@@ -1,4 +1,4 @@
-package restic
+package restorer
 
 import (
 	"context"
@@ -9,29 +9,30 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/restic"
 )
 
 // Restorer is used to restore a snapshot to a directory.
 type Restorer struct {
-	repo Repository
-	sn   *Snapshot
+	repo restic.Repository
+	sn   *restic.Snapshot
 
-	Error        func(dir string, node *Node, err error) error
-	SelectFilter func(item string, dstpath string, node *Node) (selectedForRestore bool, childMayBeSelected bool)
+	Error        func(dir string, node *restic.Node, err error) error
+	SelectFilter func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool)
 }
 
-var restorerAbortOnAllErrors = func(str string, node *Node, err error) error { return err }
+var restorerAbortOnAllErrors = func(str string, node *restic.Node, err error) error { return err }
 
 // NewRestorer creates a restorer preloaded with the content from the snapshot id.
-func NewRestorer(repo Repository, id ID) (*Restorer, error) {
+func NewRestorer(repo restic.Repository, id restic.ID) (*Restorer, error) {
 	r := &Restorer{
 		repo: repo, Error: restorerAbortOnAllErrors,
-		SelectFilter: func(string, string, *Node) (bool, bool) { return true, true },
+		SelectFilter: func(string, string, *restic.Node) (bool, bool) { return true, true },
 	}
 
 	var err error
 
-	r.sn, err = LoadSnapshot(context.TODO(), repo, id)
+	r.sn, err = restic.LoadSnapshot(context.TODO(), repo, id)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +42,7 @@ func NewRestorer(repo Repository, id ID) (*Restorer, error) {
 
 // restoreTo restores a tree from the repo to a destination. target is the path in
 // the file system, location within the snapshot.
-func (res *Restorer) restoreTo(ctx context.Context, target, location string, treeID ID, idx *HardlinkIndex) error {
+func (res *Restorer) restoreTo(ctx context.Context, target, location string, treeID restic.ID, idx *restic.HardlinkIndex) error {
 	debug.Log("%v %v %v", target, location, treeID)
 	tree, err := res.repo.LoadTree(ctx, treeID)
 	if err != nil {
@@ -122,7 +123,7 @@ func (res *Restorer) restoreTo(ctx context.Context, target, location string, tre
 	return nil
 }
 
-func (res *Restorer) restoreNodeTo(ctx context.Context, node *Node, target, location string, idx *HardlinkIndex) error {
+func (res *Restorer) restoreNodeTo(ctx context.Context, node *restic.Node, target, location string, idx *restic.HardlinkIndex) error {
 	debug.Log("%v %v %v", node.Name, target, location)
 
 	err := node.CreateAt(ctx, target, res.repo, idx)
@@ -163,11 +164,11 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 		}
 	}
 
-	idx := NewHardlinkIndex()
+	idx := restic.NewHardlinkIndex()
 	return res.restoreTo(ctx, dst, string(filepath.Separator), *res.sn.Tree, idx)
 }
 
 // Snapshot returns the snapshot this restorer is configured to use.
-func (res *Restorer) Snapshot() *Snapshot {
+func (res *Restorer) Snapshot() *restic.Snapshot {
 	return res.sn
 }

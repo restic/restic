@@ -5,6 +5,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/restorer"
 
 	"github.com/spf13/cobra"
 )
@@ -104,7 +105,7 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	res, err := restic.NewRestorer(repo, id)
+	res, err := restorer.NewRestorer(repo, id)
 	if err != nil {
 		Exitf(2, "creating restorer failed: %v\n", err)
 	}
