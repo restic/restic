@@ -44,8 +44,8 @@ func (b *Backend) Remove(ctx context.Context, h restic.Handle) error {
 }
 
 var autoCacheTypes = map[restic.FileType]struct{}{
-	restic.IndexFile:    struct{}{},
-	restic.SnapshotFile: struct{}{},
+	restic.IndexFile:    {},
+	restic.SnapshotFile: {},
 }
 
 // Save stores a new file in the backend and the cache.
