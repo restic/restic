@@ -398,6 +398,7 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 		if err == nil {
 			arch.CompleteItem(snItem, previous, fn.node, fn.stats, time.Since(start))
 		} else {
+			debug.Log("SaveDir for %v returned error: %v", snPath, err)
 			return FutureNode{}, false, err
 		}
 

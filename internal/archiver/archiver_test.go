@@ -8,11 +8,13 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"testing"
 	"time"
 
 	"github.com/restic/restic/internal/checker"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -1595,6 +1597,144 @@ func TestArchiverErrorReporting(t *testing.T) {
 			TestEnsureSnapshot(t, repo, snapshotID, want)
 
 			checker.TestCheckRepo(t, repo)
+		})
+	}
+}
+
+// TrackFS keeps track which files are opened. For some files, an error is injected.
+type TrackFS struct {
+	fs.FS
+
+	errorOn map[string]error
+
+	opened map[string]uint
+	m      sync.Mutex
+}
+
+func (m *TrackFS) Open(name string) (fs.File, error) {
+	m.m.Lock()
+	m.opened[name]++
+	m.m.Unlock()
+
+	return m.FS.Open(name)
+}
+
+func (m *TrackFS) OpenFile(name string, flag int, perm os.FileMode) (fs.File, error) {
+	m.m.Lock()
+	m.opened[name]++
+	m.m.Unlock()
+
+	return m.FS.OpenFile(name, flag, perm)
+}
+
+type failSaveRepo struct {
+	restic.Repository
+	failAfter int32
+	cnt       int32
+	err       error
+}
+
+func (f *failSaveRepo) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID) (restic.ID, error) {
+	val := atomic.AddInt32(&f.cnt, 1)
+	if val >= f.failAfter {
+		return restic.ID{}, f.err
+	}
+
+	return f.Repository.SaveBlob(ctx, t, buf, id)
+}
+
+func TestArchiverAbortEarlyOnError(t *testing.T) {
+	var testErr = errors.New("test error")
+
+	var tests = []struct {
+		src       TestDir
+		wantOpen  map[string]uint
+		failAfter uint // error after so many files have been saved to the repo
+		err       error
+	}{
+		{
+			src: TestDir{
+				"dir": TestDir{
+					"bar": TestFile{Content: "foobar"},
+					"baz": TestFile{Content: "foobar"},
+					"foo": TestFile{Content: "foobar"},
+				},
+			},
+			wantOpen: map[string]uint{
+				filepath.FromSlash("dir/bar"): 1,
+				filepath.FromSlash("dir/baz"): 1,
+				filepath.FromSlash("dir/foo"): 1,
+			},
+		},
+		{
+			src: TestDir{
+				"dir": TestDir{
+					"file1": TestFile{Content: string(restictest.Random(3, 4*1024*1024))},
+					"file2": TestFile{Content: string(restictest.Random(3, 4*1024*1024))},
+					"file3": TestFile{Content: string(restictest.Random(3, 4*1024*1024))},
+					"file4": TestFile{Content: string(restictest.Random(3, 4*1024*1024))},
+					"file5": TestFile{Content: string(restictest.Random(3, 4*1024*1024))},
+					"file6": TestFile{Content: string(restictest.Random(3, 4*1024*1024))},
+					"file7": TestFile{Content: string(restictest.Random(3, 4*1024*1024))},
+					"file8": TestFile{Content: string(restictest.Random(3, 4*1024*1024))},
+					"file9": TestFile{Content: string(restictest.Random(3, 4*1024*1024))},
+				},
+			},
+			wantOpen: map[string]uint{
+				filepath.FromSlash("dir/file1"): 1,
+				filepath.FromSlash("dir/file2"): 1,
+				filepath.FromSlash("dir/file3"): 1,
+				filepath.FromSlash("dir/file7"): 0,
+				filepath.FromSlash("dir/file8"): 0,
+				filepath.FromSlash("dir/file9"): 0,
+			},
+			failAfter: 5,
+			err:       testErr,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			tempdir, repo, cleanup := prepareTempdirRepoSrc(t, test.src)
+			defer cleanup()
+
+			back := fs.TestChdir(t, tempdir)
+			defer back()
+
+			testFS := &TrackFS{
+				FS:     fs.Track{fs.Local{}},
+				opened: make(map[string]uint),
+			}
+
+			if testFS.errorOn == nil {
+				testFS.errorOn = make(map[string]error)
+			}
+
+			testRepo := &failSaveRepo{
+				Repository: repo,
+				failAfter:  int32(test.failAfter),
+				err:        test.err,
+			}
+
+			arch := New(testRepo, testFS, Options{})
+
+			_, _, err := arch.Snapshot(ctx, []string{"."}, SnapshotOptions{Time: time.Now()})
+			if errors.Cause(err) != test.err {
+				t.Errorf("expected error (%v) not found, got %v", test.err, errors.Cause(err))
+			}
+
+			t.Logf("Snapshot return error: %v", err)
+
+			t.Logf("track fs: %v", testFS.opened)
+
+			for k, v := range test.wantOpen {
+				if testFS.opened[k] != v {
+					t.Errorf("opened %v %d times, want %d", k, testFS.opened[k], v)
+				}
+			}
 		})
 	}
 }

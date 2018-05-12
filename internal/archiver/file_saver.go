@@ -117,10 +117,12 @@ func (s *FileSaver) Save(ctx context.Context, snPath string, file fs.File, fi os
 	case s.ch <- job:
 	case <-s.done:
 		debug.Log("not sending job, FileSaver is done")
+		_ = file.Close()
 		close(ch)
 		return FutureFile{ch: ch}
 	case <-ctx.Done():
 		debug.Log("not sending job, context is cancelled: %v", ctx.Err())
+		_ = file.Close()
 		close(ch)
 		return FutureFile{ch: ch}
 	}
