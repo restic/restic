@@ -263,8 +263,8 @@ type FutureNode struct {
 
 	isFile bool
 	file   FutureFile
-	isDir  bool
-	dir    FutureTree
+	isTree bool
+	tree   FutureTree
 }
 
 func (fn *FutureNode) wait(ctx context.Context) {
@@ -280,15 +280,15 @@ func (fn *FutureNode) wait(ctx context.Context) {
 		fn.file = FutureFile{}
 		fn.isFile = false
 
-	case fn.isDir:
+	case fn.isTree:
 		// wait for and collect the data for the dir
-		fn.dir.Wait(ctx)
-		fn.node = fn.dir.Node()
-		fn.stats = fn.dir.Stats()
+		fn.tree.Wait(ctx)
+		fn.node = fn.tree.Node()
+		fn.stats = fn.tree.Stats()
 
 		// ensure the other stuff can be garbage-collected
-		fn.dir = FutureTree{}
-		fn.isDir = false
+		fn.tree = FutureTree{}
+		fn.isTree = false
 	}
 }
 
@@ -393,8 +393,8 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 		start := time.Now()
 		oldSubtree := arch.loadSubtree(ctx, previous)
 
-		fn.isDir = true
-		fn.dir, err = arch.SaveDir(ctx, snPath, fi, target, oldSubtree)
+		fn.isTree = true
+		fn.tree, err = arch.SaveDir(ctx, snPath, fi, target, oldSubtree)
 		if err == nil {
 			arch.CompleteItem(snItem, previous, fn.node, fn.stats, time.Since(start))
 		} else {
