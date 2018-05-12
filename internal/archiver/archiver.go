@@ -218,6 +218,7 @@ func (arch *Archiver) SaveDir(ctx context.Context, snPath string, fi os.FileInfo
 	for _, name := range names {
 		// test if context has been cancelled
 		if ctx.Err() != nil {
+			debug.Log("context has been cancelled, aborting")
 			return FutureTree{}, ctx.Err()
 		}
 
@@ -263,14 +264,15 @@ type FutureNode struct {
 
 	isFile bool
 	file   FutureFile
-	isDir  bool
-	dir    FutureTree
+	isTree bool
+	tree   FutureTree
 }
 
 func (fn *FutureNode) wait(ctx context.Context) {
 	switch {
 	case fn.isFile:
 		// wait for and collect the data for the file
+		fn.file.Wait(ctx)
 		fn.node = fn.file.Node()
 		fn.err = fn.file.Err()
 		fn.stats = fn.file.Stats()
@@ -279,19 +281,21 @@ func (fn *FutureNode) wait(ctx context.Context) {
 		fn.file = FutureFile{}
 		fn.isFile = false
 
-	case fn.isDir:
+	case fn.isTree:
 		// wait for and collect the data for the dir
-		fn.node = fn.dir.Node()
-		fn.stats = fn.dir.Stats()
+		fn.tree.Wait(ctx)
+		fn.node = fn.tree.Node()
+		fn.stats = fn.tree.Stats()
 
 		// ensure the other stuff can be garbage-collected
-		fn.dir = FutureTree{}
-		fn.isDir = false
+		fn.tree = FutureTree{}
+		fn.isTree = false
 	}
 }
 
 // Save saves a target (file or directory) to the repo. If the item is
-// excluded,this function returns a nil node and error.
+// excluded,this function returns a nil node and error, with excluded set to
+// true.
 //
 // Errors and completion is needs to be handled by the caller.
 //
@@ -390,11 +394,12 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 		start := time.Now()
 		oldSubtree := arch.loadSubtree(ctx, previous)
 
-		fn.isDir = true
-		fn.dir, err = arch.SaveDir(ctx, snPath, fi, target, oldSubtree)
+		fn.isTree = true
+		fn.tree, err = arch.SaveDir(ctx, snPath, fi, target, oldSubtree)
 		if err == nil {
 			arch.CompleteItem(snItem, previous, fn.node, fn.stats, time.Since(start))
 		} else {
+			debug.Log("SaveDir for %v returned error: %v", snPath, err)
 			return FutureNode{}, false, err
 		}
 
@@ -477,7 +482,16 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 
 	futureNodes := make(map[string]FutureNode)
 
-	for name, subatree := range atree.Nodes {
+	// iterate over the nodes of atree in lexicographic (=deterministic) order
+	names := make([]string, 0, len(atree.Nodes))
+	for name := range atree.Nodes {
+		names = append(names, name)
+	}
+	sort.Stable(sort.StringSlice(names))
+
+	for _, name := range names {
+		subatree := atree.Nodes[name]
+
 		// test if context has been cancelled
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
@@ -713,13 +727,13 @@ func (arch *Archiver) runWorkers(ctx context.Context, t *tomb.Tomb) {
 
 	arch.fileSaver = NewFileSaver(ctx, t,
 		arch.FS,
-		arch.blobSaver,
+		arch.blobSaver.Save,
 		arch.Repo.Config().ChunkerPolynomial,
 		arch.Options.FileReadConcurrency, arch.Options.SaveBlobConcurrency)
 	arch.fileSaver.CompleteBlob = arch.CompleteBlob
 	arch.fileSaver.NodeFromFileInfo = arch.nodeFromFileInfo
 
-	arch.treeSaver = NewTreeSaver(ctx, t, arch.Options.SaveTreeConcurrency, arch.saveTree, arch.error)
+	arch.treeSaver = NewTreeSaver(ctx, t, arch.Options.SaveTreeConcurrency, arch.saveTree, arch.Error)
 }
 
 // Snapshot saves several targets and returns a snapshot.
@@ -754,7 +768,8 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 
 	t.Kill(nil)
 	werr := t.Wait()
-	if err != nil && errors.Cause(err) == context.Canceled {
+	debug.Log("err is %v, werr is %v", err, werr)
+	if err == nil || errors.Cause(err) == context.Canceled {
 		err = werr
 	}
 
