@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/restic/restic/internal/debug"
-	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
+	tomb "gopkg.in/tomb.v2"
 )
 
 // FutureTree is returned by Save and will return the data once it
@@ -15,22 +15,25 @@ type FutureTree struct {
 	res saveTreeResponse
 }
 
-func (s *FutureTree) wait() {
-	res, ok := <-s.ch
-	if ok {
-		s.res = res
+// Wait blocks until the data has been received or ctx is cancelled.
+func (s *FutureTree) Wait(ctx context.Context) {
+	select {
+	case <-ctx.Done():
+		return
+	case res, ok := <-s.ch:
+		if ok {
+			s.res = res
+		}
 	}
 }
 
-// Node returns the node once it is available.
+// Node returns the node.
 func (s *FutureTree) Node() *restic.Node {
-	s.wait()
 	return s.res.node
 }
 
-// Stats returns the stats for the file once they are available.
+// Stats returns the stats for the file.
 func (s *FutureTree) Stats() ItemStats {
-	s.wait()
 	return s.res.stats
 }
 
@@ -39,23 +42,25 @@ type TreeSaver struct {
 	saveTree func(context.Context, *restic.Tree) (restic.ID, ItemStats, error)
 	errFn    ErrorFunc
 
-	ch chan<- saveTreeJob
+	ch   chan<- saveTreeJob
+	done <-chan struct{}
 }
 
 // NewTreeSaver returns a new tree saver. A worker pool with treeWorkers is
 // started, it is stopped when ctx is cancelled.
-func NewTreeSaver(ctx context.Context, g Goer, treeWorkers uint, saveTree func(context.Context, *restic.Tree) (restic.ID, ItemStats, error), errFn ErrorFunc) *TreeSaver {
+func NewTreeSaver(ctx context.Context, t *tomb.Tomb, treeWorkers uint, saveTree func(context.Context, *restic.Tree) (restic.ID, ItemStats, error), errFn ErrorFunc) *TreeSaver {
 	ch := make(chan saveTreeJob)
 
 	s := &TreeSaver{
 		ch:       ch,
+		done:     t.Dying(),
 		saveTree: saveTree,
 		errFn:    errFn,
 	}
 
 	for i := uint(0); i < treeWorkers; i++ {
-		g.Go(func() error {
-			return s.worker(ctx, ch)
+		t.Go(func() error {
+			return s.worker(t.Context(ctx), ch)
 		})
 	}
 
@@ -73,8 +78,12 @@ func (s *TreeSaver) Save(ctx context.Context, snPath string, node *restic.Node, 
 	}
 	select {
 	case s.ch <- job:
+	case <-s.done:
+		debug.Log("not saving tree, TreeSaver is done")
+		close(ch)
+		return FutureTree{ch: ch}
 	case <-ctx.Done():
-		debug.Log("refusing to save job, context is cancelled: %v", ctx.Err())
+		debug.Log("not saving tree, context is cancelled")
 		close(ch)
 		return FutureTree{ch: ch}
 	}
@@ -149,7 +158,8 @@ func (s *TreeSaver) worker(ctx context.Context, jobs <-chan saveTreeJob) error {
 		node, stats, err := s.save(ctx, job.snPath, job.node, job.nodes)
 		if err != nil {
 			debug.Log("error saving tree blob: %v", err)
-			return errors.Fatalf("unable to save data: %v", err)
+			close(job.ch)
+			return err
 		}
 
 		job.ch <- saveTreeResponse{

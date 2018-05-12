@@ -10,12 +10,8 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
+	tomb "gopkg.in/tomb.v2"
 )
-
-// Goer starts a function in a goroutine.
-type Goer interface {
-	Go(func() error)
-}
 
 // FutureFile is returned by Save and will return the data once it
 // has been processed.
@@ -24,40 +20,47 @@ type FutureFile struct {
 	res saveFileResponse
 }
 
-func (s *FutureFile) wait() {
-	res, ok := <-s.ch
-	if ok {
-		s.res = res
+// Wait blocks until the result of the save operation is received or ctx is
+// cancelled.
+func (s *FutureFile) Wait(ctx context.Context) {
+	select {
+	case res, ok := <-s.ch:
+		if ok {
+			s.res = res
+		}
+	case <-ctx.Done():
+		return
 	}
 }
 
 // Node returns the node once it is available.
 func (s *FutureFile) Node() *restic.Node {
-	s.wait()
 	return s.res.node
 }
 
 // Stats returns the stats for the file once they are available.
 func (s *FutureFile) Stats() ItemStats {
-	s.wait()
 	return s.res.stats
 }
 
 // Err returns the error in case an error occurred.
 func (s *FutureFile) Err() error {
-	s.wait()
 	return s.res.err
 }
+
+// SaveBlobFn saves a blob to a repo.
+type SaveBlobFn func(context.Context, restic.BlobType, *Buffer) FutureBlob
 
 // FileSaver concurrently saves incoming files to the repo.
 type FileSaver struct {
 	fs           fs.FS
-	blobSaver    *BlobSaver
 	saveFilePool *BufferPool
+	saveBlob     SaveBlobFn
 
 	pol chunker.Pol
 
-	ch chan<- saveFileJob
+	ch   chan<- saveFileJob
+	done <-chan struct{}
 
 	CompleteBlob func(filename string, bytes uint64)
 
@@ -66,7 +69,7 @@ type FileSaver struct {
 
 // NewFileSaver returns a new file saver. A worker pool with fileWorkers is
 // started, it is stopped when ctx is cancelled.
-func NewFileSaver(ctx context.Context, g Goer, fs fs.FS, blobSaver *BlobSaver, pol chunker.Pol, fileWorkers, blobWorkers uint) *FileSaver {
+func NewFileSaver(ctx context.Context, t *tomb.Tomb, fs fs.FS, save SaveBlobFn, pol chunker.Pol, fileWorkers, blobWorkers uint) *FileSaver {
 	ch := make(chan saveFileJob)
 
 	debug.Log("new file saver with %v file workers and %v blob workers", fileWorkers, blobWorkers)
@@ -75,17 +78,18 @@ func NewFileSaver(ctx context.Context, g Goer, fs fs.FS, blobSaver *BlobSaver, p
 
 	s := &FileSaver{
 		fs:           fs,
-		blobSaver:    blobSaver,
+		saveBlob:     save,
 		saveFilePool: NewBufferPool(ctx, int(poolSize), chunker.MaxSize),
 		pol:          pol,
 		ch:           ch,
+		done:         t.Dying(),
 
 		CompleteBlob: func(string, uint64) {},
 	}
 
 	for i := uint(0); i < fileWorkers; i++ {
-		g.Go(func() error {
-			s.worker(ctx, ch)
+		t.Go(func() error {
+			s.worker(t.Context(ctx), ch)
 			return nil
 		})
 	}
@@ -111,8 +115,14 @@ func (s *FileSaver) Save(ctx context.Context, snPath string, file fs.File, fi os
 
 	select {
 	case s.ch <- job:
+	case <-s.done:
+		debug.Log("not sending job, FileSaver is done")
+		close(ch)
+		return FutureFile{ch: ch}
 	case <-ctx.Done():
 		debug.Log("not sending job, context is cancelled: %v", ctx.Err())
+		close(ch)
+		return FutureFile{ch: ch}
 	}
 
 	return FutureFile{ch: ch}
@@ -182,7 +192,7 @@ func (s *FileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 			return saveFileResponse{err: ctx.Err()}
 		}
 
-		res := s.blobSaver.Save(ctx, restic.DataBlob, buf)
+		res := s.saveBlob(ctx, restic.DataBlob, buf)
 		results = append(results, res)
 
 		// test if the context has been cancelled, return the error

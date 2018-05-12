@@ -5,8 +5,8 @@ import (
 	"sync"
 
 	"github.com/restic/restic/internal/debug"
-	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
+	tomb "gopkg.in/tomb.v2"
 )
 
 // Saver allows saving a blob.
@@ -22,22 +22,24 @@ type BlobSaver struct {
 	m          sync.Mutex
 	knownBlobs restic.BlobSet
 
-	ch chan<- saveBlobJob
+	ch   chan<- saveBlobJob
+	done <-chan struct{}
 }
 
 // NewBlobSaver returns a new blob. A worker pool is started, it is stopped
 // when ctx is cancelled.
-func NewBlobSaver(ctx context.Context, g Goer, repo Saver, workers uint) *BlobSaver {
+func NewBlobSaver(ctx context.Context, t *tomb.Tomb, repo Saver, workers uint) *BlobSaver {
 	ch := make(chan saveBlobJob)
 	s := &BlobSaver{
 		repo:       repo,
 		knownBlobs: restic.NewBlobSet(),
 		ch:         ch,
+		done:       t.Dying(),
 	}
 
 	for i := uint(0); i < workers; i++ {
-		g.Go(func() error {
-			return s.worker(ctx, ch)
+		t.Go(func() error {
+			return s.worker(t.Context(ctx), ch)
 		})
 	}
 
@@ -51,6 +53,10 @@ func (s *BlobSaver) Save(ctx context.Context, t restic.BlobType, buf *Buffer) Fu
 	ch := make(chan saveBlobResponse, 1)
 	select {
 	case s.ch <- saveBlobJob{BlobType: t, buf: buf, ch: ch}:
+	case <-s.done:
+		debug.Log("not sending job, BlobSaver is done")
+		close(ch)
+		return FutureBlob{ch: ch}
 	case <-ctx.Done():
 		debug.Log("not sending job, context is cancelled")
 		close(ch)
@@ -139,7 +145,7 @@ func (s *BlobSaver) saveBlob(ctx context.Context, t restic.BlobType, buf []byte)
 	// otherwise we're responsible for saving it
 	_, err := s.repo.SaveBlob(ctx, t, buf, id)
 	if err != nil {
-		return saveBlobResponse{}, errors.Fatalf("unable to save data: %v", err)
+		return saveBlobResponse{}, err
 	}
 
 	return saveBlobResponse{
@@ -153,14 +159,13 @@ func (s *BlobSaver) worker(ctx context.Context, jobs <-chan saveBlobJob) error {
 		var job saveBlobJob
 		select {
 		case <-ctx.Done():
-			debug.Log("context is cancelled, exiting: %v", ctx.Err())
 			return nil
 		case job = <-jobs:
 		}
 
 		res, err := s.saveBlob(ctx, job.BlobType, job.buf.Data)
 		if err != nil {
-			debug.Log("saveBlob returned error: %v", err)
+			debug.Log("saveBlob returned error, exiting: %v", err)
 			close(job.ch)
 			return err
 		}

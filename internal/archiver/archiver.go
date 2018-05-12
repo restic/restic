@@ -271,6 +271,7 @@ func (fn *FutureNode) wait(ctx context.Context) {
 	switch {
 	case fn.isFile:
 		// wait for and collect the data for the file
+		fn.file.Wait(ctx)
 		fn.node = fn.file.Node()
 		fn.err = fn.file.Err()
 		fn.stats = fn.file.Stats()
@@ -281,6 +282,7 @@ func (fn *FutureNode) wait(ctx context.Context) {
 
 	case fn.isDir:
 		// wait for and collect the data for the dir
+		fn.dir.Wait(ctx)
 		fn.node = fn.dir.Node()
 		fn.stats = fn.dir.Stats()
 
@@ -713,13 +715,13 @@ func (arch *Archiver) runWorkers(ctx context.Context, t *tomb.Tomb) {
 
 	arch.fileSaver = NewFileSaver(ctx, t,
 		arch.FS,
-		arch.blobSaver,
+		arch.blobSaver.Save,
 		arch.Repo.Config().ChunkerPolynomial,
 		arch.Options.FileReadConcurrency, arch.Options.SaveBlobConcurrency)
 	arch.fileSaver.CompleteBlob = arch.CompleteBlob
 	arch.fileSaver.NodeFromFileInfo = arch.nodeFromFileInfo
 
-	arch.treeSaver = NewTreeSaver(ctx, t, arch.Options.SaveTreeConcurrency, arch.saveTree, arch.error)
+	arch.treeSaver = NewTreeSaver(ctx, t, arch.Options.SaveTreeConcurrency, arch.saveTree, arch.Error)
 }
 
 // Snapshot saves several targets and returns a snapshot.

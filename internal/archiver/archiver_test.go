@@ -70,6 +70,8 @@ func saveFile(t testing.TB, repo restic.Repository, filename string, filesystem 
 	}
 
 	res := arch.fileSaver.Save(ctx, "/", file, fi, start, complete)
+
+	res.Wait(ctx)
 	if res.Err() != nil {
 		t.Fatal(res.Err())
 	}
@@ -620,6 +622,7 @@ func TestArchiverSaveDir(t *testing.T) {
 				t.Fatal(err)
 			}
 
+			ft.Wait(ctx)
 			node, stats := ft.Node(), ft.Stats()
 
 			tmb.Kill(nil)
@@ -701,6 +704,7 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		ft.Wait(ctx)
 		node, stats := ft.Node(), ft.Stats()
 
 		tmb.Kill(nil)
