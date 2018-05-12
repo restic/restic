@@ -218,6 +218,7 @@ func (arch *Archiver) SaveDir(ctx context.Context, snPath string, fi os.FileInfo
 	for _, name := range names {
 		// test if context has been cancelled
 		if ctx.Err() != nil {
+			debug.Log("context has been cancelled, aborting")
 			return FutureTree{}, ctx.Err()
 		}
 
@@ -767,7 +768,8 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 
 	t.Kill(nil)
 	werr := t.Wait()
-	if err != nil && errors.Cause(err) == context.Canceled {
+	debug.Log("err is %v, werr is %v", err, werr)
+	if err == nil || errors.Cause(err) == context.Canceled {
 		err = werr
 	}
 
