@@ -122,7 +122,7 @@ func newReadProgress(gopts GlobalOptions, todo restic.Stat) *restic.Progress {
 // prepareCheckCache configures a special cache directory for check.
 //
 //  * if --with-cache is specified, the default cache is used
-//  * if the user explicitely requested --no-cache, we don't use any cache
+//  * if the user explicitly requested --no-cache, we don't use any cache
 //  * by default, we use a cache in a temporary directory that is deleted after the check
 func prepareCheckCache(opts CheckOptions, gopts *GlobalOptions) (cleanup func()) {
 	cleanup = func() {}
