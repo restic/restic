@@ -293,7 +293,8 @@ func (fn *FutureNode) wait(ctx context.Context) {
 }
 
 // Save saves a target (file or directory) to the repo. If the item is
-// excluded,this function returns a nil node and error.
+// excluded,this function returns a nil node and error, with excluded set to
+// true.
 //
 // Errors and completion is needs to be handled by the caller.
 //
