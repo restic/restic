@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -28,14 +27,14 @@ data after 'forget' was run successfully, see the 'prune' command. `,
 
 // ForgetOptions collects all options for the forget command.
 type ForgetOptions struct {
-	Last      int
-	Hourly    int
-	Daily     int
-	Weekly    int
-	Monthly   int
-	Yearly    int
-	NewerThan time.Duration
-	KeepTags  restic.TagLists
+	Last       int
+	Hourly     int
+	Daily      int
+	Weekly     int
+	Monthly    int
+	Yearly     int
+	WithinDays int
+	KeepTags   restic.TagLists
 
 	Host    string
 	Tags    restic.TagLists
@@ -60,7 +59,7 @@ func init() {
 	f.IntVarP(&forgetOptions.Weekly, "keep-weekly", "w", 0, "keep the last `n` weekly snapshots")
 	f.IntVarP(&forgetOptions.Monthly, "keep-monthly", "m", 0, "keep the last `n` monthly snapshots")
 	f.IntVarP(&forgetOptions.Yearly, "keep-yearly", "y", 0, "keep the last `n` yearly snapshots")
-	f.DurationVar(&forgetOptions.NewerThan, "keep-newer-than", 0, "keep snapshots that were created within this timeframe")
+	f.IntVar(&forgetOptions.WithinDays, "keep-within", 0, "keep snapshots that were created within `days` before the newest")
 
 	f.Var(&forgetOptions.KeepTags, "keep-tag", "keep snapshots with this `taglist` (can be specified multiple times)")
 	// Sadly the commonly used shortcut `H` is already used.
@@ -166,20 +165,15 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	var ageCutoff time.Time
-	if opts.NewerThan > 0 {
-		ageCutoff = time.Now().Add(-opts.NewerThan)
-	}
-
 	policy := restic.ExpirePolicy{
-		Last:      opts.Last,
-		Hourly:    opts.Hourly,
-		Daily:     opts.Daily,
-		Weekly:    opts.Weekly,
-		Monthly:   opts.Monthly,
-		Yearly:    opts.Yearly,
-		NewerThan: ageCutoff,
-		Tags:      opts.KeepTags,
+		Last:    opts.Last,
+		Hourly:  opts.Hourly,
+		Daily:   opts.Daily,
+		Weekly:  opts.Weekly,
+		Monthly: opts.Monthly,
+		Yearly:  opts.Yearly,
+		Within:  opts.WithinDays,
+		Tags:    opts.KeepTags,
 	}
 
 	if policy.Empty() && len(args) == 0 {

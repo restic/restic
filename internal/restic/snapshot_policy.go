@@ -10,14 +10,14 @@ import (
 
 // ExpirePolicy configures which snapshots should be automatically removed.
 type ExpirePolicy struct {
-	Last      int       // keep the last n snapshots
-	Hourly    int       // keep the last n hourly snapshots
-	Daily     int       // keep the last n daily snapshots
-	Weekly    int       // keep the last n weekly snapshots
-	Monthly   int       // keep the last n monthly snapshots
-	Yearly    int       // keep the last n yearly snapshots
-	NewerThan time.Time // keep snapshots newer than this time
-	Tags      []TagList // keep all snapshots that include at least one of the tag lists.
+	Last    int       // keep the last n snapshots
+	Hourly  int       // keep the last n hourly snapshots
+	Daily   int       // keep the last n daily snapshots
+	Weekly  int       // keep the last n weekly snapshots
+	Monthly int       // keep the last n monthly snapshots
+	Yearly  int       // keep the last n yearly snapshots
+	Within  int       // keep snapshots made within this number of days since the newest snapshot
+	Tags    []TagList // keep all snapshots that include at least one of the tag lists.
 }
 
 func (e ExpirePolicy) String() (s string) {
@@ -40,8 +40,8 @@ func (e ExpirePolicy) String() (s string) {
 	if e.Yearly > 0 {
 		keeps = append(keeps, fmt.Sprintf("%d yearly", e.Yearly))
 	}
-	if !e.NewerThan.IsZero() {
-		keeps = append(keeps, fmt.Sprintf("snapshots newer than %s", e.NewerThan))
+	if e.Within != 0 {
+		keeps = append(keeps, fmt.Sprintf("snapshots within %d days of the newest snapshot", e.Within))
 	}
 
 	return fmt.Sprintf("keep the last %s snapshots", strings.Join(keeps, ", "))
@@ -94,6 +94,22 @@ func always(d time.Time, nr int) int {
 	return nr
 }
 
+// findLatestTimestamp returns the time stamp for the newest snapshot.
+func findLatestTimestamp(list Snapshots) time.Time {
+	if len(list) == 0 {
+		panic("list of snapshots is empty")
+	}
+
+	var latest time.Time
+	for _, sn := range list {
+		if sn.Time.After(latest) {
+			latest = sn.Time
+		}
+	}
+
+	return latest
+}
+
 // ApplyPolicy returns the snapshots from list that are to be kept and removed
 // according to the policy p. list is sorted in the process.
 func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots) {
@@ -120,6 +136,8 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots) {
 		{p.Yearly, y, -1},
 	}
 
+	latest := findLatestTimestamp(list)
+
 	for nr, cur := range list {
 		var keepSnap bool
 
@@ -130,9 +148,12 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots) {
 			}
 		}
 
-		// If a timestamp is specified, it's a hard cutoff for older snapshots.
-		if !p.NewerThan.IsZero() && cur.Time.After(p.NewerThan) {
-			keepSnap = true
+		// If the timestamp of the snapshot is within the range, then keep it.
+		if p.Within != 0 {
+			t := latest.AddDate(0, 0, -p.Within)
+			if cur.Time.After(t) {
+				keepSnap = true
+			}
 		}
 
 		// Now update the other buckets and see if they have some counts left.

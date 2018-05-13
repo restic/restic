@@ -21,6 +21,15 @@ func parseTimeUTC(s string) time.Time {
 	return t.UTC()
 }
 
+func parseDuration(s string) time.Duration {
+	d, err := time.ParseDuration(s)
+	if err != nil {
+		panic(err)
+	}
+
+	return d
+}
+
 func TestExpireSnapshotOps(t *testing.T) {
 	data := []struct {
 		expectEmpty bool
@@ -171,7 +180,10 @@ var expireTests = []restic.ExpirePolicy{
 	{Tags: []restic.TagList{{"foo"}}},
 	{Tags: []restic.TagList{{"foo", "bar"}}},
 	{Tags: []restic.TagList{{"foo"}, {"bar"}}},
-	{NewerThan: parseTimeUTC("2016-01-01 01:00:00")},
+	{Within: 1},
+	{Within: 2},
+	{Within: 7},
+	{Within: 30},
 }
 
 func TestApplyPolicy(t *testing.T) {
