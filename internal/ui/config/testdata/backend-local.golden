@@ -5,10 +5,14 @@
   "Backends": {
     "bar": {
       "Type": "local",
+      "User": "",
+      "Host": "",
       "Path": "/srv/data/repo"
     },
     "foo": {
       "Type": "local",
+      "User": "",
+      "Host": "",
       "Path": "/srv/data/repo"
     }
   },

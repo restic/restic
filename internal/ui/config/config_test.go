@@ -99,6 +99,7 @@ func TestConfigApplyFlags(t *testing.T) {
 					Target:   []string{"foo", "/home/user"},
 					Excludes: []string{"foo/*.go"},
 				},
+				Backends: map[string]Backend{},
 			},
 		},
 		{
@@ -120,7 +121,8 @@ func TestConfigApplyFlags(t *testing.T) {
 				Backup: Backup{
 					Target: []string{"foo", "/home/user"},
 				},
-				Repo: "sftp:user@server:/srv/backup/repo",
+				Repo:     "sftp:user@server:/srv/backup/repo",
+				Backends: map[string]Backend{},
 			},
 		},
 	}
@@ -164,6 +166,7 @@ func TestConfigApplyEnv(t *testing.T) {
 				Backup: Backup{
 					Target: []string{"foo", "/home/user"},
 				},
+				Backends: map[string]Backend{},
 			},
 		},
 	}

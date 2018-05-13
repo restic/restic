@@ -20,26 +20,16 @@ type Config struct {
 	Password     string `hcl:"password"                           env:"RESTIC_PASSWORD"`
 	PasswordFile string `hcl:"password_file" flag:"password-file" env:"RESTIC_PASSWORD_FILE"`
 
-	Backends map[string]interface{}
+	Backends map[string]Backend
 	Backup   Backup `hcl:"backup"`
 }
 
 // Backend configures a backend.
 type Backend struct {
 	Type string `hcl:"type"`
-}
-
-// BackendLocal is a backend in a local directory.
-type BackendLocal struct {
-	Type string `hcl:"type"`
-	Path string `hcl:"path"`
-}
-
-// BackendSFTP is a backend stored on a server via sftp.
-type BackendSFTP struct {
-	Type string `hcl:"type"`
 	User string `hcl:"user"`
 	Host string `hcl:"host"`
+	Path string `hcl:"path"`
 }
 
 // Backup sets the options for the "backup" command.
@@ -132,8 +122,8 @@ func Parse(buf []byte) (cfg Config, err error) {
 }
 
 // parseBackends parses the backend configuration sections.
-func parseBackends(root *ast.ObjectList) (map[string]interface{}, error) {
-	backends := make(map[string]interface{})
+func parseBackends(root *ast.ObjectList) (map[string]Backend, error) {
+	backends := make(map[string]Backend)
 
 	// find top-level backend objects
 	for _, item := range root.Items {
@@ -172,21 +162,8 @@ func parseBackends(root *ast.ObjectList) (map[string]interface{}, error) {
 			return nil, err
 		}
 
-		// then decode it into the right type
-		var target interface{}
-		switch be.Type {
-		case "local", "":
-			target = &BackendLocal{Type: "local"}
-		case "sftp":
-			target = &BackendSFTP{}
-		default:
-			return nil, errors.Errorf("backend type %q is unknown at line %v, column %v",
-				be.Type, item.Pos().Line, item.Pos().Column)
-		}
-
-		err = hcl.DecodeObject(target, item)
-		if err != nil {
-			return nil, err
+		if be.Type == "" {
+			be.Type = "local"
 		}
 
 		if _, ok := backends[name]; ok {
@@ -202,12 +179,12 @@ func parseBackends(root *ast.ObjectList) (map[string]interface{}, error) {
 		}
 
 		// check allowed types
-		err = validateObjects(innerBlock.List, listTags(target, "hcl"))
+		err = validateObjects(innerBlock.List, listTags(be, "hcl"))
 		if err != nil {
 			return nil, err
 		}
 
-		backends[name] = target
+		backends[name] = be
 	}
 
 	return backends, nil

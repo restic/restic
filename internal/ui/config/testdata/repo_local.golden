@@ -4,7 +4,9 @@
   "PasswordFile": "",
   "Backends": {
     "test": {
-      "Type": "",
+      "Type": "local",
+      "User": "",
+      "Host": "",
       "Path": "/foo/bar/baz"
     }
   },
