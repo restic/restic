@@ -2,7 +2,26 @@
   "Repo": "sftp:user@server:/srv/repo",
   "Password": "secret",
   "PasswordFile": "/root/secret.txt",
-  "Backends": {},
+  "Backends": {
+    "local": {
+      "Type": "local",
+      "User": "",
+      "Host": "",
+      "Path": "/foo/bar"
+    },
+    "local2": {
+      "Type": "local",
+      "User": "",
+      "Host": "",
+      "Path": "/foo/bar"
+    },
+    "sftp": {
+      "Type": "sftp",
+      "User": "foo",
+      "Host": "bar",
+      "Path": "/foo/bar"
+    }
+  },
   "Backup": {
     "Target": [
       "/home/user/",

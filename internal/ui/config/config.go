@@ -27,9 +27,9 @@ type Config struct {
 // Backend configures a backend.
 type Backend struct {
 	Type string `hcl:"type"`
-	User string `hcl:"user"`
-	Host string `hcl:"host"`
-	Path string `hcl:"path"`
+	User string `hcl:"user" valid_for:"sftp"`
+	Host string `hcl:"host" valid_for:"sftp"`
+	Path string `hcl:"path" valid_for:"sftp,local"`
 }
 
 // Backup sets the options for the "backup" command.
@@ -155,7 +155,7 @@ func parseBackends(root *ast.ObjectList) (map[string]Backend, error) {
 				obj.Pos().Line, obj.Pos().Column)
 		}
 
-		// get the type of the backend by decoding it into the Backend truct
+		// decode object
 		var be Backend
 		err := hcl.DecodeObject(&be, obj)
 		if err != nil {
@@ -178,8 +178,8 @@ func parseBackends(root *ast.ObjectList) (map[string]Backend, error) {
 				name, obj.Pos().Line, obj.Pos().Column)
 		}
 
-		// check allowed types
-		err = validateObjects(innerBlock.List, listTags(be, "hcl"))
+		// check valid fields
+		err = validateObjects(innerBlock.List, validBackendFieldNames(be.Type))
 		if err != nil {
 			return nil, err
 		}
@@ -188,6 +188,34 @@ func parseBackends(root *ast.ObjectList) (map[string]Backend, error) {
 	}
 
 	return backends, nil
+}
+
+// validBackendFieldNames returns a set of names of valid options for the backend type be.
+func validBackendFieldNames(be string) map[string]struct{} {
+	target := Backend{}
+	vi := reflect.ValueOf(target)
+
+	attr := make(map[string]struct{})
+	for i := 0; i < vi.NumField(); i++ {
+		typeField := vi.Type().Field(i)
+		tag := typeField.Tag.Get("valid_for")
+		name := typeField.Tag.Get("hcl")
+
+		if tag == "" {
+			// if the tag is not specified, it's valid for all backend types
+			attr[name] = struct{}{}
+			continue
+		}
+
+		for _, v := range strings.Split(tag, ",") {
+			if be == v {
+				attr[name] = struct{}{}
+				break
+			}
+		}
+	}
+
+	return attr
 }
 
 // Load loads a config from a file.
