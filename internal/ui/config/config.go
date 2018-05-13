@@ -126,38 +126,38 @@ func parseBackends(root *ast.ObjectList) (map[string]Backend, error) {
 	backends := make(map[string]Backend)
 
 	// find top-level backend objects
-	for _, item := range root.Items {
+	for _, obj := range root.Items {
 		// is not an object block
-		if len(item.Keys) == 0 {
+		if len(obj.Keys) == 0 {
 			continue
 		}
 
 		// does not start with an an identifier
-		if item.Keys[0].Token.Type != token.IDENT {
+		if obj.Keys[0].Token.Type != token.IDENT {
 			continue
 		}
 
 		// something other than a backend section
-		if s, ok := item.Keys[0].Token.Value().(string); !ok || s != "backend" {
+		if s, ok := obj.Keys[0].Token.Value().(string); !ok || s != "backend" {
 			continue
 		}
 
 		// missing name
-		if len(item.Keys) != 2 {
+		if len(obj.Keys) != 2 {
 			return nil, errors.Errorf("backend has no name at line %v, column %v",
-				item.Pos().Line, item.Pos().Column)
+				obj.Pos().Line, obj.Pos().Column)
 		}
 
 		// check that the name is not empty
-		name := item.Keys[1].Token.Value().(string)
+		name := obj.Keys[1].Token.Value().(string)
 		if len(name) == 0 {
 			return nil, errors.Errorf("backend name is empty at line %v, column %v",
-				item.Pos().Line, item.Pos().Column)
+				obj.Pos().Line, obj.Pos().Column)
 		}
 
 		// get the type of the backend by decoding it into the Backend truct
 		var be Backend
-		err := hcl.DecodeObject(&be, item)
+		err := hcl.DecodeObject(&be, obj)
 		if err != nil {
 			return nil, err
 		}
@@ -168,14 +168,14 @@ func parseBackends(root *ast.ObjectList) (map[string]Backend, error) {
 
 		if _, ok := backends[name]; ok {
 			return nil, errors.Errorf("backend %q at line %v, column %v already configured",
-				name, item.Pos().Line, item.Pos().Column)
+				name, obj.Pos().Line, obj.Pos().Column)
 		}
 
 		// check structure of the backend object
-		innerBlock, ok := item.Val.(*ast.ObjectType)
+		innerBlock, ok := obj.Val.(*ast.ObjectType)
 		if !ok {
 			return nil, errors.Errorf("unable to verify structure of backend %q at line %v, column %v already configured",
-				name, item.Pos().Line, item.Pos().Column)
+				name, obj.Pos().Line, obj.Pos().Column)
 		}
 
 		// check allowed types
