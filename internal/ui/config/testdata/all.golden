@@ -1,0 +1,15 @@
+{
+  "Repo": "sftp:user@server:/srv/repo",
+  "Password": "secret",
+  "PasswordFile": "/root/secret.txt",
+  "Backends": null,
+  "Backup": {
+    "Target": [
+      "/home/user/",
+      "/home/otheruser"
+    ],
+    "Excludes": [
+      "*.c"
+    ]
+  }
+}

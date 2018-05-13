@@ -1,10 +1,15 @@
 {
+  "Repo": "test",
+  "Password": "",
+  "PasswordFile": "",
   "Backends": {
     "test": {
       "Backend": "local",
       "Path": "/foo/bar/baz"
     }
   },
-  "Repo": "test",
-  "Backup": null
+  "Backup": {
+    "Target": null,
+    "Excludes": null
+  }
 }

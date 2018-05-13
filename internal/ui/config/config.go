@@ -19,14 +19,14 @@ type Config struct {
 	Password     string `hcl:"password"                           env:"RESTIC_PASSWORD"`
 	PasswordFile string `hcl:"password_file" flag:"password-file" env:"RESTIC_PASSWORD_FILE"`
 
-	Backends map[string]Backend `hcl:"backend"`
-	Backup   Backup             `hcl:"backup"`
+	Backends map[string]interface{} `hcl:"backend"`
+	Backup   Backup                 `hcl:"backup"`
 }
 
-// Backend is a configured backend to store a repository.
-type Backend struct {
-	Backend string
-	Path    string
+// BackendLocal is a backend in a local directory.
+type BackendLocal struct {
+	Type string `hcl:"type"`
+	Path string `hcl:"path"`
 }
 
 // Backup sets the options for the "backup" command.
@@ -80,8 +80,8 @@ func Parse(buf []byte) (cfg Config, err error) {
 	root := parsed.Node.(*ast.ObjectList)
 
 	checks := map[string]map[string]struct{}{
-		"":       listTags(cfg, "config"),
-		"backup": listTags(Backup{}, "config"),
+		"":       listTags(cfg, "hcl"),
+		"backup": listTags(Backup{}, "hcl"),
 	}
 
 	for name, valid := range checks {
@@ -150,6 +150,8 @@ func ApplyFlags(cfg interface{}, fset *pflag.FlagSet) error {
 		panic("target config is not a pointer")
 	}
 
+	debug.Log("apply flags")
+
 	attr := getFieldsForTag("flag", cfg)
 
 	var visitError error
@@ -197,7 +199,13 @@ func ApplyFlags(cfg interface{}, fset *pflag.FlagSet) error {
 				visitError = err
 				return
 			}
-			field.SetSlice(v)
+
+			slice := reflect.MakeSlice(reflect.TypeOf(v), len(v), len(v))
+			field.Set(slice)
+
+			for i, s := range v {
+				slice.Index(i).SetString(s)
+			}
 		default:
 			visitError = errors.Errorf("flag %v has unknown type %v", flag.Name, flag.Value.Type())
 			return

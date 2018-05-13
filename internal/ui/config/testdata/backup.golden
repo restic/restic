@@ -1,10 +1,13 @@
 {
-  "Backends": null,
   "Repo": "",
+  "Password": "",
+  "PasswordFile": "",
+  "Backends": null,
   "Backup": {
     "Target": [
       "foo",
       "/home/user"
-    ]
+    ],
+    "Excludes": null
   }
 }
