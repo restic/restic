@@ -2,7 +2,7 @@
   "Repo": "sftp:user@server:/srv/repo",
   "Password": "secret",
   "PasswordFile": "/root/secret.txt",
-  "Backends": null,
+  "Backends": {},
   "Backup": {
     "Target": [
       "/home/user/",

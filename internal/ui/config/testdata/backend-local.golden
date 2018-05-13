@@ -1,13 +1,15 @@
 {
   "Repo": "",
-  "Password": "",
+  "Password": "geheim",
   "PasswordFile": "",
   "Backends": {
     "bar": {
-      "Type": ""
+      "Type": "local",
+      "Path": "/srv/data/repo"
     },
     "foo": {
-      "Type": "local"
+      "Type": "local",
+      "Path": "/srv/data/repo"
     }
   },
   "Backup": {

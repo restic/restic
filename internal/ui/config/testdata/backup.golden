@@ -2,7 +2,7 @@
   "Repo": "",
   "Password": "",
   "PasswordFile": "",
-  "Backends": null,
+  "Backends": {},
   "Backup": {
     "Target": [
       "foo",

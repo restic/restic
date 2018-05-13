@@ -4,7 +4,7 @@
   "PasswordFile": "",
   "Backends": {
     "test": {
-      "Backend": "local",
+      "Type": "",
       "Path": "/foo/bar/baz"
     }
   },

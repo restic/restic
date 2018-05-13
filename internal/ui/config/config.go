@@ -8,6 +8,7 @@ import (
 
 	"github.com/hashicorp/hcl"
 	"github.com/hashicorp/hcl/hcl/ast"
+	"github.com/hashicorp/hcl/hcl/token"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/spf13/pflag"
@@ -19,14 +20,26 @@ type Config struct {
 	Password     string `hcl:"password"                           env:"RESTIC_PASSWORD"`
 	PasswordFile string `hcl:"password_file" flag:"password-file" env:"RESTIC_PASSWORD_FILE"`
 
-	Backends map[string]interface{} `hcl:"backend"`
-	Backup   Backup                 `hcl:"backup"`
+	Backends map[string]interface{}
+	Backup   Backup `hcl:"backup"`
+}
+
+// Backend configures a backend.
+type Backend struct {
+	Type string `hcl:"type"`
 }
 
 // BackendLocal is a backend in a local directory.
 type BackendLocal struct {
 	Type string `hcl:"type"`
 	Path string `hcl:"path"`
+}
+
+// BackendSFTP is a backend stored on a server via sftp.
+type BackendSFTP struct {
+	Type string `hcl:"type"`
+	User string `hcl:"user"`
+	Host string `hcl:"host"`
 }
 
 // Backup sets the options for the "backup" command.
@@ -76,11 +89,20 @@ func Parse(buf []byte) (cfg Config, err error) {
 		return Config{}, err
 	}
 
-	// check for additional unknown items
 	root := parsed.Node.(*ast.ObjectList)
 
+	// load all 'backend' sections
+	cfg.Backends, err = parseBackends(root)
+	if err != nil {
+		return Config{}, err
+	}
+
+	// check for additional unknown items
+	rootTags := listTags(cfg, "hcl")
+	rootTags["backend"] = struct{}{}
+
 	checks := map[string]map[string]struct{}{
-		"":       listTags(cfg, "hcl"),
+		"":       rootTags,
 		"backup": listTags(Backup{}, "hcl"),
 	}
 
@@ -107,6 +129,88 @@ func Parse(buf []byte) (cfg Config, err error) {
 	}
 
 	return cfg, nil
+}
+
+// parseBackends parses the backend configuration sections.
+func parseBackends(root *ast.ObjectList) (map[string]interface{}, error) {
+	backends := make(map[string]interface{})
+
+	// find top-level backend objects
+	for _, item := range root.Items {
+		// is not an object block
+		if len(item.Keys) == 0 {
+			continue
+		}
+
+		// does not start with an an identifier
+		if item.Keys[0].Token.Type != token.IDENT {
+			continue
+		}
+
+		// something other than a backend section
+		if s, ok := item.Keys[0].Token.Value().(string); !ok || s != "backend" {
+			continue
+		}
+
+		// missing name
+		if len(item.Keys) != 2 {
+			return nil, errors.Errorf("backend has no name at line %v, column %v",
+				item.Pos().Line, item.Pos().Column)
+		}
+
+		// check that the name is not empty
+		name := item.Keys[1].Token.Value().(string)
+		if len(name) == 0 {
+			return nil, errors.Errorf("backend name is empty at line %v, column %v",
+				item.Pos().Line, item.Pos().Column)
+		}
+
+		// get the type of the backend by decoding it into the Backend truct
+		var be Backend
+		err := hcl.DecodeObject(&be, item)
+		if err != nil {
+			return nil, err
+		}
+
+		// then decode it into the right type
+		var target interface{}
+		switch be.Type {
+		case "local", "":
+			target = &BackendLocal{Type: "local"}
+		case "sftp":
+			target = &BackendSFTP{}
+		default:
+			return nil, errors.Errorf("backend type %q is unknown at line %v, column %v",
+				be.Type, item.Pos().Line, item.Pos().Column)
+		}
+
+		err = hcl.DecodeObject(target, item)
+		if err != nil {
+			return nil, err
+		}
+
+		if _, ok := backends[name]; ok {
+			return nil, errors.Errorf("backend %q at line %v, column %v already configured",
+				name, item.Pos().Line, item.Pos().Column)
+		}
+
+		// check structure of the backend object
+		innerBlock, ok := item.Val.(*ast.ObjectType)
+		if !ok {
+			return nil, errors.Errorf("unable to verify structure of backend %q at line %v, column %v already configured",
+				name, item.Pos().Line, item.Pos().Column)
+		}
+
+		// check allowed types
+		err = validateObjects(innerBlock.List, listTags(target, "hcl"))
+		if err != nil {
+			return nil, err
+		}
+
+		backends[name] = target
+	}
+
+	return backends, nil
 }
 
 // Load loads a config from a file.
