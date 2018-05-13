@@ -1,0 +1,17 @@
+{
+  "Repo": "",
+  "Password": "",
+  "PasswordFile": "",
+  "Backends": {
+    "bar": {
+      "Type": ""
+    },
+    "foo": {
+      "Type": "local"
+    }
+  },
+  "Backup": {
+    "Target": null,
+    "Excludes": null
+  }
+}
