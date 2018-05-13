@@ -27,14 +27,14 @@ data after 'forget' was run successfully, see the 'prune' command. `,
 
 // ForgetOptions collects all options for the forget command.
 type ForgetOptions struct {
-	Last       int
-	Hourly     int
-	Daily      int
-	Weekly     int
-	Monthly    int
-	Yearly     int
-	WithinDays int
-	KeepTags   restic.TagLists
+	Last     int
+	Hourly   int
+	Daily    int
+	Weekly   int
+	Monthly  int
+	Yearly   int
+	Within   restic.Duration
+	KeepTags restic.TagLists
 
 	Host    string
 	Tags    restic.TagLists
@@ -59,7 +59,7 @@ func init() {
 	f.IntVarP(&forgetOptions.Weekly, "keep-weekly", "w", 0, "keep the last `n` weekly snapshots")
 	f.IntVarP(&forgetOptions.Monthly, "keep-monthly", "m", 0, "keep the last `n` monthly snapshots")
 	f.IntVarP(&forgetOptions.Yearly, "keep-yearly", "y", 0, "keep the last `n` yearly snapshots")
-	f.IntVar(&forgetOptions.WithinDays, "keep-within", 0, "keep snapshots that were created within `days` before the newest")
+	f.VarP(&forgetOptions.Within, "keep-within", "", "keep snapshots that were created within `duration` before the newest (e.g. 1y5m7d)")
 
 	f.Var(&forgetOptions.KeepTags, "keep-tag", "keep snapshots with this `taglist` (can be specified multiple times)")
 	// Sadly the commonly used shortcut `H` is already used.
@@ -172,7 +172,7 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 		Weekly:  opts.Weekly,
 		Monthly: opts.Monthly,
 		Yearly:  opts.Yearly,
-		Within:  opts.WithinDays,
+		Within:  opts.Within,
 		Tags:    opts.KeepTags,
 	}
 

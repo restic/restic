@@ -21,8 +21,8 @@ func parseTimeUTC(s string) time.Time {
 	return t.UTC()
 }
 
-func parseDuration(s string) time.Duration {
-	d, err := time.ParseDuration(s)
+func parseDuration(s string) restic.Duration {
+	d, err := restic.ParseDuration(s)
 	if err != nil {
 		panic(err)
 	}
@@ -180,10 +180,10 @@ var expireTests = []restic.ExpirePolicy{
 	{Tags: []restic.TagList{{"foo"}}},
 	{Tags: []restic.TagList{{"foo", "bar"}}},
 	{Tags: []restic.TagList{{"foo"}, {"bar"}}},
-	{Within: 1},
-	{Within: 2},
-	{Within: 7},
-	{Within: 30},
+	{Within: parseDuration("1d")},
+	{Within: parseDuration("2d")},
+	{Within: parseDuration("7d")},
+	{Within: parseDuration("1m")},
 }
 
 func TestApplyPolicy(t *testing.T) {

@@ -16,7 +16,7 @@ type ExpirePolicy struct {
 	Weekly  int       // keep the last n weekly snapshots
 	Monthly int       // keep the last n monthly snapshots
 	Yearly  int       // keep the last n yearly snapshots
-	Within  int       // keep snapshots made within this number of days since the newest snapshot
+	Within  Duration  // keep snapshots made within this duration
 	Tags    []TagList // keep all snapshots that include at least one of the tag lists.
 }
 
@@ -40,11 +40,26 @@ func (e ExpirePolicy) String() (s string) {
 	if e.Yearly > 0 {
 		keeps = append(keeps, fmt.Sprintf("%d yearly", e.Yearly))
 	}
-	if e.Within != 0 {
-		keeps = append(keeps, fmt.Sprintf("snapshots within %d days of the newest snapshot", e.Within))
+
+	if len(keeps) > 0 {
+		s = fmt.Sprintf("keep the last %s snapshots", strings.Join(keeps, ", "))
 	}
 
-	return fmt.Sprintf("keep the last %s snapshots", strings.Join(keeps, ", "))
+	if len(e.Tags) > 0 {
+		if s != "" {
+			s += " and "
+		}
+		s += fmt.Sprintf("all snapshots with tags %s", e.Tags)
+	}
+
+	if !e.Within.Zero() {
+		if s != "" {
+			s += " and "
+		}
+		s += fmt.Sprintf("all snapshots within %s of the newest", e.Within)
+	}
+
+	return s
 }
 
 // Sum returns the maximum number of snapshots to be kept according to this
@@ -149,8 +164,8 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots) {
 		}
 
 		// If the timestamp of the snapshot is within the range, then keep it.
-		if p.Within != 0 {
-			t := latest.AddDate(0, 0, -p.Within)
+		if !p.Within.Zero() {
+			t := latest.AddDate(-p.Within.Years, -p.Within.Months, -p.Within.Days)
 			if cur.Time.After(t) {
 				keepSnap = true
 			}
