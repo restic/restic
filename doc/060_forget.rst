@@ -159,6 +159,10 @@ The ``forget`` command accepts the following parameters:
    snapshots, only keep the last one for that year.
 -  ``--keep-tag`` keep all snapshots which have all tags specified by
    this option (can be specified multiple times).
+-  ``--keep-within duration`` keep all snapshots which have been made within
+   the duration of the latest snapshot. ``duration`` needs to be a number of
+   years, months, and days, e.g. ``2y5m7d`` will keep all snapshots made in the
+   two years, five months, and seven days before the latest snapshot.
 
 Additionally, you can restrict removing snapshots to those which have a
 particular hostname with the ``--hostname`` parameter, or tags with the
