@@ -73,6 +73,49 @@ func TestConfigLoad(t *testing.T) {
 	}
 }
 
+func TestInvalidConfigs(t *testing.T) {
+	var tests = []struct {
+		config string
+		err    string
+	}{
+		{
+			config: `backend ""`,
+			err:    "expected start of object",
+		},
+		{
+			config: `backend "" {}`,
+			err:    "name is empty",
+		},
+		{
+			config: `backend "foo" {
+				type = ""
+				user = "xxx"
+			}`,
+			err: `unknown option "user"`,
+		},
+		{
+			config: `backend "foo" {
+				type = "local"
+				user = "xxx"
+			}`,
+			err: `unknown option "user"`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			_, err := Parse([]byte(test.config))
+			if err == nil {
+				t.Fatalf("expected error not found, got nil")
+			}
+
+			if !strings.Contains(err.Error(), test.err) {
+				t.Fatalf("returned error does not contain substring %q: %q", test.err, err.Error())
+			}
+		})
+	}
+}
+
 func TestConfigApplyFlags(t *testing.T) {
 	var tests = []struct {
 		filename   string
