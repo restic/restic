@@ -623,7 +623,7 @@ func readdir(filesystem fs.FS, dir string) ([]os.FileInfo, error) {
 	entries, err := f.Readdir(-1)
 	if err != nil {
 		_ = f.Close()
-		return nil, errors.Wrap(err, "Readdir")
+		return nil, errors.Wrapf(err, "Readdir %v failed: %v", dir, err)
 	}
 
 	err = f.Close()
@@ -644,7 +644,7 @@ func readdirnames(filesystem fs.FS, dir string) ([]string, error) {
 	entries, err := f.Readdirnames(-1)
 	if err != nil {
 		_ = f.Close()
-		return nil, errors.Wrap(err, "Readdirnames")
+		return nil, errors.Wrapf(err, "Readdirnames %v failed: %v", dir, err)
 	}
 
 	err = f.Close()
