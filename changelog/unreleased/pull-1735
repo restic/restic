@@ -1,0 +1,9 @@
+Enhancement: Allow keeping a time range of snaphots
+
+We've added the `--keep-within` option to the `forget` command. It instructs
+restic to keep all snapshots within the given duration since the newest
+snapshot. For example, running `restic forget --keep-within 5m7d` will keep all
+snapshots which have been made in the five months and seven days since the
+latest snapshot.
+
+https://github.com/restic/restic/pull/1735

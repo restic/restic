@@ -16,6 +16,7 @@ type ExpirePolicy struct {
 	Weekly  int       // keep the last n weekly snapshots
 	Monthly int       // keep the last n monthly snapshots
 	Yearly  int       // keep the last n yearly snapshots
+	Within  Duration  // keep snapshots made within this duration
 	Tags    []TagList // keep all snapshots that include at least one of the tag lists.
 }
 
@@ -40,12 +41,23 @@ func (e ExpirePolicy) String() (s string) {
 		keeps = append(keeps, fmt.Sprintf("%d yearly", e.Yearly))
 	}
 
-	s = "keep the last "
-	for _, k := range keeps {
-		s += k + ", "
+	if len(keeps) > 0 {
+		s = fmt.Sprintf("keep the last %s snapshots", strings.Join(keeps, ", "))
 	}
-	s = strings.Trim(s, ", ")
-	s += " snapshots"
+
+	if len(e.Tags) > 0 {
+		if s != "" {
+			s += " and "
+		}
+		s += fmt.Sprintf("all snapshots with tags %s", e.Tags)
+	}
+
+	if !e.Within.Zero() {
+		if s != "" {
+			s += " and "
+		}
+		s += fmt.Sprintf("all snapshots within %s of the newest", e.Within)
+	}
 
 	return s
 }
@@ -97,6 +109,22 @@ func always(d time.Time, nr int) int {
 	return nr
 }
 
+// findLatestTimestamp returns the time stamp for the newest snapshot.
+func findLatestTimestamp(list Snapshots) time.Time {
+	if len(list) == 0 {
+		panic("list of snapshots is empty")
+	}
+
+	var latest time.Time
+	for _, sn := range list {
+		if sn.Time.After(latest) {
+			latest = sn.Time
+		}
+	}
+
+	return latest
+}
+
 // ApplyPolicy returns the snapshots from list that are to be kept and removed
 // according to the policy p. list is sorted in the process.
 func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots) {
@@ -123,12 +151,22 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots) {
 		{p.Yearly, y, -1},
 	}
 
+	latest := findLatestTimestamp(list)
+
 	for nr, cur := range list {
 		var keepSnap bool
 
 		// Tags are handled specially as they are not counted.
 		for _, l := range p.Tags {
 			if cur.HasTags(l) {
+				keepSnap = true
+			}
+		}
+
+		// If the timestamp of the snapshot is within the range, then keep it.
+		if !p.Within.Zero() {
+			t := latest.AddDate(-p.Within.Years, -p.Within.Months, -p.Within.Days)
+			if cur.Time.After(t) {
 				keepSnap = true
 			}
 		}
