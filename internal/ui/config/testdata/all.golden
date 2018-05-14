@@ -5,21 +5,29 @@
   "Backends": {
     "local": {
       "Type": "local",
-      "User": "",
-      "Host": "",
-      "Path": "/foo/bar"
+      "local": {
+        "Type": "local",
+        "Path": "/foo/bar"
+      },
+      "sftp": null
     },
     "local2": {
       "Type": "local",
-      "User": "",
-      "Host": "",
-      "Path": "/foo/bar"
+      "local": {
+        "Type": "",
+        "Path": "/foo/bar"
+      },
+      "sftp": null
     },
     "sftp": {
       "Type": "sftp",
-      "User": "foo",
-      "Host": "bar",
-      "Path": "/foo/bar"
+      "local": null,
+      "sftp": {
+        "Type": "sftp",
+        "User": "foo",
+        "Host": "bar",
+        "Path": "/foo/bar"
+      }
     }
   },
   "Backup": {

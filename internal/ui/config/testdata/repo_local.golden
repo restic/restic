@@ -5,9 +5,11 @@
   "Backends": {
     "test": {
       "Type": "local",
-      "User": "",
-      "Host": "",
-      "Path": "/foo/bar/baz"
+      "local": {
+        "Type": "local",
+        "Path": "/foo/bar/baz"
+      },
+      "sftp": null
     }
   },
   "Backup": {

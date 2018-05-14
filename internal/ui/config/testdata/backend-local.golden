@@ -5,15 +5,19 @@
   "Backends": {
     "bar": {
       "Type": "local",
-      "User": "",
-      "Host": "",
-      "Path": "/srv/data/repo"
+      "local": {
+        "Type": "",
+        "Path": "/srv/data/repo"
+      },
+      "sftp": null
     },
     "foo": {
       "Type": "local",
-      "User": "",
-      "Host": "",
-      "Path": "/srv/data/repo"
+      "local": {
+        "Type": "local",
+        "Path": "/srv/data/repo"
+      },
+      "sftp": null
     }
   },
   "Backup": {

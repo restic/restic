@@ -100,6 +100,22 @@ func TestInvalidConfigs(t *testing.T) {
 			}`,
 			err: `unknown option "user"`,
 		},
+		{
+			config: `backend "foo" {
+				path = "/foo"
+			}
+			
+			backend "foo" {
+				path = "/bar"
+			}`,
+			err: `backend "foo" already configured`,
+		},
+		{
+			config: `backend "foo" {
+				type = "xxx"
+			}`,
+			err: `unknown backend type "xxx"`,
+		},
 	}
 
 	for _, test := range tests {

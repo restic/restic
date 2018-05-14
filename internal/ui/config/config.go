@@ -27,9 +27,25 @@ type Config struct {
 // Backend configures a backend.
 type Backend struct {
 	Type string `hcl:"type"`
-	User string `hcl:"user" valid_for:"sftp"`
-	Host string `hcl:"host" valid_for:"sftp"`
-	Path string `hcl:"path" valid_for:"sftp,local"`
+
+	*BackendLocal `hcl:"-" json:"local"`
+	*BackendSFTP  `hcl:"-" json:"sftp"`
+}
+
+// BackendLocal configures a local backend.
+type BackendLocal struct {
+	Type string `hcl:"type"`
+
+	Path string `hcl:"path"`
+}
+
+// BackendSFTP configures an sftp backend.
+type BackendSFTP struct {
+	Type string `hcl:"type"`
+
+	User string `hcl:"user"`
+	Host string `hcl:"host"`
+	Path string `hcl:"path"`
 }
 
 // Backup sets the options for the "backup" command.
@@ -166,56 +182,47 @@ func parseBackends(root *ast.ObjectList) (map[string]Backend, error) {
 			be.Type = "local"
 		}
 
-		if _, ok := backends[name]; ok {
-			return nil, errors.Errorf("backend %q at line %v, column %v already configured",
-				name, obj.Pos().Line, obj.Pos().Column)
+		var target interface{}
+		switch be.Type {
+		case "local":
+			be.BackendLocal = &BackendLocal{}
+			target = be.BackendLocal
+		case "sftp":
+			be.BackendSFTP = &BackendSFTP{}
+			target = be.BackendSFTP
+		default:
+			return nil, errors.Errorf("unknown backend type %q at line %v, column %v",
+				be.Type, obj.Pos().Line, obj.Pos().Column)
 		}
 
 		// check structure of the backend object
 		innerBlock, ok := obj.Val.(*ast.ObjectType)
 		if !ok {
-			return nil, errors.Errorf("unable to verify structure of backend %q at line %v, column %v already configured",
+			return nil, errors.Errorf("unable to verify structure of backend %q at line %v, column %v",
 				name, obj.Pos().Line, obj.Pos().Column)
 		}
 
-		// check valid fields
-		err = validateObjects(innerBlock.List, validBackendFieldNames(be.Type))
+		// check allowed types
+		err = validateObjects(innerBlock.List, listTags(target, "hcl"))
 		if err != nil {
 			return nil, err
+		}
+
+		err = hcl.DecodeObject(target, innerBlock)
+		if err != nil {
+			return nil, errors.Errorf("parsing backend %q (type %s) at line %v, column %v failed: %v",
+				name, be.Type, obj.Pos().Line, obj.Pos().Column, err)
+		}
+
+		if _, ok := backends[name]; ok {
+			return nil, errors.Errorf("backend %q at line %v, column %v already configured",
+				name, obj.Pos().Line, obj.Pos().Column)
 		}
 
 		backends[name] = be
 	}
 
 	return backends, nil
-}
-
-// validBackendFieldNames returns a set of names of valid options for the backend type be.
-func validBackendFieldNames(be string) map[string]struct{} {
-	target := Backend{}
-	vi := reflect.ValueOf(target)
-
-	attr := make(map[string]struct{})
-	for i := 0; i < vi.NumField(); i++ {
-		typeField := vi.Type().Field(i)
-		tag := typeField.Tag.Get("valid_for")
-		name := typeField.Tag.Get("hcl")
-
-		if tag == "" {
-			// if the tag is not specified, it's valid for all backend types
-			attr[name] = struct{}{}
-			continue
-		}
-
-		for _, v := range strings.Split(tag, ",") {
-			if be == v {
-				attr[name] = struct{}{}
-				break
-			}
-		}
-	}
-
-	return attr
 }
 
 // Load loads a config from a file.
@@ -350,4 +357,9 @@ func ApplyEnv(cfg interface{}, env []string) error {
 	}
 
 	return nil
+}
+
+// ApplyOptions takes a list of Options and applies them to the config.
+func ApplyOptions(cfg interface{}, opts map[string]string) error {
+	return errors.New("not implemented")
 }
