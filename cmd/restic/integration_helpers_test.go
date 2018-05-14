@@ -9,11 +9,11 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui/config"
+	"github.com/restic/restic/internal/ui/options"
 )
 
 type dirEntry struct {

@@ -10,9 +10,9 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/restic/restic/internal/debug"
-	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/config"
+	"github.com/restic/restic/internal/ui/options"
 
 	"github.com/spf13/cobra"
 

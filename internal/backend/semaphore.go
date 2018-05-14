@@ -2,8 +2,9 @@ package backend
 
 import (
 	"context"
-	"github.com/restic/restic/internal/errors"
 	"io"
+
+	"github.com/restic/restic/internal/errors"
 )
 
 // Semaphore limits access to a restricted resource.

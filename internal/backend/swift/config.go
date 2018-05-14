@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/options"
+	"github.com/restic/restic/internal/ui/options"
 )
 
 // Config contains basic configuration needed to specify swift location for a swift server

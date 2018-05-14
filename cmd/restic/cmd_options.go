@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/restic/restic/internal/options"
+	"github.com/restic/restic/internal/ui/options"
 
 	"github.com/spf13/cobra"
 )

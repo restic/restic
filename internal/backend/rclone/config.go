@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/options"
+	"github.com/restic/restic/internal/ui/options"
 )
 
 // Config contains all configuration necessary to start rclone.

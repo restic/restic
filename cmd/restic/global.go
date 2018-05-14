@@ -26,11 +26,11 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/limiter"
-	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/textfile"
 	"github.com/restic/restic/internal/ui/config"
+	"github.com/restic/restic/internal/ui/options"
 
 	"github.com/restic/restic/internal/errors"
 
