@@ -55,6 +55,8 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 				SecretAccessKey: cfg.Secret,
 			},
 		},
+		&credentials.FileAWSCredentials{},
+		&credentials.FileMinioClient{},
 		&credentials.IAM{
 			Client: &http.Client{
 				Transport: http.DefaultTransport,
