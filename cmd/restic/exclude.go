@@ -229,11 +229,14 @@ func rejectByDevice(samples []string) (RejectFunc, error) {
 			panic(err)
 		}
 
-		for dir := item; dir != filepath.Dir(dir); dir = filepath.Dir(dir) {
+		for dir := item; ; dir = filepath.Dir(dir) {
 			debug.Log("item %v, test dir %v", item, dir)
 
 			allowedID, ok := allowed[dir]
 			if !ok {
+				if dir == filepath.Dir(dir) {
+					break
+				}
 				continue
 			}
 
