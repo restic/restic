@@ -29,7 +29,7 @@ and add some data:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup backup ~/work
+    $ restic --repo /tmp/backup backup ~/work
     enter password for repository:
     scan [/home/user/work]
     scanned 764 directories, 1816 files in 0:00
