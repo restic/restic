@@ -1,0 +1,7 @@
+Enhancement: Use default AWS credentials chain for S3 backend
+
+Adds support for file credentials to the S3 backend (e.g. ~/.aws/credentials),
+and reorders the credentials chain for the S3 backend to match AWS's standard,
+which is static credentials, env vars, credentials file, and finally remote.
+
+https://github.com/restic/restic/pull/1782
