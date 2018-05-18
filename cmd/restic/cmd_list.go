@@ -18,7 +18,7 @@ The "list" command allows listing objects in the repository based on type.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runList(globalOptions, args)
+		return runList(cmd, globalOptions, args)
 	},
 }
 
@@ -26,9 +26,9 @@ func init() {
 	cmdRoot.AddCommand(cmdList)
 }
 
-func runList(opts GlobalOptions, args []string) error {
+func runList(cmd *cobra.Command, opts GlobalOptions, args []string) error {
 	if len(args) != 1 {
-		return errors.Fatal("type not specified")
+		return errors.Fatal("type not specified, usage: " + cmd.Use)
 	}
 
 	repo, err := OpenRepository(opts)

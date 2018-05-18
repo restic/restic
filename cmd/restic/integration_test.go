@@ -86,7 +86,7 @@ func testRunList(t testing.TB, tpe string, opts GlobalOptions) restic.IDs {
 		globalOptions.stdout = os.Stdout
 	}()
 
-	rtest.OK(t, runList(opts, []string{tpe}))
+	rtest.OK(t, runList(cmdList, opts, []string{tpe}))
 	return parseIDsFromReader(t, buf)
 }
 
