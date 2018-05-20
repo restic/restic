@@ -762,6 +762,10 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 			return restic.ID{}, ItemStats{}, err
 		}
 
+		if len(tree.Nodes) == 0 {
+			return restic.ID{}, ItemStats{}, errors.New("snapshot is empty")
+		}
+
 		return arch.saveTree(wctx, tree)
 	}()
 	debug.Log("saved tree, error: %v", err)

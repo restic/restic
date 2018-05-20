@@ -1343,6 +1343,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 		src   TestDir
 		want  TestDir
 		selFn SelectFunc
+		err   string
 	}{
 		{
 			name: "include-all",
@@ -1377,7 +1378,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 			selFn: func(item string, fi os.FileInfo) bool {
 				return false
 			},
-			want: TestDir{},
+			err: "snapshot is empty",
 		},
 		{
 			name: "exclude-txt-files",
@@ -1462,6 +1463,18 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 
 			targets := []string{"."}
 			_, snapshotID, err := arch.Snapshot(ctx, targets, SnapshotOptions{Time: time.Now()})
+			if test.err != "" {
+				if err == nil {
+					t.Fatalf("expected error not found, got %v, wanted %q", err, test.err)
+				}
+
+				if err.Error() != test.err {
+					t.Fatalf("unexpected error, want %q, got %q", test.err, err)
+				}
+
+				return
+			}
+
 			if err != nil {
 				t.Fatal(err)
 			}
