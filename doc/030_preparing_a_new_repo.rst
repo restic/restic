@@ -143,7 +143,10 @@ If you use TLS, restic will use the system's CA certificates to verify the
 server certificate. When the verification fails, restic refuses to proceed and
 exits with an error. If you have your own self-signed certificate, or a custom
 CA certificate should be used for verification, you can pass restic the
-certificate filename via the ``--cacert`` option.
+certificate filename via the ``--cacert`` option. It will then verify that the
+server's certificate is contained in the file passed to this option, or signed
+by a CA certificate in the file. In this case, the system CA certificates are
+not considered at all.
 
 REST server uses exactly the same directory structure as local backend,
 so you should be able to access it both locally and via HTTP, even

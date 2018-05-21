@@ -17,6 +17,7 @@ Usage help is available:
 
     Available Commands:
       backup        Create a new backup of files and/or directories
+      cache         Operate on local cache directories
       cat           Print internal objects to stdout
       check         Check the repository for errors
       diff          Show differences between two snapshots
@@ -40,7 +41,7 @@ Usage help is available:
       version       Print version information
 
     Flags:
-          --cacert stringSlice       path to load root certificates from (default: use system certificates)
+          --cacert file              file to load root certificates from (default: use system certificates)
           --cache-dir string         set the cache directory
           --cleanup-cache            auto remove old cache directories
       -h, --help                     help for restic
@@ -54,7 +55,7 @@ Usage help is available:
       -q, --quiet                    do not output comprehensive progress report
       -r, --repo string              repository to backup to or restore from (default: $RESTIC_REPOSITORY)
           --tls-client-cert string   path to a file containing PEM encoded TLS client certificate and private key
-      -v, --verbose count[=-1]       be verbose (can be specified multiple times)
+      -v, --verbose n[=-1]           be verbose (specify --verbose multiple times or level n)
 
     Use "restic [command] --help" for more information about a command.
 
@@ -91,7 +92,7 @@ command:
           --with-atime                       store the atime for all files and directories
 
     Global Flags:
-          --cacert stringSlice       path to load root certificates from (default: use system certificates)
+          --cacert file              file to load root certificates from (default: use system certificates)
           --cache-dir string         set the cache directory
           --cleanup-cache            auto remove old cache directories
           --json                     set output mode to JSON for commands that support it
