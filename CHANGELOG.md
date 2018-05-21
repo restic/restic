@@ -1,3 +1,265 @@
+Changelog for restic 0.9.0 (2018-05-21)
+=======================================
+
+The following sections list the changes in restic 0.9.0 relevant to
+restic users. The changes are ordered by importance.
+
+Summary
+-------
+
+ * Fix #1608: Respect time stamp for new backup when reading from stdin
+ * Fix #1652: Ignore/remove invalid lock files
+ * Fix #1730: Ignore sockets for restore
+ * Fix #1684: Fix backend tests for rest-server
+ * Fix #1745: Correctly parse the argument to --tls-client-cert
+ * Enh #1433: Support UTF-16 encoding and process Byte Order Mark
+ * Enh #1561: Allow using rclone to access other services
+ * Enh #1665: Improve cache handling for `restic check`
+ * Enh #1721: Add `cache` command to list cache dirs
+ * Enh #1758: Allow saving OneDrive folders in Windows
+ * Enh #549: Rework archiver code
+ * Enh #1552: Use Google Application Default credentials
+ * Enh #1477: Accept AWS_SESSION_TOKEN for the s3 backend
+ * Enh #1648: Ignore AWS permission denied error when creating a repository
+ * Enh #1649: Add illumos/Solaris support
+ * Enh #1676: Improve backup speed: Skip initial scan phase in quiet mode
+ * Enh #1709: Improve messages `restic check` prints
+ * Enh #827: Add --new-password-file flag for non-interactive password changes
+ * Enh #1735: Allow keeping a time range of snaphots
+ * Enh #1782: Use default AWS credentials chain for S3 backend
+
+Details
+-------
+
+ * Bugfix #1608: Respect time stamp for new backup when reading from stdin
+
+   When reading backups from stdin (via `restic backup --stdin`), restic now uses the time stamp
+   for the new backup passed in `--time`.
+
+   https://github.com/restic/restic/issues/1608
+   https://github.com/restic/restic/pull/1703
+
+ * Bugfix #1652: Ignore/remove invalid lock files
+
+   This corrects a bug introduced recently: When an invalid lock file in the repo is encountered
+   (e.g. if the file is empty), the code used to ignore that, but now returns the error. Now, invalid
+   files are ignored for the normal lock check, and removed when `restic unlock --remove-all` is
+   run.
+
+   https://github.com/restic/restic/issues/1652
+   https://github.com/restic/restic/pull/1653
+
+ * Bugfix #1730: Ignore sockets for restore
+
+   We've received a report and correct the behavior in which the restore code aborted restoring a
+   directory when a socket was encountered. Unix domain socket files cannot be restored (they are
+   created on the fly once a process starts listening). The error handling was corrected, and in
+   addition we're now ignoring sockets during restore.
+
+   https://github.com/restic/restic/issues/1730
+   https://github.com/restic/restic/pull/1731
+
+ * Bugfix #1684: Fix backend tests for rest-server
+
+   The REST server for restic now requires an explicit parameter (`--no-auth`) if no
+   authentication should be allowed. This is fixed in the tests.
+
+   https://github.com/restic/restic/pull/1684
+
+ * Bugfix #1745: Correctly parse the argument to --tls-client-cert
+
+   Previously, the --tls-client-cert method attempt to read ARGV[1] (hardcoded) instead of the
+   argument that was passed to it. This has been corrected.
+
+   https://github.com/restic/restic/issues/1745
+   https://github.com/restic/restic/pull/1746
+
+ * Enhancement #1433: Support UTF-16 encoding and process Byte Order Mark
+
+   On Windows, text editors commonly leave a Byte Order Mark at the beginning of the file to define
+   which encoding is used (oftentimes UTF-16). We've added code to support processing the BOMs in
+   text files, like the exclude files, the password file and the file passed via `--files-from`.
+   This does not apply to any file being saved in a backup, those are not touched and archived as they
+   are.
+
+   https://github.com/restic/restic/issues/1433
+   https://github.com/restic/restic/issues/1738
+   https://github.com/restic/restic/pull/1748
+
+ * Enhancement #1561: Allow using rclone to access other services
+
+   We've added the ability to use rclone to store backup data on all backends that it supports. This
+   was done in collaboration with Nick, the author of rclone. You can now use it to first configure a
+   service, then restic manages the rest (starting and stopping rclone). For details, please see
+   the manual.
+
+   https://github.com/restic/restic/issues/1561
+   https://github.com/restic/restic/pull/1657
+   https://rclone.org
+
+ * Enhancement #1665: Improve cache handling for `restic check`
+
+   For safety reasons, restic does not use a local metadata cache for the `restic check` command,
+   so that data is loaded from the repository and restic can check it's in good condition. When the
+   cache is disabled, restic will fetch each tiny blob needed for checking the integrity using a
+   separate backend request. For non-local backends, that will take a long time, and depending on
+   the backend (e.g. B2) may also be much more expensive.
+
+   This PR adds a few commits which will change the behavior as follows:
+
+   * When `restic check` is called without any additional parameters, it will build a new cache in a
+   temporary directory, which is removed at the end of the check. This way, we'll get readahead for
+   metadata files (so restic will fetch the whole file when the first blob from the file is
+   requested), but all data is freshly fetched from the storage backend. This is the default
+   behavior and will work for almost all users.
+
+   * When `restic check` is called with `--with-cache`, the default on-disc cache is used. This
+   behavior hasn't changed since the cache was introduced.
+
+   * When `--no-cache` is specified, restic falls back to the old behavior, and read all tiny blobs
+   in separate requests.
+
+   https://github.com/restic/restic/issues/1665
+   https://github.com/restic/restic/issues/1694
+   https://github.com/restic/restic/pull/1696
+
+ * Enhancement #1721: Add `cache` command to list cache dirs
+
+   The command `cache` was added, it allows listing restic's cache directoriers together with
+   the last usage. It also allows removing old cache dirs without having to access a repo, via
+   `restic cache --cleanup`
+
+   https://github.com/restic/restic/issues/1721
+   https://github.com/restic/restic/pull/1749
+
+ * Enhancement #1758: Allow saving OneDrive folders in Windows
+
+   Restic now contains a bugfix to two libraries, which allows saving OneDrive folders in
+   Windows. In order to use the newer versions of the libraries, the minimal version required to
+   compile restic is now Go 1.9.
+
+   https://github.com/restic/restic/issues/1758
+   https://github.com/restic/restic/pull/1765
+
+ * Enhancement #549: Rework archiver code
+
+   The core archiver code and the complementary code for the `backup` command was rewritten
+   completely. This resolves very annoying issues such as 549. The first backup with this release
+   of restic will likely result in all files being re-read locally, so it will take a lot longer. The
+   next backup after that will be fast again.
+
+   Basically, with the old code, restic took the last path component of each to-be-saved file or
+   directory as the top-level file/directory within the snapshot. This meant that when called as
+   `restic backup /home/user/foo`, the snapshot would contain the files in the directory
+   `/home/user/foo` as `/foo`.
+
+   This is not the case any more with the new archiver code. Now, restic works very similar to what
+   `tar` does: When restic is called with an absolute path to save, then it'll preserve the
+   directory structure within the snapshot. For the example above, the snapshot would contain
+   the files in the directory within `/home/user/foo` in the snapshot. For relative
+   directories, it only preserves the relative path components. So `restic backup user/foo`
+   will save the files as `/user/foo` in the snapshot.
+
+   While we were at it, the status display and notification system was completely rewritten. By
+   default, restic now shows which files are currently read (unless `--quiet` is specified) in a
+   multi-line status display.
+
+   The `backup` command also gained a new option: `--verbose`. It can be specified once (which
+   prints a bit more detail what restic is doing) or twice (which prints a line for each
+   file/directory restic encountered, together with some statistics).
+
+   Another issue that was resolved is the new code only reads two files at most. The old code would
+   read way too many files in parallel, thereby slowing down the backup process on spinning discs a
+   lot.
+
+   https://github.com/restic/restic/issues/549
+   https://github.com/restic/restic/issues/1286
+   https://github.com/restic/restic/issues/446
+   https://github.com/restic/restic/issues/1344
+   https://github.com/restic/restic/issues/1416
+   https://github.com/restic/restic/issues/1456
+   https://github.com/restic/restic/issues/1145
+   https://github.com/restic/restic/issues/1160
+   https://github.com/restic/restic/pull/1494
+
+ * Enhancement #1552: Use Google Application Default credentials
+
+   Google provide libraries to generate appropriate credentials with various fallback
+   sources. This change uses the library to generate our GCS client, which allows us to make use of
+   these extra methods.
+
+   This should be backward compatible with previous restic behaviour while adding the
+   additional capabilities to auth from Google's internal metadata endpoints. For users
+   running restic in GCP this can make authentication far easier than it was before.
+
+   https://github.com/restic/restic/pull/1552
+   https://developers.google.com/identity/protocols/application-default-credentials
+
+ * Enhancement #1477: Accept AWS_SESSION_TOKEN for the s3 backend
+
+   Before, it was not possible to use s3 backend with AWS temporary security credentials(with
+   AWS_SESSION_TOKEN). This change gives higher priority to credentials.EnvAWS credentials
+   provider.
+
+   https://github.com/restic/restic/issues/1477
+   https://github.com/restic/restic/pull/1479
+   https://github.com/restic/restic/pull/1647
+
+ * Enhancement #1648: Ignore AWS permission denied error when creating a repository
+
+   It's not possible to use s3 backend scoped to a subdirectory(with specific permissions).
+   Restic doesn't try to create repository in a subdirectory, when 'bucket exists' of parent
+   directory check fails due to permission issues.
+
+   https://github.com/restic/restic/pull/1648
+
+ * Enhancement #1649: Add illumos/Solaris support
+
+   https://github.com/restic/restic/pull/1649
+
+ * Enhancement #1676: Improve backup speed: Skip initial scan phase in quiet mode
+
+   We've improved the backup speed when the quiet flag (`-q` or `--quiet`) is set by skipping the
+   initial scan which gathers information for displaying the progress bar and the ETA
+   estimation.
+
+   https://github.com/restic/restic/issues/1160
+   https://github.com/restic/restic/pull/1676
+
+ * Enhancement #1709: Improve messages `restic check` prints
+
+   Some messages `restic check` prints are not really errors, so from now on restic does not treat
+   them as errors any more and exits cleanly.
+
+   https://github.com/restic/restic/pull/1709
+   https://forum.restic.net/t/what-is-the-standard-procedure-to-follow-if-a-backup-or-restore-is-interrupted/571/2
+
+ * Enhancement #827: Add --new-password-file flag for non-interactive password changes
+
+   This makes it possible to change a repository password without being prompted.
+
+   https://github.com/restic/restic/issues/827
+   https://github.com/restic/restic/pull/1720
+   https://forum.restic.net/t/changing-repo-password-without-prompt/591
+
+ * Enhancement #1735: Allow keeping a time range of snaphots
+
+   We've added the `--keep-within` option to the `forget` command. It instructs restic to keep
+   all snapshots within the given duration since the newest snapshot. For example, running
+   `restic forget --keep-within 5m7d` will keep all snapshots which have been made in the five
+   months and seven days since the latest snapshot.
+
+   https://github.com/restic/restic/pull/1735
+
+ * Enhancement #1782: Use default AWS credentials chain for S3 backend
+
+   Adds support for file credentials to the S3 backend (e.g. ~/.aws/credentials), and reorders
+   the credentials chain for the S3 backend to match AWS's standard, which is static credentials,
+   env vars, credentials file, and finally remote.
+
+   https://github.com/restic/restic/pull/1782
+
+
 Changelog for restic 0.8.3 (2018-02-26)
 =======================================
 
@@ -34,6 +296,7 @@ Details
 
    https://github.com/restic/restic/issues/1641
    https://github.com/restic/restic/pull/1643
+   https://forum.restic.net/t/help-fixing-repo-no-such-file/485/3
 
  * Bugfix #1638: Handle errors listing files in the backend
 
@@ -48,6 +311,7 @@ Details
    operation on the backend should that fail. It is now corrected.
 
    https://github.com/restic/restic/pull/1638
+   https://forum.restic.net/t/restic-backup-returns-0-exit-code-when-already-locked/484
 
  * Enhancement #1497: Add --read-data-subset flag to check command
 
@@ -155,6 +419,7 @@ Details
    of data loss, just minor inconvenience for our users.
 
    https://github.com/restic/restic/pull/1589
+   https://forum.restic.net/t/error-loading-tree-check-prune-and-forget-gives-error-b2-backend/406
 
  * Bugfix #1594: Google Cloud Storage: Use generic HTTP transport
 
@@ -693,7 +958,7 @@ Details
  * Enhancement #1203: Print stats on all BSD systems when SIGINFO (ctrl+t) is received
 
    https://github.com/restic/restic/pull/1203
-   https://github.com/restic/restic/pull/1082
+   https://github.com/restic/restic/pull/1082#issuecomment-326279920
 
  * Enhancement #1205: Allow specifying time/date for a backup with `--time`
 
@@ -733,12 +998,12 @@ Details
  * Enhancement #1055: Create subdirs below `data/` for local/sftp backends
 
    The local and sftp backends now create the subdirs below `data/` on open/init. This way, restic
-   makes sure that they always exist. This is connected to an issue for the sftp server:
+   makes sure that they always exist. This is connected to an issue for the sftp server.
 
    https://github.com/restic/restic/issues/1055
+   https://github.com/restic/rest-server/pull/11#issuecomment-309879710
    https://github.com/restic/restic/pull/1077
    https://github.com/restic/restic/pull/1105
-   https://github.com/restic/rest-server/pull/11#issuecomment-309879710
 
  * Enhancement #1067: Allow loading credentials for s3 from IAM
 
