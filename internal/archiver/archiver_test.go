@@ -43,6 +43,11 @@ func saveFile(t testing.TB, repo restic.Repository, filename string, filesystem 
 	arch := New(repo, filesystem, Options{})
 	arch.runWorkers(ctx, &tmb)
 
+	arch.Error = func(item string, fi os.FileInfo, err error) error {
+		t.Errorf("archiver error for %v: %v", item, err)
+		return err
+	}
+
 	var (
 		completeCallbackNode  *restic.Node
 		completeCallbackStats ItemStats
@@ -180,6 +185,150 @@ func TestArchiverSaveFileReaderFS(t *testing.T) {
 			node, stats := saveFile(t, repo, filename, readerFs)
 
 			TestEnsureFileContent(ctx, t, repo, "file", node, TestFile{Content: test.Data})
+			if stats.DataSize != uint64(len(test.Data)) {
+				t.Errorf("wrong stats returned in DataSize, want %d, got %d", len(test.Data), stats.DataSize)
+			}
+			if stats.DataBlobs <= 0 && len(test.Data) > 0 {
+				t.Errorf("wrong stats returned in DataBlobs, want > 0, got %d", stats.DataBlobs)
+			}
+			if stats.TreeSize != 0 {
+				t.Errorf("wrong stats returned in TreeSize, want 0, got %d", stats.TreeSize)
+			}
+			if stats.TreeBlobs != 0 {
+				t.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs)
+			}
+		})
+	}
+}
+
+func TestArchiverSave(t *testing.T) {
+	var tests = []TestFile{
+		TestFile{Content: ""},
+		TestFile{Content: "foo"},
+		TestFile{Content: string(restictest.Random(23, 12*1024*1024+1287898))},
+	}
+
+	for _, testfile := range tests {
+		t.Run("", func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			tempdir, repo, cleanup := prepareTempdirRepoSrc(t, TestDir{"file": testfile})
+			defer cleanup()
+
+			var tmb tomb.Tomb
+
+			arch := New(repo, fs.Track{fs.Local{}}, Options{})
+			arch.Error = func(item string, fi os.FileInfo, err error) error {
+				t.Errorf("archiver error for %v: %v", item, err)
+				return err
+			}
+			arch.runWorkers(tmb.Context(ctx), &tmb)
+
+			node, excluded, err := arch.Save(ctx, "/", filepath.Join(tempdir, "file"), nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if excluded {
+				t.Errorf("Save() excluded the node, that's unexpected")
+			}
+
+			node.wait(ctx)
+			if node.err != nil {
+				t.Fatal(node.err)
+			}
+
+			if node.node == nil {
+				t.Fatalf("returned node is nil")
+			}
+
+			stats := node.stats
+
+			err = repo.Flush(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			TestEnsureFileContent(ctx, t, repo, "file", node.node, testfile)
+			if stats.DataSize != uint64(len(testfile.Content)) {
+				t.Errorf("wrong stats returned in DataSize, want %d, got %d", len(testfile.Content), stats.DataSize)
+			}
+			if stats.DataBlobs <= 0 && len(testfile.Content) > 0 {
+				t.Errorf("wrong stats returned in DataBlobs, want > 0, got %d", stats.DataBlobs)
+			}
+			if stats.TreeSize != 0 {
+				t.Errorf("wrong stats returned in TreeSize, want 0, got %d", stats.TreeSize)
+			}
+			if stats.TreeBlobs != 0 {
+				t.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs)
+			}
+		})
+	}
+}
+
+func TestArchiverSaveReaderFS(t *testing.T) {
+	var tests = []struct {
+		Data string
+	}{
+		{Data: ""},
+		{Data: "foo"},
+		{Data: string(restictest.Random(23, 12*1024*1024+1287898))},
+	}
+
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			repo, cleanup := repository.TestRepository(t)
+			defer cleanup()
+
+			ts := time.Now()
+			filename := "xx"
+			readerFs := &fs.Reader{
+				ModTime:    ts,
+				Mode:       0123,
+				Name:       filename,
+				ReadCloser: ioutil.NopCloser(strings.NewReader(test.Data)),
+			}
+
+			var tmb tomb.Tomb
+
+			arch := New(repo, readerFs, Options{})
+			arch.Error = func(item string, fi os.FileInfo, err error) error {
+				t.Errorf("archiver error for %v: %v", item, err)
+				return err
+			}
+			arch.runWorkers(tmb.Context(ctx), &tmb)
+
+			node, excluded, err := arch.Save(ctx, "/", filename, nil)
+			t.Logf("Save returned %v %v", node, err)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if excluded {
+				t.Errorf("Save() excluded the node, that's unexpected")
+			}
+
+			node.wait(ctx)
+			if node.err != nil {
+				t.Fatal(node.err)
+			}
+
+			if node.node == nil {
+				t.Fatalf("returned node is nil")
+			}
+
+			stats := node.stats
+
+			err = repo.Flush(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			TestEnsureFileContent(ctx, t, repo, "file", node.node, TestFile{Content: test.Data})
 			if stats.DataSize != uint64(len(test.Data)) {
 				t.Errorf("wrong stats returned in DataSize, want %d, got %d", len(test.Data), stats.DataSize)
 			}
@@ -1194,6 +1343,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 		src   TestDir
 		want  TestDir
 		selFn SelectFunc
+		err   string
 	}{
 		{
 			name: "include-all",
@@ -1228,7 +1378,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 			selFn: func(item string, fi os.FileInfo) bool {
 				return false
 			},
-			want: TestDir{},
+			err: "snapshot is empty",
 		},
 		{
 			name: "exclude-txt-files",
@@ -1313,6 +1463,18 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 
 			targets := []string{"."}
 			_, snapshotID, err := arch.Snapshot(ctx, targets, SnapshotOptions{Time: time.Now()})
+			if test.err != "" {
+				if err == nil {
+					t.Fatalf("expected error not found, got %v, wanted %q", err, test.err)
+				}
+
+				if err.Error() != test.err {
+					t.Fatalf("unexpected error, want %q, got %q", test.err, err)
+				}
+
+				return
+			}
+
 			if err != nil {
 				t.Fatal(err)
 			}

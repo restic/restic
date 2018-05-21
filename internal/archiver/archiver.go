@@ -338,7 +338,7 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 
 		// reopen file and do an fstat() on the open file to check it is still
 		// a file (and has not been exchanged for e.g. a symlink)
-		file, err := arch.FS.OpenFile(target, fs.O_RDONLY|fs.O_NOFOLLOW|fs.O_NONBLOCK, 0)
+		file, err := arch.FS.OpenFile(target, fs.O_RDONLY|fs.O_NOFOLLOW, 0)
 		if err != nil {
 			debug.Log("Openfile() for %v returned error: %v", target, err)
 			err = arch.error(abstarget, fi, err)
@@ -760,6 +760,10 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		tree, err := arch.SaveTree(wctx, "/", atree, arch.loadParentTree(wctx, opts.ParentSnapshot))
 		if err != nil {
 			return restic.ID{}, ItemStats{}, err
+		}
+
+		if len(tree.Nodes) == 0 {
+			return restic.ID{}, ItemStats{}, errors.New("snapshot is empty")
 		}
 
 		return arch.saveTree(wctx, tree)
