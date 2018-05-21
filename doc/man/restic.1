@@ -22,7 +22,7 @@ directories in an encrypted repository stored on different backends.
 .SH OPTIONS
 .PP
 \fB\-\-cacert\fP=[]
-    path to load root certificates from (default: use system certificates)
+    \fB\fCfile\fR to load root certificates from (default: use system certificates)
 
 .PP
 \fB\-\-cache\-dir\fP=""
@@ -76,7 +76,11 @@ directories in an encrypted repository stored on different backends.
 \fB\-\-tls\-client\-cert\fP=""
     path to a file containing PEM encoded TLS client certificate and private key
 
+.PP
+\fB\-v\fP, \fB\-\-verbose\fP[=0]
+    be verbose (specify \-\-verbose multiple times or level \fB\fCn\fR)
+
 
 .SH SEE ALSO
 .PP
-\fBrestic\-backup(1)\fP, \fBrestic\-cat(1)\fP, \fBrestic\-check(1)\fP, \fBrestic\-diff(1)\fP, \fBrestic\-dump(1)\fP, \fBrestic\-find(1)\fP, \fBrestic\-forget(1)\fP, \fBrestic\-generate(1)\fP, \fBrestic\-init(1)\fP, \fBrestic\-key(1)\fP, \fBrestic\-list(1)\fP, \fBrestic\-ls(1)\fP, \fBrestic\-migrate(1)\fP, \fBrestic\-mount(1)\fP, \fBrestic\-prune(1)\fP, \fBrestic\-rebuild\-index(1)\fP, \fBrestic\-restore(1)\fP, \fBrestic\-snapshots(1)\fP, \fBrestic\-tag(1)\fP, \fBrestic\-unlock(1)\fP, \fBrestic\-version(1)\fP
+\fBrestic\-backup(1)\fP, \fBrestic\-cache(1)\fP, \fBrestic\-cat(1)\fP, \fBrestic\-check(1)\fP, \fBrestic\-diff(1)\fP, \fBrestic\-dump(1)\fP, \fBrestic\-find(1)\fP, \fBrestic\-forget(1)\fP, \fBrestic\-generate(1)\fP, \fBrestic\-init(1)\fP, \fBrestic\-key(1)\fP, \fBrestic\-list(1)\fP, \fBrestic\-ls(1)\fP, \fBrestic\-migrate(1)\fP, \fBrestic\-mount(1)\fP, \fBrestic\-prune(1)\fP, \fBrestic\-rebuild\-index(1)\fP, \fBrestic\-restore(1)\fP, \fBrestic\-snapshots(1)\fP, \fBrestic\-tag(1)\fP, \fBrestic\-unlock(1)\fP, \fBrestic\-version(1)\fP

@@ -47,6 +47,10 @@ data after 'forget' was run successfully, see the 'prune' command.
     keep the last \fB\fCn\fR yearly snapshots
 
 .PP
+\fB\-\-keep\-within\fP=
+    keep snapshots that were created within \fB\fCduration\fR before the newest (e.g. 1y5m7d)
+
+.PP
 \fB\-\-keep\-tag\fP=[]
     keep snapshots with this \fB\fCtaglist\fR (can be specified multiple times)
 
@@ -90,7 +94,7 @@ data after 'forget' was run successfully, see the 'prune' command.
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
 .PP
 \fB\-\-cacert\fP=[]
-    path to load root certificates from (default: use system certificates)
+    \fB\fCfile\fR to load root certificates from (default: use system certificates)
 
 .PP
 \fB\-\-cache\-dir\fP=""
@@ -139,6 +143,10 @@ data after 'forget' was run successfully, see the 'prune' command.
 .PP
 \fB\-\-tls\-client\-cert\fP=""
     path to a file containing PEM encoded TLS client certificate and private key
+
+.PP
+\fB\-v\fP, \fB\-\-verbose\fP[=0]
+    be verbose (specify \-\-verbose multiple times or level \fB\fCn\fR)
 
 
 .SH SEE ALSO

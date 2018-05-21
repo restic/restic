@@ -46,7 +46,7 @@ The special snapshot\-ID "latest" can be used to list files and directories of t
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
 .PP
 \fB\-\-cacert\fP=[]
-    path to load root certificates from (default: use system certificates)
+    \fB\fCfile\fR to load root certificates from (default: use system certificates)
 
 .PP
 \fB\-\-cache\-dir\fP=""
@@ -95,6 +95,10 @@ The special snapshot\-ID "latest" can be used to list files and directories of t
 .PP
 \fB\-\-tls\-client\-cert\fP=""
     path to a file containing PEM encoded TLS client certificate and private key
+
+.PP
+\fB\-v\fP, \fB\-\-verbose\fP[=0]
+    be verbose (specify \-\-verbose multiple times or level \fB\fCn\fR)
 
 
 .SH SEE ALSO

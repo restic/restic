@@ -18,6 +18,8 @@ restic\-diff \- Show differences between two snapshots
 The "diff" command shows differences from the first to the second snapshot. The
 first characters in each line display what has happened to a particular file or
 directory:
+
+.RS
 .IP \(bu 2
 The item was added
 .IP \(bu 2
@@ -25,6 +27,8 @@ The item was removed
 U  The metadata (access mode, timestamps, ...) for the item was updated
 M  The file's content was modified
 T  The type was changed, e.g. a file was made a symlink
+
+.RE
 
 
 .SH OPTIONS
@@ -40,7 +44,7 @@ T  The type was changed, e.g. a file was made a symlink
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
 .PP
 \fB\-\-cacert\fP=[]
-    path to load root certificates from (default: use system certificates)
+    \fB\fCfile\fR to load root certificates from (default: use system certificates)
 
 .PP
 \fB\-\-cache\-dir\fP=""
@@ -89,6 +93,10 @@ T  The type was changed, e.g. a file was made a symlink
 .PP
 \fB\-\-tls\-client\-cert\fP=""
     path to a file containing PEM encoded TLS client certificate and private key
+
+.PP
+\fB\-v\fP, \fB\-\-verbose\fP[=0]
+    be verbose (specify \-\-verbose multiple times or level \fB\fCn\fR)
 
 
 .SH SEE ALSO

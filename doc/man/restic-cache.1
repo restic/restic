@@ -5,56 +5,31 @@
 
 .SH NAME
 .PP
-restic\-find \- Find a file or directory
+restic\-cache \- Operate on local cache directories
 
 
 .SH SYNOPSIS
 .PP
-\fBrestic find [flags] PATTERN\fP
+\fBrestic cache [flags]\fP
 
 
 .SH DESCRIPTION
 .PP
-The "find" command searches for files or directories in snapshots stored in the
-repo.
+The "cache" command allows listing and cleaning local cache directories.
 
 
 .SH OPTIONS
 .PP
+\fB\-\-cleanup\fP[=false]
+    remove old cache directories
+
+.PP
 \fB\-h\fP, \fB\-\-help\fP[=false]
-    help for find
+    help for cache
 
 .PP
-\fB\-H\fP, \fB\-\-host\fP=""
-    only consider snapshots for this \fB\fChost\fR, when no snapshot ID is given
-
-.PP
-\fB\-i\fP, \fB\-\-ignore\-case\fP[=false]
-    ignore case for pattern
-
-.PP
-\fB\-l\fP, \fB\-\-long\fP[=false]
-    use a long listing format showing size and mode
-
-.PP
-\fB\-N\fP, \fB\-\-newest\fP=""
-    newest modification date/time
-
-.PP
-\fB\-O\fP, \fB\-\-oldest\fP=""
-    oldest modification date/time
-
-.PP
-\fB\-\-path\fP=[]
-    only consider snapshots which include this (absolute) \fB\fCpath\fR, when no snapshot\-ID is given
-
-.PP
-\fB\-s\fP, \fB\-\-snapshot\fP=[]
-    snapshot \fB\fCid\fR to search in (can be given multiple times)
-
-.PP
-\fB\-\-tag\fP=[]
-    only consider snapshots which include this \fB\fCtaglist\fR, when no snapshot\-ID is given
+\fB\-\-max\-age\fP=30
+    max age in \fB\fCdays\fR for cache directories to be considered old
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
