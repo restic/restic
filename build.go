@@ -230,6 +230,7 @@ func showUsage(output io.Writer) {
 	fmt.Fprintf(output, "         --goos value    set GOOS for cross-compilation\n")
 	fmt.Fprintf(output, "         --goarch value  set GOARCH for cross-compilation\n")
 	fmt.Fprintf(output, "         --goarm value   set GOARM for cross-compilation\n")
+	fmt.Fprintf(output, "         --tempdir dir   use a specific directory for compilation\n")
 }
 
 func verbosePrintf(message string, args ...interface{}) {
