@@ -561,17 +561,18 @@ func open(s string, gopts GlobalOptions, opts options.Options) (restic.Backend, 
 	}
 
 	// wrap the transport so that the throughput via HTTP is limited
-	rt = limiter.NewStaticLimiter(gopts.LimitUploadKb, gopts.LimitDownloadKb).Transport(rt)
+	lim := limiter.NewStaticLimiter(gopts.LimitUploadKb, gopts.LimitDownloadKb)
+	rt = lim.Transport(rt)
 
 	switch loc.Scheme {
 	case "local":
 		be, err = local.Open(cfg.(local.Config))
 		// wrap the backend in a LimitBackend so that the throughput is limited
-		be = limiter.LimitBackend(be, limiter.NewStaticLimiter(gopts.LimitUploadKb, gopts.LimitDownloadKb))
+		be = limiter.LimitBackend(be, lim)
 	case "sftp":
 		be, err = sftp.Open(cfg.(sftp.Config))
 		// wrap the backend in a LimitBackend so that the throughput is limited
-		be = limiter.LimitBackend(be, limiter.NewStaticLimiter(gopts.LimitUploadKb, gopts.LimitDownloadKb))
+		be = limiter.LimitBackend(be, lim)
 	case "s3":
 		be, err = s3.Open(cfg.(s3.Config), rt)
 	case "gs":
@@ -585,7 +586,7 @@ func open(s string, gopts GlobalOptions, opts options.Options) (restic.Backend, 
 	case "rest":
 		be, err = rest.Open(cfg.(rest.Config), rt)
 	case "rclone":
-		be, err = rclone.Open(cfg.(rclone.Config))
+		be, err = rclone.Open(cfg.(rclone.Config), lim)
 
 	default:
 		return nil, errors.Fatalf("invalid backend: %q", loc.Scheme)
@@ -648,7 +649,7 @@ func create(s string, opts options.Options) (restic.Backend, error) {
 	case "rest":
 		return rest.Create(cfg.(rest.Config), rt)
 	case "rclone":
-		return rclone.Open(cfg.(rclone.Config))
+		return rclone.Open(cfg.(rclone.Config), nil)
 	}
 
 	debug.Log("invalid repository scheme: %v", s)
