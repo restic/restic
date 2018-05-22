@@ -39,7 +39,7 @@ func newTestSuite(t testing.TB) *test.Suite {
 		Open: func(config interface{}) (restic.Backend, error) {
 			t.Logf("Open()")
 			cfg := config.(rclone.Config)
-			return rclone.Open(cfg)
+			return rclone.Open(cfg, nil)
 		},
 
 		// CleanupFn removes data created during the tests.

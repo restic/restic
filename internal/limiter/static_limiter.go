@@ -35,11 +35,15 @@ func NewStaticLimiter(uploadKb, downloadKb int) Limiter {
 }
 
 func (l staticLimiter) Upstream(r io.Reader) io.Reader {
-	return l.limit(r, l.upstream)
+	return l.limitReader(r, l.upstream)
+}
+
+func (l staticLimiter) UpstreamWriter(w io.Writer) io.Writer {
+	return l.limitWriter(w, l.upstream)
 }
 
 func (l staticLimiter) Downstream(r io.Reader) io.Reader {
-	return l.limit(r, l.downstream)
+	return l.limitReader(r, l.downstream)
 }
 
 type roundTripper func(*http.Request) (*http.Response, error)
@@ -75,11 +79,18 @@ func (l staticLimiter) Transport(rt http.RoundTripper) http.RoundTripper {
 	})
 }
 
-func (l staticLimiter) limit(r io.Reader, b *ratelimit.Bucket) io.Reader {
+func (l staticLimiter) limitReader(r io.Reader, b *ratelimit.Bucket) io.Reader {
 	if b == nil {
 		return r
 	}
 	return ratelimit.Reader(r, b)
+}
+
+func (l staticLimiter) limitWriter(w io.Writer, b *ratelimit.Bucket) io.Writer {
+	if b == nil {
+		return w
+	}
+	return ratelimit.Writer(w, b)
 }
 
 func toByteRate(val int) float64 {

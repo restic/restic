@@ -1,0 +1,9 @@
+Bugfix: Add limiting bandwidth to the rclone backend
+
+The rclone backend did not respect `--limit-upload` or `--limit-download`.
+Oftentimes it's not necessary to use this, as the limiting in rclone itself
+should be used because it gives much better results, but in case a remote
+instance of rclone is used (e.g. called via ssh), it is still relevant to limit
+the bandwidth from restic to rclone.
+
+https://github.com/restic/restic/issues/1801

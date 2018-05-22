@@ -12,6 +12,10 @@ type Limiter interface {
 	// uploads.
 	Upstream(r io.Reader) io.Reader
 
+	// UpstreamWriter returns a rate limited writer that is intended to be used
+	// in uploads.
+	UpstreamWriter(w io.Writer) io.Writer
+
 	// Downstream returns a rate limited reader that is intended to be used
 	// for downloads.
 	Downstream(r io.Reader) io.Reader
