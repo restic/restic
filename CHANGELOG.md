@@ -22,7 +22,6 @@ Summary
  * Enh #1477: Accept AWS_SESSION_TOKEN for the s3 backend
  * Enh #1648: Ignore AWS permission denied error when creating a repository
  * Enh #1649: Add illumos/Solaris support
- * Enh #1676: Improve backup speed: Skip initial scan phase in quiet mode
  * Enh #1709: Improve messages `restic check` prints
  * Enh #827: Add --new-password-file flag for non-interactive password changes
  * Enh #1735: Allow keeping a time range of snaphots
@@ -216,15 +215,6 @@ Details
  * Enhancement #1649: Add illumos/Solaris support
 
    https://github.com/restic/restic/pull/1649
-
- * Enhancement #1676: Improve backup speed: Skip initial scan phase in quiet mode
-
-   We've improved the backup speed when the quiet flag (`-q` or `--quiet`) is set by skipping the
-   initial scan which gathers information for displaying the progress bar and the ETA
-   estimation.
-
-   https://github.com/restic/restic/issues/1160
-   https://github.com/restic/restic/pull/1676
 
  * Enhancement #1709: Improve messages `restic check` prints
 
