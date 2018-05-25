@@ -97,20 +97,11 @@ func downloadFile(ctx context.Context, bucket *b2.Bucket, downloads int, src, ds
 
 ```go
 func printObjects(ctx context.Context, bucket *b2.Bucket) error {
-	var cur *b2.Cursor
-	for {
-		objs, c, err := bucket.ListObjects(ctx, 1000, cur)
-		if err != nil && err != io.EOF {
-			return err
-		}
-		for _, obj := range objs {
-			fmt.Println(obj)
-		}
-		if err == io.EOF {
-			return
-		}
-		cur = c
+	iterator := bucket.List()
+	for iterator.Next() {
+		fmt.Println(itrator.Object())
 	}
+	return iterator.Err()
 }
 ```
 

@@ -2,7 +2,6 @@ package consistent
 
 import (
 	"context"
-	"io"
 	"io/ioutil"
 	"os"
 	"strconv"
@@ -66,7 +65,7 @@ func TestOperationLive(t *testing.T) {
 		t.Fatal(err)
 	}
 	if n != 100 {
-		t.Errorf("result: got %d, want 10", n)
+		t.Errorf("result: got %d, want 100", n)
 	}
 }
 
@@ -142,42 +141,20 @@ func startLiveTest(ctx context.Context, t *testing.T) (*b2.Bucket, func()) {
 		return nil, nil
 	}
 	f := func() {
-		for c := range listObjects(ctx, bucket.ListObjects) {
-			if c.err != nil {
-				continue
-			}
-			if err := c.o.Delete(ctx); err != nil {
+		iter := bucket.List(b2.ListHidden())
+		for iter.Next(ctx) {
+			if err := iter.Object().Delete(ctx); err != nil {
 				t.Error(err)
 			}
+		}
+		if err := iter.Err(); err != nil && !b2.IsNotExist(err) {
+			t.Error(err)
 		}
 		if err := bucket.Delete(ctx); err != nil && !b2.IsNotExist(err) {
 			t.Error(err)
 		}
 	}
 	return bucket, f
-}
-
-func listObjects(ctx context.Context, f func(context.Context, int, *b2.Cursor) ([]*b2.Object, *b2.Cursor, error)) <-chan object {
-	ch := make(chan object)
-	go func() {
-		defer close(ch)
-		var cur *b2.Cursor
-		for {
-			objs, c, err := f(ctx, 100, cur)
-			if err != nil && err != io.EOF {
-				ch <- object{err: err}
-				return
-			}
-			for _, o := range objs {
-				ch <- object{o: o}
-			}
-			if err == io.EOF {
-				return
-			}
-			cur = c
-		}
-	}()
-	return ch
 }
 
 type object struct {
