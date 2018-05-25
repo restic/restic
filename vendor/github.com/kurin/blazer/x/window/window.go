@@ -24,7 +24,7 @@ import (
 
 // A Window efficiently records events that have occurred over a span of time
 // extending from some fixed interval ago to now.  Events that pass beyond this
-// horizon effectively "fall off" the back of the window.
+// horizon are discarded.
 type Window struct {
 	mu      sync.Mutex
 	events  []interface{}
@@ -81,16 +81,27 @@ func (w *Window) sweep(now time.Time) {
 		w.last = now
 	}()
 
-	b := w.bucket(now)
-	p := w.bucket(w.last)
+	// This compares now and w.last's monotonic clocks.
+	diff := now.Sub(w.last)
+	if diff < 0 {
+		// time went backwards somehow; zero events and return
+		for i := range w.events {
+			w.events[i] = nil
+		}
+		return
+	}
+	last := now.Add(-diff)
 
-	if b == p && now.Sub(w.last) <= w.res {
+	b := w.bucket(now)
+	p := w.bucket(last)
+
+	if b == p && diff <= w.res {
 		// We're in the same bucket as the previous sweep, so all buckets are
 		// valid.
 		return
 	}
 
-	if now.Sub(w.last) > w.res*time.Duration(len(w.events)) {
+	if diff > w.res*time.Duration(len(w.events)) {
 		// We've gone longer than this window measures since the last sweep, just
 		// zero the thing and have done.
 		for i := range w.events {
@@ -102,10 +113,10 @@ func (w *Window) sweep(now time.Time) {
 	// Expire all invalid buckets.  This means buckets not seen since the
 	// previous sweep and now, including the current bucket but not including the
 	// previous bucket.
-	old := int(w.last.UnixNano()) / int(w.res)
-	new := int(now.UnixNano()) / int(w.res)
+	old := int64(last.UnixNano()) / int64(w.res)
+	new := int64(now.UnixNano()) / int64(w.res)
 	for i := old + 1; i <= new; i++ {
-		b := i % len(w.events)
+		b := int(i) % len(w.events)
 		w.events[b] = nil
 	}
 }

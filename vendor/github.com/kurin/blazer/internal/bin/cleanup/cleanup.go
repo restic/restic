@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/kurin/blazer/b2"
@@ -24,12 +24,27 @@ func main() {
 		fmt.Println(err)
 		return
 	}
+	buckets, err := client.ListBuckets(ctx)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	var kill []string
+	for _, bucket := range buckets {
+		if strings.HasPrefix(bucket.Name(), fmt.Sprintf("%s-b2-tests-", id)) {
+			kill = append(kill, bucket.Name())
+		}
+		if bucket.Name() == fmt.Sprintf("%s-consistobucket", id) || bucket.Name() == fmt.Sprintf("%s-base-tests", id) {
+			kill = append(kill, bucket.Name())
+		}
+	}
 	var wg sync.WaitGroup
-	for _, name := range []string{"consistobucket", "base-tests"} {
+	for _, name := range kill {
 		wg.Add(1)
 		go func(name string) {
 			defer wg.Done()
-			if err := killBucket(ctx, client, id, name); err != nil {
+			fmt.Println("removing", name)
+			if err := killBucket(ctx, client, name); err != nil {
 				fmt.Println(err)
 			}
 		}(name)
@@ -37,8 +52,8 @@ func main() {
 	wg.Wait()
 }
 
-func killBucket(ctx context.Context, client *b2.Client, id, name string) error {
-	bucket, err := client.NewBucket(ctx, id+"-"+name, nil)
+func killBucket(ctx context.Context, client *b2.Client, name string) error {
+	bucket, err := client.NewBucket(ctx, name, nil)
 	if b2.IsNotExist(err) {
 		return nil
 	}
@@ -46,18 +61,11 @@ func killBucket(ctx context.Context, client *b2.Client, id, name string) error {
 		return err
 	}
 	defer bucket.Delete(ctx)
-	cur := &b2.Cursor{}
-	for {
-		os, c, err := bucket.ListObjects(ctx, 1000, cur)
-		if err != nil && err != io.EOF {
-			return err
+	iter := bucket.List(b2.ListHidden())
+	for iter.Next(ctx) {
+		if err := iter.Object().Delete(ctx); err != nil {
+			fmt.Println(err)
 		}
-		for _, o := range os {
-			o.Delete(ctx)
-		}
-		if err == io.EOF {
-			return nil
-		}
-		cur = c
 	}
+	return iter.Err()
 }

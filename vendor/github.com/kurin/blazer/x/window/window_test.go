@@ -73,6 +73,21 @@ func TestWindows(t *testing.T) {
 			want:   6,
 			reduce: adder,
 		},
+		{ // what happens if time goes backwards?
+			size: time.Minute,
+			dur:  time.Second,
+			incs: []epair{
+				{t: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC), e: 1},
+				{t: time.Date(2000, 1, 1, 0, 0, 1, 0, time.UTC), e: 1},
+				{t: time.Date(2000, 1, 1, 0, 0, 2, 0, time.UTC), e: 1},
+				{t: time.Date(2000, 1, 1, 0, 0, 3, 0, time.UTC), e: 1},
+				{t: time.Date(2000, 1, 1, 0, 0, 4, 0, time.UTC), e: 1},
+				{t: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC), e: 1},
+			},
+			look:   time.Date(2000, 1, 1, 0, 0, 30, 0, time.UTC),
+			want:   1,
+			reduce: adder,
+		},
 	}
 
 	for _, e := range table {

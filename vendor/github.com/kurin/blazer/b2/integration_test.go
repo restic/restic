@@ -64,21 +64,14 @@ func TestReadWriteLive(t *testing.T) {
 		t.Error(err)
 	}
 
-	var cur *Cursor
-	for {
-		objs, c, err := bucket.ListObjects(ctx, 100, cur)
-		if err != nil && err != io.EOF {
-			t.Fatal(err)
+	iter := bucket.List(ListHidden())
+	for iter.Next(ctx) {
+		if err := iter.Object().Delete(ctx); err != nil {
+			t.Error(err)
 		}
-		for _, o := range objs {
-			if err := o.Delete(ctx); err != nil {
-				t.Error(err)
-			}
-		}
-		if err == io.EOF {
-			break
-		}
-		cur = c
+	}
+	if err := iter.Err(); err != nil {
+		t.Error(err)
 	}
 }
 
@@ -175,7 +168,7 @@ func TestHideShowLive(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, err := countObjects(ctx, bucket.ListCurrentObjects)
+	got, err := countObjects(ctx, bucket.List())
 	if err != nil {
 		t.Error(err)
 	}
@@ -193,7 +186,7 @@ func TestHideShowLive(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, err = countObjects(ctx, bucket.ListCurrentObjects)
+	got, err = countObjects(ctx, bucket.List())
 	if err != nil {
 		t.Error(err)
 	}
@@ -207,7 +200,7 @@ func TestHideShowLive(t *testing.T) {
 	}
 
 	// count see the object again
-	got, err = countObjects(ctx, bucket.ListCurrentObjects)
+	got, err = countObjects(ctx, bucket.List())
 	if err != nil {
 		t.Error(err)
 	}
@@ -542,33 +535,37 @@ func TestListObjectsWithPrefix(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// This is kind of a hack, but
-	type lfun func(context.Context, int, *Cursor) ([]*Object, *Cursor, error)
+	table := []struct {
+		opts []ListOption
+	}{
+		{
+			opts: []ListOption{
+				ListPrefix("baz/"),
+			},
+		},
+		{
+			opts: []ListOption{
+				ListPrefix("baz/"),
+				ListHidden(),
+			},
+		},
+	}
 
-	for _, f := range []lfun{bucket.ListObjects, bucket.ListCurrentObjects} {
-		c := &Cursor{
-			Prefix: "baz/",
-		}
+	for _, entry := range table {
+		iter := bucket.List(entry.opts...)
 		var res []string
-		for {
-			objs, cur, err := f(ctx, 10, c)
-			if err != nil && err != io.EOF {
-				t.Fatalf("bucket.ListObjects: %v", err)
+		for iter.Next(ctx) {
+			o := iter.Object()
+			attrs, err := o.Attrs(ctx)
+			if err != nil {
+				t.Errorf("(%v).Attrs: %v", o, err)
+				continue
 			}
-			for _, o := range objs {
-				attrs, err := o.Attrs(ctx)
-				if err != nil {
-					t.Errorf("(%v).Attrs: %v", o, err)
-					continue
-				}
-				res = append(res, attrs.Name)
-			}
-			if err == io.EOF {
-				break
-			}
-			c = cur
+			res = append(res, attrs.Name)
 		}
-
+		if iter.Err() != nil {
+			t.Errorf("iter.Err(): %v", iter.Err())
+		}
 		want := []string{"baz/bar"}
 		if !reflect.DeepEqual(res, want) {
 			t.Errorf("got %v, want %v", res, want)
@@ -746,19 +743,15 @@ func TestAttrsNoRoundtrip(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	objs, _, err := bucket.ListObjects(ctx, 1, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(objs) != 1 {
-		t.Fatalf("unexpected objects: got %d, want 1", len(objs))
-	}
+	iter := bucket.List()
+	iter.Next(ctx)
+	obj := iter.Object()
 
 	var trips int
 	for range bucket.c.Status().table()["1m"] {
-		trips += 1
+		trips++
 	}
-	attrs, err := objs[0].Attrs(ctx)
+	attrs, err := obj.Attrs(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -768,7 +761,7 @@ func TestAttrsNoRoundtrip(t *testing.T) {
 
 	var newTrips int
 	for range bucket.c.Status().table()["1m"] {
-		newTrips += 1
+		newTrips++
 	}
 	if trips != newTrips {
 		t.Errorf("Attrs() should not have caused any net traffic, but it did: old %d, new %d", trips, newTrips)
@@ -859,13 +852,9 @@ func TestListUnfinishedLargeFiles(t *testing.T) {
 	if _, err := io.Copy(w, io.LimitReader(zReader{}, 1e6)); err != nil {
 		t.Fatal(err)
 	}
-	// Don't close the writer.
-	fs, _, err := bucket.ListUnfinishedLargeFiles(ctx, 10, nil)
-	if err != io.EOF && err != nil {
-		t.Fatal(err)
-	}
-	if len(fs) != 1 {
-		t.Errorf("ListUnfinishedLargeFiles: got %d, want 1", len(fs))
+	iter := bucket.List(ListUnfinished())
+	if !iter.Next(ctx) {
+		t.Errorf("ListUnfinishedLargeFiles: got none, want 1 (error %v)", iter.Err())
 	}
 }
 
@@ -905,39 +894,12 @@ type object struct {
 	err error
 }
 
-func countObjects(ctx context.Context, f func(context.Context, int, *Cursor) ([]*Object, *Cursor, error)) (int, error) {
+func countObjects(ctx context.Context, iter *ObjectIterator) (int, error) {
 	var got int
-	ch := listObjects(ctx, f)
-	for c := range ch {
-		if c.err != nil {
-			return 0, c.err
-		}
+	for iter.Next(ctx) {
 		got++
 	}
-	return got, nil
-}
-
-func listObjects(ctx context.Context, f func(context.Context, int, *Cursor) ([]*Object, *Cursor, error)) <-chan object {
-	ch := make(chan object)
-	go func() {
-		defer close(ch)
-		var cur *Cursor
-		for {
-			objs, c, err := f(ctx, 100, cur)
-			if err != nil && err != io.EOF {
-				ch <- object{err: err}
-				return
-			}
-			for _, o := range objs {
-				ch <- object{o: o}
-			}
-			if err == io.EOF {
-				return
-			}
-			cur = c
-		}
-	}()
-	return ch
+	return got, iter.Err()
 }
 
 var defaultTransport = http.DefaultTransport
@@ -1042,13 +1004,14 @@ func startLiveTest(ctx context.Context, t *testing.T) (*Bucket, func()) {
 	}
 	f := func() {
 		defer ccport.done()
-		for c := range listObjects(ctx, bucket.ListObjects) {
-			if c.err != nil {
-				continue
-			}
-			if err := c.o.Delete(ctx); err != nil {
+		iter := bucket.List(ListHidden())
+		for iter.Next(ctx) {
+			if err := iter.Object().Delete(ctx); err != nil {
 				t.Error(err)
 			}
+		}
+		if err := iter.Err(); err != nil && !IsNotExist(err) {
+			t.Errorf("%#v", err)
 		}
 		if err := bucket.Delete(ctx); err != nil && !IsNotExist(err) {
 			t.Error(err)

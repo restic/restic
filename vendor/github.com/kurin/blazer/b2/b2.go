@@ -501,7 +501,7 @@ const (
 	Hider
 
 	// Folder is a special state given to non-objects that are returned during a
-	// List*Objects call with a non-empty Delimiter.
+	// List call with a ListDelimiter option.
 	Folder
 )
 
@@ -574,6 +574,8 @@ func (o *Object) Delete(ctx context.Context) error {
 }
 
 // Cursor is passed to ListObjects to return subsequent pages.
+//
+// DEPRECATED.  Will be removed in a future release.
 type Cursor struct {
 	// Prefix limits the listed objects to those that begin with this string.
 	Prefix string
@@ -602,6 +604,8 @@ type Cursor struct {
 //
 // ListObjects will return io.EOF when there are no objects left in the bucket,
 // however it may do so concurrently with the last objects.
+//
+// DEPRECATED.  Will be removed in a future release.
 func (b *Bucket) ListObjects(ctx context.Context, count int, c *Cursor) ([]*Object, *Cursor, error) {
 	if c == nil {
 		c = &Cursor{}
@@ -636,6 +640,8 @@ func (b *Bucket) ListObjects(ctx context.Context, count int, c *Cursor) ([]*Obje
 
 // ListCurrentObjects is similar to ListObjects, except that it returns only
 // current, unhidden objects in the bucket.
+//
+// DEPRECATED.  Will be removed in a future release.
 func (b *Bucket) ListCurrentObjects(ctx context.Context, count int, c *Cursor) ([]*Object, *Cursor, error) {
 	if c == nil {
 		c = &Cursor{}
@@ -669,6 +675,8 @@ func (b *Bucket) ListCurrentObjects(ctx context.Context, count int, c *Cursor) (
 
 // ListUnfinishedLargeFiles lists any objects that correspond to large file uploads that haven't been completed.
 // This can happen for example when an upload is interrupted.
+//
+// DEPRECATED.  Will be removed in a future release.
 func (b *Bucket) ListUnfinishedLargeFiles(ctx context.Context, count int, c *Cursor) ([]*Object, *Cursor, error) {
 	if c == nil {
 		c = &Cursor{}
