@@ -164,6 +164,9 @@ The ``forget`` command accepts the following parameters:
    years, months, and days, e.g. ``2y5m7d`` will keep all snapshots made in the
    two years, five months, and seven days before the latest snapshot.
 
+Multiple policies will be ORed together so as to be as inclusive as possible
+for keeping snapshots.
+
 Additionally, you can restrict removing snapshots to those which have a
 particular hostname with the ``--hostname`` parameter, or tags with the
 ``--tag`` option. When multiple tags are specified, only the snapshots
