@@ -4,8 +4,8 @@ package termstatus
 
 import (
 	"io"
-	"syscall"
-	"unsafe"
+
+	"golang.org/x/sys/unix"
 
 	isatty "github.com/mattn/go-isatty"
 )
@@ -30,10 +30,9 @@ func canUpdateStatus(fd uintptr) bool {
 // getTermSize returns the dimensions of the given terminal.
 // the code is taken from "golang.org/x/crypto/ssh/terminal"
 func getTermSize(fd uintptr) (width, height int, err error) {
-	var dimensions [4]uint16
-
-	if _, _, err := syscall.Syscall6(syscall.SYS_IOCTL, fd, uintptr(syscall.TIOCGWINSZ), uintptr(unsafe.Pointer(&dimensions)), 0, 0, 0); err != 0 {
+	ws, err := unix.IoctlGetWinsize(int(fd), unix.TIOCGWINSZ)
+	if err != nil {
 		return -1, -1, err
 	}
-	return int(dimensions[1]), int(dimensions[0]), nil
+	return int(ws.Col), int(ws.Row), nil
 }
