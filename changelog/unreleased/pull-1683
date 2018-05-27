@@ -1,0 +1,8 @@
+Enhancement: Add Code of Conduct, document governance model
+
+We've added a Code of Conduct based on the one from the Django project. In
+addition, we've documented the current governance model for the restic project
+(BDFL fd0).
+
+https://github.com/restic/restic/pull/1683
+https://forum.restic.net/t/should-restic-adopt-a-code-of-conduct/445

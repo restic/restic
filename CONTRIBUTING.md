@@ -1,4 +1,6 @@
 This document describes the way you can contribute to the restic project.
+Please have a look at the [Code of Conduct for this
+project](CODE_OF_CONDUCT.md), in the file `CODE_OF_CONDUCT.md`.
 
 Ways to Help Out
 ================
