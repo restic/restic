@@ -290,6 +290,20 @@ func (t *Terminal) Errorf(msg string, args ...interface{}) {
 	t.Error(s)
 }
 
+// truncate returns a string that has at most maxlen characters. If maxlen is
+// negative, the empty string is returned.
+func truncate(s string, maxlen int) string {
+	if maxlen < 0 {
+		return ""
+	}
+
+	if len(s) < maxlen {
+		return s
+	}
+
+	return s[:maxlen]
+}
+
 // SetStatus updates the status lines.
 func (t *Terminal) SetStatus(lines []string) {
 	if len(lines) == 0 {
@@ -297,7 +311,7 @@ func (t *Terminal) SetStatus(lines []string) {
 	}
 
 	width, _, err := getTermSize(t.fd)
-	if err != nil || width < 0 {
+	if err != nil || width <= 0 {
 		// use 80 columns by default
 		width = 80
 	}
@@ -305,11 +319,7 @@ func (t *Terminal) SetStatus(lines []string) {
 	// make sure that all lines have a line break and are not too long
 	for i, line := range lines {
 		line = strings.TrimRight(line, "\n")
-
-		if len(line) >= width-2 {
-			line = line[:width-2]
-		}
-		line += "\n"
+		line = truncate(line, width-2) + "\n"
 		lines[i] = line
 	}
 
