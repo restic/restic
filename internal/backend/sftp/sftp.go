@@ -75,7 +75,9 @@ func startClient(program string, args ...string) (*SFTP, error) {
 	go func() {
 		err := cmd.Wait()
 		debug.Log("ssh command exited, err %v", err)
-		ch <- errors.Wrap(err, "cmd.Wait")
+		for {
+			ch <- errors.Wrap(err, "ssh command exited")
+		}
 	}()
 
 	// open the SFTP session
