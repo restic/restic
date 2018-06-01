@@ -2,6 +2,7 @@ package azure
 
 import (
 	"context"
+	"encoding/base64"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -64,13 +65,13 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 }
 
 // Open opens the Azure backend at specified container.
-func Open(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
+func Open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	return open(cfg, rt)
 }
 
 // Create opens the Azure backend at specified container and creates the container if
 // it does not exist yet.
-func Create(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
+func Create(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	be, err := open(cfg, rt)
 
 	if err != nil {
@@ -129,13 +130,72 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 
 	debug.Log("InsertObject(%v, %v)", be.container.Name, objName)
 
-	// wrap the reader so that net/http client cannot close the reader
-	err := be.container.GetBlobReference(objName).CreateBlockBlobFromReader(ioutil.NopCloser(rd), nil)
+	var err error
+	if rd.Length() < 256*1024*1024 {
+		// wrap the reader so that net/http client cannot close the reader
+		dataReader := ioutil.NopCloser(rd)
+
+		// if it's smaller than 256miB, then just create the file directly from the reader
+		err = be.container.GetBlobReference(objName).CreateBlockBlobFromReader(dataReader, nil)
+	} else {
+		// otherwise use the more complicated method
+		err = be.saveLarge(ctx, objName, rd)
+
+	}
 
 	be.sem.ReleaseToken()
 	debug.Log("%v, err %#v", objName, err)
 
 	return errors.Wrap(err, "CreateBlockBlobFromReader")
+}
+
+func (be *Backend) saveLarge(ctx context.Context, objName string, rd restic.RewindReader) error {
+	// create the file on the server
+	file := be.container.GetBlobReference(objName)
+	err := file.CreateBlockBlob(nil)
+	if err != nil {
+		return errors.Wrap(err, "CreateBlockBlob")
+	}
+
+	// read the data, in 100 MiB chunks
+	buf := make([]byte, 100*1024*1024)
+	var blocks []storage.Block
+
+	for {
+		n, err := io.ReadFull(rd, buf)
+		if err == io.ErrUnexpectedEOF {
+			err = nil
+		}
+		if err == io.EOF {
+			// end of file reached, no bytes have been read at all
+			break
+		}
+
+		if err != nil {
+			return errors.Wrap(err, "ReadFull")
+		}
+
+		buf = buf[:n]
+
+		// upload it as a new "block", use the base64 hash for the ID
+		h := restic.Hash(buf)
+		id := base64.StdEncoding.EncodeToString(h[:])
+		debug.Log("PutBlock %v with %d bytes", id, len(buf))
+		err = file.PutBlock(id, buf, nil)
+		if err != nil {
+			return errors.Wrap(err, "PutBlock")
+		}
+
+		blocks = append(blocks, storage.Block{
+			ID:     id,
+			Status: "Uncommitted",
+		})
+	}
+
+	debug.Log("uploaded %d parts: %v", len(blocks), blocks)
+	err = file.PutBlockList(blocks, nil)
+	debug.Log("PutBlockList returned %v", err)
+	return errors.Wrap(err, "PutBlockList")
 }
 
 // wrapReader wraps an io.ReadCloser to run an additional function on Close.

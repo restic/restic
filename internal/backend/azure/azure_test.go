@@ -1,8 +1,10 @@
 package azure_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"testing"
 	"time"
@@ -121,4 +123,96 @@ func BenchmarkBackendAzure(t *testing.B) {
 
 	t.Logf("run tests")
 	newAzureTestSuite(t).RunBenchmarks(t)
+}
+
+func TestUploadLargeFile(t *testing.T) {
+	if os.Getenv("RESTIC_AZURE_TEST_LARGE_UPLOAD") == "" {
+		t.Skip("set RESTIC_AZURE_TEST_LARGE_UPLOAD=1 to test large uploads")
+		return
+	}
+
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
+
+	if os.Getenv("RESTIC_TEST_AZURE_REPOSITORY") == "" {
+		t.Skipf("environment variables not available")
+		return
+	}
+
+	azcfg, err := azure.ParseConfig(os.Getenv("RESTIC_TEST_AZURE_REPOSITORY"))
+	if err != nil {
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	cfg := azcfg.(azure.Config)
+	cfg.AccountName = os.Getenv("RESTIC_TEST_AZURE_ACCOUNT_NAME")
+	cfg.AccountKey = os.Getenv("RESTIC_TEST_AZURE_ACCOUNT_KEY")
+	cfg.Prefix = fmt.Sprintf("test-upload-large-%d", time.Now().UnixNano())
+
+	tr, err := backend.Transport(backend.TransportOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	be, err := azure.Create(cfg, tr)
+	if err != nil {
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	defer func() {
+		err := be.Delete(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	data := rtest.Random(23, 300*1024*1024)
+	id := restic.Hash(data)
+	h := restic.Handle{Name: id.String(), Type: restic.DataFile}
+
+	t.Logf("hash of %d bytes: %v", len(data), id)
+
+	err = be.Save(ctx, h, restic.NewByteReader(data))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		err := be.Remove(ctx, h)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	var tests = []struct {
+		offset, length int
+	}{
+		{0, len(data)},
+		{23, 1024},
+		{23 + 100*1024, 500},
+		{888 + 200*1024, 89999},
+		{888 + 100*1024*1024, 120 * 1024 * 1024},
+	}
+
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			want := data[test.offset : test.offset+test.length]
+
+			buf := make([]byte, test.length)
+			err = be.Load(ctx, h, test.length, int64(test.offset), func(rd io.Reader) error {
+				_, err = io.ReadFull(rd, buf)
+				return err
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if !bytes.Equal(buf, want) {
+				t.Fatalf("wrong bytes returned")
+			}
+		})
+	}
 }

@@ -1,0 +1,9 @@
+Bugfix: Allow uploading large files to MS Azure
+
+Sometimes, restic creates files to be uploaded to the repository which are
+quite large, e.g. when saving directories with many entries or very large
+files. The MS Azure API does not allow uploading files larger that 256MiB
+directly, rather restic needs to upload them in blocks of 100MiB. This is now
+implemented.
+
+https://github.com/restic/restic/issues/1822
