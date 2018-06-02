@@ -188,6 +188,10 @@ func (be *Backend) ReadDir(dir string) (list []os.FileInfo, err error) {
 	defer close(done)
 
 	for obj := range be.client.ListObjects(be.cfg.Bucket, dir, false, done) {
+		if obj.Err != nil {
+			return nil, err
+		}
+
 		if obj.Key == "" {
 			continue
 		}
@@ -424,6 +428,10 @@ func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.F
 	listresp := be.client.ListObjects(be.cfg.Bucket, prefix, recursive, ctx.Done())
 
 	for obj := range listresp {
+		if obj.Err != nil {
+			return obj.Err
+		}
+
 		m := strings.TrimPrefix(obj.Key, prefix)
 		if m == "" {
 			continue
