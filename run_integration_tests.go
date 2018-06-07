@@ -136,6 +136,12 @@ func (env *TravisEnvironment) Prepare() error {
 				"openbsd/386", "openbsd/amd64",
 				"linux/arm", "freebsd/arm",
 			}
+
+			if os.Getenv("RESTIC_BUILD_SOLARIS") == "0" {
+				msg("Skipping Solaris build\n")
+			} else {
+				env.goxOSArch = append(env.goxOSArch, "solaris/amd64")
+			}
 		} else {
 			env.goxOSArch = []string{runtime.GOOS + "/" + runtime.GOARCH}
 		}
