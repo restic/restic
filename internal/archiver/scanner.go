@@ -58,6 +58,9 @@ func (s *Scanner) Scan(ctx context.Context, targets []string) error {
 		}
 	}
 
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 	s.Result("", stats)
 	return nil
 }
@@ -107,6 +110,9 @@ func (s *Scanner) scan(ctx context.Context, stats ScanStats, target string) (Sca
 		stats.Others++
 	}
 
+	if ctx.Err() != nil {
+		return stats, ctx.Err()
+	}
 	s.Result(target, stats)
 	return stats, nil
 }

@@ -40,7 +40,7 @@ type Backup struct {
 	processedCh chan counter
 	errCh       chan struct{}
 	workerCh    chan fileWorkerMessage
-	clearStatus chan struct{}
+	finished    chan struct{}
 
 	summary struct {
 		sync.Mutex
@@ -69,7 +69,7 @@ func NewBackup(term *termstatus.Terminal, verbosity uint) *Backup {
 		processedCh: make(chan counter),
 		errCh:       make(chan struct{}),
 		workerCh:    make(chan fileWorkerMessage),
-		clearStatus: make(chan struct{}),
+		finished:    make(chan struct{}),
 	}
 }
 
@@ -92,7 +92,7 @@ func (b *Backup) Run(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			return nil
-		case <-b.clearStatus:
+		case <-b.finished:
 			started = false
 			b.term.SetStatus([]string{""})
 		case t, ok := <-b.totalCh:
@@ -333,7 +333,10 @@ func (b *Backup) CompleteItemFn(item string, previous, current *restic.Node, s a
 
 // ReportTotal sets the total stats up to now
 func (b *Backup) ReportTotal(item string, s archiver.ScanStats) {
-	b.totalCh <- counter{Files: s.Files, Dirs: s.Dirs, Bytes: s.Bytes}
+	select {
+	case b.totalCh <- counter{Files: s.Files, Dirs: s.Dirs, Bytes: s.Bytes}:
+	case <-b.finished:
+	}
 
 	if item == "" {
 		b.V("scan finished in %.3fs: %v files, %s",
@@ -347,7 +350,7 @@ func (b *Backup) ReportTotal(item string, s archiver.ScanStats) {
 
 // Finish prints the finishing messages.
 func (b *Backup) Finish() {
-	b.clearStatus <- struct{}{}
+	close(b.finished)
 
 	b.P("\n")
 	b.P("Files:       %5d new, %5d changed, %5d unmodified\n", b.summary.Files.New, b.summary.Files.Changed, b.summary.Files.Unchanged)
