@@ -49,6 +49,10 @@ func Walk(ctx context.Context, repo TreeLoader, root restic.ID, ignoreTrees rest
 		return err
 	}
 
+	if ignoreTrees == nil {
+		ignoreTrees = restic.NewIDSet()
+	}
+
 	_, err = walk(ctx, repo, "/", tree, ignoreTrees, walkFn)
 	return err
 }

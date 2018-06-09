@@ -2,13 +2,12 @@ package main
 
 import (
 	"context"
-	"path"
 
 	"github.com/spf13/cobra"
 
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/walker"
 )
 
 var cmdLs = &cobra.Command{
@@ -46,26 +45,6 @@ func init() {
 	flags.StringArrayVar(&lsOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot ID is given")
 }
 
-func printTree(ctx context.Context, repo *repository.Repository, id *restic.ID, prefix string) error {
-	tree, err := repo.LoadTree(ctx, *id)
-	if err != nil {
-		return err
-	}
-
-	for _, entry := range tree.Nodes {
-		entryPath := path.Join(prefix, entry.Name)
-		Printf("%s\n", formatNode(entryPath, entry, lsOptions.ListLong))
-
-		if entry.Type == "dir" && entry.Subtree != nil {
-			if err = printTree(ctx, repo, entry.Subtree, entryPath); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
 func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 	if len(args) == 0 && opts.Host == "" && len(opts.Tags) == 0 && len(opts.Paths) == 0 {
 		return errors.Fatal("Invalid arguments, either give one or more snapshot IDs or set filters.")
@@ -85,7 +64,18 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, args) {
 		Verbosef("snapshot %s of %v at %s):\n", sn.ID().Str(), sn.Paths, sn.Time)
 
-		if err = printTree(gopts.ctx, repo, sn.Tree, ""); err != nil {
+		err := walker.Walk(ctx, repo, *sn.Tree, nil, func(nodepath string, node *restic.Node, err error) (bool, error) {
+			if err != nil {
+				return false, err
+			}
+
+			if node == nil {
+				return false, nil
+			}
+			Printf("%s\n", formatNode(nodepath, node, lsOptions.ListLong))
+			return false, nil
+		})
+		if err != nil {
 			return err
 		}
 	}
