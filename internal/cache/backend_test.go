@@ -3,9 +3,13 @@ package cache
 import (
 	"bytes"
 	"context"
+	"io"
 	"math/rand"
+	"sync"
 	"testing"
+	"time"
 
+	"github.com/pkg/errors"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/mem"
 	"github.com/restic/restic/internal/restic"
@@ -111,4 +115,60 @@ func TestBackend(t *testing.T) {
 	if c.Has(h) {
 		t.Errorf("removed file still in cache after stat")
 	}
+}
+
+type loadErrorBackend struct {
+	restic.Backend
+	loadError error
+}
+
+func (be loadErrorBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+	time.Sleep(10 * time.Millisecond)
+	return be.loadError
+}
+
+func TestErrorBackend(t *testing.T) {
+	be := mem.New()
+
+	c, cleanup := TestNewCache(t)
+	defer cleanup()
+
+	h, data := randomData(5234142)
+
+	// save directly in backend
+	save(t, be, h, data)
+
+	testErr := errors.New("test error")
+	errBackend := loadErrorBackend{
+		Backend:   be,
+		loadError: testErr,
+	}
+
+	loadTest := func(wg *sync.WaitGroup, be restic.Backend) {
+		defer wg.Done()
+
+		buf, err := backend.LoadAll(context.TODO(), be, h)
+		if err == testErr {
+			return
+		}
+
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		if !bytes.Equal(buf, data) {
+			t.Errorf("data does not match")
+		}
+		time.Sleep(time.Millisecond)
+	}
+
+	wrappedBE := c.Wrap(errBackend)
+	var wg sync.WaitGroup
+	for i := 0; i < 5; i++ {
+		wg.Add(1)
+		go loadTest(&wg, wrappedBE)
+	}
+
+	wg.Wait()
 }
