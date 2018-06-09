@@ -1,0 +1,5 @@
+Bugfix: Resolve deadlock
+
+When the "scanning" process restic runs to find out how much data there is does
+not finish before the backup itself is done, restic stops doing anything. This
+is resolved now.
