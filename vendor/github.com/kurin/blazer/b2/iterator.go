@@ -22,9 +22,10 @@ import (
 
 // List returns an iterator for selecting objects in a bucket.  The default
 // behavior, with no options, is to list all currently un-hidden objects.
-func (b *Bucket) List(opts ...ListOption) *ObjectIterator {
+func (b *Bucket) List(ctx context.Context, opts ...ListOption) *ObjectIterator {
 	o := &ObjectIterator{
 		bucket: b,
+		ctx:    ctx,
 	}
 	for _, opt := range opts {
 		opt(&o.opts)
@@ -36,7 +37,7 @@ func (b *Bucket) List(opts ...ListOption) *ObjectIterator {
 // contents.
 //
 // It is intended to be called in a loop:
-//  for iter.Next(ctx) {
+//  for iter.Next() {
 //    obj := iter.Object()
 //    // act on obj
 //  }
@@ -45,6 +46,7 @@ func (b *Bucket) List(opts ...ListOption) *ObjectIterator {
 //  }
 type ObjectIterator struct {
 	bucket *Bucket
+	ctx    context.Context
 	final  bool
 	err    error
 	idx    int
@@ -58,7 +60,11 @@ type ObjectIterator struct {
 
 type lister func(context.Context, int, *Cursor) ([]*Object, *Cursor, error)
 
-func (o *ObjectIterator) frame(ctx context.Context) error {
+func (o *ObjectIterator) page(ctx context.Context) error {
+	if o.opts.locker != nil {
+		o.opts.locker.Lock()
+		defer o.opts.locker.Unlock()
+	}
 	objs, c, err := o.l(ctx, o.count, o.c)
 	if err != nil && err != io.EOF {
 		if bNotExist.MatchString(err.Error()) {
@@ -82,13 +88,18 @@ func (o *ObjectIterator) frame(ctx context.Context) error {
 // any calls to Object().  If Next returns true, then the next call to Object()
 // will be valid.  Once Next returns false, it is important to check the return
 // value of Err().
-func (o *ObjectIterator) Next(ctx context.Context) bool {
+func (o *ObjectIterator) Next() bool {
 	o.init.Do(func() {
-		o.count = 1000
+		o.count = o.opts.pageSize
+		if o.count < 0 || o.count > 1000 {
+			o.count = 1000
+		}
 		switch {
 		case o.opts.unfinished:
 			o.l = o.bucket.ListUnfinishedLargeFiles
-			o.count = 100
+			if o.count > 100 {
+				o.count = 100
+			}
 		case o.opts.hidden:
 			o.l = o.bucket.ListObjects
 		default:
@@ -102,16 +113,20 @@ func (o *ObjectIterator) Next(ctx context.Context) bool {
 	if o.err != nil {
 		return false
 	}
+	if o.ctx.Err() != nil {
+		o.err = o.ctx.Err()
+		return false
+	}
 	if o.idx >= len(o.objs) {
 		if o.final {
 			o.err = io.EOF
 			return false
 		}
-		if err := o.frame(ctx); err != nil {
+		if err := o.page(o.ctx); err != nil {
 			o.err = err
 			return false
 		}
-		return o.Next(ctx)
+		return o.Next()
 	}
 	o.idx++
 	return true
@@ -136,6 +151,8 @@ type objectIteratorOptions struct {
 	unfinished bool
 	prefix     string
 	delimiter  string
+	pageSize   int
+	locker     sync.Locker
 }
 
 // A ListOption alters the default behavor of List.
@@ -179,5 +196,22 @@ func ListPrefix(pfx string) ListOption {
 func ListDelimiter(delimiter string) ListOption {
 	return func(o *objectIteratorOptions) {
 		o.delimiter = delimiter
+	}
+}
+
+// ListPageSize configures the iterator to request the given number of objects
+// per network round-trip.  The default (and maximum) is 1000 objects, except
+// for unfinished large files, which is 100.
+func ListPageSize(count int) ListOption {
+	return func(o *objectIteratorOptions) {
+		o.pageSize = count
+	}
+}
+
+// ListLocker passes the iterator a lock which will be held during network
+// round-trips.
+func ListLocker(l sync.Locker) ListOption {
+	return func(o *objectIteratorOptions) {
+		o.locker = l
 	}
 }

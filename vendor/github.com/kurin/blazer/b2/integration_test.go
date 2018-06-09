@@ -64,8 +64,8 @@ func TestReadWriteLive(t *testing.T) {
 		t.Error(err)
 	}
 
-	iter := bucket.List(ListHidden())
-	for iter.Next(ctx) {
+	iter := bucket.List(ctx, ListHidden())
+	for iter.Next() {
 		if err := iter.Object().Delete(ctx); err != nil {
 			t.Error(err)
 		}
@@ -168,7 +168,7 @@ func TestHideShowLive(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, err := countObjects(ctx, bucket.List())
+	got, err := countObjects(bucket.List(ctx))
 	if err != nil {
 		t.Error(err)
 	}
@@ -186,7 +186,7 @@ func TestHideShowLive(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, err = countObjects(ctx, bucket.List())
+	got, err = countObjects(bucket.List(ctx))
 	if err != nil {
 		t.Error(err)
 	}
@@ -200,7 +200,7 @@ func TestHideShowLive(t *testing.T) {
 	}
 
 	// count see the object again
-	got, err = countObjects(ctx, bucket.List())
+	got, err = countObjects(bucket.List(ctx))
 	if err != nil {
 		t.Error(err)
 	}
@@ -552,9 +552,9 @@ func TestListObjectsWithPrefix(t *testing.T) {
 	}
 
 	for _, entry := range table {
-		iter := bucket.List(entry.opts...)
+		iter := bucket.List(ctx, entry.opts...)
 		var res []string
-		for iter.Next(ctx) {
+		for iter.Next() {
 			o := iter.Object()
 			attrs, err := o.Attrs(ctx)
 			if err != nil {
@@ -743,8 +743,8 @@ func TestAttrsNoRoundtrip(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	iter := bucket.List()
-	iter.Next(ctx)
+	iter := bucket.List(ctx)
+	iter.Next()
 	obj := iter.Object()
 
 	var trips int
@@ -852,8 +852,8 @@ func TestListUnfinishedLargeFiles(t *testing.T) {
 	if _, err := io.Copy(w, io.LimitReader(zReader{}, 1e6)); err != nil {
 		t.Fatal(err)
 	}
-	iter := bucket.List(ListUnfinished())
-	if !iter.Next(ctx) {
+	iter := bucket.List(ctx, ListUnfinished())
+	if !iter.Next() {
 		t.Errorf("ListUnfinishedLargeFiles: got none, want 1 (error %v)", iter.Err())
 	}
 }
@@ -894,9 +894,9 @@ type object struct {
 	err error
 }
 
-func countObjects(ctx context.Context, iter *ObjectIterator) (int, error) {
+func countObjects(iter *ObjectIterator) (int, error) {
 	var got int
-	for iter.Next(ctx) {
+	for iter.Next() {
 		got++
 	}
 	return got, iter.Err()
@@ -1004,8 +1004,8 @@ func startLiveTest(ctx context.Context, t *testing.T) (*Bucket, func()) {
 	}
 	f := func() {
 		defer ccport.done()
-		iter := bucket.List(ListHidden())
-		for iter.Next(ctx) {
+		iter := bucket.List(ctx, ListHidden())
+		for iter.Next() {
 			if err := iter.Object().Delete(ctx); err != nil {
 				t.Error(err)
 			}
