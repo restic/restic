@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"path/filepath"
+	"path"
 	"strings"
 	"time"
 
@@ -111,7 +111,7 @@ func (s *statefulOutput) PrintJSON(prefix string, node *restic.Node) {
 		Content            byte `json:"content,omitempty"`
 		Subtree            byte `json:"subtree,omitempty"`
 	}{
-		Path:        filepath.Join(prefix, node.Name),
+		Path:        path.Join(prefix, node.Name),
 		Permissions: node.Mode.String(),
 		findNode:    (*findNode)(node),
 	})
@@ -202,7 +202,7 @@ func (f *Finder) findInTree(ctx context.Context, treeID restic.ID, prefix string
 			name = strings.ToLower(name)
 		}
 
-		m, err := filepath.Match(f.pat.pattern, name)
+		m, err := path.Match(f.pat.pattern, name)
 		if err != nil {
 			return err
 		}
@@ -224,7 +224,7 @@ func (f *Finder) findInTree(ctx context.Context, treeID restic.ID, prefix string
 		}
 
 		if node.Type == "dir" {
-			if err := f.findInTree(ctx, *node.Subtree, filepath.Join(prefix, node.Name)); err != nil {
+			if err := f.findInTree(ctx, *node.Subtree, path.Join(prefix, node.Name)); err != nil {
 				return err
 			}
 		}
@@ -241,7 +241,7 @@ func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error 
 	debug.Log("searching in snapshot %s\n  for entries within [%s %s]", sn.ID(), f.pat.oldest, f.pat.newest)
 
 	f.out.newsn = sn
-	return f.findInTree(ctx, *sn.Tree, string(filepath.Separator))
+	return f.findInTree(ctx, *sn.Tree, "/")
 }
 
 func runFind(opts FindOptions, gopts GlobalOptions, args []string) error {

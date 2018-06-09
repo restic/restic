@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
-	"path/filepath"
+	"path"
 	"time"
 
 	"github.com/restic/restic/internal/restic"
@@ -64,7 +64,7 @@ func formatDuration(d time.Duration) string {
 }
 
 func formatNode(prefix string, n *restic.Node, long bool) string {
-	nodepath := prefix + string(filepath.Separator) + n.Name
+	nodepath := path.Join(prefix, n.Name)
 	if !long {
 		return nodepath
 	}
