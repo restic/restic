@@ -91,14 +91,6 @@ var autoCacheFiles = map[restic.FileType]bool{
 
 func (b *Backend) cacheFile(ctx context.Context, h restic.Handle) error {
 	finish := make(chan struct{})
-	defer func() {
-		close(finish)
-
-		// remove the finish channel from the map
-		b.inProgressMutex.Lock()
-		delete(b.inProgress, h)
-		b.inProgressMutex.Unlock()
-	}()
 
 	b.inProgressMutex.Lock()
 	other, alreadyDownloading := b.inProgress[h]
@@ -120,10 +112,17 @@ func (b *Backend) cacheFile(ctx context.Context, h restic.Handle) error {
 	if err != nil {
 		// try to remove from the cache, ignore errors
 		_ = b.Cache.Remove(h)
-		return err
 	}
 
-	return nil
+	// signal other waiting goroutines that the file may now be cached
+	close(finish)
+
+	// remove the finish channel from the map
+	b.inProgressMutex.Lock()
+	delete(b.inProgress, h)
+	b.inProgressMutex.Unlock()
+
+	return err
 }
 
 // loadFromCacheOrDelegate will try to load the file from the cache, and fall
@@ -131,12 +130,13 @@ func (b *Backend) cacheFile(ctx context.Context, h restic.Handle) error {
 func (b *Backend) loadFromCacheOrDelegate(ctx context.Context, h restic.Handle, length int, offset int64, consumer func(rd io.Reader) error) error {
 	rd, err := b.Cache.Load(h, length, offset)
 	if err != nil {
+		debug.Log("error caching %v: %v, falling back to backend", h, err)
 		return b.Backend.Load(ctx, h, length, offset, consumer)
 	}
 
 	err = consumer(rd)
 	if err != nil {
-		rd.Close() // ignore secondary errors
+		_ = rd.Close() // ignore secondary errors
 		return err
 	}
 	return rd.Close()
@@ -193,19 +193,8 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 
 	debug.Log("auto-store %v in the cache", h)
 	err := b.cacheFile(ctx, h)
-
 	if err == nil {
-		// load the cached version
-		rd, err := b.Cache.Load(h, 0, 0)
-		if err != nil {
-			return err
-		}
-		err = consumer(rd)
-		if err != nil {
-			rd.Close() // ignore secondary errors
-			return err
-		}
-		return rd.Close()
+		return b.loadFromCacheOrDelegate(ctx, h, length, offset, consumer)
 	}
 
 	debug.Log("error caching %v: %v, falling back to backend", h, err)
