@@ -1,0 +1,9 @@
+Bugfix: Fix caching files on error
+
+During `check` it may happen that different threads access the same file in the
+backend, which is then downloaded into the cache only once. When that fails,
+only the thread which is responsible for downloading the file signals the
+correct error. The other threads just assume that the file has been downloaded
+successfully and then get an error when they try to access the cached file.
+
+https://github.com/restic/restic/issues/1833
