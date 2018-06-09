@@ -74,13 +74,25 @@ installed from the official repos, e.g. with ``apt-get``:
 RHEL & CentOS
 =============
 
-restic can be installed via copr repository.
+restic can be installed via copr repository, for RHEL7/CentOS you can try the following:
 
 .. code-block:: console
 
     $ yum install yum-plugin-copr
     $ yum copr enable copart/restic
     $ yum install restic
+
+If that doesn't work, you can try adding the repository directly, for CentOS6 use:
+
+.. code-block:: console
+
+    $ yum-config-manager --add-repo https://copr.fedorainfracloud.org/coprs/copart/restic/repo/epel-6/copart-restic-epel-6.repo
+
+For CentOS7 use:
+
+.. code-block:: console
+
+    $ yum-config-manager --add-repo https://copr.fedorainfracloud.org/coprs/copart/restic/repo/epel-7/copart-restic-epel-7.repo
 
 Fedora
 ======
