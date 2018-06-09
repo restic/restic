@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"path/filepath"
+	"path"
 
 	"github.com/spf13/cobra"
 
@@ -53,10 +53,10 @@ func printTree(ctx context.Context, repo *repository.Repository, id *restic.ID, 
 	}
 
 	for _, entry := range tree.Nodes {
-		Printf("%s\n", formatNode(prefix, entry, lsOptions.ListLong))
+		entryPath := path.Join(prefix, entry.Name)
+		Printf("%s\n", formatNode(entryPath, entry, lsOptions.ListLong))
 
 		if entry.Type == "dir" && entry.Subtree != nil {
-			entryPath := prefix + string(filepath.Separator) + entry.Name
 			if err = printTree(ctx, repo, entry.Subtree, entryPath); err != nil {
 				return err
 			}

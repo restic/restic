@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"path"
 	"strings"
 	"time"
 
@@ -11,7 +10,9 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/walker"
 )
 
 var cmdFind = &cobra.Command{
@@ -94,7 +95,7 @@ type statefulOutput struct {
 	hits     int
 }
 
-func (s *statefulOutput) PrintJSON(prefix string, node *restic.Node) {
+func (s *statefulOutput) PrintJSON(path string, node *restic.Node) {
 	type findNode restic.Node
 	b, err := json.Marshal(struct {
 		// Add these attributes
@@ -111,7 +112,7 @@ func (s *statefulOutput) PrintJSON(prefix string, node *restic.Node) {
 		Content            byte `json:"content,omitempty"`
 		Subtree            byte `json:"subtree,omitempty"`
 	}{
-		Path:        path.Join(prefix, node.Name),
+		Path:        path,
 		Permissions: node.Mode.String(),
 		findNode:    (*findNode)(node),
 	})
@@ -138,7 +139,7 @@ func (s *statefulOutput) PrintJSON(prefix string, node *restic.Node) {
 	s.hits++
 }
 
-func (s *statefulOutput) PrintNormal(prefix string, node *restic.Node) {
+func (s *statefulOutput) PrintNormal(path string, node *restic.Node) {
 	if s.newsn != s.oldsn {
 		if s.oldsn != nil {
 			Verbosef("\n")
@@ -146,14 +147,14 @@ func (s *statefulOutput) PrintNormal(prefix string, node *restic.Node) {
 		s.oldsn = s.newsn
 		Verbosef("Found matching entries in snapshot %s\n", s.oldsn.ID().Str())
 	}
-	Printf(formatNode(prefix, node, s.ListLong) + "\n")
+	Printf(formatNode(path, node, s.ListLong) + "\n")
 }
 
-func (s *statefulOutput) Print(prefix string, node *restic.Node) {
+func (s *statefulOutput) Print(path string, node *restic.Node) {
 	if s.JSON {
-		s.PrintJSON(prefix, node)
+		s.PrintJSON(path, node)
 	} else {
-		s.PrintNormal(prefix, node)
+		s.PrintNormal(path, node)
 	}
 }
 
@@ -174,83 +175,75 @@ func (s *statefulOutput) Finish() {
 
 // Finder bundles information needed to find a file or directory.
 type Finder struct {
-	repo     restic.Repository
-	pat      findPattern
-	out      statefulOutput
-	notfound restic.IDSet
+	repo        restic.Repository
+	pat         findPattern
+	out         statefulOutput
+	ignoreTrees restic.IDSet
 }
 
-// findInTree traverses a tree and outputs matches. foundInSubtree is true if
-// some match has been found within some subtree. If err is non-nil, the value
-// of foundInSubtree is invalid.
-func (f *Finder) findInTree(ctx context.Context, treeID restic.ID, prefix string) (foundInSubtree bool, err error) {
-	if f.notfound.Has(treeID) {
-		debug.Log("%v skipping tree %v, has already been checked", prefix, treeID)
-		return false, nil
+func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error {
+	debug.Log("searching in snapshot %s\n  for entries within [%s %s]", sn.ID(), f.pat.oldest, f.pat.newest)
+
+	if sn.Tree == nil {
+		return errors.Errorf("snapshot %v has no tree", sn.ID().Str())
 	}
 
-	debug.Log("%v checking tree %v\n", prefix, treeID)
+	f.out.newsn = sn
+	return walker.Walk(ctx, f.repo, *sn.Tree, f.ignoreTrees, func(nodepath string, node *restic.Node, err error) (bool, error) {
+		if err != nil {
+			return false, err
+		}
 
-	tree, err := f.repo.LoadTree(ctx, treeID)
-	if err != nil {
-		return false, err
-	}
-
-	var found bool
-	for _, node := range tree.Nodes {
-		debug.Log("  testing entry %q\n", node.Name)
+		if node == nil {
+			return false, nil
+		}
 
 		name := node.Name
 		if f.pat.ignoreCase {
 			name = strings.ToLower(name)
 		}
 
-		m, err := path.Match(f.pat.pattern, name)
+		foundMatch, err := filter.Match(f.pat.pattern, nodepath)
 		if err != nil {
 			return false, err
 		}
 
-		if m {
-			if !f.pat.oldest.IsZero() && node.ModTime.Before(f.pat.oldest) {
-				debug.Log("    ModTime is older than %s\n", f.pat.oldest)
-				continue
-			}
-
-			if !f.pat.newest.IsZero() && node.ModTime.After(f.pat.newest) {
-				debug.Log("    ModTime is newer than %s\n", f.pat.newest)
-				continue
-			}
-
-			debug.Log("    found match\n")
-			found = true
-			f.out.Print(prefix, node)
-		}
-
+		var (
+			ignoreIfNoMatch = true
+			errIfNoMatch    error
+		)
 		if node.Type == "dir" {
-			foundSubtree, err := f.findInTree(ctx, *node.Subtree, path.Join(prefix, node.Name))
+			childMayMatch, err := filter.ChildMatch(f.pat.pattern, nodepath)
 			if err != nil {
 				return false, err
 			}
 
-			if foundSubtree {
-				found = true
+			if !childMayMatch {
+				ignoreIfNoMatch = true
+				errIfNoMatch = walker.SkipNode
+			} else {
+				ignoreIfNoMatch = false
 			}
 		}
-	}
 
-	if !found {
-		f.notfound.Insert(treeID)
-	}
+		if !foundMatch {
+			return ignoreIfNoMatch, errIfNoMatch
+		}
 
-	return found, nil
-}
+		if !f.pat.oldest.IsZero() && node.ModTime.Before(f.pat.oldest) {
+			debug.Log("    ModTime is older than %s\n", f.pat.oldest)
+			return ignoreIfNoMatch, errIfNoMatch
+		}
 
-func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error {
-	debug.Log("searching in snapshot %s\n  for entries within [%s %s]", sn.ID(), f.pat.oldest, f.pat.newest)
+		if !f.pat.newest.IsZero() && node.ModTime.After(f.pat.newest) {
+			debug.Log("    ModTime is newer than %s\n", f.pat.newest)
+			return ignoreIfNoMatch, errIfNoMatch
+		}
 
-	f.out.newsn = sn
-	_, err := f.findInTree(ctx, *sn.Tree, "/")
-	return err
+		debug.Log("    found match\n")
+		f.out.Print(nodepath, node)
+		return false, nil
+	})
 }
 
 func runFind(opts FindOptions, gopts GlobalOptions, args []string) error {
@@ -298,10 +291,10 @@ func runFind(opts FindOptions, gopts GlobalOptions, args []string) error {
 	defer cancel()
 
 	f := &Finder{
-		repo:     repo,
-		pat:      pat,
-		out:      statefulOutput{ListLong: opts.ListLong, JSON: globalOptions.JSON},
-		notfound: restic.NewIDSet(),
+		repo:        repo,
+		pat:         pat,
+		out:         statefulOutput{ListLong: opts.ListLong, JSON: globalOptions.JSON},
+		ignoreTrees: restic.NewIDSet(),
 	}
 	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, opts.Snapshots) {
 		if err = f.findInSnapshot(ctx, sn); err != nil {
