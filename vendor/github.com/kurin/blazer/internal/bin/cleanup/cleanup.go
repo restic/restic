@@ -61,8 +61,8 @@ func killBucket(ctx context.Context, client *b2.Client, name string) error {
 		return err
 	}
 	defer bucket.Delete(ctx)
-	iter := bucket.List(b2.ListHidden())
-	for iter.Next(ctx) {
+	iter := bucket.List(ctx, b2.ListHidden())
+	for iter.Next() {
 		if err := iter.Object().Delete(ctx); err != nil {
 			fmt.Println(err)
 		}

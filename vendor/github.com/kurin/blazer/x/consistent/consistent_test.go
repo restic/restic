@@ -141,8 +141,8 @@ func startLiveTest(ctx context.Context, t *testing.T) (*b2.Bucket, func()) {
 		return nil, nil
 	}
 	f := func() {
-		iter := bucket.List(b2.ListHidden())
-		for iter.Next(ctx) {
+		iter := bucket.List(ctx, b2.ListHidden())
+		for iter.Next() {
 			if err := iter.Object().Delete(ctx); err != nil {
 				t.Error(err)
 			}
