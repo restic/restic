@@ -144,7 +144,7 @@ func (s *statefulOutput) PrintNormal(prefix string, node *restic.Node) {
 			Verbosef("\n")
 		}
 		s.oldsn = s.newsn
-		Verbosef("Found matching entries in snapshot %s\n", s.oldsn.ID())
+		Verbosef("Found matching entries in snapshot %s\n", s.oldsn.ID().Str())
 	}
 	Printf(formatNode(prefix, node, s.ListLong) + "\n")
 }
@@ -180,17 +180,20 @@ type Finder struct {
 	notfound restic.IDSet
 }
 
-func (f *Finder) findInTree(ctx context.Context, treeID restic.ID, prefix string) error {
+// findInTree traverses a tree and outputs matches. foundInSubtree is true if
+// some match has been found within some subtree. If err is non-nil, the value
+// of foundInSubtree is invalid.
+func (f *Finder) findInTree(ctx context.Context, treeID restic.ID, prefix string) (foundInSubtree bool, err error) {
 	if f.notfound.Has(treeID) {
 		debug.Log("%v skipping tree %v, has already been checked", prefix, treeID)
-		return nil
+		return false, nil
 	}
 
 	debug.Log("%v checking tree %v\n", prefix, treeID)
 
 	tree, err := f.repo.LoadTree(ctx, treeID)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	var found bool
@@ -204,7 +207,7 @@ func (f *Finder) findInTree(ctx context.Context, treeID restic.ID, prefix string
 
 		m, err := path.Match(f.pat.pattern, name)
 		if err != nil {
-			return err
+			return false, err
 		}
 
 		if m {
@@ -224,8 +227,13 @@ func (f *Finder) findInTree(ctx context.Context, treeID restic.ID, prefix string
 		}
 
 		if node.Type == "dir" {
-			if err := f.findInTree(ctx, *node.Subtree, path.Join(prefix, node.Name)); err != nil {
-				return err
+			foundSubtree, err := f.findInTree(ctx, *node.Subtree, path.Join(prefix, node.Name))
+			if err != nil {
+				return false, err
+			}
+
+			if foundSubtree {
+				found = true
 			}
 		}
 	}
@@ -234,14 +242,15 @@ func (f *Finder) findInTree(ctx context.Context, treeID restic.ID, prefix string
 		f.notfound.Insert(treeID)
 	}
 
-	return nil
+	return found, nil
 }
 
 func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error {
 	debug.Log("searching in snapshot %s\n  for entries within [%s %s]", sn.ID(), f.pat.oldest, f.pat.newest)
 
 	f.out.newsn = sn
-	return f.findInTree(ctx, *sn.Tree, "/")
+	_, err := f.findInTree(ctx, *sn.Tree, "/")
+	return err
 }
 
 func runFind(opts FindOptions, gopts GlobalOptions, args []string) error {
