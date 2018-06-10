@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/restic/restic/internal/restic"
@@ -63,10 +62,9 @@ func formatDuration(d time.Duration) string {
 	return formatSeconds(sec)
 }
 
-func formatNode(prefix string, n *restic.Node, long bool) string {
-	nodepath := prefix + string(filepath.Separator) + n.Name
+func formatNode(path string, n *restic.Node, long bool) string {
 	if !long {
-		return nodepath
+		return path
 	}
 
 	var mode os.FileMode
@@ -92,6 +90,6 @@ func formatNode(prefix string, n *restic.Node, long bool) string {
 
 	return fmt.Sprintf("%s %5d %5d %6d %s %s%s",
 		mode|n.Mode, n.UID, n.GID, n.Size,
-		n.ModTime.Format(TimeFormat), nodepath,
+		n.ModTime.Format(TimeFormat), path,
 		target)
 }

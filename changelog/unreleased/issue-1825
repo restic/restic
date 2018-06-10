@@ -1,0 +1,12 @@
+Bugfix: Correct `find` to not skip snapshots
+
+Under certain circumstances, the `find` command was found to skip snapshots
+containing directories with files to look for when the directories haven't been
+modified at all, and were already printed as part of a different snapshot. This
+is now corrected.
+
+In addition, we've switched to our own matching/pattern implementation, so now
+things like `restic find "/home/user/foo/**/main.go"` are possible.
+
+https://github.com/restic/restic/issues/1825
+https://github.com/restic/restic/issues/1823

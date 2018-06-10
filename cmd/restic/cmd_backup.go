@@ -336,6 +336,14 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		return err
 	}
 
+	timeStamp := time.Now()
+	if opts.TimeStamp != "" {
+		timeStamp, err = time.Parse(TimeFormat, opts.TimeStamp)
+		if err != nil {
+			return errors.Fatalf("error in time option: %v\n", err)
+		}
+	}
+
 	var t tomb.Tomb
 
 	p := ui.NewBackup(term, gopts.verbosity)
@@ -400,14 +408,6 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 			}
 		}
 		return true
-	}
-
-	timeStamp := time.Now()
-	if opts.TimeStamp != "" {
-		timeStamp, err = time.Parse(TimeFormat, opts.TimeStamp)
-		if err != nil {
-			return errors.Fatalf("error in time option: %v\n", err)
-		}
 	}
 
 	var targetFS fs.FS = fs.Local{}

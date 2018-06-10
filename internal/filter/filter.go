@@ -83,6 +83,12 @@ func childMatch(patterns, strs []string) (matched bool, err error) {
 		return true, nil
 	}
 
+	ok, pos := hasDoubleWildcard(patterns)
+	if ok && len(strs) >= pos {
+		// cut off at the double wildcard
+		strs = strs[:pos]
+	}
+
 	// match path against absolute pattern prefix
 	l := 0
 	if len(strs) > len(patterns) {
