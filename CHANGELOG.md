@@ -1,3 +1,70 @@
+Changelog for restic 0.9.1 (2018-06-10)
+=======================================
+
+The following sections list the changes in restic 0.9.1 relevant to
+restic users. The changes are ordered by importance.
+
+Summary
+-------
+
+ * Fix #1801: Add limiting bandwidth to the rclone backend
+ * Fix #1822: Allow uploading large files to MS Azure
+ * Fix #1825: Correct `find` to not skip snapshots
+ * Fix #1833: Fix caching files on error
+ * Fix #1834: Resolve deadlock
+
+Details
+-------
+
+ * Bugfix #1801: Add limiting bandwidth to the rclone backend
+
+   The rclone backend did not respect `--limit-upload` or `--limit-download`. Oftentimes it's
+   not necessary to use this, as the limiting in rclone itself should be used because it gives much
+   better results, but in case a remote instance of rclone is used (e.g. called via ssh), it is still
+   relevant to limit the bandwidth from restic to rclone.
+
+   https://github.com/restic/restic/issues/1801
+
+ * Bugfix #1822: Allow uploading large files to MS Azure
+
+   Sometimes, restic creates files to be uploaded to the repository which are quite large, e.g.
+   when saving directories with many entries or very large files. The MS Azure API does not allow
+   uploading files larger that 256MiB directly, rather restic needs to upload them in blocks of
+   100MiB. This is now implemented.
+
+   https://github.com/restic/restic/issues/1822
+
+ * Bugfix #1825: Correct `find` to not skip snapshots
+
+   Under certain circumstances, the `find` command was found to skip snapshots containing
+   directories with files to look for when the directories haven't been modified at all, and were
+   already printed as part of a different snapshot. This is now corrected.
+
+   In addition, we've switched to our own matching/pattern implementation, so now things like
+   `restic find "/home/user/foo/**/main.go"` are possible.
+
+   https://github.com/restic/restic/issues/1825
+   https://github.com/restic/restic/issues/1823
+
+ * Bugfix #1833: Fix caching files on error
+
+   During `check` it may happen that different threads access the same file in the backend, which
+   is then downloaded into the cache only once. When that fails, only the thread which is
+   responsible for downloading the file signals the correct error. The other threads just assume
+   that the file has been downloaded successfully and then get an error when they try to access the
+   cached file.
+
+   https://github.com/restic/restic/issues/1833
+
+ * Bugfix #1834: Resolve deadlock
+
+   When the "scanning" process restic runs to find out how much data there is does not finish before
+   the backup itself is done, restic stops doing anything. This is resolved now.
+
+   https://github.com/restic/restic/issues/1834
+   https://github.com/restic/restic/pull/1835
+
+
 Changelog for restic 0.9.0 (2018-05-21)
 =======================================
 
