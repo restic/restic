@@ -299,3 +299,17 @@ information. Just specify the tags for a snapshot one by one with ``--tag``:
 The tags can later be used to keep (or forget) snapshots with the ``forget``
 command. The command ``tag`` can be used to modify tags on an existing
 snapshot.
+
+Space requirements
+******************
+
+Restic currently assumes that your backup repository has sufficient space
+for the backup operation you are about to perform. This is a realistic
+assumption for many cloud providers, but may not be true when backing up
+to local disks.
+
+Should you run out of space during the middle of a backup, there will be
+some additional data in the repository, but the snapshop will never be
+created as it only would be written at the very (successful) end of
+the backup operation.  Previous snapshots will still be there and will still
+work.
