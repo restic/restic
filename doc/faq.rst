@@ -120,3 +120,8 @@ The following may work:
 ::
 
     $ restic init -r sftp:user@nas:/restic-repo init
+
+Why does restic perform so poorly on Windows?
+---------------------------------------------
+
+In some cases the realtime protection of antivirus software can interfere with restic's operations. If you are experiencing bad performace you can try to temporarily disable your antivirus software to find out if it is the cause for your performance problems.
