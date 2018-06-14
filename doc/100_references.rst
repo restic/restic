@@ -625,9 +625,9 @@ are deleted, the particular snapshot vanished and all snapshots
 depending on data that has been added in the snapshot cannot be restored
 completely. Restic is not designed to detect this attack.
 
-******
+************
 Local Cache
-******
+***********
 
 In order to speed up certain operations, restic manages a local cache of data.
 This document describes the data structures for the local cache with version 1.
