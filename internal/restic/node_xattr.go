@@ -1,3 +1,4 @@
+// +build !netbsd
 // +build !openbsd
 // +build !solaris
 // +build !windows

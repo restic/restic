@@ -66,7 +66,7 @@ func isSymlink(fi os.FileInfo) bool {
 
 func sameModTime(fi1, fi2 os.FileInfo) bool {
 	switch runtime.GOOS {
-	case "darwin", "freebsd", "openbsd":
+	case "darwin", "freebsd", "openbsd", "netbsd":
 		if isSymlink(fi1) && isSymlink(fi2) {
 			return true
 		}

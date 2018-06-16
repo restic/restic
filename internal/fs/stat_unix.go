@@ -1,4 +1,4 @@
-// +build !windows,!darwin,!freebsd
+// +build !windows,!darwin,!freebsd,!netbsd
 
 package fs
 
