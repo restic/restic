@@ -134,6 +134,7 @@ func (env *TravisEnvironment) Prepare() error {
 				"darwin/386", "darwin/amd64",
 				"freebsd/386", "freebsd/amd64",
 				"openbsd/386", "openbsd/amd64",
+				"netbsd/386", "netbsd/amd64",
 				"linux/arm", "freebsd/arm",
 			}
 
