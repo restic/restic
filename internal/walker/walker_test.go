@@ -400,6 +400,62 @@ func TestWalker(t *testing.T) {
 				),
 			},
 		},
+		{
+			tree: TestTree{
+				"subdir1": TestTree{},
+				"subdir2": TestTree{},
+				"subdir3": TestTree{
+					"file": TestFile{},
+				},
+				"subdir4": TestTree{
+					"file": TestFile{},
+				},
+				"subdir5": TestTree{},
+				"subdir6": TestTree{},
+			},
+			checks: []checkFunc{
+				checkItemOrder([]string{
+					"/",
+					"/subdir1",
+					"/subdir2",
+					"/subdir3",
+					"/subdir3/file",
+					"/subdir4",
+					"/subdir4/file",
+					"/subdir5",
+					"/subdir6",
+				}),
+			},
+		},
+		{
+			tree: TestTree{
+				"subdir1": TestTree{},
+				"subdir2": TestTree{},
+				"subdir3": TestTree{
+					"file": TestFile{},
+				},
+				"subdir4": TestTree{},
+				"subdir5": TestTree{
+					"file": TestFile{},
+				},
+				"subdir6": TestTree{},
+			},
+			checks: []checkFunc{
+				checkIgnore(
+					map[string]struct{}{}, map[string]bool{
+						"/subdir2": true,
+					}, []string{
+						"/",
+						"/subdir1",
+						"/subdir2",
+						"/subdir3",
+						"/subdir3/file",
+						"/subdir5",
+						"/subdir5/file",
+					},
+				),
+			},
+		},
 	}
 
 	for _, test := range tests {

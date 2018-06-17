@@ -63,6 +63,10 @@ func Walk(ctx context.Context, repo TreeLoader, root restic.ID, ignoreTrees rest
 func walk(ctx context.Context, repo TreeLoader, prefix string, tree *restic.Tree, ignoreTrees restic.IDSet, walkFn WalkFunc) (ignore bool, err error) {
 	var allNodesIgnored = true
 
+	if len(tree.Nodes) == 0 {
+		allNodesIgnored = false
+	}
+
 	sort.Slice(tree.Nodes, func(i, j int) bool {
 		return tree.Nodes[i].Name < tree.Nodes[j].Name
 	})
