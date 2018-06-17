@@ -48,6 +48,10 @@ files in the snapshot. For example, to restore a single file:
 
 This will restore the file ``foo`` to ``/tmp/restore-work/work/foo``.
 
+You can use the command ``restic ls latest`` or ``restic find foo`` to find the
+path to the file within the snapshot. This pass you can then pass to
+`--include` in verbatim to only restore the single file or directory.
+
 Restore using mount
 ===================
 
