@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -35,33 +36,75 @@ func init() {
 	flags.StringVarP(&newPasswordFile, "new-password-file", "", "", "the file from which to load a new password")
 }
 
-func listKeys(ctx context.Context, s *repository.Repository) error {
-	tab := NewTable()
-	tab.Header = fmt.Sprintf(" %-10s  %-10s  %-10s  %s", "ID", "User", "Host", "Created")
-	tab.RowFormat = "%s%-10s  %-10s  %-10s  %s"
+type keyInfo struct {
+	Current  bool   `json:"current"`
+	ID       string `json:"id"`
+	UserName string `json:"userName"`
+	HostName string `json:"hostName"`
+	Created  string `json:"created"`
+}
 
-	err := s.List(ctx, restic.KeyFile, func(id restic.ID, size int64) error {
+func (ki keyInfo) CurrentStr() string {
+	if ki.Current {
+		return "*"
+	}
+	return " "
+}
+
+func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions) error {
+	var (
+		appendKey func(keyInfo)
+		printKeys func() error
+	)
+
+	switch gopts.JSON {
+	case true:
+		var keys []keyInfo
+
+		appendKey = func(key keyInfo) {
+			keys = append(keys, key)
+		}
+
+		printKeys = func() error {
+			return json.NewEncoder(gopts.stdout).Encode(keys)
+		}
+	default:
+		tab := NewTable()
+		tab.Header = fmt.Sprintf(" %-10s  %-10s  %-10s  %s", "ID", "User", "Host", "Created")
+		tab.RowFormat = "%s%-10s  %-10s  %-10s  %s"
+
+		appendKey = func(key keyInfo) {
+			tab.Rows = append(tab.Rows, []interface{}{key.CurrentStr(), key.ID, key.UserName, key.HostName, key.Created})
+		}
+
+		printKeys = func() error {
+			return tab.Write(globalOptions.stdout)
+		}
+	}
+
+	if err := s.List(ctx, restic.KeyFile, func(id restic.ID, size int64) error {
 		k, err := repository.LoadKey(ctx, s, id.String())
 		if err != nil {
 			Warnf("LoadKey() failed: %v\n", err)
 			return nil
 		}
 
-		var current string
-		if id.String() == s.KeyName() {
-			current = "*"
-		} else {
-			current = " "
+		key := keyInfo{
+			Current:  id.String() == s.KeyName(),
+			ID:       id.Str(),
+			UserName: k.Username,
+			HostName: k.Hostname,
+			Created:  k.Created.Format(TimeFormat),
 		}
-		tab.Rows = append(tab.Rows, []interface{}{current, id.Str(),
-			k.Username, k.Hostname, k.Created.Format(TimeFormat)})
+
+		appendKey(key)
+
 		return nil
-	})
-	if err != nil {
+	}); err != nil {
 		return err
 	}
 
-	return tab.Write(globalOptions.stdout)
+	return printKeys()
 }
 
 // testKeyNewPassword is used to set a new password during integration testing.
@@ -160,7 +203,7 @@ func runKey(gopts GlobalOptions, args []string) error {
 			return err
 		}
 
-		return listKeys(ctx, repo)
+		return listKeys(ctx, repo, gopts)
 	case "add":
 		lock, err := lockRepo(repo)
 		defer unlockRepo(lock)

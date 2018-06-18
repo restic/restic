@@ -1,0 +1,6 @@
+Enhancement: Add JSON output support to `restic key list`
+
+This PR enables users to get the output of `restic key list` in JSON in addition
+to the existing table format.
+
+https://github.com/restic/restic/pull/1853
