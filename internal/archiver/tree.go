@@ -202,30 +202,53 @@ func (t Tree) String() string {
 // formatTree returns a text representation of the tree t.
 func formatTree(t Tree, indent string) (s string) {
 	for name, node := range t.Nodes {
-		if node.Path != "" {
-			s += fmt.Sprintf("%v/%v, src %q\n", indent, name, node.Path)
-			continue
-		}
-		s += fmt.Sprintf("%v/%v, root %q, meta %q\n", indent, name, node.Root, node.FileInfoPath)
+		s += fmt.Sprintf("%v/%v, root %q, path %q, meta %q\n", indent, name, node.Root, node.Path, node.FileInfoPath)
 		s += formatTree(node, indent+"    ")
 	}
 	return s
 }
 
-// prune removes sub-trees of leaf nodes.
-func prune(t *Tree) {
-	// if the current tree is a leaf node (Path is set), remove all nodes,
-	// those are automatically included anyway.
+// unrollTree unrolls the tree so that only leaf nodes have Path set.
+func unrollTree(f fs.FS, t *Tree) error {
+	// if the current tree is a leaf node (Path is set) and has additional
+	// nodes, add the contents of Path to the nodes.
 	if t.Path != "" && len(t.Nodes) > 0 {
-		t.FileInfoPath = ""
-		t.Nodes = nil
-		return
+		debug.Log("resolve path %v", t.Path)
+		entries, err := fs.ReadDirNames(f, t.Path)
+		if err != nil {
+			return err
+		}
+
+		for _, entry := range entries {
+			if node, ok := t.Nodes[entry]; ok {
+				if node.Path == "" {
+					node.Path = f.Join(t.Path, entry)
+					t.Nodes[entry] = node
+					continue
+				}
+
+				if node.Path == f.Join(t.Path, entry) {
+					continue
+				}
+
+				return errors.Errorf("tree unrollTree: collision on path, node %#v, path %q", node, f.Join(t.Path, entry))
+				continue
+			}
+			t.Nodes[entry] = Tree{Path: f.Join(t.Path, entry)}
+		}
+		t.Path = ""
 	}
 
 	for i, subtree := range t.Nodes {
-		prune(&subtree)
+		err := unrollTree(f, &subtree)
+		if err != nil {
+			return err
+		}
+
 		t.Nodes[i] = subtree
 	}
+
+	return nil
 }
 
 // NewTree creates a Tree from the target files/directories.
@@ -248,7 +271,12 @@ func NewTree(fs fs.FS, targets []string) (*Tree, error) {
 		}
 	}
 
-	prune(tree)
+	debug.Log("before unroll:\n%v", tree)
+	err := unrollTree(fs, tree)
+	if err != nil {
+		return nil, err
+	}
+
 	debug.Log("result:\n%v", tree)
 	return tree, nil
 }
