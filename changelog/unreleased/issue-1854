@@ -1,0 +1,16 @@
+Bugfix: Allow saving files/dirs on different fs with `--one-file-system`
+
+restic now allows saving files/dirs on a different file system in a subdir
+correctly even when `--one-file-system` is specified. 
+
+The first thing the restic archiver code does is to build a tree of the target
+files/directories. If it detects that a parent directory is already included
+(e.g. `restic backup /foo /foo/bar/baz`), it'll ignore the latter argument.
+
+Without `--one-file-system`, that's perfectly valid: If `/foo` is to be
+archived, it will include `/foo/bar/baz`. But with `--one-file-system`,
+`/foo/bar/baz` may reside on a different file system, so it won't be included
+with `/foo`.
+
+https://github.com/restic/restic/issues/1854
+https://github.com/restic/restic/pull/1855

@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/restic/restic/internal/fs"
+	restictest "github.com/restic/restic/internal/test"
 )
 
 func TestPathComponents(t *testing.T) {
@@ -136,6 +137,7 @@ func TestRootDirectory(t *testing.T) {
 func TestTree(t *testing.T) {
 	var tests = []struct {
 		targets   []string
+		src       TestDir
 		want      Tree
 		unix      bool
 		win       bool
@@ -227,39 +229,152 @@ func TestTree(t *testing.T) {
 			}},
 		},
 		{
+			src: TestDir{
+				"foo": TestDir{
+					"file": TestFile{Content: "file content"},
+					"work": TestFile{Content: "work file content"},
+				},
+			},
+			targets: []string{"foo", "foo/work"},
+			want: Tree{Nodes: map[string]Tree{
+				"foo": Tree{
+					Root:         ".",
+					FileInfoPath: "foo",
+					Nodes: map[string]Tree{
+						"file": Tree{Path: filepath.FromSlash("foo/file")},
+						"work": Tree{Path: filepath.FromSlash("foo/work")},
+					},
+				},
+			}},
+		},
+		{
+			src: TestDir{
+				"foo": TestDir{
+					"file": TestFile{Content: "file content"},
+					"work": TestDir{
+						"other": TestFile{Content: "other file content"},
+					},
+				},
+			},
+			targets: []string{"foo/work", "foo"},
+			want: Tree{Nodes: map[string]Tree{
+				"foo": Tree{
+					Root:         ".",
+					FileInfoPath: "foo",
+					Nodes: map[string]Tree{
+						"file": Tree{Path: filepath.FromSlash("foo/file")},
+						"work": Tree{Path: filepath.FromSlash("foo/work")},
+					},
+				},
+			}},
+		},
+		{
+			src: TestDir{
+				"foo": TestDir{
+					"work": TestDir{
+						"user1": TestFile{Content: "file content"},
+						"user2": TestFile{Content: "other file content"},
+					},
+				},
+			},
 			targets: []string{"foo/work", "foo/work/user2"},
 			want: Tree{Nodes: map[string]Tree{
 				"foo": Tree{Root: ".", FileInfoPath: "foo", Nodes: map[string]Tree{
 					"work": Tree{
-						Path: filepath.FromSlash("foo/work"),
+						FileInfoPath: filepath.FromSlash("foo/work"),
+						Nodes: map[string]Tree{
+							"user1": Tree{Path: filepath.FromSlash("foo/work/user1")},
+							"user2": Tree{Path: filepath.FromSlash("foo/work/user2")},
+						},
 					},
 				}},
 			}},
 		},
 		{
+			src: TestDir{
+				"foo": TestDir{
+					"work": TestDir{
+						"user1": TestFile{Content: "file content"},
+						"user2": TestFile{Content: "other file content"},
+					},
+				},
+			},
 			targets: []string{"foo/work/user2", "foo/work"},
 			want: Tree{Nodes: map[string]Tree{
 				"foo": Tree{Root: ".", FileInfoPath: "foo", Nodes: map[string]Tree{
-					"work": Tree{
-						Path: filepath.FromSlash("foo/work"),
+					"work": Tree{FileInfoPath: filepath.FromSlash("foo/work"),
+						Nodes: map[string]Tree{
+							"user1": Tree{Path: filepath.FromSlash("foo/work/user1")},
+							"user2": Tree{Path: filepath.FromSlash("foo/work/user2")},
+						},
 					},
 				}},
 			}},
 		},
 		{
+			src: TestDir{
+				"foo": TestDir{
+					"other": TestFile{Content: "file content"},
+					"work": TestDir{
+						"user2": TestDir{
+							"data": TestDir{
+								"secret": TestFile{Content: "secret file content"},
+							},
+						},
+						"user3": TestDir{
+							"important.txt": TestFile{Content: "important work"},
+						},
+					},
+				},
+			},
 			targets: []string{"foo/work/user2/data/secret", "foo"},
 			want: Tree{Nodes: map[string]Tree{
-				"foo": Tree{Root: ".", Path: "foo"},
+				"foo": Tree{Root: ".", FileInfoPath: "foo", Nodes: map[string]Tree{
+					"other": Tree{Path: filepath.FromSlash("foo/other")},
+					"work": Tree{FileInfoPath: filepath.FromSlash("foo/work"), Nodes: map[string]Tree{
+						"user2": Tree{FileInfoPath: filepath.FromSlash("foo/work/user2"), Nodes: map[string]Tree{
+							"data": Tree{FileInfoPath: filepath.FromSlash("foo/work/user2/data"), Nodes: map[string]Tree{
+								"secret": Tree{
+									Path: filepath.FromSlash("foo/work/user2/data/secret"),
+								},
+							}},
+						}},
+						"user3": Tree{Path: filepath.FromSlash("foo/work/user3")},
+					}},
+				}},
 			}},
 		},
 		{
-			unix:    true,
-			targets: []string{"/mnt/driveA", "/mnt/driveA/work/driveB"},
-			want: Tree{Nodes: map[string]Tree{
-				"mnt": Tree{Root: "/", FileInfoPath: filepath.FromSlash("/mnt"), Nodes: map[string]Tree{
-					"driveA": Tree{
-						Path: filepath.FromSlash("/mnt/driveA"),
+			src: TestDir{
+				"mnt": TestDir{
+					"driveA": TestDir{
+						"work": TestDir{
+							"driveB": TestDir{
+								"secret": TestFile{Content: "secret file content"},
+							},
+							"test1": TestDir{
+								"important.txt": TestFile{Content: "important work"},
+							},
+						},
+						"test2": TestDir{
+							"important.txt": TestFile{Content: "other important work"},
+						},
 					},
+				},
+			},
+			unix:    true,
+			targets: []string{"mnt/driveA", "mnt/driveA/work/driveB"},
+			want: Tree{Nodes: map[string]Tree{
+				"mnt": Tree{Root: ".", FileInfoPath: filepath.FromSlash("mnt"), Nodes: map[string]Tree{
+					"driveA": Tree{FileInfoPath: filepath.FromSlash("mnt/driveA"), Nodes: map[string]Tree{
+						"work": Tree{FileInfoPath: filepath.FromSlash("mnt/driveA/work"), Nodes: map[string]Tree{
+							"driveB": Tree{
+								Path: filepath.FromSlash("mnt/driveA/work/driveB"),
+							},
+							"test1": Tree{Path: filepath.FromSlash("mnt/driveA/work/test1")},
+						}},
+						"test2": Tree{Path: filepath.FromSlash("mnt/driveA/test2")},
+					}},
 				}},
 			}},
 		},
@@ -319,6 +434,14 @@ func TestTree(t *testing.T) {
 			if test.win && runtime.GOOS != "windows" {
 				t.Skip("skip test on unix")
 			}
+
+			tempdir, cleanup := restictest.TempDir(t)
+			defer cleanup()
+
+			TestCreateFiles(t, tempdir, test.src)
+
+			back := fs.TestChdir(t, tempdir)
+			defer back()
 
 			tree, err := NewTree(fs.Local{}, test.targets)
 			if test.mustError {
