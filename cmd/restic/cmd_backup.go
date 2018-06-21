@@ -190,7 +190,7 @@ func (opts BackupOptions) Check(gopts GlobalOptions, args []string) error {
 // from being saved in a snapshot
 func collectRejectFuncs(opts BackupOptions, repo *repository.Repository, targets []string) (fs []RejectFunc, err error) {
 	// allowed devices
-	if opts.ExcludeOtherFS {
+	if opts.ExcludeOtherFS && !opts.Stdin {
 		f, err := rejectByDevice(targets)
 		if err != nil {
 			return nil, err
