@@ -234,8 +234,18 @@ func collectRejectFuncs(opts BackupOptions, repo *repository.Repository, targets
 }
 
 // readExcludePatternsFromFiles reads all exclude files and returns the list of
-// exclude patterns.
+// exclude patterns. For each line, leading and trailing white space is removed
+// and comment lines are ignored. For each remaining pattern, environment
+// variables are resolved. For adding a literal dollar sign ($), write $$ to
+// the file.
 func readExcludePatternsFromFiles(excludeFiles []string) []string {
+	getenvOrDollar := func(s string) string {
+		if s == "$" {
+			return "$"
+		}
+		return os.Getenv(s)
+	}
+
 	var excludes []string
 	for _, filename := range excludeFiles {
 		err := func() (err error) {
@@ -258,7 +268,7 @@ func readExcludePatternsFromFiles(excludeFiles []string) []string {
 					continue
 				}
 
-				line = os.ExpandEnv(line)
+				line = os.Expand(line, getenvOrDollar)
 				excludes = append(excludes, line)
 			}
 			return scanner.Err()

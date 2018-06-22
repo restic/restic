@@ -158,7 +158,9 @@ Patterns use `filepath.Glob <https://golang.org/pkg/path/filepath/#Glob>`__ inte
 see `filepath.Match <https://golang.org/pkg/path/filepath/#Match>`__ for
 syntax. Patterns are tested against the full path of a file/dir to be saved,
 even if restic is passed a relative path to save. Environment-variables in
-exclude-files are expanded with `os.ExpandEnv <https://golang.org/pkg/os/#ExpandEnv>`__.
+exclude-files are expanded with `os.ExpandEnv <https://golang.org/pkg/os/#ExpandEnv>`__,
+so `/home/$USER/foo` will be expanded to `/home/bob/foo` for the user `bob`. To
+get a literal dollar sign, write `$$` to the file.
 
 Patterns need to match on complete path components. For example, the pattern ``foo``:
 
