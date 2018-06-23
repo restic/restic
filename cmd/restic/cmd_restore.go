@@ -5,6 +5,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/restorer"
 
 	"github.com/spf13/cobra"
 )
@@ -33,6 +34,7 @@ type RestoreOptions struct {
 	Host    string
 	Paths   []string
 	Tags    restic.TagLists
+	Verify  bool
 }
 
 var restoreOptions RestoreOptions
@@ -48,6 +50,7 @@ func init() {
 	flags.StringVarP(&restoreOptions.Host, "host", "H", "", `only consider snapshots for this host when the snapshot ID is "latest"`)
 	flags.Var(&restoreOptions.Tags, "tag", "only consider snapshots which include this `taglist` for snapshot ID \"latest\"")
 	flags.StringArrayVar(&restoreOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` for snapshot ID \"latest\"")
+	flags.BoolVar(&restoreOptions.Verify, "verify", false, "verify restored files content")
 }
 
 func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
@@ -104,7 +107,7 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	res, err := restic.NewRestorer(repo, id)
+	res, err := restorer.NewRestorer(repo, id)
 	if err != nil {
 		Exitf(2, "creating restorer failed: %v\n", err)
 	}
@@ -153,6 +156,12 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 	Verbosef("restoring %s to %s\n", res.Snapshot(), opts.Target)
 
 	err = res.RestoreTo(ctx, opts.Target)
+	if err == nil && opts.Verify {
+		Verbosef("verifying files in %s\n", opts.Target)
+		var count int
+		count, err = res.VerifyFiles(ctx, opts.Target)
+		Verbosef("finished verifying %d files in %s\n", count, opts.Target)
+	}
 	if totalErrors > 0 {
 		Printf("There were %d errors\n", totalErrors)
 	}

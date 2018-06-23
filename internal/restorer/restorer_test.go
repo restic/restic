@@ -1,4 +1,4 @@
-package restic_test
+package restorer_test
 
 import (
 	"bytes"
@@ -13,6 +13,7 @@ import (
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/restorer"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -264,7 +265,7 @@ func TestRestorer(t *testing.T) {
 			_, id := saveSnapshot(t, repo, test.Snapshot)
 			t.Logf("snapshot saved as %v", id.Str())
 
-			res, err := restic.NewRestorer(repo, id)
+			res, err := restorer.NewRestorer(repo, id)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -377,7 +378,7 @@ func TestRestorerRelative(t *testing.T) {
 			_, id := saveSnapshot(t, repo, test.Snapshot)
 			t.Logf("snapshot saved as %v", id.Str())
 
-			res, err := restic.NewRestorer(repo, id)
+			res, err := restorer.NewRestorer(repo, id)
 			if err != nil {
 				t.Fatal(err)
 			}

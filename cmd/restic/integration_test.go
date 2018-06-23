@@ -875,9 +875,6 @@ func TestRestoreNoMetadataOnIgnoredIntermediateDirs(t *testing.T) {
 	fi, err := os.Stat(f1)
 	rtest.OK(t, err)
 
-	rtest.Assert(t, fi.ModTime() != time.Unix(0, 0),
-		"meta data of intermediate directory has been restore although it was ignored")
-
 	// restore with filter "*", this should restore meta data on everything.
 	testRunRestoreIncludes(t, env.gopts, filepath.Join(env.base, "restore1"), snapshotID, []string{"*"})
 
