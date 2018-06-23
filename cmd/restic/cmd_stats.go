@@ -9,17 +9,18 @@ import (
 	"path/filepath"
 
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/walker"
 	"github.com/spf13/cobra"
 )
 
 var cmdStats = &cobra.Command{
-	Use:   "stats",
+	Use:   "stats [flags] [snapshot-ID]",
 	Short: "Scan the repository and show basic statistics",
 	Long: `
 The "stats" command walks one or all snapshots in a repository and
 accumulates statistics about the data stored therein. It reports on
 the number of unique files and their sizes, according to one of
-the counting modes as given by a flag.
+the counting modes as given by the --mode flag.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -27,16 +28,10 @@ the counting modes as given by a flag.
 	},
 }
 
-var countModeFlag []string
-
 func init() {
 	cmdRoot.AddCommand(cmdStats)
-
 	f := cmdStats.Flags()
-	f.BoolVar(&countModeRestoreSize, "count-restore-size", false, "count the size of files that would be restored (default)")
-	f.BoolVar(&countModeUniqueFilesByContent, "count-files-by-contents", false, "count files as unique by their contents")
-	f.BoolVar(&countModeBlobsPerFile, "count-blobs-per-file", false, "count sizes of blobs by filename")
-	f.BoolVar(&countModeRawData, "count-raw-data", false, "count unique blob sizes irrespective of files referencing them")
+	f.StringVar(&countMode, "mode", countModeRestoreSize, "counting mode: restore-size (default), files-by-content, blobs-per-file, or raw-data")
 	f.StringVar(&snapshotByHost, "host", "", "filter latest snapshot by this hostname")
 }
 
@@ -69,7 +64,6 @@ func runStats(gopts GlobalOptions, args []string) error {
 	// create a container for the stats (and other needed state)
 	stats := &statsContainer{
 		uniqueFiles: make(map[fileID]struct{}),
-		idSet:       make(restic.IDSet),
 		fileBlobs:   make(map[string]restic.IDSet),
 		blobs:       restic.NewBlobSet(),
 		blobsSeen:   restic.NewBlobSet(),
@@ -111,7 +105,7 @@ func runStats(gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	if countModeRawData {
+	if countMode == countModeRawData {
 		// the blob handles have been collected, but not yet counted
 		for blobHandle := range stats.blobs {
 			blobSize, found := repo.LookupBlobSize(blobHandle.ID, blobHandle.Type)
@@ -147,93 +141,81 @@ func statsWalkSnapshot(ctx context.Context, snapshot *restic.Snapshot, repo rest
 		return fmt.Errorf("snapshot %s has nil tree", snapshot.ID().Str())
 	}
 
-	if countModeRawData {
+	if countMode == countModeRawData {
 		// count just the sizes of unique blobs; we don't need to walk the tree
 		// ourselves in this case, since a nifty function does it for us
 		return restic.FindUsedBlobs(ctx, repo, *snapshot.Tree, stats.blobs, stats.blobsSeen)
 	}
 
-	err := statsWalkTree(ctx, repo, *snapshot.Tree, stats, string(filepath.Separator))
+	err := walker.Walk(ctx, repo, *snapshot.Tree, restic.NewIDSet(), func(path string, node *restic.Node, nodeErr error) (bool, error) {
+		return statsWalkTree(path, node, nodeErr, repo, stats)
+	})
 	if err != nil {
 		return fmt.Errorf("walking tree %s: %v", *snapshot.Tree, err)
 	}
 	return nil
 }
 
-func statsWalkTree(ctx context.Context, repo restic.Repository, treeID restic.ID, stats *statsContainer, fpath string) error {
-	// don't visit a tree we've already walked
-	if stats.idSet.Has(treeID) {
-		return nil
+func statsWalkTree(npath string, node *restic.Node, nodeErr error, repo restic.Repository, stats *statsContainer) (ignore bool, err error) {
+	if nodeErr != nil {
+		return true, nodeErr
 	}
-	stats.idSet.Insert(treeID)
-
-	tree, err := repo.LoadTree(ctx, treeID)
-	if err != nil {
-		return fmt.Errorf("loading tree: %v", err)
+	if node == nil {
+		return true, nil
 	}
 
-	for _, node := range tree.Nodes {
-		if countModeUniqueFilesByContent || countModeBlobsPerFile {
-			// only count this file if we haven't visited it before
-			fid := makeFileIDByContents(node)
-			if _, ok := stats.uniqueFiles[fid]; !ok {
-				// mark the file as visited
-				stats.uniqueFiles[fid] = struct{}{}
+	if countMode == countModeUniqueFilesByContent || countMode == countModeBlobsPerFile {
+		// only count this file if we haven't visited it before
+		fid := makeFileIDByContents(node)
+		if _, ok := stats.uniqueFiles[fid]; !ok {
+			// mark the file as visited
+			stats.uniqueFiles[fid] = struct{}{}
 
-				if countModeUniqueFilesByContent {
-					// simply count the size of each unique file (unique by contents only)
-					stats.TotalSize += node.Size
-					stats.TotalFileCount++
-				}
-				if countModeBlobsPerFile {
-					// count the size of each unique blob reference, which is
-					// by unique file (unique by contents and file path)
-					for _, blobID := range node.Content {
-						// ensure we have this file (by path) in our map; in this
-						// mode, a file is unique by both contents and path
-						nodePath := filepath.Join(fpath, node.Name)
-						if _, ok := stats.fileBlobs[nodePath]; !ok {
-							stats.fileBlobs[nodePath] = restic.NewIDSet()
-							stats.TotalFileCount++
+			if countMode == countModeUniqueFilesByContent {
+				// simply count the size of each unique file (unique by contents only)
+				stats.TotalSize += node.Size
+				stats.TotalFileCount++
+			}
+			if countMode == countModeBlobsPerFile {
+				// count the size of each unique blob reference, which is
+				// by unique file (unique by contents and file path)
+				for _, blobID := range node.Content {
+					// ensure we have this file (by path) in our map; in this
+					// mode, a file is unique by both contents and path
+					nodePath := filepath.Join(npath, node.Name)
+					if _, ok := stats.fileBlobs[nodePath]; !ok {
+						stats.fileBlobs[nodePath] = restic.NewIDSet()
+						stats.TotalFileCount++
+					}
+					if _, ok := stats.fileBlobs[nodePath][blobID]; !ok {
+						// is always a data blob since we're accessing it via a file's Content array
+						blobSize, found := repo.LookupBlobSize(blobID, restic.DataBlob)
+						if !found {
+							return true, fmt.Errorf("blob %s not found for tree %s", blobID, *node.Subtree)
 						}
-						if _, ok := stats.fileBlobs[nodePath][blobID]; !ok {
-							// is always a data blob since we're accessing it via a file's Content array
-							blobSize, found := repo.LookupBlobSize(blobID, restic.DataBlob)
-							if !found {
-								return fmt.Errorf("blob %s not found for tree %s", blobID, treeID)
-							}
 
-							// count the blob's size, then add this blob by this
-							// file (path) so we don't double-count it
-							stats.TotalSize += uint64(blobSize)
-							stats.fileBlobs[nodePath].Insert(blobID)
+						// count the blob's size, then add this blob by this
+						// file (path) so we don't double-count it
+						stats.TotalSize += uint64(blobSize)
+						stats.fileBlobs[nodePath].Insert(blobID)
 
-							// this mode also counts total unique blob _references_ per file
-							stats.TotalBlobCount++
-						}
+						// this mode also counts total unique blob _references_ per file
+						stats.TotalBlobCount++
 					}
 				}
 			}
 		}
-
-		if countModeRestoreSize {
-			// as this is a file in the snapshot, we can simply count its
-			// size without worrying about uniqueness, since duplicate files
-			// will still be restored
-			stats.TotalSize += node.Size
-			stats.TotalFileCount++
-		}
-
-		// visit subtrees (i.e. directory contents)
-		if node.Subtree != nil {
-			err = statsWalkTree(ctx, repo, *node.Subtree, stats, filepath.Join(fpath, node.Name))
-			if err != nil {
-				return err
-			}
-		}
 	}
 
-	return nil
+	if countMode == countModeRestoreSize {
+		// as this is a file in the snapshot, we can simply count its
+		// size without worrying about uniqueness, since duplicate files
+		// will still be restored
+		stats.TotalSize += node.Size
+		stats.TotalFileCount++
+	}
+
+	return true, nil
 }
 
 // makeFileIDByContents returns a hash of the blob IDs of the
@@ -247,35 +229,26 @@ func makeFileIDByContents(node *restic.Node) fileID {
 }
 
 func verifyStatsInput(gopts GlobalOptions, args []string) error {
-	// ensure only one counting mode was specified, for clarity
-	var countModes int
-	if countModeRestoreSize {
-		countModes++
+	// require a recognized counting mode
+	switch countMode {
+	case countModeRestoreSize:
+	case countModeUniqueFilesByContent:
+	case countModeBlobsPerFile:
+	case countModeRawData:
+	default:
+		return fmt.Errorf("unknown counting mode: %s (use the -h flag to get a list of supported modes)", countMode)
 	}
-	if countModeUniqueFilesByContent {
-		countModes++
-	}
-	if countModeBlobsPerFile {
-		countModes++
-	}
-	if countModeRawData {
-		countModes++
-	}
-	if countModes > 1 {
-		return fmt.Errorf("only one counting mode may be used")
-	}
-	// set a default count mode if none were specified
-	if countModes == 0 {
-		countModeRestoreSize = true
-	}
-	// ensure one or none snapshots were specified
+
+	// ensure at most one snapshot was specified
 	if len(args) > 1 {
 		return fmt.Errorf("only one snapshot may be specified")
 	}
-	// set the snapshot to scan, if one was specified
+
+	// if a snapshot was specified, mark it as the one to scan
 	if len(args) == 1 {
 		snapshotIDString = args[0]
 	}
+
 	return nil
 }
 
@@ -286,9 +259,6 @@ type statsContainer struct {
 	TotalSize      uint64 `json:"total_size"`
 	TotalFileCount uint64 `json:"total_file_count"`
 	TotalBlobCount uint64 `json:"total_blob_count,omitempty"`
-
-	// idSet marks visited trees, to avoid repeated walks
-	idSet restic.IDSet
 
 	// uniqueFiles marks visited files according to their
 	// contents (hashed sequence of content blob IDs)
@@ -307,10 +277,8 @@ type statsContainer struct {
 type fileID [32]byte
 
 var (
-	countModeRestoreSize          bool
-	countModeUniqueFilesByContent bool
-	countModeBlobsPerFile         bool
-	countModeRawData              bool
+	// the mode of counting to perform
+	countMode string
 
 	// the snapshot to scan, as given by the user
 	snapshotIDString string
@@ -318,4 +286,11 @@ var (
 	// snapshotByHost is the host to filter latest
 	// snapshot by, if given by user
 	snapshotByHost string
+)
+
+const (
+	countModeRestoreSize          = "restore-size"
+	countModeUniqueFilesByContent = "files-by-content"
+	countModeBlobsPerFile         = "blobs-per-file"
+	countModeRawData              = "raw-data"
 )
