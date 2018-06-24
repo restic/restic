@@ -1,0 +1,6 @@
+Bugfix: Fix case-insensitive search with restic find
+
+We've fixed the behavior for `restic find -i PATTERN`, which was
+broken in v0.9.1.
+
+https://github.com/restic/restic/pull/1861

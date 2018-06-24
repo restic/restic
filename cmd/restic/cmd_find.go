@@ -198,12 +198,12 @@ func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error 
 			return false, nil
 		}
 
-		name := node.Name
+		normalizedNodepath := nodepath
 		if f.pat.ignoreCase {
-			name = strings.ToLower(name)
+			normalizedNodepath = strings.ToLower(nodepath)
 		}
 
-		foundMatch, err := filter.Match(f.pat.pattern, nodepath)
+		foundMatch, err := filter.Match(f.pat.pattern, normalizedNodepath)
 		if err != nil {
 			return false, err
 		}
@@ -213,7 +213,7 @@ func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error 
 			errIfNoMatch    error
 		)
 		if node.Type == "dir" {
-			childMayMatch, err := filter.ChildMatch(f.pat.pattern, nodepath)
+			childMayMatch, err := filter.ChildMatch(f.pat.pattern, normalizedNodepath)
 			if err != nil {
 				return false, err
 			}
