@@ -397,6 +397,10 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 		fn.isTree = true
 		fn.tree, err = arch.SaveDir(ctx, snPath, fi, target, oldSubtree)
 		if err == nil {
+			fn.node, err = arch.nodeFromFileInfo(target, fi)
+			if err != nil {
+				return FutureNode{}, false, err
+			}
 			arch.CompleteItem(snItem, previous, fn.node, fn.stats, time.Since(start))
 		} else {
 			debug.Log("SaveDir for %v returned error: %v", snPath, err)
