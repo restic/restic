@@ -1,153 +1,416 @@
-[
-  {
-    "time": "2015-10-22T10:20:30Z",
-    "tree": null,
-    "paths": [
-      "path1",
-      "path2"
-    ],
-    "tags": [
-      "foo",
-      "bar"
-    ]
-  },
-  {
-    "time": "2015-10-22T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo",
-      "bar"
-    ]
-  },
-  {
-    "time": "2015-10-22T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo",
-      "bar"
-    ]
-  },
-  {
-    "time": "2014-11-15T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo",
-      "bar"
-    ]
-  },
-  {
-    "time": "2014-11-13T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo"
-    ]
-  },
-  {
-    "time": "2014-11-12T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo"
-    ]
-  },
-  {
-    "time": "2014-11-10T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo"
-    ]
-  },
-  {
-    "time": "2014-11-08T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo"
-    ]
-  },
-  {
-    "time": "2014-10-22T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo"
-    ]
-  },
-  {
-    "time": "2014-10-20T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo"
-    ]
-  },
-  {
-    "time": "2014-10-11T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo"
-    ]
-  },
-  {
-    "time": "2014-10-10T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo"
-    ]
-  },
-  {
-    "time": "2014-10-09T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo"
-    ]
-  },
-  {
-    "time": "2014-10-08T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo"
-    ]
-  },
-  {
-    "time": "2014-10-06T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo"
-    ]
-  },
-  {
-    "time": "2014-10-05T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo"
-    ]
-  },
-  {
-    "time": "2014-10-02T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo"
-    ]
-  },
-  {
-    "time": "2014-10-01T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo"
-    ]
-  }
-]
+{
+  "keep": [
+    {
+      "time": "2015-10-22T10:20:30Z",
+      "tree": null,
+      "paths": [
+        "path1",
+        "path2"
+      ],
+      "tags": [
+        "foo",
+        "bar"
+      ]
+    },
+    {
+      "time": "2015-10-22T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo",
+        "bar"
+      ]
+    },
+    {
+      "time": "2015-10-22T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo",
+        "bar"
+      ]
+    },
+    {
+      "time": "2014-11-15T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo",
+        "bar"
+      ]
+    },
+    {
+      "time": "2014-11-13T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo"
+      ]
+    },
+    {
+      "time": "2014-11-12T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo"
+      ]
+    },
+    {
+      "time": "2014-11-10T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo"
+      ]
+    },
+    {
+      "time": "2014-11-08T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo"
+      ]
+    },
+    {
+      "time": "2014-10-22T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo"
+      ]
+    },
+    {
+      "time": "2014-10-20T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo"
+      ]
+    },
+    {
+      "time": "2014-10-11T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo"
+      ]
+    },
+    {
+      "time": "2014-10-10T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo"
+      ]
+    },
+    {
+      "time": "2014-10-09T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo"
+      ]
+    },
+    {
+      "time": "2014-10-08T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo"
+      ]
+    },
+    {
+      "time": "2014-10-06T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo"
+      ]
+    },
+    {
+      "time": "2014-10-05T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo"
+      ]
+    },
+    {
+      "time": "2014-10-02T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo"
+      ]
+    },
+    {
+      "time": "2014-10-01T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo"
+      ]
+    }
+  ],
+  "reasons": [
+    {
+      "snapshot": {
+        "time": "2015-10-22T10:20:30Z",
+        "tree": null,
+        "paths": [
+          "path1",
+          "path2"
+        ],
+        "tags": [
+          "foo",
+          "bar"
+        ]
+      },
+      "matches": [
+        "has tags [foo]"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2015-10-22T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo",
+          "bar"
+        ]
+      },
+      "matches": [
+        "has tags [foo]"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2015-10-22T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo",
+          "bar"
+        ]
+      },
+      "matches": [
+        "has tags [foo]"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2014-11-15T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo",
+          "bar"
+        ]
+      },
+      "matches": [
+        "has tags [foo]"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2014-11-13T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo"
+        ]
+      },
+      "matches": [
+        "has tags [foo]"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2014-11-12T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo"
+        ]
+      },
+      "matches": [
+        "has tags [foo]"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2014-11-10T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo"
+        ]
+      },
+      "matches": [
+        "has tags [foo]"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2014-11-08T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo"
+        ]
+      },
+      "matches": [
+        "has tags [foo]"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2014-10-22T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo"
+        ]
+      },
+      "matches": [
+        "has tags [foo]"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2014-10-20T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo"
+        ]
+      },
+      "matches": [
+        "has tags [foo]"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2014-10-11T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo"
+        ]
+      },
+      "matches": [
+        "has tags [foo]"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2014-10-10T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo"
+        ]
+      },
+      "matches": [
+        "has tags [foo]"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2014-10-09T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo"
+        ]
+      },
+      "matches": [
+        "has tags [foo]"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2014-10-08T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo"
+        ]
+      },
+      "matches": [
+        "has tags [foo]"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2014-10-06T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo"
+        ]
+      },
+      "matches": [
+        "has tags [foo]"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2014-10-05T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo"
+        ]
+      },
+      "matches": [
+        "has tags [foo]"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2014-10-02T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo"
+        ]
+      },
+      "matches": [
+        "has tags [foo]"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2014-10-01T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo"
+        ]
+      },
+      "matches": [
+        "has tags [foo]"
+      ],
+      "counters": {}
+    }
+  ]
+}

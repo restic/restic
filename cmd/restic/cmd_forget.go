@@ -206,17 +206,17 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 			}
 			Verbosef(":\n\n")
 
-			keep, remove := restic.ApplyPolicy(snapshotGroup, policy)
+			keep, remove, reasons := restic.ApplyPolicy(snapshotGroup, policy)
 
 			if len(keep) != 0 && !gopts.Quiet {
 				Printf("keep %d snapshots:\n", len(keep))
-				PrintSnapshots(globalOptions.stdout, keep, opts.Compact)
+				PrintSnapshots(globalOptions.stdout, keep, reasons, opts.Compact)
 				Printf("\n")
 			}
 
 			if len(remove) != 0 && !gopts.Quiet {
 				Printf("remove %d snapshots:\n", len(remove))
-				PrintSnapshots(globalOptions.stdout, remove, opts.Compact)
+				PrintSnapshots(globalOptions.stdout, remove, nil, opts.Compact)
 				Printf("\n")
 			}
 

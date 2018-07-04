@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui/table"
 	"github.com/spf13/cobra"
 )
 
@@ -81,7 +82,7 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 		}
 		return nil
 	}
-	PrintSnapshots(gopts.stdout, list, opts.Compact)
+	PrintSnapshots(gopts.stdout, list, nil, opts.Compact)
 
 	return nil
 }
@@ -123,7 +124,16 @@ func FilterLastSnapshots(list restic.Snapshots) restic.Snapshots {
 }
 
 // PrintSnapshots prints a text table of the snapshots in list to stdout.
-func PrintSnapshots(stdout io.Writer, list restic.Snapshots, compact bool) {
+func PrintSnapshots(stdout io.Writer, list restic.Snapshots, reasons []restic.KeepReason, compact bool) {
+	// keep the reasons a snasphot is being kept in a map, so that it doesn't
+	// get lost when the list of snapshots is sorted
+	keepReasons := make(map[restic.ID]restic.KeepReason, len(reasons))
+	if len(reasons) > 0 {
+		for i, sn := range list {
+			id := sn.ID()
+			keepReasons[*id] = reasons[i]
+		}
+	}
 
 	// always sort the snapshots so that the newer ones are listed last
 	sort.SliceStable(list, func(i, j int) bool {
@@ -143,71 +153,72 @@ func PrintSnapshots(stdout io.Writer, list restic.Snapshots, compact bool) {
 		}
 	}
 
-	tab := NewTable()
-	if !compact {
-		tab.Header = fmt.Sprintf("%-8s  %-19s  %-*s  %-*s  %-3s %s", "ID", "Date", -maxHost, "Host", -maxTag, "Tags", "", "Directory")
-		tab.RowFormat = fmt.Sprintf("%%-8s  %%-19s  %%%ds  %%%ds  %%-3s %%s", -maxHost, -maxTag)
+	tab := table.New()
+
+	if compact {
+		tab.AddColumn("ID", "{{ .ID }}")
+		tab.AddColumn("Time", "{{ .Timestamp }}")
+		tab.AddColumn("Host", "{{ .Hostname }}")
+		tab.AddColumn("Tags  ", `{{ join .Tags "\n" }}`)
 	} else {
-		tab.Header = fmt.Sprintf("%-8s  %-19s  %-*s  %-*s", "ID", "Date", -maxHost, "Host", -maxTag, "Tags")
-		tab.RowFormat = fmt.Sprintf("%%-8s  %%-19s  %%%ds  %%s", -maxHost)
+		tab.AddColumn("ID", "{{ .ID }}")
+		tab.AddColumn("Time", "{{ .Timestamp }}")
+		tab.AddColumn("Host      ", "{{ .Hostname }}")
+		tab.AddColumn("Tags      ", `{{ join .Tags "," }}`)
+		if len(reasons) > 0 {
+			tab.AddColumn("Reasons", `{{ join .Reasons "\n" }}`)
+		}
+		tab.AddColumn("Paths", `{{ join .Paths "\n" }}`)
 	}
 
+	type snapshot struct {
+		ID        string
+		Timestamp string
+		Hostname  string
+		Tags      []string
+		Reasons   []string
+		Paths     []string
+	}
+
+	var multiline bool
 	for _, sn := range list {
-		if len(sn.Paths) == 0 {
-			continue
+		data := snapshot{
+			ID:        sn.ID().Str(),
+			Timestamp: sn.Time.Format(TimeFormat),
+			Hostname:  sn.Hostname,
+			Tags:      sn.Tags,
+			Paths:     sn.Paths,
 		}
 
-		firstTag := ""
-		if len(sn.Tags) > 0 {
-			firstTag = sn.Tags[0]
+		if len(reasons) > 0 {
+			id := sn.ID()
+			data.Reasons = keepReasons[*id].Matches
 		}
 
-		rows := len(sn.Paths)
-		if rows < len(sn.Tags) {
-			rows = len(sn.Tags)
+		if len(sn.Paths) > 1 {
+			multiline = true
 		}
 
-		treeElement := "   "
-		if rows != 1 {
-			treeElement = "┌──"
-		}
-
-		if !compact {
-			tab.Rows = append(tab.Rows, []interface{}{sn.ID().Str(), sn.Time.Format(TimeFormat), sn.Hostname, firstTag, treeElement, sn.Paths[0]})
-		} else {
-			allTags := ""
-			for _, tag := range sn.Tags {
-				allTags += tag + " "
-			}
-			tab.Rows = append(tab.Rows, []interface{}{sn.ID().Str(), sn.Time.Format(TimeFormat), sn.Hostname, allTags})
-			continue
-		}
-
-		if len(sn.Tags) > rows {
-			rows = len(sn.Tags)
-		}
-
-		for i := 1; i < rows; i++ {
-			path := ""
-			if len(sn.Paths) > i {
-				path = sn.Paths[i]
-			}
-
-			tag := ""
-			if len(sn.Tags) > i {
-				tag = sn.Tags[i]
-			}
-
-			treeElement := "│"
-			if i == (rows - 1) {
-				treeElement = "└──"
-			}
-
-			tab.Rows = append(tab.Rows, []interface{}{"", "", "", tag, treeElement, path})
-		}
+		tab.AddRow(data)
 	}
 
-	tab.Footer = fmt.Sprintf("%d snapshots", len(list))
+	tab.AddFooter(fmt.Sprintf("%d snapshots", len(list)))
+
+	if multiline {
+		// print an additional blank line between snapshots
+
+		var last int
+		tab.PrintData = func(w io.Writer, idx int, s string) error {
+			var err error
+			if idx == last {
+				_, err = fmt.Fprintf(w, "%s\n", s)
+			} else {
+				_, err = fmt.Fprintf(w, "\n%s\n", s)
+			}
+			last = idx
+			return err
+		}
+	}
 
 	tab.Write(stdout)
 }

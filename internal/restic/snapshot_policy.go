@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/restic/restic/internal/debug"
 )
 
 // ExpirePolicy configures which snapshots should be automatically removed.
@@ -125,41 +127,70 @@ func findLatestTimestamp(list Snapshots) time.Time {
 	return latest
 }
 
+// KeepReason specifies why a particular snapshot was kept, and the counters at
+// that point in the policy evaluation.
+type KeepReason struct {
+	Snapshot *Snapshot `json:"snapshot"`
+
+	// description text which criteria match, e.g. "daily", "monthly"
+	Matches []string `json:"matches"`
+
+	// the counters after evaluating the current snapshot
+	Counters struct {
+		Last    int `json:"last,omitempty"`
+		Hourly  int `json:"hourly,omitempty"`
+		Daily   int `json:"daily,omitempty"`
+		Weekly  int `json:"weekly,omitempty"`
+		Monthly int `json:"monthly,omitempty"`
+		Yearly  int `json:"yearly,omitempty"`
+	} `json:"counters"`
+}
+
 // ApplyPolicy returns the snapshots from list that are to be kept and removed
-// according to the policy p. list is sorted in the process.
-func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots) {
+// according to the policy p. list is sorted in the process. reasons contains
+// the reasons to keep each snapshot, it is in the same order as keep.
+func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots, reasons []KeepReason) {
 	sort.Sort(list)
 
 	if p.Empty() {
-		return list, remove
+		for _, sn := range list {
+			reasons = append(reasons, KeepReason{
+				Snapshot: sn,
+				Matches:  []string{"policy is empty"},
+			})
+		}
+		return list, remove, reasons
 	}
 
 	if len(list) == 0 {
-		return list, remove
+		return list, nil, nil
 	}
 
 	var buckets = [6]struct {
 		Count  int
 		bucker func(d time.Time, nr int) int
 		Last   int
+		reason string
 	}{
-		{p.Last, always, -1},
-		{p.Hourly, ymdh, -1},
-		{p.Daily, ymd, -1},
-		{p.Weekly, yw, -1},
-		{p.Monthly, ym, -1},
-		{p.Yearly, y, -1},
+		{p.Last, always, -1, "last snapshot"},
+		{p.Hourly, ymdh, -1, "hourly snapshot"},
+		{p.Daily, ymd, -1, "daily snapshot"},
+		{p.Weekly, yw, -1, "weekly snapshot"},
+		{p.Monthly, ym, -1, "monthly snapshot"},
+		{p.Yearly, y, -1, "yearly snapshot"},
 	}
 
 	latest := findLatestTimestamp(list)
 
 	for nr, cur := range list {
 		var keepSnap bool
+		var keepSnapReasons []string
 
 		// Tags are handled specially as they are not counted.
 		for _, l := range p.Tags {
 			if cur.HasTags(l) {
 				keepSnap = true
+				keepSnapReasons = append(keepSnapReasons, fmt.Sprintf("has tags %v", l))
 			}
 		}
 
@@ -168,6 +199,7 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots) {
 			t := latest.AddDate(-p.Within.Years, -p.Within.Months, -p.Within.Days)
 			if cur.Time.After(t) {
 				keepSnap = true
+				keepSnapReasons = append(keepSnapReasons, fmt.Sprintf("within %v", p.Within))
 			}
 		}
 
@@ -176,19 +208,32 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots) {
 			if b.Count > 0 {
 				val := b.bucker(cur.Time, nr)
 				if val != b.Last {
+					debug.Log("keep %v %v, bucker %v, val %v\n", cur.Time, cur.id.Str(), i, val)
 					keepSnap = true
 					buckets[i].Last = val
 					buckets[i].Count--
+					keepSnapReasons = append(keepSnapReasons, b.reason)
 				}
 			}
 		}
 
 		if keepSnap {
 			keep = append(keep, cur)
+			kr := KeepReason{
+				Snapshot: cur,
+				Matches:  keepSnapReasons,
+			}
+			kr.Counters.Last = buckets[0].Count
+			kr.Counters.Hourly = buckets[1].Count
+			kr.Counters.Daily = buckets[2].Count
+			kr.Counters.Weekly = buckets[3].Count
+			kr.Counters.Monthly = buckets[4].Count
+			kr.Counters.Yearly = buckets[5].Count
+			reasons = append(reasons, kr)
 		} else {
 			remove = append(remove, cur)
 		}
 	}
 
-	return keep, remove
+	return keep, remove, reasons
 }

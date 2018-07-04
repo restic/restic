@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
-	"reflect"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/restic/restic/internal/restic"
 )
 
@@ -49,6 +50,43 @@ func TestExpireSnapshotOps(t *testing.T) {
 		if hasSum != d.expectSum {
 			t.Errorf("sum test %v: wrong result, want:\n  %#v\ngot:\n  %#v", i, d.expectSum, hasSum)
 		}
+	}
+}
+
+// ApplyPolicyResult is used to marshal/unmarshal the golden files for
+// TestApplyPolicy.
+type ApplyPolicyResult struct {
+	Keep    restic.Snapshots    `json:"keep"`
+	Reasons []restic.KeepReason `json:"reasons,omitempty"`
+}
+
+func loadGoldenFile(t testing.TB, filename string) (res ApplyPolicyResult) {
+	buf, err := ioutil.ReadFile(filename)
+	if err != nil {
+		t.Fatalf("error loading golden file %v: %v", filename, err)
+	}
+
+	err = json.Unmarshal(buf, &res)
+	if err != nil {
+		t.Fatalf("error unmarshalling golden file %v: %v", filename, err)
+	}
+
+	return res
+}
+
+func saveGoldenFile(t testing.TB, filename string, keep restic.Snapshots, reasons []restic.KeepReason) {
+	res := ApplyPolicyResult{
+		Keep:    keep,
+		Reasons: reasons,
+	}
+
+	buf, err := json.MarshalIndent(res, "", "  ")
+	if err != nil {
+		t.Fatalf("error marshaling result: %v", err)
+	}
+
+	if err = ioutil.WriteFile(filename, buf, 0644); err != nil {
+		t.Fatalf("unable to update golden file: %v", err)
 	}
 }
 
@@ -191,10 +229,8 @@ func TestApplyPolicy(t *testing.T) {
 
 	for i, p := range tests {
 		t.Run("", func(t *testing.T) {
-			keep, remove := restic.ApplyPolicy(testExpireSnapshots, p)
 
-			t.Logf("returned keep %v, remove %v (of %v) expired snapshots for policy %v",
-				len(keep), len(remove), len(testExpireSnapshots), p)
+			keep, remove, reasons := restic.ApplyPolicy(testExpireSnapshots, p)
 
 			if len(keep)+len(remove) != len(testExpireSnapshots) {
 				t.Errorf("len(keep)+len(remove) = %d != len(testExpireSnapshots) = %d",
@@ -206,39 +242,26 @@ func TestApplyPolicy(t *testing.T) {
 					p.Sum(), len(keep))
 			}
 
-			for _, sn := range keep {
-				t.Logf("    keep snapshot at %v %s", sn.Time, sn.Tags)
-			}
-			for _, sn := range remove {
-				t.Logf("    forget snapshot at %v %s", sn.Time, sn.Tags)
+			if len(keep) != len(reasons) {
+				t.Errorf("got %d keep reasons for %d snapshots to keep, these must be equal", len(reasons), len(keep))
 			}
 
 			goldenFilename := filepath.Join("testdata", fmt.Sprintf("policy_keep_snapshots_%d", i))
 
 			if *updateGoldenFiles {
-				buf, err := json.MarshalIndent(keep, "", "  ")
-				if err != nil {
-					t.Fatalf("error marshaling result: %v", err)
-				}
-
-				if err = ioutil.WriteFile(goldenFilename, buf, 0644); err != nil {
-					t.Fatalf("unable to update golden file: %v", err)
-				}
+				saveGoldenFile(t, goldenFilename, keep, reasons)
 			}
 
-			buf, err := ioutil.ReadFile(goldenFilename)
-			if err != nil {
-				t.Fatalf("error loading golden file %v: %v", goldenFilename, err)
+			want := loadGoldenFile(t, goldenFilename)
+
+			cmpOpts := cmpopts.IgnoreUnexported(restic.Snapshot{})
+
+			if !cmp.Equal(want.Keep, keep, cmpOpts) {
+				t.Error(cmp.Diff(want.Keep, keep, cmpOpts))
 			}
 
-			var want restic.Snapshots
-			err = json.Unmarshal(buf, &want)
-			if err != nil {
-				t.Fatalf("error unmarshalling golden file %v: %v", goldenFilename, err)
-			}
-
-			if !reflect.DeepEqual(keep, want) {
-				t.Fatalf("wrong result, want:\n  %v\ngot:\n  %v", want, keep)
+			if !cmp.Equal(want.Reasons, reasons, cmpOpts) {
+				t.Error(cmp.Diff(want.Reasons, reasons, cmpOpts))
 			}
 		})
 	}

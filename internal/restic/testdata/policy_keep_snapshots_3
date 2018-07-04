@@ -1,561 +1,1914 @@
-[
-  {
-    "time": "2016-01-18T12:02:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-12T21:08:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-12T21:02:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-09T21:02:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-08T20:02:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-07T10:02:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-06T08:02:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-05T09:02:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-04T16:23:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-04T12:30:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-04T12:28:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-04T12:24:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-04T12:23:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-04T11:23:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-04T10:23:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-03T07:02:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-01T07:08:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-01T01:03:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-01T01:02:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-11-22T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-11-21T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-11-20T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-11-18T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-11-15T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-11-13T10:20:30.1Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-11-13T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-11-12T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-11-10T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-11-08T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-10-22T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-10-22T10:20:30Z",
-    "tree": null,
-    "paths": [
-      "path1",
-      "path2"
-    ],
-    "tags": [
-      "foo",
-      "bar"
-    ]
-  },
-  {
-    "time": "2015-10-22T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo",
-      "bar"
-    ]
-  },
-  {
-    "time": "2015-10-22T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-10-22T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo",
-      "bar"
-    ]
-  },
-  {
-    "time": "2015-10-20T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-10-11T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-10-10T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-10-09T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-10-08T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-10-06T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-10-05T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-10-02T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-10-01T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-09-22T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-09-20T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-09-11T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-09-10T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-09-09T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-09-08T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-09-06T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-09-05T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-09-02T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-09-01T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-08-22T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-08-21T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-08-20T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-08-18T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-08-15T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-08-13T10:20:30.1Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-08-13T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-08-12T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-08-10T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-08-08T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2014-11-22T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2014-11-21T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2014-11-20T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2014-11-18T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2014-11-15T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo",
-      "bar"
-    ]
-  },
-  {
-    "time": "2014-11-13T10:20:30.1Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "bar"
-    ]
-  },
-  {
-    "time": "2014-11-13T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo"
-    ]
-  },
-  {
-    "time": "2014-11-12T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo"
-    ]
-  },
-  {
-    "time": "2014-11-10T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo"
-    ]
-  },
-  {
-    "time": "2014-11-08T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo"
-    ]
-  },
-  {
-    "time": "2014-10-22T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo"
-    ]
-  },
-  {
-    "time": "2014-10-20T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo"
-    ]
-  },
-  {
-    "time": "2014-10-11T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo"
-    ]
-  },
-  {
-    "time": "2014-10-10T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo"
-    ]
-  },
-  {
-    "time": "2014-10-09T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo"
-    ]
-  },
-  {
-    "time": "2014-10-08T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo"
-    ]
-  },
-  {
-    "time": "2014-10-06T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo"
-    ]
-  },
-  {
-    "time": "2014-10-05T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo"
-    ]
-  },
-  {
-    "time": "2014-10-02T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo"
-    ]
-  },
-  {
-    "time": "2014-10-01T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo"
-    ]
-  },
-  {
-    "time": "2014-09-22T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2014-09-20T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2014-09-11T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2014-09-10T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2014-09-09T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2014-09-08T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2014-09-06T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2014-09-05T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2014-09-02T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2014-09-01T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2014-08-22T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2014-08-21T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2014-08-20T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2014-08-18T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2014-08-15T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2014-08-13T10:20:30.1Z",
-    "tree": null,
-    "paths": null
-  }
-]
+{
+  "keep": [
+    {
+      "time": "2016-01-18T12:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-12T21:08:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-12T21:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-09T21:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-08T20:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-07T10:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-06T08:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-05T09:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-04T16:23:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-04T12:30:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-04T12:28:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-04T12:24:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-04T12:23:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-04T11:23:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-04T10:23:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-03T07:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-01T07:08:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-01T01:03:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-01T01:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-11-22T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-11-21T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-11-20T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-11-18T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-11-15T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-11-13T10:20:30.1Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-11-13T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-11-12T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-11-10T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-11-08T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-10-22T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-10-22T10:20:30Z",
+      "tree": null,
+      "paths": [
+        "path1",
+        "path2"
+      ],
+      "tags": [
+        "foo",
+        "bar"
+      ]
+    },
+    {
+      "time": "2015-10-22T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo",
+        "bar"
+      ]
+    },
+    {
+      "time": "2015-10-22T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-10-22T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo",
+        "bar"
+      ]
+    },
+    {
+      "time": "2015-10-20T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-10-11T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-10-10T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-10-09T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-10-08T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-10-06T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-10-05T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-10-02T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-10-01T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-09-22T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-09-20T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-09-11T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-09-10T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-09-09T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-09-08T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-09-06T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-09-05T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-09-02T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-09-01T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-08-22T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-08-21T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-08-20T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-08-18T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-08-15T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-08-13T10:20:30.1Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-08-13T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-08-12T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-08-10T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-08-08T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2014-11-22T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2014-11-21T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2014-11-20T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2014-11-18T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2014-11-15T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo",
+        "bar"
+      ]
+    },
+    {
+      "time": "2014-11-13T10:20:30.1Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "bar"
+      ]
+    },
+    {
+      "time": "2014-11-13T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo"
+      ]
+    },
+    {
+      "time": "2014-11-12T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo"
+      ]
+    },
+    {
+      "time": "2014-11-10T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo"
+      ]
+    },
+    {
+      "time": "2014-11-08T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo"
+      ]
+    },
+    {
+      "time": "2014-10-22T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo"
+      ]
+    },
+    {
+      "time": "2014-10-20T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo"
+      ]
+    },
+    {
+      "time": "2014-10-11T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo"
+      ]
+    },
+    {
+      "time": "2014-10-10T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo"
+      ]
+    },
+    {
+      "time": "2014-10-09T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo"
+      ]
+    },
+    {
+      "time": "2014-10-08T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo"
+      ]
+    },
+    {
+      "time": "2014-10-06T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo"
+      ]
+    },
+    {
+      "time": "2014-10-05T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo"
+      ]
+    },
+    {
+      "time": "2014-10-02T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo"
+      ]
+    },
+    {
+      "time": "2014-10-01T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo"
+      ]
+    },
+    {
+      "time": "2014-09-22T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2014-09-20T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2014-09-11T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2014-09-10T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2014-09-09T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2014-09-08T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2014-09-06T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2014-09-05T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2014-09-02T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2014-09-01T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2014-08-22T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2014-08-21T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2014-08-20T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2014-08-18T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2014-08-15T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2014-08-13T10:20:30.1Z",
+      "tree": null,
+      "paths": null
+    }
+  ],
+  "reasons": [
+    {
+      "snapshot": {
+        "time": "2016-01-18T12:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 98
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-12T21:08:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 97
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-12T21:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 96
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-09T21:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 95
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-08T20:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 94
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-07T10:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 93
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-06T08:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 92
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-05T09:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 91
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-04T16:23:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 90
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-04T12:30:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 89
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-04T12:28:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 88
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-04T12:24:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 87
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-04T12:23:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 86
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-04T11:23:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 85
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-04T10:23:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 84
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-03T07:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 83
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-01T07:08:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 82
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-01T01:03:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 81
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-01T01:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 80
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-11-22T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 79
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-11-21T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 78
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-11-20T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 77
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-11-18T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 76
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-11-15T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 75
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-11-13T10:20:30.1Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 74
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-11-13T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 73
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-11-12T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 72
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-11-10T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 71
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-11-08T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 70
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-10-22T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 69
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-10-22T10:20:30Z",
+        "tree": null,
+        "paths": [
+          "path1",
+          "path2"
+        ],
+        "tags": [
+          "foo",
+          "bar"
+        ]
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 68
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-10-22T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo",
+          "bar"
+        ]
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 67
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-10-22T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 66
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-10-22T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo",
+          "bar"
+        ]
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 65
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-10-20T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 64
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-10-11T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 63
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-10-10T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 62
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-10-09T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 61
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-10-08T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 60
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-10-06T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 59
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-10-05T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 58
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-10-02T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 57
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-10-01T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 56
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-09-22T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 55
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-09-20T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 54
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-09-11T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 53
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-09-10T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 52
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-09-09T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 51
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-09-08T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 50
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-09-06T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 49
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-09-05T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 48
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-09-02T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 47
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-09-01T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 46
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-08-22T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 45
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-08-21T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 44
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-08-20T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 43
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-08-18T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 42
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-08-15T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 41
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-08-13T10:20:30.1Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 40
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-08-13T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 39
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-08-12T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 38
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-08-10T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 37
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-08-08T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 36
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-11-22T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 35
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-11-21T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 34
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-11-20T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 33
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-11-18T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 32
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-11-15T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo",
+          "bar"
+        ]
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 31
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-11-13T10:20:30.1Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "bar"
+        ]
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 30
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-11-13T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo"
+        ]
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 29
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-11-12T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo"
+        ]
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 28
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-11-10T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo"
+        ]
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 27
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-11-08T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo"
+        ]
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 26
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-10-22T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo"
+        ]
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 25
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-10-20T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo"
+        ]
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 24
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-10-11T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo"
+        ]
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 23
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-10-10T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo"
+        ]
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 22
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-10-09T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo"
+        ]
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 21
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-10-08T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo"
+        ]
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 20
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-10-06T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo"
+        ]
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 19
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-10-05T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo"
+        ]
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 18
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-10-02T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo"
+        ]
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 17
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-10-01T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo"
+        ]
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 16
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-09-22T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 15
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-09-20T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 14
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-09-11T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 13
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-09-10T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 12
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-09-09T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 11
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-09-08T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 10
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-09-06T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 9
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-09-05T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 8
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-09-02T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 7
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-09-01T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 6
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-08-22T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 5
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-08-21T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 4
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-08-20T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 3
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-08-18T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 2
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-08-15T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 1
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-08-13T10:20:30.1Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {}
+    }
+  ]
+}
