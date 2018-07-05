@@ -111,6 +111,14 @@ License
 Restic is licensed under `BSD 2-Clause License <https://opensource.org/licenses/BSD-2-Clause>`__. You can find the
 complete text in ``LICENSE``.
 
+Sponsorship
+-----------
+
+Backend integration tests for Google Cloud Storage and Microsoft Azure Blob
+Storage are sponsored by [AppsCode](https://appscode.com/)!
+
+|AppsCode|
+
 .. |Documentation| image:: https://readthedocs.org/projects/restic/badge/?version=latest
    :target: https://restic.readthedocs.io/en/latest/?badge=latest
 .. |Build Status| image:: https://travis-ci.com/restic/restic.svg?branch=master
@@ -123,3 +131,5 @@ complete text in ``LICENSE``.
    :target: https://saythanks.io/to/restic
 .. |TestCoverage| image:: https://codecov.io/gh/restic/restic/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/restic/restic
+.. |AppsCode| image:: https://cdn.appscode.com/images/logo/appscode/ac-logo-color.png
+   :target: https://appscode.com
