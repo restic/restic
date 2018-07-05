@@ -115,7 +115,7 @@ Sponsorship
 -----------
 
 Backend integration tests for Google Cloud Storage and Microsoft Azure Blob
-Storage are sponsored by [AppsCode](https://appscode.com/)!
+Storage are sponsored by `AppsCode <https://appscode.com>`__!
 
 |AppsCode|
 
