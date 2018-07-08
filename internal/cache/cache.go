@@ -61,7 +61,13 @@ func writeCachedirTag(dir string) error {
 		return err
 	}
 
-	f, err := fs.OpenFile(filepath.Join(dir, "CACHEDIR.TAG"), os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+	tagfile := filepath.Join(dir, "CACHEDIR.TAG")
+	_, err := fs.Lstat(tagfile)
+	if err != nil && !os.IsNotExist(err) {
+		return errors.Wrap(err, "Lstat")
+	}
+
+	f, err := fs.OpenFile(tagfile, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
 	if err != nil {
 		if os.IsExist(errors.Cause(err)) {
 			return nil
