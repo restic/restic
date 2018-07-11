@@ -39,7 +39,7 @@ func TestBytesWriterSeeker(t *testing.T) {
 	assertNotOK(t, "unsupported seek", err)
 }
 
-func TestPackCache_basic(t *testing.T) {
+func TestPackCacheBasic(t *testing.T) {
 	assertReader := func(expected []byte, offset int64, rd io.ReaderAt) {
 		actual := make([]byte, len(expected))
 		rd.ReadAt(actual, offset)
@@ -89,7 +89,7 @@ func TestPackCache_basic(t *testing.T) {
 	assertReader([]byte{1, 2, 3, 4, 5}, 10, rd)
 }
 
-func TestPackCache_invalid_range(t *testing.T) {
+func TestPackCacheInvalidRange(t *testing.T) {
 	c := newPackCache(10)
 
 	id := restic.NewRandomID()
@@ -113,7 +113,7 @@ func TestPackCache_invalid_range(t *testing.T) {
 	assertNotOK(t, "negative length", err)
 }
 
-func TestPackCache_capacity(t *testing.T) {
+func TestPackCacheCapacity(t *testing.T) {
 	c := newPackCache(10)
 
 	id1, id2, id3 := restic.NewRandomID(), restic.NewRandomID(), restic.NewRandomID()
@@ -159,7 +159,7 @@ func TestPackCache_capacity(t *testing.T) {
 	rtest.Equals(t, true, loaded)
 }
 
-func TestPackCache_downsize_record(t *testing.T) {
+func TestPackCacheDownsizeRecord(t *testing.T) {
 	c := newPackCache(10)
 
 	id := restic.NewRandomID()
@@ -233,7 +233,7 @@ func TestPackCache_downsize_record(t *testing.T) {
 	rd.Close()
 }
 
-func TestPackCache_wrong_load_size(t *testing.T) {
+func TestPackCacheWrongLoadSize(t *testing.T) {
 	c := newPackCache(10)
 
 	_, err := c.get(restic.NewRandomID(), 0, 5, func(offset int64, length int, wr io.WriteSeeker) error {
@@ -249,7 +249,7 @@ func TestPackCache_wrong_load_size(t *testing.T) {
 	assertNotOK(t, "too many bytes read", err)
 }
 
-func TestPackCache_invalidRequests(t *testing.T) {
+func TestPackCacheInvalidRequests(t *testing.T) {
 	c := newPackCache(10)
 
 	id := restic.NewRandomID()

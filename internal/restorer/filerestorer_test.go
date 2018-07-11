@@ -13,21 +13,17 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 )
 
-///////////////////////////////////////////////////////////////////////////////
-// test helpers (TODO move to a dedicated file?)
-///////////////////////////////////////////////////////////////////////////////
-
-type _Blob struct {
+type TestBlob struct {
 	data string
 	pack string
 }
 
-type _File struct {
+type TestFile struct {
 	name  string
-	blobs []_Blob
+	blobs []TestBlob
 }
 
-type _TestData struct {
+type TestRepo struct {
 	key *crypto.Key
 
 	// pack names and ids
@@ -47,39 +43,40 @@ type _TestData struct {
 	idx filePackTraverser
 }
 
-func (i *_TestData) Lookup(blobID restic.ID, _ restic.BlobType) ([]restic.PackedBlob, bool) {
+func (i *TestRepo) Lookup(blobID restic.ID, _ restic.BlobType) ([]restic.PackedBlob, bool) {
 	packs, found := i.blobs[blobID]
 	return packs, found
 }
 
-func (i *_TestData) packName(pack *packInfo) string {
+func (i *TestRepo) packName(pack *packInfo) string {
 	return i.packsIDToName[pack.id]
 }
-func (i *_TestData) packID(name string) restic.ID {
+
+func (i *TestRepo) packID(name string) restic.ID {
 	return i.packsNameToID[name]
 }
 
-func (i *_TestData) pack(queue *packQueue, name string) *packInfo {
+func (i *TestRepo) pack(queue *packQueue, name string) *packInfo {
 	id := i.packsNameToID[name]
 	return queue.packs[id]
 }
 
-func (i *_TestData) fileContent(file *fileInfo) string {
+func (i *TestRepo) fileContent(file *fileInfo) string {
 	return i.filesPathToContent[file.path]
 }
 
-func _newTestData(_files []_File) *_TestData {
-	type _Pack struct {
+func newTestRepo(content []TestFile) *TestRepo {
+	type Pack struct {
 		name  string
 		data  []byte
 		blobs map[restic.ID]restic.Blob
 	}
-	_packs := make(map[string]_Pack)
+	packs := make(map[string]Pack)
 
 	key := crypto.NewRandomKey()
 	seal := func(data []byte) []byte {
 		ciphertext := restic.NewBlobBuffer(len(data))
-		ciphertext = ciphertext[:0] // TODO what does this actually do?
+		ciphertext = ciphertext[:0] // truncate the slice
 		nonce := crypto.NewRandomNonce()
 		ciphertext = append(ciphertext, nonce...)
 		return key.Seal(ciphertext, nonce, data, nil)
@@ -87,34 +84,34 @@ func _newTestData(_files []_File) *_TestData {
 
 	filesPathToContent := make(map[string]string)
 
-	for _, _file := range _files {
+	for _, file := range content {
 		var content string
-		for _, _blob := range _file.blobs {
-			content += _blob.data
+		for _, blob := range file.blobs {
+			content += blob.data
 
 			// get the pack, create as necessary
-			var _pack _Pack
-			var found bool // TODO is there more concise way of doing this in go?
-			if _pack, found = _packs[_blob.pack]; !found {
-				_pack = _Pack{name: _blob.pack, blobs: make(map[restic.ID]restic.Blob)}
+			var pack Pack
+			var found bool
+			if pack, found = packs[blob.pack]; !found {
+				pack = Pack{name: blob.pack, blobs: make(map[restic.ID]restic.Blob)}
 			}
 
 			// calculate blob id and add to the pack as necessary
-			_blobID := restic.Hash([]byte(_blob.data))
-			if _, found := _pack.blobs[_blobID]; !found {
-				_blobData := seal([]byte(_blob.data))
-				_pack.blobs[_blobID] = restic.Blob{
+			blobID := restic.Hash([]byte(blob.data))
+			if _, found := pack.blobs[blobID]; !found {
+				blobData := seal([]byte(blob.data))
+				pack.blobs[blobID] = restic.Blob{
 					Type:   restic.DataBlob,
-					ID:     _blobID,
-					Length: uint(len(_blobData)), // XXX is Length encrypted or plaintext?
-					Offset: uint(len(_pack.data)),
+					ID:     blobID,
+					Length: uint(len(blobData)),
+					Offset: uint(len(pack.data)),
 				}
-				_pack.data = append(_pack.data, _blobData...)
+				pack.data = append(pack.data, blobData...)
 			}
 
-			_packs[_blob.pack] = _pack
+			packs[blob.pack] = pack
 		}
-		filesPathToContent[_file.name] = content
+		filesPathToContent[file.name] = content
 	}
 
 	blobs := make(map[restic.ID][]restic.PackedBlob)
@@ -122,26 +119,26 @@ func _newTestData(_files []_File) *_TestData {
 	packsIDToData := make(map[restic.ID][]byte)
 	packsNameToID := make(map[string]restic.ID)
 
-	for _, _pack := range _packs {
-		_packID := restic.Hash(_pack.data)
-		packsIDToName[_packID] = _pack.name
-		packsIDToData[_packID] = _pack.data
-		packsNameToID[_pack.name] = _packID
-		for blobID, blob := range _pack.blobs {
-			blobs[blobID] = append(blobs[blobID], restic.PackedBlob{Blob: blob, PackID: _packID})
+	for _, pack := range packs {
+		packID := restic.Hash(pack.data)
+		packsIDToName[packID] = pack.name
+		packsIDToData[packID] = pack.data
+		packsNameToID[pack.name] = packID
+		for blobID, blob := range pack.blobs {
+			blobs[blobID] = append(blobs[blobID], restic.PackedBlob{Blob: blob, PackID: packID})
 		}
 	}
 
 	var files []*fileInfo
-	for _, _file := range _files {
+	for _, file := range content {
 		content := restic.IDs{}
-		for _, _blob := range _file.blobs {
-			content = append(content, restic.Hash([]byte(_blob.data)))
+		for _, blob := range file.blobs {
+			content = append(content, restic.Hash([]byte(blob.data)))
 		}
-		files = append(files, &fileInfo{path: _file.name, blobs: content})
+		files = append(files, &fileInfo{path: file.name, blobs: content})
 	}
 
-	_data := &_TestData{
+	repo := &TestRepo{
 		key:                key,
 		packsIDToName:      packsIDToName,
 		packsIDToData:      packsIDToData,
@@ -150,30 +147,30 @@ func _newTestData(_files []_File) *_TestData {
 		files:              files,
 		filesPathToContent: filesPathToContent,
 	}
-	_data.idx = filePackTraverser{lookup: _data.Lookup}
-	_data.loader = func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+	repo.idx = filePackTraverser{lookup: repo.Lookup}
+	repo.loader = func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
 		packID, err := restic.ParseID(h.Name)
 		if err != nil {
 			return err
 		}
-		rd := bytes.NewReader(_data.packsIDToData[packID][int(offset) : int(offset)+length])
+		rd := bytes.NewReader(repo.packsIDToData[packID][int(offset) : int(offset)+length])
 		return fn(rd)
 	}
 
-	return _data
+	return repo
 }
 
-func restoreAndVerify(t *testing.T, _files []_File) {
-	test := _newTestData(_files)
+func restoreAndVerify(t *testing.T, content []TestFile) {
+	repo := newTestRepo(content)
 
-	r := newFileRestorer(test.loader, test.key, test.idx)
-	r.files = test.files
+	r := newFileRestorer(repo.loader, repo.key, repo.idx)
+	r.files = repo.files
 
 	r.restoreFiles(context.TODO(), func(path string, err error) {
 		rtest.OK(t, errors.Wrapf(err, "unexpected error"))
 	})
 
-	for _, file := range test.files {
+	for _, file := range repo.files {
 		data, err := ioutil.ReadFile(file.path)
 		if err != nil {
 			t.Errorf("unable to read file %v: %v", file.path, err)
@@ -182,7 +179,7 @@ func restoreAndVerify(t *testing.T, _files []_File) {
 
 		rtest.Equals(t, false, r.filesWriter.writers.Contains(file.path))
 
-		content := test.fileContent(file)
+		content := repo.fileContent(file)
 		if !bytes.Equal(data, []byte(content)) {
 			t.Errorf("file %v has wrong content: want %q, got %q", file.path, content, data)
 		}
@@ -191,36 +188,36 @@ func restoreAndVerify(t *testing.T, _files []_File) {
 	rtest.OK(t, nil)
 }
 
-func TestFileRestorer_basic(t *testing.T) {
+func TestFileRestorerBasic(t *testing.T) {
 	tempdir, cleanup := rtest.TempDir(t)
 	defer cleanup()
 
-	restoreAndVerify(t, []_File{
-		_File{
+	restoreAndVerify(t, []TestFile{
+		TestFile{
 			name: tempdir + "/file1",
-			blobs: []_Blob{
-				_Blob{"data1-1", "pack1-1"},
-				_Blob{"data1-2", "pack1-2"},
+			blobs: []TestBlob{
+				TestBlob{"data1-1", "pack1-1"},
+				TestBlob{"data1-2", "pack1-2"},
 			},
 		},
-		_File{
+		TestFile{
 			name: tempdir + "/file2",
-			blobs: []_Blob{
-				_Blob{"data2-1", "pack2-1"},
-				_Blob{"data2-2", "pack2-2"},
+			blobs: []TestBlob{
+				TestBlob{"data2-1", "pack2-1"},
+				TestBlob{"data2-2", "pack2-2"},
 			},
 		},
 	})
 }
 
-func TestFileRestorer_emptyFile(t *testing.T) {
+func TestFileRestorerEmptyFile(t *testing.T) {
 	tempdir, cleanup := rtest.TempDir(t)
 	defer cleanup()
 
-	restoreAndVerify(t, []_File{
-		_File{
+	restoreAndVerify(t, []TestFile{
+		TestFile{
 			name:  tempdir + "/empty",
-			blobs: []_Blob{},
+			blobs: []TestBlob{},
 		},
 	})
 }

@@ -7,7 +7,7 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func processPack(t *testing.T, data *_TestData, pack *packInfo, files []*fileInfo) {
+func processPack(t *testing.T, data *TestRepo, pack *packInfo, files []*fileInfo) {
 	for _, file := range files {
 		data.idx.forEachFilePack(file, func(packIdx int, packID restic.ID, packBlobs []restic.Blob) bool {
 			// assert file's head pack
@@ -18,13 +18,13 @@ func processPack(t *testing.T, data *_TestData, pack *packInfo, files []*fileInf
 	}
 }
 
-func TestPackQueue_basic(t *testing.T) {
-	data := _newTestData([]_File{
-		_File{
+func TestPackQueueBasic(t *testing.T) {
+	data := newTestRepo([]TestFile{
+		TestFile{
 			name: "file",
-			blobs: []_Blob{
-				_Blob{"data1", "pack1"},
-				_Blob{"data2", "pack2"},
+			blobs: []TestBlob{
+				TestBlob{"data1", "pack1"},
+				TestBlob{"data2", "pack2"},
 			},
 		},
 	})
@@ -83,16 +83,16 @@ func TestPackQueue_basic(t *testing.T) {
 	rtest.Equals(t, true, queue.isEmpty())
 }
 
-func TestPackQueue_failedFile(t *testing.T) {
+func TestPackQueueFailedFile(t *testing.T) {
 	// point of this test is to assert that enqueuePack removes
 	// all references to files that failed restore
 
-	data := _newTestData([]_File{
-		_File{
+	data := newTestRepo([]TestFile{
+		TestFile{
 			name: "file",
-			blobs: []_Blob{
-				_Blob{"data1", "pack1"},
-				_Blob{"data2", "pack2"},
+			blobs: []TestBlob{
+				TestBlob{"data1", "pack1"},
+				TestBlob{"data2", "pack2"},
 			},
 		},
 	})
@@ -105,23 +105,23 @@ func TestPackQueue_failedFile(t *testing.T) {
 	rtest.Equals(t, true, queue.isEmpty())
 }
 
-func TestPackQueue_ordering_cost(t *testing.T) {
+func TestPackQueueOrderingCost(t *testing.T) {
 	// assert pack1 is selected before pack2:
 	// pack1 is ready to restore file1, pack2 is ready to restore file2
 	// but pack2 cannot be immediately used to restore file1
 
-	data := _newTestData([]_File{
-		_File{
+	data := newTestRepo([]TestFile{
+		TestFile{
 			name: "file1",
-			blobs: []_Blob{
-				_Blob{"data1", "pack1"},
-				_Blob{"data2", "pack2"},
+			blobs: []TestBlob{
+				TestBlob{"data1", "pack1"},
+				TestBlob{"data2", "pack2"},
 			},
 		},
-		_File{
+		TestFile{
 			name: "file2",
-			blobs: []_Blob{
-				_Blob{"data2", "pack2"},
+			blobs: []TestBlob{
+				TestBlob{"data2", "pack2"},
 			},
 		},
 	})
@@ -143,22 +143,22 @@ func TestPackQueue_ordering_cost(t *testing.T) {
 	rtest.Equals(t, false, queue.requeuePack(pack, files, []*fileInfo{}))
 }
 
-func TestPackQueue_ordering_inprogress(t *testing.T) {
+func TestPackQueueOrderingInprogress(t *testing.T) {
 	// finish restoring one file before starting another
 
-	data := _newTestData([]_File{
-		_File{
+	data := newTestRepo([]TestFile{
+		TestFile{
 			name: "file1",
-			blobs: []_Blob{
-				_Blob{"data1-1", "pack1-1"},
-				_Blob{"data1-2", "pack1-2"},
+			blobs: []TestBlob{
+				TestBlob{"data1-1", "pack1-1"},
+				TestBlob{"data1-2", "pack1-2"},
 			},
 		},
-		_File{
+		TestFile{
 			name: "file2",
-			blobs: []_Blob{
-				_Blob{"data2-1", "pack2-1"},
-				_Blob{"data2-2", "pack2-2"},
+			blobs: []TestBlob{
+				TestBlob{"data2-1", "pack2-1"},
+				TestBlob{"data2-2", "pack2-2"},
 			},
 		},
 	})
@@ -192,17 +192,17 @@ func TestPackQueue_ordering_inprogress(t *testing.T) {
 	rtest.Equals(t, false, file == files[0]) // different file as before
 }
 
-func TestPackQueue_packMultiuse(t *testing.T) {
+func TestPackQueuePackMultiuse(t *testing.T) {
 	// the same pack is required multiple times to restore the same file
 
-	data := _newTestData([]_File{
-		_File{
+	data := newTestRepo([]TestFile{
+		TestFile{
 			name: "file",
-			blobs: []_Blob{
-				_Blob{"data1", "pack1"},
-				_Blob{"data2", "pack2"},
-				_Blob{"data3", "pack1"}, // pack1 reuse, new blob
-				_Blob{"data2", "pack2"}, // pack2 reuse, same blob
+			blobs: []TestBlob{
+				TestBlob{"data1", "pack1"},
+				TestBlob{"data2", "pack2"},
+				TestBlob{"data3", "pack1"}, // pack1 reuse, new blob
+				TestBlob{"data2", "pack2"}, // pack2 reuse, same blob
 			},
 		},
 	})
