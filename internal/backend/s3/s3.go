@@ -50,13 +50,13 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	//    call to a pre-defined endpoint, only valid inside
 	//    configured ec2 instances)
 	creds := credentials.NewChainCredentials([]credentials.Provider{
+		&credentials.EnvAWS{},
 		&credentials.Static{
 			Value: credentials.Value{
 				AccessKeyID:     cfg.KeyID,
 				SecretAccessKey: cfg.Secret,
 			},
 		},
-		&credentials.EnvAWS{},
 		&credentials.EnvMinio{},
 		&credentials.FileAWSCredentials{},
 		&credentials.FileMinioClient{},
