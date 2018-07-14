@@ -16,12 +16,18 @@ import (
 )
 
 var cmdFind = &cobra.Command{
-	Use:   "find [flags] PATTERN",
+	Use:   "find [flags] PATTERN...",
 	Short: "Find a file, a directory or restic IDs",
 	Long: `
 The "find" command searches for files or directories in snapshots stored in the
 repo.
 It can also be used to search for restic blobs or trees for troubleshooting.`,
+	Example: `restic find config.json
+restic find --json "*.yml" "*.json"
+restic find --json --blob 420f620f b46ebe8a ddd38656
+restic find --show-pack-id --blob 420f620f
+restic find --tree 577c2bc9 f81f2e22 a62827a9
+restic find --pack 025c1d06`,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runFind(findOptions, globalOptions, args)
@@ -67,7 +73,7 @@ func init() {
 
 type findPattern struct {
 	oldest, newest time.Time
-	pattern        string
+	pattern        []string
 	ignoreCase     bool
 }
 
@@ -263,9 +269,17 @@ func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error 
 			normalizedNodepath = strings.ToLower(nodepath)
 		}
 
-		foundMatch, err := filter.Match(f.pat.pattern, normalizedNodepath)
-		if err != nil {
-			return false, err
+		var foundMatch bool
+
+		for _, pat := range f.pat.pattern {
+			found, err := filter.Match(pat, normalizedNodepath)
+			if err != nil {
+				return false, err
+			}
+			if found {
+				foundMatch = true
+				break
+			}
 		}
 
 		var (
@@ -273,9 +287,16 @@ func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error 
 			errIfNoMatch    error
 		)
 		if node.Type == "dir" {
-			childMayMatch, err := filter.ChildMatch(f.pat.pattern, normalizedNodepath)
-			if err != nil {
-				return false, err
+			var childMayMatch bool
+			for _, pat := range f.pat.pattern {
+				mayMatch, err := filter.ChildMatch(pat, normalizedNodepath)
+				if err != nil {
+					return false, err
+				}
+				if mayMatch {
+					childMayMatch = true
+					break
+				}
 			}
 
 			if !childMayMatch {
@@ -444,14 +465,16 @@ func (f *Finder) findBlobsPacks(ctx context.Context) {
 }
 
 func runFind(opts FindOptions, gopts GlobalOptions, args []string) error {
-	if len(args) != 1 {
+	if len(args) == 0 {
 		return errors.Fatal("wrong number of arguments")
 	}
 
 	var err error
-	pat := findPattern{pattern: args[0]}
+	pat := findPattern{pattern: args}
 	if opts.CaseInsensitive {
-		pat.pattern = strings.ToLower(pat.pattern)
+		for i := range pat.pattern {
+			pat.pattern[i] = strings.ToLower(pat.pattern[i])
+		}
 		pat.ignoreCase = true
 	}
 
@@ -504,17 +527,19 @@ func runFind(opts FindOptions, gopts GlobalOptions, args []string) error {
 
 	if opts.BlobID {
 		f.blobIDs = make(map[string]struct{})
-		// for _, i := range pat {} // TODO: support multiple args
-		f.blobIDs[f.pat.pattern] = struct{}{}
+		for _, pat := range f.pat.pattern {
+			f.blobIDs[pat] = struct{}{}
+		}
 	}
 	if opts.TreeID {
 		f.treeIDs = make(map[string]struct{})
-		// for _, i := range pat {} // TODO: support multiple args
-		f.treeIDs[f.pat.pattern] = struct{}{}
+		for _, pat := range f.pat.pattern {
+			f.treeIDs[pat] = struct{}{}
+		}
 	}
 
 	if opts.PackID {
-		f.packsToBlobs(ctx, []string{f.pat.pattern}) // TODO: support multiple packs
+		f.packsToBlobs(ctx, []string{f.pat.pattern[0]}) // TODO: support multiple packs
 	}
 
 	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, opts.Snapshots) {
