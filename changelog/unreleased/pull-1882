@@ -1,0 +1,8 @@
+Enhancement: S3 backend: accept AWS_SESSION_TOKEN
+
+Before, it was not possible to use s3 backend with AWS temporary security credentials(with AWS_SESSION_TOKEN).
+This change gives higher priority to credentials.EnvAWS credentials provider.
+
+https://github.com/restic/restic/issues/1477
+https://github.com/restic/restic/pull/1479
+https://github.com/restic/restic/pull/1647
