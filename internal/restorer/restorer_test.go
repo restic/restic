@@ -202,6 +202,16 @@ func TestRestorer(t *testing.T) {
 				"dir/file": "file in dir",
 			},
 		},
+		{
+			Snapshot: Snapshot{
+				Nodes: map[string]Node{
+					"topfile": File{"top-level file"},
+				},
+			},
+			Files: map[string]string{
+				"topfile": "top-level file",
+			},
+		},
 
 		// test cases with invalid/constructed names
 		{
@@ -272,6 +282,9 @@ func TestRestorer(t *testing.T) {
 
 			tempdir, cleanup := rtest.TempDir(t)
 			defer cleanup()
+
+			// make sure we're creating a new subdir of the tempdir
+			tempdir = filepath.Join(tempdir, "target")
 
 			res.SelectFilter = func(item, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
 				t.Logf("restore %v to %v", item, dstpath)
