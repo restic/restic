@@ -112,7 +112,7 @@ func TestNodeFromFileInfo(t *testing.T) {
 
 			s, ok := fi.Sys().(*syscall.Stat_t)
 			if !ok {
-				t.Skip("fi type is %T, not stat_t", fi.Sys())
+				t.Skipf("fi type is %T, not stat_t", fi.Sys())
 				return
 			}
 
