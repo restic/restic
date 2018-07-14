@@ -188,7 +188,7 @@ func statsWalkSnapshot(ctx context.Context, snapshot *restic.Snapshot, repo rest
 }
 
 func statsWalkTree(repo restic.Repository, stats *statsContainer) walker.WalkFunc {
-	return func(npath string, node *restic.Node, nodeErr error) (bool, error) {
+	return func(npath string, node *restic.Node, parentTreeID string, nodeErr error) (bool, error) {
 		if nodeErr != nil {
 			return true, nodeErr
 		}

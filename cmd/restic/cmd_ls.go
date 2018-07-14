@@ -203,7 +203,7 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, args[:1]) {
 		printSnapshot(sn)
 
-		err := walker.Walk(ctx, repo, *sn.Tree, nil, func(nodepath string, node *restic.Node, err error) (bool, error) {
+		err := walker.Walk(ctx, repo, *sn.Tree, nil, func(nodepath string, node *restic.Node, treeID string, err error) (bool, error) {
 			if err != nil {
 				return false, err
 			}

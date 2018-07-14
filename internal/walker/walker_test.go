@@ -78,7 +78,7 @@ type checkFunc func(t testing.TB) (walker WalkFunc, final func(testing.TB))
 func checkItemOrder(want []string) checkFunc {
 	pos := 0
 	return func(t testing.TB) (walker WalkFunc, final func(testing.TB)) {
-		walker = func(path string, node *restic.Node, err error) (bool, error) {
+		walker = func(path string, node *restic.Node, treeID string, err error) (bool, error) {
 			if err != nil {
 				t.Errorf("error walking %v: %v", path, err)
 				return false, err
@@ -112,7 +112,7 @@ func checkSkipFor(skipFor map[string]struct{}, wantPaths []string) checkFunc {
 	var pos int
 
 	return func(t testing.TB) (walker WalkFunc, final func(testing.TB)) {
-		walker = func(path string, node *restic.Node, err error) (bool, error) {
+		walker = func(path string, node *restic.Node, treeID string, err error) (bool, error) {
 			if err != nil {
 				t.Errorf("error walking %v: %v", path, err)
 				return false, err
@@ -152,7 +152,7 @@ func checkIgnore(skipFor map[string]struct{}, ignoreFor map[string]bool, wantPat
 	var pos int
 
 	return func(t testing.TB) (walker WalkFunc, final func(testing.TB)) {
-		walker = func(path string, node *restic.Node, err error) (bool, error) {
+		walker = func(path string, node *restic.Node, treeID string, err error) (bool, error) {
 			if err != nil {
 				t.Errorf("error walking %v: %v", path, err)
 				return false, err

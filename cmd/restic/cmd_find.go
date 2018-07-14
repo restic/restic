@@ -173,12 +173,13 @@ func (s *statefulOutput) PrintPattern(path string, node *restic.Node) {
 	}
 }
 
-func (s *statefulOutput) PrintObjectJSON(kind, id, nodepath string, sn *restic.Snapshot) {
+func (s *statefulOutput) PrintObjectJSON(kind, id, nodepath, treeID string, sn *restic.Snapshot) {
 	b, err := json.Marshal(struct {
 		// Add these attributes
 		ObjectType string    `json:"object_type"`
 		ID         string    `json:"id"`
-		Path       string    `json:"path,omitempty"`
+		Path       string    `json:"path"`
+		ParentTree string    `json:"parent_tree,omitempty"`
 		SnapshotID string    `json:"snapshot"`
 		Time       time.Time `json:"time,omitempty"`
 	}{
@@ -186,6 +187,7 @@ func (s *statefulOutput) PrintObjectJSON(kind, id, nodepath string, sn *restic.S
 		ID:         id,
 		Path:       nodepath,
 		SnapshotID: sn.ID().String(),
+		ParentTree: treeID,
 		Time:       sn.Time,
 	})
 	if err != nil {
@@ -203,21 +205,22 @@ func (s *statefulOutput) PrintObjectJSON(kind, id, nodepath string, sn *restic.S
 	s.hits++
 }
 
-func (s *statefulOutput) PrintObjectNormal(kind, id, nodepath string, sn *restic.Snapshot) {
-	f := "path"
-	if kind == "blob" {
-		f = "in file"
-	}
+func (s *statefulOutput) PrintObjectNormal(kind, id, nodepath, treeID string, sn *restic.Snapshot) {
 	Printf("Found %s %s\n", kind, id)
-	Printf(" ... %s %s\n", f, nodepath)
+	if kind == "blob" {
+		Printf(" ... in file %s\n", nodepath)
+		Printf("     (tree %s)\n", treeID)
+	} else {
+		Printf(" ... path %s\n", nodepath)
+	}
 	Printf(" ... in snapshot %s (%s)\n", sn.ID().Str(), sn.Time.Format(TimeFormat))
 }
 
-func (s *statefulOutput) PrintObject(kind, id, nodepath string, sn *restic.Snapshot) {
+func (s *statefulOutput) PrintObject(kind, id, nodepath, treeID string, sn *restic.Snapshot) {
 	if s.JSON {
-		s.PrintObjectJSON(kind, id, nodepath, sn)
+		s.PrintObjectJSON(kind, id, nodepath, treeID, sn)
 	} else {
-		s.PrintObjectNormal(kind, id, nodepath, sn)
+		s.PrintObjectNormal(kind, id, nodepath, treeID, sn)
 	}
 }
 
@@ -255,7 +258,7 @@ func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error 
 	}
 
 	f.out.newsn = sn
-	return walker.Walk(ctx, f.repo, *sn.Tree, f.ignoreTrees, func(nodepath string, node *restic.Node, err error) (bool, error) {
+	return walker.Walk(ctx, f.repo, *sn.Tree, f.ignoreTrees, func(nodepath string, node *restic.Node, treeID string, err error) (bool, error) {
 		if err != nil {
 			return false, err
 		}
@@ -335,7 +338,7 @@ func (f *Finder) findIDs(ctx context.Context, sn *restic.Snapshot) error {
 	}
 
 	f.out.newsn = sn
-	return walker.Walk(ctx, f.repo, *sn.Tree, f.ignoreTrees, func(nodepath string, node *restic.Node, err error) (bool, error) {
+	return walker.Walk(ctx, f.repo, *sn.Tree, f.ignoreTrees, func(nodepath string, node *restic.Node, treeID string, err error) (bool, error) {
 		if err != nil {
 			return false, err
 		}
@@ -353,7 +356,7 @@ func (f *Finder) findIDs(ctx context.Context, sn *restic.Snapshot) error {
 				found = true
 			}
 			if found {
-				f.out.PrintObject("tree", treeID.String(), nodepath, sn)
+				f.out.PrintObject("tree", treeID.String(), nodepath, "", sn)
 				f.itemsFound++
 				// Terminate if we have found all trees (and we are not
 				// looking for blobs)
@@ -376,8 +379,7 @@ func (f *Finder) findIDs(ctx context.Context, sn *restic.Snapshot) error {
 					f.blobIDs[idStr] = struct{}{}
 					delete(f.blobIDs, idStr[:shortStr])
 				}
-				f.out.PrintObject("blob", idStr, nodepath, sn)
-				// TODO Printf("     (tree %s)\n", treeID.Str())
+				f.out.PrintObject("blob", idStr, nodepath, treeID, sn)
 				break
 			}
 		}
