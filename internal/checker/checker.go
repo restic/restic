@@ -582,12 +582,6 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 				}
 				size += uint64(blobSize)
 			}
-			if size != node.Size {
-				errs = append(errs, Error{
-					TreeID: id,
-					Err:    errors.Errorf("file %q: metadata size (%v) and sum of blob sizes (%v) do not match", node.Name, node.Size, size),
-				})
-			}
 		case "dir":
 			if node.Subtree == nil {
 				errs = append(errs, Error{TreeID: id, Err: errors.Errorf("dir node %q has no subtree", node.Name)})
