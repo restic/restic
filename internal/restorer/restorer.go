@@ -197,6 +197,12 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 		}
 	}
 
+	// make sure the target directory exists
+	err = fs.MkdirAll(dst, 0777) // umask takes care of dir permissions
+	if err != nil {
+		return errors.Wrap(err, "MkdirAll")
+	}
+
 	idx := restic.NewHardlinkIndex()
 	return res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
 		enterDir: func(node *restic.Node, target, location string) error {
