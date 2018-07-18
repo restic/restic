@@ -14,10 +14,10 @@
 Preparing a new repository
 ##########################
 
-The place where your backups will be saved at is called a "repository".
+The place where your backups will be saved is called a "repository".
 This chapter explains how to create ("init") such a repository. The repository
 can be stored locally, or on some remote server or service. We'll first cover
-using a local repository, the remaining sections of this chapter cover all the
+using a local repository; the remaining sections of this chapter cover all the
 other options. You can skip to the next chapter once you've read the relevant
 section here.
 
@@ -129,8 +129,8 @@ scheme like this:
     $ restic -r rest:http://host:8000/
 
 Depending on your REST server setup, you can use HTTPS protocol,
-password protection, or multiple repositories. Or any combination of
-those features, as you see fit. TCP/IP port is also configurable. Here
+password protection, multiple repositories or any combination of
+those features. The TCP/IP port is also configurable. Here
 are some more examples:
 
 .. code-block:: console
@@ -167,7 +167,7 @@ while creating the bucket.
     $ export AWS_SECRET_ACCESS_KEY=<MY_SECRET_ACCESS_KEY>
 
 You can then easily initialize a repository that uses your Amazon S3 as
-a backend, if the bucket does not exist yet it will be created in the
+a backend. If the bucket does not exist it will be created in the
 default location:
 
 .. code-block:: console
@@ -209,7 +209,7 @@ written in Go and compatible with AWS S3 API.
    on installation and getting started on Minio Client and Minio Server.
 
 You must first setup the following environment variables with the
-credentials of your running Minio Server.
+credentials of your Minio Server.
 
 .. code-block:: console
 
@@ -234,7 +234,7 @@ OpenStack Swift
 Restic can backup data to an OpenStack Swift container. Because Swift supports
 various authentication methods, credentials are passed through environment
 variables. In order to help integration with existing OpenStack installations,
-the naming convention of those variables follows official python swift client:
+the naming convention of those variables follows the official Python Swift client:
 
 .. code-block:: console
 
@@ -265,12 +265,12 @@ the naming convention of those variables follows official python swift client:
    $ export OS_AUTH_TOKEN=<MY_AUTH_TOKEN>
 
 
-Restic should be compatible with `OpenStack RC file
+Restic should be compatible with an `OpenStack RC file
 <https://docs.openstack.org/user-guide/common/cli-set-environment-variables-using-openstack-rc.html>`__
 in most cases.
 
 Once environment variables are set up, a new repository can be created. The
-name of swift container and optional path can be specified. If
+name of the Swift container and optional path can be specified. If
 the container does not exist, it will be created automatically:
 
 .. code-block:: console
@@ -282,7 +282,7 @@ the container does not exist, it will be created automatically:
    Please note that knowledge of your password is required to access the repository.
    Losing your password means that your data is irrecoverably lost.
 
-The policy of new container created by restic can be changed using environment variable:
+The policy of the new container created by restic can be changed using environment variable:
 
 .. code-block:: console
 
@@ -314,7 +314,7 @@ bucket does not exist yet, it will be created:
     Losing your password means that your data is irrecoverably lost.
 
 The number of concurrent connections to the B2 service can be set with the ``-o
-b2.connections=10``. By default, at most five parallel connections are
+b2.connections=10`` switch. By default, at most five parallel connections are
 established.
 
 Microsoft Azure Blob Storage
@@ -341,15 +341,13 @@ root path like this:
     [...]
 
 The number of concurrent connections to the Azure Blob Storage service can be set with the
-``-o azure.connections=10``. By default, at most five parallel connections are
+``-o azure.connections=10`` switch. By default, at most five parallel connections are
 established.
 
 Google Cloud Storage
 ********************
 
-Restic supports Google Cloud Storage as a backend.
-
-Restic connects to Google Cloud Storage via a `service account`_.
+Restic supports Google Cloud Storage as a backend and connects via a `service account`_.
 
 For normal restic operation, the service account must have the
 ``storage.objects.{create,delete,get,list}`` permissions for the bucket. These
@@ -371,7 +369,7 @@ key file and the project ID as follows:
 
 Restic uses  Google's client library to generate `default authentication material`_,
 which means if you're running in Google Container Engine or are otherwise
-located on an instance with default service accounts then these should work out
+located on an instance with default service accounts then these should work out of 
 the box.
 
 Once authenticated, you can use the ``gs:`` backend type to create a new
@@ -387,7 +385,7 @@ repository in the bucket ``foo`` at the root path:
     [...]
 
 The number of concurrent connections to the GCS service can be set with the
-``-o gs.connections=10``. By default, at most five parallel connections are
+``-o gs.connections=10`` switch. By default, at most five parallel connections are
 established.
 
 .. _service account: https://cloud.google.com/storage/docs/authentication#service_accounts
@@ -506,7 +504,7 @@ At the moment, restic only supports the default Windows console
 interaction. If you use emulation environments like
 `MSYS2 <https://msys2.github.io/>`__ or
 `Cygwin <https://www.cygwin.com/>`__, which use terminals like
-``Mintty`` or ``rxvt``, you may get a password error:
+``Mintty`` or ``rxvt``, you may get a password error.
 
 You can workaround this by using a special tool called ``winpty`` (look
 `here <https://sourceforge.net/p/msys2/wiki/Porting/>`__ and
