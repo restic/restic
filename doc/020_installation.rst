@@ -150,9 +150,9 @@ master branch.
 Windows
 =======
 
-On Windows, put the `restic.exe` into `%SystemRoot%\System32` to use restic
+On Windows, put the `restic.exe` binary into `%SystemRoot%\\System32` to use restic
 in scripts without the need for absolute paths to the binary. This requires
-Admin rights.
+administrator rights.
 
 Docker Container
 ****************
