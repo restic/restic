@@ -4,9 +4,9 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/reststdiohttp2"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/limiter"
-	"github.com/restic/restic/internal/backend/reststdiohttp2"
 )
 
 type Backend struct {

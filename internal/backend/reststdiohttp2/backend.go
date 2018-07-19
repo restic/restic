@@ -113,7 +113,6 @@ func wrapConn(c *stdioconn.StdioConn, lim limiter.Limiter) wrappedConn {
 	return wc
 }
 
-
 // New initializes a Backend and starts the process.
 func New(args []string, lim limiter.Limiter, warmupTime time.Duration, exitTime time.Duration, connections uint) (*Backend, error) {
 	arg0, args := args[0], args[1:]

@@ -16,7 +16,7 @@ type StdioConn struct {
 }
 
 // New creates a StdioConn using the provided pipes
-func New(input *os.File, output *os.File) (*StdioConn){
+func New(input *os.File, output *os.File) *StdioConn {
 	return &StdioConn{
 		input:  input,
 		output: output,
