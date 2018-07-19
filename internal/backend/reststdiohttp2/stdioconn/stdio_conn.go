@@ -15,7 +15,7 @@ type StdioConn struct {
 	close  sync.Once
 }
 
-// Create a StdioConn using the provided pipes
+// New creates a StdioConn using the provided pipes
 func New(stdin *os.File, stdout *os.File) (*StdioConn){
 	return &StdioConn{
 		stdin: stdin,
