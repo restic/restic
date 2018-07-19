@@ -1,27 +1,28 @@
 package rest_stdio_http2
 
 import (
-	"github.com/restic/restic/internal/backend/rest"
+	"bufio"
+	"crypto/tls"
+	"fmt"
+	"io"
+	"math/rand"
+	"net"
+	"net/http"
+	"net/url"
+	"os"
 	"os/exec"
 	"sync"
-	"github.com/restic/restic/internal/backend/rest_stdio_http2/stdio_conn"
-	"bufio"
-	"fmt"
-	"os"
-	"github.com/restic/restic/internal/backend"
-	"io"
-	"github.com/restic/restic/internal/limiter"
-	"golang.org/x/net/http2"
-	"crypto/tls"
-	"net"
-	"github.com/restic/restic/internal/debug"
 	"time"
-	"golang.org/x/net/context/ctxhttp"
-	"golang.org/x/net/context"
-	"net/http"
-	"math/rand"
+
+	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/rest"
+	"github.com/restic/restic/internal/backend/rest_stdio_http2/stdio_conn"
+	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
-	"net/url"
+	"github.com/restic/restic/internal/limiter"
+	"golang.org/x/net/context"
+	"golang.org/x/net/context/ctxhttp"
+	"golang.org/x/net/http2"
 )
 
 type Backend struct {
@@ -54,7 +55,7 @@ func run(command string, args ...string) (*stdio_conn.StdioConn, *exec.Cmd, *syn
 		defer wg.Done()
 		sc := bufio.NewScanner(p)
 		for sc.Scan() {
-			fmt.Fprintf(os.Stderr, command + ": %v\n", sc.Text())
+			fmt.Fprintf(os.Stderr, command+": %v\n", sc.Text())
 		}
 	}()
 
@@ -111,7 +112,7 @@ func wrapConn(c *stdio_conn.StdioConn, lim limiter.Limiter) wrappedConn {
 	return wc
 }
 
-func New (args []string, lim limiter.Limiter, warmupTime time.Duration, exitTime time.Duration, connections uint) (*Backend, error) {
+func New(args []string, lim limiter.Limiter, warmupTime time.Duration, exitTime time.Duration, connections uint) (*Backend, error) {
 	arg0, args := args[0], args[1:]
 	stdioConn, cmd, wg, bg, err := run(arg0, args...)
 	if err != nil {
@@ -149,13 +150,13 @@ func New (args []string, lim limiter.Limiter, warmupTime time.Duration, exitTime
 	}
 
 	be := &Backend{
-		tr:     tr,
-		cmd:    cmd,
-		waitCh: waitCh,
-		conn:   stdioConn,
-		wg:     wg,
+		tr:         tr,
+		cmd:        cmd,
+		waitCh:     waitCh,
+		conn:       stdioConn,
+		wg:         wg,
 		warmupTime: warmupTime,
-		exitTime: exitTime,
+		exitTime:   exitTime,
 		restConfig: restConfig,
 	}
 
