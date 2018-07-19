@@ -1,4 +1,4 @@
-package rest_stdio_http2
+package reststdiohttp2
 
 import (
 	"bufio"
@@ -16,7 +16,7 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/rest"
-	"github.com/restic/restic/internal/backend/rest_stdio_http2/stdio_conn"
+	"github.com/restic/restic/internal/backend/reststdiohttp2/stdioconn"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/limiter"
@@ -25,6 +25,7 @@ import (
 	"golang.org/x/net/http2"
 )
 
+// Backend uses the REST protocol over HTTP2 over a StdioConn to access data through a child process
 type Backend struct {
 	*rest.Backend
 	tr         *http2.Transport
@@ -32,14 +33,14 @@ type Backend struct {
 	waitCh     <-chan struct{}
 	waitResult error
 	wg         *sync.WaitGroup
-	conn       *stdio_conn.StdioConn
+	conn       *stdioconn.StdioConn
 	warmupTime time.Duration
 	exitTime   time.Duration
 	restConfig rest.Config
 }
 
 // run starts command with args and initializes the StdioConn.
-func run(command string, args ...string) (*stdio_conn.StdioConn, *exec.Cmd, *sync.WaitGroup, func() error, error) {
+func run(command string, args ...string) (*stdioconn.StdioConn, *exec.Cmd, *sync.WaitGroup, func() error, error) {
 	cmd := exec.Command(command, args...)
 
 	p, err := cmd.StderrPipe()
@@ -77,7 +78,7 @@ func run(command string, args ...string) (*stdio_conn.StdioConn, *exec.Cmd, *syn
 		return nil, nil, nil, nil, err
 	}
 
-	c := stdio_conn.New(stdin, stdout)
+	c := stdioconn.New(stdin, stdout)
 
 	return c, cmd, &wg, bg, nil
 }
@@ -85,7 +86,7 @@ func run(command string, args ...string) (*stdio_conn.StdioConn, *exec.Cmd, *syn
 // wrappedConn adds bandwidth limiting capabilities to the StdioConn by
 // wrapping the Read/Write methods.
 type wrappedConn struct {
-	*stdio_conn.StdioConn
+	*stdioconn.StdioConn
 	io.Reader
 	io.Writer
 }
@@ -98,7 +99,7 @@ func (c wrappedConn) Write(p []byte) (int, error) {
 	return c.Writer.Write(p)
 }
 
-func wrapConn(c *stdio_conn.StdioConn, lim limiter.Limiter) wrappedConn {
+func wrapConn(c *stdioconn.StdioConn, lim limiter.Limiter) wrappedConn {
 	wc := wrappedConn{
 		StdioConn: c,
 		Reader:    c,
@@ -112,6 +113,8 @@ func wrapConn(c *stdio_conn.StdioConn, lim limiter.Limiter) wrappedConn {
 	return wc
 }
 
+
+// New initializes a Backend and starts the process.
 func New(args []string, lim limiter.Limiter, warmupTime time.Duration, exitTime time.Duration, connections uint) (*Backend, error) {
 	arg0, args := args[0], args[1:]
 	stdioConn, cmd, wg, bg, err := run(arg0, args...)
@@ -194,9 +197,9 @@ func New(args []string, lim limiter.Limiter, warmupTime time.Duration, exitTime 
 
 	// request a random file which does not exist. we just want to test when
 	// the server is able to accept HTTP requests.
-	dummyUrl := fmt.Sprintf("http://localhost/file-%d", rand.Uint64())
+	dummyURL := fmt.Sprintf("http://localhost/file-%d", rand.Uint64())
 
-	req, err := http.NewRequest(http.MethodGet, dummyUrl, nil)
+	req, err := http.NewRequest(http.MethodGet, dummyURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -216,10 +219,12 @@ func New(args []string, lim limiter.Limiter, warmupTime time.Duration, exitTime 
 	return be, nil
 }
 
+// Open initializes the underlying rest backend for an existing repo
 func (be *Backend) Open() error {
 	return be.init(rest.Open(be.restConfig, be.tr))
 }
 
+// Create initializes the underlying rest backend for a new repo
 func (be *Backend) Create() error {
 	return be.init(rest.Create(be.restConfig, be.tr))
 }
@@ -232,6 +237,7 @@ func (be *Backend) init(restBackend *rest.Backend, err error) error {
 	return nil
 }
 
+// Close terminates the backend.
 func (be *Backend) Close() error {
 	be.tr.CloseIdleConnections()
 

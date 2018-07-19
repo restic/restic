@@ -1,6 +1,6 @@
 // +build go1.10
 
-package stdio_conn
+package stdioconn
 
 import "time"
 

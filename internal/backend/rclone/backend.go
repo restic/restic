@@ -6,11 +6,11 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/limiter"
-	"github.com/restic/restic/internal/backend/rest_stdio_http2"
+	"github.com/restic/restic/internal/backend/reststdiohttp2"
 )
 
 type Backend struct {
-	*rest_stdio_http2.Backend
+	*reststdiohttp2.Backend
 }
 
 // New initializes a Backend and starts the process.
@@ -49,7 +49,7 @@ func New(cfg Config, lim limiter.Limiter) (*Backend, error) {
 
 	debug.Log("running command: %v %v", args)
 
-	be, err := rest_stdio_http2.New(args, lim, warmupTime, waitForExit, cfg.Connections)
+	be, err := reststdiohttp2.New(args, lim, warmupTime, waitForExit, cfg.Connections)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func Open(cfg Config, lim limiter.Limiter) (*Backend, error) {
 	return be, nil
 }
 
-// Create initializes a new restic repo with clone.
+// Create initializes a new restic repo with rclone.
 func Create(cfg Config, lim limiter.Limiter) (*Backend, error) {
 	be, err := New(cfg, lim)
 	if err != nil {
