@@ -6,8 +6,8 @@ import "time"
 
 // SetDeadline sets the read/write deadline.
 func (s *StdioConn) SetDeadline(t time.Time) error {
-	err1 := s.stdin.SetReadDeadline(t)
-	err2 := s.stdout.SetWriteDeadline(t)
+	err1 := s.input.SetReadDeadline(t)
+	err2 := s.output.SetWriteDeadline(t)
 	if err1 != nil {
 		return err1
 	}
@@ -16,10 +16,10 @@ func (s *StdioConn) SetDeadline(t time.Time) error {
 
 // SetReadDeadline sets the read/write deadline.
 func (s *StdioConn) SetReadDeadline(t time.Time) error {
-	return s.stdin.SetReadDeadline(t)
+	return s.input.SetReadDeadline(t)
 }
 
 // SetWriteDeadline sets the read/write deadline.
 func (s *StdioConn) SetWriteDeadline(t time.Time) error {
-	return s.stdout.SetWriteDeadline(t)
+	return s.output.SetWriteDeadline(t)
 }

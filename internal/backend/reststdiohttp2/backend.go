@@ -78,7 +78,7 @@ func run(command string, args ...string) (*stdioconn.StdioConn, *exec.Cmd, *sync
 		return nil, nil, nil, nil, err
 	}
 
-	c := stdioconn.New(stdin, stdout)
+	c := stdioconn.New(stdout, stdin)
 
 	return c, cmd, &wg, bg, nil
 }

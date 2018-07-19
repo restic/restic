@@ -8,28 +8,28 @@ import (
 	"github.com/restic/restic/internal/debug"
 )
 
-// StdioConn implements a net.Conn via stdin/stdout.
+// StdioConn implements a net.Conn via os.File input/output.
 type StdioConn struct {
-	stdin  *os.File
-	stdout *os.File
+	input  *os.File
+	output *os.File
 	close  sync.Once
 }
 
 // New creates a StdioConn using the provided pipes
-func New(stdin *os.File, stdout *os.File) (*StdioConn){
+func New(input *os.File, output *os.File) (*StdioConn){
 	return &StdioConn{
-		stdin: stdin,
-		stdout: stdout,
+		input:  input,
+		output: output,
 	}
 }
 
 func (s *StdioConn) Read(p []byte) (int, error) {
-	n, err := s.stdin.Read(p)
+	n, err := s.input.Read(p)
 	return n, err
 }
 
 func (s *StdioConn) Write(p []byte) (int, error) {
-	n, err := s.stdout.Write(p)
+	n, err := s.output.Write(p)
 	return n, err
 }
 
@@ -39,7 +39,7 @@ func (s *StdioConn) Close() (err error) {
 		debug.Log("close stdio connection")
 		var errs []error
 
-		for _, f := range []func() error{s.stdin.Close, s.stdout.Close} {
+		for _, f := range []func() error{s.input.Close, s.output.Close} {
 			err := f()
 			if err != nil {
 				errs = append(errs, err)
@@ -67,7 +67,7 @@ func (s *StdioConn) RemoteAddr() net.Addr {
 // make sure StdioConn implements net.Conn
 var _ net.Conn = &StdioConn{}
 
-// Addr implements net.Addr for stdin/stdout.
+// Addr implements net.Addr for StdioConn.
 type Addr struct{}
 
 // Network returns the network type as a string.
