@@ -1,6 +1,6 @@
 // +build !go1.10
 
-package rclone
+package stdio_conn
 
 import "time"
 

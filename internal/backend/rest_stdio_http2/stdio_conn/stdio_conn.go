@@ -1,9 +1,8 @@
-package rclone
+package stdio_conn
 
 import (
 	"net"
 	"os"
-	"os/exec"
 	"sync"
 
 	"github.com/restic/restic/internal/debug"
@@ -13,8 +12,14 @@ import (
 type StdioConn struct {
 	stdin  *os.File
 	stdout *os.File
-	cmd    *exec.Cmd
 	close  sync.Once
+}
+
+func New(stdin *os.File, stdout *os.File) (*StdioConn){
+	return &StdioConn{
+		stdin: stdin,
+		stdout: stdout,
+	}
 }
 
 func (s *StdioConn) Read(p []byte) (int, error) {

@@ -17,6 +17,7 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/rest"
+	"github.com/restic/restic/internal/backend/rest_stdio_http2/stdio_conn"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/limiter"
@@ -32,11 +33,11 @@ type Backend struct {
 	waitCh     <-chan struct{}
 	waitResult error
 	wg         *sync.WaitGroup
-	conn       *StdioConn
+	conn       *stdio_conn.StdioConn
 }
 
 // run starts command with args and initializes the StdioConn.
-func run(command string, args ...string) (*StdioConn, *exec.Cmd, *sync.WaitGroup, func() error, error) {
+func run(command string, args ...string) (*stdio_conn.StdioConn, *exec.Cmd, *sync.WaitGroup, func() error, error) {
 	cmd := exec.Command(command, args...)
 
 	p, err := cmd.StderrPipe()
@@ -74,11 +75,7 @@ func run(command string, args ...string) (*StdioConn, *exec.Cmd, *sync.WaitGroup
 		return nil, nil, nil, nil, err
 	}
 
-	c := &StdioConn{
-		stdin:  stdout,
-		stdout: stdin,
-		cmd:    cmd,
-	}
+	c := stdio_conn.New(stdin, stdout)
 
 	return c, cmd, &wg, bg, nil
 }
@@ -86,7 +83,7 @@ func run(command string, args ...string) (*StdioConn, *exec.Cmd, *sync.WaitGroup
 // wrappedConn adds bandwidth limiting capabilities to the StdioConn by
 // wrapping the Read/Write methods.
 type wrappedConn struct {
-	*StdioConn
+	*stdio_conn.StdioConn
 	io.Reader
 	io.Writer
 }
@@ -99,7 +96,7 @@ func (c wrappedConn) Write(p []byte) (int, error) {
 	return c.Writer.Write(p)
 }
 
-func wrapConn(c *StdioConn, lim limiter.Limiter) wrappedConn {
+func wrapConn(c *stdio_conn.StdioConn, lim limiter.Limiter) wrappedConn {
 	wc := wrappedConn{
 		StdioConn: c,
 		Reader:    c,
