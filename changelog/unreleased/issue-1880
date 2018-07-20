@@ -1,0 +1,7 @@
+Bugfix: Use `--cache-dir` argument for `check` command
+
+`check` command now uses a specific cache directory if set using the `--cache-dir` argument.
+
+The `--cache-dir` argument was not used by the `check` command, instead a cache directory was created in the temporary directory.
+
+https://github.com/restic/restic/issues/1880
