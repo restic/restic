@@ -91,7 +91,7 @@ func saveDir(t testing.TB, repo restic.Repository, nodes map[string]Node) restic
 	return id
 }
 
-func saveSnapshot(t testing.TB, repo restic.Repository, snapshot Snapshot) (restic.Repository, restic.ID) {
+func saveSnapshot(t testing.TB, repo restic.Repository, snapshot Snapshot) (*restic.Snapshot, restic.ID) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -118,7 +118,7 @@ func saveSnapshot(t testing.TB, repo restic.Repository, snapshot Snapshot) (rest
 		t.Fatal(err)
 	}
 
-	return repo, id
+	return sn, id
 }
 
 // toSlash converts the OS specific path dir to a slash-separated path.
