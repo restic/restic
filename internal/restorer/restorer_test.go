@@ -134,6 +134,7 @@ func TestRestorer(t *testing.T) {
 		Files      map[string]string
 		ErrorsMust map[string]string
 		ErrorsMay  map[string]string
+		Select     func(item string, dstpath string, node *restic.Node) (selectForRestore bool, childMayBeSelected bool)
 	}{
 		// valid test cases
 		{
@@ -210,6 +211,31 @@ func TestRestorer(t *testing.T) {
 			},
 			Files: map[string]string{
 				"topfile": "top-level file",
+			},
+		},
+		{
+			Snapshot: Snapshot{
+				Nodes: map[string]Node{
+					"dir": Dir{
+						Nodes: map[string]Node{
+							"file": File{"content: file\n"},
+						},
+					},
+				},
+			},
+			Files: map[string]string{
+				"dir/file": "content: file\n",
+			},
+			Select: func(item, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
+				switch item {
+				case filepath.FromSlash("/dir"):
+					childMayBeSelected = true
+				case filepath.FromSlash("/dir/file"):
+					selectedForRestore = true
+					childMayBeSelected = true
+				}
+
+				return selectedForRestore, childMayBeSelected
 			},
 		},
 
@@ -293,6 +319,11 @@ func TestRestorer(t *testing.T) {
 						item, dstpath, tempdir)
 					return false, false
 				}
+
+				if test.Select != nil {
+					return test.Select(item, dstpath, node)
+				}
+
 				return true, true
 			}
 
