@@ -99,35 +99,15 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 			return err
 		}
 
-		enteredDir := false
 		if node.Type == "dir" {
 			if node.Subtree == nil {
 				return errors.Errorf("Dir without subtree in tree %v", treeID.Str())
 			}
 
-			// ifedorenko: apparently a dir can be selected explicitly or implicitly when a child is selected
-			// to support implicit selection, visit the directory from within visitor#visitNode
 			if selectedForRestore {
-				enteredDir = true
 				err = sanitizeError(visitor.enterDir(node, nodeTarget, nodeLocation))
 				if err != nil {
 					return err
-				}
-			} else {
-				_visitor := visitor
-				visitor = treeVisitor{
-					enterDir: _visitor.enterDir,
-					visitNode: func(node *restic.Node, nodeTarget, nodeLocation string) error {
-						if !enteredDir {
-							enteredDir = true
-							derr := sanitizeError(_visitor.enterDir(node, nodeTarget, nodeLocation))
-							if derr != nil {
-								return derr
-							}
-						}
-						return _visitor.visitNode(node, nodeTarget, nodeLocation)
-					},
-					leaveDir: _visitor.leaveDir,
 				}
 			}
 
@@ -137,25 +117,21 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 					return err
 				}
 			}
-		}
 
-		if selectedForRestore && node.Type != "dir" {
-			err = sanitizeError(visitor.visitNode(node, nodeTarget, nodeLocation))
-			if err != nil {
-				err = res.Error(nodeLocation, node, errors.Wrap(err, "restoreNodeTo"))
+			if selectedForRestore {
+				err = sanitizeError(visitor.leaveDir(node, nodeTarget, nodeLocation))
 				if err != nil {
 					return err
 				}
 			}
+
+			continue
 		}
 
-		if enteredDir {
-			err = sanitizeError(visitor.leaveDir(node, nodeTarget, nodeLocation))
+		if selectedForRestore {
+			err = sanitizeError(visitor.visitNode(node, nodeTarget, nodeLocation))
 			if err != nil {
-				err = res.Error(nodeLocation, node, errors.Wrap(err, "RestoreTimestamps"))
-				if err != nil {
-					return err
-				}
+				return err
 			}
 		}
 	}
@@ -211,6 +187,13 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 			return fs.MkdirAll(target, 0700)
 		},
 		visitNode: func(node *restic.Node, target, location string) error {
+			// create parent dir with default permissions
+			// #leaveDir restores dir metadata after visiting all children
+			err := fs.MkdirAll(filepath.Dir(target), 0700)
+			if err != nil {
+				return err
+			}
+
 			return res.restoreNodeTo(ctx, node, target, location, idx)
 		},
 		leaveDir: func(node *restic.Node, target, location string) error {
