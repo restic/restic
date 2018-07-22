@@ -4,11 +4,7 @@
 [[projects]]
   branch = "master"
   name = "bazil.org/fuse"
-  packages = [
-    ".",
-    "fs",
-    "fuseutil"
-  ]
+  packages = [".","fs","fuseutil"]
   revision = "371fbbdaa8987b715bdd21d6adc4c9b20155f748"
 
 [[projects]]
@@ -19,21 +15,13 @@
 
 [[projects]]
   name = "github.com/Azure/azure-sdk-for-go"
-  packages = [
-    "storage",
-    "version"
-  ]
+  packages = ["storage","version"]
   revision = "56332fec5b308fbb6615fa1af6117394cdba186d"
   version = "v15.0.0"
 
 [[projects]]
   name = "github.com/Azure/go-autorest"
-  packages = [
-    "autorest",
-    "autorest/adal",
-    "autorest/azure",
-    "autorest/date"
-  ]
+  packages = ["autorest","autorest/adal","autorest/azure","autorest/date"]
   revision = "ed4b7f5bf1ec0c9ede1fda2681d96771282f2862"
   version = "v10.4.0"
 
@@ -81,12 +69,7 @@
 
 [[projects]]
   name = "github.com/google/go-cmp"
-  packages = [
-    "cmp",
-    "cmp/internal/diff",
-    "cmp/internal/function",
-    "cmp/internal/value"
-  ]
+  packages = ["cmp","cmp/internal/diff","cmp/internal/function","cmp/internal/value"]
   revision = "8099a9787ce5dc5984ed879a3bda47dc730a8e97"
   version = "v0.1.0"
 
@@ -110,16 +93,9 @@
 
 [[projects]]
   name = "github.com/kurin/blazer"
-  packages = [
-    "b2",
-    "base",
-    "internal/b2assets",
-    "internal/b2types",
-    "internal/blog",
-    "x/window"
-  ]
-  revision = "318e9768bf9a0fe52a64b9f8fe74f4f5caef6452"
-  version = "v0.4.4"
+  packages = ["b2","base","internal/b2assets","internal/b2types","internal/blog","x/window"]
+  revision = "7f1134c7489e86be5c924137996d4e421815f48a"
+  version = "v0.5.0"
 
 [[projects]]
   name = "github.com/marstr/guid"
@@ -135,15 +111,7 @@
 
 [[projects]]
   name = "github.com/minio/minio-go"
-  packages = [
-    ".",
-    "pkg/credentials",
-    "pkg/encrypt",
-    "pkg/policy",
-    "pkg/s3signer",
-    "pkg/s3utils",
-    "pkg/set"
-  ]
+  packages = [".","pkg/credentials","pkg/encrypt","pkg/policy","pkg/s3signer","pkg/s3utils","pkg/set"]
   revision = "66252c2a3c15f7b90cc8493d497a04ac3b6e3606"
   version = "5.0.0"
 
@@ -190,52 +158,6 @@
   version = "v0.2.0"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/restic/restic"
-  packages = [
-    "internal/archiver",
-    "internal/backend",
-    "internal/backend/azure",
-    "internal/backend/b2",
-    "internal/backend/gs",
-    "internal/backend/local",
-    "internal/backend/location",
-    "internal/backend/mem",
-    "internal/backend/rclone",
-    "internal/backend/rest",
-    "internal/backend/s3",
-    "internal/backend/sftp",
-    "internal/backend/swift",
-    "internal/backend/test",
-    "internal/cache",
-    "internal/checker",
-    "internal/crypto",
-    "internal/debug",
-    "internal/errors",
-    "internal/filter",
-    "internal/fs",
-    "internal/fuse",
-    "internal/hashing",
-    "internal/index",
-    "internal/limiter",
-    "internal/list",
-    "internal/migrations",
-    "internal/mock",
-    "internal/options",
-    "internal/pack",
-    "internal/repository",
-    "internal/restic",
-    "internal/restorer",
-    "internal/test",
-    "internal/textfile",
-    "internal/ui",
-    "internal/ui/termstatus",
-    "internal/walker",
-    "internal/worker"
-  ]
-  revision = "bd742ddb692ffeaf5ac24eefdff0c0ba3e7c17fb"
-
-[[projects]]
   name = "github.com/russross/blackfriday"
   packages = ["."]
   revision = "55d61fa8aa702f59229e6cff85793c22e580eaf5"
@@ -255,10 +177,7 @@
 
 [[projects]]
   name = "github.com/spf13/cobra"
-  packages = [
-    ".",
-    "doc"
-  ]
+  packages = [".","doc"]
   revision = "a1f051bc3eba734da4772d60e2d677f47cf93ef4"
   version = "v0.0.2"
 
@@ -271,44 +190,19 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = [
-    "argon2",
-    "blake2b",
-    "curve25519",
-    "ed25519",
-    "ed25519/internal/edwards25519",
-    "internal/chacha20",
-    "pbkdf2",
-    "poly1305",
-    "scrypt",
-    "ssh",
-    "ssh/terminal"
-  ]
+  packages = ["argon2","blake2b","curve25519","ed25519","ed25519/internal/edwards25519","internal/chacha20","pbkdf2","poly1305","scrypt","ssh","ssh/terminal"]
   revision = "4ec37c66abab2c7e02ae775328b2ff001c3f025a"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = [
-    "context",
-    "context/ctxhttp",
-    "http2",
-    "http2/hpack",
-    "idna",
-    "lex/httplex"
-  ]
+  packages = ["context","context/ctxhttp","http2","http2/hpack","idna","lex/httplex"]
   revision = "6078986fec03a1dcc236c34816c71b0e05018fda"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/oauth2"
-  packages = [
-    ".",
-    "google",
-    "internal",
-    "jws",
-    "jwt"
-  ]
+  packages = [".","google","internal","jws","jwt"]
   revision = "fdc9e635145ae97e6c2cb777c48305600cf515cb"
 
 [[projects]]
@@ -320,65 +214,24 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
-  packages = [
-    "cpu",
-    "unix",
-    "windows"
-  ]
+  packages = ["cpu","unix","windows"]
   revision = "7db1c3b1a98089d0071c84f646ff5c96aad43682"
 
 [[projects]]
   name = "golang.org/x/text"
-  packages = [
-    "collate",
-    "collate/build",
-    "encoding",
-    "encoding/internal",
-    "encoding/internal/identifier",
-    "encoding/unicode",
-    "internal/colltab",
-    "internal/gen",
-    "internal/tag",
-    "internal/triegen",
-    "internal/ucd",
-    "internal/utf8internal",
-    "language",
-    "runes",
-    "secure/bidirule",
-    "transform",
-    "unicode/bidi",
-    "unicode/cldr",
-    "unicode/norm",
-    "unicode/rangetable"
-  ]
+  packages = ["collate","collate/build","encoding","encoding/internal","encoding/internal/identifier","encoding/unicode","internal/colltab","internal/gen","internal/tag","internal/triegen","internal/ucd","internal/utf8internal","language","runes","secure/bidirule","transform","unicode/bidi","unicode/cldr","unicode/norm","unicode/rangetable"]
   revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
   version = "v0.3.0"
 
 [[projects]]
   branch = "master"
   name = "google.golang.org/api"
-  packages = [
-    "gensupport",
-    "googleapi",
-    "googleapi/internal/uritemplates",
-    "storage/v1"
-  ]
+  packages = ["gensupport","googleapi","googleapi/internal/uritemplates","storage/v1"]
   revision = "dbbc13f71100fa6ece308335445fca6bb0dd5c2f"
 
 [[projects]]
   name = "google.golang.org/appengine"
-  packages = [
-    ".",
-    "internal",
-    "internal/app_identity",
-    "internal/base",
-    "internal/datastore",
-    "internal/log",
-    "internal/modules",
-    "internal/remote_api",
-    "internal/urlfetch",
-    "urlfetch"
-  ]
+  packages = [".","internal","internal/app_identity","internal/base","internal/datastore","internal/log","internal/modules","internal/remote_api","internal/urlfetch","urlfetch"]
   revision = "150dc57a1b433e64154302bdc40b6bb8aefa313a"
   version = "v1.0.0"
 
@@ -397,6 +250,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "cfab88aa746c1535f17c59e8db9ee2ca6908b840f71d7331de84c722221348d0"
+  inputs-digest = "a5de339cba7570216b212439b90e1e6c384c94be8342fe7755b7cb66aa0a3440"
   solver-name = "gps-cdcl"
   solver-version = 1
