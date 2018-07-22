@@ -23,10 +23,12 @@ Thanks for understanding, and for contributing to the project!
 -->
 
 
-## Output of `restic version`
+Output of `restic version`
+--------------------------
 
 
-## How did you run restic exactly?
+How did you run restic exactly?
+-------------------------------
 
 <!--
 This section should include at least:
@@ -38,39 +40,46 @@ This section should include at least:
    information to diagnose the problem!
 -->
 
-## What backend/server/service did you use to store the repository?
+What backend/server/service did you use to store the repository?
+----------------------------------------------------------------
 
 
 
-## Expected behavior
+Expected behavior
+-----------------
 
 <!--
 Describe what you'd like restic to do differently.
 -->
 
-## Actual behavior
+Actual behavior
+---------------
 
 <!--
 In this section, please try to concentrate on observations, so only describe
 what you observed directly.
 -->
 
-## Steps to reproduce the behavior
+Steps to reproduce the behavior
+-------------------------------
 
 <!--
 The more time you spend describing an easy way to reproduce the behavior (if
 this is possible), the easier it is for the project developers to fix it!
 -->
 
-## Do you have any idea what may have caused this?
+Do you have any idea what may have caused this?
+-----------------------------------------------
 
 
 
-## Do you have an idea how to solve the issue?
+Do you have an idea how to solve the issue?
+-------------------------------------------
 
 
 
-## Did restic help you or made you happy in any way?
+Did restic help you or made you happy in any way?
+-------------------------------------------------
 
 <!--
 Answering this question is not required, but if you have anything positive to share, please do so here!

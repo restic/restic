@@ -8,19 +8,22 @@ your time and add more commits. If you're done and ready for review, please
 check the last box.
 -->
 
-### What is the purpose of this change? What does it change?
+What is the purpose of this change? What does it change?
+--------------------------------------------------------
 
 <!--
 Describe the changes here, as detailed as needed.
 -->
 
-### Was the change discussed in an issue or in the forum before?
+Was the change discussed in an issue or in the forum before?
+------------------------------------------------------------
 
 <!--
 Link issues and relevant forum posts here.
 -->
 
-### Checklist
+Checklist
+---------
 
 - [ ] I have read the [Contribution Guidelines](https://github.com/restic/restic/blob/master/CONTRIBUTING.md#providing-patches)
 - [ ] I have added tests for all changes in this PR
