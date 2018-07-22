@@ -1,0 +1,9 @@
+Enhancement: Update the Backblaze B2 library
+
+We've updated the library we're using for accessing the Backblaze B2 service to
+0.5.0 to include support for upcoming so-called "application keys". With this
+feature, you can create access credentials for B2 which are restricted to e.g.
+a single bucket or even a sub-directory of a bucket.
+
+https://github.com/restic/restic/pull/1901
+https://github.com/kurin/blazer
