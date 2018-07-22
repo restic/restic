@@ -210,7 +210,11 @@ func collectRejectFuncs(opts BackupOptions, repo *repository.Repository, targets
 
 	// add patterns from file
 	if len(opts.ExcludeFiles) > 0 {
-		opts.Excludes = append(opts.Excludes, readExcludePatternsFromFiles(opts.ExcludeFiles)...)
+		excludes, err := readExcludePatternsFromFiles(opts.ExcludeFiles)
+		if err != nil {
+			return nil, err
+		}
+		opts.Excludes = append(opts.Excludes, excludes...)
 	}
 
 	if len(opts.Excludes) > 0 {
@@ -238,7 +242,7 @@ func collectRejectFuncs(opts BackupOptions, repo *repository.Repository, targets
 // and comment lines are ignored. For each remaining pattern, environment
 // variables are resolved. For adding a literal dollar sign ($), write $$ to
 // the file.
-func readExcludePatternsFromFiles(excludeFiles []string) []string {
+func readExcludePatternsFromFiles(excludeFiles []string) ([]string, error) {
 	getenvOrDollar := func(s string) string {
 		if s == "$" {
 			return "$"
@@ -274,11 +278,10 @@ func readExcludePatternsFromFiles(excludeFiles []string) []string {
 			return scanner.Err()
 		}()
 		if err != nil {
-			Warnf("error reading exclude patterns: %v:", err)
-			return nil
+			return nil, err
 		}
 	}
-	return excludes
+	return excludes, nil
 }
 
 // collectTargets returns a list of target files/dirs from several sources.

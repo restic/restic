@@ -1,0 +1,8 @@
+Bugfix: Return error when exclude file cannot be read
+
+A bug was found: when multiple exclude files were passed to restic and one of
+them could not be read, an error was printed and restic continued, ignoring
+even the existing exclude files. Now, an error message is printed and restic
+aborts when an exclude file cannot be read.
+
+https://github.com/restic/restic/issues/1893
