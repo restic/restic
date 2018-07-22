@@ -1,3 +1,8 @@
+---
+name: Bug report
+about: Report a problem with restic to help us resolve it and improve
+---
+
 <!--
 
 Welcome! - We kindly ask that you:
