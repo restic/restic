@@ -123,6 +123,7 @@ func newReadProgress(gopts GlobalOptions, todo restic.Stat) *restic.Progress {
 //
 //  * if --with-cache is specified, the default cache is used
 //  * if the user explicitly requested --no-cache, we don't use any cache
+//  * if the user provides --cache-dir, we use a cache in a temporary sub-directory of the specified directory and the sub-directory is deleted after the check
 //  * by default, we use a cache in a temporary directory that is deleted after the check
 func prepareCheckCache(opts CheckOptions, gopts *GlobalOptions) (cleanup func()) {
 	cleanup = func() {}
@@ -136,8 +137,10 @@ func prepareCheckCache(opts CheckOptions, gopts *GlobalOptions) (cleanup func())
 		return cleanup
 	}
 
+	cachedir := gopts.CacheDir
+
 	// use a cache in a temporary directory
-	tempdir, err := ioutil.TempDir("", "restic-check-cache-")
+	tempdir, err := ioutil.TempDir(cachedir, "restic-check-cache-")
 	if err != nil {
 		// if an error occurs, don't use any cache
 		Warnf("unable to create temporary directory for cache during check, disabling cache: %v\n", err)

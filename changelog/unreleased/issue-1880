@@ -1,0 +1,12 @@
+Bugfix: Use `--cache-dir` argument for `check` command
+
+`check` command now uses a temporary sub-directory of the specified directory
+if set using the `--cache-dir` argument. If not set, the cache directory is
+created in the default temporary directory as before.
+In either case a temporary cache is used to ensure the actual repository is
+checked (rather than a local copy).
+
+The `--cache-dir` argument was not used by the `check` command, instead a
+cache directory was created in the temporary directory.
+
+https://github.com/restic/restic/issues/1880
