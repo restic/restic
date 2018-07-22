@@ -265,7 +265,7 @@ func TestStorage(t *testing.T) {
 	}
 
 	// b2_get_download_authorization
-	if _, err := bucket.GetDownloadAuthorization(ctx, "foo/", 24*time.Hour); err != nil {
+	if _, err := bucket.GetDownloadAuthorization(ctx, "foo/", 24*time.Hour, "attachment"); err != nil {
 		t.Errorf("failed to get download auth token: %v", err)
 	}
 }
@@ -280,7 +280,7 @@ func TestUploadAuthAfterConnectionHang(t *testing.T) {
 
 	hung := make(chan struct{})
 
-	// An http.RoundTripper that dies after sending ~10k bytes.
+	// An http.RoundTripper that dies and hangs after sending ~10k bytes.
 	hang := func() {
 		close(hung)
 		select {}
@@ -317,7 +317,6 @@ func TestUploadAuthAfterConnectionHang(t *testing.T) {
 
 	go func() {
 		ue.UploadFile(ctx, buf, buf.Len(), smallFileName, "application/octet-stream", smallSHA1, nil)
-		t.Fatal("this ought not to be reachable")
 	}()
 
 	<-hung

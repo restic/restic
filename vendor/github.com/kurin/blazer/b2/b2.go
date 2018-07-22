@@ -32,6 +32,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
 	"sync"
@@ -46,6 +47,7 @@ type Client struct {
 	sWriters map[string]*Writer
 	sReaders map[string]*Reader
 	sMethods []methodCounter
+	opts     clientOptions
 }
 
 // NewClient creates and returns a new Client with valid B2 service account
@@ -63,7 +65,10 @@ func NewClient(ctx context.Context, account, key string, opts ...ClientOption) (
 		},
 	}
 	opts = append(opts, client(c))
-	if err := c.backend.authorizeAccount(ctx, account, key, opts...); err != nil {
+	for _, f := range opts {
+		f(&c.opts)
+	}
+	if err := c.backend.authorizeAccount(ctx, account, key, c.opts); err != nil {
 		return nil, err
 	}
 	return c, nil
@@ -75,27 +80,9 @@ type clientOptions struct {
 	failSomeUploads bool
 	expireTokens    bool
 	capExceeded     bool
+	apiBase         string
 	userAgents      []string
-}
-
-// for testing
-func (c clientOptions) eq(o clientOptions) bool {
-	if c.client != o.client ||
-		c.transport != o.transport ||
-		c.failSomeUploads != o.failSomeUploads ||
-		c.expireTokens != o.expireTokens ||
-		c.capExceeded != o.capExceeded {
-		return false
-	}
-	if len(c.userAgents) != len(o.userAgents) {
-		return false
-	}
-	for i := range c.userAgents {
-		if c.userAgents[i] != o.userAgents[i] {
-			return false
-		}
-	}
-	return true
+	writerOpts      []WriterOption
 }
 
 // A ClientOption allows callers to adjust various per-client settings.
@@ -109,6 +96,13 @@ type ClientOption func(*clientOptions)
 func UserAgent(agent string) ClientOption {
 	return func(o *clientOptions) {
 		o.userAgents = append(o.userAgents, agent)
+	}
+}
+
+// APIBase returns a ClientOption specifying the URL root of API requests.
+func APIBase(url string) ClientOption {
+	return func(o *clientOptions) {
+		o.apiBase = url
 	}
 }
 
@@ -434,7 +428,7 @@ type Attrs struct {
 	ContentType     string            // Used on upload, default is "application/octet-stream".
 	Status          ObjectState       // Not used on upload.
 	UploadTimestamp time.Time         // Not used on upload.
-	SHA1            string            // Not used on upload. Can be "none" for large files.
+	SHA1            string            // Can be "none" for large files.  If set on upload, will be used for large files.
 	LastModified    time.Time         // If present, and there are fewer than 10 keys in the Info field, this is saved on upload.
 	Info            map[string]string // Save arbitrary metadata on upload, but limited to 10 keys.
 }
@@ -473,6 +467,9 @@ func (o *Object) Attrs(ctx context.Context) (*Attrs, error) {
 		}
 		mtime = time.Unix(ms/1e3, (ms%1e3)*1e6)
 		delete(info, "src_last_modified_millis")
+	}
+	if v, ok := info["large_file_sha1"]; ok {
+		sha = v
 	}
 	return &Attrs{
 		Name:            name,
@@ -524,14 +521,21 @@ func (o *Object) URL() string {
 // overwritten are not deleted, but are "hidden".
 //
 // Callers must close the writer when finished and check the error status.
-func (o *Object) NewWriter(ctx context.Context) *Writer {
+func (o *Object) NewWriter(ctx context.Context, opts ...WriterOption) *Writer {
 	ctx, cancel := context.WithCancel(ctx)
-	return &Writer{
+	w := &Writer{
 		o:      o,
 		name:   o.name,
 		ctx:    ctx,
 		cancel: cancel,
 	}
+	for _, f := range o.b.c.opts.writerOpts {
+		f(w)
+	}
+	for _, f := range opts {
+		f(w)
+	}
+	return w
 }
 
 // NewRangeReader returns a reader for the given object, reading up to length
@@ -760,5 +764,24 @@ func (b *Bucket) getObject(ctx context.Context, name string) (*Object, error) {
 // in a private bucket.  Only objects that begin with prefix can be accessed.
 // The token expires after the given duration.
 func (b *Bucket) AuthToken(ctx context.Context, prefix string, valid time.Duration) (string, error) {
-	return b.b.getDownloadAuthorization(ctx, prefix, valid)
+	return b.b.getDownloadAuthorization(ctx, prefix, valid, "")
+}
+
+// AuthURL returns a URL for the given object with embedded token and,
+// possibly, b2ContentDisposition arguments.  Leave b2cd blank for no content
+// disposition.
+func (o *Object) AuthURL(ctx context.Context, valid time.Duration, b2cd string) (*url.URL, error) {
+	token, err := o.b.b.getDownloadAuthorization(ctx, o.name, valid, b2cd)
+	if err != nil {
+		return nil, err
+	}
+	urlString := fmt.Sprintf("%s?Authorization=%s", o.URL(), url.QueryEscape(token))
+	if b2cd != "" {
+		urlString = fmt.Sprintf("%s&b2ContentDisposition=%s", urlString, url.QueryEscape(b2cd))
+	}
+	u, err := url.Parse(urlString)
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
 }

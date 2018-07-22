@@ -17,9 +17,13 @@ package b2
 import (
 	"bytes"
 	"context"
+	"crypto/sha1"
 	"errors"
+	"fmt"
+	"hash"
 	"io"
 	"sync"
+	"time"
 
 	"github.com/kurin/blazer/internal/blog"
 )
@@ -38,21 +42,25 @@ type Reader struct {
 	// 10MB.
 	ChunkSize int
 
-	ctx    context.Context
-	cancel context.CancelFunc // cancels ctx
-	o      *Object
-	name   string
-	offset int64 // the start of the file
-	length int64 // the length to read, or -1
-	csize  int   // chunk size
-	read   int   // amount read
-	chwid  int   // chunks written
-	chrid  int   // chunks read
-	chbuf  chan *rchunk
-	init   sync.Once
-	rmux   sync.Mutex // guards rcond
-	rcond  *sync.Cond
-	chunks map[int]*rchunk
+	ctx        context.Context
+	cancel     context.CancelFunc // cancels ctx
+	o          *Object
+	name       string
+	offset     int64 // the start of the file
+	length     int64 // the length to read, or -1
+	csize      int   // chunk size
+	read       int   // amount read
+	chwid      int   // chunks written
+	chrid      int   // chunks read
+	chbuf      chan *rchunk
+	init       sync.Once
+	chunks     map[int]*rchunk
+	vrfy       hash.Hash
+	readOffEnd bool
+	sha1       string
+
+	rmux  sync.Mutex // guards rcond
+	rcond *sync.Cond
 
 	emux sync.RWMutex // guards err, believe it or not
 	err  error
@@ -122,10 +130,12 @@ func (r *Reader) thread() {
 				}
 				r.length -= size
 			}
+			var b backoff
 		redo:
 			fr, err := r.o.b.b.downloadFileByName(r.ctx, r.name, offset, size)
 			if err == errNoMoreContent {
 				// this read generated a 416 so we are entirely past the end of the object
+				r.readOffEnd = true
 				buf.final = true
 				r.rmux.Lock()
 				r.chunks[chunkID] = buf
@@ -138,7 +148,10 @@ func (r *Reader) thread() {
 				r.rcond.Broadcast()
 				return
 			}
-			rsize, _, _, _ := fr.stats()
+			rsize, _, sha1, _ := fr.stats()
+			if len(sha1) == 40 && r.sha1 != sha1 {
+				r.sha1 = sha1
+			}
 			mr := &meteredReader{r: noopResetter{fr}, size: int(rsize)}
 			r.smux.Lock()
 			r.smap[chunkID] = mr
@@ -150,7 +163,12 @@ func (r *Reader) thread() {
 			r.smux.Unlock()
 			if i < int64(rsize) || err == io.ErrUnexpectedEOF {
 				// Probably the network connection was closed early.  Retry.
-				blog.V(1).Infof("b2 reader %d: got %dB of %dB; retrying", chunkID, i, rsize)
+				blog.V(1).Infof("b2 reader %d: got %dB of %dB; retrying after %v", chunkID, i, rsize, b)
+				if err := b.wait(r.ctx); err != nil {
+					r.setErr(err)
+					r.rcond.Broadcast()
+					return
+				}
 				buf.Reset()
 				goto redo
 			}
@@ -211,13 +229,13 @@ func (r *Reader) initFunc() {
 		r.thread()
 		r.chbuf <- &rchunk{}
 	}
+	r.vrfy = sha1.New()
 }
 
 func (r *Reader) Read(p []byte) (int, error) {
 	if err := r.getErr(); err != nil {
 		return 0, err
 	}
-	// TODO: check the SHA1 hash here and verify it on Close.
 	r.init.Do(r.initFunc)
 	chunk, err := r.curChunk()
 	if err != nil {
@@ -225,6 +243,7 @@ func (r *Reader) Read(p []byte) (int, error) {
 		return 0, err
 	}
 	n, err := chunk.Read(p)
+	r.vrfy.Write(p[:n]) // Hash.Write never returns an error.
 	r.read += n
 	if err == io.EOF {
 		if chunk.final {
@@ -256,38 +275,49 @@ func (r *Reader) status() *ReaderStatus {
 	return rs
 }
 
-// copied from io.Copy, basically.
-func copyContext(ctx context.Context, dst io.Writer, src io.Reader) (written int64, err error) {
-	buf := make([]byte, 32*1024)
-	for {
-		if ctx.Err() != nil {
-			err = ctx.Err()
-			return
-		}
-		nr, er := src.Read(buf)
-		if nr > 0 {
-			nw, ew := dst.Write(buf[0:nr])
-			if nw > 0 {
-				written += int64(nw)
-			}
-			if ew != nil {
-				err = ew
-				break
-			}
-			if nr != nw {
-				err = io.ErrShortWrite
-				break
-			}
-		}
-		if er == io.EOF {
-			break
-		}
-		if er != nil {
-			err = er
-			break
-		}
+// Verify checks the SHA1 hash on download and compares it to the SHA1 hash
+// submitted on upload.  If the two differ, this returns an error.  If the
+// correct hash could not be calculated (if, for example, the entire object was
+// not read, or if the object was uploaded as a "large file" and thus the SHA1
+// hash was not sent), this returns (nil, false).
+func (r *Reader) Verify() (error, bool) {
+	got := fmt.Sprintf("%x", r.vrfy.Sum(nil))
+	if r.sha1 == got {
+		return nil, true
 	}
-	return written, err
+	// TODO: if the exact length of the file is requested AND the checksum is
+	// bad, this will return (nil, false) instead of (an error, true).  This is
+	// because there's no good way that I can tell to determine that we've hit
+	// the end of the file without reading off the end.  Consider reading N+1
+	// bytes at the very end to close this hole.
+	if r.offset > 0 || !r.readOffEnd || len(r.sha1) != 40 {
+		return nil, false
+	}
+	return fmt.Errorf("bad hash: got %v, want %v", got, r.sha1), true
+}
+
+// strip a writer of any non-Write methods
+type onlyWriter struct{ w io.Writer }
+
+func (ow onlyWriter) Write(p []byte) (int, error) { return ow.w.Write(p) }
+
+func copyContext(ctx context.Context, w io.Writer, r io.Reader) (int64, error) {
+	var n int64
+	var err error
+	done := make(chan struct{})
+	go func() {
+		if _, ok := w.(*Writer); ok {
+			w = onlyWriter{w}
+		}
+		n, err = io.Copy(w, r)
+		close(done)
+	}()
+	select {
+	case <-done:
+		return n, err
+	case <-ctx.Done():
+		return 0, ctx.Err()
+	}
 }
 
 type noopResetter struct {
@@ -295,3 +325,24 @@ type noopResetter struct {
 }
 
 func (noopResetter) Reset() error { return nil }
+
+type backoff time.Duration
+
+func (b *backoff) wait(ctx context.Context) error {
+	if *b == 0 {
+		*b = backoff(time.Millisecond)
+	}
+	select {
+	case <-time.After(time.Duration(*b)):
+		if time.Duration(*b) < time.Second*10 {
+			*b <<= 1
+		}
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+func (b backoff) String() string {
+	return time.Duration(b).String()
+}

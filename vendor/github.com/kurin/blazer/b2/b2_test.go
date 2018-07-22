@@ -71,7 +71,7 @@ type testRoot struct {
 	bucketMap map[string]map[string]string
 }
 
-func (t *testRoot) authorizeAccount(context.Context, string, string, ...ClientOption) error {
+func (t *testRoot) authorizeAccount(context.Context, string, string, clientOptions) error {
 	t.auths++
 	return nil
 }
@@ -106,6 +106,13 @@ func (t *testRoot) transient(err error) bool {
 		return false
 	}
 	return e.retry || e.reupload || e.backoff > 0
+}
+
+func (t *testRoot) createKey(context.Context, string, []string, time.Duration, string, string) (b2KeyInterface, error) {
+	return nil, nil
+}
+func (t *testRoot) listKeys(context.Context, int, string) ([]b2KeyInterface, string, error) {
+	return nil, "", nil
 }
 
 func (t *testRoot) createBucket(_ context.Context, name, _ string, _ map[string]string, _ []LifecycleRule) (b2BucketInterface, error) {
@@ -147,6 +154,7 @@ func (t *testBucket) btype() string                                    { return 
 func (t *testBucket) attrs() *BucketAttrs                              { return nil }
 func (t *testBucket) deleteBucket(context.Context) error               { return nil }
 func (t *testBucket) updateBucket(context.Context, *BucketAttrs) error { return nil }
+func (t *testBucket) id() string                                       { return "" }
 
 func (t *testBucket) getUploadURL(context.Context) (b2URLInterface, error) {
 	if err := t.errs.getError("getUploadURL"); err != nil {
@@ -221,7 +229,7 @@ func (t *testBucket) downloadFileByName(_ context.Context, name string, offset, 
 }
 
 func (t *testBucket) hideFile(context.Context, string) (b2FileInterface, error) { return nil, nil }
-func (t *testBucket) getDownloadAuthorization(context.Context, string, time.Duration) (string, error) {
+func (t *testBucket) getDownloadAuthorization(context.Context, string, time.Duration, string) (string, error) {
 	return "", nil
 }
 func (t *testBucket) baseURL() string                      { return "" }

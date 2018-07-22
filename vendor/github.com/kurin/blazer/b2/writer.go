@@ -476,16 +476,40 @@ func (w *Writer) Close() error {
 
 // WithAttrs sets the writable attributes of the resulting file to given
 // values.  WithAttrs must be called before the first call to Write.
+//
+// DEPRECATED: Use WithAttrsOption instead.
 func (w *Writer) WithAttrs(attrs *Attrs) *Writer {
 	w.contentType = attrs.ContentType
 	w.info = make(map[string]string)
 	for k, v := range attrs.Info {
 		w.info[k] = v
 	}
+	if len(w.info) < 10 && attrs.SHA1 != "" {
+		w.info["large_file_sha1"] = attrs.SHA1
+	}
 	if len(w.info) < 10 && !attrs.LastModified.IsZero() {
 		w.info["src_last_modified_millis"] = fmt.Sprintf("%d", attrs.LastModified.UnixNano()/1e6)
 	}
 	return w
+}
+
+// A WriterOption sets Writer-specific behavior.
+type WriterOption func(*Writer)
+
+// WithAttrs attaches the given Attrs to the writer.
+func WithAttrsOption(attrs *Attrs) WriterOption {
+	return func(w *Writer) {
+		w.WithAttrs(attrs)
+	}
+}
+
+// DefaultWriterOptions returns a ClientOption that will apply the given
+// WriterOptions to every Writer.  These options can be overridden by passing
+// new options to NewWriter.
+func DefaultWriterOptions(opts ...WriterOption) ClientOption {
+	return func(c *clientOptions) {
+		c.writerOpts = opts
+	}
 }
 
 func (w *Writer) status() *WriterStatus {

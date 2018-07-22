@@ -22,6 +22,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"reflect"
@@ -29,6 +30,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kurin/blazer/internal/blog"
 	"github.com/kurin/blazer/x/transport"
 )
 
@@ -136,6 +138,9 @@ func TestReaderFromLive(t *testing.T) {
 		}
 		if rn != n {
 			t.Errorf("Read from B2: got %d bytes, want %d bytes", rn, n)
+		}
+		if err, ok := r.Verify(); ok && err != nil {
+			t.Errorf("Read from B2: %v", err)
 		}
 		if err := r.Close(); err != nil {
 			t.Errorf("r.Close(): %v", err)
@@ -323,6 +328,7 @@ func TestAttrs(t *testing.T) {
 		for _, attrs := range attrlist {
 			o := bucket.Object(e.name)
 			w := o.NewWriter(ctx).WithAttrs(attrs)
+			w.ChunkSize = 5e6
 			if _, err := io.Copy(w, io.LimitReader(zReader{}, e.size)); err != nil {
 				t.Error(err)
 				continue
@@ -429,6 +435,57 @@ func TestAuthTokLive(t *testing.T) {
 	}
 }
 
+func TestObjAuthTokLive(t *testing.T) {
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
+	bucket, done := startLiveTest(ctx, t)
+	defer done()
+
+	table := []struct {
+		obj  string
+		d    time.Duration
+		b2cd string
+	}{
+		{
+			obj: "foo/bar",
+			d:   time.Minute,
+		},
+		{
+			obj:  "foo2/thing.pdf",
+			d:    time.Minute,
+			b2cd: "attachment",
+		},
+		{
+			obj:  "foo2/thing.pdf",
+			d:    time.Minute,
+			b2cd: `attachment; filename="what.png"`,
+		},
+	}
+
+	for _, e := range table {
+		fw := bucket.Object(e.obj).NewWriter(ctx)
+		io.Copy(fw, io.LimitReader(zReader{}, 1e5))
+		if err := fw.Close(); err != nil {
+			t.Fatal(err)
+		}
+
+		url, err := bucket.Object(e.obj).AuthURL(ctx, e.d, e.b2cd)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		blog.V(2).Infof("downloading %s", url.String())
+		frsp, err := http.Get(url.String())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if frsp.StatusCode != 200 {
+			t.Fatalf("%s: got %s, want 200", url.String(), frsp.Status)
+		}
+	}
+}
+
 func TestRangeReaderLive(t *testing.T) {
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
@@ -509,6 +566,9 @@ func TestRangeReaderLive(t *testing.T) {
 		want := fmt.Sprintf("%x", hw.Sum(nil))
 		if got != want {
 			t.Errorf("NewRangeReader(_, %d, %d): got %q, want %q", e.offset, e.length, got, want)
+		}
+		if err, ok := r.Verify(); ok && err != nil {
+			t.Errorf("NewRangeReader(_, %d, %d): %v", e.offset, e.length, err)
 		}
 	}
 }
@@ -863,29 +923,161 @@ func TestReauthPreservesOptions(t *testing.T) {
 	bucket, done := startLiveTest(ctx, t)
 	defer done()
 
-	var first []ClientOption
-	opts := bucket.r.(*beRoot).options
-	for _, o := range opts {
-		first = append(first, o)
-	}
-
+	first := bucket.r.(*beRoot).options
 	if err := bucket.r.reauthorizeAccount(ctx); err != nil {
 		t.Fatalf("reauthorizeAccount: %v", err)
 	}
-
 	second := bucket.r.(*beRoot).options
-	if len(second) != len(first) {
-		t.Fatalf("options mismatch: got %d options, wanted %d", len(second), len(first))
+	if !reflect.DeepEqual(first, second) {
+		// Test that they are literally the same set of options, which is an
+		// implementation detail but is fine for now.
+		t.Errorf("options mismatch: got %v, want %v", second, first)
+	}
+}
+
+func TestVerifyReader(t *testing.T) {
+	ctx := context.Background()
+	bucket, done := startLiveTest(ctx, t)
+	defer done()
+
+	table := []struct {
+		name     string
+		fakeSHA  string
+		size     int64
+		off, len int64
+		valid    bool
+	}{
+		{
+			name:  "first",
+			size:  100,
+			off:   0,
+			len:   -1,
+			valid: true,
+		},
+		{
+			name:  "second",
+			size:  100,
+			off:   0,
+			len:   100,
+			valid: true,
+		},
+		{
+			name:  "third",
+			size:  100,
+			off:   0,
+			len:   99,
+			valid: false,
+		},
+		{
+			name:  "fourth",
+			size:  5e6 + 100,
+			off:   0,
+			len:   -1,
+			valid: false,
+		},
+		{
+			name:    "fifth",
+			size:    5e6 + 100,
+			off:     0,
+			len:     -1,
+			fakeSHA: "fbc815f2d6518858dec83ccb46263875fc894d88",
+			valid:   true,
+		},
 	}
 
-	var f, s clientOptions
-	for i := range first {
-		first[i](&f)
-		second[i](&s)
+	for _, e := range table {
+		o := bucket.Object(e.name)
+		w := o.NewWriter(ctx)
+		if e.fakeSHA != "" {
+			w = w.WithAttrs(&Attrs{SHA1: e.fakeSHA})
+		}
+		w.ChunkSize = 5e6
+		if _, err := io.Copy(w, io.LimitReader(zReader{}, e.size)); err != nil {
+			t.Error(err)
+			continue
+		}
+		if err := w.Close(); err != nil {
+			t.Error(err)
+			continue
+		}
+		r := o.NewRangeReader(ctx, e.off, e.len)
+		if _, err := io.Copy(ioutil.Discard, r); err != nil {
+			t.Error(err)
+		}
+		err, ok := r.Verify()
+		if ok != e.valid {
+			t.Errorf("%s: bad validity: got %v, want %v", e.name, ok, e.valid)
+		}
+		if e.valid && err != nil {
+			t.Errorf("%s does not verify: %v", e.name, err)
+		}
+	}
+}
+
+func TestCreateDeleteKey(t *testing.T) {
+	ctx := context.Background()
+	bucket, done := startLiveTest(ctx, t)
+	defer done()
+
+	table := []struct {
+		d      time.Duration
+		e      time.Time
+		bucket bool
+		cap    []string
+		pfx    string
+	}{
+		{
+			cap: []string{"deleteKeys"},
+		},
+		{
+			d:   time.Minute,
+			cap: []string{"deleteKeys"},
+			pfx: "prefox",
+		},
+		{
+			e:      time.Now().Add(time.Minute), // <shrug emojis>
+			cap:    []string{"writeFiles", "listFiles"},
+			bucket: true,
+		},
+		{
+			d:      time.Minute,
+			cap:    []string{"writeFiles", "listFiles"},
+			pfx:    "prefox",
+			bucket: true,
+		},
 	}
 
-	if !f.eq(s) {
-		t.Errorf("options mismatch: got %v, want %v", s, f)
+	for _, e := range table {
+		var opts []KeyOption
+		for _, cap := range e.cap {
+			opts = append(opts, Capability(cap))
+		}
+		if e.d != 0 {
+			opts = append(opts, Lifetime(e.d))
+		}
+		if !e.e.IsZero() {
+			opts = append(opts, Deadline(e.e))
+		}
+		var key *Key
+		if e.bucket {
+			opts = append(opts, Prefix(e.pfx))
+			bkey, err := bucket.CreateKey(ctx, "whee", opts...)
+			if err != nil {
+				t.Errorf("Bucket.CreateKey(%v, %v): %v", bucket.Name(), e, err)
+				continue
+			}
+			key = bkey
+		} else {
+			gkey, err := bucket.c.CreateKey(ctx, "whee", opts...)
+			if err != nil {
+				t.Errorf("Client.CreateKey(%v): %v", e, err)
+				continue
+			}
+			key = gkey
+		}
+		if err := key.Delete(ctx); err != nil {
+			t.Errorf("key.Delete(): %v", err)
+		}
 	}
 }
 

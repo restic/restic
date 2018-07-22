@@ -42,7 +42,7 @@ import (
 
 const (
 	APIBase          = "https://api.backblazeb2.com"
-	DefaultUserAgent = "blazer/0.4.4"
+	DefaultUserAgent = "blazer/0.5.0"
 )
 
 type b2err struct {
@@ -427,7 +427,7 @@ func AuthorizeAccount(ctx context.Context, account, key string, opts ...AuthOpti
 		authToken:   b2resp.AuthToken,
 		apiURI:      b2resp.URI,
 		downloadURI: b2resp.DownloadURI,
-		minPartSize: b2resp.MinPartSize,
+		minPartSize: b2resp.PartSize,
 		opts:        b2opts,
 	}, nil
 }
@@ -479,6 +479,14 @@ func ForceCapExceeded() AuthOption {
 	}
 }
 
+// SetAPIBase returns an AuthOption that uses the given URL as the base for API
+// requests.
+func SetAPIBase(url string) AuthOption {
+	return func(o *b2Options) {
+		o.apiBase = url
+	}
+}
+
 type LifecycleRule struct {
 	Prefix                 string
 	DaysNewUntilHidden     int
@@ -524,7 +532,7 @@ func (b *B2) CreateBucket(ctx context.Context, name, btype string, info map[stri
 		Name:           name,
 		Info:           b2resp.Info,
 		LifecycleRules: respRules,
-		id:             b2resp.BucketID,
+		ID:             b2resp.BucketID,
 		rev:            b2resp.Revision,
 		b2:             b,
 	}, nil
@@ -534,7 +542,7 @@ func (b *B2) CreateBucket(ctx context.Context, name, btype string, info map[stri
 func (b *Bucket) DeleteBucket(ctx context.Context) error {
 	b2req := &b2types.DeleteBucketRequest{
 		AccountID: b.b2.accountID,
-		BucketID:  b.id,
+		BucketID:  b.ID,
 	}
 	headers := map[string]string{
 		"Authorization": b.b2.authToken,
@@ -548,7 +556,7 @@ type Bucket struct {
 	Type           string
 	Info           map[string]string
 	LifecycleRules []LifecycleRule
-	id             string
+	ID             string
 	rev            int
 	b2             *B2
 }
@@ -565,7 +573,7 @@ func (b *Bucket) Update(ctx context.Context) (*Bucket, error) {
 	}
 	b2req := &b2types.UpdateBucketRequest{
 		AccountID: b.b2.accountID,
-		BucketID:  b.id,
+		BucketID:  b.ID,
 		// Name:           b.Name,
 		Type:           b.Type,
 		Info:           b.Info,
@@ -592,7 +600,7 @@ func (b *Bucket) Update(ctx context.Context) (*Bucket, error) {
 		Type:           b2resp.Type,
 		Info:           b2resp.Info,
 		LifecycleRules: respRules,
-		id:             b2resp.BucketID,
+		ID:             b2resp.BucketID,
 		b2:             b.b2,
 	}, nil
 }
@@ -629,7 +637,7 @@ func (b *B2) ListBuckets(ctx context.Context) ([]*Bucket, error) {
 			Type:           bucket.Type,
 			Info:           bucket.Info,
 			LifecycleRules: rules,
-			id:             bucket.BucketID,
+			ID:             bucket.BucketID,
 			rev:            bucket.Revision,
 			b2:             b,
 		})
@@ -660,7 +668,7 @@ func (url *URL) Reload(ctx context.Context) error {
 // GetUploadURL wraps b2_get_upload_url.
 func (b *Bucket) GetUploadURL(ctx context.Context) (*URL, error) {
 	b2req := &b2types.GetUploadURLRequest{
-		BucketID: b.id,
+		BucketID: b.ID,
 	}
 	b2resp := &b2types.GetUploadURLResponse{}
 	headers := map[string]string{
@@ -745,7 +753,7 @@ type LargeFile struct {
 // StartLargeFile wraps b2_start_large_file.
 func (b *Bucket) StartLargeFile(ctx context.Context, name, contentType string, info map[string]string) (*LargeFile, error) {
 	b2req := &b2types.StartLargeFileRequest{
-		BucketID:    b.id,
+		BucketID:    b.ID,
 		Name:        name,
 		ContentType: contentType,
 		Info:        info,
@@ -927,7 +935,7 @@ func (l *LargeFile) FinishLargeFile(ctx context.Context) (*File, error) {
 // ListUnfinishedLargeFiles wraps b2_list_unfinished_large_files.
 func (b *Bucket) ListUnfinishedLargeFiles(ctx context.Context, count int, continuation string) ([]*File, string, error) {
 	b2req := &b2types.ListUnfinishedLargeFilesRequest{
-		BucketID:     b.id,
+		BucketID:     b.ID,
 		Continuation: continuation,
 		Count:        count,
 	}
@@ -962,7 +970,7 @@ func (b *Bucket) ListFileNames(ctx context.Context, count int, continuation, pre
 	b2req := &b2types.ListFileNamesRequest{
 		Count:        count,
 		Continuation: continuation,
-		BucketID:     b.id,
+		BucketID:     b.ID,
 		Prefix:       prefix,
 		Delimiter:    delimiter,
 	}
@@ -1000,7 +1008,7 @@ func (b *Bucket) ListFileNames(ctx context.Context, count int, continuation, pre
 // ListFileVersions wraps b2_list_file_versions.
 func (b *Bucket) ListFileVersions(ctx context.Context, count int, startName, startID, prefix, delimiter string) ([]*File, string, string, error) {
 	b2req := &b2types.ListFileVersionsRequest{
-		BucketID:  b.id,
+		BucketID:  b.ID,
 		Count:     count,
 		StartName: startName,
 		StartID:   startID,
@@ -1038,11 +1046,12 @@ func (b *Bucket) ListFileVersions(ctx context.Context, count int, startName, sta
 }
 
 // GetDownloadAuthorization wraps b2_get_download_authorization.
-func (b *Bucket) GetDownloadAuthorization(ctx context.Context, prefix string, valid time.Duration) (string, error) {
+func (b *Bucket) GetDownloadAuthorization(ctx context.Context, prefix string, valid time.Duration, contentDisposition string) (string, error) {
 	b2req := &b2types.GetDownloadAuthorizationRequest{
-		BucketID: b.id,
-		Prefix:   prefix,
-		Valid:    int(valid.Seconds()),
+		BucketID:           b.ID,
+		Prefix:             prefix,
+		Valid:              int(valid.Seconds()),
+		ContentDisposition: contentDisposition,
 	}
 	b2resp := &b2types.GetDownloadAuthorizationResponse{}
 	headers := map[string]string{
@@ -1121,9 +1130,13 @@ func (b *Bucket) DownloadFileByName(ctx context.Context, name string, offset, si
 		}
 		info[name] = val
 	}
+	sha1 := resp.Header.Get("X-Bz-Content-Sha1")
+	if sha1 == "none" && info["Large_file_sha1"] != "" {
+		sha1 = info["Large_file_sha1"]
+	}
 	return &FileReader{
 		ReadCloser:    resp.Body,
-		SHA1:          resp.Header.Get("X-Bz-Content-Sha1"),
+		SHA1:          sha1,
 		ID:            resp.Header.Get("X-Bz-File-Id"),
 		ContentType:   resp.Header.Get("Content-Type"),
 		ContentLength: int(clen),
@@ -1134,7 +1147,7 @@ func (b *Bucket) DownloadFileByName(ctx context.Context, name string, offset, si
 // HideFile wraps b2_hide_file.
 func (b *Bucket) HideFile(ctx context.Context, name string) (*File, error) {
 	b2req := &b2types.HideFileRequest{
-		BucketID: b.id,
+		BucketID: b.ID,
 		File:     name,
 	}
 	b2resp := &b2types.HideFileResponse{}
@@ -1189,4 +1202,79 @@ func (f *File) GetFileInfo(ctx context.Context) (*FileInfo, error) {
 		Timestamp:   millitime(b2resp.Timestamp),
 	}
 	return f.Info, nil
+}
+
+// Key is a B2 application key.
+type Key struct {
+	ID           string
+	Secret       string
+	Name         string
+	Capabilities []string
+	Expires      time.Time
+	b2           *B2
+}
+
+// CreateKey wraps b2_create_key.
+func (b *B2) CreateKey(ctx context.Context, name string, caps []string, valid time.Duration, bucketID string, prefix string) (*Key, error) {
+	b2req := &b2types.CreateKeyRequest{
+		AccountID:    b.accountID,
+		Capabilities: caps,
+		Name:         name,
+		Valid:        int(valid.Seconds()),
+		BucketID:     bucketID,
+		Prefix:       prefix,
+	}
+	b2resp := &b2types.CreateKeyResponse{}
+	headers := map[string]string{
+		"Authorization": b.authToken,
+	}
+	if err := b.opts.makeRequest(ctx, "b2_create_key", "POST", b.apiURI+b2types.V1api+"b2_create_key", b2req, b2resp, headers, nil); err != nil {
+		return nil, err
+	}
+	return &Key{
+		Name:         b2resp.Name,
+		ID:           b2resp.ID,
+		Secret:       b2resp.Secret,
+		Capabilities: b2resp.Capabilities,
+		Expires:      millitime(b2resp.Expires),
+		b2:           b,
+	}, nil
+}
+
+// Delete wraps b2_delete_key.
+func (k *Key) Delete(ctx context.Context) error {
+	b2req := &b2types.DeleteKeyRequest{
+		KeyID: k.ID,
+	}
+	headers := map[string]string{
+		"Authorization": k.b2.authToken,
+	}
+	return k.b2.opts.makeRequest(ctx, "b2_delete_key", "POST", k.b2.apiURI+b2types.V1api+"b2_delete_key", b2req, nil, headers, nil)
+}
+
+// ListKeys wraps b2_list_keys.
+func (b *B2) ListKeys(ctx context.Context, max int, next string) ([]*Key, string, error) {
+	b2req := &b2types.ListKeysRequest{
+		AccountID: b.accountID,
+		Max:       max,
+		Next:      next,
+	}
+	headers := map[string]string{
+		"Authorization": b.authToken,
+	}
+	b2resp := &b2types.ListKeysResponse{}
+	if err := b.opts.makeRequest(ctx, "b2_create_key", "POST", b.apiURI+b2types.V1api+"b2_create_key", b2req, b2resp, headers, nil); err != nil {
+		return nil, "", err
+	}
+	var keys []*Key
+	for _, key := range b2resp.Keys {
+		keys = append(keys, &Key{
+			Name:         key.Name,
+			ID:           key.ID,
+			Capabilities: key.Capabilities,
+			Expires:      millitime(key.Expires),
+			b2:           b,
+		})
+	}
+	return keys, b2resp.Next, nil
 }

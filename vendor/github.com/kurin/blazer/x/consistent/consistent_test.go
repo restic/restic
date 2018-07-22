@@ -30,9 +30,9 @@ func TestOperationLive(t *testing.T) {
 		wg.Add(1)
 		i := i
 		go func() {
-			var n int
 			defer wg.Done()
 			for j := 0; j < 10; j++ {
+				var n int
 				if err := g.Operate(ctx, name, func(b []byte) ([]byte, error) {
 					if len(b) > 0 {
 						i, err := strconv.Atoi(string(b))
