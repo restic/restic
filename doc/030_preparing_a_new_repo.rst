@@ -313,6 +313,8 @@ bucket does not exist yet, it will be created:
     Please note that knowledge of your password is required to access the repository.
     Losing your password means that your data is irrecoverably lost.
 
+Note that the bucket name must be unique across all of B2.
+
 The number of concurrent connections to the B2 service can be set with the ``-o
 b2.connections=10`` switch. By default, at most five parallel connections are
 established.
