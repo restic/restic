@@ -1,0 +1,6 @@
+Bugfix: Fix restore with --include
+
+We fixed a bug which prevented restic to restore files with an include filter.
+
+https://github.com/restic/restic/issues/1870
+https://github.com/restic/restic/pull/1900
