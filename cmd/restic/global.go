@@ -51,6 +51,9 @@ type GlobalOptions struct {
 	CACerts       []string
 	TLSClientCert string
 	CleanupCache  bool
+	StatusURL     string
+	StatusTime    int
+	StatusToken   string
 
 	LimitUploadKb   int
 	LimitDownloadKb int
@@ -100,6 +103,9 @@ func init() {
 	f.IntVar(&globalOptions.LimitUploadKb, "limit-upload", 0, "limits uploads to a maximum rate in KiB/s. (default: unlimited)")
 	f.IntVar(&globalOptions.LimitDownloadKb, "limit-download", 0, "limits downloads to a maximum rate in KiB/s. (default: unlimited)")
 	f.StringSliceVarP(&globalOptions.Options, "option", "o", []string{}, "set extended option (`key=value`, can be specified multiple times)")
+	f.StringVar(&globalOptions.StatusURL, "send-status-url", "", "URL for status monitoring")
+	f.IntVar(&globalOptions.StatusTime, "send-status-time", 5, "delay for status monitoring")
+	f.StringVar(&globalOptions.StatusToken, "send-status-token", os.Getenv("RESTIC_SEND_STATUS_TOKEN"), "token for status monitoring (default: $RESTIC_SEND_STATUS_TOKEN)")
 
 	restoreTerminal()
 }
