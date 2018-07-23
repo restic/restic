@@ -16,6 +16,7 @@ import (
 // Restore reports progress for the `restore` command.
 type Restore struct {
 	*Message
+	HTTP *HTTPRestore
 	*StdioWrapper
 
 	MinUpdatePause time.Duration
@@ -33,8 +34,8 @@ type Restore struct {
 	finished    chan struct{}
 
 	total, processed counter
-	errors           uint
-	eta              uint64
+	errors uint
+	eta uint64
 
 	summary struct {
 		sync.Mutex
@@ -48,7 +49,7 @@ type Restore struct {
 }
 
 // NewRestore returns a new restoration progress reporter.
-func NewRestore(term *termstatus.Terminal, verbosity uint) *Restore {
+func NewRestore(term *termstatus.Terminal, verbosity uint, statusURL string, statusInterval int, statusToken string) *Restore {
 	ret := &Restore{
 		Message:      NewMessage(term, verbosity),
 		StdioWrapper: NewStdioWrapper(term),
@@ -65,6 +66,7 @@ func NewRestore(term *termstatus.Terminal, verbosity uint) *Restore {
 		workerCh:    make(chan fileWorkerMessage),
 		finished:    make(chan struct{}),
 	}
+	ret.HTTP = NewHTTPRestore(ret, statusURL, statusInterval, statusToken)
 	return ret
 }
 
@@ -72,9 +74,9 @@ func NewRestore(term *termstatus.Terminal, verbosity uint) *Restore {
 // goroutine.
 func (b *Restore) Run(ctx context.Context) error {
 	var (
-		lastUpdate   time.Time
-		started      bool
-		currentFiles = make(map[string]struct{})
+		lastUpdate       time.Time
+		started          bool
+		currentFiles     = make(map[string]struct{})
 	)
 
 	t := time.NewTicker(time.Second)

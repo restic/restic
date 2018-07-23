@@ -201,6 +201,8 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string, p *ui.Restore) e
 	}
 
 	idx := restic.NewHardlinkIndex()
+	p.HTTP.State = ui.HTTPScanningData
+	p.HTTP.SendUpdate()
 	var totalFiles uint
 	var totalBytes uint64
 	res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
@@ -219,6 +221,8 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string, p *ui.Restore) e
 		leaveDir: func(node *restic.Node, target, location string) error { return nil },
 	})
 	p.ReportTotal("", archiver.ScanStats{Files: totalFiles, Bytes: totalBytes})
+	p.HTTP.State = ui.HTTPDoingRestore
+	p.HTTP.SendUpdate()
 	return res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
 		enterDir: func(node *restic.Node, target, location string) error {
 			// create dir with default permissions
