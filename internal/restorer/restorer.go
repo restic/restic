@@ -4,13 +4,16 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
 
+	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
 )
 
 // Restorer is used to restore a snapshot to a directory.
@@ -188,7 +191,7 @@ func (res *Restorer) restoreNodeMetadataTo(node *restic.Node, target, location s
 
 // RestoreTo creates the directories and files in the snapshot below dst.
 // Before an item is created, res.Filter is called.
-func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
+func (res *Restorer) RestoreTo(ctx context.Context, dst string, p *ui.Restore) error {
 	var err error
 	if !filepath.IsAbs(dst) {
 		dst, err = filepath.Abs(dst)
@@ -198,14 +201,41 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 	}
 
 	idx := restic.NewHardlinkIndex()
+	var totalFiles uint
+	var totalBytes uint64
+	res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
+		enterDir: func(node *restic.Node, target, location string) error { return nil },
+		visitNode: func(node *restic.Node, target, location string) error {
+			switch node.Type {
+			case "file":
+				totalFiles++
+				totalBytes += node.Size
+				p.ReportTotal("-", archiver.ScanStats{Files: 1})
+			case "dir":
+				p.ReportTotal("-", archiver.ScanStats{Dirs: 1})
+			}
+			return nil
+		},
+		leaveDir: func(node *restic.Node, target, location string) error { return nil },
+	})
+	p.ReportTotal("", archiver.ScanStats{Files: totalFiles, Bytes: totalBytes})
 	return res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
 		enterDir: func(node *restic.Node, target, location string) error {
 			// create dir with default permissions
 			// #leaveDir restores dir metadata after visiting all children
-			return fs.MkdirAll(target, 0700)
+			start := time.Now()
+			err := fs.MkdirAll(target, 0700)
+			p.CompleteItemFn(location, nil, node, archiver.ItemStats{DataSize: node.Size}, time.Now().Sub(start))
+			return err
 		},
 		visitNode: func(node *restic.Node, target, location string) error {
-			return res.restoreNodeTo(ctx, node, target, location, idx)
+			start := time.Now()
+			err := res.restoreNodeTo(ctx, node, target, location, idx)
+			p.CompleteItemFn(location, nil, node, archiver.ItemStats{DataSize: node.Size}, time.Now().Sub(start))
+			if node.Type == "file" {
+				p.CompleteBlob(node.Name, node.Size)
+			}
+			return err
 		},
 		leaveDir: func(node *restic.Node, target, location string) error {
 			// Restore directory permissions and timestamp at the end. If we did it earlier

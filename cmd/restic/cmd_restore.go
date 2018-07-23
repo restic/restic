@@ -1,13 +1,15 @@
 package main
 
 import (
-	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/restorer"
+	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/termstatus"
 
 	"github.com/spf13/cobra"
+	"gopkg.in/tomb.v2"
 )
 
 var cmdRestore = &cobra.Command{
@@ -22,7 +24,11 @@ repository.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runRestore(restoreOptions, globalOptions, args)
+		var t tomb.Tomb
+		term := termstatus.New(globalOptions.stdout, globalOptions.stderr, globalOptions.Quiet)
+		t.Go(func() error { term.Run(t.Context(globalOptions.ctx)); return nil })
+
+		return runRestore(restoreOptions, globalOptions, term, args)
 	},
 }
 
@@ -53,7 +59,7 @@ func init() {
 	flags.BoolVar(&restoreOptions.Verify, "verify", false, "verify restored files content")
 }
 
-func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
+func runRestore(opts RestoreOptions, gopts GlobalOptions, term *termstatus.Terminal, args []string) error {
 	ctx := gopts.ctx
 
 	switch {
@@ -73,7 +79,12 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 
 	snapshotIDString := args[0]
 
-	debug.Log("restore %v to %v", snapshotIDString, opts.Target)
+	p := ui.NewRestore(term, gopts.verbosity)
+
+	var t tomb.Tomb
+	t.Go(func() error { return p.Run(t.Context(gopts.ctx)) })
+
+	p.VV("restore %v to %v", snapshotIDString, opts.Target)
 
 	repo, err := OpenRepository(gopts)
 	if err != nil {
@@ -88,6 +99,7 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
+	p.V("load index files")
 	err = repo.LoadIndex(ctx)
 	if err != nil {
 		return err
@@ -114,7 +126,7 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 
 	totalErrors := 0
 	res.Error = func(dir string, node *restic.Node, err error) error {
-		Warnf("ignoring error for %s: %s\n", dir, err)
+		p.Error("ignoring error for %s: %s\n", dir, err)
 		totalErrors++
 		return nil
 	}
@@ -122,7 +134,7 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 	selectExcludeFilter := func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
 		matched, _, err := filter.List(opts.Exclude, item)
 		if err != nil {
-			Warnf("error for exclude pattern: %v", err)
+			p.Error("error for exclude pattern: %v", err)
 		}
 
 		// An exclude filter is basically a 'wildcard but foo',
@@ -138,7 +150,7 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 	selectIncludeFilter := func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
 		matched, childMayMatch, err := filter.List(opts.Include, item)
 		if err != nil {
-			Warnf("error for include pattern: %v", err)
+			p.Error("error for include pattern: %v", err)
 		}
 
 		selectedForRestore = matched
@@ -153,17 +165,18 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 		res.SelectFilter = selectIncludeFilter
 	}
 
-	Verbosef("restoring %s to %s\n", res.Snapshot(), opts.Target)
+	p.V("restoring %s to %s\n", res.Snapshot(), opts.Target)
 
-	err = res.RestoreTo(ctx, opts.Target)
+	err = res.RestoreTo(ctx, opts.Target, p)
 	if err == nil && opts.Verify {
-		Verbosef("verifying files in %s\n", opts.Target)
+		p.V("verifying files in %s\n", opts.Target)
 		var count int
 		count, err = res.VerifyFiles(ctx, opts.Target)
-		Verbosef("finished verifying %d files in %s\n", count, opts.Target)
+		p.V("finished verifying %d files in %s\n", count, opts.Target)
 	}
+	p.Finish()
 	if totalErrors > 0 {
-		Printf("There were %d errors\n", totalErrors)
+		p.P("There were %d errors\n", totalErrors)
 	}
 	return err
 }
