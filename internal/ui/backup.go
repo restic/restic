@@ -26,6 +26,7 @@ type fileWorkerMessage struct {
 // Backup reports progress for the `backup` command.
 type Backup struct {
 	*Message
+	HTTP *HTTPBackup
 	*StdioWrapper
 
 	MinUpdatePause time.Duration
@@ -42,6 +43,10 @@ type Backup struct {
 	workerCh    chan fileWorkerMessage
 	finished    chan struct{}
 
+	total, processed counter
+	errors           uint
+	eta              uint64
+
 	summary struct {
 		sync.Mutex
 		Files, Dirs struct {
@@ -54,8 +59,8 @@ type Backup struct {
 }
 
 // NewBackup returns a new backup progress reporter.
-func NewBackup(term *termstatus.Terminal, verbosity uint) *Backup {
-	return &Backup{
+func NewBackup(term *termstatus.Terminal, verbosity uint, statusURL string, statusInterval int, statusToken string) *Backup {
+	ret := &Backup{
 		Message:      NewMessage(term, verbosity),
 		StdioWrapper: NewStdioWrapper(term),
 		term:         term,
@@ -71,18 +76,17 @@ func NewBackup(term *termstatus.Terminal, verbosity uint) *Backup {
 		workerCh:    make(chan fileWorkerMessage),
 		finished:    make(chan struct{}),
 	}
+	ret.HTTP = NewHTTPBackup(ret, statusURL, statusInterval, statusToken)
+	return ret
 }
 
 // Run regularly updates the status lines. It should be called in a separate
 // goroutine.
 func (b *Backup) Run(ctx context.Context) error {
 	var (
-		lastUpdate       time.Time
-		total, processed counter
-		errors           uint
-		started          bool
-		currentFiles     = make(map[string]struct{})
-		secondsRemaining uint64
+		lastUpdate   time.Time
+		started      bool
+		currentFiles = make(map[string]struct{})
 	)
 
 	t := time.NewTicker(time.Second)
@@ -97,20 +101,20 @@ func (b *Backup) Run(ctx context.Context) error {
 			b.term.SetStatus([]string{""})
 		case t, ok := <-b.totalCh:
 			if ok {
-				total = t
+				b.total = t
 				started = true
 			} else {
 				// scan has finished
 				b.totalCh = nil
-				b.totalBytes = total.Bytes
+				b.totalBytes = b.total.Bytes
 			}
 		case s := <-b.processedCh:
-			processed.Files += s.Files
-			processed.Dirs += s.Dirs
-			processed.Bytes += s.Bytes
+			b.processed.Files += s.Files
+			b.processed.Dirs += s.Dirs
+			b.processed.Bytes += s.Bytes
 			started = true
 		case <-b.errCh:
-			errors++
+			b.errors++
 			started = true
 		case m := <-b.workerCh:
 			if m.done {
@@ -125,8 +129,8 @@ func (b *Backup) Run(ctx context.Context) error {
 
 			if b.totalCh == nil {
 				secs := float64(time.Since(b.start) / time.Second)
-				todo := float64(total.Bytes - processed.Bytes)
-				secondsRemaining = uint64(secs / float64(processed.Bytes) * todo)
+				todo := float64(b.total.Bytes - b.processed.Bytes)
+				b.eta = uint64(secs / float64(b.processed.Bytes) * todo)
 			}
 		}
 
@@ -136,25 +140,25 @@ func (b *Backup) Run(ctx context.Context) error {
 		}
 		lastUpdate = time.Now()
 
-		b.update(total, processed, errors, currentFiles, secondsRemaining)
+		b.update(currentFiles)
 	}
 }
 
 // update updates the status lines.
-func (b *Backup) update(total, processed counter, errors uint, currentFiles map[string]struct{}, secs uint64) {
+func (b *Backup) update(currentFiles map[string]struct{}) {
 	var status string
-	if total.Files == 0 && total.Dirs == 0 {
+	if b.total.Files == 0 && b.total.Dirs == 0 {
 		// no total count available yet
 		status = fmt.Sprintf("[%s] %v files, %s, %d errors",
 			formatDuration(time.Since(b.start)),
-			processed.Files, formatBytes(processed.Bytes), errors,
+			b.processed.Files, formatBytes(b.processed.Bytes), b.errors,
 		)
 	} else {
 		var eta, percent string
 
-		if secs > 0 && processed.Bytes < total.Bytes {
-			eta = fmt.Sprintf(" ETA %s", formatSeconds(secs))
-			percent = formatPercent(processed.Bytes, total.Bytes)
+		if b.eta > 0 && b.processed.Bytes < b.total.Bytes {
+			eta = fmt.Sprintf(" ETA %s", formatSeconds(b.eta))
+			percent = formatPercent(b.processed.Bytes, b.total.Bytes)
 			percent += "  "
 		}
 
@@ -162,11 +166,11 @@ func (b *Backup) update(total, processed counter, errors uint, currentFiles map[
 		status = fmt.Sprintf("[%s] %s%v files %s, total %v files %v, %d errors%s",
 			formatDuration(time.Since(b.start)),
 			percent,
-			processed.Files,
-			formatBytes(processed.Bytes),
-			total.Files,
-			formatBytes(total.Bytes),
-			errors,
+			b.processed.Files,
+			formatBytes(b.processed.Bytes),
+			b.total.Files,
+			formatBytes(b.total.Bytes),
+			b.errors,
 			eta,
 		)
 	}

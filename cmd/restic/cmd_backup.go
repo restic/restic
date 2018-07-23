@@ -336,13 +336,17 @@ func findParentSnapshot(ctx context.Context, repo restic.Repository, opts Backup
 }
 
 func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Terminal, args []string) error {
+	p := ui.NewBackup(term, gopts.verbosity, gopts.StatusURL, gopts.StatusTime, gopts.StatusToken)
+
 	err := opts.Check(gopts, args)
 	if err != nil {
+		p.HTTP.Error(err)
 		return err
 	}
 
 	targets, err := collectTargets(opts, args)
 	if err != nil {
+		p.HTTP.Error(err)
 		return err
 	}
 
@@ -350,13 +354,12 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	if opts.TimeStamp != "" {
 		timeStamp, err = time.Parse(TimeFormat, opts.TimeStamp)
 		if err != nil {
+			p.HTTP.Error(err)
 			return errors.Fatalf("error in time option: %v\n", err)
 		}
 	}
 
 	var t tomb.Tomb
-
-	p := ui.NewBackup(term, gopts.verbosity)
 
 	// use the terminal for stdout/stderr
 	prevStdout, prevStderr := gopts.stdout, gopts.stderr
@@ -380,6 +383,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	p.V("open repository")
 	repo, err := OpenRepository(gopts)
 	if err != nil {
+		p.HTTP.Error(err)
 		return err
 	}
 
@@ -387,23 +391,29 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	lock, err := lockRepo(repo)
 	defer unlockRepo(lock)
 	if err != nil {
+		p.HTTP.Error(err)
 		return err
 	}
 
 	// rejectFuncs collect functions that can reject items from the backup
 	rejectFuncs, err := collectRejectFuncs(opts, repo, targets)
 	if err != nil {
+		p.HTTP.Error(err)
 		return err
 	}
 
 	p.V("load index files")
+	p.HTTP.State = ui.HTTPReadingIndex
+	p.HTTP.SendUpdate()
 	err = repo.LoadIndex(gopts.ctx)
 	if err != nil {
+		p.HTTP.Error(err)
 		return err
 	}
 
 	parentSnapshotID, err := findParentSnapshot(gopts.ctx, repo, opts, targets)
 	if err != nil {
+		p.HTTP.Error(err)
 		return err
 	}
 
@@ -435,9 +445,14 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	sc := archiver.NewScanner(targetFS)
 	sc.Select = selectFilter
 	sc.Error = p.ScannerError
-	sc.Result = p.ReportTotal
+	sc.Result = func(item string, s archiver.ScanStats) {
+		p.ReportTotal(item, s)
+		p.HTTP.ScanStats = s
+	}
 
 	p.V("start scan on %v", targets)
+	p.HTTP.State = ui.HTTPScanningData
+	// No SendUpdate; SendScanStats is used elsewhere instead
 	t.Go(func() error { return sc.Scan(t.Context(gopts.ctx), targets) })
 
 	arch := archiver.New(repo, targetFS, archiver.Options{})
@@ -475,12 +490,16 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	})
 
 	p.V("start backup on %v", targets)
+	p.HTTP.State = ui.HTTPDoingBackup
+	p.HTTP.SendUpdate()
 	_, id, err := arch.Snapshot(gopts.ctx, targets, snapshotOpts)
 	if err != nil {
 		return errors.Fatalf("unable to save snapshot: %v", err)
 	}
 
 	p.Finish()
+	p.HTTP.State = ui.HTTPNone
+	p.HTTP.SendDone(id.Str())
 	p.P("snapshot %s saved\n", id.Str())
 
 	// cleanly shutdown all running goroutines
@@ -489,6 +508,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	// let's see if one returned an error
 	err = t.Wait()
 	if err != nil {
+		p.HTTP.Error(err)
 		return err
 	}
 
