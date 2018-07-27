@@ -21,6 +21,25 @@ The "stats" command walks one or all snapshots in a repository and
 accumulates statistics about the data stored therein. It reports on
 the number of unique files and their sizes, according to one of
 the counting modes as given by the --mode flag.
+
+If no snapshot is specified, all snapshots will be considered. Some
+modes make more sense over just a single snapshot, while others
+are useful across all snapshots, depending on what you are trying
+to calculate.
+
+The modes are:
+
+  restore-size: (default) Counts the size of the restored files.
+
+  files-by-contents: Counts total size of files, where a file is
+                     considered unique if it has unique contents.
+
+  raw-data: Counts the size of blobs in the repository, regardless
+			of how many files reference them.
+
+  blobs-per-file: A combination of files-by-contents and raw-data.
+
+Refer to the online manual for more details about each mode.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -31,7 +50,7 @@ the counting modes as given by the --mode flag.
 func init() {
 	cmdRoot.AddCommand(cmdStats)
 	f := cmdStats.Flags()
-	f.StringVar(&countMode, "mode", countModeRestoreSize, "counting mode: restore-size (default), files-by-content, blobs-per-file, or raw-data")
+	f.StringVar(&countMode, "mode", countModeRestoreSize, "counting mode: restore-size (default), files-by-contents, blobs-per-file, or raw-data")
 	f.StringVar(&snapshotByHost, "host", "", "filter latest snapshot by this hostname")
 }
 
@@ -163,14 +182,14 @@ func statsWalkTree(repo restic.Repository, stats *statsContainer) walker.WalkFun
 			return true, nil
 		}
 
-		if countMode == countModeUniqueFilesByContent || countMode == countModeBlobsPerFile {
+		if countMode == countModeUniqueFilesByContents || countMode == countModeBlobsPerFile {
 			// only count this file if we haven't visited it before
 			fid := makeFileIDByContents(node)
 			if _, ok := stats.uniqueFiles[fid]; !ok {
 				// mark the file as visited
 				stats.uniqueFiles[fid] = struct{}{}
 
-				if countMode == countModeUniqueFilesByContent {
+				if countMode == countModeUniqueFilesByContents {
 					// simply count the size of each unique file (unique by contents only)
 					stats.TotalSize += node.Size
 					stats.TotalFileCount++
@@ -197,7 +216,6 @@ func statsWalkTree(repo restic.Repository, stats *statsContainer) walker.WalkFun
 							// file (path) so we don't double-count it
 							stats.TotalSize += uint64(blobSize)
 							stats.fileBlobs[nodePath].Insert(blobID)
-
 							// this mode also counts total unique blob _references_ per file
 							stats.TotalBlobCount++
 						}
@@ -232,7 +250,7 @@ func verifyStatsInput(gopts GlobalOptions, args []string) error {
 	// require a recognized counting mode
 	switch countMode {
 	case countModeRestoreSize:
-	case countModeUniqueFilesByContent:
+	case countModeUniqueFilesByContents:
 	case countModeBlobsPerFile:
 	case countModeRawData:
 	default:
@@ -289,8 +307,8 @@ var (
 )
 
 const (
-	countModeRestoreSize          = "restore-size"
-	countModeUniqueFilesByContent = "files-by-content"
-	countModeBlobsPerFile         = "blobs-per-file"
-	countModeRawData              = "raw-data"
+	countModeRestoreSize           = "restore-size"
+	countModeUniqueFilesByContents = "files-by-contents"
+	countModeBlobsPerFile          = "blobs-per-file"
+	countModeRawData               = "raw-data"
 )
