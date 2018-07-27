@@ -147,75 +147,75 @@ func statsWalkSnapshot(ctx context.Context, snapshot *restic.Snapshot, repo rest
 		return restic.FindUsedBlobs(ctx, repo, *snapshot.Tree, stats.blobs, stats.blobsSeen)
 	}
 
-	err := walker.Walk(ctx, repo, *snapshot.Tree, restic.NewIDSet(), func(path string, node *restic.Node, nodeErr error) (bool, error) {
-		return statsWalkTree(path, node, nodeErr, repo, stats)
-	})
+	err := walker.Walk(ctx, repo, *snapshot.Tree, restic.NewIDSet(), statsWalkTree(repo, stats))
 	if err != nil {
 		return fmt.Errorf("walking tree %s: %v", *snapshot.Tree, err)
 	}
 	return nil
 }
 
-func statsWalkTree(npath string, node *restic.Node, nodeErr error, repo restic.Repository, stats *statsContainer) (ignore bool, err error) {
-	if nodeErr != nil {
-		return true, nodeErr
-	}
-	if node == nil {
-		return true, nil
-	}
+func statsWalkTree(repo restic.Repository, stats *statsContainer) walker.WalkFunc {
+	return func(npath string, node *restic.Node, nodeErr error) (bool, error) {
+		if nodeErr != nil {
+			return true, nodeErr
+		}
+		if node == nil {
+			return true, nil
+		}
 
-	if countMode == countModeUniqueFilesByContent || countMode == countModeBlobsPerFile {
-		// only count this file if we haven't visited it before
-		fid := makeFileIDByContents(node)
-		if _, ok := stats.uniqueFiles[fid]; !ok {
-			// mark the file as visited
-			stats.uniqueFiles[fid] = struct{}{}
+		if countMode == countModeUniqueFilesByContent || countMode == countModeBlobsPerFile {
+			// only count this file if we haven't visited it before
+			fid := makeFileIDByContents(node)
+			if _, ok := stats.uniqueFiles[fid]; !ok {
+				// mark the file as visited
+				stats.uniqueFiles[fid] = struct{}{}
 
-			if countMode == countModeUniqueFilesByContent {
-				// simply count the size of each unique file (unique by contents only)
-				stats.TotalSize += node.Size
-				stats.TotalFileCount++
-			}
-			if countMode == countModeBlobsPerFile {
-				// count the size of each unique blob reference, which is
-				// by unique file (unique by contents and file path)
-				for _, blobID := range node.Content {
-					// ensure we have this file (by path) in our map; in this
-					// mode, a file is unique by both contents and path
-					nodePath := filepath.Join(npath, node.Name)
-					if _, ok := stats.fileBlobs[nodePath]; !ok {
-						stats.fileBlobs[nodePath] = restic.NewIDSet()
-						stats.TotalFileCount++
-					}
-					if _, ok := stats.fileBlobs[nodePath][blobID]; !ok {
-						// is always a data blob since we're accessing it via a file's Content array
-						blobSize, found := repo.LookupBlobSize(blobID, restic.DataBlob)
-						if !found {
-							return true, fmt.Errorf("blob %s not found for tree %s", blobID, *node.Subtree)
+				if countMode == countModeUniqueFilesByContent {
+					// simply count the size of each unique file (unique by contents only)
+					stats.TotalSize += node.Size
+					stats.TotalFileCount++
+				}
+				if countMode == countModeBlobsPerFile {
+					// count the size of each unique blob reference, which is
+					// by unique file (unique by contents and file path)
+					for _, blobID := range node.Content {
+						// ensure we have this file (by path) in our map; in this
+						// mode, a file is unique by both contents and path
+						nodePath := filepath.Join(npath, node.Name)
+						if _, ok := stats.fileBlobs[nodePath]; !ok {
+							stats.fileBlobs[nodePath] = restic.NewIDSet()
+							stats.TotalFileCount++
 						}
+						if _, ok := stats.fileBlobs[nodePath][blobID]; !ok {
+							// is always a data blob since we're accessing it via a file's Content array
+							blobSize, found := repo.LookupBlobSize(blobID, restic.DataBlob)
+							if !found {
+								return true, fmt.Errorf("blob %s not found for tree %s", blobID, *node.Subtree)
+							}
 
-						// count the blob's size, then add this blob by this
-						// file (path) so we don't double-count it
-						stats.TotalSize += uint64(blobSize)
-						stats.fileBlobs[nodePath].Insert(blobID)
+							// count the blob's size, then add this blob by this
+							// file (path) so we don't double-count it
+							stats.TotalSize += uint64(blobSize)
+							stats.fileBlobs[nodePath].Insert(blobID)
 
-						// this mode also counts total unique blob _references_ per file
-						stats.TotalBlobCount++
+							// this mode also counts total unique blob _references_ per file
+							stats.TotalBlobCount++
+						}
 					}
 				}
 			}
 		}
-	}
 
-	if countMode == countModeRestoreSize {
-		// as this is a file in the snapshot, we can simply count its
-		// size without worrying about uniqueness, since duplicate files
-		// will still be restored
-		stats.TotalSize += node.Size
-		stats.TotalFileCount++
-	}
+		if countMode == countModeRestoreSize {
+			// as this is a file in the snapshot, we can simply count its
+			// size without worrying about uniqueness, since duplicate files
+			// will still be restored
+			stats.TotalSize += node.Size
+			stats.TotalFileCount++
+		}
 
-	return true, nil
+		return true, nil
+	}
 }
 
 // makeFileIDByContents returns a hash of the blob IDs of the
