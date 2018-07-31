@@ -42,7 +42,7 @@ import (
 
 const (
 	APIBase          = "https://api.backblazeb2.com"
-	DefaultUserAgent = "blazer/0.5.0"
+	DefaultUserAgent = "blazer/0.5.1"
 )
 
 type b2err struct {
@@ -268,6 +268,8 @@ type B2 struct {
 	downloadURI string
 	minPartSize int
 	opts        *b2Options
+	bucket      string // restricted to this bucket if present
+	pfx         string // restricted to objects with this prefix if present
 }
 
 // Update replaces the B2 object with a new one, in-place.
@@ -428,6 +430,8 @@ func AuthorizeAccount(ctx context.Context, account, key string, opts ...AuthOpti
 		apiURI:      b2resp.URI,
 		downloadURI: b2resp.DownloadURI,
 		minPartSize: b2resp.PartSize,
+		bucket:      b2resp.Allowed.Bucket,
+		pfx:         b2resp.Allowed.Prefix,
 		opts:        b2opts,
 	}, nil
 }
@@ -614,6 +618,7 @@ func (b *Bucket) BaseURL() string {
 func (b *B2) ListBuckets(ctx context.Context) ([]*Bucket, error) {
 	b2req := &b2types.ListBucketsRequest{
 		AccountID: b.accountID,
+		Bucket:    b.bucket,
 	}
 	b2resp := &b2types.ListBucketsResponse{}
 	headers := map[string]string{
@@ -967,6 +972,9 @@ func (b *Bucket) ListUnfinishedLargeFiles(ctx context.Context, count int, contin
 
 // ListFileNames wraps b2_list_file_names.
 func (b *Bucket) ListFileNames(ctx context.Context, count int, continuation, prefix, delimiter string) ([]*File, string, error) {
+	if prefix == "" {
+		prefix = b.b2.pfx
+	}
 	b2req := &b2types.ListFileNamesRequest{
 		Count:        count,
 		Continuation: continuation,
@@ -1007,6 +1015,9 @@ func (b *Bucket) ListFileNames(ctx context.Context, count int, continuation, pre
 
 // ListFileVersions wraps b2_list_file_versions.
 func (b *Bucket) ListFileVersions(ctx context.Context, count int, startName, startID, prefix, delimiter string) ([]*File, string, string, error) {
+	if prefix == "" {
+		prefix = b.b2.pfx
+	}
 	b2req := &b2types.ListFileVersionsRequest{
 		BucketID:  b.ID,
 		Count:     count,

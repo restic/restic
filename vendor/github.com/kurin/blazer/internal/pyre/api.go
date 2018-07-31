@@ -255,9 +255,9 @@ func (s *Server) ListFileVersions(ctx context.Context, req *pb.ListFileVersionsR
 	return nil, nil
 }
 
-//type objTuple struct {
-//	name, version string
-//}
+type objTuple struct {
+	name, version string
+}
 
 type ListManager interface {
 	// NextN returns the next n objects, sorted by lexicographical order by name,
@@ -274,6 +274,35 @@ type ListManager interface {
 type VersionedObject interface {
 	Name() string
 	NextNVersions(begin string, n int) ([]string, error)
+}
+
+func getDirNames(lm ListManager, bucket, name, prefix, delim string, n int) ([]string, error) {
+	var sfx string
+	var out []string
+	for n > 0 {
+		vo, err := lm.NextN(bucket, name, prefix, sfx, 1)
+		if err != nil {
+			return nil, err
+		}
+		if len(vo) == 0 {
+			return out, nil
+		}
+		v := vo[0]
+		name = v.Name()
+		suffix := name[len(prefix):]
+		i := strings.Index(suffix, delim)
+		if i < 0 {
+			sfx = ""
+			out = append(out, name)
+			name += "\000"
+			n--
+			continue
+		}
+		sfx = v.Name()[:len(prefix)+i+1]
+		out = append(out, sfx)
+		n--
+	}
+	return out, nil
 }
 
 //func getNextObjects(lm ListManager, bucket, name, prefix, delimiter string, n int) ([]VersionedObject, error) {

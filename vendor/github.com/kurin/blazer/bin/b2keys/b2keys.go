@@ -65,9 +65,7 @@ func (c *create) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{})
 	if *c.pfx != "" {
 		opts = append(opts, b2.Prefix(*c.pfx))
 	}
-	for _, c := range caps {
-		opts = append(opts, b2.Capability(c))
-	}
+	opts = append(opts, b2.Capabilities(caps...))
 
 	client, err := b2.NewClient(ctx, id, key, b2.UserAgent("b2keys"))
 	if err != nil {
@@ -86,10 +84,12 @@ func (c *create) Execute(ctx context.Context, f *flag.FlagSet, _ ...interface{})
 		cr = bucket
 	}
 
-	if _, err := cr.CreateKey(ctx, name, opts...); err != nil {
+	b2key, err := cr.CreateKey(ctx, name, opts...)
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		return subcommands.ExitFailure
 	}
+	fmt.Printf("key=%s, secret=%s\n", b2key.ID(), b2key.Secret())
 	return subcommands.ExitSuccess
 }
 

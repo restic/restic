@@ -105,6 +105,7 @@ type b2KeyInterface interface {
 	name() string
 	expires() time.Time
 	secret() string
+	id() string
 }
 
 type b2Root struct {
@@ -508,3 +509,4 @@ func (b *b2Key) caps() []string                { return b.b.Capabilities }
 func (b *b2Key) name() string                  { return b.b.Name }
 func (b *b2Key) expires() time.Time            { return b.b.Expires }
 func (b *b2Key) secret() string                { return b.b.Secret }
+func (b *b2Key) id() string                    { return b.b.ID }
