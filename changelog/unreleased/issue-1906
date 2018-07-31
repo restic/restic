@@ -1,4 +1,4 @@
-Feature: Add support for B2 application keys
+Enhancement: Add support for B2 application keys
 
 Restic can now use so-called "application keys" which can be created in the B2
 dashboard and were only introduced recently. In contrast to the "master key",
