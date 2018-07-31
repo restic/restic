@@ -293,16 +293,21 @@ Backblaze B2
 ************
 
 Restic can backup data to any Backblaze B2 bucket. You need to first setup the
-following environment variables with the credentials you obtained when signed
-into your B2 account:
+following environment variables with the credentials you can find in the
+dashboard in on the "Buckets" page when signed into your B2 account:
 
 .. code-block:: console
 
     $ export B2_ACCOUNT_ID=<MY_ACCOUNT_ID>
     $ export B2_ACCOUNT_KEY=<MY_SECRET_ACCOUNT_KEY>
 
-You can then easily initialize a repository stored at Backblaze B2. If the
-bucket does not exist yet, it will be created:
+You can either specify the so-called "Master Application Key" here (which can
+access any bucket at any path) or a dedicated "Application Key" created just
+for restic (which may be restricted to a specific bucket and/or path).
+
+You can then initialize a repository stored at Backblaze B2. If the
+bucket does not exist yet and the credentials you passed to restic have the
+privilege to create buckets, it will be created automatically:
 
 .. code-block:: console
 
