@@ -16,6 +16,10 @@ import (
 	tomb "gopkg.in/tomb.v2"
 )
 
+// SelectByNameFunc returns true for all items that should be included (files and
+// dirs). If false is returned, files are ignored and dirs are not even walked.
+type SelectByNameFunc func(item string) bool
+
 // SelectFunc returns true for all items that should be included (files and
 // dirs). If false is returned, files are ignored and dirs are not even walked.
 type SelectFunc func(item string, fi os.FileInfo) bool
@@ -43,10 +47,11 @@ func (s *ItemStats) Add(other ItemStats) {
 
 // Archiver saves a directory structure to the repo.
 type Archiver struct {
-	Repo    restic.Repository
-	Select  SelectFunc
-	FS      fs.FS
-	Options Options
+	Repo         restic.Repository
+	SelectByName SelectByNameFunc
+	Select       SelectFunc
+	FS           fs.FS
+	Options      Options
 
 	blobSaver *BlobSaver
 	fileSaver *FileSaver
@@ -119,10 +124,11 @@ func (o Options) ApplyDefaults() Options {
 // New initializes a new archiver.
 func New(repo restic.Repository, fs fs.FS, opts Options) *Archiver {
 	arch := &Archiver{
-		Repo:    repo,
-		Select:  func(string, os.FileInfo) bool { return true },
-		FS:      fs,
-		Options: opts.ApplyDefaults(),
+		Repo:         repo,
+		SelectByName: func(item string) bool { return true },
+		Select:       func(item string, fi os.FileInfo) bool { return true },
+		FS:           fs,
+		Options:      opts.ApplyDefaults(),
 
 		CompleteItem: func(string, *restic.Node, *restic.Node, ItemStats, time.Duration) {},
 		StartFile:    func(string) {},
@@ -294,10 +300,10 @@ func (fn *FutureNode) wait(ctx context.Context) {
 }
 
 // Save saves a target (file or directory) to the repo. If the item is
-// excluded,this function returns a nil node and error, with excluded set to
+// excluded, this function returns a nil node and error, with excluded set to
 // true.
 //
-// Errors and completion is needs to be handled by the caller.
+// Errors and completion needs to be handled by the caller.
 //
 // snPath is the path within the current snapshot.
 func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous *restic.Node) (fn FutureNode, excluded bool, err error) {
@@ -316,6 +322,13 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 
 	fn.absTarget = abstarget
 
+	// exclude files by path before running Lstat to reduce number of lstat calls
+	if !arch.SelectByName(abstarget) {
+		debug.Log("%v is excluded by path", target)
+		return FutureNode{}, true, nil
+	}
+
+	// get file info and run remaining select functions that require file information
 	fi, err := arch.FS.Lstat(target)
 	if !arch.Select(abstarget, fi) {
 		debug.Log("%v is excluded", target)

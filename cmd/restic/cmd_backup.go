@@ -186,18 +186,9 @@ func (opts BackupOptions) Check(gopts GlobalOptions, args []string) error {
 	return nil
 }
 
-// collectRejectFuncs returns a list of all functions which may reject data
-// from being saved in a snapshot
-func collectRejectFuncs(opts BackupOptions, repo *repository.Repository, targets []string) (fs []RejectFunc, err error) {
-	// allowed devices
-	if opts.ExcludeOtherFS && !opts.Stdin {
-		f, err := rejectByDevice(targets)
-		if err != nil {
-			return nil, err
-		}
-		fs = append(fs, f)
-	}
-
+// collectRejectByNameFuncs returns a list of all functions which may reject data
+// from being saved in a snapshot based on path only
+func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository, targets []string) (fs []RejectByNameFunc, err error) {
 	// exclude restic cache
 	if repo.Cache != nil {
 		f, err := rejectResticCache(repo)
@@ -231,6 +222,21 @@ func collectRejectFuncs(opts BackupOptions, repo *repository.Repository, targets
 			return nil, err
 		}
 
+		fs = append(fs, f)
+	}
+
+	return fs, nil
+}
+
+// collectRejectFuncs returns a list of all functions which may reject data
+// from being saved in a snapshot based on path and file info
+func collectRejectFuncs(opts BackupOptions, repo *repository.Repository, targets []string) (fs []RejectFunc, err error) {
+	// allowed devices
+	if opts.ExcludeOtherFS && !opts.Stdin {
+		f, err := rejectByDevice(targets)
+		if err != nil {
+			return nil, err
+		}
 		fs = append(fs, f)
 	}
 
@@ -393,7 +399,13 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		return err
 	}
 
-	// rejectFuncs collect functions that can reject items from the backup
+	// rejectByNameFuncs collect functions that can reject items from the backup based on path only
+	rejectByNameFuncs, err := collectRejectByNameFuncs(opts, repo, targets)
+	if err != nil {
+		return err
+	}
+
+	// rejectFuncs collect functions that can reject items from the backup based on path and file info
 	rejectFuncs, err := collectRejectFuncs(opts, repo, targets)
 	if err != nil {
 		return err
@@ -412,6 +424,15 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 
 	if parentSnapshotID != nil {
 		p.V("using parent snapshot %v\n", parentSnapshotID.Str())
+	}
+
+	selectByNameFilter := func(item string) bool {
+		for _, reject := range rejectByNameFuncs {
+			if reject(item) {
+				return false
+			}
+		}
+		return true
 	}
 
 	selectFilter := func(item string, fi os.FileInfo) bool {
@@ -436,6 +457,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	}
 
 	sc := archiver.NewScanner(targetFS)
+	sc.SelectByName = selectByNameFilter
 	sc.Select = selectFilter
 	sc.Error = p.ScannerError
 	sc.Result = p.ReportTotal
@@ -444,6 +466,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	t.Go(func() error { return sc.Scan(t.Context(gopts.ctx), targets) })
 
 	arch := archiver.New(repo, targetFS, archiver.Options{})
+	arch.SelectByName = selectByNameFilter
 	arch.Select = selectFilter
 	arch.WithAtime = opts.WithAtime
 	arch.Error = p.Error
