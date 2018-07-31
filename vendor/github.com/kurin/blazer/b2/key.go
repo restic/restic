@@ -47,6 +47,10 @@ func (k *Key) Delete(ctx context.Context) error { return k.k.del(ctx) }
 // operations.
 func (k *Key) Secret() string { return k.k.secret() }
 
+// ID returns the application key ID.  This, plus the secret, is necessary to
+// authenticate to B2.
+func (k *Key) ID() string { return k.k.id() }
+
 type keyOptions struct {
 	caps     []string
 	prefix   string
@@ -69,10 +73,10 @@ func Deadline(t time.Time) KeyOption {
 	return Lifetime(d)
 }
 
-// Capability requests a key with the given capability.
-func Capability(cap string) KeyOption {
+// Capabilities requests a key with the given capability.
+func Capabilities(caps ...string) KeyOption {
 	return func(k *keyOptions) {
-		k.caps = append(k.caps, cap)
+		k.caps = append(k.caps, caps...)
 	}
 }
 

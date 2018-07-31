@@ -29,14 +29,20 @@ type ErrorMessage struct {
 }
 
 type AuthorizeAccountResponse struct {
-	AccountID      string   `json:"accountId"`
-	AuthToken      string   `json:"authorizationToken"`
-	URI            string   `json:"apiUrl"`
-	DownloadURI    string   `json:"downloadUrl"`
-	MinPartSize    int      `json:"minimumPartSize"`
-	PartSize       int      `json:"recommendedPartSize"`
-	AbsMinPartSize int      `json:"absoluteMinimumPartSize"`
-	Capabilities   []string `json:"capabilities"`
+	AccountID      string    `json:"accountId"`
+	AuthToken      string    `json:"authorizationToken"`
+	URI            string    `json:"apiUrl"`
+	DownloadURI    string    `json:"downloadUrl"`
+	MinPartSize    int       `json:"minimumPartSize"`
+	PartSize       int       `json:"recommendedPartSize"`
+	AbsMinPartSize int       `json:"absoluteMinimumPartSize"`
+	Allowed        Allowance `json:"allowed"`
+}
+
+type Allowance struct {
+	Capabilities []string `json:"capabilities"`
+	Bucket       string   `json:"bucketId"`
+	Prefix       string   `json:"namePrefix"`
 }
 
 type LifecycleRule struct {
@@ -69,6 +75,7 @@ type DeleteBucketRequest struct {
 
 type ListBucketsRequest struct {
 	AccountID string `json:"accountId"`
+	Bucket    string `json:"bucketId,omitempty"`
 }
 
 type ListBucketsResponse struct {
