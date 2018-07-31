@@ -357,7 +357,7 @@ func (b *Backup) Finish() {
 	b.P("Dirs:        %5d new, %5d changed, %5d unmodified\n", b.summary.Dirs.New, b.summary.Dirs.Changed, b.summary.Dirs.Unchanged)
 	b.V("Data Blobs:  %5d new\n", b.summary.ItemStats.DataBlobs)
 	b.V("Tree Blobs:  %5d new\n", b.summary.ItemStats.TreeBlobs)
-	b.P("Added:      %-5s\n", formatBytes(b.summary.ItemStats.DataSize+b.summary.ItemStats.TreeSize))
+	b.P("Added to the repo: %-5s\n", formatBytes(b.summary.ItemStats.DataSize+b.summary.ItemStats.TreeSize))
 	b.P("\n")
 	b.P("processed %v files, %v in %s",
 		b.summary.Files.New+b.summary.Files.Changed+b.summary.Files.Unchanged,
