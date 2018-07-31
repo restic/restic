@@ -650,7 +650,7 @@ func create(s string, opts options.Options) (restic.Backend, error) {
 	case "rest":
 		return rest.Create(cfg.(rest.Config), rt)
 	case "rclone":
-		return rclone.Open(cfg.(rclone.Config), nil)
+		return rclone.Create(cfg.(rclone.Config), nil)
 	}
 
 	debug.Log("invalid repository scheme: %v", s)
