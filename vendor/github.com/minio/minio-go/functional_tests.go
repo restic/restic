@@ -44,7 +44,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/minio/minio-go/pkg/encrypt"
-	"github.com/minio/minio-go/pkg/policy"
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyz01234569"
@@ -570,7 +569,7 @@ func testPutObjectReadAt() {
 		logError(testName, function, args, startTime, "", fmt.Sprintf("Number of bytes in stat does not match, expected %d got %d", bufSize, st.Size), err)
 		return
 	}
-	if st.ContentType != objectContentType {
+	if st.ContentType != objectContentType && st.ContentType != "application/octet-stream" {
 		logError(testName, function, args, startTime, "", "Content types don't match", err)
 		return
 	}
@@ -684,7 +683,7 @@ func testPutObjectWithMetadata() {
 		logError(testName, function, args, startTime, "", "Number of bytes returned by PutObject does not match GetObject, expected "+string(bufSize)+" got "+string(st.Size), err)
 		return
 	}
-	if st.ContentType != customContentType {
+	if st.ContentType != customContentType && st.ContentType != "application/octet-stream" {
 		logError(testName, function, args, startTime, "", "ContentType does not match, expected "+customContentType+" got "+st.ContentType, err)
 		return
 	}
@@ -694,6 +693,84 @@ func testPutObjectWithMetadata() {
 	}
 	if err := r.Close(); err == nil {
 		logError(testName, function, args, startTime, "", "Object already closed, should respond with error", err)
+		return
+	}
+
+	// Delete all objects and buckets
+	if err = cleanupBucket(bucketName, c); err != nil {
+		logError(testName, function, args, startTime, "", "Cleanup failed", err)
+		return
+	}
+
+	successLogger(testName, function, args, startTime).Info()
+}
+
+func testPutObjectWithContentLanguage() {
+	// initialize logging params
+	objectName := "test-object"
+	startTime := time.Now()
+	testName := getFuncName()
+	function := "PutObject(bucketName, objectName, reader, size, opts)"
+	args := map[string]interface{}{
+		"bucketName": "",
+		"objectName": objectName,
+		"size":       -1,
+		"opts":       "",
+	}
+
+	// Seed random based on current time.
+	rand.Seed(time.Now().Unix())
+
+	// Instantiate new minio client object.
+	c, err := minio.NewV4(
+		os.Getenv(serverEndpoint),
+		os.Getenv(accessKey),
+		os.Getenv(secretKey),
+		mustParseBool(os.Getenv(enableHTTPS)),
+	)
+	if err != nil {
+		logError(testName, function, args, startTime, "", "Minio client object creation failed", err)
+		return
+	}
+
+	// Enable tracing, write to stderr.
+	// c.TraceOn(os.Stderr)
+
+	// Set user agent.
+	c.SetAppInfo("Minio-go-FunctionalTest", "0.1.0")
+
+	// Generate a new random bucket name.
+	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()), "minio-go-test-")
+	args["bucketName"] = bucketName
+	// Make a new bucket.
+	err = c.MakeBucket(bucketName, "us-east-1")
+	if err != nil {
+		logError(testName, function, args, startTime, "", "MakeBucket failed", err)
+		return
+	}
+
+	data := bytes.Repeat([]byte("a"), int(0))
+	n, err := c.PutObject(bucketName, objectName, bytes.NewReader(data), int64(0), minio.PutObjectOptions{
+		ContentLanguage: "en",
+	})
+	if err != nil {
+		logError(testName, function, args, startTime, "", "PutObject failed", err)
+		return
+	}
+
+	if n != 0 {
+		logError(testName, function, args, startTime, "", "Expected upload object '0' doesn't match with PutObject return value", err)
+		return
+	}
+
+	objInfo, err := c.StatObject(bucketName, objectName, minio.StatObjectOptions{})
+	if err != nil {
+		logError(testName, function, args, startTime, "", "StatObject failed", err)
+		return
+	}
+
+	if objInfo.Metadata.Get("Content-Language") != "en" {
+		logError(testName, function, args, startTime, "", "Expected content-language 'en' doesn't match with StatObject return value", err)
 		return
 	}
 
@@ -764,103 +841,6 @@ func testPutObjectStreaming() {
 
 		if n != size {
 			logError(testName, function, args, startTime, "", "Expected upload object size doesn't match with PutObjectStreaming return value", err)
-			return
-		}
-	}
-
-	// Delete all objects and buckets
-	if err = cleanupBucket(bucketName, c); err != nil {
-		logError(testName, function, args, startTime, "", "Cleanup failed", err)
-		return
-	}
-
-	successLogger(testName, function, args, startTime).Info()
-}
-
-// Test listing partially uploaded objects.
-func testListPartiallyUploaded() {
-	// initialize logging params
-	startTime := time.Now()
-	testName := getFuncName()
-	function := "ListIncompleteUploads(bucketName, objectName, isRecursive, doneCh)"
-	args := map[string]interface{}{
-		"bucketName":  "",
-		"objectName":  "",
-		"isRecursive": "",
-	}
-
-	// Seed random based on current time.
-	rand.Seed(time.Now().Unix())
-
-	// Instantiate new minio client object.
-	c, err := minio.New(
-		os.Getenv(serverEndpoint),
-		os.Getenv(accessKey),
-		os.Getenv(secretKey),
-		mustParseBool(os.Getenv(enableHTTPS)),
-	)
-	if err != nil {
-		logError(testName, function, args, startTime, "", "Minio client object creation failed", err)
-		return
-	}
-
-	// Set user agent.
-	c.SetAppInfo("Minio-go-FunctionalTest", "0.1.0")
-
-	// Enable tracing, write to stdout.
-	// c.TraceOn(os.Stderr)
-
-	// Generate a new random bucket name.
-	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()), "minio-go-test-")
-	args["bucketName"] = bucketName
-
-	// Make a new bucket.
-	err = c.MakeBucket(bucketName, "us-east-1")
-	if err != nil {
-		logError(testName, function, args, startTime, "", "MakeBucket failed", err)
-		return
-	}
-
-	bufSize := dataFileMap["datafile-65-MB"]
-	r := bytes.NewReader(bytes.Repeat([]byte("0"), bufSize*2))
-
-	reader, writer := io.Pipe()
-	go func() {
-		i := 0
-		for i < 25 {
-			_, cerr := io.CopyN(writer, r, (int64(bufSize)*2)/25)
-			if cerr != nil {
-				logError(testName, function, args, startTime, "", "Copy failed", err)
-				return
-			}
-			i++
-			r.Seek(0, 0)
-		}
-		writer.CloseWithError(errors.New("proactively closed to be verified later"))
-	}()
-
-	objectName := bucketName + "-resumable"
-	args["objectName"] = objectName
-
-	_, err = c.PutObject(bucketName, objectName, reader, int64(bufSize*2), minio.PutObjectOptions{ContentType: "application/octet-stream"})
-	if err == nil {
-		logError(testName, function, args, startTime, "", "PutObject should fail", err)
-		return
-	}
-	if !strings.Contains(err.Error(), "proactively closed to be verified later") {
-		logError(testName, function, args, startTime, "", "String not found in PutObject output", err)
-		return
-	}
-
-	doneCh := make(chan struct{})
-	defer close(doneCh)
-	isRecursive := true
-	args["isRecursive"] = isRecursive
-
-	multiPartObjectCh := c.ListIncompleteUploads(bucketName, objectName, isRecursive, doneCh)
-	for multiPartObject := range multiPartObjectCh {
-		if multiPartObject.Err != nil {
-			logError(testName, function, args, startTime, "", "Multipart object error", multiPartObject.Err)
 			return
 		}
 	}
@@ -1280,89 +1260,6 @@ func testRemoveMultipleObjects() {
 	successLogger(testName, function, args, startTime).Info()
 }
 
-// Tests removing partially uploaded objects.
-func testRemovePartiallyUploaded() {
-	// initialize logging params
-	startTime := time.Now()
-	testName := getFuncName()
-	function := "RemoveIncompleteUpload(bucketName, objectName)"
-	args := map[string]interface{}{}
-
-	// Seed random based on current time.
-	rand.Seed(time.Now().Unix())
-
-	// Instantiate new minio client object.
-	c, err := minio.New(
-		os.Getenv(serverEndpoint),
-		os.Getenv(accessKey),
-		os.Getenv(secretKey),
-		mustParseBool(os.Getenv(enableHTTPS)),
-	)
-	if err != nil {
-		logError(testName, function, args, startTime, "", "Minio client object creation failed", err)
-		return
-	}
-
-	// Set user agent.
-	c.SetAppInfo("Minio-go-FunctionalTest", "0.1.0")
-
-	// Enable tracing, write to stdout.
-	// c.TraceOn(os.Stderr)
-
-	// Generate a new random bucket name.
-	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()), "minio-go-test-")
-	args["bucketName"] = bucketName
-
-	// Make a new bucket.
-	err = c.MakeBucket(bucketName, "us-east-1")
-	if err != nil {
-		logError(testName, function, args, startTime, "", "MakeBucket failed", err)
-		return
-	}
-
-	r := bytes.NewReader(bytes.Repeat([]byte("a"), 128*1024))
-
-	reader, writer := io.Pipe()
-	go func() {
-		i := 0
-		for i < 25 {
-			_, cerr := io.CopyN(writer, r, 128*1024)
-			if cerr != nil {
-				logError(testName, function, args, startTime, "", "Copy failed", err)
-				return
-			}
-			i++
-			r.Seek(0, 0)
-		}
-		writer.CloseWithError(errors.New("proactively closed to be verified later"))
-	}()
-
-	objectName := bucketName + "-resumable"
-	args["objectName"] = objectName
-
-	_, err = c.PutObject(bucketName, objectName, reader, 128*1024, minio.PutObjectOptions{ContentType: "application/octet-stream"})
-	if err == nil {
-		logError(testName, function, args, startTime, "", "PutObject should fail", err)
-		return
-	}
-	if !strings.Contains(err.Error(), "proactively closed to be verified later") {
-		logError(testName, function, args, startTime, "", "String not found", err)
-		return
-	}
-	err = c.RemoveIncompleteUpload(bucketName, objectName)
-	if err != nil {
-		logError(testName, function, args, startTime, "", "RemoveIncompleteUpload failed", err)
-		return
-	}
-	// Delete all objects and buckets
-	if err = cleanupBucket(bucketName, c); err != nil {
-		logError(testName, function, args, startTime, "", "Cleanup failed", err)
-		return
-	}
-
-	successLogger(testName, function, args, startTime).Info()
-}
-
 // Tests FPutObject of a big file to trigger multipart
 func testFPutObjectMultipart() {
 	// initialize logging params
@@ -1462,7 +1359,7 @@ func testFPutObjectMultipart() {
 		logError(testName, function, args, startTime, "", "Number of bytes does not match, expected "+string(int64(totalSize))+" got "+string(objInfo.Size), err)
 		return
 	}
-	if objInfo.ContentType != objectContentType {
+	if objInfo.ContentType != objectContentType && objInfo.ContentType != "application/octet-stream" {
 		logError(testName, function, args, startTime, "", "ContentType doesn't match", err)
 		return
 	}
@@ -1602,6 +1499,7 @@ func testFPutObject() {
 
 	// Perform FPutObject with no contentType provided (Expecting application/x-gtar)
 	args["objectName"] = objectName + "-GTar"
+	args["opts"] = minio.PutObjectOptions{}
 	n, err = c.FPutObject(bucketName, objectName+"-GTar", fName+".gtar", minio.PutObjectOptions{})
 	if err != nil {
 		logError(testName, function, args, startTime, "", "FPutObject failed", err)
@@ -1644,8 +1542,8 @@ func testFPutObject() {
 		logError(testName, function, args, startTime, "", "StatObject failed", err)
 		return
 	}
-	if rGTar.ContentType != "application/x-gtar" {
-		logError(testName, function, args, startTime, "", "ContentType does not match, expected application/x-gtar, got "+rGTar.ContentType, err)
+	if rGTar.ContentType != "application/x-gtar" && rGTar.ContentType != "application/octet-stream" {
+		logError(testName, function, args, startTime, "", "ContentType does not match, expected application/x-gtar or application/octet-stream, got "+rGTar.ContentType, err)
 		return
 	}
 
@@ -2726,8 +2624,14 @@ func testCopyObject() {
 		return
 	}
 
+	oi, err := c.StatObject(bucketName, objectName, minio.StatObjectOptions{})
+	if err != nil {
+		logError(testName, function, args, startTime, "", "StatObject failed", err)
+		return
+	}
+
 	stOpts := minio.StatObjectOptions{}
-	stOpts.SetMatchETag(objInfo.ETag)
+	stOpts.SetMatchETag(oi.ETag)
 	objInfo, err = c.StatObject(bucketName, objectName, stOpts)
 	if err != nil {
 		logError(testName, function, args, startTime, "", "CopyObject ETag should match and not fail", err)
@@ -3558,117 +3462,104 @@ func testFunctional() {
 	}
 
 	// Asserting the default bucket policy.
-	function = "GetBucketPolicy(bucketName, objectPrefix)"
+	function = "GetBucketPolicy(bucketName)"
 	functionAll += ", " + function
 	args = map[string]interface{}{
-		"bucketName":   bucketName,
-		"objectPrefix": "",
+		"bucketName": bucketName,
 	}
-	policyAccess, err := c.GetBucketPolicy(bucketName, "")
-
+	nilPolicy, err := c.GetBucketPolicy(bucketName)
 	if err != nil {
 		logError(testName, function, args, startTime, "", "GetBucketPolicy failed", err)
 		return
 	}
-	if policyAccess != "none" {
-		logError(testName, function, args, startTime, "", "policy should be set to none", err)
+	if nilPolicy != "" {
+		logError(testName, function, args, startTime, "", "policy should be set to nil", err)
 		return
 	}
 
 	// Set the bucket policy to 'public readonly'.
-	function = "SetBucketPolicy(bucketName, objectPrefix, bucketPolicy)"
+	function = "SetBucketPolicy(bucketName, readOnlyPolicy)"
 	functionAll += ", " + function
+
+	readOnlyPolicy := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":["*"]},"Action":["s3:ListBucket"],"Resource":["arn:aws:s3:::` + bucketName + `"]}]}`
 	args = map[string]interface{}{
 		"bucketName":   bucketName,
-		"objectPrefix": "",
-		"bucketPolicy": policy.BucketPolicyReadOnly,
+		"bucketPolicy": readOnlyPolicy,
 	}
-	err = c.SetBucketPolicy(bucketName, "", policy.BucketPolicyReadOnly)
 
+	err = c.SetBucketPolicy(bucketName, readOnlyPolicy)
 	if err != nil {
 		logError(testName, function, args, startTime, "", "SetBucketPolicy failed", err)
 		return
 	}
 	// should return policy `readonly`.
-	function = "GetBucketPolicy(bucketName, objectPrefix)"
+	function = "GetBucketPolicy(bucketName)"
 	functionAll += ", " + function
 	args = map[string]interface{}{
-		"bucketName":   bucketName,
-		"objectPrefix": "",
+		"bucketName": bucketName,
 	}
-	policyAccess, err = c.GetBucketPolicy(bucketName, "")
-
+	_, err = c.GetBucketPolicy(bucketName)
 	if err != nil {
 		logError(testName, function, args, startTime, "", "GetBucketPolicy failed", err)
 		return
 	}
-	if policyAccess != "readonly" {
-		logError(testName, function, args, startTime, "", "policy should be set to readonly", err)
-		return
-	}
 
 	// Make the bucket 'public writeonly'.
-	function = "SetBucketPolicy(bucketName, objectPrefix, bucketPolicy)"
+	function = "SetBucketPolicy(bucketName, writeOnlyPolicy)"
 	functionAll += ", " + function
+
+	writeOnlyPolicy := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":["*"]},"Action":["s3:ListBucketMultipartUploads"],"Resource":["arn:aws:s3:::` + bucketName + `"]}]}`
 	args = map[string]interface{}{
 		"bucketName":   bucketName,
-		"objectPrefix": "",
-		"bucketPolicy": policy.BucketPolicyWriteOnly,
+		"bucketPolicy": writeOnlyPolicy,
 	}
-	err = c.SetBucketPolicy(bucketName, "", policy.BucketPolicyWriteOnly)
+	err = c.SetBucketPolicy(bucketName, writeOnlyPolicy)
 
 	if err != nil {
 		logError(testName, function, args, startTime, "", "SetBucketPolicy failed", err)
 		return
 	}
 	// should return policy `writeonly`.
-	function = "GetBucketPolicy(bucketName, objectPrefix)"
+	function = "GetBucketPolicy(bucketName)"
 	functionAll += ", " + function
 	args = map[string]interface{}{
-		"bucketName":   bucketName,
-		"objectPrefix": "",
+		"bucketName": bucketName,
 	}
-	policyAccess, err = c.GetBucketPolicy(bucketName, "")
 
+	_, err = c.GetBucketPolicy(bucketName)
 	if err != nil {
 		logError(testName, function, args, startTime, "", "GetBucketPolicy failed", err)
 		return
 	}
-	if policyAccess != "writeonly" {
-		logError(testName, function, args, startTime, "", "policy should be set to writeonly", err)
-		return
-	}
+
 	// Make the bucket 'public read/write'.
-	function = "SetBucketPolicy(bucketName, objectPrefix, bucketPolicy)"
+	function = "SetBucketPolicy(bucketName, readWritePolicy)"
 	functionAll += ", " + function
+
+	readWritePolicy := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":["*"]},"Action":["s3:ListBucket","s3:ListBucketMultipartUploads"],"Resource":["arn:aws:s3:::` + bucketName + `"]}]}`
+
 	args = map[string]interface{}{
 		"bucketName":   bucketName,
-		"objectPrefix": "",
-		"bucketPolicy": policy.BucketPolicyReadWrite,
+		"bucketPolicy": readWritePolicy,
 	}
-	err = c.SetBucketPolicy(bucketName, "", policy.BucketPolicyReadWrite)
+	err = c.SetBucketPolicy(bucketName, readWritePolicy)
 
 	if err != nil {
 		logError(testName, function, args, startTime, "", "SetBucketPolicy failed", err)
 		return
 	}
 	// should return policy `readwrite`.
-	function = "GetBucketPolicy(bucketName, objectPrefix)"
+	function = "GetBucketPolicy(bucketName)"
 	functionAll += ", " + function
 	args = map[string]interface{}{
-		"bucketName":   bucketName,
-		"objectPrefix": "",
+		"bucketName": bucketName,
 	}
-	policyAccess, err = c.GetBucketPolicy(bucketName, "")
-
+	_, err = c.GetBucketPolicy(bucketName)
 	if err != nil {
 		logError(testName, function, args, startTime, "", "GetBucketPolicy failed", err)
 		return
 	}
-	if policyAccess != "readwrite" {
-		logError(testName, function, args, startTime, "", "policy should be set to readwrite", err)
-		return
-	}
+
 	// List all buckets.
 	function = "ListBuckets()"
 	functionAll += ", " + function
@@ -4496,89 +4387,6 @@ func testGetObjectClosedTwiceV2() {
 	successLogger(testName, function, args, startTime).Info()
 }
 
-// Tests removing partially uploaded objects.
-func testRemovePartiallyUploadedV2() {
-	// initialize logging params
-	startTime := time.Now()
-	testName := getFuncName()
-	function := "RemoveIncompleteUpload(bucketName, objectName)"
-	args := map[string]interface{}{}
-
-	// Seed random based on current time.
-	rand.Seed(time.Now().Unix())
-
-	// Instantiate new minio client object.
-	c, err := minio.NewV2(
-		os.Getenv(serverEndpoint),
-		os.Getenv(accessKey),
-		os.Getenv(secretKey),
-		mustParseBool(os.Getenv(enableHTTPS)),
-	)
-	if err != nil {
-		logError(testName, function, args, startTime, "", "Minio v2 client object creation failed", err)
-		return
-	}
-
-	// Set user agent.
-	c.SetAppInfo("Minio-go-FunctionalTest", "0.1.0")
-
-	// Enable tracing, write to stdout.
-	// c.TraceOn(os.Stderr)
-
-	// Generate a new random bucket name.
-	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()), "minio-go-test-")
-	args["bucketName"] = bucketName
-
-	// make a new bucket.
-	err = c.MakeBucket(bucketName, "us-east-1")
-	if err != nil {
-		logError(testName, function, args, startTime, "", "MakeBucket failed", err)
-		return
-	}
-
-	r := bytes.NewReader(bytes.Repeat([]byte("a"), 128*1024))
-
-	reader, writer := io.Pipe()
-	go func() {
-		i := 0
-		for i < 25 {
-			_, cerr := io.CopyN(writer, r, 128*1024)
-			if cerr != nil {
-				logError(testName, function, args, startTime, "", "Copy failed", cerr)
-				return
-			}
-			i++
-			r.Seek(0, 0)
-		}
-		writer.CloseWithError(errors.New("proactively closed to be verified later"))
-	}()
-
-	objectName := bucketName + "-resumable"
-	args["objectName"] = objectName
-
-	_, err = c.PutObject(bucketName, objectName, reader, -1, minio.PutObjectOptions{ContentType: "application/octet-stream"})
-	if err == nil {
-		logError(testName, function, args, startTime, "", "PutObject should fail", err)
-		return
-	}
-	if err.Error() != "proactively closed to be verified later" {
-		logError(testName, function, args, startTime, "", "Unexpected error, expected : proactively closed to be verified later", err)
-		return
-	}
-	err = c.RemoveIncompleteUpload(bucketName, objectName)
-	if err != nil {
-		logError(testName, function, args, startTime, "", "RemoveIncompleteUpload failed", err)
-		return
-	}
-	// Delete all objects and buckets
-	if err = cleanupBucket(bucketName, c); err != nil {
-		logError(testName, function, args, startTime, "", "Cleanup failed", err)
-		return
-	}
-
-	successLogger(testName, function, args, startTime).Info()
-}
-
 // Tests FPutObject hidden contentType setting
 func testFPutObjectV2() {
 	// initialize logging params
@@ -4728,7 +4536,7 @@ func testFPutObjectV2() {
 		logError(testName, function, args, startTime, "", "StatObject failed", err)
 		return
 	}
-	if rGTar.ContentType != "application/x-gtar" {
+	if rGTar.ContentType != "application/x-gtar" && rGTar.ContentType != "application/octet-stream" {
 		logError(testName, function, args, startTime, "", "Content-Type headers mismatched, expected: application/x-gtar , got "+rGTar.ContentType, err)
 		return
 	}
@@ -5829,6 +5637,60 @@ func testEncryptedCopyObjectV2() {
 	testEncryptedCopyObjectWrapper(c)
 }
 
+func testDecryptedCopyObject() {
+	// initialize logging params
+	startTime := time.Now()
+	testName := getFuncName()
+	function := "CopyObject(destination, source)"
+	args := map[string]interface{}{}
+
+	// Instantiate new minio client object
+	c, err := minio.New(
+		os.Getenv(serverEndpoint),
+		os.Getenv(accessKey),
+		os.Getenv(secretKey),
+		mustParseBool(os.Getenv(enableHTTPS)),
+	)
+	if err != nil {
+		logError(testName, function, args, startTime, "", "Minio v2 client object creation failed", err)
+		return
+	}
+
+	bucketName, objectName := randString(60, rand.NewSource(time.Now().UnixNano()), "minio-go-test-"), "object"
+	if err = c.MakeBucket(bucketName, "us-east-1"); err != nil {
+		logError(testName, function, args, startTime, "", "MakeBucket failed", err)
+		return
+	}
+
+	encryption := encrypt.DefaultPBKDF([]byte("correct horse battery staple"), []byte(bucketName+objectName))
+	_, err = c.PutObject(bucketName, objectName, bytes.NewReader(bytes.Repeat([]byte("a"), 1024*1024)), 1024*1024, minio.PutObjectOptions{
+		ServerSideEncryption: encryption,
+	})
+	if err != nil {
+		logError(testName, function, args, startTime, "", "PutObject call failed", err)
+		return
+	}
+
+	src := minio.NewSourceInfo(bucketName, objectName, encrypt.SSECopy(encryption))
+	args["source"] = src
+	dst, err := minio.NewDestinationInfo(bucketName, "decrypted-"+objectName, nil, nil)
+	if err != nil {
+		logError(testName, function, args, startTime, "", "NewDestinationInfo failed", err)
+		return
+	}
+	args["destination"] = dst
+
+	if err = c.CopyObject(dst, src); err != nil {
+		logError(testName, function, args, startTime, "", "CopyObject failed", err)
+		return
+	}
+	if _, err = c.GetObject(bucketName, "decrypted-"+objectName, minio.GetObjectOptions{}); err != nil {
+		logError(testName, function, args, startTime, "", "GetObject failed", err)
+		return
+	}
+	successLogger(testName, function, args, startTime).Info()
+}
+
 func testUserMetadataCopying() {
 	// initialize logging params
 	startTime := time.Now()
@@ -6121,7 +5983,11 @@ func testStorageClassMetadataPutObject() {
 		logError(testName, function, args, startTime, "", "Metadata verification failed, STANDARD storage class should not be a part of response metadata", err)
 		return
 	}
-
+	// Delete all objects and buckets
+	if err = cleanupBucket(bucketName, c); err != nil {
+		logError(testName, function, args, startTime, "", "Cleanup failed", err)
+		return
+	}
 	successLogger(testName, function, args, startTime).Info()
 }
 
@@ -6162,7 +6028,11 @@ func testStorageClassInvalidMetadataPutObject() {
 		logError(testName, function, args, startTime, "", "PutObject with invalid storage class passed, was expected to fail", err)
 		return
 	}
-
+	// Delete all objects and buckets
+	if err = cleanupBucket(bucketName, c); err != nil {
+		logError(testName, function, args, startTime, "", "Cleanup failed", err)
+		return
+	}
 	successLogger(testName, function, args, startTime).Info()
 }
 
@@ -6262,7 +6132,11 @@ func testStorageClassMetadataCopyObject() {
 		logError(testName, function, args, startTime, "", "Metadata verification failed, STANDARD storage class should not be a part of response metadata", err)
 		return
 	}
-
+	// Delete all objects and buckets
+	if err = cleanupBucket(bucketName, c); err != nil {
+		logError(testName, function, args, startTime, "", "Cleanup failed", err)
+		return
+	}
 	successLogger(testName, function, args, startTime).Info()
 }
 
@@ -6620,14 +6494,17 @@ func testFunctionalV2() {
 	}
 
 	// Make the bucket 'public read/write'.
-	function = "SetBucketPolicy(bucketName, objectPrefix, bucketPolicy)"
+	function = "SetBucketPolicy(bucketName, bucketPolicy)"
 	functionAll += ", " + function
+
+	readWritePolicy := `{"Version": "2012-10-17","Statement": [{"Action": ["s3:ListBucketMultipartUploads", "s3:ListBucket"],"Effect": "Allow","Principal": {"AWS": ["*"]},"Resource": ["arn:aws:s3:::` + bucketName + `"],"Sid": ""}]}`
+
 	args = map[string]interface{}{
 		"bucketName":   bucketName,
-		"objectPrefix": "",
-		"bucketPolicy": policy.BucketPolicyReadWrite,
+		"bucketPolicy": readWritePolicy,
 	}
-	err = c.SetBucketPolicy(bucketName, "", policy.BucketPolicyReadWrite)
+	err = c.SetBucketPolicy(bucketName, readWritePolicy)
+
 	if err != nil {
 		logError(testName, function, args, startTime, "", "SetBucketPolicy failed", err)
 		return
@@ -6681,9 +6558,9 @@ func testFunctionalV2() {
 		return
 	}
 
-	objectName_noLength := objectName + "-nolength"
-	args["objectName"] = objectName_noLength
-	n, err = c.PutObject(bucketName, objectName_noLength, bytes.NewReader(buf), int64(len(buf)), minio.PutObjectOptions{ContentType: "binary/octet-stream"})
+	objectNameNoLength := objectName + "-nolength"
+	args["objectName"] = objectNameNoLength
+	n, err = c.PutObject(bucketName, objectNameNoLength, bytes.NewReader(buf), int64(len(buf)), minio.PutObjectOptions{ContentType: "binary/octet-stream"})
 	if err != nil {
 		logError(testName, function, args, startTime, "", "PutObject failed", err)
 		return
@@ -7426,6 +7303,120 @@ func testFGetObjectWithContextV2() {
 
 }
 
+// Test list object v1 and V2 storage class fields
+func testListObjects() {
+	// initialize logging params
+	startTime := time.Now()
+	testName := getFuncName()
+	function := "ListObjects(bucketName, objectPrefix, recursive, doneCh)"
+	args := map[string]interface{}{
+		"bucketName":   "",
+		"objectPrefix": "",
+		"recursive":    "true",
+	}
+	// Seed random based on current time.
+	rand.Seed(time.Now().Unix())
+
+	// Instantiate new minio client object.
+	c, err := minio.New(
+		os.Getenv(serverEndpoint),
+		os.Getenv(accessKey),
+		os.Getenv(secretKey),
+		mustParseBool(os.Getenv(enableHTTPS)),
+	)
+	if err != nil {
+		logError(testName, function, args, startTime, "", "Minio client v4 object creation failed", err)
+		return
+	}
+
+	// Enable tracing, write to stderr.
+	// c.TraceOn(os.Stderr)
+
+	// Set user agent.
+	c.SetAppInfo("Minio-go-FunctionalTest", "0.1.0")
+
+	// Generate a new random bucket name.
+	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()), "minio-go-test-")
+	args["bucketName"] = bucketName
+
+	// Make a new bucket.
+	err = c.MakeBucket(bucketName, "us-east-1")
+	if err != nil {
+		logError(testName, function, args, startTime, "", "MakeBucket failed", err)
+		return
+	}
+
+	bufSize := dataFileMap["datafile-33-kB"]
+	var reader = getDataReader("datafile-33-kB")
+	defer reader.Close()
+
+	// Save the data
+	objectName1 := randString(60, rand.NewSource(time.Now().UnixNano()), "")
+
+	_, err = c.PutObject(bucketName, objectName1, reader, int64(bufSize), minio.PutObjectOptions{ContentType: "binary/octet-stream", StorageClass: "STANDARD"})
+	if err != nil {
+		logError(testName, function, args, startTime, "", "PutObject1 call failed", err)
+		return
+	}
+
+	bufSize1 := dataFileMap["datafile-33-kB"]
+	var reader1 = getDataReader("datafile-33-kB")
+	defer reader1.Close()
+	objectName2 := randString(60, rand.NewSource(time.Now().UnixNano()), "")
+
+	_, err = c.PutObject(bucketName, objectName2, reader1, int64(bufSize1), minio.PutObjectOptions{ContentType: "binary/octet-stream", StorageClass: "REDUCED_REDUNDANCY"})
+	if err != nil {
+		logError(testName, function, args, startTime, "", "PutObject2 call failed", err)
+		return
+	}
+
+	// Create a done channel to control 'ListObjects' go routine.
+	doneCh := make(chan struct{})
+	// Exit cleanly upon return.
+	defer close(doneCh)
+
+	// check for storage-class from ListObjects result
+	for objInfo := range c.ListObjects(bucketName, "", true, doneCh) {
+		if objInfo.Err != nil {
+			logError(testName, function, args, startTime, "", "ListObjects failed unexpectedly", err)
+			return
+		}
+		if objInfo.Key == objectName1 && objInfo.StorageClass != "STANDARD" {
+			// Ignored as Gateways (Azure/GCS etc) wont return storage class
+			ignoredLog(testName, function, args, startTime, "ListObjects doesn't return expected storage class").Info()
+		}
+		if objInfo.Key == objectName2 && objInfo.StorageClass != "REDUCED_REDUNDANCY" {
+			// Ignored as Gateways (Azure/GCS etc) wont return storage class
+			ignoredLog(testName, function, args, startTime, "ListObjects doesn't return expected storage class").Info()
+		}
+	}
+
+	// check for storage-class from ListObjectsV2 result
+	for objInfo := range c.ListObjectsV2(bucketName, "", true, doneCh) {
+		if objInfo.Err != nil {
+			logError(testName, function, args, startTime, "", "ListObjectsV2 failed unexpectedly", err)
+			return
+		}
+		if objInfo.Key == objectName1 && objInfo.StorageClass != "STANDARD" {
+			// Ignored as Gateways (Azure/GCS etc) wont return storage class
+			ignoredLog(testName, function, args, startTime, "ListObjectsV2 doesn't return expected storage class").Info()
+		}
+		if objInfo.Key == objectName2 && objInfo.StorageClass != "REDUCED_REDUNDANCY" {
+			// Ignored as Gateways (Azure/GCS etc) wont return storage class
+			ignoredLog(testName, function, args, startTime, "ListObjectsV2 doesn't return expected storage class").Info()
+		}
+	}
+
+	// Delete all objects and buckets
+	if err = cleanupBucket(bucketName, c); err != nil {
+		logError(testName, function, args, startTime, "", "Cleanup failed", err)
+		return
+	}
+
+	successLogger(testName, function, args, startTime).Info()
+
+}
+
 // Convert string to bool and always return false if any error
 func mustParseBool(str string) bool {
 	b, err := strconv.ParseBool(str)
@@ -7450,7 +7441,6 @@ func main() {
 	if isFullMode() {
 		testMakeBucketErrorV2()
 		testGetObjectClosedTwiceV2()
-		testRemovePartiallyUploadedV2()
 		testFPutObjectV2()
 		testMakeBucketRegionsV2()
 		testGetObjectReadSeekFunctionalV2()
@@ -7472,11 +7462,9 @@ func main() {
 		testPutObjectWithMetadata()
 		testPutObjectReadAt()
 		testPutObjectStreaming()
-		testListPartiallyUploaded()
 		testGetObjectSeekEnd()
 		testGetObjectClosedTwice()
 		testRemoveMultipleObjects()
-		testRemovePartiallyUploaded()
 		testFPutObjectMultipart()
 		testFPutObject()
 		testGetObjectReadSeekFunctional()
@@ -7497,6 +7485,8 @@ func main() {
 		testStorageClassMetadataPutObject()
 		testStorageClassInvalidMetadataPutObject()
 		testStorageClassMetadataCopyObject()
+		testPutObjectWithContentLanguage()
+		testListObjects()
 
 		// SSE-C tests will only work over TLS connection.
 		if tls {
@@ -7507,6 +7497,7 @@ func main() {
 			testEncryptedCopyObjectV2()
 			testEncryptedCopyObject()
 			testEncryptedEmptyObject()
+			testDecryptedCopyObject()
 		}
 	} else {
 		testFunctional()

@@ -106,7 +106,7 @@ func huffmanDecode(buf *bytes.Buffer, maxLen int, v []byte) error {
 
 type node struct {
 	// children is non-nil for internal nodes
-	children []*node
+	children *[256]*node
 
 	// The following are only valid if children is nil:
 	codeLen uint8 // number of bits that led to the output of sym
@@ -114,7 +114,7 @@ type node struct {
 }
 
 func newInternalNode() *node {
-	return &node{children: make([]*node, 256)}
+	return &node{children: new([256]*node)}
 }
 
 var rootHuffmanNode = newInternalNode()

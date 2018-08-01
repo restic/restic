@@ -130,7 +130,6 @@ The full API Reference is available here.
 ### API Reference : Bucket policy Operations
 * [`SetBucketPolicy`](https://docs.minio.io/docs/golang-client-api-reference#SetBucketPolicy)
 * [`GetBucketPolicy`](https://docs.minio.io/docs/golang-client-api-reference#GetBucketPolicy)
-* [`ListBucketPolicies`](https://docs.minio.io/docs/golang-client-api-reference#ListBucketPolicies)
 
 ### API Reference : Bucket notification Operations
 * [`SetBucketNotification`](https://docs.minio.io/docs/golang-client-api-reference#SetBucketNotification)
@@ -140,7 +139,7 @@ The full API Reference is available here.
 
 ### API Reference : File Object Operations
 * [`FPutObject`](https://docs.minio.io/docs/golang-client-api-reference#FPutObject)
-* [`FGetObject`](https://docs.minio.io/docs/golang-client-api-reference#FPutObject)
+* [`FGetObject`](https://docs.minio.io/docs/golang-client-api-reference#FGetObject)
 * [`FPutObjectWithContext`](https://docs.minio.io/docs/golang-client-api-reference#FPutObjectWithContext)
 * [`FGetObjectWithContext`](https://docs.minio.io/docs/golang-client-api-reference#FGetObjectWithContext)
 

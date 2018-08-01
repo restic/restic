@@ -134,7 +134,7 @@ func (svr *Server) sftpServerWorker(pktChan chan requestPacket) error {
 		case *sshFxpOpenPacket:
 			readonly = pkt.readonly()
 		case *sshFxpExtendedPacket:
-			readonly = pkt.SpecificPacket.readonly()
+			readonly = pkt.readonly()
 		}
 
 		// If server is operating read-only and a write operation is requested,
@@ -240,6 +240,12 @@ func handlePacket(s *Server, p interface{}) error {
 			}},
 		})
 	case *sshFxpOpendirPacket:
+		if stat, err := os.Stat(p.Path); err != nil {
+			return s.sendError(p, err)
+		} else if !stat.IsDir() {
+			return s.sendError(p, &os.PathError{
+				Path: p.Path, Err: syscall.ENOTDIR})
+		}
 		return sshFxpOpenPacket{
 			ID:     p.ID,
 			Path:   p.Path,
@@ -304,9 +310,18 @@ func (svr *Server) Serve() error {
 
 		pkt, err = makePacket(rxPacket{fxp(pktType), pktBytes})
 		if err != nil {
-			debug("makePacket err: %v", err)
-			svr.conn.Close() // shuts down recvPacket
-			break
+			switch errors.Cause(err) {
+			case errUnknownExtendedPacket:
+				if err := svr.serverConn.sendError(pkt, ErrSshFxOpUnsupported); err != nil {
+					debug("failed to send err packet: %v", err)
+					svr.conn.Close() // shuts down recvPacket
+					break
+				}
+			default:
+				debug("makePacket err: %v", err)
+				svr.conn.Close() // shuts down recvPacket
+				break
+			}
 		}
 
 		pktChan <- pkt
