@@ -2,72 +2,111 @@
 
 package xattr
 
-import "syscall"
+import (
+	"syscall"
+	"unsafe"
 
-// Get retrieves extended attribute data associated with path.
-func Get(path, name string) ([]byte, error) {
-	// find size.
-	size, err := getxattr(path, name, nil, 0, 0, 0)
-	if err != nil {
-		return nil, &Error{"xattr.Get", path, name, err}
-	}
-	if size > 0 {
-		buf := make([]byte, size)
-		// Read into buffer of that size.
-		read, err := getxattr(path, name, &buf[0], size, 0, 0)
-		if err != nil {
-			return nil, &Error{"xattr.Get", path, name, err}
-		}
-		return buf[:read], nil
-	}
-	return []byte{}, nil
+	"golang.org/x/sys/unix"
+)
+
+// See https://opensource.apple.com/source/xnu/xnu-1504.15.3/bsd/sys/xattr.h.auto.html
+const (
+	XATTR_NOFOLLOW        = 0x0001
+	XATTR_CREATE          = 0x0002
+	XATTR_REPLACE         = 0x0004
+	XATTR_NOSECURITY      = 0x0008
+	XATTR_NODEFAULT       = 0x0010
+	XATTR_SHOWCOMPRESSION = 0x0020
+
+	// ENOATTR is not exported by the syscall package on Linux, because it is
+	// an alias for ENODATA. We export it here so it is available on all
+	// our supported platforms.
+	ENOATTR = syscall.ENOATTR
+)
+
+func getxattr(path string, name string, data []byte) (int, error) {
+	return unix.Getxattr(path, name, data)
 }
 
-// List retrieves a list of names of extended attributes associated
-// with the given path in the file system.
-func List(path string) ([]string, error) {
-	// find size.
-	size, err := listxattr(path, nil, 0, 0)
-	if err != nil {
-		return nil, &Error{"xattr.List", path, "", err}
+func lgetxattr(path string, name string, data []byte) (int, error) {
+	value, size := bytePtrFromSlice(data)
+	/*
+		ssize_t getxattr(
+			const char *path,
+			const char *name,
+			void *value,
+			size_t size,
+			u_int32_t position,
+			int options
+		)
+	*/
+	r0, _, err := syscall.Syscall6(syscall.SYS_GETXATTR, uintptr(unsafe.Pointer(syscall.StringBytePtr(path))),
+		uintptr(unsafe.Pointer(syscall.StringBytePtr(name))), uintptr(unsafe.Pointer(value)), uintptr(size), 0, XATTR_NOFOLLOW)
+	if err != syscall.Errno(0) {
+		return int(r0), err
 	}
-	if size > 0 {
-		buf := make([]byte, size)
-		// Read into buffer of that size.
-		read, err := listxattr(path, &buf[0], size, 0)
-		if err != nil {
-			return nil, &Error{"xattr.List", path, "", err}
-		}
-		return nullTermToStrings(buf[:read]), nil
-	}
-	return []string{}, nil
+	return int(r0), nil
 }
 
-// Set associates name and data together as an attribute of path.
-func Set(path, name string, data []byte) error {
-	var dataval *byte
-	datalen := len(data)
-	if datalen > 0 {
-		dataval = &data[0]
-	}
-	if err := setxattr(path, name, dataval, datalen, 0, 0); err != nil {
-		return &Error{"xattr.Set", path, name, err}
+func setxattr(path string, name string, data []byte, flags int) error {
+	return unix.Setxattr(path, name, data, flags)
+}
+
+func lsetxattr(path string, name string, data []byte, flags int) error {
+	return unix.Setxattr(path, name, data, flags|XATTR_NOFOLLOW)
+}
+
+func removexattr(path string, name string) error {
+	return unix.Removexattr(path, name)
+}
+
+func lremovexattr(path string, name string) error {
+	/*
+		int removexattr(
+			const char *path,
+			const char *name,
+			int options
+		);
+	*/
+	_, _, err := syscall.Syscall(syscall.SYS_REMOVEXATTR, uintptr(unsafe.Pointer(syscall.StringBytePtr(path))),
+		uintptr(unsafe.Pointer(syscall.StringBytePtr(name))), XATTR_NOFOLLOW)
+	if err != syscall.Errno(0) {
+		return err
 	}
 	return nil
 }
 
-// Remove removes the attribute associated with the given path.
-func Remove(path, name string) error {
-	if err := removexattr(path, name, 0); err != nil {
-		return &Error{"xattr.Remove", path, name, err}
-	}
-	return nil
+func listxattr(path string, data []byte) (int, error) {
+	return unix.Listxattr(path, data)
 }
 
-// Supported checks if filesystem supports extended attributes
-func Supported(path string) bool {
-	if _, err := listxattr(path, nil, 0, 0); err != nil {
-		return err != syscall.ENOTSUP
+func llistxattr(path string, data []byte) (int, error) {
+	name, size := bytePtrFromSlice(data)
+	/*
+		ssize_t listxattr(
+			const char *path,
+			char *name,
+			size_t size,
+			int options
+		);
+	*/
+	r0, _, err := syscall.Syscall6(syscall.SYS_LISTXATTR, uintptr(unsafe.Pointer(syscall.StringBytePtr(path))),
+		uintptr(unsafe.Pointer(name)), uintptr(size), XATTR_NOFOLLOW, 0, 0)
+	if err != syscall.Errno(0) {
+		return int(r0), err
 	}
-	return true
+	return int(r0), nil
+}
+
+// stringsFromByteSlice converts a sequence of attributes to a []string.
+// On Darwin and Linux, each entry is a NULL-terminated string.
+func stringsFromByteSlice(buf []byte) (result []string) {
+	offset := 0
+	for index, b := range buf {
+		if b == 0 {
+			result = append(result, string(buf[offset:index]))
+			offset = index + 1
+		}
+	}
+	return
 }

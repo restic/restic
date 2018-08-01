@@ -19,3 +19,7 @@
 # [[override]]
 #  name = "github.com/x/y"
 #  version = "2.4.0"
+
+[prune]
+  unused-packages = true
+  go-tests = true

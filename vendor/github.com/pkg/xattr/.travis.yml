@@ -14,10 +14,10 @@ install:
   - go version
   - export GOBIN="$GOPATH/bin"
   - export PATH="$PATH:$GOBIN"
+  - go get golang.org/x/sys/unix
   - go get golang.org/x/tools/cmd/goimports
   - go build
 
 script:
-  - go vet
-  - go test -v -race
+  - ./.travis.sh
   - diff <(GOPATH="$PWD:$PWD/vendor" goimports -d .) <(printf "")

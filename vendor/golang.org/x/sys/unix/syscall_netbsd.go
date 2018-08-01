@@ -145,11 +145,11 @@ func IoctlSetInt(fd int, req uint, value int) error {
 	return ioctl(fd, req, uintptr(value))
 }
 
-func IoctlSetWinsize(fd int, req uint, value *Winsize) error {
+func ioctlSetWinsize(fd int, req uint, value *Winsize) error {
 	return ioctl(fd, req, uintptr(unsafe.Pointer(value)))
 }
 
-func IoctlSetTermios(fd int, req uint, value *Termios) error {
+func ioctlSetTermios(fd int, req uint, value *Termios) error {
 	return ioctl(fd, req, uintptr(unsafe.Pointer(value)))
 }
 
@@ -233,6 +233,7 @@ func Uname(uname *Utsname) error {
 //sys	Dup(fd int) (nfd int, err error)
 //sys	Dup2(from int, to int) (err error)
 //sys	Exit(code int)
+//sys	Faccessat(dirfd int, path string, mode uint32, flags int) (err error)
 //sys	Fadvise(fd int, offset int64, length int64, advice int) (err error) = SYS_POSIX_FADVISE
 //sys	Fchdir(fd int) (err error)
 //sys	Fchflags(fd int, flags int) (err error)
