@@ -303,7 +303,10 @@ dashboard in on the "Buckets" page when signed into your B2 account:
 
 You can either specify the so-called "Master Application Key" here (which can
 access any bucket at any path) or a dedicated "Application Key" created just
-for restic (which may be restricted to a specific bucket and/or path).
+for restic (which may be restricted to a specific bucket and/or path). The
+master key consists of a ``B2_ACCOUNT_ID`` and a ``B2_ACCOUNT_KEY``, and each
+application key also is a pair of ``B2_ACCOUNT_ID`` and ``B2_ACCOUNT_KEY``. The
+ID of an application key is much longer than the ID of the master key.
 
 You can then initialize a repository stored at Backblaze B2. If the
 bucket does not exist yet and the credentials you passed to restic have the
