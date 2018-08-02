@@ -164,7 +164,7 @@ history and triaging bugs much easier.
 Git commit messages have a very terse summary in the first line of the commit
 message, followed by an empty line, followed by a more verbose description or a
 List of changed things. For examples, please refer to the excellent [How to
-Write a Git Commit Message](http://chris.beams.io/posts/git-commit/).
+Write a Git Commit Message](https://chris.beams.io/posts/git-commit/).
 
 If you change/add multiple different things that aren't related at all, try to
 make several smaller commits. This is much easier to review. Using `git add -p`
