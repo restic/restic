@@ -190,7 +190,6 @@ func (env *TravisEnvironment) Prepare() error {
 		"golang.org/x/tools/cmd/cover",
 		"github.com/pierrre/gotestcover",
 		"github.com/NebulousLabs/glyphcheck",
-		"github.com/golang/dep/cmd/dep",
 		"github.com/restic/rest-server/cmd/rest-server",
 		"github.com/restic/calens",
 		"github.com/ncw/rclone",
@@ -349,12 +348,13 @@ func (env *TravisEnvironment) RunTests() error {
 		if err = runGofmt(); err != nil {
 			return err
 		}
-	} else {
-		msg("Skipping gofmt check for %v\n", v)
-	}
 
-	if err = runDep(); err != nil {
-		return err
+		msg("run go mod vendor\n")
+		if err := runGoModVendor(); err != nil {
+			return err
+		}
+	} else {
+		msg("Skipping gofmt and module vendor check for %v\n", v)
 	}
 
 	if err = runGlyphcheck(); err != nil {
@@ -517,14 +517,30 @@ func runGofmt() error {
 	return nil
 }
 
-func runDep() error {
-	cmd := exec.Command("dep", "ensure", "-no-vendor", "-dry-run")
+func runGoModVendor() error {
+	cmd := exec.Command("go", "mod", "vendor")
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
+	cmd.Env = updateEnv(os.Environ(), map[string]string{
+		"GO111MODULE": "on",
+	})
 
 	err := cmd.Run()
 	if err != nil {
-		return fmt.Errorf("error running dep: %v\nThis probably means that Gopkg.lock is not up to date, run 'dep ensure' and commit all changes", err)
+		return fmt.Errorf("error running 'go mod vendor': %v", err)
+	}
+
+	// check that "git diff" does not return any output
+	cmd = exec.Command("git", "diff", "vendor")
+	cmd.Stderr = os.Stderr
+
+	buf, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("error running 'git diff vendor': %v\noutput: %s", err, buf)
+	}
+
+	if len(buf) > 0 {
+		return fmt.Errorf("vendor/ directory was modified:\n%s", buf)
 	}
 
 	return nil
