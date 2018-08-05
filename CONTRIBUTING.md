@@ -141,10 +141,11 @@ run
 
     gofmt -w **/*.go
 
-in the project root directory before committing. Installing the script
-`fmt-check` from https://github.com/edsrzf/gofmt-git-hook locally as a
-pre-commit hook checks formatting before committing automatically, just copy
-this script to `.git/hooks/pre-commit`.
+in the project root directory before committing. For each Pull Request, the
+formatting is tested with `gofmt` for the latest stable version of Go.
+Installing the script `fmt-check` from https://github.com/edsrzf/gofmt-git-hook
+locally as a pre-commit hook checks formatting before committing automatically,
+just copy this script to `.git/hooks/pre-commit`.
 
 For each pull request, several different systems run the integration tests on
 Linux, OS X and Windows. We won't merge any code that does not pass all tests
