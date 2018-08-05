@@ -16,6 +16,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 )
 
@@ -23,6 +24,90 @@ import (
 // our code.
 var ForbiddenImports = map[string]bool{
 	"errors": true,
+}
+
+// Use a specific version of gofmt (the latest stable, usually) to guarantee
+// deterministic formatting. This is used with the GoVersion.AtLeast()
+// function (so that we don't forget to update it).
+var GofmtVersion = ParseGoVersion("go1.11")
+
+// GoVersion is the version of Go used to compile the project.
+type GoVersion struct {
+	Major int
+	Minor int
+	Patch int
+}
+
+// ParseGoVersion parses the Go version s. If s cannot be parsed, the returned GoVersion is null.
+func ParseGoVersion(s string) (v GoVersion) {
+	if !strings.HasPrefix(s, "go") {
+		return
+	}
+
+	s = s[2:]
+	data := strings.Split(s, ".")
+	if len(data) < 2 || len(data) > 3 {
+		// invalid version
+		return GoVersion{}
+	}
+
+	var err error
+
+	v.Major, err = strconv.Atoi(data[0])
+	if err != nil {
+		return GoVersion{}
+	}
+
+	// try to parse the minor version while removing an eventual suffix (like
+	// "rc2" or so)
+	for s := data[1]; s != ""; s = s[:len(s)-1] {
+		v.Minor, err = strconv.Atoi(s)
+		if err == nil {
+			break
+		}
+	}
+
+	if v.Minor == 0 {
+		// no minor version found
+		return GoVersion{}
+	}
+
+	if len(data) >= 3 {
+		v.Patch, err = strconv.Atoi(data[2])
+		if err != nil {
+			return GoVersion{}
+		}
+	}
+
+	return
+}
+
+// AtLeast returns true if v is at least as new as other. If v is empty, true is returned.
+func (v GoVersion) AtLeast(other GoVersion) bool {
+	var empty GoVersion
+
+	// the empty version satisfies all versions
+	if v == empty {
+		return true
+	}
+
+	if v.Major < other.Major {
+		return false
+	}
+
+	if v.Minor < other.Minor {
+		return false
+	}
+
+	if v.Patch < other.Patch {
+		return false
+	}
+
+	return true
+}
+
+func (v GoVersion) String() string {
+	return fmt.Sprintf("Go %d.%d.%d", v.Major, v.Minor, v.Patch)
 }
 
 // CloudBackends contains a map of backend tests for cloud services to one
@@ -257,8 +342,15 @@ func (env *TravisEnvironment) RunTests() error {
 		return err
 	}
 
-	if err = runGofmt(); err != nil {
-		return err
+	// only run gofmt on a specific version of Go.
+	v := ParseGoVersion(runtime.Version())
+	msg("Detected Go version %v\n", v)
+	if v.AtLeast(GofmtVersion) {
+		if err = runGofmt(); err != nil {
+			return err
+		}
+	} else {
+		msg("Skipping gofmt check for %v\n", v)
 	}
 
 	if err = runDep(); err != nil {
