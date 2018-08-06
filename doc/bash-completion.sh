@@ -229,6 +229,14 @@ __restic_handle_word()
         __restic_handle_command
     elif [[ $c -eq 0 ]]; then
         __restic_handle_command
+    elif __restic_contains_word "${words[c]}" "${command_aliases[@]}"; then
+        # aliashash variable is an associative array which is only supported in bash > 3.
+        if [[ -z "${BASH_VERSION}" || "${BASH_VERSINFO[0]}" -gt 3 ]]; then
+            words[c]=${aliashash[${words[c]}]}
+            __restic_handle_command
+        else
+            __restic_handle_noun
+        fi
     else
         __restic_handle_noun
     fi
@@ -238,6 +246,9 @@ __restic_handle_word()
 _restic_backup()
 {
     last_command="restic_backup"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -308,6 +319,9 @@ _restic_backup()
 _restic_cache()
 {
     last_command="restic_cache"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -351,6 +365,9 @@ _restic_cache()
 _restic_cat()
 {
     last_command="restic_cat"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -390,6 +407,9 @@ _restic_cat()
 _restic_check()
 {
     last_command="restic_check"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -437,6 +457,9 @@ _restic_check()
 _restic_diff()
 {
     last_command="restic_diff"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -478,6 +501,9 @@ _restic_diff()
 _restic_dump()
 {
     last_command="restic_dump"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -524,6 +550,9 @@ _restic_dump()
 _restic_find()
 {
     last_command="restic_find"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -585,6 +614,9 @@ _restic_find()
 _restic_forget()
 {
     last_command="restic_forget"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -665,6 +697,9 @@ _restic_forget()
 _restic_generate()
 {
     last_command="restic_generate"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -710,6 +745,9 @@ _restic_generate()
 _restic_init()
 {
     last_command="restic_init"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -749,6 +787,9 @@ _restic_init()
 _restic_key()
 {
     last_command="restic_key"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -790,6 +831,9 @@ _restic_key()
 _restic_list()
 {
     last_command="restic_list"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -829,6 +873,9 @@ _restic_list()
 _restic_ls()
 {
     last_command="restic_ls"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -878,6 +925,9 @@ _restic_ls()
 _restic_migrate()
 {
     last_command="restic_migrate"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -920,6 +970,9 @@ _restic_migrate()
 _restic_mount()
 {
     last_command="restic_mount"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -974,6 +1027,9 @@ _restic_mount()
 _restic_prune()
 {
     last_command="restic_prune"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -1013,6 +1069,9 @@ _restic_prune()
 _restic_rebuild-index()
 {
     last_command="restic_rebuild-index"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -1052,6 +1111,9 @@ _restic_rebuild-index()
 _restic_restore()
 {
     last_command="restic_restore"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -1079,6 +1141,8 @@ _restic_restore()
     flags+=("--target=")
     two_word_flags+=("-t")
     local_nonpersistent_flags+=("--target=")
+    flags+=("--verify")
+    local_nonpersistent_flags+=("--verify")
     flags+=("--cacert=")
     flags+=("--cache-dir=")
     flags+=("--cleanup-cache")
@@ -1107,6 +1171,9 @@ _restic_restore()
 _restic_snapshots()
 {
     last_command="restic_snapshots"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -1155,9 +1222,58 @@ _restic_snapshots()
     noun_aliases=()
 }
 
+_restic_stats()
+{
+    last_command="restic_stats"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--help")
+    flags+=("-h")
+    local_nonpersistent_flags+=("--help")
+    flags+=("--host=")
+    local_nonpersistent_flags+=("--host=")
+    flags+=("--mode=")
+    local_nonpersistent_flags+=("--mode=")
+    flags+=("--cacert=")
+    flags+=("--cache-dir=")
+    flags+=("--cleanup-cache")
+    flags+=("--json")
+    flags+=("--limit-download=")
+    flags+=("--limit-upload=")
+    flags+=("--no-cache")
+    flags+=("--no-lock")
+    flags+=("--option=")
+    two_word_flags+=("-o")
+    flags+=("--password-file=")
+    two_word_flags+=("-p")
+    flags+=("--quiet")
+    flags+=("-q")
+    flags+=("--repo=")
+    two_word_flags+=("-r")
+    flags+=("--tls-client-cert=")
+    flags+=("--verbose")
+    flags+=("-v")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _restic_tag()
 {
     last_command="restic_tag"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -1210,6 +1326,9 @@ _restic_tag()
 _restic_unlock()
 {
     last_command="restic_unlock"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -1251,6 +1370,9 @@ _restic_unlock()
 _restic_version()
 {
     last_command="restic_version"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -1290,6 +1412,9 @@ _restic_version()
 _restic_root_command()
 {
     last_command="restic"
+
+    command_aliases=()
+
     commands=()
     commands+=("backup")
     commands+=("cache")
@@ -1353,6 +1478,7 @@ __start_restic()
 {
     local cur prev words cword
     declare -A flaghash 2>/dev/null || :
+    declare -A aliashash 2>/dev/null || :
     if declare -F _init_completion >/dev/null 2>&1; then
         _init_completion -s || return
     else
