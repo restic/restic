@@ -1,3 +1,125 @@
+Changelog for restic 0.9.2 (2018-08-06)
+=======================================
+
+The following sections list the changes in restic 0.9.2 relevant to
+restic users. The changes are ordered by importance.
+
+Summary
+-------
+
+ * Fix #1854: Allow saving files/dirs on different fs with `--one-file-system`
+ * Fix #1870: Fix restore with --include
+ * Fix #1880: Use `--cache-dir` argument for `check` command
+ * Fix #1893: Return error when exclude file cannot be read
+ * Fix #1861: Fix case-insensitive search with restic find
+ * Enh #1906: Add support for B2 application keys
+ * Enh #874: Add stats command to get information about a repository
+ * Enh #1772: Add restore --verify to verify restored file content
+ * Enh #1853: Add JSON output support to `restic key list`
+ * Enh #1477: S3 backend: accept AWS_SESSION_TOKEN
+ * Enh #1901: Update the Backblaze B2 library
+
+Details
+-------
+
+ * Bugfix #1854: Allow saving files/dirs on different fs with `--one-file-system`
+
+   Restic now allows saving files/dirs on a different file system in a subdir correctly even when
+   `--one-file-system` is specified.
+
+   The first thing the restic archiver code does is to build a tree of the target
+   files/directories. If it detects that a parent directory is already included (e.g. `restic
+   backup /foo /foo/bar/baz`), it'll ignore the latter argument.
+
+   Without `--one-file-system`, that's perfectly valid: If `/foo` is to be archived, it will
+   include `/foo/bar/baz`. But with `--one-file-system`, `/foo/bar/baz` may reside on a
+   different file system, so it won't be included with `/foo`.
+
+   https://github.com/restic/restic/issues/1854
+   https://github.com/restic/restic/pull/1855
+
+ * Bugfix #1870: Fix restore with --include
+
+   We fixed a bug which prevented restic to restore files with an include filter.
+
+   https://github.com/restic/restic/issues/1870
+   https://github.com/restic/restic/pull/1900
+
+ * Bugfix #1880: Use `--cache-dir` argument for `check` command
+
+   `check` command now uses a temporary sub-directory of the specified directory if set using the
+   `--cache-dir` argument. If not set, the cache directory is created in the default temporary
+   directory as before. In either case a temporary cache is used to ensure the actual repository is
+   checked (rather than a local copy).
+
+   The `--cache-dir` argument was not used by the `check` command, instead a cache directory was
+   created in the temporary directory.
+
+   https://github.com/restic/restic/issues/1880
+
+ * Bugfix #1893: Return error when exclude file cannot be read
+
+   A bug was found: when multiple exclude files were passed to restic and one of them could not be
+   read, an error was printed and restic continued, ignoring even the existing exclude files.
+   Now, an error message is printed and restic aborts when an exclude file cannot be read.
+
+   https://github.com/restic/restic/issues/1893
+
+ * Bugfix #1861: Fix case-insensitive search with restic find
+
+   We've fixed the behavior for `restic find -i PATTERN`, which was broken in v0.9.1.
+
+   https://github.com/restic/restic/pull/1861
+
+ * Enhancement #1906: Add support for B2 application keys
+
+   Restic can now use so-called "application keys" which can be created in the B2 dashboard and
+   were only introduced recently. In contrast to the "master key", such keys can be restricted to a
+   specific bucket and/or path.
+
+   https://github.com/restic/restic/issues/1906
+   https://github.com/restic/restic/pull/1914
+
+ * Enhancement #874: Add stats command to get information about a repository
+
+   https://github.com/restic/restic/issues/874
+   https://github.com/restic/restic/pull/1729
+
+ * Enhancement #1772: Add restore --verify to verify restored file content
+
+   Restore will print error message if restored file content does not match expected SHA256
+   checksum
+
+   https://github.com/restic/restic/pull/1772
+
+ * Enhancement #1853: Add JSON output support to `restic key list`
+
+   This PR enables users to get the output of `restic key list` in JSON in addition to the existing
+   table format.
+
+   https://github.com/restic/restic/pull/1853
+
+ * Enhancement #1477: S3 backend: accept AWS_SESSION_TOKEN
+
+   Before, it was not possible to use s3 backend with AWS temporary security credentials(with
+   AWS_SESSION_TOKEN). This change gives higher priority to credentials.EnvAWS credentials
+   provider.
+
+   https://github.com/restic/restic/issues/1477
+   https://github.com/restic/restic/pull/1479
+   https://github.com/restic/restic/pull/1647
+
+ * Enhancement #1901: Update the Backblaze B2 library
+
+   We've updated the library we're using for accessing the Backblaze B2 service to 0.5.0 to
+   include support for upcoming so-called "application keys". With this feature, you can create
+   access credentials for B2 which are restricted to e.g. a single bucket or even a sub-directory
+   of a bucket.
+
+   https://github.com/restic/restic/pull/1901
+   https://github.com/kurin/blazer
+
+
 Changelog for restic 0.9.1 (2018-06-10)
 =======================================
 
