@@ -100,13 +100,13 @@ func runStats(gopts GlobalOptions, args []string) error {
 		} else {
 			sID, err = restic.FindSnapshot(repo, snapshotIDString)
 			if err != nil {
-				return err
+				Exitf(1, "error loading snapshot: %v", err)
 			}
 		}
 
 		snapshot, err := restic.LoadSnapshot(ctx, repo, sID)
 		if err != nil {
-			return err
+			Exitf(1, "error loading snapshot from repo: %v", err)
 		}
 
 		err = statsWalkSnapshot(ctx, snapshot, repo, stats)
