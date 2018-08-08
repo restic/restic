@@ -8,7 +8,7 @@ import (
 
 // ErrNoIDPrefixFound is returned by Find() when no ID for the given prefix
 // could be found.
-var ErrNoIDPrefixFound = errors.New("no ID found")
+var ErrNoIDPrefixFound = errors.New("no matching ID found")
 
 // ErrMultipleIDMatches is returned by Find() when multiple IDs with the given
 // prefix are found.
