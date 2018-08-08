@@ -106,9 +106,7 @@ func newFilterLastSnapshotsKey(sn *restic.Snapshot) filterLastSnapshotsKey {
 // they will be joined and treated as one item.
 func FilterLastSnapshots(list restic.Snapshots) restic.Snapshots {
 	// Sort the snapshots so that the newer ones are listed first
-	sort.SliceStable(list, func(i, j int) bool {
-		return list[i].Time.After(list[j].Time)
-	})
+	sort.Stable(list)
 
 	var results restic.Snapshots
 	seen := make(map[filterLastSnapshotsKey]bool)
@@ -124,11 +122,8 @@ func FilterLastSnapshots(list restic.Snapshots) restic.Snapshots {
 
 // PrintSnapshots prints a text table of the snapshots in list to stdout.
 func PrintSnapshots(stdout io.Writer, list restic.Snapshots, compact bool) {
-
-	// always sort the snapshots so that the newer ones are listed last
-	sort.SliceStable(list, func(i, j int) bool {
-		return list[i].Time.Before(list[j].Time)
-	})
+	// Sort the snapshots so that the newer ones are listed last
+	sort.Stable(sort.Reverse(list))
 
 	// Determine the max widths for host and tag.
 	maxHost, maxTag := 10, 6
