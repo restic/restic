@@ -1,0 +1,8 @@
+Bugfix: Remove truncated files from cache
+
+When a file in the local cache is truncated, and restic tries to access data
+beyond the end of the (cached) file, it used to return an error "EOF". This is
+now fixed, such truncated files are removed and the data is fetched directly
+from the backend.
+
+https://github.com/restic/restic/issues/1935
