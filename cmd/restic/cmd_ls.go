@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
-	"path/filepath"
+	"path"
 	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/walker"
 )
@@ -25,9 +26,11 @@ snapshot originating from a certain host only.
 
 File listings can optionally be filtered by directories. Any
 positional arguments after the snapshot ID are interpreted as
-directory paths, and only files inside those directories will
-be listed. If the --recursive flag is used, then the filter
+absolute directory paths, and only files inside those directories
+will be listed. If the --recursive flag is used, then the filter
 will allow traversing into matching directories' subfolders.
+Any directory paths specified must be absolute (starting with
+a path separator); paths use the forward slash '/' as separator.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -75,16 +78,17 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 	var dirs []string
 	if len(args) > 1 {
 		dirs = args[1:]
+		for _, dir := range dirs {
+			if !strings.HasPrefix(dir, "/") {
+				return errors.Fatal("All path filters must be absolute, starting with a forward slash '/'")
+			}
+		}
 	}
 
 	ctx, cancel := context.WithCancel(gopts.ctx)
 	defer cancel()
 	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, args[:1]) {
-		dirsToPrint := opts.Paths
-		if len(dirs) > 0 {
-			dirsToPrint = dirs
-		}
-		Verbosef("snapshot %s of %v at %s):\n", sn.ID().Str(), dirsToPrint, sn.Time)
+		Verbosef("snapshot %s of %v filtered by %v at %s):\n", sn.ID().Str(), sn.Paths, dirs, sn.Time)
 
 		err := walker.Walk(ctx, repo, *sn.Tree, nil, func(nodepath string, node *restic.Node, err error) (bool, error) {
 			if err != nil {
@@ -96,31 +100,40 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 
 			// apply any directory filters
 			if len(dirs) > 0 {
-				var nodeDir string
-				if !opts.Recursive {
-					// only needed for exact directory match; i.e. no subfolders
-					nodeDir = filepath.Dir(nodepath)
+				// this first iteration ensures we do not traverse branches that
+				// are not in matching trees or will not lead us to matching trees
+				var walk bool
+				for _, dir := range dirs {
+					if fs.HasPathPrefix(nodepath, dir) || fs.HasPathPrefix(dir, nodepath) {
+						// we are either in or approaching the right tree
+						walk = true
+						break
+					}
 				}
+				if !walk {
+					return false, walker.SkipNode
+				}
+
+				// this second iteration ensures that we get an exact match
+				// according to the filter and whether we should match subfolders
 				var match bool
 				for _, dir := range dirs {
-					if opts.Recursive {
-						if strings.HasPrefix(nodepath, dir) {
-							match = true
-							break
-						}
-					} else {
-						if nodeDir == dir {
-							match = true
-							break
-						}
+					if opts.Recursive && fs.HasPathPrefix(dir, nodepath) {
+						match = true
+						break
+					}
+					if !opts.Recursive && path.Dir(nodepath) == dir {
+						match = true
+						break
 					}
 				}
 				if !match {
-					return true, nil
+					return false, nil
 				}
 			}
 
 			Printf("%s\n", formatNode(nodepath, node, lsOptions.ListLong))
+
 			return false, nil
 		})
 		if err != nil {
