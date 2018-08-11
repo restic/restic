@@ -13,12 +13,21 @@ import (
 )
 
 var cmdLs = &cobra.Command{
-	Use:   "ls [flags] [snapshot-ID] [dir...]",
+	Use:   "ls [flags] [snapshotID] [dir...]",
 	Short: "List files in a snapshot",
 	Long: `
-The "ls" command allows listing files and directories in a snapshot.
+The "ls" command lists files and directories in a snapshot.
 
-The special snapshot-ID "latest" can be used to list files and directories of the latest snapshot in the repository.
+The special snapshot ID "latest" can be used to list files and
+directories of the latest snapshot in the repository. The
+--host flag can be used in conjunction to select the latest
+snapshot originating from a certain host only.
+
+File listings can optionally be filtered by directories. Any
+positional arguments after the snapshot ID are interpreted as
+directory paths, and only files inside those directories will
+be listed. If the --recursive flag is used, then the filter
+will allow traversing into matching directories' subfolders.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -42,7 +51,6 @@ func init() {
 
 	flags := cmdLs.Flags()
 	flags.BoolVarP(&lsOptions.ListLong, "long", "l", false, "use a long listing format showing size and mode")
-
 	flags.StringVarP(&lsOptions.Host, "host", "H", "", "only consider snapshots for this `host`, when no snapshot ID is given")
 	flags.Var(&lsOptions.Tags, "tag", "only consider snapshots which include this `taglist`, when no snapshot ID is given")
 	flags.StringArrayVar(&lsOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot ID is given")
@@ -64,12 +72,19 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	// extract any specific directories to walk
-	dirs := args[1:]
+	var dirs []string
+	if len(args) > 1 {
+		dirs = args[1:]
+	}
 
 	ctx, cancel := context.WithCancel(gopts.ctx)
 	defer cancel()
 	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, args[:1]) {
-		Verbosef("snapshot %s of %v at %s):\n", sn.ID().Str(), sn.Paths, sn.Time)
+		dirsToPrint := opts.Paths
+		if len(dirs) > 0 {
+			dirsToPrint = dirs
+		}
+		Verbosef("snapshot %s of %v at %s):\n", sn.ID().Str(), dirsToPrint, sn.Time)
 
 		err := walker.Walk(ctx, repo, *sn.Tree, nil, func(nodepath string, node *restic.Node, err error) (bool, error) {
 			if err != nil {
