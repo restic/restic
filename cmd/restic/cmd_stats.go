@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/walker"
 	"github.com/spf13/cobra"
@@ -95,18 +96,18 @@ func runStats(gopts GlobalOptions, args []string) error {
 		if snapshotIDString == "latest" {
 			sID, err = restic.FindLatestSnapshot(ctx, repo, []string{}, []restic.TagList{}, snapshotByHost)
 			if err != nil {
-				Exitf(1, "latest snapshot for criteria not found: %v", err)
+				return errors.Fatalf("latest snapshot for criteria not found: %v", err)
 			}
 		} else {
 			sID, err = restic.FindSnapshot(repo, snapshotIDString)
 			if err != nil {
-				Exitf(1, "error loading snapshot: %v", err)
+				return errors.Fatalf("error loading snapshot: %v", err)
 			}
 		}
 
 		snapshot, err := restic.LoadSnapshot(ctx, repo, sID)
 		if err != nil {
-			Exitf(1, "error loading snapshot from repo: %v", err)
+			return errors.Fatalf("error loading snapshot from repo: %v", err)
 		}
 
 		err = statsWalkSnapshot(ctx, snapshot, repo, stats)
