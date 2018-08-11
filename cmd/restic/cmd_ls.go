@@ -104,8 +104,20 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 				// are not in matching trees or will not lead us to matching trees
 				var walk bool
 				for _, dir := range dirs {
-					if fs.HasPathPrefix(nodepath, dir) || fs.HasPathPrefix(dir, nodepath) {
-						// we are either in or approaching the right tree
+					approachingMatchingTree := fs.HasPathPrefix(nodepath, dir)
+					inMatchingTree := fs.HasPathPrefix(dir, nodepath)
+
+					// this condition is complex, but it basically requires that we
+					// are either approaching a matching tree (not yet deep enough)
+					// or: if recursive, we have entered a matching tree; if non-
+					// recursive, then that we are at exactly the right depth
+					// (we can do the walk correctly by just using the condition of
+					// "approachingMatchingTree || inMatchingTree", but it will be
+					// much slower for non-recursive queries since it will continue
+					// to traverse subtrees that are too deep and won't match -- this
+					// extra check allows us to return SkipNode if we've gone TOO deep,
+					// which skips all its subfolders)
+					if approachingMatchingTree || opts.Recursive || (inMatchingTree && dir == path.Dir(nodepath)) {
 						walk = true
 						break
 					}
@@ -118,6 +130,15 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 				// according to the filter and whether we should match subfolders
 				var match bool
 				for _, dir := range dirs {
+					if nodepath == dir {
+						// special case: match the directory filter exactly,
+						// which may or may not be desirable depending on your
+						// use case (for example, this is unnecessary when
+						// wanting to simply list the contents of a folder,
+						// rather than all files matching a directory prefix)
+						match = true
+						break
+					}
 					if opts.Recursive && fs.HasPathPrefix(dir, nodepath) {
 						match = true
 						break
