@@ -100,11 +100,13 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 
 			// apply any directory filters
 			if len(dirs) > 0 {
+				nodeDir := path.Dir(nodepath)
+
 				// this first iteration ensures we do not traverse branches that
 				// are not in matching trees or will not lead us to matching trees
 				var walk bool
 				for _, dir := range dirs {
-					approachingMatchingTree := fs.HasPathPrefix(nodepath, dir)
+					approachingMatchingTree := fs.HasPathPrefix(nodeDir, dir)
 					inMatchingTree := fs.HasPathPrefix(dir, nodepath)
 
 					// this condition is complex, but it basically requires that we
@@ -117,7 +119,7 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 					// to traverse subtrees that are too deep and won't match -- this
 					// extra check allows us to return SkipNode if we've gone TOO deep,
 					// which skips all its subfolders)
-					if approachingMatchingTree || opts.Recursive || (inMatchingTree && dir == path.Dir(nodepath)) {
+					if approachingMatchingTree || opts.Recursive || (inMatchingTree && dir == nodeDir) {
 						walk = true
 						break
 					}
@@ -143,7 +145,7 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 						match = true
 						break
 					}
-					if !opts.Recursive && path.Dir(nodepath) == dir {
+					if !opts.Recursive && nodeDir == dir {
 						match = true
 						break
 					}
