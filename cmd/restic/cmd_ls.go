@@ -106,7 +106,17 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 				// are not in matching trees or will not lead us to matching trees
 				var walk bool
 				for _, dir := range dirs {
+
+					// the current node path is a prefix for one of the
+					// directories, so we're interested in something deeper in the
+					// tree. Example:
+					//   nodepath: "/test"
+					//   dir:      "/test/foo"
 					approachingMatchingTree := fs.HasPathPrefix(nodepath, dir)
+
+					// we're within one of the selected dirs, example:
+					//   nodepath: "/test/foo"
+					//   dir:      "/test"
 					inMatchingTree := fs.HasPathPrefix(dir, nodepath)
 
 					// this condition is complex, but it basically requires that we
