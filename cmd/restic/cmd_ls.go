@@ -65,15 +65,6 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 		return errors.Fatal("Invalid arguments, either give one or more snapshot IDs or set filters.")
 	}
 
-	repo, err := OpenRepository(gopts)
-	if err != nil {
-		return err
-	}
-
-	if err = repo.LoadIndex(gopts.ctx); err != nil {
-		return err
-	}
-
 	// extract any specific directories to walk
 	var dirs []string
 	if len(args) > 1 {
@@ -83,6 +74,15 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 				return errors.Fatal("All path filters must be absolute, starting with a forward slash '/'")
 			}
 		}
+	}
+
+	repo, err := OpenRepository(gopts)
+	if err != nil {
+		return err
+	}
+
+	if err = repo.LoadIndex(gopts.ctx); err != nil {
+		return err
 	}
 
 	ctx, cancel := context.WithCancel(gopts.ctx)
