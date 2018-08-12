@@ -27,7 +27,7 @@ func TestRejectByPattern(t *testing.T) {
 	for _, tc := range tests {
 		t.Run("", func(t *testing.T) {
 			reject := rejectByPattern(patterns)
-			res := reject(tc.filename, nil)
+			res := reject(tc.filename)
 			if res != tc.reject {
 				t.Fatalf("wrong result for filename %v: want %v, got %v",
 					tc.filename, tc.reject, res)
@@ -140,8 +140,8 @@ func TestMultipleIsExcludedByFile(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		excludedByFoo := fooExclude(p, fi)
-		excludedByBar := barExclude(p, fi)
+		excludedByFoo := fooExclude(p)
+		excludedByBar := barExclude(p)
 		excluded := excludedByFoo || excludedByBar
 		// the log message helps debugging in case the test fails
 		t.Logf("%q: %v || %v = %v", p, excludedByFoo, excludedByBar, excluded)

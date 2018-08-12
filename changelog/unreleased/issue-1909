@@ -1,0 +1,14 @@
+Enhancement: Reject files/dirs by name first
+
+The current scanner/archiver code had an architectural limitation: it always
+ran the `lstat()` system call on all files and directories before a decision to
+include/exclude the file/dir was made. This lead to a lot of unnecessary system
+calls for items that could have been rejected by their name or path only.
+
+We've changed the archiver/scanner implementation so that it now first rejects
+by name/path, and only runs the system call on the remaining items. This
+reduces the number of `lstat()` system calls a lot (depending on the exclude
+settings).
+
+https://github.com/restic/restic/issues/1909
+https://github.com/restic/restic/pull/1912
