@@ -1,6 +1,6 @@
 Name: restic	
 Version: 0.9.2git.20180812	
-Release: 3%{?dist}
+Release: 4%{?dist}
 Summary: restic is a backup program that is fast, efficient and secure.
 
 %global debug_package %{nil}
@@ -49,7 +49,7 @@ install -p -m 644 doc/bash-completion.sh %{buildroot}%{_datarootdir}/bash-comple
 install -p -m 755 %{name} %{buildroot}%{_bindir}
 
 %files
-%license LICENSE
+%doc LICENSE
 %doc README.rst
 %{_bindir}/%{name}
 %dir %{_datadir}/zsh/site-functions
@@ -61,6 +61,8 @@ install -p -m 755 %{name} %{buildroot}%{_bindir}
 
 
 %changelog
+* Sun Aug 12 2018 Luc De Louw <luc@delouw.ch> - 0.9.2git.20180812-4
+- %license does not work with RHEL6, using %doc instead
 * Sun Aug 12 2018 Luc De Louw <luc@delouw.ch> - 0.9.2git.20180812-3
 - Better description
 * Sun Aug 12 2018 Luc De Louw <luc@delouw.ch> - 0.9.2git.20180812-2
