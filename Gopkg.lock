@@ -287,16 +287,23 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:eefb1f49ec07e71206d4c9ea1a3e634cad331c2180733e4121b8ae39e8e92ecb"
+  digest = "1:6cd85da60627124f96cf2d1ced7ca729f7391bb4616e26f702b8c0b1a56b7a30"
   name = "golang.org/x/crypto"
   packages = [
     "argon2",
     "blake2b",
+    "cast5",
     "curve25519",
     "ed25519",
     "ed25519/internal/edwards25519",
     "internal/chacha20",
     "internal/subtle",
+    "openpgp",
+    "openpgp/armor",
+    "openpgp/elgamal",
+    "openpgp/errors",
+    "openpgp/packet",
+    "openpgp/s2k",
     "pbkdf2",
     "poly1305",
     "scrypt",
@@ -456,6 +463,7 @@
     "github.com/spf13/cobra",
     "github.com/spf13/cobra/doc",
     "github.com/spf13/pflag",
+    "golang.org/x/crypto/openpgp",
     "golang.org/x/crypto/poly1305",
     "golang.org/x/crypto/scrypt",
     "golang.org/x/crypto/ssh/terminal",
