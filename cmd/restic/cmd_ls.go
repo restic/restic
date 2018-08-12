@@ -125,7 +125,15 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 					}
 				}
 				if !walk {
-					return false, walker.SkipNode
+					if node.Type == "dir" {
+						// signal Walk() that it should not descend into the tree.
+						return false, walker.SkipNode
+					}
+
+					// we must not return SkipNode for non-dir nodes because
+					// then the remaining nodes in the same tree would be
+					// skipped, so return nil instead
+					return false, nil
 				}
 
 				// this second iteration ensures that we get an exact match
