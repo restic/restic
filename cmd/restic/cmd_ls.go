@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"path"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -76,6 +75,40 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
+	withinDir := func(nodepath string) bool {
+		if len(dirs) == 0 {
+			return true
+		}
+
+		for _, dir := range dirs {
+			// we're within one of the selected dirs, example:
+			//   nodepath: "/test/foo"
+			//   dir:      "/test"
+			if fs.HasPathPrefix(dir, nodepath) {
+				return true
+			}
+		}
+		return false
+	}
+
+	approachingMatchingTree := func(nodepath string) bool {
+		if len(dirs) == 0 {
+			return true
+		}
+
+		for _, dir := range dirs {
+			// the current node path is a prefix for one of the
+			// directories, so we're interested in something deeper in the
+			// tree. Example:
+			//   nodepath: "/test"
+			//   dir:      "/test/foo"
+			if fs.HasPathPrefix(nodepath, dir) {
+				return true
+			}
+		}
+		return false
+	}
+
 	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err
@@ -98,85 +131,31 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 				return false, nil
 			}
 
-			// apply any directory filters
-			if len(dirs) > 0 {
-				nodeDir := path.Dir(nodepath)
+			if withinDir(nodepath) {
+				// if we're within a dir, print the node
+				Printf("%s\n", formatNode(nodepath, node, lsOptions.ListLong))
 
-				// this first iteration ensures we do not traverse branches that
-				// are not in matching trees or will not lead us to matching trees
-				var walk bool
-				for _, dir := range dirs {
-
-					// the current node path is a prefix for one of the
-					// directories, so we're interested in something deeper in the
-					// tree. Example:
-					//   nodepath: "/test"
-					//   dir:      "/test/foo"
-					approachingMatchingTree := fs.HasPathPrefix(nodepath, dir)
-
-					// we're within one of the selected dirs, example:
-					//   nodepath: "/test/foo"
-					//   dir:      "/test"
-					inMatchingTree := fs.HasPathPrefix(dir, nodepath)
-
-					// this condition is complex, but it basically requires that we
-					// are either approaching a matching tree (not yet deep enough)
-					// or: if recursive, we have entered a matching tree; if non-
-					// recursive, then that we are at exactly the right depth
-					// (we can do the walk correctly by just using the condition of
-					// "approachingMatchingTree || inMatchingTree", but it will be
-					// much slower for non-recursive queries since it will continue
-					// to traverse subtrees that are too deep and won't match -- this
-					// extra check allows us to return SkipNode if we've gone TOO deep,
-					// which skips all its subfolders)
-					if approachingMatchingTree || opts.Recursive || (inMatchingTree && dir == nodeDir) {
-						walk = true
-						break
-					}
-				}
-				if !walk {
-					if node.Type == "dir" {
-						// signal Walk() that it should not descend into the tree.
-						return false, walker.SkipNode
-					}
-
-					// we must not return SkipNode for non-dir nodes because
-					// then the remaining nodes in the same tree would be
-					// skipped, so return nil instead
-					return false, nil
-				}
-
-				// this second iteration ensures that we get an exact match
-				// according to the filter and whether we should match subfolders
-				var match bool
-				for _, dir := range dirs {
-					if nodepath == dir {
-						// special case: match the directory filter exactly,
-						// which may or may not be desirable depending on your
-						// use case (for example, this is unnecessary when
-						// wanting to simply list the contents of a folder,
-						// rather than all files matching a directory prefix)
-						match = true
-						break
-					}
-					if opts.Recursive && fs.HasPathPrefix(dir, nodepath) {
-						match = true
-						break
-					}
-					if !opts.Recursive && nodeDir == dir {
-						match = true
-						break
-					}
-				}
-				if !match {
+				// if recursive listing is requested, signal the walker that it
+				// should continue walking recursively
+				if opts.Recursive {
 					return false, nil
 				}
 			}
 
-			Printf("%s\n", formatNode(nodepath, node, lsOptions.ListLong))
+			// if there's an upcoming match deeper in the tree (but we're not
+			// there yet), signal the walker to descend into any subdirs
+			if approachingMatchingTree(nodepath) {
+				return false, nil
+			}
 
+			// otherwise, signal the walker to not walk recursively into any
+			// subdirs
+			if node.Type == "dir" {
+				return false, walker.SkipNode
+			}
 			return false, nil
 		})
+
 		if err != nil {
 			return err
 		}
