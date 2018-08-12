@@ -106,7 +106,7 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 				// are not in matching trees or will not lead us to matching trees
 				var walk bool
 				for _, dir := range dirs {
-					approachingMatchingTree := fs.HasPathPrefix(nodeDir, dir)
+					approachingMatchingTree := fs.HasPathPrefix(nodepath, dir)
 					inMatchingTree := fs.HasPathPrefix(dir, nodepath)
 
 					// this condition is complex, but it basically requires that we
