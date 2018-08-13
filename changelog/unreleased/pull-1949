@@ -1,0 +1,15 @@
+Enhancement: Add new command `self-update`
+
+We have added a new command called `self-update` which downloads the
+latest released version of restic from GitHub and replaces the current
+binary with it. It does not rely on any external program (so it'll work
+everywhere), but still verifies the GPG signature using the embedded GPG
+public key.
+
+By default, the `self-update` command is hidden behind the `selfupdate`
+built tag, which is only set when restic is built using `build.go` (including
+official releases). The reason for this is that downstream distributions will
+then not include the command by default, so users are encouraged to use the
+platform-specific distribution mechanism.
+
+https://github.com/restic/restic/pull/1949

@@ -46,9 +46,10 @@ import (
 
 // config contains the configuration for the program to build.
 var config = Config{
-	Name:      "restic",                              // name of the program executable and directory
-	Namespace: "github.com/restic/restic",            // subdir of GOPATH, e.g. "github.com/foo/bar"
-	Main:      "github.com/restic/restic/cmd/restic", // package name for the main package
+	Name:             "restic",                              // name of the program executable and directory
+	Namespace:        "github.com/restic/restic",            // subdir of GOPATH, e.g. "github.com/foo/bar"
+	Main:             "github.com/restic/restic/cmd/restic", // package name for the main package
+	DefaultBuildTags: []string{"selfupdate"},                // specify build tags which are always used
 	Tests: []string{ // tests to run
 		"github.com/restic/restic/internal/...",
 		"github.com/restic/restic/cmd/...",
@@ -58,11 +59,12 @@ var config = Config{
 
 // Config configures the build.
 type Config struct {
-	Name       string
-	Namespace  string
-	Main       string
-	Tests      []string
-	MinVersion GoVersion
+	Name             string
+	Namespace        string
+	Main             string
+	DefaultBuildTags []string
+	Tests            []string
+	MinVersion       GoVersion
 }
 
 var (
@@ -461,7 +463,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	buildTags := []string{}
+	buildTags := config.DefaultBuildTags
 
 	skipNext := false
 	params := os.Args[1:]
@@ -490,7 +492,7 @@ func main() {
 				die("-t given but no tag specified")
 			}
 			skipNext = true
-			buildTags = strings.Split(params[i+1], " ")
+			buildTags = append(buildTags, strings.Split(params[i+1], " ")...)
 		case "-o", "--output":
 			skipNext = true
 			outputFilename = params[i+1]

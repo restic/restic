@@ -24,6 +24,8 @@ These are up to date binaries, built in a reproducible and verifiable way, that
 you can download and run without having to do additional installation work.
 
 Please see the :ref:`official_binaries` section below for various downloads.
+Official bianaries can be updated in place by using the ``restic self-update``
+command.
 
 Mac OS X
 ========
@@ -137,6 +139,38 @@ are considered stable and releases are made regularly in a controlled manner.
 
 There's both pre-compiled binaries for different platforms as well as the source
 code available for download. Just download and run the one matching your system.
+
+The official binaries can be updated in place using the ``restic self-update``
+command:
+
+.. code-block:: console
+
+    $ restic version
+    restic 0.9.1 compiled with go1.10.3 on linux/amd64
+
+    $ restic self-update
+    find latest release of restic at GitHub
+    latest version is 0.9.2
+    download file SHA256SUMS
+    download SHA256SUMS
+    download file SHA256SUMS
+    download SHA256SUMS.asc
+    GPG signature verification succeeded
+    download restic_0.9.2_linux_amd64.bz2
+    downloaded restic_0.9.2_linux_amd64.bz2
+    saved 12115904 bytes in ./restic
+    successfully updated restic to version 0.9.2
+
+    $ restic version
+    restic 0.9.2 compiled with go1.10.3 on linux/amd64
+
+The ``self-update`` command uses the GPG signature on the files uploaded to
+GitHub to verify their authenticity. No external programs are necessary.
+
+.. note:: Please be aware that the user executing the ``restic self-update``
+   command must have the permission to replace the restic binary.
+   If you want to save the downloaded restic binary into a different file, pass
+   the file name via the option ``--output``.
 
 Unstable Builds
 ===============
