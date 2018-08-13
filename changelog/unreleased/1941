@@ -1,0 +1,15 @@
+Enhancement: Add directory filter to ls command
+
+The ls command can now be filtered by directories, so that only files in the
+given directories will be shown. If the --recursive flag is specified, then
+ls will traverse subfolders and list their files as well.
+
+It used to be possible to specify multiple snapshots, but that has been
+replaced by only one snapshot and the possibility of specifying multiple
+directories.
+
+Specifying directories constrains the walk, which can significantly speed up
+the listing.
+
+https://github.com/restic/restic/issues/1940
+https://github.com/restic/restic/pull/1941
