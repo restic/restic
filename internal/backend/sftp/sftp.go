@@ -5,9 +5,11 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -191,10 +193,26 @@ func buildSSHCommand(cfg Config) (cmd string, args []string, err error) {
 
 	cmd = "ssh"
 
-	hostport := strings.Split(cfg.Host, ":")
-	args = []string{hostport[0]}
-	if len(hostport) > 1 {
-		args = append(args, "-p", hostport[1])
+	host, port, err := net.SplitHostPort(cfg.Host)
+	if err != nil {
+		nae := err.(*net.AddrError)
+		switch nae.Err {
+		case "too many colons in address":
+			lc := strings.LastIndex(nae.Addr, ":")
+			host = nae.Addr[0:lc]
+			port = nae.Addr[1+lc:]
+		default:
+			host = nae.Addr
+		}
+	}
+	args = []string{host}
+	if port != "" {
+		tryport, err := net.LookupPort("tcp", port)
+		if err == nil {
+			args = append(args, "-p", strconv.Itoa(tryport))
+		} else {
+			args = []string{host + ":" + port}
+		}
 	}
 	if cfg.User != "" {
 		args = append(args, "-l")
