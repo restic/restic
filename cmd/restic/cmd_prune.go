@@ -149,8 +149,8 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 		len(idx.Packs), blobs, formatBytes(uint64(stats.bytes)))
 
 	blobCount := make(map[restic.BlobHandle]int)
-	duplicateBlobs := 0
-	duplicateBytes := 0
+	var duplicateBlobs uint64
+	var duplicateBytes uint64
 
 	// find duplicate blobs
 	for _, p := range idx.Packs {
@@ -161,7 +161,7 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 
 			if blobCount[h] > 1 {
 				duplicateBlobs++
-				duplicateBytes += int(entry.Length)
+				duplicateBytes += uint64(entry.Length)
 			}
 		}
 	}
@@ -252,7 +252,7 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 				continue
 			}
 
-			removeBytes += int(blob.Length)
+			removeBytes += uint64(blob.Length)
 		}
 
 		if hasActiveBlob {
