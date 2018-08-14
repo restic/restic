@@ -161,7 +161,7 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 				Snapshot:   sn,
 				ID:         sn.ID(),
 				ShortID:    sn.ID().Str(),
-				StructType: "Snapshot",
+				StructType: "snapshot",
 			}
 			lssnapshots = append(lssnapshots, lss)
 		}
@@ -178,7 +178,7 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 				ModTime:    node.ModTime,
 				AccessTime: node.AccessTime,
 				ChangeTime: node.ChangeTime,
-				StructType: "Node",
+				StructType: "node",
 			}
 			s := &lssnapshots[len(lssnapshots)-1]
 			s.Nodes = append(s.Nodes, lsn)
