@@ -40,6 +40,11 @@ var sshcmdTests = []struct {
 		"ssh",
 		[]string{"ho:st", "-p", "123", "-l", "us:er", "-s", "sftp"},
 	},
+	{
+		Config{Host: "host:ssh", Path: "/dir/subdir"},
+		"ssh",
+		[]string{"host", "-p", "22", "-s", "sftp"},
+	},
 }
 
 func TestBuildSSHCommand(t *testing.T) {
