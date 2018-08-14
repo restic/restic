@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -57,6 +60,29 @@ func init() {
 	flags.Var(&lsOptions.Tags, "tag", "only consider snapshots which include this `taglist`, when no snapshot ID is given")
 	flags.StringArrayVar(&lsOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot ID is given")
 	flags.BoolVar(&lsOptions.Recursive, "recursive", false, "include files in subfolders of the listed directories")
+}
+
+type lsSnapshot struct {
+	*restic.Snapshot
+
+	ID         *restic.ID `json:"id"`
+	ShortID    string     `json:"short_id"`
+	Nodes      []lsNode   `json:"nodes"`
+	StructType string     `json:"struct_type"` // "snapshot"
+}
+
+type lsNode struct {
+	Name       string      `json:"name"`
+	Type       string      `json:"type"`
+	Path       string      `json:"path"`
+	UID        uint32      `json:"uid"`
+	GID        uint32      `json:"gid"`
+	Size       uint64      `json:"size,omitempty"`
+	Mode       os.FileMode `json:"mode,omitempty"`
+	ModTime    time.Time   `json:"mtime,omitempty"`
+	AccessTime time.Time   `json:"atime,omitempty"`
+	ChangeTime time.Time   `json:"ctime,omitempty"`
+	StructType string      `json:"struct_type"` // "node"
 }
 
 func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
@@ -120,8 +146,62 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 
 	ctx, cancel := context.WithCancel(gopts.ctx)
 	defer cancel()
+
+	var (
+		printSnapshot func(sn *restic.Snapshot)
+		printNode     func(path string, node *restic.Node)
+		printFinish   func() error
+	)
+
+	if gopts.JSON {
+		var lssnapshots []lsSnapshot
+
+		printSnapshot = func(sn *restic.Snapshot) {
+			lss := lsSnapshot{
+				Snapshot:   sn,
+				ID:         sn.ID(),
+				ShortID:    sn.ID().Str(),
+				StructType: "Snapshot",
+			}
+			lssnapshots = append(lssnapshots, lss)
+		}
+
+		printNode = func(path string, node *restic.Node) {
+			lsn := lsNode{
+				Name:       node.Name,
+				Type:       node.Type,
+				Path:       path,
+				UID:        node.UID,
+				GID:        node.GID,
+				Size:       node.Size,
+				Mode:       node.Mode,
+				ModTime:    node.ModTime,
+				AccessTime: node.AccessTime,
+				ChangeTime: node.ChangeTime,
+				StructType: "Node",
+			}
+			s := &lssnapshots[len(lssnapshots)-1]
+			s.Nodes = append(s.Nodes, lsn)
+		}
+
+		printFinish = func() error {
+			return json.NewEncoder(gopts.stdout).Encode(lssnapshots)
+		}
+	} else {
+		// default output methods
+		printSnapshot = func(sn *restic.Snapshot) {
+			Verbosef("snapshot %s of %v filtered by %v at %s):\n", sn.ID().Str(), sn.Paths, dirs, sn.Time)
+		}
+		printNode = func(path string, node *restic.Node) {
+			Printf("%s\n", formatNode(path, node, lsOptions.ListLong))
+		}
+		printFinish = func() error {
+			return nil
+		}
+	}
+
 	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, args[:1]) {
-		Verbosef("snapshot %s of %v filtered by %v at %s):\n", sn.ID().Str(), sn.Paths, dirs, sn.Time)
+		printSnapshot(sn)
 
 		err := walker.Walk(ctx, repo, *sn.Tree, nil, func(nodepath string, node *restic.Node, err error) (bool, error) {
 			if err != nil {
@@ -133,7 +213,7 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 
 			if withinDir(nodepath) {
 				// if we're within a dir, print the node
-				Printf("%s\n", formatNode(nodepath, node, lsOptions.ListLong))
+				printNode(nodepath, node)
 
 				// if recursive listing is requested, signal the walker that it
 				// should continue walking recursively
@@ -160,5 +240,5 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 			return err
 		}
 	}
-	return nil
+	return printFinish()
 }
