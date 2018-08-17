@@ -36,7 +36,7 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
-var version = "compiled manually"
+var version = "0.9.2-dev (compiled manually)"
 
 // GlobalOptions hold all global options for restic.
 type GlobalOptions struct {
