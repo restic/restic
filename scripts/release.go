@@ -70,6 +70,21 @@ func run(cmd string, args ...string) {
 	}
 }
 
+func replace(filename, from, to string) {
+	reg := regexp.MustCompile(from)
+
+	buf, err := ioutil.ReadFile(filename)
+	if err != nil {
+		die("error reading file %v: %v", filename, err)
+	}
+
+	buf = reg.ReplaceAll(buf, []byte(to))
+	err = ioutil.WriteFile(filename, buf, 0644)
+	if err != nil {
+		die("error writing file %v: %v", filename, err)
+	}
+}
+
 func rm(file string) {
 	err := os.Remove(file)
 	if err != nil {
@@ -272,16 +287,31 @@ func generateFiles() {
 	}
 }
 
+var versionPattern = `var version = ".*"`
+
+const versionCodeFile = "cmd/restic/global.go"
+
 func updateVersion() {
 	err := ioutil.WriteFile("VERSION", []byte(opts.Version+"\n"), 0644)
 	if err != nil {
 		die("unable to write version to file: %v", err)
 	}
 
-	if len(uncommittedChanges("VERSION")) > 0 {
-		msg("committing file VERSION")
-		run("git", "commit", "-m", fmt.Sprintf("Add VERSION for %v", opts.Version), "VERSION")
+	newVersion := fmt.Sprintf("var version = %q", opts.Version)
+	replace(versionCodeFile, versionPattern, newVersion)
+
+	if len(uncommittedChanges("VERSION")) > 0 || len(uncommittedChanges(versionCodeFile)) > 0 {
+		msg("committing version files")
+		run("git", "commit", "-m", fmt.Sprintf("Add version for %v", opts.Version), "VERSION", versionCodeFile)
 	}
+}
+
+func updateVersionDev() {
+	newVersion := fmt.Sprintf(`var version = "%s-dev (compiled manually)"`, opts.Version)
+	replace(versionCodeFile, versionPattern, newVersion)
+
+	msg("committing cmd/restic/global.go with dev version")
+	run("git", "commit", "-m", fmt.Sprintf("Set development version for %v", opts.Version), "VERSION", versionCodeFile)
 }
 
 func addTag() {
@@ -371,6 +401,7 @@ func main() {
 	generateFiles()
 	updateVersion()
 	addTag()
+	updateVersionDev()
 
 	exportTar()
 	runBuild()
