@@ -1,0 +1,7 @@
+Enhancement: ls: Add JSON output support for restic ls cmd
+
+We've implemented listing files in the repository with JSON as output, just
+pass `--json` as an option to `restic ls`. This makes the output of the command
+machine readable.
+
+https://github.com/restic/restic/pull/1953
