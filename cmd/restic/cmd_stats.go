@@ -81,6 +81,10 @@ func runStats(gopts GlobalOptions, args []string) error {
 		}
 	}
 
+	if !gopts.JSON {
+		Printf("scanning...\n")
+	}
+
 	// create a container for the stats (and other needed state)
 	stats := &statsContainer{
 		uniqueFiles: make(map[fileID]struct{}),
@@ -144,6 +148,15 @@ func runStats(gopts GlobalOptions, args []string) error {
 		}
 		return nil
 	}
+
+	// inform the user what was scanned and how it was scanned
+	snapshotsScanned := snapshotIDString
+	if snapshotsScanned == "latest" {
+		snapshotsScanned = "the latest snapshot"
+	} else if snapshotsScanned == "" {
+		snapshotsScanned = "all snapshots"
+	}
+	Printf("Stats for %s in %s mode:\n", snapshotsScanned, countMode)
 
 	if stats.TotalBlobCount > 0 {
 		Printf("  Total Blob Count:   %d\n", stats.TotalBlobCount)
