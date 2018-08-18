@@ -33,18 +33,26 @@ again:
     processed 1.720 GiB in 0:12
     Files:        5307 new,     0 changed,     0 unmodified
     Dirs:         1867 new,     0 changed,     0 unmodified
-    Added:      1.700 GiB
+    Added:      1.200 GiB
     snapshot 40dc1520 saved
 
 As you can see, restic created a backup of the directory and was pretty
 fast! The specific snapshot just created is identified by a sequence of
 hexadecimal characters, ``40dc1520`` in this case.
 
-If you don't pass the ``--verbose`` option, restic will print less data. You'll still get a nice live status display. Be aware that the live status shows the processed files and not the transferred data. Transferred volume might be lower (due to deduplication) or higher.
+You can see that restic tells us it processed 1.720 GiB of data, this is the
+size of the files and directories in ``~/work`` on the local file system. It
+also tells us that only 1.200 GiB was added to the repository. This means that
+some of the data was duplicate and restic was able to efficiently reduce it.
+
+If you don't pass the ``--verbose`` option, restic will print less data. You'll
+still get a nice live status display. Be aware that the live status shows the
+processed files and not the transferred data. Transferred volume might be lower
+(due to de-duplication) or higher.
 
 If you run the command again, restic will create another snapshot of
-your data, but this time it's even faster. This is de-duplication at
-work!
+your data, but this time it's even faster and no new data was added to the
+repository (since all data is already there). This is de-duplication at work!
 
 .. code-block:: console
 
