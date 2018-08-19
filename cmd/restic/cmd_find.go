@@ -258,7 +258,7 @@ func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error 
 	}
 
 	f.out.newsn = sn
-	return walker.Walk(ctx, f.repo, *sn.Tree, f.ignoreTrees, func(nodepath string, node *restic.Node, treeID string, err error) (bool, error) {
+	return walker.Walk(ctx, f.repo, *sn.Tree, f.ignoreTrees, func(_ restic.ID, nodepath string, node *restic.Node, err error) (bool, error) {
 		if err != nil {
 			return false, err
 		}
@@ -338,7 +338,7 @@ func (f *Finder) findIDs(ctx context.Context, sn *restic.Snapshot) error {
 	}
 
 	f.out.newsn = sn
-	return walker.Walk(ctx, f.repo, *sn.Tree, f.ignoreTrees, func(nodepath string, node *restic.Node, treeID string, err error) (bool, error) {
+	return walker.Walk(ctx, f.repo, *sn.Tree, f.ignoreTrees, func(parentTreeID restic.ID, nodepath string, node *restic.Node, err error) (bool, error) {
 		if err != nil {
 			return false, err
 		}
@@ -379,7 +379,7 @@ func (f *Finder) findIDs(ctx context.Context, sn *restic.Snapshot) error {
 					f.blobIDs[idStr] = struct{}{}
 					delete(f.blobIDs, idStr[:shortStr])
 				}
-				f.out.PrintObject("blob", idStr, nodepath, treeID, sn)
+				f.out.PrintObject("blob", idStr, nodepath, parentTreeID.String(), sn)
 				break
 			}
 		}
