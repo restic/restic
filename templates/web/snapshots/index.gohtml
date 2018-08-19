@@ -1,0 +1,23 @@
+{{define "head"}}
+  <link rel="stylesheet" type="text/css" href="/static/snapshots.css">
+  <script src="/static/base.js"></script>
+  <script src="/static/snapshots.js"></script>
+{{end}}
+
+{{define "content"}}
+  <h2>restic > snapshots</h2>
+  <table id="table-snapshots" class="table table-sm table-striped">
+    <thead>
+      <tr>
+        <th class="id">ID</th>
+        <th class="date">Date</th>
+        <th class="username">Username</th>
+        <th class="hostname">Hostname</th>
+        <th class="paths">Paths</th>
+        <th class="tags">Tags</th>
+      </tr>
+    </thead>
+    <tbody>
+    </tbody>
+  </table>
+{{end}}

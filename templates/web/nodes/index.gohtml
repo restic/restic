@@ -1,0 +1,37 @@
+{{ define "head" }}
+  <link rel="stylesheet" type="text/css" href="/static/snapshots.css">
+  <script src="/static/base.js"></script>
+  <script src="/static/nodes.js"></script>
+{{ end }}
+
+{{ define "content" }}
+  <h2>
+    <a href="/web/snapshots/">restic</a> > snapshots > {{ .SnapshotID }}
+  </h2>
+
+  <table id="treeview" class="table table-sm" data-snapshot-id="{{.SnapshotID}}">
+    <thead>
+      <tr>
+        <th class="node"></th>
+        <th class="path">Path</th>
+        <th class="user">User</th>
+        <th class="group">Group</th>
+        <th class="mtime">MTime</th>
+        <th class="size">Size</th>
+        <th class="actions">#</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Define a row template for all invariant markup: -->
+      <tr>
+        <td class="node"></td>
+        <td class="path"></td>
+        <td class="user"></td>
+        <td class="group"></td>
+        <td class="mtime"></td>
+        <td class="size"></td>
+        <td class="actions"></td>
+      </tr>
+    </tbody>
+  </table>
+{{ end }}

@@ -1,0 +1,35 @@
+{{ define "layout" }}
+
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+  <link href="https://cdn.jsdelivr.net/gh/mar10/fancytree@2/dist/skin-lion/ui.fancytree.min.css" rel="stylesheet" />
+
+  <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/mar10/fancytree@2/dist/jquery.fancytree-all-deps.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.2/moment.min.js"></script>
+
+  <title>{{block "title" .}} {{end}}</title>
+  <style>
+    body {
+      font-size: 0.8rem;
+    }
+  </style>
+  {{ block "head" .}} {{end}}
+  {{ block "style" .}} {{end}}
+</head>
+
+<body>
+  <div class="container-fluid">
+    {{template "content" .}}
+  </div>
+</body>
+
+</html>
+
+{{ end }}

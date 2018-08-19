@@ -1,0 +1,33 @@
+/* snapshots */
+
+#table-snapshots .id {
+  width: 5rem;
+}
+
+#table-snapshots .date, .hostname, .username {
+  width: 10rem;
+}
+
+/* treeview */
+
+#treeview .node {
+  width: 2rem;
+}
+
+#treeview .mtime {
+  text-align: right;
+  width: 13rem;
+}
+
+#treeview .size {
+  text-align: right;
+  width: 6rem;
+}
+
+#treeview .user, .group {
+  width: 5rem;
+}
+
+#treeview .actions {
+  width: 2rem;
+}

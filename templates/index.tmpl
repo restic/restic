@@ -1,0 +1,32 @@
+{{define "content"}}
+  <h1>Restic - Snapshots</h1>
+  <table class="table table-sm table-striped">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Date</th>
+        <th>Hostname</th>
+        <th>Username</th>
+        <th>Tags</th>
+        <th>Paths</th>
+      </tr>
+    </thead>
+    <tbody>
+    {{ range .Snapshots }}
+      <tr>
+        <td>
+          <a href="/snapshots/{{ .ShortID }}">{{ .ShortID }}<a></td>
+        <td>{{ .TimeFormatted }}</td>
+        <td>{{ .Hostname }}</td>
+        <td>{{ .Username }}</td>
+        <td>{{ .Tags }}</td>
+        <td>
+          {{ range .Paths }}
+            {{ . }}<br>
+          {{ end}}
+        </td>
+      </tr>
+    {{ end }}
+    </tbody>
+  </table>
+{{end}}
