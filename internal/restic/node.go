@@ -50,7 +50,7 @@ type Node struct {
 
 	Error string `json:"error,omitempty"`
 
-	Path string `json:"path"`
+	Path string `json:"-"`
 }
 
 // Nodes is a slice of nodes that can be sorted.

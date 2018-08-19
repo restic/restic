@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -68,8 +70,17 @@ type lsSnapshot struct {
 }
 
 type lsNode struct {
-	*restic.Node
-	StructType string `json:"struct_type"` // "node"
+	Name       string      `json:"name"`
+	Type       string      `json:"type"`
+	Path       string      `json:"path"`
+	UID        uint32      `json:"uid"`
+	GID        uint32      `json:"gid"`
+	Size       uint64      `json:"size,omitempty"`
+	Mode       os.FileMode `json:"mode,omitempty"`
+	ModTime    time.Time   `json:"mtime,omitempty"`
+	AccessTime time.Time   `json:"atime,omitempty"`
+	ChangeTime time.Time   `json:"ctime,omitempty"`
+	StructType string      `json:"struct_type"` // "node"
 }
 
 func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
@@ -153,7 +164,16 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 
 		printNode = func(path string, node *restic.Node) {
 			enc.Encode(lsNode{
-				Node:       node,
+				Name:       node.Name,
+				Type:       node.Type,
+				Path:       path,
+				UID:        node.UID,
+				GID:        node.GID,
+				Size:       node.Size,
+				Mode:       node.Mode,
+				ModTime:    node.ModTime,
+				AccessTime: node.AccessTime,
+				ChangeTime: node.ChangeTime,
 				StructType: "node",
 			})
 		}
