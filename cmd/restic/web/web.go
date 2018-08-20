@@ -29,6 +29,7 @@ func CreateRouterWeb(ctx context.Context, repo *repository.Repository) *mux.Rout
 	// snapshots
 	r.HandleFunc("/web/", webSnapshotsList)
 	r.HandleFunc("/web/snapshots/", webSnapshotsList)
+	r.HandleFunc("/web/snapshots/{snapshot_id}/download", webSnapshotDownloadShow)
 	// nodes
 	r.HandleFunc("/web/snapshots/{snapshot_id}/nodes/", webSnapshotNodesList)
 
