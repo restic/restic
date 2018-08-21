@@ -51,6 +51,10 @@ function readyFn(jQuery) {
         url: "/api/snapshots/" + snapshot_id + "/nodes/" + node_key
       };
     },
+    // apply parent's state to new child nodes
+    loadChildren: function(event, data) {
+      data.node.fixSelection3AfterClick();
+    },
     // This event is part of the table extension:
     renderColumns: function(event, data) {
       var n = data.node.data;
