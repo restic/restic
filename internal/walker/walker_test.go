@@ -78,7 +78,7 @@ type checkFunc func(t testing.TB) (walker WalkFunc, final func(testing.TB))
 func checkItemOrder(want []string) checkFunc {
 	pos := 0
 	return func(t testing.TB) (walker WalkFunc, final func(testing.TB)) {
-		walker = func(path string, node *restic.Node, err error) (bool, error) {
+		walker = func(treeID restic.ID, path string, node *restic.Node, err error) (bool, error) {
 			if err != nil {
 				t.Errorf("error walking %v: %v", path, err)
 				return false, err
@@ -106,13 +106,45 @@ func checkItemOrder(want []string) checkFunc {
 	}
 }
 
+// checkParentTreeOrder ensures that the order of the 'parentID' arguments is the one passed in as 'want'.
+func checkParentTreeOrder(want []string) checkFunc {
+	pos := 0
+	return func(t testing.TB) (walker WalkFunc, final func(testing.TB)) {
+		walker = func(treeID restic.ID, path string, node *restic.Node, err error) (bool, error) {
+			if err != nil {
+				t.Errorf("error walking %v: %v", path, err)
+				return false, err
+			}
+
+			if pos >= len(want) {
+				t.Errorf("additional unexpected parent tree ID found: %v", treeID)
+				return false, nil
+			}
+
+			if treeID.String() != want[pos] {
+				t.Errorf("wrong parent tree ID found, want %q, got %q", want[pos], treeID.String())
+			}
+			pos++
+			return false, nil
+		}
+
+		final = func(t testing.TB) {
+			if pos != len(want) {
+				t.Errorf("not enough items returned, want %d, got %d", len(want), pos)
+			}
+		}
+
+		return walker, final
+	}
+}
+
 // checkSkipFor returns SkipNode if path is in skipFor, it checks that the
 // paths the walk func is called for are exactly the ones in wantPaths.
 func checkSkipFor(skipFor map[string]struct{}, wantPaths []string) checkFunc {
 	var pos int
 
 	return func(t testing.TB) (walker WalkFunc, final func(testing.TB)) {
-		walker = func(path string, node *restic.Node, err error) (bool, error) {
+		walker = func(treeID restic.ID, path string, node *restic.Node, err error) (bool, error) {
 			if err != nil {
 				t.Errorf("error walking %v: %v", path, err)
 				return false, err
@@ -152,7 +184,7 @@ func checkIgnore(skipFor map[string]struct{}, ignoreFor map[string]bool, wantPat
 	var pos int
 
 	return func(t testing.TB) (walker WalkFunc, final func(testing.TB)) {
-		walker = func(path string, node *restic.Node, err error) (bool, error) {
+		walker = func(treeID restic.ID, path string, node *restic.Node, err error) (bool, error) {
 			if err != nil {
 				t.Errorf("error walking %v: %v", path, err)
 				return false, err
@@ -204,6 +236,12 @@ func TestWalker(t *testing.T) {
 					"/subdir",
 					"/subdir/subfile",
 				}),
+				checkParentTreeOrder([]string{
+					"2593e9dba52232c043d68c40d0f9c236b4448e37224941298ea6e223ca1e3a1b", // tree /
+					"2593e9dba52232c043d68c40d0f9c236b4448e37224941298ea6e223ca1e3a1b", // tree /
+					"2593e9dba52232c043d68c40d0f9c236b4448e37224941298ea6e223ca1e3a1b", // tree /
+					"a7f5be55bdd94db9df706a428e0726a4044720c9c94b9ebeb81000debe032087", // tree /subdir
+				}),
 				checkSkipFor(
 					map[string]struct{}{
 						"/subdir": struct{}{},
@@ -248,6 +286,16 @@ func TestWalker(t *testing.T) {
 					"/subdir2/subfile2",
 					"/subdir2/subsubdir2",
 					"/subdir2/subsubdir2/subsubfile3",
+				}),
+				checkParentTreeOrder([]string{
+					"31c86f0bc298086b787b5d24e9e33ea566c224be2939ed66a817f7fb6fdba700", // tree /
+					"31c86f0bc298086b787b5d24e9e33ea566c224be2939ed66a817f7fb6fdba700", // tree /
+					"31c86f0bc298086b787b5d24e9e33ea566c224be2939ed66a817f7fb6fdba700", // tree /
+					"af838dc7a83d353f0273c33d93fcdba3220d4517576f09694a971dd23b8e94dc", // tree /subdir1
+					"31c86f0bc298086b787b5d24e9e33ea566c224be2939ed66a817f7fb6fdba700", // tree /
+					"fb749ba6ae01a3814bed9b59d74af8d7593d3074a681d4112c4983d461089e5b", // tree /subdir2
+					"fb749ba6ae01a3814bed9b59d74af8d7593d3074a681d4112c4983d461089e5b", // tree /subdir2
+					"eb8dd587a9c5e6be87b69d2c5264a19622f75bf6704927aaebaee78d0992531d", // tree /subdir2/subsubdir2
 				}),
 				checkSkipFor(
 					map[string]struct{}{
@@ -322,6 +370,23 @@ func TestWalker(t *testing.T) {
 					"/subdir3/subfile2",
 					"/subdir3/subfile3",
 					"/zzz other",
+				}),
+				checkParentTreeOrder([]string{
+					"b37368f62fdd6f8f3d19f9ef23c6534988e26db4e5dddc21d206b16b6a17a58f", // tree /
+					"b37368f62fdd6f8f3d19f9ef23c6534988e26db4e5dddc21d206b16b6a17a58f", // tree /
+					"b37368f62fdd6f8f3d19f9ef23c6534988e26db4e5dddc21d206b16b6a17a58f", // tree /
+					"787b9260d4f0f8298f5cf58945681961982eb6aa1c526845206c5b353aeb4351", // tree /subdir1
+					"787b9260d4f0f8298f5cf58945681961982eb6aa1c526845206c5b353aeb4351", // tree /subdir1
+					"787b9260d4f0f8298f5cf58945681961982eb6aa1c526845206c5b353aeb4351", // tree /subdir1
+					"b37368f62fdd6f8f3d19f9ef23c6534988e26db4e5dddc21d206b16b6a17a58f", // tree /
+					"787b9260d4f0f8298f5cf58945681961982eb6aa1c526845206c5b353aeb4351", // tree /subdir2
+					"787b9260d4f0f8298f5cf58945681961982eb6aa1c526845206c5b353aeb4351", // tree /subdir2
+					"787b9260d4f0f8298f5cf58945681961982eb6aa1c526845206c5b353aeb4351", // tree /subdir2
+					"b37368f62fdd6f8f3d19f9ef23c6534988e26db4e5dddc21d206b16b6a17a58f", // tree /
+					"787b9260d4f0f8298f5cf58945681961982eb6aa1c526845206c5b353aeb4351", // tree /subdir3
+					"787b9260d4f0f8298f5cf58945681961982eb6aa1c526845206c5b353aeb4351", // tree /subdir3
+					"787b9260d4f0f8298f5cf58945681961982eb6aa1c526845206c5b353aeb4351", // tree /subdir3
+					"b37368f62fdd6f8f3d19f9ef23c6534988e26db4e5dddc21d206b16b6a17a58f", // tree /
 				}),
 				checkIgnore(
 					map[string]struct{}{

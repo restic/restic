@@ -33,14 +33,14 @@ var SkipNode = errors.New("skip this node")
 // tree have ignore set to true, the current tree will not be visited again.
 // When err is not nil and different from SkipNode, the value returned for
 // ignore is ignored.
-type WalkFunc func(path string, node *restic.Node, nodeErr error) (ignore bool, err error)
+type WalkFunc func(parentTreeID restic.ID, path string, node *restic.Node, nodeErr error) (ignore bool, err error)
 
 // Walk calls walkFn recursively for each node in root. If walkFn returns an
 // error, it is passed up the call stack. The trees in ignoreTrees are not
 // walked. If walkFn ignores trees, these are added to the set.
 func Walk(ctx context.Context, repo TreeLoader, root restic.ID, ignoreTrees restic.IDSet, walkFn WalkFunc) error {
 	tree, err := repo.LoadTree(ctx, root)
-	_, err = walkFn("/", nil, err)
+	_, err = walkFn(root, "/", nil, err)
 
 	if err != nil {
 		if err == SkipNode {
@@ -53,14 +53,14 @@ func Walk(ctx context.Context, repo TreeLoader, root restic.ID, ignoreTrees rest
 		ignoreTrees = restic.NewIDSet()
 	}
 
-	_, err = walk(ctx, repo, "/", tree, ignoreTrees, walkFn)
+	_, err = walk(ctx, repo, "/", root, tree, ignoreTrees, walkFn)
 	return err
 }
 
 // walk recursively traverses the tree, ignoring subtrees when the ID of the
 // subtree is in ignoreTrees. If err is nil and ignore is true, the subtree ID
 // will be added to ignoreTrees by walk.
-func walk(ctx context.Context, repo TreeLoader, prefix string, tree *restic.Tree, ignoreTrees restic.IDSet, walkFn WalkFunc) (ignore bool, err error) {
+func walk(ctx context.Context, repo TreeLoader, prefix string, parentTreeID restic.ID, tree *restic.Tree, ignoreTrees restic.IDSet, walkFn WalkFunc) (ignore bool, err error) {
 	var allNodesIgnored = true
 
 	if len(tree.Nodes) == 0 {
@@ -79,7 +79,7 @@ func walk(ctx context.Context, repo TreeLoader, prefix string, tree *restic.Tree
 		}
 
 		if node.Type != "dir" {
-			ignore, err := walkFn(p, node, nil)
+			ignore, err := walkFn(parentTreeID, p, node, nil)
 			if err != nil {
 				if err == SkipNode {
 					// skip the remaining entries in this tree
@@ -105,7 +105,7 @@ func walk(ctx context.Context, repo TreeLoader, prefix string, tree *restic.Tree
 		}
 
 		subtree, err := repo.LoadTree(ctx, *node.Subtree)
-		ignore, err := walkFn(p, node, err)
+		ignore, err := walkFn(parentTreeID, p, node, err)
 		if err != nil {
 			if err == SkipNode {
 				if ignore {
@@ -124,7 +124,7 @@ func walk(ctx context.Context, repo TreeLoader, prefix string, tree *restic.Tree
 			allNodesIgnored = false
 		}
 
-		ignore, err = walk(ctx, repo, p, subtree, ignoreTrees, walkFn)
+		ignore, err = walk(ctx, repo, p, *node.Subtree, subtree, ignoreTrees, walkFn)
 		if err != nil {
 			return false, err
 		}
