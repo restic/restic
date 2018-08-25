@@ -1,0 +1,7 @@
+Enhancement: Display reason why forget keeps snapshots
+
+We've added a column to the list of snapshots `forget` keeps which details the
+reasons to keep a particuliar snapshot. This makes debugging policies for
+forget much easier. Please remember to always try things out with `--dry-run`!
+
+https://github.com/restic/restic/pull/1876

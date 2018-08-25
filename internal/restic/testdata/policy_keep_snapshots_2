@@ -1,77 +1,274 @@
-[
-  {
-    "time": "2016-01-18T12:02:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-12T21:08:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-12T21:02:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-09T21:02:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-08T20:02:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-07T10:02:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-06T08:02:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-05T09:02:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-04T16:23:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-04T12:30:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-04T12:28:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-04T12:24:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-04T12:23:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-04T11:23:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2016-01-04T10:23:03Z",
-    "tree": null,
-    "paths": null
-  }
-]
+{
+  "keep": [
+    {
+      "time": "2016-01-18T12:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-12T21:08:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-12T21:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-09T21:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-08T20:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-07T10:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-06T08:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-05T09:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-04T16:23:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-04T12:30:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-04T12:28:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-04T12:24:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-04T12:23:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-04T11:23:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-04T10:23:03Z",
+      "tree": null,
+      "paths": null
+    }
+  ],
+  "reasons": [
+    {
+      "snapshot": {
+        "time": "2016-01-18T12:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 14
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-12T21:08:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 13
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-12T21:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 12
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-09T21:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 11
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-08T20:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 10
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-07T10:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 9
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-06T08:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 8
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-05T09:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 7
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-04T16:23:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 6
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-04T12:30:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 5
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-04T12:28:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 4
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-04T12:24:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 3
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-04T12:23:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 2
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-04T11:23:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {
+        "last": 1
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-04T10:23:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "last snapshot"
+      ],
+      "counters": {}
+    }
+  ]
+}

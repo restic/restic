@@ -1,41 +1,108 @@
-[
-  {
-    "time": "2015-10-22T10:20:30Z",
-    "tree": null,
-    "paths": [
-      "path1",
-      "path2"
-    ],
-    "tags": [
-      "foo",
-      "bar"
-    ]
-  },
-  {
-    "time": "2015-10-22T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo",
-      "bar"
-    ]
-  },
-  {
-    "time": "2015-10-22T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo",
-      "bar"
-    ]
-  },
-  {
-    "time": "2014-11-15T10:20:30Z",
-    "tree": null,
-    "paths": null,
-    "tags": [
-      "foo",
-      "bar"
-    ]
-  }
-]
+{
+  "keep": [
+    {
+      "time": "2015-10-22T10:20:30Z",
+      "tree": null,
+      "paths": [
+        "path1",
+        "path2"
+      ],
+      "tags": [
+        "foo",
+        "bar"
+      ]
+    },
+    {
+      "time": "2015-10-22T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo",
+        "bar"
+      ]
+    },
+    {
+      "time": "2015-10-22T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo",
+        "bar"
+      ]
+    },
+    {
+      "time": "2014-11-15T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo",
+        "bar"
+      ]
+    }
+  ],
+  "reasons": [
+    {
+      "snapshot": {
+        "time": "2015-10-22T10:20:30Z",
+        "tree": null,
+        "paths": [
+          "path1",
+          "path2"
+        ],
+        "tags": [
+          "foo",
+          "bar"
+        ]
+      },
+      "matches": [
+        "has tags [foo, bar]"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2015-10-22T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo",
+          "bar"
+        ]
+      },
+      "matches": [
+        "has tags [foo, bar]"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2015-10-22T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo",
+          "bar"
+        ]
+      },
+      "matches": [
+        "has tags [foo, bar]"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2014-11-15T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo",
+          "bar"
+        ]
+      },
+      "matches": [
+        "has tags [foo, bar]"
+      ],
+      "counters": {}
+    }
+  ]
+}

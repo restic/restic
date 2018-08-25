@@ -1,7 +1,22 @@
-[
-  {
-    "time": "2016-01-18T12:02:03Z",
-    "tree": null,
-    "paths": null
-  }
-]
+{
+  "keep": [
+    {
+      "time": "2016-01-18T12:02:03Z",
+      "tree": null,
+      "paths": null
+    }
+  ],
+  "reasons": [
+    {
+      "snapshot": {
+        "time": "2016-01-18T12:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "within 2d"
+      ],
+      "counters": {}
+    }
+  ]
+}

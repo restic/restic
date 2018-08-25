@@ -38,6 +38,9 @@ import (
 
 var version = "0.9.2-dev (compiled manually)"
 
+// TimeFormat is the format used for all timestamps printed by restic.
+const TimeFormat = "2006-01-02 15:04:05"
+
 // GlobalOptions hold all global options for restic.
 type GlobalOptions struct {
 	Repo          string

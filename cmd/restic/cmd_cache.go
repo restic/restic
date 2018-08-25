@@ -9,6 +9,7 @@ import (
 	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/ui/table"
 	"github.com/spf13/cobra"
 )
 
@@ -85,9 +86,17 @@ func runCache(opts CacheOptions, gopts GlobalOptions, args []string) error {
 		return nil
 	}
 
-	tab := NewTable()
-	tab.Header = fmt.Sprintf("%-14s   %-16s %s", "Repository ID", "Last Used", "Old")
-	tab.RowFormat = "%-14s   %-16s %s"
+	tab := table.New()
+
+	type data struct {
+		ID   string
+		Last string
+		Old  string
+	}
+
+	tab.AddColumn("Repo ID", "{{ .ID }}")
+	tab.AddColumn("Last Used", "{{ .Last }}")
+	tab.AddColumn("Old", "{{ .Old }}")
 
 	dirs, err := cache.All(cachedir)
 	if err != nil {
@@ -109,7 +118,7 @@ func runCache(opts CacheOptions, gopts GlobalOptions, args []string) error {
 			old = "yes"
 		}
 
-		tab.Rows = append(tab.Rows, []interface{}{
+		tab.AddRow(data{
 			entry.Name()[:10],
 			fmt.Sprintf("%d days ago", uint(time.Since(entry.ModTime()).Hours()/24)),
 			old,

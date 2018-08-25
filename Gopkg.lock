@@ -104,10 +104,11 @@
   version = "v1.1.0"
 
 [[projects]]
-  digest = "1:2e3c336fc7fde5c984d2841455a658a6d626450b1754a854b3b32e7a8f49a07a"
+  digest = "1:d2754cafcab0d22c13541618a8029a70a8959eb3525ff201fe971637e2274cd0"
   name = "github.com/google/go-cmp"
   packages = [
     "cmp",
+    "cmp/cmpopts",
     "cmp/internal/diff",
     "cmp/internal/function",
     "cmp/internal/value",
@@ -449,6 +450,7 @@
     "github.com/cenkalti/backoff",
     "github.com/elithrar/simple-scrypt",
     "github.com/google/go-cmp/cmp",
+    "github.com/google/go-cmp/cmp/cmpopts",
     "github.com/juju/ratelimit",
     "github.com/kurin/blazer/b2",
     "github.com/mattn/go-isatty",

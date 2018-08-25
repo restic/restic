@@ -1,17 +1,60 @@
-[
-  {
-    "time": "2016-01-18T12:02:03Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2015-11-22T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2014-11-22T10:20:30Z",
-    "tree": null,
-    "paths": null
-  }
-]
+{
+  "keep": [
+    {
+      "time": "2016-01-18T12:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-11-22T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2014-11-22T10:20:30Z",
+      "tree": null,
+      "paths": null
+    }
+  ],
+  "reasons": [
+    {
+      "snapshot": {
+        "time": "2016-01-18T12:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "yearly snapshot"
+      ],
+      "counters": {
+        "yearly": 9
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2015-11-22T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "yearly snapshot"
+      ],
+      "counters": {
+        "yearly": 8
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-11-22T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "yearly snapshot"
+      ],
+      "counters": {
+        "yearly": 7
+      }
+    }
+  ]
+}
