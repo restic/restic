@@ -1,0 +1,8 @@
+Enhancement: Vendor dependencies with Go 1.11 Modules
+
+Until now, we've used `dep` for managing dependencies, we've now switch to
+using Go modules. For users this does not change much, only if you want to
+compile restic without downloading anything with Go 1.11, then you need to run:
+`go build -mod=vendor build.go`
+
+https://github.com/restic/restic/pull/1920
