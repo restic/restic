@@ -285,7 +285,7 @@ func build(cwd string, ver GoVersion, goos, goarch, goarm, gopath string, args .
 
 	a = append(a, args...)
 	cmd := exec.Command("go", a...)
-	cmd.Env = append(cleanEnv(), "GOPATH="+gopath, "GOARCH="+goarch, "GOOS="+goos)
+	cmd.Env = append(cleanEnv(), "GOPROXY=off", "GOPATH="+gopath, "GOARCH="+goarch, "GOOS="+goos)
 	if goarm != "" {
 		cmd.Env = append(cmd.Env, "GOARM="+goarm)
 	}
