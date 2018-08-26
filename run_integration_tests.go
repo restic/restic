@@ -230,6 +230,7 @@ func (env *TravisEnvironment) RunTests() error {
 	}
 
 	env.env["RESTIC_TEST_DISALLOW_SKIP"] = strings.Join(ensureTests, ",")
+	env.env["GOPROXY"] = "off"
 
 	if *runCrossCompile {
 		// compile for all target architectures with tags
@@ -301,13 +302,15 @@ type AppveyorEnvironment struct{}
 
 // Prepare installs dependencies and starts services in order to run the tests.
 func (env *AppveyorEnvironment) Prepare() error {
-	msg("preparing environment for Appveyor CI\n")
 	return nil
 }
 
 // RunTests start the tests.
 func (env *AppveyorEnvironment) RunTests() error {
-	return run("go", "run", "build.go", "-v", "-T")
+	e := map[string]string{
+		"GOPROXY": "off",
+	}
+	return runWithEnv(e, "go", "run", "-mod=vendor", "build.go", "-v", "-T")
 }
 
 // Teardown is a noop.
