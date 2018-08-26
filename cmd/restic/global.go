@@ -67,7 +67,7 @@ type GlobalOptions struct {
 	//  0 means: don't print any messages except errors, this is used when --quiet is specified
 	//  1 is the default: print essential messages
 	//  2 means: print more messages, report minor things, this is used when --verbose is specified
-	//  3 means: print very detailed debug messages, this is used when --debug is specified
+	//  3 means: print very detailed debug messages, this is used when --verbose 2 is specified
 	verbosity uint
 
 	Options []string
