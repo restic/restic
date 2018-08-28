@@ -1,8 +1,9 @@
-Enhancement: find: Add options for searching IDs (blobs, trees...)
+Enhancement: Improve the `find` command
 
-We've enhanced the `find` command to be able to list the snapshots containing
-a specific tree or blob, or even the snapshots that contain blobs belonging
-to a given pack.
+We've updated the `find` command to support multiple patterns.
+
+`restic find` is now able to list the snapshots containing a specific tree
+or blob, or even the snapshots that contain blobs belonging to a given pack.
 A list of IDs can be given, as long as they all have the same type.
 
 The command `find` can also display the pack IDs the blobs belong to, if
