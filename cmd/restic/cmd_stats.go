@@ -30,17 +30,13 @@ to calculate.
 
 The modes are:
 
-  restore-size: (default) Counts the size of the restored files.
-
-  files-by-contents: Counts total size of files, where a file is
-                     considered unique if it has unique contents.
-
-  raw-data: Counts the size of blobs in the repository, regardless
-			of how many files reference them.
-
-  blobs-per-file: A combination of files-by-contents and raw-data.
-
-Refer to the online manual for more details about each mode.
+* restore-size: (default) Counts the size of the restored files.
+* files-by-contents: Counts total size of files, where a file is
+   considered unique if it has unique contents.
+* raw-data: Counts the size of blobs in the repository, regardless of
+  how many files reference them.
+* blobs-per-file: A combination of files-by-contents and raw-data.
+* Refer to the online manual for more details about each mode.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {

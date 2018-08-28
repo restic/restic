@@ -21,11 +21,11 @@ The "diff" command shows differences from the first to the second snapshot. The
 first characters in each line display what has happened to a particular file or
 directory:
 
- +  The item was added
- -  The item was removed
- U  The metadata (access mode, timestamps, ...) for the item was updated
- M  The file's content was modified
- T  The type was changed, e.g. a file was made a symlink
+* +  The item was added
+* -  The item was removed
+* U  The metadata (access mode, timestamps, ...) for the item was updated
+* M  The file's content was modified
+* T  The type was changed, e.g. a file was made a symlink
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
