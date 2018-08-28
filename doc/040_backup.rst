@@ -127,7 +127,7 @@ Now is a good time to run ``restic check`` to verify that all data
 is properly stored in the repository. You should run this command regularly
 to make sure the internal structure of the repository is free of errors.
 
-Including and Excluding Files 
+Including and Excluding Files
 *****************************
 
 You can exclude folders and files by specifying exclude patterns, currently
@@ -187,7 +187,7 @@ For this, the special wildcard ``**`` can be used to match arbitrary
 sub-directories: The pattern ``foo/**/bar`` matches:
 
  * ``/dir1/foo/dir2/bar/file``
- * ``/foo/bar/file`` 
+ * ``/foo/bar/file``
  * ``/tmp/foo/bar``
 
 By specifying the option ``--one-file-system`` you can instruct restic
@@ -322,3 +322,51 @@ some additional data in the repository, but the snapshot will never be
 created as it would only be written at the very (successful) end of
 the backup operation.  Previous snapshots will still be there and will still
 work.
+
+
+Environment Variables
+*********************
+
+In addition to command-line options, restic supports passing various options in
+environment variables. The following list of environment variables:
+
+.. code-block:: console
+
+    RESTIC_REPOSITORY                   Location of repository (replaces -r)
+    RESTIC_PASSWORD_FILE                Location of password file (replaces --password-file)
+    RESTIC_PASSWORD                     The actual password for the repository
+
+    AWS_ACCESS_KEY_ID                   Amazon S3 access key ID
+    AWS_SECRET_ACCESS_KEY               Amazon S3 secret access key
+
+    ST_AUTH                             Auth URL for keystone v1 authentication
+    ST_USER                             Username for keystone v1 authentication
+    ST_KEY                              Password for keystone v1 authentication
+
+    OS_AUTH_URL                         Auth URL for keystone authentication
+    OS_REGION_NAME                      Region name for keystone authentication
+    OS_USERNAME                         Username for keystone authentication
+    OS_PASSWORD                         Password for keystone authentication
+    OS_TENANT_ID                        Tenant ID for keystone v2 authentication
+    OS_TENANT_NAME                      Tenant name for keystone v2 authentication
+
+    OS_USER_DOMAIN_NAME                 User domain name for keystone authentication
+    OS_PROJECT_NAME                     Project name for keystone authentication
+    OS_PROJECT_DOMAIN_NAME              PRoject domain name for keystone authentication
+
+    OS_STORAGE_URL                      Storage URL for token authentication
+    OS_AUTH_TOKEN                       Auth token for token authentication
+
+    B2_ACCOUNT_ID                       Account ID for Backblaze B2
+    B2_ACCOUNT_KEY                      Account ID for Backblaze B2
+
+    AZURE_ACCOUNT_NAME                  Account name for Azure
+    AZURE_ACCOUNT_KEY                   Account key for Azure
+
+    GOOGLE_PROJECT_ID                   Project ID for Google Cloud Storage
+    GOOGLE_APPLICATION_CREDENTIALS      Application Credentials for Google Cloud Storage (e.g. $HOME/.config/gs-secret-restic-key.json)
+
+    RCLONE_BWLIMIT                      rclone bandwidth limit
+
+
+
