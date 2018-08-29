@@ -357,8 +357,8 @@ environment variables. The following list of environment variables:
     OS_STORAGE_URL                      Storage URL for token authentication
     OS_AUTH_TOKEN                       Auth token for token authentication
 
-    B2_ACCOUNT_ID                       Account ID for Backblaze B2
-    B2_ACCOUNT_KEY                      Account ID for Backblaze B2
+    B2_ACCOUNT_ID                       Account ID or applicationKeyId for Backblaze B2
+    B2_ACCOUNT_KEY                      Account Key or applicationKey for Backblaze B2
 
     AZURE_ACCOUNT_NAME                  Account name for Azure
     AZURE_ACCOUNT_KEY                   Account key for Azure
