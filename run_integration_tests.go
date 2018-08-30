@@ -314,7 +314,6 @@ func (env *TravisEnvironment) RunTests() error {
 	}
 
 	env.env["RESTIC_TEST_DISALLOW_SKIP"] = strings.Join(ensureTests, ",")
-	env.env["GOPROXY"] = "off"
 
 	if *runCrossCompile {
 		// compile for all target architectures with tags
@@ -335,6 +334,9 @@ func (env *TravisEnvironment) RunTests() error {
 	msg("Detected Go version %v\n", v)
 	if v.AtLeast(GoVersion{1, 11, 0}) {
 		args = []string{"go", "run", "-mod=vendor", "build.go"}
+		env.env["GOPROXY"] = "off"
+		delete(env.env, "GOPATH")
+		os.Unsetenv("GOPATH")
 	}
 
 	// run the build script
