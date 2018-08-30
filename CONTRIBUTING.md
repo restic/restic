@@ -46,11 +46,14 @@ Remember, the easier it is for us to reproduce the bug, the earlier it will be
 corrected!
 
 In addition, you can compile restic with debug support by running
-`go run build.go -tags debug` and instructing it to create a debug log by
-setting the environment variable `DEBUG_LOG` to a file, e.g. like this:
+`go run -mod=vendor build.go -tags debug` and instructing it to create a debug
+log by setting the environment variable `DEBUG_LOG` to a file, e.g. like this:
 
     $ export DEBUG_LOG=/tmp/restic-debug.log
     $ restic backup ~/work
+
+For Go < 1.11, you need to remove the `-mod=vendor` option from the build
+command.
 
 Please be aware that the debug log file will contain potentially sensitive
 things like file and directory names, so please either redact it before
@@ -60,9 +63,37 @@ uploading it somewhere or post only the parts that are really relevant.
 Development Environment
 =======================
 
-In order to compile restic with the `go` tool directly, it needs to be checked
-out at the right path within a `GOPATH`. The concept of a `GOPATH` is explained
-in ["How to write Go code"](https://golang.org/doc/code.html).
+The repository contains several sets of directories with code: `cmd/` and
+`internal/` contain the code written for restic, whereas `vendor/` contains
+copies of libraries restic depends on. The libraries are managed with the
+command `go mod vendor`.
+
+Go >= 1.11
+----------
+
+For Go version 1.11 or later, you should clone the repo (without having
+`$GOPATH` set) and `cd` into the directory:
+
+    $ unset GOPATH
+    $ git clone https://github.com/restic/restic
+    $ cd restic
+
+Then use the `go` tool to build restic:
+
+    $ go build ./cmd/restic
+    $ ./restic version
+    restic 0.9.2-dev (compiled manually) compiled with go1.11 on linux/amd64
+
+You can run all tests with the following command:
+
+    $ go test ./...
+
+Go < 1.11
+---------
+
+In order to compile restic with Go before 1.11, it needs to be checked out at
+the right path within a `GOPATH`. The concept of a `GOPATH` is explained in
+["How to write Go code"](https://golang.org/doc/code.html).
 
 If you do not have a directory with Go code yet, executing the following
 instructions in your shell will create one for you and check out the restic
@@ -83,12 +114,7 @@ You can then build restic as follows:
 
 The following commands can be used to run all the tests:
 
-    $ go test ./cmd/... ./internal/...
-
-The repository contains two sets of directories with code: `cmd/` and
-`internal/` contain the code written for restic, whereas `vendor/` contains
-copies of libraries restic depends on. The libraries are managed with the
-[`dep`](https://github.com/golang/dep) tool.
+    $ go test ./...
 
 Providing Patches
 =================
