@@ -331,7 +331,7 @@ func (env *TravisEnvironment) RunTests() error {
 	}
 
 	// run the build script
-	if err := run("go", "run", "build.go"); err != nil {
+	if err := run("go", "run", "-mod=vendor", "build.go"); err != nil {
 		return err
 	}
 
