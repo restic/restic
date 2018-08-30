@@ -330,8 +330,15 @@ func (env *TravisEnvironment) RunTests() error {
 		}
 	}
 
+	args := []string{"go", "run", "build.go"}
+	v := ParseGoVersion(runtime.Version())
+	msg("Detected Go version %v\n", v)
+	if v.AtLeast(GoVersion{1, 11, 0}) {
+		args = []string{"go", "run", "-mod=vendor", "build.go"}
+	}
+
 	// run the build script
-	if err := run("go", "run", "-mod=vendor", "build.go"); err != nil {
+	if err := run(args[0], args[1:]...); err != nil {
 		return err
 	}
 
@@ -342,8 +349,6 @@ func (env *TravisEnvironment) RunTests() error {
 	}
 
 	// only run gofmt on a specific version of Go.
-	v := ParseGoVersion(runtime.Version())
-	msg("Detected Go version %v\n", v)
 	if v.AtLeast(GofmtVersion) {
 		if err = runGofmt(); err != nil {
 			return err
