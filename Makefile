@@ -3,7 +3,7 @@
 all: restic
 
 restic:
-	go run build.go
+	go run -mod=vendor build.go || go run build.go
 
 clean:
 	rm -f restic
