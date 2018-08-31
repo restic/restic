@@ -187,8 +187,6 @@ func (env *TravisEnvironment) Prepare() error {
 	msg("preparing environment for Travis CI\n")
 
 	pkgs := []string{
-		"golang.org/x/tools/cmd/cover",
-		"github.com/pierrre/gotestcover",
 		"github.com/NebulousLabs/glyphcheck",
 		"github.com/restic/rest-server/cmd/rest-server",
 		"github.com/restic/calens",
@@ -340,12 +338,20 @@ func (env *TravisEnvironment) RunTests() error {
 	}
 
 	// run the build script
-	if err := run(args[0], args[1:]...); err != nil {
+	err := run(args[0], args[1:]...)
+	if err != nil {
 		return err
 	}
 
-	// run the tests and gather coverage information
-	err := runWithEnv(env.env, "gotestcover", "-coverprofile", "all.cov", "github.com/restic/restic/cmd/...", "github.com/restic/restic/internal/...")
+	// run the tests and gather coverage information (for Go >= 1.10)
+	switch {
+	case v.AtLeast(GoVersion{1, 11, 0}):
+		err = runWithEnv(env.env, "go", "test", "-mod=vendor", "-coverprofile", "all.cov", "./...")
+	case v.AtLeast(GoVersion{1, 10, 0}):
+		err = runWithEnv(env.env, "go", "test", "-coverprofile", "all.cov", "./...")
+	default:
+		err = runWithEnv(env.env, "go", "test", "./...")
+	}
 	if err != nil {
 		return err
 	}
