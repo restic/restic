@@ -6,19 +6,31 @@ matrix:
     - os: linux
       go: "1.9.x"
       env: RESTIC_TEST_FUSE=0 RESTIC_TEST_CLOUD_BACKENDS=0 RESTIC_BUILD_SOLARIS=0
+      cache:
+        directories:
+          - $HOME/.cache/go-build
 
     - os: linux
       go: "1.10.x"
       env: RESTIC_TEST_FUSE=0 RESTIC_TEST_CLOUD_BACKENDS=0
+      cache:
+        directories:
+          - $HOME/.cache/go-build
 
     # only run fuse and cloud backends tests on Travis for the latest Go on Linux
     - os: linux
       go: "1.11.x"
       sudo: true
+      cache:
+        directories:
+          - $HOME/.cache/go-build
 
     - os: osx
       go: "1.11.x"
       env: RESTIC_TEST_FUSE=0 RESTIC_TEST_CLOUD_BACKENDS=0
+      cache:
+        directories:
+          - $HOME/Library/Caches/go-build
 
 branches:
   only:
@@ -31,10 +43,6 @@ notifications:
     on_success: change
     on_failure: change
     skip_join: true
-
-cache:
-  directories:
-    - $HOME/.cache/go-build
 
 install:
   - go version
