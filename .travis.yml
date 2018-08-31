@@ -32,6 +32,10 @@ notifications:
     on_failure: change
     skip_join: true
 
+cache:
+  directories:
+    - $HOME/.cache/go-build
+
 install:
   - go version
   - export GOBIN="$GOPATH/bin"
