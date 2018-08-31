@@ -346,11 +346,11 @@ func (env *TravisEnvironment) RunTests() error {
 	// run the tests and gather coverage information (for Go >= 1.10)
 	switch {
 	case v.AtLeast(GoVersion{1, 11, 0}):
-		err = runWithEnv(env.env, "go", "test", "-mod=vendor", "-coverprofile", "all.cov", "./...")
+		err = runWithEnv(env.env, "go", "test", "-count", "1", "-mod=vendor", "-coverprofile", "all.cov", "./...")
 	case v.AtLeast(GoVersion{1, 10, 0}):
-		err = runWithEnv(env.env, "go", "test", "-coverprofile", "all.cov", "./...")
+		err = runWithEnv(env.env, "go", "test", "-count", "1", "-coverprofile", "all.cov", "./...")
 	default:
-		err = runWithEnv(env.env, "go", "test", "./...")
+		err = runWithEnv(env.env, "go", "test", "-count", "1", "./...")
 	}
 	if err != nil {
 		return err
