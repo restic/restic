@@ -208,7 +208,7 @@ func copyFile(dst, src string) error {
 		err = os.Chtimes(dst, fi.ModTime(), fi.ModTime())
 	}
 
-	return nil
+	return err
 }
 
 // die prints the message with fmt.Fprintf() to stderr and exits with an error
