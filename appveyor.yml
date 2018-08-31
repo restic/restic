@@ -7,6 +7,9 @@ branches:
   only:
     - master
 
+cache:
+  - '%APPDATA%\Local\go-build'
+
 init:
   - ps: >-
       $app = Get-WmiObject -Class Win32_Product -Filter "Vendor = 'http://golang.org'"
