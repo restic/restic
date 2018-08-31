@@ -9,6 +9,7 @@ matrix:
       cache:
         directories:
           - $HOME/.cache/go-build
+          - $HOME/gopath/pkg/mod
 
     - os: linux
       go: "1.10.x"
@@ -16,6 +17,7 @@ matrix:
       cache:
         directories:
           - $HOME/.cache/go-build
+          - $HOME/gopath/pkg/mod
 
     # only run fuse and cloud backends tests on Travis for the latest Go on Linux
     - os: linux
@@ -24,6 +26,7 @@ matrix:
       cache:
         directories:
           - $HOME/.cache/go-build
+          - $HOME/gopath/pkg/mod
 
     - os: osx
       go: "1.11.x"
@@ -31,6 +34,7 @@ matrix:
       cache:
         directories:
           - $HOME/Library/Caches/go-build
+          - $HOME/gopath/pkg/mod
 
 branches:
   only:
