@@ -6,15 +6,35 @@ matrix:
     - os: linux
       go: "1.9.x"
       env: RESTIC_TEST_FUSE=0 RESTIC_TEST_CLOUD_BACKENDS=0 RESTIC_BUILD_SOLARIS=0
+      cache:
+        directories:
+          - $HOME/.cache/go-build
+          - $HOME/gopath/pkg/mod
+
+    - os: linux
+      go: "1.10.x"
+      env: RESTIC_TEST_FUSE=0 RESTIC_TEST_CLOUD_BACKENDS=0
+      cache:
+        directories:
+          - $HOME/.cache/go-build
+          - $HOME/gopath/pkg/mod
 
     # only run fuse and cloud backends tests on Travis for the latest Go on Linux
     - os: linux
-      go: "1.10.x"
+      go: "1.11.x"
       sudo: true
+      cache:
+        directories:
+          - $HOME/.cache/go-build
+          - $HOME/gopath/pkg/mod
 
     - os: osx
-      go: "1.10.x"
+      go: "1.11.x"
       env: RESTIC_TEST_FUSE=0 RESTIC_TEST_CLOUD_BACKENDS=0
+      cache:
+        directories:
+          - $HOME/Library/Caches/go-build
+          - $HOME/gopath/pkg/mod
 
 branches:
   only:
@@ -38,4 +58,4 @@ script:
   - go run run_integration_tests.go
 
 after_success:
-  - bash <(curl -s https://codecov.io/bash) -f all.cov
+  - test -r all.cov && bash <(curl -s https://codecov.io/bash) -f all.cov

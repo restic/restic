@@ -194,12 +194,12 @@ func TestTestWalkFiles(t *testing.T) {
 				},
 			},
 			want: map[string]string{
-				"foo":    "<File>",
-				"subdir": "<Dir>",
+				"foo":                                "<File>",
+				"subdir":                             "<Dir>",
 				filepath.FromSlash("subdir/subfile"): "<File>",
-				"x": "<Dir>",
-				filepath.FromSlash("x/y"):      "<Dir>",
-				filepath.FromSlash("x/y/link"): "<Symlink>",
+				"x":                                  "<Dir>",
+				filepath.FromSlash("x/y"):            "<Dir>",
+				filepath.FromSlash("x/y/link"):       "<Symlink>",
 			},
 		},
 	}
@@ -373,7 +373,7 @@ func TestTestEnsureSnapshot(t *testing.T) {
 	}{
 		{
 			files: map[string]interface{}{
-				"foo": TestFile{Content: "foo"},
+				"foo":                                TestFile{Content: "foo"},
 				filepath.FromSlash("subdir/subfile"): TestFile{Content: "bar"},
 				filepath.FromSlash("x/y/link"):       TestSymlink{Target: filepath.FromSlash("../../foo")},
 			},

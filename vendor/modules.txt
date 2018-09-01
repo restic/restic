@@ -1,0 +1,151 @@
+# bazil.org/fuse v0.0.0-20180421153158-65cc252bf669
+bazil.org/fuse
+bazil.org/fuse/fs
+bazil.org/fuse/fuseutil
+# cloud.google.com/go v0.25.0
+cloud.google.com/go/compute/metadata
+# github.com/Azure/azure-sdk-for-go v19.1.0+incompatible
+github.com/Azure/azure-sdk-for-go/storage
+github.com/Azure/azure-sdk-for-go/version
+# github.com/Azure/go-autorest v10.15.0+incompatible
+github.com/Azure/go-autorest/autorest
+github.com/Azure/go-autorest/autorest/azure
+github.com/Azure/go-autorest/autorest/adal
+github.com/Azure/go-autorest/logger
+github.com/Azure/go-autorest/version
+github.com/Azure/go-autorest/autorest/date
+# github.com/cenkalti/backoff v2.0.0+incompatible
+github.com/cenkalti/backoff
+# github.com/cpuguy83/go-md2man v1.0.8
+github.com/cpuguy83/go-md2man/md2man
+# github.com/dgrijalva/jwt-go v3.2.0+incompatible
+github.com/dgrijalva/jwt-go
+# github.com/elithrar/simple-scrypt v1.3.0
+github.com/elithrar/simple-scrypt
+# github.com/go-ini/ini v1.38.1
+github.com/go-ini/ini
+# github.com/golang/protobuf v1.1.0
+github.com/golang/protobuf/proto
+# github.com/google/go-cmp v0.2.0
+github.com/google/go-cmp/cmp
+github.com/google/go-cmp/cmp/cmpopts
+github.com/google/go-cmp/cmp/internal/diff
+github.com/google/go-cmp/cmp/internal/function
+github.com/google/go-cmp/cmp/internal/value
+# github.com/inconshreveable/mousetrap v1.0.0
+github.com/inconshreveable/mousetrap
+# github.com/juju/ratelimit v1.0.1
+github.com/juju/ratelimit
+# github.com/kr/fs v0.1.0
+github.com/kr/fs
+# github.com/kurin/blazer v0.5.1
+github.com/kurin/blazer/b2
+github.com/kurin/blazer/base
+github.com/kurin/blazer/internal/b2assets
+github.com/kurin/blazer/internal/blog
+github.com/kurin/blazer/x/window
+github.com/kurin/blazer/internal/b2types
+# github.com/marstr/guid v1.1.0
+github.com/marstr/guid
+# github.com/mattn/go-isatty v0.0.3
+github.com/mattn/go-isatty
+# github.com/minio/minio-go v6.0.5+incompatible
+github.com/minio/minio-go
+github.com/minio/minio-go/pkg/credentials
+github.com/minio/minio-go/pkg/encrypt
+github.com/minio/minio-go/pkg/s3signer
+github.com/minio/minio-go/pkg/s3utils
+github.com/minio/minio-go/pkg/set
+# github.com/mitchellh/go-homedir v0.0.0-20180523094522-3864e76763d9
+github.com/mitchellh/go-homedir
+# github.com/ncw/swift v1.0.39
+github.com/ncw/swift
+# github.com/pkg/errors v0.8.0
+github.com/pkg/errors
+# github.com/pkg/profile v1.2.1
+github.com/pkg/profile
+# github.com/pkg/sftp v1.8.0
+github.com/pkg/sftp
+# github.com/pkg/xattr v0.3.1
+github.com/pkg/xattr
+# github.com/restic/chunker v0.2.0
+github.com/restic/chunker
+# github.com/russross/blackfriday v1.5.1
+github.com/russross/blackfriday
+# github.com/satori/go.uuid v1.2.0
+github.com/satori/go.uuid
+# github.com/spf13/cobra v0.0.3
+github.com/spf13/cobra
+github.com/spf13/cobra/doc
+# github.com/spf13/pflag v1.0.1
+github.com/spf13/pflag
+# golang.org/x/crypto v0.0.0-20180723164146-c126467f60eb
+golang.org/x/crypto/ssh/terminal
+golang.org/x/crypto/poly1305
+golang.org/x/crypto/scrypt
+golang.org/x/crypto/openpgp
+golang.org/x/crypto/ssh
+golang.org/x/crypto/pbkdf2
+golang.org/x/crypto/openpgp/armor
+golang.org/x/crypto/openpgp/errors
+golang.org/x/crypto/openpgp/packet
+golang.org/x/crypto/openpgp/s2k
+golang.org/x/crypto/argon2
+golang.org/x/crypto/curve25519
+golang.org/x/crypto/ed25519
+golang.org/x/crypto/internal/chacha20
+golang.org/x/crypto/cast5
+golang.org/x/crypto/openpgp/elgamal
+golang.org/x/crypto/blake2b
+golang.org/x/crypto/ed25519/internal/edwards25519
+golang.org/x/crypto/internal/subtle
+# golang.org/x/net v0.0.0-20180801174033-32f9bdbd7df1
+golang.org/x/net/context/ctxhttp
+golang.org/x/net/http2
+golang.org/x/net/context
+golang.org/x/net/http/httpguts
+golang.org/x/net/http2/hpack
+golang.org/x/net/idna
+# golang.org/x/oauth2 v0.0.0-20180724155351-3d292e4d0cdc
+golang.org/x/oauth2/google
+golang.org/x/oauth2
+golang.org/x/oauth2/internal
+golang.org/x/oauth2/jws
+golang.org/x/oauth2/jwt
+# golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f
+golang.org/x/sync/errgroup
+# golang.org/x/sys v0.0.0-20180727230415-bd9dbc187b6e
+golang.org/x/sys/unix
+golang.org/x/sys/windows
+golang.org/x/sys/cpu
+# golang.org/x/text v0.3.0
+golang.org/x/text/encoding/unicode
+golang.org/x/text/encoding
+golang.org/x/text/encoding/internal
+golang.org/x/text/encoding/internal/identifier
+golang.org/x/text/internal/utf8internal
+golang.org/x/text/runes
+golang.org/x/text/transform
+golang.org/x/text/secure/bidirule
+golang.org/x/text/unicode/bidi
+golang.org/x/text/unicode/norm
+# google.golang.org/api v0.0.0-20180730000901-31ca0e01cd79
+google.golang.org/api/googleapi
+google.golang.org/api/storage/v1
+google.golang.org/api/googleapi/internal/uritemplates
+google.golang.org/api/gensupport
+# google.golang.org/appengine v1.1.0
+google.golang.org/appengine
+google.golang.org/appengine/urlfetch
+google.golang.org/appengine/internal
+google.golang.org/appengine/internal/app_identity
+google.golang.org/appengine/internal/modules
+google.golang.org/appengine/internal/urlfetch
+google.golang.org/appengine/internal/base
+google.golang.org/appengine/internal/datastore
+google.golang.org/appengine/internal/log
+google.golang.org/appengine/internal/remote_api
+# gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
+gopkg.in/tomb.v2
+# gopkg.in/yaml.v2 v2.2.1
+gopkg.in/yaml.v2
