@@ -29,22 +29,21 @@ func CreateRouterWeb(ctx context.Context, repo *repository.Repository) *mux.Rout
 
 	r := mux.NewRouter()
 	// snapshots
-	r.HandleFunc("/web/", webSnapshotsList)
-	r.HandleFunc("/web/snapshots/", webSnapshotsList)
-	r.HandleFunc("/web/snapshots/{snapshot_id}/download", webSnapshotDownloadShow)
+	r.HandleFunc("/web/", getWebSnapshots).Methods("GET")
+	r.HandleFunc("/web/snapshots/", getWebSnapshots).Methods("GET")
+	r.HandleFunc("/web/snapshots/{snapshot_id}/download", getWebSnapshotDownload).Methods("GET")
 	// nodes
-	r.HandleFunc("/web/snapshots/{snapshot_id}/nodes/", webSnapshotNodesList)
-
+	r.HandleFunc("/web/snapshots/{snapshot_id}/nodes/", getWebSnapshotNodes).Methods("GET")
 	return r
 }
 
 // Snapshots
 
-func webSnapshotsList(w http.ResponseWriter, r *http.Request) {
+func getWebSnapshots(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "templates/web/snapshots/index.gohtml", nil)
 }
 
-func webSnapshotDownloadShow(w http.ResponseWriter, r *http.Request) {
+func getWebSnapshotDownload(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	snapshotID := params["snapshot_id"]
@@ -84,7 +83,7 @@ func webSnapshotDownloadShow(w http.ResponseWriter, r *http.Request) {
 
 // Nodes
 
-func webSnapshotNodesList(w http.ResponseWriter, r *http.Request) {
+func getWebSnapshotNodes(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	type data struct {

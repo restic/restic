@@ -30,10 +30,10 @@ func CreateRouterAPI(ctx context.Context, repo *repository.Repository) *mux.Rout
 
 	r := mux.NewRouter()
 	// snapshots
-	r.HandleFunc("/api/snapshots/", apiSnapshotsList)
+	r.HandleFunc("/api/snapshots/", getSnapshots).Methods("GET")
 	// nodes
-	r.HandleFunc("/api/snapshots/{snapshot_id}/nodes/", apiSnapshotNodesList)
-	r.HandleFunc("/api/snapshots/{snapshot_id}/nodes/{id}", apiSnapshotNodeShow)
+	r.HandleFunc("/api/snapshots/{snapshot_id}/nodes/", getSnapshotNodes).Methods("GET")
+	r.HandleFunc("/api/snapshots/{snapshot_id}/nodes/{id}", getSnapshotNode).Methods("GET")
 
 	return r
 }
@@ -45,7 +45,7 @@ type apiSnapshot struct {
 	ShortID string `json:"short_id"`
 }
 
-func apiSnapshotsList(w http.ResponseWriter, r *http.Request) {
+func getSnapshots(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
 
@@ -63,7 +63,7 @@ func apiSnapshotsList(w http.ResponseWriter, r *http.Request) {
 
 // Nodes
 
-func apiSnapshotNodesList(w http.ResponseWriter, r *http.Request) {
+func getSnapshotNodes(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	id, err := restic.FindSnapshot(webRepository, params["snapshot_id"])
@@ -87,7 +87,7 @@ func apiSnapshotNodesList(w http.ResponseWriter, r *http.Request) {
 	renderJSON(w, tree)
 }
 
-func apiSnapshotNodeShow(w http.ResponseWriter, r *http.Request) {
+func getSnapshotNode(w http.ResponseWriter, r *http.Request) {
 	// FIXME (kitone): should we check if the node id belongs to the snapshot_id first ?
 	params := mux.Vars(r)
 
