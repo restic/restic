@@ -61,6 +61,8 @@ function readyFn(jQuery) {
       var path = path_from_root(data.node);
       var td = $(data.node.tr).find(">td");
 
+      $(data.node.tr)[0].setAttribute("data-path", path);
+
       td.eq(1).attr("title", path);
       td.eq(2).text(n.user);
       td.eq(3).text(n.group);

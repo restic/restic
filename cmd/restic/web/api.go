@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -16,7 +15,6 @@ import (
 var webRepository *repository.Repository
 
 func renderJSON(w http.ResponseWriter, data interface{}) {
-	log.Printf("%v", data)
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(data); err != nil {
@@ -31,6 +29,7 @@ func CreateRouterAPI(ctx context.Context, repo *repository.Repository) *mux.Rout
 	r := mux.NewRouter()
 	// snapshots
 	r.HandleFunc("/api/snapshots/", getSnapshots).Methods("GET")
+	r.HandleFunc("/api/snapshots/{id}/restore/", createSnapshotRestore).Methods("POST")
 	// nodes
 	r.HandleFunc("/api/snapshots/{snapshot_id}/nodes/", getSnapshotNodes).Methods("GET")
 	r.HandleFunc("/api/snapshots/{snapshot_id}/nodes/{id}", getSnapshotNode).Methods("GET")
@@ -59,6 +58,43 @@ func getSnapshots(w http.ResponseWriter, r *http.Request) {
 		data = append(data, apiSnapshot{sn, sn.ID().Str()})
 	}
 	renderJSON(w, data)
+}
+
+func createSnapshotRestore(w http.ResponseWriter, r *http.Request) {
+	type restoreTask struct {
+		Target string   `json:"target"`
+		Files  []string `json:"files"`
+	}
+	var task restoreTask
+	err := json.NewDecoder(r.Body).Decode(&task)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if task.Target == "" {
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		http.Error(w, "Target should not be empty", http.StatusInternalServerError)
+		return
+	}
+	if len(task.Files) == 0 {
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		http.Error(w, "no files to restore", http.StatusInternalServerError)
+		return
+	}
+	params := mux.Vars(r)
+	snapshotID, err := restic.FindSnapshot(webRepository, params["id"])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	totalErrors, err := restore(webRepository, snapshotID, task.Files, task.Target)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	} else {
+		renderJSON(w, fmt.Sprintf("Successfully restored files, there were %d errors", totalErrors))
+	}
 }
 
 // Nodes

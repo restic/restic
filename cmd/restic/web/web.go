@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	homedir "github.com/mitchellh/go-homedir"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 )
@@ -87,7 +88,9 @@ func getWebSnapshotNodes(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	type data struct {
-		SnapshotID string
+		SnapshotID    string
+		DefaultTarget string
 	}
-	renderTemplate(w, "templates/web/nodes/index.gohtml", data{params["snapshot_id"]})
+	home, _ := homedir.Dir()
+	renderTemplate(w, "templates/web/nodes/index.gohtml", data{params["snapshot_id"], home})
 }

@@ -2,6 +2,7 @@
   <link rel="stylesheet" type="text/css" href="/static/snapshots.css">
   <script src="/static/base.js"></script>
   <script src="/static/nodes.js"></script>
+  <script src="/static/nodes_restore.js"></script>
 {{ end }}
 
 {{ define "content" }}
@@ -10,6 +11,23 @@
     > snapshots >
     {{ .SnapshotID }}
   </h2>
+
+  <div>
+    <h4>Restore locally</h4>
+    <form id="restore-form" action="/api/snapshots/{{.SnapshotID}}/restore/" method="POST" enctype="application/x-www-form-urlencoded">
+      <div id="form-messages"></div>
+      <div class="input-group mb-3">
+        <div class="input-group-prepend">
+          <span class="input-group-text">Target:</span>
+        </div>
+        <input type="string" name="restore_target" value="{{.DefaultTarget}}/restic_restore/{{.SnapshotID}}/" class="form-control">
+        <div class="input-group-append">
+          <input name="submit" type="submit" value="Restore" class="btn btn-primary">
+        </div>
+      </div>
+    </form>
+  </div>
+
 
   <table id="treeview" class="table table-sm" data-snapshot-id="{{.SnapshotID}}">
     <thead>

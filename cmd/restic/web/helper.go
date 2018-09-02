@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/restorer"
 )
 
 func splitPath(path string) []string {
@@ -77,4 +80,40 @@ func findNode(ctx context.Context, tree *restic.Tree, repo restic.Repository, pr
 		}
 	}
 	return nil, fmt.Errorf("path %q not found in snapshot", item)
+}
+
+func restore(repo restic.Repository, snapshotID restic.ID, files []string, target string) (int, error) {
+	res, err := restorer.NewRestorer(repo, snapshotID)
+	if err != nil {
+		return 0, errors.Errorf("creating restorer failed: %v", err)
+	}
+
+	totalErrors := 0
+	res.Error = func(dir string, node *restic.Node, err error) error {
+		fmt.Fprintf(os.Stdout, "ignoring error for %s: %s\n", dir, err)
+		totalErrors++
+		return nil
+	}
+
+	compareFunc := func(files []string, item string) (bool, bool) {
+		for _, f := range files {
+			if strings.Compare(f, item) == 0 {
+				return true, true
+			} else if strings.HasPrefix(f, item) {
+				return true, true
+			} else if strings.HasPrefix(item, f) {
+				return true, true
+			}
+		}
+		return false, false
+
+	}
+
+	res.SelectFilter = func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
+		selectedForRestore, childMayBeSelected = compareFunc(files, item)
+		return selectedForRestore, childMayBeSelected && node.Type == "dir"
+	}
+
+	err = res.RestoreTo(context.TODO(), target)
+	return totalErrors, err
 }
