@@ -6,7 +6,9 @@
 
 {{ define "content" }}
   <h2>
-    <a href="/web/snapshots/">restic</a> > snapshots > {{ .SnapshotID }}
+    <a href="/web/snapshots/">restic</a>
+    > snapshots >
+    {{ .SnapshotID }}
   </h2>
 
   <table id="treeview" class="table table-sm" data-snapshot-id="{{.SnapshotID}}">

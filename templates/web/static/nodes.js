@@ -59,17 +59,16 @@ function readyFn(jQuery) {
     renderColumns: function(event, data) {
       var n = data.node.data;
       var path = path_from_root(data.node);
+      var td = $(data.node.tr).find(">td");
 
-      $tdList = $(data.node.tr).find(">td");
-
-      $tdList.eq(1).attr("title", path);
-      $tdList.eq(2).text(n.user);
-      $tdList.eq(3).text(n.group);
+      td.eq(1).attr("title", path);
+      td.eq(2).text(n.user);
+      td.eq(3).text(n.group);
       // mtime
-      $tdList.eq(4).text(human_date(n.mtime));
+      td.eq(4).text(human_date(n.mtime));
       // size
       if (n.hasOwnProperty("size")) {
-        $tdList.eq(5).text(human_filesize(n.size));
+        td.eq(5).text(human_filesize(n.size));
       }
       // actions
       if (data.node.type !== "dir") {
@@ -77,7 +76,7 @@ function readyFn(jQuery) {
         var link = document.createElement("a");
         link.text = "Download";
         link.href = `/web/snapshots/${snapshot_id}/download?path=${path}`;
-        $tdList.eq(6).append(link);
+        td.eq(6).append(link);
       }
     },
     postProcess: function(event, data) {
