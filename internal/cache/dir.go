@@ -68,25 +68,31 @@ func DefaultDir() (cachedir string, err error) {
 	return cachedir, nil
 }
 
-func mkdirCacheDir(cachedir string) error {
+// mkdirCacheDir ensures that the cache directory exists. It it didn't, created
+// is set to true.
+func mkdirCacheDir(cachedir string) (created bool, err error) {
+	var newCacheDir bool
+
 	fi, err := fs.Stat(cachedir)
 	if os.IsNotExist(errors.Cause(err)) {
 		err = fs.MkdirAll(cachedir, 0700)
 		if err != nil {
-			return errors.Wrap(err, "MkdirAll")
+			return true, errors.Wrap(err, "MkdirAll")
 		}
 
 		fi, err = fs.Stat(cachedir)
 		debug.Log("create cache dir %v", cachedir)
+
+		newCacheDir = true
 	}
 
 	if err != nil {
-		return errors.Wrap(err, "Stat")
+		return newCacheDir, errors.Wrap(err, "Stat")
 	}
 
 	if !fi.IsDir() {
-		return errors.Errorf("cache dir %v is not a directory", cachedir)
+		return newCacheDir, errors.Errorf("cache dir %v is not a directory", cachedir)
 	}
 
-	return nil
+	return newCacheDir, nil
 }

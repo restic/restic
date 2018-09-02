@@ -19,6 +19,7 @@ import (
 type Cache struct {
 	Path             string
 	Base             string
+	Created          bool
 	PerformReadahead func(restic.Handle) bool
 }
 
@@ -98,7 +99,7 @@ func New(id string, basedir string) (c *Cache, err error) {
 		}
 	}
 
-	err = mkdirCacheDir(basedir)
+	created, err := mkdirCacheDir(basedir)
 	if err != nil {
 		return nil, err
 	}
@@ -121,8 +122,13 @@ func New(id string, basedir string) (c *Cache, err error) {
 	}
 
 	// create the repo cache dir if it does not exist yet
-	if err = fs.MkdirAll(cachedir, dirMode); err != nil {
-		return nil, err
+	_, err = fs.Lstat(cachedir)
+	if os.IsNotExist(err) {
+		err = fs.MkdirAll(cachedir, dirMode)
+		if err != nil {
+			return nil, err
+		}
+		created = true
 	}
 
 	// update the timestamp so that we can detect old cache dirs
@@ -145,8 +151,9 @@ func New(id string, basedir string) (c *Cache, err error) {
 	}
 
 	c = &Cache{
-		Path: cachedir,
-		Base: basedir,
+		Path:    cachedir,
+		Base:    basedir,
+		Created: created,
 		PerformReadahead: func(restic.Handle) bool {
 			// do not perform readahead by default
 			return false

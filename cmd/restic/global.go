@@ -376,6 +376,10 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 		return s, nil
 	}
 
+	if c.Created && !opts.JSON {
+		Verbosef("created new cache in %v\n", c.Base)
+	}
+
 	// start using the cache
 	s.UseCache(c)
 
