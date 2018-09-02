@@ -8,7 +8,7 @@ branches:
     - master
 
 cache:
-  - '%APPDATA%\Local\go-build'
+  - '%LocalAppData%\go-build'
 
 init:
   - ps: >-
