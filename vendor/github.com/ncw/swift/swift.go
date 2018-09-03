@@ -1895,6 +1895,10 @@ func (c *Connection) doBulkDelete(objects []string) (result BulkDeleteResult, er
 // * http://docs.openstack.org/trunk/openstack-object-storage/admin/content/object-storage-bulk-delete.html
 // * http://docs.rackspace.com/files/api/v1/cf-devguide/content/Bulk_Delete-d1e2338.html
 func (c *Connection) BulkDelete(container string, objectNames []string) (result BulkDeleteResult, err error) {
+	if len(objectNames) == 0 {
+		result.Errors = make(map[string]error)
+		return
+	}
 	fullPaths := make([]string, len(objectNames))
 	for i, name := range objectNames {
 		fullPaths[i] = fmt.Sprintf("/%s/%s", container, name)
@@ -2079,6 +2083,15 @@ func (c *Connection) ObjectUpdate(container string, objectName string, h Headers
 	return err
 }
 
+// urlPathEscape escapes URL path the in string using URL escaping rules
+//
+// This mimics url.PathEscape which only available from go 1.8
+func urlPathEscape(in string) string {
+	var u url.URL
+	u.Path = in
+	return u.String()
+}
+
 // ObjectCopy does a server side copy of an object to a new position
 //
 // All metadata is preserved.  If metadata is set in the headers then
@@ -2091,7 +2104,7 @@ func (c *Connection) ObjectUpdate(container string, objectName string, h Headers
 func (c *Connection) ObjectCopy(srcContainer string, srcObjectName string, dstContainer string, dstObjectName string, h Headers) (headers Headers, err error) {
 	// Meta stuff
 	extraHeaders := map[string]string{
-		"Destination": dstContainer + "/" + dstObjectName,
+		"Destination": urlPathEscape(dstContainer + "/" + dstObjectName),
 	}
 	for key, value := range h {
 		extraHeaders[key] = value

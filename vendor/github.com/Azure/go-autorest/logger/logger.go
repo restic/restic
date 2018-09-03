@@ -282,7 +282,7 @@ func (fl fileLogger) WriteRequest(req *http.Request, filter Filter) {
 	}
 	fl.mu.Lock()
 	defer fl.mu.Unlock()
-	fmt.Fprintf(fl.logFile, b.String())
+	fmt.Fprint(fl.logFile, b.String())
 	fl.logFile.Sync()
 }
 
@@ -311,7 +311,7 @@ func (fl fileLogger) WriteResponse(resp *http.Response, filter Filter) {
 	}
 	fl.mu.Lock()
 	defer fl.mu.Unlock()
-	fmt.Fprintf(fl.logFile, b.String())
+	fmt.Fprint(fl.logFile, b.String())
 	fl.logFile.Sync()
 }
 
