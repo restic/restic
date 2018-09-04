@@ -1,22 +1,23 @@
+/*jshint esversion: 6 */
 function readyFn(jQuery) {
-  $.getJSON("/api/snapshots/", function(data) {
-    data = data.sort(function(a, b) {
-      var x = a.time;
-      var y = b.time;
+  $.getJSON("/api/snapshots/", data => {
+    data = data.sort((a, b) => {
+      const x = a.time;
+      const y = b.time;
       return x < y ? -1 : x > y ? 1 : 0;
     });
     // console.log(data);
-    $.each(data, function(k, v) {
+    $.each(data, (k, v) => {
       $("#table-snapshots tbody").append(
         `<tr>
           <td>
             <a href="/web/snapshots/${v.short_id}/nodes/">${v.short_id}<a>
           </td>
-          <td>${human_date(v.time)}</td>
+          <td>${humanDate(v.time)}</td>
           <td>${v.username}</td>
           <td>${v.hostname}</td>
-          <td>${array_to_div(v.paths)}</td>
-          <td>${array_to_div(v.tags)}</td>
+          <td>${arrayToDiv(v.paths)}</td>
+          <td>${arrayToDiv(v.tags)}</td>
         </tr>`
       );
     });

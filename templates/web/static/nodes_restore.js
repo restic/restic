@@ -1,9 +1,10 @@
-function files_to_restore() {
-  var files = [];
-  var tree = $("#treeview").fancytree("getTree");
-  tree.visit(function(node) {
+/*jshint esversion: 6 */
+function filesToRestore() {
+  const files = [];
+  const tree = $("#treeview").fancytree("getTree");
+  tree.visit(node => {
     if (node.selected) {
-      var path = $(node.tr).data("path");
+      const path = $(node.tr).data("path");
       files.push(path);
       // if the node is a dir, we don't need to enable childs
       if (node.type === "dir") {
@@ -14,40 +15,40 @@ function files_to_restore() {
   return files;
 }
 
-$(document).ready(function() {
+$(document).ready(() => {
   $("#restore-form").submit(function(ev) {
     // Stop the browser from submitting the form.
     ev.preventDefault();
     // Api url and values to send
-    var restore_api = $(this).attr("action");
-    var restore_data = JSON.stringify({
+    const restoreApi = $(this).attr("action");
+    const restoreData = JSON.stringify({
       target: $("input[name=restore_target]").val(),
-      files: files_to_restore()
+      files: filesToRestore()
     });
-    var submit_button = $("input[name=submit]");
-    submit_button.attr("disabled", true);
-    submit_button.val("In Progress...");
+    const submitButton = $("input[name=submit]");
+    submitButton.attr("disabled", true);
+    submitButton.val("In Progress...");
     // Submit the form using AJAX.
     $.ajax({
       type: "POST",
-      url: restore_api,
-      data: restore_data
+      url: restoreApi,
+      data: restoreData
     })
-      .done(function(response) {
-        var msg = $("#form-messages");
+      .done(response => {
+        const msg = $("#form-messages");
         $(msg).removeClass("alert-danger");
         $(msg).addClass("alert alert-success");
         $(msg).text(response);
-        submit_button.attr("disabled", false);
-        submit_button.val("Restore");
+        submitButton.attr("disabled", false);
+        submitButton.val("Restore");
       })
-      .fail(function(data) {
-        var msg = $("#form-messages");
+      .fail(data => {
+        const msg = $("#form-messages");
         $(msg).removeClass("alert-success");
         $(msg).addClass("alert alert-danger");
         $(msg).text(data.responseText);
-        submit_button.attr("disabled", false);
-        submit_button.val("Restore");
+        submitButton.attr("disabled", false);
+        submitButton.val("Restore");
       });
   });
 });

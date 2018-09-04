@@ -1,8 +1,9 @@
+/*jshint esversion: 6 */
 function convertData(data) {
   // work with the childs "nodes"
   nodes = data.nodes;
   // adjust field and fix struct
-  nodes = $.map(nodes, function(c) {
+  nodes = $.map(nodes, c => {
     // delete unused attributes
     delete c.atime;
     delete c.ctime;
@@ -22,11 +23,11 @@ function convertData(data) {
   return nodes;
 }
 
-function path_from_root(node) {
+function pathFromRoot(node) {
   if (node.parent === null) {
     return "";
   }
-  return path_from_root(node.parent) + "/" + node.data.name;
+  return `${pathFromRoot(node.parent)}/${node.data.name}`;
 }
 
 function readyFn(jQuery) {
@@ -41,25 +42,25 @@ function readyFn(jQuery) {
     checkbox: true,
     selectMode: 3,
     source: {
-      url: "/api/snapshots/" + $("#treeview").data("snapshot-id") + "/nodes/"
+      url: `/api/snapshots/${$("#treeview").data("snapshot-id")}/nodes/`
     },
-    lazyLoad: function(event, data) {
-      var node = data.node;
-      var snapshot_id = node.tree.data["snapshot-id"];
-      var node_key = node.data.subtree;
+    lazyLoad(event, data) {
+      const node = data.node;
+      const snapshotID = node.tree.data["snapshot-id"];
+      const nodeKey = node.data.subtree;
       data.result = {
-        url: "/api/snapshots/" + snapshot_id + "/nodes/" + node_key
+        url: `/api/snapshots/${snapshotID}/nodes/${nodeKey}`
       };
     },
     // apply parent's state to new child nodes
-    loadChildren: function(event, data) {
+    loadChildren(event, data) {
       data.node.fixSelection3AfterClick();
     },
     // This event is part of the table extension:
-    renderColumns: function(event, data) {
-      var n = data.node.data;
-      var path = path_from_root(data.node);
-      var td = $(data.node.tr).find(">td");
+    renderColumns(event, data) {
+      const n = data.node.data;
+      const path = pathFromRoot(data.node);
+      const td = $(data.node.tr).find(">td");
 
       $(data.node.tr)[0].setAttribute("data-path", path);
 
@@ -67,21 +68,21 @@ function readyFn(jQuery) {
       td.eq(2).text(n.user);
       td.eq(3).text(n.group);
       // mtime
-      td.eq(4).text(human_date(n.mtime));
+      td.eq(4).text(humanDate(n.mtime));
       // size
       if (n.hasOwnProperty("size")) {
-        td.eq(5).text(human_filesize(n.size));
+        td.eq(5).text(humanFileSize(n.size));
       }
       // actions
       if (data.node.type !== "dir") {
-        var snapshot_id = data.tree.data["snapshotId"];
-        var link = document.createElement("a");
+        const snapshotID = data.tree.data["snapshotId"];
+        const link = document.createElement("a");
         link.text = "Download";
-        link.href = `/web/snapshots/${snapshot_id}/download?path=${path}`;
+        link.href = `/web/snapshots/${snapshotID}/download?path=${path}`;
         td.eq(6).append(link);
       }
     },
-    postProcess: function(event, data) {
+    postProcess(event, data) {
       data.result = convertData(data.response);
     }
   });
