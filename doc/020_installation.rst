@@ -24,18 +24,8 @@ These are up to date binaries, built in a reproducible and verifiable way, that
 you can download and run without having to do additional installation work.
 
 Please see the :ref:`official_binaries` section below for various downloads.
-Official bianaries can be updated in place by using the ``restic self-update``
+Official binaries can be updated in place by using the ``restic self-update``
 command.
-
-Mac OS X
-========
-
-If you are using Mac OS X, you can install restic using the
-`homebrew <http://brew.sh/>`__ package manager:
-
-.. code-block:: console
-
-    $ brew install restic
 
 Arch Linux
 ==========
@@ -46,17 +36,6 @@ which can be installed from AUR, e.g. with ``pacaur``:
 .. code-block:: console
 
     $ pacaur -S restic-git
-
-Nix & NixOS
-===========
-
-If you are using `Nix <https://nixos.org/nix/>`__ or `NixOS <https://nixos.org/>`__
-there is a package available named ``restic``.
-It can be installed uisng ``nix-env``:
-
-.. code-block:: console
-
-    $ nix-env --install restic 
 
 Debian
 ======
@@ -72,7 +51,62 @@ installed from the official repos, e.g. with ``apt-get``:
 .. warning:: Please be aware that, at the time of writing, Debian *stable*
    has ``restic`` version 0.3.3 which is very old. The *testing* and *unstable*
    branches have recent versions of ``restic``.
-   
+
+Fedora
+======
+
+restic can be installed using ``dnf``:
+
+.. code-block:: console
+
+    $ dnf install restic
+
+If you used restic from copr previously, remove the copr repo as follows to
+avoid any conflicts:
+
+.. code-block:: console
+
+   $ dnf copr remove copart/restic
+
+macOS
+=====
+
+If you are using Mac OS X, you can install restic using the
+`homebrew <http://brew.sh/>`__ package manager:
+
+.. code-block:: console
+
+    $ brew install restic
+
+Nix & NixOS
+===========
+
+If you are using `Nix <https://nixos.org/nix/>`__ or `NixOS <https://nixos.org/>`__
+there is a package available named ``restic``.
+It can be installed using ``nix-env``:
+
+.. code-block:: console
+
+    $ nix-env --install restic
+
+OpenBSD
+=======
+
+On OpenBSD 6.3 and greater, you can install restic using ``pkg_add``:
+
+.. code-block:: console
+
+    # pkg_add restic
+
+FreeBSD
+=======
+
+On FreeBSD (11 and probably later versions), you can install restic using ``pkg install``:
+
+.. code-block:: console
+
+    # pkg install restic
+
 RHEL & CentOS
 =============
 
@@ -96,17 +130,6 @@ For CentOS7 use:
 
     $ yum-config-manager --add-repo https://copr.fedorainfracloud.org/coprs/copart/restic/repo/epel-7/copart-restic-epel-7.repo
 
-Fedora
-======
-
-restic can be installed via copr repository.
-
-.. code-block:: console
-
-    $ dnf install dnf-plugin-core
-    $ dnf copr enable copart/restic
-    $ dnf install restic
-
 Solus
 =====
 
@@ -115,15 +138,7 @@ restic can be installed from the official repo of Solus via the ``eopkg`` packag
 .. code-block:: console
 
     $ eopkg install restic
-    
-OpenBSD
-=======
 
-On OpenBSD 6.3 and greater, you can install restic using ``pkg_add``:
-
-.. code-block:: console
-
-    # pkg_add restic
 
 .. _official_binaries:
 
