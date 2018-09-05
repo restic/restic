@@ -187,6 +187,13 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 			return fs.MkdirAll(target, 0700)
 		},
 		visitNode: func(node *restic.Node, target, location string) error {
+
+			count := 0
+			// skip restore if verifyNode returns no errors
+			if node.Type == "file" && res.verifyNode(node, target, location, &count) == nil {
+				return nil
+			}
+
 			// create parent dir with default permissions
 			// #leaveDir restores dir metadata after visiting all children
 			err := fs.MkdirAll(filepath.Dir(target), 0700)
