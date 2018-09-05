@@ -68,8 +68,8 @@ avoid any conflicts:
 
    $ dnf copr remove copart/restic
 
-Mac OS X
-========
+macOS
+=====
 
 If you are using Mac OS X, you can install restic using the
 `homebrew <http://brew.sh/>`__ package manager:
