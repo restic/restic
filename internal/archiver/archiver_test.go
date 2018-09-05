@@ -137,7 +137,7 @@ func TestArchiverSaveFile(t *testing.T) {
 			tempdir, repo, cleanup := prepareTempdirRepoSrc(t, TestDir{"file": testfile})
 			defer cleanup()
 
-			node, stats := saveFile(t, repo, filepath.Join(tempdir, "file"), fs.Track{fs.Local{}})
+			node, stats := saveFile(t, repo, filepath.Join(tempdir, "file"), fs.Track{FS: fs.Local{}})
 
 			TestEnsureFileContent(ctx, t, repo, "file", node, testfile)
 			if stats.DataSize != uint64(len(testfile.Content)) {
@@ -218,7 +218,7 @@ func TestArchiverSave(t *testing.T) {
 
 			var tmb tomb.Tomb
 
-			arch := New(repo, fs.Track{fs.Local{}}, Options{})
+			arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
 			arch.Error = func(item string, fi os.FileInfo, err error) error {
 				t.Errorf("archiver error for %v: %v", item, err)
 				return err
@@ -358,7 +358,7 @@ func BenchmarkArchiverSaveFileSmall(b *testing.B) {
 		tempdir, repo, cleanup := prepareTempdirRepoSrc(b, d)
 		b.StartTimer()
 
-		_, stats := saveFile(b, repo, filepath.Join(tempdir, "file"), fs.Track{fs.Local{}})
+		_, stats := saveFile(b, repo, filepath.Join(tempdir, "file"), fs.Track{FS: fs.Local{}})
 
 		b.StopTimer()
 		if stats.DataSize != fileSize {
@@ -391,7 +391,7 @@ func BenchmarkArchiverSaveFileLarge(b *testing.B) {
 		tempdir, repo, cleanup := prepareTempdirRepoSrc(b, d)
 		b.StartTimer()
 
-		_, stats := saveFile(b, repo, filepath.Join(tempdir, "file"), fs.Track{fs.Local{}})
+		_, stats := saveFile(b, repo, filepath.Join(tempdir, "file"), fs.Track{FS: fs.Local{}})
 
 		b.StopTimer()
 		if stats.DataSize != fileSize {
@@ -471,7 +471,7 @@ func TestArchiverSaveFileIncremental(t *testing.T) {
 
 	for i := 0; i < 3; i++ {
 		appendToFile(t, testfile, data)
-		node, _ := saveFile(t, repo, testfile, fs.Track{fs.Local{}})
+		node, _ := saveFile(t, repo, testfile, fs.Track{FS: fs.Local{}})
 
 		t.Logf("node blobs: %v", node.Content)
 
@@ -752,7 +752,7 @@ func TestArchiverSaveDir(t *testing.T) {
 			tempdir, repo, cleanup := prepareTempdirRepoSrc(t, test.src)
 			defer cleanup()
 
-			arch := New(repo, fs.Track{fs.Local{}}, Options{})
+			arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
 			arch.runWorkers(ctx, &tmb)
 
 			chdir := tempdir
@@ -842,7 +842,7 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 		var tmb tomb.Tomb
 		ctx := tmb.Context(context.Background())
 
-		arch := New(repo, fs.Track{fs.Local{}}, Options{})
+		arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
 		arch.runWorkers(ctx, &tmb)
 
 		fi, err := fs.Lstat(tempdir)
@@ -1002,7 +1002,7 @@ func TestArchiverSaveTree(t *testing.T) {
 			tempdir, repo, cleanup := prepareTempdirRepoSrc(t, test.src)
 			defer cleanup()
 
-			testFS := fs.Track{fs.Local{}}
+			testFS := fs.Track{FS: fs.Local{}}
 
 			arch := New(repo, testFS, Options{})
 			arch.runWorkers(ctx, &tmb)
@@ -1291,7 +1291,7 @@ func TestArchiverSnapshot(t *testing.T) {
 			tempdir, repo, cleanup := prepareTempdirRepoSrc(t, test.src)
 			defer cleanup()
 
-			arch := New(repo, fs.Track{fs.Local{}}, Options{})
+			arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
 
 			chdir := tempdir
 			if test.chdir != "" {
@@ -1455,7 +1455,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 			tempdir, repo, cleanup := prepareTempdirRepoSrc(t, test.src)
 			defer cleanup()
 
-			arch := New(repo, fs.Track{fs.Local{}}, Options{})
+			arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
 			arch.Select = test.selFn
 
 			back := fs.TestChdir(t, tempdir)
@@ -1559,7 +1559,7 @@ func TestArchiverParent(t *testing.T) {
 			defer cleanup()
 
 			testFS := &MockFS{
-				FS:        fs.Track{fs.Local{}},
+				FS:        fs.Track{FS: fs.Local{}},
 				bytesRead: make(map[string]int),
 			}
 
@@ -1732,7 +1732,7 @@ func TestArchiverErrorReporting(t *testing.T) {
 				test.prepare(t)
 			}
 
-			arch := New(repo, fs.Track{fs.Local{}}, Options{})
+			arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
 			arch.Error = test.errFn
 
 			_, snapshotID, err := arch.Snapshot(ctx, []string{"."}, SnapshotOptions{Time: time.Now()})
@@ -1867,7 +1867,7 @@ func TestArchiverAbortEarlyOnError(t *testing.T) {
 			defer back()
 
 			testFS := &TrackFS{
-				FS:     fs.Track{fs.Local{}},
+				FS:     fs.Track{FS: fs.Local{}},
 				opened: make(map[string]uint),
 			}
 

@@ -232,7 +232,6 @@ func unrollTree(f fs.FS, t *Tree) error {
 				}
 
 				return errors.Errorf("tree unrollTree: collision on path, node %#v, path %q", node, f.Join(t.Path, entry))
-				continue
 			}
 			t.Nodes[entry] = Tree{Path: f.Join(t.Path, entry)}
 		}

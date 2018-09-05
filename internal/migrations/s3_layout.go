@@ -67,8 +67,6 @@ func (m *S3Layout) moveFiles(ctx context.Context, be *s3.Backend, l backend.Layo
 			return be.Rename(h, l)
 		})
 	})
-
-	return nil
 }
 
 // Apply runs the migration.
