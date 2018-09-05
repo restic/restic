@@ -98,7 +98,14 @@ On OpenBSD 6.3 and greater, you can install restic using ``pkg_add``:
 
     # pkg_add restic
 
-.. _official_binaries:
+FreeBSD
+=======
+
+On FreeBSD (11 and probably later versions), you can install restic using ``pkg install``:
+
+.. code-block:: console
+
+    # pkg install restic
 
 RHEL & CentOS
 =============
@@ -131,6 +138,9 @@ restic can be installed from the official repo of Solus via the ``eopkg`` packag
 .. code-block:: console
 
     $ eopkg install restic
+
+
+.. _official_binaries:
 
 Official Binaries
 *****************
