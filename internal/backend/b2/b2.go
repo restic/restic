@@ -320,8 +320,6 @@ func (be *b2Backend) List(ctx context.Context, t restic.FileType, fn func(restic
 		}
 		cur = c
 	}
-
-	return ctx.Err()
 }
 
 // Remove keys for a specified backend type.
