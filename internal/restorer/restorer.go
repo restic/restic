@@ -210,6 +210,43 @@ func (res *Restorer) Snapshot() *restic.Snapshot {
 	return res.sn
 }
 
+func (res *Restorer) verifyNode(node *restic.Node, target, location string, count *int) error {
+	if node.Type != "file" {
+		return nil
+	}
+
+	*count++
+
+	stat, err := os.Stat(target)
+	if err != nil {
+		return err
+	}
+	if int64(node.Size) != stat.Size() {
+		return errors.Errorf("Invalid file size: expected %d got %d", node.Size, stat.Size())
+	}
+
+	offset := int64(0)
+	for _, blobID := range node.Content {
+		rd, err := os.Open(target)
+		if err != nil {
+			return err
+		}
+		blobs, _ := res.repo.Index().Lookup(blobID, restic.DataBlob)
+		length := blobs[0].Length - uint(crypto.Extension)
+		buf := make([]byte, length) // TODO do I want to reuse the buffer somehow?
+		_, err = rd.ReadAt(buf, offset)
+		if err != nil {
+			return err
+		}
+		if !blobID.Equal(restic.Hash(buf)) {
+			return errors.Errorf("Unexpected contents starting at offset %d", offset)
+		}
+		offset += int64(length)
+	}
+
+	return nil
+}
+
 // VerifyFiles reads all snapshot files and verifies their contents
 func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
 	// TODO multithreaded?
@@ -218,39 +255,7 @@ func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
 	err := res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
 		enterDir: func(node *restic.Node, target, location string) error { return nil },
 		visitNode: func(node *restic.Node, target, location string) error {
-			if node.Type != "file" {
-				return nil
-			}
-
-			count++
-			stat, err := os.Stat(target)
-			if err != nil {
-				return err
-			}
-			if int64(node.Size) != stat.Size() {
-				return errors.Errorf("Invalid file size: expected %d got %d", node.Size, stat.Size())
-			}
-
-			offset := int64(0)
-			for _, blobID := range node.Content {
-				rd, err := os.Open(target)
-				if err != nil {
-					return err
-				}
-				blobs, _ := res.repo.Index().Lookup(blobID, restic.DataBlob)
-				length := blobs[0].Length - uint(crypto.Extension)
-				buf := make([]byte, length) // TODO do I want to reuse the buffer somehow?
-				_, err = rd.ReadAt(buf, offset)
-				if err != nil {
-					return err
-				}
-				if !blobID.Equal(restic.Hash(buf)) {
-					return errors.Errorf("Unexpected contents starting at offset %d", offset)
-				}
-				offset += int64(length)
-			}
-
-			return nil
+			return res.verifyNode(node, target, location, &count)
 		},
 		leaveDir: func(node *restic.Node, target, location string) error { return nil },
 	})
