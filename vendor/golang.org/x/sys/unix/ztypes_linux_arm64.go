@@ -446,6 +446,7 @@ const (
 	IFLA_ADDRESS         = 0x1
 	IFLA_BROADCAST       = 0x2
 	IFLA_IFNAME          = 0x3
+	IFLA_INFO_KIND       = 0x1
 	IFLA_MTU             = 0x4
 	IFLA_LINK            = 0x5
 	IFLA_QDISC           = 0x6
@@ -514,6 +515,13 @@ const (
 	RTA_FLOW             = 0xb
 	RTA_CACHEINFO        = 0xc
 	RTA_TABLE            = 0xf
+	RTA_MARK             = 0x10
+	RTA_MFC_STATS        = 0x11
+	RTA_VIA              = 0x12
+	RTA_NEWDST           = 0x13
+	RTA_PREF             = 0x14
+	RTA_ENCAP_TYPE       = 0x15
+	RTA_ENCAP            = 0x16
 	RTN_UNSPEC           = 0x0
 	RTN_UNICAST          = 0x1
 	RTN_LOCAL            = 0x2
@@ -1874,4 +1882,11 @@ const (
 	BLKPG_ADD_PARTITION    = 0x1
 	BLKPG_DEL_PARTITION    = 0x2
 	BLKPG_RESIZE_PARTITION = 0x3
+)
+
+const (
+	NETNSA_NONE = 0x0
+	NETNSA_NSID = 0x1
+	NETNSA_PID  = 0x2
+	NETNSA_FD   = 0x3
 )
