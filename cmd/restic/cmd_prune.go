@@ -13,6 +13,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const DefaultRepackThreshold int = 20
+
 var cmdPrune = &cobra.Command{
 	Use:   "prune [flags]",
 	Short: "Remove unneeded data from the repository",
@@ -37,7 +39,7 @@ func init() {
 	cmdRoot.AddCommand(cmdPrune)
 
 	f := cmdPrune.Flags()
-	f.IntVarP(&pruneOptions.RepackThreshold, "repack-threshold", "", 0, "only rebuild packs with at least `n`% unused space (default: 0)")
+	f.IntVarP(&pruneOptions.RepackThreshold, "repack-threshold", "", DefaultRepackThreshold, "only rebuild packs with at least `n`% unused space")
 
 	f.SortFlags = false
 }
