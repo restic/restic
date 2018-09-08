@@ -19,6 +19,7 @@ require (
 	github.com/jtolds/gls v4.2.1+incompatible // indirect
 	github.com/juju/ratelimit v1.0.1
 	github.com/kr/fs v0.1.0 // indirect
+	github.com/kr/pretty v0.1.0 // indirect
 	github.com/kurin/blazer v0.5.1
 	github.com/marstr/guid v1.1.0 // indirect
 	github.com/mattn/go-isatty v0.0.4
@@ -33,7 +34,6 @@ require (
 	github.com/restic/chunker v0.2.0
 	github.com/russross/blackfriday v1.5.1 // indirect
 	github.com/satori/go.uuid v1.2.0 // indirect
-	github.com/shurcooL/sanitized_anchor_name v0.0.0-20170918181015-86672fcb3f95 // indirect
 	github.com/smartystreets/assertions v0.0.0-20180820201707-7c9eb446e3cf // indirect
 	github.com/smartystreets/goconvey v0.0.0-20180222194500-ef6db91d284a // indirect
 	github.com/spf13/cobra v0.0.3
