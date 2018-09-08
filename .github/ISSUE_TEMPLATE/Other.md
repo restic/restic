@@ -1,6 +1,6 @@
 ---
 name: Other issue
-about: Suggest a new feature or enhancement for restic. If you have a question, please use the forum at https://forum.restic.net!
+about: Open other issue. If you have a question, please use the forum at https://forum.restic.net instead!
 ---
 
 <!--
