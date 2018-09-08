@@ -22,12 +22,24 @@ referenced and therefore not needed any more.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runPrune(globalOptions)
+		return runPrune(pruneOptions, globalOptions)
 	},
 }
 
+// PruneOptions collects all options for the prune command.
+type PruneOptions struct {
+	RepackThreshold   int
+}
+
+var pruneOptions PruneOptions
+
 func init() {
 	cmdRoot.AddCommand(cmdPrune)
+
+	f := cmdPrune.Flags()
+	f.IntVarP(&pruneOptions.RepackThreshold, "repack-threshold", "", 0, "only rebuild packs with at least `n`% unused space (default: 0)")
+
+	f.SortFlags = false
 }
 
 func shortenStatus(maxLength int, s string) string {
@@ -70,7 +82,7 @@ func newProgressMax(show bool, max uint64, description string) *restic.Progress 
 	return p
 }
 
-func runPrune(gopts GlobalOptions) error {
+func runPrune(opts PruneOptions, gopts GlobalOptions) error {
 	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err
@@ -82,7 +94,7 @@ func runPrune(gopts GlobalOptions) error {
 		return err
 	}
 
-	return pruneRepository(gopts, repo)
+	return pruneRepository(opts, gopts, repo)
 }
 
 func mixedBlobs(list []restic.Blob) bool {
@@ -104,7 +116,7 @@ func mixedBlobs(list []restic.Blob) bool {
 	return false
 }
 
-func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
+func pruneRepository(opts PruneOptions, gopts GlobalOptions, repo restic.Repository) error {
 	ctx := gopts.ctx
 
 	err := repo.LoadIndex(ctx)
