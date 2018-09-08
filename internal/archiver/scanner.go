@@ -52,20 +52,17 @@ func (s *Scanner) Scan(ctx context.Context, targets []string) error {
 		}
 
 		if ctx.Err() != nil {
-			return ctx.Err()
+			return nil
 		}
 	}
 
-	if ctx.Err() != nil {
-		return ctx.Err()
-	}
 	s.Result("", stats)
 	return nil
 }
 
 func (s *Scanner) scan(ctx context.Context, stats ScanStats, target string) (ScanStats, error) {
 	if ctx.Err() != nil {
-		return stats, ctx.Err()
+		return stats, nil
 	}
 
 	// exclude files by path before running stat to reduce number of lstat calls
@@ -89,10 +86,6 @@ func (s *Scanner) scan(ctx context.Context, stats ScanStats, target string) (Sca
 		stats.Files++
 		stats.Bytes += uint64(fi.Size())
 	case fi.Mode().IsDir():
-		if ctx.Err() != nil {
-			return stats, ctx.Err()
-		}
-
 		names, err := readdirnames(s.FS, target)
 		if err != nil {
 			return stats, s.Error(target, fi, err)
@@ -109,9 +102,6 @@ func (s *Scanner) scan(ctx context.Context, stats ScanStats, target string) (Sca
 		stats.Others++
 	}
 
-	if ctx.Err() != nil {
-		return stats, ctx.Err()
-	}
 	s.Result(target, stats)
 	return stats, nil
 }
