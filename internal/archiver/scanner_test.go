@@ -289,7 +289,7 @@ func TestScannerCancel(t *testing.T) {
 		"other": TestFile{Content: "other"},
 	}
 
-	result := ScanStats{Files: 2, Bytes: 6}
+	result := ScanStats{Files: 2, Dirs: 1, Bytes: 6}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -319,12 +319,8 @@ func TestScannerCancel(t *testing.T) {
 	}
 
 	err = sc.Scan(ctx, []string{"."})
-	if err == nil {
-		t.Errorf("did not find expected error")
-	}
-
-	if err != context.Canceled {
-		t.Errorf("unexpected error found, want %v, got %v", context.Canceled, err)
+	if err != nil {
+		t.Errorf("unexpected error %v found", err)
 	}
 
 	if lastStats != result {
