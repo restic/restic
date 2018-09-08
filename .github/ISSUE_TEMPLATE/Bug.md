@@ -1,6 +1,7 @@
 ---
 name: Bug report
 about: Report a problem with restic to help us resolve it and improve
+
 ---
 
 <!--
