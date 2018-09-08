@@ -1,0 +1,12 @@
+Bugfix: Do not return an error when the scanner is faster than backup
+
+When restic makes a backup, there's a background task called "scanner" which
+collects information on how many files and directories are to be saved, in
+order to display progress information to the user. When the backup finishes
+faster than the scanner, it is aborted because the result is not needed any
+more. This logic contained a bug, where quitting the scanner process was
+treated as an error, and caused restic to print an unhelpful error message
+("context canceled").
+
+https://github.com/restic/restic/issues/1978
+https://github.com/restic/restic/pull/1991
