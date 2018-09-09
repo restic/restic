@@ -366,6 +366,11 @@ func (env *TravisEnvironment) RunTests() error {
 		if err := runGoModVendor(); err != nil {
 			return err
 		}
+
+		msg("run go mod tidy\n")
+		if err := runGoModTidy(); err != nil {
+			return err
+		}
 	} else {
 		msg("Skipping gofmt and module vendor check for %v\n", v)
 	}
@@ -545,6 +550,38 @@ func runGoModVendor() error {
 
 	// check that "git diff" does not return any output
 	cmd = exec.Command("git", "diff", "vendor")
+	cmd.Stderr = os.Stderr
+
+	buf, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("error running 'git diff vendor': %v\noutput: %s", err, buf)
+	}
+
+	if len(buf) > 0 {
+		return fmt.Errorf("vendor/ directory was modified:\n%s", buf)
+	}
+
+	return nil
+}
+
+// run "go mod tidy" so that go.sum and go.mod are updated to reflect all
+// dependencies for all OS/Arch combinations, see
+// https://github.com/golang/go/wiki/Modules#why-does-go-mod-tidy-put-so-many-indirect-dependencies-in-my-gomod
+func runGoModTidy() error {
+	cmd := exec.Command("go", "mod", "tidy")
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	cmd.Env = updateEnv(os.Environ(), map[string]string{
+		"GO111MODULE": "on",
+	})
+
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("error running 'go mod vendor': %v", err)
+	}
+
+	// check that "git diff" does not return any output
+	cmd = exec.Command("git", "diff", "go.sum", "go.mod")
 	cmd.Stderr = os.Stderr
 
 	buf, err := cmd.Output()
