@@ -1,0 +1,16 @@
+Enhancement: Add adjustable utilization threshold for re-writing packs during prune
+
+We've added the `--repack-threshold` flag to the `prune` command which
+allows the user to specify the maximum percentage of unused space to
+allow in a pack before prune will rewrite that pack. This gives the user
+some control over the read/write activity occurs on the backend, which
+is important for those backends with metered transactions.
+
+Setting the value of this new flag to zero causes prune to re-write
+packs with any amount of unused data (previous behavior). Setting the
+value to 100 causes prune to only re-write packs that are completely
+unused. The flag defaults to 20, which means that packs with less than
+20% unused data are not re-written while packs with 20% or more
+unused date are re-written.
+
+https://github.com/restic/restic/issues/1985
