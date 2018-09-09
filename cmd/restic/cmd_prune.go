@@ -209,7 +209,7 @@ func pruneRepository(opts PruneOptions, gopts GlobalOptions, repo restic.Reposit
 	bar.Done()
 	stats.usedBlobs = len(usedBlobs)
 
-	Verbosef("found %d of %d data blobs still in use, removing %d blobs\n",
+	Verbosef("found %d of %d data blobs still in use, %d blobs unused\n",
 		stats.usedBlobs, stats.totalBlobs, stats.totalBlobs-stats.usedBlobs)
 
 	if stats.usedBlobs > stats.totalBlobs {
@@ -284,12 +284,14 @@ func pruneRepository(opts PruneOptions, gopts GlobalOptions, repo restic.Reposit
 			return err
 		}
 		bar.Done()
+
+		removePacks.Merge(obsoletePacks)
 	}
 
-	removePacks.Merge(obsoletePacks)
-
-	if err = rebuildIndex(ctx, repo, removePacks); err != nil {
-		return err
+	if len(rewritePacks) != 0 || len(removePacks) != 0 {
+		if err = rebuildIndex(ctx, repo, removePacks); err != nil {
+			return err
+		}
 	}
 
 	if len(removePacks) != 0 {
