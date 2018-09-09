@@ -127,15 +127,21 @@ func pruneRepository(opts PruneOptions, gopts GlobalOptions, repo restic.Reposit
 	}
 
 	var stats struct {
-		blobs     int
-		packs     int
-		snapshots int
-		bytes     int64
+		totalFiles		int
+		totalPacks		int
+		totalBlobs		int
+		totalBytes		uint64
+		snapshots		int
+		usedBlobs		int
+		duplicateBlobs	int
+		duplicateBytes	uint64
+		remainingBytes	uint64
+		removeBytes		uint64
 	}
 
 	Verbosef("counting files in repo\n")
 	err = repo.List(ctx, restic.DataFile, func(restic.ID, int64) error {
-		stats.packs++
+		stats.totalFiles++
 		return nil
 	})
 	if err != nil {
@@ -143,8 +149,7 @@ func pruneRepository(opts PruneOptions, gopts GlobalOptions, repo restic.Reposit
 	}
 
 	Verbosef("building new index for repo\n")
-
-	bar := newProgressMax(!gopts.Quiet, uint64(stats.packs), "packs")
+	bar := newProgressMax(!gopts.Quiet, uint64(stats.totalFiles), "packs")
 	idx, invalidFiles, err := index.New(ctx, repo, restic.NewIDSet(), bar)
 	if err != nil {
 		return err
@@ -154,50 +159,38 @@ func pruneRepository(opts PruneOptions, gopts GlobalOptions, repo restic.Reposit
 		Warnf("incomplete pack file (will be removed): %v\n", id)
 	}
 
-	blobs := 0
+	blobCounts := make(map[restic.BlobHandle]int)
 	for _, pack := range idx.Packs {
-		stats.bytes += pack.Size
-		blobs += len(pack.Entries)
-	}
-	Verbosef("repository contains %v packs (%v blobs) with %v\n",
-		len(idx.Packs), blobs, formatBytes(uint64(stats.bytes)))
-
-	blobCount := make(map[restic.BlobHandle]int)
-	var duplicateBlobs uint64
-	var duplicateBytes uint64
-
-	// find duplicate blobs
-	for _, p := range idx.Packs {
-		for _, entry := range p.Entries {
-			stats.blobs++
-			h := restic.BlobHandle{ID: entry.ID, Type: entry.Type}
-			blobCount[h]++
-
-			if blobCount[h] > 1 {
-				duplicateBlobs++
-				duplicateBytes += uint64(entry.Length)
+		stats.totalPacks += 1
+		stats.totalBytes += uint64(pack.Size)
+		for _, blob := range pack.Entries {
+			stats.totalBlobs += 1
+			h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
+			blobCounts[h]++
+			if blobCounts[h] > 1 {
+				stats.duplicateBlobs++
+				stats.duplicateBytes += uint64(blob.Length)
+				stats.removeBytes += uint64(blob.Length)
 			}
 		}
 	}
+	Verbosef("repository contains %v packs (%v blobs) with %v\n",
+		stats.totalPacks, stats.totalBlobs, formatBytes(stats.totalBytes))
+	Verbosef("found %d duplicate blobs, %v duplicate\n",
+		stats.duplicateBlobs, formatBytes(stats.duplicateBytes))
 
-	Verbosef("processed %d blobs: %d duplicate blobs, %v duplicate\n",
-		stats.blobs, duplicateBlobs, formatBytes(uint64(duplicateBytes)))
 	Verbosef("load all snapshots\n")
-
-	// find referenced blobs
 	snapshots, err := restic.LoadAllSnapshots(ctx, repo)
 	if err != nil {
 		return err
 	}
-
 	stats.snapshots = len(snapshots)
 
 	Verbosef("find data that is still in use for %d snapshots\n", stats.snapshots)
 
 	usedBlobs := restic.NewBlobSet()
 	seenBlobs := restic.NewBlobSet()
-
-	bar = newProgressMax(!gopts.Quiet, uint64(len(snapshots)), "snapshots")
+	bar = newProgressMax(!gopts.Quiet, uint64(stats.snapshots), "snapshots")
 	bar.Start()
 	for _, sn := range snapshots {
 		debug.Log("process snapshot %v", sn.ID())
@@ -207,7 +200,6 @@ func pruneRepository(opts PruneOptions, gopts GlobalOptions, repo restic.Reposit
 			if repo.Backend().IsNotExist(err) {
 				return errors.Fatal("unable to load a tree from the repo: " + err.Error())
 			}
-
 			return err
 		}
 
@@ -215,75 +207,73 @@ func pruneRepository(opts PruneOptions, gopts GlobalOptions, repo restic.Reposit
 		bar.Report(restic.Stat{Blobs: 1})
 	}
 	bar.Done()
+	stats.usedBlobs = len(usedBlobs)
 
-	if len(usedBlobs) > stats.blobs {
+	Verbosef("found %d of %d data blobs still in use, removing %d blobs\n",
+		stats.usedBlobs, stats.totalBlobs, stats.totalBlobs-stats.usedBlobs)
+
+	if stats.usedBlobs > stats.totalBlobs {
 		return errors.Fatalf("number of used blobs is larger than number of available blobs!\n" +
 			"Please report this error (along with the output of the 'prune' run) at\n" +
 			"https://github.com/restic/restic/issues/new")
 	}
 
-	Verbosef("found %d of %d data blobs still in use, removing %d blobs\n",
-		len(usedBlobs), stats.blobs, stats.blobs-len(usedBlobs))
-
-	// find packs that need a rewrite
-	rewritePacks := restic.NewIDSet()
-	for _, pack := range idx.Packs {
-		if mixedBlobs(pack.Entries) {
-			rewritePacks.Insert(pack.ID)
-			continue
-		}
-
-		for _, blob := range pack.Entries {
-			h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
-			if !usedBlobs.Has(h) {
-				rewritePacks.Insert(pack.ID)
-				continue
-			}
-
-			if blobCount[h] > 1 {
-				rewritePacks.Insert(pack.ID)
-			}
-		}
-	}
-
-	removeBytes := duplicateBytes
-
-	// find packs that are unneeded
+	// get packs to be removed
 	removePacks := restic.NewIDSet()
-
-	Verbosef("will remove %d invalid files\n", len(invalidFiles))
 	for _, id := range invalidFiles {
 		removePacks.Insert(id)
 	}
 
-	for packID, p := range idx.Packs {
+	// find packs that need a rewrite
+	rewritePacks := restic.NewIDSet()
+	for _, pack := range idx.Packs {
+		packNeedsRewrite := false
+		packNeedsRemoval := false
 
-		hasActiveBlob := false
-		for _, blob := range p.Entries {
+		if mixedBlobs(pack.Entries) {
+			Verbosef("found deprecated mixed data/tree pack %v, marking for rewrite\n", pack.ID)
+			packNeedsRewrite = true
+		}
+
+		packTotalBytes := uint64(0)
+		packUnusedBytes := uint64(0)
+		for _, blob := range pack.Entries {
+			packTotalBytes += uint64(blob.Length)
 			h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
-			if usedBlobs.Has(h) {
-				hasActiveBlob = true
-				continue
+			if !usedBlobs.Has(h) {
+				packUnusedBytes += uint64(blob.Length)
 			}
 
-			removeBytes += uint64(blob.Length)
+			// if pack has a duplicated blob, force rewrite
+			if blobCounts[h] > 1 {
+				packNeedsRewrite = true
+			}
 		}
 
-		if hasActiveBlob {
-			continue
+		if packUnusedBytes >= packTotalBytes {
+			packNeedsRemoval = true
+		} else if packUnusedBytes > 0 {
+			unusedPercent := int((packUnusedBytes * 100) / packTotalBytes)
+			if unusedPercent >= opts.RepackThreshold {
+				packNeedsRewrite = true
+			}
 		}
 
-		removePacks.Insert(packID)
-
-		if !rewritePacks.Has(packID) {
-			return errors.Fatalf("pack %v is unneeded, but not contained in rewritePacks", packID.Str())
+		if packNeedsRemoval {
+			removePacks.Insert(pack.ID)
+			stats.removeBytes += packTotalBytes
+		} else if packNeedsRewrite {
+			rewritePacks.Insert(pack.ID)
+			stats.removeBytes += packUnusedBytes
+		} else {
+			stats.remainingBytes += packUnusedBytes
 		}
-
-		rewritePacks.Delete(packID)
 	}
 
-	Verbosef("will delete %d packs and rewrite %d packs, this frees %s\n",
-		len(removePacks), len(rewritePacks), formatBytes(uint64(removeBytes)))
+	Verbosef("will delete %d packs and rewrite %d packs\n",
+		len(removePacks), len(rewritePacks))
+	Verbosef("frees %s with %s unused remaining\n",
+		formatBytes(stats.removeBytes), formatBytes(stats.remainingBytes))
 
 	var obsoletePacks restic.IDSet
 	if len(rewritePacks) != 0 {
