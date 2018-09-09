@@ -186,7 +186,16 @@ func (node Node) restoreMetadata(path string) error {
 	var firsterr error
 
 	if err := lchown(path, int(node.UID), int(node.GID)); err != nil {
-		firsterr = errors.Wrap(err, "Lchown")
+		// Like "cp -a" and "rsync -a" do, we only report lchown permission errors
+		// if we run as root.
+		// On Windows, Geteuid always returns -1, and we always report lchown
+		// permission errors.
+		if os.Geteuid() > 0 && os.IsPermission(err) {
+			debug.Log("not running as root, ignoring lchown permission error for %v: %v",
+				path, err)
+		} else {
+			firsterr = errors.Wrap(err, "Lchown")
+		}
 	}
 
 	if node.Type != "symlink" {

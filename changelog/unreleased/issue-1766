@@ -1,0 +1,7 @@
+Enhancement: restore: suppress lchown errors when not running as root
+
+Like "cp" and "rsync" do, restic now only reports errors for changing
+the ownership of files during restore if it is run ￼as root, on non-Windows
+operating systems. On Windows, the error is reported as usual.
+
+https://github.com/restic/restic/issues/1766
