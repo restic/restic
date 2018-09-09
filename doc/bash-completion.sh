@@ -1048,6 +1048,8 @@ _restic_prune()
     flags_with_completion=()
     flags_completion=()
 
+    flags+=("--repack-threshold=")
+    local_nonpersistent_flags+=("--repack-threshold=")
     flags+=("--help")
     flags+=("-h")
     local_nonpersistent_flags+=("--help")
