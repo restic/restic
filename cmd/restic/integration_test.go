@@ -220,7 +220,7 @@ func testRunForget(t testing.TB, gopts GlobalOptions, args ...string) {
 }
 
 func testRunPrune(t testing.TB, gopts GlobalOptions) {
-	opts := PruneOptions{ RepackThreshold: DefaultRepackThreshold }
+	opts := PruneOptions{RepackThreshold: DefaultRepackThreshold}
 	rtest.OK(t, runPrune(opts, gopts))
 }
 

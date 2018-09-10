@@ -238,7 +238,7 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 	if removeSnapshots > 0 && opts.Prune {
 		Verbosef("%d snapshots have been removed, running prune\n", removeSnapshots)
 		if !opts.DryRun {
-			pruneOptions := PruneOptions { RepackThreshold: DefaultRepackThreshold }
+			pruneOptions := PruneOptions{RepackThreshold: DefaultRepackThreshold}
 			return pruneRepository(pruneOptions, gopts, repo)
 		}
 	}

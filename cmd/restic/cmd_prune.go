@@ -31,7 +31,7 @@ referenced and therefore not needed any more.
 
 // PruneOptions collects all options for the prune command.
 type PruneOptions struct {
-	RepackThreshold   int
+	RepackThreshold int
 }
 
 var pruneOptions PruneOptions
@@ -128,16 +128,16 @@ func pruneRepository(opts PruneOptions, gopts GlobalOptions, repo restic.Reposit
 	}
 
 	var stats struct {
-		totalFiles		int
-		totalPacks		int
-		totalBlobs		int
-		totalBytes		uint64
-		snapshots		int
-		usedBlobs		int
-		duplicateBlobs	int
-		duplicateBytes	uint64
-		remainingBytes	uint64
-		removeBytes		uint64
+		totalFiles     int
+		totalPacks     int
+		totalBlobs     int
+		totalBytes     uint64
+		snapshots      int
+		usedBlobs      int
+		duplicateBlobs int
+		duplicateBytes uint64
+		remainingBytes uint64
+		removeBytes    uint64
 	}
 
 	Verbosef("counting files in repo\n")
