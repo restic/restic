@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// DefaultRepackThreshold - Default value for --repack-threshold when it is not specified
 const DefaultRepackThreshold int = 20
 
 var cmdPrune = &cobra.Command{
@@ -161,10 +162,10 @@ func pruneRepository(opts PruneOptions, gopts GlobalOptions, repo restic.Reposit
 
 	blobCounts := make(map[restic.BlobHandle]int)
 	for _, pack := range idx.Packs {
-		stats.totalPacks += 1
+		stats.totalPacks++
 		stats.totalBytes += uint64(pack.Size)
 		for _, blob := range pack.Entries {
-			stats.totalBlobs += 1
+			stats.totalBlobs++
 			h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
 			blobCounts[h]++
 			if blobCounts[h] > 1 {
