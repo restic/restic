@@ -1,4 +1,4 @@
-Enhancement: Add adjustable utilization threshold for re-writing packs during prune
+Enhancement: Add adjustment for re-writing packs during prune
 
 We've added the `--repack-threshold` flag to the `prune` command which
 allows the user to specify the maximum percentage of unused space to
