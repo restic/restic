@@ -66,4 +66,5 @@ func (w *filesWriter) close(file *fileInfo) {
 	w.lock.Lock()
 	defer w.lock.Unlock()
 	w.writers.Remove(file)
+	delete(w.inprogress, file)
 }
