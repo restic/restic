@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/ui"
+
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -362,7 +364,7 @@ func TestRestorer(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			err = res.RestoreTo(ctx, tempdir)
+			err = res.RestoreTo(ctx, ui.NewNilProgressUI(), tempdir, false)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -461,7 +463,7 @@ func TestRestorerRelative(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			err = res.RestoreTo(ctx, "restore")
+			err = res.RestoreTo(ctx, ui.NewNilProgressUI(), "restore", false)
 			if err != nil {
 				t.Fatal(err)
 			}

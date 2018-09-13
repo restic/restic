@@ -166,7 +166,7 @@ func restoreAndVerify(t *testing.T, tempdir string, content []TestFile) {
 	r := newFileRestorer(tempdir, repo.loader, repo.key, repo.idx)
 	r.files = repo.files
 
-	r.restoreFiles(context.TODO(), func(path string, err error) {
+	r.restoreFiles(context.TODO(), func(path string, size uint) {}, func(path string) {}, func(path string, err error) {
 		rtest.OK(t, errors.Wrapf(err, "unexpected error"))
 	})
 
