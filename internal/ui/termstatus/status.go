@@ -306,7 +306,7 @@ func truncate(s string, maxlen int) string {
 
 // SetStatus updates the status lines.
 func (t *Terminal) SetStatus(lines []string) {
-	if len(lines) == 0 {
+	if len(lines) == 0 || !t.canUpdateStatus {
 		return
 	}
 
@@ -331,4 +331,9 @@ func (t *Terminal) SetStatus(lines []string) {
 	case t.status <- status{lines: lines}:
 	case <-t.closed:
 	}
+}
+
+// CanDisplayStatus returns true if terminal supports fancy status display
+func (t *Terminal) CanDisplayStatus() bool {
+	return t.canUpdateStatus
 }

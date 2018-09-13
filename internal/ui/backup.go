@@ -147,14 +147,14 @@ func (b *Backup) update(total, processed counter, errors uint, currentFiles map[
 		// no total count available yet
 		status = fmt.Sprintf("[%s] %v files, %s, %d errors",
 			formatDuration(time.Since(b.start)),
-			processed.Files, formatBytes(processed.Bytes), errors,
+			processed.Files, FormatBytes(processed.Bytes), errors,
 		)
 	} else {
 		var eta, percent string
 
 		if secs > 0 && processed.Bytes < total.Bytes {
-			eta = fmt.Sprintf(" ETA %s", formatSeconds(secs))
-			percent = formatPercent(processed.Bytes, total.Bytes)
+			eta = fmt.Sprintf(" ETA %s", FormatSeconds(secs))
+			percent = FormatPercent(processed.Bytes, total.Bytes)
 			percent += "  "
 		}
 
@@ -163,9 +163,9 @@ func (b *Backup) update(total, processed counter, errors uint, currentFiles map[
 			formatDuration(time.Since(b.start)),
 			percent,
 			processed.Files,
-			formatBytes(processed.Bytes),
+			FormatBytes(processed.Bytes),
 			total.Files,
-			formatBytes(total.Bytes),
+			FormatBytes(total.Bytes),
 			errors,
 			eta,
 		)
@@ -207,53 +207,6 @@ func (b *Backup) CompleteBlob(filename string, bytes uint64) {
 	b.processedCh <- counter{Bytes: bytes}
 }
 
-func formatPercent(numerator uint64, denominator uint64) string {
-	if denominator == 0 {
-		return ""
-	}
-
-	percent := 100.0 * float64(numerator) / float64(denominator)
-
-	if percent > 100 {
-		percent = 100
-	}
-
-	return fmt.Sprintf("%3.2f%%", percent)
-}
-
-func formatSeconds(sec uint64) string {
-	hours := sec / 3600
-	sec -= hours * 3600
-	min := sec / 60
-	sec -= min * 60
-	if hours > 0 {
-		return fmt.Sprintf("%d:%02d:%02d", hours, min, sec)
-	}
-
-	return fmt.Sprintf("%d:%02d", min, sec)
-}
-
-func formatDuration(d time.Duration) string {
-	sec := uint64(d / time.Second)
-	return formatSeconds(sec)
-}
-
-func formatBytes(c uint64) string {
-	b := float64(c)
-	switch {
-	case c > 1<<40:
-		return fmt.Sprintf("%.3f TiB", b/(1<<40))
-	case c > 1<<30:
-		return fmt.Sprintf("%.3f GiB", b/(1<<30))
-	case c > 1<<20:
-		return fmt.Sprintf("%.3f MiB", b/(1<<20))
-	case c > 1<<10:
-		return fmt.Sprintf("%.3f KiB", b/(1<<10))
-	default:
-		return fmt.Sprintf("%d B", c)
-	}
-}
-
 // CompleteItemFn is the status callback function for the archiver when a
 // file/dir has been saved successfully.
 func (b *Backup) CompleteItemFn(item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration) {
@@ -283,7 +236,7 @@ func (b *Backup) CompleteItemFn(item string, previous, current *restic.Node, s a
 
 	if current.Type == "dir" {
 		if previous == nil {
-			b.VV("new       %v, saved in %.3fs (%v added, %v metadata)", item, d.Seconds(), formatBytes(s.DataSize), formatBytes(s.TreeSize))
+			b.VV("new       %v, saved in %.3fs (%v added, %v metadata)", item, d.Seconds(), FormatBytes(s.DataSize), FormatBytes(s.TreeSize))
 			b.summary.Lock()
 			b.summary.Dirs.New++
 			b.summary.Unlock()
@@ -296,7 +249,7 @@ func (b *Backup) CompleteItemFn(item string, previous, current *restic.Node, s a
 			b.summary.Dirs.Unchanged++
 			b.summary.Unlock()
 		} else {
-			b.VV("modified  %v, saved in %.3fs (%v added, %v metadata)", item, d.Seconds(), formatBytes(s.DataSize), formatBytes(s.TreeSize))
+			b.VV("modified  %v, saved in %.3fs (%v added, %v metadata)", item, d.Seconds(), FormatBytes(s.DataSize), FormatBytes(s.TreeSize))
 			b.summary.Lock()
 			b.summary.Dirs.Changed++
 			b.summary.Unlock()
@@ -310,7 +263,7 @@ func (b *Backup) CompleteItemFn(item string, previous, current *restic.Node, s a
 		}
 
 		if previous == nil {
-			b.VV("new       %v, saved in %.3fs (%v added)", item, d.Seconds(), formatBytes(s.DataSize))
+			b.VV("new       %v, saved in %.3fs (%v added)", item, d.Seconds(), FormatBytes(s.DataSize))
 			b.summary.Lock()
 			b.summary.Files.New++
 			b.summary.Unlock()
@@ -323,7 +276,7 @@ func (b *Backup) CompleteItemFn(item string, previous, current *restic.Node, s a
 			b.summary.Files.Unchanged++
 			b.summary.Unlock()
 		} else {
-			b.VV("modified  %v, saved in %.3fs (%v added)", item, d.Seconds(), formatBytes(s.DataSize))
+			b.VV("modified  %v, saved in %.3fs (%v added)", item, d.Seconds(), FormatBytes(s.DataSize))
 			b.summary.Lock()
 			b.summary.Files.Changed++
 			b.summary.Unlock()
@@ -341,7 +294,7 @@ func (b *Backup) ReportTotal(item string, s archiver.ScanStats) {
 	if item == "" {
 		b.V("scan finished in %.3fs: %v files, %s",
 			time.Since(b.start).Seconds(),
-			s.Files, formatBytes(s.Bytes),
+			s.Files, FormatBytes(s.Bytes),
 		)
 		close(b.totalCh)
 		return
@@ -357,11 +310,11 @@ func (b *Backup) Finish() {
 	b.P("Dirs:        %5d new, %5d changed, %5d unmodified\n", b.summary.Dirs.New, b.summary.Dirs.Changed, b.summary.Dirs.Unchanged)
 	b.V("Data Blobs:  %5d new\n", b.summary.ItemStats.DataBlobs)
 	b.V("Tree Blobs:  %5d new\n", b.summary.ItemStats.TreeBlobs)
-	b.P("Added to the repo: %-5s\n", formatBytes(b.summary.ItemStats.DataSize+b.summary.ItemStats.TreeSize))
+	b.P("Added to the repo: %-5s\n", FormatBytes(b.summary.ItemStats.DataSize+b.summary.ItemStats.TreeSize))
 	b.P("\n")
 	b.P("processed %v files, %v in %s",
 		b.summary.Files.New+b.summary.Files.Changed+b.summary.Files.Unchanged,
-		formatBytes(b.totalBytes),
+		FormatBytes(b.totalBytes),
 		formatDuration(time.Since(b.start)),
 	)
 }

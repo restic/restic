@@ -6,6 +6,9 @@ import (
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/restorer"
+	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/termstatus"
+	tomb "gopkg.in/tomb.v2"
 
 	"github.com/spf13/cobra"
 )
@@ -22,7 +25,20 @@ repository.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runRestore(restoreOptions, globalOptions, args)
+		var t tomb.Tomb
+		term := termstatus.New(globalOptions.stdout, globalOptions.stderr, globalOptions.Quiet)
+		t.Go(func() error { term.Run(t.Context(globalOptions.ctx)); return nil })
+
+		prevStdout, prevStderr := globalOptions.stdout, globalOptions.stderr
+		defer func() {
+			globalOptions.stdout, globalOptions.stderr = prevStdout, prevStderr
+		}()
+		pm := ui.NewTermstatusProgressUI(term, globalOptions.verbosity)
+		defer pm.Finish()
+		globalOptions.stdout, globalOptions.stderr = pm.Stdout(), pm.Stderr()
+		t.Go(func() error { return pm.Run(t.Context(globalOptions.ctx)) })
+
+		return runRestore(restoreOptions, globalOptions, pm, args)
 	},
 }
 
@@ -53,7 +69,7 @@ func init() {
 	flags.BoolVar(&restoreOptions.Verify, "verify", false, "verify restored files content")
 }
 
-func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
+func runRestore(opts RestoreOptions, gopts GlobalOptions, pm ui.ProgressUI, args []string) error {
 	ctx := gopts.ctx
 
 	switch {
@@ -155,15 +171,10 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 
 	Verbosef("restoring %s to %s\n", res.Snapshot(), opts.Target)
 
-	err = res.RestoreTo(ctx, opts.Target)
-	if err == nil && opts.Verify {
-		Verbosef("verifying files in %s\n", opts.Target)
-		var count int
-		count, err = res.VerifyFiles(ctx, opts.Target)
-		Verbosef("finished verifying %d files in %s\n", count, opts.Target)
-	}
+	err = res.RestoreTo(ctx, pm, opts.Target, opts.Verify)
 	if totalErrors > 0 {
-		Printf("There were %d errors\n", totalErrors)
+		Verbosef("There were %d errors\n", totalErrors)
 	}
+
 	return err
 }

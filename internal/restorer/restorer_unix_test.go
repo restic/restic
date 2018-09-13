@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui"
 )
 
 func TestRestorerRestoreEmptyHardlinkedFileds(t *testing.T) {
@@ -42,7 +43,7 @@ func TestRestorerRestoreEmptyHardlinkedFileds(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	err = res.RestoreTo(ctx, tempdir)
+	err = res.RestoreTo(ctx, ui.NewNilProgressUI(), tempdir, false)
 	rtest.OK(t, err)
 
 	f1, err := os.Stat(filepath.Join(tempdir, "dirtest/file1"))

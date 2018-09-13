@@ -24,6 +24,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/termstatus"
 	"golang.org/x/sync/errgroup"
 )
@@ -90,6 +91,10 @@ func testRunList(t testing.TB, tpe string, opts GlobalOptions) restic.IDs {
 	return parseIDsFromReader(t, buf)
 }
 
+func runRestoreWithProgressUI(opts RestoreOptions, gopts GlobalOptions, args []string) error {
+	return runRestore(opts, gopts, ui.NewNilProgressUI(), args)
+}
+
 func testRunRestore(t testing.TB, opts GlobalOptions, dir string, snapshotID restic.ID) {
 	testRunRestoreExcludes(t, opts, dir, snapshotID, nil)
 }
@@ -101,7 +106,7 @@ func testRunRestoreLatest(t testing.TB, gopts GlobalOptions, dir string, paths [
 		Paths:  paths,
 	}
 
-	rtest.OK(t, runRestore(opts, gopts, []string{"latest"}))
+	rtest.OK(t, runRestoreWithProgressUI(opts, gopts, []string{"latest"}))
 }
 
 func testRunRestoreExcludes(t testing.TB, gopts GlobalOptions, dir string, snapshotID restic.ID, excludes []string) {
@@ -110,7 +115,7 @@ func testRunRestoreExcludes(t testing.TB, gopts GlobalOptions, dir string, snaps
 		Exclude: excludes,
 	}
 
-	rtest.OK(t, runRestore(opts, gopts, []string{snapshotID.String()}))
+	rtest.OK(t, runRestoreWithProgressUI(opts, gopts, []string{snapshotID.String()}))
 }
 
 func testRunRestoreIncludes(t testing.TB, gopts GlobalOptions, dir string, snapshotID restic.ID, includes []string) {
@@ -119,7 +124,7 @@ func testRunRestoreIncludes(t testing.TB, gopts GlobalOptions, dir string, snaps
 		Include: includes,
 	}
 
-	rtest.OK(t, runRestore(opts, gopts, []string{snapshotID.String()}))
+	rtest.OK(t, runRestoreWithProgressUI(opts, gopts, []string{snapshotID.String()}))
 }
 
 func testRunCheck(t testing.TB, gopts GlobalOptions) {
