@@ -162,14 +162,19 @@ func (c *packCache) get(packID restic.ID, offset int64, length int, load func(of
 	}
 
 	if pack.data == nil {
+		releasePack := func() {
+			delete(c.reservedPacks, pack.id)
+			c.reservedCapacity -= length
+			c.allocatedCapacity -= length
+		}
 		wr := &bytesWriteSeeker{data: make([]byte, length)}
 		err = load(offset, length, wr)
 		if err != nil {
+			releasePack()
 			return nil, err
 		}
 		if wr.pos != length {
-			delete(c.reservedPacks, pack.id)
-			c.reservedCapacity -= len(pack.data)
+			releasePack()
 			return nil, errors.Errorf("invalid read size")
 		}
 		pack.data = wr.data

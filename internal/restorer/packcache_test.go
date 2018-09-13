@@ -4,6 +4,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -233,20 +234,34 @@ func TestPackCacheDownsizeRecord(t *testing.T) {
 	rd.Close()
 }
 
-func TestPackCacheWrongLoadSize(t *testing.T) {
+func TestPackCacheFailedDownload(t *testing.T) {
 	c := newPackCache(10)
+	assertEmpty := func() {
+		rtest.Equals(t, 0, len(c.cachedPacks))
+		rtest.Equals(t, 10, c.capacity)
+		rtest.Equals(t, 0, c.reservedCapacity)
+		rtest.Equals(t, 0, c.allocatedCapacity)
+	}
 
 	_, err := c.get(restic.NewRandomID(), 0, 5, func(offset int64, length int, wr io.WriteSeeker) error {
+		return errors.Errorf("expected induced test error")
+	})
+	assertNotOK(t, "not enough bytes read", err)
+	assertEmpty()
+
+	_, err = c.get(restic.NewRandomID(), 0, 5, func(offset int64, length int, wr io.WriteSeeker) error {
 		wr.Write([]byte{1})
 		return nil
 	})
 	assertNotOK(t, "not enough bytes read", err)
+	assertEmpty()
 
 	_, err = c.get(restic.NewRandomID(), 0, 5, func(offset int64, length int, wr io.WriteSeeker) error {
 		wr.Write([]byte{1, 2, 3, 4, 5, 6})
 		return nil
 	})
 	assertNotOK(t, "too many bytes read", err)
+	assertEmpty()
 }
 
 func TestPackCacheInvalidRequests(t *testing.T) {
