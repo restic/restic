@@ -18,11 +18,11 @@ type Restorer struct {
 	repo restic.Repository
 	sn   *restic.Snapshot
 
-	Error        func(dir string, node *restic.Node, err error) error
+	Error        func(location string, err error) error
 	SelectFilter func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool)
 }
 
-var restorerAbortOnAllErrors = func(str string, node *restic.Node, err error) error { return err }
+var restorerAbortOnAllErrors = func(location string, err error) error { return err }
 
 // NewRestorer creates a restorer preloaded with the content from the snapshot id.
 func NewRestorer(repo restic.Repository, id restic.ID) (*Restorer, error) {
@@ -55,7 +55,7 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 	tree, err := res.repo.LoadTree(ctx, treeID)
 	if err != nil {
 		debug.Log("error loading tree %v: %v", treeID, err)
-		return res.Error(location, nil, err)
+		return res.Error(location, err)
 	}
 
 	for _, node := range tree.Nodes {
@@ -65,7 +65,7 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 		nodeName := filepath.Base(filepath.Join(string(filepath.Separator), node.Name))
 		if nodeName != node.Name {
 			debug.Log("node %q has invalid name %q", node.Name, nodeName)
-			err := res.Error(location, node, errors.New("node has invalid name"))
+			err := res.Error(location, errors.Errorf("invalid child node name %s", node.Name))
 			if err != nil {
 				return err
 			}
@@ -78,7 +78,7 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 		if target == nodeTarget || !fs.HasPathPrefix(target, nodeTarget) {
 			debug.Log("target: %v %v", target, nodeTarget)
 			debug.Log("node %q has invalid target path %q", node.Name, nodeTarget)
-			err := res.Error(nodeLocation, node, errors.New("node has invalid path"))
+			err := res.Error(nodeLocation, errors.New("node has invalid path"))
 			if err != nil {
 				return err
 			}
@@ -95,7 +95,7 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 
 		sanitizeError := func(err error) error {
 			if err != nil {
-				err = res.Error(nodeTarget, node, err)
+				err = res.Error(nodeLocation, err)
 			}
 			return err
 		}
@@ -194,9 +194,6 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 
 	filerestorer := newFileRestorer(dst, res.repo.Backend().Load, res.repo.Key(), filePackTraverser{lookup: res.repo.Index().Lookup})
 
-	// path->node map, only needed to call res.Error, which uses the node during tests
-	nodes := make(map[string]*restic.Node)
-
 	// first tree pass: create directories and collect all files to restore
 	err = res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
 		enterDir: func(node *restic.Node, target, location string) error {
@@ -224,7 +221,6 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 				idx.Add(node.Inode, node.DeviceID, location)
 			}
 
-			nodes[target] = node
 			filerestorer.addFile(location, node.Content)
 
 			return nil
@@ -235,7 +231,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 		return err
 	}
 
-	err = filerestorer.restoreFiles(ctx, func(path string, err error) { res.Error(path, nodes[path], err) })
+	err = filerestorer.restoreFiles(ctx, func(location string, err error) { res.Error(location, err) })
 	if err != nil {
 		return err
 	}

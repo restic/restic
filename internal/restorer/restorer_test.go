@@ -134,8 +134,8 @@ func TestRestorer(t *testing.T) {
 	var tests = []struct {
 		Snapshot
 		Files      map[string]string
-		ErrorsMust map[string]string
-		ErrorsMay  map[string]string
+		ErrorsMust map[string]map[string]struct{}
+		ErrorsMay  map[string]map[string]struct{}
 		Select     func(item string, dstpath string, node *restic.Node) (selectForRestore bool, childMayBeSelected bool)
 	}{
 		// valid test cases
@@ -249,9 +249,11 @@ func TestRestorer(t *testing.T) {
 					`..\..\foo\..\bar\..\xx\test2`: File{"test2\n"},
 				},
 			},
-			ErrorsMay: map[string]string{
-				`/#..\test`:                      "node has invalid name",
-				`/#..\..\foo\..\bar\..\xx\test2`: "node has invalid name",
+			ErrorsMay: map[string]map[string]struct{}{
+				`/`: {
+					`invalid child node name ..\test`:                      struct{}{},
+					`invalid child node name ..\..\foo\..\bar\..\xx\test2`: struct{}{},
+				},
 			},
 		},
 		{
@@ -261,9 +263,11 @@ func TestRestorer(t *testing.T) {
 					`../../foo/../bar/../xx/test2`: File{"test2\n"},
 				},
 			},
-			ErrorsMay: map[string]string{
-				`/#../test`:                      "node has invalid name",
-				`/#../../foo/../bar/../xx/test2`: "node has invalid name",
+			ErrorsMay: map[string]map[string]struct{}{
+				`/`: {
+					`invalid child node name ../test`:                      struct{}{},
+					`invalid child node name ../../foo/../bar/../xx/test2`: struct{}{},
+				},
 			},
 		},
 		{
@@ -290,8 +294,10 @@ func TestRestorer(t *testing.T) {
 			Files: map[string]string{
 				"top": "toplevel file",
 			},
-			ErrorsMust: map[string]string{
-				`/x#..`: "node has invalid name",
+			ErrorsMust: map[string]map[string]struct{}{
+				`/x`: {
+					`invalid child node name ..`: struct{}{},
+				},
 			},
 		},
 	}
@@ -329,11 +335,14 @@ func TestRestorer(t *testing.T) {
 				return true, true
 			}
 
-			errors := make(map[string]string)
-			res.Error = func(dir string, node *restic.Node, err error) error {
-				t.Logf("restore returned error for %q in dir %v: %v", node.Name, dir, err)
-				dir = toSlash(dir)
-				errors[dir+"#"+node.Name] = err.Error()
+			errors := make(map[string]map[string]struct{})
+			res.Error = func(location string, err error) error {
+				location = toSlash(location)
+				t.Logf("restore returned error for %q: %v", location, err)
+				if errors[location] == nil {
+					errors[location] = make(map[string]struct{})
+				}
+				errors[location][err.Error()] = struct{}{}
 				return nil
 			}
 
@@ -345,33 +354,27 @@ func TestRestorer(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			for filename, errorMessage := range test.ErrorsMust {
-				msg, ok := errors[filename]
+			for location, expectedErrors := range test.ErrorsMust {
+				actualErrors, ok := errors[location]
 				if !ok {
-					t.Errorf("expected error for %v, found none", filename)
+					t.Errorf("expected error(s) for %v, found none", location)
 					continue
 				}
 
-				if msg != "" && msg != errorMessage {
-					t.Errorf("wrong error message for %v: got %q, want %q",
-						filename, msg, errorMessage)
-				}
+				rtest.Equals(t, expectedErrors, actualErrors)
 
-				delete(errors, filename)
+				delete(errors, location)
 			}
 
-			for filename, errorMessage := range test.ErrorsMay {
-				msg, ok := errors[filename]
+			for location, expectedErrors := range test.ErrorsMay {
+				actualErrors, ok := errors[location]
 				if !ok {
 					continue
 				}
 
-				if msg != "" && msg != errorMessage {
-					t.Errorf("wrong error message for %v: got %q, want %q",
-						filename, msg, errorMessage)
-				}
+				rtest.Equals(t, expectedErrors, actualErrors)
 
-				delete(errors, filename)
+				delete(errors, location)
 			}
 
 			for filename, err := range errors {
@@ -436,10 +439,9 @@ func TestRestorerRelative(t *testing.T) {
 			defer cleanup()
 
 			errors := make(map[string]string)
-			res.Error = func(dir string, node *restic.Node, err error) error {
-				t.Logf("restore returned error for %q in dir %v: %v", node.Name, dir, err)
-				dir = toSlash(dir)
-				errors[dir+"#"+node.Name] = err.Error()
+			res.Error = func(location string, err error) error {
+				t.Logf("restore returned error for %q: %v", location, err)
+				errors[location] = err.Error()
 				return nil
 			}
 
