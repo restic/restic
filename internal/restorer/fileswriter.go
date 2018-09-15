@@ -11,9 +11,9 @@ import (
 )
 
 type filesWriter struct {
-	lock       sync.Mutex             // guards concurrent access
-	inprogress map[*fileInfo]struct{} // (logically) opened file writers
-	writers    simplelru.LRUCache     // key: *fileInfo, value: *os.File
+	lock       sync.Mutex          // guards concurrent access
+	inprogress map[string]struct{} // (logically) opened file writers
+	writers    simplelru.LRUCache  // key: string, value: *os.File
 }
 
 func newFilesWriter(count int) *filesWriter {
@@ -21,30 +21,30 @@ func newFilesWriter(count int) *filesWriter {
 		value.(*os.File).Close()
 		debug.Log("Closed and purged cached writer for %v", key)
 	})
-	return &filesWriter{inprogress: make(map[*fileInfo]struct{}), writers: writers}
+	return &filesWriter{inprogress: make(map[string]struct{}), writers: writers}
 }
 
-func (w *filesWriter) writeToFile(file *fileInfo, buf []byte) error {
+func (w *filesWriter) writeToFile(path string, buf []byte) error {
 	acquireWriter := func() (io.Writer, error) {
 		w.lock.Lock()
 		defer w.lock.Unlock()
-		if wr, ok := w.writers.Get(file); ok {
-			debug.Log("Used cached writer for %s", file.path)
+		if wr, ok := w.writers.Get(path); ok {
+			debug.Log("Used cached writer for %s", path)
 			return wr.(*os.File), nil
 		}
 		var flags int
-		if _, append := w.inprogress[file]; append {
+		if _, append := w.inprogress[path]; append {
 			flags = os.O_APPEND | os.O_WRONLY
 		} else {
-			w.inprogress[file] = struct{}{}
+			w.inprogress[path] = struct{}{}
 			flags = os.O_CREATE | os.O_TRUNC | os.O_WRONLY
 		}
-		wr, err := os.OpenFile(file.path, flags, 0600)
+		wr, err := os.OpenFile(path, flags, 0600)
 		if err != nil {
 			return nil, err
 		}
-		w.writers.Add(file, wr)
-		debug.Log("Opened and cached writer for %s", file.path)
+		w.writers.Add(path, wr)
+		debug.Log("Opened and cached writer for %s", path)
 		return wr, nil
 	}
 
@@ -57,14 +57,14 @@ func (w *filesWriter) writeToFile(file *fileInfo, buf []byte) error {
 		return err
 	}
 	if n != len(buf) {
-		return errors.Errorf("error writing file %v: wrong length written, want %d, got %d", file.path, len(buf), n)
+		return errors.Errorf("error writing file %v: wrong length written, want %d, got %d", path, len(buf), n)
 	}
 	return nil
 }
 
-func (w *filesWriter) close(file *fileInfo) {
+func (w *filesWriter) close(path string) {
 	w.lock.Lock()
 	defer w.lock.Unlock()
-	w.writers.Remove(file)
-	delete(w.inprogress, file)
+	w.writers.Remove(path)
+	delete(w.inprogress, path)
 }

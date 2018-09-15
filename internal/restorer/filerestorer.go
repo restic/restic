@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
@@ -19,7 +20,6 @@ import (
 // TODO consider replacing pack file cache with blob cache
 // TODO avoid decrypting the same blob multiple times
 // TODO evaluate disabled debug logging overhead for large repositories
-// TODO consider logging snapshot-relative path to reduce log clutter
 
 const (
 	workerCount = 8
@@ -37,8 +37,8 @@ const (
 
 // information about regular file being restored
 type fileInfo struct {
-	path  string      // full path to the file on local filesystem
-	blobs []restic.ID // remaining blobs of the file
+	location string      // file on local filesystem relative to restorer basedir
+	blobs    []restic.ID // remaining blobs of the file
 }
 
 // information about a data pack required to restore one or more files
@@ -65,21 +65,27 @@ type fileRestorer struct {
 	packCache   *packCache   // pack cache
 	filesWriter *filesWriter // file write
 
+	dst   string
 	files []*fileInfo
 }
 
-func newFileRestorer(packLoader func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error, key *crypto.Key, idx filePackTraverser) *fileRestorer {
+func newFileRestorer(dst string, packLoader func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error, key *crypto.Key, idx filePackTraverser) *fileRestorer {
 	return &fileRestorer{
 		packLoader:  packLoader,
 		key:         key,
 		idx:         idx,
 		filesWriter: newFilesWriter(filesWriterCount),
 		packCache:   newPackCache(packCacheCapacity),
+		dst:         dst,
 	}
 }
 
-func (r *fileRestorer) addFile(path string, content restic.IDs) {
-	r.files = append(r.files, &fileInfo{path: path, blobs: content})
+func (r *fileRestorer) addFile(location string, content restic.IDs) {
+	r.files = append(r.files, &fileInfo{location: location, blobs: content})
+}
+
+func (r *fileRestorer) targetPath(location string) string {
+	return filepath.Join(r.dst, location)
 }
 
 // used to pass information among workers (wish golang channels allowed multivalues)
@@ -90,7 +96,7 @@ type processingInfo struct {
 
 func (r *fileRestorer) restoreFiles(ctx context.Context, onError func(path string, err error)) error {
 	for _, file := range r.files {
-		dbgmsg := file.path + ": "
+		dbgmsg := file.location + ": "
 		r.idx.forEachFilePack(file, func(packIdx int, packID restic.ID, packBlobs []restic.Blob) bool {
 			if packIdx > 0 {
 				dbgmsg += ", "
@@ -110,12 +116,13 @@ func (r *fileRestorer) restoreFiles(ctx context.Context, onError func(path strin
 
 	// synchronously create empty files (empty files need no packs and are ignored by packQueue)
 	for _, file := range r.files {
+		fullpath := r.targetPath(file.location)
 		if len(file.blobs) == 0 {
-			wr, err := os.OpenFile(file.path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
+			wr, err := os.OpenFile(fullpath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
 			if err == nil {
 				wr.Close()
 			} else {
-				onError(file.path, err)
+				onError(file.location, err)
 			}
 		}
 	}
@@ -172,9 +179,10 @@ func (r *fileRestorer) restoreFiles(ctx context.Context, onError func(path strin
 		var success []*fileInfo
 		var failure []*fileInfo
 		for file, ferr := range ferrors {
+			target := r.targetPath(file.location)
 			if ferr != nil {
-				onError(file.path, ferr)
-				r.filesWriter.close(file)
+				onError(file.location, ferr)
+				r.filesWriter.close(target)
 				delete(inprogress, file)
 				failure = append(failure, file)
 			} else {
@@ -183,7 +191,7 @@ func (r *fileRestorer) restoreFiles(ctx context.Context, onError func(path strin
 					return false // only interesed in the first pack
 				})
 				if len(file.blobs) == 0 {
-					r.filesWriter.close(file)
+					r.filesWriter.close(target)
 					delete(inprogress, file)
 				}
 				success = append(success, file)
@@ -281,12 +289,13 @@ func (r *fileRestorer) processPack(ctx context.Context, request processingInfo, 
 	defer rd.Close()
 
 	for file := range request.files {
+		target := r.targetPath(file.location)
 		r.idx.forEachFilePack(file, func(packIdx int, packID restic.ID, packBlobs []restic.Blob) bool {
 			for _, blob := range packBlobs {
-				debug.Log("Writing blob %s (%d bytes) from pack %s to %s", blob.ID.Str(), blob.Length, packID.Str(), file.path)
+				debug.Log("Writing blob %s (%d bytes) from pack %s to %s", blob.ID.Str(), blob.Length, packID.Str(), file.location)
 				buf, err := r.loadBlob(rd, blob)
 				if err == nil {
-					err = r.filesWriter.writeToFile(file, buf)
+					err = r.filesWriter.writeToFile(target, buf)
 				}
 				if err != nil {
 					request.files[file] = err

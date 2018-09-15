@@ -112,7 +112,7 @@ func (h *packQueue) nextPack() (*packInfo, []*fileInfo) {
 	var files []*fileInfo
 	for file := range pack.files {
 		h.idx.forEachFilePack(file, func(packIdx int, packID restic.ID, packBlobs []restic.Blob) bool {
-			debug.Log("Pack #%d %s (%d blobs) used by %s", packIdx, packID.Str(), len(packBlobs), file.path)
+			debug.Log("Pack #%d %s (%d blobs) used by %s", packIdx, packID.Str(), len(packBlobs), file.location)
 			if pack.id == packID {
 				files = append(files, file)
 			}

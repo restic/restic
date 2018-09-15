@@ -62,7 +62,7 @@ func (i *TestRepo) pack(queue *packQueue, name string) *packInfo {
 }
 
 func (i *TestRepo) fileContent(file *fileInfo) string {
-	return i.filesPathToContent[file.path]
+	return i.filesPathToContent[file.location]
 }
 
 func newTestRepo(content []TestFile) *TestRepo {
@@ -135,7 +135,7 @@ func newTestRepo(content []TestFile) *TestRepo {
 		for _, blob := range file.blobs {
 			content = append(content, restic.Hash([]byte(blob.data)))
 		}
-		files = append(files, &fileInfo{path: file.name, blobs: content})
+		files = append(files, &fileInfo{location: file.name, blobs: content})
 	}
 
 	repo := &TestRepo{
@@ -160,10 +160,10 @@ func newTestRepo(content []TestFile) *TestRepo {
 	return repo
 }
 
-func restoreAndVerify(t *testing.T, content []TestFile) {
+func restoreAndVerify(t *testing.T, tempdir string, content []TestFile) {
 	repo := newTestRepo(content)
 
-	r := newFileRestorer(repo.loader, repo.key, repo.idx)
+	r := newFileRestorer(tempdir, repo.loader, repo.key, repo.idx)
 	r.files = repo.files
 
 	r.restoreFiles(context.TODO(), func(path string, err error) {
@@ -171,17 +171,18 @@ func restoreAndVerify(t *testing.T, content []TestFile) {
 	})
 
 	for _, file := range repo.files {
-		data, err := ioutil.ReadFile(file.path)
+		target := r.targetPath(file.location)
+		data, err := ioutil.ReadFile(target)
 		if err != nil {
-			t.Errorf("unable to read file %v: %v", file.path, err)
+			t.Errorf("unable to read file %v: %v", file.location, err)
 			continue
 		}
 
-		rtest.Equals(t, false, r.filesWriter.writers.Contains(file.path))
+		rtest.Equals(t, false, r.filesWriter.writers.Contains(target))
 
 		content := repo.fileContent(file)
 		if !bytes.Equal(data, []byte(content)) {
-			t.Errorf("file %v has wrong content: want %q, got %q", file.path, content, data)
+			t.Errorf("file %v has wrong content: want %q, got %q", file.location, content, data)
 		}
 	}
 
@@ -192,16 +193,16 @@ func TestFileRestorerBasic(t *testing.T) {
 	tempdir, cleanup := rtest.TempDir(t)
 	defer cleanup()
 
-	restoreAndVerify(t, []TestFile{
+	restoreAndVerify(t, tempdir, []TestFile{
 		TestFile{
-			name: tempdir + "/file1",
+			name: "file1",
 			blobs: []TestBlob{
 				TestBlob{"data1-1", "pack1-1"},
 				TestBlob{"data1-2", "pack1-2"},
 			},
 		},
 		TestFile{
-			name: tempdir + "/file2",
+			name: "file2",
 			blobs: []TestBlob{
 				TestBlob{"data2-1", "pack2-1"},
 				TestBlob{"data2-2", "pack2-2"},
@@ -214,9 +215,9 @@ func TestFileRestorerEmptyFile(t *testing.T) {
 	tempdir, cleanup := rtest.TempDir(t)
 	defer cleanup()
 
-	restoreAndVerify(t, []TestFile{
+	restoreAndVerify(t, tempdir, []TestFile{
 		TestFile{
-			name:  tempdir + "/empty",
+			name:  "empty",
 			blobs: []TestBlob{},
 		},
 	})

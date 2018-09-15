@@ -192,7 +192,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 
 	idx := restic.NewHardlinkIndex()
 
-	filerestorer := newFileRestorer(res.repo.Backend().Load, res.repo.Key(), filePackTraverser{lookup: res.repo.Index().Lookup})
+	filerestorer := newFileRestorer(dst, res.repo.Backend().Load, res.repo.Key(), filePackTraverser{lookup: res.repo.Index().Lookup})
 
 	// path->node map, only needed to call res.Error, which uses the node during tests
 	nodes := make(map[string]*restic.Node)
@@ -221,11 +221,11 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 				if idx.Has(node.Inode, node.DeviceID) {
 					return nil
 				}
-				idx.Add(node.Inode, node.DeviceID, target)
+				idx.Add(node.Inode, node.DeviceID, location)
 			}
 
 			nodes[target] = node
-			filerestorer.addFile(target, node.Content)
+			filerestorer.addFile(location, node.Content)
 
 			return nil
 		},
@@ -244,8 +244,8 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 	return res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
 		enterDir: noop,
 		visitNode: func(node *restic.Node, target, location string) error {
-			if idx.Has(node.Inode, node.DeviceID) && idx.GetFilename(node.Inode, node.DeviceID) != target {
-				return res.restoreHardlinkAt(node, idx.GetFilename(node.Inode, node.DeviceID), target, location)
+			if idx.Has(node.Inode, node.DeviceID) && idx.GetFilename(node.Inode, node.DeviceID) != location {
+				return res.restoreHardlinkAt(node, filerestorer.targetPath(idx.GetFilename(node.Inode, node.DeviceID)), target, location)
 			}
 
 			if node.Type != "file" {

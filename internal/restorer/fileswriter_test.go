@@ -13,8 +13,8 @@ func TestFilesWriterBasic(t *testing.T) {
 
 	w := newFilesWriter(1)
 
-	f1 := &fileInfo{path: dir + "/f1"}
-	f2 := &fileInfo{path: dir + "/f2"}
+	f1 := dir + "/f1"
+	f2 := dir + "/f2"
 
 	rtest.OK(t, w.writeToFile(f1, []byte{1}))
 	rtest.Equals(t, 1, w.writers.Len())
@@ -34,11 +34,11 @@ func TestFilesWriterBasic(t *testing.T) {
 	rtest.Equals(t, 0, w.writers.Len())
 	rtest.Equals(t, 0, len(w.inprogress))
 
-	buf, err := ioutil.ReadFile(f1.path)
+	buf, err := ioutil.ReadFile(f1)
 	rtest.OK(t, err)
 	rtest.Equals(t, []byte{1, 1}, buf)
 
-	buf, err = ioutil.ReadFile(f2.path)
+	buf, err = ioutil.ReadFile(f2)
 	rtest.OK(t, err)
 	rtest.Equals(t, []byte{2, 2}, buf)
 }
