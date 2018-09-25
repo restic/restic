@@ -139,6 +139,18 @@ restic can be installed from the official repo of Solus via the ``eopkg`` packag
 
     $ eopkg install restic
 
+Windows
+=======
+
+restic can be installed using `Scoop <https://scoop.sh/>`__:
+
+.. code-block:: console
+
+    scoop install restic
+
+Using this installation method, ``restic.exe`` will automatically be available
+in the ``PATH``. It can be called from cmd.exe or PowerShell by typing ``restic``.
+
 
 .. _official_binaries:
 
