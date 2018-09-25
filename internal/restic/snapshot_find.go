@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/restic/restic/internal/errors"
@@ -14,17 +13,11 @@ import (
 var ErrNoSnapshotFound = errors.New("no snapshot found")
 
 // FindLatestSnapshot finds latest snapshot with optional target/directory, tags and hostname filters.
-func FindLatestSnapshot(ctx context.Context, repo Repository, targets []string, tagLists []TagList, hostname string) (ID, error) {
+func FindLatestSnapshot(ctx context.Context, repo Repository, targets []string, tagLists []TagList, hostname string, prefix string, strip int) (ID, error) {
 	var err error
 	absTargets := make([]string, 0, len(targets))
 	for _, target := range targets {
-		if !filepath.IsAbs(target) {
-			target, err = filepath.Abs(target)
-			if err != nil {
-				return ID{}, errors.Wrap(err, "Abs")
-			}
-		}
-		absTargets = append(absTargets, filepath.Clean(target))
+		absTargets = append(absTargets, pathMangle(target, prefix, strip))
 	}
 
 	var (

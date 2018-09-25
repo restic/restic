@@ -27,17 +27,45 @@ type Snapshot struct {
 	id *ID // plaintext ID, used during restore
 }
 
+func pathSplit(path string) (root string, lst []string) {
+	for root = filepath.Clean(path); ; {
+		var file string
+		root, file = filepath.Split(root)
+		if file == "" {
+			break
+		}
+		lst = append([]string{file}, lst...)
+	}
+	return
+}
+
+func pathMangle(path string, prefix string, strip int) string {
+	pathRoot, pathList := pathSplit(path)
+	if strip > 0 {
+		var stripRoot int
+		if pathRoot != "" {
+			stripRoot++
+		}
+		pathList = pathList[strip-stripRoot:]
+		pathRoot = ""
+	}
+	if prefix != "" {
+		pathRoot = prefix
+	} else {
+		absPath, err := filepath.Abs(pathRoot)
+		if err == nil {
+			pathRoot = absPath
+		}
+	}
+	return filepath.Join(append([]string{pathRoot}, pathList...)...)
+}
+
 // NewSnapshot returns an initialized snapshot struct for the current user and
 // time.
-func NewSnapshot(paths []string, tags []string, hostname string, time time.Time) (*Snapshot, error) {
+func NewSnapshot(paths []string, tags []string, hostname string, time time.Time, prefix string, strip int) (*Snapshot, error) {
 	absPaths := make([]string, 0, len(paths))
 	for _, path := range paths {
-		p, err := filepath.Abs(path)
-		if err == nil {
-			absPaths = append(absPaths, p)
-		} else {
-			absPaths = append(absPaths, path)
-		}
+		absPaths = append(absPaths, pathMangle(path, prefix, strip))
 	}
 
 	sn := &Snapshot{

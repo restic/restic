@@ -94,7 +94,7 @@ func runStats(gopts GlobalOptions, args []string) error {
 
 		var sID restic.ID
 		if snapshotIDString == "latest" {
-			sID, err = restic.FindLatestSnapshot(ctx, repo, []string{}, []restic.TagList{}, snapshotByHost)
+			sID, err = restic.FindLatestSnapshot(ctx, repo, []string{}, []restic.TagList{}, snapshotByHost, "", 0)
 			if err != nil {
 				return errors.Fatalf("latest snapshot for criteria not found: %v", err)
 			}

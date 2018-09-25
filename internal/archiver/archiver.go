@@ -705,6 +705,8 @@ type SnapshotOptions struct {
 	Excludes       []string
 	Time           time.Time
 	ParentSnapshot restic.ID
+	RootPrefix     string
+	RootStrip      int
 }
 
 // loadParentTree loads a tree referenced by snapshot id. If id is null, nil is returned.
@@ -807,7 +809,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		return nil, restic.ID{}, err
 	}
 
-	sn, err := restic.NewSnapshot(targets, opts.Tags, opts.Hostname, opts.Time)
+	sn, err := restic.NewSnapshot(targets, opts.Tags, opts.Hostname, opts.Time, opts.RootPrefix, opts.RootStrip)
 	sn.Excludes = opts.Excludes
 	if !opts.ParentSnapshot.IsNull() {
 		id := opts.ParentSnapshot

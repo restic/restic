@@ -11,6 +11,6 @@ import (
 func TestNewSnapshot(t *testing.T) {
 	paths := []string{"/home/foobar"}
 
-	_, err := restic.NewSnapshot(paths, nil, "foo", time.Now())
+	_, err := restic.NewSnapshot(paths, nil, "foo", time.Now(), "", 0)
 	rtest.OK(t, err)
 }
