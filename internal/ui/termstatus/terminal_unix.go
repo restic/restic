@@ -4,6 +4,7 @@ package termstatus
 
 import (
 	"io"
+	"os"
 
 	"golang.org/x/sys/unix"
 
@@ -24,7 +25,15 @@ func moveCursorUp(wr io.Writer, fd uintptr) func(io.Writer, uintptr, int) {
 // canUpdateStatus returns true if status lines can be printed, the process
 // output is not redirected to a file or pipe.
 func canUpdateStatus(fd uintptr) bool {
-	return isatty.IsTerminal(fd)
+	if !isatty.IsTerminal(fd) {
+		return false
+	}
+	term := os.Getenv("TERM")
+	if term == "" {
+		return false
+	}
+	// TODO actually read termcap db and detect if terminal supports what we need
+	return term != "dumb"
 }
 
 // getTermSize returns the dimensions of the given terminal.
