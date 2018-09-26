@@ -43,12 +43,15 @@ func pathSplit(path string) (root string, lst []string) {
 func pathMangle(path string, prefix string, strip int) string {
 	pathRoot, pathList := pathSplit(path)
 	if strip > 0 {
-		var stripRoot int
+		stripFinal := strip
 		if pathRoot != "" {
-			stripRoot++
+			pathRoot = ""
+			stripFinal--
 		}
-		pathList = pathList[strip-stripRoot:]
-		pathRoot = ""
+		if stripFinal > len(pathList) {
+			stripFinal = len(pathList)
+		}
+		pathList = pathList[stripFinal:]
 	}
 	if prefix != "" {
 		pathRoot = prefix
