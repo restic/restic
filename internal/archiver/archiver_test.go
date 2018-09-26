@@ -1566,7 +1566,7 @@ func TestArchiverSnapshotPrefixStrip(t *testing.T) {
 			}
 
 			t.Logf("targets: %v", targets)
-			sn, snapshotID, err := arch.Snapshot(ctx, targets, SnapshotOptions{Time: time.Now()})
+			sn, snapshotID, err := arch.Snapshot(ctx, targets, SnapshotOptions{Time: time.Now(), RootPrefix: test.prefix, RootStrip: test.strip})
 			if err != nil {
 				t.Fatal(err)
 			}
