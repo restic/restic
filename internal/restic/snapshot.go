@@ -27,6 +27,9 @@ type Snapshot struct {
 	id *ID // plaintext ID, used during restore
 }
 
+// pathSplit takes a path and returns its root part and a list of its path elements.
+// For absolute paths, root result is "/" for Unix and Plan9, drive letter for Windows.
+// For relative paths, root result is empty.
 func pathSplit(path string) (root string, lst []string) {
         root = path
         for {
@@ -40,7 +43,10 @@ func pathSplit(path string) (root string, lst []string) {
 	return
 }
 
-func pathMangle(path string, prefix string, strip int) string {
+
+// pathStripPrefix strips zero or more leading path elements from a path
+// and optionally applies a prefix. Finally, if no prefix is applied, absolute path is resolved.
+func pathStripPrefix(path string, prefix string, strip int) string {
 	pathRoot, pathList := pathSplit(path)
 	if strip > 0 {
 		stripFinal := strip
@@ -69,7 +75,7 @@ func pathMangle(path string, prefix string, strip int) string {
 func NewSnapshot(paths []string, tags []string, hostname string, time time.Time, prefix string, strip int) (*Snapshot, error) {
 	absPaths := make([]string, 0, len(paths))
 	for _, path := range paths {
-		absPaths = append(absPaths, pathMangle(path, prefix, strip))
+		absPaths = append(absPaths, pathStripPrefix(path, prefix, strip))
 	}
 
 	sn := &Snapshot{

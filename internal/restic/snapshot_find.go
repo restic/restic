@@ -17,7 +17,7 @@ func FindLatestSnapshot(ctx context.Context, repo Repository, targets []string, 
 	var err error
 	absTargets := make([]string, 0, len(targets))
 	for _, target := range targets {
-		absTargets = append(absTargets, pathMangle(target, prefix, strip))
+		absTargets = append(absTargets, pathStripPrefix(target, prefix, strip))
 	}
 
 	var (

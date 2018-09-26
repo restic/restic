@@ -52,7 +52,7 @@ func TestPathSplit(t *testing.T) {
 	}
 }
 
-func TestPathMangle(t *testing.T) {
+func TestPathSplitPrefix(t *testing.T) {
 	var tests = []struct {
 		Path   string
 		Prefix string
@@ -133,7 +133,7 @@ func TestPathMangle(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			res := pathMangle(test.Path, test.Prefix, test.Strip)
+			res := pathStripPrefix(test.Path, test.Prefix, test.Strip)
 			if res != test.Result {
 				t.Fatalf("wrong result, want %q, got %q", res, test.Result)
 			}
