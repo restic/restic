@@ -107,7 +107,7 @@ func init() {
 	f.StringVar(&backupOptions.TimeStamp, "time", "", "time of the backup (ex. '2012-11-01 22:08:41') (default: now)")
 	f.BoolVar(&backupOptions.WithAtime, "with-atime", false, "store the atime for all files and directories")
 	f.StringVar(&backupOptions.RootPrefix, "prefix", "", "apply a prefix to target paths")
-	f.IntVar(&backupOptions.RootStrip, "strip-components", 0, "strip NUMBER leading components from target paths")
+	f.IntVar(&backupOptions.RootStrip, "strip-components", 0, "strip `n` leading components from target paths")
 }
 
 // filterExisting returns a slice of all existing items, or an error if no
