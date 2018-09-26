@@ -51,8 +51,10 @@ func pathStripPrefix(path string, prefix string, strip int) string {
 	if strip > 0 {
 		stripFinal := strip
 		if pathRoot != "" {
+			if pathRoot != "/" {
+				stripFinal--
+			}
 			pathRoot = ""
-			stripFinal--
 		}
 		if stripFinal > len(pathList) {
 			stripFinal = len(pathList)
