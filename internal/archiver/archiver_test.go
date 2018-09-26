@@ -1492,6 +1492,111 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 	}
 }
 
+func TestArchiverSnapshotPrefixStrip(t *testing.T) {
+	var tests = []struct {
+		name    string
+		src     TestDir
+		want    TestDir
+		chdir   string
+		targets []string
+		strip   int
+		prefix  string
+	}{
+		{
+			name: "prefix-single-file",
+			src: TestDir{
+				"foo": TestFile{Content: "foo"},
+			},
+			targets: []string{"foo"},
+			prefix:  "prefix",
+			want: TestDir{
+				"prefix": TestDir{
+					"foo": TestFile{Content: "foo"},
+				},
+			},
+		},
+		{
+			name: "prefix-abs-files",
+			src: TestDir{
+				"foo": TestFile{Content: "foo"},
+				"bar": TestFile{Content: "bar"},
+				"subdir": TestDir{
+					"bar": TestFile{Content: "bar2"},
+				},
+			},
+			targets: []string{"foo"},
+			prefix:  "/home/user/work",
+			want: TestDir{
+				"home": TestDir{
+					"user": TestDir{
+						"work": TestDir{
+							"foo": TestFile{Content: "foo"},
+							"bar": TestFile{Content: "bar"},
+							"subdir": TestDir{
+								"bar": TestFile{Content: "bar2"},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			tempdir, repo, cleanup := prepareTempdirRepoSrc(t, test.src)
+			defer cleanup()
+
+			arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
+
+			chdir := tempdir
+			if test.chdir != "" {
+				chdir = filepath.Join(chdir, filepath.FromSlash(test.chdir))
+			}
+
+			back := fs.TestChdir(t, chdir)
+			defer back()
+
+			var targets []string
+			for _, target := range test.targets {
+				targets = append(targets, os.ExpandEnv(target))
+			}
+
+			t.Logf("targets: %v", targets)
+			sn, snapshotID, err := arch.Snapshot(ctx, targets, SnapshotOptions{Time: time.Now()})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			t.Logf("saved as %v", snapshotID.Str())
+
+			want := test.want
+			if want == nil {
+				want = test.src
+			}
+			TestEnsureSnapshot(t, repo, snapshotID, want)
+
+			checker.TestCheckRepo(t, repo)
+
+			// check that the snapshot contains the targets with absolute paths
+			for i, target := range sn.Paths {
+				t.Errorf("decide what to do with the paths recorderd in the snapshots and test that here")
+				atarget, err := filepath.Abs(test.targets[i])
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				if target != atarget {
+					t.Errorf("wrong path in snapshot: want %v, got %v", atarget, target)
+				}
+			}
+		})
+	}
+}
+
 // MockFS keeps track which files are read.
 type MockFS struct {
 	fs.FS
