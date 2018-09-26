@@ -68,7 +68,9 @@ command to serve the repository with FUSE:
     Don't forget to umount after quitting!
 
 Mounting repositories via FUSE is not possible on OpenBSD, Solaris/illumos
-and Windows.
+and Windows. For Linux, the ``fuse`` kernel module needs to be loaded. For
+FreeBSD, you may need to install FUSE and load the kernel module (``kldload
+fuse``).
 
 Restic supports storage and preservation of hard links. However, since
 hard links exist in the scope of a filesystem by definition, restoring
