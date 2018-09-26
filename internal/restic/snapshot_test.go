@@ -23,18 +23,18 @@ func TestPathSplit(t *testing.T) {
 	}{
 		{
 			"foo",
-			"foo",
-			[]string{},
+			"",
+			[]string{"foo"},
 		},
 		{
 			"foo/bar",
-			"foo",
-			[]string{"bar"},
+			"",
+			[]string{"foo", "bar"},
 		},
 		{
 			"/home/user/work",
-			"/home",
-			[]string{"user", "work"},
+			"/",
+			[]string{"home", "user", "work"},
 		},
 	}
 
