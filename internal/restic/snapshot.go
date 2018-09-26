@@ -28,10 +28,11 @@ type Snapshot struct {
 }
 
 func pathSplit(path string) (root string, lst []string) {
-	for root = filepath.Clean(path); ; {
+        root = path
+        for {
 		var file string
-		root, file = filepath.Split(root)
-		if file == "" {
+		root, file = filepath.Split(filepath.Clean(root))
+		if file == "." || file == "" {
 			break
 		}
 		lst = append([]string{file}, lst...)
