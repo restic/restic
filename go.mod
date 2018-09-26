@@ -23,7 +23,7 @@ require (
 	github.com/kurin/blazer v0.5.1
 	github.com/marstr/guid v1.1.0 // indirect
 	github.com/mattn/go-isatty v0.0.4
-	github.com/minio/minio-go v6.0.6+incompatible
+	github.com/minio/minio-go v6.0.7+incompatible
 	github.com/mitchellh/go-homedir v1.0.0 // indirect
 	github.com/ncw/swift v1.0.41
 	github.com/pkg/errors v0.8.0
