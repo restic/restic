@@ -69,7 +69,7 @@ func pathStripPrefix(path string, prefix string, strip int) string {
 			pathRoot = absPath
 		}
 	}
-	return filepath.Join(append([]string{pathRoot}, pathList...)...)
+	return filepath.Clean(filepath.Join(append([]string{pathRoot}, pathList...)...))
 }
 
 // NewSnapshot returns an initialized snapshot struct for the current user and
