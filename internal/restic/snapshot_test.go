@@ -1,6 +1,7 @@
 package restic
 
 import (
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -53,6 +54,10 @@ func TestPathSplit(t *testing.T) {
 }
 
 func TestPathSplitPrefix(t *testing.T) {
+	mustAbs := func (path string) (ret string) {
+		ret, _ = filepath.Abs(path)
+		return
+	}
 	var tests = []struct {
 		Path   string
 		Prefix string
@@ -61,7 +66,7 @@ func TestPathSplitPrefix(t *testing.T) {
 	}{
 		{
 			Path:   "foo",
-			Result: "foo",
+			Result: mustAbs("foo"),
 		},
 		{
 			Path:   "/home/user",
@@ -69,7 +74,7 @@ func TestPathSplitPrefix(t *testing.T) {
 		},
 		{
 			Path:   "../home/user",
-			Result: "../home/user",
+			Result: mustAbs("../home/user"),
 		},
 		{
 			Path:   "foo/bar",
@@ -79,12 +84,12 @@ func TestPathSplitPrefix(t *testing.T) {
 		{
 			Path:   "foo/bar",
 			Strip:  2,
-			Result: "",
+			Result: ".",
 		},
 		{
 			Path:   "foo/bar",
 			Strip:  3,
-			Result: "",
+			Result: ".",
 		},
 		{
 			Path:   "/home/user/foo/bar",
@@ -127,7 +132,7 @@ func TestPathSplitPrefix(t *testing.T) {
 			Path:   "../user/foo/bar",
 			Strip:  1,
 			Prefix: "/srv/backup",
-			Result: "/srv/user/user/foo/bar",
+			Result: "/srv/backup/user/foo/bar",
 		},
 	}
 
@@ -135,7 +140,7 @@ func TestPathSplitPrefix(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			res := pathStripPrefix(test.Path, test.Prefix, test.Strip)
 			if res != test.Result {
-				t.Fatalf("wrong result, want %q, got %q", res, test.Result)
+				t.Fatalf("wrong result, want %q, got %q", test.Result, res)
 			}
 		})
 	}
