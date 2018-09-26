@@ -63,7 +63,7 @@ func pathStripPrefix(path string, prefix string, strip int) string {
 	}
 	if prefix != "" {
 		pathRoot = prefix
-	} else {
+	} else if strip == 0 {
 		absPath, err := filepath.Abs(pathRoot)
 		if err == nil {
 			pathRoot = absPath
