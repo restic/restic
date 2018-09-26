@@ -45,7 +45,8 @@ func pathSplit(path string) (root string, lst []string) {
 
 
 // pathStripPrefix strips zero or more leading path elements from a path
-// and optionally applies a prefix. Finally, if no prefix is applied, absolute path is resolved.
+// and optionally applies a prefix. Finally, if no prefix or stripping are applied,
+// absolute path is resolved.
 func pathStripPrefix(path string, prefix string, strip int) string {
 	pathRoot, pathList := pathSplit(path)
 	if strip > 0 {
