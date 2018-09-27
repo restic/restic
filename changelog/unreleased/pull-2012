@@ -1,0 +1,6 @@
+Enhancement: restore: Only restore file if required
+
+During the `restore` process, we're now verifying if files exists
+locally and restore them only when required (mimic `rsync` behavior).
+
+https://github.com/restic/restic/pull/2012
