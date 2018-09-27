@@ -3,7 +3,6 @@ package restorer
 import (
 	"context"
 	"io"
-	"os"
 	"path/filepath"
 
 	"github.com/restic/restic/internal/crypto"
@@ -95,37 +94,25 @@ type processingInfo struct {
 }
 
 func (r *fileRestorer) restoreFiles(ctx context.Context, onError func(path string, err error)) error {
-	for _, file := range r.files {
-		dbgmsg := file.location + ": "
-		r.idx.forEachFilePack(file, func(packIdx int, packID restic.ID, packBlobs []restic.Blob) bool {
-			if packIdx > 0 {
-				dbgmsg += ", "
-			}
-			dbgmsg += "pack{id=" + packID.Str() + ", blobs: "
-			for blobIdx, blob := range packBlobs {
-				if blobIdx > 0 {
-					dbgmsg += ", "
-				}
-				dbgmsg += blob.ID.Str()
-			}
-			dbgmsg += "}"
-			return true // keep going
-		})
-		debug.Log(dbgmsg)
-	}
-
-	// synchronously create empty files (empty files need no packs and are ignored by packQueue)
-	for _, file := range r.files {
-		fullpath := r.targetPath(file.location)
-		if len(file.blobs) == 0 {
-			wr, err := os.OpenFile(fullpath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
-			if err == nil {
-				wr.Close()
-			} else {
-				onError(file.location, err)
-			}
-		}
-	}
+	// TODO conditionally enable when debug log is on
+	// for _, file := range r.files {
+	// 	dbgmsg := file.location + ": "
+	// 	r.idx.forEachFilePack(file, func(packIdx int, packID restic.ID, packBlobs []restic.Blob) bool {
+	// 		if packIdx > 0 {
+	// 			dbgmsg += ", "
+	// 		}
+	// 		dbgmsg += "pack{id=" + packID.Str() + ", blobs: "
+	// 		for blobIdx, blob := range packBlobs {
+	// 			if blobIdx > 0 {
+	// 				dbgmsg += ", "
+	// 			}
+	// 			dbgmsg += blob.ID.Str()
+	// 		}
+	// 		dbgmsg += "}"
+	// 		return true // keep going
+	// 	})
+	// 	debug.Log(dbgmsg)
+	// }
 
 	inprogress := make(map[*fileInfo]struct{})
 	queue, err := newPackQueue(r.idx, r.files, func(files map[*fileInfo]struct{}) bool {

@@ -210,15 +210,3 @@ func TestFileRestorerBasic(t *testing.T) {
 		},
 	})
 }
-
-func TestFileRestorerEmptyFile(t *testing.T) {
-	tempdir, cleanup := rtest.TempDir(t)
-	defer cleanup()
-
-	restoreAndVerify(t, tempdir, []TestFile{
-		TestFile{
-			name:  "empty",
-			blobs: []TestBlob{},
-		},
-	})
-}
