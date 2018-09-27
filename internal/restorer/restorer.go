@@ -171,7 +171,8 @@ func (res *Restorer) restoreHardlinkAt(node *restic.Node, target, path, location
 	if err != nil {
 		return errors.Wrap(err, "CreateHardlink")
 	}
-	return res.restoreNodeMetadataTo(node, target, location)
+	// TODO investigate if hardlinks have separate metadata on any supported system
+	return res.restoreNodeMetadataTo(node, path, location)
 }
 
 // RestoreTo creates the directories and files in the snapshot below dst.
