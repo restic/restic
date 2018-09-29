@@ -245,7 +245,7 @@ outer:
 			eta := time.Duration(float64(remaining)/gps) * time.Second
 
 			fmt.Printf("\r%d byte of %d done (%.2f%%), %.2f guesses per second, ETA %v",
-				i, len(input), float32(i)/float32(len(input)),
+				i, len(input), float32(i)/float32(len(input)*100),
 				gps, eta)
 			info = time.Now()
 		}
