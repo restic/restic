@@ -300,11 +300,10 @@ func loadBlobs(ctx context.Context, repo restic.Repository, pack string, list []
 		}
 
 		id := restic.Hash(plaintext)
-		fmt.Printf("         successfully decrypted blob (length %v), hash is %v\n", len(plaintext), id)
 		if !id.Equal(blob.ID) {
-			fmt.Printf("         IDs do not match, want %v, got %v\n", blob.ID, id)
+			fmt.Printf("         successfully decrypted blob (length %v), hash is %v, ID does not match, wanted %v\n", len(plaintext), id, blob.ID)
 		} else {
-			fmt.Printf("         IDs match\n")
+			fmt.Printf("         successfully decrypted blob (length %v), hash is %v, ID matches\n", len(plaintext), id)
 		}
 	}
 
