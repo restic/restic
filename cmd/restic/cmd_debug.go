@@ -47,12 +47,14 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 }
 
 var tryRepair bool
+var repairByte bool
 
 func init() {
 	cmdRoot.AddCommand(cmdDebug)
 	cmdDebug.AddCommand(cmdDebugDump)
 	cmdDebug.AddCommand(cmdDebugExamine)
 	cmdDebugExamine.Flags().BoolVar(&tryRepair, "try-repair", false, "try to repair broken blobs with single bit flips")
+	cmdDebugExamine.Flags().BoolVar(&repairByte, "repair-byte", false, "try to repair broken blobs by trying bytes")
 }
 
 func prettyPrintJSON(wr io.Writer, item interface{}) error {
@@ -186,8 +188,12 @@ var cmdDebugExamine = &cobra.Command{
 	},
 }
 
-func tryRepairWithBitflip(ctx context.Context, key *crypto.Key, input []byte) {
-	fmt.Printf("        trying to repair blob with single bit flip\n")
+func tryRepairWithBitflip(ctx context.Context, key *crypto.Key, input []byte, bytewise bool) {
+	if bytewise {
+		fmt.Printf("        trying to repair blob by finding a broken byte\n")
+	} else {
+		fmt.Printf("        trying to repair blob with single bit flip\n")
+	}
 
 	ch := make(chan int)
 	var wg errgroup.Group
@@ -205,22 +211,42 @@ func tryRepairWithBitflip(ctx context.Context, key *crypto.Key, input []byte) {
 				case <-done:
 					return nil
 				case i := <-ch:
-					for j := 0; j < 7; j++ {
-						// flip bit
-						buf[i] ^= (1 << uint(j))
+					if bytewise {
+						for j := 0; j < 255; j++ {
+							// flip bits
+							buf[i] ^= byte(j)
 
-						nonce, plaintext := buf[:key.NonceSize()], buf[key.NonceSize():]
-						plaintext, err := key.Open(plaintext[:0], nonce, plaintext, nil)
-						if err == nil {
-							fmt.Printf("\n")
-							fmt.Printf("        blob could be repaired by flipping bit %v in byte %v\n", j, i)
-							fmt.Printf("        hash is %v\n", restic.Hash(plaintext))
-							close(done)
-							return nil
+							nonce, plaintext := buf[:key.NonceSize()], buf[key.NonceSize():]
+							plaintext, err := key.Open(plaintext[:0], nonce, plaintext, nil)
+							if err == nil {
+								fmt.Printf("\n")
+								fmt.Printf("        blob could be repaired by XORing byte %v with 0x%02x\n", i, j)
+								fmt.Printf("        hash is %v\n", restic.Hash(plaintext))
+								close(done)
+								return nil
+							}
+
+							// flip bits back
+							buf[i] ^= byte(j)
 						}
+					} else {
+						for j := 0; j < 7; j++ {
+							// flip bit
+							buf[i] ^= (1 << uint(j))
 
-						// flip bit back
-						buf[i] ^= (1 << uint(j))
+							nonce, plaintext := buf[:key.NonceSize()], buf[key.NonceSize():]
+							plaintext, err := key.Open(plaintext[:0], nonce, plaintext, nil)
+							if err == nil {
+								fmt.Printf("\n")
+								fmt.Printf("        blob could be repaired by flipping bit %v in byte %v\n", j, i)
+								fmt.Printf("        hash is %v\n", restic.Hash(plaintext))
+								close(done)
+								return nil
+							}
+
+							// flip bit back
+							buf[i] ^= (1 << uint(j))
+						}
 					}
 				}
 			}
@@ -244,7 +270,7 @@ outer:
 			remaining := len(input) - i
 			eta := time.Duration(float64(remaining)/gps) * time.Second
 
-			fmt.Printf("\r%d byte of %d done (%.2f%%), %.2f guesses per second, ETA %v",
+			fmt.Printf("\r%d byte of %d done (%.2f%%), %.0f byte per second, ETA %v",
 				i, len(input), float32(i)/float32(len(input)*100),
 				gps, eta)
 			info = time.Now()
@@ -294,8 +320,8 @@ func loadBlobs(ctx context.Context, repo restic.Repository, pack string, list []
 		plaintext, err = key.Open(plaintext[:0], nonce, plaintext, nil)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error decrypting blob: %v\n", err)
-			if tryRepair {
-				tryRepairWithBitflip(ctx, key, buf)
+			if tryRepair || repairByte {
+				tryRepairWithBitflip(ctx, key, buf, repairByte)
 			}
 			continue
 		}
