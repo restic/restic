@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/pack"
@@ -347,6 +348,19 @@ func runDebugExamine(gopts GlobalOptions, args []string) error {
 		}
 
 		fmt.Printf("  file size is %v\n", fi.Size)
+
+		buf, err := backend.LoadAll(gopts.ctx, nil, repo.Backend(), h)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		}
+
+		gotID := restic.Hash(buf)
+		if !id.Equal(gotID) {
+			fmt.Printf("  wanted hash %v, got %v\n", id, gotID)
+		} else {
+			fmt.Printf("  hash for file content matches\n")
+		}
+
 		fmt.Printf("  ========================================\n")
 		fmt.Printf("  looking for info in the indexes\n")
 
