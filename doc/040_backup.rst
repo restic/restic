@@ -121,7 +121,12 @@ can compute which parts of the files need to be saved. When you backup
 the same directory again (maybe with new or changed files) restic will
 find the old snapshot in the repo and by default only reads those files
 that are new or have been modified since the last snapshot. This is
-decided based on the modify date of the file in the file system.
+decided based on the following attributes of the file in the file system:
+
+ * Type (file, symlink, or directory?)
+ * Modification time
+ * Size
+ * Inode number (internal number used to reference a file in a file system)
 
 Now is a good time to run ``restic check`` to verify that all data
 is properly stored in the repository. You should run this command regularly
