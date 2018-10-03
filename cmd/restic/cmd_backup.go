@@ -34,13 +34,13 @@ The "backup" command creates a new snapshot and saves the files and directories
 given as the arguments.
 `,
 	PreRun: func(cmd *cobra.Command, args []string) {
-		if backupOptions.Hostname == "" {
+		if backupOptions.Host == "" {
 			hostname, err := os.Hostname()
 			if err != nil {
 				debug.Log("os.Hostname() returned err: %v", err)
 				return
 			}
-			backupOptions.Hostname = hostname
+			backupOptions.Host = hostname
 		}
 	},
 	DisableAutoGenTag: true,
@@ -74,7 +74,7 @@ type BackupOptions struct {
 	Stdin            bool
 	StdinFilename    string
 	Tags             []string
-	Hostname         string
+	Host             string
 	FilesFrom        string
 	TimeStamp        string
 	WithAtime        bool
@@ -96,7 +96,11 @@ func init() {
 	f.BoolVar(&backupOptions.Stdin, "stdin", false, "read backup from stdin")
 	f.StringVar(&backupOptions.StdinFilename, "stdin-filename", "stdin", "file name to use when reading from stdin")
 	f.StringArrayVar(&backupOptions.Tags, "tag", nil, "add a `tag` for the new snapshot (can be specified multiple times)")
-	f.StringVar(&backupOptions.Hostname, "hostname", "", "set the `hostname` for the snapshot manually. To prevent an expensive rescan use the \"parent\" flag")
+
+	f.StringVar(&backupOptions.Host, "host", "H", "set the `hostname` for the snapshot manually. To prevent an expensive rescan use the \"parent\" flag")
+	f.StringVar(&backupOptions.Host, "hostname", "", "set the `hostname` for the snapshot manually")
+	f.MarkDeprecated("hostname", "use --host")
+
 	f.StringVar(&backupOptions.FilesFrom, "files-from", "", "read the files to backup from file (can be combined with file args)")
 	f.StringVar(&backupOptions.TimeStamp, "time", "", "time of the backup (ex. '2012-11-01 22:08:41') (default: now)")
 	f.BoolVar(&backupOptions.WithAtime, "with-atime", false, "store the atime for all files and directories")
@@ -346,7 +350,7 @@ func findParentSnapshot(ctx context.Context, repo restic.Repository, opts Backup
 
 	// Find last snapshot to set it as parent, if not already set
 	if !opts.Force && parentID == nil {
-		id, err := restic.FindLatestSnapshot(ctx, repo, targets, []restic.TagList{}, opts.Hostname)
+		id, err := restic.FindLatestSnapshot(ctx, repo, targets, []restic.TagList{}, opts.Host)
 		if err == nil {
 			parentID = &id
 		} else if err != restic.ErrNoSnapshotFound {
@@ -495,7 +499,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		Excludes:       opts.Excludes,
 		Tags:           opts.Tags,
 		Time:           timeStamp,
-		Hostname:       opts.Hostname,
+		Hostname:       opts.Host,
 		ParentSnapshot: *parentSnapshotID,
 	}
 

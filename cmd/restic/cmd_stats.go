@@ -48,7 +48,7 @@ func init() {
 	cmdRoot.AddCommand(cmdStats)
 	f := cmdStats.Flags()
 	f.StringVar(&countMode, "mode", countModeRestoreSize, "counting mode: restore-size (default), files-by-contents, blobs-per-file, or raw-data")
-	f.StringVar(&snapshotByHost, "host", "", "filter latest snapshot by this hostname")
+	f.StringVar(&snapshotByHost, "host", "H", "filter latest snapshot by this hostname")
 }
 
 func runStats(gopts GlobalOptions, args []string) error {
