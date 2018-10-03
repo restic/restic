@@ -120,6 +120,8 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 		mountOptions = append(mountOptions, systemFuse.AllowOther())
 	}
 
+	mountOptions = append(mountOptions, systemFuse.DefaultPermissions())
+
 	c, err := systemFuse.Mount(mountpoint, mountOptions...)
 	if err != nil {
 		return err
