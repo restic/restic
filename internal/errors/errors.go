@@ -22,6 +22,10 @@ var Wrap = errors.Wrap
 // nil, Wrapf returns nil.
 var Wrapf = errors.Wrapf
 
+// WithMessage annotates err with a new message. If err is nil, WithMessage
+// returns nil.
+var WithMessage = errors.WithMessage
+
 // Cause returns the cause of an error. It will also unwrap certain errors,
 // e.g. *url.Error returned by the net/http client.
 func Cause(err error) error {

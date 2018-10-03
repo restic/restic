@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -308,7 +309,7 @@ func collectTargets(opts BackupOptions, args []string) (targets []string, err er
 		var expanded []string
 		expanded, err := filepath.Glob(line)
 		if err != nil {
-			return nil, err
+			return nil, errors.WithMessage(err, fmt.Sprintf("pattern: %s", line))
 		}
 		lines = append(lines, expanded...)
 	}
