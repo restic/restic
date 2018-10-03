@@ -1,0 +1,7 @@
+Enhancement: Use `--host` everywhere
+
+We now use the flag `--host` for all commands which need a host name, using
+`--hostname` (e.g. for `restic backup`) still works, but will print a
+deprecation warning. Also, add the short option `-H` where possible.
+
+https://github.com/restic/restic/issues/1967
