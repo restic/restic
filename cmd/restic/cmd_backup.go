@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -301,10 +303,21 @@ func collectTargets(opts BackupOptions, args []string) (targets []string, err er
 		return nil, err
 	}
 
+	// expand wildcards
+	var lines []string
+	for _, line := range fromfile {
+		var expanded []string
+		expanded, err := filepath.Glob(line)
+		if err != nil {
+			return nil, errors.WithMessage(err, fmt.Sprintf("pattern: %s", line))
+		}
+		lines = append(lines, expanded...)
+	}
+
 	// merge files from files-from into normal args so we can reuse the normal
 	// args checks and have the ability to use both files-from and args at the
 	// same time
-	args = append(args, fromfile...)
+	args = append(args, lines...)
 	if len(args) == 0 && !opts.Stdin {
 		return nil, errors.Fatal("nothing to backup, please specify target files/dirs")
 	}

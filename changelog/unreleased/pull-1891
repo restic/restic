@@ -1,0 +1,7 @@
+Enhancement: Accept glob in paths loaded via --files-from
+
+Before that, behaviour was different if paths were appended to command line or
+from a file, because wild card characters were expanded by shell if appended to
+command line, but not expanded if loaded from file.
+
+https://github.com/restic/restic/issues/1891
