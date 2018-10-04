@@ -106,6 +106,11 @@ func (b *Backend) cacheFile(ctx context.Context, h restic.Handle) error {
 		return nil
 	}
 
+	// test again, maybe the file was cached in the meantime
+	if b.Cache.Has(h) {
+		return nil
+	}
+
 	err := b.Backend.Load(ctx, h, 0, 0, func(rd io.Reader) error {
 		return b.Cache.Save(h, rd)
 	})
@@ -122,7 +127,7 @@ func (b *Backend) cacheFile(ctx context.Context, h restic.Handle) error {
 	delete(b.inProgress, h)
 	b.inProgressMutex.Unlock()
 
-	return err
+	return nil
 }
 
 // loadFromCacheOrDelegate will try to load the file from the cache, and fall
