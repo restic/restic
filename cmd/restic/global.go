@@ -95,7 +95,7 @@ func init() {
 	f.CountVarP(&globalOptions.Verbose, "verbose", "v", "be verbose (specify --verbose multiple times or level `n`)")
 	f.BoolVar(&globalOptions.NoLock, "no-lock", false, "do not lock the repo, this allows some operations on read-only repos")
 	f.BoolVarP(&globalOptions.JSON, "json", "", false, "set output mode to JSON for commands that support it")
-	f.StringVar(&globalOptions.CacheDir, "cache-dir", "", "set the cache directory")
+	f.StringVar(&globalOptions.CacheDir, "cache-dir", "", "set the cache directory. (default: use system default cache directory)")
 	f.BoolVar(&globalOptions.NoCache, "no-cache", false, "do not use a local cache")
 	f.StringSliceVar(&globalOptions.CACerts, "cacert", nil, "`file` to load root certificates from (default: use system certificates)")
 	f.StringVar(&globalOptions.TLSClientCert, "tls-client-cert", "", "path to a file containing PEM encoded TLS client certificate and private key")

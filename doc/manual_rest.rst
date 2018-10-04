@@ -43,7 +43,7 @@ Usage help is available:
 
     Flags:
           --cacert file              file to load root certificates from (default: use system certificates)
-          --cache-dir string         set the cache directory
+          --cache-dir string         set the cache directory. (default: use system default cache directory)
           --cleanup-cache            auto remove old cache directories
       -h, --help                     help for restic
           --json                     set output mode to JSON for commands that support it
@@ -94,7 +94,7 @@ command:
 
     Global Flags:
           --cacert file              file to load root certificates from (default: use system certificates)
-          --cache-dir string         set the cache directory
+          --cache-dir string         set the cache directory. (default: use system default cache directory)
           --cleanup-cache            auto remove old cache directories
           --json                     set output mode to JSON for commands that support it
           --limit-download int       limits downloads to a maximum rate in KiB/s. (default: unlimited)
