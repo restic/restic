@@ -106,12 +106,18 @@ func (b *Backend) cacheFile(ctx context.Context, h restic.Handle) error {
 		return nil
 	}
 
-	err := b.Backend.Load(ctx, h, 0, 0, func(rd io.Reader) error {
-		return b.Cache.Save(h, rd)
-	})
-	if err != nil {
-		// try to remove from the cache, ignore errors
-		_ = b.Cache.Remove(h)
+	// test again, maybe the file was cached in the meantime
+	if !b.Cache.Has(h) {
+
+		// nope, it's still not in the cache, pull it from the repo and save it
+
+		err := b.Backend.Load(ctx, h, 0, 0, func(rd io.Reader) error {
+			return b.Cache.Save(h, rd)
+		})
+		if err != nil {
+			// try to remove from the cache, ignore errors
+			_ = b.Cache.Remove(h)
+		}
 	}
 
 	// signal other waiting goroutines that the file may now be cached
@@ -122,7 +128,7 @@ func (b *Backend) cacheFile(ctx context.Context, h restic.Handle) error {
 	delete(b.inProgress, h)
 	b.inProgressMutex.Unlock()
 
-	return err
+	return nil
 }
 
 // loadFromCacheOrDelegate will try to load the file from the cache, and fall
