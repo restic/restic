@@ -27,6 +27,47 @@ strictly necessary. With high probability this is duplicate data. In
 order to clean it up, the command ``restic prune`` can be used. The
 cause of this bug is not yet known.
 
+I ran a ``restic`` command but it is not working as intented, what do I do now?
+-------------------------------------------------------------------------------
+
+If you are running a restic command and it is not working as you hoped it would, 
+there is an easy way of checking how your shell interpreted the command you are trying to run.
+
+Here is an example of a mistake in a forget rule that results in the rule not working correctly.
+A user wants to run the following ``restic forget`` command
+
+::
+
+$ restic backup --exclude "~/documents" ~
+
+.. important:: This command contains an intentional user error described in this paragraph.
+
+This command will result in a complete backup of ``~`` and it won't exclude the folder ``~/documents/`` which is intended.
+The problem is how the path to ``~/documents`` is passed to restic.
+
+In order so spot an issue like this you can make use of the following command preceeding your restic command.
+
+::
+
+    $ ruby -e 'puts ARGV.inspect' restic backup --exclude "~/documents" ~
+    ["restic", "backup", "--exclude", "~/documents", "/home/john"]
+
+As you can see, the command outputs every argument you have passed to the shell and expands it - this is what restic sees when you run your command.
+The error here is that the tilde (~) in ``"~/documents"`` didn't get expanded as it is quoted.
+
+::
+
+    $ echo ~/documents
+    /home/john/documents
+
+    $ echo "~/documents"
+    ~/document
+
+    $ echo "$HOME/documents"
+    /home/john/documents
+
+Expansions are handled by the shell only and not by restic.
+
 How can I specify encryption passwords automatically?
 -----------------------------------------------------
 
