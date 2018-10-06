@@ -5,7 +5,6 @@ import (
 	"io"
 	"net/http"
 	"path"
-	"strings"
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
@@ -257,69 +256,45 @@ func (be *b2Backend) Remove(ctx context.Context, h restic.Handle) error {
 	return errors.Wrap(obj.Delete(ctx), "Delete")
 }
 
-// List returns a channel that yields all names of blobs of type t. A
-// goroutine is started for this. If the channel done is closed, sending
-// stops.
+type semLocker struct {
+	*backend.Semaphore
+}
+
+func (sm semLocker) Lock()   { sm.GetToken() }
+func (sm semLocker) Unlock() { sm.ReleaseToken() }
+
+// List returns a channel that yields all names of blobs of type t.
 func (be *b2Backend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
 	debug.Log("List %v", t)
-
-	prefix, _ := be.Basedir(t)
-	cur := &b2.Cursor{Prefix: prefix}
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	for {
-		be.sem.GetToken()
-		objs, c, err := be.bucket.ListCurrentObjects(ctx, be.listMaxItems, cur)
-		be.sem.ReleaseToken()
+	prefix, _ := be.Basedir(t)
+	iter := be.bucket.List(ctx, b2.ListPrefix(prefix), b2.ListPageSize(be.listMaxItems), b2.ListLocker(semLocker{be.sem}))
 
-		if err != nil && err != io.EOF {
-			debug.Log("List: %v", err)
+	for iter.Next() {
+		obj := iter.Object()
+
+		attrs, err := obj.Attrs(ctx)
+		if err != nil {
 			return err
 		}
 
-		debug.Log("returned %v items", len(objs))
-		for _, obj := range objs {
-			// Skip objects returned that do not have the specified prefix.
-			if !strings.HasPrefix(obj.Name(), prefix) {
-				continue
-			}
-
-			m := path.Base(obj.Name())
-			if m == "" {
-				continue
-			}
-
-			if ctx.Err() != nil {
-				return ctx.Err()
-			}
-
-			attrs, err := obj.Attrs(ctx)
-			if err != nil {
-				return err
-			}
-
-			fi := restic.FileInfo{
-				Name: m,
-				Size: attrs.Size,
-			}
-
-			err = fn(fi)
-			if err != nil {
-				return err
-			}
-
-			if ctx.Err() != nil {
-				return ctx.Err()
-			}
+		fi := restic.FileInfo{
+			Name: path.Base(obj.Name()),
+			Size: attrs.Size,
 		}
 
-		if err == io.EOF {
-			return ctx.Err()
+		if err := fn(fi); err != nil {
+			return err
 		}
-		cur = c
 	}
+	if err := iter.Err(); err != nil {
+		debug.Log("List: %v", err)
+		return err
+	}
+	return nil
 }
 
 // Remove keys for a specified backend type.
