@@ -27,6 +27,54 @@ strictly necessary. With high probability this is duplicate data. In
 order to clean it up, the command ``restic prune`` can be used. The
 cause of this bug is not yet known.
 
+I ran a ``restic`` command but it is not working as intented, what do I do now?
+-------------------------------------------------------------------------------
+
+If you are running a restic command and it is not working as you hoped it would, 
+there is an easy way of checking how your shell interpreted the command you are trying to run.
+
+Here is an example of a mistake in a backup command that results in the command not working as expected.
+A user wants to run the following ``restic backup`` command
+
+::
+
+$ restic backup --exclude "~/documents" ~
+
+.. important:: This command contains an intentional user error described in this paragraph.
+
+This command will result in a complete backup of the current logged in user's home directory and it won't exclude the folder ``~/documents/`` - which is not what the user wanted to achieve.
+The problem is how the path to ``~/documents`` is passed to restic.
+
+In order to spot an issue like this, you can make use of the following ruby command preceeding your restic command.
+
+::
+
+    $ ruby -e 'puts ARGV.inspect' restic backup --exclude "~/documents" ~
+    ["restic", "backup", "--exclude", "~/documents", "/home/john"]
+
+As you can see, the command outputs every argument you have passed to the shell. This is what restic sees when you run your command.
+The error here is that the tilde ``~`` in ``"~/documents"`` didn't get expanded as it is quoted.
+
+::
+
+    $ echo ~/documents
+    /home/john/documents
+
+    $ echo "~/documents"
+    ~/document
+
+    $ echo "$HOME/documents"
+    /home/john/documents
+
+Restic handles globbing and expansion in the following ways:
+
+-  Globbing is only expanded for lines read via ``--files-from``
+-  Environment variables are not expanded in the file read via ``--files-from``
+-  ``*`` is expanded for paths read via ``--files-from``
+-  E.g. For backup targets given to restic as arguments on the shell, neither glob expansion nor shell variable replacement is done. If restic is called as ``restic backup '*' '$HOME'``, it will try to backup the literal file(s)/dir(s) ``*`` and ``$HOME``
+-  Double-asterisk ``**`` only works in exclude patterns as this is a custom extension built into restic; the shell must not expand it
+
+
 How can I specify encryption passwords automatically?
 -----------------------------------------------------
 
