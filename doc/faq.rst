@@ -66,7 +66,8 @@ The error here is that the tilde (~) in ``"~/documents"`` didn't get expanded as
     $ echo "$HOME/documents"
     /home/john/documents
 
-Expansions are handled by the shell only and not by restic.
+Most expansions are handled by the shell only and not by restic.
+Glob expansions like ** or * on the other hand are being handled by restic directly.
 
 How can I specify encryption passwords automatically?
 -----------------------------------------------------
