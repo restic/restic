@@ -1,4 +1,4 @@
-// +build release
+// +build !debug
 
 package debug
 

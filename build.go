@@ -525,11 +525,6 @@ func main() {
 
 	verbosePrintf("detected Go version %v\n", goVersion)
 
-	if len(buildTags) == 0 {
-		verbosePrintf("adding build-tag release\n")
-		buildTags = []string{"release"}
-	}
-
 	for i := range buildTags {
 		buildTags[i] = strings.TrimSpace(buildTags[i])
 	}

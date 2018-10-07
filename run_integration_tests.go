@@ -315,7 +315,7 @@ func (env *TravisEnvironment) RunTests() error {
 
 	if *runCrossCompile {
 		// compile for all target architectures with tags
-		for _, tags := range []string{"release", "debug"} {
+		for _, tags := range []string{"", "debug"} {
 			err := runWithEnv(env.env, "gox", "-verbose",
 				"-osarch", strings.Join(env.goxOSArch, " "),
 				"-tags", tags,
