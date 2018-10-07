@@ -19,3 +19,4 @@ Restic Documentation
    110_talks
    faq
    manual_rest
+   developer_information
