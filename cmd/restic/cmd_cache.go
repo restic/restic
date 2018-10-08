@@ -128,7 +128,7 @@ func runCache(opts CacheOptions, gopts GlobalOptions, args []string) error {
 
 		var size string
 		if !opts.NoSize {
-			bytes, err := dirSize(fmt.Sprintf("%s/%s", cachedir, entry.Name()))
+			bytes, err := dirSize(filepath.Join(cachedir, entry.Name()))
 			if err != nil {
 				return err
 			}
