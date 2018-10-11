@@ -1,0 +1,7 @@
+Enhancement: Display size of cache directories
+
+The `cache` command now by default shows the size of the individual cache
+directories. It can be disabled with `--no-size`.
+
+https://github.com/restic/restic/issues/2028
+https://github.com/restic/restic/pull/2033
