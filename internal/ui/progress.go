@@ -10,6 +10,11 @@ import (
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
+const (
+	etaDONE = 0  // XXX how to represent "done"?
+	etaNA   = -1 // XXX how to represent "unknown"?
+)
+
 // ProgressUI provides periodic updates about long a running operation
 type ProgressUI interface {
 	E(msg string, args ...interface{})
@@ -18,9 +23,8 @@ type ProgressUI interface {
 	VV(msg string, args ...interface{})
 
 	// Set currently running operation title, periodic progress and summary
-	// messages.
-	// update, progress and summary callback invocations are serialized
-	Set(title string, progress, summary func() []string)
+	// messages. all callback invocations are serialized
+	Set(title string, setup func(), eta func() time.Duration, progress, summary func() string)
 
 	// Update executes op, then displays user-visible progress message(s).
 	// update, progress and summary callback invocations are serialized.
@@ -45,8 +49,9 @@ type TermstatusProgressUI struct {
 	minUpdatePause time.Duration
 
 	title    string
-	progress func() []string
-	summary  func() []string
+	eta      func() time.Duration
+	progress func() string
+	summary  func() string
 
 	start time.Time
 }
@@ -123,14 +128,18 @@ func (p *TermstatusProgressUI) Update(op func()) {
 }
 
 // Set currently running operation title, periodic progress and summary
-// messages. progress and summary callbacks will be invoked from the "UI" thread
-func (p *TermstatusProgressUI) Set(title string, progress, summary func() []string) {
+// messages. all callbacks will be invoked from the "UI" thread
+func (p *TermstatusProgressUI) Set(title string, setup func(), eta func() time.Duration, progress, summary func() string) {
 	p.updates <- func() {
-		p.diplaySummary()
+		p.diplaySummary() // display summary of the prior phase if any
+		if setup != nil {
+			setup()
+		}
+		p.eta = eta
 		p.title = title
 		p.progress = progress
 		p.summary = summary
-		p.displayProgress(true)
+		p.displayProgress(true) // display initial progress
 	}
 }
 
@@ -143,9 +152,7 @@ func (p *TermstatusProgressUI) Finish() {
 
 func (p *TermstatusProgressUI) diplaySummary() {
 	if p.summary != nil {
-		for _, line := range p.summary() {
-			p.P(line)
-		}
+		p.P(p.summary())
 	}
 }
 
@@ -154,14 +161,19 @@ func (p *TermstatusProgressUI) displayProgress(first bool) {
 
 	progress := func(lines []string) []string {
 		if p.progress != nil {
-			for _, line := range p.progress() {
-				lines = append(lines, fmt.Sprintf("[%s] %s", duration, line))
+			eta := "N/A"
+			if p.eta != nil {
+				eta = FormatETA(p.eta())
 			}
+
+			// TODO %% completion
+			lines = append(lines, fmt.Sprintf("[%s] %s ETA %s", duration, p.progress(), eta))
 		}
 		return lines
 	}
 
 	if p.term.CanDisplayStatus() {
+		// TODO consider single line to include title, progress and ETA
 		var lines []string
 		if p.title != "" {
 			lines = append(lines, p.title)
@@ -243,4 +255,16 @@ func formatDuration(d time.Duration) string {
 // FormatDurationSince returns time elapsed since t as HH:mm:ss string
 func FormatDurationSince(t time.Time) string {
 	return formatDuration(time.Since(t))
+}
+
+// FormatETA ETA string
+func FormatETA(d time.Duration) string {
+	switch {
+	case d == etaDONE:
+		return "DONE"
+	case d == etaNA:
+		return "N/A"
+	default:
+		return formatDuration(d)
+	}
 }

@@ -1,5 +1,7 @@
 package ui
 
+import "time"
+
 type testProgressUI struct {
 }
 
@@ -11,9 +13,10 @@ func NewNilProgressUI() ProgressUI {
 	return &testProgressUI{}
 }
 
-func (p *testProgressUI) E(msg string, args ...interface{})                   {}
-func (p *testProgressUI) P(msg string, args ...interface{})                   {}
-func (p *testProgressUI) V(msg string, args ...interface{})                   {}
-func (p *testProgressUI) VV(msg string, args ...interface{})                  {}
-func (p *testProgressUI) Set(title string, progress, summary func() []string) {}
-func (p *testProgressUI) Update(op func())                                    {}
+func (p *testProgressUI) E(msg string, args ...interface{})  {}
+func (p *testProgressUI) P(msg string, args ...interface{})  {}
+func (p *testProgressUI) V(msg string, args ...interface{})  {}
+func (p *testProgressUI) VV(msg string, args ...interface{}) {}
+func (p *testProgressUI) Set(title string, setup func(), eta func() time.Duration, progress, summary func() string) {
+}
+func (p *testProgressUI) Update(op func()) {}
