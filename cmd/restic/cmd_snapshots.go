@@ -195,7 +195,7 @@ func PrintSnapshots(stdout io.Writer, list restic.Snapshots, reasons []restic.Ke
 			data.Reasons = keepReasons[*id].Matches
 		}
 
-		if len(sn.Paths) > 1 {
+		if len(sn.Paths) > 1 && !compact {
 			multiline = true
 		}
 
