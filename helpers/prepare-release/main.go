@@ -9,7 +9,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 
 	"github.com/spf13/pflag"
@@ -25,8 +24,7 @@ var opts = struct {
 	IgnoreChangelogCurrent     bool
 	IgnoreDockerBuildGoVersion bool
 
-	tarFilename string
-	buildDir    string
+	OutputDir string
 }{}
 
 var versionRegex = regexp.MustCompile(`^\d+\.\d+\.\d+$`)
@@ -38,6 +36,9 @@ func init() {
 	pflag.BoolVar(&opts.IgnoreChangelogReleaseDate, "ignore-changelog-release-date", false, "ignore missing subdir with date in changelog/")
 	pflag.BoolVar(&opts.IgnoreChangelogCurrent, "ignore-changelog-current", false, "ignore check if CHANGELOG.md is up to date")
 	pflag.BoolVar(&opts.IgnoreDockerBuildGoVersion, "ignore-docker-build-go-version", false, "ignore check if docker builder go version is up to date")
+
+	pflag.StringVar(&opts.OutputDir, "output-dir", "", "use `dir` as output directory")
+
 	pflag.Parse()
 }
 
@@ -251,6 +252,7 @@ func preCheckDockerBuilderGoVersion() {
 	}
 	localVersion := strings.TrimSpace(string(buf))
 
+	msg("update docker container restic/builder")
 	run("docker", "pull", "restic/builder")
 	buf, err = exec.Command("docker", "run", "--rm", "restic/builder", "go", "version").Output()
 	if err != nil {
@@ -318,62 +320,92 @@ func addTag() {
 	run("git", "tag", "-a", "-s", "-m", tagname, tagname)
 }
 
-func exportTar() {
+func exportTar(version, tarFilename string) {
 	cmd := fmt.Sprintf("git archive --format=tar --prefix=restic-%s/ v%s | gzip -n > %s",
-		opts.Version, opts.Version, opts.tarFilename)
+		version, version, tarFilename)
 	run("sh", "-c", cmd)
-	msg("build restic-%s.tar.gz", opts.Version)
+	msg("build restic-%s.tar.gz", version)
 }
 
-func runBuild() {
-	msg("building binaries...")
-	run("docker", "run", "--rm", "--volume", getwd()+":/home/build", "restic/builder", "build.sh", opts.tarFilename)
-}
-
-func findBuildDir() string {
-	nameRegex := regexp.MustCompile(`restic-` + opts.Version + `-\d{8}-\d{6}`)
-
-	f, err := os.Open(".")
+func extractTar(filename, outputDir string) {
+	msg("extract tar into %v", outputDir)
+	c := exec.Command("tar", "xz", "--strip-components=1", "-f", filename)
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
+	c.Dir = outputDir
+	err := c.Run()
 	if err != nil {
-		die("Open(.): %v", err)
+		die("error extracting tar: %v", err)
+	}
+}
+
+func runBuild(sourceDir, outputDir string) {
+	msg("building binaries...")
+	run("docker", "run", "--rm",
+		"--volume", sourceDir+":/restic",
+		"--volume", outputDir+":/output",
+		"restic/builder")
+}
+
+func readdir(dir string) []string {
+	fis, err := ioutil.ReadDir(dir)
+	if err != nil {
+		die("readdir %v failed: %v", dir, err)
 	}
 
-	entries, err := f.Readdirnames(-1)
+	filenames := make([]string, 0, len(fis))
+	for _, fi := range fis {
+		filenames = append(filenames, fi.Name())
+	}
+	return filenames
+}
+
+func sha256sums(inputDir, outputFile string) {
+	msg("runnnig sha256sum in %v", inputDir)
+
+	filenames := readdir(inputDir)
+
+	f, err := os.Create(outputFile)
 	if err != nil {
-		die("Readdirnames(): %v", err)
+		die("unable to create %v: %v", outputFile, err)
+	}
+
+	c := exec.Command("sha256sum", filenames...)
+	c.Stdout = f
+	c.Stderr = os.Stderr
+	c.Dir = inputDir
+
+	err = c.Run()
+	if err != nil {
+		die("error running sha256sums: %v", err)
 	}
 
 	err = f.Close()
 	if err != nil {
-		die("Close(): %v", err)
+		die("close %v: %v", outputFile, err)
 	}
-
-	sort.Slice(entries, func(i, j int) bool {
-		return entries[j] < entries[i]
-	})
-
-	for _, entry := range entries {
-		if nameRegex.MatchString(entry) {
-			msg("found restic build dir: %v", entry)
-			return entry
-		}
-	}
-
-	die("restic build dir not found")
-	return ""
 }
 
-func signFiles() {
-	run("gpg", "--armor", "--detach-sign", filepath.Join(opts.buildDir, "SHA256SUMS"))
-	run("gpg", "--armor", "--detach-sign", filepath.Join(opts.buildDir, opts.tarFilename))
+func signFiles(filenames ...string) {
+	for _, filename := range filenames {
+		run("gpg", "--armor", "--detach-sign", filename)
+	}
 }
 
-func updateDocker() {
-	cmd := fmt.Sprintf("bzcat %s/restic_%s_linux_amd64.bz2 > restic", opts.buildDir, opts.Version)
+func updateDocker(outputDir, version string) {
+	cmd := fmt.Sprintf("bzcat %s/restic_%s_linux_amd64.bz2 > restic", outputDir, version)
 	run("sh", "-c", cmd)
 	run("chmod", "+x", "restic")
 	run("docker", "build", "--rm", "--tag", "restic/restic:latest", "-f", "docker/Dockerfile", ".")
-	run("docker", "tag", "restic/restic:latest", "restic/restic:"+opts.Version)
+	run("docker", "tag", "restic/restic:latest", "restic/restic:"+version)
+}
+
+func tempdir(prefix string) string {
+	dir, err := ioutil.TempDir(getwd(), prefix)
+	if err != nil {
+		die("unable to create temp dir %q: %v", prefix, err)
+	}
+	return dir
 }
 
 func main() {
@@ -386,8 +418,6 @@ func main() {
 		die("invalid new version")
 	}
 
-	opts.tarFilename = fmt.Sprintf("restic-%s.tar.gz", opts.Version)
-
 	preCheckBranchMaster()
 	preCheckUncommittedChanges()
 	preCheckVersionExists()
@@ -396,19 +426,33 @@ func main() {
 	preCheckChangelogCurrent()
 	preCheckChangelogVersion()
 
+	if opts.OutputDir == "" {
+		opts.OutputDir = tempdir("build-output-")
+	}
+	sourceDir := tempdir("source-")
+
+	msg("using output dir %v", opts.OutputDir)
+	msg("using source dir %v", sourceDir)
+
 	generateFiles()
 	updateVersion()
 	addTag()
 	updateVersionDev()
 
-	exportTar()
-	runBuild()
-	opts.buildDir = findBuildDir()
-	signFiles()
+	tarFilename := filepath.Join(opts.OutputDir, fmt.Sprintf("restic-%s.tar.gz", opts.Version))
+	exportTar(opts.Version, tarFilename)
 
-	updateDocker()
+	extractTar(tarFilename, sourceDir)
+	runBuild(sourceDir, opts.OutputDir)
+	rmdir(sourceDir)
 
-	msg("done, build dir is %v", opts.buildDir)
+	sha256sums(opts.OutputDir, filepath.Join(opts.OutputDir, "SHA256SUMS"))
+
+	signFiles(filepath.Join(opts.OutputDir, "SHA256SUMS"), tarFilename)
+
+	updateDocker(opts.OutputDir, opts.Version)
+
+	msg("done, output dir is %v", opts.OutputDir)
 
 	msg("now run:\n\ngit push --tags origin master\ndocker push restic/restic\n")
 }
