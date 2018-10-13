@@ -1,3 +1,161 @@
+Changelog for restic 0.9.3 (2018-10-13)
+=======================================
+
+The following sections list the changes in restic 0.9.3 relevant to
+restic users. The changes are ordered by importance.
+
+Summary
+-------
+
+ * Fix #1935: Remove truncated files from cache
+ * Fix #1978: Do not return an error when the scanner is faster than backup
+ * Enh #1766: Restore: suppress lchown errors when not running as root
+ * Enh #1909: Reject files/dirs by name first
+ * Enh #1940: Add directory filter to ls command
+ * Enh #1967: Use `--host` everywhere
+ * Enh #2028: Display size of cache directories
+ * Enh #1777: Improve the `find` command
+ * Enh #1876: Display reason why forget keeps snapshots
+ * Enh #1891: Accept glob in paths loaded via --files-from
+ * Enh #1920: Vendor dependencies with Go 1.11 Modules
+ * Enh #1949: Add new command `self-update`
+ * Enh #1953: Ls: Add JSON output support for restic ls cmd
+
+Details
+-------
+
+ * Bugfix #1935: Remove truncated files from cache
+
+   When a file in the local cache is truncated, and restic tries to access data beyond the end of the
+   (cached) file, it used to return an error "EOF". This is now fixed, such truncated files are
+   removed and the data is fetched directly from the backend.
+
+   https://github.com/restic/restic/issues/1935
+
+ * Bugfix #1978: Do not return an error when the scanner is faster than backup
+
+   When restic makes a backup, there's a background task called "scanner" which collects
+   information on how many files and directories are to be saved, in order to display progress
+   information to the user. When the backup finishes faster than the scanner, it is aborted
+   because the result is not needed any more. This logic contained a bug, where quitting the
+   scanner process was treated as an error, and caused restic to print an unhelpful error message
+   ("context canceled").
+
+   https://github.com/restic/restic/issues/1978
+   https://github.com/restic/restic/pull/1991
+
+ * Enhancement #1766: Restore: suppress lchown errors when not running as root
+
+   Like "cp" and "rsync" do, restic now only reports errors for changing the ownership of files
+   during restore if it is run ￼as root, on non-Windows operating systems. On Windows, the error
+   is reported as usual.
+
+   https://github.com/restic/restic/issues/1766
+
+ * Enhancement #1909: Reject files/dirs by name first
+
+   The current scanner/archiver code had an architectural limitation: it always ran the
+   `lstat()` system call on all files and directories before a decision to include/exclude the
+   file/dir was made. This lead to a lot of unnecessary system calls for items that could have been
+   rejected by their name or path only.
+
+   We've changed the archiver/scanner implementation so that it now first rejects by name/path,
+   and only runs the system call on the remaining items. This reduces the number of `lstat()`
+   system calls a lot (depending on the exclude settings).
+
+   https://github.com/restic/restic/issues/1909
+   https://github.com/restic/restic/pull/1912
+
+ * Enhancement #1940: Add directory filter to ls command
+
+   The ls command can now be filtered by directories, so that only files in the given directories
+   will be shown. If the --recursive flag is specified, then ls will traverse subfolders and list
+   their files as well.
+
+   It used to be possible to specify multiple snapshots, but that has been replaced by only one
+   snapshot and the possibility of specifying multiple directories.
+
+   Specifying directories constrains the walk, which can significantly speed up the listing.
+
+   https://github.com/restic/restic/issues/1940
+   https://github.com/restic/restic/pull/1941
+
+ * Enhancement #1967: Use `--host` everywhere
+
+   We now use the flag `--host` for all commands which need a host name, using `--hostname` (e.g.
+   for `restic backup`) still works, but will print a deprecation warning. Also, add the short
+   option `-H` where possible.
+
+   https://github.com/restic/restic/issues/1967
+
+ * Enhancement #2028: Display size of cache directories
+
+   The `cache` command now by default shows the size of the individual cache directories. It can be
+   disabled with `--no-size`.
+
+   https://github.com/restic/restic/issues/2028
+   https://github.com/restic/restic/pull/2033
+
+ * Enhancement #1777: Improve the `find` command
+
+   We've updated the `find` command to support multiple patterns.
+
+   `restic find` is now able to list the snapshots containing a specific tree or blob, or even the
+   snapshots that contain blobs belonging to a given pack. A list of IDs can be given, as long as they
+   all have the same type.
+
+   The command `find` can also display the pack IDs the blobs belong to, if the `--show-pack-id`
+   flag is provided.
+
+   https://github.com/restic/restic/issues/1777
+   https://github.com/restic/restic/pull/1780
+
+ * Enhancement #1876: Display reason why forget keeps snapshots
+
+   We've added a column to the list of snapshots `forget` keeps which details the reasons to keep a
+   particuliar snapshot. This makes debugging policies for forget much easier. Please remember
+   to always try things out with `--dry-run`!
+
+   https://github.com/restic/restic/pull/1876
+
+ * Enhancement #1891: Accept glob in paths loaded via --files-from
+
+   Before that, behaviour was different if paths were appended to command line or from a file,
+   because wild card characters were expanded by shell if appended to command line, but not
+   expanded if loaded from file.
+
+   https://github.com/restic/restic/issues/1891
+
+ * Enhancement #1920: Vendor dependencies with Go 1.11 Modules
+
+   Until now, we've used `dep` for managing dependencies, we've now switch to using Go modules.
+   For users this does not change much, only if you want to compile restic without downloading
+   anything with Go 1.11, then you need to run: `go build -mod=vendor build.go`
+
+   https://github.com/restic/restic/pull/1920
+
+ * Enhancement #1949: Add new command `self-update`
+
+   We have added a new command called `self-update` which downloads the latest released version
+   of restic from GitHub and replaces the current binary with it. It does not rely on any external
+   program (so it'll work everywhere), but still verifies the GPG signature using the embedded
+   GPG public key.
+
+   By default, the `self-update` command is hidden behind the `selfupdate` built tag, which is
+   only set when restic is built using `build.go` (including official releases). The reason for
+   this is that downstream distributions will then not include the command by default, so users
+   are encouraged to use the platform-specific distribution mechanism.
+
+   https://github.com/restic/restic/pull/1949
+
+ * Enhancement #1953: Ls: Add JSON output support for restic ls cmd
+
+   We've implemented listing files in the repository with JSON as output, just pass `--json` as an
+   option to `restic ls`. This makes the output of the command machine readable.
+
+   https://github.com/restic/restic/pull/1953
+
+
 Changelog for restic 0.9.2 (2018-08-06)
 =======================================
 
