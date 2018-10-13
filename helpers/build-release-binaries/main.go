@@ -6,7 +6,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"sort"
 	"strings"
 	"time"
 
@@ -207,46 +206,22 @@ func buildForTarget(sourceDir, outputDir, goos, goarch string) (filename string)
 	return filename
 }
 
-func sha256sums(outputFile, inputDir string, filenames []string) {
-	verbose("runnnig sha256sum in %v", inputDir)
-	f, err := os.Create(outputFile)
-	if err != nil {
-		die("unable to create %v: %v", outputFile, err)
-	}
-
-	c := exec.Command("sha256sum", filenames...)
-	c.Stdout = f
-	c.Stderr = os.Stderr
-	c.Dir = inputDir
-
-	err = c.Run()
-	if err != nil {
-		die("error running sha256sums: %v", err)
-	}
-
-	err = f.Close()
-	if err != nil {
-		die("close %v: %v", outputFile, err)
-	}
-}
-
 func buildTargets(sourceDir, outputDir string, targets map[string][]string) {
+	start := time.Now()
 	msg("building with %d workers", runtime.NumCPU())
 
 	type Job struct{ GOOS, GOARCH string }
 
 	var wg errgroup.Group
 	ch := make(chan Job)
-	res := make(chan string)
 
 	for i := 0; i < runtime.NumCPU(); i++ {
 		wg.Go(func() error {
 			for job := range ch {
 				start := time.Now()
 				verbose("build %v/%v", job.GOOS, job.GOARCH)
-				file := buildForTarget(sourceDir, outputDir, job.GOOS, job.GOARCH)
+				buildForTarget(sourceDir, outputDir, job.GOOS, job.GOARCH)
 				msg("built %v/%v in %.3fs", job.GOOS, job.GOARCH, time.Since(start).Seconds())
-				res <- file
 			}
 			return nil
 		})
@@ -262,20 +237,8 @@ func buildTargets(sourceDir, outputDir string, targets map[string][]string) {
 		return nil
 	})
 
-	go func() {
-		_ = wg.Wait()
-		close(res)
-	}()
-
-	start := time.Now()
-	var filenames []string
-	for filename := range res {
-		filenames = append(filenames, filename)
-	}
-	sort.Strings(filenames)
-
-	msg("build finished in %.3fs, create SHA256SUMS", time.Since(start).Seconds())
-	sha256sums(filepath.Join(outputDir, "SHA256SUMS"), outputDir, filenames)
+	_ = wg.Wait()
+	msg("build finished in %.3fs", time.Since(start).Seconds())
 }
 
 var defaultBuildTargets = map[string][]string{
