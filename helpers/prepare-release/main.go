@@ -339,12 +339,14 @@ func extractTar(filename, outputDir string) {
 	}
 }
 
-func runBuild(sourceDir, outputDir string) {
+func runBuild(sourceDir, outputDir, version string) {
 	msg("building binaries...")
 	run("docker", "run", "--rm",
 		"--volume", sourceDir+":/restic",
 		"--volume", outputDir+":/output",
-		"restic/builder")
+		"restic/builder",
+		"go", "run", "-mod=vendor", "helpers/build-release-binaries/main.go",
+		"--version", version)
 }
 
 func readdir(dir string) []string {
@@ -443,7 +445,7 @@ func main() {
 	exportTar(opts.Version, tarFilename)
 
 	extractTar(tarFilename, sourceDir)
-	runBuild(sourceDir, opts.OutputDir)
+	runBuild(sourceDir, opts.OutputDir, opts.Version)
 	rmdir(sourceDir)
 
 	sha256sums(opts.OutputDir, filepath.Join(opts.OutputDir, "SHA256SUMS"))

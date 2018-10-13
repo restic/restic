@@ -17,12 +17,14 @@ var opts = struct {
 	Verbose   bool
 	SourceDir string
 	OutputDir string
+	Version   string
 }{}
 
 func init() {
 	pflag.BoolVarP(&opts.Verbose, "verbose", "v", false, "be verbose")
 	pflag.StringVarP(&opts.SourceDir, "source", "s", "/restic", "path to the source code `directory`")
 	pflag.StringVarP(&opts.OutputDir, "output", "o", "/output", "path to the output `directory`")
+	pflag.StringVar(&opts.Version, "version", "", "use `x.y.z` as the version for output files")
 	pflag.Parse()
 }
 
@@ -108,6 +110,11 @@ func abs(dir string) string {
 
 func build(sourceDir, outputDir, goos, goarch string) (filename string) {
 	filename = fmt.Sprintf("%v_%v_%v", "restic", goos, goarch)
+
+	if opts.Version != "" {
+		filename = fmt.Sprintf("%v_%v_%v_%v", "restic", opts.Version, goos, goarch)
+	}
+
 	if goos == "windows" {
 		filename += ".exe"
 	}
