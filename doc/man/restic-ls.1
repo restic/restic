@@ -10,15 +10,27 @@ restic\-ls \- List files in a snapshot
 
 .SH SYNOPSIS
 .PP
-\fBrestic ls [flags] [snapshot\-ID ...]\fP
+\fBrestic ls [flags] [snapshotID] [dir...]\fP
 
 
 .SH DESCRIPTION
 .PP
-The "ls" command allows listing files and directories in a snapshot.
+The "ls" command lists files and directories in a snapshot.
 
 .PP
-The special snapshot\-ID "latest" can be used to list files and directories of the latest snapshot in the repository.
+The special snapshot ID "latest" can be used to list files and
+directories of the latest snapshot in the repository. The
+\-\-host flag can be used in conjunction to select the latest
+snapshot originating from a certain host only.
+
+.PP
+File listings can optionally be filtered by directories. Any
+positional arguments after the snapshot ID are interpreted as
+absolute directory paths, and only files inside those directories
+will be listed. If the \-\-recursive flag is used, then the filter
+will allow traversing into matching directories' subfolders.
+Any directory paths specified must be absolute (starting with
+a path separator); paths use the forward slash '/' as separator.
 
 
 .SH OPTIONS
@@ -39,6 +51,10 @@ The special snapshot\-ID "latest" can be used to list files and directories of t
     only consider snapshots which include this (absolute) \fB\fCpath\fR, when no snapshot ID is given
 
 .PP
+\fB\-\-recursive\fP[=false]
+    include files in subfolders of the listed directories
+
+.PP
 \fB\-\-tag\fP=[]
     only consider snapshots which include this \fB\fCtaglist\fR, when no snapshot ID is given
 
@@ -50,7 +66,7 @@ The special snapshot\-ID "latest" can be used to list files and directories of t
 
 .PP
 \fB\-\-cache\-dir\fP=""
-    set the cache directory
+    set the cache directory. (default: use system default cache directory)
 
 .PP
 \fB\-\-cleanup\-cache\fP[=false]

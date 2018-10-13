@@ -59,10 +59,6 @@ data after 'forget' was run successfully, see the 'prune' command.
     only consider snapshots with the given \fB\fChost\fR
 
 .PP
-\fB\-\-hostname\fP=""
-    only consider snapshots with the given \fB\fChostname\fR (deprecated)
-
-.PP
 \fB\-\-tag\fP=[]
     only consider snapshots which include this \fB\fCtaglist\fR in the format \fB\fCtag[,tag,...]\fR (can be specified multiple times)
 
@@ -98,7 +94,7 @@ data after 'forget' was run successfully, see the 'prune' command.
 
 .PP
 \fB\-\-cache\-dir\fP=""
-    set the cache directory
+    set the cache directory. (default: use system default cache directory)
 
 .PP
 \fB\-\-cleanup\-cache\fP[=false]

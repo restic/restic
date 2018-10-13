@@ -29,22 +29,21 @@ to calculate.
 .PP
 The modes are:
 
-.PP
+.RS
+.IP \(bu 2
 restore\-size: (default) Counts the size of the restored files.
-
-.PP
+.IP \(bu 2
 files\-by\-contents: Counts total size of files, where a file is
-                     considered unique if it has unique contents.
-
-.PP
-raw\-data: Counts the size of blobs in the repository, regardless
-            of how many files reference them.
-
-.PP
+considered unique if it has unique contents.
+.IP \(bu 2
+raw\-data: Counts the size of blobs in the repository, regardless of
+how many files reference them.
+.IP \(bu 2
 blobs\-per\-file: A combination of files\-by\-contents and raw\-data.
-
-.PP
+.IP \(bu 2
 Refer to the online manual for more details about each mode.
+
+.RE
 
 
 .SH OPTIONS
@@ -53,7 +52,7 @@ Refer to the online manual for more details about each mode.
     help for stats
 
 .PP
-\fB\-\-host\fP=""
+\fB\-\-host\fP="H"
     filter latest snapshot by this hostname
 
 .PP
@@ -68,7 +67,7 @@ Refer to the online manual for more details about each mode.
 
 .PP
 \fB\-\-cache\-dir\fP=""
-    set the cache directory
+    set the cache directory. (default: use system default cache directory)
 
 .PP
 \fB\-\-cleanup\-cache\fP[=false]

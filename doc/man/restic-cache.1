@@ -31,6 +31,10 @@ The "cache" command allows listing and cleaning local cache directories.
 \fB\-\-max\-age\fP=30
     max age in \fB\fCdays\fR for cache directories to be considered old
 
+.PP
+\fB\-\-no\-size\fP[=false]
+    do not output the size of the cache directories
+
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
 .PP
@@ -39,7 +43,7 @@ The "cache" command allows listing and cleaning local cache directories.
 
 .PP
 \fB\-\-cache\-dir\fP=""
-    set the cache directory
+    set the cache directory. (default: use system default cache directory)
 
 .PP
 \fB\-\-cleanup\-cache\fP[=false]

@@ -5,21 +5,33 @@
 
 .SH NAME
 .PP
-restic \- Backup and restore files
+restic\-self\-update \- Update the restic binary
 
 
 .SH SYNOPSIS
 .PP
-\fBrestic [flags]\fP
+\fBrestic self\-update [flags]\fP
 
 
 .SH DESCRIPTION
 .PP
-restic is a backup program which allows saving multiple revisions of files and
-directories in an encrypted repository stored on different backends.
+The command "update\-restic" downloads the latest stable release of restic from
+GitHub and replaces the currently running binary. After download, the
+authenticity of the binary is verified using the GPG signature on the release
+files.
 
 
 .SH OPTIONS
+.PP
+\fB\-h\fP, \fB\-\-help\fP[=false]
+    help for self\-update
+
+.PP
+\fB\-\-output\fP="./restic\-generate.temp"
+    Save the downloaded file as \fB\fCfilename\fR
+
+
+.SH OPTIONS INHERITED FROM PARENT COMMANDS
 .PP
 \fB\-\-cacert\fP=[]
     \fB\fCfile\fR to load root certificates from (default: use system certificates)
@@ -31,10 +43,6 @@ directories in an encrypted repository stored on different backends.
 .PP
 \fB\-\-cleanup\-cache\fP[=false]
     auto remove old cache directories
-
-.PP
-\fB\-h\fP, \fB\-\-help\fP[=false]
-    help for restic
 
 .PP
 \fB\-\-json\fP[=false]
@@ -83,4 +91,4 @@ directories in an encrypted repository stored on different backends.
 
 .SH SEE ALSO
 .PP
-\fBrestic\-backup(1)\fP, \fBrestic\-cache(1)\fP, \fBrestic\-cat(1)\fP, \fBrestic\-check(1)\fP, \fBrestic\-diff(1)\fP, \fBrestic\-dump(1)\fP, \fBrestic\-find(1)\fP, \fBrestic\-forget(1)\fP, \fBrestic\-generate(1)\fP, \fBrestic\-init(1)\fP, \fBrestic\-key(1)\fP, \fBrestic\-list(1)\fP, \fBrestic\-ls(1)\fP, \fBrestic\-migrate(1)\fP, \fBrestic\-mount(1)\fP, \fBrestic\-prune(1)\fP, \fBrestic\-rebuild\-index(1)\fP, \fBrestic\-restore(1)\fP, \fBrestic\-self\-update(1)\fP, \fBrestic\-snapshots(1)\fP, \fBrestic\-stats(1)\fP, \fBrestic\-tag(1)\fP, \fBrestic\-unlock(1)\fP, \fBrestic\-version(1)\fP
+\fBrestic(1)\fP
