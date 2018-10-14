@@ -64,10 +64,8 @@ func init() {
 
 type lsSnapshot struct {
 	*restic.Snapshot
-
 	ID         *restic.ID `json:"id"`
 	ShortID    string     `json:"short_id"`
-	Nodes      []lsNode   `json:"nodes"`
 	StructType string     `json:"struct_type"` // "snapshot"
 }
 
@@ -150,24 +148,22 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 	var (
 		printSnapshot func(sn *restic.Snapshot)
 		printNode     func(path string, node *restic.Node)
-		printFinish   func() error
 	)
 
 	if gopts.JSON {
-		var lssnapshots []lsSnapshot
+		enc := json.NewEncoder(gopts.stdout)
 
 		printSnapshot = func(sn *restic.Snapshot) {
-			lss := lsSnapshot{
+			enc.Encode(lsSnapshot{
 				Snapshot:   sn,
 				ID:         sn.ID(),
 				ShortID:    sn.ID().Str(),
 				StructType: "snapshot",
-			}
-			lssnapshots = append(lssnapshots, lss)
+			})
 		}
 
 		printNode = func(path string, node *restic.Node) {
-			lsn := lsNode{
+			enc.Encode(lsNode{
 				Name:       node.Name,
 				Type:       node.Type,
 				Path:       path,
@@ -179,24 +175,14 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 				AccessTime: node.AccessTime,
 				ChangeTime: node.ChangeTime,
 				StructType: "node",
-			}
-			s := &lssnapshots[len(lssnapshots)-1]
-			s.Nodes = append(s.Nodes, lsn)
-		}
-
-		printFinish = func() error {
-			return json.NewEncoder(gopts.stdout).Encode(lssnapshots)
+			})
 		}
 	} else {
-		// default output methods
 		printSnapshot = func(sn *restic.Snapshot) {
 			Verbosef("snapshot %s of %v filtered by %v at %s):\n", sn.ID().Str(), sn.Paths, dirs, sn.Time)
 		}
 		printNode = func(path string, node *restic.Node) {
 			Printf("%s\n", formatNode(path, node, lsOptions.ListLong))
-		}
-		printFinish = func() error {
-			return nil
 		}
 	}
 
@@ -240,5 +226,6 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 			return err
 		}
 	}
-	return printFinish()
+
+	return nil
 }

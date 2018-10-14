@@ -1,0 +1,13 @@
+Enhancement: Stream JSON output for ls command
+
+The `ls` command now supports JSON output with the global `--json`
+flag, and this change streams out JSON messages one object at a time
+rather than en entire array buffered in memory before encoding. The
+advantage is it allows large listings to be handled efficiently.
+
+Two message types are printed: snapshots and nodes. A snapshot
+object will precede node objects which belong to that snapshot.
+The `struct_type` field can be used to determine which kind of
+message an object is.
+
+https://github.com/restic/restic/pull/1962
