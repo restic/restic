@@ -1,4 +1,4 @@
-// +build selfupdate
+// xbuild selfupdate
 
 package main
 
@@ -36,16 +36,38 @@ func init() {
 	cmdRoot.AddCommand(cmdSelfUpdate)
 
 	flags := cmdSelfUpdate.Flags()
-	flags.StringVar(&selfUpdateOptions.Output, "output", os.Args[0], "Save the downloaded file as `filename`")
+	flags.StringVar(&selfUpdateOptions.Output, "output", "", "Save the downloaded file as `filename` (default: running binary itself)")
 }
 
 func runSelfUpdate(opts SelfUpdateOptions, gopts GlobalOptions, args []string) error {
-	v, err := selfupdate.DownloadLatestStableRelease(gopts.ctx, opts.Output, Verbosef)
+	if opts.Output == "" {
+		file, err := os.Executable()
+		if err != nil {
+			return errors.Wrap(err, "unable to find executable")
+		}
+
+		opts.Output = file
+	}
+
+	fi, err := os.Lstat(opts.Output)
+	if err != nil {
+		return err
+	}
+
+	if !fi.Mode().IsRegular() {
+		return errors.Errorf("output file %v is not a normal file, use --output to specify a different file", opts.Output)
+	}
+
+	Printf("writing restic to %v\n", opts.Output)
+
+	v, err := selfupdate.DownloadLatestStableRelease(gopts.ctx, opts.Output, version, Verbosef)
 	if err != nil {
 		return errors.Fatalf("unable to update restic: %v", err)
 	}
 
-	Printf("successfully updated restic to version %v\n", v)
+	if v != version {
+		Printf("successfully updated restic to version %v\n", v)
+	}
 
 	return nil
 }

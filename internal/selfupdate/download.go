@@ -106,7 +106,7 @@ func extractToFile(buf []byte, filename, target string, printf func(string, ...i
 // DownloadLatestStableRelease downloads the latest stable released version of
 // restic and saves it to target. It returns the version string for the newest
 // version. The function printf is used to print progress information.
-func DownloadLatestStableRelease(ctx context.Context, target string, printf func(string, ...interface{})) (version string, err error) {
+func DownloadLatestStableRelease(ctx context.Context, target, currentVersion string, printf func(string, ...interface{})) (version string, err error) {
 	if printf == nil {
 		printf = func(string, ...interface{}) {}
 	}
@@ -116,6 +116,11 @@ func DownloadLatestStableRelease(ctx context.Context, target string, printf func
 	rel, err := GitHubLatestRelease(ctx, "restic", "restic")
 	if err != nil {
 		return "", err
+	}
+
+	if rel.Version == currentVersion {
+		printf("restic is up to date\n")
+		return currentVersion, nil
 	}
 
 	printf("latest version is %v\n", rel.Version)
