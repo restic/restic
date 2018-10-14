@@ -113,8 +113,8 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	totalErrors := 0
-	res.Error = func(dir string, node *restic.Node, err error) error {
-		Warnf("ignoring error for %s: %s\n", dir, err)
+	res.Error = func(location string, err error) error {
+		Warnf("ignoring error for %s: %s\n", location, err)
 		totalErrors++
 		return nil
 	}

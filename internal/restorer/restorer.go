@@ -18,16 +18,17 @@ type Restorer struct {
 	repo restic.Repository
 	sn   *restic.Snapshot
 
-	Error        func(dir string, node *restic.Node, err error) error
+	Error        func(location string, err error) error
 	SelectFilter func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool)
 }
 
-var restorerAbortOnAllErrors = func(str string, node *restic.Node, err error) error { return err }
+var restorerAbortOnAllErrors = func(location string, err error) error { return err }
 
 // NewRestorer creates a restorer preloaded with the content from the snapshot id.
 func NewRestorer(repo restic.Repository, id restic.ID) (*Restorer, error) {
 	r := &Restorer{
-		repo: repo, Error: restorerAbortOnAllErrors,
+		repo:         repo,
+		Error:        restorerAbortOnAllErrors,
 		SelectFilter: func(string, string, *restic.Node) (bool, bool) { return true, true },
 	}
 
@@ -54,7 +55,7 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 	tree, err := res.repo.LoadTree(ctx, treeID)
 	if err != nil {
 		debug.Log("error loading tree %v: %v", treeID, err)
-		return res.Error(location, nil, err)
+		return res.Error(location, err)
 	}
 
 	for _, node := range tree.Nodes {
@@ -64,7 +65,7 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 		nodeName := filepath.Base(filepath.Join(string(filepath.Separator), node.Name))
 		if nodeName != node.Name {
 			debug.Log("node %q has invalid name %q", node.Name, nodeName)
-			err := res.Error(location, node, errors.New("node has invalid name"))
+			err := res.Error(location, errors.Errorf("invalid child node name %s", node.Name))
 			if err != nil {
 				return err
 			}
@@ -77,7 +78,7 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 		if target == nodeTarget || !fs.HasPathPrefix(target, nodeTarget) {
 			debug.Log("target: %v %v", target, nodeTarget)
 			debug.Log("node %q has invalid target path %q", node.Name, nodeTarget)
-			err := res.Error(nodeLocation, node, errors.New("node has invalid path"))
+			err := res.Error(nodeLocation, errors.New("node has invalid path"))
 			if err != nil {
 				return err
 			}
@@ -94,7 +95,7 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 
 		sanitizeError := func(err error) error {
 			if err != nil {
-				err = res.Error(nodeTarget, node, err)
+				err = res.Error(nodeLocation, err)
 			}
 			return err
 		}
@@ -139,10 +140,10 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 	return nil
 }
 
-func (res *Restorer) restoreNodeTo(ctx context.Context, node *restic.Node, target, location string, idx *restic.HardlinkIndex) error {
+func (res *Restorer) restoreNodeTo(ctx context.Context, node *restic.Node, target, location string) error {
 	debug.Log("restoreNode %v %v %v", node.Name, target, location)
 
-	err := node.CreateAt(ctx, target, res.repo, idx)
+	err := node.CreateAt(ctx, target, res.repo)
 	if err != nil {
 		debug.Log("node.CreateAt(%s) error %v", target, err)
 	}
@@ -162,6 +163,31 @@ func (res *Restorer) restoreNodeMetadataTo(node *restic.Node, target, location s
 	return err
 }
 
+func (res *Restorer) restoreHardlinkAt(node *restic.Node, target, path, location string) error {
+	if err := fs.Remove(path); !os.IsNotExist(err) {
+		return errors.Wrap(err, "RemoveCreateHardlink")
+	}
+	err := fs.Link(target, path)
+	if err != nil {
+		return errors.Wrap(err, "CreateHardlink")
+	}
+	// TODO investigate if hardlinks have separate metadata on any supported system
+	return res.restoreNodeMetadataTo(node, path, location)
+}
+
+func (res *Restorer) restoreEmptyFileAt(node *restic.Node, target, location string) error {
+	wr, err := os.OpenFile(target, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
+	if err != nil {
+		return err
+	}
+	err = wr.Close()
+	if err != nil {
+		return err
+	}
+
+	return res.restoreNodeMetadataTo(node, target, location)
+}
+
 // RestoreTo creates the directories and files in the snapshot below dst.
 // Before an item is created, res.Filter is called.
 func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
@@ -173,35 +199,84 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 		}
 	}
 
-	// make sure the target directory exists
-	err = fs.MkdirAll(dst, 0777) // umask takes care of dir permissions
-	if err != nil {
-		return errors.Wrap(err, "MkdirAll")
+	restoreNodeMetadata := func(node *restic.Node, target, location string) error {
+		return res.restoreNodeMetadataTo(node, target, location)
 	}
+	noop := func(node *restic.Node, target, location string) error { return nil }
 
 	idx := restic.NewHardlinkIndex()
-	return res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
+
+	filerestorer := newFileRestorer(dst, res.repo.Backend().Load, res.repo.Key(), filePackTraverser{lookup: res.repo.Index().Lookup})
+
+	// first tree pass: create directories and collect all files to restore
+	err = res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
 		enterDir: func(node *restic.Node, target, location string) error {
 			// create dir with default permissions
 			// #leaveDir restores dir metadata after visiting all children
 			return fs.MkdirAll(target, 0700)
 		},
+
 		visitNode: func(node *restic.Node, target, location string) error {
 			// create parent dir with default permissions
-			// #leaveDir restores dir metadata after visiting all children
+			// second pass #leaveDir restores dir metadata after visiting/restoring all children
 			err := fs.MkdirAll(filepath.Dir(target), 0700)
 			if err != nil {
 				return err
 			}
 
-			return res.restoreNodeTo(ctx, node, target, location, idx)
+			if node.Type != "file" {
+				return nil
+			}
+
+			if node.Size == 0 {
+				return nil // deal with empty files later
+			}
+
+			if node.Links > 1 {
+				if idx.Has(node.Inode, node.DeviceID) {
+					return nil
+				}
+				idx.Add(node.Inode, node.DeviceID, location)
+			}
+
+			filerestorer.addFile(location, node.Content)
+
+			return nil
 		},
-		leaveDir: func(node *restic.Node, target, location string) error {
-			// Restore directory permissions and timestamp at the end. If we did it earlier
-			// - children restore could fail because of restictive directory permission
-			// - children restore could overwrite the timestamp of the directory they are in
+		leaveDir: noop,
+	})
+	if err != nil {
+		return err
+	}
+
+	err = filerestorer.restoreFiles(ctx, func(location string, err error) { res.Error(location, err) })
+	if err != nil {
+		return err
+	}
+
+	// second tree pass: restore special files and filesystem metadata
+	return res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
+		enterDir: noop,
+		visitNode: func(node *restic.Node, target, location string) error {
+			if node.Type != "file" {
+				return res.restoreNodeTo(ctx, node, target, location)
+			}
+
+			// create empty files, but not hardlinks to empty files
+			if node.Size == 0 && (node.Links < 2 || !idx.Has(node.Inode, node.DeviceID)) {
+				if node.Links > 1 {
+					idx.Add(node.Inode, node.DeviceID, location)
+				}
+				return res.restoreEmptyFileAt(node, target, location)
+			}
+
+			if idx.Has(node.Inode, node.DeviceID) && idx.GetFilename(node.Inode, node.DeviceID) != location {
+				return res.restoreHardlinkAt(node, filerestorer.targetPath(idx.GetFilename(node.Inode, node.DeviceID)), target, location)
+			}
+
 			return res.restoreNodeMetadataTo(node, target, location)
 		},
+		leaveDir: restoreNodeMetadata,
 	})
 }
 

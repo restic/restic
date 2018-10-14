@@ -135,7 +135,7 @@ func (node Node) GetExtendedAttribute(a string) []byte {
 }
 
 // CreateAt creates the node at the given path but does NOT restore node meta data.
-func (node *Node) CreateAt(ctx context.Context, path string, repo Repository, idx *HardlinkIndex) error {
+func (node *Node) CreateAt(ctx context.Context, path string, repo Repository) error {
 	debug.Log("create node %v at %v", node.Name, path)
 
 	switch node.Type {
@@ -144,7 +144,7 @@ func (node *Node) CreateAt(ctx context.Context, path string, repo Repository, id
 			return err
 		}
 	case "file":
-		if err := node.createFileAt(ctx, path, repo, idx); err != nil {
+		if err := node.createFileAt(ctx, path, repo); err != nil {
 			return err
 		}
 	case "symlink":
@@ -259,18 +259,7 @@ func (node Node) createDirAt(path string) error {
 	return nil
 }
 
-func (node Node) createFileAt(ctx context.Context, path string, repo Repository, idx *HardlinkIndex) error {
-	if node.Links > 1 && idx.Has(node.Inode, node.DeviceID) {
-		if err := fs.Remove(path); !os.IsNotExist(err) {
-			return errors.Wrap(err, "RemoveCreateHardlink")
-		}
-		err := fs.Link(idx.GetFilename(node.Inode, node.DeviceID), path)
-		if err != nil {
-			return errors.Wrap(err, "CreateHardlink")
-		}
-		return nil
-	}
-
+func (node Node) createFileAt(ctx context.Context, path string, repo Repository) error {
 	f, err := fs.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		return errors.Wrap(err, "OpenFile")
@@ -285,10 +274,6 @@ func (node Node) createFileAt(ctx context.Context, path string, repo Repository,
 
 	if closeErr != nil {
 		return errors.Wrap(closeErr, "Close")
-	}
-
-	if node.Links > 1 {
-		idx.Add(node.Inode, node.DeviceID, path)
 	}
 
 	return nil

@@ -1,0 +1,11 @@
+Enhancement: Concurrent restore
+
+This change significantly improves restore performance, especially
+when using high-latency remote repositories like B2.
+
+The implementation now uses several concurrent threads to download and process
+multiple remote files concurrently. To further reduce restore time, each remote
+file is downloaded using a single repository request.
+
+https://github.com/restic/restic/issues/1605
+https://github.com/restic/restic/pull/1719

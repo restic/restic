@@ -24,7 +24,9 @@ type Snapshot struct {
 }
 
 type File struct {
-	Data string
+	Data  string
+	Links uint64
+	Inode uint64
 }
 
 type Dir struct {
@@ -44,26 +46,40 @@ func saveFile(t testing.TB, repo restic.Repository, node File) restic.ID {
 	return id
 }
 
-func saveDir(t testing.TB, repo restic.Repository, nodes map[string]Node) restic.ID {
+func saveDir(t testing.TB, repo restic.Repository, nodes map[string]Node, inode uint64) restic.ID {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	tree := &restic.Tree{}
 	for name, n := range nodes {
-		var id restic.ID
+		inode++
 		switch node := n.(type) {
 		case File:
-			id = saveFile(t, repo, node)
+			fi := n.(File).Inode
+			if fi == 0 {
+				fi = inode
+			}
+			lc := n.(File).Links
+			if lc == 0 {
+				lc = 1
+			}
+			fc := []restic.ID{}
+			if len(n.(File).Data) > 0 {
+				fc = append(fc, saveFile(t, repo, node))
+			}
 			tree.Insert(&restic.Node{
 				Type:    "file",
 				Mode:    0644,
 				Name:    name,
 				UID:     uint32(os.Getuid()),
 				GID:     uint32(os.Getgid()),
-				Content: []restic.ID{id},
+				Content: fc,
+				Size:    uint64(len(n.(File).Data)),
+				Inode:   fi,
+				Links:   lc,
 			})
 		case Dir:
-			id = saveDir(t, repo, node.Nodes)
+			id := saveDir(t, repo, node.Nodes, inode)
 
 			mode := node.Mode
 			if mode == 0 {
@@ -95,7 +111,7 @@ func saveSnapshot(t testing.TB, repo restic.Repository, snapshot Snapshot) (*res
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	treeID := saveDir(t, repo, snapshot.Nodes)
+	treeID := saveDir(t, repo, snapshot.Nodes, 1000)
 
 	err := repo.Flush(ctx)
 	if err != nil {
@@ -131,18 +147,18 @@ func TestRestorer(t *testing.T) {
 	var tests = []struct {
 		Snapshot
 		Files      map[string]string
-		ErrorsMust map[string]string
-		ErrorsMay  map[string]string
+		ErrorsMust map[string]map[string]struct{}
+		ErrorsMay  map[string]map[string]struct{}
 		Select     func(item string, dstpath string, node *restic.Node) (selectForRestore bool, childMayBeSelected bool)
 	}{
 		// valid test cases
 		{
 			Snapshot: Snapshot{
 				Nodes: map[string]Node{
-					"foo": File{"content: foo\n"},
+					"foo": File{Data: "content: foo\n"},
 					"dirtest": Dir{
 						Nodes: map[string]Node{
-							"file": File{"content: file\n"},
+							"file": File{Data: "content: file\n"},
 						},
 					},
 				},
@@ -155,13 +171,13 @@ func TestRestorer(t *testing.T) {
 		{
 			Snapshot: Snapshot{
 				Nodes: map[string]Node{
-					"top": File{"toplevel file"},
+					"top": File{Data: "toplevel file"},
 					"dir": Dir{
 						Nodes: map[string]Node{
-							"file": File{"file in dir"},
+							"file": File{Data: "file in dir"},
 							"subdir": Dir{
 								Nodes: map[string]Node{
-									"file": File{"file in subdir"},
+									"file": File{Data: "file in subdir"},
 								},
 							},
 						},
@@ -180,7 +196,7 @@ func TestRestorer(t *testing.T) {
 					"dir": Dir{
 						Mode: 0444,
 					},
-					"file": File{"top-level file"},
+					"file": File{Data: "top-level file"},
 				},
 			},
 			Files: map[string]string{
@@ -193,7 +209,7 @@ func TestRestorer(t *testing.T) {
 					"dir": Dir{
 						Mode: 0555,
 						Nodes: map[string]Node{
-							"file": File{"file in dir"},
+							"file": File{Data: "file in dir"},
 						},
 					},
 				},
@@ -205,7 +221,7 @@ func TestRestorer(t *testing.T) {
 		{
 			Snapshot: Snapshot{
 				Nodes: map[string]Node{
-					"topfile": File{"top-level file"},
+					"topfile": File{Data: "top-level file"},
 				},
 			},
 			Files: map[string]string{
@@ -217,7 +233,7 @@ func TestRestorer(t *testing.T) {
 				Nodes: map[string]Node{
 					"dir": Dir{
 						Nodes: map[string]Node{
-							"file": File{"content: file\n"},
+							"file": File{Data: "content: file\n"},
 						},
 					},
 				},
@@ -242,40 +258,44 @@ func TestRestorer(t *testing.T) {
 		{
 			Snapshot: Snapshot{
 				Nodes: map[string]Node{
-					`..\test`:                      File{"foo\n"},
-					`..\..\foo\..\bar\..\xx\test2`: File{"test2\n"},
+					`..\test`:                      File{Data: "foo\n"},
+					`..\..\foo\..\bar\..\xx\test2`: File{Data: "test2\n"},
 				},
 			},
-			ErrorsMay: map[string]string{
-				`/#..\test`:                      "node has invalid name",
-				`/#..\..\foo\..\bar\..\xx\test2`: "node has invalid name",
+			ErrorsMay: map[string]map[string]struct{}{
+				`/`: {
+					`invalid child node name ..\test`:                      struct{}{},
+					`invalid child node name ..\..\foo\..\bar\..\xx\test2`: struct{}{},
+				},
 			},
 		},
 		{
 			Snapshot: Snapshot{
 				Nodes: map[string]Node{
-					`../test`:                      File{"foo\n"},
-					`../../foo/../bar/../xx/test2`: File{"test2\n"},
+					`../test`:                      File{Data: "foo\n"},
+					`../../foo/../bar/../xx/test2`: File{Data: "test2\n"},
 				},
 			},
-			ErrorsMay: map[string]string{
-				`/#../test`:                      "node has invalid name",
-				`/#../../foo/../bar/../xx/test2`: "node has invalid name",
+			ErrorsMay: map[string]map[string]struct{}{
+				`/`: {
+					`invalid child node name ../test`:                      struct{}{},
+					`invalid child node name ../../foo/../bar/../xx/test2`: struct{}{},
+				},
 			},
 		},
 		{
 			Snapshot: Snapshot{
 				Nodes: map[string]Node{
-					"top": File{"toplevel file"},
+					"top": File{Data: "toplevel file"},
 					"x": Dir{
 						Nodes: map[string]Node{
-							"file1": File{"file1"},
+							"file1": File{Data: "file1"},
 							"..": Dir{
 								Nodes: map[string]Node{
-									"file2": File{"file2"},
+									"file2": File{Data: "file2"},
 									"..": Dir{
 										Nodes: map[string]Node{
-											"file2": File{"file2"},
+											"file2": File{Data: "file2"},
 										},
 									},
 								},
@@ -287,8 +307,10 @@ func TestRestorer(t *testing.T) {
 			Files: map[string]string{
 				"top": "toplevel file",
 			},
-			ErrorsMust: map[string]string{
-				`/x#..`: "node has invalid name",
+			ErrorsMust: map[string]map[string]struct{}{
+				`/x`: {
+					`invalid child node name ..`: struct{}{},
+				},
 			},
 		},
 	}
@@ -326,11 +348,14 @@ func TestRestorer(t *testing.T) {
 				return true, true
 			}
 
-			errors := make(map[string]string)
-			res.Error = func(dir string, node *restic.Node, err error) error {
-				t.Logf("restore returned error for %q in dir %v: %v", node.Name, dir, err)
-				dir = toSlash(dir)
-				errors[dir+"#"+node.Name] = err.Error()
+			errors := make(map[string]map[string]struct{})
+			res.Error = func(location string, err error) error {
+				location = toSlash(location)
+				t.Logf("restore returned error for %q: %v", location, err)
+				if errors[location] == nil {
+					errors[location] = make(map[string]struct{})
+				}
+				errors[location][err.Error()] = struct{}{}
 				return nil
 			}
 
@@ -342,33 +367,27 @@ func TestRestorer(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			for filename, errorMessage := range test.ErrorsMust {
-				msg, ok := errors[filename]
+			for location, expectedErrors := range test.ErrorsMust {
+				actualErrors, ok := errors[location]
 				if !ok {
-					t.Errorf("expected error for %v, found none", filename)
+					t.Errorf("expected error(s) for %v, found none", location)
 					continue
 				}
 
-				if msg != "" && msg != errorMessage {
-					t.Errorf("wrong error message for %v: got %q, want %q",
-						filename, msg, errorMessage)
-				}
+				rtest.Equals(t, expectedErrors, actualErrors)
 
-				delete(errors, filename)
+				delete(errors, location)
 			}
 
-			for filename, errorMessage := range test.ErrorsMay {
-				msg, ok := errors[filename]
+			for location, expectedErrors := range test.ErrorsMay {
+				actualErrors, ok := errors[location]
 				if !ok {
 					continue
 				}
 
-				if msg != "" && msg != errorMessage {
-					t.Errorf("wrong error message for %v: got %q, want %q",
-						filename, msg, errorMessage)
-				}
+				rtest.Equals(t, expectedErrors, actualErrors)
 
-				delete(errors, filename)
+				delete(errors, location)
 			}
 
 			for filename, err := range errors {
@@ -398,10 +417,10 @@ func TestRestorerRelative(t *testing.T) {
 		{
 			Snapshot: Snapshot{
 				Nodes: map[string]Node{
-					"foo": File{"content: foo\n"},
+					"foo": File{Data: "content: foo\n"},
 					"dirtest": Dir{
 						Nodes: map[string]Node{
-							"file": File{"content: file\n"},
+							"file": File{Data: "content: file\n"},
 						},
 					},
 				},
@@ -433,10 +452,9 @@ func TestRestorerRelative(t *testing.T) {
 			defer cleanup()
 
 			errors := make(map[string]string)
-			res.Error = func(dir string, node *restic.Node, err error) error {
-				t.Logf("restore returned error for %q in dir %v: %v", node.Name, dir, err)
-				dir = toSlash(dir)
-				errors[dir+"#"+node.Name] = err.Error()
+			res.Error = func(location string, err error) error {
+				t.Logf("restore returned error for %q: %v", location, err)
+				errors[location] = err.Error()
 				return nil
 			}
 
@@ -521,12 +539,12 @@ func TestRestorerTraverseTree(t *testing.T) {
 			Snapshot: Snapshot{
 				Nodes: map[string]Node{
 					"dir": Dir{Nodes: map[string]Node{
-						"otherfile": File{"x"},
+						"otherfile": File{Data: "x"},
 						"subdir": Dir{Nodes: map[string]Node{
-							"file": File{"content: file\n"},
+							"file": File{Data: "content: file\n"},
 						}},
 					}},
-					"foo": File{"content: foo\n"},
+					"foo": File{Data: "content: foo\n"},
 				},
 			},
 			Select: func(item string, dstpath string, node *restic.Node) (selectForRestore bool, childMayBeSelected bool) {
@@ -548,12 +566,12 @@ func TestRestorerTraverseTree(t *testing.T) {
 			Snapshot: Snapshot{
 				Nodes: map[string]Node{
 					"dir": Dir{Nodes: map[string]Node{
-						"otherfile": File{"x"},
+						"otherfile": File{Data: "x"},
 						"subdir": Dir{Nodes: map[string]Node{
-							"file": File{"content: file\n"},
+							"file": File{Data: "content: file\n"},
 						}},
 					}},
-					"foo": File{"content: foo\n"},
+					"foo": File{Data: "content: foo\n"},
 				},
 			},
 			Select: func(item string, dstpath string, node *restic.Node) (selectForRestore bool, childMayBeSelected bool) {
@@ -569,11 +587,11 @@ func TestRestorerTraverseTree(t *testing.T) {
 		{
 			Snapshot: Snapshot{
 				Nodes: map[string]Node{
-					"aaa": File{"content: foo\n"},
+					"aaa": File{Data: "content: foo\n"},
 					"dir": Dir{Nodes: map[string]Node{
-						"otherfile": File{"x"},
+						"otherfile": File{Data: "x"},
 						"subdir": Dir{Nodes: map[string]Node{
-							"file": File{"content: file\n"},
+							"file": File{Data: "content: file\n"},
 						}},
 					}},
 				},
@@ -594,12 +612,12 @@ func TestRestorerTraverseTree(t *testing.T) {
 			Snapshot: Snapshot{
 				Nodes: map[string]Node{
 					"dir": Dir{Nodes: map[string]Node{
-						"otherfile": File{"x"},
+						"otherfile": File{Data: "x"},
 						"subdir": Dir{Nodes: map[string]Node{
-							"file": File{"content: file\n"},
+							"file": File{Data: "content: file\n"},
 						}},
 					}},
-					"foo": File{"content: foo\n"},
+					"foo": File{Data: "content: foo\n"},
 				},
 			},
 			Select: func(item string, dstpath string, node *restic.Node) (selectForRestore bool, childMayBeSelected bool) {
@@ -623,12 +641,12 @@ func TestRestorerTraverseTree(t *testing.T) {
 			Snapshot: Snapshot{
 				Nodes: map[string]Node{
 					"dir": Dir{Nodes: map[string]Node{
-						"otherfile": File{"x"},
+						"otherfile": File{Data: "x"},
 						"subdir": Dir{Nodes: map[string]Node{
-							"file": File{"content: file\n"},
+							"file": File{Data: "content: file\n"},
 						}},
 					}},
-					"foo": File{"content: foo\n"},
+					"foo": File{Data: "content: foo\n"},
 				},
 			},
 			Select: func(item string, dstpath string, node *restic.Node) (selectForRestore bool, childMayBeSelected bool) {
