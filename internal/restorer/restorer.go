@@ -306,23 +306,31 @@ func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
 				return errors.Errorf("Invalid file size: expected %d got %d", node.Size, stat.Size())
 			}
 
+			file, err := os.Open(target)
+			if err != nil {
+				return err
+			}
+
 			offset := int64(0)
 			for _, blobID := range node.Content {
-				rd, err := os.Open(target)
-				if err != nil {
-					return err
-				}
 				blobs, _ := res.repo.Index().Lookup(blobID, restic.DataBlob)
 				length := blobs[0].Length - uint(crypto.Extension)
 				buf := make([]byte, length) // TODO do I want to reuse the buffer somehow?
-				_, err = rd.ReadAt(buf, offset)
+				_, err = file.ReadAt(buf, offset)
 				if err != nil {
+					_ = file.Close()
 					return err
 				}
 				if !blobID.Equal(restic.Hash(buf)) {
+					_ = file.Close()
 					return errors.Errorf("Unexpected contents starting at offset %d", offset)
 				}
 				offset += int64(length)
+			}
+
+			err = file.Close()
+			if err != nil {
+				return err
 			}
 
 			return nil
