@@ -1,55 +1,62 @@
 package ui
 
 import (
-	"fmt"
 	"time"
 )
 
-// CounterTo tracks progress of a single metric of a long running operation and provides
-// info about current status and ETA of completion.
+type Counter struct {
+	value int64
+}
+
+func (c *Counter) Add(count int64) {
+	c.value += int64(count)
+}
+
+func (c *Counter) Value() int64 {
+	return c.value
+}
+
+func (c *Counter) FormatBytes() string {
+	return FormatBytes(uint64(c.value))
+}
+
+type Stopwatch struct {
+	start time.Time
+}
+
+func StartStopwatch() *Stopwatch {
+	return &Stopwatch{start: time.Now()}
+}
+
+func (s *Stopwatch) Elapsed() time.Duration {
+	return time.Since(s.start)
+}
+
+func (s *Stopwatch) FormatDuration() string {
+	return formatDuration(s.Elapsed())
+}
+
 type CounterTo struct {
-	start           time.Time
-	target, current uint64 // XXX unsigned integers wrap at zero, it's bad
+	Counter
+	target Counter
 }
 
-func StartCountTo(start time.Time, target uint64) CounterTo {
-	return CounterTo{start: start, target: target}
-}
-
-func (c *CounterTo) Add(count uint) {
-	c.current += uint64(count)
-}
-
-func (c *CounterTo) Percent() float64 {
-	percent := 100.0 * float64(c.current) / float64(c.target)
-
-	if percent > 100 {
-		percent = 100
-	}
-
-	return percent
+func StartCountTo(target int64) CounterTo {
+	return CounterTo{target: Counter{value: target}}
 }
 
 func (c *CounterTo) FormatPercent() string {
-	return fmt.Sprintf("%3.2f%%", c.Percent())
+	return FormatPercent(uint64(c.value), uint64(c.target.value))
 }
 
-func (c *CounterTo) Value() uint64 {
-	return c.current
-}
-
-func (c *CounterTo) Target() uint64 {
-	return c.target
-}
-
-func (c *CounterTo) ETA(now time.Time) time.Duration {
-	if c.current >= c.target {
+func (c *CounterTo) ETA(sw Stopwatch) time.Duration {
+	if c.value >= c.target.value {
 		return etaDONE
 	}
 
-	elapsed := now.Sub(c.start)
-	current := c.current
-	target := c.target
+	elapsed := sw.Elapsed()
+	current := c.value
+	target := c.target.value
 
 	if elapsed <= 0 || current <= 0 {
 		return etaNA
@@ -65,6 +72,10 @@ func (c *CounterTo) ETA(now time.Time) time.Duration {
 	return eta
 }
 
-func (c *CounterTo) FormatETA(now time.Time) string {
-	return FormatSeconds(uint64(c.ETA(now) / time.Second))
+func (c *CounterTo) FormatETA(sw Stopwatch) string {
+	return FormatDuration(c.ETA(sw))
+}
+
+func (c *CounterTo) Target() *Counter {
+	return &c.target
 }

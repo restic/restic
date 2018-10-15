@@ -1,10 +1,12 @@
 package ui
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
 	"strconv"
+	"text/template"
 	"time"
 
 	"github.com/restic/restic/internal/ui/termstatus"
@@ -40,12 +42,18 @@ type ProgressUI interface {
 	V(msg string, args ...interface{})
 	VV(msg string, args ...interface{})
 
-	// Set currently running operation title, periodic progress and summary
-	// messages. all callback invocations are serialized
-	Set(title string, setup func(), eta func() time.Duration, progress, summary func() string)
+	// Set currently running operation phase
+	Set(title string, setup func(), metrics map[string]interface{}, progress, summary string)
 
-	// Update executes op, then updates user-visible progress message(s) as necessary
+	// Update executes op, then updates user-visible progress UI as necessary
 	Update(op func())
+}
+
+type progressPhase struct {
+	title    string
+	metrics  map[string]interface{}
+	progress *template.Template
+	summary  *template.Template
 }
 
 // TermstatusProgressUI implements ProgressUI using termstatus.Terminal.
@@ -65,12 +73,10 @@ type TermstatusProgressUI struct {
 
 	minUpdatePause time.Duration
 
-	title    string
-	eta      func() time.Duration
-	progress func() string
-	summary  func() string
-
+	// long-running command start time
 	start time.Time
+
+	phase progressPhase
 }
 
 var _ ProgressUI = &TermstatusProgressUI{}
@@ -119,9 +125,7 @@ forever:
 			if !ok {
 				p.term.SetStatus([]string{})
 				p.diplaySummary()
-				p.title = ""
-				p.progress = nil
-				p.summary = nil
+				p.phase = progressPhase{}
 				break forever
 			}
 			op()
@@ -144,18 +148,35 @@ func (p *TermstatusProgressUI) Update(op func()) {
 	p.updates <- op
 }
 
+func copyMetrics(original map[string]interface{}) map[string]interface{} {
+	copy := make(map[string]interface{}, len(original))
+	for k, v := range original {
+		copy[k] = v
+	}
+	return copy
+}
+
 // Set currently running operation title, periodic progress and summary
 // messages. all callbacks will be invoked from the "UI" thread
-func (p *TermstatusProgressUI) Set(title string, setup func(), eta func() time.Duration, progress, summary func() string) {
+func (p *TermstatusProgressUI) Set(title string, setup func(), metrics map[string]interface{}, progress, summary string) {
+	metrics = copyMetrics(metrics)
+	metrics["stopwatch"] = StartStopwatch()
+	// decorate progress messahe with running time, completion % and ETA, if available
+	progress = "[{{.stopwatch.FormatDuration}}] " + progress
+	if _, ok := metrics["percent"]; ok {
+		progress = progress + " {{.percent.FormatPercent}} ETA {{.percent.FormatETA .stopwatch}}"
+	}
 	p.updates <- func() {
 		p.diplaySummary() // display summary of the prior phase if any
 		if setup != nil {
 			setup()
 		}
-		p.eta = eta
-		p.title = title
-		p.progress = progress
-		p.summary = summary
+		p.phase = progressPhase{
+			title:    title,
+			metrics:  metrics, // XXX do I need to make a copy, just to be safe?
+			progress: parseTemplate("progress", progress),
+			summary:  parseTemplate("summary", summary),
+		}
 		p.displayProgress(true) // display initial progress
 	}
 }
@@ -168,50 +189,49 @@ func (p *TermstatusProgressUI) Finish() {
 }
 
 func (p *TermstatusProgressUI) diplaySummary() {
-	if p.summary != nil {
-		p.P(p.summary())
+	if p.phase.summary != nil {
+		p.P(executeTemplate(p.phase.summary, p.phase.metrics))
 	}
 }
 
-func (p *TermstatusProgressUI) displayProgress(first bool) {
-	duration := FormatDurationSince(p.start)
+func parseTemplate(name, text string) *template.Template {
+	return template.Must(template.New(name).Parse(text))
+}
 
-	progress := func(lines []string) []string {
-		if p.progress != nil {
-			eta := "N/A"
-			if p.eta != nil {
-				eta = FormatETA(p.eta())
-			}
-
-			// TODO %% completion
-			lines = append(lines, fmt.Sprintf("[%s] %s ETA %s", duration, p.progress(), eta))
-		}
-		return lines
+func executeTemplate(t *template.Template, data interface{}) string {
+	buf := new(bytes.Buffer)
+	err := t.Execute(buf, data)
+	if err != nil {
+		panic(err)
 	}
+	return buf.String()
+}
+
+func (p *TermstatusProgressUI) displayProgress(first bool) {
+	if p.phase.title == "" {
+		if p.term.CanDisplayStatus() {
+			p.term.SetStatus([]string{})
+		}
+		return
+	}
+
+	msg := executeTemplate(p.phase.progress, p.phase.metrics)
 
 	if p.term.CanDisplayStatus() {
 		// TODO consider single line to include title, progress and ETA
+		// TODO asci-art progress bar, if completion percent is available
 		var lines []string
-		if p.title != "" {
-			lines = append(lines, p.title)
+		if p.phase.title != "" {
+			lines = append(lines, p.phase.title)
 		}
-		lines = progress(lines)
+		lines = append(lines, msg)
 		p.term.SetStatus(lines)
 	} else {
 		// on dumb terminals print title once, then progress message
 		if first {
-			p.P("%s", p.title)
+			p.P("%s", p.phase.title)
 		} else {
-			lines := progress([]string{})
-			if len(lines) > 0 {
-				if len(lines) > 1 {
-					// separate multiline messages so they are easier to read
-					lines = append(lines, "\n")
-				}
-				for _, line := range lines {
-					p.V("%s", line)
-				}
-			}
+			p.V("%s", msg)
 		}
 	}
 
@@ -251,6 +271,16 @@ func FormatPercent(numerator uint64, denominator uint64) string {
 	return fmt.Sprintf("%3.2f%%", percent)
 }
 
+func formatPercent(percent float64) string {
+	switch {
+	case percent < 0:
+		percent = 0
+	case percent > 1:
+		percent = 1
+	}
+	return fmt.Sprintf("%3.2f%%", 100*percent)
+}
+
 // FormatSeconds returns provided number of as HH:mm:ss string
 func FormatSeconds(sec uint64) string {
 	hours := sec / 3600
@@ -269,19 +299,35 @@ func formatDuration(d time.Duration) string {
 	return FormatSeconds(sec)
 }
 
+func FormatDuration(d time.Duration) string {
+	return formatDuration(d)
+}
+
 // FormatDurationSince returns time elapsed since t as HH:mm:ss string
 func FormatDurationSince(t time.Time) string {
 	return formatDuration(time.Since(t))
 }
 
 // FormatETA ETA string
-func FormatETA(d time.Duration) string {
+func formatETA(elapsed time.Duration, percent float64) string {
+	eta := eta(elapsed, percent)
 	switch {
-	case d == etaDONE:
+	case eta == etaDONE:
 		return "DONE"
-	case d == etaNA:
+	case eta == etaNA:
 		return "N/A"
 	default:
-		return formatDuration(d)
+		return formatDuration(eta)
 	}
+}
+
+func eta(elapsed time.Duration, percent float64) time.Duration {
+	// XXX original inputs are integers, don't like float64 here at all
+	switch {
+	case percent >= 1:
+		return etaDONE
+	case percent < 0:
+		return etaNA
+	}
+	return time.Duration(float64(elapsed) / percent)
 }

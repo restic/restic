@@ -1,22 +1,39 @@
 package ui
 
-import "time"
-
-type testProgressUI struct {
+type nilProgressUI struct {
 }
 
-var _ ProgressUI = &testProgressUI{}
+var _ ProgressUI = &nilProgressUI{}
 
 // NewNilProgressUI new ProgressUI instance that does not print any messages.
 // Meant for use from tests
 func NewNilProgressUI() ProgressUI {
-	return &testProgressUI{}
+	return &nilProgressUI{}
 }
 
-func (p *testProgressUI) E(msg string, args ...interface{})  {}
-func (p *testProgressUI) P(msg string, args ...interface{})  {}
-func (p *testProgressUI) V(msg string, args ...interface{})  {}
-func (p *testProgressUI) VV(msg string, args ...interface{}) {}
-func (p *testProgressUI) Set(title string, setup func(), eta func() time.Duration, progress, summary func() string) {
+func (p *nilProgressUI) E(msg string, args ...interface{})  {}
+func (p *nilProgressUI) P(msg string, args ...interface{})  {}
+func (p *nilProgressUI) V(msg string, args ...interface{})  {}
+func (p *nilProgressUI) VV(msg string, args ...interface{}) {}
+func (p *nilProgressUI) Set(title string, setup func(), metrics map[string]interface{}, progress, summary string) {
 }
-func (p *testProgressUI) Update(op func()) {}
+func (p *nilProgressUI) Update(op func()) {}
+
+type validatingProgressUI struct {
+}
+
+var _ ProgressUI = &validatingProgressUI{}
+
+func NewValidatingProgressUI() ProgressUI {
+	return &validatingProgressUI{}
+}
+
+func (p *validatingProgressUI) E(msg string, args ...interface{})  {}
+func (p *validatingProgressUI) P(msg string, args ...interface{})  {}
+func (p *validatingProgressUI) V(msg string, args ...interface{})  {}
+func (p *validatingProgressUI) VV(msg string, args ...interface{}) {}
+func (p *validatingProgressUI) Set(title string, setup func(), metrics map[string]interface{}, progress, summary string) {
+	executeTemplate(parseTemplate("progress", progress), metrics)
+	executeTemplate(parseTemplate("summary", summary), metrics)
+}
+func (p *validatingProgressUI) Update(op func()) {}
