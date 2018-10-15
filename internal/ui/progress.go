@@ -15,7 +15,25 @@ const (
 	etaNA   = -1 // XXX how to represent "unknown"?
 )
 
-// ProgressUI provides periodic updates about long a running operation
+// High level idea of what I am trying to do
+//
+// Each long-running command is modeled as a sequence of independent phases (better name is welcome),
+// which happen strictly one after the another, i.e. without overlap in time. Performance
+// of one phase cannot be used to estimate performance of other phases (hence "independent").
+// For example, network download speed cannot be used to estimate local disk read speed and vise versa.
+//
+// For each in-progress phase I want to show to the user:
+// * the phase name
+// * %% and ETA of completion (when possible to estimate)
+// * one-line message about number of files/bytes/packs/etc processed so far and total (depends on the nature of the phase)
+// * optionally, few lines of info about files/packs currently being processed (not convinced this is terrible useful)
+//
+// At the end of the phase I want to show to the user:
+// * the time it took to complete the phase
+// * total number files/bytes/packs/etc processed during the phase (depends on the nature of the phase)
+// * speed attained (if makes sense)
+
+// ProgressUI provides periodic updates about long a running command.
 type ProgressUI interface {
 	E(msg string, args ...interface{})
 	P(msg string, args ...interface{})
@@ -26,8 +44,7 @@ type ProgressUI interface {
 	// messages. all callback invocations are serialized
 	Set(title string, setup func(), eta func() time.Duration, progress, summary func() string)
 
-	// Update executes op, then displays user-visible progress message(s).
-	// update, progress and summary callback invocations are serialized.
+	// Update executes op, then updates user-visible progress message(s) as necessary
 	Update(op func())
 }
 
