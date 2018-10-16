@@ -206,7 +206,7 @@ func (arch *Archiver) loadSubtree(ctx context.Context, node *restic.Node) *resti
 
 // SaveDir stores a directory in the repo and returns the node. snPath is the
 // path within the current snapshot.
-func (arch *Archiver) SaveDir(ctx context.Context, snPath string, fi os.FileInfo, dir string, previous *restic.Tree) (d FutureTree, err error) {
+func (arch *Archiver) SaveDir(ctx context.Context, snPath string, fi os.FileInfo, dir string, previous *restic.Tree, modIgnores ModifiedIgnores) (d FutureTree, err error) {
 	debug.Log("%v %v", snPath, dir)
 
 	treeNode, err := arch.nodeFromFileInfo(dir, fi)
@@ -231,7 +231,7 @@ func (arch *Archiver) SaveDir(ctx context.Context, snPath string, fi os.FileInfo
 		pathname := arch.FS.Join(dir, name)
 		oldNode := previous.Find(name)
 		snItem := join(snPath, name)
-		fn, excluded, err := arch.Save(ctx, snItem, pathname, oldNode)
+		fn, excluded, err := arch.Save(ctx, snItem, pathname, oldNode, modIgnores)
 
 		// return error early if possible
 		if err != nil {
@@ -306,7 +306,7 @@ func (fn *FutureNode) wait(ctx context.Context) {
 // Errors and completion needs to be handled by the caller.
 //
 // snPath is the path within the current snapshot.
-func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous *restic.Node) (fn FutureNode, excluded bool, err error) {
+func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous *restic.Node, modIgnores ModifiedIgnores) (fn FutureNode, excluded bool, err error) {
 	start := time.Now()
 
 	fn = FutureNode{
@@ -383,7 +383,7 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 		}
 
 		// use previous node if the file hasn't changed
-		if previous != nil && !fileChanged(fi, previous) {
+		if previous != nil && !fileChanged(fi, previous, modIgnores) {
 			debug.Log("%v hasn't changed, returning old node", target)
 			arch.CompleteItem(snPath, previous, previous, ItemStats{}, time.Since(start))
 			arch.CompleteBlob(snPath, previous.Size)
@@ -408,7 +408,7 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 		oldSubtree := arch.loadSubtree(ctx, previous)
 
 		fn.isTree = true
-		fn.tree, err = arch.SaveDir(ctx, snPath, fi, target, oldSubtree)
+		fn.tree, err = arch.SaveDir(ctx, snPath, fi, target, oldSubtree, modIgnores)
 		if err == nil {
 			arch.CompleteItem(snItem, previous, fn.node, fn.stats, time.Since(start))
 		} else {
@@ -436,7 +436,7 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 
 // fileChanged returns true if the file's content has changed since the node
 // was created.
-func fileChanged(fi os.FileInfo, node *restic.Node) bool {
+func fileChanged(fi os.FileInfo, node *restic.Node, modIgnores ModifiedIgnores) bool {
 	if node == nil {
 		return true
 	}
@@ -458,7 +458,7 @@ func fileChanged(fi os.FileInfo, node *restic.Node) bool {
 	}
 
 	// check inode
-	if node.Inode != extFI.Inode {
+	if !modIgnores.Inode && node.Inode != extFI.Inode {
 		return true
 	}
 
@@ -488,7 +488,7 @@ func (arch *Archiver) statDir(dir string) (os.FileInfo, error) {
 
 // SaveTree stores a Tree in the repo, returned is the tree. snPath is the path
 // within the current snapshot.
-func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, previous *restic.Tree) (*restic.Tree, error) {
+func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, previous *restic.Tree, modIgnores ModifiedIgnores) (*restic.Tree, error) {
 	debug.Log("%v (%v nodes), parent %v", snPath, len(atree.Nodes), previous)
 
 	tree := restic.NewTree()
@@ -512,7 +512,7 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 
 		// this is a leaf node
 		if subatree.Path != "" {
-			fn, excluded, err := arch.Save(ctx, join(snPath, name), subatree.Path, previous.Find(name))
+			fn, excluded, err := arch.Save(ctx, join(snPath, name), subatree.Path, previous.Find(name), modIgnores)
 
 			if err != nil {
 				err = arch.error(subatree.Path, fn.fi, err)
@@ -540,7 +540,7 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 		oldSubtree := arch.loadSubtree(ctx, oldNode)
 
 		// not a leaf node, archive subtree
-		subtree, err := arch.SaveTree(ctx, join(snPath, name), &subatree, oldSubtree)
+		subtree, err := arch.SaveTree(ctx, join(snPath, name), &subatree, oldSubtree, modIgnores)
 		if err != nil {
 			return nil, err
 		}
@@ -698,6 +698,11 @@ func resolveRelativeTargets(fs fs.FS, targets []string) ([]string, error) {
 	return result, nil
 }
 
+// ModifiedIgnores defines which file attributes are not checked for modification.
+type ModifiedIgnores struct {
+	Inode bool
+}
+
 // SnapshotOptions collect attributes for a new snapshot.
 type SnapshotOptions struct {
 	Tags           []string
@@ -705,6 +710,7 @@ type SnapshotOptions struct {
 	Excludes       []string
 	Time           time.Time
 	ParentSnapshot restic.ID
+	ModIgnores     ModifiedIgnores
 }
 
 // loadParentTree loads a tree referenced by snapshot id. If id is null, nil is returned.
@@ -770,7 +776,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 
 	debug.Log("starting snapshot")
 	rootTreeID, stats, err := func() (restic.ID, ItemStats, error) {
-		tree, err := arch.SaveTree(wctx, "/", atree, arch.loadParentTree(wctx, opts.ParentSnapshot))
+		tree, err := arch.SaveTree(wctx, "/", atree, arch.loadParentTree(wctx, opts.ParentSnapshot), opts.ModIgnores)
 		if err != nil {
 			return restic.ID{}, ItemStats{}, err
 		}

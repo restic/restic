@@ -225,7 +225,7 @@ func TestArchiverSave(t *testing.T) {
 			}
 			arch.runWorkers(tmb.Context(ctx), &tmb)
 
-			node, excluded, err := arch.Save(ctx, "/", filepath.Join(tempdir, "file"), nil)
+			node, excluded, err := arch.Save(ctx, "/", filepath.Join(tempdir, "file"), nil, ModifiedIgnores{})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -302,7 +302,7 @@ func TestArchiverSaveReaderFS(t *testing.T) {
 			}
 			arch.runWorkers(tmb.Context(ctx), &tmb)
 
-			node, excluded, err := arch.Save(ctx, "/", filename, nil)
+			node, excluded, err := arch.Save(ctx, "/", filename, nil, ModifiedIgnores{})
 			t.Logf("Save returned %v %v", node, err)
 			if err != nil {
 				t.Fatal(err)
@@ -557,9 +557,11 @@ func TestFileChanged(t *testing.T) {
 	}
 
 	var tests = []struct {
-		Name    string
-		Content []byte
-		Modify  func(t testing.TB, filename string)
+		Name       string
+		Content    []byte
+		Modify     func(t testing.TB, filename string)
+		ModIgnores ModifiedIgnores
+		Check      bool
 	}{
 		{
 			Name: "same-content-new-file",
@@ -598,6 +600,20 @@ func TestFileChanged(t *testing.T) {
 				save(t, filename, defaultContent)
 			},
 		},
+		{
+			Name: "ignore-inode",
+			Modify: func(t testing.TB, filename string) {
+				fi := lstat(t, filename)
+				remove(t, filename)
+				sleep()
+				save(t, filename, defaultContent)
+				setTimestamp(t, filename, fi.ModTime(), fi.ModTime())
+			},
+			ModIgnores: ModifiedIgnores{
+				Inode: true,
+			},
+			Check: true,
+		},
 	}
 
 	for _, test := range tests {
@@ -615,15 +631,19 @@ func TestFileChanged(t *testing.T) {
 			fiBefore := lstat(t, filename)
 			node := nodeFromFI(t, filename, fiBefore)
 
-			if fileChanged(fiBefore, node) {
+			if fileChanged(fiBefore, node, ModifiedIgnores{}) {
 				t.Fatalf("unchanged file detected as changed")
 			}
 
 			test.Modify(t, filename)
 
 			fiAfter := lstat(t, filename)
-			if !fileChanged(fiAfter, node) {
-				t.Fatalf("modified file detected as unchanged")
+			if test.Check == fileChanged(fiAfter, node, test.ModIgnores) {
+				if test.Check {
+					t.Fatalf("unmodified file detected as changed")
+				} else {
+					t.Fatalf("modified file detected as unchanged")
+				}
 			}
 		})
 	}
@@ -639,7 +659,7 @@ func TestFilChangedSpecialCases(t *testing.T) {
 
 	t.Run("nil-node", func(t *testing.T) {
 		fi := lstat(t, filename)
-		if !fileChanged(fi, nil) {
+		if !fileChanged(fi, nil, ModifiedIgnores{}) {
 			t.Fatal("nil node detected as unchanged")
 		}
 	})
@@ -648,7 +668,7 @@ func TestFilChangedSpecialCases(t *testing.T) {
 		fi := lstat(t, filename)
 		node := nodeFromFI(t, filename, fi)
 		node.Type = "symlink"
-		if !fileChanged(fi, node) {
+		if !fileChanged(fi, node, ModifiedIgnores{}) {
 			t.Fatal("node with changed type detected as unchanged")
 		}
 	})
@@ -768,7 +788,7 @@ func TestArchiverSaveDir(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			ft, err := arch.SaveDir(ctx, "/", fi, test.target, nil)
+			ft, err := arch.SaveDir(ctx, "/", fi, test.target, nil, ModifiedIgnores{})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -850,7 +870,7 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ft, err := arch.SaveDir(ctx, "/", fi, tempdir, nil)
+		ft, err := arch.SaveDir(ctx, "/", fi, tempdir, nil, ModifiedIgnores{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1019,7 +1039,7 @@ func TestArchiverSaveTree(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			tree, err := arch.SaveTree(ctx, "/", atree, nil)
+			tree, err := arch.SaveTree(ctx, "/", atree, nil, ModifiedIgnores{})
 			if err != nil {
 				t.Fatal(err)
 			}
