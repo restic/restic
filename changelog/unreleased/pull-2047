@@ -1,0 +1,9 @@
+Enhancement: Add --ignore-inode option to backup cmd
+
+This option handles backup of virtual filesystems that do not keep fixed
+inodes for files, like Fuse-based, pCloud, etc. Ignoring inode changes allows
+to consider the file as unchanged if last modification date and size
+are unchanged.
+
+https://github.com/restic/restic/pull/2047
+https://github.com/restic/restic/issues/1631
