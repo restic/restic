@@ -341,3 +341,25 @@ func TestEnsureSnapshot(t testing.TB, repo restic.Repository, snapshotID restic.
 
 	TestEnsureTree(ctx, t, "/", repo, *sn.Tree, dir)
 }
+
+// TestEnsureSnapshotPaths tests if the snapshot in the repo has exactly the same
+// paths as paths.
+func TestEnsureSnapshotPaths(t testing.TB, repo restic.Repository, snapshotID restic.ID, paths []string) {
+	test.Helper(t).Helper()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sn, err := restic.LoadSnapshot(ctx, repo, snapshotID)
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+	if len(sn.Paths) != len(paths) {
+		t.Errorf("snapshot has different path count %d, expected %d", len(sn.Paths), len(paths))
+	}
+	for i, v := range sn.Paths {
+		if v != paths[i] {
+			t.Errorf("snapshot path %v is different from expected path %v", v, paths[i])
+		}
+	}
+}

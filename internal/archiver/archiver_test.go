@@ -1496,49 +1496,43 @@ func TestArchiverSnapshotPrefixStrip(t *testing.T) {
 	var tests = []struct {
 		name    string
 		src     TestDir
-		want    TestDir
+		want    []string
 		chdir   string
 		targets []string
 		strip   int
 		prefix  string
 	}{
 		{
-			name: "prefix-single-file",
+			name: "prefix-relative",
 			src: TestDir{
 				"foo": TestFile{Content: "foo"},
 			},
 			targets: []string{"foo"},
 			prefix:  "prefix",
-			want: TestDir{
-				"prefix": TestDir{
-					"foo": TestFile{Content: "foo"},
-				},
-			},
+			want:    []string{"prefix/foo"},
 		},
 		{
-			name: "prefix-abs-files",
+			name: "prefix-absolute",
 			src: TestDir{
 				"foo": TestFile{Content: "foo"},
-				"bar": TestFile{Content: "bar"},
-				"subdir": TestDir{
-					"bar": TestFile{Content: "bar2"},
-				},
 			},
 			targets: []string{"foo"},
 			prefix:  "/home/user/work",
-			want: TestDir{
-				"home": TestDir{
-					"user": TestDir{
-						"work": TestDir{
-							"foo": TestFile{Content: "foo"},
-							"bar": TestFile{Content: "bar"},
-							"subdir": TestDir{
-								"bar": TestFile{Content: "bar2"},
-							},
-						},
+			want:    []string{"/home/user/work/foo"},
+		},
+		{
+			name: "strip-1",
+			src: TestDir{
+				"one": TestDir{
+					"two": TestDir{
+						"three": TestFile{Content: "three"},
 					},
 				},
 			},
+			targets: []string{"one/two"},
+			prefix:  "/prefix",
+			strip:   1,
+			want:    []string{"/prefix/two"},
 		},
 	}
 
@@ -1566,7 +1560,7 @@ func TestArchiverSnapshotPrefixStrip(t *testing.T) {
 			}
 
 			t.Logf("targets: %v", targets)
-			sn, snapshotID, err := arch.Snapshot(ctx, targets, SnapshotOptions{Time: time.Now(), RootPrefix: test.prefix, RootStrip: test.strip})
+			_, snapshotID, err := arch.Snapshot(ctx, targets, SnapshotOptions{Time: time.Now(), RootPrefix: test.prefix, RootStrip: test.strip})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1575,24 +1569,11 @@ func TestArchiverSnapshotPrefixStrip(t *testing.T) {
 
 			want := test.want
 			if want == nil {
-				want = test.src
+				want = test.targets
 			}
-			TestEnsureSnapshot(t, repo, snapshotID, want)
+			TestEnsureSnapshotPaths(t, repo, snapshotID, want)
 
 			checker.TestCheckRepo(t, repo)
-
-			// check that the snapshot contains the targets with absolute paths
-			for i, target := range sn.Paths {
-				t.Errorf("decide what to do with the paths recorderd in the snapshots and test that here")
-				atarget, err := filepath.Abs(test.targets[i])
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				if target != atarget {
-					t.Errorf("wrong path in snapshot: want %v, got %v", atarget, target)
-				}
-			}
 		})
 	}
 }
