@@ -271,6 +271,10 @@ written, and the next backup needs to write new metadata again. If you really
 want to save the access time for files and directories, you can pass the
 ``--with-atime`` option to the ``backup`` command.
 
+In filesystems that do not support inode consistency, like FUSE-based ones and pCloud, it is
+possible to ignore inode on changed files comparison by passing ``--ignore-inode`` to
+``backup`` command.
+
 Reading data from stdin
 ***********************
 
