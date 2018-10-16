@@ -1,0 +1,18 @@
+Enhancement: Add support for --prefix and --strip-components options on backup
+
+We've added two options that rewrite target paths upon backup:
+
+--prefix=/foo/bar prepends a relative or absolute path;
+--strip-components=n strips n components from target path.
+
+The rationale for these options is to allow different paths to look equal
+upon parent snapshot id selection.
+
+For instance, when backing up ZFS snapshots from
+<mountpoint>/.zfs/snapshot/<snapshot-id>, user could run restic from
+CWD=<mountpoint>/.zfs/snapshot/<snapshot-id> using "." as target, and
+pass --prefix=<mountpoint> as option. This way, multiple ZFS snapshots
+could be stacked as restic snapshots with correct parent-child relationship.
+
+https://github.com/restic/restic/issues/555
+https://github.com/restic/restic/pull/2010
