@@ -88,6 +88,16 @@ func rejectByPattern(patterns []string) RejectByNameFunc {
 	}
 }
 
+// Same as `rejectByPattern` but case insensitive.
+func rejectByInsensitivePattern(patterns []string) RejectByNameFunc {
+	for index, path := range patterns {
+		patterns[index] = strings.ToLower(path)
+	}
+	return func(item string) bool {
+		return rejectByPattern(patterns)(strings.ToLower(item))
+	}
+}
+
 // rejectIfPresent returns a RejectByNameFunc which itself returns whether a path
 // should be excluded. The RejectByNameFunc considers a file to be excluded when
 // it resides in a directory with an exclusion file, that is specified by
