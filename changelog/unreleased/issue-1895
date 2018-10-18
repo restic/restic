@@ -1,0 +1,7 @@
+Enhancement: Add case insensitive include & exclude options
+
+The backup and restore commands now have --iexclude and --iinclude flags
+as case insensitive variants of --exclude and --include.
+
+https://github.com/restic/restic/issues/1895
+https://github.com/restic/restic/pull/2032
