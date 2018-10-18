@@ -14,7 +14,7 @@ var cmdSelfUpdate = &cobra.Command{
 	Use:   "self-update [flags]",
 	Short: "Update the restic binary",
 	Long: `
-The command "update-restic" downloads the latest stable release of restic from
+The command "self-update" downloads the latest stable release of restic from
 GitHub and replaces the currently running binary. After download, the
 authenticity of the binary is verified using the GPG signature on the release
 files.
