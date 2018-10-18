@@ -21,7 +21,7 @@ func formatBytes(c uint64) string {
 	case c > 1<<10:
 		return fmt.Sprintf("%.3f KiB", b/(1<<10))
 	default:
-		return fmt.Sprintf("%dB", c)
+		return fmt.Sprintf("%d B", c)
 	}
 }
 
