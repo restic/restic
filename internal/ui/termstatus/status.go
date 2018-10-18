@@ -255,7 +255,7 @@ func (t *Terminal) undoStatus(lines int) {
 // Print writes a line to the terminal.
 func (t *Terminal) Print(line string) {
 	// make sure the line ends with a line break
-	if line[len(line)-1] != '\n' {
+	if len(line) == 0 || line[len(line)-1] != '\n' {
 		line += "\n"
 	}
 

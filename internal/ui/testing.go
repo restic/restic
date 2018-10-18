@@ -18,6 +18,7 @@ func (p *nilProgressUI) VV(msg string, args ...interface{}) {}
 func (p *nilProgressUI) Set(title string, setup func(), metrics map[string]interface{}, progress, summary string) {
 }
 func (p *nilProgressUI) Update(op func()) {}
+func (p *nilProgressUI) Unset()           {}
 
 type validatingProgressUI struct {
 }
@@ -37,3 +38,4 @@ func (p *validatingProgressUI) Set(title string, setup func(), metrics map[strin
 	executeTemplate(parseTemplate("summary", summary), metrics)
 }
 func (p *validatingProgressUI) Update(op func()) {}
+func (p *validatingProgressUI) Unset()           {}

@@ -15,17 +15,18 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui"
 )
 
 var checkerTestData = filepath.Join("testdata", "checker-test-repo.tar.gz")
 
-func collectErrors(ctx context.Context, f func(context.Context, chan<- error)) (errs []error) {
+func collectErrors(ctx context.Context, f func(context.Context, ui.ProgressUI, chan<- error)) (errs []error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	errChan := make(chan error)
 
-	go f(ctx, errChan)
+	go f(ctx, ui.NewNilProgressUI(), errChan)
 
 	for err := range errChan {
 		errs = append(errs, err)
@@ -45,8 +46,8 @@ func checkStruct(chkr *checker.Checker) []error {
 func checkData(chkr *checker.Checker) []error {
 	return collectErrors(
 		context.TODO(),
-		func(ctx context.Context, errCh chan<- error) {
-			chkr.ReadData(ctx, nil, errCh)
+		func(ctx context.Context, ui ui.ProgressUI, errCh chan<- error) {
+			chkr.ReadData(ctx, ui, errCh)
 		},
 	)
 }
@@ -58,7 +59,7 @@ func TestCheckRepo(t *testing.T) {
 	repo := repository.TestOpenLocal(t, repodir)
 
 	chkr := checker.New(repo)
-	hints, errs := chkr.LoadIndex(context.TODO())
+	hints, errs := chkr.LoadIndex(context.TODO(), ui.NewNilProgressUI())
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
@@ -84,7 +85,7 @@ func TestMissingPack(t *testing.T) {
 	test.OK(t, repo.Backend().Remove(context.TODO(), packHandle))
 
 	chkr := checker.New(repo)
-	hints, errs := chkr.LoadIndex(context.TODO())
+	hints, errs := chkr.LoadIndex(context.TODO(), ui.NewNilProgressUI())
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
@@ -120,7 +121,7 @@ func TestUnreferencedPack(t *testing.T) {
 	test.OK(t, repo.Backend().Remove(context.TODO(), indexHandle))
 
 	chkr := checker.New(repo)
-	hints, errs := chkr.LoadIndex(context.TODO())
+	hints, errs := chkr.LoadIndex(context.TODO(), ui.NewNilProgressUI())
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
@@ -165,7 +166,7 @@ func TestUnreferencedBlobs(t *testing.T) {
 	sort.Sort(unusedBlobsBySnapshot)
 
 	chkr := checker.New(repo)
-	hints, errs := chkr.LoadIndex(context.TODO())
+	hints, errs := chkr.LoadIndex(context.TODO(), ui.NewNilProgressUI())
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
@@ -238,7 +239,7 @@ func TestModifiedIndex(t *testing.T) {
 	}
 
 	chkr := checker.New(repo)
-	hints, errs := chkr.LoadIndex(context.TODO())
+	hints, errs := chkr.LoadIndex(context.TODO(), ui.NewNilProgressUI())
 	if len(errs) == 0 {
 		t.Fatalf("expected errors not found")
 	}
@@ -261,7 +262,7 @@ func TestDuplicatePacksInIndex(t *testing.T) {
 	repo := repository.TestOpenLocal(t, repodir)
 
 	chkr := checker.New(repo)
-	hints, errs := chkr.LoadIndex(context.TODO())
+	hints, errs := chkr.LoadIndex(context.TODO(), ui.NewNilProgressUI())
 	if len(hints) == 0 {
 		t.Fatalf("did not get expected checker hints for duplicate packs in indexes")
 	}
@@ -334,7 +335,7 @@ func TestCheckerModifiedData(t *testing.T) {
 
 	chkr := checker.New(checkRepo)
 
-	hints, errs := chkr.LoadIndex(context.TODO())
+	hints, errs := chkr.LoadIndex(context.TODO(), ui.NewNilProgressUI())
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
@@ -370,7 +371,7 @@ func BenchmarkChecker(t *testing.B) {
 	repo := repository.TestOpenLocal(t, repodir)
 
 	chkr := checker.New(repo)
-	hints, errs := chkr.LoadIndex(context.TODO())
+	hints, errs := chkr.LoadIndex(context.TODO(), ui.NewNilProgressUI())
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}

@@ -42,11 +42,15 @@ type ProgressUI interface {
 	V(msg string, args ...interface{})
 	VV(msg string, args ...interface{})
 
+	// TODO rename to StartPhase
 	// Set currently running operation phase
 	Set(title string, setup func(), metrics map[string]interface{}, progress, summary string)
 
 	// Update executes op, then updates user-visible progress UI as necessary
 	Update(op func())
+
+	// TODO rename to FinishPhase
+	Unset()
 }
 
 type progressPhase struct {
@@ -178,6 +182,14 @@ func (p *TermstatusProgressUI) Set(title string, setup func(), metrics map[strin
 			summary:  parseTemplate("summary", summary),
 		}
 		p.displayProgress(true) // display initial progress
+	}
+}
+
+func (p *TermstatusProgressUI) Unset() {
+	p.updates <- func() {
+		p.diplaySummary() // display summary of the prior phase if any
+		p.phase = progressPhase{}
+		p.displayProgress(false)
 	}
 }
 

@@ -132,7 +132,7 @@ func testRunCheck(t testing.TB, gopts GlobalOptions) {
 		ReadData:    true,
 		CheckUnused: true,
 	}
-	rtest.OK(t, runCheck(opts, gopts, nil))
+	rtest.OK(t, runCheck(opts, gopts, ui.NewNilProgressUI(), nil))
 }
 
 func testRunCheckOutput(gopts GlobalOptions) (string, error) {
@@ -147,7 +147,7 @@ func testRunCheckOutput(gopts GlobalOptions) (string, error) {
 		ReadData: true,
 	}
 
-	err := runCheck(opts, gopts, nil)
+	err := runCheck(opts, gopts, ui.NewNilProgressUI(), nil)
 	return string(buf.Bytes()), err
 }
 

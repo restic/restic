@@ -6,14 +6,15 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
-
-	"github.com/spf13/cobra"
 
 	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/termstatus"
+	"github.com/spf13/cobra"
+	tomb "gopkg.in/tomb.v2"
 )
 
 var cmdCheck = &cobra.Command{
@@ -28,7 +29,21 @@ repository and not use a local cache.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runCheck(checkOptions, globalOptions, args)
+		// XXX this is EXACT copy from cmd_restore, and all other commands will need this too
+		var t tomb.Tomb
+		term := termstatus.New(globalOptions.stdout, globalOptions.stderr, globalOptions.Quiet)
+		t.Go(func() error { term.Run(t.Context(globalOptions.ctx)); return nil })
+
+		prevStdout, prevStderr := globalOptions.stdout, globalOptions.stderr
+		defer func() {
+			globalOptions.stdout, globalOptions.stderr = prevStdout, prevStderr
+		}()
+		pm := ui.NewTermstatusProgressUI(term, globalOptions.verbosity)
+		defer pm.Finish()
+		globalOptions.stdout, globalOptions.stderr = pm.Stdout(), pm.Stderr()
+		t.Go(func() error { return pm.Run(t.Context(globalOptions.ctx)) })
+
+		return runCheck(checkOptions, globalOptions, pm, args)
 	},
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		return checkFlags(checkOptions)
@@ -89,36 +104,6 @@ func stringToIntSlice(param string) (split []uint, err error) {
 	return result, nil
 }
 
-func newReadProgress(gopts GlobalOptions, todo restic.Stat) *restic.Progress {
-	if gopts.Quiet {
-		return nil
-	}
-
-	readProgress := restic.NewProgress()
-
-	readProgress.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
-		status := fmt.Sprintf("[%s] %s  %d / %d items",
-			formatDuration(d),
-			formatPercent(s.Blobs, todo.Blobs),
-			s.Blobs, todo.Blobs)
-
-		if w := stdoutTerminalWidth(); w > 0 {
-			if len(status) > w {
-				max := w - len(status) - 4
-				status = status[:max] + "... "
-			}
-		}
-
-		PrintProgress("%s", status)
-	}
-
-	readProgress.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
-		fmt.Printf("\nduration: %s\n", formatDuration(d))
-	}
-
-	return readProgress
-}
-
 // prepareCheckCache configures a special cache directory for check.
 //
 //  * if --with-cache is specified, the default cache is used
@@ -161,7 +146,7 @@ func prepareCheckCache(opts CheckOptions, gopts *GlobalOptions) (cleanup func())
 	return cleanup
 }
 
-func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
+func runCheck(opts CheckOptions, gopts GlobalOptions, pm ui.ProgressUI, args []string) error {
 	if len(args) != 0 {
 		return errors.Fatal("check has no arguments")
 	}
@@ -178,7 +163,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	if !gopts.NoLock {
-		Verbosef("create exclusive lock for repository\n")
+		pm.V("create exclusive lock for repository\n")
 		lock, err := lockRepoExclusive(repo)
 		defer unlockRepo(lock)
 		if err != nil {
@@ -188,24 +173,23 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 
 	chkr := checker.New(repo)
 
-	Verbosef("load indexes\n")
-	hints, errs := chkr.LoadIndex(gopts.ctx)
+	hints, errs := chkr.LoadIndex(gopts.ctx, pm)
 
 	dupFound := false
 	for _, hint := range hints {
-		Printf("%v\n", hint)
+		pm.P("%v\n", hint)
 		if _, ok := hint.(checker.ErrDuplicatePacks); ok {
 			dupFound = true
 		}
 	}
 
 	if dupFound {
-		Printf("This is non-critical, you can run `restic rebuild-index' to correct this\n")
+		pm.P("This is non-critical, you can run `restic rebuild-index' to correct this\n")
 	}
 
 	if len(errs) > 0 {
 		for _, err := range errs {
-			Warnf("error: %v\n", err)
+			pm.P("error: %v\n", err)
 		}
 		return errors.Fatal("LoadIndex returned errors")
 	}
@@ -214,8 +198,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	orphanedPacks := 0
 	errChan := make(chan error)
 
-	Verbosef("check all packs\n")
-	go chkr.Packs(gopts.ctx, errChan)
+	go chkr.Packs(gopts.ctx, pm, errChan)
 
 	for err := range errChan {
 		if checker.IsOrphanedPack(err) {
@@ -228,28 +211,27 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	if orphanedPacks > 0 {
-		Verbosef("%d additional files were found in the repo, which likely contain duplicate data.\nYou can run `restic prune` to correct this.\n", orphanedPacks)
+		pm.V("%d additional files were found in the repo, which likely contain duplicate data.\nYou can run `restic prune` to correct this.\n", orphanedPacks)
 	}
 
-	Verbosef("check snapshots, trees and blobs\n")
 	errChan = make(chan error)
-	go chkr.Structure(gopts.ctx, errChan)
+	go chkr.Structure(gopts.ctx, pm, errChan)
 
 	for err := range errChan {
 		errorsFound = true
 		if e, ok := err.(checker.TreeError); ok {
-			fmt.Fprintf(os.Stderr, "error for tree %v:\n", e.ID.Str())
+			pm.E("error for tree %v:\n", e.ID.Str())
 			for _, treeErr := range e.Errors {
-				fmt.Fprintf(os.Stderr, "  %v\n", treeErr)
+				pm.E("  %v\n", treeErr)
 			}
 		} else {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			pm.E("error: %v\n", err)
 		}
 	}
 
 	if opts.CheckUnused {
 		for _, id := range chkr.UnusedBlobs() {
-			Verbosef("unused blob %v\n", id.Str())
+			pm.V("unused blob %v\n", id.Str())
 			errorsFound = true
 		}
 	}
@@ -264,15 +246,14 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 		packCount := uint64(len(packs))
 
 		if packCount < chkr.CountPacks() {
-			Verbosef(fmt.Sprintf("read group #%d of %d data packs (out of total %d packs in %d groups)\n", bucket, packCount, chkr.CountPacks(), totalBuckets))
+			pm.V(fmt.Sprintf("read group #%d of %d data packs (out of total %d packs in %d groups)\n", bucket, packCount, chkr.CountPacks(), totalBuckets))
 		} else {
-			Verbosef("read all data\n")
+			pm.V("read all data\n")
 		}
 
-		p := newReadProgress(gopts, restic.Stat{Blobs: packCount})
 		errChan := make(chan error)
 
-		go chkr.ReadPacks(gopts.ctx, packs, p, errChan)
+		go chkr.ReadPacks(gopts.ctx, packs, pm, errChan)
 
 		for err := range errChan {
 			errorsFound = true
@@ -292,7 +273,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 		return errors.Fatal("repository contains errors")
 	}
 
-	Verbosef("no errors were found\n")
+	pm.V("no errors were found\n")
 
 	return nil
 }
