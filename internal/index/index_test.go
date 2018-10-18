@@ -11,6 +11,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui"
 )
 
 var (
@@ -337,7 +338,7 @@ func TestIndexSave(t *testing.T) {
 	t.Logf("load new index with %d packs", len(idx2.Packs))
 
 	checker := checker.New(repo)
-	hints, errs := checker.LoadIndex(context.TODO())
+	hints, errs := checker.LoadIndex(context.TODO(), ui.NewNilProgressUI())
 	for _, h := range hints {
 		t.Logf("hint: %v\n", h)
 	}
@@ -350,7 +351,7 @@ func TestIndexSave(t *testing.T) {
 	defer cancel()
 
 	errCh := make(chan error)
-	go checker.Structure(ctx, errCh)
+	go checker.Structure(ctx, ui.NewNilProgressUI(), errCh)
 	i := 0
 	for err := range errCh {
 		t.Errorf("checker returned error: %v", err)

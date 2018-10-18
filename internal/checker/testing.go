@@ -5,13 +5,15 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
 )
 
 // TestCheckRepo runs the checker on repo.
 func TestCheckRepo(t testing.TB, repo restic.Repository) {
+	ui := ui.NewNilProgressUI()
 	chkr := New(repo)
 
-	hints, errs := chkr.LoadIndex(context.TODO())
+	hints, errs := chkr.LoadIndex(context.TODO(), ui)
 	if len(errs) != 0 {
 		t.Fatalf("errors loading index: %v", errs)
 	}
@@ -22,7 +24,7 @@ func TestCheckRepo(t testing.TB, repo restic.Repository) {
 
 	// packs
 	errChan := make(chan error)
-	go chkr.Packs(context.TODO(), errChan)
+	go chkr.Packs(context.TODO(), ui, errChan)
 
 	for err := range errChan {
 		t.Error(err)
@@ -30,7 +32,7 @@ func TestCheckRepo(t testing.TB, repo restic.Repository) {
 
 	// structure
 	errChan = make(chan error)
-	go chkr.Structure(context.TODO(), errChan)
+	go chkr.Structure(context.TODO(), ui, errChan)
 
 	for err := range errChan {
 		t.Error(err)
@@ -44,7 +46,7 @@ func TestCheckRepo(t testing.TB, repo restic.Repository) {
 
 	// read data
 	errChan = make(chan error)
-	go chkr.ReadData(context.TODO(), nil, errChan)
+	go chkr.ReadData(context.TODO(), ui, errChan)
 
 	for err := range errChan {
 		t.Error(err)
