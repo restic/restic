@@ -92,6 +92,9 @@ func fillPacks(t testing.TB, rnd *randReader, be Saver, pm *packerManager, buf [
 		}
 
 		n, err := packer.Add(restic.DataBlob, id, buf)
+		if err != nil {
+			t.Fatal(err)
+		}
 		if n != l {
 			t.Errorf("Add() returned invalid number of bytes: want %v, got %v", n, l)
 		}
