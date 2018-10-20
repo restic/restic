@@ -296,7 +296,7 @@ type statsContainer struct {
 	// blobs that have been seen as a part of the file
 	fileBlobs map[string]restic.IDSet
 
-	// blobs and blobsSeen are used to count indiviudal
+	// blobs and blobsSeen are used to count individual
 	// unique blobs, independent of references to files
 	blobs, blobsSeen restic.BlobSet
 }
