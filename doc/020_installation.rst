@@ -30,12 +30,12 @@ command.
 Arch Linux
 ==========
 
-On `Arch Linux <https://www.archlinux.org/>`__, there is a package called ``restic-git``
-which can be installed from AUR, e.g. with ``pacaur``:
+On `Arch Linux <https://www.archlinux.org/>`__, there is a package called ``restic``
+installed from the official community repos, e.g. with ``pacman -S``:
 
 .. code-block:: console
 
-    $ pacaur -S restic-git
+    $ pacman -S restic
 
 Debian
 ======
