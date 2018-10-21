@@ -210,7 +210,7 @@ func New(cfg Config, lim limiter.Limiter) (*Backend, error) {
 
 	// send an HTTP request to the base URL, see if the server is there
 	client := &http.Client{
-		Transport: tr,
+		Transport: debug.RoundTripper(tr),
 		Timeout:   60 * time.Second,
 	}
 
@@ -255,7 +255,7 @@ func Open(cfg Config, lim limiter.Limiter) (*Backend, error) {
 		URL:         url,
 	}
 
-	restBackend, err := rest.Open(restConfig, be.tr)
+	restBackend, err := rest.Open(restConfig, debug.RoundTripper(be.tr))
 	if err != nil {
 		return nil, err
 	}
@@ -283,7 +283,7 @@ func Create(cfg Config) (*Backend, error) {
 		URL:         url,
 	}
 
-	restBackend, err := rest.Create(restConfig, be.tr)
+	restBackend, err := rest.Create(restConfig, debug.RoundTripper(be.tr))
 	if err != nil {
 		_ = be.Close()
 		return nil, err
