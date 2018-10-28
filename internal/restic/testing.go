@@ -26,6 +26,7 @@ type fakeFileSystem struct {
 	duplication float32
 	buf         []byte
 	chunker     *chunker.Chunker
+	rand        *rand.Rand
 }
 
 // saveFile reads from rd and saves the blobs in the repository. The list of
@@ -87,7 +88,7 @@ func (fs *fakeFileSystem) treeIsKnown(tree *Tree) (bool, []byte, ID) {
 }
 
 func (fs *fakeFileSystem) blobIsKnown(id ID, t BlobType) bool {
-	if rand.Float32() < fs.duplication {
+	if fs.rand.Float32() < fs.duplication {
 		return false
 	}
 
@@ -175,6 +176,7 @@ func TestCreateSnapshot(t testing.TB, repo Repository, at time.Time, depth int, 
 		repo:        repo,
 		knownBlobs:  NewIDSet(),
 		duplication: duplication,
+		rand:        rand.New(rand.NewSource(seed)),
 	}
 
 	treeID := fs.saveTree(context.TODO(), seed, depth)
