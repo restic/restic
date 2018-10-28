@@ -36,9 +36,19 @@ func newIndex() *Index {
 
 const listPackWorkers = 10
 
+// Lister lists files and their contents
+type Lister interface {
+	// List runs fn for all files of type t in the repo.
+	List(ctx context.Context, t restic.FileType, fn func(restic.ID, int64) error) error
+
+	// ListPack returns the list of blobs saved in the pack id and the length
+	// of the file as stored in the backend.
+	ListPack(ctx context.Context, id restic.ID, size int64) ([]restic.Blob, int64, error)
+}
+
 // New creates a new index for repo from scratch. InvalidFiles contains all IDs
 // of files  that cannot be listed successfully.
-func New(ctx context.Context, repo restic.Repository, ignorePacks restic.IDSet, p *restic.Progress) (idx *Index, invalidFiles restic.IDs, err error) {
+func New(ctx context.Context, repo Lister, ignorePacks restic.IDSet, p *restic.Progress) (idx *Index, invalidFiles restic.IDs, err error) {
 	p.Start()
 	defer p.Done()
 
@@ -158,7 +168,13 @@ type indexJSON struct {
 	Packs      []packJSON `json:"packs"`
 }
 
-func loadIndexJSON(ctx context.Context, repo restic.Repository, id restic.ID) (*indexJSON, error) {
+// ListLoader allows listing files and their content, in addition to loading and unmarshaling JSON files.
+type ListLoader interface {
+	Lister
+	LoadJSONUnpacked(context.Context, restic.FileType, restic.ID, interface{}) error
+}
+
+func loadIndexJSON(ctx context.Context, repo ListLoader, id restic.ID) (*indexJSON, error) {
 	debug.Log("process index %v\n", id)
 
 	var idx indexJSON
@@ -171,7 +187,7 @@ func loadIndexJSON(ctx context.Context, repo restic.Repository, id restic.ID) (*
 }
 
 // Load creates an index by loading all index files from the repo.
-func Load(ctx context.Context, repo restic.Repository, p *restic.Progress) (*Index, error) {
+func Load(ctx context.Context, repo ListLoader, p *restic.Progress) (*Index, error) {
 	debug.Log("loading indexes")
 
 	p.Start()
@@ -328,8 +344,13 @@ func (idx *Index) FindBlob(h restic.BlobHandle) (result []Location, err error) {
 
 const maxEntries = 3000
 
+// Saver saves structures as JSON.
+type Saver interface {
+	SaveJSONUnpacked(ctx context.Context, t restic.FileType, item interface{}) (restic.ID, error)
+}
+
 // Save writes the complete index to the repo.
-func (idx *Index) Save(ctx context.Context, repo restic.Repository, supersedes restic.IDs) (restic.IDs, error) {
+func (idx *Index) Save(ctx context.Context, repo Saver, supersedes restic.IDs) (restic.IDs, error) {
 	debug.Log("pack files: %d\n", len(idx.Packs))
 
 	var indexIDs []restic.ID
