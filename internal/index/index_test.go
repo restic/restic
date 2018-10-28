@@ -2,6 +2,7 @@ package index
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -65,18 +66,21 @@ func TestIndexNew(t *testing.T) {
 	validateIndex(t, repo, idx)
 }
 
-type ListErrorRepo struct {
+type ErrorRepo struct {
 	restic.Repository
-	Max int
+	MaxListFiles int
+
+	MaxPacks      int
+	MaxPacksMutex sync.Mutex
 }
 
-// List returns an error after repo.Max files
-func (repo ListErrorRepo) List(ctx context.Context, t restic.FileType, fn func(restic.ID, int64) error) error {
-	if repo.Max == 0 {
+// List returns an error after repo.MaxListFiles files.
+func (repo *ErrorRepo) List(ctx context.Context, t restic.FileType, fn func(restic.ID, int64) error) error {
+	if repo.MaxListFiles == 0 {
 		return errors.New("test error, max is zero")
 	}
 
-	max := repo.Max
+	max := repo.MaxListFiles
 	return repo.Repository.List(ctx, t, func(id restic.ID, size int64) error {
 		if max == 0 {
 			return errors.New("test error, max reached zero")
@@ -87,14 +91,54 @@ func (repo ListErrorRepo) List(ctx context.Context, t restic.FileType, fn func(r
 	})
 }
 
-func TestIndexNewErrors(t *testing.T) {
+// ListPack returns an error after repo.MaxPacks files.
+func (repo *ErrorRepo) ListPack(ctx context.Context, id restic.ID, size int64) ([]restic.Blob, int64, error) {
+	repo.MaxPacksMutex.Lock()
+	max := repo.MaxPacks
+	if max > 0 {
+		repo.MaxPacks--
+	}
+	repo.MaxPacksMutex.Unlock()
+
+	if max == 0 {
+		return nil, 0, errors.New("test list pack error")
+	}
+
+	return repo.Repository.ListPack(ctx, id, size)
+}
+
+func TestIndexNewListErrors(t *testing.T) {
 	repo, cleanup := createFilledRepo(t, 3, 0)
 	defer cleanup()
 
 	for _, max := range []int{0, 3, 5} {
-		errRepo := ListErrorRepo{
+		errRepo := &ErrorRepo{
+			Repository:   repo,
+			MaxListFiles: max,
+		}
+		idx, invalid, err := New(context.TODO(), errRepo, restic.NewIDSet(), nil)
+		if err == nil {
+			t.Errorf("expected error not found, got nil")
+		}
+
+		if idx != nil {
+			t.Errorf("expected nil index, got %v", idx)
+		}
+
+		if len(invalid) != 0 {
+			t.Errorf("expected empty invalid list, got %v", invalid)
+		}
+	}
+}
+
+func TestIndexNewPackErrors(t *testing.T) {
+	repo, cleanup := createFilledRepo(t, 3, 0)
+	defer cleanup()
+
+	for _, max := range []int{0, 3, 5} {
+		errRepo := &ErrorRepo{
 			Repository: repo,
-			Max:        max,
+			MaxPacks:   max,
 		}
 		idx, invalid, err := New(context.TODO(), errRepo, restic.NewIDSet(), nil)
 		if err == nil {
@@ -237,7 +281,7 @@ func BenchmarkIndexSave(b *testing.B) {
 }
 
 func TestIndexDuplicateBlobs(t *testing.T) {
-	repo, cleanup := createFilledRepo(t, 3, 0.01)
+	repo, cleanup := createFilledRepo(t, 3, 0.05)
 	defer cleanup()
 
 	idx, _, err := New(context.TODO(), repo, restic.NewIDSet(), nil)
