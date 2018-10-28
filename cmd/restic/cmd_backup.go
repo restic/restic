@@ -8,12 +8,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
-
-	"github.com/spf13/cobra"
-	tomb "gopkg.in/tomb.v2"
 
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/debug"
@@ -24,6 +20,8 @@ import (
 	"github.com/restic/restic/internal/textfile"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/termstatus"
+	"github.com/spf13/cobra"
+	tomb "gopkg.in/tomb.v2"
 )
 
 var cmdBackup = &cobra.Command{
@@ -53,11 +51,21 @@ given as the arguments.
 			}
 		}
 
+		// XXX this is EXACT copy from cmd_restore, and all other commands will need this too
 		var t tomb.Tomb
 		term := termstatus.New(globalOptions.stdout, globalOptions.stderr, globalOptions.Quiet)
 		t.Go(func() error { term.Run(t.Context(globalOptions.ctx)); return nil })
 
-		err := runBackup(backupOptions, globalOptions, term, args)
+		prevStdout, prevStderr := globalOptions.stdout, globalOptions.stderr
+		defer func() {
+			globalOptions.stdout, globalOptions.stderr = prevStdout, prevStderr
+		}()
+		pm := ui.NewTermstatusProgressUI(term, globalOptions.verbosity)
+		defer pm.Finish()
+		globalOptions.stdout, globalOptions.stderr = pm.Stdout(), pm.Stderr()
+		t.Go(func() error { return pm.Run(t.Context(globalOptions.ctx)) })
+
+		err := runBackup(backupOptions, globalOptions, pm, args)
 		if err != nil {
 			return err
 		}
@@ -374,7 +382,7 @@ func findParentSnapshot(ctx context.Context, repo restic.Repository, opts Backup
 	return parentID, nil
 }
 
-func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Terminal, args []string) error {
+func runBackup(opts BackupOptions, gopts GlobalOptions, pm ui.ProgressUI, args []string) error {
 	err := opts.Check(gopts, args)
 	if err != nil {
 		return err
@@ -393,36 +401,15 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		}
 	}
 
-	var t tomb.Tomb
+	var t tomb.Tomb // TODO reuse Tomb from outer call?
 
-	term.Print("open repository\n")
+	pm.V("open repository")
 	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err
 	}
 
-	p := ui.NewBackup(term, gopts.verbosity)
-
-	// use the terminal for stdout/stderr
-	prevStdout, prevStderr := gopts.stdout, gopts.stderr
-	defer func() {
-		gopts.stdout, gopts.stderr = prevStdout, prevStderr
-	}()
-	gopts.stdout, gopts.stderr = p.Stdout(), p.Stderr()
-
-	if s, ok := os.LookupEnv("RESTIC_PROGRESS_FPS"); ok {
-		fps, err := strconv.Atoi(s)
-		if err == nil && fps >= 1 {
-			if fps > 60 {
-				fps = 60
-			}
-			p.MinUpdatePause = time.Second / time.Duration(fps)
-		}
-	}
-
-	t.Go(func() error { return p.Run(t.Context(gopts.ctx)) })
-
-	p.V("lock repository")
+	pm.V("lock repository")
 	lock, err := lockRepo(repo)
 	defer unlockRepo(lock)
 	if err != nil {
@@ -441,7 +428,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		return err
 	}
 
-	p.V("load index files")
+	pm.V("load index files")
 	err = repo.LoadIndex(gopts.ctx)
 	if err != nil {
 		return err
@@ -453,7 +440,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	}
 
 	if parentSnapshotID != nil {
-		p.V("using parent snapshot %v\n", parentSnapshotID.Str())
+		pm.V("using parent snapshot %v\n", parentSnapshotID.Str())
 	}
 
 	selectByNameFilter := func(item string) bool {
@@ -476,7 +463,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 
 	var targetFS fs.FS = fs.Local{}
 	if opts.Stdin {
-		p.V("read data from stdin")
+		pm.V("read data from stdin")
 		targetFS = &fs.Reader{
 			ModTime:    timeStamp,
 			Name:       opts.StdinFilename,
@@ -486,13 +473,15 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		targets = []string{opts.StdinFilename}
 	}
 
+	p := ui.NewBackup(pm)
+
 	sc := archiver.NewScanner(targetFS)
 	sc.SelectByName = selectByNameFilter
 	sc.Select = selectFilter
 	sc.Error = p.ScannerError
 	sc.Result = p.ReportTotal
 
-	p.V("start scan on %v", targets)
+	pm.V("start scan on %v", targets)
 	t.Go(func() error { return sc.Scan(t.Context(gopts.ctx), targets) })
 
 	arch := archiver.New(repo, targetFS, archiver.Options{})
@@ -519,10 +508,10 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	uploader := archiver.IndexUploader{
 		Repository: repo,
 		Start: func() {
-			p.VV("uploading intermediate index")
+			pm.VV("uploading intermediate index")
 		},
 		Complete: func(id restic.ID) {
-			p.V("uploaded intermediate index %v", id.Str())
+			pm.V("uploaded intermediate index %v", id.Str())
 		},
 	}
 
@@ -530,14 +519,14 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		return uploader.Upload(gopts.ctx, t.Context(gopts.ctx), 30*time.Second)
 	})
 
-	p.V("start backup on %v", targets)
+	pm.V("start backup on %v", targets)
 	_, id, err := arch.Snapshot(gopts.ctx, targets, snapshotOpts)
 	if err != nil {
 		return errors.Fatalf("unable to save snapshot: %v", err)
 	}
 
-	p.Finish()
-	p.P("snapshot %s saved\n", id.Str())
+	pm.Unset()
+	pm.P("snapshot %s saved\n", id.Str())
 
 	// cleanly shutdown all running goroutines
 	t.Kill(nil)

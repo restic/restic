@@ -9,7 +9,11 @@ type Counter struct {
 }
 
 func (c *Counter) Add(count int64) {
-	c.value += int64(count)
+	c.value += count
+}
+
+func (c *Counter) Set(value int64) {
+	c.value = value
 }
 
 func (c *Counter) Value() int64 {
