@@ -9,16 +9,15 @@ import (
 	"io"
 	"os"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/cache"
+	"github.com/restic/restic/internal/crypto"
+	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/hashing"
-	"github.com/restic/restic/internal/restic"
-
-	"github.com/restic/restic/internal/backend"
-	"github.com/restic/restic/internal/crypto"
-	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/pack"
+	"github.com/restic/restic/internal/restic"
 )
 
 // Repository is used to access a repository in a backend.
@@ -694,16 +693,21 @@ func (r *Repository) SaveTree(ctx context.Context, t *restic.Tree) (restic.ID, e
 	return id, err
 }
 
+// Loader allows loading data from a backend.
+type Loader interface {
+	Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error
+}
+
 // DownloadAndHash is all-in-one helper to download content of the file at h to a temporary filesystem location
 // and calculate ID of the contents. Returned (temporary) file is positioned at the beginning of the file;
 // it is reponsibility of the caller to close and delete the file.
-func DownloadAndHash(ctx context.Context, repo restic.Repository, h restic.Handle) (tmpfile *os.File, hash restic.ID, size int64, err error) {
+func DownloadAndHash(ctx context.Context, be Loader, h restic.Handle) (tmpfile *os.File, hash restic.ID, size int64, err error) {
 	tmpfile, err = fs.TempFile("", "restic-temp-")
 	if err != nil {
 		return nil, restic.ID{}, -1, errors.Wrap(err, "TempFile")
 	}
 
-	err = repo.Backend().Load(ctx, h, 0, 0, func(rd io.Reader) (ierr error) {
+	err = be.Load(ctx, h, 0, 0, func(rd io.Reader) (ierr error) {
 		_, ierr = tmpfile.Seek(0, io.SeekStart)
 		if ierr == nil {
 			ierr = tmpfile.Truncate(0)
@@ -716,6 +720,11 @@ func DownloadAndHash(ctx context.Context, repo restic.Repository, h restic.Handl
 		hash = restic.IDFromHash(hrd.Sum(nil))
 		return ierr
 	})
+	if err != nil {
+		tmpfile.Close()
+		os.Remove(tmpfile.Name())
+		return nil, restic.ID{}, -1, errors.Wrap(err, "Load")
+	}
 
 	_, err = tmpfile.Seek(0, io.SeekStart)
 	if err != nil {

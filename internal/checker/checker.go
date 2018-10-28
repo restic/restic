@@ -7,13 +7,12 @@ import (
 	"os"
 	"sync"
 
-	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/restic"
-	"golang.org/x/sync/errgroup"
-
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/restic"
+	"golang.org/x/sync/errgroup"
 )
 
 // Checker runs various checks on a repository. It is advisable to create an
@@ -652,7 +651,7 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID) error {
 	debug.Log("checking pack %v", id)
 	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
 
-	packfile, hash, size, err := repository.DownloadAndHash(ctx, r, h)
+	packfile, hash, size, err := repository.DownloadAndHash(ctx, r.Backend(), h)
 	if err != nil {
 		return errors.Wrap(err, "checkPack")
 	}

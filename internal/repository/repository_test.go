@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/archiver"
+	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -390,5 +392,109 @@ func TestRepositoryIncrementalIndex(t *testing.T) {
 		if len(ids) > 1 {
 			t.Errorf("pack %v listed in %d indexes\n", packID, len(ids))
 		}
+	}
+}
+
+type backend struct {
+	rd io.Reader
+}
+
+func (be backend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+	return fn(be.rd)
+}
+
+type retryBackend struct {
+	buf []byte
+}
+
+func (be retryBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+	err := fn(bytes.NewReader(be.buf[:len(be.buf)/2]))
+	if err != nil {
+		return err
+	}
+
+	return fn(bytes.NewReader(be.buf))
+}
+
+func TestDownloadAndHash(t *testing.T) {
+	buf := make([]byte, 5*1024*1024+881)
+	_, err := io.ReadFull(rnd, buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var tests = []struct {
+		be   repository.Loader
+		want []byte
+	}{
+		{
+			be:   backend{rd: bytes.NewReader(buf)},
+			want: buf,
+		},
+		{
+			be:   retryBackend{buf: buf},
+			want: buf,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			f, id, size, err := repository.DownloadAndHash(context.TODO(), test.be, restic.Handle{})
+			if err != nil {
+				t.Error(err)
+			}
+
+			want := restic.Hash(test.want)
+			if !want.Equal(id) {
+				t.Errorf("wrong hash returned, want %v, got %v", want.Str(), id.Str())
+			}
+
+			if size != int64(len(test.want)) {
+				t.Errorf("wrong size returned, want %v, got %v", test.want, size)
+			}
+
+			err = f.Close()
+			if err != nil {
+				t.Error(err)
+			}
+
+			err = fs.RemoveIfExists(f.Name())
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+type errorReader struct {
+	err error
+}
+
+func (er errorReader) Read(p []byte) (n int, err error) {
+	return 0, er.err
+}
+
+func TestDownloadAndHashErrors(t *testing.T) {
+	var tests = []struct {
+		be  repository.Loader
+		err string
+	}{
+		{
+			be:  backend{rd: errorReader{errors.New("test error 1")}},
+			err: "test error 1",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			_, _, _, err := repository.DownloadAndHash(context.TODO(), test.be, restic.Handle{})
+			if err == nil {
+				t.Fatalf("wanted error %q, got nil", test.err)
+			}
+
+			if errors.Cause(err).Error() != test.err {
+				t.Fatalf("wanted error %q, got %q", test.err, err)
+			}
+		})
 	}
 }

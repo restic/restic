@@ -6,11 +6,10 @@ import (
 	"os"
 
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/restic"
-
-	"github.com/restic/restic/internal/errors"
 )
 
 // Repack takes a list of packs together with a list of blobs contained in
@@ -24,7 +23,7 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 		// load the complete pack into a temp file
 		h := restic.Handle{Type: restic.DataFile, Name: packID.String()}
 
-		tempfile, hash, packLength, err := DownloadAndHash(ctx, repo, h)
+		tempfile, hash, packLength, err := DownloadAndHash(ctx, repo.Backend(), h)
 		if err != nil {
 			return nil, errors.Wrap(err, "Repack")
 		}
