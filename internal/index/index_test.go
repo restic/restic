@@ -252,6 +252,7 @@ func TestIndexSave(t *testing.T) {
 	}
 
 	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
 
 	errCh := make(chan error)
 	go checker.Structure(ctx, errCh)
