@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/checker"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
@@ -48,7 +49,7 @@ func TestIndexNew(t *testing.T) {
 	repo, cleanup := createFilledRepo(t, 3, 0)
 	defer cleanup()
 
-	idx, _, err := New(context.TODO(), repo, restic.NewIDSet(), nil)
+	idx, invalid, err := New(context.TODO(), repo, restic.NewIDSet(), nil)
 	if err != nil {
 		t.Fatalf("New() returned error %v", err)
 	}
@@ -57,7 +58,57 @@ func TestIndexNew(t *testing.T) {
 		t.Fatalf("New() returned nil index")
 	}
 
+	if len(invalid) > 0 {
+		t.Fatalf("New() returned invalid files: %v", invalid)
+	}
+
 	validateIndex(t, repo, idx)
+}
+
+type ListErrorRepo struct {
+	restic.Repository
+	Max int
+}
+
+// List returns an error after repo.Max files
+func (repo ListErrorRepo) List(ctx context.Context, t restic.FileType, fn func(restic.ID, int64) error) error {
+	if repo.Max == 0 {
+		return errors.New("test error, max is zero")
+	}
+
+	max := repo.Max
+	return repo.Repository.List(ctx, t, func(id restic.ID, size int64) error {
+		if max == 0 {
+			return errors.New("test error, max reached zero")
+		}
+
+		max--
+		return fn(id, size)
+	})
+}
+
+func TestIndexNewErrors(t *testing.T) {
+	repo, cleanup := createFilledRepo(t, 3, 0)
+	defer cleanup()
+
+	for _, max := range []int{0, 3, 5} {
+		errRepo := ListErrorRepo{
+			Repository: repo,
+			Max:        max,
+		}
+		idx, invalid, err := New(context.TODO(), errRepo, restic.NewIDSet(), nil)
+		if err == nil {
+			t.Errorf("expected error not found, got nil")
+		}
+
+		if idx != nil {
+			t.Errorf("expected nil index, got %v", idx)
+		}
+
+		if len(invalid) != 0 {
+			t.Errorf("expected empty invalid list, got %v", invalid)
+		}
+	}
 }
 
 func TestIndexLoad(t *testing.T) {
