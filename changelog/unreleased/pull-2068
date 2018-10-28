@@ -1,0 +1,6 @@
+Bugfix: Correctly return error loading data
+
+In one case during `prune` and `check`, an error loading data from the backend is not returned properly. This is now corrected.
+
+https://github.com/restic/restic/pull/2068
+https://github.com/restic/restic/issues/1999#issuecomment-433737921
