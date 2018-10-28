@@ -1,4 +1,4 @@
-Bugfix: Do not return an error when the scanner is faster than backup
+Bugfix: Do not return an error when the scanner is slower than backup
 
 When restic makes a backup, there's a background task called "scanner" which
 collects information on how many files and directories are to be saved, in

@@ -8,7 +8,7 @@ Summary
 -------
 
  * Fix #1935: Remove truncated files from cache
- * Fix #1978: Do not return an error when the scanner is faster than backup
+ * Fix #1978: Do not return an error when the scanner is slower than backup
  * Enh #1766: Restore: suppress lchown errors when not running as root
  * Enh #1909: Reject files/dirs by name first
  * Enh #1940: Add directory filter to ls command
@@ -32,7 +32,7 @@ Details
 
    https://github.com/restic/restic/issues/1935
 
- * Bugfix #1978: Do not return an error when the scanner is faster than backup
+ * Bugfix #1978: Do not return an error when the scanner is slower than backup
 
    When restic makes a backup, there's a background task called "scanner" which collects
    information on how many files and directories are to be saved, in order to display progress
