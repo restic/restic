@@ -1,0 +1,7 @@
+Enhancement: Make all commands display timestamps in local time
+
+Restic used to drop the timezone information from displayed timestamps, it now
+converts timestamps to local time before printing them so the times can be
+easily compared to.
+
+https://github.com/restic/restic/pull/2070
