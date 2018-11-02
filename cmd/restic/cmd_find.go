@@ -213,7 +213,7 @@ func (s *statefulOutput) PrintObjectNormal(kind, id, nodepath, treeID string, sn
 	} else {
 		Printf(" ... path %s\n", nodepath)
 	}
-	Printf(" ... in snapshot %s (%s)\n", sn.ID().Str(), sn.Time.Format(TimeFormat))
+	Printf(" ... in snapshot %s (%s)\n", sn.ID().Str(), sn.Time.Local().Format(TimeFormat))
 }
 
 func (s *statefulOutput) PrintObject(kind, id, nodepath, treeID string, sn *restic.Snapshot) {
