@@ -59,7 +59,7 @@ func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions
 			ID:       id.Str(),
 			UserName: k.Username,
 			HostName: k.Hostname,
-			Created:  k.Created.Format(TimeFormat),
+			Created:  k.Created.Local().Format(TimeFormat),
 		}
 
 		keys = append(keys, key)
