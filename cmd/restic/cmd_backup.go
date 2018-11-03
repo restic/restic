@@ -315,6 +315,9 @@ func collectTargets(opts BackupOptions, args []string) (targets []string, err er
 		if err != nil {
 			return nil, errors.WithMessage(err, fmt.Sprintf("pattern: %s", line))
 		}
+		if len(expanded) == 0 {
+			Warnf("pattern %q does not match any files, skipping\n", line)
+		}
 		lines = append(lines, expanded...)
 	}
 
