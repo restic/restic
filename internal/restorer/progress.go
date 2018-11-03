@@ -103,7 +103,7 @@ func (p *progressUI) startFileListing() {
 	progress := "{{.dirs.Value}} directories, {{.bytes.FormatBytes}} in {{.files.Value}} files"
 	subtotal := "Created {{.dirs.Value}} directories, listed {{.bytes.FormatBytes}} in {{.files.Value}} files"
 
-	p.ui.Set("Creating directories and listing files...", setup, metrics, progress, subtotal)
+	p.ui.Set("Creating directories and listing files...", setup, metrics, progress, nil, subtotal)
 }
 
 // announce start of file content download phase
@@ -119,7 +119,7 @@ func (p *progressUI) startFileContent() {
 	}
 	progress := "{{.bytes.FormatBytes}} / {{.bytes.Target.FormatBytes}} {{.files.Value}} / {{.files.Target.Value}} files"
 	subtotal := "Restored {{.files.FormatBytes}} in {{.files.Value}} files"
-	p.ui.Set("Restoring files content...", setup, metrics, progress, subtotal)
+	p.ui.Set("Restoring files content...", setup, metrics, progress, nil, subtotal)
 }
 
 // announce filesystem metadata restoration phase
@@ -133,7 +133,7 @@ func (p *progressUI) startMetadata() {
 	}
 	progress := "{{.metadata.Value}} / {{.metadata.Target.Value}}"
 	subtotal := "Restored {{.metadata.Value}} filesystem timestamps and other metadata"
-	p.ui.Set("Restoring filesystem timestamps and other metadata...", setup, metrics, progress, subtotal)
+	p.ui.Set("Restoring filesystem timestamps and other metadata...", setup, metrics, progress, nil, subtotal)
 }
 
 // announce start of file content verification phase
@@ -149,7 +149,7 @@ func (p *progressUI) startVerify() {
 	}
 	progress := ""
 	subtotal := "Verified {{.bytes.FormatBytes}} in {{.files.Value}} files"
-	p.ui.Set("Verifying files content...", setup, metrics, progress, subtotal)
+	p.ui.Set("Verifying files content...", setup, metrics, progress, nil, subtotal)
 }
 
 // show restore summary and statistics

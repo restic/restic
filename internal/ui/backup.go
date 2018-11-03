@@ -2,16 +2,12 @@ package ui
 
 import (
 	"os"
+	"sort"
 	"time"
 
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/restic"
 )
-
-// type fileWorkerMessage struct {
-// 	filename string
-// 	done     bool
-// }
 
 // Backup reports progress for the `backup` command.
 type Backup struct {
@@ -20,6 +16,8 @@ type Backup struct {
 	dirs, files, others CounterTo
 	bytes               CounterTo
 	errors              Counter
+
+	currentFiles map[string]struct{}
 
 	summary struct {
 		Files, Dirs struct {
@@ -34,7 +32,8 @@ type Backup struct {
 // NewBackup returns a new backup progress reporter.
 func NewBackup(ui ProgressUI) *Backup {
 	b := &Backup{
-		ui: ui,
+		ui:           ui,
+		currentFiles: make(map[string]struct{}),
 	}
 
 	metrics := map[string]interface{}{
@@ -48,13 +47,13 @@ func NewBackup(ui ProgressUI) *Backup {
 
 	setup := func() {}
 
-	progress := "{{.files.Value}} files {{.bytes.FormatBytes}}, total {{.files.Target.Value}} files {{.bytes.Target.FormatBytes}}, {{.errors.Value}} errors"
+	progress := `{{.files.Value}} files {{.bytes.FormatBytes}}, total {{.files.Target.Value}} files {{.bytes.Target.FormatBytes}}, {{.errors.Value}} errors`
 	summary := `
-Files:       {{.summary.Files.New.Value}} new, {{.summary.Files.Changed.Value}} changed, {{.summary.Files.Unchanged.Value}} unmodified
-Dirs:        {{.summary.Dirs.New.Value}} new, {{.summary.Dirs.Changed.Value}} changed, {{.summary.Dirs.Unchanged.Value}} unmodified
-Data Blobs:  {{.summary.ItemStats.DataBlobs}} new
-Tree Blobs:  {{.summary.ItemStats.TreeBlobs}} new
-Added to the repo: %-5s
+Files:       {{printf "%5d" .summary.Files.New.Value}} new, {{printf "%5d" .summary.Files.Changed.Value}} changed, {{printf "%5d" .summary.Files.Unchanged.Value}} unmodified
+Dirs:        {{printf "%5d" .summary.Dirs.New.Value}} new, {{printf "%5d" .summary.Dirs.Changed.Value}} changed, {{printf "%5d" .summary.Dirs.Unchanged.Value}} unmodified
+Data Blobs:  {{printf "%5d" .summary.ItemStats.DataBlobs}} new
+Tree Blobs:  {{printf "%5d" .summary.ItemStats.TreeBlobs}} new
+Added to the repo: {{ FormatBytes (.summary.ItemStats.DataSize + .summary.ItemStats.TreeSize) | print "%-5s" }}
 
 processed %v files, {{.bytes.FormatBytes}} in %s
 	`
@@ -72,23 +71,27 @@ processed %v files, {{.bytes.FormatBytes}} in %s
 	// 	formatDuration(time.Since(b.start)),
 	// )
 
-	ui.Set("backup", setup, metrics, progress, summary)
+	status := func() []string {
+		// 	lines := make([]string, 0, len(currentFiles)+1)
+		// 	for filename := range currentFiles {
+		// 		lines = append(lines, filename)
+		// 	}
+		// 	sort.Sort(sort.StringSlice(lines))
+		// 	lines = append([]string{status}, lines...)
+
+		lines := make([]string, 0, len(b.currentFiles)+1)
+		for filename := range b.currentFiles {
+			lines = append(lines, filename)
+		}
+		sort.Sort(sort.StringSlice(lines))
+
+		return lines
+	}
+
+	ui.Set("backup", setup, metrics, progress, status, summary)
 
 	return b
 }
-
-// update updates the status lines.
-// func (b *Backup) update(total, processed counter, errors uint, currentFiles map[string]struct{}, secs uint64) {
-
-// 	lines := make([]string, 0, len(currentFiles)+1)
-// 	for filename := range currentFiles {
-// 		lines = append(lines, filename)
-// 	}
-// 	sort.Sort(sort.StringSlice(lines))
-// 	lines = append([]string{status}, lines...)
-
-// 	b.term.SetStatus(lines)
-// }
 
 // ScannerError is the error callback function for the scanner, it prints the
 // error in verbose mode and returns nil.
@@ -106,9 +109,7 @@ func (b *Backup) Error(item string, fi os.FileInfo, err error) error {
 
 // StartFile is called when a file is being processed by a worker.
 func (b *Backup) StartFile(filename string) {
-	// b.workerCh <- fileWorkerMessage{
-	// 	filename: filename,
-	// }
+	b.ui.Update(func() { b.currentFiles[filename] = struct{}{} })
 }
 
 // CompleteBlob is called for all saved blobs for files.
@@ -119,29 +120,17 @@ func (b *Backup) CompleteBlob(filename string, bytes uint64) {
 // CompleteItemFn is the status callback function for the archiver when a
 // file/dir has been saved successfully.
 func (b *Backup) CompleteItemFn(item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration) {
+	filedone := func() { delete(b.currentFiles, item) }
+
 	if current == nil {
 		// error occurred, tell the status display to remove the line
-		// b.workerCh <- fileWorkerMessage{
-		// 	filename: item,
-		// 	done:     true,
-		// }
+		b.ui.Update(filedone)
 		return
 	}
 
-	var progress, summary *Counter
-
-	switch current.Type {
-	case "file":
-		progress = &b.files.Counter
-		// b.workerCh <- fileWorkerMessage{
-		// 	filename: item,
-		// 	done:     true,
-		// }
-	case "dir":
-		progress = &b.dirs.Counter
-	}
-
 	if current.Type == "dir" {
+		var summary *Counter
+
 		switch {
 		case previous == nil:
 			b.ui.VV("new       %v, saved in %.3fs (%v added, %v metadata)", item, d.Seconds(), FormatBytes(s.DataSize), FormatBytes(s.TreeSize))
@@ -155,12 +144,14 @@ func (b *Backup) CompleteItemFn(item string, previous, current *restic.Node, s a
 			b.ui.VV("modified  %v, saved in %.3fs (%v added, %v metadata)", item, d.Seconds(), FormatBytes(s.DataSize), FormatBytes(s.TreeSize))
 			summary = &b.summary.Dirs.Changed
 		}
-	} else if current.Type == "file" {
 
-		// b.workerCh <- fileWorkerMessage{
-		// 	done:     true,
-		// 	filename: item,
-		// }
+		b.ui.Update(func() {
+			b.dirs.Counter.Add(1)
+			summary.Add(1)
+			b.summary.ItemStats.Add(s)
+		})
+	} else if current.Type == "file" {
+		var summary *Counter
 
 		switch {
 		case previous == nil:
@@ -175,13 +166,15 @@ func (b *Backup) CompleteItemFn(item string, previous, current *restic.Node, s a
 			b.ui.VV("modified  %v, saved in %.3fs (%v added)", item, d.Seconds(), FormatBytes(s.DataSize))
 			summary = &b.summary.Files.Changed
 		}
+
+		b.ui.Update(func() {
+			b.files.Counter.Add(1)
+			summary.Add(1)
+			b.summary.ItemStats.Add(s)
+			filedone()
+		})
 	}
 
-	b.ui.Update(func() {
-		progress.Add(1)
-		summary.Add(1)
-		b.summary.ItemStats.Add(s)
-	})
 }
 
 // ReportTotal sets the total stats up to now
