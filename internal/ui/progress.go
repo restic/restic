@@ -44,7 +44,7 @@ type ProgressUI interface {
 
 	// TODO rename to StartPhase
 	// Set currently running operation phase
-	Set(title string, setup func(), metrics map[string]interface{}, progress, summary string)
+	Set(title string, setup func(), metrics map[string]interface{}, progress string, status func() []string, summary string)
 
 	// Update executes op, then updates user-visible progress UI as necessary
 	Update(op func())
@@ -57,6 +57,7 @@ type progressPhase struct {
 	title    string
 	metrics  map[string]interface{}
 	progress *template.Template
+	status   func() []string
 	summary  *template.Template
 }
 
@@ -162,11 +163,11 @@ func copyMetrics(original map[string]interface{}) map[string]interface{} {
 
 // Set currently running operation title, periodic progress and summary
 // messages. all callbacks will be invoked from the "UI" thread
-func (p *TermstatusProgressUI) Set(title string, setup func(), metrics map[string]interface{}, progress, summary string) {
+func (p *TermstatusProgressUI) Set(title string, setup func(), metrics map[string]interface{}, progress string, status func() []string, summary string) {
 	metrics = copyMetrics(metrics)
 	metrics["stopwatch"] = StartStopwatch()
 	// decorate progress messahe with running time, completion % and ETA, if available
-	progress = "[{{.stopwatch.FormatDuration}}] " + progress
+	progress = "[{{.stopwatch.FormatDuration}}] " + title + " " + progress
 	if _, ok := metrics["percent"]; ok {
 		progress = progress + " {{.percent.FormatPercent}} ETA {{.percent.FormatETA .stopwatch}}"
 	}
@@ -179,6 +180,7 @@ func (p *TermstatusProgressUI) Set(title string, setup func(), metrics map[strin
 			title:    title,
 			metrics:  metrics, // XXX do I need to make a copy, just to be safe?
 			progress: parseTemplate("progress", progress),
+			status:   status,
 			summary:  parseTemplate("summary", summary),
 		}
 		p.displayProgress(true) // display initial progress
@@ -207,7 +209,10 @@ func (p *TermstatusProgressUI) diplaySummary() {
 }
 
 func parseTemplate(name, text string) *template.Template {
-	return template.Must(template.New(name).Parse(text))
+	funcMap := template.FuncMap{
+		"FormatBytes": FormatBytes,
+	}
+	return template.Must(template.New(name).Funcs(funcMap).Parse(text))
 }
 
 func executeTemplate(t *template.Template, data interface{}) string {
@@ -219,7 +224,17 @@ func executeTemplate(t *template.Template, data interface{}) string {
 	return buf.String()
 }
 
+func (p *TermstatusProgressUI) displayInteructiveProgress() {
+	// TODO asci-art progress bar, if completion percent is available
+	lines := []string{executeTemplate(p.phase.progress, p.phase.metrics)}
+	if p.phase.status != nil {
+		lines = append(lines, p.phase.status()...)
+	}
+	p.term.SetStatus(lines)
+}
+
 func (p *TermstatusProgressUI) displayProgress(first bool) {
+	// XXX get rid of this, "clear screen" should not be necessary on each progress update
 	if p.phase.title == "" {
 		if p.term.CanDisplayStatus() {
 			p.term.SetStatus([]string{})
@@ -227,24 +242,11 @@ func (p *TermstatusProgressUI) displayProgress(first bool) {
 		return
 	}
 
-	msg := executeTemplate(p.phase.progress, p.phase.metrics)
-
 	if p.term.CanDisplayStatus() {
-		// TODO consider single line to include title, progress and ETA
-		// TODO asci-art progress bar, if completion percent is available
-		var lines []string
-		if p.phase.title != "" {
-			lines = append(lines, p.phase.title)
-		}
-		lines = append(lines, msg)
-		p.term.SetStatus(lines)
+		p.displayInteructiveProgress()
 	} else {
-		// on dumb terminals print title once, then progress message
-		if first {
-			p.P("%s", p.phase.title)
-		} else {
-			p.V("%s", msg)
-		}
+		// dumb terminal print progress message only, no status lines
+		p.V("%s", executeTemplate(p.phase.progress, p.phase.metrics))
 	}
 
 }

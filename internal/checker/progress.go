@@ -19,7 +19,7 @@ func startIndexCheckProgress(ui ui.ProgressUI) *indexLoadStats {
 	progress := "{{.idxfiles.Value}} index files ({{.blobs.Value}} blobs)"
 	subtotal := "Loaded {{.idxfiles.Value}} index files ({{.blobs.Value}} blobs)"
 
-	ui.Set("Loading index files...", setup, metrics, progress, subtotal)
+	ui.Set("Loading index files...", setup, metrics, progress, nil, subtotal)
 
 	return p
 }
@@ -54,7 +54,7 @@ func (p *packCheckStats) startListPacks() {
 	progress := "{{.packfiles.Value}} pack files"
 	subtotal := "Checked {{.packfiles.Value}} pack files"
 
-	p.ui.Set("Checking all packs...", setup, metrics, progress, subtotal)
+	p.ui.Set("Checking all packs...", setup, metrics, progress, nil, subtotal)
 }
 
 func (p *packCheckStats) addPack(ui ui.ProgressUI) {
@@ -84,7 +84,7 @@ func (p *structureCheckStats) startLoadSnapshots() {
 	progress := "{{.snapshots.Value}} snapshot files"
 	subtotal := "Loaded {{.snapshots.Value}} snapshot files"
 
-	p.ui.Set("Loading snapshot files...", setup, metrics, progress, subtotal)
+	p.ui.Set("Loading snapshot files...", setup, metrics, progress, nil, subtotal)
 }
 
 func (p *structureCheckStats) addSnapshot() {
@@ -102,7 +102,7 @@ func (p *structureCheckStats) startCheckSnapshots() {
 	progress := "{{.snapshotFiles.Value}} snapshots"
 	subtotal := "Checked {{.snapshotFiles.Value}} snapshots"
 
-	p.ui.Set("Checking snapshots, trees and blobs...", setup, metrics, progress, subtotal)
+	p.ui.Set("Checking snapshots, trees and blobs...", setup, metrics, progress, nil, subtotal)
 }
 
 func (p *structureCheckStats) doneSnapshot() {
@@ -133,7 +133,7 @@ func startReadPacksProgress(pm ui.ProgressUI, packs int) *readPacksStats {
 	progress := "{{.packfiles.Value}} / {{.packfiles.Target.Value}} pack files ({{.bytes.FormatBytes}} bytes, {{.blobs.Value}} blobs)"
 	subtotal := "Read {{.packfiles.Value}} pack files ({{.bytes.FormatBytes}} bytes, {{.blobs.Value}} blobs)"
 
-	pm.Set("Reading pack files...", setup, metrics, progress, subtotal)
+	pm.Set("Reading pack files...", setup, metrics, progress, nil, subtotal)
 
 	return p
 }
