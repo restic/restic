@@ -131,36 +131,42 @@ func (p *structureCheckStats) finish() {
 type readPacksStats struct {
 	ui ui.ProgressUI
 
-	checkedPackFiles       ui.CounterTo
-	totalBytes, totalBlobs int64
+	packs        ui.CounterTo
+	bytes, blobs int64
 }
 
 func startReadPacksProgress(pm ui.ProgressUI, packs int) *readPacksStats {
-	p := &readPacksStats{ui: pm, checkedPackFiles: ui.StartCountTo(int64(packs))}
+	p := &readPacksStats{ui: pm, packs: ui.StartCountTo(int64(packs))}
 
 	progress := func() string {
-		// "{{.packfiles.Value}} / {{.packfiles.Target.Value}} pack files ({{.bytes.FormatBytes}} bytes, {{.blobs.Value}} blobs)"
-		return fmt.Sprint("Reading pack files: %d / %d pack files (%s bytes, %d blobs)",
-			p.checkedPackFiles.Current,
-			p.checkedPackFiles.Total,
-			ui.FormatBytes(p.totalBytes),
-			p.totalBlobs,
+		return fmt.Sprintf("Reading pack files: %d / %d pack files (%s bytes, %d blobs)",
+			p.packs.Current,
+			p.packs.Total,
+			ui.FormatBytes(p.bytes),
+			p.blobs,
 		)
 	}
+	percent := func() (int64, int64) {
+		return p.packs.Current, p.packs.Total
+	}
 	summary := func(time.Duration) {
-		// "Read {{.packfiles.Value}} pack files ({{.bytes.FormatBytes}} bytes, {{.blobs.Value}} blobs)"
+		p.ui.P("Read %d pack files (%s bytes, %d blobs)",
+			p.packs.Current,
+			ui.FormatBytes(p.bytes),
+			p.blobs,
+		)
 	}
 
-	p.ui.StartPhase(progress, nil, nil, summary)
+	p.ui.StartPhase(progress, nil, percent, summary)
 
 	return p
 }
 
 func (p *readPacksStats) doneReadPack(size int64, blobCnt int) {
 	p.ui.Update(func() {
-		p.checkedPackFiles.Current++
-		p.totalBytes += size
-		p.totalBlobs += int64(blobCnt)
+		p.packs.Current++
+		p.bytes += size
+		p.blobs += int64(blobCnt)
 	})
 }
 
