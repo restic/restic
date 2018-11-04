@@ -306,7 +306,7 @@ func truncate(s string, maxlen int) string {
 
 // SetStatus updates the status lines.
 func (t *Terminal) SetStatus(lines []string) {
-	if len(lines) == 0 || !t.canUpdateStatus {
+	if !t.canUpdateStatus {
 		return
 	}
 
@@ -324,8 +324,10 @@ func (t *Terminal) SetStatus(lines []string) {
 	}
 
 	// make sure the last line does not have a line break
-	last := len(lines) - 1
-	lines[last] = strings.TrimRight(lines[last], "\n")
+	if len(lines) > 0 {
+		last := len(lines) - 1
+		lines[last] = strings.TrimRight(lines[last], "\n")
+	}
 
 	select {
 	case t.status <- status{lines: lines}:
