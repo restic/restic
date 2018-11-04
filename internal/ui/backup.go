@@ -37,6 +37,14 @@ func NewBackup(ui ProgressUI) *Backup {
 		currentFiles: make(map[string]struct{}),
 	}
 
+	// NB backup does not fit perfectly into "sequence of independent phases" ProgressUI model
+	// There are actually two overlapping and dependent "phases"
+	// - scanning of files to backup, which calculates totals
+	// - actual backup
+	// We need to time backup phase to calculate ETA, so this is what we model as a phase
+	// The scanner runs in parallel and updates totals, but it is not represented in the
+	// progress otherwise
+
 	progress := func() string {
 		return fmt.Sprintf("Backing up: %v files %s, total %v files %v, %d errors",
 			b.files.Current,
@@ -44,6 +52,10 @@ func NewBackup(ui ProgressUI) *Backup {
 			b.files.Total,
 			FormatBytes(b.bytes.Total),
 			b.errors)
+	}
+
+	percent := func() (int64, int64) {
+		return b.bytes.Current, b.bytes.Total
 	}
 
 	status := func() []string {
@@ -71,7 +83,7 @@ func NewBackup(ui ProgressUI) *Backup {
 		)
 	}
 
-	ui.StartPhase(progress, status, b.bytes.Percent, summary)
+	ui.StartPhase(progress, status, percent, summary)
 
 	return b
 }
