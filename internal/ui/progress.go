@@ -216,10 +216,6 @@ func (p *TermstatusProgressUI) displayInteructiveProgress() {
 
 func (p *TermstatusProgressUI) displayProgress(first bool) {
 	if p.phase.progress == nil {
-		// XXX get rid of this, "clear screen" should not be necessary on each progress update
-		if p.term.CanDisplayStatus() {
-			p.term.SetStatus([]string{})
-		}
 		return
 	}
 
