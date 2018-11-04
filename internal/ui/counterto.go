@@ -27,7 +27,3 @@ type CounterTo struct {
 func StartCountTo(total int64) CounterTo {
 	return CounterTo{Total: total}
 }
-
-func (c CounterTo) Percent() (int64, int64) {
-	return c.Current, c.Total
-}
