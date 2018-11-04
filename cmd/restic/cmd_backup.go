@@ -527,7 +527,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, pm ui.ProgressUI, args [
 		return errors.Fatalf("unable to save snapshot: %v", err)
 	}
 
-	pm.Unset()
+	pm.FinishPhase()
 	pm.P("snapshot %s saved\n", id.Str())
 
 	// cleanly shutdown all running goroutines
