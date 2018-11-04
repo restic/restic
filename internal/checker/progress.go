@@ -1,45 +1,55 @@
 package checker
 
-import "github.com/restic/restic/internal/ui"
+import (
+	"fmt"
+	"time"
+
+	"github.com/restic/restic/internal/ui"
+)
 
 type indexLoadStats struct {
 	ui ui.ProgressUI
 
-	totalIdxFiles, totalBlobs ui.Counter
+	totalIdxFiles, totalBlobs int64
 }
 
 func startIndexCheckProgress(ui ui.ProgressUI) *indexLoadStats {
 	p := &indexLoadStats{ui: ui}
 
-	setup := func() {}
-	metrics := map[string]interface{}{
-		"idxfiles": &p.totalIdxFiles,
-		"blobs":    &p.totalBlobs,
+	progress := func() string {
+		return fmt.Sprintf("Loading index files: %d index files (%d blobs)",
+			p.totalIdxFiles,
+			p.totalBlobs,
+		)
 	}
-	progress := "{{.idxfiles.Value}} index files ({{.blobs.Value}} blobs)"
-	subtotal := "Loaded {{.idxfiles.Value}} index files ({{.blobs.Value}} blobs)"
+	summary := func(time.Duration) {
+		p.ui.P("Loaded %d index files (%d blobs)",
+			p.totalIdxFiles,
+			p.totalBlobs,
+		)
+	}
 
-	ui.Set("Loading index files...", setup, metrics, progress, nil, subtotal)
+	ui.StartPhase(progress, nil, nil, summary)
 
 	return p
 }
 
 func (p *indexLoadStats) addIndexFile() {
-	p.ui.Update(func() { p.totalIdxFiles.Add(1) })
+	p.ui.Update(func() { p.totalIdxFiles++ })
 }
 
 func (p *indexLoadStats) doneIndexFile(blobCnt int) {
-	p.ui.Update(func() { p.totalBlobs.Add(int64(blobCnt)) })
+	p.ui.Update(func() { p.totalBlobs += int64(blobCnt) })
 }
 
 func (p *indexLoadStats) finish() {
-	p.ui.Unset()
+	p.ui.FinishPhase()
 }
 
 type packCheckStats struct {
 	ui ui.ProgressUI
 
-	totalPackFiles ui.Counter
+	totalPackFiles int64
 }
 
 func newPackCheckProgress(ui ui.ProgressUI) *packCheckStats {
@@ -47,29 +57,29 @@ func newPackCheckProgress(ui ui.ProgressUI) *packCheckStats {
 }
 
 func (p *packCheckStats) startListPacks() {
-	setup := func() {}
-	metrics := map[string]interface{}{
-		"packfiles": &p.totalPackFiles,
+	progress := func() string {
+		// "{{.packfiles.Value}} pack files"
+		return fmt.Sprintf("Checking all packs: %d pack files", p.totalPackFiles)
 	}
-	progress := "{{.packfiles.Value}} pack files"
-	subtotal := "Checked {{.packfiles.Value}} pack files"
+	summary := func(time.Duration) {
+		p.ui.P("Checked %d pack files", p.totalPackFiles)
+	}
 
-	p.ui.Set("Checking all packs...", setup, metrics, progress, nil, subtotal)
+	p.ui.StartPhase(progress, nil, nil, summary)
 }
 
 func (p *packCheckStats) addPack(ui ui.ProgressUI) {
-	ui.Update(func() { p.totalPackFiles.Add(1) })
+	ui.Update(func() { p.totalPackFiles++ })
 }
 
 func (p *packCheckStats) finish() {
-	p.ui.Unset()
+	p.ui.FinishPhase()
 }
 
 type structureCheckStats struct {
 	ui ui.ProgressUI
 
-	totalSnapshotFiles   ui.Counter
-	checkedSnapshotFiles ui.CounterTo
+	snapshotFiles ui.CounterTo
 }
 
 func newStructureCheckStats(ui ui.ProgressUI) *structureCheckStats {
@@ -77,75 +87,83 @@ func newStructureCheckStats(ui ui.ProgressUI) *structureCheckStats {
 }
 
 func (p *structureCheckStats) startLoadSnapshots() {
-	setup := func() {}
-	metrics := map[string]interface{}{
-		"snapshots": &p.totalSnapshotFiles,
+	progress := func() string {
+		return fmt.Sprintf("Loading snapshot files: %d snapshot files",
+			p.snapshotFiles.Total,
+		)
 	}
-	progress := "{{.snapshots.Value}} snapshot files"
-	subtotal := "Loaded {{.snapshots.Value}} snapshot files"
+	summary := func(time.Duration) {
+		p.ui.P("Loaded %d snapshot files",
+			p.snapshotFiles.Total,
+		)
+	}
 
-	p.ui.Set("Loading snapshot files...", setup, metrics, progress, nil, subtotal)
+	p.ui.StartPhase(progress, nil, nil, summary)
 }
 
 func (p *structureCheckStats) addSnapshot() {
-	p.ui.Update(func() { p.totalSnapshotFiles.Add(1) })
+	p.ui.Update(func() { p.snapshotFiles.Total++ })
 }
 
 func (p *structureCheckStats) startCheckSnapshots() {
-	setup := func() {
-		p.checkedSnapshotFiles = ui.StartCountTo(p.totalSnapshotFiles.Value())
+	progress := func() string {
+		return fmt.Sprintf("Checking snapshots, trees and blobs: %d snapshots",
+			p.snapshotFiles.Current,
+		)
 	}
-	metrics := map[string]interface{}{
-		"snapshotFiles": &p.checkedSnapshotFiles,
-		"percent":       &p.checkedSnapshotFiles,
+	summary := func(time.Duration) {
+		p.ui.P("Checked %d snapshots",
+			p.snapshotFiles.Current,
+		)
 	}
-	progress := "{{.snapshotFiles.Value}} snapshots"
-	subtotal := "Checked {{.snapshotFiles.Value}} snapshots"
 
-	p.ui.Set("Checking snapshots, trees and blobs...", setup, metrics, progress, nil, subtotal)
+	p.ui.StartPhase(progress, nil, nil, summary)
 }
 
 func (p *structureCheckStats) doneSnapshot() {
-	p.ui.Update(func() { p.checkedSnapshotFiles.Add(1) })
+	p.ui.Update(func() { p.snapshotFiles.Current++ })
 }
 
 func (p *structureCheckStats) finish() {
-	p.ui.Unset()
+	p.ui.FinishPhase()
 }
 
 type readPacksStats struct {
 	ui ui.ProgressUI
 
 	checkedPackFiles       ui.CounterTo
-	totalBytes, totalBlobs ui.Counter
+	totalBytes, totalBlobs int64
 }
 
 func startReadPacksProgress(pm ui.ProgressUI, packs int) *readPacksStats {
 	p := &readPacksStats{ui: pm, checkedPackFiles: ui.StartCountTo(int64(packs))}
 
-	setup := func() {}
-	metrics := map[string]interface{}{
-		"packfiles": &p.checkedPackFiles,
-		"bytes":     &p.totalBytes,
-		"blobs":     &p.totalBlobs,
-		"percent":   &p.checkedPackFiles,
+	progress := func() string {
+		// "{{.packfiles.Value}} / {{.packfiles.Target.Value}} pack files ({{.bytes.FormatBytes}} bytes, {{.blobs.Value}} blobs)"
+		return fmt.Sprint("Reading pack files: %d / %d pack files (%s bytes, %d blobs)",
+			p.checkedPackFiles.Current,
+			p.checkedPackFiles.Total,
+			ui.FormatBytes(p.totalBytes),
+			p.totalBlobs,
+		)
 	}
-	progress := "{{.packfiles.Value}} / {{.packfiles.Target.Value}} pack files ({{.bytes.FormatBytes}} bytes, {{.blobs.Value}} blobs)"
-	subtotal := "Read {{.packfiles.Value}} pack files ({{.bytes.FormatBytes}} bytes, {{.blobs.Value}} blobs)"
+	summary := func(time.Duration) {
+		// "Read {{.packfiles.Value}} pack files ({{.bytes.FormatBytes}} bytes, {{.blobs.Value}} blobs)"
+	}
 
-	pm.Set("Reading pack files...", setup, metrics, progress, nil, subtotal)
+	p.ui.StartPhase(progress, nil, nil, summary)
 
 	return p
 }
 
 func (p *readPacksStats) doneReadPack(size int64, blobCnt int) {
 	p.ui.Update(func() {
-		p.checkedPackFiles.Add(1)
-		p.totalBytes.Add(size)
-		p.totalBlobs.Add(int64(blobCnt))
+		p.checkedPackFiles.Current++
+		p.totalBytes += size
+		p.totalBlobs += int64(blobCnt)
 	})
 }
 
 func (p *readPacksStats) finish() {
-	p.ui.Unset()
+	p.ui.FinishPhase()
 }

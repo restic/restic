@@ -1,5 +1,7 @@
 package ui
 
+import "time"
+
 type nilProgressUI struct {
 }
 
@@ -15,10 +17,10 @@ func (p *nilProgressUI) E(msg string, args ...interface{})  {}
 func (p *nilProgressUI) P(msg string, args ...interface{})  {}
 func (p *nilProgressUI) V(msg string, args ...interface{})  {}
 func (p *nilProgressUI) VV(msg string, args ...interface{}) {}
-func (p *nilProgressUI) Set(title string, setup func(), metrics map[string]interface{}, progress string, status func() []string, summary string) {
+func (p *nilProgressUI) StartPhase(progress func() string, status func() []string, percent func() (int64, int64), summary func(time.Duration)) {
 }
 func (p *nilProgressUI) Update(op func()) {}
-func (p *nilProgressUI) Unset()           {}
+func (p *nilProgressUI) FinishPhase()     {}
 
 type validatingProgressUI struct {
 }
@@ -33,9 +35,7 @@ func (p *validatingProgressUI) E(msg string, args ...interface{})  {}
 func (p *validatingProgressUI) P(msg string, args ...interface{})  {}
 func (p *validatingProgressUI) V(msg string, args ...interface{})  {}
 func (p *validatingProgressUI) VV(msg string, args ...interface{}) {}
-func (p *validatingProgressUI) Set(title string, setup func(), metrics map[string]interface{}, progress string, status func() []string, summary string) {
-	executeTemplate(parseTemplate("progress", progress), metrics)
-	executeTemplate(parseTemplate("summary", summary), metrics)
+func (p *validatingProgressUI) StartPhase(progress func() string, status func() []string, percent func() (int64, int64), summary func(time.Duration)) {
 }
 func (p *validatingProgressUI) Update(op func()) {}
-func (p *validatingProgressUI) Unset()           {}
+func (p *validatingProgressUI) FinishPhase()     {}

@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"os"
 	"sort"
 	"time"
@@ -15,15 +16,15 @@ type Backup struct {
 
 	dirs, files, others CounterTo
 	bytes               CounterTo
-	errors              Counter
+	errors              uint
 
 	currentFiles map[string]struct{}
 
 	summary struct {
 		Files, Dirs struct {
-			New       Counter
-			Changed   Counter
-			Unchanged Counter
+			New       uint
+			Changed   uint
+			Unchanged uint
 		}
 		archiver.ItemStats
 	}
@@ -36,49 +37,16 @@ func NewBackup(ui ProgressUI) *Backup {
 		currentFiles: make(map[string]struct{}),
 	}
 
-	metrics := map[string]interface{}{
-		"dirs":    &b.dirs,
-		"files":   &b.files,
-		"bytes":   &b.bytes,
-		"percent": &b.bytes,
-		"errors":  &b.errors,
-		"summary": &b.summary,
+	progress := func() string {
+		return fmt.Sprintf("Backing up: %v files %s, total %v files %v, %d errors",
+			b.files.Current,
+			FormatBytes(b.bytes.Current),
+			b.files.Total,
+			FormatBytes(b.bytes.Total),
+			b.errors)
 	}
 
-	setup := func() {}
-
-	progress := `{{.files.Value}} files {{.bytes.FormatBytes}}, total {{.files.Target.Value}} files {{.bytes.Target.FormatBytes}}, {{.errors.Value}} errors`
-	summary := `
-Files:       {{printf "%5d" .summary.Files.New.Value}} new, {{printf "%5d" .summary.Files.Changed.Value}} changed, {{printf "%5d" .summary.Files.Unchanged.Value}} unmodified
-Dirs:        {{printf "%5d" .summary.Dirs.New.Value}} new, {{printf "%5d" .summary.Dirs.Changed.Value}} changed, {{printf "%5d" .summary.Dirs.Unchanged.Value}} unmodified
-Data Blobs:  {{printf "%5d" .summary.ItemStats.DataBlobs}} new
-Tree Blobs:  {{printf "%5d" .summary.ItemStats.TreeBlobs}} new
-Added to the repo: {{ FormatBytes (.summary.ItemStats.DataSize + .summary.ItemStats.TreeSize) | print "%-5s" }}
-
-processed %v files, {{.bytes.FormatBytes}} in %s
-	`
-
-	// b.P("\n")
-	// b.P("Files:       %5d new, %5d changed, %5d unmodified\n", b.summary.Files.New, b.summary.Files.Changed, b.summary.Files.Unchanged)
-	// b.P("Dirs:        %5d new, %5d changed, %5d unmodified\n", b.summary.Dirs.New, b.summary.Dirs.Changed, b.summary.Dirs.Unchanged)
-	// b.V("Data Blobs:  %5d new\n", b.summary.ItemStats.DataBlobs)
-	// b.V("Tree Blobs:  %5d new\n", b.summary.ItemStats.TreeBlobs)
-	// b.P("Added to the repo: %-5s\n", FormatBytes(b.summary.ItemStats.DataSize+b.summary.ItemStats.TreeSize))
-	// b.P("\n")
-	// b.P("processed %v files, %v in %s",
-	// 	b.summary.Files.New+b.summary.Files.Changed+b.summary.Files.Unchanged,
-	// 	FormatBytes(b.totalBytes),
-	// 	formatDuration(time.Since(b.start)),
-	// )
-
 	status := func() []string {
-		// 	lines := make([]string, 0, len(currentFiles)+1)
-		// 	for filename := range currentFiles {
-		// 		lines = append(lines, filename)
-		// 	}
-		// 	sort.Sort(sort.StringSlice(lines))
-		// 	lines = append([]string{status}, lines...)
-
 		lines := make([]string, 0, len(b.currentFiles)+1)
 		for filename := range b.currentFiles {
 			lines = append(lines, filename)
@@ -88,7 +56,22 @@ processed %v files, {{.bytes.FormatBytes}} in %s
 		return lines
 	}
 
-	ui.Set("backup", setup, metrics, progress, status, summary)
+	summary := func(duration time.Duration) {
+		b.ui.P("\n")
+		b.ui.P("Files:       %5d new, %5d changed, %5d unmodified\n", b.summary.Files.New, b.summary.Files.Changed, b.summary.Files.Unchanged)
+		b.ui.P("Dirs:        %5d new, %5d changed, %5d unmodified\n", b.summary.Dirs.New, b.summary.Dirs.Changed, b.summary.Dirs.Unchanged)
+		b.ui.V("Data Blobs:  %5d new\n", b.summary.ItemStats.DataBlobs)
+		b.ui.V("Tree Blobs:  %5d new\n", b.summary.ItemStats.TreeBlobs)
+		b.ui.P("Added to the repo: %-5s\n", FormatBytes(int64(b.summary.ItemStats.DataSize+b.summary.ItemStats.TreeSize)))
+		b.ui.P("\n")
+		b.ui.P("processed %v files, %v in %s",
+			b.summary.Files.New+b.summary.Files.Changed+b.summary.Files.Unchanged,
+			FormatBytes(b.bytes.Current),
+			formatDuration(duration),
+		)
+	}
+
+	ui.StartPhase(progress, status, b.bytes.Percent, summary)
 
 	return b
 }
@@ -103,7 +86,7 @@ func (b *Backup) ScannerError(item string, fi os.FileInfo, err error) error {
 // Error is the error callback function for the archiver, it prints the error and returns nil.
 func (b *Backup) Error(item string, fi os.FileInfo, err error) error {
 	b.ui.E("error: %v\n", err)
-	b.ui.Update(func() { b.errors.Add(1) })
+	b.ui.Update(func() { b.errors++ })
 	return nil
 }
 
@@ -114,7 +97,7 @@ func (b *Backup) StartFile(filename string) {
 
 // CompleteBlob is called for all saved blobs for files.
 func (b *Backup) CompleteBlob(filename string, bytes uint64) {
-	b.ui.Update(func() { b.bytes.Add(int64(bytes)) })
+	b.ui.Update(func() { b.bytes.Current += int64(bytes) })
 }
 
 // CompleteItemFn is the status callback function for the archiver when a
@@ -129,11 +112,11 @@ func (b *Backup) CompleteItemFn(item string, previous, current *restic.Node, s a
 	}
 
 	if current.Type == "dir" {
-		var summary *Counter
+		var summary *uint
 
 		switch {
 		case previous == nil:
-			b.ui.VV("new       %v, saved in %.3fs (%v added, %v metadata)", item, d.Seconds(), FormatBytes(s.DataSize), FormatBytes(s.TreeSize))
+			b.ui.VV("new       %v, saved in %.3fs (%v added, %v metadata)", item, d.Seconds(), FormatBytes(int64(s.DataSize)), FormatBytes(int64(s.TreeSize)))
 			summary = &b.summary.Dirs.New
 
 		case previous.Equals(*current):
@@ -141,21 +124,21 @@ func (b *Backup) CompleteItemFn(item string, previous, current *restic.Node, s a
 			summary = &b.summary.Dirs.Unchanged
 
 		default:
-			b.ui.VV("modified  %v, saved in %.3fs (%v added, %v metadata)", item, d.Seconds(), FormatBytes(s.DataSize), FormatBytes(s.TreeSize))
+			b.ui.VV("modified  %v, saved in %.3fs (%v added, %v metadata)", item, d.Seconds(), FormatBytes(int64(s.DataSize)), FormatBytes(int64(s.TreeSize)))
 			summary = &b.summary.Dirs.Changed
 		}
 
 		b.ui.Update(func() {
-			b.dirs.Counter.Add(1)
-			summary.Add(1)
+			b.dirs.Current++
+			*summary++
 			b.summary.ItemStats.Add(s)
 		})
 	} else if current.Type == "file" {
-		var summary *Counter
+		var summary *uint
 
 		switch {
 		case previous == nil:
-			b.ui.VV("new       %v, saved in %.3fs (%v added)", item, d.Seconds(), FormatBytes(s.DataSize))
+			b.ui.VV("new       %v, saved in %.3fs (%v added)", item, d.Seconds(), FormatBytes(int64(s.DataSize)))
 			summary = &b.summary.Files.New
 
 		case previous.Equals(*current):
@@ -163,13 +146,13 @@ func (b *Backup) CompleteItemFn(item string, previous, current *restic.Node, s a
 			summary = &b.summary.Files.Unchanged
 
 		default:
-			b.ui.VV("modified  %v, saved in %.3fs (%v added)", item, d.Seconds(), FormatBytes(s.DataSize))
+			b.ui.VV("modified  %v, saved in %.3fs (%v added)", item, d.Seconds(), FormatBytes(int64(s.DataSize)))
 			summary = &b.summary.Files.Changed
 		}
 
 		b.ui.Update(func() {
-			b.files.Counter.Add(1)
-			summary.Add(1)
+			b.files.Current++
+			*summary++
 			b.summary.ItemStats.Add(s)
 			filedone()
 		})
@@ -180,10 +163,10 @@ func (b *Backup) CompleteItemFn(item string, previous, current *restic.Node, s a
 // ReportTotal sets the total stats up to now
 func (b *Backup) ReportTotal(item string, s archiver.ScanStats) {
 	b.ui.Update(func() {
-		b.dirs.Target().Set(int64(s.Dirs))
-		b.files.Target().Set(int64(s.Files))
-		b.others.Target().Set(int64(s.Others))
-		b.bytes.Target().Set(int64(s.Bytes))
+		b.dirs.Total = int64(s.Dirs)
+		b.files.Total = int64(s.Files)
+		b.others.Total = int64(s.Others)
+		b.bytes.Total = int64(s.Bytes)
 	})
 
 	if item == "" {
