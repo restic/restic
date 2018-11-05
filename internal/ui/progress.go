@@ -11,41 +11,39 @@ import (
 )
 
 const (
-	etaDONE = 0  // XXX how to represent "done"?
-	etaNA   = -1 // XXX how to represent "unknown"?
+	etaDONE = 0
+	etaNA   = -1
 )
 
-// High level idea of what I am trying to do
+// ProgressUI provides periodic updates about progress of a long running command.
 //
-// Each long-running command is modeled as a sequence of independent phases (better name is welcome),
+// Long-running commands are modeled as sequences of independent phases,
 // which happen strictly one after the another, i.e. without overlap in time. Performance
 // of one phase cannot be used to estimate performance of other phases (hence "independent").
 // For example, network download speed cannot be used to estimate local disk read speed and vise versa.
 //
-// For each in-progress phase I want to show to the user:
-// * the phase name
-// * %% and ETA of completion (when possible to estimate)
-// * one-line message about number of files/bytes/packs/etc processed so far and total (depends on the nature of the phase)
-// * optionally, few lines of info about files/packs currently being processed (not convinced this is terrible useful)
+// ProgressUI renders the following messages for each long running command phase
+// * transient phase progress information, which is cleared after phase finishes
+//   - one-line progress so far, decorated with elapsed time and ETA if available
+//   - optional multi-line status
+// * phase summary, one or more lines with totals, running time, speed, etc, which is
+//   printed after phase finishes
 //
-// At the end of the phase I want to show to the user:
-// * the time it took to complete the phase
-// * total number files/bytes/packs/etc processed during the phase (depends on the nature of the phase)
-// * speed attained (if makes sense)
-
-// ProgressUI provides periodic updates about long a running command.
+// ProgressUI clients are not expected to use "real" stdout/stderr, they should
+// use ProgressUI E/P/V/VV methods.
 type ProgressUI interface {
 	E(msg string, args ...interface{})
 	P(msg string, args ...interface{})
 	V(msg string, args ...interface{})
 	VV(msg string, args ...interface{})
 
-	// Set currently running operation phase
+	// StartPhase starts periodic progress report for a long running command phase.
 	StartPhase(progress func() string, status func() []string, percent func() (int64, int64), summary func(time.Duration))
 
 	// Update executes op, then updates user-visible progress UI as necessary
 	Update(op func())
 
+	// FinishPhase stops periodic progress report for the current phase and prints phase execution summary.
 	FinishPhase()
 }
 
@@ -62,8 +60,6 @@ type progressPhase struct {
 // global message verbosity level.
 // Clients are expected to run  "UI" thread (Run function) in a separate
 // goroutine.
-// Clients are not expected to use "real" stdout/stderr, they should either
-// use E/P/V/VV methods (recommended) or StdioWrapper's Stdout/Stderr.
 type TermstatusProgressUI struct {
 	*Message
 	*StdioWrapper
@@ -148,16 +144,9 @@ func (p *TermstatusProgressUI) Update(op func()) {
 	p.updates <- op
 }
 
-func copyMetrics(original map[string]interface{}) map[string]interface{} {
-	copy := make(map[string]interface{}, len(original))
-	for k, v := range original {
-		copy[k] = v
-	}
-	return copy
-}
-
-// Set currently running operation title, periodic progress and summary
-// messages. all callbacks will be invoked from the "UI" thread
+// StartPhase starts periodic progress report for a long running command phase.
+// Provided callback functions are executed on in the same "UI" thread and do not need
+// additional synchronization.
 func (p *TermstatusProgressUI) StartPhase(progress func() string, status func() []string, percent func() (int64, int64), summary func(time.Duration)) {
 	p.updates <- func() {
 		p.diplaySummary() // display summary of the prior phase if any
@@ -172,6 +161,7 @@ func (p *TermstatusProgressUI) StartPhase(progress func() string, status func() 
 	}
 }
 
+// FinishPhase stops periodic progress report for the current phase and prints phase execution summary.
 func (p *TermstatusProgressUI) FinishPhase() {
 	p.updates <- func() {
 		p.diplaySummary() // display summary of the prior phase if any
@@ -180,7 +170,8 @@ func (p *TermstatusProgressUI) FinishPhase() {
 	}
 }
 
-// Finish stops UI updates and prints summary message.
+// Finish stops periodic progress report for the current phase, prints phase execution summary,
+// then stops this TermstatusProgressUI
 func (p *TermstatusProgressUI) Finish() {
 	close(p.updates)
 
@@ -205,6 +196,7 @@ func (p *TermstatusProgressUI) decorateProgress() string {
 	return line
 }
 
+// displayInteructiveProgress reports operation phase progress on a terminal supported by termstatus
 func (p *TermstatusProgressUI) displayInteructiveProgress() {
 	// TODO asci-art progress bar, if completion percent is available
 	lines := []string{p.decorateProgress()}
@@ -214,6 +206,7 @@ func (p *TermstatusProgressUI) displayInteructiveProgress() {
 	p.term.SetStatus(lines)
 }
 
+// displayProgress prints transient progress and status information about current phase of a long running command
 func (p *TermstatusProgressUI) displayProgress(first bool) {
 	if p.phase.progress == nil {
 		return
@@ -274,16 +267,6 @@ func FormatPercent(numerator uint64, denominator uint64) string {
 	return fmt.Sprintf("%3.2f%%", percent)
 }
 
-func formatPercent(percent float64) string {
-	switch {
-	case percent < 0:
-		percent = 0
-	case percent > 1:
-		percent = 1
-	}
-	return fmt.Sprintf("%3.2f%%", 100*percent)
-}
-
 // FormatSeconds returns provided number of as HH:mm:ss string
 func FormatSeconds(sec uint64) string {
 	hours := sec / 3600
@@ -297,18 +280,10 @@ func FormatSeconds(sec uint64) string {
 	return fmt.Sprintf("%d:%02d", min, sec)
 }
 
-func formatDuration(d time.Duration) string {
+// FormatDuration renders duration as user-friendly HH:mm:ss string
+func FormatDuration(d time.Duration) string {
 	sec := uint64(d / time.Second)
 	return FormatSeconds(sec)
-}
-
-func FormatDuration(d time.Duration) string {
-	return formatDuration(d)
-}
-
-// FormatDurationSince returns time elapsed since t as HH:mm:ss string
-func FormatDurationSince(t time.Time) string {
-	return formatDuration(time.Since(t))
 }
 
 func eta(sw stopwatch, current int64, total int64) time.Duration {
@@ -340,6 +315,6 @@ func formatETA(eta time.Duration) string {
 	case eta == etaNA:
 		return "N/A"
 	default:
-		return formatDuration(eta)
+		return FormatDuration(eta)
 	}
 }
