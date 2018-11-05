@@ -24,16 +24,17 @@ import (
 	"github.com/restic/restic/internal/backend/swift"
 	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/limiter"
 	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/textfile"
-
-	"github.com/restic/restic/internal/errors"
-
+	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/termstatus"
 	"golang.org/x/crypto/ssh/terminal"
+	tomb "gopkg.in/tomb.v2"
 )
 
 var version = "0.9.3-dev (compiled manually)"
@@ -190,6 +191,31 @@ func Verbosef(format string, args ...interface{}) {
 	if globalOptions.verbosity >= 1 {
 		Printf(format, args...)
 	}
+}
+
+// runWithProgress is a template function that starts progress ui, runs provided op, then shuts down the progress ui.
+func runWithProgress(op func(ui.ProgressUI) error) error {
+	var t tomb.Tomb
+	term := termstatus.New(globalOptions.stdout, globalOptions.stderr, globalOptions.Quiet)
+	t.Go(func() error { term.Run(t.Context(globalOptions.ctx)); return nil })
+
+	prevStdout, prevStderr := globalOptions.stdout, globalOptions.stderr
+	defer func() {
+		globalOptions.stdout, globalOptions.stderr = prevStdout, prevStderr
+	}()
+	pm := ui.NewTermstatusProgressUI(term, globalOptions.verbosity)
+	defer pm.Finish()
+	globalOptions.stdout, globalOptions.stderr = pm.Stdout(), pm.Stderr()
+	t.Go(func() error { return pm.Run(t.Context(globalOptions.ctx)) })
+
+	err := op(pm)
+	if err != nil {
+		t.Kill(err)
+		return err
+	}
+
+	t.Kill(nil)
+	return t.Wait()
 }
 
 // PrintProgress wraps fmt.Printf to handle the difference in writing progress
