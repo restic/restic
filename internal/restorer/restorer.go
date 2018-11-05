@@ -207,7 +207,6 @@ func (res *Restorer) RestoreTo(ctx context.Context, ui ui.ProgressUI, dst string
 	idx := restic.NewHardlinkIndex()
 
 	pm := newProgressUI(ui)
-	defer pm.done()
 
 	filerestorer := newFileRestorer(dst, res.repo.Backend().Load, res.repo.Key(), filePackTraverser{lookup: res.repo.Index().Lookup})
 
