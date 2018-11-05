@@ -14,9 +14,10 @@ import (
 type BackupProgress struct {
 	ui ui.ProgressUI
 
-	dirs, files, others ui.CounterTo
-	bytes               ui.CounterTo
-	errors              uint
+	dirs, files, bytes, others struct {
+		current, total int64
+	}
+	errors uint
 
 	currentFiles map[string]struct{}
 
@@ -47,15 +48,15 @@ func NewBackupProgress(pm ui.ProgressUI) *BackupProgress {
 
 	progress := func() string {
 		return fmt.Sprintf("Backing up: %v files %s, total %v files %v, %d errors",
-			b.files.Current,
-			ui.FormatBytes(b.bytes.Current),
-			b.files.Total,
-			ui.FormatBytes(b.bytes.Total),
+			b.files.current,
+			ui.FormatBytes(b.bytes.current),
+			b.files.total,
+			ui.FormatBytes(b.bytes.total),
 			b.errors)
 	}
 
 	percent := func() (int64, int64) {
-		return b.bytes.Current, b.bytes.Total
+		return b.bytes.current, b.bytes.total
 	}
 
 	status := func() []string {
@@ -78,7 +79,7 @@ func NewBackupProgress(pm ui.ProgressUI) *BackupProgress {
 		b.ui.P("\n")
 		b.ui.P("processed %v files, %v in %s",
 			b.summary.Files.New+b.summary.Files.Changed+b.summary.Files.Unchanged,
-			ui.FormatBytes(b.bytes.Current),
+			ui.FormatBytes(b.bytes.current),
 			ui.FormatDuration(duration),
 		)
 	}
@@ -109,7 +110,7 @@ func (b *BackupProgress) StartFile(filename string) {
 
 // CompleteBlob is called for all saved blobs for files.
 func (b *BackupProgress) CompleteBlob(filename string, bytes uint64) {
-	b.ui.Update(func() { b.bytes.Current += int64(bytes) })
+	b.ui.Update(func() { b.bytes.current += int64(bytes) })
 }
 
 // CompleteItemFn is the status callback function for the archiver when a
@@ -141,7 +142,7 @@ func (b *BackupProgress) CompleteItemFn(item string, previous, current *restic.N
 		}
 
 		b.ui.Update(func() {
-			b.dirs.Current++
+			b.dirs.current++
 			*summary++
 			b.summary.ItemStats.Add(s)
 		})
@@ -163,7 +164,7 @@ func (b *BackupProgress) CompleteItemFn(item string, previous, current *restic.N
 		}
 
 		b.ui.Update(func() {
-			b.files.Current++
+			b.files.current++
 			*summary++
 			b.summary.ItemStats.Add(s)
 			filedone()
@@ -175,10 +176,10 @@ func (b *BackupProgress) CompleteItemFn(item string, previous, current *restic.N
 // ReportTotal sets the total stats up to now
 func (b *BackupProgress) ReportTotal(item string, s ScanStats) {
 	b.ui.Update(func() {
-		b.dirs.Total = int64(s.Dirs)
-		b.files.Total = int64(s.Files)
-		b.others.Total = int64(s.Others)
-		b.bytes.Total = int64(s.Bytes)
+		b.dirs.total = int64(s.Dirs)
+		b.files.total = int64(s.Files)
+		b.others.total = int64(s.Others)
+		b.bytes.total = int64(s.Bytes)
 	})
 
 	if item == "" {

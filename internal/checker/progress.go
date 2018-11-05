@@ -79,7 +79,9 @@ func (p *packCheckStats) finish() {
 type structureCheckStats struct {
 	ui ui.ProgressUI
 
-	snapshotFiles ui.CounterTo
+	snapshotFiles struct {
+		current, total int64
+	}
 }
 
 func newStructureCheckStats(ui ui.ProgressUI) *structureCheckStats {
@@ -89,12 +91,12 @@ func newStructureCheckStats(ui ui.ProgressUI) *structureCheckStats {
 func (p *structureCheckStats) startLoadSnapshots() {
 	progress := func() string {
 		return fmt.Sprintf("Loading snapshot files: %d snapshot files",
-			p.snapshotFiles.Total,
+			p.snapshotFiles.total,
 		)
 	}
 	summary := func(time.Duration) {
 		p.ui.P("Loaded %d snapshot files",
-			p.snapshotFiles.Total,
+			p.snapshotFiles.total,
 		)
 	}
 
@@ -102,18 +104,18 @@ func (p *structureCheckStats) startLoadSnapshots() {
 }
 
 func (p *structureCheckStats) addSnapshot() {
-	p.ui.Update(func() { p.snapshotFiles.Total++ })
+	p.ui.Update(func() { p.snapshotFiles.total++ })
 }
 
 func (p *structureCheckStats) startCheckSnapshots() {
 	progress := func() string {
 		return fmt.Sprintf("Checking snapshots, trees and blobs: %d snapshots",
-			p.snapshotFiles.Current,
+			p.snapshotFiles.current,
 		)
 	}
 	summary := func(time.Duration) {
 		p.ui.P("Checked %d snapshots",
-			p.snapshotFiles.Current,
+			p.snapshotFiles.current,
 		)
 	}
 
@@ -121,7 +123,7 @@ func (p *structureCheckStats) startCheckSnapshots() {
 }
 
 func (p *structureCheckStats) doneSnapshot() {
-	p.ui.Update(func() { p.snapshotFiles.Current++ })
+	p.ui.Update(func() { p.snapshotFiles.current++ })
 }
 
 func (p *structureCheckStats) finish() {
@@ -131,27 +133,30 @@ func (p *structureCheckStats) finish() {
 type readPacksStats struct {
 	ui ui.ProgressUI
 
-	packs        ui.CounterTo
+	packs struct {
+		current, total int64
+	}
 	bytes, blobs int64
 }
 
 func startReadPacksProgress(pm ui.ProgressUI, packs int) *readPacksStats {
-	p := &readPacksStats{ui: pm, packs: ui.StartCountTo(int64(packs))}
+	p := &readPacksStats{ui: pm}
+	p.packs.total = int64(packs) // TODO how do I initialize anonymous struct?
 
 	progress := func() string {
 		return fmt.Sprintf("Reading pack files: %d / %d pack files (%s bytes, %d blobs)",
-			p.packs.Current,
-			p.packs.Total,
+			p.packs.current,
+			p.packs.total,
 			ui.FormatBytes(p.bytes),
 			p.blobs,
 		)
 	}
 	percent := func() (int64, int64) {
-		return p.packs.Current, p.packs.Total
+		return p.packs.current, p.packs.total
 	}
 	summary := func(time.Duration) {
 		p.ui.P("Read %d pack files (%s bytes, %d blobs)",
-			p.packs.Current,
+			p.packs.current,
 			ui.FormatBytes(p.bytes),
 			p.blobs,
 		)
@@ -164,7 +169,7 @@ func startReadPacksProgress(pm ui.ProgressUI, packs int) *readPacksStats {
 
 func (p *readPacksStats) doneReadPack(size int64, blobCnt int) {
 	p.ui.Update(func() {
-		p.packs.Current++
+		p.packs.current++
 		p.bytes += size
 		p.blobs += int64(blobCnt)
 	})
