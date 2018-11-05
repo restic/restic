@@ -12,9 +12,7 @@ import (
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
-	"github.com/restic/restic/internal/ui/termstatus"
 	"github.com/spf13/cobra"
-	tomb "gopkg.in/tomb.v2"
 )
 
 var cmdCheck = &cobra.Command{
@@ -29,21 +27,7 @@ repository and not use a local cache.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// XXX this is EXACT copy from cmd_restore, and all other commands will need this too
-		var t tomb.Tomb
-		term := termstatus.New(globalOptions.stdout, globalOptions.stderr, globalOptions.Quiet)
-		t.Go(func() error { term.Run(t.Context(globalOptions.ctx)); return nil })
-
-		prevStdout, prevStderr := globalOptions.stdout, globalOptions.stderr
-		defer func() {
-			globalOptions.stdout, globalOptions.stderr = prevStdout, prevStderr
-		}()
-		pm := ui.NewTermstatusProgressUI(term, globalOptions.verbosity)
-		defer pm.Finish()
-		globalOptions.stdout, globalOptions.stderr = pm.Stdout(), pm.Stderr()
-		t.Go(func() error { return pm.Run(t.Context(globalOptions.ctx)) })
-
-		return runCheck(checkOptions, globalOptions, pm, args)
+		return runWithProgress(func(pm ui.ProgressUI) error { return runCheck(checkOptions, globalOptions, pm, args) })
 	},
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		return checkFlags(checkOptions)
