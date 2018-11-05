@@ -1,6 +1,10 @@
 package ui
 
-import "time"
+import (
+	"fmt"
+	"io"
+	"time"
+)
 
 type nilProgressUI struct {
 }
@@ -22,20 +26,43 @@ func (p *nilProgressUI) StartPhase(progress func() string, status func() []strin
 func (p *nilProgressUI) Update(op func()) {}
 func (p *nilProgressUI) FinishPhase()     {}
 
-type validatingProgressUI struct {
+type simpleProgressUI struct {
+	stdout    io.Writer
+	stderr    io.Writer
+	verbosity uint
 }
 
-var _ ProgressUI = &validatingProgressUI{}
+var _ ProgressUI = &simpleProgressUI{}
 
-func NewValidatingProgressUI() ProgressUI {
-	return &validatingProgressUI{}
+// NewSimpleProgressUI returns new ProgressUI instances that prints E/P/V/VV messages to provided
+// stdout/stderr streams but does not display any operation execution progress or summary.
+func NewSimpleProgressUI(stdout io.Writer, stderr io.Writer, verbosity uint) ProgressUI {
+	return &simpleProgressUI{
+		stdout:    stdout,
+		stderr:    stderr,
+		verbosity: verbosity,
+	}
 }
 
-func (p *validatingProgressUI) E(msg string, args ...interface{})  {}
-func (p *validatingProgressUI) P(msg string, args ...interface{})  {}
-func (p *validatingProgressUI) V(msg string, args ...interface{})  {}
-func (p *validatingProgressUI) VV(msg string, args ...interface{}) {}
-func (p *validatingProgressUI) StartPhase(progress func() string, status func() []string, percent func() (int64, int64), summary func(time.Duration)) {
+func (p *simpleProgressUI) E(msg string, args ...interface{}) {
+	fmt.Fprintf(p.stderr, msg, args...)
 }
-func (p *validatingProgressUI) Update(op func()) {}
-func (p *validatingProgressUI) FinishPhase()     {}
+func (p *simpleProgressUI) P(msg string, args ...interface{}) {
+	if p.verbosity > 0 {
+		fmt.Fprintf(p.stdout, msg, args...)
+	}
+}
+func (p *simpleProgressUI) V(msg string, args ...interface{}) {
+	if p.verbosity > 1 {
+		fmt.Fprintf(p.stdout, msg, args...)
+	}
+}
+func (p *simpleProgressUI) VV(msg string, args ...interface{}) {
+	if p.verbosity > 2 {
+		fmt.Fprintf(p.stdout, msg, args...)
+	}
+}
+func (p *simpleProgressUI) StartPhase(progress func() string, status func() []string, percent func() (int64, int64), summary func(time.Duration)) {
+}
+func (p *simpleProgressUI) Update(op func()) {}
+func (p *simpleProgressUI) FinishPhase()     {}
