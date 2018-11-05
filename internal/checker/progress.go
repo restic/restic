@@ -82,6 +82,7 @@ type structureCheckStats struct {
 	snapshotFiles struct {
 		current, total int64
 	}
+	trees int64
 }
 
 func newStructureCheckStats(ui ui.ProgressUI) *structureCheckStats {
@@ -107,23 +108,26 @@ func (p *structureCheckStats) addSnapshot() {
 	p.ui.Update(func() { p.snapshotFiles.total++ })
 }
 
-func (p *structureCheckStats) startCheckSnapshots() {
+func (p *structureCheckStats) startCheckTrees(trees int) {
 	progress := func() string {
-		return fmt.Sprintf("Checking snapshots, trees and blobs: %d snapshots",
-			p.snapshotFiles.current,
+		return fmt.Sprintf("Checking snapshots, trees and blobs: %d trees",
+			p.trees,
 		)
+	}
+	percent := func() (int64, int64) {
+		return p.trees, int64(trees)
 	}
 	summary := func(time.Duration) {
-		p.ui.P("Checked %d snapshots",
-			p.snapshotFiles.current,
+		p.ui.P("Checked %d trees",
+			p.trees,
 		)
 	}
 
-	p.ui.StartPhase(progress, nil, nil, summary)
+	p.ui.StartPhase(progress, nil, percent, summary)
 }
 
-func (p *structureCheckStats) doneSnapshot() {
-	p.ui.Update(func() { p.snapshotFiles.current++ })
+func (p *structureCheckStats) doneCheckTree() {
+	p.ui.Update(func() { p.trees++ })
 }
 
 func (p *structureCheckStats) finish() {
