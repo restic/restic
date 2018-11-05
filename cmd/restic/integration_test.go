@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
@@ -25,8 +24,6 @@ import (
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui"
-	"github.com/restic/restic/internal/ui/termstatus"
-	"golang.org/x/sync/errgroup"
 )
 
 func parseIDsFromReader(t testing.TB, rd io.Reader) restic.IDs {
@@ -56,13 +53,6 @@ func testRunInit(t testing.TB, opts GlobalOptions) {
 }
 
 func testRunBackup(t testing.TB, dir string, target []string, opts BackupOptions, gopts GlobalOptions) {
-	ctx, cancel := context.WithCancel(gopts.ctx)
-	defer cancel()
-
-	var wg errgroup.Group
-	term := termstatus.New(gopts.stdout, gopts.stderr, gopts.Quiet)
-	wg.Go(func() error { term.Run(ctx); return nil })
-
 	gopts.stdout = ioutil.Discard
 	t.Logf("backing up %v in %v", target, dir)
 	if dir != "" {
@@ -70,14 +60,7 @@ func testRunBackup(t testing.TB, dir string, target []string, opts BackupOptions
 		defer cleanup()
 	}
 
-	rtest.OK(t, runBackup(opts, gopts, term, target))
-
-	cancel()
-
-	err := wg.Wait()
-	if err != nil {
-		t.Fatal(err)
-	}
+	rtest.OK(t, runBackup(opts, gopts, ui.NewNilProgressUI(), target))
 }
 
 func testRunList(t testing.TB, tpe string, opts GlobalOptions) restic.IDs {
@@ -147,7 +130,7 @@ func testRunCheckOutput(gopts GlobalOptions) (string, error) {
 		ReadData: true,
 	}
 
-	err := runCheck(opts, gopts, ui.NewNilProgressUI(), nil)
+	err := runCheck(opts, gopts, ui.NewSimpleProgressUI(globalOptions.stdout, globalOptions.stderr, 1), nil)
 	return string(buf.Bytes()), err
 }
 
