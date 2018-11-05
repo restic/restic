@@ -563,12 +563,12 @@ func (c *Checker) Structure(ctx context.Context, ui ui.ProgressUI, errChan chan<
 	treeJobChan1 := make(chan treeJob)
 	treeJobChan2 := make(chan treeJob)
 
-	pm.startCheckSnapshots()
+	pm.startCheckTrees(len(trees))
 	var wg sync.WaitGroup
 	for i := 0; i < defaultParallelism; i++ {
 		wg.Add(2)
 		go loadTreeWorker(ctx, c.repo, treeIDChan, treeJobChan1, &wg)
-		go c.checkTreeWorker(ctx, treeJobChan2, errChan, &wg, func() { pm.doneSnapshot() })
+		go c.checkTreeWorker(ctx, treeJobChan2, errChan, &wg, func() { pm.doneCheckTree() })
 	}
 
 	filterTrees(ctx, trees, treeIDChan, treeJobChan1, treeJobChan2)
