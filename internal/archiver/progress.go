@@ -1,4 +1,4 @@
-package ui
+package archiver
 
 import (
 	"fmt"
@@ -6,16 +6,16 @@ import (
 	"sort"
 	"time"
 
-	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
 )
 
-// Backup reports progress for the `backup` command.
-type Backup struct {
-	ui ProgressUI
+// BackupProgress reports progress for the `backup` command.
+type BackupProgress struct {
+	ui ui.ProgressUI
 
-	dirs, files, others CounterTo
-	bytes               CounterTo
+	dirs, files, others ui.CounterTo
+	bytes               ui.CounterTo
 	errors              uint
 
 	currentFiles map[string]struct{}
@@ -26,14 +26,14 @@ type Backup struct {
 			Changed   uint
 			Unchanged uint
 		}
-		archiver.ItemStats
+		ItemStats
 	}
 }
 
-// NewBackup returns a new backup progress reporter.
-func NewBackup(ui ProgressUI) *Backup {
-	b := &Backup{
-		ui:           ui,
+// NewBackupProgress returns a new backup progress reporter.
+func NewBackupProgress(pm ui.ProgressUI) *BackupProgress {
+	b := &BackupProgress{
+		ui:           pm,
 		currentFiles: make(map[string]struct{}),
 	}
 
@@ -48,9 +48,9 @@ func NewBackup(ui ProgressUI) *Backup {
 	progress := func() string {
 		return fmt.Sprintf("Backing up: %v files %s, total %v files %v, %d errors",
 			b.files.Current,
-			FormatBytes(b.bytes.Current),
+			ui.FormatBytes(b.bytes.Current),
 			b.files.Total,
-			FormatBytes(b.bytes.Total),
+			ui.FormatBytes(b.bytes.Total),
 			b.errors)
 	}
 
@@ -74,47 +74,47 @@ func NewBackup(ui ProgressUI) *Backup {
 		b.ui.P("Dirs:        %5d new, %5d changed, %5d unmodified\n", b.summary.Dirs.New, b.summary.Dirs.Changed, b.summary.Dirs.Unchanged)
 		b.ui.V("Data Blobs:  %5d new\n", b.summary.ItemStats.DataBlobs)
 		b.ui.V("Tree Blobs:  %5d new\n", b.summary.ItemStats.TreeBlobs)
-		b.ui.P("Added to the repo: %-5s\n", FormatBytes(int64(b.summary.ItemStats.DataSize+b.summary.ItemStats.TreeSize)))
+		b.ui.P("Added to the repo: %-5s\n", ui.FormatBytes(int64(b.summary.ItemStats.DataSize+b.summary.ItemStats.TreeSize)))
 		b.ui.P("\n")
 		b.ui.P("processed %v files, %v in %s",
 			b.summary.Files.New+b.summary.Files.Changed+b.summary.Files.Unchanged,
-			FormatBytes(b.bytes.Current),
-			formatDuration(duration),
+			ui.FormatBytes(b.bytes.Current),
+			ui.FormatDuration(duration),
 		)
 	}
 
-	ui.StartPhase(progress, status, percent, summary)
+	pm.StartPhase(progress, status, percent, summary)
 
 	return b
 }
 
 // ScannerError is the error callback function for the scanner, it prints the
 // error in verbose mode and returns nil.
-func (b *Backup) ScannerError(item string, fi os.FileInfo, err error) error {
+func (b *BackupProgress) ScannerError(item string, fi os.FileInfo, err error) error {
 	b.ui.V("scan: %v\n", err)
 	return nil
 }
 
 // Error is the error callback function for the archiver, it prints the error and returns nil.
-func (b *Backup) Error(item string, fi os.FileInfo, err error) error {
+func (b *BackupProgress) Error(item string, fi os.FileInfo, err error) error {
 	b.ui.E("error: %v\n", err)
 	b.ui.Update(func() { b.errors++ })
 	return nil
 }
 
 // StartFile is called when a file is being processed by a worker.
-func (b *Backup) StartFile(filename string) {
+func (b *BackupProgress) StartFile(filename string) {
 	b.ui.Update(func() { b.currentFiles[filename] = struct{}{} })
 }
 
 // CompleteBlob is called for all saved blobs for files.
-func (b *Backup) CompleteBlob(filename string, bytes uint64) {
+func (b *BackupProgress) CompleteBlob(filename string, bytes uint64) {
 	b.ui.Update(func() { b.bytes.Current += int64(bytes) })
 }
 
 // CompleteItemFn is the status callback function for the archiver when a
 // file/dir has been saved successfully.
-func (b *Backup) CompleteItemFn(item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration) {
+func (b *BackupProgress) CompleteItemFn(item string, previous, current *restic.Node, s ItemStats, d time.Duration) {
 	filedone := func() { delete(b.currentFiles, item) }
 
 	if current == nil {
@@ -128,7 +128,7 @@ func (b *Backup) CompleteItemFn(item string, previous, current *restic.Node, s a
 
 		switch {
 		case previous == nil:
-			b.ui.VV("new       %v, saved in %.3fs (%v added, %v metadata)", item, d.Seconds(), FormatBytes(int64(s.DataSize)), FormatBytes(int64(s.TreeSize)))
+			b.ui.VV("new       %v, saved in %.3fs (%v added, %v metadata)", item, d.Seconds(), ui.FormatBytes(int64(s.DataSize)), ui.FormatBytes(int64(s.TreeSize)))
 			summary = &b.summary.Dirs.New
 
 		case previous.Equals(*current):
@@ -136,7 +136,7 @@ func (b *Backup) CompleteItemFn(item string, previous, current *restic.Node, s a
 			summary = &b.summary.Dirs.Unchanged
 
 		default:
-			b.ui.VV("modified  %v, saved in %.3fs (%v added, %v metadata)", item, d.Seconds(), FormatBytes(int64(s.DataSize)), FormatBytes(int64(s.TreeSize)))
+			b.ui.VV("modified  %v, saved in %.3fs (%v added, %v metadata)", item, d.Seconds(), ui.FormatBytes(int64(s.DataSize)), ui.FormatBytes(int64(s.TreeSize)))
 			summary = &b.summary.Dirs.Changed
 		}
 
@@ -150,7 +150,7 @@ func (b *Backup) CompleteItemFn(item string, previous, current *restic.Node, s a
 
 		switch {
 		case previous == nil:
-			b.ui.VV("new       %v, saved in %.3fs (%v added)", item, d.Seconds(), FormatBytes(int64(s.DataSize)))
+			b.ui.VV("new       %v, saved in %.3fs (%v added)", item, d.Seconds(), ui.FormatBytes(int64(s.DataSize)))
 			summary = &b.summary.Files.New
 
 		case previous.Equals(*current):
@@ -158,7 +158,7 @@ func (b *Backup) CompleteItemFn(item string, previous, current *restic.Node, s a
 			summary = &b.summary.Files.Unchanged
 
 		default:
-			b.ui.VV("modified  %v, saved in %.3fs (%v added)", item, d.Seconds(), FormatBytes(int64(s.DataSize)))
+			b.ui.VV("modified  %v, saved in %.3fs (%v added)", item, d.Seconds(), ui.FormatBytes(int64(s.DataSize)))
 			summary = &b.summary.Files.Changed
 		}
 
@@ -173,7 +173,7 @@ func (b *Backup) CompleteItemFn(item string, previous, current *restic.Node, s a
 }
 
 // ReportTotal sets the total stats up to now
-func (b *Backup) ReportTotal(item string, s archiver.ScanStats) {
+func (b *BackupProgress) ReportTotal(item string, s ScanStats) {
 	b.ui.Update(func() {
 		b.dirs.Total = int64(s.Dirs)
 		b.files.Total = int64(s.Files)

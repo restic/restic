@@ -455,7 +455,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, pm ui.ProgressUI, args [
 		targets = []string{opts.StdinFilename}
 	}
 
-	p := ui.NewBackup(pm)
+	p := archiver.NewBackupProgress(pm)
 
 	sc := archiver.NewScanner(targetFS)
 	sc.SelectByName = selectByNameFilter
