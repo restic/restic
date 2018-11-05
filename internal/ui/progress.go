@@ -50,7 +50,7 @@ type ProgressUI interface {
 }
 
 type progressPhase struct {
-	stopwatch Stopwatch
+	stopwatch stopwatch
 	progress  func() string
 	status    func() []string
 	percent   func() (int64, int64)
@@ -162,7 +162,7 @@ func (p *TermstatusProgressUI) StartPhase(progress func() string, status func() 
 	p.updates <- func() {
 		p.diplaySummary() // display summary of the prior phase if any
 		p.phase = progressPhase{
-			stopwatch: StartStopwatch(),
+			stopwatch: startStopwatch(),
 			progress:  progress,
 			status:    status,
 			percent:   percent,
@@ -191,13 +191,13 @@ func (p *TermstatusProgressUI) Finish() {
 func (p *TermstatusProgressUI) diplaySummary() {
 	p.term.SetStatus([]string{})
 	if p.phase.summary != nil {
-		p.phase.summary(p.phase.stopwatch.Elapsed())
+		p.phase.summary(p.phase.stopwatch.elapsed())
 	}
 }
 
 // decorateProgress message with running time, completion % and ETA, if available
 func (p *TermstatusProgressUI) decorateProgress() string {
-	line := fmt.Sprintf("[%s] %s", p.phase.stopwatch.FormatDuration(), p.phase.progress())
+	line := fmt.Sprintf("[%s] %s", FormatDuration(p.phase.stopwatch.elapsed()), p.phase.progress())
 	if p.phase.percent != nil {
 		current, total := p.phase.percent()
 		line = line + fmt.Sprintf(" %s ETA %s", FormatPercent(uint64(current), uint64(total)), FormatDuration(eta(p.phase.stopwatch, current, total)))
@@ -225,6 +225,19 @@ func (p *TermstatusProgressUI) displayProgress(first bool) {
 		// dumb terminal print progress message only, no status lines
 		p.V("%s", p.decorateProgress())
 	}
+}
+
+// stopwatch knows how to tell elapsed time since it was started
+type stopwatch time.Time
+
+// startStopwatch returns running stopwatch instances
+func startStopwatch() stopwatch {
+	return stopwatch(time.Now())
+}
+
+// elapsed returns time duration since the stopwatch was started
+func (s stopwatch) elapsed() time.Duration {
+	return time.Since(time.Time(s))
 }
 
 // FormatBytes formats provided number in best matching binary units (B/KiB/MiB/etc)
@@ -298,12 +311,12 @@ func FormatDurationSince(t time.Time) string {
 	return formatDuration(time.Since(t))
 }
 
-func eta(sw Stopwatch, current int64, total int64) time.Duration {
+func eta(sw stopwatch, current int64, total int64) time.Duration {
 	if current >= total {
 		return etaDONE
 	}
 
-	elapsed := sw.Elapsed()
+	elapsed := sw.elapsed()
 
 	if elapsed <= 0 || current <= 0 {
 		return etaNA
