@@ -187,12 +187,3 @@ func (p *progressUI) startVerify() {
 	}
 	p.ui.StartPhase(progress, nil, percent, summary)
 }
-
-// show restore summary and statistics
-func (p *progressUI) done() {
-	// TODO decide if this is useful
-	// individual subtotals already provide good idea of the work done
-	// summary := func() []string {
-	// }
-	// p.ui.Set("", nil, summary)
-}
