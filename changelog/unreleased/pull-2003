@@ -1,0 +1,8 @@
+Enhancement: Restore progress UI
+
+Print information about what restore is doing (i.e. creating target directory structure, 
+downloading file contents, etc), ETA of completion, and summary of the work done. 
+On "dumb" terminals only prints summary by default, but more details are printed in
+verbose mode (i.e. -v restic parameter).
+
+https://github.com/restic/restic/pull/2003
