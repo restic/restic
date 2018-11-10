@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/restic/restic/internal/debug"
@@ -47,12 +48,12 @@ func init() {
 	flags.StringArrayVar(&dumpOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` for snapshot ID \"latest\"")
 }
 
-func splitPath(path string) []string {
-	d, f := filepath.Split(path)
+func splitPath(p string) []string {
+	d, f := path.Split(p)
 	if d == "" || d == "/" {
 		return []string{f}
 	}
-	s := splitPath(filepath.Clean(d))
+	s := splitPath(path.Clean(d))
 	return append(s, f)
 }
 
