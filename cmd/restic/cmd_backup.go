@@ -385,6 +385,12 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 
 	var t tomb.Tomb
 
+	term.Print("open repository\n")
+	repo, err := OpenRepository(gopts)
+	if err != nil {
+		return err
+	}
+
 	p := ui.NewBackup(term, gopts.verbosity)
 
 	// use the terminal for stdout/stderr
@@ -405,12 +411,6 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	}
 
 	t.Go(func() error { return p.Run(t.Context(gopts.ctx)) })
-
-	p.V("open repository")
-	repo, err := OpenRepository(gopts)
-	if err != nil {
-		return err
-	}
 
 	p.V("lock repository")
 	lock, err := lockRepo(repo)
