@@ -32,7 +32,7 @@ func xdgCacheDir() (string, error) {
 func windowsCacheDir() (string, error) {
 	appdata := os.Getenv("LOCALAPPDATA")
 	if appdata == "" {
-		return "", errors.New("unable to locate cache directory (APPDATA unset)")
+		return "", errors.New("unable to locate cache directory (LOCALAPPDATA unset)")
 	}
 	return filepath.Join(appdata, "restic"), nil
 }
