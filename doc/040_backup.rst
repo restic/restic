@@ -205,8 +205,8 @@ backup ``/sys`` or ``/dev`` on a Linux system:
     $ restic -r /srv/restic-repo backup --one-file-system /
 
 By using the ``--files-from`` option you can read the files you want to
-backup from a file. This is especially useful if a lot of files have to
-be backed up that are not in the same folder or are maybe pre-filtered
+backup from one or more files. This is especially useful if a lot of files have
+to be backed up that are not in the same folder or are maybe pre-filtered
 by other software.
 
 For example maybe you want to backup files which have a name that matches a

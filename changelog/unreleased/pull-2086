@@ -1,0 +1,10 @@
+Enhancement: Allow --files-from to be specified multiple times
+
+This change should help with managing backup sources as source paths
+can be specified in multiple files.
+Usage:
+
+restic backup --files-from afile --files-from anotherfile ..
+
+https://github.com/restic/restic/pull/2086
+https://github.com/restic/restic/issues/2085
