@@ -59,7 +59,7 @@ func init() {
 	f.IntVarP(&forgetOptions.Weekly, "keep-weekly", "w", 0, "keep the last `n` weekly snapshots")
 	f.IntVarP(&forgetOptions.Monthly, "keep-monthly", "m", 0, "keep the last `n` monthly snapshots")
 	f.IntVarP(&forgetOptions.Yearly, "keep-yearly", "y", 0, "keep the last `n` yearly snapshots")
-	f.VarP(&forgetOptions.Within, "keep-within", "", "keep snapshots that are older than `duration` (eg. 1y5m7d) relative to the latest snapshot")
+	f.VarP(&forgetOptions.Within, "keep-within", "", "keep snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
 
 	f.Var(&forgetOptions.KeepTags, "keep-tag", "keep snapshots with this `taglist` (can be specified multiple times)")
 	f.StringVar(&forgetOptions.Host, "host", "", "only consider snapshots with the given `host`")

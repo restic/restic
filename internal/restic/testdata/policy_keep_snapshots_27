@@ -1,0 +1,150 @@
+{
+  "keep": [
+    {
+      "time": "2016-01-18T12:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-12T21:08:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-12T21:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-09T21:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-08T20:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-07T10:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-06T08:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-05T09:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-04T16:23:03Z",
+      "tree": null,
+      "paths": null
+    }
+  ],
+  "reasons": [
+    {
+      "snapshot": {
+        "time": "2016-01-18T12:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "within 13d23h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-12T21:08:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "within 13d23h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-12T21:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "within 13d23h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-09T21:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "within 13d23h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-08T20:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "within 13d23h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-07T10:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "within 13d23h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-06T08:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "within 13d23h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-05T09:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "within 13d23h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-04T16:23:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "within 13d23h"
+      ],
+      "counters": {}
+    }
+  ]
+}
