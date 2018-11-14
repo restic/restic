@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/table"
 	"github.com/spf13/cobra"
@@ -32,6 +33,7 @@ type SnapshotOptions struct {
 	Paths   []string
 	Compact bool
 	Last    bool
+	GroupBy string
 }
 
 var snapshotOptions SnapshotOptions
@@ -45,6 +47,13 @@ func init() {
 	f.StringArrayVar(&snapshotOptions.Paths, "path", nil, "only consider snapshots for this `path` (can be specified multiple times)")
 	f.BoolVarP(&snapshotOptions.Compact, "compact", "c", false, "use compact format")
 	f.BoolVar(&snapshotOptions.Last, "last", false, "only show the last snapshot for each host and path")
+	f.StringVarP(&snapshotOptions.GroupBy, "group-by", "g", "", "string for grouping snapshots by host,paths,tags")
+}
+
+type groupKey struct {
+	Hostname string
+	Paths    []string
+	Tags     []string
 }
 
 func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) error {
@@ -61,28 +70,87 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 		}
 	}
 
+	// group by hostname and dirs
+	snapshotGroups := make(map[string]restic.Snapshots)
+
+	var GroupByTag bool
+	var GroupByHost bool
+	var GroupByPath bool
+	var GroupOptionList []string
+
+	GroupOptionList = strings.Split(opts.GroupBy, ",")
+
+	for _, option := range GroupOptionList {
+		switch option {
+		case "host":
+			GroupByHost = true
+		case "paths":
+			GroupByPath = true
+		case "tags":
+			GroupByTag = true
+		case "":
+		default:
+			return errors.Fatal("unknown grouping option: '" + option + "'")
+		}
+	}
+
 	ctx, cancel := context.WithCancel(gopts.ctx)
 	defer cancel()
 
-	var list restic.Snapshots
 	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, args) {
-		list = append(list, sn)
+		// Determining grouping-keys
+		var tags []string
+		var hostname string
+		var paths []string
+
+		if GroupByTag {
+			tags = sn.Tags
+			sort.StringSlice(tags).Sort()
+		}
+		if GroupByHost {
+			hostname = sn.Hostname
+		}
+		if GroupByPath {
+			paths = sn.Paths
+		}
+
+		sort.StringSlice(sn.Paths).Sort()
+		var k []byte
+		var err error
+
+		k, err = json.Marshal(groupKey{Tags: tags, Hostname: hostname, Paths: paths})
+
+		if err != nil {
+			return err
+		}
+		snapshotGroups[string(k)] = append(snapshotGroups[string(k)], sn)
 	}
 
-	if opts.Last {
-		list = FilterLastSnapshots(list)
+	for k, list := range snapshotGroups {
+		if opts.Last {
+			list = FilterLastSnapshots(list)
+		}
+		sort.Sort(sort.Reverse(list))
+		snapshotGroups[k] = list
 	}
-
-	sort.Sort(sort.Reverse(list))
 
 	if gopts.JSON {
-		err := printSnapshotsJSON(gopts.stdout, list)
+		err := printSnapshotGroupJSON(gopts.stdout, snapshotGroups, GroupByTag || GroupByHost || GroupByPath)
 		if err != nil {
-			Warnf("error printing snapshot: %v\n", err)
+			Warnf("error printing snapshots: %v\n", err)
 		}
 		return nil
 	}
-	PrintSnapshots(gopts.stdout, list, nil, opts.Compact)
+
+	for k, list := range snapshotGroups {
+		err := PrintSnapshotGroupHeader(gopts.stdout, k, GroupByTag, GroupByHost, GroupByPath)
+		if err != nil {
+			Warnf("error printing snapshots: %v\n", err)
+			return nil
+		}
+
+		PrintSnapshots(gopts.stdout, list, nil, opts.Compact)
+	}
 
 	return nil
 }
@@ -223,6 +291,40 @@ func PrintSnapshots(stdout io.Writer, list restic.Snapshots, reasons []restic.Ke
 	tab.Write(stdout)
 }
 
+// PrintSnapshotGroupHeader prints which group of the group-by option the
+// following snapshots belong to.
+// Prints nothing, if we did not group at all.
+func PrintSnapshotGroupHeader(stdout io.Writer, groupKeyJSON string, GroupByTag bool, GroupByHost bool, GroupByPath bool) error {
+	if GroupByTag || GroupByHost || GroupByPath {
+		var key groupKey
+		var err error
+
+		err = json.Unmarshal([]byte(groupKeyJSON), &key)
+		if err != nil {
+			return err
+		}
+
+		// Info
+		fmt.Fprintf(stdout, "snapshots")
+		var infoStrings []string
+		if GroupByTag {
+			infoStrings = append(infoStrings, "tags ["+strings.Join(key.Tags, ", ")+"]")
+		}
+		if GroupByHost {
+			infoStrings = append(infoStrings, "host ["+key.Hostname+"]")
+		}
+		if GroupByPath {
+			infoStrings = append(infoStrings, "paths ["+strings.Join(key.Paths, ", ")+"]")
+		}
+		if infoStrings != nil {
+			fmt.Fprintf(stdout, " for (%s)", strings.Join(infoStrings, ", "))
+		}
+		fmt.Fprintf(stdout, ":\n")
+	}
+
+	return nil
+}
+
 // Snapshot helps to print Snaphots as JSON with their ID included.
 type Snapshot struct {
 	*restic.Snapshot
@@ -231,20 +333,60 @@ type Snapshot struct {
 	ShortID string     `json:"short_id"`
 }
 
+// SnapshotGroup helps to print SnaphotGroups as JSON with their GroupReasons included.
+type SnapshotGroup struct {
+	GroupKey  groupKey
+	Snapshots []Snapshot
+}
+
 // printSnapshotsJSON writes the JSON representation of list to stdout.
-func printSnapshotsJSON(stdout io.Writer, list restic.Snapshots) error {
+func printSnapshotGroupJSON(stdout io.Writer, snGroups map[string]restic.Snapshots, grouped bool) error {
 
-	var snapshots []Snapshot
+	if grouped {
+		var snapshotGroups []SnapshotGroup
 
-	for _, sn := range list {
+		for k, list := range snGroups {
+			var key groupKey
+			var err error
+			var snapshots []Snapshot
 
-		k := Snapshot{
-			Snapshot: sn,
-			ID:       sn.ID(),
-			ShortID:  sn.ID().Str(),
+			err = json.Unmarshal([]byte(k), &key)
+			if err != nil {
+				return err
+			}
+
+			for _, sn := range list {
+				k := Snapshot{
+					Snapshot: sn,
+					ID:       sn.ID(),
+					ShortID:  sn.ID().Str(),
+				}
+				snapshots = append(snapshots, k)
+			}
+
+			group := SnapshotGroup{
+				GroupKey:  key,
+				Snapshots: snapshots,
+			}
+			snapshotGroups = append(snapshotGroups, group)
 		}
-		snapshots = append(snapshots, k)
-	}
 
-	return json.NewEncoder(stdout).Encode(snapshots)
+		return json.NewEncoder(stdout).Encode(snapshotGroups)
+	} else {
+		// Old behavior
+		var snapshots []Snapshot
+
+		for _, list := range snGroups {
+			for _, sn := range list {
+				k := Snapshot{
+					Snapshot: sn,
+					ID:       sn.ID(),
+					ShortID:  sn.ID().Str(),
+				}
+				snapshots = append(snapshots, k)
+			}
+		}
+
+		return json.NewEncoder(stdout).Encode(snapshots)
+	}
 }
