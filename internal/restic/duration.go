@@ -10,9 +10,9 @@ import (
 )
 
 // Duration is similar to time.Duration, except it only supports larger ranges
-// like days, months, and years.
+// like hours, days, months, and years.
 type Duration struct {
-	Days, Months, Years int
+	Hours, Days, Months, Years int
 }
 
 func (d Duration) String() string {
@@ -27,6 +27,10 @@ func (d Duration) String() string {
 
 	if d.Days != 0 {
 		s += fmt.Sprintf("%dd", d.Days)
+	}
+
+	if d.Hours != 0 {
+		s += fmt.Sprintf("%dh", d.Hours)
 	}
 
 	return s
@@ -73,7 +77,7 @@ func nextNumber(input string) (num int, rest string, err error) {
 }
 
 // ParseDuration parses a duration from a string. The format is:
-//    6y5m234d
+//    6y5m234d37h
 func ParseDuration(s string) (Duration, error) {
 	var (
 		d   Duration
@@ -100,6 +104,8 @@ func ParseDuration(s string) (Duration, error) {
 			d.Months = num
 		case 'd':
 			d.Days = num
+		case 'h':
+			d.Hours = num
 		}
 
 		s = s[1:]
@@ -127,5 +133,5 @@ func (d Duration) Type() string {
 
 // Zero returns true if the duration is empty (all values are set to zero).
 func (d Duration) Zero() bool {
-	return d.Years == 0 && d.Months == 0 && d.Days == 0
+	return d.Years == 0 && d.Months == 0 && d.Days == 0 && d.Hours == 0
 }
