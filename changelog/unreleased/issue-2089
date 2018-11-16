@@ -1,0 +1,9 @@
+Enhancement: increase granularity of the "keep within" retention policy
+
+The `keep-within` option of the `forget` command now accepts time ranges with
+an hourly granularity. For example, running `restic forget --keep-within 3d12h`
+will keep all the snapshots made within three days and twelve hours from the
+time of the latest snapshot.
+
+https://github.com/restic/restic/issues/2089
+https://github.com/restic/restic/pull/2090
