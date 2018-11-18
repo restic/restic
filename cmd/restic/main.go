@@ -54,7 +54,7 @@ directories in an encrypted repository stored on different backends.
 		if c.Name() == "version" {
 			return nil
 		}
-		pwd, err := resolvePassword(globalOptions, "RESTIC_PASSWORD")
+		pwd, err := resolvePassword(globalOptions)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Resolving password failed: %v\n", err)
 			Exit(1)

@@ -34,6 +34,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 
 	"golang.org/x/crypto/ssh/terminal"
+	"os/exec"
 )
 
 var version = "0.9.3-dev (compiled manually)"
@@ -43,18 +44,19 @@ const TimeFormat = "2006-01-02 15:04:05"
 
 // GlobalOptions hold all global options for restic.
 type GlobalOptions struct {
-	Repo          string
-	PasswordFile  string
-	KeyHint       string
-	Quiet         bool
-	Verbose       int
-	NoLock        bool
-	JSON          bool
-	CacheDir      string
-	NoCache       bool
-	CACerts       []string
-	TLSClientCert string
-	CleanupCache  bool
+	Repo            string
+	PasswordFile    string
+	PasswordCommand string
+	KeyHint         string
+	Quiet           bool
+	Verbose         int
+	NoLock          bool
+	JSON            bool
+	CacheDir        string
+	NoCache         bool
+	CACerts         []string
+	TLSClientCert   string
+	CleanupCache    bool
 
 	LimitUploadKb   int
 	LimitDownloadKb int
@@ -93,6 +95,7 @@ func init() {
 	f.StringVarP(&globalOptions.Repo, "repo", "r", os.Getenv("RESTIC_REPOSITORY"), "repository to backup to or restore from (default: $RESTIC_REPOSITORY)")
 	f.StringVarP(&globalOptions.PasswordFile, "password-file", "p", os.Getenv("RESTIC_PASSWORD_FILE"), "read the repository password from a file (default: $RESTIC_PASSWORD_FILE)")
 	f.StringVarP(&globalOptions.KeyHint, "key-hint", "", os.Getenv("RESTIC_KEY_HINT"), "key ID of key to try decrypting first (default: $RESTIC_KEY_HINT)")
+	f.StringVarP(&globalOptions.PasswordCommand, "password-command", "", os.Getenv("RESTIC_PASSWORD_COMMAND"), "specify a shell command to obtain a password (default: $RESTIC_PASSWORD_COMMAND)")
 	f.BoolVarP(&globalOptions.Quiet, "quiet", "q", false, "do not output comprehensive progress report")
 	f.CountVarP(&globalOptions.Verbose, "verbose", "v", "be verbose (specify --verbose multiple times or level `n`)")
 	f.BoolVar(&globalOptions.NoLock, "no-lock", false, "do not lock the repo, this allows some operations on read-only repos")
@@ -238,7 +241,23 @@ func Exitf(exitcode int, format string, args ...interface{}) {
 }
 
 // resolvePassword determines the password to be used for opening the repository.
-func resolvePassword(opts GlobalOptions, env string) (string, error) {
+func resolvePassword(opts GlobalOptions) (string, error) {
+	if opts.PasswordFile != "" && opts.PasswordCommand != "" {
+		return "", errors.Fatalf("Password file and command are mutually exclusive options")
+	}
+	if opts.PasswordCommand != "" {
+		args, err := backend.SplitShellStrings(opts.PasswordCommand)
+		if err != nil {
+			return "", err
+		}
+		cmd := exec.Command(args[0], args[1:]...)
+		cmd.Stderr = os.Stderr
+		output, err := cmd.Output()
+		if err != nil {
+			return "", err
+		}
+		return (strings.TrimSpace(string(output))), nil
+	}
 	if opts.PasswordFile != "" {
 		s, err := textfile.Read(opts.PasswordFile)
 		if os.IsNotExist(errors.Cause(err)) {
@@ -247,7 +266,7 @@ func resolvePassword(opts GlobalOptions, env string) (string, error) {
 		return strings.TrimSpace(string(s)), errors.Wrap(err, "Readfile")
 	}
 
-	if pwd := os.Getenv(env); pwd != "" {
+	if pwd := os.Getenv("RESTIC_PASSWORD"); pwd != "" {
 		return pwd, nil
 	}
 
