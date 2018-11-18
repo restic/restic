@@ -3,7 +3,7 @@
 Introduction
 ------------
 
-restic is a backup program that is fast, efficient and secure.
+restic is a backup program that is fast, efficient and secure. It supports the three major operating systems (Linux, macOS, Windows) and a few smaller ones (FreeBSD, OpenBSD).
 
 For detailed usage and installation instructions check out the `documentation <https://restic.readthedocs.io/en/latest>`__.
 
