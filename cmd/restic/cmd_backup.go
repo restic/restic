@@ -377,7 +377,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 
 	timeStamp := time.Now()
 	if opts.TimeStamp != "" {
-		timeStamp, err = time.Parse(TimeFormat, opts.TimeStamp)
+		timeStamp, err = time.ParseInLocation(TimeFormat, opts.TimeStamp, time.Local)
 		if err != nil {
 			return errors.Fatalf("error in time option: %v\n", err)
 		}
