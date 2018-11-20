@@ -1,0 +1,7 @@
+Bugfix: consistently use local time for snapshots times
+
+By default snapshots created with restic backup were set to local time,
+but when the --time flag was used the provided timestamp was parsed as
+UTC. With this change all snapshots times are set to local time.
+
+https://github.com/restic/restic/pull/2095
