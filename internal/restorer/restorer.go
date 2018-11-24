@@ -208,7 +208,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, ui ui.ProgressUI, dst string
 
 	pm := newProgressUI(ui)
 
-	filerestorer := newFileRestorer(dst, res.repo.Backend().Load, res.repo.Key(), filePackTraverser{lookup: res.repo.Index().Lookup})
+	filerestorer := newFileRestorer(dst, res.repo.Backend().Load, res.repo.Key(), res.repo.Index().Lookup)
 
 	// first tree pass: create directories and collect all files to restore
 	pm.startFileListing()
