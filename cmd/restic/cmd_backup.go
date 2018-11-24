@@ -97,7 +97,7 @@ func init() {
 	f.StringVar(&backupOptions.StdinFilename, "stdin-filename", "stdin", "file name to use when reading from stdin")
 	f.StringArrayVar(&backupOptions.Tags, "tag", nil, "add a `tag` for the new snapshot (can be specified multiple times)")
 
-	f.StringVar(&backupOptions.Host, "host", "H", "set the `hostname` for the snapshot manually. To prevent an expensive rescan use the \"parent\" flag")
+	f.StringVarP(&backupOptions.Host, "host", "H", "", "set the `hostname` for the snapshot manually. To prevent an expensive rescan use the \"parent\" flag")
 	f.StringVar(&backupOptions.Host, "hostname", "", "set the `hostname` for the snapshot manually")
 	f.MarkDeprecated("hostname", "use --host")
 

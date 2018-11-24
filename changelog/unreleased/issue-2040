@@ -1,0 +1,11 @@
+Bugfix: Add host name filter shorthand flag for `stats` command
+
+The default value for `--host` flag was set to 'H' (the shorthand version of
+the flag), this caused the lookup for the latest snapshot to fail.
+
+Add shorthand flag `-H` for `--host` (with empty default so if these flags
+are not specified the latest snapshot will not filter by host name).
+
+Also add shorthand `-H` for `backup` command.
+
+https://github.com/restic/restic/issues/2040
