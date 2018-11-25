@@ -47,6 +47,7 @@ Usage help is available:
           --cleanup-cache            auto remove old cache directories
       -h, --help                     help for restic
           --json                     set output mode to JSON for commands that support it
+          --key-hint string          key ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
           --limit-download int       limits downloads to a maximum rate in KiB/s. (default: unlimited)
           --limit-upload int         limits uploads to a maximum rate in KiB/s. (default: unlimited)
           --no-cache                 do not use a local cache
@@ -97,6 +98,7 @@ command:
           --cache-dir string         set the cache directory. (default: use system default cache directory)
           --cleanup-cache            auto remove old cache directories
           --json                     set output mode to JSON for commands that support it
+          --key-hint string          key ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
           --limit-download int       limits downloads to a maximum rate in KiB/s. (default: unlimited)
           --limit-upload int         limits uploads to a maximum rate in KiB/s. (default: unlimited)
           --no-cache                 do not use a local cache

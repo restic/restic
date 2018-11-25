@@ -45,6 +45,7 @@ const TimeFormat = "2006-01-02 15:04:05"
 type GlobalOptions struct {
 	Repo          string
 	PasswordFile  string
+	KeyHint       string
 	Quiet         bool
 	Verbose       int
 	NoLock        bool
@@ -91,6 +92,7 @@ func init() {
 	f := cmdRoot.PersistentFlags()
 	f.StringVarP(&globalOptions.Repo, "repo", "r", os.Getenv("RESTIC_REPOSITORY"), "repository to backup to or restore from (default: $RESTIC_REPOSITORY)")
 	f.StringVarP(&globalOptions.PasswordFile, "password-file", "p", os.Getenv("RESTIC_PASSWORD_FILE"), "read the repository password from a file (default: $RESTIC_PASSWORD_FILE)")
+	f.StringVarP(&globalOptions.KeyHint, "key-hint", "", os.Getenv("RESTIC_KEY_HINT"), "key ID of key to try decrypting first (default: $RESTIC_KEY_HINT)")
 	f.BoolVarP(&globalOptions.Quiet, "quiet", "q", false, "do not output comprehensive progress report")
 	f.CountVarP(&globalOptions.Verbose, "verbose", "v", "be verbose (specify --verbose multiple times or level `n`)")
 	f.BoolVar(&globalOptions.NoLock, "no-lock", false, "do not lock the repo, this allows some operations on read-only repos")
@@ -353,7 +355,7 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 		return nil, err
 	}
 
-	err = s.SearchKey(opts.ctx, opts.password, maxKeys)
+	err = s.SearchKey(opts.ctx, opts.password, maxKeys, opts.KeyHint)
 	if err != nil {
 		return nil, err
 	}

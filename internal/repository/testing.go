@@ -99,7 +99,7 @@ func TestOpenLocal(t testing.TB, dir string) (r restic.Repository) {
 	}
 
 	repo := New(be)
-	err = repo.SearchKey(context.TODO(), test.TestPassword, 10)
+	err = repo.SearchKey(context.TODO(), test.TestPassword, 10, "")
 	if err != nil {
 		t.Fatal(err)
 	}
