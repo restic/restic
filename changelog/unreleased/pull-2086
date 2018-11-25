@@ -1,0 +1,7 @@
+Enhancement: Allow --files-from to be specified multiple times
+
+Before, restic took only the last file specified with `--files-from` into
+account, this is now corrected.
+
+https://github.com/restic/restic/issues/2085
+https://github.com/restic/restic/pull/2086

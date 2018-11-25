@@ -80,7 +80,7 @@ command:
           --exclude-caches                   excludes cache directories that are marked with a CACHEDIR.TAG file
           --exclude-file file                read exclude patterns from a file (can be specified multiple times)
           --exclude-if-present stringArray   takes filename[:header], exclude contents of directories containing filename (except filename itself) if header of that file is as provided (can be specified multiple times)
-          --files-from string                read the files to backup from file (can be combined with file args)
+          --files-from string                read the files to backup from file (can be combined with file args/can be specified multiple times)
       -f, --force                            force re-reading the target files/directories (overrides the "parent" flag)
       -h, --help                             help for backup
           --hostname hostname                set the hostname for the snapshot manually. To prevent an expensive rescan use the "parent" flag
