@@ -15,6 +15,7 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
 
+	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/googleapi"
 	storage "google.golang.org/api/storage/v1"
@@ -40,8 +41,17 @@ type Backend struct {
 // Ensure that *Backend implements restic.Backend.
 var _ restic.Backend = &Backend{}
 
-func getStorageService() (*storage.Service, error) {
-	client, err := google.DefaultClient(context.TODO(), storage.DevstorageReadWriteScope)
+func getStorageService(rt http.RoundTripper) (*storage.Service, error) {
+	// create a new HTTP client
+	httpClient := &http.Client{
+		Transport: rt,
+	}
+
+	// create a now context with the HTTP client stored at the oauth2.HTTPClient key
+	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, httpClient)
+
+	// use this context
+	client, err := google.DefaultClient(ctx, storage.DevstorageReadWriteScope)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +69,7 @@ const defaultListMaxItems = 1000
 func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	debug.Log("open, config %#v", cfg)
 
-	service, err := getStorageService()
+	service, err := getStorageService(rt)
 	if err != nil {
 		return nil, errors.Wrap(err, "getStorageService")
 	}
