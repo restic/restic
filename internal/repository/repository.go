@@ -510,8 +510,8 @@ func LoadIndex(ctx context.Context, repo restic.Repository, id restic.ID) (*Inde
 
 // SearchKey finds a key with the supplied password, afterwards the config is
 // read and parsed. It tries at most maxKeys key files in the repo.
-func (r *Repository) SearchKey(ctx context.Context, password string, maxKeys int) error {
-	key, err := SearchKey(ctx, r, password, maxKeys)
+func (r *Repository) SearchKey(ctx context.Context, password string, maxKeys int, keyHint string) error {
+	key, err := SearchKey(ctx, r, password, maxKeys, keyHint)
 	if err != nil {
 		return err
 	}

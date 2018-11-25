@@ -112,8 +112,25 @@ func OpenKey(ctx context.Context, s *Repository, name string, password string) (
 // given password. If none could be found, ErrNoKeyFound is returned. When
 // maxKeys is reached, ErrMaxKeysReached is returned. When setting maxKeys to
 // zero, all keys in the repo are checked.
-func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int) (k *Key, err error) {
+func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int, keyHint string) (k *Key, err error) {
 	checked := 0
+
+	if len(keyHint) > 0 {
+		id, err := restic.Find(s.Backend(), restic.KeyFile, keyHint)
+
+		if err == nil {
+			key, err := OpenKey(ctx, s, id, password)
+
+			if err == nil {
+				debug.Log("successfully opened hinted key %v", id)
+				return key, nil
+			}
+
+			debug.Log("could not open hinted key %v", id)
+		} else {
+			debug.Log("Could not find hinted key %v", keyHint)
+		}
+	}
 
 	listCtx, cancel := context.WithCancel(ctx)
 	defer cancel()

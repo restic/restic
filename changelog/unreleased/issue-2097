@@ -1,0 +1,12 @@
+Enhancement: Add key hinting
+
+Added a new option `--key-hint` and corresponding environment variable
+`RESTIC_KEY_HINT`.  The key hint is a key ID to try decrypting first, before
+other keys in the repository.
+
+This change will benefit repositories with many keys; if the correct key hint
+is supplied then restic only needs to check one key.  If the key hint is
+incorrect (the key does not exist, or the password is incorrect) then restic
+will check all keys, as usual.
+
+https://github.com/restic/restic/issues/2097
