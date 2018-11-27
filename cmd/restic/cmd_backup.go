@@ -382,6 +382,8 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, pm ui.ProgressUI, args [
 	}
 
 	var t tomb.Tomb // TODO reuse Tomb from outer call?
+	// make sure Tomb does not die too early
+	t.Go(func() error { <-t.Dying(); return nil })
 
 	pm.V("open repository")
 	repo, err := OpenRepository(gopts)
