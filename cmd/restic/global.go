@@ -200,6 +200,7 @@ func Verbosef(format string, args ...interface{}) {
 func runWithProgress(op func(ui.ProgressUI) error) error {
 	var t tomb.Tomb
 	term := termstatus.New(globalOptions.stdout, globalOptions.stderr, globalOptions.Quiet)
+	// note that term.Run does not stop by itself, which prevents premature Tomb death
 	t.Go(func() error { term.Run(t.Context(globalOptions.ctx)); return nil })
 
 	prevStdout, prevStderr := globalOptions.stdout, globalOptions.stderr
