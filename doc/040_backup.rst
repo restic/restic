@@ -204,6 +204,9 @@ backup ``/sys`` or ``/dev`` on a Linux system:
 
     $ restic -r /srv/restic-repo backup --one-file-system /
 
+.. note:: ``--one-file-system`` is currently unsupported on Windows, and will
+    cause the backup to immediately fail with an error.
+
 By using the ``--files-from`` option you can read the files you want to
 backup from one or more files. This is especially useful if a lot of files have
 to be backed up that are not in the same folder or are maybe pre-filtered
