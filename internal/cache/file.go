@@ -127,7 +127,8 @@ func (c *Cache) Save(h restic.Handle, rd io.Reader) error {
 	if n <= crypto.Extension {
 		_ = f.Close()
 		_ = c.Remove(h)
-		return errors.Errorf("trying to cache truncated file %v", h)
+		debug.Log("trying to cache truncated file %v, removing", h)
+		return nil
 	}
 
 	if err = f.Close(); err != nil {
