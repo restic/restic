@@ -109,8 +109,8 @@ golang.org/x/net/http/httpguts
 golang.org/x/net/http2/hpack
 golang.org/x/net/idna
 # golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be
-golang.org/x/oauth2/google
 golang.org/x/oauth2
+golang.org/x/oauth2/google
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt

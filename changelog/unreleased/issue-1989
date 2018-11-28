@@ -1,0 +1,7 @@
+Bugfix: Google Cloud Storage: Respect bandwidth limit
+
+The GCS backend did not respect the bandwidth limit configured, a previous
+commit accidentally removed support for it.
+
+https://github.com/restic/restic/issues/1989
+https://github.com/restic/restic/pull/2100
