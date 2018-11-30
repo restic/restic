@@ -70,60 +70,16 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 		}
 	}
 
-	// group by hostname and dirs
-	snapshotGroups := make(map[string]restic.Snapshots)
-
-	var GroupByTag bool
-	var GroupByHost bool
-	var GroupByPath bool
-	var GroupOptionList []string
-
-	GroupOptionList = strings.Split(opts.GroupBy, ",")
-
-	for _, option := range GroupOptionList {
-		switch option {
-		case "host":
-			GroupByHost = true
-		case "paths":
-			GroupByPath = true
-		case "tags":
-			GroupByTag = true
-		case "":
-		default:
-			return errors.Fatal("unknown grouping option: '" + option + "'")
-		}
-	}
-
 	ctx, cancel := context.WithCancel(gopts.ctx)
 	defer cancel()
 
+	var snapshots restic.Snapshots
 	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, args) {
-		// Determining grouping-keys
-		var tags []string
-		var hostname string
-		var paths []string
-
-		if GroupByTag {
-			tags = sn.Tags
-			sort.StringSlice(tags).Sort()
-		}
-		if GroupByHost {
-			hostname = sn.Hostname
-		}
-		if GroupByPath {
-			paths = sn.Paths
-		}
-
-		sort.StringSlice(sn.Paths).Sort()
-		var k []byte
-		var err error
-
-		k, err = json.Marshal(groupKey{Tags: tags, Hostname: hostname, Paths: paths})
-
-		if err != nil {
-			return err
-		}
-		snapshotGroups[string(k)] = append(snapshotGroups[string(k)], sn)
+		snapshots = append(snapshots, sn)
+	}
+	snapshotGroups, grouped, err := GroupSnapshots(snapshots, opts.GroupBy)
+	if err != nil {
+		return err
 	}
 
 	for k, list := range snapshotGroups {
@@ -135,7 +91,7 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 	}
 
 	if gopts.JSON {
-		err := printSnapshotGroupJSON(gopts.stdout, snapshotGroups, GroupByTag || GroupByHost || GroupByPath)
+		err := printSnapshotGroupJSON(gopts.stdout, snapshotGroups, grouped)
 		if err != nil {
 			Warnf("error printing snapshots: %v\n", err)
 		}
@@ -143,12 +99,13 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 	}
 
 	for k, list := range snapshotGroups {
-		err := PrintSnapshotGroupHeader(gopts.stdout, k, GroupByTag, GroupByHost, GroupByPath)
-		if err != nil {
-			Warnf("error printing snapshots: %v\n", err)
-			return nil
+		if grouped {
+			err := PrintSnapshotGroupHeader(gopts.stdout, k)
+			if err != nil {
+				Warnf("error printing snapshots: %v\n", err)
+				return nil
+			}
 		}
-
 		PrintSnapshots(gopts.stdout, list, nil, opts.Compact)
 	}
 
@@ -189,6 +146,65 @@ func FilterLastSnapshots(list restic.Snapshots) restic.Snapshots {
 		}
 	}
 	return results
+}
+
+// GroupSnapshots takes a list of snapshots and a grouping criteria and creates
+// a group list of snapshots.
+func GroupSnapshots(snapshots restic.Snapshots, options string) (map[string]restic.Snapshots, bool, error) {
+	// group by hostname and dirs
+	snapshotGroups := make(map[string]restic.Snapshots)
+
+	var GroupByTag bool
+	var GroupByHost bool
+	var GroupByPath bool
+	var GroupOptionList []string
+
+	GroupOptionList = strings.Split(options, ",")
+
+	for _, option := range GroupOptionList {
+		switch option {
+		case "host":
+			GroupByHost = true
+		case "paths":
+			GroupByPath = true
+		case "tags":
+			GroupByTag = true
+		case "":
+		default:
+			return nil, false, errors.Fatal("unknown grouping option: '" + option + "'")
+		}
+	}
+
+	for _, sn := range snapshots {
+		// Determining grouping-keys
+		var tags []string
+		var hostname string
+		var paths []string
+
+		if GroupByTag {
+			tags = sn.Tags
+			sort.StringSlice(tags).Sort()
+		}
+		if GroupByHost {
+			hostname = sn.Hostname
+		}
+		if GroupByPath {
+			paths = sn.Paths
+		}
+
+		sort.StringSlice(sn.Paths).Sort()
+		var k []byte
+		var err error
+
+		k, err = json.Marshal(groupKey{Tags: tags, Hostname: hostname, Paths: paths})
+
+		if err != nil {
+			return nil, false, err
+		}
+		snapshotGroups[string(k)] = append(snapshotGroups[string(k)], sn)
+	}
+
+	return snapshotGroups, GroupByTag || GroupByHost || GroupByPath, nil
 }
 
 // PrintSnapshots prints a text table of the snapshots in list to stdout.
@@ -294,10 +310,7 @@ func PrintSnapshots(stdout io.Writer, list restic.Snapshots, reasons []restic.Ke
 // PrintSnapshotGroupHeader prints which group of the group-by option the
 // following snapshots belong to.
 // Prints nothing, if we did not group at all.
-func PrintSnapshotGroupHeader(stdout io.Writer, groupKeyJSON string, GroupByTag bool, GroupByHost bool, GroupByPath bool) error {
-	if !GroupByTag && !GroupByHost && !GroupByPath {
-		return nil
-	}
+func PrintSnapshotGroupHeader(stdout io.Writer, groupKeyJSON string) error {
 	var key groupKey
 	var err error
 
@@ -306,16 +319,20 @@ func PrintSnapshotGroupHeader(stdout io.Writer, groupKeyJSON string, GroupByTag 
 		return err
 	}
 
+	if key.Hostname == "" && key.Tags == nil && key.Paths == nil {
+		return nil
+	}
+
 	// Info
 	fmt.Fprintf(stdout, "snapshots")
 	var infoStrings []string
-	if GroupByTag {
-		infoStrings = append(infoStrings, "tags ["+strings.Join(key.Tags, ", ")+"]")
-	}
-	if GroupByHost {
+	if key.Hostname != "" {
 		infoStrings = append(infoStrings, "host ["+key.Hostname+"]")
 	}
-	if GroupByPath {
+	if key.Tags != nil {
+		infoStrings = append(infoStrings, "tags ["+strings.Join(key.Tags, ", ")+"]")
+	}
+	if key.Paths != nil {
 		infoStrings = append(infoStrings, "paths ["+strings.Join(key.Paths, ", ")+"]")
 	}
 	if infoStrings != nil {
@@ -342,7 +359,6 @@ type SnapshotGroup struct {
 
 // printSnapshotsJSON writes the JSON representation of list to stdout.
 func printSnapshotGroupJSON(stdout io.Writer, snGroups map[string]restic.Snapshots, grouped bool) error {
-
 	if grouped {
 		var snapshotGroups []SnapshotGroup
 
