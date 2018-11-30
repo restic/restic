@@ -1,0 +1,10 @@
+Enhancement: Add group-by option to snapshots command
+
+We have added an option to group the output of the snapshots command, similar
+to the output of the forget command. The option has been called "--group-by"
+and accepts any combination of the values "host", "paths" and "tags", separated
+by commas. Default behavior (not specifying --group-by) has not been changed.
+We have added support of the grouping to the JSON output.
+
+https://github.com/restic/restic/issues/2037
+https://github.com/restic/restic/pull/2087
