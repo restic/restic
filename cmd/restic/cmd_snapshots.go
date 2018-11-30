@@ -51,9 +51,9 @@ func init() {
 }
 
 type groupKey struct {
-	Hostname string
-	Paths    []string
-	Tags     []string
+	Hostname string   `json:"hostname"`
+	Paths    []string `json:"paths"`
+	Tags     []string `json:"tags"`
 }
 
 func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) error {
@@ -295,32 +295,33 @@ func PrintSnapshots(stdout io.Writer, list restic.Snapshots, reasons []restic.Ke
 // following snapshots belong to.
 // Prints nothing, if we did not group at all.
 func PrintSnapshotGroupHeader(stdout io.Writer, groupKeyJSON string, GroupByTag bool, GroupByHost bool, GroupByPath bool) error {
-	if GroupByTag || GroupByHost || GroupByPath {
-		var key groupKey
-		var err error
-
-		err = json.Unmarshal([]byte(groupKeyJSON), &key)
-		if err != nil {
-			return err
-		}
-
-		// Info
-		fmt.Fprintf(stdout, "snapshots")
-		var infoStrings []string
-		if GroupByTag {
-			infoStrings = append(infoStrings, "tags ["+strings.Join(key.Tags, ", ")+"]")
-		}
-		if GroupByHost {
-			infoStrings = append(infoStrings, "host ["+key.Hostname+"]")
-		}
-		if GroupByPath {
-			infoStrings = append(infoStrings, "paths ["+strings.Join(key.Paths, ", ")+"]")
-		}
-		if infoStrings != nil {
-			fmt.Fprintf(stdout, " for (%s)", strings.Join(infoStrings, ", "))
-		}
-		fmt.Fprintf(stdout, ":\n")
+	if !GroupByTag && !GroupByHost && !GroupByPath {
+		return nil
 	}
+	var key groupKey
+	var err error
+
+	err = json.Unmarshal([]byte(groupKeyJSON), &key)
+	if err != nil {
+		return err
+	}
+
+	// Info
+	fmt.Fprintf(stdout, "snapshots")
+	var infoStrings []string
+	if GroupByTag {
+		infoStrings = append(infoStrings, "tags ["+strings.Join(key.Tags, ", ")+"]")
+	}
+	if GroupByHost {
+		infoStrings = append(infoStrings, "host ["+key.Hostname+"]")
+	}
+	if GroupByPath {
+		infoStrings = append(infoStrings, "paths ["+strings.Join(key.Paths, ", ")+"]")
+	}
+	if infoStrings != nil {
+		fmt.Fprintf(stdout, " for (%s)", strings.Join(infoStrings, ", "))
+	}
+	fmt.Fprintf(stdout, ":\n")
 
 	return nil
 }
@@ -335,8 +336,8 @@ type Snapshot struct {
 
 // SnapshotGroup helps to print SnaphotGroups as JSON with their GroupReasons included.
 type SnapshotGroup struct {
-	GroupKey  groupKey
-	Snapshots []Snapshot
+	GroupKey  groupKey   `json:"group_key"`
+	Snapshots []Snapshot `json:"snapshots"`
 }
 
 // printSnapshotsJSON writes the JSON representation of list to stdout.
@@ -372,21 +373,21 @@ func printSnapshotGroupJSON(stdout io.Writer, snGroups map[string]restic.Snapsho
 		}
 
 		return json.NewEncoder(stdout).Encode(snapshotGroups)
-	} else {
-		// Old behavior
-		var snapshots []Snapshot
-
-		for _, list := range snGroups {
-			for _, sn := range list {
-				k := Snapshot{
-					Snapshot: sn,
-					ID:       sn.ID(),
-					ShortID:  sn.ID().Str(),
-				}
-				snapshots = append(snapshots, k)
-			}
-		}
-
-		return json.NewEncoder(stdout).Encode(snapshots)
 	}
+
+	// Old behavior
+	var snapshots []Snapshot
+
+	for _, list := range snGroups {
+		for _, sn := range list {
+			k := Snapshot{
+				Snapshot: sn,
+				ID:       sn.ID(),
+				ShortID:  sn.ID().Str(),
+			}
+			snapshots = append(snapshots, k)
+		}
+	}
+
+	return json.NewEncoder(stdout).Encode(snapshots)
 }
