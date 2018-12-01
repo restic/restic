@@ -415,7 +415,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		SetMinUpdatePause(d time.Duration)
 		Run(ctx context.Context) error
 		Error(item string, fi os.FileInfo, err error) error
-		Finish()
+		Finish(snapshotID restic.ID)
 
 		// ui.StdioWrapper
 		Stdout() io.WriteCloser
@@ -582,7 +582,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		return errors.Fatalf("unable to save snapshot: %v", err)
 	}
 
-	p.Finish()
+	p.Finish(id)
 	if !gopts.JSON {
 		p.P("snapshot %s saved\n", id.Str())
 	}

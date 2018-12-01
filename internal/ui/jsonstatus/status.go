@@ -167,7 +167,6 @@ func (b *Backup) update(total, processed counter, errors uint, currentFiles map[
 // ScannerError is the error callback function for the scanner, it prints the
 // error in verbose mode and returns nil.
 func (b *Backup) ScannerError(item string, fi os.FileInfo, err error) error {
-	// b.V("scan: %v\n", err)
 	json.NewEncoder(b.StdioWrapper.Stderr()).Encode(errorUpdate{
 		MessageType: "error",
 		Error:       err,
@@ -179,7 +178,6 @@ func (b *Backup) ScannerError(item string, fi os.FileInfo, err error) error {
 
 // Error is the error callback function for the archiver, it prints the error and returns nil.
 func (b *Backup) Error(item string, fi os.FileInfo, err error) error {
-	// b.E("error: %v\n", err)
 	json.NewEncoder(b.StdioWrapper.Stderr()).Encode(errorUpdate{
 		MessageType: "error",
 		Error:       err,
@@ -231,7 +229,6 @@ func (b *Backup) CompleteItem(item string, previous, current *restic.Node, s arc
 
 	if current.Type == "dir" {
 		if previous == nil {
-			// b.VV("new       %v, saved in %.3fs (%v added, %v metadata)", item, d.Seconds(), formatBytes(s.DataSize), formatBytes(s.TreeSize))
 			if b.v >= 3 {
 				json.NewEncoder(b.StdioWrapper.Stdout()).Encode(verboseUpdate{
 					MessageType:  "verbose_status",
@@ -249,7 +246,6 @@ func (b *Backup) CompleteItem(item string, previous, current *restic.Node, s arc
 		}
 
 		if previous.Equals(*current) {
-			// b.VV("unchanged %v", item)
 			if b.v >= 3 {
 				json.NewEncoder(b.StdioWrapper.Stdout()).Encode(verboseUpdate{
 					MessageType: "verbose_status",
@@ -261,7 +257,6 @@ func (b *Backup) CompleteItem(item string, previous, current *restic.Node, s arc
 			b.summary.Dirs.Unchanged++
 			b.summary.Unlock()
 		} else {
-			// b.VV("modified  %v, saved in %.3fs (%v added, %v metadata)", item, d.Seconds(), formatBytes(s.DataSize), formatBytes(s.TreeSize))
 			if b.v >= 3 {
 				json.NewEncoder(b.StdioWrapper.Stdout()).Encode(verboseUpdate{
 					MessageType:  "verbose_status",
@@ -285,7 +280,6 @@ func (b *Backup) CompleteItem(item string, previous, current *restic.Node, s arc
 		}
 
 		if previous == nil {
-			// b.VV("new       %v, saved in %.3fs (%v added)", item, d.Seconds(), formatBytes(s.DataSize))
 			if b.v >= 3 {
 				json.NewEncoder(b.StdioWrapper.Stdout()).Encode(verboseUpdate{
 					MessageType: "verbose_status",
@@ -302,7 +296,6 @@ func (b *Backup) CompleteItem(item string, previous, current *restic.Node, s arc
 		}
 
 		if previous.Equals(*current) {
-			// b.VV("unchanged %v", item)
 			if b.v >= 3 {
 				json.NewEncoder(b.StdioWrapper.Stdout()).Encode(verboseUpdate{
 					MessageType: "verbose_status",
@@ -314,7 +307,6 @@ func (b *Backup) CompleteItem(item string, previous, current *restic.Node, s arc
 			b.summary.Files.Unchanged++
 			b.summary.Unlock()
 		} else {
-			// b.VV("modified  %v, saved in %.3fs (%v added)", item, d.Seconds(), formatBytes(s.DataSize))
 			if b.v >= 3 {
 				json.NewEncoder(b.StdioWrapper.Stdout()).Encode(verboseUpdate{
 					MessageType: "verbose_status",
@@ -339,10 +331,6 @@ func (b *Backup) ReportTotal(item string, s archiver.ScanStats) {
 	}
 
 	if item == "" {
-		// b.V("scan finished in %.3fs: %v files, %s",
-		// 	time.Since(b.start).Seconds(),
-		// 	s.Files, formatBytes(s.Bytes),
-		// )
 		if b.v >= 2 {
 			json.NewEncoder(b.StdioWrapper.Stdout()).Encode(verboseUpdate{
 				MessageType: "status",
@@ -358,21 +346,8 @@ func (b *Backup) ReportTotal(item string, s archiver.ScanStats) {
 }
 
 // Finish prints the finishing messages.
-func (b *Backup) Finish() {
+func (b *Backup) Finish(snapshotID restic.ID) {
 	close(b.finished)
-
-	// b.P("\n")
-	// b.P("Files:       %5d new, %5d changed, %5d unmodified\n", b.summary.Files.New, b.summary.Files.Changed, b.summary.Files.Unchanged)
-	// b.P("Dirs:        %5d new, %5d changed, %5d unmodified\n", b.summary.Dirs.New, b.summary.Dirs.Changed, b.summary.Dirs.Unchanged)
-	// b.V("Data Blobs:  %5d new\n", b.summary.ItemStats.DataBlobs)
-	// b.V("Tree Blobs:  %5d new\n", b.summary.ItemStats.TreeBlobs)
-	// b.P("Added to the repo: %-5s\n", formatBytes(b.summary.ItemStats.DataSize+b.summary.ItemStats.TreeSize))
-	// b.P("\n")
-	// b.P("processed %v files, %v in %s",
-	// 	b.summary.Files.New+b.summary.Files.Changed+b.summary.Files.Unchanged,
-	// 	formatBytes(b.totalBytes),
-	// 	formatDuration(time.Since(b.start)),
-	// )
 	json.NewEncoder(b.StdioWrapper.Stdout()).Encode(summaryOutput{
 		MessageType:         "summary",
 		FilesNew:            b.summary.Files.New,
@@ -387,6 +362,7 @@ func (b *Backup) Finish() {
 		TotalFilesProcessed: b.summary.Files.New + b.summary.Files.Changed + b.summary.Files.Unchanged,
 		TotalBytesProcessed: b.totalBytes,
 		TotalDuration:       time.Since(b.start).Seconds(),
+		SnapshotID:          snapshotID.Str(),
 	})
 }
 
@@ -440,4 +416,5 @@ type summaryOutput struct {
 	TotalFilesProcessed uint    `json:"total_files_processed"`
 	TotalBytesProcessed uint64  `json:"total_bytes_processed"`
 	TotalDuration       float64 `json:"total_duration"` // in seconds
+	SnapshotID          string  `json:"snapshot_id"`
 }

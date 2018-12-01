@@ -349,7 +349,7 @@ func (b *Backup) ReportTotal(item string, s archiver.ScanStats) {
 }
 
 // Finish prints the finishing messages.
-func (b *Backup) Finish() {
+func (b *Backup) Finish(snapshotID restic.ID) {
 	close(b.finished)
 
 	b.P("\n")
