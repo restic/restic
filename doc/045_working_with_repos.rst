@@ -66,7 +66,7 @@ backup with the intention to make you restore malicious data:
 
 .. code-block:: console
 
-    $ sudo echo "boom" >> backup/index/d795ffa99a8ab8f8e42cec1f814df4e48b8f49129360fb57613df93739faee97
+    $ echo "boom" >> backup/index/d795ffa99a8ab8f8e42cec1f814df4e48b8f49129360fb57613df93739faee97
 
 In order to detect these things, it is a good idea to regularly use the
 ``check`` command to test whether everything is alright, your precious
