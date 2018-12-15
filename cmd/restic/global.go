@@ -181,7 +181,6 @@ func Printf(format string, args ...interface{}) {
 	_, err := fmt.Fprintf(globalOptions.stdout, format, args...)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to write to stdout: %v\n", err)
-		Exit(100)
 	}
 }
 
@@ -222,7 +221,6 @@ func Warnf(format string, args ...interface{}) {
 	_, err := fmt.Fprintf(globalOptions.stderr, format, args...)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to write to stderr: %v\n", err)
-		Exit(100)
 	}
 }
 
