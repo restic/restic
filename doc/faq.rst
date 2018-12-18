@@ -27,7 +27,7 @@ strictly necessary. With high probability this is duplicate data. In
 order to clean it up, the command ``restic prune`` can be used. The
 cause of this bug is not yet known.
 
-I ran a ``restic`` command but it is not working as intented, what do I do now?
+I ran a ``restic`` command but it is not working as intended, what do I do now?
 -------------------------------------------------------------------------------
 
 If you are running a restic command and it is not working as you hoped it would,
@@ -45,7 +45,7 @@ $ restic backup --exclude "~/documents" ~
 This command will result in a complete backup of the current logged in user's home directory and it won't exclude the folder ``~/documents/`` - which is not what the user wanted to achieve.
 The problem is how the path to ``~/documents`` is passed to restic.
 
-In order to spot an issue like this, you can make use of the following ruby command preceeding your restic command.
+In order to spot an issue like this, you can make use of the following ruby command preceding your restic command.
 
 ::
 
@@ -71,7 +71,7 @@ Restic handles globbing and expansion in the following ways:
 -  Globbing is only expanded for lines read via ``--files-from``
 -  Environment variables are not expanded in the file read via ``--files-from``
 -  ``*`` is expanded for paths read via ``--files-from``
--  E.g. For backup targets given to restic as arguments on the shell, neither glob expansion nor shell variable replacement is done. If restic is called as ``restic backup '*' '$HOME'``, it will try to backup the literal file(s)/dir(s) ``*`` and ``$HOME``
+-  e.g. For backup targets given to restic as arguments on the shell, neither glob expansion nor shell variable replacement is done. If restic is called as ``restic backup '*' '$HOME'``, it will try to backup the literal file(s)/dir(s) ``*`` and ``$HOME``
 -  Double-asterisk ``**`` only works in exclude patterns as this is a custom extension built into restic; the shell must not expand it
 
 
@@ -172,4 +172,4 @@ The following may work:
 Why does restic perform so poorly on Windows?
 ---------------------------------------------
 
-In some cases the realtime protection of antivirus software can interfere with restic's operations. If you are experiencing bad performace you can try to temporarily disable your antivirus software to find out if it is the cause for your performance problems.
+In some cases the real-time protection of antivirus software can interfere with restic's operations. If you are experiencing bad performance you can try to temporarily disable your antivirus software to find out if it is the cause for your performance problems.
