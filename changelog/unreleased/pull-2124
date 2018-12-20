@@ -1,0 +1,8 @@
+Enhancement: Ability to dump folders to tar via stdout
+
+We've added the ability to dump whole folders to stdout via the `dump` command.
+Restic now requires at least Go 1.10 due to a limitation of the standard
+library for Go <= 1.9.
+
+https://github.com/restic/restic/pull/2124
+https://github.com/restic/restic/issues/2123
