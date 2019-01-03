@@ -146,6 +146,9 @@ func readLinesFromFile(filename string) ([]string, error) {
 
 	if filename == "-" {
 		data, err = ioutil.ReadAll(os.Stdin)
+		if len(data) == 0 {
+			Warnf("backing up from stdin but received 0 bytes from stdin\n")
+		}
 	} else {
 		data, err = textfile.Read(filename)
 	}
