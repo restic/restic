@@ -225,6 +225,9 @@ func TestApplyPolicy(t *testing.T) {
 		{Within: parseDuration("1m")},
 		{Within: parseDuration("1m14d")},
 		{Within: parseDuration("1y1d1m")},
+		{Within: parseDuration("13d23h")},
+		{Within: parseDuration("2m2h")},
+		{Within: parseDuration("1y2m3d3h")},
 	}
 
 	for i, p := range tests {

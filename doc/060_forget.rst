@@ -168,8 +168,9 @@ The ``forget`` command accepts the following parameters:
    this option (can be specified multiple times).
 -  ``--keep-within duration`` keep all snapshots which have been made within
    the duration of the latest snapshot. ``duration`` needs to be a number of
-   years, months, and days, e.g. ``2y5m7d`` will keep all snapshots made in the
-   two years, five months, and seven days before the latest snapshot.
+   years, months, days, and hours, e.g. ``2y5m7d3h`` will keep all snapshots
+   made in the two years, five months, seven days, and three hours before the
+   latest snapshot.
 
 Multiple policies will be ORed together so as to be as inclusive as possible
 for keeping snapshots.

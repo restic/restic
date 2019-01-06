@@ -196,7 +196,7 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots, reason
 
 		// If the timestamp of the snapshot is within the range, then keep it.
 		if !p.Within.Zero() {
-			t := latest.AddDate(-p.Within.Years, -p.Within.Months, -p.Within.Days)
+			t := latest.AddDate(-p.Within.Years, -p.Within.Months, -p.Within.Days).Add(time.Hour * time.Duration(-p.Within.Hours))
 			if cur.Time.After(t) {
 				keepSnap = true
 				keepSnapReasons = append(keepSnapReasons, fmt.Sprintf("within %v", p.Within))

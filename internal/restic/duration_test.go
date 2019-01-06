@@ -14,13 +14,22 @@ func TestNextNumber(t *testing.T) {
 		err   bool
 	}{
 		{
+			input: "12h", num: 12, rest: "h",
+		},
+		{
 			input: "3d", num: 3, rest: "d",
+		},
+		{
+			input: "4d9h", num: 4, rest: "d9h",
 		},
 		{
 			input: "7m5d", num: 7, rest: "m5d",
 		},
 		{
 			input: "-23y7m5d", num: -23, rest: "y7m5d",
+		},
+		{
+			input: "-13y5m11d12h", num: -13, rest: "y5m11d12h",
 		},
 		{
 			input: "  5d", num: 0, rest: "  5d", err: true,
@@ -55,10 +64,15 @@ func TestParseDuration(t *testing.T) {
 		d      Duration
 		output string
 	}{
+		{"9h", Duration{Hours: 9}, "9h"},
 		{"3d", Duration{Days: 3}, "3d"},
+		{"4d2h", Duration{Days: 4, Hours: 2}, "4d2h"},
 		{"7m5d", Duration{Months: 7, Days: 5}, "7m5d"},
+		{"6m4d8h", Duration{Months: 6, Days: 4, Hours: 8}, "6m4d8h"},
 		{"5d7m", Duration{Months: 7, Days: 5}, "7m5d"},
+		{"4h3d9m", Duration{Months: 9, Days: 3, Hours: 4}, "9m3d4h"},
 		{"-7m5d", Duration{Months: -7, Days: 5}, "-7m5d"},
+		{"1y4m-5d-3h", Duration{Years: 1, Months: 4, Days: -5, Hours: -3}, "1y4m-5d-3h"},
 		{"2y7m-5d", Duration{Years: 2, Months: 7, Days: -5}, "2y7m-5d"},
 	}
 
