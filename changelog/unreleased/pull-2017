@@ -1,12 +1,11 @@
-Enhancement: mount: Enforce FUSE Unix permissions by default
+Enhancement: mount: Enforce FUSE Unix permissions with allow-other
 
-By default, `mount` will now respect the Unix permissions of the files within
-snapshots (this is done through the "DefaultPermissions" FUSE option).
+The fuse mount (`restic mount`) now lets the kernel check the permissions of
+the files within snapshots (this is done through the `DefaultPermissions` FUSE
+option) when the option `--allow-other` is specified.
 
 To restore the old behavior, we've added the `--no-default-permissions` option.
-This allows alll users that have access to the mountpoint to access all
-files within the snapshots. Normal FUSE rules apply, so `--allow-root`
-or `--allow-other` can be used to allow users besides the mounting user to
-access the mountpoint.
+This allows all users that have access to the mount point to access all
+files within the snapshots.
 
 https://github.com/restic/restic/pull/2017

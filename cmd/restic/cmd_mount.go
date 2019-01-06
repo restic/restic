@@ -120,10 +120,11 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 
 	if opts.AllowOther {
 		mountOptions = append(mountOptions, systemFuse.AllowOther())
-	}
 
-	if !opts.NoDefaultPermissions {
-		mountOptions = append(mountOptions, systemFuse.DefaultPermissions())
+		// let the kernel check permissions unless it is explicitly disabled
+		if !opts.NoDefaultPermissions {
+			mountOptions = append(mountOptions, systemFuse.DefaultPermissions())
+		}
 	}
 
 	c, err := systemFuse.Mount(mountpoint, mountOptions...)
