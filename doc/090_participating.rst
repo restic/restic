@@ -85,7 +85,7 @@ back end is contained in `Design <https://restic.readthedocs.io/en/latest/design
 If you'd like to start contributing to restic, but don't know exactly
 what do to, have a look at this great article by Dave Cheney:
 `Suggestions for contributing to an Open Source
-project <http://dave.cheney.net/2016/03/12/suggestions-for-contributing-to-an-open-source-project>`__
+project <https://dave.cheney.net/2016/03/12/suggestions-for-contributing-to-an-open-source-project>`__
 A few issues have been tagged with the label ``help wanted``, you can
 start looking at those:
 https://github.com/restic/restic/labels/help%20wanted
@@ -113,7 +113,7 @@ Compatibility
 
 Backward compatibility for backups is important so that our users are
 always able to restore saved data. Therefore restic follows `Semantic
-Versioning <http://semver.org>`__ to clearly define which versions are
+Versioning <https://semver.org>`__ to clearly define which versions are
 compatible. The repository and data structures contained therein are
 considered the "Public API" in the sense of Semantic Versioning. This
 goes for all released versions of restic, this may not be the case for
@@ -128,7 +128,7 @@ prior versions.
 Building documentation
 **********************
 
-The restic documentation is built with `Sphinx <http://sphinx-doc.org>`__,
+The restic documentation is built with `Sphinx <https://www.sphinx-doc.org>`__,
 therefore building it locally requires a recent Python version and requirements listed in ``doc/requirements.txt``.
 This example will guide you through the process using `virtualenv <https://virtualenv.pypa.io>`__:
 
