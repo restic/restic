@@ -398,6 +398,7 @@ func updateDocker(outputDir, version string) {
 	cmd := fmt.Sprintf("bzcat %s/restic_%s_linux_amd64.bz2 > restic", outputDir, version)
 	run("sh", "-c", cmd)
 	run("chmod", "+x", "restic")
+	run("docker", "pull", "alpine:latest")
 	run("docker", "build", "--rm", "--tag", "restic/restic:latest", "-f", "docker/Dockerfile", ".")
 	run("docker", "tag", "restic/restic:latest", "restic/restic:"+version)
 }
