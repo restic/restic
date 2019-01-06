@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path"
@@ -19,9 +20,12 @@ type Reader struct {
 	Name string
 	io.ReadCloser
 
+	// for FileInfo
 	Mode    os.FileMode
 	ModTime time.Time
 	Size    int64
+
+	AllowEmptyFile bool
 
 	open sync.Once
 }
@@ -40,7 +44,7 @@ func (fs *Reader) Open(name string) (f File, err error) {
 	switch name {
 	case fs.Name:
 		fs.open.Do(func() {
-			f = newReaderFile(fs.ReadCloser, fs.fi())
+			f = newReaderFile(fs.ReadCloser, fs.fi(), fs.AllowEmptyFile)
 		})
 
 		if f == nil {
@@ -78,7 +82,7 @@ func (fs *Reader) OpenFile(name string, flag int, perm os.FileMode) (f File, err
 	}
 
 	fs.open.Do(func() {
-		f = newReaderFile(fs.ReadCloser, fs.fi())
+		f = newReaderFile(fs.ReadCloser, fs.fi(), fs.AllowEmptyFile)
 	})
 
 	if f == nil {
@@ -158,9 +162,10 @@ func (fs *Reader) Dir(p string) string {
 	return path.Dir(p)
 }
 
-func newReaderFile(rd io.ReadCloser, fi os.FileInfo) readerFile {
-	return readerFile{
-		ReadCloser: rd,
+func newReaderFile(rd io.ReadCloser, fi os.FileInfo, allowEmptyFile bool) *readerFile {
+	return &readerFile{
+		ReadCloser:     rd,
+		AllowEmptyFile: allowEmptyFile,
 		fakeFile: fakeFile{
 			FileInfo: fi,
 			name:     fi.Name(),
@@ -170,19 +175,41 @@ func newReaderFile(rd io.ReadCloser, fi os.FileInfo) readerFile {
 
 type readerFile struct {
 	io.ReadCloser
+	AllowEmptyFile, bytesRead bool
+
 	fakeFile
 }
 
-func (r readerFile) Read(p []byte) (int, error) {
-	return r.ReadCloser.Read(p)
+// ErrFileEmpty is returned inside a *os.PathError by Read() for the file
+// opened from the fs provided by Reader when no data could be read and
+// AllowEmptyFile is not set.
+var ErrFileEmpty = errors.New("no data read")
+
+func (r *readerFile) Read(p []byte) (int, error) {
+	n, err := r.ReadCloser.Read(p)
+	if n > 0 {
+		r.bytesRead = true
+	}
+
+	// return an error if we did not read any data
+	if err == io.EOF && !r.AllowEmptyFile && !r.bytesRead {
+		fmt.Printf("reader: %d bytes read, err %v, bytesRead %v, allowEmpty %v\n", n, err, r.bytesRead, r.AllowEmptyFile)
+		return n, &os.PathError{
+			Path: r.fakeFile.name,
+			Op:   "read",
+			Err:  ErrFileEmpty,
+		}
+	}
+
+	return n, err
 }
 
-func (r readerFile) Close() error {
+func (r *readerFile) Close() error {
 	return r.ReadCloser.Close()
 }
 
 // ensure that readerFile implements File
-var _ File = readerFile{}
+var _ File = &readerFile{}
 
 // fakeFile implements all File methods, but only returns errors for anything
 // except Stat() and Name().
