@@ -1,0 +1,11 @@
+Enhancement: mount: Enforce FUSE Unix permissions with allow-other
+
+The fuse mount (`restic mount`) now lets the kernel check the permissions of
+the files within snapshots (this is done through the `DefaultPermissions` FUSE
+option) when the option `--allow-other` is specified.
+
+To restore the old behavior, we've added the `--no-default-permissions` option.
+This allows all users that have access to the mount point to access all
+files within the snapshots.
+
+https://github.com/restic/restic/pull/2017
