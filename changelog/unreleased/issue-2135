@@ -1,0 +1,10 @@
+Bugfix: Return error when no bytes could be read from stdin
+
+We assume that users reading backup data from stdin want to know when no data
+could be read, so now restic returns an error when `backup --stdin` is called
+but no bytes could be read. Usually, this means that an earlier command in a
+pipe has failed. The documentation was amended and now recommends setting the
+`pipefail` option (`set -o pipefail`).
+
+https://github.com/restic/restic/pull/2135
+https://github.com/restic/restic/pull/2139
