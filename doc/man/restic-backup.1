@@ -37,8 +37,8 @@ given as the arguments.
     takes filename[:header], exclude contents of directories containing filename (except filename itself) if header of that file is as provided (can be specified multiple times)
 
 .PP
-\fB\-\-files\-from\fP=""
-    read the files to backup from file (can be combined with file args)
+\fB\-\-files\-from\fP=[]
+    read the files to backup from file (can be combined with file args/can be specified multiple times)
 
 .PP
 \fB\-f\fP, \fB\-\-force\fP[=false]
@@ -49,7 +49,7 @@ given as the arguments.
     help for backup
 
 .PP
-\fB\-\-host\fP="H"
+\fB\-H\fP, \fB\-\-host\fP=""
     set the \fB\fChostname\fR for the snapshot manually. To prevent an expensive rescan use the "parent" flag
 
 .PP
@@ -99,6 +99,10 @@ given as the arguments.
     set output mode to JSON for commands that support it
 
 .PP
+\fB\-\-key\-hint\fP=""
+    key ID of key to try decrypting first (default: $RESTIC\_KEY\_HINT)
+
+.PP
 \fB\-\-limit\-download\fP=0
     limits downloads to a maximum rate in KiB/s. (default: unlimited)
 
@@ -117,6 +121,10 @@ given as the arguments.
 .PP
 \fB\-o\fP, \fB\-\-option\fP=[]
     set extended option (\fB\fCkey=value\fR, can be specified multiple times)
+
+.PP
+\fB\-\-password\-command\fP=""
+    specify a shell command to obtain a password (default: $RESTIC\_PASSWORD\_COMMAND)
 
 .PP
 \fB\-p\fP, \fB\-\-password\-file\fP=""

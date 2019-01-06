@@ -15,7 +15,7 @@ restic\-self\-update \- Update the restic binary
 
 .SH DESCRIPTION
 .PP
-The command "update\-restic" downloads the latest stable release of restic from
+The command "self\-update" downloads the latest stable release of restic from
 GitHub and replaces the currently running binary. After download, the
 authenticity of the binary is verified using the GPG signature on the release
 files.
@@ -27,8 +27,8 @@ files.
     help for self\-update
 
 .PP
-\fB\-\-output\fP="./restic\-generate.temp"
-    Save the downloaded file as \fB\fCfilename\fR
+\fB\-\-output\fP=""
+    Save the downloaded file as \fB\fCfilename\fR (default: running binary itself)
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
@@ -49,6 +49,10 @@ files.
     set output mode to JSON for commands that support it
 
 .PP
+\fB\-\-key\-hint\fP=""
+    key ID of key to try decrypting first (default: $RESTIC\_KEY\_HINT)
+
+.PP
 \fB\-\-limit\-download\fP=0
     limits downloads to a maximum rate in KiB/s. (default: unlimited)
 
@@ -67,6 +71,10 @@ files.
 .PP
 \fB\-o\fP, \fB\-\-option\fP=[]
     set extended option (\fB\fCkey=value\fR, can be specified multiple times)
+
+.PP
+\fB\-\-password\-command\fP=""
+    specify a shell command to obtain a password (default: $RESTIC\_PASSWORD\_COMMAND)
 
 .PP
 \fB\-p\fP, \fB\-\-password\-file\fP=""

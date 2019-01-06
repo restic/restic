@@ -52,7 +52,7 @@ Refer to the online manual for more details about each mode.
     help for stats
 
 .PP
-\fB\-\-host\fP="H"
+\fB\-H\fP, \fB\-\-host\fP=""
     filter latest snapshot by this hostname
 
 .PP
@@ -78,6 +78,10 @@ Refer to the online manual for more details about each mode.
     set output mode to JSON for commands that support it
 
 .PP
+\fB\-\-key\-hint\fP=""
+    key ID of key to try decrypting first (default: $RESTIC\_KEY\_HINT)
+
+.PP
 \fB\-\-limit\-download\fP=0
     limits downloads to a maximum rate in KiB/s. (default: unlimited)
 
@@ -96,6 +100,10 @@ Refer to the online manual for more details about each mode.
 .PP
 \fB\-o\fP, \fB\-\-option\fP=[]
     set extended option (\fB\fCkey=value\fR, can be specified multiple times)
+
+.PP
+\fB\-\-password\-command\fP=""
+    specify a shell command to obtain a password (default: $RESTIC\_PASSWORD\_COMMAND)
 
 .PP
 \fB\-p\fP, \fB\-\-password\-file\fP=""

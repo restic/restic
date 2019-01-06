@@ -48,7 +48,7 @@ data after 'forget' was run successfully, see the 'prune' command.
 
 .PP
 \fB\-\-keep\-within\fP=
-    keep snapshots that are older than \fB\fCduration\fR (eg. 1y5m7d) relative to the latest snapshot
+    keep snapshots that are newer than \fB\fCduration\fR (eg. 1y5m7d2h) relative to the latest snapshot
 
 .PP
 \fB\-\-keep\-tag\fP=[]
@@ -105,6 +105,10 @@ data after 'forget' was run successfully, see the 'prune' command.
     set output mode to JSON for commands that support it
 
 .PP
+\fB\-\-key\-hint\fP=""
+    key ID of key to try decrypting first (default: $RESTIC\_KEY\_HINT)
+
+.PP
 \fB\-\-limit\-download\fP=0
     limits downloads to a maximum rate in KiB/s. (default: unlimited)
 
@@ -123,6 +127,10 @@ data after 'forget' was run successfully, see the 'prune' command.
 .PP
 \fB\-o\fP, \fB\-\-option\fP=[]
     set extended option (\fB\fCkey=value\fR, can be specified multiple times)
+
+.PP
+\fB\-\-password\-command\fP=""
+    specify a shell command to obtain a password (default: $RESTIC\_PASSWORD\_COMMAND)
 
 .PP
 \fB\-p\fP, \fB\-\-password\-file\fP=""

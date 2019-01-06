@@ -69,6 +69,10 @@ For details please see the documentation for time.Format() at:
     only consider snapshots for this host
 
 .PP
+\fB\-\-no\-default\-permissions\fP[=false]
+    for 'allow\-other', ignore Unix permissions and allow users to read all snapshot files
+
+.PP
 \fB\-\-owner\-root\fP[=false]
     use 'root' as the owner of files and dirs
 
@@ -103,6 +107,10 @@ For details please see the documentation for time.Format() at:
     set output mode to JSON for commands that support it
 
 .PP
+\fB\-\-key\-hint\fP=""
+    key ID of key to try decrypting first (default: $RESTIC\_KEY\_HINT)
+
+.PP
 \fB\-\-limit\-download\fP=0
     limits downloads to a maximum rate in KiB/s. (default: unlimited)
 
@@ -121,6 +129,10 @@ For details please see the documentation for time.Format() at:
 .PP
 \fB\-o\fP, \fB\-\-option\fP=[]
     set extended option (\fB\fCkey=value\fR, can be specified multiple times)
+
+.PP
+\fB\-\-password\-command\fP=""
+    specify a shell command to obtain a password (default: $RESTIC\_PASSWORD\_COMMAND)
 
 .PP
 \fB\-p\fP, \fB\-\-password\-file\fP=""

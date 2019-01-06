@@ -5,35 +5,25 @@
 
 .SH NAME
 .PP
-restic\-cache \- Operate on local cache directories
+restic\-recover \- Recover data from the repository
 
 
 .SH SYNOPSIS
 .PP
-\fBrestic cache [flags]\fP
+\fBrestic recover [flags]\fP
 
 
 .SH DESCRIPTION
 .PP
-The "cache" command allows listing and cleaning local cache directories.
+The "recover" command build a new snapshot from all directories it can find in
+the raw data of the repository. It can be used if, for example, a snapshot has
+been removed by accident with "forget".
 
 
 .SH OPTIONS
 .PP
-\fB\-\-cleanup\fP[=false]
-    remove old cache directories
-
-.PP
 \fB\-h\fP, \fB\-\-help\fP[=false]
-    help for cache
-
-.PP
-\fB\-\-max\-age\fP=30
-    max age in \fB\fCdays\fR for cache directories to be considered old
-
-.PP
-\fB\-\-no\-size\fP[=false]
-    do not output the size of the cache directories
+    help for recover
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
