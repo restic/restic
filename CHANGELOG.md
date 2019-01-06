@@ -1,3 +1,131 @@
+Changelog for restic 0.9.4 (2019-01-06)
+=======================================
+
+The following sections list the changes in restic 0.9.4 relevant to
+restic users. The changes are ordered by importance.
+
+Summary
+-------
+
+ * Fix #1989: Google Cloud Storage: Respect bandwidth limit
+ * Fix #2040: Add host name filter shorthand flag for `stats` command
+ * Fix #2068: Correctly return error loading data
+ * Fix #2095: Consistently use local time for snapshots times
+ * Enh #1605: Concurrent restore
+ * Enh #2089: Increase granularity of the "keep within" retention policy
+ * Enh #2097: Add key hinting
+ * Enh #2017: Mount: Enforce FUSE Unix permissions with allow-other
+ * Enh #2070: Make all commands display timestamps in local time
+ * Enh #2085: Allow --files-from to be specified multiple times
+ * Enh #2094: Run command to get password
+
+Details
+-------
+
+ * Bugfix #1989: Google Cloud Storage: Respect bandwidth limit
+
+   The GCS backend did not respect the bandwidth limit configured, a previous commit
+   accidentally removed support for it.
+
+   https://github.com/restic/restic/issues/1989
+   https://github.com/restic/restic/pull/2100
+
+ * Bugfix #2040: Add host name filter shorthand flag for `stats` command
+
+   The default value for `--host` flag was set to 'H' (the shorthand version of the flag), this
+   caused the lookup for the latest snapshot to fail.
+
+   Add shorthand flag `-H` for `--host` (with empty default so if these flags are not specified the
+   latest snapshot will not filter by host name).
+
+   Also add shorthand `-H` for `backup` command.
+
+   https://github.com/restic/restic/issues/2040
+
+ * Bugfix #2068: Correctly return error loading data
+
+   In one case during `prune` and `check`, an error loading data from the backend is not returned
+   properly. This is now corrected.
+
+   https://github.com/restic/restic/issues/1999#issuecomment-433737921
+   https://github.com/restic/restic/pull/2068
+
+ * Bugfix #2095: Consistently use local time for snapshots times
+
+   By default snapshots created with restic backup were set to local time, but when the --time flag
+   was used the provided timestamp was parsed as UTC. With this change all snapshots times are set
+   to local time.
+
+   https://github.com/restic/restic/pull/2095
+
+ * Enhancement #1605: Concurrent restore
+
+   This change significantly improves restore performance, especially when using
+   high-latency remote repositories like B2.
+
+   The implementation now uses several concurrent threads to download and process multiple
+   remote files concurrently. To further reduce restore time, each remote file is downloaded
+   using a single repository request.
+
+   https://github.com/restic/restic/issues/1605
+   https://github.com/restic/restic/pull/1719
+
+ * Enhancement #2089: Increase granularity of the "keep within" retention policy
+
+   The `keep-within` option of the `forget` command now accepts time ranges with an hourly
+   granularity. For example, running `restic forget --keep-within 3d12h` will keep all the
+   snapshots made within three days and twelve hours from the time of the latest snapshot.
+
+   https://github.com/restic/restic/issues/2089
+   https://github.com/restic/restic/pull/2090
+
+ * Enhancement #2097: Add key hinting
+
+   Added a new option `--key-hint` and corresponding environment variable `RESTIC_KEY_HINT`.
+   The key hint is a key ID to try decrypting first, before other keys in the repository.
+
+   This change will benefit repositories with many keys; if the correct key hint is supplied then
+   restic only needs to check one key. If the key hint is incorrect (the key does not exist, or the
+   password is incorrect) then restic will check all keys, as usual.
+
+   https://github.com/restic/restic/issues/2097
+
+ * Enhancement #2017: Mount: Enforce FUSE Unix permissions with allow-other
+
+   The fuse mount (`restic mount`) now lets the kernel check the permissions of the files within
+   snapshots (this is done through the `DefaultPermissions` FUSE option) when the option
+   `--allow-other` is specified.
+
+   To restore the old behavior, we've added the `--no-default-permissions` option. This allows
+   all users that have access to the mount point to access all files within the snapshots.
+
+   https://github.com/restic/restic/pull/2017
+
+ * Enhancement #2070: Make all commands display timestamps in local time
+
+   Restic used to drop the timezone information from displayed timestamps, it now converts
+   timestamps to local time before printing them so the times can be easily compared to.
+
+   https://github.com/restic/restic/pull/2070
+
+ * Enhancement #2085: Allow --files-from to be specified multiple times
+
+   Before, restic took only the last file specified with `--files-from` into account, this is now
+   corrected.
+
+   https://github.com/restic/restic/issues/2085
+   https://github.com/restic/restic/pull/2086
+
+ * Enhancement #2094: Run command to get password
+
+   We've added the `--password-command` option which allows specifying a command that restic
+   runs every time the password for the repository is needed, so it can be integrated with a
+   password manager or keyring. The option can also be set via the environment variable
+   `$RESTIC_PASSWORD_COMMAND`.
+
+   https://github.com/restic/restic/pull/2094
+
+
 Changelog for restic 0.9.3 (2018-10-13)
 =======================================
 
@@ -20,6 +148,7 @@ Summary
  * Enh #1920: Vendor dependencies with Go 1.11 Modules
  * Enh #1949: Add new command `self-update`
  * Enh #1953: Ls: Add JSON output support for restic ls cmd
+ * Enh #1962: Stream JSON output for ls command
 
 Details
 -------
@@ -154,6 +283,18 @@ Details
    option to `restic ls`. This makes the output of the command machine readable.
 
    https://github.com/restic/restic/pull/1953
+
+ * Enhancement #1962: Stream JSON output for ls command
+
+   The `ls` command now supports JSON output with the global `--json` flag, and this change
+   streams out JSON messages one object at a time rather than en entire array buffered in memory
+   before encoding. The advantage is it allows large listings to be handled efficiently.
+
+   Two message types are printed: snapshots and nodes. A snapshot object will precede node
+   objects which belong to that snapshot. The `struct_type` field can be used to determine which
+   kind of message an object is.
+
+   https://github.com/restic/restic/pull/1962
 
 
 Changelog for restic 0.9.2 (2018-08-06)
