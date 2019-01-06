@@ -21,6 +21,19 @@ using a local repository; the remaining sections of this chapter cover all the
 other options. You can skip to the next chapter once you've read the relevant
 section here.
 
+For automated backups, restic accepts the repository location in the
+environment variable ``RESTIC_REPOSITORY``. For the password, several options
+exist:
+
+ * Setting the environment variable ``RESTIC_PASSWORD``
+
+ * Specifying the path to a file with the password via the option
+   ``--password-file`` or the environment variable ``RESTIC_PASSWORD_FILE``
+
+ * Configuring a program to be called when the password is needed via the
+   option ``--password-command`` or the environment variable
+   ``RESTIC_PASSWORD_COMMAND``
+
 Local
 *****
 
@@ -40,11 +53,6 @@ command and enter the same password twice:
 
    Remembering your password is important! If you lose it, you won't be
    able to access data stored in the repository.
-
-For automated backups, restic accepts the repository location in the
-environment variable ``RESTIC_REPOSITORY``. The password can be read
-from a file (via the option ``--password-file`` or the environment variable
-``RESTIC_PASSWORD_FILE``) or the environment variable ``RESTIC_PASSWORD``.
 
 SFTP
 ****

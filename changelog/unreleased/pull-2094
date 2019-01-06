@@ -1,0 +1,8 @@
+Enhancement: Run command to get password
+
+We've added the `--password-command` option which allows specifying a command
+that restic runs every time the password for the repository is needed, so it
+can be integrated with a password manager or keyring. The option can also be
+set via the environment variable `$RESTIC_PASSWORD_COMMAND`.
+
+https://github.com/restic/restic/pull/2094
