@@ -298,10 +298,10 @@ dashboard in on the "Buckets" page when signed into your B2 account:
 
 .. code-block:: console
 
-    $ export B2_ACCOUNT_ID=<MY_ACCOUNT_ID>
+    $ export B2_ACCOUNT_ID=<MY_APPLICATION_KEY_ID>
     $ export B2_ACCOUNT_KEY=<MY_SECRET_ACCOUNT_KEY>
 
-.. note:: In case you want to use Backblaze Application Keys replace <MY_ACCOUNT_ID> and <MY_SECRET_ACCOUNT_KEY> with <applicationKeyId> and <applicationKey> respectively.
+.. note:: In case you want to use Backblaze Application Keys replace <MY_APPLICATION_KEY_ID> and <MY_SECRET_ACCOUNT_KEY> with <applicationKeyId> and <applicationKey> respectively.
 
 You can then initialize a repository stored at Backblaze B2. If the
 bucket does not exist yet and the credentials you passed to restic have the
