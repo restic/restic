@@ -93,8 +93,10 @@ func rejectByInsensitivePattern(patterns []string) RejectByNameFunc {
 	for index, path := range patterns {
 		patterns[index] = strings.ToLower(path)
 	}
+
+	rejFunc := rejectByPattern(patterns)
 	return func(item string) bool {
-		return rejectByPattern(patterns)(strings.ToLower(item))
+		return rejFunc(strings.ToLower(item))
 	}
 }
 
