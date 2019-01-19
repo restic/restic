@@ -6,6 +6,7 @@ import (
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/restorer"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -61,6 +62,14 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 	ctx := gopts.ctx
 	hasExcludes := len(opts.Exclude) > 0 || len(opts.InsensitiveExclude) > 0
 	hasIncludes := len(opts.Include) > 0 || len(opts.InsensitiveInclude) > 0
+
+	for i, str := range opts.InsensitiveExclude {
+		opts.InsensitiveExclude[i] = strings.ToLower(str)
+	}
+
+	for i, str := range opts.InsensitiveInclude {
+		opts.InsensitiveInclude[i] = strings.ToLower(str)
+	}
 
 	switch {
 	case len(args) == 0:
@@ -131,7 +140,7 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 			Warnf("error for exclude pattern: %v", err)
 		}
 
-		matchedInsensitive, _, err := filter.InsensitiveList(opts.InsensitiveExclude, item)
+		matchedInsensitive, _, err := filter.List(opts.InsensitiveExclude, strings.ToLower(item))
 		if err != nil {
 			Warnf("error for iexclude pattern: %v", err)
 		}
@@ -152,7 +161,7 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 			Warnf("error for include pattern: %v", err)
 		}
 
-		matchedInsensitive, childMayMatchInsensitive, err := filter.InsensitiveList(opts.InsensitiveInclude, item)
+		matchedInsensitive, childMayMatchInsensitive, err := filter.List(opts.InsensitiveInclude, strings.ToLower(item))
 		if err != nil {
 			Warnf("error for iexclude pattern: %v", err)
 		}

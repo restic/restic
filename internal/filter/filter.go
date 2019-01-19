@@ -187,12 +187,3 @@ func List(patterns []string, str string) (matched bool, childMayMatch bool, err 
 
 	return matched, childMayMatch, nil
 }
-
-// InsensitiveList is the same as List but case insensitive.
-func InsensitiveList(patterns []string, str string) (matched bool, childMayMatch bool, err error) {
-	str = strings.ToLower(str)
-	for index, path := range patterns {
-		patterns[index] = strings.ToLower(path)
-	}
-	return List(patterns, str)
-}

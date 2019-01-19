@@ -279,33 +279,6 @@ func ExampleList() {
 	// match: true
 }
 
-var filterInsensitiveListTests = []struct {
-	patterns []string
-	path     string
-	match    bool
-}{
-	{[]string{"*.go"}, "/foo/bar/test.go", true},
-	{[]string{"test.go"}, "/foo/bar/test.go", true},
-	{[]string{"test.go"}, "/foo/bar/TEST.go", true},
-	{[]string{"BAR"}, "/foo/BAR/TEST.go", true},
-}
-
-func TestInsensitiveList(t *testing.T) {
-	for i, test := range filterInsensitiveListTests {
-		match, _, err := filter.InsensitiveList(test.patterns, test.path)
-		if err != nil {
-			t.Errorf("test %d failed: expected no error for patterns %q, but error returned: %v",
-				i, test.patterns, err)
-			continue
-		}
-
-		if match != test.match {
-			t.Errorf("test %d: filter.InsensitiveList(%q, %q): expected %v, got %v",
-				i, test.patterns, test.path, test.match, match)
-		}
-	}
-}
-
 func extractTestLines(t testing.TB) (lines []string) {
 	f, err := os.Open("testdata/libreoffice.txt.bz2")
 	if err != nil {
