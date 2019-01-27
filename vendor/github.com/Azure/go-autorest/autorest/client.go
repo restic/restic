@@ -26,7 +26,7 @@ import (
 	"time"
 
 	"github.com/Azure/go-autorest/logger"
-	"github.com/Azure/go-autorest/version"
+	"github.com/Azure/go-autorest/tracing"
 )
 
 const (
@@ -147,6 +147,7 @@ type Client struct {
 	PollingDelay time.Duration
 
 	// PollingDuration sets the maximum polling time after which an error is returned.
+	// Setting this to zero will use the provided context to control the duration.
 	PollingDuration time.Duration
 
 	// RetryAttempts sets the default number of retry attempts for client.
@@ -173,7 +174,7 @@ func NewClientWithUserAgent(ua string) Client {
 		PollingDuration: DefaultPollingDuration,
 		RetryAttempts:   DefaultRetryAttempts,
 		RetryDuration:   DefaultRetryDuration,
-		UserAgent:       version.UserAgent(),
+		UserAgent:       UserAgent(),
 	}
 	c.Sender = c.sender()
 	c.AddToUserAgent(ua)
@@ -229,8 +230,10 @@ func (c Client) Do(r *http.Request) (*http.Response, error) {
 func (c Client) sender() Sender {
 	if c.Sender == nil {
 		j, _ := cookiejar.New(nil)
-		return &http.Client{Jar: j}
+		client := &http.Client{Jar: j, Transport: tracing.Transport}
+		return client
 	}
+
 	return c.Sender
 }
 

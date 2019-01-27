@@ -1,4 +1,4 @@
-// Copyright 2016, Google
+// Copyright 2016, the Blazer authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -577,139 +577,6 @@ func (o *Object) Delete(ctx context.Context) error {
 	return o.f.deleteFileVersion(ctx)
 }
 
-// Cursor is passed to ListObjects to return subsequent pages.
-//
-// DEPRECATED.  Will be removed in a future release.
-type Cursor struct {
-	// Prefix limits the listed objects to those that begin with this string.
-	Prefix string
-
-	// Delimiter denotes the path separator.  If set, object listings will be
-	// truncated at this character.
-	//
-	// For example, if the bucket contains objects foo/bar, foo/baz, and foo,
-	// then a delimiter of "/" will cause the listing to return "foo" and "foo/".
-	// Otherwise, the listing would have returned all object names.
-	//
-	// Note that objects returned that end in the delimiter may not be actual
-	// objects, e.g. you cannot read from (or write to, or delete) an object "foo/",
-	// both because no actual object exists and because B2 disallows object names
-	// that end with "/".  If you want to ensure that all objects returned by
-	// ListObjects and ListCurrentObjects are actual objects, leave this unset.
-	Delimiter string
-
-	name string
-	id   string
-}
-
-// ListObjects returns all objects in the bucket, including multiple versions
-// of the same object.  Cursor may be nil; when passed to a subsequent query,
-// it will continue the listing.
-//
-// ListObjects will return io.EOF when there are no objects left in the bucket,
-// however it may do so concurrently with the last objects.
-//
-// DEPRECATED.  Will be removed in a future release.
-func (b *Bucket) ListObjects(ctx context.Context, count int, c *Cursor) ([]*Object, *Cursor, error) {
-	if c == nil {
-		c = &Cursor{}
-	}
-	fs, name, id, err := b.b.listFileVersions(ctx, count, c.name, c.id, c.Prefix, c.Delimiter)
-	if err != nil {
-		return nil, nil, err
-	}
-	var next *Cursor
-	if name != "" && id != "" {
-		next = &Cursor{
-			Prefix:    c.Prefix,
-			Delimiter: c.Delimiter,
-			name:      name,
-			id:        id,
-		}
-	}
-	var objects []*Object
-	for _, f := range fs {
-		objects = append(objects, &Object{
-			name: f.name(),
-			f:    f,
-			b:    b,
-		})
-	}
-	var rtnErr error
-	if len(objects) == 0 || next == nil {
-		rtnErr = io.EOF
-	}
-	return objects, next, rtnErr
-}
-
-// ListCurrentObjects is similar to ListObjects, except that it returns only
-// current, unhidden objects in the bucket.
-//
-// DEPRECATED.  Will be removed in a future release.
-func (b *Bucket) ListCurrentObjects(ctx context.Context, count int, c *Cursor) ([]*Object, *Cursor, error) {
-	if c == nil {
-		c = &Cursor{}
-	}
-	fs, name, err := b.b.listFileNames(ctx, count, c.name, c.Prefix, c.Delimiter)
-	if err != nil {
-		return nil, nil, err
-	}
-	var next *Cursor
-	if name != "" {
-		next = &Cursor{
-			Prefix:    c.Prefix,
-			Delimiter: c.Delimiter,
-			name:      name,
-		}
-	}
-	var objects []*Object
-	for _, f := range fs {
-		objects = append(objects, &Object{
-			name: f.name(),
-			f:    f,
-			b:    b,
-		})
-	}
-	var rtnErr error
-	if len(objects) == 0 || next == nil {
-		rtnErr = io.EOF
-	}
-	return objects, next, rtnErr
-}
-
-// ListUnfinishedLargeFiles lists any objects that correspond to large file uploads that haven't been completed.
-// This can happen for example when an upload is interrupted.
-//
-// DEPRECATED.  Will be removed in a future release.
-func (b *Bucket) ListUnfinishedLargeFiles(ctx context.Context, count int, c *Cursor) ([]*Object, *Cursor, error) {
-	if c == nil {
-		c = &Cursor{}
-	}
-	fs, name, err := b.b.listUnfinishedLargeFiles(ctx, count, c.name)
-	if err != nil {
-		return nil, nil, err
-	}
-	var next *Cursor
-	if name != "" {
-		next = &Cursor{
-			name: name,
-		}
-	}
-	var objects []*Object
-	for _, f := range fs {
-		objects = append(objects, &Object{
-			name: f.name(),
-			f:    f,
-			b:    b,
-		})
-	}
-	var rtnErr error
-	if len(objects) == 0 || next == nil {
-		rtnErr = io.EOF
-	}
-	return objects, next, rtnErr
-}
-
 // Hide hides the object from name-based listing.
 func (o *Object) Hide(ctx context.Context) error {
 	if err := o.ensure(ctx); err != nil {
@@ -722,21 +589,20 @@ func (o *Object) Hide(ctx context.Context) error {
 // Reveal unhides (if hidden) the named object.  If there are multiple objects
 // of a given name, it will reveal the most recent.
 func (b *Bucket) Reveal(ctx context.Context, name string) error {
-	cur := &Cursor{
-		name: name,
+	iter := b.List(ctx, ListPrefix(name), ListHidden())
+	for iter.Next() {
+		obj := iter.Object()
+		if obj.Name() == name {
+			if obj.f.status() == "hide" {
+				return obj.Delete(ctx)
+			}
+			return nil
+		}
+		if obj.Name() > name {
+			break
+		}
 	}
-	objs, _, err := b.ListObjects(ctx, 1, cur)
-	if err != nil && err != io.EOF {
-		return err
-	}
-	if len(objs) < 1 || objs[0].name != name {
-		return b2err{err: fmt.Errorf("%s: not found", name), notFoundErr: true}
-	}
-	obj := objs[0]
-	if obj.f.status() != "hide" {
-		return nil
-	}
-	return obj.Delete(ctx)
+	return b2err{err: fmt.Errorf("%s: not found", name), notFoundErr: true}
 }
 
 // I don't want to import all of ioutil for this.

@@ -3,6 +3,7 @@
 package xattr
 
 import (
+	"os"
 	"syscall"
 	"unsafe"
 )
@@ -22,6 +23,10 @@ func getxattr(path string, name string, data []byte) (int, error) {
 
 func lgetxattr(path string, name string, data []byte) (int, error) {
 	return sysGet(syscall.SYS_EXTATTR_GET_LINK, path, name, data)
+}
+
+func fgetxattr(f *os.File, name string, data []byte) (int, error) {
+	return getxattr(f.Name(), name, data)
 }
 
 // sysGet is called by getxattr and lgetxattr with the appropriate syscall
@@ -59,6 +64,10 @@ func setxattr(path string, name string, data []byte, flags int) error {
 
 func lsetxattr(path string, name string, data []byte, flags int) error {
 	return sysSet(syscall.SYS_EXTATTR_SET_LINK, path, name, data)
+}
+
+func fsetxattr(f *os.File, name string, data []byte, flags int) error {
+	return setxattr(f.Name(), name, data, flags)
 }
 
 // sysSet is called by setxattr and lsetxattr with the appropriate syscall
@@ -103,6 +112,10 @@ func lremovexattr(path string, name string) error {
 	return sysRemove(syscall.SYS_EXTATTR_DELETE_LINK, path, name)
 }
 
+func fremovexattr(f *os.File, name string) error {
+	return removexattr(f.Name(), name)
+}
+
 // sysSet is called by removexattr and lremovexattr with the appropriate syscall
 // number. This works because syscalls have the same signature and return
 // values.
@@ -135,6 +148,10 @@ func listxattr(path string, data []byte) (int, error) {
 
 func llistxattr(path string, data []byte) (int, error) {
 	return sysList(syscall.SYS_EXTATTR_LIST_LINK, path, data)
+}
+
+func flistxattr(f *os.File, data []byte) (int, error) {
+	return listxattr(f.Name(), data)
 }
 
 // sysSet is called by listxattr and llistxattr with the appropriate syscall

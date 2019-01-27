@@ -11,4 +11,4 @@ GOOS=freebsd go build
 
 echo "Running tests..."
 go vet
-go test -v -race  -covermode=atomic
+go test -v -race -coverprofile=coverage.txt -covermode=atomic

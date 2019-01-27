@@ -1,4 +1,4 @@
-// Copyright 2018, Google
+// Copyright 2018, the Blazer authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ type ObjectIterator struct {
 	final  bool
 	err    error
 	idx    int
-	c      *Cursor
+	c      *cursor
 	opts   objectIteratorOptions
 	objs   []*Object
 	init   sync.Once
@@ -58,7 +58,7 @@ type ObjectIterator struct {
 	count  int
 }
 
-type lister func(context.Context, int, *Cursor) ([]*Object, *Cursor, error)
+type lister func(context.Context, int, *cursor) ([]*Object, *cursor, error)
 
 func (o *ObjectIterator) page(ctx context.Context) error {
 	if o.opts.locker != nil {
@@ -96,18 +96,18 @@ func (o *ObjectIterator) Next() bool {
 		}
 		switch {
 		case o.opts.unfinished:
-			o.l = o.bucket.ListUnfinishedLargeFiles
+			o.l = o.bucket.listUnfinishedLargeFiles
 			if o.count > 100 {
 				o.count = 100
 			}
 		case o.opts.hidden:
-			o.l = o.bucket.ListObjects
+			o.l = o.bucket.listObjects
 		default:
-			o.l = o.bucket.ListCurrentObjects
+			o.l = o.bucket.listCurrentObjects
 		}
-		o.c = &Cursor{
-			Prefix:    o.opts.prefix,
-			Delimiter: o.opts.delimiter,
+		o.c = &cursor{
+			prefix:    o.opts.prefix,
+			delimiter: o.opts.delimiter,
 		}
 	})
 	if o.err != nil {
@@ -214,4 +214,118 @@ func ListLocker(l sync.Locker) ListOption {
 	return func(o *objectIteratorOptions) {
 		o.locker = l
 	}
+}
+
+type cursor struct {
+	// Prefix limits the listed objects to those that begin with this string.
+	prefix string
+
+	// Delimiter denotes the path separator.  If set, object listings will be
+	// truncated at this character.
+	//
+	// For example, if the bucket contains objects foo/bar, foo/baz, and foo,
+	// then a delimiter of "/" will cause the listing to return "foo" and "foo/".
+	// Otherwise, the listing would have returned all object names.
+	//
+	// Note that objects returned that end in the delimiter may not be actual
+	// objects, e.g. you cannot read from (or write to, or delete) an object "foo/",
+	// both because no actual object exists and because B2 disallows object names
+	// that end with "/".  If you want to ensure that all objects returned by
+	// ListObjects and ListCurrentObjects are actual objects, leave this unset.
+	delimiter string
+
+	name string
+	id   string
+}
+
+func (b *Bucket) listObjects(ctx context.Context, count int, c *cursor) ([]*Object, *cursor, error) {
+	if c == nil {
+		c = &cursor{}
+	}
+	fs, name, id, err := b.b.listFileVersions(ctx, count, c.name, c.id, c.prefix, c.delimiter)
+	if err != nil {
+		return nil, nil, err
+	}
+	var next *cursor
+	if name != "" && id != "" {
+		next = &cursor{
+			prefix:    c.prefix,
+			delimiter: c.delimiter,
+			name:      name,
+			id:        id,
+		}
+	}
+	var objects []*Object
+	for _, f := range fs {
+		objects = append(objects, &Object{
+			name: f.name(),
+			f:    f,
+			b:    b,
+		})
+	}
+	var rtnErr error
+	if len(objects) == 0 || next == nil {
+		rtnErr = io.EOF
+	}
+	return objects, next, rtnErr
+}
+
+func (b *Bucket) listCurrentObjects(ctx context.Context, count int, c *cursor) ([]*Object, *cursor, error) {
+	if c == nil {
+		c = &cursor{}
+	}
+	fs, name, err := b.b.listFileNames(ctx, count, c.name, c.prefix, c.delimiter)
+	if err != nil {
+		return nil, nil, err
+	}
+	var next *cursor
+	if name != "" {
+		next = &cursor{
+			prefix:    c.prefix,
+			delimiter: c.delimiter,
+			name:      name,
+		}
+	}
+	var objects []*Object
+	for _, f := range fs {
+		objects = append(objects, &Object{
+			name: f.name(),
+			f:    f,
+			b:    b,
+		})
+	}
+	var rtnErr error
+	if len(objects) == 0 || next == nil {
+		rtnErr = io.EOF
+	}
+	return objects, next, rtnErr
+}
+
+func (b *Bucket) listUnfinishedLargeFiles(ctx context.Context, count int, c *cursor) ([]*Object, *cursor, error) {
+	if c == nil {
+		c = &cursor{}
+	}
+	fs, name, err := b.b.listUnfinishedLargeFiles(ctx, count, c.name)
+	if err != nil {
+		return nil, nil, err
+	}
+	var next *cursor
+	if name != "" {
+		next = &cursor{
+			name: name,
+		}
+	}
+	var objects []*Object
+	for _, f := range fs {
+		objects = append(objects, &Object{
+			name: f.name(),
+			f:    f,
+			b:    b,
+		})
+	}
+	var rtnErr error
+	if len(objects) == 0 || next == nil {
+		rtnErr = io.EOF
+	}
+	return objects, next, rtnErr
 }

@@ -24,7 +24,7 @@ See https://godoc.org/github.com/cenkalti/backoff#pkg-examples
 [coveralls]: https://coveralls.io/github/cenkalti/backoff?branch=master
 [coveralls image]: https://coveralls.io/repos/github/cenkalti/backoff/badge.svg?branch=master
 
-[google-http-java-client]: https://github.com/google/google-http-java-client
+[google-http-java-client]: https://github.com/google/google-http-java-client/blob/da1aa993e90285ec18579f1553339b00e19b3ab5/google-http-client/src/main/java/com/google/api/client/util/ExponentialBackOff.java
 [exponential backoff wiki]: http://en.wikipedia.org/wiki/Exponential_backoff
 
 [advanced example]: https://godoc.org/github.com/cenkalti/backoff#example_
