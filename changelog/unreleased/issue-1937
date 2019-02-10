@@ -1,0 +1,8 @@
+Enhancement: Support streaming JSON output for backup
+
+We've added support for getting machine-readable status output during backup,
+just pass the flag `--json` for `restic backup` and restic will output a stream
+of JSON objects which contain the current progress.
+
+https://github.com/restic/restic/issues/1937
+https://github.com/restic/restic/pull/1944
