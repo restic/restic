@@ -302,7 +302,7 @@ Backblaze B2
 
 Restic can backup data to any Backblaze B2 bucket. You need to first setup the
 following environment variables with the credentials you can find in the
-dashboard in on the "Buckets" page when signed into your B2 account:
+dashboard on the "Buckets" page when signed into your B2 account:
 
 .. code-block:: console
 
