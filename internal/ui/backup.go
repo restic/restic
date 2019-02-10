@@ -254,9 +254,9 @@ func formatBytes(c uint64) string {
 	}
 }
 
-// CompleteItemFn is the status callback function for the archiver when a
+// CompleteItem is the status callback function for the archiver when a
 // file/dir has been saved successfully.
-func (b *Backup) CompleteItemFn(item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration) {
+func (b *Backup) CompleteItem(item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration) {
 	b.summary.Lock()
 	b.summary.ItemStats.Add(s)
 	b.summary.Unlock()
@@ -349,7 +349,7 @@ func (b *Backup) ReportTotal(item string, s archiver.ScanStats) {
 }
 
 // Finish prints the finishing messages.
-func (b *Backup) Finish() {
+func (b *Backup) Finish(snapshotID restic.ID) {
 	close(b.finished)
 
 	b.P("\n")
@@ -364,4 +364,10 @@ func (b *Backup) Finish() {
 		formatBytes(b.totalBytes),
 		formatDuration(time.Since(b.start)),
 	)
+}
+
+// SetMinUpdatePause sets b.MinUpdatePause. It satisfies the
+// ArchiveProgressReporter interface.
+func (b *Backup) SetMinUpdatePause(d time.Duration) {
+	b.MinUpdatePause = d
 }
