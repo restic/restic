@@ -6,6 +6,7 @@ import (
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/restorer"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -28,13 +29,15 @@ repository.
 
 // RestoreOptions collects all options for the restore command.
 type RestoreOptions struct {
-	Exclude []string
-	Include []string
-	Target  string
-	Host    string
-	Paths   []string
-	Tags    restic.TagLists
-	Verify  bool
+	Exclude            []string
+	InsensitiveExclude []string
+	Include            []string
+	InsensitiveInclude []string
+	Target             string
+	Host               string
+	Paths              []string
+	Tags               restic.TagLists
+	Verify             bool
 }
 
 var restoreOptions RestoreOptions
@@ -44,7 +47,9 @@ func init() {
 
 	flags := cmdRestore.Flags()
 	flags.StringArrayVarP(&restoreOptions.Exclude, "exclude", "e", nil, "exclude a `pattern` (can be specified multiple times)")
+	flags.StringArrayVar(&restoreOptions.InsensitiveExclude, "iexclude", nil, "same as `--exclude` but ignores the casing of filenames")
 	flags.StringArrayVarP(&restoreOptions.Include, "include", "i", nil, "include a `pattern`, exclude everything else (can be specified multiple times)")
+	flags.StringArrayVar(&restoreOptions.InsensitiveInclude, "iinclude", nil, "same as `--include` but ignores the casing of filenames")
 	flags.StringVarP(&restoreOptions.Target, "target", "t", "", "directory to extract data to")
 
 	flags.StringVarP(&restoreOptions.Host, "host", "H", "", `only consider snapshots for this host when the snapshot ID is "latest"`)
@@ -55,6 +60,16 @@ func init() {
 
 func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 	ctx := gopts.ctx
+	hasExcludes := len(opts.Exclude) > 0 || len(opts.InsensitiveExclude) > 0
+	hasIncludes := len(opts.Include) > 0 || len(opts.InsensitiveInclude) > 0
+
+	for i, str := range opts.InsensitiveExclude {
+		opts.InsensitiveExclude[i] = strings.ToLower(str)
+	}
+
+	for i, str := range opts.InsensitiveInclude {
+		opts.InsensitiveInclude[i] = strings.ToLower(str)
+	}
 
 	switch {
 	case len(args) == 0:
@@ -67,7 +82,7 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 		return errors.Fatal("please specify a directory to restore to (--target)")
 	}
 
-	if len(opts.Exclude) > 0 && len(opts.Include) > 0 {
+	if hasExcludes && hasIncludes {
 		return errors.Fatal("exclude and include patterns are mutually exclusive")
 	}
 
@@ -125,11 +140,16 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 			Warnf("error for exclude pattern: %v", err)
 		}
 
+		matchedInsensitive, _, err := filter.List(opts.InsensitiveExclude, strings.ToLower(item))
+		if err != nil {
+			Warnf("error for iexclude pattern: %v", err)
+		}
+
 		// An exclude filter is basically a 'wildcard but foo',
 		// so even if a childMayMatch, other children of a dir may not,
 		// therefore childMayMatch does not matter, but we should not go down
 		// unless the dir is selected for restore
-		selectedForRestore = !matched
+		selectedForRestore = !matched && !matchedInsensitive
 		childMayBeSelected = selectedForRestore && node.Type == "dir"
 
 		return selectedForRestore, childMayBeSelected
@@ -141,15 +161,20 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 			Warnf("error for include pattern: %v", err)
 		}
 
-		selectedForRestore = matched
-		childMayBeSelected = childMayMatch && node.Type == "dir"
+		matchedInsensitive, childMayMatchInsensitive, err := filter.List(opts.InsensitiveInclude, strings.ToLower(item))
+		if err != nil {
+			Warnf("error for iexclude pattern: %v", err)
+		}
+
+		selectedForRestore = matched || matchedInsensitive
+		childMayBeSelected = (childMayMatch || childMayMatchInsensitive) && node.Type == "dir"
 
 		return selectedForRestore, childMayBeSelected
 	}
 
-	if len(opts.Exclude) > 0 {
+	if hasExcludes {
 		res.SelectFilter = selectExcludeFilter
-	} else if len(opts.Include) > 0 {
+	} else if hasIncludes {
 		res.SelectFilter = selectIncludeFilter
 	}
 

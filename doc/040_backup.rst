@@ -139,6 +139,7 @@ You can exclude folders and files by specifying exclude patterns, currently
 the exclude options are:
 
 -  ``--exclude`` Specified one or more times to exclude one or more items
+-  ``--iexclude`` Same as ``--exclude`` but ignores the case of paths
 -  ``--exclude-caches`` Specified once to exclude folders containing a special file
 -  ``--exclude-file`` Specified one or more times to exclude items listed in a given file
 -  ``--exclude-if-present`` Specified one or more times to exclude a folders content
