@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -314,6 +315,69 @@ func TestFSReader(t *testing.T) {
 
 		t.Run(test.name, func(t *testing.T) {
 			test.f(t, fs)
+		})
+	}
+}
+
+func TestFSReaderMinFileSize(t *testing.T) {
+	var tests = []struct {
+		name        string
+		data        string
+		allowEmpty  bool
+		readMustErr bool
+	}{
+		{
+			name: "regular",
+			data: "foobar",
+		},
+		{
+			name:        "empty",
+			data:        "",
+			allowEmpty:  false,
+			readMustErr: true,
+		},
+		{
+			name:        "empty2",
+			data:        "",
+			allowEmpty:  true,
+			readMustErr: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			fs := &Reader{
+				Name:           "testfile",
+				ReadCloser:     ioutil.NopCloser(strings.NewReader(test.data)),
+				Mode:           0644,
+				ModTime:        time.Now(),
+				AllowEmptyFile: test.allowEmpty,
+			}
+
+			f, err := fs.Open("testfile")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			buf, err := ioutil.ReadAll(f)
+			if test.readMustErr {
+				if err == nil {
+					t.Fatal("expected error not found, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			if string(buf) != test.data {
+				t.Fatalf("wrong data returned, want %q, got %q", test.data, string(buf))
+			}
+
+			err = f.Close()
+			if err != nil {
+				t.Fatal(err)
+			}
 		})
 	}
 }

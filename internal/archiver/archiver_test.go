@@ -160,7 +160,6 @@ func TestArchiverSaveFileReaderFS(t *testing.T) {
 	var tests = []struct {
 		Data string
 	}{
-		{Data: ""},
 		{Data: "foo"},
 		{Data: string(restictest.Random(23, 12*1024*1024+1287898))},
 	}
@@ -271,7 +270,6 @@ func TestArchiverSaveReaderFS(t *testing.T) {
 	var tests = []struct {
 		Data string
 	}{
-		{Data: ""},
 		{Data: "foo"},
 		{Data: string(restictest.Random(23, 12*1024*1024+1287898))},
 	}

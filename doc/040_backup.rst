@@ -289,6 +289,7 @@ this mode of operation, just supply the option ``--stdin`` to the
 
 .. code-block:: console
 
+    $ set -o pipefail
     $ mysqldump [...] | restic -r /srv/restic-repo backup --stdin
 
 This creates a new snapshot of the output of ``mysqldump``. You can then
@@ -301,6 +302,13 @@ specified with ``--stdin-filename``, e.g. like this:
 .. code-block:: console
 
     $ mysqldump [...] | restic -r /srv/restic-repo backup --stdin --stdin-filename production.sql
+
+The option ``pipefail`` is highly recommended so that a non-zero exit code from
+one of the programs in the pipe (e.g. ``mysqldump`` here) makes the whole chain
+return a non-zero exit code. Refer to the `Use the Unofficial Bash Strict Mode
+<http://redsymbol.net/articles/unofficial-bash-strict-mode/>`__ for more
+details on this.
+
 
 Tags for backup
 ***************
