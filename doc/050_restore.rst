@@ -69,7 +69,7 @@ command to serve the repository with FUSE:
     $ restic -r /srv/restic-repo mount /mnt/restic
     enter password for repository:
     Now serving /srv/restic-repo at /mnt/restic
-    Don't forget to umount after quitting!
+    When finished, quit with Ctrl-c or umount the mountpoint.
 
 Mounting repositories via FUSE is not possible on OpenBSD, Solaris/illumos
 and Windows. For Linux, the ``fuse`` kernel module needs to be loaded. For

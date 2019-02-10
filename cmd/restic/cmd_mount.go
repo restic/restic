@@ -149,7 +149,7 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 	}
 
 	Printf("Now serving the repository at %s\n", mountpoint)
-	Printf("Don't forget to umount after quitting!\n")
+	Printf("When finished, quit with Ctrl-c or umount the mountpoint.\n")
 
 	debug.Log("serving mount at %v", mountpoint)
 	err = fs.Serve(c, root)
