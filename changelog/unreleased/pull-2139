@@ -1,0 +1,8 @@
+Enhancement: Return error if no bytes could be read for `backup --stdin`
+
+When restic is used to backup the output of a program, like `mysqldump | restic
+backup --stdin`, it now returns an error if no bytes could be read at all. This
+catches the failure case when `mysqldump` failed for some reason and did not
+output any data to stdout.
+
+https://github.com/restic/restic/pull/2139
