@@ -1,4 +1,4 @@
-// Copyright 2018, Google
+// Copyright 2018, the Blazer authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -132,7 +132,11 @@ func (c *Client) ListKeys(ctx context.Context, count int, cursor string) ([]*Key
 			k: k,
 		})
 	}
-	return keys, next, nil
+	var rerr error
+	if next == "" {
+		rerr = io.EOF
+	}
+	return keys, next, rerr
 }
 
 // CreateKey creates a scoped application key that is valid only for this bucket.

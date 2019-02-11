@@ -5,10 +5,11 @@ similar to the environment strings associated with a process.
 An attribute may be defined or undefined. If it is defined, its value may be empty or non-empty.
 More details you can find here: https://en.wikipedia.org/wiki/Extended_file_attributes .
 
-All functions are provided in pairs: Get/LGet, Set/LSet etc. The "L"
-variant will not follow a symlink at the end of the path.
+All functions are provided in triples: Get/LGet/FGet, Set/LSet/FSet etc. The "L"
+variant will not follow a symlink at the end of the path, and "F" variant accepts
+a file descriptor instead of a path.
 
-Example assuming path is "/symlink1/symlink2", where both components are
+Example for "L" variant, assuming path is "/symlink1/symlink2", where both components are
 symlinks:
 Get will follow "symlink1" and "symlink2" and operate on the target of
 "symlink2". LGet will follow "symlink1" but operate directly on "symlink2".
@@ -16,6 +17,7 @@ Get will follow "symlink1" and "symlink2" and operate on the target of
 package xattr
 
 import (
+	"os"
 	"syscall"
 )
 
@@ -34,15 +36,26 @@ func (e *Error) Error() string {
 // Get retrieves extended attribute data associated with path. It will follow
 // all symlinks along the path.
 func Get(path, name string) ([]byte, error) {
-	return get(path, name, getxattr)
+	return get(path, name, func(name string, data []byte) (int, error) {
+		return getxattr(path, name, data)
+	})
 }
 
 // LGet is like Get but does not follow a symlink at the end of the path.
 func LGet(path, name string) ([]byte, error) {
-	return get(path, name, lgetxattr)
+	return get(path, name, func(name string, data []byte) (int, error) {
+		return lgetxattr(path, name, data)
+	})
 }
 
-type getxattrFunc func(path string, name string, data []byte) (int, error)
+// FGet is like Get but accepts a os.File instead of a file path.
+func FGet(f *os.File, name string) ([]byte, error) {
+	return get(f.Name(), name, func(name string, data []byte) (int, error) {
+		return fgetxattr(f, name, data)
+	})
+}
+
+type getxattrFunc func(name string, data []byte) (int, error)
 
 // get contains the buffer allocation logic used by both Get and LGet.
 func get(path string, name string, getxattrFunc getxattrFunc) ([]byte, error) {
@@ -62,7 +75,7 @@ func get(path string, name string, getxattrFunc getxattrFunc) ([]byte, error) {
 	size := initialBufSize
 	for {
 		data := make([]byte, size)
-		read, err := getxattrFunc(path, name, data)
+		read, err := getxattrFunc(name, data)
 
 		// If the buffer was too small to fit the value, Linux and MacOS react
 		// differently:
@@ -105,6 +118,14 @@ func LSet(path, name string, data []byte) error {
 	return nil
 }
 
+// FSet is like Set but accepts a os.File instead of a file path.
+func FSet(f *os.File, name string, data []byte) error {
+	if err := fsetxattr(f, name, data, 0); err != nil {
+		return &Error{"xattr.FSet", f.Name(), name, err}
+	}
+	return nil
+}
+
 // SetWithFlags associates name and data together as an attribute of path.
 // Forwards the flags parameter to the syscall layer.
 func SetWithFlags(path, name string, data []byte, flags int) error {
@@ -119,6 +140,14 @@ func SetWithFlags(path, name string, data []byte, flags int) error {
 func LSetWithFlags(path, name string, data []byte, flags int) error {
 	if err := lsetxattr(path, name, data, flags); err != nil {
 		return &Error{"xattr.LSetWithFlags", path, name, err}
+	}
+	return nil
+}
+
+// FSetWithFlags is like SetWithFlags but accepts a os.File instead of a file path.
+func FSetWithFlags(f *os.File, name string, data []byte, flags int) error {
+	if err := fsetxattr(f, name, data, flags); err != nil {
+		return &Error{"xattr.FSetWithFlags", f.Name(), name, err}
 	}
 	return nil
 }
@@ -140,25 +169,44 @@ func LRemove(path, name string) error {
 	return nil
 }
 
+// FRemove is like Remove but accepts a os.File instead of a file path.
+func FRemove(f *os.File, name string) error {
+	if err := fremovexattr(f, name); err != nil {
+		return &Error{"xattr.FRemove", f.Name(), name, err}
+	}
+	return nil
+}
+
 // List retrieves a list of names of extended attributes associated
 // with the given path in the file system.
 func List(path string) ([]string, error) {
-	return list(path, listxattr)
+	return list(path, func(data []byte) (int, error) {
+		return listxattr(path, data)
+	})
 }
 
 // LList is like List but does not follow a symlink at the end of the
 // path.
 func LList(path string) ([]string, error) {
-	return list(path, llistxattr)
+	return list(path, func(data []byte) (int, error) {
+		return llistxattr(path, data)
+	})
 }
 
-type listxattrFunc func(path string, data []byte) (int, error)
+// FList is like List but accepts a os.File instead of a file path.
+func FList(f *os.File) ([]string, error) {
+	return list(f.Name(), func(data []byte) (int, error) {
+		return flistxattr(f, data)
+	})
+}
+
+type listxattrFunc func(data []byte) (int, error)
 
 // list contains the buffer allocation logic used by both List and LList.
 func list(path string, listxattrFunc listxattrFunc) ([]string, error) {
 	myname := "xattr.list"
 	// find size.
-	size, err := listxattrFunc(path, nil)
+	size, err := listxattrFunc(nil)
 	if err != nil {
 		return nil, &Error{myname, path, "", err}
 	}
@@ -167,7 +215,7 @@ func list(path string, listxattrFunc listxattrFunc) ([]string, error) {
 		// from a SMB1 mount point (https://github.com/pkg/xattr/issues/16).
 		buf := make([]byte, size+1)
 		// Read into buffer of that size.
-		read, err := listxattrFunc(path, buf)
+		read, err := listxattrFunc(buf)
 		if err != nil {
 			return nil, &Error{myname, path, "", err}
 		}

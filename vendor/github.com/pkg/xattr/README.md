@@ -2,6 +2,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/pkg/xattr)](https://goreportcard.com/report/github.com/pkg/xattr)
 [![Build Status](https://travis-ci.org/pkg/xattr.svg?branch=master)](https://travis-ci.org/pkg/xattr)
 [![Version](https://badge.fury.io/gh/pkg%2Fxattr.svg)](https://github.com/pkg/xattr/releases)
+[![Codecov](https://codecov.io/gh/pkg/xattr/branch/master/graph/badge.svg)](https://codecov.io/gh/pkg/xattr)
 
 xattr
 =====
@@ -23,12 +24,12 @@ do not reference a symlink that appears at the end of a path. See
   if err := xattr.Set(path, prefix+"test", []byte("test-attr-value")); err != nil {
   	log.Fatal(err)
   }
- 
+
   var list []string
   if list, err = xattr.List(path); err != nil {
   	log.Fatal(err)
   }
-  
+
   var data []byte
   if data, err = xattr.Get(path, prefix+"test"); err != nil {
   	log.Fatal(err)

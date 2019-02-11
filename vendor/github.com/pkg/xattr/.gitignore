@@ -18,6 +18,9 @@ _cgo_defun.c
 _cgo_gotypes.go
 _cgo_export.*
 
+# Dependencies
+go.sum
+
 _testmain.go
 
 *.exe

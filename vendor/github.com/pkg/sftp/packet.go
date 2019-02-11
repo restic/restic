@@ -125,15 +125,14 @@ func sendPacket(w io.Writer, m encoding.BinaryMarshaler) error {
 	} else if debugDumpTxPacket {
 		debug("send packet: %s %d bytes", fxp(bb[0]), len(bb))
 	}
-	l := uint32(len(bb))
-	hdr := []byte{byte(l >> 24), byte(l >> 16), byte(l >> 8), byte(l)}
-	_, err = w.Write(hdr)
+	// Slide packet down 4 bytes to make room for length header.
+	packet := append(bb, make([]byte, 4)...) // optimistically assume bb has capacity
+	copy(packet[4:], bb)
+	binary.BigEndian.PutUint32(packet[:4], uint32(len(bb)))
+
+	_, err = w.Write(packet)
 	if err != nil {
-		return errors.Errorf("failed to send packet header: %v", err)
-	}
-	_, err = w.Write(bb)
-	if err != nil {
-		return errors.Errorf("failed to send packet body: %v", err)
+		return errors.Errorf("failed to send packet: %v", err)
 	}
 	return nil
 }

@@ -3,6 +3,7 @@
 package xattr
 
 import (
+	"os"
 	"syscall"
 	"unsafe"
 
@@ -48,12 +49,20 @@ func lgetxattr(path string, name string, data []byte) (int, error) {
 	return int(r0), nil
 }
 
+func fgetxattr(f *os.File, name string, data []byte) (int, error) {
+	return getxattr(f.Name(), name, data)
+}
+
 func setxattr(path string, name string, data []byte, flags int) error {
 	return unix.Setxattr(path, name, data, flags)
 }
 
 func lsetxattr(path string, name string, data []byte, flags int) error {
 	return unix.Setxattr(path, name, data, flags|XATTR_NOFOLLOW)
+}
+
+func fsetxattr(f *os.File, name string, data []byte, flags int) error {
+	return setxattr(f.Name(), name, data, flags)
 }
 
 func removexattr(path string, name string) error {
@@ -76,6 +85,10 @@ func lremovexattr(path string, name string) error {
 	return nil
 }
 
+func fremovexattr(f *os.File, name string) error {
+	return removexattr(f.Name(), name)
+}
+
 func listxattr(path string, data []byte) (int, error) {
 	return unix.Listxattr(path, data)
 }
@@ -96,6 +109,10 @@ func llistxattr(path string, data []byte) (int, error) {
 		return int(r0), err
 	}
 	return int(r0), nil
+}
+
+func flistxattr(f *os.File, data []byte) (int, error) {
+	return listxattr(f.Name(), data)
 }
 
 // stringsFromByteSlice converts a sequence of attributes to a []string.

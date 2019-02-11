@@ -1,4 +1,4 @@
-// Copyright 2016, Google
+// Copyright 2016, the Blazer authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ import (
 
 const (
 	APIBase          = "https://api.backblazeb2.com"
-	DefaultUserAgent = "blazer/0.5.1"
+	DefaultUserAgent = "blazer/0.5.3"
 )
 
 type b2err struct {
@@ -320,6 +320,13 @@ func (rb *requestBody) getSize() int64 {
 func (rb *requestBody) getBody() io.Reader {
 	if rb == nil {
 		return nil
+	}
+	if rb.getSize() == 0 {
+		// https://github.com/kurin/blazer/issues/57
+		// When body is non-nil, but the request's ContentLength is 0, it is
+		// replaced with -1, which causes the client to send a chunked encoding,
+		// which confuses B2.
+		return http.NoBody
 	}
 	return rb.body
 }
@@ -1274,7 +1281,7 @@ func (b *B2) ListKeys(ctx context.Context, max int, next string) ([]*Key, string
 		"Authorization": b.authToken,
 	}
 	b2resp := &b2types.ListKeysResponse{}
-	if err := b.opts.makeRequest(ctx, "b2_create_key", "POST", b.apiURI+b2types.V1api+"b2_create_key", b2req, b2resp, headers, nil); err != nil {
+	if err := b.opts.makeRequest(ctx, "b2_list_keys", "POST", b.apiURI+b2types.V1api+"b2_list_keys", b2req, b2resp, headers, nil); err != nil {
 		return nil, "", err
 	}
 	var keys []*Key

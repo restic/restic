@@ -96,26 +96,29 @@ const (
 type Connection struct {
 	// Parameters - fill these in before calling Authenticate
 	// They are all optional except UserName, ApiKey and AuthUrl
-	Domain         string            // User's domain name
-	DomainId       string            // User's domain Id
-	UserName       string            // UserName for api
-	UserId         string            // User Id
-	ApiKey         string            // Key for api access
-	AuthUrl        string            // Auth URL
-	Retries        int               // Retries on error (default is 3)
-	UserAgent      string            // Http User agent (default goswift/1.0)
-	ConnectTimeout time.Duration     // Connect channel timeout (default 10s)
-	Timeout        time.Duration     // Data channel timeout (default 60s)
-	Region         string            // Region to use eg "LON", "ORD" - default is use first region (v2,v3 auth only)
-	AuthVersion    int               // Set to 1, 2 or 3 or leave at 0 for autodetect
-	Internal       bool              // Set this to true to use the the internal / service network
-	Tenant         string            // Name of the tenant (v2,v3 auth only)
-	TenantId       string            // Id of the tenant (v2,v3 auth only)
-	EndpointType   EndpointType      // Endpoint type (v2,v3 auth only) (default is public URL unless Internal is set)
-	TenantDomain   string            // Name of the tenant's domain (v3 auth only), only needed if it differs from the user domain
-	TenantDomainId string            // Id of the tenant's domain (v3 auth only), only needed if it differs the from user domain
-	TrustId        string            // Id of the trust (v3 auth only)
-	Transport      http.RoundTripper `json:"-" xml:"-"` // Optional specialised http.Transport (eg. for Google Appengine)
+	Domain                      string            // User's domain name
+	DomainId                    string            // User's domain Id
+	UserName                    string            // UserName for api
+	UserId                      string            // User Id
+	ApiKey                      string            // Key for api access
+	ApplicationCredentialId     string            // Application Credential ID
+	ApplicationCredentialName   string            // Application Credential Name
+	ApplicationCredentialSecret string            // Application Credential Secret
+	AuthUrl                     string            // Auth URL
+	Retries                     int               // Retries on error (default is 3)
+	UserAgent                   string            // Http User agent (default goswift/1.0)
+	ConnectTimeout              time.Duration     // Connect channel timeout (default 10s)
+	Timeout                     time.Duration     // Data channel timeout (default 60s)
+	Region                      string            // Region to use eg "LON", "ORD" - default is use first region (v2,v3 auth only)
+	AuthVersion                 int               // Set to 1, 2 or 3 or leave at 0 for autodetect
+	Internal                    bool              // Set this to true to use the the internal / service network
+	Tenant                      string            // Name of the tenant (v2,v3 auth only)
+	TenantId                    string            // Id of the tenant (v2,v3 auth only)
+	EndpointType                EndpointType      // Endpoint type (v2,v3 auth only) (default is public URL unless Internal is set)
+	TenantDomain                string            // Name of the tenant's domain (v3 auth only), only needed if it differs from the user domain
+	TenantDomainId              string            // Id of the tenant's domain (v3 auth only), only needed if it differs the from user domain
+	TrustId                     string            // Id of the trust (v3 auth only)
+	Transport                   http.RoundTripper `json:"-" xml:"-"` // Optional specialised http.Transport (eg. for Google Appengine)
 	// These are filled in after Authenticate is called as are the defaults for above
 	StorageUrl string
 	AuthToken  string
@@ -194,6 +197,9 @@ func setFromEnv(param interface{}, name string) (err error) {
 //     OS_USERNAME - UserName for api
 //     OS_USER_ID - User Id
 //     OS_PASSWORD - Key for api access
+//     OS_APPLICATION_CREDENTIAL_ID - Application Credential ID
+//     OS_APPLICATION_CREDENTIAL_NAME - Application Credential Name
+//     OS_APPLICATION_CREDENTIAL_SECRET - Application Credential Secret
 //     OS_USER_DOMAIN_NAME - User's domain name
 //     OS_USER_DOMAIN_ID - User's domain Id
 //     OS_PROJECT_NAME - Name of the project
@@ -227,6 +233,9 @@ func (c *Connection) ApplyEnvironment() (err error) {
 		{&c.UserName, "OS_USERNAME"},
 		{&c.UserId, "OS_USER_ID"},
 		{&c.ApiKey, "OS_PASSWORD"},
+		{&c.ApplicationCredentialId, "OS_APPLICATION_CREDENTIAL_ID"},
+		{&c.ApplicationCredentialName, "OS_APPLICATION_CREDENTIAL_NAME"},
+		{&c.ApplicationCredentialSecret, "OS_APPLICATION_CREDENTIAL_SECRET"},
 		{&c.AuthUrl, "OS_AUTH_URL"},
 		{&c.Retries, "GOSWIFT_RETRIES"},
 		{&c.UserAgent, "GOSWIFT_USER_AGENT"},
@@ -423,12 +432,15 @@ func (c *Connection) setDefaults() {
 		c.Timeout = 60 * time.Second
 	}
 	if c.Transport == nil {
-		c.Transport = &http.Transport{
+		t := &http.Transport{
 			//		TLSClientConfig:    &tls.Config{RootCAs: pool},
 			//		DisableCompression: true,
-			Proxy:               http.ProxyFromEnvironment,
-			MaxIdleConnsPerHost: 2048,
+			Proxy: http.ProxyFromEnvironment,
+			// Half of linux's default open files limit (1024).
+			MaxIdleConnsPerHost: 512,
 		}
+		SetExpectContinueTimeout(t, 5*time.Second)
+		c.Transport = t
 	}
 	if c.client == nil {
 		c.client = &http.Client{
@@ -720,6 +732,10 @@ func (c *Connection) Call(targetUrl string, p RequestOpts) (resp *http.Response,
 		}
 		req.Header.Add("User-Agent", c.UserAgent)
 		req.Header.Add("X-Auth-Token", authToken)
+
+		_, hasCL := p.Headers["Content-Length"]
+		AddExpectAndTransferEncoding(req, hasCL)
+
 		resp, err = c.doTimeoutRequest(timer, req)
 		if err != nil {
 			if (p.Operation == "HEAD" || p.Operation == "GET") && retries > 0 {
@@ -1013,7 +1029,8 @@ type Object struct {
 	Bytes              int64      `json:"bytes"`         // size in bytes
 	ServerLastModified string     `json:"last_modified"` // Last modified time, eg '2011-06-30T08:20:47.736680' as a string supplied by the server
 	LastModified       time.Time  // Last modified time converted to a time.Time
-	Hash               string     `json:"hash"` // MD5 hash, eg "d41d8cd98f00b204e9800998ecf8427e"
+	Hash               string     `json:"hash"`     // MD5 hash, eg "d41d8cd98f00b204e9800998ecf8427e"
+	SLOHash            string     `json:"slo_etag"` // MD5 hash of all segments' MD5 hash, eg "d41d8cd98f00b204e9800998ecf8427e"
 	PseudoDirectory    bool       // Set when using delimiter to show that this directory object does not really exist
 	SubDir             string     `json:"subdir"` // returned only when using delimiter to mark "pseudo directories"
 	ObjectType         ObjectType // type of this object
@@ -1064,6 +1081,9 @@ func (c *Connection) Objects(container string, opts *ObjectsOpts) ([]Object, err
 			if err != nil {
 				return nil, err
 			}
+		}
+		if object.SLOHash != "" {
+			object.ObjectType = StaticLargeObjectType
 		}
 	}
 	return objects, err
