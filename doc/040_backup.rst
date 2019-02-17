@@ -369,7 +369,7 @@ environment variables. The following list of environment variables:
 
     OS_USER_DOMAIN_NAME                 User domain name for keystone authentication
     OS_PROJECT_NAME                     Project name for keystone authentication
-    OS_PROJECT_DOMAIN_NAME              PRoject domain name for keystone authentication
+    OS_PROJECT_DOMAIN_NAME              Project domain name for keystone authentication
 
     OS_STORAGE_URL                      Storage URL for token authentication
     OS_AUTH_TOKEN                       Auth token for token authentication
