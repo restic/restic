@@ -1,0 +1,15 @@
+Enhancement: expose filerestorer tunning parameters in cmd_restore command
+
+The `restic restore` command now exposes three new flags that control the 
+behaviour of the filerestorer.
+
+These new flags are the following:
+
+```
+--average-pack-size int    average pack size in bytes (default 5242880)
+--files-writer-count int   number of open files for restore (default 32)
+--worker-count int        number of workers for file restore (default 8)
+
+```
+
+https://github.com/restic/restic/pull/2178

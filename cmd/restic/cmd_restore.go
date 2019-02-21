@@ -1,12 +1,13 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/restorer"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -38,6 +39,9 @@ type RestoreOptions struct {
 	Paths              []string
 	Tags               restic.TagLists
 	Verify             bool
+	WorkerCount        int
+	FilesWriterCount   int
+	AveragePackSize    int
 }
 
 var restoreOptions RestoreOptions
@@ -55,6 +59,10 @@ func init() {
 	flags.StringVarP(&restoreOptions.Host, "host", "H", "", `only consider snapshots for this host when the snapshot ID is "latest"`)
 	flags.Var(&restoreOptions.Tags, "tag", "only consider snapshots which include this `taglist` for snapshot ID \"latest\"")
 	flags.StringArrayVar(&restoreOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` for snapshot ID \"latest\"")
+	flags.IntVar(&restoreOptions.WorkerCount, "worker-count", 8, "number of workers for file restore")
+	flags.IntVar(&restoreOptions.FilesWriterCount, "files-writer-count", 32, "number of open files for restore")
+	flags.IntVar(&restoreOptions.AveragePackSize, "average-pack-size", 5*1024*1024, "average pack size in bytes")
+
 	flags.BoolVar(&restoreOptions.Verify, "verify", false, "verify restored files content")
 }
 
@@ -122,7 +130,12 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	res, err := restorer.NewRestorer(repo, id)
+	opt := &restorer.Options{
+		WorkerCount:      opts.WorkerCount,
+		AveragePackSize:  opts.AveragePackSize,
+		FilesWriterCount: opts.FilesWriterCount,
+	}
+	res, err := restorer.NewRestorer(repo, id, opt)
 	if err != nil {
 		Exitf(2, "creating restorer failed: %v\n", err)
 	}

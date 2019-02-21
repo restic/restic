@@ -13,6 +13,13 @@ import (
 	"github.com/restic/restic/internal/restic"
 )
 
+// Options are the options available for the Restorer.
+type Options struct {
+	WorkerCount      int
+	FilesWriterCount int
+	AveragePackSize  int
+}
+
 // Restorer is used to restore a snapshot to a directory.
 type Restorer struct {
 	repo restic.Repository
@@ -25,7 +32,7 @@ type Restorer struct {
 var restorerAbortOnAllErrors = func(location string, err error) error { return err }
 
 // NewRestorer creates a restorer preloaded with the content from the snapshot id.
-func NewRestorer(repo restic.Repository, id restic.ID) (*Restorer, error) {
+func NewRestorer(repo restic.Repository, id restic.ID, opt *Options) (*Restorer, error) {
 	r := &Restorer{
 		repo:         repo,
 		Error:        restorerAbortOnAllErrors,
@@ -38,6 +45,12 @@ func NewRestorer(repo restic.Repository, id restic.ID) (*Restorer, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// set package variables to option values
+	// these variables are defined in filerestorer.go
+	workerCount = opt.WorkerCount
+	averagePackSize = opt.AveragePackSize
+	filesWriterCount = opt.FilesWriterCount
 
 	return r, nil
 }

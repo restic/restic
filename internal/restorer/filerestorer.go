@@ -20,7 +20,7 @@ import (
 // TODO avoid decrypting the same blob multiple times
 // TODO evaluate disabled debug logging overhead for large repositories
 
-const (
+var (
 	workerCount = 8
 
 	// max number of open output file handles
