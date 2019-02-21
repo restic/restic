@@ -101,7 +101,7 @@ data files:
 
 Use ``--read-data-subset=n/t`` parameter to check subset of repository data
 files. The parameter takes two values, ``n`` and ``t``. All repository data 
-files are logically devided in ``t`` roughly equal groups and only files that
+files are logically divided in ``t`` roughly equal groups and only files that
 belong to the group number ``n`` are checked. For example, the following 
 commands check all repository data files over 5 separate invocations:
 
