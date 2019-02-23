@@ -236,6 +236,8 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 			}
 			addJSONSnapshots(&fg.Remove, remove)
 
+			fg.Reasons = reasons
+
 			jsonGroups = append(jsonGroups, &fg)
 
 			removeSnapshots += len(remove)
@@ -271,11 +273,12 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 
 // ForgetGroup helps to print what is forgotten in JSON.
 type ForgetGroup struct {
-	Tags   []string   `json:"tags"`
-	Host   string     `json:"host"`
-	Paths  []string   `json:"paths"`
-	Keep   []Snapshot `json:"keep"`
-	Remove []Snapshot `json:"remove"`
+	Tags    []string            `json:"tags"`
+	Host    string              `json:"host"`
+	Paths   []string            `json:"paths"`
+	Keep    []Snapshot          `json:"keep"`
+	Remove  []Snapshot          `json:"remove"`
+	Reasons []restic.KeepReason `json:"reasons"`
 }
 
 func addJSONSnapshots(js *[]Snapshot, list restic.Snapshots) {
