@@ -1,0 +1,8 @@
+Enhancement: Add --json support to forget command
+
+The forget command now supports the --json argument, outputting the
+information about what is (or would-be) kept and removed from the
+repository.
+
+https://github.com/restic/restic/issues/2184
+https://github.com/restic/restic/pull/2185
