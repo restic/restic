@@ -112,9 +112,6 @@ func GitHubLatestRelease(ctx context.Context, owner, repo string) (Release, erro
 }
 
 func getGithubData(ctx context.Context, url string) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(ctx, githubAPITimeout)
-	defer cancel()
-
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
