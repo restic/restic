@@ -219,6 +219,35 @@ func testRunForget(t testing.TB, gopts GlobalOptions, args ...string) {
 	rtest.OK(t, runForget(opts, gopts, args))
 }
 
+func testRunForgetJSON(t testing.TB, gopts GlobalOptions, args ...string) {
+	buf := bytes.NewBuffer(nil)
+	oldJSON := gopts.JSON
+	gopts.stdout = buf
+	gopts.JSON = true
+	defer func() {
+		gopts.stdout = os.Stdout
+		gopts.JSON = oldJSON
+	}()
+
+	opts := ForgetOptions{
+		DryRun: true,
+		Last:   1,
+	}
+
+	rtest.OK(t, runForget(opts, gopts, args))
+
+	var forgets []*ForgetGroup
+	rtest.OK(t, json.Unmarshal(buf.Bytes(), &forgets))
+
+	rtest.Assert(t, len(forgets) == 1,
+		"Expected 1 snapshot group, got %v", len(forgets))
+	rtest.Assert(t, len(forgets[0].Keep) == 1,
+		"Expected 1 snapshot to be kept, got %v", len(forgets[0].Keep))
+	rtest.Assert(t, len(forgets[0].Remove) == 2,
+		"Expected 2 snapshots to be removed, got %v", len(forgets[0].Remove))
+	return
+}
+
 func testRunPrune(t testing.TB, gopts GlobalOptions) {
 	rtest.OK(t, runPrune(gopts))
 }
@@ -1051,6 +1080,7 @@ func TestPrune(t *testing.T) {
 	rtest.Assert(t, len(snapshotIDs) == 3,
 		"expected 3 snapshot, got %v", snapshotIDs)
 
+	testRunForgetJSON(t, env.gopts)
 	testRunForget(t, env.gopts, firstSnapshot[0].String())
 	testRunPrune(t, env.gopts)
 	testRunCheck(t, env.gopts)
