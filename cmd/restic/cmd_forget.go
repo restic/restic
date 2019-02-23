@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"sort"
 	"strings"
 
@@ -182,7 +183,11 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	if !policy.Empty() {
-		Verbosef("Applying Policy: %v\n", policy)
+		if !gopts.JSON {
+			Verbosef("Applying Policy: %v\n", policy)
+		}
+
+		var jsonGroups []*ForgetGroup
 
 		for k, snapshotGroup := range snapshotGroups {
 			var key key
@@ -190,36 +195,48 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 				return err
 			}
 
+			var fg ForgetGroup
 			// Info
-			Verbosef("snapshots")
+			if !gopts.JSON {
+				Verbosef("snapshots")
+			}
 			var infoStrings []string
 			if GroupByTag {
 				infoStrings = append(infoStrings, "tags ["+strings.Join(key.Tags, ", ")+"]")
+				fg.Tags = key.Tags
 			}
 			if GroupByHost {
 				infoStrings = append(infoStrings, "host ["+key.Hostname+"]")
+				fg.Host = key.Hostname
 			}
 			if GroupByPath {
 				infoStrings = append(infoStrings, "paths ["+strings.Join(key.Paths, ", ")+"]")
+				fg.Paths = key.Paths
 			}
-			if infoStrings != nil {
+			if infoStrings != nil && !gopts.JSON {
 				Verbosef(" for (" + strings.Join(infoStrings, ", ") + ")")
 			}
-			Verbosef(":\n\n")
+			if !gopts.JSON {
+				Verbosef(":\n\n")
+			}
 
 			keep, remove, reasons := restic.ApplyPolicy(snapshotGroup, policy)
 
-			if len(keep) != 0 && !gopts.Quiet {
+			if len(keep) != 0 && !gopts.Quiet && !gopts.JSON {
 				Printf("keep %d snapshots:\n", len(keep))
 				PrintSnapshots(globalOptions.stdout, keep, reasons, opts.Compact)
 				Printf("\n")
 			}
+			addJSONSnapshots(&fg.Keep, keep)
 
-			if len(remove) != 0 && !gopts.Quiet {
+			if len(remove) != 0 && !gopts.Quiet && !gopts.JSON {
 				Printf("remove %d snapshots:\n", len(remove))
 				PrintSnapshots(globalOptions.stdout, remove, nil, opts.Compact)
 				Printf("\n")
 			}
+			addJSONSnapshots(&fg.Remove, remove)
+
+			jsonGroups = append(jsonGroups, &fg)
 
 			removeSnapshots += len(remove)
 
@@ -233,6 +250,13 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 				}
 			}
 		}
+
+		if gopts.JSON {
+			err = printJSONForget(gopts.stdout, jsonGroups)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	if removeSnapshots > 0 && opts.Prune {
@@ -243,4 +267,28 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	return nil
+}
+
+// ForgetGroup helps to print what is forgotten in JSON.
+type ForgetGroup struct {
+	Tags   []string   `json:"tags"`
+	Host   string     `json:"host"`
+	Paths  []string   `json:"paths"`
+	Keep   []Snapshot `json:"keep"`
+	Remove []Snapshot `json:"remove"`
+}
+
+func addJSONSnapshots(js *[]Snapshot, list restic.Snapshots) {
+	for _, sn := range list {
+		k := Snapshot{
+			Snapshot: sn,
+			ID:       sn.ID(),
+			ShortID:  sn.ID().Str(),
+		}
+		*js = append(*js, k)
+	}
+}
+
+func printJSONForget(stdout io.Writer, forgets []*ForgetGroup) error {
+	return json.NewEncoder(stdout).Encode(forgets)
 }
