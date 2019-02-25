@@ -23,8 +23,8 @@ import (
 const (
 	workerCount = 8
 
-	// max number of open output file handles
-	filesWriterCount = 32
+	// max number of cached open output file handles
+	filesWriterCacheCap = 32
 
 	// estimated average pack size used to calculate pack cache capacity
 	averagePackSize = 5 * 1024 * 1024
@@ -73,7 +73,7 @@ func newFileRestorer(dst string, packLoader func(ctx context.Context, h restic.H
 		packLoader:  packLoader,
 		key:         key,
 		idx:         idx,
-		filesWriter: newFilesWriter(filesWriterCount),
+		filesWriter: newFilesWriter(filesWriterCacheCap),
 		packCache:   newPackCache(packCacheCapacity),
 		dst:         dst,
 	}
