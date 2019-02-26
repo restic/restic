@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"os"
 	"path/filepath"
 	"sync"
 
@@ -31,7 +30,7 @@ const (
 type fileInfo struct {
 	lock      sync.Mutex
 	flags     int
-	remaining int64       // remaining download size
+	remaining int64       // remaining download size (includes encryption framing)
 	location  string      // file on local filesystem relative to restorer basedir
 	blobs     []restic.ID // remaining blobs of the file
 }
@@ -48,6 +47,8 @@ type fileRestorer struct {
 	idx        func(restic.ID, restic.BlobType) ([]restic.PackedBlob, bool)
 	packLoader func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error
 
+	filesWriter *filesWriter
+
 	dst   string
 	files []*fileInfo
 }
@@ -58,10 +59,11 @@ func newFileRestorer(dst string,
 	idx func(restic.ID, restic.BlobType) ([]restic.PackedBlob, bool)) *fileRestorer {
 
 	return &fileRestorer{
-		packLoader: packLoader,
-		key:        key,
-		idx:        idx,
-		dst:        dst,
+		key:         key,
+		idx:         idx,
+		packLoader:  packLoader,
+		filesWriter: newFilesWriter(workerCount),
+		dst:         dst,
 	}
 }
 
@@ -98,7 +100,8 @@ func (r *fileRestorer) restoreFiles(ctx context.Context,
 
 	// create packInfo from fileInfo
 	for _, file := range r.files {
-		err := r.forEachBlob(file.blobs, func(packID restic.ID, _ restic.Blob) {
+		err := r.forEachBlob(file.blobs, func(packID restic.ID, blob restic.Blob) {
+			file.remaining += int64(blob.Length)
 			pack, ok := packs[packID]
 			if !ok {
 				pack = &packInfo{
@@ -202,47 +205,6 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo,
 		return nil
 	})
 
-	writeToFile := func(file *fileInfo, data []byte, offsets []int64) error {
-		target := r.targetPath(file.location)
-
-		// for simplicity, serialize writes to the same file
-		// we can make it more complicated later
-		file.lock.Lock()
-		defer file.lock.Unlock()
-
-		var flags int
-		if file.flags&fileProgress == 0 {
-			flags = os.O_CREATE | os.O_TRUNC | os.O_WRONLY
-		} else {
-			flags = os.O_WRONLY
-		}
-		file.flags |= fileProgress
-
-		wr, err := os.OpenFile(target, flags, 0600)
-		if err != nil {
-			return err
-		}
-
-		for _, offset := range offsets {
-			// fmt.Printf("write %s offset %d len %d '%s'\n", file.location, offset, len(data), string(data))
-			_, err = wr.WriteAt(data, offset)
-
-			if err != nil {
-				// fmt.Printf("error %s %v\n", file.location, err)
-				wr.Close()
-				return err
-			}
-
-			reportDoneFileBlob(file.location, uint(len(data)))
-			file.remaining -= int64(len(data))
-			if file.remaining <= 0 {
-				reportDoneFile(file.location)
-			}
-		}
-
-		return wr.Close()
-	}
-
 	markFileError := func(file *fileInfo, err error) {
 		file.lock.Lock()
 		defer file.lock.Unlock()
@@ -270,9 +232,19 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo,
 			continue
 		}
 		for file, offsets := range blob.files {
-			err = writeToFile(file, blobData, offsets)
-			if err != nil {
-				markFileError(file, err)
+			for _, offset := range offsets {
+				err = r.filesWriter.writeToFile(r.targetPath(file.location), blobData, offset, file.flags&fileProgress == 0)
+				file.flags |= fileProgress
+				if err == nil {
+					reportDoneFileBlob(file.location, uint(len(blobData))) // number of bytes written to disk
+					file.remaining -= int64(blob.length)                   // blob size with encryption framing
+					if file.remaining <= 0 {
+						reportDoneFile(file.location)
+					}
+				} else {
+					markFileError(file, err)
+					break
+				}
 			}
 		}
 	}
