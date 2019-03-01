@@ -32,7 +32,7 @@ type fileInfo struct {
 	flags     int
 	remaining int64       // remaining download size (includes encryption framing)
 	location  string      // file on local filesystem relative to restorer basedir
-	blobs     []restic.ID // remaining blobs of the file
+	blobs     interface{} // blobs of the file
 }
 
 // information about a data pack required to restore one or more files
@@ -100,7 +100,7 @@ func (r *fileRestorer) restoreFiles(ctx context.Context,
 
 	// create packInfo from fileInfo
 	for _, file := range r.files {
-		err := r.forEachBlob(file.blobs, func(packID restic.ID, blob restic.Blob) {
+		err := r.forEachBlob(file.blobs.(restic.IDs), func(packID restic.ID, blob restic.Blob) {
 			file.remaining += int64(blob.Length)
 			pack, ok := packs[packID]
 			if !ok {
@@ -169,23 +169,26 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo,
 		files  map[*fileInfo][]int64 // file -> offsets (plural!) of the blob in the file
 	})
 	for file := range pack.files {
+		addBlob := func(blob restic.Blob, fileOffset int64) {
+			if start > int64(blob.Offset) {
+				start = int64(blob.Offset)
+			}
+			if end < int64(blob.Offset+blob.Length) {
+				end = int64(blob.Offset + blob.Length)
+			}
+			blobInfo, ok := blobs[blob.ID]
+			if !ok {
+				blobInfo.offset = int64(blob.Offset)
+				blobInfo.length = int(blob.Length)
+				blobInfo.files = make(map[*fileInfo][]int64)
+				blobs[blob.ID] = blobInfo
+			}
+			blobInfo.files[file] = append(blobInfo.files[file], fileOffset)
+		}
 		fileOffset := int64(0)
-		r.forEachBlob(file.blobs, func(packID restic.ID, blob restic.Blob) {
+		r.forEachBlob(file.blobs.(restic.IDs), func(packID restic.ID, blob restic.Blob) {
 			if packID.Equal(pack.id) {
-				if start > int64(blob.Offset) {
-					start = int64(blob.Offset)
-				}
-				if end < int64(blob.Offset+blob.Length) {
-					end = int64(blob.Offset + blob.Length)
-				}
-				blobInfo, ok := blobs[blob.ID]
-				if !ok {
-					blobInfo.offset = int64(blob.Offset)
-					blobInfo.length = int(blob.Length)
-					blobInfo.files = make(map[*fileInfo][]int64)
-					blobs[blob.ID] = blobInfo
-				}
-				blobInfo.files[file] = append(blobInfo.files[file], fileOffset)
+				addBlob(blob, fileOffset)
 			}
 			fileOffset += int64(blob.Length) - crypto.Extension
 		})
