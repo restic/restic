@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"math"
 	"path/filepath"
 	"sync"
 
@@ -24,6 +25,8 @@ const (
 	// fileInfo flags
 	fileProgress = 1
 	fileError    = 2
+
+	largeFileBlobCount = 25
 )
 
 // information about regular file being restored
@@ -33,6 +36,11 @@ type fileInfo struct {
 	remaining int64       // remaining download size (includes encryption framing)
 	location  string      // file on local filesystem relative to restorer basedir
 	blobs     interface{} // blobs of the file
+}
+
+type fileBlobInfo struct {
+	id     restic.ID // the blob id
+	offset int64     // blob offset in the file
 }
 
 // information about a data pack required to restore one or more files
@@ -100,7 +108,18 @@ func (r *fileRestorer) restoreFiles(ctx context.Context,
 
 	// create packInfo from fileInfo
 	for _, file := range r.files {
-		err := r.forEachBlob(file.blobs.(restic.IDs), func(packID restic.ID, blob restic.Blob) {
+		fileBlobs := file.blobs.(restic.IDs)
+		largeFile := len(fileBlobs) > largeFileBlobCount
+		var packsMap map[restic.ID][]fileBlobInfo
+		if largeFile {
+			packsMap = make(map[restic.ID][]fileBlobInfo)
+		}
+		fileOffset := int64(0)
+		err := r.forEachBlob(fileBlobs, func(packID restic.ID, blob restic.Blob) {
+			if largeFile {
+				packsMap[packID] = append(packsMap[packID], fileBlobInfo{id: blob.ID, offset: fileOffset})
+				fileOffset += int64(blob.Length) - crypto.Extension
+			}
 			file.remaining += int64(blob.Length)
 			pack, ok := packs[packID]
 			if !ok {
@@ -115,6 +134,9 @@ func (r *fileRestorer) restoreFiles(ctx context.Context,
 		if err != nil {
 			// repository index is messed up, can't do anything
 			return err
+		}
+		if largeFile {
+			file.blobs = packsMap
 		}
 	}
 
@@ -159,10 +181,9 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo,
 	reportDoneFileBlob func(path string, size uint),
 	reportDoneFile func(path string),
 	reportError func(path string, err error)) {
-	const MaxInt64 = 1<<63 - 1 // odd Go does not have this predefined somewhere
 
 	// calculate pack byte range and blob->[]files->[]offsets mappings
-	start, end := int64(MaxInt64), int64(0)
+	start, end := int64(math.MaxInt64), int64(0)
 	blobs := make(map[restic.ID]struct {
 		offset int64                 // offset of the blob in the pack
 		length int                   // length of the blob
@@ -185,13 +206,27 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo,
 			}
 			blobInfo.files[file] = append(blobInfo.files[file], fileOffset)
 		}
-		fileOffset := int64(0)
-		r.forEachBlob(file.blobs.(restic.IDs), func(packID restic.ID, blob restic.Blob) {
-			if packID.Equal(pack.id) {
-				addBlob(blob, fileOffset)
+		if fileBlobs, ok := file.blobs.(restic.IDs); ok {
+			fileOffset := int64(0)
+			r.forEachBlob(fileBlobs, func(packID restic.ID, blob restic.Blob) {
+				if packID.Equal(pack.id) {
+					addBlob(blob, fileOffset)
+				}
+				fileOffset += int64(blob.Length) - crypto.Extension
+			})
+		} else if packsMap, ok := file.blobs.(map[restic.ID][]fileBlobInfo); ok {
+			for _, blob := range packsMap[pack.id] {
+				idxPacks, found := r.idx(blob.id, restic.DataBlob)
+				if found {
+					for _, idxPack := range idxPacks {
+						if idxPack.PackID.Equal(pack.id) {
+							addBlob(idxPack.Blob, blob.offset)
+							break
+						}
+					}
+				}
 			}
-			fileOffset += int64(blob.Length) - crypto.Extension
-		})
+		}
 	}
 
 	packData := make([]byte, int(end-start))
