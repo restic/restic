@@ -233,8 +233,24 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo,
 		}
 		for file, offsets := range blob.files {
 			for _, offset := range offsets {
-				err = r.filesWriter.writeToFile(r.targetPath(file.location), blobData, offset, file.flags&fileProgress == 0)
-				file.flags |= fileProgress
+				writeToFile := func() error {
+					// this looks overly complicated and needs explanation
+					// two competing requirements:
+					// - must create the file once and only once
+					// - should allow concurrent writes to the file
+					// so write the first blob while holding file lock
+					// write other blobs after releasing the lock
+					file.lock.Lock()
+					create := file.flags&fileProgress == 0
+					if create {
+						defer file.lock.Unlock()
+						file.flags |= fileProgress
+					} else {
+						file.lock.Unlock()
+					}
+					return r.filesWriter.writeToFile(r.targetPath(file.location), blobData, offset, create)
+				}
+				err := writeToFile()
 				if err == nil {
 					reportDoneFileBlob(file.location, uint(len(blobData))) // number of bytes written to disk
 					file.remaining -= int64(blob.length)                   // blob size with encryption framing
