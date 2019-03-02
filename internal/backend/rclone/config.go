@@ -15,15 +15,19 @@ type Config struct {
 	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
 }
 
+var defaultConfig = Config{
+	Program:     "rclone",
+	Args:        "serve restic --stdio --b2-hard-delete --drive-use-trash=false",
+	Connections: 5,
+}
+
 func init() {
 	options.Register("rclone", Config{})
 }
 
 // NewConfig returns a new Config with the default values filled in.
 func NewConfig() Config {
-	return Config{
-		Connections: 5,
-	}
+	return defaultConfig
 }
 
 // ParseConfig parses the string s and extracts the remote server URL.

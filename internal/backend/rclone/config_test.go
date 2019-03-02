@@ -14,7 +14,9 @@ func TestParseConfig(t *testing.T) {
 			"rclone:local:foo:/bar",
 			Config{
 				Remote:      "local:foo:/bar",
-				Connections: 5,
+				Program:     defaultConfig.Program,
+				Args:        defaultConfig.Args,
+				Connections: defaultConfig.Connections,
 			},
 		},
 	}
