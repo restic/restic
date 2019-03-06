@@ -6,6 +6,10 @@ func (node Node) restoreSymlinkTimestamps(path string, utimes [2]syscall.Timespe
 	return nil
 }
 
+func (node Node) device() int {
+	return int(node.Device)
+}
+
 func (s statUnix) atim() syscall.Timespec { return s.Atim }
 func (s statUnix) mtim() syscall.Timespec { return s.Mtim }
 func (s statUnix) ctim() syscall.Timespec { return s.Ctim }

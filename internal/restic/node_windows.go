@@ -22,6 +22,10 @@ func (node Node) restoreSymlinkTimestamps(path string, utimes [2]syscall.Timespe
 	return nil
 }
 
+func (node Node) device() int {
+	return int(node.Device)
+}
+
 // Getxattr retrieves extended attribute data associated with path.
 func Getxattr(path, name string) ([]byte, error) {
 	return nil, nil
