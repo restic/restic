@@ -151,8 +151,8 @@ func verifyDirectoryContentsFI(t testing.TB, fs FS, dir string, want []os.FileIn
 }
 
 func checkFileInfo(t testing.TB, fi os.FileInfo, filename string, modtime time.Time, mode os.FileMode, isdir bool) {
-	if fi.IsDir() {
-		t.Errorf("IsDir returned true, want false")
+	if fi.IsDir() != isdir {
+		t.Errorf("IsDir returned %t, want %t", fi.IsDir(), isdir)
 	}
 
 	if fi.Mode() != mode {
