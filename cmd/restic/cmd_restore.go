@@ -200,11 +200,11 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	err = res.RestoreTo(ctx, opts.Target)
+	err = res.RestoreTo(ctx, opts.Target, opts.SkipUnchanged)
 	if err == nil && opts.Verify {
 		Verbosef("verifying files in %s\n", opts.Target)
 		var count int
-		count, err = res.VerifyFiles(ctx, opts.Target)
+		count, err = res.VerifyFiles(ctx, opts.Target, opts.SkipUnchanged)
 		Verbosef("finished verifying %d files in %s\n", count, opts.Target)
 	}
 	if totalErrors > 0 {
