@@ -555,9 +555,11 @@ func TestFileChanged(t *testing.T) {
 	}
 
 	var tests = []struct {
-		Name    string
-		Content []byte
-		Modify  func(t testing.TB, filename string)
+		Name        string
+		Content     []byte
+		Modify      func(t testing.TB, filename string)
+		IgnoreInode bool
+		Check       bool
 	}{
 		{
 			Name: "same-content-new-file",
@@ -596,6 +598,18 @@ func TestFileChanged(t *testing.T) {
 				save(t, filename, defaultContent)
 			},
 		},
+		{
+			Name: "ignore-inode",
+			Modify: func(t testing.TB, filename string) {
+				fi := lstat(t, filename)
+				remove(t, filename)
+				sleep()
+				save(t, filename, defaultContent)
+				setTimestamp(t, filename, fi.ModTime(), fi.ModTime())
+			},
+			IgnoreInode: true,
+			Check: true,
+		},
 	}
 
 	for _, test := range tests {
@@ -613,15 +627,19 @@ func TestFileChanged(t *testing.T) {
 			fiBefore := lstat(t, filename)
 			node := nodeFromFI(t, filename, fiBefore)
 
-			if fileChanged(fiBefore, node) {
+			if fileChanged(fiBefore, node, false) {
 				t.Fatalf("unchanged file detected as changed")
 			}
 
 			test.Modify(t, filename)
 
 			fiAfter := lstat(t, filename)
-			if !fileChanged(fiAfter, node) {
-				t.Fatalf("modified file detected as unchanged")
+			if test.Check == fileChanged(fiAfter, node, test.IgnoreInode) {
+				if test.Check {
+					t.Fatalf("unmodified file detected as changed")
+				} else {
+					t.Fatalf("modified file detected as unchanged")
+				}
 			}
 		})
 	}
@@ -637,7 +655,7 @@ func TestFilChangedSpecialCases(t *testing.T) {
 
 	t.Run("nil-node", func(t *testing.T) {
 		fi := lstat(t, filename)
-		if !fileChanged(fi, nil) {
+		if !fileChanged(fi, nil, false) {
 			t.Fatal("nil node detected as unchanged")
 		}
 	})
@@ -646,7 +664,7 @@ func TestFilChangedSpecialCases(t *testing.T) {
 		fi := lstat(t, filename)
 		node := nodeFromFI(t, filename, fi)
 		node.Type = "symlink"
-		if !fileChanged(fi, node) {
+		if !fileChanged(fi, node, false) {
 			t.Fatal("node with changed type detected as unchanged")
 		}
 	})

@@ -85,6 +85,7 @@ type BackupOptions struct {
 	FilesFrom           []string
 	TimeStamp           string
 	WithAtime           bool
+	IgnoreInode         bool
 }
 
 var backupOptions BackupOptions
@@ -112,6 +113,7 @@ func init() {
 	f.StringArrayVar(&backupOptions.FilesFrom, "files-from", nil, "read the files to backup from file (can be combined with file args/can be specified multiple times)")
 	f.StringVar(&backupOptions.TimeStamp, "time", "", "time of the backup (ex. '2012-11-01 22:08:41') (default: now)")
 	f.BoolVar(&backupOptions.WithAtime, "with-atime", false, "store the atime for all files and directories")
+	f.BoolVar(&backupOptions.IgnoreInode, "ignore-inode", false, "ignore inode number changes when checking for modified files")
 }
 
 // filterExisting returns a slice of all existing items, or an error if no
@@ -549,6 +551,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	arch.CompleteItem = p.CompleteItem
 	arch.StartFile = p.StartFile
 	arch.CompleteBlob = p.CompleteBlob
+	arch.IgnoreInode = opts.IgnoreInode
 
 	if parentSnapshotID == nil {
 		parentSnapshotID = &restic.ID{}
