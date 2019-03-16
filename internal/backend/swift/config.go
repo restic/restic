@@ -23,6 +23,11 @@ type Config struct {
 	StorageURL string
 	AuthToken  string
 
+	// auth v3 only
+	ApplicationCredentialID     string
+	ApplicationCredentialName   string
+	ApplicationCredentialSecret string
+
 	Container              string
 	Prefix                 string
 	DefaultContainerPolicy string
@@ -95,6 +100,11 @@ func ApplyEnvironment(prefix string, cfg interface{}) error {
 		{&c.AuthURL, prefix + "ST_AUTH"},
 		{&c.UserName, prefix + "ST_USER"},
 		{&c.APIKey, prefix + "ST_KEY"},
+
+		// Application Credential auth
+		{&c.ApplicationCredentialID, prefix + "OS_APPLICATION_CREDENTIAL_ID"},
+		{&c.ApplicationCredentialName, prefix + "OS_APPLICATION_CREDENTIAL_NAME"},
+		{&c.ApplicationCredentialSecret, prefix + "OS_APPLICATION_CREDENTIAL_SECRET"},
 
 		// Manual authentication
 		{&c.StorageURL, prefix + "OS_STORAGE_URL"},

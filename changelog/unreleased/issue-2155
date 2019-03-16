@@ -1,0 +1,8 @@
+Enhancement: add Openstack application credential auth for Swift
+
+Since Openstack Queens Identity (auth V3) service supports an application
+credential auth method.  It allows to create a technical account with the
+limited roles. This commit adds an application credential authentication
+method for the Swift backend.
+
+https://github.com/restic/restic/issues/2155

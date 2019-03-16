@@ -374,6 +374,10 @@ environment variables. The following list of environment variables:
     OS_PROJECT_NAME                     Project name for keystone authentication
     OS_PROJECT_DOMAIN_NAME              Project domain name for keystone authentication
 
+    OS_APPLICATION_CREDENTIAL_ID        Application Credential ID (keystone v3)
+    OS_APPLICATION_CREDENTIAL_NAME      Application Credential Name (keystone v3)
+    OS_APPLICATION_CREDENTIAL_SECRET    Application Credential Secret (keystone v3)
+
     OS_STORAGE_URL                      Storage URL for token authentication
     OS_AUTH_TOKEN                       Auth token for token authentication
 
