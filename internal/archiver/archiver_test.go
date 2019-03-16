@@ -608,7 +608,7 @@ func TestFileChanged(t *testing.T) {
 				setTimestamp(t, filename, fi.ModTime(), fi.ModTime())
 			},
 			IgnoreInode: true,
-			Check: true,
+			Check:       true,
 		},
 	}
 

@@ -78,7 +78,7 @@ type Archiver struct {
 	// WithAtime configures if the access time for files and directories should
 	// be saved. Enabling it may result in much metadata, so it's off by
 	// default.
-	WithAtime bool
+	WithAtime   bool
 	IgnoreInode bool
 }
 
