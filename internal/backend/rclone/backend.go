@@ -127,8 +127,6 @@ func New(cfg Config, lim limiter.Limiter) (*Backend, error) {
 			return nil, err
 		}
 		args = append(args, a...)
-	} else {
-		args = append(args, "rclone")
 	}
 
 	// then add the arguments
@@ -139,10 +137,6 @@ func New(cfg Config, lim limiter.Limiter) (*Backend, error) {
 		}
 
 		args = append(args, a...)
-	} else {
-		args = append(args,
-			"serve", "restic", "--stdio",
-			"--b2-hard-delete", "--drive-use-trash=false")
 	}
 
 	// finally, add the remote
