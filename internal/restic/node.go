@@ -321,11 +321,11 @@ func (node Node) createSymlinkAt(path string) error {
 }
 
 func (node *Node) createDevAt(path string) error {
-	return mknod(path, syscall.S_IFBLK|0600, int(node.Device))
+	return mknod(path, syscall.S_IFBLK|0600, node.device())
 }
 
 func (node *Node) createCharDevAt(path string) error {
-	return mknod(path, syscall.S_IFCHR|0600, int(node.Device))
+	return mknod(path, syscall.S_IFCHR|0600, node.device())
 }
 
 func (node *Node) createFifoAt(path string) error {
