@@ -178,7 +178,8 @@ func restoreAndVerify(t *testing.T, tempdir string, content []TestFile) {
 			continue
 		}
 
-		rtest.Equals(t, false, r.filesWriter.writers.Contains(target))
+		_, contains := r.filesWriter.cache[target]
+		rtest.Equals(t, false, contains)
 
 		content := repo.fileContent(file)
 		if !bytes.Equal(data, []byte(content)) {

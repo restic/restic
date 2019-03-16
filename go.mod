@@ -15,7 +15,6 @@ require (
 	github.com/google/go-cmp v0.2.0
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.7.0 // indirect
-	github.com/hashicorp/golang-lru v0.5.0
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jtolds/gls v4.2.1+incompatible // indirect
 	github.com/juju/ratelimit v1.0.1
