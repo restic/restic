@@ -4,15 +4,15 @@ sudo: false
 matrix:
   include:
     - os: linux
-      go: "1.9.x"
-      env: RESTIC_TEST_FUSE=0 RESTIC_TEST_CLOUD_BACKENDS=0 RESTIC_BUILD_SOLARIS=0
+      go: "1.10.x"
+      env: RESTIC_TEST_FUSE=0 RESTIC_TEST_CLOUD_BACKENDS=0
       cache:
         directories:
           - $HOME/.cache/go-build
           - $HOME/gopath/pkg/mod
 
     - os: linux
-      go: "1.10.x"
+      go: "1.11.x"
       env: RESTIC_TEST_FUSE=0 RESTIC_TEST_CLOUD_BACKENDS=0
       cache:
         directories:
@@ -21,7 +21,7 @@ matrix:
 
     # only run fuse and cloud backends tests on Travis for the latest Go on Linux
     - os: linux
-      go: "1.11.x"
+      go: "1.12.x"
       sudo: true
       cache:
         directories:
@@ -29,7 +29,7 @@ matrix:
           - $HOME/gopath/pkg/mod
 
     - os: osx
-      go: "1.11.x"
+      go: "1.12.x"
       env: RESTIC_TEST_FUSE=0 RESTIC_TEST_CLOUD_BACKENDS=0
       cache:
         directories:
