@@ -6,7 +6,7 @@ bazil.org/fuse/fuseutil
 cloud.google.com/go/compute/metadata
 # contrib.go.opencensus.io/exporter/ocagent v0.4.3
 contrib.go.opencensus.io/exporter/ocagent
-# github.com/Azure/azure-sdk-for-go v25.1.0+incompatible
+# github.com/Azure/azure-sdk-for-go v26.4.0+incompatible
 github.com/Azure/azure-sdk-for-go/storage
 github.com/Azure/azure-sdk-for-go/version
 # github.com/Azure/go-autorest v11.4.0+incompatible
@@ -71,7 +71,7 @@ github.com/kurin/blazer/x/window
 github.com/kurin/blazer/internal/b2types
 # github.com/marstr/guid v1.1.0
 github.com/marstr/guid
-# github.com/mattn/go-isatty v0.0.4
+# github.com/mattn/go-isatty v0.0.7
 github.com/mattn/go-isatty
 # github.com/minio/minio-go v6.0.14+incompatible
 github.com/minio/minio-go
@@ -82,7 +82,7 @@ github.com/minio/minio-go/pkg/s3utils
 github.com/minio/minio-go/pkg/set
 # github.com/mitchellh/go-homedir v1.1.0
 github.com/mitchellh/go-homedir
-# github.com/ncw/swift v1.0.44
+# github.com/ncw/swift v1.0.45
 github.com/ncw/swift
 # github.com/pkg/errors v0.8.1
 github.com/pkg/errors
@@ -159,7 +159,7 @@ golang.org/x/oauth2/jwt
 # golang.org/x/sync v0.0.0-20181221193216-37e7f081c4d4
 golang.org/x/sync/errgroup
 golang.org/x/sync/semaphore
-# golang.org/x/sys v0.0.0-20190209173611-3b5209105503
+# golang.org/x/sys v0.0.0-20190316082340-a2f829d7f35f
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 golang.org/x/sys/cpu
