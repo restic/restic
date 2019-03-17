@@ -4,7 +4,7 @@ require (
 	bazil.org/fuse v0.0.0-20180421153158-65cc252bf669
 	cloud.google.com/go v0.36.0 // indirect
 	contrib.go.opencensus.io/exporter/ocagent v0.4.3 // indirect
-	github.com/Azure/azure-sdk-for-go v25.1.0+incompatible
+	github.com/Azure/azure-sdk-for-go v26.4.0+incompatible
 	github.com/Azure/go-autorest v11.4.0+incompatible // indirect
 	github.com/cenkalti/backoff v2.1.1+incompatible
 	github.com/cpuguy83/go-md2man v1.0.8 // indirect
@@ -21,10 +21,10 @@ require (
 	github.com/kr/fs v0.1.0 // indirect
 	github.com/kurin/blazer v0.5.3
 	github.com/marstr/guid v1.1.0 // indirect
-	github.com/mattn/go-isatty v0.0.4
+	github.com/mattn/go-isatty v0.0.7
 	github.com/minio/minio-go v6.0.14+incompatible
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
-	github.com/ncw/swift v1.0.44
+	github.com/ncw/swift v1.0.45
 	github.com/pkg/errors v0.8.1
 	github.com/pkg/profile v1.2.1
 	github.com/pkg/sftp v1.10.0
@@ -41,7 +41,7 @@ require (
 	golang.org/x/net v0.0.0-20190206173232-65e2d4e15006
 	golang.org/x/oauth2 v0.0.0-20190130055435-99b60b757ec1
 	golang.org/x/sync v0.0.0-20181221193216-37e7f081c4d4
-	golang.org/x/sys v0.0.0-20190209173611-3b5209105503
+	golang.org/x/sys v0.0.0-20190316082340-a2f829d7f35f
 	golang.org/x/text v0.3.1-0.20180807135948-17ff2d5776d2
 	google.golang.org/api v0.1.0
 	google.golang.org/grpc v1.18.0 // indirect
