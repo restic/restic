@@ -1,6 +1,7 @@
 package archiver
 
 import (
+	"bytes"
 	"context"
 	"io/ioutil"
 	"os"
@@ -574,6 +575,26 @@ func TestFileChanged(t *testing.T) {
 			Modify: func(t testing.TB, filename string) {
 				sleep()
 				save(t, filename, defaultContent)
+			},
+		},
+		{
+			Name: "new-content-same-timestamp",
+			Modify: func(t testing.TB, filename string) {
+				fi, _ := os.Stat(filename)
+				extFI := fs.ExtendedStat(fi)
+				save(t, filename, bytes.ToUpper(defaultContent))
+				sleep()
+				ts := []syscall.Timespec{
+					{
+						Sec:  extFI.AccessTime.Unix(),
+						Nsec: int64(extFI.AccessTime.Nanosecond()),
+					},
+					{
+						Sec:  extFI.ModTime.Unix(),
+						Nsec: int64(extFI.ModTime.Nanosecond()),
+					},
+				}
+				syscall.UtimesNano(filename, ts)
 			},
 		},
 		{

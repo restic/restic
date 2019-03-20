@@ -22,6 +22,7 @@ type ExtendedFileInfo struct {
 
 	AccessTime time.Time // last access time stamp
 	ModTime    time.Time // last (content) modification time stamp
+	ChangeTime time.Time // last status change time stamp
 }
 
 // ExtendedStat returns an ExtendedFileInfo constructed from the os.FileInfo.

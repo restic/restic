@@ -1,0 +1,8 @@
+Bugfix: Use ctime when checking for file changes
+
+Previously, restic only checked a file's mtime (along with other non-timestamp
+data) to decide if a file has changed. This could cause it to not notice changes
+if something edits a file and then resets the timestamp. Restic now also checks
+the ctime, so any modification to a file should be noticed.
+
+https://github.com/restic/restic/issues/2179

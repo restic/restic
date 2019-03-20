@@ -453,8 +453,13 @@ func fileChanged(fi os.FileInfo, node *restic.Node, ignoreInode bool) bool {
 		return true
 	}
 
-	// check size
+	// check status change timestamp
 	extFI := fs.ExtendedStat(fi)
+	if !extFI.ChangeTime.Equal(node.ChangeTime) {
+		return true
+	}
+
+	// check size
 	if uint64(fi.Size()) != node.Size || uint64(extFI.Size) != node.Size {
 		return true
 	}
