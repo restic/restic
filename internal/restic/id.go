@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 
 	"github.com/restic/restic/internal/errors"
@@ -101,13 +102,33 @@ func (id ID) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON parses the JSON-encoded data and stores the result in id.
 func (id *ID) UnmarshalJSON(b []byte) error {
-	var s string
-	err := json.Unmarshal(b, &s)
-	if err != nil {
-		return errors.Wrap(err, "Unmarshal")
+	// check string length
+	if len(b) < 2 {
+		return fmt.Errorf("invalid ID: %q", b)
 	}
 
-	_, err = hex.Decode(id[:], []byte(s))
+	if len(b)%2 != 0 {
+		return fmt.Errorf("invalid ID length: %q", b)
+	}
+
+	// check string delimiters
+	if b[0] != '"' && b[0] != '\'' {
+		return fmt.Errorf("invalid start of string: %q", b[0])
+	}
+
+	last := len(b) - 1
+	if b[0] != b[last] {
+		return fmt.Errorf("starting string delimiter (%q) does not match end (%q)", b[0], b[last])
+	}
+
+	// strip JSON string delimiters
+	b = b[1:last]
+
+	if len(b) != 2*len(id) {
+		return fmt.Errorf("invalid length for ID")
+	}
+
+	_, err := hex.Decode(id[:], b)
 	if err != nil {
 		return errors.Wrap(err, "hex.Decode")
 	}
