@@ -1,0 +1,7 @@
+Enhancement: Add --wait-lock option
+
+This option allows to specify a duration for which restic will wait if there
+already exists a conflicting lock within the repository.
+
+https://github.com/restic/restic/pull/2214
+https://github.com/restic/restic/issues/719

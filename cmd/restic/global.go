@@ -56,6 +56,7 @@ type GlobalOptions struct {
 	Quiet           bool
 	Verbose         int
 	NoLock          bool
+	WaitLock        time.Duration
 	JSON            bool
 	CacheDir        string
 	NoCache         bool
@@ -109,6 +110,7 @@ func init() {
 	f.BoolVarP(&globalOptions.Quiet, "quiet", "q", false, "do not output comprehensive progress report")
 	f.CountVarP(&globalOptions.Verbose, "verbose", "v", "be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)")
 	f.BoolVar(&globalOptions.NoLock, "no-lock", false, "do not lock the repository, this allows some operations on read-only repositories")
+	f.DurationVar(&globalOptions.WaitLock, "wait-lock", 0, "wait if the repository is already locked, takes a value like 5m or 2h (default: don't wait)")
 	f.BoolVarP(&globalOptions.JSON, "json", "", false, "set output mode to JSON for commands that support it")
 	f.StringVar(&globalOptions.CacheDir, "cache-dir", "", "set the cache `directory`. (default: use system default cache directory)")
 	f.BoolVar(&globalOptions.NoCache, "no-cache", false, "do not use a local cache")

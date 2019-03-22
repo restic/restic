@@ -32,7 +32,39 @@ func lockRepository(ctx context.Context, repo *repository.Repository, exclusive 
 		lockFn = restic.NewExclusiveLock
 	}
 
-	lock, err := lockFn(ctx, repo)
+	retrySleep := 10 * time.Second
+	if retrySleep > globalOptions.WaitLock/4 {
+		// Reduce the time between the retries if the maximum total wait
+		// duration is small so that there are at least a few attempts.
+		retrySleep = globalOptions.WaitLock / 4
+	}
+
+	var lock *restic.Lock
+	var err error
+	waitMessagePrinted := false
+	timeout := time.After(globalOptions.WaitLock)
+retryLoop:
+	for {
+		lock, err = lockFn(ctx, repo)
+		if err != nil && restic.IsAlreadyLocked(err) {
+			// repo already locked
+			select {
+			case <-timeout:
+				debug.Log("repo already locked, timeout expired")
+				break retryLoop
+			default:
+				debug.Log("repo already locked, retrying in %v", retrySleep)
+				if !waitMessagePrinted {
+					Verbosef("repo already locked, waiting up to %s for the lock\n", globalOptions.WaitLock)
+					waitMessagePrinted = true
+				}
+				time.Sleep(retrySleep)
+			}
+		} else {
+			// anything else, either a successful lock or another error
+			break retryLoop
+		}
+	}
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to create lock in backend")
 	}

@@ -542,7 +542,10 @@ that the process is dead and considers the lock to be stale.
 When a new lock is to be created and no other conflicting locks are
 detected, restic creates a new lock, waits, and checks if other locks
 appeared in the repository. Depending on the type of the other locks and
-the lock to be created, restic either continues or fails.
+the lock to be created, restic either continues or fails. If the
+``--wait-lock`` option is specified, restic will automatically retry
+creating the lock periodically until it succeeds or the specified
+timeout expires.
 
 Backups and Deduplication
 =========================

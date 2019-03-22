@@ -63,6 +63,7 @@ Usage help is available:
           --repository-file file       file to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
           --tls-client-cert file       path to a file containing PEM encoded TLS client certificate and private key
       -v, --verbose n                  be verbose (specify --verbose multiple times or level --verbose=n)
+          --wait-lock duration         wait if the repository is already locked, takes a value like 5m or 2h (default: don't wait)
 
     Use "restic [command] --help" for more information about a command.
 
@@ -128,6 +129,7 @@ command:
           --repository-file file       file to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
           --tls-client-cert file       path to a file containing PEM encoded TLS client certificate and private key
       -v, --verbose n                  be verbose (specify --verbose multiple times or level --verbose=n)
+          --wait-lock duration         wait if the repository is already locked, takes a value like 5m or 2h (default: don't wait)
 
 Subcommand that support showing progress information such as ``backup``,
 ``check`` and ``prune`` will do so unless the quiet flag ``-q`` or
