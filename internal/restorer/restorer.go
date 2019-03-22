@@ -8,6 +8,7 @@ import (
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
 
+	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
@@ -92,7 +93,7 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 
 		if skipUnchanged {
 			if targetFile, err := os.Stat(nodeTarget); !os.IsNotExist(err) {
-				if node.ModTime.Equal(targetFile.ModTime()) && node.Size == uint64(targetFile.Size()) {
+				if !archiver.FileChanged(targetFile, node, true) {
 					debug.Log("Skipping target: %v\n", nodeTarget)
 					continue
 				}

@@ -385,7 +385,7 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 		}
 
 		// use previous node if the file hasn't changed
-		if previous != nil && !fileChanged(fi, previous, arch.IgnoreInode) {
+		if previous != nil && !FileChanged(fi, previous, arch.IgnoreInode) {
 			debug.Log("%v hasn't changed, returning old node", target)
 			arch.CompleteItem(snPath, previous, previous, ItemStats{}, time.Since(start))
 			arch.CompleteBlob(snPath, previous.Size)
@@ -436,9 +436,9 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 	return fn, false, nil
 }
 
-// fileChanged returns true if the file's content has changed since the node
+// FileChanged returns true if the file's content has changed since the node
 // was created.
-func fileChanged(fi os.FileInfo, node *restic.Node, ignoreInode bool) bool {
+func FileChanged(fi os.FileInfo, node *restic.Node, ignoreInode bool) bool {
 	if node == nil {
 		return true
 	}
