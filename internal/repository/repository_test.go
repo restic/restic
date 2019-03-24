@@ -244,7 +244,7 @@ func BenchmarkLoadAndDecrypt(b *testing.B) {
 	b.SetBytes(int64(length))
 
 	for i := 0; i < b.N; i++ {
-		data, err := repo.LoadAndDecrypt(context.TODO(), restic.DataFile, storageID)
+		data, err := repo.LoadAndDecrypt(context.TODO(), nil, restic.DataFile, storageID)
 		rtest.OK(b, err)
 		if len(data) != length {
 			b.Errorf("wanted %d bytes, got %d", length, len(data))

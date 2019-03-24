@@ -79,7 +79,7 @@ func (s *Suite) TestConfig(t *testing.T) {
 	var testString = "Config"
 
 	// create config and read it back
-	_, err := backend.LoadAll(context.TODO(), b, restic.Handle{Type: restic.ConfigFile})
+	_, err := backend.LoadAll(context.TODO(), nil, b, restic.Handle{Type: restic.ConfigFile})
 	if err == nil {
 		t.Fatalf("did not get expected error for non-existing config")
 	}
@@ -93,7 +93,7 @@ func (s *Suite) TestConfig(t *testing.T) {
 	// same config
 	for _, name := range []string{"", "foo", "bar", "0000000000000000000000000000000000000000000000000000000000000000"} {
 		h := restic.Handle{Type: restic.ConfigFile, Name: name}
-		buf, err := backend.LoadAll(context.TODO(), b, h)
+		buf, err := backend.LoadAll(context.TODO(), nil, b, h)
 		if err != nil {
 			t.Fatalf("unable to read config with name %q: %+v", name, err)
 		}
@@ -491,7 +491,7 @@ func (s *Suite) TestSave(t *testing.T) {
 		err := b.Save(context.TODO(), h, restic.NewByteReader(data))
 		test.OK(t, err)
 
-		buf, err := backend.LoadAll(context.TODO(), b, h)
+		buf, err := backend.LoadAll(context.TODO(), nil, b, h)
 		test.OK(t, err)
 		if len(buf) != len(data) {
 			t.Fatalf("number of bytes does not match, want %v, got %v", len(data), len(buf))
@@ -584,7 +584,7 @@ func (s *Suite) TestSaveFilenames(t *testing.T) {
 			continue
 		}
 
-		buf, err := backend.LoadAll(context.TODO(), b, h)
+		buf, err := backend.LoadAll(context.TODO(), nil, b, h)
 		if err != nil {
 			t.Errorf("test %d failed: Load() returned %+v", i, err)
 			continue
@@ -734,7 +734,7 @@ func (s *Suite) TestBackend(t *testing.T) {
 
 			// test Load()
 			h := restic.Handle{Type: tpe, Name: ts.id}
-			buf, err := backend.LoadAll(context.TODO(), b, h)
+			buf, err := backend.LoadAll(context.TODO(), nil, b, h)
 			test.OK(t, err)
 			test.Equals(t, ts.data, string(buf))
 

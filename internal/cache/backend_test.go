@@ -17,7 +17,7 @@ import (
 )
 
 func loadAndCompare(t testing.TB, be restic.Backend, h restic.Handle, data []byte) {
-	buf, err := backend.LoadAll(context.TODO(), be, h)
+	buf, err := backend.LoadAll(context.TODO(), nil, be, h)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,7 +147,7 @@ func TestErrorBackend(t *testing.T) {
 	loadTest := func(wg *sync.WaitGroup, be restic.Backend) {
 		defer wg.Done()
 
-		buf, err := backend.LoadAll(context.TODO(), be, h)
+		buf, err := backend.LoadAll(context.TODO(), nil, be, h)
 		if err == testErr {
 			return
 		}

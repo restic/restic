@@ -9,7 +9,6 @@ import (
 	"io"
 	"os"
 
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
@@ -67,15 +66,29 @@ func (r *Repository) PrefixLength(t restic.FileType) (int, error) {
 	return restic.PrefixLength(r.be, t)
 }
 
-// LoadAndDecrypt loads and decrypts data identified by t and id from the
-// backend.
-func (r *Repository) LoadAndDecrypt(ctx context.Context, t restic.FileType, id restic.ID) (buf []byte, err error) {
+// LoadAndDecrypt loads and decrypts the file with the given type and ID, using
+// the supplied buffer (which must be empty). If the buffer is nil, a new
+// buffer will be allocated and returned.
+func (r *Repository) LoadAndDecrypt(ctx context.Context, buf []byte, t restic.FileType, id restic.ID) ([]byte, error) {
+	if len(buf) != 0 {
+		panic("buf is not empty")
+	}
+
 	debug.Log("load %v with id %v", t, id)
 
 	h := restic.Handle{Type: t, Name: id.String()}
-	buf, err = backend.LoadAll(ctx, r.be, h)
+	err := r.be.Load(ctx, h, 0, 0, func(rd io.Reader) error {
+		// make sure this call is idempotent, in case an error occurs
+		wr := bytes.NewBuffer(buf[:0])
+		_, cerr := io.Copy(wr, rd)
+		if cerr != nil {
+			return cerr
+		}
+		buf = wr.Bytes()
+		return nil
+	})
+
 	if err != nil {
-		debug.Log("error loading %v: %v", h, err)
 		return nil, err
 	}
 
@@ -188,7 +201,7 @@ func (r *Repository) loadBlob(ctx context.Context, id restic.ID, t restic.BlobTy
 // LoadJSONUnpacked decrypts the data and afterwards calls json.Unmarshal on
 // the item.
 func (r *Repository) LoadJSONUnpacked(ctx context.Context, t restic.FileType, id restic.ID, item interface{}) (err error) {
-	buf, err := r.LoadAndDecrypt(ctx, t, id)
+	buf, err := r.LoadAndDecrypt(ctx, nil, t, id)
 	if err != nil {
 		return err
 	}

@@ -74,7 +74,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 		fmt.Println(string(buf))
 		return nil
 	case "index":
-		buf, err := repo.LoadAndDecrypt(gopts.ctx, restic.IndexFile, id)
+		buf, err := repo.LoadAndDecrypt(gopts.ctx, nil, restic.IndexFile, id)
 		if err != nil {
 			return err
 		}
@@ -99,7 +99,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 		return nil
 	case "key":
 		h := restic.Handle{Type: restic.KeyFile, Name: id.String()}
-		buf, err := backend.LoadAll(gopts.ctx, repo.Backend(), h)
+		buf, err := backend.LoadAll(gopts.ctx, nil, repo.Backend(), h)
 		if err != nil {
 			return err
 		}
@@ -150,7 +150,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 	switch tpe {
 	case "pack":
 		h := restic.Handle{Type: restic.DataFile, Name: id.String()}
-		buf, err := backend.LoadAll(gopts.ctx, repo.Backend(), h)
+		buf, err := backend.LoadAll(gopts.ctx, nil, repo.Backend(), h)
 		if err != nil {
 			return err
 		}
