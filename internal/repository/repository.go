@@ -431,11 +431,13 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 
 	// a worker receives an index ID from ch, loads the index, and sends it to indexCh
 	worker := func() error {
+		var buf []byte
 		for fi := range ch {
-			idx, err := LoadIndex(ctx, r, fi.ID)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "%v, ignoring\n", err)
-				return nil
+			var err error
+			var idx *Index
+			idx, buf, err = LoadIndexWithDecoder(ctx, r, buf[:0], fi.ID, DecodeIndex)
+			if err != nil && errors.Cause(err) == ErrOldIndexFormat {
+				idx, buf, err = LoadIndexWithDecoder(ctx, r, buf[:0], fi.ID, DecodeOldIndex)
 			}
 
 			select {
@@ -548,14 +550,15 @@ func (r *Repository) PrepareCache(indexIDs restic.IDSet) error {
 
 // LoadIndex loads the index id from backend and returns it.
 func LoadIndex(ctx context.Context, repo restic.Repository, id restic.ID) (*Index, error) {
-	idx, err := LoadIndexWithDecoder(ctx, repo, id, DecodeIndex)
+	idx, _, err := LoadIndexWithDecoder(ctx, repo, nil, id, DecodeIndex)
 	if err == nil {
 		return idx, nil
 	}
 
 	if errors.Cause(err) == ErrOldIndexFormat {
 		fmt.Fprintf(os.Stderr, "index %v has old format\n", id.Str())
-		return LoadIndexWithDecoder(ctx, repo, id, DecodeOldIndex)
+		idx, _, err := LoadIndexWithDecoder(ctx, repo, nil, id, DecodeOldIndex)
+		return idx, err
 	}
 
 	return nil, err

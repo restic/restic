@@ -108,14 +108,17 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 
 	// a worker receives an index ID from ch, loads the index, and sends it to indexCh
 	worker := func() error {
+		var buf []byte
 		for fi := range ch {
 			debug.Log("worker got file %v", fi.ID.Str())
-			idx, err := repository.LoadIndexWithDecoder(ctx, c.repo, fi.ID, repository.DecodeIndex)
+			var err error
+			var idx *repository.Index
+			idx, buf, err = repository.LoadIndexWithDecoder(ctx, c.repo, buf[:0], fi.ID, repository.DecodeIndex)
 			if errors.Cause(err) == repository.ErrOldIndexFormat {
 				debug.Log("index %v has old format", fi.ID.Str())
 				hints = append(hints, ErrOldIndexFormat{fi.ID})
 
-				idx, err = repository.LoadIndexWithDecoder(ctx, c.repo, fi.ID, repository.DecodeOldIndex)
+				idx, buf, err = repository.LoadIndexWithDecoder(ctx, c.repo, buf[:0], fi.ID, repository.DecodeOldIndex)
 			}
 
 			err = errors.Wrapf(err, "error loading index %v", fi.ID.Str())
