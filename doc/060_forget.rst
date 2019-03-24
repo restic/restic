@@ -210,7 +210,7 @@ all snapshots, use ``--keep-last 1`` and then finally remove the last
 snapshot ID manually (by passing the ID to ``forget``).
 
 All snapshots are evaluated against all matching ``--keep-*`` counts. A
-single snapshot on 2017-09-30 (Sun) will count as a daily, weekly and monthly.
+single snapshot on 2017-09-30 (Sat) will count as a daily, weekly and monthly.
 
 Let's explain this with an example: Suppose you have only made a backup
 on each Sunday for 12 weeks. Then ``forget --keep-daily 4`` will keep
