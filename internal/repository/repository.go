@@ -18,6 +18,7 @@ import (
 	"github.com/restic/restic/internal/hashing"
 	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/restic"
+	"golang.org/x/sync/errgroup"
 )
 
 // Repository is used to access a repository in a backend.
@@ -391,45 +392,84 @@ const loadIndexParallelism = 4
 func (r *Repository) LoadIndex(ctx context.Context) error {
 	debug.Log("Loading index")
 
-	errCh := make(chan error, 1)
-	indexes := make(chan *Index)
+	// track spawned goroutines using wg, create a new context which is
+	// cancelled as soon as an error occurs.
+	wg, ctx := errgroup.WithContext(ctx)
 
-	worker := func(ctx context.Context, id restic.ID) error {
-		idx, err := LoadIndex(ctx, r, id)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "%v, ignoring\n", err)
+	type FileInfo struct {
+		restic.ID
+		Size int64
+	}
+	ch := make(chan FileInfo)
+	indexCh := make(chan *Index)
+
+	// send list of index files through ch, which is closed afterwards
+	wg.Go(func() error {
+		defer close(ch)
+		return r.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
+			select {
+			case <-ctx.Done():
+				return nil
+			case ch <- FileInfo{id, size}:
+			}
 			return nil
-		}
+		})
+	})
 
-		select {
-		case indexes <- idx:
-		case <-ctx.Done():
+	// a worker receives an index ID from ch, loads the index, and sends it to indexCh
+	worker := func() error {
+		for fi := range ch {
+			idx, err := LoadIndex(ctx, r, fi.ID)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "%v, ignoring\n", err)
+				return nil
+			}
+
+			select {
+			case indexCh <- idx:
+			case <-ctx.Done():
+			}
 		}
 
 		return nil
 	}
 
-	go func() {
-		defer close(indexes)
-		errCh <- FilesInParallel(ctx, r.be, restic.IndexFile, loadIndexParallelism,
-			ParallelWorkFuncParseID(worker))
-	}()
-
-	validIndex := restic.NewIDSet()
-	for idx := range indexes {
-		id, err := idx.ID()
-		if err == nil {
-			validIndex.Insert(id)
-		}
-		r.idx.Insert(idx)
+	// final closes indexCh after all workers have terminated
+	final := func() error {
+		close(indexCh)
+		return nil
 	}
 
-	err := r.PrepareCache(validIndex)
+	// run workers on ch
+	wg.Go(func() error {
+		return RunWorkers(ctx, loadIndexParallelism, worker, final)
+	})
+
+	// receive decoded indexes
+	validIndex := restic.NewIDSet()
+	wg.Go(func() error {
+		for idx := range indexCh {
+			id, err := idx.ID()
+			if err == nil {
+				validIndex.Insert(id)
+			}
+			r.idx.Insert(idx)
+		}
+		return nil
+	})
+
+	err := wg.Wait()
 	if err != nil {
 		return err
 	}
 
-	return <-errCh
+	// remove index files from the cache which have been removed in the repo
+	err = r.PrepareCache(validIndex)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // PrepareCache initializes the local cache. indexIDs is the list of IDs of
