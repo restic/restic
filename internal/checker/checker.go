@@ -49,7 +49,7 @@ func New(repo restic.Repository) *Checker {
 	return c
 }
 
-const defaultParallelism = 40
+const defaultParallelism = 5
 
 // ErrDuplicatePacks is returned when a pack is found in more than one index.
 type ErrDuplicatePacks struct {
