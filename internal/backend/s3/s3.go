@@ -260,7 +260,7 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 	be.sem.GetToken()
 	defer be.sem.ReleaseToken()
 
-	opts := minio.PutObjectOptions{}
+	opts := minio.PutObjectOptions{StorageClass: be.cfg.StorageClass}
 	opts.ContentType = "application/octet-stream"
 
 	debug.Log("PutObject(%v, %v, %v)", be.cfg.Bucket, objName, rd.Length())
