@@ -1,0 +1,6 @@
+Bugfix: Fix reading passwords from stdin
+
+Passwords for the `init`, `key add`, and `key passwd` commands can now be read from
+non-terminal stdin.
+
+https://github.com/restic/restic/issues/2203
