@@ -122,7 +122,17 @@ Last, if you'd like to use an entirely different program to create the
 SFTP connection, you can specify the command to be run with the option
 ``-o sftp.command="foobar"``.
 
+.. note:: Please be aware that sftp servers close connections when no data is
+          received by the client. This can happen when restic is processing huge
+          amounts of unchanged data. To avoid this issue add the following lines 
+          to the client’s .ssh/config file:
 
+::
+
+    ServerAliveInterval 60
+    ServerAliveCountMax 240
+          
+          
 REST Server
 ***********
 
