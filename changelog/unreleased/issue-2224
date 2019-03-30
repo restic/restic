@@ -1,0 +1,9 @@
+Bugfix: Don't abort the find command when a tree can't be loaded
+
+Change the find command so that missing trees don't result in a crash.
+Instead, the error is logged to the debug log, and the tree ID is displayed
+along with the snapshot it belongs to.  This makes it possible to recover
+repositories that are missing trees by forgetting the snapshots they are used
+in.
+
+https://github.com/restic/restic/issues/2224
