@@ -174,28 +174,28 @@ There's both pre-compiled binaries for different platforms as well as the source
 code available for download. Just download and run the one matching your system.
 
 The official binaries can be updated in place using the ``restic self-update``
-command:
+command (needs restic 0.9.3 or later):
 
 .. code-block:: console
 
     $ restic version
-    restic 0.9.1 compiled with go1.10.3 on linux/amd64
+    restic 0.9.3 compiled with go1.11.2 on linux/amd64
 
     $ restic self-update
     find latest release of restic at GitHub
-    latest version is 0.9.2
+    latest version is 0.9.4
     download file SHA256SUMS
     download SHA256SUMS
     download file SHA256SUMS
     download SHA256SUMS.asc
     GPG signature verification succeeded
-    download restic_0.9.2_linux_amd64.bz2
-    downloaded restic_0.9.2_linux_amd64.bz2
+    download restic_0.9.4_linux_amd64.bz2
+    downloaded restic_0.9.4_linux_amd64.bz2
     saved 12115904 bytes in ./restic
-    successfully updated restic to version 0.9.2
+    successfully updated restic to version 0.9.4
 
     $ restic version
-    restic 0.9.2 compiled with go1.10.3 on linux/amd64
+    restic 0.9.4 compiled with go1.12.1 on linux/amd64
 
 The ``self-update`` command uses the GPG signature on the files uploaded to
 GitHub to verify their authenticity. No external programs are necessary.
