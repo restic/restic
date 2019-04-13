@@ -9,7 +9,6 @@ import (
 	"io"
 	"os"
 
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
@@ -18,6 +17,7 @@ import (
 	"github.com/restic/restic/internal/hashing"
 	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/restic"
+	"golang.org/x/sync/errgroup"
 )
 
 // Repository is used to access a repository in a backend.
@@ -66,15 +66,29 @@ func (r *Repository) PrefixLength(t restic.FileType) (int, error) {
 	return restic.PrefixLength(r.be, t)
 }
 
-// LoadAndDecrypt loads and decrypts data identified by t and id from the
-// backend.
-func (r *Repository) LoadAndDecrypt(ctx context.Context, t restic.FileType, id restic.ID) (buf []byte, err error) {
+// LoadAndDecrypt loads and decrypts the file with the given type and ID, using
+// the supplied buffer (which must be empty). If the buffer is nil, a new
+// buffer will be allocated and returned.
+func (r *Repository) LoadAndDecrypt(ctx context.Context, buf []byte, t restic.FileType, id restic.ID) ([]byte, error) {
+	if len(buf) != 0 {
+		panic("buf is not empty")
+	}
+
 	debug.Log("load %v with id %v", t, id)
 
 	h := restic.Handle{Type: t, Name: id.String()}
-	buf, err = backend.LoadAll(ctx, r.be, h)
+	err := r.be.Load(ctx, h, 0, 0, func(rd io.Reader) error {
+		// make sure this call is idempotent, in case an error occurs
+		wr := bytes.NewBuffer(buf[:0])
+		_, cerr := io.Copy(wr, rd)
+		if cerr != nil {
+			return cerr
+		}
+		buf = wr.Bytes()
+		return nil
+	})
+
 	if err != nil {
-		debug.Log("error loading %v: %v", h, err)
 		return nil, err
 	}
 
@@ -187,7 +201,7 @@ func (r *Repository) loadBlob(ctx context.Context, id restic.ID, t restic.BlobTy
 // LoadJSONUnpacked decrypts the data and afterwards calls json.Unmarshal on
 // the item.
 func (r *Repository) LoadJSONUnpacked(ctx context.Context, t restic.FileType, id restic.ID, item interface{}) (err error) {
-	buf, err := r.LoadAndDecrypt(ctx, t, id)
+	buf, err := r.LoadAndDecrypt(ctx, nil, t, id)
 	if err != nil {
 		return err
 	}
@@ -391,45 +405,86 @@ const loadIndexParallelism = 4
 func (r *Repository) LoadIndex(ctx context.Context) error {
 	debug.Log("Loading index")
 
-	errCh := make(chan error, 1)
-	indexes := make(chan *Index)
+	// track spawned goroutines using wg, create a new context which is
+	// cancelled as soon as an error occurs.
+	wg, ctx := errgroup.WithContext(ctx)
 
-	worker := func(ctx context.Context, id restic.ID) error {
-		idx, err := LoadIndex(ctx, r, id)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "%v, ignoring\n", err)
+	type FileInfo struct {
+		restic.ID
+		Size int64
+	}
+	ch := make(chan FileInfo)
+	indexCh := make(chan *Index)
+
+	// send list of index files through ch, which is closed afterwards
+	wg.Go(func() error {
+		defer close(ch)
+		return r.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
+			select {
+			case <-ctx.Done():
+				return nil
+			case ch <- FileInfo{id, size}:
+			}
 			return nil
-		}
+		})
+	})
 
-		select {
-		case indexes <- idx:
-		case <-ctx.Done():
+	// a worker receives an index ID from ch, loads the index, and sends it to indexCh
+	worker := func() error {
+		var buf []byte
+		for fi := range ch {
+			var err error
+			var idx *Index
+			idx, buf, err = LoadIndexWithDecoder(ctx, r, buf[:0], fi.ID, DecodeIndex)
+			if err != nil && errors.Cause(err) == ErrOldIndexFormat {
+				idx, buf, err = LoadIndexWithDecoder(ctx, r, buf[:0], fi.ID, DecodeOldIndex)
+			}
+
+			select {
+			case indexCh <- idx:
+			case <-ctx.Done():
+			}
 		}
 
 		return nil
 	}
 
-	go func() {
-		defer close(indexes)
-		errCh <- FilesInParallel(ctx, r.be, restic.IndexFile, loadIndexParallelism,
-			ParallelWorkFuncParseID(worker))
-	}()
-
-	validIndex := restic.NewIDSet()
-	for idx := range indexes {
-		id, err := idx.ID()
-		if err == nil {
-			validIndex.Insert(id)
-		}
-		r.idx.Insert(idx)
+	// final closes indexCh after all workers have terminated
+	final := func() error {
+		close(indexCh)
+		return nil
 	}
 
-	err := r.PrepareCache(validIndex)
+	// run workers on ch
+	wg.Go(func() error {
+		return RunWorkers(ctx, loadIndexParallelism, worker, final)
+	})
+
+	// receive decoded indexes
+	validIndex := restic.NewIDSet()
+	wg.Go(func() error {
+		for idx := range indexCh {
+			id, err := idx.ID()
+			if err == nil {
+				validIndex.Insert(id)
+			}
+			r.idx.Insert(idx)
+		}
+		return nil
+	})
+
+	err := wg.Wait()
 	if err != nil {
 		return err
 	}
 
-	return <-errCh
+	// remove index files from the cache which have been removed in the repo
+	err = r.PrepareCache(validIndex)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // PrepareCache initializes the local cache. indexIDs is the list of IDs of
@@ -495,14 +550,15 @@ func (r *Repository) PrepareCache(indexIDs restic.IDSet) error {
 
 // LoadIndex loads the index id from backend and returns it.
 func LoadIndex(ctx context.Context, repo restic.Repository, id restic.ID) (*Index, error) {
-	idx, err := LoadIndexWithDecoder(ctx, repo, id, DecodeIndex)
+	idx, _, err := LoadIndexWithDecoder(ctx, repo, nil, id, DecodeIndex)
 	if err == nil {
 		return idx, nil
 	}
 
 	if errors.Cause(err) == ErrOldIndexFormat {
 		fmt.Fprintf(os.Stderr, "index %v has old format\n", id.Str())
-		return LoadIndexWithDecoder(ctx, repo, id, DecodeOldIndex)
+		idx, _, err := LoadIndexWithDecoder(ctx, repo, nil, id, DecodeOldIndex)
+		return idx, err
 	}
 
 	return nil, err

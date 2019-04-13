@@ -549,21 +549,21 @@ func DecodeOldIndex(buf []byte) (idx *Index, err error) {
 }
 
 // LoadIndexWithDecoder loads the index and decodes it with fn.
-func LoadIndexWithDecoder(ctx context.Context, repo restic.Repository, id restic.ID, fn func([]byte) (*Index, error)) (idx *Index, err error) {
+func LoadIndexWithDecoder(ctx context.Context, repo restic.Repository, buf []byte, id restic.ID, fn func([]byte) (*Index, error)) (*Index, []byte, error) {
 	debug.Log("Loading index %v", id)
 
-	buf, err := repo.LoadAndDecrypt(ctx, restic.IndexFile, id)
+	buf, err := repo.LoadAndDecrypt(ctx, buf[:0], restic.IndexFile, id)
 	if err != nil {
-		return nil, err
+		return nil, buf[:0], err
 	}
 
-	idx, err = fn(buf)
+	idx, err := fn(buf)
 	if err != nil {
 		debug.Log("error while decoding index %v: %v", id, err)
-		return nil, err
+		return nil, buf[:0], err
 	}
 
 	idx.id = id
 
-	return idx, nil
+	return idx, buf, nil
 }
