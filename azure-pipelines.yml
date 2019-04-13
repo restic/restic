@@ -1,0 +1,58 @@
+---
+# Go
+# Build your Go project.
+# Add steps that test, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/go
+#
+# YAML format reference:
+# https://docs.microsoft.com/en-us/azure/devops/pipelines/yaml-schema?view=azure-devops&tabs=schema
+#
+#
+
+trigger:
+  - master
+
+strategy:
+  matrix:
+    linux:
+      ImageName: ubuntu-16.04
+      TargetGoVersion: 1.12.4
+      # check all cloud backends but skip cross compilation for Linux
+      TestOptions: --skip-cross-compile --verbose
+    mac:
+      ImageName: macos-10.13
+      TargetGoVersion: 1.12.4
+      # the macOS machines for Azure Pipelines are more powerful, we do cross-compilation here
+      TestOptions: --skip-cloud-backends --skip-fuse --verbose
+    windows:
+      ImageName: windows-2019
+      TargetGoVersion: 1.12.4
+      # Windows machines are very slow, so don't do anything expensive here
+      TestOptions: --skip-cloud-backends --skip-install --skip-program-backends --skip-cross-compile --skip-tidy --skip-vendor --skip-fuse --skip-format --skip-changelog --verbose
+
+variables:
+  GO111MODULE: "on"
+
+pool:
+  vmImage: '$(ImageName)'
+
+steps:
+  # download Go, make sure that GOBIN and GOROOT/bin are inserted at the
+  # beginning of the PATH
+  - bash: |
+      go run -mod=vendor helpers/download-go/main.go --version "$(TargetGoVersion)" --target-dir "$HOME/sdk"
+      GOROOT="$HOME/sdk/go"
+      GOBIN="$HOME/go/bin"
+      echo "##vso[task.setvariable variable=GOROOT]${GOROOT}"
+      echo "##vso[task.setvariable variable=GOBIN]${GOBIN}"
+      echo "##vso[task.prependpath]${GOBIN}"
+      echo "##vso[task.prependpath]${GOROOT}/bin"
+    displayName: 'Install Go $(TargetGoVersion)'
+
+  - bash: |
+      go version
+      export RESTIC_TEST_S3_REPOSITORY='$(RESTIC_TEST_S3_REPOSITORY)'
+      export RESTIC_TEST_S3_KEY='$(RESTIC_TEST_S3_KEY)'
+      export RESTIC_TEST_S3_SECRET='$(RESTIC_TEST_S3_SECRET)'
+      go run -mod=vendor helpers/run-integration-tests/main.go --verbose $(TestOptions)
+    displayName: 'Run the tests'

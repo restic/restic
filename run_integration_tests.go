@@ -188,7 +188,7 @@ func (env *TravisEnvironment) Prepare() error {
 
 	pkgs := []string{
 		"github.com/NebulousLabs/glyphcheck",
-		"github.com/restic/rest-server/cmd/rest-server",
+		"github.com/restic/rest-server/cmd/rest-server@latest",
 		"github.com/restic/calens",
 		"github.com/ncw/rclone",
 	}
