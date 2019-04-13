@@ -78,7 +78,7 @@ command:
 
     Flags:
       -e, --exclude pattern                  exclude a pattern (can be specified multiple times)
-          --exclude-caches                   excludes cache directories that are marked with a CACHEDIR.TAG file
+          --exclude-caches                   excludes cache directories that are marked with a CACHEDIR.TAG file. See http://bford.info/cachedir/spec.html for the Cache Directory Tagging Standard
           --exclude-file file                read exclude patterns from a file (can be specified multiple times)
           --exclude-if-present stringArray   takes filename[:header], exclude contents of directories containing filename (except filename itself) if header of that file is as provided (can be specified multiple times)
           --files-from string                read the files to backup from file (can be combined with file args/can be specified multiple times)
