@@ -1,0 +1,16 @@
+Enhancement: Add config option to set S3 storage class
+
+The `s3.storage-class` option can be passed to restic (using `-o`) to
+specify the storage class to be used for S3 objects created by restic.
+
+The storage class is passed as-is to S3, so it needs to be understood by
+the API. On AWS, it can be one of `STANDARD`, `STANDARD_IA`,
+`ONEZONE_IA`, `INTELLIGENT_TIERING` and `REDUCED_REDUNDANCY`. If
+unspecified, the default storage class is used (`STANDARD` on AWS).
+
+You can mix storage classes in the same bucket, and the setting isn't
+stored in the restic repository, so be sure to specify it with each
+command that writes to S3.
+
+https://github.com/restic/restic/pull/2220
+https://github.com/restic/restic/issues/706
