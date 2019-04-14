@@ -1,6 +1,0 @@
-Enhancement: Extend "restic find --show-pack-id" to support --tree
-
-This makes it possible to find the pack containing a specific tree, which is
-useful mostly in development.
-
-https://github.com/restic/restic/issues/2229
