@@ -24,7 +24,7 @@ func Find(be Lister, t FileType, prefix string) (string, error) {
 	defer cancel()
 
 	err := be.List(ctx, t, func(fi FileInfo) error {
-		if prefix == fi.Name[:len(prefix)] {
+		if len(fi.Name) >= len(prefix) && prefix == fi.Name[:len(prefix)] {
 			if match == "" {
 				match = fi.Name
 			} else {
