@@ -317,7 +317,7 @@ func installRclone(gobin string) {
 		die("error close %v: %v", tempfile.Name(), err)
 	}
 
-	verbose("extracted %v from %v in %.3fs", target, tempfile.Name(), time.Since(start).Seconds())
+	verbose("  extracted %v from %v in %.3fs", target, tempfile.Name(), time.Since(start).Seconds())
 }
 
 var opts struct {
