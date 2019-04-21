@@ -14,19 +14,34 @@ trigger:
 
 strategy:
   matrix:
-    linux:
+    linux_go1.12:
       ImageName: ubuntu-16.04
       TargetGoVersion: 1.12.4
       # check all cloud backends but skip cross compilation for Linux
       TestOptions: --skip-cross-compile --verbose
-    mac:
+    linux_go1.11:
+      ImageName: ubuntu-16.04
+      TargetGoVersion: 1.11.9
+      # check all cloud backends but skip cross compilation for Linux
+      TestOptions: --skip-cross-compile --verbose
+    mac_go1.12:
       ImageName: macos-10.13
       TargetGoVersion: 1.12.4
       # the macOS machines for Azure Pipelines are more powerful, we do cross-compilation here
       TestOptions: --skip-cloud-backends --skip-fuse --verbose
-    windows:
+    mac_go1.11:
+      ImageName: macos-10.13
+      TargetGoVersion: 1.11.9
+      # the macOS machines for Azure Pipelines are more powerful, we do cross-compilation here
+      TestOptions: --skip-cloud-backends --skip-fuse --verbose
+    windows_go1.12:
       ImageName: windows-2019
       TargetGoVersion: 1.12.4
+      # Windows machines are very slow, so don't do anything expensive here
+      TestOptions: --skip-cloud-backends --skip-install --skip-program-backends --skip-cross-compile --skip-tidy --skip-vendor --skip-fuse --skip-format --skip-changelog --verbose
+    windows_go1.11:
+      ImageName: windows-2019
+      TargetGoVersion: 1.11.9
       # Windows machines are very slow, so don't do anything expensive here
       TestOptions: --skip-cloud-backends --skip-install --skip-program-backends --skip-cross-compile --skip-tidy --skip-vendor --skip-fuse --skip-format --skip-changelog --verbose
 
