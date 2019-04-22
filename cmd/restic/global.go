@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -273,15 +274,10 @@ func resolvePassword(opts GlobalOptions) (string, error) {
 
 // readPassword reads the password from the given reader directly.
 func readPassword(in io.Reader) (password string, err error) {
-	buf := make([]byte, 1000)
-	n, err := io.ReadFull(in, buf)
-	buf = buf[:n]
+	sc := bufio.NewScanner(in)
+	sc.Scan()
 
-	if err != nil && errors.Cause(err) != io.ErrUnexpectedEOF {
-		return "", errors.Wrap(err, "ReadFull")
-	}
-
-	return strings.TrimRight(string(buf), "\r\n"), nil
+	return sc.Text(), errors.Wrap(err, "Scan")
 }
 
 // readPasswordTerminal reads the password from the given reader which must be a
@@ -336,13 +332,15 @@ func ReadPasswordTwice(gopts GlobalOptions, prompt1, prompt2 string) (string, er
 	if err != nil {
 		return "", err
 	}
-	pw2, err := ReadPassword(gopts, prompt2)
-	if err != nil {
-		return "", err
-	}
+	if stdinIsTerminal() {
+		pw2, err := ReadPassword(gopts, prompt2)
+		if err != nil {
+			return "", err
+		}
 
-	if pw1 != pw2 {
-		return "", errors.Fatal("passwords do not match")
+		if pw1 != pw2 {
+			return "", errors.Fatal("passwords do not match")
+		}
 	}
 
 	return pw1, nil
