@@ -4,10 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"sort"
-	"strings"
 
-	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	"github.com/spf13/cobra"
 )
@@ -91,178 +88,129 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	// group by hostname and dirs
-	type key struct {
-		Hostname string
-		Paths    []string
-		Tags     []string
-	}
-	snapshotGroups := make(map[string]restic.Snapshots)
-
-	var GroupByTag bool
-	var GroupByHost bool
-	var GroupByPath bool
-	var GroupOptionList []string
-
-	GroupOptionList = strings.Split(opts.GroupBy, ",")
-
-	for _, option := range GroupOptionList {
-		switch option {
-		case "host":
-			GroupByHost = true
-		case "paths":
-			GroupByPath = true
-		case "tags":
-			GroupByTag = true
-		case "":
-		default:
-			return errors.Fatal("unknown grouping option: '" + option + "'")
-		}
-	}
-
 	removeSnapshots := 0
 
 	ctx, cancel := context.WithCancel(gopts.ctx)
 	defer cancel()
+
+	var snapshots restic.Snapshots
+
 	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, args) {
-		if len(args) > 0 {
-			// When explicit snapshots args are given, remove them immediately.
+		snapshots = append(snapshots, sn)
+	}
+
+	if len(args) > 0 {
+		// When explicit snapshots args are given, remove them immediately.
+		for _, sn := range snapshots {
 			if !opts.DryRun {
 				h := restic.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
 				if err = repo.Backend().Remove(gopts.ctx, h); err != nil {
 					return err
 				}
-				Verbosef("removed snapshot %v\n", sn.ID().Str())
+				if !gopts.JSON {
+					Verbosef("removed snapshot %v\n", sn.ID().Str())
+				}
 				removeSnapshots++
 			} else {
-				Verbosef("would have removed snapshot %v\n", sn.ID().Str())
+				if !gopts.JSON {
+					Verbosef("would have removed snapshot %v\n", sn.ID().Str())
+				}
 			}
-		} else {
-			// Determining grouping-keys
-			var tags []string
-			var hostname string
-			var paths []string
-
-			if GroupByTag {
-				tags = sn.Tags
-				sort.StringSlice(tags).Sort()
-			}
-			if GroupByHost {
-				hostname = sn.Hostname
-			}
-			if GroupByPath {
-				paths = sn.Paths
-			}
-
-			sort.StringSlice(sn.Paths).Sort()
-			var k []byte
-			var err error
-
-			k, err = json.Marshal(key{Tags: tags, Hostname: hostname, Paths: paths})
-
-			if err != nil {
-				return err
-			}
-			snapshotGroups[string(k)] = append(snapshotGroups[string(k)], sn)
 		}
-	}
-
-	policy := restic.ExpirePolicy{
-		Last:    opts.Last,
-		Hourly:  opts.Hourly,
-		Daily:   opts.Daily,
-		Weekly:  opts.Weekly,
-		Monthly: opts.Monthly,
-		Yearly:  opts.Yearly,
-		Within:  opts.Within,
-		Tags:    opts.KeepTags,
-	}
-
-	if policy.Empty() && len(args) == 0 {
-		Verbosef("no policy was specified, no snapshots will be removed\n")
-	}
-
-	if !policy.Empty() {
-		if !gopts.JSON {
-			Verbosef("Applying Policy: %v\n", policy)
+	} else {
+		snapshotGroups, _, err := restic.GroupSnapshots(snapshots, opts.GroupBy)
+		if err != nil {
+			return err
 		}
 
-		var jsonGroups []*ForgetGroup
+		policy := restic.ExpirePolicy{
+			Last:    opts.Last,
+			Hourly:  opts.Hourly,
+			Daily:   opts.Daily,
+			Weekly:  opts.Weekly,
+			Monthly: opts.Monthly,
+			Yearly:  opts.Yearly,
+			Within:  opts.Within,
+			Tags:    opts.KeepTags,
+		}
 
-		for k, snapshotGroup := range snapshotGroups {
-			var key key
-			if json.Unmarshal([]byte(k), &key) != nil {
-				return err
-			}
-
-			var fg ForgetGroup
-			// Info
+		if policy.Empty() && len(args) == 0 {
 			if !gopts.JSON {
-				Verbosef("snapshots")
+				Verbosef("no policy was specified, no snapshots will be removed\n")
 			}
-			var infoStrings []string
-			if GroupByTag {
-				infoStrings = append(infoStrings, "tags ["+strings.Join(key.Tags, ", ")+"]")
-				fg.Tags = key.Tags
-			}
-			if GroupByHost {
-				infoStrings = append(infoStrings, "host ["+key.Hostname+"]")
-				fg.Host = key.Hostname
-			}
-			if GroupByPath {
-				infoStrings = append(infoStrings, "paths ["+strings.Join(key.Paths, ", ")+"]")
-				fg.Paths = key.Paths
-			}
-			if infoStrings != nil && !gopts.JSON {
-				Verbosef(" for (" + strings.Join(infoStrings, ", ") + ")")
-			}
+		}
+
+		if !policy.Empty() {
 			if !gopts.JSON {
-				Verbosef(":\n\n")
+				Verbosef("Applying Policy: %v\n", policy)
 			}
 
-			keep, remove, reasons := restic.ApplyPolicy(snapshotGroup, policy)
+			var jsonGroups []*ForgetGroup
 
-			if len(keep) != 0 && !gopts.Quiet && !gopts.JSON {
-				Printf("keep %d snapshots:\n", len(keep))
-				PrintSnapshots(globalOptions.stdout, keep, reasons, opts.Compact)
-				Printf("\n")
-			}
-			addJSONSnapshots(&fg.Keep, keep)
-
-			if len(remove) != 0 && !gopts.Quiet && !gopts.JSON {
-				Printf("remove %d snapshots:\n", len(remove))
-				PrintSnapshots(globalOptions.stdout, remove, nil, opts.Compact)
-				Printf("\n")
-			}
-			addJSONSnapshots(&fg.Remove, remove)
-
-			fg.Reasons = reasons
-
-			jsonGroups = append(jsonGroups, &fg)
-
-			removeSnapshots += len(remove)
-
-			if !opts.DryRun {
-				for _, sn := range remove {
-					h := restic.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
-					err = repo.Backend().Remove(gopts.ctx, h)
+			for k, snapshotGroup := range snapshotGroups {
+				if gopts.Verbose >= 1 && !gopts.JSON {
+					err = PrintSnapshotGroupHeader(gopts.stdout, k)
 					if err != nil {
 						return err
 					}
 				}
-			}
-		}
 
-		if gopts.JSON {
-			err = printJSONForget(gopts.stdout, jsonGroups)
-			if err != nil {
-				return err
+				var key restic.SnapshotGroupKey
+				if json.Unmarshal([]byte(k), &key) != nil {
+					return err
+				}
+
+				var fg ForgetGroup
+				fg.Tags = key.Tags
+				fg.Host = key.Hostname
+				fg.Paths = key.Paths
+
+				keep, remove, reasons := restic.ApplyPolicy(snapshotGroup, policy)
+
+				if len(keep) != 0 && !gopts.Quiet && !gopts.JSON {
+					Printf("keep %d snapshots:\n", len(keep))
+					PrintSnapshots(globalOptions.stdout, keep, reasons, opts.Compact)
+					Printf("\n")
+				}
+				addJSONSnapshots(&fg.Keep, keep)
+
+				if len(remove) != 0 && !gopts.Quiet && !gopts.JSON {
+					Printf("remove %d snapshots:\n", len(remove))
+					PrintSnapshots(globalOptions.stdout, remove, nil, opts.Compact)
+					Printf("\n")
+				}
+				addJSONSnapshots(&fg.Remove, remove)
+
+				fg.Reasons = reasons
+
+				jsonGroups = append(jsonGroups, &fg)
+
+				removeSnapshots += len(remove)
+
+				if !opts.DryRun {
+					for _, sn := range remove {
+						h := restic.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
+						err = repo.Backend().Remove(gopts.ctx, h)
+						if err != nil {
+							return err
+						}
+					}
+				}
+			}
+
+			if gopts.JSON {
+				err = printJSONForget(gopts.stdout, jsonGroups)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
 
 	if removeSnapshots > 0 && opts.Prune {
-		Verbosef("%d snapshots have been removed, running prune\n", removeSnapshots)
+		if !gopts.JSON {
+			Verbosef("%d snapshots have been removed, running prune\n", removeSnapshots)
+		}
 		if !opts.DryRun {
 			return pruneRepository(gopts, repo)
 		}
