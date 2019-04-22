@@ -23,7 +23,7 @@ strategy:
       ImageName: ubuntu-16.04
       TargetGoVersion: 1.11.9
       # check compilation for older Go versions
-      TestOptions: --skip-cloud-backends --skip-install --skip-cross-compile --skip-program-backends --skip-tidy --skip-vendor --skip-fuse --skip-format --skip-changelog 
+      TestOptions: --skip-cloud-backends --skip-install --skip-cross-compile --skip-program-backends --skip-tidy --skip-vendor --skip-fuse --skip-format --skip-changelog
     macOS:
       ImageName: macos-10.13
       TargetGoVersion: 1.12.4
