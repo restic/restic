@@ -26,7 +26,8 @@ given as the arguments.
 
 .PP
 \fB\-\-exclude\-caches\fP[=false]
-    excludes cache directories that are marked with a CACHEDIR.TAG file. See http://bford.info/cachedir/spec.html for the Cache Directory Tagging Standard
+    excludes cache directories that are marked with a CACHEDIR.TAG file. See 
+\[la]http://bford.info/cachedir/spec.html\[ra] for the Cache Directory Tagging Standard
 
 .PP
 \fB\-\-exclude\-file\fP=[]
@@ -51,6 +52,14 @@ given as the arguments.
 .PP
 \fB\-H\fP, \fB\-\-host\fP=""
     set the \fB\fChostname\fR for the snapshot manually. To prevent an expensive rescan use the "parent" flag
+
+.PP
+\fB\-\-iexclude\fP=[]
+    same as \fB\fC\-\-exclude\fR but ignores the casing of filenames
+
+.PP
+\fB\-\-ignore\-inode\fP[=false]
+    ignore inode number changes when checking for modified files
 
 .PP
 \fB\-x\fP, \fB\-\-one\-file\-system\fP[=false]
