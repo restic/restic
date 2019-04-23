@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
@@ -1915,4 +1916,177 @@ func TestArchiverAbortEarlyOnError(t *testing.T) {
 			}
 		})
 	}
+}
+
+func snapshot(t testing.TB, repo restic.Repository, fs fs.FS, parent restic.ID, filename string) (restic.ID, *restic.Node) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	arch := New(repo, fs, Options{})
+
+	sopts := SnapshotOptions{
+		Time:           time.Now(),
+		ParentSnapshot: parent,
+	}
+	snapshot, snapshotID, err := arch.Snapshot(ctx, []string{filename}, sopts)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tree, err := repo.LoadTree(ctx, *snapshot.Tree)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	node := tree.Find(filename)
+	if node == nil {
+		t.Fatalf("unable to find node for testfile in snapshot")
+	}
+
+	return snapshotID, node
+}
+
+func chmod(t testing.TB, filename string, mode os.FileMode) {
+	err := os.Chmod(filename, mode)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// StatFS allows overwriting what is returned by the Lstat function.
+type StatFS struct {
+	fs.FS
+
+	OverrideLstat map[string]os.FileInfo
+}
+
+func (fs *StatFS) Lstat(name string) (os.FileInfo, error) {
+	if fi, ok := fs.OverrideLstat[name]; ok {
+		return fi, nil
+	}
+
+	return fs.FS.Lstat(name)
+}
+
+func (fs *StatFS) OpenFile(name string, flags int, perm os.FileMode) (fs.File, error) {
+	if fi, ok := fs.OverrideLstat[name]; ok {
+		f, err := fs.FS.OpenFile(name, flags, perm)
+		if err != nil {
+			return nil, err
+		}
+
+		wrappedFile := fileStat{
+			File: f,
+			fi:   fi,
+		}
+		return wrappedFile, nil
+	}
+
+	return fs.FS.OpenFile(name, flags, perm)
+}
+
+type fileStat struct {
+	fs.File
+	fi os.FileInfo
+}
+
+func (f fileStat) Stat() (os.FileInfo, error) {
+	return f.fi, nil
+}
+
+type wrappedFileInfo struct {
+	os.FileInfo
+	sys  interface{}
+	mode os.FileMode
+}
+
+func (fi wrappedFileInfo) Sys() interface{} {
+	return fi.sys
+}
+
+func (fi wrappedFileInfo) Mode() os.FileMode {
+	return fi.mode
+}
+
+func TestMetadataChanged(t *testing.T) {
+	files := TestDir{
+		"testfile": TestFile{
+			Content: "foo bar test file",
+		},
+	}
+
+	tempdir, repo, cleanup := prepareTempdirRepoSrc(t, files)
+	defer cleanup()
+
+	back := fs.TestChdir(t, tempdir)
+	defer back()
+
+	// get metadata
+	fi := lstat(t, "testfile")
+	want, err := restic.NodeFromFileInfo("testfile", fi)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fs := &StatFS{
+		FS: fs.Local{},
+		OverrideLstat: map[string]os.FileInfo{
+			"testfile": fi,
+		},
+	}
+
+	snapshotID, node2 := snapshot(t, repo, fs, restic.ID{}, "testfile")
+
+	// set some values so we can then compare the nodes
+	want.Content = node2.Content
+	want.Path = ""
+	want.ExtendedAttributes = nil
+
+	// make sure that metadata was recorded successfully
+	if !cmp.Equal(want, node2) {
+		t.Fatalf("metadata does not match:\n%v", cmp.Diff(want, node2))
+	}
+
+	// modify the mode
+	stat, ok := fi.Sys().(*syscall.Stat_t)
+	if ok {
+		// change a few values
+		stat.Mode = 0400
+		stat.Uid = 1234
+		stat.Gid = 1235
+
+		// wrap the os.FileInfo so we can return a modified stat_t
+		fi = wrappedFileInfo{
+			FileInfo: fi,
+			sys:      stat,
+			mode:     0400,
+		}
+		fs.OverrideLstat["testfile"] = fi
+	} else {
+		// skip the test on this platform
+		t.Skipf("unable to modify os.FileInfo, Sys() returned %T", fi.Sys())
+	}
+
+	want, err = restic.NodeFromFileInfo("testfile", fi)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// make another snapshot
+	snapshotID, node3 := snapshot(t, repo, fs, snapshotID, "testfile")
+
+	// set some values so we can then compare the nodes
+	want.Content = node2.Content
+	want.Path = ""
+	want.ExtendedAttributes = nil
+
+	// make sure that metadata was recorded successfully
+	if !cmp.Equal(want, node3) {
+		t.Fatalf("metadata does not match:\n%v", cmp.Diff(want, node2))
+	}
+
+	// make sure the content matches
+	TestEnsureFileContent(context.Background(), t, repo, "testfile", node3, files["testfile"].(TestFile))
+
+	checker.TestCheckRepo(t, repo)
 }
