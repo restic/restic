@@ -38,7 +38,7 @@ import (
 	"os/exec"
 )
 
-var version = "0.9.4-dev (compiled manually)"
+var version = "0.9.5"
 
 // TimeFormat is the format used for all timestamps printed by restic.
 const TimeFormat = "2006-01-02 15:04:05"
