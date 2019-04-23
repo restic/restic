@@ -1117,7 +1117,7 @@ Details
    Exploiting the vulnerability requires a Linux/Unix system which saves backups via restic and
    a Windows systems which restores files from the repo. In addition, the attackers need to be able
    to create create files with arbitrary names which are then saved to the restic repo. For
-   example, by creating a file named "..\test.txt" (which is a perfectly legal filename on Linux)
+   example, by creating a file named `..\test.txt` (which is a perfectly legal filename on Linux)
    and restoring a snapshot containing this file on Windows, it would be written to the parent of
    the target directory.
 
