@@ -24,6 +24,57 @@ var samples = IDs{
 	TestParseID("fa31d65b87affcd167b119e9d3d2a27b8236ca4836cb077ed3e96fcbe209b792"),
 }
 
+func TestFind(t *testing.T) {
+	list := samples
+
+	m := mockBackend{}
+	m.list = func(ctx context.Context, t FileType, fn func(FileInfo) error) error {
+		for _, id := range list {
+			err := fn(FileInfo{Name: id.String()})
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	f, err := Find(m, SnapshotFile, "20bdc1402a6fc9b633aa")
+	if err != nil {
+		t.Error(err)
+	}
+	expected_match := "20bdc1402a6fc9b633aaffffffffffffffffffffffffffffffffffffffffffff"
+	if f != expected_match {
+		t.Errorf("Wrong match returned want %s, got %s", expected_match, f)
+	}
+
+	f, err = Find(m, SnapshotFile, "NotAPrefix")
+	if err != ErrNoIDPrefixFound {
+		t.Error("Expected no snapshots to be found.")
+	}
+	if f != "" {
+		t.Errorf("Find should not return a match on error.")
+	}
+
+	// Try to match with a prefix longer than any ID.
+	extra_length_id := samples[0].String() + "f"
+	f, err = Find(m, SnapshotFile, extra_length_id)
+	if err != ErrNoIDPrefixFound {
+		t.Error("Expected no snapshots to be matched.")
+	}
+	if f != "" {
+		t.Errorf("Find should not return a match on error.")
+	}
+
+	// Use a prefix that will match the prefix of multiple Ids in `samples`.
+	f, err = Find(m, SnapshotFile, "20bdc140")
+	if err != ErrMultipleIDMatches {
+		t.Error("Expected multiple snapshots to be matched.")
+	}
+	if f != "" {
+		t.Errorf("Find should not return a match on error.")
+	}
+}
+
 func TestPrefixLength(t *testing.T) {
 	list := samples
 
