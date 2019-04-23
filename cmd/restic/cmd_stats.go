@@ -36,7 +36,8 @@ The modes are:
 * raw-data: Counts the size of blobs in the repository, regardless of
   how many files reference them.
 * blobs-per-file: A combination of files-by-contents and raw-data.
-* Refer to the online manual for more details about each mode.
+
+Refer to the online manual for more details about each mode.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
