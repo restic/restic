@@ -1,0 +1,10 @@
+Bugfix: Save files with invalid timestamps
+
+When restic reads invalid timestamps (year is before 0000 or after 9999) it
+refused to read and archive the file. We've changed the behavior and will now
+save modified timestamps with the year set to either 0000 or 9999, the rest of
+the timestamp stays the same, so the file will be saved (albeit with a bogus
+timestamp).
+
+https://github.com/restic/restic/issues/2174
+https://github.com/restic/restic/issues/1173

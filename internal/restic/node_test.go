@@ -244,3 +244,54 @@ func AssertFsTimeEqual(t *testing.T, label string, nodeType string, t1 time.Time
 
 	rtest.Assert(t, equal, "%s: %s doesn't match (%v != %v)", label, nodeType, t1, t2)
 }
+
+func parseTimeNano(t testing.TB, s string) time.Time {
+	// 2006-01-02T15:04:05.999999999Z07:00
+	ts, err := time.Parse(time.RFC3339Nano, s)
+	if err != nil {
+		t.Fatalf("error parsing %q: %v", s, err)
+	}
+	return ts
+}
+
+func TestFixTime(t *testing.T) {
+	// load UTC location
+	utc, err := time.LoadLocation("")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var tests = []struct {
+		src, want time.Time
+	}{
+		{
+			src:  parseTimeNano(t, "2006-01-02T15:04:05.999999999+07:00"),
+			want: parseTimeNano(t, "2006-01-02T15:04:05.999999999+07:00"),
+		},
+		{
+			src:  time.Date(0, 1, 2, 3, 4, 5, 6, utc),
+			want: parseTimeNano(t, "0000-01-02T03:04:05.000000006+00:00"),
+		},
+		{
+			src:  time.Date(-2, 1, 2, 3, 4, 5, 6, utc),
+			want: parseTimeNano(t, "0000-01-02T03:04:05.000000006+00:00"),
+		},
+		{
+			src:  time.Date(12345, 1, 2, 3, 4, 5, 6, utc),
+			want: parseTimeNano(t, "9999-01-02T03:04:05.000000006+00:00"),
+		},
+		{
+			src:  time.Date(9999, 1, 2, 3, 4, 5, 6, utc),
+			want: parseTimeNano(t, "9999-01-02T03:04:05.000000006+00:00"),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			res := restic.FixTime(test.src)
+			if !res.Equal(test.want) {
+				t.Fatalf("wrong result for %v, want:\n  %v\ngot:\n  %v", test.src, test.want, res)
+			}
+		})
+	}
+}
