@@ -34,8 +34,8 @@ type statsTransport struct {
 // RoundTrip implements http.RoundTripper, delegating to Base and recording stats for the request.
 func (t statsTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	ctx, _ := tag.New(req.Context(),
-		tag.Upsert(KeyClientHost, req.URL.Host),
-		tag.Upsert(Host, req.URL.Host),
+		tag.Upsert(KeyClientHost, req.Host),
+		tag.Upsert(Host, req.Host),
 		tag.Upsert(KeyClientPath, req.URL.Path),
 		tag.Upsert(Path, req.URL.Path),
 		tag.Upsert(KeyClientMethod, req.Method),
@@ -68,7 +68,7 @@ func (t statsTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 			track.end()
 		} else {
 			track.body = resp.Body
-			resp.Body = track
+			resp.Body = wrappedBody(track, resp.Body)
 		}
 	}
 	return resp, err

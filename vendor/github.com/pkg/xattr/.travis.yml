@@ -2,11 +2,12 @@ language: go
 sudo: false
 
 go:
-  - "1.11"
+  - "1.11.x"
 
 os:
   - linux
   - osx
+  - windows
 
 before_install:
   - go version
@@ -18,7 +19,8 @@ install:
 
 script:
   - ./.travis.sh
-  - diff <(goimports -d .) <(printf "")
+  # goimports on windows gives false positives
+  - if [[ "${TRAVIS_OS_NAME}" != "windows" ]]; then diff <(goimports -d .) <(printf ""); fi
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)

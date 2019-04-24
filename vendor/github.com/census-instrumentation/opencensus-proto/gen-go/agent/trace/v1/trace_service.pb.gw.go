@@ -35,7 +35,11 @@ func request_TraceService_Export_0(ctx context.Context, marshaler runtime.Marsha
 		grpclog.Infof("Failed to start streaming: %v", err)
 		return nil, metadata, err
 	}
-	dec := marshaler.NewDecoder(req.Body)
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, berr
+	}
+	dec := marshaler.NewDecoder(newReader())
 	handleSend := func() error {
 		var protoReq ExportTraceServiceRequest
 		err := dec.Decode(&protoReq)
@@ -121,15 +125,6 @@ func RegisterTraceServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 	mux.Handle("POST", pattern_TraceService_Export_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
-		if cn, ok := w.(http.CloseNotifier); ok {
-			go func(done <-chan struct{}, closed <-chan bool) {
-				select {
-				case <-done:
-				case <-closed:
-					cancel()
-				}
-			}(ctx.Done(), cn.CloseNotify())
-		}
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		rctx, err := runtime.AnnotateContext(ctx, mux, req)
 		if err != nil {

@@ -5,7 +5,6 @@ package xattr
 import (
 	"os"
 	"syscall"
-	"unsafe"
 
 	"golang.org/x/sys/unix"
 )
@@ -30,23 +29,7 @@ func getxattr(path string, name string, data []byte) (int, error) {
 }
 
 func lgetxattr(path string, name string, data []byte) (int, error) {
-	value, size := bytePtrFromSlice(data)
-	/*
-		ssize_t getxattr(
-			const char *path,
-			const char *name,
-			void *value,
-			size_t size,
-			u_int32_t position,
-			int options
-		)
-	*/
-	r0, _, err := syscall.Syscall6(syscall.SYS_GETXATTR, uintptr(unsafe.Pointer(syscall.StringBytePtr(path))),
-		uintptr(unsafe.Pointer(syscall.StringBytePtr(name))), uintptr(unsafe.Pointer(value)), uintptr(size), 0, XATTR_NOFOLLOW)
-	if err != syscall.Errno(0) {
-		return int(r0), err
-	}
-	return int(r0), nil
+	return unix.Lgetxattr(path, name, data)
 }
 
 func fgetxattr(f *os.File, name string, data []byte) (int, error) {
@@ -58,7 +41,7 @@ func setxattr(path string, name string, data []byte, flags int) error {
 }
 
 func lsetxattr(path string, name string, data []byte, flags int) error {
-	return unix.Setxattr(path, name, data, flags|XATTR_NOFOLLOW)
+	return unix.Lsetxattr(path, name, data, flags)
 }
 
 func fsetxattr(f *os.File, name string, data []byte, flags int) error {
@@ -70,19 +53,7 @@ func removexattr(path string, name string) error {
 }
 
 func lremovexattr(path string, name string) error {
-	/*
-		int removexattr(
-			const char *path,
-			const char *name,
-			int options
-		);
-	*/
-	_, _, err := syscall.Syscall(syscall.SYS_REMOVEXATTR, uintptr(unsafe.Pointer(syscall.StringBytePtr(path))),
-		uintptr(unsafe.Pointer(syscall.StringBytePtr(name))), XATTR_NOFOLLOW)
-	if err != syscall.Errno(0) {
-		return err
-	}
-	return nil
+	return unix.Lremovexattr(path, name)
 }
 
 func fremovexattr(f *os.File, name string) error {
@@ -94,21 +65,7 @@ func listxattr(path string, data []byte) (int, error) {
 }
 
 func llistxattr(path string, data []byte) (int, error) {
-	name, size := bytePtrFromSlice(data)
-	/*
-		ssize_t listxattr(
-			const char *path,
-			char *name,
-			size_t size,
-			int options
-		);
-	*/
-	r0, _, err := syscall.Syscall6(syscall.SYS_LISTXATTR, uintptr(unsafe.Pointer(syscall.StringBytePtr(path))),
-		uintptr(unsafe.Pointer(name)), uintptr(size), XATTR_NOFOLLOW, 0, 0)
-	if err != syscall.Errno(0) {
-		return int(r0), err
-	}
-	return int(r0), nil
+	return unix.Llistxattr(path, data)
 }
 
 func flistxattr(f *os.File, data []byte) (int, error) {
