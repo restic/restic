@@ -455,7 +455,7 @@ func fileChanged(fi os.FileInfo, node *restic.Node, ignoreInode bool) bool {
 
 	// check status change timestamp
 	extFI := fs.ExtendedStat(fi)
-	if !extFI.ChangeTime.Equal(node.ChangeTime) {
+	if !ignoreInode && !extFI.ChangeTime.Equal(node.ChangeTime) {
 		return true
 	}
 
