@@ -1,4 +1,4 @@
-// Copyright 2018, OpenCensus Authors
+// Copyright 2019, OpenCensus Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,29 +15,23 @@
 package trace
 
 import (
-	"context"
-	"encoding/hex"
-
-	"go.opencensus.io/exemplar"
+	"github.com/hashicorp/golang-lru/simplelru"
 )
 
-func init() {
-	exemplar.RegisterAttachmentExtractor(attachSpanContext)
+type lruMap struct {
+	simpleLruMap *simplelru.LRU
+	droppedCount int
 }
 
-func attachSpanContext(ctx context.Context, a exemplar.Attachments) exemplar.Attachments {
-	span := FromContext(ctx)
-	if span == nil {
-		return a
+func newLruMap(size int) *lruMap {
+	lm := &lruMap{}
+	lm.simpleLruMap, _ = simplelru.NewLRU(size, nil)
+	return lm
+}
+
+func (lm *lruMap) add(key, value interface{}) {
+	evicted := lm.simpleLruMap.Add(key, value)
+	if evicted {
+		lm.droppedCount++
 	}
-	sc := span.SpanContext()
-	if !sc.IsSampled() {
-		return a
-	}
-	if a == nil {
-		a = make(exemplar.Attachments)
-	}
-	a[exemplar.KeyTraceID] = hex.EncodeToString(sc.TraceID[:])
-	a[exemplar.KeySpanID] = hex.EncodeToString(sc.SpanID[:])
-	return a
 }

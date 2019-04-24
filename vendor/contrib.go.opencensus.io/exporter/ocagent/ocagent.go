@@ -23,7 +23,10 @@ import (
 
 	"google.golang.org/api/support/bundler"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/metadata"
 
+	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/resource"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/trace"
@@ -67,6 +70,7 @@ type Exporter struct {
 	reconnectionPeriod time.Duration
 	resource           *resourcepb.Resource
 	compressor         string
+	headers            map[string]string
 
 	startOnce      sync.Once
 	stopCh         chan bool
@@ -80,6 +84,8 @@ type Exporter struct {
 	// from OpenCensus-Go view.Data to metricspb.Metric.
 	// Please do not confuse it with metricsBundler!
 	viewDataBundler *bundler.Bundler
+
+	clientTransportCredentials credentials.TransportCredentials
 }
 
 func NewExporter(opts ...ExporterOption) (*Exporter, error) {
@@ -191,7 +197,11 @@ func (ae *Exporter) enableConnectionStreams(cc *grpc.ClientConn) error {
 func (ae *Exporter) createTraceServiceConnection(cc *grpc.ClientConn, node *commonpb.Node) error {
 	// Initiate the trace service by sending over node identifier info.
 	traceSvcClient := agenttracepb.NewTraceServiceClient(cc)
-	traceExporter, err := traceSvcClient.Export(context.Background())
+	ctx := context.Background()
+	if len(ae.headers) > 0 {
+		ctx = metadata.NewOutgoingContext(ctx, metadata.New(ae.headers))
+	}
+	traceExporter, err := traceSvcClient.Export(ctx)
 	if err != nil {
 		return fmt.Errorf("Exporter.Start:: TraceServiceClient: %v", err)
 	}
@@ -251,13 +261,21 @@ func (ae *Exporter) createMetricsServiceConnection(cc *grpc.ClientConn, node *co
 func (ae *Exporter) dialToAgent() (*grpc.ClientConn, error) {
 	addr := ae.prepareAgentAddress()
 	var dialOpts []grpc.DialOption
-	if ae.canDialInsecure {
+	if ae.clientTransportCredentials != nil {
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(ae.clientTransportCredentials))
+	} else if ae.canDialInsecure {
 		dialOpts = append(dialOpts, grpc.WithInsecure())
 	}
 	if ae.compressor != "" {
 		dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(grpc.UseCompressor(ae.compressor)))
 	}
-	return grpc.Dial(addr, dialOpts...)
+	dialOpts = append(dialOpts, grpc.WithStatsHandler(&ocgrpc.ClientHandler{}))
+
+	ctx := context.Background()
+	if len(ae.headers) > 0 {
+		ctx = metadata.NewOutgoingContext(ctx, metadata.New(ae.headers))
+	}
+	return grpc.DialContext(ctx, addr, dialOpts...)
 }
 
 func (ae *Exporter) handleConfigStreaming(configStream agenttracepb.TraceService_ConfigClient) error {
@@ -278,7 +296,7 @@ func (ae *Exporter) handleConfigStreaming(configStream agenttracepb.TraceService
 		if psamp := cfg.GetProbabilitySampler(); psamp != nil {
 			trace.ApplyConfig(trace.Config{DefaultSampler: trace.ProbabilitySampler(psamp.SamplingProbability)})
 		} else if csamp := cfg.GetConstantSampler(); csamp != nil {
-			alwaysSample := csamp.Decision == true
+			alwaysSample := csamp.Decision == tracepb.ConstantSampler_ALWAYS_ON
 			if alwaysSample {
 				trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
 			} else {

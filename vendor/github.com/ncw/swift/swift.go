@@ -122,6 +122,7 @@ type Connection struct {
 	// These are filled in after Authenticate is called as are the defaults for above
 	StorageUrl string
 	AuthToken  string
+	Expires    time.Time // time the token expires, may be Zero if unknown
 	client     *http.Client
 	Auth       Authenticator `json:"-" xml:"-"` // the current authenticator
 	authLock   sync.Mutex    // lock when R/W StorageUrl, AuthToken, Auth
@@ -307,6 +308,7 @@ var (
 	Forbidden           = newError(403, "Operation forbidden")
 	TooLargeObject      = newError(413, "Too Large Object")
 	RateLimit           = newError(498, "Rate Limit")
+	TooManyRequests     = newError(429, "TooManyRequests")
 
 	// Mappings for authentication errors
 	authErrorMap = errorMap{
@@ -332,6 +334,7 @@ var (
 		404: ObjectNotFound,
 		413: TooLargeObject,
 		422: ObjectCorrupted,
+		429: TooManyRequests,
 		498: RateLimit,
 	}
 )
@@ -519,6 +522,12 @@ again:
 		c.StorageUrl = c.Auth.StorageUrl(c.Internal)
 	}
 	c.AuthToken = c.Auth.Token()
+	if do, ok := c.Auth.(Expireser); ok {
+		c.Expires = do.Expires()
+	} else {
+		c.Expires = time.Time{}
+	}
+
 	if !c.authenticated() {
 		err = newError(0, "Response didn't have storage url and auth token")
 		return
@@ -580,7 +589,14 @@ func (c *Connection) Authenticated() bool {
 //
 // Call with authLock held
 func (c *Connection) authenticated() bool {
-	return c.StorageUrl != "" && c.AuthToken != ""
+	if c.StorageUrl == "" || c.AuthToken == "" {
+		return false
+	}
+	if c.Expires.IsZero() {
+		return true
+	}
+	timeUntilExpiry := c.Expires.Sub(time.Now())
+	return timeUntilExpiry >= 60*time.Second
 }
 
 // SwiftInfo contains the JSON object returned by Swift when the /info
@@ -720,11 +736,11 @@ func (c *Connection) Call(targetUrl string, p RequestOpts) (resp *http.Response,
 			for k, v := range p.Headers {
 				// Set ContentLength in req if the user passed it in in the headers
 				if k == "Content-Length" {
-					contentLength, err := strconv.ParseInt(v, 10, 64)
+					req.ContentLength, err = strconv.ParseInt(v, 10, 64)
 					if err != nil {
-						return nil, nil, fmt.Errorf("Invalid %q header %q: %v", k, v, err)
+						err = fmt.Errorf("Invalid %q header %q: %v", k, v, err)
+						return
 					}
-					req.ContentLength = contentLength
 				} else {
 					req.Header.Add(k, v)
 				}
@@ -742,7 +758,7 @@ func (c *Connection) Call(targetUrl string, p RequestOpts) (resp *http.Response,
 				retries--
 				continue
 			}
-			return nil, nil, err
+			return
 		}
 		// Check to see if token has expired
 		if resp.StatusCode == 401 && retries > 0 {
@@ -754,15 +770,14 @@ func (c *Connection) Call(targetUrl string, p RequestOpts) (resp *http.Response,
 		}
 	}
 
-	if err = c.parseHeaders(resp, p.ErrorMap); err != nil {
-		return nil, nil, err
-	}
 	headers = readHeaders(resp)
+	if err = c.parseHeaders(resp, p.ErrorMap); err != nil {
+		return
+	}
 	if p.NoResponse {
-		var err error
 		drainAndClose(resp.Body, &err)
 		if err != nil {
-			return nil, nil, err
+			return
 		}
 	} else {
 		// Cancel the request on timeout

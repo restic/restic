@@ -1,9 +1,8 @@
 language: go
 go_import_path: github.com/pkg/profile
 go:
-  - 1.4.3
-  - 1.5.2
-  - 1.6.3
+  - 1.10.x
+  - 1.12.x
   - tip
 
 script:

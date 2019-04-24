@@ -6,11 +6,11 @@
 
 xattr
 =====
-Extended attribute support for Go (linux + darwin + freebsd).
+Extended attribute support for Go (linux + darwin + freebsd + netbsd).
 
 "Extended attributes are name:value pairs associated permanently with files and directories, similar to the environment strings associated with a process. An attribute may be defined or undefined. If it is defined, its value may be empty or non-empty." [See more...](https://en.wikipedia.org/wiki/Extended_file_attributes)
 
-`SetWithFlags` allows to additionally pass system flags to be forwarded to the underlying calls, FreeBSD does not support this and the parameter will be ignored.
+`SetWithFlags` allows to additionally pass system flags to be forwarded to the underlying calls. FreeBSD and NetBSD do not support this and the parameter will be ignored.
 
 The `L` variants of all functions (`LGet/LSet/...`) are identical to `Get/Set/...` except that they
 do not reference a symlink that appears at the end of a path. See
