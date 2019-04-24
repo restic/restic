@@ -580,21 +580,14 @@ func TestFileChanged(t *testing.T) {
 		{
 			Name: "new-content-same-timestamp",
 			Modify: func(t testing.TB, filename string) {
-				fi, _ := os.Stat(filename)
+				fi, err := os.Stat(filename)
+				if err != nil {
+					t.Fatal(err)
+				}
 				extFI := fs.ExtendedStat(fi)
 				save(t, filename, bytes.ToUpper(defaultContent))
 				sleep()
-				ts := []syscall.Timespec{
-					{
-						Sec:  extFI.AccessTime.Unix(),
-						Nsec: int64(extFI.AccessTime.Nanosecond()),
-					},
-					{
-						Sec:  extFI.ModTime.Unix(),
-						Nsec: int64(extFI.ModTime.Nanosecond()),
-					},
-				}
-				syscall.UtimesNano(filename, ts)
+				setTimestamp(t, filename, extFI.AccessTime, extFI.ModTime)
 			},
 		},
 		{
