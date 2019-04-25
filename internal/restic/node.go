@@ -332,24 +332,27 @@ func (node *Node) createFifoAt(path string) error {
 	return mkfifo(path, 0600)
 }
 
+// FixTime returns a time.Time which can safely be used to marshal as JSON. If
+// the timestamp is ealier that year zero, the year is set to zero. In the same
+// way, if the year is larger than 9999, the year is set to 9999. Other than
+// the year nothing is changed.
+func FixTime(t time.Time) time.Time {
+	switch {
+	case t.Year() < 0000:
+		return t.AddDate(-t.Year(), 0, 0)
+	case t.Year() > 9999:
+		return t.AddDate(-(t.Year() - 9999), 0, 0)
+	default:
+		return t
+	}
+}
+
 func (node Node) MarshalJSON() ([]byte, error) {
-	if node.ModTime.Year() < 0 || node.ModTime.Year() > 9999 {
-		err := errors.Errorf("node %v has invalid ModTime year %d: %v",
-			node.Path, node.ModTime.Year(), node.ModTime)
-		return nil, err
-	}
-
-	if node.ChangeTime.Year() < 0 || node.ChangeTime.Year() > 9999 {
-		err := errors.Errorf("node %v has invalid ChangeTime year %d: %v",
-			node.Path, node.ChangeTime.Year(), node.ChangeTime)
-		return nil, err
-	}
-
-	if node.AccessTime.Year() < 0 || node.AccessTime.Year() > 9999 {
-		err := errors.Errorf("node %v has invalid AccessTime year %d: %v",
-			node.Path, node.AccessTime.Year(), node.AccessTime)
-		return nil, err
-	}
+	// make sure invalid timestamps for mtime and atime are converted to
+	// something we can actually save.
+	node.ModTime = FixTime(node.ModTime)
+	node.AccessTime = FixTime(node.AccessTime)
+	node.ChangeTime = FixTime(node.ChangeTime)
 
 	type nodeJSON Node
 	nj := nodeJSON(node)
