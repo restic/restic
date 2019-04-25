@@ -1,0 +1,15 @@
+Enhancement: Use ctime when checking for file changes
+
+Previously, restic only checked a file's mtime (along with other non-timestamp
+metadata) to decide if a file has changed. This could cause restic to not notice
+that a file has changed (and therefore continue to store the old version, as
+opposed to the modified version) if something edits the file and then resets the
+timestamp. Restic now also checks the ctime of files, so any modifications to a
+file should be noticed, and the modified file will be backed up. The ctime check
+will be disabled if the --ignore-inode flag was given.
+
+If this change causes problems for you, please open an issue, and we can look in
+to adding a seperate flag to disable just the ctime check.
+
+https://github.com/restic/restic/issues/2179
+https://github.com/restic/restic/pull/2212

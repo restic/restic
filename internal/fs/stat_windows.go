@@ -27,5 +27,7 @@ func extendedStat(fi os.FileInfo) ExtendedFileInfo {
 	mtime := syscall.NsecToTimespec(s.LastWriteTime.Nanoseconds())
 	extFI.ModTime = time.Unix(mtime.Unix())
 
+	extFI.ChangeTime = extFI.ModTime
+
 	return extFI
 }
