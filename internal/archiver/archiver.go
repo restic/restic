@@ -384,12 +384,19 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 			return FutureNode{}, true, nil
 		}
 
-		// use previous node if the file hasn't changed
+		// use previous list of blobs if the file hasn't changed
 		if previous != nil && !fileChanged(fi, previous, arch.IgnoreInode) {
-			debug.Log("%v hasn't changed, returning old node", target)
+			debug.Log("%v hasn't changed, using old list of blobs", target)
 			arch.CompleteItem(snPath, previous, previous, ItemStats{}, time.Since(start))
 			arch.CompleteBlob(snPath, previous.Size)
-			fn.node = previous
+			fn.node, err = arch.nodeFromFileInfo(target, fi)
+			if err != nil {
+				return FutureNode{}, false, err
+			}
+
+			// copy list of blobs
+			fn.node.Content = previous.Content
+
 			_ = file.Close()
 			return fn, false, nil
 		}

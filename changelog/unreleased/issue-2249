@@ -1,0 +1,6 @@
+Bugfix: Read fresh metadata for unmodified files
+
+Restic took all metadata for files which were detected as unmodified, not taking into account changed metadata (ownership, mode). This is now corrected.
+
+https://github.com/restic/restic/issues/2249
+https://github.com/restic/restic/pull/2252
