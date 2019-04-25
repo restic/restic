@@ -59,13 +59,10 @@ func init() {
 
 func splitPath(p string) []string {
 	d, f := path.Split(p)
-	if d == "" {
+	if d == "" || d == "/" {
 		return []string{f}
 	}
-	if d == "/" {
-		return []string{d}
-	}
-	s := splitPath(path.Clean(d))
+	s := splitPath(path.Clean(path.Join("/", d)))
 	return append(s, f)
 }
 
@@ -81,9 +78,18 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repositor
 	if l == 0 {
 		return fmt.Errorf("empty path components")
 	}
+
+	// If we print / we need to assume that there are multiple nodes at that
+	// level in the tree.
+	if pathToPrint == "/" {
+		return writeTar(ctx, repo, tree, pathToPrint, os.Stdout)
+	}
+
 	item := filepath.Join(prefix, pathComponents[0])
 	for _, node := range tree.Nodes {
-		if node.Name == pathComponents[0] || pathComponents[0] == "/" {
+		// If dumping something in the highest level it will just take the
+		// first item it finds and dump that according to the switch case below.
+		if node.Name == pathComponents[0] {
 			switch {
 			case l == 1 && node.Type == "file":
 				return getNodeData(ctx, os.Stdout, repo, node)
@@ -94,8 +100,11 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repositor
 				}
 				return printFromTree(ctx, subtree, repo, item, pathComponents[1:], pathToPrint)
 			case node.Type == "dir":
-				node.Path = pathToPrint
-				return tarTree(ctx, repo, node, pathToPrint)
+				subtree, err := repo.LoadTree(ctx, *node.Subtree)
+				if err != nil {
+					return err
+				}
+				return writeTar(ctx, repo, subtree, pathToPrint, os.Stdout)
 			case l > 1:
 				return fmt.Errorf("%q should be a dir, but is a %q", item, node.Type)
 			case node.Type != "file":
@@ -170,6 +179,26 @@ func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
 	return nil
 }
 
+// writeTar will write the contents of the given tree, encoded as a tar to the given destination.
+// It will loop over all nodes in the tree and dump them recursively.
+func writeTar(ctx context.Context, repo restic.Repository, tree *restic.Tree, rootPath string, dst io.Writer) error {
+	if stdoutIsTerminal() {
+		return fmt.Errorf("stdout is the terminal, please redirect output")
+	}
+
+	tw := tar.NewWriter(dst)
+
+	for _, rootNode := range tree.Nodes {
+		rootNode.Path = rootPath
+		err := tarTree(ctx, repo, rootNode, rootPath, tw)
+		if err != nil {
+			_ = tw.Close()
+			return err
+		}
+	}
+	return tw.Close()
+}
+
 func getNodeData(ctx context.Context, output io.Writer, repo restic.Repository, node *restic.Node) error {
 	var (
 		buf []byte
@@ -190,26 +219,18 @@ func getNodeData(ctx context.Context, output io.Writer, repo restic.Repository, 
 	return nil
 }
 
-func tarTree(ctx context.Context, repo restic.Repository, rootNode *restic.Node, rootPath string) error {
+func tarTree(ctx context.Context, repo restic.Repository, rootNode *restic.Node, rootPath string, tw *tar.Writer) error {
 
-	if stdoutIsTerminal() {
-		return fmt.Errorf("stdout is the terminal, please redirect output")
-	}
+	rootNode.Path = path.Join(rootNode.Path, rootNode.Name)
+	rootPath = rootNode.Path
 
-	tw := tar.NewWriter(os.Stdout)
-	defer tw.Close()
-
-	// If we want to dump "/" we'll need to add the name of the first node, too
-	// as it would get lost otherwise.
-	if rootNode.Path == "/" {
-		rootNode.Path = path.Join(rootNode.Path, rootNode.Name)
-		rootPath = rootNode.Path
-	}
-
-	// we know that rootNode is a folder and walker.Walk will already process
-	// the next node, so we have to tar this one first, too
 	if err := tarNode(ctx, tw, rootNode, repo); err != nil {
 		return err
+	}
+
+	// If this is no directory we are finished
+	if rootNode.Type != "dir" {
+		return nil
 	}
 
 	err := walker.Walk(ctx, repo, *rootNode.Subtree, nil, func(_ restic.ID, nodepath string, node *restic.Node, err error) (bool, error) {
