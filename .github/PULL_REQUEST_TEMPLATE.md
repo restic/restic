@@ -22,6 +22,9 @@ Was the change discussed in an issue or in the forum before?
 
 <!--
 Link issues and relevant forum posts here.
+
+If this PR resolves an issue on GitHub, use "closes #1234" so that the issue is
+closed automatically when this PR is merged.
 -->
 
 Checklist
