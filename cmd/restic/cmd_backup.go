@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -523,13 +524,14 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		if !gopts.JSON {
 			p.V("read data from stdin")
 		}
+		filename := path.Join("/", opts.StdinFilename)
 		targetFS = &fs.Reader{
 			ModTime:    timeStamp,
-			Name:       opts.StdinFilename,
+			Name:       filename,
 			Mode:       0644,
 			ReadCloser: os.Stdin,
 		}
-		targets = []string{opts.StdinFilename}
+		targets = []string{filename}
 	}
 
 	sc := archiver.NewScanner(targetFS)
