@@ -1,0 +1,6 @@
+Bugfix: Allow absolute path for filename when backing up from stdin
+
+When backing up from stdin, handle directory path for `--stdin-filename`.
+This can be used to specify the full path for the backed-up file.
+
+https://github.com/restic/restic/issues/2063
