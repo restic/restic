@@ -92,7 +92,7 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repositor
 				node.Path = pathToPrint
 				return tarTree(ctx, repo, node, pathToPrint)
 			case l > 1:
-				return fmt.Errorf("%q should be a dir, but s a %q", item, node.Type)
+				return fmt.Errorf("%q should be a dir, but is a %q", item, node.Type)
 			case node.Type != "file":
 				return fmt.Errorf("%q should be a file, but is a %q", item, node.Type)
 			}
