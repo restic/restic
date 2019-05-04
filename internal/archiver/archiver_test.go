@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
@@ -2012,16 +2013,69 @@ func (f fileStat) Stat() (os.FileInfo, error) {
 	return f.fi, nil
 }
 
-type wrappedFileInfo struct {
-	os.FileInfo
-	sys  interface{}
-	mode os.FileMode
-}
+func TestMetadataChanged(t *testing.T) {
+	files := TestDir{
+		"testfile": TestFile{
+			Content: "foo bar test file",
+		},
+	}
 
-func (fi wrappedFileInfo) Sys() interface{} {
-	return fi.sys
-}
+	tempdir, repo, cleanup := prepareTempdirRepoSrc(t, files)
+	defer cleanup()
 
-func (fi wrappedFileInfo) Mode() os.FileMode {
-	return fi.mode
+	back := fs.TestChdir(t, tempdir)
+	defer back()
+
+	// get metadata
+	fi := lstat(t, "testfile")
+	want, err := restic.NodeFromFileInfo("testfile", fi)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fs := &StatFS{
+		FS: fs.Local{},
+		OverrideLstat: map[string]os.FileInfo{
+			"testfile": fi,
+		},
+	}
+
+	snapshotID, node2 := snapshot(t, repo, fs, restic.ID{}, "testfile")
+
+	// set some values so we can then compare the nodes
+	want.Content = node2.Content
+	want.Path = ""
+	want.ExtendedAttributes = nil
+
+	// make sure that metadata was recorded successfully
+	if !cmp.Equal(want, node2) {
+		t.Fatalf("metadata does not match:\n%v", cmp.Diff(want, node2))
+	}
+
+	// modify the mode by wrapping it in a new struct
+	fs.OverrideLstat["testfile"] = wrapFileInfo(t, fi, 0400, 51234, 51235)
+
+	// set the override values in the 'want' node which
+	want.Mode = 0400
+	// ignore UID and GID on Windows
+	if runtime.GOOS != "windows" {
+		want.UID = 51234
+		want.GID = 51235
+	}
+	// no user and group name
+	want.User = ""
+	want.Group = ""
+
+	// make another snapshot
+	snapshotID, node3 := snapshot(t, repo, fs, snapshotID, "testfile")
+
+	// make sure that metadata was recorded successfully
+	if !cmp.Equal(want, node3) {
+		t.Fatalf("metadata does not match:\n%v", cmp.Diff(want, node3))
+	}
+
+	// make sure the content matches
+	TestEnsureFileContent(context.Background(), t, repo, "testfile", node3, files["testfile"].(TestFile))
+
+	checker.TestCheckRepo(t, repo)
 }
