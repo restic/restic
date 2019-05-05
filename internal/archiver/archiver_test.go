@@ -560,7 +560,7 @@ func TestFileChanged(t *testing.T) {
 		Content     []byte
 		Modify      func(t testing.TB, filename string)
 		IgnoreInode bool
-		Check       bool
+		SameFile    bool
 	}{
 		{
 			Name: "same-content-new-file",
@@ -622,7 +622,7 @@ func TestFileChanged(t *testing.T) {
 				setTimestamp(t, filename, fi.ModTime(), fi.ModTime())
 			},
 			IgnoreInode: true,
-			Check:       true,
+			SameFile:    true,
 		},
 	}
 
@@ -648,10 +648,15 @@ func TestFileChanged(t *testing.T) {
 			test.Modify(t, filename)
 
 			fiAfter := lstat(t, filename)
-			if test.Check == fileChanged(fiAfter, node, test.IgnoreInode) {
-				if test.Check {
+
+			if test.SameFile {
+				// file should be detected as unchanged
+				if fileChanged(fiAfter, node, test.IgnoreInode) {
 					t.Fatalf("unmodified file detected as changed")
-				} else {
+				}
+			} else {
+				// file should be detected as changed
+				if !fileChanged(fiAfter, node, test.IgnoreInode) && !test.SameFile {
 					t.Fatalf("modified file detected as unchanged")
 				}
 			}
