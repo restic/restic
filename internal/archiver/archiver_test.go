@@ -557,11 +557,12 @@ func TestFileChanged(t *testing.T) {
 	}
 
 	var tests = []struct {
-		Name        string
-		Content     []byte
-		Modify      func(t testing.TB, filename string)
-		IgnoreInode bool
-		SameFile    bool
+		Name           string
+		SkipForWindows bool
+		Content        []byte
+		Modify         func(t testing.TB, filename string)
+		IgnoreInode    bool
+		SameFile       bool
 	}{
 		{
 			Name: "same-content-new-file",
@@ -580,6 +581,10 @@ func TestFileChanged(t *testing.T) {
 		},
 		{
 			Name: "new-content-same-timestamp",
+			// on Windows, there's no "create time" field users cannot modify,
+			// so we're unable to detect if a file has been modified when the
+			// timestamps are reset, so we skip this test for Windows
+			SkipForWindows: true,
 			Modify: func(t testing.TB, filename string) {
 				fi, err := os.Stat(filename)
 				if err != nil {
@@ -629,6 +634,10 @@ func TestFileChanged(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
+			if runtime.GOOS == "windows" && test.SkipForWindows {
+				t.Skip("don't run test on Windows")
+			}
+
 			tempdir, cleanup := restictest.TempDir(t)
 			defer cleanup()
 
