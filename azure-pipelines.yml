@@ -37,6 +37,7 @@ strategy:
 
 variables:
   GO111MODULE: "on"
+  GOPROXY: "https://proxy.golang.org"
 
 pool:
   vmImage: '$(ImageName)'
