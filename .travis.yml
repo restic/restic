@@ -1,6 +1,8 @@
 language: go
 sudo: false
 
+go_import_path: github.com/restic/restic
+
 matrix:
   include:
     - os: linux
