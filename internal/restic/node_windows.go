@@ -76,5 +76,6 @@ func (s statWin) mtim() syscall.Timespec {
 }
 
 func (s statWin) ctim() syscall.Timespec {
-	return syscall.NsecToTimespec(s.CreationTime.Nanoseconds())
+	// Windows does not have the concept of a "change time" in the sense Unix uses it, so we're using the LastWriteTime here.
+	return syscall.NsecToTimespec(s.LastWriteTime.Nanoseconds())
 }
