@@ -23,18 +23,18 @@ func (fi wrappedFileInfo) Mode() os.FileMode {
 }
 
 // wrapFileInfo returns a new os.FileInfo with the mode, owner, and group fields changed.
-func wrapFileInfo(t testing.TB, fi os.FileInfo, mode os.FileMode, uid, gid uint) os.FileInfo {
+func wrapFileInfo(t testing.TB, fi os.FileInfo) os.FileInfo {
 	// get the underlying stat_t and modify the values
 	stat := fi.Sys().(*syscall.Stat_t)
-	stat.Mode = uint32(mode)
-	stat.Uid = uint32(uid)
-	stat.Gid = uint32(gid)
+	stat.Mode = mockFileInfoMode
+	stat.Uid = mockFileInfoUID
+	stat.Gid = mockFileInfoGID
 
 	// wrap the os.FileInfo so we can return a modified stat_t
 	res := wrappedFileInfo{
 		FileInfo: fi,
 		sys:      stat,
-		mode:     mode,
+		mode:     mockFileInfoMode,
 	}
 
 	return res

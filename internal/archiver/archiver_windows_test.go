@@ -17,11 +17,11 @@ func (fi wrappedFileInfo) Mode() os.FileMode {
 }
 
 // wrapFileInfo returns a new os.FileInfo with the mode, owner, and group fields changed.
-func wrapFileInfo(t testing.TB, fi os.FileInfo, mode os.FileMode, uid, gid uint) os.FileInfo {
+func wrapFileInfo(t testing.TB, fi os.FileInfo) os.FileInfo {
 	// wrap the os.FileInfo and return the modified mode, uid and gid are ignored on Windows
 	res := wrappedFileInfo{
 		FileInfo: fi,
-		mode:     mode,
+		mode:     mockFileInfoMode,
 	}
 
 	return res

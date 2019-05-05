@@ -2022,6 +2022,14 @@ func (f fileStat) Stat() (os.FileInfo, error) {
 	return f.fi, nil
 }
 
+// used by wrapFileInfo, use untyped const in order to avoid having a version
+// of wrapFileInfo for each OS
+const (
+	mockFileInfoMode = 0400
+	mockFileInfoUID  = 51234
+	mockFileInfoGID  = 51235
+)
+
 func TestMetadataChanged(t *testing.T) {
 	files := TestDir{
 		"testfile": TestFile{
@@ -2061,8 +2069,8 @@ func TestMetadataChanged(t *testing.T) {
 		t.Fatalf("metadata does not match:\n%v", cmp.Diff(want, node2))
 	}
 
-	// modify the mode by wrapping it in a new struct
-	fs.OverrideLstat["testfile"] = wrapFileInfo(t, fi, 0400, 51234, 51235)
+	// modify the mode by wrapping it in a new struct, uses the consts defined above
+	fs.OverrideLstat["testfile"] = wrapFileInfo(t, fi)
 
 	// set the override values in the 'want' node which
 	want.Mode = 0400
