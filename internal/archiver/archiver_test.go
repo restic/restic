@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
@@ -556,11 +557,12 @@ func TestFileChanged(t *testing.T) {
 	}
 
 	var tests = []struct {
-		Name        string
-		Content     []byte
-		Modify      func(t testing.TB, filename string)
-		IgnoreInode bool
-		Check       bool
+		Name           string
+		SkipForWindows bool
+		Content        []byte
+		Modify         func(t testing.TB, filename string)
+		IgnoreInode    bool
+		SameFile       bool
 	}{
 		{
 			Name: "same-content-new-file",
@@ -579,6 +581,10 @@ func TestFileChanged(t *testing.T) {
 		},
 		{
 			Name: "new-content-same-timestamp",
+			// on Windows, there's no "create time" field users cannot modify,
+			// so we're unable to detect if a file has been modified when the
+			// timestamps are reset, so we skip this test for Windows
+			SkipForWindows: true,
 			Modify: func(t testing.TB, filename string) {
 				fi, err := os.Stat(filename)
 				if err != nil {
@@ -622,12 +628,16 @@ func TestFileChanged(t *testing.T) {
 				setTimestamp(t, filename, fi.ModTime(), fi.ModTime())
 			},
 			IgnoreInode: true,
-			Check:       true,
+			SameFile:    true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
+			if runtime.GOOS == "windows" && test.SkipForWindows {
+				t.Skip("don't run test on Windows")
+			}
+
 			tempdir, cleanup := restictest.TempDir(t)
 			defer cleanup()
 
@@ -648,10 +658,15 @@ func TestFileChanged(t *testing.T) {
 			test.Modify(t, filename)
 
 			fiAfter := lstat(t, filename)
-			if test.Check == fileChanged(fiAfter, node, test.IgnoreInode) {
-				if test.Check {
+
+			if test.SameFile {
+				// file should be detected as unchanged
+				if fileChanged(fiAfter, node, test.IgnoreInode) {
 					t.Fatalf("unmodified file detected as changed")
-				} else {
+				}
+			} else {
+				// file should be detected as changed
+				if !fileChanged(fiAfter, node, test.IgnoreInode) && !test.SameFile {
 					t.Fatalf("modified file detected as unchanged")
 				}
 			}
@@ -2007,16 +2022,77 @@ func (f fileStat) Stat() (os.FileInfo, error) {
 	return f.fi, nil
 }
 
-type wrappedFileInfo struct {
-	os.FileInfo
-	sys  interface{}
-	mode os.FileMode
-}
+// used by wrapFileInfo, use untyped const in order to avoid having a version
+// of wrapFileInfo for each OS
+const (
+	mockFileInfoMode = 0400
+	mockFileInfoUID  = 51234
+	mockFileInfoGID  = 51235
+)
 
-func (fi wrappedFileInfo) Sys() interface{} {
-	return fi.sys
-}
+func TestMetadataChanged(t *testing.T) {
+	files := TestDir{
+		"testfile": TestFile{
+			Content: "foo bar test file",
+		},
+	}
 
-func (fi wrappedFileInfo) Mode() os.FileMode {
-	return fi.mode
+	tempdir, repo, cleanup := prepareTempdirRepoSrc(t, files)
+	defer cleanup()
+
+	back := fs.TestChdir(t, tempdir)
+	defer back()
+
+	// get metadata
+	fi := lstat(t, "testfile")
+	want, err := restic.NodeFromFileInfo("testfile", fi)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fs := &StatFS{
+		FS: fs.Local{},
+		OverrideLstat: map[string]os.FileInfo{
+			"testfile": fi,
+		},
+	}
+
+	snapshotID, node2 := snapshot(t, repo, fs, restic.ID{}, "testfile")
+
+	// set some values so we can then compare the nodes
+	want.Content = node2.Content
+	want.Path = ""
+	want.ExtendedAttributes = nil
+
+	// make sure that metadata was recorded successfully
+	if !cmp.Equal(want, node2) {
+		t.Fatalf("metadata does not match:\n%v", cmp.Diff(want, node2))
+	}
+
+	// modify the mode by wrapping it in a new struct, uses the consts defined above
+	fs.OverrideLstat["testfile"] = wrapFileInfo(t, fi)
+
+	// set the override values in the 'want' node which
+	want.Mode = 0400
+	// ignore UID and GID on Windows
+	if runtime.GOOS != "windows" {
+		want.UID = 51234
+		want.GID = 51235
+	}
+	// no user and group name
+	want.User = ""
+	want.Group = ""
+
+	// make another snapshot
+	snapshotID, node3 := snapshot(t, repo, fs, snapshotID, "testfile")
+
+	// make sure that metadata was recorded successfully
+	if !cmp.Equal(want, node3) {
+		t.Fatalf("metadata does not match:\n%v", cmp.Diff(want, node3))
+	}
+
+	// make sure the content matches
+	TestEnsureFileContent(context.Background(), t, repo, "testfile", node3, files["testfile"].(TestFile))
+
+	checker.TestCheckRepo(t, repo)
 }
