@@ -103,17 +103,32 @@ func (fs *Reader) Stat(name string) (os.FileInfo, error) {
 // describes the symbolic link.  Lstat makes no attempt to follow the link.
 // If there is an error, it will be of type *PathError.
 func (fs *Reader) Lstat(name string) (os.FileInfo, error) {
+	getDirInfo := func(name string) os.FileInfo {
+		fi := fakeFileInfo{
+			name:    fs.Base(name),
+			size:    0,
+			mode:    os.ModeDir | 0755,
+			modtime: time.Now(),
+		}
+		return fi
+	}
+
 	switch name {
 	case fs.Name:
 		return fs.fi(), nil
 	case "/", ".":
-		fi := fakeFileInfo{
-			name:    name,
-			size:    0,
-			mode:    0755,
-			modtime: time.Now(),
+		return getDirInfo(name), nil
+	}
+
+	dir := fs.Dir(fs.Name)
+	for {
+		if dir == "/" || dir == "." {
+			break
 		}
-		return fi, nil
+		if name == dir {
+			return getDirInfo(name), nil
+		}
+		dir = fs.Dir(dir)
 	}
 
 	return nil, os.ErrNotExist

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io/ioutil"
 	"os"
+	"path"
 	"sort"
 	"strings"
 	"testing"
@@ -151,8 +152,8 @@ func verifyDirectoryContentsFI(t testing.TB, fs FS, dir string, want []os.FileIn
 }
 
 func checkFileInfo(t testing.TB, fi os.FileInfo, filename string, modtime time.Time, mode os.FileMode, isdir bool) {
-	if fi.IsDir() {
-		t.Errorf("IsDir returned true, want false")
+	if fi.IsDir() != isdir {
+		t.Errorf("IsDir returned %t, want %t", fi.IsDir(), isdir)
 	}
 
 	if fi.Mode() != mode {
@@ -163,8 +164,12 @@ func checkFileInfo(t testing.TB, fi os.FileInfo, filename string, modtime time.T
 		t.Errorf("ModTime() returned wrong value, want %v, got %v", modtime, fi.ModTime())
 	}
 
-	if fi.Name() != filename {
-		t.Errorf("Name() returned wrong value, want %q, got %q", filename, fi.Name())
+	if path.Base(fi.Name()) != fi.Name() {
+		t.Errorf("Name() returned is not base, want %q, got %q", path.Base(fi.Name()), fi.Name())
+	}
+
+	if fi.Name() != path.Base(filename) {
+		t.Errorf("Name() returned wrong value, want %q, got %q", path.Base(filename), fi.Name())
 	}
 }
 
@@ -265,7 +270,7 @@ func TestFSReader(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				checkFileInfo(t, fi, "/", time.Time{}, 0755, false)
+				checkFileInfo(t, fi, "/", time.Time{}, os.ModeDir|0755, true)
 			},
 		},
 		{
@@ -276,7 +281,16 @@ func TestFSReader(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				checkFileInfo(t, fi, ".", time.Time{}, 0755, false)
+				checkFileInfo(t, fi, ".", time.Time{}, os.ModeDir|0755, true)
+			},
+		},
+		{
+			name: "dir/Lstat-error-not-exist",
+			f: func(t *testing.T, fs FS) {
+				_, err := fs.Lstat("other")
+				if err != os.ErrNotExist {
+					t.Fatal(err)
+				}
 			},
 		},
 		{
@@ -287,7 +301,7 @@ func TestFSReader(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				checkFileInfo(t, fi, "/", time.Time{}, 0755, false)
+				checkFileInfo(t, fi, "/", time.Time{}, os.ModeDir|0755, true)
 			},
 		},
 		{
@@ -298,7 +312,7 @@ func TestFSReader(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				checkFileInfo(t, fi, ".", time.Time{}, 0755, false)
+				checkFileInfo(t, fi, ".", time.Time{}, os.ModeDir|0755, true)
 			},
 		},
 	}
@@ -315,6 +329,54 @@ func TestFSReader(t *testing.T) {
 
 		t.Run(test.name, func(t *testing.T) {
 			test.f(t, fs)
+		})
+	}
+}
+
+func TestFSReaderDir(t *testing.T) {
+	data := test.Random(55, 1<<18+588)
+	now := time.Now()
+
+	var tests = []struct {
+		name     string
+		filename string
+	}{
+		{
+			name:     "Lstat-absolute",
+			filename: "/path/to/foobar",
+		},
+		{
+			name:     "Lstat-relative",
+			filename: "path/to/foobar",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			fs := &Reader{
+				Name:       test.filename,
+				ReadCloser: ioutil.NopCloser(bytes.NewReader(data)),
+
+				Mode:    0644,
+				Size:    int64(len(data)),
+				ModTime: now,
+			}
+
+			dir := path.Dir(fs.Name)
+			for {
+				if dir == "/" || dir == "." {
+					break
+				}
+
+				fi, err := fs.Lstat(dir)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				checkFileInfo(t, fi, dir, time.Time{}, os.ModeDir|0755, true)
+
+				dir = path.Dir(dir)
+			}
 		})
 	}
 }
