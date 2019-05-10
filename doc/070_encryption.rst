@@ -29,6 +29,10 @@ The ``key`` command allows you to set multiple access keys or passwords
 per repository. In fact, you can use the ``list``, ``add``, ``remove``, and
 ``passwd`` (changes a password) sub-commands to manage these keys very precisely:
 
+By default the ``key add`` command will use the current user and host name when
+creating a key, to override these add ``key-username=<name>`` or
+``key-hostname=<host>`` to the arguments.
+
 .. code-block:: console
 
     $ restic -r /srv/restic-repo key list

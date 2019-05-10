@@ -1,0 +1,9 @@
+Enhancement: Allow specifying user and host when creating keys
+
+When adding a new key to the repository, the username and hostname for the new
+key can be specified on the command line. This allows overriding the defaults,
+for example if you would prefer to use the FQDN to identify the host or if you
+want to add keys for several different hosts without having to run the key add
+command on those hosts.
+
+https://github.com/restic/restic/issues/2175

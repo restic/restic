@@ -10,12 +10,16 @@ restic\-key \- Manage keys (passwords)
 
 .SH SYNOPSIS
 .PP
-\fBrestic key [list|add|remove|passwd] [ID] [flags]\fP
+\fBrestic key [list|add|remove|passwd] [ID] [key\-username=<username>] [key\-hostname=<hostname>] [flags]\fP
 
 
 .SH DESCRIPTION
 .PP
 The "key" command manages keys (passwords) for accessing the repository.
+
+.PP
+By default keys are added for the current user and hostname, this can be
+overridden by with the optional "key\-username" and "key\-hostname" parameters
 
 
 .SH OPTIONS
