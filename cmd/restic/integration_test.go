@@ -639,6 +639,34 @@ func testRunKeyAddNewKey(t testing.TB, newPassword string, gopts GlobalOptions) 
 	rtest.OK(t, runKey(gopts, []string{"add"}))
 }
 
+func testRunKeyAddUserHost(t testing.TB, newPassword string, user string, host string, gopts GlobalOptions) {
+	buf := bytes.NewBuffer(nil)
+	testKeyNewPassword = newPassword
+	globalOptions.stdout = buf
+	globalOptions.verbosity = 2
+
+	defer func() {
+		testKeyNewPassword = ""
+		globalOptions.stdout = os.Stdout
+		globalOptions.verbosity = 1
+	}()
+
+	rtest.OK(t, runKey(gopts, []string{"add", "key-username=" + user, "key-hostname=" + host}))
+
+	scanner := bufio.NewScanner(buf)
+	exp := regexp.MustCompile(`Key of (\w+)@([\w.]+),`)
+
+	found := false
+	for scanner.Scan() {
+		if match := exp.FindStringSubmatch(scanner.Text()); match != nil {
+			if match[1] == user && match[2] == host {
+				found = true
+			}
+		}
+	}
+	rtest.Assert(t, found, "Key was not created")
+}
+
 func testRunKeyPasswd(t testing.TB, newPassword string, gopts GlobalOptions) {
 	testKeyNewPassword = newPassword
 	defer func() {
@@ -661,6 +689,11 @@ func TestKeyAddRemove(t *testing.T) {
 		"raicneirvOjEfEigonOmLasOd",
 	}
 
+	userHostPassList := [][]string{
+		[]string{"test127", "example.com", "ing6Xaen"},
+		[]string{"test245", "other.example.com", "Vie0Reu5"},
+	}
+
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
@@ -676,11 +709,15 @@ func TestKeyAddRemove(t *testing.T) {
 		env.gopts.password = newPassword
 		testRunKeyRemove(t, env.gopts, testRunKeyListOtherIDs(t, env.gopts))
 	}
-
 	env.gopts.password = passwordList[len(passwordList)-1]
 	t.Logf("testing access with last password %q\n", env.gopts.password)
 	rtest.OK(t, runKey(env.gopts, []string{"list"}))
 	testRunCheck(t, env.gopts)
+
+	for _, userDetails := range userHostPassList {
+		testRunKeyAddUserHost(t, userDetails[2], userDetails[0], userDetails[1], env.gopts)
+		t.Logf("Added key for %v@%v: %q", userDetails[0], userDetails[1], userDetails[2])
+	}
 }
 
 func testFileSize(filename string, size int64) error {
