@@ -1,19 +1,16 @@
 package main
 
 import (
-	"archive/tar"
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/dump"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/walker"
 
 	"github.com/spf13/cobra"
 )
@@ -82,7 +79,10 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repositor
 	// If we print / we need to assume that there are multiple nodes at that
 	// level in the tree.
 	if pathToPrint == "/" {
-		return writeTar(ctx, repo, tree, pathToPrint, os.Stdout)
+		if err := checkStdoutTar(); err != nil {
+			return err
+		}
+		return dump.WriteTar(ctx, repo, tree, pathToPrint, os.Stdout)
 	}
 
 	item := filepath.Join(prefix, pathComponents[0])
@@ -91,23 +91,26 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repositor
 		// first item it finds and dump that according to the switch case below.
 		if node.Name == pathComponents[0] {
 			switch {
-			case l == 1 && node.Type == "file":
-				return getNodeData(ctx, os.Stdout, repo, node)
-			case l > 1 && node.Type == "dir":
+			case l == 1 && dump.IsFile(node):
+				return dump.GetNodeData(ctx, os.Stdout, repo, node)
+			case l > 1 && dump.IsDir(node):
 				subtree, err := repo.LoadTree(ctx, *node.Subtree)
 				if err != nil {
 					return errors.Wrapf(err, "cannot load subtree for %q", item)
 				}
 				return printFromTree(ctx, subtree, repo, item, pathComponents[1:], pathToPrint)
-			case node.Type == "dir":
+			case dump.IsDir(node):
+				if err := checkStdoutTar(); err != nil {
+					return err
+				}
 				subtree, err := repo.LoadTree(ctx, *node.Subtree)
 				if err != nil {
 					return err
 				}
-				return writeTar(ctx, repo, subtree, pathToPrint, os.Stdout)
+				return dump.WriteTar(ctx, repo, subtree, pathToPrint, os.Stdout)
 			case l > 1:
 				return fmt.Errorf("%q should be a dir, but is a %q", item, node.Type)
-			case node.Type != "file":
+			case !dump.IsFile(node):
 				return fmt.Errorf("%q should be a file, but is a %q", item, node.Type)
 			}
 		}
@@ -179,138 +182,9 @@ func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
 	return nil
 }
 
-// writeTar will write the contents of the given tree, encoded as a tar to the given destination.
-// It will loop over all nodes in the tree and dump them recursively.
-func writeTar(ctx context.Context, repo restic.Repository, tree *restic.Tree, rootPath string, dst io.Writer) error {
+func checkStdoutTar() error {
 	if stdoutIsTerminal() {
 		return fmt.Errorf("stdout is the terminal, please redirect output")
 	}
-
-	tw := tar.NewWriter(dst)
-
-	for _, rootNode := range tree.Nodes {
-		rootNode.Path = rootPath
-		err := tarTree(ctx, repo, rootNode, rootPath, tw)
-		if err != nil {
-			_ = tw.Close()
-			return err
-		}
-	}
-	return tw.Close()
-}
-
-func getNodeData(ctx context.Context, output io.Writer, repo restic.Repository, node *restic.Node) error {
-	var (
-		buf []byte
-		err error
-	)
-	for _, id := range node.Content {
-		buf, err = repo.LoadBlob(ctx, restic.DataBlob, id, buf)
-		if err != nil {
-			return err
-		}
-
-		_, err = output.Write(buf)
-		if err != nil {
-			return errors.Wrap(err, "Write")
-		}
-
-	}
 	return nil
-}
-
-func tarTree(ctx context.Context, repo restic.Repository, rootNode *restic.Node, rootPath string, tw *tar.Writer) error {
-
-	rootNode.Path = path.Join(rootNode.Path, rootNode.Name)
-	rootPath = rootNode.Path
-
-	if err := tarNode(ctx, tw, rootNode, repo); err != nil {
-		return err
-	}
-
-	// If this is no directory we are finished
-	if rootNode.Type != "dir" {
-		return nil
-	}
-
-	err := walker.Walk(ctx, repo, *rootNode.Subtree, nil, func(_ restic.ID, nodepath string, node *restic.Node, err error) (bool, error) {
-		if err != nil {
-			return false, err
-		}
-		if node == nil {
-			return false, nil
-		}
-
-		node.Path = path.Join(rootPath, nodepath)
-
-		if node.Type == "file" || node.Type == "symlink" || node.Type == "dir" {
-			err := tarNode(ctx, tw, node, repo)
-			if err != nil {
-				return false, err
-			}
-		}
-
-		return false, nil
-	})
-
-	return err
-}
-
-func tarNode(ctx context.Context, tw *tar.Writer, node *restic.Node, repo restic.Repository) error {
-
-	header := &tar.Header{
-		Name:       node.Path,
-		Size:       int64(node.Size),
-		Mode:       int64(node.Mode),
-		Uid:        int(node.UID),
-		Gid:        int(node.GID),
-		ModTime:    node.ModTime,
-		AccessTime: node.AccessTime,
-		ChangeTime: node.ChangeTime,
-		PAXRecords: parseXattrs(node.ExtendedAttributes),
-	}
-
-	if node.Type == "symlink" {
-		header.Typeflag = tar.TypeSymlink
-		header.Linkname = node.LinkTarget
-	}
-
-	if node.Type == "dir" {
-		header.Typeflag = tar.TypeDir
-	}
-
-	err := tw.WriteHeader(header)
-
-	if err != nil {
-		return errors.Wrap(err, "TarHeader ")
-	}
-
-	return getNodeData(ctx, tw, repo, node)
-
-}
-
-func parseXattrs(xattrs []restic.ExtendedAttribute) map[string]string {
-	tmpMap := make(map[string]string)
-
-	for _, attr := range xattrs {
-		attrString := string(attr.Value)
-
-		if strings.HasPrefix(attr.Name, "system.posix_acl_") {
-			na := acl{}
-			na.decode(attr.Value)
-
-			if na.String() != "" {
-				if strings.Contains(attr.Name, "system.posix_acl_access") {
-					tmpMap["SCHILY.acl.access"] = na.String()
-				} else if strings.Contains(attr.Name, "system.posix_acl_default") {
-					tmpMap["SCHILY.acl.default"] = na.String()
-				}
-			}
-
-		} else {
-			tmpMap["SCHILY.xattr."+attr.Name] = attrString
-		}
-	}
-
-	return tmpMap
 }
