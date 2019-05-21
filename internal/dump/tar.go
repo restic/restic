@@ -5,6 +5,7 @@ import (
 	"context"
 	"io"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/restic/restic/internal/errors"
@@ -65,8 +66,13 @@ func tarTree(ctx context.Context, repo restic.Repository, rootNode *restic.Node,
 }
 
 func tarNode(ctx context.Context, tw *tar.Writer, node *restic.Node, repo restic.Repository) error {
+	relPath, err := filepath.Rel("/", node.Path)
+	if err != nil {
+		return err
+	}
+
 	header := &tar.Header{
-		Name:       node.Path,
+		Name:       relPath,
 		Size:       int64(node.Size),
 		Mode:       int64(node.Mode),
 		Uid:        int(node.UID),
@@ -86,7 +92,7 @@ func tarNode(ctx context.Context, tw *tar.Writer, node *restic.Node, repo restic
 		header.Typeflag = tar.TypeDir
 	}
 
-	err := tw.WriteHeader(header)
+	err = tw.WriteHeader(header)
 
 	if err != nil {
 		return errors.Wrap(err, "TarHeader ")
