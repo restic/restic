@@ -5,6 +5,9 @@ package textfile
 import (
 	"bytes"
 	"io/ioutil"
+	"os"
+
+	"github.com/restic/restic/internal/errors"
 
 	"golang.org/x/text/encoding/unicode"
 )
@@ -32,8 +35,25 @@ func Decode(data []byte) ([]byte, error) {
 	return e.NewDecoder().Bytes(data)
 }
 
+// Trying to read more than 512 MiB of text
+// is a good indication of something going wrong.
+// Especially `--exclude` and `--exclude-file` are nasty.
+const MaxSaneTextfileSize = 512 * 1024 * 1024
+
 // Read returns the contents of the file, converted to UTF-8, stripped of any BOM.
 func Read(filename string) ([]byte, error) {
+	// First, sanity check the file size:
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	if fi, err := f.Stat(); err == nil {
+		if size := fi.Size() + bytes.MinRead; size > MaxSaneTextfileSize {
+			return nil, errors.Fatalf("Textfile %s is unreasonably large (%dB > %dB)", filename, size, MaxSaneTextfileSize)
+		}
+	}
+
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err

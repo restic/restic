@@ -1,0 +1,9 @@
+Bugfix: Refuse excessive --exclude file
+
+The options `--exclude` and `--exclude-file` are quite similar.  Confusing
+them caused restic to attempt parsing the "excluded" file as a list of
+filenames, which exhausted memory.  This change prevents behavior like this,
+and sanity checks all "text" files to have a sane size.
+I hope 512 MiB is a safe upper bound.
+
+https://github.com/restic/restic/issues/2150
