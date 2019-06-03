@@ -395,8 +395,12 @@ func main() {
 
 	verbosePrintf("detected Go version %v\n", goVersion)
 
+	preserveSymbols := false
 	for i := range buildTags {
 		buildTags[i] = strings.TrimSpace(buildTags[i])
+		if buildTags[i] == "debug" || buildTags[i] == "profile" {
+			preserveSymbols = true
+		}
 	}
 
 	verbosePrintf("build tags: %s\n", buildTags)
@@ -423,7 +427,11 @@ func main() {
 	if version != "" {
 		constants["main.version"] = version
 	}
-	ldflags := "-s -w " + constants.LDFlags()
+	ldflags := constants.LDFlags()
+	if !preserveSymbols {
+		// Strip debug symbols.
+		ldflags = "-s -w " + ldflags
+	}
 	verbosePrintf("ldflags: %s\n", ldflags)
 
 	var (
