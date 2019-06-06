@@ -1,0 +1,4 @@
+Feature: Add list console output for backup
+
+We've added another console output option to backup for environments
+where parsing JSON is not feasible for better readability in logs

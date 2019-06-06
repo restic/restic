@@ -26,6 +26,7 @@ import (
 	"github.com/restic/restic/internal/textfile"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/jsonstatus"
+	"github.com/restic/restic/internal/ui/termliststatus"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
@@ -87,6 +88,7 @@ type BackupOptions struct {
 	TimeStamp           string
 	WithAtime           bool
 	IgnoreInode         bool
+	ListFilesOutput     bool
 }
 
 var backupOptions BackupOptions
@@ -101,6 +103,7 @@ func init() {
 	f.StringArrayVar(&backupOptions.InsensitiveExcludes, "iexclude", nil, "same as `--exclude` but ignores the casing of filenames")
 	f.StringArrayVar(&backupOptions.ExcludeFiles, "exclude-file", nil, "read exclude patterns from a `file` (can be specified multiple times)")
 	f.BoolVarP(&backupOptions.ExcludeOtherFS, "one-file-system", "x", false, "exclude other file systems")
+	f.BoolVarP(&backupOptions.ListFilesOutput, "listed-output", "l", false, "print changed or new files to stdout as list")
 	f.StringArrayVar(&backupOptions.ExcludeIfPresent, "exclude-if-present", nil, "takes filename[:header], exclude contents of directories containing filename (except filename itself) if header of that file is as provided (can be specified multiple times)")
 	f.BoolVar(&backupOptions.ExcludeCaches, "exclude-caches", false, `excludes cache directories that are marked with a CACHEDIR.TAG file. See http://bford.info/cachedir/spec.html for the Cache Directory Tagging Standard`)
 	f.BoolVar(&backupOptions.Stdin, "stdin", false, "read backup from stdin")
@@ -109,7 +112,7 @@ func init() {
 
 	f.StringVarP(&backupOptions.Host, "host", "H", "", "set the `hostname` for the snapshot manually. To prevent an expensive rescan use the \"parent\" flag")
 	f.StringVar(&backupOptions.Host, "hostname", "", "set the `hostname` for the snapshot manually")
-	f.MarkDeprecated("hostname", "use --host")
+	_ = f.MarkDeprecated("hostname", "use --host")
 
 	f.StringArrayVar(&backupOptions.FilesFrom, "files-from", nil, "read the files to backup from file (can be combined with file args/can be specified multiple times)")
 	f.StringVar(&backupOptions.TimeStamp, "time", "", "time of the backup (ex. '2012-11-01 22:08:41') (default: now)")
@@ -202,6 +205,10 @@ func (opts BackupOptions) Check(gopts GlobalOptions, args []string) error {
 		if len(args) > 0 {
 			return errors.Fatal("--stdin was specified and files/dirs were listed as arguments")
 		}
+	}
+
+	if gopts.JSON && opts.ListFilesOutput {
+		return errors.Fatal("--json and --listed-output cannot be used together")
 	}
 
 	return nil
@@ -441,7 +448,11 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	if gopts.JSON {
 		p = jsonstatus.NewBackup(term, gopts.verbosity)
 	} else {
-		p = ui.NewBackup(term, gopts.verbosity)
+		if opts.ListFilesOutput {
+			p = termliststatus.NewBackup(term, gopts.verbosity)
+		} else {
+			p = ui.NewBackup(term, gopts.verbosity)
+		}
 	}
 
 	// use the terminal for stdout/stderr

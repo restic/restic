@@ -329,6 +329,20 @@ The tags can later be used to keep (or forget) snapshots with the ``forget``
 command. The command ``tag`` can be used to modify tags on an existing
 snapshot.
 
+Simple output
+*************
+
+By passing --listed-output (-l) to backup you get a line by line output. This
+may be useful in some environments where parsing JSON is not feasible.
+
+.. code-block:: console
+
+    type:status elapsed:0 remaining:0 files-total:1 files-done:0 files-current:[] bytes-total:32 bytes-done:0 error-count:0 percent-done:0.000000
+    type:status elapsed:0 remaining:0 files-total:725 files-done:91 files-current:[] bytes-total:105766588 bytes-done:61307336 error-count:0 percent-done:0.579647
+    type:file action:modified item:"/doc/040_backup.rst" duration:0.000234 data-size:15752
+    [...]
+    type:summary files-new:12 files-changed:5 dirs-new:0 dirs-changed:0 data-blobs:12 tree-blobs:1 data-added:270623 processed-files:2096 processed-files:122945416 duration:0.355123 snapshot:8ce801c4
+
 Space requirements
 ******************
 
