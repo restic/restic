@@ -11,6 +11,10 @@ type Backend interface {
 	// repository.
 	Location() string
 
+	// Connections returns the number of simultaneous connections this
+	// backend currently allows.
+	Connections() uint
+
 	// Test a boolean value whether a File with the name and type exists.
 	Test(ctx context.Context, h Handle) (bool, error)
 

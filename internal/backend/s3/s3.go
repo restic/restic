@@ -160,6 +160,12 @@ func (be *Backend) Join(p ...string) string {
 	return path.Join(p...)
 }
 
+// Connections returns the number of simultaneous connections this backend
+// currently allows.
+func (be *Backend) Connections() uint {
+	return be.cfg.Connections
+}
+
 type fileInfo struct {
 	name    string
 	size    int64

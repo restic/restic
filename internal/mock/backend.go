@@ -10,16 +10,17 @@ import (
 
 // Backend implements a mock backend.
 type Backend struct {
-	CloseFn      func() error
-	IsNotExistFn func(err error) bool
-	SaveFn       func(ctx context.Context, h restic.Handle, rd restic.RewindReader) error
-	OpenReaderFn func(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error)
-	StatFn       func(ctx context.Context, h restic.Handle) (restic.FileInfo, error)
-	ListFn       func(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error
-	RemoveFn     func(ctx context.Context, h restic.Handle) error
-	TestFn       func(ctx context.Context, h restic.Handle) (bool, error)
-	DeleteFn     func(ctx context.Context) error
-	LocationFn   func() string
+	CloseFn       func() error
+	IsNotExistFn  func(err error) bool
+	SaveFn        func(ctx context.Context, h restic.Handle, rd restic.RewindReader) error
+	OpenReaderFn  func(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error)
+	StatFn        func(ctx context.Context, h restic.Handle) (restic.FileInfo, error)
+	ListFn        func(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error
+	RemoveFn      func(ctx context.Context, h restic.Handle) error
+	TestFn        func(ctx context.Context, h restic.Handle) (bool, error)
+	DeleteFn      func(ctx context.Context) error
+	LocationFn    func() string
+	ConnectionsFn func() uint
 }
 
 // NewBackend returns new mock Backend instance
@@ -44,6 +45,16 @@ func (m *Backend) Location() string {
 	}
 
 	return m.LocationFn()
+}
+
+// Connections returns the number of simultaneous connections this backend
+// currently allows.
+func (m *Backend) Connections() uint {
+	if m.ConnectionsFn == nil {
+		return 1
+	}
+
+	return m.ConnectionsFn()
 }
 
 // IsNotExist returns true if the error is caused by a missing file.

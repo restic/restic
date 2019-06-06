@@ -35,6 +35,7 @@ type Backend struct {
 	bucketName   string
 	prefix       string
 	listMaxItems int
+	connections  uint
 	backend.Layout
 }
 
@@ -80,11 +81,12 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	}
 
 	be := &Backend{
-		service:    service,
-		projectID:  cfg.ProjectID,
-		sem:        sem,
-		bucketName: cfg.Bucket,
-		prefix:     cfg.Prefix,
+		service:     service,
+		projectID:   cfg.ProjectID,
+		sem:         sem,
+		bucketName:  cfg.Bucket,
+		prefix:      cfg.Prefix,
+		connections: cfg.Connections,
 		Layout: &backend.DefaultLayout{
 			Path: cfg.Prefix,
 			Join: path.Join,
@@ -188,6 +190,12 @@ func (be *Backend) Join(p ...string) string {
 // Location returns this backend's location (the bucket name).
 func (be *Backend) Location() string {
 	return be.Join(be.bucketName, be.prefix)
+}
+
+// Connections returns the number of simultaneous connections this backend
+// currently allows.
+func (be *Backend) Connections() uint {
+	return be.connections
 }
 
 // Path returns the path in the bucket that is used for this backend.

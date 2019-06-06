@@ -21,10 +21,11 @@ const connLimit = 10
 
 // beSwift is a backend which stores the data on a swift endpoint.
 type beSwift struct {
-	conn      *swift.Connection
-	sem       *backend.Semaphore
-	container string // Container name
-	prefix    string // Prefix of object names in the container
+	conn        *swift.Connection
+	sem         *backend.Semaphore
+	container   string // Container name
+	prefix      string // Prefix of object names in the container
+	connections uint
 	backend.Layout
 }
 
@@ -62,9 +63,10 @@ func Open(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 
 			Transport: rt,
 		},
-		sem:       sem,
-		container: cfg.Container,
-		prefix:    cfg.Prefix,
+		sem:         sem,
+		container:   cfg.Container,
+		prefix:      cfg.Prefix,
+		connections: cfg.Connections,
 		Layout: &backend.DefaultLayout{
 			Path: cfg.Prefix,
 			Join: path.Join,
@@ -110,6 +112,12 @@ func (be *beSwift) createContainer(policy string) error {
 // Location returns this backend's location (the container name).
 func (be *beSwift) Location() string {
 	return be.container
+}
+
+// Connections returns the number of simultaneous connections this backend
+// currently allows.
+func (be *beSwift) Connections() uint {
+	return be.connections
 }
 
 // Load runs fn with a reader that yields the contents of the file at h at the

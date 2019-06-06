@@ -92,6 +92,12 @@ func (b *Local) Location() string {
 	return b.Path
 }
 
+// Connections returns the number of simultaneous connections this backend
+// currently allows.
+func (b *Local) Connections() uint {
+	return 2
+}
+
 // IsNotExist returns true if the error is caused by a non existing file.
 func (b *Local) IsNotExist(err error) bool {
 	return os.IsNotExist(errors.Cause(err))

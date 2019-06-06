@@ -25,9 +25,10 @@ var _ restic.Backend = &Backend{}
 
 // Backend uses the REST protocol to access data stored on a server.
 type Backend struct {
-	url    *url.URL
-	sem    *backend.Semaphore
-	client *http.Client
+	url         *url.URL
+	sem         *backend.Semaphore
+	client      *http.Client
+	connections uint
 	backend.Layout
 }
 
@@ -53,10 +54,11 @@ func Open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	}
 
 	be := &Backend{
-		url:    cfg.URL,
-		client: client,
-		Layout: &backend.RESTLayout{URL: url, Join: path.Join},
-		sem:    sem,
+		url:         cfg.URL,
+		client:      client,
+		connections: cfg.Connections,
+		Layout:      &backend.RESTLayout{URL: url, Join: path.Join},
+		sem:         sem,
 	}
 
 	return be, nil
@@ -104,6 +106,12 @@ func Create(cfg Config, rt http.RoundTripper) (*Backend, error) {
 // Location returns this backend's location (the server's URL).
 func (b *Backend) Location() string {
 	return b.url.String()
+}
+
+// Connections returns the number of simultaneous connections this backend
+// currently allows.
+func (b *Backend) Connections() uint {
+	return b.connections
 }
 
 // Save stores data in the backend at the handle.

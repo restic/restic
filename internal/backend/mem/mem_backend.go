@@ -5,6 +5,7 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
+	"runtime"
 	"sync"
 
 	"github.com/restic/restic/internal/backend"
@@ -37,6 +38,12 @@ func New() *MemoryBackend {
 	debug.Log("created new memory backend")
 
 	return be
+}
+
+// Connections returns the number of simultaneous connections this backend
+// currently allows.
+func (be *MemoryBackend) Connections() uint {
+	return uint(runtime.GOMAXPROCS(0))
 }
 
 // Test returns whether a file exists.

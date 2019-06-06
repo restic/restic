@@ -136,6 +136,12 @@ func Open(cfg Config) (*SFTP, error) {
 	return sftp, nil
 }
 
+// Connections returns the number of simultaneous connections this backend
+// currently allows.
+func (r *SFTP) Connections() uint {
+	return sftp.SftpServerWorkerCount
+}
+
 func (r *SFTP) mkdirAllDataSubdirs() error {
 	for _, d := range r.Paths() {
 		err := r.mkdirAll(d, backend.Modes.Dir)

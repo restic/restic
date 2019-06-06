@@ -24,6 +24,7 @@ type Backend struct {
 	sem          *backend.Semaphore
 	prefix       string
 	listMaxItems int
+	connections  uint
 	backend.Layout
 }
 
@@ -59,6 +60,7 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 			Join: path.Join,
 		},
 		listMaxItems: defaultListMaxItems,
+		connections:  cfg.Connections,
 	}
 
 	return be, nil
@@ -109,6 +111,12 @@ func (be *Backend) Join(p ...string) string {
 // Location returns this backend's location (the container name).
 func (be *Backend) Location() string {
 	return be.Join(be.container.Name, be.prefix)
+}
+
+// Connections returns the number of simultaneous connections this backend
+// currently allows.
+func (be *Backend) Connections() uint {
+	return be.connections
 }
 
 // Path returns the path in the bucket that is used for this backend.

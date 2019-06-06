@@ -136,6 +136,12 @@ func (be *b2Backend) Location() string {
 	return be.cfg.Bucket
 }
 
+// Connections returns the number of simultaneous connections this backend
+// currently allows.
+func (be *b2Backend) Connections() uint {
+	return be.cfg.Connections
+}
+
 // IsNotExist returns true if the error is caused by a non-existing file.
 func (be *b2Backend) IsNotExist(err error) bool {
 	return b2.IsNotExist(errors.Cause(err))
