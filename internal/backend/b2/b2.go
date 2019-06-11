@@ -147,6 +147,22 @@ func (be *b2Backend) Load(ctx context.Context, h restic.Handle, length int, offs
 	return backend.DefaultLoad(ctx, h, length, offset, be.openReader, fn)
 }
 
+type verifyOnCloseReader struct {
+	*b2.Reader
+	name string
+}
+
+func (r verifyOnCloseReader) Close() error {
+	err := r.Reader.Close()
+	if err != nil {
+		return err
+	}
+
+	verr, hashCalculatable := r.Reader.Verify()
+	debug.Log("Verify result for %q: err=%v, hash calculatable=%t\n", r.name, verr, hashCalculatable)
+	return nil
+}
+
 func (be *b2Backend) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	debug.Log("Load %v, length %v, offset %v from %v", h, length, offset, be.Filename(h))
 	if err := h.Valid(); err != nil {
@@ -169,7 +185,7 @@ func (be *b2Backend) openReader(ctx context.Context, h restic.Handle, length int
 	obj := be.bucket.Object(name)
 
 	if offset == 0 && length == 0 {
-		rd := obj.NewReader(ctx)
+		rd := verifyOnCloseReader{obj.NewReader(ctx), name}
 		return be.sem.ReleaseTokenOnClose(rd, cancel), nil
 	}
 
