@@ -147,6 +147,8 @@ func (be *b2Backend) Load(ctx context.Context, h restic.Handle, length int, offs
 	return backend.DefaultLoad(ctx, h, length, offset, be.openReader, fn)
 }
 
+// verifyOnCloseReader calls b2.Reader.Verify() on close to check file
+// integrity.
 type verifyOnCloseReader struct {
 	*b2.Reader
 	name string
@@ -160,7 +162,8 @@ func (r verifyOnCloseReader) Close() error {
 
 	verr, hashCalculatable := r.Reader.Verify()
 	debug.Log("Verify result for %q: err=%v, hash calculatable=%t\n", r.name, verr, hashCalculatable)
-	return nil
+	// Non-nil only when hashCalculatable is true.
+	return verr
 }
 
 func (be *b2Backend) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
