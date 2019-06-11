@@ -160,10 +160,10 @@ func (r verifyOnCloseReader) Close() error {
 		return errors.Wrapf(err, "Close %q", r.name)
 	}
 
-	verr, hashCalculatable := r.Reader.Verify()
-	debug.Log("Verify result for %q: err=%v, hash calculatable=%t\n", r.name, verr, hashCalculatable)
+	err, hashCalculatable := r.Reader.Verify()
+	debug.Log("Verify result for %q: err=%v, hash calculatable=%t\n", r.name, err, hashCalculatable)
 	// Non-nil only when hashCalculatable is true.
-	return errors.Wrapf(verr, "Verify %q", r.name)
+	return errors.Wrapf(err, "Verify %q", r.name)
 }
 
 func (be *b2Backend) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
