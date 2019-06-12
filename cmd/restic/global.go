@@ -319,7 +319,7 @@ func ReadPassword(opts GlobalOptions, prompt string) (string, error) {
 	}
 
 	if len(password) == 0 {
-		return "", errors.Fatal("an empty password is not a password")
+		return "", errors.New("an empty password is not a password")
 	}
 
 	return password, nil
@@ -365,14 +365,32 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 
 	s := repository.New(be)
 
-	opts.password, err = ReadPassword(opts, "enter password for repository: ")
-	if err != nil {
-		return nil, err
+	passwordTriesLeft := 1
+	if stdinIsTerminal() && opts.password == "" {
+		passwordTriesLeft = 3
 	}
 
-	err = s.SearchKey(opts.ctx, opts.password, maxKeys, opts.KeyHint)
+	for ; passwordTriesLeft > 0; passwordTriesLeft-- {
+		opts.password, err = ReadPassword(opts, "enter password for repository: ")
+		if err != nil && passwordTriesLeft > 1 {
+			opts.password = ""
+			fmt.Printf("%s. Try again\n", err)
+		}
+		if err != nil {
+			continue
+		}
+
+		err = s.SearchKey(opts.ctx, opts.password, maxKeys, opts.KeyHint)
+		if err != nil && passwordTriesLeft > 1 {
+			opts.password = ""
+			fmt.Printf("%s. Try again\n", err)
+		}
+	}
 	if err != nil {
-		return nil, err
+		if errors.IsFatal(err) {
+			return nil, err
+		}
+		return nil, errors.Fatalf("%s", err)
 	}
 
 	if stdoutIsTerminal() && !opts.JSON {
