@@ -35,6 +35,7 @@ type Backup struct {
 	start time.Time
 
 	totalBytes uint64
+	dry        bool // true if writes are faked
 
 	totalCh     chan counter
 	processedCh chan counter
@@ -364,7 +365,11 @@ func (b *Backup) Finish(snapshotID restic.ID) {
 	b.P("Dirs:        %5d new, %5d changed, %5d unmodified\n", b.summary.Dirs.New, b.summary.Dirs.Changed, b.summary.Dirs.Unchanged)
 	b.V("Data Blobs:  %5d new\n", b.summary.ItemStats.DataBlobs)
 	b.V("Tree Blobs:  %5d new\n", b.summary.ItemStats.TreeBlobs)
-	b.P("Added to the repo: %-5s\n", formatBytes(b.summary.ItemStats.DataSize+b.summary.ItemStats.TreeSize))
+	verb := "Added"
+	if b.dry {
+		verb = "Would add"
+	}
+	b.P("%s to the repo: %-5s\n", verb, formatBytes(b.summary.ItemStats.DataSize+b.summary.ItemStats.TreeSize))
 	b.P("\n")
 	b.P("processed %v files, %v in %s",
 		b.summary.Files.New+b.summary.Files.Changed+b.summary.Files.Unchanged,
@@ -377,4 +382,8 @@ func (b *Backup) Finish(snapshotID restic.ID) {
 // ArchiveProgressReporter interface.
 func (b *Backup) SetMinUpdatePause(d time.Duration) {
 	b.MinUpdatePause = d
+}
+
+func (b *Backup) SetDryRun() {
+	b.dry = true
 }

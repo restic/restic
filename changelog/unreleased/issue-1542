@@ -1,0 +1,9 @@
+Enhancement: Add --dry-run/-n option to backup command.
+
+We added a new --dry-run/-n option to backup, which performs all the normal
+steps of a backup without actually writing data. Passing -vv will log
+information about files that would be added, allowing fast verification of
+backup options without any unnecessary write activity.
+
+https://github.com/restic/restic/issues/1542
+https://github.com/restic/restic/pull/2308

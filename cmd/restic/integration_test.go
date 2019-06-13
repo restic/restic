@@ -269,10 +269,23 @@ func TestBackup(t *testing.T) {
 
 	rtest.SetupTarTestFixture(t, env.testdata, datafile)
 	opts := BackupOptions{}
+	dryOpts := BackupOptions{DryRun: true}
+
+	// dry run before first backup
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, dryOpts, env.gopts)
+	snapshotIDs := testRunList(t, "snapshots", env.gopts)
+	rtest.Assert(t, len(snapshotIDs) == 0,
+		"expected no snapshot, got %v", snapshotIDs)
 
 	// first backup
 	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
-	snapshotIDs := testRunList(t, "snapshots", env.gopts)
+	snapshotIDs = testRunList(t, "snapshots", env.gopts)
+	rtest.Assert(t, len(snapshotIDs) == 1,
+		"expected one snapshot, got %v", snapshotIDs)
+
+	// dry run between backups
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, dryOpts, env.gopts)
+	snapshotIDs = testRunList(t, "snapshots", env.gopts)
 	rtest.Assert(t, len(snapshotIDs) == 1,
 		"expected one snapshot, got %v", snapshotIDs)
 

@@ -95,6 +95,7 @@ type BackupOptions struct {
 	TimeStamp           string
 	WithAtime           bool
 	IgnoreInode         bool
+	DryRun              bool
 }
 
 var backupOptions BackupOptions
@@ -123,6 +124,7 @@ func init() {
 	f.StringVar(&backupOptions.TimeStamp, "time", "", "`time` of the backup (ex. '2012-11-01 22:08:41') (default: now)")
 	f.BoolVar(&backupOptions.WithAtime, "with-atime", false, "store the atime for all files and directories")
 	f.BoolVar(&backupOptions.IgnoreInode, "ignore-inode", false, "ignore inode number changes when checking for modified files")
+	f.BoolVarP(&backupOptions.DryRun, "dry-run", "n", false, "do not write anything, just print what would be done")
 }
 
 // filterExisting returns a slice of all existing items, or an error if no
@@ -433,6 +435,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		Run(ctx context.Context) error
 		Error(item string, fi os.FileInfo, err error) error
 		Finish(snapshotID restic.ID)
+		SetDryRun()
 
 		// ui.StdioWrapper
 		Stdout() io.WriteCloser
@@ -450,6 +453,11 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		p = json.NewBackup(term, gopts.verbosity)
 	} else {
 		p = ui.NewBackup(term, gopts.verbosity)
+	}
+
+	if opts.DryRun {
+		repo.SetDryRun()
+		p.SetDryRun()
 	}
 
 	// use the terminal for stdout/stderr
@@ -609,7 +617,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 
 	// Report finished execution
 	p.Finish(id)
-	if !gopts.JSON {
+	if !gopts.JSON && !opts.DryRun {
 		p.P("snapshot %s saved\n", id.Str())
 	}
 
