@@ -277,12 +277,14 @@ func PrintSnapshotGroupHeader(stdout io.Writer, groupKeyJSON string) error {
 	return nil
 }
 
-// Snapshot helps to print Snaphots as JSON with their ID included.
+// Snapshot helps to print Snaphots as JSON with their ID included. Also add the timestamp
+// formatted as unix epoch.
 type Snapshot struct {
 	*restic.Snapshot
 
 	ID      *restic.ID `json:"id"`
 	ShortID string     `json:"short_id"`
+	Epoch   int64      `json:"epoch"`
 }
 
 // SnapshotGroup helps to print SnaphotGroups as JSON with their GroupReasons included.
@@ -311,6 +313,7 @@ func printSnapshotGroupJSON(stdout io.Writer, snGroups map[string]restic.Snapsho
 					Snapshot: sn,
 					ID:       sn.ID(),
 					ShortID:  sn.ID().Str(),
+					Epoch:    sn.Time.Unix(),
 				}
 				snapshots = append(snapshots, k)
 			}
@@ -334,6 +337,7 @@ func printSnapshotGroupJSON(stdout io.Writer, snGroups map[string]restic.Snapsho
 				Snapshot: sn,
 				ID:       sn.ID(),
 				ShortID:  sn.ID().Str(),
+				Epoch:    sn.Time.Unix(),
 			}
 			snapshots = append(snapshots, k)
 		}
