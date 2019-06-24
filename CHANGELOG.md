@@ -20,7 +20,6 @@ Summary
  * Enh #2139: Return error if no bytes could be read for `backup --stdin`
  * Enh #2205: Add --ignore-inode option to backup cmd
  * Enh #2220: Add config option to set S3 storage class
- * Enh #2315: Add 'epoch' field to json output for 'snapshot' command
 
 Details
 -------
@@ -139,11 +138,6 @@ Details
 
    https://github.com/restic/restic/issues/706
    https://github.com/restic/restic/pull/2220
-
- * Enhancement #2315: Add 'epoch' field to json output for 'snapshot' command
-
-   The JSON output for the 'snapshot' command now includes the timestamp of each snapshot formatted
-   as a unix epoch value. This makes it easier for machine processing of the timestamp (eg, sorting)
 
 
 Changelog for restic 0.9.4 (2019-01-06)

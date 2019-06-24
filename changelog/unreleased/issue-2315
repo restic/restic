@@ -1,0 +1,6 @@
+Enh: Add 'epoch' field to json output for 'snapshot' command
+
+The JSON output for the 'snapshot' command now includes the timestamp of each snapshot formatted
+as a unix epoch value. This makes it easier for machine processing of the timestamp (eg, sorting)
+
+https://github.com/restic/restic/issues/2315
