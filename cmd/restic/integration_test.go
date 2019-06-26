@@ -639,6 +639,28 @@ func testRunKeyAddNewKey(t testing.TB, newPassword string, gopts GlobalOptions) 
 	rtest.OK(t, runKey(gopts, []string{"add"}))
 }
 
+func testRunKeyAddNewKeyUserHost(t testing.TB, gopts GlobalOptions) {
+	testKeyNewPassword = "john's geheimnis"
+	defer func() {
+		testKeyNewPassword = ""
+		keyUsername = ""
+		keyHostname = ""
+	}()
+
+	cmdKey.Flags().Parse([]string{"--user=john", "--host=example.com"})
+
+	t.Log("adding key for john@example.com")
+	rtest.OK(t, runKey(gopts, []string{"add"}))
+
+	repo, err := OpenRepository(gopts)
+	rtest.OK(t, err)
+	key, err := repository.SearchKey(gopts.ctx, repo, testKeyNewPassword, 1, "")
+	rtest.OK(t, err)
+
+	rtest.Equals(t, "john", key.Username)
+	rtest.Equals(t, "example.com", key.Hostname)
+}
+
 func testRunKeyPasswd(t testing.TB, newPassword string, gopts GlobalOptions) {
 	testKeyNewPassword = newPassword
 	defer func() {
@@ -681,6 +703,8 @@ func TestKeyAddRemove(t *testing.T) {
 	t.Logf("testing access with last password %q\n", env.gopts.password)
 	rtest.OK(t, runKey(env.gopts, []string{"list"}))
 	testRunCheck(t, env.gopts)
+
+	testRunKeyAddNewKeyUserHost(t, env.gopts)
 }
 
 func testFileSize(filename string, size int64) error {

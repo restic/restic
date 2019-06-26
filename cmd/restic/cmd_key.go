@@ -32,13 +32,19 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 	},
 }
 
-var newPasswordFile string
+var (
+	newPasswordFile string
+	keyUsername     string
+	keyHostname     string
+)
 
 func init() {
 	cmdRoot.AddCommand(cmdKey)
 
 	flags := cmdKey.Flags()
 	flags.StringVarP(&newPasswordFile, "new-password-file", "", "", "the file from which to load a new password")
+	flags.StringVarP(&keyUsername, "user", "", "", "the username for new keys")
+	flags.StringVarP(&keyHostname, "host", "", "", "the hostname for new keys")
 }
 
 func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions) error {
@@ -120,7 +126,7 @@ func addKey(gopts GlobalOptions, repo *repository.Repository) error {
 		return err
 	}
 
-	id, err := repository.AddKey(gopts.ctx, repo, pw, repo.Key())
+	id, err := repository.AddKey(gopts.ctx, repo, pw, keyUsername, keyHostname, repo.Key())
 	if err != nil {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
@@ -151,7 +157,7 @@ func changePassword(gopts GlobalOptions, repo *repository.Repository) error {
 		return err
 	}
 
-	id, err := repository.AddKey(gopts.ctx, repo, pw, repo.Key())
+	id, err := repository.AddKey(gopts.ctx, repo, pw, "", "", repo.Key())
 	if err != nil {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
