@@ -1,0 +1,7 @@
+Bugfix: Add upper bound for t in --read-data-subset=n/t
+
+256 is the effective maximum for t, but restic would allow larger
+values, leading to strange behavior.
+
+https://github.com/restic/restic/issues/2301
+https://github.com/restic/restic/pull/2304
