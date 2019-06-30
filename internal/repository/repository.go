@@ -440,6 +440,10 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 				idx, buf, err = LoadIndexWithDecoder(ctx, r, buf[:0], fi.ID, DecodeOldIndex)
 			}
 
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("unable to load index %v", fi.ID.Str()))
+			}
+
 			select {
 			case indexCh <- idx:
 			case <-ctx.Done():
@@ -475,7 +479,7 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 
 	err := wg.Wait()
 	if err != nil {
-		return err
+		return errors.Fatal(err.Error())
 	}
 
 	// remove index files from the cache which have been removed in the repo
