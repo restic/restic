@@ -176,7 +176,7 @@ func (b *Backup) update(total, processed counter, errors uint, currentFiles map[
 	for filename := range currentFiles {
 		lines = append(lines, filename)
 	}
-	sort.Sort(sort.StringSlice(lines))
+	sort.Strings(lines)
 	lines = append([]string{status}, lines...)
 
 	b.term.SetStatus(lines)
