@@ -17,8 +17,6 @@ import (
 	"github.com/ncw/swift"
 )
 
-const connLimit = 10
-
 // beSwift is a backend which stores the data on a swift endpoint.
 type beSwift struct {
 	conn      *swift.Connection

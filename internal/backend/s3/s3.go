@@ -231,22 +231,6 @@ func (be *Backend) Path() string {
 	return be.cfg.Prefix
 }
 
-// lenForFile returns the length of the file.
-func lenForFile(f *os.File) (int64, error) {
-	fi, err := f.Stat()
-	if err != nil {
-		return 0, errors.Wrap(err, "Stat")
-	}
-
-	pos, err := f.Seek(0, io.SeekCurrent)
-	if err != nil {
-		return 0, errors.Wrap(err, "Seek")
-	}
-
-	size := fi.Size() - pos
-	return size, nil
-}
-
 // Save stores data in the backend at the handle.
 func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
 	debug.Log("Save %v", h)
