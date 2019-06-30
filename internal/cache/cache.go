@@ -175,11 +175,7 @@ const MaxCacheAge = 30 * 24 * time.Hour
 
 func validCacheDirName(s string) bool {
 	r := regexp.MustCompile(`^[a-fA-F0-9]{64}$`)
-	if !r.MatchString(s) {
-		return false
-	}
-
-	return true
+	return r.MatchString(s)
 }
 
 // listCacheDirs returns the list of cache directories.
