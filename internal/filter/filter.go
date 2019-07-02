@@ -18,7 +18,8 @@ type patternPart struct {
 
 // Pattern represents a preparsed filter pattern
 type Pattern struct {
-	parts []patternPart
+	parts     []patternPart
+	isNegated bool
 }
 
 func prepareStr(str string) ([]string, error) {
@@ -29,6 +30,12 @@ func prepareStr(str string) ([]string, error) {
 }
 
 func preparePattern(patternStr string) Pattern {
+	var negate bool
+	if patternStr[0] == '!' {
+		negate = true
+		patternStr = patternStr[1:]
+	}
+
 	pathParts := splitPath(filepath.Clean(patternStr))
 	parts := make([]patternPart, len(pathParts))
 	for i, part := range pathParts {
@@ -41,7 +48,7 @@ func preparePattern(patternStr string) Pattern {
 		parts[i] = patternPart{part, isSimple}
 	}
 
-	return Pattern{parts}
+	return Pattern{parts, negate}
 }
 
 // Split p into path components. Assuming p has been Cleaned, no component
@@ -123,7 +130,7 @@ func childMatch(pattern Pattern, strs []string) (matched bool, err error) {
 	} else {
 		l = len(strs)
 	}
-	return match(Pattern{pattern.parts[0:l]}, strs)
+	return match(Pattern{pattern.parts[0:l], pattern.isNegated}, strs)
 }
 
 func hasDoubleWildcard(list Pattern) (ok bool, pos int) {
@@ -151,7 +158,7 @@ func match(pattern Pattern, strs []string) (matched bool, err error) {
 			}
 			newPat = append(newPat, pattern.parts[pos+1:]...)
 
-			matched, err := match(Pattern{newPat}, strs)
+			matched, err := match(Pattern{newPat, pattern.isNegated}, strs)
 			if err != nil {
 				return false, err
 			}
@@ -234,7 +241,9 @@ func ListWithChild(patterns []Pattern, str string) (matched bool, childMayMatch 
 	return list(patterns, true, str)
 }
 
-// List returns true if str matches one of the patterns. Empty patterns are ignored.
+// list returns true if str matches one of the patterns. Empty patterns are ignored.
+// Patterns prefixed by "!" are negated: any matching file excluded by a previous pattern
+// will become included again.
 func list(patterns []Pattern, checkChildMatches bool, str string) (matched bool, childMayMatch bool, err error) {
 	if len(patterns) == 0 {
 		return false, false, nil
@@ -260,11 +269,12 @@ func list(patterns []Pattern, checkChildMatches bool, str string) (matched bool,
 			c = true
 		}
 
-		matched = matched || m
-		childMayMatch = childMayMatch || c
-
-		if matched && childMayMatch {
-			return true, true, nil
+		if pat.isNegated {
+			matched = matched && !m
+			childMayMatch = childMayMatch && !m
+		} else {
+			matched = matched || m
+			childMayMatch = childMayMatch || c
 		}
 	}
 
