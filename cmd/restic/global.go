@@ -34,8 +34,9 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 
-	"golang.org/x/crypto/ssh/terminal"
 	"os/exec"
+
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 var version = "0.9.5-dev (compiled manually)"
@@ -425,7 +426,7 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 		}
 	} else {
 		if stdoutIsTerminal() {
-			Verbosef("found %d old cache directories in %v, pass --cleanup-cache to remove them\n",
+			Verbosef("found %d old cache directories in %v, run `restic cache --cleanup` to remove them\n",
 				len(oldCacheDirs), c.Base)
 		}
 	}
