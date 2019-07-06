@@ -149,8 +149,13 @@ func match(patterns Pattern, strs []string) (matched bool, err error) {
 	}
 
 	if len(patterns) <= len(strs) {
+		maxOffset := len(strs) - len(patterns)
+		// special case absolute patterns
+		if patterns[0] == "" {
+			maxOffset = 0
+		}
 	outer:
-		for offset := len(strs) - len(patterns); offset >= 0; offset-- {
+		for offset := maxOffset; offset >= 0; offset-- {
 
 			for i := len(patterns) - 1; i >= 0; i-- {
 				ok, err := filepath.Match(patterns[i], strs[offset+i])
