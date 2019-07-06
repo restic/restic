@@ -1940,6 +1940,7 @@ func snapshot(t testing.TB, repo restic.Repository, fs fs.FS, parent restic.ID, 
 	defer cancel()
 
 	arch := New(repo, fs, Options{})
+	arch.WithAtime = true
 
 	sopts := SnapshotOptions{
 		Time:           time.Now(),
