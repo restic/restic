@@ -493,7 +493,9 @@ func (c *Checker) filterTrees(ctx context.Context, backlog restic.IDs, loaderCha
 
 	for {
 		if loadCh == nil && len(backlog) > 0 {
-			nextTreeID, backlog = backlog[0], backlog[1:]
+			// process last added ids first, that is traverse the tree in depth-first order
+			ln := len(backlog) - 1
+			nextTreeID, backlog = backlog[ln], backlog[:ln]
 
 			// use a separate flag for processed trees to ensure that check still processes trees
 			// even when a file references a tree blob
@@ -545,7 +547,9 @@ func (c *Checker) filterTrees(ctx context.Context, backlog restic.IDs, loaderCha
 			} else {
 				subtrees := j.Tree.Subtrees()
 				debug.Log("subtrees for tree %v: %v", j.ID, subtrees)
-				for _, id := range subtrees {
+				// iterate backwards over subtree to compensate backwards traversal order of nextTreeID selection
+				for i := len(subtrees) - 1; i >= 0; i-- {
+					id := subtrees[i]
 					if id.IsNull() {
 						// We do not need to raise this error here, it is
 						// checked when the tree is checked. Just make sure
