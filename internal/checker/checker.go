@@ -535,8 +535,9 @@ func filterTrees(ctx context.Context, backlog restic.IDs, loaderChan chan<- rest
 				debug.Log("received job with nil tree pointer: %v (ID %v)", j.error, j.ID)
 				err = errors.New("tree is nil and error is nil")
 			} else {
-				debug.Log("subtrees for tree %v: %v", j.ID, j.Tree.Subtrees())
-				for _, id := range j.Tree.Subtrees() {
+				subtrees := j.Tree.Subtrees()
+				debug.Log("subtrees for tree %v: %v", j.ID, subtrees)
+				for _, id := range subtrees {
 					if id.IsNull() {
 						// We do not need to raise this error here, it is
 						// checked when the tree is checked. Just make sure
