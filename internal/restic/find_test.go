@@ -91,9 +91,9 @@ func TestFindUsedBlobs(t *testing.T) {
 		snapshots = append(snapshots, sn)
 	}
 
+	// Check individual snapshots
 	for i, sn := range snapshots {
-		usedBlobs := restic.NewBlobSet()
-		err := restic.FindUsedBlobs(context.TODO(), repo, *sn.Tree, usedBlobs, restic.NewBlobSet())
+		usedBlobs, err := restic.FindUsedBlobs(context.TODO(), repo, []*restic.Snapshot{sn}, nil)
 		if err != nil {
 			t.Errorf("FindUsedBlobs returned error: %v", err)
 			continue
@@ -116,6 +116,25 @@ func TestFindUsedBlobs(t *testing.T) {
 			saveIDSet(t, goldenFilename, usedBlobs)
 		}
 	}
+
+	// Check combined snapshots
+	usedBlobs, err := restic.FindUsedBlobs(context.TODO(), repo, snapshots, nil)
+	if err != nil {
+		t.Errorf("FindUsedBlobs returned error: %v", err)
+	}
+	if len(usedBlobs) == 0 {
+		t.Errorf("FindUsedBlobs returned an empty set")
+	}
+
+	goldenFilename := filepath.Join("testdata", "used_blobs")
+	want := loadIDSet(t, goldenFilename)
+	if !want.Equals(usedBlobs) {
+		t.Errorf("wrong list of blobs returned:\n  missing blobs: %v\n  extra blobs: %v",
+			want.Sub(usedBlobs), usedBlobs.Sub(want))
+	}
+	if *updateGoldenFiles {
+		saveIDSet(t, goldenFilename, usedBlobs)
+	}
 }
 
 func BenchmarkFindUsedBlobs(b *testing.B) {
@@ -127,9 +146,7 @@ func BenchmarkFindUsedBlobs(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		seen := restic.NewBlobSet()
-		blobs := restic.NewBlobSet()
-		err := restic.FindUsedBlobs(context.TODO(), repo, *sn.Tree, blobs, seen)
+		blobs, err := restic.FindUsedBlobs(context.TODO(), repo, []*restic.Snapshot{sn}, nil)
 		if err != nil {
 			b.Error(err)
 		}

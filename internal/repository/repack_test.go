@@ -172,7 +172,7 @@ func rebuildIndex(t *testing.T, repo restic.Repository) {
 		t.Fatal(err)
 	}
 
-	_, err = idx.Save(context.TODO(), repo, nil)
+	_, err = idx.Save(context.TODO(), repo, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,0 +1,18 @@
+Enhancement: Improve prune performance
+
+We've improved the performance of pruning a repository.
+
+Previously, restic would build a new index for the repository at the beginning
+of the prune, do the prune, and then build another new index at the end.
+Building these indexes could take a long time for large repositories, especially
+if they are using cloud storage. Restic now loads the existing repository index,
+keeps track of the added an removed packs, and writes a new index without having
+to rebuild it from scratch. It also parallelizes as many operations as it can.
+
+There is a new --ignore-index option to the prune command which makes restic
+ignore the existing index and scan the repository to build a new index. This
+option is not available for the forget command with the --prune option; restic
+will always load the existing index when run in that manner.
+
+https://github.com/restic/restic/issues/2162
+https://github.com/restic/restic/issues/2227

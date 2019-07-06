@@ -73,7 +73,7 @@ func rebuildIndex(ctx context.Context, repo restic.Repository, ignorePacks resti
 		return err
 	}
 
-	ids, err := idx.Save(ctx, repo, supersedes)
+	ids, err := idx.Save(ctx, repo, supersedes, nil)
 	if err != nil {
 		return errors.Fatalf("unable to save index, last error was: %v", err)
 	}

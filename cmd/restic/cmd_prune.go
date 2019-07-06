@@ -2,15 +2,18 @@ package main
 
 import (
 	"fmt"
+	"runtime"
+	"sync"
 	"time"
 
-	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/index"
+	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/spf13/cobra"
+	tomb "gopkg.in/tomb.v2"
 )
 
 var cmdPrune = &cobra.Command{
@@ -22,12 +25,22 @@ referenced and therefore not needed any more.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runPrune(globalOptions)
+		return runPrune(pruneOptions, globalOptions)
 	},
 }
 
+// PruneOptions collects all options for the prune command.
+type PruneOptions struct {
+	IgnoreIndex bool
+}
+
+var pruneOptions PruneOptions
+
 func init() {
 	cmdRoot.AddCommand(cmdPrune)
+
+	f := cmdPrune.Flags()
+	f.BoolVar(&pruneOptions.IgnoreIndex, "ignore-index", false, "rebuild index before pruning")
 }
 
 func shortenStatus(maxLength int, s string) string {
@@ -45,6 +58,10 @@ func shortenStatus(maxLength int, s string) string {
 // newProgressMax returns a progress that counts blobs.
 func newProgressMax(show bool, max uint64, description string) *restic.Progress {
 	if !show {
+		return nil
+	}
+
+	if max == 0 {
 		return nil
 	}
 
@@ -70,7 +87,33 @@ func newProgressMax(show bool, max uint64, description string) *restic.Progress 
 	return p
 }
 
-func runPrune(gopts GlobalOptions) error {
+func newProgress(show bool, description string) *restic.Progress {
+	if !show {
+		return nil
+	}
+
+	p := restic.NewProgress()
+
+	p.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
+		status := fmt.Sprintf("[%s] %d %s",
+			formatDuration(d),
+			s.Blobs, description)
+
+		if w := stdoutTerminalWidth(); w > 0 {
+			status = shortenStatus(w, status)
+		}
+
+		PrintProgress("%s", status)
+	}
+
+	p.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
+		fmt.Printf("\n")
+	}
+
+	return p
+}
+
+func runPrune(opts PruneOptions, gopts GlobalOptions) error {
 	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err
@@ -82,7 +125,7 @@ func runPrune(gopts GlobalOptions) error {
 		return err
 	}
 
-	return pruneRepository(gopts, repo)
+	return pruneRepository(opts, gopts, repo)
 }
 
 func mixedBlobs(list []restic.Blob) bool {
@@ -104,49 +147,171 @@ func mixedBlobs(list []restic.Blob) bool {
 	return false
 }
 
-func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
+func pruneRepository(opts PruneOptions, gopts GlobalOptions, repo restic.Repository) error {
 	ctx := gopts.ctx
 
-	err := repo.LoadIndex(ctx)
-	if err != nil {
-		return err
-	}
-
 	var stats struct {
+		indexes   int
 		blobs     int
 		packs     int
 		snapshots int
 		bytes     int64
 	}
+	type Pack struct {
+		ID   restic.ID
+		Size int64
+	}
+	indexFiles := restic.NewIDSet()
+	packFiles := make(map[restic.ID]Pack)
 
-	Verbosef("counting files in repo\n")
-	err = repo.List(ctx, restic.DataFile, func(restic.ID, int64) error {
+	Verbosef("listing files in repo\n")
+	err := repo.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
+		indexFiles.Insert(id)
+		stats.indexes++
+		return nil
+	})
+	err = repo.List(ctx, restic.DataFile, func(id restic.ID, size int64) error {
 		stats.packs++
+		stats.bytes += size
+		packFiles[id] = Pack{ID: id, Size: size}
 		return nil
 	})
 	if err != nil {
 		return err
 	}
 
-	Verbosef("building new index for repo\n")
+	var idx *index.Index
+	var invalidFiles restic.IDs
+	if opts.IgnoreIndex {
+		Verbosef("building index for repo\n")
+		bar := newProgressMax(!gopts.Quiet, uint64(stats.packs), "packs")
 
-	bar := newProgressMax(!gopts.Quiet, uint64(stats.packs), "packs")
-	idx, invalidFiles, err := index.New(ctx, repo, restic.NewIDSet(), bar)
-	if err != nil {
-		return err
+		idx, invalidFiles, err = index.New(ctx, repo, nil, bar)
+		if err != nil {
+			return err
+		}
+	} else {
+		Verbosef("loading index for repo\n")
+		bar := newProgressMax(!gopts.Quiet, uint64(stats.indexes), "index files")
+
+		idx, err = index.Load(ctx, repo, bar)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, pack := range idx.Packs {
+		if _, ok := packFiles[pack.ID]; ok {
+			// We're going to be using packFiles later to examine
+			// packs that aren't in the index, so remove this pack
+			// file from packFiles so we know it's already handled.
+			delete(packFiles, pack.ID)
+		} else {
+			// This pack is in the index, but isn't actually in the
+			// repository. Remove it from the index so everything
+			// knows it doesn't exist any more.
+			delete(idx.Packs, pack.ID)
+		}
+	}
+
+	Verbosef("checking for packs not in index\n")
+	bar := newProgressMax(!gopts.Quiet, uint64(len(packFiles)), "packs")
+	bar.Start()
+
+	t, wctx := tomb.WithContext(ctx)
+
+	inputCh := make(chan Pack)
+	invalidPacksCh := make(chan restic.ID)
+
+	inputWorker := func() error {
+		for _, packFile := range packFiles {
+			select {
+			case inputCh <- packFile:
+			case <-t.Dying():
+				close(inputCh)
+				return tomb.ErrDying
+			}
+		}
+		close(inputCh)
+		return nil
+	}
+
+	var wg sync.WaitGroup
+	scanUnknownPacksWorker := func() error {
+		defer wg.Done()
+		for packFile := range inputCh {
+			entries, size, err := repo.ListPack(wctx, packFile.ID, packFile.Size)
+			if err != nil {
+				cause := errors.Cause(err)
+				if _, ok := cause.(pack.InvalidFileError); ok {
+					select {
+					case invalidPacksCh <- packFile.ID:
+					case <-t.Dying():
+						return tomb.ErrDying
+					}
+					bar.Report(restic.Stat{Blobs: 1})
+				}
+				Printf("pack file cannot be listed: %v: %v\n", packFile.ID, err)
+				bar.Report(restic.Stat{Blobs: 1})
+				continue
+			}
+
+			err = idx.AddPack(packFile.ID, size, entries)
+			if err != nil {
+				Printf("couldn't add pack %v to index: %v\n", packFile.ID, err)
+			}
+			bar.Report(restic.Stat{Blobs: 1})
+		}
+		return nil
+	}
+
+	collectInvalidPacksWorker := func() error {
+		for {
+			select {
+			case file, ok := <-invalidPacksCh:
+				if !ok {
+					return nil
+				}
+				invalidFiles = append(invalidFiles, file)
+			case <-t.Dying():
+				return tomb.ErrDying
+			}
+		}
+	}
+
+	t.Go(func() error {
+		t.Go(inputWorker)
+		count := runtime.NumCPU()
+		wg.Add(count)
+		for i := 0; i < count; i++ {
+			t.Go(scanUnknownPacksWorker)
+		}
+
+		t.Go(func() error {
+			wg.Wait()
+			close(invalidPacksCh)
+			return nil
+		})
+
+		t.Go(collectInvalidPacksWorker)
+		return nil
+	})
+	err = t.Wait()
+	bar.Done()
+
+	for _, pack := range idx.Packs {
+		stats.blobs += len(pack.Entries)
+		for _, blob := range pack.Entries {
+			repo.Index().Store(restic.PackedBlob{Blob: blob, PackID: pack.ID})
+		}
 	}
 
 	for _, id := range invalidFiles {
 		Warnf("incomplete pack file (will be removed): %v\n", id)
 	}
 
-	blobs := 0
-	for _, pack := range idx.Packs {
-		stats.bytes += pack.Size
-		blobs += len(pack.Entries)
-	}
 	Verbosef("repository contains %v packs (%v blobs) with %v\n",
-		len(idx.Packs), blobs, formatBytes(uint64(stats.bytes)))
+		stats.packs, stats.blobs, formatBytes(uint64(stats.bytes)))
 
 	blobCount := make(map[restic.BlobHandle]int)
 	var duplicateBlobs uint64
@@ -155,7 +320,6 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	// find duplicate blobs
 	for _, p := range idx.Packs {
 		for _, entry := range p.Entries {
-			stats.blobs++
 			h := restic.BlobHandle{ID: entry.ID, Type: entry.Type}
 			blobCount[h]++
 
@@ -167,7 +331,7 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	}
 
 	Verbosef("processed %d blobs: %d duplicate blobs, %v duplicate\n",
-		stats.blobs, duplicateBlobs, formatBytes(uint64(duplicateBytes)))
+		stats.blobs, duplicateBlobs, formatBytes(duplicateBytes))
 	Verbosef("load all snapshots\n")
 
 	// find referenced blobs
@@ -180,27 +344,11 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 
 	Verbosef("find data that is still in use for %d snapshots\n", stats.snapshots)
 
-	usedBlobs := restic.NewBlobSet()
-	seenBlobs := restic.NewBlobSet()
-
-	bar = newProgressMax(!gopts.Quiet, uint64(len(snapshots)), "snapshots")
-	bar.Start()
-	for _, sn := range snapshots {
-		debug.Log("process snapshot %v", sn.ID())
-
-		err = restic.FindUsedBlobs(ctx, repo, *sn.Tree, usedBlobs, seenBlobs)
-		if err != nil {
-			if repo.Backend().IsNotExist(err) {
-				return errors.Fatal("unable to load a tree from the repo: " + err.Error())
-			}
-
-			return err
-		}
-
-		debug.Log("processed snapshot %v", sn.ID())
-		bar.Report(restic.Stat{Blobs: 1})
+	bar = newProgressMax(!gopts.Quiet, uint64(stats.snapshots), "snapshots")
+	usedBlobs, err := restic.FindUsedBlobs(ctx, repo, snapshots, bar)
+	if err != nil {
+		return err
 	}
-	bar.Done()
 
 	if len(usedBlobs) > stats.blobs {
 		return errors.Fatalf("number of used blobs is larger than number of available blobs!\n" +
@@ -243,7 +391,6 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	}
 
 	for packID, p := range idx.Packs {
-
 		hasActiveBlob := false
 		for _, blob := range p.Entries {
 			h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
@@ -269,37 +416,107 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	}
 
 	Verbosef("will delete %d packs and rewrite %d packs, this frees %s\n",
-		len(removePacks), len(rewritePacks), formatBytes(uint64(removeBytes)))
+		len(removePacks), len(rewritePacks), formatBytes(removeBytes))
 
 	var obsoletePacks restic.IDSet
 	if len(rewritePacks) != 0 {
 		bar = newProgressMax(!gopts.Quiet, uint64(len(rewritePacks)), "packs rewritten")
-		bar.Start()
 		obsoletePacks, err = repository.Repack(ctx, repo, rewritePacks, usedBlobs, bar)
 		if err != nil {
 			return err
 		}
-		bar.Done()
+
+		knownPacks := restic.NewIDSet()
+		for packID := range idx.Packs {
+			knownPacks.Insert(packID)
+		}
+		for blob := range repo.Index().Each(ctx) {
+			if _, ok := knownPacks[blob.PackID]; ok {
+				continue
+			}
+			pack, ok := idx.Packs[blob.PackID]
+			if !ok {
+				pack.ID = blob.PackID
+			}
+			pack.Entries = append(pack.Entries, blob.Blob)
+			idx.Packs[pack.ID] = pack
+		}
 	}
 
 	removePacks.Merge(obsoletePacks)
 
-	if err = rebuildIndex(ctx, repo, removePacks); err != nil {
+	for packID := range removePacks {
+		idx.RemovePack(packID)
+	}
+	var supersedes restic.IDs
+	for id := range indexFiles {
+		supersedes = append(supersedes, id)
+	}
+
+	Verbosef("saving new index\n")
+	bar = newProgress(!gopts.Quiet, "index files")
+	_, err = idx.Save(ctx, repo, supersedes, bar)
+	if err != nil {
 		return err
 	}
 
-	if len(removePacks) != 0 {
-		bar = newProgressMax(!gopts.Quiet, uint64(len(removePacks)), "packs deleted")
-		bar.Start()
-		for packID := range removePacks {
+	Verbosef("remove %d old index files\n", len(indexFiles))
+
+	for id := range indexFiles {
+		if err := repo.Backend().Remove(ctx, restic.Handle{
+			Type: restic.IndexFile,
+			Name: id.String(),
+		}); err != nil {
+			Warnf("error removing old index %v: %v\n", id.Str(), err)
+		}
+	}
+
+	t, wctx = tomb.WithContext(ctx)
+	removePacksCh := make(chan restic.ID)
+	bar = newProgressMax(!gopts.Quiet, uint64(len(removePacks)), "packs deleted")
+	deleteWorker := func() error {
+		for packID := range removePacksCh {
+			select {
+			case <-t.Dying():
+				break
+			default:
+			}
+
 			h := restic.Handle{Type: restic.DataFile, Name: packID.String()}
-			err = repo.Backend().Remove(ctx, h)
+			err = repo.Backend().Remove(wctx, h)
 			if err != nil {
 				Warnf("unable to remove file %v from the repository\n", packID.Str())
 			}
 			bar.Report(restic.Stat{Blobs: 1})
 		}
-		bar.Done()
+		return nil
+	}
+
+	bar.Start()
+	t.Go(func() error {
+		t.Go(func() error {
+			for packID := range removePacks {
+				select {
+				case removePacksCh <- packID:
+				case <-t.Dying():
+					break
+				}
+			}
+			close(removePacksCh)
+			return nil
+		})
+
+		deleteWorkers := repo.Backend().Connections()
+		for i := uint(0); i < deleteWorkers; i++ {
+			t.Go(deleteWorker)
+		}
+
+		return nil
+	})
+	err = t.Wait()
+	bar.Done()
+	if err != nil {
+		return err
 	}
 
 	Verbosef("done\n")

@@ -62,6 +62,7 @@ type Index interface {
 	Has(ID, BlobType) bool
 	Lookup(ID, BlobType) ([]PackedBlob, bool)
 	Count(BlobType) uint
+	Store(PackedBlob)
 
 	// Each returns a channel that yields all blobs known to the index. When
 	// the context is cancelled, the background goroutine terminates. This

@@ -398,8 +398,6 @@ func (r *Repository) SaveFullIndex(ctx context.Context) error {
 	return r.saveIndex(ctx, r.idx.FullIndexes()...)
 }
 
-const loadIndexParallelism = 4
-
 // LoadIndex loads all index files from the backend in parallel and stores them
 // in the master index. The first error that occurred is returned.
 func (r *Repository) LoadIndex(ctx context.Context) error {
@@ -457,7 +455,7 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 
 	// run workers on ch
 	wg.Go(func() error {
-		return RunWorkers(ctx, loadIndexParallelism, worker, final)
+		return RunWorkers(ctx, int(r.be.Connections()), worker, final)
 	})
 
 	// receive decoded indexes

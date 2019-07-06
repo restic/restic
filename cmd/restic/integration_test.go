@@ -248,8 +248,8 @@ func testRunForgetJSON(t testing.TB, gopts GlobalOptions, args ...string) {
 	return
 }
 
-func testRunPrune(t testing.TB, gopts GlobalOptions) {
-	rtest.OK(t, runPrune(gopts))
+func testRunPrune(t testing.TB, opts PruneOptions, gopts GlobalOptions) {
+	rtest.OK(t, runPrune(opts, gopts))
 }
 
 func TestBackup(t *testing.T) {
@@ -1051,9 +1051,6 @@ func TestCheckRestoreNoLock(t *testing.T) {
 }
 
 func TestPrune(t *testing.T) {
-	env, cleanup := withTestEnvironment(t)
-	defer cleanup()
-
 	datafile := filepath.Join("testdata", "backup-data.tar.gz")
 	fd, err := os.Open(datafile)
 	if os.IsNotExist(errors.Cause(err)) {
@@ -1063,27 +1060,106 @@ func TestPrune(t *testing.T) {
 	rtest.OK(t, err)
 	rtest.OK(t, fd.Close())
 
-	testRunInit(t, env.gopts)
+	var tests = []struct {
+		Name        string
+		Options     PruneOptions
+		BeforePrune func(t *testing.T, env *testEnvironment)
+		AfterPrune  func(t *testing.T, env *testEnvironment)
+	}{
+		{
+			Name: "use-index",
+		},
+		{
+			Name:    "ignore-index",
+			Options: PruneOptions{IgnoreIndex: true},
+		},
+		{
+			Name: "remove-index",
+			BeforePrune: func(t *testing.T, env *testEnvironment) {
+				indexdir := filepath.Join(env.repo, "index")
+				for entry := range walkDir(indexdir) {
+					if entry.fi.Mode().IsDir() {
+						continue
+					}
+					rtest.OK(t, os.Remove(filepath.Join(indexdir, entry.path)))
+				}
+			},
+		},
+		{
+			Name: "invalid-pack",
+			BeforePrune: func(t *testing.T, env *testEnvironment) {
+				name := filepath.Join(env.repo, "data", "01",
+					"0123456789012345678901234567890123456789012345678901234567890123")
+				f, err := os.Create(name)
+				rtest.OK(t, err)
 
-	rtest.SetupTarTestFixture(t, env.testdata, datafile)
-	opts := BackupOptions{}
+				buf := make([]byte, 100)
+				_, err = f.Write(buf)
+				rtest.OK(t, err)
 
-	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9")}, opts, env.gopts)
-	firstSnapshot := testRunList(t, "snapshots", env.gopts)
-	rtest.Assert(t, len(firstSnapshot) == 1,
-		"expected one snapshot, got %v", firstSnapshot)
+				err = f.Sync()
+				rtest.OK(t, err)
 
-	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "2")}, opts, env.gopts)
-	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "3")}, opts, env.gopts)
+				err = f.Close()
+				rtest.OK(t, err)
+			},
+			AfterPrune: func(t *testing.T, env *testEnvironment) {
+				name := filepath.Join(env.repo, "data", "01",
+					"0123456789012345678901234567890123456789012345678901234567890123")
+				_, err := os.Stat(name)
+				if !os.IsNotExist(err) {
+					t.Fatal("invalid pack wasn't removed")
+				}
+			},
+		},
+		{
+			Name: "prune-twice",
+			AfterPrune: func(t *testing.T, env *testEnvironment) {
+				testRunPrune(t, PruneOptions{}, env.gopts)
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			env, cleanup := withTestEnvironment(t)
+			defer cleanup()
 
-	snapshotIDs := testRunList(t, "snapshots", env.gopts)
-	rtest.Assert(t, len(snapshotIDs) == 3,
-		"expected 3 snapshot, got %v", snapshotIDs)
+			testRunInit(t, env.gopts)
 
-	testRunForgetJSON(t, env.gopts)
-	testRunForget(t, env.gopts, firstSnapshot[0].String())
-	testRunPrune(t, env.gopts)
-	testRunCheck(t, env.gopts)
+			rtest.SetupTarTestFixture(t, env.testdata, datafile)
+			opts := BackupOptions{}
+
+			testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9")},
+				opts, env.gopts)
+			firstSnapshot := testRunList(t, "snapshots", env.gopts)
+			rtest.Assert(t, len(firstSnapshot) == 1,
+				"expected one snapshot, got %v", firstSnapshot)
+
+			testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "2")},
+				opts, env.gopts)
+			testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "3")},
+				opts, env.gopts)
+
+			snapshotIDs := testRunList(t, "snapshots", env.gopts)
+			rtest.Assert(t, len(snapshotIDs) == 3,
+				"expected 3 snapshot, got %v", snapshotIDs)
+
+			testRunForgetJSON(t, env.gopts)
+			testRunForget(t, env.gopts, firstSnapshot[0].String())
+
+			if test.BeforePrune != nil {
+				test.BeforePrune(t, env)
+			}
+
+			testRunPrune(t, test.Options, env.gopts)
+
+			if test.AfterPrune != nil {
+				test.AfterPrune(t, env)
+			}
+
+			testRunCheck(t, env.gopts)
+		})
+	}
 }
 
 func TestHardLink(t *testing.T) {

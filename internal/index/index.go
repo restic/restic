@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/restic"
 	"golang.org/x/sync/errgroup"
+	tomb "gopkg.in/tomb.v2"
 )
 
 // Pack contains information about the contents of a pack.
@@ -23,6 +24,7 @@ type Pack struct {
 
 // Index contains information about blobs and packs stored in a repo.
 type Index struct {
+	m        sync.Mutex
 	Packs    map[restic.ID]Pack
 	IndexIDs restic.IDSet
 }
@@ -33,8 +35,6 @@ func newIndex() *Index {
 		IndexIDs: restic.NewIDSet(),
 	}
 }
-
-const listPackWorkers = 10
 
 // Lister lists files and their contents
 type Lister interface {
@@ -48,7 +48,7 @@ type Lister interface {
 
 // New creates a new index for repo from scratch. InvalidFiles contains all IDs
 // of files  that cannot be listed successfully.
-func New(ctx context.Context, repo Lister, ignorePacks restic.IDSet, p *restic.Progress) (idx *Index, invalidFiles restic.IDs, err error) {
+func New(ctx context.Context, repo restic.Repository, ignorePacks restic.IDSet, p *restic.Progress) (idx *Index, invalidFiles restic.IDs, err error) {
 	p.Start()
 	defer p.Done()
 
@@ -91,7 +91,7 @@ func New(ctx context.Context, repo Lister, ignorePacks restic.IDSet, p *restic.P
 
 	// run the workers listing the files, read from inputCh, send to outputCh
 	var workers sync.WaitGroup
-	for i := 0; i < listPackWorkers; i++ {
+	for i := uint(0); i < repo.Backend().Connections(); i++ {
 		workers.Add(1)
 		go func() {
 			defer workers.Done()
@@ -187,60 +187,133 @@ func loadIndexJSON(ctx context.Context, repo ListLoader, id restic.ID) (*indexJS
 }
 
 // Load creates an index by loading all index files from the repo.
-func Load(ctx context.Context, repo ListLoader, p *restic.Progress) (*Index, error) {
+func Load(ctx context.Context, repo restic.Repository, p *restic.Progress) (*Index, error) {
 	debug.Log("loading indexes")
 
 	p.Start()
 	defer p.Done()
+
+	t, ctx := tomb.WithContext(ctx)
+
+	type ReadJob struct {
+		IndexID restic.ID
+		Size    int64
+	}
+	type SaveJob struct {
+		IndexID    restic.ID
+		Packs      map[restic.ID]Pack
+		Supersedes restic.IDSet
+	}
+
+	readCh := make(chan ReadJob)
+	saveCh := make(chan SaveJob)
 
 	supersedes := make(map[restic.ID]restic.IDSet)
 	results := make(map[restic.ID]map[restic.ID]Pack)
 
 	index := newIndex()
 
-	err := repo.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
-		p.Report(restic.Stat{Blobs: 1})
-
-		debug.Log("Load index %v", id)
-		idx, err := loadIndexJSON(ctx, repo, id)
-		if err != nil {
-			return err
-		}
-
-		res := make(map[restic.ID]Pack)
-		supersedes[id] = restic.NewIDSet()
-		for _, sid := range idx.Supersedes {
-			debug.Log("  index %v supersedes %v", id, sid)
-			supersedes[id].Insert(sid)
-		}
-
-		for _, jpack := range idx.Packs {
-			entries := make([]restic.Blob, 0, len(jpack.Blobs))
-			for _, blob := range jpack.Blobs {
-				entry := restic.Blob{
-					ID:     blob.ID,
-					Type:   blob.Type,
-					Offset: blob.Offset,
-					Length: blob.Length,
-				}
-				entries = append(entries, entry)
+	// List index files in the repo, send to readCh
+	listWorker := func() error {
+		defer close(readCh)
+		err := repo.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
+			select {
+			case readCh <- ReadJob{IndexID: id, Size: size}:
+			case <-ctx.Done():
+				return tomb.ErrDying
 			}
+			return nil
+		})
+		return err
+	}
 
-			if err = index.AddPack(jpack.ID, 0, entries); err != nil {
+	// Read index files received on readCh, parse to partial indexes, send
+	// to saveCh
+	var readWg sync.WaitGroup
+	readWorker := func() error {
+		defer readWg.Done()
+		for job := range readCh {
+			debug.Log("Load index %v", job.IndexID)
+
+			idx, err := loadIndexJSON(ctx, repo, job.IndexID)
+			if err != nil {
 				return err
 			}
-		}
 
-		results[id] = res
-		index.IndexIDs.Insert(id)
+			saveJob := SaveJob{
+				IndexID:    job.IndexID,
+				Packs:      make(map[restic.ID]Pack),
+				Supersedes: restic.NewIDSet(),
+			}
+
+			for _, sid := range idx.Supersedes {
+				debug.Log("  index %v supersedes %v", job.IndexID, sid)
+				saveJob.Supersedes.Insert(sid)
+			}
+
+			for _, pack := range idx.Packs {
+				entries := make([]restic.Blob, 0, len(pack.Blobs))
+				for _, blob := range pack.Blobs {
+					entry := restic.Blob{
+						ID:     blob.ID,
+						Type:   blob.Type,
+						Offset: blob.Offset,
+						Length: blob.Length,
+					}
+					entries = append(entries, entry)
+				}
+				saveJob.Packs[pack.ID] = Pack{
+					ID:      pack.ID,
+					Size:    job.Size,
+					Entries: entries,
+				}
+			}
+
+			select {
+			case saveCh <- saveJob:
+			case <-ctx.Done():
+				return tomb.ErrDying
+			}
+
+			p.Report(restic.Stat{Blobs: 1})
+		}
+		return nil
+	}
+
+	// Collect partial indexes from saveCh
+	saveWorker := func() error {
+		for job := range saveCh {
+			supersedes[job.IndexID] = job.Supersedes
+			results[job.IndexID] = job.Packs
+			index.IndexIDs.Insert(job.IndexID)
+		}
+		return nil
+	}
+
+	t.Go(func() error {
+		t.Go(listWorker)
+
+		readWorkers := repo.Backend().Connections()
+		readWg.Add(int(readWorkers))
+		for i := uint(0); i < readWorkers; i++ {
+			t.Go(readWorker)
+		}
+		t.Go(func() error {
+			readWg.Wait()
+			close(saveCh)
+			return nil
+		})
+
+		t.Go(saveWorker)
 
 		return nil
 	})
 
-	if err != nil {
+	if err := t.Wait(); err != nil {
 		return nil, err
 	}
 
+	// Ignore superseded index files
 	for superID, list := range supersedes {
 		for indexID := range list {
 			if _, ok := results[indexID]; !ok {
@@ -252,12 +325,28 @@ func Load(ctx context.Context, repo ListLoader, p *restic.Progress) (*Index, err
 		}
 	}
 
+	// Combine the partial indexes
+	for _, idx := range results {
+		for _, pack := range idx {
+			if _, ok := index.Packs[pack.ID]; ok {
+				continue
+			}
+			err := index.AddPack(pack.ID, 0, pack.Entries)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	return index, nil
 }
 
 // AddPack adds a pack to the index. If this pack is already in the index, an
 // error is returned.
 func (idx *Index) AddPack(id restic.ID, size int64, entries []restic.Blob) error {
+	idx.m.Lock()
+	defer idx.m.Unlock()
+
 	if _, ok := idx.Packs[id]; ok {
 		return errors.Errorf("pack %v already present in the index", id.Str())
 	}
@@ -350,7 +439,10 @@ type Saver interface {
 }
 
 // Save writes the complete index to the repo.
-func (idx *Index) Save(ctx context.Context, repo Saver, supersedes restic.IDs) (restic.IDs, error) {
+func (idx *Index) Save(ctx context.Context, repo Saver, supersedes restic.IDs, prog *restic.Progress) (restic.IDs, error) {
+	prog.Start()
+	defer prog.Done()
+
 	debug.Log("pack files: %d\n", len(idx.Packs))
 
 	var indexIDs []restic.ID
@@ -387,6 +479,7 @@ func (idx *Index) Save(ctx context.Context, repo Saver, supersedes restic.IDs) (
 				return nil, err
 			}
 			debug.Log("saved new index as %v", id)
+			prog.Report(restic.Stat{Blobs: 1})
 
 			indexIDs = append(indexIDs, id)
 			packs = 0
@@ -400,6 +493,7 @@ func (idx *Index) Save(ctx context.Context, repo Saver, supersedes restic.IDs) (
 			return nil, err
 		}
 		debug.Log("saved new index as %v", id)
+		prog.Report(restic.Stat{Blobs: 1})
 		indexIDs = append(indexIDs, id)
 	}
 

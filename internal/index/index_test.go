@@ -227,6 +227,35 @@ func TestIndexLoad(t *testing.T) {
 	}
 }
 
+func TestIndexLoadDuplicate(t *testing.T) {
+	repo, cleanup := createFilledRepo(t, 3, 0)
+	defer cleanup()
+
+	idx, err := Load(context.TODO(), repo, nil)
+	if err != nil {
+		t.Fatalf("Load() returned error %v", err)
+	}
+
+	if idx == nil {
+		t.Fatalf("Load() returned nil index")
+	}
+
+	validateIndex(t, repo, idx)
+
+	_, err = idx.Save(context.TODO(), repo, nil, nil)
+	if err != nil {
+		t.Fatalf("idx.Save() returned error %v", err)
+	}
+
+	dupIdx, err := Load(context.TODO(), repo, nil)
+	if err != nil {
+		t.Fatalf("Load() with duplicates returned error %v", err)
+	}
+	if dupIdx == nil {
+		t.Fatalf("Load() with duplicates returned nil index")
+	}
+}
+
 func BenchmarkIndexNew(b *testing.B) {
 	repo, cleanup := createFilledRepo(b, 3, 0)
 	defer cleanup()
@@ -271,7 +300,7 @@ func BenchmarkIndexSave(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		ids, err := idx.Save(context.TODO(), repo, nil)
+		ids, err := idx.Save(context.TODO(), repo, nil, nil)
 		if err != nil {
 			b.Fatalf("New() returned error %v", err)
 		}
@@ -317,7 +346,7 @@ func TestIndexSave(t *testing.T) {
 
 	idx := loadIndex(t, repo)
 
-	ids, err := idx.Save(context.TODO(), repo, idx.IndexIDs.List())
+	ids, err := idx.Save(context.TODO(), repo, idx.IndexIDs.List(), nil)
 	if err != nil {
 		t.Fatalf("unable to save new index: %v", err)
 	}
