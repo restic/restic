@@ -194,6 +194,16 @@ func TestLoadBlob(t *testing.T) {
 			continue
 		}
 	}
+
+	// then test automatic buffer allocation
+	n, err := repo.LoadBlob(context.TODO(), restic.DataBlob, id, nil)
+	if err != nil {
+		t.Errorf("LoadBlob() failed to allocate an useable buffer: %v", err)
+	}
+
+	if n != length {
+		t.Errorf("LoadBlob() returned the wrong number of bytes: want %v, got %v", length, n)
+	}
 }
 
 func BenchmarkLoadBlob(b *testing.B) {
