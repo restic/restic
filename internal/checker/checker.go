@@ -25,7 +25,7 @@ type Checker struct {
 	blobs    restic.IDSet
 	blobRefs struct {
 		sync.Mutex
-		M map[restic.ID]uint
+		M map[restic.ID]bool
 	}
 	indexes map[restic.ID]*repository.Index
 
@@ -44,7 +44,7 @@ func New(repo restic.Repository) *Checker {
 		repo:        repo,
 	}
 
-	c.blobRefs.M = make(map[restic.ID]uint)
+	c.blobRefs.M = make(map[restic.ID]bool)
 
 	return c
 }
@@ -160,7 +160,6 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 			for blob := range res.Index.Each(ctx) {
 				c.packs.Insert(blob.PackID)
 				c.blobs.Insert(blob.ID)
-				c.blobRefs.M[blob.ID] = 0
 				cnt++
 
 				if _, ok := packToIndex[blob.PackID]; !ok {
@@ -445,19 +444,9 @@ func (c *Checker) checkTreeWorker(ctx context.Context, in <-chan treeJob, out ch
 				return
 			}
 
-			id := job.ID
-			alreadyChecked := false
 			c.blobRefs.Lock()
-			if c.blobRefs.M[id] > 0 {
-				alreadyChecked = true
-			}
-			c.blobRefs.M[id]++
-			debug.Log("tree %v refcount %d", job.ID, c.blobRefs.M[id])
+			c.blobRefs.M[job.ID] = true
 			c.blobRefs.Unlock()
-
-			if alreadyChecked {
-				continue
-			}
 
 			debug.Log("check tree %v (tree %v, err %v)", job.ID, job.Tree, job.error)
 
@@ -497,6 +486,7 @@ func filterTrees(ctx context.Context, backlog restic.IDs, loaderChan chan<- rest
 		job                     treeJob
 		nextTreeID              restic.ID
 		outstandingLoadTreeJobs = 0
+		processedTrees          = restic.NewIDSet()
 	)
 
 	outCh = nil
@@ -504,8 +494,11 @@ func filterTrees(ctx context.Context, backlog restic.IDs, loaderChan chan<- rest
 
 	for {
 		if loadCh == nil && len(backlog) > 0 {
-			loadCh = loaderChan
 			nextTreeID, backlog = backlog[0], backlog[1:]
+			if processedTrees.Has(nextTreeID) {
+				continue
+			}
+			loadCh = loaderChan
 		}
 
 		if loadCh == nil && outCh == nil && outstandingLoadTreeJobs == 0 {
@@ -520,6 +513,7 @@ func filterTrees(ctx context.Context, backlog restic.IDs, loaderChan chan<- rest
 		case loadCh <- nextTreeID:
 			outstandingLoadTreeJobs++
 			loadCh = nil
+			processedTrees.Insert(nextTreeID)
 
 		case j, ok := <-inCh:
 			if !ok {
@@ -654,8 +648,8 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 
 	for _, blobID := range blobs {
 		c.blobRefs.Lock()
-		c.blobRefs.M[blobID]++
-		debug.Log("blob %v refcount %d", blobID, c.blobRefs.M[blobID])
+		c.blobRefs.M[blobID] = true
+		debug.Log("blob %v is referenced", blobID)
 		c.blobRefs.Unlock()
 
 		if !c.blobs.Has(blobID) {
@@ -675,7 +669,7 @@ func (c *Checker) UnusedBlobs() (blobs restic.IDs) {
 
 	debug.Log("checking %d blobs", len(c.blobs))
 	for id := range c.blobs {
-		if c.blobRefs.M[id] == 0 {
+		if !c.blobRefs.M[id] {
 			debug.Log("blob %v not referenced", id)
 			blobs = append(blobs, id)
 		}
