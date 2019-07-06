@@ -208,7 +208,7 @@ func (arch *Archiver) loadSubtree(ctx context.Context, node *restic.Node) *resti
 
 // SaveDir stores a directory in the repo and returns the node. snPath is the
 // path within the current snapshot.
-func (arch *Archiver) SaveDir(ctx context.Context, snPath string, fi os.FileInfo, dir string, previous *restic.Tree) (d FutureTree, err error) {
+func (arch *Archiver) SaveDir(ctx context.Context, snPath string, fi os.FileInfo, dir string, previous *restic.Tree, previousID *restic.ID) (d FutureTree, err error) {
 	debug.Log("%v %v", snPath, dir)
 
 	treeNode, err := arch.nodeFromFileInfo(dir, fi)
@@ -254,7 +254,7 @@ func (arch *Archiver) SaveDir(ctx context.Context, snPath string, fi os.FileInfo
 		nodes = append(nodes, fn)
 	}
 
-	ft := arch.treeSaver.Save(ctx, snPath, treeNode, nodes)
+	ft := arch.treeSaver.Save(ctx, snPath, treeNode, nodes, previous, previousID)
 
 	return ft, nil
 }
@@ -436,9 +436,13 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 		snItem := snPath + "/"
 		start := time.Now()
 		oldSubtree := arch.loadSubtree(ctx, previous)
+		var oldSubtreeID *restic.ID
+		if previous != nil {
+			oldSubtreeID = previous.Subtree
+		}
 
 		fn.isTree = true
-		fn.tree, err = arch.SaveDir(ctx, snPath, fi, target, oldSubtree)
+		fn.tree, err = arch.SaveDir(ctx, snPath, fi, target, oldSubtree, oldSubtreeID)
 		if err == nil {
 			arch.CompleteItem(snItem, previous, fn.node, fn.stats, time.Since(start))
 		} else {

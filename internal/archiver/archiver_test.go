@@ -811,7 +811,7 @@ func TestArchiverSaveDir(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			ft, err := arch.SaveDir(ctx, "/", fi, test.target, nil)
+			ft, err := arch.SaveDir(ctx, "/", fi, test.target, nil, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -874,6 +874,8 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 
 	appendToFile(t, filepath.Join(tempdir, "testfile"), []byte("foobar"))
 
+	var lastDirNode *restic.Node
+
 	// save the empty directory several times in a row, then have a look if the
 	// archiver did save the same tree several times
 	for i := 0; i < 5; i++ {
@@ -888,13 +890,24 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ft, err := arch.SaveDir(ctx, "/", fi, tempdir, nil)
+		var oldSubtree *restic.Tree
+		var oldSubtreeID *restic.ID
+		if i >= 3 {
+			// check that unchanged trees aren't serialized multiple times
+			oldSubtree = arch.loadSubtree(ctx, lastDirNode)
+			if lastDirNode != nil {
+				oldSubtreeID = lastDirNode.Subtree
+			}
+		}
+
+		ft, err := arch.SaveDir(ctx, "/", fi, tempdir, oldSubtree, oldSubtreeID)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		ft.Wait(ctx)
-		node, stats := ft.Node(), ft.Stats()
+		var stats ItemStats
+		lastDirNode, stats = ft.Node(), ft.Stats()
 
 		tmb.Kill(nil)
 		err = tmb.Wait()
@@ -932,7 +945,7 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 			}
 		}
 
-		t.Logf("node subtree %v", node.Subtree)
+		t.Logf("node subtree %v", lastDirNode.Subtree)
 
 		err = repo.Flush(ctx)
 		if err != nil {

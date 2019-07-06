@@ -36,7 +36,7 @@ func TestTreeSaver(t *testing.T) {
 			Name: fmt.Sprintf("file-%d", i),
 		}
 
-		fb := b.Save(ctx, "/", node, nil)
+		fb := b.Save(ctx, "/", node, nil, nil, nil)
 		results = append(results, fb)
 	}
 
@@ -97,7 +97,7 @@ func TestTreeSaverError(t *testing.T) {
 					Name: fmt.Sprintf("file-%d", i),
 				}
 
-				fb := b.Save(ctx, "/", node, nil)
+				fb := b.Save(ctx, "/", node, nil, nil, nil)
 				results = append(results, fb)
 			}
 

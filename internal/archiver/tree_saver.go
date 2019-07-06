@@ -66,13 +66,15 @@ func NewTreeSaver(ctx context.Context, t *tomb.Tomb, treeWorkers uint, saveTree 
 }
 
 // Save stores the dir d and returns the data once it has been completed.
-func (s *TreeSaver) Save(ctx context.Context, snPath string, node *restic.Node, nodes []FutureNode) FutureTree {
+func (s *TreeSaver) Save(ctx context.Context, snPath string, node *restic.Node, nodes []FutureNode, previous *restic.Tree, previousID *restic.ID) FutureTree {
 	ch := make(chan saveTreeResponse, 1)
 	job := saveTreeJob{
-		snPath: snPath,
-		node:   node,
-		nodes:  nodes,
-		ch:     ch,
+		snPath:     snPath,
+		node:       node,
+		nodes:      nodes,
+		ch:         ch,
+		previous:   previous,
+		previousID: previousID,
 	}
 	select {
 	case s.ch <- job:
@@ -86,10 +88,12 @@ func (s *TreeSaver) Save(ctx context.Context, snPath string, node *restic.Node, 
 }
 
 type saveTreeJob struct {
-	snPath string
-	nodes  []FutureNode
-	node   *restic.Node
-	ch     chan<- saveTreeResponse
+	snPath     string
+	nodes      []FutureNode
+	node       *restic.Node
+	ch         chan<- saveTreeResponse
+	previous   *restic.Tree
+	previousID *restic.ID
 }
 
 type saveTreeResponse struct {
@@ -98,7 +102,7 @@ type saveTreeResponse struct {
 }
 
 // save stores the nodes as a tree in the repo.
-func (s *TreeSaver) save(ctx context.Context, snPath string, node *restic.Node, nodes []FutureNode) (*restic.Node, ItemStats, error) {
+func (s *TreeSaver) save(ctx context.Context, snPath string, node *restic.Node, nodes []FutureNode, previous *restic.Tree, previousID *restic.ID) (*restic.Node, ItemStats, error) {
 	var stats ItemStats
 
 	tree := restic.NewTree()
@@ -130,6 +134,12 @@ func (s *TreeSaver) save(ctx context.Context, snPath string, node *restic.Node, 
 		}
 	}
 
+	// only go through the full serialize, hash, save cycle if the tree has changed
+	if previousID != nil && previous != nil && previous.Equals(tree) {
+		node.Subtree = previousID
+		return node, stats, nil
+	}
+
 	id, treeStats, err := s.saveTree(ctx, tree)
 	stats.Add(treeStats)
 	if err != nil {
@@ -149,7 +159,7 @@ func (s *TreeSaver) worker(ctx context.Context, jobs <-chan saveTreeJob) error {
 		case job = <-jobs:
 		}
 
-		node, stats, err := s.save(ctx, job.snPath, job.node, job.nodes)
+		node, stats, err := s.save(ctx, job.snPath, job.node, job.nodes, job.previous, job.previousID)
 		if err != nil {
 			debug.Log("error saving tree blob: %v", err)
 			close(job.ch)
