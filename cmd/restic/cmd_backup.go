@@ -592,16 +592,18 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		targets = []string{filename}
 	}
 
-	sc := archiver.NewScanner(targetFS)
-	sc.SelectByName = selectByNameFilter
-	sc.Select = selectFilter
-	sc.Error = p.ScannerError
-	sc.Result = p.ReportTotal
+	if !gopts.Quiet {
+		sc := archiver.NewScanner(targetFS)
+		sc.SelectByName = selectByNameFilter
+		sc.Select = selectFilter
+		sc.Error = p.ScannerError
+		sc.Result = p.ReportTotal
 
-	if !gopts.JSON {
-		p.V("start scan on %v", targets)
+		if !gopts.JSON {
+			p.V("start scan on %v", targets)
+		}
+		t.Go(func() error { return sc.Scan(t.Context(gopts.ctx), targets) })
 	}
-	t.Go(func() error { return sc.Scan(t.Context(gopts.ctx), targets) })
 
 	arch := archiver.New(repo, targetFS, archiver.Options{})
 	arch.SelectByName = selectByNameFilter

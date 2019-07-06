@@ -1,0 +1,8 @@
+Enhancement: Faster backups in quiet mode
+
+Restic calculated the total file/directory count and size which, however,
+were not displayed when running with the quiet flag set. This speeds up
+backups as the file tree is only walked once.
+
+https://github.com/restic/restic/pull/2336
+
