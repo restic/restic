@@ -31,8 +31,6 @@ github.com/cpuguy83/go-md2man/md2man
 github.com/dgrijalva/jwt-go
 # github.com/elithrar/simple-scrypt v1.3.0
 github.com/elithrar/simple-scrypt
-# github.com/go-ini/ini v1.42.0
-github.com/go-ini/ini
 # github.com/golang/protobuf v1.3.1
 github.com/golang/protobuf/proto
 github.com/golang/protobuf/ptypes/timestamp
@@ -75,13 +73,13 @@ github.com/kurin/blazer/internal/b2types
 github.com/marstr/guid
 # github.com/mattn/go-isatty v0.0.7
 github.com/mattn/go-isatty
-# github.com/minio/minio-go v6.0.14+incompatible
-github.com/minio/minio-go
-github.com/minio/minio-go/pkg/credentials
-github.com/minio/minio-go/pkg/encrypt
-github.com/minio/minio-go/pkg/s3signer
-github.com/minio/minio-go/pkg/s3utils
-github.com/minio/minio-go/pkg/set
+# github.com/minio/minio-go/v6 v6.0.31
+github.com/minio/minio-go/v6
+github.com/minio/minio-go/v6/pkg/credentials
+github.com/minio/minio-go/v6/pkg/encrypt
+github.com/minio/minio-go/v6/pkg/s3signer
+github.com/minio/minio-go/v6/pkg/s3utils
+github.com/minio/minio-go/v6/pkg/set
 # github.com/mitchellh/go-homedir v1.1.0
 github.com/mitchellh/go-homedir
 # github.com/ncw/swift v1.0.47
@@ -124,7 +122,7 @@ go.opencensus.io/metric/metricproducer
 go.opencensus.io/stats/internal
 go.opencensus.io/internal
 go.opencensus.io/trace/internal
-# golang.org/x/crypto v0.0.0-20190422183909-d864b10871cd
+# golang.org/x/crypto v0.0.0-20190513172903-22d7a77e9e5f
 golang.org/x/crypto/ssh/terminal
 golang.org/x/crypto/poly1305
 golang.org/x/crypto/scrypt
@@ -144,7 +142,7 @@ golang.org/x/crypto/openpgp/elgamal
 golang.org/x/crypto/blake2b
 golang.org/x/crypto/ed25519/internal/edwards25519
 golang.org/x/crypto/internal/subtle
-# golang.org/x/net v0.0.0-20190424024845-afe8014c977f
+# golang.org/x/net v0.0.0-20190522155817-f3200d17e092
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/http2
 golang.org/x/net/context
@@ -237,6 +235,8 @@ google.golang.org/grpc/balancer/base
 google.golang.org/grpc/credentials/internal
 google.golang.org/grpc/binarylog/grpc_binarylog_v1
 google.golang.org/grpc/internal/syscall
+# gopkg.in/ini.v1 v1.42.0
+gopkg.in/ini.v1
 # gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 gopkg.in/tomb.v2
 # gopkg.in/yaml.v2 v2.2.2
