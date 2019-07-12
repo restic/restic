@@ -109,6 +109,18 @@ func (idx *Index) Store(blob restic.PackedBlob) {
 	idx.store(blob)
 }
 
+func toPacketBlob(h restic.BlobHandle, p indexEntry) restic.PackedBlob {
+	return restic.PackedBlob{
+		Blob: restic.Blob{
+			Type:   h.Type,
+			Length: p.length,
+			ID:     h.ID,
+			Offset: p.offset,
+		},
+		PackID: p.packID,
+	}
+}
+
 // Lookup queries the index for the blob ID and returns a restic.PackedBlob.
 func (idx *Index) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic.PackedBlob, found bool) {
 	idx.m.Lock()
@@ -120,17 +132,7 @@ func (idx *Index) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic.Pack
 		blobs = make([]restic.PackedBlob, 0, len(packs))
 
 		for _, p := range packs {
-			blob := restic.PackedBlob{
-				Blob: restic.Blob{
-					Type:   tpe,
-					Length: p.length,
-					ID:     id,
-					Offset: p.offset,
-				},
-				PackID: p.packID,
-			}
-
-			blobs = append(blobs, blob)
+			blobs = append(blobs, toPacketBlob(h, p))
 		}
 
 		return blobs, true
@@ -147,15 +149,7 @@ func (idx *Index) ListPack(id restic.ID) (list []restic.PackedBlob) {
 	for h, packList := range idx.pack {
 		for _, entry := range packList {
 			if entry.packID == id {
-				list = append(list, restic.PackedBlob{
-					Blob: restic.Blob{
-						ID:     h.ID,
-						Type:   h.Type,
-						Length: entry.length,
-						Offset: entry.offset,
-					},
-					PackID: entry.packID,
-				})
+				list = append(list, toPacketBlob(h, entry))
 			}
 		}
 	}
@@ -223,15 +217,7 @@ func (idx *Index) Each(ctx context.Context) <-chan restic.PackedBlob {
 				select {
 				case <-ctx.Done():
 					return
-				case ch <- restic.PackedBlob{
-					Blob: restic.Blob{
-						ID:     h.ID,
-						Type:   h.Type,
-						Offset: blob.offset,
-						Length: blob.length,
-					},
-					PackID: blob.packID,
-				}:
+				case ch <- toPacketBlob(h, blob):
 				}
 			}
 		}
