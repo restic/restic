@@ -442,6 +442,13 @@ func BenchmarkIndexHasKnown(b *testing.B) {
 	}
 }
 
+func BenchmarkIndexAlloc(b *testing.B) {
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		createRandomIndex(rand.New(rand.NewSource(0)))
+	}
+}
+
 func TestIndexHas(t *testing.T) {
 	type testEntry struct {
 		id             restic.ID

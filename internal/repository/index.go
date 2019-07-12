@@ -15,9 +15,10 @@ import (
 
 // Index holds a lookup table for id -> pack.
 type Index struct {
-	m         sync.Mutex
-	pack      map[restic.BlobHandle][]indexEntry
-	treePacks restic.IDs
+	m            sync.Mutex
+	pack         map[restic.BlobHandle]*indexEntry
+	packOverflow map[restic.BlobHandle][]indexEntry
+	treePacks    restic.IDs
 
 	final      bool      // set to true for all indexes read from the backend ("finalized")
 	id         restic.ID // set to the ID of the index when it's finalized
@@ -34,8 +35,9 @@ type indexEntry struct {
 // NewIndex returns a new index.
 func NewIndex() *Index {
 	return &Index{
-		pack:    make(map[restic.BlobHandle][]indexEntry),
-		created: time.Now(),
+		pack:         make(map[restic.BlobHandle]*indexEntry),
+		packOverflow: make(map[restic.BlobHandle][]indexEntry),
+		created:      time.Now(),
 	}
 }
 
@@ -46,7 +48,11 @@ func (idx *Index) store(blob restic.PackedBlob) {
 		length: blob.Length,
 	}
 	h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
-	idx.pack[h] = append(idx.pack[h], newEntry)
+	if _, ok := idx.pack[h]; !ok {
+		idx.pack[h] = &newEntry
+	} else {
+		idx.packOverflow[h] = append(idx.packOverflow[h], newEntry)
+	}
 }
 
 // Final returns true iff the index is already written to the repository, it is
@@ -121,6 +127,16 @@ func toPacketBlob(h restic.BlobHandle, p indexEntry) restic.PackedBlob {
 	}
 }
 
+func (idx *Index) load(pack *indexEntry, h restic.BlobHandle) []indexEntry {
+	if packList, ok := idx.packOverflow[h]; ok {
+		jpl := make([]indexEntry, len(packList)+1)
+		jpl[0] = *pack
+		copy(jpl[1:], packList)
+		return jpl
+	}
+	return []indexEntry{*pack}
+}
+
 // Lookup queries the index for the blob ID and returns a restic.PackedBlob.
 func (idx *Index) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic.PackedBlob, found bool) {
 	idx.m.Lock()
@@ -128,10 +144,11 @@ func (idx *Index) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic.Pack
 
 	h := restic.BlobHandle{ID: id, Type: tpe}
 
-	if packs, ok := idx.pack[h]; ok {
-		blobs = make([]restic.PackedBlob, 0, len(packs))
+	if pack, ok := idx.pack[h]; ok {
+		packList := idx.load(pack, h)
+		blobs = make([]restic.PackedBlob, 0, len(packList))
 
-		for _, p := range packs {
+		for _, p := range packList {
 			blobs = append(blobs, toPacketBlob(h, p))
 		}
 
@@ -146,7 +163,9 @@ func (idx *Index) ListPack(id restic.ID) (list []restic.PackedBlob) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
-	for h, packList := range idx.pack {
+	for h, pack := range idx.pack {
+		packList := idx.load(pack, h)
+
 		for _, entry := range packList {
 			if entry.packID == id {
 				list = append(list, toPacketBlob(h, entry))
@@ -212,8 +231,9 @@ func (idx *Index) Each(ctx context.Context) <-chan restic.PackedBlob {
 			close(ch)
 		}()
 
-		for h, packs := range idx.pack {
-			for _, blob := range packs {
+		for h, pack := range idx.pack {
+			packList := idx.load(pack, h)
+			for _, blob := range packList {
 				select {
 				case <-ctx.Done():
 					return
@@ -232,7 +252,11 @@ func (idx *Index) Packs() restic.IDSet {
 	defer idx.m.Unlock()
 
 	packs := restic.NewIDSet()
-	for _, list := range idx.pack {
+	for _, entry := range idx.pack {
+		packs.Insert(entry.packID)
+	}
+
+	for _, list := range idx.packOverflow {
 		for _, entry := range list {
 			packs.Insert(entry.packID)
 		}
@@ -247,7 +271,15 @@ func (idx *Index) Count(t restic.BlobType) (n uint) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
-	for h, list := range idx.pack {
+	for h := range idx.pack {
+		if h.Type != t {
+			continue
+		}
+
+		n++
+	}
+
+	for h, list := range idx.packOverflow {
 		if h.Type != t {
 			continue
 		}
@@ -275,7 +307,8 @@ func (idx *Index) generatePackList() ([]*packJSON, error) {
 	list := []*packJSON{}
 	packs := make(map[restic.ID]*packJSON)
 
-	for h, packedBlobs := range idx.pack {
+	for h, pack := range idx.pack {
+		packedBlobs := idx.load(pack, h)
 		for _, blob := range packedBlobs {
 			if blob.packID.IsNull() {
 				panic("null pack id")
