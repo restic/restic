@@ -27,7 +27,6 @@ type Checker struct {
 		sync.Mutex
 		M map[restic.ID]bool
 	}
-	indexes map[restic.ID]*repository.Index
 
 	masterIndex *repository.MasterIndex
 
@@ -40,7 +39,6 @@ func New(repo restic.Repository) *Checker {
 		packs:       restic.NewIDSet(),
 		blobs:       restic.NewIDSet(),
 		masterIndex: repository.NewMasterIndex(),
-		indexes:     make(map[restic.ID]*repository.Index),
 		repo:        repo,
 	}
 
@@ -152,7 +150,6 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 				continue
 			}
 
-			c.indexes[res.ID] = res.Index
 			c.masterIndex.Insert(res.Index)
 
 			debug.Log("process blobs")
