@@ -48,13 +48,13 @@ branches:
   only:
     - master
 
-notifications:
-  irc:
-    channels:
-      - "chat.freenode.net#restic"
-    on_success: change
-    on_failure: change
-    skip_join: true
+#notifications:
+#  irc:
+#    channels:
+#      - "chat.freenode.net#restic"
+#    on_success: change
+#    on_failure: change
+#    skip_join: true
 
 install:
   - go version
