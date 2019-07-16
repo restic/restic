@@ -1,0 +1,5 @@
+Enhancement: Add support for ppc64le
+
+Adds support for ppc64le, the processor architecture from IBM.
+
+https://github.com/restic/restic/issues/2277
