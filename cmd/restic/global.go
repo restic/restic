@@ -485,6 +485,10 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 			cfg.Secret = os.Getenv("AWS_SECRET_ACCESS_KEY")
 		}
 
+		if cfg.Region == "" {
+			cfg.Region = os.Getenv("AWS_REGION")
+		}
+
 		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
 			return nil, err
 		}

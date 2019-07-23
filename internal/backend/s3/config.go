@@ -22,6 +22,7 @@ type Config struct {
 
 	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
 	MaxRetries  uint `option:"retries" help:"set the number of retries attempted"`
+	Region      string
 }
 
 // NewConfig returns a new Config with the default values filled in.
