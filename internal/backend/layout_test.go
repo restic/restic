@@ -116,8 +116,8 @@ func TestDefaultLayout(t *testing.T) {
 			want = append(want, filepath.Join(tempdir, "data", fmt.Sprintf("%02x", i)))
 		}
 
-		sort.Sort(sort.StringSlice(want))
-		sort.Sort(sort.StringSlice(dirs))
+		sort.Strings(want)
+		sort.Strings(dirs)
 
 		if !reflect.DeepEqual(dirs, want) {
 			t.Fatalf("wrong paths returned, want:\n  %v\ngot:\n  %v", want, dirs)
@@ -189,8 +189,8 @@ func TestRESTLayout(t *testing.T) {
 			filepath.Join(path, "keys"),
 		}
 
-		sort.Sort(sort.StringSlice(want))
-		sort.Sort(sort.StringSlice(dirs))
+		sort.Strings(want)
+		sort.Strings(dirs)
 
 		if !reflect.DeepEqual(dirs, want) {
 			t.Fatalf("wrong paths returned, want:\n  %v\ngot:\n  %v", want, dirs)
@@ -335,8 +335,8 @@ func TestS3LegacyLayout(t *testing.T) {
 			filepath.Join(path, "key"),
 		}
 
-		sort.Sort(sort.StringSlice(want))
-		sort.Sort(sort.StringSlice(dirs))
+		sort.Strings(want)
+		sort.Strings(dirs)
 
 		if !reflect.DeepEqual(dirs, want) {
 			t.Fatalf("wrong paths returned, want:\n  %v\ngot:\n  %v", want, dirs)

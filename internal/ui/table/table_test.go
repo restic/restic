@@ -154,7 +154,7 @@ foo        2018-08-19 22:22:22  xxx  other  /home/user/other
 			}
 
 			want := strings.TrimLeft(test.output, "\n")
-			if string(buf.Bytes()) != want {
+			if buf.String() != want {
 				t.Errorf("wrong output\n---- want ---\n%s\n---- got ---\n%s\n-------\n", want, buf.Bytes())
 			}
 		})

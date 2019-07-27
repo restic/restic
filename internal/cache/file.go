@@ -214,9 +214,5 @@ func (c *Cache) Has(h restic.Handle) bool {
 	}
 
 	_, err := fs.Stat(c.filename(h))
-	if err == nil {
-		return true
-	}
-
-	return false
+	return err == nil
 }

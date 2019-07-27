@@ -25,25 +25,6 @@ var _ restic.Backend = &Local{}
 
 const defaultLayout = "default"
 
-// dirExists returns true if the name exists and is a directory.
-func dirExists(name string) bool {
-	f, err := fs.Open(name)
-	if err != nil {
-		return false
-	}
-
-	fi, err := f.Stat()
-	if err != nil {
-		return false
-	}
-
-	if err = f.Close(); err != nil {
-		return false
-	}
-
-	return fi.IsDir()
-}
-
 // Open opens the local backend as specified by config.
 func Open(cfg Config) (*Local, error) {
 	debug.Log("open local backend at %v (layout %q)", cfg.Path, cfg.Layout)

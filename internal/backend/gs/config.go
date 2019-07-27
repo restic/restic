@@ -49,9 +49,7 @@ func ParseConfig(s string) (interface{}, error) {
 
 	bucket, path := data[0], path.Clean(data[1])
 
-	if strings.HasPrefix(path, "/") {
-		path = path[1:]
-	}
+	path = strings.TrimPrefix(path, "/")
 
 	cfg := NewConfig()
 	cfg.Bucket = bucket

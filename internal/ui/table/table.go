@@ -129,7 +129,7 @@ func (t *Table) Write(w io.Writer) error {
 				return err
 			}
 
-			row = append(row, string(buf.Bytes()))
+			row = append(row, buf.String())
 			buf.Reset()
 		}
 		lines = append(lines, row)
