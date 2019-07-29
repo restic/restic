@@ -575,6 +575,9 @@ func main() {
 
 		buildArgs = append(buildArgs, "-mod=vendor")
 		testArgs = append(testArgs, "-mod=vendor")
+
+		goEnv["GO111MODULE"] = "on"
+		buildEnv["GO111MODULE"] = "on"
 	} else {
 		if tempdir == "" {
 			tempdir, err = ioutil.TempDir("", fmt.Sprintf("%v-build-", config.Name))
