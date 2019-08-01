@@ -172,4 +172,4 @@ The following may work:
 Why does restic perform so poorly on Windows?
 ---------------------------------------------
 
-In some cases the real-time protection of antivirus software can interfere with restic's operations. If you are experiencing bad performance you can try to temporarily disable your antivirus software to find out if it is the cause for your performance problems.
+In some cases the real-time protection of antivirus software can interfere with restic's operations. If you are experiencing bad performance you can try to temporarily disable your antivirus software to find out if it is the cause for your performance problems. If you find out that the antivirus is the cause, and you want to gain maximum performance, you have to add restic process (the full path) to the exclusions list.
