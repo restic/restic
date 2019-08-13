@@ -1,0 +1,13 @@
+Enhancement: Add command for copying snapshots between repositories
+
+We've added a copy command, allowing you to copy snapshots from one
+repository to another.
+
+Note that this process will have to read (download) and write (upload) the
+entire snapshot(s) due to the different encryption keys used on the source
+and destination repository. Also, the transferred files are not re-chunked,
+which may break deduplication between files already stored in the
+destination repo and files copied there using this command.
+
+https://github.com/restic/restic/issues/323
+https://github.com/restic/restic/pull/2606
