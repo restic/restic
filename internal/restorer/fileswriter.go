@@ -2,6 +2,7 @@ package restorer
 
 import (
 	"os"
+	"runtime"
 	"sync"
 
 	"github.com/restic/restic/internal/debug"
@@ -28,6 +29,50 @@ func newFilesWriter(cacheCap int) *filesWriter {
 	}
 }
 
+func sparseFilesSupport() bool {
+	switch runtime.GOOS {
+	case "darwin":
+		return true
+	case "windows":
+		return false
+	default:
+		return true
+	}
+}
+
+func (w *filesWriter) acquireWriter(path string) (*os.File, error) {
+	w.lock.Lock()
+	defer w.lock.Unlock()
+	if wr, ok := w.cache[path]; ok {
+		debug.Log("Used cached writer for %s", path)
+		delete(w.cache, path)
+		return wr, nil
+	}
+	var flags int
+	if _, append := w.inprogress[path]; append {
+		flags = os.O_APPEND | os.O_WRONLY
+	} else {
+		w.inprogress[path] = struct{}{}
+		flags = os.O_CREATE | os.O_TRUNC | os.O_WRONLY
+	}
+	wr, err := os.OpenFile(path, flags, 0600)
+	if err != nil {
+		return nil, err
+	}
+	debug.Log("Opened writer for %s", path)
+	return wr, nil
+}
+
+func (w *filesWriter) cacheOrCloseWriter(path string, wr *os.File) {
+	w.lock.Lock()
+	defer w.lock.Unlock()
+	if len(w.cache) < w.cacheCap {
+		w.cache[path] = wr
+	} else {
+		wr.Close()
+	}
+}
+
 func (w *filesWriter) writeToFile(path string, blob []byte) error {
 	// First writeToFile invocation for any given path will:
 	// - create and open the file
@@ -43,49 +88,38 @@ func (w *filesWriter) writeToFile(path string, blob []byte) error {
 
 	// TODO measure if caching is useful (likely depends on operating system
 	// and hardware configuration)
-	acquireWriter := func() (*os.File, error) {
-		w.lock.Lock()
-		defer w.lock.Unlock()
-		if wr, ok := w.cache[path]; ok {
-			debug.Log("Used cached writer for %s", path)
-			delete(w.cache, path)
-			return wr, nil
-		}
-		var flags int
-		if _, append := w.inprogress[path]; append {
-			flags = os.O_APPEND | os.O_WRONLY
-		} else {
-			w.inprogress[path] = struct{}{}
-			flags = os.O_CREATE | os.O_TRUNC | os.O_WRONLY
-		}
-		wr, err := os.OpenFile(path, flags, 0600)
-		if err != nil {
-			return nil, err
-		}
-		debug.Log("Opened writer for %s", path)
-		return wr, nil
-	}
-	cacheOrCloseWriter := func(wr *os.File) {
-		w.lock.Lock()
-		defer w.lock.Unlock()
-		if len(w.cache) < w.cacheCap {
-			w.cache[path] = wr
-		} else {
-			wr.Close()
-		}
-	}
 
-	wr, err := acquireWriter()
+	wr, err := w.acquireWriter(path)
 	if err != nil {
 		return err
 	}
 	n, err := wr.Write(blob)
-	cacheOrCloseWriter(wr)
+	w.cacheOrCloseWriter(path, wr)
 	if err != nil {
 		return err
 	}
 	if n != len(blob) {
 		return errors.Errorf("error writing file %v: wrong length written, want %d, got %d", path, len(blob), n)
+	}
+	return nil
+}
+
+func (w *filesWriter) seekInFile(path string, bytes int64) error {
+	wr, err := w.acquireWriter(path)
+	if err != nil {
+		return err
+	}
+	info, err := wr.Stat()
+	if err != nil {
+		return err
+	}
+	err = wr.Truncate(info.Size() + bytes)
+	if err == nil {
+		_, err = wr.Seek(0, os.SEEK_END)
+	}
+	w.cacheOrCloseWriter(path, wr)
+	if err != nil {
+		return err
 	}
 	return nil
 }
