@@ -68,12 +68,12 @@ type fileRestorer struct {
 	dst   string
 	files []*fileInfo
 
-	zerosId     restic.ID // computed "zeros" id
+	zerosID     restic.ID // computed "zeros" id
 	zerosSize   int64     // "zeros" chunk size
 	sparseFiles bool      // sparse files supported
 }
 
-func newFileRestorer(dst string, packLoader func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error, key *crypto.Key, idx filePackTraverser) *fileRestorer {
+func newFileRestorer(dst string, packLoader func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error, key *crypto.Key, idx filePackTraverser, sparseFiles bool) *fileRestorer {
 	return &fileRestorer{
 		packLoader:  packLoader,
 		key:         key,
@@ -81,9 +81,9 @@ func newFileRestorer(dst string, packLoader func(ctx context.Context, h restic.H
 		filesWriter: newFilesWriter(filesWriterCacheCap),
 		packCache:   newPackCache(packCacheCapacity),
 		dst:         dst,
-		zerosId:     restic.Hash(make([]byte, chunker.MinSize)),
+		zerosID:     restic.Hash(make([]byte, chunker.MinSize)),
 		zerosSize:   chunker.MinSize,
-		sparseFiles: sparseFilesSupport(),
+		sparseFiles: sparseFilesSupport() && sparseFiles,
 	}
 }
 
@@ -287,9 +287,9 @@ func (r *fileRestorer) processPack(ctx context.Context, request processingInfo, 
 		target := r.targetPath(file.location)
 		r.idx.forEachFilePack(file, func(packIdx int, packID restic.ID, packBlobs []restic.Blob) bool {
 			for _, blob := range packBlobs {
-				if blob.ID == r.zerosId && r.sparseFiles {
+				if blob.ID == r.zerosID && r.sparseFiles {
 					debug.Log("Seeking past zeros blob %s (%d bytes) from pack %s in %s", blob.ID.Str(), blob.Length, packID.Str(), file.location)
-					r.filesWriter.seekInFile(target, r.zerosSize)
+					r.filesWriter.extendFile(target, r.zerosSize)
 				} else {
 					debug.Log("Writing blob %s (%d bytes) from pack %s to %s", blob.ID.Str(), blob.Length, packID.Str(), file.location)
 					buf, err := r.loadBlob(rd, blob)

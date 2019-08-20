@@ -104,7 +104,7 @@ func (w *filesWriter) writeToFile(path string, blob []byte) error {
 	return nil
 }
 
-func (w *filesWriter) seekInFile(path string, bytes int64) error {
+func (w *filesWriter) extendFile(path string, bytes int64) error {
 	wr, err := w.acquireWriter(path)
 	if err != nil {
 		return err
