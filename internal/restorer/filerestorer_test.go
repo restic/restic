@@ -163,7 +163,7 @@ func newTestRepo(content []TestFile) *TestRepo {
 func restoreAndVerify(t *testing.T, tempdir string, content []TestFile) {
 	repo := newTestRepo(content)
 
-	r := newFileRestorer(tempdir, repo.loader, repo.key, repo.idx)
+	r := newFileRestorer(tempdir, repo.loader, repo.key, repo.idx, false)
 	r.files = repo.files
 
 	r.restoreFiles(context.TODO(), func(path string, err error) {
