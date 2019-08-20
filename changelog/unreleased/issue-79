@@ -1,0 +1,5 @@
+Enhancement: Support for sparse file restoration
+
+Restore files with long runs of zeros as sparse on supported platforms
+
+https://github.com/restic/restic/issues/79
