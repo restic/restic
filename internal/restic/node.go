@@ -696,8 +696,3 @@ func (node *Node) fillTimes(stat statT) {
 	node.ChangeTime = time.Unix(ctim.Unix())
 	node.AccessTime = time.Unix(atim.Unix())
 }
-
-func changeTime(stat statT) time.Time {
-	ctim := stat.ctim()
-	return time.Unix(ctim.Unix())
-}

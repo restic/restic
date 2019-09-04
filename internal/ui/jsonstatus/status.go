@@ -159,7 +159,7 @@ func (b *Backup) update(total, processed counter, errors uint, currentFiles map[
 	for filename := range currentFiles {
 		status.CurrentFiles = append(status.CurrentFiles, filename)
 	}
-	sort.Sort(sort.StringSlice(status.CurrentFiles))
+	sort.Strings(status.CurrentFiles)
 
 	json.NewEncoder(b.StdioWrapper.Stdout()).Encode(status)
 }

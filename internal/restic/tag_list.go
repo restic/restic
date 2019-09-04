@@ -36,16 +36,6 @@ func (TagList) Type() string {
 // TagLists consists of several TagList.
 type TagLists []TagList
 
-// splitTagLists splits a slice of strings into a slice of TagLists using
-// SplitTagList.
-func splitTagLists(s []string) (l TagLists) {
-	l = make([]TagList, 0, len(s))
-	for _, t := range s {
-		l = append(l, splitTagList(t))
-	}
-	return l
-}
-
 func (l TagLists) String() string {
 	return fmt.Sprintf("%v", []TagList(l))
 }

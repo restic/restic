@@ -1,0 +1,8 @@
+Bugfix: Check errors when loading index files
+
+Restic now checks and handles errors which occur when loading index files, the
+missing check leads to odd errors (and a stack trace printed to users) later.
+This was reported in the forum.
+
+https://github.com/restic/restic/pull/2321
+https://forum.restic.net/t/check-rebuild-index-prune/1848/13

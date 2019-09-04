@@ -56,16 +56,6 @@ func verbose(f string, args ...interface{}) {
 	fmt.Printf(f, args...)
 }
 
-func run(cmd string, args ...string) {
-	c := exec.Command(cmd, args...)
-	c.Stdout = os.Stdout
-	c.Stderr = os.Stderr
-	err := c.Run()
-	if err != nil {
-		die("error running %s %s: %v", cmd, args, err)
-	}
-}
-
 func rm(file string) {
 	err := os.Remove(file)
 
@@ -78,26 +68,11 @@ func rm(file string) {
 	}
 }
 
-func rmdir(dir string) {
-	err := os.RemoveAll(dir)
-	if err != nil {
-		die("error removing %v: %v", dir, err)
-	}
-}
-
 func mkdir(dir string) {
 	err := os.MkdirAll(dir, 0755)
 	if err != nil {
 		die("mkdir %v: %v", dir, err)
 	}
-}
-
-func getwd() string {
-	pwd, err := os.Getwd()
-	if err != nil {
-		die("Getwd(): %v", err)
-	}
-	return pwd
 }
 
 func abs(dir string) string {

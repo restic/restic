@@ -48,10 +48,6 @@ installed from the official repos, e.g. with ``apt-get``:
     $ apt-get install restic
 
 
-.. warning:: Please be aware that, at the time of writing, Debian *stable*
-   has ``restic`` version 0.3.3 which is very old. The *testing* and *unstable*
-   branches have recent versions of ``restic``.
-
 Fedora
 ======
 

@@ -22,10 +22,8 @@ func Register(ns string, cfg interface{}) {
 
 // List returns a list of all registered options (using Register()).
 func List() (list []Help) {
-	list = make([]Help, 0, len(opts))
-	for _, opt := range opts {
-		list = append(list, opt)
-	}
+	list = make([]Help, len(opts))
+	copy(list, opts)
 	return list
 }
 

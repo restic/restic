@@ -24,7 +24,7 @@ type Cache struct {
 }
 
 const dirMode = 0700
-const fileMode = 0600
+const fileMode = 0644
 
 func readVersion(dir string) (v uint, err error) {
 	buf, err := ioutil.ReadFile(filepath.Join(dir, "version"))
@@ -68,7 +68,7 @@ func writeCachedirTag(dir string) error {
 		return errors.Wrap(err, "Lstat")
 	}
 
-	f, err := fs.OpenFile(tagfile, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+	f, err := fs.OpenFile(tagfile, os.O_CREATE|os.O_EXCL|os.O_WRONLY, fileMode)
 	if err != nil {
 		if os.IsExist(errors.Cause(err)) {
 			return nil
@@ -138,7 +138,7 @@ func New(id string, basedir string) (c *Cache, err error) {
 	}
 
 	if v < cacheVersion {
-		err = ioutil.WriteFile(filepath.Join(cachedir, "version"), []byte(fmt.Sprintf("%d", cacheVersion)), 0644)
+		err = ioutil.WriteFile(filepath.Join(cachedir, "version"), []byte(fmt.Sprintf("%d", cacheVersion)), fileMode)
 		if err != nil {
 			return nil, errors.Wrap(err, "WriteFile")
 		}
@@ -175,11 +175,7 @@ const MaxCacheAge = 30 * 24 * time.Hour
 
 func validCacheDirName(s string) bool {
 	r := regexp.MustCompile(`^[a-fA-F0-9]{64}$`)
-	if !r.MatchString(s) {
-		return false
-	}
-
-	return true
+	return r.MatchString(s)
 }
 
 // listCacheDirs returns the list of cache directories.

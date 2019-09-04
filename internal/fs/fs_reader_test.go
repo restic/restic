@@ -72,8 +72,8 @@ func verifyDirectoryContents(t testing.TB, fs FS, dir string, want []string) {
 		t.Fatal(err)
 	}
 
-	sort.Sort(sort.StringSlice(want))
-	sort.Sort(sort.StringSlice(entries))
+	sort.Strings(want)
+	sort.Strings(entries)
 
 	if !cmp.Equal(want, entries) {
 		t.Error(cmp.Diff(want, entries))
