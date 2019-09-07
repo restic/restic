@@ -355,7 +355,7 @@ environment variables. The following list of environment variables:
     RESTIC_REPOSITORY                   Location of repository (replaces -r)
     RESTIC_PASSWORD_FILE                Location of password file (replaces --password-file)
     RESTIC_PASSWORD                     The actual password for the repository
-    RESTIC_PASSWORD_COMMAND		Command printing the password for the repoaitory to stdout
+    RESTIC_PASSWORD_COMMAND             Command printing the password for the repository to stdout
 
     AWS_ACCESS_KEY_ID                   Amazon S3 access key ID
     AWS_SECRET_ACCESS_KEY               Amazon S3 secret access key
