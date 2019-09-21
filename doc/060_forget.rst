@@ -220,11 +220,10 @@ is a safety feature: it prevents restic from removing many snapshots
 when no new ones are created. If it was implemented otherwise, running
 ``forget --keep-daily 4`` on a Friday would remove all snapshots!
 
-Another example: Suppose you make daily backups for 100 years. Then
-``forget --keep-daily 7 --keep-weekly 5 --keep-monthly 12 --keep-yearly 75``
-will keep the most recent 7 daily snapshots, then 4 (remember, 7 dailies
-already include a week!) last-day-of-the-weeks and 11 or 12
-last-day-of-the-months (11 or 12 depends if the 5 weeklies cross a month).
-And finally 75 last-day-of-the-year snapshots. All other snapshots are
-removed.
-
+Another example: Suppose you have made daily backups for 8 years.
+``forget --keep-daily 7 --keep-weekly 5 --keep-monthly 12 --keep-yearly 5``
+will keep the most recent 7 daily snapshots,
+4 (7 dailies already include a week) last-day-of-the-weeks,
+11 or 12 latest snapshots from each month and
+5 snapshots of the last days in 5 previous years last-day-of-the-year snapshots.
+In total 27-28 backupswill be kept. All other snapshots are removed.
