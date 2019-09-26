@@ -376,9 +376,10 @@ OS-specific cache folder:
  * macOS: ``~/Library/Caches/restic``
  * Windows: ``%LOCALAPPDATA%/restic``
 
-The command line parameter ``--cache-dir`` can each be used to override the
-default cache location. The parameter ``--no-cache`` disables the cache
-entirely. In this case, all data is loaded from the repo.
+The command line parameter ``--cache-dir`` or the environment variable
+``$RESTIC_CACHE_DIR`` can be used to override the default cache location.  The
+parameter ``--no-cache`` disables the cache entirely. In this case, all data
+is loaded from the repo.
 
 The cache is ephemeral: When a file cannot be read from the cache, it is loaded
 from the repository.
