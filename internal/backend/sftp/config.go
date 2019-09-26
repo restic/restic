@@ -56,8 +56,11 @@ func ParseConfig(s string) (interface{}, error) {
 		host = data[0]
 		dir = data[1]
 		// split user and host at the "@"
-		data = strings.SplitN(host, "@", 2)
-		if len(data) == 2 {
+		data = strings.SplitN(host, "@", 3)
+		if len(data) == 3 {
+			user = data[0] + "@" + data[1]
+			host = data[2]
+		} else if len(data) == 2 {
 			user = data[0]
 			host = data[1]
 		}

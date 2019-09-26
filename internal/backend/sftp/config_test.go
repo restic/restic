@@ -1,6 +1,8 @@
 package sftp
 
-import "testing"
+import (
+	"testing"
+)
 
 var configTests = []struct {
 	in  string
@@ -40,6 +42,10 @@ var configTests = []struct {
 	{
 		"sftp:user@host:/dir/subdir",
 		Config{User: "user", Host: "host", Path: "/dir/subdir"},
+	},
+	{
+		"sftp:user@domain@host:/dir/subdir",
+		Config{User: "user@domain", Host: "host", Path: "/dir/subdir"},
 	},
 	{
 		"sftp:host:../dir/subdir",
