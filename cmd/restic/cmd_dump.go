@@ -40,9 +40,10 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 // DumpOptions collects all options for the dump command.
 type DumpOptions struct {
-	Hosts []string
-	Paths []string
-	Tags  restic.TagLists
+	Hosts       []string
+	Paths       []string
+	Tags        restic.TagLists
+	ArchiveType string
 }
 
 var dumpOptions DumpOptions
@@ -54,6 +55,7 @@ func init() {
 	flags.StringArrayVarP(&dumpOptions.Hosts, "host", "H", nil, `only consider snapshots for this host when the snapshot ID is "latest" (can be specified multiple times)`)
 	flags.Var(&dumpOptions.Tags, "tag", "only consider snapshots which include this `taglist` for snapshot ID \"latest\"")
 	flags.StringArrayVar(&dumpOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` for snapshot ID \"latest\"")
+	flags.StringVarP(&dumpOptions.ArchiveType, "archive", "a", "tar", "archive type `tar` (default) or `zip`")
 }
 
 func splitPath(p string) []string {
@@ -84,7 +86,7 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repositor
 		if err := checkStdoutTar(); err != nil {
 			return err
 		}
-		return dump.WriteTar(ctx, repo, tree, "/", os.Stdout)
+		return dump.WriteArchive(ctx, dumpOptions.ArchiveType, repo, tree, "/", os.Stdout)
 	}
 
 	item := filepath.Join(prefix, pathComponents[0])
@@ -109,7 +111,7 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repositor
 				if err != nil {
 					return err
 				}
-				return dump.WriteTar(ctx, repo, subtree, item, os.Stdout)
+				return dump.WriteArchive(ctx, dumpOptions.ArchiveType, repo, subtree, item, os.Stdout)
 			case l > 1:
 				return fmt.Errorf("%q should be a dir, but is a %q", item, node.Type)
 			case !dump.IsFile(node):

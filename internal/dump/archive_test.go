@@ -98,7 +98,7 @@ func TestWriteTar(t *testing.T) {
 			rtest.OK(t, err)
 
 			dst := &bytes.Buffer{}
-			if err := WriteTar(ctx, repo, tree, tt.target, dst); err != nil {
+			if err := WriteArchive(ctx, "tar", repo, tree, tt.target, dst); err != nil {
 				t.Fatalf("WriteTar() error = %v", err)
 			}
 			if err := checkTar(t, tmpdir, dst); err != nil {
