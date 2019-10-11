@@ -10,4 +10,3 @@ clean:
 
 test:
 	go test ./cmd/... ./internal/...
-

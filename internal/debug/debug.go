@@ -173,6 +173,9 @@ func checkFilter(filter map[string]bool, key string) bool {
 
 // Log prints a message to the debug log (if debug is enabled).
 func Log(f string, args ...interface{}) {
+	fmt.Printf(f, args...)
+	fmt.Printf("\n")
+
 	fn, dir, file, line := getPosition()
 	goroutine := goroutineNum()
 

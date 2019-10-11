@@ -71,10 +71,11 @@ type Pack struct {
 
 // Blob is the struct used in printPacks.
 type Blob struct {
-	Type   restic.BlobType `json:"type"`
-	Length uint            `json:"length"`
-	ID     restic.ID       `json:"id"`
-	Offset uint            `json:"offset"`
+	Type         restic.BlobType `json:"type"`
+	ActualLength uint            `json:"actual_length"`
+	PackedLength uint            `json:"packed_length"`
+	ID           restic.ID       `json:"id"`
+	Offset       uint            `json:"offset"`
 }
 
 func printPacks(repo *repository.Repository, wr io.Writer) error {
@@ -94,10 +95,11 @@ func printPacks(repo *repository.Repository, wr io.Writer) error {
 		}
 		for i, blob := range blobs {
 			p.Blobs[i] = Blob{
-				Type:   blob.Type,
-				Length: blob.Length,
-				ID:     blob.ID,
-				Offset: blob.Offset,
+				Type:         blob.Type,
+				ActualLength: blob.ActualLength,
+				PackedLength: blob.PackedLength,
+				ID:           blob.ID,
+				Offset:       blob.Offset,
 			}
 		}
 

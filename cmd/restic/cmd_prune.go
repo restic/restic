@@ -161,7 +161,7 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 
 			if blobCount[h] > 1 {
 				duplicateBlobs++
-				duplicateBytes += uint64(entry.Length)
+				duplicateBytes += uint64(entry.ActualLength)
 			}
 		}
 	}
@@ -252,7 +252,7 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 				continue
 			}
 
-			removeBytes += uint64(blob.Length)
+			removeBytes += uint64(blob.ActualLength)
 		}
 
 		if hasActiveBlob {

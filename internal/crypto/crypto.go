@@ -1,11 +1,14 @@
 package crypto
 
 import (
+	"bytes"
+	"compress/zlib"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"io"
 
 	"github.com/restic/restic/internal/errors"
 
@@ -274,6 +277,33 @@ func sliceForAppend(in []byte, n int) (head, tail []byte) {
 	}
 	tail = head[len(in):]
 	return
+}
+
+func Compress(plaintext []byte) []byte {
+	var comp_plaintext_buffer bytes.Buffer
+	w := zlib.NewWriter(&comp_plaintext_buffer)
+	w.Write(plaintext)
+	w.Close()
+
+	compressed := comp_plaintext_buffer.Bytes()
+	return compressed
+}
+
+func Uncompress(compressed []byte) ([]byte, error) {
+	var out bytes.Buffer
+
+	panic(1)
+
+	in_b := bytes.NewReader(compressed)
+	r, err := zlib.NewReader(in_b)
+	if err != nil {
+		return nil, err
+	}
+	io.Copy(&out, r)
+	r.Close()
+
+	plaintext := out.Bytes()
+	return plaintext, nil
 }
 
 // Seal encrypts and authenticates plaintext, authenticates the

@@ -19,7 +19,7 @@ type BlobSizeCache struct {
 func NewBlobSizeCache(ctx context.Context, idx restic.Index) *BlobSizeCache {
 	m := make(map[restic.ID]uint, 1000)
 	for pb := range idx.Each(ctx) {
-		m[pb.ID] = uint(restic.PlaintextLength(int(pb.Length)))
+		m[pb.ID] = uint(int(pb.ActualLength))
 	}
 	return &BlobSizeCache{
 		m: m,

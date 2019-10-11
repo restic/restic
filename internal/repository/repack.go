@@ -55,10 +55,10 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 			debug.Log("  process blob %v", h)
 
 			buf = buf[:]
-			if uint(len(buf)) < entry.Length {
-				buf = make([]byte, entry.Length)
+			if uint(len(buf)) < entry.PackedLength {
+				buf = make([]byte, entry.PackedLength)
 			}
-			buf = buf[:entry.Length]
+			buf = buf[:entry.PackedLength]
 
 			n, err := tempfile.ReadAt(buf, int64(entry.Offset))
 			if err != nil {

@@ -152,31 +152,50 @@ func (r *Repository) loadBlob(ctx context.Context, id restic.ID, t restic.BlobTy
 		// load blob from pack
 		h := restic.Handle{Type: restic.DataFile, Name: blob.PackID.String()}
 
-		if uint(cap(plaintextBuf)) < blob.Length {
-			return 0, errors.Errorf("buffer is too small: %v < %v", cap(plaintextBuf), blob.Length)
+		if uint(cap(plaintextBuf)) < blob.ActualLength {
+			return 0, errors.Errorf("buffer is too small: %v < %v", cap(plaintextBuf), blob.ActualLength)
 		}
 
-		plaintextBuf = plaintextBuf[:blob.Length]
+		fmt.Printf("blobs %v\n", blob)
 
-		n, err := restic.ReadAt(ctx, r.be, h, int64(blob.Offset), plaintextBuf)
+		cipherBuf := make([]byte, blob.PackedLength)
+
+		n, err := restic.ReadAt(ctx, r.be, h, int64(blob.Offset), cipherBuf)
 		if err != nil {
 			debug.Log("error loading blob %v: %v", blob, err)
 			lastError = err
 			continue
 		}
 
-		if uint(n) != blob.Length {
+		if uint(n) != blob.PackedLength {
 			lastError = errors.Errorf("error loading blob %v: wrong length returned, want %d, got %d",
-				id.Str(), blob.Length, uint(n))
+				id.Str(), blob.PackedLength, uint(n))
 			debug.Log("lastError: %v", lastError)
 			continue
 		}
 
 		// decrypt
-		nonce, ciphertext := plaintextBuf[:r.key.NonceSize()], plaintextBuf[r.key.NonceSize():]
-		plaintext, err := r.key.Open(ciphertext[:0], nonce, ciphertext, nil)
+		nonce, ciphertext := cipherBuf[:r.key.NonceSize()], cipherBuf[r.key.NonceSize():]
+		compressed, err := r.key.Open(ciphertext[:0], nonce, ciphertext, nil)
 		if err != nil {
 			lastError = errors.Errorf("decrypting blob %v failed: %v", id, err)
+			continue
+		}
+
+		var plaintext []byte
+
+		switch blob.CompressionType {
+		case restic.CompressionTypeStored:
+			plaintext = compressed
+
+		case restic.CompressionTypeZlib:
+			plaintext, err = crypto.Uncompress(compressed)
+			if err != nil {
+				lastError = errors.Errorf("decompressing blob %v failed: %v", id, err)
+				continue
+			}
+		default:
+			lastError = errors.Errorf("Unknown CompressionType for blob %v failed: %v", id, err)
 			continue
 		}
 
@@ -216,7 +235,8 @@ func (r *Repository) LookupBlobSize(id restic.ID, tpe restic.BlobType) (uint, bo
 
 // SaveAndEncrypt encrypts data and stores it to the backend as type t. If data
 // is small enough, it will be packed together with other small blobs.
-func (r *Repository) SaveAndEncrypt(ctx context.Context, t restic.BlobType, data []byte, id *restic.ID) (restic.ID, error) {
+func (r *Repository) SaveAndEncrypt(ctx context.Context, t restic.BlobType,
+	data []byte, actual_length uint, id *restic.ID) (restic.ID, error) {
 	if id == nil {
 		// compute plaintext hash
 		hashedID := restic.Hash(data)
@@ -254,7 +274,7 @@ func (r *Repository) SaveAndEncrypt(ctx context.Context, t restic.BlobType, data
 	}
 
 	// save ciphertext
-	_, err = packer.Add(t, *id, ciphertext)
+	_, err = packer.Add(t, *id, ciphertext, actual_length)
 	if err != nil {
 		return restic.ID{}, err
 	}
@@ -701,7 +721,13 @@ func (r *Repository) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte
 	if !id.IsNull() {
 		i = &id
 	}
-	return r.SaveAndEncrypt(ctx, t, buf, i)
+
+	// We compress data blobs to ZlibBlobs
+	if t == restic.DataBlob {
+		buf = crypto.Compress(buf)
+		t = restic.ZlibBlob
+	}
+	return r.SaveAndEncrypt(ctx, t, buf, uint(len(buf)), i)
 }
 
 // LoadTree loads a tree from the repository.
@@ -714,6 +740,7 @@ func (r *Repository) LoadTree(ctx context.Context, id restic.ID) (*restic.Tree, 
 	}
 
 	debug.Log("size is %d, create buffer", size)
+
 	buf := restic.NewBlobBuffer(int(size))
 
 	n, err := r.loadBlob(ctx, id, restic.TreeBlob, buf)

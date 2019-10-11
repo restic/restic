@@ -6,17 +6,24 @@ import (
 	"github.com/restic/restic/internal/errors"
 )
 
+const (
+	CompressionTypeStored uint8 = iota
+	CompressionTypeZlib
+)
+
 // Blob is one part of a file or a tree.
 type Blob struct {
-	Type   BlobType
-	Length uint
-	ID     ID
-	Offset uint
+	Type            BlobType
+	ActualLength    uint  // How long the unpacked blob is
+	PackedLength    uint  // How long the blob is in the pack.
+	CompressionType uint8 // One of CompressionType*
+	ID              ID
+	Offset          uint
 }
 
 func (b Blob) String() string {
-	return fmt.Sprintf("<Blob (%v) %v, offset %v, length %v>",
-		b.Type, b.ID.Str(), b.Offset, b.Length)
+	return fmt.Sprintf("<Blob (%v) %v, offset %v, length %v (%v)>",
+		b.Type, b.ID.Str(), b.Offset, b.ActualLength, b.PackedLength)
 }
 
 // PackedBlob is a blob stored within a file.
@@ -43,6 +50,9 @@ const (
 	InvalidBlob BlobType = iota
 	DataBlob
 	TreeBlob
+
+	// A data blob compressed with zlib.
+	ZlibBlob
 )
 
 func (t BlobType) String() string {

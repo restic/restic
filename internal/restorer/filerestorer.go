@@ -5,6 +5,7 @@ import (
 	"io"
 	"path/filepath"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -235,8 +236,8 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) (reader
 					if start > int64(blob.Offset) {
 						start = int64(blob.Offset)
 					}
-					if end < int64(blob.Offset+blob.Length) {
-						end = int64(blob.Offset + blob.Length)
+					if end < int64(blob.Offset+blob.PackedLength) {
+						end = int64(blob.Offset + blob.PackedLength)
 					}
 				}
 			}
@@ -279,7 +280,7 @@ func (r *fileRestorer) processPack(ctx context.Context, request processingInfo, 
 		target := r.targetPath(file.location)
 		r.idx.forEachFilePack(file, func(packIdx int, packID restic.ID, packBlobs []restic.Blob) bool {
 			for _, blob := range packBlobs {
-				debug.Log("Writing blob %s (%d bytes) from pack %s to %s", blob.ID.Str(), blob.Length, packID.Str(), file.location)
+				debug.Log("Writing blob %s (%d bytes) from pack %s to %s", blob.ID.Str(), blob.ActualLength, packID.Str(), file.location)
 				buf, err := r.loadBlob(rd, blob)
 				if err == nil {
 					err = r.filesWriter.writeToFile(target, buf)
@@ -297,23 +298,40 @@ func (r *fileRestorer) processPack(ctx context.Context, request processingInfo, 
 func (r *fileRestorer) loadBlob(rd io.ReaderAt, blob restic.Blob) ([]byte, error) {
 	// TODO reconcile with Repository#loadBlob implementation
 
-	buf := make([]byte, blob.Length)
+	buf := make([]byte, blob.PackedLength)
 
 	n, err := rd.ReadAt(buf, int64(blob.Offset))
 	if err != nil {
 		return nil, err
 	}
 
-	if n != int(blob.Length) {
-		return nil, errors.Errorf("error loading blob %v: wrong length returned, want %d, got %d", blob.ID.Str(), blob.Length, n)
+	if n != int(blob.PackedLength) {
+		return nil, errors.Errorf("error loading blob %v: wrong length returned, want %d, got %d", blob.ID.Str(), blob.PackedLength, n)
 	}
 
 	// decrypt
 	nonce, ciphertext := buf[:r.key.NonceSize()], buf[r.key.NonceSize():]
-	plaintext, err := r.key.Open(ciphertext[:0], nonce, ciphertext, nil)
+	compressed, err := r.key.Open(ciphertext[:0], nonce, ciphertext, nil)
 	if err != nil {
 		return nil, errors.Errorf("decrypting blob %v failed: %v", blob.ID, err)
 	}
+
+	var plaintext []byte
+
+	switch blob.CompressionType {
+	case restic.CompressionTypeStored:
+		plaintext = compressed
+
+	case restic.CompressionTypeZlib:
+		plaintext, err = crypto.Uncompress(compressed)
+		if err != nil {
+			return nil, errors.Errorf("decompressing blob failed: %v", err)
+		}
+	default:
+		return nil, errors.Errorf("Unknown CompressionType for blob failed: %v", err)
+	}
+
+	spew.Dump(blob)
 
 	// check hash
 	if !restic.Hash(plaintext).Equal(blob.ID) {

@@ -171,7 +171,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 			}
 			blob := list[0]
 
-			buf := make([]byte, blob.Length)
+			buf := make([]byte, blob.ActualLength)
 			n, err := repo.LoadBlob(gopts.ctx, t, id, buf)
 			if err != nil {
 				return err

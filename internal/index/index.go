@@ -157,10 +157,11 @@ type packJSON struct {
 }
 
 type blobJSON struct {
-	ID     restic.ID       `json:"id"`
-	Type   restic.BlobType `json:"type"`
-	Offset uint            `json:"offset"`
-	Length uint            `json:"length"`
+	ID           restic.ID       `json:"id"`
+	Type         restic.BlobType `json:"type"`
+	Offset       uint            `json:"offset"`
+	ActualLength uint            `json:"actual_length"`
+	PackedLength uint            `json:"packed_length"`
 }
 
 type indexJSON struct {
@@ -218,10 +219,11 @@ func Load(ctx context.Context, repo ListLoader, p *restic.Progress) (*Index, err
 			entries := make([]restic.Blob, 0, len(jpack.Blobs))
 			for _, blob := range jpack.Blobs {
 				entry := restic.Blob{
-					ID:     blob.ID,
-					Type:   blob.Type,
-					Offset: blob.Offset,
-					Length: blob.Length,
+					ID:           blob.ID,
+					Type:         blob.Type,
+					Offset:       blob.Offset,
+					ActualLength: blob.ActualLength,
+					PackedLength: blob.PackedLength,
 				}
 				entries = append(entries, entry)
 			}
@@ -366,10 +368,11 @@ func (idx *Index) Save(ctx context.Context, repo Saver, supersedes restic.IDs) (
 		b := make([]blobJSON, 0, len(pack.Entries))
 		for _, blob := range pack.Entries {
 			b = append(b, blobJSON{
-				ID:     blob.ID,
-				Type:   blob.Type,
-				Offset: blob.Offset,
-				Length: blob.Length,
+				ID:           blob.ID,
+				Type:         blob.Type,
+				Offset:       blob.Offset,
+				ActualLength: blob.ActualLength,
+				PackedLength: blob.PackedLength,
 			})
 		}
 

@@ -212,7 +212,11 @@ func TestIndexLoad(t *testing.T) {
 					continue
 				}
 
-				if entryLoad.Length != entryNew.Length {
+				if entryLoad.ActualLength != entryNew.ActualLength {
+					continue
+				}
+
+				if entryLoad.PackedLength != entryNew.PackedLength {
 					continue
 				}
 
@@ -258,10 +262,11 @@ func BenchmarkIndexSave(b *testing.B) {
 		entries := make([]restic.Blob, 0, 200)
 		for j := 0; j < cap(entries); j++ {
 			entries = append(entries, restic.Blob{
-				ID:     restic.NewRandomID(),
-				Length: 1000,
-				Offset: 5,
-				Type:   restic.DataBlob,
+				ID:           restic.NewRandomID(),
+				ActualLength: 1000,
+				PackedLength: 1000,
+				Offset:       5,
+				Type:         restic.DataBlob,
 			})
 		}
 
@@ -414,18 +419,21 @@ var docExample = []byte(`
 		  "id": "3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce",
 		  "type": "data",
 		  "offset": 0,
-		  "length": 25
+		  "actual_length": 25,
+		  "packed_length": 25
 		},{
 		  "id": "9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae",
 		  "type": "tree",
 		  "offset": 38,
-		  "length": 100
+		  "actual_length": 100,
+		  "packed_length": 100
 		},
 		{
 		  "id": "d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66",
 		  "type": "data",
 		  "offset": 150,
-		  "length": 123
+		  "actual_length": 123,
+		  "packed_length": 123
 		}
 	  ]
 	}
@@ -469,7 +477,7 @@ func TestIndexLoadDocReference(t *testing.T) {
 		t.Errorf("wrong offset, want %d, got %v", 150, l.Offset)
 	}
 
-	if l.Length != 123 {
-		t.Errorf("wrong length, want %d, got %v", 123, l.Length)
+	if l.ActualLength != 123 {
+		t.Errorf("wrong length, want %d, got %v", 123, l.ActualLength)
 	}
 }
