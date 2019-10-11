@@ -31,10 +31,11 @@ func TestIndexSerialize(t *testing.T) {
 			length := uint(i*100 + j)
 			idx.Store(restic.PackedBlob{
 				Blob: restic.Blob{
-					Type:   restic.DataBlob,
-					ID:     id,
-					Offset: pos,
-					Length: length,
+					Type:         restic.DataBlob,
+					ID:           id,
+					Offset:       pos,
+					ActualLength: length,
+					PackedLength: length,
 				},
 				PackID: packID,
 			})
@@ -76,7 +77,7 @@ func TestIndexSerialize(t *testing.T) {
 		rtest.Equals(t, testBlob.pack, result.PackID)
 		rtest.Equals(t, testBlob.tpe, result.Type)
 		rtest.Equals(t, testBlob.offset, result.Offset)
-		rtest.Equals(t, testBlob.length, result.Length)
+		rtest.Equals(t, testBlob.length, result.ActualLength)
 
 		list2, found := idx2.Lookup(testBlob.id, testBlob.tpe)
 		rtest.Assert(t, found, "Expected to find blob id %v", testBlob.id)
@@ -89,7 +90,7 @@ func TestIndexSerialize(t *testing.T) {
 		rtest.Equals(t, testBlob.pack, result2.PackID)
 		rtest.Equals(t, testBlob.tpe, result2.Type)
 		rtest.Equals(t, testBlob.offset, result2.Offset)
-		rtest.Equals(t, testBlob.length, result2.Length)
+		rtest.Equals(t, testBlob.length, result2.ActualLength)
 	}
 
 	// add more blobs to idx
@@ -103,10 +104,11 @@ func TestIndexSerialize(t *testing.T) {
 			length := uint(i*100 + j)
 			idx.Store(restic.PackedBlob{
 				Blob: restic.Blob{
-					Type:   restic.DataBlob,
-					ID:     id,
-					Offset: pos,
-					Length: length,
+					Type:         restic.DataBlob,
+					ID:           id,
+					Offset:       pos,
+					ActualLength: length,
+					PackedLength: length,
 				},
 				PackID: packID,
 			})
@@ -158,7 +160,7 @@ func TestIndexSerialize(t *testing.T) {
 		rtest.Equals(t, testBlob.pack, blob.PackID)
 		rtest.Equals(t, testBlob.tpe, blob.Type)
 		rtest.Equals(t, testBlob.offset, blob.Offset)
-		rtest.Equals(t, testBlob.length, blob.Length)
+		rtest.Equals(t, testBlob.length, blob.ActualLength)
 	}
 }
 
@@ -176,10 +178,11 @@ func TestIndexSize(t *testing.T) {
 			length := uint(i*100 + j)
 			idx.Store(restic.PackedBlob{
 				Blob: restic.Blob{
-					Type:   restic.DataBlob,
-					ID:     id,
-					Offset: pos,
-					Length: length,
+					Type:         restic.DataBlob,
+					ID:           id,
+					Offset:       pos,
+					ActualLength: length,
+					PackedLength: length,
 				},
 				PackID: packID,
 			})
@@ -306,7 +309,7 @@ func TestIndexUnserialize(t *testing.T) {
 		rtest.Equals(t, test.packID, blob.PackID)
 		rtest.Equals(t, test.tpe, blob.Type)
 		rtest.Equals(t, test.offset, blob.Offset)
-		rtest.Equals(t, test.length, blob.Length)
+		rtest.Equals(t, test.length, blob.ActualLength)
 	}
 
 	rtest.Equals(t, oldIdx, idx.Supersedes())
@@ -352,7 +355,7 @@ func TestIndexUnserializeOld(t *testing.T) {
 		rtest.Equals(t, test.packID, blob.PackID)
 		rtest.Equals(t, test.tpe, blob.Type)
 		rtest.Equals(t, test.offset, blob.Offset)
-		rtest.Equals(t, test.length, blob.Length)
+		rtest.Equals(t, test.length, blob.ActualLength)
 	}
 
 	rtest.Equals(t, 0, len(idx.Supersedes()))
@@ -366,10 +369,11 @@ func TestIndexPacks(t *testing.T) {
 		packID := restic.NewRandomID()
 		idx.Store(restic.PackedBlob{
 			Blob: restic.Blob{
-				Type:   restic.DataBlob,
-				ID:     restic.NewRandomID(),
-				Offset: 0,
-				Length: 23,
+				Type:         restic.DataBlob,
+				ID:           restic.NewRandomID(),
+				Offset:       0,
+				ActualLength: 23,
+				PackedLength: 23,
 			},
 			PackID: packID,
 		})
@@ -403,10 +407,11 @@ func createRandomIndex(rng *rand.Rand) (idx *repository.Index, lookupID restic.I
 			idx.Store(restic.PackedBlob{
 				PackID: packID,
 				Blob: restic.Blob{
-					Type:   restic.DataBlob,
-					ID:     id,
-					Length: uint(size),
-					Offset: uint(offset),
+					Type:         restic.DataBlob,
+					ID:           id,
+					ActualLength: uint(size),
+					PackedLength: uint(size),
+					Offset:       uint(offset),
 				},
 			})
 
@@ -463,10 +468,11 @@ func TestIndexHas(t *testing.T) {
 			length := uint(i*100 + j)
 			idx.Store(restic.PackedBlob{
 				Blob: restic.Blob{
-					Type:   restic.DataBlob,
-					ID:     id,
-					Offset: pos,
-					Length: length,
+					Type:         restic.DataBlob,
+					ID:           id,
+					Offset:       pos,
+					ActualLength: length,
+					PackedLength: length,
 				},
 				PackID: packID,
 			})

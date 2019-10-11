@@ -91,7 +91,9 @@ func fillPacks(t testing.TB, rnd *randReader, be Saver, pm *packerManager, buf [
 			t.Fatal(err)
 		}
 
-		n, err := packer.Add(restic.DataBlob, id, buf)
+		n, err := packer.Add(
+			restic.DataBlob, id, buf, uint(len(buf)),
+			restic.CompressionTypeStored)
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -15,9 +15,30 @@ import (
 )
 
 // There are two types of Packer file format:
-// 1. Lagacy format:
+// 1. Legacy format:
+//      0: [blob 1 data][blob 2 data][blob 3 data] ...
+//      X: [headerEntryLegacy1][headerEntryLegacy2] ...
+//           + crypto.Extension
+//      n-4: Length of X -> len(b)-4
 //
-// 2. New format - headers vary in length.
+//    Note: headerEntryLegacy specifies the length and ID and Type of
+//    each blob.
+//
+// 2. New format - headers vary in length depending on type.
+//      0: [blob 1 data][blob 2 data][blob 3 data] ...
+//      X: [headerEntryZlib][headerEntryLegacy]....
+//           + crypto.Extension
+//      n-12: total_size of X
+//      n-8: total_count of records in X
+//      n-4: uint32 where MSB represents the header type (1 = New format).
+//
+//    Note: headerEntryZlib specifies the length of its corresponding
+//    blob data using PackedLength field. While headerEntryLegacy only
+//    has a single Length field.
+//
+//  To figure out which format we are looking at we read the uint32 at
+//  n-4 and >> 24. If it is 0 we are looking at Legacy while 1 is the
+//  new format.
 
 const (
 	packerHeaderLegacyType uint32 = iota
@@ -62,7 +83,7 @@ func (p *Packer) Add(t restic.BlobType, id restic.ID,
 	}
 
 	debug.Log("%v: Writing blob %v @ offset %v and length %v",
-		p, id, p.bytes, len(data))
+		p, id, p.bytes, data[:10])
 
 	n, err := p.wr.Write(data)
 	if n != len(data) {
@@ -75,9 +96,8 @@ func (p *Packer) Add(t restic.BlobType, id restic.ID,
 	return n, errors.Wrap(err, "Write")
 }
 
-var entrySizeLegacy = uint(binary.Size(restic.BlobType(0)) +
-	binary.Size(uint32(0)) +
-	len(restic.ID{}))
+// 1 byte for type + size of struct.
+var entrySizeLegacy = uint(binary.Size(headerEntryLegacy{}) + 1)
 
 // headerEntryLegacy is used with encoding/binary to read and write
 // uncompressed header entries
@@ -86,10 +106,7 @@ type headerEntryLegacy struct {
 	ID     restic.ID
 }
 
-var entrySizeZlib = uint(binary.Size(restic.BlobType(0)) +
-	binary.Size(uint32(0)) +
-	binary.Size(uint32(0)) +
-	len(restic.ID{}))
+var entrySizeZlib = uint(binary.Size(headerEntryZlib{}) + 1)
 
 // headerEntryZlib is used with encoding/binary to read and write zlib
 // header entries
@@ -106,11 +123,11 @@ type packerHeader struct {
 
 	// Last member must be the type to maintain alignment with the
 	// legacy format.
-	Type    uint8 // Must be packerHeaderVersion1Type
 	padding [3]uint8
+	Type    uint8 // Must be packerHeaderVersion1Type
 }
 
-const packerHeaderSize uint = 4 + 4 + 1 + 3
+var packerHeaderSize uint = uint(binary.Size(packerHeader{}))
 
 // Finalize writes the header for all added blobs and finalizes the pack.
 // Returned are the number of bytes written, including the header. If the
@@ -159,7 +176,7 @@ func (p *Packer) Finalize() (uint, error) {
 
 	bytesWritten += packerHeaderSize
 
-	p.bytes = uint(bytesWritten)
+	p.bytes += uint(bytesWritten)
 
 	if w, ok := p.wr.(io.Closer); ok {
 		return bytesWritten, w.Close()
@@ -267,7 +284,7 @@ func readRecords(rd io.ReaderAt, size int64, max int) ([]byte, int, error) {
 	var bufsize int
 
 	// entrySizeZlib is largest right now.
-	bufsize += max * int(entrySizeZlib)
+	bufsize += max * int(entrySizeLegacy)
 	bufsize += crypto.Extension
 	bufsize += headerLengthSize
 
@@ -281,13 +298,10 @@ func readRecords(rd io.ReaderAt, size int64, max int) ([]byte, int, error) {
 	if err != nil {
 		return nil, 0, err
 	}
-
-	if n < bufsize {
-		return nil, 0, errors.New("Short read")
-	}
+	b = b[:n]
 
 	tail_sig := binary.LittleEndian.Uint32(b[len(b)-headerLengthSize:])
-	header_type := tail_sig & 0xFF000000
+	header_type := tail_sig >> 24
 
 	// This is a Legacy header
 	switch header_type {
@@ -326,15 +340,22 @@ func readRecords(rd io.ReaderAt, size int64, max int) ([]byte, int, error) {
 		// buffer is supposed to be and how many records
 		// exist.
 	case packerHeaderVersion1Type:
+		// The total size of the encrypted record array.
 		total_size := binary.LittleEndian.Uint32(b[len(b)-12:])
+
+		// Total number of records in there.
 		total_count := binary.LittleEndian.Uint32(b[len(b)-8:])
 
+		// Rewind from the end of the buffer to the start of
+		// the blob record array.
+		start_of_records := len(b) - int(packerHeaderSize) - int(total_size)
+
 		// The buffer is short - try again.
-		if total_size != uint32(len(b)) {
+		if start_of_records < 0 {
 			return nil, int(total_count), nil
 		}
 
-		return b, int(total_count), nil
+		return b[start_of_records : len(b)-12], int(total_count), nil
 
 	}
 	return nil, 0, errors.New("Unsupported packer file format")
@@ -383,7 +404,6 @@ func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []restic.Blob, err
 	if err != nil {
 		return nil, err
 	}
-
 	if len(buf) < k.NonceSize()+k.Overhead() {
 		return nil, errors.New("invalid header, too small")
 	}
@@ -400,7 +420,8 @@ func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []restic.Blob, err
 	entries = make([]restic.Blob, 0, count)
 
 	// Parse records into blobs
-	for pos := 0; pos < len(buf); {
+	pos := 0
+	for {
 		var entry_type restic.BlobType
 
 		err = binary.Read(hdrRd, binary.LittleEndian, &entry_type)
@@ -421,6 +442,7 @@ func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []restic.Blob, err
 			}
 
 			entry := restic.Blob{
+				Type:            entry_type,
 				ActualLength:    uint(record.Length),
 				PackedLength:    uint(record.Length),
 				CompressionType: restic.CompressionTypeStored,

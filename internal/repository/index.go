@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/restic/restic/internal/debug"
@@ -26,6 +25,7 @@ type Index struct {
 	created    time.Time
 }
 
+// Why not use a PackedBlob here?
 type indexEntry struct {
 	packID restic.ID
 	offset uint
@@ -279,8 +279,8 @@ func (idx *Index) Count(t restic.BlobType) (n uint) {
 }
 
 type packJSON struct {
-	ID    restic.ID        `json:"id"`
-	Blobs []index.BlobJSON `json:"blobs"`
+	ID    restic.ID         `json:"id"`
+	Blobs []restic.BlobJSON `json:"blobs"`
 }
 
 // The index is a json document mapping packs to blobs.
@@ -316,14 +316,7 @@ func (idx *Index) generatePackList() ([]*packJSON, error) {
 			}
 
 			// add blob
-			p.Blobs = append(p.Blobs, index.BlobJSON{
-				ID:              h.ID,
-				Type:            h.Type,
-				Offset:          blob.offset,
-				ActualLength:    blob.actual_length,
-				PackedLength:    blob.packed_length,
-				CompressionType: blob.compression_type,
-			})
+			p.Blobs = append(p.Blobs, blob.ToBlob().ToBlobJSON())
 		}
 	}
 

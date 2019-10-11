@@ -23,7 +23,8 @@ func (rd *countingReaderAt) ReadAt(p []byte, off int64) (n int, err error) {
 func TestReadHeaderEagerLoad(t *testing.T) {
 
 	testReadHeader := func(dataSize, entryCount, expectedReadInvocationCount int) {
-		expectedHeader := rtest.Random(0, entryCount*int(entrySize)+crypto.Extension)
+		expectedHeader := rtest.Random(
+			0, entryCount*int(entrySizeLegacy)+crypto.Extension)
 
 		buf := &bytes.Buffer{}
 		buf.Write(rtest.Random(0, dataSize))                                // pack blobs data
@@ -32,7 +33,7 @@ func TestReadHeaderEagerLoad(t *testing.T) {
 
 		rd := &countingReaderAt{delegate: bytes.NewReader(buf.Bytes())}
 
-		header, err := readHeader(rd, int64(buf.Len()))
+		header, _, err := readHeader(rd, int64(buf.Len()))
 		rtest.OK(t, err)
 
 		rtest.Equals(t, expectedHeader, header)
@@ -48,8 +49,8 @@ func TestReadHeaderEagerLoad(t *testing.T) {
 	testReadHeader(100, eagerEntries+1, 2)
 
 	// file size == eager header load size
-	eagerLoadSize := int((eagerEntries * entrySize) + crypto.Extension)
-	headerSize := int(1*entrySize) + crypto.Extension
+	eagerLoadSize := int((eagerEntries * entrySizeLegacy) + crypto.Extension)
+	headerSize := int(1*entrySizeLegacy) + crypto.Extension
 	dataSize := eagerLoadSize - headerSize - binary.Size(uint32(0))
 	testReadHeader(dataSize-1, 1, 1)
 	testReadHeader(dataSize, 1, 1)
@@ -57,12 +58,13 @@ func TestReadHeaderEagerLoad(t *testing.T) {
 	testReadHeader(dataSize+2, 1, 1)
 	testReadHeader(dataSize+3, 1, 1)
 	testReadHeader(dataSize+4, 1, 1)
+
 }
 
 func TestReadRecords(t *testing.T) {
 	testReadRecords := func(dataSize, entryCount, totalRecords int) {
-		totalHeader := rtest.Random(0, totalRecords*int(entrySize)+crypto.Extension)
-		off := len(totalHeader) - (entryCount*int(entrySize) + crypto.Extension)
+		totalHeader := rtest.Random(0, totalRecords*int(entrySizeLegacy)+crypto.Extension)
+		off := len(totalHeader) - (entryCount*int(entrySizeLegacy) + crypto.Extension)
 		if off < 0 {
 			off = 0
 		}
@@ -92,8 +94,8 @@ func TestReadRecords(t *testing.T) {
 	testReadRecords(100, eagerEntries, eagerEntries+1)
 
 	// file size == eager header load size
-	eagerLoadSize := int((eagerEntries * entrySize) + crypto.Extension)
-	headerSize := int(1*entrySize) + crypto.Extension
+	eagerLoadSize := int((eagerEntries * entrySizeLegacy) + crypto.Extension)
+	headerSize := int(1*entrySizeLegacy) + crypto.Extension
 	dataSize := eagerLoadSize - headerSize - binary.Size(uint32(0))
 	testReadRecords(dataSize-1, 1, 1)
 	testReadRecords(dataSize, 1, 1)

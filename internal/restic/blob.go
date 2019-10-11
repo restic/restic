@@ -27,6 +27,57 @@ func (b Blob) String() string {
 		b.CompressionType)
 }
 
+// Convert from the internal Blob struct to a form serializable as
+// JSON.
+func (b Blob) ToBlobJSON() BlobJSON {
+	return BlobJSON{
+		ID:              b.ID,
+		Type:            b.Type,
+		Offset:          b.Offset,
+		ActualLength:    b.ActualLength,
+		PackedLength:    b.PackedLength,
+		CompressionType: b.CompressionType,
+	}
+}
+
+// The serialized blob in the index. We include extra fields to
+// support older versions of the index.
+type BlobJSON struct {
+	ID     ID       `json:"id"`
+	Type   BlobType `json:"type"`
+	Offset uint     `json:"offset"`
+
+	// Legacy version only supports uncompressed length
+	Length uint `json:"length"`
+
+	// New index version
+	ActualLength    uint  `json:"actual_length"`
+	PackedLength    uint  `json:"packed_length"`
+	CompressionType uint8 `json:"compression_type"`
+}
+
+// Take care of parsing older versions of the index.
+func (blob BlobJSON) ToBlob() Blob {
+	result := Blob{
+		Type:   blob.Type,
+		ID:     blob.ID,
+		Offset: blob.Offset,
+	}
+
+	// Legacy index entry.
+	if blob.Length > 0 {
+		result.ActualLength = blob.Length
+		result.PackedLength = blob.Length
+
+	} else {
+		result.ActualLength = blob.ActualLength
+		result.PackedLength = blob.PackedLength
+		result.CompressionType = blob.CompressionType
+	}
+
+	return result
+}
+
 // PackedBlob is a blob stored within a file.
 type PackedBlob struct {
 	Blob

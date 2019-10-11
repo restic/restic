@@ -152,46 +152,8 @@ func New(ctx context.Context, repo Lister, ignorePacks restic.IDSet, p *restic.P
 }
 
 type packJSON struct {
-	ID    restic.ID  `json:"id"`
-	Blobs []BlobJSON `json:"blobs"`
-}
-
-// The serialized blob in the index. We include extra fields to
-// support older versions of the index.
-type BlobJSON struct {
-	ID     restic.ID       `json:"id"`
-	Type   restic.BlobType `json:"type"`
-	Offset uint            `json:"offset"`
-
-	// Legacy version only supports uncompressed length
-	Length uint `json:"length"`
-
-	// New index version
-	ActualLength    uint  `json:"actual_length"`
-	PackedLength    uint  `json:"packed_length"`
-	CompressionType uint8 `json:"compression_type"`
-}
-
-// Take care of parsing older versions of the index.
-func (blob BlobJSON) ToBlob() restic.Blob {
-	result := restic.Blob{
-		Type:   blob.Type,
-		ID:     blob.ID,
-		Offset: blob.Offset,
-	}
-
-	// Legacy index entry.
-	if blob.Length > 0 {
-		result.ActualLength = blob.Length
-		result.PackedLength = blob.Length
-
-	} else {
-		result.ActualLength = blob.ActualLength
-		result.PackedLength = blob.PackedLength
-		result.CompressionType = blob.CompressionType
-	}
-
-	return result
+	ID    restic.ID         `json:"id"`
+	Blobs []restic.BlobJSON `json:"blobs"`
 }
 
 type indexJSON struct {
@@ -388,16 +350,9 @@ func (idx *Index) Save(ctx context.Context, repo Saver, supersedes restic.IDs) (
 
 	for packID, pack := range idx.Packs {
 		debug.Log("%04d add pack %v with %d entries", packs, packID, len(pack.Entries))
-		b := make([]BlobJSON, 0, len(pack.Entries))
+		b := make([]restic.BlobJSON, 0, len(pack.Entries))
 		for _, blob := range pack.Entries {
-			b = append(b, BlobJSON{
-				ID:              blob.ID,
-				Type:            blob.Type,
-				Offset:          blob.Offset,
-				ActualLength:    blob.ActualLength,
-				PackedLength:    blob.PackedLength,
-				CompressionType: blob.CompressionType,
-			})
+			b = append(b, blob.ToBlobJSON())
 		}
 
 		p := packJSON{

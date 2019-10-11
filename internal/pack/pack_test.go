@@ -1,4 +1,4 @@
-package pack_test
+package pack
 
 import (
 	"bytes"
@@ -12,7 +12,6 @@ import (
 
 	"github.com/restic/restic/internal/backend/mem"
 	"github.com/restic/restic/internal/crypto"
-	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -36,9 +35,10 @@ func newPack(t testing.TB, k *crypto.Key, lengths []int) ([]Buf, []byte, uint) {
 	}
 
 	// pack blobs
-	p := pack.NewPacker(k, nil)
+	p := NewPacker(k, nil)
 	for _, b := range bufs {
-		p.Add(restic.TreeBlob, b.id, b.data)
+		p.Add(restic.TreeBlob, b.id, b.data,
+			uint(len(b.data)), restic.CompressionTypeStored)
 	}
 
 	_, err := p.Finalize()
@@ -49,21 +49,26 @@ func newPack(t testing.TB, k *crypto.Key, lengths []int) ([]Buf, []byte, uint) {
 }
 
 func verifyBlobs(t testing.TB, bufs []Buf, k *crypto.Key, rd io.ReaderAt, packSize uint) {
+	// First we write all the bulk data
 	written := 0
 	for _, buf := range bufs {
 		written += len(buf.data)
 	}
-	// header length
-	written += binary.Size(uint32(0))
-	// header + header crypto
-	headerSize := len(bufs) * (binary.Size(restic.BlobType(0)) + binary.Size(uint32(0)) + len(restic.ID{}))
-	written += restic.CiphertextLength(headerSize)
+
+	// We write n headers for TreeBlobs. Each header is of size
+	// entrySizeLegacy.
+	// + n * record_len
+	written += restic.CiphertextLength(
+		len(bufs) * int(entrySizeLegacy))
+
+	// + packer header length
+	written += binary.Size(packerHeader{})
 
 	// check length
 	rtest.Equals(t, uint(written), packSize)
 
 	// read and parse it again
-	entries, err := pack.List(k, rd, int64(packSize))
+	entries, err := List(k, rd, int64(packSize))
 	rtest.OK(t, err)
 	rtest.Equals(t, len(entries), len(bufs))
 
@@ -72,10 +77,10 @@ func verifyBlobs(t testing.TB, bufs []Buf, k *crypto.Key, rd io.ReaderAt, packSi
 		e := entries[i]
 		rtest.Equals(t, b.id, e.ID)
 
-		if len(buf) < int(e.Length) {
-			buf = make([]byte, int(e.Length))
+		if len(buf) < int(e.PackedLength) {
+			buf = make([]byte, int(e.PackedLength))
 		}
-		buf = buf[:int(e.Length)]
+		buf = buf[:int(e.PackedLength)]
 		n, err := rd.ReadAt(buf, int64(e.Offset))
 		rtest.OK(t, err)
 		buf = buf[:n]
@@ -91,6 +96,7 @@ func TestCreatePack(t *testing.T) {
 
 	bufs, packData, packSize := newPack(t, k, testLens)
 	rtest.Equals(t, uint(len(packData)), packSize)
+
 	verifyBlobs(t, bufs, k, bytes.NewReader(packData), packSize)
 }
 

@@ -16,20 +16,22 @@ func TestMasterIndexLookup(t *testing.T) {
 	blob1 := restic.PackedBlob{
 		PackID: restic.NewRandomID(),
 		Blob: restic.Blob{
-			Type:   restic.DataBlob,
-			ID:     idInIdx1,
-			Length: 10,
-			Offset: 0,
+			Type:         restic.DataBlob,
+			ID:           idInIdx1,
+			ActualLength: 10,
+			PackedLength: 10,
+			Offset:       0,
 		},
 	}
 
 	blob2 := restic.PackedBlob{
 		PackID: restic.NewRandomID(),
 		Blob: restic.Blob{
-			Type:   restic.DataBlob,
-			ID:     idInIdx2,
-			Length: 100,
-			Offset: 10,
+			Type:         restic.DataBlob,
+			ID:           idInIdx2,
+			ActualLength: 100,
+			PackedLength: 100,
+			Offset:       10,
 		},
 	}
 
