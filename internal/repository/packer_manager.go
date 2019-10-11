@@ -139,13 +139,7 @@ func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packe
 	for _, b := range p.Packer.Blobs() {
 		debug.Log("  updating blob %v to pack %v", b.ID, id)
 		r.idx.Store(restic.PackedBlob{
-			Blob: restic.Blob{
-				Type:         b.Type,
-				ID:           b.ID,
-				Offset:       b.Offset,
-				ActualLength: uint(b.ActualLength),
-				PackedLength: uint(b.PackedLength),
-			},
+			Blob:   b,
 			PackID: id,
 		})
 	}

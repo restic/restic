@@ -292,8 +292,6 @@ func Compress(plaintext []byte) []byte {
 func Uncompress(compressed []byte) ([]byte, error) {
 	var out bytes.Buffer
 
-	panic(1)
-
 	in_b := bytes.NewReader(compressed)
 	r, err := zlib.NewReader(in_b)
 	if err != nil {

@@ -18,7 +18,11 @@ func (t *filePackTraverser) forEachFilePack(file *fileInfo, fn func(packIdx int,
 	getBlobPack := func(blobID restic.ID) (restic.PackedBlob, error) {
 		packs, found := t.lookup(blobID, restic.DataBlob)
 		if !found {
-			return restic.PackedBlob{}, errors.Errorf("Unknown blob %s", blobID.String())
+			packs, found = t.lookup(blobID, restic.ZlibBlob)
+			if !found {
+				return restic.PackedBlob{}, errors.Errorf(
+					"Unknown blob %s", blobID.String())
+			}
 		}
 		// TODO which pack to use if multiple packs have the blob?
 		// MUST return the same pack for the same blob during the same execution

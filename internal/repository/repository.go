@@ -153,10 +153,10 @@ func (r *Repository) loadBlob(ctx context.Context, id restic.ID, t restic.BlobTy
 		h := restic.Handle{Type: restic.DataFile, Name: blob.PackID.String()}
 
 		if uint(cap(plaintextBuf)) < blob.ActualLength {
-			return 0, errors.Errorf("buffer is too small: %v < %v", cap(plaintextBuf), blob.ActualLength)
+			return 0, errors.Errorf(
+				"buffer is too small: %v < %v",
+				cap(plaintextBuf), blob.ActualLength)
 		}
-
-		fmt.Printf("blobs %v\n", blob)
 
 		cipherBuf := make([]byte, blob.PackedLength)
 
@@ -182,6 +182,7 @@ func (r *Repository) loadBlob(ctx context.Context, id restic.ID, t restic.BlobTy
 			continue
 		}
 
+		// Decompress if needed
 		var plaintext []byte
 
 		switch blob.CompressionType {
@@ -236,7 +237,10 @@ func (r *Repository) LookupBlobSize(id restic.ID, tpe restic.BlobType) (uint, bo
 // SaveAndEncrypt encrypts data and stores it to the backend as type t. If data
 // is small enough, it will be packed together with other small blobs.
 func (r *Repository) SaveAndEncrypt(ctx context.Context, t restic.BlobType,
-	data []byte, actual_length uint, id *restic.ID) (restic.ID, error) {
+	data []byte,
+	actual_length uint,
+	id *restic.ID,
+	compression_type uint8) (restic.ID, error) {
 	if id == nil {
 		// compute plaintext hash
 		hashedID := restic.Hash(data)
@@ -262,7 +266,7 @@ func (r *Repository) SaveAndEncrypt(ctx context.Context, t restic.BlobType,
 	switch t {
 	case restic.TreeBlob:
 		pm = r.treePM
-	case restic.DataBlob:
+	case restic.DataBlob, restic.ZlibBlob:
 		pm = r.dataPM
 	default:
 		panic(fmt.Sprintf("invalid type: %v", t))
@@ -274,7 +278,9 @@ func (r *Repository) SaveAndEncrypt(ctx context.Context, t restic.BlobType,
 	}
 
 	// save ciphertext
-	_, err = packer.Add(t, *id, ciphertext, actual_length)
+	_, err = packer.Add(
+		t, *id, ciphertext,
+		actual_length, compression_type)
 	if err != nil {
 		return restic.ID{}, err
 	}
@@ -722,12 +728,16 @@ func (r *Repository) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte
 		i = &id
 	}
 
+	compression_type := restic.CompressionTypeStored
+
 	// We compress data blobs to ZlibBlobs
 	if t == restic.DataBlob {
 		buf = crypto.Compress(buf)
 		t = restic.ZlibBlob
+		compression_type = restic.CompressionTypeZlib
 	}
-	return r.SaveAndEncrypt(ctx, t, buf, uint(len(buf)), i)
+	return r.SaveAndEncrypt(
+		ctx, t, buf, uint(len(buf)), i, compression_type)
 }
 
 // LoadTree loads a tree from the repository.

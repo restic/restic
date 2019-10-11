@@ -47,19 +47,28 @@ func NewPacker(k *crypto.Key, wr io.Writer) *Packer {
 // Add saves the data read from rd as a new blob to the packer. Returned is the
 // number of bytes written to the pack.
 func (p *Packer) Add(t restic.BlobType, id restic.ID,
-	data []byte, actual_length uint) (int, error) {
+	data []byte, actual_length uint,
+	compression_type uint8) (int, error) {
 	p.m.Lock()
 	defer p.m.Unlock()
 
-	c := restic.Blob{Type: t, ID: id}
+	c := restic.Blob{
+		Type:            t,
+		ID:              id,
+		ActualLength:    actual_length,
+		PackedLength:    uint(len(data)),
+		Offset:          p.bytes,
+		CompressionType: compression_type,
+	}
 
 	debug.Log("%v: Writing blob %v @ offset %v and length %v",
 		p, id, p.bytes, len(data))
 
 	n, err := p.wr.Write(data)
-	c.ActualLength = actual_length
-	c.PackedLength = uint(n)
-	c.Offset = p.bytes
+	if n != len(data) {
+		return n, errors.New("Short write")
+	}
+
 	p.bytes += uint(n)
 	p.blobs = append(p.blobs, c)
 
@@ -313,8 +322,19 @@ func readRecords(rd io.ReaderAt, size int64, max int) ([]byte, int, error) {
 		}
 		return b, total, nil
 
+		// This is a Version 1 header - we know how large the
+		// buffer is supposed to be and how many records
+		// exist.
 	case packerHeaderVersion1Type:
-		//FIXME
+		total_size := binary.LittleEndian.Uint32(b[len(b)-12:])
+		total_count := binary.LittleEndian.Uint32(b[len(b)-8:])
+
+		// The buffer is short - try again.
+		if total_size != uint32(len(b)) {
+			return nil, int(total_count), nil
+		}
+
+		return b, int(total_count), nil
 
 	}
 	return nil, 0, errors.New("Unsupported packer file format")
@@ -337,7 +357,7 @@ func readHeader(rd io.ReaderAt, size int64) ([]byte, int, error) {
 	if err != nil {
 		return nil, 0, err
 	}
-	if c <= eagerEntries {
+	if c <= eagerEntries && b != nil {
 		// eager read sufficed, return what we got
 		return b, c, nil
 	}

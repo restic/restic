@@ -153,15 +153,45 @@ func New(ctx context.Context, repo Lister, ignorePacks restic.IDSet, p *restic.P
 
 type packJSON struct {
 	ID    restic.ID  `json:"id"`
-	Blobs []blobJSON `json:"blobs"`
+	Blobs []BlobJSON `json:"blobs"`
 }
 
-type blobJSON struct {
-	ID           restic.ID       `json:"id"`
-	Type         restic.BlobType `json:"type"`
-	Offset       uint            `json:"offset"`
-	ActualLength uint            `json:"actual_length"`
-	PackedLength uint            `json:"packed_length"`
+// The serialized blob in the index. We include extra fields to
+// support older versions of the index.
+type BlobJSON struct {
+	ID     restic.ID       `json:"id"`
+	Type   restic.BlobType `json:"type"`
+	Offset uint            `json:"offset"`
+
+	// Legacy version only supports uncompressed length
+	Length uint `json:"length"`
+
+	// New index version
+	ActualLength    uint  `json:"actual_length"`
+	PackedLength    uint  `json:"packed_length"`
+	CompressionType uint8 `json:"compression_type"`
+}
+
+// Take care of parsing older versions of the index.
+func (blob BlobJSON) ToBlob() restic.Blob {
+	result := restic.Blob{
+		Type:   blob.Type,
+		ID:     blob.ID,
+		Offset: blob.Offset,
+	}
+
+	// Legacy index entry.
+	if blob.Length > 0 {
+		result.ActualLength = blob.Length
+		result.PackedLength = blob.Length
+
+	} else {
+		result.ActualLength = blob.ActualLength
+		result.PackedLength = blob.PackedLength
+		result.CompressionType = blob.CompressionType
+	}
+
+	return result
 }
 
 type indexJSON struct {
@@ -218,14 +248,7 @@ func Load(ctx context.Context, repo ListLoader, p *restic.Progress) (*Index, err
 		for _, jpack := range idx.Packs {
 			entries := make([]restic.Blob, 0, len(jpack.Blobs))
 			for _, blob := range jpack.Blobs {
-				entry := restic.Blob{
-					ID:           blob.ID,
-					Type:         blob.Type,
-					Offset:       blob.Offset,
-					ActualLength: blob.ActualLength,
-					PackedLength: blob.PackedLength,
-				}
-				entries = append(entries, entry)
+				entries = append(entries, blob.ToBlob())
 			}
 
 			if err = index.AddPack(jpack.ID, 0, entries); err != nil {
@@ -365,14 +388,15 @@ func (idx *Index) Save(ctx context.Context, repo Saver, supersedes restic.IDs) (
 
 	for packID, pack := range idx.Packs {
 		debug.Log("%04d add pack %v with %d entries", packs, packID, len(pack.Entries))
-		b := make([]blobJSON, 0, len(pack.Entries))
+		b := make([]BlobJSON, 0, len(pack.Entries))
 		for _, blob := range pack.Entries {
-			b = append(b, blobJSON{
-				ID:           blob.ID,
-				Type:         blob.Type,
-				Offset:       blob.Offset,
-				ActualLength: blob.ActualLength,
-				PackedLength: blob.PackedLength,
+			b = append(b, BlobJSON{
+				ID:              blob.ID,
+				Type:            blob.Type,
+				Offset:          blob.Offset,
+				ActualLength:    blob.ActualLength,
+				PackedLength:    blob.PackedLength,
+				CompressionType: blob.CompressionType,
 			})
 		}
 

@@ -22,8 +22,9 @@ type Blob struct {
 }
 
 func (b Blob) String() string {
-	return fmt.Sprintf("<Blob (%v) %v, offset %v, length %v (%v)>",
-		b.Type, b.ID.Str(), b.Offset, b.ActualLength, b.PackedLength)
+	return fmt.Sprintf("<Blob (%v) %v, offset %v, length %v (%v), comp %v>",
+		b.Type, b.ID.Str(), b.Offset, b.ActualLength, b.PackedLength,
+		b.CompressionType)
 }
 
 // PackedBlob is a blob stored within a file.
@@ -57,6 +58,8 @@ const (
 
 func (t BlobType) String() string {
 	switch t {
+	case ZlibBlob:
+		return "zlib"
 	case DataBlob:
 		return "data"
 	case TreeBlob:
@@ -71,6 +74,8 @@ func (t BlobType) String() string {
 // MarshalJSON encodes the BlobType into JSON.
 func (t BlobType) MarshalJSON() ([]byte, error) {
 	switch t {
+	case ZlibBlob:
+		return []byte(`"zlib"`), nil
 	case DataBlob:
 		return []byte(`"data"`), nil
 	case TreeBlob:
@@ -83,6 +88,8 @@ func (t BlobType) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON decodes the BlobType from JSON.
 func (t *BlobType) UnmarshalJSON(buf []byte) error {
 	switch string(buf) {
+	case `"zlib"`:
+		*t = ZlibBlob
 	case `"data"`:
 		*t = DataBlob
 	case `"tree"`:

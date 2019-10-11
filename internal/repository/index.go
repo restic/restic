@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/restic/restic/internal/debug"
@@ -279,48 +279,11 @@ func (idx *Index) Count(t restic.BlobType) (n uint) {
 }
 
 type packJSON struct {
-	ID    restic.ID  `json:"id"`
-	Blobs []blobJSON `json:"blobs"`
+	ID    restic.ID        `json:"id"`
+	Blobs []index.BlobJSON `json:"blobs"`
 }
 
 // The index is a json document mapping packs to blobs.
-
-// The serialized blob in the index. We include extra fields to
-// support older versions of the index.
-type blobJSON struct {
-	ID     restic.ID       `json:"id"`
-	Type   restic.BlobType `json:"type"`
-	Offset uint            `json:"offset"`
-
-	// Legacy version only supports uncompressed length
-	Length uint `json:"length"`
-
-	// New index version
-	ActualLength    uint  `json:"actual_length"`
-	PackedLength    uint  `json:"packed_length"`
-	CompressionType uint8 `json:"compression_type"`
-}
-
-// Take care of parsing older versions of the index.
-func (blob blobJSON) ToBlob() restic.Blob {
-	result := restic.Blob{
-		Type:   blob.Type,
-		ID:     blob.ID,
-		Offset: blob.Offset,
-	}
-
-	// Legacy index entry.
-	if blob.Length > 0 {
-		result.ActualLength = blob.Length
-		result.PackedLength = blob.Length
-	} else {
-		result.ActualLength = blob.ActualLength
-		result.PackedLength = blob.PackedLength
-		result.CompressionType = blob.CompressionType
-	}
-
-	return result
-}
 
 // generatePackList returns a list of packs.
 func (idx *Index) generatePackList() ([]*packJSON, error) {
@@ -353,7 +316,7 @@ func (idx *Index) generatePackList() ([]*packJSON, error) {
 			}
 
 			// add blob
-			p.Blobs = append(p.Blobs, blobJSON{
+			p.Blobs = append(p.Blobs, index.BlobJSON{
 				ID:              h.ID,
 				Type:            h.Type,
 				Offset:          blob.offset,
@@ -496,6 +459,7 @@ var ErrOldIndexFormat = errors.New("index has old format")
 // DecodeIndex loads and unserializes an index from rd.
 func DecodeIndex(buf []byte) (idx *Index, err error) {
 	debug.Log("Start decoding index")
+
 	idxJSON := &jsonIndex{}
 	err = json.Unmarshal(buf, idxJSON)
 	if err != nil {
@@ -534,7 +498,6 @@ func DecodeIndex(buf []byte) (idx *Index, err error) {
 	idx.supersedes = idxJSON.Supersedes
 	idx.final = true
 
-	spew.Dump(idx)
 	debug.Log("done")
 	return idx, nil
 }

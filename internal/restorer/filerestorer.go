@@ -5,7 +5,6 @@ import (
 	"io"
 	"path/filepath"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -331,11 +330,9 @@ func (r *fileRestorer) loadBlob(rd io.ReaderAt, blob restic.Blob) ([]byte, error
 		return nil, errors.Errorf("Unknown CompressionType for blob failed: %v", err)
 	}
 
-	spew.Dump(blob)
-
 	// check hash
 	if !restic.Hash(plaintext).Equal(blob.ID) {
-		return nil, errors.Errorf("blob %v returned invalid hash", blob.ID)
+		return nil, errors.Errorf("blob %v returned invalid hash", blob)
 	}
 
 	return plaintext, nil
