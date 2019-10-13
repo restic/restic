@@ -84,7 +84,8 @@ type PackedBlob struct {
 	PackID ID
 }
 
-// BlobHandle identifies a blob of a given type.
+// BlobHandle identifies a blob of a given type. A BlobHandle is used
+// as a key in indexes.
 type BlobHandle struct {
 	ID   ID
 	Type BlobType
@@ -92,6 +93,16 @@ type BlobHandle struct {
 
 func (h BlobHandle) String() string {
 	return fmt.Sprintf("<%s/%s>", h.Type, h.ID.Str())
+}
+
+// Create a normalize blob handle. We treat DataBlob as functionally
+// equivalent to ZlibBlob.
+func NewBlobHandle(id ID, t BlobType) BlobHandle {
+	if t == ZlibBlob {
+		t = DataBlob
+	}
+
+	return BlobHandle{id, t}
 }
 
 // BlobType specifies what a blob stored in a pack is.

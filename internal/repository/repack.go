@@ -48,7 +48,7 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 		debug.Log("processing pack %v, blobs: %v", packID, len(blobs))
 		var buf []byte
 		for _, entry := range blobs {
-			h := restic.BlobHandle{ID: entry.ID, Type: entry.Type}
+			h := restic.NewBlobHandle(entry.ID, entry.Type)
 			if !keepBlobs.Has(h) {
 				continue
 			}

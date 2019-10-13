@@ -6,7 +6,7 @@ import "context"
 // blobs) to the set blobs. The tree blobs in the `seen` BlobSet will not be visited
 // again.
 func FindUsedBlobs(ctx context.Context, repo Repository, treeID ID, blobs BlobSet, seen BlobSet) error {
-	blobs.Insert(BlobHandle{ID: treeID, Type: TreeBlob})
+	blobs.Insert(NewBlobHandle(treeID, TreeBlob))
 
 	tree, err := repo.LoadTree(ctx, treeID)
 	if err != nil {
@@ -17,11 +17,11 @@ func FindUsedBlobs(ctx context.Context, repo Repository, treeID ID, blobs BlobSe
 		switch node.Type {
 		case "file":
 			for _, blob := range node.Content {
-				blobs.Insert(BlobHandle{ID: blob, Type: DataBlob})
+				blobs.Insert(NewBlobHandle(blob, DataBlob))
 			}
 		case "dir":
 			subtreeID := *node.Subtree
-			h := BlobHandle{ID: subtreeID, Type: TreeBlob}
+			h := NewBlobHandle(subtreeID, TreeBlob)
 			if seen.Has(h) {
 				continue
 			}

@@ -76,7 +76,7 @@ func NewIndex() *Index {
 
 func (idx *Index) store(blob restic.PackedBlob) {
 	newEntry := indexEntryFromBlob(blob)
-	h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
+	h := restic.NewBlobHandle(blob.ID, blob.Type)
 	idx.pack[h] = append(idx.pack[h], newEntry)
 }
 
@@ -149,7 +149,7 @@ func (idx *Index) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic.Pack
 }
 
 func (idx *Index) _lookup(id restic.ID, tpe restic.BlobType) (blobs []restic.PackedBlob, found bool) {
-	h := restic.BlobHandle{ID: id, Type: tpe}
+	h := restic.NewBlobHandle(id, tpe)
 
 	if packs, ok := idx.pack[h]; ok {
 		blobs = make([]restic.PackedBlob, 0, len(packs))
@@ -159,11 +159,6 @@ func (idx *Index) _lookup(id restic.ID, tpe restic.BlobType) (blobs []restic.Pac
 		}
 
 		return blobs, true
-	}
-
-	// Fallback to the new zlib blob if the caller wanted data blobs
-	if tpe == restic.DataBlob {
-		return idx._lookup(id, restic.ZlibBlob)
 	}
 
 	return nil, false
@@ -190,8 +185,7 @@ func (idx *Index) Has(id restic.ID, tpe restic.BlobType) bool {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
-	h := restic.BlobHandle{ID: id, Type: tpe}
-
+	h := restic.NewBlobHandle(id, tpe)
 	_, ok := idx.pack[h]
 	return ok
 }

@@ -113,7 +113,7 @@ type saveBlobResponse struct {
 
 func (s *BlobSaver) saveBlob(ctx context.Context, t restic.BlobType, buf []byte) (saveBlobResponse, error) {
 	id := restic.Hash(buf)
-	h := restic.BlobHandle{ID: id, Type: t}
+	h := restic.NewBlobHandle(id, t)
 
 	// check if another goroutine has already saved this blob
 	known := false

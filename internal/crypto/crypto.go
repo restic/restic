@@ -378,7 +378,6 @@ func (k *Key) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, error
 
 	// verify mac
 	if !poly1305Verify(ct, nonce, &k.MACKey, mac) {
-		panic(1)
 		return nil, ErrUnauthenticated
 	}
 

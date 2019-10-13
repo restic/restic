@@ -291,10 +291,12 @@ const (
 func readRecords(rd io.ReaderAt, size int64, max int) ([]byte, int, error) {
 	var bufsize int
 
-	// entrySizeZlib is largest right now.
-	bufsize += max * int(entrySizeLegacy)
+	// Calculate the maximum size of the buffer that will
+	// accomodate max items. Currently entrySizeZlib is largest
+	// record.
+	bufsize += max * int(entrySizeZlib)
 	bufsize += crypto.Extension
-	bufsize += headerLengthSize
+	bufsize += int(packerHeaderSize)
 
 	if bufsize > int(size) {
 		bufsize = int(size)
@@ -315,7 +317,7 @@ func readRecords(rd io.ReaderAt, size int64, max int) ([]byte, int, error) {
 	switch header_type {
 	case packerHeaderLegacyType:
 		hlen := tail_sig
-		b = b[:len(b)-headerLengthSize]
+		b = b[:len(b)-4]
 		debug.Log("header length: %v", hlen)
 
 		var err error
@@ -324,8 +326,10 @@ func readRecords(rd io.ReaderAt, size int64, max int) ([]byte, int, error) {
 			err = InvalidFileError{Message: "header length is zero"}
 		case hlen < crypto.Extension:
 			err = InvalidFileError{Message: "header length is too small"}
+
 		case (hlen-crypto.Extension)%uint32(entrySizeLegacy) != 0:
 			err = InvalidFileError{Message: "header length is invalid"}
+
 		case int64(hlen) > size-int64(headerLengthSize):
 			err = InvalidFileError{Message: "header is larger than file"}
 		case int64(hlen) > maxHeaderSize:
@@ -337,12 +341,13 @@ func readRecords(rd io.ReaderAt, size int64, max int) ([]byte, int, error) {
 
 		// Legacy header all records are same size and total
 		// count is calculated by the total size of the index.
-		total := (int(hlen) - crypto.Extension) / int(entrySizeLegacy)
-		if total < max {
+		total_count := (int(hlen) - crypto.Extension) / int(entrySizeLegacy)
+		if total_count <= max {
 			// truncate to the beginning of the pack header
 			b = b[len(b)-int(hlen):]
+			return b, total_count, nil
 		}
-		return b, total, nil
+		return []byte{}, total_count, nil
 
 		// This is a Version 1 header - we know how large the
 		// buffer is supposed to be and how many records
@@ -386,7 +391,7 @@ func readHeader(rd io.ReaderAt, size int64) ([]byte, int, error) {
 	if err != nil {
 		return nil, 0, err
 	}
-	if c <= eagerEntries && b != nil {
+	if c <= eagerEntries && len(b) > 0 {
 		// eager read sufficed, return what we got
 		return b, c, nil
 	}
@@ -413,7 +418,7 @@ func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []restic.Blob, err
 		return nil, err
 	}
 	if len(buf) < k.NonceSize()+k.Overhead() {
-		return nil, errors.New("invalid header, too small")
+		return nil, errors.New(fmt.Sprintf("invalid header, too small: %v", len(buf)))
 	}
 
 	nonce, buf := buf[:k.NonceSize()], buf[k.NonceSize():]

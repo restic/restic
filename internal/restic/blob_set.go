@@ -1,6 +1,8 @@
 package restic
 
-import "sort"
+import (
+	"sort"
+)
 
 // BlobSet is a set of blobs.
 type BlobSet map[BlobHandle]struct{}
@@ -17,12 +19,21 @@ func NewBlobSet(handles ...BlobHandle) BlobSet {
 
 // Has returns true iff id is contained in the set.
 func (s BlobSet) Has(h BlobHandle) bool {
+	// ZlibBlobs and DataBlob are equivalent.
+	if h.Type == ZlibBlob {
+		h.Type = DataBlob
+	}
+
 	_, ok := s[h]
 	return ok
 }
 
 // Insert adds id to the set.
 func (s BlobSet) Insert(h BlobHandle) {
+	if h.Type == ZlibBlob {
+		h.Type = DataBlob
+	}
+
 	s[h] = struct{}{}
 }
 

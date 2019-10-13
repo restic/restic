@@ -737,10 +737,13 @@ func (r *Repository) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte
 
 	// We compress data blobs to ZlibBlobs
 	if t == restic.DataBlob {
-		// Blob id should be the hash of the plaintext not the
-		// compressed buffer.
-		id = restic.Hash(buf)
-		i = &id
+
+		if id.IsNull() {
+			// Blob id should be the hash of the plaintext
+			// not the compressed buffer.
+			id = restic.Hash(buf)
+			i = &id
+		}
 
 		buf = crypto.Compress(buf)
 		t = restic.ZlibBlob

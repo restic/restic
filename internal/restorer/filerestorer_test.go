@@ -98,8 +98,10 @@ func newTestRepo(content []TestFile) *TestRepo {
 					blobs: make(map[restic.ID]restic.Blob)}
 			}
 
-			// calculate blob id and add to the pack as necessary
-			blobID := restic.Hash(compress_data)
+			// calculate blob id and add to the pack as
+			// necessary. The blob id is always the hash
+			// of the plain text.
+			blobID := restic.Hash([]byte(blob.data))
 			if _, found := pack.blobs[blobID]; !found {
 				blobData := seal([]byte(compress_data))
 				pack.blobs[blobID] = restic.Blob{
@@ -107,9 +109,8 @@ func newTestRepo(content []TestFile) *TestRepo {
 					CompressionType: restic.CompressionTypeZlib,
 					ID:              blobID,
 					ActualLength:    uint(len(blob.data)),
-					PackedLength: uint(restic.CiphertextLength(
-						len(blobData))),
-					Offset: uint(len(pack.data)),
+					PackedLength:    uint(len(blobData)),
+					Offset:          uint(len(pack.data)),
 				}
 				pack.data = append(pack.data, blobData...)
 			}

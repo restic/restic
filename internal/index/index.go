@@ -273,7 +273,7 @@ func (idx *Index) DuplicateBlobs() (dups restic.BlobSet) {
 
 	for _, p := range idx.Packs {
 		for _, entry := range p.Entries {
-			h := restic.BlobHandle{ID: entry.ID, Type: entry.Type}
+			h := restic.NewBlobHandle(entry.ID, entry.Type)
 			if seen.Has(h) {
 				dups.Insert(h)
 			}
@@ -290,7 +290,7 @@ func (idx *Index) PacksForBlobs(blobs restic.BlobSet) (packs restic.IDSet) {
 
 	for id, p := range idx.Packs {
 		for _, entry := range p.Entries {
-			if blobs.Has(restic.BlobHandle{ID: entry.ID, Type: entry.Type}) {
+			if blobs.Has(restic.NewBlobHandle(entry.ID, entry.Type)) {
 				packs.Insert(id)
 			}
 		}
@@ -313,7 +313,12 @@ var ErrBlobNotFound = errors.New("blob not found in index")
 func (idx *Index) FindBlob(h restic.BlobHandle) (result []Location, err error) {
 	for id, p := range idx.Packs {
 		for _, entry := range p.Entries {
-			if entry.ID.Equal(h.ID) && entry.Type == h.Type {
+			entry_type := entry.Type
+			if entry_type == restic.ZlibBlob {
+				entry_type = restic.DataBlob
+			}
+
+			if entry.ID.Equal(h.ID) && entry_type == h.Type {
 				result = append(result, Location{
 					PackID: id,
 					Blob:   entry,

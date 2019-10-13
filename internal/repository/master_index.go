@@ -70,6 +70,10 @@ func (mi *MasterIndex) Has(id restic.ID, tpe restic.BlobType) bool {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 
+	if tpe == restic.ZlibBlob {
+		tpe = restic.DataBlob
+	}
+
 	for _, idx := range mi.idx {
 		if idx.Has(id, tpe) {
 			return true

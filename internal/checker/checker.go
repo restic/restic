@@ -754,11 +754,23 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID) error {
 			continue
 		}
 
-		plaintext, err := crypto.Uncompress(compressed)
-		if err != nil {
-			errs = append(errs, errors.Errorf(
-				"decompressing blob %v failed: %v", id, err))
-			continue
+		// Decompress if needed
+		var plaintext []byte
+
+		switch blob.CompressionType {
+		case restic.CompressionTypeStored:
+			plaintext = compressed
+
+		case restic.CompressionTypeZlib:
+			plaintext, err = crypto.Uncompress(compressed)
+			if err != nil {
+				return errors.Errorf(
+					"decompressing blob %v failed: %v", id, err)
+			}
+
+		default:
+			return errors.Errorf(
+				"Unknown CompressionType for blob %v failed: %v", id, err)
 		}
 
 		hash := restic.Hash(plaintext)

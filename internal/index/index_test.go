@@ -198,13 +198,23 @@ func TestIndexLoad(t *testing.T) {
 		}
 
 		for _, entryNew := range packNew.Entries {
+			entryNew_type := entryNew.Type
+			if entryNew_type == restic.ZlibBlob {
+				entryNew_type = restic.DataBlob
+			}
+
 			found := false
 			for _, entryLoad := range packLoad.Entries {
 				if !entryLoad.ID.Equal(entryNew.ID) {
 					continue
 				}
 
-				if entryLoad.Type != entryNew.Type {
+				blob_type := entryLoad.Type
+				if blob_type == restic.ZlibBlob {
+					blob_type = restic.DataBlob
+				}
+
+				if blob_type != entryNew_type {
 					continue
 				}
 
