@@ -145,6 +145,10 @@ func (idx *Index) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic.Pack
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
+	return idx._lookup(id, tpe)
+}
+
+func (idx *Index) _lookup(id restic.ID, tpe restic.BlobType) (blobs []restic.PackedBlob, found bool) {
 	h := restic.BlobHandle{ID: id, Type: tpe}
 
 	if packs, ok := idx.pack[h]; ok {
@@ -155,6 +159,11 @@ func (idx *Index) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic.Pack
 		}
 
 		return blobs, true
+	}
+
+	// Fallback to the new zlib blob if the caller wanted data blobs
+	if tpe == restic.DataBlob {
+		return idx._lookup(id, restic.ZlibBlob)
 	}
 
 	return nil, false

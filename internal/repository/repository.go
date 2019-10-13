@@ -195,6 +195,7 @@ func (r *Repository) loadBlob(ctx context.Context, id restic.ID, t restic.BlobTy
 				lastError = errors.Errorf("decompressing blob %v failed: %v", id, err)
 				continue
 			}
+
 		default:
 			lastError = errors.Errorf("Unknown CompressionType for blob %v failed: %v", id, err)
 			continue
@@ -318,6 +319,8 @@ func (r *Repository) SaveUnpacked(ctx context.Context, t restic.FileType, p []by
 
 	ciphertext = r.key.Seal(ciphertext, nonce, p, nil)
 
+	// Why is ID the hash of the ciphertext here? in SaveBlob its
+	// the hash of the plaintext.
 	id = restic.Hash(ciphertext)
 	h := restic.Handle{Type: t, Name: id.String()}
 
@@ -337,6 +340,7 @@ func (r *Repository) Flush(ctx context.Context) error {
 		t  restic.BlobType
 		pm *packerManager
 	}{
+		{restic.ZlibBlob, r.dataPM},
 		{restic.DataBlob, r.dataPM},
 		{restic.TreeBlob, r.treePM},
 	}
@@ -729,15 +733,21 @@ func (r *Repository) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte
 	}
 
 	compression_type := restic.CompressionTypeStored
+	actual_length := uint(len(buf))
 
 	// We compress data blobs to ZlibBlobs
 	if t == restic.DataBlob {
+		// Blob id should be the hash of the plaintext not the
+		// compressed buffer.
+		id = restic.Hash(buf)
+		i = &id
+
 		buf = crypto.Compress(buf)
 		t = restic.ZlibBlob
 		compression_type = restic.CompressionTypeZlib
 	}
 	return r.SaveAndEncrypt(
-		ctx, t, buf, uint(len(buf)), i, compression_type)
+		ctx, t, buf, actual_length, i, compression_type)
 }
 
 // LoadTree loads a tree from the repository.

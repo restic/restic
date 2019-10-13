@@ -83,7 +83,7 @@ func (p *Packer) Add(t restic.BlobType, id restic.ID,
 	}
 
 	debug.Log("%v: Writing blob %v @ offset %v and length %v",
-		p, id, p.bytes, data[:10])
+		p, id, p.bytes, len(data))
 
 	n, err := p.wr.Write(data)
 	if n != len(data) {
@@ -100,7 +100,9 @@ func (p *Packer) Add(t restic.BlobType, id restic.ID,
 var entrySizeLegacy = uint(binary.Size(headerEntryLegacy{}) + 1)
 
 // headerEntryLegacy is used with encoding/binary to read and write
-// uncompressed header entries
+// uncompressed header entries. The legacy format simply uses a single
+// Length field to represent the Packed length on disk. The actual
+// length is implied by subtracting the encryption extension.
 type headerEntryLegacy struct {
 	Length uint32
 	ID     restic.ID
@@ -109,7 +111,12 @@ type headerEntryLegacy struct {
 var entrySizeZlib = uint(binary.Size(headerEntryZlib{}) + 1)
 
 // headerEntryZlib is used with encoding/binary to read and write zlib
-// header entries
+// header entries. The new format makes a distinction between the
+// actual size of the blob and the packed size. When a blob is written
+// to disk it gets compressed and then encrypted. Thus the
+// PackedLength represents the bytes that need to be read from
+// disk. They should hopefully be expanded to ActualLength once they
+// are decrypted and decompressed.
 type headerEntryZlib struct {
 	ActualLength uint32
 	PackedLength uint32
@@ -196,7 +203,8 @@ func (p *Packer) writeHeader(wr io.Writer) (bytesWritten uint, err error) {
 		switch b.Type {
 		case restic.DataBlob, restic.TreeBlob:
 			entry := headerEntryLegacy{
-				Length: uint32(b.ActualLength),
+				// Represents the packed length
+				Length: uint32(b.PackedLength),
 				ID:     b.ID,
 			}
 
@@ -442,8 +450,13 @@ func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []restic.Blob, err
 			}
 
 			entry := restic.Blob{
-				Type:            entry_type,
-				ActualLength:    uint(record.Length),
+				Type: entry_type,
+
+				// We actually write a bit more than
+				// the actual length due to crypto
+				// overheads.
+				ActualLength: uint(restic.PlaintextLength(int(
+					record.Length))),
 				PackedLength:    uint(record.Length),
 				CompressionType: restic.CompressionTypeStored,
 				ID:              record.ID,
@@ -464,6 +477,7 @@ func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []restic.Blob, err
 			}
 
 			entry := restic.Blob{
+				Type:            entry_type,
 				ActualLength:    uint(record.ActualLength),
 				PackedLength:    uint(record.PackedLength),
 				CompressionType: restic.CompressionTypeZlib,

@@ -182,7 +182,7 @@ func TestLoadBlob(t *testing.T) {
 	base := restic.CiphertextLength(length)
 	for _, testlength := range []int{base, base + 7, base + 15, base + 1000} {
 		buf = make([]byte, 0, testlength)
-		n, err := repo.LoadBlob(context.TODO(), restic.DataBlob, id, buf)
+		n, err := repo.LoadBlob(context.TODO(), restic.ZlibBlob, id, buf)
 		if err != nil {
 			t.Errorf("LoadBlob() returned an error for buffer size %v: %v", testlength, err)
 			continue
