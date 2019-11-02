@@ -197,7 +197,7 @@ To only keep the last snapshot of all snapshots with both the tag ``foo`` and
 
 .. code-block:: console
 
-   $ restic forget --tag foo,tag bar --keep-last 1
+   $ restic forget --tag foo,bar --keep-last 1
 
 All the ``--keep-*`` options above only count
 hours/days/weeks/months/years which have a snapshot, so those without a
