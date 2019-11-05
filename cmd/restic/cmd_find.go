@@ -27,7 +27,13 @@ restic find --json "*.yml" "*.json"
 restic find --json --blob 420f620f b46ebe8a ddd38656
 restic find --show-pack-id --blob 420f620f
 restic find --tree 577c2bc9 f81f2e22 a62827a9
-restic find --pack 025c1d06`,
+restic find --pack 025c1d06
+
+EXIT STATUS
+===========
+
+Exit status is 0 if the command was successful, and non-zero if there was any error.
+`,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runFind(findOptions, globalOptions, args)

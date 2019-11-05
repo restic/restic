@@ -44,6 +44,11 @@ You need to specify a sample format for exactly the following timestamp:
 
 For details please see the documentation for time.Format() at:
   https://godoc.org/time#Time.Format
+
+EXIT STATUS
+===========
+
+Exit status is 0 if the command was successful, and non-zero if there was any error.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {

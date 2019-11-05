@@ -16,6 +16,11 @@ var cmdRebuildIndex = &cobra.Command{
 	Long: `
 The "rebuild-index" command creates a new index based on the pack files in the
 repository.
+
+EXIT STATUS
+===========
+
+Exit status is 0 if the command was successful, and non-zero if there was any error.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {

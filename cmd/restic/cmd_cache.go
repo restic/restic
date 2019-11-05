@@ -19,6 +19,11 @@ var cmdCache = &cobra.Command{
 	Short: "Operate on local cache directories",
 	Long: `
 The "cache" command allows listing and cleaning local cache directories.
+
+EXIT STATUS
+===========
+
+Exit status is 0 if the command was successful, and non-zero if there was any error.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {

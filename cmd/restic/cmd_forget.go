@@ -16,7 +16,13 @@ var cmdForget = &cobra.Command{
 The "forget" command removes snapshots according to a policy. Please note that
 this command really only deletes the snapshot object in the repository, which
 is a reference to data stored there. In order to remove this (now unreferenced)
-data after 'forget' was run successfully, see the 'prune' command. `,
+data after 'forget' was run successfully, see the 'prune' command.
+
+EXIT STATUS
+===========
+
+Exit status is 0 if the command was successful, and non-zero if there was any error.
+`,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runForget(forgetOptions, globalOptions, args)

@@ -38,6 +38,11 @@ The modes are:
 * blobs-per-file: A combination of files-by-contents and raw-data.
 
 Refer to the online manual for more details about each mode.
+
+EXIT STATUS
+===========
+
+Exit status is 0 if the command was successful, and non-zero if there was any error.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {

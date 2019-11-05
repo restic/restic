@@ -35,6 +35,14 @@ var cmdBackup = &cobra.Command{
 	Long: `
 The "backup" command creates a new snapshot and saves the files and directories
 given as the arguments.
+
+EXIT STATUS
+===========
+
+Exit status is 0 if the command was successful, and non-zero if there was any error.
+
+Note that some issues such as unreadable or deleted files during backup
+currently doesn't result in a non-zero error exit status.
 `,
 	PreRun: func(cmd *cobra.Command, args []string) {
 		if backupOptions.Host == "" {
