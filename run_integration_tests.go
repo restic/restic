@@ -190,7 +190,7 @@ func (env *TravisEnvironment) Prepare() error {
 		"github.com/NebulousLabs/glyphcheck",
 		"github.com/restic/rest-server/cmd/rest-server",
 		"github.com/restic/calens",
-		"github.com/ncw/rclone",
+		"github.com/rclone/rclone",
 	}
 
 	for _, pkg := range pkgs {
