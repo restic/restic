@@ -129,13 +129,9 @@ func getGithubData(ctx context.Context, url string) ([]byte, error) {
 		return nil, fmt.Errorf("unexpected status %v (%v) returned", res.StatusCode, res.Status)
 	}
 
-	buf, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		_ = res.Body.Close()
-		return nil, err
-	}
+	defer res.Body.Close()
 
-	err = res.Body.Close()
+	buf, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
