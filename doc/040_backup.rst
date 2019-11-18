@@ -142,7 +142,7 @@ the exclude options are:
 -  ``--iexclude`` Same as ``--exclude`` but ignores the case of paths
 -  ``--exclude-caches`` Specified once to exclude folders containing a special file
 -  ``--exclude-file`` Specified one or more times to exclude items listed in a given file
--  ``--exclude-if-present foo`` Specified one or more times to exclude a folder's content if it contains a file called ``foo``` (optionally having a given header, no wildcards for the file name supported)
+-  ``--exclude-if-present foo`` Specified one or more times to exclude a folder's content if it contains a file called ``foo`` (optionally having a given header, no wildcards for the file name supported)
 
 Please see ``restic help backup`` for more specific information about each exclude option.
 
