@@ -144,7 +144,9 @@ the exclude options are:
 -  ``--exclude-file`` Specified one or more times to exclude items listed in a given file
 -  ``--exclude-if-present foo`` Specified one or more times to exclude a folder's content if it contains a file called ``foo``` (optionally having a given header, no wildcards for the file name supported)
 
- Let's say we have a file called ``excludes.txt`` with the following content:
+Please see ``restic help backup`` for more specific information about each exclude option.
+
+Let's say we have a file called ``excludes.txt`` with the following content:
 
 ::
 
@@ -159,34 +161,31 @@ It can be used like this:
 
     $ restic -r /srv/restic-repo backup ~/work --exclude="*.c" --exclude-file=excludes.txt
 
-This instruct restic to exclude files matching the following criteria:
+This instructs restic to exclude files matching the following criteria:
 
+ * All files matching ``*.c`` (parameter ``--exclude``)
  * All files matching ``*.go`` (second line in ``excludes.txt``)
  * All files and sub-directories named ``bar`` which reside somewhere below a directory called ``foo`` (fourth line in ``excludes.txt``)
- * All files matching ``*.c`` (parameter ``--exclude``)
-
-Please see ``restic help backup`` for more specific information about each exclude option.
 
 Patterns use `filepath.Glob <https://golang.org/pkg/path/filepath/#Glob>`__ internally,
 see `filepath.Match <https://golang.org/pkg/path/filepath/#Match>`__ for
 syntax. Patterns are tested against the full path of a file/dir to be saved,
-even if restic is passed a relative path to save. Environment-variables in
-exclude-files are expanded with `os.ExpandEnv <https://golang.org/pkg/os/#ExpandEnv>`__,
-so `/home/$USER/foo` will be expanded to `/home/bob/foo` for the user `bob`. To
-get a literal dollar sign, write `$$` to the file.
+even if restic is passed a relative path to save.
+
+Environment-variables in exclude files are expanded with `os.ExpandEnv <https://golang.org/pkg/os/#ExpandEnv>`__,
+so ``/home/$USER/foo`` will be expanded to ``/home/bob/foo`` for the user ``bob``.
+To get a literal dollar sign, write ``$$`` to the file.
 
 Patterns need to match on complete path components. For example, the pattern ``foo``:
 
  * matches ``/dir1/foo/dir2/file`` and ``/dir/foo``
  * does not match ``/dir/foobar`` or ``barfoo``
 
-A trailing ``/`` is ignored, a leading ``/`` anchors the
-pattern at the root directory. This means, ``/bin`` matches ``/bin/bash`` but
-does not match ``/usr/bin/restic``.
+A trailing ``/`` is ignored, a leading ``/`` anchors the pattern at the root directory.
+This means, ``/bin`` matches ``/bin/bash`` but does not match ``/usr/bin/restic``.
 
-Regular wildcards cannot be used to match over the
-directory separator ``/``. For example: ``b*ash`` matches ``/bin/bash`` but does not match
-``/bin/ash``.
+Regular wildcards cannot be used to match over the directory separator ``/``.
+For example: ``b*ash`` matches ``/bin/bash`` but does not match ``/bin/ash``.
 
 For this, the special wildcard ``**`` can be used to match arbitrary
 sub-directories: The pattern ``foo/**/bar`` matches:
@@ -194,6 +193,23 @@ sub-directories: The pattern ``foo/**/bar`` matches:
  * ``/dir1/foo/dir2/bar/file``
  * ``/foo/bar/file``
  * ``/tmp/foo/bar``
+
+Spaces in patterns listed in an exclude file can be specified verbatim. That is,
+in order to exclude a file named ``foo bar star.txt``, put that just as it reads
+on one line in the exclude file. Please note that beginning and trailing spaces
+are trimmed - in order to match these, use e.g. a ``*`` at the beginning or end
+of the filename.
+
+Spaces in patterns listed in the other exclude options (e.g. ``--exclude`` on the
+command line) are specified in different ways depending on the operating system
+and/or shell. Restic itself does not need any escaping, but your shell may need
+some escaping in order to pass the name/pattern as a single argument to restic.
+
+On most Unixy shells, you can either quote or use backslashes. For example:
+
+ * ``--exclude='foo bar star/foo.txt'``
+ * ``--exclude="foo bar star/foo.txt"``
+ * ``--exclude=foo\ bar\ star/foo.txt``
 
 By specifying the option ``--one-file-system`` you can instruct restic
 to only backup files from the file systems the initially specified files
