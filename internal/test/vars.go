@@ -32,9 +32,9 @@ func getStringVar(name, defaultValue string) string {
 func getBoolVar(name string, defaultValue bool) bool {
 	if e := os.Getenv(name); e != "" {
 		switch e {
-		case "1":
+		case "1", "true":
 			return true
-		case "0":
+		case "0", "false":
 			return false
 		default:
 			fmt.Fprintf(os.Stderr, "invalid value for variable %q, using default\n", name)
