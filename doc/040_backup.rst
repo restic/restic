@@ -132,8 +132,8 @@ Now is a good time to run ``restic check`` to verify that all data
 is properly stored in the repository. You should run this command regularly
 to make sure the internal structure of the repository is free of errors.
 
-Including and Excluding Files
-*****************************
+Excluding Files
+***************
 
 You can exclude folders and files by specifying exclude patterns, currently
 the exclude options are:
@@ -223,10 +223,13 @@ backup ``/sys`` or ``/dev`` on a Linux system:
 .. note:: ``--one-file-system`` is currently unsupported on Windows, and will
     cause the backup to immediately fail with an error.
 
-By using the ``--files-from`` option you can read the files you want to
-backup from one or more files. This is especially useful if a lot of files have
-to be backed up that are not in the same folder or are maybe pre-filtered
-by other software.
+Including Files
+***************
+
+By using the ``--files-from`` option you can read the files you want to back
+up from one or more files. This is especially useful if a lot of files have
+to be backed up that are not in the same folder or are maybe pre-filtered by
+other software.
 
 For example maybe you want to backup files which have a name that matches a
 certain pattern:
@@ -248,7 +251,11 @@ args:
 
     $ restic -r /srv/restic-repo backup --files-from /tmp/files_to_backup /tmp/some_additional_file
 
-Paths in the listing file can be absolute or relative.
+Paths in the listing file can be absolute or relative. Please note that
+patterns listed in a ``--files-from`` file are treated the same way as
+exclude patterns are, which means that beginning and trailing spaces are
+trimmed and special characters must be escaped. See the documentation
+above for more information.
 
 Comparing Snapshots
 *******************
