@@ -28,8 +28,9 @@ var ForbiddenImports = map[string]bool{
 
 // Use a specific version of gofmt (the latest stable, usually) to guarantee
 // deterministic formatting. This is used with the GoVersion.AtLeast()
-// function (so that we don't forget to update it).
-var GofmtVersion = ParseGoVersion("go1.11")
+// function (so that we don't forget to update it). This is also used to run
+// `go mod vendor` and `go mod tidy`.
+var GofmtVersion = ParseGoVersion("go1.13")
 
 // GoVersion is the version of Go used to compile the project.
 type GoVersion struct {
