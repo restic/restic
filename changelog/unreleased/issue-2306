@@ -1,0 +1,7 @@
+Enhancement: Allow multiple retries for interactive password input
+
+Restic used to quit if the repository password was typed incorrectly once.
+Restic will now ask the user again for the repository password if typed incorrectly.
+The user will now get three tries to input the correct password before restic quits. 
+
+https://github.com/restic/restic/issues/2306
