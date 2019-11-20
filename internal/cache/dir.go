@@ -12,17 +12,21 @@ import (
 
 // xdgCacheDir returns the cache directory according to XDG basedir spec, see
 // http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
+// unless RESTIC_CACHE_DIR is defined
 func xdgCacheDir() (string, error) {
+	cachedir := os.Getenv("RESTIC_CACHE_DIR")
 	xdgcache := os.Getenv("XDG_CACHE_HOME")
 	home := os.Getenv("HOME")
 
-	if xdgcache != "" {
+	if cachedir != "" {
+		return cachedir, nil
+	} else if xdgcache != "" {
 		return filepath.Join(xdgcache, "restic"), nil
 	} else if home != "" {
 		return filepath.Join(home, ".cache", "restic"), nil
 	}
 
-	return "", errors.New("unable to locate cache directory (XDG_CACHE_HOME and HOME unset)")
+	return "", errors.New("unable to locate cache directory (RESTIC_CACHE_DIR, XDG_CACHE_HOME and HOME unset)")
 }
 
 // windowsCacheDir returns the cache directory for Windows.
