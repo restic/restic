@@ -5,10 +5,10 @@ require (
 	cloud.google.com/go v0.37.4 // indirect
 	contrib.go.opencensus.io/exporter/ocagent v0.4.12 // indirect
 	github.com/Azure/azure-sdk-for-go v27.3.0+incompatible
-	github.com/Azure/go-autorest v12.0.0+incompatible // indirect
+	github.com/Azure/go-autorest v13.3.0+incompatible // indirect
+	github.com/Azure/go-autorest/autorest v0.9.2 // indirect
 	github.com/cenkalti/backoff v2.1.1+incompatible
 	github.com/cpuguy83/go-md2man v1.0.10 // indirect
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/dnaeon/go-vcr v1.0.1 // indirect
 	github.com/elithrar/simple-scrypt v1.3.0
 	github.com/go-ini/ini v1.42.0 // indirect
@@ -49,3 +49,5 @@ require (
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 	gopkg.in/yaml.v2 v2.2.2 // indirect
 )
+
+go 1.13
