@@ -1,5 +1,7 @@
 module github.com/restic/restic
 
+go 1.11
+
 require (
 	bazil.org/fuse v0.0.0-20180421153158-65cc252bf669
 	cloud.google.com/go v0.37.4 // indirect
