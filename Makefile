@@ -1,13 +1,34 @@
-.PHONY: all clean test restic
+PROJECT_NAME := restic
+PROJECT_MAIN := ./cmd/restic
+BINARY_NAME := restic
+DOCKER_REPO := restic/restic
+DOCKER_FILE := docker/Dockerfile
 
-all: restic
+.PHONY: all clean get test build run snapshot
 
-restic:
-	go run -mod=vendor build.go || go run build.go
+all: get test build
 
+# Common actions
 clean:
-	rm -f restic
+	rm -f $(BINARY_NAME) # Output binary file
+	rm -rf dist/ # Goreleaser dist folder
 
-test:
-	go test ./cmd/... ./internal/...
+get:
+	go get -t
 
+test: get
+	go test ./...
+
+build: get
+	go build -o $(BINARY_NAME) $(PROJECT_MAIN)
+
+run: build
+	./$(BINARY_NAME)
+
+# Release actions
+snapshot: get
+	goreleaser --snapshot
+
+# Docker actions
+docker-build:
+	docker build --rm -t $(DOCKER_REPO):latest -f $(DOCKER_FILE) .
