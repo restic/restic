@@ -1,0 +1,66 @@
+# For more details check the documentation at https://goreleaser.com
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - main: ./cmd/restic/main.go
+    flags:
+      - -tags=selfupdate
+      - -ldflags
+      - -s
+      - -w
+    env:
+      - CGO_ENABLED=0
+    goos: [darwin, freebsd, linux, openbsd, windows]
+    goarch: [386, amd64, arm, arm64]
+    ignore:
+      - goos: darwin
+        goarch: arm
+      - goos: darwin
+        goarch: arm64
+      - goos: freebsd
+        goarch: arm64
+      - goos: openbsd
+        goarch: arm
+      - goos: openbsd
+        goarch: arm64
+      - goos: windows
+        goarch: arm
+      - goos: windows
+        goarch: arm64
+
+archives:
+  - format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - LICENSE
+      - README.rst
+
+checksum:
+  name_template: SHA256SUMS
+
+signs:
+  - artifacts: checksum
+    signature: ${artifact}.asc
+    cmd: gpg
+    args: ["--armor", "--detach-sign", "${artifact}"]
+
+snapshot:
+  name_template: "{{.ShortCommit}}"
+
+# Use goreleaser --release-notes <(calens)
+changelog:
+  skip: true
+
+dockers:
+  - goos: linux
+    goarch: amd64
+    binaries:
+      - restic
+    image_templates:
+      - "restic/restic:latest"
+      - "restic/restic:{{ .Tag }}"
+    dockerfile: docker/Dockerfile
