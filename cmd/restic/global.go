@@ -486,7 +486,7 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 		}
 
 		if cfg.Region == "" {
-			cfg.Region = os.Getenv("AWS_REGION")
+			cfg.Region = os.Getenv("AWS_DEFAULT_REGION")
 		}
 
 		if err := opts.Apply(loc.Scheme, &cfg); err != nil {

@@ -198,10 +198,10 @@ default location:
     Losing your password means that your data is irrecoverably lost.
 
 If needed, you can manually specify the region to use by either setting the
-environment variable ``AWS_REGION`` or calling restic with an option parameter
-like ``-o s3.region="us-east-1"``. If the region is not specified, the default
-region is used. Afterwards, the S3 server (``s3.amazonaws.com``) will redirect
-restic to the correct endpoint.
+environment variable ``AWS_DEFAULT_REGION`` or calling restic with an option
+parameter like ``-o s3.region="us-east-1"``. If the region is not specified,
+the default region is used. Afterwards, the S3 server (at least for AWS,
+``s3.amazonaws.com``) will redirect restic to the correct endpoint.
 
 Until version 0.8.0, restic used a default prefix of ``restic``, so the files
 in the bucket were placed in a directory named ``restic``. If you want to
