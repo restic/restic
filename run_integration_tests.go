@@ -477,9 +477,9 @@ func updateEnv(env []string, override map[string]string) []string {
 
 func (env *TravisEnvironment) findImports() (map[string][]string, error) {
 	res := make(map[string][]string)
+	msg("checking for forbidden imports")
 
 	cmd := exec.Command("go", "list", "-f", `{{.ImportPath}} {{join .Imports " "}}`, "./internal/...", "./cmd/...")
-	cmd.Env = updateEnv(os.Environ(), env.env)
 	cmd.Stderr = os.Stderr
 
 	output, err := cmd.Output()
