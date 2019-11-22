@@ -201,6 +201,11 @@ func (env *TravisEnvironment) Prepare() error {
 		}
 	}
 
+	// reset changes made to go.mod/go.sum by "go get"
+	if err := run("git", "checkout", "go.mod", "go.sum"); err != nil {
+		return err
+	}
+
 	if err := env.getMinio(); err != nil {
 		return err
 	}
@@ -210,6 +215,12 @@ func (env *TravisEnvironment) Prepare() error {
 		if err := run("go", "get", "github.com/mitchellh/gox"); err != nil {
 			return err
 		}
+
+		// reset changes made to go.mod/go.sum by "go get"
+		if err := run("git", "checkout", "go.mod", "go.sum"); err != nil {
+			return err
+		}
+
 		if runtime.GOOS == "linux" {
 			env.goxOSArch = []string{
 				"linux/386", "linux/amd64",
