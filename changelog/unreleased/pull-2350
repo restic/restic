@@ -1,0 +1,8 @@
+Enhancement: Add option to configure S3 region
+
+We've added a new option for setting the region when accessing an S3-compatible
+service. For some providers, it is required to set this to a valid value. You
+can do that either by setting the environment variable `AWS_DEFAULT_REGION` or
+using the option `s3.region`, e.g. like this: `-o s3.region="us-east-1"`.
+
+https://github.com/restic/restic/pull/2350

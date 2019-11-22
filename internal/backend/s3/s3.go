@@ -66,7 +66,7 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 			},
 		},
 	})
-	client, err := minio.NewWithCredentials(cfg.Endpoint, creds, !cfg.UseHTTP, "")
+	client, err := minio.NewWithCredentials(cfg.Endpoint, creds, !cfg.UseHTTP, cfg.Region)
 	if err != nil {
 		return nil, errors.Wrap(err, "minio.NewWithCredentials")
 	}
