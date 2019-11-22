@@ -26,8 +26,6 @@ github.com/cpuguy83/go-md2man/md2man
 github.com/dgrijalva/jwt-go
 # github.com/elithrar/simple-scrypt v1.3.0
 github.com/elithrar/simple-scrypt
-# github.com/go-ini/ini v1.42.0
-github.com/go-ini/ini
 # github.com/golang/protobuf v1.3.1
 github.com/golang/protobuf/proto
 github.com/golang/protobuf/ptypes
@@ -59,13 +57,15 @@ github.com/kurin/blazer/x/window
 github.com/marstr/guid
 # github.com/mattn/go-isatty v0.0.7
 github.com/mattn/go-isatty
-# github.com/minio/minio-go v6.0.14+incompatible
-github.com/minio/minio-go
-github.com/minio/minio-go/pkg/credentials
-github.com/minio/minio-go/pkg/encrypt
-github.com/minio/minio-go/pkg/s3signer
-github.com/minio/minio-go/pkg/s3utils
-github.com/minio/minio-go/pkg/set
+# github.com/minio/minio-go/v6 v6.0.43
+github.com/minio/minio-go/v6
+github.com/minio/minio-go/v6/pkg/credentials
+github.com/minio/minio-go/v6/pkg/encrypt
+github.com/minio/minio-go/v6/pkg/s3signer
+github.com/minio/minio-go/v6/pkg/s3utils
+github.com/minio/minio-go/v6/pkg/set
+# github.com/minio/sha256-simd v0.1.1
+github.com/minio/sha256-simd
 # github.com/mitchellh/go-homedir v1.1.0
 github.com/mitchellh/go-homedir
 # github.com/ncw/swift v1.0.47
@@ -106,7 +106,7 @@ go.opencensus.io/trace
 go.opencensus.io/trace/internal
 go.opencensus.io/trace/propagation
 go.opencensus.io/trace/tracestate
-# golang.org/x/crypto v0.0.0-20190422183909-d864b10871cd
+# golang.org/x/crypto v0.0.0-20190513172903-22d7a77e9e5f
 golang.org/x/crypto/argon2
 golang.org/x/crypto/blake2b
 golang.org/x/crypto/cast5
@@ -126,7 +126,7 @@ golang.org/x/crypto/poly1305
 golang.org/x/crypto/scrypt
 golang.org/x/crypto/ssh
 golang.org/x/crypto/ssh/terminal
-# golang.org/x/net v0.0.0-20190424024845-afe8014c977f
+# golang.org/x/net v0.0.0-20190522155817-f3200d17e092
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/http/httpguts
@@ -215,6 +215,8 @@ google.golang.org/grpc/resolver/passthrough
 google.golang.org/grpc/stats
 google.golang.org/grpc/status
 google.golang.org/grpc/tap
+# gopkg.in/ini.v1 v1.42.0
+gopkg.in/ini.v1
 # gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 gopkg.in/tomb.v2
 # gopkg.in/yaml.v2 v2.2.2
