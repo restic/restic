@@ -432,6 +432,10 @@ func (env *AppveyorEnvironment) Teardown() error {
 // findGoFiles returns a list of go source code file names below dir.
 func findGoFiles(dir string) (list []string, err error) {
 	err = filepath.Walk(dir, func(name string, fi os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
 		relpath, err := filepath.Rel(dir, name)
 		if err != nil {
 			return err
