@@ -47,8 +47,8 @@ This section should contain a brief description what you're trying to do, which
 would be possible after implementing the new feature.
 -->
 
-Did restic help you or made you happy in any way?
--------------------------------------------------
+How did restic make your day better today?
+------------------------------------------
 
 <!--
 Answering this question is not required, but if you have anything positive to share, please do so here!
