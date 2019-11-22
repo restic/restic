@@ -197,10 +197,11 @@ default location:
     Please note that knowledge of your password is required to access the repository.
     Losing your password means that your data is irrecoverably lost.
 
-It is not possible at the moment to have restic create a new bucket in a
-different location, so you need to create it using a different program.
-Afterwards, the S3 server (``s3.amazonaws.com``) will redirect restic to
-the correct endpoint.
+If needed, you can manually specify the region to use by either setting the
+environment variable ``AWS_REGION`` or calling restic with an option parameter
+like ``-o s3.region="us-east-1"``. If the region is not specified, the default
+region is used. Afterwards, the S3 server (``s3.amazonaws.com``) will redirect
+restic to the correct endpoint.
 
 Until version 0.8.0, restic used a default prefix of ``restic``, so the files
 in the bucket were placed in a directory named ``restic``. If you want to
