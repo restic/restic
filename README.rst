@@ -1,4 +1,4 @@
-|Documentation| |Build Status| |Build status| |Report Card| |Say Thanks| |TestCoverage| |Reviewed by Hound|
+|Documentation| |Build Status| |Build status| |Report Card| |Say Thanks| |Reviewed by Hound|
 
 Introduction
 ------------
