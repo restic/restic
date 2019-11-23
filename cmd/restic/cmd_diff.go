@@ -66,7 +66,7 @@ type Comparer struct {
 type DiffStat struct {
 	Files, Dirs, Others  int
 	DataBlobs, TreeBlobs int
-	Bytes                int
+	Bytes                uint64
 }
 
 // Add adds stats information for node to s.
@@ -141,7 +141,7 @@ func updateBlobs(repo restic.Repository, blobs restic.BlobSet, stats *DiffStat) 
 			continue
 		}
 
-		stats.Bytes += int(size)
+		stats.Bytes += uint64(size)
 	}
 }
 
