@@ -12,6 +12,7 @@ Summary
  * Fix #2249: Read fresh metadata for unmodified files
  * Fix #2301: Add upper bound for t in --read-data-subset=n/t
  * Fix #2321: Check errors when loading index files
+ * Enh #2179: Use ctime when checking for file changes
  * Enh #2306: Allow multiple retries for interactive password input
  * Enh #2330: Make `--group-by` accept both singular and plural
  * Enh #2350: Add option to configure S3 region
@@ -60,6 +61,21 @@ Details
    https://github.com/restic/restic/pull/2321
    https://forum.restic.net/t/check-rebuild-index-prune/1848/13
 
+ * Enhancement #2179: Use ctime when checking for file changes
+
+   Previously, restic only checked a file's mtime (along with other non-timestamp metadata) to
+   decide if a file has changed. This could cause restic to not notice that a file has changed (and
+   therefore continue to store the old version, as opposed to the modified version) if something
+   edits the file and then resets the timestamp. Restic now also checks the ctime of files, so any
+   modifications to a file should be noticed, and the modified file will be backed up. The ctime
+   check will be disabled if the --ignore-inode flag was given.
+
+   If this change causes problems for you, please open an issue, and we can look in to adding a
+   seperate flag to disable just the ctime check.
+
+   https://github.com/restic/restic/issues/2179
+   https://github.com/restic/restic/pull/2212
+
  * Enhancement #2306: Allow multiple retries for interactive password input
 
    Restic used to quit if the repository password was typed incorrectly once. Restic will now ask
@@ -101,7 +117,6 @@ Summary
  * Enh #1895: Add case insensitive include & exclude options
  * Enh #1937: Support streaming JSON output for backup
  * Enh #2155: Add Openstack application credential auth for Swift
- * Enh #2179: Use ctime when checking for file changes
  * Enh #2184: Add --json support to forget command
  * Enh #2037: Add group-by option to snapshots command
  * Enh #2124: Ability to dump folders to tar via stdout
@@ -166,21 +181,6 @@ Details
    application credential authentication method for the Swift backend.
 
    https://github.com/restic/restic/issues/2155
-
- * Enhancement #2179: Use ctime when checking for file changes
-
-   Previously, restic only checked a file's mtime (along with other non-timestamp metadata) to
-   decide if a file has changed. This could cause restic to not notice that a file has changed (and
-   therefore continue to store the old version, as opposed to the modified version) if something
-   edits the file and then resets the timestamp. Restic now also checks the ctime of files, so any
-   modifications to a file should be noticed, and the modified file will be backed up. The ctime
-   check will be disabled if the --ignore-inode flag was given.
-
-   If this change causes problems for you, please open an issue, and we can look in to adding a
-   seperate flag to disable just the ctime check.
-
-   https://github.com/restic/restic/issues/2179
-   https://github.com/restic/restic/pull/2212
 
  * Enhancement #2184: Add --json support to forget command
 
