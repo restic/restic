@@ -235,7 +235,7 @@ credentials of your Minio Server.
     $ export AWS_ACCESS_KEY_ID=<YOUR-MINIO-ACCESS-KEY-ID>
     $ export AWS_SECRET_ACCESS_KEY= <YOUR-MINIO-SECRET-ACCESS-KEY>
 
-Now you can easily initialize restic to use Minio server as backend with
+Now you can easily initialize restic to use Minio server as a backend with
 this command.
 
 .. code-block:: console
@@ -244,6 +244,35 @@ this command.
     enter password for new backend:
     enter password again:
     created restic backend 6ad29560f5 at s3:http://localhost:9000/restic1
+    Please note that knowledge of your password is required to access
+    the repository. Losing your password means that your data is irrecoverably lost.
+
+Wasabi
+************
+
+`Wasabi <https://wasabi.com>`__ is a low cost AWS S3 conformant object storage provider.
+Due to it's S3 conformance, Wasabi can be used as a storage provider for a restic repository.
+
+-  Create a Wasabi bucket using the `Wasabi Console <https://console.wasabisys.com>`__.
+-  Determine the correct Wasabi service URL for your bucket `here <https://wasabi-support.zendesk.com/hc/en-us/articles/360015106031-What-are-the-service-URLs-for-Wasabi-s-different-regions->__`.
+
+You must first setup the following environment variables with the
+credentials of your Wasabi account.
+
+.. code-block:: console
+
+    $ export AWS_ACCESS_KEY_ID=<YOUR-WASABI-ACCESS-KEY-ID>
+    $ export AWS_SECRET_ACCESS_KEY=<YOUR-WASABI-SECRET-ACCESS-KEY>
+
+Now you can easily initialize restic to use Wasabi as a backend with
+this command.
+
+.. code-block:: console
+
+    $ ./restic -r s3:https://<WASABI-SERVICE-URL>/<WASABI-BUCKET-NAME> init
+    enter password for new backend:
+    enter password again:
+    created restic backend xxxxxxxxxx at s3:https://<WASABI-SERVICE-URL>/<WASABI-BUCKET-NAME>
     Please note that knowledge of your password is required to access
     the repository. Losing your password means that your data is irrecoverably lost.
 
