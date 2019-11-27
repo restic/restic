@@ -6,6 +6,7 @@ require (
 	github.com/Azure/azure-sdk-for-go v27.3.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.9.2 // indirect
 	github.com/cenkalti/backoff v2.1.1+incompatible
+	github.com/cespare/xxhash v1.1.0
 	github.com/cpuguy83/go-md2man v1.0.10 // indirect
 	github.com/dnaeon/go-vcr v1.0.1 // indirect
 	github.com/elithrar/simple-scrypt v1.3.0
