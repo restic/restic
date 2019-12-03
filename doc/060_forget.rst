@@ -197,7 +197,7 @@ To only keep the last snapshot of all snapshots with both the tag ``foo`` and
 
 .. code-block:: console
 
-   $ restic forget --tag foo,tag bar --keep-last 1
+   $ restic forget --tag foo,bar --keep-last 1
 
 All the ``--keep-*`` options above only count
 hours/days/weeks/months/years which have a snapshot, so those without a
@@ -213,12 +213,66 @@ All snapshots are evaluated against all matching ``--keep-*`` counts. A
 single snapshot on 2017-09-30 (Sat) will count as a daily, weekly and monthly.
 
 Let's explain this with an example: Suppose you have only made a backup
-on each Sunday for 12 weeks. Then ``forget --keep-daily 4`` will keep
-the last four snapshots for the last four Sundays, but remove the rest.
-Only counting the days which have a backup and ignore the ones without
-is a safety feature: it prevents restic from removing many snapshots
-when no new ones are created. If it was implemented otherwise, running
-``forget --keep-daily 4`` on a Friday would remove all snapshots!
+on each Sunday for 12 weeks:
+
+.. code-block:: console
+
+   $ restic snapshots
+   repository f00c6e2a opened successfully, password is correct
+   ID        Time                 Host        Tags        Paths
+   ---------------------------------------------------------------
+   0a1f9759  2019-09-01 11:00:00  mopped                  /home/user/work
+   46cfe4d5  2019-09-08 11:00:00  mopped                  /home/user/work
+   f6b1f037  2019-09-15 11:00:00  mopped                  /home/user/work
+   eb430a5d  2019-09-22 11:00:00  mopped                  /home/user/work
+   8cf1cb9a  2019-09-29 11:00:00  mopped                  /home/user/work
+   5d33b116  2019-10-06 11:00:00  mopped                  /home/user/work
+   b9553125  2019-10-13 11:00:00  mopped                  /home/user/work
+   e1a7b58b  2019-10-20 11:00:00  mopped                  /home/user/work
+   8f8018c0  2019-10-27 11:00:00  mopped                  /home/user/work
+   59403279  2019-11-03 11:00:00  mopped                  /home/user/work
+   dfee9fb4  2019-11-10 11:00:00  mopped                  /home/user/work
+   e1ae2f40  2019-11-17 11:00:00  mopped                  /home/user/work
+   ---------------------------------------------------------------
+   12 snapshots
+
+Then ``forget --keep-daily 4`` will keep the last four snapshots for the last
+four Sundays, but remove the rest:
+
+.. code-block:: console
+
+   $ restic forget --keep-daily 4 --dry-run
+   repository f00c6e2a opened successfully, password is correct
+   Applying Policy: keep the last 4 daily snapshots
+   keep 4 snapshots:
+   ID        Time                 Host        Tags        Reasons         Paths
+   -------------------------------------------------------------------------------
+   8f8018c0  2019-10-27 11:00:00  mopped                  daily snapshot  /home/user/work
+   59403279  2019-11-03 11:00:00  mopped                  daily snapshot  /home/user/work
+   dfee9fb4  2019-11-10 11:00:00  mopped                  daily snapshot  /home/user/work
+   e1ae2f40  2019-11-17 11:00:00  mopped                  daily snapshot  /home/user/work
+   -------------------------------------------------------------------------------
+   4 snapshots
+
+   remove 8 snapshots:
+   ID        Time                 Host        Tags        Paths
+   ---------------------------------------------------------------
+   0a1f9759  2019-09-01 11:00:00  mopped                  /home/user/work
+   46cfe4d5  2019-09-08 11:00:00  mopped                  /home/user/work
+   f6b1f037  2019-09-15 11:00:00  mopped                  /home/user/work
+   eb430a5d  2019-09-22 11:00:00  mopped                  /home/user/work
+   8cf1cb9a  2019-09-29 11:00:00  mopped                  /home/user/work
+   5d33b116  2019-10-06 11:00:00  mopped                  /home/user/work
+   b9553125  2019-10-13 11:00:00  mopped                  /home/user/work
+   e1a7b58b  2019-10-20 11:00:00  mopped                  /home/user/work
+   ---------------------------------------------------------------
+   8 snapshots
+
+The result of the ``forget --keep-daily`` operation does not depend on when it
+is run, it will only count the days for which a snapshot exists. This is a
+safety feature: it prevents restic from removing snapshots when no new ones are
+created. Otherwise, running ``forget --keep-daily 4`` on a Friday (without any
+snapshot Monday to Thursday) would remove all snapshots!
 
 Another example: Suppose you make daily backups for 100 years. Then
 ``forget --keep-daily 7 --keep-weekly 5 --keep-monthly 12 --keep-yearly 75``

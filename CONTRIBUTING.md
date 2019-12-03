@@ -133,8 +133,7 @@ down to the following steps:
 
  2. Clone the repository locally and create a new branch. If you are working on
     the code itself, please set up the development environment as described in
-    the previous section. Especially take care to place your forked repository
-    at the correct path (`src/github.com/restic/restic`) within your `GOPATH`.
+    the previous section.
 
  3. Then commit your changes as fine grained as possible, as smaller patches,
     that handle one and only one issue are easier to discuss and merge.
@@ -150,11 +149,14 @@ down to the following steps:
     existing commit, use common sense to decide which is better), they will be
     automatically added to the pull request.
 
- 7. If your pull request changes anything that users should be aware of (a
-    bugfix, a new feature, ...) please add an entry to the file
-    ['CHANGELOG.md'](CHANGELOG.md). It will be used in the announcement of the
-    next stable release. While writing, ask yourself: If I were the user, what
-    would I need to be aware of with this change.
+ 7. If your pull request changes anything that users should be aware
+    of (a bugfix, a new feature, ...) please add an entry as a new
+    file in `changelog/unreleased` including the issue number in the
+    filename (e.g. `issue-8756`). Use the template in
+    `changelog/TEMPLATE` for the content. It will be used in the
+    announcement of the next stable release. While writing, ask
+    yourself: If I were the user, what would I need to be aware of
+    with this change.
 
  8. Once your code looks good and passes all the tests, we'll merge it. Thanks
     a lot for your contribution!

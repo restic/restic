@@ -1,3 +1,106 @@
+Changelog for restic 0.9.6 (2019-11-22)
+=======================================
+
+The following sections list the changes in restic 0.9.6 relevant to
+restic users. The changes are ordered by importance.
+
+Summary
+-------
+
+ * Fix #2063: Allow absolute path for filename when backing up from stdin
+ * Fix #2174: Save files with invalid timestamps
+ * Fix #2249: Read fresh metadata for unmodified files
+ * Fix #2301: Add upper bound for t in --read-data-subset=n/t
+ * Fix #2321: Check errors when loading index files
+ * Enh #2179: Use ctime when checking for file changes
+ * Enh #2306: Allow multiple retries for interactive password input
+ * Enh #2330: Make `--group-by` accept both singular and plural
+ * Enh #2350: Add option to configure S3 region
+
+Details
+-------
+
+ * Bugfix #2063: Allow absolute path for filename when backing up from stdin
+
+   When backing up from stdin, handle directory path for `--stdin-filename`. This can be used to
+   specify the full path for the backed-up file.
+
+   https://github.com/restic/restic/issues/2063
+
+ * Bugfix #2174: Save files with invalid timestamps
+
+   When restic reads invalid timestamps (year is before 0000 or after 9999) it refused to read and
+   archive the file. We've changed the behavior and will now save modified timestamps with the
+   year set to either 0000 or 9999, the rest of the timestamp stays the same, so the file will be saved
+   (albeit with a bogus timestamp).
+
+   https://github.com/restic/restic/issues/2174
+   https://github.com/restic/restic/issues/1173
+
+ * Bugfix #2249: Read fresh metadata for unmodified files
+
+   Restic took all metadata for files which were detected as unmodified, not taking into account
+   changed metadata (ownership, mode). This is now corrected.
+
+   https://github.com/restic/restic/issues/2249
+   https://github.com/restic/restic/pull/2252
+
+ * Bugfix #2301: Add upper bound for t in --read-data-subset=n/t
+
+   256 is the effective maximum for t, but restic would allow larger values, leading to strange
+   behavior.
+
+   https://github.com/restic/restic/issues/2301
+   https://github.com/restic/restic/pull/2304
+
+ * Bugfix #2321: Check errors when loading index files
+
+   Restic now checks and handles errors which occur when loading index files, the missing check
+   leads to odd errors (and a stack trace printed to users) later. This was reported in the forum.
+
+   https://github.com/restic/restic/pull/2321
+   https://forum.restic.net/t/check-rebuild-index-prune/1848/13
+
+ * Enhancement #2179: Use ctime when checking for file changes
+
+   Previously, restic only checked a file's mtime (along with other non-timestamp metadata) to
+   decide if a file has changed. This could cause restic to not notice that a file has changed (and
+   therefore continue to store the old version, as opposed to the modified version) if something
+   edits the file and then resets the timestamp. Restic now also checks the ctime of files, so any
+   modifications to a file should be noticed, and the modified file will be backed up. The ctime
+   check will be disabled if the --ignore-inode flag was given.
+
+   If this change causes problems for you, please open an issue, and we can look in to adding a
+   seperate flag to disable just the ctime check.
+
+   https://github.com/restic/restic/issues/2179
+   https://github.com/restic/restic/pull/2212
+
+ * Enhancement #2306: Allow multiple retries for interactive password input
+
+   Restic used to quit if the repository password was typed incorrectly once. Restic will now ask
+   the user again for the repository password if typed incorrectly. The user will now get three
+   tries to input the correct password before restic quits.
+
+   https://github.com/restic/restic/issues/2306
+
+ * Enhancement #2330: Make `--group-by` accept both singular and plural
+
+   One can now use the values `host`/`hosts`, `path`/`paths` and `tag` / `tags` interchangeably
+   in the `--group-by` argument.
+
+   https://github.com/restic/restic/issues/2330
+
+ * Enhancement #2350: Add option to configure S3 region
+
+   We've added a new option for setting the region when accessing an S3-compatible service. For
+   some providers, it is required to set this to a valid value. You can do that either by setting the
+   environment variable `AWS_DEFAULT_REGION` or using the option `s3.region`, e.g. like this:
+   `-o s3.region="us-east-1"`.
+
+   https://github.com/restic/restic/pull/2350
+
+
 Changelog for restic 0.9.5 (2019-04-23)
 =======================================
 

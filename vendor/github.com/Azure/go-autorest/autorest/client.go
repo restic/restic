@@ -22,12 +22,10 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/http/cookiejar"
 	"strings"
 	"time"
 
 	"github.com/Azure/go-autorest/logger"
-	"github.com/Azure/go-autorest/tracing"
 )
 
 const (
@@ -71,6 +69,22 @@ const (
 // last http.Response.
 type Response struct {
 	*http.Response `json:"-"`
+}
+
+// IsHTTPStatus returns true if the returned HTTP status code matches the provided status code.
+// If there was no response (i.e. the underlying http.Response is nil) the return value is false.
+func (r Response) IsHTTPStatus(statusCode int) bool {
+	if r.Response == nil {
+		return false
+	}
+	return r.Response.StatusCode == statusCode
+}
+
+// HasHTTPStatus returns true if the returned HTTP status code matches one of the provided status codes.
+// If there was no response (i.e. the underlying http.Response is nil) or not status codes are provided
+// the return value is false.
+func (r Response) HasHTTPStatus(statusCodes ...int) bool {
+	return ResponseHasStatusCode(r.Response, statusCodes...)
 }
 
 // LoggingInspector implements request and response inspectors that log the full request and
@@ -248,30 +262,8 @@ func (c Client) Do(r *http.Request) (*http.Response, error) {
 // sender returns the Sender to which to send requests.
 func (c Client) sender(renengotiation tls.RenegotiationSupport) Sender {
 	if c.Sender == nil {
-		// Use behaviour compatible with DefaultTransport, but require TLS minimum version.
-		var defaultTransport = http.DefaultTransport.(*http.Transport)
-		transport := tracing.Transport
-		// for non-default values of TLS renegotiation create a new tracing transport.
-		// updating tracing.Transport affects all clients which is not what we want.
-		if renengotiation != tls.RenegotiateNever {
-			transport = tracing.NewTransport()
-		}
-		transport.Base = &http.Transport{
-			Proxy:                 defaultTransport.Proxy,
-			DialContext:           defaultTransport.DialContext,
-			MaxIdleConns:          defaultTransport.MaxIdleConns,
-			IdleConnTimeout:       defaultTransport.IdleConnTimeout,
-			TLSHandshakeTimeout:   defaultTransport.TLSHandshakeTimeout,
-			ExpectContinueTimeout: defaultTransport.ExpectContinueTimeout,
-			TLSClientConfig: &tls.Config{
-				MinVersion:    tls.VersionTLS12,
-				Renegotiation: renengotiation,
-			},
-		}
-		j, _ := cookiejar.New(nil)
-		return &http.Client{Jar: j, Transport: transport}
+		return sender(renengotiation)
 	}
-
 	return c.Sender
 }
 

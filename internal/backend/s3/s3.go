@@ -14,8 +14,8 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
-	"github.com/minio/minio-go"
-	"github.com/minio/minio-go/pkg/credentials"
+	"github.com/minio/minio-go/v6"
+	"github.com/minio/minio-go/v6/pkg/credentials"
 
 	"github.com/restic/restic/internal/debug"
 )
@@ -66,7 +66,7 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 			},
 		},
 	})
-	client, err := minio.NewWithCredentials(cfg.Endpoint, creds, !cfg.UseHTTP, "")
+	client, err := minio.NewWithCredentials(cfg.Endpoint, creds, !cfg.UseHTTP, cfg.Region)
 	if err != nil {
 		return nil, errors.Wrap(err, "minio.NewWithCredentials")
 	}
@@ -305,7 +305,7 @@ func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, 
 
 	be.sem.GetToken()
 	coreClient := minio.Core{Client: be.client}
-	rd, err := coreClient.GetObjectWithContext(ctx, be.cfg.Bucket, objName, opts)
+	rd, _, _, err := coreClient.GetObjectWithContext(ctx, be.cfg.Bucket, objName, opts)
 	if err != nil {
 		be.sem.ReleaseToken()
 		return nil, err

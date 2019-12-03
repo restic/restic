@@ -39,7 +39,7 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
-var version = "0.9.5-dev (compiled manually)"
+var version = "0.9.6-dev (compiled manually)"
 
 // TimeFormat is the format used for all timestamps printed by restic.
 const TimeFormat = "2006-01-02 15:04:05"
@@ -320,7 +320,7 @@ func ReadPassword(opts GlobalOptions, prompt string) (string, error) {
 	}
 
 	if len(password) == 0 {
-		return "", errors.Fatal("an empty password is not a password")
+		return "", errors.New("an empty password is not a password")
 	}
 
 	return password, nil
@@ -366,14 +366,32 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 
 	s := repository.New(be)
 
-	opts.password, err = ReadPassword(opts, "enter password for repository: ")
-	if err != nil {
-		return nil, err
+	passwordTriesLeft := 1
+	if stdinIsTerminal() && opts.password == "" {
+		passwordTriesLeft = 3
 	}
 
-	err = s.SearchKey(opts.ctx, opts.password, maxKeys, opts.KeyHint)
+	for ; passwordTriesLeft > 0; passwordTriesLeft-- {
+		opts.password, err = ReadPassword(opts, "enter password for repository: ")
+		if err != nil && passwordTriesLeft > 1 {
+			opts.password = ""
+			fmt.Printf("%s. Try again\n", err)
+		}
+		if err != nil {
+			continue
+		}
+
+		err = s.SearchKey(opts.ctx, opts.password, maxKeys, opts.KeyHint)
+		if err != nil && passwordTriesLeft > 1 {
+			opts.password = ""
+			fmt.Printf("%s. Try again\n", err)
+		}
+	}
 	if err != nil {
-		return nil, err
+		if errors.IsFatal(err) {
+			return nil, err
+		}
+		return nil, errors.Fatalf("%s", err)
 	}
 
 	if stdoutIsTerminal() && !opts.JSON {
@@ -465,6 +483,10 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 
 		if cfg.Secret == "" {
 			cfg.Secret = os.Getenv("AWS_SECRET_ACCESS_KEY")
+		}
+
+		if cfg.Region == "" {
+			cfg.Region = os.Getenv("AWS_DEFAULT_REGION")
 		}
 
 		if err := opts.Apply(loc.Scheme, &cfg); err != nil {

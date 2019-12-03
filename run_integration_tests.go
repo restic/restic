@@ -28,8 +28,9 @@ var ForbiddenImports = map[string]bool{
 
 // Use a specific version of gofmt (the latest stable, usually) to guarantee
 // deterministic formatting. This is used with the GoVersion.AtLeast()
-// function (so that we don't forget to update it).
-var GofmtVersion = ParseGoVersion("go1.11")
+// function (so that we don't forget to update it). This is also used to run
+// `go mod vendor` and `go mod tidy`.
+var GofmtVersion = ParseGoVersion("go1.13")
 
 // GoVersion is the version of Go used to compile the project.
 type GoVersion struct {
@@ -190,7 +191,7 @@ func (env *TravisEnvironment) Prepare() error {
 		"github.com/NebulousLabs/glyphcheck",
 		"github.com/restic/rest-server/cmd/rest-server",
 		"github.com/restic/calens",
-		"github.com/ncw/rclone",
+		"github.com/rclone/rclone",
 	}
 
 	for _, pkg := range pkgs {
@@ -198,6 +199,11 @@ func (env *TravisEnvironment) Prepare() error {
 		if err != nil {
 			return err
 		}
+	}
+
+	// reset changes made to go.mod/go.sum by "go get"
+	if err := run("git", "checkout", "go.mod", "go.sum"); err != nil {
+		return err
 	}
 
 	if err := env.getMinio(); err != nil {
@@ -209,6 +215,12 @@ func (env *TravisEnvironment) Prepare() error {
 		if err := run("go", "get", "github.com/mitchellh/gox"); err != nil {
 			return err
 		}
+
+		// reset changes made to go.mod/go.sum by "go get"
+		if err := run("git", "checkout", "go.mod", "go.sum"); err != nil {
+			return err
+		}
+
 		if runtime.GOOS == "linux" {
 			env.goxOSArch = []string{
 				"linux/386", "linux/amd64",
@@ -431,6 +443,10 @@ func (env *AppveyorEnvironment) Teardown() error {
 // findGoFiles returns a list of go source code file names below dir.
 func findGoFiles(dir string) (list []string, err error) {
 	err = filepath.Walk(dir, func(name string, fi os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
 		relpath, err := filepath.Rel(dir, name)
 		if err != nil {
 			return err
@@ -476,9 +492,9 @@ func updateEnv(env []string, override map[string]string) []string {
 
 func (env *TravisEnvironment) findImports() (map[string][]string, error) {
 	res := make(map[string][]string)
+	msg("checking for forbidden imports\n")
 
 	cmd := exec.Command("go", "list", "-f", `{{.ImportPath}} {{join .Imports " "}}`, "./internal/...", "./cmd/...")
-	cmd.Env = updateEnv(os.Environ(), env.env)
 	cmd.Stderr = os.Stderr
 
 	output, err := cmd.Output()
