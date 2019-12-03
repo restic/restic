@@ -1,0 +1,6 @@
+Enhancement: Make `--group-by` accept both singular and plural
+
+One can now use the values `host`/`hosts`, `path`/`paths` and
+`tag` / `tags` interchangeably in the `--group-by` argument.
+
+https://github.com/restic/restic/issues/2330

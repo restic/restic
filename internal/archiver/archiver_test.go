@@ -2064,6 +2064,8 @@ func TestMetadataChanged(t *testing.T) {
 	want.Path = ""
 	want.ExtendedAttributes = nil
 
+	want.AccessTime = want.ModTime
+
 	// make sure that metadata was recorded successfully
 	if !cmp.Equal(want, node2) {
 		t.Fatalf("metadata does not match:\n%v", cmp.Diff(want, node2))

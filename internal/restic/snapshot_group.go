@@ -31,11 +31,11 @@ func GroupSnapshots(snapshots Snapshots, options string) (map[string]Snapshots, 
 
 	for _, option := range GroupOptionList {
 		switch option {
-		case "host":
+		case "host", "hosts":
 			GroupByHost = true
-		case "paths":
+		case "path", "paths":
 			GroupByPath = true
-		case "tags":
+		case "tag", "tags":
 			GroupByTag = true
 		case "":
 		default:

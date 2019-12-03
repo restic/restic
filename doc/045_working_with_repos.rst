@@ -124,10 +124,11 @@ data files:
     check snapshots, trees and blobs
     read all data
 
-Use ``--read-data-subset=n/t`` parameter to check subset of repository data
-files. The parameter takes two values, ``n`` and ``t``. All repository data 
-files are logically divided in ``t`` roughly equal groups and only files that
-belong to the group number ``n`` are checked. For example, the following 
+Use the ``--read-data-subset=n/t`` parameter to check only a subset of the
+repository data files at a time. The parameter takes two values, ``n`` and
+``t``. When the check command runs, all data files in the repository are
+logically divided in ``t`` (roughly equal) groups, and only files that
+belong to the group number ``n`` are checked. For example, the following
 commands check all repository data files over 5 separate invocations:
 
 .. code-block:: console

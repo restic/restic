@@ -225,6 +225,7 @@ func TestLockRefresh(t *testing.T) {
 
 	lock, err := restic.NewLock(context.TODO(), repo)
 	rtest.OK(t, err)
+	time0 := lock.Time
 
 	var lockID *restic.ID
 	err = repo.List(context.TODO(), restic.LockFile, func(id restic.ID, size int64) error {
@@ -238,6 +239,7 @@ func TestLockRefresh(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	time.Sleep(time.Millisecond)
 	rtest.OK(t, lock.Refresh(context.TODO()))
 
 	var lockID2 *restic.ID
@@ -254,5 +256,9 @@ func TestLockRefresh(t *testing.T) {
 
 	rtest.Assert(t, !lockID.Equal(*lockID2),
 		"expected a new ID after lock refresh, got the same")
+	lock2, err := restic.LoadLock(context.TODO(), repo, *lockID2)
+	rtest.OK(t, err)
+	rtest.Assert(t, lock2.Time.After(time0),
+		"expected a later timestamp after lock refresh")
 	rtest.OK(t, lock.Unlock())
 }

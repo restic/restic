@@ -1,0 +1,5 @@
+Bugfix: Fix incorrect bytes stats in `diff` command
+
+In some cases, the wrong number of bytes (e.g. 16777215.998 TiB) were reported by the `diff` command. This is now fixed.
+
+https://github.com/restic/restic/issues/2469

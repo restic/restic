@@ -18,7 +18,7 @@ import (
 
 var (
 	// ErrNoKeyFound is returned when no key for the repository could be decrypted.
-	ErrNoKeyFound = errors.Fatal("wrong password or no key found")
+	ErrNoKeyFound = errors.New("wrong password or no key found")
 
 	// ErrMaxKeysReached is returned when the maximum number of keys was checked and no key could be found.
 	ErrMaxKeysReached = errors.Fatal("maximum number of keys reached")

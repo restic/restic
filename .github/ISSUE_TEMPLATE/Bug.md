@@ -83,8 +83,8 @@ Do you have an idea how to solve the issue?
 
 
 
-Did restic help you or made you happy in any way?
--------------------------------------------------
+Did restic help you today? Did it make you happy in any way?
+------------------------------------------------------------
 
 <!--
 Answering this question is not required, but if you have anything positive to share, please do so here!

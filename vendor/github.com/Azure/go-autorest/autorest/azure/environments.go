@@ -45,6 +45,7 @@ type ResourceIdentifier struct {
 	Datalake            string `json:"datalake"`
 	Batch               string `json:"batch"`
 	OperationalInsights string `json:"operationalInsights"`
+	Storage             string `json:"storage"`
 }
 
 // Environment represents a set of endpoints for each of Azure's Clouds.
@@ -103,6 +104,7 @@ var (
 			Datalake:            "https://datalake.azure.net/",
 			Batch:               "https://batch.core.windows.net/",
 			OperationalInsights: "https://api.loganalytics.io",
+			Storage:             "https://storage.azure.com/",
 		},
 	}
 
@@ -135,6 +137,7 @@ var (
 			Datalake:            NotAvailable,
 			Batch:               "https://batch.core.usgovcloudapi.net/",
 			OperationalInsights: "https://api.loganalytics.us",
+			Storage:             "https://storage.azure.com/",
 		},
 	}
 
@@ -167,6 +170,7 @@ var (
 			Datalake:            NotAvailable,
 			Batch:               "https://batch.chinacloudapi.cn/",
 			OperationalInsights: NotAvailable,
+			Storage:             "https://storage.azure.com/",
 		},
 	}
 
@@ -199,6 +203,7 @@ var (
 			Datalake:            NotAvailable,
 			Batch:               "https://batch.cloudapi.de/",
 			OperationalInsights: NotAvailable,
+			Storage:             "https://storage.azure.com/",
 		},
 	}
 )

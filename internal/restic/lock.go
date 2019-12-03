@@ -221,6 +221,7 @@ func (l *Lock) Stale() bool {
 // timestamp. Afterwards the old lock is removed.
 func (l *Lock) Refresh(ctx context.Context) error {
 	debug.Log("refreshing lock %v", l.lockID)
+	l.Time = time.Now()
 	id, err := l.createLock(ctx)
 	if err != nil {
 		return err

@@ -109,6 +109,15 @@ On FreeBSD (11 and probably later versions), you can install restic using ``pkg 
 
     # pkg install restic
 
+openSUSE
+========
+
+On openSUSE (leap 15.0 and greater, and tumbleweed), you can install restic using the ``zypper`` package manager:
+
+.. code-block:: console
+
+    # zypper install restic
+
 RHEL & CentOS
 =============
 

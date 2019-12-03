@@ -197,10 +197,11 @@ default location:
     Please note that knowledge of your password is required to access the repository.
     Losing your password means that your data is irrecoverably lost.
 
-It is not possible at the moment to have restic create a new bucket in a
-different location, so you need to create it using a different program.
-Afterwards, the S3 server (``s3.amazonaws.com``) will redirect restic to
-the correct endpoint.
+If needed, you can manually specify the region to use by either setting the
+environment variable ``AWS_DEFAULT_REGION`` or calling restic with an option
+parameter like ``-o s3.region="us-east-1"``. If the region is not specified,
+the default region is used. Afterwards, the S3 server (at least for AWS,
+``s3.amazonaws.com``) will redirect restic to the correct endpoint.
 
 Until version 0.8.0, restic used a default prefix of ``restic``, so the files
 in the bucket were placed in a directory named ``restic``. If you want to
@@ -234,7 +235,7 @@ credentials of your Minio Server.
     $ export AWS_ACCESS_KEY_ID=<YOUR-MINIO-ACCESS-KEY-ID>
     $ export AWS_SECRET_ACCESS_KEY= <YOUR-MINIO-SECRET-ACCESS-KEY>
 
-Now you can easily initialize restic to use Minio server as backend with
+Now you can easily initialize restic to use Minio server as a backend with
 this command.
 
 .. code-block:: console
@@ -243,6 +244,35 @@ this command.
     enter password for new backend:
     enter password again:
     created restic backend 6ad29560f5 at s3:http://localhost:9000/restic1
+    Please note that knowledge of your password is required to access
+    the repository. Losing your password means that your data is irrecoverably lost.
+
+Wasabi
+************
+
+`Wasabi <https://wasabi.com>`__ is a low cost AWS S3 conformant object storage provider.
+Due to it's S3 conformance, Wasabi can be used as a storage provider for a restic repository.
+
+-  Create a Wasabi bucket using the `Wasabi Console <https://console.wasabisys.com>`__.
+-  Determine the correct Wasabi service URL for your bucket `here <https://wasabi-support.zendesk.com/hc/en-us/articles/360015106031-What-are-the-service-URLs-for-Wasabi-s-different-regions->__`.
+
+You must first setup the following environment variables with the
+credentials of your Wasabi account.
+
+.. code-block:: console
+
+    $ export AWS_ACCESS_KEY_ID=<YOUR-WASABI-ACCESS-KEY-ID>
+    $ export AWS_SECRET_ACCESS_KEY=<YOUR-WASABI-SECRET-ACCESS-KEY>
+
+Now you can easily initialize restic to use Wasabi as a backend with
+this command.
+
+.. code-block:: console
+
+    $ ./restic -r s3:https://<WASABI-SERVICE-URL>/<WASABI-BUCKET-NAME> init
+    enter password for new backend:
+    enter password again:
+    created restic backend xxxxxxxxxx at s3:https://<WASABI-SERVICE-URL>/<WASABI-BUCKET-NAME>
     Please note that knowledge of your password is required to access
     the repository. Losing your password means that your data is irrecoverably lost.
 
@@ -329,9 +359,9 @@ dashboard on the "Buckets" page when signed into your B2 account:
 .. code-block:: console
 
     $ export B2_ACCOUNT_ID=<MY_APPLICATION_KEY_ID>
-    $ export B2_ACCOUNT_KEY=<MY_SECRET_ACCOUNT_KEY>
+    $ export B2_ACCOUNT_KEY=<MY_APPLICATION_KEY>
 
-.. note:: In case you want to use Backblaze Application Keys replace <MY_APPLICATION_KEY_ID> and <MY_SECRET_ACCOUNT_KEY> with <applicationKeyId> and <applicationKey> respectively.
+.. note:: As of version 0.9.2, restic supports both master and non-master `application keys <https://www.backblaze.com/b2/docs/application_keys.html>`__. If using a non-master application key, ensure that it is created with at least **read and write** access to the B2 bucket. On earlier versions of restic, a master application key is required.
 
 You can then initialize a repository stored at Backblaze B2. If the
 bucket does not exist yet and the credentials you passed to restic have the
