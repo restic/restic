@@ -1,0 +1,5 @@
+Bugfix: Refresh lock timestamp
+
+Long-running operations did not refresh lock timestamp, resulting in locks becoming stale. This is now fixed.
+
+https://github.com/restic/restic/issues/2390
