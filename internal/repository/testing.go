@@ -36,7 +36,7 @@ func TestBackend(t testing.TB) (be restic.Backend, cleanup func()) {
 	return mem.New(), func() {}
 }
 
-const testChunkerPol = chunker.Pol(0x3DA3358B4DC173)
+const TestChunkerPol = chunker.Pol(0x3DA3358B4DC173)
 
 // TestRepositoryWithBackend returns a repository initialized with a test
 // password. If be is nil, an in-memory backend is used. A constant polynomial
@@ -53,7 +53,7 @@ func TestRepositoryWithBackend(t testing.TB, be restic.Backend) (r restic.Reposi
 
 	repo := New(be)
 
-	cfg := restic.TestCreateConfig(t, testChunkerPol)
+	cfg := restic.TestCreateConfig(t, TestChunkerPol)
 	err := repo.init(context.TODO(), test.TestPassword, cfg)
 	if err != nil {
 		t.Fatalf("TestRepository(): initialize repo failed: %v", err)

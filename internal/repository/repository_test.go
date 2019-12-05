@@ -274,6 +274,14 @@ func TestLoadJSONUnpacked(t *testing.T) {
 
 	rtest.Equals(t, sn.Hostname, sn2.Hostname)
 	rtest.Equals(t, sn.Username, sn2.Username)
+
+	var cf restic.Config
+
+	// load and check Config
+	err = repo.LoadJSONUnpacked(context.TODO(), restic.ConfigFile, id, &cf)
+	rtest.OK(t, err)
+
+	rtest.Equals(t, cf.ChunkerPolynomial, repository.TestChunkerPol)
 }
 
 var repoFixture = filepath.Join("testdata", "test-repo.tar.gz")
