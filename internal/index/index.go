@@ -48,7 +48,14 @@ type Lister interface {
 
 // New creates a new index for repo from scratch. InvalidFiles contains all IDs
 // of files  that cannot be listed successfully.
-func New(ctx context.Context, repo Lister, ignorePacks restic.IDSet, p *restic.Progress) (idx *Index, invalidFiles restic.IDs, err error) {
+func New(ctx context.Context, repo ListLoader, ignorePacks restic.IDSet, p *restic.Progress) (idx *Index, invalidFiles restic.IDs, err error) {
+
+	// Start with loading the old index
+	oldIdx, err := Load(ctx, repo, p)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	p.Start()
 	defer p.Done()
 
@@ -68,11 +75,19 @@ func New(ctx context.Context, repo Lister, ignorePacks restic.IDSet, p *restic.P
 	outputCh := make(chan Result)
 	wg, ctx := errgroup.WithContext(ctx)
 
+	idx = newIndex()
 	// list the files in the repo, send to inputCh
 	wg.Go(func() error {
 		defer close(inputCh)
 		return repo.List(ctx, restic.DataFile, func(id restic.ID, size int64) error {
 			if ignorePacks.Has(id) {
+				return nil
+			}
+
+			if res, ok := oldIdx.Packs[id]; ok {
+				if err := idx.AddPack(res.ID, res.Size, res.Entries); err != nil {
+					return err
+				}
 				return nil
 			}
 
@@ -114,8 +129,6 @@ func New(ctx context.Context, repo Lister, ignorePacks restic.IDSet, p *restic.P
 		close(outputCh)
 		return nil
 	})
-
-	idx = newIndex()
 
 	for res := range outputCh {
 		p.Report(restic.Stat{Blobs: 1})
