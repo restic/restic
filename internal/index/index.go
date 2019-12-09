@@ -271,13 +271,11 @@ func Load(ctx context.Context, repo ListLoader, p *restic.Progress) (*Index, err
 	return index, nil
 }
 
-// AddPack adds a pack to the index. If this pack is already in the index, an
-// error is returned.
+// AddPack adds a pack to the index.
 func (idx *Index) AddPack(id restic.ID, size int64, entries []restic.Blob) error {
 	if _, ok := idx.Packs[id]; ok {
-		return errors.Errorf("pack %v already present in the index", id.Str())
+		debug.Log("pack %v already present in the index", id.Str())
 	}
-
 	idx.Packs[id] = Pack{ID: id, Size: size, Entries: entries}
 
 	return nil
