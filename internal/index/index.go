@@ -88,7 +88,7 @@ func New(ctx context.Context, repo ListLoader, ignorePacks restic.IDSet, p *rest
 				if err := idx.AddPack(res.ID, size, res.Entries); err != nil {
 					return err
 				}
-				if err:= oldIdx.RemovePack(id); err != nil {
+				if err := oldIdx.RemovePack(id); err != nil {
 					return err
 				}
 				return nil
