@@ -1,0 +1,8 @@
+Enhancement: Add flag to disable TLS verification for self-signed certificates
+
+We've added a flag, `--insecure-tls`, to allow disabling
+TLS verification for self-signed certificates in order to support
+some development workflows.
+
+https://github.com/restic/restic/issues/2656
+https://github.com/restic/restic/pull/2657

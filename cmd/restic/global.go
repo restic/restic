@@ -61,6 +61,7 @@ type GlobalOptions struct {
 	CacheDir        string
 	NoCache         bool
 	CACerts         []string
+	InsecureTLS     bool
 	TLSClientCert   string
 	CleanupCache    bool
 
@@ -115,6 +116,7 @@ func init() {
 	f.BoolVar(&globalOptions.NoCache, "no-cache", false, "do not use a local cache")
 	f.StringSliceVar(&globalOptions.CACerts, "cacert", nil, "`file` to load root certificates from (default: use system certificates)")
 	f.StringVar(&globalOptions.TLSClientCert, "tls-client-cert", "", "path to a `file` containing PEM encoded TLS client certificate and private key")
+	f.BoolVar(&globalOptions.InsecureTLS, "insecure-tls", false, "skip TLS certificate verification when connecting to the repo (insecure)")
 	f.BoolVar(&globalOptions.CleanupCache, "cleanup-cache", false, "auto remove old cache directories")
 	f.IntVar(&globalOptions.LimitUploadKb, "limit-upload", 0, "limits uploads to a maximum rate in KiB/s. (default: unlimited)")
 	f.IntVar(&globalOptions.LimitDownloadKb, "limit-download", 0, "limits downloads to a maximum rate in KiB/s. (default: unlimited)")
@@ -671,6 +673,7 @@ func open(s string, gopts GlobalOptions, opts options.Options) (restic.Backend, 
 	tropts := backend.TransportOptions{
 		RootCertFilenames:        globalOptions.CACerts,
 		TLSClientCertKeyFilename: globalOptions.TLSClientCert,
+		InsecureTLS:              globalOptions.InsecureTLS,
 	}
 	rt, err := backend.Transport(tropts)
 	if err != nil {
@@ -751,6 +754,7 @@ func create(s string, opts options.Options) (restic.Backend, error) {
 	tropts := backend.TransportOptions{
 		RootCertFilenames:        globalOptions.CACerts,
 		TLSClientCertKeyFilename: globalOptions.TLSClientCert,
+		InsecureTLS:              globalOptions.InsecureTLS,
 	}
 	rt, err := backend.Transport(tropts)
 	if err != nil {
