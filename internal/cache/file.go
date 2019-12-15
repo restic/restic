@@ -17,7 +17,7 @@ func (c *Cache) filename(h restic.Handle) string {
 		panic("Name is empty or too short")
 	}
 	subdir := h.Name[:2]
-	return filepath.Join(c.path, cacheLayoutPaths[h.Type], subdir, h.Name)
+	return filepath.Join(c.Path, c.Layout[h.Type].Path, subdir, h.Name)
 }
 
 func (c *Cache) canBeCached(t restic.FileType) bool {
@@ -25,7 +25,7 @@ func (c *Cache) canBeCached(t restic.FileType) bool {
 		return false
 	}
 
-	if _, ok := cacheLayoutPaths[t]; !ok {
+	if _, ok := c.Layout[t]; !ok {
 		return false
 	}
 
@@ -181,7 +181,7 @@ func (c *Cache) list(t restic.FileType) (restic.IDSet, error) {
 	}
 
 	list := restic.NewIDSet()
-	dir := filepath.Join(c.path, cacheLayoutPaths[t])
+	dir := filepath.Join(c.Path, c.Layout[t].Path)
 	err := filepath.Walk(dir, func(name string, fi os.FileInfo, err error) error {
 		if err != nil {
 			return errors.Wrap(err, "Walk")

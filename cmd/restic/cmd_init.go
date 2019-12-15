@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/backend/location"
+	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 
@@ -70,6 +71,19 @@ func runInit(opts InitOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	s := repository.New(be)
+	if !gopts.NoCache && gopts.CacheAll {
+		c, err := cache.New(gopts.RepoHash(), gopts.CacheDir, cache.LayoutAll)
+		if c.Created && !gopts.JSON {
+			Verbosef("created new cache in %v\n", c.Base)
+		}
+
+		if err != nil {
+			Warnf("unable to open cache: %v\n", err)
+		} else {
+			// start using the cache
+			s.UseCache(c)
+		}
+	}
 
 	err = s.Init(gopts.ctx, gopts.password, chunkerPolynomial)
 	if err != nil {

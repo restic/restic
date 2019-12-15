@@ -15,12 +15,33 @@ import (
 	"github.com/restic/restic/internal/restic"
 )
 
+type CacheLayout map[restic.FileType]struct {
+	Path      string
+	AutoCache bool
+}
+
+var LayoutStandard = CacheLayout{
+	restic.PackFile:     {"data", false},
+	restic.SnapshotFile: {"snapshots", true},
+	restic.IndexFile:    {"index", true},
+}
+
+var LayoutAll = CacheLayout{
+	restic.PackFile:     {"data", false},
+	restic.SnapshotFile: {"snapshots", true},
+	restic.IndexFile:    {"index", true},
+	restic.KeyFile:      {"keys", true},
+	restic.LockFile:     {"lock", true},
+	restic.ConfigFile:   {"config", true},
+}
+
 // Cache manages a local cache.
 type Cache struct {
-	path             string
+	Path             string
 	Base             string
 	Created          bool
 	PerformReadahead func(restic.Handle) bool
+	Layout           CacheLayout
 }
 
 const dirMode = 0700
@@ -45,13 +66,6 @@ func readVersion(dir string) (v uint, err error) {
 }
 
 const cacheVersion = 1
-
-var cacheLayoutPaths = map[restic.FileType]string{
-	restic.PackFile:     "data",
-	restic.SnapshotFile: "snapshots",
-	restic.IndexFile:    "index",
-}
-
 const cachedirTagSignature = "Signature: 8a477f597d28d172789f06886806bc55\n"
 
 func writeCachedirTag(dir string) error {
@@ -88,13 +102,22 @@ func writeCachedirTag(dir string) error {
 //
 // For partial files, the complete file is loaded and stored in the cache when
 // performReadahead returns true.
-func New(id string, basedir string) (c *Cache, err error) {
+func New(id string, basedir string, layout CacheLayout) (c *Cache, err error) {
+	c = &Cache{
+		PerformReadahead: func(restic.Handle) bool {
+			// do not perform readahead by default
+			return false
+		},
+		Layout: layout,
+	}
+
 	if basedir == "" {
 		basedir, err = DefaultDir()
 		if err != nil {
 			return nil, err
 		}
 	}
+	c.Base = basedir
 
 	err = fs.MkdirAll(basedir, 0700)
 	if err != nil {
@@ -106,7 +129,13 @@ func New(id string, basedir string) (c *Cache, err error) {
 		return nil, err
 	}
 
+	if !validCacheDirName(id) {
+		return nil, errors.New("cache dir name is invalid")
+	}
+
 	cachedir := filepath.Join(basedir, id)
+	c.Path = cachedir
+
 	debug.Log("using cache dir %v", cachedir)
 
 	v, err := readVersion(cachedir)
@@ -128,6 +157,7 @@ func New(id string, basedir string) (c *Cache, err error) {
 		}
 		created = true
 	}
+	c.Created = created
 
 	// update the timestamp so that we can detect old cache dirs
 	err = updateTimestamp(cachedir)
@@ -142,20 +172,10 @@ func New(id string, basedir string) (c *Cache, err error) {
 		}
 	}
 
-	for _, p := range cacheLayoutPaths {
-		if err = fs.MkdirAll(filepath.Join(cachedir, p), dirMode); err != nil {
+	for _, p := range c.Layout {
+		if err = fs.MkdirAll(filepath.Join(cachedir, p.Path), dirMode); err != nil {
 			return nil, errors.WithStack(err)
 		}
-	}
-
-	c = &Cache{
-		path:    cachedir,
-		Base:    basedir,
-		Created: created,
-		PerformReadahead: func(restic.Handle) bool {
-			// do not perform readahead by default
-			return false
-		},
 	}
 
 	return c, nil
@@ -172,7 +192,7 @@ func updateTimestamp(d string) error {
 const MaxCacheAge = 30 * 24 * time.Hour
 
 func validCacheDirName(s string) bool {
-	r := regexp.MustCompile(`^[a-fA-F0-9]{64}$`)
+	r := regexp.MustCompile(`^(repo-)?[a-fA-F0-9]{64}$`)
 	return r.MatchString(s)
 }
 

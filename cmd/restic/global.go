@@ -59,6 +59,7 @@ type GlobalOptions struct {
 	JSON            bool
 	CacheDir        string
 	NoCache         bool
+	CacheAll        bool
 	CACerts         []string
 	TLSClientCert   string
 	CleanupCache    bool
@@ -83,6 +84,10 @@ type GlobalOptions struct {
 	Options []string
 
 	extended options.Options
+}
+
+func (gopts GlobalOptions) RepoHash() string {
+	return "repo-" + restic.Hash([]byte(gopts.Repo)).String()
 }
 
 var globalOptions = GlobalOptions{
@@ -111,6 +116,7 @@ func init() {
 	f.BoolVar(&globalOptions.NoLock, "no-lock", false, "do not lock the repository, this allows some operations on read-only repositories")
 	f.BoolVarP(&globalOptions.JSON, "json", "", false, "set output mode to JSON for commands that support it")
 	f.StringVar(&globalOptions.CacheDir, "cache-dir", "", "set the cache `directory`. (default: use system default cache directory)")
+	f.BoolVar(&globalOptions.CacheAll, "cache-all", false, "also cache key, config and lock files (uses repo string to identify cache)")
 	f.BoolVar(&globalOptions.NoCache, "no-cache", false, "do not use a local cache")
 	f.StringSliceVar(&globalOptions.CACerts, "cacert", nil, "`file` to load root certificates from (default: use system certificates)")
 	f.StringVar(&globalOptions.TLSClientCert, "tls-client-cert", "", "path to a `file` containing PEM encoded TLS client certificate and private key")
@@ -443,6 +449,21 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 	}
 
 	s := repository.New(be)
+	var c *cache.Cache
+
+	if !opts.NoCache && opts.CacheAll {
+		c, err = cache.New(opts.RepoHash(), opts.CacheDir, cache.LayoutAll)
+		if c.Created && !opts.JSON {
+			Verbosef("created new cache in %v\n", c.Base)
+		}
+
+		if err != nil {
+			Warnf("unable to open cache: %v\n", err)
+		} else {
+			// start using the cache
+			s.UseCache(c)
+		}
+	}
 
 	passwordTriesLeft := 1
 	if stdinIsTerminal() && opts.password == "" {
@@ -486,18 +507,20 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 		return s, nil
 	}
 
-	c, err := cache.New(s.Config().ID, opts.CacheDir)
-	if err != nil {
-		Warnf("unable to open cache: %v\n", err)
-		return s, nil
-	}
+	if !opts.CacheAll {
+		c, err = cache.New(s.Config().ID, opts.CacheDir, cache.LayoutStandard)
+		if err != nil {
+			Warnf("unable to open cache: %v\n", err)
+			return s, nil
+		}
 
-	if c.Created && !opts.JSON {
-		Verbosef("created new cache in %v\n", c.Base)
-	}
+		if c.Created && !opts.JSON {
+			Verbosef("created new cache in %v\n", c.Base)
+		}
 
-	// start using the cache
-	s.UseCache(c)
+		// start using the cache
+		s.UseCache(c)
+	}
 
 	oldCacheDirs, err := cache.Old(c.Base)
 	if err != nil {
