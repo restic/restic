@@ -59,6 +59,7 @@ type GlobalOptions struct {
 	CACerts         []string
 	TLSClientCert   string
 	CleanupCache    bool
+	Retries         uint
 
 	LimitUploadKb   int
 	LimitDownloadKb int
@@ -111,6 +112,7 @@ func init() {
 	f.BoolVar(&globalOptions.CleanupCache, "cleanup-cache", false, "auto remove old cache directories")
 	f.IntVar(&globalOptions.LimitUploadKb, "limit-upload", 0, "limits uploads to a maximum rate in KiB/s. (default: unlimited)")
 	f.IntVar(&globalOptions.LimitDownloadKb, "limit-download", 0, "limits downloads to a maximum rate in KiB/s. (default: unlimited)")
+	f.UintVar(&globalOptions.Retries, "retries", 10, "maximum # of retries on file operations befor canceling")
 	f.StringSliceVarP(&globalOptions.Options, "option", "o", []string{}, "set extended option (`key=value`, can be specified multiple times)")
 
 	restoreTerminal()
@@ -391,7 +393,10 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 		return nil, err
 	}
 
-	be = backend.NewRetryBackend(be, 10, func(msg string, err error, d time.Duration) {
+	if opts.Retries > 20 {
+		Warnf("You specified --retries=%d.\nUsing a large number for retries can lead to a large delay when restic aborts, e.g. due to an error!\n\n", opts.Retries)
+	}
+	be = backend.NewRetryBackend(be, int(opts.Retries), func(msg string, err error, d time.Duration) {
 		Warnf("%v returned error, retrying after %v: %v\n", msg, d, err)
 	})
 

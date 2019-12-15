@@ -1,0 +1,8 @@
+Enhancement: Add --retries flag
+
+Restic used to retry backend operation 10 times before cancelling.
+This causes problems for 'cold storage' backends where you can have a large retrieve time.
+With the new flag you can finetune the maximum number of retries.
+
+https://github.com/restic/restic/issues/2504
+https://github.com/restic/restic/pull/2515
