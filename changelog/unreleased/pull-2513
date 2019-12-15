@@ -1,0 +1,10 @@
+Enhancement: Add new commands --cleanup-index and --cleanup-packs
+
+We've added two new restic commands:
+cleanup-index removes blobs that are not used from the index files.
+cleanup-packs removes pack files that are not referenced in the index.
+
+With these two comamnds you can do a prune without repacking.
+This can be used if prune is too slow or too memory consuming.
+
+https://github.com/restic/restic/pull/2513
