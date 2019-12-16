@@ -230,6 +230,7 @@ func (env *TravisEnvironment) Prepare() error {
 				"openbsd/386", "openbsd/amd64",
 				"netbsd/386", "netbsd/amd64",
 				"linux/arm", "freebsd/arm",
+				"linux/ppc64le",
 			}
 
 			if os.Getenv("RESTIC_BUILD_SOLARIS") == "0" {
