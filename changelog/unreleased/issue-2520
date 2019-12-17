@@ -1,0 +1,5 @@
+Enhancement: Add alibaba cloud oss backend
+
+Add alibaba cloud oss backend in restic.
+
+https://github.com/restic/restic/issues/2520

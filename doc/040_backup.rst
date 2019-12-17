@@ -414,6 +414,9 @@ environment variables. The following list of environment variables:
     GOOGLE_PROJECT_ID                   Project ID for Google Cloud Storage
     GOOGLE_APPLICATION_CREDENTIALS      Application Credentials for Google Cloud Storage (e.g. $HOME/.config/gs-secret-restic-key.json)
 
+    ALIBABA_CLOUD_ACCESS_KEY_ID         Account access key ID
+    ALIBABA_CLOUD_ACCESS_KEY_SECRET     Account access key secret
+
     RCLONE_BWLIMIT                      rclone bandwidth limit
 
 

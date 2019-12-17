@@ -18,6 +18,7 @@ import (
 	"github.com/restic/restic/internal/backend/gs"
 	"github.com/restic/restic/internal/backend/local"
 	"github.com/restic/restic/internal/backend/location"
+	"github.com/restic/restic/internal/backend/oss"
 	"github.com/restic/restic/internal/backend/rclone"
 	"github.com/restic/restic/internal/backend/rest"
 	"github.com/restic/restic/internal/backend/s3"
@@ -581,6 +582,22 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 
 		debug.Log("opening rest repository at %#v", cfg)
 		return cfg, nil
+	case "oss":
+		cfg := loc.Config.(oss.Config)
+		if cfg.AccessKeyID == "" {
+			cfg.AccessKeyID = os.Getenv("ALIBABA_CLOUD_ACCESS_KEY_ID")
+		}
+
+		if cfg.AccessKeySecret == "" {
+			cfg.AccessKeySecret = os.Getenv("ALIBABA_CLOUD_ACCESS_KEY_SECRET")
+		}
+
+		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
+			return nil, err
+		}
+
+		debug.Log("opening alibaba cloud repository at %#v", cfg)
+		return cfg, nil
 	}
 
 	return nil, errors.Fatalf("invalid backend: %q", loc.Scheme)
@@ -637,6 +654,8 @@ func open(s string, gopts GlobalOptions, opts options.Options) (restic.Backend, 
 		be, err = rest.Open(cfg.(rest.Config), rt)
 	case "rclone":
 		be, err = rclone.Open(cfg.(rclone.Config), lim)
+	case "oss":
+		be, err = oss.Open(cfg.(oss.Config), rt)
 
 	default:
 		return nil, errors.Fatalf("invalid backend: %q", loc.Scheme)
@@ -700,6 +719,8 @@ func create(s string, opts options.Options) (restic.Backend, error) {
 		return rest.Create(cfg.(rest.Config), rt)
 	case "rclone":
 		return rclone.Open(cfg.(rclone.Config), nil)
+	case "oss":
+		return oss.Create(cfg.(oss.Config), rt)
 	}
 
 	debug.Log("invalid repository scheme: %v", s)

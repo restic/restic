@@ -18,6 +18,8 @@ github.com/Azure/go-autorest/autorest/date
 github.com/Azure/go-autorest/logger
 # github.com/Azure/go-autorest/tracing v0.5.0
 github.com/Azure/go-autorest/tracing
+# github.com/aliyun/aliyun-oss-go-sdk v2.0.4+incompatible
+github.com/aliyun/aliyun-oss-go-sdk/oss
 # github.com/cenkalti/backoff v2.1.1+incompatible
 github.com/cenkalti/backoff
 # github.com/cpuguy83/go-md2man v1.0.10
@@ -159,6 +161,8 @@ golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
+# golang.org/x/time v0.0.0-20181108054448-85acf8d2951c
+golang.org/x/time/rate
 # google.golang.org/api v0.3.2
 google.golang.org/api/gensupport
 google.golang.org/api/googleapi

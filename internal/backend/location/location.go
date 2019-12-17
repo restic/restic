@@ -8,6 +8,7 @@ import (
 	"github.com/restic/restic/internal/backend/b2"
 	"github.com/restic/restic/internal/backend/gs"
 	"github.com/restic/restic/internal/backend/local"
+	"github.com/restic/restic/internal/backend/oss"
 	"github.com/restic/restic/internal/backend/rclone"
 	"github.com/restic/restic/internal/backend/rest"
 	"github.com/restic/restic/internal/backend/s3"
@@ -40,6 +41,7 @@ var parsers = []parser{
 	{"swift", swift.ParseConfig},
 	{"rest", rest.ParseConfig},
 	{"rclone", rclone.ParseConfig},
+	{"oss", oss.ParseConfig},
 }
 
 func isPath(s string) bool {

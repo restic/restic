@@ -457,6 +457,30 @@ established.
 .. _create a service account key: https://cloud.google.com/storage/docs/authentication#generating-a-private-key
 .. _default authentication material: https://developers.google.com/identity/protocols/application-default-credentials
 
+Alibaba Cloud OSS
+********************
+
+Restic supports Alibaba Cloud OSS as a backend. Export the Alibaba Cloud access key and secret as follows:
+
+.. code-block:: console
+
+    $ export ALIBABA_CLOUD_ACCESS_KEY_ID=<ACCESS_KEY_ID>
+    $ export ALIBABA_CLOUD_ACCESS_KEY_SECRET=<ACCESS_KEY_SECRET>
+
+Afterwards you can use the ``oss:`` backend type to initialize a repository in the bucket ``foo`` at the root path:
+
+.. code-block:: console
+
+    $ restic -r oss:oss-cn-hangzhou.aliyuncs.com/foo init
+    enter password for new backend:
+    enter password again:
+    created restic repository 62494f11a1 at oss:oss-cn-hangzhou.aliyuncs.com/foo
+    [...]
+
+The number of concurrent connections to the OSS service can be set with the
+``-o oss.connections=10`` switch. By default, at most five parallel connections are
+established.
+
 Other Services via rclone
 *************************
 
