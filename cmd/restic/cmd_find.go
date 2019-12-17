@@ -160,7 +160,7 @@ func (s *statefulOutput) PrintPatternNormal(path string, node *restic.Node) {
 			Verbosef("\n")
 		}
 		s.oldsn = s.newsn
-		Verbosef("Found matching entries in snapshot %s\n", s.oldsn.ID().Str())
+		Verbosef("Found matching entries in snapshot %s from %s\n", s.oldsn.ID().Str(), s.oldsn.Time.Local().Format(TimeFormat))
 	}
 	Printf(formatNode(path, node, s.ListLong) + "\n")
 }

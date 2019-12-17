@@ -1,0 +1,5 @@
+Enhancement: Display snapshot date when using `restic find`
+
+Added the respective snapshot date to the output of `restic find`.
+
+https://github.com/restic/restic/issues/2072
