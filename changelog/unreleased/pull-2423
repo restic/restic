@@ -1,0 +1,5 @@
+Enhancement: support user@domain parsing as user
+
+Added the ability for user@domain-like users to be authenticated over SFTP servers.
+
+https://github.com/restic/restic/pull/2423
