@@ -78,6 +78,9 @@ You can also specify a relative (read: no slash (``/``) character at the
 beginning) directory, in this case the dir is relative to the remote
 user's home directory.
 
+Also, if the SFTP server is enforcing domain-confined users, you can
+specify the user this way: ``user@domain@host``.
+
 .. note:: Please be aware that sftp servers do not expand the tilde character
           (``~``) normally used as an alias for a user's home directory. If you
           want to specify a path relative to the user's home directory, pass a
