@@ -49,6 +49,7 @@ type GlobalOptions struct {
 	Repo            string
 	PasswordFile    string
 	PasswordCommand string
+	MasterKeyFile   string
 	KeyHint         string
 	Quiet           bool
 	Verbose         int
@@ -97,6 +98,7 @@ func init() {
 	f.StringVarP(&globalOptions.Repo, "repo", "r", os.Getenv("RESTIC_REPOSITORY"), "repository to backup to or restore from (default: $RESTIC_REPOSITORY)")
 	f.StringVarP(&globalOptions.PasswordFile, "password-file", "p", os.Getenv("RESTIC_PASSWORD_FILE"), "read the repository password from a file (default: $RESTIC_PASSWORD_FILE)")
 	f.StringVarP(&globalOptions.KeyHint, "key-hint", "", os.Getenv("RESTIC_KEY_HINT"), "key ID of key to try decrypting first (default: $RESTIC_KEY_HINT)")
+	f.StringVarP(&globalOptions.MasterKeyFile, "masterkeyfile", "", os.Getenv("RESTIC_MASTERKEY_FILE"), "use masterkey from file (default: $RESTIC_MASTERKEY_FILE)")
 	f.StringVarP(&globalOptions.PasswordCommand, "password-command", "", os.Getenv("RESTIC_PASSWORD_COMMAND"), "specify a shell command to obtain a password (default: $RESTIC_PASSWORD_COMMAND)")
 	f.BoolVarP(&globalOptions.Quiet, "quiet", "q", false, "do not output comprehensive progress report")
 	f.CountVarP(&globalOptions.Verbose, "verbose", "v", "be verbose (specify --verbose multiple times or level `n`)")
@@ -366,26 +368,38 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 
 	s := repository.New(be)
 
-	passwordTriesLeft := 1
-	if stdinIsTerminal() && opts.password == "" {
-		passwordTriesLeft = 3
-	}
+	if opts.MasterKeyFile == "" {
 
-	for ; passwordTriesLeft > 0; passwordTriesLeft-- {
-		opts.password, err = ReadPassword(opts, "enter password for repository: ")
-		if err != nil && passwordTriesLeft > 1 {
-			opts.password = ""
-			fmt.Printf("%s. Try again\n", err)
-		}
-		if err != nil {
-			continue
+		passwordTriesLeft := 1
+		if stdinIsTerminal() && opts.password == "" {
+			passwordTriesLeft = 3
 		}
 
-		err = s.SearchKey(opts.ctx, opts.password, maxKeys, opts.KeyHint)
-		if err != nil && passwordTriesLeft > 1 {
-			opts.password = ""
-			fmt.Printf("%s. Try again\n", err)
+		for ; passwordTriesLeft > 0; passwordTriesLeft-- {
+			opts.password, err = ReadPassword(opts, "enter password for repository: ")
+			if err != nil && passwordTriesLeft > 1 {
+				opts.password = ""
+				fmt.Printf("%s. Try again\n", err)
+			}
+			if err != nil {
+				continue
+			}
+
+			err = s.SearchKey(opts.ctx, opts.password, maxKeys, opts.KeyHint)
+			if err == nil {
+				if !opts.JSON {
+					Verbosef("password is correct\n")
+				}
+				break
+			}
+
+			if err != nil && passwordTriesLeft > 1 {
+				opts.password = ""
+				fmt.Printf("%s. Try again\n", err)
+			}
 		}
+	} else {
+		err = s.MasterKeyFile(opts.ctx, opts.MasterKeyFile)
 	}
 	if err != nil {
 		if errors.IsFatal(err) {
@@ -400,7 +414,7 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 			id = id[:8]
 		}
 		if !opts.JSON {
-			Verbosef("repository %v opened successfully, password is correct\n", id)
+			Verbosef("repository %v opened successfully\n", id)
 		}
 	}
 

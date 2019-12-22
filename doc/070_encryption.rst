@@ -49,3 +49,51 @@ per repository. In fact, you can use the ``list``, ``add``, ``remove``, and
     ----------------------------------------------------------------------
      5c657874    username    kasimir   2015-08-12 13:35:05
     *eb78040b    username    kasimir   2015-08-12 13:29:57
+
+**************************
+Using master key from file
+**************************
+
+The flag ``--masterkeyfile`` allows you to directly use a file for the master key. Then no key needs to be stored
+in the repository. Make sure your masterkey cannot be accessed by unauthorized persons and that you  have a backup
+of you masterkey file ready (e.g. print-out)!
+
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo --masterkeyfile master.key init
+    created restic repository f855d38126 at /tmp/repo
+
+    Please note that you need the masterkey tmp.master to access the repository
+    Losing your masterkey file means that your data is irrecoverably lost.
+
+    $ restic -r /srv/restic-repo --masterkeyfile master.key key list
+    repository f855d381 opened successfully
+    ID  User  Host  Created
+    ------------------------
+    ------------------------
+
+If you want to export the master key from an existing repository, you can use the `cat masterkey` command:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo init
+    enter password for new repository: 
+    enter password again: 
+    created restic repository a8e7f96567 at /srv/restic-repo
+
+    Please note that knowledge of your password is required to access
+    the repository. Losing your password means that your data is
+    irrecoverably lost.
+    $ restic -r  /srv/restic-repo --quiet cat masterkey > key.master 
+    enter password for repository:
+    $ chmod 400 key.master
+    $ restic -r /srv/restic-repo --masterkeyfile key.master key list
+    repository a8e7f965 opened successfully
+    ID        User        Host      Created
+    ---------------------------------------------------
+    335ca24b  username    kasimir   2015-08-12 13:35:05
+    ---------------------------------------------------
+    $ restic -r /srv/restic-repo --masterkeyfile key.master key remove 335ca24b
+    repository a8e7f965 opened successfully
+    removed key 335ca24bc44d561f60b700bc2b52c1850dc1a97094d755dd7c1c185b91111d9b

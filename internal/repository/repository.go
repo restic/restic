@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 
 	"github.com/restic/restic/internal/cache"
@@ -568,6 +569,33 @@ func LoadIndex(ctx context.Context, repo restic.Repository, id restic.ID) (*Inde
 	return nil, err
 }
 
+// MasterKeyFile reads the master key from a given file
+func (r *Repository) MasterKeyFile(ctx context.Context, keyfile string) error {
+
+	buf, err := ioutil.ReadFile(keyfile) // just pass the file name
+	if err != nil {
+		debug.Log("ReadFile() returned error %v", err)
+		return errors.Wrap(err, "ReadFile")
+	}
+
+	master := &crypto.Key{}
+	err = json.Unmarshal(buf, master)
+	if err != nil {
+		debug.Log("Unmarshal() returned error %v", err)
+		return errors.Wrap(err, "Unmarshal")
+	}
+
+	r.key = master
+	r.dataPM.key = master
+	r.treePM.key = master
+	r.keyName = "master"
+	r.cfg, err = restic.LoadConfig(ctx, r)
+	if err != nil {
+		return errors.Fatalf("config cannot be loaded: %v", err)
+	}
+	return nil
+}
+
 // SearchKey finds a key with the supplied password, afterwards the config is
 // read and parsed. It tries at most maxKeys key files in the repo.
 func (r *Repository) SearchKey(ctx context.Context, password string, maxKeys int, keyHint string) error {
@@ -589,13 +617,13 @@ func (r *Repository) SearchKey(ctx context.Context, password string, maxKeys int
 
 // Init creates a new master key with the supplied password, initializes and
 // saves the repository config.
-func (r *Repository) Init(ctx context.Context, password string) error {
+func (r *Repository) Init(ctx context.Context, keyfile string, password string) error {
 	has, err := r.be.Test(ctx, restic.Handle{Type: restic.ConfigFile})
 	if err != nil {
 		return err
 	}
 	if has {
-		return errors.New("repository master key and config already initialized")
+		return errors.New("repository config already initialized")
 	}
 
 	cfg, err := restic.CreateConfig()
@@ -603,21 +631,48 @@ func (r *Repository) Init(ctx context.Context, password string) error {
 		return err
 	}
 
-	return r.init(ctx, password, cfg)
+	return r.init(ctx, keyfile, password, cfg)
 }
 
 // init creates a new master key with the supplied password and uses it to save
 // the config into the repo.
-func (r *Repository) init(ctx context.Context, password string, cfg restic.Config) error {
-	key, err := createMasterKey(r, password)
-	if err != nil {
-		return err
+// If keyfile is not empty, save the masterkey to the filename, else save it
+// in the repo with the given password
+func (r *Repository) init(ctx context.Context, keyfile string, password string, cfg restic.Config) error {
+	var err error
+
+	if keyfile == "" {
+		key, err := createMasterKey(r, password)
+		if err != nil {
+			return err
+		}
+
+		r.key = key.master
+		r.dataPM.key = key.master
+		r.treePM.key = key.master
+		r.keyName = key.Name()
+
+	} else {
+		master := crypto.NewRandomKey()
+		buf, err := json.MarshalIndent(master, "", "  ")
+		if err != nil {
+			return err
+		}
+
+		if _, err := os.Stat(keyfile); os.IsNotExist(err) {
+			ioutil.WriteFile(keyfile, buf, 0600)
+		} else if err != nil {
+			return err
+		} else {
+			return errors.Errorf("Keyfile %s already exists!\n", keyfile)
+		}
+
+		r.key = master
+		r.dataPM.key = master
+		r.treePM.key = master
+		r.keyName = "master"
 	}
 
-	r.key = key.master
-	r.dataPM.key = key.master
-	r.treePM.key = key.master
-	r.keyName = key.Name()
 	r.cfg = cfg
 	_, err = r.SaveJSONUnpacked(ctx, restic.ConfigFile, cfg)
 	return err
