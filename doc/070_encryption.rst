@@ -73,7 +73,7 @@ of you masterkey file ready (e.g. print-out)!
     ------------------------
     ------------------------
 
-If you want to export the master key from an existing repository, you can use the `cat masterkey` command:
+If you want to export the master key from an existing repository, you can use the ``cat masterkey`` command:
 
 .. code-block:: console
 

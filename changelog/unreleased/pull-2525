@@ -1,0 +1,9 @@
+Enhancement: Add flag `--masterkeyfile`
+
+We've added a new option for using the master key from a file.
+With this option, no key needs to be saved in the repo and no
+key derivation function is used. This may increase security
+and performance. However, you have to take care about your locally
+saved key file!
+
+https://github.com/restic/restic/pull/2525
