@@ -73,7 +73,7 @@ func CleanupIndex(opts CleanupIndexOptions, gopts GlobalOptions, repo restic.Rep
 	ctx := gopts.ctx
 
 	indexlist := restic.NewIDSet()
-	// TODO: Add parallel processi
+	// TODO: Add parallel processing
 	err := repo.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
 		indexlist.Insert(id)
 		return nil
@@ -99,16 +99,15 @@ func CleanupIndex(opts CleanupIndexOptions, gopts GlobalOptions, repo restic.Rep
 		}
 
 		changed := false
-		for packid := range idx.Packs() {
-			for _, blob := range idx.ListPack(packid) {
-				h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
-				if usedBlobs.Has(h) {
-					idxNew.Store(blob)
-					usedBlobs.Delete(h)
-				} else {
-					changed = true
-				}
+		for pb := range idx.Each(ctx) {
+			h := restic.BlobHandle{ID: pb.ID, Type: pb.Type}
+			if usedBlobs.Has(h) {
+				idxNew.Store(pb)
+				usedBlobs.Delete(h)
+			} else {
+				changed = true
 			}
+
 		}
 		if changed {
 			if !opts.DryRun {
@@ -144,14 +143,14 @@ func getUsedBlobs(gopts GlobalOptions, repo restic.Repository, snapshots []*rest
 	Verbosef("find data that is still in use for %d snapshots\n", len(snapshots))
 
 	usedBlobs := restic.NewBlobSet()
-	seenBlobs := restic.NewBlobSet()
+	//seenBlobs := restic.NewBlobSet()
 
 	bar := newProgressMax(!gopts.Quiet, uint64(len(snapshots)), "snapshots")
 	bar.Start()
 	for _, sn := range snapshots {
 		debug.Log("process snapshot %v", sn.ID())
 
-		err := restic.FindUsedBlobs(ctx, repo, *sn.Tree, usedBlobs, seenBlobs)
+		err := restic.FindUsedBlobs(ctx, repo, *sn.Tree, usedBlobs, usedBlobs)
 		if err != nil {
 			if repo.Backend().IsNotExist(err) {
 				return nil, errors.Fatal("unable to load a tree from the repo: " + err.Error())
