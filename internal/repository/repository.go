@@ -572,7 +572,7 @@ func LoadIndex(ctx context.Context, repo restic.Repository, id restic.ID) (*Inde
 // MasterKeyFile reads the master key from a given file
 func (r *Repository) MasterKeyFile(ctx context.Context, keyfile string) error {
 
-	buf, err := ioutil.ReadFile(keyfile) // just pass the file name
+	buf, err := ioutil.ReadFile(keyfile)
 	if err != nil {
 		debug.Log("ReadFile() returned error %v", err)
 		return errors.Wrap(err, "ReadFile")

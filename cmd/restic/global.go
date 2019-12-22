@@ -351,6 +351,41 @@ func ReadPasswordTwice(gopts GlobalOptions, prompt1, prompt2 string) (string, er
 
 const maxKeys = 20
 
+func tryPassword(opts GlobalOptions, s *repository.Repository) error {
+	var err error
+
+	passwordTriesLeft := 1
+	if stdinIsTerminal() && opts.password == "" {
+		passwordTriesLeft = 3
+	}
+
+	for ; passwordTriesLeft > 0; passwordTriesLeft-- {
+		opts.password, err = ReadPassword(opts, "enter password for repository: ")
+		if err != nil && passwordTriesLeft > 1 {
+			opts.password = ""
+			fmt.Printf("%s. Try again\n", err)
+		}
+		if err != nil {
+			continue
+		}
+
+		err = s.SearchKey(opts.ctx, opts.password, maxKeys, opts.KeyHint)
+		if err == nil {
+			if !opts.JSON {
+				Verbosef("password is correct\n")
+			}
+			break
+		}
+
+		if err != nil && passwordTriesLeft > 1 {
+			opts.password = ""
+			fmt.Printf("%s. Try again\n", err)
+		}
+	}
+
+	return err
+}
+
 // OpenRepository reads the password and opens the repository.
 func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 	if opts.Repo == "" {
@@ -369,35 +404,7 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 	s := repository.New(be)
 
 	if opts.MasterKeyFile == "" {
-
-		passwordTriesLeft := 1
-		if stdinIsTerminal() && opts.password == "" {
-			passwordTriesLeft = 3
-		}
-
-		for ; passwordTriesLeft > 0; passwordTriesLeft-- {
-			opts.password, err = ReadPassword(opts, "enter password for repository: ")
-			if err != nil && passwordTriesLeft > 1 {
-				opts.password = ""
-				fmt.Printf("%s. Try again\n", err)
-			}
-			if err != nil {
-				continue
-			}
-
-			err = s.SearchKey(opts.ctx, opts.password, maxKeys, opts.KeyHint)
-			if err == nil {
-				if !opts.JSON {
-					Verbosef("password is correct\n")
-				}
-				break
-			}
-
-			if err != nil && passwordTriesLeft > 1 {
-				opts.password = ""
-				fmt.Printf("%s. Try again\n", err)
-			}
-		}
+		err = tryPassword(opts, s)
 	} else {
 		err = s.MasterKeyFile(opts.ctx, opts.MasterKeyFile)
 	}

@@ -54,17 +54,35 @@ per repository. In fact, you can use the ``list``, ``add``, ``remove``, and
 Using master key from file
 **************************
 
-The flag ``--masterkeyfile`` allows you to directly use a file for the master key. Then no key needs to be stored
-in the repository. Make sure your masterkey cannot be accessed by unauthorized persons and that you  have a backup
-of you masterkey file ready (e.g. print-out)!
+The flag ``--masterkeyfile`` allows you to directly use a file for the master key.
+This allows restic to be used without the need to save a key in the repository.
+The masterkey file can be used in combination with repository keys, e.g. use the masterkey
+file to backup from one source and a repository key from the other source.
 
+Please note that the master key is not encrypted and contains the key that is
+needed to decrypt the repository in plain text!
+Hence make sure your masterkey cannot be accessed by unauthorized persons!
+
+If you do not have a key stored in the repository and loose your masterkey file,
+your repository cannot be decrypted!
+Hence make sure to have a backup of you masterkey file (e.g. print-out)!
+
+Using the master key makes restic independent from a password-encrypted master key stored
+in the repository. This prevents a potential unknown weakness in the key derivation function
+(KDF) which is used to encrypt the master key.
+The trade-off is that you have to take extra care about your masterkey file. If you only use
+the masterkey file and no repository keys, you also loose the ability to access your repository
+with different passwords.
+
+
+Example of creating and using a repository only with the master-key:
 
 .. code-block:: console
 
     $ restic -r /srv/restic-repo --masterkeyfile master.key init
-    created restic repository f855d38126 at /tmp/repo
+    created restic repository f855d38126 at /srv/restic-repo
 
-    Please note that you need the masterkey tmp.master to access the repository
+    Please note that you need the masterkey master.key to access the repository.
     Losing your masterkey file means that your data is irrecoverably lost.
 
     $ restic -r /srv/restic-repo --masterkeyfile master.key key list
@@ -85,15 +103,16 @@ If you want to export the master key from an existing repository, you can use th
     Please note that knowledge of your password is required to access
     the repository. Losing your password means that your data is
     irrecoverably lost.
-    $ restic -r  /srv/restic-repo --quiet cat masterkey > key.master 
+    $ restic -r  /srv/restic-repo --quiet cat masterkey > master.key && chmod 400 key.master
     enter password for repository:
-    $ chmod 400 key.master
-    $ restic -r /srv/restic-repo --masterkeyfile key.master key list
+    $ restic -r /srv/restic-repo --masterkeyfile master.key key list
     repository a8e7f965 opened successfully
     ID        User        Host      Created
     ---------------------------------------------------
     335ca24b  username    kasimir   2015-08-12 13:35:05
     ---------------------------------------------------
-    $ restic -r /srv/restic-repo --masterkeyfile key.master key remove 335ca24b
+    $ restic -r /srv/restic-repo --masterkeyfile master.key key remove 335ca24b
     repository a8e7f965 opened successfully
+    Removing repository key with masterkey file.
+    Make sure that you do not to loose the masterkey file if you delete all repository keys!
     removed key 335ca24bc44d561f60b700bc2b52c1850dc1a97094d755dd7c1c185b91111d9b

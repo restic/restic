@@ -129,6 +129,9 @@ func deleteKey(ctx context.Context, repo *repository.Repository, name string) er
 	if name == repo.KeyName() {
 		return errors.Fatal("refusing to remove key currently used to access repository")
 	}
+	if repo.KeyName() == "master" {
+		Verbosef("Removing repository key with masterkey file.\n Make sure that you do not to loose the masterkey file if you delete all repository keys!\n")
+	}
 
 	h := restic.Handle{Type: restic.KeyFile, Name: name}
 	err := repo.Backend().Remove(ctx, h)

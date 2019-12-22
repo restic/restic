@@ -56,7 +56,7 @@ func runInit(gopts GlobalOptions, args []string) error {
 		Verbosef("the repository. Losing your password means that your data is\n")
 		Verbosef("irrecoverably lost.\n")
 	} else {
-		Verbosef("Please note that you need the masterkey %s to access the repository\n", gopts.MasterKeyFile)
+		Verbosef("Please note that you need the masterkey %s to access the repository.\n", gopts.MasterKeyFile)
 		Verbosef("Losing your masterkey file means that your data is irrecoverably lost.\n")
 	}
 
