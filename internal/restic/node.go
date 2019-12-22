@@ -333,7 +333,7 @@ func (node *Node) createFifoAt(path string) error {
 }
 
 // FixTime returns a time.Time which can safely be used to marshal as JSON. If
-// the timestamp is ealier that year zero, the year is set to zero. In the same
+// the timestamp is earlier than year zero, the year is set to zero. In the same
 // way, if the year is larger than 9999, the year is set to 9999. Other than
 // the year nothing is changed.
 func FixTime(t time.Time) time.Time {
