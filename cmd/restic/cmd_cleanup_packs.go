@@ -2,12 +2,10 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"os"
 
+	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -19,8 +17,14 @@ var cmdCleanupPacks = &cobra.Command{
 	Use:   "cleanup-packs [flags]",
 	Short: "Remove packs not in index",
 	Long: `
-The "cleanup-packs" command removes packs
-that are not contained in any index files.
+The "cleanup-packs" cleans up data in packs
+that is not referenced in any index files.
+
+Without extra packs, only packs that are completely unused
+are deleted. You can specify additional conditions to repack
+packs that are only partly used or too small.
+These packs will be downloaded and uploaded again which can be
+quite time-consuming for remote repositories.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -30,7 +34,10 @@ that are not contained in any index files.
 
 // CleanupIndexOptions collects all options for the cleanup-index command.
 type CleanupPacksOptions struct {
-	DryRun bool
+	DryRun        bool
+	UnusedPercent int8
+	UnusedSpace   int64
+	UsedSpace     int64
 }
 
 var cleanupPacksOptions CleanupPacksOptions
@@ -40,6 +47,9 @@ func init() {
 
 	f := cmdCleanupPacks.Flags()
 	f.BoolVarP(&cleanupPacksOptions.DryRun, "dry-run", "n", false, "do not delete anything, just print what would be done")
+	f.Int8Var(&cleanupPacksOptions.UnusedPercent, "unused-percent", -1, "if set, repack packs with more than given % unused space")
+	f.Int64Var(&cleanupPacksOptions.UnusedSpace, "unused-space", -1, "if set, repack packs with more than given bytes unused space")
+	f.Int64Var(&cleanupPacksOptions.UsedSpace, "used-space", -1, "if set, repack packs with less than given bytes used space")
 }
 
 func runCleanupPacks(opts CleanupPacksOptions, gopts GlobalOptions) error {
@@ -67,48 +77,48 @@ func CleanupPacks(opts CleanupPacksOptions, gopts GlobalOptions, repo restic.Rep
 
 	ctx := gopts.ctx
 
-	Verbosef("find blobs in index\n")
-	packLength := make(map[restic.ID]uint64)
+	Verbosef("find packs in index and calculate used size...\n")
+	packLength := make(map[restic.ID]uint)
 	for blob := range repo.Index().Each(ctx) {
 		if _, ok := packLength[blob.PackID]; !ok {
 			// Start with 4 bytes overhead per pack (len of header)
 			packLength[blob.PackID] = 4
 		}
-		// overhead per blob is 16 bytes IV + 16 bytes MAc + (1+4+32) bytes in header
-		// => total overhead per blob: 69 Bytes
-		packLength[blob.PackID] += uint64(blob.Length) + 69
+		// overhead per blob is the entry Size of the header
+		// + crypto overhead
+		packLength[blob.PackID] += blob.Length + pack.EntrySize + crypto.Extension
 	}
 
 	Verbosef("repack and collect packs for deletion\n")
 	removePacks := restic.NewIDSet()
+	repackPacks := restic.NewIDSet()
 	removeBytes := uint64(0)
 	repackBytes := uint64(0)
-	repackedPacks := 0
+	repackFreeBytes := uint64(0)
+	repackSmall := uint(0)
 
 	// TODO: Add parallel processing
-	err := repo.List(ctx, restic.DataFile, func(id restic.ID, size int64) error {
+	err := repo.List(ctx, restic.DataFile, func(id restic.ID, i64size int64) error {
 		length, ok := packLength[id]
-		uintSize := uint64(size)
-		if !ok {
+		usedSize := int64(length)
+		packSize := i64size
+		unusedSize := packSize - usedSize
+		unusedPercent := int8((unusedSize * 100) / packSize)
+
+		switch {
+		case !ok:
 			// Pack not in index! => remove!
 			removePacks.Insert(id)
-			removeBytes += uintSize
-		} else {
-			// TODO: add threshold
-			if uintSize > length {
-				Verbosef("size of pack %s: %s, / used: %s\n", id.String(), formatBytes(uintSize), formatBytes(length))
-				if !opts.DryRun {
-					err := repack(ctx, repo, id, nil)
-					if err != nil {
-						return err
-					}
-				}
-				repackBytes += length
-				repackedPacks++
-				// Also remove Pack at the end!
-				removePacks.Insert(id)
-				removeBytes += uint64(size)
-			}
+			removeBytes += uint64(packSize)
+		case opts.UnusedPercent > 0 && unusedPercent > opts.UnusedPercent,
+			opts.UnusedSpace > 0 && unusedSize > opts.UnusedSpace:
+			repackPacks.Insert(id)
+			repackBytes += uint64(packSize)
+			repackFreeBytes += uint64(unusedSize)
+		case opts.UsedSpace > 0 && usedSize < opts.UsedSpace:
+			repackPacks.Insert(id)
+			repackBytes += uint64(packSize)
+			repackSmall++
 		}
 		return nil
 	})
@@ -116,9 +126,23 @@ func CleanupPacks(opts CleanupPacksOptions, gopts GlobalOptions, repo restic.Rep
 		return err
 	}
 
-	Verbosef("repacked %d packs with %s\n", repackedPacks, formatBytes(repackBytes))
+	if !opts.DryRun {
+		for id := range repackPacks {
+			err := repack(ctx, repo, id, nil)
+			if err != nil {
+				return err
+			}
+			// Also remove repacked pack at the end!
+			removePacks.Insert(id)
+		}
+	}
 
-	if repackedPacks > 0 {
+	err = repo.Flush(ctx)
+	if err != nil {
+		return err
+	}
+
+	if len(repackPacks) > 0 && !opts.DryRun {
 		Verbosef("updating index files...\n")
 
 		notFinalIdx := (repo.Index()).(*repository.MasterIndex).NotFinalIndexes()
@@ -127,65 +151,13 @@ func CleanupPacks(opts CleanupPacksOptions, gopts GlobalOptions, repo restic.Rep
 		}
 		repackIndex := notFinalIdx[0]
 
-		indexlist := restic.NewIDSet()
-		// TODO: Add parallel processing
-		err = repo.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
-			indexlist.Insert(id)
-			return nil
-		})
+		// TODO: Should be in index Operations:
+		//       e.g. something like
+
+		err = ChangePacksInIndex(opts, gopts, repo, repackIndex)
 		if err != nil {
 			return err
 		}
-
-		Verbosef("check %d files and change if neccessary\n", len(indexlist))
-		bar := newProgressMax(!gopts.Quiet, uint64(len(indexlist)), "index files processed")
-		bar.Start()
-		// TODO: Add parallel processing
-		for id := range indexlist {
-			idxNew := repository.NewIndex()
-			err := idxNew.AddToSupersedes(id)
-			if err != nil {
-				return err
-			}
-
-			idx, err := repository.LoadIndex(ctx, repo, id)
-			if err != nil {
-				return err
-			}
-
-			changed := false
-			for pb := range idx.Each(ctx) {
-				pbs, found := repackIndex.Lookup(pb.ID, pb.Type)
-				if found {
-					idxNew.Store(pbs[0])
-					changed = true
-				} else {
-					idxNew.Store(pb)
-				}
-			}
-			if changed {
-				if !opts.DryRun {
-					newID, err := repository.SaveIndex(ctx, repo, idxNew)
-					if err != nil {
-						return err
-					}
-					h := restic.Handle{Type: restic.IndexFile, Name: id.String()}
-					err = repo.Backend().Remove(ctx, h)
-					if err != nil {
-						Warnf("unable to remove index %v from the repository\n", id.Str())
-					}
-					if !gopts.JSON {
-						Verbosef("index %v was removed. new index: %v\n", id.Str(), newID.Str())
-					}
-				} else {
-					if !gopts.JSON {
-						Verbosef("would have replaced index %v\n", id.Str())
-					}
-				}
-			}
-			bar.Report(restic.Stat{Files: 1})
-		}
-		bar.Done()
 	}
 
 	Verbosef("will now delete %d packs\n", len(removePacks))
@@ -221,9 +193,11 @@ func CleanupPacks(opts CleanupPacksOptions, gopts GlobalOptions, repo restic.Rep
 }
 
 func repack(ctx context.Context, repo restic.Repository, packID restic.ID, p *restic.Progress) (err error) {
+
 	// load the complete pack into a temp file
 	h := restic.Handle{Type: restic.DataFile, Name: packID.String()}
 
+	// TODO:
 	tempfile, hash, packLength, err := repository.DownloadAndHash(ctx, repo.Backend(), h)
 	if err != nil {
 		return errors.Wrap(err, "Repack")
@@ -248,13 +222,11 @@ func repack(ctx context.Context, repo restic.Repository, packID restic.ID, p *re
 	debug.Log("processing pack %v, blobs: %v", packID, len(blobs))
 	var buf []byte
 	for _, entry := range blobs {
-		h := restic.BlobHandle{ID: entry.ID, Type: entry.Type}
-		// if blob not in index, don't write it
+		// if blob is not in index, don't write it
 		if !repo.Index().Has(entry.ID, entry.Type) {
+			debug.Log("not writing blob %v (not in index)", entry.ID)
 			continue
 		}
-
-		debug.Log("  process blob %v", h)
 
 		buf = buf[:]
 		if uint(len(buf)) < entry.Length {
@@ -262,31 +234,17 @@ func repack(ctx context.Context, repo restic.Repository, packID restic.ID, p *re
 		}
 		buf = buf[:entry.Length]
 
-		n, err := tempfile.ReadAt(buf, int64(entry.Offset))
+		n, err := repo.LoadBlob(ctx, entry.Type, entry.ID, buf)
+
 		if err != nil {
-			return errors.Wrap(err, "ReadAt")
+			return errors.Wrap(err, "LoadBlob")
+		}
+		if n+crypto.Extension != int(entry.Length) {
+			return errors.Errorf("error reading blob %v; length invalid. Want %d, got %d", entry.ID, entry.Length, n)
 		}
 
-		if n != len(buf) {
-			return errors.Errorf("read blob %v from %v: not enough bytes read, want %v, got %v",
-				h, tempfile.Name(), len(buf), n)
-		}
-
-		nonce, ciphertext := buf[:repo.Key().NonceSize()], buf[repo.Key().NonceSize():]
-		plaintext, err := repo.Key().Open(ciphertext[:0], nonce, ciphertext, nil)
-		if err != nil {
-			return err
-		}
-
-		id := restic.Hash(plaintext)
-		if !id.Equal(entry.ID) {
-			debug.Log("read blob %v/%v from %v: wrong data returned, hash is %v",
-				h.Type, h.ID, tempfile.Name(), id)
-			fmt.Fprintf(os.Stderr, "read blob %v from %v: wrong data returned, hash is %v",
-				h, tempfile.Name(), id)
-		}
-
-		_, err = repo.SaveBlob(ctx, entry.Type, plaintext, entry.ID)
+		buf = buf[:n]
+		_, err = repo.SaveBlob(ctx, entry.Type, buf, entry.ID)
 		if err != nil {
 			return err
 		}
@@ -295,15 +253,20 @@ func repack(ctx context.Context, repo restic.Repository, packID restic.ID, p *re
 
 	}
 
-	if err = tempfile.Close(); err != nil {
-		return errors.Wrap(err, "Close")
-	}
-
-	if err = fs.RemoveIfExists(tempfile.Name()); err != nil {
-		return errors.Wrap(err, "Remove")
-	}
 	if p != nil {
 		p.Report(restic.Stat{Blobs: 1})
 	}
 	return nil
+}
+
+func ChangePacksInIndex(opts CleanupPacksOptions, gopts GlobalOptions, repo restic.Repository, repackIndex *repository.Index) error {
+	return ModifyIndex(opts.DryRun, gopts, repo, func(pb restic.PackedBlob) (changed bool, pbnew restic.PackedBlob) {
+		pbs, found := repackIndex.Lookup(pb.ID, pb.Type)
+		if found {
+			Verbosef("replace packed blob %v by %v\n", pb, pbs[0])
+			changed = true
+			pbnew = pbs[0]
+		}
+		return
+	})
 }

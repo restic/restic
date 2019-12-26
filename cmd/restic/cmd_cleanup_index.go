@@ -14,8 +14,7 @@ var cmdCleanupIndex = &cobra.Command{
 	Short: "Remove unused blobs from index",
 	Long: `
 The "cleanup-index" command removes data from the index 
-that is not referenced and therefore not needed any more.
-`,
+that is not referenced and therefore not needed any more.`,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runCleanupIndex(cleanupIndexOptions, globalOptions)
@@ -61,15 +60,56 @@ func runCleanupIndex(opts CleanupIndexOptions, gopts GlobalOptions) error {
 	if err != nil {
 		return err
 	}
+
 	usedBlobs, err := getUsedBlobs(gopts, repo, snapshots)
 	if err != nil {
 		return err
 	}
 
-	return CleanupIndex(opts, gopts, repo, usedBlobs)
+	err = CleanupIndex(opts, gopts, repo, usedBlobs)
+	if err != nil {
+		return err
+	}
+
+	if len(usedBlobs) > 0 {
+		Warnf("There are blobs in use which are not referenced in the index files:\n")
+		for blob := range usedBlobs {
+			Warnf("%v\n", blob)
+		}
+	}
+	return nil
 }
 
 func CleanupIndex(opts CleanupIndexOptions, gopts GlobalOptions, repo restic.Repository, usedBlobs restic.BlobSet) error {
+	return ModifyIndex(opts.DryRun, gopts, repo, func(pb restic.PackedBlob) (changed bool, pbnew restic.PackedBlob) {
+		h := restic.BlobHandle{ID: pb.ID, Type: pb.Type}
+		if !usedBlobs.Has(h) {
+			// delete Blob from index
+			changed = true
+			return
+		}
+		// keep only once
+		usedBlobs.Delete(h)
+		// blob remains unchanged
+		return
+	})
+}
+
+// ModifyIndex modifies all index files with respect to a selector function
+// TODO: This function is a work-around for missing functionality in the Index data structure
+//       Index should be implemented such that it lines like the following work:
+//		for pb := range repo.Index().Each(ctx) {
+//			change, newpb := f(pb)
+//			if change {
+//				if (newpb != restic.PackedBlob{}) {
+//					repo.Index().Modify(newpb)
+//				} else {
+//					repo.Index().Delete(pb.ID, pb.Type)
+//				}
+//			}
+//		}
+//		repo.SaveModifiedIndices()
+func ModifyIndex(dryRun bool, gopts GlobalOptions, repo restic.Repository, f func(restic.PackedBlob) (bool, restic.PackedBlob)) error {
 	ctx := gopts.ctx
 
 	indexlist := restic.NewIDSet()
@@ -82,7 +122,7 @@ func CleanupIndex(opts CleanupIndexOptions, gopts GlobalOptions, repo restic.Rep
 		return err
 	}
 
-	Verbosef("check %d files and change if neccessary\n", len(indexlist))
+	Verbosef("check %d index files and change if neccessary\n", len(indexlist))
 	bar := newProgressMax(!gopts.Quiet, uint64(len(indexlist)), "index files processed")
 	bar.Start()
 	// TODO: Add parallel processing
@@ -100,17 +140,18 @@ func CleanupIndex(opts CleanupIndexOptions, gopts GlobalOptions, repo restic.Rep
 
 		changed := false
 		for pb := range idx.Each(ctx) {
-			h := restic.BlobHandle{ID: pb.ID, Type: pb.Type}
-			if usedBlobs.Has(h) {
-				idxNew.Store(pb)
-				usedBlobs.Delete(h)
-			} else {
+			change, newpb := f(pb)
+			if change {
+				if (newpb != restic.PackedBlob{}) {
+					idxNew.Store(newpb)
+				}
 				changed = true
+			} else {
+				idxNew.Store(pb)
 			}
-
 		}
 		if changed {
-			if !opts.DryRun {
+			if !dryRun {
 				newID, err := repository.SaveIndex(ctx, repo, idxNew)
 				if err != nil {
 					return err

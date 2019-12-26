@@ -23,7 +23,7 @@ func (rd *countingReaderAt) ReadAt(p []byte, off int64) (n int, err error) {
 func TestReadHeaderEagerLoad(t *testing.T) {
 
 	testReadHeader := func(dataSize, entryCount, expectedReadInvocationCount int) {
-		expectedHeader := rtest.Random(0, entryCount*int(entrySize)+crypto.Extension)
+		expectedHeader := rtest.Random(0, entryCount*int(EntrySize)+crypto.Extension)
 
 		buf := &bytes.Buffer{}
 		buf.Write(rtest.Random(0, dataSize))                                // pack blobs data
@@ -48,8 +48,8 @@ func TestReadHeaderEagerLoad(t *testing.T) {
 	testReadHeader(100, eagerEntries+1, 2)
 
 	// file size == eager header load size
-	eagerLoadSize := int((eagerEntries * entrySize) + crypto.Extension)
-	headerSize := int(1*entrySize) + crypto.Extension
+	eagerLoadSize := int((eagerEntries * EntrySize) + crypto.Extension)
+	headerSize := int(1*EntrySize) + crypto.Extension
 	dataSize := eagerLoadSize - headerSize - binary.Size(uint32(0))
 	testReadHeader(dataSize-1, 1, 1)
 	testReadHeader(dataSize, 1, 1)
@@ -61,8 +61,8 @@ func TestReadHeaderEagerLoad(t *testing.T) {
 
 func TestReadRecords(t *testing.T) {
 	testReadRecords := func(dataSize, entryCount, totalRecords int) {
-		totalHeader := rtest.Random(0, totalRecords*int(entrySize)+crypto.Extension)
-		off := len(totalHeader) - (entryCount*int(entrySize) + crypto.Extension)
+		totalHeader := rtest.Random(0, totalRecords*int(EntrySize)+crypto.Extension)
+		off := len(totalHeader) - (entryCount*int(EntrySize) + crypto.Extension)
 		if off < 0 {
 			off = 0
 		}
@@ -92,8 +92,8 @@ func TestReadRecords(t *testing.T) {
 	testReadRecords(100, eagerEntries, eagerEntries+1)
 
 	// file size == eager header load size
-	eagerLoadSize := int((eagerEntries * entrySize) + crypto.Extension)
-	headerSize := int(1*entrySize) + crypto.Extension
+	eagerLoadSize := int((eagerEntries * EntrySize) + crypto.Extension)
+	headerSize := int(1*EntrySize) + crypto.Extension
 	dataSize := eagerLoadSize - headerSize - binary.Size(uint32(0))
 	testReadRecords(dataSize-1, 1, 1)
 	testReadRecords(dataSize, 1, 1)
