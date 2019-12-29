@@ -79,12 +79,13 @@ func runRecover(gopts GlobalOptions) error {
 		}
 
 		for _, node := range tree.Nodes {
-			if node.Type != "dir" || node.Subtree == nil {
+			if node.Type != "dir" {
 				continue
 			}
 
-			subtree := *node.Subtree
-			trees[subtree] = true
+			for _, st := range node.Subtrees {
+				trees[*st] = true
+			}
 		}
 	}
 	Verbosef("\ndone\n")
@@ -107,7 +108,7 @@ func runRecover(gopts GlobalOptions) error {
 			Type:       "dir",
 			Name:       id.Str(),
 			Mode:       0755,
-			Subtree:    &subtreeID,
+			Subtrees:   []*restic.ID{&subtreeID},
 			AccessTime: time.Now(),
 			ModTime:    time.Now(),
 			ChangeTime: time.Now(),

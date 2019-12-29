@@ -96,9 +96,13 @@ type Options struct {
 	// available in the system.
 	SaveBlobConcurrency uint
 
+	// SaveTreeConcurrency sets how many goroutines waiting for finished subtrees
+	// are run concurrently.
+	SaveTreeConcurrency uint
+
 	// SaveTreeConcurrency sets how many trees are marshalled and saved to the
 	// repo concurrently.
-	SaveTreeConcurrency uint
+	SaveSubTreeConcurrency uint
 }
 
 // ApplyDefaults returns a copy of o with the default options set for all unset
@@ -116,9 +120,13 @@ func (o Options) ApplyDefaults() Options {
 	}
 
 	if o.SaveTreeConcurrency == 0 {
-		// use a relatively high concurrency here, having multiple SaveTree
+		o.SaveTreeConcurrency = o.SaveBlobConcurrency
+	}
+
+	if o.SaveSubTreeConcurrency == 0 {
+		// use a relatively high concurrency here, having multiple SaveSubTree
 		// workers is cheap
-		o.SaveTreeConcurrency = o.SaveBlobConcurrency * 20
+		o.SaveSubTreeConcurrency = o.SaveBlobConcurrency * 20
 	}
 
 	return o
@@ -192,21 +200,7 @@ func (arch *Archiver) nodeFromFileInfo(filename string, fi os.FileInfo) (*restic
 	return node, errors.Wrap(err, "NodeFromFileInfo")
 }
 
-// loadSubtree tries to load the subtree referenced by node. In case of an error, nil is returned.
-func (arch *Archiver) GetSubtrees(node *restic.Node) []*restic.ID {
-	if node == nil || node.Type != "dir" {
-		return nil
-	}
-	if node.Subtree != nil {
-		trees := make([]*restic.ID, 1)
-		trees[0] = node.Subtree
-		return trees
-	}
-
-	return node.Subtrees
-}
-
-// loadSubtree tries to load the subtree referenced by node. In case of an error, nil is returned.
+// loadSubtree tries to load the subtree referenced by subtree in a node. In case of an error, nil is returned.
 func (arch *Archiver) loadSubtree(ctx context.Context, subtree *restic.ID) *restic.Tree {
 
 	if subtree == nil {
@@ -223,12 +217,15 @@ func (arch *Archiver) loadSubtree(ctx context.Context, subtree *restic.ID) *rest
 	return tree
 }
 
-func (arch *Archiver) loadSingleSubtree(ctx context.Context, node *restic.Node) *restic.Tree {
-	subtrees := arch.GetSubtrees(node)
-
+// loadAllSubtrees tries to load all subtrees referenced by a node. In case of an error, nil is returned.
+func (arch *Archiver) loadAllSubtrees(ctx context.Context, node *restic.Node) *restic.Tree {
 	var tree restic.Tree
 
-	for _, id := range subtrees {
+	if node == nil || node.Subtrees == nil {
+		return nil
+	}
+
+	for _, id := range node.Subtrees {
 		subtree := arch.loadSubtree(ctx, id)
 		for _, node := range subtree.Nodes {
 			tree.Insert(node)
@@ -240,7 +237,7 @@ func (arch *Archiver) loadSingleSubtree(ctx context.Context, node *restic.Node) 
 // SaveDir stores a directory in the repo and returns the node. snPath is the
 // path within the current snapshot.
 func (arch *Archiver) SaveDir(ctx context.Context, snPath string, fi os.FileInfo, dir string, previous *restic.Node) (d FutureTree, err error) {
-	debug.Log("%v %v", snPath, dir)
+	debug.Log("%v %v previous: %v", snPath, dir, previous)
 
 	treeNode, err := arch.nodeFromFileInfo(dir, fi)
 	if err != nil {
@@ -255,7 +252,6 @@ func (arch *Archiver) SaveDir(ctx context.Context, snPath string, fi os.FileInfo
 
 	fts := make([]FutureSubTree, 0, len(names)/MaxNodesPerSubTree)
 
-	// TODO: only load one subtree and process!
 	var nodesNeeded int
 	if len(names) < MaxNodesPerSubTree {
 		nodesNeeded = len(names)
@@ -265,13 +261,7 @@ func (arch *Archiver) SaveDir(ctx context.Context, snPath string, fi os.FileInfo
 
 	nodes := make([]FutureNode, 0, nodesNeeded)
 
-	//oldSubtrees := arch.GetSubtrees(previous)
-	//actSubTree := 0
-	//actSubTreeIndex := 0
-	//var oldSubtree *restic.Tree
-	//if oldSubtrees != nil {
-	//	oldSubtree = arch.loadSubtree(ctx, &oldSubtrees[0])
-	//}
+	sti := arch.Repo.NewSubtreeIterator(ctx, previous)
 
 	for _, name := range names {
 		// test if context has been cancelled
@@ -289,22 +279,23 @@ func (arch *Archiver) SaveDir(ctx context.Context, snPath string, fi os.FileInfo
 
 		pathname := arch.FS.Join(dir, name)
 		var oldNode *restic.Node
-		// find old node if present
-		//for {
-		//		if actSubTreeIndex >= len(oldSubtree.Nodes) {
-		//			actSubTree++
-		//			if actSubTree >= len(oldSubtrees) {
-		//				break
-		//			}
-		//			oldSubtree = arch.loadSubtree(ctx, &oldSubtrees[actSubTree])
-		//			actSubTreeIndex = 0
-		//		}
-		//		if oldSubtree.Nodes[actSubTreeIndex].Name > name {
-		//			oldNode = oldSubtree.Nodes[actSubTreeIndex]
-		//		}
-		//		actSubTreeIndex++
-		//	}
-		//oldNode := oldSubtree.Find(name)
+		for {
+			if sti.Node() == nil {
+				break
+			}
+			debug.Log("trying oldnode  %s\n", sti.Node().Name)
+			if sti.Node().Name < name {
+				_, err := sti.Next()
+				if err != nil {
+					return FutureTree{}, err
+				}
+				continue
+			}
+			if sti.Node().Name == name {
+				oldNode = sti.Node()
+			}
+			break
+		}
 		snItem := join(snPath, name)
 		fn, excluded, err := arch.Save(ctx, snItem, pathname, oldNode)
 
@@ -625,7 +616,7 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 		start := time.Now()
 
 		oldNode := previous.Find(name)
-		oldSubtree := arch.loadSingleSubtree(ctx, oldNode)
+		oldSubtree := arch.loadAllSubtrees(ctx, oldNode)
 
 		// not a leaf node, archive subtree
 		subtree, err := arch.SaveTree(ctx, join(snPath, name), &subatree, oldSubtree)
@@ -657,7 +648,7 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 		}
 
 		node.Name = name
-		node.Subtree = &id
+		node.Subtrees = []*restic.ID{&id}
 
 		err = tree.Insert(node)
 		if err != nil {
@@ -834,7 +825,7 @@ func (arch *Archiver) runWorkers(ctx context.Context, t *tomb.Tomb) {
 	arch.fileSaver.CompleteBlob = arch.CompleteBlob
 	arch.fileSaver.NodeFromFileInfo = arch.nodeFromFileInfo
 
-	arch.treeSaver = NewTreeSaver(ctx, t, arch.Options.SaveTreeConcurrency, arch.saveTree, arch.Error)
+	arch.treeSaver = NewTreeSaver(ctx, t, arch.Options.SaveTreeConcurrency, arch.Options.SaveSubTreeConcurrency, arch.saveTree, arch.Error)
 }
 
 // Snapshot saves several targets and returns a snapshot.

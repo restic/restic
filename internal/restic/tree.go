@@ -91,8 +91,17 @@ func (t *Tree) Sort() {
 // Subtrees returns a slice of all subtree IDs of the tree.
 func (t *Tree) Subtrees() (trees IDs) {
 	for _, node := range t.Nodes {
-		if node.Type == "dir" && node.Subtree != nil {
-			trees = append(trees, *node.Subtree)
+		if node.Type == "dir" {
+			// can maybe omitted as Subtree should be only present during Unmarshal
+			// and not in internal data structure
+			if node.Subtree != nil {
+				trees = append(trees, *node.Subtree)
+			}
+			if node.Subtrees != nil {
+				for _, id := range node.Subtrees {
+					trees = append(trees, *id)
+				}
+			}
 		}
 	}
 

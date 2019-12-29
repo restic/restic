@@ -78,7 +78,7 @@ type TreeSaver struct {
 
 // NewTreeSaver returns a new tree saver. A worker pool with treeWorkers is
 // started, it is stopped when ctx is cancelled.
-func NewTreeSaver(ctx context.Context, t *tomb.Tomb, treeWorkers uint, saveTree func(context.Context, *restic.Tree) (restic.ID, ItemStats, error), errFn ErrorFunc) *TreeSaver {
+func NewTreeSaver(ctx context.Context, t *tomb.Tomb, treeWorkers, subTreeWorkers uint, saveTree func(context.Context, *restic.Tree) (restic.ID, ItemStats, error), errFn ErrorFunc) *TreeSaver {
 	ch := make(chan saveTreeJob)
 	chst := make(chan saveSubTreeJob)
 
@@ -94,6 +94,9 @@ func NewTreeSaver(ctx context.Context, t *tomb.Tomb, treeWorkers uint, saveTree 
 		t.Go(func() error {
 			return s.worker(t.Context(ctx), ch)
 		})
+	}
+
+	for i := uint(0); i < subTreeWorkers; i++ {
 		t.Go(func() error {
 			return s.workerSubTree(t.Context(ctx), chst)
 		})
@@ -105,10 +108,14 @@ func NewTreeSaver(ctx context.Context, t *tomb.Tomb, treeWorkers uint, saveTree 
 // Save stores the dir d and returns the data once it has been completed.
 func (s *TreeSaver) Save(ctx context.Context, snPath string, node *restic.Node, subtrees []FutureSubTree) FutureTree {
 	ch := make(chan saveTreeResponse, 1)
+
+	// copy subtrees to avoid race condition
+	subtreesCopy := make([]FutureSubTree, len(subtrees))
+	copy(subtreesCopy, subtrees)
 	job := saveTreeJob{
 		snPath:   snPath,
 		node:     node,
-		subtrees: subtrees,
+		subtrees: subtreesCopy,
 		ch:       ch,
 	}
 	select {
@@ -129,8 +136,11 @@ func (s *TreeSaver) Save(ctx context.Context, snPath string, node *restic.Node, 
 // Save stores the dir d and returns the data once it has been completed.
 func (s *TreeSaver) SaveSubTree(ctx context.Context, nodes []FutureNode) FutureSubTree {
 	ch := make(chan saveSubTreeResponse, 1)
+	// copy nodes to avoid race condition
+	nodesCopy := make([]FutureNode, len(nodes))
+	copy(nodesCopy, nodes)
 	job := saveSubTreeJob{
-		nodes: nodes,
+		nodes: nodesCopy,
 		ch:    ch,
 	}
 	select {
@@ -161,9 +171,10 @@ type saveTreeResponse struct {
 }
 
 // save stores the nodes as a tree in the repo.
-func (s *TreeSaver) save(ctx context.Context, snPath string, node *restic.Node, subtrees []FutureSubTree) (*restic.Node, ItemStats, error) {
+func (s *TreeSaver) save(ctx context.Context, snPath string, node *restic.Node, subtrees []FutureSubTree) (*restic.Node, ItemStats) {
 	var stats ItemStats
 
+	// If only one subtree is present, save in node.Subtree, else use node.Subtrees
 	if len(subtrees) == 1 {
 		fst := subtrees[0]
 		fst.Wait(ctx)
@@ -172,14 +183,13 @@ func (s *TreeSaver) save(ctx context.Context, snPath string, node *restic.Node, 
 	} else {
 		for _, fst := range subtrees {
 			fst.Wait(ctx)
-
 			debug.Log("insert %v", fst.ID())
 			node.Subtrees = append(node.Subtrees, fst.ID())
 			stats.Add(fst.Stats())
 		}
 	}
 
-	return node, stats, nil
+	return node, stats
 }
 
 func (s *TreeSaver) worker(ctx context.Context, jobs <-chan saveTreeJob) error {
@@ -191,18 +201,12 @@ func (s *TreeSaver) worker(ctx context.Context, jobs <-chan saveTreeJob) error {
 		case job = <-jobs:
 		}
 
-		node, stats, err := s.save(ctx, job.snPath, job.node, job.subtrees)
-		if err != nil {
-			debug.Log("error saving tree blob: %v", err)
-			close(job.ch)
-			return err
-		}
+		node, stats := s.save(ctx, job.snPath, job.node, job.subtrees)
 
 		job.ch <- saveTreeResponse{
 			node:  node,
 			stats: stats,
 		}
-		close(job.ch)
 	}
 }
 
@@ -278,6 +282,5 @@ func (s *TreeSaver) workerSubTree(ctx context.Context, jobs <-chan saveSubTreeJo
 			id:    id,
 			stats: stats,
 		}
-		close(job.ch)
 	}
 }

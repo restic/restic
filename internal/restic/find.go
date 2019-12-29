@@ -20,17 +20,19 @@ func FindUsedBlobs(ctx context.Context, repo Repository, treeID ID, blobs BlobSe
 				blobs.Insert(BlobHandle{ID: blob, Type: DataBlob})
 			}
 		case "dir":
-			subtreeID := *node.Subtree
-			h := BlobHandle{ID: subtreeID, Type: TreeBlob}
-			if seen.Has(h) {
-				continue
-			}
+			for _, st := range node.Subtrees {
+				subtreeID := *st
+				h := BlobHandle{ID: subtreeID, Type: TreeBlob}
+				if seen.Has(h) {
+					continue
+				}
 
-			seen.Insert(h)
+				seen.Insert(h)
 
-			err := FindUsedBlobs(ctx, repo, subtreeID, blobs, seen)
-			if err != nil {
-				return err
+				err := FindUsedBlobs(ctx, repo, subtreeID, blobs, seen)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}

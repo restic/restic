@@ -36,17 +36,18 @@ func cleanupNodeName(name string) string {
 }
 
 func newDir(ctx context.Context, root *Root, inode, parentInode uint64, node *restic.Node) (*dir, error) {
-	debug.Log("new dir for %v (%v)", node.Name, node.Subtree)
-	tree, err := root.repo.LoadTree(ctx, *node.Subtree)
-	if err != nil {
-		debug.Log("  error loading tree %v: %v", node.Subtree, err)
-		return nil, err
-	}
+	debug.Log("new dir for %v", node.Name)
 	items := make(map[string]*restic.Node)
-	for _, node := range tree.Nodes {
-		items[cleanupNodeName(node.Name)] = node
+	for _, st := range node.Subtrees {
+		tree, err := root.repo.LoadTree(ctx, *st)
+		if err != nil {
+			debug.Log("  error loading tree %v: %v", st, err)
+			return nil, err
+		}
+		for _, node := range tree.Nodes {
+			items[cleanupNodeName(node.Name)] = node
+		}
 	}
-
 	return &dir{
 		root:        root,
 		node:        node,
@@ -59,7 +60,7 @@ func newDir(ctx context.Context, root *Root, inode, parentInode uint64, node *re
 // replaceSpecialNodes replaces nodes with name "." and "/" by their contents.
 // Otherwise, the node is returned.
 func replaceSpecialNodes(ctx context.Context, repo restic.Repository, node *restic.Node) ([]*restic.Node, error) {
-	if node.Type != "dir" || node.Subtree == nil {
+	if node.Type != "dir" || node.Subtrees == nil {
 		return []*restic.Node{node}, nil
 	}
 
@@ -67,12 +68,15 @@ func replaceSpecialNodes(ctx context.Context, repo restic.Repository, node *rest
 		return []*restic.Node{node}, nil
 	}
 
-	tree, err := repo.LoadTree(ctx, *node.Subtree)
-	if err != nil {
-		return nil, err
+	var nodes []*restic.Node
+	for _, st := range node.Subtrees {
+		tree, err := repo.LoadTree(ctx, *st)
+		if err != nil {
+			return nil, err
+		}
+		nodes = append(nodes, tree.Nodes...)
 	}
-
-	return tree.Nodes, nil
+	return nodes, nil
 }
 
 func newDirFromSnapshot(ctx context.Context, root *Root, inode uint64, snapshot *restic.Snapshot) (*dir, error) {

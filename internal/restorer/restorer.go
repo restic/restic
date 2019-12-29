@@ -101,7 +101,7 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 		}
 
 		if node.Type == "dir" {
-			if node.Subtree == nil {
+			if node.Subtrees == nil {
 				return errors.Errorf("Dir without subtree in tree %v", treeID.Str())
 			}
 
@@ -113,9 +113,11 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 			}
 
 			if childMayBeSelected {
-				err = sanitizeError(res.traverseTree(ctx, nodeTarget, nodeLocation, *node.Subtree, visitor))
-				if err != nil {
-					return err
+				for _, st := range node.Subtrees {
+					err = sanitizeError(res.traverseTree(ctx, nodeTarget, nodeLocation, *st, visitor))
+					if err != nil {
+						return err
+					}
 				}
 			}
 

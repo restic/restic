@@ -35,9 +35,9 @@ func buildTreeMap(tree TestTree, m TreeMap) restic.ID {
 		case TestTree:
 			id := buildTreeMap(elem, m)
 			res.Insert(&restic.Node{
-				Name:    name,
-				Subtree: &id,
-				Type:    "dir",
+				Name:     name,
+				Subtrees: []*restic.ID{&id},
+				Type:     "dir",
 			})
 		default:
 			panic(fmt.Sprintf("invalid type %T", elem))

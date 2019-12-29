@@ -4,7 +4,6 @@ import (
 	"context"
 	"path"
 	"reflect"
-	"sort"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -101,11 +100,13 @@ func addBlobs(bs restic.BlobSet, node *restic.Node) {
 			bs.Insert(h)
 		}
 	case "dir":
-		h := restic.BlobHandle{
-			ID:   *node.Subtree,
-			Type: restic.TreeBlob,
+		for _, st := range node.Subtrees {
+			h := restic.BlobHandle{
+				ID:   *st,
+				Type: restic.TreeBlob,
+			}
+			bs.Insert(h)
 		}
-		bs.Insert(h)
 	}
 }
 
@@ -145,26 +146,28 @@ func updateBlobs(repo restic.Repository, blobs restic.BlobSet, stats *DiffStat) 
 	}
 }
 
-func (c *Comparer) printDir(ctx context.Context, mode string, stats *DiffStat, blobs restic.BlobSet, prefix string, id restic.ID) error {
-	debug.Log("print %v tree %v", mode, id)
-	tree, err := c.repo.LoadTree(ctx, id)
-	if err != nil {
-		return err
-	}
-
-	for _, node := range tree.Nodes {
-		name := path.Join(prefix, node.Name)
-		if node.Type == "dir" {
-			name += "/"
+func (c *Comparer) printDir(ctx context.Context, mode string, stats *DiffStat, blobs restic.BlobSet, prefix string, node *restic.Node) error {
+	for _, st := range node.Subtrees {
+		debug.Log("print %v subtree %v", mode, *st)
+		tree, err := c.repo.LoadTree(ctx, *st)
+		if err != nil {
+			return err
 		}
-		Printf("%-5s%v\n", mode, name)
-		stats.Add(node)
-		addBlobs(blobs, node)
 
-		if node.Type == "dir" {
-			err := c.printDir(ctx, mode, stats, blobs, name, *node.Subtree)
-			if err != nil {
-				Warnf("error: %v\n", err)
+		for _, node := range tree.Nodes {
+			name := path.Join(prefix, node.Name)
+			if node.Type == "dir" {
+				name += "/"
+			}
+			Printf("%-5s%v\n", mode, name)
+			stats.Add(node)
+			addBlobs(blobs, node)
+
+			if node.Type == "dir" {
+				err := c.printDir(ctx, mode, stats, blobs, name, node)
+				if err != nil {
+					Warnf("error: %v\n", err)
+				}
 			}
 		}
 	}
@@ -172,53 +175,66 @@ func (c *Comparer) printDir(ctx context.Context, mode string, stats *DiffStat, b
 	return nil
 }
 
-func uniqueNodeNames(tree1, tree2 *restic.Tree) (tree1Nodes, tree2Nodes map[string]*restic.Node, uniqueNames []string) {
-	names := make(map[string]struct{})
-	tree1Nodes = make(map[string]*restic.Node)
-	for _, node := range tree1.Nodes {
-		tree1Nodes[node.Name] = node
-		names[node.Name] = struct{}{}
-	}
+func (c *Comparer) diffTree(ctx context.Context, stats *DiffStats, prefix string, parentNode1, parentNode2 *restic.Node) error {
+	debug.Log("diffing %v to %v", parentNode1, parentNode2)
+	sti1 := c.repo.NewSubtreeIterator(ctx, parentNode1)
+	sti2 := c.repo.NewSubtreeIterator(ctx, parentNode2)
 
-	tree2Nodes = make(map[string]*restic.Node)
-	for _, node := range tree2.Nodes {
-		tree2Nodes[node.Name] = node
-		names[node.Name] = struct{}{}
-	}
-
-	uniqueNames = make([]string, 0, len(names))
-	for name := range names {
-		uniqueNames = append(uniqueNames, name)
-	}
-
-	sort.Sort(sort.StringSlice(uniqueNames))
-	return tree1Nodes, tree2Nodes, uniqueNames
-}
-
-func (c *Comparer) diffTree(ctx context.Context, stats *DiffStats, prefix string, id1, id2 restic.ID) error {
-	debug.Log("diffing %v to %v", id1, id2)
-	tree1, err := c.repo.LoadTree(ctx, id1)
-	if err != nil {
-		return err
-	}
-
-	tree2, err := c.repo.LoadTree(ctx, id2)
-	if err != nil {
-		return err
-	}
-
-	tree1Nodes, tree2Nodes, names := uniqueNodeNames(tree1, tree2)
-
-	for _, name := range names {
-		node1, t1 := tree1Nodes[name]
-		node2, t2 := tree2Nodes[name]
+	for {
+		node1 := sti1.Node()
+		node2 := sti2.Node()
+		debug.Log("diffing %v to %v", node1, node2)
 
 		addBlobs(stats.BlobsBefore, node1)
 		addBlobs(stats.BlobsAfter, node2)
 
 		switch {
-		case t1 && t2:
-			name := path.Join(prefix, name)
+		case node1 == nil && node2 == nil:
+			debug.Log("finished")
+			// both nodes are nil => finished comparing
+			return nil
+
+		case node1 == nil || node2.Name < node1.Name:
+			// node2 is inserted
+			name := node2.Name
+			prefix := path.Join(prefix, name)
+			if node2.Type == "dir" {
+				prefix += "/"
+			}
+			Printf("%-5s%v\n", "+", prefix)
+			stats.Added.Add(node2)
+
+			if node2.Type == "dir" {
+				err := c.printDir(ctx, "+", &stats.Added, stats.BlobsAfter, prefix, node2)
+				if err != nil {
+					Warnf("error: %v\n", err)
+				}
+			}
+			sti2.Next()
+
+		case node2 == nil || node1.Name < node2.Name:
+			// node1 is inserted
+			name := node1.Name
+			prefix := path.Join(prefix, name)
+			if node1.Type == "dir" {
+				prefix += "/"
+			}
+			Printf("%-5s%v\n", "-", prefix)
+			stats.Removed.Add(node1)
+
+			if node1.Type == "dir" {
+				err := c.printDir(ctx, "-", &stats.Removed, stats.BlobsBefore, prefix, node1)
+				if err != nil {
+					Warnf("error: %v\n", err)
+				}
+			}
+			sti1.Next()
+
+		default:
+			debug.Log("nodes are equal")
+			// both nodes identical (node1.Name == node2.Name)
+			name := node1.Name
+			name = path.Join(prefix, name)
 			mod := ""
 
 			if node1.Type != node2.Type {
@@ -243,39 +259,13 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStats, prefix string
 			}
 
 			if node1.Type == "dir" && node2.Type == "dir" {
-				err := c.diffTree(ctx, stats, name, *node1.Subtree, *node2.Subtree)
+				err := c.diffTree(ctx, stats, name, node1, node2)
 				if err != nil {
 					Warnf("error: %v\n", err)
 				}
 			}
-		case t1 && !t2:
-			prefix := path.Join(prefix, name)
-			if node1.Type == "dir" {
-				prefix += "/"
-			}
-			Printf("%-5s%v\n", "-", prefix)
-			stats.Removed.Add(node1)
-
-			if node1.Type == "dir" {
-				err := c.printDir(ctx, "-", &stats.Removed, stats.BlobsBefore, prefix, *node1.Subtree)
-				if err != nil {
-					Warnf("error: %v\n", err)
-				}
-			}
-		case !t1 && t2:
-			prefix := path.Join(prefix, name)
-			if node2.Type == "dir" {
-				prefix += "/"
-			}
-			Printf("%-5s%v\n", "+", prefix)
-			stats.Added.Add(node2)
-
-			if node2.Type == "dir" {
-				err := c.printDir(ctx, "+", &stats.Added, stats.BlobsAfter, prefix, *node2.Subtree)
-				if err != nil {
-					Warnf("error: %v\n", err)
-				}
-			}
+			sti1.Next()
+			sti2.Next()
 		}
 	}
 
@@ -334,7 +324,14 @@ func runDiff(opts DiffOptions, gopts GlobalOptions, args []string) error {
 
 	stats := NewDiffStats()
 
-	err = c.diffTree(ctx, stats, "/", *sn1.Tree, *sn2.Tree)
+	node1 := restic.Node{
+		Subtrees: []*restic.ID{sn1.Tree},
+	}
+	node2 := restic.Node{
+		Subtrees: []*restic.ID{sn2.Tree},
+	}
+
+	err = c.diffTree(ctx, stats, "/", &node1, &node2)
 	if err != nil {
 		return err
 	}

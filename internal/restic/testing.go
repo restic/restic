@@ -9,9 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/restic/restic/internal/errors"
-
 	"github.com/restic/chunker"
+	"github.com/restic/restic/internal/errors"
 )
 
 // fakeFile returns a reader which yields deterministic pseudo-random data.
@@ -118,10 +117,10 @@ func (fs *fakeFileSystem) saveTree(ctx context.Context, seed int64, depth int) I
 			id := fs.saveTree(ctx, treeSeed, depth-1)
 
 			node := &Node{
-				Name:    fmt.Sprintf("dir-%v", treeSeed),
-				Type:    "dir",
-				Mode:    0755,
-				Subtree: &id,
+				Name:     fmt.Sprintf("dir-%v", treeSeed),
+				Type:     "dir",
+				Mode:     0755,
+				Subtrees: []*ID{&id},
 			}
 
 			tree.Nodes = append(tree.Nodes, node)

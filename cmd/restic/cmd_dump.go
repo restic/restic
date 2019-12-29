@@ -83,11 +83,17 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repositor
 			case l == 1 && node.Type == "file":
 				return getNodeData(ctx, os.Stdout, repo, node)
 			case l > 1 && node.Type == "dir":
-				subtree, err := repo.LoadTree(ctx, *node.Subtree)
-				if err != nil {
-					return errors.Wrapf(err, "cannot load subtree for %q", item)
+				for _, st := range node.Subtrees {
+					subtree, err := repo.LoadTree(ctx, *st)
+					if err != nil {
+						return errors.Wrapf(err, "cannot load subtree for %q", item)
+					}
+					err = printFromTree(ctx, subtree, repo, item, pathComponents[1:], pathToPrint)
+					if err != nil {
+						return err
+					}
 				}
-				return printFromTree(ctx, subtree, repo, item, pathComponents[1:], pathToPrint)
+				return nil
 			case node.Type == "dir":
 				node.Path = pathToPrint
 				return tarTree(ctx, repo, node, pathToPrint)
@@ -216,27 +222,32 @@ func tarTree(ctx context.Context, repo restic.Repository, rootNode *restic.Node,
 		return err
 	}
 
-	err := walker.Walk(ctx, repo, *rootNode.Subtree, nil, func(_ restic.ID, nodepath string, node *restic.Node, err error) (bool, error) {
-		if err != nil {
-			return false, err
-		}
-		if node == nil {
-			return false, nil
-		}
-
-		node.Path = path.Join(rootPath, nodepath)
-
-		if node.Type == "file" || node.Type == "symlink" || node.Type == "dir" {
-			err := tarNode(ctx, tw, node, repo)
-			if err != err {
+	for _, st := range rootNode.Subtrees {
+		err := walker.Walk(ctx, repo, *st, nil, func(_ restic.ID, nodepath string, node *restic.Node, err error) (bool, error) {
+			if err != nil {
 				return false, err
 			}
+			if node == nil {
+				return false, nil
+			}
+
+			node.Path = path.Join(rootPath, nodepath)
+
+			if node.Type == "file" || node.Type == "symlink" || node.Type == "dir" {
+				err := tarNode(ctx, tw, node, repo)
+				if err != err {
+					return false, err
+				}
+			}
+
+			return false, nil
+		})
+
+		if err != nil {
+			return err
 		}
-
-		return false, nil
-	})
-
-	return err
+	}
+	return nil
 }
 
 func tarNode(ctx context.Context, tw *tar.Writer, node *restic.Node, repo restic.Repository) error {

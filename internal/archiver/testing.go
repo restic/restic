@@ -247,62 +247,64 @@ func TestEnsureFileContent(ctx context.Context, t testing.TB, repo restic.Reposi
 
 // TestEnsureTree checks that the tree ID in the repo matches dir. On Windows,
 // Symlinks are ignored.
-func TestEnsureTree(ctx context.Context, t testing.TB, prefix string, repo restic.Repository, treeID restic.ID, dir TestDir) {
+func TestEnsureTree(ctx context.Context, t testing.TB, prefix string, repo restic.Repository, trees []*restic.ID, dir TestDir) {
 	test.Helper(t).Helper()
 
-	tree, err := repo.LoadTree(ctx, treeID)
-	if err != nil {
-		t.Fatal(err)
-		return
-	}
-
 	var nodeNames []string
-	for _, node := range tree.Nodes {
-		nodeNames = append(nodeNames, node.Name)
-	}
-	debug.Log("%v (%v) %v", prefix, treeID.Str(), nodeNames)
-
 	checked := make(map[string]struct{})
-	for _, node := range tree.Nodes {
-		nodePrefix := path.Join(prefix, node.Name)
-
-		entry, ok := dir[node.Name]
-		if !ok {
-			t.Errorf("unexpected tree node %q found, want: %#v", node.Name, dir)
+	for i := range trees {
+		tree, err := repo.LoadTree(ctx, *trees[i])
+		if err != nil {
+			t.Fatal(err)
 			return
 		}
 
-		checked[node.Name] = struct{}{}
+		for _, node := range tree.Nodes {
+			nodeNames = append(nodeNames, node.Name)
+		}
+		debug.Log("%v (%v) %v", prefix, trees[i].Str(), nodeNames)
 
-		switch e := entry.(type) {
-		case TestDir:
-			if node.Type != "dir" {
-				t.Errorf("tree node %v has wrong type %q, want %q", nodePrefix, node.Type, "dir")
+		for _, node := range tree.Nodes {
+			nodePrefix := path.Join(prefix, node.Name)
+
+			entry, ok := dir[node.Name]
+			if !ok {
+				t.Errorf("unexpected tree node %q found, want: %#v", node.Name, dir)
 				return
 			}
 
-			if node.Subtree == nil {
-				t.Errorf("tree node %v has nil subtree", nodePrefix)
-				return
-			}
+			checked[node.Name] = struct{}{}
 
-			TestEnsureTree(ctx, t, path.Join(prefix, node.Name), repo, *node.Subtree, e)
-		case TestFile:
-			if node.Type != "file" {
-				t.Errorf("tree node %v has wrong type %q, want %q", nodePrefix, node.Type, "file")
-			}
-			TestEnsureFileContent(ctx, t, repo, nodePrefix, node, e)
-		case TestSymlink:
-			// skip symlinks on windows
-			if runtime.GOOS == "windows" {
-				continue
-			}
-			if node.Type != "symlink" {
-				t.Errorf("tree node %v has wrong type %q, want %q", nodePrefix, node.Type, "file")
-			}
+			switch e := entry.(type) {
+			case TestDir:
+				if node.Type != "dir" {
+					t.Errorf("tree node %v has wrong type %q, want %q", nodePrefix, node.Type, "dir")
+					return
+				}
 
-			if e.Target != node.LinkTarget {
-				t.Errorf("symlink %v has wrong target, want %q, got %q", nodePrefix, e.Target, node.LinkTarget)
+				if node.Subtrees == nil {
+					t.Errorf("tree node %v has nil subtrees", nodePrefix)
+					return
+				}
+
+				TestEnsureTree(ctx, t, path.Join(prefix, node.Name), repo, node.Subtrees, e)
+			case TestFile:
+				if node.Type != "file" {
+					t.Errorf("tree node %v has wrong type %q, want %q", nodePrefix, node.Type, "file")
+				}
+				TestEnsureFileContent(ctx, t, repo, nodePrefix, node, e)
+			case TestSymlink:
+				// skip symlinks on windows
+				if runtime.GOOS == "windows" {
+					continue
+				}
+				if node.Type != "symlink" {
+					t.Errorf("tree node %v has wrong type %q, want %q", nodePrefix, node.Type, "file")
+				}
+
+				if e.Target != node.LinkTarget {
+					t.Errorf("symlink %v has wrong target, want %q, got %q", nodePrefix, e.Target, node.LinkTarget)
+				}
 			}
 		}
 	}
@@ -339,5 +341,7 @@ func TestEnsureSnapshot(t testing.TB, repo restic.Repository, snapshotID restic.
 		return
 	}
 
-	TestEnsureTree(ctx, t, "/", repo, *sn.Tree, dir)
+	trees := []*restic.ID{sn.Tree}
+
+	TestEnsureTree(ctx, t, "/", repo, trees, dir)
 }

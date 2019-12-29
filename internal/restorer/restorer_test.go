@@ -92,7 +92,7 @@ func saveDir(t testing.TB, repo restic.Repository, nodes map[string]Node, inode 
 				Name:    name,
 				UID:     uint32(os.Getuid()),
 				GID:     uint32(os.Getgid()),
-				Subtree: &id,
+				Subtrees: []*restic.ID{}&id},
 			})
 		default:
 			t.Fatalf("unknown node type %T", node)

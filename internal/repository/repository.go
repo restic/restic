@@ -728,7 +728,72 @@ func (r *Repository) LoadTree(ctx context.Context, id restic.ID) (*restic.Tree, 
 		return nil, err
 	}
 
+	// if Subtree is present, add it to Subtrees instead
+	for _, node := range t.Nodes {
+		if node.Subtree != nil {
+			node.Subtrees = append(node.Subtrees, node.Subtree)
+			node.Subtree = nil
+		}
+	}
+
 	return t, nil
+}
+
+// SubtreeIterator is a struct to allow iteration over nodes in multiple
+// subtrees of a dir node
+type SubtreeIterator struct {
+	subtrees     []*restic.ID
+	indexSubtree int
+	indexNode    int
+	ctx          context.Context
+	repo         *Repository
+	tree         *restic.Tree
+}
+
+// NewSubtreeIterator gives a new SubtreeIterator to iterate over nodes
+// in all subtrees of a given dir node
+func (r *Repository) NewSubtreeIterator(ctx context.Context, node *restic.Node) restic.SubtreeIterator {
+	sti := SubtreeIterator{
+		ctx:  ctx,
+		repo: r,
+	}
+	if node != nil {
+		sti.subtrees = node.Subtrees
+	}
+	sti.Start()
+	return &sti
+}
+
+// Start resets the SubtreeIterator
+func (sti *SubtreeIterator) Start() {
+	sti.indexSubtree = -1
+	sti.Next()
+}
+
+// Next gives the next node
+func (sti *SubtreeIterator) Next() (node *restic.Node, err error) {
+	sti.indexNode++
+	if sti.indexSubtree == -1 || sti.indexNode >= len(sti.tree.Nodes) {
+		indexNew := sti.indexSubtree + 1
+		if indexNew >= len(sti.subtrees) {
+			return nil, nil
+		}
+		sti.indexSubtree = indexNew
+		sti.tree, err = sti.repo.LoadTree(sti.ctx, *sti.subtrees[sti.indexSubtree])
+		if err != nil {
+			return nil, err
+		}
+		sti.indexNode = 0
+	}
+	return sti.tree.Nodes[sti.indexNode], nil
+}
+
+// Node gives the actual node
+func (sti *SubtreeIterator) Node() *restic.Node {
+	if sti.indexSubtree == -1 || sti.indexNode >= len(sti.tree.Nodes) {
+		return nil
+	}
+	return sti.tree.Nodes[sti.indexNode]
 }
 
 // SaveTree stores a tree into the repository and returns the ID. The ID is

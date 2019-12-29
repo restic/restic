@@ -50,6 +50,14 @@ type Repository interface {
 
 	LoadTree(context.Context, ID) (*Tree, error)
 	SaveTree(context.Context, *Tree) (ID, error)
+
+	NewSubtreeIterator(context.Context, *Node) SubtreeIterator
+}
+
+type SubtreeIterator interface {
+	Start()
+	Next() (*Node, error)
+	Node() *Node
 }
 
 // Lister allows listing files in a backend.

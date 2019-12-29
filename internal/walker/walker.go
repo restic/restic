@@ -96,45 +96,48 @@ func walk(ctx context.Context, repo TreeLoader, prefix string, parentTreeID rest
 			continue
 		}
 
-		if node.Subtree == nil {
-			return false, errors.Errorf("subtree for node %v in tree %v is nil", node.Name, p)
+		if node.Subtrees == nil {
+			return false, errors.Errorf("subtrees for node %v in tree %v is nil", node.Name, p)
 		}
 
-		if ignoreTrees.Has(*node.Subtree) {
-			continue
-		}
+		for _, st := range node.Subtrees {
 
-		subtree, err := repo.LoadTree(ctx, *node.Subtree)
-		ignore, err := walkFn(parentTreeID, p, node, err)
-		if err != nil {
-			if err == SkipNode {
-				if ignore {
-					ignoreTrees.Insert(*node.Subtree)
-				}
+			if ignoreTrees.Has(*st) {
 				continue
 			}
-			return false, err
-		}
 
-		if ignore {
-			ignoreTrees.Insert(*node.Subtree)
-		}
+			subtree, err := repo.LoadTree(ctx, *st)
+			ignore, err := walkFn(parentTreeID, p, node, err)
+			if err != nil {
+				if err == SkipNode {
+					if ignore {
+						ignoreTrees.Insert(*st)
+					}
+					continue
+				}
+				return false, err
+			}
 
-		if !ignore {
-			allNodesIgnored = false
-		}
+			if ignore {
+				ignoreTrees.Insert(*st)
+			}
 
-		ignore, err = walk(ctx, repo, p, *node.Subtree, subtree, ignoreTrees, walkFn)
-		if err != nil {
-			return false, err
-		}
+			if !ignore {
+				allNodesIgnored = false
+			}
 
-		if ignore {
-			ignoreTrees.Insert(*node.Subtree)
-		}
+			ignore, err = walk(ctx, repo, p, *st, subtree, ignoreTrees, walkFn)
+			if err != nil {
+				return false, err
+			}
 
-		if !ignore {
-			allNodesIgnored = false
+			if ignore {
+				ignoreTrees.Insert(*st)
+			}
+
+			if !ignore {
+				allNodesIgnored = false
+			}
 		}
 	}
 

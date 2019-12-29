@@ -119,7 +119,7 @@ var nodeTests = []restic.Node{
 	{
 		Name:       "testDir",
 		Type:       "dir",
-		Subtree:    nil,
+		Subtrees:   nil,
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
 		Mode:       0750 | os.ModeDir,
@@ -155,7 +155,7 @@ var nodeTests = []restic.Node{
 	{
 		Name:       "testDir",
 		Type:       "dir",
-		Subtree:    nil,
+		Subtrees:   nil,
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
 		Mode:       0750 | os.ModeDir,

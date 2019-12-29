@@ -356,21 +356,22 @@ func (f *Finder) findIDs(ctx context.Context, sn *restic.Snapshot) error {
 		}
 
 		if node.Type == "dir" && f.treeIDs != nil {
-			treeID := node.Subtree
-			found := false
-			if _, ok := f.treeIDs[treeID.Str()]; ok {
-				found = true
-			} else if _, ok := f.treeIDs[treeID.String()]; ok {
-				found = true
-			}
-			if found {
-				f.out.PrintObject("tree", treeID.String(), nodepath, "", sn)
-				f.itemsFound++
-				// Terminate if we have found all trees (and we are not
-				// looking for blobs)
-				if f.itemsFound >= len(f.treeIDs) && f.blobIDs == nil {
-					// Return an error to terminate the Walk
-					return true, errors.New("OK")
+			for _, treeID := range node.Subtrees {
+				found := false
+				if _, ok := f.treeIDs[treeID.Str()]; ok {
+					found = true
+				} else if _, ok := f.treeIDs[treeID.String()]; ok {
+					found = true
+				}
+				if found {
+					f.out.PrintObject("tree", treeID.String(), nodepath, "", sn)
+					f.itemsFound++
+					// Terminate if we have found all trees (and we are not
+					// looking for blobs)
+					if f.itemsFound >= len(f.treeIDs) && f.blobIDs == nil {
+						// Return an error to terminate the Walk
+						return true, errors.New("OK")
+					}
 				}
 			}
 		}

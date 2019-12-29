@@ -939,8 +939,6 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 			}
 		}
 
-		t.Logf("node subtree %v", node.Subtree)
-
 		err = repo.Flush(ctx)
 		if err != nil {
 			t.Fatal(err)

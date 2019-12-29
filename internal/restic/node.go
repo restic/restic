@@ -431,6 +431,8 @@ func (node Node) Equals(other Node) bool {
 	if !node.sameExtendedAttributes(other) {
 		return false
 	}
+	// testing of Subtree can maybe omitted as Subtree should be only filled
+	// during Unmarshal and not in internal data sets...
 	if node.Subtree != nil {
 		if other.Subtree == nil {
 			return false

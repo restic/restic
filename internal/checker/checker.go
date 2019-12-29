@@ -631,14 +631,16 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 				size += uint64(blobSize)
 			}
 		case "dir":
-			if node.Subtree == nil {
+			if node.Subtrees == nil {
 				errs = append(errs, Error{TreeID: id, Err: errors.Errorf("dir node %q has no subtree", node.Name)})
 				continue
 			}
 
-			if node.Subtree.IsNull() {
-				errs = append(errs, Error{TreeID: id, Err: errors.Errorf("dir node %q subtree id is null", node.Name)})
-				continue
+			for _, st := range node.Subtrees {
+				if st.IsNull() {
+					errs = append(errs, Error{TreeID: id, Err: errors.Errorf("dir node %q subtree id is null", node.Name)})
+					continue
+				}
 			}
 
 		case "symlink", "socket", "chardev", "dev", "fifo":

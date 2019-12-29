@@ -220,7 +220,7 @@ func statsWalkTree(repo restic.Repository, stats *statsContainer) walker.WalkFun
 							// is always a data blob since we're accessing it via a file's Content array
 							blobSize, found := repo.LookupBlobSize(blobID, restic.DataBlob)
 							if !found {
-								return true, fmt.Errorf("blob %s not found for tree %s", blobID, *node.Subtree)
+								return true, fmt.Errorf("blob %s not found for node %s", blobID, node)
 							}
 
 							// count the blob's size, then add this blob by this
