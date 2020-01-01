@@ -138,8 +138,7 @@ func Open(cfg Config) (*SFTP, error) {
 
 func (r *SFTP) mkdirAllDataSubdirs() error {
 	for _, d := range r.Paths() {
-		err := r.mkdirAll(d, backend.Modes.Dir)
-		debug.Log("mkdirAll %v -> %v", d, err)
+		err := r.c.MkdirAll(d)
 		if err != nil {
 			return err
 		}
@@ -250,38 +249,6 @@ func (r *SFTP) Location() string {
 	return r.p
 }
 
-func (r *SFTP) mkdirAll(dir string, mode os.FileMode) error {
-	// check if directory already exists
-	fi, err := r.c.Lstat(dir)
-	if err == nil {
-		if fi.IsDir() {
-			return nil
-		}
-
-		return errors.Errorf("mkdirAll(%s): entry exists but is not a directory", dir)
-	}
-
-	// create parent directories
-	errMkdirAll := r.mkdirAll(path.Dir(dir), backend.Modes.Dir)
-
-	// create directory
-	errMkdir := r.c.Mkdir(dir)
-
-	// test if directory was created successfully
-	fi, err = r.c.Lstat(dir)
-	if err != nil {
-		// return previous errors
-		return errors.Errorf("mkdirAll(%s): unable to create directories: %v, %v", dir, errMkdirAll, errMkdir)
-	}
-
-	if !fi.IsDir() {
-		return errors.Errorf("mkdirAll(%s): entry exists but is not a directory", dir)
-	}
-
-	// set mode
-	return r.c.Chmod(dir, mode)
-}
-
 // Join joins the given paths and cleans them afterwards. This always uses
 // forward slashes, which is required by sftp.
 func Join(parts ...string) string {
@@ -306,7 +273,7 @@ func (r *SFTP) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader
 
 	if r.IsNotExist(err) {
 		// error is caused by a missing directory, try to create it
-		mkdirErr := r.mkdirAll(r.Dirname(h), backend.Modes.Dir)
+		mkdirErr := r.c.MkdirAll(r.Dirname(h))
 		if mkdirErr != nil {
 			debug.Log("error creating dir %v: %v", r.Dirname(h), mkdirErr)
 		} else {
