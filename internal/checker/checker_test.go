@@ -8,7 +8,9 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/checker"
@@ -363,20 +365,65 @@ func TestCheckerModifiedData(t *testing.T) {
 	}
 }
 
-func BenchmarkChecker(t *testing.B) {
+func loadBenchRepository(t *testing.B) (*checker.Checker, restic.Repository, func()) {
 	repodir, cleanup := test.Env(t, checkerTestData)
-	defer cleanup()
 
 	repo := repository.TestOpenLocal(t, repodir)
 
 	chkr := checker.New(repo)
 	hints, errs := chkr.LoadIndex(context.TODO())
 	if len(errs) > 0 {
+		defer cleanup()
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
 
 	if len(hints) > 0 {
 		t.Errorf("expected no hints, got %v: %v", len(hints), hints)
+	}
+	return chkr, repo, cleanup
+}
+
+func BenchmarkChecker(t *testing.B) {
+	chkr, _, cleanup := loadBenchRepository(t)
+	defer cleanup()
+
+	t.ResetTimer()
+
+	for i := 0; i < t.N; i++ {
+		test.OKs(t, checkPacks(chkr))
+		test.OKs(t, checkStruct(chkr))
+		test.OKs(t, checkData(chkr))
+	}
+}
+
+func benchmarkSnapshotScaling(t *testing.B, newSnapshots int) {
+	chkr, repo, cleanup := loadBenchRepository(t)
+	defer cleanup()
+
+	snID, err := restic.FindSnapshot(repo, "51d249d2")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var sn2 restic.Snapshot
+	err = repo.LoadJSONUnpacked(context.TODO(), restic.SnapshotFile, snID, &sn2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	treeID := sn2.Tree
+
+	for i := 0; i < newSnapshots; i++ {
+		sn, err := restic.NewSnapshot([]string{"test" + strconv.Itoa(i)}, nil, "", time.Now())
+		if err != nil {
+			t.Fatal(err)
+		}
+		sn.Tree = treeID
+
+		_, err = repo.SaveJSONUnpacked(context.TODO(), restic.SnapshotFile, sn)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	t.ResetTimer()
@@ -385,5 +432,15 @@ func BenchmarkChecker(t *testing.B) {
 		test.OKs(t, checkPacks(chkr))
 		test.OKs(t, checkStruct(chkr))
 		test.OKs(t, checkData(chkr))
+	}
+}
+
+func BenchmarkCheckerSnapshotScaling(b *testing.B) {
+	counts := []int{50, 100, 200}
+	for _, count := range counts {
+		count := count
+		b.Run(strconv.Itoa(count), func(b *testing.B) {
+			benchmarkSnapshotScaling(b, count)
+		})
 	}
 }
