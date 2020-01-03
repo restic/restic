@@ -20,9 +20,10 @@ type Config struct {
 	Layout        string `option:"layout" help:"use this backend layout (default: auto-detect)"`
 	StorageClass  string `option:"storage-class" help:"set S3 storage class (STANDARD, STANDARD_IA, ONEZONE_IA, INTELLIGENT_TIERING or REDUCED_REDUNDANCY)"`
 
-	Connections uint   `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
-	MaxRetries  uint   `option:"retries" help:"set the number of retries attempted"`
-	Region      string `option:"region" help:"set region"`
+	Connections  uint   `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
+	MaxRetries   uint   `option:"retries" help:"set the number of retries attempted"`
+	Region       string `option:"region" help:"set region"`
+	BucketLookup string `option:"bucket-lookup" help:"bucket lookup style: 'auto', 'dns', or 'path'."`
 }
 
 // NewConfig returns a new Config with the default values filled in.
