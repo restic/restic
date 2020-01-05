@@ -2087,6 +2087,10 @@ func TestMetadataChanged(t *testing.T) {
 
 	// make another snapshot
 	snapshotID, node3 := snapshot(t, repo, fs, snapshotID, "testfile")
+	// Override username and group to empty string - in case underlying system has user with UID 51234
+	// See https://github.com/restic/restic/issues/2372
+	node3.User = ""
+	node3.Group = ""
 
 	// make sure that metadata was recorded successfully
 	if !cmp.Equal(want, node3) {
