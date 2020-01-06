@@ -142,6 +142,9 @@ is not slowed down, which is particularly useful for servers.
 Creating new repo on a Synology NAS via sftp fails
 --------------------------------------------------
 
+For using restic with a Synology NAS via sftp, please make sure that the
+specified path is absolute, it must start with a slash (``/``).
+
 Sometimes creating a new restic repository on a Synology NAS via sftp fails
 with an error similar to the following:
 
@@ -160,8 +163,8 @@ different than the directory structure on the device and maybe even as exposed
 via other protocols.
 
 
-Try removing the /volume1 prefix in your paths. If this does not work, use sftp
-and ls to explore the SFTP file system hierarchy on your NAS.
+Try removing the ``/volume1`` prefix in your paths. If this does not work, use
+sftp and ls to explore the SFTP file system hierarchy on your NAS.
 
 The following may work:
 
