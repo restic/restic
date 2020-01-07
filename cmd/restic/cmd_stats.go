@@ -247,8 +247,13 @@ func statsWalkTree(repo restic.Repository, stats *statsContainer) walker.WalkFun
 			// as this is a file in the snapshot, we can simply count its
 			// size without worrying about uniqueness, since duplicate files
 			// will still be restored
-			stats.TotalSize += node.Size
 			stats.TotalFileCount++
+
+			// TODO - Issue #2531 Handle hard links by identifying duplicate inodes.
+			// (Duplicates should appear in the file count, but not the size count)
+			stats.TotalSize += node.Size
+
+			return false, nil
 		}
 
 		return true, nil
