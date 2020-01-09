@@ -114,23 +114,21 @@ restic encounters:
 In fact several hosts may use the same repository to backup directories
 and files leading to a greater de-duplication.
 
-Please be aware that when you backup different directories (or the
-directories to be saved have a variable name component like a
-time/date), restic always needs to read all files and only afterwards
-can compute which parts of the files need to be saved. When you backup
-the same directory again (maybe with new or changed files) restic will
-find the old snapshot in the repo and by default only reads those files
-that are new or have been modified since the last snapshot. This is
-decided based on the following attributes of the file in the file system:
+When directories are backed up for the first time, restic will read the 
+entire contents of all files in those directories.  Restic will determine 
+which parts of the file are already present in the repository, and which 
+parts need to be added to the repository. This is data de-duplication.   
+(Note: directories whose names change between backups will be treated as if
+they are being backed up for the first time).
 
- * Type (file, symlink, or directory?)
- * Modification time
+Subsequent backups of those directories will be faster because restic 
+will only read files that are new or have changed since the latest backup.
+Restic detects changed files by examining the following file attributes:
+
+ * Type (e.g. file, directory, device or symlink)
+ * Creation and modification times
  * Size
  * Inode number (internal number used to reference a file in a file system)
-
-Now is a good time to run ``restic check`` to verify that all data
-is properly stored in the repository. You should run this command regularly
-to make sure the internal structure of the repository is free of errors.
 
 Excluding Files
 ***************
@@ -256,6 +254,13 @@ patterns listed in a ``--files-from`` file are treated the same way as
 exclude patterns are, which means that beginning and trailing spaces are
 trimmed and special characters must be escaped. See the documentation
 above for more information.
+
+Checking the Repository
+***********************
+
+The integrity of the repository should be occasionally verified by running
+``restic check``. This command will examine the internal structure of the
+repository to assure that it is free of errors.
 
 Comparing Snapshots
 *******************
@@ -415,6 +420,3 @@ environment variables. The following list of environment variables:
     GOOGLE_APPLICATION_CREDENTIALS      Application Credentials for Google Cloud Storage (e.g. $HOME/.config/gs-secret-restic-key.json)
 
     RCLONE_BWLIMIT                      rclone bandwidth limit
-
-
-

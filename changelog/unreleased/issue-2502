@@ -1,0 +1,5 @@
+Documentation: Refactor backup documentation
+
+In particular, include a better description of mtime/ctime 
+
+https://github.com/restic/restic/issues/2502
