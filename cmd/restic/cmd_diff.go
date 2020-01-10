@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"os"
 	"path"
 	"reflect"
 	"sort"
@@ -64,9 +67,12 @@ type Comparer struct {
 
 // DiffStat collects stats for all types of items.
 type DiffStat struct {
-	Files, Dirs, Others  int
-	DataBlobs, TreeBlobs int
-	Bytes                uint64
+	Files     int    `json:"files"`
+	Dirs      int    `json:"dirs"`
+	Others    int    `json:"others"`
+	DataBlobs int    `json:"data_blobs"`
+	TreeBlobs int    `json:"tree_blobs"`
+	Bytes     uint64 `json:"bytes"`
 }
 
 // Add adds stats information for node to s.
@@ -109,20 +115,14 @@ func addBlobs(bs restic.BlobSet, node *restic.Node) {
 	}
 }
 
-// DiffStats collects the differences between two snapshots.
-type DiffStats struct {
-	ChangedFiles            int
-	Added                   DiffStat
-	Removed                 DiffStat
-	BlobsBefore, BlobsAfter restic.BlobSet
-}
-
-// NewDiffStats creates new stats for a diff run.
-func NewDiffStats() *DiffStats {
-	return &DiffStats{
-		BlobsBefore: restic.NewBlobSet(),
-		BlobsAfter:  restic.NewBlobSet(),
-	}
+// DiffStatsContainer collects the differences between two snapshots.
+type DiffStatsContainer struct {
+	SourceSnapshot          string         `json:"source_snapshot"`
+	TargetSnapshot          string         `json:"target_snapshot"`
+	ChangedFiles            int            `json:"changed_files"`
+	Added                   DiffStat       `json:"added"`
+	Removed                 DiffStat       `json:"removed"`
+	BlobsBefore, BlobsAfter restic.BlobSet `json:"-"`
 }
 
 // updateBlobs updates the blob counters in the stats struct.
@@ -195,7 +195,7 @@ func uniqueNodeNames(tree1, tree2 *restic.Tree) (tree1Nodes, tree2Nodes map[stri
 	return tree1Nodes, tree2Nodes, uniqueNames
 }
 
-func (c *Comparer) diffTree(ctx context.Context, stats *DiffStats, prefix string, id1, id2 restic.ID) error {
+func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, prefix string, id1, id2 restic.ID, quiet bool) error {
 	debug.Log("diffing %v to %v", id1, id2)
 	tree1, err := c.repo.LoadTree(ctx, id1)
 	if err != nil {
@@ -238,12 +238,12 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStats, prefix string
 				mod += "U"
 			}
 
-			if mod != "" {
+			if !quiet && mod != "" {
 				Printf("%-5s%v\n", mod, name)
 			}
 
 			if node1.Type == "dir" && node2.Type == "dir" {
-				err := c.diffTree(ctx, stats, name, *node1.Subtree, *node2.Subtree)
+				err := c.diffTree(ctx, stats, name, *node1.Subtree, *node2.Subtree, quiet)
 				if err != nil {
 					Warnf("error: %v\n", err)
 				}
@@ -253,7 +253,9 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStats, prefix string
 			if node1.Type == "dir" {
 				prefix += "/"
 			}
-			Printf("%-5s%v\n", "-", prefix)
+			if !quiet {
+				Printf("%-5s%v\n", "-", prefix)
+			}
 			stats.Removed.Add(node1)
 
 			if node1.Type == "dir" {
@@ -267,10 +269,12 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStats, prefix string
 			if node2.Type == "dir" {
 				prefix += "/"
 			}
-			Printf("%-5s%v\n", "+", prefix)
+			if !quiet {
+				Printf("%-5s%v\n", "+", prefix)
+			}
 			stats.Added.Add(node2)
 
-			if node2.Type == "dir" {
+			if !quiet && node2.Type == "dir" {
 				err := c.printDir(ctx, "+", &stats.Added, stats.BlobsAfter, prefix, *node2.Subtree)
 				if err != nil {
 					Warnf("error: %v\n", err)
@@ -317,7 +321,9 @@ func runDiff(opts DiffOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	Verbosef("comparing snapshot %v to %v:\n\n", sn1.ID().Str(), sn2.ID().Str())
+	if !gopts.JSON {
+		Verbosef("comparing snapshot %v to %v:\n\n", sn1.ID().Str(), sn2.ID().Str())
+	}
 
 	if sn1.Tree == nil {
 		return errors.Errorf("snapshot %v has nil tree", sn1.ID().Str())
@@ -332,9 +338,15 @@ func runDiff(opts DiffOptions, gopts GlobalOptions, args []string) error {
 		opts: diffOptions,
 	}
 
-	stats := NewDiffStats()
+	// create a container for the stats (and other needed state)
+	stats := &DiffStatsContainer{
+		SourceSnapshot: args[0],
+		TargetSnapshot: args[1],
+		BlobsBefore:    restic.NewBlobSet(),
+		BlobsAfter:     restic.NewBlobSet(),
+	}
 
-	err = c.diffTree(ctx, stats, "/", *sn1.Tree, *sn2.Tree)
+	err = c.diffTree(ctx, stats, "/", *sn1.Tree, *sn2.Tree, gopts.JSON)
 	if err != nil {
 		return err
 	}
@@ -342,6 +354,14 @@ func runDiff(opts DiffOptions, gopts GlobalOptions, args []string) error {
 	both := stats.BlobsBefore.Intersect(stats.BlobsAfter)
 	updateBlobs(repo, stats.BlobsBefore.Sub(both), &stats.Removed)
 	updateBlobs(repo, stats.BlobsAfter.Sub(both), &stats.Added)
+
+	if gopts.JSON {
+		err = json.NewEncoder(os.Stdout).Encode(stats)
+		if err != nil {
+			return fmt.Errorf("encoding output: %v", err)
+		}
+		return nil
+	}
 
 	Printf("\n")
 	Printf("Files:       %5d new, %5d removed, %5d changed\n", stats.Added.Files, stats.Removed.Files, stats.ChangedFiles)
