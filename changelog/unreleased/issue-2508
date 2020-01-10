@@ -1,0 +1,5 @@
+Enhancement: Support `diff --json`
+
+`diff --json` suppresses detailed diff and reports only summary diff stats in JSON
+
+https://github.com/restic/restic/issues/2508
