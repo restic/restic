@@ -1,4 +1,4 @@
-package jsonstatus
+package json
 
 import (
 	"bytes"

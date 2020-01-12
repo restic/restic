@@ -25,7 +25,7 @@ import (
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/textfile"
 	"github.com/restic/restic/internal/ui"
-	"github.com/restic/restic/internal/ui/jsonstatus"
+	"github.com/restic/restic/internal/ui/json"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
@@ -447,7 +447,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 
 	var p ArchiveProgressReporter
 	if gopts.JSON {
-		p = jsonstatus.NewBackup(term, gopts.verbosity)
+		p = json.NewBackup(term, gopts.verbosity)
 	} else {
 		p = ui.NewBackup(term, gopts.verbosity)
 	}
