@@ -39,10 +39,9 @@ given as the arguments.
 EXIT STATUS
 ===========
 
-Exit status is 0 if the command was successful, and non-zero if there was any error.
-
-Note that some issues such as unreadable or deleted files during backup
-currently doesn't result in a non-zero error exit status.
+Exit status is 0 if the command was successful.
+Exit status is 1 if there was a fatal error (no snapshot created).
+Exit status is 3 if some source data could not be read (incomplete snapshot created).
 `,
 	PreRun: func(cmd *cobra.Command, args []string) {
 		if backupOptions.Host == "" {
@@ -98,6 +97,9 @@ type BackupOptions struct {
 }
 
 var backupOptions BackupOptions
+
+// Error sentinel for invalid source data
+var InvalidSourceData = errors.New("Failed to read all source data during backup.")
 
 func init() {
 	cmdRoot.AddCommand(cmdBackup)
@@ -557,7 +559,11 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	arch.SelectByName = selectByNameFilter
 	arch.Select = selectFilter
 	arch.WithAtime = opts.WithAtime
-	arch.Error = p.Error
+	success := true
+	arch.Error = func(item string, fi os.FileInfo, err error) error {
+		success = false
+		return p.Error(item, fi, err)
+	}
 	arch.CompleteItem = p.CompleteItem
 	arch.StartFile = p.StartFile
 	arch.CompleteBlob = p.CompleteBlob
@@ -593,6 +599,9 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	p.Finish(id)
 	if !gopts.JSON {
 		p.P("snapshot %s saved\n", id.Str())
+	}
+	if !success {
+		return InvalidSourceData
 	}
 
 	// Return error if any
