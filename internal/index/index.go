@@ -84,10 +84,13 @@ func New(ctx context.Context, repo ListLoader, ignorePacks restic.IDSet, p *rest
 				return nil
 			}
 
-			if res, ok := oldIdx.Packs[id]; ok {
-				if err := idx.AddPack(res.ID, size, res.Entries); err != nil {
-					return err
+			if old, ok := oldIdx.Packs[id]; ok {
+				select {
+				case outputCh <- Result{PackID: old.ID, Entries: old.Entries, Size: old.Size}:
+				case <-ctx.Done():
+					return nil
 				}
+
 				if err := oldIdx.RemovePack(id); err != nil {
 					return err
 				}
