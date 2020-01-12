@@ -601,19 +601,18 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		return errors.Fatalf("unable to save snapshot: %v", err)
 	}
 
-	p.Finish(id)
-	if !gopts.JSON {
-		p.P("snapshot %s saved\n", id.Str())
-	}
-
 	// cleanly shutdown all running goroutines
 	t.Kill(nil)
 
 	// let's see if one returned an error
 	err = t.Wait()
-	if err != nil {
-		return err
+
+	// Report finished execution
+	p.Finish(id)
+	if !gopts.JSON {
+		p.P("snapshot %s saved\n", id.Str())
 	}
 
-	return nil
+	// Return error if any
+	return err
 }
