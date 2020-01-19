@@ -1,4 +1,4 @@
-Command Enhancement: New option history in snapshots command
+Enhancement: New option history in snapshots command
 
 I've added a new option for the snapshots command that shows the history of the snapshots
 
