@@ -1,0 +1,24 @@
+Command Enhancement: New option history in snapshots command
+
+I've added a new option for the snapshots command that shows the history of the snapshots
+
+example:
+
+./restic -r s3:s3.amazonaws.com/xxx --password-file ./restic.password snapshots --history --last
+
+repository xxx opened successfully, password is correct
+ID        Time                 Host          Tags        Paths
+----------------------------------------------------------------
+9a587b78  2020-01-18 01:00:08  xxx2019              /groups
+----------------------------------------------------------------
+1 snapshots
+
+Snapshot History
+Period  Current  Consecutive Previous Backups
+---------------------------------------------
+Daily   false    1
+Weekly  true     3
+---------------------------------------------
+
+
+https://github.com/restic/restic/issues/2554
