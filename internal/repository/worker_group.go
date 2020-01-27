@@ -24,10 +24,6 @@ func RunWorkers(ctx context.Context, count int, workerFunc func() error, finalFu
 	// make sure finalFunc is run
 	finalFunc()
 
-	// if the workers returned an error, return it to the caller
-	if err != nil {
-		return err
-	}
-
-	return nil
+	// return error from workers to the caller
+	return err
 }
