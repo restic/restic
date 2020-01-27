@@ -454,9 +454,8 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 	}
 
 	// final closes indexCh after all workers have terminated
-	final := func() error {
+	final := func() {
 		close(indexCh)
-		return nil
 	}
 
 	// run workers on ch
