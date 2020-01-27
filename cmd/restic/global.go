@@ -232,7 +232,7 @@ func Warnf(format string, args ...interface{}) {
 // Exitf uses Warnf to write the message and then terminates the process with
 // the given exit code.
 func Exitf(exitcode int, format string, args ...interface{}) {
-	if format[len(format)-1] != '\n' {
+	if !(strings.HasSuffix(format, "\n")) {
 		format += "\n"
 	}
 
