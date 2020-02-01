@@ -93,7 +93,6 @@ func runStats(gopts GlobalOptions, args []string) error {
 		uniqueInodes: make(map[uint64]struct{}),
 		fileBlobs:    make(map[string]restic.IDSet),
 		blobs:        restic.NewBlobSet(),
-		blobsSeen:    restic.NewBlobSet(),
 	}
 
 	if snapshotIDString != "" {
@@ -183,7 +182,7 @@ func statsWalkSnapshot(ctx context.Context, snapshot *restic.Snapshot, repo rest
 	if countMode == countModeRawData {
 		// count just the sizes of unique blobs; we don't need to walk the tree
 		// ourselves in this case, since a nifty function does it for us
-		return restic.FindUsedBlobs(ctx, repo, *snapshot.Tree, stats.blobs, stats.blobsSeen)
+		return restic.FindUsedBlobs(ctx, repo, *snapshot.Tree, stats.blobs)
 	}
 
 	err := walker.Walk(ctx, repo, *snapshot.Tree, restic.NewIDSet(), statsWalkTree(repo, stats))
@@ -318,9 +317,9 @@ type statsContainer struct {
 	// blobs that have been seen as a part of the file
 	fileBlobs map[string]restic.IDSet
 
-	// blobs and blobsSeen are used to count individual
+	// blobs are used to count individual
 	// unique blobs, independent of references to files
-	blobs, blobsSeen restic.BlobSet
+	blobs restic.BlobSet
 }
 
 // fileID is a 256-bit hash that distinguishes unique files.

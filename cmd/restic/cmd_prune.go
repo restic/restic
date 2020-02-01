@@ -186,14 +186,13 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	Verbosef("find data that is still in use for %d snapshots\n", stats.snapshots)
 
 	usedBlobs := restic.NewBlobSet()
-	seenBlobs := restic.NewBlobSet()
 
 	bar = newProgressMax(!gopts.Quiet, uint64(len(snapshots)), "snapshots")
 	bar.Start()
 	for _, sn := range snapshots {
 		debug.Log("process snapshot %v", sn.ID())
 
-		err = restic.FindUsedBlobs(ctx, repo, *sn.Tree, usedBlobs, seenBlobs)
+		err = restic.FindUsedBlobs(ctx, repo, *sn.Tree, usedBlobs)
 		if err != nil {
 			if repo.Backend().IsNotExist(err) {
 				return errors.Fatal("unable to load a tree from the repo: " + err.Error())
