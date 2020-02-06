@@ -251,7 +251,7 @@ A snapshot was created and stored in the S3 bucket. By default backups to AWS S3
 
 .. code-block:: console
 
-  $ ./restic backup -o s3.storageclass=REDUCED_REDUNDANCY test.bin
+  $ ./restic backup -o s3.storage-class=REDUCED_REDUNDANCY test.bin
 
 This snapshot may now be restored:
 
