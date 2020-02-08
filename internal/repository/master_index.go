@@ -132,19 +132,6 @@ func (mi *MasterIndex) Insert(idx *Index) {
 	mi.idx = append(mi.idx, idx)
 }
 
-// Remove deletes an index from the MasterIndex.
-func (mi *MasterIndex) Remove(index *Index) {
-	mi.idxMutex.Lock()
-	defer mi.idxMutex.Unlock()
-
-	for i, idx := range mi.idx {
-		if idx == index {
-			mi.idx = append(mi.idx[:i], mi.idx[i+1:]...)
-			return
-		}
-	}
-}
-
 // Store remembers the id and pack in the index.
 func (mi *MasterIndex) StorePack(id restic.ID, blobs []restic.Blob) {
 	mi.idxMutex.Lock()
