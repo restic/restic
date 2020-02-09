@@ -49,6 +49,7 @@ type Backup struct {
 			Changed   uint
 			Unchanged uint
 		}
+		ProcessedBytes uint64
 		archiver.ItemStats
 	}
 }
@@ -214,6 +215,8 @@ func (b *Backup) CompleteItem(item string, previous, current *restic.Node, s arc
 			done:     true,
 		}
 		return
+	} else {
+		b.summary.ProcessedBytes += current.Size;
 	}
 
 	switch current.Type {
@@ -360,7 +363,7 @@ func (b *Backup) Finish(snapshotID restic.ID) {
 		TreeBlobs:           b.summary.ItemStats.TreeBlobs,
 		DataAdded:           b.summary.ItemStats.DataSize + b.summary.ItemStats.TreeSize,
 		TotalFilesProcessed: b.summary.Files.New + b.summary.Files.Changed + b.summary.Files.Unchanged,
-		TotalBytesProcessed: b.totalBytes,
+		TotalBytesProcessed: b.summary.ProcessedBytes,
 		TotalDuration:       time.Since(b.start).Seconds(),
 		SnapshotID:          snapshotID.Str(),
 	})
