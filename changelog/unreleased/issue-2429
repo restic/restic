@@ -1,0 +1,6 @@
+Bugfix: backup --json reports total_bytes_processed as 0
+
+We've fixed the json output of total_bytes_processed. The non-json output
+was already fixed with pull request #2138 but left the json output untouched.
+
+https://github.com/restic/restic/issues/2429
