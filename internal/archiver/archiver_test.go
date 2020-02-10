@@ -1991,7 +1991,7 @@ type StatFS struct {
 
 func (fs *StatFS) Lstat(name string) (os.FileInfo, error) {
 	if !fs.OnlyOverrideStat {
-		if fi, ok := fs.OverrideLstat[name]; ok {
+		if fi, ok := fs.OverrideLstat[fixpath(name)]; ok {
 			return fi, nil
 		}
 	}
@@ -2000,7 +2000,7 @@ func (fs *StatFS) Lstat(name string) (os.FileInfo, error) {
 }
 
 func (fs *StatFS) OpenFile(name string, flags int, perm os.FileMode) (fs.File, error) {
-	if fi, ok := fs.OverrideLstat[name]; ok {
+	if fi, ok := fs.OverrideLstat[fixpath(name)]; ok {
 		f, err := fs.FS.OpenFile(name, flags, perm)
 		if err != nil {
 			return nil, err
