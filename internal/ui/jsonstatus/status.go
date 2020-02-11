@@ -216,7 +216,7 @@ func (b *Backup) CompleteItem(item string, previous, current *restic.Node, s arc
 		}
 		return
 	} else {
-		b.summary.ProcessedBytes += current.Size;
+		b.summary.ProcessedBytes += current.Size
 	}
 
 	switch current.Type {
