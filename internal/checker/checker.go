@@ -132,9 +132,8 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 	}
 
 	// final closes indexCh after all workers have terminated
-	final := func() error {
+	final := func() {
 		close(resultCh)
-		return nil
 	}
 
 	// run workers on ch
