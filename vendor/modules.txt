@@ -78,7 +78,7 @@ github.com/pkg/profile
 github.com/pkg/sftp
 # github.com/pkg/xattr v0.4.1
 github.com/pkg/xattr
-# github.com/restic/chunker v0.2.0
+# github.com/restic/chunker v0.3.0
 github.com/restic/chunker
 # github.com/russross/blackfriday v1.5.2
 github.com/russross/blackfriday

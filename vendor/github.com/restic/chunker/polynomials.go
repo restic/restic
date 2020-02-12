@@ -94,7 +94,6 @@ func (x Pol) Deg() int {
 	}
 
 	if uint64(x)&0x2 > 0 {
-		x >>= 1
 		r |= 1
 	}
 
