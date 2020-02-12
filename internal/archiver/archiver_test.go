@@ -1985,19 +1985,22 @@ func chmod(t testing.TB, filename string, mode os.FileMode) {
 type StatFS struct {
 	fs.FS
 
-	OverrideLstat map[string]os.FileInfo
+	OverrideLstat    map[string]os.FileInfo
+	OnlyOverrideStat bool
 }
 
 func (fs *StatFS) Lstat(name string) (os.FileInfo, error) {
-	if fi, ok := fs.OverrideLstat[name]; ok {
-		return fi, nil
+	if !fs.OnlyOverrideStat {
+		if fi, ok := fs.OverrideLstat[fixpath(name)]; ok {
+			return fi, nil
+		}
 	}
 
 	return fs.FS.Lstat(name)
 }
 
 func (fs *StatFS) OpenFile(name string, flags int, perm os.FileMode) (fs.File, error) {
-	if fi, ok := fs.OverrideLstat[name]; ok {
+	if fi, ok := fs.OverrideLstat[fixpath(name)]; ok {
 		f, err := fs.FS.OpenFile(name, flags, perm)
 		if err != nil {
 			return nil, err
@@ -2101,4 +2104,52 @@ func TestMetadataChanged(t *testing.T) {
 	TestEnsureFileContent(context.Background(), t, repo, "testfile", node3, files["testfile"].(TestFile))
 
 	checker.TestCheckRepo(t, repo)
+}
+
+func TestRacyFileSwap(t *testing.T) {
+	files := TestDir{
+		"file": TestFile{
+			Content: "foo bar test file",
+		},
+	}
+
+	tempdir, repo, cleanup := prepareTempdirRepoSrc(t, files)
+	defer cleanup()
+
+	back := fs.TestChdir(t, tempdir)
+	defer back()
+
+	// get metadata of current folder
+	fi := lstat(t, ".")
+	tempfile := filepath.Join(tempdir, "file")
+
+	statfs := &StatFS{
+		FS: fs.Local{},
+		OverrideLstat: map[string]os.FileInfo{
+			tempfile: fi,
+		},
+		OnlyOverrideStat: true,
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var tmb tomb.Tomb
+
+	arch := New(repo, fs.Track{FS: statfs}, Options{})
+	arch.Error = func(item string, fi os.FileInfo, err error) error {
+		t.Logf("archiver error as expected for %v: %v", item, err)
+		return err
+	}
+	arch.runWorkers(tmb.Context(ctx), &tmb)
+
+	// fs.Track will panic if the file was not closed
+	_, excluded, err := arch.Save(ctx, "/", tempfile, nil)
+	if err == nil {
+		t.Errorf("Save() should have failed")
+	}
+
+	if excluded {
+		t.Errorf("Save() excluded the node, that's unexpected")
+	}
 }
