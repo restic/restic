@@ -134,6 +134,7 @@ func TestIndexSerialize(t *testing.T) {
 	id := restic.NewRandomID()
 	rtest.OK(t, idx.SetID(id))
 	id2, err := idx.ID()
+	rtest.OK(t, err)
 	rtest.Assert(t, id2.Equal(id),
 		"wrong ID returned: want %v, got %v", id, id2)
 

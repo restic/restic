@@ -60,6 +60,7 @@ func TestLayout(t *testing.T) {
 				datafiles[fi.Name] = false
 				return nil
 			})
+			rtest.OK(t, err)
 
 			if len(datafiles) == 0 {
 				t.Errorf("List() returned zero data files")

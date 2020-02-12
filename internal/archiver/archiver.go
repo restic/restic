@@ -823,6 +823,10 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 	}
 
 	sn, err := restic.NewSnapshot(targets, opts.Tags, opts.Hostname, opts.Time)
+	if err != nil {
+		return nil, restic.ID{}, err
+	}
+
 	sn.Excludes = opts.Excludes
 	if !opts.ParentSnapshot.IsNull() {
 		id := opts.ParentSnapshot
