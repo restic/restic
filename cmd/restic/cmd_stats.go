@@ -112,6 +112,9 @@ func runStats(gopts GlobalOptions, args []string) error {
 		}
 
 		err = statsWalkSnapshot(ctx, snapshot, repo, stats)
+		if err != nil {
+			return fmt.Errorf("error walking snapshot: %v", err)
+		}
 	} else {
 		// iterate every snapshot in the repo
 		err = repo.List(ctx, restic.SnapshotFile, func(snapshotID restic.ID, size int64) error {
