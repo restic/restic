@@ -20,6 +20,11 @@ a directory.
 
 The special snapshot "latest" can be used to restore the latest snapshot in the
 repository.
+
+EXIT STATUS
+===========
+
+Exit status is 0 if the command was successful, and non-zero if there was any error.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {

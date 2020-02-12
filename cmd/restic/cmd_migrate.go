@@ -13,6 +13,11 @@ var cmdMigrate = &cobra.Command{
 	Long: `
 The "migrate" command applies migrations to a repository. When no migration
 name is explicitly given, a list of migrations that can be applied is printed.
+
+EXIT STATUS
+===========
+
+Exit status is 0 if the command was successful, and non-zero if there was any error.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {

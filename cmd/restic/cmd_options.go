@@ -13,6 +13,11 @@ var optionsCmd = &cobra.Command{
 	Short: "Print list of extended options",
 	Long: `
 The "options" command prints a list of extended options.
+
+EXIT STATUS
+===========
+
+Exit status is 0 if the command was successful, and non-zero if there was any error.
 `,
 	Hidden:            true,
 	DisableAutoGenTag: true,

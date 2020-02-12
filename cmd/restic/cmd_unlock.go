@@ -10,6 +10,11 @@ var unlockCmd = &cobra.Command{
 	Short: "Remove locks other processes created",
 	Long: `
 The "unlock" command removes stale locks that have been created by other restic processes.
+
+EXIT STATUS
+===========
+
+Exit status is 0 if the command was successful, and non-zero if there was any error.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
