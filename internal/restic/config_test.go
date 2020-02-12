@@ -36,6 +36,7 @@ func TestConfig(t *testing.T) {
 	rtest.OK(t, err)
 
 	_, err = saver(save).SaveJSONUnpacked(restic.ConfigFile, cfg1)
+	rtest.OK(t, err)
 
 	load := func(ctx context.Context, tpe restic.FileType, id restic.ID, arg interface{}) error {
 		rtest.Assert(t, tpe == restic.ConfigFile,
