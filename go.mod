@@ -26,7 +26,7 @@ require (
 	github.com/pkg/profile v1.3.0
 	github.com/pkg/sftp v1.10.0
 	github.com/pkg/xattr v0.4.1
-	github.com/restic/chunker v0.2.0
+	github.com/restic/chunker v0.3.0
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/smartystreets/assertions v0.0.0-20190401211740-f487f9de1cd3 // indirect
 	github.com/spf13/cobra v0.0.3

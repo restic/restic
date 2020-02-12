@@ -47,7 +47,7 @@ type Chunk struct {
 
 type chunkerState struct {
 	window [windowSize]byte
-	wpos   int
+	wpos   uint
 
 	buf  []byte
 	bpos uint
@@ -225,6 +225,12 @@ func (c *Chunker) Next(data []byte) (Chunk, error) {
 	tabout := c.tables.out
 	tabmod := c.tables.mod
 	polShift := c.polShift
+	// go guarantees the expected behavior for bit shifts even for shift counts
+	// larger than the value width. Bounding the value of polShift allows the compiler
+	// to optimize the code for 'digest >> polShift'
+	if polShift > 53-8 {
+		return Chunk{}, errors.New("the polynomial must have a degree less than or equal 53")
+	}
 	minSize := c.MinSize
 	maxSize := c.MaxSize
 	buf := c.buf
@@ -291,10 +297,12 @@ func (c *Chunker) Next(data []byte) (Chunk, error) {
 		wpos := c.wpos
 		for _, b := range buf[c.bpos:c.bmax] {
 			// slide(b)
+			// limit wpos before to elide array bound checks
+			wpos = wpos % windowSize
 			out := win[wpos]
 			win[wpos] = b
 			digest ^= uint64(tabout[out])
-			wpos = (wpos + 1) % windowSize
+			wpos++
 
 			// updateDigest
 			index := byte(digest >> polShift)
@@ -331,7 +339,7 @@ func (c *Chunker) Next(data []byte) (Chunk, error) {
 		}
 		c.digest = digest
 		c.window = win
-		c.wpos = wpos
+		c.wpos = wpos % windowSize
 
 		steps := c.bmax - c.bpos
 		if steps > 0 {
