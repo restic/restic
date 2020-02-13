@@ -1,0 +1,16 @@
+Bugfix: Do not crash with Synology NAS sftp server
+
+It was found that when restic is used to store data on an sftp server on a
+Synology NAS with a relative path (one which does not start with a slash), it
+may go into an endless loop trying to create directories on the server. We've
+fixed this bug by using a function in the sftp library instead of our own
+implementation.
+
+The bug was discovered because the Synology sftp server behaves erratic with
+non-absolute path (e.g. `home/restic-repo`). This can be resolved by just using
+an absolute path instead (`/home/restic-repo`). We've also added a paragraph in
+the FAQ.
+
+https://github.com/restic/restic/issues/2518
+https://github.com/restic/restic/issues/2363
+https://github.com/restic/restic/pull/2530
