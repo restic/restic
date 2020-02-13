@@ -25,7 +25,7 @@ import (
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/textfile"
 	"github.com/restic/restic/internal/ui"
-	"github.com/restic/restic/internal/ui/jsonstatus"
+	"github.com/restic/restic/internal/ui/json"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
@@ -447,7 +447,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 
 	var p ArchiveProgressReporter
 	if gopts.JSON {
-		p = jsonstatus.NewBackup(term, gopts.verbosity)
+		p = json.NewBackup(term, gopts.verbosity)
 	} else {
 		p = ui.NewBackup(term, gopts.verbosity)
 	}
@@ -601,19 +601,18 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		return errors.Fatalf("unable to save snapshot: %v", err)
 	}
 
-	p.Finish(id)
-	if !gopts.JSON {
-		p.P("snapshot %s saved\n", id.Str())
-	}
-
 	// cleanly shutdown all running goroutines
 	t.Kill(nil)
 
 	// let's see if one returned an error
 	err = t.Wait()
-	if err != nil {
-		return err
+
+	// Report finished execution
+	p.Finish(id)
+	if !gopts.JSON {
+		p.P("snapshot %s saved\n", id.Str())
 	}
 
-	return nil
+	// Return error if any
+	return err
 }

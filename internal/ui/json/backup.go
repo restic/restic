@@ -1,6 +1,7 @@
-package jsonstatus
+package json
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"os"
@@ -72,6 +73,20 @@ func NewBackup(term *termstatus.Terminal, verbosity uint) *Backup {
 		workerCh:    make(chan fileWorkerMessage),
 		finished:    make(chan struct{}),
 	}
+}
+
+func toJSONString(status interface{}) string {
+	buf := new(bytes.Buffer)
+	json.NewEncoder(buf).Encode(status)
+	return buf.String()
+}
+
+func (b *Backup) print(status interface{}) {
+	b.term.Print(toJSONString(status))
+}
+
+func (b *Backup) error(status interface{}) {
+	b.term.Error(toJSONString(status))
 }
 
 // Run regularly updates the status lines. It should be called in a separate
@@ -162,13 +177,13 @@ func (b *Backup) update(total, processed counter, errors uint, currentFiles map[
 	}
 	sort.Strings(status.CurrentFiles)
 
-	json.NewEncoder(b.StdioWrapper.Stdout()).Encode(status)
+	b.print(status)
 }
 
 // ScannerError is the error callback function for the scanner, it prints the
 // error in verbose mode and returns nil.
 func (b *Backup) ScannerError(item string, fi os.FileInfo, err error) error {
-	json.NewEncoder(b.StdioWrapper.Stderr()).Encode(errorUpdate{
+	b.error(errorUpdate{
 		MessageType: "error",
 		Error:       err,
 		During:      "scan",
@@ -179,7 +194,7 @@ func (b *Backup) ScannerError(item string, fi os.FileInfo, err error) error {
 
 // Error is the error callback function for the archiver, it prints the error and returns nil.
 func (b *Backup) Error(item string, fi os.FileInfo, err error) error {
-	json.NewEncoder(b.StdioWrapper.Stderr()).Encode(errorUpdate{
+	b.error(errorUpdate{
 		MessageType: "error",
 		Error:       err,
 		During:      "archival",
@@ -233,7 +248,7 @@ func (b *Backup) CompleteItem(item string, previous, current *restic.Node, s arc
 	if current.Type == "dir" {
 		if previous == nil {
 			if b.v >= 3 {
-				json.NewEncoder(b.StdioWrapper.Stdout()).Encode(verboseUpdate{
+				b.print(verboseUpdate{
 					MessageType:  "verbose_status",
 					Action:       "new",
 					Item:         item,
@@ -250,7 +265,7 @@ func (b *Backup) CompleteItem(item string, previous, current *restic.Node, s arc
 
 		if previous.Equals(*current) {
 			if b.v >= 3 {
-				json.NewEncoder(b.StdioWrapper.Stdout()).Encode(verboseUpdate{
+				b.print(verboseUpdate{
 					MessageType: "verbose_status",
 					Action:      "unchanged",
 					Item:        item,
@@ -261,7 +276,7 @@ func (b *Backup) CompleteItem(item string, previous, current *restic.Node, s arc
 			b.summary.Unlock()
 		} else {
 			if b.v >= 3 {
-				json.NewEncoder(b.StdioWrapper.Stdout()).Encode(verboseUpdate{
+				b.print(verboseUpdate{
 					MessageType:  "verbose_status",
 					Action:       "modified",
 					Item:         item,
@@ -284,7 +299,7 @@ func (b *Backup) CompleteItem(item string, previous, current *restic.Node, s arc
 
 		if previous == nil {
 			if b.v >= 3 {
-				json.NewEncoder(b.StdioWrapper.Stdout()).Encode(verboseUpdate{
+				b.print(verboseUpdate{
 					MessageType: "verbose_status",
 					Action:      "new",
 					Item:        item,
@@ -300,7 +315,7 @@ func (b *Backup) CompleteItem(item string, previous, current *restic.Node, s arc
 
 		if previous.Equals(*current) {
 			if b.v >= 3 {
-				json.NewEncoder(b.StdioWrapper.Stdout()).Encode(verboseUpdate{
+				b.print(verboseUpdate{
 					MessageType: "verbose_status",
 					Action:      "unchanged",
 					Item:        item,
@@ -311,7 +326,7 @@ func (b *Backup) CompleteItem(item string, previous, current *restic.Node, s arc
 			b.summary.Unlock()
 		} else {
 			if b.v >= 3 {
-				json.NewEncoder(b.StdioWrapper.Stdout()).Encode(verboseUpdate{
+				b.print(verboseUpdate{
 					MessageType: "verbose_status",
 					Action:      "modified",
 					Item:        item,
@@ -335,7 +350,7 @@ func (b *Backup) ReportTotal(item string, s archiver.ScanStats) {
 
 	if item == "" {
 		if b.v >= 2 {
-			json.NewEncoder(b.StdioWrapper.Stdout()).Encode(verboseUpdate{
+			b.print(verboseUpdate{
 				MessageType: "status",
 				Action:      "scan_finished",
 				Duration:    time.Since(b.start).Seconds(),
@@ -351,7 +366,7 @@ func (b *Backup) ReportTotal(item string, s archiver.ScanStats) {
 // Finish prints the finishing messages.
 func (b *Backup) Finish(snapshotID restic.ID) {
 	close(b.finished)
-	json.NewEncoder(b.StdioWrapper.Stdout()).Encode(summaryOutput{
+	b.print(summaryOutput{
 		MessageType:         "summary",
 		FilesNew:            b.summary.Files.New,
 		FilesChanged:        b.summary.Files.Changed,
