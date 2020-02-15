@@ -156,7 +156,7 @@ func (s *statefulOutput) PrintPatternJSON(path string, node *restic.Node) {
 	if s.hits > 0 {
 		Printf(",")
 	}
-	Printf(string(b))
+	Print(string(b))
 	s.hits++
 }
 
@@ -168,7 +168,7 @@ func (s *statefulOutput) PrintPatternNormal(path string, node *restic.Node) {
 		s.oldsn = s.newsn
 		Verbosef("Found matching entries in snapshot %s from %s\n", s.oldsn.ID().Str(), s.oldsn.Time.Local().Format(TimeFormat))
 	}
-	Printf(formatNode(path, node, s.ListLong) + "\n")
+	Println(formatNode(path, node, s.ListLong))
 }
 
 func (s *statefulOutput) PrintPattern(path string, node *restic.Node) {
@@ -207,7 +207,7 @@ func (s *statefulOutput) PrintObjectJSON(kind, id, nodepath, treeID string, sn *
 	if s.hits > 0 {
 		Printf(",")
 	}
-	Printf(string(b))
+	Print(string(b))
 	s.hits++
 }
 

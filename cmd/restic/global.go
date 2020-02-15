@@ -189,6 +189,22 @@ func Printf(format string, args ...interface{}) {
 	}
 }
 
+// Print writes the message to the configured stdout stream.
+func Print(args ...interface{}) {
+	_, err := fmt.Fprint(globalOptions.stdout, args...)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "unable to write to stdout: %v\n", err)
+	}
+}
+
+// Println writes the message to the configured stdout stream.
+func Println(args ...interface{}) {
+	_, err := fmt.Fprintln(globalOptions.stdout, args...)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "unable to write to stdout: %v\n", err)
+	}
+}
+
 // Verbosef calls Printf to write the message when the verbose flag is set.
 func Verbosef(format string, args ...interface{}) {
 	if globalOptions.verbosity >= 1 {
