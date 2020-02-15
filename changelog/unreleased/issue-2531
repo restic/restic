@@ -1,0 +1,5 @@
+Bugfix: Fix incorrect size calculation in `stats --mode restore-size` 
+
+The restore-size mode of stats was counting hard-linked files as if they were independent.
+
+https://github.com/restic/restic/issues/2531

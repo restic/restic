@@ -89,10 +89,11 @@ func runStats(gopts GlobalOptions, args []string) error {
 
 	// create a container for the stats (and other needed state)
 	stats := &statsContainer{
-		uniqueFiles: make(map[fileID]struct{}),
-		fileBlobs:   make(map[string]restic.IDSet),
-		blobs:       restic.NewBlobSet(),
-		blobsSeen:   restic.NewBlobSet(),
+		uniqueFiles:  make(map[fileID]struct{}),
+		uniqueInodes: make(map[uint64]struct{}),
+		fileBlobs:    make(map[string]restic.IDSet),
+		blobs:        restic.NewBlobSet(),
+		blobsSeen:    restic.NewBlobSet(),
 	}
 
 	if snapshotIDString != "" {
@@ -247,8 +248,16 @@ func statsWalkTree(repo restic.Repository, stats *statsContainer) walker.WalkFun
 			// as this is a file in the snapshot, we can simply count its
 			// size without worrying about uniqueness, since duplicate files
 			// will still be restored
-			stats.TotalSize += node.Size
 			stats.TotalFileCount++
+
+			// if inodes are present, only count each inode once
+			// (hard links do not increase restore size)
+			if _, ok := stats.uniqueInodes[node.Inode]; !ok || node.Inode == 0 {
+				stats.uniqueInodes[node.Inode] = struct{}{}
+				stats.TotalSize += node.Size
+			}
+
+			return false, nil
 		}
 
 		return true, nil
@@ -300,6 +309,10 @@ type statsContainer struct {
 	// uniqueFiles marks visited files according to their
 	// contents (hashed sequence of content blob IDs)
 	uniqueFiles map[fileID]struct{}
+
+	// uniqueInodes marks visited files according to their
+	// inode # (hashed sequence of inode numbers)
+	uniqueInodes map[uint64]struct{}
 
 	// fileBlobs maps a file name (path) to the set of
 	// blobs that have been seen as a part of the file
