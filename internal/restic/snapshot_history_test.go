@@ -126,3 +126,154 @@ Daily   true     7
 		t.Errorf("history was not printed correctly %v\n", is)
 	}
 }
+
+
+func TestNewHourlyBackupRunningFindFor12HoursWithoutCurrent(t *testing.T) {
+	historyToPrint := restic.SnapshotHistory{
+		CurrentHour:               false,
+		ConsecutiveHourlyBackups:  12,
+		CurrentDay:                true,
+		ConsecutiveDailyBackups:   0,
+		CurrentWeek:               true,
+		ConsecutiveWeeklyBackups:  0,
+		CurrentMonth:              true,
+		ConsecutiveMonthlyBackups: 0,
+		CurrentYear:               true,
+		ConsecutiveYearlyBackups:  0,
+	}
+	buf := new(bytes.Buffer)
+	restic.PrintHistory(buf, historyToPrint)
+	is := buf.String()
+
+	tobe := `
+Snapshot History
+Period  Current  Consecutive Previous Backups
+---------------------------------------------
+Hourly  false    12
+Daily   true     0
+---------------------------------------------
+`
+	if tobe != is {
+		t.Errorf("history was not printed correctly %v\n", is)
+	}
+}
+
+func TestNewHourlyBackupRunningFineFor12HoursWithCurrent(t *testing.T) {
+	historyToPrint := restic.SnapshotHistory{
+		CurrentHour:               true,
+		ConsecutiveHourlyBackups:  12,
+		CurrentDay:                true,
+		ConsecutiveDailyBackups:   0,
+		CurrentWeek:               true,
+		ConsecutiveWeeklyBackups:  0,
+		CurrentMonth:              true,
+		ConsecutiveMonthlyBackups: 0,
+		CurrentYear:               true,
+		ConsecutiveYearlyBackups:  0,
+	}
+	buf := new(bytes.Buffer)
+	restic.PrintHistory(buf, historyToPrint)
+	is := buf.String()
+
+	tobe := `
+Snapshot History
+Period  Current  Consecutive Previous Backups
+---------------------------------------------
+Hourly  true     12
+---------------------------------------------
+`
+	if tobe != is {
+		t.Errorf("history was not printed correctly %v\n", is)
+	}
+}
+
+
+func TestNewHourlyBackupRunningFineFor12Hours3Days(t *testing.T) {
+	historyToPrint := restic.SnapshotHistory{
+		CurrentHour:               true,
+		ConsecutiveHourlyBackups:  24,
+		CurrentDay:                true,
+		ConsecutiveDailyBackups:   3,
+		CurrentWeek:               true,
+		ConsecutiveWeeklyBackups:  0,
+		CurrentMonth:              true,
+		ConsecutiveMonthlyBackups: 0,
+		CurrentYear:               true,
+		ConsecutiveYearlyBackups:  0,
+	}
+	buf := new(bytes.Buffer)
+	restic.PrintHistory(buf, historyToPrint)
+	is := buf.String()
+
+	tobe := `
+Snapshot History
+Period  Current  Consecutive Previous Backups
+---------------------------------------------
+Hourly  true     24
+Daily   true     3
+---------------------------------------------
+`
+	if tobe != is {
+		t.Errorf("history was not printed correctly %v\n", is)
+	}
+}
+
+func TestNewHourlyBackupRunningBrokenAfter4Days01(t *testing.T) {
+	// broken for more than one hour...
+	historyToPrint := restic.SnapshotHistory{
+		CurrentHour:               false,
+		ConsecutiveHourlyBackups:  0,
+		CurrentDay:                true,
+		ConsecutiveDailyBackups:   3,
+		CurrentWeek:               true,
+		ConsecutiveWeeklyBackups:  0,
+		CurrentMonth:              true,
+		ConsecutiveMonthlyBackups: 0,
+		CurrentYear:               true,
+		ConsecutiveYearlyBackups:  0,
+	}
+	buf := new(bytes.Buffer)
+	restic.PrintHistory(buf, historyToPrint)
+	is := buf.String()
+
+	tobe := `
+Snapshot History
+Period  Current  Consecutive Previous Backups
+---------------------------------------------
+Daily   true     3
+---------------------------------------------
+`
+	if tobe != is {
+		t.Errorf("history was not printed correctly %v\n", is)
+	}
+}
+
+func TestNewHourlyBackupRunningBrokenAfter4Days02(t *testing.T) {
+	// broken for more than one day...
+	historyToPrint := restic.SnapshotHistory{
+		CurrentHour:               false,
+		ConsecutiveHourlyBackups:  0,
+		CurrentDay:                false,
+		ConsecutiveDailyBackups:   0,
+		CurrentWeek:               true,
+		ConsecutiveWeeklyBackups:  0,
+		CurrentMonth:              true,
+		ConsecutiveMonthlyBackups: 0,
+		CurrentYear:               true,
+		ConsecutiveYearlyBackups:  0,
+	}
+	buf := new(bytes.Buffer)
+	restic.PrintHistory(buf, historyToPrint)
+	is := buf.String()
+
+	tobe := `
+Snapshot History
+Period  Current  Consecutive Previous Backups
+---------------------------------------------
+Weekly  true     0
+---------------------------------------------
+`
+	if tobe != is {
+		t.Errorf("history was not printed correctly %v\n", is)
+	}
+}
