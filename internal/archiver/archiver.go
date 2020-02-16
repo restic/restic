@@ -754,7 +754,6 @@ func (arch *Archiver) runWorkers(ctx context.Context, t *tomb.Tomb) {
 	arch.blobSaver = NewBlobSaver(ctx, t, arch.Repo, arch.Options.SaveBlobConcurrency)
 
 	arch.fileSaver = NewFileSaver(ctx, t,
-		arch.FS,
 		arch.blobSaver.Save,
 		arch.Repo.Config().ChunkerPolynomial,
 		arch.Options.FileReadConcurrency, arch.Options.SaveBlobConcurrency)
