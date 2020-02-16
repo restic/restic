@@ -252,10 +252,6 @@ func (f fakeFile) Seek(int64, int) (int64, error) {
 	return 0, os.ErrInvalid
 }
 
-func (f fakeFile) Write(p []byte) (int, error) {
-	return 0, os.ErrInvalid
-}
-
 func (f fakeFile) Read(p []byte) (int, error) {
 	return 0, os.ErrInvalid
 }

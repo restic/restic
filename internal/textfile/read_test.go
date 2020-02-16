@@ -3,25 +3,44 @@ package textfile
 import (
 	"bytes"
 	"encoding/hex"
+	"io/ioutil"
+	"os"
 	"testing"
-
-	"github.com/restic/restic/internal/fs"
 )
 
-func writeTempfile(t testing.TB, data []byte) (fs.File, func()) {
-	f, removeTempfile := fs.TestTempFile(t, "restic-test-textfile-read-")
+// writeTempfile writes data to a new temporary file and returns its name
+// and a callback that removes it.
+func writeTempfile(t testing.TB, data []byte) (string, func()) {
+	t.Helper()
 
-	_, err := f.Write(data)
+	f, err := ioutil.TempFile("", "restic-test-textfile-read-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	name := f.Name()
+
+	defer func() {
+		closeErr := f.Close()
+		if err == nil && closeErr != nil {
+			err = closeErr
+		}
+		if err != nil {
+			os.Remove(name)
+			t.Fatal(err)
+		}
+	}()
+
+	_, err = f.Write(data)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = f.Close()
-	if err != nil {
-		t.Fatal(err)
+	return name, func() {
+		err := os.Remove(name)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
-
-	return f, removeTempfile
 }
 
 func dec(s string) []byte {
@@ -60,10 +79,10 @@ func TestRead(t *testing.T) {
 				want = test.data
 			}
 
-			f, cleanup := writeTempfile(t, test.data)
+			tempname, cleanup := writeTempfile(t, test.data)
 			defer cleanup()
 
-			data, err := Read(f.Name())
+			data, err := Read(tempname)
 			if err != nil {
 				t.Fatal(err)
 			}
