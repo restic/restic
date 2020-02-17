@@ -79,7 +79,7 @@ func TestWriteTar(t *testing.T) {
 
 			arch := archiver.New(repo, fs.Track{FS: fs.Local{}}, archiver.Options{})
 
-			back := fs.TestChdir(t, tmpdir)
+			back := rtest.Chdir(t, tmpdir)
 			defer back()
 
 			sn, _, err := arch.Snapshot(ctx, []string{"."}, archiver.SnapshotOptions{})

@@ -442,7 +442,7 @@ func TestRestorerRelative(t *testing.T) {
 			tempdir, cleanup := rtest.TempDir(t)
 			defer cleanup()
 
-			cleanup = fs.TestChdir(t, tempdir)
+			cleanup = rtest.Chdir(t, tempdir)
 			defer cleanup()
 
 			errors := make(map[string]string)

@@ -803,7 +803,7 @@ func TestArchiverSaveDir(t *testing.T) {
 				chdir = filepath.Join(chdir, test.chdir)
 			}
 
-			back := fs.TestChdir(t, chdir)
+			back := restictest.Chdir(t, chdir)
 			defer back()
 
 			fi, err := fs.Lstat(test.target)
@@ -1063,7 +1063,7 @@ func TestArchiverSaveTree(t *testing.T) {
 
 			arch.runWorkers(ctx, &tmb)
 
-			back := fs.TestChdir(t, tempdir)
+			back := restictest.Chdir(t, tempdir)
 			defer back()
 
 			if test.prepare != nil {
@@ -1353,7 +1353,7 @@ func TestArchiverSnapshot(t *testing.T) {
 				chdir = filepath.Join(chdir, filepath.FromSlash(test.chdir))
 			}
 
-			back := fs.TestChdir(t, chdir)
+			back := restictest.Chdir(t, chdir)
 			defer back()
 
 			var targets []string
@@ -1507,7 +1507,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 			arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
 			arch.Select = test.selFn
 
-			back := fs.TestChdir(t, tempdir)
+			back := restictest.Chdir(t, tempdir)
 			defer back()
 
 			targets := []string{"."}
@@ -1614,7 +1614,7 @@ func TestArchiverParent(t *testing.T) {
 
 			arch := New(repo, testFS, Options{})
 
-			back := fs.TestChdir(t, tempdir)
+			back := restictest.Chdir(t, tempdir)
 			defer back()
 
 			_, firstSnapshotID, err := arch.Snapshot(ctx, []string{"."}, SnapshotOptions{Time: time.Now()})
@@ -1774,7 +1774,7 @@ func TestArchiverErrorReporting(t *testing.T) {
 			tempdir, repo, cleanup := prepareTempdirRepoSrc(t, test.src)
 			defer cleanup()
 
-			back := fs.TestChdir(t, tempdir)
+			back := restictest.Chdir(t, tempdir)
 			defer back()
 
 			if test.prepare != nil {
@@ -1915,7 +1915,7 @@ func TestArchiverAbortEarlyOnError(t *testing.T) {
 			tempdir, repo, cleanup := prepareTempdirRepoSrc(t, test.src)
 			defer cleanup()
 
-			back := fs.TestChdir(t, tempdir)
+			back := restictest.Chdir(t, tempdir)
 			defer back()
 
 			testFS := &TrackFS{
@@ -2046,7 +2046,7 @@ func TestMetadataChanged(t *testing.T) {
 	tempdir, repo, cleanup := prepareTempdirRepoSrc(t, files)
 	defer cleanup()
 
-	back := fs.TestChdir(t, tempdir)
+	back := restictest.Chdir(t, tempdir)
 	defer back()
 
 	// get metadata
@@ -2121,7 +2121,7 @@ func TestRacyFileSwap(t *testing.T) {
 	tempdir, repo, cleanup := prepareTempdirRepoSrc(t, files)
 	defer cleanup()
 
-	back := fs.TestChdir(t, tempdir)
+	back := restictest.Chdir(t, tempdir)
 	defer back()
 
 	// get metadata of current folder

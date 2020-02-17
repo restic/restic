@@ -16,31 +16,6 @@ func IsRegularFile(fi os.FileInfo) bool {
 	return fi.Mode()&(os.ModeType|os.ModeCharDevice) == 0
 }
 
-// TestChdir changes the current directory to dest, the function back returns to the previous directory.
-func TestChdir(t testing.TB, dest string) (back func()) {
-	t.Helper()
-
-	prev, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.Logf("chdir to %v", dest)
-	err = os.Chdir(dest)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return func() {
-		t.Helper()
-		t.Logf("chdir back to %v", prev)
-		err = os.Chdir(prev)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-}
-
 // TestTempFile returns a new temporary file, which is removed when cleanup()
 // is called.
 func TestTempFile(t testing.TB, prefix string) (File, func()) {

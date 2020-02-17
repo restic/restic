@@ -202,3 +202,29 @@ func TempDir(t testing.TB) (path string, cleanup func()) {
 		RemoveAll(t, tempdir)
 	}
 }
+
+// Chdir changes the current directory to dest.
+// The function back returns to the previous directory.
+func Chdir(t testing.TB, dest string) (back func()) {
+	t.Helper()
+
+	prev, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Logf("chdir to %v", dest)
+	err = os.Chdir(dest)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return func() {
+		t.Helper()
+		t.Logf("chdir back to %v", prev)
+		err = os.Chdir(prev)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+}

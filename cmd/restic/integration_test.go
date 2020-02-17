@@ -21,7 +21,6 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/filter"
-	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -66,7 +65,7 @@ func testRunBackupAssumeFailure(t testing.TB, dir string, target []string, opts 
 	gopts.stdout = ioutil.Discard
 	t.Logf("backing up %v in %v", target, dir)
 	if dir != "" {
-		cleanup := fs.TestChdir(t, dir)
+		cleanup := rtest.Chdir(t, dir)
 		defer cleanup()
 	}
 
@@ -1003,7 +1002,7 @@ func TestRestoreLatest(t *testing.T) {
 
 	// chdir manually here so we can get the current directory. This is not the
 	// same as the temp dir returned by ioutil.TempDir() on darwin.
-	back := fs.TestChdir(t, filepath.Dir(env.testdata))
+	back := rtest.Chdir(t, filepath.Dir(env.testdata))
 	defer back()
 
 	curdir, err := os.Getwd()
