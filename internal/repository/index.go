@@ -15,7 +15,7 @@ import (
 
 // Index holds a lookup table for id -> pack.
 type Index struct {
-	m         sync.Mutex
+	m         sync.RWMutex
 	pack      map[restic.BlobHandle][]indexEntry
 	treePacks restic.IDs
 
@@ -52,8 +52,8 @@ func (idx *Index) store(blob restic.PackedBlob) {
 // Final returns true iff the index is already written to the repository, it is
 // finalized.
 func (idx *Index) Final() bool {
-	idx.m.Lock()
-	defer idx.m.Unlock()
+	idx.m.RLock()
+	defer idx.m.RUnlock()
 
 	return idx.final
 }
@@ -67,10 +67,10 @@ const (
 
 // IndexFull returns true iff the index is "full enough" to be saved as a preliminary index.
 var IndexFull = func(idx *Index) bool {
-	idx.m.Lock()
-	defer idx.m.Unlock()
-
 	debug.Log("checking whether index %p is full", idx)
+
+	idx.m.RLock()
+	defer idx.m.RUnlock()
 
 	packs := len(idx.pack)
 	age := time.Now().Sub(idx.created)
@@ -111,8 +111,8 @@ func (idx *Index) Store(blob restic.PackedBlob) {
 
 // Lookup queries the index for the blob ID and returns a restic.PackedBlob.
 func (idx *Index) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic.PackedBlob, found bool) {
-	idx.m.Lock()
-	defer idx.m.Unlock()
+	idx.m.RLock()
+	defer idx.m.RUnlock()
 
 	h := restic.BlobHandle{ID: id, Type: tpe}
 
@@ -141,8 +141,8 @@ func (idx *Index) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic.Pack
 
 // ListPack returns a list of blobs contained in a pack.
 func (idx *Index) ListPack(id restic.ID) (list []restic.PackedBlob) {
-	idx.m.Lock()
-	defer idx.m.Unlock()
+	idx.m.RLock()
+	defer idx.m.RUnlock()
 
 	for h, packList := range idx.pack {
 		for _, entry := range packList {
@@ -165,8 +165,8 @@ func (idx *Index) ListPack(id restic.ID) (list []restic.PackedBlob) {
 
 // Has returns true iff the id is listed in the index.
 func (idx *Index) Has(id restic.ID, tpe restic.BlobType) bool {
-	idx.m.Lock()
-	defer idx.m.Unlock()
+	idx.m.RLock()
+	defer idx.m.RUnlock()
 
 	h := restic.BlobHandle{ID: id, Type: tpe}
 
@@ -208,15 +208,12 @@ func (idx *Index) AddToSupersedes(ids ...restic.ID) error {
 // context is cancelled, the background goroutine terminates. This blocks any
 // modification of the index.
 func (idx *Index) Each(ctx context.Context) <-chan restic.PackedBlob {
-	idx.m.Lock()
-
 	ch := make(chan restic.PackedBlob)
+	idx.m.RLock()
 
 	go func() {
-		defer idx.m.Unlock()
-		defer func() {
-			close(ch)
-		}()
+		defer idx.m.RUnlock()
+		defer close(ch)
 
 		for h, packs := range idx.pack {
 			for _, blob := range packs {
@@ -242,10 +239,11 @@ func (idx *Index) Each(ctx context.Context) <-chan restic.PackedBlob {
 
 // Packs returns all packs in this index
 func (idx *Index) Packs() restic.IDSet {
-	idx.m.Lock()
-	defer idx.m.Unlock()
-
 	packs := restic.NewIDSet()
+
+	idx.m.RLock()
+	defer idx.m.RUnlock()
+
 	for _, list := range idx.pack {
 		for _, entry := range list {
 			packs.Insert(entry.packID)
@@ -258,8 +256,9 @@ func (idx *Index) Packs() restic.IDSet {
 // Count returns the number of blobs of type t in the index.
 func (idx *Index) Count(t restic.BlobType) (n uint) {
 	debug.Log("counting blobs of type %v", t)
-	idx.m.Lock()
-	defer idx.m.Unlock()
+
+	idx.m.RLock()
+	defer idx.m.RUnlock()
 
 	for h, list := range idx.pack {
 		if h.Type != t {
@@ -337,8 +336,8 @@ type jsonIndex struct {
 // Encode writes the JSON serialization of the index to the writer w.
 func (idx *Index) Encode(w io.Writer) error {
 	debug.Log("encoding index")
-	idx.m.Lock()
-	defer idx.m.Unlock()
+	idx.m.RLock()
+	defer idx.m.RUnlock()
 
 	return idx.encode(w)
 }
@@ -374,8 +373,8 @@ func (idx *Index) Finalize(w io.Writer) error {
 // ID returns the ID of the index, if available. If the index is not yet
 // finalized, an error is returned.
 func (idx *Index) ID() (restic.ID, error) {
-	idx.m.Lock()
-	defer idx.m.Unlock()
+	idx.m.RLock()
+	defer idx.m.RUnlock()
 
 	if !idx.final {
 		return restic.ID{}, errors.New("index not finalized")
