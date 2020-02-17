@@ -127,7 +127,6 @@ Daily   true     7
 	}
 }
 
-
 func TestNewHourlyBackupRunningFindFor12HoursWithoutCurrent(t *testing.T) {
 	historyToPrint := restic.SnapshotHistory{
 		CurrentHour:               false,
@@ -186,7 +185,6 @@ Hourly  true     12
 		t.Errorf("history was not printed correctly %v\n", is)
 	}
 }
-
 
 func TestNewHourlyBackupRunningFineFor12Hours3Days(t *testing.T) {
 	historyToPrint := restic.SnapshotHistory{
