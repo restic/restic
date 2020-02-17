@@ -111,7 +111,7 @@ func newDirFromSnapshot(ctx context.Context, root *Root, inode uint64, snapshot 
 }
 
 func (d *dir) Attr(ctx context.Context, a *fuse.Attr) error {
-	debug.Log("called")
+	debug.Log("Attr()")
 	a.Inode = d.inode
 	a.Mode = os.ModeDir | d.node.Mode
 
@@ -142,7 +142,7 @@ func (d *dir) calcNumberOfLinks() uint32 {
 }
 
 func (d *dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
-	debug.Log("called")
+	debug.Log("ReadDirAll()")
 	ret := make([]fuse.Dirent, 0, len(d.items)+2)
 
 	ret = append(ret, fuse.Dirent{
