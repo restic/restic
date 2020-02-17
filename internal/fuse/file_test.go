@@ -117,12 +117,7 @@ func TestFuseFile(t *testing.T) {
 		Size:    filesize,
 		Content: content,
 	}
-	root := &Root{
-		blobSizeCache: NewBlobSizeCache(context.TODO(), repo.Index()),
-		repo:          repo,
-	}
-
-	t.Logf("blob cache has %d entries", len(root.blobSizeCache.m))
+	root := &Root{repo: repo}
 
 	inode := fs.GenerateDynamicInode(1, "foo")
 	f, err := newFile(context.TODO(), root, inode, node)

@@ -148,7 +148,7 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 		Paths:            opts.Paths,
 		SnapshotTemplate: opts.SnapshotTemplate,
 	}
-	root, err := fuse.NewRoot(gopts.ctx, repo, cfg)
+	root, err := fuse.NewRoot(repo, cfg)
 	if err != nil {
 		return err
 	}

@@ -27,8 +27,6 @@ type dir struct {
 	inode       uint64
 	parentInode uint64
 	node        *restic.Node
-
-	blobsize *BlobSizeCache
 }
 
 func cleanupNodeName(name string) string {
