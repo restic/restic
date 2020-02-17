@@ -515,7 +515,7 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 	for name := range atree.Nodes {
 		names = append(names, name)
 	}
-	sort.Stable(sort.StringSlice(names))
+	sort.Strings(names)
 
 	for _, name := range names {
 		subatree := atree.Nodes[name]
