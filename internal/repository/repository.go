@@ -228,13 +228,13 @@ func (r *Repository) SaveAndEncrypt(ctx context.Context, t restic.BlobType, data
 	// get buf from the pool
 	ciphertext := getBuf()
 
-	ciphertext = ciphertext[:0]
+	*ciphertext = (*ciphertext)[:0]
 	nonce := crypto.NewRandomNonce()
-	ciphertext = append(ciphertext, nonce...)
+	*ciphertext = append(*ciphertext, nonce...)
 	defer freeBuf(ciphertext)
 
 	// encrypt blob
-	ciphertext = r.key.Seal(ciphertext, nonce, data, nil)
+	*ciphertext = r.key.Seal(*ciphertext, nonce, data, nil)
 
 	// find suitable packer and add blob
 	var pm *packerManager
@@ -254,7 +254,7 @@ func (r *Repository) SaveAndEncrypt(ctx context.Context, t restic.BlobType, data
 	}
 
 	// save ciphertext
-	_, err = packer.Add(t, *id, ciphertext)
+	_, err = packer.Add(t, *id, *ciphertext)
 	if err != nil {
 		return restic.ID{}, err
 	}

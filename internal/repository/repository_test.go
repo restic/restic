@@ -93,6 +93,8 @@ func TestSaveFrom(t *testing.T) {
 }
 
 func BenchmarkSaveAndEncrypt(t *testing.B) {
+	t.ReportAllocs()
+
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 

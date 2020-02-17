@@ -6,16 +6,19 @@ import (
 	"github.com/restic/chunker"
 )
 
+// This pool stores pointers to []byte, for use in Repository.SaveAndEncrypt.
+// See the example in the sync package docs for why pointers are used.
 var bufPool = sync.Pool{
 	New: func() interface{} {
-		return make([]byte, chunker.MaxSize/3)
+		buf := make([]byte, 0, chunker.MaxSize/3)
+		return &buf
 	},
 }
 
-func getBuf() []byte {
-	return bufPool.Get().([]byte)
+func getBuf() *[]byte {
+	return bufPool.Get().(*[]byte)
 }
 
-func freeBuf(data []byte) {
+func freeBuf(data *[]byte) {
 	bufPool.Put(data)
 }
