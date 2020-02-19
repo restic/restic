@@ -13,34 +13,34 @@ var sshcmdTests = []struct {
 	{
 		Config{User: "user", Host: "host", Path: "dir/subdir"},
 		"ssh",
-		[]string{"host", "-l", "user", "-s", "sftp"},
+		[]string{"-l", "user", "-s", "sftp", "--", "host"},
 	},
 	{
 		Config{Host: "host", Path: "dir/subdir"},
 		"ssh",
-		[]string{"host", "-s", "sftp"},
+		[]string{"-s", "sftp", "--", "host"},
 	},
 	{
 		Config{Host: "host", Port: "10022", Path: "/dir/subdir"},
 		"ssh",
-		[]string{"host", "-p", "10022", "-s", "sftp"},
+		[]string{"-p", "10022", "-s", "sftp", "--", "host"},
 	},
 	{
 		Config{User: "user", Host: "host", Port: "10022", Path: "/dir/subdir"},
 		"ssh",
-		[]string{"host", "-p", "10022", "-l", "user", "-s", "sftp"},
+		[]string{"-p", "10022", "-l", "user", "-s", "sftp", "--", "host"},
 	},
 	{
 		// IPv6 address.
 		Config{User: "user", Host: "::1", Path: "dir"},
 		"ssh",
-		[]string{"::1", "-l", "user", "-s", "sftp"},
+		[]string{"-l", "user", "-s", "sftp", "--", "::1"},
 	},
 	{
 		// IPv6 address with zone and port.
 		Config{User: "user", Host: "::1%lo0", Port: "22", Path: "dir"},
 		"ssh",
-		[]string{"::1%lo0", "-p", "22", "-l", "user", "-s", "sftp"},
+		[]string{"-p", "22", "-l", "user", "-s", "sftp", "--", "::1%lo0"},
 	},
 }
 

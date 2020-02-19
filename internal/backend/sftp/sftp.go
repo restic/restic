@@ -189,11 +189,8 @@ func buildSSHCommand(cfg Config) (cmd string, args []string, err error) {
 
 	cmd = "ssh"
 
-	host, port := cfg.Host, cfg.Port
-
-	args = []string{host}
-	if port != "" {
-		args = append(args, "-p", port)
+	if cfg.Port != "" {
+		args = append(args, "-p", cfg.Port)
 	}
 	if cfg.User != "" {
 		args = append(args, "-l")
@@ -201,6 +198,8 @@ func buildSSHCommand(cfg Config) (cmd string, args []string, err error) {
 	}
 	args = append(args, "-s")
 	args = append(args, "sftp")
+
+	args = append(args, "--", cfg.Host)
 	return cmd, args, nil
 }
 
