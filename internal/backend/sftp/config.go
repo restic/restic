@@ -11,9 +11,10 @@ import (
 
 // Config collects all information required to connect to an sftp server.
 type Config struct {
-	User, Host, Path string
-	Layout           string `option:"layout" help:"use this backend directory layout (default: auto-detect)"`
-	Command          string `option:"command" help:"specify command to create sftp connection"`
+	User, Host, Port, Path string
+
+	Layout  string `option:"layout" help:"use this backend directory layout (default: auto-detect)"`
+	Command string `option:"command" help:"specify command to create sftp connection"`
 }
 
 func init() {
@@ -21,12 +22,12 @@ func init() {
 }
 
 // ParseConfig parses the string s and extracts the sftp config. The
-// supported configuration formats are sftp://user@host/directory
+// supported configuration formats are sftp://user@host[:port]/directory
 //  and sftp:user@host:directory.  The directory will be path Cleaned and can
 //  be an absolute path if it starts with a '/' (e.g.
 //  sftp://user@host//absolute and sftp:user@host:/absolute).
 func ParseConfig(s string) (interface{}, error) {
-	var user, host, dir string
+	var user, host, port, dir string
 	switch {
 	case strings.HasPrefix(s, "sftp://"):
 		// parse the "sftp://user@host/path" url format
@@ -37,7 +38,8 @@ func ParseConfig(s string) (interface{}, error) {
 		if url.User != nil {
 			user = url.User.Username()
 		}
-		host = url.Host
+		host = url.Hostname()
+		port = url.Port()
 		dir = url.Path
 		if dir == "" {
 			return nil, errors.Errorf("invalid backend %q, no directory specified", s)
@@ -76,6 +78,7 @@ func ParseConfig(s string) (interface{}, error) {
 	return Config{
 		User: user,
 		Host: host,
+		Port: port,
 		Path: p,
 	}, nil
 }

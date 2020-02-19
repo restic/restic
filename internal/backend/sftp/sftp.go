@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"strings"
 	"time"
 
 	"github.com/restic/restic/internal/errors"
@@ -190,10 +189,11 @@ func buildSSHCommand(cfg Config) (cmd string, args []string, err error) {
 
 	cmd = "ssh"
 
-	hostport := strings.Split(cfg.Host, ":")
-	args = []string{hostport[0]}
-	if len(hostport) > 1 {
-		args = append(args, "-p", hostport[1])
+	host, port := cfg.Host, cfg.Port
+
+	args = []string{host}
+	if port != "" {
+		args = append(args, "-p", port)
 	}
 	if cfg.User != "" {
 		args = append(args, "-l")

@@ -23,11 +23,11 @@ var configTests = []struct {
 	},
 	{
 		"sftp://host:10022//dir/subdir",
-		Config{Host: "host:10022", Path: "/dir/subdir"},
+		Config{Host: "host", Port: "10022", Path: "/dir/subdir"},
 	},
 	{
 		"sftp://user@host:10022//dir/subdir",
-		Config{User: "user", Host: "host:10022", Path: "/dir/subdir"},
+		Config{User: "user", Host: "host", Port: "10022", Path: "/dir/subdir"},
 	},
 	{
 		"sftp://user@host/dir/subdir/../other",
@@ -36,6 +36,17 @@ var configTests = []struct {
 	{
 		"sftp://user@host/dir///subdir",
 		Config{User: "user", Host: "host", Path: "dir/subdir"},
+	},
+
+	// IPv6 address.
+	{
+		"sftp://user@[::1]/dir",
+		Config{User: "user", Host: "::1", Path: "dir"},
+	},
+	// IPv6 address with port.
+	{
+		"sftp://user@[::1]:22/dir",
+		Config{User: "user", Host: "::1", Port: "22", Path: "dir"},
 	},
 
 	// second form, user specified sftp:user@host:/dir
