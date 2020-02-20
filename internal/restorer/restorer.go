@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/errors"
 
 	"github.com/restic/restic/internal/debug"
@@ -316,8 +317,11 @@ func (res *Restorer) Snapshot() *restic.Snapshot {
 // including the file(s) that caused errors.
 func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
 	// TODO multithreaded?
+	var (
+		buf   = make([]byte, 0, chunker.MaxSize)
+		count = 0
+	)
 
-	count := 0
 	_, err := res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
 		enterDir: func(node *restic.Node, target, location string) error { return nil },
 		visitNode: func(node *restic.Node, target, location string) error {
@@ -342,7 +346,7 @@ func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
 			offset := int64(0)
 			for _, blobID := range node.Content {
 				length, _ := res.repo.LookupBlobSize(blobID, restic.DataBlob)
-				buf := make([]byte, length) // TODO do I want to reuse the buffer somehow?
+				buf = buf[:length]
 				_, err = file.ReadAt(buf, offset)
 				if err != nil {
 					_ = file.Close()
