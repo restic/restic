@@ -38,11 +38,12 @@ func runInit(gopts GlobalOptions, args []string) error {
 		return errors.Fatalf("create repository at %s failed: %v\n", gopts.Repo, err)
 	}
 
-	gopts.password, err = ReadPasswordTwice(gopts,
-		"enter password for new repository: ",
-		"enter password again: ")
-	if err != nil {
-		return err
+	if gopts.password == "" {
+		gopts.password, err = ReadPasswordTerminal(
+			"enter password for new repository: ", true)
+		if err != nil {
+			return err
+		}
 	}
 
 	s := repository.New(be)

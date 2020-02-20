@@ -1,0 +1,15 @@
+Bugfix: Fix reading passwords when standard input is redirected
+
+Passwords are now read from the controlling terminal (on Unix) or the console
+(on Windows), instead of from standard input. This means that commands that
+read from a pipe, notably
+
+    mysqldump my_database | restic backup --stdin
+
+now no longer confuse the input for the password.
+
+This means that reading the password from a file using shell redirection
+syntax is no longer possible. Use the option `--password-file` instead.
+
+https://github.com/restic/restic/issues/2591
+https://github.com/restic/restic/pull/2593

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -129,10 +129,6 @@ func checkErrno(err error) error {
 	}
 
 	return err
-}
-
-func stdinIsTerminal() bool {
-	return terminal.IsTerminal(int(os.Stdin.Fd()))
 }
 
 func stdoutIsTerminal() bool {
@@ -302,80 +298,44 @@ func resolvePassword(opts GlobalOptions) (string, error) {
 	return "", nil
 }
 
-// readPassword reads the password from the given reader directly.
-func readPassword(in io.Reader) (password string, err error) {
-	sc := bufio.NewScanner(in)
-	sc.Scan()
-
-	return sc.Text(), errors.Wrap(err, "Scan")
-}
-
-// readPasswordTerminal reads the password from the given reader which must be a
-// tty. Prompt is printed on the writer out before attempting to read the
-// password.
-func readPasswordTerminal(in *os.File, out io.Writer, prompt string) (password string, err error) {
-	fmt.Fprint(out, prompt)
-	isReadingPassword = true
-	buf, err := terminal.ReadPassword(int(in.Fd()))
-	isReadingPassword = false
-	fmt.Fprintln(out)
+// ReadPasswordTerminal reads the password from the controlling terminal.
+// prompt is printed before attempting to read the password.
+// If confirm is true, the password is requested a second time for confirmation.
+func ReadPasswordTerminal(prompt string, confirm bool) (password string, err error) {
+	tty, err := openTerminal()
 	if err != nil {
-		return "", errors.Wrap(err, "ReadPassword")
+		return "", fmt.Errorf("get terminal for password: %v", err)
 	}
+	defer tty.Close()
 
-	password = string(buf)
-	return password, nil
-}
-
-// ReadPassword reads the password from a password file, the environment
-// variable RESTIC_PASSWORD or prompts the user.
-func ReadPassword(opts GlobalOptions, prompt string) (string, error) {
-	if opts.password != "" {
-		return opts.password, nil
-	}
-
-	var (
-		password string
-		err      error
-	)
-
-	if stdinIsTerminal() {
-		password, err = readPasswordTerminal(os.Stdin, os.Stderr, prompt)
-	} else {
-		password, err = readPassword(os.Stdin)
-		Verbosef("read password from stdin\n")
-	}
-
-	if err != nil {
-		return "", errors.Wrap(err, "unable to read password")
-	}
-
-	if len(password) == 0 {
-		return "", errors.New("an empty password is not a password")
-	}
-
-	return password, nil
-}
-
-// ReadPasswordTwice calls ReadPassword two times and returns an error when the
-// passwords don't match.
-func ReadPasswordTwice(gopts GlobalOptions, prompt1, prompt2 string) (string, error) {
-	pw1, err := ReadPassword(gopts, prompt1)
+	buf, err := readSinglePassword(tty, prompt)
 	if err != nil {
 		return "", err
 	}
-	if stdinIsTerminal() {
-		pw2, err := ReadPassword(gopts, prompt2)
+
+	if confirm {
+		buf2, err := readSinglePassword(tty, "enter password again: ")
 		if err != nil {
 			return "", err
 		}
-
-		if pw1 != pw2 {
+		if !bytes.Equal(buf, buf2) {
 			return "", errors.Fatal("passwords do not match")
 		}
 	}
 
-	return pw1, nil
+	return string(buf), nil
+}
+
+func readSinglePassword(tty *controllingTerminal, prompt string) (password []byte, err error) {
+	fmt.Fprint(tty, prompt)
+	isReadingPassword = true
+	password, err = terminal.ReadPassword(int(tty.Fd()))
+	isReadingPassword = false
+	fmt.Fprintln(tty)
+	if err != nil {
+		return nil, errors.Wrap(err, "ReadPassword")
+	}
+	return password, nil
 }
 
 const maxKeys = 20
@@ -397,25 +357,25 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 
 	s := repository.New(be)
 
-	passwordTriesLeft := 1
-	if stdinIsTerminal() && opts.password == "" {
-		passwordTriesLeft = 3
-	}
-
-	for ; passwordTriesLeft > 0; passwordTriesLeft-- {
-		opts.password, err = ReadPassword(opts, "enter password for repository: ")
-		if err != nil && passwordTriesLeft > 1 {
-			opts.password = ""
-			fmt.Printf("%s. Try again\n", err)
-		}
-		if err != nil {
-			continue
-		}
-
+	if opts.password != "" {
 		err = s.SearchKey(opts.ctx, opts.password, maxKeys, opts.KeyHint)
-		if err != nil && passwordTriesLeft > 1 {
-			opts.password = ""
-			fmt.Printf("%s. Try again\n", err)
+	} else {
+		for passwordTriesLeft := 3; passwordTriesLeft > 0; passwordTriesLeft-- {
+			var password string
+			password, err = ReadPasswordTerminal(
+				"enter password for repository: ", false)
+			if err != nil {
+				break
+			}
+
+			err = s.SearchKey(opts.ctx, password, maxKeys, opts.KeyHint)
+			if err == nil {
+				opts.password = password
+				break
+			}
+			if passwordTriesLeft > 1 {
+				fmt.Printf("%s. Try again\n", err)
+			}
 		}
 	}
 	if err != nil {

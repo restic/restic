@@ -104,14 +104,7 @@ func getNewPassword(gopts GlobalOptions) (string, error) {
 		return loadPasswordFromFile(newPasswordFile)
 	}
 
-	// Since we already have an open repository, temporary remove the password
-	// to prompt the user for the passwd.
-	newopts := gopts
-	newopts.password = ""
-
-	return ReadPasswordTwice(newopts,
-		"enter password for new key: ",
-		"enter password again: ")
+	return ReadPasswordTerminal("enter password for new key: ", true)
 }
 
 func addKey(gopts GlobalOptions, repo *repository.Repository) error {
