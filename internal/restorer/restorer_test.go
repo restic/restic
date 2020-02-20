@@ -367,6 +367,11 @@ func TestRestorer(t *testing.T) {
 				t.Fatal(err)
 			}
 
+			if len(test.ErrorsMust)+len(test.ErrorsMay) == 0 {
+				_, err = res.VerifyFiles(ctx, tempdir)
+				rtest.OK(t, err)
+			}
+
 			for location, expectedErrors := range test.ErrorsMust {
 				actualErrors, ok := errors[location]
 				if !ok {
@@ -465,6 +470,9 @@ func TestRestorerRelative(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			nverified, err := res.VerifyFiles(ctx, "restore")
+			rtest.OK(t, err)
+			rtest.Equals(t, len(test.Files), nverified)
 
 			for filename, err := range errors {
 				t.Errorf("unexpected error for %v found: %v", filename, err)

@@ -310,7 +310,10 @@ func (res *Restorer) Snapshot() *restic.Snapshot {
 	return res.sn
 }
 
-// VerifyFiles reads all snapshot files and verifies their contents
+// VerifyFiles checks whether all regular files in the snapshot res.sn
+// have been successfully written to dst. It stops when it encounters an
+// error. It returns that error and the number of files it has checked,
+// including the file(s) that caused errors.
 func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
 	// TODO multithreaded?
 
