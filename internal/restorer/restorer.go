@@ -317,8 +317,8 @@ const nVerifyWorkers = 8
 
 // VerifyFiles checks whether all regular files in the snapshot res.sn
 // have been successfully written to dst. It stops when it encounters an
-// error. It returns that error and the number of files it has checked,
-// including the file(s) that caused errors.
+// error. It returns that error and the number of files it has successfully
+// verified.
 func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
 	type mustCheck struct {
 		node *restic.Node
@@ -358,11 +358,11 @@ func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
 		g.Go(func() (err error) {
 			var buf []byte
 			for job := range work {
-				atomic.AddUint64(&nchecked, 1)
 				buf, err = res.verifyFile(job.path, job.node, buf)
 				if err != nil {
 					break
 				}
+				atomic.AddUint64(&nchecked, 1)
 			}
 			return
 		})
