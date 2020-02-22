@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 )
@@ -115,6 +116,31 @@ func TestFindUsedBlobs(t *testing.T) {
 		if *updateGoldenFiles {
 			saveIDSet(t, goldenFilename, usedBlobs)
 		}
+	}
+}
+
+type ForbiddenRepo struct{}
+
+func (r ForbiddenRepo) LoadTree(ctx context.Context, id restic.ID) (*restic.Tree, error) {
+	return nil, errors.New("should not be called")
+}
+
+func TestFindUsedBlobsSkipsSeenBlobs(t *testing.T) {
+	repo, cleanup := repository.TestRepository(t)
+	defer cleanup()
+
+	snapshot := restic.TestCreateSnapshot(t, repo, findTestTime, findTestDepth, 0)
+	t.Logf("snapshot %v saved, tree %v", snapshot.ID().Str(), snapshot.Tree.Str())
+
+	usedBlobs := restic.NewBlobSet()
+	err := restic.FindUsedBlobs(context.TODO(), repo, *snapshot.Tree, usedBlobs)
+	if err != nil {
+		t.Fatalf("FindUsedBlobs returned error: %v", err)
+	}
+
+	err = restic.FindUsedBlobs(context.TODO(), ForbiddenRepo{}, *snapshot.Tree, usedBlobs)
+	if err != nil {
+		t.Fatalf("FindUsedBlobs returned error: %v", err)
 	}
 }
 
