@@ -154,6 +154,21 @@ func testRunCheckOutput(gopts GlobalOptions) (string, error) {
 	return buf.String(), err
 }
 
+func testRunDiffOutput(gopts GlobalOptions, firstSnapshotID string, secondSnapshotID string) (string, error) {
+	buf := bytes.NewBuffer(nil)
+
+	globalOptions.stdout = buf
+	defer func() {
+		globalOptions.stdout = os.Stdout
+	}()
+
+	opts := DiffOptions{
+		ShowMetadata: false,
+	}
+	err := runDiff(opts, gopts, []string{firstSnapshotID, secondSnapshotID})
+	return string(buf.Bytes()), err
+}
+
 func testRunRebuildIndex(t testing.TB, gopts GlobalOptions) {
 	globalOptions.stdout = ioutil.Discard
 	defer func() {
@@ -1471,4 +1486,92 @@ func TestQuietBackup(t *testing.T) {
 		"expected two snapshots, got %v", snapshotIDs)
 
 	testRunCheck(t, env.gopts)
+}
+
+func copyFile(dst string, src string) error {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+
+	_, err = io.Copy(dstFile, srcFile)
+	return err
+}
+
+var diffOutputRegexPatterns = []string{
+	"-.+modfile",
+	"M.+modfile1",
+	"\\+.+modfile2",
+	"\\+.+modfile3",
+	"\\+.+modfile4",
+	"-.+submoddir",
+	"-.+submoddir.subsubmoddir",
+	"\\+.+submoddir2",
+	"\\+.+submoddir2.subsubmoddir",
+	"Files: +2 new, +1 removed, +1 changed",
+	"Dirs: +3 new, +2 removed",
+	"Data Blobs: +2 new, +1 removed",
+	"Added: +7[0-9]{2}\\.[0-9]{3} KiB",
+	"Removed: +2[0-9]{2}\\.[0-9]{3} KiB",
+}
+
+func TestDiff(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testRunInit(t, env.gopts)
+
+	datadir := filepath.Join(env.base, "testdata")
+	testdir := filepath.Join(datadir, "testdir")
+	subtestdir := filepath.Join(testdir, "subtestdir")
+	testfile := filepath.Join(testdir, "testfile")
+
+	rtest.OK(t, os.Mkdir(testdir, 0755))
+	rtest.OK(t, os.Mkdir(subtestdir, 0755))
+	rtest.OK(t, appendRandomData(testfile, 256*1024))
+
+	moddir := filepath.Join(datadir, "moddir")
+	submoddir := filepath.Join(moddir, "submoddir")
+	subsubmoddir := filepath.Join(submoddir, "subsubmoddir")
+	modfile := filepath.Join(moddir, "modfile")
+	rtest.OK(t, os.Mkdir(moddir, 0755))
+	rtest.OK(t, os.Mkdir(submoddir, 0755))
+	rtest.OK(t, os.Mkdir(subsubmoddir, 0755))
+	rtest.OK(t, copyFile(modfile, testfile))
+	rtest.OK(t, appendRandomData(modfile+"1", 256*1024))
+
+	snapshots := make(map[string]struct{})
+	opts := BackupOptions{}
+	testRunBackup(t, "", []string{datadir}, opts, env.gopts)
+	snapshots, firstSnapshotID := lastSnapshot(snapshots, loadSnapshotMap(t, env.gopts))
+
+	rtest.OK(t, os.Rename(modfile, modfile+"3"))
+	rtest.OK(t, os.Rename(submoddir, submoddir+"2"))
+	rtest.OK(t, appendRandomData(modfile+"1", 256*1024))
+	rtest.OK(t, appendRandomData(modfile+"2", 256*1024))
+	rtest.OK(t, os.Mkdir(modfile+"4", 0755))
+
+	testRunBackup(t, "", []string{datadir}, opts, env.gopts)
+	snapshots, secondSnapshotID := lastSnapshot(snapshots, loadSnapshotMap(t, env.gopts))
+
+	_, err := testRunDiffOutput(env.gopts, "", secondSnapshotID)
+	rtest.Assert(t, err != nil, "expected error on invalid snapshot id")
+
+	out, err := testRunDiffOutput(env.gopts, firstSnapshotID, secondSnapshotID)
+	if err != nil {
+		t.Fatalf("expected no error from diff for test repository, got %v", err)
+	}
+
+	for _, pattern := range diffOutputRegexPatterns {
+		r, err := regexp.Compile(pattern)
+		rtest.Assert(t, err == nil, "failed to compile regexp %v", pattern)
+		rtest.Assert(t, r.MatchString(out), "expected pattern %v in output, got\n%v", pattern, out)
+	}
 }
