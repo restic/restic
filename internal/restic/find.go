@@ -2,9 +2,14 @@ package restic
 
 import "context"
 
+// TreeLoader loads a tree from a repository.
+type TreeLoader interface {
+	LoadTree(context.Context, ID) (*Tree, error)
+}
+
 // FindUsedBlobs traverses the tree ID and adds all seen blobs (trees and data
 // blobs) to the set blobs. Already seen tree blobs will not be visited again.
-func FindUsedBlobs(ctx context.Context, repo Repository, treeID ID, blobs BlobSet) error {
+func FindUsedBlobs(ctx context.Context, repo TreeLoader, treeID ID, blobs BlobSet) error {
 	h := BlobHandle{ID: treeID, Type: TreeBlob}
 	if blobs.Has(h) {
 		return nil
