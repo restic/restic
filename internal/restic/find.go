@@ -5,7 +5,11 @@ import "context"
 // FindUsedBlobs traverses the tree ID and adds all seen blobs (trees and data
 // blobs) to the set blobs. Already seen tree blobs will not be visited again.
 func FindUsedBlobs(ctx context.Context, repo Repository, treeID ID, blobs BlobSet) error {
-	blobs.Insert(BlobHandle{ID: treeID, Type: TreeBlob})
+	h := BlobHandle{ID: treeID, Type: TreeBlob}
+	if blobs.Has(h) {
+		return nil
+	}
+	blobs.Insert(h)
 
 	tree, err := repo.LoadTree(ctx, treeID)
 	if err != nil {
@@ -19,13 +23,7 @@ func FindUsedBlobs(ctx context.Context, repo Repository, treeID ID, blobs BlobSe
 				blobs.Insert(BlobHandle{ID: blob, Type: DataBlob})
 			}
 		case "dir":
-			subtreeID := *node.Subtree
-			h := BlobHandle{ID: subtreeID, Type: TreeBlob}
-			if blobs.Has(h) {
-				continue
-			}
-
-			err := FindUsedBlobs(ctx, repo, subtreeID, blobs)
+			err := FindUsedBlobs(ctx, repo, *node.Subtree, blobs)
 			if err != nil {
 				return err
 			}
