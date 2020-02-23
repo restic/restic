@@ -276,6 +276,7 @@ func (idx *Index) AddPack(id restic.ID, size int64, entries []restic.Blob) error
 				pack.Entries = append(pack.Entries, blob)
 			}
 		}
+		idx.Packs[id] = pack
 	}
 
 	idx.Packs[id] = Pack{ID: id, Size: size, Entries: entries}
