@@ -1,7 +1,9 @@
 package restorer
 
 import (
+	"bytes"
 	"os"
+	"runtime"
 	"sync"
 
 	"github.com/cespare/xxhash"
@@ -81,7 +83,11 @@ func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create
 		return err
 	}
 
-	_, err = wr.WriteAt(blob, offset)
+	if writeByTruncate() && allZero(blob) {
+		err = w.writeZeros(wr, blob, offset)
+	} else {
+		_, err = wr.WriteAt(blob, offset)
+	}
 
 	if err != nil {
 		releaseWriter(wr)
@@ -89,4 +95,47 @@ func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create
 	}
 
 	return releaseWriter(wr)
+}
+
+// writeZeros writes blob, which must be all zeros, to offset in wr.
+func (w *filesWriter) writeZeros(wr *os.File, blob []byte, offset int64) error {
+	fi, err := wr.Stat()
+	if err != nil {
+		return err
+	}
+
+	if fi.Size() >= offset+int64(len(blob)) {
+		// A previous writeToFile call will already have allocated the block.
+		// Since the file was newly created, it will be all zeros.
+		return nil
+	}
+
+	err = wr.Truncate(offset + int64(len(blob)))
+	if err != nil {
+		// Retry. If this fails too, at least
+		// we get the error message from WriteAt.
+		_, err = wr.WriteAt(blob, offset)
+	}
+	return err
+}
+
+// writeByTruncate returns true if we can write zeros to a file by truncating
+// it to more than its current size. That may create a sparse file, depending
+// on the underlying file system.
+func writeByTruncate() bool { return runtime.GOOS != "windows" }
+
+func allZero(p []byte) bool {
+	var zeros [2048]byte
+
+	for len(p) > 0 {
+		n := len(zeros)
+		if n > len(p) {
+			n = len(p)
+		}
+		if !bytes.Equal(p[:n], zeros[:n]) {
+			return false
+		}
+		p = p[n:]
+	}
+	return true
 }
