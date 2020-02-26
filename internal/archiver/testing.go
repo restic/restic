@@ -14,7 +14,6 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/test"
 )
 
 // TestSnapshot creates a new snapshot of path.
@@ -63,7 +62,7 @@ func (s TestSymlink) String() string {
 // TestCreateFiles creates a directory structure described by dir at target,
 // which must already exist. On Windows, symlinks aren't created.
 func TestCreateFiles(t testing.TB, target string, dir TestDir) {
-	test.Helper(t).Helper()
+	t.Helper()
 	for name, item := range dir {
 		targetPath := filepath.Join(target, name)
 
@@ -100,7 +99,7 @@ type TestWalkFunc func(path string, item interface{}) error
 // TestWalkFiles runs fn for each file/directory in dir, the filename will be
 // constructed with target as the prefix. Symlinks on Windows are ignored.
 func TestWalkFiles(t testing.TB, target string, dir TestDir, fn TestWalkFunc) {
-	test.Helper(t).Helper()
+	t.Helper()
 	for name, item := range dir {
 		targetPath := filepath.Join(target, name)
 
@@ -130,7 +129,7 @@ func fixpath(item string) string {
 // TestEnsureFiles tests if the directory structure at target is the same as
 // described in dir.
 func TestEnsureFiles(t testing.TB, target string, dir TestDir) {
-	test.Helper(t).Helper()
+	t.Helper()
 	pathsChecked := make(map[string]struct{})
 
 	// first, test that all items are there
@@ -248,7 +247,7 @@ func TestEnsureFileContent(ctx context.Context, t testing.TB, repo restic.Reposi
 // TestEnsureTree checks that the tree ID in the repo matches dir. On Windows,
 // Symlinks are ignored.
 func TestEnsureTree(ctx context.Context, t testing.TB, prefix string, repo restic.Repository, treeID restic.ID, dir TestDir) {
-	test.Helper(t).Helper()
+	t.Helper()
 
 	tree, err := repo.LoadTree(ctx, treeID)
 	if err != nil {
@@ -324,7 +323,7 @@ func TestEnsureTree(ctx context.Context, t testing.TB, prefix string, repo resti
 // TestEnsureSnapshot tests if the snapshot in the repo has exactly the same
 // structure as dir. On Windows, Symlinks are ignored.
 func TestEnsureSnapshot(t testing.TB, repo restic.Repository, snapshotID restic.ID, dir TestDir) {
-	test.Helper(t).Helper()
+	t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
