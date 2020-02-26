@@ -225,13 +225,10 @@ func (r *Repository) SaveAndEncrypt(ctx context.Context, t restic.BlobType, data
 
 	debug.Log("save id %v (%v, %d bytes)", id, t, len(data))
 
-	// get buf from the pool
-	ciphertext := getBuf()
-
-	ciphertext = ciphertext[:0]
 	nonce := crypto.NewRandomNonce()
+
+	ciphertext := make([]byte, 0, restic.CiphertextLength(len(data)))
 	ciphertext = append(ciphertext, nonce...)
-	defer freeBuf(ciphertext)
 
 	// encrypt blob
 	ciphertext = r.key.Seal(ciphertext, nonce, data, nil)
