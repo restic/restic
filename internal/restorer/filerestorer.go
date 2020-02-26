@@ -152,8 +152,8 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 		}
 	}
 	for i := 0; i < workerCount; i++ {
-		go worker()
 		wg.Add(1)
+		go worker()
 	}
 
 	// the main restore loop
