@@ -20,6 +20,8 @@ github.com/Azure/go-autorest/logger
 github.com/Azure/go-autorest/tracing
 # github.com/cenkalti/backoff v2.1.1+incompatible
 github.com/cenkalti/backoff
+# github.com/cespare/xxhash v1.1.0
+github.com/cespare/xxhash
 # github.com/cpuguy83/go-md2man v1.0.10
 github.com/cpuguy83/go-md2man/md2man
 # github.com/dgrijalva/jwt-go v3.2.0+incompatible

@@ -4,98 +4,89 @@ import (
 	"os"
 	"sync"
 
-	"github.com/restic/restic/internal/debug"
-	"github.com/restic/restic/internal/errors"
+	"github.com/cespare/xxhash"
 )
 
-// Writes blobs to output files. Each file is written sequentially,
-// start to finish, but multiple files can be written to concurrently.
-// Implementation allows virtually unlimited number of logically open
-// files, but number of phisically open files will never exceed number
-// of concurrent writeToFile invocations plus cacheCap.
+// writes blobs to target files.
+// multiple files can be written to concurrently.
+// multiple blobs can be concurrently written to the same file.
+// TODO I am not 100% convinced this is necessary, i.e. it may be okay
+//      to use multiple os.File to write to the same target file
 type filesWriter struct {
-	lock       sync.Mutex          // guards concurrent access to open files cache
-	inprogress map[string]struct{} // (logically) opened file writers
-	cache      map[string]*os.File // cache of open files
-	cacheCap   int                 // max number of cached open files
+	buckets []filesWriterBucket
 }
 
-func newFilesWriter(cacheCap int) *filesWriter {
+type filesWriterBucket struct {
+	lock  sync.Mutex
+	files map[string]*os.File
+	users map[string]int
+}
+
+func newFilesWriter(count int) *filesWriter {
+	buckets := make([]filesWriterBucket, count)
+	for b := 0; b < count; b++ {
+		buckets[b].files = make(map[string]*os.File)
+		buckets[b].users = make(map[string]int)
+	}
 	return &filesWriter{
-		inprogress: make(map[string]struct{}),
-		cache:      make(map[string]*os.File),
-		cacheCap:   cacheCap,
+		buckets: buckets,
 	}
 }
 
-func (w *filesWriter) writeToFile(path string, blob []byte) error {
-	// First writeToFile invocation for any given path will:
-	// - create and open the file
-	// - write the blob to the file
-	// - cache the open file if there is space, close the file otherwise
-	// Subsequent invocations will:
-	// - remove the open file from the cache _or_ open the file for append
-	// - write the blob to the file
-	// - cache the open file if there is space, close the file otherwise
-	// The idea is to cap maximum number of open files with minimal
-	// coordination among concurrent writeToFile invocations (note that
-	// writeToFile never touches somebody else's open file).
+func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create bool) error {
+	bucket := &w.buckets[uint(xxhash.Sum64String(path))%uint(len(w.buckets))]
 
-	// TODO measure if caching is useful (likely depends on operating system
-	// and hardware configuration)
 	acquireWriter := func() (*os.File, error) {
-		w.lock.Lock()
-		defer w.lock.Unlock()
-		if wr, ok := w.cache[path]; ok {
-			debug.Log("Used cached writer for %s", path)
-			delete(w.cache, path)
+		bucket.lock.Lock()
+		defer bucket.lock.Unlock()
+
+		if wr, ok := bucket.files[path]; ok {
+			bucket.users[path]++
 			return wr, nil
 		}
+
 		var flags int
-		if _, append := w.inprogress[path]; append {
-			flags = os.O_APPEND | os.O_WRONLY
-		} else {
-			w.inprogress[path] = struct{}{}
+		if create {
 			flags = os.O_CREATE | os.O_TRUNC | os.O_WRONLY
+		} else {
+			flags = os.O_WRONLY
 		}
+
 		wr, err := os.OpenFile(path, flags, 0600)
 		if err != nil {
 			return nil, err
 		}
-		debug.Log("Opened writer for %s", path)
+
+		bucket.files[path] = wr
+		bucket.users[path] = 1
+
 		return wr, nil
 	}
-	cacheOrCloseWriter := func(wr *os.File) {
-		w.lock.Lock()
-		defer w.lock.Unlock()
-		if len(w.cache) < w.cacheCap {
-			w.cache[path] = wr
-		} else {
-			wr.Close()
+
+	releaseWriter := func(wr *os.File) error {
+		bucket.lock.Lock()
+		defer bucket.lock.Unlock()
+
+		if bucket.users[path] == 1 {
+			delete(bucket.files, path)
+			delete(bucket.users, path)
+			return wr.Close()
 		}
+		bucket.users[path]--
+		return nil
 	}
 
 	wr, err := acquireWriter()
 	if err != nil {
 		return err
 	}
-	n, err := wr.Write(blob)
-	cacheOrCloseWriter(wr)
+
+	_, err = wr.WriteAt(blob, offset)
+
 	if err != nil {
+		releaseWriter(wr)
 		return err
 	}
-	if n != len(blob) {
-		return errors.Errorf("error writing file %v: wrong length written, want %d, got %d", path, len(blob), n)
-	}
-	return nil
-}
 
-func (w *filesWriter) close(path string) {
-	w.lock.Lock()
-	defer w.lock.Unlock()
-	if wr, ok := w.cache[path]; ok {
-		wr.Close()
-		delete(w.cache, path)
-	}
-	delete(w.inprogress, path)
+	return releaseWriter(wr)
 }
