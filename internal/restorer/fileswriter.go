@@ -19,15 +19,19 @@ type filesWriter struct {
 
 type filesWriterBucket struct {
 	lock  sync.Mutex
-	files map[string]*os.File
-	users map[string]int
+	files map[string]*partialFile
+}
+
+type partialFile struct {
+	*os.File
+	size  int64 // File size, tracked for sparse writes (not on Windows).
+	users int   // Reference count.
 }
 
 func newFilesWriter(count int) *filesWriter {
 	buckets := make([]filesWriterBucket, count)
 	for b := 0; b < count; b++ {
-		buckets[b].files = make(map[string]*os.File)
-		buckets[b].users = make(map[string]int)
+		buckets[b].files = make(map[string]*partialFile)
 	}
 	return &filesWriter{
 		buckets: buckets,
@@ -37,12 +41,12 @@ func newFilesWriter(count int) *filesWriter {
 func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, createSize int64) error {
 	bucket := &w.buckets[uint(xxhash.Sum64String(path))%uint(len(w.buckets))]
 
-	acquireWriter := func() (*os.File, error) {
+	acquireWriter := func() (*partialFile, error) {
 		bucket.lock.Lock()
 		defer bucket.lock.Unlock()
 
 		if wr, ok := bucket.files[path]; ok {
-			bucket.users[path]++
+			bucket.files[path].users++
 			return wr, nil
 		}
 
@@ -53,16 +57,23 @@ func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create
 			flags = os.O_WRONLY
 		}
 
-		wr, err := os.OpenFile(path, flags, 0600)
+		f, err := os.OpenFile(path, flags, 0600)
 		if err != nil {
 			return nil, err
 		}
 
+		wr := &partialFile{File: f, users: 1}
+		if createSize < 0 {
+			info, err := f.Stat()
+			if err != nil {
+				return nil, err
+			}
+			wr.size = info.Size()
+		}
 		bucket.files[path] = wr
-		bucket.users[path] = 1
 
 		if createSize >= 0 {
-			err := preallocateFile(wr, createSize)
+			err := preallocateFile(wr.File, createSize)
 			if err != nil {
 				// Just log the preallocate error but don't let it cause the restore process to fail.
 				// Preallocate might return an error if the filesystem (implementation) does not
@@ -76,16 +87,15 @@ func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create
 		return wr, nil
 	}
 
-	releaseWriter := func(wr *os.File) error {
+	releaseWriter := func(wr *partialFile) error {
 		bucket.lock.Lock()
 		defer bucket.lock.Unlock()
 
-		if bucket.users[path] == 1 {
+		if bucket.files[path].users == 1 {
 			delete(bucket.files, path)
-			delete(bucket.users, path)
 			return wr.Close()
 		}
-		bucket.users[path]--
+		bucket.files[path].users--
 		return nil
 	}
 
