@@ -1,0 +1,9 @@
+Enhancement: Support specifying multiple host flags for various commands
+
+Previously commands didn't take more than one `--host` or `-H` argument into account, which could be limiting with e.g.
+the `forget` command.
+
+The `dump`, `find`, `forget`, `ls`, `mount`, `restore`, `snapshots`, `stats` and `tag` commands will now take into account
+multiple `--host` and `-H` flags.
+
+https://github.com/restic/restic/issues/1570

@@ -19,7 +19,7 @@ import (
 // Config holds settings for the fuse mount.
 type Config struct {
 	OwnerIsRoot      bool
-	Host             string
+	Hosts            []string
 	Tags             []restic.TagList
 	Paths            []string
 	SnapshotTemplate string

@@ -36,7 +36,7 @@ repository.
 
 // DumpOptions collects all options for the dump command.
 type DumpOptions struct {
-	Host  string
+	Hosts []string
 	Paths []string
 	Tags  restic.TagLists
 }
@@ -47,7 +47,7 @@ func init() {
 	cmdRoot.AddCommand(cmdDump)
 
 	flags := cmdDump.Flags()
-	flags.StringVarP(&dumpOptions.Host, "host", "H", "", `only consider snapshots for this host when the snapshot ID is "latest"`)
+	flags.StringArrayVarP(&dumpOptions.Hosts, "host", "H", nil, `only consider snapshots for this host when the snapshot ID is "latest" (can be specified multiple times)`)
 	flags.Var(&dumpOptions.Tags, "tag", "only consider snapshots which include this `taglist` for snapshot ID \"latest\"")
 	flags.StringArrayVar(&dumpOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` for snapshot ID \"latest\"")
 }
@@ -136,9 +136,9 @@ func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
 	var id restic.ID
 
 	if snapshotIDString == "latest" {
-		id, err = restic.FindLatestSnapshot(ctx, repo, opts.Paths, opts.Tags, opts.Host)
+		id, err = restic.FindLatestSnapshot(ctx, repo, opts.Paths, opts.Tags, opts.Hosts)
 		if err != nil {
-			Exitf(1, "latest snapshot for criteria not found: %v Paths:%v Host:%v", err, opts.Paths, opts.Host)
+			Exitf(1, "latest snapshot for criteria not found: %v Paths:%v Hosts:%v", err, opts.Paths, opts.Hosts)
 		}
 	} else {
 		id, err = restic.FindSnapshot(repo, snapshotIDString)

@@ -57,7 +57,7 @@ type MountOptions struct {
 	AllowRoot            bool
 	AllowOther           bool
 	NoDefaultPermissions bool
-	Host                 string
+	Hosts                []string
 	Tags                 restic.TagLists
 	Paths                []string
 	SnapshotTemplate     string
@@ -74,7 +74,7 @@ func init() {
 	mountFlags.BoolVar(&mountOptions.AllowOther, "allow-other", false, "allow other users to access the data in the mounted directory")
 	mountFlags.BoolVar(&mountOptions.NoDefaultPermissions, "no-default-permissions", false, "for 'allow-other', ignore Unix permissions and allow users to read all snapshot files")
 
-	mountFlags.StringVarP(&mountOptions.Host, "host", "H", "", `only consider snapshots for this host`)
+	mountFlags.StringArrayVarP(&mountOptions.Hosts, "host", "H", nil, `only consider snapshots for this host (can be specified multiple times)`)
 	mountFlags.Var(&mountOptions.Tags, "tag", "only consider snapshots which include this `taglist`")
 	mountFlags.StringArrayVar(&mountOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`")
 
@@ -138,7 +138,7 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 
 	cfg := fuse.Config{
 		OwnerIsRoot:      opts.OwnerRoot,
-		Host:             opts.Host,
+		Hosts:            opts.Hosts,
 		Tags:             opts.Tags,
 		Paths:            opts.Paths,
 		SnapshotTemplate: opts.SnapshotTemplate,

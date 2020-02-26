@@ -8,7 +8,7 @@ import (
 )
 
 // FindFilteredSnapshots yields Snapshots, either given explicitly by `snapshotIDs` or filtered from the list of all snapshots.
-func FindFilteredSnapshots(ctx context.Context, repo *repository.Repository, host string, tags []restic.TagList, paths []string, snapshotIDs []string) <-chan *restic.Snapshot {
+func FindFilteredSnapshots(ctx context.Context, repo *repository.Repository, hosts []string, tags []restic.TagList, paths []string, snapshotIDs []string) <-chan *restic.Snapshot {
 	out := make(chan *restic.Snapshot)
 	go func() {
 		defer close(out)
@@ -22,9 +22,9 @@ func FindFilteredSnapshots(ctx context.Context, repo *repository.Repository, hos
 			// Process all snapshot IDs given as arguments.
 			for _, s := range snapshotIDs {
 				if s == "latest" {
-					id, err = restic.FindLatestSnapshot(ctx, repo, paths, tags, host)
+					id, err = restic.FindLatestSnapshot(ctx, repo, paths, tags, hosts)
 					if err != nil {
-						Warnf("Ignoring %q, no snapshot matched given filter (Paths:%v Tags:%v Host:%v)\n", s, paths, tags, host)
+						Warnf("Ignoring %q, no snapshot matched given filter (Paths:%v Tags:%v Hosts:%v)\n", s, paths, tags, hosts)
 						usedFilter = true
 						continue
 					}
@@ -39,7 +39,7 @@ func FindFilteredSnapshots(ctx context.Context, repo *repository.Repository, hos
 			}
 
 			// Give the user some indication their filters are not used.
-			if !usedFilter && (host != "" || len(tags) != 0 || len(paths) != 0) {
+			if !usedFilter && (len(hosts) != 0 || len(tags) != 0 || len(paths) != 0) {
 				Warnf("Ignoring filters as there are explicit snapshot ids given\n")
 			}
 
@@ -58,7 +58,7 @@ func FindFilteredSnapshots(ctx context.Context, repo *repository.Repository, hos
 			return
 		}
 
-		snapshots, err := restic.FindFilteredSnapshots(ctx, repo, host, tags, paths)
+		snapshots, err := restic.FindFilteredSnapshots(ctx, repo, hosts, tags, paths)
 		if err != nil {
 			Warnf("could not load snapshots: %v\n", err)
 			return
