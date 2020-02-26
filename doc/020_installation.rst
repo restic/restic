@@ -245,7 +245,7 @@ From Source
 ***********
 
 restic is written in the Go programming language and you need at least
-Go version 1.9. Building restic may also work with older versions of Go,
+Go version 1.11. Building restic may also work with older versions of Go,
 but that's not supported. See the `Getting
 started <https://golang.org/doc/install>`__ guide of the Go project for
 instructions how to install Go.
@@ -261,13 +261,6 @@ In order to build restic from source, execute the following steps:
 
     $ go run -mod=vendor build.go
 
-For Go versions < 1.11, the option ``-mod=vendor`` needs to be removed, like
-this:
-
-.. code-block:: console
-
-    $ go run build.go
-
 You can easily cross-compile restic for all supported platforms, just
 supply the target OS and platform via the command-line options like this
 (for Windows and FreeBSD respectively):
@@ -279,8 +272,6 @@ supply the target OS and platform via the command-line options like this
     $ go run -mod=vendor build.go --goos freebsd --goarch 386
 
     $ go run -mod=vendor build.go --goos linux --goarch arm --goarm 6
-
-Again, for Go < 1.11 ``-mod=vendor`` needs to be removed.
 
 The resulting binary is statically linked and does not require any
 libraries.
