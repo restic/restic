@@ -54,7 +54,7 @@ func init() {
 	cmdRoot.AddCommand(cmdStats)
 	f := cmdStats.Flags()
 	f.StringVar(&countMode, "mode", countModeRestoreSize, "counting mode: restore-size (default), files-by-contents, blobs-per-file, or raw-data")
-	f.StringVarP(&snapshotByHost, "host", "H", "", "filter latest snapshot by this hostname")
+	f.StringArrayVarP(&snapshotByHosts, "host", "H", nil, "filter latest snapshot by this hostname (can be specified multiple times)")
 }
 
 func runStats(gopts GlobalOptions, args []string) error {
@@ -101,7 +101,7 @@ func runStats(gopts GlobalOptions, args []string) error {
 
 		var sID restic.ID
 		if snapshotIDString == "latest" {
-			sID, err = restic.FindLatestSnapshot(ctx, repo, []string{}, []restic.TagList{}, snapshotByHost)
+			sID, err = restic.FindLatestSnapshot(ctx, repo, []string{}, []restic.TagList{}, snapshotByHosts)
 			if err != nil {
 				return errors.Fatalf("latest snapshot for criteria not found: %v", err)
 			}
@@ -335,7 +335,7 @@ var (
 
 	// snapshotByHost is the host to filter latest
 	// snapshot by, if given by user
-	snapshotByHost string
+	snapshotByHosts []string
 )
 
 const (

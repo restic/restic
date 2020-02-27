@@ -48,7 +48,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 // LsOptions collects all options for the ls command.
 type LsOptions struct {
 	ListLong  bool
-	Host      string
+	Hosts     []string
 	Tags      restic.TagLists
 	Paths     []string
 	Recursive bool
@@ -61,7 +61,7 @@ func init() {
 
 	flags := cmdLs.Flags()
 	flags.BoolVarP(&lsOptions.ListLong, "long", "l", false, "use a long listing format showing size and mode")
-	flags.StringVarP(&lsOptions.Host, "host", "H", "", "only consider snapshots for this `host`, when no snapshot ID is given")
+	flags.StringArrayVarP(&lsOptions.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when no snapshot ID is given (can be specified multiple times)")
 	flags.Var(&lsOptions.Tags, "tag", "only consider snapshots which include this `taglist`, when no snapshot ID is given")
 	flags.StringArrayVar(&lsOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot ID is given")
 	flags.BoolVar(&lsOptions.Recursive, "recursive", false, "include files in subfolders of the listed directories")
@@ -89,7 +89,7 @@ type lsNode struct {
 }
 
 func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
-	if len(args) == 0 && opts.Host == "" && len(opts.Tags) == 0 && len(opts.Paths) == 0 {
+	if len(args) == 0 && len(opts.Hosts) == 0 && len(opts.Tags) == 0 && len(opts.Paths) == 0 {
 		return errors.Fatal("Invalid arguments, either give one or more snapshot IDs or set filters.")
 	}
 
@@ -191,7 +191,7 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, args[:1]) {
+	for sn := range FindFilteredSnapshots(ctx, repo, opts.Hosts, opts.Tags, opts.Paths, args[:1]) {
 		printSnapshot(sn)
 
 		err := walker.Walk(ctx, repo, *sn.Tree, nil, func(_ restic.ID, nodepath string, node *restic.Node, err error) (bool, error) {

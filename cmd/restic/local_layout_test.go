@@ -33,7 +33,7 @@ func TestRestoreLocalLayout(t *testing.T) {
 
 		// restore latest snapshot
 		target := filepath.Join(env.base, "restore")
-		testRunRestoreLatest(t, env.gopts, target, nil, "")
+		testRunRestoreLatest(t, env.gopts, target, nil, nil)
 
 		rtest.RemoveAll(t, filepath.Join(env.base, "repo"))
 		rtest.RemoveAll(t, target)

@@ -1,12 +1,13 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/restorer"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -39,7 +40,7 @@ type RestoreOptions struct {
 	Include            []string
 	InsensitiveInclude []string
 	Target             string
-	Host               string
+	Hosts              []string
 	Paths              []string
 	Tags               restic.TagLists
 	Verify             bool
@@ -57,7 +58,7 @@ func init() {
 	flags.StringArrayVar(&restoreOptions.InsensitiveInclude, "iinclude", nil, "same as `--include` but ignores the casing of filenames")
 	flags.StringVarP(&restoreOptions.Target, "target", "t", "", "directory to extract data to")
 
-	flags.StringVarP(&restoreOptions.Host, "host", "H", "", `only consider snapshots for this host when the snapshot ID is "latest"`)
+	flags.StringArrayVarP(&restoreOptions.Hosts, "host", "H", nil, `only consider snapshots for this host when the snapshot ID is "latest" (can be specified multiple times)`)
 	flags.Var(&restoreOptions.Tags, "tag", "only consider snapshots which include this `taglist` for snapshot ID \"latest\"")
 	flags.StringArrayVar(&restoreOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` for snapshot ID \"latest\"")
 	flags.BoolVar(&restoreOptions.Verify, "verify", false, "verify restored files content")
@@ -116,9 +117,9 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 	var id restic.ID
 
 	if snapshotIDString == "latest" {
-		id, err = restic.FindLatestSnapshot(ctx, repo, opts.Paths, opts.Tags, opts.Host)
+		id, err = restic.FindLatestSnapshot(ctx, repo, opts.Paths, opts.Tags, opts.Hosts)
 		if err != nil {
-			Exitf(1, "latest snapshot for criteria not found: %v Paths:%v Host:%v", err, opts.Paths, opts.Host)
+			Exitf(1, "latest snapshot for criteria not found: %v Paths:%v Hosts:%v", err, opts.Paths, opts.Hosts)
 		}
 	} else {
 		id, err = restic.FindSnapshot(repo, snapshotIDString)

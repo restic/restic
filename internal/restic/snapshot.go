@@ -162,8 +162,10 @@ func (sn *Snapshot) HasTags(l []string) bool {
 	return true
 }
 
-// HasTagList returns true if the snapshot satisfies at least one TagList,
-// so there is a TagList in l for which all tags are included in sn.
+// HasTagList returns true if either
+// - the snapshot satisfies at least one TagList, so there is a TagList in l
+//   for which all tags are included in sn, or
+// - l is empty
 func (sn *Snapshot) HasTagList(l []TagList) bool {
 	debug.Log("testing snapshot with tags %v against list: %v", sn.Tags, l)
 
@@ -199,6 +201,23 @@ func (sn *Snapshot) HasPaths(paths []string) bool {
 	}
 
 	return true
+}
+
+// HasHostname returns true if either
+// - the snapshot hostname is in the list of the given hostnames, or
+// - the list of given hostnames is empty
+func (sn *Snapshot) HasHostname(hostnames []string) bool {
+	if len(hostnames) == 0 {
+		return true
+	}
+
+	for _, hostname := range hostnames {
+		if sn.Hostname == hostname {
+			return true
+		}
+	}
+
+	return false
 }
 
 // Snapshots is a list of snapshots.

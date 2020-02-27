@@ -40,7 +40,7 @@ type ForgetOptions struct {
 	Within   restic.Duration
 	KeepTags restic.TagLists
 
-	Host    string
+	Hosts   []string
 	Tags    restic.TagLists
 	Paths   []string
 	Compact bool
@@ -66,8 +66,8 @@ func init() {
 	f.VarP(&forgetOptions.Within, "keep-within", "", "keep snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
 
 	f.Var(&forgetOptions.KeepTags, "keep-tag", "keep snapshots with this `taglist` (can be specified multiple times)")
-	f.StringVar(&forgetOptions.Host, "host", "", "only consider snapshots with the given `host`")
-	f.StringVar(&forgetOptions.Host, "hostname", "", "only consider snapshots with the given `hostname`")
+	f.StringArrayVar(&forgetOptions.Hosts, "host", nil, "only consider snapshots with the given `host` (can be specified multiple times)")
+	f.StringArrayVar(&forgetOptions.Hosts, "hostname", nil, "only consider snapshots with the given `hostname` (can be specified multiple times)")
 	f.MarkDeprecated("hostname", "use --host")
 
 	f.Var(&forgetOptions.Tags, "tag", "only consider snapshots which include this `taglist` in the format `tag[,tag,...]` (can be specified multiple times)")
@@ -101,7 +101,7 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 
 	var snapshots restic.Snapshots
 
-	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, args) {
+	for sn := range FindFilteredSnapshots(ctx, repo, opts.Hosts, opts.Tags, opts.Paths, args) {
 		snapshots = append(snapshots, sn)
 	}
 
