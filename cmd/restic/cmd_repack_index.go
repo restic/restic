@@ -78,14 +78,15 @@ func RepackIndex(opts RepackIndexOptions, gopts GlobalOptions, repo restic.Repos
 		}
 
 		Verbosef("remove %d old index files\n", len(supersedes))
-		for _, id := range supersedes {
-			if err := repo.Backend().Remove(gopts.ctx, restic.Handle{
-				Type: restic.IndexFile,
-				Name: id.String(),
-			}); err != nil {
-				Warnf("error removing old index %v: %v\n", id.Str(), err)
+		fileHandles := make(chan restic.Handle)
+		go func() {
+			for _, id := range supersedes {
+				fileHandles <- restic.Handle{Type: restic.IndexFile, Name: id.String()}
 			}
-		}
+			close(fileHandles)
+		}()
+		DeleteFiles(gopts, opts.DryRun, repo, len(supersedes), fileHandles)
+
 	} else {
 		Verbosef("would have replaced %d index files\n", len(supersedes))
 	}

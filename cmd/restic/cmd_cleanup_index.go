@@ -1,12 +1,15 @@
 package main
 
 import (
+	"sync"
+
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 )
 
 var cmdCleanupIndex = &cobra.Command{
@@ -81,8 +84,12 @@ func runCleanupIndex(opts CleanupIndexOptions, gopts GlobalOptions) error {
 }
 
 func CleanupIndex(opts CleanupIndexOptions, gopts GlobalOptions, repo restic.Repository, usedBlobs restic.BlobSet) error {
+	// Mutex to savely access usedBlobs
+	var m sync.Mutex
 	return ModifyIndex(opts.DryRun, gopts, repo, func(pb restic.PackedBlob) (changed bool, pbnew restic.PackedBlob) {
 		h := restic.BlobHandle{ID: pb.ID, Type: pb.Type}
+		m.Lock()
+		defer m.Unlock()
 		if !usedBlobs.Has(h) {
 			// delete Blob from index
 			changed = true
@@ -95,9 +102,13 @@ func CleanupIndex(opts CleanupIndexOptions, gopts GlobalOptions, repo restic.Rep
 	})
 }
 
+const numModifyWorkers = 4
+
 // ModifyIndex modifies all index files with respect to a selector function
+// Make sure that the selector function is concurrency-safe!
+//
 // TODO: This function is a work-around for missing functionality in the Index data structure
-//       Index should be implemented such that it lines like the following work:
+//       Index should be implemented such that lines like the following work:
 //		for pb := range repo.Index().Each(ctx) {
 //			change, newpb := f(pb)
 //			if change {
@@ -110,11 +121,8 @@ func CleanupIndex(opts CleanupIndexOptions, gopts GlobalOptions, repo restic.Rep
 //		}
 //		repo.SaveModifiedIndices()
 func ModifyIndex(dryRun bool, gopts GlobalOptions, repo restic.Repository, f func(restic.PackedBlob) (bool, restic.PackedBlob)) error {
-	ctx := gopts.ctx
-
 	indexlist := restic.NewIDSet()
-	// TODO: Add parallel processing
-	err := repo.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
+	err := repo.List(gopts.ctx, restic.IndexFile, func(id restic.ID, size int64) error {
 		indexlist.Insert(id)
 		return nil
 	})
@@ -123,59 +131,72 @@ func ModifyIndex(dryRun bool, gopts GlobalOptions, repo restic.Repository, f fun
 	}
 
 	Verbosef("check %d index files and change if neccessary\n", len(indexlist))
+	indexID := make(chan restic.ID)
+	go func() {
+		for id := range indexlist {
+			indexID <- id
+		}
+		close(indexID)
+	}()
 	bar := newProgressMax(!gopts.Quiet, uint64(len(indexlist)), "index files processed")
 	bar.Start()
-	// TODO: Add parallel processing
-	for id := range indexlist {
-		idxNew := repository.NewIndex()
-		err := idxNew.AddToSupersedes(id)
-		if err != nil {
-			return err
-		}
-
-		idx, err := repository.LoadIndex(ctx, repo, id)
-		if err != nil {
-			return err
-		}
-
-		changed := false
-		for pb := range idx.Each(ctx) {
-			change, newpb := f(pb)
-			if change {
-				if (newpb != restic.PackedBlob{}) {
-					idxNew.Store(newpb)
-				}
-				changed = true
-			} else {
-				idxNew.Store(pb)
-			}
-		}
-		if changed {
-			if !dryRun {
-				newID, err := repository.SaveIndex(ctx, repo, idxNew)
+	wg, ctx := errgroup.WithContext(gopts.ctx)
+	for i := 0; i < numModifyWorkers; i++ {
+		wg.Go(func() error {
+			for id := range indexID {
+				idxNew := repository.NewIndex()
+				err := idxNew.AddToSupersedes(id)
 				if err != nil {
 					return err
 				}
-				h := restic.Handle{Type: restic.IndexFile, Name: id.String()}
-				err = repo.Backend().Remove(ctx, h)
+
+				idx, err := repository.LoadIndex(ctx, repo, id)
 				if err != nil {
-					Warnf("unable to remove index %v from the repository\n", id.Str())
+					return err
 				}
-				if !gopts.JSON {
-					Verbosef("index %v was removed. new index: %v\n", id.Str(), newID.Str())
+
+				changed := false
+				for pb := range idx.Each(ctx) {
+					change, newpb := f(pb)
+					if change {
+						if (newpb != restic.PackedBlob{}) {
+							idxNew.Store(newpb)
+						}
+						changed = true
+					} else {
+						idxNew.Store(pb)
+					}
 				}
-			} else {
-				if !gopts.JSON {
-					Verbosef("would have replaced index %v\n", id.Str())
+				if changed {
+					if !dryRun {
+						newID, err := repository.SaveIndex(ctx, repo, idxNew)
+						if err != nil {
+							return err
+						}
+						h := restic.Handle{Type: restic.IndexFile, Name: id.String()}
+						err = repo.Backend().Remove(ctx, h)
+						if err != nil {
+							Warnf("unable to remove index %v from the repository\n", id.Str())
+						}
+						if !gopts.JSON && gopts.verbosity >= 2 {
+							Verbosef("index %v was removed. new index: %v\n", id.Str(), newID.Str())
+						}
+					} else {
+						if !gopts.JSON && gopts.verbosity >= 2 {
+							Verbosef("would have replaced index %v\n", id.Str())
+						}
+					}
 				}
+				bar.Report(restic.Stat{Blobs: 1})
 			}
-		}
-		bar.Report(restic.Stat{Files: 1})
+			return nil
+		})
 	}
+	err = wg.Wait()
 	bar.Done()
 
 	Verbosef("done\n")
-	return nil
+	return err
 }
 
 func getUsedBlobs(gopts GlobalOptions, repo restic.Repository, snapshots []*restic.Snapshot) (restic.BlobSet, error) {
@@ -183,11 +204,12 @@ func getUsedBlobs(gopts GlobalOptions, repo restic.Repository, snapshots []*rest
 
 	Verbosef("find data that is still in use for %d snapshots\n", len(snapshots))
 
+	// usedBlobs will be used as used and seen Blobs
 	usedBlobs := restic.NewBlobSet()
-	//seenBlobs := restic.NewBlobSet()
 
 	bar := newProgressMax(!gopts.Quiet, uint64(len(snapshots)), "snapshots")
 	bar.Start()
+	// TODO: Make this and FindUsedBlobs parallel
 	for _, sn := range snapshots {
 		debug.Log("process snapshot %v", sn.ID())
 
