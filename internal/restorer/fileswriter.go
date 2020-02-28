@@ -83,11 +83,11 @@ func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create
 		return err
 	}
 
-	if writeByTruncate() && allZero(blob) {
-		err = w.writeZeros(wr, blob, offset)
-	} else {
-		_, err = wr.WriteAt(blob, offset)
+	if sparseFileSupport() {
+		blob, offset = skipZeroPrefix(blob, offset)
 	}
+
+	_, err = wr.WriteAt(blob, offset)
 
 	if err != nil {
 		releaseWriter(wr)
@@ -97,45 +97,25 @@ func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create
 	return releaseWriter(wr)
 }
 
-// writeZeros writes blob, which must be all zeros, to offset in wr.
-func (w *filesWriter) writeZeros(wr *os.File, blob []byte, offset int64) error {
-	fi, err := wr.Stat()
-	if err != nil {
-		return err
+// Remove a run of zeros from the start of blob and update offset accordingly.
+// If the run is long enough, this may trigger a sparse write.
+func skipZeroPrefix(blob []byte, offset int64) ([]byte, int64) {
+	// We favor speed and simplicity over completeness, so we check with
+	// 1kB granularity and we stop before the end of the blob.
+	// The early stopping prevents having to do a zero-length WriteAt,
+	// which won't extend the file, or a Truncate, which complicates the code.
+
+	const blocksize = 1024
+	var zeros [blocksize]byte
+
+	for len(blob) > blocksize && bytes.Equal(blob[:blocksize], zeros[:]) {
+		offset += blocksize
+		blob = blob[blocksize:]
 	}
 
-	if fi.Size() >= offset+int64(len(blob)) {
-		// A previous writeToFile call will already have allocated the block.
-		// Since the file was newly created, it will be all zeros.
-		return nil
-	}
-
-	err = wr.Truncate(offset + int64(len(blob)))
-	if err != nil {
-		// Retry. If this fails too, at least
-		// we get the error message from WriteAt.
-		_, err = wr.WriteAt(blob, offset)
-	}
-	return err
+	return blob, offset
 }
 
-// writeByTruncate returns true if we can write zeros to a file by truncating
-// it to more than its current size. That may create a sparse file, depending
-// on the underlying file system.
-func writeByTruncate() bool { return runtime.GOOS != "windows" }
-
-func allZero(p []byte) bool {
-	var zeros [2048]byte
-
-	for len(p) > 0 {
-		n := len(zeros)
-		if n > len(p) {
-			n = len(p)
-		}
-		if !bytes.Equal(p[:n], zeros[:n]) {
-			return false
-		}
-		p = p[n:]
-	}
-	return true
-}
+// sparseFileSupport() is true if the operating system supports sparse files.
+// We don't check if the underlying filesystem supports them too.
+func sparseFileSupport() bool { return runtime.GOOS != "windows" }

@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"io/ioutil"
+	"math"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -69,7 +70,7 @@ func TestRestorerSparseFiles(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
-	var zeros [1<<20 + 13]byte // 1MB + a bit to get a corner case
+	var zeros [1<<20 + 13]byte
 
 	target := &fs.Reader{
 		Mode:       0600,
@@ -109,38 +110,54 @@ func TestRestorerSparseFiles(t *testing.T) {
 		return
 	}
 
-	// This reports 0 blocks on a supporting filesystem.
-	// We can't assert that, though, since we don't know to what type
-	// of filesystem we're writing.
-	t.Logf("wrote %d zeros as %d blocks", len(zeros), st.Blocks)
+	// st.Blocks is the size in 512-byte blocks.
+	denseBlocks := math.Ceil(float64(len(zeros)) / 512)
+	sparsity := 1 - float64(st.Blocks)/denseBlocks
+
+	t.Logf("wrote %d zeros as %d blocks, %.1f%% sparse",
+		len(zeros), st.Blocks, 100*sparsity)
 }
 
-func BenchmarkAllZero(b *testing.B) {
-	// Only benchmark the case were the blocks are not all zeros,
-	// to ensure that the common case doesn't suffer a performance hit
-	// from sparse file support.
+func TestSkipZeroPrefix(t *testing.T) {
+	// Even for all-zero blobs, skipZeroPrefix should not return empty []byte.
 
+	r := rand.New(rand.NewSource(123456))
+
+	for _, n := range []int{1, 10, 100, 1024, 4096, 4097} {
+		var (
+			buf       = make([]byte, n)
+			oldOffset = r.Int63n(1 << 30)
+		)
+
+		blob, offset := skipZeroPrefix(buf, oldOffset)
+		rtest.Assert(t, len(blob) > 0, "skipZeroPrefix returned empty blob")
+		rtest.Equals(t, oldOffset, offset+int64(len(blob)-len(buf)))
+	}
+}
+
+func BenchmarkSkipZeroPrefix(b *testing.B) {
 	var (
-		buf   [4<<20 + 37]byte
-		r     = rand.New(rand.NewSource(0x618732))
-		zeros int
+		buf        [4<<20 + 37]byte
+		r          = rand.New(rand.NewSource(0x618732))
+		sumSkipped int64
 	)
 
 	b.ReportAllocs()
 	b.SetBytes(int64(len(buf)))
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		j := r.Intn(len(buf))
 		buf[j] = 0xff
 
-		z := allZero(buf[:])
-		if z {
-			zeros++
-		}
+		_, skipped := skipZeroPrefix(buf[:], 0)
+		sumSkipped += skipped
 
 		buf[j] = 0
 	}
 
-	// Make sure the compiler doesn't optimize away the call to allZeros.
-	rtest.Equals(b, zeros, 0)
+	// The closer this is to .5, the better. If it's far off, give the
+	// benchmark more time to run with -benchtime.
+	b.Logf("average number of zeros skipped: %.3f",
+		float64(sumSkipped)/(float64(b.N*len(buf))))
 }
