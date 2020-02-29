@@ -8,6 +8,7 @@ import (
 	"unsafe"
 
 	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/sys/windows"
 )
 
 // clearCurrentLine removes all characters from the current line and resets the
@@ -19,7 +20,7 @@ func clearCurrentLine(wr io.Writer, fd uintptr) func(io.Writer, uintptr) {
 	}
 
 	// check if the output file type is a pipe (0x0003)
-	if getFileType(fd) != fileTypePipe {
+	if isPipe(fd) {
 		// return empty func, update state is not possible on this terminal
 		return func(io.Writer, uintptr) {}
 	}
@@ -36,7 +37,7 @@ func moveCursorUp(wr io.Writer, fd uintptr) func(io.Writer, uintptr, int) {
 	}
 
 	// check if the output file type is a pipe (0x0003)
-	if getFileType(fd) != fileTypePipe {
+	if isPipe(fd) {
 		// return empty func, update state is not possible on this terminal
 		return func(io.Writer, uintptr, int) {}
 	}
@@ -48,63 +49,37 @@ func moveCursorUp(wr io.Writer, fd uintptr) func(io.Writer, uintptr, int) {
 var kernel32 = syscall.NewLazyDLL("kernel32.dll")
 
 var (
-	procGetConsoleScreenBufferInfo = kernel32.NewProc("GetConsoleScreenBufferInfo")
 	procSetConsoleCursorPosition   = kernel32.NewProc("SetConsoleCursorPosition")
 	procFillConsoleOutputCharacter = kernel32.NewProc("FillConsoleOutputCharacterW")
 	procFillConsoleOutputAttribute = kernel32.NewProc("FillConsoleOutputAttribute")
-	procGetFileType                = kernel32.NewProc("GetFileType")
-)
-
-type (
-	short int16
-	word  uint16
-	dword uint32
-
-	coord struct {
-		x short
-		y short
-	}
-	smallRect struct {
-		left   short
-		top    short
-		right  short
-		bottom short
-	}
-	consoleScreenBufferInfo struct {
-		size              coord
-		cursorPosition    coord
-		attributes        word
-		window            smallRect
-		maximumWindowSize coord
-	}
 )
 
 // windowsClearCurrentLine removes all characters from the current line and
 // resets the cursor position to the first column.
 func windowsClearCurrentLine(wr io.Writer, fd uintptr) {
-	var info consoleScreenBufferInfo
-	procGetConsoleScreenBufferInfo.Call(fd, uintptr(unsafe.Pointer(&info)))
+	var info windows.ConsoleScreenBufferInfo
+	windows.GetConsoleScreenBufferInfo(windows.Handle(fd), &info)
 
 	// clear the line
-	cursor := coord{
-		x: info.window.left,
-		y: info.cursorPosition.y,
+	cursor := windows.Coord{
+		X: info.Window.Left,
+		Y: info.CursorPosition.Y,
 	}
-	var count, w dword
-	count = dword(info.size.x)
-	procFillConsoleOutputAttribute.Call(fd, uintptr(info.attributes), uintptr(count), *(*uintptr)(unsafe.Pointer(&cursor)), uintptr(unsafe.Pointer(&w)))
+	var count, w uint32
+	count = uint32(info.Size.X)
+	procFillConsoleOutputAttribute.Call(fd, uintptr(info.Attributes), uintptr(count), *(*uintptr)(unsafe.Pointer(&cursor)), uintptr(unsafe.Pointer(&w)))
 	procFillConsoleOutputCharacter.Call(fd, uintptr(' '), uintptr(count), *(*uintptr)(unsafe.Pointer(&cursor)), uintptr(unsafe.Pointer(&w)))
 }
 
 // windowsMoveCursorUp moves the cursor to the line n lines above the current one.
 func windowsMoveCursorUp(wr io.Writer, fd uintptr, n int) {
-	var info consoleScreenBufferInfo
-	procGetConsoleScreenBufferInfo.Call(fd, uintptr(unsafe.Pointer(&info)))
+	var info windows.ConsoleScreenBufferInfo
+	windows.GetConsoleScreenBufferInfo(windows.Handle(fd), &info)
 
 	// move cursor up by n lines and to the first column
-	info.cursorPosition.y -= short(n)
-	info.cursorPosition.x = 0
-	procSetConsoleCursorPosition.Call(fd, uintptr(*(*int32)(unsafe.Pointer(&info.cursorPosition))))
+	info.CursorPosition.Y -= int16(n)
+	info.CursorPosition.X = 0
+	procSetConsoleCursorPosition.Call(fd, uintptr(*(*int32)(unsafe.Pointer(&info.CursorPosition))))
 }
 
 // isWindowsTerminal return true if the file descriptor is a windows terminal (cmd, psh).
@@ -112,16 +87,9 @@ func isWindowsTerminal(fd uintptr) bool {
 	return terminal.IsTerminal(int(fd))
 }
 
-const fileTypePipe = 0x0003
-
-// getFileType returns the file type for the given fd.
-// https://msdn.microsoft.com/de-de/library/windows/desktop/aa364960(v=vs.85).aspx
-func getFileType(fd uintptr) int {
-	r, _, e := syscall.Syscall(procGetFileType.Addr(), 1, fd, 0, 0)
-	if e != 0 {
-		return 0
-	}
-	return int(r)
+func isPipe(fd uintptr) bool {
+	typ, err := windows.GetFileType(windows.Handle(fd))
+	return err == nil && typ == windows.FILE_TYPE_PIPE
 }
 
 // canUpdateStatus returns true if status lines can be printed, the process
@@ -133,7 +101,7 @@ func canUpdateStatus(fd uintptr) bool {
 	}
 
 	// check if the output file type is a pipe (0x0003)
-	if getFileType(fd) != fileTypePipe {
+	if isPipe(fd) {
 		return false
 	}
 
