@@ -19,12 +19,6 @@ func clearCurrentLine(wr io.Writer, fd uintptr) func(io.Writer, uintptr) {
 		return windowsClearCurrentLine
 	}
 
-	// check if the output file type is a pipe (0x0003)
-	if isPipe(fd) {
-		// return empty func, update state is not possible on this terminal
-		return func(io.Writer, uintptr) {}
-	}
-
 	// assume we're running in mintty/cygwin
 	return posixClearCurrentLine
 }
@@ -34,12 +28,6 @@ func moveCursorUp(wr io.Writer, fd uintptr) func(io.Writer, uintptr, int) {
 	// easy case, the terminal is cmd or psh, without redirection
 	if isWindowsTerminal(fd) {
 		return windowsMoveCursorUp
-	}
-
-	// check if the output file type is a pipe (0x0003)
-	if isPipe(fd) {
-		// return empty func, update state is not possible on this terminal
-		return func(io.Writer, uintptr, int) {}
 	}
 
 	// assume we're running in mintty/cygwin
