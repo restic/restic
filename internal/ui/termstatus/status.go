@@ -16,21 +16,27 @@ import (
 // updated. When the output is redirected to a file, the status lines are not
 // printed.
 type Terminal struct {
-	wr              *bufio.Writer
-	fd              uintptr
-	errWriter       io.Writer
-	buf             *bytes.Buffer
-	msg             chan message
-	status          chan status
-	canUpdateStatus bool
+	wr        *bufio.Writer
+	fd        int
+	errWriter io.Writer
+	buf       *bytes.Buffer
+	msg       chan message
+	status    chan status
 
 	// will be closed when the goroutine which runs Run() terminates, so it'll
 	// yield a default value immediately
 	closed chan struct{}
 
-	clearCurrentLine func(io.Writer, uintptr)
-	moveCursorUp     func(io.Writer, uintptr, int)
+	termType // One of termType*.
 }
+
+type termType byte
+
+const (
+	termTypeNone = iota
+	termTypePosix
+	termTypeWindows
+)
 
 type message struct {
 	line string
@@ -66,12 +72,9 @@ func New(wr io.Writer, errWriter io.Writer, disableStatus bool) *Terminal {
 		return t
 	}
 
-	if d, ok := wr.(fder); ok && canUpdateStatus(d.Fd()) {
-		// only use the fancy status code when we're running on a real terminal.
-		t.canUpdateStatus = true
-		t.fd = d.Fd()
-		t.clearCurrentLine = clearCurrentLine(wr, t.fd)
-		t.moveCursorUp = moveCursorUp(wr, t.fd)
+	// only use the fancy status code when we're running on a real terminal.
+	if d, ok := wr.(fder); ok {
+		t.initTermType(int(d.Fd()))
 	}
 
 	return t
@@ -81,7 +84,7 @@ func New(wr io.Writer, errWriter io.Writer, disableStatus bool) *Terminal {
 // ctx is cancelled, the status lines are cleanly removed.
 func (t *Terminal) Run(ctx context.Context) {
 	defer close(t.closed)
-	if t.canUpdateStatus {
+	if t.termType != termTypeNone {
 		t.run(ctx)
 		return
 	}
@@ -112,7 +115,7 @@ func (t *Terminal) run(ctx context.Context) {
 				// ignore all messages, do nothing, we are in the background process group
 				continue
 			}
-			t.clearCurrentLine(t.wr, t.fd)
+			t.clearCurrentLine()
 
 			var dst io.Writer
 			if msg.err {
@@ -162,7 +165,7 @@ func (t *Terminal) run(ctx context.Context) {
 
 func (t *Terminal) writeStatus(status []string) {
 	for _, line := range status {
-		t.clearCurrentLine(t.wr, t.fd)
+		t.clearCurrentLine()
 
 		_, err := t.wr.WriteString(line)
 		if err != nil {
@@ -177,7 +180,7 @@ func (t *Terminal) writeStatus(status []string) {
 	}
 
 	if len(status) > 0 {
-		t.moveCursorUp(t.wr, t.fd, len(status)-1)
+		t.moveCursorUp(len(status) - 1)
 	}
 
 	err := t.wr.Flush()
@@ -232,7 +235,7 @@ func (t *Terminal) runWithoutStatus(ctx context.Context) {
 
 func (t *Terminal) undoStatus(lines int) {
 	for i := 0; i < lines; i++ {
-		t.clearCurrentLine(t.wr, t.fd)
+		t.clearCurrentLine()
 
 		_, err := t.wr.WriteRune('\n')
 		if err != nil {
@@ -246,7 +249,7 @@ func (t *Terminal) undoStatus(lines int) {
 		}
 	}
 
-	t.moveCursorUp(t.wr, t.fd, lines)
+	t.moveCursorUp(lines)
 
 	err := t.wr.Flush()
 	if err != nil {
@@ -312,7 +315,7 @@ func (t *Terminal) SetStatus(lines []string) {
 		return
 	}
 
-	width, _, err := terminal.GetSize(int(t.fd))
+	width, _, err := terminal.GetSize(t.fd)
 	if err != nil || width <= 0 {
 		// use 80 columns by default
 		width = 80

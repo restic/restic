@@ -3,7 +3,6 @@
 package termstatus
 
 import (
-	"io"
 	"syscall"
 	"unsafe"
 
@@ -11,27 +10,22 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-// clearCurrentLine removes all characters from the current line and resets the
-// cursor position to the first column.
-func clearCurrentLine(wr io.Writer, fd uintptr) func(io.Writer, uintptr) {
-	// easy case, the terminal is cmd or psh, without redirection
-	if isWindowsTerminal(fd) {
-		return windowsClearCurrentLine
+func (t *Terminal) clearCurrentLine() {
+	switch t.termType {
+	case termTypePosix:
+		posixClearCurrentLine(t.wr)
+	case termTypeWindows:
+		windowsClearCurrentLine(uintptr(t.fd))
 	}
-
-	// assume we're running in mintty/cygwin
-	return posixClearCurrentLine
 }
 
-// moveCursorUp moves the cursor to the line n lines above the current one.
-func moveCursorUp(wr io.Writer, fd uintptr) func(io.Writer, uintptr, int) {
-	// easy case, the terminal is cmd or psh, without redirection
-	if isWindowsTerminal(fd) {
-		return windowsMoveCursorUp
+func (t *Terminal) moveCursorUp(n int) {
+	switch t.termType {
+	case termTypePosix:
+		posixMoveCursorUp(t.wr, n)
+	case termTypeWindows:
+		windowsMoveCursorUp(uintptr(t.fd), n)
 	}
-
-	// assume we're running in mintty/cygwin
-	return posixMoveCursorUp
 }
 
 var kernel32 = syscall.NewLazyDLL("kernel32.dll")
@@ -44,7 +38,7 @@ var (
 
 // windowsClearCurrentLine removes all characters from the current line and
 // resets the cursor position to the first column.
-func windowsClearCurrentLine(wr io.Writer, fd uintptr) {
+func windowsClearCurrentLine(fd uintptr) {
 	var info windows.ConsoleScreenBufferInfo
 	windows.GetConsoleScreenBufferInfo(windows.Handle(fd), &info)
 
@@ -60,7 +54,7 @@ func windowsClearCurrentLine(wr io.Writer, fd uintptr) {
 }
 
 // windowsMoveCursorUp moves the cursor to the line n lines above the current one.
-func windowsMoveCursorUp(wr io.Writer, fd uintptr, n int) {
+func windowsMoveCursorUp(fd uintptr, n int) {
 	var info windows.ConsoleScreenBufferInfo
 	windows.GetConsoleScreenBufferInfo(windows.Handle(fd), &info)
 
@@ -70,29 +64,22 @@ func windowsMoveCursorUp(wr io.Writer, fd uintptr, n int) {
 	procSetConsoleCursorPosition.Call(fd, uintptr(*(*int32)(unsafe.Pointer(&info.CursorPosition))))
 }
 
-// isWindowsTerminal return true if the file descriptor is a windows terminal (cmd, psh).
-func isWindowsTerminal(fd uintptr) bool {
-	return terminal.IsTerminal(int(fd))
-}
-
-func isPipe(fd uintptr) bool {
-	typ, err := windows.GetFileType(windows.Handle(fd))
-	return err == nil && typ == windows.FILE_TYPE_PIPE
-}
-
-// canUpdateStatus returns true if status lines can be printed, the process
-// output is not redirected to a file or pipe.
-func canUpdateStatus(fd uintptr) bool {
+// initTermType sets t.termType and, if t is a terminal, t.fd.
+func (t *Terminal) initTermType(fd int) {
 	// easy case, the terminal is cmd or psh, without redirection
-	if isWindowsTerminal(fd) {
-		return true
+	if terminal.IsTerminal(fd) {
+		t.fd = fd
+		t.termType = termTypeWindows
+		return
 	}
 
-	// check if the output file type is a pipe (0x0003)
-	if isPipe(fd) {
-		return false
+	// Check if the output file type is a pipe.
+	typ, err := windows.GetFileType(windows.Handle(fd))
+	if err == nil && typ == windows.FILE_TYPE_PIPE {
+		return
 	}
 
-	// assume we're running in mintty/cygwin
-	return true
+	// Else, assume we're running in mintty/cygwin.
+	t.fd = fd
+	t.termType = termTypePosix
 }

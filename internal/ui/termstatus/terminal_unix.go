@@ -3,33 +3,26 @@
 package termstatus
 
 import (
-	"io"
 	"os"
 
 	"golang.org/x/crypto/ssh/terminal"
 )
 
-// clearCurrentLine removes all characters from the current line and resets the
-// cursor position to the first column.
-func clearCurrentLine(wr io.Writer, fd uintptr) func(io.Writer, uintptr) {
-	return posixClearCurrentLine
-}
+// On Unix, real terminals are always POSIX terminals.
+func (t *Terminal) clearCurrentLine()  { posixClearCurrentLine(t.wr) }
+func (t *Terminal) moveCursorUp(n int) { posixMoveCursorUp(t.wr, n) }
 
-// moveCursorUp moves the cursor to the line n lines above the current one.
-func moveCursorUp(wr io.Writer, fd uintptr) func(io.Writer, uintptr, int) {
-	return posixMoveCursorUp
-}
-
-// canUpdateStatus returns true if status lines can be printed, the process
-// output is not redirected to a file or pipe.
-func canUpdateStatus(fd uintptr) bool {
-	if !terminal.IsTerminal(int(fd)) {
-		return false
+// initTermType sets t.termType and, if t is a terminal, t.fd.
+func (t *Terminal) initTermType(fd int) {
+	if !terminal.IsTerminal(fd) {
+		return
 	}
 	term := os.Getenv("TERM")
-	if term == "" {
-		return false
-	}
 	// TODO actually read termcap db and detect if terminal supports what we need
-	return term != "dumb"
+	if term == "" || term == "dumb" {
+		return
+	}
+
+	t.fd = fd
+	t.termType = termTypePosix
 }
