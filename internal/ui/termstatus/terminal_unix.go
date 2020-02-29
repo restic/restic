@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"golang.org/x/crypto/ssh/terminal"
-	"golang.org/x/sys/unix"
 )
 
 // clearCurrentLine removes all characters from the current line and resets the
@@ -24,7 +23,7 @@ func moveCursorUp(wr io.Writer, fd uintptr) func(io.Writer, uintptr, int) {
 // canUpdateStatus returns true if status lines can be printed, the process
 // output is not redirected to a file or pipe.
 func canUpdateStatus(fd uintptr) bool {
-	if !terminal.IsTerminal(fd) {
+	if !terminal.IsTerminal(int(fd)) {
 		return false
 	}
 	term := os.Getenv("TERM")
@@ -33,14 +32,4 @@ func canUpdateStatus(fd uintptr) bool {
 	}
 	// TODO actually read termcap db and detect if terminal supports what we need
 	return term != "dumb"
-}
-
-// getTermSize returns the dimensions of the given terminal.
-// the code is taken from "golang.org/x/crypto/ssh/terminal"
-func getTermSize(fd uintptr) (width, height int, err error) {
-	ws, err := unix.IoctlGetWinsize(int(fd), unix.TIOCGWINSZ)
-	if err != nil {
-		return -1, -1, err
-	}
-	return int(ws.Col), int(ws.Row), nil
 }

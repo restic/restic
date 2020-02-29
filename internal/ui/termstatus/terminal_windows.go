@@ -6,6 +6,8 @@ import (
 	"io"
 	"syscall"
 	"unsafe"
+
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 // clearCurrentLine removes all characters from the current line and resets the
@@ -50,7 +52,6 @@ var (
 	procSetConsoleCursorPosition   = kernel32.NewProc("SetConsoleCursorPosition")
 	procFillConsoleOutputCharacter = kernel32.NewProc("FillConsoleOutputCharacterW")
 	procFillConsoleOutputAttribute = kernel32.NewProc("FillConsoleOutputAttribute")
-	procGetConsoleMode             = kernel32.NewProc("GetConsoleMode")
 	procGetFileType                = kernel32.NewProc("GetFileType")
 )
 
@@ -106,22 +107,9 @@ func windowsMoveCursorUp(wr io.Writer, fd uintptr, n int) {
 	procSetConsoleCursorPosition.Call(fd, uintptr(*(*int32)(unsafe.Pointer(&info.cursorPosition))))
 }
 
-// getTermSize returns the dimensions of the given terminal.
-// the code is taken from "golang.org/x/crypto/ssh/terminal"
-func getTermSize(fd uintptr) (width, height int, err error) {
-	var info consoleScreenBufferInfo
-	_, _, e := syscall.Syscall(procGetConsoleScreenBufferInfo.Addr(), 2, fd, uintptr(unsafe.Pointer(&info)), 0)
-	if e != 0 {
-		return 0, 0, error(e)
-	}
-	return int(info.size.x), int(info.size.y), nil
-}
-
 // isWindowsTerminal return true if the file descriptor is a windows terminal (cmd, psh).
 func isWindowsTerminal(fd uintptr) bool {
-	var st uint32
-	r, _, e := syscall.Syscall(procGetConsoleMode.Addr(), 2, fd, uintptr(unsafe.Pointer(&st)), 0)
-	return r != 0 && e == 0
+	return terminal.IsTerminal(int(fd))
 }
 
 const fileTypePipe = 0x0003
