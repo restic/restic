@@ -20,7 +20,6 @@ require (
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/kurin/blazer v0.5.3
 	github.com/marstr/guid v1.1.0 // indirect
-	github.com/mattn/go-isatty v0.0.7
 	github.com/minio/minio-go/v6 v6.0.43
 	github.com/ncw/swift v1.0.47
 	github.com/pkg/errors v0.8.1

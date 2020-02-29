@@ -6,9 +6,8 @@ import (
 	"io"
 	"os"
 
+	"golang.org/x/crypto/ssh/terminal"
 	"golang.org/x/sys/unix"
-
-	isatty "github.com/mattn/go-isatty"
 )
 
 // clearCurrentLine removes all characters from the current line and resets the
@@ -25,7 +24,7 @@ func moveCursorUp(wr io.Writer, fd uintptr) func(io.Writer, uintptr, int) {
 // canUpdateStatus returns true if status lines can be printed, the process
 // output is not redirected to a file or pipe.
 func canUpdateStatus(fd uintptr) bool {
-	if !isatty.IsTerminal(fd) {
+	if !terminal.IsTerminal(fd) {
 		return false
 	}
 	term := os.Getenv("TERM")
