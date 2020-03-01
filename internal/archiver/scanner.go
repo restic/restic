@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"sort"
 
 	"github.com/restic/restic/internal/fs"
 )
@@ -86,10 +87,11 @@ func (s *Scanner) scan(ctx context.Context, stats ScanStats, target string) (Sca
 		stats.Files++
 		stats.Bytes += uint64(fi.Size())
 	case fi.Mode().IsDir():
-		names, err := readdirnames(s.FS, target)
+		names, err := readdirnames(s.FS, target, fs.O_NOFOLLOW)
 		if err != nil {
 			return stats, s.Error(target, fi, err)
 		}
+		sort.Strings(names)
 
 		for _, name := range names {
 			stats, err = s.scan(ctx, stats, filepath.Join(target, name))

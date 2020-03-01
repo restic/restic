@@ -53,7 +53,6 @@ type SaveBlobFn func(context.Context, restic.BlobType, *Buffer) FutureBlob
 
 // FileSaver concurrently saves incoming files to the repo.
 type FileSaver struct {
-	fs           fs.FS
 	saveFilePool *BufferPool
 	saveBlob     SaveBlobFn
 
@@ -69,7 +68,7 @@ type FileSaver struct {
 
 // NewFileSaver returns a new file saver. A worker pool with fileWorkers is
 // started, it is stopped when ctx is cancelled.
-func NewFileSaver(ctx context.Context, t *tomb.Tomb, fs fs.FS, save SaveBlobFn, pol chunker.Pol, fileWorkers, blobWorkers uint) *FileSaver {
+func NewFileSaver(ctx context.Context, t *tomb.Tomb, save SaveBlobFn, pol chunker.Pol, fileWorkers, blobWorkers uint) *FileSaver {
 	ch := make(chan saveFileJob)
 
 	debug.Log("new file saver with %v file workers and %v blob workers", fileWorkers, blobWorkers)
@@ -77,7 +76,6 @@ func NewFileSaver(ctx context.Context, t *tomb.Tomb, fs fs.FS, save SaveBlobFn, 
 	poolSize := fileWorkers + blobWorkers
 
 	s := &FileSaver{
-		fs:           fs,
 		saveBlob:     save,
 		saveFilePool: NewBufferPool(ctx, int(poolSize), chunker.MaxSize),
 		pol:          pol,
