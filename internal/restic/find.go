@@ -3,6 +3,7 @@ package restic
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -17,8 +18,8 @@ const numUsedBlobsWorkers = 4
 // queue implements a concurrency-safe queue of IDs
 // It can be accessed by the channel given with queue.Items()
 type queue struct {
-	q chan ID
-	sync.WaitGroup
+	length int64
+	q      chan ID
 }
 
 // NewQueue() gives a new empty queue
@@ -26,9 +27,12 @@ func NewQueue() *queue {
 	return &queue{q: make(chan ID)}
 }
 
-// Add() adds the given IDs to the queue
+// Add() adds the given IDs to the queue and increases the queue counter by 1
 func (q *queue) Add(ids IDs) {
-	q.WaitGroup.Add(len(ids))
+	if len(ids) == 0 {
+		return
+	}
+	atomic.AddInt64(&q.length, int64(len(ids)))
 	go func() {
 		for _, id := range ids {
 			q.q <- id
@@ -42,11 +46,21 @@ func (q queue) Items() <-chan ID {
 	return q.q
 }
 
-// Wait() waits for all IDs to be processed and then closes the channel
-// given by Items()
-func (q *queue) Wait() {
-	q.WaitGroup.Wait()
-	close(q.q)
+// Done() informs the queue that one ID has been processed.
+// The behavior is as follows:
+// First, decrease the queue counter by one
+// If counter is zero, close the queue channel
+// if counter is negative, panic
+
+func (q *queue) Done() {
+	newlength := atomic.AddInt64(&q.length, -1)
+	switch {
+	case newlength == 0:
+		close(q.q)
+	case newlength < 0:
+		panic("queue: cannot call Done() without prior Add()")
+	}
+
 }
 
 // FindUsedBlobs traverses the tree ID and adds all seen blobs (trees and data
@@ -62,7 +76,6 @@ func FindUsedBlobs(ctx context.Context, repo TreeLoader, treeID ID, blobs BlobSe
 			return FindUsedBlobsWorker(queue, ctx, repo, blobs, &m)
 		})
 	}
-	queue.Wait()
 	return wg.Wait()
 }
 
