@@ -576,6 +576,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	// enable the Go Module Proxy
+	err = os.Setenv("GOPROXY", "https://proxy.golang.org")
+	if err != nil {
+		msg("setenv(GOPROXY) return error: %v\n", err)
+		os.Exit(1)
+	}
+
 	var env CIEnvironment
 
 	switch {
