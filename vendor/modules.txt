@@ -57,8 +57,6 @@ github.com/kurin/blazer/internal/blog
 github.com/kurin/blazer/x/window
 # github.com/marstr/guid v1.1.0
 github.com/marstr/guid
-# github.com/mattn/go-isatty v0.0.7
-github.com/mattn/go-isatty
 # github.com/minio/minio-go/v6 v6.0.43
 github.com/minio/minio-go/v6
 github.com/minio/minio-go/v6/pkg/credentials
