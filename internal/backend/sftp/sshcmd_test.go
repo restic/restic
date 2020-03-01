@@ -13,31 +13,43 @@ var sshcmdTests = []struct {
 	{
 		Config{User: "user", Host: "host", Path: "dir/subdir"},
 		"ssh",
-		[]string{"host", "-l", "user", "-s", "sftp"},
+		[]string{"-l", "user", "-s", "sftp", "--", "host"},
 	},
 	{
 		Config{Host: "host", Path: "dir/subdir"},
 		"ssh",
-		[]string{"host", "-s", "sftp"},
+		[]string{"-s", "sftp", "--", "host"},
 	},
 	{
-		Config{Host: "host:10022", Path: "/dir/subdir"},
+		Config{Host: "host", Port: "10022", Path: "/dir/subdir"},
 		"ssh",
-		[]string{"host", "-p", "10022", "-s", "sftp"},
+		[]string{"-p", "10022", "-s", "sftp", "--", "host"},
 	},
 	{
-		Config{User: "user", Host: "host:10022", Path: "/dir/subdir"},
+		Config{User: "user", Host: "host", Port: "10022", Path: "/dir/subdir"},
 		"ssh",
-		[]string{"host", "-p", "10022", "-l", "user", "-s", "sftp"},
+		[]string{"-p", "10022", "-l", "user", "-s", "sftp", "--", "host"},
+	},
+	{
+		// IPv6 address.
+		Config{User: "user", Host: "::1", Path: "dir"},
+		"ssh",
+		[]string{"-l", "user", "-s", "sftp", "--", "::1"},
+	},
+	{
+		// IPv6 address with zone and port.
+		Config{User: "user", Host: "::1%lo0", Port: "22", Path: "dir"},
+		"ssh",
+		[]string{"-p", "22", "-l", "user", "-s", "sftp", "--", "::1%lo0"},
 	},
 }
 
 func TestBuildSSHCommand(t *testing.T) {
-	for _, test := range sshcmdTests {
+	for i, test := range sshcmdTests {
 		t.Run("", func(t *testing.T) {
 			cmd, args, err := buildSSHCommand(test.cfg)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("%v in test %d", err, i)
 			}
 
 			if cmd != test.cmd {
@@ -45,7 +57,8 @@ func TestBuildSSHCommand(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(test.args, args) {
-				t.Fatalf("wrong args, want:\n  %v\ngot:\n  %v", test.args, args)
+				t.Fatalf("wrong args in test %d, want:\n  %v\ngot:\n  %v",
+					i, test.args, args)
 			}
 		})
 	}
