@@ -57,12 +57,12 @@ var (
 
 // createMasterKey creates a new master key in the given backend and encrypts
 // it with the password.
-func createMasterKey(s *Repository, password string) (*Key, error) {
+func createMasterKey(s restic.Repository, password string) (*Key, error) {
 	return AddKey(context.TODO(), s, password, nil)
 }
 
 // OpenKey tries do decrypt the key specified by name with the given password.
-func OpenKey(ctx context.Context, s *Repository, name string, password string) (*Key, error) {
+func OpenKey(ctx context.Context, s restic.Repository, name string, password string) (*Key, error) {
 	k, err := LoadKey(ctx, s, name)
 	if err != nil {
 		debug.Log("LoadKey(%v) returned error %v", name, err)
@@ -112,7 +112,7 @@ func OpenKey(ctx context.Context, s *Repository, name string, password string) (
 // given password. If none could be found, ErrNoKeyFound is returned. When
 // maxKeys is reached, ErrMaxKeysReached is returned. When setting maxKeys to
 // zero, all keys in the repo are checked.
-func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int, keyHint string) (k *Key, err error) {
+func SearchKey(ctx context.Context, s restic.Repository, password string, maxKeys int, keyHint string) (k *Key, err error) {
 	checked := 0
 
 	if len(keyHint) > 0 {
@@ -182,9 +182,9 @@ func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int,
 }
 
 // LoadKey loads a key from the backend.
-func LoadKey(ctx context.Context, s *Repository, name string) (k *Key, err error) {
+func LoadKey(ctx context.Context, s restic.Repository, name string) (k *Key, err error) {
 	h := restic.Handle{Type: restic.KeyFile, Name: name}
-	data, err := backend.LoadAll(ctx, nil, s.be, h)
+	data, err := backend.LoadAll(ctx, nil, s.Backend(), h)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +199,7 @@ func LoadKey(ctx context.Context, s *Repository, name string) (k *Key, err error
 }
 
 // AddKey adds a new key to an already existing repository.
-func AddKey(ctx context.Context, s *Repository, password string, template *crypto.Key) (*Key, error) {
+func AddKey(ctx context.Context, s restic.Repository, password string, template *crypto.Key) (*Key, error) {
 	// make sure we have valid KDF parameters
 	if Params == nil {
 		p, err := crypto.Calibrate(KDFTimeout, KDFMemory)
@@ -274,7 +274,7 @@ func AddKey(ctx context.Context, s *Repository, password string, template *crypt
 		Name: restic.Hash(buf).String(),
 	}
 
-	err = s.be.Save(ctx, h, restic.NewByteReader(buf))
+	err = s.Backend().Save(ctx, h, restic.NewByteReader(buf))
 	if err != nil {
 		return nil, err
 	}
