@@ -1,0 +1,6 @@
+Bugfix: SFTP backend supports IPv6 addresses
+
+The SFTP backend now supports IPv6 addresses natively, without relying on
+aliases in the external SSH configuration.
+
+https://github.com/restic/restic/pull/2592
