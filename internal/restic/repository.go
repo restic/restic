@@ -14,6 +14,7 @@ type Repository interface {
 	Backend() Backend
 
 	Key() *crypto.Key
+	KeyName() string
 
 	SetIndex(Index) error
 

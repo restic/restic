@@ -9,7 +9,6 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 )
 
@@ -20,15 +19,15 @@ var globalLocks struct {
 	sync.Mutex
 }
 
-func lockRepo(repo *repository.Repository) (*restic.Lock, error) {
+func lockRepo(repo restic.Repository) (*restic.Lock, error) {
 	return lockRepository(repo, false)
 }
 
-func lockRepoExclusive(repo *repository.Repository) (*restic.Lock, error) {
+func lockRepoExclusive(repo restic.Repository) (*restic.Lock, error) {
 	return lockRepository(repo, true)
 }
 
-func lockRepository(repo *repository.Repository, exclusive bool) (*restic.Lock, error) {
+func lockRepository(repo restic.Repository, exclusive bool) (*restic.Lock, error) {
 	lockFn := restic.NewLock
 	if exclusive {
 		lockFn = restic.NewExclusiveLock

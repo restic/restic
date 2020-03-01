@@ -7,7 +7,6 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 )
 
@@ -58,7 +57,7 @@ func init() {
 	tagFlags.StringArrayVar(&tagOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot-ID is given")
 }
 
-func changeTags(ctx context.Context, repo *repository.Repository, sn *restic.Snapshot, setTags, addTags, removeTags []string) (bool, error) {
+func changeTags(ctx context.Context, repo restic.Repository, sn *restic.Snapshot, setTags, addTags, removeTags []string) (bool, error) {
 	var changed bool
 
 	if len(setTags) != 0 {

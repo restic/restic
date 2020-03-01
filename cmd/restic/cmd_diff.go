@@ -8,7 +8,6 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/spf13/cobra"
 )
@@ -52,7 +51,7 @@ func init() {
 	f.BoolVar(&diffOptions.ShowMetadata, "metadata", false, "print changes in metadata")
 }
 
-func loadSnapshot(ctx context.Context, repo *repository.Repository, desc string) (*restic.Snapshot, error) {
+func loadSnapshot(ctx context.Context, repo restic.Repository, desc string) (*restic.Snapshot, error) {
 	id, err := restic.FindSnapshot(repo, desc)
 	if err != nil {
 		return nil, err

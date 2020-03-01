@@ -3,12 +3,11 @@ package main
 import (
 	"context"
 
-	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 )
 
 // FindFilteredSnapshots yields Snapshots, either given explicitly by `snapshotIDs` or filtered from the list of all snapshots.
-func FindFilteredSnapshots(ctx context.Context, repo *repository.Repository, hosts []string, tags []restic.TagList, paths []string, snapshotIDs []string) <-chan *restic.Snapshot {
+func FindFilteredSnapshots(ctx context.Context, repo restic.Repository, hosts []string, tags []restic.TagList, paths []string, snapshotIDs []string) <-chan *restic.Snapshot {
 	out := make(chan *restic.Snapshot)
 	go func() {
 		defer close(out)

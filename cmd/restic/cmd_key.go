@@ -41,7 +41,7 @@ func init() {
 	flags.StringVarP(&newPasswordFile, "new-password-file", "", "", "the file from which to load a new password")
 }
 
-func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions) error {
+func listKeys(ctx context.Context, s restic.Repository, gopts GlobalOptions) error {
 	type keyInfo struct {
 		Current  bool   `json:"current"`
 		ID       string `json:"id"`
@@ -114,7 +114,7 @@ func getNewPassword(gopts GlobalOptions) (string, error) {
 		"enter password again: ")
 }
 
-func addKey(gopts GlobalOptions, repo *repository.Repository) error {
+func addKey(gopts GlobalOptions, repo restic.Repository) error {
 	pw, err := getNewPassword(gopts)
 	if err != nil {
 		return err
@@ -130,7 +130,7 @@ func addKey(gopts GlobalOptions, repo *repository.Repository) error {
 	return nil
 }
 
-func deleteKey(ctx context.Context, repo *repository.Repository, name string) error {
+func deleteKey(ctx context.Context, repo restic.Repository, name string) error {
 	if name == repo.KeyName() {
 		return errors.Fatal("refusing to remove key currently used to access repository")
 	}
@@ -145,7 +145,7 @@ func deleteKey(ctx context.Context, repo *repository.Repository, name string) er
 	return nil
 }
 
-func changePassword(gopts GlobalOptions, repo *repository.Repository) error {
+func changePassword(gopts GlobalOptions, repo restic.Repository) error {
 	pw, err := getNewPassword(gopts)
 	if err != nil {
 		return err
