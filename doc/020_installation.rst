@@ -259,7 +259,7 @@ In order to build restic from source, execute the following steps:
 
     $ cd restic
 
-    $ go run -mod=vendor build.go
+    $ go run build.go
 
 You can easily cross-compile restic for all supported platforms, just
 supply the target OS and platform via the command-line options like this
@@ -267,11 +267,11 @@ supply the target OS and platform via the command-line options like this
 
 .. code-block:: console
 
-    $ go run -mod=vendor build.go --goos windows --goarch amd64
+    $ go run build.go --goos windows --goarch amd64
 
-    $ go run -mod=vendor build.go --goos freebsd --goarch 386
+    $ go run build.go --goos freebsd --goarch 386
 
-    $ go run -mod=vendor build.go --goos linux --goarch arm --goarm 6
+    $ go run build.go --goos linux --goarch arm --goarm 6
 
 The resulting binary is statically linked and does not require any
 libraries.

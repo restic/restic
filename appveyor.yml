@@ -29,4 +29,4 @@ install:
   - set PATH=bin/;%PATH%
 
 build_script:
-  - go run -mod=vendor run_integration_tests.go
+  - go run run_integration_tests.go
