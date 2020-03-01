@@ -2071,7 +2071,9 @@ func TestMetadataChanged(t *testing.T) {
 	// set some values so we can then compare the nodes
 	want.Content = node2.Content
 	want.Path = ""
-	want.ExtendedAttributes = nil
+	if len(want.ExtendedAttributes) == 0 {
+		want.ExtendedAttributes = nil
+	}
 
 	want.AccessTime = want.ModTime
 
