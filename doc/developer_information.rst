@@ -47,10 +47,10 @@ In the following example, we'll use the file ``restic-0.9.3.tar.gz`` and Go
     $ go version
     go version go1.11.1 linux/amd64
 
-    $ GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -mod=vendor -ldflags "-s -w" -tags selfupdate -o restic_linux_amd64 ./cmd/restic
+    $ GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-s -w" -tags selfupdate -o restic_linux_amd64 ./cmd/restic
     $ bzip2 restic_linux_amd64
 
-    $ GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -mod=vendor -ldflags "-s -w" -tags selfupdate -o restic_windows_amd64.exe ./cmd/restic
+    $ GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-s -w" -tags selfupdate -o restic_windows_amd64.exe ./cmd/restic
     $ touch --reference VERSION restic_windows_amd64.exe
     $ TZ=Europe/Berlin zip -q -X restic_windows_amd64.zip restic_windows_amd64.exe
 
@@ -105,7 +105,7 @@ The following steps are necessary to build the binaries:
         --volume "$PWD/restic-0.9.3:/restic" \
         --volume "$PWD/output:/output" \
         restic/builder \
-        go run -mod=vendor helpers/build-release-binaries/main.go --verbose
+        go run helpers/build-release-binaries/main.go --verbose
 
 Prepare a New Release
 *********************
@@ -118,6 +118,6 @@ required argument is the new version number (in `Semantic Versioning
 
 .. code::
 
-    go run -mod=vendor helpers/prepare-release/main.go 0.9.3
+    go run helpers/prepare-release/main.go 0.9.3
 
 Checks can be skipped on demand via flags, please see ``--help`` for details.

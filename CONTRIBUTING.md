@@ -46,14 +46,11 @@ Remember, the easier it is for us to reproduce the bug, the earlier it will be
 corrected!
 
 In addition, you can compile restic with debug support by running
-`go run -mod=vendor build.go -tags debug` and instructing it to create a debug
+`go run build.go -tags debug` and instructing it to create a debug
 log by setting the environment variable `DEBUG_LOG` to a file, e.g. like this:
 
     $ export DEBUG_LOG=/tmp/restic-debug.log
     $ restic backup ~/work
-
-For Go < 1.11, you need to remove the `-mod=vendor` option from the build
-command.
 
 Please be aware that the debug log file will contain potentially sensitive
 things like file and directory names, so please either redact it before

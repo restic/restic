@@ -345,7 +345,7 @@ func runBuild(sourceDir, outputDir, version string) {
 		"--volume", sourceDir+":/restic",
 		"--volume", outputDir+":/output",
 		"restic/builder",
-		"go", "run", "-mod=vendor", "helpers/build-release-binaries/main.go",
+		"go", "run", "helpers/build-release-binaries/main.go",
 		"--version", version)
 }
 
