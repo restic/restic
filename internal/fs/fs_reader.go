@@ -275,7 +275,7 @@ type fakeDir struct {
 }
 
 func (d fakeDir) Readdirnames(n int) ([]string, error) {
-	if n >= 0 {
+	if n > 0 {
 		return nil, errors.New("not implemented")
 	}
 	names := make([]string, 0, len(d.entries))
@@ -287,7 +287,7 @@ func (d fakeDir) Readdirnames(n int) ([]string, error) {
 }
 
 func (d fakeDir) Readdir(n int) ([]os.FileInfo, error) {
-	if n >= 0 {
+	if n > 0 {
 		return nil, errors.New("not implemented")
 	}
 	return d.entries, nil
@@ -299,7 +299,6 @@ type fakeFileInfo struct {
 	size    int64
 	mode    os.FileMode
 	modtime time.Time
-	sys     interface{}
 }
 
 func (fi fakeFileInfo) Name() string {
@@ -323,5 +322,5 @@ func (fi fakeFileInfo) IsDir() bool {
 }
 
 func (fi fakeFileInfo) Sys() interface{} {
-	return fi.sys
+	return nil
 }
