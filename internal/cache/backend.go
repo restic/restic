@@ -40,7 +40,7 @@ func (b *Backend) Remove(ctx context.Context, h restic.Handle) error {
 		return err
 	}
 
-	return b.Cache.Remove(h)
+	return b.Cache.remove(h)
 }
 
 var autoCacheTypes = map[restic.FileType]struct{}{
@@ -77,7 +77,7 @@ func (b *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRea
 	err = b.Cache.Save(h, rd)
 	if err != nil {
 		debug.Log("unable to save %v to cache: %v", h, err)
-		_ = b.Cache.Remove(h)
+		_ = b.Cache.remove(h)
 		return nil
 	}
 
@@ -116,7 +116,7 @@ func (b *Backend) cacheFile(ctx context.Context, h restic.Handle) error {
 		})
 		if err != nil {
 			// try to remove from the cache, ignore errors
-			_ = b.Cache.Remove(h)
+			_ = b.Cache.remove(h)
 		}
 	}
 
@@ -134,7 +134,7 @@ func (b *Backend) cacheFile(ctx context.Context, h restic.Handle) error {
 // loadFromCacheOrDelegate will try to load the file from the cache, and fall
 // back to the backend if that fails.
 func (b *Backend) loadFromCacheOrDelegate(ctx context.Context, h restic.Handle, length int, offset int64, consumer func(rd io.Reader) error) error {
-	rd, err := b.Cache.Load(h, length, offset)
+	rd, err := b.Cache.load(h, length, offset)
 	if err != nil {
 		debug.Log("error caching %v: %v, falling back to backend", h, err)
 		return b.Backend.Load(ctx, h, length, offset, consumer)
@@ -162,7 +162,7 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 
 	if b.Cache.Has(h) {
 		debug.Log("Load(%v, %v, %v) from cache", h, length, offset)
-		rd, err := b.Cache.Load(h, length, offset)
+		rd, err := b.Cache.load(h, length, offset)
 		if err == nil {
 			err = consumer(rd)
 			if err != nil {
@@ -216,7 +216,7 @@ func (b *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, e
 	if err != nil {
 		if b.Backend.IsNotExist(err) {
 			// try to remove from the cache, ignore errors
-			_ = b.Cache.Remove(h)
+			_ = b.Cache.remove(h)
 		}
 
 		return fi, err

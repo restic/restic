@@ -40,7 +40,7 @@ type readCloser struct {
 // Load returns a reader that yields the contents of the file with the
 // given handle. rd must be closed after use. If an error is returned, the
 // ReadCloser is nil.
-func (c *Cache) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+func (c *Cache) load(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	debug.Log("Load from cache: %v", h)
 	if !c.canBeCached(h.Type) {
 		return nil, errors.New("cannot be cached")
@@ -59,13 +59,13 @@ func (c *Cache) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, 
 
 	if fi.Size() <= crypto.Extension {
 		_ = f.Close()
-		_ = c.Remove(h)
+		_ = c.remove(h)
 		return nil, errors.Errorf("cached file %v is truncated, removing", h)
 	}
 
 	if fi.Size() < offset+int64(length) {
 		_ = f.Close()
-		_ = c.Remove(h)
+		_ = c.remove(h)
 		return nil, errors.Errorf("cached file %v is too small, removing", h)
 	}
 
@@ -85,7 +85,7 @@ func (c *Cache) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, 
 }
 
 // SaveWriter returns a writer for the cache object h. It must be closed after writing is finished.
-func (c *Cache) SaveWriter(h restic.Handle) (io.WriteCloser, error) {
+func (c *Cache) saveWriter(h restic.Handle) (io.WriteCloser, error) {
 	debug.Log("Save to cache: %v", h)
 	if !c.canBeCached(h.Type) {
 		return nil, errors.New("cannot be cached")
@@ -112,7 +112,7 @@ func (c *Cache) Save(h restic.Handle, rd io.Reader) error {
 		return errors.New("Save() called with nil reader")
 	}
 
-	f, err := c.SaveWriter(h)
+	f, err := c.saveWriter(h)
 	if err != nil {
 		return err
 	}
@@ -120,19 +120,19 @@ func (c *Cache) Save(h restic.Handle, rd io.Reader) error {
 	n, err := io.Copy(f, rd)
 	if err != nil {
 		_ = f.Close()
-		_ = c.Remove(h)
+		_ = c.remove(h)
 		return errors.Wrap(err, "Copy")
 	}
 
 	if n <= crypto.Extension {
 		_ = f.Close()
-		_ = c.Remove(h)
+		_ = c.remove(h)
 		debug.Log("trying to cache truncated file %v, removing", h)
 		return nil
 	}
 
 	if err = f.Close(); err != nil {
-		_ = c.Remove(h)
+		_ = c.remove(h)
 		return errors.Wrap(err, "Close")
 	}
 
@@ -140,7 +140,7 @@ func (c *Cache) Save(h restic.Handle, rd io.Reader) error {
 }
 
 // Remove deletes a file. When the file is not cache, no error is returned.
-func (c *Cache) Remove(h restic.Handle) error {
+func (c *Cache) remove(h restic.Handle) error {
 	if !c.Has(h) {
 		return nil
 	}

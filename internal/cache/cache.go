@@ -46,9 +46,6 @@ func readVersion(dir string) (v uint, err error) {
 
 const cacheVersion = 1
 
-// ensure Cache implements restic.Cache
-var _ restic.Cache = &Cache{}
-
 var cacheLayoutPaths = map[restic.FileType]string{
 	restic.PackFile:     "data",
 	restic.SnapshotFile: "snapshots",

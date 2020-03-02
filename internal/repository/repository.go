@@ -28,7 +28,8 @@ type Repository struct {
 	key     *crypto.Key
 	keyName string
 	idx     *MasterIndex
-	restic.Cache
+	Cache   *cache.Cache
+
 	noAutoIndexUpdate bool
 
 	treePM *packerManager
@@ -59,7 +60,7 @@ func (r *Repository) Config() restic.Config {
 }
 
 // UseCache replaces the backend with the wrapped cache.
-func (r *Repository) UseCache(c restic.Cache) {
+func (r *Repository) UseCache(c *cache.Cache) {
 	if c == nil {
 		return
 	}
@@ -552,7 +553,7 @@ func (r *Repository) PrepareCache(indexIDs restic.IDSet) error {
 
 	// use readahead
 	debug.Log("using readahead")
-	cache := r.Cache.(*cache.Cache)
+	cache := r.Cache
 	cache.PerformReadahead = func(h restic.Handle) bool {
 		if h.Type != restic.PackFile {
 			debug.Log("no readahead for %v, is not a pack file", h)
