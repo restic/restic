@@ -412,13 +412,11 @@ func (s *Suite) TestListCancel(t *testing.T) {
 	})
 
 	t.Run("Timeout", func(t *testing.T) {
-		ctx, cancel := context.WithCancel(context.TODO())
-		defer cancel()
-
 		// rather large timeout, let's try to get at least one item
 		timeout := time.Second
 
-		ctxTimeout, _ := context.WithTimeout(ctx, timeout)
+		ctxTimeout, cancel := context.WithTimeout(context.TODO(), timeout)
+		defer cancel()
 
 		i := 0
 		// pass in a context with a timeout
