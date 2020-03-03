@@ -253,22 +253,6 @@ func IsOld(t time.Time, maxAge time.Duration) bool {
 	return t.Before(oldest)
 }
 
-// errNoSuchFile is returned when a file is not cached.
-type errNoSuchFile struct {
-	Type string
-	Name string
-}
-
-func (e errNoSuchFile) Error() string {
-	return fmt.Sprintf("file %v (%v) is not cached", e.Name, e.Type)
-}
-
-// IsNotExist returns true if the error was caused by a non-existing file.
-func (c *Cache) IsNotExist(err error) bool {
-	_, ok := errors.Cause(err).(errNoSuchFile)
-	return ok
-}
-
 // Wrap returns a backend with a cache.
 func (c *Cache) Wrap(be restic.Backend) restic.Backend {
 	return newBackend(be, c)
