@@ -111,6 +111,11 @@ func (r *retryReader) read(p []byte) (n int, err error) {
 	}
 	n, err = rd.Read(p)
 
+	cerr := rd.Close()
+	if err == nil {
+		err = cerr
+	}
+
 	switch err {
 	case nil:
 	case io.EOF:
