@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"testing"
 	"time"
@@ -201,11 +200,7 @@ func TestUploadLargeFile(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			want := data[test.offset : test.offset+test.length]
 
-			buf := make([]byte, test.length)
-			err = be.Load(ctx, h, test.length, int64(test.offset), func(rd io.Reader) error {
-				_, err = io.ReadFull(rd, buf)
-				return err
-			})
+			buf, err := backend.LoadAll(ctx, nil, be, h)
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
@@ -77,18 +78,9 @@ func (r *Repository) LoadAndDecrypt(ctx context.Context, buf []byte, t restic.Fi
 	debug.Log("load %v with id %v", t, id)
 
 	h := restic.Handle{Type: t, Name: id.String()}
-	err := r.be.Load(ctx, h, 0, 0, func(rd io.Reader) error {
-		// make sure this call is idempotent, in case an error occurs
-		wr := bytes.NewBuffer(buf[:0])
-		_, cerr := io.Copy(wr, rd)
-		if cerr != nil {
-			return cerr
-		}
-		buf = wr.Bytes()
-		return nil
-	})
-
+	buf, err := backend.LoadAll(ctx, buf, r.be, h)
 	if err != nil {
+		debug.Log("error loading %v: %v", h, err)
 		return nil, err
 	}
 
@@ -751,7 +743,7 @@ func (r *Repository) SaveTree(ctx context.Context, t *restic.Tree) (restic.ID, e
 
 // Loader allows loading data from a backend.
 type Loader interface {
-	Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error
+	Load(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error)
 }
 
 // DownloadAndHash is all-in-one helper to download content of the file at h to a temporary filesystem location
@@ -763,19 +755,18 @@ func DownloadAndHash(ctx context.Context, be Loader, h restic.Handle) (tmpfile *
 		return nil, restic.ID{}, -1, errors.Wrap(err, "TempFile")
 	}
 
-	err = be.Load(ctx, h, 0, 0, func(rd io.Reader) (ierr error) {
-		_, ierr = tmpfile.Seek(0, io.SeekStart)
-		if ierr == nil {
-			ierr = tmpfile.Truncate(0)
+	rd, err := be.Load(ctx, h, 0, 0)
+	defer func() {
+		cerr := rd.Close()
+		if err == nil {
+			err = cerr
 		}
-		if ierr != nil {
-			return ierr
-		}
-		hrd := hashing.NewReader(rd, sha256.New())
-		size, ierr = io.Copy(tmpfile, hrd)
-		hash = restic.IDFromHash(hrd.Sum(nil))
-		return ierr
-	})
+	}()
+
+	hrd := hashing.NewReader(rd, sha256.New())
+	size, err = io.Copy(tmpfile, hrd)
+	hash = restic.IDFromHash(hrd.Sum(nil))
+
 	if err != nil {
 		tmpfile.Close()
 		os.Remove(tmpfile.Name())

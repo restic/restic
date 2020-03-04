@@ -73,11 +73,68 @@ func (be *RetryBackend) Save(ctx context.Context, h restic.Handle, rd restic.Rew
 // given offset. If length is larger than zero, only a portion of the file
 // is returned. rd must be closed after use. If an error is returned, the
 // ReadCloser must be nil.
-func (be *RetryBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64, consumer func(rd io.Reader) error) (err error) {
-	return be.retry(ctx, fmt.Sprintf("Load(%v, %v, %v)", h, length, offset),
-		func() error {
-			return be.Backend.Load(ctx, h, length, offset, consumer)
-		})
+func (be *RetryBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64) (r io.ReadCloser, err error) {
+	r = &retryReader{be: be, ctx: ctx, h: h, length: length, offset: offset}
+	return r, nil
+}
+
+type retryReader struct {
+	atEOF  bool
+	be     *RetryBackend
+	ctx    context.Context
+	h      restic.Handle
+	length int
+	offset int64
+}
+
+func (r *retryReader) Read(p []byte) (n int, err error) {
+	if r.atEOF {
+		return 0, io.EOF
+	}
+
+	msg := fmt.Sprintf("Load(%v, %v, %v)", r.h, r.length, r.offset)
+	err = r.be.retry(r.ctx, msg, func() (innerErr error) {
+		n, innerErr = r.read(p)
+		return innerErr
+	})
+	return n, err
+}
+
+func (r *retryReader) read(p []byte) (n int, err error) {
+	rd, err := r.be.Backend.Load(r.ctx, r.h, r.length, r.offset)
+	if err != nil {
+		return 0, err
+	}
+
+	if len(p) > r.length && r.length != 0 {
+		p = p[:r.length]
+	}
+	n, err = rd.Read(p)
+
+	switch err {
+	case nil:
+	case io.EOF:
+		r.atEOF = true
+		err = nil // Don't trigger retry.
+	default:
+		// Forget what we read, restart at current offset.
+		return 0, err
+	}
+
+	if r.length != 0 {
+		r.length -= n
+		if r.length == 0 {
+			r.atEOF = true
+		}
+	}
+	r.offset += int64(n)
+
+	return n, err
+}
+
+func (r *retryReader) Close() error {
+	*r = retryReader{}
+	return nil
 }
 
 // Stat returns information about the File identified by h.

@@ -40,13 +40,15 @@ func (l limitedRewindReader) Read(b []byte) (int, error) {
 	return l.limited.Read(b)
 }
 
-func (r rateLimitedBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64, consumer func(rd io.Reader) error) error {
-	return r.Backend.Load(ctx, h, length, offset, func(rd io.Reader) error {
-		lrd := limitedReadCloser{
-			limited: r.limiter.Downstream(rd),
+func (r rateLimitedBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+	rd, err := r.Backend.Load(ctx, h, length, offset)
+	if err == nil {
+		rd = limitedReadCloser{
+			limited:  r.limiter.Downstream(rd),
+			original: rd,
 		}
-		return consumer(lrd)
-	})
+	}
+	return rd, nil
 }
 
 type limitedReadCloser struct {

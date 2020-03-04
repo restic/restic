@@ -170,13 +170,9 @@ func (b *Backend) IsNotExist(err error) bool {
 	return ok
 }
 
-// Load runs fn with a reader that yields the contents of the file at h at the
+// Load returns a reader that yields the contents of the file at h at the
 // given offset.
-func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
-	return backend.DefaultLoad(ctx, h, length, offset, b.openReader, fn)
-}
-
-func (b *Backend) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	debug.Log("Load %v, length %v, offset %v", h, length, offset)
 	if err := h.Valid(); err != nil {
 		return nil, err

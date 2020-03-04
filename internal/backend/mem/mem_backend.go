@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"sync"
 
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
@@ -86,13 +85,9 @@ func (be *MemoryBackend) Save(ctx context.Context, h restic.Handle, rd restic.Re
 	return nil
 }
 
-// Load runs fn with a reader that yields the contents of the file at h at the
+// Load returns a reader that yields the contents of the file at h at the
 // given offset.
-func (be *MemoryBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
-	return backend.DefaultLoad(ctx, h, length, offset, be.openReader, fn)
-}
-
-func (be *MemoryBackend) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+func (be *MemoryBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	if err := h.Valid(); err != nil {
 		return nil, err
 	}

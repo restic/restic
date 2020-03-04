@@ -114,13 +114,12 @@ func (s *Suite) TestLoad(t *testing.T) {
 	b := s.open(t)
 	defer s.close(t, b)
 
-	noop := func(rd io.Reader) error {
-		return nil
-	}
-
-	err := b.Load(context.TODO(), restic.Handle{}, 0, 0, noop)
+	rd, err := b.Load(context.TODO(), restic.Handle{}, 0, 0)
 	if err == nil {
 		t.Fatalf("Load() did not return an error for invalid handle")
+		test.OK(t, rd.Close())
+	} else {
+		test.Assert(t, rd == nil, "non-nil Reader but nil error")
 	}
 
 	err = testLoad(b, restic.Handle{Type: restic.DataFile, Name: "foobar"}, 0, 0)
@@ -141,23 +140,12 @@ func (s *Suite) TestLoad(t *testing.T) {
 
 	t.Logf("saved %d bytes as %v", length, handle)
 
-	err = b.Load(context.TODO(), handle, 100, -1, noop)
+	rd, err = b.Load(context.TODO(), handle, 100, -1)
 	if err == nil {
 		t.Fatalf("Load() returned no error for negative offset!")
-	}
-
-	err = b.Load(context.TODO(), handle, 0, 0, func(rd io.Reader) error {
-		_, err := io.Copy(ioutil.Discard, rd)
-		if err != nil {
-			t.Fatal(err)
-		}
-		return errors.Errorf("deliberate error")
-	})
-	if err == nil {
-		t.Fatalf("Load() did not propagate consumer error!")
-	}
-	if err.Error() != "deliberate error" {
-		t.Fatalf("Load() did not correctly propagate consumer error!")
+		test.OK(t, rd.Close())
+	} else {
+		test.Assert(t, rd == nil, "non-nil Reader but nil error")
 	}
 
 	loadTests := 50
@@ -187,10 +175,12 @@ func (s *Suite) TestLoad(t *testing.T) {
 		}
 
 		var buf []byte
-		err := b.Load(context.TODO(), handle, getlen, int64(o), func(rd io.Reader) (ierr error) {
-			buf, ierr = ioutil.ReadAll(rd)
-			return ierr
-		})
+		rd, err := b.Load(context.TODO(), handle, getlen, int64(o))
+		if err == nil {
+			buf, err = ioutil.ReadAll(rd)
+			test.OK(t, rd.Close())
+		}
+
 		if err != nil {
 			t.Logf("Load, l %v, o %v, len(d) %v, getlen %v", l, o, len(d), getlen)
 			t.Errorf("Load(%d, %d) returned unexpected error: %+v", l, o, err)
@@ -622,10 +612,16 @@ func store(t testing.TB, b restic.Backend, tpe restic.FileType, data []byte) res
 
 // testLoad loads a blob (but discards its contents).
 func testLoad(b restic.Backend, h restic.Handle, length int, offset int64) error {
-	return b.Load(context.TODO(), h, 0, 0, func(rd io.Reader) (ierr error) {
-		_, ierr = io.Copy(ioutil.Discard, rd)
-		return ierr
-	})
+	rd, err := b.Load(context.TODO(), h, 0, 0)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(ioutil.Discard, rd)
+	cerr := rd.Close()
+	if cerr != nil {
+		err = cerr
+	}
+	return err
 }
 
 func (s *Suite) delayedRemove(t testing.TB, be restic.Backend, handles ...restic.Handle) error {
@@ -744,11 +740,7 @@ func (s *Suite) TestBackend(t *testing.T) {
 			length := end - start
 
 			buf2 := make([]byte, length)
-			var n int
-			err = b.Load(context.TODO(), h, len(buf2), int64(start), func(rd io.Reader) (ierr error) {
-				n, ierr = io.ReadFull(rd, buf2)
-				return ierr
-			})
+			n, err := restic.ReadAt(context.TODO(), b, h, int64(start), buf2)
 			test.OK(t, err)
 			test.OK(t, err)
 			test.Equals(t, len(buf2), n)

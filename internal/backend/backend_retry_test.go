@@ -3,6 +3,7 @@ package backend
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"testing"
@@ -185,6 +186,12 @@ func TestBackendListRetryErrorBackend(t *testing.T) {
 	test.Equals(t, names[:2], listed)
 }
 
+type readLimitReached int
+
+func (err readLimitReached) Error() string {
+	return fmt.Sprintf("reader reached limit of %d", int(err))
+}
+
 // failingReader returns an error after reading limit number of bytes
 type failingReader struct {
 	data  []byte
@@ -199,7 +206,7 @@ func (r failingReader) Read(p []byte) (n int, err error) {
 	}
 	r.pos += i
 	if r.pos >= r.limit {
-		return i, errors.Errorf("reader reached limit of %d", r.limit)
+		return i, readLimitReached(r.limit)
 	}
 	return i, nil
 }
@@ -219,15 +226,21 @@ func (r closingReader) Close() error {
 	return nil
 }
 
-func TestBackendLoadRetry(t *testing.T) {
+func TestBackendLoadRetryTransient(t *testing.T) {
 	data := test.Random(23, 1024)
 	limit := 100
 	attempt := 0
 
 	be := mock.NewBackend()
-	be.OpenReaderFn = func(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+	be.LoadFn = func(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 		// returns failing reader on first invocation, good reader on subsequent invocations
 		attempt++
+		end := int64(len(data))
+		if length != 0 {
+			end = offset + int64(length)
+		}
+		data := data[offset:end]
+
 		if attempt > 1 {
 			return closingReader{rd: bytes.NewReader(data)}, nil
 		}
@@ -238,12 +251,39 @@ func TestBackendLoadRetry(t *testing.T) {
 		Backend: be,
 	}
 
-	var buf []byte
-	err := retryBackend.Load(context.TODO(), restic.Handle{}, 0, 0, func(rd io.Reader) (err error) {
-		buf, err = ioutil.ReadAll(rd)
-		return err
-	})
+	rd, err := retryBackend.Load(context.TODO(), restic.Handle{}, 0, 0)
 	test.OK(t, err)
+	buf, err := ioutil.ReadAll(rd)
+	test.OK(t, err)
+	test.Equals(t, len(data), len(buf))
 	test.Equals(t, data, buf)
-	test.Equals(t, 2, attempt)
+	test.Assert(t, attempt > 1, "should have failed on first attempt")
+	err = rd.Close()
+	test.OK(t, err)
+}
+
+func TestBackendLoadRetryPermanent(t *testing.T) {
+	const maxRetries = 2
+	attempt := 0
+
+	be := mock.NewBackend()
+	be.LoadFn = func(context.Context, restic.Handle, int, int64) (io.ReadCloser, error) {
+		attempt++
+		return failingReader{limit: 0}, nil
+	}
+
+	retryBackend := RetryBackend{
+		Backend:  be,
+		MaxTries: maxRetries,
+	}
+
+	rd, err := retryBackend.Load(context.TODO(), restic.Handle{}, 0, 0)
+	test.OK(t, err)
+
+	var buf [10]byte
+	n, err := io.ReadFull(rd, buf[:])
+	test.Equals(t, 0, n)
+	test.Equals(t, readLimitReached(0), err)
+
+	test.Equals(t, maxRetries+1, attempt)
 }

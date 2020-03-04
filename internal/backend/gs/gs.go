@@ -265,13 +265,9 @@ func (wr wrapReader) Close() error {
 	return err
 }
 
-// Load runs fn with a reader that yields the contents of the file at h at the
+// Load returns a reader that yields the contents of the file at h at the
 // given offset.
-func (be *Backend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
-	return backend.DefaultLoad(ctx, h, length, offset, be.openReader, fn)
-}
-
-func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+func (be *Backend) Load(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	debug.Log("Load %v, length %v, offset %v from %v", h, length, offset, be.Filename(h))
 	if err := h.Valid(); err != nil {
 		return nil, err

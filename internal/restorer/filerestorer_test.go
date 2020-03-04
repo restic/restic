@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/crypto"
+	"github.com/restic/restic/internal/mock"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -35,8 +36,7 @@ type TestRepo struct {
 	files              []*fileInfo
 	filesPathToContent map[string]string
 
-	//
-	loader func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error
+	loader *mock.Backend
 }
 
 func (i *TestRepo) Lookup(blobID restic.ID, _ restic.BlobType) ([]restic.PackedBlob, bool) {
@@ -138,13 +138,14 @@ func newTestRepo(content []TestFile) *TestRepo {
 		files:              files,
 		filesPathToContent: filesPathToContent,
 	}
-	repo.loader = func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+	repo.loader = mock.NewBackend()
+	repo.loader.LoadFn = func(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 		packID, err := restic.ParseID(h.Name)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		rd := bytes.NewReader(repo.packsIDToData[packID][int(offset) : int(offset)+length])
-		return fn(rd)
+		return ioutil.NopCloser(rd), nil
 	}
 
 	return repo

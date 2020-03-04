@@ -52,7 +52,7 @@ type packInfo struct {
 type fileRestorer struct {
 	key        *crypto.Key
 	idx        func(restic.ID, restic.BlobType) ([]restic.PackedBlob, bool)
-	packLoader func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error
+	packLoader restic.Backend
 
 	filesWriter *filesWriter
 
@@ -60,9 +60,7 @@ type fileRestorer struct {
 	files []*fileInfo
 }
 
-func newFileRestorer(dst string,
-	packLoader func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error,
-	key *crypto.Key,
+func newFileRestorer(dst string, packLoader restic.Backend, key *crypto.Key,
 	idx func(restic.ID, restic.BlobType) ([]restic.PackedBlob, bool)) *fileRestorer {
 
 	return &fileRestorer{
@@ -224,16 +222,11 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) {
 	packData := make([]byte, int(end-start))
 
 	h := restic.Handle{Type: restic.DataFile, Name: pack.id.String()}
-	err := r.packLoader(ctx, h, int(end-start), start, func(rd io.Reader) error {
-		l, err := io.ReadFull(rd, packData)
-		if err != nil {
-			return err
-		}
-		if l != len(packData) {
-			return errors.Errorf("unexpected pack size: expected %d but got %d", len(packData), l)
-		}
-		return nil
-	})
+	l, err := restic.ReadAt(ctx, r.packLoader, h, start, packData)
+
+	if err == nil && l != len(packData) {
+		err = errors.Errorf("unexpected pack size: expected %d but got %d", len(packData), l)
+	}
 
 	markFileError := func(file *fileInfo, err error) {
 		file.lock.Lock()

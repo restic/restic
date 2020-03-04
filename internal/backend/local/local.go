@@ -127,13 +127,9 @@ func (b *Local) Save(ctx context.Context, h restic.Handle, rd restic.RewindReade
 	return setNewFileMode(filename, backend.Modes.File)
 }
 
-// Load runs fn with a reader that yields the contents of the file at h at the
+// Load returns a reader that yields the contents of the file at h at the
 // given offset.
-func (b *Local) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
-	return backend.DefaultLoad(ctx, h, length, offset, b.openReader, fn)
-}
-
-func (b *Local) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+func (b *Local) Load(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	debug.Log("Load %v, length %v, offset %v", h, length, offset)
 	if err := h.Valid(); err != nil {
 		return nil, err

@@ -3,7 +3,6 @@ package test
 import (
 	"bytes"
 	"context"
-	"io"
 	"testing"
 
 	"github.com/restic/restic/internal/restic"
@@ -43,11 +42,7 @@ func (s *Suite) BenchmarkLoadFile(t *testing.B) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		var n int
-		err := be.Load(context.TODO(), handle, 0, 0, func(rd io.Reader) (ierr error) {
-			n, ierr = io.ReadFull(rd, buf)
-			return ierr
-		})
+		n, err := restic.ReadAt(context.TODO(), be, handle, 0, buf)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -80,11 +75,7 @@ func (s *Suite) BenchmarkLoadPartialFile(t *testing.B) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		var n int
-		err := be.Load(context.TODO(), handle, testLength, 0, func(rd io.Reader) (ierr error) {
-			n, ierr = io.ReadFull(rd, buf)
-			return ierr
-		})
+		n, err := restic.ReadAt(context.TODO(), be, handle, 0, buf)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -119,11 +110,7 @@ func (s *Suite) BenchmarkLoadPartialFileOffset(t *testing.B) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		var n int
-		err := be.Load(context.TODO(), handle, testLength, int64(testOffset), func(rd io.Reader) (ierr error) {
-			n, ierr = io.ReadFull(rd, buf)
-			return ierr
-		})
+		n, err := restic.ReadAt(context.TODO(), be, handle, int64(testOffset), buf)
 		if err != nil {
 			t.Fatal(err)
 		}

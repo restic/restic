@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"io"
+	"io/ioutil"
 	"math/rand"
 	"path/filepath"
 	"testing"
@@ -400,21 +401,8 @@ type backend struct {
 	rd io.Reader
 }
 
-func (be backend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
-	return fn(be.rd)
-}
-
-type retryBackend struct {
-	buf []byte
-}
-
-func (be retryBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
-	err := fn(bytes.NewReader(be.buf[:len(be.buf)/2]))
-	if err != nil {
-		return err
-	}
-
-	return fn(bytes.NewReader(be.buf))
+func (be backend) Load(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+	return ioutil.NopCloser(be.rd), nil
 }
 
 func TestDownloadAndHash(t *testing.T) {
@@ -430,10 +418,6 @@ func TestDownloadAndHash(t *testing.T) {
 	}{
 		{
 			be:   backend{rd: bytes.NewReader(buf)},
-			want: buf,
-		},
-		{
-			be:   retryBackend{buf: buf},
 			want: buf,
 		},
 	}
