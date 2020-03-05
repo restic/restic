@@ -85,6 +85,7 @@ type retryReader struct {
 	h      restic.Handle
 	length int
 	offset int64
+	rd     io.ReadCloser
 }
 
 func (r *retryReader) Read(p []byte) (n int, err error) {
@@ -101,27 +102,27 @@ func (r *retryReader) Read(p []byte) (n int, err error) {
 }
 
 func (r *retryReader) read(p []byte) (n int, err error) {
-	rd, err := r.be.Backend.Load(r.ctx, r.h, r.length, r.offset)
-	if err != nil {
-		return 0, err
+	if r.rd == nil {
+		r.rd, err = r.be.Backend.Load(r.ctx, r.h, r.length, r.offset)
+		if err != nil {
+			return 0, err
+		}
 	}
 
 	if len(p) > r.length && r.length != 0 {
 		p = p[:r.length]
 	}
-	n, err = rd.Read(p)
-
-	cerr := rd.Close()
-	if err == nil {
-		err = cerr
-	}
+	n, err = r.rd.Read(p)
 
 	switch err {
 	case nil:
 	case io.EOF:
 		r.atEOF = true
-		err = nil // Don't trigger retry.
+		err = nil // Don't trigger retry. Next Read will return EOF.
 	default:
+		// Assume r.rd is bad. Next call will get a fresh Reader.
+		_ = r.rd.Close()
+		r.rd = nil
 		// Forget what we read, restart at current offset.
 		return 0, err
 	}
@@ -137,9 +138,12 @@ func (r *retryReader) read(p []byte) (n int, err error) {
 	return n, err
 }
 
-func (r *retryReader) Close() error {
+func (r *retryReader) Close() (err error) {
+	if r.rd != nil {
+		err = r.rd.Close()
+	}
 	*r = retryReader{}
-	return nil
+	return err
 }
 
 // Stat returns information about the File identified by h.
