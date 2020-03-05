@@ -1,0 +1,6 @@
+Enhancement: Slightly reduce memory usage of prune and stats commands
+
+The prune and the stats command kept directory identifiers in memory twice
+while searching for used blobs.
+
+https://github.com/restic/restic/pull/2599
