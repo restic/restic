@@ -25,9 +25,7 @@ func GroupSnapshots(snapshots Snapshots, options string) (map[string]Snapshots, 
 	var GroupByTag bool
 	var GroupByHost bool
 	var GroupByPath bool
-	var GroupOptionList []string
-
-	GroupOptionList = strings.Split(options, ",")
+	GroupOptionList := strings.Split(options, ",")
 
 	for _, option := range GroupOptionList {
 		switch option {
