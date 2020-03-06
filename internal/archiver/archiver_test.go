@@ -1458,10 +1458,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 				"other": TestFile{Content: "another file"},
 			},
 			selFn: func(item string, fi os.FileInfo) bool {
-				if filepath.Ext(item) == ".txt" {
-					return false
-				}
-				return true
+				return filepath.Ext(item) != ".txt"
 			},
 		},
 		{
@@ -1485,10 +1482,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 				"other": TestFile{Content: "another file"},
 			},
 			selFn: func(item string, fi os.FileInfo) bool {
-				if filepath.Base(item) == "subdir" {
-					return false
-				}
-				return true
+				return filepath.Base(item) != "subdir"
 			},
 		},
 		{

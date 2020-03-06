@@ -84,7 +84,7 @@ func walk(ctx context.Context, repo restic.TreeLoader, prefix string, parentTree
 				return false, err
 			}
 
-			if ignore == false {
+			if !ignore {
 				allNodesIgnored = false
 			}
 
