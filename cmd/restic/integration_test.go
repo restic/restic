@@ -1105,14 +1105,14 @@ func TestRestoreNoMetadataOnIgnoredIntermediateDirs(t *testing.T) {
 	testRunRestoreIncludes(t, env.gopts, filepath.Join(env.base, "restore0"), snapshotID, []string{"*.ext"})
 
 	f1 := filepath.Join(env.base, "restore0", "testdata", "subdir1", "subdir2")
-	fi, err := os.Stat(f1)
+	_, err := os.Stat(f1)
 	rtest.OK(t, err)
 
 	// restore with filter "*", this should restore meta data on everything.
 	testRunRestoreIncludes(t, env.gopts, filepath.Join(env.base, "restore1"), snapshotID, []string{"*"})
 
 	f2 := filepath.Join(env.base, "restore1", "testdata", "subdir1", "subdir2")
-	fi, err = os.Stat(f2)
+	fi, err := os.Stat(f2)
 	rtest.OK(t, err)
 
 	rtest.Assert(t, fi.ModTime() == time.Unix(0, 0),

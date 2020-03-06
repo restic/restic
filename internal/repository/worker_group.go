@@ -11,7 +11,7 @@ import (
 // one of the workers, it is returned. FinalFunc is always run, regardless of
 // any other previous errors.
 func RunWorkers(ctx context.Context, count int, workerFunc func() error, finalFunc func()) error {
-	wg, ctx := errgroup.WithContext(ctx)
+	wg, _ := errgroup.WithContext(ctx)
 
 	// run workers
 	for i := 0; i < count; i++ {
