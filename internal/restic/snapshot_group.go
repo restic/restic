@@ -51,7 +51,7 @@ func GroupSnapshots(snapshots Snapshots, options string) (map[string]Snapshots, 
 
 		if GroupByTag {
 			tags = sn.Tags
-			sort.StringSlice(tags).Sort()
+			sort.Strings(tags)
 		}
 		if GroupByHost {
 			hostname = sn.Hostname
@@ -60,7 +60,7 @@ func GroupSnapshots(snapshots Snapshots, options string) (map[string]Snapshots, 
 			paths = sn.Paths
 		}
 
-		sort.StringSlice(sn.Paths).Sort()
+		sort.Strings(sn.Paths)
 		var k []byte
 		var err error
 
