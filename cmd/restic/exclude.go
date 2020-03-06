@@ -190,7 +190,7 @@ func isDirExcludedByFile(dir, tagFilename, header string) bool {
 		Warnf("could not read signature from exclusion tagfile %q: %v\n", tf, err)
 		return false
 	}
-	if bytes.Compare(buf, []byte(header)) != 0 {
+	if !bytes.Equal(buf, []byte(header)) {
 		Warnf("invalid signature in exclusion tagfile %q\n", tf)
 		return false
 	}
