@@ -1984,13 +1984,6 @@ func snapshot(t testing.TB, repo restic.Repository, fs fs.FS, parent restic.ID, 
 	return snapshotID, node
 }
 
-func chmod(t testing.TB, filename string, mode os.FileMode) {
-	err := os.Chmod(filename, mode)
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
 // StatFS allows overwriting what is returned by the Lstat function.
 type StatFS struct {
 	fs.FS
