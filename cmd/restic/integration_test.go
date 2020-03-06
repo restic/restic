@@ -449,7 +449,7 @@ func TestBackupExclude(t *testing.T) {
 		f, err := os.Create(fp)
 		rtest.OK(t, err)
 
-		fmt.Fprintf(f, filename)
+		fmt.Fprint(f, filename)
 		rtest.OK(t, f.Close())
 	}
 
