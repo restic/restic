@@ -12,11 +12,11 @@ type FileType string
 // These are the different data types a backend can store.
 const (
 	PackFile     FileType = "data" // use data, as packs are stored under /data in repo
-	KeyFile               = "key"
-	LockFile              = "lock"
-	SnapshotFile          = "snapshot"
-	IndexFile             = "index"
-	ConfigFile            = "config"
+	KeyFile      FileType = "key"
+	LockFile     FileType = "lock"
+	SnapshotFile FileType = "snapshot"
+	IndexFile    FileType = "index"
+	ConfigFile   FileType = "config"
 )
 
 // Handle is used to store and access data in a backend.
