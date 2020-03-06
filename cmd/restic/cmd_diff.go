@@ -196,7 +196,7 @@ func uniqueNodeNames(tree1, tree2 *restic.Tree) (tree1Nodes, tree2Nodes map[stri
 		uniqueNames = append(uniqueNames, name)
 	}
 
-	sort.Sort(sort.StringSlice(uniqueNames))
+	sort.Strings(uniqueNames)
 	return tree1Nodes, tree2Nodes, uniqueNames
 }
 
