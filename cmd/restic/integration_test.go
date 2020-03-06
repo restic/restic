@@ -253,7 +253,6 @@ func testRunForgetJSON(t testing.TB, gopts GlobalOptions, args ...string) {
 		"Expected 1 snapshot to be kept, got %v", len(forgets[0].Keep))
 	rtest.Assert(t, len(forgets[0].Remove) == 2,
 		"Expected 2 snapshots to be removed, got %v", len(forgets[0].Remove))
-	return
 }
 
 func testRunPrune(t testing.TB, gopts GlobalOptions) {
