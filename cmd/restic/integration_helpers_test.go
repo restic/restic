@@ -141,11 +141,7 @@ func directoriesEqualContents(dir1, dir2 string) bool {
 		a, b = nil, nil
 	}
 
-	if changes {
-		return false
-	}
-
-	return true
+	return !changes
 }
 
 type dirStat struct {

@@ -1147,11 +1147,7 @@ func linksEqual(source, dest map[uint64][]string) bool {
 		}
 	}
 
-	if len(dest) != 0 {
-		return false
-	}
-
-	return true
+	return len(dest) == 0
 }
 
 func linkEqual(source, dest []string) bool {

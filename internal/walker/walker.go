@@ -89,7 +89,7 @@ func walk(ctx context.Context, repo TreeLoader, prefix string, parentTreeID rest
 				return false, err
 			}
 
-			if ignore == false {
+			if !ignore {
 				allNodesIgnored = false
 			}
 
