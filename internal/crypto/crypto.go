@@ -231,10 +231,6 @@ func (k *EncryptionKey) Valid() bool {
 	return false
 }
 
-// ErrInvalidCiphertext is returned when trying to encrypt into the slice that
-// holds the plaintext.
-var ErrInvalidCiphertext = errors.New("invalid ciphertext, same slice used for plaintext")
-
 // validNonce checks that nonce is not all zero.
 func validNonce(nonce []byte) bool {
 	var sum byte
