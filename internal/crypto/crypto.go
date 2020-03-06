@@ -237,11 +237,12 @@ var ErrInvalidCiphertext = errors.New("invalid ciphertext, same slice used for p
 
 // validNonce checks that nonce is not all zero.
 func validNonce(nonce []byte) bool {
-	var sum byte
 	for _, b := range nonce {
-		sum |= b
+		if b != 0 {
+			return true
+		}
 	}
-	return sum > 0
+	return false
 }
 
 // statically ensure that *Key implements crypto/cipher.AEAD
