@@ -151,7 +151,7 @@ func testRunCheckOutput(gopts GlobalOptions) (string, error) {
 	}
 
 	err := runCheck(opts, gopts, nil)
-	return string(buf.Bytes()), err
+	return buf.String(), err
 }
 
 func testRunRebuildIndex(t testing.TB, gopts GlobalOptions) {
@@ -177,7 +177,7 @@ func testRunLs(t testing.TB, gopts GlobalOptions, snapshotID string) []string {
 
 	rtest.OK(t, runLs(opts, gopts, []string{snapshotID}))
 
-	return strings.Split(string(buf.Bytes()), "\n")
+	return strings.Split(buf.String(), "\n")
 }
 
 func testRunFind(t testing.TB, wantJSON bool, gopts GlobalOptions, pattern string) []byte {
