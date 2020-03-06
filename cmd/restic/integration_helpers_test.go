@@ -54,7 +54,7 @@ func walkDir(dir string) <-chan *dirEntry {
 	}()
 
 	// first element is root
-	_ = <-ch
+	<-ch
 
 	return ch
 }

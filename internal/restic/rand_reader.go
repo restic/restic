@@ -64,7 +64,7 @@ func (rd *RandReader) Read(p []byte) (int, error) {
 
 	// load 7 byte to temp buffer
 	rd.buf = rd.buf[:7]
-	n, err = rd.read(rd.buf)
+	_, err = rd.read(rd.buf)
 	if err != nil {
 		return pos, errors.Wrap(err, "Read")
 	}

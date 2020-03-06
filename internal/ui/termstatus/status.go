@@ -224,7 +224,7 @@ func (t *Terminal) runWithoutStatus(ctx context.Context) {
 				fmt.Fprintf(os.Stderr, "flush failed: %v\n", err)
 			}
 
-		case _ = <-t.status:
+		case <-t.status:
 			// discard status lines
 		}
 	}
