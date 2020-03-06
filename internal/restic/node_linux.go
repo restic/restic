@@ -13,10 +13,10 @@ import (
 
 func (node Node) restoreSymlinkTimestamps(path string, utimes [2]syscall.Timespec) error {
 	dir, err := fs.Open(filepath.Dir(path))
-	defer dir.Close()
 	if err != nil {
 		return errors.Wrap(err, "Open")
 	}
+	defer dir.Close()
 
 	times := []unix.Timespec{
 		{Sec: utimes[0].Sec, Nsec: utimes[0].Nsec},
