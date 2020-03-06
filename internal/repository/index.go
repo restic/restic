@@ -107,7 +107,7 @@ var IndexFull = func(idx *Index) bool {
 	for typ := range idx.byType {
 		blobs += idx.byType[typ].len()
 	}
-	age := time.Now().Sub(idx.created)
+	age := time.Since(idx.created)
 
 	switch {
 	case age >= indexMaxAge:
