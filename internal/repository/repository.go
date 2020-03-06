@@ -116,6 +116,7 @@ type haver interface {
 }
 
 // sortCachedPacksFirst moves all cached pack files to the front of blobs.
+// It overwrites blobs.
 func sortCachedPacksFirst(cache haver, blobs []restic.PackedBlob) []restic.PackedBlob {
 	if cache == nil {
 		return blobs
@@ -126,7 +127,7 @@ func sortCachedPacksFirst(cache haver, blobs []restic.PackedBlob) []restic.Packe
 		return blobs
 	}
 
-	cached := make([]restic.PackedBlob, 0, len(blobs)/2)
+	cached := blobs[:0]
 	noncached := make([]restic.PackedBlob, 0, len(blobs)/2)
 
 	for _, blob := range blobs {
