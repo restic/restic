@@ -253,7 +253,7 @@ var ignoreSIGHUP sync.Once
 func init() {
 	ignoreSIGHUP.Do(func() {
 		go func() {
-			c := make(chan os.Signal)
+			c := make(chan os.Signal, 1)
 			signal.Notify(c, syscall.SIGHUP)
 			for s := range c {
 				debug.Log("Signal received: %v\n", s)
