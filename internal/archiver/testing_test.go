@@ -125,7 +125,6 @@ func TestTestCreateFiles(t *testing.T) {
 					if _, ok := item.(TestSymlink); ok {
 						continue
 					}
-					continue
 				}
 
 				targetPath := filepath.Join(tempdir, filepath.FromSlash(name))
