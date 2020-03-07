@@ -60,7 +60,7 @@ func (idx *Index) Final() bool {
 
 const (
 	indexMinBlobs = 20
-	indexMaxBlobs = 2000
+	indexMaxBlobs = 3000
 	indexMinAge   = 2 * time.Minute
 	indexMaxAge   = 15 * time.Minute
 )
