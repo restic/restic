@@ -1,0 +1,8 @@
+Enhancement: Improve speed of check command
+
+We've improved the check command to traverse trees only once independent of
+whether they are contained in multiple snapshots. The check command is now much
+faster for repositories with a large number of snapshots.
+
+https://github.com/restic/restic/pull/2328
+https://github.com/restic/restic/issues/2284
