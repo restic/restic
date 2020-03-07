@@ -2,8 +2,9 @@ package backend
 
 import (
 	"context"
-	"github.com/restic/restic/internal/errors"
 	"io"
+
+	"github.com/restic/restic/internal/errors"
 )
 
 // Semaphore limits access to a restricted resource.
@@ -13,7 +14,7 @@ type Semaphore struct {
 
 // NewSemaphore returns a new semaphore with capacity n.
 func NewSemaphore(n uint) (*Semaphore, error) {
-	if n <= 0 {
+	if n == 0 {
 		return nil, errors.New("must be a positive number")
 	}
 	return &Semaphore{

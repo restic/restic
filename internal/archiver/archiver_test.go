@@ -832,7 +832,7 @@ func TestArchiverSaveDir(t *testing.T) {
 			if stats.DataBlobs != 0 {
 				t.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs)
 			}
-			if stats.TreeSize <= 0 {
+			if stats.TreeSize == 0 {
 				t.Errorf("wrong stats returned in TreeSize, want > 0, got %d", stats.TreeSize)
 			}
 			if stats.TreeBlobs <= 0 {
@@ -910,7 +910,7 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 			if stats.DataBlobs != 0 {
 				t.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs)
 			}
-			if stats.TreeSize <= 0 {
+			if stats.TreeSize == 0 {
 				t.Errorf("wrong stats returned in TreeSize, want > 0, got %d", stats.TreeSize)
 			}
 			if stats.TreeBlobs <= 0 {
