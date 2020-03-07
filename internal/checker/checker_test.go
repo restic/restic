@@ -9,11 +9,13 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/checker"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
@@ -363,6 +365,52 @@ func TestCheckerModifiedData(t *testing.T) {
 	if !errFound {
 		t.Fatal("no error found, checker is broken")
 	}
+}
+
+// loadTreesOnceRepository allows each tree to be loaded only once
+type loadTreesOnceRepository struct {
+	restic.Repository
+	loadedTrees   restic.IDSet
+	mutex         sync.Mutex
+	DuplicateTree bool
+}
+
+func (r *loadTreesOnceRepository) LoadTree(ctx context.Context, id restic.ID) (*restic.Tree, error) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
+	if r.loadedTrees.Has(id) {
+		// additionally store error to ensure that it cannot be swallowed
+		r.DuplicateTree = true
+		return nil, errors.Errorf("trying to load tree with id %v twice", id)
+	}
+	r.loadedTrees.Insert(id)
+	return r.Repository.LoadTree(ctx, id)
+}
+
+func TestCheckerNoDuplicateTreeDecodes(t *testing.T) {
+	repodir, cleanup := test.Env(t, checkerTestData)
+	defer cleanup()
+
+	repo := repository.TestOpenLocal(t, repodir)
+	checkRepo := &loadTreesOnceRepository{
+		Repository:  repo,
+		loadedTrees: restic.NewIDSet(),
+	}
+
+	chkr := checker.New(checkRepo)
+	hints, errs := chkr.LoadIndex(context.TODO())
+	if len(errs) > 0 {
+		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
+	}
+
+	if len(hints) > 0 {
+		t.Errorf("expected no hints, got %v: %v", len(hints), hints)
+	}
+
+	test.OKs(t, checkPacks(chkr))
+	test.OKs(t, checkStruct(chkr))
+	test.Assert(t, !checkRepo.DuplicateTree, "detected duplicate tree loading")
 }
 
 func loadBenchRepository(t *testing.B) (*checker.Checker, restic.Repository, func()) {
