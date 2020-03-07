@@ -537,13 +537,12 @@ func (c *Checker) filterTrees(ctx context.Context, backlog restic.IDs, loaderCha
 
 			debug.Log("input job tree %v", j.ID)
 
-			var err error
-
 			if j.error != nil {
 				debug.Log("received job with error: %v (tree %v, ID %v)", j.error, j.Tree, j.ID)
 			} else if j.Tree == nil {
 				debug.Log("received job with nil tree pointer: %v (ID %v)", j.error, j.ID)
-				err = errors.New("tree is nil and error is nil")
+				// send a new job with the new error instead of the old one
+				j = treeJob{ID: j.ID, error: errors.New("tree is nil and error is nil")}
 			} else {
 				subtrees := j.Tree.Subtrees()
 				debug.Log("subtrees for tree %v: %v", j.ID, subtrees)
@@ -559,11 +558,6 @@ func (c *Checker) filterTrees(ctx context.Context, backlog restic.IDs, loaderCha
 					}
 					backlog = append(backlog, id)
 				}
-			}
-
-			if err != nil {
-				// send a new job with the new error instead of the old one
-				j = treeJob{ID: j.ID, error: err}
 			}
 
 			job = j
