@@ -142,7 +142,7 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 
 	// run workers on ch
 	wg.Go(func() error {
-		return repository.RunWorkers(ctx, defaultParallelism, worker, final)
+		return repository.RunWorkers(defaultParallelism, worker, final)
 	})
 
 	// receive decoded indexes

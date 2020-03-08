@@ -1,8 +1,6 @@
 package repository
 
 import (
-	"context"
-
 	"golang.org/x/sync/errgroup"
 )
 
@@ -10,8 +8,8 @@ import (
 // After all workers have terminated, finalFunc is run. If an error occurs in
 // one of the workers, it is returned. FinalFunc is always run, regardless of
 // any other previous errors.
-func RunWorkers(ctx context.Context, count int, workerFunc func() error, finalFunc func()) error {
-	wg, _ := errgroup.WithContext(ctx)
+func RunWorkers(count int, workerFunc func() error, finalFunc func()) error {
+	var wg errgroup.Group
 
 	// run workers
 	for i := 0; i < count; i++ {
