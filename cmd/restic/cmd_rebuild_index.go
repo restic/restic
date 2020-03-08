@@ -62,9 +62,15 @@ func rebuildIndex(ctx context.Context, repo restic.Repository, ignorePacks resti
 	}
 
 	bar := newProgressMax(!globalOptions.Quiet, packs-uint64(len(ignorePacks)), "packs")
-	idx, _, err := index.New(ctx, repo, ignorePacks, bar)
+	idx, invalidFiles, err := index.New(ctx, repo, ignorePacks, bar)
 	if err != nil {
 		return err
+	}
+
+	if globalOptions.verbosity >= 2 {
+		for _, id := range invalidFiles {
+			Printf("skipped incomplete pack file: %v\n", id)
+		}
 	}
 
 	Verbosef("finding old index files\n")
