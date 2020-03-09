@@ -15,7 +15,7 @@ import (
 )
 
 // fakeFile returns a reader which yields deterministic pseudo-random data.
-func fakeFile(t testing.TB, seed, size int64) io.Reader {
+func fakeFile(seed, size int64) io.Reader {
 	return io.LimitReader(rand.New(rand.NewSource(seed)), size)
 }
 
@@ -138,7 +138,7 @@ func (fs *fakeFileSystem) saveTree(ctx context.Context, seed int64, depth int) I
 			Size: uint64(fileSize),
 		}
 
-		node.Content = fs.saveFile(ctx, fakeFile(fs.t, fileSeed, fileSize))
+		node.Content = fs.saveFile(ctx, fakeFile(fileSeed, fileSize))
 		tree.Nodes = append(tree.Nodes, node)
 	}
 
