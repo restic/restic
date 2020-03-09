@@ -25,12 +25,8 @@ type Packer struct {
 	m sync.Mutex
 }
 
-// NewPacker returns a new Packer that can be used to pack blobs
-// together. If wr is nil, a bytes.Buffer is used.
+// NewPacker returns a new Packer that can be used to pack blobs together.
 func NewPacker(k *crypto.Key, wr io.Writer) *Packer {
-	if wr == nil {
-		wr = bytes.NewBuffer(nil)
-	}
 	return &Packer{k: k, wr: wr}
 }
 
