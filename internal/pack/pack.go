@@ -61,8 +61,7 @@ type headerEntry struct {
 }
 
 // Finalize writes the header for all added blobs and finalizes the pack.
-// Returned are the number of bytes written, including the header. If the
-// underlying writer implements io.Closer, it is closed.
+// Returned are the number of bytes written, including the header.
 func (p *Packer) Finalize() (uint, error) {
 	p.m.Lock()
 	defer p.m.Unlock()
@@ -101,11 +100,6 @@ func (p *Packer) Finalize() (uint, error) {
 	bytesWritten += uint(binary.Size(uint32(0)))
 
 	p.bytes = uint(bytesWritten)
-
-	if w, ok := p.wr.(io.Closer); ok {
-		return bytesWritten, w.Close()
-	}
-
 	return bytesWritten, nil
 }
 
