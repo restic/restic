@@ -116,15 +116,14 @@ type haver interface {
 }
 
 // sortCachedPacksFirst moves all cached pack files to the front of blobs.
-// It overwrites blobs.
-func sortCachedPacksFirst(cache haver, blobs []restic.PackedBlob) []restic.PackedBlob {
+func sortCachedPacksFirst(cache haver, blobs []restic.PackedBlob) {
 	if cache == nil {
-		return blobs
+		return
 	}
 
 	// no need to sort a list with one element
 	if len(blobs) == 1 {
-		return blobs
+		return
 	}
 
 	cached := blobs[:0]
@@ -138,7 +137,7 @@ func sortCachedPacksFirst(cache haver, blobs []restic.PackedBlob) []restic.Packe
 		noncached = append(noncached, blob)
 	}
 
-	return append(cached, noncached...)
+	copy(blobs[len(cached):], noncached)
 }
 
 // LoadBlob loads a blob of type t from the repository.
@@ -154,7 +153,7 @@ func (r *Repository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.
 	}
 
 	// try cached pack files first
-	blobs = sortCachedPacksFirst(r.Cache, blobs)
+	sortCachedPacksFirst(r.Cache, blobs)
 
 	var lastError error
 	for _, blob := range blobs {

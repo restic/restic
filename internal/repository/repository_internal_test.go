@@ -2,52 +2,45 @@ package repository
 
 import (
 	"math/rand"
+	"sort"
 	"testing"
 
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
-type mapcache map[restic.Handle]struct{}
+type mapcache map[restic.Handle]bool
 
-func (c mapcache) Has(h restic.Handle) bool {
-	_, ok := c[h]
-	return ok
-}
+func (c mapcache) Has(h restic.Handle) bool { return c[h] }
 
 func TestSortCachedPacksFirst(t *testing.T) {
 	var (
-		blobs   [100]restic.PackedBlob
-		blobset = make(map[restic.PackedBlob]struct{})
-		cache   = make(mapcache)
-		r       = rand.New(rand.NewSource(1261))
+		blobs, sorted [100]restic.PackedBlob
+
+		cache = make(mapcache)
+		r     = rand.New(rand.NewSource(1261))
 	)
 
 	for i := 0; i < len(blobs); i++ {
 		var id restic.ID
 		r.Read(id[:])
 		blobs[i] = restic.PackedBlob{PackID: id}
-		blobset[blobs[i]] = struct{}{}
 
 		if i%3 == 0 {
 			h := restic.Handle{Name: id.String(), Type: restic.DataFile}
-			cache[h] = struct{}{}
+			cache[h] = true
 		}
 	}
 
-	sorted := sortCachedPacksFirst(cache, blobs[:])
+	copy(sorted[:], blobs[:])
+	sort.SliceStable(sorted[:], func(i, j int) bool {
+		hi := restic.Handle{Type: restic.DataFile, Name: sorted[i].PackID.String()}
+		hj := restic.Handle{Type: restic.DataFile, Name: sorted[j].PackID.String()}
+		return cache.Has(hi) && !cache.Has(hj)
+	})
 
-	rtest.Equals(t, len(blobs), len(sorted))
-	for i := 0; i < len(blobs); i++ {
-		h := restic.Handle{Type: restic.DataFile, Name: sorted[i].PackID.String()}
-		if i < len(cache) {
-			rtest.Assert(t, cache.Has(h), "non-cached blob at front of sorted output")
-		} else {
-			rtest.Assert(t, !cache.Has(h), "cached blob at end of sorted output")
-		}
-		_, ok := blobset[sorted[i]]
-		rtest.Assert(t, ok, "sortCachedPacksFirst changed blob id")
-	}
+	sortCachedPacksFirst(cache, blobs[:])
+	rtest.Equals(t, sorted, blobs)
 }
 
 func BenchmarkSortCachedPacksFirst(b *testing.B) {
@@ -66,7 +59,7 @@ func BenchmarkSortCachedPacksFirst(b *testing.B) {
 
 		if i%3 == 0 {
 			h := restic.Handle{Name: id.String(), Type: restic.DataFile}
-			cache[h] = struct{}{}
+			cache[h] = true
 		}
 	}
 
