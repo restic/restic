@@ -670,29 +670,28 @@ func (r *Repository) Close() error {
 	return r.be.Close()
 }
 
-// LoadBlob loads a blob of type t from the repository to the buffer. buf must
-// be large enough to hold the encrypted blob, since it is used as scratch
-// space.
-func (r *Repository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.ID, buf []byte) (int, error) {
+// LoadBlob loads a blob of type t from the repository.
+// It may use all of buf[:cap(buf)] as scratch space.
+func (r *Repository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.ID, buf []byte) ([]byte, error) {
 	debug.Log("load blob %v into buf (len %v, cap %v)", id, len(buf), cap(buf))
 	size, found := r.idx.LookupSize(id, t)
 	if !found {
-		return 0, errors.Errorf("id %v not found in repository", id)
+		return nil, errors.Errorf("id %v not found in repository", id)
 	}
 
 	if cap(buf) < restic.CiphertextLength(int(size)) {
-		return 0, errors.Errorf("buffer is too small for data blob (%d < %d)", cap(buf), restic.CiphertextLength(int(size)))
+		buf = restic.NewBlobBuffer(int(size))
 	}
 
 	n, err := r.loadBlob(ctx, id, t, buf)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	buf = buf[:n]
 
 	debug.Log("loaded %d bytes into buf %p", len(buf), buf)
 
-	return len(buf), err
+	return buf, err
 }
 
 // SaveBlob saves a blob of type t into the repository. If id is the null id, it

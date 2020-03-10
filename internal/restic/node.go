@@ -282,21 +282,10 @@ func (node Node) createFileAt(ctx context.Context, path string, repo Repository)
 func (node Node) writeNodeContent(ctx context.Context, repo Repository, f *os.File) error {
 	var buf []byte
 	for _, id := range node.Content {
-		size, found := repo.LookupBlobSize(id, DataBlob)
-		if !found {
-			return errors.Errorf("id %v not found in repository", id)
-		}
-
-		buf = buf[:cap(buf)]
-		if len(buf) < CiphertextLength(int(size)) {
-			buf = NewBlobBuffer(int(size))
-		}
-
-		n, err := repo.LoadBlob(ctx, DataBlob, id, buf)
+		buf, err := repo.LoadBlob(ctx, DataBlob, id, buf)
 		if err != nil {
 			return err
 		}
-		buf = buf[:n]
 
 		_, err = f.Write(buf)
 		if err != nil {

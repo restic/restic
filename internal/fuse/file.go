@@ -96,15 +96,14 @@ func (f *file) getBlobAt(ctx context.Context, i int) (blob []byte, err error) {
 		f.blobs[j] = nil
 	}
 
-	buf := restic.NewBlobBuffer(f.sizes[i])
-	n, err := f.root.repo.LoadBlob(ctx, restic.DataBlob, f.node.Content[i], buf)
+	blob, err = f.root.repo.LoadBlob(ctx, restic.DataBlob, f.node.Content[i], nil)
 	if err != nil {
 		debug.Log("LoadBlob(%v, %v) failed: %v", f.node.Name, f.node.Content[i], err)
 		return nil, err
 	}
-	f.blobs[i] = buf[:n]
+	f.blobs[i] = blob
 
-	return buf[:n], nil
+	return blob, nil
 }
 
 func (f *file) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {

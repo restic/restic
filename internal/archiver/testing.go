@@ -228,13 +228,13 @@ func TestEnsureFileContent(ctx context.Context, t testing.TB, repo restic.Reposi
 	content := make([]byte, restic.CiphertextLength(len(file.Content)))
 	pos := 0
 	for _, id := range node.Content {
-		n, err := repo.LoadBlob(ctx, restic.DataBlob, id, content[pos:])
+		part, err := repo.LoadBlob(ctx, restic.DataBlob, id, content[pos:])
 		if err != nil {
 			t.Fatalf("error loading blob %v: %v", id.Str(), err)
 			return
 		}
 
-		pos += n
+		pos += len(part)
 	}
 
 	content = content[:pos]
