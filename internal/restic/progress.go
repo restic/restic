@@ -15,10 +15,15 @@ import (
 // variable.
 var minTickerTime = time.Second / 60
 
-var isTerminal = terminal.IsTerminal(int(os.Stdout.Fd()))
-var forceUpdateProgress = make(chan bool)
+var isTerminal bool
+var forceUpdateProgress chan bool
 
-func init() {
+var progressOnce sync.Once
+
+func progressInit() {
+	forceUpdateProgress = make(chan bool)
+	isTerminal = terminal.IsTerminal(int(os.Stdout.Fd()))
+
 	fps, err := strconv.ParseInt(os.Getenv("RESTIC_PROGRESS_FPS"), 10, 64)
 	if err == nil && fps >= 1 {
 		if fps > 60 {
@@ -26,6 +31,8 @@ func init() {
 		}
 		minTickerTime = time.Second / time.Duration(fps)
 	}
+
+	progressSignalInit()
 }
 
 // Progress reports progress on an operation.
@@ -66,6 +73,8 @@ type ProgressFunc func(s Stat, runtime time.Duration, ticker bool)
 // OnDone is called when Done() is called. Both functions are called
 // synchronously and can use shared state.
 func NewProgress() *Progress {
+	progressOnce.Do(progressInit)
+
 	var d time.Duration
 	if isTerminal {
 		d = time.Second

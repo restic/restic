@@ -10,8 +10,8 @@ import (
 	"github.com/restic/restic/internal/debug"
 )
 
-func init() {
-	c := make(chan os.Signal)
+func progressSignalInit() {
+	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGUSR1)
 	signal.Notify(c, syscall.SIGINFO)
 	go func() {
