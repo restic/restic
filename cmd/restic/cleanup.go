@@ -20,7 +20,7 @@ var cleanupHandlers struct {
 var stderr = os.Stderr
 
 func init() {
-	cleanupHandlers.ch = make(chan os.Signal)
+	cleanupHandlers.ch = make(chan os.Signal, 1)
 	go CleanupHandler(cleanupHandlers.ch)
 	signal.Notify(cleanupHandlers.ch, syscall.SIGINT)
 }
