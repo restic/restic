@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	c := make(chan os.Signal)
+	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGUSR1)
 	go func() {
 		for s := range c {

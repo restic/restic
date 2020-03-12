@@ -11,9 +11,8 @@ import (
 )
 
 func init() {
-	c := make(chan os.Signal)
-	signal.Notify(c, syscall.SIGUSR1)
-	signal.Notify(c, syscall.SIGINFO)
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGINFO, syscall.SIGUSR1)
 	go func() {
 		for s := range c {
 			debug.Log("Signal received: %v\n", s)
