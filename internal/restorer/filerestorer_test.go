@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/crypto"
-	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -38,9 +37,6 @@ type TestRepo struct {
 
 	//
 	loader func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error
-
-	//
-	idx filePackTraverser
 }
 
 func (i *TestRepo) Lookup(blobID restic.ID, _ restic.BlobType) ([]restic.PackedBlob, bool) {
@@ -54,11 +50,6 @@ func (i *TestRepo) packName(pack *packInfo) string {
 
 func (i *TestRepo) packID(name string) restic.ID {
 	return i.packsNameToID[name]
-}
-
-func (i *TestRepo) pack(queue *packQueue, name string) *packInfo {
-	id := i.packsNameToID[name]
-	return queue.packs[id]
 }
 
 func (i *TestRepo) fileContent(file *fileInfo) string {
@@ -147,7 +138,6 @@ func newTestRepo(content []TestFile) *TestRepo {
 		files:              files,
 		filesPathToContent: filesPathToContent,
 	}
-	repo.idx = filePackTraverser{lookup: repo.Lookup}
 	repo.loader = func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
 		packID, err := restic.ParseID(h.Name)
 		if err != nil {
@@ -163,12 +153,11 @@ func newTestRepo(content []TestFile) *TestRepo {
 func restoreAndVerify(t *testing.T, tempdir string, content []TestFile) {
 	repo := newTestRepo(content)
 
-	r := newFileRestorer(tempdir, repo.loader, repo.key, repo.idx)
+	r := newFileRestorer(tempdir, repo.loader, repo.key, repo.Lookup)
 	r.files = repo.files
 
-	r.restoreFiles(context.TODO(), func(path string, err error) {
-		rtest.OK(t, errors.Wrapf(err, "unexpected error"))
-	})
+	err := r.restoreFiles(context.TODO())
+	rtest.OK(t, err)
 
 	for _, file := range repo.files {
 		target := r.targetPath(file.location)
@@ -178,16 +167,11 @@ func restoreAndVerify(t *testing.T, tempdir string, content []TestFile) {
 			continue
 		}
 
-		_, contains := r.filesWriter.cache[target]
-		rtest.Equals(t, false, contains)
-
 		content := repo.fileContent(file)
 		if !bytes.Equal(data, []byte(content)) {
 			t.Errorf("file %v has wrong content: want %q, got %q", file.location, content, data)
 		}
 	}
-
-	rtest.OK(t, nil)
 }
 
 func TestFileRestorerBasic(t *testing.T) {
@@ -207,6 +191,14 @@ func TestFileRestorerBasic(t *testing.T) {
 			blobs: []TestBlob{
 				TestBlob{"data2-1", "pack2-1"},
 				TestBlob{"data2-2", "pack2-2"},
+			},
+		},
+		TestFile{
+			name: "file3",
+			blobs: []TestBlob{
+				// same blob multiple times
+				TestBlob{"data3-1", "pack3-1"},
+				TestBlob{"data3-1", "pack3-1"},
 			},
 		},
 	})

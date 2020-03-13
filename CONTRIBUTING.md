@@ -46,14 +46,11 @@ Remember, the easier it is for us to reproduce the bug, the earlier it will be
 corrected!
 
 In addition, you can compile restic with debug support by running
-`go run -mod=vendor build.go -tags debug` and instructing it to create a debug
+`go run build.go -tags debug` and instructing it to create a debug
 log by setting the environment variable `DEBUG_LOG` to a file, e.g. like this:
 
     $ export DEBUG_LOG=/tmp/restic-debug.log
     $ restic backup ~/work
-
-For Go < 1.11, you need to remove the `-mod=vendor` option from the build
-command.
 
 Please be aware that the debug log file will contain potentially sensitive
 things like file and directory names, so please either redact it before
@@ -141,7 +138,7 @@ down to the following steps:
  4. Push the new branch with your changes to your fork of the repository.
 
  5. Create a pull request by visiting the GitHub website, it will guide you
-    through the process.
+    through the process. Please [allow edits from maintainers](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/allowing-changes-to-a-pull-request-branch-created-from-a-fork).
 
  6. You will receive comments on your code and the feature or bug that they
     address. Maybe you need to rework some minor things, in this case push new

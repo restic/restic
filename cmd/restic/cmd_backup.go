@@ -25,7 +25,7 @@ import (
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/textfile"
 	"github.com/restic/restic/internal/ui"
-	"github.com/restic/restic/internal/ui/jsonstatus"
+	"github.com/restic/restic/internal/ui/json"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
@@ -35,6 +35,14 @@ var cmdBackup = &cobra.Command{
 	Long: `
 The "backup" command creates a new snapshot and saves the files and directories
 given as the arguments.
+
+EXIT STATUS
+===========
+
+Exit status is 0 if the command was successful, and non-zero if there was any error.
+
+Note that some issues such as unreadable or deleted files during backup
+currently doesn't result in a non-zero error exit status.
 `,
 	PreRun: func(cmd *cobra.Command, args []string) {
 		if backupOptions.Host == "" {
@@ -374,7 +382,7 @@ func findParentSnapshot(ctx context.Context, repo restic.Repository, opts Backup
 
 	// Find last snapshot to set it as parent, if not already set
 	if !opts.Force && parentID == nil {
-		id, err := restic.FindLatestSnapshot(ctx, repo, targets, []restic.TagList{}, opts.Host)
+		id, err := restic.FindLatestSnapshot(ctx, repo, targets, []restic.TagList{}, []string{opts.Host})
 		if err == nil {
 			parentID = &id
 		} else if err != restic.ErrNoSnapshotFound {
@@ -439,7 +447,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 
 	var p ArchiveProgressReporter
 	if gopts.JSON {
-		p = jsonstatus.NewBackup(term, gopts.verbosity)
+		p = json.NewBackup(term, gopts.verbosity)
 	} else {
 		p = ui.NewBackup(term, gopts.verbosity)
 	}
@@ -593,19 +601,18 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		return errors.Fatalf("unable to save snapshot: %v", err)
 	}
 
-	p.Finish(id)
-	if !gopts.JSON {
-		p.P("snapshot %s saved\n", id.Str())
-	}
-
 	// cleanly shutdown all running goroutines
 	t.Kill(nil)
 
 	// let's see if one returned an error
 	err = t.Wait()
-	if err != nil {
-		return err
+
+	// Report finished execution
+	p.Finish(id)
+	if !gopts.JSON {
+		p.P("snapshot %s saved\n", id.Str())
 	}
 
-	return nil
+	// Return error if any
+	return err
 }

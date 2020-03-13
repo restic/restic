@@ -13,6 +13,11 @@ var versionCmd = &cobra.Command{
 	Long: `
 The "version" command prints detailed information about the build environment
 and the version of this software.
+
+EXIT STATUS
+===========
+
+Exit status is 0 if the command was successful, and non-zero if there was any error.
 `,
 	DisableAutoGenTag: true,
 	Run: func(cmd *cobra.Command, args []string) {

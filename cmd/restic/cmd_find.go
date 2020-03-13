@@ -27,7 +27,13 @@ restic find --json "*.yml" "*.json"
 restic find --json --blob 420f620f b46ebe8a ddd38656
 restic find --show-pack-id --blob 420f620f
 restic find --tree 577c2bc9 f81f2e22 a62827a9
-restic find --pack 025c1d06`,
+restic find --pack 025c1d06
+
+EXIT STATUS
+===========
+
+Exit status is 0 if the command was successful, and non-zero if there was any error.
+`,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runFind(findOptions, globalOptions, args)
@@ -45,7 +51,7 @@ type FindOptions struct {
 	PackID, ShowPackID bool
 	CaseInsensitive    bool
 	ListLong           bool
-	Host               string
+	Hosts              []string
 	Paths              []string
 	Tags               restic.TagLists
 }
@@ -66,7 +72,7 @@ func init() {
 	f.BoolVarP(&findOptions.CaseInsensitive, "ignore-case", "i", false, "ignore case for pattern")
 	f.BoolVarP(&findOptions.ListLong, "long", "l", false, "use a long listing format showing size and mode")
 
-	f.StringVarP(&findOptions.Host, "host", "H", "", "only consider snapshots for this `host`, when no snapshot ID is given")
+	f.StringArrayVarP(&findOptions.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when no snapshot ID is given (can be specified multiple times)")
 	f.Var(&findOptions.Tags, "tag", "only consider snapshots which include this `taglist`, when no snapshot-ID is given")
 	f.StringArrayVar(&findOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot-ID is given")
 }
@@ -150,7 +156,7 @@ func (s *statefulOutput) PrintPatternJSON(path string, node *restic.Node) {
 	if s.hits > 0 {
 		Printf(",")
 	}
-	Printf(string(b))
+	Print(string(b))
 	s.hits++
 }
 
@@ -162,7 +168,7 @@ func (s *statefulOutput) PrintPatternNormal(path string, node *restic.Node) {
 		s.oldsn = s.newsn
 		Verbosef("Found matching entries in snapshot %s from %s\n", s.oldsn.ID().Str(), s.oldsn.Time.Local().Format(TimeFormat))
 	}
-	Printf(formatNode(path, node, s.ListLong) + "\n")
+	Println(formatNode(path, node, s.ListLong))
 }
 
 func (s *statefulOutput) PrintPattern(path string, node *restic.Node) {
@@ -201,7 +207,7 @@ func (s *statefulOutput) PrintObjectJSON(kind, id, nodepath, treeID string, sn *
 	if s.hits > 0 {
 		Printf(",")
 	}
-	Printf(string(b))
+	Print(string(b))
 	s.hits++
 }
 
@@ -561,7 +567,7 @@ func runFind(opts FindOptions, gopts GlobalOptions, args []string) error {
 		f.packsToBlobs(ctx, []string{f.pat.pattern[0]}) // TODO: support multiple packs
 	}
 
-	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, opts.Snapshots) {
+	for sn := range FindFilteredSnapshots(ctx, repo, opts.Hosts, opts.Tags, opts.Paths, opts.Snapshots) {
 		if f.blobIDs != nil || f.treeIDs != nil {
 			if err = f.findIDs(ctx, sn); err != nil && err.Error() != "OK" {
 				return err

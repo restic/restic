@@ -29,8 +29,8 @@ var ForbiddenImports = map[string]bool{
 // Use a specific version of gofmt (the latest stable, usually) to guarantee
 // deterministic formatting. This is used with the GoVersion.AtLeast()
 // function (so that we don't forget to update it). This is also used to run
-// `go mod vendor` and `go mod tidy`.
-var GofmtVersion = ParseGoVersion("go1.13")
+// `go mod tidy`.
+var GofmtVersion = ParseGoVersion("go1.14")
 
 // GoVersion is the version of Go used to compile the project.
 type GoVersion struct {
@@ -340,15 +340,10 @@ func (env *TravisEnvironment) RunTests() error {
 		}
 	}
 
-	args := []string{"go", "run", "build.go"}
 	v := ParseGoVersion(runtime.Version())
 	msg("Detected Go version %v\n", v)
-	if v.AtLeast(GoVersion{1, 11, 0}) {
-		args = []string{"go", "run", "-mod=vendor", "build.go"}
-		env.env["GOPROXY"] = "off"
-		delete(env.env, "GOPATH")
-		os.Unsetenv("GOPATH")
-	}
+
+	args := []string{"go", "run", "build.go"}
 
 	// run the build script
 	err := run(args[0], args[1:]...)
@@ -356,15 +351,8 @@ func (env *TravisEnvironment) RunTests() error {
 		return err
 	}
 
-	// run the tests and gather coverage information (for Go >= 1.10)
-	switch {
-	case v.AtLeast(GoVersion{1, 11, 0}):
-		err = runWithEnv(env.env, "go", "test", "-count", "1", "-mod=vendor", "-coverprofile", "all.cov", "./...")
-	case v.AtLeast(GoVersion{1, 10, 0}):
-		err = runWithEnv(env.env, "go", "test", "-count", "1", "-coverprofile", "all.cov", "./...")
-	default:
-		err = runWithEnv(env.env, "go", "test", "-count", "1", "./...")
-	}
+	// run the tests and gather coverage information
+	err = runWithEnv(env.env, "go", "test", "-count", "1", "-coverprofile", "all.cov", "./...")
 	if err != nil {
 		return err
 	}
@@ -372,11 +360,6 @@ func (env *TravisEnvironment) RunTests() error {
 	// only run gofmt on a specific version of Go.
 	if v.AtLeast(GofmtVersion) {
 		if err = runGofmt(); err != nil {
-			return err
-		}
-
-		msg("run go mod vendor\n")
-		if err := runGoModVendor(); err != nil {
 			return err
 		}
 
@@ -430,41 +413,12 @@ func (env *AppveyorEnvironment) Prepare() error {
 
 // RunTests start the tests.
 func (env *AppveyorEnvironment) RunTests() error {
-	e := map[string]string{
-		"GOPROXY": "off",
-	}
-	return runWithEnv(e, "go", "run", "-mod=vendor", "build.go", "-v", "-T")
+	return runWithEnv(nil, "go", "run", "build.go", "-v", "-T")
 }
 
 // Teardown is a noop.
 func (env *AppveyorEnvironment) Teardown() error {
 	return nil
-}
-
-// findGoFiles returns a list of go source code file names below dir.
-func findGoFiles(dir string) (list []string, err error) {
-	err = filepath.Walk(dir, func(name string, fi os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		relpath, err := filepath.Rel(dir, name)
-		if err != nil {
-			return err
-		}
-
-		if relpath == "vendor" || relpath == "pkg" {
-			return filepath.SkipDir
-		}
-
-		if filepath.Ext(relpath) == ".go" {
-			list = append(list, relpath)
-		}
-
-		return err
-	})
-
-	return list, err
 }
 
 func msg(format string, args ...interface{}) {
@@ -525,19 +479,7 @@ func (env *TravisEnvironment) findImports() (map[string][]string, error) {
 }
 
 func runGofmt() error {
-	dir, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("Getwd(): %v", err)
-	}
-
-	files, err := findGoFiles(dir)
-	if err != nil {
-		return fmt.Errorf("error finding Go files: %v", err)
-	}
-
-	msg("runGofmt() with %d files\n", len(files))
-	args := append([]string{"-l"}, files...)
-	cmd := exec.Command("gofmt", args...)
+	cmd := exec.Command("gofmt", "-l", ".")
 	cmd.Stderr = os.Stderr
 
 	buf, err := cmd.Output()
@@ -552,35 +494,6 @@ func runGofmt() error {
 	return nil
 }
 
-func runGoModVendor() error {
-	cmd := exec.Command("go", "mod", "vendor")
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-	cmd.Env = updateEnv(os.Environ(), map[string]string{
-		"GO111MODULE": "on",
-	})
-
-	err := cmd.Run()
-	if err != nil {
-		return fmt.Errorf("error running 'go mod vendor': %v", err)
-	}
-
-	// check that "git diff" does not return any output
-	cmd = exec.Command("git", "diff", "vendor")
-	cmd.Stderr = os.Stderr
-
-	buf, err := cmd.Output()
-	if err != nil {
-		return fmt.Errorf("error running 'git diff vendor': %v\noutput: %s", err, buf)
-	}
-
-	if len(buf) > 0 {
-		return fmt.Errorf("vendor/ directory was modified:\n%s", buf)
-	}
-
-	return nil
-}
-
 // run "go mod tidy" so that go.sum and go.mod are updated to reflect all
 // dependencies for all OS/Arch combinations, see
 // https://github.com/golang/go/wiki/Modules#why-does-go-mod-tidy-put-so-many-indirect-dependencies-in-my-gomod
@@ -588,13 +501,11 @@ func runGoModTidy() error {
 	cmd := exec.Command("go", "mod", "tidy")
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
-	cmd.Env = updateEnv(os.Environ(), map[string]string{
-		"GO111MODULE": "on",
-	})
+	cmd.Env = updateEnv(os.Environ(), nil)
 
 	err := cmd.Run()
 	if err != nil {
-		return fmt.Errorf("error running 'go mod vendor': %v", err)
+		return fmt.Errorf("error running 'go mod tidy': %v", err)
 	}
 
 	// check that "git diff" does not return any output
@@ -603,11 +514,11 @@ func runGoModTidy() error {
 
 	buf, err := cmd.Output()
 	if err != nil {
-		return fmt.Errorf("error running 'git diff vendor': %v\noutput: %s", err, buf)
+		return fmt.Errorf("error running 'git diff': %v\noutput: %s", err, buf)
 	}
 
 	if len(buf) > 0 {
-		return fmt.Errorf("vendor/ directory was modified:\n%s", buf)
+		return fmt.Errorf("`go.mod` or `go.sum` not up to date (forgot to run `go mod tidy`?):\n%s", buf)
 	}
 
 	return nil
@@ -658,6 +569,20 @@ func isAppveyor() bool {
 }
 
 func main() {
+	// make sure we run in Module mode
+	err := os.Setenv("GO111MODULE", "on")
+	if err != nil {
+		msg("setenv(GO111MODULE=on) return error: %v\n", err)
+		os.Exit(1)
+	}
+
+	// enable the Go Module Proxy
+	err = os.Setenv("GOPROXY", "https://proxy.golang.org")
+	if err != nil {
+		msg("setenv(GOPROXY) return error: %v\n", err)
+		os.Exit(1)
+	}
+
 	var env CIEnvironment
 
 	switch {
@@ -670,7 +595,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err := env.Prepare()
+	err = env.Prepare()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error preparing: %v\n", err)
 		os.Exit(1)

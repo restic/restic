@@ -20,8 +20,8 @@ init:
 
 install:
   - rmdir c:\go /s /q
-  - appveyor DownloadFile https://dl.google.com/go/go1.13.4.windows-amd64.msi
-  - msiexec /i go1.13.4.windows-amd64.msi /q
+  - appveyor DownloadFile https://dl.google.com/go/go1.14.windows-amd64.msi
+  - msiexec /i go1.14.windows-amd64.msi /q
   - go version
   - go env
   - appveyor DownloadFile http://sourceforge.netcologne.de/project/gnuwin32/tar/1.13-1/tar-1.13-1-bin.zip -FileName tar.zip
@@ -29,4 +29,4 @@ install:
   - set PATH=bin/;%PATH%
 
 build_script:
-  - go run -mod=vendor run_integration_tests.go
+  - go run run_integration_tests.go

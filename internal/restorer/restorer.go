@@ -206,7 +206,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 
 	idx := restic.NewHardlinkIndex()
 
-	filerestorer := newFileRestorer(dst, res.repo.Backend().Load, res.repo.Key(), filePackTraverser{lookup: res.repo.Index().Lookup})
+	filerestorer := newFileRestorer(dst, res.repo.Backend().Load, res.repo.Key(), res.repo.Index().Lookup)
 
 	// first tree pass: create directories and collect all files to restore
 	err = res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
@@ -249,7 +249,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 		return err
 	}
 
-	err = filerestorer.restoreFiles(ctx, func(location string, err error) { res.Error(location, err) })
+	err = filerestorer.restoreFiles(ctx)
 	if err != nil {
 		return err
 	}

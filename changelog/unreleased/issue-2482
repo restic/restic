@@ -1,0 +1,9 @@
+Change: Remove vendored dependencies
+
+We've removed the vendored dependencies (in the subdir `vendor/`). When
+building restic, the Go compiler automatically fetches the dependencies. It
+will also cryptographically verify that the correct code has been fetched by
+using the hashes in `go.sum` (see the link to the documentation below).
+
+https://github.com/restic/restic/issues/2482
+https://golang.org/cmd/go/#hdr-Module_downloading_and_verification

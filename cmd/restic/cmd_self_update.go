@@ -18,6 +18,11 @@ The command "self-update" downloads the latest stable release of restic from
 GitHub and replaces the currently running binary. After download, the
 authenticity of the binary is verified using the GPG signature on the release
 files.
+
+EXIT STATUS
+===========
+
+Exit status is 0 if the command was successful, and non-zero if there was any error.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {

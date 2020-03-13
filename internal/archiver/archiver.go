@@ -216,10 +216,11 @@ func (arch *Archiver) SaveDir(ctx context.Context, snPath string, fi os.FileInfo
 		return FutureTree{}, err
 	}
 
-	names, err := readdirnames(arch.FS, dir)
+	names, err := readdirnames(arch.FS, dir, fs.O_NOFOLLOW)
 	if err != nil {
 		return FutureTree{}, err
 	}
+	sort.Strings(names)
 
 	nodes := make([]FutureNode, 0, len(names))
 
@@ -377,6 +378,7 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 		// make sure it's still a file
 		if !fs.IsRegularFile(fi) {
 			err = errors.Errorf("file %v changed type, refusing to archive")
+			_ = file.Close()
 			err = arch.error(abstarget, fi, err)
 			if err != nil {
 				return FutureNode{}, false, err
@@ -514,7 +516,7 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 	for name := range atree.Nodes {
 		names = append(names, name)
 	}
-	sort.Stable(sort.StringSlice(names))
+	sort.Strings(names)
 
 	for _, name := range names {
 		subatree := atree.Nodes[name]
@@ -627,43 +629,9 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 	return tree, nil
 }
 
-type fileInfoSlice []os.FileInfo
-
-func (fi fileInfoSlice) Len() int {
-	return len(fi)
-}
-
-func (fi fileInfoSlice) Swap(i, j int) {
-	fi[i], fi[j] = fi[j], fi[i]
-}
-
-func (fi fileInfoSlice) Less(i, j int) bool {
-	return fi[i].Name() < fi[j].Name()
-}
-
-func readdir(filesystem fs.FS, dir string) ([]os.FileInfo, error) {
-	f, err := filesystem.OpenFile(dir, fs.O_RDONLY|fs.O_NOFOLLOW, 0)
-	if err != nil {
-		return nil, errors.Wrap(err, "Open")
-	}
-
-	entries, err := f.Readdir(-1)
-	if err != nil {
-		_ = f.Close()
-		return nil, errors.Wrapf(err, "Readdir %v failed", dir)
-	}
-
-	err = f.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	sort.Sort(fileInfoSlice(entries))
-	return entries, nil
-}
-
-func readdirnames(filesystem fs.FS, dir string) ([]string, error) {
-	f, err := filesystem.OpenFile(dir, fs.O_RDONLY|fs.O_NOFOLLOW, 0)
+// flags are passed to fs.OpenFile. O_RDONLY is implied.
+func readdirnames(filesystem fs.FS, dir string, flags int) ([]string, error) {
+	f, err := filesystem.OpenFile(dir, fs.O_RDONLY|flags, 0)
 	if err != nil {
 		return nil, errors.Wrap(err, "Open")
 	}
@@ -679,32 +647,32 @@ func readdirnames(filesystem fs.FS, dir string) ([]string, error) {
 		return nil, err
 	}
 
-	sort.Sort(sort.StringSlice(entries))
 	return entries, nil
 }
 
 // resolveRelativeTargets replaces targets that only contain relative
 // directories ("." or "../../") with the contents of the directory. Each
 // element of target is processed with fs.Clean().
-func resolveRelativeTargets(fs fs.FS, targets []string) ([]string, error) {
+func resolveRelativeTargets(filesys fs.FS, targets []string) ([]string, error) {
 	debug.Log("targets before resolving: %v", targets)
 	result := make([]string, 0, len(targets))
 	for _, target := range targets {
-		target = fs.Clean(target)
-		pc, _ := pathComponents(fs, target, false)
+		target = filesys.Clean(target)
+		pc, _ := pathComponents(filesys, target, false)
 		if len(pc) > 0 {
 			result = append(result, target)
 			continue
 		}
 
 		debug.Log("replacing %q with readdir(%q)", target, target)
-		entries, err := readdirnames(fs, target)
+		entries, err := readdirnames(filesys, target, fs.O_NOFOLLOW)
 		if err != nil {
 			return nil, err
 		}
+		sort.Strings(entries)
 
 		for _, name := range entries {
-			result = append(result, fs.Join(target, name))
+			result = append(result, filesys.Join(target, name))
 		}
 	}
 
@@ -753,7 +721,6 @@ func (arch *Archiver) runWorkers(ctx context.Context, t *tomb.Tomb) {
 	arch.blobSaver = NewBlobSaver(ctx, t, arch.Repo, arch.Options.SaveBlobConcurrency)
 
 	arch.fileSaver = NewFileSaver(ctx, t,
-		arch.FS,
 		arch.blobSaver.Save,
 		arch.Repo.Config().ChunkerPolynomial,
 		arch.Options.FileReadConcurrency, arch.Options.SaveBlobConcurrency)
@@ -822,6 +789,10 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 	}
 
 	sn, err := restic.NewSnapshot(targets, opts.Tags, opts.Hostname, opts.Time)
+	if err != nil {
+		return nil, restic.ID{}, err
+	}
+
 	sn.Excludes = opts.Excludes
 	if !opts.ParentSnapshot.IsNull() {
 		id := opts.ParentSnapshot

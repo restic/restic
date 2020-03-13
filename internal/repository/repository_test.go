@@ -104,6 +104,7 @@ func BenchmarkSaveAndEncrypt(t *testing.B) {
 
 	id := restic.ID(sha256.Sum256(data))
 
+	t.ReportAllocs()
 	t.ResetTimer()
 	t.SetBytes(int64(size))
 

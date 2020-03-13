@@ -8,6 +8,8 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 // Terminal is used to write messages and display status lines which can be
@@ -310,7 +312,7 @@ func (t *Terminal) SetStatus(lines []string) {
 		return
 	}
 
-	width, _, err := getTermSize(t.fd)
+	width, _, err := terminal.GetSize(int(t.fd))
 	if err != nil || width <= 0 {
 		// use 80 columns by default
 		width = 80

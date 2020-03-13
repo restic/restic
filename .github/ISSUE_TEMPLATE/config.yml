@@ -1,0 +1,4 @@
+contact_links:
+  - name: restic forum
+    url: https://forum.restic.net
+    about: Please ask questions about using restic here, do not open an issue for questions.

@@ -20,6 +20,11 @@ var cmdKey = &cobra.Command{
 	Short: "Manage keys (passwords)",
 	Long: `
 The "key" command manages keys (passwords) for accessing the repository.
+
+EXIT STATUS
+===========
+
+Exit status is 0 if the command was successful, and non-zero if there was any error.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {

@@ -19,6 +19,11 @@ var cmdSnapshots = &cobra.Command{
 	Short: "List all snapshots",
 	Long: `
 The "snapshots" command lists all snapshots stored in the repository.
+
+EXIT STATUS
+===========
+
+Exit status is 0 if the command was successful, and non-zero if there was any error.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -28,7 +33,7 @@ The "snapshots" command lists all snapshots stored in the repository.
 
 // SnapshotOptions bundles all options for the snapshots command.
 type SnapshotOptions struct {
-	Host    string
+	Hosts   []string
 	Tags    restic.TagLists
 	Paths   []string
 	Compact bool
@@ -43,7 +48,7 @@ func init() {
 	cmdRoot.AddCommand(cmdSnapshots)
 
 	f := cmdSnapshots.Flags()
-	f.StringVarP(&snapshotOptions.Host, "host", "H", "", "only consider snapshots for this `host`")
+	f.StringArrayVarP(&snapshotOptions.Hosts, "host", "H", nil, "only consider snapshots for this `host` (can be specified multiple times)")
 	f.Var(&snapshotOptions.Tags, "tag", "only consider snapshots which include this `taglist` (can be specified multiple times)")
 	f.StringArrayVar(&snapshotOptions.Paths, "path", nil, "only consider snapshots for this `path` (can be specified multiple times)")
 	f.BoolVarP(&snapshotOptions.Compact, "compact", "c", false, "use compact format")
@@ -70,7 +75,7 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 	defer cancel()
 
 	var snapshots restic.Snapshots
-	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, args) {
+	for sn := range FindFilteredSnapshots(ctx, repo, opts.Hosts, opts.Tags, opts.Paths, args) {
 		snapshots = append(snapshots, sn)
 	}
 	snapshotGroups, grouped, err := restic.GroupSnapshots(snapshots, opts.GroupBy)

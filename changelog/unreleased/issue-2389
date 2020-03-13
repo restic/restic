@@ -1,0 +1,8 @@
+Bugfix: Fix mangled json output of backup command
+
+We've fixed a race condition in the json output of the backup command
+that could cause multiple lines to get mixed up. We've also ensured that
+the backup summary is printed last.
+
+https://github.com/restic/restic/issues/2389
+https://github.com/restic/restic/pull/2545

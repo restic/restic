@@ -1,0 +1,7 @@
+Bugfix: Honor RESTIC_CACHE_DIR environment variable on Mac and Windows
+
+On Mac and Windows, the RESTIC_CACHE_DIR environment variable was ignored.
+This variable can now be used on all platforms to set the directory where
+restic stores caches.
+
+https://github.com/restic/restic/pull/2607

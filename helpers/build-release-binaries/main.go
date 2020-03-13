@@ -96,7 +96,6 @@ func build(sourceDir, outputDir, goos, goarch string) (filename string) {
 	outputFile := filepath.Join(outputDir, filename)
 
 	c := exec.Command("go", "build",
-		"-mod=vendor",
 		"-o", outputFile,
 		"-ldflags", "-s -w",
 		"-tags", "selfupdate",

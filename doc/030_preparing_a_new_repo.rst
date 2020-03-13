@@ -86,10 +86,21 @@ specify the user this way: ``user@domain@host``.
           want to specify a path relative to the user's home directory, pass a
           relative path to the sftp backend.
 
-The backend config string does not allow specifying a port. If you need
-to contact an sftp server on a different port, you can create an entry
-in the ``ssh`` file, usually located in your user's home directory at
-``~/.ssh/config`` or in ``/etc/ssh/ssh_config``:
+If you need to specify a port number or IPv6 address, you'll need to use
+URL syntax. E.g., the repository ``/srv/restic-repo`` on ``[::1]`` (localhost)
+at port 2222 with username ``user`` can be specified as
+
+::
+
+    sftp://user@[::1]:2222//srv/restic-repo
+
+Note the double slash: the first slash separates the connection settings from
+the path, while the second is the start of the path. To specify a relative
+path, use one slash.
+
+Alternatively, you can create an entry in the ``ssh`` configuration file,
+usually located in your home directory at ``~/.ssh/config`` or in
+``/etc/ssh/ssh_config``:
 
 ::
 

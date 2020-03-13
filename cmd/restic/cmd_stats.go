@@ -38,6 +38,11 @@ The modes are:
 * blobs-per-file: A combination of files-by-contents and raw-data.
 
 Refer to the online manual for more details about each mode.
+
+EXIT STATUS
+===========
+
+Exit status is 0 if the command was successful, and non-zero if there was any error.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -49,7 +54,7 @@ func init() {
 	cmdRoot.AddCommand(cmdStats)
 	f := cmdStats.Flags()
 	f.StringVar(&countMode, "mode", countModeRestoreSize, "counting mode: restore-size (default), files-by-contents, blobs-per-file, or raw-data")
-	f.StringVarP(&snapshotByHost, "host", "H", "", "filter latest snapshot by this hostname")
+	f.StringArrayVarP(&snapshotByHosts, "host", "H", nil, "filter latest snapshot by this hostname (can be specified multiple times)")
 }
 
 func runStats(gopts GlobalOptions, args []string) error {
@@ -84,10 +89,11 @@ func runStats(gopts GlobalOptions, args []string) error {
 
 	// create a container for the stats (and other needed state)
 	stats := &statsContainer{
-		uniqueFiles: make(map[fileID]struct{}),
-		fileBlobs:   make(map[string]restic.IDSet),
-		blobs:       restic.NewBlobSet(),
-		blobsSeen:   restic.NewBlobSet(),
+		uniqueFiles:  make(map[fileID]struct{}),
+		uniqueInodes: make(map[uint64]struct{}),
+		fileBlobs:    make(map[string]restic.IDSet),
+		blobs:        restic.NewBlobSet(),
+		blobsSeen:    restic.NewBlobSet(),
 	}
 
 	if snapshotIDString != "" {
@@ -95,7 +101,7 @@ func runStats(gopts GlobalOptions, args []string) error {
 
 		var sID restic.ID
 		if snapshotIDString == "latest" {
-			sID, err = restic.FindLatestSnapshot(ctx, repo, []string{}, []restic.TagList{}, snapshotByHost)
+			sID, err = restic.FindLatestSnapshot(ctx, repo, []string{}, []restic.TagList{}, snapshotByHosts)
 			if err != nil {
 				return errors.Fatalf("latest snapshot for criteria not found: %v", err)
 			}
@@ -112,6 +118,9 @@ func runStats(gopts GlobalOptions, args []string) error {
 		}
 
 		err = statsWalkSnapshot(ctx, snapshot, repo, stats)
+		if err != nil {
+			return fmt.Errorf("error walking snapshot: %v", err)
+		}
 	} else {
 		// iterate every snapshot in the repo
 		err = repo.List(ctx, restic.SnapshotFile, func(snapshotID restic.ID, size int64) error {
@@ -239,8 +248,16 @@ func statsWalkTree(repo restic.Repository, stats *statsContainer) walker.WalkFun
 			// as this is a file in the snapshot, we can simply count its
 			// size without worrying about uniqueness, since duplicate files
 			// will still be restored
-			stats.TotalSize += node.Size
 			stats.TotalFileCount++
+
+			// if inodes are present, only count each inode once
+			// (hard links do not increase restore size)
+			if _, ok := stats.uniqueInodes[node.Inode]; !ok || node.Inode == 0 {
+				stats.uniqueInodes[node.Inode] = struct{}{}
+				stats.TotalSize += node.Size
+			}
+
+			return false, nil
 		}
 
 		return true, nil
@@ -293,6 +310,10 @@ type statsContainer struct {
 	// contents (hashed sequence of content blob IDs)
 	uniqueFiles map[fileID]struct{}
 
+	// uniqueInodes marks visited files according to their
+	// inode # (hashed sequence of inode numbers)
+	uniqueInodes map[uint64]struct{}
+
 	// fileBlobs maps a file name (path) to the set of
 	// blobs that have been seen as a part of the file
 	fileBlobs map[string]restic.IDSet
@@ -314,7 +335,7 @@ var (
 
 	// snapshotByHost is the host to filter latest
 	// snapshot by, if given by user
-	snapshotByHost string
+	snapshotByHosts []string
 )
 
 const (

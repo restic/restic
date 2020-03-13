@@ -26,6 +26,11 @@ directory:
 * U  The metadata (access mode, timestamps, ...) for the item was updated
 * M  The file's content was modified
 * T  The type was changed, e.g. a file was made a symlink
+
+EXIT STATUS
+===========
+
+Exit status is 0 if the command was successful, and non-zero if there was any error.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {

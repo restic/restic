@@ -16,6 +16,11 @@ var cmdRecover = &cobra.Command{
 The "recover" command build a new snapshot from all directories it can find in
 the raw data of the repository. It can be used if, for example, a snapshot has
 been removed by accident with "forget".
+
+EXIT STATUS
+===========
+
+Exit status is 0 if the command was successful, and non-zero if there was any error.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {

@@ -22,9 +22,7 @@ The program can be built with debug support like this:
 
 .. code-block:: console
 
-    $ go run build.go -mod=vendor -tags debug
-
-For Go < 1.11, the option ``-mod=vendor`` needs to be removed.
+    $ go run build.go -tags debug
 
 Afterwards, extensive debug messages are written to the file in
 environment variable ``DEBUG_LOG``, e.g.:

@@ -27,7 +27,13 @@ var cmdDebugDump = &cobra.Command{
 	Short: "Dump data structures",
 	Long: `
 The "dump" command dumps data structures from the repository as JSON objects. It
-is used for debugging purposes only.`,
+is used for debugging purposes only.
+
+EXIT STATUS
+===========
+
+Exit status is 0 if the command was successful, and non-zero if there was any error.
+`,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runDebugDump(globalOptions, args)

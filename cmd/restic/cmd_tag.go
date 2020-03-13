@@ -21,6 +21,11 @@ You can either set/replace the entire set of tags on a snapshot, or
 add tags to/remove tags from the existing set.
 
 When no snapshot-ID is given, all snapshots matching the host, tag and path filter criteria are modified.
+
+EXIT STATUS
+===========
+
+Exit status is 0 if the command was successful, and non-zero if there was any error.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -30,7 +35,7 @@ When no snapshot-ID is given, all snapshots matching the host, tag and path filt
 
 // TagOptions bundles all options for the 'tag' command.
 type TagOptions struct {
-	Host       string
+	Hosts      []string
 	Paths      []string
 	Tags       restic.TagLists
 	SetTags    []string
@@ -48,7 +53,7 @@ func init() {
 	tagFlags.StringSliceVar(&tagOptions.AddTags, "add", nil, "`tag` which will be added to the existing tags (can be given multiple times)")
 	tagFlags.StringSliceVar(&tagOptions.RemoveTags, "remove", nil, "`tag` which will be removed from the existing tags (can be given multiple times)")
 
-	tagFlags.StringVarP(&tagOptions.Host, "host", "H", "", "only consider snapshots for this `host`, when no snapshot ID is given")
+	tagFlags.StringArrayVarP(&tagOptions.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when no snapshot ID is given (can be specified multiple times)")
 	tagFlags.Var(&tagOptions.Tags, "tag", "only consider snapshots which include this `taglist`, when no snapshot-ID is given")
 	tagFlags.StringArrayVar(&tagOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot-ID is given")
 }
@@ -124,7 +129,7 @@ func runTag(opts TagOptions, gopts GlobalOptions, args []string) error {
 	changeCnt := 0
 	ctx, cancel := context.WithCancel(gopts.ctx)
 	defer cancel()
-	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, args) {
+	for sn := range FindFilteredSnapshots(ctx, repo, opts.Hosts, opts.Tags, opts.Paths, args) {
 		changed, err := changeTags(ctx, repo, sn, opts.SetTags, opts.AddTags, opts.RemoveTags)
 		if err != nil {
 			Warnf("unable to modify the tags for snapshot ID %q, ignoring: %v\n", sn.ID(), err)

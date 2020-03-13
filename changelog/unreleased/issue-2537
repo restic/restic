@@ -1,0 +1,5 @@
+Bugfix: Fix incorrect file counts in `stats --mode restore-size` 
+
+The restore-size mode of stats was failing to count empty directories and some files with hard links.
+
+https://github.com/restic/restic/issues/2537

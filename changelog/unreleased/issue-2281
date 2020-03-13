@@ -1,0 +1,7 @@
+Bugfix: Handle format verbs like '%' properly in `find` output
+
+The JSON or "normal" output of the `find` command can now deal with file names
+that contain substrings which the Golang `fmt` package considers "format verbs"
+like `%s`.
+
+https://github.com/restic/restic/issues/2281

@@ -131,6 +131,6 @@ output the contents in the tar format:
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo dump /home/other/work latest > restore.tar
+    $ restic -r /srv/restic-repo dump latest /home/other/work > restore.tar
 
 

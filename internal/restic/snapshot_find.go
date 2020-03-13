@@ -14,7 +14,7 @@ import (
 var ErrNoSnapshotFound = errors.New("no snapshot found")
 
 // FindLatestSnapshot finds latest snapshot with optional target/directory, tags and hostname filters.
-func FindLatestSnapshot(ctx context.Context, repo Repository, targets []string, tagLists []TagList, hostname string) (ID, error) {
+func FindLatestSnapshot(ctx context.Context, repo Repository, targets []string, tagLists []TagList, hostnames []string) (ID, error) {
 	var err error
 	absTargets := make([]string, 0, len(targets))
 	for _, target := range targets {
@@ -38,7 +38,12 @@ func FindLatestSnapshot(ctx context.Context, repo Repository, targets []string, 
 		if err != nil {
 			return errors.Errorf("Error loading snapshot %v: %v", snapshotID.Str(), err)
 		}
-		if snapshot.Time.Before(latest) || (hostname != "" && hostname != snapshot.Hostname) {
+
+		if snapshot.Time.Before(latest) {
+			return nil
+		}
+
+		if !snapshot.HasHostname(hostnames) {
 			return nil
 		}
 
@@ -82,7 +87,7 @@ func FindSnapshot(repo Repository, s string) (ID, error) {
 
 // FindFilteredSnapshots yields Snapshots filtered from the list of all
 // snapshots.
-func FindFilteredSnapshots(ctx context.Context, repo Repository, host string, tags []TagList, paths []string) (Snapshots, error) {
+func FindFilteredSnapshots(ctx context.Context, repo Repository, hosts []string, tags []TagList, paths []string) (Snapshots, error) {
 	results := make(Snapshots, 0, 20)
 
 	err := repo.List(ctx, SnapshotFile, func(id ID, size int64) error {
@@ -92,7 +97,7 @@ func FindFilteredSnapshots(ctx context.Context, repo Repository, host string, ta
 			return nil
 		}
 
-		if (host != "" && host != sn.Hostname) || !sn.HasTagList(tags) || !sn.HasPaths(paths) {
+		if !sn.HasHostname(hosts) || !sn.HasTagList(tags) || !sn.HasPaths(paths) {
 			return nil
 		}
 
