@@ -113,7 +113,7 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 				return hasRestored, errors.Errorf("Dir without subtree in tree %v", treeID.Str())
 			}
 
-			if selectedForRestore {
+			if selectedForRestore && visitor.enterDir != nil {
 				err = sanitizeError(visitor.enterDir(node, nodeTarget, nodeLocation))
 				if err != nil {
 					return hasRestored, err
@@ -138,7 +138,7 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 
 			// metadata need to be restore when leaving the directory in both cases
 			// selected for restore or any child of any subtree have been restored
-			if selectedForRestore || childHasRestored {
+			if (selectedForRestore || childHasRestored) && visitor.leaveDir != nil {
 				err = sanitizeError(visitor.leaveDir(node, nodeTarget, nodeLocation))
 				if err != nil {
 					return hasRestored, err
@@ -219,7 +219,6 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 	}
 
 	idx := restic.NewHardlinkIndex()
-
 	filerestorer := newFileRestorer(dst, res.repo.Backend().Load, res.repo.Key(), res.repo.Index().Lookup)
 	filerestorer.Error = res.Error
 
@@ -262,9 +261,6 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 
 			return nil
 		},
-		leaveDir: func(node *restic.Node, target, location string) error {
-			return nil
-		},
 	})
 	if err != nil {
 		return err
@@ -279,9 +275,6 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 
 	// second tree pass: restore special files and filesystem metadata
 	_, err = res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
-		enterDir: func(node *restic.Node, target, location string) error {
-			return nil
-		},
 		visitNode: func(node *restic.Node, target, location string) error {
 			debug.Log("second pass, visitNode: restore node %q", location)
 			if node.Type != "file" {
@@ -302,10 +295,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 
 			return res.restoreNodeMetadataTo(node, target, location)
 		},
-		leaveDir: func(node *restic.Node, target, location string) error {
-			debug.Log("second pass, leaveDir restore metadata %q", location)
-			return res.restoreNodeMetadataTo(node, target, location)
-		},
+		leaveDir: res.restoreNodeMetadataTo,
 	})
 	return err
 }
@@ -340,7 +330,6 @@ func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
 		defer close(work)
 
 		_, err := res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
-			enterDir: func(node *restic.Node, target, location string) error { return nil },
 			visitNode: func(node *restic.Node, target, location string) error {
 				if node.Type != "file" {
 					return nil
@@ -352,7 +341,6 @@ func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
 					return nil
 				}
 			},
-			leaveDir: func(node *restic.Node, target, location string) error { return nil },
 		})
 		return err
 	})
