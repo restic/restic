@@ -808,3 +808,41 @@ func TestRestorerConsistentTimestampsAndPermissions(t *testing.T) {
 		checkConsistentInfo(t, test.path, f, test.modtime, test.mode)
 	}
 }
+
+// VerifyFiles must not report cancelation of its context through res.Error.
+func TestVerifyCancel(t *testing.T) {
+	snapshot := Snapshot{
+		Nodes: map[string]Node{
+			"foo": File{Data: "content: foo\n"},
+		},
+	}
+
+	repo, cleanup := repository.TestRepository(t)
+	defer cleanup()
+
+	_, id := saveSnapshot(t, repo, snapshot)
+
+	res, err := NewRestorer(context.TODO(), repo, id)
+	rtest.OK(t, err)
+
+	tempdir, cleanup := rtest.TempDir(t)
+	defer cleanup()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	rtest.OK(t, res.RestoreTo(ctx, tempdir))
+	err = ioutil.WriteFile(filepath.Join(tempdir, "foo"), []byte("bar"), 0644)
+	rtest.OK(t, err)
+
+	var errs []error
+	res.Error = func(filename string, err error) error {
+		errs = append(errs, err)
+		return err
+	}
+
+	nverified, err := res.VerifyFiles(ctx, tempdir)
+	rtest.Equals(t, 0, nverified)
+	rtest.Assert(t, err != nil, "nil error from VerifyFiles")
+	rtest.Equals(t, []error(nil), errs)
+}

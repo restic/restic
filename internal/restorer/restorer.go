@@ -99,10 +99,13 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 		}
 
 		sanitizeError := func(err error) error {
-			if err != nil {
-				err = res.Error(nodeLocation, err)
+			switch err {
+			case nil, context.Canceled, context.DeadlineExceeded:
+				// Context errors are permanent.
+				return err
+			default:
+				return res.Error(nodeLocation, err)
 			}
-			return err
 		}
 
 		if node.Type == "dir" {
@@ -364,7 +367,7 @@ func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
 				}
 				atomic.AddUint64(&nchecked, 1)
 			}
-			return
+			return err
 		})
 	}
 
