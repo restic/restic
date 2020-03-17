@@ -1026,8 +1026,6 @@ _restic_mount()
 
     flags+=("--allow-other")
     local_nonpersistent_flags+=("--allow-other")
-    flags+=("--allow-root")
-    local_nonpersistent_flags+=("--allow-root")
     flags+=("--help")
     flags+=("-h")
     local_nonpersistent_flags+=("--help")

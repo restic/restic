@@ -59,7 +59,6 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 // MountOptions collects all options for the mount command.
 type MountOptions struct {
 	OwnerRoot            bool
-	AllowRoot            bool
 	AllowOther           bool
 	NoDefaultPermissions bool
 	Hosts                []string
@@ -75,7 +74,6 @@ func init() {
 
 	mountFlags := cmdMount.Flags()
 	mountFlags.BoolVar(&mountOptions.OwnerRoot, "owner-root", false, "use 'root' as the owner of files and dirs")
-	mountFlags.BoolVar(&mountOptions.AllowRoot, "allow-root", false, "allow root user to access the data in the mounted directory")
 	mountFlags.BoolVar(&mountOptions.AllowOther, "allow-other", false, "allow other users to access the data in the mounted directory")
 	mountFlags.BoolVar(&mountOptions.NoDefaultPermissions, "no-default-permissions", false, "for 'allow-other', ignore Unix permissions and allow users to read all snapshot files")
 
@@ -117,10 +115,6 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 	mountOptions := []systemFuse.MountOption{
 		systemFuse.ReadOnly(),
 		systemFuse.FSName("restic"),
-	}
-
-	if opts.AllowRoot {
-		mountOptions = append(mountOptions, systemFuse.AllowRoot())
 	}
 
 	if opts.AllowOther {
