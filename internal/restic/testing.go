@@ -16,7 +16,7 @@ import (
 
 // fakeFile returns a reader which yields deterministic pseudo-random data.
 func fakeFile(t testing.TB, seed, size int64) io.Reader {
-	return io.LimitReader(NewRandReader(rand.New(rand.NewSource(seed))), size)
+	return io.LimitReader(rand.New(rand.NewSource(seed)), size)
 }
 
 type fakeFileSystem struct {

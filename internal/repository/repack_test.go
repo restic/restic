@@ -2,7 +2,6 @@ package repository_test
 
 import (
 	"context"
-	"io"
 	"math/rand"
 	"testing"
 
@@ -13,17 +12,6 @@ import (
 
 func randomSize(min, max int) int {
 	return rand.Intn(max-min) + min
-}
-
-func random(t testing.TB, length int) []byte {
-	rd := restic.NewRandReader(rand.New(rand.NewSource(rand.Int63())))
-	buf := make([]byte, length)
-	_, err := io.ReadFull(rd, buf)
-	if err != nil {
-		t.Fatalf("unable to read %d random bytes: %v", length, err)
-	}
-
-	return buf
 }
 
 func createRandomBlobs(t testing.TB, repo restic.Repository, blobs int, pData float32) {
@@ -41,7 +29,8 @@ func createRandomBlobs(t testing.TB, repo restic.Repository, blobs int, pData fl
 			length = randomSize(1*1024, 20*1024) // 1KiB to 20KiB
 		}
 
-		buf := random(t, length)
+		buf := make([]byte, length)
+		rand.Read(buf)
 		id := restic.Hash(buf)
 
 		if repo.Index().Has(id, restic.DataBlob) {
