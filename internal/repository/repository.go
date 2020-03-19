@@ -3,7 +3,6 @@ package repository
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -17,6 +16,8 @@ import (
 	"github.com/restic/restic/internal/hashing"
 	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/restic"
+
+	"github.com/minio/sha256-simd"
 	"golang.org/x/sync/errgroup"
 )
 

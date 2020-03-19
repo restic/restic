@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"crypto/sha256"
 	"os"
 	"sync"
 
@@ -14,6 +13,8 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/pack"
+
+	"github.com/minio/sha256-simd"
 )
 
 // Saver implements saving data in a backend.

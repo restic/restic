@@ -21,6 +21,7 @@ require (
 	github.com/kurin/blazer v0.5.3
 	github.com/marstr/guid v1.1.0 // indirect
 	github.com/minio/minio-go/v6 v6.0.43
+	github.com/minio/sha256-simd v0.1.1
 	github.com/ncw/swift v1.0.47
 	github.com/pkg/errors v0.8.1
 	github.com/pkg/profile v1.3.0

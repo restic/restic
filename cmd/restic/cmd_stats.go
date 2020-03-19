@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -11,6 +10,8 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/walker"
+
+	"github.com/minio/sha256-simd"
 	"github.com/spf13/cobra"
 )
 
