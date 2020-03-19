@@ -60,8 +60,10 @@ type GlobalOptions struct {
 	TLSClientCert   string
 	CleanupCache    bool
 
-	LimitUploadKb   int
-	LimitDownloadKb int
+	LimitUploadKb       int
+	LimitDownloadKb     int
+	MinPackSize         uint
+	FileReadConcurrency uint
 
 	ctx      context.Context
 	password string
@@ -109,6 +111,8 @@ func init() {
 	f.BoolVar(&globalOptions.CleanupCache, "cleanup-cache", false, "auto remove old cache directories")
 	f.IntVar(&globalOptions.LimitUploadKb, "limit-upload", 0, "limits uploads to a maximum rate in KiB/s. (default: unlimited)")
 	f.IntVar(&globalOptions.LimitDownloadKb, "limit-download", 0, "limits downloads to a maximum rate in KiB/s. (default: unlimited)")
+	f.UintVar(&globalOptions.MinPackSize, "min-packsize", 4, "set min pack size in MiB.")
+	f.UintVar(&globalOptions.FileReadConcurrency, "filereadcon", 2, "set concurrency on file reads.")
 	f.StringSliceVarP(&globalOptions.Options, "option", "o", []string{}, "set extended option (`key=value`, can be specified multiple times)")
 
 	restoreTerminal()
@@ -380,7 +384,7 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 		Warnf("%v returned error, retrying after %v: %v\n", msg, d, err)
 	})
 
-	s := repository.New(be)
+	s := repository.New(be, opts.MinPackSize)
 
 	passwordTriesLeft := 1
 	if stdinIsTerminal() && opts.password == "" {

@@ -51,7 +51,7 @@ func TestRepositoryWithBackend(t testing.TB, be restic.Backend) (r restic.Reposi
 		be, beCleanup = TestBackend(t)
 	}
 
-	repo := New(be)
+	repo := New(be, defaultMinPackSize)
 
 	cfg := restic.TestCreateConfig(t, testChunkerPol)
 	err := repo.init(context.TODO(), test.TestPassword, cfg)
@@ -98,7 +98,7 @@ func TestOpenLocal(t testing.TB, dir string) (r restic.Repository) {
 		t.Fatal(err)
 	}
 
-	repo := New(be)
+	repo := New(be, defaultMinPackSize)
 	err = repo.SearchKey(context.TODO(), test.TestPassword, 10, "")
 	if err != nil {
 		t.Fatal(err)

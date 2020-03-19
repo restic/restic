@@ -138,7 +138,7 @@ func TestPackerManager(t *testing.T) {
 	rnd := newRandReader(rand.NewSource(23))
 
 	be := mem.New()
-	pm := newPackerManager(be, crypto.NewRandomKey())
+	pm := newPackerManager(be, crypto.NewRandomKey(), defaultMinPackSize)
 
 	blobBuf := make([]byte, maxBlobSize)
 
@@ -160,7 +160,7 @@ func BenchmarkPackerManager(t *testing.B) {
 
 	for i := 0; i < t.N; i++ {
 		bytes := 0
-		pm := newPackerManager(be, crypto.NewRandomKey())
+		pm := newPackerManager(be, crypto.NewRandomKey(), defaultMinPackSize)
 		bytes += fillPacks(t, rnd, be, pm, blobBuf)
 		bytes += flushRemainingPacks(t, rnd, be, pm)
 		t.Logf("saved %d bytes", bytes)

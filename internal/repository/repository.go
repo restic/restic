@@ -34,12 +34,12 @@ type Repository struct {
 }
 
 // New returns a new repository with backend be.
-func New(be restic.Backend) *Repository {
+func New(be restic.Backend, minpacksize uint) *Repository {
 	repo := &Repository{
 		be:     be,
 		idx:    NewMasterIndex(),
-		dataPM: newPackerManager(be, nil),
-		treePM: newPackerManager(be, nil),
+		dataPM: newPackerManager(be, nil, minpacksize),
+		treePM: newPackerManager(be, nil, minpacksize),
 	}
 
 	return repo
@@ -257,7 +257,7 @@ func (r *Repository) SaveAndEncrypt(ctx context.Context, t restic.BlobType, data
 	}
 
 	// if the pack is not full enough, put back to the list
-	if packer.Size() < minPackSize {
+	if packer.Size() < pm.minPackSize {
 		debug.Log("pack is not full enough (%d bytes)", packer.Size())
 		pm.insertPacker(packer)
 		return *id, nil

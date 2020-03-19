@@ -30,20 +30,22 @@ type Packer struct {
 
 // packerManager keeps a list of open packs and creates new on demand.
 type packerManager struct {
-	be      Saver
-	key     *crypto.Key
-	pm      sync.Mutex
-	packers []*Packer
+	be          Saver
+	key         *crypto.Key
+	pm          sync.Mutex
+	packers     []*Packer
+	minPackSize uint
 }
 
-const minPackSize = 4 * 1024 * 1024
+const defaultMinPackSize = 4
 
 // newPackerManager returns an new packer manager which writes temporary files
 // to a temporary directory
-func newPackerManager(be Saver, key *crypto.Key) *packerManager {
+func newPackerManager(be Saver, key *crypto.Key, minpacksize uint) *packerManager {
 	return &packerManager{
-		be:  be,
-		key: key,
+		be:          be,
+		key:         key,
+		minPackSize: minpacksize * 1024 * 1024,
 	}
 }
 
