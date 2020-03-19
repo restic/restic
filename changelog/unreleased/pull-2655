@@ -1,0 +1,5 @@
+Bugfix: Addition of --min-packsize and --file-read-concurrency
+
+In order to tune restic for large installs we need to be able to configure --min-packsize and --file-read-concurrency. I the current release these numbers are hard coded.
+
+https://github.com/restic/restic/pull/2655
