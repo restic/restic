@@ -363,7 +363,10 @@ func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
 }
 
 // Verify that the file target has the contents of node.
+//
 // buf and the first return value are scratch space, passed around for reuse.
+// Reusing buffers prevents the verifier goroutines allocating all of RAM and
+// flushing the filesystem cache (at least on Linux).
 func (res *Restorer) verifyFile(target string, node *restic.Node, buf []byte) ([]byte, error) {
 	f, err := os.Open(target)
 	if err != nil {
@@ -374,7 +377,7 @@ func (res *Restorer) verifyFile(target string, node *restic.Node, buf []byte) ([
 	fi, err := f.Stat()
 	switch {
 	case err != nil:
-		return nil, err
+		return buf, err
 	case int64(node.Size) != fi.Size():
 		return buf, errors.Errorf("Invalid file size for %s: expected %d, got %d",
 			target, node.Size, fi.Size())
