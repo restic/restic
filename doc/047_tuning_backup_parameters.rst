@@ -51,6 +51,16 @@ only applied for the single run of restic. The option can also be set via the en
 variable ``RESTIC_COMPRESSION``.
 
 
+File Read Concurrency
+=====================
+
+In some instances, such as backing up traditional spinning disks, reducing the file read
+concurrency is desired.  This will help reduce the amount of time spent seeking around
+the disk and can increase the overall performance of the backup operation. You can specify
+the concurrency of file reads with the ``RESTIC_FILE_READ_CONCURRENCY`` environment variable
+or the ``--file-read-concurrency`` flag for the ``backup`` subcommand.
+
+
 Pack Size
 =========
 

@@ -103,6 +103,7 @@ command:
           --files-from file                        read the files to backup from file (can be combined with file args; can be specified multiple times)
           --files-from-raw file                    read the files to backup from file (can be combined with file args; can be specified multiple times)
           --files-from-verbatim file               read the files to backup from file (can be combined with file args; can be specified multiple times)
+          --file-read-concurrency uint             set concurrency on file reads. (default: $RESTIC_FILE_READ_CONCURRENCY or 2)
       -f, --force                                  force re-reading the target files/directories (overrides the "parent" flag)
       -h, --help                                   help for backup
       -H, --host hostname                          set the hostname for the snapshot manually. To prevent an expensive rescan use the "parent" flag
@@ -442,3 +443,4 @@ time it is used, so by looking at the timestamps of the sub directories of the
 cache directory it can decide which sub directories are old and probably not
 needed any more. You can either remove these directories manually, or run a
 restic command with the ``--cleanup-cache`` flag.
+
