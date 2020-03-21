@@ -6,7 +6,9 @@ import (
 	"io"
 	"io/ioutil"
 	"testing"
+	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/restic/restic/internal/backend/mock"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -300,4 +302,57 @@ func TestBackendCanceledContext(t *testing.T) {
 	assertIsCanceled(t, err)
 
 	// don't test "Delete" as it is not used by normal code
+}
+
+func TestNotifyWithSuccessIsNotCalled(t *testing.T) {
+	operation := func() error {
+		return nil
+	}
+
+	notify := func(error, time.Duration) {
+		t.Fatal("Notify should not have been called")
+	}
+
+	success := func() {
+		t.Fatal("Success should not have been called")
+	}
+
+	err := retryNotifyErrorWithSuccess(operation, &backoff.ZeroBackOff{}, notify, success)
+	if err != nil {
+		t.Fatal("retry should not have returned an error")
+	}
+}
+
+func TestNotifyWithSuccessIsCalled(t *testing.T) {
+	operationCalled := 0
+	operation := func() error {
+		operationCalled++
+		if operationCalled <= 2 {
+			return errors.New("expected error in test")
+		}
+		return nil
+	}
+
+	notifyCalled := 0
+	notify := func(error, time.Duration) {
+		notifyCalled++
+	}
+
+	successCalled := 0
+	success := func() {
+		successCalled++
+	}
+
+	err := retryNotifyErrorWithSuccess(operation, &backoff.ZeroBackOff{}, notify, success)
+	if err != nil {
+		t.Fatal("retry should not have returned an error")
+	}
+
+	if notifyCalled != 2 {
+		t.Fatalf("Notify should have been called 2 times, but was called %d times instead", notifyCalled)
+	}
+
+	if successCalled != 1 {
+		t.Fatalf("Success should have been called only once, but was called %d times instead", successCalled)
+	}
 }
