@@ -210,7 +210,7 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	if len(usedBlobs) > stats.blobs {
 		return errors.Fatalf("number of used blobs is larger than number of available blobs!\n" +
 			"Please report this error (along with the output of the 'prune' run) at\n" +
-			"https://github.com/restic/restic/issues/new")
+			"https://github.com/restic/restic/issues/new?template=Bug.md")
 	}
 
 	Verbosef("found %d of %d data blobs still in use, removing %d blobs\n",
