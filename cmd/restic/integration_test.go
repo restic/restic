@@ -359,6 +359,28 @@ func TestBackupNonExistingFile(t *testing.T) {
 	testRunBackup(t, "", dirs, opts, env.gopts)
 }
 
+func removeDataPacksExcept(gopts GlobalOptions, t *testing.T, keep restic.IDSet) {
+	r, err := OpenRepository(gopts)
+	rtest.OK(t, err)
+
+	// Get all tree packs
+	rtest.OK(t, r.LoadIndex(gopts.ctx))
+	treePacks := restic.NewIDSet()
+	for _, idx := range r.Index().(*repository.MasterIndex).All() {
+		for _, id := range idx.TreePacks() {
+			treePacks.Insert(id)
+		}
+	}
+
+	// remove all packs containing data blobs
+	rtest.OK(t, r.List(gopts.ctx, restic.PackFile, func(id restic.ID, size int64) error {
+		if treePacks.Has(id) || keep.Has(id) {
+			return nil
+		}
+		return r.Backend().Remove(gopts.ctx, restic.Handle{Type: restic.PackFile, Name: id.String()})
+	}))
+}
+
 func TestBackupSelfHealing(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
@@ -374,25 +396,8 @@ func TestBackupSelfHealing(t *testing.T) {
 	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 
-	r, err := OpenRepository(env.gopts)
-	rtest.OK(t, err)
-
-	// Get all tree packs
-	rtest.OK(t, r.LoadIndex(env.gopts.ctx))
-	treePacks := restic.NewIDSet()
-	for _, idx := range r.Index().(*repository.MasterIndex).All() {
-		for _, id := range idx.TreePacks() {
-			treePacks.Insert(id)
-		}
-	}
-
-	// remove all packs containing data blobs
-	rtest.OK(t, r.List(env.gopts.ctx, restic.PackFile, func(id restic.ID, size int64) error {
-		if treePacks.Has(id) {
-			return nil
-		}
-		return r.Backend().Remove(env.gopts.ctx, restic.Handle{Type: restic.PackFile, Name: id.String()})
-	}))
+	// remove all data packs
+	removeDataPacksExcept(env.gopts, t, restic.NewIDSet())
 
 	testRunRebuildIndex(t, env.gopts)
 	// now the repo is also missing the data blob in the index; check should report this
@@ -400,7 +405,7 @@ func TestBackupSelfHealing(t *testing.T) {
 		"check should have reported an error")
 
 	// second backup should report an error but "heal" this situation
-	err = testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
+	err := testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
 	rtest.Assert(t, err != nil,
 		"backup should have reported an error")
 	testRunCheck(t, env.gopts)
@@ -1224,6 +1229,58 @@ func TestPrune(t *testing.T) {
 	testRunForget(t, env.gopts, firstSnapshot[0].String())
 	testRunPrune(t, env.gopts)
 	testRunCheck(t, env.gopts)
+}
+
+func listPacks(gopts GlobalOptions, t *testing.T) restic.IDSet {
+	r, err := OpenRepository(gopts)
+	rtest.OK(t, err)
+
+	packs := restic.NewIDSet()
+
+	rtest.OK(t, r.List(gopts.ctx, restic.PackFile, func(id restic.ID, size int64) error {
+		packs.Insert(id)
+		return nil
+	}))
+	return packs
+}
+
+func TestPruneWithDamagedRepository(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	datafile := filepath.Join("testdata", "backup-data.tar.gz")
+	testRunInit(t, env.gopts)
+
+	rtest.SetupTarTestFixture(t, env.testdata, datafile)
+	opts := BackupOptions{}
+
+	// create and delete snapshot to create unused blobs
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "2")}, opts, env.gopts)
+	firstSnapshot := testRunList(t, "snapshots", env.gopts)
+	rtest.Assert(t, len(firstSnapshot) == 1,
+		"expected one snapshot, got %v", firstSnapshot)
+	testRunForget(t, env.gopts, firstSnapshot[0].String())
+
+	oldPacks := listPacks(env.gopts, t)
+
+	// create new snapshot, but lose all data
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "3")}, opts, env.gopts)
+	snapshotIDs := testRunList(t, "snapshots", env.gopts)
+
+	removeDataPacksExcept(env.gopts, t, oldPacks)
+
+	rtest.Assert(t, len(snapshotIDs) == 1,
+		"expected one snapshot, got %v", snapshotIDs)
+
+	// prune should fail
+	err := runPrune(env.gopts)
+	if err == nil {
+		t.Fatalf("expected prune to fail")
+	}
+	if !strings.Contains(err.Error(), "blob seems to be missing") {
+		t.Fatalf("did not find hint for missing blobs")
+	}
+	t.Log(err)
 }
 
 func TestHardLink(t *testing.T) {
