@@ -57,8 +57,7 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 
 			debug.Log("  process blob %v", h)
 
-			buf = buf[:]
-			if uint(len(buf)) < entry.Length {
+			if uint(cap(buf)) < entry.Length {
 				buf = make([]byte, entry.Length)
 			}
 			buf = buf[:entry.Length]
