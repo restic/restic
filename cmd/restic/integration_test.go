@@ -1277,7 +1277,7 @@ func TestPruneWithDamagedRepository(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected prune to fail")
 	}
-	if !strings.Contains(err.Error(), "blob seems to be missing") {
+	if !strings.Contains(err.Error(), "blobs seem to be missing") {
 		t.Fatalf("did not find hint for missing blobs")
 	}
 	t.Log(err)
