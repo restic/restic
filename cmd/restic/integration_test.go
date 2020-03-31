@@ -1132,6 +1132,37 @@ func TestRebuildIndexAlwaysFull(t *testing.T) {
 	TestRebuildIndex(t)
 }
 
+type appendOnlyBackend struct {
+	restic.Backend
+}
+
+// called via repo.Backend().Remove()
+func (b *appendOnlyBackend) Remove(ctx context.Context, h restic.Handle) error {
+	return errors.Errorf("Failed to remove %v", h)
+}
+
+func TestRebuildIndexFailsOnAppendOnly(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	datafile := filepath.Join("..", "..", "internal", "checker", "testdata", "duplicate-packs-in-index-test-repo.tar.gz")
+	rtest.SetupTarTestFixture(t, env.base, datafile)
+
+	globalOptions.stdout = ioutil.Discard
+	defer func() {
+		globalOptions.stdout = os.Stdout
+	}()
+
+	env.gopts.backendTestHook = func(r restic.Backend) (restic.Backend, error) {
+		return &appendOnlyBackend{r}, nil
+	}
+	err := runRebuildIndex(env.gopts)
+	if err == nil {
+		t.Error("expected rebuildIndex to fail")
+	}
+	t.Log(err)
+}
+
 func TestCheckRestoreNoLock(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
