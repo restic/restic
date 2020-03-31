@@ -44,6 +44,8 @@ var version = "0.9.6-dev (compiled manually)"
 // TimeFormat is the format used for all timestamps printed by restic.
 const TimeFormat = "2006-01-02 15:04:05"
 
+type backendWrapper func(r restic.Backend) (restic.Backend, error)
+
 // GlobalOptions hold all global options for restic.
 type GlobalOptions struct {
 	Repo            string
@@ -67,6 +69,8 @@ type GlobalOptions struct {
 	password string
 	stdout   io.Writer
 	stderr   io.Writer
+
+	backendTestHook backendWrapper
 
 	// verbosity is set as follows:
 	//  0 means: don't print any messages except errors, this is used when --quiet is specified
@@ -394,6 +398,14 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 	be = backend.NewRetryBackend(be, 10, func(msg string, err error, d time.Duration) {
 		Warnf("%v returned error, retrying after %v: %v\n", msg, d, err)
 	})
+
+	// wrap backend if a test specified a hook
+	if opts.backendTestHook != nil {
+		be, err = opts.backendTestHook(be)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	s := repository.New(be)
 
