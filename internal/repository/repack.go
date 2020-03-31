@@ -2,8 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
-	"os"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -85,7 +83,7 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 			if !id.Equal(entry.ID) {
 				debug.Log("read blob %v/%v from %v: wrong data returned, hash is %v",
 					h.Type, h.ID, tempfile.Name(), id)
-				fmt.Fprintf(os.Stderr, "read blob %v from %v: wrong data returned, hash is %v",
+				return nil, errors.Errorf("read blob %v from %v: wrong data returned, hash is %v",
 					h, tempfile.Name(), id)
 			}
 
