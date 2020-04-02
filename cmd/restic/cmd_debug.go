@@ -141,11 +141,6 @@ func runDebugDump(gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	err = repo.LoadIndex(gopts.ctx)
-	if err != nil {
-		return err
-	}
-
 	tpe := args[0]
 
 	switch tpe {
