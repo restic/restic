@@ -107,13 +107,11 @@ func printPacks(repo *repository.Repository, wr io.Writer) error {
 			}
 		}
 
-		return prettyPrintJSON(os.Stdout, p)
+		return prettyPrintJSON(wr, p)
 	})
-
-	return nil
 }
 
-func dumpIndexes(repo restic.Repository) error {
+func dumpIndexes(repo restic.Repository, wr io.Writer) error {
 	return repo.List(context.TODO(), restic.IndexFile, func(id restic.ID, size int64) error {
 		fmt.Printf("index_id: %v\n", id)
 
@@ -122,7 +120,7 @@ func dumpIndexes(repo restic.Repository) error {
 			return err
 		}
 
-		return idx.Dump(os.Stdout)
+		return idx.Dump(wr)
 	})
 }
 
@@ -153,7 +151,7 @@ func runDebugDump(gopts GlobalOptions, args []string) error {
 
 	switch tpe {
 	case "indexes":
-		return dumpIndexes(repo)
+		return dumpIndexes(repo, os.Stdout)
 	case "snapshots":
 		return debugPrintSnapshots(repo, os.Stdout)
 	case "packs":
@@ -166,7 +164,7 @@ func runDebugDump(gopts GlobalOptions, args []string) error {
 		}
 
 		fmt.Printf("\nindexes:\n")
-		err = dumpIndexes(repo)
+		err = dumpIndexes(repo, os.Stdout)
 		if err != nil {
 			return err
 		}
