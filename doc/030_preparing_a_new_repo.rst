@@ -474,6 +474,10 @@ The number of concurrent connections to the GCS service can be set with the
 ``-o gs.connections=10`` switch. By default, at most five parallel connections are
 established.
 
+The base URL to the GCS service can be set with the ``-o gs.baseurl=http://myhost/my/path/``
+switch. By default, the value is https://storage.googleapis.com/storage/v1/. This should not
+be confused with a full proxy like the ``HTTPS_PROXY`` environment variable.
+
 .. _service account: https://cloud.google.com/storage/docs/authentication#service_accounts
 .. _create a service account key: https://cloud.google.com/storage/docs/authentication#generating-a-private-key
 .. _default authentication material: https://developers.google.com/identity/protocols/application-default-credentials

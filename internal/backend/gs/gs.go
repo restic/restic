@@ -73,6 +73,9 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "getStorageService")
 	}
+	if cfg.BaseURL != "" {
+		service.BasePath = cfg.BaseURL
+	}
 
 	sem, err := backend.NewSemaphore(cfg.Connections)
 	if err != nil {
