@@ -22,7 +22,7 @@ Usage help is available:
       check         Check the repository for errors
       diff          Show differences between two snapshots
       dump          Print a backed-up file to stdout
-      find          Find a file or directory
+      find          Find a file, a directory or restic IDs
       forget        Remove snapshots from the repository
       generate      Generate manual pages and auto-completion files (bash, zsh)
       help          Help about any command
@@ -34,30 +34,33 @@ Usage help is available:
       mount         Mount the repository
       prune         Remove unneeded data from the repository
       rebuild-index Build a new index file
+      recover       Recover data from the repository
       restore       Extract the data from a snapshot
+      self-update   Update the restic binary
       snapshots     List all snapshots
-      stats         Count up sizes and show information about repository data
+      stats         Scan the repository and show basic statistics
       tag           Modify tags on snapshots
       unlock        Remove locks other processes created
       version       Print version information
 
     Flags:
-          --cacert file              file to load root certificates from (default: use system certificates)
-          --cache-dir string         set the cache directory. (default: use system default cache directory)
-          --cleanup-cache            auto remove old cache directories
-      -h, --help                     help for restic
-          --json                     set output mode to JSON for commands that support it
-          --key-hint string          key ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
-          --limit-download int       limits downloads to a maximum rate in KiB/s. (default: unlimited)
-          --limit-upload int         limits uploads to a maximum rate in KiB/s. (default: unlimited)
-          --no-cache                 do not use a local cache
-          --no-lock                  do not lock the repo, this allows some operations on read-only repos
-      -o, --option key=value         set extended option (key=value, can be specified multiple times)
-      -p, --password-file string     read the repository password from a file (default: $RESTIC_PASSWORD_FILE)
-      -q, --quiet                    do not output comprehensive progress report
-      -r, --repo string              repository to backup to or restore from (default: $RESTIC_REPOSITORY)
-          --tls-client-cert string   path to a file containing PEM encoded TLS client certificate and private key
-      -v, --verbose n[=-1]           be verbose (specify --verbose multiple times or level n)
+          --cacert file                file to load root certificates from (default: use system certificates)
+          --cache-dir directory        set the cache directory. (default: use system default cache directory)
+          --cleanup-cache              auto remove old cache directories
+      -h, --help                       help for restic
+          --json                       set output mode to JSON for commands that support it
+          --key-hint key               key ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
+          --limit-download int         limits downloads to a maximum rate in KiB/s. (default: unlimited)
+          --limit-upload int           limits uploads to a maximum rate in KiB/s. (default: unlimited)
+          --no-cache                   do not use a local cache
+          --no-lock                    do not lock the repo, this allows some operations on read-only repos
+      -o, --option key=value           set extended option (key=value, can be specified multiple times)
+          --password-command command   specify a shell command to obtain a password (default: $RESTIC_PASSWORD_COMMAND)
+      -p, --password-file file         read the repository password from a file (default: $RESTIC_PASSWORD_FILE)
+      -q, --quiet                      do not output comprehensive progress report
+      -r, --repo repository            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
+          --tls-client-cert file       path to a file containing PEM encoded TLS client certificate and private key
+      -v, --verbose n                  be verbose (specify --verbose multiple times or level n)
 
     Use "restic [command] --help" for more information about a command.
 
@@ -73,42 +76,53 @@ command:
     The "backup" command creates a new snapshot and saves the files and directories
     given as the arguments.
 
+    EXIT STATUS
+    ===========
+
+    Exit status is 0 if the command was successful, and non-zero if there was any error.
+
+    Note that some issues such as unreadable or deleted files during backup
+    currently doesn't result in a non-zero error exit status.
+
     Usage:
       restic backup [flags] FILE/DIR [FILE/DIR] ...
 
     Flags:
-      -e, --exclude pattern                  exclude a pattern (can be specified multiple times)
-          --exclude-caches                   excludes cache directories that are marked with a CACHEDIR.TAG file. See http://bford.info/cachedir/spec.html for the Cache Directory Tagging Standard
-          --exclude-file file                read exclude patterns from a file (can be specified multiple times)
-          --exclude-if-present stringArray   takes filename[:header], exclude contents of directories containing filename (except filename itself) if header of that file is as provided (can be specified multiple times)
-          --files-from string                read the files to backup from file (can be combined with file args/can be specified multiple times)
-      -f, --force                            force re-reading the target files/directories (overrides the "parent" flag)
-      -h, --help                             help for backup
-          --hostname hostname                set the hostname for the snapshot manually. To prevent an expensive rescan use the "parent" flag
-      -x, --one-file-system                  exclude other file systems
-          --parent string                    use this parent snapshot (default: last snapshot in the repo that has the same target files/directories)
-          --stdin                            read backup from stdin
-          --stdin-filename string            file name to use when reading from stdin (default "stdin")
-          --tag tag                          add a tag for the new snapshot (can be specified multiple times)
-          --time string                      time of the backup (ex. '2012-11-01 22:08:41') (default: now)
-          --with-atime                       store the atime for all files and directories
+      -e, --exclude pattern                        exclude a pattern (can be specified multiple times)
+          --exclude-caches                         excludes cache directories that are marked with a CACHEDIR.TAG file. See http://bford.info/cachedir/spec.html for the Cache Directory Tagging Standard
+          --exclude-file file                      read exclude patterns from a file (can be specified multiple times)
+          --exclude-if-present filename[:header]   takes filename[:header], exclude contents of directories containing filename (except filename itself) if header of that file is as provided (can be specified multiple times)
+          --files-from file                        read the files to backup from file (can be combined with file args/can be specified multiple times)
+      -f, --force                                  force re-reading the target files/directories (overrides the "parent" flag)
+      -h, --help                                   help for backup
+      -H, --host hostname                          set the hostname for the snapshot manually. To prevent an expensive rescan use the "parent" flag
+          --iexclude pattern                       same as --exclude pattern but ignores the casing of filenames
+          --ignore-inode                           ignore inode number changes when checking for modified files
+      -x, --one-file-system                        exclude other file systems
+          --parent snapshot                        use this parent snapshot (default: last snapshot in the repo that has the same target files/directories)
+          --stdin                                  read backup from stdin
+          --stdin-filename filename                filename to use when reading from stdin (default "stdin")
+          --tag tag                                add a tag for the new snapshot (can be specified multiple times)
+          --time time                              time of the backup (ex. '2012-11-01 22:08:41') (default: now)
+          --with-atime                             store the atime for all files and directories
 
     Global Flags:
-          --cacert file              file to load root certificates from (default: use system certificates)
-          --cache-dir string         set the cache directory. (default: use system default cache directory)
-          --cleanup-cache            auto remove old cache directories
-          --json                     set output mode to JSON for commands that support it
-          --key-hint string          key ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
-          --limit-download int       limits downloads to a maximum rate in KiB/s. (default: unlimited)
-          --limit-upload int         limits uploads to a maximum rate in KiB/s. (default: unlimited)
-          --no-cache                 do not use a local cache
-          --no-lock                  do not lock the repo, this allows some operations on read-only repos
-      -o, --option key=value         set extended option (key=value, can be specified multiple times)
-      -p, --password-file string     read the repository password from a file (default: $RESTIC_PASSWORD_FILE)
-      -q, --quiet                    do not output comprehensive progress report
-      -r, --repo string              repository to backup to or restore from (default: $RESTIC_REPOSITORY)
-          --tls-client-cert string   path to a file containing PEM encoded TLS client certificate and private key
-      -v, --verbose n[=-1]           be verbose (specify --verbose multiple times or level n)
+          --cacert file                file to load root certificates from (default: use system certificates)
+          --cache-dir directory        set the cache directory. (default: use system default cache directory)
+          --cleanup-cache              auto remove old cache directories
+          --json                       set output mode to JSON for commands that support it
+          --key-hint key               key ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
+          --limit-download int         limits downloads to a maximum rate in KiB/s. (default: unlimited)
+          --limit-upload int           limits uploads to a maximum rate in KiB/s. (default: unlimited)
+          --no-cache                   do not use a local cache
+          --no-lock                    do not lock the repo, this allows some operations on read-only repos
+      -o, --option key=value           set extended option (key=value, can be specified multiple times)
+          --password-command command   specify a shell command to obtain a password (default: $RESTIC_PASSWORD_COMMAND)
+      -p, --password-file file         read the repository password from a file (default: $RESTIC_PASSWORD_FILE)
+      -q, --quiet                      do not output comprehensive progress report
+      -r, --repo repository            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
+          --tls-client-cert file       path to a file containing PEM encoded TLS client certificate and private key
+      -v, --verbose n                  be verbose (specify --verbose multiple times or level n)
 
 Subcommand that support showing progress information such as ``backup``,
 ``check`` and ``prune`` will do so unless the quiet flag ``-q`` or
