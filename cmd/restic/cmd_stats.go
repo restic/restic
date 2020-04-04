@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/restic/restic/internal/errors"
@@ -149,7 +148,7 @@ func runStats(gopts GlobalOptions, args []string) error {
 	}
 
 	if gopts.JSON {
-		err = json.NewEncoder(os.Stdout).Encode(stats)
+		err = json.NewEncoder(globalOptions.stdout).Encode(stats)
 		if err != nil {
 			return fmt.Errorf("encoding output: %v", err)
 		}

@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"os"
 
 	"github.com/spf13/cobra"
 
@@ -83,9 +82,8 @@ func runCat(gopts GlobalOptions, args []string) error {
 			return err
 		}
 
-		_, err = os.Stdout.Write(append(buf, '\n'))
-		return err
-
+		Println(string(buf))
+		return nil
 	case "snapshot":
 		sn := &restic.Snapshot{}
 		err = repo.LoadJSONUnpacked(gopts.ctx, restic.SnapshotFile, id, sn)
@@ -162,7 +160,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 			Warnf("Warning: hash of data does not match ID, want\n  %v\ngot:\n  %v\n", id.String(), hash.String())
 		}
 
-		_, err = os.Stdout.Write(buf)
+		_, err = globalOptions.stdout.Write(buf)
 		return err
 
 	case "blob":
@@ -177,7 +175,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 				return err
 			}
 
-			_, err = os.Stdout.Write(buf)
+			_, err = globalOptions.stdout.Write(buf)
 			return err
 		}
 
