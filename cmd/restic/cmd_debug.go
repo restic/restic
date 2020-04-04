@@ -89,7 +89,7 @@ func printPacks(repo *repository.Repository, wr io.Writer) error {
 
 		blobs, err := pack.List(repo.Key(), restic.ReaderAt(repo.Backend(), h), size)
 		if err != nil {
-			fmt.Fprintf(globalOptions.stderr, "error for pack %v: %v\n", id.Str(), err)
+			Warnf("error for pack %v: %v\n", id.Str(), err)
 			return nil
 		}
 
@@ -112,7 +112,7 @@ func printPacks(repo *repository.Repository, wr io.Writer) error {
 
 func dumpIndexes(repo restic.Repository, wr io.Writer) error {
 	return repo.List(context.TODO(), restic.IndexFile, func(id restic.ID, size int64) error {
-		fmt.Printf("index_id: %v\n", id)
+		Printf("index_id: %v\n", id)
 
 		idx, err := repository.LoadIndex(context.TODO(), repo, id)
 		if err != nil {
@@ -151,13 +151,13 @@ func runDebugDump(gopts GlobalOptions, args []string) error {
 	case "packs":
 		return printPacks(repo, gopts.stdout)
 	case "all":
-		fmt.Printf("snapshots:\n")
+		Printf("snapshots:\n")
 		err := debugPrintSnapshots(repo, gopts.stdout)
 		if err != nil {
 			return err
 		}
 
-		fmt.Printf("\nindexes:\n")
+		Printf("\nindexes:\n")
 		err = dumpIndexes(repo, gopts.stdout)
 		if err != nil {
 			return err

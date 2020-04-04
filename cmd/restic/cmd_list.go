@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/restic"
@@ -69,7 +67,7 @@ func runList(cmd *cobra.Command, opts GlobalOptions, args []string) error {
 
 		for _, pack := range idx.Packs {
 			for _, entry := range pack.Entries {
-				fmt.Printf("%v %v\n", entry.Type, entry.ID)
+				Printf("%v %v\n", entry.Type, entry.ID)
 			}
 		}
 
