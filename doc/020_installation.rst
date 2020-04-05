@@ -288,7 +288,7 @@ Restic can write out man pages and bash/zsh compatible autocompletion scripts:
 
     $ ./restic generate --help
 
-    The "generate" command writes automatically generated files like the man pages
+    The "generate" command writes automatically generated files (like the man pages
     and the auto-completion files for bash and zsh).
 
     Usage:

@@ -54,6 +54,13 @@ command and enter the same password twice:
    Remembering your password is important! If you lose it, you won't be
    able to access data stored in the repository.
 
+.. warning::
+
+   On Linux, storing the backup repository on a CIFS (SMB) share is not
+   recommended due to compatibility issues. Either use another backend
+   or set the environment variable `GODEBUG` to `asyncpreemptoff=1`.
+   Refer to GitHub issue #2659 for further explanations.
+
 SFTP
 ****
 
