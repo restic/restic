@@ -276,18 +276,16 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	Verbosef("will delete %d packs and rewrite %d packs, this frees %s\n",
 		len(removePacks), len(rewritePacks), formatBytes(uint64(removeBytes)))
 
-	var obsoletePacks restic.IDSet
 	if len(rewritePacks) != 0 {
+		var obsoletePacks restic.IDSet
 		bar = newProgressMax(!gopts.Quiet, uint64(len(rewritePacks)), "packs rewritten")
-		bar.Start()
 		obsoletePacks, err = repository.Repack(ctx, repo, rewritePacks, usedBlobs, bar)
 		if err != nil {
 			return err
 		}
-		bar.Done()
+		removePacks.Merge(obsoletePacks)
 	}
 
-	removePacks.Merge(obsoletePacks)
 
 	if err = rebuildIndex(ctx, repo, removePacks); err != nil {
 		return err
