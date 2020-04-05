@@ -50,7 +50,7 @@ func TestIndexNew(t *testing.T) {
 	repo, cleanup := createFilledRepo(t, 3, 0)
 	defer cleanup()
 
-	idx, invalid, err := New(context.TODO(), repo, restic.NewIDSet(), nil)
+	idx, invalid, err := New(context.TODO(), repo, nil)
 	if err != nil {
 		t.Fatalf("New() returned error %v", err)
 	}
@@ -116,7 +116,7 @@ func TestIndexNewListErrors(t *testing.T) {
 			Repository:   repo,
 			MaxListFiles: max,
 		}
-		idx, invalid, err := New(context.TODO(), errRepo, restic.NewIDSet(), nil)
+		idx, invalid, err := New(context.TODO(), errRepo, nil)
 		if err == nil {
 			t.Errorf("expected error not found, got nil")
 		}
@@ -140,7 +140,7 @@ func TestIndexNewPackErrors(t *testing.T) {
 			Repository: repo,
 			MaxPacks:   max,
 		}
-		idx, invalid, err := New(context.TODO(), errRepo, restic.NewIDSet(), nil)
+		idx, invalid, err := New(context.TODO(), errRepo, nil)
 		if err == nil {
 			t.Errorf("expected error not found, got nil")
 		}
@@ -170,7 +170,7 @@ func TestIndexLoad(t *testing.T) {
 
 	validateIndex(t, repo, loadIdx)
 
-	newIdx, _, err := New(context.TODO(), repo, restic.NewIDSet(), nil)
+	newIdx, _, err := New(context.TODO(), repo, nil)
 	if err != nil {
 		t.Fatalf("New() returned error %v", err)
 	}
@@ -234,7 +234,7 @@ func BenchmarkIndexNew(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		idx, _, err := New(context.TODO(), repo, restic.NewIDSet(), nil)
+		idx, _, err := New(context.TODO(), repo, nil)
 
 		if err != nil {
 			b.Fatalf("New() returned error %v", err)
@@ -251,7 +251,7 @@ func BenchmarkIndexSave(b *testing.B) {
 	repo, cleanup := repository.TestRepository(b)
 	defer cleanup()
 
-	idx, _, err := New(context.TODO(), repo, restic.NewIDSet(), nil)
+	idx, _, err := New(context.TODO(), repo, nil)
 	test.OK(b, err)
 
 	for i := 0; i < 8000; i++ {
@@ -284,7 +284,7 @@ func TestIndexDuplicateBlobs(t *testing.T) {
 	repo, cleanup := createFilledRepo(t, 3, 0.05)
 	defer cleanup()
 
-	idx, _, err := New(context.TODO(), repo, restic.NewIDSet(), nil)
+	idx, _, err := New(context.TODO(), repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -124,17 +124,51 @@ func findPacksForBlobs(t *testing.T, repo restic.Repository, blobs restic.BlobSe
 	return packs
 }
 
-func repack(t *testing.T, repo restic.Repository, packs restic.IDSet, blobs restic.BlobSet) {
-	repackedBlobs, err := repository.Repack(context.TODO(), repo, packs, blobs, nil)
+func listPacksSize(t *testing.T, repo restic.Repository) map[restic.ID]int64 {
+	list := make(map[restic.ID]int64)
+	err := repo.List(context.TODO(), restic.DataFile, func(id restic.ID, size int64) error {
+		list[id] = size
+		return nil
+	})
+
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	for id := range repackedBlobs {
+	return list
+}
+
+func repack(t *testing.T, repo restic.Repository, packs restic.IDSet, blobs restic.BlobSet) {
+	// list packs before
+	packsBefore := listPacksSize(t, repo)
+
+	newPacks, obsoletePacks, err := repository.Repack(context.TODO(), repo, packs, blobs, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for id := range obsoletePacks {
 		err = repo.Backend().Remove(context.TODO(), restic.Handle{Type: restic.DataFile, Name: id.String()})
 		if err != nil {
 			t.Fatal(err)
 		}
+	}
+
+	packsAfterwards := listPacksSize(t, repo)
+
+	for id, size := range packsAfterwards {
+		if _, ok := packsBefore[id]; ok {
+			continue
+		}
+		// new files must be contained in newPacks
+		if repSize, ok := newPacks[id]; !ok || size != repSize {
+			t.Fatalf("newPacks has wrong size for %v, expected %v, got %v", id, size, repSize)
+		}
+		delete(newPacks, id)
+	}
+
+	if len(newPacks) != 0 {
+		t.Fatalf("repack returned non-existing packs %v", newPacks)
 	}
 }
 
@@ -145,7 +179,7 @@ func saveIndex(t *testing.T, repo restic.Repository) {
 }
 
 func rebuildIndex(t *testing.T, repo restic.Repository) {
-	idx, _, err := index.New(context.TODO(), repo, restic.NewIDSet(), nil)
+	idx, _, err := index.New(context.TODO(), repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

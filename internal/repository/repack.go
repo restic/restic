@@ -16,10 +16,19 @@ import (
 // these packs. Each pack is loaded and the blobs listed in keepBlobs is saved
 // into a new pack. Returned is the list of obsolete packs which can then
 // be removed.
-func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet, p *restic.Progress) (obsoletePacks restic.IDSet, err error) {
+func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet, p *restic.Progress) (newPacks map[restic.ID]int64, obsoletePacks restic.IDSet, err error) {
 	debug.Log("repacking %d packs while keeping %d blobs", len(packs), len(keepBlobs))
 	p.Start()
 	defer p.Done()
+
+	newPacks = make(map[restic.ID]int64)
+	r := repo.(*Repository)
+	r.packHook = func(id restic.ID, size uint) {
+		newPacks[id] = int64(size)
+	}
+	defer func() {
+		r.packHook = nil
+	}()
 
 	for packID := range packs {
 		// load the complete pack into a temp file
@@ -27,23 +36,23 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 
 		tempfile, hash, packLength, err := DownloadAndHash(ctx, repo.Backend(), h)
 		if err != nil {
-			return nil, errors.Wrap(err, "Repack")
+			return nil, nil, errors.Wrap(err, "Repack")
 		}
 
 		debug.Log("pack %v loaded (%d bytes), hash %v", packID, packLength, hash)
 
 		if !packID.Equal(hash) {
-			return nil, errors.Errorf("hash does not match id: want %v, got %v", packID, hash)
+			return nil, nil, errors.Errorf("hash does not match id: want %v, got %v", packID, hash)
 		}
 
 		_, err = tempfile.Seek(0, 0)
 		if err != nil {
-			return nil, errors.Wrap(err, "Seek")
+			return nil, nil, errors.Wrap(err, "Seek")
 		}
 
 		blobs, err := pack.List(repo.Key(), tempfile, packLength)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		debug.Log("processing pack %v, blobs: %v", packID, len(blobs))
@@ -64,18 +73,18 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 
 			n, err := tempfile.ReadAt(buf, int64(entry.Offset))
 			if err != nil {
-				return nil, errors.Wrap(err, "ReadAt")
+				return nil, nil, errors.Wrap(err, "ReadAt")
 			}
 
 			if n != len(buf) {
-				return nil, errors.Errorf("read blob %v from %v: not enough bytes read, want %v, got %v",
+				return nil, nil, errors.Errorf("read blob %v from %v: not enough bytes read, want %v, got %v",
 					h, tempfile.Name(), len(buf), n)
 			}
 
 			nonce, ciphertext := buf[:repo.Key().NonceSize()], buf[repo.Key().NonceSize():]
 			plaintext, err := repo.Key().Open(ciphertext[:0], nonce, ciphertext, nil)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 
 			id := restic.Hash(plaintext)
@@ -88,7 +97,7 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 
 			_, err = repo.SaveBlob(ctx, entry.Type, plaintext, entry.ID)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 
 			debug.Log("  saved blob %v", entry.ID)
@@ -97,11 +106,11 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 		}
 
 		if err = tempfile.Close(); err != nil {
-			return nil, errors.Wrap(err, "Close")
+			return nil, nil, errors.Wrap(err, "Close")
 		}
 
 		if err = fs.RemoveIfExists(tempfile.Name()); err != nil {
-			return nil, errors.Wrap(err, "Remove")
+			return nil, nil, errors.Wrap(err, "Remove")
 		}
 		if p != nil {
 			p.Report(restic.Stat{Blobs: 1})
@@ -109,8 +118,8 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 	}
 
 	if err := repo.Flush(ctx); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return packs, nil
+	return newPacks, packs, nil
 }

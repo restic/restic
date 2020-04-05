@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -109,6 +110,26 @@ func mixedBlobs(list []restic.Blob) bool {
 	return false
 }
 
+type selectedPacksRepo struct {
+	restic.Repository
+	packs map[restic.ID]int64
+}
+
+func (r *selectedPacksRepo) List(ctx context.Context, t restic.FileType, fn func(restic.ID, int64) error) error {
+	if t == restic.DataFile {
+		for id, size := range r.packs {
+			fn(id, size)
+			select {
+			case <-ctx.Done():
+				return nil
+			default:
+			}
+		}
+		return nil
+	}
+	return r.Repository.List(ctx, t, fn)
+}
+
 func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	ctx := gopts.ctx
 
@@ -136,7 +157,7 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	Verbosef("building new index for repo\n")
 
 	bar := newProgressMax(!gopts.Quiet, uint64(stats.packs), "packs")
-	idx, invalidFiles, err := index.New(ctx, repo, restic.NewIDSet(), bar)
+	idx, invalidFiles, err := index.New(ctx, repo, bar)
 	if err != nil {
 		return err
 	}
@@ -276,18 +297,25 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	Verbosef("will delete %d packs and rewrite %d packs, this frees %s\n",
 		len(removePacks), len(rewritePacks), formatBytes(uint64(removeBytes)))
 
+	packSizes := make(map[restic.ID]int64)
 	if len(rewritePacks) != 0 {
 		var obsoletePacks restic.IDSet
 		bar = newProgressMax(!gopts.Quiet, uint64(len(rewritePacks)), "packs rewritten")
-		obsoletePacks, err = repository.Repack(ctx, repo, rewritePacks, usedBlobs, bar)
+		packSizes, obsoletePacks, err = repository.Repack(ctx, repo, rewritePacks, usedBlobs, bar)
 		if err != nil {
 			return err
 		}
 		removePacks.Merge(obsoletePacks)
 	}
 
+	for _, pack := range idx.Packs {
+		if removePacks.Has(pack.ID) {
+			continue
+		}
+		packSizes[pack.ID] = pack.Size
+	}
 
-	if err = rebuildIndex(ctx, repo, removePacks); err != nil {
+	if err = rebuildIndex(ctx, &selectedPacksRepo{repo, packSizes}); err != nil {
 		return err
 	}
 

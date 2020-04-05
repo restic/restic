@@ -48,7 +48,7 @@ type Lister interface {
 
 // New creates a new index for repo from scratch. InvalidFiles contains all IDs
 // of files  that cannot be listed successfully.
-func New(ctx context.Context, repo Lister, ignorePacks restic.IDSet, p *restic.Progress) (idx *Index, invalidFiles restic.IDs, err error) {
+func New(ctx context.Context, repo Lister, p *restic.Progress) (idx *Index, invalidFiles restic.IDs, err error) {
 	p.Start()
 	defer p.Done()
 
@@ -72,10 +72,6 @@ func New(ctx context.Context, repo Lister, ignorePacks restic.IDSet, p *restic.P
 	wg.Go(func() error {
 		defer close(inputCh)
 		return repo.List(ctx, restic.DataFile, func(id restic.ID, size int64) error {
-			if ignorePacks.Has(id) {
-				return nil
-			}
-
 			job := Job{
 				PackID: id,
 				Size:   size,

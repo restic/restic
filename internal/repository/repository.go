@@ -20,6 +20,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+type packListener func(id restic.ID, size uint)
+
 // Repository is used to access a repository in a backend.
 type Repository struct {
 	be      restic.Backend
@@ -29,8 +31,9 @@ type Repository struct {
 	idx     *MasterIndex
 	restic.Cache
 
-	treePM *packerManager
-	dataPM *packerManager
+	treePM   *packerManager
+	dataPM   *packerManager
+	packHook packListener
 }
 
 // New returns a new repository with backend be.
