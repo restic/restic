@@ -1086,6 +1086,58 @@ func TestPrune(t *testing.T) {
 	testRunCheck(t, env.gopts)
 }
 
+func verifyRepoFileList(t *testing.T, repo restic.Repository, filetype restic.FileType, files map[restic.ID]int64) {
+	fileMap := make(map[restic.ID]int64)
+	for id, size := range files {
+		fileMap[id] = size
+	}
+
+	repo.List(context.TODO(), filetype, func(id restic.ID, size int64) error {
+		if _, ok := fileMap[id]; !ok {
+			t.Fatalf("unexpected %v %v", filetype, id)
+		}
+		delete(fileMap, id)
+		return nil
+	})
+
+	if len(fileMap) != 0 {
+		t.Fatalf("left-over %v %v", filetype, fileMap)
+	}
+}
+
+func TestPrunePacksRepo(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	datafile := filepath.Join("..", "..", "internal", "checker", "testdata", "duplicate-packs-in-index-test-repo.tar.gz")
+	rtest.SetupTarTestFixture(t, env.base, datafile)
+
+	repo, err := OpenRepository(env.gopts)
+	if err != nil {
+		rtest.OK(t, err)
+	}
+
+	packs := make(map[restic.ID]int64)
+	repo.List(context.TODO(), restic.DataFile, func(id restic.ID, size int64) error {
+		id[0] ^= 0xff
+		packs[id] = size
+		return nil
+	})
+
+	repoMod := &selectedPacksRepo{
+		Repository: repo,
+		packs:      packs,
+	}
+
+	indexes := make(map[restic.ID]int64)
+	repo.List(context.TODO(), restic.IndexFile, func(id restic.ID, size int64) error {
+		indexes[id] = size
+		return nil
+	})
+	verifyRepoFileList(t, repoMod, restic.IndexFile, indexes)
+	verifyRepoFileList(t, repoMod, restic.DataFile, packs)
+}
+
 func TestHardLink(t *testing.T) {
 	// this test assumes a test set with a single directory containing hard linked files
 	env, cleanup := withTestEnvironment(t)
