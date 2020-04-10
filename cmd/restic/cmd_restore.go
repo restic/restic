@@ -128,7 +128,7 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	res, err := restorer.NewRestorer(repo, id)
+	res, err := restorer.NewRestorer(ctx, repo, id)
 	if err != nil {
 		Exitf(2, "creating restorer failed: %v\n", err)
 	}
