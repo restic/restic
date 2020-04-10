@@ -210,7 +210,7 @@ func runKey(gopts GlobalOptions, args []string) error {
 			return err
 		}
 
-		id, err := restic.Find(repo.Backend(), restic.KeyFile, args[1])
+		id, err := restic.Find(ctx, repo.Backend(), restic.KeyFile, args[1])
 		if err != nil {
 			return err
 		}

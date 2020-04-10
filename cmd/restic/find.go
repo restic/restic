@@ -29,7 +29,7 @@ func FindFilteredSnapshots(ctx context.Context, repo *repository.Repository, hos
 						continue
 					}
 				} else {
-					id, err = restic.FindSnapshot(repo, s)
+					id, err = restic.FindSnapshot(ctx, repo, s)
 					if err != nil {
 						Warnf("Ignoring %q, it is not a snapshot id\n", s)
 						continue

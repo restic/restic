@@ -72,8 +72,8 @@ func (r *Repository) UseCache(c *cache.Cache) {
 
 // PrefixLength returns the number of bytes required so that all prefixes of
 // all IDs of type t are unique.
-func (r *Repository) PrefixLength(t restic.FileType) (int, error) {
-	return restic.PrefixLength(r.be, t)
+func (r *Repository) PrefixLength(ctx context.Context, t restic.FileType) (int, error) {
+	return restic.PrefixLength(ctx, r.be, t)
 }
 
 // LoadAndDecrypt loads and decrypts the file with the given type and ID, using

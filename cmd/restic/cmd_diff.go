@@ -53,7 +53,7 @@ func init() {
 }
 
 func loadSnapshot(ctx context.Context, repo *repository.Repository, desc string) (*restic.Snapshot, error) {
-	id, err := restic.FindSnapshot(repo, desc)
+	id, err := restic.FindSnapshot(ctx, repo, desc)
 	if err != nil {
 		return nil, err
 	}

@@ -17,10 +17,10 @@ var ErrMultipleIDMatches = errors.New("multiple IDs with prefix found")
 // Find loads the list of all files of type t and searches for names which
 // start with prefix. If none is found, nil and ErrNoIDPrefixFound is returned.
 // If more than one is found, nil and ErrMultipleIDMatches is returned.
-func Find(be Lister, t FileType, prefix string) (string, error) {
+func Find(ctx context.Context, be Lister, t FileType, prefix string) (string, error) {
 	match := ""
 
-	ctx, cancel := context.WithCancel(context.TODO())
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	err := be.List(ctx, t, func(fi FileInfo) error {
@@ -50,11 +50,11 @@ const minPrefixLength = 8
 
 // PrefixLength returns the number of bytes required so that all prefixes of
 // all names of type t are unique.
-func PrefixLength(be Lister, t FileType) (int, error) {
+func PrefixLength(ctx context.Context, be Lister, t FileType) (int, error) {
 	// load all IDs of the given type
 	list := make([]string, 0, 100)
 
-	ctx, cancel := context.WithCancel(context.TODO())
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	err := be.List(ctx, t, func(fi FileInfo) error {
