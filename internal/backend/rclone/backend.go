@@ -267,6 +267,7 @@ func Open(cfg Config, lim limiter.Limiter) (*Backend, error) {
 
 	restBackend, err := rest.Open(restConfig, debug.RoundTripper(be.tr))
 	if err != nil {
+		_ = be.Close()
 		return nil, err
 	}
 
