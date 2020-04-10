@@ -57,8 +57,8 @@ var (
 
 // createMasterKey creates a new master key in the given backend and encrypts
 // it with the password.
-func createMasterKey(s *Repository, password string) (*Key, error) {
-	return AddKey(context.TODO(), s, password, "", "", nil)
+func createMasterKey(ctx context.Context, s *Repository, password string) (*Key, error) {
+	return AddKey(ctx, s, password, "", "", nil)
 }
 
 // OpenKey tries do decrypt the key specified by name with the given password.

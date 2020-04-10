@@ -638,7 +638,7 @@ func (r *Repository) Init(ctx context.Context, password string, chunkerPolynomia
 // init creates a new master key with the supplied password and uses it to save
 // the config into the repo.
 func (r *Repository) init(ctx context.Context, password string, cfg restic.Config) error {
-	key, err := createMasterKey(r, password)
+	key, err := createMasterKey(ctx, r, password)
 	if err != nil {
 		return err
 	}
