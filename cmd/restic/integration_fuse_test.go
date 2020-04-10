@@ -6,7 +6,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -122,7 +121,7 @@ func checkSnapshots(t testing.TB, global GlobalOptions, repo *repository.Reposit
 	}
 
 	for _, id := range snapshotIDs {
-		snapshot, err := restic.LoadSnapshot(context.TODO(), repo, id)
+		snapshot, err := restic.LoadSnapshot(global.ctx, repo, id)
 		rtest.OK(t, err)
 
 		ts := snapshot.Time.Format(time.RFC3339)
