@@ -63,13 +63,13 @@ func Open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 }
 
 // Create creates a new REST on server configured in config.
-func Create(cfg Config, rt http.RoundTripper) (*Backend, error) {
+func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, error) {
 	be, err := Open(cfg, rt)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = be.Stat(context.TODO(), restic.Handle{Type: restic.ConfigFile})
+	_, err = be.Stat(ctx, restic.Handle{Type: restic.ConfigFile})
 	if err == nil {
 		return nil, errors.Fatal("config file already exists")
 	}

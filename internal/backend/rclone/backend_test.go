@@ -1,6 +1,7 @@
 package rclone_test
 
 import (
+	"context"
 	"os/exec"
 	"testing"
 
@@ -27,7 +28,7 @@ func newTestSuite(t testing.TB) *test.Suite {
 		Create: func(config interface{}) (restic.Backend, error) {
 			t.Logf("Create()")
 			cfg := config.(rclone.Config)
-			be, err := rclone.Create(cfg)
+			be, err := rclone.Create(context.TODO(), cfg)
 			if e, ok := errors.Cause(err).(*exec.Error); ok && e.Err == exec.ErrNotFound {
 				t.Skipf("program %q not found", e.Name)
 				return nil, nil
