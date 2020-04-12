@@ -85,6 +85,8 @@ var globalOptions = GlobalOptions{
 	stderr: os.Stderr,
 }
 
+var isReadingPassword bool
+
 func init() {
 	var cancel context.CancelFunc
 	globalOptions.ctx, cancel = context.WithCancel(context.Background())
@@ -146,7 +148,10 @@ func stdoutTerminalWidth() int {
 }
 
 // restoreTerminal installs a cleanup handler that restores the previous
-// terminal state on exit.
+// terminal state on exit. This handler is only intended to restore the
+// terminal configuration if restic exits after receiving a signal. A regular
+// program execution must revert changes to the terminal configuration itself.
+// The terminal configuration is only restored while reading a password.
 func restoreTerminal() {
 	if !stdoutIsTerminal() {
 		return
@@ -160,9 +165,17 @@ func restoreTerminal() {
 	}
 
 	AddCleanupHandler(func() error {
+		// Restoring the terminal configuration while restic runs in the
+		// background, causes restic to get stopped on unix systems with
+		// a SIGTTOU signal. Thus only restore the terminal settings if
+		// they might have been modified, which is the case while reading
+		// a password.
+		if !isReadingPassword {
+			return nil
+		}
 		err := checkErrno(terminal.Restore(fd, state))
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "unable to get restore terminal state: %#+v\n", err)
+			fmt.Fprintf(os.Stderr, "unable to restore terminal state: %v\n", err)
 		}
 		return err
 	})
@@ -302,7 +315,9 @@ func readPassword(in io.Reader) (password string, err error) {
 // password.
 func readPasswordTerminal(in *os.File, out io.Writer, prompt string) (password string, err error) {
 	fmt.Fprint(out, prompt)
+	isReadingPassword = true
 	buf, err := terminal.ReadPassword(int(in.Fd()))
+	isReadingPassword = false
 	fmt.Fprintln(out)
 	if err != nil {
 		return "", errors.Wrap(err, "ReadPassword")
