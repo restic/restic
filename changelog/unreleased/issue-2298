@@ -1,0 +1,8 @@
+Bugfix: Do not hang when run as a background job
+
+Restic did hang on exit while restoring the terminal configuration when it was
+started as a background job, for example using `restic ... &`. This has been
+fixed by only restoring the terminal configuration when restic is interrupted
+while reading a password from the terminal.
+
+https://github.com/restic/restic/issues/2298
