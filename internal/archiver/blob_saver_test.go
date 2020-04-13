@@ -38,12 +38,12 @@ func TestBlobSaver(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	var tmb tomb.Tomb
+	tmb, ctx := tomb.WithContext(ctx)
 	saver := &saveFail{
 		idx: repository.NewIndex(),
 	}
 
-	b := NewBlobSaver(ctx, &tmb, saver, uint(runtime.NumCPU()))
+	b := NewBlobSaver(ctx, tmb, saver, uint(runtime.NumCPU()))
 
 	var results []FutureBlob
 
@@ -84,13 +84,13 @@ func TestBlobSaverError(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			var tmb tomb.Tomb
+			tmb, ctx := tomb.WithContext(ctx)
 			saver := &saveFail{
 				idx:    repository.NewIndex(),
 				failAt: int32(test.failAt),
 			}
 
-			b := NewBlobSaver(ctx, &tmb, saver, uint(runtime.NumCPU()))
+			b := NewBlobSaver(ctx, tmb, saver, uint(runtime.NumCPU()))
 
 			var results []FutureBlob
 

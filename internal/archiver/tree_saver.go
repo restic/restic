@@ -42,8 +42,7 @@ type TreeSaver struct {
 	saveTree func(context.Context, *restic.Tree) (restic.ID, ItemStats, error)
 	errFn    ErrorFunc
 
-	ch   chan<- saveTreeJob
-	done <-chan struct{}
+	ch chan<- saveTreeJob
 }
 
 // NewTreeSaver returns a new tree saver. A worker pool with treeWorkers is
@@ -53,7 +52,6 @@ func NewTreeSaver(ctx context.Context, t *tomb.Tomb, treeWorkers uint, saveTree 
 
 	s := &TreeSaver{
 		ch:       ch,
-		done:     t.Dying(),
 		saveTree: saveTree,
 		errFn:    errFn,
 	}
@@ -78,10 +76,6 @@ func (s *TreeSaver) Save(ctx context.Context, snPath string, node *restic.Node, 
 	}
 	select {
 	case s.ch <- job:
-	case <-s.done:
-		debug.Log("not saving tree, TreeSaver is done")
-		close(ch)
-		return FutureTree{ch: ch}
 	case <-ctx.Done():
 		debug.Log("not saving tree, context is cancelled")
 		close(ch)

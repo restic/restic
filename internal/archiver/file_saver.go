@@ -58,8 +58,7 @@ type FileSaver struct {
 
 	pol chunker.Pol
 
-	ch   chan<- saveFileJob
-	done <-chan struct{}
+	ch chan<- saveFileJob
 
 	CompleteBlob func(filename string, bytes uint64)
 
@@ -80,7 +79,6 @@ func NewFileSaver(ctx context.Context, t *tomb.Tomb, save SaveBlobFn, pol chunke
 		saveFilePool: NewBufferPool(ctx, int(poolSize), chunker.MaxSize),
 		pol:          pol,
 		ch:           ch,
-		done:         t.Dying(),
 
 		CompleteBlob: func(string, uint64) {},
 	}
@@ -113,11 +111,6 @@ func (s *FileSaver) Save(ctx context.Context, snPath string, file fs.File, fi os
 
 	select {
 	case s.ch <- job:
-	case <-s.done:
-		debug.Log("not sending job, FileSaver is done")
-		_ = file.Close()
-		close(ch)
-		return FutureFile{ch: ch}
 	case <-ctx.Done():
 		debug.Log("not sending job, context is cancelled: %v", ctx.Err())
 		_ = file.Close()

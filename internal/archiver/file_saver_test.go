@@ -30,8 +30,8 @@ func createTestFiles(t testing.TB, num int) (files []string, cleanup func()) {
 	return files, cleanup
 }
 
-func startFileSaver(ctx context.Context, t testing.TB) (*FileSaver, *tomb.Tomb) {
-	var tmb tomb.Tomb
+func startFileSaver(ctx context.Context, t testing.TB) (*FileSaver, context.Context, *tomb.Tomb) {
+	tmb, ctx := tomb.WithContext(ctx)
 
 	saveBlob := func(ctx context.Context, tpe restic.BlobType, buf *Buffer) FutureBlob {
 		ch := make(chan saveBlobResponse)
@@ -45,10 +45,10 @@ func startFileSaver(ctx context.Context, t testing.TB) (*FileSaver, *tomb.Tomb) 
 		t.Fatal(err)
 	}
 
-	s := NewFileSaver(ctx, &tmb, saveBlob, pol, workers, workers)
+	s := NewFileSaver(ctx, tmb, saveBlob, pol, workers, workers)
 	s.NodeFromFileInfo = restic.NodeFromFileInfo
 
-	return s, &tmb
+	return s, ctx, tmb
 }
 
 func TestFileSaver(t *testing.T) {
@@ -62,7 +62,7 @@ func TestFileSaver(t *testing.T) {
 	completeFn := func(*restic.Node, ItemStats) {}
 
 	testFs := fs.Local{}
-	s, tmb := startFileSaver(ctx, t)
+	s, ctx, tmb := startFileSaver(ctx, t)
 
 	var results []FutureFile
 
