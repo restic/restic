@@ -717,7 +717,7 @@ func resolveRelativeTargets(filesys fs.FS, targets []string) ([]string, error) {
 
 // SnapshotOptions collect attributes for a new snapshot.
 type SnapshotOptions struct {
-	Tags           []string
+	Tags           restic.TagList
 	Hostname       string
 	Excludes       []string
 	Time           time.Time
