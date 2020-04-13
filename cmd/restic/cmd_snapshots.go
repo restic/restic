@@ -47,7 +47,7 @@ func init() {
 
 	f := cmdSnapshots.Flags()
 	f.StringArrayVarP(&snapshotOptions.Hosts, "host", "H", nil, "only consider snapshots for this `host` (can be specified multiple times)")
-	f.Var(&snapshotOptions.Tags, "tag", "only consider snapshots which include this `taglist` (can be specified multiple times)")
+	f.Var(&snapshotOptions.Tags, "tag", "only consider snapshots which include this `taglist` in the format `tag[,tag,...]` (can be specified multiple times)")
 	f.StringArrayVar(&snapshotOptions.Paths, "path", nil, "only consider snapshots for this `path` (can be specified multiple times)")
 	f.BoolVarP(&snapshotOptions.Compact, "compact", "c", false, "use compact output format")
 	f.BoolVar(&snapshotOptions.Last, "last", false, "only show the last snapshot for each host and path")
