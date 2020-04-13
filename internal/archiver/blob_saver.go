@@ -22,8 +22,7 @@ type BlobSaver struct {
 	m          sync.Mutex
 	knownBlobs restic.BlobSet
 
-	ch   chan<- saveBlobJob
-	done <-chan struct{}
+	ch chan<- saveBlobJob
 }
 
 // NewBlobSaver returns a new blob. A worker pool is started, it is stopped
@@ -34,7 +33,6 @@ func NewBlobSaver(ctx context.Context, t *tomb.Tomb, repo Saver, workers uint) *
 		repo:       repo,
 		knownBlobs: restic.NewBlobSet(),
 		ch:         ch,
-		done:       t.Dying(),
 	}
 
 	for i := uint(0); i < workers; i++ {
@@ -53,10 +51,6 @@ func (s *BlobSaver) Save(ctx context.Context, t restic.BlobType, buf *Buffer) Fu
 	ch := make(chan saveBlobResponse, 1)
 	select {
 	case s.ch <- saveBlobJob{BlobType: t, buf: buf, ch: ch}:
-	case <-s.done:
-		debug.Log("not sending job, BlobSaver is done")
-		close(ch)
-		return FutureBlob{ch: ch}
 	case <-ctx.Done():
 		debug.Log("not sending job, context is cancelled")
 		close(ch)
