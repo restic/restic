@@ -1,0 +1,6 @@
+Bugfix: Handle comma-separated list tags when using backup command
+
+Creating a backup by specifying comma-separated tags created a backup with this concatenated list as a tag.
+For example `restic backup --tag foo,bar` creates a new snapshot with one "foo,bar" tag instead of two tags, one "foo" and one "bar". Fixed now.
+
+https://github.com/restic/restic/issues/2688

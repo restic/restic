@@ -102,7 +102,7 @@ command:
           --parent snapshot                        use this parent snapshot (default: last snapshot in the repo that has the same target files/directories)
           --stdin                                  read backup from stdin
           --stdin-filename filename                filename to use when reading from stdin (default "stdin")
-          --tag tag                                add a tag for the new snapshot (can be specified multiple times)
+          --tag tag                                add `tags` for the new snapshot in the format `tag[,tag,...]` (can be specified multiple times)
           --time time                              time of the backup (ex. '2012-11-01 22:08:41') (default: now)
           --with-atime                             store the atime for all files and directories
 
