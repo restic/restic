@@ -15,13 +15,14 @@ type Writer struct {
 func NewWriter(w io.Writer, h hash.Hash) *Writer {
 	return &Writer{
 		h: h,
-		w: io.MultiWriter(w, h),
+		w: w,
 	}
 }
 
 // Write wraps the write method of the underlying writer and also hashes all data.
 func (h *Writer) Write(p []byte) (int, error) {
 	n, err := h.w.Write(p)
+	h.h.Write(p[:n])
 	return n, err
 }
 
