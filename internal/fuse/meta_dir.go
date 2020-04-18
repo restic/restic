@@ -42,11 +42,9 @@ func NewMetaDir(root *Root, inode uint64, entries map[string]fs.Node) *MetaDir {
 func (d *MetaDir) Attr(ctx context.Context, attr *fuse.Attr) error {
 	attr.Inode = d.inode
 	attr.Mode = os.ModeDir | 0555
+	attr.Uid = d.root.uid
+	attr.Gid = d.root.gid
 
-	if !d.root.cfg.OwnerIsRoot {
-		attr.Uid = uint32(os.Getuid())
-		attr.Gid = uint32(os.Getgid())
-	}
 	debug.Log("attr: %v", attr)
 	return nil
 }

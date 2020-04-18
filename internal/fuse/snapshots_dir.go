@@ -168,11 +168,9 @@ func NewTagsDir(root *Root, inode uint64) *TagsDir {
 func (d *SnapshotsDir) Attr(ctx context.Context, attr *fuse.Attr) error {
 	attr.Inode = d.inode
 	attr.Mode = os.ModeDir | 0555
+	attr.Uid = d.root.uid
+	attr.Gid = d.root.gid
 
-	if !d.root.cfg.OwnerIsRoot {
-		attr.Uid = uint32(os.Getuid())
-		attr.Gid = uint32(os.Getgid())
-	}
 	debug.Log("attr: %v", attr)
 	return nil
 }
@@ -181,11 +179,9 @@ func (d *SnapshotsDir) Attr(ctx context.Context, attr *fuse.Attr) error {
 func (d *SnapshotsIDSDir) Attr(ctx context.Context, attr *fuse.Attr) error {
 	attr.Inode = d.inode
 	attr.Mode = os.ModeDir | 0555
+	attr.Uid = d.root.uid
+	attr.Gid = d.root.gid
 
-	if !d.root.cfg.OwnerIsRoot {
-		attr.Uid = uint32(os.Getuid())
-		attr.Gid = uint32(os.Getgid())
-	}
 	debug.Log("attr: %v", attr)
 	return nil
 }
@@ -194,11 +190,9 @@ func (d *SnapshotsIDSDir) Attr(ctx context.Context, attr *fuse.Attr) error {
 func (d *HostsDir) Attr(ctx context.Context, attr *fuse.Attr) error {
 	attr.Inode = d.inode
 	attr.Mode = os.ModeDir | 0555
+	attr.Uid = d.root.uid
+	attr.Gid = d.root.gid
 
-	if !d.root.cfg.OwnerIsRoot {
-		attr.Uid = uint32(os.Getuid())
-		attr.Gid = uint32(os.Getgid())
-	}
 	debug.Log("attr: %v", attr)
 	return nil
 }
@@ -207,11 +201,9 @@ func (d *HostsDir) Attr(ctx context.Context, attr *fuse.Attr) error {
 func (d *TagsDir) Attr(ctx context.Context, attr *fuse.Attr) error {
 	attr.Inode = d.inode
 	attr.Mode = os.ModeDir | 0555
+	attr.Uid = d.root.uid
+	attr.Gid = d.root.gid
 
-	if !d.root.cfg.OwnerIsRoot {
-		attr.Uid = uint32(os.Getuid())
-		attr.Gid = uint32(os.Getgid())
-	}
 	debug.Log("attr: %v", attr)
 	return nil
 }
@@ -437,11 +429,8 @@ func (l *snapshotLink) Readlink(ctx context.Context, req *fuse.ReadlinkRequest) 
 func (l *snapshotLink) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Inode = l.inode
 	a.Mode = os.ModeSymlink | 0777
-
-	if !l.root.cfg.OwnerIsRoot {
-		a.Uid = uint32(os.Getuid())
-		a.Gid = uint32(os.Getgid())
-	}
+	a.Uid = l.root.uid
+	a.Gid = l.root.gid
 	a.Atime = l.snapshot.Time
 	a.Ctime = l.snapshot.Time
 	a.Mtime = l.snapshot.Time

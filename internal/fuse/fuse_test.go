@@ -8,6 +8,7 @@ package fuse
 import (
 	"bytes"
 	"math/rand"
+	"os"
 	"testing"
 	"time"
 
@@ -151,4 +152,45 @@ func TestFuseFile(t *testing.T) {
 	}
 
 	rtest.OK(t, f.Release(ctx, nil))
+}
+
+// Test top-level directories for their UID and GID.
+func TestTopUidGid(t *testing.T) {
+	repo, cleanup := repository.TestRepository(t)
+	defer cleanup()
+
+	restic.TestCreateSnapshot(t, repo, time.Unix(1460289341, 207401672), 0, 0)
+
+	testTopUidGid(t, Config{}, repo, uint32(os.Getuid()), uint32(os.Getgid()))
+	testTopUidGid(t, Config{OwnerIsRoot: true}, repo, 0, 0)
+}
+
+func testTopUidGid(t *testing.T, cfg Config, repo restic.Repository, uid, gid uint32) {
+	t.Helper()
+
+	ctx := context.Background()
+	root, err := NewRoot(ctx, repo, cfg)
+	rtest.OK(t, err)
+
+	var attr fuse.Attr
+	err = root.Attr(ctx, &attr)
+	rtest.OK(t, err)
+	rtest.Equals(t, uid, attr.Uid)
+	rtest.Equals(t, gid, attr.Gid)
+
+	idsdir, err := root.Lookup(ctx, "ids")
+	rtest.OK(t, err)
+
+	err = idsdir.Attr(ctx, &attr)
+	rtest.OK(t, err)
+	rtest.Equals(t, uid, attr.Uid)
+	rtest.Equals(t, gid, attr.Gid)
+
+	snapID := loadFirstSnapshot(t, repo).ID().Str()
+	snapshotdir, err := idsdir.(fs.NodeStringLookuper).Lookup(ctx, snapID)
+
+	err = snapshotdir.Attr(ctx, &attr)
+	rtest.OK(t, err)
+	rtest.Equals(t, uid, attr.Uid)
+	rtest.Equals(t, gid, attr.Gid)
 }
