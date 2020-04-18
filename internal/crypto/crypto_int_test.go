@@ -164,7 +164,7 @@ func TestCrypto(t *testing.T) {
 	}
 }
 
-func TestNonceVadlid(t *testing.T) {
+func TestNonceValid(t *testing.T) {
 	nonce := make([]byte, ivSize)
 
 	if validNonce(nonce) {
