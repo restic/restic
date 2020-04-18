@@ -157,13 +157,13 @@ func TestUnreferencedBlobs(t *testing.T) {
 	}
 	test.OK(t, repo.Backend().Remove(context.TODO(), snapshotHandle))
 
-	unusedBlobsBySnapshot := restic.IDs{
-		restic.TestParseID("58c748bbe2929fdf30c73262bd8313fe828f8925b05d1d4a87fe109082acb849"),
-		restic.TestParseID("988a272ab9768182abfd1fe7d7a7b68967825f0b861d3b36156795832c772235"),
-		restic.TestParseID("c01952de4d91da1b1b80bc6e06eaa4ec21523f4853b69dc8231708b9b7ec62d8"),
-		restic.TestParseID("bec3a53d7dc737f9a9bee68b107ec9e8ad722019f649b34d474b9982c3a3fec7"),
-		restic.TestParseID("2a6f01e5e92d8343c4c6b78b51c5a4dc9c39d42c04e26088c7614b13d8d0559d"),
-		restic.TestParseID("18b51b327df9391732ba7aaf841a4885f350d8a557b2da8352c9acf8898e3f10"),
+	unusedBlobsBySnapshot := restic.BlobHandles{
+		restic.TestParseHandle("58c748bbe2929fdf30c73262bd8313fe828f8925b05d1d4a87fe109082acb849", restic.DataBlob),
+		restic.TestParseHandle("988a272ab9768182abfd1fe7d7a7b68967825f0b861d3b36156795832c772235", restic.DataBlob),
+		restic.TestParseHandle("c01952de4d91da1b1b80bc6e06eaa4ec21523f4853b69dc8231708b9b7ec62d8", restic.TreeBlob),
+		restic.TestParseHandle("bec3a53d7dc737f9a9bee68b107ec9e8ad722019f649b34d474b9982c3a3fec7", restic.TreeBlob),
+		restic.TestParseHandle("2a6f01e5e92d8343c4c6b78b51c5a4dc9c39d42c04e26088c7614b13d8d0559d", restic.TreeBlob),
+		restic.TestParseHandle("18b51b327df9391732ba7aaf841a4885f350d8a557b2da8352c9acf8898e3f10", restic.DataBlob),
 	}
 
 	sort.Sort(unusedBlobsBySnapshot)

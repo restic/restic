@@ -25,7 +25,7 @@ type Checker struct {
 	blobRefs struct {
 		sync.Mutex
 		// see flags below
-		M map[restic.ID]blobStatus
+		M map[restic.BlobHandle]blobStatus
 	}
 
 	masterIndex *repository.MasterIndex
@@ -36,9 +36,8 @@ type Checker struct {
 type blobStatus uint8
 
 const (
-	blobExists blobStatus = 1 << iota
-	blobReferenced
-	treeProcessed
+	blobStatusExists blobStatus = 1 << iota
+	blobStatusReferenced
 )
 
 // New returns a new checker which runs on repo.
@@ -49,7 +48,7 @@ func New(repo restic.Repository) *Checker {
 		repo:        repo,
 	}
 
-	c.blobRefs.M = make(map[restic.ID]blobStatus)
+	c.blobRefs.M = make(map[restic.BlobHandle]blobStatus)
 
 	return c
 }
@@ -163,7 +162,8 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 			cnt := 0
 			for blob := range res.Index.Each(ctx) {
 				c.packs.Insert(blob.PackID)
-				c.blobRefs.M[blob.ID] = blobExists
+				h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
+				c.blobRefs.M[h] = blobStatusExists
 				cnt++
 
 				if _, ok := packToIndex[blob.PackID]; !ok {
@@ -500,9 +500,10 @@ func (c *Checker) filterTrees(ctx context.Context, backlog restic.IDs, loaderCha
 			// use a separate flag for processed trees to ensure that check still processes trees
 			// even when a file references a tree blob
 			c.blobRefs.Lock()
-			blobFlags := c.blobRefs.M[nextTreeID]
+			h := restic.BlobHandle{ID: nextTreeID, Type: restic.TreeBlob}
+			status := c.blobRefs.M[h]
 			c.blobRefs.Unlock()
-			if (blobFlags & treeProcessed) != 0 {
+			if (status & blobStatusReferenced) != 0 {
 				continue
 			}
 
@@ -522,7 +523,8 @@ func (c *Checker) filterTrees(ctx context.Context, backlog restic.IDs, loaderCha
 			outstandingLoadTreeJobs++
 			loadCh = nil
 			c.blobRefs.Lock()
-			c.blobRefs.M[nextTreeID] |= treeProcessed | blobReferenced
+			h := restic.BlobHandle{ID: nextTreeID, Type: restic.TreeBlob}
+			c.blobRefs.M[h] |= blobStatusReferenced
 			c.blobRefs.Unlock()
 
 		case j, ok := <-inCh:
@@ -655,11 +657,12 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 
 	for _, blobID := range blobs {
 		c.blobRefs.Lock()
-		if (c.blobRefs.M[blobID] & blobExists) == 0 {
+		h := restic.BlobHandle{ID: blobID, Type: restic.DataBlob}
+		if (c.blobRefs.M[h] & blobStatusExists) == 0 {
 			debug.Log("tree %v references blob %v which isn't contained in index", id, blobID)
 			errs = append(errs, Error{TreeID: id, BlobID: blobID, Err: errors.New("not found in index")})
 		}
-		c.blobRefs.M[blobID] |= blobReferenced
+		c.blobRefs.M[h] |= blobStatusReferenced
 		debug.Log("blob %v is referenced", blobID)
 		c.blobRefs.Unlock()
 	}
@@ -668,13 +671,13 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 }
 
 // UnusedBlobs returns all blobs that have never been referenced.
-func (c *Checker) UnusedBlobs() (blobs restic.IDs) {
+func (c *Checker) UnusedBlobs() (blobs restic.BlobHandles) {
 	c.blobRefs.Lock()
 	defer c.blobRefs.Unlock()
 
 	debug.Log("checking %d blobs", len(c.blobRefs.M))
 	for id, flags := range c.blobRefs.M {
-		if (flags & blobReferenced) == 0 {
+		if (flags & blobStatusReferenced) == 0 {
 			debug.Log("blob %v not referenced", id)
 			blobs = append(blobs, id)
 		}
