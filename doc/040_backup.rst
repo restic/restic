@@ -174,7 +174,7 @@ even if restic is passed a relative path to save.
 
 Environment-variables in exclude files are expanded with `os.ExpandEnv <https://golang.org/pkg/os/#ExpandEnv>`__,
 so ``/home/$USER/foo`` will be expanded to ``/home/bob/foo`` for the user ``bob``.
-To get a literal dollar sign, write ``$$`` to the file.
+To get a literal dollar sign, write ``$$`` to the file. Note that tilde (``~``) expansion does not work, please use the ``$HOME`` environment variable instead.
 
 Patterns need to match on complete path components. For example, the pattern ``foo``:
 
