@@ -111,6 +111,11 @@ func (r *Repository) sortCachedPacks(blobs []restic.PackedBlob) []restic.PackedB
 		return blobs
 	}
 
+	// no need to sort a list with one element
+	if len(blobs) == 1 {
+		return blobs
+	}
+
 	cached := make([]restic.PackedBlob, 0, len(blobs)/2)
 	noncached := make([]restic.PackedBlob, 0, len(blobs)/2)
 
