@@ -178,6 +178,22 @@ func TestLoadBlob(t *testing.T) {
 	}
 }
 
+func TestLoadBlobNotFound(t *testing.T) {
+	repo, cleanup := repository.TestRepository(t)
+	defer cleanup()
+
+	for _, typ := range []restic.BlobType{restic.DataBlob, restic.TreeBlob} {
+		_, err := repo.LoadBlob(context.TODO(), typ, restic.ID{}, nil)
+		switch e := err.(type) {
+		case *repository.BlobNotFoundError:
+			rtest.Equals(t, restic.ID{}, e.ID)
+			rtest.Equals(t, typ, e.Type)
+		default:
+			t.Errorf("wrong error type %T for missing blob", err)
+		}
+	}
+}
+
 func BenchmarkLoadBlob(b *testing.B) {
 	repo, cleanup := repository.TestRepository(b)
 	defer cleanup()

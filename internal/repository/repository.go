@@ -130,6 +130,17 @@ func (r *Repository) sortCachedPacks(blobs []restic.PackedBlob) []restic.PackedB
 	return append(cached, noncached...)
 }
 
+// A *BlobNotFoundError is returned by Repository.LoadBlob if it cannot find
+// a blob with a given ID and type.
+type BlobNotFoundError struct {
+	ID   restic.ID
+	Type restic.BlobType
+}
+
+func (e *BlobNotFoundError) Error() string {
+	return fmt.Sprintf("id %v not found in repository", e.ID)
+}
+
 // LoadBlob loads a blob of type t from the repository.
 // It may use all of buf[:cap(buf)] as scratch space.
 func (r *Repository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.ID, buf []byte) ([]byte, error) {
@@ -139,7 +150,7 @@ func (r *Repository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.
 	blobs, found := r.idx.Lookup(id, t)
 	if !found {
 		debug.Log("id %v not found in index", id)
-		return nil, errors.Errorf("id %v not found in repository", id)
+		return nil, &BlobNotFoundError{ID: id, Type: t}
 	}
 
 	// try cached pack files first
