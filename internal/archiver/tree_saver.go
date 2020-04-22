@@ -66,13 +66,14 @@ func NewTreeSaver(ctx context.Context, t *tomb.Tomb, treeWorkers uint, saveTree 
 }
 
 // Save stores the dir d and returns the data once it has been completed.
-func (s *TreeSaver) Save(ctx context.Context, snPath string, node *restic.Node, nodes []FutureNode) FutureTree {
+func (s *TreeSaver) Save(ctx context.Context, snPath string, node *restic.Node, nodes []FutureNode, complete CompleteFunc) FutureTree {
 	ch := make(chan saveTreeResponse, 1)
 	job := saveTreeJob{
-		snPath: snPath,
-		node:   node,
-		nodes:  nodes,
-		ch:     ch,
+		snPath:   snPath,
+		node:     node,
+		nodes:    nodes,
+		ch:       ch,
+		complete: complete,
 	}
 	select {
 	case s.ch <- job:
@@ -86,10 +87,11 @@ func (s *TreeSaver) Save(ctx context.Context, snPath string, node *restic.Node, 
 }
 
 type saveTreeJob struct {
-	snPath string
-	nodes  []FutureNode
-	node   *restic.Node
-	ch     chan<- saveTreeResponse
+	snPath   string
+	nodes    []FutureNode
+	node     *restic.Node
+	ch       chan<- saveTreeResponse
+	complete CompleteFunc
 }
 
 type saveTreeResponse struct {
@@ -156,6 +158,9 @@ func (s *TreeSaver) worker(ctx context.Context, jobs <-chan saveTreeJob) error {
 			return err
 		}
 
+		if job.complete != nil {
+			job.complete(node, stats)
+		}
 		job.ch <- saveTreeResponse{
 			node:  node,
 			stats: stats,

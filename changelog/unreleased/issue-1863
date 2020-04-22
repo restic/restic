@@ -1,0 +1,6 @@
+Bugfix: Report correct number of directories processed by backup
+
+The directory statistics calculation was fixed to report the actual number
+of processed directories instead of always zero.
+
+https://github.com/restic/restic/issues/1863
