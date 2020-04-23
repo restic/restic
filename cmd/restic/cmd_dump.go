@@ -171,24 +171,15 @@ func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
 }
 
 func getNodeData(ctx context.Context, output io.Writer, repo restic.Repository, node *restic.Node) error {
-	var buf []byte
+	var (
+		buf []byte
+		err error
+	)
 	for _, id := range node.Content {
-
-		size, found := repo.LookupBlobSize(id, restic.DataBlob)
-		if !found {
-			return errors.Errorf("id %v not found in repository", id)
-		}
-
-		buf = buf[:cap(buf)]
-		if len(buf) < restic.CiphertextLength(int(size)) {
-			buf = restic.NewBlobBuffer(int(size))
-		}
-
-		n, err := repo.LoadBlob(ctx, restic.DataBlob, id, buf)
+		buf, err = repo.LoadBlob(ctx, restic.DataBlob, id, buf)
 		if err != nil {
 			return err
 		}
-		buf = buf[:n]
 
 		_, err = output.Write(buf)
 		if err != nil {

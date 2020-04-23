@@ -94,12 +94,11 @@ func TestFuseFile(t *testing.T) {
 		rtest.Assert(t, found, "Expected to find blob id %v", id)
 		filesize += uint64(size)
 
-		buf := restic.NewBlobBuffer(int(size))
-		n, err := repo.LoadBlob(context.TODO(), restic.DataBlob, id, buf)
+		buf, err := repo.LoadBlob(context.TODO(), restic.DataBlob, id, nil)
 		rtest.OK(t, err)
 
-		if uint(n) != size {
-			t.Fatalf("not enough bytes read for id %v: want %v, got %v", id.Str(), size, n)
+		if len(buf) != int(size) {
+			t.Fatalf("not enough bytes read for id %v: want %v, got %v", id.Str(), size, len(buf))
 		}
 
 		if uint(len(buf)) != size {
