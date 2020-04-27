@@ -2,7 +2,6 @@ package rest
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"hash"
 	"io"
@@ -19,6 +18,7 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/json"
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/cenkalti/backoff/v4"

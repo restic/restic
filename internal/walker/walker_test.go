@@ -2,11 +2,11 @@ package walker
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"testing"
 
 	"github.com/pkg/errors"
+	"github.com/restic/restic/internal/json"
 	"github.com/restic/restic/internal/restic"
 )
 

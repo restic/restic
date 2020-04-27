@@ -2,12 +2,12 @@ package repository
 
 import (
 	"context"
-	"encoding/json"
 	"io"
 	"sync"
 	"time"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/json"
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/restic/restic/internal/debug"
@@ -579,13 +579,6 @@ func (idx *Index) merge(idx2 *Index) error {
 	return nil
 }
 
-// isErrOldIndex returns true if the error may be caused by an old index
-// format.
-func isErrOldIndex(err error) bool {
-	e, ok := err.(*json.UnmarshalTypeError)
-	return ok && e.Value == "array"
-}
-
 // DecodeIndex unserializes an index from buf.
 func DecodeIndex(buf []byte, id restic.ID) (idx *Index, oldFormat bool, err error) {
 	debug.Log("Start decoding index")
@@ -595,7 +588,7 @@ func DecodeIndex(buf []byte, id restic.ID) (idx *Index, oldFormat bool, err erro
 	if err != nil {
 		debug.Log("Error %v", err)
 
-		if isErrOldIndex(err) {
+		if err != nil {
 			debug.Log("index is probably old format, trying that")
 			idx, err = decodeOldIndex(buf)
 			return idx, err == nil, err

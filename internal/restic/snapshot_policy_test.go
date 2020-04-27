@@ -1,7 +1,6 @@
 package restic_test
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/restic/restic/internal/json"
 	"github.com/restic/restic/internal/restic"
 )
 

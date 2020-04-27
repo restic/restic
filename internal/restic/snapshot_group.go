@@ -1,11 +1,11 @@
 package restic
 
 import (
-	"encoding/json"
 	"sort"
 	"strings"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/json"
 )
 
 // SnapshotGroupKey is the structure for identifying groups in a grouped

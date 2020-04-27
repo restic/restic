@@ -1,8 +1,9 @@
 package restic
 
 import (
-	"encoding/json"
 	"testing"
+
+	"github.com/restic/restic/internal/json"
 )
 
 var blobTypeJSON = []struct {

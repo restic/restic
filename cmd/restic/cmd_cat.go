@@ -1,12 +1,11 @@
 package main
 
 import (
-	"encoding/json"
-
 	"github.com/spf13/cobra"
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/json"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 )

@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"sort"
 	"strings"
 
+	"github.com/restic/restic/internal/json"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/table"
 	"github.com/spf13/cobra"

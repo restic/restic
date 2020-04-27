@@ -2,7 +2,6 @@ package archiver
 
 import (
 	"context"
-	"encoding/json"
 	"os"
 	"path"
 	"runtime"
@@ -12,6 +11,7 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/json"
 	"github.com/restic/restic/internal/restic"
 	tomb "gopkg.in/tomb.v2"
 )
@@ -168,14 +168,10 @@ func (arch *Archiver) error(item string, fi os.FileInfo, err error) error {
 // before saving anything.
 func (arch *Archiver) saveTree(ctx context.Context, t *restic.Tree) (restic.ID, ItemStats, error) {
 	var s ItemStats
-	buf, err := json.Marshal(t)
+	buf, err := treeJSON(t)
 	if err != nil {
 		return restic.ID{}, s, errors.Wrap(err, "MarshalJSON")
 	}
-
-	// append a newline so that the data is always consistent (json.Encoder
-	// adds a newline after each object)
-	buf = append(buf, '\n')
 
 	b := &Buffer{Data: buf}
 	res := arch.blobSaver.Save(ctx, restic.TreeBlob, b)
@@ -190,6 +186,17 @@ func (arch *Archiver) saveTree(ctx context.Context, t *restic.Tree) (restic.ID, 
 		return restic.ID{}, s, ctx.Err()
 	}
 	return res.ID(), s, nil
+}
+
+func treeJSON(t *restic.Tree) ([]byte, error) {
+	buf, err := json.Marshal(t)
+	if err != nil {
+		return nil, err
+	}
+
+	// append a newline so that the data is always consistent (json.Encoder
+	// adds a newline after each object)
+	return append(buf, '\n'), nil
 }
 
 // nodeFromFileInfo returns the restic node from an os.FileInfo.

@@ -2,12 +2,13 @@ package selfupdate
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/restic/restic/internal/json"
 
 	"github.com/pkg/errors"
 	"golang.org/x/net/context/ctxhttp"

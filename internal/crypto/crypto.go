@@ -4,10 +4,10 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-	"encoding/json"
 	"fmt"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/json"
 
 	"golang.org/x/crypto/poly1305"
 )

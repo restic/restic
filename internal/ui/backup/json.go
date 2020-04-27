@@ -2,12 +2,12 @@ package backup
 
 import (
 	"bytes"
-	"encoding/json"
 	"os"
 	"sort"
 	"time"
 
 	"github.com/restic/restic/internal/archiver"
+	"github.com/restic/restic/internal/json"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/termstatus"

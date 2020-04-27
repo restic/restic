@@ -3,11 +3,11 @@ package restic
 import (
 	"crypto/rand"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"io"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/json"
 
 	"github.com/minio/sha256-simd"
 )

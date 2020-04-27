@@ -2,7 +2,6 @@ package restic
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/user"
@@ -18,6 +17,7 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/json"
 )
 
 // ExtendedAttribute is a tuple storing the xattr name and value.
