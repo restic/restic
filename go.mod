@@ -33,7 +33,7 @@ require (
 	github.com/spf13/pflag v1.0.3
 	github.com/stretchr/testify v1.3.0 // indirect
 	go.opencensus.io v0.20.2 // indirect
-	golang.org/x/crypto v0.0.0-20190513172903-22d7a77e9e5f
+	golang.org/x/crypto v0.0.0-20200427165652-729f1e841bcc
 	golang.org/x/net v0.0.0-20190522155817-f3200d17e092
 	golang.org/x/oauth2 v0.0.0-20190402181905-9f3314589c9a
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
