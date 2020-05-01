@@ -79,7 +79,7 @@ func fillPacks(t testing.TB, rnd *rand.Rand, be Saver, pm *packerManager, buf []
 		}
 		bytes += l
 
-		if packer.Size() < minPackSize {
+		if packer.Size() < MinPackSize {
 			pm.insertPacker(packer)
 			continue
 		}

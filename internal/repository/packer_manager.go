@@ -37,7 +37,7 @@ type packerManager struct {
 	packers []*Packer
 }
 
-const minPackSize = 4 * 1024 * 1024
+const MinPackSize = 4 * 1024 * 1024
 
 // newPackerManager returns an new packer manager which writes temporary files
 // to a temporary directory
