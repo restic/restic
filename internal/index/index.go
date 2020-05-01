@@ -312,36 +312,6 @@ func (idx *Index) PacksForBlobs(blobs restic.BlobSet) (packs restic.IDSet) {
 	return packs
 }
 
-// Location describes the location of a blob in a pack.
-type Location struct {
-	PackID restic.ID
-	restic.Blob
-}
-
-// ErrBlobNotFound is return by FindBlob when the blob could not be found in
-// the index.
-var ErrBlobNotFound = errors.New("blob not found in index")
-
-// FindBlob returns a list of packs and positions the blob can be found in.
-func (idx *Index) FindBlob(h restic.BlobHandle) (result []Location, err error) {
-	for id, p := range idx.Packs {
-		for _, entry := range p.Entries {
-			if entry.ID.Equal(h.ID) && entry.Type == h.Type {
-				result = append(result, Location{
-					PackID: id,
-					Blob:   entry,
-				})
-			}
-		}
-	}
-
-	if len(result) == 0 {
-		return nil, ErrBlobNotFound
-	}
-
-	return result, nil
-}
-
 const maxEntries = 3000
 
 // Saver saves structures as JSON.

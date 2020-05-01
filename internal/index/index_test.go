@@ -363,6 +363,28 @@ func TestIndexSave(t *testing.T) {
 	}
 }
 
+// Location describes the location of a blob in a pack.
+type location struct {
+	PackID restic.ID
+	restic.Blob
+}
+
+// FindBlob returns a list of packs and positions the blob can be found in.
+func (idx *Index) findBlob(h restic.BlobHandle) (result []location) {
+	for id, p := range idx.Packs {
+		for _, entry := range p.Entries {
+			if entry.ID.Equal(h.ID) && entry.Type == h.Type {
+				result = append(result, location{
+					PackID: id,
+					Blob:   entry,
+				})
+			}
+		}
+	}
+
+	return result
+}
+
 func TestIndexAddRemovePack(t *testing.T) {
 	repo, cleanup := createFilledRepo(t, 3, 0)
 	defer cleanup()
@@ -393,8 +415,8 @@ func TestIndexAddRemovePack(t *testing.T) {
 
 	for _, blob := range blobs {
 		h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
-		_, err := idx.FindBlob(h)
-		if err == nil {
+		locs := idx.findBlob(h)
+		if len(locs) != 0 {
 			t.Errorf("removed blob %v found in index", h)
 		}
 	}
@@ -447,9 +469,9 @@ func TestIndexLoadDocReference(t *testing.T) {
 	idx := loadIndex(t, repo)
 
 	blobID := restic.TestParseID("d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66")
-	locs, err := idx.FindBlob(restic.BlobHandle{ID: blobID, Type: restic.DataBlob})
-	if err != nil {
-		t.Errorf("FindBlob() returned error %v", err)
+	locs := idx.findBlob(restic.BlobHandle{ID: blobID, Type: restic.DataBlob})
+	if len(locs) == 0 {
+		t.Error("blob not found in index")
 	}
 
 	if len(locs) != 1 {
