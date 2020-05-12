@@ -44,6 +44,18 @@ matrix:
           - $HOME/Library/Caches/go-build
           - $HOME/gopath/pkg/mod
 
+    # Cross-compilation job; doesn't run any tests.
+    - name: Cross-compile
+      os: linux
+      go: "1.14.x"
+      script: cd cmd/restic && go env GOARCH GOOS && go build -tags=debug
+      env:
+        - GOARCH=amd64 GOOS=freebsd
+        - GOARCH=amd64 GOOS=illumos
+        - GOARCH=arm64 GOOS=linux
+        - GOARCH=amd64 GOOS=netbsd
+        - GOARCH=amd64 GOOS=openbsd
+
 branches:
   only:
     - master
