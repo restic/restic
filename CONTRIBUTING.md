@@ -125,15 +125,14 @@ down to the following steps:
     GitHub. For a new feature, please add an issue before starting to work on
     it, so that duplicate work is prevented.
 
- 1. First we would kindly ask you to fork our project on GitHub if you haven't
-    done so already.
+ 1. Next, fork our project on GitHub if you haven't done so already.
 
- 2. Clone the repository locally and create a new branch. If you are working on
-    the code itself, please set up the development environment as described in
-    the previous section.
+ 2. Clone your fork of the repository locally and **create a new branch** for
+    your changes. If you are working on the code itself, please set up the
+    development environment as described in the previous section.
 
- 3. Then commit your changes as fine grained as possible, as smaller patches,
-    that handle one and only one issue are easier to discuss and merge.
+ 3. Commit your changes to the new branch as fine grained as possible, as
+    smaller patches, for individual changes, are easier to discuss and merge.
 
  4. Push the new branch with your changes to your fork of the repository.
 
@@ -146,20 +145,19 @@ down to the following steps:
     existing commit, use common sense to decide which is better), they will be
     automatically added to the pull request.
 
- 7. If your pull request changes anything that users should be aware
-    of (a bugfix, a new feature, ...) please add an entry as a new
-    file in `changelog/unreleased` including the issue number in the
-    filename (e.g. `issue-8756`). Use the template in
-    `changelog/TEMPLATE` for the content. It will be used in the
-    announcement of the next stable release. While writing, ask
-    yourself: If I were the user, what would I need to be aware of
-    with this change.
+ 7. If your pull request changes anything that users should be aware of
+    (a bugfix, a new feature, ...) please add an entry as a new file in
+    `changelog/unreleased` including the issue number in the filename (e.g.
+    `issue-8756`). Use the template in `changelog/TEMPLATE` for the content.
+    It will be used in the announcement of the next stable release. While
+    writing, ask yourself: If I were the user, what would I need to be aware
+    of with this change?
 
  8. Once your code looks good and passes all the tests, we'll merge it. Thanks
     a lot for your contribution!
 
 Please provide the patches for each bug or feature in a separate branch and
-open up a pull request for each.
+open up a pull request for each, as this simplifies discussion and merging.
 
 The restic project uses the `gofmt` tool for Go source indentation, so please
 run
