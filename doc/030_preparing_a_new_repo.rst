@@ -442,6 +442,14 @@ dashboard on the "Buckets" page when signed into your B2 account:
     $ export B2_ACCOUNT_ID=<MY_APPLICATION_KEY_ID>
     $ export B2_ACCOUNT_KEY=<MY_APPLICATION_KEY>
 
+To get application keys, a user can go to the App Keys section of the Backblaze
+account portal.  You must create a master application key first.  From there, you
+can generate a standard Application Key.  Please note that the Application Key
+should be treated like a password and will only appear once.  If an Application
+Key is forgotten, you must generate a new one.
+
+For more information on application keys, refer to the Backblaze `documentation <https://www.backblaze.com/b2/docs/application_keys.html>`__.
+
 .. note:: As of version 0.9.2, restic supports both master and non-master `application keys <https://www.backblaze.com/b2/docs/application_keys.html>`__. If using a non-master application key, ensure that it is created with at least **read and write** access to the B2 bucket. On earlier versions of restic, a master application key is required.
 
 You can then initialize a repository stored at Backblaze B2. If the
