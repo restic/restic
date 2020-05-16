@@ -52,7 +52,7 @@ You can use the command ``restic ls latest`` or ``restic find foo`` to find the
 path to the file within the snapshot. This path you can then pass to
 ``--include`` in verbatim to only restore the single file or directory.
 
-There are case insensitive variants of of ``--exclude`` and ``--include`` called
+There are case insensitive variants of ``--exclude`` and ``--include`` called
 ``--iexclude`` and ``--iinclude``. These options will behave the same way but
 ignore the casing of paths.
 

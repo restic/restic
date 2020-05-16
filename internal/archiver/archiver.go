@@ -181,7 +181,7 @@ func (arch *Archiver) saveTree(ctx context.Context, t *restic.Tree) (restic.ID, 
 	return res.ID(), s, nil
 }
 
-// nodeFromFileInfo returns the restic node from a os.FileInfo.
+// nodeFromFileInfo returns the restic node from an os.FileInfo.
 func (arch *Archiver) nodeFromFileInfo(filename string, fi os.FileInfo) (*restic.Node, error) {
 	node, err := restic.NodeFromFileInfo(filename, fi)
 	if !arch.WithAtime {

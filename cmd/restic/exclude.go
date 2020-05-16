@@ -131,7 +131,7 @@ func rejectIfPresent(excludeFileSpec string) (RejectByNameFunc, error) {
 }
 
 // isExcludedByFile interprets filename as a path and returns true if that file
-// is in a excluded directory. A directory is identified as excluded if it contains a
+// is in an excluded directory. A directory is identified as excluded if it contains a
 // tagfile which bears the name specified in tagFilename and starts with
 // header. If rc is non-nil, it is used to expedite the evaluation of a
 // directory based on previous visits.

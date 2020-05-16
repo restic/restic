@@ -17,7 +17,7 @@ import (
 )
 
 // MockT passes through all logging functions from T, but catches Fail(),
-// Error/f() and Fatal/f(). It is used to test test helper functions.
+// Error/f() and Fatal/f(). It is used to test helper functions.
 type MockT struct {
 	*testing.T
 	HasFailed bool
