@@ -231,6 +231,7 @@ func (env *TravisEnvironment) Prepare() error {
 				"netbsd/386", "netbsd/amd64",
 				"linux/arm", "freebsd/arm",
 				"linux/ppc64le", "solaris/amd64",
+				"aix/ppc64",
 			}
 		} else {
 			env.goxOSArch = []string{runtime.GOOS + "/" + runtime.GOARCH}

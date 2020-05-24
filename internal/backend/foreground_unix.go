@@ -1,5 +1,4 @@
-// +build !solaris
-// +build !windows
+// +build !aix,!solaris,!windows
 
 package backend
 
