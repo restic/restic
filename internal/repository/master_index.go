@@ -17,6 +17,8 @@ type MasterIndex struct {
 	idx          []*Index
 	pendingBlobs restic.BlobSet
 	idxMutex     sync.RWMutex
+	superseded   restic.IDSet
+	obsolete     restic.IDSet
 }
 
 // NewMasterIndex creates a new master index.
@@ -26,7 +28,11 @@ func NewMasterIndex() *MasterIndex {
 	// sitation that only two indexes exist which are saved and merged concurrently.
 	idx := []*Index{NewIndex()}
 	idx[0].Finalize()
-	return &MasterIndex{idx: idx, pendingBlobs: restic.NewBlobSet()}
+	return &MasterIndex{idx: idx,
+		pendingBlobs: restic.NewBlobSet(),
+		superseded:   restic.NewIDSet(),
+		obsolete:     restic.NewIDSet(),
+	}
 }
 
 // Lookup queries all known Indexes for the ID and returns all matches.
@@ -154,11 +160,34 @@ func (mi *MasterIndex) Count(t restic.BlobType) (n uint) {
 }
 
 // Insert adds a new index to the MasterIndex.
+// The "supersedes" field is also evaluated and indexes that are superseded
+// will be removed from the master index. The IDs of superseded and removed
+// indexes will be available by the func Obsolete()
 func (mi *MasterIndex) Insert(idx *Index) {
 	mi.idxMutex.Lock()
 	defer mi.idxMutex.Unlock()
 
 	mi.idx = append(mi.idx, idx)
+	for _, id := range idx.supersedes {
+		mi.superseded.Insert(id)
+	}
+
+	// remove indexes that have been superseded
+	newIdx := mi.idx[:0]
+	for _, i := range mi.idx {
+		idsAsSet := restic.NewIDSet(i.ids...)
+		// test if all ids are superseded
+		if len(i.ids) > 0 && len(idsAsSet.Sub(mi.superseded)) == 0 {
+			mi.obsolete.Merge(idsAsSet)
+		} else {
+			newIdx = append(newIdx, i)
+		}
+	}
+	mi.idx = newIdx
+}
+
+func (mi *MasterIndex) Obsolete() restic.IDSet {
+	return mi.obsolete
 }
 
 // StorePack remembers the id and pack in the index.

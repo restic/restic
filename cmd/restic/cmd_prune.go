@@ -512,6 +512,13 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		DeleteFiles(gopts, repo, removePacksFirst, restic.PackFile)
 	}
 
+	// delete obsolete index files (index files that have already been superseded)
+	obsoleteIndexes := (repo.Index()).(*repository.MasterIndex).Obsolete()
+	if len(obsoleteIndexes) != 0 {
+		Verbosef("deleting unused index files...\n")
+		DeleteFiles(gopts, repo, obsoleteIndexes, restic.IndexFile)
+	}
+
 	if len(repackPacks) != 0 {
 		Verbosef("repacking packs\n")
 		bar := newProgressMax(!gopts.Quiet, uint64(len(repackPacks)), "packs repacked")

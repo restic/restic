@@ -70,6 +70,15 @@ func (err ErrOldIndexFormat) Error() string {
 	return fmt.Sprintf("index %v has old format", err.ID.Str())
 }
 
+// ErrDuplicatePacks is returned when a pack is found in more than one index.
+type ErrObsoleteIndex struct {
+	Index restic.ID
+}
+
+func (e ErrObsoleteIndex) Error() string {
+	return fmt.Sprintf("index %v has been superseded but is still present", e.Index.Str())
+}
+
 // LoadIndex loads all index files.
 func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 	debug.Log("Start")
@@ -129,6 +138,14 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 				Indexes: packToIndex[packID],
 			})
 		}
+	}
+
+	debug.Log("checking for obsolete index files")
+	for idxID := range c.masterIndex.Obsolete() {
+		debug.Log("  check index %v: is obsolete", idxID)
+		hints = append(hints, ErrObsoleteIndex{
+			Index: idxID,
+		})
 	}
 
 	err = c.repo.SetIndex(c.masterIndex)

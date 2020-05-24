@@ -1,0 +1,11 @@
+Bugfix: Treat superseded index files correctly
+
+We've fixed the treatment of still existing superseded index files.
+
+Index files that have been superseded are usually removed directly. However, if this
+wasn't the case, restic used them like normal index files without warning.
+This could result in data loss in special circumstances.
+The treatment of this special situation has been fixed and restic check was changed
+to warn if "obsolete" index files are present in the repo.
+
+https://github.com/restic/restic/issues/2824
