@@ -59,10 +59,8 @@ func (idx *Index) Final() bool {
 }
 
 const (
-	indexMinBlobs = 20
-	indexMaxBlobs = 2000
-	indexMinAge   = 2 * time.Minute
-	indexMaxAge   = 15 * time.Minute
+	indexMaxBlobs = 50000
+	indexMaxAge   = 10 * time.Minute
 )
 
 // IndexFull returns true iff the index is "full enough" to be saved as a preliminary index.
@@ -72,26 +70,21 @@ var IndexFull = func(idx *Index) bool {
 
 	debug.Log("checking whether index %p is full", idx)
 
-	packs := len(idx.pack)
+	blobs := len(idx.pack)
 	age := time.Now().Sub(idx.created)
 
-	if age > indexMaxAge {
+	switch {
+	case age >= indexMaxAge:
 		debug.Log("index %p is old enough", idx, age)
 		return true
-	}
-
-	if packs < indexMinBlobs || age < indexMinAge {
-		debug.Log("index %p only has %d packs or is too young (%v)", idx, packs, age)
-		return false
-	}
-
-	if packs > indexMaxBlobs {
-		debug.Log("index %p has %d packs", idx, packs)
+	case blobs >= indexMaxBlobs:
+		debug.Log("index %p has %d blobs", idx, blobs)
 		return true
 	}
 
-	debug.Log("index %p is not full", idx)
+	debug.Log("index %p only has %d blobs and is too young (%v)", idx, blobs, age)
 	return false
+
 }
 
 // Store remembers the id and pack in the index. An existing entry will be
