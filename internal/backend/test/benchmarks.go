@@ -48,17 +48,17 @@ func (s *Suite) BenchmarkLoadFile(t *testing.B) {
 			n, ierr = io.ReadFull(rd, buf)
 			return ierr
 		})
-		if err != nil {
+
+		t.StopTimer()
+		switch {
+		case err != nil:
 			t.Fatal(err)
-		}
-
-		if n != length {
+		case n != length:
 			t.Fatalf("wrong number of bytes read: want %v, got %v", length, n)
-		}
-
-		if !bytes.Equal(data, buf) {
+		case !bytes.Equal(data, buf):
 			t.Fatalf("wrong bytes returned")
 		}
+		t.StartTimer()
 	}
 }
 
@@ -85,18 +85,17 @@ func (s *Suite) BenchmarkLoadPartialFile(t *testing.B) {
 			n, ierr = io.ReadFull(rd, buf)
 			return ierr
 		})
-		if err != nil {
+
+		t.StopTimer()
+		switch {
+		case err != nil:
 			t.Fatal(err)
-		}
-
-		if n != testLength {
+		case n != testLength:
 			t.Fatalf("wrong number of bytes read: want %v, got %v", testLength, n)
-		}
-
-		if !bytes.Equal(data[:testLength], buf) {
+		case !bytes.Equal(data[:testLength], buf):
 			t.Fatalf("wrong bytes returned")
 		}
-
+		t.StartTimer()
 	}
 }
 
@@ -124,17 +123,17 @@ func (s *Suite) BenchmarkLoadPartialFileOffset(t *testing.B) {
 			n, ierr = io.ReadFull(rd, buf)
 			return ierr
 		})
-		if err != nil {
+
+		t.StopTimer()
+		switch {
+		case err != nil:
 			t.Fatal(err)
-		}
-
-		if n != testLength {
+		case n != testLength:
 			t.Fatalf("wrong number of bytes read: want %v, got %v", testLength, n)
-		}
-
-		if !bytes.Equal(data[testOffset:testOffset+testLength], buf) {
+		case !bytes.Equal(data[testOffset:testOffset+testLength], buf):
 			t.Fatalf("wrong bytes returned")
 		}
+		t.StartTimer()
 
 	}
 }
