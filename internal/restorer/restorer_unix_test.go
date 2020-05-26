@@ -114,28 +114,14 @@ func TestRestorerSparseFiles(t *testing.T) {
 	denseBlocks := math.Ceil(float64(len(zeros)) / 512)
 	sparsity := 1 - float64(st.Blocks)/denseBlocks
 
+	// This should report 100% sparse. We don't assert that,
+	// as the behavior of sparse writes depends on the underlying
+	// file system as well as the OS.
 	t.Logf("wrote %d zeros as %d blocks, %.1f%% sparse",
 		len(zeros), st.Blocks, 100*sparsity)
 }
 
-func TestSkipZeroPrefix(t *testing.T) {
-	// Even for all-zero blobs, skipZeroPrefix should not return empty []byte.
-
-	r := rand.New(rand.NewSource(123456))
-
-	for _, n := range []int{1, 10, 100, 1024, 4096, 4097} {
-		var (
-			buf       = make([]byte, n)
-			oldOffset = r.Int63n(1 << 30)
-		)
-
-		blob, offset := skipZeroPrefix(buf, oldOffset)
-		rtest.Assert(t, len(blob) > 0, "skipZeroPrefix returned empty blob")
-		rtest.Equals(t, oldOffset, offset+int64(len(blob)-len(buf)))
-	}
-}
-
-func BenchmarkSkipZeroPrefix(b *testing.B) {
+func BenchmarkZeroPrefixLen(b *testing.B) {
 	var (
 		buf        [4<<20 + 37]byte
 		r          = rand.New(rand.NewSource(0x618732))
@@ -150,8 +136,8 @@ func BenchmarkSkipZeroPrefix(b *testing.B) {
 		j := r.Intn(len(buf))
 		buf[j] = 0xff
 
-		_, skipped := skipZeroPrefix(buf[:], 0)
-		sumSkipped += skipped
+		skipped := zeroPrefixLen(buf[:])
+		sumSkipped += int64(skipped)
 
 		buf[j] = 0
 	}

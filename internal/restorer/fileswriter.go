@@ -1,9 +1,7 @@
 package restorer
 
 import (
-	"bytes"
 	"os"
-	"runtime"
 	"sync"
 
 	"github.com/cespare/xxhash"
@@ -20,15 +18,19 @@ type filesWriter struct {
 
 type filesWriterBucket struct {
 	lock  sync.Mutex
-	files map[string]*os.File
-	users map[string]int
+	files map[string]*partialFile
+}
+
+type partialFile struct {
+	*os.File
+	size  int64 // File size, tracked for sparse writes (not on Windows).
+	users int   // Reference count.
 }
 
 func newFilesWriter(count int) *filesWriter {
 	buckets := make([]filesWriterBucket, count)
 	for b := 0; b < count; b++ {
-		buckets[b].files = make(map[string]*os.File)
-		buckets[b].users = make(map[string]int)
+		buckets[b].files = make(map[string]*partialFile)
 	}
 	return &filesWriter{
 		buckets: buckets,
@@ -38,12 +40,12 @@ func newFilesWriter(count int) *filesWriter {
 func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create bool) error {
 	bucket := &w.buckets[uint(xxhash.Sum64String(path))%uint(len(w.buckets))]
 
-	acquireWriter := func() (*os.File, error) {
+	acquireWriter := func() (*partialFile, error) {
 		bucket.lock.Lock()
 		defer bucket.lock.Unlock()
 
 		if wr, ok := bucket.files[path]; ok {
-			bucket.users[path]++
+			bucket.files[path].users++
 			return wr, nil
 		}
 
@@ -54,37 +56,39 @@ func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create
 			flags = os.O_WRONLY
 		}
 
-		wr, err := os.OpenFile(path, flags, 0600)
+		f, err := os.OpenFile(path, flags, 0600)
 		if err != nil {
 			return nil, err
 		}
 
+		wr := &partialFile{File: f, users: 1}
+		if !create {
+			info, err := f.Stat()
+			if err != nil {
+				return nil, err
+			}
+			wr.size = info.Size()
+		}
 		bucket.files[path] = wr
-		bucket.users[path] = 1
 
 		return wr, nil
 	}
 
-	releaseWriter := func(wr *os.File) error {
+	releaseWriter := func(wr *partialFile) error {
 		bucket.lock.Lock()
 		defer bucket.lock.Unlock()
 
-		if bucket.users[path] == 1 {
+		if bucket.files[path].users == 1 {
 			delete(bucket.files, path)
-			delete(bucket.users, path)
 			return wr.Close()
 		}
-		bucket.users[path]--
+		bucket.files[path].users--
 		return nil
 	}
 
 	wr, err := acquireWriter()
 	if err != nil {
 		return err
-	}
-
-	if sparseFileSupport() {
-		blob, offset = skipZeroPrefix(blob, offset)
 	}
 
 	_, err = wr.WriteAt(blob, offset)
@@ -96,26 +100,3 @@ func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create
 
 	return releaseWriter(wr)
 }
-
-// Remove a run of zeros from the start of blob and update offset accordingly.
-// If the run is long enough, this may trigger a sparse write.
-func skipZeroPrefix(blob []byte, offset int64) ([]byte, int64) {
-	// We favor speed and simplicity over completeness, so we check with
-	// 1kB granularity and we stop before the end of the blob.
-	// The early stopping prevents having to do a zero-length WriteAt,
-	// which won't extend the file, or a Truncate, which complicates the code.
-
-	const blocksize = 1024
-	var zeros [blocksize]byte
-
-	for len(blob) > blocksize && bytes.Equal(blob[:blocksize], zeros[:]) {
-		offset += blocksize
-		blob = blob[blocksize:]
-	}
-
-	return blob, offset
-}
-
-// sparseFileSupport() is true if the operating system supports sparse files.
-// We don't check if the underlying filesystem supports them too.
-func sparseFileSupport() bool { return runtime.GOOS != "windows" }

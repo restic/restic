@@ -18,19 +18,15 @@ func TestFilesWriterBasic(t *testing.T) {
 
 	rtest.OK(t, w.writeToFile(f1, []byte{1}, 0, true))
 	rtest.Equals(t, 0, len(w.buckets[0].files))
-	rtest.Equals(t, 0, len(w.buckets[0].users))
 
 	rtest.OK(t, w.writeToFile(f2, []byte{2}, 0, true))
 	rtest.Equals(t, 0, len(w.buckets[0].files))
-	rtest.Equals(t, 0, len(w.buckets[0].users))
 
 	rtest.OK(t, w.writeToFile(f1, []byte{1}, 1, false))
 	rtest.Equals(t, 0, len(w.buckets[0].files))
-	rtest.Equals(t, 0, len(w.buckets[0].users))
 
 	rtest.OK(t, w.writeToFile(f2, []byte{2}, 1, false))
 	rtest.Equals(t, 0, len(w.buckets[0].files))
-	rtest.Equals(t, 0, len(w.buckets[0].users))
 
 	buf, err := ioutil.ReadFile(f1)
 	rtest.OK(t, err)
