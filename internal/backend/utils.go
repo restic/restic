@@ -32,19 +32,14 @@ func LoadAll(ctx context.Context, buf []byte, be restic.Backend, h restic.Handle
 
 // LimitedReadCloser wraps io.LimitedReader and exposes the Close() method.
 type LimitedReadCloser struct {
-	io.ReadCloser
-	io.Reader
+	io.Closer
+	io.LimitedReader
 }
 
-// Read reads data from the limited reader.
-func (l *LimitedReadCloser) Read(p []byte) (int, error) {
-	return l.Reader.Read(p)
-}
-
-// LimitReadCloser returns a new reader wraps r in an io.LimitReader, but also
+// LimitReadCloser returns a new reader wraps r in an io.LimitedReader, but also
 // exposes the Close() method.
 func LimitReadCloser(r io.ReadCloser, n int64) *LimitedReadCloser {
-	return &LimitedReadCloser{ReadCloser: r, Reader: io.LimitReader(r, n)}
+	return &LimitedReadCloser{Closer: r, LimitedReader: io.LimitedReader{R: r, N: n}}
 }
 
 // DefaultLoad implements Backend.Load using lower-level openReader func
