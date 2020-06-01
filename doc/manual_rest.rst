@@ -361,6 +361,8 @@ lists all snapshots as JSON and uses ``jq`` to pretty-print the result:
       }
     ]
 
+.. _temporary_files:
+
 Temporary files
 ---------------
 
@@ -377,6 +379,8 @@ instead of the default, set the environment variable like this:
     $ restic -r /srv/restic-repo backup ~/work
 
 
+
+.. _caching:
 
 Caching
 -------
