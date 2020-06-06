@@ -783,11 +783,6 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		return nil, restic.ID{}, err
 	}
 
-	err = arch.Repo.SaveIndex(ctx)
-	if err != nil {
-		return nil, restic.ID{}, err
-	}
-
 	sn, err := restic.NewSnapshot(targets, opts.Tags, opts.Hostname, opts.Time)
 	if err != nil {
 		return nil, restic.ID{}, err

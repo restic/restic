@@ -1,0 +1,8 @@
+Enhancement: Optimize repository implementation
+
+We've optimized the implementation of handling index entries in the repository.
+
+Restic now uses less memory for backups which add a lot of data, e.g. large initial backups.
+Also it is more stable in some edge situations and allows easier future enhancments.
+
+https://github.com/restic/restic/pull/2773

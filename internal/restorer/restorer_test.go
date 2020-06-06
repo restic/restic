@@ -38,7 +38,7 @@ func saveFile(t testing.TB, repo restic.Repository, node File) restic.ID {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	id, err := repo.SaveBlob(ctx, restic.DataBlob, []byte(node.Data), restic.ID{})
+	id, _, err := repo.SaveBlob(ctx, restic.DataBlob, []byte(node.Data), restic.ID{}, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,11 +114,6 @@ func saveSnapshot(t testing.TB, repo restic.Repository, snapshot Snapshot) (*res
 	treeID := saveDir(t, repo, snapshot.Nodes, 1000)
 
 	err := repo.Flush(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = repo.SaveIndex(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

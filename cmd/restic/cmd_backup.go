@@ -575,24 +575,6 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		ParentSnapshot: *parentSnapshotID,
 	}
 
-	uploader := archiver.IndexUploader{
-		Repository: repo,
-		Start: func() {
-			if !gopts.JSON {
-				p.VV("uploading intermediate index")
-			}
-		},
-		Complete: func(id restic.ID) {
-			if !gopts.JSON {
-				p.V("uploaded intermediate index %v", id.Str())
-			}
-		},
-	}
-
-	t.Go(func() error {
-		return uploader.Upload(gopts.ctx, t.Context(gopts.ctx), 30*time.Second)
-	})
-
 	if !gopts.JSON {
 		p.V("start backup on %v", targets)
 	}

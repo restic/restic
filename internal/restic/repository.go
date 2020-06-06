@@ -46,7 +46,7 @@ type Repository interface {
 	LoadAndDecrypt(ctx context.Context, buf []byte, t FileType, id ID) (data []byte, err error)
 
 	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
-	SaveBlob(context.Context, BlobType, []byte, ID) (ID, error)
+	SaveBlob(context.Context, BlobType, []byte, ID, bool) (ID, bool, error)
 
 	LoadTree(context.Context, ID) (*Tree, error)
 	SaveTree(context.Context, *Tree) (ID, error)

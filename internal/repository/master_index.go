@@ -11,13 +11,14 @@ import (
 
 // MasterIndex is a collection of indexes and IDs of chunks that are in the process of being saved.
 type MasterIndex struct {
-	idx      []*Index
-	idxMutex sync.RWMutex
+	idx          []*Index
+	pendingBlobs restic.BlobSet
+	idxMutex     sync.RWMutex
 }
 
 // NewMasterIndex creates a new master index.
 func NewMasterIndex() *MasterIndex {
-	return &MasterIndex{}
+	return &MasterIndex{pendingBlobs: restic.NewBlobSet()}
 }
 
 // Lookup queries all known Indexes for the ID and returns the first match.
@@ -65,10 +66,41 @@ func (mi *MasterIndex) ListPack(id restic.ID) (list []restic.PackedBlob) {
 	return nil
 }
 
+// AddPending adds a given blob to list of pending Blobs
+// Before doing so it checks if this blob is already known.
+// Returns true if adding was successful and false if the blob
+// was already known
+func (mi *MasterIndex) addPending(id restic.ID, tpe restic.BlobType) bool {
+
+	mi.idxMutex.Lock()
+	defer mi.idxMutex.Unlock()
+
+	// Check if blob is pending or in index
+	if mi.pendingBlobs.Has(restic.BlobHandle{ID: id, Type: tpe}) {
+		return false
+	}
+
+	for _, idx := range mi.idx {
+		if idx.Has(id, tpe) {
+			return false
+		}
+	}
+
+	// really not known -> insert
+	mi.pendingBlobs.Insert(restic.BlobHandle{ID: id, Type: tpe})
+	return true
+}
+
 // Has queries all known Indexes for the ID and returns the first match.
+// Also returns true if the ID is pending.
 func (mi *MasterIndex) Has(id restic.ID, tpe restic.BlobType) bool {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
+
+	// also return true if blob is pending
+	if mi.pendingBlobs.Has(restic.BlobHandle{ID: id, Type: tpe}) {
+		return true
+	}
 
 	for _, idx := range mi.idx {
 		if idx.Has(id, tpe) {
@@ -114,24 +146,30 @@ func (mi *MasterIndex) Remove(index *Index) {
 }
 
 // Store remembers the id and pack in the index.
-func (mi *MasterIndex) Store(pb restic.PackedBlob) {
+func (mi *MasterIndex) StorePack(id restic.ID, blobs []restic.Blob) {
 	mi.idxMutex.Lock()
 	defer mi.idxMutex.Unlock()
 
+	// delete blobs from pending
+	for _, blob := range blobs {
+		mi.pendingBlobs.Delete(restic.BlobHandle{Type: blob.Type, ID: blob.ID})
+	}
+
 	for _, idx := range mi.idx {
 		if !idx.Final() {
-			idx.Store(pb)
+			idx.StorePack(id, blobs)
 			return
 		}
 	}
 
 	newIdx := NewIndex()
-	newIdx.Store(pb)
+	newIdx.StorePack(id, blobs)
 	mi.idx = append(mi.idx, newIdx)
 }
 
-// NotFinalIndexes returns all indexes that have not yet been saved.
-func (mi *MasterIndex) NotFinalIndexes() []*Index {
+// FinalizeNotFinalIndexes finalizes all indexes that
+// have not yet been saved and returns that list
+func (mi *MasterIndex) FinalizeNotFinalIndexes() []*Index {
 	mi.idxMutex.Lock()
 	defer mi.idxMutex.Unlock()
 
@@ -139,6 +177,7 @@ func (mi *MasterIndex) NotFinalIndexes() []*Index {
 
 	for _, idx := range mi.idx {
 		if !idx.Final() {
+			idx.Finalize()
 			list = append(list, idx)
 		}
 	}
@@ -147,8 +186,8 @@ func (mi *MasterIndex) NotFinalIndexes() []*Index {
 	return list
 }
 
-// FullIndexes returns all indexes that are full.
-func (mi *MasterIndex) FullIndexes() []*Index {
+// FinalizeFullIndexes finalizes all indexes that are full and returns that list.
+func (mi *MasterIndex) FinalizeFullIndexes() []*Index {
 	mi.idxMutex.Lock()
 	defer mi.idxMutex.Unlock()
 
@@ -163,6 +202,7 @@ func (mi *MasterIndex) FullIndexes() []*Index {
 
 		if IndexFull(idx) {
 			debug.Log("index %p is full", idx)
+			idx.Finalize()
 			list = append(list, idx)
 		} else {
 			debug.Log("index %p not full", idx)

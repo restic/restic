@@ -130,11 +130,6 @@ func runRecover(gopts GlobalOptions) error {
 		return errors.Fatalf("unable to save blobs to the repo: %v", err)
 	}
 
-	err = repo.SaveIndex(gopts.ctx)
-	if err != nil {
-		return errors.Fatalf("unable to save new index to the repo: %v", err)
-	}
-
 	sn, err := restic.NewSnapshot([]string{"/recover"}, []string{}, hostname, time.Now())
 	if err != nil {
 		return errors.Fatalf("unable to save snapshot: %v", err)

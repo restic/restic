@@ -136,20 +136,11 @@ func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packe
 	}
 
 	// update blobs in the index
-	for _, b := range p.Packer.Blobs() {
-		debug.Log("  updating blob %v to pack %v", b.ID, id)
-		r.idx.Store(restic.PackedBlob{
-			Blob: restic.Blob{
-				Type:   b.Type,
-				ID:     b.ID,
-				Offset: b.Offset,
-				Length: uint(b.Length),
-			},
-			PackID: id,
-		})
-	}
+	debug.Log("  updating blobs %v to pack %v", p.Packer.Blobs(), id)
+	r.idx.StorePack(id, p.Packer.Blobs())
 
-	return nil
+	// Save index if full
+	return r.SaveFullIndex(ctx)
 }
 
 // countPacker returns the number of open (unfinished) packers.
