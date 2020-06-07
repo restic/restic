@@ -180,7 +180,7 @@ func runMount(opts MountOptions, gopts GlobalOptions, args []string) error {
 		debug.Log("running umount cleanup handler for mount at %v", mountpoint)
 		err := umount(mountpoint)
 		if err != nil {
-			Warnf("unable to umount (maybe already umounted?): %v\n", err)
+			Warnf("unable to umount (maybe already umounted or still in use?): %v\n", err)
 		}
 		return nil
 	})
