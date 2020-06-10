@@ -36,7 +36,7 @@ func lockRepository(repo *repository.Repository, exclusive bool) (*restic.Lock, 
 
 	lock, err := lockFn(context.TODO(), repo)
 	if err != nil {
-		return nil, errors.Fatalf("unable to create lock in backend: %v", err)
+		return nil, errors.WithMessage(err, "unable to create lock in backend")
 	}
 	debug.Log("create lock %p (exclusive %v)", lock, exclusive)
 
