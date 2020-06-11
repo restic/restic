@@ -45,8 +45,7 @@ func NewBlobSaver(ctx context.Context, t *tomb.Tomb, repo Saver, workers uint) *
 }
 
 // Save stores a blob in the repo. It checks the index and the known blobs
-// before saving anything. The second return parameter is true if the blob was
-// previously unknown.
+// before saving anything. It takes ownership of the buffer passed in.
 func (s *BlobSaver) Save(ctx context.Context, t restic.BlobType, buf *Buffer) FutureBlob {
 	ch := make(chan saveBlobResponse, 1)
 	select {
