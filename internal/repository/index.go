@@ -30,10 +30,10 @@ import (
 // We have the following sizes:
 // key: 32 + 1 = 33 bytes
 // slice: 24 bytes (pointer, len and cap)
-// indexEntry:  32 + 8 + 8 = 48 bytes
+// indexEntry:  32 + 4 + 4 = 40 bytes
 //
 // To save N index entries, we therefore need:
-// N * OF * (33 + 24) bytes + N * 48 bytes = N * 134 bytes
+// N * OF * (33 + 24) bytes + N * 40 bytes = N * 126 bytes
 
 // Index holds a lookup table for id -> pack.
 type Index struct {
@@ -49,8 +49,8 @@ type Index struct {
 
 type indexEntry struct {
 	packID restic.ID
-	offset uint
-	length uint
+	offset uint32
+	length uint32
 }
 
 // NewIndex returns a new index.
@@ -61,11 +61,17 @@ func NewIndex() *Index {
 	}
 }
 
+const maxuint32 = 1<<32 - 1
+
 func (idx *Index) store(blob restic.PackedBlob) {
+	// assert that offset and length fit into uint32!
+	if blob.Offset > maxuint32 || blob.Length > maxuint32 {
+		panic("offset or length does not fit in uint32. You have packs > 4GB!")
+	}
 	newEntry := indexEntry{
 		packID: blob.PackID,
-		offset: blob.Offset,
-		length: blob.Length,
+		offset: uint32(blob.Offset),
+		length: uint32(blob.Length),
 	}
 	h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
 	idx.pack[h] = append(idx.pack[h], newEntry)
@@ -146,8 +152,8 @@ func indexEntryToPackedBlob(h restic.BlobHandle, entry indexEntry) restic.Packed
 		Blob: restic.Blob{
 			ID:     h.ID,
 			Type:   h.Type,
-			Length: entry.length,
-			Offset: entry.offset,
+			Length: uint(entry.length),
+			Offset: uint(entry.offset),
 		},
 		PackID: entry.packID,
 	}
@@ -336,8 +342,8 @@ func (idx *Index) generatePackList() ([]*packJSON, error) {
 			p.Blobs = append(p.Blobs, blobJSON{
 				ID:     h.ID,
 				Type:   h.Type,
-				Offset: blob.offset,
-				Length: blob.length,
+				Offset: uint(blob.offset),
+				Length: uint(blob.length),
 			})
 		}
 	}
