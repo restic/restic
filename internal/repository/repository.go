@@ -28,6 +28,7 @@ type Repository struct {
 	keyName string
 	idx     *MasterIndex
 	restic.Cache
+	noAutoIndexUpdate bool
 
 	treePM *packerManager
 	dataPM *packerManager
@@ -43,6 +44,10 @@ func New(be restic.Backend) *Repository {
 	}
 
 	return repo
+}
+
+func (r *Repository) DisableAutoIndexUpdate() {
+	r.noAutoIndexUpdate = true
 }
 
 // Config returns the repository configuration.
