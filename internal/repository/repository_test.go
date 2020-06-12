@@ -197,6 +197,10 @@ func BenchmarkLoadBlob(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		var err error
 		buf, err = repo.LoadBlob(context.TODO(), restic.DataBlob, id, buf)
+
+		// Checking the SHA-256 with restic.Hash can make up 38% of the time
+		// spent in this loop, so pause the timer.
+		b.StopTimer()
 		rtest.OK(b, err)
 		if len(buf) != length {
 			b.Errorf("wanted %d bytes, got %d", length, len(buf))
@@ -206,6 +210,7 @@ func BenchmarkLoadBlob(b *testing.B) {
 		if !id.Equal(id2) {
 			b.Errorf("wrong data returned, wanted %v, got %v", id.Str(), id2.Str())
 		}
+		b.StartTimer()
 	}
 }
 
@@ -230,6 +235,9 @@ func BenchmarkLoadAndDecrypt(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		data, err := repo.LoadAndDecrypt(context.TODO(), nil, restic.DataFile, storageID)
 		rtest.OK(b, err)
+
+		// See comment in BenchmarkLoadBlob.
+		b.StopTimer()
 		if len(data) != length {
 			b.Errorf("wanted %d bytes, got %d", length, len(data))
 		}
@@ -238,6 +246,7 @@ func BenchmarkLoadAndDecrypt(b *testing.B) {
 		if !dataID.Equal(id2) {
 			b.Errorf("wrong data returned, wanted %v, got %v", storageID.Str(), id2.Str())
 		}
+		b.StartTimer()
 	}
 }
 
