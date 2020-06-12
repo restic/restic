@@ -87,6 +87,9 @@ func runPrune(gopts GlobalOptions) error {
 		return err
 	}
 
+	// we do not need index updates while pruning!
+	repo.DisableAutoIndexUpdate()
+
 	return pruneRepository(gopts, repo)
 }
 

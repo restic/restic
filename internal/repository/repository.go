@@ -28,6 +28,7 @@ type Repository struct {
 	keyName string
 	idx     *MasterIndex
 	restic.Cache
+	noAutoIndexUpdate bool
 
 	treePM *packerManager
 	dataPM *packerManager
@@ -43,6 +44,10 @@ func New(be restic.Backend) *Repository {
 	}
 
 	return repo
+}
+
+func (r *Repository) DisableAutoIndexUpdate() {
+	r.noAutoIndexUpdate = true
 }
 
 // Config returns the repository configuration.
@@ -221,13 +226,8 @@ func (r *Repository) LookupBlobSize(id restic.ID, tpe restic.BlobType) (uint, bo
 
 // SaveAndEncrypt encrypts data and stores it to the backend as type t. If data
 // is small enough, it will be packed together with other small blobs.
-func (r *Repository) SaveAndEncrypt(ctx context.Context, t restic.BlobType, data []byte, id *restic.ID) (restic.ID, error) {
-	if id == nil {
-		// compute plaintext hash
-		hashedID := restic.Hash(data)
-		id = &hashedID
-	}
-
+// The caller must ensure that the id matches the data.
+func (r *Repository) SaveAndEncrypt(ctx context.Context, t restic.BlobType, data []byte, id restic.ID) error {
 	debug.Log("save id %v (%v, %d bytes)", id, t, len(data))
 
 	nonce := crypto.NewRandomNonce()
@@ -252,24 +252,24 @@ func (r *Repository) SaveAndEncrypt(ctx context.Context, t restic.BlobType, data
 
 	packer, err := pm.findPacker()
 	if err != nil {
-		return restic.ID{}, err
+		return err
 	}
 
 	// save ciphertext
-	_, err = packer.Add(t, *id, ciphertext)
+	_, err = packer.Add(t, id, ciphertext)
 	if err != nil {
-		return restic.ID{}, err
+		return err
 	}
 
 	// if the pack is not full enough, put back to the list
 	if packer.Size() < minPackSize {
 		debug.Log("pack is not full enough (%d bytes)", packer.Size())
 		pm.insertPacker(packer)
-		return *id, nil
+		return nil
 	}
 
 	// else write the pack to the backend
-	return *id, r.savePacker(ctx, t, packer)
+	return r.savePacker(ctx, t, packer)
 }
 
 // SaveJSONUnpacked serialises item as JSON and encrypts and saves it in the
@@ -307,8 +307,18 @@ func (r *Repository) SaveUnpacked(ctx context.Context, t restic.FileType, p []by
 	return id, nil
 }
 
-// Flush saves all remaining packs.
+// Flush saves all remaining packs and the index
 func (r *Repository) Flush(ctx context.Context) error {
+	if err := r.FlushPacks(ctx); err != nil {
+		return err
+	}
+
+	// Save index after flushing
+	return r.SaveIndex(ctx)
+}
+
+// FlushPacks saves all remaining packs.
+func (r *Repository) FlushPacks(ctx context.Context) error {
 	pms := []struct {
 		t  restic.BlobType
 		pm *packerManager
@@ -331,7 +341,6 @@ func (r *Repository) Flush(ctx context.Context) error {
 		p.pm.packers = p.pm.packers[:0]
 		p.pm.pm.Unlock()
 	}
-
 	return nil
 }
 
@@ -366,7 +375,7 @@ func (r *Repository) SetIndex(i restic.Index) error {
 func SaveIndex(ctx context.Context, repo restic.Repository, index *Index) (restic.ID, error) {
 	buf := bytes.NewBuffer(nil)
 
-	err := index.Finalize(buf)
+	err := index.Encode(buf)
 	if err != nil {
 		return restic.ID{}, err
 	}
@@ -392,12 +401,12 @@ func (r *Repository) saveIndex(ctx context.Context, indexes ...*Index) error {
 
 // SaveIndex saves all new indexes in the backend.
 func (r *Repository) SaveIndex(ctx context.Context) error {
-	return r.saveIndex(ctx, r.idx.NotFinalIndexes()...)
+	return r.saveIndex(ctx, r.idx.FinalizeNotFinalIndexes()...)
 }
 
 // SaveFullIndex saves all full indexes in the backend.
 func (r *Repository) SaveFullIndex(ctx context.Context) error {
-	return r.saveIndex(ctx, r.idx.FullIndexes()...)
+	return r.saveIndex(ctx, r.idx.FinalizeFullIndexes()...)
 }
 
 const loadIndexParallelism = 4
@@ -670,14 +679,29 @@ func (r *Repository) Close() error {
 	return r.be.Close()
 }
 
-// SaveBlob saves a blob of type t into the repository. If id is the null id, it
-// will be computed and returned.
-func (r *Repository) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID) (restic.ID, error) {
-	var i *restic.ID
-	if !id.IsNull() {
-		i = &id
+// SaveBlob saves a blob of type t into the repository.
+// It takes care that no duplicates are saved; this can be overwritten
+// by setting storeDuplicate to true.
+// If id is the null id, it will be computed and returned.
+// Also returns if the blob was already known before
+func (r *Repository) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, err error) {
+
+	// compute plaintext hash if not already set
+	if id.IsNull() {
+		newID = restic.Hash(buf)
+	} else {
+		newID = id
 	}
-	return r.SaveAndEncrypt(ctx, t, buf, i)
+
+	// first try to add to pending blobs; if not successful, this blob is already known
+	known = !r.idx.addPending(newID, t)
+
+	// only save when needed or explicitely told
+	if !known || storeDuplicate {
+		err = r.SaveAndEncrypt(ctx, t, buf, newID)
+	}
+
+	return newID, known, err
 }
 
 // LoadTree loads a tree from the repository.
@@ -711,12 +735,7 @@ func (r *Repository) SaveTree(ctx context.Context, t *restic.Tree) (restic.ID, e
 	// adds a newline after each object)
 	buf = append(buf, '\n')
 
-	id := restic.Hash(buf)
-	if r.idx.Has(id, restic.TreeBlob) {
-		return id, nil
-	}
-
-	_, err = r.SaveBlob(ctx, restic.TreeBlob, buf, id)
+	id, _, err := r.SaveBlob(ctx, restic.TreeBlob, buf, restic.ID{}, false)
 	return id, err
 }
 

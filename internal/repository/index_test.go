@@ -123,9 +123,10 @@ func TestIndexSerialize(t *testing.T) {
 		}
 	}
 
-	// serialize idx, unserialize to idx3
+	// finalize; serialize idx, unserialize to idx3
+	idx.Finalize()
 	wr3 := bytes.NewBuffer(nil)
-	err = idx.Finalize(wr3)
+	err = idx.Encode(wr3)
 	rtest.OK(t, err)
 
 	rtest.Assert(t, idx.Final(),

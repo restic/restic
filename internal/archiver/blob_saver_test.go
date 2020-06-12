@@ -21,13 +21,13 @@ type saveFail struct {
 	failAt int32
 }
 
-func (b *saveFail) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID) (restic.ID, error) {
+func (b *saveFail) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicates bool) (restic.ID, bool, error) {
 	val := atomic.AddInt32(&b.cnt, 1)
 	if val == b.failAt {
-		return restic.ID{}, errTest
+		return restic.ID{}, false, errTest
 	}
 
-	return id, nil
+	return id, false, nil
 }
 
 func (b *saveFail) Index() restic.Index {

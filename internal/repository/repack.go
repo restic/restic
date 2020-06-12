@@ -84,7 +84,8 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 					h, tempfile.Name(), id)
 			}
 
-			_, err = repo.SaveBlob(ctx, entry.Type, plaintext, entry.ID)
+			// We do want to save already saved blobs!
+			_, _, err = repo.SaveBlob(ctx, entry.Type, plaintext, entry.ID, true)
 			if err != nil {
 				return nil, err
 			}

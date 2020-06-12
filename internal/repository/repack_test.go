@@ -31,16 +31,15 @@ func createRandomBlobs(t testing.TB, repo restic.Repository, blobs int, pData fl
 
 		buf := make([]byte, length)
 		rand.Read(buf)
-		id := restic.Hash(buf)
 
-		if repo.Index().Has(id, restic.DataBlob) {
-			t.Errorf("duplicate blob %v/%v ignored", id, restic.DataBlob)
-			continue
-		}
-
-		_, err := repo.SaveBlob(context.TODO(), tpe, buf, id)
+		id, exists, err := repo.SaveBlob(context.TODO(), tpe, buf, restic.ID{}, false)
 		if err != nil {
 			t.Fatalf("SaveFrom() error %v", err)
+		}
+
+		if exists {
+			t.Errorf("duplicate blob %v/%v ignored", id, restic.DataBlob)
+			continue
 		}
 
 		if rand.Float32() < 0.2 {

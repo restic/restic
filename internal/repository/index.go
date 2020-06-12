@@ -87,8 +87,7 @@ var IndexFull = func(idx *Index) bool {
 
 }
 
-// Store remembers the id and pack in the index. An existing entry will be
-// silently overwritten.
+// Store remembers the id and pack in the index.
 func (idx *Index) Store(blob restic.PackedBlob) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
@@ -100,6 +99,23 @@ func (idx *Index) Store(blob restic.PackedBlob) {
 	debug.Log("%v", blob)
 
 	idx.store(blob)
+}
+
+// StorePack remembers the ids of all blobs of a given pack
+// in the index
+func (idx *Index) StorePack(id restic.ID, blobs []restic.Blob) {
+	idx.m.Lock()
+	defer idx.m.Unlock()
+
+	if idx.final {
+		panic("store new item in finalized index")
+	}
+
+	debug.Log("%v", blobs)
+
+	for _, blob := range blobs {
+		idx.store(restic.PackedBlob{Blob: blob, PackID: id})
+	}
 }
 
 // Lookup queries the index for the blob ID and returns a restic.PackedBlob.
@@ -353,15 +369,13 @@ func (idx *Index) encode(w io.Writer) error {
 	return enc.Encode(idxJSON)
 }
 
-// Finalize sets the index to final and writes the JSON serialization to w.
-func (idx *Index) Finalize(w io.Writer) error {
-	debug.Log("encoding index")
+// Finalize sets the index to final.
+func (idx *Index) Finalize() {
+	debug.Log("finalizing index")
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
 	idx.final = true
-
-	return idx.encode(w)
 }
 
 // ID returns the ID of the index, if available. If the index is not yet

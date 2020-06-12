@@ -96,11 +96,6 @@ func saveFile(t testing.TB, repo restic.Repository, filename string, filesystem 
 		t.Fatal(err)
 	}
 
-	err = repo.SaveIndex(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	if !startCallback {
 		t.Errorf("start callback did not happen")
 	}
@@ -418,13 +413,16 @@ type blobCountingRepo struct {
 	saved map[restic.BlobHandle]uint
 }
 
-func (repo *blobCountingRepo) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID) (restic.ID, error) {
-	id, err := repo.Repository.SaveBlob(ctx, t, buf, id)
+func (repo *blobCountingRepo) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (restic.ID, bool, error) {
+	id, exists, err := repo.Repository.SaveBlob(ctx, t, buf, id, false)
+	if exists {
+		return id, exists, err
+	}
 	h := restic.BlobHandle{ID: id, Type: t}
 	repo.m.Lock()
 	repo.saved[h]++
 	repo.m.Unlock()
-	return id, err
+	return id, exists, err
 }
 
 func (repo *blobCountingRepo) SaveTree(ctx context.Context, t *restic.Tree) (restic.ID, error) {
@@ -853,11 +851,6 @@ func TestArchiverSaveDir(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			err = repo.SaveIndex(ctx)
-			if err != nil {
-				t.Fatal(err)
-			}
-
 			want := test.want
 			if want == nil {
 				want = test.src
@@ -942,11 +935,6 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 		t.Logf("node subtree %v", node.Subtree)
 
 		err = repo.Flush(ctx)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		err = repo.SaveIndex(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1081,11 +1069,6 @@ func TestArchiverSaveTree(t *testing.T) {
 			}
 
 			err = repo.Flush(ctx)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			err = repo.SaveIndex(ctx)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1841,13 +1824,13 @@ type failSaveRepo struct {
 	err       error
 }
 
-func (f *failSaveRepo) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID) (restic.ID, error) {
+func (f *failSaveRepo) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (restic.ID, bool, error) {
 	val := atomic.AddInt32(&f.cnt, 1)
 	if val >= f.failAfter {
-		return restic.ID{}, f.err
+		return restic.ID{}, false, f.err
 	}
 
-	return f.Repository.SaveBlob(ctx, t, buf, id)
+	return f.Repository.SaveBlob(ctx, t, buf, id, storeDuplicate)
 }
 
 func TestArchiverAbortEarlyOnError(t *testing.T) {
