@@ -13,6 +13,28 @@ import (
 	"github.com/restic/restic/internal/debug"
 )
 
+// In large repositories, millions of blobs are stored in the repository
+// and restic needs to store an index entry for each blob in memory for
+// most operations.
+// Hence the index data structure defined here is one of the main contributions
+// to the total memory requirements of restic.
+//
+// We use a map to store each index entry.
+// The key of the map is a BlobHandle
+// The entries of the maps are slices which contain the actual index entries.
+//
+// To compute the needed amount of memory, we need some assumptions.
+// Maps need an overhead of allocated but not needed elements.
+// For computations, we assume an overhead of 50% and use OF=1.5 (overhead factor)
+//
+// We have the following sizes:
+// key: 32 + 1 = 33 bytes
+// slice: 24 bytes (pointer, len and cap)
+// indexEntry:  32 + 8 + 8 = 48 bytes
+//
+// To save N index entries, we therefore need:
+// N * OF * (33 + 24) bytes + N * 48 bytes = N * 134 bytes
+
 // Index holds a lookup table for id -> pack.
 type Index struct {
 	m         sync.Mutex
