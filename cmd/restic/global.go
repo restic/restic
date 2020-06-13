@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/keybase/go-keychain"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/azure"
 	"github.com/restic/restic/internal/backend/b2"
@@ -46,19 +47,20 @@ const TimeFormat = "2006-01-02 15:04:05"
 
 // GlobalOptions hold all global options for restic.
 type GlobalOptions struct {
-	Repo            string
-	PasswordFile    string
-	PasswordCommand string
-	KeyHint         string
-	Quiet           bool
-	Verbose         int
-	NoLock          bool
-	JSON            bool
-	CacheDir        string
-	NoCache         bool
-	CACerts         []string
-	TLSClientCert   string
-	CleanupCache    bool
+	Repo             string
+	PasswordFile     string
+	PasswordCommand  string
+	PasswordKeychain string
+	KeyHint          string
+	Quiet            bool
+	Verbose          int
+	NoLock           bool
+	JSON             bool
+	CacheDir         string
+	NoCache          bool
+	CACerts          []string
+	TLSClientCert    string
+	CleanupCache     bool
 
 	LimitUploadKb   int
 	LimitDownloadKb int
@@ -98,6 +100,7 @@ func init() {
 	f := cmdRoot.PersistentFlags()
 	f.StringVarP(&globalOptions.Repo, "repo", "r", os.Getenv("RESTIC_REPOSITORY"), "`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)")
 	f.StringVarP(&globalOptions.PasswordFile, "password-file", "p", os.Getenv("RESTIC_PASSWORD_FILE"), "read the repository password from a `file` (default: $RESTIC_PASSWORD_FILE)")
+	f.StringVarP(&globalOptions.PasswordKeychain, "password-keychain", "", os.Getenv("RESTIC_KEYCHAIN_NAME"), "read the repository password from a keychain entry `name` (default: $RESTIC_KEYCHAIN_NAME)")
 	f.StringVarP(&globalOptions.KeyHint, "key-hint", "", os.Getenv("RESTIC_KEY_HINT"), "`key` ID of key to try decrypting first (default: $RESTIC_KEY_HINT)")
 	f.StringVarP(&globalOptions.PasswordCommand, "password-command", "", os.Getenv("RESTIC_PASSWORD_COMMAND"), "specify a shell `command` to obtain a password (default: $RESTIC_PASSWORD_COMMAND)")
 	f.BoolVarP(&globalOptions.Quiet, "quiet", "q", false, "do not output comprehensive progress report")
@@ -271,8 +274,8 @@ func Exitf(exitcode int, format string, args ...interface{}) {
 
 // resolvePassword determines the password to be used for opening the repository.
 func resolvePassword(opts GlobalOptions) (string, error) {
-	if opts.PasswordFile != "" && opts.PasswordCommand != "" {
-		return "", errors.Fatalf("Password file and command are mutually exclusive options")
+	if opts.PasswordFile != "" && opts.PasswordCommand != "" && opts.PasswordKeychain != "" {
+		return "", errors.Fatalf("Password file, command and keychain are mutually exclusive options")
 	}
 	if opts.PasswordCommand != "" {
 		args, err := backend.SplitShellStrings(opts.PasswordCommand)
@@ -293,6 +296,22 @@ func resolvePassword(opts GlobalOptions) (string, error) {
 			return "", errors.Fatalf("%s does not exist", opts.PasswordFile)
 		}
 		return strings.TrimSpace(string(s)), errors.Wrap(err, "Readfile")
+	}
+	if opts.PasswordKeychain != "" {
+		query := keychain.NewItem()
+		query.SetSecClass(keychain.SecClassGenericPassword)
+		query.SetService(opts.PasswordKeychain)
+		query.SetMatchLimit(keychain.MatchLimitOne)
+		query.SetReturnData(true)
+		results, err := keychain.QueryItem(query)
+		if err != nil {
+			return "", errors.Fatalf("%s not authorized", opts.PasswordKeychain)
+		} else if len(results) != 1 {
+			return "", errors.Fatalf("%s not found", opts.PasswordKeychain)
+		} else {
+			password := string(results[0].Data)
+			return password, nil
+		}
 	}
 
 	if pwd := os.Getenv("RESTIC_PASSWORD"); pwd != "" {
