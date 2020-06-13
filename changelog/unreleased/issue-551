@@ -1,0 +1,10 @@
+Enhancement: Use optimized library for hash calculation of file chunks
+
+We've switched the library used to calculate the hashes of file chunks, which
+are used for deduplication, to the optimized Minio SHA-256 implementation.
+
+Depending on the CPU it improves the hashing throughput by 10-30%. Modern x86
+CPUs with the SHA Extension should be about two to three times faster.
+
+https://github.com/restic/restic/issues/551
+https://github.com/restic/restic/pull/2709
