@@ -53,6 +53,8 @@ type Index struct {
 	duplicates map[restic.BlobHandle][]indexEntry
 	packs      restic.IDs
 	treePacks  restic.IDs
+	// only used by Store, StorePacks does not check for already saved packIDs
+	packIDToIndex map[restic.ID]int
 
 	final      bool      // set to true for all indexes read from the backend ("finalized")
 	id         restic.ID // set to the ID of the index when it's finalized
@@ -70,9 +72,10 @@ type indexEntry struct {
 // NewIndex returns a new index.
 func NewIndex() *Index {
 	return &Index{
-		blob:       make(map[restic.BlobHandle]indexEntry),
-		duplicates: make(map[restic.BlobHandle][]indexEntry),
-		created:    time.Now(),
+		blob:          make(map[restic.BlobHandle]indexEntry),
+		duplicates:    make(map[restic.BlobHandle][]indexEntry),
+		packIDToIndex: make(map[restic.ID]int),
+		created:       time.Now(),
 	}
 }
 
@@ -165,7 +168,14 @@ func (idx *Index) Store(blob restic.PackedBlob) {
 
 	debug.Log("%v", blob)
 
-	idx.store(idx.addToPacks(blob.PackID), blob.Blob)
+	// get packIndex and save if new packID
+	packIndex, ok := idx.packIDToIndex[blob.PackID]
+	if !ok {
+		packIndex = idx.addToPacks(blob.PackID)
+		idx.packIDToIndex[blob.PackID] = packIndex
+	}
+
+	idx.store(packIndex, blob.Blob)
 }
 
 // StorePack remembers the ids of all blobs of a given pack
@@ -431,6 +441,8 @@ func (idx *Index) Finalize() {
 	defer idx.m.Unlock()
 
 	idx.final = true
+	// clear packIDToIndex as no more elements will be added
+	idx.packIDToIndex = nil
 }
 
 // ID returns the ID of the index, if available. If the index is not yet
