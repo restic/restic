@@ -1,0 +1,6 @@
+Enhancement: Use optimized SHA-256
+
+We now use Minio's optimized version of SHA-256 (https://github.com/minio/sha256-simd/).
+This increases SHA-256 performance for many recent Intel, AMD or ARM CPUs.
+
+https://github.com/restic/restic/pull/2709
