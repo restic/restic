@@ -260,7 +260,7 @@ func (idx *Index) Has(id restic.ID, tpe restic.BlobType) bool {
 
 // LookupSize returns the length of the plaintext content of the blob with the
 // given id.
-func (idx *Index) LookupSize(id restic.ID, tpe restic.BlobType) (plaintextLength uint, found bool) {
+func (idx *Index) lookupSize(id restic.ID, tpe restic.BlobType) (plaintextLength uint, found bool) {
 	h := restic.BlobHandle{ID: id, Type: tpe}
 
 	idx.m.Lock()

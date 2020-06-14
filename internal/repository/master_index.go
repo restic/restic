@@ -37,12 +37,12 @@ func (mi *MasterIndex) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic
 }
 
 // LookupSize queries all known Indexes for the ID and returns the first match.
-func (mi *MasterIndex) LookupSize(id restic.ID, tpe restic.BlobType) (uint, bool) {
+func (mi *MasterIndex) lookupSize(id restic.ID, tpe restic.BlobType) (uint, bool) {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 
 	for _, idx := range mi.idx {
-		if size, found := idx.LookupSize(id, tpe); found {
+		if size, found := idx.lookupSize(id, tpe); found {
 			return size, found
 		}
 	}

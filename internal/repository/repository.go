@@ -222,7 +222,7 @@ func (r *Repository) LoadJSONUnpacked(ctx context.Context, t restic.FileType, id
 
 // LookupBlobSize returns the size of blob id.
 func (r *Repository) LookupBlobSize(id restic.ID, tpe restic.BlobType) (uint, bool) {
-	return r.idx.LookupSize(id, tpe)
+	return r.idx.lookupSize(id, tpe)
 }
 
 // SaveAndEncrypt encrypts data and stores it to the backend as type t. If data
