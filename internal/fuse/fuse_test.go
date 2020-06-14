@@ -146,8 +146,6 @@ func TestFuseFile(t *testing.T) {
 			t.Errorf("test %d failed, wrong data returned (offset %v, length %v)", i, offset, length)
 		}
 	}
-
-	rtest.OK(t, f.Release(ctx, nil))
 }
 
 // Test top-level directories for their UID and GID.
