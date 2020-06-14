@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"os/signal"
 	"sync"
@@ -16,8 +15,6 @@ var cleanupHandlers struct {
 	done bool
 	ch   chan os.Signal
 }
-
-var stderr = os.Stderr
 
 func init() {
 	cleanupHandlers.ch = make(chan os.Signal, 1)
@@ -51,7 +48,7 @@ func RunCleanupHandlers() {
 	for _, f := range cleanupHandlers.list {
 		err := f()
 		if err != nil {
-			fmt.Fprintf(stderr, "error in cleanup handler: %v\n", err)
+			Warnf("error in cleanup handler: %v\n", err)
 		}
 	}
 	cleanupHandlers.list = nil
@@ -61,7 +58,7 @@ func RunCleanupHandlers() {
 func CleanupHandler(c <-chan os.Signal) {
 	for s := range c {
 		debug.Log("signal %v received, cleaning up", s)
-		fmt.Fprintf(stderr, "%ssignal %v received, cleaning up\n", ClearLine(), s)
+		Warnf("%ssignal %v received, cleaning up\n", ClearLine(), s)
 
 		code := 0
 

@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"sync"
 	"time"
 
@@ -79,7 +77,7 @@ func refreshLocks(wg *sync.WaitGroup, done <-chan struct{}) {
 			for _, lock := range globalLocks.locks {
 				err := lock.Refresh(context.TODO())
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "unable to refresh lock: %v\n", err)
+					Warnf("unable to refresh lock: %v\n", err)
 				}
 			}
 			globalLocks.Unlock()

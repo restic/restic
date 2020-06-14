@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -235,7 +234,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 			continue
 		}
 		errorsFound = true
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+		Warnf("%v\n", err)
 	}
 
 	if orphanedPacks > 0 {
@@ -249,12 +248,12 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	for err := range errChan {
 		errorsFound = true
 		if e, ok := err.(checker.TreeError); ok {
-			fmt.Fprintf(os.Stderr, "error for tree %v:\n", e.ID.Str())
+			Warnf("error for tree %v:\n", e.ID.Str())
 			for _, treeErr := range e.Errors {
-				fmt.Fprintf(os.Stderr, "  %v\n", treeErr)
+				Warnf("  %v\n", treeErr)
 			}
 		} else {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			Warnf("error: %v\n", err)
 		}
 	}
 
@@ -289,7 +288,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 
 		for err := range errChan {
 			errorsFound = true
-			fmt.Fprintf(os.Stderr, "%v\n", err)
+			Warnf("%v\n", err)
 		}
 	}
 
