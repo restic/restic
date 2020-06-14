@@ -209,7 +209,7 @@ func (idx *Index) indexEntryToPackedBlob(h restic.BlobHandle, entry indexEntry) 
 	}
 }
 
-// Lookup queries the index for the blob ID and returns a restic.PackedBlob.
+// Lookup queries the index for the blob ID and returns all its pack locations.
 func (idx *Index) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic.PackedBlob, found bool) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
