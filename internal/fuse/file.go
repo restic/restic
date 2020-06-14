@@ -35,13 +35,9 @@ func newFile(ctx context.Context, root *Root, inode uint64, node *restic.Node) (
 	var bytes uint64
 	cumsize := make([]uint64, 1+len(node.Content))
 	for i, id := range node.Content {
-		size, ok := root.blobSizeCache.Lookup(id)
-		if !ok {
-			var found bool
-			size, found = root.repo.LookupBlobSize(id, restic.DataBlob)
-			if !found {
-				return nil, errors.Errorf("id %v not found in repository", id)
-			}
+		size, found := root.repo.LookupBlobSize(id, restic.DataBlob)
+		if !found {
+			return nil, errors.Errorf("id %v not found in repository", id)
 		}
 
 		bytes += uint64(size)

@@ -139,7 +139,7 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 		Paths:            opts.Paths,
 		SnapshotTemplate: opts.SnapshotTemplate,
 	}
-	root := fuse.NewRoot(gopts.ctx, repo, cfg)
+	root := fuse.NewRoot(repo, cfg)
 
 	Printf("Now serving the repository at %s\n", mountpoint)
 	Printf("When finished, quit with Ctrl-c or umount the mountpoint.\n")
