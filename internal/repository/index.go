@@ -261,12 +261,13 @@ func (idx *Index) Has(id restic.ID, tpe restic.BlobType) bool {
 // LookupSize returns the length of the plaintext content of the blob with the
 // given id.
 func (idx *Index) LookupSize(id restic.ID, tpe restic.BlobType) (plaintextLength uint, found bool) {
-	blobs, found := idx.Lookup(id, tpe)
-	if !found {
-		return 0, found
-	}
+	h := restic.BlobHandle{ID: id, Type: tpe}
 
-	return uint(restic.PlaintextLength(int(blobs[0].Length))), true
+	idx.m.Lock()
+	entry, ok := idx.blob[h]
+	idx.m.Unlock()
+
+	return uint(restic.PlaintextLength(int(entry.length))), ok
 }
 
 // Supersedes returns the list of indexes this index supersedes, if any.
