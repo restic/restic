@@ -1,0 +1,8 @@
+Enhancement: Optimize `restic mount`
+
+We've optimized the FUSE implementation used within restic.
+`restic mount` is now more responsive and uses less memory.
+
+https://github.com/restic/restic/issues/1680
+https://github.com/restic/restic/pull/2587
+https://github.com/restic/restic/pull/2787
