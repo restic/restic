@@ -26,19 +26,16 @@ func NewMasterIndex() *MasterIndex {
 	return &MasterIndex{idx: idx, pendingBlobs: restic.NewBlobSet()}
 }
 
-// Lookup queries all known Indexes for the ID and returns the first match.
-func (mi *MasterIndex) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic.PackedBlob, found bool) {
+// Lookup queries all known Indexes for the ID and returns all matches.
+func (mi *MasterIndex) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic.PackedBlob) {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 
 	for _, idx := range mi.idx {
-		blobs, found = idx.Lookup(id, tpe)
-		if found {
-			return
-		}
+		blobs = idx.Lookup(id, tpe, blobs)
 	}
 
-	return nil, false
+	return blobs
 }
 
 // LookupSize queries all known Indexes for the ID and returns the first match.

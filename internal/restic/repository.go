@@ -60,7 +60,7 @@ type Lister interface {
 // Index keeps track of the blobs are stored within files.
 type Index interface {
 	Has(ID, BlobType) bool
-	Lookup(ID, BlobType) ([]PackedBlob, bool)
+	Lookup(ID, BlobType) []PackedBlob
 	Count(BlobType) uint
 
 	// Each returns a channel that yields all blobs known to the index. When

@@ -40,7 +40,7 @@ func TestBlobSaver(t *testing.T) {
 
 	tmb, ctx := tomb.WithContext(ctx)
 	saver := &saveFail{
-		idx: repository.NewIndex(),
+		idx: repository.NewMasterIndex(),
 	}
 
 	b := NewBlobSaver(ctx, tmb, saver, uint(runtime.NumCPU()))
@@ -86,7 +86,7 @@ func TestBlobSaverError(t *testing.T) {
 
 			tmb, ctx := tomb.WithContext(ctx)
 			saver := &saveFail{
-				idx:    repository.NewIndex(),
+				idx:    repository.NewMasterIndex(),
 				failAt: int32(test.failAt),
 			}
 

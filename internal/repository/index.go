@@ -174,8 +174,9 @@ func (idx *Index) toPackedBlob(e *indexEntry, typ restic.BlobType) restic.Packed
 	}
 }
 
-// Lookup queries the index for the blob ID and returns a restic.PackedBlob.
-func (idx *Index) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic.PackedBlob, found bool) {
+// Lookup queries the index for the blob ID and returns all entries including
+// duplicates. Adds found entries to blobs and returns the result.
+func (idx *Index) Lookup(id restic.ID, tpe restic.BlobType, blobs []restic.PackedBlob) []restic.PackedBlob {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
@@ -183,7 +184,7 @@ func (idx *Index) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic.Pack
 		blobs = append(blobs, idx.toPackedBlob(e, tpe))
 	})
 
-	return blobs, len(blobs) > 0
+	return blobs
 }
 
 // ListPack returns a list of blobs contained in a pack.
