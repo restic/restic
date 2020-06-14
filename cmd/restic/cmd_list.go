@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/index"
+	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/spf13/cobra"
@@ -60,16 +60,16 @@ func runList(cmd *cobra.Command, opts GlobalOptions, args []string) error {
 	case "locks":
 		t = restic.LockFile
 	case "blobs":
-		idx, err := index.Load(opts.ctx, repo, nil)
-		if err != nil {
-			return err
-		}
-
-		for _, pack := range idx.Packs {
-			for _, entry := range pack.Entries {
-				Printf("%v %v\n", entry.Type, entry.ID)
+		return repo.List(opts.ctx, restic.IndexFile, func(id restic.ID, size int64) error {
+			idx, err := repository.LoadIndex(opts.ctx, repo, id)
+			if err != nil {
+				return err
 			}
-		}
+			for blobs := range idx.Each(opts.ctx) {
+				Printf("%v %v\n", blobs.Type, blobs.ID)
+			}
+			return nil
+		})
 
 		return nil
 	default:
