@@ -142,7 +142,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 	}
 
 	// load index, handle all the other types
-	err = repo.LoadIndex(gopts.ctx)
+	err = repo.LoadIndex(gopts.ctx, restic.IndexOptionFull)
 	if err != nil {
 		return err
 	}

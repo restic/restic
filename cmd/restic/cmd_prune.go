@@ -115,7 +115,7 @@ func mixedBlobs(list []restic.Blob) bool {
 func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	ctx := gopts.ctx
 
-	err := repo.LoadIndex(ctx)
+	err := repo.LoadIndex(ctx, restic.IndexOptionFull)
 	if err != nil {
 		return err
 	}

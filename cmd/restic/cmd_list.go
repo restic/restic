@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/spf13/cobra"
@@ -60,17 +59,17 @@ func runList(cmd *cobra.Command, opts GlobalOptions, args []string) error {
 	case "locks":
 		t = restic.LockFile
 	case "blobs":
-		return repo.List(opts.ctx, restic.IndexFile, func(id restic.ID, size int64) error {
-			idx, err := repository.LoadIndex(opts.ctx, repo, id)
-			if err != nil {
-				return err
-			}
-			for blobs := range idx.Each(opts.ctx) {
-				Printf("%v %v\n", blobs.Type, blobs.ID)
-			}
-			return nil
-		})
-
+		err := repo.LoadIndex(opts.ctx, restic.IndexOptionNone)
+		if err != nil {
+			return err
+		}
+		blobs, err := repo.Index().Each(opts.ctx)
+		if err != nil {
+			return err
+		}
+		for blob := range blobs {
+			Printf("%v %v\n", blob.Type, blob.ID)
+		}
 		return nil
 	default:
 		return errors.Fatal("invalid type")

@@ -50,7 +50,7 @@ func runRecover(gopts GlobalOptions) error {
 	}
 
 	Verbosef("load index files\n")
-	if err = repo.LoadIndex(gopts.ctx); err != nil {
+	if err = repo.LoadIndex(gopts.ctx, restic.IndexOptionNoData); err != nil {
 		return err
 	}
 
@@ -58,7 +58,11 @@ func runRecover(gopts GlobalOptions) error {
 	// tree. If it is not referenced, we have a root tree.
 	trees := make(map[restic.ID]bool)
 
-	for blob := range repo.Index().Each(gopts.ctx) {
+	blobs, err := repo.Index().Each(gopts.ctx)
+	if err != nil {
+		return err
+	}
+	for blob := range blobs {
 		if blob.Blob.Type != restic.TreeBlob {
 			continue
 		}

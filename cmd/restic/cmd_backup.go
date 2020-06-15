@@ -495,7 +495,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	if !gopts.JSON {
 		p.V("load index files")
 	}
-	err = repo.LoadIndex(gopts.ctx)
+	err = repo.LoadIndex(gopts.ctx, restic.IndexOptionDataIDsOnly)
 	if err != nil {
 		return err
 	}

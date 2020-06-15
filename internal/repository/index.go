@@ -56,6 +56,12 @@ type Index struct {
 	// only used by Store, StorePacks does not check for already saved packIDs
 	packIDToIndex map[restic.ID]int
 
+	option restic.IndexOption
+	// only used with option DataIDsOnly
+	dataIDs restic.IDSet
+	// only used when option != FullIndex
+	repo *Repository
+
 	final      bool      // set to true for all indexes read from the backend ("finalized")
 	id         restic.ID // set to the ID of the index when it's finalized
 	supersedes restic.IDs
@@ -70,12 +76,24 @@ type indexEntry struct {
 }
 
 // NewIndex returns a new index.
-func NewIndex() *Index {
+func NewIndex(option restic.IndexOption) *Index {
+	var dataIDs restic.IDSet
+	if option == restic.IndexOptionDataIDsOnly {
+		dataIDs = restic.NewIDSet()
+	}
 	return &Index{
 		blob:          make(map[restic.BlobHandle]indexEntry),
 		duplicates:    make(map[restic.BlobHandle][]indexEntry),
 		packIDToIndex: make(map[restic.ID]int),
+		option:        option,
+		dataIDs:       dataIDs,
 		created:       time.Now(),
+	}
+}
+
+func (idx *Index) assertOption() {
+	if idx.option != restic.IndexOptionFull {
+		panic("not implemented!")
 	}
 }
 
@@ -168,6 +186,16 @@ func (idx *Index) Store(blob restic.PackedBlob) {
 
 	debug.Log("%v", blob)
 
+	if blob.Type == restic.DataBlob {
+		switch idx.option {
+		case restic.IndexOptionDataIDsOnly:
+			idx.dataIDs.Insert(blob.ID)
+			return
+		case restic.IndexOptionNoData:
+			panic("not implemented!")
+		}
+	}
+
 	// get packIndex and save if new packID
 	packIndex, ok := idx.packIDToIndex[blob.PackID]
 	if !ok {
@@ -183,6 +211,8 @@ func (idx *Index) Store(blob restic.PackedBlob) {
 func (idx *Index) StorePack(id restic.ID, blobs []restic.Blob) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
+
+	idx.assertOption()
 
 	if idx.final {
 		panic("store new item in finalized index")
@@ -214,6 +244,10 @@ func (idx *Index) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic.Pack
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
+	if tpe == restic.DataBlob {
+		idx.assertOption()
+	}
+
 	h := restic.BlobHandle{ID: id, Type: tpe}
 
 	blob, ok := idx.blob[h]
@@ -236,6 +270,8 @@ func (idx *Index) ListPack(id restic.ID) (list []restic.PackedBlob) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
+	idx.assertOption()
+
 	for h, entry := range idx.blob {
 		for _, blob := range idx.withDuplicates(h, entry) {
 			if idx.packs[blob.packIndex] == id {
@@ -252,8 +288,16 @@ func (idx *Index) Has(id restic.ID, tpe restic.BlobType) bool {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
-	h := restic.BlobHandle{ID: id, Type: tpe}
+	if tpe == restic.DataBlob {
+		switch idx.option {
+		case restic.IndexOptionDataIDsOnly:
+			return idx.dataIDs.Has(id)
+		case restic.IndexOptionNoData:
+			panic("not implemented!")
+		}
+	}
 
+	h := restic.BlobHandle{ID: id, Type: tpe}
 	_, ok := idx.blob[h]
 	return ok
 }
@@ -291,8 +335,22 @@ func (idx *Index) AddToSupersedes(ids ...restic.ID) error {
 // Each returns a channel that yields all blobs known to the index. When the
 // context is cancelled, the background goroutine terminates. This blocks any
 // modification of the index.
-func (idx *Index) Each(ctx context.Context) <-chan restic.PackedBlob {
+func (idx *Index) Each(ctx context.Context) (<-chan restic.PackedBlob, error) {
 	idx.m.Lock()
+
+	if idx.option != restic.IndexOptionFull {
+		// reload current index file!
+		id, err := idx.ID()
+		if err != nil {
+			return nil, err
+		}
+		// TODO: Even better would be to load JSON and directly loop over it in a gofunc
+		newIdx, err := LoadIndex(ctx, idx.repo, id, restic.IndexOptionFull)
+		if err != nil {
+			return nil, err
+		}
+		return newIdx.Each(ctx)
+	}
 
 	ch := make(chan restic.PackedBlob)
 
@@ -313,7 +371,7 @@ func (idx *Index) Each(ctx context.Context) <-chan restic.PackedBlob {
 		}
 	}()
 
-	return ch
+	return ch, nil
 }
 
 // Packs returns all packs in this index
@@ -334,6 +392,8 @@ func (idx *Index) Count(t restic.BlobType) (n uint) {
 	debug.Log("counting blobs of type %v", t)
 	idx.m.Lock()
 	defer idx.m.Unlock()
+
+	idx.assertOption()
 
 	for h := range idx.blob {
 		if h.Type != t {
@@ -365,6 +425,7 @@ type blobJSON struct {
 
 // generatePackList returns a list of packs.
 func (idx *Index) generatePackList() ([]*packJSON, error) {
+	idx.assertOption()
 	list := []*packJSON{}
 	packs := make(map[restic.ID]*packJSON)
 
@@ -528,11 +589,11 @@ func isErrOldIndex(err error) bool {
 var ErrOldIndexFormat = errors.New("index has old format")
 
 // DecodeIndex loads and unserializes an index from rd.
-func DecodeIndex(buf []byte) (idx *Index, err error) {
+func DecodeIndex(idx *Index, buf []byte) error {
 	debug.Log("Start decoding index")
 	idxJSON := &jsonIndex{}
 
-	err = json.Unmarshal(buf, idxJSON)
+	err := json.Unmarshal(buf, idxJSON)
 	if err != nil {
 		debug.Log("Error %v", err)
 
@@ -541,71 +602,51 @@ func DecodeIndex(buf []byte) (idx *Index, err error) {
 			err = ErrOldIndexFormat
 		}
 
-		return nil, errors.Wrap(err, "Decode")
+		return errors.Wrap(err, "Decode")
 	}
 
-	idx = NewIndex()
-	for _, pack := range idxJSON.Packs {
-		var data, tree bool
-		packID := idx.addToPacks(pack.ID)
-
-		for _, blob := range pack.Blobs {
-			idx.store(packID, restic.Blob{
-				Type:   blob.Type,
-				ID:     blob.ID,
-				Offset: blob.Offset,
-				Length: blob.Length,
-			})
-
-			switch blob.Type {
-			case restic.DataBlob:
-				data = true
-			case restic.TreeBlob:
-				tree = true
-			}
-		}
-
-		if !data && tree {
-			idx.treePacks = append(idx.treePacks, pack.ID)
-		}
-	}
 	idx.supersedes = idxJSON.Supersedes
-	idx.final = true
 
-	debug.Log("done")
-	return idx, nil
+	return DecodePacklist(idxJSON.Packs, idx)
 }
 
 // DecodeOldIndex loads and unserializes an index in the old format from rd.
-func DecodeOldIndex(buf []byte) (idx *Index, err error) {
+func DecodeOldIndex(idx *Index, buf []byte) error {
 	debug.Log("Start decoding old index")
 	list := []*packJSON{}
 
-	err = json.Unmarshal(buf, &list)
+	err := json.Unmarshal(buf, &list)
 	if err != nil {
 		debug.Log("Error %#v", err)
-		return nil, errors.Wrap(err, "Decode")
+		return errors.Wrap(err, "Decode")
 	}
 
-	idx = NewIndex()
+	return DecodePacklist(list, idx)
+}
+
+func DecodePacklist(list []*packJSON, idx *Index) error {
 	for _, pack := range list {
 		var data, tree bool
 		packID := idx.addToPacks(pack.ID)
 
 		for _, blob := range pack.Blobs {
+			switch blob.Type {
+			case restic.DataBlob:
+				data = true
+				if idx.option == restic.IndexOptionDataIDsOnly {
+					idx.dataIDs.Insert(blob.ID)
+					continue
+				}
+			case restic.TreeBlob:
+				tree = true
+			}
+
 			idx.store(packID, restic.Blob{
 				Type:   blob.Type,
 				ID:     blob.ID,
 				Offset: blob.Offset,
 				Length: blob.Length,
 			})
-
-			switch blob.Type {
-			case restic.DataBlob:
-				data = true
-			case restic.TreeBlob:
-				tree = true
-			}
 		}
 
 		if !data && tree {
@@ -615,11 +656,11 @@ func DecodeOldIndex(buf []byte) (idx *Index, err error) {
 	idx.final = true
 
 	debug.Log("done")
-	return idx, nil
+	return nil
 }
 
 // LoadIndexWithDecoder loads the index and decodes it with fn.
-func LoadIndexWithDecoder(ctx context.Context, repo restic.Repository, buf []byte, id restic.ID, fn func([]byte) (*Index, error)) (*Index, []byte, error) {
+func LoadIndexWithDecoder(ctx context.Context, repo restic.Repository, buf []byte, id restic.ID, option restic.IndexOption, fn func(*Index, []byte) error) (*Index, []byte, error) {
 	debug.Log("Loading index %v", id)
 
 	buf, err := repo.LoadAndDecrypt(ctx, buf[:0], restic.IndexFile, id)
@@ -627,7 +668,8 @@ func LoadIndexWithDecoder(ctx context.Context, repo restic.Repository, buf []byt
 		return nil, buf[:0], err
 	}
 
-	idx, err := fn(buf)
+	idx := NewIndex(option)
+	err = fn(idx, buf)
 	if err != nil {
 		debug.Log("error while decoding index %v: %v", id, err)
 		return nil, buf[:0], err

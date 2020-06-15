@@ -113,12 +113,12 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 			debug.Log("worker got file %v", fi.ID.Str())
 			var err error
 			var idx *repository.Index
-			idx, buf, err = repository.LoadIndexWithDecoder(ctx, c.repo, buf[:0], fi.ID, repository.DecodeIndex)
+			idx, buf, err = repository.LoadIndexWithDecoder(ctx, c.repo, buf[:0], fi.ID, restic.IndexOptionFull, repository.DecodeIndex)
 			if errors.Cause(err) == repository.ErrOldIndexFormat {
 				debug.Log("index %v has old format", fi.ID.Str())
 				hints = append(hints, ErrOldIndexFormat{fi.ID})
 
-				idx, buf, err = repository.LoadIndexWithDecoder(ctx, c.repo, buf[:0], fi.ID, repository.DecodeOldIndex)
+				idx, buf, err = repository.LoadIndexWithDecoder(ctx, c.repo, buf[:0], fi.ID, restic.IndexOptionFull, repository.DecodeOldIndex)
 			}
 
 			err = errors.Wrapf(err, "error loading index %v", fi.ID.Str())
@@ -157,7 +157,12 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 
 			debug.Log("process blobs")
 			cnt := 0
-			for blob := range res.Index.Each(ctx) {
+			blobs, err := res.Index.Each(ctx)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			for blob := range blobs {
 				c.packs.Insert(blob.PackID)
 				c.blobs.Insert(blob.ID)
 				c.blobRefs.M[blob.ID] = 0

@@ -71,7 +71,7 @@ func runStats(gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	if err = repo.LoadIndex(ctx); err != nil {
+	if err = repo.LoadIndex(ctx, restic.IndexOptionNoData); err != nil {
 		return err
 	}
 

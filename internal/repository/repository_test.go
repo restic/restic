@@ -283,7 +283,7 @@ func TestRepositoryLoadIndex(t *testing.T) {
 	defer cleanup()
 
 	repo := repository.TestOpenLocal(t, repodir)
-	rtest.OK(t, repo.LoadIndex(context.TODO()))
+	rtest.OK(t, repo.LoadIndex(context.TODO(), restic.IndexOptionFull))
 }
 
 func BenchmarkLoadIndex(b *testing.B) {
@@ -292,7 +292,7 @@ func BenchmarkLoadIndex(b *testing.B) {
 	repo, cleanup := repository.TestRepository(b)
 	defer cleanup()
 
-	idx := repository.NewIndex()
+	idx := repository.NewIndex(restic.IndexOptionFull)
 
 	for i := 0; i < 5000; i++ {
 		idx.Store(restic.PackedBlob{
@@ -317,7 +317,7 @@ func BenchmarkLoadIndex(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := repository.LoadIndex(context.TODO(), repo, id)
+		_, err := repository.LoadIndex(context.TODO(), repo, id, restic.IndexOptionFull)
 		rtest.OK(b, err)
 	}
 }
@@ -367,10 +367,14 @@ func TestRepositoryIncrementalIndex(t *testing.T) {
 	packEntries := make(map[restic.ID]map[restic.ID]struct{})
 
 	err := repo.List(context.TODO(), restic.IndexFile, func(id restic.ID, size int64) error {
-		idx, err := repository.LoadIndex(context.TODO(), repo, id)
+		idx, err := repository.LoadIndex(context.TODO(), repo, id, restic.IndexOptionFull)
 		rtest.OK(t, err)
 
-		for pb := range idx.Each(context.TODO()) {
+		blobs, err := idx.Each(context.TODO())
+		if err != nil {
+			return err
+		}
+		for pb := range blobs {
 			if _, ok := packEntries[pb.PackID]; !ok {
 				packEntries[pb.PackID] = make(map[restic.ID]struct{})
 			}

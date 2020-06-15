@@ -96,7 +96,7 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 		return err
 	}
 
-	err = repo.LoadIndex(gopts.ctx)
+	err = repo.LoadIndex(gopts.ctx, restic.IndexOptionFull)
 	if err != nil {
 		return err
 	}

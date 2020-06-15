@@ -414,7 +414,7 @@ const loadIndexParallelism = 4
 
 // LoadIndex loads all index files from the backend in parallel and stores them
 // in the master index. The first error that occurred is returned.
-func (r *Repository) LoadIndex(ctx context.Context) error {
+func (r *Repository) LoadIndex(ctx context.Context, option restic.IndexOption) error {
 	debug.Log("Loading index")
 
 	// track spawned goroutines using wg, create a new context which is
@@ -447,9 +447,16 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 		for fi := range ch {
 			var err error
 			var idx *Index
-			idx, buf, err = LoadIndexWithDecoder(ctx, r, buf[:0], fi.ID, DecodeIndex)
+			if option == restic.IndexOptionNone {
+				idx = NewIndex(option)
+				err = idx.SetID(fi.ID)
+				if err != nil {
+					return err
+				}
+			}
+			idx, buf, err = LoadIndexWithDecoder(ctx, r, buf[:0], fi.ID, option, DecodeIndex)
 			if err != nil && errors.Cause(err) == ErrOldIndexFormat {
-				idx, buf, err = LoadIndexWithDecoder(ctx, r, buf[:0], fi.ID, DecodeOldIndex)
+				idx, buf, err = LoadIndexWithDecoder(ctx, r, buf[:0], fi.ID, option, DecodeOldIndex)
 			}
 
 			if err != nil {
@@ -564,15 +571,15 @@ func (r *Repository) PrepareCache(indexIDs restic.IDSet) error {
 }
 
 // LoadIndex loads the index id from backend and returns it.
-func LoadIndex(ctx context.Context, repo restic.Repository, id restic.ID) (*Index, error) {
-	idx, _, err := LoadIndexWithDecoder(ctx, repo, nil, id, DecodeIndex)
+func LoadIndex(ctx context.Context, repo restic.Repository, id restic.ID, option restic.IndexOption) (*Index, error) {
+	idx, _, err := LoadIndexWithDecoder(ctx, repo, nil, id, option, DecodeIndex)
 	if err == nil {
 		return idx, nil
 	}
 
 	if errors.Cause(err) == ErrOldIndexFormat {
 		fmt.Fprintf(os.Stderr, "index %v has old format\n", id.Str())
-		idx, _, err := LoadIndexWithDecoder(ctx, repo, nil, id, DecodeOldIndex)
+		idx, _, err := LoadIndexWithDecoder(ctx, repo, nil, id, option, DecodeOldIndex)
 		return idx, err
 	}
 

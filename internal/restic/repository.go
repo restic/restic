@@ -20,7 +20,7 @@ type Repository interface {
 	Index() Index
 	SaveFullIndex(context.Context) error
 	SaveIndex(context.Context) error
-	LoadIndex(context.Context) error
+	LoadIndex(context.Context, IndexOption) error
 
 	Config() Config
 
@@ -57,6 +57,17 @@ type Lister interface {
 	List(context.Context, FileType, func(FileInfo) error) error
 }
 
+// IndexOption specifies options how loaded index is saved
+type IndexOption uint8
+
+// These are the options of how loaded index files can be saved.
+const (
+	IndexOptionFull IndexOption = iota
+	IndexOptionDataIDsOnly
+	IndexOptionNoData
+	IndexOptionNone
+)
+
 // Index keeps track of the blobs are stored within files.
 type Index interface {
 	Has(ID, BlobType) bool
@@ -66,5 +77,5 @@ type Index interface {
 	// Each returns a channel that yields all blobs known to the index. When
 	// the context is cancelled, the background goroutine terminates. This
 	// blocks any modification of the index.
-	Each(ctx context.Context) <-chan PackedBlob
+	Each(ctx context.Context) (<-chan PackedBlob, error)
 }

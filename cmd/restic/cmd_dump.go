@@ -133,7 +133,7 @@ func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	err = repo.LoadIndex(ctx)
+	err = repo.LoadIndex(ctx, restic.IndexOptionFull)
 	if err != nil {
 		return err
 	}

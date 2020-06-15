@@ -33,10 +33,10 @@ func TestMasterIndexLookup(t *testing.T) {
 		},
 	}
 
-	idx1 := repository.NewIndex()
+	idx1 := repository.NewIndex(restic.IndexOptionFull)
 	idx1.Store(blob1)
 
-	idx2 := repository.NewIndex()
+	idx2 := repository.NewIndex(restic.IndexOptionFull)
 	idx2.Store(blob2)
 
 	mIdx := repository.NewMasterIndex()

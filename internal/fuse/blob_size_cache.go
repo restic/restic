@@ -15,7 +15,8 @@ type BlobSizeCache struct {
 // NewBlobSizeCache returns a new blob size cache containing all entries from midx.
 func NewBlobSizeCache(ctx context.Context, idx restic.Index) *BlobSizeCache {
 	m := make(map[restic.ID]uint, 1000)
-	for pb := range idx.Each(ctx) {
+	blobs, _ := idx.Each(ctx)
+	for pb := range blobs {
 		m[pb.ID] = uint(restic.PlaintextLength(int(pb.Length)))
 	}
 	return &BlobSizeCache{

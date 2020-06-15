@@ -230,7 +230,7 @@ func updateSnapshots(ctx context.Context, root *Root) error {
 
 	if root.snCount != len(snapshots) {
 		root.snCount = len(snapshots)
-		root.repo.LoadIndex(ctx)
+		root.repo.LoadIndex(ctx, restic.IndexOptionFull)
 		root.snapshots = snapshots
 	}
 	root.lastCheck = time.Now()

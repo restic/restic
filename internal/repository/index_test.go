@@ -10,6 +10,12 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 )
 
+func DecodeIndex(buf []byte) (*repository.Index, error) {
+	idx := repository.NewIndex(restic.IndexOptionFull)
+	err := repository.DecodeIndex(idx, buf)
+	return idx, err
+}
+
 func TestIndexSerialize(t *testing.T) {
 	type testEntry struct {
 		id             restic.ID
@@ -19,7 +25,7 @@ func TestIndexSerialize(t *testing.T) {
 	}
 	tests := []testEntry{}
 
-	idx := repository.NewIndex()
+	idx := repository.NewIndex(restic.IndexOptionFull)
 
 	// create 50 packs with 20 blobs each
 	for i := 0; i < 50; i++ {
@@ -55,7 +61,7 @@ func TestIndexSerialize(t *testing.T) {
 	err := idx.Encode(wr)
 	rtest.OK(t, err)
 
-	idx2, err := repository.DecodeIndex(wr.Bytes())
+	idx2, err := DecodeIndex(wr.Bytes())
 	rtest.OK(t, err)
 	rtest.Assert(t, idx2 != nil,
 		"nil returned for decoded index")
@@ -139,7 +145,7 @@ func TestIndexSerialize(t *testing.T) {
 	rtest.Assert(t, id2.Equal(id),
 		"wrong ID returned: want %v, got %v", id, id2)
 
-	idx3, err := repository.DecodeIndex(wr3.Bytes())
+	idx3, err := DecodeIndex(wr3.Bytes())
 	rtest.OK(t, err)
 	rtest.Assert(t, idx3 != nil,
 		"nil returned for decoded index")
@@ -165,7 +171,7 @@ func TestIndexSerialize(t *testing.T) {
 }
 
 func TestIndexSize(t *testing.T) {
-	idx := repository.NewIndex()
+	idx := repository.NewIndex(restic.IndexOptionFull)
 
 	packs := 200
 	blobs := 100
@@ -291,7 +297,7 @@ var exampleLookupTest = struct {
 func TestIndexUnserialize(t *testing.T) {
 	oldIdx := restic.IDs{restic.TestParseID("ed54ae36197f4745ebc4b54d10e0f623eaaaedd03013eb7ae90df881b7781452")}
 
-	idx, err := repository.DecodeIndex(docExample)
+	idx, err := DecodeIndex(docExample)
 	rtest.OK(t, err)
 
 	for _, test := range exampleTests {
@@ -333,13 +339,14 @@ func BenchmarkDecodeIndex(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := repository.DecodeIndex(docExample)
+		_, err := DecodeIndex(docExample)
 		rtest.OK(b, err)
 	}
 }
 
 func TestIndexUnserializeOld(t *testing.T) {
-	idx, err := repository.DecodeOldIndex(docOldExample)
+	idx := repository.NewIndex(restic.IndexOptionFull)
+	err := repository.DecodeOldIndex(idx, docOldExample)
 	rtest.OK(t, err)
 
 	for _, test := range exampleTests {
@@ -361,7 +368,7 @@ func TestIndexUnserializeOld(t *testing.T) {
 }
 
 func TestIndexPacks(t *testing.T) {
-	idx := repository.NewIndex()
+	idx := repository.NewIndex(restic.IndexOptionFull)
 	packs := restic.NewIDSet()
 
 	for i := 0; i < 20; i++ {
@@ -393,7 +400,7 @@ func NewRandomTestID(rng *rand.Rand) restic.ID {
 }
 
 func createRandomIndex(rng *rand.Rand) (idx *repository.Index, lookupID restic.ID) {
-	idx = repository.NewIndex()
+	idx = repository.NewIndex(restic.IndexOptionFull)
 
 	// create index with 200k pack files
 	for i := 0; i < 200000; i++ {
@@ -459,7 +466,7 @@ func TestIndexHas(t *testing.T) {
 	}
 	tests := []testEntry{}
 
-	idx := repository.NewIndex()
+	idx := repository.NewIndex(restic.IndexOptionFull)
 
 	// create 50 packs with 20 blobs each
 	for i := 0; i < 50; i++ {

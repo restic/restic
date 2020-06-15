@@ -143,7 +143,7 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	if err = repo.LoadIndex(gopts.ctx); err != nil {
+	if err = repo.LoadIndex(gopts.ctx, restic.IndexOptionNoData); err != nil {
 		return err
 	}
 

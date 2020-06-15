@@ -300,7 +300,7 @@ func runDiff(opts DiffOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	if err = repo.LoadIndex(ctx); err != nil {
+	if err = repo.LoadIndex(ctx, restic.IndexOptionFull); err != nil {
 		return err
 	}
 

@@ -536,7 +536,7 @@ func runFind(opts FindOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	if err = repo.LoadIndex(gopts.ctx); err != nil {
+	if err = repo.LoadIndex(gopts.ctx, restic.IndexOptionNoData); err != nil {
 		return err
 	}
 
