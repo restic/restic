@@ -13,7 +13,7 @@ require (
 	github.com/golang/protobuf v1.3.1 // indirect
 	github.com/google/go-cmp v0.2.0
 	github.com/gopherjs/gopherjs v0.0.0-20190411002643-bd77b112433e // indirect
-	github.com/hashicorp/golang-lru v0.5.1 // indirect
+	github.com/hashicorp/golang-lru v0.5.1
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/juju/ratelimit v1.0.1
 	github.com/kr/fs v0.1.0 // indirect

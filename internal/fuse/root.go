@@ -29,6 +29,7 @@ type Root struct {
 	cfg           Config
 	inode         uint64
 	snapshots     restic.Snapshots
+	blobCache     *blobCache
 	blobSizeCache *BlobSizeCache
 
 	snCount   int
@@ -45,14 +46,18 @@ var _ = fs.NodeStringLookuper(&Root{})
 
 const rootInode = 1
 
+// Size of the blob cache. TODO: make this configurable.
+const blobCacheSize = 64 << 20
+
 // NewRoot initializes a new root node from a repository.
-func NewRoot(ctx context.Context, repo restic.Repository, cfg Config) (*Root, error) {
+func NewRoot(ctx context.Context, repo restic.Repository, cfg Config) *Root {
 	debug.Log("NewRoot(), config %v", cfg)
 
 	root := &Root{
 		repo:          repo,
 		inode:         rootInode,
 		cfg:           cfg,
+		blobCache:     newBlobCache(blobCacheSize),
 		blobSizeCache: NewBlobSizeCache(ctx, repo.Index()),
 	}
 
@@ -70,7 +75,7 @@ func NewRoot(ctx context.Context, repo restic.Repository, cfg Config) (*Root, er
 
 	root.MetaDir = NewMetaDir(root, rootInode, entries)
 
-	return root, nil
+	return root
 }
 
 // Root is just there to satisfy fs.Root, it returns itself.

@@ -28,12 +28,6 @@ type file struct {
 
 	// cumsize[i] holds the cumulative size of blobs[:i].
 	cumsize []uint64
-
-	// Cached blob and its index in the blobs of node.
-	cached struct {
-		blob  []byte
-		index int
-	}
 }
 
 func newFile(ctx context.Context, root *Root, inode uint64, node *restic.Node) (fusefile *file, err error) {
@@ -91,8 +85,10 @@ func (f *file) Attr(ctx context.Context, a *fuse.Attr) error {
 
 func (f *file) getBlobAt(ctx context.Context, i int) (blob []byte, err error) {
 	debug.Log("getBlobAt(%v, %v)", f.node.Name, i)
-	if i == f.cached.index && f.cached.blob != nil {
-		return f.cached.blob, nil
+
+	blob, ok := f.root.blobCache.get(f.node.Content[i])
+	if ok {
+		return blob, nil
 	}
 
 	blob, err = f.root.repo.LoadBlob(ctx, restic.DataBlob, f.node.Content[i], nil)
@@ -100,7 +96,8 @@ func (f *file) getBlobAt(ctx context.Context, i int) (blob []byte, err error) {
 		debug.Log("LoadBlob(%v, %v) failed: %v", f.node.Name, f.node.Content[i], err)
 		return nil, err
 	}
-	f.cached.blob, f.cached.index = blob, i
+
+	f.root.blobCache.add(f.node.Content[i], blob)
 
 	return blob, nil
 }
