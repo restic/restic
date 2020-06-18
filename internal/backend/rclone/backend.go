@@ -114,7 +114,7 @@ func wrapConn(c *StdioConn, lim limiter.Limiter) wrappedConn {
 }
 
 // New initializes a Backend and starts the process.
-func New(cfg Config, lim limiter.Limiter) (*Backend, error) {
+func newBackend(cfg Config, lim limiter.Limiter) (*Backend, error) {
 	var (
 		args []string
 		err  error
@@ -234,7 +234,7 @@ func New(cfg Config, lim limiter.Limiter) (*Backend, error) {
 
 // Open starts an rclone process with the given config.
 func Open(cfg Config, lim limiter.Limiter) (*Backend, error) {
-	be, err := New(cfg, lim)
+	be, err := newBackend(cfg, lim)
 	if err != nil {
 		return nil, err
 	}
@@ -260,7 +260,7 @@ func Open(cfg Config, lim limiter.Limiter) (*Backend, error) {
 
 // Create initializes a new restic repo with clone.
 func Create(cfg Config) (*Backend, error) {
-	be, err := New(cfg, nil)
+	be, err := newBackend(cfg, nil)
 	if err != nil {
 		return nil, err
 	}
