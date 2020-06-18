@@ -184,6 +184,7 @@ func newBackend(cfg Config, lim limiter.Limiter) (*Backend, error) {
 		debug.Log("Wait returned %v", err)
 		be.waitResult = err
 		close(waitCh)
+		stdioConn.Close()
 	}()
 
 	ctx, cancel := context.WithCancel(context.Background())
