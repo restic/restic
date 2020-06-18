@@ -1,0 +1,5 @@
+Enhancement: Optimize in-memory index
+
+We've optimized the in-memory index such that most index operations no longer depend on the repository size.
+
+https://github.com/restic/restic/pull/2799

@@ -134,10 +134,9 @@ func TestIndexSerialize(t *testing.T) {
 
 	id := restic.NewRandomID()
 	rtest.OK(t, idx.SetID(id))
-	id2, err := idx.ID()
+	ids, err := idx.IDs()
 	rtest.OK(t, err)
-	rtest.Assert(t, id2.Equal(id),
-		"wrong ID returned: want %v, got %v", id, id2)
+	rtest.Equals(t, restic.IDs{id}, ids)
 
 	idx3, err := repository.DecodeIndex(wr3.Bytes())
 	rtest.OK(t, err)
@@ -392,11 +391,11 @@ func NewRandomTestID(rng *rand.Rand) restic.ID {
 	return id
 }
 
-func createRandomIndex(rng *rand.Rand) (idx *repository.Index, lookupID restic.ID) {
+func createRandomIndex(rng *rand.Rand, packfiles int) (idx *repository.Index, lookupID restic.ID) {
 	idx = repository.NewIndex()
 
-	// create index with 200k pack files
-	for i := 0; i < 200000; i++ {
+	// create index with given number of pack files
+	for i := 0; i < packfiles; i++ {
 		packID := NewRandomTestID(rng)
 		var blobs []restic.Blob
 		offset := 0
@@ -423,7 +422,7 @@ func createRandomIndex(rng *rand.Rand) (idx *repository.Index, lookupID restic.I
 }
 
 func BenchmarkIndexHasUnknown(b *testing.B) {
-	idx, _ := createRandomIndex(rand.New(rand.NewSource(0)))
+	idx, _ := createRandomIndex(rand.New(rand.NewSource(0)), 200000)
 	lookupID := restic.NewRandomID()
 
 	b.ResetTimer()
@@ -434,7 +433,7 @@ func BenchmarkIndexHasUnknown(b *testing.B) {
 }
 
 func BenchmarkIndexHasKnown(b *testing.B) {
-	idx, lookupID := createRandomIndex(rand.New(rand.NewSource(0)))
+	idx, lookupID := createRandomIndex(rand.New(rand.NewSource(0)), 200000)
 
 	b.ResetTimer()
 
@@ -446,7 +445,7 @@ func BenchmarkIndexHasKnown(b *testing.B) {
 func BenchmarkIndexAlloc(b *testing.B) {
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		createRandomIndex(rand.New(rand.NewSource(0)))
+		createRandomIndex(rand.New(rand.NewSource(0)), 200000)
 	}
 }
 

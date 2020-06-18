@@ -23,6 +23,10 @@ import (
 // The first map stores the first entry of a blobtype/blobID
 // The key of the map is a BlobHandle
 // The entries are the actual index entries.
+// As restic maps have the property that they can use 3x the ammount of memory
+// when being resized, we use 256 shards of maps to actually store the index entries.
+// This optimization also allows to not store the first byte of the ID in the blob handle.
+//
 // In the second map we store duplicate index entries, i.e. entries with same
 // blobtype/blobID
 // In the index entries, we need to reference the packID. As one pack may
@@ -39,25 +43,25 @@ import (
 // size is 1.5 MB and the minimum pack size is 4 MB)
 //
 // We have the following sizes:
-// key: 32 + 1 = 33 bytes
+// key: 31 + 1 = 32 bytes
 // indexEntry:  8 + 4 + 4 = 16 bytes
 // each packID: 32 bytes
 //
 // To save N index entries, we therefore need:
-// N * OF * (33 + 16) bytes + N * 32 bytes / BP = N * 78 bytes
+// N * OF * (32 + 16) bytes + N * 32 bytes / BP = N * 76 bytes
 
 // Index holds lookup tables for id -> pack.
 type Index struct {
 	m          sync.Mutex
-	blob       map[restic.BlobHandle]indexEntry
+	blob       *shardedBlobMap
 	duplicates map[restic.BlobHandle][]indexEntry
 	packs      restic.IDs
 	treePacks  restic.IDs
 	// only used by Store, StorePacks does not check for already saved packIDs
 	packIDToIndex map[restic.ID]int
 
-	final      bool      // set to true for all indexes read from the backend ("finalized")
-	id         restic.ID // set to the ID of the index when it's finalized
+	final      bool       // set to true for all indexes read from the backend ("finalized")
+	ids        restic.IDs // set to the ID of the index when it's finalized
 	supersedes restic.IDs
 	created    time.Time
 }
@@ -69,10 +73,77 @@ type indexEntry struct {
 	length    uint32
 }
 
+// shardedBlobMap - actually behaves like map[restic.BlobHandle]indexEntry
+type shardedBlobMap [256]struct {
+	// Note that this is not a real ID, but saves the blobType in the first byte!
+	blob map[restic.ID]indexEntry
+}
+
+func newShardedBlobMap() *shardedBlobMap {
+	var sm shardedBlobMap
+	for i := range sm {
+		sm[i].blob = make(map[restic.ID]indexEntry)
+	}
+	return &sm
+}
+
+// get(h) gives the entry for the given handle h
+// entry, found := sm.get(h) works like entry, found := map[h]
+func (sm *shardedBlobMap) get(h restic.BlobHandle) (indexEntry, bool) {
+	i := h.ID[0]
+	id := h.ID
+	id[0] = byte(h.Type)
+
+	entry, ok := sm[i].blob[id]
+	return entry, ok
+}
+
+// setIfNotExists(h) sets the entry for the handle h if not already set.
+// returns false if there exists already an entry for h; returns true if successful
+func (sm *shardedBlobMap) setIfNotExist(h restic.BlobHandle, entry indexEntry) bool {
+	i := h.ID[0]
+	id := h.ID
+	id[0] = byte(h.Type)
+
+	if _, ok := sm[i].blob[id]; ok {
+		return false
+	}
+
+	sm[i].blob[id] = entry
+	return true
+}
+
+// forEach calls fn for each entry
+func (sm *shardedBlobMap) forEach(fn func(restic.BlobHandle, indexEntry)) {
+	for i := range sm {
+		for id, entry := range sm[i].blob {
+			tpe := restic.BlobType(id[0])
+			id[0] = byte(i)
+			h := restic.BlobHandle{Type: tpe, ID: id}
+			fn(h, entry)
+		}
+	}
+}
+
+// length gives the total count of all entries in the shardedBlobMap
+func (sm *shardedBlobMap) length() (length int) {
+	for i := range sm {
+		length += len(sm[i].blob)
+	}
+	return length
+}
+
+// clear clears all entries from the shardedBlobMap
+func (sm *shardedBlobMap) clear() {
+	for i := range sm {
+		sm[i].blob = nil
+	}
+}
+
 // NewIndex returns a new index.
 func NewIndex() *Index {
 	return &Index{
-		blob:          make(map[restic.BlobHandle]indexEntry),
+		blob:          newShardedBlobMap(),
 		duplicates:    make(map[restic.BlobHandle][]indexEntry),
 		packIDToIndex: make(map[restic.ID]int),
 		created:       time.Now(),
@@ -112,10 +183,9 @@ func (idx *Index) store(packIndex int, blob restic.Blob) {
 		length:    uint32(blob.Length),
 	}
 	h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
-	if _, ok := idx.blob[h]; ok {
+
+	if !idx.blob.setIfNotExist(h, newEntry) {
 		idx.duplicates[h] = append(idx.duplicates[h], newEntry)
-	} else {
-		idx.blob[h] = newEntry
 	}
 }
 
@@ -140,7 +210,7 @@ var IndexFull = func(idx *Index) bool {
 
 	debug.Log("checking whether index %p is full", idx)
 
-	blobs := len(idx.blob)
+	blobs := idx.blob.length()
 	age := time.Now().Sub(idx.created)
 
 	switch {
@@ -216,7 +286,7 @@ func (idx *Index) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic.Pack
 
 	h := restic.BlobHandle{ID: id, Type: tpe}
 
-	blob, ok := idx.blob[h]
+	blob, ok := idx.blob.get(h)
 	if ok {
 		blobList := idx.withDuplicates(h, blob)
 		blobs = make([]restic.PackedBlob, 0, len(blobList))
@@ -236,13 +306,13 @@ func (idx *Index) ListPack(id restic.ID) (list []restic.PackedBlob) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
-	for h, entry := range idx.blob {
+	idx.blob.forEach(func(h restic.BlobHandle, entry indexEntry) {
 		for _, blob := range idx.withDuplicates(h, entry) {
 			if idx.packs[blob.packIndex] == id {
 				list = append(list, idx.indexEntryToPackedBlob(h, blob))
 			}
 		}
-	}
+	})
 
 	return list
 }
@@ -254,7 +324,7 @@ func (idx *Index) Has(id restic.ID, tpe restic.BlobType) bool {
 
 	h := restic.BlobHandle{ID: id, Type: tpe}
 
-	_, ok := idx.blob[h]
+	_, ok := idx.blob.get(h)
 	return ok
 }
 
@@ -301,8 +371,7 @@ func (idx *Index) Each(ctx context.Context) <-chan restic.PackedBlob {
 		defer func() {
 			close(ch)
 		}()
-
-		for h, entry := range idx.blob {
+		idx.blob.forEach(func(h restic.BlobHandle, entry indexEntry) {
 			for _, blob := range idx.withDuplicates(h, entry) {
 				select {
 				case <-ctx.Done():
@@ -310,7 +379,7 @@ func (idx *Index) Each(ctx context.Context) <-chan restic.PackedBlob {
 				case ch <- idx.indexEntryToPackedBlob(h, blob):
 				}
 			}
-		}
+		})
 	}()
 
 	return ch
@@ -335,12 +404,12 @@ func (idx *Index) Count(t restic.BlobType) (n uint) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
-	for h := range idx.blob {
+	idx.blob.forEach(func(h restic.BlobHandle, entry indexEntry) {
 		if h.Type != t {
-			continue
+			return
 		}
 		n++
-	}
+	})
 	for h, dups := range idx.duplicates {
 		if h.Type != t {
 			continue
@@ -368,7 +437,7 @@ func (idx *Index) generatePackList() ([]*packJSON, error) {
 	list := []*packJSON{}
 	packs := make(map[restic.ID]*packJSON)
 
-	for h, entry := range idx.blob {
+	idx.blob.forEach(func(h restic.BlobHandle, entry indexEntry) {
 		for _, blob := range idx.withDuplicates(h, entry) {
 			packID := idx.packs[blob.packIndex]
 			if packID.IsNull() {
@@ -396,7 +465,7 @@ func (idx *Index) generatePackList() ([]*packJSON, error) {
 				Length: uint(blob.length),
 			})
 		}
-	}
+	})
 
 	debug.Log("done")
 
@@ -445,17 +514,17 @@ func (idx *Index) Finalize() {
 	idx.packIDToIndex = nil
 }
 
-// ID returns the ID of the index, if available. If the index is not yet
+// ID returns the IDs of the index, if available. If the index is not yet
 // finalized, an error is returned.
-func (idx *Index) ID() (restic.ID, error) {
+func (idx *Index) IDs() (restic.IDs, error) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
 	if !idx.final {
-		return restic.ID{}, errors.New("index not finalized")
+		return nil, errors.New("index not finalized")
 	}
 
-	return idx.id, nil
+	return idx.ids, nil
 }
 
 // SetID sets the ID the index has been written to. This requires that
@@ -468,12 +537,12 @@ func (idx *Index) SetID(id restic.ID) error {
 		return errors.New("index is not final")
 	}
 
-	if !idx.id.IsNull() {
+	if len(idx.ids) > 0 {
 		return errors.New("ID already set")
 	}
 
 	debug.Log("ID set to %v", id)
-	idx.id = id
+	idx.ids = append(idx.ids, id)
 
 	return nil
 }
@@ -512,6 +581,43 @@ func (idx *Index) Dump(w io.Writer) error {
 // TreePacks returns a list of packs that contain only tree blobs.
 func (idx *Index) TreePacks() restic.IDs {
 	return idx.treePacks
+}
+
+// merge merges indexes, i.e.
+// idx.merge(idx2) merges the contents of idx2 into idx.
+func (idx *Index) merge(idx2 *Index) error {
+	idx.m.Lock()
+	defer idx.m.Unlock()
+
+	if !idx2.final {
+		return errors.New("index to merge is not final!")
+	}
+
+	// insert all index entries
+	idx2.blob.forEach(func(h restic.BlobHandle, entry indexEntry) {
+		for _, blob := range idx2.withDuplicates(h, entry) {
+			// packIndex is changed as idx2.pack is appended to idx.pack, see below
+			blob.packIndex += len(idx.packs)
+			if !idx.blob.setIfNotExist(h, blob) {
+				idx.duplicates[h] = append(idx.duplicates[h], blob)
+			}
+		}
+	})
+
+	idx.packs = append(idx.packs, idx2.packs...)
+	idx.treePacks = append(idx.treePacks, idx2.treePacks...)
+	idx.ids = append(idx.ids, idx2.ids...)
+	idx.supersedes = append(idx.supersedes, idx2.supersedes...)
+
+	// idx2 is no longer used
+	idx2.blob.clear()
+	idx2.duplicates = nil
+	idx2.packs = nil
+	idx2.treePacks = nil
+	idx2.ids = nil
+	idx2.supersedes = nil
+
+	return nil
 }
 
 // isErrOldIndex returns true if the error may be caused by an old index
@@ -633,7 +739,7 @@ func LoadIndexWithDecoder(ctx context.Context, repo restic.Repository, buf []byt
 		return nil, buf[:0], err
 	}
 
-	idx.id = id
+	idx.ids = append(idx.ids, id)
 
 	return idx, buf, nil
 }
