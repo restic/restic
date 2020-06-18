@@ -697,6 +697,13 @@ func (s *Suite) TestBackend(t *testing.T) {
 	b := s.open(t)
 	defer s.close(t, b)
 
+	// Test should return an error for an invalid type.
+	h := restic.Handle{Type: "i-am-not-a-type"}
+	_, err := b.Test(context.TODO(), h)
+	test.Assert(t, err != nil, "nil error for handle without type")
+	test.Assert(t, !b.IsNotExist(err),
+		"not-exists error for handle without type")
+
 	for _, tpe := range []restic.FileType{
 		restic.DataFile, restic.KeyFile, restic.LockFile,
 		restic.SnapshotFile, restic.IndexFile,

@@ -155,18 +155,18 @@ func (b *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRea
 
 // ErrIsNotExist is returned whenever the requested file does not exist on the
 // server.
-type ErrIsNotExist struct {
+type errIsNotExist struct {
 	restic.Handle
 }
 
-func (e ErrIsNotExist) Error() string {
+func (e *errIsNotExist) Error() string {
 	return fmt.Sprintf("%v does not exist", e.Handle)
 }
 
 // IsNotExist returns true if the error was caused by a non-existing file.
 func (b *Backend) IsNotExist(err error) bool {
 	err = errors.Cause(err)
-	_, ok := err.(ErrIsNotExist)
+	_, ok := err.(*errIsNotExist)
 	return ok
 }
 
@@ -217,7 +217,7 @@ func (b *Backend) openReader(ctx context.Context, h restic.Handle, length int, o
 
 	if resp.StatusCode == http.StatusNotFound {
 		_ = resp.Body.Close()
-		return nil, ErrIsNotExist{h}
+		return nil, &errIsNotExist{h}
 	}
 
 	if resp.StatusCode != 200 && resp.StatusCode != 206 {
@@ -254,7 +254,7 @@ func (b *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, e
 
 	if resp.StatusCode == http.StatusNotFound {
 		_ = resp.Body.Close()
-		return restic.FileInfo{}, ErrIsNotExist{h}
+		return restic.FileInfo{}, &errIsNotExist{h}
 	}
 
 	if resp.StatusCode != 200 {
@@ -276,11 +276,14 @@ func (b *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, e
 // Test returns true if a blob of the given type and name exists in the backend.
 func (b *Backend) Test(ctx context.Context, h restic.Handle) (bool, error) {
 	_, err := b.Stat(ctx, h)
-	if err != nil {
+	switch {
+	case err == nil:
+		return true, nil
+	case b.IsNotExist(err):
 		return false, nil
+	default:
+		return false, err
 	}
-
-	return true, nil
 }
 
 // Remove removes the blob with the given name and type.
@@ -305,7 +308,7 @@ func (b *Backend) Remove(ctx context.Context, h restic.Handle) error {
 
 	if resp.StatusCode == http.StatusNotFound {
 		_ = resp.Body.Close()
-		return ErrIsNotExist{h}
+		return &errIsNotExist{h}
 	}
 
 	if resp.StatusCode != 200 {
