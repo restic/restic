@@ -190,6 +190,8 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 		}
 	}
 
+	c.masterIndex.MergeFinalIndexes()
+
 	err = c.repo.SetIndex(c.masterIndex)
 	if err != nil {
 		debug.Log("SetIndex returned error: %v", err)
