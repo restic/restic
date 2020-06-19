@@ -120,14 +120,7 @@ func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
 		if err = dstRepo.Flush(ctx); err != nil {
 			return err
 		}
-		debug.Log("flushed packs")
-
-		err = dstRepo.SaveIndex(ctx)
-		if err != nil {
-			debug.Log("error saving index: %v", err)
-			return err
-		}
-		debug.Log("saved index")
+		debug.Log("flushed packs and saved index")
 
 		// save snapshot
 		sn.Parent = nil   // Parent does not have relevance in the new repo.
