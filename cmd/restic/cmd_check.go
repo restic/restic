@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -43,6 +44,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 type CheckOptions struct {
 	ReadData       bool
 	ReadDataSubset string
+	ReadDataSample uint64
 	CheckUnused    bool
 	WithCache      bool
 }
@@ -55,6 +57,7 @@ func init() {
 	f := cmdCheck.Flags()
 	f.BoolVar(&checkOptions.ReadData, "read-data", false, "read all data blobs")
 	f.StringVar(&checkOptions.ReadDataSubset, "read-data-subset", "", "read subset n of m data packs (format: `n/m`)")
+	f.Uint64Var(&checkOptions.ReadDataSample, "read-data-sample", 0, "read a random sample of data packs with given sample length")
 	f.BoolVar(&checkOptions.CheckUnused, "check-unused", false, "find unused blobs")
 	f.BoolVar(&checkOptions.WithCache, "with-cache", false, "use the cache")
 }
@@ -62,6 +65,12 @@ func init() {
 func checkFlags(opts CheckOptions) error {
 	if opts.ReadData && opts.ReadDataSubset != "" {
 		return errors.Fatalf("check flags --read-data and --read-data-subset cannot be used together")
+	}
+	if opts.ReadData && opts.ReadDataSample > 0 {
+		return errors.Fatalf("check flags --read-data and --read-data-sample cannot be used together")
+	}
+	if opts.ReadDataSample > 0 && opts.ReadDataSubset != "" {
+		return errors.Fatalf("check flags --read-data-sample and --read-data-subset cannot be used together")
 	}
 	if opts.ReadDataSubset != "" {
 		dataSubset, err := stringToIntSlice(opts.ReadDataSubset)
@@ -79,7 +88,7 @@ func checkFlags(opts CheckOptions) error {
 	return nil
 }
 
-// See doReadData in runCheck below for why this is 256.
+// See last switch in runCheck below for why this is 256.
 const totalBucketsMax = 256
 
 // stringToIntSlice converts string to []uint, using '/' as element separator
@@ -264,23 +273,8 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	doReadData := func(bucket, totalBuckets uint) {
-		packs := restic.IDSet{}
-		for pack := range chkr.GetPacks() {
-			// If we ever check more than the first byte
-			// of pack, update totalBucketsMax.
-			if (uint(pack[0]) % totalBuckets) == (bucket - 1) {
-				packs.Insert(pack)
-			}
-		}
+	doReadData := func(packs restic.IDSet) {
 		packCount := uint64(len(packs))
-
-		if packCount < chkr.CountPacks() {
-			Verbosef(fmt.Sprintf("read group #%d of %d data packs (out of total %d packs in %d groups)\n", bucket, packCount, chkr.CountPacks(), totalBuckets))
-		} else {
-			Verbosef("read all data\n")
-		}
-
 		p := newReadProgress(gopts, restic.Stat{Blobs: packCount})
 		errChan := make(chan error)
 
@@ -293,11 +287,45 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	switch {
-	case opts.ReadData:
-		doReadData(1, 1)
+	case opts.ReadData, opts.ReadDataSample >= chkr.CountPacks():
+		Verbosef("read all data\n")
+		doReadData(chkr.GetPacks())
 	case opts.ReadDataSubset != "":
 		dataSubset, _ := stringToIntSlice(opts.ReadDataSubset)
-		doReadData(dataSubset[0], dataSubset[1])
+		bucket := dataSubset[0]
+		totalBuckets := dataSubset[1]
+		packs := restic.IDSet{}
+		for pack := range chkr.GetPacks() {
+			// If we ever check more than the first byte
+			// of pack, update totalBucketsMax.
+			if (uint(pack[0]) % totalBuckets) == (bucket - 1) {
+				packs.Insert(pack)
+			}
+		}
+		Verbosef(fmt.Sprintf("read group #%d of %d data packs (out of total %d packs in %d groups)\n", bucket, len(packs), chkr.CountPacks(), totalBuckets))
+		doReadData(packs)
+	case opts.ReadDataSample > 0:
+		rand.Seed(time.Now().UnixNano())
+		maxSkip := int(chkr.CountPacks() - opts.ReadDataSample)
+		skip := rand.Intn(maxSkip + 1)
+		packs := restic.IDSet{}
+		// loop over all packs and pick them; after each picking always skip a
+		// random number (between 0 and maxSkip) of packs which will not be read
+		for pack := range chkr.GetPacks() {
+			if skip == 0 {
+				Verbosef("chose pack %v\n", pack)
+				packs.Insert(pack)
+				if uint64(len(packs)) == opts.ReadDataSample {
+					break
+				}
+				skip = rand.Intn(maxSkip + 1)
+			} else {
+				skip--
+				maxSkip--
+			}
+		}
+		Verbosef(fmt.Sprintf("read random %d data packs (out of total %d packs)\n", len(packs), chkr.CountPacks()))
+		doReadData(packs)
 	}
 
 	if errorsFound {

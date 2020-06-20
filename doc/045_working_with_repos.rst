@@ -169,3 +169,10 @@ check all repository data files over 5 separate invocations:
     $ restic -r /srv/restic-repo check --read-data-subset=3/5
     $ restic -r /srv/restic-repo check --read-data-subset=4/5
     $ restic -r /srv/restic-repo check --read-data-subset=5/5
+
+If only testing a sample subset of all data files, use the ``--read-data-sample=s``
+parameter which randomly picks ``s`` data files to check:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo check --read-data-sample=100

@@ -1,0 +1,7 @@
+Enhancement: Add flag `--read-data-sample` to restich check
+
+We've added a new flag to restic check which allows to read only a random sample of data files.
+
+https://github.com/restic/restic/issues/2186
+https://github.com/restic/restic/pull/2801
+https://forum.restic.net/t/rsync-net-how-do-you-run-repo-maintanenance
