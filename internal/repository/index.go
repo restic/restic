@@ -24,8 +24,8 @@ import (
 // The key of the map is a BlobHandle
 // The entries are the actual index entries.
 // As restic maps have the property that they can use 3x the ammount of memory
-// when being resized, we use 3 maps which store 9/32, 11/32 and 3/8 of the
-// to assure that this worst case happens only to a third of the data.
+// when being resized, we use 5 maps which store only a part of the entries
+// to assure that this worst case happens only to a fifth of the data.
 //
 // In the second map we store duplicate index entries, i.e. entries with same
 // blobtype/blobID
@@ -53,7 +53,7 @@ import (
 // Index holds lookup tables for id -> pack.
 type Index struct {
 	m          sync.Mutex
-	blob       *blobThreeMap
+	blob       *blobMaps
 	duplicates map[restic.BlobHandle][]indexEntry
 	packs      restic.IDs
 	treePacks  restic.IDs
@@ -73,11 +73,11 @@ type indexEntry struct {
 	length    uint32
 }
 
-// blobThreeMap - actually behaves like map[restic.BlobHandle]indexEntry
-type blobThreeMap [3]map[restic.BlobHandle]indexEntry
+// blobMaps - actually behaves like map[restic.BlobHandle]indexEntry
+type blobMaps [5]map[restic.BlobHandle]indexEntry
 
-func newBlobThreeMap() *blobThreeMap {
-	var btm blobThreeMap
+func newBlobMaps() *blobMaps {
+	var btm blobMaps
 	for i := range btm {
 		btm[i] = make(map[restic.BlobHandle]indexEntry)
 	}
@@ -85,32 +85,35 @@ func newBlobThreeMap() *blobThreeMap {
 }
 
 func getMap(b byte) (i int) {
-	// index is chosen such that:
-	// 96/256 = 12/32 of IDs go in map 0
-	// 88/256 = 11/32 of IDs go in map 1
-	// 72/256 =  9/32 of IDs go in map 2
+	// index is chosen such that each map has (2^(1/5) - 1) = 14.87% more entries
+	// than the previous.
 	// This will ensure that only one map grows at a time.
+	// Bounds are computed by 256 * (2 - 2^(k/5)) for k=4,3,2,1
 	switch {
-	case b < 96:
+	case b < 66:
 		i = 0
-	case b < 184:
+	case b < 124:
 		i = 1
-	default:
+	case b < 174:
 		i = 2
+	case b < 218:
+		i = 3
+	default:
+		i = 4
 	}
 	return i
 }
 
 // get(h) gives the entry for the given handle h
 // entry, found := sm.get(h) works like entry, found := map[h]
-func (sm *blobThreeMap) get(h restic.BlobHandle) (indexEntry, bool) {
+func (sm *blobMaps) get(h restic.BlobHandle) (indexEntry, bool) {
 	entry, ok := sm[getMap(h.ID[0])][h]
 	return entry, ok
 }
 
 // setIfNotExists(h) sets the entry for the handle h if not already set.
 // returns false if there exists already an entry for h; returns true if successful
-func (sm *blobThreeMap) setIfNotExist(h restic.BlobHandle, entry indexEntry) bool {
+func (sm *blobMaps) setIfNotExist(h restic.BlobHandle, entry indexEntry) bool {
 	i := getMap(h.ID[0])
 
 	if _, ok := sm[i][h]; ok {
@@ -122,7 +125,7 @@ func (sm *blobThreeMap) setIfNotExist(h restic.BlobHandle, entry indexEntry) boo
 }
 
 // forEach calls fn for each entry
-func (sm *blobThreeMap) forEach(fn func(restic.BlobHandle, indexEntry)) {
+func (sm *blobMaps) forEach(fn func(restic.BlobHandle, indexEntry)) {
 	for i := range sm {
 		for h, entry := range sm[i] {
 			fn(h, entry)
@@ -131,7 +134,7 @@ func (sm *blobThreeMap) forEach(fn func(restic.BlobHandle, indexEntry)) {
 }
 
 // length gives the total count of all entries in the shardedBlobMap
-func (sm *blobThreeMap) length() (length int) {
+func (sm *blobMaps) length() (length int) {
 	for i := range sm {
 		length += len(sm[i])
 	}
@@ -139,7 +142,7 @@ func (sm *blobThreeMap) length() (length int) {
 }
 
 // clear clears all entries from the shardedBlobMap
-func (sm *blobThreeMap) clear() {
+func (sm *blobMaps) clear() {
 	for i := range sm {
 		sm[i] = nil
 	}
@@ -148,7 +151,7 @@ func (sm *blobThreeMap) clear() {
 // NewIndex returns a new index.
 func NewIndex() *Index {
 	return &Index{
-		blob:          newBlobThreeMap(),
+		blob:          newBlobMaps(),
 		duplicates:    make(map[restic.BlobHandle][]indexEntry),
 		packIDToIndex: make(map[restic.ID]int),
 		created:       time.Now(),
