@@ -86,7 +86,7 @@ func newBlobMaps() *blobMaps {
 
 func getMap(b byte) (i int) {
 	// index is chosen such that each map has (2^(1/5) - 1) = 14.87% more entries
-	// than the previous.
+	// than the following.
 	// This will ensure that only one map grows at a time.
 	// Bounds are computed by 256 * (2 - 2^(k/5)) for k=4,3,2,1
 	switch {
@@ -596,6 +596,8 @@ func (idx *Index) TreePacks() restic.IDs {
 func (idx *Index) merge(idx2 *Index) error {
 	idx.m.Lock()
 	defer idx.m.Unlock()
+	idx2.m.Lock()
+	defer idx2.m.Unlock()
 
 	if !idx2.final {
 		return errors.New("index to merge is not final!")

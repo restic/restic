@@ -250,18 +250,15 @@ func (mi *MasterIndex) MergeFinalIndexes() {
 	mi.idxMutex.Lock()
 	defer mi.idxMutex.Unlock()
 
-	var firstFinalIndex *Index
-	newIdx := mi.idx[:0]
-
-	for _, idx := range mi.idx {
+	// The first index is always final and the one to merge into
+	newIdx := mi.idx[:1]
+	for i := 1; i < len(mi.idx); i++ {
+		idx := mi.idx[i]
 		switch {
 		case !idx.Final():
 			newIdx = append(newIdx, idx)
-		case firstFinalIndex == nil:
-			firstFinalIndex = idx
-			newIdx = append(newIdx, idx)
 		default:
-			firstFinalIndex.merge(idx)
+			mi.idx[0].merge(idx)
 		}
 	}
 	mi.idx = newIdx
