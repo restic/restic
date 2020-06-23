@@ -43,6 +43,7 @@ const (
 	InvalidBlob BlobType = iota
 	DataBlob
 	TreeBlob
+	NumBlobTypes // Number of types. Must be last in this enumeration.
 )
 
 func (t BlobType) String() string {

@@ -8,6 +8,7 @@ require (
 	github.com/cenkalti/backoff v2.1.1+incompatible
 	github.com/cespare/xxhash v1.1.0
 	github.com/cpuguy83/go-md2man v1.0.10 // indirect
+	github.com/dchest/siphash v1.2.1
 	github.com/dnaeon/go-vcr v1.0.1 // indirect
 	github.com/elithrar/simple-scrypt v1.3.0
 	github.com/golang/protobuf v1.3.1 // indirect
