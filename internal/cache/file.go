@@ -84,8 +84,8 @@ func (c *Cache) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, 
 	return rd, nil
 }
 
-// SaveWriter returns a writer for the cache object h. It must be closed after writing is finished.
-func (c *Cache) SaveWriter(h restic.Handle) (io.WriteCloser, error) {
+// saveWriter returns a writer for the cache object h. It must be closed after writing is finished.
+func (c *Cache) saveWriter(h restic.Handle) (io.WriteCloser, error) {
 	debug.Log("Save to cache: %v", h)
 	if !c.canBeCached(h.Type) {
 		return nil, errors.New("cannot be cached")
@@ -112,7 +112,7 @@ func (c *Cache) Save(h restic.Handle, rd io.Reader) error {
 		return errors.New("Save() called with nil reader")
 	}
 
-	f, err := c.SaveWriter(h)
+	f, err := c.saveWriter(h)
 	if err != nil {
 		return err
 	}

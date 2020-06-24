@@ -21,10 +21,6 @@ type Cache interface {
 	// SaveIndex saves an index in the cache.
 	Save(Handle, io.Reader) error
 
-	// SaveWriter returns a writer for the to be cached object h. It must be
-	// closed after writing is finished.
-	SaveWriter(Handle) (io.WriteCloser, error)
-
 	// Remove deletes a single file from the cache. If it isn't cached, this
 	// functions must return no error.
 	Remove(Handle) error

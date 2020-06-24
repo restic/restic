@@ -148,7 +148,7 @@ func TestFileSaveWriter(t *testing.T) {
 		Name: id.String(),
 	}
 
-	wr, err := c.SaveWriter(h)
+	wr, err := c.saveWriter(h)
 	if err != nil {
 		t.Fatal(err)
 	}
