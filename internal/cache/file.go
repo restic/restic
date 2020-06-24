@@ -170,8 +170,10 @@ func (c *Cache) Save(h restic.Handle, rd io.Reader) (err error) {
 
 // Remove deletes a file. When the file is not cache, no error is returned.
 func (c *Cache) Remove(h restic.Handle) error {
-	if !c.Has(h) {
-		return nil
+	if s := c.saveInFlight(h); s != nil {
+		// Wait for the save to be done, then remove the file.
+		// This is silly, but simple.
+		<-s.done
 	}
 
 	return fs.Remove(c.filename(h))
@@ -243,6 +245,11 @@ func (c *Cache) Has(h restic.Handle) bool {
 	}
 
 	if s := c.saveInFlight(h); s != nil {
+		// XXX This method has two clients. The Repository wants to handle cached
+		// files before other files. The caching backend wants to know if it should
+		// download a file.
+		// Returning false leads to duplicate downloads. Returning true makes the
+		// repository wait.
 		return true
 	}
 	_, err := fs.Stat(c.filename(h))

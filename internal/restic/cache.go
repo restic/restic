@@ -29,5 +29,9 @@ type Cache interface {
 	Clear(FileType, IDSet) error
 
 	// Has returns true if the file is cached.
+	//
+	// In a concurrent setting, the return value may be outdated by the time
+	// the caller acts upon it, so it should only be used as an optimization
+	// hint.
 	Has(Handle) bool
 }

@@ -6,12 +6,16 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
+
+	"golang.org/x/sync/singleflight"
 )
 
 // Backend wraps a restic.Backend and adds a cache.
 type Backend struct {
 	restic.Backend
 	*Cache
+
+	downloads singleflight.Group
 }
 
 // ensure cachedBackend implements restic.Backend
@@ -85,8 +89,20 @@ func (b *Backend) cacheFile(ctx context.Context, h restic.Handle) error {
 	if b.Cache.Has(h) {
 		return nil
 	}
-	err := b.Backend.Load(ctx, h, 0, 0, func(rd io.Reader) error {
-		return b.Cache.Save(h, rd)
+
+	// The singleflight group prevents a race condition with concurrent calls
+	// that can cause multiple downloads of the same file.
+	//
+	// The race condition could be avoided altogether by registering a save
+	// action before we start the download. singleflight is the easy way out.
+	//
+	// See comment in Cache.Has.
+
+	key := string(h.Type) + "/" + h.Name
+	_, err, _ := b.downloads.Do(key, func() (interface{}, error) {
+		return nil, b.Backend.Load(ctx, h, 0, 0, func(rd io.Reader) error {
+			return b.Cache.Save(h, rd)
+		})
 	})
 	if err != nil {
 		// try to remove from the cache, ignore errors
@@ -115,19 +131,17 @@ func (b *Backend) loadFromCacheOrDelegate(ctx context.Context, h restic.Handle, 
 
 // Load loads a file from the cache or the backend.
 func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset int64, consumer func(rd io.Reader) error) error {
-	if b.Cache.Has(h) {
-		debug.Log("Load(%v, %v, %v) from cache", h, length, offset)
-		rd, err := b.Cache.Load(h, length, offset)
-		if err == nil {
-			err = consumer(rd)
-			if err != nil {
-				rd.Close() // ignore secondary errors
-				return err
-			}
-			return rd.Close()
+	debug.Log("Load(%v, %v, %v) from cache", h, length, offset)
+	rd, err := b.Cache.Load(h, length, offset)
+	if err == nil {
+		err = consumer(rd)
+		if err != nil {
+			rd.Close() // ignore secondary errors
+			return err
 		}
-		debug.Log("error loading %v from cache: %v", h, err)
+		return rd.Close()
 	}
+	debug.Log("error loading %v from cache: %v", h, err)
 
 	// partial file requested
 	if offset != 0 || length != 0 {
@@ -153,7 +167,7 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 	}
 
 	debug.Log("auto-store %v in the cache", h)
-	err := b.cacheFile(ctx, h)
+	err = b.cacheFile(ctx, h)
 	if err == nil {
 		return b.loadFromCacheOrDelegate(ctx, h, length, offset, consumer)
 	}
