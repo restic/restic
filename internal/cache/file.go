@@ -46,6 +46,13 @@ func (c *Cache) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, 
 		return nil, errors.New("cannot be cached")
 	}
 
+	if s := c.saveInFlight(h); s != nil {
+		<-s.done
+		if s.err != nil {
+			return nil, s.err
+		}
+	}
+
 	f, err := fs.Open(c.filename(h))
 	if err != nil {
 		return nil, errors.Wrap(err, "Open")
@@ -106,11 +113,33 @@ func (c *Cache) saveWriter(h restic.Handle) (io.WriteCloser, error) {
 }
 
 // Save saves a file in the cache.
-func (c *Cache) Save(h restic.Handle, rd io.Reader) error {
+func (c *Cache) Save(h restic.Handle, rd io.Reader) (err error) {
 	debug.Log("Save to cache: %v", h)
 	if rd == nil {
 		return errors.New("Save() called with nil reader")
 	}
+
+	c.savingMu.Lock()
+	s, inprogress := c.saving[h]
+
+	if inprogress {
+		c.savingMu.Unlock()
+		<-s.done
+		return s.err
+	}
+
+	s = &saveAction{done: make(chan struct{})}
+	c.saving[h] = s
+	c.savingMu.Unlock()
+
+	defer func() {
+		s.err = err
+		close(s.done)
+
+		c.savingMu.Lock()
+		delete(c.saving, h)
+		c.savingMu.Unlock()
+	}()
 
 	f, err := c.saveWriter(h)
 	if err != nil {
@@ -213,6 +242,22 @@ func (c *Cache) Has(h restic.Handle) bool {
 		return false
 	}
 
+	if s := c.saveInFlight(h); s != nil {
+		return true
+	}
 	_, err := fs.Stat(c.filename(h))
 	return err == nil
+}
+
+// saveInFlight returns the saveAction that is in progress for h, if any.
+func (c *Cache) saveInFlight(h restic.Handle) *saveAction {
+	c.savingMu.Lock()
+	defer c.savingMu.Unlock()
+	return c.saving[h]
+}
+
+// A saveAction is a Save call in progress.
+type saveAction struct {
+	err  error
+	done chan struct{}
 }

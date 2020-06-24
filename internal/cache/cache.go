@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -21,6 +22,10 @@ type Cache struct {
 	Base             string
 	Created          bool
 	PerformReadahead func(restic.Handle) bool
+
+	// saving tracks files that are currently being saved.
+	savingMu sync.Mutex
+	saving   map[restic.Handle]*saveAction
 }
 
 const dirMode = 0700
@@ -158,6 +163,7 @@ func New(id string, basedir string) (c *Cache, err error) {
 			// do not perform readahead by default
 			return false
 		},
+		saving: make(map[restic.Handle]*saveAction),
 	}
 
 	return c, nil
