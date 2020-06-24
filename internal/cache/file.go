@@ -2,6 +2,7 @@ package cache
 
 import (
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -84,59 +85,71 @@ func (c *Cache) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, 
 	return rd, nil
 }
 
-// SaveWriter returns a writer for the cache object h. It must be closed after writing is finished.
-func (c *Cache) SaveWriter(h restic.Handle) (io.WriteCloser, error) {
-	debug.Log("Save to cache: %v", h)
-	if !c.canBeCached(h.Type) {
-		return nil, errors.New("cannot be cached")
-	}
-
-	p := c.filename(h)
-	err := fs.MkdirAll(filepath.Dir(p), 0700)
-	if err != nil {
-		return nil, errors.Wrap(err, "MkdirAll")
-	}
-
-	f, err := fs.OpenFile(p, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0400)
-	if err != nil {
-		return nil, errors.Wrap(err, "Create")
-	}
-
-	return f, err
-}
-
 // Save saves a file in the cache.
 func (c *Cache) Save(h restic.Handle, rd io.Reader) error {
 	debug.Log("Save to cache: %v", h)
 	if rd == nil {
 		return errors.New("Save() called with nil reader")
 	}
+	if !c.canBeCached(h.Type) {
+		return errors.New("cannot be cached")
+	}
 
-	f, err := c.SaveWriter(h)
+	finalname := c.filename(h)
+	dir := filepath.Dir(finalname)
+	err := os.Mkdir(dir, 0700)
+	if err != nil && !os.IsExist(err) {
+		return err
+	}
+
+	// First save to a temporary location. This allows multiple concurrent
+	// restics to use a single cache dir, and is resistant to machine crashes.
+	f, err := ioutil.TempFile(dir, "tmp-")
 	if err != nil {
 		return err
 	}
 
 	n, err := io.Copy(f, rd)
 	if err != nil {
-		_ = f.Close()
-		_ = c.Remove(h)
+		f.Close()
+		os.Remove(f.Name())
 		return errors.Wrap(err, "Copy")
 	}
 
 	if n <= crypto.Extension {
-		_ = f.Close()
-		_ = c.Remove(h)
+		f.Close()
+		os.Remove(f.Name())
 		debug.Log("trying to cache truncated file %v, removing", h)
 		return nil
 	}
 
-	if err = f.Close(); err != nil {
-		_ = c.Remove(h)
-		return errors.Wrap(err, "Close")
+	// Sync before rename. In case of a crash, we don't want a half-written
+	// file with the final name.
+	err = f.Sync()
+	if err != nil {
+		f.Close()
+		os.Remove(f.Name())
+		return err
 	}
 
-	return nil
+	if err = f.Close(); err != nil {
+		os.Remove(f.Name())
+		return err
+	}
+
+	err = os.Rename(f.Name(), finalname)
+	switch {
+	case err == nil:
+		return nil
+	case os.IsExist(err):
+		// Someone else created the file concurrently.
+		// Assume it's a different restic process that was behaving properly.
+		err = nil
+		fallthrough
+	default:
+		os.Remove(f.Name())
+		return err
+	}
 }
 
 // Remove deletes a file. When the file is not cache, no error is returned.
