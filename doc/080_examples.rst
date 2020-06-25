@@ -317,7 +317,7 @@ directory.
 .. code-block:: console
 
    root@a3e580b6369d:/# mkdir ~restic/bin
-   root@a3e580b6369d:/# curl -L https://github.com/restic/restic/releases/download/v0.9.1/restic_0.9.1_linux_amd64.bz2 | bunzip2 > ~restic/bin/restic
+   root@a3e580b6369d:/# curl -L https://github.com/restic/restic/releases/download/v0.9.6/restic_0.9.6_linux_amd64.bz2 | bunzip2 > ~restic/bin/restic
 
 Before we assign any special capability to the restic binary we
 restrict its permissions so that only root and the newly created
