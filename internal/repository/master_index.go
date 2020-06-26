@@ -62,7 +62,6 @@ func (mi *MasterIndex) ListPack(id restic.ID) (list []restic.PackedBlob) {
 			return list
 		}
 	}
-
 	return nil
 }
 
@@ -145,12 +144,14 @@ func (mi *MasterIndex) StorePack(id restic.ID, blobs []restic.Blob) {
 	for _, idx := range mi.idx {
 		if !idx.Final() {
 			idx.StorePack(id, blobs)
+			idx.Sort()
 			return
 		}
 	}
 
 	newIdx := NewIndex()
 	newIdx.StorePack(id, blobs)
+	newIdx.Sort()
 	mi.idx = append(mi.idx, newIdx)
 }
 

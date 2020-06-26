@@ -35,9 +35,11 @@ func TestMasterIndexLookup(t *testing.T) {
 
 	idx1 := repository.NewIndex()
 	idx1.Store(blob1)
+	idx1.Sort()
 
 	idx2 := repository.NewIndex()
 	idx2.Store(blob2)
+	idx2.Sort()
 
 	mIdx := repository.NewMasterIndex()
 	mIdx.Insert(idx1)

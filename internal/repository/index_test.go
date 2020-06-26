@@ -50,6 +50,7 @@ func TestIndexSerialize(t *testing.T) {
 			pos += length
 		}
 	}
+	idx.Sort()
 
 	wr := bytes.NewBuffer(nil)
 	err := idx.Encode(wr)
@@ -418,6 +419,7 @@ func createRandomIndex(rng *rand.Rand) (idx *repository.Index, lookupID restic.I
 		}
 		idx.StorePack(packID, blobs)
 	}
+	idx.Sort()
 
 	return idx, lookupID
 }
@@ -490,6 +492,7 @@ func TestIndexHas(t *testing.T) {
 			pos += length
 		}
 	}
+	idx.Sort()
 
 	for _, testBlob := range tests {
 		rtest.Assert(t, idx.Has(testBlob.id, testBlob.tpe), "Index reports not having data blob added to it")
