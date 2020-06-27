@@ -84,12 +84,6 @@ func NewIndex() *Index {
 	return &ind
 }
 
-func (idx *Index) Stats() {
-	for _, t := range allBlobTypes {
-		idx.byType[t].Stats()
-	}
-}
-
 // addToPacks saves the given pack ID and return the index.
 // This procedere allows to use pack IDs which can be easily garbage collected after.
 func (idx *Index) addToPacks(id restic.ID) int {
