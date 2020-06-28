@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"encoding/binary"
 	"sort"
 
 	"github.com/restic/restic/internal/restic"
@@ -27,38 +28,22 @@ import (
 // which have to be defined in order to use a generic implementation.
 
 // Define type of key and values of the map
-// please ensure that mapKey implements Hash, Less, LessEqual and Equal
+// please ensure that mapKey implements Hash and Compare
 type mapKey restic.ID
 type mapValue indexEntry
 
 func (key mapKey) Hash() int {
-	var x int
-	var s uint
-	id := restic.ID(key)
-	for _, b := range id[:8] {
-		x |= int(b) << s
-		s += 8
-	}
-
-	return x
+	return int(binary.LittleEndian.Uint64(key[:8]))
 }
 
-func (key mapKey) Less(other mapKey) bool {
-	return restic.ID(key).Less(restic.ID(other))
-}
-
-func (key mapKey) LessEqual(other mapKey) bool {
-	return restic.ID(key).LessEqual(restic.ID(other))
-}
-
-func (key mapKey) Equal(other mapKey) bool {
-	return restic.ID(key).Equal(restic.ID(other))
+func (key mapKey) Compare(other mapKey) int {
+	return restic.ID(key).Compare(restic.ID(other))
 }
 
 // --- start of generic implementation
 
 // grow when each bucket has in average 64 pages
-const GrowFactor = 64
+const maxPagesPerBucket = 64
 
 // Make pages of 2^5 = 32 blobEntries by default
 const shiftBits = 5
@@ -67,9 +52,9 @@ const maskBits = pageSize - 1
 
 // lowMemMap - actually behaves like map[mapKey]mapEntry, but uses much less memory
 type lowMemMap struct {
-	cnt       int
-	bucketCnt int
-	mask      int
+	cnt     int
+	pageCnt int
+	mask    int
 
 	buckets []*bucket
 }
@@ -79,9 +64,9 @@ func newLowMemMap() *lowMemMap {
 	buckets := make([]*bucket, 1)
 	buckets[0] = newBucket()
 	return &lowMemMap{
-		mask:      0,
-		buckets:   buckets,
-		bucketCnt: 0,
+		mask:    0,
+		buckets: buckets,
+		pageCnt: 0,
 	}
 }
 
@@ -132,8 +117,8 @@ func (m *lowMemMap) add(key mapKey, entry mapValue) {
 	bucket := m.buckets[key.Hash()&m.mask]
 	m.cnt++
 	if bucket.append(bucketEntry{key: key, value: entry}) {
-		m.bucketCnt++
-		if m.bucketCnt >= GrowFactor*len(m.buckets) {
+		m.pageCnt++
+		if m.pageCnt >= maxPagesPerBucket*len(m.buckets) {
 			m.grow()
 		}
 	}
@@ -151,7 +136,7 @@ func (m *lowMemMap) grow() {
 			return (key.Hash() & m.mask) == i+oldLen
 		})
 		newBuckets[i+oldLen] = newBucket
-		m.bucketCnt += delta
+		m.pageCnt += delta
 	}
 	m.buckets = newBuckets
 }
@@ -203,7 +188,7 @@ func (b *bucket) Len() int {
 	return b.length
 }
 func (b *bucket) Less(i, j int) bool {
-	return b.get(i).key.Less(b.get(j).key)
+	return b.get(i).key.Compare(b.get(j).key) < 0
 }
 func (b *bucket) Swap(i, j int) {
 	// calculate outer and inner indices
@@ -259,9 +244,9 @@ func (b *bucket) getKey(key mapKey) (mapValue, bool) {
 		panic("bucket is not sorted!")
 	}
 	if k := sort.Search(b.length, func(i int) bool {
-		return key.LessEqual(b.get(i).key)
+		return key.Compare(b.get(i).key) <= 0
 	}); k < b.length {
-		if be := b.get(k); be.key.Equal(key) {
+		if be := b.get(k); be.key.Compare(key) == 0 {
 			return be.value, true
 		}
 	}
@@ -274,10 +259,10 @@ func (bt *bucket) getAllKey(key mapKey) (entries []mapValue) {
 		panic("bucket is not sorted!")
 	}
 	for k := sort.Search(bt.length, func(i int) bool {
-		return key.LessEqual(bt.get(i).key)
+		return key.Compare(bt.get(i).key) <= 0
 	}); k < bt.length; k++ {
 		be := bt.get(k)
-		if !be.key.Equal(key) {
+		if be.key.Compare(key) != 0 {
 			break
 		}
 		entries = append(entries, be.value)

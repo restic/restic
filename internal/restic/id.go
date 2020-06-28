@@ -1,6 +1,7 @@
 package restic
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -83,26 +84,16 @@ func (id ID) Equal(other ID) bool {
 	return id == other
 }
 
+func (id ID) Compare(other ID) int {
+	return bytes.Compare(id[:], other[:])
+}
+
 func (id ID) Less(other ID) bool {
-	if len(id) < len(other) {
-		return true
-	}
-
-	for k, b := range id {
-		if b == other[k] {
-			continue
-		}
-
-		if b < other[k] {
-			return true
-		}
-		return false
-	}
-	return false
+	return bytes.Compare(id[:], other[:]) < 0
 }
 
 func (id ID) LessEqual(other ID) bool {
-	return !other.Less(id)
+	return bytes.Compare(id[:], other[:]) <= 0
 }
 
 // EqualString compares this ID to another one, given as a string.
