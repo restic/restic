@@ -49,7 +49,7 @@ import (
 // Index holds lookup tables for id -> pack.
 type Index struct {
 	m         sync.Mutex
-	byType    map[restic.BlobType]*lowMemMap
+	byType    []*linkedMemMap
 	packs     restic.IDs
 	treePacks restic.IDs
 	// only used by Store, StorePacks does not check for already saved packIDs
@@ -73,12 +73,12 @@ type indexEntry struct {
 // NewIndex returns a new index.
 func NewIndex() *Index {
 	ind := Index{
-		byType:        make(map[restic.BlobType]*lowMemMap),
+		byType:        make([]*linkedMemMap, len(allBlobTypes)+1),
 		packIDToIndex: make(map[restic.ID]int),
 		created:       time.Now(),
 	}
 	for _, t := range allBlobTypes {
-		ind.byType[t] = newLowMemMap()
+		ind.byType[t] = newLinkedMemMap()
 	}
 
 	return &ind
