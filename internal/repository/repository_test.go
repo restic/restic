@@ -107,8 +107,7 @@ func BenchmarkSaveAndEncrypt(t *testing.B) {
 	t.SetBytes(int64(size))
 
 	for i := 0; i < t.N; i++ {
-		// save
-		_, _, err = repo.SaveBlob(context.TODO(), restic.DataBlob, data, id, false)
+		_, _, err = repo.SaveBlob(context.TODO(), restic.DataBlob, data, id, true)
 		rtest.OK(t, err)
 	}
 }
