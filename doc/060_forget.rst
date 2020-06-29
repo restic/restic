@@ -176,7 +176,7 @@ Multiple policies will be ORed together so as to be as inclusive as possible
 for keeping snapshots.
 
 Additionally, you can restrict removing snapshots to those which have a
-particular hostname with the ``--hostname`` parameter, or tags with the
+particular hostname with the ``--host`` parameter, or tags with the
 ``--tag`` option. When multiple tags are specified, only the snapshots
 which have all the tags are considered. For example, the following command
 removes all but the latest snapshot of all snapshots that have the tag ``foo``:
