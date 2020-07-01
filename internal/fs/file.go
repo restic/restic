@@ -85,7 +85,12 @@ func Create(name string) (*os.File, error) {
 
 // Open opens a file for reading.
 func Open(name string) (File, error) {
-	return os.Open(fixpath(name))
+	f, err := os.Open(fixpath(name))
+	if err != nil {
+		return nil, err
+	}
+	setFlags(f)
+	return f, err
 }
 
 // OpenFile is the generalized open call; most users will use Open
@@ -94,7 +99,12 @@ func Open(name string) (File, error) {
 // methods on the returned File can be used for I/O.
 // If there is an error, it will be of type *PathError.
 func OpenFile(name string, flag int, perm os.FileMode) (*os.File, error) {
-	return os.OpenFile(fixpath(name), flag, perm)
+	f, err := os.OpenFile(fixpath(name), flag, perm)
+	if err != nil {
+		return nil, err
+	}
+	setFlags(f)
+	return f, err
 }
 
 // Walk walks the file tree rooted at root, calling walkFn for each file or
