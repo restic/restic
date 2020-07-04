@@ -49,8 +49,8 @@ type Index struct {
 	// only used by Store, StorePacks does not check for already saved packIDs
 	packIDToIndex map[restic.ID]int
 
-	final      bool      // set to true for all indexes read from the backend ("finalized")
-	id         restic.ID // set to the ID of the index when it's finalized
+	final      bool       // set to true for all indexes read from the backend ("finalized")
+	ids        restic.IDs // set to the IDs of the contained finalized indexes
 	supersedes restic.IDs
 	created    time.Time
 }
@@ -393,17 +393,17 @@ func (idx *Index) Finalize() {
 	idx.packIDToIndex = nil
 }
 
-// ID returns the ID of the index, if available. If the index is not yet
+// ID returns the IDs of the index, if available. If the index is not yet
 // finalized, an error is returned.
-func (idx *Index) ID() (restic.ID, error) {
+func (idx *Index) IDs() (restic.IDs, error) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
 	if !idx.final {
-		return restic.ID{}, errors.New("index not finalized")
+		return nil, errors.New("index not finalized")
 	}
 
-	return idx.id, nil
+	return idx.ids, nil
 }
 
 // SetID sets the ID the index has been written to. This requires that
@@ -416,12 +416,12 @@ func (idx *Index) SetID(id restic.ID) error {
 		return errors.New("index is not final")
 	}
 
-	if !idx.id.IsNull() {
+	if len(idx.ids) > 0 {
 		return errors.New("ID already set")
 	}
 
 	debug.Log("ID set to %v", id)
-	idx.id = id
+	idx.ids = append(idx.ids, id)
 
 	return nil
 }
@@ -460,6 +460,38 @@ func (idx *Index) Dump(w io.Writer) error {
 // TreePacks returns a list of packs that contain only tree blobs.
 func (idx *Index) TreePacks() restic.IDs {
 	return idx.treePacks
+}
+
+// merge() merges indexes, i.e. idx.merge(idx2) merges the contents of idx2 into idx.
+// idx2 is not changed by this method.
+func (idx *Index) merge(idx2 *Index) error {
+	idx.m.Lock()
+	defer idx.m.Unlock()
+	idx2.m.Lock()
+	defer idx2.m.Unlock()
+
+	if !idx2.final {
+		return errors.New("index to merge is not final!")
+	}
+
+	packlen := len(idx.packs)
+	// copy all index entries of idx2 to idx
+	for typ := range idx2.byType {
+		m2 := &idx2.byType[typ]
+		m := &idx.byType[typ]
+		m2.foreach(func(entry *indexEntry) bool {
+			// packIndex is changed as idx2.pack is appended to idx.pack, see below
+			m.add(entry.id, entry.packIndex+packlen, entry.offset, entry.length)
+			return true
+		})
+	}
+
+	idx.packs = append(idx.packs, idx2.packs...)
+	idx.treePacks = append(idx.treePacks, idx2.treePacks...)
+	idx.ids = append(idx.ids, idx2.ids...)
+	idx.supersedes = append(idx.supersedes, idx2.supersedes...)
+
+	return nil
 }
 
 // isErrOldIndex returns true if the error may be caused by an old index
@@ -581,7 +613,7 @@ func LoadIndexWithDecoder(ctx context.Context, repo restic.Repository, buf []byt
 		return nil, buf[:0], err
 	}
 
-	idx.id = id
+	idx.ids = append(idx.ids, id)
 
 	return idx, buf, nil
 }
