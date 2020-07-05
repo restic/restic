@@ -3,6 +3,7 @@ package repository_test
 import (
 	"bytes"
 	"math/rand"
+	"sync"
 	"testing"
 
 	"github.com/restic/restic/internal/repository"
@@ -329,13 +330,38 @@ func TestIndexUnserialize(t *testing.T) {
 	}
 }
 
+var (
+	benchmarkIndexJSON     []byte
+	benchmarkIndexJSONOnce sync.Once
+)
+
+func initBenchmarkIndexJSON() {
+	idx, _ := createRandomIndex(rand.New(rand.NewSource(0)))
+	var buf bytes.Buffer
+	idx.Encode(&buf)
+	benchmarkIndexJSON = buf.Bytes()
+}
+
 func BenchmarkDecodeIndex(b *testing.B) {
+	benchmarkIndexJSONOnce.Do(initBenchmarkIndexJSON)
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := repository.DecodeIndex(docExample)
+		_, err := repository.DecodeIndex(benchmarkIndexJSON)
 		rtest.OK(b, err)
 	}
+}
+
+func BenchmarkDecodeIndexParallel(b *testing.B) {
+	benchmarkIndexJSONOnce.Do(initBenchmarkIndexJSON)
+	b.ResetTimer()
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			_, err := repository.DecodeIndex(benchmarkIndexJSON)
+			rtest.OK(b, err)
+		}
+	})
 }
 
 func TestIndexUnserializeOld(t *testing.T) {
@@ -401,7 +427,7 @@ func createRandomIndex(rng *rand.Rand) (idx *repository.Index, lookupID restic.I
 		var blobs []restic.Blob
 		offset := 0
 		for offset < maxPackSize {
-			size := 2000 + rand.Intn(4*1024*1024)
+			size := 2000 + rng.Intn(4*1024*1024)
 			id := NewRandomTestID(rng)
 			blobs = append(blobs, restic.Blob{
 				Type:   restic.DataBlob,
@@ -411,12 +437,12 @@ func createRandomIndex(rng *rand.Rand) (idx *repository.Index, lookupID restic.I
 			})
 
 			offset += size
-
-			if rand.Float32() < 0.001 && lookupID.IsNull() {
-				lookupID = id
-			}
 		}
 		idx.StorePack(packID, blobs)
+
+		if i == 0 {
+			lookupID = blobs[rng.Intn(len(blobs))].ID
+		}
 	}
 
 	return idx, lookupID
@@ -444,10 +470,23 @@ func BenchmarkIndexHasKnown(b *testing.B) {
 }
 
 func BenchmarkIndexAlloc(b *testing.B) {
+	rng := rand.New(rand.NewSource(0))
 	b.ReportAllocs()
+
 	for i := 0; i < b.N; i++ {
-		createRandomIndex(rand.New(rand.NewSource(0)))
+		createRandomIndex(rng)
 	}
+}
+
+func BenchmarkIndexAllocParallel(b *testing.B) {
+	b.ReportAllocs()
+
+	b.RunParallel(func(pb *testing.PB) {
+		rng := rand.New(rand.NewSource(0))
+		for pb.Next() {
+			createRandomIndex(rng)
+		}
+	})
 }
 
 func TestIndexHas(t *testing.T) {
