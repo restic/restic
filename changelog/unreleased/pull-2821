@@ -1,0 +1,8 @@
+Change: Honor the --no-lock flag in the mount command
+
+The mount command now does not lock the repository if given the
+--no-lock flag. This allows to mount repositories which are archived
+on a read only backend/filesystem.
+
+https://github.com/restic/restic/issues/1597
+https://github.com/restic/restic/pull/2821
