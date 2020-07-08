@@ -78,9 +78,17 @@ type Archiver struct {
 	// WithAtime configures if the access time for files and directories should
 	// be saved. Enabling it may result in much metadata, so it's off by
 	// default.
-	WithAtime   bool
-	IgnoreInode bool
+	WithAtime bool
+
+	// Flags controlling change detection. See doc/040_backup.rst for details.
+	ChangeIgnoreFlags uint
 }
+
+// Flags for the ChangeIgnoreFlags bitfield.
+const (
+	ChangeIgnoreCtime = 1 << iota
+	ChangeIgnoreInode
+)
 
 // Options is used to configure the archiver.
 type Options struct {
@@ -134,7 +142,6 @@ func New(repo restic.Repository, fs fs.FS, opts Options) *Archiver {
 		CompleteItem: func(string, *restic.Node, *restic.Node, ItemStats, time.Duration) {},
 		StartFile:    func(string) {},
 		CompleteBlob: func(string, uint64) {},
-		IgnoreInode:  false,
 	}
 
 	return arch
@@ -379,7 +386,7 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 
 		// check if the file has not changed before performing a fopen operation (more expensive, specially
 		// in network filesystems)
-		if previous != nil && !fileChanged(fi, previous, arch.IgnoreInode) {
+		if previous != nil && !fileChanged(fi, previous, arch.ChangeIgnoreFlags) {
 			if arch.allBlobsPresent(previous) {
 				debug.Log("%v hasn't changed, using old list of blobs", target)
 				arch.CompleteItem(snPath, previous, previous, ItemStats{}, time.Since(start))
@@ -481,36 +488,30 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 	return fn, false, nil
 }
 
-// fileChanged returns true if the file's content has changed since the node
-// was created.
-func fileChanged(fi os.FileInfo, node *restic.Node, ignoreInode bool) bool {
-	if node == nil {
+// fileChanged tries to detect whether a file's content has changed compared
+// to the contents of node, which describes the same path in the parent backup.
+// It should only be run for regular files.
+func fileChanged(fi os.FileInfo, node *restic.Node, ignoreFlags uint) bool {
+	switch {
+	case node == nil:
+		return true
+	case node.Type != "file":
+		// We're only called for regular files, so this is a type change.
+		return true
+	case uint64(fi.Size()) != node.Size:
+		return true
+	case !fi.ModTime().Equal(node.ModTime):
 		return true
 	}
 
-	// check type change
-	if node.Type != "file" {
-		return true
-	}
+	checkCtime := ignoreFlags&ChangeIgnoreCtime == 0
+	checkInode := ignoreFlags&ChangeIgnoreInode == 0
 
-	// check modification timestamp
-	if !fi.ModTime().Equal(node.ModTime) {
-		return true
-	}
-
-	// check status change timestamp
 	extFI := fs.ExtendedStat(fi)
-	if !ignoreInode && !extFI.ChangeTime.Equal(node.ChangeTime) {
+	switch {
+	case checkCtime && !extFI.ChangeTime.Equal(node.ChangeTime):
 		return true
-	}
-
-	// check size
-	if uint64(fi.Size()) != node.Size || uint64(extFI.Size) != node.Size {
-		return true
-	}
-
-	// check inode
-	if !ignoreInode && node.Inode != extFI.Inode {
+	case checkInode && node.Inode != extFI.Inode:
 		return true
 	}
 
