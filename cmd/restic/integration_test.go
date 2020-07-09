@@ -359,6 +359,53 @@ func TestBackupNonExistingFile(t *testing.T) {
 	testRunBackup(t, "", dirs, opts, env.gopts)
 }
 
+func TestBackupSelfHealing(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testRunInit(t, env.gopts)
+
+	p := filepath.Join(env.testdata, "test/test")
+	rtest.OK(t, os.MkdirAll(filepath.Dir(p), 0755))
+	rtest.OK(t, appendRandomData(p, 5))
+
+	opts := BackupOptions{}
+
+	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
+	testRunCheck(t, env.gopts)
+
+	r, err := OpenRepository(env.gopts)
+	rtest.OK(t, err)
+
+	// Get all tree packs
+	rtest.OK(t, r.LoadIndex(env.gopts.ctx))
+	treePacks := restic.NewIDSet()
+	for _, idx := range r.Index().(*repository.MasterIndex).All() {
+		for _, id := range idx.TreePacks() {
+			treePacks.Insert(id)
+		}
+	}
+
+	// remove all data packs
+	rtest.OK(t, r.List(env.gopts.ctx, restic.DataFile, func(id restic.ID, size int64) error {
+		if treePacks.Has(id) {
+			return nil
+		}
+		return r.Backend().Remove(env.gopts.ctx, restic.Handle{Type: restic.DataFile, Name: id.String()})
+	}))
+
+	testRunRebuildIndex(t, env.gopts)
+	// now the repo is also missing the data blob in the index; check should report this
+	rtest.Assert(t, runCheck(CheckOptions{}, env.gopts, nil) != nil,
+		"check should have reported an error")
+
+	// second backup should report an error but "heal" this situation
+	err = testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
+	rtest.Assert(t, err != nil,
+		"backup should have reported an error")
+	testRunCheck(t, env.gopts)
+}
+
 func includes(haystack []string, needle string) bool {
 	for _, s := range haystack {
 		if s == needle {
