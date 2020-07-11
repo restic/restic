@@ -379,6 +379,7 @@ environment variables. The following list of environment variables:
     RESTIC_PASSWORD_FILE                Location of password file (replaces --password-file)
     RESTIC_PASSWORD                     The actual password for the repository
     RESTIC_PASSWORD_COMMAND             Command printing the password for the repository to stdout
+    RESTIC_CACHE_DIR                    Location of the cache directory
 
     AWS_ACCESS_KEY_ID                   Amazon S3 access key ID
     AWS_SECRET_ACCESS_KEY               Amazon S3 secret access key
@@ -417,4 +418,9 @@ environment variables. The following list of environment variables:
     RCLONE_BWLIMIT                      rclone bandwidth limit
 
 
+In addition to restic-specific environment variables, the following system-wide environment variables
+are taken into account for various operations:
 
+ * ``$XDG_CACHE_HOME/restic``, ``$HOME/.cache/restic``: :ref:`caching`.
+ * ``$TMPDIR``: :ref:`temporary_files`.
+ * ``$PATH/fusermount``: Binary for ``restic mount``.
