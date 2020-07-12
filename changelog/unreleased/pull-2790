@@ -1,0 +1,6 @@
+Enhancement: Optimized file access in restic mount
+
+Reading large (> 100GiB) files from restic mountpoints is now faster,
+and the speedup is greater for larger files.
+
+https://github.com/restic/restic/pull/2790
