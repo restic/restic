@@ -220,6 +220,7 @@ func testTopUidGid(t *testing.T, cfg Config, repo restic.Repository, uid, gid ui
 
 	snapID := loadFirstSnapshot(t, repo).ID().Str()
 	snapshotdir, err := idsdir.(fs.NodeStringLookuper).Lookup(ctx, snapID)
+	rtest.OK(t, err)
 
 	err = snapshotdir.Attr(ctx, &attr)
 	rtest.OK(t, err)
