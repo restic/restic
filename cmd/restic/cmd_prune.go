@@ -296,17 +296,8 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	}
 
 	if len(removePacks) != 0 {
-		bar = newProgressMax(!gopts.Quiet, uint64(len(removePacks)), "packs deleted")
-		bar.Start()
-		for packID := range removePacks {
-			h := restic.Handle{Type: restic.DataFile, Name: packID.String()}
-			err = repo.Backend().Remove(ctx, h)
-			if err != nil {
-				Warnf("unable to remove file %v from the repository\n", packID.Str())
-			}
-			bar.Report(restic.Stat{Blobs: 1})
-		}
-		bar.Done()
+		Verbosef("remove %d old packs\n", len(removePacks))
+		DeleteFiles(gopts, repo, removePacks, restic.DataFile)
 	}
 
 	Verbosef("done\n")
