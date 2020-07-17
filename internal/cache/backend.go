@@ -43,14 +43,13 @@ func (b *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	return b.Cache.Remove(h)
 }
 
-var autoCacheTypes = map[restic.FileType]struct{}{
-	restic.IndexFile:    {},
-	restic.SnapshotFile: {},
+func autoCached(t restic.FileType) bool {
+	return t == restic.IndexFile || t == restic.SnapshotFile
 }
 
 // Save stores a new file in the backend and the cache.
 func (b *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
-	if _, ok := autoCacheTypes[h.Type]; !ok {
+	if !autoCached(h.Type) {
 		return b.Backend.Save(ctx, h, rd)
 	}
 
@@ -82,11 +81,6 @@ func (b *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRea
 	}
 
 	return nil
-}
-
-var autoCacheFiles = map[restic.FileType]bool{
-	restic.IndexFile:    true,
-	restic.SnapshotFile: true,
 }
 
 func (b *Backend) cacheFile(ctx context.Context, h restic.Handle) error {
@@ -192,7 +186,7 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 	}
 
 	// if we don't automatically cache this file type, fall back to the backend
-	if _, ok := autoCacheFiles[h.Type]; !ok {
+	if !autoCached(h.Type) {
 		debug.Log("Load(%v, %v, %v): delegating to backend", h, length, offset)
 		return b.Backend.Load(ctx, h, length, offset, consumer)
 	}
