@@ -58,10 +58,6 @@ var cacheLayoutPaths = map[restic.FileType]string{
 const cachedirTagSignature = "Signature: 8a477f597d28d172789f06886806bc55\n"
 
 func writeCachedirTag(dir string) error {
-	if err := fs.MkdirAll(dir, dirMode); err != nil {
-		return err
-	}
-
 	tagfile := filepath.Join(dir, "CACHEDIR.TAG")
 	_, err := fs.Lstat(tagfile)
 	if err != nil && !os.IsNotExist(err) {
@@ -122,13 +118,20 @@ func New(id string, basedir string) (c *Cache, err error) {
 	}
 
 	// create the repo cache dir if it does not exist yet
-	_, err = fs.Lstat(cachedir)
-	if os.IsNotExist(err) {
-		err = fs.MkdirAll(cachedir, dirMode)
-		if err != nil {
+	err = os.Mkdir(cachedir, dirMode)
+	switch {
+	case err == nil:
+		created = true
+	case os.IsExist(err):
+		info, err := os.Lstat(cachedir)
+		if err == nil && !info.IsDir() {
+			err = fmt.Errorf("%s exists and is not a directory", cachedir)
+		}
+		if err == nil {
 			return nil, err
 		}
-		created = true
+	default:
+		return nil, err
 	}
 
 	// update the timestamp so that we can detect old cache dirs
