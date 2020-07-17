@@ -19,6 +19,10 @@ func (b Blob) String() string {
 		b.Type, b.ID.Str(), b.Offset, b.Length)
 }
 
+func (b Blob) Handle() BlobHandle {
+	return BlobHandle{ID: b.ID, Type: b.Type}
+}
+
 // PackedBlob is a blob stored within a file.
 type PackedBlob struct {
 	Blob
