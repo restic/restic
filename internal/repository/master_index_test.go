@@ -57,6 +57,58 @@ func TestMasterIndexLookup(t *testing.T) {
 	rtest.Assert(t, blobs == nil, "Expected no blobs when fetching with a random id")
 }
 
+func TestMasterMergeFinalIndexes(t *testing.T) {
+	idInIdx1 := restic.NewRandomID()
+	idInIdx2 := restic.NewRandomID()
+
+	blob1 := restic.PackedBlob{
+		PackID: restic.NewRandomID(),
+		Blob: restic.Blob{
+			Type:   restic.DataBlob,
+			ID:     idInIdx1,
+			Length: 10,
+			Offset: 0,
+		},
+	}
+
+	blob2 := restic.PackedBlob{
+		PackID: restic.NewRandomID(),
+		Blob: restic.Blob{
+			Type:   restic.DataBlob,
+			ID:     idInIdx2,
+			Length: 100,
+			Offset: 10,
+		},
+	}
+
+	idx1 := repository.NewIndex()
+	idx1.Store(blob1)
+
+	idx2 := repository.NewIndex()
+	idx2.Store(blob2)
+
+	mIdx := repository.NewMasterIndex()
+	mIdx.Insert(idx1)
+	mIdx.Insert(idx2)
+
+	finalIndexes := mIdx.FinalizeNotFinalIndexes()
+	rtest.Equals(t, []*repository.Index{idx1, idx2}, finalIndexes)
+
+	mIdx.MergeFinalIndexes()
+
+	blobs, found := mIdx.Lookup(idInIdx1, restic.DataBlob)
+	rtest.Assert(t, found, "Expected to find blob id %v from index 1", idInIdx1)
+	rtest.Equals(t, []restic.PackedBlob{blob1}, blobs)
+
+	blobs, found = mIdx.Lookup(idInIdx2, restic.DataBlob)
+	rtest.Assert(t, found, "Expected to find blob id %v from index 2", idInIdx2)
+	rtest.Equals(t, []restic.PackedBlob{blob2}, blobs)
+
+	blobs, found = mIdx.Lookup(restic.NewRandomID(), restic.DataBlob)
+	rtest.Assert(t, !found, "Expected to not find a blob when fetching with a random id")
+	rtest.Assert(t, blobs == nil, "Expected no blobs when fetching with a random id")
+}
+
 func createRandomMasterIndex(rng *rand.Rand, num, size int) (*repository.MasterIndex, restic.ID) {
 	mIdx := repository.NewMasterIndex()
 	for i := 0; i < num-1; i++ {
@@ -65,6 +117,10 @@ func createRandomMasterIndex(rng *rand.Rand, num, size int) (*repository.MasterI
 	}
 	idx1, lookupID := createRandomIndex(rng, size)
 	mIdx.Insert(idx1)
+
+	mIdx.FinalizeNotFinalIndexes()
+	mIdx.MergeFinalIndexes()
+
 	return mIdx, lookupID
 }
 
