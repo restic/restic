@@ -186,28 +186,10 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 
 	stats.snapshots = len(snapshots)
 
-	Verbosef("find data that is still in use for %d snapshots\n", stats.snapshots)
-
-	usedBlobs := restic.NewBlobSet()
-
-	bar = newProgressMax(!gopts.Quiet, uint64(len(snapshots)), "snapshots")
-	bar.Start()
-	for _, sn := range snapshots {
-		debug.Log("process snapshot %v", sn.ID())
-
-		err = restic.FindUsedBlobs(ctx, repo, *sn.Tree, usedBlobs)
-		if err != nil {
-			if repo.Backend().IsNotExist(err) {
-				return errors.Fatal("unable to load a tree from the repo: " + err.Error())
-			}
-
-			return err
-		}
-
-		debug.Log("processed snapshot %v", sn.ID())
-		bar.Report(restic.Stat{Blobs: 1})
+	usedBlobs, err := getUsedBlobs(gopts, repo, snapshots)
+	if err != nil {
+		return err
 	}
-	bar.Done()
 
 	if len(usedBlobs) > stats.blobs {
 		return errors.Fatalf("number of used blobs is larger than number of available blobs!\n" +
@@ -311,4 +293,31 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 
 	Verbosef("done\n")
 	return nil
+}
+
+func getUsedBlobs(gopts GlobalOptions, repo restic.Repository, snapshots []*restic.Snapshot) (usedBlobs restic.BlobSet, err error) {
+	ctx := gopts.ctx
+
+	Verbosef("find data that is still in use for %d snapshots\n", len(snapshots))
+
+	usedBlobs = restic.NewBlobSet()
+
+	bar := newProgressMax(!gopts.Quiet, uint64(len(snapshots)), "snapshots")
+	bar.Start()
+	for _, sn := range snapshots {
+		debug.Log("process snapshot %v", sn.ID())
+
+		err = restic.FindUsedBlobs(ctx, repo, *sn.Tree, usedBlobs)
+		if err != nil {
+			if repo.Backend().IsNotExist(err) {
+				return nil, errors.Fatal("unable to load a tree from the repo: " + err.Error())
+			}
+
+			return nil, err
+		}
+
+		debug.Log("processed snapshot %v", sn.ID())
+		bar.Report(restic.Stat{Blobs: 1})
+	}
+	return usedBlobs, nil
 }
