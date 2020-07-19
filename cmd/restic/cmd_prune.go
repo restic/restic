@@ -128,15 +128,15 @@ func runPrune(opts PruneOptions, gopts GlobalOptions) error {
 		return err
 	}
 
-	return runPruneWithRepo(opts, gopts, repo)
+	return runPruneWithRepo(opts, gopts, repo, restic.NewIDSet())
 }
 
-func runPruneWithRepo(opts PruneOptions, gopts GlobalOptions, repo *repository.Repository) error {
+func runPruneWithRepo(opts PruneOptions, gopts GlobalOptions, repo *repository.Repository, ignoreSnapshots restic.IDSet) error {
 	// we do not need index updates while pruning!
 	repo.DisableAutoIndexUpdate()
 
 	Verbosef("loading all snapshots...\n")
-	snapshots, err := restic.LoadAllSnapshots(gopts.ctx, repo)
+	snapshots, err := restic.LoadAllSnapshots(gopts.ctx, repo, ignoreSnapshots)
 	if err != nil {
 		return err
 	}
