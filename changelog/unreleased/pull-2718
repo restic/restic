@@ -1,0 +1,22 @@
+Enhancement: Improve pruning performance and make pruning more customizable
+
+The prune command is now much faster. This is especially the case for remote
+repositories or repositories with not much data to prune.
+Also the memory usage of the prune command is now reduced.
+
+By default the prune command now no longer removes all unused blobs. This
+behavior can be fine-tuned by new options, like tolerated unused space or 
+maximum size of packs to repack. For more details, see
+https://restic.readthedocs.io/en/stable/060_forget.html
+
+Moreover, prune now accepts the dry-run option and forget --dry-run --prune 
+also shows what prune would do.
+
+Fixes several open issues, e.g.:
+https://github.com/restic/restic/issues/1140
+https://github.com/restic/restic/issues/1985
+https://github.com/restic/restic/issues/2112
+https://github.com/restic/restic/issues/2227
+https://github.com/restic/restic/issues/2305
+
+https://github.com/restic/restic/pull/2718
