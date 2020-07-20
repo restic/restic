@@ -1,6 +1,7 @@
 package repository_test
 
 import (
+	"fmt"
 	"math/rand"
 	"testing"
 
@@ -74,11 +75,11 @@ func BenchmarkMasterIndexLookupMultipleIndex(b *testing.B) {
 	mIdx := repository.NewMasterIndex()
 
 	for i := 0; i < 5; i++ {
-		idx, _ := createRandomIndex(rand.New(rng))
+		idx, _ := createRandomIndex(rng)
 		mIdx.Insert(idx)
 	}
 
-	idx1, lookupID := createRandomIndex(rand.New(rng))
+	idx1, lookupID := createRandomIndex(rng)
 	mIdx.Insert(idx1)
 
 	b.ResetTimer()
@@ -107,17 +108,51 @@ func BenchmarkMasterIndexLookupMultipleIndexUnknown(b *testing.B) {
 	lookupID := restic.NewRandomID()
 	mIdx := repository.NewMasterIndex()
 
-	for i := 0; i < 5; i++ {
-		idx, _ := createRandomIndex(rand.New(rng))
+	for i := 0; i < 6; i++ {
+		idx, _ := createRandomIndex(rng)
 		mIdx.Insert(idx)
 	}
-
-	idx1, _ := createRandomIndex(rand.New(rng))
-	mIdx.Insert(idx1)
 
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
 		mIdx.Lookup(lookupID, restic.DataBlob)
+	}
+}
+
+func BenchmarkMasterIndexLookupParallel(b *testing.B) {
+	mIdx := repository.NewMasterIndex()
+
+	for _, numindices := range []int{5, 10, 20} {
+		var lookupID restic.ID
+
+		b.StopTimer()
+		rng := rand.New(rand.NewSource(0))
+		for i := 0; i < numindices; i++ {
+			var idx *repository.Index
+			idx, lookupID = createRandomIndex(rng)
+			mIdx.Insert(idx)
+		}
+		b.StartTimer()
+
+		name := fmt.Sprintf("known,indices=%d", numindices)
+		b.Run(name, func(b *testing.B) {
+			b.RunParallel(func(pb *testing.PB) {
+				for pb.Next() {
+					mIdx.Lookup(lookupID, restic.DataBlob)
+				}
+			})
+		})
+
+		lookupID = restic.NewRandomID()
+		name = fmt.Sprintf("unknown,indices=%d", numindices)
+		b.Run(name, func(b *testing.B) {
+			b.RunParallel(func(pb *testing.PB) {
+				for pb.Next() {
+					mIdx.Lookup(lookupID, restic.DataBlob)
+				}
+			})
+		})
+
 	}
 }
