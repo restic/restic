@@ -103,9 +103,13 @@ func main() {
 	}
 
 	var exitCode int
-	if err != nil {
+	switch err {
+	case nil:
+		exitCode = 0
+	case InvalidSourceData:
+		exitCode = 3
+	default:
 		exitCode = 1
 	}
-
 	Exit(exitCode)
 }
