@@ -47,14 +47,24 @@ func getStorageService(rt http.RoundTripper) (*storage.Service, error) {
 		Transport: rt,
 	}
 
-	// create a now context with the HTTP client stored at the oauth2.HTTPClient key
+	// create a new context with the HTTP client stored at the oauth2.HTTPClient key
 	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, httpClient)
 
-	// use this context
-	client, err := google.DefaultClient(ctx, storage.DevstorageReadWriteScope)
-	if err != nil {
-		return nil, err
+	var ts oauth2.TokenSource
+	if token := os.Getenv("GOOGLE_ACCESS_TOKEN"); token != "" {
+		ts = oauth2.StaticTokenSource(&oauth2.Token{
+			AccessToken: token,
+			TokenType:   "Bearer",
+		})
+	} else {
+		var err error
+		ts, err = google.DefaultTokenSource(ctx, storage.DevstorageReadWriteScope)
+		if err != nil {
+			return nil, err
+		}
 	}
+
+	client := oauth2.NewClient(ctx, ts)
 
 	service, err := storage.New(client)
 	if err != nil {

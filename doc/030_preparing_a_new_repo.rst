@@ -458,6 +458,18 @@ which means if you're running in Google Container Engine or are otherwise
 located on an instance with default service accounts then these should work out of 
 the box.
 
+Alternatively, you can specify an existing access token directly:
+
+.. code-block:: console
+
+    $ export GOOGLE_ACCESS_TOKEN=ya29.a0AfH6SMC78...
+
+If ``GOOGLE_ACCESS_TOKEN`` is set all other authentication mechanisms are
+disabled. The access token must have at least the
+``https://www.googleapis.com/auth/devstorage.read_write`` scope. Keep in mind
+that access tokens are short-lived (usually one hour), so they are not suitable
+if creating a backup takes longer than that, for instance.
+
 Once authenticated, you can use the ``gs:`` backend type to create a new
 repository in the bucket ``foo`` at the root path:
 
