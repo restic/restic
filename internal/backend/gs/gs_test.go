@@ -87,7 +87,6 @@ func TestBackendGS(t *testing.T) {
 	}()
 
 	vars := []string{
-		"GOOGLE_APPLICATION_CREDENTIALS",
 		"RESTIC_TEST_GS_PROJECT_ID",
 		"RESTIC_TEST_GS_REPOSITORY",
 	}
@@ -97,6 +96,10 @@ func TestBackendGS(t *testing.T) {
 			t.Skipf("environment variable %v not set", v)
 			return
 		}
+	}
+	if os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")+os.Getenv("GOOGLE_ACCESS_TOKEN") == "" {
+		t.Skipf("environment variable GOOGLE_APPLICATION_CREDENTIALS not set, nor GOOGLE_ACCESS_TOKEN")
+		return
 	}
 
 	t.Logf("run tests")
@@ -105,7 +108,6 @@ func TestBackendGS(t *testing.T) {
 
 func BenchmarkBackendGS(t *testing.B) {
 	vars := []string{
-		"GOOGLE_APPLICATION_CREDENTIALS",
 		"RESTIC_TEST_GS_PROJECT_ID",
 		"RESTIC_TEST_GS_REPOSITORY",
 	}
@@ -115,6 +117,10 @@ func BenchmarkBackendGS(t *testing.B) {
 			t.Skipf("environment variable %v not set", v)
 			return
 		}
+	}
+	if os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")+os.Getenv("GOOGLE_ACCESS_TOKEN") == "" {
+		t.Skipf("environment variable GOOGLE_APPLICATION_CREDENTIALS not set, nor GOOGLE_ACCESS_TOKEN")
+		return
 	}
 
 	t.Logf("run tests")
