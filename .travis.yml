@@ -4,14 +4,6 @@ sudo: false
 matrix:
   include:
     - os: linux
-      go: "1.11.x"
-      env: RESTIC_TEST_FUSE=0 RESTIC_TEST_CLOUD_BACKENDS=0
-      cache:
-        directories:
-          - $HOME/.cache/go-build
-          - $HOME/gopath/pkg/mod
-
-    - os: linux
       go: "1.12.x"
       env: RESTIC_TEST_FUSE=0 RESTIC_TEST_CLOUD_BACKENDS=0
       cache:
