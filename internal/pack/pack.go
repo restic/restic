@@ -151,11 +151,6 @@ func (p *Packer) Blobs() []restic.Blob {
 	return p.blobs
 }
 
-// Writer return the underlying writer.
-func (p *Packer) Writer() io.Writer {
-	return p.wr
-}
-
 func (p *Packer) String() string {
 	return fmt.Sprintf("<Packer %d blobs, %d bytes>", len(p.blobs), p.bytes)
 }
