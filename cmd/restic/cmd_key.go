@@ -110,8 +110,8 @@ func getNewPassword(gopts GlobalOptions) (string, error) {
 	newopts.password = ""
 
 	return ReadPasswordTwice(newopts,
-		"enter password for new key: ",
-		"enter password again: ")
+		"enter password (new): ",
+		"enter password (again): ")
 }
 
 func addKey(gopts GlobalOptions, repo *repository.Repository) error {
