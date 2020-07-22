@@ -8,10 +8,14 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/checker"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
@@ -153,13 +157,13 @@ func TestUnreferencedBlobs(t *testing.T) {
 	}
 	test.OK(t, repo.Backend().Remove(context.TODO(), snapshotHandle))
 
-	unusedBlobsBySnapshot := restic.IDs{
-		restic.TestParseID("58c748bbe2929fdf30c73262bd8313fe828f8925b05d1d4a87fe109082acb849"),
-		restic.TestParseID("988a272ab9768182abfd1fe7d7a7b68967825f0b861d3b36156795832c772235"),
-		restic.TestParseID("c01952de4d91da1b1b80bc6e06eaa4ec21523f4853b69dc8231708b9b7ec62d8"),
-		restic.TestParseID("bec3a53d7dc737f9a9bee68b107ec9e8ad722019f649b34d474b9982c3a3fec7"),
-		restic.TestParseID("2a6f01e5e92d8343c4c6b78b51c5a4dc9c39d42c04e26088c7614b13d8d0559d"),
-		restic.TestParseID("18b51b327df9391732ba7aaf841a4885f350d8a557b2da8352c9acf8898e3f10"),
+	unusedBlobsBySnapshot := restic.BlobHandles{
+		restic.TestParseHandle("58c748bbe2929fdf30c73262bd8313fe828f8925b05d1d4a87fe109082acb849", restic.DataBlob),
+		restic.TestParseHandle("988a272ab9768182abfd1fe7d7a7b68967825f0b861d3b36156795832c772235", restic.DataBlob),
+		restic.TestParseHandle("c01952de4d91da1b1b80bc6e06eaa4ec21523f4853b69dc8231708b9b7ec62d8", restic.TreeBlob),
+		restic.TestParseHandle("bec3a53d7dc737f9a9bee68b107ec9e8ad722019f649b34d474b9982c3a3fec7", restic.TreeBlob),
+		restic.TestParseHandle("2a6f01e5e92d8343c4c6b78b51c5a4dc9c39d42c04e26088c7614b13d8d0559d", restic.TreeBlob),
+		restic.TestParseHandle("18b51b327df9391732ba7aaf841a4885f350d8a557b2da8352c9acf8898e3f10", restic.DataBlob),
 	}
 
 	sort.Sort(unusedBlobsBySnapshot)
@@ -363,13 +367,38 @@ func TestCheckerModifiedData(t *testing.T) {
 	}
 }
 
-func BenchmarkChecker(t *testing.B) {
+// loadTreesOnceRepository allows each tree to be loaded only once
+type loadTreesOnceRepository struct {
+	restic.Repository
+	loadedTrees   restic.IDSet
+	mutex         sync.Mutex
+	DuplicateTree bool
+}
+
+func (r *loadTreesOnceRepository) LoadTree(ctx context.Context, id restic.ID) (*restic.Tree, error) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
+	if r.loadedTrees.Has(id) {
+		// additionally store error to ensure that it cannot be swallowed
+		r.DuplicateTree = true
+		return nil, errors.Errorf("trying to load tree with id %v twice", id)
+	}
+	r.loadedTrees.Insert(id)
+	return r.Repository.LoadTree(ctx, id)
+}
+
+func TestCheckerNoDuplicateTreeDecodes(t *testing.T) {
 	repodir, cleanup := test.Env(t, checkerTestData)
 	defer cleanup()
 
 	repo := repository.TestOpenLocal(t, repodir)
+	checkRepo := &loadTreesOnceRepository{
+		Repository:  repo,
+		loadedTrees: restic.NewIDSet(),
+	}
 
-	chkr := checker.New(repo)
+	chkr := checker.New(checkRepo)
 	hints, errs := chkr.LoadIndex(context.TODO())
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
@@ -379,11 +408,213 @@ func BenchmarkChecker(t *testing.B) {
 		t.Errorf("expected no hints, got %v: %v", len(hints), hints)
 	}
 
+	test.OKs(t, checkPacks(chkr))
+	test.OKs(t, checkStruct(chkr))
+	test.Assert(t, !checkRepo.DuplicateTree, "detected duplicate tree loading")
+}
+
+// delayRepository delays read of a specific handle.
+type delayRepository struct {
+	restic.Repository
+	DelayTree      restic.ID
+	UnblockChannel chan struct{}
+	Unblocker      sync.Once
+}
+
+func (r *delayRepository) LoadTree(ctx context.Context, id restic.ID) (*restic.Tree, error) {
+	if id == r.DelayTree {
+		<-r.UnblockChannel
+	}
+	return r.Repository.LoadTree(ctx, id)
+}
+
+func (r *delayRepository) LookupBlobSize(id restic.ID, t restic.BlobType) (uint, bool) {
+	if id == r.DelayTree && t == restic.DataBlob {
+		r.Unblock()
+	}
+	return r.Repository.LookupBlobSize(id, t)
+}
+
+func (r *delayRepository) Unblock() {
+	r.Unblocker.Do(func() {
+		close(r.UnblockChannel)
+	})
+}
+
+func TestCheckerBlobTypeConfusion(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	repo, cleanup := repository.TestRepository(t)
+	defer cleanup()
+
+	damagedNode := &restic.Node{
+		Name:    "damaged",
+		Type:    "file",
+		Mode:    0644,
+		Size:    42,
+		Content: restic.IDs{restic.TestParseID("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")},
+	}
+	damagedTree := &restic.Tree{
+		Nodes: []*restic.Node{damagedNode},
+	}
+
+	id, err := repo.SaveTree(ctx, damagedTree)
+	test.OK(t, repo.Flush(ctx))
+	test.OK(t, err)
+
+	buf, err := repo.LoadBlob(ctx, restic.TreeBlob, id, nil)
+	test.OK(t, err)
+
+	_, _, err = repo.SaveBlob(ctx, restic.DataBlob, buf, id, false)
+	test.OK(t, err)
+
+	malNode := &restic.Node{
+		Name:    "aaaaa",
+		Type:    "file",
+		Mode:    0644,
+		Size:    uint64(len(buf)),
+		Content: restic.IDs{id},
+	}
+	dirNode := &restic.Node{
+		Name:    "bbbbb",
+		Type:    "dir",
+		Mode:    0755,
+		Subtree: &id,
+	}
+
+	rootTree := &restic.Tree{
+		Nodes: []*restic.Node{malNode, dirNode},
+	}
+
+	rootId, err := repo.SaveTree(ctx, rootTree)
+	test.OK(t, err)
+
+	test.OK(t, repo.Flush(ctx))
+	test.OK(t, repo.SaveIndex(ctx))
+
+	snapshot, err := restic.NewSnapshot([]string{"/damaged"}, []string{"test"}, "foo", time.Now())
+	test.OK(t, err)
+
+	snapshot.Tree = &rootId
+
+	snapId, err := repo.SaveJSONUnpacked(ctx, restic.SnapshotFile, snapshot)
+	test.OK(t, err)
+
+	t.Logf("saved snapshot %v", snapId.Str())
+
+	delayRepo := &delayRepository{
+		Repository:     repo,
+		DelayTree:      id,
+		UnblockChannel: make(chan struct{}),
+	}
+
+	chkr := checker.New(delayRepo)
+
+	go func() {
+		<-ctx.Done()
+		delayRepo.Unblock()
+	}()
+
+	hints, errs := chkr.LoadIndex(ctx)
+	if len(errs) > 0 {
+		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
+	}
+
+	if len(hints) > 0 {
+		t.Errorf("expected no hints, got %v: %v", len(hints), hints)
+	}
+
+	errFound := false
+
+	for _, err := range checkStruct(chkr) {
+		t.Logf("struct error: %v", err)
+		errFound = true
+	}
+
+	test.OK(t, ctx.Err())
+
+	if !errFound {
+		t.Fatal("no error found, checker is broken")
+	}
+}
+
+func loadBenchRepository(t *testing.B) (*checker.Checker, restic.Repository, func()) {
+	repodir, cleanup := test.Env(t, checkerTestData)
+
+	repo := repository.TestOpenLocal(t, repodir)
+
+	chkr := checker.New(repo)
+	hints, errs := chkr.LoadIndex(context.TODO())
+	if len(errs) > 0 {
+		defer cleanup()
+		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
+	}
+
+	if len(hints) > 0 {
+		t.Errorf("expected no hints, got %v: %v", len(hints), hints)
+	}
+	return chkr, repo, cleanup
+}
+
+func BenchmarkChecker(t *testing.B) {
+	chkr, _, cleanup := loadBenchRepository(t)
+	defer cleanup()
+
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
 		test.OKs(t, checkPacks(chkr))
 		test.OKs(t, checkStruct(chkr))
 		test.OKs(t, checkData(chkr))
+	}
+}
+
+func benchmarkSnapshotScaling(t *testing.B, newSnapshots int) {
+	chkr, repo, cleanup := loadBenchRepository(t)
+	defer cleanup()
+
+	snID, err := restic.FindSnapshot(repo, "51d249d2")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var sn2 restic.Snapshot
+	err = repo.LoadJSONUnpacked(context.TODO(), restic.SnapshotFile, snID, &sn2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	treeID := sn2.Tree
+
+	for i := 0; i < newSnapshots; i++ {
+		sn, err := restic.NewSnapshot([]string{"test" + strconv.Itoa(i)}, nil, "", time.Now())
+		if err != nil {
+			t.Fatal(err)
+		}
+		sn.Tree = treeID
+
+		_, err = repo.SaveJSONUnpacked(context.TODO(), restic.SnapshotFile, sn)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	t.ResetTimer()
+
+	for i := 0; i < t.N; i++ {
+		test.OKs(t, checkPacks(chkr))
+		test.OKs(t, checkStruct(chkr))
+		test.OKs(t, checkData(chkr))
+	}
+}
+
+func BenchmarkCheckerSnapshotScaling(b *testing.B) {
+	counts := []int{50, 100, 200}
+	for _, count := range counts {
+		count := count
+		b.Run(strconv.Itoa(count), func(b *testing.B) {
+			benchmarkSnapshotScaling(b, count)
+		})
 	}
 }

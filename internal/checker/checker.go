@@ -22,29 +22,33 @@ import (
 // repository (e.g. missing blobs), and needs a valid Repository to work on.
 type Checker struct {
 	packs    restic.IDSet
-	blobs    restic.IDSet
 	blobRefs struct {
 		sync.Mutex
-		M map[restic.ID]uint
+		// see flags below
+		M map[restic.BlobHandle]blobStatus
 	}
-	indexes map[restic.ID]*repository.Index
 
 	masterIndex *repository.MasterIndex
 
 	repo restic.Repository
 }
 
+type blobStatus uint8
+
+const (
+	blobStatusExists blobStatus = 1 << iota
+	blobStatusReferenced
+)
+
 // New returns a new checker which runs on repo.
 func New(repo restic.Repository) *Checker {
 	c := &Checker{
 		packs:       restic.NewIDSet(),
-		blobs:       restic.NewIDSet(),
 		masterIndex: repository.NewMasterIndex(),
-		indexes:     make(map[restic.ID]*repository.Index),
 		repo:        repo,
 	}
 
-	c.blobRefs.M = make(map[restic.ID]uint)
+	c.blobRefs.M = make(map[restic.BlobHandle]blobStatus)
 
 	return c
 }
@@ -152,15 +156,14 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 				continue
 			}
 
-			c.indexes[res.ID] = res.Index
 			c.masterIndex.Insert(res.Index)
 
 			debug.Log("process blobs")
 			cnt := 0
 			for blob := range res.Index.Each(ctx) {
 				c.packs.Insert(blob.PackID)
-				c.blobs.Insert(blob.ID)
-				c.blobRefs.M[blob.ID] = 0
+				h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
+				c.blobRefs.M[h] = blobStatusExists
 				cnt++
 
 				if _, ok := packToIndex[blob.PackID]; !ok {
@@ -447,20 +450,6 @@ func (c *Checker) checkTreeWorker(ctx context.Context, in <-chan treeJob, out ch
 				return
 			}
 
-			id := job.ID
-			alreadyChecked := false
-			c.blobRefs.Lock()
-			if c.blobRefs.M[id] > 0 {
-				alreadyChecked = true
-			}
-			c.blobRefs.M[id]++
-			debug.Log("tree %v refcount %d", job.ID, c.blobRefs.M[id])
-			c.blobRefs.Unlock()
-
-			if alreadyChecked {
-				continue
-			}
-
 			debug.Log("check tree %v (tree %v, err %v)", job.ID, job.Tree, job.error)
 
 			var errs []error
@@ -485,7 +474,7 @@ func (c *Checker) checkTreeWorker(ctx context.Context, in <-chan treeJob, out ch
 	}
 }
 
-func filterTrees(ctx context.Context, backlog restic.IDs, loaderChan chan<- restic.ID, in <-chan treeJob, out chan<- treeJob) {
+func (c *Checker) filterTrees(ctx context.Context, backlog restic.IDs, loaderChan chan<- restic.ID, in <-chan treeJob, out chan<- treeJob) {
 	defer func() {
 		debug.Log("closing output channels")
 		close(loaderChan)
@@ -506,8 +495,21 @@ func filterTrees(ctx context.Context, backlog restic.IDs, loaderChan chan<- rest
 
 	for {
 		if loadCh == nil && len(backlog) > 0 {
+			// process last added ids first, that is traverse the tree in depth-first order
+			ln := len(backlog) - 1
+			nextTreeID, backlog = backlog[ln], backlog[:ln]
+
+			// use a separate flag for processed trees to ensure that check still processes trees
+			// even when a file references a tree blob
+			c.blobRefs.Lock()
+			h := restic.BlobHandle{ID: nextTreeID, Type: restic.TreeBlob}
+			status := c.blobRefs.M[h]
+			c.blobRefs.Unlock()
+			if (status & blobStatusReferenced) != 0 {
+				continue
+			}
+
 			loadCh = loaderChan
-			nextTreeID, backlog = backlog[0], backlog[1:]
 		}
 
 		if loadCh == nil && outCh == nil && outstandingLoadTreeJobs == 0 {
@@ -522,6 +524,10 @@ func filterTrees(ctx context.Context, backlog restic.IDs, loaderChan chan<- rest
 		case loadCh <- nextTreeID:
 			outstandingLoadTreeJobs++
 			loadCh = nil
+			c.blobRefs.Lock()
+			h := restic.BlobHandle{ID: nextTreeID, Type: restic.TreeBlob}
+			c.blobRefs.M[h] |= blobStatusReferenced
+			c.blobRefs.Unlock()
 
 		case j, ok := <-inCh:
 			if !ok {
@@ -535,16 +541,18 @@ func filterTrees(ctx context.Context, backlog restic.IDs, loaderChan chan<- rest
 
 			debug.Log("input job tree %v", j.ID)
 
-			var err error
-
 			if j.error != nil {
 				debug.Log("received job with error: %v (tree %v, ID %v)", j.error, j.Tree, j.ID)
 			} else if j.Tree == nil {
 				debug.Log("received job with nil tree pointer: %v (ID %v)", j.error, j.ID)
-				err = errors.New("tree is nil and error is nil")
+				// send a new job with the new error instead of the old one
+				j = treeJob{ID: j.ID, error: errors.New("tree is nil and error is nil")}
 			} else {
-				debug.Log("subtrees for tree %v: %v", j.ID, j.Tree.Subtrees())
-				for _, id := range j.Tree.Subtrees() {
+				subtrees := j.Tree.Subtrees()
+				debug.Log("subtrees for tree %v: %v", j.ID, subtrees)
+				// iterate backwards over subtree to compensate backwards traversal order of nextTreeID selection
+				for i := len(subtrees) - 1; i >= 0; i-- {
+					id := subtrees[i]
 					if id.IsNull() {
 						// We do not need to raise this error here, it is
 						// checked when the tree is checked. Just make sure
@@ -554,11 +562,6 @@ func filterTrees(ctx context.Context, backlog restic.IDs, loaderChan chan<- rest
 					}
 					backlog = append(backlog, id)
 				}
-			}
-
-			if err != nil {
-				// send a new job with the new error instead of the old one
-				j = treeJob{ID: j.ID, error: err}
 			}
 
 			job = j
@@ -601,7 +604,7 @@ func (c *Checker) Structure(ctx context.Context, errChan chan<- error) {
 		go c.checkTreeWorker(ctx, treeJobChan2, errChan, &wg)
 	}
 
-	filterTrees(ctx, trees, treeIDChan, treeJobChan1, treeJobChan2)
+	c.filterTrees(ctx, trees, treeIDChan, treeJobChan1, treeJobChan2)
 
 	wg.Wait()
 }
@@ -656,28 +659,27 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 
 	for _, blobID := range blobs {
 		c.blobRefs.Lock()
-		c.blobRefs.M[blobID]++
-		debug.Log("blob %v refcount %d", blobID, c.blobRefs.M[blobID])
-		c.blobRefs.Unlock()
-
-		if !c.blobs.Has(blobID) {
+		h := restic.BlobHandle{ID: blobID, Type: restic.DataBlob}
+		if (c.blobRefs.M[h] & blobStatusExists) == 0 {
 			debug.Log("tree %v references blob %v which isn't contained in index", id, blobID)
-
 			errs = append(errs, Error{TreeID: id, BlobID: blobID, Err: errors.New("not found in index")})
 		}
+		c.blobRefs.M[h] |= blobStatusReferenced
+		debug.Log("blob %v is referenced", blobID)
+		c.blobRefs.Unlock()
 	}
 
 	return errs
 }
 
 // UnusedBlobs returns all blobs that have never been referenced.
-func (c *Checker) UnusedBlobs() (blobs restic.IDs) {
+func (c *Checker) UnusedBlobs() (blobs restic.BlobHandles) {
 	c.blobRefs.Lock()
 	defer c.blobRefs.Unlock()
 
-	debug.Log("checking %d blobs", len(c.blobs))
-	for id := range c.blobs {
-		if c.blobRefs.M[id] == 0 {
+	debug.Log("checking %d blobs", len(c.blobRefs.M))
+	for id, flags := range c.blobRefs.M {
+		if (flags & blobStatusReferenced) == 0 {
 			debug.Log("blob %v not referenced", id)
 			blobs = append(blobs, id)
 		}

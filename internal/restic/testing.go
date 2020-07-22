@@ -200,3 +200,8 @@ func TestParseID(s string) ID {
 
 	return id
 }
+
+// TestParseHandle parses s as a ID, panics if that fails and creates a BlobHandle with t.
+func TestParseHandle(s string, t BlobType) BlobHandle {
+	return BlobHandle{ID: TestParseID(s), Type: t}
+}
