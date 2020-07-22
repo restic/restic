@@ -57,7 +57,10 @@ func (r *packerManager) findPacker() (packer *Packer, err error) {
 	// search for a suitable packer
 	if len(r.packers) > 0 {
 		p := r.packers[0]
-		r.packers = r.packers[1:]
+		last := len(r.packers) - 1
+		r.packers[0] = r.packers[last]
+		r.packers[last] = nil // Allow GC of stale reference.
+		r.packers = r.packers[:last]
 		return p, nil
 	}
 
