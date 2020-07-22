@@ -361,12 +361,14 @@ func (r *Repository) SetIndex(i restic.Index) error {
 
 	ids := restic.NewIDSet()
 	for _, idx := range r.idx.All() {
-		id, err := idx.ID()
+		indexIDs, err := idx.IDs()
 		if err != nil {
 			debug.Log("not using index, ID() returned error %v", err)
 			continue
 		}
-		ids.Insert(id)
+		for _, id := range indexIDs {
+			ids.Insert(id)
+		}
 	}
 
 	return r.PrepareCache(ids)
@@ -396,6 +398,7 @@ func (r *Repository) saveIndex(ctx context.Context, indexes ...*Index) error {
 
 		debug.Log("Saved index %d as %v", i, sid)
 	}
+	r.idx.MergeFinalIndexes()
 
 	return nil
 }
@@ -479,12 +482,16 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 	validIndex := restic.NewIDSet()
 	wg.Go(func() error {
 		for idx := range indexCh {
-			id, err := idx.ID()
+			ids, err := idx.IDs()
 			if err == nil {
-				validIndex.Insert(id)
+				for _, id := range ids {
+					validIndex.Insert(id)
+				}
 			}
+
 			r.idx.Insert(idx)
 		}
+		r.idx.MergeFinalIndexes()
 		return nil
 	})
 

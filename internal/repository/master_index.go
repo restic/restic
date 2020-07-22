@@ -18,7 +18,12 @@ type MasterIndex struct {
 
 // NewMasterIndex creates a new master index.
 func NewMasterIndex() *MasterIndex {
-	return &MasterIndex{pendingBlobs: restic.NewBlobSet()}
+	// Always add an empty final index, such that MergeFinalIndexes can merge into this.
+	// Note that removing this index could lead to a race condition in the rare
+	// sitation that only two indexes exist which are saved and merged concurrently.
+	idx := []*Index{NewIndex()}
+	idx[0].Finalize()
+	return &MasterIndex{idx: idx, pendingBlobs: restic.NewBlobSet()}
 }
 
 // Lookup queries all known Indexes for the ID and returns the first match.
@@ -237,6 +242,31 @@ func (mi *MasterIndex) Each(ctx context.Context) <-chan restic.PackedBlob {
 	return ch
 }
 
+// MergeFinalIndexes merges all final indexes together.
+// After calling, there will be only one big final index in MasterIndex
+// containing all final index contents.
+// Indexes that are not final are left untouched.
+// This merging can only be called after all index files are loaded - as
+// removing of superseded index contents is only possible for unmerged indexes.
+func (mi *MasterIndex) MergeFinalIndexes() {
+	mi.idxMutex.Lock()
+	defer mi.idxMutex.Unlock()
+
+	// The first index is always final and the one to merge into
+	newIdx := mi.idx[:1]
+	for i := 1; i < len(mi.idx); i++ {
+		idx := mi.idx[i]
+		// clear reference in masterindex as it may become stale
+		mi.idx[i] = nil
+		if !idx.Final() {
+			newIdx = append(newIdx, idx)
+		} else {
+			mi.idx[0].merge(idx)
+		}
+	}
+	mi.idx = newIdx
+}
+
 // RebuildIndex combines all known indexes to a new index, leaving out any
 // packs whose ID is contained in packBlacklist. The new index contains the IDs
 // of all known indexes in the "supersedes" field.
@@ -267,15 +297,15 @@ func (mi *MasterIndex) RebuildIndex(packBlacklist restic.IDSet) (*Index, error) 
 			continue
 		}
 
-		id, err := idx.ID()
+		ids, err := idx.IDs()
 		if err != nil {
 			debug.Log("index %d does not have an ID: %v", err)
 			return nil, err
 		}
 
-		debug.Log("adding index id %v to supersedes field", id)
+		debug.Log("adding index ids %v to supersedes field", ids)
 
-		err = newIndex.AddToSupersedes(id)
+		err = newIndex.AddToSupersedes(ids...)
 		if err != nil {
 			return nil, err
 		}
