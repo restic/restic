@@ -9,6 +9,9 @@ import (
 	"github.com/hashicorp/golang-lru/simplelru"
 )
 
+// Size of the blob cache. TODO: make this configurable.
+const blobCacheSize = 64 << 20
+
 // Crude estimate of the overhead per blob: a SHA-256, a linked list node
 // and some pointers. See comment in blobCache.add.
 const cacheOverhead = len(restic.ID{}) + 64

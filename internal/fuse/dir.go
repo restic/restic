@@ -4,7 +4,6 @@ package fuse
 
 import (
 	"os"
-	"path/filepath"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
@@ -28,10 +27,6 @@ type dir struct {
 	blobsize *BlobSizeCache
 }
 
-func cleanupNodeName(name string) string {
-	return filepath.Base(name)
-}
-
 func newDir(ctx context.Context, root *Root, inode, parentInode uint64, node *restic.Node) (*dir, error) {
 	debug.Log("new dir for %v (%v)", node.Name, node.Subtree)
 	tree, err := root.repo.LoadTree(ctx, *node.Subtree)
@@ -51,25 +46,6 @@ func newDir(ctx context.Context, root *Root, inode, parentInode uint64, node *re
 		inode:       inode,
 		parentInode: parentInode,
 	}, nil
-}
-
-// replaceSpecialNodes replaces nodes with name "." and "/" by their contents.
-// Otherwise, the node is returned.
-func replaceSpecialNodes(ctx context.Context, repo restic.Repository, node *restic.Node) ([]*restic.Node, error) {
-	if node.Type != "dir" || node.Subtree == nil {
-		return []*restic.Node{node}, nil
-	}
-
-	if node.Name != "." && node.Name != "/" {
-		return []*restic.Node{node}, nil
-	}
-
-	tree, err := repo.LoadTree(ctx, *node.Subtree)
-	if err != nil {
-		return nil, err
-	}
-
-	return tree.Nodes, nil
 }
 
 func newDirFromSnapshot(ctx context.Context, root *Root, inode uint64, snapshot *restic.Snapshot) (*dir, error) {

@@ -1,9 +1,10 @@
-// +build darwin freebsd linux
+// +build darwin freebsd linux windows
 
 package main
 
 import (
-	"os"
+	"regexp"
+	"runtime"
 	"strings"
 	"time"
 
@@ -12,12 +13,6 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
-
-	resticfs "github.com/restic/restic/internal/fs"
-	"github.com/restic/restic/internal/fuse"
-
-	systemFuse "bazil.org/fuse"
-	"bazil.org/fuse/fs"
 )
 
 var cmdMount = &cobra.Command{
@@ -78,84 +73,16 @@ func init() {
 	mountFlags.Var(&mountOptions.Tags, "tag", "only consider snapshots which include this `taglist`")
 	mountFlags.StringArrayVar(&mountOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`")
 
-	mountFlags.StringVar(&mountOptions.SnapshotTemplate, "snapshot-template", time.RFC3339, "set `template` to use for snapshot dirs")
-}
+	snapshotTemplate := time.RFC3339
 
-func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
-	debug.Log("start mount")
-	defer debug.Log("finish mount")
-
-	repo, err := OpenRepository(gopts)
-	if err != nil {
-		return err
+	// on windows some characters are not allowed in filenames therefor we
+	// remove them from the template for snapshot names
+	if runtime.GOOS == "windows" {
+		reservedCharacters := regexp.MustCompile("[<>:\"/\\|?*]")
+		snapshotTemplate = reservedCharacters.ReplaceAllString(snapshotTemplate, "")
 	}
 
-	lock, err := lockRepo(repo)
-	defer unlockRepo(lock)
-	if err != nil {
-		return err
-	}
-
-	err = repo.LoadIndex(gopts.ctx)
-	if err != nil {
-		return err
-	}
-
-	if _, err := resticfs.Stat(mountpoint); os.IsNotExist(errors.Cause(err)) {
-		Verbosef("Mountpoint %s doesn't exist, creating it\n", mountpoint)
-		err = resticfs.Mkdir(mountpoint, os.ModeDir|0700)
-		if err != nil {
-			return err
-		}
-	}
-
-	mountOptions := []systemFuse.MountOption{
-		systemFuse.ReadOnly(),
-		systemFuse.FSName("restic"),
-	}
-
-	if opts.AllowOther {
-		mountOptions = append(mountOptions, systemFuse.AllowOther())
-
-		// let the kernel check permissions unless it is explicitly disabled
-		if !opts.NoDefaultPermissions {
-			mountOptions = append(mountOptions, systemFuse.DefaultPermissions())
-		}
-	}
-
-	c, err := systemFuse.Mount(mountpoint, mountOptions...)
-	if err != nil {
-		return err
-	}
-
-	systemFuse.Debug = func(msg interface{}) {
-		debug.Log("fuse: %v", msg)
-	}
-
-	cfg := fuse.Config{
-		OwnerIsRoot:      opts.OwnerRoot,
-		Hosts:            opts.Hosts,
-		Tags:             opts.Tags,
-		Paths:            opts.Paths,
-		SnapshotTemplate: opts.SnapshotTemplate,
-	}
-	root := fuse.NewRoot(gopts.ctx, repo, cfg)
-
-	Printf("Now serving the repository at %s\n", mountpoint)
-	Printf("When finished, quit with Ctrl-c or umount the mountpoint.\n")
-
-	debug.Log("serving mount at %v", mountpoint)
-	err = fs.Serve(c, root)
-	if err != nil {
-		return err
-	}
-
-	<-c.Ready
-	return c.MountError
-}
-
-func umount(mountpoint string) error {
-	return systemFuse.Unmount(mountpoint)
+	mountFlags.StringVar(&mountOptions.SnapshotTemplate, "snapshot-template", snapshotTemplate, "set `template` to use for snapshot dirs")
 }
 
 func runMount(opts MountOptions, gopts GlobalOptions, args []string) error {

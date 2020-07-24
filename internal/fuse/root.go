@@ -14,15 +14,6 @@ import (
 	"bazil.org/fuse/fs"
 )
 
-// Config holds settings for the fuse mount.
-type Config struct {
-	OwnerIsRoot      bool
-	Hosts            []string
-	Tags             []restic.TagList
-	Paths            []string
-	SnapshotTemplate string
-}
-
 // Root is the root node of the fuse mount of a repository.
 type Root struct {
 	repo          restic.Repository
@@ -45,9 +36,6 @@ var _ = fs.HandleReadDirAller(&Root{})
 var _ = fs.NodeStringLookuper(&Root{})
 
 const rootInode = 1
-
-// Size of the blob cache. TODO: make this configurable.
-const blobCacheSize = 64 << 20
 
 // NewRoot initializes a new root node from a repository.
 func NewRoot(ctx context.Context, repo restic.Repository, cfg Config) *Root {

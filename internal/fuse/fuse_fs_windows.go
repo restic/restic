@@ -1,0 +1,264 @@
+package fuse
+
+import (
+	"strings"
+
+	"github.com/billziss-gh/cgofuse/fuse"
+	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/restic"
+	"golang.org/x/net/context"
+)
+
+const (
+	filename = "hello"
+	contents = "hello, world\n"
+)
+
+func splitPath(path string) []string {
+	split := strings.Split(path, "/")
+
+	var emptyFiltered []string
+	for _, str := range split {
+		if str != "" {
+			emptyFiltered = append(emptyFiltered, str)
+		}
+	}
+
+	return emptyFiltered
+}
+
+var defaultDirectoryStat = fuse.Stat_t{
+	Mode: fuse.S_IFDIR | 0555,
+}
+
+type FsListItemCallback = func(name string, stat *fuse.Stat_t, ofst int64) bool
+
+type FsNode interface {
+	ListFiles(path []string, callback FsListItemCallback)
+	ListDirectories(path []string, callback FsListItemCallback)
+	GetAttributes(path []string, stat *fuse.Stat_t) bool
+}
+
+type FsNodeRoot struct {
+	ctx             context.Context
+	repo            restic.Repository
+	cfg             Config
+	snapshotManager SnapshotManager
+	entries         map[string]FsNode
+}
+
+var _ = FsNode(&FsNodeRoot{})
+
+func NewNodeRoot(
+	ctx context.Context, repo restic.Repository, cfg Config, snapshotManager SnapshotManager,
+) *FsNodeRoot {
+
+	root := &FsNodeRoot{
+		ctx:             ctx,
+		repo:            repo,
+		cfg:             cfg,
+		snapshotManager: snapshotManager,
+	}
+
+	entries := map[string]FsNode{
+		"snapshots": NewSnapshotsDir(ctx, root),
+	}
+	root.entries = entries
+
+	return root
+}
+
+func (self *FsNodeRoot) ListFiles(path []string, fill FsListItemCallback) {
+	debug.Log("FsNodeRoot: ListFiles(%v)", path)
+
+	if len(path) > 0 {
+		if entry, found := self.entries[path[0]]; found {
+			entry.ListFiles(path[1:], fill)
+		}
+	}
+}
+
+func (self *FsNodeRoot) ListDirectories(path []string, fill FsListItemCallback) {
+
+	debug.Log("FsNodeRoot: ListDirectories(%v)", path)
+
+	if len(path) == 0 {
+		fill(".", nil, 0)
+		fill("..", nil, 0)
+
+		for name, _ := range self.entries {
+			fill(name, &defaultDirectoryStat, 0)
+		}
+	} else {
+		if entry, found := self.entries[path[0]]; found {
+			entry.ListDirectories(path[1:], fill)
+		}
+	}
+}
+
+func (self *FsNodeRoot) GetAttributes(path []string, stat *fuse.Stat_t) bool {
+
+	if len(path) == 0 {
+		*stat = defaultDirectoryStat
+		return true
+	}
+
+	if entry, found := self.entries[path[0]]; found {
+		return entry.GetAttributes(path[1:], stat)
+	}
+
+	return false
+}
+
+// type SnapshotDir struct {
+// 	snapshotManager *SnapshotManager
+// }
+
+// var _ = FsNode(&SnapshotDir{})
+
+// func NewSnapshotDir(snapshotManager *SnapshotManager) *SnapshotDir {
+// 	return &SnapshotDir{snapshotManager: snapshotManager}
+// }
+
+// func (self *SnapshotDir) ListFiles(path []string, fill FsListItemCallback) {
+// }
+
+// func (self *SnapshotDir) ListDirectories(path []string, fill FsListItemCallback) {
+
+// 	debug.Log("SnapshotDir: ListDirectories(%v)", path)
+
+// 	fill(".", nil, 0)
+// 	fill("..", nil, 0)
+
+// 	self.snapshotManager.updateSnapshots()
+
+// 	if self.snapshotManager.snapshotNameLatest != "" {
+// 		fill(snapshotDirLatestName, &defaultDirectoryStat, 0)
+// 	}
+
+// 	for name, _ := range self.snapshotManager.snapshotByName {
+// 		fill(name, &defaultDirectoryStat, 0)
+// 	}
+// }
+
+// func (self *SnapshotDir) GetAttributes(path []string, stat *fuse.Stat_t) bool {
+
+// 	debug.Log("SnapshotDir: GetAttributes(%v)")
+
+// 	if len(path) < 1 {
+// 		*stat = defaultDirectoryStat
+// 		return true
+// 	}
+
+// 	if path[0] == snapshotDirLatestName && self.snapshotManager.snapshotNameLatest != "" {
+// 		*stat = defaultDirectoryStat
+// 	}
+
+// 	if _, found := self.snapshotManager.snapshotByName[path[0]]; found {
+// 		*stat = defaultDirectoryStat
+// 	}
+
+// 	return false
+// }
+
+type FuseFsWindows struct {
+	fuse.FileSystemBase
+	ctx           context.Context
+	repo          restic.Repository
+	config        Config
+	rootNode      *FsNodeRoot
+	blobCache     *blobCache
+	blobSizeCache *BlobSizeCache
+}
+
+// NewRoot initializes a new root node from a repository.
+func NewFuseFsWindows(ctx context.Context, repo restic.Repository, cfg Config) *FuseFsWindows {
+	debug.Log("NewFuseFsWindows(), config %v", cfg)
+
+	snapshotManager := NewSnapshotManager(ctx, repo, cfg)
+	snapshotManager.updateSnapshots()
+
+	rootNode := NewNodeRoot(ctx, repo, cfg, *snapshotManager)
+
+	fuseFsWindows := &FuseFsWindows{
+		ctx:           ctx,
+		repo:          repo,
+		config:        cfg,
+		rootNode:      rootNode,
+		blobCache:     newBlobCache(blobCacheSize),
+		blobSizeCache: NewBlobSizeCache(ctx, repo.Index()),
+	}
+
+	return fuseFsWindows
+}
+
+func (self *FuseFsWindows) Open(path string, flags int) (errc int, fh uint64) {
+	switch path {
+	case "/" + filename:
+		return 0, 0
+	case "/" + filename + "123":
+		return 0, 0
+	default:
+		return -fuse.ENOENT, ^uint64(0)
+	}
+}
+
+func (self *FuseFsWindows) Read(
+	path string, buff []byte, ofst int64, fh uint64,
+) (n int) {
+	endofst := ofst + int64(len(buff))
+	if endofst > int64(len(contents)) {
+		endofst = int64(len(contents))
+	}
+	if endofst < ofst {
+		return 0
+	}
+	n = copy(buff, contents[ofst:endofst])
+	return
+}
+
+func (self *FuseFsWindows) Readdir(
+	path string,
+	fill func(name string, stat *fuse.Stat_t, ofst int64) bool,
+	ofst int64,
+	fh uint64,
+) (errc int) {
+
+	debug.Log("FuseFsWindows: Readdir(%v)", path)
+
+	splitPath := splitPath(path)
+
+	self.rootNode.ListDirectories(splitPath, fill)
+	self.rootNode.ListFiles(splitPath, fill)
+
+	return 0
+}
+
+func (self *FuseFsWindows) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
+
+	splitPath := splitPath(path)
+
+	debug.Log("FuseFsWindows: Getattr(%v) -> %v", path, splitPath)
+
+	if self.rootNode.GetAttributes(splitPath, stat) {
+		return 0
+	}
+
+	return -fuse.ENOENT
+
+	// switch path {
+	// case "/":
+	// 	stat.Mode = fuse.S_IFDIR | 0555
+	// 	return 0
+	// case "/" + filename:
+	// 	stat.Mode = fuse.S_IFREG | 0444
+	// 	stat.Size = int64(len(contents))
+	// 	return 0
+	// case "/" + filename + "123":
+	// 	stat.Mode = fuse.S_IFREG | 0444
+	// 	stat.Size = int64(len(contents))
+	// 	return 0
+	// default:
+	// 	return -fuse.ENOENT
+	// }
+}

@@ -205,18 +205,6 @@ func (d *TagsDir) Attr(ctx context.Context, attr *fuse.Attr) error {
 	return nil
 }
 
-// search element in string list.
-func isElem(e string, list []string) bool {
-	for _, x := range list {
-		if e == x {
-			return true
-		}
-	}
-	return false
-}
-
-const minSnapshotsReloadTime = 60 * time.Second
-
 // update snapshots if repository has changed
 func updateSnapshots(ctx context.Context, root *Root) error {
 	if time.Since(root.lastCheck) < minSnapshotsReloadTime {

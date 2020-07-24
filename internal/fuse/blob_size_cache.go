@@ -1,4 +1,4 @@
-// +build darwin freebsd linux
+// +build darwin freebsd linux windows
 
 package fuse
 
