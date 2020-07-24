@@ -63,6 +63,9 @@ func run(command string, args ...string) (*StdioConn, *exec.Cmd, *sync.WaitGroup
 
 	stdout, w, err := os.Pipe()
 	if err != nil {
+		// close first pipe
+		r.Close()
+		stdin.Close()
 		return nil, nil, nil, nil, err
 	}
 
@@ -70,6 +73,16 @@ func run(command string, args ...string) (*StdioConn, *exec.Cmd, *sync.WaitGroup
 	cmd.Stdout = w
 
 	bg, err := backend.StartForeground(cmd)
+	// close rclone side of pipes
+	errR := r.Close()
+	errW := w.Close()
+	// return first error
+	if err == nil {
+		err = errR
+	}
+	if err == nil {
+		err = errW
+	}
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
@@ -183,6 +196,8 @@ func newBackend(cfg Config, lim limiter.Limiter) (*Backend, error) {
 		err := cmd.Wait()
 		debug.Log("Wait returned %v", err)
 		be.waitResult = err
+		// close our side of the pipes to rclone
+		stdioConn.Close()
 		close(waitCh)
 	}()
 
