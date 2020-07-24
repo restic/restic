@@ -197,7 +197,7 @@ func newBackend(cfg Config, lim limiter.Limiter) (*Backend, error) {
 		debug.Log("Wait returned %v", err)
 		be.waitResult = err
 		// close our side of the pipes to rclone
-		stdioConn.Close()
+		stdioConn.CloseAll()
 		close(waitCh)
 	}()
 
@@ -314,7 +314,7 @@ func (be *Backend) Close() error {
 		debug.Log("rclone exited")
 	case <-time.After(waitForExit):
 		debug.Log("timeout, closing file descriptors")
-		err := be.conn.Close()
+		err := be.conn.CloseAll()
 		if err != nil {
 			return err
 		}

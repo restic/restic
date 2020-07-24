@@ -12,10 +12,11 @@ import (
 
 // StdioConn implements a net.Conn via stdin/stdout.
 type StdioConn struct {
-	stdin  *os.File
-	stdout *os.File
-	cmd    *exec.Cmd
-	close  sync.Once
+	stdin    *os.File
+	stdout   *os.File
+	cmd      *exec.Cmd
+	closeIn  sync.Once
+	closeOut sync.Once
 }
 
 func (s *StdioConn) Read(p []byte) (int, error) {
@@ -28,21 +29,25 @@ func (s *StdioConn) Write(p []byte) (int, error) {
 	return n, err
 }
 
-// Close closes both streams.
+// Close closes the stream to the child process.
 func (s *StdioConn) Close() (err error) {
-	s.close.Do(func() {
-		debug.Log("close stdio connection")
-		var errs []error
+	s.closeOut.Do(func() {
+		debug.Log("close stdio send connection")
+		err = s.stdout.Close()
+	})
 
-		for _, f := range []func() error{s.stdin.Close, s.stdout.Close} {
-			err := f()
-			if err != nil {
-				errs = append(errs, err)
-			}
-		}
+	return err
+}
 
-		if len(errs) > 0 {
-			err = errs[0]
+// CloseAll closes both streams.
+func (s *StdioConn) CloseAll() (err error) {
+	err = s.Close()
+
+	s.closeIn.Do(func() {
+		debug.Log("close stdio receive connection")
+		err2 := s.stdin.Close()
+		if err == nil {
+			err = err2
 		}
 	})
 
