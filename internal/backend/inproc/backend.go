@@ -55,11 +55,6 @@ func Open(cfg Config, lim limiter.Limiter) (*Backend, error) {
 	return be, nil
 }
 
-// Create initializes a new restic repo
-func Create(cfg Config) (*Backend, error) {
-	return Open(cfg, nil)
-}
-
 type ServiceProvider interface {
 	NewService(args string) (http.RoundTripper, error)
 }
