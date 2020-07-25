@@ -156,9 +156,7 @@ func TestFuseFile(t *testing.T) {
 		Size:    filesize,
 		Content: content,
 	}
-	root := NewRoot(context.TODO(), repo, Config{})
-
-	t.Logf("blob cache has %d entries", len(root.blobSizeCache.m))
+	root := NewRoot(repo, Config{})
 
 	inode := fs.GenerateDynamicInode(1, "foo")
 	f, err := newFile(context.TODO(), root, inode, node)
@@ -202,7 +200,7 @@ func testTopUidGid(t *testing.T, cfg Config, repo restic.Repository, uid, gid ui
 	t.Helper()
 
 	ctx := context.Background()
-	root := NewRoot(ctx, repo, cfg)
+	root := NewRoot(repo, cfg)
 
 	var attr fuse.Attr
 	err := root.Attr(ctx, &attr)
