@@ -12,28 +12,28 @@ import (
 
 // StdioConn implements a net.Conn via stdin/stdout.
 type StdioConn struct {
-	stdin    *os.File
-	stdout   *os.File
-	cmd      *exec.Cmd
-	closeIn  sync.Once
-	closeOut sync.Once
+	receive   *os.File
+	send      *os.File
+	cmd       *exec.Cmd
+	closeRecv sync.Once
+	closeSend sync.Once
 }
 
 func (s *StdioConn) Read(p []byte) (int, error) {
-	n, err := s.stdin.Read(p)
+	n, err := s.receive.Read(p)
 	return n, err
 }
 
 func (s *StdioConn) Write(p []byte) (int, error) {
-	n, err := s.stdout.Write(p)
+	n, err := s.send.Write(p)
 	return n, err
 }
 
 // Close closes the stream to the child process.
 func (s *StdioConn) Close() (err error) {
-	s.closeOut.Do(func() {
+	s.closeSend.Do(func() {
 		debug.Log("close stdio send connection")
-		err = s.stdout.Close()
+		err = s.send.Close()
 	})
 
 	return err
@@ -43,9 +43,9 @@ func (s *StdioConn) Close() (err error) {
 func (s *StdioConn) CloseAll() (err error) {
 	err = s.Close()
 
-	s.closeIn.Do(func() {
+	s.closeRecv.Do(func() {
 		debug.Log("close stdio receive connection")
-		err2 := s.stdin.Close()
+		err2 := s.receive.Close()
 		if err == nil {
 			err = err2
 		}
@@ -66,8 +66,8 @@ func (s *StdioConn) RemoteAddr() net.Addr {
 
 // SetDeadline sets the read/write deadline.
 func (s *StdioConn) SetDeadline(t time.Time) error {
-	err1 := s.stdin.SetReadDeadline(t)
-	err2 := s.stdout.SetWriteDeadline(t)
+	err1 := s.receive.SetReadDeadline(t)
+	err2 := s.send.SetWriteDeadline(t)
 	if err1 != nil {
 		return err1
 	}
@@ -76,12 +76,12 @@ func (s *StdioConn) SetDeadline(t time.Time) error {
 
 // SetReadDeadline sets the read/write deadline.
 func (s *StdioConn) SetReadDeadline(t time.Time) error {
-	return s.stdin.SetReadDeadline(t)
+	return s.receive.SetReadDeadline(t)
 }
 
 // SetWriteDeadline sets the read/write deadline.
 func (s *StdioConn) SetWriteDeadline(t time.Time) error {
-	return s.stdout.SetWriteDeadline(t)
+	return s.send.SetWriteDeadline(t)
 }
 
 // make sure StdioConn implements net.Conn

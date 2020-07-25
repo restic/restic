@@ -88,9 +88,9 @@ func run(command string, args ...string) (*StdioConn, *exec.Cmd, *sync.WaitGroup
 	}
 
 	c := &StdioConn{
-		stdin:  stdout,
-		stdout: stdin,
-		cmd:    cmd,
+		receive: stdout,
+		send:    stdin,
+		cmd:     cmd,
 	}
 
 	return c, cmd, &wg, bg, nil
