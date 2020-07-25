@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/restic/restic/cmd/global"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 
@@ -33,7 +34,7 @@ func runInit(gopts GlobalOptions, args []string) error {
 		return errors.Fatal("Please specify repository location (-r)")
 	}
 
-	be, err := create(gopts.Repo, gopts.extended)
+	be, err := global.Create(gopts.GlobalOptions, gopts.extended)
 	if err != nil {
 		return errors.Fatalf("create repository at %s failed: %v\n", gopts.Repo, err)
 	}
