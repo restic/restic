@@ -10,7 +10,7 @@ import (
 type Config struct {
 	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
 	Remote      string
-	Provider    ServiceProvider
+	provider    ServiceProvider
 }
 
 var defaultConfig = Config{
@@ -44,6 +44,6 @@ func ParseConfig(s string) (interface{}, error) {
 
 	cfg := NewConfig()
 	cfg.Remote = items[2]
-	cfg.Provider = provider
+	cfg.provider = provider
 	return cfg, nil
 }

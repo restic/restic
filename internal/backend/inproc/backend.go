@@ -18,7 +18,7 @@ type Backend struct {
 
 // New initializes a Backend and starts the process.
 func New(cfg Config, lim limiter.Limiter) (*Backend, error) {
-	service, err := cfg.Provider.NewService(cfg.Remote)
+	service, err := cfg.provider.NewService(cfg.Remote)
 	if err != nil {
 		return nil, err
 	}
