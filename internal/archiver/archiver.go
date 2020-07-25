@@ -302,6 +302,18 @@ func (fn *FutureNode) wait(ctx context.Context) {
 	}
 }
 
+// allBlobsPresent checks if all blobs (contents) of the given node are
+// present in the index.
+func (arch *Archiver) allBlobsPresent(previous *restic.Node) bool {
+	// check if all blobs are contained in index
+	for _, id := range previous.Content {
+		if !arch.Repo.Index().Has(id, restic.DataBlob) {
+			return false
+		}
+	}
+	return true
+}
+
 // Save saves a target (file or directory) to the repo. If the item is
 // excluded, this function returns a nil node and error, with excluded set to
 // true.
@@ -388,19 +400,26 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 
 		// use previous list of blobs if the file hasn't changed
 		if previous != nil && !fileChanged(fi, previous, arch.IgnoreInode) {
-			debug.Log("%v hasn't changed, using old list of blobs", target)
-			arch.CompleteItem(snPath, previous, previous, ItemStats{}, time.Since(start))
-			arch.CompleteBlob(snPath, previous.Size)
-			fn.node, err = arch.nodeFromFileInfo(target, fi)
-			if err != nil {
-				return FutureNode{}, false, err
+			if arch.allBlobsPresent(previous) {
+				debug.Log("%v hasn't changed, using old list of blobs", target)
+				arch.CompleteItem(snPath, previous, previous, ItemStats{}, time.Since(start))
+				arch.CompleteBlob(snPath, previous.Size)
+				fn.node, err = arch.nodeFromFileInfo(target, fi)
+				if err != nil {
+					return FutureNode{}, false, err
+				}
+
+				// copy list of blobs
+				fn.node.Content = previous.Content
+
+				_ = file.Close()
+				return fn, false, nil
+			} else {
+				debug.Log("%v hasn't changed, but contents are missing!", target)
+				// There are contents missing - inform user!
+				err := errors.Errorf("parts of %v not found in the repository index; storing the file again", target)
+				arch.error(abstarget, fi, err)
 			}
-
-			// copy list of blobs
-			fn.node.Content = previous.Content
-
-			_ = file.Close()
-			return fn, false, nil
 		}
 
 		fn.isFile = true

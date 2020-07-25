@@ -1,0 +1,16 @@
+Enhancement: Self-heal missing file parts during backup of unchanged files
+
+We've improved the resilience of restic to certain types of repository corruption.
+
+For files that are unchanged since the parent snapshot, the backup command now
+verifies that all parts of the files still exist in the repository. Parts that are
+missing, e.g. from a damaged repository, are backed up again. This verification
+was already run for files that were modified since the parent snapshot, but is
+now also done for unchanged files.
+
+Note that restic will not backup file parts that are referenced in the index but
+where the actual data is not present on disk, as this situation can only be
+detected by restic check. Please ensure that you run `restic check` regularly.
+
+https://github.com/restic/restic/issues/2571
+https://github.com/restic/restic/pull/2827
