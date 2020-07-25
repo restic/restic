@@ -62,7 +62,6 @@ var isReadingPassword bool
 func init() {
 	var cancel context.CancelFunc
 	globalOptions.ctx, cancel = context.WithCancel(context.Background())
-	globalOptions.Ctx = globalOptions.ctx
 	AddCleanupHandler(func() error {
 		cancel()
 		return nil
@@ -359,7 +358,7 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 		return nil, errors.Fatal("Please specify repository location (-r)")
 	}
 
-	be, err := global.Open(opts.GlobalOptions, opts.extended)
+	be, err := global.Open(opts.ctx, opts.GlobalOptions, opts.extended)
 	if err != nil {
 		return nil, err
 	}

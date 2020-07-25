@@ -34,7 +34,7 @@ func runInit(gopts GlobalOptions, args []string) error {
 		return errors.Fatal("Please specify repository location (-r)")
 	}
 
-	be, err := global.Create(gopts.GlobalOptions, gopts.extended)
+	be, err := global.Create(gopts.ctx, gopts.GlobalOptions, gopts.extended)
 	if err != nil {
 		return errors.Fatalf("create repository at %s failed: %v\n", gopts.Repo, err)
 	}

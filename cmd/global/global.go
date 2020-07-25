@@ -42,8 +42,6 @@ type GlobalOptions struct {
 
 	LimitUploadKb   int
 	LimitDownloadKb int
-
-	Ctx context.Context
 }
 
 func parseConfig(loc location.Location, opts options.Options) (interface{}, error) {
@@ -190,7 +188,7 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 }
 
 // Open the backend specified by a location config.
-func Open(gopts GlobalOptions, opts options.Options) (restic.Backend, error) {
+func Open(ctx context.Context, gopts GlobalOptions, opts options.Options) (restic.Backend, error) {
 	s := gopts.Repo
 	debug.Log("parsing location %v", s)
 	loc, err := location.Parse(s)
@@ -235,7 +233,7 @@ func Open(gopts GlobalOptions, opts options.Options) (restic.Backend, error) {
 	case "swift":
 		be, err = swift.Open(cfg.(swift.Config), rt)
 	case "b2":
-		be, err = b2.Open(gopts.Ctx, cfg.(b2.Config), rt)
+		be, err = b2.Open(ctx, cfg.(b2.Config), rt)
 	case "rest":
 		be, err = rest.Open(cfg.(rest.Config), rt)
 	case "rclone":
@@ -252,7 +250,7 @@ func Open(gopts GlobalOptions, opts options.Options) (restic.Backend, error) {
 	}
 
 	// check if config is there
-	fi, err := be.Stat(gopts.Ctx, restic.Handle{Type: restic.ConfigFile})
+	fi, err := be.Stat(ctx, restic.Handle{Type: restic.ConfigFile})
 	if err != nil {
 		return nil, errors.Fatalf("unable to open config file: %v\nIs there a repository at the following location?\n%v", err, s)
 	}
@@ -265,7 +263,7 @@ func Open(gopts GlobalOptions, opts options.Options) (restic.Backend, error) {
 }
 
 // Create the backend specified by URI.
-func Create(gopts GlobalOptions, opts options.Options) (restic.Backend, error) {
+func Create(ctx context.Context, gopts GlobalOptions, opts options.Options) (restic.Backend, error) {
 	s := gopts.Repo
 	debug.Log("parsing location %v", s)
 	loc, err := location.Parse(s)
@@ -301,7 +299,7 @@ func Create(gopts GlobalOptions, opts options.Options) (restic.Backend, error) {
 	case "swift":
 		return swift.Open(cfg.(swift.Config), rt)
 	case "b2":
-		return b2.Create(gopts.Ctx, cfg.(b2.Config), rt)
+		return b2.Create(ctx, cfg.(b2.Config), rt)
 	case "rest":
 		return rest.Create(cfg.(rest.Config), rt)
 	case "rclone":
