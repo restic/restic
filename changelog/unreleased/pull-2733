@@ -1,0 +1,6 @@
+Enhancement: S3 backend: Add support for WebIdentityTokenFile
+
+We've added support for EKS IAM roles for service accounts feature to the S3 backend.
+
+https://github.com/restic/restic/pull/2733
+https://github.com/restic/restic/issues/2703
