@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/restic/restic/cmd/global"
 	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -199,9 +200,10 @@ func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
 	rtest.OK(t, os.MkdirAll(env.repo, 0700))
 
 	env.gopts = GlobalOptions{
-		Repo:     env.repo,
-		Quiet:    true,
-		CacheDir: env.cache,
+		GlobalOptions: global.GlobalOptions{
+			Repo:     env.repo,
+			Quiet:    true,
+			CacheDir: env.cache},
 		ctx:      context.Background(),
 		password: rtest.TestPassword,
 		stdout:   os.Stdout,
