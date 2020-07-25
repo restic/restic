@@ -111,29 +111,33 @@ func (r *Repository) LoadAndDecrypt(ctx context.Context, buf []byte, t restic.Fi
 	return plaintext, nil
 }
 
-// sortCachedPacks moves all cached pack files to the front of blobs.
-func (r *Repository) sortCachedPacks(blobs []restic.PackedBlob) []restic.PackedBlob {
-	if r.Cache == nil {
-		return blobs
+type haver interface {
+	Has(restic.Handle) bool
+}
+
+// sortCachedPacksFirst moves all cached pack files to the front of blobs.
+func sortCachedPacksFirst(cache haver, blobs []restic.PackedBlob) {
+	if cache == nil {
+		return
 	}
 
 	// no need to sort a list with one element
 	if len(blobs) == 1 {
-		return blobs
+		return
 	}
 
-	cached := make([]restic.PackedBlob, 0, len(blobs)/2)
+	cached := blobs[:0]
 	noncached := make([]restic.PackedBlob, 0, len(blobs)/2)
 
 	for _, blob := range blobs {
-		if r.Cache.Has(restic.Handle{Type: restic.DataFile, Name: blob.PackID.String()}) {
+		if cache.Has(restic.Handle{Type: restic.DataFile, Name: blob.PackID.String()}) {
 			cached = append(cached, blob)
 			continue
 		}
 		noncached = append(noncached, blob)
 	}
 
-	return append(cached, noncached...)
+	copy(blobs[len(cached):], noncached)
 }
 
 // LoadBlob loads a blob of type t from the repository.
@@ -149,7 +153,7 @@ func (r *Repository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.
 	}
 
 	// try cached pack files first
-	blobs = r.sortCachedPacks(blobs)
+	sortCachedPacksFirst(r.Cache, blobs)
 
 	var lastError error
 	for _, blob := range blobs {
