@@ -355,12 +355,12 @@ func (r *Repository) Backend() restic.Backend {
 }
 
 // Index returns the currently used MasterIndex.
-func (r *Repository) Index() restic.Index {
+func (r *Repository) Index() restic.MasterIndex {
 	return r.idx
 }
 
 // SetIndex instructs the repository to use the given index.
-func (r *Repository) SetIndex(i restic.Index) error {
+func (r *Repository) SetIndex(i restic.MasterIndex) error {
 	r.idx = i.(*MasterIndex)
 
 	ids := restic.NewIDSet()

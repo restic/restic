@@ -16,7 +16,7 @@ import (
 var errTest = errors.New("test error")
 
 type saveFail struct {
-	idx    restic.Index
+	idx    restic.MasterIndex
 	cnt    int32
 	failAt int32
 }
@@ -30,7 +30,7 @@ func (b *saveFail) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, 
 	return id, false, nil
 }
 
-func (b *saveFail) Index() restic.Index {
+func (b *saveFail) Index() restic.MasterIndex {
 	return b.idx
 }
 
