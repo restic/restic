@@ -10,11 +10,11 @@ your time and add more commits. If you're done and ready for review, please
 check the last box.
 -->
 
-What is the purpose of this change? What does it change?
---------------------------------------------------------
+What does this PR change? What problem does it solve?
+-----------------------------------------------------
 
 <!--
-Describe the changes here, as detailed as needed.
+Describe the changes and their purpose here, as detailed as needed.
 -->
 
 Was the change discussed in an issue or in the forum before?
@@ -23,8 +23,8 @@ Was the change discussed in an issue or in the forum before?
 <!--
 Link issues and relevant forum posts here.
 
-If this PR resolves an issue on GitHub, use "closes #1234" so that the issue is
-closed automatically when this PR is merged.
+If this PR resolves an issue on GitHub, use "Closes #1234" so that the issue
+is closed automatically when this PR is merged.
 -->
 
 Checklist
