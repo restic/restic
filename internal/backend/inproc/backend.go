@@ -60,11 +60,6 @@ func Create(cfg Config) (*Backend, error) {
 	return Open(cfg, nil)
 }
 
-// Close does nothing
-func (be *Backend) Close() error {
-	return nil
-}
-
 type ServiceProvider interface {
 	NewService(args string) (http.RoundTripper, error)
 }
