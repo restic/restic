@@ -2,8 +2,10 @@ package rclone
 
 import (
 	"context"
+	"os/exec"
 	"testing"
 
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -16,6 +18,10 @@ func TestRcloneExit(t *testing.T) {
 	cfg := NewConfig()
 	cfg.Remote = dir
 	be, err := Open(cfg, nil)
+	if e, ok := errors.Cause(err).(*exec.Error); ok && e.Err == exec.ErrNotFound {
+		t.Skipf("program %q not found", e.Name)
+		return
+	}
 	rtest.OK(t, err)
 	defer be.Close()
 
