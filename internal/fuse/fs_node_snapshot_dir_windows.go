@@ -3,7 +3,6 @@ package fuse
 import (
 	"context"
 	"errors"
-	"sync"
 
 	"github.com/billziss-gh/cgofuse/fuse"
 	"github.com/restic/restic/internal/debug"
@@ -11,7 +10,6 @@ import (
 )
 
 type FsNodeSnapshotDir struct {
-	lock  sync.Mutex
 	root  *FsNodeRoot
 	items map[string]*restic.Node
 	nodes map[string]*FsNodeSnapshotDir
@@ -115,24 +113,9 @@ func NewFsNodeSnapshotDirFromSnapshot(
 	return result, nil
 }
 
-func (self *FsNodeSnapshotDir) ListFiles(path []string, fill FsListItemCallback) {
+func (self *FsNodeSnapshotDir) Readdir(path []string, fill FsListItemCallback) {
 
-	defer self.synchronize()()
-
-	debug.Log("FsNodeSnapshotDir: ListFiles(%v)", path)
-
-	// if len(path) > 0 {
-	// 	if entry, found := self.entries[path[0]]; found {
-	// 		entry.ListFiles(path[1:], fill)
-	// 	}
-	// }
-}
-
-func (self *FsNodeSnapshotDir) ListDirectories(path []string, fill FsListItemCallback) {
-
-	defer self.synchronize()()
-
-	debug.Log("FsNodeSnapshotDir: ListDirectories(%v)", path)
+	debug.Log("FsNodeSnapshotDir: Readdir(%v)", path)
 
 	fill(".", nil, 0)
 	fill("..", nil, 0)
@@ -150,25 +133,23 @@ func (self *FsNodeSnapshotDir) ListDirectories(path []string, fill FsListItemCal
 		if item, itemOk := self.items[head]; itemOk {
 			if _, nodeOk := self.nodes[head]; !nodeOk {
 
-				debug.Log("FsNodeSnapshotDir: ListDirectories(%v): creating node for %v", path, head)
+				debug.Log("FsNodeSnapshotDir: Readdir(%v): creating node for %v", path, head)
 				child, err := newFsNodeSnapshotDir(self.root.ctx, self.root, item)
 
 				if err != nil {
 					self.nodes[head] = child
 				} else {
-					debug.Log("FsNodeSnapshotDir: ListDirectories error: %v", err)
+					debug.Log("FsNodeSnapshotDir: Readdir error: %v", err)
 					return
 				}
 			}
 
-			self.nodes[head].ListDirectories(tail, fill)
+			self.nodes[head].Readdir(tail, fill)
 		}
 	}
 }
 
 func (self *FsNodeSnapshotDir) GetAttributes(path []string, stat *fuse.Stat_t) bool {
-
-	defer self.synchronize()()
 
 	debug.Log("FsNodeSnapshotDir: ListDirectories(%v)", path)
 
@@ -186,11 +167,4 @@ func (self *FsNodeSnapshotDir) GetAttributes(path []string, stat *fuse.Stat_t) b
 	}
 
 	return false
-}
-
-func (self *FsNodeSnapshotDir) synchronize() func() {
-	self.lock.Lock()
-	return func() {
-		self.lock.Unlock()
-	}
 }

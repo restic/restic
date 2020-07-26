@@ -35,8 +35,7 @@ var defaultDirectoryStat = fuse.Stat_t{
 type FsListItemCallback = func(name string, stat *fuse.Stat_t, ofst int64) bool
 
 type FsNode interface {
-	ListFiles(path []string, callback FsListItemCallback)
-	ListDirectories(path []string, callback FsListItemCallback)
+	Readdir(path []string, callback FsListItemCallback)
 	GetAttributes(path []string, stat *fuse.Stat_t) bool
 }
 
@@ -69,19 +68,9 @@ func NewNodeRoot(
 	return root
 }
 
-func (self *FsNodeRoot) ListFiles(path []string, fill FsListItemCallback) {
-	debug.Log("FsNodeRoot: ListFiles(%v)", path)
+func (self *FsNodeRoot) Readdir(path []string, fill FsListItemCallback) {
 
-	if len(path) > 0 {
-		if entry, found := self.entries[path[0]]; found {
-			entry.ListFiles(path[1:], fill)
-		}
-	}
-}
-
-func (self *FsNodeRoot) ListDirectories(path []string, fill FsListItemCallback) {
-
-	debug.Log("FsNodeRoot: ListDirectories(%v)", path)
+	debug.Log("FsNodeRoot: Readdir(%v)", path)
 
 	if len(path) == 0 {
 		fill(".", nil, 0)
@@ -92,7 +81,7 @@ func (self *FsNodeRoot) ListDirectories(path []string, fill FsListItemCallback) 
 		}
 	} else {
 		if entry, found := self.entries[path[0]]; found {
-			entry.ListDirectories(path[1:], fill)
+			entry.Readdir(path[1:], fill)
 		}
 	}
 }
@@ -186,8 +175,7 @@ func (self *FuseFsWindows) Readdir(
 
 	splitPath := splitPath(path)
 
-	self.rootNode.ListDirectories(splitPath, fill)
-	self.rootNode.ListFiles(splitPath, fill)
+	self.rootNode.Readdir(splitPath, fill)
 
 	return 0
 }

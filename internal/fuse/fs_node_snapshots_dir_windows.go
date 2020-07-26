@@ -1,8 +1,6 @@
 package fuse
 
 import (
-	"sync"
-
 	"github.com/billziss-gh/cgofuse/fuse"
 	"github.com/restic/restic/internal/debug"
 	"golang.org/x/net/context"
@@ -11,7 +9,6 @@ import (
 const snapshotDirLatestName = "latest"
 
 type FsNodeSnapshotsDir struct {
-	lock  sync.Mutex
 	ctx   context.Context
 	root  *FsNodeRoot
 	nodes map[string]*FsNodeSnapshotDir
@@ -23,31 +20,9 @@ func NewSnapshotsDir(ctx context.Context, root *FsNodeRoot) *FsNodeSnapshotsDir 
 	return &FsNodeSnapshotsDir{ctx: ctx, root: root, nodes: make(map[string]*FsNodeSnapshotDir)}
 }
 
-func (self *FsNodeSnapshotsDir) ListFiles(path []string, fill FsListItemCallback) {
-	defer self.synchronize()()
+func (self *FsNodeSnapshotsDir) Readdir(path []string, fill FsListItemCallback) {
 
-	debug.Log("FsNodeSnapshotsDir: ListFiles(%v)", path)
-
-	if len(path) > 0 {
-
-		// if path[0] == self.snapshotManager.snapshotNameLatest {
-		// 	//fill(snapshotDirLatestName, &defaultDirectoryStat, 0)
-		// 	return
-		// }
-
-		// if entry, found := self.snapshotManager.snapshotByName[path[0]]; found {
-		// 	entry.ListFiles(path[1:], fill)
-		// 	return
-		// }
-
-	}
-}
-
-func (self *FsNodeSnapshotsDir) ListDirectories(path []string, fill FsListItemCallback) {
-
-	defer self.synchronize()()
-
-	debug.Log("FsNodeSnapshotsDir: ListDirectories(%v)", path)
+	debug.Log("FsNodeSnapshotsDir: Readdir(%v)", path)
 
 	if len(path) == 0 {
 
@@ -95,7 +70,7 @@ func (self *FsNodeSnapshotsDir) ListDirectories(path []string, fill FsListItemCa
 
 			if node, contained := self.nodes[head]; contained {
 				debug.Log("FsNodeSnapshotsDir: ListDirectories for existing node %v", head)
-				node.ListDirectories(path[1:], fill)
+				node.Readdir(path[1:], fill)
 			} else {
 				debug.Log("FsNodeSnapshotsDir: ListDirectories error for %v", head)
 			}
@@ -109,8 +84,6 @@ func (self *FsNodeSnapshotsDir) ListDirectories(path []string, fill FsListItemCa
 }
 
 func (self *FsNodeSnapshotsDir) GetAttributes(path []string, stat *fuse.Stat_t) bool {
-
-	defer self.synchronize()()
 
 	debug.Log("FsNodeSnapshotsDir: GetAttributes(%v)", path)
 
@@ -141,11 +114,4 @@ func (self *FsNodeSnapshotsDir) GetAttributes(path []string, stat *fuse.Stat_t) 
 	}
 
 	return false
-}
-
-func (self *FsNodeSnapshotsDir) synchronize() func() {
-	self.lock.Lock()
-	return func() {
-		self.lock.Unlock()
-	}
 }
