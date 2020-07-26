@@ -117,3 +117,31 @@ func (self *FsNodeSnapshotsDir) GetAttributes(path []string, stat *fuse.Stat_t) 
 
 	return false
 }
+
+func (self *FsNodeSnapshotsDir) Open(path []string, flags int) (errc int, fh uint64) {
+
+	pathLength := len(path)
+
+	if pathLength < 1 {
+		return -fuse.EISDIR, ^uint64(0)
+	} else {
+
+		head := path[0]
+
+		if pathLength == 1 {
+			if head == snapshotDirLatestName && self.root.snapshotManager.snapshotNameLatest != "" {
+				return -fuse.EISDIR, ^uint64(0)
+			}
+
+			if _, found := self.root.snapshotManager.snapshotByName[head]; found {
+				return -fuse.EISDIR, ^uint64(0)
+			}
+		} else {
+			if snapshotDir, ok := self.nodes[head]; ok {
+				return snapshotDir.Open(path[1:], flags)
+			}
+		}
+	}
+
+	return -fuse.ENOENT, ^uint64(0)
+}

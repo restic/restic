@@ -37,6 +37,7 @@ type FsListItemCallback = func(name string, stat *fuse.Stat_t, ofst int64) bool
 type FsNode interface {
 	Readdir(path []string, callback FsListItemCallback)
 	GetAttributes(path []string, stat *fuse.Stat_t) bool
+	Open(path []string, flags int) (errc int, fh uint64)
 }
 
 type FsNodeRoot struct {
@@ -100,6 +101,21 @@ func (self *FsNodeRoot) GetAttributes(path []string, stat *fuse.Stat_t) bool {
 	return false
 }
 
+func (self *FsNodeRoot) Open(path []string, flags int) (errc int, fh uint64) {
+
+	lenPath := len(path)
+
+	if lenPath <= 1 {
+		return -fuse.EISDIR, ^uint64(0)
+	}
+
+	if entry, found := self.entries[path[0]]; found {
+		return entry.Open(path[1:], flags)
+	}
+
+	return -fuse.ENOENT, ^uint64(0)
+}
+
 type FuseFsWindows struct {
 	fuse.FileSystemBase
 	lock      sync.Mutex
@@ -135,14 +151,19 @@ func (self *FuseFsWindows) Open(path string, flags int) (errc int, fh uint64) {
 
 	defer self.synchronize()()
 
-	switch path {
-	case "/" + filename:
-		return 0, 0
-	case "/" + filename + "123":
-		return 0, 0
-	default:
-		return -fuse.ENOENT, ^uint64(0)
-	}
+	debug.Log("FuseFsWindows: Open(%v, %v)", path, flags)
+
+	splitPath := splitPath(path)
+	return self.rootNode.Open(splitPath, flags)
+
+	// switch path {
+	// case "/" + filename:
+	// 	return 0, 0
+	// case "/" + filename + "123":
+	// 	return 0, 0
+	// default:
+	// 	return -fuse.ENOENT, ^uint64(0)
+	// }
 }
 
 func (self *FuseFsWindows) Read(

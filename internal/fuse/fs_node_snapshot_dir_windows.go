@@ -161,12 +161,34 @@ func (self *FsNodeSnapshotDir) GetAttributes(path []string, stat *fuse.Stat_t) b
 	return false
 }
 
+func (self *FsNodeSnapshotDir) Open(path []string, flags int) (errc int, fh uint64) {
+
+	lenPath := len(path)
+
+	if lenPath == 0 {
+		return -fuse.EISDIR, ^uint64(0)
+	}
+
+	head := path[0]
+
+	if _, found := self.files[head]; found {
+		return 0, 0
+	}
+
+	if dir, found := self.directories[head]; found {
+		tail := path[1:]
+		return dir.Open(tail, flags)
+	}
+
+	return -fuse.ENOENT, ^uint64(0)
+}
+
 func nodeToStat(node *restic.Node, stat *fuse.Stat_t) {
 	switch node.Type {
 	case "dir":
 		stat.Mode = fuse.S_IFDIR | 0555
 	case "file":
-		stat.Mode = 0555
+		stat.Mode = fuse.S_IFREG | 0444
 		stat.Size = int64(node.Size)
 	}
 }
