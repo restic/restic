@@ -63,6 +63,9 @@ func run(command string, args ...string) (*StdioConn, *exec.Cmd, *sync.WaitGroup
 
 	stdout, w, err := os.Pipe()
 	if err != nil {
+		// close first pipe
+		r.Close()
+		stdin.Close()
 		return nil, nil, nil, nil, err
 	}
 
@@ -70,14 +73,24 @@ func run(command string, args ...string) (*StdioConn, *exec.Cmd, *sync.WaitGroup
 	cmd.Stdout = w
 
 	bg, err := backend.StartForeground(cmd)
+	// close rclone side of pipes
+	errR := r.Close()
+	errW := w.Close()
+	// return first error
+	if err == nil {
+		err = errR
+	}
+	if err == nil {
+		err = errW
+	}
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
 
 	c := &StdioConn{
-		stdin:  stdout,
-		stdout: stdin,
-		cmd:    cmd,
+		receive: stdout,
+		send:    stdin,
+		cmd:     cmd,
 	}
 
 	return c, cmd, &wg, bg, nil
@@ -114,7 +127,7 @@ func wrapConn(c *StdioConn, lim limiter.Limiter) wrappedConn {
 }
 
 // New initializes a Backend and starts the process.
-func New(cfg Config, lim limiter.Limiter) (*Backend, error) {
+func newBackend(cfg Config, lim limiter.Limiter) (*Backend, error) {
 	var (
 		args []string
 		err  error
@@ -183,6 +196,8 @@ func New(cfg Config, lim limiter.Limiter) (*Backend, error) {
 		err := cmd.Wait()
 		debug.Log("Wait returned %v", err)
 		be.waitResult = err
+		// close our side of the pipes to rclone
+		stdioConn.CloseAll()
 		close(waitCh)
 	}()
 
@@ -234,7 +249,7 @@ func New(cfg Config, lim limiter.Limiter) (*Backend, error) {
 
 // Open starts an rclone process with the given config.
 func Open(cfg Config, lim limiter.Limiter) (*Backend, error) {
-	be, err := New(cfg, lim)
+	be, err := newBackend(cfg, lim)
 	if err != nil {
 		return nil, err
 	}
@@ -260,7 +275,7 @@ func Open(cfg Config, lim limiter.Limiter) (*Backend, error) {
 
 // Create initializes a new restic repo with clone.
 func Create(cfg Config) (*Backend, error) {
-	be, err := New(cfg, nil)
+	be, err := newBackend(cfg, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -299,7 +314,7 @@ func (be *Backend) Close() error {
 		debug.Log("rclone exited")
 	case <-time.After(waitForExit):
 		debug.Log("timeout, closing file descriptors")
-		err := be.conn.Close()
+		err := be.conn.CloseAll()
 		if err != nil {
 			return err
 		}
