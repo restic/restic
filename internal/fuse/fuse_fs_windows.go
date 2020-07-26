@@ -2,6 +2,7 @@ package fuse
 
 import (
 	"strings"
+	"sync"
 
 	"github.com/billziss-gh/cgofuse/fuse"
 	"github.com/restic/restic/internal/debug"
@@ -110,69 +111,19 @@ func (self *FsNodeRoot) GetAttributes(path []string, stat *fuse.Stat_t) bool {
 	return false
 }
 
-// type SnapshotDir struct {
-// 	snapshotManager *SnapshotManager
-// }
-
-// var _ = FsNode(&SnapshotDir{})
-
-// func NewSnapshotDir(snapshotManager *SnapshotManager) *SnapshotDir {
-// 	return &SnapshotDir{snapshotManager: snapshotManager}
-// }
-
-// func (self *SnapshotDir) ListFiles(path []string, fill FsListItemCallback) {
-// }
-
-// func (self *SnapshotDir) ListDirectories(path []string, fill FsListItemCallback) {
-
-// 	debug.Log("SnapshotDir: ListDirectories(%v)", path)
-
-// 	fill(".", nil, 0)
-// 	fill("..", nil, 0)
-
-// 	self.snapshotManager.updateSnapshots()
-
-// 	if self.snapshotManager.snapshotNameLatest != "" {
-// 		fill(snapshotDirLatestName, &defaultDirectoryStat, 0)
-// 	}
-
-// 	for name, _ := range self.snapshotManager.snapshotByName {
-// 		fill(name, &defaultDirectoryStat, 0)
-// 	}
-// }
-
-// func (self *SnapshotDir) GetAttributes(path []string, stat *fuse.Stat_t) bool {
-
-// 	debug.Log("SnapshotDir: GetAttributes(%v)")
-
-// 	if len(path) < 1 {
-// 		*stat = defaultDirectoryStat
-// 		return true
-// 	}
-
-// 	if path[0] == snapshotDirLatestName && self.snapshotManager.snapshotNameLatest != "" {
-// 		*stat = defaultDirectoryStat
-// 	}
-
-// 	if _, found := self.snapshotManager.snapshotByName[path[0]]; found {
-// 		*stat = defaultDirectoryStat
-// 	}
-
-// 	return false
-// }
-
 type FuseFsWindows struct {
 	fuse.FileSystemBase
-	ctx           context.Context
-	repo          restic.Repository
-	config        Config
-	rootNode      *FsNodeRoot
-	blobCache     *blobCache
-	blobSizeCache *BlobSizeCache
+	lock      sync.Mutex
+	ctx       context.Context
+	repo      restic.Repository
+	config    Config
+	rootNode  *FsNodeRoot
+	blobCache *blobCache
 }
 
 // NewRoot initializes a new root node from a repository.
 func NewFuseFsWindows(ctx context.Context, repo restic.Repository, cfg Config) *FuseFsWindows {
+
 	debug.Log("NewFuseFsWindows(), config %v", cfg)
 
 	snapshotManager := NewSnapshotManager(ctx, repo, cfg)
@@ -181,18 +132,20 @@ func NewFuseFsWindows(ctx context.Context, repo restic.Repository, cfg Config) *
 	rootNode := NewNodeRoot(ctx, repo, cfg, *snapshotManager)
 
 	fuseFsWindows := &FuseFsWindows{
-		ctx:           ctx,
-		repo:          repo,
-		config:        cfg,
-		rootNode:      rootNode,
-		blobCache:     newBlobCache(blobCacheSize),
-		blobSizeCache: NewBlobSizeCache(ctx, repo.Index()),
+		ctx:       ctx,
+		repo:      repo,
+		config:    cfg,
+		rootNode:  rootNode,
+		blobCache: newBlobCache(blobCacheSize),
 	}
 
 	return fuseFsWindows
 }
 
 func (self *FuseFsWindows) Open(path string, flags int) (errc int, fh uint64) {
+
+	defer self.synchronize()()
+
 	switch path {
 	case "/" + filename:
 		return 0, 0
@@ -206,6 +159,9 @@ func (self *FuseFsWindows) Open(path string, flags int) (errc int, fh uint64) {
 func (self *FuseFsWindows) Read(
 	path string, buff []byte, ofst int64, fh uint64,
 ) (n int) {
+
+	defer self.synchronize()()
+
 	endofst := ofst + int64(len(buff))
 	if endofst > int64(len(contents)) {
 		endofst = int64(len(contents))
@@ -224,6 +180,8 @@ func (self *FuseFsWindows) Readdir(
 	fh uint64,
 ) (errc int) {
 
+	defer self.synchronize()()
+
 	debug.Log("FuseFsWindows: Readdir(%v)", path)
 
 	splitPath := splitPath(path)
@@ -235,6 +193,8 @@ func (self *FuseFsWindows) Readdir(
 }
 
 func (self *FuseFsWindows) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
+
+	defer self.synchronize()()
 
 	splitPath := splitPath(path)
 
@@ -261,4 +221,11 @@ func (self *FuseFsWindows) Getattr(path string, stat *fuse.Stat_t, fh uint64) (e
 	// default:
 	// 	return -fuse.ENOENT
 	// }
+}
+
+func (self *FuseFsWindows) synchronize() func() {
+	self.lock.Lock()
+	return func() {
+		self.lock.Unlock()
+	}
 }
