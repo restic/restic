@@ -92,24 +92,26 @@ func (self *FsNodeSnapshotsDir) GetAttributes(path []string, stat *fuse.Stat_t) 
 	if pathLength < 1 {
 		*stat = defaultDirectoryStat
 		return true
-	} else if pathLength == 1 {
-		head := path[0]
-
-		if head == snapshotDirLatestName && self.root.snapshotManager.snapshotNameLatest != "" {
-			*stat = defaultDirectoryStat
-			return true
-		}
-
-		if _, found := self.root.snapshotManager.snapshotByName[head]; found {
-			*stat = defaultDirectoryStat
-			return true
-		}
 	} else {
+
 		head := path[0]
-		if snapshotDir, ok := self.nodes[head]; ok {
-			return snapshotDir.GetAttributes(path[1:], stat)
+
+		if pathLength == 1 {
+			if head == snapshotDirLatestName && self.root.snapshotManager.snapshotNameLatest != "" {
+				*stat = defaultDirectoryStat
+				return true
+			}
+
+			if _, found := self.root.snapshotManager.snapshotByName[head]; found {
+				*stat = defaultDirectoryStat
+				return true
+			}
 		} else {
-			return false
+			if snapshotDir, ok := self.nodes[head]; ok {
+				return snapshotDir.GetAttributes(path[1:], stat)
+			} else {
+				return false
+			}
 		}
 	}
 
