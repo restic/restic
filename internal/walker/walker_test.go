@@ -138,7 +138,7 @@ func checkParentTreeOrder(want []string) checkFunc {
 	}
 }
 
-// checkSkipFor returns SkipNode if path is in skipFor, it checks that the
+// checkSkipFor returns ErrSkipNode if path is in skipFor, it checks that the
 // paths the walk func is called for are exactly the ones in wantPaths.
 func checkSkipFor(skipFor map[string]struct{}, wantPaths []string) checkFunc {
 	var pos int
@@ -161,7 +161,7 @@ func checkSkipFor(skipFor map[string]struct{}, wantPaths []string) checkFunc {
 			pos++
 
 			if _, ok := skipFor[path]; ok {
-				return false, SkipNode
+				return false, ErrSkipNode
 			}
 
 			return false, nil
@@ -177,7 +177,7 @@ func checkSkipFor(skipFor map[string]struct{}, wantPaths []string) checkFunc {
 	}
 }
 
-// checkIgnore returns SkipNode if path is in skipFor and sets ignore according
+// checkIgnore returns ErrSkipNode if path is in skipFor and sets ignore according
 // to ignoreFor. It checks that the paths the walk func is called for are exactly
 // the ones in wantPaths.
 func checkIgnore(skipFor map[string]struct{}, ignoreFor map[string]bool, wantPaths []string) checkFunc {
@@ -201,7 +201,7 @@ func checkIgnore(skipFor map[string]struct{}, ignoreFor map[string]bool, wantPat
 			pos++
 
 			if _, ok := skipFor[path]; ok {
-				return ignoreFor[path], SkipNode
+				return ignoreFor[path], ErrSkipNode
 			}
 
 			return ignoreFor[path], nil

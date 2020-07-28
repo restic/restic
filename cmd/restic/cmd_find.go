@@ -270,7 +270,7 @@ func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error 
 
 			Printf("Unable to load tree %s\n ... which belongs to snapshot %s.\n", parentTreeID, sn.ID())
 
-			return false, walker.SkipNode
+			return false, walker.ErrSkipNode
 		}
 
 		if node == nil {
@@ -314,7 +314,7 @@ func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error 
 
 			if !childMayMatch {
 				ignoreIfNoMatch = true
-				errIfNoMatch = walker.SkipNode
+				errIfNoMatch = walker.ErrSkipNode
 			} else {
 				ignoreIfNoMatch = false
 			}
@@ -354,7 +354,7 @@ func (f *Finder) findIDs(ctx context.Context, sn *restic.Snapshot) error {
 
 			Printf("Unable to load tree %s\n ... which belongs to snapshot %s.\n", parentTreeID, sn.ID())
 
-			return false, walker.SkipNode
+			return false, walker.ErrSkipNode
 		}
 
 		if node == nil {

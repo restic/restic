@@ -222,7 +222,7 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 			// otherwise, signal the walker to not walk recursively into any
 			// subdirs
 			if node.Type == "dir" {
-				return false, walker.SkipNode
+				return false, walker.ErrSkipNode
 			}
 			return false, nil
 		})
