@@ -47,6 +47,8 @@ func New(be restic.Backend) *Repository {
 	return repo
 }
 
+// DisableAutoIndexUpdate deactives the automatic finalization and upload of new
+// indexes once these are full
 func (r *Repository) DisableAutoIndexUpdate() {
 	r.noAutoIndexUpdate = true
 }

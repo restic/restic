@@ -394,7 +394,7 @@ func (idx *Index) Finalize() {
 	idx.packIDToIndex = nil
 }
 
-// ID returns the IDs of the index, if available. If the index is not yet
+// IDs returns the IDs of the index, if available. If the index is not yet
 // finalized, an error is returned.
 func (idx *Index) IDs() (restic.IDs, error) {
 	idx.m.Lock()
