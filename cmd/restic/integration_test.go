@@ -374,10 +374,11 @@ func removePacksExcept(gopts GlobalOptions, t *testing.T, keep restic.IDSet, rem
 
 	// Get all tree packs
 	rtest.OK(t, r.LoadIndex(gopts.ctx))
+
 	treePacks := restic.NewIDSet()
-	for _, idx := range r.Index().(*repository.MasterIndex).All() {
-		for _, id := range idx.TreePacks() {
-			treePacks.Insert(id)
+	for pb := range r.Index().Each(context.TODO()) {
+		if pb.Type == restic.TreeBlob {
+			treePacks.Insert(pb.PackID)
 		}
 	}
 
@@ -436,11 +437,10 @@ func TestBackupTreeLoadError(t *testing.T) {
 	r, err := OpenRepository(env.gopts)
 	rtest.OK(t, err)
 	rtest.OK(t, r.LoadIndex(env.gopts.ctx))
-	// collect tree packs of subdirectory
-	subTreePacks := restic.NewIDSet()
-	for _, idx := range r.Index().(*repository.MasterIndex).All() {
-		for _, id := range idx.TreePacks() {
-			subTreePacks.Insert(id)
+	treePacks := restic.NewIDSet()
+	for pb := range r.Index().Each(context.TODO()) {
+		if pb.Type == restic.TreeBlob {
+			treePacks.Insert(pb.PackID)
 		}
 	}
 
@@ -448,7 +448,7 @@ func TestBackupTreeLoadError(t *testing.T) {
 	testRunCheck(t, env.gopts)
 
 	// delete the subdirectory pack first
-	for id := range subTreePacks {
+	for id := range treePacks {
 		rtest.OK(t, r.Backend().Remove(env.gopts.ctx, restic.Handle{Type: restic.PackFile, Name: id.String()}))
 	}
 	testRunRebuildIndex(t, env.gopts)

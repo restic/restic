@@ -99,6 +99,18 @@ func (mi *MasterIndex) Has(bh restic.BlobHandle) bool {
 	return false
 }
 
+func (mi *MasterIndex) IsMixedPack(packID restic.ID) bool {
+	mi.idxMutex.RLock()
+	defer mi.idxMutex.RUnlock()
+
+	for _, idx := range mi.idx {
+		if idx.MixedPacks().Has(packID) {
+			return true
+		}
+	}
+	return false
+}
+
 // Packs returns all packs that are covered by the index.
 // If packBlacklist is given, those packs are only contained in the
 // resulting IDSet if they are contained in a non-final (newly written) index.

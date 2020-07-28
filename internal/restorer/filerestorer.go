@@ -245,7 +245,7 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) {
 		}
 	}
 
-	h := restic.Handle{Type: restic.PackFile, Name: pack.id.String()}
+	h := restic.Handle{Type: restic.PackFile, Name: pack.id.String(), BT: restic.DataBlob}
 	err := r.packLoader(ctx, h, int(end-start), start, func(rd io.Reader) error {
 		bufferSize := int(end - start)
 		if bufferSize > maxBufferSize {

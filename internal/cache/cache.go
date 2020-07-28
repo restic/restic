@@ -17,10 +17,9 @@ import (
 
 // Cache manages a local cache.
 type Cache struct {
-	path             string
-	Base             string
-	Created          bool
-	PerformReadahead func(restic.Handle) bool
+	path    string
+	Base    string
+	Created bool
 }
 
 const dirMode = 0700
@@ -152,10 +151,6 @@ func New(id string, basedir string) (c *Cache, err error) {
 		path:    cachedir,
 		Base:    basedir,
 		Created: created,
-		PerformReadahead: func(restic.Handle) bool {
-			// do not perform readahead by default
-			return false
-		},
 	}
 
 	return c, nil

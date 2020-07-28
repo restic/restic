@@ -100,7 +100,7 @@ func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packe
 	}
 
 	id := restic.IDFromHash(p.hw.Sum(nil))
-	h := restic.Handle{Type: restic.PackFile, Name: id.String()}
+	h := restic.Handle{Type: restic.PackFile, Name: id.String(), BT: t}
 
 	rd, err := restic.NewFileReader(p.tmpfile)
 	if err != nil {
@@ -114,20 +114,6 @@ func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packe
 	}
 
 	debug.Log("saved as %v", h)
-
-	if t == restic.TreeBlob && r.Cache != nil {
-		debug.Log("saving tree pack file in cache")
-
-		_, err = p.tmpfile.Seek(0, 0)
-		if err != nil {
-			return errors.Wrap(err, "Seek")
-		}
-
-		err := r.Cache.Save(h, p.tmpfile)
-		if err != nil {
-			return err
-		}
-	}
 
 	err = p.tmpfile.Close()
 	if err != nil {
