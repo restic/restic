@@ -230,9 +230,9 @@ func (b *Backup) CompleteItem(item string, previous, current *restic.Node, s arc
 			done:     true,
 		}
 		return
-	} else {
-		b.summary.ProcessedBytes += current.Size
 	}
+
+	b.summary.ProcessedBytes += current.Size
 
 	switch current.Type {
 	case "file":

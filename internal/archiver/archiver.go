@@ -414,12 +414,12 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 
 				_ = file.Close()
 				return fn, false, nil
-			} else {
-				debug.Log("%v hasn't changed, but contents are missing!", target)
-				// There are contents missing - inform user!
-				err := errors.Errorf("parts of %v not found in the repository index; storing the file again", target)
-				arch.error(abstarget, fi, err)
 			}
+
+			debug.Log("%v hasn't changed, but contents are missing!", target)
+			// There are contents missing - inform user!
+			err := errors.Errorf("parts of %v not found in the repository index; storing the file again", target)
+			arch.error(abstarget, fi, err)
 		}
 
 		fn.isFile = true
