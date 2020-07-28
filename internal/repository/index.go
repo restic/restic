@@ -472,7 +472,7 @@ func (idx *Index) merge(idx2 *Index) error {
 	defer idx2.m.Unlock()
 
 	if !idx2.final {
-		return errors.New("index to merge is not final!")
+		return errors.New("index to merge is not final")
 	}
 
 	packlen := len(idx.packs)
