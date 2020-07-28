@@ -44,32 +44,24 @@ func (self *FsNodeSnapshotsDir) Readdir(path []string, fill FsListItemCallback) 
 
 		debug.Log("FsNodeSnapshotsDir: handle subtree %v", head)
 
+		if head == snapshotDirLatestName {
+			head = self.root.snapshotManager.snapshotNameLatest
+		}
+
 		if snapshot, ok := self.root.snapshotManager.snapshotByName[head]; ok {
 
 			if _, contained := self.nodes[head]; !contained {
 
-				debug.Log("FsNodeSnapshotsDir: node not contained for: %v", head)
-
 				node, err := NewFsNodeSnapshotDirFromSnapshot(self.ctx, self.root, snapshot)
 
-				debug.Log("FsNodeSnapshotsDir: called NewFsNodeSnapshotDirFromSnapshot")
-				debug.Log("FsNodeSnapshotsDir: err %v", err)
-				debug.Log("FsNodeSnapshotsDir: head %v", head)
-				debug.Log("FsNodeSnapshotsDir: len(nodes) %v", len(self.nodes))
-
 				if err == nil {
-					debug.Log("FsNodeSnapshotsDir: Before adding node for: %v", head)
 					self.nodes[head] = node
-					debug.Log("FsNodeSnapshotsDir: Added node for: %v", head)
 				} else {
 					debug.Log("FsNodeSnapshotsDir: Failed to create node for %v: %v", head, err.Error())
 				}
 			}
 
-			debug.Log("FsNodeSnapshotsDir: finding node for: %v", head)
-
 			if node, contained := self.nodes[head]; contained {
-				debug.Log("FsNodeSnapshotsDir: ListDirectories for existing node %v", head)
 				node.Readdir(path[1:], fill)
 			} else {
 				debug.Log("FsNodeSnapshotsDir: ListDirectories error for %v", head)
@@ -79,8 +71,6 @@ func (self *FsNodeSnapshotsDir) Readdir(path []string, fill FsListItemCallback) 
 			debug.Log("FsNodeSnapshotsDir: Snapshot not found: %v", head)
 		}
 	}
-
-	debug.Log("FsNodeSnapshotsDir: ListDirectories(%v) done", path)
 }
 
 func (self *FsNodeSnapshotsDir) GetAttributes(path []string, stat *fuse.Stat_t) bool {
@@ -107,6 +97,11 @@ func (self *FsNodeSnapshotsDir) GetAttributes(path []string, stat *fuse.Stat_t) 
 				return true
 			}
 		} else {
+
+			if head == snapshotDirLatestName {
+				head = self.root.snapshotManager.snapshotNameLatest
+			}
+
 			if snapshotDir, ok := self.nodes[head]; ok {
 				return snapshotDir.GetAttributes(path[1:], stat)
 			} else {
@@ -137,6 +132,10 @@ func (self *FsNodeSnapshotsDir) Open(path []string, flags int) (errc int, fh uin
 				return -fuse.EISDIR, ^uint64(0)
 			}
 		} else {
+			if head == snapshotDirLatestName {
+				head = self.root.snapshotManager.snapshotNameLatest
+			}
+
 			if snapshotDir, ok := self.nodes[head]; ok {
 				return snapshotDir.Open(path[1:], flags)
 			}
@@ -165,6 +164,10 @@ func (self *FsNodeSnapshotsDir) Read(path []string, buff []byte, ofst int64, fh 
 				return -fuse.EISDIR
 			}
 		} else {
+			if head == snapshotDirLatestName {
+				head = self.root.snapshotManager.snapshotNameLatest
+			}
+
 			if snapshotDir, ok := self.nodes[head]; ok {
 				return snapshotDir.Read(path[1:], buff, ofst, fh)
 			}
