@@ -21,7 +21,7 @@ type Backend struct {
 	inProgress      map[restic.Handle]chan struct{}
 }
 
-// ensure cachedBackend implements restic.Backend
+// ensure Backend implements restic.Backend
 var _ restic.Backend = &Backend{}
 
 func newBackend(be restic.Backend, c *Cache) *Backend {
@@ -43,13 +43,19 @@ func (b *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	return b.Cache.remove(h)
 }
 
-func autoCached(t restic.FileType) bool {
-	return t == restic.IndexFile || t == restic.SnapshotFile
+func autoCacheTypes(h restic.Handle) bool {
+	switch h.Type {
+	case restic.IndexFile, restic.SnapshotFile:
+		return true
+	case restic.PackFile:
+		return h.ContainedBlobType == restic.TreeBlob
+	}
+	return false
 }
 
 // Save stores a new file in the backend and the cache.
 func (b *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
-	if !autoCached(h.Type) {
+	if !autoCacheTypes(h) {
 		return b.Backend.Save(ctx, h, rd)
 	}
 
@@ -168,25 +174,8 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 		debug.Log("error loading %v from cache: %v", h, err)
 	}
 
-	// partial file requested
-	if offset != 0 || length != 0 {
-		if b.Cache.PerformReadahead(h) {
-			debug.Log("performing readahead for %v", h)
-
-			err := b.cacheFile(ctx, h)
-			if err == nil {
-				return b.loadFromCacheOrDelegate(ctx, h, length, offset, consumer)
-			}
-
-			debug.Log("error caching %v: %v", h, err)
-		}
-
-		debug.Log("Load(%v, %v, %v): partial file requested, delegating to backend", h, length, offset)
-		return b.Backend.Load(ctx, h, length, offset, consumer)
-	}
-
 	// if we don't automatically cache this file type, fall back to the backend
-	if !autoCached(h.Type) {
+	if !autoCacheTypes(h) {
 		debug.Log("Load(%v, %v, %v): delegating to backend", h, length, offset)
 		return b.Backend.Load(ctx, h, length, offset, consumer)
 	}
