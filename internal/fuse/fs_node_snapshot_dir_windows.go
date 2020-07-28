@@ -2,9 +2,11 @@ package fuse
 
 import (
 	"context"
+	"sort"
 
 	"github.com/billziss-gh/cgofuse/fuse"
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 )
 
@@ -141,14 +143,16 @@ func (self *FsNodeSnapshotDir) GetAttributes(path []string, stat *fuse.Stat_t) b
 
 	debug.Log("FsNodeSnapshotDir: ListDirectories(%v)", path)
 
-	if len(path) == 0 {
+	lenPath := len(path)
+
+	if lenPath == 0 {
 		*stat = defaultDirectoryStat
 		return true
 	}
 
 	head := path[0]
 
-	if file, found := self.files[head]; found {
+	if file, found := self.files[head]; lenPath == 1 && found {
 		nodeToStat(file, stat)
 		return true
 	}
@@ -171,7 +175,7 @@ func (self *FsNodeSnapshotDir) Open(path []string, flags int) (errc int, fh uint
 
 	head := path[0]
 
-	if _, found := self.files[head]; found {
+	if _, found := self.files[head]; lenPath == 1 && found {
 		return 0, 0
 	}
 
@@ -183,7 +187,121 @@ func (self *FsNodeSnapshotDir) Open(path []string, flags int) (errc int, fh uint
 	return -fuse.ENOENT, ^uint64(0)
 }
 
+func (self *FsNodeSnapshotDir) Read(path []string, buff []byte, ofst int64, fh uint64) (n int) {
+
+	lenPath := len(path)
+
+	if lenPath == 0 {
+		return -fuse.EISDIR
+	}
+
+	head := path[0]
+
+	if dir, found := self.directories[head]; found {
+		tail := path[1:]
+		return dir.Read(tail, buff, ofst, fh)
+	}
+
+	if node, found := self.files[head]; lenPath == 1 && found {
+		debug.Log("Read(%v, %v, %v), file size %v", node.Name, len(buff), ofst, node.Size)
+		offset := uint64(ofst)
+
+		if offset > node.Size {
+			debug.Log("Read(%v): offset is greater than file size: %v > %v",
+				node.Name, ofst, node.Size)
+
+			// return no data
+			return 0
+		}
+
+		// handle special case: file is empty
+		if node.Size == 0 {
+			return 0
+		}
+
+		cumsize, err := self.cumsize(node)
+
+		if err != nil {
+			return -fuse.EIO
+		}
+
+		// Skip blobs before the offset
+		startContent := -1 + sort.Search(len(cumsize), func(i int) bool {
+			return cumsize[i] > offset
+		})
+		offset -= cumsize[startContent]
+
+		readBytes := 0
+		remainingBytes := len(buff)
+
+		for i := startContent; remainingBytes > 0 && i < len(cumsize)-1; i++ {
+
+			blob, err := self.getBlobAt(self.root.ctx, node, i)
+			if err != nil {
+				return -fuse.EIO
+			}
+
+			if offset > 0 {
+				blob = blob[offset:]
+				offset = 0
+			}
+
+			copied := copy(buff[readBytes:], blob)
+
+			remainingBytes -= copied
+			readBytes += copied
+		}
+
+		return readBytes
+	}
+
+	return -fuse.ENOENT
+}
+
+func (self *FsNodeSnapshotDir) cumsize(node *restic.Node) ([]uint64, error) {
+
+	var bytes uint64
+	cumsize := make([]uint64, 1+len(node.Content))
+
+	for i, id := range node.Content {
+		size, found := self.root.repo.LookupBlobSize(id, restic.DataBlob)
+
+		if !found {
+			return nil, errors.Errorf("id %v not found in repository", id)
+		}
+
+		bytes += uint64(size)
+		cumsize[i+1] = bytes
+	}
+
+	return cumsize, nil
+}
+
+func (self *FsNodeSnapshotDir) getBlobAt(ctx context.Context, node *restic.Node, i int) (blob []byte, err error) {
+	debug.Log("getBlobAt(%v, %v)", node.Name, i)
+
+	blob, ok := self.root.blobCache.get(node.Content[i])
+	if ok {
+		return blob, nil
+	}
+
+	blob, err = self.root.repo.LoadBlob(ctx, restic.DataBlob, node.Content[i], nil)
+	if err != nil {
+		debug.Log("LoadBlob(%v, %v) failed: %v", node.Name, node.Content[i], err)
+		return nil, err
+	}
+
+	self.root.blobCache.add(node.Content[i], blob)
+
+	return blob, nil
+}
+
 func nodeToStat(node *restic.Node, stat *fuse.Stat_t) {
+
+	stat.Atim = fuse.NewTimespec(node.AccessTime)
+	stat.Mtim = fuse.NewTimespec(node.ModTime)
+	stat.Ctim = fuse.NewTimespec(node.ChangeTime)
+
 	switch node.Type {
 	case "dir":
 		stat.Mode = fuse.S_IFDIR | 0555

@@ -10,11 +10,6 @@ import (
 	"golang.org/x/net/context"
 )
 
-const (
-	filename = "hello"
-	contents = "hello, world\n"
-)
-
 func splitPath(path string) []string {
 	split := strings.Split(path, "/")
 
@@ -38,6 +33,7 @@ type FsNode interface {
 	Readdir(path []string, callback FsListItemCallback)
 	GetAttributes(path []string, stat *fuse.Stat_t) bool
 	Open(path []string, flags int) (errc int, fh uint64)
+	Read(path []string, buff []byte, ofst int64, fh uint64) (n int)
 }
 
 type FsNodeRoot struct {
@@ -45,6 +41,7 @@ type FsNodeRoot struct {
 	repo            restic.Repository
 	cfg             Config
 	snapshotManager SnapshotManager
+	blobCache       *blobCache
 	entries         map[string]FsNode
 }
 
@@ -59,6 +56,7 @@ func NewNodeRoot(
 		repo:            repo,
 		cfg:             cfg,
 		snapshotManager: snapshotManager,
+		blobCache:       newBlobCache(blobCacheSize),
 	}
 
 	entries := map[string]FsNode{
@@ -116,14 +114,28 @@ func (self *FsNodeRoot) Open(path []string, flags int) (errc int, fh uint64) {
 	return -fuse.ENOENT, ^uint64(0)
 }
 
+func (self *FsNodeRoot) Read(path []string, buff []byte, ofst int64, fh uint64) (n int) {
+
+	lenPath := len(path)
+
+	if lenPath <= 1 {
+		return -fuse.EISDIR
+	}
+
+	if entry, found := self.entries[path[0]]; found {
+		return entry.Read(path[1:], buff, ofst, fh)
+	}
+
+	return -fuse.ENOENT
+}
+
 type FuseFsWindows struct {
 	fuse.FileSystemBase
-	lock      sync.Mutex
-	ctx       context.Context
-	repo      restic.Repository
-	config    Config
-	rootNode  *FsNodeRoot
-	blobCache *blobCache
+	lock     sync.Mutex
+	ctx      context.Context
+	repo     restic.Repository
+	config   Config
+	rootNode *FsNodeRoot
 }
 
 // NewRoot initializes a new root node from a repository.
@@ -137,11 +149,10 @@ func NewFuseFsWindows(ctx context.Context, repo restic.Repository, cfg Config) *
 	rootNode := NewNodeRoot(ctx, repo, cfg, *snapshotManager)
 
 	fuseFsWindows := &FuseFsWindows{
-		ctx:       ctx,
-		repo:      repo,
-		config:    cfg,
-		rootNode:  rootNode,
-		blobCache: newBlobCache(blobCacheSize),
+		ctx:      ctx,
+		repo:     repo,
+		config:   cfg,
+		rootNode: rootNode,
 	}
 
 	return fuseFsWindows
@@ -155,15 +166,6 @@ func (self *FuseFsWindows) Open(path string, flags int) (errc int, fh uint64) {
 
 	splitPath := splitPath(path)
 	return self.rootNode.Open(splitPath, flags)
-
-	// switch path {
-	// case "/" + filename:
-	// 	return 0, 0
-	// case "/" + filename + "123":
-	// 	return 0, 0
-	// default:
-	// 	return -fuse.ENOENT, ^uint64(0)
-	// }
 }
 
 func (self *FuseFsWindows) Read(
@@ -172,15 +174,8 @@ func (self *FuseFsWindows) Read(
 
 	defer self.synchronize()()
 
-	endofst := ofst + int64(len(buff))
-	if endofst > int64(len(contents)) {
-		endofst = int64(len(contents))
-	}
-	if endofst < ofst {
-		return 0
-	}
-	n = copy(buff, contents[ofst:endofst])
-	return
+	splitPath := splitPath(path)
+	return self.rootNode.Read(splitPath, buff, ofst, fh)
 }
 
 func (self *FuseFsWindows) Readdir(
@@ -214,26 +209,12 @@ func (self *FuseFsWindows) Getattr(path string, stat *fuse.Stat_t, fh uint64) (e
 	}
 
 	return -fuse.ENOENT
-
-	// switch path {
-	// case "/":
-	// 	stat.Mode = fuse.S_IFDIR | 0555
-	// 	return 0
-	// case "/" + filename:
-	// 	stat.Mode = fuse.S_IFREG | 0444
-	// 	stat.Size = int64(len(contents))
-	// 	return 0
-	// case "/" + filename + "123":
-	// 	stat.Mode = fuse.S_IFREG | 0444
-	// 	stat.Size = int64(len(contents))
-	// 	return 0
-	// default:
-	// 	return -fuse.ENOENT
-	// }
 }
 
 func (self *FuseFsWindows) synchronize() func() {
+
 	self.lock.Lock()
+
 	return func() {
 		self.lock.Unlock()
 	}

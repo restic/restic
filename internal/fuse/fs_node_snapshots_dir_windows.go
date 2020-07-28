@@ -145,3 +145,31 @@ func (self *FsNodeSnapshotsDir) Open(path []string, flags int) (errc int, fh uin
 
 	return -fuse.ENOENT, ^uint64(0)
 }
+
+func (self *FsNodeSnapshotsDir) Read(path []string, buff []byte, ofst int64, fh uint64) (n int) {
+
+	pathLength := len(path)
+
+	if pathLength < 1 {
+		return -fuse.EISDIR
+	} else {
+
+		head := path[0]
+
+		if pathLength == 1 {
+			if head == snapshotDirLatestName && self.root.snapshotManager.snapshotNameLatest != "" {
+				return -fuse.EISDIR
+			}
+
+			if _, found := self.root.snapshotManager.snapshotByName[head]; found {
+				return -fuse.EISDIR
+			}
+		} else {
+			if snapshotDir, ok := self.nodes[head]; ok {
+				return snapshotDir.Read(path[1:], buff, ofst, fh)
+			}
+		}
+	}
+
+	return -fuse.ENOENT
+}
