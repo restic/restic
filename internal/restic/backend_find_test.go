@@ -42,9 +42,9 @@ func TestFind(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	expected_match := "20bdc1402a6fc9b633aaffffffffffffffffffffffffffffffffffffffffffff"
-	if f != expected_match {
-		t.Errorf("Wrong match returned want %s, got %s", expected_match, f)
+	expectedMatch := "20bdc1402a6fc9b633aaffffffffffffffffffffffffffffffffffffffffffff"
+	if f != expectedMatch {
+		t.Errorf("Wrong match returned want %s, got %s", expectedMatch, f)
 	}
 
 	f, err = Find(m, SnapshotFile, "NotAPrefix")
@@ -56,8 +56,8 @@ func TestFind(t *testing.T) {
 	}
 
 	// Try to match with a prefix longer than any ID.
-	extra_length_id := samples[0].String() + "f"
-	f, err = Find(m, SnapshotFile, extra_length_id)
+	extraLengthID := samples[0].String() + "f"
+	f, err = Find(m, SnapshotFile, extraLengthID)
 	if err != ErrNoIDPrefixFound {
 		t.Error("Expected no snapshots to be matched.")
 	}
