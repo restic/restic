@@ -98,8 +98,8 @@ type BackupOptions struct {
 
 var backupOptions BackupOptions
 
-// Error sentinel for invalid source data
-var InvalidSourceData = errors.New("Failed to read all source data during backup.")
+// ErrInvalidSourceData is used to report an incomplete backup
+var ErrInvalidSourceData = errors.New("failed to read all source data during backup")
 
 func init() {
 	cmdRoot.AddCommand(cmdBackup)
@@ -601,7 +601,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		p.P("snapshot %s saved\n", id.Str())
 	}
 	if !success {
-		return InvalidSourceData
+		return ErrInvalidSourceData
 	}
 
 	// Return error if any
