@@ -1,4 +1,4 @@
-// +build freebsd,go1.12
+// +build freebsd
 
 package restic
 

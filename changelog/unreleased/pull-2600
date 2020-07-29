@@ -1,6 +1,7 @@
-Change: Require Go >= 1.11
+Change: Require Go >= 1.12
 
-Restic now requires Go to be at least 1.11. This allows simplifications in the
+Restic now requires Go to be at least 1.12. This allows simplifications in the
 build process and removing workarounds.
 
 https://github.com/restic/restic/pull/2600
+https://github.com/restic/restic/pull/2852

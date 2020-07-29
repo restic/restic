@@ -362,7 +362,7 @@ func (env *TravisEnvironment) RunTests() error {
 			return err
 		}
 	} else {
-		msg("Skipping gofmt and module vendor check for %v\n", v)
+		msg("Skipping gofmt and mod tidy check for %v\n", v)
 	}
 
 	if err = runGlyphcheck(); err != nil {

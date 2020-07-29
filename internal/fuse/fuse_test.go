@@ -62,7 +62,7 @@ func TestCache(t *testing.T) {
 	rtest.Equals(t, cacheSize, c.free)
 }
 
-func testRead(t testing.TB, f *file, offset, length int, data []byte) {
+func testRead(t testing.TB, f fs.Handle, offset, length int, data []byte) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -73,7 +73,8 @@ func testRead(t testing.TB, f *file, offset, length int, data []byte) {
 	resp := &fuse.ReadResponse{
 		Data: data,
 	}
-	rtest.OK(t, f.Read(ctx, req, resp))
+	fr := f.(fs.HandleReader)
+	rtest.OK(t, fr.Read(ctx, req, resp))
 }
 
 func firstSnapshotID(t testing.TB, repo restic.Repository) (first restic.ID) {
@@ -156,12 +157,12 @@ func TestFuseFile(t *testing.T) {
 		Size:    filesize,
 		Content: content,
 	}
-	root := NewRoot(context.TODO(), repo, Config{})
-
-	t.Logf("blob cache has %d entries", len(root.blobSizeCache.m))
+	root := &Root{repo: repo, blobCache: newBlobCache(blobCacheSize)}
 
 	inode := fs.GenerateDynamicInode(1, "foo")
 	f, err := newFile(context.TODO(), root, inode, node)
+	rtest.OK(t, err)
+	of, err := f.Open(context.TODO(), nil, nil)
 	rtest.OK(t, err)
 
 	attr := fuse.Attr{}
@@ -180,7 +181,7 @@ func TestFuseFile(t *testing.T) {
 
 		buf := make([]byte, length)
 
-		testRead(t, f, offset, length, buf)
+		testRead(t, of, offset, length, buf)
 		if !bytes.Equal(b, buf) {
 			t.Errorf("test %d failed, wrong data returned (offset %v, length %v)", i, offset, length)
 		}
@@ -202,7 +203,7 @@ func testTopUidGid(t *testing.T, cfg Config, repo restic.Repository, uid, gid ui
 	t.Helper()
 
 	ctx := context.Background()
-	root := NewRoot(ctx, repo, cfg)
+	root := NewRoot(repo, cfg)
 
 	var attr fuse.Attr
 	err := root.Attr(ctx, &attr)
@@ -220,6 +221,7 @@ func testTopUidGid(t *testing.T, cfg Config, repo restic.Repository, uid, gid ui
 
 	snapID := loadFirstSnapshot(t, repo).ID().Str()
 	snapshotdir, err := idsdir.(fs.NodeStringLookuper).Lookup(ctx, snapID)
+	rtest.OK(t, err)
 
 	err = snapshotdir.Attr(ctx, &attr)
 	rtest.OK(t, err)

@@ -11,8 +11,6 @@ import (
 	"github.com/restic/restic/internal/backend/test"
 )
 
-//go:generate go run generate_test_list.go
-
 type memConfig struct {
 	be restic.Backend
 }

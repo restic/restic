@@ -111,29 +111,33 @@ func (r *Repository) LoadAndDecrypt(ctx context.Context, buf []byte, t restic.Fi
 	return plaintext, nil
 }
 
-// sortCachedPacks moves all cached pack files to the front of blobs.
-func (r *Repository) sortCachedPacks(blobs []restic.PackedBlob) []restic.PackedBlob {
-	if r.Cache == nil {
-		return blobs
+type haver interface {
+	Has(restic.Handle) bool
+}
+
+// sortCachedPacksFirst moves all cached pack files to the front of blobs.
+func sortCachedPacksFirst(cache haver, blobs []restic.PackedBlob) {
+	if cache == nil {
+		return
 	}
 
 	// no need to sort a list with one element
 	if len(blobs) == 1 {
-		return blobs
+		return
 	}
 
-	cached := make([]restic.PackedBlob, 0, len(blobs)/2)
+	cached := blobs[:0]
 	noncached := make([]restic.PackedBlob, 0, len(blobs)/2)
 
 	for _, blob := range blobs {
-		if r.Cache.Has(restic.Handle{Type: restic.DataFile, Name: blob.PackID.String()}) {
+		if cache.Has(restic.Handle{Type: restic.DataFile, Name: blob.PackID.String()}) {
 			cached = append(cached, blob)
 			continue
 		}
 		noncached = append(noncached, blob)
 	}
 
-	return append(cached, noncached...)
+	copy(blobs[len(cached):], noncached)
 }
 
 // LoadBlob loads a blob of type t from the repository.
@@ -142,14 +146,14 @@ func (r *Repository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.
 	debug.Log("load %v with id %v (buf len %v, cap %d)", t, id, len(buf), cap(buf))
 
 	// lookup packs
-	blobs, found := r.idx.Lookup(id, t)
-	if !found {
+	blobs := r.idx.Lookup(id, t)
+	if len(blobs) == 0 {
 		debug.Log("id %v not found in index", id)
 		return nil, errors.Errorf("id %v not found in repository", id)
 	}
 
 	// try cached pack files first
-	blobs = r.sortCachedPacks(blobs)
+	sortCachedPacksFirst(r.Cache, blobs)
 
 	var lastError error
 	for _, blob := range blobs {
@@ -351,22 +355,24 @@ func (r *Repository) Backend() restic.Backend {
 }
 
 // Index returns the currently used MasterIndex.
-func (r *Repository) Index() restic.Index {
+func (r *Repository) Index() restic.MasterIndex {
 	return r.idx
 }
 
 // SetIndex instructs the repository to use the given index.
-func (r *Repository) SetIndex(i restic.Index) error {
+func (r *Repository) SetIndex(i restic.MasterIndex) error {
 	r.idx = i.(*MasterIndex)
 
 	ids := restic.NewIDSet()
 	for _, idx := range r.idx.All() {
-		id, err := idx.ID()
+		indexIDs, err := idx.IDs()
 		if err != nil {
 			debug.Log("not using index, ID() returned error %v", err)
 			continue
 		}
-		ids.Insert(id)
+		for _, id := range indexIDs {
+			ids.Insert(id)
+		}
 	}
 
 	return r.PrepareCache(ids)
@@ -396,6 +402,7 @@ func (r *Repository) saveIndex(ctx context.Context, indexes ...*Index) error {
 
 		debug.Log("Saved index %d as %v", i, sid)
 	}
+	r.idx.MergeFinalIndexes()
 
 	return nil
 }
@@ -479,12 +486,16 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 	validIndex := restic.NewIDSet()
 	wg.Go(func() error {
 		for idx := range indexCh {
-			id, err := idx.ID()
+			ids, err := idx.IDs()
 			if err == nil {
-				validIndex.Insert(id)
+				for _, id := range ids {
+					validIndex.Insert(id)
+				}
 			}
+
 			r.idx.Insert(idx)
 		}
+		r.idx.MergeFinalIndexes()
 		return nil
 	})
 

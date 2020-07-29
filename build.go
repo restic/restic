@@ -3,7 +3,7 @@
 // This program aims to make building Go programs for end users easier by just
 // calling it with `go run`, without having to setup a GOPATH.
 //
-// This program needs Go >= 1.11. It'll use Go modules for compilation. It
+// This program needs Go >= 1.12. It'll use Go modules for compilation. It
 // builds the package configured as Main in the Config struct.
 
 // BSD 2-Clause License
@@ -327,8 +327,8 @@ func (v GoVersion) String() string {
 }
 
 func main() {
-	if !goVersion.AtLeast(GoVersion{1, 11, 0}) {
-		die("Go version (%v) is too old, Go <= 1.11 does not support Go Modules\n", goVersion)
+	if !goVersion.AtLeast(GoVersion{1, 12, 0}) {
+		die("Go version (%v) is too old, restic requires Go >= 1.12\n", goVersion)
 	}
 
 	if !goVersion.AtLeast(config.MinVersion) {

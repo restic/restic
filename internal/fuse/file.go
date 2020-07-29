@@ -5,10 +5,9 @@ package fuse
 import (
 	"sort"
 
+	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
-
-	"github.com/restic/restic/internal/debug"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
@@ -18,47 +17,30 @@ import (
 // The default block size to report in stat
 const blockSize = 512
 
-// Statically ensure that *file implements the given interface
-var _ = fs.HandleReader(&file{})
+// Statically ensure that *file and *openFile implement the given interfaces
+var _ = fs.HandleReader(&openFile{})
+var _ = fs.NodeListxattrer(&file{})
+var _ = fs.NodeGetxattrer(&file{})
+var _ = fs.NodeOpener(&file{})
 
 type file struct {
 	root  *Root
 	node  *restic.Node
 	inode uint64
+}
 
+type openFile struct {
+	file
 	// cumsize[i] holds the cumulative size of blobs[:i].
 	cumsize []uint64
 }
 
 func newFile(ctx context.Context, root *Root, inode uint64, node *restic.Node) (fusefile *file, err error) {
 	debug.Log("create new file for %v with %d blobs", node.Name, len(node.Content))
-	var bytes uint64
-	cumsize := make([]uint64, 1+len(node.Content))
-	for i, id := range node.Content {
-		size, ok := root.blobSizeCache.Lookup(id)
-		if !ok {
-			var found bool
-			size, found = root.repo.LookupBlobSize(id, restic.DataBlob)
-			if !found {
-				return nil, errors.Errorf("id %v not found in repository", id)
-			}
-		}
-
-		bytes += uint64(size)
-		cumsize[i+1] = bytes
-	}
-
-	if bytes != node.Size {
-		debug.Log("sizes do not match: node.Size %v != size %v, using real size", node.Size, bytes)
-		node.Size = bytes
-	}
-
 	return &file{
 		inode: inode,
 		root:  root,
 		node:  node,
-
-		cumsize: cumsize,
 	}, nil
 }
 
@@ -83,8 +65,36 @@ func (f *file) Attr(ctx context.Context, a *fuse.Attr) error {
 
 }
 
-func (f *file) getBlobAt(ctx context.Context, i int) (blob []byte, err error) {
-	debug.Log("getBlobAt(%v, %v)", f.node.Name, i)
+func (f *file) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenResponse) (fs.Handle, error) {
+	debug.Log("open file %v with %d blobs", f.node.Name, len(f.node.Content))
+
+	var bytes uint64
+	cumsize := make([]uint64, 1+len(f.node.Content))
+	for i, id := range f.node.Content {
+		size, found := f.root.repo.LookupBlobSize(id, restic.DataBlob)
+		if !found {
+			return nil, errors.Errorf("id %v not found in repository", id)
+		}
+
+		bytes += uint64(size)
+		cumsize[i+1] = bytes
+	}
+
+	var of = openFile{file: *f}
+
+	if bytes != f.node.Size {
+		debug.Log("sizes do not match: node.Size %v != size %v, using real size", f.node.Size, bytes)
+		// Make a copy of the node with correct size
+		nodenew := *f.node
+		nodenew.Size = bytes
+		of.file.node = &nodenew
+	}
+	of.cumsize = cumsize
+
+	return &of, nil
+}
+
+func (f *openFile) getBlobAt(ctx context.Context, i int) (blob []byte, err error) {
 
 	blob, ok := f.root.blobCache.get(f.node.Content[i])
 	if ok {
@@ -102,18 +112,12 @@ func (f *file) getBlobAt(ctx context.Context, i int) (blob []byte, err error) {
 	return blob, nil
 }
 
-func (f *file) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
+func (f *openFile) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
 	debug.Log("Read(%v, %v, %v), file size %v", f.node.Name, req.Size, req.Offset, f.node.Size)
 	offset := uint64(req.Offset)
 
-	if offset > f.node.Size {
-		debug.Log("Read(%v): offset is greater than file size: %v > %v",
-			f.node.Name, req.Offset, f.node.Size)
-
-		// return no data
-		resp.Data = resp.Data[:0]
-		return nil
-	}
+	// as stated in https://godoc.org/bazil.org/fuse/fs#HandleReader there
+	// is no need to check if offset > size
 
 	// handle special case: file is empty
 	if f.node.Size == 0 {
@@ -130,6 +134,15 @@ func (f *file) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadR
 	dst := resp.Data[0:req.Size]
 	readBytes := 0
 	remainingBytes := req.Size
+
+	// The documentation of bazil/fuse actually says that synchronization is
+	// required (see https://godoc.org/bazil.org/fuse#hdr-Service_Methods):
+	//
+	// Multiple goroutines may call service methods simultaneously;
+	// the methods being called are responsible for appropriate synchronization.
+	//
+	// However, no lock needed here as getBlobAt can be called conurrently
+	// (blobCache has it's own locking)
 	for i := startContent; remainingBytes > 0 && i < len(f.cumsize)-1; i++ {
 		blob, err := f.getBlobAt(ctx, i)
 		if err != nil {

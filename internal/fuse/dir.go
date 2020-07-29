@@ -4,6 +4,7 @@ package fuse
 
 import (
 	"os"
+	"sync"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
@@ -23,26 +24,15 @@ type dir struct {
 	inode       uint64
 	parentInode uint64
 	node        *restic.Node
-
-	blobsize *BlobSizeCache
+	m           sync.Mutex
 }
 
 func newDir(ctx context.Context, root *Root, inode, parentInode uint64, node *restic.Node) (*dir, error) {
 	debug.Log("new dir for %v (%v)", node.Name, node.Subtree)
-	tree, err := root.repo.LoadTree(ctx, *node.Subtree)
-	if err != nil {
-		debug.Log("  error loading tree %v: %v", node.Subtree, err)
-		return nil, err
-	}
-	items := make(map[string]*restic.Node)
-	for _, node := range tree.Nodes {
-		items[cleanupNodeName(node.Name)] = node
-	}
 
 	return &dir{
 		root:        root,
 		node:        node,
-		items:       items,
 		inode:       inode,
 		parentInode: parentInode,
 	}, nil
@@ -50,24 +40,6 @@ func newDir(ctx context.Context, root *Root, inode, parentInode uint64, node *re
 
 func newDirFromSnapshot(ctx context.Context, root *Root, inode uint64, snapshot *restic.Snapshot) (*dir, error) {
 	debug.Log("new dir for snapshot %v (%v)", snapshot.ID(), snapshot.Tree)
-	tree, err := root.repo.LoadTree(ctx, *snapshot.Tree)
-	if err != nil {
-		debug.Log("  loadTree(%v) failed: %v", snapshot.ID(), err)
-		return nil, err
-	}
-	items := make(map[string]*restic.Node)
-	for _, n := range tree.Nodes {
-		nodes, err := replaceSpecialNodes(ctx, root.repo, n)
-		if err != nil {
-			debug.Log("  replaceSpecialNodes(%v) failed: %v", n, err)
-			return nil, err
-		}
-
-		for _, node := range nodes {
-			items[cleanupNodeName(node.Name)] = node
-		}
-	}
-
 	return &dir{
 		root: root,
 		node: &restic.Node{
@@ -75,10 +47,40 @@ func newDirFromSnapshot(ctx context.Context, root *Root, inode uint64, snapshot 
 			ModTime:    snapshot.Time,
 			ChangeTime: snapshot.Time,
 			Mode:       os.ModeDir | 0555,
+			Subtree:    snapshot.Tree,
 		},
-		items: items,
 		inode: inode,
 	}, nil
+}
+
+func (d *dir) open(ctx context.Context) error {
+	d.m.Lock()
+	defer d.m.Unlock()
+
+	if d.items != nil {
+		return nil
+	}
+
+	debug.Log("open dir %v (%v)", d.node.Name, d.node.Subtree)
+
+	tree, err := d.root.repo.LoadTree(ctx, *d.node.Subtree)
+	if err != nil {
+		debug.Log("  error loading tree %v: %v", d.node.Subtree, err)
+		return err
+	}
+	items := make(map[string]*restic.Node)
+	for _, n := range tree.Nodes {
+		nodes, err := replaceSpecialNodes(ctx, d.root.repo, n)
+		if err != nil {
+			debug.Log("  replaceSpecialNodes(%v) failed: %v", n, err)
+			return err
+		}
+		for _, node := range nodes {
+			items[cleanupNodeName(node.Name)] = node
+		}
+	}
+	d.items = items
+	return nil
 }
 
 func (d *dir) Attr(ctx context.Context, a *fuse.Attr) error {
@@ -111,6 +113,10 @@ func (d *dir) calcNumberOfLinks() uint32 {
 
 func (d *dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	debug.Log("ReadDirAll()")
+	err := d.open(ctx)
+	if err != nil {
+		return nil, err
+	}
 	ret := make([]fuse.Dirent, 0, len(d.items)+2)
 
 	ret = append(ret, fuse.Dirent{
@@ -149,6 +155,12 @@ func (d *dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 
 func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	debug.Log("Lookup(%v)", name)
+
+	err := d.open(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	node, ok := d.items[name]
 	if !ok {
 		debug.Log("  Lookup(%v) -> not found", name)

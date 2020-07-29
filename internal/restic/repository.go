@@ -15,9 +15,9 @@ type Repository interface {
 
 	Key() *crypto.Key
 
-	SetIndex(Index) error
+	SetIndex(MasterIndex) error
 
-	Index() Index
+	Index() MasterIndex
 	SaveFullIndex(context.Context) error
 	SaveIndex(context.Context) error
 	LoadIndex(context.Context) error
@@ -57,10 +57,10 @@ type Lister interface {
 	List(context.Context, FileType, func(FileInfo) error) error
 }
 
-// Index keeps track of the blobs are stored within files.
-type Index interface {
+// MasterIndex keeps track of the blobs are stored within files.
+type MasterIndex interface {
 	Has(ID, BlobType) bool
-	Lookup(ID, BlobType) ([]PackedBlob, bool)
+	Lookup(ID, BlobType) []PackedBlob
 	Count(BlobType) uint
 
 	// Each returns a channel that yields all blobs known to the index. When

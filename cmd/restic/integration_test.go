@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"syscall"
 	"testing"
@@ -54,7 +55,7 @@ func testRunInit(t testing.TB, opts GlobalOptions) {
 	t.Logf("repository initialized at %v", opts.Repo)
 }
 
-func testRunBackup(t testing.TB, dir string, target []string, opts BackupOptions, gopts GlobalOptions) {
+func testRunBackupAssumeFailure(t testing.TB, dir string, target []string, opts BackupOptions, gopts GlobalOptions) error {
 	ctx, cancel := context.WithCancel(gopts.ctx)
 	defer cancel()
 
@@ -69,7 +70,7 @@ func testRunBackup(t testing.TB, dir string, target []string, opts BackupOptions
 		defer cleanup()
 	}
 
-	rtest.OK(t, runBackup(opts, gopts, term, target))
+	backupErr := runBackup(opts, gopts, term, target)
 
 	cancel()
 
@@ -77,6 +78,13 @@ func testRunBackup(t testing.TB, dir string, target []string, opts BackupOptions
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	return backupErr
+}
+
+func testRunBackup(t testing.TB, dir string, target []string, opts BackupOptions, gopts GlobalOptions) {
+	err := testRunBackupAssumeFailure(t, dir, target, opts, gopts)
+	rtest.Assert(t, err == nil, "Error while backing up")
 }
 
 func testRunList(t testing.TB, tpe string, opts GlobalOptions) restic.IDs {
@@ -351,6 +359,53 @@ func TestBackupNonExistingFile(t *testing.T) {
 	testRunBackup(t, "", dirs, opts, env.gopts)
 }
 
+func TestBackupSelfHealing(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testRunInit(t, env.gopts)
+
+	p := filepath.Join(env.testdata, "test/test")
+	rtest.OK(t, os.MkdirAll(filepath.Dir(p), 0755))
+	rtest.OK(t, appendRandomData(p, 5))
+
+	opts := BackupOptions{}
+
+	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
+	testRunCheck(t, env.gopts)
+
+	r, err := OpenRepository(env.gopts)
+	rtest.OK(t, err)
+
+	// Get all tree packs
+	rtest.OK(t, r.LoadIndex(env.gopts.ctx))
+	treePacks := restic.NewIDSet()
+	for _, idx := range r.Index().(*repository.MasterIndex).All() {
+		for _, id := range idx.TreePacks() {
+			treePacks.Insert(id)
+		}
+	}
+
+	// remove all data packs
+	rtest.OK(t, r.List(env.gopts.ctx, restic.DataFile, func(id restic.ID, size int64) error {
+		if treePacks.Has(id) {
+			return nil
+		}
+		return r.Backend().Remove(env.gopts.ctx, restic.Handle{Type: restic.DataFile, Name: id.String()})
+	}))
+
+	testRunRebuildIndex(t, env.gopts)
+	// now the repo is also missing the data blob in the index; check should report this
+	rtest.Assert(t, runCheck(CheckOptions{}, env.gopts, nil) != nil,
+		"check should have reported an error")
+
+	// second backup should report an error but "heal" this situation
+	err = testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
+	rtest.Assert(t, err != nil,
+		"backup should have reported an error")
+	testRunCheck(t, env.gopts)
+}
+
 func includes(haystack []string, needle string) bool {
 	for _, s := range haystack {
 		if s == needle {
@@ -434,6 +489,36 @@ func TestBackupExclude(t *testing.T) {
 		"expected file %q not in first snapshot, but it's included", "foo.tar.gz")
 	rtest.Assert(t, !includes(files, "/testdata/private/secret/passwords.txt"),
 		"expected file %q not in first snapshot, but it's included", "passwords.txt")
+}
+
+func TestBackupErrors(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		return
+	}
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	datafile := filepath.Join("testdata", "backup-data.tar.gz")
+
+	rtest.SetupTarTestFixture(t, env.testdata, datafile)
+
+	testRunInit(t, env.gopts)
+
+	// Assume failure
+	inaccessibleFile := filepath.Join(env.testdata, "0", "0", "9", "0")
+	os.Chmod(inaccessibleFile, 0000)
+	defer func() {
+		os.Chmod(inaccessibleFile, 0644)
+	}()
+	opts := BackupOptions{}
+	gopts := env.gopts
+	gopts.stderr = ioutil.Discard
+	err := testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, gopts)
+	rtest.Assert(t, err != nil, "Assumed failure, but no error occured.")
+	rtest.Assert(t, err == ErrInvalidSourceData, "Wrong error returned")
+	snapshotIDs := testRunList(t, "snapshots", env.gopts)
+	rtest.Assert(t, len(snapshotIDs) == 1,
+		"expected one snapshot, got %v", snapshotIDs)
 }
 
 const (
