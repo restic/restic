@@ -1,10 +1,9 @@
 package main
 
 import (
-	"errors"
-
 	windowsFuse "github.com/billziss-gh/cgofuse/fuse"
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fuse"
 )
 
@@ -39,10 +38,11 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 
 	host := windowsFuse.NewFileSystemHost(fuseFsWindows)
 	host.SetCapReaddirPlus(true)
+
 	success := host.Mount(mountpoint, []string{})
 
 	if !success {
-		return errors.New("mount failed")
+		return errors.Fatal("mount failed")
 	}
 
 	return nil
