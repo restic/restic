@@ -306,6 +306,10 @@ host by using the ``--host`` flag:
 There we see that it would take 482 GiB of disk space to restore the latest
 snapshot from "myserver".
 
+In case you have multiple backups running from the same host so can also use
+``--tag`` and ``--path`` to be more specific about which snapshots you
+are looking for.
+
 But how much space does that snapshot take on disk? In other words, how much
 has restic's deduplication helped? We can check:
 
