@@ -25,9 +25,9 @@ func NewSnapshotManager(
 }
 
 // update snapshots if repository has changed
-func (self *SnapshotManager) updateSnapshots() error {
+func (self *SnapshotManager) updateSnapshots() (bool, error) {
 	if time.Since(self.lastSnapshotUpdate) < minSnapshotsReloadTime {
-		return nil
+		return false, nil
 	}
 
 	snapshots, err := restic.FindFilteredSnapshots(
@@ -35,7 +35,7 @@ func (self *SnapshotManager) updateSnapshots() error {
 		self.config.Hosts, self.config.Tags, self.config.Paths,
 	)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	if len(self.snapshots) != len(snapshots) {
@@ -47,7 +47,7 @@ func (self *SnapshotManager) updateSnapshots() error {
 
 	self.lastSnapshotUpdate = time.Now()
 
-	return nil
+	return true, nil
 }
 
 // read snapshot timestamps from the current repository-state.

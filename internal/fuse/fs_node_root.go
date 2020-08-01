@@ -32,6 +32,15 @@ func NewNodeRoot(
 
 	entries := map[string]FsNode{
 		"snapshots": NewSnapshotsDir(ctx, root),
+		"hosts": NewFsNodeFiltered(ctx, root, func(snapshot *restic.Snapshot) []string {
+			return []string{snapshot.Hostname}
+		}),
+		"ids": NewFsNodeFiltered(ctx, root, func(snapshot *restic.Snapshot) []string {
+			return []string{snapshot.ID().Str()}
+		}),
+		"tags": NewFsNodeFiltered(ctx, root, func(snapshot *restic.Snapshot) []string {
+			return snapshot.Tags
+		}),
 	}
 	root.entries = entries
 
