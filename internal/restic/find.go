@@ -2,11 +2,19 @@ package restic
 
 import "context"
 
+// TreeLoader loads a tree from a repository.
+type TreeLoader interface {
+	LoadTree(context.Context, ID) (*Tree, error)
+}
+
 // FindUsedBlobs traverses the tree ID and adds all seen blobs (trees and data
-// blobs) to the set blobs. The tree blobs in the `seen` BlobSet will not be visited
-// again.
-func FindUsedBlobs(ctx context.Context, repo Repository, treeID ID, blobs BlobSet, seen BlobSet) error {
-	blobs.Insert(BlobHandle{ID: treeID, Type: TreeBlob})
+// blobs) to the set blobs. Already seen tree blobs will not be visited again.
+func FindUsedBlobs(ctx context.Context, repo TreeLoader, treeID ID, blobs BlobSet) error {
+	h := BlobHandle{ID: treeID, Type: TreeBlob}
+	if blobs.Has(h) {
+		return nil
+	}
+	blobs.Insert(h)
 
 	tree, err := repo.LoadTree(ctx, treeID)
 	if err != nil {
@@ -20,15 +28,7 @@ func FindUsedBlobs(ctx context.Context, repo Repository, treeID ID, blobs BlobSe
 				blobs.Insert(BlobHandle{ID: blob, Type: DataBlob})
 			}
 		case "dir":
-			subtreeID := *node.Subtree
-			h := BlobHandle{ID: subtreeID, Type: TreeBlob}
-			if seen.Has(h) {
-				continue
-			}
-
-			seen.Insert(h)
-
-			err := FindUsedBlobs(ctx, repo, subtreeID, blobs, seen)
+			err := FindUsedBlobs(ctx, repo, *node.Subtree, blobs)
 			if err != nil {
 				return err
 			}

@@ -10,11 +10,6 @@ import (
 	"github.com/restic/restic/internal/restic"
 )
 
-// TreeLoader loads a tree from a repository.
-type TreeLoader interface {
-	LoadTree(context.Context, restic.ID) (*restic.Tree, error)
-}
-
 // SkipNode is returned by WalkFunc when a dir node should not be walked.
 var SkipNode = errors.New("skip this node")
 
@@ -38,7 +33,7 @@ type WalkFunc func(parentTreeID restic.ID, path string, node *restic.Node, nodeE
 // Walk calls walkFn recursively for each node in root. If walkFn returns an
 // error, it is passed up the call stack. The trees in ignoreTrees are not
 // walked. If walkFn ignores trees, these are added to the set.
-func Walk(ctx context.Context, repo TreeLoader, root restic.ID, ignoreTrees restic.IDSet, walkFn WalkFunc) error {
+func Walk(ctx context.Context, repo restic.TreeLoader, root restic.ID, ignoreTrees restic.IDSet, walkFn WalkFunc) error {
 	tree, err := repo.LoadTree(ctx, root)
 	_, err = walkFn(root, "/", nil, err)
 
@@ -60,7 +55,7 @@ func Walk(ctx context.Context, repo TreeLoader, root restic.ID, ignoreTrees rest
 // walk recursively traverses the tree, ignoring subtrees when the ID of the
 // subtree is in ignoreTrees. If err is nil and ignore is true, the subtree ID
 // will be added to ignoreTrees by walk.
-func walk(ctx context.Context, repo TreeLoader, prefix string, parentTreeID restic.ID, tree *restic.Tree, ignoreTrees restic.IDSet, walkFn WalkFunc) (ignore bool, err error) {
+func walk(ctx context.Context, repo restic.TreeLoader, prefix string, parentTreeID restic.ID, tree *restic.Tree, ignoreTrees restic.IDSet, walkFn WalkFunc) (ignore bool, err error) {
 	var allNodesIgnored = true
 
 	if len(tree.Nodes) == 0 {
