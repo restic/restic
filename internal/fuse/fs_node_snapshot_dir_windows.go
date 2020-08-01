@@ -10,6 +10,8 @@ import (
 	"github.com/restic/restic/internal/restic"
 )
 
+// FsNodeSnapshotDir represents a single directory of a snapshot inside the
+// virtual filesystem.
 type FsNodeSnapshotDir struct {
 	root        *FsNodeRoot
 	files       map[string]*restic.Node
@@ -18,6 +20,58 @@ type FsNodeSnapshotDir struct {
 
 var _ = FsNode(&FsNodeSnapshotDir{})
 
+// NewFsNodeSnapshotDirFromSnapshot creates a new FsNodeSnapshotDir for the
+// given snapshot.
+func NewFsNodeSnapshotDirFromSnapshot(
+	ctx context.Context, root *FsNodeRoot, snapshot *restic.Snapshot,
+) (*FsNodeSnapshotDir, error) {
+
+	debug.Log("id %v (tree %v)", snapshot.ID(), snapshot.Tree)
+
+	tree, err := root.repo.LoadTree(ctx, *snapshot.Tree)
+	if err != nil {
+		debug.Log("loadTree(%v) failed: %v", snapshot.ID(), err)
+		return nil, err
+	}
+
+	files := make(map[string]*restic.Node)
+	directories := make(map[string]*FsNodeSnapshotDir)
+
+	for _, n := range tree.Nodes {
+
+		treeNodes, err := replaceSpecialNodes(ctx, root.repo, n)
+		if err != nil {
+			debug.Log("replaceSpecialNodes(%v) failed: %v", n, err)
+			return nil, err
+		}
+
+		for _, node := range treeNodes {
+
+			nodeName := cleanupNodeName(node.Name)
+
+			switch node.Type {
+			case "file":
+				files[nodeName] = node
+			case "dir":
+				child, err := newFsNodeSnapshotDir(ctx, root, node)
+
+				if err != nil {
+					return nil, err
+				}
+
+				directories[nodeName] = child
+			}
+		}
+	}
+
+	return &FsNodeSnapshotDir{
+		root:        root,
+		files:       files,
+		directories: directories,
+	}, nil
+}
+
+// newFsNodeSnapshotDir creates a new FsNodeSnapshotDir for the given node.
 func newFsNodeSnapshotDir(
 	ctx context.Context, root *FsNodeRoot, node *restic.Node,
 ) (*FsNodeSnapshotDir, error) {
@@ -33,11 +87,9 @@ func newFsNodeSnapshotDir(
 	files := make(map[string]*restic.Node)
 	directories := make(map[string]*FsNodeSnapshotDir)
 
-	debug.Log("newFsNodeSnapshotDir tree nodes %v", len(tree.Nodes))
-
 	for _, node := range tree.Nodes {
 
-		debug.Log("newFsNodeSnapshotDir handling node %v", node.Name)
+		debug.Log("handling node %v", node.Name)
 
 		nodeName := cleanupNodeName(node.Name)
 
@@ -62,59 +114,11 @@ func newFsNodeSnapshotDir(
 	}, nil
 }
 
-func NewFsNodeSnapshotDirFromSnapshot(
-	ctx context.Context, root *FsNodeRoot, snapshot *restic.Snapshot,
-) (*FsNodeSnapshotDir, error) {
-
-	debug.Log("NewFsNodeSnapshotDirFromSnapshot for id %v (tree %v)", snapshot.ID(), snapshot.Tree)
-
-	tree, err := root.repo.LoadTree(ctx, *snapshot.Tree)
-	if err != nil {
-		debug.Log("NewFsNodeSnapshotDirFromSnapshot loadTree(%v) failed: %v", snapshot.ID(), err)
-		return nil, err
-	}
-
-	files := make(map[string]*restic.Node)
-	directories := make(map[string]*FsNodeSnapshotDir)
-
-	for _, n := range tree.Nodes {
-
-		treeNodes, err := replaceSpecialNodes(ctx, root.repo, n)
-		if err != nil {
-			debug.Log("  replaceSpecialNodes(%v) failed: %v", n, err)
-			return nil, err
-		}
-
-		for _, node := range treeNodes {
-
-			nodeName := cleanupNodeName(node.Name)
-
-			switch node.Type {
-			case "file":
-				files[nodeName] = node
-			case "dir":
-				child, err := newFsNodeSnapshotDir(ctx, root, node)
-
-				if err != nil {
-					return nil, err
-				}
-
-				directories[nodeName] = child
-				debug.Log("NewFsNodeSnapshotDirFromSnapshot: child %v", nodeName)
-			}
-		}
-	}
-
-	return &FsNodeSnapshotDir{
-		root:        root,
-		files:       files,
-		directories: directories,
-	}, nil
-}
-
+// Readdir lists all items in the specified path. Results are returned
+// through the given callback function.
 func (self *FsNodeSnapshotDir) Readdir(path []string, fill FsListItemCallback) {
 
-	debug.Log("FsNodeSnapshotDir: Readdir(%v)", path)
+	debug.Log("Readdir(%v)", path)
 
 	fill(".", nil, 0)
 	fill("..", nil, 0)
@@ -139,9 +143,10 @@ func (self *FsNodeSnapshotDir) Readdir(path []string, fill FsListItemCallback) {
 	}
 }
 
+// GetAttributes fetches the attributes of the specified file or directory.
 func (self *FsNodeSnapshotDir) GetAttributes(path []string, stat *fuse.Stat_t) bool {
 
-	debug.Log("FsNodeSnapshotDir: ListDirectories(%v)", path)
+	debug.Log("ListDirectories(%v)", path)
 
 	lenPath := len(path)
 
@@ -165,6 +170,7 @@ func (self *FsNodeSnapshotDir) GetAttributes(path []string, stat *fuse.Stat_t) b
 	return false
 }
 
+// Open opens the file for the given path.
 func (self *FsNodeSnapshotDir) Open(path []string, flags int) (errc int, fh uint64) {
 
 	lenPath := len(path)
@@ -187,6 +193,7 @@ func (self *FsNodeSnapshotDir) Open(path []string, flags int) (errc int, fh uint
 	return -fuse.ENOENT, ^uint64(0)
 }
 
+// Read reads data to the given buffer from the specified file.
 func (self *FsNodeSnapshotDir) Read(path []string, buff []byte, ofst int64, fh uint64) (n int) {
 
 	lenPath := len(path)
@@ -258,6 +265,7 @@ func (self *FsNodeSnapshotDir) Read(path []string, buff []byte, ofst int64, fh u
 	return -fuse.ENOENT
 }
 
+// cumsize calculates the size of all blobs for the given node.
 func (self *FsNodeSnapshotDir) cumsize(node *restic.Node) ([]uint64, error) {
 
 	var bytes uint64
@@ -277,6 +285,7 @@ func (self *FsNodeSnapshotDir) cumsize(node *restic.Node) ([]uint64, error) {
 	return cumsize, nil
 }
 
+// getBlobAt fetches a specific blob for a given node from the repository.
 func (self *FsNodeSnapshotDir) getBlobAt(ctx context.Context, node *restic.Node, i int) (blob []byte, err error) {
 	debug.Log("getBlobAt(%v, %v)", node.Name, i)
 
@@ -296,6 +305,7 @@ func (self *FsNodeSnapshotDir) getBlobAt(ctx context.Context, node *restic.Node,
 	return blob, nil
 }
 
+// nodeToStat convert node ifnromation to filesystem stat information.
 func nodeToStat(node *restic.Node, stat *fuse.Stat_t) {
 
 	stat.Atim = fuse.NewTimespec(node.AccessTime)

@@ -12,6 +12,8 @@ type NamedSnapshotDir struct {
 	snapshotDir *FsNodeSnapshotDir
 }
 
+// FsNodeFiltered is a special node that filters and aggregates snapshots
+// by a filter criteria e.g. by hostname or tags.
 type FsNodeFiltered struct {
 	root               *FsNodeRoot
 	itemToSnapshots    map[string][]NamedSnapshotDir
@@ -20,6 +22,9 @@ type FsNodeFiltered struct {
 
 var _ = FsNode(&FsNodeSnapshotDir{})
 
+// NewFsNodeFiltered create a new FsNodeFiltered filesystem node.
+// snapshotToItemName is a callback used to aggregate snapshots
+// into different virtual folders.
 func NewFsNodeFiltered(
 	ctx context.Context, root *FsNodeRoot,
 	snapshotToItemName func(snapshot *restic.Snapshot) []string,
@@ -35,6 +40,8 @@ func NewFsNodeFiltered(
 	return node
 }
 
+// updateItems updates the items inside this node from the available
+// snapshots.
 func (self *FsNodeFiltered) updateItems() {
 	itemToSnapshots := make(map[string][]NamedSnapshotDir)
 
@@ -54,7 +61,7 @@ func (self *FsNodeFiltered) updateItems() {
 
 		if err != nil {
 			debug.Log(
-				"FsNodeFiltered: failed to create FsNodeSnapshotDir: %v",
+				"failed to create FsNodeSnapshotDir: %v",
 				err,
 			)
 			continue
@@ -71,9 +78,11 @@ func (self *FsNodeFiltered) updateItems() {
 	self.itemToSnapshots = itemToSnapshots
 }
 
+// Readdir lists all items in the specified path. Results are returned
+// through the given callback function.
 func (self *FsNodeFiltered) Readdir(path []string, fill FsListItemCallback) {
 
-	debug.Log("FsNodeFiltered: Readdir(%v)", path)
+	debug.Log("Readdir(%v)", path)
 
 	pathLength := len(path)
 
@@ -111,7 +120,7 @@ func (self *FsNodeFiltered) Readdir(path []string, fill FsListItemCallback) {
 		head := path[0]
 		head2 := path[1]
 
-		debug.Log("FsNodeFiltered: handle subtree %v", head)
+		debug.Log("handle subtree %v", head)
 
 		if items, found := self.itemToSnapshots[head]; found {
 			for _, item := range items {
@@ -124,9 +133,10 @@ func (self *FsNodeFiltered) Readdir(path []string, fill FsListItemCallback) {
 	}
 }
 
+// GetAttributes fetches the attributes of the specified file or directory.
 func (self *FsNodeFiltered) GetAttributes(path []string, stat *fuse.Stat_t) bool {
 
-	debug.Log("FsNodeFiltered: GetAttributes(%v)", path)
+	debug.Log("GetAttributes(%v)", path)
 
 	pathLength := len(path)
 
@@ -175,6 +185,7 @@ func (self *FsNodeFiltered) GetAttributes(path []string, stat *fuse.Stat_t) bool
 	return false
 }
 
+// Open opens the file for the given path.
 func (self *FsNodeFiltered) Open(path []string, flags int) (errc int, fh uint64) {
 
 	pathLength := len(path)
@@ -216,6 +227,7 @@ func (self *FsNodeFiltered) Open(path []string, flags int) (errc int, fh uint64)
 	return -fuse.ENOENT, ^uint64(0)
 }
 
+// Read reads data to the given buffer from the specified file.
 func (self *FsNodeFiltered) Read(path []string, buff []byte, ofst int64, fh uint64) (n int) {
 
 	if len(path) > 2 {

@@ -7,6 +7,7 @@ import (
 	"golang.org/x/net/context"
 )
 
+// FsNodeRoot is the root node of the fuse filesystem.
 type FsNodeRoot struct {
 	ctx             context.Context
 	repo            restic.Repository
@@ -18,8 +19,10 @@ type FsNodeRoot struct {
 
 var _ = FsNode(&FsNodeRoot{})
 
-func NewNodeRoot(
-	ctx context.Context, repo restic.Repository, cfg Config, snapshotManager SnapshotManager,
+// NewNodeRoot creates a new FsNodeRoot for the given repository.
+func NewFsNodeRoot(
+	ctx context.Context, repo restic.Repository,
+	cfg Config, snapshotManager SnapshotManager,
 ) *FsNodeRoot {
 
 	root := &FsNodeRoot{
@@ -47,9 +50,11 @@ func NewNodeRoot(
 	return root
 }
 
+// Readdir lists all items in the specified path. Results are returned
+// through the given callback function.
 func (self *FsNodeRoot) Readdir(path []string, fill FsListItemCallback) {
 
-	debug.Log("FsNodeRoot: Readdir(%v)", path)
+	debug.Log("Readdir(%v)", path)
 
 	if len(path) == 0 {
 		fill(".", nil, 0)
@@ -65,6 +70,7 @@ func (self *FsNodeRoot) Readdir(path []string, fill FsListItemCallback) {
 	}
 }
 
+// GetAttributes fetches the attributes of the specified file or directory.
 func (self *FsNodeRoot) GetAttributes(path []string, stat *fuse.Stat_t) bool {
 
 	if len(path) == 0 {
@@ -79,6 +85,7 @@ func (self *FsNodeRoot) GetAttributes(path []string, stat *fuse.Stat_t) bool {
 	return false
 }
 
+// Open opens the file for the given path.
 func (self *FsNodeRoot) Open(path []string, flags int) (errc int, fh uint64) {
 
 	lenPath := len(path)
@@ -94,6 +101,7 @@ func (self *FsNodeRoot) Open(path []string, flags int) (errc int, fh uint64) {
 	return -fuse.ENOENT, ^uint64(0)
 }
 
+// Read reads data to the given buffer from the specified file.
 func (self *FsNodeRoot) Read(path []string, buff []byte, ofst int64, fh uint64) (n int) {
 
 	lenPath := len(path)

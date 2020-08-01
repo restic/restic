@@ -8,6 +8,8 @@ import (
 	"golang.org/x/net/context"
 )
 
+// SnapshotManager encapsulates access to and updating of available snapshots
+// for a repository.
 type SnapshotManager struct {
 	ctx                context.Context
 	repo               restic.Repository
@@ -18,13 +20,14 @@ type SnapshotManager struct {
 	snapshotNameLatest string
 }
 
+// NewSnapshotManager initializes a new SnapshotManager for the given repository.
 func NewSnapshotManager(
 	ctx context.Context, repo restic.Repository, config Config,
 ) *SnapshotManager {
 	return &SnapshotManager{ctx: ctx, repo: repo, config: config}
 }
 
-// update snapshots if repository has changed
+// updateSnapshots update snapshots if repository has changed.
 func (self *SnapshotManager) updateSnapshots() (bool, error) {
 	if time.Since(self.lastSnapshotUpdate) < minSnapshotsReloadTime {
 		return false, nil
@@ -50,7 +53,8 @@ func (self *SnapshotManager) updateSnapshots() (bool, error) {
 	return true, nil
 }
 
-// read snapshot timestamps from the current repository-state.
+// updateSnapshotNames reads snapshot timestamps from the current
+// repository-state.
 func (self *SnapshotManager) updateSnapshotNames(tag, host, template string) {
 
 	var latestTime time.Time

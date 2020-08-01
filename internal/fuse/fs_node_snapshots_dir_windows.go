@@ -6,8 +6,11 @@ import (
 	"golang.org/x/net/context"
 )
 
+// snapshotDirLatestName is a specially handled alias for latest snapshot
 const snapshotDirLatestName = "latest"
 
+// FsNodeSnapshotsDir is a virtual directory listing all available snapshots
+// in the repository.
 type FsNodeSnapshotsDir struct {
 	ctx   context.Context
 	root  *FsNodeRoot
@@ -16,13 +19,18 @@ type FsNodeSnapshotsDir struct {
 
 var _ = FsNode(&FsNodeSnapshotsDir{})
 
+// NewSnapshotsDir creates a new virtual directory,
 func NewSnapshotsDir(ctx context.Context, root *FsNodeRoot) *FsNodeSnapshotsDir {
-	return &FsNodeSnapshotsDir{ctx: ctx, root: root, nodes: make(map[string]*FsNodeSnapshotDir)}
+	return &FsNodeSnapshotsDir{
+		ctx: ctx, root: root, nodes: make(map[string]*FsNodeSnapshotDir),
+	}
 }
 
+// Readdir lists all items in the specified path. Results are returned
+// through the given callback function.
 func (self *FsNodeSnapshotsDir) Readdir(path []string, fill FsListItemCallback) {
 
-	debug.Log("FsNodeSnapshotsDir: Readdir(%v)", path)
+	debug.Log("Readdir(%v)", path)
 
 	if len(path) == 0 {
 
@@ -42,7 +50,7 @@ func (self *FsNodeSnapshotsDir) Readdir(path []string, fill FsListItemCallback) 
 
 		head := path[0]
 
-		debug.Log("FsNodeSnapshotsDir: handle subtree %v", head)
+		debug.Log("handle subtree %v", head)
 
 		if head == snapshotDirLatestName {
 			head = self.root.snapshotManager.snapshotNameLatest
@@ -57,25 +65,26 @@ func (self *FsNodeSnapshotsDir) Readdir(path []string, fill FsListItemCallback) 
 				if err == nil {
 					self.nodes[head] = node
 				} else {
-					debug.Log("FsNodeSnapshotsDir: Failed to create node for %v: %v", head, err.Error())
+					debug.Log("Failed to create node for %v: %v", head, err.Error())
 				}
 			}
 
 			if node, contained := self.nodes[head]; contained {
 				node.Readdir(path[1:], fill)
 			} else {
-				debug.Log("FsNodeSnapshotsDir: ListDirectories error for %v", head)
+				debug.Log("ListDirectories error for %v", head)
 			}
 
 		} else {
-			debug.Log("FsNodeSnapshotsDir: Snapshot not found: %v", head)
+			debug.Log("Snapshot not found: %v", head)
 		}
 	}
 }
 
+// GetAttributes fetches the attributes of the specified file or directory.
 func (self *FsNodeSnapshotsDir) GetAttributes(path []string, stat *fuse.Stat_t) bool {
 
-	debug.Log("FsNodeSnapshotsDir: GetAttributes(%v)", path)
+	debug.Log("GetAttributes(%v)", path)
 
 	pathLength := len(path)
 
@@ -113,6 +122,7 @@ func (self *FsNodeSnapshotsDir) GetAttributes(path []string, stat *fuse.Stat_t) 
 	return false
 }
 
+// Open opens the file for the given path.
 func (self *FsNodeSnapshotsDir) Open(path []string, flags int) (errc int, fh uint64) {
 
 	pathLength := len(path)
@@ -145,6 +155,7 @@ func (self *FsNodeSnapshotsDir) Open(path []string, flags int) (errc int, fh uin
 	return -fuse.ENOENT, ^uint64(0)
 }
 
+// Read reads data to the given buffer from the specified file.
 func (self *FsNodeSnapshotsDir) Read(path []string, buff []byte, ofst int64, fh uint64) (n int) {
 
 	pathLength := len(path)
