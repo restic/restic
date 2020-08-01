@@ -173,7 +173,8 @@ func newBackend(cfg Config, lim limiter.Limiter) (*Backend, error) {
 		DialTLS: func(network, address string, cfg *tls.Config) (net.Conn, error) {
 			debug.Log("new connection requested, %v %v", network, address)
 			if dialCount > 0 {
-				panic("dial count > 0")
+				// the connection to the child process is already closed
+				return nil, errors.New("rclone stdio connection already closed")
 			}
 			dialCount++
 			return conn, nil

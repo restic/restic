@@ -29,9 +29,11 @@ func TestRcloneExit(t *testing.T) {
 	rtest.OK(t, err)
 	t.Log("killed rclone")
 
-	_, err = be.Stat(context.TODO(), restic.Handle{
-		Name: "foo",
-		Type: restic.DataFile,
-	})
-	rtest.Assert(t, err != nil, "expected an error")
+	for i := 0; i < 10; i++ {
+		_, err = be.Stat(context.TODO(), restic.Handle{
+			Name: "foo",
+			Type: restic.DataFile,
+		})
+		rtest.Assert(t, err != nil, "expected an error")
+	}
 }
