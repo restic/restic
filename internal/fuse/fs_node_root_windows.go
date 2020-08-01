@@ -60,7 +60,7 @@ func (self *FsNodeRoot) Readdir(path []string, fill FsListItemCallback) {
 		fill(".", nil, 0)
 		fill("..", nil, 0)
 
-		for name, _ := range self.entries {
+		for name := range self.entries {
 			fill(name, &defaultDirectoryStat, 0)
 		}
 	} else {

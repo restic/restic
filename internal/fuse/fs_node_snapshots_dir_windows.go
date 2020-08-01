@@ -43,7 +43,7 @@ func (self *FsNodeSnapshotsDir) Readdir(path []string, fill FsListItemCallback) 
 			fill(snapshotDirLatestName, &defaultDirectoryStat, 0)
 		}
 
-		for name, _ := range self.root.snapshotManager.snapshotByName {
+		for name := range self.root.snapshotManager.snapshotByName {
 			fill(name, &defaultDirectoryStat, 0)
 		}
 	} else {

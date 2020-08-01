@@ -97,7 +97,7 @@ func (self *FsNodeFiltered) Readdir(path []string, fill FsListItemCallback) {
 		fill(".", nil, 0)
 		fill("..", nil, 0)
 
-		for name, _ := range self.itemToSnapshots {
+		for name := range self.itemToSnapshots {
 			fill(name, &defaultDirectoryStat, 0)
 		}
 
