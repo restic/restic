@@ -7,7 +7,7 @@ import (
 	"github.com/restic/restic/internal/fuse"
 )
 
-func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
+func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) (result error) {
 	debug.Log("start mount")
 	defer debug.Log("finish mount")
 
@@ -38,6 +38,17 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 
 	host := windowsFuse.NewFileSystemHost(fuseFsWindows)
 	host.SetCapReaddirPlus(true)
+
+	// Right now it is not possible to check if winfsp is installed before
+	// mounting the filesystem. Until https://github.com/billziss-gh/cgofuse/issues/48
+	// is closed this is a workaround to handle it in a user-friendly way.
+	defer func() {
+		if r := recover(); r != nil {
+			result = errors.Fatalf(
+				"mount failed, please make sure winfsp is installed: %v", r,
+			)
+		}
+	}()
 
 	success := host.Mount(mountpoint, []string{})
 
