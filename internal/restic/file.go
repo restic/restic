@@ -19,6 +19,17 @@ const (
 	ConfigFile            = "config"
 )
 
+func (t FileType) String() string {
+	switch t {
+	case PackFile:
+		return "pack file"
+	case KeyFile, LockFile, SnapshotFile, IndexFile, ConfigFile:
+	default:
+		return "invalid file type"
+	}
+	return string(t) + " file"
+}
+
 // Handle is used to store and access data in a backend.
 type Handle struct {
 	Type FileType
