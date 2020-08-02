@@ -25,16 +25,21 @@ const numDeleteWorkers = 8
 func deleteFiles(gopts GlobalOptions, ignoreError bool, repo restic.Repository, fileList restic.IDSet, fileType restic.FileType) error {
 	totalCount := len(fileList)
 	fileChan := make(chan restic.ID)
-	go func() {
+	wg, ctx := errgroup.WithContext(gopts.ctx)
+	wg.Go(func() error {
+		defer close(fileChan)
 		for id := range fileList {
-			fileChan <- id
+			select {
+			case fileChan <- id:
+			case <-ctx.Done():
+				return nil
+			}
 		}
-		close(fileChan)
-	}()
+		return nil
+	})
 
 	bar := newProgressMax(!gopts.JSON && !gopts.Quiet, uint64(totalCount), "files deleted")
 	defer bar.Done()
-	wg, ctx := errgroup.WithContext(gopts.ctx)
 	for i := 0; i < numDeleteWorkers; i++ {
 		wg.Go(func() error {
 			for id := range fileChan {
