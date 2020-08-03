@@ -5,6 +5,7 @@ require (
 	cloud.google.com/go v0.37.4 // indirect
 	github.com/Azure/azure-sdk-for-go v27.3.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.9.2 // indirect
+	github.com/billziss-gh/cgofuse v1.4.0
 	github.com/cenkalti/backoff v2.1.1+incompatible
 	github.com/cespare/xxhash v1.1.0
 	github.com/cpuguy83/go-md2man v1.0.10 // indirect

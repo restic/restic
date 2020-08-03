@@ -1,0 +1,5 @@
+Enhancement: Mount support on windows using winfsp
+
+Mounting repsitories is now supported on windows using winfsp.
+
+https://github.com/restic/restic/pull/2862
