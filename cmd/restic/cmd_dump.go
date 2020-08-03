@@ -224,7 +224,7 @@ func tarTree(ctx context.Context, repo restic.Repository, rootNode *restic.Node,
 
 		if node.Type == "file" || node.Type == "symlink" || node.Type == "dir" {
 			err := tarNode(ctx, tw, node, repo)
-			if err != err {
+			if err != nil {
 				return false, err
 			}
 		}
