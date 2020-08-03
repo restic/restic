@@ -17,6 +17,11 @@ import (
 // into a new pack. Returned is the list of obsolete packs which can then
 // be removed.
 func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet, p *restic.Progress) (obsoletePacks restic.IDSet, err error) {
+	if p != nil {
+		p.Start()
+		defer p.Done()
+	}
+
 	debug.Log("repacking %d packs while keeping %d blobs", len(packs), len(keepBlobs))
 
 	for packID := range packs {

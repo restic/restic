@@ -262,13 +262,11 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 
 	var obsoletePacks restic.IDSet
 	if len(rewritePacks) != 0 {
-		bar = newProgressMax(!gopts.Quiet, uint64(len(rewritePacks)), "packs rewritten")
-		bar.Start()
+		bar := newProgressMax(!gopts.Quiet, uint64(len(rewritePacks)), "packs rewritten")
 		obsoletePacks, err = repository.Repack(ctx, repo, rewritePacks, usedBlobs, bar)
 		if err != nil {
 			return err
 		}
-		bar.Done()
 	}
 
 	removePacks.Merge(obsoletePacks)
@@ -295,6 +293,7 @@ func getUsedBlobs(gopts GlobalOptions, repo restic.Repository, snapshots []*rest
 
 	bar := newProgressMax(!gopts.Quiet, uint64(len(snapshots)), "snapshots")
 	bar.Start()
+	defer bar.Done()
 	for _, sn := range snapshots {
 		debug.Log("process snapshot %v", sn.ID())
 
