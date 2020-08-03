@@ -2050,6 +2050,11 @@ func TestMetadataChanged(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// create want node the same way the archiver
+	// does when WithAtime is false by setting
+	// AccessTime to ModTime
+	want.AccessTime = want.ModTime
+
 	fs := &StatFS{
 		FS: fs.Local{},
 		OverrideLstat: map[string]os.FileInfo{
