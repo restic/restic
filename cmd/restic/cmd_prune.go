@@ -295,6 +295,7 @@ func getUsedBlobs(gopts GlobalOptions, repo restic.Repository, snapshots []*rest
 
 	bar := newProgressMax(!gopts.Quiet, uint64(len(snapshots)), "snapshots")
 	bar.Start()
+	defer bar.Done()
 	for _, sn := range snapshots {
 		debug.Log("process snapshot %v", sn.ID())
 
