@@ -83,7 +83,7 @@ You can even backup individual files in the same repository (not passing
     snapshot 249d0210 saved
 
 If you're interested in what restic does, pass ``--verbose`` twice (or
-``--verbose 2``) to display detailed information about each file and directory
+``--verbose=2``) to display detailed information about each file and directory
 restic encounters:
 
 .. code-block:: console
