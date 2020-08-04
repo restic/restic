@@ -281,6 +281,17 @@ and displays a small statistic, just pass the command two snapshot IDs:
       Added:   16.403 MiB
       Removed: 16.402 MiB
 
+To compare specific subpaths in the two snapshots, you can use the
+``--from-root`` and ``--to-root`` flags. This is especially useful if
+the snapshots were created with different root paths, or when the folders
+you want to compare have been moved around in the filesystem.
+
+Example:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo diff 5845b002 2ab627a6 --from-root=Pictures/Library/2020 --to-root=Photos/2020
+
 
 Backing up special items and metadata
 *************************************
