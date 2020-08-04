@@ -60,7 +60,7 @@ Usage help is available:
       -q, --quiet                      do not output comprehensive progress report
       -r, --repo repository            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
           --tls-client-cert file       path to a file containing PEM encoded TLS client certificate and private key
-      -v, --verbose n                  be verbose (specify --verbose multiple times or level n)
+      -v, --verbose n                  be verbose (specify --verbose multiple times or level --verbose=n)
 
     Use "restic [command] --help" for more information about a command.
 
@@ -122,7 +122,7 @@ command:
       -q, --quiet                      do not output comprehensive progress report
       -r, --repo repository            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
           --tls-client-cert file       path to a file containing PEM encoded TLS client certificate and private key
-      -v, --verbose n                  be verbose (specify --verbose multiple times or level n)
+      -v, --verbose n                  be verbose (specify --verbose multiple times or level --verbose=n)
 
 Subcommand that support showing progress information such as ``backup``,
 ``check`` and ``prune`` will do so unless the quiet flag ``-q`` or
