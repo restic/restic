@@ -1,0 +1,8 @@
+Enhancement: Add content hash to `ls --json` output
+
+Added a new `content_hash` field to the `ls --json` output.
+
+These content hashes can only be compared within a single backup repository.
+
+https://github.com/restic/restic/issues/2870
+https://github.com/restic/restic/pull/2871
