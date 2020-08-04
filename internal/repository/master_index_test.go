@@ -1,6 +1,7 @@
 package repository_test
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"testing"
@@ -167,6 +168,14 @@ func TestMasterMergeFinalIndexes(t *testing.T) {
 	rtest.Equals(t, []*repository.Index{idx1, idx2}, finalIndexes)
 
 	mIdx.MergeFinalIndexes()
+	allIndexes := mIdx.All()
+	rtest.Equals(t, 1, len(allIndexes))
+
+	blobCount := 0
+	for _ = range mIdx.Each(context.TODO()) {
+		blobCount++
+	}
+	rtest.Equals(t, 2, blobCount)
 
 	blobs := mIdx.Lookup(idInIdx1, restic.DataBlob)
 	rtest.Equals(t, []restic.PackedBlob{blob1}, blobs)
@@ -176,6 +185,32 @@ func TestMasterMergeFinalIndexes(t *testing.T) {
 
 	blobs = mIdx.Lookup(restic.NewRandomID(), restic.DataBlob)
 	rtest.Assert(t, blobs == nil, "Expected no blobs when fetching with a random id")
+
+	// merge another index containing identical blobs
+	idx3 := repository.NewIndex()
+	idx3.Store(blob1)
+	idx3.Store(blob2)
+
+	mIdx.Insert(idx3)
+	finalIndexes = mIdx.FinalizeNotFinalIndexes()
+	rtest.Equals(t, []*repository.Index{idx3}, finalIndexes)
+
+	mIdx.MergeFinalIndexes()
+	allIndexes = mIdx.All()
+	rtest.Equals(t, 1, len(allIndexes))
+
+	// Index should have same entries as before!
+	blobs = mIdx.Lookup(idInIdx1, restic.DataBlob)
+	rtest.Equals(t, []restic.PackedBlob{blob1}, blobs)
+
+	blobs = mIdx.Lookup(idInIdx2, restic.DataBlob)
+	rtest.Equals(t, []restic.PackedBlob{blob2}, blobs)
+
+	blobCount = 0
+	for _ = range mIdx.Each(context.TODO()) {
+		blobCount++
+	}
+	rtest.Equals(t, 2, blobCount)
 }
 
 func createRandomMasterIndex(rng *rand.Rand, num, size int) (*repository.MasterIndex, restic.ID) {
