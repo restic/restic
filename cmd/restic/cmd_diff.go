@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"path"
 	"reflect"
 	"sort"
+	"strings"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -41,6 +43,8 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 // DiffOptions collects all options for the diff command.
 type DiffOptions struct {
 	ShowMetadata bool
+	FromRoot     string
+	ToRoot       string
 }
 
 var diffOptions DiffOptions
@@ -50,6 +54,33 @@ func init() {
 
 	f := cmdDiff.Flags()
 	f.BoolVar(&diffOptions.ShowMetadata, "metadata", false, "print changes in metadata")
+	f.StringVar(&diffOptions.FromRoot, "from-root", "", "root subpath in first snapshot")
+	f.StringVar(&diffOptions.ToRoot, "to-root", "", "root subpath in second snapshot")
+}
+
+func changeSnapshotDir(ctx context.Context, repo *repository.Repository, id *restic.ID, dir string) (*restic.ID, error) {
+	if id == nil {
+		return nil, fmt.Errorf("nil id")
+	}
+	dirs := strings.Split(path.Clean(dir), "/")
+	for _, name := range dirs {
+		if name == "" || name == "." {
+			continue
+		}
+		tree, err := repo.LoadTree(ctx, *id)
+		if err != nil {
+			return nil, err
+		}
+		node := tree.Find(name)
+		if node == nil {
+			return nil, fmt.Errorf("path %s: tree node not found: %s", dir, name)
+		}
+		if node.Type != "dir" || node.Subtree == nil {
+			return nil, fmt.Errorf("path %s: node not a dir: %s", dir, name)
+		}
+		id = node.Subtree
+	}
+	return id, nil
 }
 
 func loadSnapshot(ctx context.Context, repo *repository.Repository, desc string) (*restic.Snapshot, error) {
@@ -332,6 +363,16 @@ func runDiff(opts DiffOptions, gopts GlobalOptions, args []string) error {
 		return errors.Errorf("snapshot %v has nil tree", sn2.ID().Str())
 	}
 
+	tree1, err := changeSnapshotDir(ctx, repo, sn1.Tree, opts.FromRoot)
+	if err != nil {
+		return fmt.Errorf("first snapshot: %v", err)
+	}
+
+	tree2, err := changeSnapshotDir(ctx, repo, sn2.Tree, opts.ToRoot)
+	if err != nil {
+		return fmt.Errorf("second snapshot: %v", err)
+	}
+
 	c := &Comparer{
 		repo: repo,
 		opts: diffOptions,
@@ -339,7 +380,7 @@ func runDiff(opts DiffOptions, gopts GlobalOptions, args []string) error {
 
 	stats := NewDiffStats()
 
-	err = c.diffTree(ctx, stats, "/", *sn1.Tree, *sn2.Tree)
+	err = c.diffTree(ctx, stats, "/", *tree1, *tree2)
 	if err != nil {
 		return err
 	}
