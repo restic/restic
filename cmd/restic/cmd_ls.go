@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/minio/sha256-simd"
 	"github.com/spf13/cobra"
 
 	"github.com/restic/restic/internal/errors"
@@ -75,17 +77,43 @@ type lsSnapshot struct {
 }
 
 type lsNode struct {
-	Name       string      `json:"name"`
-	Type       string      `json:"type"`
-	Path       string      `json:"path"`
-	UID        uint32      `json:"uid"`
-	GID        uint32      `json:"gid"`
-	Size       uint64      `json:"size,omitempty"`
-	Mode       os.FileMode `json:"mode,omitempty"`
-	ModTime    time.Time   `json:"mtime,omitempty"`
-	AccessTime time.Time   `json:"atime,omitempty"`
-	ChangeTime time.Time   `json:"ctime,omitempty"`
-	StructType string      `json:"struct_type"` // "node"
+	Name        string      `json:"name"`
+	Type        string      `json:"type"`
+	Path        string      `json:"path"`
+	UID         uint32      `json:"uid"`
+	GID         uint32      `json:"gid"`
+	Size        uint64      `json:"size,omitempty"`
+	Mode        os.FileMode `json:"mode,omitempty"`
+	ModTime     time.Time   `json:"mtime,omitempty"`
+	AccessTime  time.Time   `json:"atime,omitempty"`
+	ChangeTime  time.Time   `json:"ctime,omitempty"`
+	StructType  string      `json:"struct_type"` // "node"
+	ContentHash contentHash `json:"content_hash,omitempty"`
+}
+
+// contentHash creates a single content hash string out of the content blocks.
+// If the content contains a single block, it returns "sha256:...".
+// If the content contains multiple blocks, it returns "multi:..." with a hash
+// of each of the block hashes. This is useful for detecting file changes between
+// snapshots in one repo, but not for comparing different repos.
+// If restic ever starts storing the full file hash, we can return that instead.
+type contentHash restic.IDs
+
+// MarshalText implements the TextMarshaler interface to override the JSON
+// output.
+func (ch contentHash) MarshalText() (text []byte, err error) {
+	if len(ch) == 0 {
+		return nil, nil
+	}
+	if len(ch) == 1 {
+		return []byte("sha256:" + ch[0].String()), nil
+	}
+	// Construct a hash from multiple block hashes
+	h := sha256.New()
+	for _, id := range ch {
+		h.Write(id[:])
+	}
+	return []byte("multi:" + hex.EncodeToString(h.Sum(nil))), nil
 }
 
 func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
@@ -169,17 +197,18 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 
 		printNode = func(path string, node *restic.Node) {
 			enc.Encode(lsNode{
-				Name:       node.Name,
-				Type:       node.Type,
-				Path:       path,
-				UID:        node.UID,
-				GID:        node.GID,
-				Size:       node.Size,
-				Mode:       node.Mode,
-				ModTime:    node.ModTime,
-				AccessTime: node.AccessTime,
-				ChangeTime: node.ChangeTime,
-				StructType: "node",
+				Name:        node.Name,
+				Type:        node.Type,
+				Path:        path,
+				UID:         node.UID,
+				GID:         node.GID,
+				Size:        node.Size,
+				Mode:        node.Mode,
+				ModTime:     node.ModTime,
+				AccessTime:  node.AccessTime,
+				ChangeTime:  node.ChangeTime,
+				StructType:  "node",
+				ContentHash: contentHash(node.Content),
 			})
 		}
 	} else {
