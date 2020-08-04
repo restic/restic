@@ -1,0 +1,10 @@
+Enhancement: Option for root paths in diff command
+
+The diff command now has new `--from-root` and `--to-root` flags that allow you
+to compare specific subpaths within snapshots.
+
+This allows you to compare a specific subset of a snapshots, and to compare files in 
+snapshots that were taken with different root paths.
+
+https://github.com/restic/restic/issues/2872
+https://github.com/restic/restic/pull/2873
