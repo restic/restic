@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/binary"
+	"sort"
 	"strings"
 
 	"github.com/restic/restic/internal/crypto"
@@ -233,7 +234,14 @@ func (info *repoinfo) print() {
 		"", "count", "raw size", "crypto", "encr size")
 	Printf("%s\n", strings.Repeat("-", 69))
 
-	for s, ri := range info.byString {
+	var sortedStrings []string
+	for s := range info.byString {
+		sortedStrings = append(sortedStrings, s)
+	}
+	sort.Strings(sortedStrings)
+
+	for _, s := range sortedStrings {
+		ri := info.byString[s]
 		Printf("%-15s %11d | %11s | %11s | %11s\n",
 			s, ri.count, formatBytes(ri.size),
 			formatBytes(ri.crypto), formatBytes(ri.size+ri.crypto))
@@ -249,8 +257,15 @@ func (info *repoinfo) printPercent() {
 		"", "count", "raw size", "crypto", "encr size")
 	Printf("%s\n", strings.Repeat("-", 69))
 
-	for s, ri := range info.byString {
-		Printf("%-15s     %7s |     %7s |     %7s |     %7s\n\n",
+	var sortedStrings []string
+	for s := range info.byString {
+		sortedStrings = append(sortedStrings, s)
+	}
+	sort.Strings(sortedStrings)
+
+	for _, s := range sortedStrings {
+		ri := info.byString[s]
+		Printf("%-15s     %7s |     %7s |     %7s |     %7s\n",
 			s, formatPercent(ri.count, info.all.count),
 			formatPercent(ri.size, info.all.size),
 			formatPercent(ri.crypto, info.all.crypto),
@@ -309,7 +324,14 @@ func (info *packinfo) print() {
 		"", "# packs", "# blobs", "raw blobs", "pack header", "crypto", "total")
 	Printf("%s\n", strings.Repeat("-", 94))
 
-	for s, pi := range info.byString {
+	var sortedStrings []string
+	for s := range info.byString {
+		sortedStrings = append(sortedStrings, s)
+	}
+	sort.Strings(sortedStrings)
+
+	for _, s := range sortedStrings {
+		pi := info.byString[s]
 		Printf("%-12s %11d | %11d | %11s | %11s | %11s | %11s\n",
 			s, len(pi.packs), pi.count, formatBytes(pi.size),
 			formatBytes(pi.header()), formatBytes(pi.crypto()),
@@ -327,7 +349,14 @@ func (info *packinfo) printPercent() {
 		"", "# packs", "# blobs", "raw blobs", "pack header", "crypto", "total")
 	Printf("%s\n", strings.Repeat("-", 94))
 
-	for s, pi := range info.byString {
+	var sortedStrings []string
+	for s := range info.byString {
+		sortedStrings = append(sortedStrings, s)
+	}
+	sort.Strings(sortedStrings)
+
+	for _, s := range sortedStrings {
+		pi := info.byString[s]
 		Printf("%-12s %11s | %11s | %11s | %11s | %11s | %11s\n",
 			s, formatPercent(uint64(len(pi.packs)), uint64(len(info.all.packs))),
 			formatPercent(pi.count, info.all.count), formatPercent(pi.size, info.all.size),
@@ -377,7 +406,14 @@ func (info *statinfo) print() {
 	Printf("%s\n", strings.Repeat("-", 55))
 
 	var avg uint64
-	for s, si := range info.byString {
+	var sortedStrings []string
+	for s := range info.byString {
+		sortedStrings = append(sortedStrings, s)
+	}
+	sort.Strings(sortedStrings)
+
+	for _, s := range sortedStrings {
+		si := info.byString[s]
 		if si.count == 0 {
 			avg = 0
 		} else {
