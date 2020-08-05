@@ -193,6 +193,15 @@ func createRandomMasterIndex(rng *rand.Rand, num, size int) (*repository.MasterI
 	return mIdx, lookupID
 }
 
+func BenchmarkMasterIndexAlloc(b *testing.B) {
+	rng := rand.New(rand.NewSource(0))
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		createRandomMasterIndex(rng, 10000, 5)
+	}
+}
+
 func BenchmarkMasterIndexLookupSingleIndex(b *testing.B) {
 	mIdx, lookupID := createRandomMasterIndex(rand.New(rand.NewSource(0)), 1, 200000)
 
