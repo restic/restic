@@ -13,6 +13,7 @@ Restic Documentation
    060_forget
    070_encryption
    075_scripting
+   077_troubleshooting
    080_examples
    090_participating
    100_references
