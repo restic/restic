@@ -1,0 +1,16 @@
+Enhancement: Add new command repair
+
+We've added a new command repair which allows to repair snapshots even if needed
+parts of it are not accessable in the repository. Note that using this command
+can lead to data loss!
+
+Some corrupted repositories were reported in several issues and so far restic
+lacked a possibility to accept data loss but clean those up such that the
+repository returns to a sane state. This possibility was now added.
+
+https://github.com/restic/restic/issues/1759
+https://github.com/restic/restic/issues/1798
+https://github.com/restic/restic/issues/2334
+https://github.com/restic/restic/pull/2876
+https://forum.restic.net/t/corrupted-repo-how-to-repair/799
+https://forum.restic.net/t/recovery-options-for-damaged-repositories/1571
