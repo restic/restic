@@ -103,3 +103,9 @@ repository.
 
 Note that `recover` relies on a correct index state, so make sure your index is fine or run `rebuild-index`
 before running `recover`.
+
+7. Repair defect snapshots using `repair`
+********************************************
+
+If all other things did not help, you can repair defect snapshots with `repair`. Note that the repaired
+snapshots will miss data which was referenced in the defect snapshot.
