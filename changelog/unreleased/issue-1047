@@ -1,0 +1,7 @@
+Enhancement: Add new command repoinfo
+
+We've added the new command repoinfo which shows general technical repository
+information and some statistics.
+
+https://github.com/restic/restic/issues/1047
+https://github.com/restic/restic/pull/2543
