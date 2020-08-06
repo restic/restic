@@ -257,7 +257,56 @@ The following metadata is handled by restic:
 Getting information about repository data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Use the ``stats`` command to count up stats about the data in the repository.
+To get a quick glance about your repository, use the ``repoinfo`` command.
+It counts the the number of all filetypes and all blobs and shows the total sizes which
+they occupy. Also some statistics are available.
+
+.. code-block:: console
+  
+    $ restic repoinfo
+    password is correct
+    
+    Repository content:
+    ==================
+                          count |    raw size |      crypto |   encr size
+    ---------------------------------------------------------------------
+    lock files:               1 |       137 B |        32 B |       169 B
+    snapshot files:           1 |       222 B |        32 B |       254 B
+    index files:              1 |  18.270 KiB |        32 B |  18.301 KiB
+    data files:              39 | 190.754 MiB |         0 B | 190.754 MiB
+    key files:                1 |         0 B |       449 B |       449 B
+    ---------------------------------------------------------------------
+    all files:               43 | 190.772 MiB |       545 B | 190.773 MiB
+    
+    scanning index..
+    
+    Index content:
+    ==============
+                     # packs |     # blobs |   raw blobs | pack header |      crypto |       total
+    ----------------------------------------------------------------------------------------------
+    data blobs:           38 |         125 | 190.735 MiB |   4.665 KiB |   5.094 KiB | 190.744 MiB
+    tree blobs:            1 |           4 |   9.577 KiB |       152 B |       160 B |   9.882 KiB
+    ----------------------------------------------------------------------------------------------
+                          39 |         129 | 190.744 MiB |   4.813 KiB |   5.250 KiB | 190.754 MiB
+    
+    Overhead:
+    =========
+    index:                  18.270 KiB (  0.01%)
+    snapshots:                   222 B (  0.00%)
+    locks:                       137 B (  0.00%)
+    pack header:             4.813 KiB (  0.00%)
+    crypto:                  5.782 KiB (  0.00%)
+    --------------------------------------------
+    total:                  29.082 KiB (  0.01%)
+    
+    Total:
+    ======
+            129 blobs
+             43 files
+    190.773 MiB total repository size
+
+
+Use the ``stats`` command to count up stats about the files saved in the repository.
 There are different counting modes available using the ``--mode`` flag,
 depending on what you want to calculate. The default is the restore size, or
 the size required to restore the files:
