@@ -13,6 +13,8 @@ import (
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 
 	"github.com/restic/restic/internal/errors"
 )
@@ -30,6 +32,42 @@ directories in an encrypted repository stored on different backends.
 	DisableAutoGenTag: true,
 
 	PersistentPreRunE: func(c *cobra.Command, args []string) error {
+
+		viper.BindPFlags(c.Flags())         // bind viper to cobra flags
+		viper.SetConfigName("restic")       // name of config file (without extension)
+		viper.AddConfigPath("/etc/restic/") // paths to look for the config file in
+		viper.AddConfigPath("$HOME/.restic")
+		viper.AddConfigPath(".")
+		if err := viper.ReadInConfig(); err != nil {
+			if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+				// Config file was found but another error was produced
+				panic(fmt.Errorf("Fatal error config file: %s \n", err))
+			}
+		} else {
+			Printf("using config file %v\n", viper.ConfigFileUsed())
+		}
+
+		// SetAllCobraFlagsByViper loops over all flags and sets them
+		// by viper (if not already set)
+		setAllCobraFlagsByViper := func(v *viper.Viper) {
+			if v == nil {
+				return
+			}
+
+			c.Flags().VisitAll(func(f *pflag.Flag) {
+				if !f.Changed && v.IsSet(f.Name) {
+					value := v.GetString(f.Name)
+					debug.Log("use option from config file: set'%v' to '%v'\n", f.Name, value)
+					c.Flags().Set(f.Name, value)
+				}
+			})
+		}
+
+		// set flags specified explicitely to the subcommand (e.g. "backup.one-file-system") first
+		setAllCobraFlagsByViper(viper.Sub(c.Name()))
+		// set flags specified globally (e.g. "repository")
+		setAllCobraFlagsByViper(viper.GetViper())
+
 		// set verbosity, default is one
 		globalOptions.verbosity = 1
 		if globalOptions.Quiet && (globalOptions.Verbose > 1) {
