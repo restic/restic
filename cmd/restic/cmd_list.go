@@ -71,7 +71,6 @@ func runList(cmd *cobra.Command, opts GlobalOptions, args []string) error {
 			return nil
 		})
 
-		return nil
 	default:
 		return errors.Fatal("invalid type")
 	}

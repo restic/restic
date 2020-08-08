@@ -51,12 +51,6 @@ func formatPercent(numerator uint64, denominator uint64) string {
 	return fmt.Sprintf("%3.2f%%", percent)
 }
 
-func formatRate(bytes uint64, duration time.Duration) string {
-	sec := float64(duration) / float64(time.Second)
-	rate := float64(bytes) / sec / (1 << 20)
-	return fmt.Sprintf("%.2fMiB/s", rate)
-}
-
 func formatDuration(d time.Duration) string {
 	sec := uint64(d / time.Second)
 	return formatSeconds(sec)

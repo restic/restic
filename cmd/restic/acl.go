@@ -35,17 +35,6 @@ type aclElement struct {
 	Perm uint16
 }
 
-func (a *aclSID) setUID(uid uint32) {
-	*a = aclSID(uid) | (aclUser << 32)
-}
-func (a *aclSID) setGID(gid uint32) {
-	*a = aclSID(gid) | (aclGroup << 32)
-}
-
-func (a *aclSID) setType(tp int) {
-	*a = aclSID(tp) << 32
-}
-
 func (a aclSID) getType() int {
 	return int(a >> 32)
 }
