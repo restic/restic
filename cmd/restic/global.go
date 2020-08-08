@@ -63,6 +63,9 @@ type GlobalOptions struct {
 	LimitUploadKb   int
 	LimitDownloadKb int
 
+	ConfigFile string // config file to use
+	Profile    string // profile to use in config file
+
 	ctx      context.Context
 	password string
 	stdout   io.Writer
@@ -112,6 +115,8 @@ func init() {
 	f.IntVar(&globalOptions.LimitUploadKb, "limit-upload", 0, "limits uploads to a maximum rate in KiB/s. (default: unlimited)")
 	f.IntVar(&globalOptions.LimitDownloadKb, "limit-download", 0, "limits downloads to a maximum rate in KiB/s. (default: unlimited)")
 	f.StringSliceVarP(&globalOptions.Options, "option", "o", []string{}, "set extended option (`key=value`, can be specified multiple times)")
+	f.StringVarP(&globalOptions.Profile, "profile", "P", "", "profile to use in config file.")
+	f.StringVarP(&globalOptions.ConfigFile, "config", "C", "", "config `file` to use. (default: search for a suitable one)")
 
 	restoreTerminal()
 }

@@ -33,11 +33,15 @@ directories in an encrypted repository stored on different backends.
 
 	PersistentPreRunE: func(c *cobra.Command, args []string) error {
 
-		viper.BindPFlags(c.Flags())         // bind viper to cobra flags
-		viper.SetConfigName("restic")       // name of config file (without extension)
-		viper.AddConfigPath("/etc/restic/") // paths to look for the config file in
-		viper.AddConfigPath("$HOME/.restic")
-		viper.AddConfigPath(".")
+		viper.BindPFlags(c.Flags()) // bind viper to cobra flags
+		if globalOptions.ConfigFile == "" {
+			viper.SetConfigName("restic")       // name of config file (without extension)
+			viper.AddConfigPath("/etc/restic/") // paths to look for the config file in
+			viper.AddConfigPath("$HOME/.restic")
+			viper.AddConfigPath(".")
+		} else {
+			viper.SetConfigFile(globalOptions.ConfigFile)
+		}
 		if err := viper.ReadInConfig(); err != nil {
 			if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 				// Config file was found but another error was produced
@@ -63,9 +67,16 @@ directories in an encrypted repository stored on different backends.
 			})
 		}
 
-		// set flags specified explicitely to the subcommand (e.g. "backup.one-file-system") first
+		if globalOptions.Profile != "" {
+			// set flags of subcommand of profile (e.g. "profiles.prof1.backup.one-file-system")
+			setAllCobraFlagsByViper(viper.Sub("profiles." + globalOptions.Profile + "." + c.Name()))
+			// set flags of profile (e.g. "profiles.prof1.repository")
+			setAllCobraFlagsByViper(viper.Sub("profiles." + globalOptions.Profile))
+		}
+
+		// set flags of subcommand (e.g. "backup.one-file-system")
 		setAllCobraFlagsByViper(viper.Sub(c.Name()))
-		// set flags specified globally (e.g. "repository")
+		// set global flags  (e.g. "repository")
 		setAllCobraFlagsByViper(viper.GetViper())
 
 		// set verbosity, default is one
