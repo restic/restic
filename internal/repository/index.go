@@ -464,7 +464,7 @@ func (idx *Index) TreePacks() restic.IDs {
 }
 
 // merge() merges indexes, i.e. idx.merge(idx2) merges the contents of idx2 into idx.
-// idx2 is not changed by this method.
+// During merging exact duplicates are removed;  idx2 is not changed by this method.
 func (idx *Index) merge(idx2 *Index) error {
 	idx.m.Lock()
 	defer idx.m.Unlock()
@@ -476,18 +476,35 @@ func (idx *Index) merge(idx2 *Index) error {
 	}
 
 	packlen := len(idx.packs)
+	// first append packs as they might be accessed when looking for duplicates below
+	idx.packs = append(idx.packs, idx2.packs...)
+
 	// copy all index entries of idx2 to idx
 	for typ := range idx2.byType {
 		m2 := &idx2.byType[typ]
 		m := &idx.byType[typ]
-		m2.foreach(func(entry *indexEntry) bool {
-			// packIndex is changed as idx2.pack is appended to idx.pack, see below
-			m.add(entry.id, entry.packIndex+packlen, entry.offset, entry.length)
+
+		// helper func to test if identical entry is contained in idx
+		hasIdenticalEntry := func(e2 *indexEntry) (found bool) {
+			m.foreachWithID(e2.id, func(e *indexEntry) {
+				b := idx.toPackedBlob(e, restic.BlobType(typ))
+				b2 := idx2.toPackedBlob(e2, restic.BlobType(typ))
+				if b.Length == b2.Length && b.Offset == b2.Offset && b.PackID == b2.PackID {
+					found = true
+				}
+			})
+			return found
+		}
+
+		m2.foreach(func(e2 *indexEntry) bool {
+			if !hasIdenticalEntry(e2) {
+				// packIndex needs to be changed as idx2.pack was appended to idx.pack, see above
+				m.add(e2.id, e2.packIndex+packlen, e2.offset, e2.length)
+			}
 			return true
 		})
 	}
 
-	idx.packs = append(idx.packs, idx2.packs...)
 	idx.treePacks = append(idx.treePacks, idx2.treePacks...)
 	idx.ids = append(idx.ids, idx2.ids...)
 	idx.supersedes = append(idx.supersedes, idx2.supersedes...)
