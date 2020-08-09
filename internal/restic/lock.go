@@ -223,15 +223,11 @@ func (l *Lock) Refresh(ctx context.Context) error {
 		return err
 	}
 
-	err = l.repo.Backend().Remove(context.TODO(), Handle{Type: LockFile, Name: l.lockID.String()})
-	if err != nil {
-		return err
-	}
-
 	debug.Log("new lock ID %v", id)
+	oldLockID := l.lockID
 	l.lockID = &id
 
-	return nil
+	return l.repo.Backend().Remove(context.TODO(), Handle{Type: LockFile, Name: oldLockID.String()})
 }
 
 func (l Lock) String() string {
