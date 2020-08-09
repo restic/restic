@@ -86,6 +86,10 @@ func refreshLocks(wg *sync.WaitGroup, done <-chan struct{}) {
 }
 
 func unlockRepo(lock *restic.Lock) error {
+	if lock == nil {
+		return nil
+	}
+
 	globalLocks.Lock()
 	defer globalLocks.Unlock()
 
