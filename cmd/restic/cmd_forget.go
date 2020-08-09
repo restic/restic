@@ -88,7 +88,7 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	lock, err := lockRepoExclusive(repo)
+	lock, err := lockRepoExclusive(gopts.ctx, repo)
 	defer unlockRepo(lock)
 	if err != nil {
 		return err

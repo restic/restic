@@ -65,13 +65,13 @@ func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	srcLock, err := lockRepo(srcRepo)
+	srcLock, err := lockRepo(ctx, srcRepo)
 	defer unlockRepo(srcLock)
 	if err != nil {
 		return err
 	}
 
-	dstLock, err := lockRepo(dstRepo)
+	dstLock, err := lockRepo(ctx, dstRepo)
 	defer unlockRepo(dstLock)
 	if err != nil {
 		return err
