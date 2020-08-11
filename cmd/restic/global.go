@@ -343,7 +343,7 @@ func ReadPassword(opts GlobalOptions, prompt string) (string, error) {
 		password, err = readPasswordTerminal(os.Stdin, os.Stderr, prompt)
 	} else {
 		password, err = readPassword(os.Stdin)
-		Verbosef("read password from stdin\n")
+		Verbosef("reading repository encryption password from stdin\n")
 	}
 
 	if err != nil {
