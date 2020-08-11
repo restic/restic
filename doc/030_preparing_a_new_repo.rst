@@ -43,9 +43,9 @@ command and enter the same password twice:
 .. code-block:: console
 
     $ restic init --repo /srv/restic-repo
-    enter password for new backend:
+    enter password for new repository:
     enter password again:
-    created restic backend 085b3c76b9 at /srv/restic-repo
+    created restic repository 085b3c76b9 at /srv/restic-repo
     Please note that knowledge of your password is required to access the repository.
     Losing your password means that your data is irrecoverably lost.
 
@@ -75,9 +75,9 @@ simply be achieved by changing the URL scheme in the ``init`` command:
 .. code-block:: console
 
     $ restic -r sftp:user@host:/srv/restic-repo init
-    enter password for new backend:
+    enter password for new repository:
     enter password again:
-    created restic backend f1c6108821 at sftp:user@host:/srv/restic-repo
+    created restic repository f1c6108821 at sftp:user@host:/srv/restic-repo
     Please note that knowledge of your password is required to access the repository.
     Losing your password means that your data is irrecoverably lost.
 
@@ -212,9 +212,9 @@ default location:
 .. code-block:: console
 
     $ restic -r s3:s3.amazonaws.com/bucket_name init
-    enter password for new backend:
+    enter password for new repository:
     enter password again:
-    created restic backend eefee03bbd at s3:s3.amazonaws.com/bucket_name
+    created restic repository eefee03bbd at s3:s3.amazonaws.com/bucket_name
     Please note that knowledge of your password is required to access the repository.
     Losing your password means that your data is irrecoverably lost.
 
@@ -262,9 +262,9 @@ this command.
 .. code-block:: console
 
     $ ./restic -r s3:http://localhost:9000/restic init
-    enter password for new backend:
+    enter password for new repository:
     enter password again:
-    created restic backend 6ad29560f5 at s3:http://localhost:9000/restic1
+    created restic repository 6ad29560f5 at s3:http://localhost:9000/restic1
     Please note that knowledge of your password is required to access
     the repository. Losing your password means that your data is irrecoverably lost.
 
@@ -291,9 +291,9 @@ this command.
 .. code-block:: console
 
     $ ./restic -r s3:https://<WASABI-SERVICE-URL>/<WASABI-BUCKET-NAME> init
-    enter password for new backend:
+    enter password for new repository:
     enter password again:
-    created restic backend xxxxxxxxxx at s3:https://<WASABI-SERVICE-URL>/<WASABI-BUCKET-NAME>
+    created restic repository xxxxxxxxxx at s3:https://<WASABI-SERVICE-URL>/<WASABI-BUCKET-NAME>
     Please note that knowledge of your password is required to access
     the repository. Losing your password means that your data is irrecoverably lost.
 
@@ -357,9 +357,9 @@ the container does not exist, it will be created automatically:
 .. code-block:: console
 
    $ restic -r swift:container_name:/path init   # path is optional
-   enter password for new backend:
+   enter password for new repository:
    enter password again:
-   created restic backend eefee03bbd at swift:container_name:/path
+   created restic repository eefee03bbd at swift:container_name:/path
    Please note that knowledge of your password is required to access the repository.
    Losing your password means that your data is irrecoverably lost.
 
@@ -391,9 +391,9 @@ privilege to create buckets, it will be created automatically:
 .. code-block:: console
 
     $ restic -r b2:bucketname:path/to/repo init
-    enter password for new backend:
+    enter password for new repository:
     enter password again:
-    created restic backend eefee03bbd at b2:bucketname:path/to/repo
+    created restic repository eefee03bbd at b2:bucketname:path/to/repo
     Please note that knowledge of your password is required to access the repository.
     Losing your password means that your data is irrecoverably lost.
 
@@ -420,10 +420,10 @@ root path like this:
 .. code-block:: console
 
     $ restic -r azure:foo:/ init
-    enter password for new backend:
+    enter password for new repository:
     enter password again:
 
-    created restic backend a934bac191 at azure:foo:/
+    created restic repository a934bac191 at azure:foo:/
     [...]
 
 The number of concurrent connections to the Azure Blob Storage service can be set with the
@@ -464,10 +464,10 @@ repository in the bucket ``foo`` at the root path:
 .. code-block:: console
 
     $ restic -r gs:foo:/ init
-    enter password for new backend:
+    enter password for new repository:
     enter password again:
 
-    created restic backend bde47d6254 at gs:foo2/
+    created restic repository bde47d6254 at gs:foo2/
     [...]
 
 The number of concurrent connections to the GCS service can be set with the
