@@ -43,7 +43,7 @@ command and enter the same password twice:
 .. code-block:: console
 
     $ restic init --repo /srv/restic-repo
-    enter password for new backend:
+    enter password for new repository:
     enter password again:
     created restic backend 085b3c76b9 at /srv/restic-repo
     Please note that knowledge of your password is required to access the repository.
@@ -75,7 +75,7 @@ simply be achieved by changing the URL scheme in the ``init`` command:
 .. code-block:: console
 
     $ restic -r sftp:user@host:/srv/restic-repo init
-    enter password for new backend:
+    enter password for new repository:
     enter password again:
     created restic backend f1c6108821 at sftp:user@host:/srv/restic-repo
     Please note that knowledge of your password is required to access the repository.
