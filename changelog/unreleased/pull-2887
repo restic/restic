@@ -1,0 +1,9 @@
+Enhancement: Secondary key for locks in B2
+
+We've added options for Backblaze B2 that can prevent restic from permanently
+deleting its data. You can now use B2_LOCK_ID and B2_LOCK_KEY, which need to be
+able to delete files with a `locks/` prefix. Then, the main B2_ACCOUNT_ID and
+B2_ACCOUNT_KEY do not need delete permissions for most operations. For details,
+please see the manual.
+
+https://github.com/restic/restic/pull/2887
