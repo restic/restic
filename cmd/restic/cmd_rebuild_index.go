@@ -53,7 +53,7 @@ func rebuildIndex(ctx context.Context, repo restic.Repository, ignorePacks resti
 	Verbosef("counting files in repo\n")
 
 	var packs uint64
-	err := repo.List(ctx, restic.DataFile, func(restic.ID, int64) error {
+	err := repo.List(ctx, restic.PackFile, func(restic.ID, int64) error {
 		packs++
 		return nil
 	})

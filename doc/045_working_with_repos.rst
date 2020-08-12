@@ -134,10 +134,10 @@ If the repository structure is intact, restic will show that no errors were foun
     check snapshots, trees and blobs
     no errors were found
 
-By default, the ``check`` command does not verify that the actual data files
+By default, the ``check`` command does not verify that the actual pack files
 on disk in the repository are unmodified, because doing so requires reading
-a copy of every data file in the repository. To tell restic to also verify the
-integrity of the data files in the repository, use the ``--read-data`` flag:
+a copy of every pack file in the repository. To tell restic to also verify the
+integrity of the pack files in the repository, use the ``--read-data`` flag:
 
 .. code-block:: console
 
@@ -151,16 +151,16 @@ integrity of the data files in the repository, use the ``--read-data`` flag:
     duration: 0:00
     no errors were found
 
-.. note:: Since ``--read-data`` has to download all data files in the
+.. note:: Since ``--read-data`` has to download all pack files in the
     repository, beware that it might incur higher bandwidth costs than usual
     and also that it takes more time than the default ``check``.
 
 Alternatively, use the ``--read-data-subset=n/t`` parameter to check only a
-subset of the repository data files at a time. The parameter takes two values,
-``n`` and ``t``. When the check command runs, all data files in the repository
+subset of the repository pack files at a time. The parameter takes two values,
+``n`` and ``t``. When the check command runs, all pack files in the repository
 are logically divided in ``t`` (roughly equal) groups, and only files that
 belong to group number ``n`` are checked. For example, the following commands
-check all repository data files over 5 separate invocations:
+check all repository pack files over 5 separate invocations:
 
 .. code-block:: console
 

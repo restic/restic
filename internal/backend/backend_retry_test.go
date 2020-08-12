@@ -78,7 +78,7 @@ func TestBackendListRetry(t *testing.T) {
 	}
 
 	var listed []string
-	err := retryBackend.List(context.TODO(), restic.DataFile, func(fi restic.FileInfo) error {
+	err := retryBackend.List(context.TODO(), restic.PackFile, func(fi restic.FileInfo) error {
 		listed = append(listed, fi.Name)
 		return nil
 	})
@@ -112,7 +112,7 @@ func TestBackendListRetryErrorFn(t *testing.T) {
 
 	var listed []string
 	run := 0
-	err := retryBackend.List(context.TODO(), restic.DataFile, func(fi restic.FileInfo) error {
+	err := retryBackend.List(context.TODO(), restic.PackFile, func(fi restic.FileInfo) error {
 		t.Logf("fn called for %v", fi.Name)
 		run++
 		// return an error for the third item in the list
@@ -168,7 +168,7 @@ func TestBackendListRetryErrorBackend(t *testing.T) {
 	}
 
 	var listed []string
-	err := retryBackend.List(context.TODO(), restic.DataFile, func(fi restic.FileInfo) error {
+	err := retryBackend.List(context.TODO(), restic.PackFile, func(fi restic.FileInfo) error {
 		t.Logf("fn called for %v", fi.Name)
 		listed = append(listed, fi.Name)
 		return nil

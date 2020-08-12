@@ -34,7 +34,7 @@ func min(a, b int) int {
 }
 
 func saveFile(t testing.TB, be Saver, length int, f *os.File, id restic.ID) {
-	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
+	h := restic.Handle{Type: restic.PackFile, Name: id.String()}
 	t.Logf("save file %v", h)
 
 	rd, err := restic.NewFileReader(f)

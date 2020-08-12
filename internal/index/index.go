@@ -71,7 +71,7 @@ func New(ctx context.Context, repo Lister, ignorePacks restic.IDSet, p *restic.P
 	// list the files in the repo, send to inputCh
 	wg.Go(func() error {
 		defer close(inputCh)
-		return repo.List(ctx, restic.DataFile, func(id restic.ID, size int64) error {
+		return repo.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
 			if ignorePacks.Has(id) {
 				return nil
 			}

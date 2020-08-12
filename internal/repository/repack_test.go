@@ -62,7 +62,7 @@ func selectBlobs(t *testing.T, repo restic.Repository, p float32) (list1, list2 
 
 	blobs := restic.NewBlobSet()
 
-	err := repo.List(context.TODO(), restic.DataFile, func(id restic.ID, size int64) error {
+	err := repo.List(context.TODO(), restic.PackFile, func(id restic.ID, size int64) error {
 		entries, _, err := repo.ListPack(context.TODO(), id, size)
 		if err != nil {
 			t.Fatalf("error listing pack %v: %v", id, err)
@@ -93,7 +93,7 @@ func selectBlobs(t *testing.T, repo restic.Repository, p float32) (list1, list2 
 
 func listPacks(t *testing.T, repo restic.Repository) restic.IDSet {
 	list := restic.NewIDSet()
-	err := repo.List(context.TODO(), restic.DataFile, func(id restic.ID, size int64) error {
+	err := repo.List(context.TODO(), restic.PackFile, func(id restic.ID, size int64) error {
 		list.Insert(id)
 		return nil
 	})
@@ -130,7 +130,7 @@ func repack(t *testing.T, repo restic.Repository, packs restic.IDSet, blobs rest
 	}
 
 	for id := range repackedBlobs {
-		err = repo.Backend().Remove(context.TODO(), restic.Handle{Type: restic.DataFile, Name: id.String()})
+		err = repo.Backend().Remove(context.TODO(), restic.Handle{Type: restic.PackFile, Name: id.String()})
 		if err != nil {
 			t.Fatal(err)
 		}

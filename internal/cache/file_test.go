@@ -88,7 +88,7 @@ func TestFiles(t *testing.T) {
 
 	var tests = []restic.FileType{
 		restic.SnapshotFile,
-		restic.DataFile,
+		restic.PackFile,
 		restic.IndexFile,
 	}
 
@@ -144,7 +144,7 @@ func TestFileSaveWriter(t *testing.T) {
 	id := restic.ID{}
 	copy(id[:], data)
 	h := restic.Handle{
-		Type: restic.DataFile,
+		Type: restic.PackFile,
 		Name: id.String(),
 	}
 
@@ -202,7 +202,7 @@ func TestFileLoad(t *testing.T) {
 	id := restic.ID{}
 	copy(id[:], data)
 	h := restic.Handle{
-		Type: restic.DataFile,
+		Type: restic.PackFile,
 		Name: id.String(),
 	}
 	if err := c.Save(h, bytes.NewReader(data)); err != nil {

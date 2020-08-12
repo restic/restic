@@ -123,7 +123,7 @@ func (s *Suite) TestLoad(t *testing.T) {
 		t.Fatalf("Load() did not return an error for invalid handle")
 	}
 
-	err = testLoad(b, restic.Handle{Type: restic.DataFile, Name: "foobar"}, 0, 0)
+	err = testLoad(b, restic.Handle{Type: restic.PackFile, Name: "foobar"}, 0, 0)
 	if err == nil {
 		t.Fatalf("Load() did not return an error for non-existing blob")
 	}
@@ -133,7 +133,7 @@ func (s *Suite) TestLoad(t *testing.T) {
 	data := test.Random(23, length)
 	id := restic.Hash(data)
 
-	handle := restic.Handle{Type: restic.DataFile, Name: id.String()}
+	handle := restic.Handle{Type: restic.PackFile, Name: id.String()}
 	err = b.Save(context.TODO(), handle, restic.NewByteReader(data))
 	if err != nil {
 		t.Fatalf("Save() error: %+v", err)
@@ -236,7 +236,7 @@ func (s *Suite) TestList(t *testing.T) {
 
 	// Check that the backend is empty to start with
 	var found []string
-	err := b.List(context.TODO(), restic.DataFile, func(fi restic.FileInfo) error {
+	err := b.List(context.TODO(), restic.PackFile, func(fi restic.FileInfo) error {
 		found = append(found, fi.Name)
 		return nil
 	})
@@ -252,7 +252,7 @@ func (s *Suite) TestList(t *testing.T) {
 	for i := 0; i < numTestFiles; i++ {
 		data := test.Random(rand.Int(), rand.Intn(100)+55)
 		id := restic.Hash(data)
-		h := restic.Handle{Type: restic.DataFile, Name: id.String()}
+		h := restic.Handle{Type: restic.PackFile, Name: id.String()}
 		err := b.Save(context.TODO(), h, restic.NewByteReader(data))
 		if err != nil {
 			t.Fatal(err)
@@ -281,7 +281,7 @@ func (s *Suite) TestList(t *testing.T) {
 				s.SetListMaxItems(test.maxItems)
 			}
 
-			err := b.List(context.TODO(), restic.DataFile, func(fi restic.FileInfo) error {
+			err := b.List(context.TODO(), restic.PackFile, func(fi restic.FileInfo) error {
 				id, err := restic.ParseID(fi.Name)
 				if err != nil {
 					t.Fatal(err)
@@ -319,7 +319,7 @@ func (s *Suite) TestList(t *testing.T) {
 	t.Logf("remove %d files", numTestFiles)
 	handles := make([]restic.Handle, 0, len(list1))
 	for id := range list1 {
-		handles = append(handles, restic.Handle{Type: restic.DataFile, Name: id.String()})
+		handles = append(handles, restic.Handle{Type: restic.PackFile, Name: id.String()})
 	}
 
 	err = s.delayedRemove(t, b, handles...)
@@ -342,7 +342,7 @@ func (s *Suite) TestListCancel(t *testing.T) {
 	for i := 0; i < numTestFiles; i++ {
 		data := []byte(fmt.Sprintf("random test blob %v", i))
 		id := restic.Hash(data)
-		h := restic.Handle{Type: restic.DataFile, Name: id.String()}
+		h := restic.Handle{Type: restic.PackFile, Name: id.String()}
 		err := b.Save(context.TODO(), h, restic.NewByteReader(data))
 		if err != nil {
 			t.Fatal(err)
@@ -355,7 +355,7 @@ func (s *Suite) TestListCancel(t *testing.T) {
 		cancel()
 
 		// pass in a cancelled context
-		err := b.List(ctx, restic.DataFile, func(fi restic.FileInfo) error {
+		err := b.List(ctx, restic.PackFile, func(fi restic.FileInfo) error {
 			t.Errorf("got FileInfo %v for cancelled context", fi)
 			return nil
 		})
@@ -370,7 +370,7 @@ func (s *Suite) TestListCancel(t *testing.T) {
 		defer cancel()
 
 		i := 0
-		err := b.List(ctx, restic.DataFile, func(fi restic.FileInfo) error {
+		err := b.List(ctx, restic.PackFile, func(fi restic.FileInfo) error {
 			i++
 			// cancel the context on the first file
 			if i == 1 {
@@ -393,7 +393,7 @@ func (s *Suite) TestListCancel(t *testing.T) {
 		defer cancel()
 
 		i := 0
-		err := b.List(ctx, restic.DataFile, func(fi restic.FileInfo) error {
+		err := b.List(ctx, restic.PackFile, func(fi restic.FileInfo) error {
 			// cancel the context at the last file
 			i++
 			if i == numTestFiles {
@@ -420,7 +420,7 @@ func (s *Suite) TestListCancel(t *testing.T) {
 
 		i := 0
 		// pass in a context with a timeout
-		err := b.List(ctxTimeout, restic.DataFile, func(fi restic.FileInfo) error {
+		err := b.List(ctxTimeout, restic.PackFile, func(fi restic.FileInfo) error {
 			i++
 
 			// wait until the context is cancelled
@@ -483,7 +483,7 @@ func (s *Suite) TestSave(t *testing.T) {
 		copy(id[:], data)
 
 		h := restic.Handle{
-			Type: restic.DataFile,
+			Type: restic.PackFile,
 			Name: fmt.Sprintf("%s-%d", id, i),
 		}
 		err := b.Save(context.TODO(), h, restic.NewByteReader(data))
@@ -534,7 +534,7 @@ func (s *Suite) TestSave(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
+	h := restic.Handle{Type: restic.PackFile, Name: id.String()}
 
 	// wrap the tempfile in an errorCloser, so we can detect if the backend
 	// closes the reader
@@ -575,7 +575,7 @@ func (s *Suite) TestSaveFilenames(t *testing.T) {
 	defer s.close(t, b)
 
 	for i, test := range filenameTests {
-		h := restic.Handle{Name: test.name, Type: restic.DataFile}
+		h := restic.Handle{Name: test.name, Type: restic.PackFile}
 		err := b.Save(context.TODO(), h, restic.NewByteReader([]byte(test.data)))
 		if err != nil {
 			t.Errorf("test %d failed: Save() returned %+v", i, err)
@@ -698,7 +698,7 @@ func (s *Suite) TestBackend(t *testing.T) {
 	defer s.close(t, b)
 
 	for _, tpe := range []restic.FileType{
-		restic.DataFile, restic.KeyFile, restic.LockFile,
+		restic.PackFile, restic.KeyFile, restic.LockFile,
 		restic.SnapshotFile, restic.IndexFile,
 	} {
 		// detect non-existing files

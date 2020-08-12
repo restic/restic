@@ -298,7 +298,7 @@ func (be *beSwift) IsNotExist(err error) bool {
 // It will not remove the container itself.
 func (be *beSwift) Delete(ctx context.Context) error {
 	alltypes := []restic.FileType{
-		restic.DataFile,
+		restic.PackFile,
 		restic.KeyFile,
 		restic.LockFile,
 		restic.SnapshotFile,

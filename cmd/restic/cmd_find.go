@@ -417,7 +417,7 @@ func (f *Finder) packsToBlobs(ctx context.Context, packs []string) error {
 	packsFound := 0
 
 	debug.Log("Looking for packs...")
-	err := f.repo.List(ctx, restic.DataFile, func(id restic.ID, size int64) error {
+	err := f.repo.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
 		if allPacksFound {
 			return nil
 		}

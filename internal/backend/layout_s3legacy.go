@@ -11,7 +11,7 @@ type S3LegacyLayout struct {
 }
 
 var s3LayoutPaths = map[restic.FileType]string{
-	restic.DataFile:     "data",
+	restic.PackFile:     "data",
 	restic.SnapshotFile: "snapshot",
 	restic.IndexFile:    "index",
 	restic.LockFile:     "lock",

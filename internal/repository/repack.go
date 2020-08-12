@@ -26,7 +26,7 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 
 	for packID := range packs {
 		// load the complete pack into a temp file
-		h := restic.Handle{Type: restic.DataFile, Name: packID.String()}
+		h := restic.Handle{Type: restic.PackFile, Name: packID.String()}
 
 		tempfile, hash, packLength, err := DownloadAndHash(ctx, repo.Backend(), h)
 		if err != nil {

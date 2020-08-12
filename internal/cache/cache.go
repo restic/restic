@@ -50,7 +50,7 @@ const cacheVersion = 1
 var _ restic.Cache = &Cache{}
 
 var cacheLayoutPaths = map[restic.FileType]string{
-	restic.DataFile:     "data",
+	restic.PackFile:     "data",
 	restic.SnapshotFile: "snapshots",
 	restic.IndexFile:    "index",
 }

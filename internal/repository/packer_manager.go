@@ -97,7 +97,7 @@ func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packe
 	}
 
 	id := restic.IDFromHash(p.hw.Sum(nil))
-	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
+	h := restic.Handle{Type: restic.PackFile, Name: id.String()}
 
 	rd, err := restic.NewFileReader(p.tmpfile)
 	if err != nil {

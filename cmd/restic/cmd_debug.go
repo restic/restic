@@ -84,8 +84,8 @@ type Blob struct {
 
 func printPacks(repo *repository.Repository, wr io.Writer) error {
 
-	return repo.List(context.TODO(), restic.DataFile, func(id restic.ID, size int64) error {
-		h := restic.Handle{Type: restic.DataFile, Name: id.String()}
+	return repo.List(context.TODO(), restic.PackFile, func(id restic.ID, size int64) error {
+		h := restic.Handle{Type: restic.PackFile, Name: id.String()}
 
 		blobs, err := pack.List(repo.Key(), restic.ReaderAt(repo.Backend(), h), size)
 		if err != nil {

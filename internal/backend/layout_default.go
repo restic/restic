@@ -16,7 +16,7 @@ type DefaultLayout struct {
 }
 
 var defaultLayoutPaths = map[restic.FileType]string{
-	restic.DataFile:     "data",
+	restic.PackFile:     "data",
 	restic.SnapshotFile: "snapshots",
 	restic.IndexFile:    "index",
 	restic.LockFile:     "locks",
@@ -36,7 +36,7 @@ func (l *DefaultLayout) Name() string {
 func (l *DefaultLayout) Dirname(h restic.Handle) string {
 	p := defaultLayoutPaths[h.Type]
 
-	if h.Type == restic.DataFile && len(h.Name) > 2 {
+	if h.Type == restic.PackFile && len(h.Name) > 2 {
 		p = l.Join(p, h.Name[:2]) + "/"
 	}
 
@@ -62,7 +62,7 @@ func (l *DefaultLayout) Paths() (dirs []string) {
 	// also add subdirs
 	for i := 0; i < 256; i++ {
 		subdir := hex.EncodeToString([]byte{byte(i)})
-		dirs = append(dirs, l.Join(l.Path, defaultLayoutPaths[restic.DataFile], subdir))
+		dirs = append(dirs, l.Join(l.Path, defaultLayoutPaths[restic.PackFile], subdir))
 	}
 
 	return dirs
@@ -70,7 +70,7 @@ func (l *DefaultLayout) Paths() (dirs []string) {
 
 // Basedir returns the base dir name for type t.
 func (l *DefaultLayout) Basedir(t restic.FileType) (dirname string, subdirs bool) {
-	if t == restic.DataFile {
+	if t == restic.PackFile {
 		subdirs = true
 	}
 
