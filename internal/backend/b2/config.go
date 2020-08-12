@@ -14,6 +14,8 @@ import (
 type Config struct {
 	AccountID string
 	Key       string
+	LockID    string
+	LockKey   string
 	Bucket    string
 	Prefix    string
 

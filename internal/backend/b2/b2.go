@@ -16,8 +16,10 @@ import (
 
 // b2Backend is a backend which stores its data on Backblaze B2.
 type b2Backend struct {
-	client       *b2.Client
-	bucket       *b2.Bucket
+	mainClient   *b2.Client
+	mainBucket   *b2.Bucket
+	lockClient   *b2.Client
+	lockBucket   *b2.Bucket
 	cfg          Config
 	listMaxItems int
 	backend.Layout
@@ -29,16 +31,6 @@ const defaultListMaxItems = 1000
 // ensure statically that *b2Backend implements restic.Backend.
 var _ restic.Backend = &b2Backend{}
 
-func newClient(ctx context.Context, cfg Config, rt http.RoundTripper) (*b2.Client, error) {
-	opts := []b2.ClientOption{b2.Transport(rt)}
-
-	c, err := b2.NewClient(ctx, cfg.AccountID, cfg.Key, opts...)
-	if err != nil {
-		return nil, errors.Wrap(err, "b2.NewClient")
-	}
-	return c, nil
-}
-
 // Open opens a connection to the B2 service.
 func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 	debug.Log("cfg %#v", cfg)
@@ -46,14 +38,29 @@ func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backend
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	client, err := newClient(ctx, cfg, rt)
+	clientOpts := []b2.ClientOption{b2.Transport(rt)}
+	client, err := b2.NewClient(ctx, cfg.AccountID, cfg.Key, clientOpts...)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "b2.NewClient")
 	}
 
 	bucket, err := client.Bucket(ctx, cfg.Bucket)
 	if err != nil {
 		return nil, errors.Wrap(err, "Bucket")
+	}
+
+	var lockClient *b2.Client
+	var lockBucket *b2.Bucket
+	if cfg.LockKey != "" {
+		lockClient, err = b2.NewClient(ctx, cfg.LockID, cfg.LockKey, clientOpts...)
+		if err != nil {
+			return nil, errors.Wrap(err, "b2.NewClient")
+		}
+
+		lockBucket, err = lockClient.Bucket(ctx, cfg.Bucket)
+		if err != nil {
+			return nil, errors.Wrap(err, "Bucket")
+		}
 	}
 
 	sem, err := backend.NewSemaphore(cfg.Connections)
@@ -62,9 +69,11 @@ func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backend
 	}
 
 	be := &b2Backend{
-		client: client,
-		bucket: bucket,
-		cfg:    cfg,
+		mainClient: client,
+		mainBucket: bucket,
+		lockClient: lockClient,
+		lockBucket: lockBucket,
+		cfg:        cfg,
 		Layout: &backend.DefaultLayout{
 			Join: path.Join,
 			Path: cfg.Prefix,
@@ -84,9 +93,10 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backe
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	client, err := newClient(ctx, cfg, rt)
+	clientOpts := []b2.ClientOption{b2.Transport(rt)}
+	client, err := b2.NewClient(ctx, cfg.AccountID, cfg.Key, clientOpts...)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "b2.NewClient")
 	}
 
 	attr := b2.BucketAttrs{
@@ -97,15 +107,31 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backe
 		return nil, errors.Wrap(err, "NewBucket")
 	}
 
+	var lockClient *b2.Client
+	var lockBucket *b2.Bucket
+	if cfg.LockKey != "" {
+		lockClient, err = b2.NewClient(ctx, cfg.LockID, cfg.LockKey, clientOpts...)
+		if err != nil {
+			return nil, errors.Wrap(err, "b2.NewClient")
+		}
+
+		lockBucket, err = lockClient.Bucket(ctx, cfg.Bucket)
+		if err != nil {
+			return nil, errors.Wrap(err, "Bucket")
+		}
+	}
+
 	sem, err := backend.NewSemaphore(cfg.Connections)
 	if err != nil {
 		return nil, err
 	}
 
 	be := &b2Backend{
-		client: client,
-		bucket: bucket,
-		cfg:    cfg,
+		mainClient: client,
+		mainBucket: bucket,
+		lockClient: lockClient,
+		lockBucket: lockBucket,
+		cfg:        cfg,
 		Layout: &backend.DefaultLayout{
 			Join: path.Join,
 			Path: cfg.Prefix,
@@ -166,7 +192,7 @@ func (be *b2Backend) openReader(ctx context.Context, h restic.Handle, length int
 	be.sem.GetToken()
 
 	name := be.Layout.Filename(h)
-	obj := be.bucket.Object(name)
+	obj := be.bucket(h.Type).Object(name)
 
 	if offset == 0 && length == 0 {
 		rd := obj.NewReader(ctx)
@@ -183,6 +209,13 @@ func (be *b2Backend) openReader(ctx context.Context, h restic.Handle, length int
 	return be.sem.ReleaseTokenOnClose(rd, cancel), nil
 }
 
+func (be *b2Backend) bucket(t restic.FileType) *b2.Bucket {
+	if t == restic.LockFile && be.lockBucket != nil {
+		return be.lockBucket
+	}
+	return be.mainBucket
+}
+
 // Save stores data in the backend at the handle.
 func (be *b2Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
 	ctx, cancel := context.WithCancel(ctx)
@@ -197,7 +230,7 @@ func (be *b2Backend) Save(ctx context.Context, h restic.Handle, rd restic.Rewind
 
 	name := be.Filename(h)
 	debug.Log("Save %v, name %v", h, name)
-	obj := be.bucket.Object(name)
+	obj := be.bucket(h.Type).Object(name)
 
 	w := obj.NewWriter(ctx)
 	n, err := io.Copy(w, rd)
@@ -219,7 +252,7 @@ func (be *b2Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileI
 	defer be.sem.ReleaseToken()
 
 	name := be.Filename(h)
-	obj := be.bucket.Object(name)
+	obj := be.bucket(h.Type).Object(name)
 	info, err := obj.Attrs(ctx)
 	if err != nil {
 		debug.Log("Attrs() err %v", err)
@@ -237,7 +270,7 @@ func (be *b2Backend) Test(ctx context.Context, h restic.Handle) (bool, error) {
 
 	found := false
 	name := be.Filename(h)
-	obj := be.bucket.Object(name)
+	obj := be.bucket(h.Type).Object(name)
 	info, err := obj.Attrs(ctx)
 	if err == nil && info != nil && info.Status == b2.Uploaded {
 		found = true
@@ -252,7 +285,7 @@ func (be *b2Backend) Remove(ctx context.Context, h restic.Handle) error {
 	be.sem.GetToken()
 	defer be.sem.ReleaseToken()
 
-	obj := be.bucket.Object(be.Filename(h))
+	obj := be.bucket(h.Type).Object(be.Filename(h))
 	return errors.Wrap(obj.Delete(ctx), "Delete")
 }
 
@@ -271,7 +304,7 @@ func (be *b2Backend) List(ctx context.Context, t restic.FileType, fn func(restic
 	defer cancel()
 
 	prefix, _ := be.Basedir(t)
-	iter := be.bucket.List(ctx, b2.ListPrefix(prefix), b2.ListPageSize(be.listMaxItems), b2.ListLocker(semLocker{be.sem}))
+	iter := be.bucket(t).List(ctx, b2.ListPrefix(prefix), b2.ListPageSize(be.listMaxItems), b2.ListLocker(semLocker{be.sem}))
 
 	for iter.Next() {
 		obj := iter.Object()

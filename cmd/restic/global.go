@@ -590,6 +590,14 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 			return nil, errors.Fatalf("unable to open B2 backend: Key ($B2_ACCOUNT_KEY) is empty")
 		}
 
+		if cfg.LockID == "" {
+			cfg.LockID = os.Getenv("B2_LOCK_ID")
+		}
+
+		if cfg.LockKey == "" {
+			cfg.LockKey = os.Getenv("B2_LOCK_KEY")
+		}
+
 		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
 			return nil, err
 		}

@@ -407,6 +407,8 @@ environment variables. The following list of environment variables:
 
     B2_ACCOUNT_ID                       Account ID or applicationKeyId for Backblaze B2
     B2_ACCOUNT_KEY                      Account Key or applicationKey for Backblaze B2
+    B2_LOCK_ID                          Optional secondary applicationKeyId for Backblaze B2 to create and delete locks
+    B2_LOCK_KEY                         Optional secondary applicationKey for Backblaze B2 to create and delete locks
 
     AZURE_ACCOUNT_NAME                  Account name for Azure
     AZURE_ACCOUNT_KEY                   Account key for Azure

@@ -403,6 +403,36 @@ The number of concurrent connections to the B2 service can be set with the ``-o
 b2.connections=10`` switch. By default, at most five parallel connections are
 established.
 
+In the next release, you'll be able to use restic in a mode that prevents the
+client (or anyone else with the keys) from permanently overwriting or deleting
+data stored in Backblaze B2. To do so, first configure your bucket lifecycle
+version to "Keep all versions of the file". Then, generate two restricted
+application keys using the B2 API. For example, using the `command-line tool
+<https://www.backblaze.com/b2/docs/quick_command_line.html>`__:
+
+.. code-block:: console
+
+    $ b2 authorize-account
+    $ b2 create-key --bucket NAME restic-main listBuckets,listFiles,readFiles,writeFiles
+    $ b2 create-key --bucket NAME --namePrefix 'locks/' restic-lock listBuckets,listFiles,readFiles,writeFiles,deleteFiles
+    $ b2 clear-account
+
+Restic will use the main key to read and write most data, but it will use the
+secondary key to create and delete locks. Set up these environment variables
+using the output from the ``create-key`` commands:
+
+.. code-block:: console
+
+    $ export B2_ACCOUNT_ID=<MY_MAIN_APPLICATION_KEY_ID>
+    $ export B2_ACCOUNT_KEY=<MY_MAIN_APPLICATION_KEY>
+    $ export B2_LOCK_ID=<MY_LOCK_APPLICATION_KEY_ID>
+    $ export B2_LOCK_KEY=<MY_LOCK_APPLICATION_KEY>
+
+.. note:: Commands like ``restic prune`` will be unable to function under this
+          configuration. You can temporarily give restic a key with broader
+          privileges when you need to perform such operations.
+
+
 Microsoft Azure Blob Storage
 ****************************
 
