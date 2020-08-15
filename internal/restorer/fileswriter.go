@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/cespare/xxhash"
+	"github.com/restic/restic/internal/debug"
 )
 
 // writes blobs to target files.
@@ -33,7 +34,7 @@ func newFilesWriter(count int) *filesWriter {
 	}
 }
 
-func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create bool) error {
+func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, createSize int64) error {
 	bucket := &w.buckets[uint(xxhash.Sum64String(path))%uint(len(w.buckets))]
 
 	acquireWriter := func() (*os.File, error) {
@@ -46,7 +47,7 @@ func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create
 		}
 
 		var flags int
-		if create {
+		if createSize >= 0 {
 			flags = os.O_CREATE | os.O_TRUNC | os.O_WRONLY
 		} else {
 			flags = os.O_WRONLY
@@ -59,6 +60,18 @@ func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create
 
 		bucket.files[path] = wr
 		bucket.users[path] = 1
+
+		if createSize >= 0 {
+			err := preallocateFile(wr, createSize)
+			if err != nil {
+				// Just log the preallocate error but don't let it cause the restore process to fail.
+				// Preallocate might return an error if the filesystem (implementation) does not
+				// support preallocation or our parameters combination to the preallocate call
+				// This should yield a syscall.ENOTSUP error, but some other errors might also
+				// show up.
+				debug.Log("Failed to preallocate %v with size %v: %v", path, createSize, err)
+			}
+		}
 
 		return wr, nil
 	}
