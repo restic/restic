@@ -101,6 +101,10 @@ func (r *fileRestorer) forEachBlob(blobIDs []restic.ID, fn func(packID restic.ID
 func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 
 	packs := make(map[restic.ID]*packInfo) // all packs
+	// Process packs in order of first access. While this cannot guarantee
+	// that file chunks are restored sequentially, it offers a good enough
+	// approximation to shorten restore times by up to 19% in some test.
+	var packOrder restic.IDs
 
 	// create packInfo from fileInfo
 	for _, file := range r.files {
@@ -123,6 +127,7 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 					files: make(map[*fileInfo]struct{}),
 				}
 				packs[packID] = pack
+				packOrder = append(packOrder, packID)
 			}
 			pack.files[file] = struct{}{}
 		})
@@ -157,7 +162,8 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 	}
 
 	// the main restore loop
-	for _, pack := range packs {
+	for _, id := range packOrder {
+		pack := packs[id]
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
