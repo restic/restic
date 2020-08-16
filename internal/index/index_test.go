@@ -29,7 +29,7 @@ func createFilledRepo(t testing.TB, snapshots int, dup float32) (restic.Reposito
 }
 
 func validateIndex(t testing.TB, repo restic.Repository, idx *Index) {
-	err := repo.List(context.TODO(), restic.DataFile, func(id restic.ID, size int64) error {
+	err := repo.List(context.TODO(), restic.PackFile, func(id restic.ID, size int64) error {
 		p, ok := idx.Packs[id]
 		if !ok {
 			t.Errorf("pack %v missing from index", id.Str())
@@ -395,7 +395,7 @@ func TestIndexAddRemovePack(t *testing.T) {
 	}
 
 	var packID restic.ID
-	err = repo.List(context.TODO(), restic.DataFile, func(id restic.ID, size int64) error {
+	err = repo.List(context.TODO(), restic.PackFile, func(id restic.ID, size int64) error {
 		packID = id
 		return nil
 	})

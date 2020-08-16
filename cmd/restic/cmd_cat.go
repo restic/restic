@@ -149,7 +149,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 
 	switch tpe {
 	case "pack":
-		h := restic.Handle{Type: restic.DataFile, Name: id.String()}
+		h := restic.Handle{Type: restic.PackFile, Name: id.String()}
 		buf, err := backend.LoadAll(gopts.ctx, nil, repo.Backend(), h)
 		if err != nil {
 			return err

@@ -442,7 +442,7 @@ func (b *Backend) removeKeys(ctx context.Context, t restic.FileType) error {
 // Delete removes all data in the backend.
 func (b *Backend) Delete(ctx context.Context) error {
 	alltypes := []restic.FileType{
-		restic.DataFile,
+		restic.PackFile,
 		restic.KeyFile,
 		restic.LockFile,
 		restic.SnapshotFile,

@@ -13,7 +13,7 @@ import (
 func saveRandomFile(t testing.TB, be restic.Backend, length int) ([]byte, restic.Handle) {
 	data := test.Random(23, length)
 	id := restic.Hash(data)
-	handle := restic.Handle{Type: restic.DataFile, Name: id.String()}
+	handle := restic.Handle{Type: restic.PackFile, Name: id.String()}
 	err := be.Save(context.TODO(), handle, restic.NewByteReader(data))
 	if err != nil {
 		t.Fatalf("Save() error: %+v", err)
@@ -146,7 +146,7 @@ func (s *Suite) BenchmarkSave(t *testing.B) {
 	length := 1<<24 + 2123
 	data := test.Random(23, length)
 	id := restic.Hash(data)
-	handle := restic.Handle{Type: restic.DataFile, Name: id.String()}
+	handle := restic.Handle{Type: restic.PackFile, Name: id.String()}
 
 	rd := restic.NewByteReader(data)
 	t.SetBytes(int64(length))

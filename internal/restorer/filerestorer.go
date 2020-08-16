@@ -221,7 +221,7 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) {
 
 	packData := make([]byte, int(end-start))
 
-	h := restic.Handle{Type: restic.DataFile, Name: pack.id.String()}
+	h := restic.Handle{Type: restic.PackFile, Name: pack.id.String()}
 	err := r.packLoader(ctx, h, int(end-start), start, func(rd io.Reader) error {
 		l, err := io.ReadFull(rd, packData)
 		if err != nil {

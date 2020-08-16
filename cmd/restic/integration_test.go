@@ -386,12 +386,12 @@ func TestBackupSelfHealing(t *testing.T) {
 		}
 	}
 
-	// remove all data packs
-	rtest.OK(t, r.List(env.gopts.ctx, restic.DataFile, func(id restic.ID, size int64) error {
+	// remove all packs containing data blobs
+	rtest.OK(t, r.List(env.gopts.ctx, restic.PackFile, func(id restic.ID, size int64) error {
 		if treePacks.Has(id) {
 			return nil
 		}
-		return r.Backend().Remove(env.gopts.ctx, restic.Handle{Type: restic.DataFile, Name: id.String()})
+		return r.Backend().Remove(env.gopts.ctx, restic.Handle{Type: restic.PackFile, Name: id.String()})
 	}))
 
 	testRunRebuildIndex(t, env.gopts)

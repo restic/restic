@@ -224,7 +224,7 @@ func BenchmarkLoadAndDecrypt(b *testing.B) {
 
 	dataID := restic.Hash(buf)
 
-	storageID, err := repo.SaveUnpacked(context.TODO(), restic.DataFile, buf)
+	storageID, err := repo.SaveUnpacked(context.TODO(), restic.PackFile, buf)
 	rtest.OK(b, err)
 	// rtest.OK(b, repo.Flush())
 
@@ -232,7 +232,7 @@ func BenchmarkLoadAndDecrypt(b *testing.B) {
 	b.SetBytes(int64(length))
 
 	for i := 0; i < b.N; i++ {
-		data, err := repo.LoadAndDecrypt(context.TODO(), nil, restic.DataFile, storageID)
+		data, err := repo.LoadAndDecrypt(context.TODO(), nil, restic.PackFile, storageID)
 		rtest.OK(b, err)
 
 		// See comment in BenchmarkLoadBlob.

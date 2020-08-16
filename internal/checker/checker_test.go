@@ -82,7 +82,7 @@ func TestMissingPack(t *testing.T) {
 	repo := repository.TestOpenLocal(t, repodir)
 
 	packHandle := restic.Handle{
-		Type: restic.DataFile,
+		Type: restic.PackFile,
 		Name: "657f7fb64f6a854fff6fe9279998ee09034901eded4e6db9bcee0e59745bbce6",
 	}
 	test.OK(t, repo.Backend().Remove(context.TODO(), packHandle))

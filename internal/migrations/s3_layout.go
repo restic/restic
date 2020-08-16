@@ -91,7 +91,7 @@ func (m *S3Layout) Apply(ctx context.Context, repo restic.Repository) error {
 
 	for _, t := range []restic.FileType{
 		restic.SnapshotFile,
-		restic.DataFile,
+		restic.PackFile,
 		restic.KeyFile,
 		restic.LockFile,
 	} {

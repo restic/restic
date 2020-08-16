@@ -308,7 +308,7 @@ func (be *b2Backend) removeKeys(ctx context.Context, t restic.FileType) error {
 // Delete removes all restic keys in the bucket. It will not remove the bucket itself.
 func (be *b2Backend) Delete(ctx context.Context) error {
 	alltypes := []restic.FileType{
-		restic.DataFile,
+		restic.PackFile,
 		restic.KeyFile,
 		restic.LockFile,
 		restic.SnapshotFile,

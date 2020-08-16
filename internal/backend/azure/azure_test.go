@@ -172,7 +172,7 @@ func TestUploadLargeFile(t *testing.T) {
 
 	data := rtest.Random(23, 300*1024*1024)
 	id := restic.Hash(data)
-	h := restic.Handle{Name: id.String(), Type: restic.DataFile}
+	h := restic.Handle{Name: id.String(), Type: restic.PackFile}
 
 	t.Logf("hash of %d bytes: %v", len(data), id)
 

@@ -445,7 +445,7 @@ func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.F
 
 // Remove keys for a specified backend type.
 func (be *Backend) removeKeys(ctx context.Context, t restic.FileType) error {
-	return be.List(ctx, restic.DataFile, func(fi restic.FileInfo) error {
+	return be.List(ctx, restic.PackFile, func(fi restic.FileInfo) error {
 		return be.Remove(ctx, restic.Handle{Type: t, Name: fi.Name})
 	})
 }
@@ -453,7 +453,7 @@ func (be *Backend) removeKeys(ctx context.Context, t restic.FileType) error {
 // Delete removes all restic keys in the bucket. It will not remove the bucket itself.
 func (be *Backend) Delete(ctx context.Context) error {
 	alltypes := []restic.FileType{
-		restic.DataFile,
+		restic.PackFile,
 		restic.KeyFile,
 		restic.LockFile,
 		restic.SnapshotFile,

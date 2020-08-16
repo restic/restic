@@ -130,7 +130,7 @@ func sortCachedPacksFirst(cache haver, blobs []restic.PackedBlob) {
 	noncached := make([]restic.PackedBlob, 0, len(blobs)/2)
 
 	for _, blob := range blobs {
-		if cache.Has(restic.Handle{Type: restic.DataFile, Name: blob.PackID.String()}) {
+		if cache.Has(restic.Handle{Type: restic.PackFile, Name: blob.PackID.String()}) {
 			cached = append(cached, blob)
 			continue
 		}
@@ -164,7 +164,7 @@ func (r *Repository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.
 		}
 
 		// load blob from pack
-		h := restic.Handle{Type: restic.DataFile, Name: blob.PackID.String()}
+		h := restic.Handle{Type: restic.PackFile, Name: blob.PackID.String()}
 
 		switch {
 		case cap(buf) < int(blob.Length):
@@ -535,10 +535,10 @@ func (r *Repository) PrepareCache(indexIDs restic.IDSet) error {
 		}
 	}
 
-	// clear old data files
-	err = r.Cache.Clear(restic.DataFile, packs)
+	// clear old packs
+	err = r.Cache.Clear(restic.PackFile, packs)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error clearing data files in cache: %v\n", err)
+		fmt.Fprintf(os.Stderr, "error clearing pack files in cache: %v\n", err)
 	}
 
 	treePacks := restic.NewIDSet()
@@ -552,8 +552,8 @@ func (r *Repository) PrepareCache(indexIDs restic.IDSet) error {
 	debug.Log("using readahead")
 	cache := r.Cache.(*cache.Cache)
 	cache.PerformReadahead = func(h restic.Handle) bool {
-		if h.Type != restic.DataFile {
-			debug.Log("no readahead for %v, is not data file", h)
+		if h.Type != restic.PackFile {
+			debug.Log("no readahead for %v, is not a pack file", h)
 			return false
 		}
 
@@ -670,7 +670,7 @@ func (r *Repository) List(ctx context.Context, t restic.FileType, fn func(restic
 // ListPack returns the list of blobs saved in the pack id and the length of
 // the file as stored in the backend.
 func (r *Repository) ListPack(ctx context.Context, id restic.ID, size int64) ([]restic.Blob, int64, error) {
-	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
+	h := restic.Handle{Type: restic.PackFile, Name: id.String()}
 
 	blobs, err := pack.List(r.Key(), restic.ReaderAt(r.Backend(), h), size)
 	if err != nil {

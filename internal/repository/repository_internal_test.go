@@ -27,15 +27,15 @@ func TestSortCachedPacksFirst(t *testing.T) {
 		blobs[i] = restic.PackedBlob{PackID: id}
 
 		if i%3 == 0 {
-			h := restic.Handle{Name: id.String(), Type: restic.DataFile}
+			h := restic.Handle{Name: id.String(), Type: restic.PackFile}
 			cache[h] = true
 		}
 	}
 
 	copy(sorted[:], blobs[:])
 	sort.SliceStable(sorted[:], func(i, j int) bool {
-		hi := restic.Handle{Type: restic.DataFile, Name: sorted[i].PackID.String()}
-		hj := restic.Handle{Type: restic.DataFile, Name: sorted[j].PackID.String()}
+		hi := restic.Handle{Type: restic.PackFile, Name: sorted[i].PackID.String()}
+		hj := restic.Handle{Type: restic.PackFile, Name: sorted[j].PackID.String()}
 		return cache.Has(hi) && !cache.Has(hj)
 	})
 
@@ -58,7 +58,7 @@ func BenchmarkSortCachedPacksFirst(b *testing.B) {
 		blobs[i] = restic.PackedBlob{PackID: id}
 
 		if i%3 == 0 {
-			h := restic.Handle{Name: id.String(), Type: restic.DataFile}
+			h := restic.Handle{Name: id.String(), Type: restic.PackFile}
 			cache[h] = true
 		}
 	}

@@ -236,7 +236,7 @@ func (c *Checker) Packs(ctx context.Context, errChan chan<- error) {
 	debug.Log("listing repository packs")
 	repoPacks := restic.NewIDSet()
 
-	err := c.repo.List(ctx, restic.DataFile, func(id restic.ID, size int64) error {
+	err := c.repo.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
 		repoPacks.Insert(id)
 		return nil
 	})
@@ -701,7 +701,7 @@ func (c *Checker) GetPacks() restic.IDSet {
 // checkPack reads a pack and checks the integrity of all blobs.
 func checkPack(ctx context.Context, r restic.Repository, id restic.ID) error {
 	debug.Log("checking pack %v", id)
-	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
+	h := restic.Handle{Type: restic.PackFile, Name: id.String()}
 
 	packfile, hash, size, err := repository.DownloadAndHash(ctx, r.Backend(), h)
 	if err != nil {

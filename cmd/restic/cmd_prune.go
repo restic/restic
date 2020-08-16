@@ -128,7 +128,7 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	}
 
 	Verbosef("counting files in repo\n")
-	err = repo.List(ctx, restic.DataFile, func(restic.ID, int64) error {
+	err = repo.List(ctx, restic.PackFile, func(restic.ID, int64) error {
 		stats.packs++
 		return nil
 	})
@@ -277,7 +277,7 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 
 	if len(removePacks) != 0 {
 		Verbosef("remove %d old packs\n", len(removePacks))
-		DeleteFiles(gopts, repo, removePacks, restic.DataFile)
+		DeleteFiles(gopts, repo, removePacks, restic.PackFile)
 	}
 
 	Verbosef("done\n")

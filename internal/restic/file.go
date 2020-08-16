@@ -11,7 +11,7 @@ type FileType string
 
 // These are the different data types a backend can store.
 const (
-	DataFile     FileType = "data"
+	PackFile     FileType = "data" // use data, as packs are stored under /data in repo
 	KeyFile               = "key"
 	LockFile              = "lock"
 	SnapshotFile          = "snapshot"
@@ -40,7 +40,7 @@ func (h Handle) Valid() error {
 	}
 
 	switch h.Type {
-	case DataFile:
+	case PackFile:
 	case KeyFile:
 	case LockFile:
 	case SnapshotFile:

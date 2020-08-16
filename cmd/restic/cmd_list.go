@@ -50,7 +50,7 @@ func runList(cmd *cobra.Command, opts GlobalOptions, args []string) error {
 	var t restic.FileType
 	switch args[0] {
 	case "packs":
-		t = restic.DataFile
+		t = restic.PackFile
 	case "index":
 		t = restic.IndexFile
 	case "snapshots":
