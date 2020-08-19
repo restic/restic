@@ -116,7 +116,7 @@ func getNewPassword(gopts GlobalOptions) (string, error) {
 	newopts.password = ""
 
 	return ReadPasswordTwice(newopts,
-		"enter password for new key: ",
+		"enter new password: ",
 		"enter password again: ")
 }
 
