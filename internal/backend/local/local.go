@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"syscall"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -115,8 +116,13 @@ func (b *Local) Save(ctx context.Context, h restic.Handle, rd restic.RewindReade
 	}
 
 	if err = f.Sync(); err != nil {
-		_ = f.Close()
-		return errors.Wrap(err, "Sync")
+		pathErr, ok := err.(*os.PathError)
+		isNotSupported := ok && pathErr.Op == "sync" && pathErr.Err == syscall.ENOTSUP
+		// ignore error if filesystem does not support the sync operation
+		if !isNotSupported {
+			_ = f.Close()
+			return errors.Wrap(err, "Sync")
+		}
 	}
 
 	err = f.Close()

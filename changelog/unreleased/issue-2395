@@ -1,0 +1,12 @@
+Enhancement: Ignore sync errors when operation not supported by local filesystem
+
+The local backend has been modified to work with filesystems which doesn't support
+the `sync` operation. This operation is normally used by restic to ensure that data
+files are fully written to disk before continuing.
+
+For these limited filesystems, saving a file in the backend would previously fail with
+an "operation not supported" error. This error is now ignored, which means that e.g.
+an SMB mount on macOS can now be used as storage location for a repository.
+
+https://github.com/restic/restic/issues/2395
+https://forum.restic.net/t/sync-errors-on-mac-over-smb/1859
