@@ -213,12 +213,28 @@ On most Unixy shells, you can either quote or use backslashes. For example:
 
 By specifying the option ``--one-file-system`` you can instruct restic
 to only backup files from the file systems the initially specified files
-or directories reside on. For example, calling restic like this won't
-backup ``/sys`` or ``/dev`` on a Linux system:
+or directories reside on. In other words, it will prevent restic from crossing
+filesystem boundaries when performing a backup.
+
+For example, if you backup ``/`` with this option and you have external
+media mounted under ``/media/usb`` then restic will not back up ``/media/usb``
+at all because this is a different filesystem than ``/``. Virtual filesystems
+such as ``/proc`` are also considered different and thereby excluded when
+using ``--one-file-system``:
 
 .. code-block:: console
 
     $ restic -r /srv/restic-repo backup --one-file-system /
+
+Please note that this does not prevent you from specifying multiple filesystems
+on the command line, e.g:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo backup --one-file-system / /media/usb
+
+will back up both the ``/`` and ``/media/usb`` filesystems, but will not
+include other filesystems like ``/sys`` and ``/proc``.
 
 .. note:: ``--one-file-system`` is currently unsupported on Windows, and will
     cause the backup to immediately fail with an error.
