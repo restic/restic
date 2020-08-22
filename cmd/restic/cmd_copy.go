@@ -109,9 +109,36 @@ func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	visitedTrees := restic.NewIDSet()
+	dstSnapshotByOriginal := make(map[restic.ID][]*restic.Snapshot)
+	for sn := range FindFilteredSnapshots(ctx, dstRepo, opts.Hosts, opts.Tags, opts.Paths, nil) {
+		if sn.Original != nil && !sn.Original.IsNull() {
+			dstSnapshotByOriginal[*sn.Original] = append(dstSnapshotByOriginal[*sn.Original], sn)
+		}
+		// also consider identical snapshot copies
+		dstSnapshotByOriginal[*sn.ID()] = append(dstSnapshotByOriginal[*sn.ID()], sn)
+	}
 
 	for sn := range FindFilteredSnapshots(ctx, srcRepo, opts.Hosts, opts.Tags, opts.Paths, args) {
-		Verbosef("snapshot %s of %v at %s)\n", sn.ID().Str(), sn.Paths, sn.Time)
+		Verbosef("\nsnapshot %s of %v at %s)\n", sn.ID().Str(), sn.Paths, sn.Time)
+
+		// check whether the destination has a snapshot with the same persistent ID which has similar snapshot fields
+		srcOriginal := *sn.ID()
+		if sn.Original != nil {
+			srcOriginal = *sn.Original
+		}
+		if originalSns, ok := dstSnapshotByOriginal[srcOriginal]; ok {
+			isCopy := false
+			for _, originalSn := range originalSns {
+				if similarSnapshots(originalSn, sn) {
+					Verbosef("skipping source snapshot %s, was already copied to snapshot %s\n", sn.ID().Str(), originalSn.ID().Str())
+					isCopy = true
+					break
+				}
+			}
+			if isCopy {
+				continue
+			}
+		}
 		Verbosef("  copy started, this may take a while...\n")
 
 		if err := copyTree(ctx, srcRepo, dstRepo, *sn.Tree, visitedTrees); err != nil {
@@ -125,8 +152,11 @@ func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
 		debug.Log("flushed packs and saved index")
 
 		// save snapshot
-		sn.Parent = nil   // Parent does not have relevance in the new repo.
-		sn.Original = nil // Original does not have relevance in the new repo.
+		sn.Parent = nil // Parent does not have relevance in the new repo.
+		// Use Original as a persistent snapshot ID
+		if sn.Original == nil {
+			sn.Original = sn.ID()
+		}
 		newID, err := dstRepo.SaveJSONUnpacked(ctx, restic.SnapshotFile, sn)
 		if err != nil {
 			return err
@@ -134,6 +164,25 @@ func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
 		Verbosef("snapshot %s saved\n", newID.Str())
 	}
 	return nil
+}
+
+func similarSnapshots(sna *restic.Snapshot, snb *restic.Snapshot) bool {
+	// everything except Parent and Original must match
+	if !sna.Time.Equal(snb.Time) || !sna.Tree.Equal(*snb.Tree) || sna.Hostname != snb.Hostname ||
+		sna.Username != snb.Username || sna.UID != snb.UID || sna.GID != snb.GID ||
+		len(sna.Paths) != len(snb.Paths) || len(sna.Excludes) != len(snb.Excludes) ||
+		len(sna.Tags) != len(snb.Tags) {
+		return false
+	}
+	if !sna.HasPaths(snb.Paths) || !sna.HasTags(snb.Tags) {
+		return false
+	}
+	for i, a := range sna.Excludes {
+		if a != snb.Excludes[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func copyTree(ctx context.Context, srcRepo, dstRepo restic.Repository, treeID restic.ID, visitedTrees restic.IDSet) error {
