@@ -168,26 +168,14 @@ func copyTree(ctx context.Context, srcRepo, dstRepo restic.Repository, treeID re
 				continue
 			}
 			debug.Log("Copying blob %s\n", blobID.Str())
-			size, found := srcRepo.LookupBlobSize(blobID, restic.DataBlob)
-			if !found {
-				return fmt.Errorf("LookupBlobSize(%v) failed", blobID)
-			}
-			buf := restic.NewBlobBuffer(int(size))
-			n, err := srcRepo.LoadBlob(ctx, restic.DataBlob, blobID, buf)
+			buf, err := srcRepo.LoadBlob(ctx, restic.DataBlob, blobID, nil)
 			if err != nil {
 				return fmt.Errorf("LoadBlob(%v) returned error %v", blobID, err)
 			}
-			if n != len(buf) {
-				return fmt.Errorf("wrong number of bytes read, want %d, got %d", len(buf), n)
-			}
 
-			newBlobID, err := dstRepo.SaveBlob(ctx, restic.DataBlob, buf, blobID)
+			_, _, err = dstRepo.SaveBlob(ctx, restic.DataBlob, buf, blobID, false)
 			if err != nil {
 				return fmt.Errorf("SaveBlob(%v) returned error %v", blobID, err)
-			}
-			// Assurance only.
-			if newBlobID != blobID {
-				return fmt.Errorf("SaveBlob(%v) returned unexpected id %s", blobID.Str(), newBlobID.Str())
 			}
 		}
 	}
