@@ -260,22 +260,18 @@ func testRunPrune(t testing.TB, gopts GlobalOptions) {
 	rtest.OK(t, runPrune(gopts))
 }
 
+func testSetupBackupData(t testing.TB, env *testEnvironment) string {
+	datafile := filepath.Join("testdata", "backup-data.tar.gz")
+	testRunInit(t, env.gopts)
+	rtest.SetupTarTestFixture(t, env.testdata, datafile)
+	return datafile
+}
+
 func TestBackup(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
-	datafile := filepath.Join("testdata", "backup-data.tar.gz")
-	fd, err := os.Open(datafile)
-	if os.IsNotExist(errors.Cause(err)) {
-		t.Skipf("unable to find data file %q, skipping", datafile)
-		return
-	}
-	rtest.OK(t, err)
-	rtest.OK(t, fd.Close())
-
-	testRunInit(t, env.gopts)
-
-	rtest.SetupTarTestFixture(t, env.testdata, datafile)
+	testSetupBackupData(t, env)
 	opts := BackupOptions{}
 
 	// first backup
@@ -329,18 +325,7 @@ func TestBackupNonExistingFile(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
-	datafile := filepath.Join("testdata", "backup-data.tar.gz")
-	fd, err := os.Open(datafile)
-	if os.IsNotExist(errors.Cause(err)) {
-		t.Skipf("unable to find data file %q, skipping", datafile)
-		return
-	}
-	rtest.OK(t, err)
-	rtest.OK(t, fd.Close())
-
-	rtest.SetupTarTestFixture(t, env.testdata, datafile)
-
-	testRunInit(t, env.gopts)
+	testSetupBackupData(t, env)
 	globalOptions.stderr = ioutil.Discard
 	defer func() {
 		globalOptions.stderr = os.Stderr
@@ -503,11 +488,7 @@ func TestBackupErrors(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
-	datafile := filepath.Join("testdata", "backup-data.tar.gz")
-
-	rtest.SetupTarTestFixture(t, env.testdata, datafile)
-
-	testRunInit(t, env.gopts)
+	testSetupBackupData(t, env)
 
 	// Assume failure
 	inaccessibleFile := filepath.Join(env.testdata, "0", "0", "9", "0")
@@ -596,10 +577,7 @@ func TestBackupTags(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
-	datafile := filepath.Join("testdata", "backup-data.tar.gz")
-	testRunInit(t, env.gopts)
-	rtest.SetupTarTestFixture(t, env.testdata, datafile)
-
+	testSetupBackupData(t, env)
 	opts := BackupOptions{}
 
 	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
@@ -630,10 +608,7 @@ func TestTag(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
-	datafile := filepath.Join("testdata", "backup-data.tar.gz")
-	testRunInit(t, env.gopts)
-	rtest.SetupTarTestFixture(t, env.testdata, datafile)
-
+	testSetupBackupData(t, env)
 	testRunBackup(t, "", []string{env.testdata}, BackupOptions{}, env.gopts)
 	testRunCheck(t, env.gopts)
 	newest, _ := testRunSnapshots(t, env.gopts)
@@ -1033,10 +1008,7 @@ func TestFind(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
-	datafile := filepath.Join("testdata", "backup-data.tar.gz")
-	testRunInit(t, env.gopts)
-	rtest.SetupTarTestFixture(t, env.testdata, datafile)
-
+	datafile := testSetupBackupData(t, env)
 	opts := BackupOptions{}
 
 	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
@@ -1073,10 +1045,7 @@ func TestFindJSON(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
-	datafile := filepath.Join("testdata", "backup-data.tar.gz")
-	testRunInit(t, env.gopts)
-	rtest.SetupTarTestFixture(t, env.testdata, datafile)
-
+	datafile := testSetupBackupData(t, env)
 	opts := BackupOptions{}
 
 	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
@@ -1199,18 +1168,7 @@ func TestPrune(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
-	datafile := filepath.Join("testdata", "backup-data.tar.gz")
-	fd, err := os.Open(datafile)
-	if os.IsNotExist(errors.Cause(err)) {
-		t.Skipf("unable to find data file %q, skipping", datafile)
-		return
-	}
-	rtest.OK(t, err)
-	rtest.OK(t, fd.Close())
-
-	testRunInit(t, env.gopts)
-
-	rtest.SetupTarTestFixture(t, env.testdata, datafile)
+	testSetupBackupData(t, env)
 	opts := BackupOptions{}
 
 	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9")}, opts, env.gopts)
@@ -1385,18 +1343,7 @@ func TestQuietBackup(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
-	datafile := filepath.Join("testdata", "backup-data.tar.gz")
-	fd, err := os.Open(datafile)
-	if os.IsNotExist(errors.Cause(err)) {
-		t.Skipf("unable to find data file %q, skipping", datafile)
-		return
-	}
-	rtest.OK(t, err)
-	rtest.OK(t, fd.Close())
-
-	testRunInit(t, env.gopts)
-
-	rtest.SetupTarTestFixture(t, env.testdata, datafile)
+	testSetupBackupData(t, env)
 	opts := BackupOptions{}
 
 	env.gopts.Quiet = false
