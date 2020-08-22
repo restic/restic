@@ -108,11 +108,13 @@ func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
+	visitedTrees := restic.NewIDSet()
+
 	for sn := range FindFilteredSnapshots(ctx, srcRepo, opts.Hosts, opts.Tags, opts.Paths, args) {
 		Verbosef("snapshot %s of %v at %s)\n", sn.ID().Str(), sn.Paths, sn.Time)
 		Verbosef("  copy started, this may take a while...\n")
 
-		if err := copyTree(ctx, srcRepo, dstRepo, *sn.Tree); err != nil {
+		if err := copyTree(ctx, srcRepo, dstRepo, *sn.Tree, visitedTrees); err != nil {
 			return err
 		}
 		debug.Log("tree copied")
@@ -134,11 +136,18 @@ func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
 	return nil
 }
 
-func copyTree(ctx context.Context, srcRepo, dstRepo restic.Repository, treeID restic.ID) error {
+func copyTree(ctx context.Context, srcRepo, dstRepo restic.Repository, treeID restic.ID, visitedTrees restic.IDSet) error {
+	// We have already processed this tree
+	if visitedTrees.Has(treeID) {
+		return nil
+	}
+
 	tree, err := srcRepo.LoadTree(ctx, treeID)
 	if err != nil {
 		return fmt.Errorf("LoadTree(%v) returned error %v", treeID.Str(), err)
 	}
+	visitedTrees.Insert(treeID)
+
 	// Do we already have this tree blob?
 	if !dstRepo.Index().Has(treeID, restic.TreeBlob) {
 		newTreeID, err := dstRepo.SaveTree(ctx, tree)
@@ -157,7 +166,7 @@ func copyTree(ctx context.Context, srcRepo, dstRepo restic.Repository, treeID re
 	for _, entry := range tree.Nodes {
 		// If it is a directory, recurse
 		if entry.Type == "dir" && entry.Subtree != nil {
-			if err := copyTree(ctx, srcRepo, dstRepo, *entry.Subtree); err != nil {
+			if err := copyTree(ctx, srcRepo, dstRepo, *entry.Subtree, visitedTrees); err != nil {
 				return err
 			}
 		}
