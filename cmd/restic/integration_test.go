@@ -313,7 +313,7 @@ func TestBackup(t *testing.T) {
 	for i, snapshotID := range snapshotIDs {
 		restoredir := filepath.Join(env.base, fmt.Sprintf("restore%d", i))
 		t.Logf("restoring snapshot %v to %v", snapshotID.Str(), restoredir)
-		testRunRestore(t, env.gopts, restoredir, snapshotIDs[0])
+		testRunRestore(t, env.gopts, restoredir, snapshotID)
 		diff := directoriesContentsDiff(env.testdata, filepath.Join(restoredir, "testdata"))
 		rtest.Assert(t, diff == "", "directories are not equal: %v", diff)
 	}
@@ -1390,7 +1390,7 @@ func TestHardLink(t *testing.T) {
 	for i, snapshotID := range snapshotIDs {
 		restoredir := filepath.Join(env.base, fmt.Sprintf("restore%d", i))
 		t.Logf("restoring snapshot %v to %v", snapshotID.Str(), restoredir)
-		testRunRestore(t, env.gopts, restoredir, snapshotIDs[0])
+		testRunRestore(t, env.gopts, restoredir, snapshotID)
 		diff := directoriesContentsDiff(env.testdata, filepath.Join(restoredir, "testdata"))
 		rtest.Assert(t, diff == "", "directories are not equal %v", diff)
 
