@@ -30,6 +30,7 @@ their deduplication.
 // CopyOptions bundles all options for the copy command.
 type CopyOptions struct {
 	Repo            string
+	password        string
 	PasswordFile    string
 	PasswordCommand string
 	KeyHint         string
@@ -64,9 +65,13 @@ func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
 	dstGopts.PasswordFile = opts.PasswordFile
 	dstGopts.PasswordCommand = opts.PasswordCommand
 	dstGopts.KeyHint = opts.KeyHint
-	dstGopts.password, err = resolvePassword(dstGopts, "RESTIC_PASSWORD2")
-	if err != nil {
-		return err
+	if opts.password != "" {
+		dstGopts.password = opts.password
+	} else {
+		dstGopts.password, err = resolvePassword(dstGopts, "RESTIC_PASSWORD2")
+		if err != nil {
+			return err
+		}
 	}
 	dstGopts.password, err = ReadPassword(dstGopts, "enter password for destination repository: ")
 	if err != nil {

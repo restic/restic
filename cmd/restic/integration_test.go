@@ -600,6 +600,121 @@ func TestBackupTags(t *testing.T) {
 		"expected parent to be %v, got %v", parent.ID, newest.Parent)
 }
 
+func testRunCopy(t testing.TB, srcGopts GlobalOptions, dstGopts GlobalOptions) {
+	copyOpts := CopyOptions{
+		Repo:     dstGopts.Repo,
+		password: dstGopts.password,
+	}
+
+	rtest.OK(t, runCopy(copyOpts, srcGopts, nil))
+}
+
+func TestCopy(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	env2, cleanup2 := withTestEnvironment(t)
+	defer cleanup2()
+
+	testSetupBackupData(t, env)
+	opts := BackupOptions{}
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9")}, opts, env.gopts)
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "2")}, opts, env.gopts)
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "3")}, opts, env.gopts)
+	testRunCheck(t, env.gopts)
+
+	testRunInit(t, env2.gopts)
+	testRunCopy(t, env.gopts, env2.gopts)
+
+	snapshotIDs := testRunList(t, "snapshots", env.gopts)
+	copiedSnapshotIDs := testRunList(t, "snapshots", env2.gopts)
+
+	// Check that the copies size seems reasonable
+	rtest.Assert(t, len(snapshotIDs) == len(copiedSnapshotIDs), "expected %v snapshots, found %v",
+		len(snapshotIDs), len(copiedSnapshotIDs))
+	stat := dirStats(env.repo)
+	stat2 := dirStats(env2.repo)
+	sizeDiff := int64(stat.size) - int64(stat2.size)
+	if sizeDiff < 0 {
+		sizeDiff = -sizeDiff
+	}
+	rtest.Assert(t, sizeDiff < int64(stat.size)/50, "expected less than 2%% size difference: %v vs. %v",
+		stat.size, stat2.size)
+
+	// Check integrity of the copy
+	testRunCheck(t, env2.gopts)
+
+	// Check that the copied snapshots have the same tree contents as the old ones (= identical tree hash)
+	origRestores := make(map[string]struct{})
+	for i, snapshotID := range snapshotIDs {
+		restoredir := filepath.Join(env.base, fmt.Sprintf("restore%d", i))
+		origRestores[restoredir] = struct{}{}
+		testRunRestore(t, env.gopts, restoredir, snapshotID)
+	}
+	for i, snapshotID := range copiedSnapshotIDs {
+		restoredir := filepath.Join(env2.base, fmt.Sprintf("restore%d", i))
+		testRunRestore(t, env2.gopts, restoredir, snapshotID)
+		foundMatch := false
+		for cmpdir := range origRestores {
+			diff := directoriesContentsDiff(restoredir, cmpdir)
+			if diff == "" {
+				delete(origRestores, cmpdir)
+				foundMatch = true
+			}
+		}
+
+		rtest.Assert(t, foundMatch, "found no counterpart for snapshot %v", snapshotID)
+	}
+
+	rtest.Assert(t, len(origRestores) == 0, "found not copied snapshots")
+}
+
+func TestCopyIncremental(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	env2, cleanup2 := withTestEnvironment(t)
+	defer cleanup2()
+
+	testSetupBackupData(t, env)
+	opts := BackupOptions{}
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9")}, opts, env.gopts)
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "2")}, opts, env.gopts)
+	testRunCheck(t, env.gopts)
+
+	testRunInit(t, env2.gopts)
+	testRunCopy(t, env.gopts, env2.gopts)
+
+	snapshotIDs := testRunList(t, "snapshots", env.gopts)
+	copiedSnapshotIDs := testRunList(t, "snapshots", env2.gopts)
+
+	// Check that the copies size seems reasonable
+	testRunCheck(t, env2.gopts)
+	rtest.Assert(t, len(snapshotIDs) == len(copiedSnapshotIDs), "expected %v snapshots, found %v",
+		len(snapshotIDs), len(copiedSnapshotIDs))
+
+	// check that no snapshots are copied, as there are no new ones
+	testRunCopy(t, env.gopts, env2.gopts)
+	testRunCheck(t, env2.gopts)
+	copiedSnapshotIDs = testRunList(t, "snapshots", env2.gopts)
+	rtest.Assert(t, len(snapshotIDs) == len(copiedSnapshotIDs), "still expected %v snapshots, found %v",
+		len(snapshotIDs), len(copiedSnapshotIDs))
+
+	// check that only new snapshots are copied
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "3")}, opts, env.gopts)
+	testRunCopy(t, env.gopts, env2.gopts)
+	testRunCheck(t, env2.gopts)
+	snapshotIDs = testRunList(t, "snapshots", env.gopts)
+	copiedSnapshotIDs = testRunList(t, "snapshots", env2.gopts)
+	rtest.Assert(t, len(snapshotIDs) == len(copiedSnapshotIDs), "still expected %v snapshots, found %v",
+		len(snapshotIDs), len(copiedSnapshotIDs))
+
+	// also test the reverse direction
+	testRunCopy(t, env2.gopts, env.gopts)
+	testRunCheck(t, env.gopts)
+	snapshotIDs = testRunList(t, "snapshots", env.gopts)
+	rtest.Assert(t, len(snapshotIDs) == len(copiedSnapshotIDs), "still expected %v snapshots, found %v",
+		len(copiedSnapshotIDs), len(snapshotIDs))
+}
+
 func testRunTag(t testing.TB, opts TagOptions, gopts GlobalOptions) {
 	rtest.OK(t, runTag(opts, gopts, []string{}))
 }
