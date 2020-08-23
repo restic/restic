@@ -191,10 +191,17 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 		return err
 	}
 
-	if len(usedBlobs) > stats.blobs {
-		return errors.Fatalf("number of used blobs is larger than number of available blobs!\n" +
-			"Please report this error (along with the output of the 'prune' run) at\n" +
-			"https://github.com/restic/restic/issues/new")
+	var missingBlobs []restic.BlobHandle
+	for h := range usedBlobs {
+		if _, ok := blobCount[h]; !ok {
+			missingBlobs = append(missingBlobs, h)
+		}
+	}
+	if len(missingBlobs) > 0 {
+		return errors.Fatalf("%v not found in the new index\n"+
+			"Data blobs seem to be missing, aborting prune to prevent further data loss!\n"+
+			"Please report this error (along with the output of the 'prune' run) at\n"+
+			"https://github.com/restic/restic/issues/new/choose", missingBlobs)
 	}
 
 	Verbosef("found %d of %d data blobs still in use, removing %d blobs\n",

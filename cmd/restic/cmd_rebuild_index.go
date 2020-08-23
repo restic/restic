@@ -92,7 +92,10 @@ func rebuildIndex(ctx context.Context, repo restic.Repository, ignorePacks resti
 	Verbosef("saved new indexes as %v\n", ids)
 
 	Verbosef("remove %d old index files\n", len(supersedes))
-	DeleteFiles(globalOptions, repo, restic.NewIDSet(supersedes...), restic.IndexFile)
+	err = DeleteFilesChecked(globalOptions, repo, restic.NewIDSet(supersedes...), restic.IndexFile)
+	if err != nil {
+		return errors.Fatalf("unable to remove an old index: %v\n", err)
+	}
 
 	return nil
 }

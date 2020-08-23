@@ -54,6 +54,24 @@ func createRandomBlobs(t testing.TB, repo restic.Repository, blobs int, pData fl
 	}
 }
 
+func createRandomWrongBlob(t testing.TB, repo restic.Repository) {
+	length := randomSize(10*1024, 1024*1024) // 10KiB to 1MiB of data
+	buf := make([]byte, length)
+	rand.Read(buf)
+	id := restic.Hash(buf)
+	// invert first data byte
+	buf[0] ^= 0xff
+
+	_, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, buf, id, false)
+	if err != nil {
+		t.Fatalf("SaveFrom() error %v", err)
+	}
+
+	if err := repo.Flush(context.Background()); err != nil {
+		t.Fatalf("repo.Flush() returned error %v", err)
+	}
+}
+
 // selectBlobs splits the list of all blobs randomly into two lists. A blob
 // will be contained in the firstone ith probability p.
 func selectBlobs(t *testing.T, repo restic.Repository, p float32) (list1, list2 restic.BlobSet) {
@@ -238,4 +256,26 @@ func TestRepack(t *testing.T) {
 			t.Errorf("blob %v still contained in the repo", h)
 		}
 	}
+}
+
+func TestRepackWrongBlob(t *testing.T) {
+	repo, cleanup := repository.TestRepository(t)
+	defer cleanup()
+
+	seed := rand.Int63()
+	rand.Seed(seed)
+	t.Logf("rand seed is %v", seed)
+
+	createRandomBlobs(t, repo, 5, 0.7)
+	createRandomWrongBlob(t, repo)
+
+	// just keep all blobs, but also rewrite every pack
+	_, keepBlobs := selectBlobs(t, repo, 0)
+	rewritePacks := findPacksForBlobs(t, repo, keepBlobs)
+
+	_, err := repository.Repack(context.TODO(), repo, rewritePacks, keepBlobs, nil)
+	if err == nil {
+		t.Fatal("expected repack to fail but got no error")
+	}
+	t.Log(err)
 }
