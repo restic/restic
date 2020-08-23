@@ -39,8 +39,8 @@ Please describe the feature you'd like us to add here.
 -->
 
 
-What are you trying to do?
---------------------------
+What are you trying to do? What problem would this solve?
+---------------------------------------------------------
 
 <!--
 This section should contain a brief description what you're trying to do, which
