@@ -386,7 +386,7 @@ Environment Variables
 *********************
 
 In addition to command-line options, restic supports passing various options in
-environment variables. The following list of environment variables:
+environment variables. The following lists these environment variables:
 
 .. code-block:: console
 
@@ -394,10 +394,13 @@ environment variables. The following list of environment variables:
     RESTIC_PASSWORD_FILE                Location of password file (replaces --password-file)
     RESTIC_PASSWORD                     The actual password for the repository
     RESTIC_PASSWORD_COMMAND             Command printing the password for the repository to stdout
+    RESTIC_KEY_HINT                     ID of key to try decrypting first, before other keys
     RESTIC_CACHE_DIR                    Location of the cache directory
+    RESTIC_PROGRESS_FPS                 Frames per second by which the progress bar is updated
 
     AWS_ACCESS_KEY_ID                   Amazon S3 access key ID
     AWS_SECRET_ACCESS_KEY               Amazon S3 secret access key
+    AWS_DEFAULT_REGION                  Amazon S3 default region
 
     ST_AUTH                             Auth URL for keystone v1 authentication
     ST_USER                             Username for keystone v1 authentication
@@ -432,13 +435,13 @@ environment variables. The following list of environment variables:
 
     RCLONE_BWLIMIT                      rclone bandwidth limit
 
-
 In addition to restic-specific environment variables, the following system-wide environment variables
 are taken into account for various operations:
 
  * ``$XDG_CACHE_HOME/restic``, ``$HOME/.cache/restic``: :ref:`caching`.
  * ``$TMPDIR``: :ref:`temporary_files`.
  * ``$PATH/fusermount``: Binary for ``restic mount``.
+
 
 Exit status codes
 *****************
