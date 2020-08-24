@@ -20,6 +20,7 @@ Usage help is available:
       cache         Operate on local cache directories
       cat           Print internal objects to stdout
       check         Check the repository for errors
+      copy          Copy snapshots from one repository to another
       diff          Show differences between two snapshots
       dump          Print a backed-up file to stdout
       find          Find a file, a directory or restic IDs
