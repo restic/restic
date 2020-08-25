@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/spf13/cobra"
 
@@ -97,36 +96,6 @@ func stringToIntSlice(param string) (split []uint, err error) {
 		result[idx] = uint(uintval)
 	}
 	return result, nil
-}
-
-func newReadProgress(gopts GlobalOptions, todo restic.Stat) *restic.Progress {
-	if gopts.Quiet {
-		return nil
-	}
-
-	readProgress := restic.NewProgress()
-
-	readProgress.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
-		status := fmt.Sprintf("[%s] %s  %d / %d items",
-			formatDuration(d),
-			formatPercent(s.Blobs, todo.Blobs),
-			s.Blobs, todo.Blobs)
-
-		if w := stdoutTerminalWidth(); w > 0 {
-			if len(status) > w {
-				max := w - len(status) - 4
-				status = status[:max] + "... "
-			}
-		}
-
-		PrintProgress("%s", status)
-	}
-
-	readProgress.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
-		fmt.Printf("\nduration: %s\n", formatDuration(d))
-	}
-
-	return readProgress
 }
 
 // prepareCheckCache configures a special cache directory for check.
@@ -281,7 +250,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 			Verbosef("read all data\n")
 		}
 
-		p := newReadProgress(gopts, restic.Stat{Blobs: packCount})
+		p := newProgressMax(!gopts.Quiet, packCount, "packs")
 		errChan := make(chan error)
 
 		go chkr.ReadPacks(gopts.ctx, packs, p, errChan)
