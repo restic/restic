@@ -1,0 +1,7 @@
+Enhancement: Add flag `--iexclude-file` to backup command
+
+The backup command now supports the flag `--iexclude-file` which is a
+case-insensitive version of `--exclude-file`.
+
+https://github.com/restic/restic/issues/2427
+https://github.com/restic/restic/pull/2898
