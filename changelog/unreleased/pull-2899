@@ -1,0 +1,9 @@
+Bugfix: Fix possible crash in the progress bar of check --read-data
+
+We've fixed a possible crash while displaying the progress bar for the
+check --read-data command. The crash occurred when the length of the
+progress bar status exceeded the terminal width, which only happened for
+very narrow terminal windows.
+
+https://github.com/restic/restic/pull/2899
+https://forum.restic.net/t/restic-rclone-pcloud-connection-issues/2963/15
