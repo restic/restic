@@ -16,7 +16,7 @@ import (
 )
 
 var cmdKey = &cobra.Command{
-	Use:   "key [list|add|remove|passwd] [ID]",
+	Use:   "key [flags] [list|add|remove|passwd] [ID]",
 	Short: "Manage keys (passwords)",
 	Long: `
 The "key" command manages keys (passwords) for accessing the repository.
