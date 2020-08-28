@@ -292,7 +292,7 @@ Restic can write out man pages and bash/zsh compatible autocompletion scripts:
     and the auto-completion files for bash and zsh).
 
     Usage:
-      restic generate [command] [flags]
+      restic generate [flags] [command]
 
     Flags:
           --bash-completion file   write bash completion file
