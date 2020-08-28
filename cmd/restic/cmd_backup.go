@@ -78,22 +78,23 @@ Exit status is 3 if some source data could not be read (incomplete snapshot crea
 
 // BackupOptions bundles all options for the backup command.
 type BackupOptions struct {
-	Parent              string
-	Force               bool
-	Excludes            []string
-	InsensitiveExcludes []string
-	ExcludeFiles        []string
-	ExcludeOtherFS      bool
-	ExcludeIfPresent    []string
-	ExcludeCaches       bool
-	Stdin               bool
-	StdinFilename       string
-	Tags                []string
-	Host                string
-	FilesFrom           []string
-	TimeStamp           string
-	WithAtime           bool
-	IgnoreInode         bool
+	Parent                  string
+	Force                   bool
+	Excludes                []string
+	InsensitiveExcludes     []string
+	ExcludeFiles            []string
+	InsensitiveExcludeFiles []string
+	ExcludeOtherFS          bool
+	ExcludeIfPresent        []string
+	ExcludeCaches           bool
+	Stdin                   bool
+	StdinFilename           string
+	Tags                    []string
+	Host                    string
+	FilesFrom               []string
+	TimeStamp               string
+	WithAtime               bool
+	IgnoreInode             bool
 }
 
 var backupOptions BackupOptions
@@ -110,6 +111,7 @@ func init() {
 	f.StringArrayVarP(&backupOptions.Excludes, "exclude", "e", nil, "exclude a `pattern` (can be specified multiple times)")
 	f.StringArrayVar(&backupOptions.InsensitiveExcludes, "iexclude", nil, "same as --exclude `pattern` but ignores the casing of filenames")
 	f.StringArrayVar(&backupOptions.ExcludeFiles, "exclude-file", nil, "read exclude patterns from a `file` (can be specified multiple times)")
+	f.StringArrayVar(&backupOptions.InsensitiveExcludeFiles, "iexclude-file", nil, "same as --exclude-file but ignores casing of `file`names in patterns")
 	f.BoolVarP(&backupOptions.ExcludeOtherFS, "one-file-system", "x", false, "exclude other file systems")
 	f.StringArrayVar(&backupOptions.ExcludeIfPresent, "exclude-if-present", nil, "takes `filename[:header]`, exclude contents of directories containing filename (except filename itself) if header of that file is as provided (can be specified multiple times)")
 	f.BoolVar(&backupOptions.ExcludeCaches, "exclude-caches", false, `excludes cache directories that are marked with a CACHEDIR.TAG file. See https://bford.info/cachedir/ for the Cache Directory Tagging Standard`)
@@ -237,6 +239,14 @@ func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository, t
 			return nil, err
 		}
 		opts.Excludes = append(opts.Excludes, excludes...)
+	}
+
+	if len(opts.InsensitiveExcludeFiles) > 0 {
+		excludes, err := readExcludePatternsFromFiles(opts.InsensitiveExcludeFiles)
+		if err != nil {
+			return nil, err
+		}
+		opts.InsensitiveExcludes = append(opts.InsensitiveExcludes, excludes...)
 	}
 
 	if len(opts.InsensitiveExcludes) > 0 {
