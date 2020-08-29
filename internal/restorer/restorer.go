@@ -90,7 +90,7 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 		}
 
 		selectedForRestore, childMayBeSelected := res.SelectFilter(nodeLocation, nodeTarget, node)
-		debug.Log("SelectFilter returned %v %v", selectedForRestore, childMayBeSelected)
+		debug.Log("SelectFilter returned %v %v for %q", selectedForRestore, childMayBeSelected, nodeLocation)
 
 		sanitizeError := func(err error) error {
 			if err != nil {
@@ -198,24 +198,23 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 		}
 	}
 
-	restoreNodeMetadata := func(node *restic.Node, target, location string) error {
-		return res.restoreNodeMetadataTo(node, target, location)
-	}
-	noop := func(node *restic.Node, target, location string) error { return nil }
-
 	idx := restic.NewHardlinkIndex()
 
 	filerestorer := newFileRestorer(dst, res.repo.Backend().Load, res.repo.Key(), res.repo.Index().Lookup)
 
+	debug.Log("first pass for %q", dst)
+
 	// first tree pass: create directories and collect all files to restore
 	err = res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
 		enterDir: func(node *restic.Node, target, location string) error {
+			debug.Log("first pass, enterDir: mkdir %q, leaveDir should restore metadata", location)
 			// create dir with default permissions
 			// #leaveDir restores dir metadata after visiting all children
 			return fs.MkdirAll(target, 0700)
 		},
 
 		visitNode: func(node *restic.Node, target, location string) error {
+			debug.Log("first pass, visitNode: mkdir %q, leaveDir on second pass should restore metadata", location)
 			// create parent dir with default permissions
 			// second pass #leaveDir restores dir metadata after visiting/restoring all children
 			err := fs.MkdirAll(filepath.Dir(target), 0700)
@@ -242,7 +241,9 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 
 			return nil
 		},
-		leaveDir: noop,
+		leaveDir: func(node *restic.Node, target, location string) error {
+			return nil
+		},
 	})
 	if err != nil {
 		return err
@@ -253,10 +254,15 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 		return err
 	}
 
+	debug.Log("second pass for %q", dst)
+
 	// second tree pass: restore special files and filesystem metadata
 	return res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
-		enterDir: noop,
+		enterDir: func(node *restic.Node, target, location string) error {
+			return nil
+		},
 		visitNode: func(node *restic.Node, target, location string) error {
+			debug.Log("second pass, visitNode: restore node %q", location)
 			if node.Type != "file" {
 				return res.restoreNodeTo(ctx, node, target, location)
 			}
@@ -275,7 +281,10 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 
 			return res.restoreNodeMetadataTo(node, target, location)
 		},
-		leaveDir: restoreNodeMetadata,
+		leaveDir: func(node *restic.Node, target, location string) error {
+			debug.Log("second pass, leaveDir restore metadata %q", location)
+			return res.restoreNodeMetadataTo(node, target, location)
+		},
 	})
 }
 
