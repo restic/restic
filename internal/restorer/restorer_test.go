@@ -692,7 +692,7 @@ func TestRestorerTraverseTree(t *testing.T) {
 			// make sure we're creating a new subdir of the tempdir
 			target := filepath.Join(tempdir, "target")
 
-			err = res.traverseTree(ctx, target, string(filepath.Separator), *sn.Tree, test.Visitor(t))
+			_, err = res.traverseTree(ctx, target, string(filepath.Separator), *sn.Tree, test.Visitor(t))
 			if err != nil {
 				t.Fatal(err)
 			}
