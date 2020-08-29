@@ -16,7 +16,7 @@ import (
 )
 
 var cmdLs = &cobra.Command{
-	Use:   "ls [flags] [snapshotID] [dir...]",
+	Use:   "ls [flags] snapshotID [dir...]",
 	Short: "List files in a snapshot",
 	Long: `
 The "ls" command lists files and directories in a snapshot.
@@ -89,8 +89,8 @@ type lsNode struct {
 }
 
 func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
-	if len(args) == 0 && len(opts.Hosts) == 0 && len(opts.Tags) == 0 && len(opts.Paths) == 0 {
-		return errors.Fatal("Invalid arguments, either give one or more snapshot IDs or set filters.")
+	if len(args) == 0 {
+		return errors.Fatal("no snapshot ID specified")
 	}
 
 	// extract any specific directories to walk
