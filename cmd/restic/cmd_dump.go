@@ -59,7 +59,7 @@ func splitPath(p string) []string {
 	if d == "" || d == "/" {
 		return []string{f}
 	}
-	s := splitPath(path.Clean(path.Join("/", d)))
+	s := splitPath(path.Join("/", d))
 	return append(s, f)
 }
 
