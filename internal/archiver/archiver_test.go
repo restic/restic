@@ -811,7 +811,7 @@ func TestArchiverSaveDir(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			ft, err := arch.SaveDir(ctx, "/", fi, test.target, nil)
+			ft, err := arch.SaveDir(ctx, "/", fi, test.target, nil, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -888,7 +888,7 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ft, err := arch.SaveDir(ctx, "/", fi, tempdir, nil)
+		ft, err := arch.SaveDir(ctx, "/", fi, tempdir, nil, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -947,6 +947,14 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 	}
 }
 
+// bothZeroOrNeither fails the test if only one of exp, act is zero.
+func bothZeroOrNeither(tb testing.TB, exp, act uint64) {
+	if (exp == 0 && act != 0) || (exp != 0 && act == 0) {
+		_, file, line, _ := runtime.Caller(1)
+		tb.Fatalf("\033[31m%s:%d:\n\n\texp: %#v\n\n\tgot: %#v\033[39m\n\n", filepath.Base(file), line, exp, act)
+	}
+}
+
 func TestArchiverSaveTree(t *testing.T) {
 	symlink := func(from, to string) func(t testing.TB) {
 		return func(t testing.TB) {
@@ -957,11 +965,13 @@ func TestArchiverSaveTree(t *testing.T) {
 		}
 	}
 
+	// The toplevel directory is not counted in the ItemStats
 	var tests = []struct {
 		src     TestDir
 		prepare func(t testing.TB)
 		targets []string
 		want    TestDir
+		stat    ItemStats
 	}{
 		{
 			src: TestDir{
@@ -971,6 +981,7 @@ func TestArchiverSaveTree(t *testing.T) {
 			want: TestDir{
 				"targetfile": TestFile{Content: string("foobar")},
 			},
+			stat: ItemStats{1, 6, 0, 0},
 		},
 		{
 			src: TestDir{
@@ -982,6 +993,7 @@ func TestArchiverSaveTree(t *testing.T) {
 				"targetfile":  TestFile{Content: string("foobar")},
 				"filesymlink": TestSymlink{Target: "targetfile"},
 			},
+			stat: ItemStats{1, 6, 0, 0},
 		},
 		{
 			src: TestDir{
@@ -1001,6 +1013,7 @@ func TestArchiverSaveTree(t *testing.T) {
 					"symlink": TestSymlink{Target: "subdir"},
 				},
 			},
+			stat: ItemStats{0, 0, 1, 0x154},
 		},
 		{
 			src: TestDir{
@@ -1024,6 +1037,7 @@ func TestArchiverSaveTree(t *testing.T) {
 					},
 				},
 			},
+			stat: ItemStats{1, 6, 3, 0x47f},
 		},
 	}
 
@@ -1038,6 +1052,15 @@ func TestArchiverSaveTree(t *testing.T) {
 			testFS := fs.Track{FS: fs.Local{}}
 
 			arch := New(repo, testFS, Options{})
+
+			var stat ItemStats
+			lock := &sync.Mutex{}
+			arch.CompleteItem = func(item string, previous, current *restic.Node, s ItemStats, d time.Duration) {
+				lock.Lock()
+				defer lock.Unlock()
+				stat.Add(s)
+			}
+
 			arch.runWorkers(ctx, &tmb)
 
 			back := fs.TestChdir(t, tempdir)
@@ -1078,6 +1101,10 @@ func TestArchiverSaveTree(t *testing.T) {
 				want = test.src
 			}
 			TestEnsureTree(ctx, t, "/", repo, treeID, want)
+			bothZeroOrNeither(t, uint64(test.stat.DataBlobs), uint64(stat.DataBlobs))
+			bothZeroOrNeither(t, uint64(test.stat.TreeBlobs), uint64(stat.TreeBlobs))
+			bothZeroOrNeither(t, test.stat.DataSize, stat.DataSize)
+			bothZeroOrNeither(t, test.stat.TreeSize, stat.TreeSize)
 		})
 	}
 }
