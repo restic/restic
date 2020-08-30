@@ -20,6 +20,7 @@ Usage help is available:
       cache         Operate on local cache directories
       cat           Print internal objects to stdout
       check         Check the repository for errors
+      copy          Copy snapshots from one repository to another
       diff          Show differences between two snapshots
       dump          Print a backed-up file to stdout
       find          Find a file, a directory or restic IDs
@@ -79,10 +80,9 @@ command:
     EXIT STATUS
     ===========
 
-    Exit status is 0 if the command was successful, and non-zero if there was any error.
-
-    Note that some issues such as unreadable or deleted files during backup
-    currently doesn't result in a non-zero error exit status.
+    Exit status is 0 if the command was successful.
+    Exit status is 1 if there was a fatal error (no snapshot created).
+    Exit status is 3 if some source data could not be read (incomplete snapshot created).
 
     Usage:
       restic backup [flags] FILE/DIR [FILE/DIR] ...

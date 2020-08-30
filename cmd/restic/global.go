@@ -274,7 +274,7 @@ func Exitf(exitcode int, format string, args ...interface{}) {
 }
 
 // resolvePassword determines the password to be used for opening the repository.
-func resolvePassword(opts GlobalOptions) (string, error) {
+func resolvePassword(opts GlobalOptions, envStr string) (string, error) {
 	if opts.PasswordFile != "" && opts.PasswordCommand != "" {
 		return "", errors.Fatalf("Password file and command are mutually exclusive options")
 	}
@@ -299,7 +299,7 @@ func resolvePassword(opts GlobalOptions) (string, error) {
 		return strings.TrimSpace(string(s)), errors.Wrap(err, "Readfile")
 	}
 
-	if pwd := os.Getenv("RESTIC_PASSWORD"); pwd != "" {
+	if pwd := os.Getenv(envStr); pwd != "" {
 		return pwd, nil
 	}
 
