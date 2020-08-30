@@ -63,7 +63,7 @@ func splitPath(p string) []string {
 	return append(s, f)
 }
 
-func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repository, prefix string, pathComponents []string, pathToPrint string) error {
+func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repository, prefix string, pathComponents []string) error {
 
 	if tree == nil {
 		return fmt.Errorf("called with a nil tree")
@@ -78,11 +78,11 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repositor
 
 	// If we print / we need to assume that there are multiple nodes at that
 	// level in the tree.
-	if pathToPrint == "/" {
+	if pathComponents[0] == "" {
 		if err := checkStdoutTar(); err != nil {
 			return err
 		}
-		return dump.WriteTar(ctx, repo, tree, pathToPrint, os.Stdout)
+		return dump.WriteTar(ctx, repo, tree, "/", os.Stdout)
 	}
 
 	item := filepath.Join(prefix, pathComponents[0])
@@ -98,7 +98,7 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repositor
 				if err != nil {
 					return errors.Wrapf(err, "cannot load subtree for %q", item)
 				}
-				return printFromTree(ctx, subtree, repo, item, pathComponents[1:], pathToPrint)
+				return printFromTree(ctx, subtree, repo, item, pathComponents[1:])
 			case dump.IsDir(node):
 				if err := checkStdoutTar(); err != nil {
 					return err
@@ -107,7 +107,7 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repositor
 				if err != nil {
 					return err
 				}
-				return dump.WriteTar(ctx, repo, subtree, pathToPrint, os.Stdout)
+				return dump.WriteTar(ctx, repo, subtree, item, os.Stdout)
 			case l > 1:
 				return fmt.Errorf("%q should be a dir, but is a %q", item, node.Type)
 			case !dump.IsFile(node):
@@ -174,7 +174,7 @@ func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
 		Exitf(2, "loading tree for snapshot %q failed: %v", snapshotIDString, err)
 	}
 
-	err = printFromTree(ctx, tree, repo, "", splittedPath, pathToPrint)
+	err = printFromTree(ctx, tree, repo, "/", splittedPath)
 	if err != nil {
 		Exitf(2, "cannot dump file: %v", err)
 	}
