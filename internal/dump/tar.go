@@ -72,7 +72,7 @@ func tarNode(ctx context.Context, tw *tar.Writer, node *restic.Node, repo restic
 	}
 
 	header := &tar.Header{
-		Name:       relPath,
+		Name:       filepath.ToSlash(relPath),
 		Size:       int64(node.Size),
 		Mode:       int64(node.Mode),
 		Uid:        int(node.UID),

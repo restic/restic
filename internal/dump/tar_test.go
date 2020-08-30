@@ -147,8 +147,9 @@ func checkTar(t *testing.T, testDir string, srcTar *bytes.Buffer) error {
 				continue
 			}
 
-			if filepath.Base(hdr.Name) != match.Name() {
-				return fmt.Errorf("foldernames don't match got %v want %v", filepath.Base(hdr.Name), match.Name())
+			filebase := filepath.ToSlash(match.Name())
+			if filepath.Base(hdr.Name) != filebase {
+				return fmt.Errorf("foldernames don't match got %v want %v", filepath.Base(hdr.Name), filebase)
 			}
 
 		} else {
