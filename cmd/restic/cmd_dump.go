@@ -19,8 +19,10 @@ var cmdDump = &cobra.Command{
 	Use:   "dump [flags] snapshotID file",
 	Short: "Print a backed-up file to stdout",
 	Long: `
-The "dump" command extracts a single file from a snapshot from the repository and
-prints its contents to stdout.
+The "dump" command extracts files from a snapshot from the repository. If a
+single file is selected, it prints its contents to stdout. Folders are output
+as a tar file containing the contents of the specified folder.  Pass "/" as
+file name to dump the whole snapshot as a tar file.
 
 The special snapshot "latest" can be used to use the latest snapshot in the
 repository.
