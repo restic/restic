@@ -1,4 +1,4 @@
-package main
+package dump
 
 // Adapted from https://github.com/maxymania/go-system/blob/master/posix_acl/posix_acl.go
 
