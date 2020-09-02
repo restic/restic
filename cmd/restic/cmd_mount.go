@@ -5,7 +5,6 @@ package main
 
 import (
 	"os"
-	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -85,9 +84,6 @@ func init() {
 func runMount(opts MountOptions, gopts GlobalOptions, args []string) error {
 	if opts.SnapshotTemplate == "" {
 		return errors.Fatal("snapshot template string cannot be empty")
-	}
-	if strings.ContainsAny(opts.SnapshotTemplate, `\/`) {
-		return errors.Fatal("snapshot template string contains a slash (/) or backslash (\\) character")
 	}
 	if len(args) == 0 {
 		return errors.Fatal("wrong number of parameters")

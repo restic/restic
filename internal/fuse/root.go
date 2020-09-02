@@ -5,7 +5,6 @@ package fuse
 
 import (
 	"os"
-	"time"
 
 	"github.com/restic/restic/internal/bloblru"
 	"github.com/restic/restic/internal/debug"
@@ -28,13 +27,9 @@ type Root struct {
 	repo      restic.Repository
 	cfg       Config
 	inode     uint64
-	snapshots restic.Snapshots
 	blobCache *bloblru.Cache
 
-	snCount   int
-	lastCheck time.Time
-
-	*MetaDir
+	*SnapshotsDir
 
 	uid, gid uint32
 }
@@ -64,14 +59,14 @@ func NewRoot(repo restic.Repository, cfg Config) *Root {
 		root.gid = uint32(os.Getgid())
 	}
 
-	entries := map[string]fs.Node{
-		"snapshots": NewSnapshotsDir(root, fs.GenerateDynamicInode(root.inode, "snapshots"), "", ""),
-		"tags":      NewTagsDir(root, fs.GenerateDynamicInode(root.inode, "tags")),
-		"hosts":     NewHostsDir(root, fs.GenerateDynamicInode(root.inode, "hosts")),
-		"ids":       NewSnapshotsIDSDir(root, fs.GenerateDynamicInode(root.inode, "ids")),
+	paths := []string{
+		"ids/%i",
+		"snapshots/%T",
+		"hosts/%h/%T",
+		"tags/%t/%T",
 	}
 
-	root.MetaDir = NewMetaDir(root, rootInode, entries)
+	root.SnapshotsDir = NewSnapshotsDir(root, rootInode, NewSnapshotsDirStructure(root, paths, cfg.SnapshotTemplate), "")
 
 	return root
 }
