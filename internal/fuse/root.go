@@ -15,11 +15,12 @@ import (
 
 // Config holds settings for the fuse mount.
 type Config struct {
-	OwnerIsRoot      bool
-	Hosts            []string
-	Tags             []restic.TagList
-	Paths            []string
-	SnapshotTemplate string
+	OwnerIsRoot   bool
+	Hosts         []string
+	Tags          []restic.TagList
+	Paths         []string
+	TimeTemplate  string
+	PathTemplates []string
 }
 
 // Root is the root node of the fuse mount of a repository.
@@ -59,14 +60,17 @@ func NewRoot(repo restic.Repository, cfg Config) *Root {
 		root.gid = uint32(os.Getgid())
 	}
 
-	paths := []string{
-		"ids/%i",
-		"snapshots/%T",
-		"hosts/%h/%T",
-		"tags/%t/%T",
+	// set defaults, if PathTemplates is not set
+	if len(cfg.PathTemplates) == 0 {
+		cfg.PathTemplates = []string{
+			"ids/%i",
+			"snapshots/%T",
+			"hosts/%h/%T",
+			"tags/%t/%T",
+		}
 	}
 
-	root.SnapshotsDir = NewSnapshotsDir(root, rootInode, NewSnapshotsDirStructure(root, paths, cfg.SnapshotTemplate), "")
+	root.SnapshotsDir = NewSnapshotsDir(root, rootInode, NewSnapshotsDirStructure(root, cfg.PathTemplates, cfg.TimeTemplate), "")
 
 	return root
 }
