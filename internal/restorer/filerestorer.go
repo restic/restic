@@ -33,6 +33,7 @@ const (
 type fileInfo struct {
 	lock     sync.Mutex
 	flags    int
+	size     int64
 	location string      // file on local filesystem relative to restorer basedir
 	blobs    interface{} // blobs of the file
 }
@@ -74,8 +75,8 @@ func newFileRestorer(dst string,
 	}
 }
 
-func (r *fileRestorer) addFile(location string, content restic.IDs) {
-	r.files = append(r.files, &fileInfo{location: location, blobs: content})
+func (r *fileRestorer) addFile(location string, content restic.IDs, size int64) {
+	r.files = append(r.files, &fileInfo{location: location, blobs: content, size: size})
 }
 
 func (r *fileRestorer) targetPath(location string) string {
@@ -101,6 +102,10 @@ func (r *fileRestorer) forEachBlob(blobIDs []restic.ID, fn func(packID restic.ID
 func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 
 	packs := make(map[restic.ID]*packInfo) // all packs
+	// Process packs in order of first access. While this cannot guarantee
+	// that file chunks are restored sequentially, it offers a good enough
+	// approximation to shorten restore times by up to 19% in some test.
+	var packOrder restic.IDs
 
 	// create packInfo from fileInfo
 	for _, file := range r.files {
@@ -123,6 +128,7 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 					files: make(map[*fileInfo]struct{}),
 				}
 				packs[packID] = pack
+				packOrder = append(packOrder, packID)
 			}
 			pack.files[file] = struct{}{}
 		})
@@ -157,7 +163,8 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 	}
 
 	// the main restore loop
-	for _, pack := range packs {
+	for _, id := range packOrder {
+		pack := packs[id]
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -269,13 +276,15 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) {
 					// write other blobs after releasing the lock
 					file.lock.Lock()
 					create := file.flags&fileProgress == 0
+					createSize := int64(-1)
 					if create {
 						defer file.lock.Unlock()
 						file.flags |= fileProgress
+						createSize = file.size
 					} else {
 						file.lock.Unlock()
 					}
-					return r.filesWriter.writeToFile(r.targetPath(file.location), blobData, offset, create)
+					return r.filesWriter.writeToFile(r.targetPath(file.location), blobData, offset, createSize)
 				}
 				err := writeToFile()
 				if err != nil {

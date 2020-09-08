@@ -238,7 +238,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 				idx.Add(node.Inode, node.DeviceID, location)
 			}
 
-			filerestorer.addFile(location, node.Content)
+			filerestorer.addFile(location, node.Content, int64(node.Size))
 
 			return nil
 		},
