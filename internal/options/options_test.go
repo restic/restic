@@ -3,6 +3,7 @@ package options
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"testing"
 	"time"
 )
@@ -199,7 +200,7 @@ var invalidSetTests = []struct {
 			"timeout": "2134",
 		},
 		"ns",
-		`time: missing unit in duration 2134`,
+		`time: missing unit in duration "?2134"?`,
 	},
 }
 
@@ -212,8 +213,13 @@ func TestOptionsApplyInvalid(t *testing.T) {
 				t.Fatalf("expected error %v not found", test.err)
 			}
 
-			if err.Error() != test.err {
-				t.Fatalf("expected error %q, got %q", test.err, err.Error())
+			matched, err := regexp.MatchString(test.err, err.Error())
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if !matched {
+				t.Fatalf("expected error to match %q, got %q", test.err, err.Error())
 			}
 		})
 	}
