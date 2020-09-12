@@ -225,7 +225,7 @@ func (env *TravisEnvironment) Prepare() error {
 			env.goxOSArch = []string{
 				"linux/386", "linux/amd64",
 				"windows/386", "windows/amd64",
-				"darwin/386", "darwin/amd64",
+				"darwin/amd64",
 				"freebsd/386", "freebsd/amd64",
 				"openbsd/386", "openbsd/amd64",
 				"netbsd/386", "netbsd/amd64",
