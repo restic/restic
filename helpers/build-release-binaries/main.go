@@ -222,11 +222,11 @@ func buildTargets(sourceDir, outputDir string, targets map[string][]string) {
 }
 
 var defaultBuildTargets = map[string][]string{
-	"darwin":  []string{"386", "amd64"},
-	"freebsd": []string{"386", "amd64", "arm"},
-	"linux":   []string{"386", "amd64", "arm", "arm64", "ppc64le"},
-	"openbsd": []string{"386", "amd64"},
-	"windows": []string{"386", "amd64"},
+	"darwin":  {"amd64"},
+	"freebsd": {"386", "amd64", "arm"},
+	"linux":   {"386", "amd64", "arm", "arm64", "ppc64le"},
+	"openbsd": {"386", "amd64"},
+	"windows": {"386", "amd64"},
 }
 
 func main() {
