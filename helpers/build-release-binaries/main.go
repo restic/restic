@@ -110,7 +110,6 @@ func build(sourceDir, outputDir, goos, goarch string) (filename string) {
 	c.Dir = sourceDir
 	c.Env = append(os.Environ(),
 		"CGO_ENABLED=0",
-		"GOPROXY=off",
 		"GOOS="+goos,
 		"GOARCH="+goarch,
 	)
