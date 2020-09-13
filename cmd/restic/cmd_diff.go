@@ -116,10 +116,10 @@ func addBlobs(bs restic.BlobSet, node *restic.Node) {
 
 // DiffStats collects the differences between two snapshots.
 type DiffStats struct {
-	ChangedFiles            int
-	Added                   DiffStat
-	Removed                 DiffStat
-	BlobsBefore, BlobsAfter restic.BlobSet
+	ChangedFiles                         int
+	Added                                DiffStat
+	Removed                              DiffStat
+	BlobsBefore, BlobsAfter, BlobsCommon restic.BlobSet
 }
 
 // NewDiffStats creates new stats for a diff run.
@@ -127,6 +127,7 @@ func NewDiffStats() *DiffStats {
 	return &DiffStats{
 		BlobsBefore: restic.NewBlobSet(),
 		BlobsAfter:  restic.NewBlobSet(),
+		BlobsCommon: restic.NewBlobSet(),
 	}
 }
 
@@ -168,6 +169,27 @@ func (c *Comparer) printDir(ctx context.Context, mode string, stats *DiffStat, b
 
 		if node.Type == "dir" {
 			err := c.printDir(ctx, mode, stats, blobs, name, *node.Subtree)
+			if err != nil {
+				Warnf("error: %v\n", err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (c *Comparer) collectDir(ctx context.Context, blobs restic.BlobSet, id restic.ID) error {
+	debug.Log("print tree %v", id)
+	tree, err := c.repo.LoadTree(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	for _, node := range tree.Nodes {
+		addBlobs(blobs, node)
+
+		if node.Type == "dir" {
+			err := c.collectDir(ctx, blobs, *node.Subtree)
 			if err != nil {
 				Warnf("error: %v\n", err)
 			}
@@ -248,7 +270,12 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStats, prefix string
 			}
 
 			if node1.Type == "dir" && node2.Type == "dir" {
-				err := c.diffTree(ctx, stats, name, *node1.Subtree, *node2.Subtree)
+				var err error
+				if (*node1.Subtree).Equal(*node2.Subtree) {
+					err = c.collectDir(ctx, stats.BlobsCommon, *node1.Subtree)
+				} else {
+					err = c.diffTree(ctx, stats, name, *node1.Subtree, *node2.Subtree)
+				}
 				if err != nil {
 					Warnf("error: %v\n", err)
 				}
@@ -345,8 +372,8 @@ func runDiff(opts DiffOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	both := stats.BlobsBefore.Intersect(stats.BlobsAfter)
-	updateBlobs(repo, stats.BlobsBefore.Sub(both), &stats.Removed)
-	updateBlobs(repo, stats.BlobsAfter.Sub(both), &stats.Added)
+	updateBlobs(repo, stats.BlobsBefore.Sub(both).Sub(stats.BlobsCommon), &stats.Removed)
+	updateBlobs(repo, stats.BlobsAfter.Sub(both).Sub(stats.BlobsCommon), &stats.Added)
 
 	Printf("\n")
 	Printf("Files:       %5d new, %5d removed, %5d changed\n", stats.Added.Files, stats.Removed.Files, stats.ChangedFiles)
