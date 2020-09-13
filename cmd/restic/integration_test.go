@@ -151,7 +151,7 @@ func testRunCheckOutput(gopts GlobalOptions) (string, error) {
 	}
 
 	err := runCheck(opts, gopts, nil)
-	return string(buf.Bytes()), err
+	return buf.String(), err
 }
 
 func testRunRebuildIndex(t testing.TB, gopts GlobalOptions) {
@@ -177,7 +177,7 @@ func testRunLs(t testing.TB, gopts GlobalOptions, snapshotID string) []string {
 
 	rtest.OK(t, runLs(opts, gopts, []string{snapshotID}))
 
-	return strings.Split(string(buf.Bytes()), "\n")
+	return strings.Split(buf.String(), "\n")
 }
 
 func testRunFind(t testing.TB, wantJSON bool, gopts GlobalOptions, pattern string) []byte {
@@ -253,7 +253,6 @@ func testRunForgetJSON(t testing.TB, gopts GlobalOptions, args ...string) {
 		"Expected 1 snapshot to be kept, got %v", len(forgets[0].Keep))
 	rtest.Assert(t, len(forgets[0].Remove) == 2,
 		"Expected 2 snapshots to be removed, got %v", len(forgets[0].Remove))
-	return
 }
 
 func testRunPrune(t testing.TB, gopts GlobalOptions) {
@@ -450,7 +449,7 @@ func TestBackupExclude(t *testing.T) {
 		f, err := os.Create(fp)
 		rtest.OK(t, err)
 
-		fmt.Fprintf(f, filename)
+		fmt.Fprint(f, filename)
 		rtest.OK(t, f.Close())
 	}
 
@@ -1105,14 +1104,14 @@ func TestRestoreNoMetadataOnIgnoredIntermediateDirs(t *testing.T) {
 	testRunRestoreIncludes(t, env.gopts, filepath.Join(env.base, "restore0"), snapshotID, []string{"*.ext"})
 
 	f1 := filepath.Join(env.base, "restore0", "testdata", "subdir1", "subdir2")
-	fi, err := os.Stat(f1)
+	_, err := os.Stat(f1)
 	rtest.OK(t, err)
 
 	// restore with filter "*", this should restore meta data on everything.
 	testRunRestoreIncludes(t, env.gopts, filepath.Join(env.base, "restore1"), snapshotID, []string{"*"})
 
 	f2 := filepath.Join(env.base, "restore1", "testdata", "subdir1", "subdir2")
-	fi, err = os.Stat(f2)
+	fi, err := os.Stat(f2)
 	rtest.OK(t, err)
 
 	rtest.Assert(t, fi.ModTime() == time.Unix(0, 0),
@@ -1417,11 +1416,7 @@ func linksEqual(source, dest map[uint64][]string) bool {
 		}
 	}
 
-	if len(dest) != 0 {
-		return false
-	}
-
-	return true
+	return len(dest) == 0
 }
 
 func linkEqual(source, dest []string) bool {

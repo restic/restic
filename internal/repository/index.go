@@ -107,7 +107,7 @@ var IndexFull = func(idx *Index) bool {
 	for typ := range idx.byType {
 		blobs += idx.byType[typ].len()
 	}
-	age := time.Now().Sub(idx.created)
+	age := time.Since(idx.created)
 
 	switch {
 	case age >= indexMaxAge:
@@ -394,7 +394,7 @@ func (idx *Index) Finalize() {
 	idx.packIDToIndex = nil
 }
 
-// ID returns the IDs of the index, if available. If the index is not yet
+// IDs returns the IDs of the index, if available. If the index is not yet
 // finalized, an error is returned.
 func (idx *Index) IDs() (restic.IDs, error) {
 	idx.m.Lock()
@@ -472,7 +472,7 @@ func (idx *Index) merge(idx2 *Index) error {
 	defer idx2.m.Unlock()
 
 	if !idx2.final {
-		return errors.New("index to merge is not final!")
+		return errors.New("index to merge is not final")
 	}
 
 	packlen := len(idx.packs)

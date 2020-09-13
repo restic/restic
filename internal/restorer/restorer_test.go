@@ -19,8 +19,7 @@ import (
 type Node interface{}
 
 type Snapshot struct {
-	Nodes  map[string]Node
-	treeID restic.ID
+	Nodes map[string]Node
 }
 
 type File struct {

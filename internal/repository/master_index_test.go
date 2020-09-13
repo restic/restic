@@ -120,7 +120,7 @@ func TestMasterIndex(t *testing.T) {
 	rtest.Assert(t, !found, "Expected no blobs when fetching with a random id")
 	blobs = mIdx.Lookup(restic.NewRandomID(), restic.DataBlob)
 	rtest.Assert(t, blobs == nil, "Expected no blobs when fetching with a random id")
-	size, found = mIdx.LookupSize(restic.NewRandomID(), restic.DataBlob)
+	_, found = mIdx.LookupSize(restic.NewRandomID(), restic.DataBlob)
 	rtest.Assert(t, !found, "Expected no blobs when fetching with a random id")
 
 	// Test Count
@@ -172,7 +172,7 @@ func TestMasterMergeFinalIndexes(t *testing.T) {
 	rtest.Equals(t, 1, len(allIndexes))
 
 	blobCount := 0
-	for _ = range mIdx.Each(context.TODO()) {
+	for range mIdx.Each(context.TODO()) {
 		blobCount++
 	}
 	rtest.Equals(t, 2, blobCount)
@@ -207,7 +207,7 @@ func TestMasterMergeFinalIndexes(t *testing.T) {
 	rtest.Equals(t, []restic.PackedBlob{blob2}, blobs)
 
 	blobCount = 0
-	for _ = range mIdx.Each(context.TODO()) {
+	for range mIdx.Each(context.TODO()) {
 		blobCount++
 	}
 	rtest.Equals(t, 2, blobCount)

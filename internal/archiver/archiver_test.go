@@ -832,7 +832,7 @@ func TestArchiverSaveDir(t *testing.T) {
 			if stats.DataBlobs != 0 {
 				t.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs)
 			}
-			if stats.TreeSize <= 0 {
+			if stats.TreeSize == 0 {
 				t.Errorf("wrong stats returned in TreeSize, want > 0, got %d", stats.TreeSize)
 			}
 			if stats.TreeBlobs <= 0 {
@@ -910,7 +910,7 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 			if stats.DataBlobs != 0 {
 				t.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs)
 			}
-			if stats.TreeSize <= 0 {
+			if stats.TreeSize == 0 {
 				t.Errorf("wrong stats returned in TreeSize, want > 0, got %d", stats.TreeSize)
 			}
 			if stats.TreeBlobs <= 0 {
@@ -1458,10 +1458,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 				"other": TestFile{Content: "another file"},
 			},
 			selFn: func(item string, fi os.FileInfo) bool {
-				if filepath.Ext(item) == ".txt" {
-					return false
-				}
-				return true
+				return filepath.Ext(item) != ".txt"
 			},
 		},
 		{
@@ -1485,10 +1482,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 				"other": TestFile{Content: "another file"},
 			},
 			selFn: func(item string, fi os.FileInfo) bool {
-				if filepath.Base(item) == "subdir" {
-					return false
-				}
-				return true
+				return filepath.Base(item) != "subdir"
 			},
 		},
 		{
@@ -1988,13 +1982,6 @@ func snapshot(t testing.TB, repo restic.Repository, fs fs.FS, parent restic.ID, 
 	}
 
 	return snapshotID, node
-}
-
-func chmod(t testing.TB, filename string, mode os.FileMode) {
-	err := os.Chmod(filename, mode)
-	if err != nil {
-		t.Fatal(err)
-	}
 }
 
 // StatFS allows overwriting what is returned by the Lstat function.

@@ -92,12 +92,9 @@ func TestBlobSaverError(t *testing.T) {
 
 			b := NewBlobSaver(ctx, tmb, saver, uint(runtime.NumCPU()))
 
-			var results []FutureBlob
-
 			for i := 0; i < test.blobs; i++ {
 				buf := &Buffer{Data: []byte(fmt.Sprintf("foo%d", i))}
-				fb := b.Save(ctx, restic.DataBlob, buf)
-				results = append(results, fb)
+				b.Save(ctx, restic.DataBlob, buf)
 			}
 
 			tmb.Kill(nil)

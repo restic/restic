@@ -47,6 +47,8 @@ func New(be restic.Backend) *Repository {
 	return repo
 }
 
+// DisableAutoIndexUpdate deactives the automatic finalization and upload of new
+// indexes once these are full
 func (r *Repository) DisableAutoIndexUpdate() {
 	r.noAutoIndexUpdate = true
 }
@@ -479,7 +481,7 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 
 	// run workers on ch
 	wg.Go(func() error {
-		return RunWorkers(ctx, loadIndexParallelism, worker, final)
+		return RunWorkers(loadIndexParallelism, worker, final)
 	})
 
 	// receive decoded indexes

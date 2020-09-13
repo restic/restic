@@ -134,7 +134,7 @@ func (mi *MasterIndex) Insert(idx *Index) {
 	mi.idx = append(mi.idx, idx)
 }
 
-// Store remembers the id and pack in the index.
+// StorePack remembers the id and pack in the index.
 func (mi *MasterIndex) StorePack(id restic.ID, blobs []restic.Blob) {
 	mi.idxMutex.Lock()
 	defer mi.idxMutex.Unlock()
