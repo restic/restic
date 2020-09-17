@@ -9,5 +9,5 @@ func IsRegularFile(fi os.FileInfo) bool {
 		return false
 	}
 
-	return fi.Mode()&(os.ModeType|os.ModeCharDevice) == 0
+	return fi.Mode()&os.ModeType == 0
 }
