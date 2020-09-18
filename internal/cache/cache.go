@@ -17,7 +17,7 @@ import (
 
 // Cache manages a local cache.
 type Cache struct {
-	Path             string
+	path             string
 	Base             string
 	Created          bool
 	PerformReadahead func(restic.Handle) bool
@@ -148,7 +148,7 @@ func New(id string, basedir string) (c *Cache, err error) {
 	}
 
 	c = &Cache{
-		Path:    cachedir,
+		path:    cachedir,
 		Base:    basedir,
 		Created: created,
 		PerformReadahead: func(restic.Handle) bool {
