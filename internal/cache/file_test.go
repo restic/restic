@@ -42,13 +42,13 @@ func randomID(s restic.IDSet) restic.ID {
 }
 
 func load(t testing.TB, c *Cache, h restic.Handle) []byte {
-	rd, err := c.Load(h, 0, 0)
+	rd, err := c.load(h, 0, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	if rd == nil {
-		t.Fatalf("Load() returned nil reader")
+		t.Fatalf("load() returned nil reader")
 	}
 
 	buf, err := ioutil.ReadAll(rd)
@@ -148,7 +148,7 @@ func TestFileSaveWriter(t *testing.T) {
 		Name: id.String(),
 	}
 
-	wr, err := c.SaveWriter(h)
+	wr, err := c.saveWriter(h)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -166,7 +166,7 @@ func TestFileSaveWriter(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	rd, err := c.Load(h, 0, 0)
+	rd, err := c.load(h, 0, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -223,7 +223,7 @@ func TestFileLoad(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%v/%v", test.length, test.offset), func(t *testing.T) {
-			rd, err := c.Load(h, test.length, test.offset)
+			rd, err := c.load(h, test.length, test.offset)
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -17,7 +17,7 @@ import (
 
 // Cache manages a local cache.
 type Cache struct {
-	Path             string
+	path             string
 	Base             string
 	Created          bool
 	PerformReadahead func(restic.Handle) bool
@@ -45,9 +45,6 @@ func readVersion(dir string) (v uint, err error) {
 }
 
 const cacheVersion = 1
-
-// ensure Cache implements restic.Cache
-var _ restic.Cache = &Cache{}
 
 var cacheLayoutPaths = map[restic.FileType]string{
 	restic.PackFile:     "data",
@@ -151,7 +148,7 @@ func New(id string, basedir string) (c *Cache, err error) {
 	}
 
 	c = &Cache{
-		Path:    cachedir,
+		path:    cachedir,
 		Base:    basedir,
 		Created: created,
 		PerformReadahead: func(restic.Handle) bool {
@@ -251,22 +248,6 @@ func Old(basedir string) ([]os.FileInfo, error) {
 func IsOld(t time.Time, maxAge time.Duration) bool {
 	oldest := time.Now().Add(-maxAge)
 	return t.Before(oldest)
-}
-
-// errNoSuchFile is returned when a file is not cached.
-type errNoSuchFile struct {
-	Type string
-	Name string
-}
-
-func (e errNoSuchFile) Error() string {
-	return fmt.Sprintf("file %v (%v) is not cached", e.Name, e.Type)
-}
-
-// IsNotExist returns true if the error was caused by a non-existing file.
-func (c *Cache) IsNotExist(err error) bool {
-	_, ok := errors.Cause(err).(errNoSuchFile)
-	return ok
 }
 
 // Wrap returns a backend with a cache.
