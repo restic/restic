@@ -758,7 +758,7 @@ func create(s string, opts options.Options) (restic.Backend, error) {
 	case "sftp":
 		return sftp.Create(cfg.(sftp.Config))
 	case "s3":
-		return s3.Create(cfg.(s3.Config), rt)
+		return s3.Create(globalOptions.ctx, cfg.(s3.Config), rt)
 	case "gs":
 		return gs.Create(cfg.(gs.Config), rt)
 	case "azure":

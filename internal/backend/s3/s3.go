@@ -14,8 +14,8 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
-	"github.com/minio/minio-go/v6"
-	"github.com/minio/minio-go/v6/pkg/credentials"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 
 	"github.com/restic/restic/internal/debug"
 )
@@ -66,9 +66,14 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 			},
 		},
 	})
-	client, err := minio.NewWithCredentials(cfg.Endpoint, creds, !cfg.UseHTTP, cfg.Region)
+	client, err := minio.New(cfg.Endpoint, &minio.Options{
+		Creds:     creds,
+		Secure:    !cfg.UseHTTP,
+		Region:    cfg.Region,
+		Transport: rt,
+	})
 	if err != nil {
-		return nil, errors.Wrap(err, "minio.NewWithCredentials")
+		return nil, errors.Wrap(err, "minio.New")
 	}
 
 	sem, err := backend.NewSemaphore(cfg.Connections)
@@ -81,8 +86,6 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 		sem:    sem,
 		cfg:    cfg,
 	}
-
-	client.SetCustomTransport(rt)
 
 	l, err := backend.ParseLayout(be, cfg.Layout, defaultLayout, cfg.Prefix)
 	if err != nil {
@@ -102,12 +105,12 @@ func Open(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 
 // Create opens the S3 backend at bucket and region and creates the bucket if
 // it does not exist yet.
-func Create(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
+func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 	be, err := open(cfg, rt)
 	if err != nil {
 		return nil, errors.Wrap(err, "open")
 	}
-	found, err := be.client.BucketExists(cfg.Bucket)
+	found, err := be.client.BucketExists(ctx, cfg.Bucket)
 
 	if err != nil && be.IsAccessDenied(err) {
 		err = nil
@@ -121,7 +124,7 @@ func Create(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 
 	if !found {
 		// create new bucket with default ACL in default region
-		err = be.client.MakeBucket(cfg.Bucket, "")
+		err = be.client.MakeBucket(ctx, cfg.Bucket, minio.MakeBucketOptions{})
 		if err != nil {
 			return nil, errors.Wrap(err, "client.MakeBucket")
 		}
@@ -184,10 +187,13 @@ func (be *Backend) ReadDir(dir string) (list []os.FileInfo, err error) {
 		dir += "/"
 	}
 
-	done := make(chan struct{})
-	defer close(done)
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
 
-	for obj := range be.client.ListObjects(be.cfg.Bucket, dir, false, done) {
+	for obj := range be.client.ListObjects(ctx, be.cfg.Bucket, minio.ListObjectsOptions{
+		Prefix:    dir,
+		Recursive: false,
+	}) {
 		if obj.Err != nil {
 			return nil, err
 		}
@@ -248,7 +254,7 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 	opts.ContentType = "application/octet-stream"
 
 	debug.Log("PutObject(%v, %v, %v)", be.cfg.Bucket, objName, rd.Length())
-	n, err := be.client.PutObjectWithContext(ctx, be.cfg.Bucket, objName, ioutil.NopCloser(rd), int64(rd.Length()), opts)
+	n, err := be.client.PutObject(ctx, be.cfg.Bucket, objName, ioutil.NopCloser(rd), int64(rd.Length()), opts)
 
 	debug.Log("%v -> %v bytes, err %#v: %v", objName, n, err, err)
 
@@ -305,7 +311,7 @@ func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, 
 
 	be.sem.GetToken()
 	coreClient := minio.Core{Client: be.client}
-	rd, _, _, err := coreClient.GetObjectWithContext(ctx, be.cfg.Bucket, objName, opts)
+	rd, _, _, err := coreClient.GetObject(ctx, be.cfg.Bucket, objName, opts)
 	if err != nil {
 		be.sem.ReleaseToken()
 		return nil, err
@@ -332,7 +338,7 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 	opts := minio.GetObjectOptions{}
 
 	be.sem.GetToken()
-	obj, err = be.client.GetObjectWithContext(ctx, be.cfg.Bucket, objName, opts)
+	obj, err = be.client.GetObject(ctx, be.cfg.Bucket, objName, opts)
 	if err != nil {
 		debug.Log("GetObject() err %v", err)
 		be.sem.ReleaseToken()
@@ -363,7 +369,7 @@ func (be *Backend) Test(ctx context.Context, h restic.Handle) (bool, error) {
 	objName := be.Filename(h)
 
 	be.sem.GetToken()
-	_, err := be.client.StatObject(be.cfg.Bucket, objName, minio.StatObjectOptions{})
+	_, err := be.client.StatObject(ctx, be.cfg.Bucket, objName, minio.StatObjectOptions{})
 	be.sem.ReleaseToken()
 
 	if err == nil {
@@ -379,7 +385,7 @@ func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	objName := be.Filename(h)
 
 	be.sem.GetToken()
-	err := be.client.RemoveObject(be.cfg.Bucket, objName)
+	err := be.client.RemoveObject(ctx, be.cfg.Bucket, objName, minio.RemoveObjectOptions{})
 	be.sem.ReleaseToken()
 
 	debug.Log("Remove(%v) at %v -> err %v", h, objName, err)
@@ -409,7 +415,10 @@ func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.F
 	// NB: unfortunately we can't protect this with be.sem.GetToken() here.
 	// Doing so would enable a deadlock situation (gh-1399), as ListObjects()
 	// starts its own goroutine and returns results via a channel.
-	listresp := be.client.ListObjects(be.cfg.Bucket, prefix, recursive, ctx.Done())
+	listresp := be.client.ListObjects(ctx, be.cfg.Bucket, minio.ListObjectsOptions{
+		Prefix:    prefix,
+		Recursive: recursive,
+	})
 
 	for obj := range listresp {
 		if obj.Err != nil {
@@ -473,7 +482,7 @@ func (be *Backend) Delete(ctx context.Context) error {
 func (be *Backend) Close() error { return nil }
 
 // Rename moves a file based on the new layout l.
-func (be *Backend) Rename(h restic.Handle, l backend.Layout) error {
+func (be *Backend) Rename(ctx context.Context, h restic.Handle, l backend.Layout) error {
 	debug.Log("Rename %v to %v", h, l)
 	oldname := be.Filename(h)
 	newname := l.Filename(h)
@@ -485,14 +494,17 @@ func (be *Backend) Rename(h restic.Handle, l backend.Layout) error {
 
 	debug.Log("  %v -> %v", oldname, newname)
 
-	src := minio.NewSourceInfo(be.cfg.Bucket, oldname, nil)
-
-	dst, err := minio.NewDestinationInfo(be.cfg.Bucket, newname, nil, nil)
-	if err != nil {
-		return errors.Wrap(err, "NewDestinationInfo")
+	src := minio.CopySrcOptions{
+		Bucket: be.cfg.Bucket,
+		Object: oldname,
 	}
 
-	err = be.client.CopyObject(dst, src)
+	dst := minio.CopyDestOptions{
+		Bucket: be.cfg.Bucket,
+		Object: newname,
+	}
+
+	_, err := be.client.CopyObject(ctx, dst, src)
 	if err != nil && be.IsNotExist(err) {
 		debug.Log("copy failed: %v, seems to already have been renamed", err)
 		return nil
@@ -503,5 +515,5 @@ func (be *Backend) Rename(h restic.Handle, l backend.Layout) error {
 		return err
 	}
 
-	return be.client.RemoveObject(be.cfg.Bucket, oldname)
+	return be.client.RemoveObject(ctx, be.cfg.Bucket, oldname, minio.RemoveObjectOptions{})
 }
