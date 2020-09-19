@@ -616,8 +616,10 @@ func TestBackupTags(t *testing.T) {
 
 func testRunCopy(t testing.TB, srcGopts GlobalOptions, dstGopts GlobalOptions) {
 	copyOpts := CopyOptions{
-		Repo:     dstGopts.Repo,
-		password: dstGopts.password,
+		secondaryRepoOptions: secondaryRepoOptions{
+			Repo:     dstGopts.Repo,
+			password: dstGopts.password,
+		},
 	}
 
 	rtest.OK(t, runCopy(copyOpts, srcGopts, nil))

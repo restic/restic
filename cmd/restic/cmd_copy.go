@@ -3,10 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/restic/restic/internal/debug"
-	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/spf13/cobra"
@@ -29,14 +27,10 @@ their deduplication.
 
 // CopyOptions bundles all options for the copy command.
 type CopyOptions struct {
-	Repo            string
-	password        string
-	PasswordFile    string
-	PasswordCommand string
-	KeyHint         string
-	Hosts           []string
-	Tags            restic.TagLists
-	Paths           []string
+	secondaryRepoOptions
+	Hosts []string
+	Tags  restic.TagLists
+	Paths []string
 }
 
 var copyOptions CopyOptions
@@ -45,35 +39,14 @@ func init() {
 	cmdRoot.AddCommand(cmdCopy)
 
 	f := cmdCopy.Flags()
-	f.StringVarP(&copyOptions.Repo, "repo2", "", os.Getenv("RESTIC_REPOSITORY2"), "destination repository to copy snapshots to (default: $RESTIC_REPOSITORY2)")
-	f.StringVarP(&copyOptions.PasswordFile, "password-file2", "", os.Getenv("RESTIC_PASSWORD_FILE2"), "`file` to read the destination repository password from (default: $RESTIC_PASSWORD_FILE2)")
-	f.StringVarP(&copyOptions.KeyHint, "key-hint2", "", os.Getenv("RESTIC_KEY_HINT2"), "key ID of key to try decrypting the destination repository first (default: $RESTIC_KEY_HINT2)")
-	f.StringVarP(&copyOptions.PasswordCommand, "password-command2", "", os.Getenv("RESTIC_PASSWORD_COMMAND2"), "shell `command` to obtain the destination repository password from (default: $RESTIC_PASSWORD_COMMAND2)")
-
+	initSecondaryRepoOptions(f, &copyOptions.secondaryRepoOptions, "destination", "to copy snapshots to")
 	f.StringArrayVarP(&copyOptions.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when no snapshot ID is given (can be specified multiple times)")
 	f.Var(&copyOptions.Tags, "tag", "only consider snapshots which include this `taglist`, when no snapshot ID is given")
 	f.StringArrayVar(&copyOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot ID is given")
 }
 
 func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
-	if opts.Repo == "" {
-		return errors.Fatal("Please specify a destination repository location (--repo2)")
-	}
-	var err error
-	dstGopts := gopts
-	dstGopts.Repo = opts.Repo
-	dstGopts.PasswordFile = opts.PasswordFile
-	dstGopts.PasswordCommand = opts.PasswordCommand
-	dstGopts.KeyHint = opts.KeyHint
-	if opts.password != "" {
-		dstGopts.password = opts.password
-	} else {
-		dstGopts.password, err = resolvePassword(dstGopts, "RESTIC_PASSWORD2")
-		if err != nil {
-			return err
-		}
-	}
-	dstGopts.password, err = ReadPassword(dstGopts, "enter password for destination repository: ")
+	dstGopts, err := fillSecondaryGlobalOpts(opts.secondaryRepoOptions, gopts, "destination")
 	if err != nil {
 		return err
 	}
