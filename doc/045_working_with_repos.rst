@@ -110,7 +110,8 @@ be skipped by later copy runs.
     entire snapshot(s) due to the different encryption keys used in the source and
     destination repository. Also, the transferred files are not re-chunked, which
     may break deduplication between files already stored in the destination repo
-    and files copied there using this command.
+    and files copied there using this command. See the next section for how to avoid
+    this problem.
 
 For the destination repository ``--repo2`` the password can be read from
 a file ``--password-file2`` or from a command ``--password-command2``.
@@ -140,6 +141,28 @@ which case only these instead of all snapshots will be copied:
 .. code-block:: console
 
     $ restic -r /srv/restic-repo copy --repo2 /srv/restic-repo-copy 410b18a2 4e5d5487 latest
+
+
+Ensuring deduplication for copied snapshots
+-------------------------------------------
+
+Even though the copy command can transfer snapshots between arbitrary repositories,
+deduplication between snapshots from the source and destination repository may not work.
+To ensure proper deduplication, both repositories have to use the same parameters for
+splitting large files into smaller chunks, which requires additional setup steps. With
+the same parameters restic will for both repositories split identical files into
+identical chunks and therefore deduplication also works for snapshots copied between
+these repositories.
+
+The chunker parameters are generated once when creating a new (destination) repository.
+That is for a copy destination repository we have to instruct restic to initialize it
+using the same chunker parameters as the source repository:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo-copy init --repo2 /srv/restic-repo --copy-chunker-params
+
+Note that it is not possible to change the chunker parameters of an existing repository.
 
 
 Checking integrity and consistency

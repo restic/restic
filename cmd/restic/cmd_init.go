@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 
@@ -20,17 +21,34 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runInit(globalOptions, args)
+		return runInit(initOptions, globalOptions, args)
 	},
 }
 
-func init() {
-	cmdRoot.AddCommand(cmdInit)
+// InitOptions bundles all options for the init command.
+type InitOptions struct {
+	secondaryRepoOptions
+	CopyChunkerParameters bool
 }
 
-func runInit(gopts GlobalOptions, args []string) error {
+var initOptions InitOptions
+
+func init() {
+	cmdRoot.AddCommand(cmdInit)
+
+	f := cmdInit.Flags()
+	initSecondaryRepoOptions(f, &initOptions.secondaryRepoOptions, "secondary", "to copy chunker parameters from")
+	f.BoolVar(&initOptions.CopyChunkerParameters, "copy-chunker-params", false, "copy chunker parameters from the secondary repository (useful with the copy command)")
+}
+
+func runInit(opts InitOptions, gopts GlobalOptions, args []string) error {
 	if gopts.Repo == "" {
 		return errors.Fatal("Please specify repository location (-r)")
+	}
+
+	chunkerPolynomial, err := maybeReadChunkerPolynomial(opts, gopts)
+	if err != nil {
+		return err
 	}
 
 	be, err := create(gopts.Repo, gopts.extended)
@@ -47,7 +65,7 @@ func runInit(gopts GlobalOptions, args []string) error {
 
 	s := repository.New(be)
 
-	err = s.Init(gopts.ctx, gopts.password)
+	err = s.Init(gopts.ctx, gopts.password, chunkerPolynomial)
 	if err != nil {
 		return errors.Fatalf("create key in repository at %s failed: %v\n", gopts.Repo, err)
 	}
@@ -59,4 +77,26 @@ func runInit(gopts GlobalOptions, args []string) error {
 	Verbosef("irrecoverably lost.\n")
 
 	return nil
+}
+
+func maybeReadChunkerPolynomial(opts InitOptions, gopts GlobalOptions) (*chunker.Pol, error) {
+	if opts.CopyChunkerParameters {
+		otherGopts, err := fillSecondaryGlobalOpts(opts.secondaryRepoOptions, gopts, "secondary")
+		if err != nil {
+			return nil, err
+		}
+
+		otherRepo, err := OpenRepository(otherGopts)
+		if err != nil {
+			return nil, err
+		}
+
+		pol := otherRepo.Config().ChunkerPolynomial
+		return &pol, nil
+	}
+
+	if opts.Repo != "" {
+		return nil, errors.Fatal("Secondary repository must only be specified when copying the chunker parameters")
+	}
+	return nil, nil
 }

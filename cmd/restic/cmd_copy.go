@@ -18,7 +18,8 @@ The "copy" command copies one or more snapshots from one repository to another
 repository. Note that this will have to read (download) and write (upload) the
 entire snapshot(s) due to the different encryption keys on the source and
 destination, and that transferred files are not re-chunked, which may break
-their deduplication.
+their deduplication. This can be mitigated by the "--copy-chunker-params"
+option when initializing a new destination repository using the "init" command.
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runCopy(copyOptions, globalOptions, args)
