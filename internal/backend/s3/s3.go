@@ -33,7 +33,7 @@ var _ restic.Backend = &Backend{}
 
 const defaultLayout = "default"
 
-func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
+func open(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, error) {
 	debug.Log("open, config %#v", cfg)
 
 	if cfg.MaxRetries > 0 {
@@ -87,7 +87,7 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 		cfg:    cfg,
 	}
 
-	l, err := backend.ParseLayout(be, cfg.Layout, defaultLayout, cfg.Prefix)
+	l, err := backend.ParseLayout(ctx, be, cfg.Layout, defaultLayout, cfg.Prefix)
 	if err != nil {
 		return nil, err
 	}
@@ -99,14 +99,14 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 
 // Open opens the S3 backend at bucket and region. The bucket is created if it
 // does not exist yet.
-func Open(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
-	return open(cfg, rt)
+func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backend, error) {
+	return open(ctx, cfg, rt)
 }
 
 // Create opens the S3 backend at bucket and region and creates the bucket if
 // it does not exist yet.
 func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backend, error) {
-	be, err := open(cfg, rt)
+	be, err := open(ctx, cfg, rt)
 	if err != nil {
 		return nil, errors.Wrap(err, "open")
 	}
@@ -179,7 +179,7 @@ func (fi fileInfo) IsDir() bool        { return fi.isDir }   // abbreviation for
 func (fi fileInfo) Sys() interface{}   { return nil }        // underlying data source (can return nil)
 
 // ReadDir returns the entries for a directory.
-func (be *Backend) ReadDir(dir string) (list []os.FileInfo, err error) {
+func (be *Backend) ReadDir(ctx context.Context, dir string) (list []os.FileInfo, err error) {
 	debug.Log("ReadDir(%v)", dir)
 
 	// make sure dir ends with a slash
@@ -187,7 +187,7 @@ func (be *Backend) ReadDir(dir string) (list []os.FileInfo, err error) {
 		dir += "/"
 	}
 
-	ctx, cancel := context.WithCancel(context.TODO())
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	for obj := range be.client.ListObjects(ctx, be.cfg.Bucket, minio.ListObjectsOptions{

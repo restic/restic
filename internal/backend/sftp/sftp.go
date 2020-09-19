@@ -109,7 +109,7 @@ func (r *SFTP) clientError() error {
 // Open opens an sftp backend as described by the config by running
 // "ssh" with the appropriate arguments (or cfg.Command, if set). The function
 // preExec is run just before, postExec just after starting a program.
-func Open(cfg Config) (*SFTP, error) {
+func Open(ctx context.Context, cfg Config) (*SFTP, error) {
 	debug.Log("open backend with config %#v", cfg)
 
 	cmd, args, err := buildSSHCommand(cfg)
@@ -123,7 +123,7 @@ func Open(cfg Config) (*SFTP, error) {
 		return nil, err
 	}
 
-	sftp.Layout, err = backend.ParseLayout(sftp, cfg.Layout, defaultLayout, cfg.Path)
+	sftp.Layout, err = backend.ParseLayout(ctx, sftp, cfg.Layout, defaultLayout, cfg.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +152,7 @@ func (r *SFTP) Join(p ...string) string {
 }
 
 // ReadDir returns the entries for a directory.
-func (r *SFTP) ReadDir(dir string) ([]os.FileInfo, error) {
+func (r *SFTP) ReadDir(ctx context.Context, dir string) ([]os.FileInfo, error) {
 	fi, err := r.c.ReadDir(dir)
 
 	// sftp client does not specify dir name on error, so add it here
@@ -207,7 +207,7 @@ func buildSSHCommand(cfg Config) (cmd string, args []string, err error) {
 // Create creates an sftp backend as described by the config by running "ssh"
 // with the appropriate arguments (or cfg.Command, if set). The function
 // preExec is run just before, postExec just after starting a program.
-func Create(cfg Config) (*SFTP, error) {
+func Create(ctx context.Context, cfg Config) (*SFTP, error) {
 	cmd, args, err := buildSSHCommand(cfg)
 	if err != nil {
 		return nil, err
@@ -219,7 +219,7 @@ func Create(cfg Config) (*SFTP, error) {
 		return nil, err
 	}
 
-	sftp.Layout, err = backend.ParseLayout(sftp, cfg.Layout, defaultLayout, cfg.Path)
+	sftp.Layout, err = backend.ParseLayout(ctx, sftp, cfg.Layout, defaultLayout, cfg.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -241,7 +241,7 @@ func Create(cfg Config) (*SFTP, error) {
 	}
 
 	// open backend
-	return Open(cfg)
+	return Open(ctx, cfg)
 }
 
 // Location returns this backend's location (the directory name).
@@ -467,8 +467,8 @@ func (r *SFTP) Close() error {
 	return nil
 }
 
-func (r *SFTP) deleteRecursive(name string) error {
-	entries, err := r.ReadDir(name)
+func (r *SFTP) deleteRecursive(ctx context.Context, name string) error {
+	entries, err := r.ReadDir(ctx, name)
 	if err != nil {
 		return errors.Wrap(err, "ReadDir")
 	}
@@ -476,7 +476,7 @@ func (r *SFTP) deleteRecursive(name string) error {
 	for _, fi := range entries {
 		itemName := r.Join(name, fi.Name())
 		if fi.IsDir() {
-			err := r.deleteRecursive(itemName)
+			err := r.deleteRecursive(ctx, itemName)
 			if err != nil {
 				return errors.Wrap(err, "ReadDir")
 			}
@@ -499,6 +499,6 @@ func (r *SFTP) deleteRecursive(name string) error {
 }
 
 // Delete removes all data in the backend.
-func (r *SFTP) Delete(context.Context) error {
-	return r.deleteRecursive(r.p)
+func (r *SFTP) Delete(ctx context.Context) error {
+	return r.deleteRecursive(ctx, r.p)
 }

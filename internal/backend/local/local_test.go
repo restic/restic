@@ -1,6 +1,7 @@
 package local_test
 
 import (
+	"context"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -32,13 +33,13 @@ func newTestSuite(t testing.TB) *test.Suite {
 		// CreateFn is a function that creates a temporary repository for the tests.
 		Create: func(config interface{}) (restic.Backend, error) {
 			cfg := config.(local.Config)
-			return local.Create(cfg)
+			return local.Create(context.TODO(), cfg)
 		},
 
 		// OpenFn is a function that opens a previously created temporary repository.
 		Open: func(config interface{}) (restic.Backend, error) {
 			cfg := config.(local.Config)
-			return local.Open(cfg)
+			return local.Open(context.TODO(), cfg)
 		},
 
 		// CleanupFn removes data created during the tests.
@@ -91,7 +92,7 @@ func empty(t testing.TB, dir string) {
 func openclose(t testing.TB, dir string) {
 	cfg := local.Config{Path: dir}
 
-	be, err := local.Open(cfg)
+	be, err := local.Open(context.TODO(), cfg)
 	if err != nil {
 		t.Logf("Open returned error %v", err)
 	}

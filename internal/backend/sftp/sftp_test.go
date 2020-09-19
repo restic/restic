@@ -1,6 +1,7 @@
 package sftp_test
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -50,13 +51,13 @@ func newTestSuite(t testing.TB) *test.Suite {
 		// CreateFn is a function that creates a temporary repository for the tests.
 		Create: func(config interface{}) (restic.Backend, error) {
 			cfg := config.(sftp.Config)
-			return sftp.Create(cfg)
+			return sftp.Create(context.TODO(), cfg)
 		},
 
 		// OpenFn is a function that opens a previously created temporary repository.
 		Open: func(config interface{}) (restic.Backend, error) {
 			cfg := config.(sftp.Config)
-			return sftp.Open(cfg)
+			return sftp.Open(context.TODO(), cfg)
 		},
 
 		// CleanupFn removes data created during the tests.
