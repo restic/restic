@@ -290,7 +290,7 @@ func Create(cfg Config) (*Backend, error) {
 	}
 
 	restConfig := rest.Config{
-		Connections: 20,
+		Connections: cfg.Connections,
 		URL:         url,
 	}
 
