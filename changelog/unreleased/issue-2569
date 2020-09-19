@@ -1,0 +1,8 @@
+Enhancement: Support excluding files by their size
+
+The `backup` command now supports the `--exclude-larger-than` option to exclude files which are
+larger than the specified maximum size. This can for example be useful to exclude unimportant
+files with a large file size.
+
+https://github.com/restic/restic/issues/2569
+https://github.com/restic/restic/pull/2914

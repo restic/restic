@@ -87,6 +87,7 @@ type BackupOptions struct {
 	ExcludeOtherFS          bool
 	ExcludeIfPresent        []string
 	ExcludeCaches           bool
+	ExcludeLargerThan       string
 	Stdin                   bool
 	StdinFilename           string
 	Tags                    []string
@@ -115,6 +116,7 @@ func init() {
 	f.BoolVarP(&backupOptions.ExcludeOtherFS, "one-file-system", "x", false, "exclude other file systems")
 	f.StringArrayVar(&backupOptions.ExcludeIfPresent, "exclude-if-present", nil, "takes `filename[:header]`, exclude contents of directories containing filename (except filename itself) if header of that file is as provided (can be specified multiple times)")
 	f.BoolVar(&backupOptions.ExcludeCaches, "exclude-caches", false, `excludes cache directories that are marked with a CACHEDIR.TAG file. See https://bford.info/cachedir/ for the Cache Directory Tagging Standard`)
+	f.StringVar(&backupOptions.ExcludeLargerThan, "exclude-larger-than", "", "max `size` of the files to be backed up (allowed suffixes: k/K, m/M, g/G, t/T)")
 	f.BoolVar(&backupOptions.Stdin, "stdin", false, "read backup from stdin")
 	f.StringVar(&backupOptions.StdinFilename, "stdin-filename", "stdin", "`filename` to use when reading from stdin")
 	f.StringArrayVar(&backupOptions.Tags, "tag", nil, "add a `tag` for the new snapshot (can be specified multiple times)")
@@ -279,6 +281,14 @@ func collectRejectFuncs(opts BackupOptions, repo *repository.Repository, targets
 	// allowed devices
 	if opts.ExcludeOtherFS && !opts.Stdin {
 		f, err := rejectByDevice(targets)
+		if err != nil {
+			return nil, err
+		}
+		fs = append(fs, f)
+	}
+
+	if len(opts.ExcludeLargerThan) != 0 && !opts.Stdin {
+		f, err := rejectBySize(opts.ExcludeLargerThan)
 		if err != nil {
 			return nil, err
 		}

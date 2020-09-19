@@ -144,6 +144,7 @@ the exclude options are:
 -  ``--exclude-file`` Specified one or more times to exclude items listed in a given file
 -  ``--iexclude-file`` Same as ``exclude-file`` but ignores cases like in ``--iexclude``
 -  ``--exclude-if-present foo`` Specified one or more times to exclude a folder's content if it contains a file called ``foo`` (optionally having a given header, no wildcards for the file name supported)
+-  ``--exclude-larger-than size`` Specified once to excludes files larger than the given size
 
 Please see ``restic help backup`` for more specific information about each exclude option.
 
@@ -239,6 +240,21 @@ include other filesystems like ``/sys`` and ``/proc``.
 
 .. note:: ``--one-file-system`` is currently unsupported on Windows, and will
     cause the backup to immediately fail with an error.
+
+Files larger than a given size can be excluded using the `--exclude-larger-than`
+option:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo backup ~/work --exclude-larger-than 1M
+
+This excludes files in ``~/work`` which are larger than 1 MB from the backup.
+
+The default unit for the size value is bytes, so e.g. ``--exclude-larger-than 2048``
+would exclude files larger than 2048 bytes (2 kilobytes). To specify other units,
+suffix the size value with one of ``k``/``K`` for kilobytes, ``m``/``M`` for megabytes,
+``g``/``G`` for gigabytes and ``t``/``T`` for terabytes (e.g. ``1k``, ``10K``, ``20m``,
+``20M``,  ``30g``, ``30G``, ``2t`` or ``2T``).
 
 Including Files
 ***************
