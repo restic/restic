@@ -42,7 +42,7 @@ func init() {
 	cmdRoot.AddCommand(cmdKey)
 
 	flags := cmdKey.Flags()
-	flags.StringVarP(&newPasswordFile, "new-password-file", "", "", "the file from which to load a new password")
+	flags.StringVarP(&newPasswordFile, "new-password-file", "", "", "`file` from which to read the new password")
 	flags.StringVarP(&keyUsername, "user", "", "", "the username for new keys")
 	flags.StringVarP(&keyHostname, "host", "", "", "the hostname for new keys")
 }

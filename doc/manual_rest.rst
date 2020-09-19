@@ -57,7 +57,7 @@ Usage help is available:
           --no-lock                    do not lock the repo, this allows some operations on read-only repos
       -o, --option key=value           set extended option (key=value, can be specified multiple times)
           --password-command command   shell command to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)
-      -p, --password-file file         read the repository password from a file (default: $RESTIC_PASSWORD_FILE)
+      -p, --password-file file         file to read the repository password from (default: $RESTIC_PASSWORD_FILE)
       -q, --quiet                      do not output comprehensive progress report
       -r, --repo repository            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
           --tls-client-cert file       path to a file containing PEM encoded TLS client certificate and private key
@@ -119,7 +119,7 @@ command:
           --no-lock                    do not lock the repo, this allows some operations on read-only repos
       -o, --option key=value           set extended option (key=value, can be specified multiple times)
           --password-command command   shell command to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)
-      -p, --password-file file         read the repository password from a file (default: $RESTIC_PASSWORD_FILE)
+      -p, --password-file file         file to read the repository password from (default: $RESTIC_PASSWORD_FILE)
       -q, --quiet                      do not output comprehensive progress report
       -r, --repo repository            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
           --tls-client-cert file       path to a file containing PEM encoded TLS client certificate and private key
