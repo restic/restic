@@ -48,7 +48,7 @@ func init() {
 	f.StringVarP(&copyOptions.Repo, "repo2", "", os.Getenv("RESTIC_REPOSITORY2"), "destination repository to copy snapshots to (default: $RESTIC_REPOSITORY2)")
 	f.StringVarP(&copyOptions.PasswordFile, "password-file2", "", os.Getenv("RESTIC_PASSWORD_FILE2"), "read the destination repository password from a file (default: $RESTIC_PASSWORD_FILE2)")
 	f.StringVarP(&copyOptions.KeyHint, "key-hint2", "", os.Getenv("RESTIC_KEY_HINT2"), "key ID of key to try decrypting the destination repository first (default: $RESTIC_KEY_HINT2)")
-	f.StringVarP(&copyOptions.PasswordCommand, "password-command2", "", os.Getenv("RESTIC_PASSWORD_COMMAND2"), "specify a shell command to obtain a password for the destination repository (default: $RESTIC_PASSWORD_COMMAND2)")
+	f.StringVarP(&copyOptions.PasswordCommand, "password-command2", "", os.Getenv("RESTIC_PASSWORD_COMMAND2"), "shell `command` to obtain the destination repository password from (default: $RESTIC_PASSWORD_COMMAND2)")
 
 	f.StringArrayVarP(&copyOptions.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when no snapshot ID is given (can be specified multiple times)")
 	f.Var(&copyOptions.Tags, "tag", "only consider snapshots which include this `taglist`, when no snapshot ID is given")
