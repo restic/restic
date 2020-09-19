@@ -51,7 +51,7 @@ func testRunInit(t testing.TB, opts GlobalOptions) {
 	restic.TestDisableCheckPolynomial(t)
 	restic.TestSetLockTimeout(t, 0)
 
-	rtest.OK(t, runInit(opts, nil))
+	rtest.OK(t, runInit(InitOptions{}, opts, nil))
 	t.Logf("repository initialized at %v", opts.Repo)
 }
 
@@ -616,8 +616,10 @@ func TestBackupTags(t *testing.T) {
 
 func testRunCopy(t testing.TB, srcGopts GlobalOptions, dstGopts GlobalOptions) {
 	copyOpts := CopyOptions{
-		Repo:     dstGopts.Repo,
-		password: dstGopts.password,
+		secondaryRepoOptions: secondaryRepoOptions{
+			Repo:     dstGopts.Repo,
+			password: dstGopts.password,
+		},
 	}
 
 	rtest.OK(t, runCopy(copyOpts, srcGopts, nil))
@@ -727,6 +729,36 @@ func TestCopyIncremental(t *testing.T) {
 	snapshotIDs = testRunList(t, "snapshots", env.gopts)
 	rtest.Assert(t, len(snapshotIDs) == len(copiedSnapshotIDs), "still expected %v snapshots, found %v",
 		len(copiedSnapshotIDs), len(snapshotIDs))
+}
+
+func TestInitCopyChunkerParams(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	env2, cleanup2 := withTestEnvironment(t)
+	defer cleanup2()
+
+	testRunInit(t, env2.gopts)
+
+	initOpts := InitOptions{
+		secondaryRepoOptions: secondaryRepoOptions{
+			Repo:     env2.gopts.Repo,
+			password: env2.gopts.password,
+		},
+	}
+	rtest.Assert(t, runInit(initOpts, env.gopts, nil) != nil, "expected invalid init options to fail")
+
+	initOpts.CopyChunkerParameters = true
+	rtest.OK(t, runInit(initOpts, env.gopts, nil))
+
+	repo, err := OpenRepository(env.gopts)
+	rtest.OK(t, err)
+
+	otherRepo, err := OpenRepository(env2.gopts)
+	rtest.OK(t, err)
+
+	rtest.Assert(t, repo.Config().ChunkerPolynomial == otherRepo.Config().ChunkerPolynomial,
+		"expected equal chunker polynomials, got %v expected %v", repo.Config().ChunkerPolynomial,
+		otherRepo.Config().ChunkerPolynomial)
 }
 
 func testRunTag(t testing.TB, opts TagOptions, gopts GlobalOptions) {

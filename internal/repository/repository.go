@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
@@ -614,7 +615,7 @@ func (r *Repository) SearchKey(ctx context.Context, password string, maxKeys int
 
 // Init creates a new master key with the supplied password, initializes and
 // saves the repository config.
-func (r *Repository) Init(ctx context.Context, password string) error {
+func (r *Repository) Init(ctx context.Context, password string, chunkerPolynomial *chunker.Pol) error {
 	has, err := r.be.Test(ctx, restic.Handle{Type: restic.ConfigFile})
 	if err != nil {
 		return err
@@ -626,6 +627,9 @@ func (r *Repository) Init(ctx context.Context, password string) error {
 	cfg, err := restic.CreateConfig()
 	if err != nil {
 		return err
+	}
+	if chunkerPolynomial != nil {
+		cfg.ChunkerPolynomial = *chunkerPolynomial
 	}
 
 	return r.init(ctx, password, cfg)
