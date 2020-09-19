@@ -1,0 +1,8 @@
+Enhancement: Speed up repacking step of prune command
+
+The repack step of the prune command, which moves still used file parts into
+new pack files such that the old ones can be garbage collected later on, now
+processes multiple pack files in parallel. This is especially beneficial for
+high latency backends or when using a fast network connection.
+
+https://github.com/restic/restic/pull/2941
