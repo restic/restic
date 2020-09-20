@@ -24,7 +24,7 @@ install:
   - msiexec /i go1.15.2.windows-amd64.msi /q
   - go version
   - go env
-  - appveyor DownloadFile http://sourceforge.netcologne.de/project/gnuwin32/tar/1.13-1/tar-1.13-1-bin.zip -FileName tar.zip
+  - appveyor DownloadFile https://sourceforge.netcologne.de/project/gnuwin32/tar/1.13-1/tar-1.13-1-bin.zip -FileName tar.zip
   - 7z x tar.zip bin/tar.exe
   - set PATH=bin/;%PATH%
 
