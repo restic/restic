@@ -63,7 +63,7 @@ Development Environment
 The repository contains the code written for restic in the directories
 `cmd/` and `internal/`.
 
-Restic requires Go version 1.12 or later for compiling. Clone the repo (without
+Restic requires Go version 1.13 or later for compiling. Clone the repo (without
 having `$GOPATH` set) and `cd` into the directory:
 
     $ unset GOPATH
@@ -74,7 +74,7 @@ Then use the `go` tool to build restic:
 
     $ go build ./cmd/restic
     $ ./restic version
-    restic 0.9.6-dev (compiled manually) compiled with go1.14 on linux/amd64
+    restic 0.10.0-dev (compiled manually) compiled with go1.15.2 on linux/amd64
 
 You can run all tests with the following command:
 
