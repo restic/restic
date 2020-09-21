@@ -88,7 +88,7 @@ func TestScanner(t *testing.T) {
 
 			TestCreateFiles(t, tempdir, test.src)
 
-			back := fs.TestChdir(t, tempdir)
+			back := restictest.Chdir(t, tempdir)
 			defer back()
 
 			cur, err := os.Getwd()
@@ -225,7 +225,7 @@ func TestScannerError(t *testing.T) {
 
 			TestCreateFiles(t, tempdir, test.src)
 
-			back := fs.TestChdir(t, tempdir)
+			back := restictest.Chdir(t, tempdir)
 			defer back()
 
 			cur, err := os.Getwd()
@@ -299,7 +299,7 @@ func TestScannerCancel(t *testing.T) {
 
 	TestCreateFiles(t, tempdir, src)
 
-	back := fs.TestChdir(t, tempdir)
+	back := restictest.Chdir(t, tempdir)
 	defer back()
 
 	cur, err := os.Getwd()

@@ -444,7 +444,7 @@ func TestTree(t *testing.T) {
 
 			TestCreateFiles(t, tempdir, test.src)
 
-			back := fs.TestChdir(t, tempdir)
+			back := restictest.Chdir(t, tempdir)
 			defer back()
 
 			tree, err := NewTree(fs.Local{}, test.targets)

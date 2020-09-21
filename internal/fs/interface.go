@@ -26,7 +26,6 @@ type FS interface {
 // File is an open file on a file system.
 type File interface {
 	io.Reader
-	io.Writer
 	io.Closer
 
 	Fd() uintptr

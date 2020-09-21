@@ -495,7 +495,7 @@ func TestTestEnsureSnapshot(t *testing.T) {
 
 			createFilesAt(t, targetDir, test.files)
 
-			back := fs.TestChdir(t, tempdir)
+			back := restictest.Chdir(t, tempdir)
 			defer back()
 
 			repo, cleanup := repository.TestRepository(t)

@@ -12,6 +12,14 @@ func Mkdir(name string, perm os.FileMode) error {
 	return os.Mkdir(fixpath(name), perm)
 }
 
+// MkdirAll creates a directory named path, along with any necessary parents,
+// and returns nil, or else returns an error. The permission bits perm are used
+// for all directories that MkdirAll creates. If path is already a directory,
+// MkdirAll does nothing and returns nil.
+func MkdirAll(path string, perm os.FileMode) error {
+	return os.MkdirAll(fixpath(path), perm)
+}
+
 // Readlink returns the destination of the named symbolic link.
 // If there is an error, it will be of type *PathError.
 func Readlink(name string) (string, error) {
@@ -30,14 +38,6 @@ func Remove(name string) error {
 // returns nil (no error).
 func RemoveAll(path string) error {
 	return os.RemoveAll(fixpath(path))
-}
-
-// Rename renames (moves) oldpath to newpath.
-// If newpath already exists, Rename replaces it.
-// OS-specific restrictions may apply when oldpath and newpath are in different directories.
-// If there is an error, it will be of type *LinkError.
-func Rename(oldpath, newpath string) error {
-	return os.Rename(fixpath(oldpath), fixpath(newpath))
 }
 
 // Symlink creates newname as a symbolic link to oldname.
