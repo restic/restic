@@ -24,22 +24,28 @@ type Location struct {
 }
 
 type parser struct {
-	scheme string
-	parse  func(string) (interface{}, error)
+	scheme        string
+	parse         func(string) (interface{}, error)
+	stripPassword func(string) string
 }
 
 // parsers is a list of valid config parsers for the backends. The first parser
 // is the fallback and should always be set to the local backend.
 var parsers = []parser{
-	{"b2", b2.ParseConfig},
-	{"local", local.ParseConfig},
-	{"sftp", sftp.ParseConfig},
-	{"s3", s3.ParseConfig},
-	{"gs", gs.ParseConfig},
-	{"azure", azure.ParseConfig},
-	{"swift", swift.ParseConfig},
-	{"rest", rest.ParseConfig},
-	{"rclone", rclone.ParseConfig},
+	{"b2", b2.ParseConfig, noPassword},
+	{"local", local.ParseConfig, noPassword},
+	{"sftp", sftp.ParseConfig, noPassword},
+	{"s3", s3.ParseConfig, noPassword},
+	{"gs", gs.ParseConfig, noPassword},
+	{"azure", azure.ParseConfig, noPassword},
+	{"swift", swift.ParseConfig, noPassword},
+	{"rest", rest.ParseConfig, rest.StripPassword},
+	{"rclone", rclone.ParseConfig, noPassword},
+}
+
+// noPassword returns the repository location unchanged (there's no sensitive information there)
+func noPassword(s string) string {
+	return s
 }
 
 func isPath(s string) bool {
@@ -105,6 +111,19 @@ func Parse(s string) (u Location, err error) {
 	}
 
 	return u, nil
+}
+
+// StripPassword returns a displayable version of a repository location (with any sensitive information removed)
+func StripPassword(s string) string {
+	scheme := extractScheme(s)
+
+	for _, parser := range parsers {
+		if parser.scheme != scheme {
+			continue
+		}
+		return parser.stripPassword(s)
+	}
+	return s
 }
 
 func extractScheme(s string) string {

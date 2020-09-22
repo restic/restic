@@ -631,7 +631,7 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 
 // Open the backend specified by a location config.
 func open(s string, gopts GlobalOptions, opts options.Options) (restic.Backend, error) {
-	debug.Log("parsing location %v", s)
+	debug.Log("parsing location %v", location.StripPassword(s))
 	loc, err := location.Parse(s)
 	if err != nil {
 		return nil, errors.Fatalf("parsing repository location failed: %v", err)
@@ -686,13 +686,13 @@ func open(s string, gopts GlobalOptions, opts options.Options) (restic.Backend, 
 	}
 
 	if err != nil {
-		return nil, errors.Fatalf("unable to open repo at %v: %v", s, err)
+		return nil, errors.Fatalf("unable to open repo at %v: %v", location.StripPassword(s), err)
 	}
 
 	// check if config is there
 	fi, err := be.Stat(globalOptions.ctx, restic.Handle{Type: restic.ConfigFile})
 	if err != nil {
-		return nil, errors.Fatalf("unable to open config file: %v\nIs there a repository at the following location?\n%v", err, s)
+		return nil, errors.Fatalf("unable to open config file: %v\nIs there a repository at the following location?\n%v", err, location.StripPassword(s))
 	}
 
 	if fi.Size == 0 {

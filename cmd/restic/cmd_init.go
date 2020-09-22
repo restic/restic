@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/restic/chunker"
+	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 
@@ -53,7 +54,7 @@ func runInit(opts InitOptions, gopts GlobalOptions, args []string) error {
 
 	be, err := create(gopts.Repo, gopts.extended)
 	if err != nil {
-		return errors.Fatalf("create repository at %s failed: %v\n", gopts.Repo, err)
+		return errors.Fatalf("create repository at %s failed: %v\n", location.StripPassword(gopts.Repo), err)
 	}
 
 	gopts.password, err = ReadPasswordTwice(gopts,
@@ -67,10 +68,10 @@ func runInit(opts InitOptions, gopts GlobalOptions, args []string) error {
 
 	err = s.Init(gopts.ctx, gopts.password, chunkerPolynomial)
 	if err != nil {
-		return errors.Fatalf("create key in repository at %s failed: %v\n", gopts.Repo, err)
+		return errors.Fatalf("create key in repository at %s failed: %v\n", location.StripPassword(gopts.Repo), err)
 	}
 
-	Verbosef("created restic repository %v at %s\n", s.Config().ID[:10], gopts.Repo)
+	Verbosef("created restic repository %v at %s\n", s.Config().ID[:10], location.StripPassword(gopts.Repo))
 	Verbosef("\n")
 	Verbosef("Please note that knowledge of your password is required to access\n")
 	Verbosef("the repository. Losing your password means that your data is\n")
