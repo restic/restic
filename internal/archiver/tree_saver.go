@@ -47,7 +47,7 @@ type TreeSaver struct {
 
 // NewTreeSaver returns a new tree saver. A worker pool with treeWorkers is
 // started, it is stopped when ctx is cancelled.
-func NewTreeSaver(ctx context.Context, t *tomb.Tomb, treeWorkers uint, saveTree func(context.Context, *restic.Tree) (restic.ID, ItemStats, error), errFn ErrorFunc) *TreeSaver {
+func NewTreeSaver(ctx, fileCtx context.Context, t *tomb.Tomb, treeWorkers uint, saveTree func(context.Context, *restic.Tree) (restic.ID, ItemStats, error), errFn ErrorFunc) *TreeSaver {
 	ch := make(chan saveTreeJob)
 
 	s := &TreeSaver{
@@ -58,7 +58,7 @@ func NewTreeSaver(ctx context.Context, t *tomb.Tomb, treeWorkers uint, saveTree 
 
 	for i := uint(0); i < treeWorkers; i++ {
 		t.Go(func() error {
-			return s.worker(t.Context(ctx), ch)
+			return s.worker(t.Context(ctx), t.Context(fileCtx), ch)
 		})
 	}
 
@@ -100,12 +100,12 @@ type saveTreeResponse struct {
 }
 
 // save stores the nodes as a tree in the repo.
-func (s *TreeSaver) save(ctx context.Context, snPath string, node *restic.Node, nodes []FutureNode) (*restic.Node, ItemStats, error) {
+func (s *TreeSaver) save(ctx, fileCtx context.Context, snPath string, node *restic.Node, nodes []FutureNode) (*restic.Node, ItemStats, error) {
 	var stats ItemStats
 
 	tree := restic.NewTree()
 	for _, fn := range nodes {
-		fn.wait(ctx)
+		fn.wait(ctx, fileCtx)
 
 		// return the error if it wasn't ignored
 		if fn.err != nil {
@@ -142,7 +142,7 @@ func (s *TreeSaver) save(ctx context.Context, snPath string, node *restic.Node, 
 	return node, stats, nil
 }
 
-func (s *TreeSaver) worker(ctx context.Context, jobs <-chan saveTreeJob) error {
+func (s *TreeSaver) worker(ctx, fileCtx context.Context, jobs <-chan saveTreeJob) error {
 	for {
 		var job saveTreeJob
 		select {
@@ -151,7 +151,7 @@ func (s *TreeSaver) worker(ctx context.Context, jobs <-chan saveTreeJob) error {
 		case job = <-jobs:
 		}
 
-		node, stats, err := s.save(ctx, job.snPath, job.node, job.nodes)
+		node, stats, err := s.save(ctx, fileCtx, job.snPath, job.node, job.nodes)
 		if err != nil {
 			debug.Log("error saving tree blob: %v", err)
 			close(job.ch)

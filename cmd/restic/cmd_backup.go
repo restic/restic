@@ -600,11 +600,12 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		Hostname:       opts.Host,
 		ParentSnapshot: *parentSnapshotID,
 	}
+	fileCtx, _ := context.WithCancel(gopts.ctx)
 
 	if !gopts.JSON {
 		p.V("start backup on %v", targets)
 	}
-	_, id, err := arch.Snapshot(gopts.ctx, targets, snapshotOpts)
+	_, id, err := arch.Snapshot(gopts.ctx, fileCtx, targets, snapshotOpts)
 	if err != nil {
 		return errors.Fatalf("unable to save snapshot: %v", err)
 	}

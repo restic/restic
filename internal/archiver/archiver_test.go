@@ -43,7 +43,7 @@ func saveFile(t testing.TB, repo restic.Repository, filename string, filesystem 
 	ctx := tmb.Context(context.Background())
 
 	arch := New(repo, filesystem, Options{})
-	arch.runWorkers(ctx, &tmb)
+	arch.runWorkers(ctx, ctx, &tmb)
 
 	arch.Error = func(item string, fi os.FileInfo, err error) error {
 		t.Errorf("archiver error for %v: %v", item, err)
@@ -219,7 +219,7 @@ func TestArchiverSave(t *testing.T) {
 				t.Errorf("archiver error for %v: %v", item, err)
 				return err
 			}
-			arch.runWorkers(tmb.Context(ctx), &tmb)
+			arch.runWorkers(tmb.Context(ctx), tmb.Context(ctx), &tmb)
 
 			node, excluded, err := arch.Save(ctx, "/", filepath.Join(tempdir, "file"), nil)
 			if err != nil {
@@ -230,7 +230,7 @@ func TestArchiverSave(t *testing.T) {
 				t.Errorf("Save() excluded the node, that's unexpected")
 			}
 
-			node.wait(ctx)
+			node.wait(ctx, ctx)
 			if node.err != nil {
 				t.Fatal(node.err)
 			}
@@ -295,7 +295,7 @@ func TestArchiverSaveReaderFS(t *testing.T) {
 				t.Errorf("archiver error for %v: %v", item, err)
 				return err
 			}
-			arch.runWorkers(tmb.Context(ctx), &tmb)
+			arch.runWorkers(tmb.Context(ctx), tmb.Context(ctx), &tmb)
 
 			node, excluded, err := arch.Save(ctx, "/", filename, nil)
 			t.Logf("Save returned %v %v", node, err)
@@ -307,7 +307,7 @@ func TestArchiverSaveReaderFS(t *testing.T) {
 				t.Errorf("Save() excluded the node, that's unexpected")
 			}
 
-			node.wait(ctx)
+			node.wait(ctx, ctx)
 			if node.err != nil {
 				t.Fatal(node.err)
 			}
@@ -796,7 +796,7 @@ func TestArchiverSaveDir(t *testing.T) {
 			defer cleanup()
 
 			arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
-			arch.runWorkers(ctx, &tmb)
+			arch.runWorkers(ctx, ctx, &tmb)
 
 			chdir := tempdir
 			if test.chdir != "" {
@@ -881,7 +881,7 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 		ctx := tmb.Context(context.Background())
 
 		arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
-		arch.runWorkers(ctx, &tmb)
+		arch.runWorkers(ctx, ctx, &tmb)
 
 		fi, err := fs.Lstat(tempdir)
 		if err != nil {
@@ -1061,7 +1061,7 @@ func TestArchiverSaveTree(t *testing.T) {
 				stat.Add(s)
 			}
 
-			arch.runWorkers(ctx, &tmb)
+			arch.runWorkers(ctx, ctx, &tmb)
 
 			back := restictest.Chdir(t, tempdir)
 			defer back()
@@ -1075,7 +1075,7 @@ func TestArchiverSaveTree(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			tree, err := arch.SaveTree(ctx, "/", atree, nil)
+			tree, err := arch.SaveTree(ctx, ctx, "/", atree, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1362,7 +1362,7 @@ func TestArchiverSnapshot(t *testing.T) {
 			}
 
 			t.Logf("targets: %v", targets)
-			sn, snapshotID, err := arch.Snapshot(ctx, targets, SnapshotOptions{Time: time.Now()})
+			sn, snapshotID, err := arch.Snapshot(ctx, ctx, targets, SnapshotOptions{Time: time.Now()})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1511,7 +1511,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 			defer back()
 
 			targets := []string{"."}
-			_, snapshotID, err := arch.Snapshot(ctx, targets, SnapshotOptions{Time: time.Now()})
+			_, snapshotID, err := arch.Snapshot(ctx, ctx, targets, SnapshotOptions{Time: time.Now()})
 			if test.err != "" {
 				if err == nil {
 					t.Fatalf("expected error not found, got %v, wanted %q", err, test.err)
@@ -1617,7 +1617,7 @@ func TestArchiverParent(t *testing.T) {
 			back := restictest.Chdir(t, tempdir)
 			defer back()
 
-			_, firstSnapshotID, err := arch.Snapshot(ctx, []string{"."}, SnapshotOptions{Time: time.Now()})
+			_, firstSnapshotID, err := arch.Snapshot(ctx, ctx, []string{"."}, SnapshotOptions{Time: time.Now()})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1647,7 +1647,7 @@ func TestArchiverParent(t *testing.T) {
 				Time:           time.Now(),
 				ParentSnapshot: firstSnapshotID,
 			}
-			_, secondSnapshotID, err := arch.Snapshot(ctx, []string{"."}, opts)
+			_, secondSnapshotID, err := arch.Snapshot(ctx, ctx, []string{"."}, opts)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1784,7 +1784,7 @@ func TestArchiverErrorReporting(t *testing.T) {
 			arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
 			arch.Error = test.errFn
 
-			_, snapshotID, err := arch.Snapshot(ctx, []string{"."}, SnapshotOptions{Time: time.Now()})
+			_, snapshotID, err := arch.Snapshot(ctx, ctx, []string{"."}, SnapshotOptions{Time: time.Now()})
 			if test.mustError {
 				if err != nil {
 					t.Logf("found expected error (%v), skipping further checks", err)
@@ -1938,7 +1938,7 @@ func TestArchiverAbortEarlyOnError(t *testing.T) {
 				FileReadConcurrency: 2,
 			})
 
-			_, _, err := arch.Snapshot(ctx, []string{"."}, SnapshotOptions{Time: time.Now()})
+			_, _, err := arch.Snapshot(ctx, ctx, []string{"."}, SnapshotOptions{Time: time.Now()})
 			if errors.Cause(err) != test.err {
 				t.Errorf("expected error (%v) not found, got %v", test.err, errors.Cause(err))
 			}
@@ -1966,7 +1966,7 @@ func snapshot(t testing.TB, repo restic.Repository, fs fs.FS, parent restic.ID, 
 		Time:           time.Now(),
 		ParentSnapshot: parent,
 	}
-	snapshot, snapshotID, err := arch.Snapshot(ctx, []string{filename}, sopts)
+	snapshot, snapshotID, err := arch.Snapshot(ctx, ctx, []string{filename}, sopts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2146,7 +2146,7 @@ func TestRacyFileSwap(t *testing.T) {
 		t.Logf("archiver error as expected for %v: %v", item, err)
 		return err
 	}
-	arch.runWorkers(tmb.Context(ctx), &tmb)
+	arch.runWorkers(tmb.Context(ctx), tmb.Context(ctx), &tmb)
 
 	// fs.Track will panic if the file was not closed
 	_, excluded, err := arch.Save(ctx, "/", tempfile, nil)

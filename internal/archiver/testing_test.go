@@ -507,7 +507,7 @@ func TestTestEnsureSnapshot(t *testing.T) {
 				Hostname: "localhost",
 				Tags:     []string{"test"},
 			}
-			_, id, err := arch.Snapshot(ctx, []string{"."}, opts)
+			_, id, err := arch.Snapshot(ctx, ctx, []string{"."}, opts)
 			if err != nil {
 				t.Fatal(err)
 			}

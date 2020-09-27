@@ -27,7 +27,7 @@ func TestTreeSaver(t *testing.T) {
 		return nil
 	}
 
-	b := NewTreeSaver(ctx, tmb, uint(runtime.NumCPU()), saveFn, errFn)
+	b := NewTreeSaver(ctx, ctx, tmb, uint(runtime.NumCPU()), saveFn, errFn)
 
 	var results []FutureTree
 
@@ -88,7 +88,7 @@ func TestTreeSaverError(t *testing.T) {
 				return nil
 			}
 
-			b := NewTreeSaver(ctx, tmb, uint(runtime.NumCPU()), saveFn, errFn)
+			b := NewTreeSaver(ctx, ctx, tmb, uint(runtime.NumCPU()), saveFn, errFn)
 
 			var results []FutureTree
 
