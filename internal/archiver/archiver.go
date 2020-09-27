@@ -816,6 +816,12 @@ func (arch *Archiver) Snapshot(ctx, fileCtx context.Context, targets []string, o
 	}
 	sn.Tree = &rootTreeID
 
+	select {
+	case <-fileCtx.Done():
+		sn.AddTags([]string{"interrupted"})
+	default:
+	}
+
 	id, err := arch.Repo.SaveJSONUnpacked(ctx, restic.SnapshotFile, sn)
 	if err != nil {
 		return nil, restic.ID{}, err
