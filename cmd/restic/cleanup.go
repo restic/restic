@@ -35,6 +35,19 @@ func AddCleanupHandler(f func() error) {
 	cleanupHandlers.list = append(cleanupHandlers.list, f)
 }
 
+// PrependCleanupHandler prepends the function f to the list of cleanup handlers so
+// that it is executed when all the cleanup handlers are run, e.g. when SIGINT
+// is received.
+func PrependCleanupHandler(f func() error) {
+	cleanupHandlers.Lock()
+	defer cleanupHandlers.Unlock()
+
+	// reset the done flag for integration tests
+	cleanupHandlers.done = false
+
+	cleanupHandlers.list = append([]func() error{f}, cleanupHandlers.list...)
+}
+
 // RunCleanupHandlers runs all registered cleanup handlers
 func RunCleanupHandlers() {
 	cleanupHandlers.Lock()

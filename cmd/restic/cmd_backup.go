@@ -600,7 +600,29 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		Hostname:       opts.Host,
 		ParentSnapshot: *parentSnapshotID,
 	}
-	fileCtx, _ := context.WithCancel(gopts.ctx)
+
+	// Make new context which can be used to cancel saving of files
+	fileCtx, fileCancel := context.WithCancel(gopts.ctx)
+	// Make new channel to indicate that backup is finished
+	backupFinish := make(chan struct{}, 1)
+	defer func() {
+		backupFinish <- struct{}{}
+	}()
+
+	// If backup is interupted, first cancel the saving of files.
+	// Then wait for at most 15 seconds for the saving of trees and
+	// snapshot to complete.
+	// After time is over, all other CleanupHandlers are called which
+	// will stop all saving and quit
+	PrependCleanupHandler(func() error {
+		fileCancel()
+		timeChan := time.After(15 * time.Second)
+		select {
+		case <-timeChan:
+		case <-backupFinish:
+		}
+		return nil
+	})
 
 	if !gopts.JSON {
 		p.V("start backup on %v", targets)
