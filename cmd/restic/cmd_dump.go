@@ -155,7 +155,7 @@ func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
 	var id restic.ID
 
 	if snapshotIDString == "latest" {
-		id, err = restic.FindLatestSnapshot(ctx, repo, opts.Paths, opts.Tags, opts.Hosts)
+		id, err = restic.FindLatestSnapshot(ctx, repo, opts.Paths, opts.Tags, []restic.TagList{}, opts.Hosts)
 		if err != nil {
 			Exitf(1, "latest snapshot for criteria not found: %v Paths:%v Hosts:%v", err, opts.Paths, opts.Hosts)
 		}

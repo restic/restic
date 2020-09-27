@@ -404,7 +404,7 @@ func findParentSnapshot(ctx context.Context, repo restic.Repository, opts Backup
 
 	// Find last snapshot to set it as parent, if not already set
 	if !opts.Force && parentID == nil {
-		id, err := restic.FindLatestSnapshot(ctx, repo, targets, []restic.TagList{}, []string{opts.Host})
+		id, err := restic.FindLatestSnapshot(ctx, repo, targets, []restic.TagList{}, []restic.TagList{}, []string{opts.Host})
 		if err == nil {
 			parentID = &id
 		} else if err != restic.ErrNoSnapshotFound {

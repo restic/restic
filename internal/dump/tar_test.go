@@ -82,7 +82,7 @@ func TestWriteTar(t *testing.T) {
 			back := rtest.Chdir(t, tmpdir)
 			defer back()
 
-			sn, _, err := arch.Snapshot(ctx, []string{"."}, archiver.SnapshotOptions{})
+			sn, _, err := arch.Snapshot(ctx, ctx, []string{"."}, archiver.SnapshotOptions{})
 			rtest.OK(t, err)
 
 			tree, err := repo.LoadTree(ctx, *sn.Tree)

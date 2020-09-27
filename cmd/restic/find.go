@@ -23,7 +23,7 @@ func FindFilteredSnapshots(ctx context.Context, repo *repository.Repository, hos
 			for _, s := range snapshotIDs {
 				if s == "latest" {
 					usedFilter = true
-					id, err = restic.FindLatestSnapshot(ctx, repo, paths, tags, hosts)
+					id, err = restic.FindLatestSnapshot(ctx, repo, paths, tags, []restic.TagList{}, hosts)
 					if err != nil {
 						Warnf("Ignoring %q, no snapshot matched given filter (Paths:%v Tags:%v Hosts:%v)\n", s, paths, tags, hosts)
 						continue
