@@ -60,6 +60,7 @@ Usage help is available:
       -p, --password-file file         file to read the repository password from (default: $RESTIC_PASSWORD_FILE)
       -q, --quiet                      do not output comprehensive progress report
       -r, --repo repository            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
+          --repository-file file       file to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
           --tls-client-cert file       path to a file containing PEM encoded TLS client certificate and private key
       -v, --verbose n                  be verbose (specify --verbose multiple times or level --verbose=n)
 
@@ -122,6 +123,7 @@ command:
       -p, --password-file file         file to read the repository password from (default: $RESTIC_PASSWORD_FILE)
       -q, --quiet                      do not output comprehensive progress report
       -r, --repo repository            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
+          --repository-file file       file to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
           --tls-client-cert file       path to a file containing PEM encoded TLS client certificate and private key
       -v, --verbose n                  be verbose (specify --verbose multiple times or level --verbose=n)
 
