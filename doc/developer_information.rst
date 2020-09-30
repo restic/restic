@@ -18,9 +18,9 @@ depends on the following things:
  * The environment variables (mostly ``$GOOS``, ``$GOARCH``, ``$CGO_ENABLED``)
 
 In addition, The compressed ZIP files for Windows depends on the modification
-timestamp of the binary contained in it. In order to reproduce the exact same
-ZIP file every time, we update the timestamp of the file ``VERSION`` in the
-source code archive and set the timezone to Europe/Berlin.
+timestamp and filename of the binary contained in it. In order to reproduce the
+exact same ZIP file every time, we update the timestamp of the file ``VERSION``
+in the source code archive and set the timezone to Europe/Berlin.
 
 In the following example, we'll use the file ``restic-0.10.0.tar.gz`` and Go
 1.15.2 to reproduce the released binaries.
@@ -53,9 +53,9 @@ In the following example, we'll use the file ``restic-0.10.0.tar.gz`` and Go
     $ GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-s -w" -tags selfupdate -o restic_linux_amd64 ./cmd/restic
     $ bzip2 restic_linux_amd64
 
-    $ GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-s -w" -tags selfupdate -o restic_windows_amd64.exe ./cmd/restic
-    $ touch --reference VERSION restic_windows_amd64.exe
-    $ TZ=Europe/Berlin zip -q -X restic_windows_amd64.zip restic_windows_amd64.exe
+    $ GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-s -w" -tags selfupdate -o restic_0.10.0_windows_amd64.exe ./cmd/restic
+    $ touch --reference VERSION restic_0.10.0_windows_amd64.exe
+    $ TZ=Europe/Berlin zip -q -X restic_0.10.0_windows_amd64.zip restic_0.10.0_windows_amd64.exe
 
 Building the Official Binaries
 ******************************
@@ -98,9 +98,10 @@ The following steps are necessary to build the binaries:
     docker run --rm \
         --volume "$PWD/restic-0.10.0:/restic" \
         --volume "$PWD/output:/output" \
-        restic/builder
+        restic/builder \
+        go run helpers/build-release-binaries/main.go --version 0.10.0
 
-4. If anything goes wrong, you can enable debug output by specifying the call to ``helpers/build-release-binaries/main.go`` like this:
+4. If anything goes wrong, you can enable debug output like this:
 
 .. code::
 
@@ -108,7 +109,7 @@ The following steps are necessary to build the binaries:
         --volume "$PWD/restic-0.10.0:/restic" \
         --volume "$PWD/output:/output" \
         restic/builder \
-        go run helpers/build-release-binaries/main.go --verbose
+        go run helpers/build-release-binaries/main.go --version 0.10.0 --verbose
 
 Prepare a New Release
 *********************
