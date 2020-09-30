@@ -25,7 +25,7 @@ type ExpirePolicy struct {
 func (e ExpirePolicy) String() (s string) {
 	var keeps []string
 	if e.Last > 0 {
-		keeps = append(keeps, fmt.Sprintf("%d snapshots", e.Last))
+		keeps = append(keeps, fmt.Sprintf("%d latest", e.Last))
 	}
 	if e.Hourly > 0 {
 		keeps = append(keeps, fmt.Sprintf("%d hourly", e.Hourly))
@@ -44,7 +44,7 @@ func (e ExpirePolicy) String() (s string) {
 	}
 
 	if len(keeps) > 0 {
-		s = fmt.Sprintf("keep the last %s snapshots", strings.Join(keeps, ", "))
+		s = fmt.Sprintf("keep %s snapshots", strings.Join(keeps, ", "))
 	}
 
 	if len(e.Tags) > 0 {
