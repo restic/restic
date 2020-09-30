@@ -407,6 +407,7 @@ environment variables. The following lists these environment variables:
 
 .. code-block:: console
 
+    RESTIC_REPOSITORY_FILE              Name of file containing the repository location (replaces --repository-file)
     RESTIC_REPOSITORY                   Location of repository (replaces -r)
     RESTIC_PASSWORD_FILE                Location of password file (replaces --password-file)
     RESTIC_PASSWORD                     The actual password for the repository
