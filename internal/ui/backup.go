@@ -91,6 +91,8 @@ func (b *Backup) Run(ctx context.Context) error {
 	t := time.NewTicker(time.Second)
 	defer t.Stop()
 	defer close(b.closed)
+	// Reset status when finished
+	defer b.term.SetStatus([]string{""})
 
 	for {
 		select {
