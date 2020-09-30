@@ -13,7 +13,7 @@ var cmdRecover = &cobra.Command{
 	Use:   "recover [flags]",
 	Short: "Recover data from the repository",
 	Long: `
-The "recover" command build a new snapshot from all directories it can find in
+The "recover" command builds a new snapshot from all directories it can find in
 the raw data of the repository. It can be used if, for example, a snapshot has
 been removed by accident with "forget".
 
