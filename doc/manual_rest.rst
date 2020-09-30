@@ -93,6 +93,7 @@ command:
           --exclude-caches                         excludes cache directories that are marked with a CACHEDIR.TAG file. See https://bford.info/cachedir/ for the Cache Directory Tagging Standard
           --exclude-file file                      read exclude patterns from a file (can be specified multiple times)
           --exclude-if-present filename[:header]   takes filename[:header], exclude contents of directories containing filename (except filename itself) if header of that file is as provided (can be specified multiple times)
+          --exclude-larger-than size               max size of the files to be backed up (allowed suffixes: k/K, m/M, g/G, t/T)
           --files-from file                        read the files to backup from file (can be combined with file args/can be specified multiple times)
       -f, --force                                  force re-reading the target files/directories (overrides the "parent" flag)
       -h, --help                                   help for backup
