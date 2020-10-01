@@ -18,6 +18,7 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/googleapi"
+	"google.golang.org/api/option"
 	storage "google.golang.org/api/storage/v1"
 )
 
@@ -66,7 +67,7 @@ func getStorageService(rt http.RoundTripper) (*storage.Service, error) {
 
 	client := oauth2.NewClient(ctx, ts)
 
-	service, err := storage.New(client)
+	service, err := storage.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
 		return nil, err
 	}
