@@ -16,7 +16,7 @@ type secondaryRepoOptions struct {
 }
 
 func initSecondaryRepoOptions(f *pflag.FlagSet, opts *secondaryRepoOptions, repoPrefix string, repoUsage string) {
-	f.StringVarP(&opts.Repo, "repo2", "", os.Getenv("RESTIC_REPOSITORY2"), repoPrefix+" repository "+repoUsage+" (default: $RESTIC_REPOSITORY2)")
+	f.StringVarP(&opts.Repo, "repo2", "", os.Getenv("RESTIC_REPOSITORY2"), repoPrefix+" `repository` "+repoUsage+" (default: $RESTIC_REPOSITORY2)")
 	f.StringVarP(&opts.PasswordFile, "password-file2", "", os.Getenv("RESTIC_PASSWORD_FILE2"), "`file` to read the "+repoPrefix+" repository password from (default: $RESTIC_PASSWORD_FILE2)")
 	f.StringVarP(&opts.KeyHint, "key-hint2", "", os.Getenv("RESTIC_KEY_HINT2"), "key ID of key to try decrypting the "+repoPrefix+" repository first (default: $RESTIC_KEY_HINT2)")
 	f.StringVarP(&opts.PasswordCommand, "password-command2", "", os.Getenv("RESTIC_PASSWORD_COMMAND2"), "shell `command` to obtain the "+repoPrefix+" repository password from (default: $RESTIC_PASSWORD_COMMAND2)")
