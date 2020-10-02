@@ -1,0 +1,9 @@
+Enhancement: Optimize check for unchanged files during backup
+
+During a backup restic skips processing files which have not changed since the last backup run.
+Previously this required opening each file once which can be slow on network filesystems. The
+backup command now checks for file changes before opening a file. This considerably reduces
+the time to create a backup on network filesystems.
+
+https://github.com/restic/restic/issues/2969
+https://github.com/restic/restic/pull/2970
