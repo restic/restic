@@ -73,7 +73,7 @@ func init() {
 	f.Var(&forgetOptions.Tags, "tag", "only consider snapshots which include this `taglist` in the format `tag[,tag,...]` (can be specified multiple times)")
 
 	f.StringArrayVar(&forgetOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` (can be specified multiple times)")
-	f.BoolVarP(&forgetOptions.Compact, "compact", "c", false, "use compact format")
+	f.BoolVarP(&forgetOptions.Compact, "compact", "c", false, "use compact output format")
 
 	f.StringVarP(&forgetOptions.GroupBy, "group-by", "g", "host,paths", "string for grouping snapshots by host,paths,tags")
 	f.BoolVarP(&forgetOptions.DryRun, "dry-run", "n", false, "do not delete anything, just print what would be done")
