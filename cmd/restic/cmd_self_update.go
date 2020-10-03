@@ -4,6 +4,7 @@ package main
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/selfupdate"
@@ -56,11 +57,18 @@ func runSelfUpdate(opts SelfUpdateOptions, gopts GlobalOptions, args []string) e
 
 	fi, err := os.Lstat(opts.Output)
 	if err != nil {
-		return err
-	}
-
-	if !fi.Mode().IsRegular() {
-		return errors.Errorf("output file %v is not a normal file, use --output to specify a different file", opts.Output)
+		dirname := filepath.Dir(opts.Output)
+		di, err := os.Lstat(dirname)
+		if err != nil {
+			return err
+		}
+		if !di.Mode().IsDir() {
+			return errors.Fatalf("output parent path %v is not a directory, use --output to specify a different file path", dirname)
+		}
+	} else {
+		if !fi.Mode().IsRegular() {
+			return errors.Fatalf("output path %v is not a normal file, use --output to specify a different file path", opts.Output)
+		}
 	}
 
 	Printf("writing restic to %v\n", opts.Output)

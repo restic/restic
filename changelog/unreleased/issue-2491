@@ -1,0 +1,9 @@
+Bugfix: Don't require `self-update --output` placeholder file
+
+`restic self-update --output /path/to/new-restic` used to require that
+new-restic was an existing file, to be overwritten. Now it's possible
+to download an updated restic binary to a new path, without first
+having to create a placeholder file.
+
+https://github.com/restic/restic/issues/2491
+https://github.com/restic/restic/pull/2937
