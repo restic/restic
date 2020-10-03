@@ -48,13 +48,13 @@ func (c *Cache) load(h restic.Handle, length int, offset int64) (io.ReadCloser, 
 
 	f, err := fs.Open(c.filename(h))
 	if err != nil {
-		return nil, errors.Wrap(err, "Open")
+		return nil, errors.WithStack(err)
 	}
 
 	fi, err := f.Stat()
 	if err != nil {
 		_ = f.Close()
-		return nil, errors.Wrap(err, "Stat")
+		return nil, errors.WithStack(err)
 	}
 
 	if fi.Size() <= crypto.Extension {
@@ -94,15 +94,11 @@ func (c *Cache) saveWriter(h restic.Handle) (io.WriteCloser, error) {
 	p := c.filename(h)
 	err := fs.MkdirAll(filepath.Dir(p), 0700)
 	if err != nil {
-		return nil, errors.Wrap(err, "MkdirAll")
+		return nil, errors.WithStack(err)
 	}
 
 	f, err := fs.OpenFile(p, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0400)
-	if err != nil {
-		return nil, errors.Wrap(err, "Create")
-	}
-
-	return f, err
+	return f, errors.WithStack(err)
 }
 
 // Save saves a file in the cache.
@@ -133,7 +129,7 @@ func (c *Cache) Save(h restic.Handle, rd io.Reader) error {
 
 	if err = f.Close(); err != nil {
 		_ = c.remove(h)
-		return errors.Wrap(err, "Close")
+		return errors.WithStack(err)
 	}
 
 	return nil
