@@ -2,7 +2,7 @@ module github.com/restic/restic
 
 require (
 	bazil.org/fuse v0.0.0-20200407214033-5883e5a4b512
-	cloud.google.com/go v0.66.0 // indirect
+	cloud.google.com/go/storage v1.12.0
 	github.com/Azure/azure-sdk-for-go v46.1.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.6 // indirect
 	github.com/Azure/go-autorest/autorest/to v0.4.0 // indirect
@@ -44,8 +44,6 @@ require (
 	golang.org/x/sys v0.0.0-20200918174421-af09f7315aff
 	golang.org/x/text v0.3.3
 	google.golang.org/api v0.32.0
-	google.golang.org/genproto v0.0.0-20200918140846-d0d605568037 // indirect
-	google.golang.org/grpc v1.32.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b // indirect
 	gopkg.in/ini.v1 v1.61.0 // indirect
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
