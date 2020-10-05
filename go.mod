@@ -9,7 +9,7 @@ require (
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/cespare/xxhash v1.1.0
-	github.com/dchest/siphash v1.2.1
+	github.com/dchest/siphash v1.2.2
 	github.com/dnaeon/go-vcr v1.0.1 // indirect
 	github.com/elithrar/simple-scrypt v1.3.0
 	github.com/google/go-cmp v0.5.2
