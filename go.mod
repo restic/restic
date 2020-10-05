@@ -6,9 +6,8 @@ require (
 	github.com/Azure/azure-sdk-for-go v46.1.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.6 // indirect
 	github.com/Azure/go-autorest/autorest/to v0.4.0 // indirect
-	github.com/OneOfOne/xxhash v1.2.8 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible
-	github.com/cespare/xxhash v1.1.0
+	github.com/cespare/xxhash/v2 v2.1.1
 	github.com/dchest/siphash v1.2.2
 	github.com/dnaeon/go-vcr v1.0.1 // indirect
 	github.com/elithrar/simple-scrypt v1.3.0
@@ -34,7 +33,6 @@ require (
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/smartystreets/assertions v1.2.0 // indirect
 	github.com/smartystreets/goconvey v1.6.4 // indirect
-	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a

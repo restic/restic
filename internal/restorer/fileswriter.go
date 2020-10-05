@@ -4,7 +4,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/cespare/xxhash"
+	"github.com/cespare/xxhash/v2"
 	"github.com/restic/restic/internal/debug"
 )
 
