@@ -234,10 +234,6 @@ func rejectByDevice(samples []string) (RejectFunc, error) {
 	debug.Log("allowed devices: %v\n", allowed)
 
 	return func(item string, fi os.FileInfo) bool {
-		if fi == nil {
-			return false
-		}
-
 		item = filepath.Clean(item)
 
 		id, err := fs.DeviceID(fi)
@@ -301,10 +297,6 @@ func rejectBySize(maxSizeStr string) (RejectFunc, error) {
 	}
 
 	return func(item string, fi os.FileInfo) bool {
-		if fi == nil {
-			return false
-		}
-
 		// directory will be ignored
 		if fi.IsDir() {
 			return false
