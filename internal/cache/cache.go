@@ -96,7 +96,7 @@ func New(id string, basedir string) (c *Cache, err error) {
 		}
 	}
 
-	created, err := mkdirCacheDir(basedir)
+	err = fs.MkdirAll(basedir, 0700)
 	if err != nil {
 		return nil, err
 	}
@@ -119,6 +119,7 @@ func New(id string, basedir string) (c *Cache, err error) {
 	}
 
 	// create the repo cache dir if it does not exist yet
+	var created bool
 	_, err = fs.Lstat(cachedir)
 	if os.IsNotExist(err) {
 		err = fs.MkdirAll(cachedir, dirMode)
