@@ -142,7 +142,7 @@ func prepareCheckCache(opts CheckOptions, gopts *GlobalOptions) (cleanup func())
 
 func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	if len(args) != 0 {
-		return errors.Fatal("check has no arguments")
+		return errors.Fatal("the check command expects no arguments, only options - please see `restic help check` for usage and flags")
 	}
 
 	cleanup := prepareCheckCache(opts, &gopts)
