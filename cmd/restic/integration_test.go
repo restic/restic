@@ -1590,7 +1590,7 @@ func TestDiff(t *testing.T) {
 	rtest.OK(t, os.Mkdir(modfile+"4", 0755))
 
 	testRunBackup(t, "", []string{datadir}, opts, env.gopts)
-	snapshots, secondSnapshotID := lastSnapshot(snapshots, loadSnapshotMap(t, env.gopts))
+	_, secondSnapshotID := lastSnapshot(snapshots, loadSnapshotMap(t, env.gopts))
 
 	_, err := testRunDiffOutput(env.gopts, "", secondSnapshotID)
 	rtest.Assert(t, err != nil, "expected error on invalid snapshot id")
