@@ -3,11 +3,10 @@
 package fuse
 
 import (
+	"context"
 	"os"
 
 	"github.com/restic/restic/internal/debug"
-
-	"golang.org/x/net/context"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"

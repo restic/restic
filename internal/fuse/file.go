@@ -3,6 +3,7 @@
 package fuse
 
 import (
+	"context"
 	"sort"
 
 	"github.com/restic/restic/internal/debug"
@@ -11,7 +12,6 @@ import (
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
-	"golang.org/x/net/context"
 )
 
 // The default block size to report in stat

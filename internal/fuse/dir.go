@@ -3,13 +3,13 @@
 package fuse
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"sync"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
-	"golang.org/x/net/context"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
