@@ -513,7 +513,7 @@ func TestBackupErrors(t *testing.T) {
 	gopts := env.gopts
 	gopts.stderr = ioutil.Discard
 	err := testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, gopts)
-	rtest.Assert(t, err != nil, "Assumed failure, but no error occured.")
+	rtest.Assert(t, err != nil, "Assumed failure, but no error occurred.")
 	rtest.Assert(t, err == ErrInvalidSourceData, "Wrong error returned")
 	snapshotIDs := testRunList(t, "snapshots", env.gopts)
 	rtest.Assert(t, len(snapshotIDs) == 1,
