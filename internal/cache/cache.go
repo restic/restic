@@ -33,12 +33,12 @@ func readVersion(dir string) (v uint, err error) {
 	}
 
 	if err != nil {
-		return 0, errors.Wrap(err, "ReadFile")
+		return 0, errors.Wrap(err, "readVersion")
 	}
 
 	ver, err := strconv.ParseUint(string(buf), 10, 32)
 	if err != nil {
-		return 0, errors.Wrap(err, "ParseUint")
+		return 0, errors.Wrap(err, "readVersion")
 	}
 
 	return uint(ver), nil
@@ -56,13 +56,13 @@ const cachedirTagSignature = "Signature: 8a477f597d28d172789f06886806bc55\n"
 
 func writeCachedirTag(dir string) error {
 	if err := fs.MkdirAll(dir, dirMode); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	tagfile := filepath.Join(dir, "CACHEDIR.TAG")
 	_, err := fs.Lstat(tagfile)
 	if err != nil && !os.IsNotExist(err) {
-		return errors.Wrap(err, "Lstat")
+		return errors.WithStack(err)
 	}
 
 	f, err := fs.OpenFile(tagfile, os.O_CREATE|os.O_EXCL|os.O_WRONLY, fileMode)
@@ -71,16 +71,16 @@ func writeCachedirTag(dir string) error {
 			return nil
 		}
 
-		return errors.Wrap(err, "OpenFile")
+		return errors.WithStack(err)
 	}
 
 	debug.Log("Create CACHEDIR.TAG at %v", dir)
 	if _, err := f.Write([]byte(cachedirTagSignature)); err != nil {
 		_ = f.Close()
-		return errors.Wrap(err, "Write")
+		return errors.WithStack(err)
 	}
 
-	return f.Close()
+	return errors.WithStack(f.Close())
 }
 
 // New returns a new cache for the repo ID at basedir. If basedir is the empty
@@ -98,7 +98,7 @@ func New(id string, basedir string) (c *Cache, err error) {
 
 	err = fs.MkdirAll(basedir, 0700)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	// create base dir and tag it as a cache directory
@@ -124,7 +124,7 @@ func New(id string, basedir string) (c *Cache, err error) {
 	if os.IsNotExist(err) {
 		err = fs.MkdirAll(cachedir, dirMode)
 		if err != nil {
-			return nil, err
+			return nil, errors.WithStack(err)
 		}
 		created = true
 	}
@@ -138,13 +138,13 @@ func New(id string, basedir string) (c *Cache, err error) {
 	if v < cacheVersion {
 		err = ioutil.WriteFile(filepath.Join(cachedir, "version"), []byte(fmt.Sprintf("%d", cacheVersion)), fileMode)
 		if err != nil {
-			return nil, errors.Wrap(err, "WriteFile")
+			return nil, errors.WithStack(err)
 		}
 	}
 
 	for _, p := range cacheLayoutPaths {
 		if err = fs.MkdirAll(filepath.Join(cachedir, p), dirMode); err != nil {
-			return nil, err
+			return nil, errors.WithStack(err)
 		}
 	}
 
