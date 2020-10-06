@@ -679,7 +679,7 @@ func (r *Repository) List(ctx context.Context, t restic.FileType, fn func(restic
 func (r *Repository) ListPack(ctx context.Context, id restic.ID, size int64) ([]restic.Blob, int64, error) {
 	h := restic.Handle{Type: restic.PackFile, Name: id.String()}
 
-	blobs, err := pack.List(r.Key(), restic.ReaderAt(r.Backend(), h), size)
+	blobs, err := pack.List(r.Key(), restic.ReaderAt(ctx, r.Backend(), h), size)
 	if err != nil {
 		return nil, 0, err
 	}
