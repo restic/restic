@@ -1401,6 +1401,81 @@ func TestPruneWithDamagedRepository(t *testing.T) {
 	t.Log(err)
 }
 
+// Test repos for edge cases
+func TestEdgeCaseRepos(t *testing.T) {
+	opts := CheckOptions{}
+
+	// repo where index is completely missing
+	// => check and prune should fail
+	t.Run("no-index", func(t *testing.T) {
+		testEdgeCaseRepo(t, "repo-index-missing.tar.gz", opts, false, false)
+	})
+
+	// repo where an existing and used blob is missing from the index
+	// => check should fail, prune should heal this
+	t.Run("index-missing-blob", func(t *testing.T) {
+		testEdgeCaseRepo(t, "repo-index-missing-blob.tar.gz", opts, false, true)
+	})
+
+	// repo where a blob is missing
+	// => check and prune should fail
+	t.Run("no-data", func(t *testing.T) {
+		testEdgeCaseRepo(t, "repo-data-missing.tar.gz", opts, false, false)
+	})
+
+	// repo where data exists that is not referenced
+	// => check and prune should fully work
+	t.Run("unreferenced-data", func(t *testing.T) {
+		testEdgeCaseRepo(t, "repo-unreferenced-data.tar.gz", opts, true, true)
+	})
+
+	// repo where an obsolete index still exists
+	// => check and prune should fully work
+	t.Run("obsolete-index", func(t *testing.T) {
+		testEdgeCaseRepo(t, "repo-obsolete-index.tar.gz", opts, true, true)
+	})
+
+	// repo which contains mixed (data/tree) packs
+	// => check and prune should fully work
+	t.Run("mixed-packs", func(t *testing.T) {
+		testEdgeCaseRepo(t, "repo-mixed.tar.gz", opts, true, true)
+	})
+
+	// repo which contains duplicate blobs
+	// => checking for unused data should report an error and prune resolves the
+	// situation
+	opts = CheckOptions{
+		ReadData:    true,
+		CheckUnused: true,
+	}
+	t.Run("duplicates", func(t *testing.T) {
+		testEdgeCaseRepo(t, "repo-duplicates.tar.gz", opts, false, true)
+	})
+}
+
+func testEdgeCaseRepo(t *testing.T, tarfile string, options CheckOptions, checkOK, pruneOK bool) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	datafile := filepath.Join("testdata", tarfile)
+	rtest.SetupTarTestFixture(t, env.base, datafile)
+
+	if checkOK {
+		testRunCheck(t, env.gopts)
+	} else {
+		rtest.Assert(t, runCheck(options, env.gopts, nil) != nil,
+			"check should have reported an error")
+	}
+
+	if pruneOK {
+		testRunPrune(t, env.gopts)
+		testRunCheck(t, env.gopts)
+	} else {
+		rtest.Assert(t, runPrune(env.gopts) != nil,
+			"prune should have reported an error")
+	}
+}
+
 func TestHardLink(t *testing.T) {
 	// this test assumes a test set with a single directory containing hard linked files
 	env, cleanup := withTestEnvironment(t)
