@@ -54,7 +54,7 @@ Usage help is available:
           --limit-download int         limits downloads to a maximum rate in KiB/s. (default: unlimited)
           --limit-upload int           limits uploads to a maximum rate in KiB/s. (default: unlimited)
           --no-cache                   do not use a local cache
-          --no-lock                    do not lock the repo, this allows some operations on read-only repos
+          --no-lock                    do not lock the repository, this allows some operations on read-only repositories
       -o, --option key=value           set extended option (key=value, can be specified multiple times)
           --password-command command   shell command to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)
       -p, --password-file file         file to read the repository password from (default: $RESTIC_PASSWORD_FILE)
@@ -118,7 +118,7 @@ command:
           --limit-download int         limits downloads to a maximum rate in KiB/s. (default: unlimited)
           --limit-upload int           limits uploads to a maximum rate in KiB/s. (default: unlimited)
           --no-cache                   do not use a local cache
-          --no-lock                    do not lock the repo, this allows some operations on read-only repos
+          --no-lock                    do not lock the repository, this allows some operations on read-only repositories
       -o, --option key=value           set extended option (key=value, can be specified multiple times)
           --password-command command   shell command to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)
       -p, --password-file file         file to read the repository password from (default: $RESTIC_PASSWORD_FILE)
