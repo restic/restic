@@ -1,4 +1,4 @@
-|Documentation| |Build Status| |Build status| |Report Card| |Say Thanks| |Reviewed by Hound|
+|Documentation| |Build Status| |Build status| |Report Card| |Reviewed by Hound|
 
 Introduction
 ------------
@@ -127,8 +127,6 @@ Storage are sponsored by `AppsCode <https://appscode.com>`__!
    :target: https://ci.appveyor.com/project/fd0/restic/branch/master
 .. |Report Card| image:: https://goreportcard.com/badge/github.com/restic/restic
    :target: https://goreportcard.com/report/github.com/restic/restic
-.. |Say Thanks| image:: https://img.shields.io/badge/Say%20Thanks-!-1EAEDB.svg
-   :target: https://saythanks.io/to/restic
 .. |AppsCode| image:: https://cdn.appscode.com/images/logo/appscode/ac-logo-color.png
    :target: https://appscode.com
 .. |Reviewed by Hound| image:: https://img.shields.io/badge/Reviewed_by-Hound-8E64B0.svg
