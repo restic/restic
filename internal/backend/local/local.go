@@ -130,9 +130,10 @@ func (b *Local) Save(ctx context.Context, h restic.Handle, rd restic.RewindReade
 		return errors.Wrap(err, "Close")
 	}
 
+	// try to mark file as read-only to avoid accidential modifications
 	// ignore if the operation fails as some filesystems don't allow the chmod call
 	// e.g. exfat and network file systems with certain mount options
-	err = setNewFileMode(filename, backend.Modes.File)
+	err = setFileReadonly(filename, backend.Modes.File)
 	if err != nil && !os.IsPermission(err) {
 		return errors.Wrap(err, "Chmod")
 	}
