@@ -393,30 +393,60 @@ func BenchmarkFilterLines(b *testing.B) {
 }
 
 func BenchmarkFilterPatterns(b *testing.B) {
-	patterns := []string{
-		"sdk/*",
-		"*.html",
-	}
 	lines := extractTestLines(b)
-	var c uint
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		c = 0
-		for _, line := range lines {
-			match, _, err := filter.List(patterns, line)
-			if err != nil {
-				b.Fatal(err)
-			}
-
-			if match {
-				c++
-			}
+	modlines := make([]string, 200)
+	for i, line := range lines {
+		if i >= len(modlines) {
+			break
 		}
+		modlines[i] = line + "-does-not-match"
+	}
+	tests := []struct {
+		name     string
+		patterns []string
+		matches  uint
+	}{
+		{"Relative", []string{
+			"does-not-match",
+			"sdk/*",
+			"*.html",
+		}, 22185},
+		{"Absolute", []string{
+			"/etc",
+			"/home/*/test",
+			"/usr/share/doc/libreoffice/sdk/docs/java",
+		}, 150},
+		{"Wildcard", []string{
+			"/etc/**/example",
+			"/home/**/test",
+			"/usr/**/java",
+		}, 150},
+		{"ManyNoMatch", modlines, 0},
+	}
 
-		if c != 22185 {
-			b.Fatalf("wrong number of matches: expected 22185, got %d", c)
-		}
+	for _, test := range tests {
+		b.Run(test.name, func(b *testing.B) {
+			var c uint
+			b.ReportAllocs()
+			b.ResetTimer()
+
+			for i := 0; i < b.N; i++ {
+				c = 0
+				for _, line := range lines {
+					match, _, err := filter.List(test.patterns, line)
+					if err != nil {
+						b.Fatal(err)
+					}
+
+					if match {
+						c++
+					}
+				}
+
+				if c != test.matches {
+					b.Fatalf("wrong number of matches: expected %d, got %d", test.matches, c)
+				}
+			}
+		})
 	}
 }
