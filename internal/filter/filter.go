@@ -11,8 +11,13 @@ import (
 // second argument.
 var ErrBadString = errors.New("filter.Match: string is empty")
 
+type patternPart struct {
+	pattern  string
+	isSimple bool
+}
+
 // Pattern represents a preparsed filter pattern
-type Pattern []string
+type Pattern []patternPart
 
 func prepareStr(str string) ([]string, error) {
 	if str == "" {
@@ -35,7 +40,14 @@ func preparePattern(pattern string) Pattern {
 		pattern = strings.Replace(pattern, string(filepath.Separator), "/", -1)
 	}
 
-	return strings.Split(pattern, "/")
+	parts := strings.Split(pattern, "/")
+	patterns := make([]patternPart, len(parts))
+	for i, part := range parts {
+		isSimple := !strings.ContainsAny(part, "\\[]*?")
+		patterns[i] = patternPart{part, isSimple}
+	}
+
+	return patterns
 }
 
 // Match returns true if str matches the pattern. When the pattern is
@@ -89,7 +101,7 @@ func ChildMatch(pattern, str string) (matched bool, err error) {
 }
 
 func childMatch(patterns Pattern, strs []string) (matched bool, err error) {
-	if patterns[0] != "" {
+	if patterns[0].pattern != "" {
 		// relative pattern can always be nested down
 		return true, nil
 	}
@@ -112,7 +124,7 @@ func childMatch(patterns Pattern, strs []string) (matched bool, err error) {
 
 func hasDoubleWildcard(list Pattern) (ok bool, pos int) {
 	for i, item := range list {
-		if item == "**" {
+		if item.pattern == "**" {
 			return true, i
 		}
 	}
@@ -131,7 +143,7 @@ func match(patterns Pattern, strs []string) (matched bool, err error) {
 			newPat := newPat[:pos+i]
 			// in the first iteration the wildcard expands to nothing
 			if i > 0 {
-				newPat[pos+i-1] = "*"
+				newPat[pos+i-1] = patternPart{"*", false}
 			}
 			newPat = append(newPat, patterns[pos+1:]...)
 
@@ -155,16 +167,21 @@ func match(patterns Pattern, strs []string) (matched bool, err error) {
 	if len(patterns) <= len(strs) {
 		maxOffset := len(strs) - len(patterns)
 		// special case absolute patterns
-		if patterns[0] == "" {
+		if patterns[0].pattern == "" {
 			maxOffset = 0
 		}
 	outer:
 		for offset := maxOffset; offset >= 0; offset-- {
 
 			for i := len(patterns) - 1; i >= 0; i-- {
-				ok, err := filepath.Match(patterns[i], strs[offset+i])
-				if err != nil {
-					return false, errors.Wrap(err, "Match")
+				var ok bool
+				if patterns[i].isSimple {
+					ok = patterns[i].pattern == strs[offset+i]
+				} else {
+					ok, err = filepath.Match(patterns[i].pattern, strs[offset+i])
+					if err != nil {
+						return false, errors.Wrap(err, "Match")
+					}
 				}
 
 				if !ok {
