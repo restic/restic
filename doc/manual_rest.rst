@@ -398,9 +398,13 @@ This allows faster operations, since meta data does not need to be loaded from
 a remote repository. The cache is automatically created, usually in an
 OS-specific cache folder:
 
- * Linux/other: ``~/.cache/restic`` (or ``$XDG_CACHE_HOME/restic``)
+ * Linux/other: ``$XDG_CACHE_HOME/restic``, or ``~/.cache/restic`` if
+   ``XDG_CACHE_HOME`` is not set
  * macOS: ``~/Library/Caches/restic``
  * Windows: ``%LOCALAPPDATA%/restic``
+
+If the relevant environment variables are not set, restic exits with an error
+message.
 
 The command line parameter ``--cache-dir`` or the environment variable
 ``$RESTIC_CACHE_DIR`` can be used to override the default cache location.  The
