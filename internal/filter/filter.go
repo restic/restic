@@ -11,7 +11,8 @@ import (
 // second argument.
 var ErrBadString = errors.New("filter.Match: string is empty")
 
-type filterPattern []string
+// Pattern represents a preparsed filter pattern
+type Pattern []string
 
 func prepareStr(str string) ([]string, error) {
 	if str == "" {
@@ -26,7 +27,7 @@ func prepareStr(str string) ([]string, error) {
 	return strings.Split(str, "/"), nil
 }
 
-func preparePattern(pattern string) filterPattern {
+func preparePattern(pattern string) Pattern {
 	pattern = filepath.Clean(pattern)
 
 	// convert file path separator to '/'
@@ -87,7 +88,7 @@ func ChildMatch(pattern, str string) (matched bool, err error) {
 	return childMatch(patterns, strs)
 }
 
-func childMatch(patterns, strs []string) (matched bool, err error) {
+func childMatch(patterns Pattern, strs []string) (matched bool, err error) {
 	if patterns[0] != "" {
 		// relative pattern can always be nested down
 		return true, nil
@@ -109,7 +110,7 @@ func childMatch(patterns, strs []string) (matched bool, err error) {
 	return match(patterns[0:l], strs)
 }
 
-func hasDoubleWildcard(list []string) (ok bool, pos int) {
+func hasDoubleWildcard(list Pattern) (ok bool, pos int) {
 	for i, item := range list {
 		if item == "**" {
 			return true, i
@@ -119,11 +120,11 @@ func hasDoubleWildcard(list []string) (ok bool, pos int) {
 	return false, 0
 }
 
-func match(patterns, strs []string) (matched bool, err error) {
+func match(patterns Pattern, strs []string) (matched bool, err error) {
 	if ok, pos := hasDoubleWildcard(patterns); ok {
 		// gradually expand '**' into separate wildcards
 		for i := 0; i <= len(strs)-len(patterns)+1; i++ {
-			newPat := make([]string, pos)
+			newPat := make(Pattern, pos)
 			copy(newPat, patterns[:pos])
 			for k := 0; k < i; k++ {
 				newPat = append(newPat, "*")
@@ -169,9 +170,22 @@ func match(patterns, strs []string) (matched bool, err error) {
 	return false, nil
 }
 
-// List returns true if str matches one of the patterns. Empty patterns are
-// ignored.
-func List(patterns []string, str string) (matched bool, childMayMatch bool, err error) {
+// ParsePatterns prepares a list of patterns for use with List.
+func ParsePatterns(patterns []string) []Pattern {
+	patpat := make([]Pattern, 0)
+	for _, pat := range patterns {
+		if pat == "" {
+			continue
+		}
+
+		pats := preparePattern(pat)
+		patpat = append(patpat, pats)
+	}
+	return patpat
+}
+
+// List returns true if str matches one of the patterns. Empty patterns are ignored.
+func List(patterns []Pattern, str string) (matched bool, childMayMatch bool, err error) {
 	if len(patterns) == 0 {
 		return false, false, nil
 	}
@@ -181,17 +195,12 @@ func List(patterns []string, str string) (matched bool, childMayMatch bool, err 
 		return false, false, err
 	}
 	for _, pat := range patterns {
-		if pat == "" {
-			continue
-		}
-
-		pats := preparePattern(pat)
-		m, err := match(pats, strs)
+		m, err := match(pat, strs)
 		if err != nil {
 			return false, false, err
 		}
 
-		c, err := childMatch(pats, strs)
+		c, err := childMatch(pat, strs)
 		if err != nil {
 			return false, false, err
 		}

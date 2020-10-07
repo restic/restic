@@ -259,7 +259,8 @@ var filterListTests = []struct {
 
 func TestList(t *testing.T) {
 	for i, test := range filterListTests {
-		match, _, err := filter.List(test.patterns, test.path)
+		patterns := filter.ParsePatterns(test.patterns)
+		match, _, err := filter.List(patterns, test.path)
 		if err != nil {
 			t.Errorf("test %d failed: expected no error for patterns %q, but error returned: %v",
 				i, test.patterns, err)
@@ -274,7 +275,8 @@ func TestList(t *testing.T) {
 }
 
 func ExampleList() {
-	match, _, _ := filter.List([]string{"*.c", "*.go"}, "/home/user/file.go")
+	patterns := filter.ParsePatterns([]string{"*.c", "*.go"})
+	match, _, _ := filter.List(patterns, "/home/user/file.go")
 	fmt.Printf("match: %v\n", match)
 	// Output:
 	// match: true
@@ -292,7 +294,7 @@ func TestInvalidStrs(t *testing.T) {
 	}
 
 	patterns := []string{"test"}
-	_, _, err = filter.List(patterns, "")
+	_, _, err = filter.List(filter.ParsePatterns(patterns), "")
 	if err == nil {
 		t.Error("List accepted invalid path")
 	}
@@ -300,13 +302,13 @@ func TestInvalidStrs(t *testing.T) {
 
 func TestInvalidPattern(t *testing.T) {
 	patterns := []string{"test/["}
-	_, _, err := filter.List(patterns, "test/example")
+	_, _, err := filter.List(filter.ParsePatterns(patterns), "test/example")
 	if err == nil {
 		t.Error("List accepted invalid pattern")
 	}
 
 	patterns = []string{"test/**/["}
-	_, _, err = filter.List(patterns, "test/example")
+	_, _, err = filter.List(filter.ParsePatterns(patterns), "test/example")
 	if err == nil {
 		t.Error("List accepted invalid pattern")
 	}
@@ -403,25 +405,25 @@ func BenchmarkFilterPatterns(b *testing.B) {
 	}
 	tests := []struct {
 		name     string
-		patterns []string
+		patterns []filter.Pattern
 		matches  uint
 	}{
-		{"Relative", []string{
+		{"Relative", filter.ParsePatterns([]string{
 			"does-not-match",
 			"sdk/*",
 			"*.html",
-		}, 22185},
-		{"Absolute", []string{
+		}), 22185},
+		{"Absolute", filter.ParsePatterns([]string{
 			"/etc",
 			"/home/*/test",
 			"/usr/share/doc/libreoffice/sdk/docs/java",
-		}, 150},
-		{"Wildcard", []string{
+		}), 150},
+		{"Wildcard", filter.ParsePatterns([]string{
 			"/etc/**/example",
 			"/home/**/test",
 			"/usr/**/java",
-		}, 150},
-		{"ManyNoMatch", modlines, 0},
+		}), 150},
+		{"ManyNoMatch", filter.ParsePatterns(modlines), 0},
 	}
 
 	for _, test := range tests {
