@@ -76,7 +76,7 @@ type RejectFunc func(path string, fi os.FileInfo) bool
 func rejectByPattern(patterns []string) RejectByNameFunc {
 	parsedPatterns := filter.ParsePatterns(patterns)
 	return func(item string) bool {
-		matched, _, err := filter.List(parsedPatterns, item)
+		matched, err := filter.List(parsedPatterns, item)
 		if err != nil {
 			Warnf("error for exclude pattern: %v", err)
 		}

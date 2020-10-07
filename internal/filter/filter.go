@@ -194,7 +194,18 @@ func ParsePatterns(patterns []string) []Pattern {
 }
 
 // List returns true if str matches one of the patterns. Empty patterns are ignored.
-func List(patterns []Pattern, str string) (matched bool, childMayMatch bool, err error) {
+func List(patterns []Pattern, str string) (matched bool, err error) {
+	matched, _, err = list(patterns, false, str)
+	return matched, err
+}
+
+// ListWithChild returns true if str matches one of the patterns. Empty patterns are ignored.
+func ListWithChild(patterns []Pattern, str string) (matched bool, childMayMatch bool, err error) {
+	return list(patterns, true, str)
+}
+
+// List returns true if str matches one of the patterns. Empty patterns are ignored.
+func list(patterns []Pattern, checkChildMatches bool, str string) (matched bool, childMayMatch bool, err error) {
 	if len(patterns) == 0 {
 		return false, false, nil
 	}
@@ -209,9 +220,14 @@ func List(patterns []Pattern, str string) (matched bool, childMayMatch bool, err
 			return false, false, err
 		}
 
-		c, err := childMatch(pat, strs)
-		if err != nil {
-			return false, false, err
+		var c bool
+		if checkChildMatches {
+			c, err = childMatch(pat, strs)
+			if err != nil {
+				return false, false, err
+			}
+		} else {
+			c = true
 		}
 
 		matched = matched || m

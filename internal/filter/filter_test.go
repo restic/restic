@@ -260,7 +260,7 @@ var filterListTests = []struct {
 func TestList(t *testing.T) {
 	for i, test := range filterListTests {
 		patterns := filter.ParsePatterns(test.patterns)
-		match, _, err := filter.List(patterns, test.path)
+		match, err := filter.List(patterns, test.path)
 		if err != nil {
 			t.Errorf("test %d failed: expected no error for patterns %q, but error returned: %v",
 				i, test.patterns, err)
@@ -276,7 +276,7 @@ func TestList(t *testing.T) {
 
 func ExampleList() {
 	patterns := filter.ParsePatterns([]string{"*.c", "*.go"})
-	match, _, _ := filter.List(patterns, "/home/user/file.go")
+	match, _ := filter.List(patterns, "/home/user/file.go")
 	fmt.Printf("match: %v\n", match)
 	// Output:
 	// match: true
@@ -294,7 +294,7 @@ func TestInvalidStrs(t *testing.T) {
 	}
 
 	patterns := []string{"test"}
-	_, _, err = filter.List(filter.ParsePatterns(patterns), "")
+	_, err = filter.List(filter.ParsePatterns(patterns), "")
 	if err == nil {
 		t.Error("List accepted invalid path")
 	}
@@ -302,13 +302,13 @@ func TestInvalidStrs(t *testing.T) {
 
 func TestInvalidPattern(t *testing.T) {
 	patterns := []string{"test/["}
-	_, _, err := filter.List(filter.ParsePatterns(patterns), "test/example")
+	_, err := filter.List(filter.ParsePatterns(patterns), "test/example")
 	if err == nil {
 		t.Error("List accepted invalid pattern")
 	}
 
 	patterns = []string{"test/**/["}
-	_, _, err = filter.List(filter.ParsePatterns(patterns), "test/example")
+	_, err = filter.List(filter.ParsePatterns(patterns), "test/example")
 	if err == nil {
 		t.Error("List accepted invalid pattern")
 	}
@@ -435,7 +435,7 @@ func BenchmarkFilterPatterns(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				c = 0
 				for _, line := range lines {
-					match, _, err := filter.List(test.patterns, line)
+					match, err := filter.List(test.patterns, line)
 					if err != nil {
 						b.Fatal(err)
 					}
