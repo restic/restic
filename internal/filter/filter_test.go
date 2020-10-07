@@ -244,6 +244,7 @@ var filterListTests = []struct {
 	path     string
 	match    bool
 }{
+	{[]string{}, "/foo/bar/test.go", false},
 	{[]string{"*.go"}, "/foo/bar/test.go", true},
 	{[]string{"*.c"}, "/foo/bar/test.go", false},
 	{[]string{"*.go", "*.c"}, "/foo/bar/test.go", true},
@@ -277,6 +278,38 @@ func ExampleList() {
 	fmt.Printf("match: %v\n", match)
 	// Output:
 	// match: true
+}
+
+func TestInvalidStrs(t *testing.T) {
+	_, err := filter.Match("test", "")
+	if err == nil {
+		t.Error("Match accepted invalid path")
+	}
+
+	_, err = filter.ChildMatch("test", "")
+	if err == nil {
+		t.Error("ChildMatch accepted invalid path")
+	}
+
+	patterns := []string{"test"}
+	_, _, err = filter.List(patterns, "")
+	if err == nil {
+		t.Error("List accepted invalid path")
+	}
+}
+
+func TestInvalidPattern(t *testing.T) {
+	patterns := []string{"test/["}
+	_, _, err := filter.List(patterns, "test/example")
+	if err == nil {
+		t.Error("List accepted invalid pattern")
+	}
+
+	patterns = []string{"test/**/["}
+	_, _, err = filter.List(patterns, "test/example")
+	if err == nil {
+		t.Error("List accepted invalid pattern")
+	}
 }
 
 func extractTestLines(t testing.TB) (lines []string) {
