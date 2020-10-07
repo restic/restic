@@ -24,21 +24,13 @@ func prepareStr(str string) ([]string, error) {
 		return nil, ErrBadString
 	}
 
-	// convert file path separator to '/'
-	if filepath.Separator != '/' {
-		str = strings.Replace(str, string(filepath.Separator), "/", -1)
-	}
-
+	str = filepath.ToSlash(str)
 	return strings.Split(str, "/"), nil
 }
 
 func preparePattern(pattern string) Pattern {
 	pattern = filepath.Clean(pattern)
-
-	// convert file path separator to '/'
-	if filepath.Separator != '/' {
-		pattern = strings.Replace(pattern, string(filepath.Separator), "/", -1)
-	}
+	pattern = filepath.ToSlash(pattern)
 
 	parts := strings.Split(pattern, "/")
 	patterns := make([]patternPart, len(parts))
