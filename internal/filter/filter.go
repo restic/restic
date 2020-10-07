@@ -11,6 +11,32 @@ import (
 // second argument.
 var ErrBadString = errors.New("filter.Match: string is empty")
 
+type filterPattern []string
+
+func prepareStr(str string) ([]string, error) {
+	if str == "" {
+		return nil, ErrBadString
+	}
+
+	// convert file path separator to '/'
+	if filepath.Separator != '/' {
+		str = strings.Replace(str, string(filepath.Separator), "/", -1)
+	}
+
+	return strings.Split(str, "/"), nil
+}
+
+func preparePattern(pattern string) filterPattern {
+	pattern = filepath.Clean(pattern)
+
+	// convert file path separator to '/'
+	if filepath.Separator != '/' {
+		pattern = strings.Replace(pattern, string(filepath.Separator), "/", -1)
+	}
+
+	return strings.Split(pattern, "/")
+}
+
 // Match returns true if str matches the pattern. When the pattern is
 // malformed, filepath.ErrBadPattern is returned. The empty pattern matches
 // everything, when str is the empty string ErrBadString is returned.
@@ -26,20 +52,12 @@ func Match(pattern, str string) (matched bool, err error) {
 		return true, nil
 	}
 
-	pattern = filepath.Clean(pattern)
+	patterns := preparePattern(pattern)
+	strs, err := prepareStr(str)
 
-	if str == "" {
-		return false, ErrBadString
+	if err != nil {
+		return false, err
 	}
-
-	// convert file path separator to '/'
-	if filepath.Separator != '/' {
-		pattern = strings.Replace(pattern, string(filepath.Separator), "/", -1)
-		str = strings.Replace(str, string(filepath.Separator), "/", -1)
-	}
-
-	patterns := strings.Split(pattern, "/")
-	strs := strings.Split(str, "/")
 
 	return match(patterns, strs)
 }
@@ -59,20 +77,12 @@ func ChildMatch(pattern, str string) (matched bool, err error) {
 		return true, nil
 	}
 
-	pattern = filepath.Clean(pattern)
+	patterns := preparePattern(pattern)
+	strs, err := prepareStr(str)
 
-	if str == "" {
-		return false, ErrBadString
+	if err != nil {
+		return false, err
 	}
-
-	// convert file path separator to '/'
-	if filepath.Separator != '/' {
-		pattern = strings.Replace(pattern, string(filepath.Separator), "/", -1)
-		str = strings.Replace(str, string(filepath.Separator), "/", -1)
-	}
-
-	patterns := strings.Split(pattern, "/")
-	strs := strings.Split(str, "/")
 
 	return childMatch(patterns, strs)
 }
@@ -162,17 +172,26 @@ func match(patterns, strs []string) (matched bool, err error) {
 // List returns true if str matches one of the patterns. Empty patterns are
 // ignored.
 func List(patterns []string, str string) (matched bool, childMayMatch bool, err error) {
+	if len(patterns) == 0 {
+		return false, false, nil
+	}
+
+	strs, err := prepareStr(str)
+	if err != nil {
+		return false, false, err
+	}
 	for _, pat := range patterns {
 		if pat == "" {
 			continue
 		}
 
-		m, err := Match(pat, str)
+		pats := preparePattern(pat)
+		m, err := match(pats, strs)
 		if err != nil {
 			return false, false, err
 		}
 
-		c, err := ChildMatch(pat, str)
+		c, err := childMatch(pats, strs)
 		if err != nil {
 			return false, false, err
 		}
