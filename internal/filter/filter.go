@@ -123,11 +123,15 @@ func hasDoubleWildcard(list Pattern) (ok bool, pos int) {
 func match(patterns Pattern, strs []string) (matched bool, err error) {
 	if ok, pos := hasDoubleWildcard(patterns); ok {
 		// gradually expand '**' into separate wildcards
+		newPat := make(Pattern, len(strs))
+		// copy static prefix once
+		copy(newPat, patterns[:pos])
 		for i := 0; i <= len(strs)-len(patterns)+1; i++ {
-			newPat := make(Pattern, pos)
-			copy(newPat, patterns[:pos])
-			for k := 0; k < i; k++ {
-				newPat = append(newPat, "*")
+			// limit to static prefix and already appended '*'
+			newPat := newPat[:pos+i]
+			// in the first iteration the wildcard expands to nothing
+			if i > 0 {
+				newPat[pos+i-1] = "*"
 			}
 			newPat = append(newPat, patterns[pos+1:]...)
 
