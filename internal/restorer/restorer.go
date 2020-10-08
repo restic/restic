@@ -104,7 +104,7 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 				return errors.Errorf("Dir without subtree in tree %v", treeID.Str())
 			}
 
-			if selectedForRestore {
+			if selectedForRestore || childMayBeSelected {
 				err = sanitizeError(visitor.enterDir(node, nodeTarget, nodeLocation))
 				if err != nil {
 					return err
@@ -118,7 +118,7 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 				}
 			}
 
-			if selectedForRestore {
+			if selectedForRestore || childMayBeSelected {
 				err = sanitizeError(visitor.leaveDir(node, nodeTarget, nodeLocation))
 				if err != nil {
 					return err
@@ -209,11 +209,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 
 	// first tree pass: create directories and collect all files to restore
 	err = res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
-		enterDir: func(node *restic.Node, target, location string) error {
-			// create dir with default permissions
-			// #leaveDir restores dir metadata after visiting all children
-			return fs.MkdirAll(target, 0700)
-		},
+		enterDir: noop,
 
 		visitNode: func(node *restic.Node, target, location string) error {
 			// create parent dir with default permissions
