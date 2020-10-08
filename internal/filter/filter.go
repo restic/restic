@@ -12,7 +12,7 @@ import (
 var ErrBadString = errors.New("filter.Match: string is empty")
 
 type patternPart struct {
-	pattern  string
+	pattern  string // First is "/" for absolute pattern; "" for "**".
 	isSimple bool
 }
 
@@ -23,23 +23,33 @@ func prepareStr(str string) ([]string, error) {
 	if str == "" {
 		return nil, ErrBadString
 	}
-
-	str = filepath.ToSlash(str)
-	return strings.Split(str, "/"), nil
+	return splitPath(str), nil
 }
 
 func preparePattern(pattern string) Pattern {
-	pattern = filepath.Clean(pattern)
-	pattern = filepath.ToSlash(pattern)
-
-	parts := strings.Split(pattern, "/")
+	parts := splitPath(filepath.Clean(pattern))
 	patterns := make([]patternPart, len(parts))
 	for i, part := range parts {
 		isSimple := !strings.ContainsAny(part, "\\[]*?")
+		// Replace "**" with the empty string to get faster comparisons
+		// (length-check only) in hasDoubleWildcard.
+		if part == "**" {
+			part = ""
+		}
 		patterns[i] = patternPart{part, isSimple}
 	}
 
 	return patterns
+}
+
+// Split p into path components. Assuming p has been Cleaned, no component
+// will be empty. For absolute paths, the first component is "/".
+func splitPath(p string) []string {
+	parts := strings.Split(filepath.ToSlash(p), "/")
+	if parts[0] == "" {
+		parts[0] = "/"
+	}
+	return parts
 }
 
 // Match returns true if str matches the pattern. When the pattern is
@@ -93,7 +103,7 @@ func ChildMatch(pattern, str string) (matched bool, err error) {
 }
 
 func childMatch(patterns Pattern, strs []string) (matched bool, err error) {
-	if patterns[0].pattern != "" {
+	if patterns[0].pattern != "/" {
 		// relative pattern can always be nested down
 		return true, nil
 	}
@@ -116,7 +126,7 @@ func childMatch(patterns Pattern, strs []string) (matched bool, err error) {
 
 func hasDoubleWildcard(list Pattern) (ok bool, pos int) {
 	for i, item := range list {
-		if item.pattern == "**" {
+		if item.pattern == "" {
 			return true, i
 		}
 	}
@@ -159,7 +169,7 @@ func match(patterns Pattern, strs []string) (matched bool, err error) {
 	if len(patterns) <= len(strs) {
 		maxOffset := len(strs) - len(patterns)
 		// special case absolute patterns
-		if patterns[0].pattern == "" {
+		if patterns[0].pattern == "/" {
 			maxOffset = 0
 		}
 	outer:
