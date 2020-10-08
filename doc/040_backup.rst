@@ -275,7 +275,7 @@ On most Unixy shells, you can either quote or use backslashes. For example:
 By specifying the option ``--one-file-system`` you can instruct restic
 to only backup files from the file systems the initially specified files
 or directories reside on. In other words, it will prevent restic from crossing
-filesystem boundaries when performing a backup.
+filesystem boundaries and subvolumes when performing a backup.
 
 For example, if you backup ``/`` with this option and you have external
 media mounted under ``/media/usb`` then restic will not back up ``/media/usb``
