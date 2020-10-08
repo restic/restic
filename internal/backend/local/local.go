@@ -130,7 +130,15 @@ func (b *Local) Save(ctx context.Context, h restic.Handle, rd restic.RewindReade
 		return errors.Wrap(err, "Close")
 	}
 
-	return setNewFileMode(filename, backend.Modes.File)
+	// try to mark file as read-only to avoid accidential modifications
+	// ignore if the operation fails as some filesystems don't allow the chmod call
+	// e.g. exfat and network file systems with certain mount options
+	err = setFileReadonly(filename, backend.Modes.File)
+	if err != nil && !os.IsPermission(err) {
+		return errors.Wrap(err, "Chmod")
+	}
+
+	return nil
 }
 
 // Load runs fn with a reader that yields the contents of the file at h at the
@@ -205,7 +213,7 @@ func (b *Local) Remove(ctx context.Context, h restic.Handle) error {
 
 	// reset read-only flag
 	err := fs.Chmod(fn, 0666)
-	if err != nil {
+	if err != nil && !os.IsPermission(err) {
 		return errors.Wrap(err, "Chmod")
 	}
 
