@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/cenkalti/backoff"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
 )
