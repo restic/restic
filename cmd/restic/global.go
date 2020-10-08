@@ -231,6 +231,13 @@ func Verbosef(format string, args ...interface{}) {
 	}
 }
 
+// Verboseff calls Printf to write the message when the verbosity is >= 2
+func Verboseff(format string, args ...interface{}) {
+	if globalOptions.verbosity >= 2 {
+		Printf(format, args...)
+	}
+}
+
 // PrintProgress wraps fmt.Printf to handle the difference in writing progress
 // information to terminals and non-terminal stdout
 func PrintProgress(format string, args ...interface{}) {
