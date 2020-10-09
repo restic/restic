@@ -267,6 +267,7 @@ func Open(cfg Config, lim limiter.Limiter) (*Backend, error) {
 
 	restBackend, err := rest.Open(restConfig, debug.RoundTripper(be.tr))
 	if err != nil {
+		_ = be.Close()
 		return nil, err
 	}
 
@@ -289,7 +290,7 @@ func Create(cfg Config) (*Backend, error) {
 	}
 
 	restConfig := rest.Config{
-		Connections: 20,
+		Connections: cfg.Connections,
 		URL:         url,
 	}
 
