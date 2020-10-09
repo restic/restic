@@ -37,7 +37,6 @@ func moveCursorUp(wr io.Writer, fd uintptr) func(io.Writer, uintptr, int) {
 var kernel32 = syscall.NewLazyDLL("kernel32.dll")
 
 var (
-	procSetConsoleCursorPosition   = kernel32.NewProc("SetConsoleCursorPosition")
 	procFillConsoleOutputCharacter = kernel32.NewProc("FillConsoleOutputCharacterW")
 	procFillConsoleOutputAttribute = kernel32.NewProc("FillConsoleOutputAttribute")
 )
@@ -65,9 +64,10 @@ func windowsMoveCursorUp(wr io.Writer, fd uintptr, n int) {
 	windows.GetConsoleScreenBufferInfo(windows.Handle(fd), &info)
 
 	// move cursor up by n lines and to the first column
-	info.CursorPosition.Y -= int16(n)
-	info.CursorPosition.X = 0
-	procSetConsoleCursorPosition.Call(fd, uintptr(*(*int32)(unsafe.Pointer(&info.CursorPosition))))
+	windows.SetConsoleCursorPosition(windows.Handle(fd), windows.Coord{
+		X: 0,
+		Y: info.CursorPosition.Y - int16(n),
+	})
 }
 
 // isWindowsTerminal return true if the file descriptor is a windows terminal (cmd, psh).
