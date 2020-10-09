@@ -17,9 +17,10 @@ import (
 )
 
 var opts struct {
-	logger *log.Logger
-	funcs  map[string]bool
-	files  map[string]bool
+	isEnabled bool
+	logger    *log.Logger
+	funcs     map[string]bool
+	files     map[string]bool
 }
 
 // make sure that all the initialization happens before the init() functions
@@ -30,6 +31,12 @@ func initDebug() bool {
 	initDebugLogger()
 	initDebugTags()
 
+	if opts.logger == nil && len(opts.funcs) == 0 && len(opts.files) == 0 {
+		opts.isEnabled = false
+		return false
+	}
+
+	opts.isEnabled = true
 	fmt.Fprintf(os.Stderr, "debug enabled\n")
 
 	return true
@@ -173,6 +180,10 @@ func checkFilter(filter map[string]bool, key string) bool {
 
 // Log prints a message to the debug log (if debug is enabled).
 func Log(f string, args ...interface{}) {
+	if !opts.isEnabled {
+		return
+	}
+
 	fn, dir, file, line := getPosition()
 	goroutine := goroutineNum()
 
