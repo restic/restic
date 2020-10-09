@@ -363,6 +363,30 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 		debug.Log("  %v regular file", target)
 		start := time.Now()
 
+		// check if the file has not changed before performing a fopen operation (more expensive, specially
+		// in network filesystems)
+		if previous != nil && !fileChanged(fi, previous, arch.IgnoreInode) {
+			if arch.allBlobsPresent(previous) {
+				debug.Log("%v hasn't changed, using old list of blobs", target)
+				arch.CompleteItem(snPath, previous, previous, ItemStats{}, time.Since(start))
+				arch.CompleteBlob(snPath, previous.Size)
+				fn.node, err = arch.nodeFromFileInfo(target, fi)
+				if err != nil {
+					return FutureNode{}, false, err
+				}
+
+				// copy list of blobs
+				fn.node.Content = previous.Content
+
+				return fn, false, nil
+			}
+
+			debug.Log("%v hasn't changed, but contents are missing!", target)
+			// There are contents missing - inform user!
+			err := errors.Errorf("parts of %v not found in the repository index; storing the file again", target)
+			arch.error(abstarget, fi, err)
+		}
+
 		// reopen file and do an fstat() on the open file to check it is still
 		// a file (and has not been exchanged for e.g. a symlink)
 		file, err := arch.FS.OpenFile(target, fs.O_RDONLY|fs.O_NOFOLLOW, 0)
@@ -395,30 +419,6 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 				return FutureNode{}, false, err
 			}
 			return FutureNode{}, true, nil
-		}
-
-		// use previous list of blobs if the file hasn't changed
-		if previous != nil && !fileChanged(fi, previous, arch.IgnoreInode) {
-			if arch.allBlobsPresent(previous) {
-				debug.Log("%v hasn't changed, using old list of blobs", target)
-				arch.CompleteItem(snPath, previous, previous, ItemStats{}, time.Since(start))
-				arch.CompleteBlob(snPath, previous.Size)
-				fn.node, err = arch.nodeFromFileInfo(target, fi)
-				if err != nil {
-					return FutureNode{}, false, err
-				}
-
-				// copy list of blobs
-				fn.node.Content = previous.Content
-
-				_ = file.Close()
-				return fn, false, nil
-			}
-
-			debug.Log("%v hasn't changed, but contents are missing!", target)
-			// There are contents missing - inform user!
-			err := errors.Errorf("parts of %v not found in the repository index; storing the file again", target)
-			arch.error(abstarget, fi, err)
 		}
 
 		fn.isFile = true
