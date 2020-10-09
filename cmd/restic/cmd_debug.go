@@ -50,11 +50,13 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 var tryRepair bool
 var repairByte bool
+var extractPack bool
 
 func init() {
 	cmdRoot.AddCommand(cmdDebug)
 	cmdDebug.AddCommand(cmdDebugDump)
 	cmdDebug.AddCommand(cmdDebugExamine)
+	cmdDebugExamine.Flags().BoolVar(&extractPack, "extract-pack", false, "write blobs to the current directory")
 	cmdDebugExamine.Flags().BoolVar(&tryRepair, "try-repair", false, "try to repair broken blobs with single bit flips")
 	cmdDebugExamine.Flags().BoolVar(&repairByte, "repair-byte", false, "try to repair broken blobs by trying bytes")
 }
@@ -190,7 +192,7 @@ var cmdDebugExamine = &cobra.Command{
 	},
 }
 
-func tryRepairWithBitflip(ctx context.Context, key *crypto.Key, input []byte, bytewise bool) {
+func tryRepairWithBitflip(ctx context.Context, key *crypto.Key, input []byte, bytewise bool) []byte {
 	if bytewise {
 		fmt.Printf("        trying to repair blob by finding a broken byte\n")
 	} else {
@@ -200,9 +202,12 @@ func tryRepairWithBitflip(ctx context.Context, key *crypto.Key, input []byte, by
 	ch := make(chan int)
 	var wg errgroup.Group
 	done := make(chan struct{})
+	var fixed []byte
+	var found bool
 
-	fmt.Printf("         spinning up %d worker functions\n", runtime.NumCPU())
-	for i := 0; i < runtime.NumCPU(); i++ {
+	workers := runtime.GOMAXPROCS(0)
+	fmt.Printf("         spinning up %d worker functions\n", runtime.GOMAXPROCS(0))
+	for i := 0; i < workers; i++ {
 		wg.Go(func() error {
 			// make a local copy of the buffer
 			buf := make([]byte, len(input))
@@ -210,9 +215,10 @@ func tryRepairWithBitflip(ctx context.Context, key *crypto.Key, input []byte, by
 
 			for {
 				select {
-				case <-done:
-					return nil
-				case i := <-ch:
+				case i, ok := <-ch:
+					if !ok {
+						return nil
+					}
 					if bytewise {
 						for j := 0; j < 255; j++ {
 							// flip bits
@@ -225,6 +231,8 @@ func tryRepairWithBitflip(ctx context.Context, key *crypto.Key, input []byte, by
 								fmt.Printf("        blob could be repaired by XORing byte %v with 0x%02x\n", i, j)
 								fmt.Printf("        hash is %v\n", restic.Hash(plaintext))
 								close(done)
+								found = true
+								fixed = plaintext
 								return nil
 							}
 
@@ -243,6 +251,8 @@ func tryRepairWithBitflip(ctx context.Context, key *crypto.Key, input []byte, by
 								fmt.Printf("        blob could be repaired by flipping bit %v in byte %v\n", j, i)
 								fmt.Printf("        hash is %v\n", restic.Hash(plaintext))
 								close(done)
+								found = true
+								fixed = plaintext
 								return nil
 							}
 
@@ -278,40 +288,20 @@ outer:
 			info = time.Now()
 		}
 	}
-
-	var found bool
-	select {
-	case <-done:
-		found = true
-	default:
-		close(done)
-	}
-
+	close(ch)
 	wg.Wait()
 
 	if !found {
 		fmt.Printf("\n        blob could not be repaired by single bit flip\n")
 	}
-}
-
-func sliceForAppend(in []byte, n int) (head, tail []byte) {
-	if total := len(in) + n; cap(in) >= total {
-		head = in[:total]
-	} else {
-		head = make([]byte, total)
-		copy(head, in)
-	}
-	tail = head[len(in):]
-	return
+	return fixed
 }
 
 func decryptUnsigned(ctx context.Context, k *crypto.Key, buf []byte) []byte {
 	// strip signature at the end
 	l := len(buf)
 	nonce, ct := buf[:16], buf[16:l-16]
-	dst := make([]byte, 0, len(ct))
-
-	ret, out := sliceForAppend(dst, len(ct))
+	out := make([]byte, len(ct))
 
 	c, err := aes.NewCipher(k.EncryptionKey[:])
 	if err != nil {
@@ -320,7 +310,7 @@ func decryptUnsigned(ctx context.Context, k *crypto.Key, buf []byte) []byte {
 	e := cipher.NewCTR(c, nonce)
 	e.XORKeyStream(out, ct)
 
-	return ret
+	return out
 }
 
 func loadBlobs(ctx context.Context, repo restic.Repository, pack string, list []restic.Blob) error {
@@ -351,39 +341,69 @@ func loadBlobs(ctx context.Context, repo restic.Repository, pack string, list []
 		plaintext, err = key.Open(plaintext[:0], nonce, plaintext, nil)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error decrypting blob: %v\n", err)
+			var plain []byte
 			if tryRepair || repairByte {
-				tryRepairWithBitflip(ctx, key, buf, repairByte)
+				plain = tryRepairWithBitflip(ctx, key, buf, repairByte)
 			}
-			plain := decryptUnsigned(ctx, key, buf)
-			filename := fmt.Sprintf("%s.bin", blob.ID.String())
-			f, err := os.Create(filename)
+			var prefix string
+			if plain != nil {
+				id := restic.Hash(plain)
+				if !id.Equal(blob.ID) {
+					fmt.Printf("         successfully repaired blob (length %v), hash is %v, ID does not match, wanted %v\n", len(plain), id, blob.ID)
+					prefix = "repaired-wrong-hash-"
+				} else {
+					prefix = "repaired-"
+				}
+			} else {
+				plain = decryptUnsigned(ctx, key, buf)
+				prefix = "damaged-"
+			}
+			err = storePlainBlob(blob.ID, prefix, plain)
 			if err != nil {
 				return err
 			}
-
-			_, err = f.Write(plain)
-			if err != nil {
-				_ = f.Close()
-				return err
-			}
-
-			err = f.Close()
-			if err != nil {
-				return err
-			}
-
-			fmt.Printf("decrypt of blob %v stored at %v\n", blob.ID.Str(), filename)
 			continue
 		}
 
 		id := restic.Hash(plaintext)
+		var prefix string
 		if !id.Equal(blob.ID) {
 			fmt.Printf("         successfully decrypted blob (length %v), hash is %v, ID does not match, wanted %v\n", len(plaintext), id, blob.ID)
+			prefix = "wrong-hash-"
 		} else {
 			fmt.Printf("         successfully decrypted blob (length %v), hash is %v, ID matches\n", len(plaintext), id)
+			prefix = "correct-"
+		}
+		if extractPack {
+			err = storePlainBlob(id, prefix, plaintext)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
+	return nil
+}
+
+func storePlainBlob(id restic.ID, prefix string, plain []byte) error {
+	filename := fmt.Sprintf("%s%s.bin", prefix, id)
+	f, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+
+	_, err = f.Write(plain)
+	if err != nil {
+		_ = f.Close()
+		return err
+	}
+
+	err = f.Close()
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("decrypt of blob %v stored at %v\n", id, filename)
 	return nil
 }
 
