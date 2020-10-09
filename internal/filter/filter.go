@@ -167,13 +167,17 @@ func match(patterns Pattern, strs []string) (matched bool, err error) {
 	}
 
 	if len(patterns) <= len(strs) {
+		minOffset := 0
 		maxOffset := len(strs) - len(patterns)
 		// special case absolute patterns
 		if patterns[0].pattern == "/" {
 			maxOffset = 0
+		} else if strs[0] == "/" {
+			// skip absolute path marker if pattern is not rooted
+			minOffset = 1
 		}
 	outer:
-		for offset := maxOffset; offset >= 0; offset-- {
+		for offset := maxOffset; offset >= minOffset; offset-- {
 
 			for i := len(patterns) - 1; i >= 0; i-- {
 				var ok bool
