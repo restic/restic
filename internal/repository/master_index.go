@@ -267,7 +267,7 @@ func (mi *MasterIndex) MergeFinalIndexes() {
 // RebuildIndex combines all known indexes to a new index, leaving out any
 // packs whose ID is contained in packBlacklist. The new index contains the IDs
 // of all known indexes in the "supersedes" field.
-func (mi *MasterIndex) RebuildIndex(packBlacklist restic.IDSet) (*Index, error) {
+func (mi *MasterIndex) RebuildIndex(ctx context.Context, packBlacklist restic.IDSet) (*Index, error) {
 	mi.idxMutex.Lock()
 	defer mi.idxMutex.Unlock()
 
@@ -275,7 +275,7 @@ func (mi *MasterIndex) RebuildIndex(packBlacklist restic.IDSet) (*Index, error) 
 
 	newIndex := NewIndex()
 
-	ctx, cancel := context.WithCancel(context.TODO())
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	for i, idx := range mi.idx {

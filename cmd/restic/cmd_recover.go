@@ -43,7 +43,7 @@ func runRecover(gopts GlobalOptions) error {
 		return err
 	}
 
-	lock, err := lockRepo(repo)
+	lock, err := lockRepo(gopts.ctx, repo)
 	defer unlockRepo(lock)
 	if err != nil {
 		return err

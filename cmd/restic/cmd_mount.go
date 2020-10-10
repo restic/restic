@@ -91,7 +91,7 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 	}
 
 	if !gopts.NoLock {
-		lock, err := lockRepo(repo)
+		lock, err := lockRepo(gopts.ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err

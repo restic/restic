@@ -326,7 +326,7 @@ func TestRestorer(t *testing.T) {
 			_, id := saveSnapshot(t, repo, test.Snapshot)
 			t.Logf("snapshot saved as %v", id.Str())
 
-			res, err := NewRestorer(repo, id)
+			res, err := NewRestorer(context.TODO(), repo, id)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -444,7 +444,7 @@ func TestRestorerRelative(t *testing.T) {
 			_, id := saveSnapshot(t, repo, test.Snapshot)
 			t.Logf("snapshot saved as %v", id.Str())
 
-			res, err := NewRestorer(repo, id)
+			res, err := NewRestorer(context.TODO(), repo, id)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -676,7 +676,7 @@ func TestRestorerTraverseTree(t *testing.T) {
 			defer cleanup()
 			sn, id := saveSnapshot(t, repo, test.Snapshot)
 
-			res, err := NewRestorer(repo, id)
+			res, err := NewRestorer(context.TODO(), repo, id)
 			if err != nil {
 				t.Fatal(err)
 			}

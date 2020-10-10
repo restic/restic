@@ -9,17 +9,20 @@ import (
 )
 
 type backendReaderAt struct {
-	be Backend
-	h  Handle
+	ctx context.Context
+	be  Backend
+	h   Handle
 }
 
 func (brd backendReaderAt) ReadAt(p []byte, offset int64) (n int, err error) {
-	return ReadAt(context.TODO(), brd.be, brd.h, offset, p)
+	return ReadAt(brd.ctx, brd.be, brd.h, offset, p)
 }
 
-// ReaderAt returns an io.ReaderAt for a file in the backend.
-func ReaderAt(be Backend, h Handle) io.ReaderAt {
-	return backendReaderAt{be: be, h: h}
+// ReaderAt returns an io.ReaderAt for a file in the backend. The returned reader
+// should not escape the caller function to avoid unexpected interactions with the
+// embedded context
+func ReaderAt(ctx context.Context, be Backend, h Handle) io.ReaderAt {
+	return backendReaderAt{ctx: ctx, be: be, h: h}
 }
 
 // ReadAt reads from the backend handle h at the given position.

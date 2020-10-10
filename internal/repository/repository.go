@@ -72,8 +72,8 @@ func (r *Repository) UseCache(c *cache.Cache) {
 
 // PrefixLength returns the number of bytes required so that all prefixes of
 // all IDs of type t are unique.
-func (r *Repository) PrefixLength(t restic.FileType) (int, error) {
-	return restic.PrefixLength(r.be, t)
+func (r *Repository) PrefixLength(ctx context.Context, t restic.FileType) (int, error) {
+	return restic.PrefixLength(ctx, r.be, t)
 }
 
 // LoadAndDecrypt loads and decrypts the file with the given type and ID, using
@@ -638,7 +638,7 @@ func (r *Repository) Init(ctx context.Context, password string, chunkerPolynomia
 // init creates a new master key with the supplied password and uses it to save
 // the config into the repo.
 func (r *Repository) init(ctx context.Context, password string, cfg restic.Config) error {
-	key, err := createMasterKey(r, password)
+	key, err := createMasterKey(ctx, r, password)
 	if err != nil {
 		return err
 	}
@@ -679,7 +679,7 @@ func (r *Repository) List(ctx context.Context, t restic.FileType, fn func(restic
 func (r *Repository) ListPack(ctx context.Context, id restic.ID, size int64) ([]restic.Blob, int64, error) {
 	h := restic.Handle{Type: restic.PackFile, Name: id.String()}
 
-	blobs, err := pack.List(r.Key(), restic.ReaderAt(r.Backend(), h), size)
+	blobs, err := pack.List(r.Key(), restic.ReaderAt(ctx, r.Backend(), h), size)
 	if err != nil {
 		return nil, 0, err
 	}

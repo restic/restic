@@ -179,26 +179,26 @@ func TestFileRestorerBasic(t *testing.T) {
 	defer cleanup()
 
 	restoreAndVerify(t, tempdir, []TestFile{
-		TestFile{
+		{
 			name: "file1",
 			blobs: []TestBlob{
-				TestBlob{"data1-1", "pack1-1"},
-				TestBlob{"data1-2", "pack1-2"},
+				{"data1-1", "pack1-1"},
+				{"data1-2", "pack1-2"},
 			},
 		},
-		TestFile{
+		{
 			name: "file2",
 			blobs: []TestBlob{
-				TestBlob{"data2-1", "pack2-1"},
-				TestBlob{"data2-2", "pack2-2"},
+				{"data2-1", "pack2-1"},
+				{"data2-2", "pack2-2"},
 			},
 		},
-		TestFile{
+		{
 			name: "file3",
 			blobs: []TestBlob{
 				// same blob multiple times
-				TestBlob{"data3-1", "pack3-1"},
-				TestBlob{"data3-1", "pack3-1"},
+				{"data3-1", "pack3-1"},
+				{"data3-1", "pack3-1"},
 			},
 		},
 	})

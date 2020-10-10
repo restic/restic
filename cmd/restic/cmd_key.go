@@ -188,7 +188,7 @@ func runKey(gopts GlobalOptions, args []string) error {
 
 	switch args[0] {
 	case "list":
-		lock, err := lockRepo(repo)
+		lock, err := lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
@@ -196,7 +196,7 @@ func runKey(gopts GlobalOptions, args []string) error {
 
 		return listKeys(ctx, repo, gopts)
 	case "add":
-		lock, err := lockRepo(repo)
+		lock, err := lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
@@ -204,20 +204,20 @@ func runKey(gopts GlobalOptions, args []string) error {
 
 		return addKey(gopts, repo)
 	case "remove":
-		lock, err := lockRepoExclusive(repo)
+		lock, err := lockRepoExclusive(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
 		}
 
-		id, err := restic.Find(repo.Backend(), restic.KeyFile, args[1])
+		id, err := restic.Find(ctx, repo.Backend(), restic.KeyFile, args[1])
 		if err != nil {
 			return err
 		}
 
 		return deleteKey(gopts.ctx, repo, id)
 	case "passwd":
-		lock, err := lockRepoExclusive(repo)
+		lock, err := lockRepoExclusive(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err

@@ -38,7 +38,7 @@ func TestFind(t *testing.T) {
 		return nil
 	}
 
-	f, err := Find(m, SnapshotFile, "20bdc1402a6fc9b633aa")
+	f, err := Find(context.TODO(), m, SnapshotFile, "20bdc1402a6fc9b633aa")
 	if err != nil {
 		t.Error(err)
 	}
@@ -47,7 +47,7 @@ func TestFind(t *testing.T) {
 		t.Errorf("Wrong match returned want %s, got %s", expectedMatch, f)
 	}
 
-	f, err = Find(m, SnapshotFile, "NotAPrefix")
+	f, err = Find(context.TODO(), m, SnapshotFile, "NotAPrefix")
 	if err != ErrNoIDPrefixFound {
 		t.Error("Expected no snapshots to be found.")
 	}
@@ -57,7 +57,7 @@ func TestFind(t *testing.T) {
 
 	// Try to match with a prefix longer than any ID.
 	extraLengthID := samples[0].String() + "f"
-	f, err = Find(m, SnapshotFile, extraLengthID)
+	f, err = Find(context.TODO(), m, SnapshotFile, extraLengthID)
 	if err != ErrNoIDPrefixFound {
 		t.Error("Expected no snapshots to be matched.")
 	}
@@ -66,7 +66,7 @@ func TestFind(t *testing.T) {
 	}
 
 	// Use a prefix that will match the prefix of multiple Ids in `samples`.
-	f, err = Find(m, SnapshotFile, "20bdc140")
+	f, err = Find(context.TODO(), m, SnapshotFile, "20bdc140")
 	if err != ErrMultipleIDMatches {
 		t.Error("Expected multiple snapshots to be matched.")
 	}
@@ -89,7 +89,7 @@ func TestPrefixLength(t *testing.T) {
 		return nil
 	}
 
-	l, err := PrefixLength(m, SnapshotFile)
+	l, err := PrefixLength(context.TODO(), m, SnapshotFile)
 	if err != nil {
 		t.Error(err)
 	}
@@ -98,7 +98,7 @@ func TestPrefixLength(t *testing.T) {
 	}
 
 	list = samples[:3]
-	l, err = PrefixLength(m, SnapshotFile)
+	l, err = PrefixLength(context.TODO(), m, SnapshotFile)
 	if err != nil {
 		t.Error(err)
 	}
@@ -107,7 +107,7 @@ func TestPrefixLength(t *testing.T) {
 	}
 
 	list = samples[3:]
-	l, err = PrefixLength(m, SnapshotFile)
+	l, err = PrefixLength(context.TODO(), m, SnapshotFile)
 	if err != nil {
 		t.Error(err)
 	}

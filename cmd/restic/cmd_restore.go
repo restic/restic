@@ -102,7 +102,7 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	if !gopts.NoLock {
-		lock, err := lockRepo(repo)
+		lock, err := lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
@@ -122,13 +122,13 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 			Exitf(1, "latest snapshot for criteria not found: %v Paths:%v Hosts:%v", err, opts.Paths, opts.Hosts)
 		}
 	} else {
-		id, err = restic.FindSnapshot(repo, snapshotIDString)
+		id, err = restic.FindSnapshot(ctx, repo, snapshotIDString)
 		if err != nil {
 			Exitf(1, "invalid id %q: %v", snapshotIDString, err)
 		}
 	}
 
-	res, err := restorer.NewRestorer(repo, id)
+	res, err := restorer.NewRestorer(ctx, repo, id)
 	if err != nil {
 		Exitf(2, "creating restorer failed: %v\n", err)
 	}

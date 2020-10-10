@@ -18,21 +18,21 @@ var globalLocks struct {
 	sync.Mutex
 }
 
-func lockRepo(repo *repository.Repository) (*restic.Lock, error) {
-	return lockRepository(repo, false)
+func lockRepo(ctx context.Context, repo *repository.Repository) (*restic.Lock, error) {
+	return lockRepository(ctx, repo, false)
 }
 
-func lockRepoExclusive(repo *repository.Repository) (*restic.Lock, error) {
-	return lockRepository(repo, true)
+func lockRepoExclusive(ctx context.Context, repo *repository.Repository) (*restic.Lock, error) {
+	return lockRepository(ctx, repo, true)
 }
 
-func lockRepository(repo *repository.Repository, exclusive bool) (*restic.Lock, error) {
+func lockRepository(ctx context.Context, repo *repository.Repository, exclusive bool) (*restic.Lock, error) {
 	lockFn := restic.NewLock
 	if exclusive {
 		lockFn = restic.NewExclusiveLock
 	}
 
-	lock, err := lockFn(context.TODO(), repo)
+	lock, err := lockFn(ctx, repo)
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to create lock in backend")
 	}
@@ -86,6 +86,10 @@ func refreshLocks(wg *sync.WaitGroup, done <-chan struct{}) {
 }
 
 func unlockRepo(lock *restic.Lock) error {
+	if lock == nil {
+		return nil
+	}
+
 	globalLocks.Lock()
 	defer globalLocks.Unlock()
 

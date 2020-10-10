@@ -86,7 +86,7 @@ func newTestSuite(ctx context.Context, t testing.TB, url *url.URL, minimalData b
 		// CreateFn is a function that creates a temporary repository for the tests.
 		Create: func(config interface{}) (restic.Backend, error) {
 			cfg := config.(rest.Config)
-			return rest.Create(cfg, tr)
+			return rest.Create(context.TODO(), cfg, tr)
 		},
 
 		// OpenFn is a function that opens a previously created temporary repository.

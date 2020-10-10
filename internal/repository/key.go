@@ -57,8 +57,8 @@ var (
 
 // createMasterKey creates a new master key in the given backend and encrypts
 // it with the password.
-func createMasterKey(s *Repository, password string) (*Key, error) {
-	return AddKey(context.TODO(), s, password, "", "", nil)
+func createMasterKey(ctx context.Context, s *Repository, password string) (*Key, error) {
+	return AddKey(ctx, s, password, "", "", nil)
 }
 
 // OpenKey tries do decrypt the key specified by name with the given password.
@@ -116,7 +116,7 @@ func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int,
 	checked := 0
 
 	if len(keyHint) > 0 {
-		id, err := restic.Find(s.Backend(), restic.KeyFile, keyHint)
+		id, err := restic.Find(ctx, s.Backend(), restic.KeyFile, keyHint)
 
 		if err == nil {
 			key, err := OpenKey(ctx, s, id, password)

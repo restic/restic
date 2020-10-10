@@ -53,7 +53,7 @@ func init() {
 }
 
 func loadSnapshot(ctx context.Context, repo *repository.Repository, desc string) (*restic.Snapshot, error) {
-	id, err := restic.FindSnapshot(repo, desc)
+	id, err := restic.FindSnapshot(ctx, repo, desc)
 	if err != nil {
 		return nil, err
 	}
@@ -332,7 +332,7 @@ func runDiff(opts DiffOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	if !gopts.NoLock {
-		lock, err := lockRepo(repo)
+		lock, err := lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
