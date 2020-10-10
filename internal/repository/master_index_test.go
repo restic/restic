@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"math/rand"
 	"testing"
+	"time"
 
+	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -320,5 +322,67 @@ func BenchmarkMasterIndexLookupBlobSize(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		mIdx.LookupSize(lookupID, restic.DataBlob)
+	}
+}
+
+var (
+	snapshotTime = time.Unix(1470492820, 207401672)
+	depth        = 3
+)
+
+func createFilledRepo(t testing.TB, snapshots int, dup float32) (restic.Repository, func()) {
+	repo, cleanup := repository.TestRepository(t)
+
+	for i := 0; i < 3; i++ {
+		restic.TestCreateSnapshot(t, repo, snapshotTime.Add(time.Duration(i)*time.Second), depth, dup)
+	}
+
+	return repo, cleanup
+}
+
+func TestIndexSave(t *testing.T) {
+	repo, cleanup := createFilledRepo(t, 3, 0)
+	defer cleanup()
+
+	repo.LoadIndex(context.TODO())
+
+	obsoletes, err := repo.Index().(*repository.MasterIndex).Save(context.TODO(), repo, nil, nil)
+	if err != nil {
+		t.Fatalf("unable to save new index: %v", err)
+	}
+
+	for id := range obsoletes {
+		t.Logf("remove index %v", id.Str())
+		h := restic.Handle{Type: restic.IndexFile, Name: id.String()}
+		err = repo.Backend().Remove(context.TODO(), h)
+		if err != nil {
+			t.Errorf("error removing index %v: %v", id, err)
+		}
+	}
+
+	checker := checker.New(repo)
+	hints, errs := checker.LoadIndex(context.TODO())
+	for _, h := range hints {
+		t.Logf("hint: %v\n", h)
+	}
+
+	for _, err := range errs {
+		t.Errorf("checker found error: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
+
+	errCh := make(chan error)
+	go checker.Structure(ctx, errCh)
+	i := 0
+	for err := range errCh {
+		t.Errorf("checker returned error: %v", err)
+		i++
+		if i == 10 {
+			t.Errorf("more than 10 errors returned, skipping the rest")
+			cancel()
+			break
+		}
 	}
 }

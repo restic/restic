@@ -275,6 +275,55 @@ func (idx *Index) Each(ctx context.Context) <-chan restic.PackedBlob {
 	return ch
 }
 
+type EachByPackResult struct {
+	packID restic.ID
+	blobs  []restic.Blob
+}
+
+// EachByPack returns a channel that yields all blobs known to the index
+// grouped by packID but ignoring blobs with a packID in packPlacklist.
+// When the  context is cancelled, the background goroutine
+// terminates. This blocks any modification of the index.
+func (idx *Index) EachByPack(ctx context.Context, packBlacklist restic.IDSet) <-chan EachByPackResult {
+	idx.m.Lock()
+
+	ch := make(chan EachByPackResult)
+
+	go func() {
+		defer idx.m.Unlock()
+		defer func() {
+			close(ch)
+		}()
+
+		for typ := range idx.byType {
+			byPack := make(map[restic.ID][]*indexEntry)
+			m := &idx.byType[typ]
+			m.foreach(func(e *indexEntry) bool {
+				packID := idx.packs[e.packIndex]
+				if !packBlacklist.Has(packID) {
+					byPack[packID] = append(byPack[packID], e)
+				}
+				return true
+			})
+
+			for packID, pack := range byPack {
+				var result EachByPackResult
+				result.packID = packID
+				for _, e := range pack {
+					result.blobs = append(result.blobs, idx.toPackedBlob(e, restic.BlobType(typ)).Blob)
+				}
+				select {
+				case <-ctx.Done():
+					return
+				case ch <- result:
+				}
+			}
+		}
+	}()
+
+	return ch
+}
+
 // Packs returns all packs in this index
 func (idx *Index) Packs() restic.IDSet {
 	idx.m.Lock()
