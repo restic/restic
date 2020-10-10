@@ -758,7 +758,7 @@ func TestRestorerConsistentTimestampsAndPermissions(t *testing.T) {
 		},
 	})
 
-	res, err := NewRestorer(repo, id)
+	res, err := NewRestorer(context.TODO(), repo, id)
 	rtest.OK(t, err)
 
 	res.SelectFilter = func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
