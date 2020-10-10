@@ -1,0 +1,11 @@
+Bugfix: Restore timestamps and permissions on intermediate directories
+
+When using the `--include` option of the restore command, restic restored
+timestamps and permissions only on directories selected by the include pattern.
+Intermediate directories, which are necessary to restore files located in sub-
+directories, were created with default permissions. We've fixed the restore
+command to restore timestamps and permissions for these directories as well.
+
+https://github.com/restic/restic/issues/1212
+https://github.com/restic/restic/issues/1402
+https://github.com/restic/restic/pull/2906
