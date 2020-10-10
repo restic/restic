@@ -58,15 +58,15 @@ func runRebuildIndex(opts RebuildIndexOptions, gopts GlobalOptions) error {
 func rebuildIndex(opts RebuildIndexOptions, gopts GlobalOptions, repo *repository.Repository, ignorePacks restic.IDSet) error {
 	ctx := gopts.ctx
 
-	var obsolete restic.IDs
+	var obsoleteIndexes restic.IDs
 	packSizeFromList := make(map[restic.ID]int64)
-	packs := restic.NewIDSet()
+	removePacks := restic.NewIDSet()
 	totalPacks := 0
 
 	if opts.ReadAllPacks {
 		// get old index files
 		err := repo.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
-			obsolete = append(obsolete, id)
+			obsoleteIndexes = append(obsoleteIndexes, id)
 			return nil
 		})
 		if err != nil {
@@ -76,7 +76,7 @@ func rebuildIndex(opts RebuildIndexOptions, gopts GlobalOptions, repo *repositor
 		Verbosef("finding pack files in repo...\n")
 		err = repo.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
 			packSizeFromList[id] = size
-			packs.Insert(id)
+			removePacks.Insert(id)
 			totalPacks++
 			return nil
 		})
@@ -90,18 +90,17 @@ func rebuildIndex(opts RebuildIndexOptions, gopts GlobalOptions, repo *repositor
 			return err
 		}
 
-		packSizeFromIndex := make(map[restic.ID]int64)
-
 		Verbosef("getting pack files to read...\n")
-		// iterate over all blobs in index
+
+		// Compute size of each pack from index entries
+		packSizeFromIndex := make(map[restic.ID]int64)
 		for blob := range repo.Index().Each(ctx) {
 			size, ok := packSizeFromIndex[blob.PackID]
 			if !ok {
 				size = pack.HeaderSize
 			}
-			size += int64(pack.PackedSizeOfBlob(blob.Length))
 			// update packSizeFromIndex
-			packSizeFromIndex[blob.PackID] = size
+			packSizeFromIndex[blob.PackID] = size + int64(pack.PackedSizeOfBlob(blob.Length))
 		}
 
 		err = repo.List(ctx, restic.PackFile, func(id restic.ID, packSize int64) error {
@@ -109,7 +108,7 @@ func rebuildIndex(opts RebuildIndexOptions, gopts GlobalOptions, repo *repositor
 			if !ok || size != packSize {
 				// Pack was not referenced in index or size does not match
 				packSizeFromList[id] = size
-				packs.Insert(id)
+				removePacks.Insert(id)
 			}
 			totalPacks++
 			delete(packSizeFromIndex, id)
@@ -119,16 +118,16 @@ func rebuildIndex(opts RebuildIndexOptions, gopts GlobalOptions, repo *repositor
 			return err
 		}
 		for id := range packSizeFromIndex {
-			// ignore pack files that are referenced in the index but do not exist
+			// forget pack files that are referenced in the index but do not exist
 			// when rebuilding the index
-			packs.Insert(id)
+			removePacks.Insert(id)
 		}
 	}
 
 	if len(packSizeFromList) > 0 {
 		Verbosef("reading pack files\n")
 		bar := newProgressMax(!globalOptions.Quiet, uint64(len(packSizeFromList)), "packs")
-		invalidFiles, err := repo.LoadIndexFromPacks(ctx, packSizeFromList, bar)
+		invalidFiles, err := repo.CreateIndexFromPacks(ctx, packSizeFromList, bar)
 		if err != nil {
 			return err
 		}
@@ -137,11 +136,9 @@ func rebuildIndex(opts RebuildIndexOptions, gopts GlobalOptions, repo *repositor
 			Verboseff("skipped incomplete pack file: %v\n", id)
 			totalPacks--
 		}
-	} else {
-		Verbosef("no need to read any pack file\n")
 	}
 
-	err := rebuildIndexFiles(gopts, repo, packs, obsolete, uint64(totalPacks))
+	err := rebuildIndexFiles(gopts, repo, removePacks, obsoleteIndexes, uint64(totalPacks))
 	if err != nil {
 		return err
 	}
