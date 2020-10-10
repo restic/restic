@@ -99,12 +99,10 @@ command must be run:
     
     repacking packs
     [0:00] 100.00%  2 / 2 packs repacked
-    counting files in repo
-    [0:00] 100.00%  3 / 3 packs
-    finding old index files
-    saved new indexes as [59270b3a]
-    remove 4 old index files
-    [0:00] 100.00%  4 / 4 files deleted
+    rebuilding index
+    [0:00] 100.00%  3 / 3 packs processed
+    deleting obsolete index files
+    [0:00] 100.00%  3 / 3 files deleted
     removing 3 old packs
     [0:00] 100.00%  3 / 3 files deleted
     done
@@ -147,12 +145,10 @@ to ``forget``:
     
     repacking packs
     [0:00] 100.00%  2 / 2 packs repacked
-    counting files in repo
-    [0:00] 100.00%  3 / 3 packs
-    finding old index files
-    saved new indexes as [59270b3a]
-    remove 4 old index files
-    [0:00] 100.00%  4 / 4 files deleted
+    rebuilding index
+    [0:00] 100.00%  3 / 3 packs processed
+    deleting obsolete index files
+    [0:00] 100.00%  3 / 3 files deleted
     removing 3 old packs
     [0:00] 100.00%  3 / 3 files deleted
     done

@@ -471,19 +471,26 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		DeleteFiles(gopts, repo, removePacksFirst, restic.PackFile)
 	}
 
+	packsAddedByRepack := 0
 	if len(repackPacks) != 0 {
+		packsAddedByRepack -= len(repo.Index().Packs())
 		Verbosef("repacking packs\n")
 		bar := newProgressMax(!gopts.Quiet, uint64(len(repackPacks)), "packs repacked")
 		_, err := repository.Repack(ctx, repo, repackPacks, keepBlobs, bar)
 		if err != nil {
 			return err
 		}
+		packsAddedByRepack += len(repo.Index().Packs())
+
 		// Also remove repacked packs
 		removePacks.Merge(repackPacks)
 	}
 
 	if len(removePacks) != 0 {
-		if err = rebuildIndex(ctx, repo, removePacks); err != nil {
+		totalpacks := int(stats.packs.used+stats.packs.partlyUsed+stats.packs.unused) -
+			len(removePacks) + packsAddedByRepack
+		err = rebuildIndexFiles(gopts, repo, removePacks, uint64(totalpacks))
+		if err != nil {
 			return err
 		}
 
@@ -493,6 +500,20 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 
 	Verbosef("done\n")
 	return nil
+}
+
+func rebuildIndexFiles(gopts GlobalOptions, repo restic.Repository, removePacks restic.IDSet, packcount uint64) error {
+	Verbosef("rebuilding index\n")
+
+	bar := newProgressMax(!gopts.Quiet, packcount, "packs processed")
+	obsoleteIndexes, err := (repo.Index()).(*repository.MasterIndex).
+		Save(gopts.ctx, repo, removePacks, bar)
+	if err != nil {
+		return err
+	}
+
+	Verbosef("deleting obsolete index files\n")
+	return DeleteFilesChecked(gopts, repo, obsoleteIndexes, restic.IndexFile)
 }
 
 func getUsedBlobs(gopts GlobalOptions, repo restic.Repository, snapshots []*restic.Snapshot) (usedBlobs restic.BlobSet, err error) {
