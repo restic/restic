@@ -175,7 +175,7 @@ func testRunRebuildIndex(t testing.TB, gopts GlobalOptions) {
 		globalOptions.stdout = os.Stdout
 	}()
 
-	rtest.OK(t, runRebuildIndex(gopts))
+	rtest.OK(t, runRebuildIndex(RebuildIndexOptions{}, gopts))
 }
 
 func testRunLs(t testing.TB, gopts GlobalOptions, snapshotID string) []string {
@@ -1351,7 +1351,7 @@ func TestRebuildIndexFailsOnAppendOnly(t *testing.T) {
 	env.gopts.backendTestHook = func(r restic.Backend) (restic.Backend, error) {
 		return &appendOnlyBackend{r}, nil
 	}
-	err := runRebuildIndex(env.gopts)
+	err := runRebuildIndex(RebuildIndexOptions{}, env.gopts)
 	if err == nil {
 		t.Error("expected rebuildIndex to fail")
 	}
@@ -1583,7 +1583,7 @@ func (be *listOnceBackend) List(ctx context.Context, t restic.FileType, fn func(
 	return be.Backend.List(ctx, t, fn)
 }
 
-func TestPruneListOnce(t *testing.T) {
+func TestListOnce(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
@@ -1613,6 +1613,9 @@ func TestPruneListOnce(t *testing.T) {
 	testRunForget(t, env.gopts, firstSnapshot[0].String())
 	testRunPrune(t, env.gopts, pruneOpts)
 	rtest.OK(t, runCheck(checkOpts, env.gopts, nil))
+
+	rtest.OK(t, runRebuildIndex(RebuildIndexOptions{}, env.gopts))
+	rtest.OK(t, runRebuildIndex(RebuildIndexOptions{ReadAllPacks: true}, env.gopts))
 }
 
 func TestHardLink(t *testing.T) {
