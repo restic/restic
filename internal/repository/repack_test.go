@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 )
@@ -163,7 +162,21 @@ func saveIndex(t *testing.T, repo restic.Repository) {
 }
 
 func rebuildIndex(t *testing.T, repo restic.Repository) {
-	idx, _, err := index.New(context.TODO(), repo, restic.NewIDSet(), nil)
+	err := repo.SetIndex(repository.NewMasterIndex())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	packs := make(map[restic.ID]int64)
+	err = repo.List(context.TODO(), restic.PackFile, func(id restic.ID, size int64) error {
+		packs[id] = size
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = repo.(*repository.Repository).CreateIndexFromPacks(context.TODO(), packs, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -179,7 +192,9 @@ func rebuildIndex(t *testing.T, repo restic.Repository) {
 		t.Fatal(err)
 	}
 
-	_, err = idx.Save(context.TODO(), repo, nil)
+	_, err = (repo.Index()).(*repository.MasterIndex).
+		Save(context.TODO(), repo, restic.NewIDSet(), nil)
+
 	if err != nil {
 		t.Fatal(err)
 	}
