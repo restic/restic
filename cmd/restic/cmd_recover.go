@@ -142,7 +142,7 @@ func runRecover(gopts GlobalOptions) error {
 		return errors.Fatalf("unable to save snapshot: %v", err)
 	}
 
-	Printf("saved new snapshot %v\n", id.Str())
+	PrintDef("saved new snapshot %v\n", id.Str())
 
 	return nil
 }

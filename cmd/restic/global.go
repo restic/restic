@@ -516,7 +516,7 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 
 	// cleanup old cache dirs if instructed to do so
 	if opts.CleanupCache {
-		Printf("removing %d old cache dirs from %v\n", len(oldCacheDirs), c.Base)
+		PrintDef("removing %d old cache dirs from %v\n", len(oldCacheDirs), c.Base)
 
 		for _, item := range oldCacheDirs {
 			dir := filepath.Join(c.Base, item.Name())
