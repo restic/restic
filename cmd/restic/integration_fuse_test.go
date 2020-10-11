@@ -163,9 +163,6 @@ func TestMount(t *testing.T) {
 	repo, err := OpenRepository(env.gopts)
 	rtest.OK(t, err)
 
-	// We remove the mountpoint now to check that cmdMount creates it
-	rtest.RemoveAll(t, env.mountpoint)
-
 	checkSnapshots(t, env.gopts, repo, env.mountpoint, env.repo, []restic.ID{}, 0)
 
 	rtest.SetupTarTestFixture(t, env.testdata, filepath.Join("testdata", "backup-data.tar.gz"))
