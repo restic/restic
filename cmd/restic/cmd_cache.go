@@ -77,11 +77,11 @@ func runCache(opts CacheOptions, gopts GlobalOptions, args []string) error {
 		}
 
 		if len(oldDirs) == 0 {
-			Verbosef("no old cache dirs found\n")
+			PrintDef("no old cache dirs found\n")
 			return nil
 		}
 
-		Verbosef("remove %d old cache directories\n", len(oldDirs))
+		PrintDef("remove %d old cache directories\n", len(oldDirs))
 
 		for _, item := range oldDirs {
 			dir := filepath.Join(cachedir, item.Name())

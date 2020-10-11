@@ -163,10 +163,10 @@ func (s *statefulOutput) PrintPatternJSON(path string, node *restic.Node) {
 func (s *statefulOutput) PrintPatternNormal(path string, node *restic.Node) {
 	if s.newsn != s.oldsn {
 		if s.oldsn != nil {
-			Verbosef("\n")
+			PrintDef("\n")
 		}
 		s.oldsn = s.newsn
-		Verbosef("Found matching entries in snapshot %s from %s\n", s.oldsn.ID().Str(), s.oldsn.Time.Local().Format(TimeFormat))
+		PrintDef("Found matching entries in snapshot %s from %s\n", s.oldsn.ID().Str(), s.oldsn.Time.Local().Format(TimeFormat))
 	}
 	Println(formatNode(path, node, s.ListLong))
 }

@@ -436,7 +436,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 
 	var t tomb.Tomb
 
-	if gopts.verbosity >= 2 && !gopts.JSON {
+	if !gopts.JSON {
 		Verbosef("open repository\n")
 	}
 

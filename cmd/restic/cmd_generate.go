@@ -54,17 +54,17 @@ func writeManpages(dir string) error {
 		Date:    &date,
 	}
 
-	Verbosef("writing man pages to directory %v\n", dir)
+	PrintDef("writing man pages to directory %v\n", dir)
 	return doc.GenManTree(cmdRoot, header, dir)
 }
 
 func writeBashCompletion(file string) error {
-	Verbosef("writing bash completion file to %v\n", file)
+	PrintDef("writing bash completion file to %v\n", file)
 	return cmdRoot.GenBashCompletionFile(file)
 }
 
 func writeZSHCompletion(file string) error {
-	Verbosef("writing zsh completion file to %v\n", file)
+	PrintDef("writing zsh completion file to %v\n", file)
 	return cmdRoot.GenZshCompletionFile(file)
 }
 

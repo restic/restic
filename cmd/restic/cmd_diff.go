@@ -349,7 +349,7 @@ func runDiff(opts DiffOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	Verbosef("comparing snapshot %v to %v:\n\n", sn1.ID().Str(), sn2.ID().Str())
+	PrintDef("comparing snapshot %v to %v:\n\n", sn1.ID().Str(), sn2.ID().Str())
 
 	if sn1.Tree == nil {
 		return errors.Errorf("snapshot %v has nil tree", sn1.ID().Str())

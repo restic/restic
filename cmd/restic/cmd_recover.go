@@ -49,7 +49,7 @@ func runRecover(gopts GlobalOptions) error {
 		return err
 	}
 
-	Verbosef("load index files\n")
+	PrintDef("load index files\n")
 	if err = repo.LoadIndex(gopts.ctx); err != nil {
 		return err
 	}
@@ -67,11 +67,11 @@ func runRecover(gopts GlobalOptions) error {
 
 	cur := 0
 	max := len(trees)
-	Verbosef("load %d trees\n\n", len(trees))
+	PrintDef("load %d trees\n\n", len(trees))
 
 	for id := range trees {
 		cur++
-		Verbosef("\rtree (%v/%v)", cur, max)
+		PrintDef("\rtree (%v/%v)", cur, max)
 
 		if !trees[id] {
 			trees[id] = false
@@ -92,7 +92,7 @@ func runRecover(gopts GlobalOptions) error {
 			trees[subtree] = true
 		}
 	}
-	Verbosef("\ndone\n")
+	PrintDef("\ndone\n")
 
 	roots := restic.NewIDSet()
 	for id, seen := range trees {
@@ -103,7 +103,7 @@ func runRecover(gopts GlobalOptions) error {
 		roots.Insert(id)
 	}
 
-	Verbosef("found %d roots\n", len(roots))
+	PrintDef("found %d roots\n", len(roots))
 
 	tree := restic.NewTree()
 	for id := range roots {

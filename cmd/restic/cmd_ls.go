@@ -184,7 +184,7 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 		}
 	} else {
 		printSnapshot = func(sn *restic.Snapshot) {
-			Verbosef("snapshot %s of %v filtered by %v at %s):\n", sn.ID().Str(), sn.Paths, dirs, sn.Time)
+			PrintDef("snapshot %s of %v filtered by %v at %s):\n", sn.ID().Str(), sn.Paths, dirs, sn.Time)
 		}
 		printNode = func(path string, node *restic.Node) {
 			Printf("%s\n", formatNode(path, node, lsOptions.ListLong))

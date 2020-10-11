@@ -104,7 +104,7 @@ func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	for sn := range FindFilteredSnapshots(ctx, srcRepo, opts.Hosts, opts.Tags, opts.Paths, args) {
-		Verbosef("\nsnapshot %s of %v at %s)\n", sn.ID().Str(), sn.Paths, sn.Time)
+		PrintDef("\nsnapshot %s of %v at %s)\n", sn.ID().Str(), sn.Paths, sn.Time)
 
 		// check whether the destination has a snapshot with the same persistent ID which has similar snapshot fields
 		srcOriginal := *sn.ID()
@@ -115,7 +115,7 @@ func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
 			isCopy := false
 			for _, originalSn := range originalSns {
 				if similarSnapshots(originalSn, sn) {
-					Verbosef("skipping source snapshot %s, was already copied to snapshot %s\n", sn.ID().Str(), originalSn.ID().Str())
+					PrintDef("skipping source snapshot %s, was already copied to snapshot %s\n", sn.ID().Str(), originalSn.ID().Str())
 					isCopy = true
 					break
 				}
@@ -124,7 +124,7 @@ func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
 				continue
 			}
 		}
-		Verbosef("  copy started, this may take a while...\n")
+		PrintDef("  copy started, this may take a while...\n")
 
 		if err := cloner.copyTree(ctx, *sn.Tree); err != nil {
 			return err
@@ -146,7 +146,7 @@ func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
 		if err != nil {
 			return err
 		}
-		Verbosef("snapshot %s saved\n", newID.Str())
+		PrintDef("snapshot %s saved\n", newID.Str())
 	}
 	return nil
 }

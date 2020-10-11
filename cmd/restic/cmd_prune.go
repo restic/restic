@@ -96,7 +96,7 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 		bytes     int64
 	}
 
-	Verbosef("counting files in repo\n")
+	PrintDef("counting files in repo\n")
 	err = repo.List(ctx, restic.PackFile, func(restic.ID, int64) error {
 		stats.packs++
 		return nil
@@ -105,7 +105,7 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 		return err
 	}
 
-	Verbosef("building new index for repo\n")
+	PrintDef("building new index for repo\n")
 
 	bar := newProgressMax(!gopts.Quiet, uint64(stats.packs), "packs")
 	idx, invalidFiles, err := index.New(ctx, repo, restic.NewIDSet(), bar)
@@ -122,7 +122,7 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 		stats.bytes += pack.Size
 		blobs += len(pack.Entries)
 	}
-	Verbosef("repository contains %v packs (%v blobs) with %v\n",
+	PrintDef("repository contains %v packs (%v blobs) with %v\n",
 		len(idx.Packs), blobs, formatBytes(uint64(stats.bytes)))
 
 	blobCount := make(map[restic.BlobHandle]int)
@@ -143,9 +143,9 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 		}
 	}
 
-	Verbosef("processed %d blobs: %d duplicate blobs, %v duplicate\n",
+	PrintDef("processed %d blobs: %d duplicate blobs, %v duplicate\n",
 		stats.blobs, duplicateBlobs, formatBytes(uint64(duplicateBytes)))
-	Verbosef("load all snapshots\n")
+	PrintDef("load all snapshots\n")
 
 	// find referenced blobs
 	snapshots, err := restic.LoadAllSnapshots(ctx, repo)
@@ -173,7 +173,7 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 			"https://github.com/restic/restic/issues/new/choose", missingBlobs)
 	}
 
-	Verbosef("found %d of %d data blobs still in use, removing %d blobs\n",
+	PrintDef("found %d of %d data blobs still in use, removing %d blobs\n",
 		len(usedBlobs), stats.blobs, stats.blobs-len(usedBlobs))
 
 	// find packs that need a rewrite
@@ -202,7 +202,7 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	// find packs that are unneeded
 	removePacks := restic.NewIDSet()
 
-	Verbosef("will remove %d invalid files\n", len(invalidFiles))
+	PrintDef("will remove %d invalid files\n", len(invalidFiles))
 	for _, id := range invalidFiles {
 		removePacks.Insert(id)
 	}
@@ -233,7 +233,7 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 		rewritePacks.Delete(packID)
 	}
 
-	Verbosef("will delete %d packs and rewrite %d packs, this frees %s\n",
+	PrintDef("will delete %d packs and rewrite %d packs, this frees %s\n",
 		len(removePacks), len(rewritePacks), formatBytes(uint64(removeBytes)))
 
 	var obsoletePacks restic.IDSet
@@ -252,18 +252,18 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	}
 
 	if len(removePacks) != 0 {
-		Verbosef("remove %d old packs\n", len(removePacks))
+		PrintDef("remove %d old packs\n", len(removePacks))
 		DeleteFiles(gopts, repo, removePacks, restic.PackFile)
 	}
 
-	Verbosef("done\n")
+	PrintDef("done\n")
 	return nil
 }
 
 func getUsedBlobs(gopts GlobalOptions, repo restic.Repository, snapshots []*restic.Snapshot) (usedBlobs restic.BlobSet, err error) {
 	ctx := gopts.ctx
 
-	Verbosef("find data that is still in use for %d snapshots\n", len(snapshots))
+	PrintDef("find data that is still in use for %d snapshots\n", len(snapshots))
 
 	usedBlobs = restic.NewBlobSet()
 

@@ -76,11 +76,11 @@ func runInit(opts InitOptions, gopts GlobalOptions, args []string) error {
 		return errors.Fatalf("create key in repository at %s failed: %v\n", location.StripPassword(gopts.Repo), err)
 	}
 
-	Verbosef("created restic repository %v at %s\n", s.Config().ID[:10], location.StripPassword(gopts.Repo))
-	Verbosef("\n")
-	Verbosef("Please note that knowledge of your password is required to access\n")
-	Verbosef("the repository. Losing your password means that your data is\n")
-	Verbosef("irrecoverably lost.\n")
+	PrintDef("created restic repository %v at %s\n", s.Config().ID[:10], location.StripPassword(gopts.Repo))
+	PrintDef("\n")
+	PrintDef("Please note that knowledge of your password is required to access\n")
+	PrintDef("the repository. Losing your password means that your data is\n")
+	PrintDef("irrecoverably lost.\n")
 
 	return nil
 }

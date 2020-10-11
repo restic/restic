@@ -104,7 +104,7 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 	}
 
 	if _, err := resticfs.Stat(mountpoint); os.IsNotExist(errors.Cause(err)) {
-		Verbosef("Mountpoint %s doesn't exist, creating it\n", mountpoint)
+		PrintDef("Mountpoint %s doesn't exist, creating it\n", mountpoint)
 		err = resticfs.Mkdir(mountpoint, os.ModeDir|0700)
 		if err != nil {
 			return err

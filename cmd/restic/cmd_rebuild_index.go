@@ -50,7 +50,7 @@ func runRebuildIndex(gopts GlobalOptions) error {
 }
 
 func rebuildIndex(ctx context.Context, repo restic.Repository, ignorePacks restic.IDSet) error {
-	Verbosef("counting files in repo\n")
+	PrintDef("counting files in repo\n")
 
 	var packs uint64
 	err := repo.List(ctx, restic.PackFile, func(restic.ID, int64) error {
@@ -67,13 +67,11 @@ func rebuildIndex(ctx context.Context, repo restic.Repository, ignorePacks resti
 		return err
 	}
 
-	if globalOptions.verbosity >= 2 {
-		for _, id := range invalidFiles {
-			Printf("skipped incomplete pack file: %v\n", id)
-		}
+	for _, id := range invalidFiles {
+		Verbosef("skipped incomplete pack file: %v\n", id)
 	}
 
-	Verbosef("finding old index files\n")
+	PrintDef("finding old index files\n")
 
 	var supersedes restic.IDs
 	err = repo.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
@@ -89,9 +87,9 @@ func rebuildIndex(ctx context.Context, repo restic.Repository, ignorePacks resti
 		return errors.Fatalf("unable to save index, last error was: %v", err)
 	}
 
-	Verbosef("saved new indexes as %v\n", ids)
+	PrintDef("saved new indexes as %v\n", ids)
 
-	Verbosef("remove %d old index files\n", len(supersedes))
+	PrintDef("remove %d old index files\n", len(supersedes))
 	err = DeleteFilesChecked(globalOptions, repo, restic.NewIDSet(supersedes...), restic.IndexFile)
 	if err != nil {
 		return errors.Fatalf("unable to remove an old index: %v\n", err)

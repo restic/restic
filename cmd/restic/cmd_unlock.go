@@ -51,6 +51,6 @@ func runUnlock(opts UnlockOptions, gopts GlobalOptions) error {
 		return err
 	}
 
-	Verbosef("successfully removed locks\n")
+	PrintDef("successfully removed locks\n")
 	return nil
 }

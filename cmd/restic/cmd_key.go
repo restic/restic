@@ -131,7 +131,7 @@ func addKey(gopts GlobalOptions, repo *repository.Repository) error {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
 
-	Verbosef("saved new key as %s\n", id)
+	PrintDef("saved new key as %s\n", id)
 
 	return nil
 }
@@ -147,7 +147,7 @@ func deleteKey(ctx context.Context, repo *repository.Repository, name string) er
 		return err
 	}
 
-	Verbosef("removed key %v\n", name)
+	PrintDef("removed key %v\n", name)
 	return nil
 }
 
@@ -168,7 +168,7 @@ func changePassword(gopts GlobalOptions, repo *repository.Repository) error {
 		return err
 	}
 
-	Verbosef("saved new key as %s\n", id)
+	PrintDef("saved new key as %s\n", id)
 
 	return nil
 }

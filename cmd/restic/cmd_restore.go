@@ -184,14 +184,14 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 		res.SelectFilter = selectIncludeFilter
 	}
 
-	Verbosef("restoring %s to %s\n", res.Snapshot(), opts.Target)
+	PrintDef("restoring %s to %s\n", res.Snapshot(), opts.Target)
 
 	err = res.RestoreTo(ctx, opts.Target)
 	if err == nil && opts.Verify {
-		Verbosef("verifying files in %s\n", opts.Target)
+		PrintDef("verifying files in %s\n", opts.Target)
 		var count int
 		count, err = res.VerifyFiles(ctx, opts.Target)
-		Verbosef("finished verifying %d files in %s\n", count, opts.Target)
+		PrintDef("finished verifying %d files in %s\n", count, opts.Target)
 	}
 	if totalErrors > 0 {
 		Printf("There were %d errors\n", totalErrors)

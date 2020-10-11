@@ -128,7 +128,7 @@ func prepareCheckCache(opts CheckOptions, gopts *GlobalOptions) (cleanup func())
 	}
 
 	gopts.CacheDir = tempdir
-	Verbosef("using temporary cache in %v\n", tempdir)
+	PrintDef("using temporary cache in %v\n", tempdir)
 
 	cleanup = func() {
 		err := fs.RemoveAll(tempdir)
@@ -157,7 +157,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	if !gopts.NoLock {
-		Verbosef("create exclusive lock for repository\n")
+		PrintDef("create exclusive lock for repository\n")
 		lock, err := lockRepoExclusive(gopts.ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
@@ -167,7 +167,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 
 	chkr := checker.New(repo)
 
-	Verbosef("load indexes\n")
+	PrintDef("load indexes\n")
 	hints, errs := chkr.LoadIndex(gopts.ctx)
 
 	dupFound := false
@@ -193,13 +193,13 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	orphanedPacks := 0
 	errChan := make(chan error)
 
-	Verbosef("check all packs\n")
+	PrintDef("check all packs\n")
 	go chkr.Packs(gopts.ctx, errChan)
 
 	for err := range errChan {
 		if checker.IsOrphanedPack(err) {
 			orphanedPacks++
-			Verbosef("%v\n", err)
+			PrintDef("%v\n", err)
 			continue
 		}
 		errorsFound = true
@@ -207,10 +207,10 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	if orphanedPacks > 0 {
-		Verbosef("%d additional files were found in the repo, which likely contain duplicate data.\nYou can run `restic prune` to correct this.\n", orphanedPacks)
+		PrintDef("%d additional files were found in the repo, which likely contain duplicate data.\nYou can run `restic prune` to correct this.\n", orphanedPacks)
 	}
 
-	Verbosef("check snapshots, trees and blobs\n")
+	PrintDef("check snapshots, trees and blobs\n")
 	errChan = make(chan error)
 	go chkr.Structure(gopts.ctx, errChan)
 
@@ -228,7 +228,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 
 	if opts.CheckUnused {
 		for _, id := range chkr.UnusedBlobs() {
-			Verbosef("unused blob %v\n", id)
+			PrintDef("unused blob %v\n", id)
 			errorsFound = true
 		}
 	}
@@ -245,9 +245,9 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 		packCount := uint64(len(packs))
 
 		if packCount < chkr.CountPacks() {
-			Verbosef(fmt.Sprintf("read group #%d of %d data packs (out of total %d packs in %d groups)\n", bucket, packCount, chkr.CountPacks(), totalBuckets))
+			PrintDef(fmt.Sprintf("read group #%d of %d data packs (out of total %d packs in %d groups)\n", bucket, packCount, chkr.CountPacks(), totalBuckets))
 		} else {
-			Verbosef("read all data\n")
+			PrintDef("read all data\n")
 		}
 
 		p := newProgressMax(!gopts.Quiet, packCount, "packs")
@@ -273,7 +273,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 		return errors.Fatal("repository contains errors")
 	}
 
-	Verbosef("no errors were found\n")
+	PrintDef("no errors were found\n")
 
 	return nil
 }
