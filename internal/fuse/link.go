@@ -3,10 +3,11 @@
 package fuse
 
 import (
+	"context"
+
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
 	"github.com/restic/restic/internal/restic"
-	"golang.org/x/net/context"
 )
 
 // Statically ensure that *link implements the given interface

@@ -715,7 +715,7 @@ func (r *Repository) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte
 	// first try to add to pending blobs; if not successful, this blob is already known
 	known = !r.idx.addPending(newID, t)
 
-	// only save when needed or explicitely told
+	// only save when needed or explicitly told
 	if !known || storeDuplicate {
 		err = r.SaveAndEncrypt(ctx, t, buf, newID)
 	}

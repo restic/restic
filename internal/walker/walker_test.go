@@ -244,7 +244,7 @@ func TestWalker(t *testing.T) {
 				}),
 				checkSkipFor(
 					map[string]struct{}{
-						"/subdir": struct{}{},
+						"/subdir": {},
 					}, []string{
 						"/",
 						"/foo",
@@ -299,7 +299,7 @@ func TestWalker(t *testing.T) {
 				}),
 				checkSkipFor(
 					map[string]struct{}{
-						"/subdir1": struct{}{},
+						"/subdir1": {},
 					}, []string{
 						"/",
 						"/foo",
@@ -312,8 +312,8 @@ func TestWalker(t *testing.T) {
 				),
 				checkSkipFor(
 					map[string]struct{}{
-						"/subdir1":            struct{}{},
-						"/subdir2/subsubdir2": struct{}{},
+						"/subdir1":            {},
+						"/subdir2/subsubdir2": {},
 					}, []string{
 						"/",
 						"/foo",
@@ -325,7 +325,7 @@ func TestWalker(t *testing.T) {
 				),
 				checkSkipFor(
 					map[string]struct{}{
-						"/foo": struct{}{},
+						"/foo": {},
 					}, []string{
 						"/",
 						"/foo",
@@ -390,7 +390,7 @@ func TestWalker(t *testing.T) {
 				}),
 				checkIgnore(
 					map[string]struct{}{
-						"/subdir1": struct{}{},
+						"/subdir1": {},
 					}, map[string]bool{
 						"/subdir1": true,
 					}, []string{
@@ -415,7 +415,7 @@ func TestWalker(t *testing.T) {
 				),
 				checkIgnore(
 					map[string]struct{}{
-						"/subdir2": struct{}{},
+						"/subdir2": {},
 					}, map[string]bool{
 						"/subdir2": true,
 					}, []string{

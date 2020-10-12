@@ -4,12 +4,11 @@ package fuse
 
 import (
 	"bytes"
+	"context"
 	"math/rand"
 	"os"
 	"testing"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"

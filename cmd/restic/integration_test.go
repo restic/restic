@@ -513,7 +513,7 @@ func TestBackupErrors(t *testing.T) {
 	gopts := env.gopts
 	gopts.stderr = ioutil.Discard
 	err := testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, gopts)
-	rtest.Assert(t, err != nil, "Assumed failure, but no error occured.")
+	rtest.Assert(t, err != nil, "Assumed failure, but no error occurred.")
 	rtest.Assert(t, err == ErrInvalidSourceData, "Wrong error returned")
 	snapshotIDs := testRunList(t, "snapshots", env.gopts)
 	rtest.Assert(t, len(snapshotIDs) == 1,
@@ -1665,7 +1665,7 @@ func TestDiff(t *testing.T) {
 	rtest.OK(t, os.Mkdir(modfile+"4", 0755))
 
 	testRunBackup(t, "", []string{datadir}, opts, env.gopts)
-	snapshots, secondSnapshotID := lastSnapshot(snapshots, loadSnapshotMap(t, env.gopts))
+	_, secondSnapshotID := lastSnapshot(snapshots, loadSnapshotMap(t, env.gopts))
 
 	_, err := testRunDiffOutput(env.gopts, "", secondSnapshotID)
 	rtest.Assert(t, err != nil, "expected error on invalid snapshot id")
