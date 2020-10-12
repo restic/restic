@@ -509,29 +509,26 @@ func (node Node) sameExtendedAttributes(other Node) bool {
 func (node *Node) fillUser(stat statT) {
 	uid, gid := stat.uid(), stat.gid()
 	node.UID, node.GID = uid, gid
-
-	node.User = lookupUsername(strconv.Itoa(int(uid)))
-	node.Group = lookupGroup(strconv.Itoa(int(gid)))
+	node.User = lookupUsername(uid)
+	node.Group = lookupGroup(gid)
 }
 
 var (
-	uidLookupCache      = make(map[string]string)
+	uidLookupCache      = make(map[uint32]string)
 	uidLookupCacheMutex = sync.RWMutex{}
 )
 
 // Cached user name lookup by uid. Returns "" when no name can be found.
-func lookupUsername(uid string) string {
+func lookupUsername(uid uint32) string {
 	uidLookupCacheMutex.RLock()
-	value, ok := uidLookupCache[uid]
+	username, ok := uidLookupCache[uid]
 	uidLookupCacheMutex.RUnlock()
 
 	if ok {
-		return value
+		return username
 	}
 
-	username := ""
-
-	u, err := user.LookupId(uid)
+	u, err := user.LookupId(strconv.Itoa(int(uid)))
 	if err == nil {
 		username = u.Username
 	}
@@ -544,23 +541,21 @@ func lookupUsername(uid string) string {
 }
 
 var (
-	gidLookupCache      = make(map[string]string)
+	gidLookupCache      = make(map[uint32]string)
 	gidLookupCacheMutex = sync.RWMutex{}
 )
 
 // Cached group name lookup by gid. Returns "" when no name can be found.
-func lookupGroup(gid string) string {
+func lookupGroup(gid uint32) string {
 	gidLookupCacheMutex.RLock()
-	value, ok := gidLookupCache[gid]
+	group, ok := gidLookupCache[gid]
 	gidLookupCacheMutex.RUnlock()
 
 	if ok {
-		return value
+		return group
 	}
 
-	group := ""
-
-	g, err := user.LookupGroupId(gid)
+	g, err := user.LookupGroupId(strconv.Itoa(int(gid)))
 	if err == nil {
 		group = g.Name
 	}
