@@ -1,11 +1,21 @@
-Bugfix: Fix behavior for foobar (in present tense)
+# The first line must start with Bugfix:, Enhancement: or Change:,
+# including the colon. Use present use. Remove lines starting with '#'
+# from this template.
+Enhancement: Allow custom bar in the foo command
 
-We've fixed the behavior for foobar, a long-standing annoyance for restic
-users.
+# Describe the problem in the past tense, the new behavior in the present
+# tense. Mention the affected commands, backends, operating systems, etc.
+# Focus on user-facing behavior, not the implementation.
 
-The text in the paragraphs is written in past tense. The last section is a list
-of issue URLs, PR URLs and other URLs. The first issue ID (or the first PR ID,
-in case there aren't any issue links) is used as the primary ID.
+Restic foo always used the system-wide bar when deciding how to frob an
+item in the baz backend. It now permits selecting the bar with --bar or
+the environment variable RESTIC_BAR. The system-wide bar is still the
+default.
+
+# The last section is a list of issue, PR and forum URLs.
+# The first issue ID determines the filename for the changelog entry:
+# changelog/unreleased/issue-1234. If there are no relevant issue links,
+# use the PR ID and call the file pull-55555.
 
 https://github.com/restic/restic/issues/1234
 https://github.com/restic/restic/pull/55555
