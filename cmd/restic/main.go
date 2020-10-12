@@ -36,12 +36,17 @@ directories in an encrypted repository stored on different backends.
 			return errors.Fatal("--quiet and --verbose cannot be specified at the same time")
 		}
 
-		switch {
-		case globalOptions.Verbose >= 2:
-			globalOptions.verbosity = 3
-		case globalOptions.Verbose > 0:
-			globalOptions.verbosity = 2
-		case globalOptions.Quiet:
+		// JSON implies quiet output
+		if !globalOptions.JSON {
+			switch {
+			case globalOptions.Verbose >= 2:
+				globalOptions.verbosity = 3
+			case globalOptions.Verbose > 0:
+				globalOptions.verbosity = 2
+			case globalOptions.Quiet:
+				globalOptions.verbosity = 0
+			}
+		} else {
 			globalOptions.verbosity = 0
 		}
 

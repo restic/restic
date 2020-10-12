@@ -98,9 +98,7 @@ func runStats(gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	if !gopts.JSON {
-		PrintDef("scanning...\n")
-	}
+	PrintDef("scanning...\n")
 
 	// create a container for the stats (and other needed state)
 	stats := &statsContainer{

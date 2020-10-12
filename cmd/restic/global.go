@@ -479,7 +479,7 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 		return nil, errors.Fatalf("%s", err)
 	}
 
-	if stdoutIsTerminal() && !opts.JSON {
+	if stdoutIsTerminal() {
 		id := s.Config().ID
 		if len(id) > 8 {
 			id = id[:8]
@@ -497,7 +497,7 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 		return s, nil
 	}
 
-	if c.Created && !opts.JSON {
+	if c.Created {
 		PrintDef("created new cache in %v\n", c.Base)
 	}
 

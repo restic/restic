@@ -436,9 +436,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 
 	var t tomb.Tomb
 
-	if !gopts.JSON {
-		Verbosef("open repository\n")
-	}
+	Verbosef("open repository\n")
 
 	repo, err := OpenRepository(gopts)
 	if err != nil {

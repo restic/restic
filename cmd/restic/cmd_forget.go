@@ -129,18 +129,14 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 		}
 
 		if policy.Empty() && len(args) == 0 {
-			if !gopts.JSON {
-				PrintDef("no policy was specified, no snapshots will be removed\n")
-			}
+			PrintDef("no policy was specified, no snapshots will be removed\n")
 		}
 
 		if !policy.Empty() {
-			if !gopts.JSON {
-				PrintDef("Applying Policy: %v\n", policy)
-			}
+			PrintDef("Applying Policy: %v\n", policy)
 
 			for k, snapshotGroup := range snapshotGroups {
-				if gopts.Verbose >= 1 && !gopts.JSON {
+				if !gopts.Quiet && !gopts.JSON {
 					err = PrintSnapshotGroupHeader(gopts.stdout, k)
 					if err != nil {
 						return err
@@ -191,9 +187,7 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 				return err
 			}
 		} else {
-			if !gopts.JSON {
-				Printf("Would have removed the following snapshots:\n%v\n\n", removeSnIDs)
-			}
+			Printf("Would have removed the following snapshots:\n%v\n\n", removeSnIDs)
 		}
 	}
 
