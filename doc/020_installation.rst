@@ -27,6 +27,16 @@ Please see the :ref:`official_binaries` section below for various downloads.
 Official binaries can be updated in place by using the ``restic self-update``
 command.
 
+Alpine Linux
+============
+
+On `Alpine Linux <https://www.alpinelinux.org>`__ you can install the ``restic``
+package from the official community repos, e.g. using ``apk``:
+
+.. code-block:: console
+
+    $ apk add restic
+
 Arch Linux
 ==========
 
