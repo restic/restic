@@ -506,24 +506,12 @@ func (node Node) sameExtendedAttributes(other Node) bool {
 	return true
 }
 
-func (node *Node) fillUser(stat statT) error {
-	node.UID = stat.uid()
-	node.GID = stat.gid()
+func (node *Node) fillUser(stat statT) {
+	uid, gid := stat.uid(), stat.gid()
+	node.UID, node.GID = uid, gid
 
-	username, err := lookupUsername(strconv.Itoa(int(stat.uid())))
-	if err != nil {
-		return err
-	}
-
-	group, err := lookupGroup(strconv.Itoa(int(stat.gid())))
-	if err != nil {
-		return err
-	}
-
-	node.User = username
-	node.Group = group
-
-	return nil
+	node.User = lookupUsername(strconv.Itoa(int(uid)))
+	node.Group = lookupGroup(strconv.Itoa(int(gid)))
 }
 
 var (
@@ -531,13 +519,14 @@ var (
 	uidLookupCacheMutex = sync.RWMutex{}
 )
 
-func lookupUsername(uid string) (string, error) {
+// Cached user name lookup by uid. Returns "" when no name can be found.
+func lookupUsername(uid string) string {
 	uidLookupCacheMutex.RLock()
 	value, ok := uidLookupCache[uid]
 	uidLookupCacheMutex.RUnlock()
 
 	if ok {
-		return value, nil
+		return value
 	}
 
 	username := ""
@@ -551,7 +540,7 @@ func lookupUsername(uid string) (string, error) {
 	uidLookupCache[uid] = username
 	uidLookupCacheMutex.Unlock()
 
-	return username, nil
+	return username
 }
 
 var (
@@ -559,13 +548,14 @@ var (
 	gidLookupCacheMutex = sync.RWMutex{}
 )
 
-func lookupGroup(gid string) (string, error) {
+// Cached group name lookup by gid. Returns "" when no name can be found.
+func lookupGroup(gid string) string {
 	gidLookupCacheMutex.RLock()
 	value, ok := gidLookupCache[gid]
 	gidLookupCacheMutex.RUnlock()
 
 	if ok {
-		return value, nil
+		return value
 	}
 
 	group := ""
@@ -579,7 +569,7 @@ func lookupGroup(gid string) (string, error) {
 	gidLookupCache[gid] = group
 	gidLookupCacheMutex.Unlock()
 
-	return group, nil
+	return group
 }
 
 func (node *Node) fillExtra(path string, fi os.FileInfo) error {
@@ -597,11 +587,7 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 
 	node.fillTimes(stat)
 
-	var err error
-
-	if err = node.fillUser(stat); err != nil {
-		return err
-	}
+	node.fillUser(stat)
 
 	switch node.Type {
 	case "file":
@@ -609,6 +595,7 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 		node.Links = uint64(stat.nlink())
 	case "dir":
 	case "symlink":
+		var err error
 		node.LinkTarget, err = fs.Readlink(path)
 		node.Links = uint64(stat.nlink())
 		if err != nil {
@@ -626,7 +613,7 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 		return errors.Errorf("invalid node type %q", node.Type)
 	}
 
-	if err = node.fillExtendedAttributes(path); err != nil {
+	if err := node.fillExtendedAttributes(path); err != nil {
 		return err
 	}
 
