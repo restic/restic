@@ -515,11 +515,8 @@ func (idx *Index) merge(idx2 *Index) error {
 // isErrOldIndex returns true if the error may be caused by an old index
 // format.
 func isErrOldIndex(err error) bool {
-	if e, ok := err.(*json.UnmarshalTypeError); ok && e.Value == "array" {
-		return true
-	}
-
-	return false
+	e, ok := err.(*json.UnmarshalTypeError)
+	return ok && e.Value == "array"
 }
 
 // DecodeIndex unserializes an index from buf.
