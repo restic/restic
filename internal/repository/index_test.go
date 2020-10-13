@@ -56,10 +56,11 @@ func TestIndexSerialize(t *testing.T) {
 	err := idx.Encode(wr)
 	rtest.OK(t, err)
 
-	idx2, err := repository.DecodeIndex(wr.Bytes())
+	idx2, oldFormat, err := repository.DecodeIndex(wr.Bytes())
 	rtest.OK(t, err)
 	rtest.Assert(t, idx2 != nil,
 		"nil returned for decoded index")
+	rtest.Assert(t, !oldFormat, "new index format recognized as old format")
 
 	wr2 := bytes.NewBuffer(nil)
 	err = idx2.Encode(wr2)
@@ -135,12 +136,13 @@ func TestIndexSerialize(t *testing.T) {
 	rtest.OK(t, err)
 	rtest.Equals(t, restic.IDs{id}, ids)
 
-	idx3, err := repository.DecodeIndex(wr3.Bytes())
+	idx3, oldFormat, err := repository.DecodeIndex(wr3.Bytes())
 	rtest.OK(t, err)
 	rtest.Assert(t, idx3 != nil,
 		"nil returned for decoded index")
 	rtest.Assert(t, idx3.Final(),
 		"decoded index is not final")
+	rtest.Assert(t, !oldFormat, "new index format recognized as old format")
 
 	// all new blobs must be in the index
 	for _, testBlob := range newtests {
@@ -285,8 +287,9 @@ var exampleLookupTest = struct {
 func TestIndexUnserialize(t *testing.T) {
 	oldIdx := restic.IDs{restic.TestParseID("ed54ae36197f4745ebc4b54d10e0f623eaaaedd03013eb7ae90df881b7781452")}
 
-	idx, err := repository.DecodeIndex(docExample)
+	idx, oldFormat, err := repository.DecodeIndex(docExample)
 	rtest.OK(t, err)
+	rtest.Assert(t, !oldFormat, "new index format recognized as old format")
 
 	for _, test := range exampleTests {
 		list := idx.Lookup(test.id, test.tpe, nil)
@@ -338,7 +341,7 @@ func BenchmarkDecodeIndex(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := repository.DecodeIndex(benchmarkIndexJSON)
+		_, _, err := repository.DecodeIndex(benchmarkIndexJSON)
 		rtest.OK(b, err)
 	}
 }
@@ -349,15 +352,16 @@ func BenchmarkDecodeIndexParallel(b *testing.B) {
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			_, err := repository.DecodeIndex(benchmarkIndexJSON)
+			_, _, err := repository.DecodeIndex(benchmarkIndexJSON)
 			rtest.OK(b, err)
 		}
 	})
 }
 
 func TestIndexUnserializeOld(t *testing.T) {
-	idx, err := repository.DecodeOldIndex(docOldExample)
+	idx, oldFormat, err := repository.DecodeIndex(docOldExample)
 	rtest.OK(t, err)
+	rtest.Assert(t, oldFormat, "old index format recognized as new format")
 
 	for _, test := range exampleTests {
 		list := idx.Lookup(test.id, test.tpe, nil)
