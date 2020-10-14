@@ -476,14 +476,10 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 		return nil
 	}
 
-	// final closes indexCh after all workers have terminated
-	final := func() {
-		close(indexCh)
-	}
-
 	// run workers on ch
 	wg.Go(func() error {
-		return RunWorkers(loadIndexParallelism, worker, final)
+		defer close(indexCh)
+		return RunWorkers(loadIndexParallelism, worker)
 	})
 
 	// receive decoded indexes
