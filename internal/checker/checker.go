@@ -135,14 +135,10 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 		return nil
 	}
 
-	// final closes indexCh after all workers have terminated
-	final := func() {
-		close(resultCh)
-	}
-
 	// run workers on ch
 	wg.Go(func() error {
-		return repository.RunWorkers(defaultParallelism, worker, final)
+		defer close(resultCh)
+		return repository.RunWorkers(defaultParallelism, worker)
 	})
 
 	// receive decoded indexes
