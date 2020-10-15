@@ -515,18 +515,12 @@ func (idx *Index) merge(idx2 *Index) error {
 // isErrOldIndex returns true if the error may be caused by an old index
 // format.
 func isErrOldIndex(err error) bool {
-	if e, ok := err.(*json.UnmarshalTypeError); ok && e.Value == "array" {
-		return true
-	}
-
-	return false
+	e, ok := err.(*json.UnmarshalTypeError)
+	return ok && e.Value == "array"
 }
 
-// ErrOldIndexFormat means an index with the old format was detected.
-var ErrOldIndexFormat = errors.New("index has old format")
-
-// DecodeIndex loads and unserializes an index from rd.
-func DecodeIndex(buf []byte) (idx *Index, err error) {
+// DecodeIndex unserializes an index from buf.
+func DecodeIndex(buf []byte) (idx *Index, oldFormat bool, err error) {
 	debug.Log("Start decoding index")
 	idxJSON := &jsonIndex{}
 
@@ -536,10 +530,11 @@ func DecodeIndex(buf []byte) (idx *Index, err error) {
 
 		if isErrOldIndex(err) {
 			debug.Log("index is probably old format, trying that")
-			err = ErrOldIndexFormat
+			idx, err = decodeOldIndex(buf)
+			return idx, err == nil, err
 		}
 
-		return nil, errors.Wrap(err, "Decode")
+		return nil, false, errors.Wrap(err, "DecodeIndex")
 	}
 
 	idx = NewIndex()
@@ -571,11 +566,11 @@ func DecodeIndex(buf []byte) (idx *Index, err error) {
 	idx.final = true
 
 	debug.Log("done")
-	return idx, nil
+	return idx, false, nil
 }
 
 // DecodeOldIndex loads and unserializes an index in the old format from rd.
-func DecodeOldIndex(buf []byte) (idx *Index, err error) {
+func decodeOldIndex(buf []byte) (idx *Index, err error) {
 	debug.Log("Start decoding old index")
 	list := []*packJSON{}
 
@@ -614,24 +609,4 @@ func DecodeOldIndex(buf []byte) (idx *Index, err error) {
 
 	debug.Log("done")
 	return idx, nil
-}
-
-// LoadIndexWithDecoder loads the index and decodes it with fn.
-func LoadIndexWithDecoder(ctx context.Context, repo restic.Repository, buf []byte, id restic.ID, fn func([]byte) (*Index, error)) (*Index, []byte, error) {
-	debug.Log("Loading index %v", id)
-
-	buf, err := repo.LoadAndDecrypt(ctx, buf[:0], restic.IndexFile, id)
-	if err != nil {
-		return nil, buf[:0], err
-	}
-
-	idx, err := fn(buf)
-	if err != nil {
-		debug.Log("error while decoding index %v: %v", id, err)
-		return nil, buf[:0], err
-	}
-
-	idx.ids = append(idx.ids, id)
-
-	return idx, buf, nil
 }

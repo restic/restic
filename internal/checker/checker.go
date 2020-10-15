@@ -117,12 +117,16 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 			debug.Log("worker got file %v", fi.ID.Str())
 			var err error
 			var idx *repository.Index
-			idx, buf, err = repository.LoadIndexWithDecoder(ctx, c.repo, buf[:0], fi.ID, repository.DecodeIndex)
-			if errors.Cause(err) == repository.ErrOldIndexFormat {
+			oldFormat := false
+
+			buf, err = c.repo.LoadAndDecrypt(ctx, buf[:0], restic.IndexFile, fi.ID)
+			if err == nil {
+				idx, oldFormat, err = repository.DecodeIndex(buf)
+			}
+
+			if oldFormat {
 				debug.Log("index %v has old format", fi.ID.Str())
 				hints = append(hints, ErrOldIndexFormat{fi.ID})
-
-				idx, buf, err = repository.LoadIndexWithDecoder(ctx, c.repo, buf[:0], fi.ID, repository.DecodeOldIndex)
 			}
 
 			err = errors.Wrapf(err, "error loading index %v", fi.ID.Str())

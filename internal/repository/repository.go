@@ -457,14 +457,13 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 		var buf []byte
 		for fi := range ch {
 			var err error
-			var idx *Index
-			idx, buf, err = LoadIndexWithDecoder(ctx, r, buf[:0], fi.ID, DecodeIndex)
-			if err != nil && errors.Cause(err) == ErrOldIndexFormat {
-				idx, buf, err = LoadIndexWithDecoder(ctx, r, buf[:0], fi.ID, DecodeOldIndex)
-			}
-
+			buf, err = r.LoadAndDecrypt(ctx, buf[:0], restic.IndexFile, fi.ID)
 			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("unable to load index %v", fi.ID.Str()))
+				return errors.Wrapf(err, "unable to load index %s", fi.ID.Str())
+			}
+			idx, _, err := DecodeIndex(buf)
+			if err != nil {
+				return errors.Wrapf(err, "unable to decode index %s", fi.ID.Str())
 			}
 
 			select {
@@ -576,18 +575,16 @@ func (r *Repository) PrepareCache(indexIDs restic.IDSet) error {
 
 // LoadIndex loads the index id from backend and returns it.
 func LoadIndex(ctx context.Context, repo restic.Repository, id restic.ID) (*Index, error) {
-	idx, _, err := LoadIndexWithDecoder(ctx, repo, nil, id, DecodeIndex)
-	if err == nil {
-		return idx, nil
+	buf, err := repo.LoadAndDecrypt(ctx, nil, restic.IndexFile, id)
+	if err != nil {
+		return nil, err
 	}
 
-	if errors.Cause(err) == ErrOldIndexFormat {
+	idx, oldFormat, err := DecodeIndex(buf)
+	if oldFormat {
 		fmt.Fprintf(os.Stderr, "index %v has old format\n", id.Str())
-		idx, _, err := LoadIndexWithDecoder(ctx, repo, nil, id, DecodeOldIndex)
-		return idx, err
 	}
-
-	return nil, err
+	return idx, err
 }
 
 // SearchKey finds a key with the supplied password, afterwards the config is
