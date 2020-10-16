@@ -95,7 +95,7 @@ func (t *Terminal) run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			if IsProcessBackground() {
+			if IsProcessBackground(t.fd) {
 				// ignore all messages, do nothing, we are in the background process group
 				continue
 			}
@@ -104,7 +104,7 @@ func (t *Terminal) run(ctx context.Context) {
 			return
 
 		case msg := <-t.msg:
-			if IsProcessBackground() {
+			if IsProcessBackground(t.fd) {
 				// ignore all messages, do nothing, we are in the background process group
 				continue
 			}
@@ -136,7 +136,7 @@ func (t *Terminal) run(ctx context.Context) {
 			}
 
 		case stat := <-t.status:
-			if IsProcessBackground() {
+			if IsProcessBackground(t.fd) {
 				// ignore all messages, do nothing, we are in the background process group
 				continue
 			}
