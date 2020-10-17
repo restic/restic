@@ -121,7 +121,7 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 
 			buf, err = c.repo.LoadAndDecrypt(ctx, buf[:0], restic.IndexFile, fi.ID)
 			if err == nil {
-				idx, oldFormat, err = repository.DecodeIndex(buf, fi.ID)
+				idx, oldFormat, err = repository.DecodeIndex(buf)
 			}
 
 			if oldFormat {
