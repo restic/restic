@@ -234,17 +234,21 @@ func (t *Terminal) undoStatus(lines int) {
 	}
 }
 
-// Print writes a line to the terminal.
-func (t *Terminal) Print(line string) {
+func (t *Terminal) print(line string, isErr bool) {
 	// make sure the line ends with a line break
 	if line[len(line)-1] != '\n' {
 		line += "\n"
 	}
 
 	select {
-	case t.msg <- message{line: line}:
+	case t.msg <- message{line: line, err: isErr}:
 	case <-t.closed:
 	}
+}
+
+// Print writes a line to the terminal.
+func (t *Terminal) Print(line string) {
+	t.print(line, false)
 }
 
 // Printf uses fmt.Sprintf to write a line to the terminal.
@@ -255,15 +259,7 @@ func (t *Terminal) Printf(msg string, args ...interface{}) {
 
 // Error writes an error to the terminal.
 func (t *Terminal) Error(line string) {
-	// make sure the line ends with a line break
-	if line[len(line)-1] != '\n' {
-		line += "\n"
-	}
-
-	select {
-	case t.msg <- message{line: line, err: true}:
-	case <-t.closed:
-	}
+	t.print(line, true)
 }
 
 // Errorf uses fmt.Sprintf to write an error line to the terminal.
