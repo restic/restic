@@ -56,11 +56,15 @@ func TestIndexSerialize(t *testing.T) {
 	err := idx.Encode(wr)
 	rtest.OK(t, err)
 
-	idx2, oldFormat, err := repository.DecodeIndex(wr.Bytes())
+	idx2ID := restic.NewRandomID()
+	idx2, oldFormat, err := repository.DecodeIndex(wr.Bytes(), idx2ID)
 	rtest.OK(t, err)
 	rtest.Assert(t, idx2 != nil,
 		"nil returned for decoded index")
 	rtest.Assert(t, !oldFormat, "new index format recognized as old format")
+	indexID, err := idx2.IDs()
+	rtest.OK(t, err)
+	rtest.Equals(t, indexID, restic.IDs{idx2ID})
 
 	wr2 := bytes.NewBuffer(nil)
 	err = idx2.Encode(wr2)
@@ -136,7 +140,7 @@ func TestIndexSerialize(t *testing.T) {
 	rtest.OK(t, err)
 	rtest.Equals(t, restic.IDs{id}, ids)
 
-	idx3, oldFormat, err := repository.DecodeIndex(wr3.Bytes())
+	idx3, oldFormat, err := repository.DecodeIndex(wr3.Bytes(), id)
 	rtest.OK(t, err)
 	rtest.Assert(t, idx3 != nil,
 		"nil returned for decoded index")
@@ -287,7 +291,7 @@ var exampleLookupTest = struct {
 func TestIndexUnserialize(t *testing.T) {
 	oldIdx := restic.IDs{restic.TestParseID("ed54ae36197f4745ebc4b54d10e0f623eaaaedd03013eb7ae90df881b7781452")}
 
-	idx, oldFormat, err := repository.DecodeIndex(docExample)
+	idx, oldFormat, err := repository.DecodeIndex(docExample, restic.NewRandomID())
 	rtest.OK(t, err)
 	rtest.Assert(t, !oldFormat, "new index format recognized as old format")
 
@@ -338,28 +342,32 @@ func initBenchmarkIndexJSON() {
 
 func BenchmarkDecodeIndex(b *testing.B) {
 	benchmarkIndexJSONOnce.Do(initBenchmarkIndexJSON)
+
+	id := restic.NewRandomID()
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, _, err := repository.DecodeIndex(benchmarkIndexJSON)
+		_, _, err := repository.DecodeIndex(benchmarkIndexJSON, id)
 		rtest.OK(b, err)
 	}
 }
 
 func BenchmarkDecodeIndexParallel(b *testing.B) {
 	benchmarkIndexJSONOnce.Do(initBenchmarkIndexJSON)
+	id := restic.NewRandomID()
+
 	b.ResetTimer()
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			_, _, err := repository.DecodeIndex(benchmarkIndexJSON)
+			_, _, err := repository.DecodeIndex(benchmarkIndexJSON, id)
 			rtest.OK(b, err)
 		}
 	})
 }
 
 func TestIndexUnserializeOld(t *testing.T) {
-	idx, oldFormat, err := repository.DecodeIndex(docOldExample)
+	idx, oldFormat, err := repository.DecodeIndex(docOldExample, restic.NewRandomID())
 	rtest.OK(t, err)
 	rtest.Assert(t, oldFormat, "old index format recognized as new format")
 
