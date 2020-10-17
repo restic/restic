@@ -520,7 +520,7 @@ func isErrOldIndex(err error) bool {
 }
 
 // DecodeIndex unserializes an index from buf.
-func DecodeIndex(buf []byte) (idx *Index, oldFormat bool, err error) {
+func DecodeIndex(buf []byte, id restic.ID) (idx *Index, oldFormat bool, err error) {
 	debug.Log("Start decoding index")
 	idxJSON := &jsonIndex{}
 
@@ -563,6 +563,7 @@ func DecodeIndex(buf []byte) (idx *Index, oldFormat bool, err error) {
 		}
 	}
 	idx.supersedes = idxJSON.Supersedes
+	idx.ids = append(idx.ids, id)
 	idx.final = true
 
 	debug.Log("done")

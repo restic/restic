@@ -461,7 +461,7 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 			if err != nil {
 				return errors.Wrapf(err, "unable to load index %s", fi.ID.Str())
 			}
-			idx, _, err := DecodeIndex(buf)
+			idx, _, err := DecodeIndex(buf, fi.ID)
 			if err != nil {
 				return errors.Wrapf(err, "unable to decode index %s", fi.ID.Str())
 			}
@@ -580,7 +580,7 @@ func LoadIndex(ctx context.Context, repo restic.Repository, id restic.ID) (*Inde
 		return nil, err
 	}
 
-	idx, oldFormat, err := DecodeIndex(buf)
+	idx, oldFormat, err := DecodeIndex(buf, id)
 	if oldFormat {
 		fmt.Fprintf(os.Stderr, "index %v has old format\n", id.Str())
 	}
