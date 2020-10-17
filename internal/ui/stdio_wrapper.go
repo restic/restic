@@ -74,13 +74,9 @@ func (w *lineWriter) Write(data []byte) (n int, err error) {
 	return n, err
 }
 
-func (w *lineWriter) Flush() error {
+func (w *lineWriter) Close() error {
 	if w.buf.Len() > 0 {
 		w.print(string(append(w.buf.Bytes(), '\n')))
 	}
 	return nil
-}
-
-func (w *lineWriter) Close() error {
-	return w.Flush()
 }
