@@ -1559,6 +1559,62 @@ func testEdgeCaseRepo(t *testing.T, tarfile string, optionsCheck CheckOptions, o
 	}
 }
 
+// a listOnceBackend only allows listing once per filetype
+// listing filetypes more than once may cause problems with eventually consistent
+// backends (like e.g. AWS S3) as the second listing may be inconsistent to what
+// is expected by the first listing + some operations.
+type listOnceBackend struct {
+	restic.Backend
+	listedFileType map[restic.FileType]bool
+}
+
+func newListOnceBackend(be restic.Backend) *listOnceBackend {
+	return &listOnceBackend{
+		Backend:        be,
+		listedFileType: make(map[restic.FileType]bool),
+	}
+}
+
+func (be *listOnceBackend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
+	if t != restic.LockFile && be.listedFileType[t] {
+		return errors.Errorf("tried listing type %v the second time", t)
+	}
+	be.listedFileType[t] = true
+	return be.Backend.List(ctx, t, fn)
+}
+
+func TestPruneListOnce(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	env.gopts.backendTestHook = func(r restic.Backend) (restic.Backend, error) {
+		return newListOnceBackend(r), nil
+	}
+
+	pruneOpts := PruneOptions{MaxUnused: "0"}
+	checkOpts := CheckOptions{ReadData: true, CheckUnused: true}
+
+	testSetupBackupData(t, env)
+	opts := BackupOptions{}
+
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9")}, opts, env.gopts)
+	firstSnapshot := testRunList(t, "snapshots", env.gopts)
+	rtest.Assert(t, len(firstSnapshot) == 1,
+		"expected one snapshot, got %v", firstSnapshot)
+
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "2")}, opts, env.gopts)
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "3")}, opts, env.gopts)
+
+	snapshotIDs := testRunList(t, "snapshots", env.gopts)
+	rtest.Assert(t, len(snapshotIDs) == 3,
+		"expected 3 snapshot, got %v", snapshotIDs)
+
+	testRunForgetJSON(t, env.gopts)
+	testRunForget(t, env.gopts, firstSnapshot[0].String())
+	testRunPrune(t, env.gopts, pruneOpts)
+	rtest.OK(t, runCheck(checkOpts, env.gopts, nil))
+}
+
 func TestHardLink(t *testing.T) {
 	// this test assumes a test set with a single directory containing hard linked files
 	env, cleanup := withTestEnvironment(t)
