@@ -96,6 +96,10 @@ type BackupOptions struct {
 	TimeStamp               string
 	WithAtime               bool
 	IgnoreInode             bool
+
+	FileReadConcurrency uint
+	SaveBlobConcurrency uint
+	SaveTreeConcurrency uint
 }
 
 var backupOptions BackupOptions
@@ -129,6 +133,10 @@ func init() {
 	f.StringVar(&backupOptions.TimeStamp, "time", "", "`time` of the backup (ex. '2012-11-01 22:08:41') (default: now)")
 	f.BoolVar(&backupOptions.WithAtime, "with-atime", false, "store the atime for all files and directories")
 	f.BoolVar(&backupOptions.IgnoreInode, "ignore-inode", false, "ignore inode number changes when checking for modified files")
+
+	f.UintVar(&backupOptions.FileReadConcurrency, "file-read-concurrency", 0, "sets how many files are read in concurrently by archiver (default: 2)")
+	f.UintVar(&backupOptions.SaveBlobConcurrency, "save-blob-concurrency", 0, "sets how many blobs are hashed and saved concurrently by archiver (default: runtime.NumCPU())")
+	f.UintVar(&backupOptions.SaveTreeConcurrency, "save-tree-concurrency", 0, "sets how many trees are marshalled and saved to the repo concurrently by archiver (default: save-blob-concurrency * 20)")
 }
 
 // filterExisting returns a slice of all existing items, or an error if no
@@ -575,7 +583,11 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	}
 	t.Go(func() error { return sc.Scan(t.Context(gopts.ctx), targets) })
 
-	arch := archiver.New(repo, targetFS, archiver.Options{})
+	arch := archiver.New(repo, targetFS, archiver.Options{
+		FileReadConcurrency: backupOptions.FileReadConcurrency,
+		SaveBlobConcurrency: backupOptions.SaveBlobConcurrency,
+		SaveTreeConcurrency: backupOptions.SaveTreeConcurrency,
+	})
 	arch.SelectByName = selectByNameFilter
 	arch.Select = selectFilter
 	arch.WithAtime = opts.WithAtime
