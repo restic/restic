@@ -266,7 +266,7 @@ func (mi *MasterIndex) MergeFinalIndexes() {
 // of all known indexes in the "supersedes" field. The IDs are also returned in
 // the IDSet obsolete
 // After calling this function, you should remove the obsolete index files.
-func (mi *MasterIndex) Save(ctx context.Context, repo restic.Repository, packBlacklist restic.IDSet, p *progress.Counter) (obsolete restic.IDSet, err error) {
+func (mi *MasterIndex) Save(ctx context.Context, repo restic.Repository, packBlacklist restic.IDSet, extraObsolete restic.IDs, p *progress.Counter) (obsolete restic.IDSet, err error) {
 	mi.idxMutex.Lock()
 	defer mi.idxMutex.Unlock()
 
@@ -274,15 +274,6 @@ func (mi *MasterIndex) Save(ctx context.Context, repo restic.Repository, packBla
 
 	newIndex := NewIndex()
 	obsolete = restic.NewIDSet()
-
-	finalize := func() error {
-		newIndex.Finalize()
-		if _, err := SaveIndex(ctx, repo, newIndex); err != nil {
-			return err
-		}
-		newIndex = NewIndex()
-		return nil
-	}
 
 	for i, idx := range mi.idx {
 		if idx.Final() {
@@ -309,13 +300,23 @@ func (mi *MasterIndex) Save(ctx context.Context, repo restic.Repository, packBla
 			newIndex.StorePack(pbs.packID, pbs.blobs)
 			p.Add(1)
 			if IndexFull(newIndex) {
-				if err := finalize(); err != nil {
+				newIndex.Finalize()
+				if _, err := SaveIndex(ctx, repo, newIndex); err != nil {
 					return nil, err
 				}
+				newIndex = NewIndex()
 			}
 		}
 	}
-	if err := finalize(); err != nil {
+
+	err = newIndex.AddToSupersedes(extraObsolete...)
+	if err != nil {
+		return nil, err
+	}
+	obsolete.Merge(restic.NewIDSet(extraObsolete...))
+
+	newIndex.Finalize()
+	if _, err := SaveIndex(ctx, repo, newIndex); err != nil {
 		return nil, err
 	}
 

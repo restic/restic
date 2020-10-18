@@ -346,7 +346,7 @@ func TestIndexSave(t *testing.T) {
 
 	repo.LoadIndex(context.TODO())
 
-	obsoletes, err := repo.Index().(*repository.MasterIndex).Save(context.TODO(), repo, nil, nil)
+	obsoletes, err := repo.Index().(*repository.MasterIndex).Save(context.TODO(), repo, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("unable to save new index: %v", err)
 	}
