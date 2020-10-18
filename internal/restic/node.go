@@ -506,7 +506,7 @@ func (node Node) sameExtendedAttributes(other Node) bool {
 	return true
 }
 
-func (node *Node) fillUser(stat statT) {
+func (node *Node) fillUser(stat *statT) {
 	uid, gid := stat.uid(), stat.gid()
 	node.UID, node.GID = uid, gid
 	node.User = lookupUsername(uid)
@@ -644,24 +644,11 @@ func (node *Node) fillExtendedAttributes(path string) error {
 	return nil
 }
 
-type statT interface {
-	dev() uint64
-	ino() uint64
-	nlink() uint64
-	uid() uint32
-	gid() uint32
-	rdev() uint64
-	size() int64
-	atim() syscall.Timespec
-	mtim() syscall.Timespec
-	ctim() syscall.Timespec
-}
-
 func mkfifo(path string, mode uint32) (err error) {
 	return mknod(path, mode|syscall.S_IFIFO, 0)
 }
 
-func (node *Node) fillTimes(stat statT) {
+func (node *Node) fillTimes(stat *statT) {
 	ctim := stat.ctim()
 	atim := stat.atim()
 	node.ChangeTime = time.Unix(ctim.Unix())
