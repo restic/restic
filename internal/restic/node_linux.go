@@ -23,7 +23,14 @@ func (node Node) restoreSymlinkTimestamps(path string, utimes [2]syscall.Timespe
 		{Sec: utimes[1].Sec, Nsec: utimes[1].Nsec},
 	}
 
-	err = unix.UtimesNanoAt(int(dir.Fd()), filepath.Base(path), times, unix.AT_SYMLINK_NOFOLLOW)
+	// fd may be uintptr(0) for some filesystems
+	// skip setting
+	fd := int(dir.Fd())
+	if fd == 0 {
+		return nil
+	}
+
+	err = unix.UtimesNanoAt(fd, filepath.Base(path), times, unix.AT_SYMLINK_NOFOLLOW)
 
 	if err != nil {
 		return errors.Wrap(err, "UtimesNanoAt")

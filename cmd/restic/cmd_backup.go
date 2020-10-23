@@ -16,6 +16,7 @@ import (
 
 	"github.com/spf13/cobra"
 	tomb "gopkg.in/tomb.v2"
+	"gopkg.in/yaml.v2"
 
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/debug"
@@ -96,6 +97,17 @@ type BackupOptions struct {
 	TimeStamp               string
 	WithAtime               bool
 	IgnoreInode             bool
+	SftpOpts                BackupSftpOptions
+}
+
+// BackupSftpOptions stores the options for sftp
+type BackupSftpOptions struct {
+	File    string `json:"file" yaml:"file"`
+	Host    string `json:"host" yaml:"host"`
+	Port    int    `json:"port" yaml:"port"`
+	User    string `json:"user" yaml:"user"`
+	Pass    string `json:"pass" yaml:"pass"`
+	KeyFile string `json:"keyfile" yaml:"keyfile"`
 }
 
 var backupOptions BackupOptions
@@ -129,13 +141,20 @@ func init() {
 	f.StringVar(&backupOptions.TimeStamp, "time", "", "`time` of the backup (ex. '2012-11-01 22:08:41') (default: now)")
 	f.BoolVar(&backupOptions.WithAtime, "with-atime", false, "store the atime for all files and directories")
 	f.BoolVar(&backupOptions.IgnoreInode, "ignore-inode", false, "ignore inode number changes when checking for modified files")
+
+	f.StringVar(&backupOptions.SftpOpts.File, "sftp-file", "", "sftp file")
+	f.StringVar(&backupOptions.SftpOpts.Host, "sftp-host", "", "sftp host")
+	f.IntVar(&backupOptions.SftpOpts.Port, "sftp-port", 22, "sftp port")
+	f.StringVar(&backupOptions.SftpOpts.User, "sftp-user", "", "username for sftp")
+	f.StringVar(&backupOptions.SftpOpts.Pass, "sftp-pass", "", "password for sftp")
+	f.StringVar(&backupOptions.SftpOpts.KeyFile, "sftp-key-file", "", "name of private file for sftp")
 }
 
 // filterExisting returns a slice of all existing items, or an error if no
 // items exist at all.
-func filterExisting(items []string) (result []string, err error) {
+func filterExisting(filesys fs.FS, items []string) (result []string, err error) {
 	for _, item := range items {
-		_, err := fs.Lstat(item)
+		_, err := filesys.Lstat(item)
 		if err != nil && os.IsNotExist(errors.Cause(err)) {
 			Warnf("%v does not exist, skipping\n", item)
 			continue
@@ -346,7 +365,7 @@ func readExcludePatternsFromFiles(excludeFiles []string) ([]string, error) {
 }
 
 // collectTargets returns a list of target files/dirs from several sources.
-func collectTargets(opts BackupOptions, args []string) (targets []string, err error) {
+func collectTargets(opts BackupOptions, filesys fs.FS, args []string) (targets []string, err error) {
 	if opts.Stdin {
 		return nil, nil
 	}
@@ -381,7 +400,7 @@ func collectTargets(opts BackupOptions, args []string) (targets []string, err er
 	}
 
 	targets = args
-	targets, err = filterExisting(targets)
+	targets, err = filterExisting(filesys, targets)
 	if err != nil {
 		return nil, err
 	}
@@ -415,13 +434,47 @@ func findParentSnapshot(ctx context.Context, repo restic.Repository, opts Backup
 	return parentID, nil
 }
 
+func readSftpOptionsFromFile(sftpOpts *BackupSftpOptions) error {
+	content, err := ioutil.ReadFile(sftpOpts.File)
+	if err != nil {
+		return err
+	}
+	return yaml.Unmarshal(content, sftpOpts)
+}
+
 func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Terminal, args []string) error {
 	err := opts.Check(gopts, args)
 	if err != nil {
 		return err
 	}
 
-	targets, err := collectTargets(opts, args)
+	var targetFS fs.FS = fs.Local{}
+	if len(opts.SftpOpts.File) != 0 {
+		err := readSftpOptionsFromFile(&opts.SftpOpts)
+		if err != nil {
+			return errors.Wrap(err, fmt.Sprintf("unable to read sftp files %s", opts.SftpOpts.File))
+		}
+	}
+
+	if len(opts.SftpOpts.Host) != 0 {
+		sftpOpts := opts.SftpOpts
+		if len(sftpOpts.User) == 0 {
+			return errors.Errorf("username is not specified")
+		}
+
+		targetFS, err = fs.NewSftp(
+			sftpOpts.Host, sftpOpts.Port, sftpOpts.User, fs.SftpOptions{
+				Password: sftpOpts.Pass,
+				KeyFile:  sftpOpts.KeyFile,
+			},
+		)
+
+		if err != nil {
+			return errors.Fatalf("unable to connect to sftp: %v", err)
+		}
+	}
+
+	targets, err := collectTargets(opts, targetFS, args)
 	if err != nil {
 		return err
 	}
@@ -549,7 +602,6 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		return true
 	}
 
-	var targetFS fs.FS = fs.Local{}
 	if opts.Stdin {
 		if !gopts.JSON {
 			p.V("read data from stdin")
