@@ -11,6 +11,7 @@ require (
 	github.com/dchest/siphash v1.2.2
 	github.com/dnaeon/go-vcr v1.0.1 // indirect
 	github.com/elithrar/simple-scrypt v1.3.0
+	github.com/go-ole/go-ole v1.2.4
 	github.com/google/go-cmp v0.5.2
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect
 	github.com/hashicorp/golang-lru v0.5.4

@@ -1,0 +1,12 @@
+Enhancement: Add support for Volume Shadow Copy Service (VSS) on Windows
+
+Volume Shadow Copy Service allows read access to files that are locked by
+another process using an exclusive lock through a filesystem snapshot. Restic
+was unable to backup those files before. This update enables backing up these
+files.
+
+This needs to be enabled explicitely using the --use-fs-snapshot option of the
+backup command.
+
+https://github.com/restic/restic/issues/340
+https://github.com/restic/restic/pull/2274

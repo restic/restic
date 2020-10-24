@@ -50,7 +50,24 @@ still get a nice live status display. Be aware that the live status shows the
 processed files and not the transferred data. Transferred volume might be lower
 (due to de-duplication) or higher.
 
-If you run the command again, restic will create another snapshot of
+On Windows, the ``--use-fs-snapshot`` option will use Windows' Volume Shadow Copy
+Service (VSS) when creating backups. Restic will transparently create a VSS
+snapshot for each volume that contains files to backup. Files are read from the
+VSS snapshot instead of the regular filesystem. This allows to backup files that are
+exclusively locked by another process during the backup.
+
+By default VSS ignores Outlook OST files. This is not a restriction of restic
+but the default Windows VSS configuration. The files not to snapshot are
+configured in the Windows registry under the following key:
+
+.. code-block:: console
+
+    HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\BackupRestore\FilesNotToSnapshot
+
+For more details refer the official Windows documentation e.g. the article
+``Registry Keys and Values for Backup and Restore``.
+
+If you run the backup command again, restic will create another snapshot of
 your data, but this time it's even faster and no new data was added to the
 repository (since all data is already there). This is de-duplication at work!
 

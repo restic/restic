@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -96,6 +97,7 @@ type BackupOptions struct {
 	TimeStamp               string
 	WithAtime               bool
 	IgnoreInode             bool
+	UseFsSnapshot           bool
 }
 
 var backupOptions BackupOptions
@@ -129,6 +131,9 @@ func init() {
 	f.StringVar(&backupOptions.TimeStamp, "time", "", "`time` of the backup (ex. '2012-11-01 22:08:41') (default: now)")
 	f.BoolVar(&backupOptions.WithAtime, "with-atime", false, "store the atime for all files and directories")
 	f.BoolVar(&backupOptions.IgnoreInode, "ignore-inode", false, "ignore inode number changes when checking for modified files")
+	if runtime.GOOS == "windows" {
+		f.BoolVar(&backupOptions.UseFsSnapshot, "use-fs-snapshot", false, "use filesystem snapshot where possible (currently only Windows VSS)")
+	}
 }
 
 // filterExisting returns a slice of all existing items, or an error if no
@@ -550,6 +555,25 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	}
 
 	var targetFS fs.FS = fs.Local{}
+	if runtime.GOOS == "windows" && opts.UseFsSnapshot {
+		if !fs.HasSufficientPrivilegesForVSS() {
+			return errors.Fatal("user doesn't have sufficient privileges to use VSS snapshots\n")
+		}
+
+		errorHandler := func(item string, err error) error {
+			return p.Error(item, nil, err)
+		}
+
+		messageHandler := func(msg string, args ...interface{}) {
+			if !gopts.JSON {
+				p.P(msg, args...)
+			}
+		}
+
+		localVss := fs.NewLocalVss(errorHandler, messageHandler)
+		defer localVss.DeleteSnapshots()
+		targetFS = localVss
+	}
 	if opts.Stdin {
 		if !gopts.JSON {
 			p.V("read data from stdin")

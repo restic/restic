@@ -21,6 +21,7 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/filter"
+	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -281,11 +282,21 @@ func testSetupBackupData(t testing.TB, env *testEnvironment) string {
 }
 
 func TestBackup(t *testing.T) {
+	testBackup(t, false)
+}
+
+func TestBackupWithFilesystemSnapshots(t *testing.T) {
+	if runtime.GOOS == "windows" && fs.HasSufficientPrivilegesForVSS() {
+		testBackup(t, true)
+	}
+}
+
+func testBackup(t *testing.T, useFsSnapshot bool) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
 	testSetupBackupData(t, env)
-	opts := BackupOptions{}
+	opts := BackupOptions{UseFsSnapshot: useFsSnapshot}
 
 	// first backup
 	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
