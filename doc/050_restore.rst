@@ -71,10 +71,11 @@ command to serve the repository with FUSE:
     Now serving /srv/restic-repo at /mnt/restic
     When finished, quit with Ctrl-c or umount the mountpoint.
 
-Mounting repositories via FUSE is not possible on OpenBSD, Solaris/illumos
-and Windows. For Linux, the ``fuse`` kernel module needs to be loaded. For
-FreeBSD, you may need to install FUSE and load the kernel module (``kldload
-fuse``).
+Mounting repositories via FUSE is only possible on Linux, macOS and FreeBSD.
+On Linux, the ``fuse`` kernel module needs to be loaded and the ``fusermount``
+command needs to be in the ``PATH``. On macOS, you need `FUSE for macOS
+<https://osxfuse.github.io/>`__. On FreeBSD, you may need to install FUSE
+and load the kernel module (``kldload fuse``).
 
 Restic supports storage and preservation of hard links. However, since
 hard links exist in the scope of a filesystem by definition, restoring

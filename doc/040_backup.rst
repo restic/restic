@@ -433,6 +433,8 @@ environment variables. The following lists these environment variables:
     RESTIC_CACHE_DIR                    Location of the cache directory
     RESTIC_PROGRESS_FPS                 Frames per second by which the progress bar is updated
 
+    TMPDIR                              Location for temporary files
+
     AWS_ACCESS_KEY_ID                   Amazon S3 access key ID
     AWS_SECRET_ACCESS_KEY               Amazon S3 secret access key
     AWS_DEFAULT_REGION                  Amazon S3 default region
@@ -470,12 +472,12 @@ environment variables. The following lists these environment variables:
 
     RCLONE_BWLIMIT                      rclone bandwidth limit
 
-In addition to restic-specific environment variables, the following system-wide environment variables
-are taken into account for various operations:
+See :ref:`caching` for the rules concerning cache locations when
+``RESTIC_CACHE_DIR`` is not set.
 
- * ``$XDG_CACHE_HOME/restic``, ``$HOME/.cache/restic``: :ref:`caching`.
- * ``$TMPDIR``: :ref:`temporary_files`.
- * ``$PATH/fusermount``: Binary for ``restic mount``.
+The external programs that restic may execute include ``rclone`` (for rclone
+backends) and ``ssh`` (for the SFTP backend). These may respond to further
+environment variables and configuration files; see their respective manuals.
 
 
 Exit status codes
