@@ -22,9 +22,23 @@ func Test_acl_decode(t *testing.T) {
 			want: "user::rw-\nuser:0:rwx\nuser:65534:rwx\ngroup::rwx\nmask::rwx\nother::r--\n",
 		},
 		{
+			name: "decode group",
+			args: args{
+				xattr: []byte{2, 0, 0, 0, 8, 0, 1, 0, 254, 255, 0, 0},
+			},
+			want: "group:65534:--x\n",
+		},
+		{
 			name: "decode fail",
 			args: args{
 				xattr: []byte("abctest"),
+			},
+			want: "",
+		},
+		{
+			name: "decode empty fail",
+			args: args{
+				xattr: []byte(""),
 			},
 			want: "",
 		},
@@ -35,6 +49,10 @@ func Test_acl_decode(t *testing.T) {
 			a.decode(tt.args.xattr)
 			if tt.want != a.String() {
 				t.Errorf("acl.decode() = %v, want: %v", a.String(), tt.want)
+			}
+			a.decode(tt.args.xattr)
+			if tt.want != a.String() {
+				t.Errorf("second acl.decode() = %v, want: %v", a.String(), tt.want)
 			}
 		})
 	}
