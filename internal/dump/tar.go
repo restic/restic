@@ -87,6 +87,8 @@ func tarNode(ctx context.Context, tw *tar.Writer, node *restic.Node, repo restic
 		Mode:       int64(node.Mode.Perm()), // c_IS* constants are added later
 		Uid:        int(node.UID),
 		Gid:        int(node.GID),
+		Uname:      node.User,
+		Gname:      node.Group,
 		ModTime:    node.ModTime,
 		AccessTime: node.AccessTime,
 		ChangeTime: node.ChangeTime,
