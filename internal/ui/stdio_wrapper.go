@@ -55,32 +55,18 @@ func (w *lineWriter) Write(data []byte) (n int, err error) {
 
 	// look for line breaks
 	buf := w.buf.Bytes()
-	skip := 0
-	for i := 0; i < len(buf); {
-		if buf[i] == '\n' {
-			// found line
-			w.print(string(buf[:i+1]))
-			buf = buf[i+1:]
-			skip += i + 1
-			i = 0
-			continue
-		}
-
-		i++
+	i := bytes.LastIndexByte(buf, '\n')
+	if i != -1 {
+		w.print(string(buf[:i+1]))
+		w.buf.Next(i + 1)
 	}
-
-	_ = w.buf.Next(skip)
 
 	return n, err
 }
 
-func (w *lineWriter) Flush() error {
+func (w *lineWriter) Close() error {
 	if w.buf.Len() > 0 {
 		w.print(string(append(w.buf.Bytes(), '\n')))
 	}
 	return nil
-}
-
-func (w *lineWriter) Close() error {
-	return w.Flush()
 }
