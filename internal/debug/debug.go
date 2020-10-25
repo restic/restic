@@ -12,8 +12,6 @@ import (
 	"strings"
 
 	"github.com/restic/restic/internal/fs"
-
-	"github.com/restic/restic/internal/errors"
 )
 
 var opts struct {
@@ -50,20 +48,7 @@ func initDebugLogger() {
 
 	fmt.Fprintf(os.Stderr, "debug log file %v\n", debugfile)
 
-	f, err := fs.OpenFile(debugfile, os.O_WRONLY|os.O_APPEND, 0600)
-
-	if err == nil {
-		_, err = f.Seek(2, 0)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "unable to seek to the end of %v: %v\n", debugfile, err)
-			os.Exit(3)
-		}
-	}
-
-	if err != nil && os.IsNotExist(errors.Cause(err)) {
-		f, err = fs.OpenFile(debugfile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
-	}
-
+	f, err := fs.OpenFile(debugfile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to open debug log file: %v\n", err)
 		os.Exit(2)
