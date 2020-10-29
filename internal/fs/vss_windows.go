@@ -741,7 +741,9 @@ func NewVssSnapshot(
 		}
 		return VssSnapshot{}, err
 	}
-	defer oleIUnknown.Release()
+	if oleIUnknown != nil {
+		defer oleIUnknown.Release()
+	}
 
 	switch HRESULT(result) {
 	case S_OK:
