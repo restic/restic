@@ -698,6 +698,10 @@ func initializeVssCOMInterface() (*ole.IUnknown, uintptr, error) {
 	var oleIUnknown *ole.IUnknown
 	result, _, _ := vssInstance.Call(uintptr(unsafe.Pointer(&oleIUnknown)))
 
+	if oleIUnknown == nil {
+		return nil, result, newVssError("Failed to initialize COM interface", HRESULT(result))
+	}
+
 	return oleIUnknown, result, nil
 }
 
@@ -735,14 +739,11 @@ func NewVssSnapshot(
 	timeoutInMillis := uint32(timeoutInSeconds * 1000)
 
 	oleIUnknown, result, err := initializeVssCOMInterface()
-	if err != nil {
-		if oleIUnknown != nil {
-			oleIUnknown.Release()
-		}
-		return VssSnapshot{}, err
-	}
 	if oleIUnknown != nil {
 		defer oleIUnknown.Release()
+	}
+	if err != nil {
+		return VssSnapshot{}, err
 	}
 
 	switch HRESULT(result) {
