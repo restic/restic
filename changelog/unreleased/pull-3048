@@ -1,0 +1,9 @@
+Enhancement: Check now checks index when reading packs
+
+Restic used to only verfiy the pack file content when calling `check --read-data`
+`check --read-data-subset` but did not check if the blobs within the pack are
+correctly contained in the index.
+This check is now added and may give an "Blob ID is not contained in index" error.
+If the index is not correct, it can be rebuilt by using the `rebuild-index` command.
+
+https://github.com/restic/restic/pull/3048
