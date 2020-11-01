@@ -52,22 +52,6 @@ func (mi *MasterIndex) LookupSize(id restic.ID, tpe restic.BlobType) (uint, bool
 	return 0, false
 }
 
-// ListPack returns the list of blobs in a pack. The first matching index is
-// returned, or nil if no index contains information about the pack id.
-func (mi *MasterIndex) ListPack(id restic.ID) (list []restic.PackedBlob) {
-	mi.idxMutex.RLock()
-	defer mi.idxMutex.RUnlock()
-
-	for _, idx := range mi.idx {
-		list := idx.ListPack(id)
-		if len(list) > 0 {
-			return list
-		}
-	}
-
-	return nil
-}
-
 // AddPending adds a given blob to list of pending Blobs
 // Before doing so it checks if this blob is already known.
 // Returns true if adding was successful and false if the blob
