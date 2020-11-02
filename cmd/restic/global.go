@@ -687,15 +687,15 @@ func open(s string, gopts GlobalOptions, opts options.Options) (restic.Backend, 
 
 	switch loc.Scheme {
 	case "local":
-		be, err = local.Open(cfg.(local.Config))
+		be, err = local.Open(globalOptions.ctx, cfg.(local.Config))
 		// wrap the backend in a LimitBackend so that the throughput is limited
 		be = limiter.LimitBackend(be, lim)
 	case "sftp":
-		be, err = sftp.Open(cfg.(sftp.Config))
+		be, err = sftp.Open(globalOptions.ctx, cfg.(sftp.Config))
 		// wrap the backend in a LimitBackend so that the throughput is limited
 		be = limiter.LimitBackend(be, lim)
 	case "s3":
-		be, err = s3.Open(cfg.(s3.Config), rt)
+		be, err = s3.Open(globalOptions.ctx, cfg.(s3.Config), rt)
 	case "gs":
 		be, err = gs.Open(cfg.(gs.Config), rt)
 	case "azure":
@@ -754,11 +754,11 @@ func create(s string, opts options.Options) (restic.Backend, error) {
 
 	switch loc.Scheme {
 	case "local":
-		return local.Create(cfg.(local.Config))
+		return local.Create(globalOptions.ctx, cfg.(local.Config))
 	case "sftp":
-		return sftp.Create(cfg.(sftp.Config))
+		return sftp.Create(globalOptions.ctx, cfg.(sftp.Config))
 	case "s3":
-		return s3.Create(cfg.(s3.Config), rt)
+		return s3.Create(globalOptions.ctx, cfg.(s3.Config), rt)
 	case "gs":
 		return gs.Create(cfg.(gs.Config), rt)
 	case "azure":

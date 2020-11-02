@@ -27,9 +27,9 @@ var _ restic.Backend = &Local{}
 const defaultLayout = "default"
 
 // Open opens the local backend as specified by config.
-func Open(cfg Config) (*Local, error) {
+func Open(ctx context.Context, cfg Config) (*Local, error) {
 	debug.Log("open local backend at %v (layout %q)", cfg.Path, cfg.Layout)
-	l, err := backend.ParseLayout(&backend.LocalFilesystem{}, cfg.Layout, defaultLayout, cfg.Path)
+	l, err := backend.ParseLayout(ctx, &backend.LocalFilesystem{}, cfg.Layout, defaultLayout, cfg.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -39,10 +39,10 @@ func Open(cfg Config) (*Local, error) {
 
 // Create creates all the necessary files and directories for a new local
 // backend at dir. Afterwards a new config blob should be created.
-func Create(cfg Config) (*Local, error) {
+func Create(ctx context.Context, cfg Config) (*Local, error) {
 	debug.Log("create local backend at %v (layout %q)", cfg.Path, cfg.Layout)
 
-	l, err := backend.ParseLayout(&backend.LocalFilesystem{}, cfg.Layout, defaultLayout, cfg.Path)
+	l, err := backend.ParseLayout(ctx, &backend.LocalFilesystem{}, cfg.Layout, defaultLayout, cfg.Path)
 	if err != nil {
 		return nil, err
 	}

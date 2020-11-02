@@ -42,7 +42,7 @@ func TestLayout(t *testing.T) {
 			rtest.SetupTarTestFixture(t, path, filepath.Join("..", "testdata", test.filename))
 
 			repo := filepath.Join(path, "repo")
-			be, err := sftp.Open(sftp.Config{
+			be, err := sftp.Open(context.TODO(), sftp.Config{
 				Command: fmt.Sprintf("%q -e", sftpServer),
 				Path:    repo,
 				Layout:  test.layout,

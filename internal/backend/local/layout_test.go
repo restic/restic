@@ -36,7 +36,7 @@ func TestLayout(t *testing.T) {
 			rtest.SetupTarTestFixture(t, path, filepath.Join("..", "testdata", test.filename))
 
 			repo := filepath.Join(path, "repo")
-			be, err := Open(Config{
+			be, err := Open(context.TODO(), Config{
 				Path:   repo,
 				Layout: test.layout,
 			})

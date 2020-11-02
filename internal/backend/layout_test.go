@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"context"
 	"fmt"
 	"path"
 	"path/filepath"
@@ -371,7 +372,7 @@ func TestDetectLayout(t *testing.T) {
 			t.Run(fmt.Sprintf("%v/fs-%T", test.filename, fs), func(t *testing.T) {
 				rtest.SetupTarTestFixture(t, path, filepath.Join("testdata", test.filename))
 
-				layout, err := DetectLayout(fs, filepath.Join(path, "repo"))
+				layout, err := DetectLayout(context.TODO(), fs, filepath.Join(path, "repo"))
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -409,7 +410,7 @@ func TestParseLayout(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.layoutName, func(t *testing.T) {
-			layout, err := ParseLayout(&LocalFilesystem{}, test.layoutName, test.defaultLayoutName, filepath.Join(path, "repo"))
+			layout, err := ParseLayout(context.TODO(), &LocalFilesystem{}, test.layoutName, test.defaultLayoutName, filepath.Join(path, "repo"))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -441,7 +442,7 @@ func TestParseLayoutInvalid(t *testing.T) {
 
 	for _, name := range invalidNames {
 		t.Run(name, func(t *testing.T) {
-			layout, err := ParseLayout(nil, name, "", path)
+			layout, err := ParseLayout(context.TODO(), nil, name, "", path)
 			if err == nil {
 				t.Fatalf("expected error not found for layout name %v, layout is %v", name, layout)
 			}

@@ -76,7 +76,7 @@ func TestRepository(t testing.TB) (r restic.Repository, cleanup func()) {
 	if dir != "" {
 		_, err := os.Stat(dir)
 		if err != nil {
-			be, err := local.Create(local.Config{Path: dir})
+			be, err := local.Create(context.TODO(), local.Config{Path: dir})
 			if err != nil {
 				t.Fatalf("error creating local backend at %v: %v", dir, err)
 			}
@@ -93,7 +93,7 @@ func TestRepository(t testing.TB) (r restic.Repository, cleanup func()) {
 
 // TestOpenLocal opens a local repository.
 func TestOpenLocal(t testing.TB, dir string) (r restic.Repository) {
-	be, err := local.Open(local.Config{Path: dir})
+	be, err := local.Open(context.TODO(), local.Config{Path: dir})
 	if err != nil {
 		t.Fatal(err)
 	}
