@@ -140,13 +140,15 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 		return nil
 	}
 
+	excludePatterns := filter.ParsePatterns(opts.Exclude)
+	insensitiveExcludePatterns := filter.ParsePatterns(opts.InsensitiveExclude)
 	selectExcludeFilter := func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
-		matched, _, err := filter.List(opts.Exclude, item)
+		matched, err := filter.List(excludePatterns, item)
 		if err != nil {
 			Warnf("error for exclude pattern: %v", err)
 		}
 
-		matchedInsensitive, _, err := filter.List(opts.InsensitiveExclude, strings.ToLower(item))
+		matchedInsensitive, err := filter.List(insensitiveExcludePatterns, strings.ToLower(item))
 		if err != nil {
 			Warnf("error for iexclude pattern: %v", err)
 		}
@@ -161,13 +163,15 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 		return selectedForRestore, childMayBeSelected
 	}
 
+	includePatterns := filter.ParsePatterns(opts.Include)
+	insensitiveIncludePatterns := filter.ParsePatterns(opts.InsensitiveInclude)
 	selectIncludeFilter := func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
-		matched, childMayMatch, err := filter.List(opts.Include, item)
+		matched, childMayMatch, err := filter.ListWithChild(includePatterns, item)
 		if err != nil {
 			Warnf("error for include pattern: %v", err)
 		}
 
-		matchedInsensitive, childMayMatchInsensitive, err := filter.List(opts.InsensitiveInclude, strings.ToLower(item))
+		matchedInsensitive, childMayMatchInsensitive, err := filter.ListWithChild(insensitiveIncludePatterns, strings.ToLower(item))
 		if err != nil {
 			Warnf("error for iexclude pattern: %v", err)
 		}

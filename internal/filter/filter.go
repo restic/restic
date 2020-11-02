@@ -11,6 +11,47 @@ import (
 // second argument.
 var ErrBadString = errors.New("filter.Match: string is empty")
 
+type patternPart struct {
+	pattern  string // First is "/" for absolute pattern; "" for "**".
+	isSimple bool
+}
+
+// Pattern represents a preparsed filter pattern
+type Pattern []patternPart
+
+func prepareStr(str string) ([]string, error) {
+	if str == "" {
+		return nil, ErrBadString
+	}
+	return splitPath(str), nil
+}
+
+func preparePattern(pattern string) Pattern {
+	parts := splitPath(filepath.Clean(pattern))
+	patterns := make([]patternPart, len(parts))
+	for i, part := range parts {
+		isSimple := !strings.ContainsAny(part, "\\[]*?")
+		// Replace "**" with the empty string to get faster comparisons
+		// (length-check only) in hasDoubleWildcard.
+		if part == "**" {
+			part = ""
+		}
+		patterns[i] = patternPart{part, isSimple}
+	}
+
+	return patterns
+}
+
+// Split p into path components. Assuming p has been Cleaned, no component
+// will be empty. For absolute paths, the first component is "/".
+func splitPath(p string) []string {
+	parts := strings.Split(filepath.ToSlash(p), "/")
+	if parts[0] == "" {
+		parts[0] = "/"
+	}
+	return parts
+}
+
 // Match returns true if str matches the pattern. When the pattern is
 // malformed, filepath.ErrBadPattern is returned. The empty pattern matches
 // everything, when str is the empty string ErrBadString is returned.
@@ -26,20 +67,12 @@ func Match(pattern, str string) (matched bool, err error) {
 		return true, nil
 	}
 
-	pattern = filepath.Clean(pattern)
+	patterns := preparePattern(pattern)
+	strs, err := prepareStr(str)
 
-	if str == "" {
-		return false, ErrBadString
+	if err != nil {
+		return false, err
 	}
-
-	// convert file path separator to '/'
-	if filepath.Separator != '/' {
-		pattern = strings.Replace(pattern, string(filepath.Separator), "/", -1)
-		str = strings.Replace(str, string(filepath.Separator), "/", -1)
-	}
-
-	patterns := strings.Split(pattern, "/")
-	strs := strings.Split(str, "/")
 
 	return match(patterns, strs)
 }
@@ -59,26 +92,18 @@ func ChildMatch(pattern, str string) (matched bool, err error) {
 		return true, nil
 	}
 
-	pattern = filepath.Clean(pattern)
+	patterns := preparePattern(pattern)
+	strs, err := prepareStr(str)
 
-	if str == "" {
-		return false, ErrBadString
+	if err != nil {
+		return false, err
 	}
-
-	// convert file path separator to '/'
-	if filepath.Separator != '/' {
-		pattern = strings.Replace(pattern, string(filepath.Separator), "/", -1)
-		str = strings.Replace(str, string(filepath.Separator), "/", -1)
-	}
-
-	patterns := strings.Split(pattern, "/")
-	strs := strings.Split(str, "/")
 
 	return childMatch(patterns, strs)
 }
 
-func childMatch(patterns, strs []string) (matched bool, err error) {
-	if patterns[0] != "" {
+func childMatch(patterns Pattern, strs []string) (matched bool, err error) {
+	if patterns[0].pattern != "/" {
 		// relative pattern can always be nested down
 		return true, nil
 	}
@@ -99,9 +124,9 @@ func childMatch(patterns, strs []string) (matched bool, err error) {
 	return match(patterns[0:l], strs)
 }
 
-func hasDoubleWildcard(list []string) (ok bool, pos int) {
+func hasDoubleWildcard(list Pattern) (ok bool, pos int) {
 	for i, item := range list {
-		if item == "**" {
+		if item.pattern == "" {
 			return true, i
 		}
 	}
@@ -109,14 +134,18 @@ func hasDoubleWildcard(list []string) (ok bool, pos int) {
 	return false, 0
 }
 
-func match(patterns, strs []string) (matched bool, err error) {
+func match(patterns Pattern, strs []string) (matched bool, err error) {
 	if ok, pos := hasDoubleWildcard(patterns); ok {
 		// gradually expand '**' into separate wildcards
+		newPat := make(Pattern, len(strs))
+		// copy static prefix once
+		copy(newPat, patterns[:pos])
 		for i := 0; i <= len(strs)-len(patterns)+1; i++ {
-			newPat := make([]string, pos)
-			copy(newPat, patterns[:pos])
-			for k := 0; k < i; k++ {
-				newPat = append(newPat, "*")
+			// limit to static prefix and already appended '*'
+			newPat := newPat[:pos+i]
+			// in the first iteration the wildcard expands to nothing
+			if i > 0 {
+				newPat[pos+i-1] = patternPart{"*", false}
 			}
 			newPat = append(newPat, patterns[pos+1:]...)
 
@@ -138,13 +167,27 @@ func match(patterns, strs []string) (matched bool, err error) {
 	}
 
 	if len(patterns) <= len(strs) {
+		minOffset := 0
+		maxOffset := len(strs) - len(patterns)
+		// special case absolute patterns
+		if patterns[0].pattern == "/" {
+			maxOffset = 0
+		} else if strs[0] == "/" {
+			// skip absolute path marker if pattern is not rooted
+			minOffset = 1
+		}
 	outer:
-		for offset := len(strs) - len(patterns); offset >= 0; offset-- {
+		for offset := maxOffset; offset >= minOffset; offset-- {
 
 			for i := len(patterns) - 1; i >= 0; i-- {
-				ok, err := filepath.Match(patterns[i], strs[offset+i])
-				if err != nil {
-					return false, errors.Wrap(err, "Match")
+				var ok bool
+				if patterns[i].isSimple {
+					ok = patterns[i].pattern == strs[offset+i]
+				} else {
+					ok, err = filepath.Match(patterns[i].pattern, strs[offset+i])
+					if err != nil {
+						return false, errors.Wrap(err, "Match")
+					}
 				}
 
 				if !ok {
@@ -159,22 +202,55 @@ func match(patterns, strs []string) (matched bool, err error) {
 	return false, nil
 }
 
-// List returns true if str matches one of the patterns. Empty patterns are
-// ignored.
-func List(patterns []string, str string) (matched bool, childMayMatch bool, err error) {
+// ParsePatterns prepares a list of patterns for use with List.
+func ParsePatterns(patterns []string) []Pattern {
+	patpat := make([]Pattern, 0)
 	for _, pat := range patterns {
 		if pat == "" {
 			continue
 		}
 
-		m, err := Match(pat, str)
+		pats := preparePattern(pat)
+		patpat = append(patpat, pats)
+	}
+	return patpat
+}
+
+// List returns true if str matches one of the patterns. Empty patterns are ignored.
+func List(patterns []Pattern, str string) (matched bool, err error) {
+	matched, _, err = list(patterns, false, str)
+	return matched, err
+}
+
+// ListWithChild returns true if str matches one of the patterns. Empty patterns are ignored.
+func ListWithChild(patterns []Pattern, str string) (matched bool, childMayMatch bool, err error) {
+	return list(patterns, true, str)
+}
+
+// List returns true if str matches one of the patterns. Empty patterns are ignored.
+func list(patterns []Pattern, checkChildMatches bool, str string) (matched bool, childMayMatch bool, err error) {
+	if len(patterns) == 0 {
+		return false, false, nil
+	}
+
+	strs, err := prepareStr(str)
+	if err != nil {
+		return false, false, err
+	}
+	for _, pat := range patterns {
+		m, err := match(pat, strs)
 		if err != nil {
 			return false, false, err
 		}
 
-		c, err := ChildMatch(pat, str)
-		if err != nil {
-			return false, false, err
+		var c bool
+		if checkChildMatches {
+			c, err = childMatch(pat, strs)
+			if err != nil {
+				return false, false, err
+			}
+		} else {
+			c = true
 		}
 
 		matched = matched || m
