@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -65,6 +66,14 @@ func TestWriteTar(t *testing.T) {
 				"secondDir": archiver.TestDir{
 					"another2": archiver.TestFile{Content: "string"},
 				},
+			},
+			target: "/",
+		},
+		{
+			name: "file and symlink in root",
+			args: archiver.TestDir{
+				"file1": archiver.TestFile{Content: "string"},
+				"file2": archiver.TestSymlink{Target: "file1"},
 			},
 			target: "/",
 		},
@@ -128,7 +137,7 @@ func checkTar(t *testing.T, testDir string, srcTar *bytes.Buffer) error {
 		}
 
 		matchPath := filepath.Join(testDir, hdr.Name)
-		match, err := os.Stat(matchPath)
+		match, err := os.Lstat(matchPath)
 		if err != nil {
 			return err
 		}
@@ -140,7 +149,12 @@ func checkTar(t *testing.T, testDir string, srcTar *bytes.Buffer) error {
 			return fmt.Errorf("modTime does not match, got: %s, want: %s", fileTime, tarTime)
 		}
 
-		if hdr.Typeflag == tar.TypeDir {
+		if os.FileMode(hdr.Mode).Perm() != match.Mode().Perm() || os.FileMode(hdr.Mode)&^os.ModePerm != 0 {
+			return fmt.Errorf("mode does not match, got: %v, want: %v", os.FileMode(hdr.Mode), match.Mode())
+		}
+
+		switch hdr.Typeflag {
+		case tar.TypeDir:
 			// this is a folder
 			if hdr.Name == "." {
 				// we don't need to check the root folder
@@ -151,8 +165,18 @@ func checkTar(t *testing.T, testDir string, srcTar *bytes.Buffer) error {
 			if filepath.Base(hdr.Name) != filebase {
 				return fmt.Errorf("foldernames don't match got %v want %v", filepath.Base(hdr.Name), filebase)
 			}
-
-		} else {
+			if !strings.HasSuffix(hdr.Name, "/") {
+				return fmt.Errorf("foldernames must end with separator got %v", hdr.Name)
+			}
+		case tar.TypeSymlink:
+			target, err := fs.Readlink(matchPath)
+			if err != nil {
+				return err
+			}
+			if target != hdr.Linkname {
+				return fmt.Errorf("symlink target does not match, got %s want %s", target, hdr.Linkname)
+			}
+		default:
 			if match.Size() != hdr.Size {
 				return fmt.Errorf("size does not match got %v want %v", hdr.Size, match.Size())
 			}

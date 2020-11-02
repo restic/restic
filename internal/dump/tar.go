@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"context"
 	"io"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -65,6 +66,15 @@ func tarTree(ctx context.Context, repo restic.Repository, rootNode *restic.Node,
 	return err
 }
 
+// copied from archive/tar.FileInfoHeader
+const (
+	// Mode constants from the USTAR spec:
+	// See http://pubs.opengroup.org/onlinepubs/9699919799/utilities/pax.html#tag_20_92_13_06
+	c_ISUID = 04000 // Set uid
+	c_ISGID = 02000 // Set gid
+	c_ISVTX = 01000 // Save text (sticky bit)
+)
+
 func tarNode(ctx context.Context, tw *tar.Writer, node *restic.Node, repo restic.Repository) error {
 	relPath, err := filepath.Rel("/", node.Path)
 	if err != nil {
@@ -74,13 +84,30 @@ func tarNode(ctx context.Context, tw *tar.Writer, node *restic.Node, repo restic
 	header := &tar.Header{
 		Name:       filepath.ToSlash(relPath),
 		Size:       int64(node.Size),
-		Mode:       int64(node.Mode),
+		Mode:       int64(node.Mode.Perm()), // c_IS* constants are added later
 		Uid:        int(node.UID),
 		Gid:        int(node.GID),
+		Uname:      node.User,
+		Gname:      node.Group,
 		ModTime:    node.ModTime,
 		AccessTime: node.AccessTime,
 		ChangeTime: node.ChangeTime,
 		PAXRecords: parseXattrs(node.ExtendedAttributes),
+	}
+
+	// adapted from archive/tar.FileInfoHeader
+	if node.Mode&os.ModeSetuid != 0 {
+		header.Mode |= c_ISUID
+	}
+	if node.Mode&os.ModeSetgid != 0 {
+		header.Mode |= c_ISGID
+	}
+	if node.Mode&os.ModeSticky != 0 {
+		header.Mode |= c_ISVTX
+	}
+
+	if IsFile(node) {
+		header.Typeflag = tar.TypeReg
 	}
 
 	if IsLink(node) {
@@ -90,6 +117,7 @@ func tarNode(ctx context.Context, tw *tar.Writer, node *restic.Node, repo restic
 
 	if IsDir(node) {
 		header.Typeflag = tar.TypeDir
+		header.Name += "/"
 	}
 
 	err = tw.WriteHeader(header)
