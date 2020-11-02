@@ -277,5 +277,5 @@ func TestRepackWrongBlob(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected repack to fail but got no error")
 	}
-	t.Log(err)
+	t.Logf("found expected error: %v", err)
 }
