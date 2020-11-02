@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/text/width"
 )
 
 // Terminal is used to write messages and display status lines which can be
@@ -268,18 +269,33 @@ func (t *Terminal) Errorf(msg string, args ...interface{}) {
 	t.Error(s)
 }
 
-// truncate returns a string that has at most maxlen characters. If maxlen is
-// negative, the empty string is returned.
-func truncate(s string, maxlen int) string {
-	if maxlen < 0 {
-		return ""
-	}
-
-	if len(s) < maxlen {
+// Truncate s to fit in width (number of terminal cells) w.
+// If w is negative, returns the empty string.
+func truncate(s string, w int) string {
+	if len(s) < w {
+		// Since the display width of a character is at most 2
+		// and all of ASCII (single byte per rune) has width 1,
+		// no character takes more bytes to encode than its width.
 		return s
 	}
 
-	return s[:maxlen]
+	for i, r := range s {
+		// Determine width of the rune. This cannot be determined without
+		// knowing the terminal font, so let's just be careful and treat
+		// all ambigous characters as full-width, i.e., two cells.
+		wr := 2
+		switch width.LookupRune(r).Kind() {
+		case width.Neutral, width.EastAsianNarrow:
+			wr = 1
+		}
+
+		w -= wr
+		if w < 0 {
+			return s[:i]
+		}
+	}
+
+	return s
 }
 
 // SetStatus updates the status lines.
