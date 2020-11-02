@@ -153,7 +153,8 @@ func checkTar(t *testing.T, testDir string, srcTar *bytes.Buffer) error {
 			return fmt.Errorf("mode does not match, got: %v, want: %v", os.FileMode(hdr.Mode), match.Mode())
 		}
 
-		if hdr.Typeflag == tar.TypeDir {
+		switch hdr.Typeflag {
+		case tar.TypeDir:
 			// this is a folder
 			if hdr.Name == "." {
 				// we don't need to check the root folder
@@ -167,7 +168,7 @@ func checkTar(t *testing.T, testDir string, srcTar *bytes.Buffer) error {
 			if !strings.HasSuffix(hdr.Name, "/") {
 				return fmt.Errorf("foldernames must end with separator got %v", hdr.Name)
 			}
-		} else if hdr.Typeflag == tar.TypeSymlink {
+		case tar.TypeSymlink:
 			target, err := fs.Readlink(matchPath)
 			if err != nil {
 				return err
@@ -175,7 +176,7 @@ func checkTar(t *testing.T, testDir string, srcTar *bytes.Buffer) error {
 			if target != hdr.Linkname {
 				return fmt.Errorf("symlink target does not match, got %s want %s", target, hdr.Linkname)
 			}
-		} else {
+		default:
 			if match.Size() != hdr.Size {
 				return fmt.Errorf("size does not match got %v want %v", hdr.Size, match.Size())
 			}
