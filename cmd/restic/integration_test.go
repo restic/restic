@@ -368,7 +368,7 @@ func TestBackupNonExistingFile(t *testing.T) {
 	testRunBackup(t, "", dirs, opts, env.gopts)
 }
 
-func removeDataPacksExcept(gopts GlobalOptions, t *testing.T, keep restic.IDSet) {
+func removePacksExcept(gopts GlobalOptions, t *testing.T, keep restic.IDSet, removeTreePacks bool) {
 	r, err := OpenRepository(gopts)
 	rtest.OK(t, err)
 
@@ -383,7 +383,7 @@ func removeDataPacksExcept(gopts GlobalOptions, t *testing.T, keep restic.IDSet)
 
 	// remove all packs containing data blobs
 	rtest.OK(t, r.List(gopts.ctx, restic.PackFile, func(id restic.ID, size int64) error {
-		if treePacks.Has(id) || keep.Has(id) {
+		if treePacks.Has(id) != removeTreePacks || keep.Has(id) {
 			return nil
 		}
 		return r.Backend().Remove(gopts.ctx, restic.Handle{Type: restic.PackFile, Name: id.String()})
@@ -406,7 +406,7 @@ func TestBackupSelfHealing(t *testing.T) {
 	testRunCheck(t, env.gopts)
 
 	// remove all data packs
-	removeDataPacksExcept(env.gopts, t, restic.NewIDSet())
+	removePacksExcept(env.gopts, t, restic.NewIDSet(), false)
 
 	testRunRebuildIndex(t, env.gopts)
 	// now the repo is also missing the data blob in the index; check should report this
@@ -417,6 +417,56 @@ func TestBackupSelfHealing(t *testing.T) {
 	err := testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
 	rtest.Assert(t, err != nil,
 		"backup should have reported an error")
+	testRunCheck(t, env.gopts)
+}
+
+func TestBackupTreeLoadError(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testRunInit(t, env.gopts)
+	p := filepath.Join(env.testdata, "test/test")
+	rtest.OK(t, os.MkdirAll(filepath.Dir(p), 0755))
+	rtest.OK(t, appendRandomData(p, 5))
+
+	opts := BackupOptions{}
+	// Backup a subdirectory first, such that we can remove the tree pack for the subdirectory
+	testRunBackup(t, env.testdata, []string{"test"}, opts, env.gopts)
+
+	r, err := OpenRepository(env.gopts)
+	rtest.OK(t, err)
+	rtest.OK(t, r.LoadIndex(env.gopts.ctx))
+	// collect tree packs of subdirectory
+	subTreePacks := restic.NewIDSet()
+	for _, idx := range r.Index().(*repository.MasterIndex).All() {
+		for _, id := range idx.TreePacks() {
+			subTreePacks.Insert(id)
+		}
+	}
+
+	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
+	testRunCheck(t, env.gopts)
+
+	// delete the subdirectory pack first
+	for id := range subTreePacks {
+		rtest.OK(t, r.Backend().Remove(env.gopts.ctx, restic.Handle{Type: restic.PackFile, Name: id.String()}))
+	}
+	testRunRebuildIndex(t, env.gopts)
+	// now the repo is missing the tree blob in the index; check should report this
+	rtest.Assert(t, runCheck(CheckOptions{}, env.gopts, nil) != nil, "check should have reported an error")
+	// second backup should report an error but "heal" this situation
+	err = testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
+	rtest.Assert(t, err != nil, "backup should have reported an error for the subdirectory")
+	testRunCheck(t, env.gopts)
+
+	// remove all tree packs
+	removePacksExcept(env.gopts, t, restic.NewIDSet(), true)
+	testRunRebuildIndex(t, env.gopts)
+	// now the repo is also missing the data blob in the index; check should report this
+	rtest.Assert(t, runCheck(CheckOptions{}, env.gopts, nil) != nil, "check should have reported an error")
+	// second backup should report an error but "heal" this situation
+	err = testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
+	rtest.Assert(t, err != nil, "backup should have reported an error")
 	testRunCheck(t, env.gopts)
 }
 
@@ -1396,7 +1446,7 @@ func TestPruneWithDamagedRepository(t *testing.T) {
 	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "3")}, opts, env.gopts)
 	snapshotIDs := testRunList(t, "snapshots", env.gopts)
 
-	removeDataPacksExcept(env.gopts, t, oldPacks)
+	removePacksExcept(env.gopts, t, oldPacks, false)
 
 	rtest.Assert(t, len(snapshotIDs) == 1,
 		"expected one snapshot, got %v", snapshotIDs)

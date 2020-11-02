@@ -191,19 +191,29 @@ func (arch *Archiver) nodeFromFileInfo(filename string, fi os.FileInfo) (*restic
 }
 
 // loadSubtree tries to load the subtree referenced by node. In case of an error, nil is returned.
-func (arch *Archiver) loadSubtree(ctx context.Context, node *restic.Node) *restic.Tree {
+// If there is no node to load, then nil is returned without an error.
+func (arch *Archiver) loadSubtree(ctx context.Context, node *restic.Node) (*restic.Tree, error) {
 	if node == nil || node.Type != "dir" || node.Subtree == nil {
-		return nil
+		return nil, nil
 	}
 
 	tree, err := arch.Repo.LoadTree(ctx, *node.Subtree)
 	if err != nil {
 		debug.Log("unable to load tree %v: %v", node.Subtree.Str(), err)
-		// TODO: handle error
-		return nil
+		// a tree in the repository is not readable -> warn the user
+		return nil, arch.wrapLoadTreeError(*node.Subtree, err)
 	}
 
-	return tree
+	return tree, nil
+}
+
+func (arch *Archiver) wrapLoadTreeError(id restic.ID, err error) error {
+	if arch.Repo.Index().Has(id, restic.TreeBlob) {
+		err = errors.Errorf("tree %v could not be loaded; the repository could be damaged: %v", id, err)
+	} else {
+		err = errors.Errorf("tree %v is not known; the repository could be damaged, run `rebuild-index` to try to repair it", id)
+	}
+	return err
 }
 
 // SaveDir stores a directory in the repo and returns the node. snPath is the
@@ -434,7 +444,10 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 
 		snItem := snPath + "/"
 		start := time.Now()
-		oldSubtree := arch.loadSubtree(ctx, previous)
+		oldSubtree, err := arch.loadSubtree(ctx, previous)
+		if err != nil {
+			arch.error(abstarget, fi, err)
+		}
 
 		fn.isTree = true
 		fn.tree, err = arch.SaveDir(ctx, snPath, fi, target, oldSubtree,
@@ -572,7 +585,10 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 		start := time.Now()
 
 		oldNode := previous.Find(name)
-		oldSubtree := arch.loadSubtree(ctx, oldNode)
+		oldSubtree, err := arch.loadSubtree(ctx, oldNode)
+		if err != nil {
+			arch.error(join(snPath, name), nil, err)
+		}
 
 		// not a leaf node, archive subtree
 		subtree, err := arch.SaveTree(ctx, join(snPath, name), &subatree, oldSubtree)
@@ -730,6 +746,7 @@ func (arch *Archiver) loadParentTree(ctx context.Context, snapshotID restic.ID) 
 	tree, err := arch.Repo.LoadTree(ctx, *sn.Tree)
 	if err != nil {
 		debug.Log("unable to load tree %v: %v", *sn.Tree, err)
+		arch.error("/", nil, arch.wrapLoadTreeError(*sn.Tree, err))
 		return nil
 	}
 	return tree
