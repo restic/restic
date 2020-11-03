@@ -390,7 +390,12 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 
 	for _, p := range repackCandidates {
 		reachedUnusedSizeAfter := (stats.size.unused-stats.size.remove-stats.size.repackrm < maxUnusedSizeAfter)
-		reachedRepackSize := (len(opts.MaxRepackSize) > 0 && stats.size.repack+p.unusedSize+p.usedSize > opts.MaxRepackBytes)
+
+		reachedRepackSize := false
+		if opts.MaxRepackBytes > 0 {
+			reachedRepackSize = stats.size.repack+p.unusedSize+p.usedSize > opts.MaxRepackBytes
+		}
+
 		switch {
 		case !reachedRepackSize && (p.duplicateBlobs > 0 || p.tpe == restic.InvalidBlob):
 			// repacking duplicates/mixed is only limited by repackSize
