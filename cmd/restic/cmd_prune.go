@@ -37,12 +37,15 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 // PruneOptions collects all options for the cleanup command.
 type PruneOptions struct {
-	DryRun             bool
-	MaxUnused          string
-	MaxUnusedPercent   float64
-	MaxUnusedBytes     uint64
-	MaxRepackSize      string
-	MaxRepackBytes     uint64
+	DryRun bool
+
+	MaxUnused        string
+	MaxUnusedPercent float64 // set if MaxUnused is a percentage
+	MaxUnusedBytes   uint64  // set if MaxUnused is an absolute number of bytes
+
+	MaxRepackSize  string
+	MaxRepackBytes uint64
+
 	RepackCachableOnly bool
 }
 
