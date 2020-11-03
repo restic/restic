@@ -315,9 +315,11 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 			stats.blobs.remove += p.unusedBlobs
 			stats.size.remove += p.unusedSize
 
-		case opts.RepackCachableOnly && p.tpe == restic.DataBlob,
+		case opts.RepackCachableOnly && p.tpe == restic.DataBlob:
 			// if this is a data pack and --repack-cacheable-only is set => keep pack!
-			p.unusedBlobs == 0 && p.duplicateBlobs == 0 && p.tpe != restic.InvalidBlob:
+			stats.packs.keep++
+
+		case p.unusedBlobs == 0 && p.duplicateBlobs == 0 && p.tpe != restic.InvalidBlob:
 			// All blobs in pack are used and not duplicates/mixed => keep pack!
 			stats.packs.keep++
 
