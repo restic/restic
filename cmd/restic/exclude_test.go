@@ -219,6 +219,25 @@ func TestParseSizeStr(t *testing.T) {
 	}
 }
 
+func TestParseInvalidSizeStr(t *testing.T) {
+	invalidSizes := []string{
+		"",
+		" ",
+		"foobar",
+		"zzz",
+	}
+
+	for _, s := range invalidSizes {
+		v, err := parseSizeStr(s)
+		if err == nil {
+			t.Errorf("wanted error for invalid value %q, got nil", s)
+		}
+		if v != 0 {
+			t.Errorf("wanted zero for invalid value %q, got: %v", s, v)
+		}
+	}
+}
+
 // TestIsExcludedByFileSize is for testing the instance of
 // --exclude-larger-than parameters
 func TestIsExcludedByFileSize(t *testing.T) {
