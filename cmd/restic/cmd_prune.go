@@ -170,6 +170,8 @@ type packInfoWithID struct {
 	packInfo
 }
 
+// prune selects which files to rewrite and then does that. The map usedBlobs is
+// modified in the process.
 func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedBlobs restic.BlobSet) error {
 	ctx := gopts.ctx
 
