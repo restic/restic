@@ -290,14 +290,6 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 
 	var repackCandidates []packInfoWithID
 
-	repack := func(id restic.ID, p packInfo) {
-		repackPacks.Insert(id)
-		stats.blobs.repack += p.unusedBlobs + p.duplicateBlobs + p.usedBlobs
-		stats.size.repack += p.unusedSize + p.usedSize
-		stats.blobs.repackrm += p.unusedBlobs
-		stats.size.repackrm += p.unusedSize
-	}
-
 	// loop over all packs and decide what to do
 	bar := newProgressMax(!gopts.Quiet, uint64(len(indexPack)), "packs processed")
 	bar.Start()
@@ -387,6 +379,14 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		}
 		return pi.unusedSize*pj.usedSize > pj.unusedSize*pi.usedSize
 	})
+
+	repack := func(id restic.ID, p packInfo) {
+		repackPacks.Insert(id)
+		stats.blobs.repack += p.unusedBlobs + p.duplicateBlobs + p.usedBlobs
+		stats.size.repack += p.unusedSize + p.usedSize
+		stats.blobs.repackrm += p.unusedBlobs
+		stats.size.repackrm += p.unusedSize
+	}
 
 	for _, p := range repackCandidates {
 		reachedUnusedSizeAfter := (stats.size.unused-stats.size.remove-stats.size.repackrm < maxUnusedSizeAfter)
