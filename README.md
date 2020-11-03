@@ -9,7 +9,7 @@ restic is a backup program that is fast, efficient and secure. It supports the t
 
 For detailed usage and installation instructions check out the [documentation](https://restic.readthedocs.io/en/latest).
 
-You can ask questions in our [Discourse forum](https://forum.restic.net>).
+You can ask questions in our [Discourse forum](https://forum.restic.net).
 
 Quick start
 -----------
