@@ -1409,15 +1409,6 @@ func TestPrune(t *testing.T) {
 		checkOpts := CheckOptions{ReadData: true}
 		testPrune(t, opts, checkOpts)
 	})
-
-	/* repack-small option will come in future
-	t.Run("Small", func(t *testing.T) {
-		opts = PruneOptions{MaxUnusedPercent: 100.0, RepackSmall: true}
-		// The test case only produces small files; hence no unused blobs should remain.
-		checkOpts = CheckOptions{ReadData: true, CheckUnused: true}
-		testPrune(t, opts, checkOpts)
-	})
-	*/
 }
 
 func testPrune(t *testing.T, pruneOpts PruneOptions, checkOpts CheckOptions) {

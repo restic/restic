@@ -37,13 +37,12 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 // PruneOptions collects all options for the cleanup command.
 type PruneOptions struct {
-	DryRun           bool
-	MaxUnused        string
-	MaxUnusedPercent float64
-	MaxUnusedBytes   uint64
-	MaxRepackSize    string
-	MaxRepackBytes   uint64
-	//	RepackSmall        bool	<- This option may be added later
+	DryRun             bool
+	MaxUnused          string
+	MaxUnusedPercent   float64
+	MaxUnusedBytes     uint64
+	MaxRepackSize      string
+	MaxRepackBytes     uint64
 	RepackCachableOnly bool
 }
 
@@ -61,7 +60,6 @@ func addPruneOptions(c *cobra.Command) {
 	f.StringVar(&pruneOptions.MaxUnused, "max-unused", "5%", "tolerate given `limit` of unused space (allowed suffixes: k/K, m/M, g/G, t/T or value in %)")
 	f.StringVar(&pruneOptions.MaxRepackSize, "max-repack-size", "", "maximum `size` to repack (allowed suffixes: k/K, m/M, g/G, t/T)")
 	f.BoolVar(&pruneOptions.RepackCachableOnly, "repack-cacheable-only", false, "only repack packs which are cacheable")
-	//	f.BoolVar(&pruneOptions.RepackSmall, "repack-small", false, "also repack small packs")
 }
 
 func verifyPruneOptions(opts *PruneOptions) error {
@@ -314,7 +312,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 
 		case opts.RepackCachableOnly && p.tpe == restic.DataBlob,
 			// if this is a data pack and --repack-cacheable-only is set => keep pack!
-			p.unusedBlobs == 0 && p.duplicateBlobs == 0 && p.tpe != restic.InvalidBlob: // && (!opts.RepackSmall || packSize >= repository.MinPackSize)
+			p.unusedBlobs == 0 && p.duplicateBlobs == 0 && p.tpe != restic.InvalidBlob:
 			// All blobs in pack are used and not duplicates/mixed => keep pack!
 			stats.packs.keep++
 
@@ -364,10 +362,6 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 			return true
 		case pj.tpe == restic.InvalidBlob && pi.tpe != restic.InvalidBlob:
 			return false
-			//case opts.RepackSmall && pi.unusedSize+pi.usedSize < repository.MinPackSize && pj.unusedSize+pj.usedSize >= repository.MinPackSize:
-			//	return true
-			//case opts.RepackSmall && pj.unusedSize+pj.usedSize < repository.MinPackSize && pi.unusedSize+pi.usedSize >= repository.MinPackSize:
-			//	return false
 		}
 		return pi.unusedSize*pj.usedSize > pj.unusedSize*pi.usedSize
 	})
