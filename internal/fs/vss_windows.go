@@ -686,10 +686,10 @@ func (p *VssSnapshot) GetSnapshotDeviceObject() string {
 }
 
 // initializeCOMInterface initialize an instance of the VSS COM api
-func initializeVssCOMInterface() (*ole.IUnknown, uintptr, error) {
+func initializeVssCOMInterface() (*ole.IUnknown, error) {
 	vssInstance, err := loadIVssBackupComponentsConstructor()
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	// ensure COM is initialized before use
@@ -702,32 +702,36 @@ func initializeVssCOMInterface() (*ole.IUnknown, uintptr, error) {
 	switch hresult {
 	case S_OK:
 	case E_ACCESSDENIED:
-		return oleIUnknown, result, newVssError(
+		return oleIUnknown, newVssError(
 			"The caller does not have sufficient backup privileges or is not an administrator",
 			hresult)
 	default:
-		return oleIUnknown, result, newVssError("Failed to create VSS instance", hresult)
+		return oleIUnknown, newVssError("Failed to create VSS instance", hresult)
 	}
 
 	if oleIUnknown == nil {
-		return nil, result, newVssError("Failed to initialize COM interface", hresult)
+		return nil, newVssError("Failed to initialize COM interface", hresult)
 	}
 
-	return oleIUnknown, result, nil
+	return oleIUnknown, nil
 }
 
 // HasSufficientPrivilegesForVSS returns true if the user is allowed to use VSS.
 func HasSufficientPrivilegesForVSS() bool {
-	oleIUnknown, result, err := initializeVssCOMInterface()
+	oleIUnknown, err := initializeVssCOMInterface()
 	if oleIUnknown != nil {
 		oleIUnknown.Release()
 	}
 
 	if err != nil {
-		return false
+		if e, ok := err.(*vssError); ok {
+			if e.hresult == E_ACCESSDENIED {
+				return false
+			}
+		}
 	}
 
-	return HRESULT(result) != E_ACCESSDENIED
+	return true
 }
 
 // NewVssSnapshot creates a new vss snapshot. If creating the snapshots doesn't
@@ -749,7 +753,7 @@ func NewVssSnapshot(
 
 	timeoutInMillis := uint32(timeoutInSeconds * 1000)
 
-	oleIUnknown, _, err := initializeVssCOMInterface()
+	oleIUnknown, err := initializeVssCOMInterface()
 	if oleIUnknown != nil {
 		defer oleIUnknown.Release()
 	}
