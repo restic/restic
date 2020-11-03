@@ -1,8 +1,10 @@
 package main
 
 import (
+	"math"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -39,9 +41,8 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 type PruneOptions struct {
 	DryRun bool
 
-	MaxUnused        string
-	MaxUnusedPercent float64 // set if MaxUnused is a percentage
-	MaxUnusedBytes   uint64  // set if MaxUnused is an absolute number of bytes
+	MaxUnused      string
+	maxUnusedBytes func(used uint64) (unused uint64) // calculates the number of unused bytes after repacking, according to MaxUnused
 
 	MaxRepackSize  string
 	MaxRepackBytes uint64
@@ -60,7 +61,7 @@ func init() {
 
 func addPruneOptions(c *cobra.Command) {
 	f := c.Flags()
-	f.StringVar(&pruneOptions.MaxUnused, "max-unused", "5%", "tolerate given `limit` of unused space (allowed suffixes: k/K, m/M, g/G, t/T or value in %)")
+	f.StringVar(&pruneOptions.MaxUnused, "max-unused", "5%", "tolerate given `limit` of unused data (absolute value in bytes with suffixes k/K, m/M, g/G, t/T, a value in % or the word 'unlimited')")
 	f.StringVar(&pruneOptions.MaxRepackSize, "max-repack-size", "", "maximum `size` to repack (allowed suffixes: k/K, m/M, g/G, t/T)")
 	f.BoolVar(&pruneOptions.RepackCachableOnly, "repack-cacheable-only", false, "only repack packs which are cacheable")
 }
@@ -74,27 +75,46 @@ func verifyPruneOptions(opts *PruneOptions) error {
 		opts.MaxRepackBytes = uint64(size)
 	}
 
-	length := len(opts.MaxUnused)
-	if length == 0 {
-		return nil
+	maxUnused := strings.TrimSpace(opts.MaxUnused)
+	if maxUnused == "" {
+		return errors.Fatalf("invalid value for --max-unused: %q", opts.MaxUnused)
 	}
 
-	var err error
-	if opts.MaxUnused[length-1] == '%' {
-		opts.MaxUnusedPercent, err = strconv.ParseFloat(opts.MaxUnused[:length-1], 64)
-		opts.MaxUnusedBytes = ^uint64(0)
-	} else {
-		var size int64
-		size, err = parseSizeStr(opts.MaxUnused)
-		opts.MaxUnusedPercent = 100.0
-		opts.MaxUnusedBytes = uint64(size)
-	}
-	if err != nil {
-		return err
-	}
+	// parse MaxUnused either as unlimited, a percentage, or an absolute number of bytes
+	switch {
+	case maxUnused == "unlimited":
+		opts.maxUnusedBytes = func(used uint64) uint64 {
+			return math.MaxUint64
+		}
 
-	if opts.MaxUnusedPercent < 0.0 || opts.MaxUnusedPercent > 100.0 {
-		return errors.Fatalf("--max-unused-percent should be between 0 and 100. Given value: %f", opts.MaxUnusedPercent)
+	case strings.HasSuffix(maxUnused, "%"):
+		maxUnused = strings.TrimSuffix(maxUnused, "%")
+		p, err := strconv.ParseFloat(maxUnused, 64)
+		if err != nil {
+			return errors.Fatalf("invalid percentage %q passed for --max-unused: %v", opts.MaxUnused, err)
+		}
+
+		if p < 0 {
+			return errors.Fatal("percentage for --max-unused must be positive")
+		}
+
+		if p >= 100 {
+			return errors.Fatal("percentage for --max-unused must be below 100%")
+		}
+
+		opts.maxUnusedBytes = func(used uint64) uint64 {
+			return uint64(p / (100 - p) * float64(used))
+		}
+
+	default:
+		size, err := parseSizeStr(maxUnused)
+		if err != nil {
+			return errors.Fatalf("invalid number of bytes %q for --max-unused: %v", opts.MaxUnused, err)
+		}
+
+		opts.maxUnusedBytes = func(used uint64) uint64 {
+			return uint64(size)
+		}
 	}
 
 	return nil
@@ -344,13 +364,8 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 
 	repackAllPacksWithDuplicates := true
 
-	maxUnusedSizeAfter := opts.MaxUnusedBytes
-	if opts.MaxUnusedPercent < 100.0 {
-		maxUnusedSizePercent := uint64(opts.MaxUnusedPercent / (100.0 - opts.MaxUnusedPercent) * float64(stats.size.used))
-		if maxUnusedSizePercent < maxUnusedSizeAfter {
-			maxUnusedSizeAfter = maxUnusedSizePercent
-		}
-	}
+	// calculate limit for number of unused bytes in the repo after repacking
+	maxUnusedSizeAfter := opts.maxUnusedBytes(stats.size.used)
 
 	// Sort repackCandidates such that packs with highest ratio unused/used space are picked first.
 	// This is equivalent to sorting by unused / total space.

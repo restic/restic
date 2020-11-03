@@ -1387,25 +1387,25 @@ func TestCheckRestoreNoLock(t *testing.T) {
 
 func TestPrune(t *testing.T) {
 	t.Run("0", func(t *testing.T) {
-		opts := PruneOptions{MaxUnusedPercent: 0.0}
+		opts := PruneOptions{MaxUnused: "0%"}
 		checkOpts := CheckOptions{ReadData: true, CheckUnused: true}
 		testPrune(t, opts, checkOpts)
 	})
 
 	t.Run("50", func(t *testing.T) {
-		opts := PruneOptions{MaxUnusedPercent: 50.0}
+		opts := PruneOptions{MaxUnused: "50%"}
 		checkOpts := CheckOptions{ReadData: true}
 		testPrune(t, opts, checkOpts)
 	})
 
-	t.Run("100", func(t *testing.T) {
-		opts := PruneOptions{MaxUnusedPercent: 100.0}
+	t.Run("unlimited", func(t *testing.T) {
+		opts := PruneOptions{MaxUnused: "unlimited"}
 		checkOpts := CheckOptions{ReadData: true}
 		testPrune(t, opts, checkOpts)
 	})
 
 	t.Run("CachableOnly", func(t *testing.T) {
-		opts := PruneOptions{RepackCachableOnly: true}
+		opts := PruneOptions{MaxUnused: "5%", RepackCachableOnly: true}
 		checkOpts := CheckOptions{ReadData: true}
 		testPrune(t, opts, checkOpts)
 	})
@@ -1436,7 +1436,7 @@ func testPrune(t *testing.T, pruneOpts PruneOptions, checkOpts CheckOptions) {
 	rtest.OK(t, runCheck(checkOpts, env.gopts, nil))
 }
 
-var pruneDefaultOptions = PruneOptions{MaxUnusedPercent: 1.5}
+var pruneDefaultOptions = PruneOptions{MaxUnused: "5%"}
 
 func listPacks(gopts GlobalOptions, t *testing.T) restic.IDSet {
 	r, err := OpenRepository(gopts)
