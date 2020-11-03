@@ -314,6 +314,10 @@ func rejectBySize(maxSizeStr string) (RejectFunc, error) {
 }
 
 func parseSizeStr(sizeStr string) (int64, error) {
+	if sizeStr == "" {
+		return 0, errors.New("expected size, got empty string")
+	}
+
 	numStr := sizeStr[:len(sizeStr)-1]
 	var unit int64 = 1
 
@@ -333,7 +337,7 @@ func parseSizeStr(sizeStr string) (int64, error) {
 	}
 	value, err := strconv.ParseInt(numStr, 10, 64)
 	if err != nil {
-		return 0, nil
+		return 0, err
 	}
 	return value * unit, nil
 }
