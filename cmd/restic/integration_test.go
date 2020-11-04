@@ -286,7 +286,7 @@ func TestBackup(t *testing.T) {
 }
 
 func TestBackupWithFilesystemSnapshots(t *testing.T) {
-	if runtime.GOOS == "windows" && fs.HasSufficientPrivilegesForVSS() {
+	if runtime.GOOS == "windows" && fs.HasSufficientPrivilegesForVSS() == nil {
 		testBackup(t, true)
 	}
 }
