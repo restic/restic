@@ -716,22 +716,14 @@ func initializeVssCOMInterface() (*ole.IUnknown, error) {
 	return oleIUnknown, nil
 }
 
-// HasSufficientPrivilegesForVSS returns true if the user is allowed to use VSS.
-func HasSufficientPrivilegesForVSS() bool {
+// HasSufficientPrivilegesForVSS returns nil if the user is allowed to use VSS.
+func HasSufficientPrivilegesForVSS() error {
 	oleIUnknown, err := initializeVssCOMInterface()
 	if oleIUnknown != nil {
 		oleIUnknown.Release()
 	}
 
-	if err != nil {
-		if e, ok := err.(*vssError); ok {
-			if e.hresult == E_ACCESSDENIED {
-				return false
-			}
-		}
-	}
-
-	return true
+	return err
 }
 
 // NewVssSnapshot creates a new vss snapshot. If creating the snapshots doesn't

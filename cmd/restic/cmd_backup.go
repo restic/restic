@@ -556,8 +556,8 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 
 	var targetFS fs.FS = fs.Local{}
 	if runtime.GOOS == "windows" && opts.UseFsSnapshot {
-		if !fs.HasSufficientPrivilegesForVSS() {
-			return errors.Fatal("user doesn't have sufficient privileges to use VSS snapshots\n")
+		if err = fs.HasSufficientPrivilegesForVSS(); err != nil {
+			return err
 		}
 
 		errorHandler := func(item string, err error) error {
