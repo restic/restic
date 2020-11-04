@@ -21,7 +21,7 @@ type LocalVss struct {
 	FS
 	snapshots       map[string]VssSnapshot
 	failedSnapshots map[string]struct{}
-	mutex           *sync.RWMutex
+	mutex           sync.RWMutex
 	msgError        ErrorHandler
 	msgMessage      MessageHandler
 }
@@ -36,7 +36,6 @@ func NewLocalVss(msgError ErrorHandler, msgMessage MessageHandler) *LocalVss {
 		FS:              Local{},
 		snapshots:       make(map[string]VssSnapshot),
 		failedSnapshots: make(map[string]struct{}),
-		mutex:           &sync.RWMutex{},
 		msgError:        msgError,
 		msgMessage:      msgMessage,
 	}

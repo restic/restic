@@ -40,7 +40,7 @@ type Progress struct {
 	start      time.Time
 	c          *time.Ticker
 	cancel     chan struct{}
-	o          *sync.Once
+	once       sync.Once
 	d          time.Duration
 	lastUpdate time.Time
 
@@ -79,7 +79,6 @@ func (p *Progress) Start() {
 		return
 	}
 
-	p.o = &sync.Once{}
 	p.cancel = make(chan struct{})
 	p.running = true
 	p.Reset()
@@ -187,7 +186,7 @@ func (p *Progress) Done() {
 	}
 
 	p.running = false
-	p.o.Do(func() {
+	p.once.Do(func() {
 		close(p.cancel)
 	})
 
