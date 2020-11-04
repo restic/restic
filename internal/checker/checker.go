@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui/progress"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -772,15 +773,13 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID) error {
 }
 
 // ReadData loads all data from the repository and checks the integrity.
-func (c *Checker) ReadData(ctx context.Context, p *restic.Progress, errChan chan<- error) {
+func (c *Checker) ReadData(ctx context.Context, p *progress.Counter, errChan chan<- error) {
 	c.ReadPacks(ctx, c.packs, p, errChan)
 }
 
 // ReadPacks loads data from specified packs and checks the integrity.
-func (c *Checker) ReadPacks(ctx context.Context, packs restic.IDSet, p *restic.Progress, errChan chan<- error) {
+func (c *Checker) ReadPacks(ctx context.Context, packs restic.IDSet, p *progress.Counter, errChan chan<- error) {
 	defer close(errChan)
-
-	p.Start()
 	defer p.Done()
 
 	g, ctx := errgroup.WithContext(ctx)
@@ -803,7 +802,7 @@ func (c *Checker) ReadPacks(ctx context.Context, packs restic.IDSet, p *restic.P
 				}
 
 				err := checkPack(ctx, c.repo, id)
-				p.Report(restic.Stat{Blobs: 1})
+				p.Add(1)
 				if err == nil {
 					continue
 				}

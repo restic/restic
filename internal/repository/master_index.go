@@ -4,9 +4,9 @@ import (
 	"context"
 	"sync"
 
-	"github.com/restic/restic/internal/restic"
-
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui/progress"
 )
 
 // MasterIndex is a collection of indexes and IDs of chunks that are in the process of being saved.
@@ -266,10 +266,7 @@ func (mi *MasterIndex) MergeFinalIndexes() {
 // of all known indexes in the "supersedes" field. The IDs are also returned in
 // the IDSet obsolete
 // After calling this function, you should remove the obsolete index files.
-func (mi *MasterIndex) Save(ctx context.Context, repo restic.Repository, packBlacklist restic.IDSet, p *restic.Progress) (obsolete restic.IDSet, err error) {
-	p.Start()
-	defer p.Done()
-
+func (mi *MasterIndex) Save(ctx context.Context, repo restic.Repository, packBlacklist restic.IDSet, p *progress.Counter) (obsolete restic.IDSet, err error) {
 	mi.idxMutex.Lock()
 	defer mi.idxMutex.Unlock()
 
@@ -310,7 +307,7 @@ func (mi *MasterIndex) Save(ctx context.Context, repo restic.Repository, packBla
 
 		for pbs := range idx.EachByPack(ctx, packBlacklist) {
 			newIndex.StorePack(pbs.packID, pbs.blobs)
-			p.Report(restic.Stat{Blobs: 1})
+			p.Add(1)
 			if IndexFull(newIndex) {
 				if err := finalize(); err != nil {
 					return nil, err
