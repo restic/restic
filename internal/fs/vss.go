@@ -26,8 +26,8 @@ type VssSnapshot struct {
 }
 
 // HasSufficientPrivilegesForVSS returns true if the user is allowed to use VSS.
-func HasSufficientPrivilegesForVSS() bool {
-	return false
+func HasSufficientPrivilegesForVSS() error {
+	return errors.New("VSS snapshots are only supported on windows")
 }
 
 // NewVssSnapshot creates a new vss snapshot. If creating the snapshots doesn't
