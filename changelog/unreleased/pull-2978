@@ -1,8 +1,0 @@
-Enhancement: Warn if parent snapshot cannot be loaded during backup
-
-During a backup restic uses the parent snapshot to check whether a file was
-changed and has to be backed up again. For this check the backup has to read
-the directories contained in the old snapshot. If a tree blob cannot be
-loaded, restic now warns about this problem with the backup repository.
-
-https://github.com/restic/restic/pull/2978

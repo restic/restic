@@ -1,7 +1,0 @@
-Bugfix: Fix rare cases of backup command hanging forever
-
-We've fixed an issue with the backup progress reporting which could cause
-restic to hang forever right before finishing a backup.
-
-https://github.com/restic/restic/issues/2834
-https://github.com/restic/restic/pull/2963

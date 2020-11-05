@@ -1,6 +1,0 @@
-Bugfix: Fix manpage formatting
-
-The manpage formatting in restic v0.10.0 was garbled, which is fixed now.
-
-https://github.com/restic/restic/issues/2938
-https://github.com/restic/restic/pull/2977
