@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"os"
 	"syscall"
+
+	"github.com/restic/restic/internal/errors"
 )
 
 // fixpath returns an absolute path on windows, so restic can open long file
@@ -29,22 +31,26 @@ func TempFile(dir, prefix string) (f *os.File, err error) {
 	return f, nil
 }
 
-// isNotSuported returns true if the error is caused by an unsupported file system feature.
-func isNotSupported(err error) bool {
-	if perr, ok := err.(*os.PathError); ok && perr.Err == syscall.ENOTSUP {
-		return true
-	}
-	return false
-}
+var osChmod = os.Chmod // Reset by test.
 
 // Chmod changes the mode of the named file to mode.
-func Chmod(name string, mode os.FileMode) error {
-	err := os.Chmod(fixpath(name), mode)
+func Chmod(name string, mode os.FileMode) (err error) {
+	const maxTries = 100 // Arbitrary.
 
-	// ignore the error if the FS does not support setting this mode (e.g. CIFS with gvfs on Linux)
-	if err != nil && isNotSupported(err) {
-		return nil
+	for try := 0; try < maxTries; try++ {
+		err = osChmod(name, mode)
+		if e, ok := err.(*os.PathError); ok {
+			switch e.Err {
+			case syscall.EINTR:
+				// CIFS (and maybe fuse?) on Linux can return EINTR. Retry.
+				continue
+			case syscall.ENOTSUP:
+				// CIFS with gvfs on Linux does not support chmod. Ignore.
+				return nil
+			}
+		}
+		return err
 	}
 
-	return err
+	return errors.Wrap(err, "max. number of tries exceeded")
 }
