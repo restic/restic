@@ -161,13 +161,16 @@ func (p *Packer) String() string {
 }
 
 var (
-	// size of the header-length field at the end of the file
-	headerLengthSize = binary.Size(uint32(0))
 	// we require at least one entry in the header, and one blob for a pack file
 	minFileSize = entrySize + crypto.Extension + uint(headerLengthSize)
 )
 
 const (
+	// size of the header-length field at the end of the file; it is a uint32
+	headerLengthSize = 4
+	// constant overhead of the header independent of #entries
+	HeaderSize = headerLengthSize + crypto.Extension
+
 	maxHeaderSize = 16 * 1024 * 1024
 	// number of header enries to download as part of header-length request
 	eagerEntries = 15
@@ -314,4 +317,9 @@ func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []restic.Blob, err
 	}
 
 	return entries, nil
+}
+
+// PackedSizeOfBlob returns the size a blob actually uses when saved in a pack
+func PackedSizeOfBlob(blobLength uint) uint {
+	return blobLength + entrySize
 }

@@ -67,8 +67,12 @@ func LoadSnapshot(ctx context.Context, repo Repository, id ID) (*Snapshot, error
 }
 
 // LoadAllSnapshots returns a list of all snapshots in the repo.
-func LoadAllSnapshots(ctx context.Context, repo Repository) (snapshots []*Snapshot, err error) {
+// If a snapshot ID is in excludeIDs, it will not be included in the result.
+func LoadAllSnapshots(ctx context.Context, repo Repository, excludeIDs IDSet) (snapshots []*Snapshot, err error) {
 	err = repo.List(ctx, SnapshotFile, func(id ID, size int64) error {
+		if excludeIDs.Has(id) {
+			return nil
+		}
 		sn, err := LoadSnapshot(ctx, repo, id)
 		if err != nil {
 			return err

@@ -270,8 +270,8 @@ func testRunForgetJSON(t testing.TB, gopts GlobalOptions, args ...string) {
 		"Expected 2 snapshots to be removed, got %v", len(forgets[0].Remove))
 }
 
-func testRunPrune(t testing.TB, gopts GlobalOptions) {
-	rtest.OK(t, runPrune(gopts))
+func testRunPrune(t testing.TB, gopts GlobalOptions, opts PruneOptions) {
+	rtest.OK(t, runPrune(opts, gopts))
 }
 
 func testSetupBackupData(t testing.TB, env *testEnvironment) string {
@@ -1386,6 +1386,32 @@ func TestCheckRestoreNoLock(t *testing.T) {
 }
 
 func TestPrune(t *testing.T) {
+	t.Run("0", func(t *testing.T) {
+		opts := PruneOptions{MaxUnused: "0%"}
+		checkOpts := CheckOptions{ReadData: true, CheckUnused: true}
+		testPrune(t, opts, checkOpts)
+	})
+
+	t.Run("50", func(t *testing.T) {
+		opts := PruneOptions{MaxUnused: "50%"}
+		checkOpts := CheckOptions{ReadData: true}
+		testPrune(t, opts, checkOpts)
+	})
+
+	t.Run("unlimited", func(t *testing.T) {
+		opts := PruneOptions{MaxUnused: "unlimited"}
+		checkOpts := CheckOptions{ReadData: true}
+		testPrune(t, opts, checkOpts)
+	})
+
+	t.Run("CachableOnly", func(t *testing.T) {
+		opts := PruneOptions{MaxUnused: "5%", RepackCachableOnly: true}
+		checkOpts := CheckOptions{ReadData: true}
+		testPrune(t, opts, checkOpts)
+	})
+}
+
+func testPrune(t *testing.T, pruneOpts PruneOptions, checkOpts CheckOptions) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
@@ -1406,9 +1432,11 @@ func TestPrune(t *testing.T) {
 
 	testRunForgetJSON(t, env.gopts)
 	testRunForget(t, env.gopts, firstSnapshot[0].String())
-	testRunPrune(t, env.gopts)
-	testRunCheck(t, env.gopts)
+	testRunPrune(t, env.gopts, pruneOpts)
+	rtest.OK(t, runCheck(checkOpts, env.gopts, nil))
 }
+
+var pruneDefaultOptions = PruneOptions{MaxUnused: "5%"}
 
 func listPacks(gopts GlobalOptions, t *testing.T) restic.IDSet {
 	r, err := OpenRepository(gopts)
@@ -1452,14 +1480,8 @@ func TestPruneWithDamagedRepository(t *testing.T) {
 		"expected one snapshot, got %v", snapshotIDs)
 
 	// prune should fail
-	err := runPrune(env.gopts)
-	if err == nil {
-		t.Fatalf("expected prune to fail")
-	}
-	if !strings.Contains(err.Error(), "blobs seem to be missing") {
-		t.Fatalf("did not find hint for missing blobs")
-	}
-	t.Log(err)
+	rtest.Assert(t, runPrune(pruneDefaultOptions, env.gopts) == errorPacksMissing,
+		"prune should have reported index not complete error")
 }
 
 // Test repos for edge cases
@@ -1469,37 +1491,37 @@ func TestEdgeCaseRepos(t *testing.T) {
 	// repo where index is completely missing
 	// => check and prune should fail
 	t.Run("no-index", func(t *testing.T) {
-		testEdgeCaseRepo(t, "repo-index-missing.tar.gz", opts, false, false)
+		testEdgeCaseRepo(t, "repo-index-missing.tar.gz", opts, pruneDefaultOptions, false, false)
 	})
 
 	// repo where an existing and used blob is missing from the index
-	// => check should fail, prune should heal this
+	// => check and prune should fail
 	t.Run("index-missing-blob", func(t *testing.T) {
-		testEdgeCaseRepo(t, "repo-index-missing-blob.tar.gz", opts, false, true)
+		testEdgeCaseRepo(t, "repo-index-missing-blob.tar.gz", opts, pruneDefaultOptions, false, false)
 	})
 
 	// repo where a blob is missing
 	// => check and prune should fail
 	t.Run("no-data", func(t *testing.T) {
-		testEdgeCaseRepo(t, "repo-data-missing.tar.gz", opts, false, false)
+		testEdgeCaseRepo(t, "repo-data-missing.tar.gz", opts, pruneDefaultOptions, false, false)
 	})
 
 	// repo where data exists that is not referenced
 	// => check and prune should fully work
 	t.Run("unreferenced-data", func(t *testing.T) {
-		testEdgeCaseRepo(t, "repo-unreferenced-data.tar.gz", opts, true, true)
+		testEdgeCaseRepo(t, "repo-unreferenced-data.tar.gz", opts, pruneDefaultOptions, true, true)
 	})
 
 	// repo where an obsolete index still exists
 	// => check and prune should fully work
 	t.Run("obsolete-index", func(t *testing.T) {
-		testEdgeCaseRepo(t, "repo-obsolete-index.tar.gz", opts, true, true)
+		testEdgeCaseRepo(t, "repo-obsolete-index.tar.gz", opts, pruneDefaultOptions, true, true)
 	})
 
 	// repo which contains mixed (data/tree) packs
 	// => check and prune should fully work
 	t.Run("mixed-packs", func(t *testing.T) {
-		testEdgeCaseRepo(t, "repo-mixed.tar.gz", opts, true, true)
+		testEdgeCaseRepo(t, "repo-mixed.tar.gz", opts, pruneDefaultOptions, true, true)
 	})
 
 	// repo which contains duplicate blobs
@@ -1510,11 +1532,11 @@ func TestEdgeCaseRepos(t *testing.T) {
 		CheckUnused: true,
 	}
 	t.Run("duplicates", func(t *testing.T) {
-		testEdgeCaseRepo(t, "repo-duplicates.tar.gz", opts, false, true)
+		testEdgeCaseRepo(t, "repo-duplicates.tar.gz", opts, pruneDefaultOptions, false, true)
 	})
 }
 
-func testEdgeCaseRepo(t *testing.T, tarfile string, options CheckOptions, checkOK, pruneOK bool) {
+func testEdgeCaseRepo(t *testing.T, tarfile string, optionsCheck CheckOptions, optionsPrune PruneOptions, checkOK, pruneOK bool) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
@@ -1524,15 +1546,15 @@ func testEdgeCaseRepo(t *testing.T, tarfile string, options CheckOptions, checkO
 	if checkOK {
 		testRunCheck(t, env.gopts)
 	} else {
-		rtest.Assert(t, runCheck(options, env.gopts, nil) != nil,
+		rtest.Assert(t, runCheck(optionsCheck, env.gopts, nil) != nil,
 			"check should have reported an error")
 	}
 
 	if pruneOK {
-		testRunPrune(t, env.gopts)
+		testRunPrune(t, env.gopts, optionsPrune)
 		testRunCheck(t, env.gopts)
 	} else {
-		rtest.Assert(t, runPrune(env.gopts) != nil,
+		rtest.Assert(t, runPrune(optionsPrune, env.gopts) != nil,
 			"prune should have reported an error")
 	}
 }

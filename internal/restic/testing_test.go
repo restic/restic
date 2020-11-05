@@ -25,7 +25,7 @@ func TestCreateSnapshot(t *testing.T) {
 		restic.TestCreateSnapshot(t, repo, testSnapshotTime.Add(time.Duration(i)*time.Second), testDepth, 0)
 	}
 
-	snapshots, err := restic.LoadAllSnapshots(context.TODO(), repo)
+	snapshots, err := restic.LoadAllSnapshots(context.TODO(), repo, restic.NewIDSet())
 	if err != nil {
 		t.Fatal(err)
 	}
