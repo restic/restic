@@ -92,8 +92,10 @@ func newTestRepo(content []TestFile) *TestRepo {
 			if _, found := pack.blobs[blobID]; !found {
 				blobData := seal([]byte(blob.data))
 				pack.blobs[blobID] = restic.Blob{
-					Type:   restic.DataBlob,
-					ID:     blobID,
+					BlobHandle: restic.BlobHandle{
+						Type: restic.DataBlob,
+						ID:   blobID,
+					},
 					Length: uint(len(blobData)),
 					Offset: uint(len(pack.data)),
 				}

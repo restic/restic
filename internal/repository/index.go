@@ -165,8 +165,8 @@ func (idx *Index) StorePack(id restic.ID, blobs []restic.Blob) {
 func (idx *Index) toPackedBlob(e *indexEntry, typ restic.BlobType) restic.PackedBlob {
 	return restic.PackedBlob{
 		Blob: restic.Blob{
-			ID:     e.id,
-			Type:   typ,
+			BlobHandle: restic.BlobHandle{ID: e.id,
+				Type: typ},
 			Length: uint(e.length),
 			Offset: uint(e.offset),
 		},
@@ -596,8 +596,8 @@ func DecodeIndex(buf []byte, id restic.ID) (idx *Index, oldFormat bool, err erro
 
 		for _, blob := range pack.Blobs {
 			idx.store(packID, restic.Blob{
-				Type:   blob.Type,
-				ID:     blob.ID,
+				BlobHandle: restic.BlobHandle{Type: blob.Type,
+					ID: blob.ID},
 				Offset: blob.Offset,
 				Length: blob.Length,
 			})
@@ -640,8 +640,9 @@ func decodeOldIndex(buf []byte) (idx *Index, err error) {
 
 		for _, blob := range pack.Blobs {
 			idx.store(packID, restic.Blob{
-				Type:   blob.Type,
-				ID:     blob.ID,
+				BlobHandle: restic.BlobHandle{
+					Type: blob.Type,
+					ID:   blob.ID},
 				Offset: blob.Offset,
 				Length: blob.Length,
 			})

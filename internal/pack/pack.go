@@ -35,7 +35,7 @@ func (p *Packer) Add(t restic.BlobType, id restic.ID, data []byte) (int, error) 
 	p.m.Lock()
 	defer p.m.Unlock()
 
-	c := restic.Blob{Type: t, ID: id}
+	c := restic.Blob{BlobHandle: restic.BlobHandle{Type: t, ID: id}}
 
 	n, err := p.wr.Write(data)
 	c.Length = uint(n)

@@ -21,8 +21,10 @@ func TestMasterIndex(t *testing.T) {
 	blob1 := restic.PackedBlob{
 		PackID: restic.NewRandomID(),
 		Blob: restic.Blob{
-			Type:   restic.DataBlob,
-			ID:     idInIdx1,
+			BlobHandle: restic.BlobHandle{
+				Type: restic.DataBlob,
+				ID:   idInIdx1,
+			},
 			Length: uint(restic.CiphertextLength(10)),
 			Offset: 0,
 		},
@@ -31,8 +33,10 @@ func TestMasterIndex(t *testing.T) {
 	blob2 := restic.PackedBlob{
 		PackID: restic.NewRandomID(),
 		Blob: restic.Blob{
-			Type:   restic.DataBlob,
-			ID:     idInIdx2,
+			BlobHandle: restic.BlobHandle{
+				Type: restic.DataBlob,
+				ID:   idInIdx2,
+			},
 			Length: uint(restic.CiphertextLength(100)),
 			Offset: 10,
 		},
@@ -41,8 +45,10 @@ func TestMasterIndex(t *testing.T) {
 	blob12a := restic.PackedBlob{
 		PackID: restic.NewRandomID(),
 		Blob: restic.Blob{
-			Type:   restic.TreeBlob,
-			ID:     idInIdx12,
+			BlobHandle: restic.BlobHandle{
+				Type: restic.TreeBlob,
+				ID:   idInIdx12,
+			},
 			Length: uint(restic.CiphertextLength(123)),
 			Offset: 110,
 		},
@@ -51,8 +57,10 @@ func TestMasterIndex(t *testing.T) {
 	blob12b := restic.PackedBlob{
 		PackID: restic.NewRandomID(),
 		Blob: restic.Blob{
-			Type:   restic.TreeBlob,
-			ID:     idInIdx12,
+			BlobHandle: restic.BlobHandle{
+				Type: restic.TreeBlob,
+				ID:   idInIdx12,
+			},
 			Length: uint(restic.CiphertextLength(123)),
 			Offset: 50,
 		},
@@ -139,8 +147,10 @@ func TestMasterMergeFinalIndexes(t *testing.T) {
 	blob1 := restic.PackedBlob{
 		PackID: restic.NewRandomID(),
 		Blob: restic.Blob{
-			Type:   restic.DataBlob,
-			ID:     idInIdx1,
+			BlobHandle: restic.BlobHandle{
+				Type: restic.DataBlob,
+				ID:   idInIdx1,
+			},
 			Length: 10,
 			Offset: 0,
 		},
@@ -149,8 +159,10 @@ func TestMasterMergeFinalIndexes(t *testing.T) {
 	blob2 := restic.PackedBlob{
 		PackID: restic.NewRandomID(),
 		Blob: restic.Blob{
-			Type:   restic.DataBlob,
-			ID:     idInIdx2,
+			BlobHandle: restic.BlobHandle{
+				Type: restic.DataBlob,
+				ID:   idInIdx2,
+			},
 			Length: 100,
 			Offset: 10,
 		},

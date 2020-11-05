@@ -32,8 +32,10 @@ func TestIndexSerialize(t *testing.T) {
 			length := uint(i*100 + j)
 			idx.Store(restic.PackedBlob{
 				Blob: restic.Blob{
-					Type:   restic.DataBlob,
-					ID:     id,
+					BlobHandle: restic.BlobHandle{
+						Type: restic.DataBlob,
+						ID:   id,
+					},
 					Offset: pos,
 					Length: length,
 				},
@@ -105,8 +107,10 @@ func TestIndexSerialize(t *testing.T) {
 			length := uint(i*100 + j)
 			idx.Store(restic.PackedBlob{
 				Blob: restic.Blob{
-					Type:   restic.DataBlob,
-					ID:     id,
+					BlobHandle: restic.BlobHandle{
+						Type: restic.DataBlob,
+						ID:   id,
+					},
 					Offset: pos,
 					Length: length,
 				},
@@ -178,8 +182,10 @@ func TestIndexSize(t *testing.T) {
 			length := uint(i*100 + j)
 			idx.Store(restic.PackedBlob{
 				Blob: restic.Blob{
-					Type:   restic.DataBlob,
-					ID:     id,
+					BlobHandle: restic.BlobHandle{
+						Type: restic.DataBlob,
+						ID:   id,
+					},
 					Offset: pos,
 					Length: length,
 				},
@@ -395,8 +401,10 @@ func TestIndexPacks(t *testing.T) {
 		packID := restic.NewRandomID()
 		idx.Store(restic.PackedBlob{
 			Blob: restic.Blob{
-				Type:   restic.DataBlob,
-				ID:     restic.NewRandomID(),
+				BlobHandle: restic.BlobHandle{
+					Type: restic.DataBlob,
+					ID:   restic.NewRandomID(),
+				},
 				Offset: 0,
 				Length: 23,
 			},
@@ -431,8 +439,10 @@ func createRandomIndex(rng *rand.Rand, packfiles int) (idx *repository.Index, lo
 			size := 2000 + rng.Intn(4*1024*1024)
 			id := NewRandomTestID(rng)
 			blobs = append(blobs, restic.Blob{
-				Type:   restic.DataBlob,
-				ID:     id,
+				BlobHandle: restic.BlobHandle{
+					Type: restic.DataBlob,
+					ID:   id,
+				},
 				Length: uint(size),
 				Offset: uint(offset),
 			})
@@ -511,8 +521,10 @@ func TestIndexHas(t *testing.T) {
 			length := uint(i*100 + j)
 			idx.Store(restic.PackedBlob{
 				Blob: restic.Blob{
-					Type:   restic.DataBlob,
-					ID:     id,
+					BlobHandle: restic.BlobHandle{
+						Type: restic.DataBlob,
+						ID:   id,
+					},
 					Offset: pos,
 					Length: length,
 				},

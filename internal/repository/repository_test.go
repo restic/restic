@@ -296,9 +296,11 @@ func BenchmarkLoadIndex(b *testing.B) {
 	for i := 0; i < 5000; i++ {
 		idx.Store(restic.PackedBlob{
 			Blob: restic.Blob{
-				Type:   restic.DataBlob,
+				BlobHandle: restic.BlobHandle{
+					Type: restic.DataBlob,
+					ID:   restic.NewRandomID(),
+				},
 				Length: 1234,
-				ID:     restic.NewRandomID(),
 				Offset: 1235,
 			},
 			PackID: restic.NewRandomID(),

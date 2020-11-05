@@ -8,19 +8,14 @@ import (
 
 // Blob is one part of a file or a tree.
 type Blob struct {
-	Type   BlobType
+	BlobHandle
 	Length uint
-	ID     ID
 	Offset uint
 }
 
 func (b Blob) String() string {
 	return fmt.Sprintf("<Blob (%v) %v, offset %v, length %v>",
 		b.Type, b.ID.Str(), b.Offset, b.Length)
-}
-
-func (b Blob) Handle() BlobHandle {
-	return BlobHandle{ID: b.ID, Type: b.Type}
 }
 
 // PackedBlob is a blob stored within a file.
