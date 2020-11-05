@@ -14,14 +14,15 @@ function _restic {
     '--limit-download[limits downloads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--limit-upload[limits uploads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--no-cache[do not use a local cache]' \
-    '--no-lock[do not lock the repo, this allows some operations on read-only repos]' \
+    '--no-lock[do not lock the repository, this allows some operations on read-only repositories]' \
     '(*-o *--option)'{\*-o,\*--option}'[set extended option (`key=value`, can be specified multiple times)]:' \
     '--password-command[shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)]:' \
     '(-p --password-file)'{-p,--password-file}'[`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)]:' \
     '(-q --quiet)'{-q,--quiet}'[do not output comprehensive progress report]' \
     '(-r --repo)'{-r,--repo}'[`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)]:' \
+    '--repository-file[`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)]:' \
     '--tls-client-cert[path to a `file` containing PEM encoded TLS client certificate and private key]:' \
-    '(-v --verbose)'{-v,--verbose}'[be verbose (specify --verbose multiple times or level --verbose=`n`)]' \
+    '(-v --verbose)'{-v,--verbose}'[be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)]' \
     "1: :->cmnds" \
     "*::arg:->args"
 
@@ -174,14 +175,15 @@ function _restic_backup {
     '--limit-download[limits downloads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--limit-upload[limits uploads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--no-cache[do not use a local cache]' \
-    '--no-lock[do not lock the repo, this allows some operations on read-only repos]' \
+    '--no-lock[do not lock the repository, this allows some operations on read-only repositories]' \
     '(*-o *--option)'{\*-o,\*--option}'[set extended option (`key=value`, can be specified multiple times)]:' \
     '--password-command[shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)]:' \
     '(-p --password-file)'{-p,--password-file}'[`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)]:' \
     '(-q --quiet)'{-q,--quiet}'[do not output comprehensive progress report]' \
     '(-r --repo)'{-r,--repo}'[`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)]:' \
+    '--repository-file[`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)]:' \
     '--tls-client-cert[path to a `file` containing PEM encoded TLS client certificate and private key]:' \
-    '(-v --verbose)'{-v,--verbose}'[be verbose (specify --verbose multiple times or level --verbose=`n`)]'
+    '(-v --verbose)'{-v,--verbose}'[be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)]'
 }
 
 function _restic_cache {
@@ -198,14 +200,15 @@ function _restic_cache {
     '--limit-download[limits downloads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--limit-upload[limits uploads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--no-cache[do not use a local cache]' \
-    '--no-lock[do not lock the repo, this allows some operations on read-only repos]' \
+    '--no-lock[do not lock the repository, this allows some operations on read-only repositories]' \
     '(*-o *--option)'{\*-o,\*--option}'[set extended option (`key=value`, can be specified multiple times)]:' \
     '--password-command[shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)]:' \
     '(-p --password-file)'{-p,--password-file}'[`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)]:' \
     '(-q --quiet)'{-q,--quiet}'[do not output comprehensive progress report]' \
     '(-r --repo)'{-r,--repo}'[`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)]:' \
+    '--repository-file[`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)]:' \
     '--tls-client-cert[path to a `file` containing PEM encoded TLS client certificate and private key]:' \
-    '(-v --verbose)'{-v,--verbose}'[be verbose (specify --verbose multiple times or level --verbose=`n`)]'
+    '(-v --verbose)'{-v,--verbose}'[be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)]'
 }
 
 function _restic_cat {
@@ -219,14 +222,15 @@ function _restic_cat {
     '--limit-download[limits downloads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--limit-upload[limits uploads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--no-cache[do not use a local cache]' \
-    '--no-lock[do not lock the repo, this allows some operations on read-only repos]' \
+    '--no-lock[do not lock the repository, this allows some operations on read-only repositories]' \
     '(*-o *--option)'{\*-o,\*--option}'[set extended option (`key=value`, can be specified multiple times)]:' \
     '--password-command[shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)]:' \
     '(-p --password-file)'{-p,--password-file}'[`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)]:' \
     '(-q --quiet)'{-q,--quiet}'[do not output comprehensive progress report]' \
     '(-r --repo)'{-r,--repo}'[`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)]:' \
+    '--repository-file[`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)]:' \
     '--tls-client-cert[path to a `file` containing PEM encoded TLS client certificate and private key]:' \
-    '(-v --verbose)'{-v,--verbose}'[be verbose (specify --verbose multiple times or level --verbose=`n`)]'
+    '(-v --verbose)'{-v,--verbose}'[be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)]'
 }
 
 function _restic_check {
@@ -244,14 +248,15 @@ function _restic_check {
     '--limit-download[limits downloads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--limit-upload[limits uploads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--no-cache[do not use a local cache]' \
-    '--no-lock[do not lock the repo, this allows some operations on read-only repos]' \
+    '--no-lock[do not lock the repository, this allows some operations on read-only repositories]' \
     '(*-o *--option)'{\*-o,\*--option}'[set extended option (`key=value`, can be specified multiple times)]:' \
     '--password-command[shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)]:' \
     '(-p --password-file)'{-p,--password-file}'[`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)]:' \
     '(-q --quiet)'{-q,--quiet}'[do not output comprehensive progress report]' \
     '(-r --repo)'{-r,--repo}'[`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)]:' \
+    '--repository-file[`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)]:' \
     '--tls-client-cert[path to a `file` containing PEM encoded TLS client certificate and private key]:' \
-    '(-v --verbose)'{-v,--verbose}'[be verbose (specify --verbose multiple times or level --verbose=`n`)]'
+    '(-v --verbose)'{-v,--verbose}'[be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)]'
 }
 
 function _restic_copy {
@@ -262,7 +267,7 @@ function _restic_copy {
     '--password-command2[shell `command` to obtain the destination repository password from (default: $RESTIC_PASSWORD_COMMAND2)]:' \
     '--password-file2[`file` to read the destination repository password from (default: $RESTIC_PASSWORD_FILE2)]:' \
     '*--path[only consider snapshots which include this (absolute) `path`, when no snapshot ID is given]:' \
-    '--repo2[destination repository to copy snapshots to (default: $RESTIC_REPOSITORY2)]:' \
+    '--repo2[destination `repository` to copy snapshots to (default: $RESTIC_REPOSITORY2)]:' \
     '--tag[only consider snapshots which include this `taglist`, when no snapshot ID is given]:' \
     '*--cacert[`file` to load root certificates from (default: use system certificates)]:' \
     '--cache-dir[set the cache `directory`. (default: use system default cache directory)]:' \
@@ -272,14 +277,15 @@ function _restic_copy {
     '--limit-download[limits downloads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--limit-upload[limits uploads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--no-cache[do not use a local cache]' \
-    '--no-lock[do not lock the repo, this allows some operations on read-only repos]' \
+    '--no-lock[do not lock the repository, this allows some operations on read-only repositories]' \
     '(*-o *--option)'{\*-o,\*--option}'[set extended option (`key=value`, can be specified multiple times)]:' \
     '--password-command[shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)]:' \
     '(-p --password-file)'{-p,--password-file}'[`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)]:' \
     '(-q --quiet)'{-q,--quiet}'[do not output comprehensive progress report]' \
     '(-r --repo)'{-r,--repo}'[`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)]:' \
+    '--repository-file[`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)]:' \
     '--tls-client-cert[path to a `file` containing PEM encoded TLS client certificate and private key]:' \
-    '(-v --verbose)'{-v,--verbose}'[be verbose (specify --verbose multiple times or level --verbose=`n`)]'
+    '(-v --verbose)'{-v,--verbose}'[be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)]'
 }
 
 function _restic_diff {
@@ -294,14 +300,15 @@ function _restic_diff {
     '--limit-download[limits downloads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--limit-upload[limits uploads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--no-cache[do not use a local cache]' \
-    '--no-lock[do not lock the repo, this allows some operations on read-only repos]' \
+    '--no-lock[do not lock the repository, this allows some operations on read-only repositories]' \
     '(*-o *--option)'{\*-o,\*--option}'[set extended option (`key=value`, can be specified multiple times)]:' \
     '--password-command[shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)]:' \
     '(-p --password-file)'{-p,--password-file}'[`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)]:' \
     '(-q --quiet)'{-q,--quiet}'[do not output comprehensive progress report]' \
     '(-r --repo)'{-r,--repo}'[`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)]:' \
+    '--repository-file[`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)]:' \
     '--tls-client-cert[path to a `file` containing PEM encoded TLS client certificate and private key]:' \
-    '(-v --verbose)'{-v,--verbose}'[be verbose (specify --verbose multiple times or level --verbose=`n`)]'
+    '(-v --verbose)'{-v,--verbose}'[be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)]'
 }
 
 function _restic_dump {
@@ -318,14 +325,15 @@ function _restic_dump {
     '--limit-download[limits downloads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--limit-upload[limits uploads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--no-cache[do not use a local cache]' \
-    '--no-lock[do not lock the repo, this allows some operations on read-only repos]' \
+    '--no-lock[do not lock the repository, this allows some operations on read-only repositories]' \
     '(*-o *--option)'{\*-o,\*--option}'[set extended option (`key=value`, can be specified multiple times)]:' \
     '--password-command[shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)]:' \
     '(-p --password-file)'{-p,--password-file}'[`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)]:' \
     '(-q --quiet)'{-q,--quiet}'[do not output comprehensive progress report]' \
     '(-r --repo)'{-r,--repo}'[`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)]:' \
+    '--repository-file[`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)]:' \
     '--tls-client-cert[path to a `file` containing PEM encoded TLS client certificate and private key]:' \
-    '(-v --verbose)'{-v,--verbose}'[be verbose (specify --verbose multiple times or level --verbose=`n`)]'
+    '(-v --verbose)'{-v,--verbose}'[be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)]'
 }
 
 function _restic_find {
@@ -351,14 +359,15 @@ function _restic_find {
     '--limit-download[limits downloads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--limit-upload[limits uploads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--no-cache[do not use a local cache]' \
-    '--no-lock[do not lock the repo, this allows some operations on read-only repos]' \
+    '--no-lock[do not lock the repository, this allows some operations on read-only repositories]' \
     '(*-o *--option)'{\*-o,\*--option}'[set extended option (`key=value`, can be specified multiple times)]:' \
     '--password-command[shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)]:' \
     '(-p --password-file)'{-p,--password-file}'[`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)]:' \
     '(-q --quiet)'{-q,--quiet}'[do not output comprehensive progress report]' \
     '(-r --repo)'{-r,--repo}'[`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)]:' \
+    '--repository-file[`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)]:' \
     '--tls-client-cert[path to a `file` containing PEM encoded TLS client certificate and private key]:' \
-    '(-v --verbose)'{-v,--verbose}'[be verbose (specify --verbose multiple times or level --verbose=`n`)]'
+    '(-v --verbose)'{-v,--verbose}'[be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)]'
 }
 
 function _restic_forget {
@@ -374,7 +383,7 @@ function _restic_forget {
     '*--host[only consider snapshots with the given `host` (can be specified multiple times)]:' \
     '--tag[only consider snapshots which include this `taglist` in the format `tag[,tag,...]` (can be specified multiple times)]:' \
     '*--path[only consider snapshots which include this (absolute) `path` (can be specified multiple times)]:' \
-    '(-c --compact)'{-c,--compact}'[use compact format]' \
+    '(-c --compact)'{-c,--compact}'[use compact output format]' \
     '(-g --group-by)'{-g,--group-by}'[string for grouping snapshots by host,paths,tags]:' \
     '(-n --dry-run)'{-n,--dry-run}'[do not delete anything, just print what would be done]' \
     '--prune[automatically run the '\''prune'\'' command if snapshots have been removed]' \
@@ -387,14 +396,15 @@ function _restic_forget {
     '--limit-download[limits downloads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--limit-upload[limits uploads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--no-cache[do not use a local cache]' \
-    '--no-lock[do not lock the repo, this allows some operations on read-only repos]' \
+    '--no-lock[do not lock the repository, this allows some operations on read-only repositories]' \
     '(*-o *--option)'{\*-o,\*--option}'[set extended option (`key=value`, can be specified multiple times)]:' \
     '--password-command[shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)]:' \
     '(-p --password-file)'{-p,--password-file}'[`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)]:' \
     '(-q --quiet)'{-q,--quiet}'[do not output comprehensive progress report]' \
     '(-r --repo)'{-r,--repo}'[`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)]:' \
+    '--repository-file[`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)]:' \
     '--tls-client-cert[path to a `file` containing PEM encoded TLS client certificate and private key]:' \
-    '(-v --verbose)'{-v,--verbose}'[be verbose (specify --verbose multiple times or level --verbose=`n`)]'
+    '(-v --verbose)'{-v,--verbose}'[be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)]'
 }
 
 function _restic_generate {
@@ -411,14 +421,15 @@ function _restic_generate {
     '--limit-download[limits downloads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--limit-upload[limits uploads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--no-cache[do not use a local cache]' \
-    '--no-lock[do not lock the repo, this allows some operations on read-only repos]' \
+    '--no-lock[do not lock the repository, this allows some operations on read-only repositories]' \
     '(*-o *--option)'{\*-o,\*--option}'[set extended option (`key=value`, can be specified multiple times)]:' \
     '--password-command[shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)]:' \
     '(-p --password-file)'{-p,--password-file}'[`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)]:' \
     '(-q --quiet)'{-q,--quiet}'[do not output comprehensive progress report]' \
     '(-r --repo)'{-r,--repo}'[`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)]:' \
+    '--repository-file[`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)]:' \
     '--tls-client-cert[path to a `file` containing PEM encoded TLS client certificate and private key]:' \
-    '(-v --verbose)'{-v,--verbose}'[be verbose (specify --verbose multiple times or level --verbose=`n`)]'
+    '(-v --verbose)'{-v,--verbose}'[be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)]'
 }
 
 function _restic_help {
@@ -431,14 +442,15 @@ function _restic_help {
     '--limit-download[limits downloads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--limit-upload[limits uploads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--no-cache[do not use a local cache]' \
-    '--no-lock[do not lock the repo, this allows some operations on read-only repos]' \
+    '--no-lock[do not lock the repository, this allows some operations on read-only repositories]' \
     '(*-o *--option)'{\*-o,\*--option}'[set extended option (`key=value`, can be specified multiple times)]:' \
     '--password-command[shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)]:' \
     '(-p --password-file)'{-p,--password-file}'[`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)]:' \
     '(-q --quiet)'{-q,--quiet}'[do not output comprehensive progress report]' \
     '(-r --repo)'{-r,--repo}'[`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)]:' \
+    '--repository-file[`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)]:' \
     '--tls-client-cert[path to a `file` containing PEM encoded TLS client certificate and private key]:' \
-    '(-v --verbose)'{-v,--verbose}'[be verbose (specify --verbose multiple times or level --verbose=`n`)]'
+    '(-v --verbose)'{-v,--verbose}'[be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)]'
 }
 
 function _restic_init {
@@ -448,7 +460,7 @@ function _restic_init {
     '--key-hint2[key ID of key to try decrypting the secondary repository first (default: $RESTIC_KEY_HINT2)]:' \
     '--password-command2[shell `command` to obtain the secondary repository password from (default: $RESTIC_PASSWORD_COMMAND2)]:' \
     '--password-file2[`file` to read the secondary repository password from (default: $RESTIC_PASSWORD_FILE2)]:' \
-    '--repo2[secondary repository to copy chunker parameters from (default: $RESTIC_REPOSITORY2)]:' \
+    '--repo2[secondary `repository` to copy chunker parameters from (default: $RESTIC_REPOSITORY2)]:' \
     '*--cacert[`file` to load root certificates from (default: use system certificates)]:' \
     '--cache-dir[set the cache `directory`. (default: use system default cache directory)]:' \
     '--cleanup-cache[auto remove old cache directories]' \
@@ -457,14 +469,15 @@ function _restic_init {
     '--limit-download[limits downloads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--limit-upload[limits uploads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--no-cache[do not use a local cache]' \
-    '--no-lock[do not lock the repo, this allows some operations on read-only repos]' \
+    '--no-lock[do not lock the repository, this allows some operations on read-only repositories]' \
     '(*-o *--option)'{\*-o,\*--option}'[set extended option (`key=value`, can be specified multiple times)]:' \
     '--password-command[shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)]:' \
     '(-p --password-file)'{-p,--password-file}'[`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)]:' \
     '(-q --quiet)'{-q,--quiet}'[do not output comprehensive progress report]' \
     '(-r --repo)'{-r,--repo}'[`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)]:' \
+    '--repository-file[`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)]:' \
     '--tls-client-cert[path to a `file` containing PEM encoded TLS client certificate and private key]:' \
-    '(-v --verbose)'{-v,--verbose}'[be verbose (specify --verbose multiple times or level --verbose=`n`)]'
+    '(-v --verbose)'{-v,--verbose}'[be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)]'
 }
 
 function _restic_key {
@@ -481,14 +494,15 @@ function _restic_key {
     '--limit-download[limits downloads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--limit-upload[limits uploads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--no-cache[do not use a local cache]' \
-    '--no-lock[do not lock the repo, this allows some operations on read-only repos]' \
+    '--no-lock[do not lock the repository, this allows some operations on read-only repositories]' \
     '(*-o *--option)'{\*-o,\*--option}'[set extended option (`key=value`, can be specified multiple times)]:' \
     '--password-command[shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)]:' \
     '(-p --password-file)'{-p,--password-file}'[`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)]:' \
     '(-q --quiet)'{-q,--quiet}'[do not output comprehensive progress report]' \
     '(-r --repo)'{-r,--repo}'[`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)]:' \
+    '--repository-file[`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)]:' \
     '--tls-client-cert[path to a `file` containing PEM encoded TLS client certificate and private key]:' \
-    '(-v --verbose)'{-v,--verbose}'[be verbose (specify --verbose multiple times or level --verbose=`n`)]'
+    '(-v --verbose)'{-v,--verbose}'[be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)]'
 }
 
 function _restic_list {
@@ -502,14 +516,15 @@ function _restic_list {
     '--limit-download[limits downloads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--limit-upload[limits uploads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--no-cache[do not use a local cache]' \
-    '--no-lock[do not lock the repo, this allows some operations on read-only repos]' \
+    '--no-lock[do not lock the repository, this allows some operations on read-only repositories]' \
     '(*-o *--option)'{\*-o,\*--option}'[set extended option (`key=value`, can be specified multiple times)]:' \
     '--password-command[shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)]:' \
     '(-p --password-file)'{-p,--password-file}'[`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)]:' \
     '(-q --quiet)'{-q,--quiet}'[do not output comprehensive progress report]' \
     '(-r --repo)'{-r,--repo}'[`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)]:' \
+    '--repository-file[`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)]:' \
     '--tls-client-cert[path to a `file` containing PEM encoded TLS client certificate and private key]:' \
-    '(-v --verbose)'{-v,--verbose}'[be verbose (specify --verbose multiple times or level --verbose=`n`)]'
+    '(-v --verbose)'{-v,--verbose}'[be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)]'
 }
 
 function _restic_ls {
@@ -528,14 +543,15 @@ function _restic_ls {
     '--limit-download[limits downloads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--limit-upload[limits uploads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--no-cache[do not use a local cache]' \
-    '--no-lock[do not lock the repo, this allows some operations on read-only repos]' \
+    '--no-lock[do not lock the repository, this allows some operations on read-only repositories]' \
     '(*-o *--option)'{\*-o,\*--option}'[set extended option (`key=value`, can be specified multiple times)]:' \
     '--password-command[shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)]:' \
     '(-p --password-file)'{-p,--password-file}'[`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)]:' \
     '(-q --quiet)'{-q,--quiet}'[do not output comprehensive progress report]' \
     '(-r --repo)'{-r,--repo}'[`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)]:' \
+    '--repository-file[`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)]:' \
     '--tls-client-cert[path to a `file` containing PEM encoded TLS client certificate and private key]:' \
-    '(-v --verbose)'{-v,--verbose}'[be verbose (specify --verbose multiple times or level --verbose=`n`)]'
+    '(-v --verbose)'{-v,--verbose}'[be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)]'
 }
 
 function _restic_migrate {
@@ -550,14 +566,15 @@ function _restic_migrate {
     '--limit-download[limits downloads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--limit-upload[limits uploads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--no-cache[do not use a local cache]' \
-    '--no-lock[do not lock the repo, this allows some operations on read-only repos]' \
+    '--no-lock[do not lock the repository, this allows some operations on read-only repositories]' \
     '(*-o *--option)'{\*-o,\*--option}'[set extended option (`key=value`, can be specified multiple times)]:' \
     '--password-command[shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)]:' \
     '(-p --password-file)'{-p,--password-file}'[`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)]:' \
     '(-q --quiet)'{-q,--quiet}'[do not output comprehensive progress report]' \
     '(-r --repo)'{-r,--repo}'[`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)]:' \
+    '--repository-file[`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)]:' \
     '--tls-client-cert[path to a `file` containing PEM encoded TLS client certificate and private key]:' \
-    '(-v --verbose)'{-v,--verbose}'[be verbose (specify --verbose multiple times or level --verbose=`n`)]'
+    '(-v --verbose)'{-v,--verbose}'[be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)]'
 }
 
 function _restic_mount {
@@ -578,14 +595,15 @@ function _restic_mount {
     '--limit-download[limits downloads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--limit-upload[limits uploads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--no-cache[do not use a local cache]' \
-    '--no-lock[do not lock the repo, this allows some operations on read-only repos]' \
+    '--no-lock[do not lock the repository, this allows some operations on read-only repositories]' \
     '(*-o *--option)'{\*-o,\*--option}'[set extended option (`key=value`, can be specified multiple times)]:' \
     '--password-command[shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)]:' \
     '(-p --password-file)'{-p,--password-file}'[`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)]:' \
     '(-q --quiet)'{-q,--quiet}'[do not output comprehensive progress report]' \
     '(-r --repo)'{-r,--repo}'[`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)]:' \
+    '--repository-file[`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)]:' \
     '--tls-client-cert[path to a `file` containing PEM encoded TLS client certificate and private key]:' \
-    '(-v --verbose)'{-v,--verbose}'[be verbose (specify --verbose multiple times or level --verbose=`n`)]'
+    '(-v --verbose)'{-v,--verbose}'[be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)]'
 }
 
 function _restic_prune {
@@ -599,14 +617,15 @@ function _restic_prune {
     '--limit-download[limits downloads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--limit-upload[limits uploads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--no-cache[do not use a local cache]' \
-    '--no-lock[do not lock the repo, this allows some operations on read-only repos]' \
+    '--no-lock[do not lock the repository, this allows some operations on read-only repositories]' \
     '(*-o *--option)'{\*-o,\*--option}'[set extended option (`key=value`, can be specified multiple times)]:' \
     '--password-command[shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)]:' \
     '(-p --password-file)'{-p,--password-file}'[`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)]:' \
     '(-q --quiet)'{-q,--quiet}'[do not output comprehensive progress report]' \
     '(-r --repo)'{-r,--repo}'[`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)]:' \
+    '--repository-file[`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)]:' \
     '--tls-client-cert[path to a `file` containing PEM encoded TLS client certificate and private key]:' \
-    '(-v --verbose)'{-v,--verbose}'[be verbose (specify --verbose multiple times or level --verbose=`n`)]'
+    '(-v --verbose)'{-v,--verbose}'[be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)]'
 }
 
 function _restic_rebuild-index {
@@ -620,14 +639,15 @@ function _restic_rebuild-index {
     '--limit-download[limits downloads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--limit-upload[limits uploads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--no-cache[do not use a local cache]' \
-    '--no-lock[do not lock the repo, this allows some operations on read-only repos]' \
+    '--no-lock[do not lock the repository, this allows some operations on read-only repositories]' \
     '(*-o *--option)'{\*-o,\*--option}'[set extended option (`key=value`, can be specified multiple times)]:' \
     '--password-command[shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)]:' \
     '(-p --password-file)'{-p,--password-file}'[`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)]:' \
     '(-q --quiet)'{-q,--quiet}'[do not output comprehensive progress report]' \
     '(-r --repo)'{-r,--repo}'[`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)]:' \
+    '--repository-file[`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)]:' \
     '--tls-client-cert[path to a `file` containing PEM encoded TLS client certificate and private key]:' \
-    '(-v --verbose)'{-v,--verbose}'[be verbose (specify --verbose multiple times or level --verbose=`n`)]'
+    '(-v --verbose)'{-v,--verbose}'[be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)]'
 }
 
 function _restic_recover {
@@ -641,14 +661,15 @@ function _restic_recover {
     '--limit-download[limits downloads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--limit-upload[limits uploads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--no-cache[do not use a local cache]' \
-    '--no-lock[do not lock the repo, this allows some operations on read-only repos]' \
+    '--no-lock[do not lock the repository, this allows some operations on read-only repositories]' \
     '(*-o *--option)'{\*-o,\*--option}'[set extended option (`key=value`, can be specified multiple times)]:' \
     '--password-command[shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)]:' \
     '(-p --password-file)'{-p,--password-file}'[`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)]:' \
     '(-q --quiet)'{-q,--quiet}'[do not output comprehensive progress report]' \
     '(-r --repo)'{-r,--repo}'[`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)]:' \
+    '--repository-file[`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)]:' \
     '--tls-client-cert[path to a `file` containing PEM encoded TLS client certificate and private key]:' \
-    '(-v --verbose)'{-v,--verbose}'[be verbose (specify --verbose multiple times or level --verbose=`n`)]'
+    '(-v --verbose)'{-v,--verbose}'[be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)]'
 }
 
 function _restic_restore {
@@ -671,14 +692,15 @@ function _restic_restore {
     '--limit-download[limits downloads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--limit-upload[limits uploads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--no-cache[do not use a local cache]' \
-    '--no-lock[do not lock the repo, this allows some operations on read-only repos]' \
+    '--no-lock[do not lock the repository, this allows some operations on read-only repositories]' \
     '(*-o *--option)'{\*-o,\*--option}'[set extended option (`key=value`, can be specified multiple times)]:' \
     '--password-command[shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)]:' \
     '(-p --password-file)'{-p,--password-file}'[`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)]:' \
     '(-q --quiet)'{-q,--quiet}'[do not output comprehensive progress report]' \
     '(-r --repo)'{-r,--repo}'[`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)]:' \
+    '--repository-file[`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)]:' \
     '--tls-client-cert[path to a `file` containing PEM encoded TLS client certificate and private key]:' \
-    '(-v --verbose)'{-v,--verbose}'[be verbose (specify --verbose multiple times or level --verbose=`n`)]'
+    '(-v --verbose)'{-v,--verbose}'[be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)]'
 }
 
 function _restic_self-update {
@@ -693,19 +715,20 @@ function _restic_self-update {
     '--limit-download[limits downloads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--limit-upload[limits uploads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--no-cache[do not use a local cache]' \
-    '--no-lock[do not lock the repo, this allows some operations on read-only repos]' \
+    '--no-lock[do not lock the repository, this allows some operations on read-only repositories]' \
     '(*-o *--option)'{\*-o,\*--option}'[set extended option (`key=value`, can be specified multiple times)]:' \
     '--password-command[shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)]:' \
     '(-p --password-file)'{-p,--password-file}'[`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)]:' \
     '(-q --quiet)'{-q,--quiet}'[do not output comprehensive progress report]' \
     '(-r --repo)'{-r,--repo}'[`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)]:' \
+    '--repository-file[`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)]:' \
     '--tls-client-cert[path to a `file` containing PEM encoded TLS client certificate and private key]:' \
-    '(-v --verbose)'{-v,--verbose}'[be verbose (specify --verbose multiple times or level --verbose=`n`)]'
+    '(-v --verbose)'{-v,--verbose}'[be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)]'
 }
 
 function _restic_snapshots {
   _arguments \
-    '(-c --compact)'{-c,--compact}'[use compact format]' \
+    '(-c --compact)'{-c,--compact}'[use compact output format]' \
     '(-g --group-by)'{-g,--group-by}'[string for grouping snapshots by host,paths,tags]:' \
     '(-h --help)'{-h,--help}'[help for snapshots]' \
     '(*-H *--host)'{\*-H,\*--host}'[only consider snapshots for this `host` (can be specified multiple times)]:' \
@@ -720,14 +743,15 @@ function _restic_snapshots {
     '--limit-download[limits downloads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--limit-upload[limits uploads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--no-cache[do not use a local cache]' \
-    '--no-lock[do not lock the repo, this allows some operations on read-only repos]' \
+    '--no-lock[do not lock the repository, this allows some operations on read-only repositories]' \
     '(*-o *--option)'{\*-o,\*--option}'[set extended option (`key=value`, can be specified multiple times)]:' \
     '--password-command[shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)]:' \
     '(-p --password-file)'{-p,--password-file}'[`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)]:' \
     '(-q --quiet)'{-q,--quiet}'[do not output comprehensive progress report]' \
     '(-r --repo)'{-r,--repo}'[`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)]:' \
+    '--repository-file[`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)]:' \
     '--tls-client-cert[path to a `file` containing PEM encoded TLS client certificate and private key]:' \
-    '(-v --verbose)'{-v,--verbose}'[be verbose (specify --verbose multiple times or level --verbose=`n`)]'
+    '(-v --verbose)'{-v,--verbose}'[be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)]'
 }
 
 function _restic_stats {
@@ -745,14 +769,15 @@ function _restic_stats {
     '--limit-download[limits downloads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--limit-upload[limits uploads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--no-cache[do not use a local cache]' \
-    '--no-lock[do not lock the repo, this allows some operations on read-only repos]' \
+    '--no-lock[do not lock the repository, this allows some operations on read-only repositories]' \
     '(*-o *--option)'{\*-o,\*--option}'[set extended option (`key=value`, can be specified multiple times)]:' \
     '--password-command[shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)]:' \
     '(-p --password-file)'{-p,--password-file}'[`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)]:' \
     '(-q --quiet)'{-q,--quiet}'[do not output comprehensive progress report]' \
     '(-r --repo)'{-r,--repo}'[`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)]:' \
+    '--repository-file[`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)]:' \
     '--tls-client-cert[path to a `file` containing PEM encoded TLS client certificate and private key]:' \
-    '(-v --verbose)'{-v,--verbose}'[be verbose (specify --verbose multiple times or level --verbose=`n`)]'
+    '(-v --verbose)'{-v,--verbose}'[be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)]'
 }
 
 function _restic_tag {
@@ -772,14 +797,15 @@ function _restic_tag {
     '--limit-download[limits downloads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--limit-upload[limits uploads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--no-cache[do not use a local cache]' \
-    '--no-lock[do not lock the repo, this allows some operations on read-only repos]' \
+    '--no-lock[do not lock the repository, this allows some operations on read-only repositories]' \
     '(*-o *--option)'{\*-o,\*--option}'[set extended option (`key=value`, can be specified multiple times)]:' \
     '--password-command[shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)]:' \
     '(-p --password-file)'{-p,--password-file}'[`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)]:' \
     '(-q --quiet)'{-q,--quiet}'[do not output comprehensive progress report]' \
     '(-r --repo)'{-r,--repo}'[`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)]:' \
+    '--repository-file[`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)]:' \
     '--tls-client-cert[path to a `file` containing PEM encoded TLS client certificate and private key]:' \
-    '(-v --verbose)'{-v,--verbose}'[be verbose (specify --verbose multiple times or level --verbose=`n`)]'
+    '(-v --verbose)'{-v,--verbose}'[be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)]'
 }
 
 function _restic_unlock {
@@ -794,14 +820,15 @@ function _restic_unlock {
     '--limit-download[limits downloads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--limit-upload[limits uploads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--no-cache[do not use a local cache]' \
-    '--no-lock[do not lock the repo, this allows some operations on read-only repos]' \
+    '--no-lock[do not lock the repository, this allows some operations on read-only repositories]' \
     '(*-o *--option)'{\*-o,\*--option}'[set extended option (`key=value`, can be specified multiple times)]:' \
     '--password-command[shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)]:' \
     '(-p --password-file)'{-p,--password-file}'[`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)]:' \
     '(-q --quiet)'{-q,--quiet}'[do not output comprehensive progress report]' \
     '(-r --repo)'{-r,--repo}'[`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)]:' \
+    '--repository-file[`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)]:' \
     '--tls-client-cert[path to a `file` containing PEM encoded TLS client certificate and private key]:' \
-    '(-v --verbose)'{-v,--verbose}'[be verbose (specify --verbose multiple times or level --verbose=`n`)]'
+    '(-v --verbose)'{-v,--verbose}'[be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)]'
 }
 
 function _restic_version {
@@ -815,13 +842,14 @@ function _restic_version {
     '--limit-download[limits downloads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--limit-upload[limits uploads to a maximum rate in KiB/s. (default: unlimited)]:' \
     '--no-cache[do not use a local cache]' \
-    '--no-lock[do not lock the repo, this allows some operations on read-only repos]' \
+    '--no-lock[do not lock the repository, this allows some operations on read-only repositories]' \
     '(*-o *--option)'{\*-o,\*--option}'[set extended option (`key=value`, can be specified multiple times)]:' \
     '--password-command[shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)]:' \
     '(-p --password-file)'{-p,--password-file}'[`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)]:' \
     '(-q --quiet)'{-q,--quiet}'[do not output comprehensive progress report]' \
     '(-r --repo)'{-r,--repo}'[`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)]:' \
+    '--repository-file[`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)]:' \
     '--tls-client-cert[path to a `file` containing PEM encoded TLS client certificate and private key]:' \
-    '(-v --verbose)'{-v,--verbose}'[be verbose (specify --verbose multiple times or level --verbose=`n`)]'
+    '(-v --verbose)'{-v,--verbose}'[be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)]'
 }
 

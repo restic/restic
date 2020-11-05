@@ -36,71 +36,9 @@ __restic_contains_word()
     return 1
 }
 
-__restic_handle_go_custom_completion()
-{
-    __restic_debug "${FUNCNAME[0]}: cur is ${cur}, words[*] is ${words[*]}, #words[@] is ${#words[@]}"
-
-    local out requestComp lastParam lastChar comp directive args
-
-    # Prepare the command to request completions for the program.
-    # Calling ${words[0]} instead of directly restic allows to handle aliases
-    args=("${words[@]:1}")
-    requestComp="${words[0]} __completeNoDesc ${args[*]}"
-
-    lastParam=${words[$((${#words[@]}-1))]}
-    lastChar=${lastParam:$((${#lastParam}-1)):1}
-    __restic_debug "${FUNCNAME[0]}: lastParam ${lastParam}, lastChar ${lastChar}"
-
-    if [ -z "${cur}" ] && [ "${lastChar}" != "=" ]; then
-        # If the last parameter is complete (there is a space following it)
-        # We add an extra empty parameter so we can indicate this to the go method.
-        __restic_debug "${FUNCNAME[0]}: Adding extra empty parameter"
-        requestComp="${requestComp} \"\""
-    fi
-
-    __restic_debug "${FUNCNAME[0]}: calling ${requestComp}"
-    # Use eval to handle any environment variables and such
-    out=$(eval "${requestComp}" 2>/dev/null)
-
-    # Extract the directive integer at the very end of the output following a colon (:)
-    directive=${out##*:}
-    # Remove the directive
-    out=${out%:*}
-    if [ "${directive}" = "${out}" ]; then
-        # There is not directive specified
-        directive=0
-    fi
-    __restic_debug "${FUNCNAME[0]}: the completion directive is: ${directive}"
-    __restic_debug "${FUNCNAME[0]}: the completions are: ${out[*]}"
-
-    if [ $((directive & 1)) -ne 0 ]; then
-        # Error code.  No completion.
-        __restic_debug "${FUNCNAME[0]}: received error from custom completion go code"
-        return
-    else
-        if [ $((directive & 2)) -ne 0 ]; then
-            if [[ $(type -t compopt) = "builtin" ]]; then
-                __restic_debug "${FUNCNAME[0]}: activating no space"
-                compopt -o nospace
-            fi
-        fi
-        if [ $((directive & 4)) -ne 0 ]; then
-            if [[ $(type -t compopt) = "builtin" ]]; then
-                __restic_debug "${FUNCNAME[0]}: activating no file completion"
-                compopt +o default
-            fi
-        fi
-
-        while IFS='' read -r comp; do
-            COMPREPLY+=("$comp")
-        done < <(compgen -W "${out[*]}" -- "$cur")
-    fi
-}
-
 __restic_handle_reply()
 {
     __restic_debug "${FUNCNAME[0]}"
-    local comp
     case $cur in
         -*)
             if [[ $(type -t compopt) = "builtin" ]]; then
@@ -112,9 +50,7 @@ __restic_handle_reply()
             else
                 allflags=("${flags[*]} ${two_word_flags[*]}")
             fi
-            while IFS='' read -r comp; do
-                COMPREPLY+=("$comp")
-            done < <(compgen -W "${allflags[*]}" -- "$cur")
+            COMPREPLY=( $(compgen -W "${allflags[*]}" -- "$cur") )
             if [[ $(type -t compopt) = "builtin" ]]; then
                 [[ "${COMPREPLY[0]}" == *= ]] || compopt +o nospace
             fi
@@ -160,22 +96,14 @@ __restic_handle_reply()
     completions=("${commands[@]}")
     if [[ ${#must_have_one_noun[@]} -ne 0 ]]; then
         completions=("${must_have_one_noun[@]}")
-    elif [[ -n "${has_completion_function}" ]]; then
-        # if a go completion function is provided, defer to that function
-        completions=()
-        __restic_handle_go_custom_completion
     fi
     if [[ ${#must_have_one_flag[@]} -ne 0 ]]; then
         completions+=("${must_have_one_flag[@]}")
     fi
-    while IFS='' read -r comp; do
-        COMPREPLY+=("$comp")
-    done < <(compgen -W "${completions[*]}" -- "$cur")
+    COMPREPLY=( $(compgen -W "${completions[*]}" -- "$cur") )
 
     if [[ ${#COMPREPLY[@]} -eq 0 && ${#noun_aliases[@]} -gt 0 && ${#must_have_one_noun[@]} -ne 0 ]]; then
-        while IFS='' read -r comp; do
-            COMPREPLY+=("$comp")
-        done < <(compgen -W "${noun_aliases[*]}" -- "$cur")
+        COMPREPLY=( $(compgen -W "${noun_aliases[*]}" -- "$cur") )
     fi
 
     if [[ ${#COMPREPLY[@]} -eq 0 ]]; then
@@ -210,7 +138,7 @@ __restic_handle_filename_extension_flag()
 __restic_handle_subdirs_in_dir_flag()
 {
     local dir="$1"
-    pushd "${dir}" >/dev/null 2>&1 && _filedir -d && popd >/dev/null 2>&1 || return
+    pushd "${dir}" >/dev/null 2>&1 && _filedir -d && popd >/dev/null 2>&1
 }
 
 __restic_handle_flag()
@@ -418,6 +346,8 @@ _restic_backup()
     flags+=("--repo=")
     two_word_flags+=("--repo")
     two_word_flags+=("-r")
+    flags+=("--repository-file=")
+    two_word_flags+=("--repository-file")
     flags+=("--tls-client-cert=")
     two_word_flags+=("--tls-client-cert")
     flags+=("--verbose")
@@ -479,6 +409,8 @@ _restic_cache()
     flags+=("--repo=")
     two_word_flags+=("--repo")
     two_word_flags+=("-r")
+    flags+=("--repository-file=")
+    two_word_flags+=("--repository-file")
     flags+=("--tls-client-cert=")
     two_word_flags+=("--tls-client-cert")
     flags+=("--verbose")
@@ -533,6 +465,8 @@ _restic_cat()
     flags+=("--repo=")
     two_word_flags+=("--repo")
     two_word_flags+=("-r")
+    flags+=("--repository-file=")
+    two_word_flags+=("--repository-file")
     flags+=("--tls-client-cert=")
     two_word_flags+=("--tls-client-cert")
     flags+=("--verbose")
@@ -596,6 +530,8 @@ _restic_check()
     flags+=("--repo=")
     two_word_flags+=("--repo")
     two_word_flags+=("-r")
+    flags+=("--repository-file=")
+    two_word_flags+=("--repository-file")
     flags+=("--tls-client-cert=")
     two_word_flags+=("--tls-client-cert")
     flags+=("--verbose")
@@ -672,6 +608,8 @@ _restic_copy()
     flags+=("--repo=")
     two_word_flags+=("--repo")
     two_word_flags+=("-r")
+    flags+=("--repository-file=")
+    two_word_flags+=("--repository-file")
     flags+=("--tls-client-cert=")
     two_word_flags+=("--tls-client-cert")
     flags+=("--verbose")
@@ -728,6 +666,8 @@ _restic_diff()
     flags+=("--repo=")
     two_word_flags+=("--repo")
     two_word_flags+=("-r")
+    flags+=("--repository-file=")
+    two_word_flags+=("--repository-file")
     flags+=("--tls-client-cert=")
     two_word_flags+=("--tls-client-cert")
     flags+=("--verbose")
@@ -792,6 +732,8 @@ _restic_dump()
     flags+=("--repo=")
     two_word_flags+=("--repo")
     two_word_flags+=("-r")
+    flags+=("--repository-file=")
+    two_word_flags+=("--repository-file")
     flags+=("--tls-client-cert=")
     two_word_flags+=("--tls-client-cert")
     flags+=("--verbose")
@@ -882,6 +824,8 @@ _restic_find()
     flags+=("--repo=")
     two_word_flags+=("--repo")
     two_word_flags+=("-r")
+    flags+=("--repository-file=")
+    two_word_flags+=("--repository-file")
     flags+=("--tls-client-cert=")
     two_word_flags+=("--tls-client-cert")
     flags+=("--verbose")
@@ -987,6 +931,8 @@ _restic_forget()
     flags+=("--repo=")
     two_word_flags+=("--repo")
     two_word_flags+=("-r")
+    flags+=("--repository-file=")
+    two_word_flags+=("--repository-file")
     flags+=("--tls-client-cert=")
     two_word_flags+=("--tls-client-cert")
     flags+=("--verbose")
@@ -1050,6 +996,8 @@ _restic_generate()
     flags+=("--repo=")
     two_word_flags+=("--repo")
     two_word_flags+=("-r")
+    flags+=("--repository-file=")
+    two_word_flags+=("--repository-file")
     flags+=("--tls-client-cert=")
     two_word_flags+=("--tls-client-cert")
     flags+=("--verbose")
@@ -1118,6 +1066,8 @@ _restic_init()
     flags+=("--repo=")
     two_word_flags+=("--repo")
     two_word_flags+=("-r")
+    flags+=("--repository-file=")
+    two_word_flags+=("--repository-file")
     flags+=("--tls-client-cert=")
     two_word_flags+=("--tls-client-cert")
     flags+=("--verbose")
@@ -1181,6 +1131,8 @@ _restic_key()
     flags+=("--repo=")
     two_word_flags+=("--repo")
     two_word_flags+=("-r")
+    flags+=("--repository-file=")
+    two_word_flags+=("--repository-file")
     flags+=("--tls-client-cert=")
     two_word_flags+=("--tls-client-cert")
     flags+=("--verbose")
@@ -1235,6 +1187,8 @@ _restic_list()
     flags+=("--repo=")
     two_word_flags+=("--repo")
     two_word_flags+=("-r")
+    flags+=("--repository-file=")
+    two_word_flags+=("--repository-file")
     flags+=("--tls-client-cert=")
     two_word_flags+=("--tls-client-cert")
     flags+=("--verbose")
@@ -1304,6 +1258,8 @@ _restic_ls()
     flags+=("--repo=")
     two_word_flags+=("--repo")
     two_word_flags+=("-r")
+    flags+=("--repository-file=")
+    two_word_flags+=("--repository-file")
     flags+=("--tls-client-cert=")
     two_word_flags+=("--tls-client-cert")
     flags+=("--verbose")
@@ -1361,6 +1317,8 @@ _restic_migrate()
     flags+=("--repo=")
     two_word_flags+=("--repo")
     two_word_flags+=("-r")
+    flags+=("--repository-file=")
+    two_word_flags+=("--repository-file")
     flags+=("--tls-client-cert=")
     two_word_flags+=("--tls-client-cert")
     flags+=("--verbose")
@@ -1434,6 +1392,8 @@ _restic_mount()
     flags+=("--repo=")
     two_word_flags+=("--repo")
     two_word_flags+=("-r")
+    flags+=("--repository-file=")
+    two_word_flags+=("--repository-file")
     flags+=("--tls-client-cert=")
     two_word_flags+=("--tls-client-cert")
     flags+=("--verbose")
@@ -1488,6 +1448,8 @@ _restic_prune()
     flags+=("--repo=")
     two_word_flags+=("--repo")
     two_word_flags+=("-r")
+    flags+=("--repository-file=")
+    two_word_flags+=("--repository-file")
     flags+=("--tls-client-cert=")
     two_word_flags+=("--tls-client-cert")
     flags+=("--verbose")
@@ -1542,6 +1504,8 @@ _restic_rebuild-index()
     flags+=("--repo=")
     two_word_flags+=("--repo")
     two_word_flags+=("-r")
+    flags+=("--repository-file=")
+    two_word_flags+=("--repository-file")
     flags+=("--tls-client-cert=")
     two_word_flags+=("--tls-client-cert")
     flags+=("--verbose")
@@ -1596,6 +1560,8 @@ _restic_recover()
     flags+=("--repo=")
     two_word_flags+=("--repo")
     two_word_flags+=("-r")
+    flags+=("--repository-file=")
+    two_word_flags+=("--repository-file")
     flags+=("--tls-client-cert=")
     two_word_flags+=("--tls-client-cert")
     flags+=("--verbose")
@@ -1680,6 +1646,8 @@ _restic_restore()
     flags+=("--repo=")
     two_word_flags+=("--repo")
     two_word_flags+=("-r")
+    flags+=("--repository-file=")
+    two_word_flags+=("--repository-file")
     flags+=("--tls-client-cert=")
     two_word_flags+=("--tls-client-cert")
     flags+=("--verbose")
@@ -1737,6 +1705,8 @@ _restic_self-update()
     flags+=("--repo=")
     two_word_flags+=("--repo")
     two_word_flags+=("-r")
+    flags+=("--repository-file=")
+    two_word_flags+=("--repository-file")
     flags+=("--tls-client-cert=")
     two_word_flags+=("--tls-client-cert")
     flags+=("--verbose")
@@ -1810,6 +1780,8 @@ _restic_snapshots()
     flags+=("--repo=")
     two_word_flags+=("--repo")
     two_word_flags+=("-r")
+    flags+=("--repository-file=")
+    two_word_flags+=("--repository-file")
     flags+=("--tls-client-cert=")
     two_word_flags+=("--tls-client-cert")
     flags+=("--verbose")
@@ -1877,6 +1849,8 @@ _restic_stats()
     flags+=("--repo=")
     two_word_flags+=("--repo")
     two_word_flags+=("-r")
+    flags+=("--repository-file=")
+    two_word_flags+=("--repository-file")
     flags+=("--tls-client-cert=")
     two_word_flags+=("--tls-client-cert")
     flags+=("--verbose")
@@ -1950,6 +1924,8 @@ _restic_tag()
     flags+=("--repo=")
     two_word_flags+=("--repo")
     two_word_flags+=("-r")
+    flags+=("--repository-file=")
+    two_word_flags+=("--repository-file")
     flags+=("--tls-client-cert=")
     two_word_flags+=("--tls-client-cert")
     flags+=("--verbose")
@@ -2006,6 +1982,8 @@ _restic_unlock()
     flags+=("--repo=")
     two_word_flags+=("--repo")
     two_word_flags+=("-r")
+    flags+=("--repository-file=")
+    two_word_flags+=("--repository-file")
     flags+=("--tls-client-cert=")
     two_word_flags+=("--tls-client-cert")
     flags+=("--verbose")
@@ -2060,6 +2038,8 @@ _restic_version()
     flags+=("--repo=")
     two_word_flags+=("--repo")
     two_word_flags+=("-r")
+    flags+=("--repository-file=")
+    two_word_flags+=("--repository-file")
     flags+=("--tls-client-cert=")
     two_word_flags+=("--tls-client-cert")
     flags+=("--verbose")
@@ -2140,6 +2120,8 @@ _restic_root_command()
     flags+=("--repo=")
     two_word_flags+=("--repo")
     two_word_flags+=("-r")
+    flags+=("--repository-file=")
+    two_word_flags+=("--repository-file")
     flags+=("--tls-client-cert=")
     two_word_flags+=("--tls-client-cert")
     flags+=("--verbose")
@@ -2170,7 +2152,6 @@ __start_restic()
     local commands=("restic")
     local must_have_one_flag=()
     local must_have_one_noun=()
-    local has_completion_function
     local last_command
     local nouns=()
 
