@@ -203,16 +203,17 @@ func preCheckChangelogRelease() bool {
 
 func createChangelogRelease() {
 	date := time.Now().Format("2006-01-02")
-	target := filepath.Join("changelog", fmt.Sprintf("%s_%s", opts.Version, date))
-	mkdir(target)
+	targetDir := filepath.Join("changelog", fmt.Sprintf("%s_%s", opts.Version, date))
+	unreleasedDir := filepath.Join("changelog", "unreleased")
+	mkdir(targetDir)
 
-	for _, name := range readdir(filepath.Join("changelog", "unreleased")) {
+	for _, name := range readdir(unreleasedDir) {
 		if name == ".gitignore" {
 			continue
 		}
 
 		src := filepath.Join("changelog", "unreleased", name)
-		dest := filepath.Join(target, name)
+		dest := filepath.Join(targetDir, name)
 
 		err := os.Rename(src, dest)
 		if err != nil {
@@ -220,11 +221,11 @@ func createChangelogRelease() {
 		}
 	}
 
-	run("git", "add", target)
-	run("git", "add", "-u", filepath.Join("changelog", "unreleased"))
+	run("git", "add", targetDir)
+	run("git", "add", "-u", unreleasedDir)
 
 	msg := fmt.Sprintf("Prepare changelog for %v", opts.Version)
-	run("git", "commit", "-m", msg, target)
+	run("git", "commit", "-m", msg, targetDir, unreleasedDir)
 }
 
 func preCheckChangelogVersion() {
