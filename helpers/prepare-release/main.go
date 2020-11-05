@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/spf13/pflag"
 )
@@ -186,34 +187,44 @@ func preCheckChangelogCurrent() {
 	}
 }
 
-func preCheckChangelogRelease() {
+func preCheckChangelogRelease() bool {
 	if opts.IgnoreChangelogReleaseDate {
-		return
+		return true
 	}
 
-	d, err := os.Open("changelog")
-	if err != nil {
-		die("error opening dir: %v", err)
-	}
-
-	names, err := d.Readdirnames(-1)
-	if err != nil {
-		_ = d.Close()
-		die("error listing dir: %v", err)
-	}
-
-	err = d.Close()
-	if err != nil {
-		die("error closing dir: %v", err)
-	}
-
-	for _, name := range names {
+	for _, name := range readdir("changelog") {
 		if strings.HasPrefix(name, opts.Version+"_") {
-			return
+			return true
 		}
 	}
 
-	die("unable to find subdir with date for version %v in changelog", opts.Version)
+	return false
+}
+
+func createChangelogRelease() {
+	date := time.Now().Format("2006-01-02")
+	target := filepath.Join("changelog", fmt.Sprintf("%s_%s", opts.Version, date))
+	mkdir(target)
+
+	for _, name := range readdir(filepath.Join("changelog", "unreleased")) {
+		if name == ".gitignore" {
+			continue
+		}
+
+		src := filepath.Join("changelog", "unreleased", name)
+		dest := filepath.Join(target, name)
+
+		err := os.Rename(src, dest)
+		if err != nil {
+			die("rename %v -> %v failed: %w", src, dest, err)
+		}
+	}
+
+	run("git", "add", target)
+	run("git", "add", "-u", filepath.Join("changelog", "unreleased"))
+
+	msg := fmt.Sprintf("Prepare changelog for %v", opts.Version)
+	run("git", "commit", "-m", msg, target)
 }
 
 func preCheckChangelogVersion() {
@@ -425,7 +436,9 @@ func main() {
 	preCheckUncommittedChanges()
 	preCheckVersionExists()
 	preCheckDockerBuilderGoVersion()
-	preCheckChangelogRelease()
+	if !preCheckChangelogRelease() {
+		createChangelogRelease()
+	}
 	preCheckChangelogCurrent()
 	preCheckChangelogVersion()
 
