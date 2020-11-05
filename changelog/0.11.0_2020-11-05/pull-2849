@@ -1,0 +1,7 @@
+Enhancement: Authenticate to Google Cloud Storage with access token
+
+When using the GCS backend, it is now possible to authenticate with OAuth2
+access tokens instead of a credentials file by setting the GOOGLE_ACCESS_TOKEN
+environment variable.
+
+https://github.com/restic/restic/pull/2849
