@@ -39,8 +39,8 @@ type TestRepo struct {
 	loader func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error
 }
 
-func (i *TestRepo) Lookup(blobID restic.ID, _ restic.BlobType) []restic.PackedBlob {
-	packs := i.blobs[blobID]
+func (i *TestRepo) Lookup(bh restic.BlobHandle) []restic.PackedBlob {
+	packs := i.blobs[bh.ID]
 	return packs
 }
 

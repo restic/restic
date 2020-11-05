@@ -165,7 +165,8 @@ func (idx *Index) StorePack(id restic.ID, blobs []restic.Blob) {
 func (idx *Index) toPackedBlob(e *indexEntry, t restic.BlobType) restic.PackedBlob {
 	return restic.PackedBlob{
 		Blob: restic.Blob{
-			BlobHandle: restic.BlobHandle{ID: e.id,
+			BlobHandle: restic.BlobHandle{
+				ID:   e.id,
 				Type: t},
 			Length: uint(e.length),
 			Offset: uint(e.offset),
@@ -176,12 +177,12 @@ func (idx *Index) toPackedBlob(e *indexEntry, t restic.BlobType) restic.PackedBl
 
 // Lookup queries the index for the blob ID and returns all entries including
 // duplicates. Adds found entries to blobs and returns the result.
-func (idx *Index) Lookup(id restic.ID, t restic.BlobType, pbs []restic.PackedBlob) []restic.PackedBlob {
+func (idx *Index) Lookup(bh restic.BlobHandle, pbs []restic.PackedBlob) []restic.PackedBlob {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
-	idx.byType[t].foreachWithID(id, func(e *indexEntry) {
-		pbs = append(pbs, idx.toPackedBlob(e, t))
+	idx.byType[bh.Type].foreachWithID(bh.ID, func(e *indexEntry) {
+		pbs = append(pbs, idx.toPackedBlob(e, bh.Type))
 	})
 
 	return pbs
@@ -206,20 +207,20 @@ func (idx *Index) ListPack(id restic.ID) (pbs []restic.PackedBlob) {
 }
 
 // Has returns true iff the id is listed in the index.
-func (idx *Index) Has(id restic.ID, t restic.BlobType) bool {
+func (idx *Index) Has(bh restic.BlobHandle) bool {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
-	return idx.byType[t].get(id) != nil
+	return idx.byType[bh.Type].get(bh.ID) != nil
 }
 
 // LookupSize returns the length of the plaintext content of the blob with the
 // given id.
-func (idx *Index) LookupSize(id restic.ID, t restic.BlobType) (plaintextLength uint, found bool) {
+func (idx *Index) LookupSize(bh restic.BlobHandle) (plaintextLength uint, found bool) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
-	e := idx.byType[t].get(id)
+	e := idx.byType[bh.Type].get(bh.ID)
 	if e == nil {
 		return 0, false
 	}
@@ -596,8 +597,9 @@ func DecodeIndex(buf []byte, id restic.ID) (idx *Index, oldFormat bool, err erro
 
 		for _, blob := range pack.Blobs {
 			idx.store(packID, restic.Blob{
-				BlobHandle: restic.BlobHandle{Type: blob.Type,
-					ID: blob.ID},
+				BlobHandle: restic.BlobHandle{
+					Type: blob.Type,
+					ID:   blob.ID},
 				Offset: blob.Offset,
 				Length: blob.Length,
 			})

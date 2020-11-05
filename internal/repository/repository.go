@@ -152,7 +152,7 @@ func (r *Repository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.
 	debug.Log("load %v with id %v (buf len %v, cap %d)", t, id, len(buf), cap(buf))
 
 	// lookup packs
-	blobs := r.idx.Lookup(id, t)
+	blobs := r.idx.Lookup(restic.BlobHandle{ID: id, Type: t})
 	if len(blobs) == 0 {
 		debug.Log("id %v not found in index", id)
 		return nil, errors.Errorf("id %v not found in repository", id)
@@ -232,7 +232,7 @@ func (r *Repository) LoadJSONUnpacked(ctx context.Context, t restic.FileType, id
 
 // LookupBlobSize returns the size of blob id.
 func (r *Repository) LookupBlobSize(id restic.ID, tpe restic.BlobType) (uint, bool) {
-	return r.idx.LookupSize(id, tpe)
+	return r.idx.LookupSize(restic.BlobHandle{ID: id, Type: tpe})
 }
 
 // SaveAndEncrypt encrypts data and stores it to the backend as type t. If data
@@ -773,7 +773,7 @@ func (r *Repository) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte
 	}
 
 	// first try to add to pending blobs; if not successful, this blob is already known
-	known = !r.idx.addPending(newID, t)
+	known = !r.idx.addPending(restic.BlobHandle{ID: newID, Type: t})
 
 	// only save when needed or explicitly told
 	if !known || storeDuplicate {

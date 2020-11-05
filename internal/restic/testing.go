@@ -53,7 +53,7 @@ func (fs *fakeFileSystem) saveFile(ctx context.Context, rd io.Reader) (blobs IDs
 		}
 
 		id := Hash(chunk.Data)
-		if !fs.blobIsKnown(id, DataBlob) {
+		if !fs.blobIsKnown(BlobHandle{ID: id, Type: DataBlob}) {
 			_, _, err := fs.repo.SaveBlob(ctx, DataBlob, chunk.Data, id, true)
 			if err != nil {
 				fs.t.Fatalf("error saving chunk: %v", err)
@@ -82,15 +82,15 @@ func (fs *fakeFileSystem) treeIsKnown(tree *Tree) (bool, []byte, ID) {
 	data = append(data, '\n')
 
 	id := Hash(data)
-	return fs.blobIsKnown(id, TreeBlob), data, id
+	return fs.blobIsKnown(BlobHandle{ID: id, Type: TreeBlob}), data, id
 }
 
-func (fs *fakeFileSystem) blobIsKnown(id ID, t BlobType) bool {
+func (fs *fakeFileSystem) blobIsKnown(bh BlobHandle) bool {
 	if fs.rand.Float32() < fs.duplication {
 		return false
 	}
 
-	if fs.repo.Index().Has(id, t) {
+	if fs.repo.Index().Has(bh) {
 		return true
 	}
 
