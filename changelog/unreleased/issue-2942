@@ -1,7 +1,0 @@
-Bugfix: Make --exclude-larger-than handle disappearing files
-
-There was a small bug in the backup command's --exclude-larger-than
-option where files that disappeared between scanning and actually
-backing them up to the repository caused a panic. This is now fixed.
-
-https://github.com/restic/restic/issues/2942

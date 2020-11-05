@@ -1,9 +1,0 @@
-Bugfix: restic generate, help and self-update no longer check passwords
-
-The commands `restic cache`, `generate`, `help` and `self-update` don't need
-passwords, but they previously did run the RESTIC_PASSWORD_COMMAND (if set in
-the environment), prompting users to authenticate for no reason. They now skip
-running the password command.
-
-https://github.com/restic/restic/issues/2951
-https://github.com/restic/restic/pull/2987
