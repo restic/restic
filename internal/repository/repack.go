@@ -30,7 +30,7 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 
 	debug.Log("repacking %d packs while keeping %d blobs", len(packs), len(keepBlobs))
 
-	wg, ctx := errgroup.WithContext(ctx)
+	wg, wgCtx := errgroup.WithContext(ctx)
 
 	downloadQueue := make(chan restic.ID)
 	wg.Go(func() error {
@@ -38,8 +38,8 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 		for packID := range packs {
 			select {
 			case downloadQueue <- packID:
-			case <-ctx.Done():
-				return ctx.Err()
+			case <-wgCtx.Done():
+				return wgCtx.Err()
 			}
 		}
 		return nil
@@ -60,7 +60,7 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 			// load the complete pack into a temp file
 			h := restic.Handle{Type: restic.PackFile, Name: packID.String()}
 
-			tempfile, hash, packLength, err := DownloadAndHash(ctx, repo.Backend(), h)
+			tempfile, hash, packLength, err := DownloadAndHash(wgCtx, repo.Backend(), h)
 			if err != nil {
 				return errors.Wrap(err, "Repack")
 			}
@@ -73,8 +73,8 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 
 			select {
 			case processQueue <- repackJob{tempfile, hash, packLength}:
-			case <-ctx.Done():
-				return ctx.Err()
+			case <-wgCtx.Done():
+				return wgCtx.Err()
 			}
 		}
 		return nil
@@ -157,7 +157,7 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 				}
 
 				// We do want to save already saved blobs!
-				_, _, err = repo.SaveBlob(ctx, entry.Type, plaintext, entry.ID, true)
+				_, _, err = repo.SaveBlob(wgCtx, entry.Type, plaintext, entry.ID, true)
 				if err != nil {
 					return err
 				}
