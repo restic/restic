@@ -124,7 +124,7 @@ var IndexFull = func(idx *Index) bool {
 }
 
 // Store remembers the id and pack in the index.
-func (idx *Index) Store(blob restic.PackedBlob) {
+func (idx *Index) Store(pb restic.PackedBlob) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
@@ -132,16 +132,16 @@ func (idx *Index) Store(blob restic.PackedBlob) {
 		panic("store new item in finalized index")
 	}
 
-	debug.Log("%v", blob)
+	debug.Log("%v", pb)
 
 	// get packIndex and save if new packID
-	packIndex, ok := idx.packIDToIndex[blob.PackID]
+	packIndex, ok := idx.packIDToIndex[pb.PackID]
 	if !ok {
-		packIndex = idx.addToPacks(blob.PackID)
-		idx.packIDToIndex[blob.PackID] = packIndex
+		packIndex = idx.addToPacks(pb.PackID)
+		idx.packIDToIndex[pb.PackID] = packIndex
 	}
 
-	idx.store(packIndex, blob.Blob)
+	idx.store(packIndex, pb.Blob)
 }
 
 // StorePack remembers the ids of all blobs of a given pack
@@ -162,11 +162,11 @@ func (idx *Index) StorePack(id restic.ID, blobs []restic.Blob) {
 	}
 }
 
-func (idx *Index) toPackedBlob(e *indexEntry, typ restic.BlobType) restic.PackedBlob {
+func (idx *Index) toPackedBlob(e *indexEntry, t restic.BlobType) restic.PackedBlob {
 	return restic.PackedBlob{
 		Blob: restic.Blob{
 			BlobHandle: restic.BlobHandle{ID: e.id,
-				Type: typ},
+				Type: t},
 			Length: uint(e.length),
 			Offset: uint(e.offset),
 		},
@@ -176,19 +176,19 @@ func (idx *Index) toPackedBlob(e *indexEntry, typ restic.BlobType) restic.Packed
 
 // Lookup queries the index for the blob ID and returns all entries including
 // duplicates. Adds found entries to blobs and returns the result.
-func (idx *Index) Lookup(id restic.ID, tpe restic.BlobType, blobs []restic.PackedBlob) []restic.PackedBlob {
+func (idx *Index) Lookup(id restic.ID, t restic.BlobType, pbs []restic.PackedBlob) []restic.PackedBlob {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
-	idx.byType[tpe].foreachWithID(id, func(e *indexEntry) {
-		blobs = append(blobs, idx.toPackedBlob(e, tpe))
+	idx.byType[t].foreachWithID(id, func(e *indexEntry) {
+		pbs = append(pbs, idx.toPackedBlob(e, t))
 	})
 
-	return blobs
+	return pbs
 }
 
 // ListPack returns a list of blobs contained in a pack.
-func (idx *Index) ListPack(id restic.ID) (list []restic.PackedBlob) {
+func (idx *Index) ListPack(id restic.ID) (pbs []restic.PackedBlob) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
@@ -196,30 +196,30 @@ func (idx *Index) ListPack(id restic.ID) (list []restic.PackedBlob) {
 		m := &idx.byType[typ]
 		m.foreach(func(e *indexEntry) bool {
 			if idx.packs[e.packIndex] == id {
-				list = append(list, idx.toPackedBlob(e, restic.BlobType(typ)))
+				pbs = append(pbs, idx.toPackedBlob(e, restic.BlobType(typ)))
 			}
 			return true
 		})
 	}
 
-	return list
+	return pbs
 }
 
 // Has returns true iff the id is listed in the index.
-func (idx *Index) Has(id restic.ID, tpe restic.BlobType) bool {
+func (idx *Index) Has(id restic.ID, t restic.BlobType) bool {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
-	return idx.byType[tpe].get(id) != nil
+	return idx.byType[t].get(id) != nil
 }
 
 // LookupSize returns the length of the plaintext content of the blob with the
 // given id.
-func (idx *Index) LookupSize(id restic.ID, tpe restic.BlobType) (plaintextLength uint, found bool) {
+func (idx *Index) LookupSize(id restic.ID, t restic.BlobType) (plaintextLength uint, found bool) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
-	e := idx.byType[tpe].get(id)
+	e := idx.byType[t].get(id)
 	if e == nil {
 		return 0, false
 	}
