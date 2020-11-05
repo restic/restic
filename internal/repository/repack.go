@@ -19,6 +19,9 @@ const numRepackWorkers = 8
 // these packs. Each pack is loaded and the blobs listed in keepBlobs is saved
 // into a new pack. Returned is the list of obsolete packs which can then
 // be removed.
+//
+// The map keepBlobs is modified by Repack, it is used to keep track of which
+// blobs have been processed.
 func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet, p *restic.Progress) (obsoletePacks restic.IDSet, err error) {
 	if p != nil {
 		p.Start()
