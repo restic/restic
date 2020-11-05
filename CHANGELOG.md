@@ -1,3 +1,178 @@
+Changelog for restic 0.11.0 (2020-11-05)
+=======================================
+
+The following sections list the changes in restic 0.11.0 relevant to
+restic users. The changes are ordered by importance.
+
+Summary
+-------
+
+ * Fix #1212: Restore timestamps and permissions on intermediate directories
+ * Fix #1756: Mark repository files as read-only when using the local backend
+ * Fix #2241: Hide password in REST backend repository URLs
+ * Fix #2319: Correctly dump directories into tar files
+ * Fix #2491: Don't require `self-update --output` placeholder file
+ * Fix #2834: Fix rare cases of backup command hanging forever
+ * Fix #2938: Fix manpage formatting
+ * Fix #2942: Make --exclude-larger-than handle disappearing files
+ * Fix #2951: Restic generate, help and self-update no longer check passwords
+ * Fix #2979: Make snapshots --json output [] instead of null when no snapshots
+ * Enh #2969: Optimize check for unchanged files during backup
+ * Enh #340: Add support for Volume Shadow Copy Service (VSS) on Windows
+ * Enh #2849: Authenticate to Google Cloud Storage with access token
+ * Enh #1458: New option --repository-file
+ * Enh #2978: Warn if parent snapshot cannot be loaded during backup
+
+Details
+-------
+
+ * Bugfix #1212: Restore timestamps and permissions on intermediate directories
+
+   When using the `--include` option of the restore command, restic restored timestamps and
+   permissions only on directories selected by the include pattern. Intermediate directories,
+   which are necessary to restore files located in sub- directories, were created with default
+   permissions. We've fixed the restore command to restore timestamps and permissions for these
+   directories as well.
+
+   https://github.com/restic/restic/issues/1212
+   https://github.com/restic/restic/issues/1402
+   https://github.com/restic/restic/pull/2906
+
+ * Bugfix #1756: Mark repository files as read-only when using the local backend
+
+   Files stored in a local repository were marked as writeable on the filesystem for non-Windows
+   systems, which did not prevent accidental file modifications outside of restic. In addition,
+   the local backend did not work with certain filesystems and network mounts which do not permit
+   modifications of file permissions.
+
+   Restic now marks files stored in a local repository as read-only on the filesystem on
+   non-Windows systems. The error handling is improved to support more filesystems.
+
+   https://github.com/restic/restic/issues/1756
+   https://github.com/restic/restic/issues/2157
+   https://github.com/restic/restic/pull/2989
+
+ * Bugfix #2241: Hide password in REST backend repository URLs
+
+   When using a password in the REST backend repository URL, the password could in some cases be
+   included in the output from restic, e.g. when initializing a repo or during an error.
+
+   The password is now replaced with "***" where applicable.
+
+   https://github.com/restic/restic/issues/2241
+   https://github.com/restic/restic/pull/2658
+
+ * Bugfix #2319: Correctly dump directories into tar files
+
+   The dump command previously wrote directories in a tar file in a way which can cause
+   compatibility problems. This caused, for example, 7zip on Windows to not open tar files
+   containing directories. In addition it was not possible to dump directories with extended
+   attributes. These compatibility problems are now corrected.
+
+   In addition, a tar file now includes the name of the owner and group of a file.
+
+   https://github.com/restic/restic/issues/2319
+   https://github.com/restic/restic/pull/3039
+
+ * Bugfix #2491: Don't require `self-update --output` placeholder file
+
+   `restic self-update --output /path/to/new-restic` used to require that new-restic was an
+   existing file, to be overwritten. Now it's possible to download an updated restic binary to a
+   new path, without first having to create a placeholder file.
+
+   https://github.com/restic/restic/issues/2491
+   https://github.com/restic/restic/pull/2937
+
+ * Bugfix #2834: Fix rare cases of backup command hanging forever
+
+   We've fixed an issue with the backup progress reporting which could cause restic to hang
+   forever right before finishing a backup.
+
+   https://github.com/restic/restic/issues/2834
+   https://github.com/restic/restic/pull/2963
+
+ * Bugfix #2938: Fix manpage formatting
+
+   The manpage formatting in restic v0.10.0 was garbled, which is fixed now.
+
+   https://github.com/restic/restic/issues/2938
+   https://github.com/restic/restic/pull/2977
+
+ * Bugfix #2942: Make --exclude-larger-than handle disappearing files
+
+   There was a small bug in the backup command's --exclude-larger-than option where files that
+   disappeared between scanning and actually backing them up to the repository caused a panic.
+   This is now fixed.
+
+   https://github.com/restic/restic/issues/2942
+
+ * Bugfix #2951: Restic generate, help and self-update no longer check passwords
+
+   The commands `restic cache`, `generate`, `help` and `self-update` don't need passwords, but
+   they previously did run the RESTIC_PASSWORD_COMMAND (if set in the environment), prompting
+   users to authenticate for no reason. They now skip running the password command.
+
+   https://github.com/restic/restic/issues/2951
+   https://github.com/restic/restic/pull/2987
+
+ * Bugfix #2979: Make snapshots --json output [] instead of null when no snapshots
+
+   Restic previously output `null` instead of `[]` for the `--json snapshots` command, when
+   there were no snapshots in the repository. This caused some minor problems when parsing the
+   output, but is now fixed such that `[]` is output when the list of snapshots is empty.
+
+   https://github.com/restic/restic/issues/2979
+   https://github.com/restic/restic/pull/2984
+
+ * Enhancement #2969: Optimize check for unchanged files during backup
+
+   During a backup restic skips processing files which have not changed since the last backup run.
+   Previously this required opening each file once which can be slow on network filesystems. The
+   backup command now checks for file changes before opening a file. This considerably reduces
+   the time to create a backup on network filesystems.
+
+   https://github.com/restic/restic/issues/2969
+   https://github.com/restic/restic/pull/2970
+
+ * Enhancement #340: Add support for Volume Shadow Copy Service (VSS) on Windows
+
+   Volume Shadow Copy Service allows read access to files that are locked by another process using
+   an exclusive lock through a filesystem snapshot. Restic was unable to backup those files
+   before. This update enables backing up these files.
+
+   This needs to be enabled explicitely using the --use-fs-snapshot option of the backup
+   command.
+
+   https://github.com/restic/restic/issues/340
+   https://github.com/restic/restic/pull/2274
+
+ * Enhancement #2849: Authenticate to Google Cloud Storage with access token
+
+   When using the GCS backend, it is now possible to authenticate with OAuth2 access tokens
+   instead of a credentials file by setting the GOOGLE_ACCESS_TOKEN environment variable.
+
+   https://github.com/restic/restic/pull/2849
+
+ * Enhancement #1458: New option --repository-file
+
+   We've added a new command-line option --repository-file as an alternative to -r. This allows
+   to read the repository URL from a file in order to prevent certain types of information leaks,
+   especially for URLs containing credentials.
+
+   https://github.com/restic/restic/issues/1458
+   https://github.com/restic/restic/issues/2900
+   https://github.com/restic/restic/pull/2910
+
+ * Enhancement #2978: Warn if parent snapshot cannot be loaded during backup
+
+   During a backup restic uses the parent snapshot to check whether a file was changed and has to be
+   backed up again. For this check the backup has to read the directories contained in the old
+   snapshot. If a tree blob cannot be loaded, restic now warns about this problem with the backup
+   repository.
+
+   https://github.com/restic/restic/pull/2978
+
+
 Changelog for restic 0.10.0 (2020-09-19)
 =======================================
 
