@@ -2,6 +2,7 @@ package s3
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -66,12 +67,26 @@ func open(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, erro
 			},
 		},
 	})
-	client, err := minio.New(cfg.Endpoint, &minio.Options{
+
+	options := &minio.Options{
 		Creds:     creds,
 		Secure:    !cfg.UseHTTP,
 		Region:    cfg.Region,
 		Transport: rt,
-	})
+	}
+
+	switch strings.ToLower(cfg.BucketLookup) {
+	case "", "auto":
+		options.BucketLookup = minio.BucketLookupAuto
+	case "dns":
+		options.BucketLookup = minio.BucketLookupDNS
+	case "path":
+		options.BucketLookup = minio.BucketLookupPath
+	default:
+		return nil, fmt.Errorf(`bad bucket-lookup style %q must be "auto", "path" or "dns"`, cfg.BucketLookup)
+	}
+
+	client, err := minio.New(cfg.Endpoint, options)
 	if err != nil {
 		return nil, errors.Wrap(err, "minio.New")
 	}
