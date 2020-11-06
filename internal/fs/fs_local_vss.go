@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/options"
@@ -13,6 +14,7 @@ import (
 
 // VSSConfig holds extended options of windows volume shadow copy service.
 type VSSConfig struct {
+	Timeout time.Duration `option:"timeout" help:"time that the VSS can spend creating snapshots before timing out"`
 }
 
 func init() {
@@ -23,7 +25,9 @@ func init() {
 
 // NewVSSConfig returns a new VSSConfig with the default values filled in.
 func NewVSSConfig() VSSConfig {
-	return VSSConfig{}
+	return VSSConfig{
+		Timeout: time.Second * 120,
+	}
 }
 
 // ParseVSSConfig parses a VSS extended options to VSSConfig struct.
@@ -52,6 +56,7 @@ type LocalVss struct {
 	mutex           sync.RWMutex
 	msgError        ErrorHandler
 	msgMessage      MessageHandler
+	timeout         time.Duration
 }
 
 // statically ensure that LocalVss implements FS.
@@ -66,6 +71,7 @@ func NewLocalVss(msgError ErrorHandler, msgMessage MessageHandler, cfg VSSConfig
 		failedSnapshots: make(map[string]struct{}),
 		msgError:        msgError,
 		msgMessage:      msgMessage,
+		timeout:         cfg.Timeout,
 	}
 }
 
@@ -144,7 +150,7 @@ func (fs *LocalVss) snapshotPath(path string) string {
 			vssVolume := volumeNameLower + string(filepath.Separator)
 			fs.msgMessage("creating VSS snapshot for [%s]\n", vssVolume)
 
-			if snapshot, err := NewVssSnapshot(vssVolume, 120, fs.msgError); err != nil {
+			if snapshot, err := NewVssSnapshot(vssVolume, fs.timeout, fs.msgError); err != nil {
 				_ = fs.msgError(vssVolume, errors.Errorf("failed to create snapshot for [%s]: %s",
 					vssVolume, err))
 				fs.failedSnapshots[volumeNameLower] = struct{}{}
