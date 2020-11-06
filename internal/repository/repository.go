@@ -322,7 +322,10 @@ func (r *Repository) Flush(ctx context.Context) error {
 		return err
 	}
 
-	// Save index after flushing
+	// Save index after flushing only if noAutoIndexUpdate is not set
+	if r.noAutoIndexUpdate {
+		return nil
+	}
 	return r.SaveIndex(ctx)
 }
 

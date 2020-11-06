@@ -62,6 +62,7 @@ type MasterIndex interface {
 	Has(ID, BlobType) bool
 	Lookup(ID, BlobType) []PackedBlob
 	Count(BlobType) uint
+	Packs() IDSet
 
 	// Each returns a channel that yields all blobs known to the index. When
 	// the context is cancelled, the background goroutine terminates. This
