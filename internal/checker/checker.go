@@ -520,6 +520,8 @@ func (c *Checker) filterTrees(ctx context.Context, backlog restic.IDs, loaderCha
 			c.blobRefs.Lock()
 			h := restic.BlobHandle{ID: nextTreeID, Type: restic.TreeBlob}
 			blobReferenced := c.blobRefs.M.Has(h)
+			// noop if already referenced
+			c.blobRefs.M.Insert(h)
 			c.blobRefs.Unlock()
 			if blobReferenced {
 				continue
@@ -540,10 +542,6 @@ func (c *Checker) filterTrees(ctx context.Context, backlog restic.IDs, loaderCha
 		case loadCh <- nextTreeID:
 			outstandingLoadTreeJobs++
 			loadCh = nil
-			c.blobRefs.Lock()
-			h := restic.BlobHandle{ID: nextTreeID, Type: restic.TreeBlob}
-			c.blobRefs.M.Insert(h)
-			c.blobRefs.Unlock()
 
 		case j, ok := <-inCh:
 			if !ok {
