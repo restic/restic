@@ -220,32 +220,27 @@ func (b *Local) Remove(ctx context.Context, h restic.Handle) error {
 	return fs.Remove(fn)
 }
 
-func isFile(fi os.FileInfo) bool {
-	return fi.Mode()&(os.ModeType|os.ModeCharDevice) == 0
-}
-
 // List runs fn for each file in the backend which has the type t. When an
 // error occurs (or fn returns an error), List stops and returns it.
 func (b *Local) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
 	debug.Log("List %v", t)
 
 	basedir, subdirs := b.Basedir(t)
+	atBasedir := true
 	err := fs.Walk(basedir, func(path string, fi os.FileInfo, err error) error {
 		debug.Log("walk on %v\n", path)
 		if err != nil {
 			return err
 		}
 
-		if path == basedir {
+		switch {
+		case atBasedir: // Skip basedir itself.
+			atBasedir = false
 			return nil
-		}
-
-		if !isFile(fi) {
-			return nil
-		}
-
-		if fi.IsDir() && !subdirs {
+		case fi.IsDir() && !subdirs:
 			return filepath.SkipDir
+		case !fi.Mode().IsRegular():
+			return nil
 		}
 
 		debug.Log("send %v\n", filepath.Base(path))
