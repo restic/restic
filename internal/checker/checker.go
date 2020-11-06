@@ -308,37 +308,14 @@ func (e TreeError) Error() string {
 	return fmt.Sprintf("tree %v: %v", e.ID.Str(), e.Errors)
 }
 
-type treeJob struct {
-	restic.ID
-	error
-	*restic.Tree
-}
-
-// loadTreeWorker loads trees from repo and sends them to out.
-func loadTreeWorker(ctx context.Context, repo restic.Repository,
-	in <-chan restic.ID, out chan<- treeJob) {
-
-	for treeID := range in {
-		tree, err := repo.LoadTree(ctx, treeID)
-		debug.Log("load tree %v (%v) returned err: %v", tree, treeID, err)
-		job := treeJob{ID: treeID, error: err, Tree: tree}
-
-		select {
-		case <-ctx.Done():
-			return
-		case out <- job:
-		}
-	}
-}
-
 // checkTreeWorker checks the trees received and sends out errors to errChan.
-func (c *Checker) checkTreeWorker(ctx context.Context, in <-chan treeJob, out chan<- error) {
-	for job := range in {
-		debug.Log("check tree %v (tree %v, err %v)", job.ID, job.Tree, job.error)
+func (c *Checker) checkTreeWorker(ctx context.Context, trees <-chan restic.TreeItem, out chan<- error) {
+	for job := range trees {
+		debug.Log("check tree %v (tree %v, err %v)", job.ID, job.Tree, job.Error)
 
 		var errs []error
-		if job.error != nil {
-			errs = append(errs, job.error)
+		if job.Error != nil {
+			errs = append(errs, job.Error)
 		} else {
 			errs = c.checkTree(job.ID, job.Tree)
 		}
@@ -352,97 +329,6 @@ func (c *Checker) checkTreeWorker(ctx context.Context, in <-chan treeJob, out ch
 			return
 		case out <- treeError:
 			debug.Log("tree %v: sent %d errors", treeError.ID, len(treeError.Errors))
-		}
-	}
-}
-
-func (c *Checker) filterTrees(ctx context.Context, backlog restic.IDs, loaderChan chan<- restic.ID, in <-chan treeJob, out chan<- treeJob) {
-	var (
-		inCh                    = in
-		outCh                   chan<- treeJob
-		loadCh                  chan<- restic.ID
-		job                     treeJob
-		nextTreeID              restic.ID
-		outstandingLoadTreeJobs = 0
-	)
-
-	for {
-		if loadCh == nil && len(backlog) > 0 {
-			// process last added ids first, that is traverse the tree in depth-first order
-			ln := len(backlog) - 1
-			nextTreeID, backlog = backlog[ln], backlog[:ln]
-
-			// use a separate flag for processed trees to ensure that check still processes trees
-			// even when a file references a tree blob
-			c.blobRefs.Lock()
-			h := restic.BlobHandle{ID: nextTreeID, Type: restic.TreeBlob}
-			blobReferenced := c.blobRefs.M.Has(h)
-			// noop if already referenced
-			c.blobRefs.M.Insert(h)
-			c.blobRefs.Unlock()
-			if blobReferenced {
-				continue
-			}
-
-			loadCh = loaderChan
-		}
-
-		if loadCh == nil && outCh == nil && outstandingLoadTreeJobs == 0 {
-			debug.Log("backlog is empty, all channels nil, exiting")
-			return
-		}
-
-		select {
-		case <-ctx.Done():
-			return
-
-		case loadCh <- nextTreeID:
-			outstandingLoadTreeJobs++
-			loadCh = nil
-
-		case j, ok := <-inCh:
-			if !ok {
-				debug.Log("input channel closed")
-				inCh = nil
-				in = nil
-				continue
-			}
-
-			outstandingLoadTreeJobs--
-
-			debug.Log("input job tree %v", j.ID)
-
-			if j.error != nil {
-				debug.Log("received job with error: %v (tree %v, ID %v)", j.error, j.Tree, j.ID)
-			} else if j.Tree == nil {
-				debug.Log("received job with nil tree pointer: %v (ID %v)", j.error, j.ID)
-				// send a new job with the new error instead of the old one
-				j = treeJob{ID: j.ID, error: errors.New("tree is nil and error is nil")}
-			} else {
-				subtrees := j.Tree.Subtrees()
-				debug.Log("subtrees for tree %v: %v", j.ID, subtrees)
-				// iterate backwards over subtree to compensate backwards traversal order of nextTreeID selection
-				for i := len(subtrees) - 1; i >= 0; i-- {
-					id := subtrees[i]
-					if id.IsNull() {
-						// We do not need to raise this error here, it is
-						// checked when the tree is checked. Just make sure
-						// that we do not add any null IDs to the backlog.
-						debug.Log("tree %v has nil subtree", j.ID)
-						continue
-					}
-					backlog = append(backlog, id)
-				}
-			}
-
-			job = j
-			outCh = out
-			inCh = nil
-
-		case outCh <- job:
-			debug.Log("tree sent to check: %v", job.ID)
-			outCh = nil
-			inCh = in
 		}
 	}
 }
@@ -480,26 +366,16 @@ func (c *Checker) Structure(ctx context.Context, errChan chan<- error) {
 		}
 	}
 
-	loaderChan := make(chan restic.ID)
-	loadedTreeChan := make(chan treeJob)
-	treeStream := make(chan treeJob)
-
 	wg, ctx := errgroup.WithContext(ctx)
-	var loadTreeWg sync.WaitGroup
-
-	for i := 0; i < defaultParallelism; i++ {
-		loadTreeWg.Add(1)
-		wg.Go(func() error {
-			defer loadTreeWg.Done()
-			loadTreeWorker(ctx, c.repo, loaderChan, loadedTreeChan)
-			return nil
-		})
-	}
-	// close once all loadTreeWorkers have completed
-	wg.Go(func() error {
-		loadTreeWg.Wait()
-		close(loadedTreeChan)
-		return nil
+	treeStream := restic.StreamTrees(ctx, wg, c.repo, trees, func(treeID restic.ID) bool {
+		// blobRefs may be accessed in parallel by checkTree
+		c.blobRefs.Lock()
+		h := restic.BlobHandle{ID: treeID, Type: restic.TreeBlob}
+		blobReferenced := c.blobRefs.M.Has(h)
+		// noop if already referenced
+		c.blobRefs.M.Insert(h)
+		c.blobRefs.Unlock()
+		return blobReferenced
 	})
 
 	defer close(errChan)
@@ -509,13 +385,6 @@ func (c *Checker) Structure(ctx context.Context, errChan chan<- error) {
 			return nil
 		})
 	}
-
-	wg.Go(func() error {
-		defer close(loaderChan)
-		defer close(treeStream)
-		c.filterTrees(ctx, trees, loaderChan, loadedTreeChan, treeStream)
-		return nil
-	})
 
 	wg.Wait()
 }
