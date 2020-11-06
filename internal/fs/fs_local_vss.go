@@ -14,7 +14,9 @@ import (
 
 // VSSConfig holds extended options of windows volume shadow copy service.
 type VSSConfig struct {
-	Timeout time.Duration `option:"timeout" help:"time that the VSS can spend creating snapshots before timing out"`
+	ExcludeAllMountPoints bool          `option:"excludeallmountpoints" help:"exclude mountpoints from snapshotting on all volumes"`
+	ExcludeVolumes        string        `option:"excludevolumes" help:"semicolon separated list of volumes to exclude from snapshotting (ex. 'c:\\;e:\\mnt;\\\\?\\Volume{...}')"`
+	Timeout               time.Duration `option:"timeout" help:"time that the VSS can spend creating snapshot before timing out"`
 }
 
 func init() {
@@ -47,31 +49,59 @@ type ErrorHandler func(item string, err error) error
 // MessageHandler is used to report errors/messages via callbacks.
 type MessageHandler func(msg string, args ...interface{})
 
+// VolumeFilter is used to filter volumes by it's mount point or GUID path.
+type VolumeFilter func(volume string) bool
+
 // LocalVss is a wrapper around the local file system which uses windows volume
 // shadow copy service (VSS) in a transparent way.
 type LocalVss struct {
 	FS
-	snapshots       map[string]VssSnapshot
-	failedSnapshots map[string]struct{}
-	mutex           sync.RWMutex
-	msgError        ErrorHandler
-	msgMessage      MessageHandler
-	timeout         time.Duration
+	snapshots             map[string]VssSnapshot
+	failedSnapshots       map[string]struct{}
+	mutex                 sync.RWMutex
+	msgError              ErrorHandler
+	msgMessage            MessageHandler
+	excludeAllMountPoints bool
+	excludeVolumes        map[string]struct{}
+	timeout               time.Duration
 }
 
 // statically ensure that LocalVss implements FS.
 var _ FS = &LocalVss{}
 
+// parseMountPoints try to convert semicolon separated list of mount points
+// to map of lowercased volume GUID pathes. Mountpoints already in volume
+// GUID path format will be validated and normalized.
+func parseMountPoints(list string, msgError ErrorHandler) (volumes map[string]struct{}) {
+	if list == "" {
+		return
+	}
+	for _, s := range strings.Split(list, ";") {
+		if v, err := GetVolumeNameForVolumeMountPoint(s); err != nil {
+			msgError(s, errors.Errorf("failed to parse vss.excludevolumes [%s]: %s", s, err))
+		} else {
+			if volumes == nil {
+				volumes = make(map[string]struct{})
+			}
+			volumes[strings.ToLower(v)] = struct{}{}
+		}
+	}
+
+	return
+}
+
 // NewLocalVss creates a new wrapper around the windows filesystem using volume
 // shadow copy service to access locked files.
 func NewLocalVss(msgError ErrorHandler, msgMessage MessageHandler, cfg VSSConfig) *LocalVss {
 	return &LocalVss{
-		FS:              Local{},
-		snapshots:       make(map[string]VssSnapshot),
-		failedSnapshots: make(map[string]struct{}),
-		msgError:        msgError,
-		msgMessage:      msgMessage,
-		timeout:         cfg.Timeout,
+		FS:                    Local{},
+		snapshots:             make(map[string]VssSnapshot),
+		failedSnapshots:       make(map[string]struct{}),
+		msgError:              msgError,
+		msgMessage:            msgMessage,
+		excludeAllMountPoints: cfg.ExcludeAllMountPoints,
+		excludeVolumes:        parseMountPoints(cfg.ExcludeVolumes, msgError),
+		timeout:               cfg.Timeout,
 	}
 }
 
@@ -112,6 +142,24 @@ func (fs *LocalVss) Lstat(name string) (os.FileInfo, error) {
 	return os.Lstat(fs.snapshotPath(name))
 }
 
+// isMountPointExcluded is true if given mountpoint excluded by user.
+func (fs *LocalVss) isMountPointExcluded(mountPoint string) bool {
+	if fs.excludeVolumes == nil {
+		return false
+	}
+
+	volume, err := GetVolumeNameForVolumeMountPoint(mountPoint)
+	if err != nil {
+		fs.msgError(mountPoint, errors.Errorf("failed to get volume from mount point [%s]: %s", mountPoint, err))
+
+		return false
+	}
+
+	_, ok := fs.excludeVolumes[strings.ToLower(volume)]
+
+	return ok
+}
+
 // snapshotPath returns the path inside a VSS snapshots if it already exists.
 // If the path is not yet available as a snapshot, a snapshot is created.
 // If creation of a snapshot fails the file's original path is returned as
@@ -148,23 +196,36 @@ func (fs *LocalVss) snapshotPath(path string) string {
 
 		if !snapshotExists && !snapshotFailed {
 			vssVolume := volumeNameLower + string(filepath.Separator)
-			fs.msgMessage("creating VSS snapshot for [%s]\n", vssVolume)
 
-			if snapshot, err := NewVssSnapshot(vssVolume, fs.timeout, fs.msgError); err != nil {
-				_ = fs.msgError(vssVolume, errors.Errorf("failed to create snapshot for [%s]: %s",
-					vssVolume, err))
+			if fs.isMountPointExcluded(vssVolume) {
+				fs.msgMessage("snapshots for [%s] excluded by user\n", vssVolume)
 				fs.failedSnapshots[volumeNameLower] = struct{}{}
 			} else {
-				fs.snapshots[volumeNameLower] = snapshot
-				fs.msgMessage("successfully created snapshot for [%s]\n", vssVolume)
-				if len(snapshot.mountPointInfo) > 0 {
-					fs.msgMessage("mountpoints in snapshot volume [%s]:\n", vssVolume)
-					for mp, mpInfo := range snapshot.mountPointInfo {
-						info := ""
-						if !mpInfo.IsSnapshotted() {
-							info = " (not snapshotted)"
+				fs.msgMessage("creating VSS snapshot for [%s]\n", vssVolume)
+
+				var filter VolumeFilter
+				if !fs.excludeAllMountPoints {
+					filter = func(volume string) bool {
+						return !fs.isMountPointExcluded(volume)
+					}
+				}
+
+				if snapshot, err := NewVssSnapshot(vssVolume, fs.timeout, filter, fs.msgError); err != nil {
+					fs.msgError(vssVolume, errors.Errorf("failed to create snapshot for [%s]: %s",
+						vssVolume, err))
+					fs.failedSnapshots[volumeNameLower] = struct{}{}
+				} else {
+					fs.snapshots[volumeNameLower] = snapshot
+					fs.msgMessage("successfully created snapshot for [%s]\n", vssVolume)
+					if len(snapshot.mountPointInfo) > 0 {
+						fs.msgMessage("mountpoints in snapshot volume [%s]:\n", vssVolume)
+						for mp, mpInfo := range snapshot.mountPointInfo {
+							info := ""
+							if !mpInfo.IsSnapshotted() {
+								info = " (not snapshotted)"
+							}
+							fs.msgMessage(" - %s%s\n", mp, info)
 						}
-						fs.msgMessage(" - %s%s\n", mp, info)
 					}
 				}
 			}

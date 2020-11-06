@@ -733,10 +733,33 @@ func HasSufficientPrivilegesForVSS() error {
 	return err
 }
 
+// GetVolumeNameForVolumeMountPoint clear input parameter
+// and calls the equivalent windows api.
+func GetVolumeNameForVolumeMountPoint(mountPoint string) (string, error) {
+	if mountPoint != "" && mountPoint[len(mountPoint)-1] != filepath.Separator {
+		mountPoint += string(filepath.Separator)
+	}
+
+	mountPointPointer, err := syscall.UTF16PtrFromString(mountPoint)
+	if err != nil {
+		return mountPoint, err
+	}
+
+	// A reasonable size for the buffer to accommodate the largest possible
+	// volume GUID path is 50 characters.
+	volumeNameBuffer := make([]uint16, 50)
+	if err := windows.GetVolumeNameForVolumeMountPoint(
+		mountPointPointer, &volumeNameBuffer[0], 50); err != nil {
+		return mountPoint, err
+	}
+
+	return syscall.UTF16ToString(volumeNameBuffer), nil
+}
+
 // NewVssSnapshot creates a new vss snapshot. If creating the snapshots doesn't
 // finish within the timeout an error is returned.
 func NewVssSnapshot(
-	volume string, timeout time.Duration, msgError ErrorHandler) (VssSnapshot, error) {
+	volume string, timeout time.Duration, filter VolumeFilter, msgError ErrorHandler) (VssSnapshot, error) {
 	is64Bit, err := isRunningOn64BitWindows()
 
 	if err != nil {
@@ -828,35 +851,42 @@ func NewVssSnapshot(
 		return VssSnapshot{}, err
 	}
 
-	mountPoints, err := enumerateMountedFolders(volume)
-	if err != nil {
-		iVssBackupComponents.Release()
-		return VssSnapshot{}, newVssTextError(fmt.Sprintf(
-			"failed to enumerate mount points for volume %s: %s", volume, err))
-	}
-
 	mountPointInfo := make(map[string]MountPoint)
 
-	for _, mountPoint := range mountPoints {
-		// ensure every mountpoint is available even without a valid
-		// snapshot because we need to consider this when backing up files
-		mountPointInfo[mountPoint] = MountPoint{isSnapshotted: false}
-
-		if isSupported, err := iVssBackupComponents.IsVolumeSupported(mountPoint); err != nil {
-			continue
-		} else if !isSupported {
-			continue
-		}
-
-		var mountPointSnapshotSetID ole.GUID
-		err := iVssBackupComponents.AddToSnapshotSet(mountPoint, &mountPointSnapshotSetID)
+	// if filter==nil just don't process mount points for this volume at all
+	if filter != nil {
+		mountPoints, err := enumerateMountedFolders(volume)
 		if err != nil {
 			iVssBackupComponents.Release()
-			return VssSnapshot{}, err
+
+			return VssSnapshot{}, newVssTextError(fmt.Sprintf(
+				"failed to enumerate mount points for volume %s: %s", volume, err))
 		}
 
-		mountPointInfo[mountPoint] = MountPoint{isSnapshotted: true,
-			snapshotSetID: mountPointSnapshotSetID}
+		for _, mountPoint := range mountPoints {
+			// ensure every mountpoint is available even without a valid
+			// snapshot because we need to consider this when backing up files
+			mountPointInfo[mountPoint] = MountPoint{isSnapshotted: false}
+
+			if !filter(mountPoint) {
+				continue
+			} else if isSupported, err := iVssBackupComponents.IsVolumeSupported(mountPoint); err != nil {
+				continue
+			} else if !isSupported {
+				continue
+			}
+
+			var mountPointSnapshotSetID ole.GUID
+			err := iVssBackupComponents.AddToSnapshotSet(mountPoint, &mountPointSnapshotSetID)
+			if err != nil {
+				iVssBackupComponents.Release()
+
+				return VssSnapshot{}, err
+			}
+
+			mountPointInfo[mountPoint] = MountPoint{isSnapshotted: true,
+				snapshotSetID: mountPointSnapshotSetID}
+		}
 	}
 
 	err = callAsyncFunctionAndWait(iVssBackupComponents.PrepareForBackup, "PrepareForBackup",
