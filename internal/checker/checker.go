@@ -27,6 +27,7 @@ type Checker struct {
 		sync.Mutex
 		M restic.BlobSet
 	}
+	trackUnused bool
 
 	masterIndex *repository.MasterIndex
 
@@ -34,11 +35,12 @@ type Checker struct {
 }
 
 // New returns a new checker which runs on repo.
-func New(repo restic.Repository) *Checker {
+func New(repo restic.Repository, trackUnused bool) *Checker {
 	c := &Checker{
 		packs:       make(map[restic.ID]int64),
 		masterIndex: repository.NewMasterIndex(),
 		repo:        repo,
+		trackUnused: trackUnused,
 	}
 
 	c.blobRefs.M = restic.NewBlobSet()
@@ -626,8 +628,6 @@ func (c *Checker) Structure(ctx context.Context, errChan chan<- error) {
 func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 	debug.Log("checking tree %v", id)
 
-	var blobs []restic.ID
-
 	for _, node := range tree.Nodes {
 		switch node.Type {
 		case "file":
@@ -641,7 +641,6 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 					errs = append(errs, Error{TreeID: id, Err: errors.Errorf("file %q blob %d has null ID", node.Name, b)})
 					continue
 				}
-				blobs = append(blobs, blobID)
 				blobSize, found := c.repo.LookupBlobSize(blobID, restic.DataBlob)
 				if !found {
 					debug.Log("tree %v references blob %v which isn't contained in index", id, blobID)
@@ -649,6 +648,21 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 				}
 				size += uint64(blobSize)
 			}
+
+			if c.trackUnused {
+				// loop a second time to keep the locked section as short as possible
+				c.blobRefs.Lock()
+				for _, blobID := range node.Content {
+					if blobID.IsNull() {
+						continue
+					}
+					h := restic.BlobHandle{ID: blobID, Type: restic.DataBlob}
+					c.blobRefs.M.Insert(h)
+					debug.Log("blob %v is referenced", blobID)
+				}
+				c.blobRefs.Unlock()
+			}
+
 		case "dir":
 			if node.Subtree == nil {
 				errs = append(errs, Error{TreeID: id, Err: errors.Errorf("dir node %q has no subtree", node.Name)})
@@ -672,19 +686,14 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 		}
 	}
 
-	for _, blobID := range blobs {
-		c.blobRefs.Lock()
-		h := restic.BlobHandle{ID: blobID, Type: restic.DataBlob}
-		c.blobRefs.M.Insert(h)
-		debug.Log("blob %v is referenced", blobID)
-		c.blobRefs.Unlock()
-	}
-
 	return errs
 }
 
 // UnusedBlobs returns all blobs that have never been referenced.
 func (c *Checker) UnusedBlobs(ctx context.Context) (blobs restic.BlobHandles) {
+	if !c.trackUnused {
+		panic("only works when tracking blob references")
+	}
 	c.blobRefs.Lock()
 	defer c.blobRefs.Unlock()
 

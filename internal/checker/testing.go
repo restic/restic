@@ -9,7 +9,7 @@ import (
 
 // TestCheckRepo runs the checker on repo.
 func TestCheckRepo(t testing.TB, repo restic.Repository) {
-	chkr := New(repo)
+	chkr := New(repo, true)
 
 	hints, errs := chkr.LoadIndex(context.TODO())
 	if len(errs) != 0 {
