@@ -473,14 +473,19 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 
 	packsAddedByRepack := 0
 	if len(repackPacks) != 0 {
-		packsAddedByRepack -= len(repo.Index().Packs())
+		// Remember the number of unique packs before repacking
+		packsBeforeRepacking := len(repo.Index().Packs())
+
 		Verbosef("repacking packs\n")
 		bar := newProgressMax(!gopts.Quiet, uint64(len(repackPacks)), "packs repacked")
 		_, err := repository.Repack(ctx, repo, repackPacks, keepBlobs, bar)
 		if err != nil {
 			return err
 		}
-		packsAddedByRepack += len(repo.Index().Packs())
+
+		// Since repacking will only add new packs, we can calculate the number
+		// of packs like this:
+		packsAddedByRepack = len(repo.Index().Packs()) - packsBeforeRepacking
 
 		// Also remove repacked packs
 		removePacks.Merge(repackPacks)
