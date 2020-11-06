@@ -3,11 +3,39 @@ package fs
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/options"
 )
+
+// VSSConfig holds extended options of windows volume shadow copy service.
+type VSSConfig struct {
+}
+
+func init() {
+	if runtime.GOOS == "windows" {
+		options.Register("vss", VSSConfig{})
+	}
+}
+
+// NewVSSConfig returns a new VSSConfig with the default values filled in.
+func NewVSSConfig() VSSConfig {
+	return VSSConfig{}
+}
+
+// ParseVSSConfig parses a VSS extended options to VSSConfig struct.
+func ParseVSSConfig(o options.Options) (VSSConfig, error) {
+	cfg := NewVSSConfig()
+	o = o.Extract("vss")
+	if err := o.Apply("vss", &cfg); err != nil {
+		return VSSConfig{}, err
+	}
+
+	return cfg, nil
+}
 
 // ErrorHandler is used to report errors via callback
 type ErrorHandler func(item string, err error) error
@@ -31,7 +59,7 @@ var _ FS = &LocalVss{}
 
 // NewLocalVss creates a new wrapper around the windows filesystem using volume
 // shadow copy service to access locked files.
-func NewLocalVss(msgError ErrorHandler, msgMessage MessageHandler) *LocalVss {
+func NewLocalVss(msgError ErrorHandler, msgMessage MessageHandler, cfg VSSConfig) *LocalVss {
 	return &LocalVss{
 		FS:              Local{},
 		snapshots:       make(map[string]VssSnapshot),
