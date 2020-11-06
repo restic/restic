@@ -656,7 +656,8 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 				blobs = append(blobs, blobID)
 				blobSize, found := c.repo.LookupBlobSize(blobID, restic.DataBlob)
 				if !found {
-					errs = append(errs, Error{TreeID: id, Err: errors.Errorf("file %q blob %d size could not be found", node.Name, b)})
+					debug.Log("tree %v references blob %v which isn't contained in index", id, blobID)
+					errs = append(errs, Error{TreeID: id, Err: errors.Errorf("file %q blob %v not found in index", node.Name, blobID)})
 				}
 				size += uint64(blobSize)
 			}
@@ -686,10 +687,6 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 	for _, blobID := range blobs {
 		c.blobRefs.Lock()
 		h := restic.BlobHandle{ID: blobID, Type: restic.DataBlob}
-		if (c.blobRefs.M[h] & blobStatusExists) == 0 {
-			debug.Log("tree %v references blob %v which isn't contained in index", id, blobID)
-			errs = append(errs, Error{TreeID: id, BlobID: blobID, Err: errors.New("not found in index")})
-		}
 		c.blobRefs.M[h] |= blobStatusReferenced
 		debug.Log("blob %v is referenced", blobID)
 		c.blobRefs.Unlock()
