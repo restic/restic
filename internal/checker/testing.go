@@ -37,7 +37,7 @@ func TestCheckRepo(t testing.TB, repo restic.Repository) {
 	}
 
 	// unused blobs
-	blobs := chkr.UnusedBlobs()
+	blobs := chkr.UnusedBlobs(context.TODO())
 	if len(blobs) > 0 {
 		t.Errorf("unused blobs found: %v", blobs)
 	}

@@ -255,7 +255,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	if opts.CheckUnused {
-		for _, id := range chkr.UnusedBlobs() {
+		for _, id := range chkr.UnusedBlobs(gopts.ctx) {
 			Verbosef("unused blob %v\n", id)
 			errorsFound = true
 		}
