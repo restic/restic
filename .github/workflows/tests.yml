@@ -50,7 +50,7 @@ jobs:
             test_fuse: true
             check_changelog: false
 
-    name: ${{ matrix.job_name }} ${{ matrix.go }}
+    name: ${{ matrix.job_name }} Go ${{ matrix.go }}
     runs-on: ${{ matrix.os }}
 
     env:
