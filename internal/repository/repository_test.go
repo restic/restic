@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"fmt"
 	"io"
 	"math/rand"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -293,6 +295,20 @@ func TestRepositoryLoadIndex(t *testing.T) {
 	rtest.OK(t, repo.LoadIndex(context.TODO()))
 }
 
+// loadIndex loads the index id from backend and returns it.
+func loadIndex(ctx context.Context, repo restic.Repository, id restic.ID) (*repository.Index, error) {
+	buf, err := repo.LoadAndDecrypt(ctx, nil, restic.IndexFile, id)
+	if err != nil {
+		return nil, err
+	}
+
+	idx, oldFormat, err := repository.DecodeIndex(buf, id)
+	if oldFormat {
+		fmt.Fprintf(os.Stderr, "index %v has old format\n", id.Str())
+	}
+	return idx, err
+}
+
 func BenchmarkLoadIndex(b *testing.B) {
 	repository.TestUseLowSecurityKDFParameters(b)
 
@@ -323,7 +339,7 @@ func BenchmarkLoadIndex(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := repository.LoadIndex(context.TODO(), repo, id)
+		_, err := loadIndex(context.TODO(), repo, id)
 		rtest.OK(b, err)
 	}
 }
@@ -373,7 +389,7 @@ func TestRepositoryIncrementalIndex(t *testing.T) {
 	packEntries := make(map[restic.ID]map[restic.ID]struct{})
 
 	err := repo.List(context.TODO(), restic.IndexFile, func(id restic.ID, size int64) error {
-		idx, err := repository.LoadIndex(context.TODO(), repo, id)
+		idx, err := loadIndex(context.TODO(), repo, id)
 		rtest.OK(t, err)
 
 		for pb := range idx.Each(context.TODO()) {
