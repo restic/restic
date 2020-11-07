@@ -110,10 +110,8 @@ func printPacks(ctx context.Context, repo *repository.Repository, wr io.Writer) 
 }
 
 func dumpIndexes(ctx context.Context, repo restic.Repository, wr io.Writer) error {
-	return repo.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
+	return repository.ForAllIndexes(ctx, repo, func(id restic.ID, idx *repository.Index, oldFormat bool, err error) error {
 		Printf("index_id: %v\n", id)
-
-		idx, err := repository.LoadIndex(ctx, repo, id)
 		if err != nil {
 			return err
 		}
