@@ -574,20 +574,14 @@ func getUsedBlobs(gopts GlobalOptions, repo restic.Repository, ignoreSnapshots r
 
 	bar := newProgressMax(!gopts.Quiet, uint64(len(snapshotTrees)), "snapshots")
 	defer bar.Done()
-	for _, tree := range snapshotTrees {
-		debug.Log("process tree %v", tree)
 
-		err = restic.FindUsedBlobs(ctx, repo, tree, usedBlobs)
-		if err != nil {
-			if repo.Backend().IsNotExist(err) {
-				return nil, errors.Fatal("unable to load a tree from the repo: " + err.Error())
-			}
-
-			return nil, err
+	err = restic.FindUsedBlobs(ctx, repo, snapshotTrees, usedBlobs, bar)
+	if err != nil {
+		if repo.Backend().IsNotExist(err) {
+			return nil, errors.Fatal("unable to load a tree from the repo: " + err.Error())
 		}
 
-		debug.Log("processed tree %v", tree)
-		bar.Add(1)
+		return nil, err
 	}
 	return usedBlobs, nil
 }

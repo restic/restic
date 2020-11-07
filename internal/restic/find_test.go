@@ -94,7 +94,7 @@ func TestFindUsedBlobs(t *testing.T) {
 
 	for i, sn := range snapshots {
 		usedBlobs := restic.NewBlobSet()
-		err := restic.FindUsedBlobs(context.TODO(), repo, *sn.Tree, usedBlobs)
+		err := restic.FindUsedBlobs(context.TODO(), repo, restic.IDs{*sn.Tree}, usedBlobs, nil)
 		if err != nil {
 			t.Errorf("FindUsedBlobs returned error: %v", err)
 			continue
@@ -133,12 +133,12 @@ func TestFindUsedBlobsSkipsSeenBlobs(t *testing.T) {
 	t.Logf("snapshot %v saved, tree %v", snapshot.ID().Str(), snapshot.Tree.Str())
 
 	usedBlobs := restic.NewBlobSet()
-	err := restic.FindUsedBlobs(context.TODO(), repo, *snapshot.Tree, usedBlobs)
+	err := restic.FindUsedBlobs(context.TODO(), repo, restic.IDs{*snapshot.Tree}, usedBlobs, nil)
 	if err != nil {
 		t.Fatalf("FindUsedBlobs returned error: %v", err)
 	}
 
-	err = restic.FindUsedBlobs(context.TODO(), ForbiddenRepo{}, *snapshot.Tree, usedBlobs)
+	err = restic.FindUsedBlobs(context.TODO(), ForbiddenRepo{}, restic.IDs{*snapshot.Tree}, usedBlobs, nil)
 	if err != nil {
 		t.Fatalf("FindUsedBlobs returned error: %v", err)
 	}
@@ -154,7 +154,7 @@ func BenchmarkFindUsedBlobs(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		blobs := restic.NewBlobSet()
-		err := restic.FindUsedBlobs(context.TODO(), repo, *sn.Tree, blobs)
+		err := restic.FindUsedBlobs(context.TODO(), repo, restic.IDs{*sn.Tree}, blobs, nil)
 		if err != nil {
 			b.Error(err)
 		}

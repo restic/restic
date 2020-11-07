@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/restic/restic/internal/ui/progress"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -14,11 +15,11 @@ type TreeLoader interface {
 
 // FindUsedBlobs traverses the tree ID and adds all seen blobs (trees and data
 // blobs) to the set blobs. Already seen tree blobs will not be visited again.
-func FindUsedBlobs(ctx context.Context, repo TreeLoader, treeID ID, blobs BlobSet) error {
+func FindUsedBlobs(ctx context.Context, repo TreeLoader, treeIDs IDs, blobs BlobSet, p *progress.Counter) error {
 	var lock sync.Mutex
 
 	wg, ctx := errgroup.WithContext(ctx)
-	treeStream := StreamTrees(ctx, wg, repo, IDs{treeID}, func(treeID ID) bool {
+	treeStream := StreamTrees(ctx, wg, repo, treeIDs, func(treeID ID) bool {
 		// locking is necessary the goroutine below concurrently adds data blobs
 		lock.Lock()
 		h := BlobHandle{ID: treeID, Type: TreeBlob}
@@ -27,7 +28,7 @@ func FindUsedBlobs(ctx context.Context, repo TreeLoader, treeID ID, blobs BlobSe
 		blobs.Insert(h)
 		lock.Unlock()
 		return blobReferenced
-	}, nil)
+	}, p)
 
 	wg.Go(func() error {
 		for tree := range treeStream {
