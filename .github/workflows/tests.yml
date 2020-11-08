@@ -175,7 +175,7 @@ jobs:
 
         # only run cloud backend tests for pull requests from our own repo,
         # otherwise the secrets are not available
-        if: github.repository == 'restic/restic' && matrix.test_cloud_backends
+        if: github.event.pull_request.head.repo.full_name == github.repository && matrix.test_cloud_backends
 
       - name: Check changelog files with calens
         run: |
