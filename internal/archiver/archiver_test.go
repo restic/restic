@@ -91,7 +91,7 @@ func saveFile(t testing.TB, repo restic.Repository, filename string, filesystem 
 		t.Fatal(err)
 	}
 
-	err = repo.Flush(ctx)
+	err = repo.Flush(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -839,6 +839,7 @@ func TestArchiverSaveDir(t *testing.T) {
 				t.Errorf("wrong stats returned in TreeBlobs, want > 0, got %d", stats.TreeBlobs)
 			}
 
+			ctx = context.Background()
 			node.Name = targetNodeName
 			tree := &restic.Tree{Nodes: []*restic.Node{node}}
 			treeID, err := repo.SaveTree(ctx, tree)
@@ -934,7 +935,7 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 
 		t.Logf("node subtree %v", node.Subtree)
 
-		err = repo.Flush(ctx)
+		err = repo.Flush(context.Background())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1091,6 +1092,7 @@ func TestArchiverSaveTree(t *testing.T) {
 				t.Fatal(err)
 			}
 
+			ctx = context.Background()
 			err = repo.Flush(ctx)
 			if err != nil {
 				t.Fatal(err)
