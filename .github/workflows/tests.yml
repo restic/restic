@@ -61,7 +61,6 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.go }}
-        id: go
 
       - name: Get programs (Linux/macOS)
         run: |
@@ -135,7 +134,7 @@ jobs:
         if: matrix.os == 'windows-latest'
 
       - name: Check out code
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
 
       - name: Build with build.go
         run: |
@@ -180,9 +179,8 @@ jobs:
             restic/backend/azure.TestBackendAzure"
         run: |
           # prepare credentials for Google Cloud Storage tests in a temp file
-          export RESTIC_TEST_GS_APPLICATION_CREDENTIALS=$(mktemp --tmpdir restic-gcs-auth-XXXXXXX)
-          export GOOGLE_APPLICATION_CREDENTIALS=$RESTIC_TEST_GS_APPLICATION_CREDENTIALS
-          echo $RESTIC_TEST_GS_APPLICATION_CREDENTIALS_B64 | base64 -d > $RESTIC_TEST_GS_APPLICATION_CREDENTIALS
+          export GOOGLE_APPLICATION_CREDENTIALS=$(mktemp --tmpdir restic-gcs-auth-XXXXXXX)
+          echo $RESTIC_TEST_GS_APPLICATION_CREDENTIALS_B64 | base64 -d > $GOOGLE_APPLICATION_CREDENTIALS
           go test -cover -parallel 4 ./internal/backend/...
         if: matrix.test_cloud_backends
 
@@ -212,16 +210,15 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: ${{ env.go }}
-        id: go
 
       - name: Check out code
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
 
       - name: Install gox
         run: |
           go get github.com/mitchellh/gox
 
-      - name: Cross-Compile with gox
+      - name: Cross-compile with gox
         env:
           GOX_ARCHS: "linux/386 linux/amd64 \
             windows/386 windows/amd64 \
@@ -240,7 +237,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v2
