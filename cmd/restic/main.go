@@ -33,7 +33,7 @@ directories in an encrypted repository stored on different backends.
 		// set verbosity, default is one
 		globalOptions.verbosity = 1
 		if globalOptions.Quiet && (globalOptions.Verbose > 1) {
-			return errors.Fatal("--quiet and --verbose cannot be specified at the same time")
+	    return errors.Fatal("--quiet and --verbose cannot be specified at the same time")
 		}
 
 		switch {
