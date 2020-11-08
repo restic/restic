@@ -26,7 +26,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/profile v1.5.0
 	github.com/pkg/sftp v1.12.0
-	github.com/pkg/xattr v0.4.1
+	github.com/pkg/xattr v0.4.2
 	github.com/restic/chunker v0.4.0
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/smartystreets/assertions v1.2.0 // indirect
@@ -37,7 +37,7 @@ require (
 	golang.org/x/net v0.0.0-20200904194848-62affa334b73
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
-	golang.org/x/sys v0.0.0-20201007082116-8445cc04cbdf
+	golang.org/x/sys v0.0.0-20201101102859-da207088b7d1
 	golang.org/x/text v0.3.4
 	google.golang.org/api v0.32.0
 	gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b // indirect
