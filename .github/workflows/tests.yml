@@ -1,0 +1,243 @@
+name: test
+on:
+  # run tests on push to master, but not when other branches are pushed to
+  push:
+    branches:
+      - master
+
+  # run tests for all pull requests
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        # list of jobs to run:
+        include:
+          - job_name: Windows
+            go: 1.15.x
+            os: windows-latest
+
+          - job_name: macOS
+            go: 1.15.x
+            os: macOS-latest
+            test_fuse: true
+
+          - job_name: Linux
+            go: 1.15.x
+            os: ubuntu-latest
+            test_cloud_backends: true
+            test_fuse: true
+            check_changelog: true
+
+          - job_name: Linux
+            go: 1.14.x
+            os: ubuntu-latest
+            test_fuse: true
+
+          - job_name: Linux
+            go: 1.13.x
+            os: ubuntu-latest
+            test_fuse: true
+
+    name: ${{ matrix.job_name }} Go ${{ matrix.go }}
+    runs-on: ${{ matrix.os }}
+
+    env:
+      GOPROXY: https://proxy.golang.org
+
+    steps:
+      - name: Set up Go ${{ matrix.go }}
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Get programs (Linux/macOS)
+        run: |
+          echo "build Go tools"
+          go get github.com/restic/rest-server/...
+
+          echo "install minio server"
+          mkdir $HOME/bin
+          if [ "$RUNNER_OS" == "macOS" ]; then
+            wget --no-verbose -O $HOME/bin/minio https://dl.minio.io/server/minio/release/darwin-amd64/minio
+          else
+            wget --no-verbose -O $HOME/bin/minio https://dl.minio.io/server/minio/release/linux-amd64/minio
+          fi
+          chmod 755 $HOME/bin/minio
+
+          echo "install rclone"
+          if [ "$RUNNER_OS" == "macOS" ]; then
+            wget --no-verbose -O rclone.zip https://downloads.rclone.org/rclone-current-osx-amd64.zip
+          else
+            wget --no-verbose -O rclone.zip https://downloads.rclone.org/rclone-current-linux-amd64.zip
+          fi
+          unzip rclone.zip
+          cp rclone*/rclone $HOME/bin
+          chmod 755 $HOME/bin/rclone
+          rm -rf rclone*
+
+          # add $HOME/bin to path ($GOBIN was already added to the path by setup-go@v2)
+          echo $HOME/bin >> $GITHUB_PATH
+
+          echo "install osxfuse"
+          if [ "$RUNNER_OS" == "macOS" ]; then
+            brew cask install osxfuse
+          fi
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macOS-latest'
+
+      - name: Get programs (Windows)
+        shell: powershell
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+
+          echo "build Go tools"
+          go get github.com/restic/rest-server/...
+
+          echo "install minio server"
+          mkdir $Env:USERPROFILE/bin
+          Invoke-WebRequest https://dl.minio.io/server/minio/release/windows-amd64/minio.exe -OutFile $Env:USERPROFILE/bin/minio.exe
+
+          echo "install rclone"
+          Invoke-WebRequest https://downloads.rclone.org/rclone-current-windows-amd64.zip -OutFile rclone.zip
+
+          unzip rclone.zip
+          copy rclone*/rclone.exe $Env:USERPROFILE/bin
+
+          # add $USERPROFILE/bin to path ($GOBIN was already added to the path by setup-go@v2)
+          echo $Env:USERPROFILE\bin >> $Env:GITHUB_PATH
+
+          echo "install tar"
+          cd $env:USERPROFILE
+          mkdir tar
+          cd tar
+
+          Invoke-WebRequest https://sourceforge.netcologne.de/project/gnuwin32/tar/1.13-1/tar-1.13-1-bin.zip -OutFile tar.zip
+          unzip tar.zip
+          Invoke-WebRequest https://master.dl.sourceforge.net/project/gnuwin32/libintl/0.11.5-2/libintl-0.11.5-2-bin.zip -OutFile libintl.zip
+          unzip libintl.zip
+          Invoke-WebRequest https://master.dl.sourceforge.net/project/gnuwin32/libiconv/1.8-1/libiconv-1.8-1-bin.zip -OutFile libiconv.zip
+          unzip libiconv.zip
+
+          # add $USERPROFILE/tar/bin to path
+          echo $Env:USERPROFILE\tar\bin >> $Env:GITHUB_PATH
+        if: matrix.os == 'windows-latest'
+
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Build with build.go
+        run: |
+          go run build.go
+
+      - name: Run local Tests
+        env:
+          RESTIC_TEST_FUSE: ${{ matrix.test_fuse }}
+        run: |
+          go test -cover ./...
+
+      - name: Test cloud backends
+        env:
+          RESTIC_TEST_S3_KEY: ${{ secrets.RESTIC_TEST_S3_KEY }}
+          RESTIC_TEST_S3_SECRET: ${{ secrets.RESTIC_TEST_S3_SECRET }}
+          RESTIC_TEST_S3_REPOSITORY: ${{ secrets.RESTIC_TEST_S3_REPOSITORY }}
+          RESTIC_TEST_AZURE_ACCOUNT_NAME: ${{ secrets.RESTIC_TEST_AZURE_ACCOUNT_NAME }}
+          RESTIC_TEST_AZURE_ACCOUNT_KEY: ${{ secrets.RESTIC_TEST_AZURE_ACCOUNT_KEY }}
+          RESTIC_TEST_AZURE_REPOSITORY: ${{ secrets.RESTIC_TEST_AZURE_REPOSITORY }}
+          RESTIC_TEST_B2_ACCOUNT_ID: ${{ secrets.RESTIC_TEST_B2_ACCOUNT_ID }}
+          RESTIC_TEST_B2_ACCOUNT_KEY: ${{ secrets.RESTIC_TEST_B2_ACCOUNT_KEY }}
+          RESTIC_TEST_B2_REPOSITORY: ${{ secrets.RESTIC_TEST_B2_REPOSITORY }}
+          RESTIC_TEST_GS_REPOSITORY: ${{ secrets.RESTIC_TEST_GS_REPOSITORY }}
+          RESTIC_TEST_GS_PROJECT_ID: ${{ secrets.RESTIC_TEST_GS_PROJECT_ID }}
+          GOOGLE_PROJECT_ID: ${{ secrets.RESTIC_TEST_GS_PROJECT_ID }}
+          RESTIC_TEST_GS_APPLICATION_CREDENTIALS_B64: ${{ secrets.RESTIC_TEST_GS_APPLICATION_CREDENTIALS_B64 }}
+          RESTIC_TEST_OS_AUTH_URL: ${{ secrets.RESTIC_TEST_OS_AUTH_URL }}
+          RESTIC_TEST_OS_TENANT_NAME: ${{ secrets.RESTIC_TEST_OS_TENANT_NAME }}
+          RESTIC_TEST_OS_USERNAME: ${{ secrets.RESTIC_TEST_OS_USERNAME }}
+          RESTIC_TEST_OS_PASSWORD: ${{ secrets.RESTIC_TEST_OS_PASSWORD }}
+          RESTIC_TEST_OS_REGION_NAME: ${{ secrets.RESTIC_TEST_OS_REGION_NAME }}
+          RESTIC_TEST_SWIFT: ${{ secrets.RESTIC_TEST_SWIFT }}
+          # fail if any of the following tests cannot be run
+          RESTIC_TEST_DISALLOW_SKIP: "restic/backend/rest.TestBackendREST,\
+            restic/backend/sftp.TestBackendSFTP,\
+            restic/backend/s3.TestBackendMinio,\
+            restic/backend/rclone.TestBackendRclone,\
+            restic/backend/s3.TestBackendS3,\
+            restic/backend/swift.TestBackendSwift,\
+            restic/backend/b2.TestBackendB2,\
+            restic/backend/gs.TestBackendGS,\
+            restic/backend/azure.TestBackendAzure"
+        run: |
+          # prepare credentials for Google Cloud Storage tests in a temp file
+          export GOOGLE_APPLICATION_CREDENTIALS=$(mktemp --tmpdir restic-gcs-auth-XXXXXXX)
+          echo $RESTIC_TEST_GS_APPLICATION_CREDENTIALS_B64 | base64 -d > $GOOGLE_APPLICATION_CREDENTIALS
+          go test -cover -parallel 4 ./internal/backend/...
+
+        # only run cloud backend tests for pull requests from our own repo,
+        # otherwise the secrets are not available
+        if: github.event.pull_request.head.repo.full_name == github.repository && matrix.test_cloud_backends
+
+      - name: Check changelog files with calens
+        run: |
+          echo "install calens"
+          go get github.com/restic/calens
+
+          echo "check changelog files"
+          calens
+        if: matrix.check_changelog
+      # debug with tmate
+      # - name: Run apt-get for tmate action
+      #   run: sudo apt-get update
+      # - name: Debugging with tmate
+      #   uses: mxschmitt/action-tmate@v1.0.1
+
+  cross_compile:
+    env:
+      go: 1.15.x
+      GOPROXY: https://proxy.golang.org
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up Go ${{ env.go }}
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.go }}
+
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Install gox
+        run: |
+          go get github.com/mitchellh/gox
+
+      - name: Cross-compile with gox
+        env:
+          GOFLAGS: "-trimpath"
+          GOX_ARCHS: "linux/386 linux/amd64 \
+            windows/386 windows/amd64 \
+            darwin/amd64 \
+            freebsd/386 freebsd/amd64 \
+            openbsd/386 openbsd/amd64 \
+            netbsd/386 netbsd/amd64 \
+            linux/arm freebsd/arm \
+            linux/ppc64le solaris/amd64"
+        run: |
+          mkdir build-output
+          gox -parallel 2 -verbose -osarch "$GOX_ARCHS" -output "build-output/{{.Dir}}_{{.OS}}_{{.Arch}}" ./cmd/restic
+
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v2
+        with:
+          # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
+          version: v1.29
+          # Optional: show only new issues if it's a pull request. The default value is `false`.
+          only-new-issues: true
+          args: --verbose --timeout 5m --enable-all --disable wsl
