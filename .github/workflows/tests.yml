@@ -230,13 +230,17 @@ jobs:
     # only run golangci-lint for pull requests, otherwise ALL hints get
     # reported. We need to slowly address all issues until we can enable
     # linting the master branch :)
-    if: github.event_name == 'pull_request'
+    # if: github.event_name == 'pull_request'
 
     name: lint
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
         uses: actions/checkout@v2
+
+      - env:
+          GH_DEBUG: ${{ toJson(github) }}
+        run: echo $GH_DEBUG
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v2
@@ -246,3 +250,7 @@ jobs:
           # Optional: show only new issues if it's a pull request. The default value is `false`.
           only-new-issues: true
           args: --verbose --timeout 5m --enable-all --disable wsl
+    # only run golangci-lint for pull requests, otherwise ALL hints get
+    # reported. We need to slowly address all issues until we can enable
+    # linting the master branch :)
+    # if: github.event_name == 'pull_request'
