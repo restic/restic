@@ -240,7 +240,7 @@ jobs:
           version: v1.29
           # Optional: show only new issues if it's a pull request. The default value is `false`.
           only-new-issues: true
-          args: --verbose --timeout 5m --enable-all --disable wsl
+          args: --verbose --timeout 5m
 
         # only run golangci-lint for pull requests, otherwise ALL hints get
         # reported. We need to slowly address all issues until we can enable
