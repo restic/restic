@@ -532,8 +532,12 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		return err
 	}
 
-	if !gopts.JSON && parentSnapshotID != nil {
-		p.V("using parent snapshot %v\n", parentSnapshotID.Str())
+	if !gopts.JSON {
+		if parentSnapshotID != nil {
+			p.P("using parent snapshot %v\n", parentSnapshotID.Str())
+		} else {
+			p.P("no parent snapshot found, will read all files\n")
+		}
 	}
 
 	selectByNameFilter := func(item string) bool {
