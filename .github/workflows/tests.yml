@@ -227,11 +227,6 @@ jobs:
           gox -parallel 2 -verbose -osarch "$GOX_ARCHS" -output "build-output/{{.Dir}}_{{.OS}}_{{.Arch}}" ./cmd/restic
 
   lint:
-    # only run golangci-lint for pull requests, otherwise ALL hints get
-    # reported. We need to slowly address all issues until we can enable
-    # linting the master branch :)
-    if: github.event_name == 'pull_request'
-
     name: lint
     runs-on: ubuntu-latest
     steps:
@@ -246,3 +241,14 @@ jobs:
           # Optional: show only new issues if it's a pull request. The default value is `false`.
           only-new-issues: true
           args: --verbose --timeout 5m --enable-all --disable wsl
+
+        # only run golangci-lint for pull requests, otherwise ALL hints get
+        # reported. We need to slowly address all issues until we can enable
+        # linting the master branch :)
+        if: github.event_name == 'pull_request'
+
+      - name: Check go.mod/go.sum
+        run: |
+          echo "check if go.mod and go.sum are up to date"
+          go mod tidy
+          git diff --exit-code go.mod go.sum
