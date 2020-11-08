@@ -47,10 +47,10 @@ func (be *MemoryBackend) Test(ctx context.Context, h restic.Handle) (bool, error
 	debug.Log("Test %v", h)
 
 	if _, ok := be.data[h]; ok {
-		return true, nil
+		return true, ctx.Err()
 	}
 
-	return false, nil
+	return false, ctx.Err()
 }
 
 // IsNotExist returns true if the file does not exist.
@@ -83,7 +83,7 @@ func (be *MemoryBackend) Save(ctx context.Context, h restic.Handle, rd restic.Re
 	be.data[h] = buf
 	debug.Log("saved %v bytes at %v", len(buf), h)
 
-	return nil
+	return ctx.Err()
 }
 
 // Load runs fn with a reader that yields the contents of the file at h at the
@@ -124,7 +124,7 @@ func (be *MemoryBackend) openReader(ctx context.Context, h restic.Handle, length
 		buf = buf[:length]
 	}
 
-	return ioutil.NopCloser(bytes.NewReader(buf)), nil
+	return ioutil.NopCloser(bytes.NewReader(buf)), ctx.Err()
 }
 
 // Stat returns information about a file in the backend.
@@ -147,7 +147,7 @@ func (be *MemoryBackend) Stat(ctx context.Context, h restic.Handle) (restic.File
 		return restic.FileInfo{}, errNotFound
 	}
 
-	return restic.FileInfo{Size: int64(len(e)), Name: h.Name}, nil
+	return restic.FileInfo{Size: int64(len(e)), Name: h.Name}, ctx.Err()
 }
 
 // Remove deletes a file from the backend.
@@ -163,7 +163,7 @@ func (be *MemoryBackend) Remove(ctx context.Context, h restic.Handle) error {
 
 	delete(be.data, h)
 
-	return nil
+	return ctx.Err()
 }
 
 // List returns a channel which yields entries from the backend.
@@ -212,6 +212,10 @@ func (be *MemoryBackend) Location() string {
 func (be *MemoryBackend) Delete(ctx context.Context) error {
 	be.m.Lock()
 	defer be.m.Unlock()
+
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 
 	be.data = make(memMap)
 	return nil
