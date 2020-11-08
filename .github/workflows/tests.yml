@@ -213,6 +213,7 @@ jobs:
 
       - name: Cross-compile with gox
         env:
+          GOFLAGS: "-trimpath"
           GOX_ARCHS: "linux/386 linux/amd64 \
             windows/386 windows/amd64 \
             darwin/amd64 \
