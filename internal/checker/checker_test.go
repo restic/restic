@@ -50,7 +50,7 @@ func checkData(chkr *checker.Checker) []error {
 	return collectErrors(
 		context.TODO(),
 		func(ctx context.Context, errCh chan<- error) {
-			chkr.ReadData(ctx, nil, errCh)
+			chkr.ReadData(ctx, errCh)
 		},
 	)
 }

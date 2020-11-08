@@ -773,14 +773,13 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID) error {
 }
 
 // ReadData loads all data from the repository and checks the integrity.
-func (c *Checker) ReadData(ctx context.Context, p *progress.Counter, errChan chan<- error) {
-	c.ReadPacks(ctx, c.packs, p, errChan)
+func (c *Checker) ReadData(ctx context.Context, errChan chan<- error) {
+	c.ReadPacks(ctx, c.packs, nil, errChan)
 }
 
 // ReadPacks loads data from specified packs and checks the integrity.
 func (c *Checker) ReadPacks(ctx context.Context, packs restic.IDSet, p *progress.Counter, errChan chan<- error) {
 	defer close(errChan)
-	defer p.Done()
 
 	g, ctx := errgroup.WithContext(ctx)
 	ch := make(chan restic.ID)

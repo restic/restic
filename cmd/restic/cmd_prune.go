@@ -482,6 +482,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		Verbosef("repacking packs\n")
 		bar := newProgressMax(!gopts.Quiet, uint64(len(repackPacks)), "packs repacked")
 		_, err := repository.Repack(ctx, repo, repackPacks, keepBlobs, bar)
+		bar.Done()
 		if err != nil {
 			return err
 		}

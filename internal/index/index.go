@@ -51,8 +51,6 @@ type Lister interface {
 // New creates a new index for repo from scratch. InvalidFiles contains all IDs
 // of files  that cannot be listed successfully.
 func New(ctx context.Context, repo Lister, ignorePacks restic.IDSet, p *progress.Counter) (idx *Index, invalidFiles restic.IDs, err error) {
-	defer p.Done()
-
 	type Job struct {
 		PackID restic.ID
 		Size   int64
@@ -190,8 +188,6 @@ func loadIndexJSON(ctx context.Context, repo ListLoader, id restic.ID) (*indexJS
 // Load creates an index by loading all index files from the repo.
 func Load(ctx context.Context, repo ListLoader, p *progress.Counter) (*Index, error) {
 	debug.Log("loading indexes")
-
-	defer p.Done()
 
 	supersedes := make(map[restic.ID]restic.IDSet)
 	results := make(map[restic.ID]map[restic.ID]Pack)
