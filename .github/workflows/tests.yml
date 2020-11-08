@@ -239,7 +239,5 @@ jobs:
           # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
           version: v1.29
           # Optional: show only new issues if it's a pull request. The default value is `false`.
-          # only-new-issues: true
-          # args: --enable goimports,govet,misspell,stylecheck
-          # make it simpler for now:
-          args: --disable unused,errcheck,ineffassign,staticcheck,gosimple
+          only-new-issues: true
+          args: --verbose --enable-all --disable wsl
