@@ -2,8 +2,8 @@ name: test
 on:
   # run tests on push to master, but not when other branches are pushed to
   push:
-    branches:
-      - master
+  # branches:
+  #   - master
 
   # run tests for all pull requests
   pull_request:
