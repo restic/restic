@@ -245,4 +245,4 @@ jobs:
     # only run golangci-lint for pull requests, otherwise ALL hints get
     # reported. We need to slowly address all issues until we can enable
     # linting the master branch :)
-    if: github.event_name == "pull_request"
+    if: github.event_name == 'pull_request'
