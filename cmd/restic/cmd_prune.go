@@ -156,6 +156,10 @@ func runPruneWithRepo(opts PruneOptions, gopts GlobalOptions, repo *repository.R
 	// we do not need index updates while pruning!
 	repo.DisableAutoIndexUpdate()
 
+	if repo.Cache == nil {
+		Print("warning: running prune without a cache, this may be very slow!\n")
+	}
+
 	Verbosef("loading all snapshots...\n")
 	snapshots, err := restic.LoadAllSnapshots(gopts.ctx, repo, ignoreSnapshots)
 	if err != nil {
