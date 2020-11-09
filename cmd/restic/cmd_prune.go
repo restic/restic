@@ -296,7 +296,6 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 
 	// loop over all packs and decide what to do
 	bar := newProgressMax(!gopts.Quiet, uint64(len(indexPack)), "packs processed")
-	bar.Start()
 	err := repo.List(ctx, restic.PackFile, func(id restic.ID, packSize int64) error {
 		p, ok := indexPack[id]
 		if !ok {
@@ -345,7 +344,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		}
 
 		delete(indexPack, id)
-		bar.Report(restic.Stat{Blobs: 1})
+		bar.Add(1)
 		return nil
 	})
 	bar.Done()
@@ -483,6 +482,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		Verbosef("repacking packs\n")
 		bar := newProgressMax(!gopts.Quiet, uint64(len(repackPacks)), "packs repacked")
 		_, err := repository.Repack(ctx, repo, repackPacks, keepBlobs, bar)
+		bar.Done()
 		if err != nil {
 			return err
 		}
@@ -517,6 +517,7 @@ func rebuildIndexFiles(gopts GlobalOptions, repo restic.Repository, removePacks 
 	bar := newProgressMax(!gopts.Quiet, packcount, "packs processed")
 	obsoleteIndexes, err := (repo.Index()).(*repository.MasterIndex).
 		Save(gopts.ctx, repo, removePacks, bar)
+	bar.Done()
 	if err != nil {
 		return err
 	}
@@ -533,7 +534,6 @@ func getUsedBlobs(gopts GlobalOptions, repo restic.Repository, snapshots []*rest
 	usedBlobs = restic.NewBlobSet()
 
 	bar := newProgressMax(!gopts.Quiet, uint64(len(snapshots)), "snapshots")
-	bar.Start()
 	defer bar.Done()
 	for _, sn := range snapshots {
 		debug.Log("process snapshot %v", sn.ID())
@@ -548,7 +548,7 @@ func getUsedBlobs(gopts GlobalOptions, repo restic.Repository, snapshots []*rest
 		}
 
 		debug.Log("processed snapshot %v", sn.ID())
-		bar.Report(restic.Stat{Blobs: 1})
+		bar.Add(1)
 	}
 	return usedBlobs, nil
 }

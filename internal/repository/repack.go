@@ -10,6 +10,8 @@ import (
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui/progress"
+
 	"golang.org/x/sync/errgroup"
 )
 
@@ -22,12 +24,7 @@ const numRepackWorkers = 8
 //
 // The map keepBlobs is modified by Repack, it is used to keep track of which
 // blobs have been processed.
-func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet, p *restic.Progress) (obsoletePacks restic.IDSet, err error) {
-	if p != nil {
-		p.Start()
-		defer p.Done()
-	}
-
+func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet, p *progress.Counter) (obsoletePacks restic.IDSet, err error) {
 	debug.Log("repacking %d packs while keeping %d blobs", len(packs), len(keepBlobs))
 
 	wg, wgCtx := errgroup.WithContext(ctx)
@@ -172,9 +169,7 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 			if err = fs.RemoveIfExists(tempfile.Name()); err != nil {
 				return errors.Wrap(err, "Remove")
 			}
-			if p != nil {
-				p.Report(restic.Stat{Blobs: 1})
-			}
+			p.Add(1)
 		}
 		return nil
 	}

@@ -259,6 +259,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 			errorsFound = true
 			Warnf("%v\n", err)
 		}
+		p.Done()
 	}
 
 	switch {

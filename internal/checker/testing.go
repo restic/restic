@@ -44,7 +44,7 @@ func TestCheckRepo(t testing.TB, repo restic.Repository) {
 
 	// read data
 	errChan = make(chan error)
-	go chkr.ReadData(context.TODO(), nil, errChan)
+	go chkr.ReadData(context.TODO(), errChan)
 
 	for err := range errChan {
 		t.Error(err)

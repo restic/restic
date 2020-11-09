@@ -11,6 +11,8 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui/progress"
+
 	"golang.org/x/sync/errgroup"
 )
 
@@ -48,10 +50,7 @@ type Lister interface {
 
 // New creates a new index for repo from scratch. InvalidFiles contains all IDs
 // of files  that cannot be listed successfully.
-func New(ctx context.Context, repo Lister, ignorePacks restic.IDSet, p *restic.Progress) (idx *Index, invalidFiles restic.IDs, err error) {
-	p.Start()
-	defer p.Done()
-
+func New(ctx context.Context, repo Lister, ignorePacks restic.IDSet, p *progress.Counter) (idx *Index, invalidFiles restic.IDs, err error) {
 	type Job struct {
 		PackID restic.ID
 		Size   int64
@@ -118,7 +117,7 @@ func New(ctx context.Context, repo Lister, ignorePacks restic.IDSet, p *restic.P
 	idx = newIndex()
 
 	for res := range outputCh {
-		p.Report(restic.Stat{Blobs: 1})
+		p.Add(1)
 		if res.Error != nil {
 			cause := errors.Cause(res.Error)
 			if _, ok := cause.(pack.InvalidFileError); ok {
@@ -187,11 +186,8 @@ func loadIndexJSON(ctx context.Context, repo ListLoader, id restic.ID) (*indexJS
 }
 
 // Load creates an index by loading all index files from the repo.
-func Load(ctx context.Context, repo ListLoader, p *restic.Progress) (*Index, error) {
+func Load(ctx context.Context, repo ListLoader, p *progress.Counter) (*Index, error) {
 	debug.Log("loading indexes")
-
-	p.Start()
-	defer p.Done()
 
 	supersedes := make(map[restic.ID]restic.IDSet)
 	results := make(map[restic.ID]map[restic.ID]Pack)
@@ -199,7 +195,7 @@ func Load(ctx context.Context, repo ListLoader, p *restic.Progress) (*Index, err
 	index := newIndex()
 
 	err := repo.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
-		p.Report(restic.Stat{Blobs: 1})
+		p.Add(1)
 
 		debug.Log("Load index %v", id)
 		idx, err := loadIndexJSON(ctx, repo, id)
