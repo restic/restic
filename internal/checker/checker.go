@@ -727,6 +727,7 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID) error {
 
 	var errs []error
 	var buf []byte
+	idx := r.Index()
 	for i, blob := range blobs {
 		debug.Log("  check blob %d: %v", i, blob)
 
@@ -760,6 +761,19 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID) error {
 		if !hash.Equal(blob.ID) {
 			debug.Log("  Blob ID does not match, want %v, got %v", blob.ID, hash)
 			errs = append(errs, errors.Errorf("Blob ID does not match, want %v, got %v", blob.ID.Str(), hash.Str()))
+			continue
+		}
+
+		// Check if blob is contained in index
+		idxHas := false
+		for _, pb := range idx.Lookup(blob.ID, blob.Type) {
+			if pb.PackID == id {
+				idxHas = true
+				break
+			}
+		}
+		if !idxHas {
+			errs = append(errs, errors.Errorf("Blob ID %v is not contained in index", blob.ID.Str()))
 			continue
 		}
 	}
