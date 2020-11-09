@@ -1,0 +1,8 @@
+Bugfix: Ignore 'no data available' error during backup
+
+restic failed to backup files on some filesystems, for example certain configurations
+of CIFS on Linux, which return a "no data available" error when reading extended
+attributes. These errors are now ignored.
+
+https://github.com/restic/restic/issues/1800
+https://github.com/restic/restic/pull/3034
