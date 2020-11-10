@@ -128,10 +128,13 @@ e.g.:
 
 It is also possible to ``dump`` the contents of a whole folder structure to
 stdout. To retain the information about the files and folders Restic will
-output the contents in the tar format:
+output the contents in the tar (default) or zip formats:
 
 .. code-block:: console
 
     $ restic -r /srv/restic-repo dump latest /home/other/work > restore.tar
+ 
+.. code-block:: console
 
+    $ restic -r /srv/restic-repo dump -a zip latest /home/other/work > restore.zip
 

@@ -1,0 +1,8 @@
+Enhancement: Allow whole folder dump in ZIP format
+
+Previously, restic can dump the contents of a whole folder structure only
+in the tar format. The `dump` command now have a new flag to change output
+format to zip. Just pass `--archive zip` as an option to `restic dump`.
+
+https://github.com/restic/restic/pull/2433
+https://github.com/restic/restic/pull/3081
