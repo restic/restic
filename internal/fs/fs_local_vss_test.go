@@ -88,10 +88,8 @@ func TestVSSConfig(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			errorHandler := func(item string, err error) error {
+			errorHandler := func(item string, err error) {
 				t.Fatalf("unexpected error (%v)", err)
-
-				return nil
 			}
 			messageHandler := func(msg string, args ...interface{}) {
 				t.Fatalf("unexpected message (%s)", fmt.Sprintf(msg, args))
@@ -181,10 +179,8 @@ func TestParseMountPoints(t *testing.T) {
 			}
 
 			var log []string
-			errorHandler := func(item string, err error) error {
+			errorHandler := func(item string, err error) {
 				log = append(log, strings.TrimSpace(err.Error()))
-
-				return nil
 			}
 			messageHandler := func(msg string, args ...interface{}) {
 				t.Fatalf("unexpected message (%s)", fmt.Sprintf(msg, args))

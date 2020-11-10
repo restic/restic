@@ -43,8 +43,8 @@ func ParseVSSConfig(o options.Options) (VSSConfig, error) {
 	return cfg, nil
 }
 
-// ErrorHandler is used to report errors via callback
-type ErrorHandler func(item string, err error) error
+// ErrorHandler is used to report errors via callback.
+type ErrorHandler func(item string, err error)
 
 // MessageHandler is used to report errors/messages via callbacks.
 type MessageHandler func(msg string, args ...interface{})
@@ -114,7 +114,7 @@ func (fs *LocalVss) DeleteSnapshots() {
 
 	for volumeName, snapshot := range fs.snapshots {
 		if err := snapshot.Delete(); err != nil {
-			_ = fs.msgError(volumeName, errors.Errorf("failed to delete VSS snapshot: %s", err))
+			fs.msgError(volumeName, errors.Errorf("failed to delete VSS snapshot: %s", err))
 			activeSnapshots[volumeName] = snapshot
 		}
 	}

@@ -556,8 +556,8 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 			return err
 		}
 
-		errorHandler := func(item string, err error) error {
-			return progressReporter.Error(item, err)
+		errorHandler := func(item string, err error) {
+			_ = progressReporter.Error(item, err)
 		}
 
 		messageHandler := func(msg string, args ...interface{}) {
