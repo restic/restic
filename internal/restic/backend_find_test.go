@@ -2,6 +2,7 @@ package restic
 
 import (
 	"context"
+	"strings"
 	"testing"
 )
 
@@ -48,7 +49,7 @@ func TestFind(t *testing.T) {
 	}
 
 	f, err = Find(context.TODO(), m, SnapshotFile, "NotAPrefix")
-	if err != ErrNoIDPrefixFound {
+	if _, ok := err.(*NoIDByPrefixError); !ok || !strings.Contains(err.Error(), "NotAPrefix") {
 		t.Error("Expected no snapshots to be found.")
 	}
 	if f != "" {
@@ -58,8 +59,8 @@ func TestFind(t *testing.T) {
 	// Try to match with a prefix longer than any ID.
 	extraLengthID := samples[0].String() + "f"
 	f, err = Find(context.TODO(), m, SnapshotFile, extraLengthID)
-	if err != ErrNoIDPrefixFound {
-		t.Error("Expected no snapshots to be matched.")
+	if _, ok := err.(*NoIDByPrefixError); !ok || !strings.Contains(err.Error(), extraLengthID) {
+		t.Errorf("Wrong error %v for no snapshots matched", err)
 	}
 	if f != "" {
 		t.Errorf("Find should not return a match on error.")
@@ -67,8 +68,8 @@ func TestFind(t *testing.T) {
 
 	// Use a prefix that will match the prefix of multiple Ids in `samples`.
 	f, err = Find(context.TODO(), m, SnapshotFile, "20bdc140")
-	if err != ErrMultipleIDMatches {
-		t.Error("Expected multiple snapshots to be matched.")
+	if _, ok := err.(*MultipleIDMatchesError); !ok {
+		t.Errorf("Wrong error %v for multiple snapshots", err)
 	}
 	if f != "" {
 		t.Errorf("Find should not return a match on error.")
