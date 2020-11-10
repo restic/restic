@@ -21,8 +21,8 @@ var cmdDump = &cobra.Command{
 	Long: `
 The "dump" command extracts files from a snapshot from the repository. If a
 single file is selected, it prints its contents to stdout. Folders are output
-as a tar file containing the contents of the specified folder.  Pass "/" as
-file name to dump the whole snapshot as a tar file.
+as a tar (default) or zip file containing the contents of the specified folder.
+Pass "/" as file name to dump the whole snapshot as an archive file.
 
 The special snapshot "latest" can be used to use the latest snapshot in the
 repository.
@@ -40,9 +40,10 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 // DumpOptions collects all options for the dump command.
 type DumpOptions struct {
-	Hosts []string
-	Paths []string
-	Tags  restic.TagLists
+	Hosts   []string
+	Paths   []string
+	Tags    restic.TagLists
+	Archive string
 }
 
 var dumpOptions DumpOptions
@@ -54,6 +55,7 @@ func init() {
 	flags.StringArrayVarP(&dumpOptions.Hosts, "host", "H", nil, `only consider snapshots for this host when the snapshot ID is "latest" (can be specified multiple times)`)
 	flags.Var(&dumpOptions.Tags, "tag", "only consider snapshots which include this `taglist` for snapshot ID \"latest\"")
 	flags.StringArrayVar(&dumpOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` for snapshot ID \"latest\"")
+	flags.StringVarP(&dumpOptions.Archive, "archive", "a", "tar", "set archive `format` as \"tar\" or \"zip\"")
 }
 
 func splitPath(p string) []string {
@@ -126,6 +128,16 @@ func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
 		return errors.Fatal("no file and no snapshot ID specified")
 	}
 
+	var wd dump.WriteDump
+	switch opts.Archive {
+	case "tar":
+		wd = dump.WriteTar
+	case "zip":
+		wd = dump.WriteZip
+	default:
+		return fmt.Errorf("unknown archive format %q", opts.Archive)
+	}
+
 	snapshotIDString := args[0]
 	pathToPrint := args[1]
 
@@ -175,7 +187,7 @@ func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
 		Exitf(2, "loading tree for snapshot %q failed: %v", snapshotIDString, err)
 	}
 
-	err = printFromTree(ctx, tree, repo, "/", splittedPath, dump.WriteTar)
+	err = printFromTree(ctx, tree, repo, "/", splittedPath, wd)
 	if err != nil {
 		Exitf(2, "cannot dump file: %v", err)
 	}
