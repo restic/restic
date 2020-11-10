@@ -800,13 +800,13 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, size int6
 		// Check if blob is contained in index and position is correct
 		idxHas := false
 		for _, pb := range idx.Lookup(blob.ID, blob.Type) {
-			if pb.PackID == id {
+			if pb.PackID == id && pb.Offset == blob.Offset && pb.Length == blob.Length {
 				idxHas = true
 				break
 			}
 		}
 		if !idxHas {
-			errs = append(errs, errors.Errorf("Blob ID %v is not contained in index", blob.ID.Str()))
+			errs = append(errs, errors.Errorf("Blob %v is not contained in index or position is incorrect", blob.ID.Str()))
 			continue
 		}
 	}
