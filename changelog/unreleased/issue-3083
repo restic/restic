@@ -1,0 +1,13 @@
+Enhancement: Allow usage of deprecated S3 ListObjectsV1 API
+
+Restic didn't work with some S3 API implementations that don't have a
+working ListObjectsV2 API endpoint. This concerns mainly Ceph versions
+before v14.2.5 , but may impact other S3 API implementations.
+
+Restic now allows selection of the older ListObjectsV1 endpoint by using
+the 's3.list-objects-v1' extended option, for instance:
+
+`restic -o s3.list-objects-v1=true snapshots`
+
+https://github.com/restic/restic/issues/3083
+https://github.com/restic/restic/pull/3085
