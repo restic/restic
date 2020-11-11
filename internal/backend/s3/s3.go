@@ -205,9 +205,12 @@ func (be *Backend) ReadDir(ctx context.Context, dir string) (list []os.FileInfo,
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	debug.Log("using ListObjectsV1(%v)", be.cfg.ListObjectsV1)
+
 	for obj := range be.client.ListObjects(ctx, be.cfg.Bucket, minio.ListObjectsOptions{
 		Prefix:    dir,
 		Recursive: false,
+		UseV1:     be.cfg.ListObjectsV1,
 	}) {
 		if obj.Err != nil {
 			return nil, err
@@ -427,12 +430,15 @@ func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.F
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	debug.Log("using ListObjectsV1(%v)", be.cfg.ListObjectsV1)
+
 	// NB: unfortunately we can't protect this with be.sem.GetToken() here.
 	// Doing so would enable a deadlock situation (gh-1399), as ListObjects()
 	// starts its own goroutine and returns results via a channel.
 	listresp := be.client.ListObjects(ctx, be.cfg.Bucket, minio.ListObjectsOptions{
 		Prefix:    prefix,
 		Recursive: recursive,
+		UseV1:     be.cfg.ListObjectsV1,
 	})
 
 	for obj := range listresp {

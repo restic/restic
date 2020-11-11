@@ -1,0 +1,18 @@
+Enhancement: Allow usage of deprecated S3 ListObjectsV1 API
+
+Some S3 API implementations, e.g. Ceph before version 14.2.5, have a broken
+`ListObjectsV2` implementation which cause problems for restic when using their
+API endpoints. When a broken server implementation is used, restic prints
+errors similar to the following:
+
+    List() returned error: Truncated response should have continuation token set
+
+As a temporary workaround, restic now allows using the older `ListObjects`
+endpoint by setting the `s3.list-objects-v1` extended option, for instance:
+
+    restic -o s3.list-objects-v1=true snapshots
+
+This option may be removed in future versions of restic.
+
+https://github.com/restic/restic/issues/3083
+https://github.com/restic/restic/pull/3085

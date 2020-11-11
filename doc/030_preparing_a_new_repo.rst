@@ -239,6 +239,15 @@ For an S3-compatible server that is not Amazon (like Minio, see below),
 or is only available via HTTP, you can specify the URL to the server
 like this: ``s3:http://server:port/bucket_name``.
 
+
+.. note:: Certain S3-compatible servers do not properly implement the
+          ``ListObjectsV2`` API, most notably Ceph versions before v14.2.5. On these
+          backends, as a temporary workaround, you can provide the
+          ``-o s3.list-objects-v1=true`` option to use the older
+          ``ListObjects`` API instead. This option may be removed in future
+          versions of restic.
+
+
 Minio Server
 ************
 

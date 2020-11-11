@@ -199,6 +199,14 @@ func (o Options) Apply(ns string, dst interface{}) error {
 
 			v.Field(i).SetUint(vi)
 
+		case "bool":
+			vi, err := strconv.ParseBool(value)
+			if err != nil {
+				return err
+			}
+
+			v.Field(i).SetBool(vi)
+
 		case "Duration":
 			d, err := time.ParseDuration(value)
 			if err != nil {
