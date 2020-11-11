@@ -23,8 +23,8 @@ type Config struct {
 	Connections   uint   `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
 	MaxRetries    uint   `option:"retries" help:"set the number of retries attempted"`
 	Region        string `option:"region" help:"set region"`
-	BucketLookup  string `option:"bucket-lookup" help:"bucket lookup style: 'auto', 'dns', or 'path'."`
-	ListObjectsV1 bool   `option:"list-objects-v1" help:"use deprecated V1 api for ListObjects calls."`
+	BucketLookup  string `option:"bucket-lookup" help:"bucket lookup style: 'auto', 'dns', or 'path'"`
+	ListObjectsV1 bool   `option:"list-objects-v1" help:"use deprecated V1 api for ListObjects calls"`
 }
 
 // NewConfig returns a new Config with the default values filled in.
