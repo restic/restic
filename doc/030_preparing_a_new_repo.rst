@@ -239,6 +239,12 @@ For an S3-compatible server that is not Amazon (like Minio, see below),
 or is only available via HTTP, you can specify the URL to the server
 like this: ``s3:http://server:port/bucket_name``.
 
+
+.. note:: Certain S3-compatible servers do not properly implement the ListObjectsV2 API,
+          most notably Ceph versions before v14.2.5. On these backends you need to
+          provide the ``-o s3.list-objects-v1=true`` option to use the ListObjects API instead.
+
+
 Minio Server
 ************
 
@@ -338,39 +344,6 @@ For example with an actual endpoint:
 .. code-block:: console
 
     $ restic -o s3.bucket-lookup=dns -o s3.region=oss-eu-west-1 -r s3:https://oss-eu-west-1.aliyuncs.com/bucketname init
-
-Ceph
-****
-
-`Ceph Object Gateway <https://ceph.io/ceph-storage/object-storage/>`__ is an object
-storage interface built on top of librados to provide applications with a RESTful
-gateway to Ceph Storage Clusters.
-
-Ceph Rados Gateway (RGW) provides a S3 interface that is compatible with a large
-subset of the Amazon S3 RESTful API.
-
-You will need to setup the following environment variables with the proper credentials:
-
-.. code-block:: console
-
-    $ export AWS_ACCESS_KEY_ID=<YOUR-ACCESS-KEY-ID>
-    $ export AWS_SECRET_ACCESS_KEY=<YOUR-SECRET-ACCESS-KEY>
-
-Now you can easily initialize restic to use Ceph RGW as a backend with
-this command.
-
-.. code-block:: console
-
-    $ restic -r s3://<RGW-S3-ENDPOINT>/<RGW-S3-BUCKET> init
-    enter password for new backend:
-    enter password again:
-    created restic backend xxxxxxxxxx at s3://<RGW-S3-ENDPOINT>/<RGW-S3-BUCKET>
-    Please note that knowledge of your password is required to access
-    the repository. Losing your password means that your data is irrecoverably lost.
-
-.. note:: Version of Ceph before v14.2.5 do not implement the ListObjectsV2 API properly.
-          On these backends you need to provide the ``-o s3.list-objects-v1=true`` option
-          to use the ListObjects API instead.
 
 OpenStack Swift
 ***************
