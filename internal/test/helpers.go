@@ -118,7 +118,10 @@ func SetupTarTestFixture(t testing.TB, outputDir, tarFile string) {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	OK(t, cmd.Run())
+	err = cmd.Run()
+	if err != nil {
+		t.Fatalf("running command %v %v failed: %v", cmd.Path, cmd.Args, err)
+	}
 }
 
 // Env creates a test environment and extracts the repository fixture.
