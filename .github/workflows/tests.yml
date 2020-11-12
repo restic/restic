@@ -112,11 +112,13 @@ jobs:
           mkdir tar
           cd tar
 
+          # install exactly these versions of tar and the libraries, other combinations might not work!
+
           Invoke-WebRequest https://sourceforge.netcologne.de/project/gnuwin32/tar/1.13-1/tar-1.13-1-bin.zip -OutFile tar.zip
           unzip tar.zip
-          Invoke-WebRequest https://sourceforge.netcologne.de/project/gnuwin32/libintl/0.14.4/libintl-0.14.4-bin.zip -OutFile libintl.zip
+          Invoke-WebRequest https://master.dl.sourceforge.net/project/gnuwin32/libintl/0.11.5-2/libintl-0.11.5-2-bin.zip -OutFile libintl.zip
           unzip libintl.zip
-          Invoke-WebRequest https://sourceforge.netcologne.de/project/gnuwin32/libiconv/1.9.2-1/libiconv-1.9.2-1-bin.zip -OutFile libiconv.zip
+          Invoke-WebRequest https://master.dl.sourceforge.net/project/gnuwin32/libiconv/1.8-1/libiconv-1.8-1-bin.zip -OutFile libiconv.zip
           unzip libiconv.zip
 
           # add $USERPROFILE/tar/bin to path
