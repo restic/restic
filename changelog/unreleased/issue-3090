@@ -1,0 +1,6 @@
+Bugfix: --use-fs-snapshot failed on windows/386
+
+restic failed to create VSS snapshots on windows/386 because of invalid API calls.
+
+https://github.com/restic/restic/issues/3087
+https://github.com/restic/restic/pull/3090
