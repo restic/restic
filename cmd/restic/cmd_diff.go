@@ -364,6 +364,8 @@ func runDiff(opts DiffOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	stats := NewDiffStats()
+	stats.BlobsBefore.Insert(restic.BlobHandle{Type: restic.TreeBlob, ID: *sn1.Tree})
+	stats.BlobsAfter.Insert(restic.BlobHandle{Type: restic.TreeBlob, ID: *sn2.Tree})
 
 	err = c.diffTree(ctx, stats, "/", *sn1.Tree, *sn2.Tree)
 	if err != nil {
