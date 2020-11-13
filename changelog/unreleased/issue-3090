@@ -1,6 +1,7 @@
-Bugfix: --use-fs-snapshot failed on windows/386
+Bugfix: --use-fs-snapshot now works on windows/386
 
-restic failed to create VSS snapshots on windows/386 because of invalid API calls.
+Restic failed to create VSS snapshots on windows/386 with the following error:
+"GetSnapshotProperties() failed: E_INVALIDARG (0x80070057)". This is fixed now.
 
 https://github.com/restic/restic/issues/3087
 https://github.com/restic/restic/pull/3090
