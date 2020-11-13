@@ -21,7 +21,7 @@ jobs:
           - job_name: macOS
             go: 1.15.x
             os: macOS-latest
-            test_fuse: true
+            test_fuse: false
 
           - job_name: Linux
             go: 1.15.x
@@ -79,11 +79,6 @@ jobs:
 
           # add $HOME/bin to path ($GOBIN was already added to the path by setup-go@v2)
           echo $HOME/bin >> $GITHUB_PATH
-
-          echo "install osxfuse"
-          if [ "$RUNNER_OS" == "macOS" ]; then
-            brew cask install osxfuse
-          fi
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'macOS-latest'
 
       - name: Get programs (Windows)
