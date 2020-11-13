@@ -1,0 +1,9 @@
+Change: Remove `--drive-use-trash=false` from default rclone params
+
+By default restic used launched rclone with --drive-use-trash=false,
+since google drive trash retention policy changed, it is no longer required.
+Rclone will now use what's provided in by the `--drive-use-trash
+parameter, `drive-use-trash` config or RCLONE_CONFIG_*_USE_TRASH env
+falling back to `true` as a default (as of: v1.53.2).
+
+https://github.com/restic/restic/issues/3095
