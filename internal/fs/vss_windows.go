@@ -482,7 +482,7 @@ func (vss *IVssBackupComponents) DeleteSnapshots(snapshotID ole.GUID) (int32, ol
 	var result uintptr = 0
 
 	if runtime.GOARCH == "386" {
-		id := (*[4]uintptr)(unsafe.Pointer(ole.IID_NULL))
+		id := (*[4]uintptr)(unsafe.Pointer(&snapshotID))
 
 		result, _, _ = syscall.Syscall9(vss.getVTable().deleteSnapshots, 9,
 			uintptr(unsafe.Pointer(vss)), id[0], id[1], id[2], id[3],
@@ -506,7 +506,7 @@ func (vss *IVssBackupComponents) GetSnapshotProperties(snapshotID ole.GUID,
 	var result uintptr = 0
 
 	if runtime.GOARCH == "386" {
-		id := (*[4]uintptr)(unsafe.Pointer(ole.IID_NULL))
+		id := (*[4]uintptr)(unsafe.Pointer(&snapshotID))
 
 		result, _, _ = syscall.Syscall6(vss.getVTable().getSnapshotProperties, 6,
 			uintptr(unsafe.Pointer(vss)), id[0], id[1], id[2], id[3],
