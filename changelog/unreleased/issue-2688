@@ -1,0 +1,26 @@
+Bugfix: Make backup and tag commands separate tags by comma
+
+Running `restic backup --tag foo,bar` previously created snapshots with one
+single tag containing a comma ("foo,bar") instead of two tags ("foo", "bar").
+Similarly, the `tag` command's --set, --add and --remove options would treat
+"foo,bar" as one tag instead of two tags. This was inconsistent with other
+commands and often unexpected when one intended "foo,bar" to mean two tags.
+
+To be consistent in all commands, restic now interprets "foo,bar" to mean two
+separate tags ("foo" and "bar") instead of one tag ("foo,bar") everywhere,
+including in the `backup` and `tag` commands.
+
+NOTE: This change might result in unexpected behavior in cases where you use
+the `forget` command and filter on tags like "foo,bar". Snapshots previously
+backed up with `--tag foo,bar` will still not match that filter, but snapshots
+saved from now on will match that filter.
+
+To replace "foo,bar" tags with "foo" and "bar" tags in old snapshots, you can
+first generate a list of the relevant snapshots using a command like
+`restic snapshots --json --quiet | jq '.[] | select(contains({tags: ["foo,bar"]})) | .id'`
+, and then use `restic tag --set foo --set bar snapshotID [...]` to set the new
+tags. Please adjust the commands to real tag names and any additional tags,
+as well as the list of snapshots to process.
+
+https://github.com/restic/restic/issues/2688
+https://github.com/restic/restic/pull/2690
