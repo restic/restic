@@ -42,40 +42,36 @@ func Setxattr(path, name string, data []byte) error {
 	return nil
 }
 
-type statWin syscall.Win32FileAttributeData
+type statT syscall.Win32FileAttributeData
 
-//ToStatT call the Windows system call Win32FileAttributeData.
-func toStatT(i interface{}) (statT, bool) {
-	if i == nil {
-		return nil, false
-	}
+func toStatT(i interface{}) (*statT, bool) {
 	s, ok := i.(*syscall.Win32FileAttributeData)
 	if ok && s != nil {
-		return statWin(*s), true
+		return (*statT)(s), true
 	}
 	return nil, false
 }
 
-func (s statWin) dev() uint64   { return 0 }
-func (s statWin) ino() uint64   { return 0 }
-func (s statWin) nlink() uint64 { return 0 }
-func (s statWin) uid() uint32   { return 0 }
-func (s statWin) gid() uint32   { return 0 }
-func (s statWin) rdev() uint64  { return 0 }
+func (s statT) dev() uint64   { return 0 }
+func (s statT) ino() uint64   { return 0 }
+func (s statT) nlink() uint64 { return 0 }
+func (s statT) uid() uint32   { return 0 }
+func (s statT) gid() uint32   { return 0 }
+func (s statT) rdev() uint64  { return 0 }
 
-func (s statWin) size() int64 {
+func (s statT) size() int64 {
 	return int64(s.FileSizeLow) | (int64(s.FileSizeHigh) << 32)
 }
 
-func (s statWin) atim() syscall.Timespec {
+func (s statT) atim() syscall.Timespec {
 	return syscall.NsecToTimespec(s.LastAccessTime.Nanoseconds())
 }
 
-func (s statWin) mtim() syscall.Timespec {
+func (s statT) mtim() syscall.Timespec {
 	return syscall.NsecToTimespec(s.LastWriteTime.Nanoseconds())
 }
 
-func (s statWin) ctim() syscall.Timespec {
+func (s statT) ctim() syscall.Timespec {
 	// Windows does not have the concept of a "change time" in the sense Unix uses it, so we're using the LastWriteTime here.
 	return syscall.NsecToTimespec(s.LastWriteTime.Nanoseconds())
 }
