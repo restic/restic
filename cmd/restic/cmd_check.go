@@ -234,12 +234,12 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	doReadData := func(bucket, totalBuckets uint) {
-		packs := restic.IDSet{}
-		for pack := range chkr.GetPacks() {
+		packs := make(map[restic.ID]int64)
+		for pack, size := range chkr.GetPacks() {
 			// If we ever check more than the first byte
 			// of pack, update totalBucketsMax.
 			if (uint(pack[0]) % totalBuckets) == (bucket - 1) {
-				packs.Insert(pack)
+				packs[pack] = size
 			}
 		}
 		packCount := uint64(len(packs))
