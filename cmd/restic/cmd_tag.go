@@ -38,9 +38,9 @@ type TagOptions struct {
 	Hosts      []string
 	Paths      []string
 	Tags       restic.TagLists
-	SetTags    []string
-	AddTags    []string
-	RemoveTags []string
+	SetTags    restic.TagList
+	AddTags    restic.TagList
+	RemoveTags restic.TagList
 }
 
 var tagOptions TagOptions
@@ -49,9 +49,9 @@ func init() {
 	cmdRoot.AddCommand(cmdTag)
 
 	tagFlags := cmdTag.Flags()
-	tagFlags.StringSliceVar(&tagOptions.SetTags, "set", nil, "`tag` which will replace the existing tags (can be given multiple times)")
-	tagFlags.StringSliceVar(&tagOptions.AddTags, "add", nil, "`tag` which will be added to the existing tags (can be given multiple times)")
-	tagFlags.StringSliceVar(&tagOptions.RemoveTags, "remove", nil, "`tag` which will be removed from the existing tags (can be given multiple times)")
+	tagFlags.Var(&tagOptions.SetTags, "set", "`tag` which will replace the existing tags (can be given multiple times)")
+	tagFlags.Var(&tagOptions.AddTags, "add", "`tag` which will be added to the existing tags (can be given multiple times)")
+	tagFlags.Var(&tagOptions.RemoveTags, "remove", "`tag` which will be removed from the existing tags (can be given multiple times)")
 
 	tagFlags.StringArrayVarP(&tagOptions.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when no snapshot ID is given (can be specified multiple times)")
 	tagFlags.Var(&tagOptions.Tags, "tag", "only consider snapshots which include this `taglist`, when no snapshot-ID is given")
