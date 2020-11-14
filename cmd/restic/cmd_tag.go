@@ -49,9 +49,9 @@ func init() {
 	cmdRoot.AddCommand(cmdTag)
 
 	tagFlags := cmdTag.Flags()
-	tagFlags.Var(&tagOptions.SetTags, "set", "`tag` which will replace the existing tags (can be given multiple times)")
-	tagFlags.Var(&tagOptions.AddTags, "add", "`tag` which will be added to the existing tags (can be given multiple times)")
-	tagFlags.Var(&tagOptions.RemoveTags, "remove", "`tag` which will be removed from the existing tags (can be given multiple times)")
+	tagFlags.Var(&tagOptions.SetTags, "set", "`tags` which will replace the existing tags in the format `tag[,tag,...]` (can be given multiple times)")
+	tagFlags.Var(&tagOptions.AddTags, "add", "`tags` which will be added to the existing tags in the format `tag[,tag,...]` (can be given multiple times)")
+	tagFlags.Var(&tagOptions.RemoveTags, "remove", "`tags` which will be removed from the existing tags in the format `tag[,tag,...]` (can be given multiple times)")
 
 	tagFlags.StringArrayVarP(&tagOptions.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when no snapshot ID is given (can be specified multiple times)")
 	tagFlags.Var(&tagOptions.Tags, "tag", "only consider snapshots which include this `taglist`, when no snapshot-ID is given")
