@@ -1,7 +1,6 @@
 package pack
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -49,7 +48,8 @@ func (p *Packer) Add(t restic.BlobType, id restic.ID, data []byte) (int, error) 
 
 var entrySize = uint(binary.Size(restic.BlobType(0)) + binary.Size(uint32(0)) + len(restic.ID{}))
 
-// headerEntry is used with encoding/binary to read and write header entries
+// headerEntry describes the format of header entries. It serves only as
+// documentation.
 type headerEntry struct {
 	Type   uint8
 	Length uint32
@@ -64,16 +64,15 @@ func (p *Packer) Finalize() (uint, error) {
 
 	bytesWritten := p.bytes
 
-	hdrBuf := bytes.NewBuffer(nil)
-	bytesHeader, err := p.writeHeader(hdrBuf)
+	header, err := p.makeHeader()
 	if err != nil {
 		return 0, err
 	}
 
-	encryptedHeader := make([]byte, 0, hdrBuf.Len()+p.k.Overhead()+p.k.NonceSize())
+	encryptedHeader := make([]byte, 0, len(header)+p.k.Overhead()+p.k.NonceSize())
 	nonce := crypto.NewRandomNonce()
 	encryptedHeader = append(encryptedHeader, nonce...)
-	encryptedHeader = p.k.Seal(encryptedHeader, nonce, hdrBuf.Bytes(), nil)
+	encryptedHeader = p.k.Seal(encryptedHeader, nonce, header, nil)
 
 	// append the header
 	n, err := p.wr.Write(encryptedHeader)
@@ -81,7 +80,7 @@ func (p *Packer) Finalize() (uint, error) {
 		return 0, errors.Wrap(err, "Write")
 	}
 
-	hdrBytes := restic.CiphertextLength(int(bytesHeader))
+	hdrBytes := restic.CiphertextLength(len(header))
 	if n != hdrBytes {
 		return 0, errors.New("wrong number of bytes written")
 	}
@@ -99,32 +98,27 @@ func (p *Packer) Finalize() (uint, error) {
 	return bytesWritten, nil
 }
 
-// writeHeader constructs and writes the header to wr.
-func (p *Packer) writeHeader(wr io.Writer) (bytesWritten uint, err error) {
-	for _, b := range p.blobs {
-		entry := headerEntry{
-			Length: uint32(b.Length),
-			ID:     b.ID,
-		}
+// makeHeader constructs the header for p.
+func (p *Packer) makeHeader() ([]byte, error) {
+	buf := make([]byte, 0, len(p.blobs)*int(entrySize))
 
+	for _, b := range p.blobs {
 		switch b.Type {
 		case restic.DataBlob:
-			entry.Type = 0
+			buf = append(buf, 0)
 		case restic.TreeBlob:
-			entry.Type = 1
+			buf = append(buf, 1)
 		default:
-			return 0, errors.Errorf("invalid blob type %v", b.Type)
+			return nil, errors.Errorf("invalid blob type %v", b.Type)
 		}
 
-		err := binary.Write(wr, binary.LittleEndian, entry)
-		if err != nil {
-			return bytesWritten, errors.Wrap(err, "binary.Write")
-		}
-
-		bytesWritten += entrySize
+		var lenLE [4]byte
+		binary.LittleEndian.PutUint32(lenLE[:], uint32(b.Length))
+		buf = append(buf, lenLE[:]...)
+		buf = append(buf, b.ID[:]...)
 	}
 
-	return
+	return buf, nil
 }
 
 // Size returns the number of bytes written so far.
@@ -149,11 +143,6 @@ func (p *Packer) Blobs() []restic.Blob {
 	defer p.m.Unlock()
 
 	return p.blobs
-}
-
-// Writer return the underlying writer.
-func (p *Packer) Writer() io.Writer {
-	return p.wr
 }
 
 func (p *Packer) String() string {
@@ -280,40 +269,19 @@ func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []restic.Blob, err
 		return nil, err
 	}
 
-	hdrRd := bytes.NewReader(buf)
-
 	entries = make([]restic.Blob, 0, uint(len(buf))/entrySize)
 
 	pos := uint(0)
-	for {
-		e := headerEntry{}
-		err = binary.Read(hdrRd, binary.LittleEndian, &e)
-		if errors.Cause(err) == io.EOF {
-			break
-		}
-
+	for len(buf) > 0 {
+		entry, err := parseHeaderEntry(buf)
 		if err != nil {
-			return nil, errors.Wrap(err, "binary.Read")
+			return nil, err
 		}
-
-		entry := restic.Blob{
-			Length: uint(e.Length),
-			ID:     e.ID,
-			Offset: pos,
-		}
-
-		switch e.Type {
-		case 0:
-			entry.Type = restic.DataBlob
-		case 1:
-			entry.Type = restic.TreeBlob
-		default:
-			return nil, errors.Errorf("invalid type %d", e.Type)
-		}
+		entry.Offset = pos
 
 		entries = append(entries, entry)
-
-		pos += uint(e.Length)
+		pos += entry.Length
+		buf = buf[entrySize:]
 	}
 
 	return entries, nil
@@ -322,4 +290,26 @@ func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []restic.Blob, err
 // PackedSizeOfBlob returns the size a blob actually uses when saved in a pack
 func PackedSizeOfBlob(blobLength uint) uint {
 	return blobLength + entrySize
+}
+
+func parseHeaderEntry(p []byte) (b restic.Blob, err error) {
+	if uint(len(p)) < entrySize {
+		err = errors.Errorf("parseHeaderEntry: buffer of size %d too short", len(p))
+		return b, err
+	}
+	p = p[:entrySize]
+
+	switch p[0] {
+	case 0:
+		b.Type = restic.DataBlob
+	case 1:
+		b.Type = restic.TreeBlob
+	default:
+		return b, errors.Errorf("invalid type %d", p[0])
+	}
+
+	b.Length = uint(binary.LittleEndian.Uint32(p[1:5]))
+	copy(b.ID[:], p[5:])
+
+	return b, nil
 }

@@ -36,7 +36,8 @@ func newPack(t testing.TB, k *crypto.Key, lengths []int) ([]Buf, []byte, uint) {
 	}
 
 	// pack blobs
-	p := pack.NewPacker(k, new(bytes.Buffer))
+	var buf bytes.Buffer
+	p := pack.NewPacker(k, &buf)
 	for _, b := range bufs {
 		p.Add(restic.TreeBlob, b.id, b.data)
 	}
@@ -44,8 +45,7 @@ func newPack(t testing.TB, k *crypto.Key, lengths []int) ([]Buf, []byte, uint) {
 	_, err := p.Finalize()
 	rtest.OK(t, err)
 
-	packData := p.Writer().(*bytes.Buffer).Bytes()
-	return bufs, packData, p.Size()
+	return bufs, buf.Bytes(), p.Size()
 }
 
 func verifyBlobs(t testing.TB, bufs []Buf, k *crypto.Key, rd io.ReaderAt, packSize uint) {

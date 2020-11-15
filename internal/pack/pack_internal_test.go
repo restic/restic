@@ -7,8 +7,43 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/crypto"
+	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
+
+func TestParseHeaderEntry(t *testing.T) {
+	h := headerEntry{
+		Type:   0, // Blob.
+		Length: 100,
+	}
+	for i := range h.ID {
+		h.ID[i] = byte(i)
+	}
+
+	buf := new(bytes.Buffer)
+	_ = binary.Write(buf, binary.LittleEndian, &h)
+
+	b, err := parseHeaderEntry(buf.Bytes())
+	rtest.OK(t, err)
+	rtest.Equals(t, restic.DataBlob, b.Type)
+	t.Logf("%v %v", h.ID, b.ID)
+	rtest.Assert(t, bytes.Equal(h.ID[:], b.ID[:]), "id mismatch")
+	rtest.Equals(t, uint(h.Length), b.Length)
+
+	h.Type = 0xae
+	buf.Reset()
+	_ = binary.Write(buf, binary.LittleEndian, &h)
+
+	b, err = parseHeaderEntry(buf.Bytes())
+	rtest.Assert(t, err != nil, "no error for invalid type")
+
+	h.Type = 0
+	buf.Reset()
+	_ = binary.Write(buf, binary.LittleEndian, &h)
+
+	b, err = parseHeaderEntry(buf.Bytes()[:entrySize-1])
+	rtest.Assert(t, err != nil, "no error for short input")
+}
 
 type countingReaderAt struct {
 	delegate        io.ReaderAt
