@@ -498,7 +498,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 	if len(removePacks) != 0 {
 		totalpacks := int(stats.packs.used+stats.packs.partlyUsed+stats.packs.unused) -
 			len(removePacks) + packsAddedByRepack
-		err = rebuildIndexFiles(gopts, repo, removePacks, uint64(totalpacks))
+		err = rebuildIndexFiles(gopts, repo, removePacks, nil, uint64(totalpacks))
 		if err != nil {
 			return err
 		}
@@ -511,12 +511,12 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 	return nil
 }
 
-func rebuildIndexFiles(gopts GlobalOptions, repo restic.Repository, removePacks restic.IDSet, packcount uint64) error {
+func rebuildIndexFiles(gopts GlobalOptions, repo restic.Repository, removePacks restic.IDSet, extraObsolete restic.IDs, packcount uint64) error {
 	Verbosef("rebuilding index\n")
 
 	bar := newProgressMax(!gopts.Quiet, packcount, "packs processed")
 	obsoleteIndexes, err := (repo.Index()).(*repository.MasterIndex).
-		Save(gopts.ctx, repo, removePacks, bar)
+		Save(gopts.ctx, repo, removePacks, extraObsolete, bar)
 	bar.Done()
 	if err != nil {
 		return err

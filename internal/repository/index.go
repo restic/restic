@@ -281,7 +281,10 @@ type EachByPackResult struct {
 }
 
 // EachByPack returns a channel that yields all blobs known to the index
-// grouped by packID but ignoring blobs with a packID in packPlacklist.
+// grouped by packID but ignoring blobs with a packID in packPlacklist for
+// finalized indexes.
+// This filtering is used when rebuilding the index where we need to ignore packs
+// from the finalized index which have been re-read into a non-finalized index.
 // When the  context is cancelled, the background goroutine
 // terminates. This blocks any modification of the index.
 func (idx *Index) EachByPack(ctx context.Context, packBlacklist restic.IDSet) <-chan EachByPackResult {
@@ -300,7 +303,7 @@ func (idx *Index) EachByPack(ctx context.Context, packBlacklist restic.IDSet) <-
 			m := &idx.byType[typ]
 			m.foreach(func(e *indexEntry) bool {
 				packID := idx.packs[e.packIndex]
-				if !packBlacklist.Has(packID) {
+				if !idx.final || !packBlacklist.Has(packID) {
 					byPack[packID] = append(byPack[packID], e)
 				}
 				return true
