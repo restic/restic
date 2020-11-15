@@ -83,7 +83,7 @@ func checkFlags(opts CheckOptions) error {
 
 			if percentage <= 0.0 || percentage > 100.0 {
 				return errors.Fatal(
-					"check flag --read-data-subset=n% n must be above 0.0% and 100.0%")
+					"check flag --read-data-subset=n% n must be above 0.0% and at most 100.0%")
 			}
 		}
 	}
