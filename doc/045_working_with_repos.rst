@@ -238,12 +238,17 @@ integrity of the pack files in the repository, use the ``--read-data`` flag:
     repository, beware that it might incur higher bandwidth costs than usual
     and also that it takes more time than the default ``check``.
 
-Alternatively, use the ``--read-data-subset=n/t`` parameter to check only a
-subset of the repository pack files at a time. The parameter takes two values,
-``n`` and ``t``. When the check command runs, all pack files in the repository
-are logically divided in ``t`` (roughly equal) groups, and only files that
-belong to group number ``n`` are checked. For example, the following commands
-check all repository pack files over 5 separate invocations:
+Alternatively, use the ``--read-data-subset`` parameter to check only a
+subset of the repository pack files at a time. It supports two ways to select a
+subset. One selects a specific range of pack files, the other selects a random
+percentage of pack files.
+
+Use ``--read-data-subset=n/t`` to check only a subset of the repository pack
+files at a time. The parameter takes two values, ``n`` and ``t``. When the check
+command runs, all pack files in the repository are logically divided in ``t``
+(roughly equal) groups, and only files that belong to group number ``n`` are
+checked. For example, the following commands check all repository pack files
+over 5 separate invocations:
 
 .. code-block:: console
 
@@ -252,3 +257,21 @@ check all repository pack files over 5 separate invocations:
     $ restic -r /srv/restic-repo check --read-data-subset=3/5
     $ restic -r /srv/restic-repo check --read-data-subset=4/5
     $ restic -r /srv/restic-repo check --read-data-subset=5/5
+
+Use ``--read-data-subset=n%`` to check a randomly choosen subset of the
+repository pack files. It takes one parameter, ``n``, the percentage of pack
+files to check as an integer or floating point number. This will not guarantee
+to cover all available pack files after sufficient runs, but it is easy to
+automate checking a small subset of data after each backup. For a floating point
+value the following command may be used:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo check --read-data-subset=2.5%
+
+When checking bigger subsets you most likely specify the percentage as an
+integer:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo check --read-data-subset=10%
