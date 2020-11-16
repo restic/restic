@@ -8,7 +8,6 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 
@@ -233,7 +232,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 	// iterate over all blobs in index to find out which blobs are duplicates
 	for blob := range repo.Index().Each(ctx) {
 		bh := blob.Handle()
-		size := uint64(pack.PackedSizeOfBlob(blob.Length))
+		size := uint64(blob.Length)
 		switch {
 		case usedBlobs.Has(bh): // used blob, move to keepBlobs
 			usedBlobs.Delete(bh)
@@ -261,19 +260,28 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 
 	indexPack := make(map[restic.ID]packInfo)
 
+	// save computed pack header size
+	for pid, hdrSize := range repo.Index().PackSize(ctx, true) {
+		// initialize tpe with NumBlobTypes to indicate it's not set
+		indexPack[pid] = packInfo{tpe: restic.NumBlobTypes, usedSize: uint64(hdrSize)}
+	}
+
 	// iterate over all blobs in index to generate packInfo
 	for blob := range repo.Index().Each(ctx) {
-		ip, ok := indexPack[blob.PackID]
-		if !ok {
-			ip = packInfo{tpe: blob.Type, usedSize: pack.HeaderSize}
+		ip := indexPack[blob.PackID]
+
+		// Set blob type if not yet set
+		if ip.tpe == restic.NumBlobTypes {
+			ip.tpe = blob.Type
 		}
+
 		// mark mixed packs with "Invalid blob type"
 		if ip.tpe != blob.Type {
 			ip.tpe = restic.InvalidBlob
 		}
 
 		bh := blob.Handle()
-		size := uint64(pack.PackedSizeOfBlob(blob.Length))
+		size := uint64(blob.Length)
 		switch {
 		case duplicateBlobs.Has(bh): // duplicate blob
 			ip.usedSize += size
