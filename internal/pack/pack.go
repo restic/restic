@@ -252,21 +252,24 @@ func (e InvalidFileError) Error() string {
 	return e.Message
 }
 
-// List returns the list of entries found in a pack file.
-func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []restic.Blob, err error) {
+// List returns the list of entries found in a pack file and the length of the
+// header (including header size and crypto overhead)
+func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []restic.Blob, hdrSize uint32, err error) {
 	buf, err := readHeader(rd, size)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	if len(buf) < k.NonceSize()+k.Overhead() {
-		return nil, errors.New("invalid header, too small")
+		return nil, 0, errors.New("invalid header, too small")
 	}
+
+	hdrSize = headerLengthSize + uint32(len(buf))
 
 	nonce, buf := buf[:k.NonceSize()], buf[k.NonceSize():]
 	buf, err = k.Open(buf[:0], nonce, buf, nil)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	entries = make([]restic.Blob, 0, uint(len(buf))/entrySize)
@@ -275,7 +278,7 @@ func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []restic.Blob, err
 	for len(buf) > 0 {
 		entry, err := parseHeaderEntry(buf)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		entry.Offset = pos
 
@@ -284,7 +287,7 @@ func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []restic.Blob, err
 		buf = buf[entrySize:]
 	}
 
-	return entries, nil
+	return entries, hdrSize, nil
 }
 
 // PackedSizeOfBlob returns the size a blob actually uses when saved in a pack

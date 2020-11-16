@@ -92,7 +92,7 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 		for job := range processQueue {
 			tempfile, packID, packLength := job.tempfile, job.hash, job.packLength
 
-			blobs, err := pack.List(repo.Key(), tempfile, packLength)
+			blobs, _, err := pack.List(repo.Key(), tempfile, packLength)
 			if err != nil {
 				return err
 			}

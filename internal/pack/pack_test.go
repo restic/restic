@@ -53,19 +53,18 @@ func verifyBlobs(t testing.TB, bufs []Buf, k *crypto.Key, rd io.ReaderAt, packSi
 	for _, buf := range bufs {
 		written += len(buf.data)
 	}
-	// header length
-	written += binary.Size(uint32(0))
-	// header + header crypto
-	headerSize := len(bufs) * (binary.Size(restic.BlobType(0)) + binary.Size(uint32(0)) + len(restic.ID{}))
-	written += restic.CiphertextLength(headerSize)
+	// header length + header + header crypto
+	headerSize := binary.Size(uint32(0)) + restic.CiphertextLength(len(bufs)*int(pack.EntrySize))
+	written += headerSize
 
 	// check length
 	rtest.Equals(t, uint(written), packSize)
 
 	// read and parse it again
-	entries, err := pack.List(k, rd, int64(packSize))
+	entries, hdrSize, err := pack.List(k, rd, int64(packSize))
 	rtest.OK(t, err)
 	rtest.Equals(t, len(entries), len(bufs))
+	rtest.Equals(t, headerSize, int(hdrSize))
 
 	var buf []byte
 	for i, b := range bufs {

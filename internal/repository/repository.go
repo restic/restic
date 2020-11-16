@@ -740,16 +740,11 @@ func (r *Repository) List(ctx context.Context, t restic.FileType, fn func(restic
 }
 
 // ListPack returns the list of blobs saved in the pack id and the length of
-// the file as stored in the backend.
-func (r *Repository) ListPack(ctx context.Context, id restic.ID, size int64) ([]restic.Blob, int64, error) {
+// the the pack header.
+func (r *Repository) ListPack(ctx context.Context, id restic.ID, size int64) ([]restic.Blob, uint32, error) {
 	h := restic.Handle{Type: restic.PackFile, Name: id.String()}
 
-	blobs, err := pack.List(r.Key(), restic.ReaderAt(ctx, r.Backend(), h), size)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	return blobs, size, nil
+	return pack.List(r.Key(), restic.ReaderAt(ctx, r.Backend(), h), size)
 }
 
 // Delete calls backend.Delete() if implemented, and returns an error

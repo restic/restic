@@ -749,7 +749,7 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, size int6
 		return errors.Errorf("Pack size does not match, want %v, got %v", size, realSize)
 	}
 
-	blobs, err := pack.List(r.Key(), packfile, size)
+	blobs, _, err := pack.List(r.Key(), packfile, size)
 	if err != nil {
 		return err
 	}
