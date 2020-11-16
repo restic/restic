@@ -1,0 +1,6 @@
+Enhancement: Reduce memory usage of check command
+
+The check command now requires less memory if it is run with the
+`--check-unused` option.
+
+https://github.com/restic/restic/pull/3099

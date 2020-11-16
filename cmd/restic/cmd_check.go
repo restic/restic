@@ -193,7 +193,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	chkr := checker.New(repo)
+	chkr := checker.New(repo, opts.CheckUnused)
 
 	Verbosef("load indexes\n")
 	hints, errs := chkr.LoadIndex(gopts.ctx)
@@ -255,7 +255,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	if opts.CheckUnused {
-		for _, id := range chkr.UnusedBlobs() {
+		for _, id := range chkr.UnusedBlobs(gopts.ctx) {
 			Verbosef("unused blob %v\n", id)
 			errorsFound = true
 		}

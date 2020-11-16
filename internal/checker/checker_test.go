@@ -61,7 +61,7 @@ func TestCheckRepo(t *testing.T) {
 
 	repo := repository.TestOpenLocal(t, repodir)
 
-	chkr := checker.New(repo)
+	chkr := checker.New(repo, false)
 	hints, errs := chkr.LoadIndex(context.TODO())
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
@@ -87,7 +87,7 @@ func TestMissingPack(t *testing.T) {
 	}
 	test.OK(t, repo.Backend().Remove(context.TODO(), packHandle))
 
-	chkr := checker.New(repo)
+	chkr := checker.New(repo, false)
 	hints, errs := chkr.LoadIndex(context.TODO())
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
@@ -123,7 +123,7 @@ func TestUnreferencedPack(t *testing.T) {
 	}
 	test.OK(t, repo.Backend().Remove(context.TODO(), indexHandle))
 
-	chkr := checker.New(repo)
+	chkr := checker.New(repo, false)
 	hints, errs := chkr.LoadIndex(context.TODO())
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
@@ -168,7 +168,7 @@ func TestUnreferencedBlobs(t *testing.T) {
 
 	sort.Sort(unusedBlobsBySnapshot)
 
-	chkr := checker.New(repo)
+	chkr := checker.New(repo, true)
 	hints, errs := chkr.LoadIndex(context.TODO())
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
@@ -181,7 +181,7 @@ func TestUnreferencedBlobs(t *testing.T) {
 	test.OKs(t, checkPacks(chkr))
 	test.OKs(t, checkStruct(chkr))
 
-	blobs := chkr.UnusedBlobs()
+	blobs := chkr.UnusedBlobs(context.TODO())
 	sort.Sort(blobs)
 
 	test.Equals(t, unusedBlobsBySnapshot, blobs)
@@ -241,7 +241,7 @@ func TestModifiedIndex(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	chkr := checker.New(repo)
+	chkr := checker.New(repo, false)
 	hints, errs := chkr.LoadIndex(context.TODO())
 	if len(errs) == 0 {
 		t.Fatalf("expected errors not found")
@@ -264,7 +264,7 @@ func TestDuplicatePacksInIndex(t *testing.T) {
 
 	repo := repository.TestOpenLocal(t, repodir)
 
-	chkr := checker.New(repo)
+	chkr := checker.New(repo, false)
 	hints, errs := chkr.LoadIndex(context.TODO())
 	if len(hints) == 0 {
 		t.Fatalf("did not get expected checker hints for duplicate packs in indexes")
@@ -336,7 +336,7 @@ func TestCheckerModifiedData(t *testing.T) {
 	checkRepo := repository.New(beError)
 	test.OK(t, checkRepo.SearchKey(context.TODO(), test.TestPassword, 5, ""))
 
-	chkr := checker.New(checkRepo)
+	chkr := checker.New(checkRepo, false)
 
 	hints, errs := chkr.LoadIndex(context.TODO())
 	if len(errs) > 0 {
@@ -398,7 +398,7 @@ func TestCheckerNoDuplicateTreeDecodes(t *testing.T) {
 		loadedTrees: restic.NewIDSet(),
 	}
 
-	chkr := checker.New(checkRepo)
+	chkr := checker.New(checkRepo, false)
 	hints, errs := chkr.LoadIndex(context.TODO())
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
@@ -509,7 +509,7 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 		UnblockChannel: make(chan struct{}),
 	}
 
-	chkr := checker.New(delayRepo)
+	chkr := checker.New(delayRepo, false)
 
 	go func() {
 		<-ctx.Done()
@@ -544,7 +544,7 @@ func loadBenchRepository(t *testing.B) (*checker.Checker, restic.Repository, fun
 
 	repo := repository.TestOpenLocal(t, repodir)
 
-	chkr := checker.New(repo)
+	chkr := checker.New(repo, false)
 	hints, errs := chkr.LoadIndex(context.TODO())
 	if len(errs) > 0 {
 		defer cleanup()

@@ -360,7 +360,7 @@ func TestIndexSave(t *testing.T) {
 		}
 	}
 
-	checker := checker.New(repo)
+	checker := checker.New(repo, false)
 	hints, errs := checker.LoadIndex(context.TODO())
 	for _, h := range hints {
 		t.Logf("hint: %v\n", h)
