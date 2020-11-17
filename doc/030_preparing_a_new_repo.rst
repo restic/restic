@@ -601,10 +601,9 @@ For debugging rclone, you can set the environment variable ``RCLONE_VERBOSE=2``.
 The rclone backend has two additional options:
 
  * ``-o rclone.program`` specifies the path to rclone, the default value is just ``rclone``
- * ``-o rclone.args`` allows setting the arguments passed to rclone, by default this is ``serve restic --stdio --b2-hard-delete --drive-use-trash=false``
+ * ``-o rclone.args`` allows setting the arguments passed to rclone, by default this is ``serve restic --stdio --b2-hard-delete``
 
-The reason for the two last parameters (``--b2-hard-delete`` and
-``--drive-use-trash=false``) can be found in the corresponding GitHub `issue #1657`_.
+The reason for the ``--b2-hard-delete`` parameters can be found in the corresponding GitHub `issue #1657`_.
 
 In order to start rclone, restic will build a list of arguments by joining the
 following lists (in this order): ``rclone.program``, ``rclone.args`` and as the
