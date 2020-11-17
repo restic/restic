@@ -376,7 +376,7 @@ func (c *Checker) Structure(ctx context.Context, errChan chan<- error) {
 		c.blobRefs.M.Insert(h)
 		c.blobRefs.Unlock()
 		return blobReferenced
-	})
+	}, nil)
 
 	defer close(errChan)
 	for i := 0; i < defaultParallelism; i++ {

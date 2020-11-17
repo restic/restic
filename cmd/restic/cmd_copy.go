@@ -183,7 +183,7 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 		visited := visitedTrees.Has(treeID)
 		visitedTrees.Insert(treeID)
 		return visited
-	})
+	}, nil)
 
 	wg.Go(func() error {
 		// reused buffer

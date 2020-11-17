@@ -27,7 +27,7 @@ func FindUsedBlobs(ctx context.Context, repo TreeLoader, treeID ID, blobs BlobSe
 		blobs.Insert(h)
 		lock.Unlock()
 		return blobReferenced
-	})
+	}, nil)
 
 	wg.Go(func() error {
 		for tree := range treeStream {
