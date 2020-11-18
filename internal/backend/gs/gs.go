@@ -136,6 +136,11 @@ func Create(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 	ctx := context.Background()
 	exists, err := be.bucketExists(ctx, be.bucket)
 	if err != nil {
+		if e, ok := err.(*googleapi.Error); ok && e.Code == http.StatusForbidden {
+			// the bucket might exist!
+			// however, the client doesn't have storage.bucket.get permission
+			return be, nil
+		}
 		return nil, errors.Wrap(err, "service.Buckets.Get")
 	}
 
