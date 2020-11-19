@@ -253,13 +253,14 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) {
 		}
 		BufRd := bufio.NewReaderSize(rd, bufferSize)
 		currentBlobEnd := start
+		var blobData, buf []byte
 		for _, blobID := range sortedBlobs {
 			blob := blobs[blobID]
 			_, err := BufRd.Discard(int(blob.offset - currentBlobEnd))
 			if err != nil {
 				return err
 			}
-			blobData, err := r.loadBlob(BufRd, blobID, blob.length)
+			blobData, buf, err = r.loadBlob(BufRd, blobID, blob.length, buf)
 			if err != nil {
 				for file := range blob.files {
 					markFileError(file, err)
@@ -309,31 +310,35 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) {
 
 }
 
-func (r *fileRestorer) loadBlob(rd io.Reader, blobID restic.ID, length int) ([]byte, error) {
+func (r *fileRestorer) loadBlob(rd io.Reader, blobID restic.ID, length int, buf []byte) ([]byte, []byte, error) {
 	// TODO reconcile with Repository#loadBlob implementation
 
-	buf := make([]byte, length)
+	if cap(buf) < length {
+		buf = make([]byte, length)
+	} else {
+		buf = buf[:length]
+	}
 
 	n, err := rd.Read(buf)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if n != length {
-		return nil, errors.Errorf("error loading blob %v: wrong length returned, want %d, got %d", blobID.Str(), length, n)
+		return nil, nil, errors.Errorf("error loading blob %v: wrong length returned, want %d, got %d", blobID.Str(), length, n)
 	}
 
 	// decrypt
 	nonce, ciphertext := buf[:r.key.NonceSize()], buf[r.key.NonceSize():]
 	plaintext, err := r.key.Open(ciphertext[:0], nonce, ciphertext, nil)
 	if err != nil {
-		return nil, errors.Errorf("decrypting blob %v failed: %v", blobID, err)
+		return nil, nil, errors.Errorf("decrypting blob %v failed: %v", blobID, err)
 	}
 
 	// check hash
 	if !restic.Hash(plaintext).Equal(blobID) {
-		return nil, errors.Errorf("blob %v returned invalid hash", blobID)
+		return nil, nil, errors.Errorf("blob %v returned invalid hash", blobID)
 	}
 
-	return plaintext, nil
+	return plaintext, buf, nil
 }
