@@ -222,45 +222,15 @@ func (b *Local) Remove(ctx context.Context, h restic.Handle) error {
 
 // List runs fn for each file in the backend which has the type t. When an
 // error occurs (or fn returns an error), List stops and returns it.
-func (b *Local) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
+func (b *Local) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) (err error) {
 	debug.Log("List %v", t)
 
 	basedir, subdirs := b.Basedir(t)
-	atBasedir := true
-	err := fs.Walk(basedir, func(path string, fi os.FileInfo, err error) error {
-		debug.Log("walk on %v\n", path)
-		if err != nil {
-			return err
-		}
-
-		switch {
-		case atBasedir: // Skip basedir itself.
-			atBasedir = false
-			return nil
-		case fi.IsDir() && !subdirs:
-			return filepath.SkipDir
-		case !fi.Mode().IsRegular():
-			return nil
-		}
-
-		debug.Log("send %v\n", filepath.Base(path))
-
-		rfi := restic.FileInfo{
-			Name: filepath.Base(path),
-			Size: fi.Size(),
-		}
-
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
-
-		err = fn(rfi)
-		if err != nil {
-			return err
-		}
-
-		return ctx.Err()
-	})
+	if subdirs {
+		err = visitDirs(ctx, basedir, fn)
+	} else {
+		err = visitFiles(ctx, basedir, fn)
+	}
 
 	if b.IsNotExist(err) {
 		debug.Log("ignoring non-existing directory")
@@ -268,6 +238,61 @@ func (b *Local) List(ctx context.Context, t restic.FileType, fn func(restic.File
 	}
 
 	return err
+}
+
+// The following two functions are like filepath.Walk, but visit only one or
+// two levels of directory structure (including dir itself as the first level).
+// Also, visitDirs assumes it sees a directory full of directories, while
+// visitFiles wants a directory full or regular files.
+func visitDirs(ctx context.Context, dir string, fn func(restic.FileInfo) error) error {
+	d, err := fs.Open(dir)
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+
+	sub, err := d.Readdirnames(-1)
+	if err != nil {
+		return err
+	}
+
+	for _, f := range sub {
+		err = visitFiles(ctx, filepath.Join(dir, f), fn)
+		if err != nil {
+			return err
+		}
+	}
+	return ctx.Err()
+}
+
+func visitFiles(ctx context.Context, dir string, fn func(restic.FileInfo) error) error {
+	d, err := fs.Open(dir)
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+
+	sub, err := d.Readdir(-1)
+	if err != nil {
+		return err
+	}
+
+	for _, fi := range sub {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
+		err := fn(restic.FileInfo{
+			Name: fi.Name(),
+			Size: fi.Size(),
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Delete removes the repository and all files.
