@@ -277,7 +277,7 @@ Including Files
 ***************
 
 By using the ``--files-from`` option you can read the files you want to back
-up from one or more files. This is especially useful if a lot of files have
+up from one or more folders. This is especially useful if a lot of files have
 to be backed up that are not in the same folder or are maybe pre-filtered by
 other software.
 
