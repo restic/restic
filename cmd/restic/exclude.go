@@ -288,7 +288,49 @@ func rejectByDevice(samples []string) (RejectFunc, error) {
 			panic(fmt.Sprintf("error checking device ID of %v: %v", item, err))
 		}
 
-		return !allowed
+		if allowed {
+			// accept item
+			return false
+		}
+
+		// reject everything except directories
+		if !fi.IsDir() {
+			return true
+		}
+
+		// special case: make sure we keep mountpoints (directories which
+		// contain a mounted file system). Test this by checking if the parent
+		// directory would be included.
+		parentDir := filepath.Dir(filepath.Clean(item))
+
+		parentFI, err := fs.Lstat(parentDir)
+		if err != nil {
+			debug.Log("item %v: error running lstat() on parent directory: %v", item, err)
+			// if in doubt, reject
+			return true
+		}
+
+		parentDeviceID, err := fs.DeviceID(parentFI)
+		if err != nil {
+			debug.Log("item %v: getting device ID of parent directory: %v", item, err)
+			// if in doubt, reject
+			return true
+		}
+
+		parentAllowed, err := deviceMap.IsAllowed(parentDir, parentDeviceID)
+		if err != nil {
+			debug.Log("item %v: error checking parent directory: %v", item, err)
+			// if in doubt, reject
+			return true
+		}
+
+		if parentAllowed {
+			// we found a mount point, so accept the directory
+			return false
+		}
+
+		// reject everything else
+		return true
 	}, nil
 }
 
