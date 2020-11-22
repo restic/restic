@@ -32,7 +32,10 @@ type Repository interface {
 	//
 	// The function fn is called in the same Goroutine List() was called from.
 	List(ctx context.Context, t FileType, fn func(ID, int64) error) error
-	ListPack(context.Context, ID, int64) ([]Blob, int64, error)
+
+	// ListPack returns the list of blobs saved in the pack id and the length of
+	// the the pack header.
+	ListPack(context.Context, ID, int64) ([]Blob, uint32, error)
 
 	Flush(context.Context) error
 
@@ -63,6 +66,7 @@ type MasterIndex interface {
 	Lookup(ID, BlobType) []PackedBlob
 	Count(BlobType) uint
 	Packs() IDSet
+	PackSize(ctx context.Context, onlyHdr bool) map[ID]int64
 
 	// Each returns a channel that yields all blobs known to the index. When
 	// the context is cancelled, the background goroutine terminates. This

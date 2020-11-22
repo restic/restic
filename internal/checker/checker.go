@@ -178,13 +178,7 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 	c.masterIndex.MergeFinalIndexes()
 
 	// compute pack size using index entries
-	for blob := range c.masterIndex.Each(ctx) {
-		size, ok := c.packs[blob.PackID]
-		if !ok {
-			size = pack.HeaderSize
-		}
-		c.packs[blob.PackID] = size + int64(pack.PackedSizeOfBlob(blob.Length))
-	}
+	c.packs = c.masterIndex.PackSize(ctx, false)
 
 	debug.Log("checking for duplicate packs")
 	for packID := range c.packs {
@@ -749,17 +743,17 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, size int6
 		return errors.Errorf("Pack size does not match, want %v, got %v", size, realSize)
 	}
 
-	blobs, err := pack.List(r.Key(), packfile, size)
+	blobs, hdrSize, err := pack.List(r.Key(), packfile, size)
 	if err != nil {
 		return err
 	}
 
 	var errs []error
 	var buf []byte
-	sizeFromBlobs := int64(pack.HeaderSize) // pack size computed only from blob information
+	sizeFromBlobs := uint(hdrSize)
 	idx := r.Index()
 	for i, blob := range blobs {
-		sizeFromBlobs += int64(pack.PackedSizeOfBlob(blob.Length))
+		sizeFromBlobs += blob.Length
 		debug.Log("  check blob %d: %v", i, blob)
 
 		buf = buf[:cap(buf)]
@@ -809,7 +803,7 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, size int6
 		}
 	}
 
-	if sizeFromBlobs != size {
+	if int64(sizeFromBlobs) != size {
 		debug.Log("Pack size does not match, want %v, got %v", size, sizeFromBlobs)
 		errs = append(errs, errors.Errorf("Pack size does not match, want %v, got %v", size, sizeFromBlobs))
 	}

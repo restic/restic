@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 
@@ -91,17 +90,7 @@ func rebuildIndex(opts RebuildIndexOptions, gopts GlobalOptions, repo *repositor
 		}
 
 		Verbosef("getting pack files to read...\n")
-
-		// Compute size of each pack from index entries
-		packSizeFromIndex := make(map[restic.ID]int64)
-		for blob := range repo.Index().Each(ctx) {
-			size, ok := packSizeFromIndex[blob.PackID]
-			if !ok {
-				size = pack.HeaderSize
-			}
-			// update packSizeFromIndex
-			packSizeFromIndex[blob.PackID] = size + int64(pack.PackedSizeOfBlob(blob.Length))
-		}
+		packSizeFromIndex := repo.Index().PackSize(ctx, false)
 
 		err = repo.List(ctx, restic.PackFile, func(id restic.ID, packSize int64) error {
 			size, ok := packSizeFromIndex[id]
