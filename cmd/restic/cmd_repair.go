@@ -84,7 +84,8 @@ func runRepair(opts RepairOptions, args []string) error {
 	}
 
 	lock, err := lockRepoExclusive(globalOptions.ctx, repo)
-	defer unlockRepo(lock)
+	// to make linter happy, as unlockRepo returns an error (which is ignored)
+	defer func() { _ = unlockRepo(lock) }()
 	if err != nil {
 		return err
 	}
