@@ -62,8 +62,8 @@ type Lister interface {
 
 // MasterIndex keeps track of the blobs are stored within files.
 type MasterIndex interface {
-	Has(ID, BlobType) bool
-	Lookup(ID, BlobType) []PackedBlob
+	Has(BlobHandle) bool
+	Lookup(BlobHandle) []PackedBlob
 	Count(BlobType) uint
 	Packs() IDSet
 	PackSize(ctx context.Context, onlyHdr bool) map[ID]int64

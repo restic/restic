@@ -29,24 +29,24 @@ func NewMasterIndex() *MasterIndex {
 }
 
 // Lookup queries all known Indexes for the ID and returns all matches.
-func (mi *MasterIndex) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic.PackedBlob) {
+func (mi *MasterIndex) Lookup(bh restic.BlobHandle) (pbs []restic.PackedBlob) {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 
 	for _, idx := range mi.idx {
-		blobs = idx.Lookup(id, tpe, blobs)
+		pbs = idx.Lookup(bh, pbs)
 	}
 
-	return blobs
+	return pbs
 }
 
 // LookupSize queries all known Indexes for the ID and returns the first match.
-func (mi *MasterIndex) LookupSize(id restic.ID, tpe restic.BlobType) (uint, bool) {
+func (mi *MasterIndex) LookupSize(bh restic.BlobHandle) (uint, bool) {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 
 	for _, idx := range mi.idx {
-		if size, found := idx.LookupSize(id, tpe); found {
+		if size, found := idx.LookupSize(bh); found {
 			return size, found
 		}
 	}
@@ -58,40 +58,40 @@ func (mi *MasterIndex) LookupSize(id restic.ID, tpe restic.BlobType) (uint, bool
 // Before doing so it checks if this blob is already known.
 // Returns true if adding was successful and false if the blob
 // was already known
-func (mi *MasterIndex) addPending(id restic.ID, tpe restic.BlobType) bool {
+func (mi *MasterIndex) addPending(bh restic.BlobHandle) bool {
 
 	mi.idxMutex.Lock()
 	defer mi.idxMutex.Unlock()
 
 	// Check if blob is pending or in index
-	if mi.pendingBlobs.Has(restic.BlobHandle{ID: id, Type: tpe}) {
+	if mi.pendingBlobs.Has(bh) {
 		return false
 	}
 
 	for _, idx := range mi.idx {
-		if idx.Has(id, tpe) {
+		if idx.Has(bh) {
 			return false
 		}
 	}
 
 	// really not known -> insert
-	mi.pendingBlobs.Insert(restic.BlobHandle{ID: id, Type: tpe})
+	mi.pendingBlobs.Insert(bh)
 	return true
 }
 
 // Has queries all known Indexes for the ID and returns the first match.
 // Also returns true if the ID is pending.
-func (mi *MasterIndex) Has(id restic.ID, tpe restic.BlobType) bool {
+func (mi *MasterIndex) Has(bh restic.BlobHandle) bool {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 
 	// also return true if blob is pending
-	if mi.pendingBlobs.Has(restic.BlobHandle{ID: id, Type: tpe}) {
+	if mi.pendingBlobs.Has(bh) {
 		return true
 	}
 
 	for _, idx := range mi.idx {
-		if idx.Has(id, tpe) {
+		if idx.Has(bh) {
 			return true
 		}
 	}

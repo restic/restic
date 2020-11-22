@@ -231,7 +231,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 
 	// iterate over all blobs in index to find out which blobs are duplicates
 	for blob := range repo.Index().Each(ctx) {
-		bh := blob.Handle()
+		bh := blob.BlobHandle
 		size := uint64(blob.Length)
 		switch {
 		case usedBlobs.Has(bh): // used blob, move to keepBlobs
@@ -280,7 +280,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 			ip.tpe = restic.InvalidBlob
 		}
 
-		bh := blob.Handle()
+		bh := blob.BlobHandle
 		size := uint64(blob.Length)
 		switch {
 		case duplicateBlobs.Has(bh): // duplicate blob

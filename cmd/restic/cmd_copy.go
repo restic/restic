@@ -190,7 +190,7 @@ func (t *treeCloner) copyTree(ctx context.Context, treeID restic.ID) error {
 	t.visitedTrees.Insert(treeID)
 
 	// Do we already have this tree blob?
-	if !t.dstRepo.Index().Has(treeID, restic.TreeBlob) {
+	if !t.dstRepo.Index().Has(restic.BlobHandle{ID: treeID, Type: restic.TreeBlob}) {
 		newTreeID, err := t.dstRepo.SaveTree(ctx, tree)
 		if err != nil {
 			return fmt.Errorf("SaveTree(%v) returned error %v", treeID.Str(), err)
@@ -213,7 +213,7 @@ func (t *treeCloner) copyTree(ctx context.Context, treeID restic.ID) error {
 		// Copy the blobs for this file.
 		for _, blobID := range entry.Content {
 			// Do we already have this data blob?
-			if t.dstRepo.Index().Has(blobID, restic.DataBlob) {
+			if t.dstRepo.Index().Has(restic.BlobHandle{ID: blobID, Type: restic.DataBlob}) {
 				continue
 			}
 			debug.Log("Copying blob %s\n", blobID.Str())

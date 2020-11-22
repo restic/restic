@@ -465,7 +465,7 @@ func (f *Finder) findObjectPack(ctx context.Context, id string, t restic.BlobTyp
 		return
 	}
 
-	blobs := idx.Lookup(rid, t)
+	blobs := idx.Lookup(restic.BlobHandle{ID: rid, Type: t})
 	if len(blobs) == 0 {
 		Printf("Object %s not found in the index\n", rid.Str())
 		return

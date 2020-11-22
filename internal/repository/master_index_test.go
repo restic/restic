@@ -14,47 +14,43 @@ import (
 )
 
 func TestMasterIndex(t *testing.T) {
-	idInIdx1 := restic.NewRandomID()
-	idInIdx2 := restic.NewRandomID()
-	idInIdx12 := restic.NewRandomID()
+	bhInIdx1 := restic.NewRandomBlobHandle()
+	bhInIdx2 := restic.NewRandomBlobHandle()
+	bhInIdx12 := restic.BlobHandle{ID: restic.NewRandomID(), Type: restic.TreeBlob}
 
 	blob1 := restic.PackedBlob{
 		PackID: restic.NewRandomID(),
 		Blob: restic.Blob{
-			Type:   restic.DataBlob,
-			ID:     idInIdx1,
-			Length: uint(restic.CiphertextLength(10)),
-			Offset: 0,
+			BlobHandle: bhInIdx1,
+			Length:     uint(restic.CiphertextLength(10)),
+			Offset:     0,
 		},
 	}
 
 	blob2 := restic.PackedBlob{
 		PackID: restic.NewRandomID(),
 		Blob: restic.Blob{
-			Type:   restic.DataBlob,
-			ID:     idInIdx2,
-			Length: uint(restic.CiphertextLength(100)),
-			Offset: 10,
+			BlobHandle: bhInIdx2,
+			Length:     uint(restic.CiphertextLength(100)),
+			Offset:     10,
 		},
 	}
 
 	blob12a := restic.PackedBlob{
 		PackID: restic.NewRandomID(),
 		Blob: restic.Blob{
-			Type:   restic.TreeBlob,
-			ID:     idInIdx12,
-			Length: uint(restic.CiphertextLength(123)),
-			Offset: 110,
+			BlobHandle: bhInIdx12,
+			Length:     uint(restic.CiphertextLength(123)),
+			Offset:     110,
 		},
 	}
 
 	blob12b := restic.PackedBlob{
 		PackID: restic.NewRandomID(),
 		Blob: restic.Blob{
-			Type:   restic.TreeBlob,
-			ID:     idInIdx12,
-			Length: uint(restic.CiphertextLength(123)),
-			Offset: 50,
+			BlobHandle: bhInIdx12,
+			Length:     uint(restic.CiphertextLength(123)),
+			Offset:     50,
 		},
 	}
 
@@ -71,32 +67,32 @@ func TestMasterIndex(t *testing.T) {
 	mIdx.Insert(idx2)
 
 	// test idInIdx1
-	found := mIdx.Has(idInIdx1, restic.DataBlob)
+	found := mIdx.Has(bhInIdx1)
 	rtest.Equals(t, true, found)
 
-	blobs := mIdx.Lookup(idInIdx1, restic.DataBlob)
+	blobs := mIdx.Lookup(bhInIdx1)
 	rtest.Equals(t, []restic.PackedBlob{blob1}, blobs)
 
-	size, found := mIdx.LookupSize(idInIdx1, restic.DataBlob)
+	size, found := mIdx.LookupSize(bhInIdx1)
 	rtest.Equals(t, true, found)
 	rtest.Equals(t, uint(10), size)
 
 	// test idInIdx2
-	found = mIdx.Has(idInIdx2, restic.DataBlob)
+	found = mIdx.Has(bhInIdx2)
 	rtest.Equals(t, true, found)
 
-	blobs = mIdx.Lookup(idInIdx2, restic.DataBlob)
+	blobs = mIdx.Lookup(bhInIdx2)
 	rtest.Equals(t, []restic.PackedBlob{blob2}, blobs)
 
-	size, found = mIdx.LookupSize(idInIdx2, restic.DataBlob)
+	size, found = mIdx.LookupSize(bhInIdx2)
 	rtest.Equals(t, true, found)
 	rtest.Equals(t, uint(100), size)
 
 	// test idInIdx12
-	found = mIdx.Has(idInIdx12, restic.TreeBlob)
+	found = mIdx.Has(bhInIdx12)
 	rtest.Equals(t, true, found)
 
-	blobs = mIdx.Lookup(idInIdx12, restic.TreeBlob)
+	blobs = mIdx.Lookup(bhInIdx12)
 	rtest.Equals(t, 2, len(blobs))
 
 	// test Lookup result for blob12a
@@ -113,16 +109,16 @@ func TestMasterIndex(t *testing.T) {
 	}
 	rtest.Assert(t, found, "blob12a not found in result")
 
-	size, found = mIdx.LookupSize(idInIdx12, restic.TreeBlob)
+	size, found = mIdx.LookupSize(bhInIdx12)
 	rtest.Equals(t, true, found)
 	rtest.Equals(t, uint(123), size)
 
 	// test not in index
-	found = mIdx.Has(restic.NewRandomID(), restic.TreeBlob)
+	found = mIdx.Has(restic.BlobHandle{ID: restic.NewRandomID(), Type: restic.TreeBlob})
 	rtest.Assert(t, !found, "Expected no blobs when fetching with a random id")
-	blobs = mIdx.Lookup(restic.NewRandomID(), restic.DataBlob)
+	blobs = mIdx.Lookup(restic.NewRandomBlobHandle())
 	rtest.Assert(t, blobs == nil, "Expected no blobs when fetching with a random id")
-	_, found = mIdx.LookupSize(restic.NewRandomID(), restic.DataBlob)
+	_, found = mIdx.LookupSize(restic.NewRandomBlobHandle())
 	rtest.Assert(t, !found, "Expected no blobs when fetching with a random id")
 
 	// Test Count
@@ -133,26 +129,24 @@ func TestMasterIndex(t *testing.T) {
 }
 
 func TestMasterMergeFinalIndexes(t *testing.T) {
-	idInIdx1 := restic.NewRandomID()
-	idInIdx2 := restic.NewRandomID()
+	bhInIdx1 := restic.NewRandomBlobHandle()
+	bhInIdx2 := restic.NewRandomBlobHandle()
 
 	blob1 := restic.PackedBlob{
 		PackID: restic.NewRandomID(),
 		Blob: restic.Blob{
-			Type:   restic.DataBlob,
-			ID:     idInIdx1,
-			Length: 10,
-			Offset: 0,
+			BlobHandle: bhInIdx1,
+			Length:     10,
+			Offset:     0,
 		},
 	}
 
 	blob2 := restic.PackedBlob{
 		PackID: restic.NewRandomID(),
 		Blob: restic.Blob{
-			Type:   restic.DataBlob,
-			ID:     idInIdx2,
-			Length: 100,
-			Offset: 10,
+			BlobHandle: bhInIdx2,
+			Length:     100,
+			Offset:     10,
 		},
 	}
 
@@ -179,13 +173,13 @@ func TestMasterMergeFinalIndexes(t *testing.T) {
 	}
 	rtest.Equals(t, 2, blobCount)
 
-	blobs := mIdx.Lookup(idInIdx1, restic.DataBlob)
+	blobs := mIdx.Lookup(bhInIdx1)
 	rtest.Equals(t, []restic.PackedBlob{blob1}, blobs)
 
-	blobs = mIdx.Lookup(idInIdx2, restic.DataBlob)
+	blobs = mIdx.Lookup(bhInIdx2)
 	rtest.Equals(t, []restic.PackedBlob{blob2}, blobs)
 
-	blobs = mIdx.Lookup(restic.NewRandomID(), restic.DataBlob)
+	blobs = mIdx.Lookup(restic.NewRandomBlobHandle())
 	rtest.Assert(t, blobs == nil, "Expected no blobs when fetching with a random id")
 
 	// merge another index containing identical blobs
@@ -202,10 +196,10 @@ func TestMasterMergeFinalIndexes(t *testing.T) {
 	rtest.Equals(t, 1, len(allIndexes))
 
 	// Index should have same entries as before!
-	blobs = mIdx.Lookup(idInIdx1, restic.DataBlob)
+	blobs = mIdx.Lookup(bhInIdx1)
 	rtest.Equals(t, []restic.PackedBlob{blob1}, blobs)
 
-	blobs = mIdx.Lookup(idInIdx2, restic.DataBlob)
+	blobs = mIdx.Lookup(bhInIdx2)
 	rtest.Equals(t, []restic.PackedBlob{blob2}, blobs)
 
 	blobCount = 0
@@ -215,19 +209,19 @@ func TestMasterMergeFinalIndexes(t *testing.T) {
 	rtest.Equals(t, 2, blobCount)
 }
 
-func createRandomMasterIndex(rng *rand.Rand, num, size int) (*repository.MasterIndex, restic.ID) {
+func createRandomMasterIndex(rng *rand.Rand, num, size int) (*repository.MasterIndex, restic.BlobHandle) {
 	mIdx := repository.NewMasterIndex()
 	for i := 0; i < num-1; i++ {
 		idx, _ := createRandomIndex(rng, size)
 		mIdx.Insert(idx)
 	}
-	idx1, lookupID := createRandomIndex(rng, size)
+	idx1, lookupBh := createRandomIndex(rng, size)
 	mIdx.Insert(idx1)
 
 	mIdx.FinalizeNotFinalIndexes()
 	mIdx.MergeFinalIndexes()
 
-	return mIdx, lookupID
+	return mIdx, lookupBh
 }
 
 func BenchmarkMasterIndexAlloc(b *testing.B) {
@@ -240,45 +234,45 @@ func BenchmarkMasterIndexAlloc(b *testing.B) {
 }
 
 func BenchmarkMasterIndexLookupSingleIndex(b *testing.B) {
-	mIdx, lookupID := createRandomMasterIndex(rand.New(rand.NewSource(0)), 1, 200000)
+	mIdx, lookupBh := createRandomMasterIndex(rand.New(rand.NewSource(0)), 1, 200000)
 
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		mIdx.Lookup(lookupID, restic.DataBlob)
+		mIdx.Lookup(lookupBh)
 	}
 }
 
 func BenchmarkMasterIndexLookupMultipleIndex(b *testing.B) {
-	mIdx, lookupID := createRandomMasterIndex(rand.New(rand.NewSource(0)), 100, 10000)
+	mIdx, lookupBh := createRandomMasterIndex(rand.New(rand.NewSource(0)), 100, 10000)
 
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		mIdx.Lookup(lookupID, restic.DataBlob)
+		mIdx.Lookup(lookupBh)
 	}
 }
 
 func BenchmarkMasterIndexLookupSingleIndexUnknown(b *testing.B) {
 
-	lookupID := restic.NewRandomID()
+	lookupBh := restic.NewRandomBlobHandle()
 	mIdx, _ := createRandomMasterIndex(rand.New(rand.NewSource(0)), 1, 200000)
 
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		mIdx.Lookup(lookupID, restic.DataBlob)
+		mIdx.Lookup(lookupBh)
 	}
 }
 
 func BenchmarkMasterIndexLookupMultipleIndexUnknown(b *testing.B) {
-	lookupID := restic.NewRandomID()
+	lookupBh := restic.NewRandomBlobHandle()
 	mIdx, _ := createRandomMasterIndex(rand.New(rand.NewSource(0)), 100, 10000)
 
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		mIdx.Lookup(lookupID, restic.DataBlob)
+		mIdx.Lookup(lookupBh)
 	}
 }
 
@@ -286,28 +280,28 @@ func BenchmarkMasterIndexLookupParallel(b *testing.B) {
 	mIdx := repository.NewMasterIndex()
 
 	for _, numindices := range []int{25, 50, 100} {
-		var lookupID restic.ID
+		var lookupBh restic.BlobHandle
 
 		b.StopTimer()
 		rng := rand.New(rand.NewSource(0))
-		mIdx, lookupID = createRandomMasterIndex(rng, numindices, 10000)
+		mIdx, lookupBh = createRandomMasterIndex(rng, numindices, 10000)
 		b.StartTimer()
 
 		name := fmt.Sprintf("known,indices=%d", numindices)
 		b.Run(name, func(b *testing.B) {
 			b.RunParallel(func(pb *testing.PB) {
 				for pb.Next() {
-					mIdx.Lookup(lookupID, restic.DataBlob)
+					mIdx.Lookup(lookupBh)
 				}
 			})
 		})
 
-		lookupID = restic.NewRandomID()
+		lookupBh = restic.NewRandomBlobHandle()
 		name = fmt.Sprintf("unknown,indices=%d", numindices)
 		b.Run(name, func(b *testing.B) {
 			b.RunParallel(func(pb *testing.PB) {
 				for pb.Next() {
-					mIdx.Lookup(lookupID, restic.DataBlob)
+					mIdx.Lookup(lookupBh)
 				}
 			})
 		})
@@ -316,12 +310,12 @@ func BenchmarkMasterIndexLookupParallel(b *testing.B) {
 
 func BenchmarkMasterIndexLookupBlobSize(b *testing.B) {
 	rng := rand.New(rand.NewSource(0))
-	mIdx, lookupID := createRandomMasterIndex(rand.New(rng), 5, 200000)
+	mIdx, lookupBh := createRandomMasterIndex(rand.New(rng), 5, 200000)
 
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		mIdx.LookupSize(lookupID, restic.DataBlob)
+		mIdx.LookupSize(lookupBh)
 	}
 }
 
