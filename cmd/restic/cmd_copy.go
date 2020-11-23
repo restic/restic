@@ -144,7 +144,8 @@ func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
 		debug.Log("flushed packs and saved index")
 
 		// save snapshot
-		sn.Parent = nil // Parent does not have relevance in the new repo.
+		sn.Parent = nil  // Parent does not have relevance in the new repo.
+		sn.Parents = nil // Parents does not have relevance in the new repo.
 		// Use Original as a persistent snapshot ID
 		if sn.Original == nil {
 			sn.Original = sn.ID()
