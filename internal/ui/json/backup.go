@@ -228,7 +228,7 @@ func (b *Backup) CompleteBlob(filename string, bytes uint64) {
 
 // CompleteItem is the status callback function for the archiver when a
 // file/dir has been saved successfully.
-func (b *Backup) CompleteItem(item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration) {
+func (b *Backup) CompleteItem(item string, previous []*restic.Node, current *restic.Node, s archiver.ItemStats, d time.Duration) {
 	b.summary.Lock()
 	b.summary.ItemStats.Add(s)
 	b.summary.Unlock()
@@ -261,6 +261,14 @@ func (b *Backup) CompleteItem(item string, previous, current *restic.Node, s arc
 		}
 	}
 
+	inPrevious := false
+	for _, p := range previous {
+		if p.Equals(*current) {
+			inPrevious = true
+			break
+		}
+	}
+
 	if current.Type == "dir" {
 		if previous == nil {
 			if b.v >= 3 {
@@ -279,7 +287,7 @@ func (b *Backup) CompleteItem(item string, previous, current *restic.Node, s arc
 			return
 		}
 
-		if previous.Equals(*current) {
+		if inPrevious {
 			if b.v >= 3 {
 				b.print(verboseUpdate{
 					MessageType: "verbose_status",
@@ -328,7 +336,7 @@ func (b *Backup) CompleteItem(item string, previous, current *restic.Node, s arc
 			return
 		}
 
-		if previous.Equals(*current) {
+		if inPrevious {
 			if b.v >= 3 {
 				b.print(verboseUpdate{
 					MessageType: "verbose_status",

@@ -1058,7 +1058,7 @@ func TestArchiverSaveTree(t *testing.T) {
 
 			var stat ItemStats
 			lock := &sync.Mutex{}
-			arch.CompleteItem = func(item string, previous, current *restic.Node, s ItemStats, d time.Duration) {
+			arch.CompleteItem = func(item string, previous []*restic.Node, current *restic.Node, s ItemStats, d time.Duration) {
 				lock.Lock()
 				defer lock.Unlock()
 				stat.Add(s)
@@ -1648,8 +1648,8 @@ func TestArchiverParent(t *testing.T) {
 			})
 
 			opts := SnapshotOptions{
-				Time:           time.Now(),
-				ParentSnapshot: firstSnapshotID,
+				Time:            time.Now(),
+				ParentSnapshots: restic.IDs{firstSnapshotID},
 			}
 			_, secondSnapshotID, err := arch.Snapshot(ctx, []string{"."}, opts)
 			if err != nil {
@@ -2030,8 +2030,8 @@ func snapshot(t testing.TB, repo restic.Repository, fs fs.FS, parent restic.ID, 
 	arch := New(repo, fs, Options{})
 
 	sopts := SnapshotOptions{
-		Time:           time.Now(),
-		ParentSnapshot: parent,
+		Time:            time.Now(),
+		ParentSnapshots: restic.IDs{parent},
 	}
 	snapshot, snapshotID, err := arch.Snapshot(ctx, []string{filename}, sopts)
 	if err != nil {

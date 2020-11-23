@@ -510,7 +510,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	}
 
 	type ArchiveProgressReporter interface {
-		CompleteItem(item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration)
+		CompleteItem(item string, previous []*restic.Node, current *restic.Node, s archiver.ItemStats, d time.Duration)
 		StartFile(filename string)
 		CompleteBlob(filename string, bytes uint64)
 		ScannerError(item string, fi os.FileInfo, err error) error
@@ -681,11 +681,11 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	}
 
 	snapshotOpts := archiver.SnapshotOptions{
-		Excludes:       opts.Excludes,
-		Tags:           opts.Tags.Flatten(),
-		Time:           timeStamp,
-		Hostname:       opts.Host,
-		ParentSnapshot: *parentSnapshotID,
+		Excludes:        opts.Excludes,
+		Tags:            opts.Tags.Flatten(),
+		Time:            timeStamp,
+		Hostname:        opts.Host,
+		ParentSnapshots: restic.IDs{*parentSnapshotID},
 	}
 
 	if !gopts.JSON {
