@@ -17,6 +17,7 @@ import (
 type Snapshot struct {
 	Time     time.Time `json:"time"`
 	Parent   *ID       `json:"parent,omitempty"`
+	Parents  IDs       `json:"parents,omitempty"`
 	Tree     *ID       `json:"tree"`
 	Paths    []string  `json:"paths"`
 	Hostname string    `json:"hostname,omitempty"`
