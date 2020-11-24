@@ -83,6 +83,27 @@ func (id ID) Equal(other ID) bool {
 	return id == other
 }
 
+// Less compares an ID to another other.
+func (id ID) Less(other ID) bool {
+	if len(id) < len(other) {
+		return true
+	}
+
+	for k, b := range id {
+		if b == other[k] {
+			continue
+		}
+
+		if b < other[k] {
+			return true
+		}
+
+		return false
+	}
+
+	return false
+}
+
 // EqualString compares this ID to another one, given as a string.
 func (id ID) EqualString(other string) (bool, error) {
 	s, err := hex.DecodeString(other)
