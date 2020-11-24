@@ -13,23 +13,7 @@ func (ids IDs) Len() int {
 }
 
 func (ids IDs) Less(i, j int) bool {
-	if len(ids[i]) < len(ids[j]) {
-		return true
-	}
-
-	for k, b := range ids[i] {
-		if b == ids[j][k] {
-			continue
-		}
-
-		if b < ids[j][k] {
-			return true
-		}
-
-		return false
-	}
-
-	return false
+	return ids[i].Less(ids[j])
 }
 
 func (ids IDs) Swap(i, j int) {
