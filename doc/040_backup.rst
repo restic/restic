@@ -135,6 +135,43 @@ Now is a good time to run ``restic check`` to verify that all data
 is properly stored in the repository. You should run this command regularly
 to make sure the internal structure of the repository is free of errors.
 
+Using previous backups
+**********************
+
+If you have already backed up some directories in existing snapshots,
+restic tries to find those so-called "parent snapshots" to speed up the
+backup.
+
+For example, if you have already have the following snapshots:
+
+
+.. code-block:: console
+
+    ID        Time                 Host    Tags        Paths
+    -----------------------------------------------------------------
+    5f3db49e  2020-07-16 19:12:29  host                /home/foo/bar1
+    1d97c1a6  2020-07-16 20:09:40  host                /home/foo/bar2
+    -----------------------------------------------------------------
+
+and now you back up ``/home/foo``, restic will choose both snapshots as
+parent snapshots. Parent snapshots can also be manually set by the 
+``--parent`` option.
+
+When you backup with parent snapshots, restic only reads those files that
+are new or have been modified since those snapshots.
+This is decided based on the following attributes of the file in the file
+system:
+
+ * Type (file, symlink, or directory?)
+ * Modification time
+ * Size
+ * Inode number (internal number used to reference a file in a file system)
+
+Please be aware that when you backup different directories (or the
+directories to be saved have a variable name component like a
+time/date), restic always needs to read all files and only afterwards
+can compute which parts of the files need to be saved.
+
 File change detection
 *********************
 

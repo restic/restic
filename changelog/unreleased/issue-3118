@@ -1,0 +1,11 @@
+Enhancement: Allow multiple parent snapshots in the backup command
+
+Restic used to take the latest snapshot with identical paths as
+parent snapshots. This is now enhanced and multiple parent snapshots
+can be specified. Restic also by default uses more than one snapshot
+as parent, when this is appropriate, e.g. if subdirs of a newly backed-up
+dir already exist in previous snapshots.
+
+https://github.com/restic/restic/issues/3118
+https://github.com/restic/restic/pull/3121
+https://forum.restic.net/t/backup-parent-behavior/3286
