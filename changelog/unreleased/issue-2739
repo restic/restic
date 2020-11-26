@@ -1,0 +1,5 @@
+Bugfix: Make cat command respect --no-lock
+
+Restic cat would not respect the --no-lock flag, it now does.
+
+https://github.com/restic/restic/issues/2739

@@ -42,10 +42,13 @@ func runCat(gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	lock, err := lockRepo(gopts.ctx, repo)
-	defer unlockRepo(lock)
-	if err != nil {
-		return err
+	if !gopts.NoLock {
+		lock, err := lockRepo(gopts.ctx, repo)
+		// Make the linter happy
+		if err != nil {
+			return err
+		}
+		defer func() { _ = unlockRepo(lock) }()
 	}
 
 	tpe := args[0]
