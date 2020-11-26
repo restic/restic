@@ -38,62 +38,67 @@ to ``cat config``) and it may print a different error message. If there
 are no errors, restic will return a zero exit code and print the repository
 metadata.
 
-Restic and json
+Restic and JSON
 ***************
 
 Restic can output json data if requested with the ``--json`` flag.
 The structure of that data varies depending on the circumstance.  The
-json output of Most restic commands are documented here.
+json output of most restic commands are documented here.
 
 .. note::
     Not all commands support json output.  If a command does not support json output,
-    at the time of writing, it is not supported yet. (feel free to submit a pull request!)
+    feel free to submit a pull request!
 
 Backup
 ------
 
-backup has multiple json structures, outlined below.
+The backup command has multiple json structures, outlined below.
+
+During the backup process, Restic will print out a stream of new-line separated JSON
+messages.  You can determine the nature of the message by the ``message_type`` field.
 
 Status
 ^^^^^^
 
-+----------------------+---------------------------------------------------------+
-|``message_type``      | always "status"                                         |
-+----------------------+---------------------------------------------------------+
-|``seconds_elapsed``   | Time since backup started                               |
-+----------------------+---------------------------------------------------------+
-|``seconds_remaining`` | Estimated time remaining                                |
-+----------------------+---------------------------------------------------------+
-|``percent_done``      | Percentage of data backed up.  (bytes_done/total_bytes) |
-+----------------------+---------------------------------------------------------+
-|``total_files``       | Total number of files detected                          |
-+----------------------+---------------------------------------------------------+
-|``files_done``        | Files completed (backed up or skipped)                  |
-+----------------------+---------------------------------------------------------+
-|``total_bytes``       | Total number of bytes in backup set                     |
-+----------------------+---------------------------------------------------------+
-|``bytes_done``        | Number of bytes completed                               |
-+----------------------+---------------------------------------------------------+
-|``error_count``       | Number of errors                                        |
-+----------------------+---------------------------------------------------------+
-|``current_files``     | List of files currently being backed up                 |
-+----------------------+---------------------------------------------------------+
++----------------------+------------------------------------------------------------+
+|``message_type``      | Always "status"                                            |
++----------------------+------------------------------------------------------------+
+|``seconds_elapsed``   | Time since backup started                                  |
++----------------------+------------------------------------------------------------+
+|``seconds_remaining`` | Estimated time remaining                                   |
++----------------------+------------------------------------------------------------+
+|``percent_done``      | Percentage of data backed up (bytes_done/total_bytes)      |
++----------------------+------------------------------------------------------------+
+|``total_files``       | Total number of files detected                             |
++----------------------+------------------------------------------------------------+
+|``files_done``        | Files completed (backed up or confirmed in repo)           |
++----------------------+------------------------------------------------------------+
+|``total_bytes``       | Total number of bytes in backup set                        |
++----------------------+------------------------------------------------------------+
+|``bytes_done``        | Number of bytes completed (backed up or confirmed in repo) |
++----------------------+------------------------------------------------------------+
+|``error_count``       | Number of errors                                           |
++----------------------+------------------------------------------------------------+
+|``current_files``     | List of files currently being backed up                    |
++----------------------+------------------------------------------------------------+
 
 Error
 ^^^^^
 
-+----------------------+--------------------------------+
-| ``message_type``     | always "error"                 |
-+----------------------+--------------------------------+
-| ``error``            | error message                  |
-+----------------------+--------------------------------+
-| ``during``           | what restic was trying to do   |
-+----------------------+--------------------------------+
-| ``item``             | what item was being processed  |
-+----------------------+--------------------------------+
++----------------------+-------------------------------------------+
+| ``message_type``     | Always "error"                            |
++----------------------+-------------------------------------------+
+| ``error``            | Error message                             |
++----------------------+-------------------------------------------+
+| ``during``           | What restic was trying to do              |
++----------------------+-------------------------------------------+
+| ``item``             | Usually, the path of the problematic file |
++----------------------+-------------------------------------------+
 
 Verbose Status
 ^^^^^^^^^^^^^^
+
+Verbose status is a status line that supplements 
 
 +----------------------+-------------------------------------------+
 | ``message_type``     | Always "verbose_status"                   |
@@ -104,15 +109,17 @@ Verbose Status
 +----------------------+-------------------------------------------+
 | ``duration``         | How long it took, in seconds              |
 +----------------------+-------------------------------------------+
-| ``data_size``        | How big item is                           |
+| ``data_size``        | How big the item is                       |
 +----------------------+-------------------------------------------+
 | ``metadata_size``    | How big the metadata is                   |
 +----------------------+-------------------------------------------+
-| ``total_files``      | how many total files there are.           |
+| ``total_files``      | Total number of files                     |
 +----------------------+-------------------------------------------+
 
 Summary
 ^^^^^^^
+
+Summary is the last output line in a successful backup. 
 
 +---------------------------+---------------------------------------------------------+
 | ``message_type``          | Always "summary"                                        |
@@ -141,34 +148,34 @@ Summary
 +---------------------------+---------------------------------------------------------+
 | ``total_duration``        | Total time it took for the operation to complete        |
 +---------------------------+---------------------------------------------------------+
-| ``snapshot_id``           | the ID of the new snapshot                              |
+| ``snapshot_id``           | The short ID of the new snapshot                        |
 +---------------------------+---------------------------------------------------------+
 
 snapshots
 ---------
 
-Snapshots returns a single json structure with a number of optional fields.
+The snapshots command returns a single JSON object, an array with the structure outlined below.
 
 +----------------+------------------------------------------------------------------------+
-| ``hostname``   | contains the hostname of the machine that's being backed up.           |
+| ``hostname``   | The hostname of the machine that's being backed up                     |
 +----------------+------------------------------------------------------------------------+
-| ``username``   | contains the username that the backup command was run as.              |
+| ``username``   | The username that the backup command was run as                        |
 +----------------+------------------------------------------------------------------------+
-| ``excludes``   | contains a list of paths and globs that were excluded from the backup. |
+| ``excludes``   | A list of paths and globs that were excluded from the backup           |
 +----------------+------------------------------------------------------------------------+
-| ``tags``       | contains a list of tags for the snapshot in question.                  |
+| ``tags``       | A list of tags for the snapshot in question                            |
 +----------------+------------------------------------------------------------------------+
-| ``id``         | contains the long snapshot id.                                         |
+| ``id``         | The long snapshot ID                                                   |
 +----------------+------------------------------------------------------------------------+
-| ``short_id``   | contains the short snapshot id.                                        |
+| ``short_id``   | The short snapshot ID                                                  |
 +----------------+------------------------------------------------------------------------+
-| ``time``       | contains the timestamp of the backup.                                  |
+| ``time``       | The timestamp of when the backup was started                           |
 +----------------+------------------------------------------------------------------------+
-| ``parent``     | contains the id of the previous backup.                                |
+| ``parent``     | The ID of the previous snapshot                                        |
 +----------------+------------------------------------------------------------------------+
-| ``tree``       | contains something...                                                  |
+| ``tree``       | The ID of the root tree blob                                           |
 +----------------+------------------------------------------------------------------------+
-| ``paths``      | contains a list of paths that were included in the backup.             |
+| ``paths``      | A list of paths that were included in the backup                       |
 +----------------+------------------------------------------------------------------------+
 
 cat
@@ -180,50 +187,74 @@ By specifying ``--json``, it will suppress any non-json messages the command gen
 find
 ----
 
+The find command outputs an array of json objects with matches for your search term.  These
+matches are organized by snapshot.
 
-+-----------------+------------------------------------------+
-| ``path``        | Object path                              |
-+-----------------+------------------------------------------+
-| ``permissions`` | unix permissions                         |
-+-----------------+------------------------------------------+
-| ``type``        | what type it is e.g. file, dir, etc...   |
-+-----------------+------------------------------------------+
-| ``atime``       | Access time                              |
-+-----------------+------------------------------------------+
-| ``mtime``       | Modification time                        |
-+-----------------+------------------------------------------+
-| ``ctime``       | Creation time                            |
-+-----------------+------------------------------------------+
-| ``name``        | Object name                              |
-+-----------------+------------------------------------------+
-| ``user``        | Name of owner                            |
-+-----------------+------------------------------------------+
-| ``group``       | Name of group                            |
-+-----------------+------------------------------------------+
-| ``uid``         | ID of owner                              |
-+-----------------+------------------------------------------+
-| ``gid``         | ID of group                              |
-+-----------------+------------------------------------------+
-| ``size``        | size of object in bytes                  |
-+-----------------+------------------------------------------+
+Snapshot
+^^^^^^^^
+
++-----------------+----------------------------------------------+
+| ``hits``        | The number of matches in the snapshot        |
++-----------------+----------------------------------------------+
+| ``snapshot``    | The long ID of the snapshot                  |
++-----------------+----------------------------------------------+
+| ``matches``     | Array of JSON objects detailing a match.     |
++-----------------+----------------------------------------------+
+
+
+Match
+^^^^^
+
++-----------------+----------------------------------------------+
+| ``path``        | Object path                                  |
++-----------------+----------------------------------------------+
+| ``permissions`` | UNIX permissions                             |
++-----------------+----------------------------------------------+
+| ``type``        | what type it is e.g. file, dir, etc...       |
++-----------------+----------------------------------------------+
+| ``atime``       | Access time                                  |
++-----------------+----------------------------------------------+
+| ``mtime``       | Modification time                            |
++-----------------+----------------------------------------------+
+| ``ctime``       | Change time                                  |
++-----------------+----------------------------------------------+
+| ``name``        | Object name                                  |
++-----------------+----------------------------------------------+
+| ``user``        | Name of owner                                |
++-----------------+----------------------------------------------+
+| ``group``       | Name of group                                |
++-----------------+----------------------------------------------+
+| ``mode``        | UNIX file mode, shorthand of ``permissions`` |
++-----------------+----------------------------------------------+
+| ``uid``         | ID of owner                                  |
++-----------------+----------------------------------------------+
+| ``gid``         | ID of group                                  |
++-----------------+----------------------------------------------+
+| ``size``        | Size of object in bytes                      |
++-----------------+----------------------------------------------+
 
 key list
 --------
+
+The key list command returns an array of objects with the following structure.
 
 +--------------+------------------------------------+
 | ``current``  | Is currently used key?             |
 +--------------+------------------------------------+
 | ``id``       | Unique key ID                      |
 +--------------+------------------------------------+
-| ``userName`` | user who created it                |
+| ``userName`` | User who created it                |
 +--------------+------------------------------------+
-| ``hostName`` | name of machine it was created on  |
+| ``hostName`` | Name of machine it was created on  |
 +--------------+------------------------------------+
-| ``created``  | timestamp when it was created      |
+| ``created``  | Timestamp when it was created      |
 +--------------+------------------------------------+
 
 ls
 --
+
+The ls command spits out a series of newline-separated JSON objects,
+the nature of which can be determined by the ``struct_type`` field.
 
 snapshot
 ^^^^^^^^
@@ -235,19 +266,19 @@ snapshot
 +-----------------+-------------------------------------+
 | ``paths``       | List of paths included in snapshot  |
 +-----------------+-------------------------------------+
-| ``hostname``    | hostname of snapshot                |
+| ``hostname``    | Hostname of snapshot                |
 +-----------------+-------------------------------------+
-| ``username``    | user snapshot was run as            |
+| ``username``    | User snapshot was run as            |
 +-----------------+-------------------------------------+
-| ``uid``         | uid of backup process               |
+| ``uid``         | UID of backup process               |
 +-----------------+-------------------------------------+
-| ``gid``         | gid of backup process               |
+| ``gid``         | GID of backup process               |
 +-----------------+-------------------------------------+
-| ``id``          | snapshot id, long form              |
+| ``id``          | Snapshot ID, long form              |
 +-----------------+-------------------------------------+
-| ``short_id``    | snapshot id, short form             |
+| ``short_id``    | Snapshot ID, short form             |
 +-----------------+-------------------------------------+
-| ``struct_type`` | always "snapshot"                   |
+| ``struct_type`` | Always "snapshot"                   |
 +-----------------+-------------------------------------+
 
 
@@ -255,27 +286,27 @@ node
 ^^^^
 
 +-----------------+--------------------------+
-| ``name``        | node name                |
+| ``name``        | Node name                |
 +-----------------+--------------------------+
-| ``type``        | node type                |
+| ``type``        | Node type                |
 +-----------------+--------------------------+
-| ``path``        | node path                |
+| ``path``        | Node path                |
 +-----------------+--------------------------+
-| ``uid``         | uid of node              |
+| ``uid``         | UID of node              |
 +-----------------+--------------------------+
-| ``gid``         | gid of node              |
+| ``gid``         | GID of node              |
 +-----------------+--------------------------+
-| ``size``        | size in bytes            |
+| ``size``        | Size in bytes            |
 +-----------------+--------------------------+
-| ``mode``        | node mode                |
+| ``mode``        | Node mode                |
 +-----------------+--------------------------+
-| ``atime``       | node access time         |
+| ``atime``       | Node access time         |
 +-----------------+--------------------------+
-| ``mtime``       | node modification time   |
+| ``mtime``       | Node modification time   |
 +-----------------+--------------------------+
-| ``ctime``       | node creation time       |
+| ``ctime``       | Node creation time       |
 +-----------------+--------------------------+
-| ``struct_type`` | always "node"            |
+| ``struct_type`` | Always "node"            |
 +-----------------+--------------------------+
 
 stats
@@ -285,4 +316,6 @@ stats
 | ``total_size``       | Repository size in bytes                    |
 +----------------------+---------------------------------------------+
 | ``total_file_count`` | Number of files backed up in the repository |
++----------------------+---------------------------------------------+
+| ``total_blob_count`` | Number of blobs in the repository           |
 +----------------------+---------------------------------------------+
