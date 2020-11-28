@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"strconv"
 
 	"github.com/restic/chunker"
@@ -49,6 +51,12 @@ func init() {
 }
 
 func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []string) error {
+	type JSONSuccess struct {
+		Status     string `json:"status"`
+		ID         string `json:"id"`
+		Repository string `json:"repository"`
+	}
+
 	var version uint
 	if opts.RepositoryVersion == "latest" || opts.RepositoryVersion == "" {
 		version = restic.MaxRepoVersion
@@ -100,13 +108,32 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 		return errors.Fatalf("create key in repository at %s failed: %v\n", location.StripPassword(gopts.Repo), err)
 	}
 
-	Verbosef("created restic repository %v at %s\n", s.Config().ID[:10], location.StripPassword(gopts.Repo))
-	Verbosef("\n")
-	Verbosef("Please note that knowledge of your password is required to access\n")
-	Verbosef("the repository. Losing your password means that your data is\n")
-	Verbosef("irrecoverably lost.\n")
+	if !gopts.JSON {
+		Verbosef("created restic repository %v at %s\n", s.Config().ID[:10], location.StripPassword(gopts.Repo))
+		Verbosef("\n")
+		Verbosef("Please note that knowledge of your password is required to access\n")
+		Verbosef("the repository. Losing your password means that your data is\n")
+		Verbosef("irrecoverably lost.\n")
+
+	} else {
+		status := JSONSuccess{
+			Status:     "success",
+			ID:         s.Config().ID,
+			Repository: location.StripPassword(gopts.Repo),
+		}
+		Verbosef(toJSONString(status))
+	}
 
 	return nil
+}
+
+func toJSONString(status interface{}) string {
+	buf := new(bytes.Buffer)
+	err := json.NewEncoder(buf).Encode(status)
+	if err != nil {
+		panic("ERROR: Could not encode JSON string")
+	}
+	return buf.String()
 }
 
 func maybeReadChunkerPolynomial(ctx context.Context, opts InitOptions, gopts GlobalOptions) (*chunker.Pol, error) {
