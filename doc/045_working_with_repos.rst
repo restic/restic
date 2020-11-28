@@ -106,12 +106,16 @@ The example command copies all snapshots from the source repository
 Snapshots which have previously been copied between repositories will
 be skipped by later copy runs.
 
-.. note:: Note that this process will have to read (download) and write (upload) the
-    entire snapshot(s) due to the different encryption keys used in the source and
-    destination repository. Also, the transferred files are not re-chunked, which
-    may break deduplication between files already stored in the destination repo
-    and files copied there using this command. See the next section for how to avoid
-    this problem.
+.. important:: This process will have to both download (read) and upload (write)
+    the entire snapshot(s) due to the different encryption keys used in the
+    source and destination repository. This *may incur higher bandwidth usage
+    and costs* than expected during normal backup runs.
+
+.. important:: The copying process does not re-chunk files, which may break
+    deduplication between the files copied and files already stored in the
+    destination repository. This means that copied files, which existed in
+    both the source and destination repository, *may occupy up to twice their
+    space* in the destination repository. See below for how to avoid this.
 
 For the destination repository ``--repo2`` the password can be read from
 a file ``--password-file2`` or from a command ``--password-command2``.
@@ -121,12 +125,15 @@ pass the password via ``$RESTIC_PASSWORD2``. The key which should be used
 for decryption can be selected by passing its ID via the flag ``--key-hint2``
 or the environment variable ``$RESTIC_KEY_HINT2``.
 
-In case the source and destination repository use the same backend, then
-configuration options and environment variables to configure the backend
-apply to both repositories. For example it might not be possible to specify
-different accounts for the source and destination repository. You can
-avoid this limitation by using the rclone backend along with remotes which
-are configured in rclone.
+.. note:: In case the source and destination repository use the same backend,
+    the configuration options and environment variables used to configure the
+    backend may apply to both repositories – for example it might not be
+    possible to specify different accounts for the source and destination
+    repository. You can avoid this limitation by using the rclone backend
+    along with remotes which are configured in rclone.
+
+Filtering snapshots to copy
+---------------------------
 
 The list of snapshots to copy can be filtered by host, path in the backup
 and / or a comma-separated tag list:
@@ -141,7 +148,6 @@ which case only these instead of all snapshots will be copied:
 .. code-block:: console
 
     $ restic -r /srv/restic-repo copy --repo2 /srv/restic-repo-copy 410b18a2 4e5d5487 latest
-
 
 Ensuring deduplication for copied snapshots
 -------------------------------------------
