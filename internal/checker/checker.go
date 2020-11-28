@@ -298,86 +298,6 @@ func (e Error) Error() string {
 	return e.Err.Error()
 }
 
-func loadTreeFromSnapshot(ctx context.Context, repo restic.Repository, id restic.ID) (restic.ID, error) {
-	sn, err := restic.LoadSnapshot(ctx, repo, id)
-	if err != nil {
-		debug.Log("error loading snapshot %v: %v", id, err)
-		return restic.ID{}, err
-	}
-
-	if sn.Tree == nil {
-		debug.Log("snapshot %v has no tree", id)
-		return restic.ID{}, errors.Errorf("snapshot %v has no tree", id)
-	}
-
-	return *sn.Tree, nil
-}
-
-// loadSnapshotTreeIDs loads all snapshots from backend and returns the tree IDs.
-func loadSnapshotTreeIDs(ctx context.Context, repo restic.Repository) (restic.IDs, []error) {
-	var trees struct {
-		IDs restic.IDs
-		sync.Mutex
-	}
-
-	var errs struct {
-		errs []error
-		sync.Mutex
-	}
-
-	// track spawned goroutines using wg, create a new context which is
-	// cancelled as soon as an error occurs.
-	wg, ctx := errgroup.WithContext(ctx)
-
-	ch := make(chan restic.ID)
-
-	// send list of index files through ch, which is closed afterwards
-	wg.Go(func() error {
-		defer close(ch)
-		return repo.List(ctx, restic.SnapshotFile, func(id restic.ID, size int64) error {
-			select {
-			case <-ctx.Done():
-				return nil
-			case ch <- id:
-			}
-			return nil
-		})
-	})
-
-	// a worker receives an index ID from ch, loads the snapshot and the tree,
-	// and adds the result to errs and trees.
-	worker := func() error {
-		for id := range ch {
-			debug.Log("load snapshot %v", id)
-
-			treeID, err := loadTreeFromSnapshot(ctx, repo, id)
-			if err != nil {
-				errs.Lock()
-				errs.errs = append(errs.errs, err)
-				errs.Unlock()
-				continue
-			}
-
-			debug.Log("snapshot %v has tree %v", id, treeID)
-			trees.Lock()
-			trees.IDs = append(trees.IDs, treeID)
-			trees.Unlock()
-		}
-		return nil
-	}
-
-	for i := 0; i < defaultParallelism; i++ {
-		wg.Go(worker)
-	}
-
-	err := wg.Wait()
-	if err != nil {
-		errs.errs = append(errs.errs, err)
-	}
-
-	return trees.IDs, errs.errs
-}
-
 // TreeError collects several errors that occurred while processing a tree.
 type TreeError struct {
 	ID     restic.ID
@@ -584,6 +504,24 @@ func (c *Checker) filterTrees(ctx context.Context, backlog restic.IDs, loaderCha
 			inCh = in
 		}
 	}
+}
+
+func loadSnapshotTreeIDs(ctx context.Context, repo restic.Repository) (ids restic.IDs, errs []error) {
+	err := restic.ForAllSnapshots(ctx, repo, nil, func(id restic.ID, sn *restic.Snapshot, err error) error {
+		if err != nil {
+			errs = append(errs, err)
+			return nil
+		}
+		treeID := *sn.Tree
+		debug.Log("snapshot %v has tree %v", id, treeID)
+		ids = append(ids, treeID)
+		return nil
+	})
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	return ids, errs
 }
 
 // Structure checks that for all snapshots all referenced data blobs and

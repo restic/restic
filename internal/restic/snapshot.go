@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"os/user"
 	"path/filepath"
+	"sync"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 
 	"github.com/restic/restic/internal/debug"
 )
@@ -66,17 +69,61 @@ func LoadSnapshot(ctx context.Context, repo Repository, id ID) (*Snapshot, error
 	return sn, nil
 }
 
-// ForAllSnapshots reads all snapshots and calls the given function.
+const loadSnapshotParallelism = 5
+
+// ForAllSnapshots reads all snapshots in parallel and calls the
+// given function. It is guaranteed that the function is not run concurrently.
+// If the called function returns an error, this function is cancelled and
+// also returns this error.
 // If a snapshot ID is in excludeIDs, it will be ignored.
 func ForAllSnapshots(ctx context.Context, repo Repository, excludeIDs IDSet, fn func(ID, *Snapshot, error) error) error {
-	return repo.List(ctx, SnapshotFile, func(id ID, size int64) error {
-		if excludeIDs.Has(id) {
+	var m sync.Mutex
+
+	// track spawned goroutines using wg, create a new context which is
+	// cancelled as soon as an error occurs.
+	wg, ctx := errgroup.WithContext(ctx)
+
+	ch := make(chan ID)
+
+	// send list of snapshot files through ch, which is closed afterwards
+	wg.Go(func() error {
+		defer close(ch)
+		return repo.List(ctx, SnapshotFile, func(id ID, size int64) error {
+			if excludeIDs.Has(id) {
+				return nil
+			}
+
+			select {
+			case <-ctx.Done():
+				return nil
+			case ch <- id:
+			}
 			return nil
-		}
-		sn, err := LoadSnapshot(ctx, repo, id)
-		return fn(id, sn, err)
+		})
 	})
 
+	// a worker receives an snapshot ID from ch, loads the snapshot
+	// and runs fn with id, the snapshot and the error
+	worker := func() error {
+		for id := range ch {
+			debug.Log("load snapshot %v", id)
+			sn, err := LoadSnapshot(ctx, repo, id)
+
+			m.Lock()
+			err = fn(id, sn, err)
+			m.Unlock()
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	for i := 0; i < loadSnapshotParallelism; i++ {
+		wg.Go(worker)
+	}
+
+	return wg.Wait()
 }
 
 // LoadAllSnapshots returns a list of all snapshots in the repo.
