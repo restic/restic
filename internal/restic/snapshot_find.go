@@ -33,10 +33,9 @@ func FindLatestSnapshot(ctx context.Context, repo Repository, targets []string, 
 		found    bool
 	)
 
-	err = repo.List(ctx, SnapshotFile, func(snapshotID ID, size int64) error {
-		snapshot, err := LoadSnapshot(ctx, repo, snapshotID)
+	err = ForAllSnapshots(ctx, repo, nil, func(id ID, snapshot *Snapshot, err error) error {
 		if err != nil {
-			return errors.Errorf("Error loading snapshot %v: %v", snapshotID.Str(), err)
+			return errors.Errorf("Error loading snapshot %v: %v", id.Str(), err)
 		}
 
 		if snapshot.Time.Before(latest) {
@@ -56,7 +55,7 @@ func FindLatestSnapshot(ctx context.Context, repo Repository, targets []string, 
 		}
 
 		latest = snapshot.Time
-		latestID = snapshotID
+		latestID = id
 		found = true
 		return nil
 	})
@@ -90,8 +89,7 @@ func FindSnapshot(ctx context.Context, repo Repository, s string) (ID, error) {
 func FindFilteredSnapshots(ctx context.Context, repo Repository, hosts []string, tags []TagList, paths []string) (Snapshots, error) {
 	results := make(Snapshots, 0, 20)
 
-	err := repo.List(ctx, SnapshotFile, func(id ID, size int64) error {
-		sn, err := LoadSnapshot(ctx, repo, id)
+	err := ForAllSnapshots(ctx, repo, nil, func(id ID, sn *Snapshot, err error) error {
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "could not load snapshot %v: %v\n", id.Str(), err)
 			return nil
