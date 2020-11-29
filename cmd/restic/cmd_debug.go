@@ -87,7 +87,7 @@ func printPacks(ctx context.Context, repo *repository.Repository, wr io.Writer) 
 	return repo.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
 		h := restic.Handle{Type: restic.PackFile, Name: id.String()}
 
-		blobs, err := pack.List(repo.Key(), restic.ReaderAt(ctx, repo.Backend(), h), size)
+		blobs, _, err := pack.List(repo.Key(), restic.ReaderAt(ctx, repo.Backend(), h), size)
 		if err != nil {
 			Warnf("error for pack %v: %v\n", id.Str(), err)
 			return nil
