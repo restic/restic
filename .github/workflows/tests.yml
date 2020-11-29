@@ -222,6 +222,7 @@ jobs:
         run: |
           mkdir build-output
           gox -parallel 2 -verbose -osarch "$GOX_ARCHS" -output "build-output/{{.Dir}}_{{.OS}}_{{.Arch}}" ./cmd/restic
+          gox -parallel 2 -verbose -osarch "$GOX_ARCHS" -tags debug -output "build-output/{{.Dir}}_{{.OS}}_{{.Arch}}_debug" ./cmd/restic
 
   lint:
     name: lint
