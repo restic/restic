@@ -1502,8 +1502,14 @@ func TestEdgeCaseRepos(t *testing.T) {
 
 	// repo where a blob is missing
 	// => check and prune should fail
-	t.Run("no-data", func(t *testing.T) {
+	t.Run("missing-data", func(t *testing.T) {
 		testEdgeCaseRepo(t, "repo-data-missing.tar.gz", opts, pruneDefaultOptions, false, false)
+	})
+
+	// repo where blobs which are not needed are missing or in invalid pack files
+	// => check should fail and prune should repair this
+	t.Run("missing-unused-data", func(t *testing.T) {
+		testEdgeCaseRepo(t, "repo-unused-data-missing.tar.gz", opts, pruneDefaultOptions, false, true)
 	})
 
 	// repo where data exists that is not referenced
