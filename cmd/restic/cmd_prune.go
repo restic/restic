@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"math"
 	"sort"
 	"strconv"
@@ -595,6 +596,10 @@ func planPrune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, u
 
 // printPruneStats prints out the statistics
 func printPruneStats(gopts GlobalOptions, stats pruneStats) error {
+	if gopts.JSON {
+		return json.NewEncoder(gopts.stdout).Encode(stats)
+	}
+
 	Verboseff("\nused:         %10d blobs / %s\n", stats.Blobs.Used, formatBytes(stats.Size.Used))
 	if stats.Blobs.Duplicate > 0 {
 		Verboseff("duplicates:   %10d blobs / %s\n", stats.Blobs.Duplicate, formatBytes(stats.Size.Duplicate))
