@@ -33,32 +33,42 @@ type PruneOptions struct {
 
 type PruneStats struct {
 	Blobs struct {
-		Used      uint
-		Duplicate uint
-		Unused    uint
-		Remove    uint
-		Repack    uint
-		Repackrm  uint
-	}
+		Used         uint `json:"used"`
+		Duplicate    uint `json:"duplicate"`
+		Unused       uint `json:"unused"`
+		Total        uint `json:"total"`
+		Repack       uint `json:"repack"`
+		Repackrm     uint `json:"repack_remove"`
+		Remove       uint `json:"remove"`
+		RemoveTotal  uint `json:"remove_total"`
+		Remain       uint `json:"remaining"`
+		RemainUnused uint `json:"remaining_unused"`
+	} `json:"blobs"`
 	Size struct {
-		Used         uint64
-		Duplicate    uint64
-		Unused       uint64
-		Remove       uint64
-		Repack       uint64
-		Repackrm     uint64
-		Unref        uint64
-		Uncompressed uint64
-	}
+		Used         uint64 `json:"used"`
+		Duplicate    uint64 `json:"duplicate"`
+		Unused       uint64 `json:"unused"`
+		Unref        uint64 `json:"unreferenced"`
+		Uncompressed uint64 `json:"uncompressed"`
+		Total        uint64 `json:"total"`
+		Repack       uint64 `json:"repack"`
+		Repackrm     uint64 `json:"repack_remove"`
+		Remove       uint64 `json:"remove"`
+		RemoveTotal  uint64 `json:"remove_total"`
+		Remain       uint64 `json:"remaining"`
+		RemainUnused uint64 `json:"remaining_unused"`
+	} `json:"bytes"`
 	Packs struct {
-		Used       uint
-		Unused     uint
-		PartlyUsed uint
-		Unref      uint
-		Keep       uint
-		Repack     uint
-		Remove     uint
-	}
+		Used        uint `json:"used"`
+		Unused      uint `json:"unused"`
+		PartlyUsed  uint `json:"partly_used"`
+		Unref       uint `json:"unreferenced"`
+		Total       uint `json:"total"`
+		Keep        uint `json:"keep"`
+		Repack      uint `json:"repack"`
+		Remove      uint `json:"remove"`
+		RemoveTotal uint `json:"remove_total"`
+	} `json:"packfiles"`
 }
 
 type PrunePlan struct {
@@ -144,6 +154,18 @@ func PlanPrune(ctx context.Context, opts PruneOptions, repo *Repository, getUsed
 		keepBlobs = nil
 	}
 	plan.keepBlobs = keepBlobs
+
+	// calculate totals for statistics
+	stats.Blobs.Total = stats.Blobs.Used + stats.Blobs.Unused + stats.Blobs.Duplicate
+	stats.Blobs.RemoveTotal = stats.Blobs.Remove + stats.Blobs.Repackrm
+	stats.Blobs.Remain = stats.Blobs.Total - stats.Blobs.RemoveTotal
+	stats.Size.Total = stats.Size.Used + stats.Size.Duplicate + stats.Size.Unused + stats.Size.Unref
+	stats.Size.Unused = stats.Size.Duplicate + stats.Size.Unused
+	stats.Size.RemoveTotal = stats.Size.Remove + stats.Size.Repackrm + stats.Size.Unref
+	stats.Size.Remain = stats.Size.Total - stats.Size.RemoveTotal
+	stats.Size.RemainUnused = stats.Size.Unused - stats.Size.Remove - stats.Size.Repackrm
+	stats.Packs.Total = stats.Packs.Used + stats.Packs.PartlyUsed + stats.Packs.Unused + stats.Packs.Unref
+	stats.Packs.RemoveTotal = stats.Packs.Unref + stats.Packs.Remove
 
 	plan.repo = repo
 	plan.stats = stats
