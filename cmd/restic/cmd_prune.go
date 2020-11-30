@@ -208,36 +208,58 @@ type packInfoWithID struct {
 	packInfo
 }
 
+type blobStats struct {
+	Used         uint `json:"used"`
+	Duplicate    uint `json:"duplicate"`
+	Unused       uint `json:"unused"`
+	Total        uint `json:"total"`
+	Repack       uint `json:"repack"`
+	RepackRm     uint `json:"repack_remove"`
+	Remove       uint `json:"remove"`
+	RemoveTotal  uint `json:"remove_total"`
+	Remain       uint `json:"remaining"`
+	RemainUnused uint `json:"remaining_unused"`
+}
+
+type sizeStats struct {
+	Used         uint64 `json:"used"`
+	Duplicate    uint64 `json:"duplicate"`
+	Unused       uint64 `json:"unused"`
+	Unref        uint64 `json:"unreferenced"`
+	Total        uint64 `json:"total"`
+	Repack       uint64 `json:"repack"`
+	RepackRm     uint64 `json:"repack_remove"`
+	Remove       uint64 `json:"remove"`
+	RemoveTotal  uint64 `json:"remove_total"`
+	Remain       uint64 `json:"remaining"`
+	RemainUnused uint64 `json:"remaining_unused"`
+}
+
+type packStats struct {
+	Used        uint `json:"used"`
+	Unused      uint `json:"unused"`
+	PartlyUsed  uint `json:"partly_used"`
+	Unref       uint `json:"unreferenced"`
+	Total       uint `json:"total"`
+	Keep        uint `json:"keep"`
+	Repack      uint `json:"repack"`
+	Remove      uint `json:"remove"`
+	RemoveTotal uint `json:"remove_total"`
+}
+
+type pruneStats struct {
+	MessageType string    `json:"message_type"` // "summary"
+	Blobs       blobStats `json:"blobs"`
+	Size        sizeStats `json:"bytes"`
+	Packs       packStats `json:"packfiles"`
+}
+
 // prune selects which files to rewrite and then does that. The map usedBlobs is
 // modified in the process.
 func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedBlobs restic.BlobSet) error {
 	ctx := gopts.ctx
 
-	var stats struct {
-		blobs struct {
-			used      uint
-			duplicate uint
-			unused    uint
-			remove    uint
-			repack    uint
-			repackrm  uint
-		}
-		size struct {
-			used      uint64
-			duplicate uint64
-			unused    uint64
-			remove    uint64
-			repack    uint64
-			repackrm  uint64
-			unref     uint64
-		}
-		packs struct {
-			used       uint
-			unused     uint
-			partlyUsed uint
-			keep       uint
-		}
-	}
+	var stats pruneStats
 
 	Verbosef("searching used packs...\n")
 
@@ -252,8 +274,8 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		case usedBlobs.Has(bh): // used blob, move to keepBlobs
 			usedBlobs.Delete(bh)
 			keepBlobs.Insert(bh)
-			stats.size.used += size
-			stats.blobs.used++
+			stats.Size.Used += size
+			stats.Blobs.Used++
 		case keepBlobs.Has(bh): // duplicate blob
 			count, ok := duplicateBlobs[bh]
 			if !ok {
@@ -265,11 +287,11 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 				count++
 			}
 			duplicateBlobs[bh] = count
-			stats.size.duplicate += size
-			stats.blobs.duplicate++
+			stats.Size.Duplicate += size
+			stats.Blobs.Duplicate++
 		default:
-			stats.size.unused += size
-			stats.blobs.unused++
+			stats.Size.Unused += size
+			stats.Blobs.Unused++
 		}
 	}
 
@@ -377,7 +399,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 			// Pack was not referenced in index and is not used  => immediately remove!
 			Verboseff("will remove pack %v as it is unused and not indexed\n", id.Str())
 			removePacksFirst.Insert(id)
-			stats.size.unref += uint64(packSize)
+			stats.Size.Unref += uint64(packSize)
 			return nil
 		}
 
@@ -393,11 +415,11 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		// statistics
 		switch {
 		case p.usedBlobs == 0:
-			stats.packs.unused++
+			stats.Packs.Unused++
 		case p.unusedBlobs == 0:
-			stats.packs.used++
+			stats.Packs.Used++
 		default:
-			stats.packs.partlyUsed++
+			stats.Packs.PartlyUsed++
 		}
 
 		mustCompress := false
@@ -414,16 +436,16 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		case p.usedBlobs == 0:
 			// All blobs in pack are no longer used => remove pack!
 			removePacks.Insert(id)
-			stats.blobs.remove += p.unusedBlobs
-			stats.size.remove += p.unusedSize
+			stats.Blobs.Remove += p.unusedBlobs
+			stats.Size.Remove += p.unusedSize
 
 		case opts.RepackCachableOnly && p.tpe == restic.DataBlob:
 			// if this is a data pack and --repack-cacheable-only is set => keep pack!
-			stats.packs.keep++
+			stats.Packs.Keep++
 
 		case p.unusedBlobs == 0 && p.tpe != restic.InvalidBlob && !mustCompress:
 			// All blobs in pack are used and not mixed => keep pack!
-			stats.packs.keep++
+			stats.Packs.Keep++
 
 		default:
 			// all other packs are candidates for repacking
@@ -446,8 +468,8 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 	for id, p := range indexPack {
 		if p.usedBlobs == 0 {
 			ignorePacks.Insert(id)
-			stats.blobs.remove += p.unusedBlobs
-			stats.size.remove += p.unusedSize
+			stats.Blobs.Remove += p.unusedBlobs
+			stats.Size.Remove += p.unusedSize
 			delete(indexPack, id)
 		}
 	}
@@ -467,7 +489,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 	}
 
 	// calculate limit for number of unused bytes in the repo after repacking
-	maxUnusedSizeAfter := opts.maxUnusedBytes(stats.size.used)
+	maxUnusedSizeAfter := opts.maxUnusedBytes(stats.Size.Used)
 
 	// Sort repackCandidates such that packs with highest ratio unused/used space are picked first.
 	// This is equivalent to sorting by unused / total space.
@@ -488,19 +510,19 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 
 	repack := func(id restic.ID, p packInfo) {
 		repackPacks.Insert(id)
-		stats.blobs.repack += p.unusedBlobs + p.usedBlobs
-		stats.size.repack += p.unusedSize + p.usedSize
-		stats.blobs.repackrm += p.unusedBlobs
-		stats.size.repackrm += p.unusedSize
+		stats.Blobs.Repack += p.unusedBlobs + p.usedBlobs
+		stats.Size.Repack += p.unusedSize + p.usedSize
+		stats.Blobs.RepackRm += p.unusedBlobs
+		stats.Size.RepackRm += p.unusedSize
 	}
 
 	for _, p := range repackCandidates {
-		reachedUnusedSizeAfter := (stats.size.unused-stats.size.remove-stats.size.repackrm < maxUnusedSizeAfter)
-		reachedRepackSize := stats.size.repack+p.unusedSize+p.usedSize >= opts.MaxRepackBytes
+		reachedUnusedSizeAfter := (stats.Size.Unused-stats.Size.Remove-stats.Size.RepackRm < maxUnusedSizeAfter)
+		reachedRepackSize := stats.Size.Repack+p.unusedSize+p.usedSize >= opts.MaxRepackBytes
 
 		switch {
 		case reachedRepackSize:
-			stats.packs.keep++
+			stats.Packs.Keep++
 
 		case p.tpe != restic.DataBlob, p.uncompressed:
 			// repacking non-data packs / uncompressed-trees is only limited by repackSize
@@ -508,7 +530,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 
 		case reachedUnusedSizeAfter:
 			// for all other packs stop repacking if tolerated unused size is reached.
-			stats.packs.keep++
+			stats.Packs.Keep++
 
 		default:
 			repack(p.ID, p.packInfo)
@@ -529,39 +551,50 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		keepBlobs = nil
 	}
 
-	Verboseff("\nused:         %10d blobs / %s\n", stats.blobs.used, formatBytes(stats.size.used))
-	if stats.blobs.duplicate > 0 {
-		Verboseff("duplicates:   %10d blobs / %s\n", stats.blobs.duplicate, formatBytes(stats.size.duplicate))
-	}
-	Verboseff("unused:       %10d blobs / %s\n", stats.blobs.unused, formatBytes(stats.size.unused))
-	if stats.size.unref > 0 {
-		Verboseff("unreferenced:                    %s\n", formatBytes(stats.size.unref))
-	}
-	totalBlobs := stats.blobs.used + stats.blobs.unused + stats.blobs.duplicate
-	totalSize := stats.size.used + stats.size.duplicate + stats.size.unused + stats.size.unref
-	unusedSize := stats.size.duplicate + stats.size.unused
-	Verboseff("total:        %10d blobs / %s\n", totalBlobs, formatBytes(totalSize))
-	Verboseff("unused size: %s of total size\n", formatPercent(unusedSize, totalSize))
+	// calculate totals for statistics
+	stats.MessageType = "summary"
+	stats.Blobs.Total = stats.Blobs.Used + stats.Blobs.Unused + stats.Blobs.Duplicate
+	stats.Blobs.RemoveTotal = stats.Blobs.Remove + stats.Blobs.RepackRm
+	stats.Blobs.Remain = stats.Blobs.Total - stats.Blobs.RemoveTotal
+	stats.Size.Total = stats.Size.Used + stats.Size.Duplicate + stats.Size.Unused + stats.Size.Unref
+	stats.Size.Unused = stats.Size.Duplicate + stats.Size.Unused
+	stats.Size.RemoveTotal = stats.Size.Remove + stats.Size.RepackRm + stats.Size.Unref
+	stats.Size.Remain = stats.Size.Total - stats.Size.RemoveTotal
+	stats.Size.RemainUnused = stats.Size.Unused - stats.Size.Remove - stats.Size.RepackRm
+	stats.Packs.Unref = uint(len(removePacksFirst))
+	stats.Packs.Total = stats.Packs.Used + stats.Packs.PartlyUsed + stats.Packs.Unused + stats.Packs.Unref
+	stats.Packs.Repack = uint(len(repackPacks))
+	stats.Packs.Remove = uint(len(removePacks))
+	stats.Packs.RemoveTotal = stats.Packs.Unref + stats.Packs.Remove
 
-	Verbosef("\nto repack:    %10d blobs / %s\n", stats.blobs.repack, formatBytes(stats.size.repack))
-	Verbosef("this removes: %10d blobs / %s\n", stats.blobs.repackrm, formatBytes(stats.size.repackrm))
-	Verbosef("to delete:    %10d blobs / %s\n", stats.blobs.remove, formatBytes(stats.size.remove+stats.size.unref))
-	totalPruneSize := stats.size.remove + stats.size.repackrm + stats.size.unref
-	Verbosef("total prune:  %10d blobs / %s\n", stats.blobs.remove+stats.blobs.repackrm, formatBytes(totalPruneSize))
-	Verbosef("remaining:    %10d blobs / %s\n", totalBlobs-(stats.blobs.remove+stats.blobs.repackrm), formatBytes(totalSize-totalPruneSize))
-	unusedAfter := unusedSize - stats.size.remove - stats.size.repackrm
+	Verboseff("\nused:         %10d blobs / %s\n", stats.Blobs.Used, formatBytes(stats.Size.Used))
+	if stats.Blobs.Duplicate > 0 {
+		Verboseff("duplicates:   %10d blobs / %s\n", stats.Blobs.Duplicate, formatBytes(stats.Size.Duplicate))
+	}
+	Verboseff("unused:       %10d blobs / %s\n", stats.Blobs.Unused, formatBytes(stats.Size.Unused))
+	if stats.Size.Unref > 0 {
+		Verboseff("unreferenced:                    %s\n", formatBytes(stats.Size.Unref))
+	}
+	Verboseff("total:        %10d blobs / %s\n", stats.Blobs.Total, formatBytes(stats.Size.Total))
+	Verboseff("unused size: %s of total size\n", formatPercent(stats.Size.Unused, stats.Size.Total))
+
+	Verbosef("\nto repack:    %10d blobs / %s\n", stats.Blobs.Repack, formatBytes(stats.Size.Repack))
+	Verbosef("this removes: %10d blobs / %s\n", stats.Blobs.RepackRm, formatBytes(stats.Size.RepackRm))
+	Verbosef("to delete:    %10d blobs / %s\n", stats.Blobs.Remove, formatBytes(stats.Size.Remove+stats.Size.Unref))
+	Verbosef("total prune:  %10d blobs / %s\n", stats.Blobs.RemoveTotal, formatBytes(stats.Size.RemoveTotal))
+	Verbosef("remaining:    %10d blobs / %s\n", stats.Blobs.Remain, formatBytes(stats.Size.Remain))
 	Verbosef("unused size after prune: %s (%s of remaining size)\n",
-		formatBytes(unusedAfter), formatPercent(unusedAfter, totalSize-totalPruneSize))
+		formatBytes(stats.Size.RemainUnused), formatPercent(stats.Size.RemainUnused, stats.Size.Remain))
 	Verbosef("\n")
-	Verboseff("totally used packs: %10d\n", stats.packs.used)
-	Verboseff("partly used packs:  %10d\n", stats.packs.partlyUsed)
-	Verboseff("unused packs:       %10d\n\n", stats.packs.unused)
+	Verboseff("totally used packs: %10d\n", stats.Packs.Used)
+	Verboseff("partly used packs:  %10d\n", stats.Packs.PartlyUsed)
+	Verboseff("unused packs:       %10d\n\n", stats.Packs.Unused)
 
-	Verboseff("to keep:      %10d packs\n", stats.packs.keep)
-	Verboseff("to repack:    %10d packs\n", len(repackPacks))
-	Verboseff("to delete:    %10d packs\n", len(removePacks))
-	if len(removePacksFirst) > 0 {
-		Verboseff("to delete:    %10d unreferenced packs\n\n", len(removePacksFirst))
+	Verboseff("to keep:      %10d packs\n", stats.Packs.Keep)
+	Verboseff("to repack:    %10d packs\n", stats.Packs.Repack)
+	Verboseff("to delete:    %10d packs\n", stats.Packs.Remove)
+	if stats.Packs.Unref > 0 {
+		Verboseff("to delete:    %10d unreferenced packs\n\n", stats.Packs.Unref)
 	}
 
 	if opts.DryRun {
