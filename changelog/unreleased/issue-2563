@@ -1,0 +1,8 @@
+Bugfix: Use correct directory owner in fuse mount
+
+Restic 0.10.0 changed the fuse mount to always report the current user
+as the owner of directories within the fuse mount, which is incorrect.
+We have changed this back to use the correct owner of a directory.
+
+https://github.com/restic/restic/issues/2563
+https://github.com/restic/restic/pull/3141

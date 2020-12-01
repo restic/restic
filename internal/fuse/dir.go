@@ -111,8 +111,11 @@ func (d *dir) Attr(ctx context.Context, a *fuse.Attr) error {
 	debug.Log("Attr()")
 	a.Inode = d.inode
 	a.Mode = os.ModeDir | d.node.Mode
-	a.Uid = d.root.uid
-	a.Gid = d.root.gid
+
+	if !d.root.cfg.OwnerIsRoot {
+		a.Uid = d.node.UID
+		a.Gid = d.node.GID
+	}
 	a.Atime = d.node.AccessTime
 	a.Ctime = d.node.ChangeTime
 	a.Mtime = d.node.ModTime

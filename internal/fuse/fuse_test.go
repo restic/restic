@@ -187,6 +187,37 @@ func TestFuseFile(t *testing.T) {
 	}
 }
 
+func TestFuseDir(t *testing.T) {
+	repo, cleanup := repository.TestRepository(t)
+	defer cleanup()
+
+	root := &Root{repo: repo, blobCache: newBlobCache(blobCacheSize)}
+
+	node := &restic.Node{
+		Mode:       0755,
+		UID:        42,
+		GID:        43,
+		AccessTime: time.Unix(1606773731, 0),
+		ChangeTime: time.Unix(1606773732, 0),
+		ModTime:    time.Unix(1606773733, 0),
+	}
+	parentInode := fs.GenerateDynamicInode(0, "parent")
+	inode := fs.GenerateDynamicInode(1, "foo")
+	d, err := newDir(context.TODO(), root, inode, parentInode, node)
+	rtest.OK(t, err)
+
+	// don't open the directory as that would require setting up a proper tree blob
+	attr := fuse.Attr{}
+	rtest.OK(t, d.Attr(context.TODO(), &attr))
+
+	rtest.Equals(t, inode, attr.Inode)
+	rtest.Equals(t, node.UID, attr.Uid)
+	rtest.Equals(t, node.GID, attr.Gid)
+	rtest.Equals(t, node.AccessTime, attr.Atime)
+	rtest.Equals(t, node.ChangeTime, attr.Ctime)
+	rtest.Equals(t, node.ModTime, attr.Mtime)
+}
+
 // Test top-level directories for their UID and GID.
 func TestTopUidGid(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
@@ -222,8 +253,9 @@ func testTopUidGid(t *testing.T, cfg Config, repo restic.Repository, uid, gid ui
 	snapshotdir, err := idsdir.(fs.NodeStringLookuper).Lookup(ctx, snapID)
 	rtest.OK(t, err)
 
+	// restic.TestCreateSnapshot does not set the UID/GID thus it must be always zero
 	err = snapshotdir.Attr(ctx, &attr)
 	rtest.OK(t, err)
-	rtest.Equals(t, uid, attr.Uid)
-	rtest.Equals(t, gid, attr.Gid)
+	rtest.Equals(t, uint32(0), attr.Uid)
+	rtest.Equals(t, uint32(0), attr.Gid)
 }
