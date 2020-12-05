@@ -22,7 +22,9 @@ func TestCounter(t *testing.T) {
 	)
 
 	report := func(value uint64, total uint64, d time.Duration, final bool) {
-		finalSeen = true
+		if final {
+			finalSeen = true
+		}
 		if value < last {
 			increasing = false
 		}
