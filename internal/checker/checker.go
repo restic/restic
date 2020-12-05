@@ -354,8 +354,9 @@ func loadSnapshotTreeIDs(ctx context.Context, repo restic.Repository) (ids resti
 // Structure checks that for all snapshots all referenced data blobs and
 // subtrees are available in the index. errChan is closed after all trees have
 // been traversed.
-func (c *Checker) Structure(ctx context.Context, errChan chan<- error) {
+func (c *Checker) Structure(ctx context.Context, p *progress.Counter, errChan chan<- error) {
 	trees, errs := loadSnapshotTreeIDs(ctx, c.repo)
+	p.SetMax(uint64(len(trees)))
 	debug.Log("need to check %d trees from snapshots, %d errs returned", len(trees), len(errs))
 
 	for _, err := range errs {
@@ -376,7 +377,7 @@ func (c *Checker) Structure(ctx context.Context, errChan chan<- error) {
 		c.blobRefs.M.Insert(h)
 		c.blobRefs.Unlock()
 		return blobReferenced
-	}, nil)
+	}, p)
 
 	defer close(errChan)
 	for i := 0; i < defaultParallelism; i++ {

@@ -240,7 +240,11 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 
 	Verbosef("check snapshots, trees and blobs\n")
 	errChan = make(chan error)
-	go chkr.Structure(gopts.ctx, errChan)
+	go func() {
+		bar := newProgressMax(!gopts.Quiet, 0, "snapshots")
+		defer bar.Done()
+		chkr.Structure(gopts.ctx, bar, errChan)
+	}()
 
 	for err := range errChan {
 		errorsFound = true

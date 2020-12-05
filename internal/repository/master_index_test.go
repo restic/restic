@@ -368,7 +368,7 @@ func TestIndexSave(t *testing.T) {
 	defer cancel()
 
 	errCh := make(chan error)
-	go checker.Structure(ctx, errCh)
+	go checker.Structure(ctx, nil, errCh)
 	i := 0
 	for err := range errCh {
 		t.Errorf("checker returned error: %v", err)
