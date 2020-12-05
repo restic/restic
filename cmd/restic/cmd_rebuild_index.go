@@ -60,7 +60,6 @@ func rebuildIndex(opts RebuildIndexOptions, gopts GlobalOptions, repo *repositor
 	var obsoleteIndexes restic.IDs
 	packSizeFromList := make(map[restic.ID]int64)
 	removePacks := restic.NewIDSet()
-	totalPacks := 0
 
 	if opts.ReadAllPacks {
 		// get old index files
@@ -76,7 +75,6 @@ func rebuildIndex(opts RebuildIndexOptions, gopts GlobalOptions, repo *repositor
 		err = repo.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
 			packSizeFromList[id] = size
 			removePacks.Insert(id)
-			totalPacks++
 			return nil
 		})
 		if err != nil {
@@ -99,7 +97,6 @@ func rebuildIndex(opts RebuildIndexOptions, gopts GlobalOptions, repo *repositor
 				packSizeFromList[id] = packSize
 				removePacks.Insert(id)
 			}
-			totalPacks++
 			delete(packSizeFromIndex, id)
 			return nil
 		})
@@ -123,11 +120,10 @@ func rebuildIndex(opts RebuildIndexOptions, gopts GlobalOptions, repo *repositor
 
 		for _, id := range invalidFiles {
 			Verboseff("skipped incomplete pack file: %v\n", id)
-			totalPacks--
 		}
 	}
 
-	err := rebuildIndexFiles(gopts, repo, removePacks, obsoleteIndexes, uint64(totalPacks))
+	err := rebuildIndexFiles(gopts, repo, removePacks, obsoleteIndexes)
 	if err != nil {
 		return err
 	}

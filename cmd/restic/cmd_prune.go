@@ -479,11 +479,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		DeleteFiles(gopts, repo, removePacksFirst, restic.PackFile)
 	}
 
-	packsAddedByRepack := 0
 	if len(repackPacks) != 0 {
-		// Remember the number of unique packs before repacking
-		packsBeforeRepacking := len(repo.Index().Packs())
-
 		Verbosef("repacking packs\n")
 		bar := newProgressMax(!gopts.Quiet, uint64(len(repackPacks)), "packs repacked")
 		_, err := repository.Repack(ctx, repo, repackPacks, keepBlobs, bar)
@@ -492,18 +488,12 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 			return err
 		}
 
-		// Since repacking will only add new packs, we can calculate the number
-		// of packs like this:
-		packsAddedByRepack = len(repo.Index().Packs()) - packsBeforeRepacking
-
 		// Also remove repacked packs
 		removePacks.Merge(repackPacks)
 	}
 
 	if len(removePacks) != 0 {
-		totalpacks := int(stats.packs.used+stats.packs.partlyUsed+stats.packs.unused) -
-			len(removePacks) + packsAddedByRepack
-		err = rebuildIndexFiles(gopts, repo, removePacks, nil, uint64(totalpacks))
+		err = rebuildIndexFiles(gopts, repo, removePacks, nil)
 		if err != nil {
 			return err
 		}
@@ -516,12 +506,13 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 	return nil
 }
 
-func rebuildIndexFiles(gopts GlobalOptions, repo restic.Repository, removePacks restic.IDSet, extraObsolete restic.IDs, packcount uint64) error {
+func rebuildIndexFiles(gopts GlobalOptions, repo restic.Repository, removePacks restic.IDSet, extraObsolete restic.IDs) error {
 	Verbosef("rebuilding index\n")
 
+	idx := (repo.Index()).(*repository.MasterIndex)
+	packcount := uint64(len(idx.Packs(removePacks)))
 	bar := newProgressMax(!gopts.Quiet, packcount, "packs processed")
-	obsoleteIndexes, err := (repo.Index()).(*repository.MasterIndex).
-		Save(gopts.ctx, repo, removePacks, extraObsolete, bar)
+	obsoleteIndexes, err := idx.Save(gopts.ctx, repo, removePacks, extraObsolete, bar)
 	bar.Done()
 	if err != nil {
 		return err

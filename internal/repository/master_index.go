@@ -100,13 +100,19 @@ func (mi *MasterIndex) Has(bh restic.BlobHandle) bool {
 }
 
 // Packs returns all packs that are covered by the index.
-func (mi *MasterIndex) Packs() restic.IDSet {
+// If packBlacklist ist given, those packs are only contained in the
+// resulting IDSet if they are contained in a non-final index.
+func (mi *MasterIndex) Packs(packBlacklist restic.IDSet) restic.IDSet {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 
 	packs := restic.NewIDSet()
 	for _, idx := range mi.idx {
-		packs.Merge(idx.Packs())
+		idxPacks := idx.Packs()
+		if idx.final {
+			idxPacks = idxPacks.Sub(packBlacklist)
+		}
+		packs.Merge(idxPacks)
 	}
 
 	return packs
