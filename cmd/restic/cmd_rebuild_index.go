@@ -96,7 +96,7 @@ func rebuildIndex(opts RebuildIndexOptions, gopts GlobalOptions, repo *repositor
 			size, ok := packSizeFromIndex[id]
 			if !ok || size != packSize {
 				// Pack was not referenced in index or size does not match
-				packSizeFromList[id] = size
+				packSizeFromList[id] = packSize
 				removePacks.Insert(id)
 			}
 			totalPacks++
