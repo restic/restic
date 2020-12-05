@@ -59,22 +59,13 @@ func rebuildIndex(opts RebuildIndexOptions, gopts GlobalOptions, repo *repositor
 
 	var obsoleteIndexes restic.IDs
 	packSizeFromList := make(map[restic.ID]int64)
+	packSizeFromIndex := make(map[restic.ID]int64)
 	removePacks := restic.NewIDSet()
 
 	if opts.ReadAllPacks {
-		// get old index files
+		// get list of old index files but start with empty index
 		err := repo.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
 			obsoleteIndexes = append(obsoleteIndexes, id)
-			return nil
-		})
-		if err != nil {
-			return err
-		}
-
-		Verbosef("finding pack files in repo...\n")
-		err = repo.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
-			packSizeFromList[id] = size
-			removePacks.Insert(id)
 			return nil
 		})
 		if err != nil {
@@ -86,28 +77,27 @@ func rebuildIndex(opts RebuildIndexOptions, gopts GlobalOptions, repo *repositor
 		if err != nil {
 			return err
 		}
+		packSizeFromIndex = repo.Index().PackSize(ctx, false)
+	}
 
-		Verbosef("getting pack files to read...\n")
-		packSizeFromIndex := repo.Index().PackSize(ctx, false)
-
-		err = repo.List(ctx, restic.PackFile, func(id restic.ID, packSize int64) error {
-			size, ok := packSizeFromIndex[id]
-			if !ok || size != packSize {
-				// Pack was not referenced in index or size does not match
-				packSizeFromList[id] = packSize
-				removePacks.Insert(id)
-			}
-			delete(packSizeFromIndex, id)
-			return nil
-		})
-		if err != nil {
-			return err
-		}
-		for id := range packSizeFromIndex {
-			// forget pack files that are referenced in the index but do not exist
-			// when rebuilding the index
+	Verbosef("getting pack files to read...\n")
+	err := repo.List(ctx, restic.PackFile, func(id restic.ID, packSize int64) error {
+		size, ok := packSizeFromIndex[id]
+		if !ok || size != packSize {
+			// Pack was not referenced in index or size does not match
+			packSizeFromList[id] = packSize
 			removePacks.Insert(id)
 		}
+		delete(packSizeFromIndex, id)
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	for id := range packSizeFromIndex {
+		// forget pack files that are referenced in the index but do not exist
+		// when rebuilding the index
+		removePacks.Insert(id)
 	}
 
 	if len(packSizeFromList) > 0 {
@@ -123,7 +113,7 @@ func rebuildIndex(opts RebuildIndexOptions, gopts GlobalOptions, repo *repositor
 		}
 	}
 
-	err := rebuildIndexFiles(gopts, repo, removePacks, obsoleteIndexes)
+	err = rebuildIndexFiles(gopts, repo, removePacks, obsoleteIndexes)
 	if err != nil {
 		return err
 	}
