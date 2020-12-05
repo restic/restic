@@ -15,6 +15,8 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui/progress"
 )
 
 func loadIDSet(t testing.TB, filename string) restic.BlobSet {
@@ -92,9 +94,12 @@ func TestFindUsedBlobs(t *testing.T) {
 		snapshots = append(snapshots, sn)
 	}
 
+	p := progress.New(time.Second, findTestSnapshots, func(value uint64, total uint64, runtime time.Duration, final bool) {})
+	defer p.Done()
+
 	for i, sn := range snapshots {
 		usedBlobs := restic.NewBlobSet()
-		err := restic.FindUsedBlobs(context.TODO(), repo, restic.IDs{*sn.Tree}, usedBlobs, nil)
+		err := restic.FindUsedBlobs(context.TODO(), repo, restic.IDs{*sn.Tree}, usedBlobs, p)
 		if err != nil {
 			t.Errorf("FindUsedBlobs returned error: %v", err)
 			continue
@@ -104,6 +109,8 @@ func TestFindUsedBlobs(t *testing.T) {
 			t.Errorf("FindUsedBlobs returned an empty set")
 			continue
 		}
+
+		test.Equals(t, p.Get(), uint64(i+1))
 
 		goldenFilename := filepath.Join("testdata", fmt.Sprintf("used_blobs_snapshot%d", i))
 		want := loadIDSet(t, goldenFilename)
@@ -115,6 +122,40 @@ func TestFindUsedBlobs(t *testing.T) {
 
 		if *updateGoldenFiles {
 			saveIDSet(t, goldenFilename, usedBlobs)
+		}
+	}
+}
+
+func TestMultiFindUsedBlobs(t *testing.T) {
+	repo, cleanup := repository.TestRepository(t)
+	defer cleanup()
+
+	var snapshotTrees restic.IDs
+	for i := 0; i < findTestSnapshots; i++ {
+		sn := restic.TestCreateSnapshot(t, repo, findTestTime.Add(time.Duration(i)*time.Second), findTestDepth, 0)
+		t.Logf("snapshot %v saved, tree %v", sn.ID().Str(), sn.Tree.Str())
+		snapshotTrees = append(snapshotTrees, *sn.Tree)
+	}
+
+	want := restic.NewBlobSet()
+	for i := range snapshotTrees {
+		goldenFilename := filepath.Join("testdata", fmt.Sprintf("used_blobs_snapshot%d", i))
+		want.Merge(loadIDSet(t, goldenFilename))
+	}
+
+	p := progress.New(time.Second, findTestSnapshots, func(value uint64, total uint64, runtime time.Duration, final bool) {})
+	defer p.Done()
+
+	// run twice to check progress bar handling of duplicate tree roots
+	usedBlobs := restic.NewBlobSet()
+	for i := 1; i < 3; i++ {
+		err := restic.FindUsedBlobs(context.TODO(), repo, snapshotTrees, usedBlobs, p)
+		test.OK(t, err)
+		test.Equals(t, p.Get(), uint64(i*len(snapshotTrees)))
+
+		if !want.Equals(usedBlobs) {
+			t.Errorf("wrong list of blobs returned:\n  missing blobs: %v\n  extra blobs: %v",
+				want.Sub(usedBlobs), usedBlobs.Sub(want))
 		}
 	}
 }

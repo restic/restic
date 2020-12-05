@@ -82,7 +82,8 @@ func (c *Counter) Done() {
 	*c = Counter{} // Prevent reuse.
 }
 
-func (c *Counter) get() uint64 {
+// Get the current Counter value. This method is concurrency-safe.
+func (c *Counter) Get() uint64 {
 	c.valueMutex.Lock()
 	v := c.value
 	c.valueMutex.Unlock()
@@ -102,7 +103,7 @@ func (c *Counter) run() {
 	defer close(c.stopped)
 	defer func() {
 		// Must be a func so that time.Since isn't called at defer time.
-		c.report(c.get(), c.getMax(), time.Since(c.start), true)
+		c.report(c.Get(), c.getMax(), time.Since(c.start), true)
 	}()
 
 	var tick <-chan time.Time
@@ -122,6 +123,6 @@ func (c *Counter) run() {
 			return
 		}
 
-		c.report(c.get(), c.getMax(), now.Sub(c.start), false)
+		c.report(c.Get(), c.getMax(), now.Sub(c.start), false)
 	}
 }
