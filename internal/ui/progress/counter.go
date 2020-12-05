@@ -12,7 +12,7 @@ import (
 //
 // The final argument is true if Counter.Done has been called,
 // which means that the current call will be the last.
-type Func func(value uint64, runtime time.Duration, final bool)
+type Func func(value uint64, total uint64, runtime time.Duration, final bool)
 
 // A Counter tracks a running count and controls a goroutine that passes its
 // value periodically to a Func.
@@ -27,16 +27,19 @@ type Counter struct {
 
 	valueMutex sync.Mutex
 	value      uint64
+	max        uint64
 }
 
 // New starts a new Counter.
-func New(interval time.Duration, report Func) *Counter {
+func New(interval time.Duration, total uint64, report Func) *Counter {
 	c := &Counter{
 		report:  report,
 		start:   time.Now(),
 		stopped: make(chan struct{}),
 		stop:    make(chan struct{}),
+		max:     total,
 	}
+
 	if interval > 0 {
 		c.tick = time.NewTicker(interval)
 	}
@@ -53,6 +56,16 @@ func (c *Counter) Add(v uint64) {
 
 	c.valueMutex.Lock()
 	c.value += v
+	c.valueMutex.Unlock()
+}
+
+// SetMax sets the maximum expected counter value. This method is concurrency-safe.
+func (c *Counter) SetMax(max uint64) {
+	if c == nil {
+		return
+	}
+	c.valueMutex.Lock()
+	c.max = max
 	c.valueMutex.Unlock()
 }
 
@@ -77,11 +90,19 @@ func (c *Counter) get() uint64 {
 	return v
 }
 
+func (c *Counter) getMax() uint64 {
+	c.valueMutex.Lock()
+	max := c.max
+	c.valueMutex.Unlock()
+
+	return max
+}
+
 func (c *Counter) run() {
 	defer close(c.stopped)
 	defer func() {
 		// Must be a func so that time.Since isn't called at defer time.
-		c.report(c.get(), time.Since(c.start), true)
+		c.report(c.get(), c.getMax(), time.Since(c.start), true)
 	}()
 
 	var tick <-chan time.Time
@@ -101,6 +122,6 @@ func (c *Counter) run() {
 			return
 		}
 
-		c.report(c.get(), now.Sub(c.start), false)
+		c.report(c.get(), c.getMax(), now.Sub(c.start), false)
 	}
 }

@@ -33,11 +33,14 @@ func newProgressMax(show bool, max uint64, description string) *progress.Counter
 	}
 	interval := calculateProgressInterval()
 
-	return progress.New(interval, func(v uint64, d time.Duration, final bool) {
-		status := fmt.Sprintf("[%s] %s  %d / %d %s",
-			formatDuration(d),
-			formatPercent(v, max),
-			v, max, description)
+	return progress.New(interval, max, func(v uint64, max uint64, d time.Duration, final bool) {
+		var status string
+		if max == 0 {
+			status = fmt.Sprintf("[%s]          %d %s", formatDuration(d), v, description)
+		} else {
+			status = fmt.Sprintf("[%s] %s  %d / %d %s",
+				formatDuration(d), formatPercent(v, max), v, max, description)
+		}
 
 		if w := stdoutTerminalWidth(); w > 0 {
 			status = shortenStatus(w, status)
