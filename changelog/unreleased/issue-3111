@@ -1,0 +1,9 @@
+Bugfix: Correctly detect output redirection for `backup` command on Windows
+
+On Windows, since restic 0.10.0 the `backup` command did not properly detect
+when the output was redirected to a file. This caused restic to output
+terminal control characters. This has been fixed by correcting the terminal
+detection.
+
+https://github.com/restic/restic/issues/3111
+https://github.com/restic/restic/pull/3150

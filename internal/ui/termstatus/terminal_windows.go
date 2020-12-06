@@ -88,8 +88,8 @@ func canUpdateStatus(fd uintptr) bool {
 		return true
 	}
 
-	// check if the output file type is a pipe (0x0003)
-	if isPipe(fd) {
+	// check that the output file type is a pipe (0x0003)
+	if !isPipe(fd) {
 		return false
 	}
 
