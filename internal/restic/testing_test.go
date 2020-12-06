@@ -17,6 +17,25 @@ const (
 	testDepth           = 2
 )
 
+// LoadAllSnapshots returns a list of all snapshots in the repo.
+// If a snapshot ID is in excludeIDs, it will not be included in the result.
+func loadAllSnapshots(ctx context.Context, repo restic.Repository, excludeIDs restic.IDSet) (snapshots restic.Snapshots, err error) {
+	err = restic.ForAllSnapshots(ctx, repo, excludeIDs, func(id restic.ID, sn *restic.Snapshot, err error) error {
+		if err != nil {
+			return err
+		}
+
+		snapshots = append(snapshots, sn)
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return snapshots, nil
+}
+
 func TestCreateSnapshot(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
@@ -25,7 +44,7 @@ func TestCreateSnapshot(t *testing.T) {
 		restic.TestCreateSnapshot(t, repo, testSnapshotTime.Add(time.Duration(i)*time.Second), testDepth, 0)
 	}
 
-	snapshots, err := restic.LoadAllSnapshots(context.TODO(), repo, restic.NewIDSet())
+	snapshots, err := loadAllSnapshots(context.TODO(), repo, restic.NewIDSet())
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -126,25 +126,6 @@ func ForAllSnapshots(ctx context.Context, repo Repository, excludeIDs IDSet, fn 
 	return wg.Wait()
 }
 
-// LoadAllSnapshots returns a list of all snapshots in the repo.
-// If a snapshot ID is in excludeIDs, it will not be included in the result.
-func LoadAllSnapshots(ctx context.Context, repo Repository, excludeIDs IDSet) (snapshots Snapshots, err error) {
-	err = ForAllSnapshots(ctx, repo, excludeIDs, func(id ID, sn *Snapshot, err error) error {
-		if err != nil {
-			return err
-		}
-
-		snapshots = append(snapshots, sn)
-		return nil
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return snapshots, nil
-}
-
 func (sn Snapshot) String() string {
 	return fmt.Sprintf("<Snapshot %s of %v at %s by %s@%s>",
 		sn.id.Str(), sn.Paths, sn.Time, sn.Username, sn.Hostname)
