@@ -96,11 +96,9 @@ func (t *Terminal) run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			if IsProcessBackground(t.fd) {
-				// ignore all messages, do nothing, we are in the background process group
-				continue
+			if !IsProcessBackground(t.fd) {
+				t.undoStatus(len(status))
 			}
-			t.undoStatus(len(status))
 
 			return
 

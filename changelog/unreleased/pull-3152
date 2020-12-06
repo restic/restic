@@ -1,0 +1,8 @@
+Bugfix: On Linux `backup` hangs during exit when run as a background job
+
+On Linux, when running in the background restic failed to stop the terminal
+output of the `backup` command after it had completed. This caused restic to
+hang until moved to the foreground. This has been fixed.
+
+https://github.com/restic/restic/pull/3152
+https://forum.restic.net/t/restic-alpine-container-cron-hangs-epoll-pwait/3334
