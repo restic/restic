@@ -159,19 +159,13 @@ func runPruneWithRepo(opts PruneOptions, gopts GlobalOptions, repo *repository.R
 		Print("warning: running prune without a cache, this may be very slow!\n")
 	}
 
-	Verbosef("loading all snapshots...\n")
-	snapshots, err := restic.LoadAllSnapshots(gopts.ctx, repo, ignoreSnapshots)
-	if err != nil {
-		return err
-	}
-
 	Verbosef("loading indexes...\n")
-	err = repo.LoadIndex(gopts.ctx)
+	err := repo.LoadIndex(gopts.ctx)
 	if err != nil {
 		return err
 	}
 
-	usedBlobs, err := getUsedBlobs(gopts, repo, snapshots)
+	usedBlobs, err := getUsedBlobs(gopts, repo, ignoreSnapshots)
 	if err != nil {
 		return err
 	}
@@ -537,19 +531,34 @@ func rebuildIndexFiles(gopts GlobalOptions, repo restic.Repository, removePacks 
 	return DeleteFilesChecked(gopts, repo, obsoleteIndexes, restic.IndexFile)
 }
 
-func getUsedBlobs(gopts GlobalOptions, repo restic.Repository, snapshots []*restic.Snapshot) (usedBlobs restic.BlobSet, err error) {
+func getUsedBlobs(gopts GlobalOptions, repo restic.Repository, ignoreSnapshots restic.IDSet) (usedBlobs restic.BlobSet, err error) {
 	ctx := gopts.ctx
 
-	Verbosef("finding data that is still in use for %d snapshots\n", len(snapshots))
+	var snapshotTrees restic.IDs
+	Verbosef("loading all snapshots...\n")
+	err = restic.ForAllSnapshots(gopts.ctx, repo, ignoreSnapshots,
+		func(id restic.ID, sn *restic.Snapshot, err error) error {
+			debug.Log("add snapshot %v (tree %v, error %v)", id, *sn.Tree, err)
+			if err != nil {
+				return err
+			}
+			snapshotTrees = append(snapshotTrees, *sn.Tree)
+			return nil
+		})
+	if err != nil {
+		return nil, err
+	}
+
+	Verbosef("finding data that is still in use for %d snapshots\n", len(snapshotTrees))
 
 	usedBlobs = restic.NewBlobSet()
 
-	bar := newProgressMax(!gopts.Quiet, uint64(len(snapshots)), "snapshots")
+	bar := newProgressMax(!gopts.Quiet, uint64(len(snapshotTrees)), "snapshots")
 	defer bar.Done()
-	for _, sn := range snapshots {
-		debug.Log("process snapshot %v", sn.ID())
+	for _, tree := range snapshotTrees {
+		debug.Log("process tree %v", tree)
 
-		err = restic.FindUsedBlobs(ctx, repo, *sn.Tree, usedBlobs)
+		err = restic.FindUsedBlobs(ctx, repo, tree, usedBlobs)
 		if err != nil {
 			if repo.Backend().IsNotExist(err) {
 				return nil, errors.Fatal("unable to load a tree from the repo: " + err.Error())
@@ -558,7 +567,7 @@ func getUsedBlobs(gopts GlobalOptions, repo restic.Repository, snapshots []*rest
 			return nil, err
 		}
 
-		debug.Log("processed snapshot %v", sn.ID())
+		debug.Log("processed tree %v", tree)
 		bar.Add(1)
 	}
 	return usedBlobs, nil

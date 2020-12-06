@@ -55,8 +55,7 @@ func prettyPrintJSON(wr io.Writer, item interface{}) error {
 }
 
 func debugPrintSnapshots(ctx context.Context, repo *repository.Repository, wr io.Writer) error {
-	return repo.List(ctx, restic.SnapshotFile, func(id restic.ID, size int64) error {
-		snapshot, err := restic.LoadSnapshot(ctx, repo, id)
+	return restic.ForAllSnapshots(ctx, repo, nil, func(id restic.ID, snapshot *restic.Snapshot, err error) error {
 		if err != nil {
 			return err
 		}
