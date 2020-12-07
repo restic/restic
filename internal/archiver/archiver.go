@@ -798,7 +798,13 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 
 		return arch.saveTree(wctx, tree)
 	}()
-	debug.Log("saved tree, error: %v", err)
+
+	if err != nil {
+		debug.Log("error while saving tree: %v", err)
+		return nil, restic.ID{}, err
+	}
+
+	debug.Log("saved tree %v, error: %v", rootTreeID, err)
 
 	t.Kill(nil)
 	werr := t.Wait()

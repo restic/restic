@@ -692,6 +692,10 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		p.V("start backup on %v", targets)
 	}
 	_, id, err := arch.Snapshot(gopts.ctx, targets, snapshotOpts)
+	if errors.Cause(err) == context.Canceled {
+		return errors.Fatal("canceled")
+	}
+
 	if err != nil {
 		return errors.Fatalf("unable to save snapshot: %v", err)
 	}
