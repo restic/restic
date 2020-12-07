@@ -88,6 +88,10 @@ func (r *Repository) LoadAndDecrypt(ctx context.Context, buf []byte, t restic.Fi
 
 	debug.Log("load %v with id %v", t, id)
 
+	if t == restic.ConfigFile {
+		id = restic.ID{}
+	}
+
 	h := restic.Handle{Type: t, Name: id.String()}
 	err := r.be.Load(ctx, h, 0, 0, func(rd io.Reader) error {
 		// make sure this call is idempotent, in case an error occurs
@@ -305,7 +309,11 @@ func (r *Repository) SaveUnpacked(ctx context.Context, t restic.FileType, p []by
 
 	ciphertext = r.key.Seal(ciphertext, nonce, p, nil)
 
-	id = restic.Hash(ciphertext)
+	if t == restic.ConfigFile {
+		id = restic.ID{}
+	} else {
+		id = restic.Hash(ciphertext)
+	}
 	h := restic.Handle{Type: t, Name: id.String()}
 
 	err = r.be.Save(ctx, h, restic.NewByteReader(ciphertext))
