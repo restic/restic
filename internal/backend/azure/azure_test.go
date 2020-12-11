@@ -141,9 +141,7 @@ func TestUploadLargeFile(t *testing.T) {
 
 	azcfg, err := azure.ParseConfig(os.Getenv("RESTIC_TEST_AZURE_REPOSITORY"))
 	if err != nil {
-		if err != nil {
-			t.Fatal(err)
-		}
+		t.Fatal(err)
 	}
 
 	cfg := azcfg.(azure.Config)
@@ -158,9 +156,7 @@ func TestUploadLargeFile(t *testing.T) {
 
 	be, err := azure.Create(cfg, tr)
 	if err != nil {
-		if err != nil {
-			t.Fatal(err)
-		}
+		t.Fatal(err)
 	}
 
 	defer func() {

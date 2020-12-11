@@ -42,7 +42,7 @@ func retry(max int, fail func(err error), f func() error) error {
 	for i := 0; i < max; i++ {
 		err = f()
 		if err == nil {
-			return err
+			return nil
 		}
 		if fail != nil {
 			fail(err)

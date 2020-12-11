@@ -351,12 +351,7 @@ func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
 				offset += int64(length)
 			}
 
-			err = file.Close()
-			if err != nil {
-				return err
-			}
-
-			return nil
+			return file.Close()
 		},
 		leaveDir: func(node *restic.Node, target, location string) error { return nil },
 	})

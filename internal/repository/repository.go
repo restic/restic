@@ -517,12 +517,7 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 	}
 
 	// remove index files from the cache which have been removed in the repo
-	err = r.PrepareCache(validIndex)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return r.PrepareCache(validIndex)
 }
 
 const listPackParallelism = 10

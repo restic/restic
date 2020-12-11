@@ -141,12 +141,6 @@ func saveSnapshot(t testing.TB, repo restic.Repository, snapshot Snapshot) (*res
 	return sn, id
 }
 
-// toSlash converts the OS specific path dir to a slash-separated path.
-func toSlash(dir string) string {
-	data := strings.Split(dir, string(filepath.Separator))
-	return strings.Join(data, "/")
-}
-
 func TestRestorer(t *testing.T) {
 	var tests = []struct {
 		Snapshot
@@ -354,7 +348,7 @@ func TestRestorer(t *testing.T) {
 
 			errors := make(map[string]map[string]struct{})
 			res.Error = func(location string, err error) error {
-				location = toSlash(location)
+				location = filepath.ToSlash(location)
 				t.Logf("restore returned error for %q: %v", location, err)
 				if errors[location] == nil {
 					errors[location] = make(map[string]struct{})
