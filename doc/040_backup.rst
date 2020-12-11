@@ -466,13 +466,17 @@ environment variables. The following lists these environment variables:
     OS_AUTH_URL                         Auth URL for keystone authentication
     OS_REGION_NAME                      Region name for keystone authentication
     OS_USERNAME                         Username for keystone authentication
+    OS_USER_ID                          User ID for keystone v3 authentication
     OS_PASSWORD                         Password for keystone authentication
     OS_TENANT_ID                        Tenant ID for keystone v2 authentication
     OS_TENANT_NAME                      Tenant name for keystone v2 authentication
 
     OS_USER_DOMAIN_NAME                 User domain name for keystone authentication
+    OS_USER_DOMAIN_ID                   User domain ID for keystone v3 authentication
     OS_PROJECT_NAME                     Project name for keystone authentication
     OS_PROJECT_DOMAIN_NAME              Project domain name for keystone authentication
+    OS_PROJECT_DOMAIN_ID                Project domain ID for keystone v3 authentication
+    OS_TRUST_ID                         Trust ID for keystone v3 authentication
 
     OS_APPLICATION_CREDENTIAL_ID        Application Credential ID (keystone v3)
     OS_APPLICATION_CREDENTIAL_NAME      Application Credential Name (keystone v3)

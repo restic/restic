@@ -375,10 +375,14 @@ the naming convention of those variables follows the official Python Swift clien
    $ export OS_AUTH_URL=<MY_AUTH_URL>
    $ export OS_REGION_NAME=<MY_REGION_NAME>
    $ export OS_USERNAME=<MY_USERNAME>
+   $ export OS_USER_ID=<MY_USER_ID>
    $ export OS_PASSWORD=<MY_PASSWORD>
    $ export OS_USER_DOMAIN_NAME=<MY_DOMAIN_NAME>
+   $ export OS_USER_DOMAIN_ID=<MY_DOMAIN_ID>
    $ export OS_PROJECT_NAME=<MY_PROJECT_NAME>
    $ export OS_PROJECT_DOMAIN_NAME=<MY_PROJECT_DOMAIN_NAME>
+   $ export OS_PROJECT_DOMAIN_ID=<MY_PROJECT_DOMAIN_ID>
+   $ export OS_TRUST_ID=<MY_TRUST_ID>
 
    # For keystone v3 application credential authentication (application credential id)
    $ export OS_AUTH_URL=<MY_AUTH_URL>
