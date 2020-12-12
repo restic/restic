@@ -42,13 +42,16 @@ func Open(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 	be := &beSwift{
 		conn: &swift.Connection{
 			UserName:                    cfg.UserName,
+			UserId:                      cfg.UserID,
 			Domain:                      cfg.Domain,
+			DomainId:                    cfg.DomainID,
 			ApiKey:                      cfg.APIKey,
 			AuthUrl:                     cfg.AuthURL,
 			Region:                      cfg.Region,
 			Tenant:                      cfg.Tenant,
 			TenantId:                    cfg.TenantID,
 			TenantDomain:                cfg.TenantDomain,
+			TenantDomainId:              cfg.TenantDomainID,
 			TrustId:                     cfg.TrustID,
 			StorageUrl:                  cfg.StorageURL,
 			AuthToken:                   cfg.AuthToken,

@@ -10,15 +10,18 @@ import (
 
 // Config contains basic configuration needed to specify swift location for a swift server
 type Config struct {
-	UserName     string
-	Domain       string
-	APIKey       string
-	AuthURL      string
-	Region       string
-	Tenant       string
-	TenantID     string
-	TenantDomain string
-	TrustID      string
+	UserName       string
+	UserID         string
+	Domain         string
+	DomainID       string
+	APIKey         string
+	AuthURL        string
+	Region         string
+	Tenant         string
+	TenantID       string
+	TenantDomain   string
+	TenantDomainID string
+	TrustID        string
 
 	StorageURL string
 	AuthToken  string
@@ -88,9 +91,13 @@ func ApplyEnvironment(prefix string, cfg interface{}) error {
 		{&c.AuthURL, prefix + "OS_AUTH_URL"},
 
 		// v3 specific
+		{&c.UserID, prefix + "OS_USER_ID"},
 		{&c.Domain, prefix + "OS_USER_DOMAIN_NAME"},
+		{&c.DomainID, prefix + "OS_USER_DOMAIN_ID"},
 		{&c.Tenant, prefix + "OS_PROJECT_NAME"},
 		{&c.TenantDomain, prefix + "OS_PROJECT_DOMAIN_NAME"},
+		{&c.TenantDomainID, prefix + "OS_PROJECT_DOMAIN_ID"},
+		{&c.TrustID, prefix + "OS_TRUST_ID"},
 
 		// v2 specific
 		{&c.TenantID, prefix + "OS_TENANT_ID"},
