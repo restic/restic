@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -32,8 +33,21 @@ func NewRetryBackend(be restic.Backend, maxTries int, report func(string, error,
 	}
 }
 
+func isRecoverable(err error) bool {
+	return !strings.HasSuffix(err.Error(), "no space left on device")
+}
+
 func (be *RetryBackend) retry(ctx context.Context, msg string, f func() error) error {
-	err := backoff.RetryNotify(f,
+	nf := func() error {
+		err := f()
+		if err != nil && !isRecoverable(err) {
+			be.Report(msg, err, 0)
+			return backoff.Permanent(err)
+		}
+		return err
+	}
+
+	err := backoff.RetryNotify(nf,
 		backoff.WithContext(backoff.WithMaxRetries(backoff.NewExponentialBackOff(), uint64(be.MaxTries)), ctx),
 		func(err error, d time.Duration) {
 			if be.Report != nil {
