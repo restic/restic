@@ -803,7 +803,8 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 	t.Kill(nil)
 	werr := t.Wait()
 	debug.Log("err is %v, werr is %v", err, werr)
-	if err == nil || errors.Cause(err) == context.Canceled {
+	// Use werr when it might contain a more specific error than "context canceled"
+	if err == nil || (errors.Cause(err) == context.Canceled && werr != nil) {
 		err = werr
 	}
 
