@@ -178,6 +178,10 @@ func (arch *Archiver) saveTree(ctx context.Context, t *restic.Tree) (restic.ID, 
 		s.TreeBlobs++
 		s.TreeSize += uint64(len(buf))
 	}
+	// The context was canceled in the meantime, res.ID() might be invalid
+	if ctx.Err() != nil {
+		return restic.ID{}, s, ctx.Err()
+	}
 	return res.ID(), s, nil
 }
 
