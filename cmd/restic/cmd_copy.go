@@ -104,12 +104,8 @@ func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
 		dstSnapshotByOriginal[*sn.ID()] = append(dstSnapshotByOriginal[*sn.ID()], sn)
 	}
 
-	cloner := &treeCloner{
-		srcRepo:      srcRepo,
-		dstRepo:      dstRepo,
-		visitedTrees: restic.NewIDSet(),
-		buf:          nil,
-	}
+	// remember already processed trees across all snapshots
+	visitedTrees := restic.NewIDSet()
 
 	for sn := range FindFilteredSnapshots(ctx, srcRepo, opts.Hosts, opts.Tags, opts.Paths, args) {
 		Verbosef("\nsnapshot %s of %v at %s)\n", sn.ID().Str(), sn.Paths, sn.Time)
@@ -134,7 +130,7 @@ func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
 		}
 		Verbosef("  copy started, this may take a while...\n")
 
-		if err := cloner.copyTree(ctx, *sn.Tree); err != nil {
+		if err := copyTree(ctx, srcRepo, dstRepo, visitedTrees, *sn.Tree); err != nil {
 			return err
 		}
 		debug.Log("tree copied")
@@ -178,31 +174,29 @@ func similarSnapshots(sna *restic.Snapshot, snb *restic.Snapshot) bool {
 	return true
 }
 
-type treeCloner struct {
-	srcRepo      restic.Repository
-	dstRepo      restic.Repository
-	visitedTrees restic.IDSet
-	buf          []byte
-}
+func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Repository,
+	visitedTrees restic.IDSet, rootTreeID restic.ID) error {
 
-func (t *treeCloner) copyTree(ctx context.Context, rootTreeID restic.ID) error {
 	wg, ctx := errgroup.WithContext(ctx)
 
-	treeStream := restic.StreamTrees(ctx, wg, t.srcRepo, restic.IDs{rootTreeID}, func(treeID restic.ID) bool {
-		visited := t.visitedTrees.Has(treeID)
-		t.visitedTrees.Insert(treeID)
+	treeStream := restic.StreamTrees(ctx, wg, srcRepo, restic.IDs{rootTreeID}, func(treeID restic.ID) bool {
+		visited := visitedTrees.Has(treeID)
+		visitedTrees.Insert(treeID)
 		return visited
 	})
 
 	wg.Go(func() error {
+		// reused buffer
+		var buf []byte
+
 		for tree := range treeStream {
 			if tree.Error != nil {
 				return fmt.Errorf("LoadTree(%v) returned error %v", tree.ID.Str(), tree.Error)
 			}
 
 			// Do we already have this tree blob?
-			if !t.dstRepo.Index().Has(restic.BlobHandle{ID: tree.ID, Type: restic.TreeBlob}) {
-				newTreeID, err := t.dstRepo.SaveTree(ctx, tree.Tree)
+			if !dstRepo.Index().Has(restic.BlobHandle{ID: tree.ID, Type: restic.TreeBlob}) {
+				newTreeID, err := dstRepo.SaveTree(ctx, tree.Tree)
 				if err != nil {
 					return fmt.Errorf("SaveTree(%v) returned error %v", tree.ID.Str(), err)
 				}
@@ -219,17 +213,17 @@ func (t *treeCloner) copyTree(ctx context.Context, rootTreeID restic.ID) error {
 				// Copy the blobs for this file.
 				for _, blobID := range entry.Content {
 					// Do we already have this data blob?
-					if t.dstRepo.Index().Has(restic.BlobHandle{ID: blobID, Type: restic.DataBlob}) {
+					if dstRepo.Index().Has(restic.BlobHandle{ID: blobID, Type: restic.DataBlob}) {
 						continue
 					}
 					debug.Log("Copying blob %s\n", blobID.Str())
 					var err error
-					t.buf, err = t.srcRepo.LoadBlob(ctx, restic.DataBlob, blobID, t.buf)
+					buf, err = srcRepo.LoadBlob(ctx, restic.DataBlob, blobID, buf)
 					if err != nil {
 						return fmt.Errorf("LoadBlob(%v) returned error %v", blobID, err)
 					}
 
-					_, _, err = t.dstRepo.SaveBlob(ctx, restic.DataBlob, t.buf, blobID, false)
+					_, _, err = dstRepo.SaveBlob(ctx, restic.DataBlob, buf, blobID, false)
 					if err != nil {
 						return fmt.Errorf("SaveBlob(%v) returned error %v", blobID, err)
 					}
