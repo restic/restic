@@ -16,6 +16,7 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/pkg/sftp"
 )
 
@@ -99,7 +100,7 @@ func (r *SFTP) clientError() error {
 	select {
 	case err := <-r.result:
 		debug.Log("client has exited with err %v", err)
-		return err
+		return backoff.Permanent(err)
 	default:
 	}
 
