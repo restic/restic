@@ -60,10 +60,6 @@ func (be *MemoryBackend) IsNotExist(err error) bool {
 
 // Save adds new Data to the backend.
 func (be *MemoryBackend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
-	if err := h.Valid(); err != nil {
-		return err
-	}
-
 	be.m.Lock()
 	defer be.m.Unlock()
 

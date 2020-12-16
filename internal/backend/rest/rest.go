@@ -108,10 +108,6 @@ func (b *Backend) Location() string {
 
 // Save stores data in the backend at the handle.
 func (b *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
-	if err := h.Valid(); err != nil {
-		return err
-	}
-
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 

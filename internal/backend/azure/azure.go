@@ -118,10 +118,6 @@ func (be *Backend) Path() string {
 
 // Save stores data in the backend at the handle.
 func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
-	if err := h.Valid(); err != nil {
-		return err
-	}
-
 	objName := be.Filename(h)
 
 	debug.Log("Save %v at %v", h, objName)

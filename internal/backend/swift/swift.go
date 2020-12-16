@@ -121,10 +121,6 @@ func (be *beSwift) Load(ctx context.Context, h restic.Handle, length int, offset
 
 func (be *beSwift) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	debug.Log("Load %v, length %v, offset %v", h, length, offset)
-	if err := h.Valid(); err != nil {
-		return nil, err
-	}
-
 	if offset < 0 {
 		return nil, errors.New("offset is negative")
 	}

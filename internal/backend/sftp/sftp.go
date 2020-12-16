@@ -262,10 +262,6 @@ func (r *SFTP) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader
 		return err
 	}
 
-	if err := h.Valid(); err != nil {
-		return err
-	}
-
 	filename := r.Filename(h)
 
 	// create new file

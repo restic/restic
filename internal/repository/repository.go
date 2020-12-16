@@ -315,6 +315,9 @@ func (r *Repository) SaveUnpacked(ctx context.Context, t restic.FileType, p []by
 		id = restic.Hash(ciphertext)
 	}
 	h := restic.Handle{Type: t, Name: id.String()}
+	if err := h.Valid(); err != nil {
+		return restic.ID{}, err
+	}
 
 	err = r.be.Save(ctx, h, restic.NewByteReader(ciphertext))
 	if err != nil {

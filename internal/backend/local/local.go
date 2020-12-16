@@ -82,10 +82,6 @@ func (b *Local) IsNotExist(err error) bool {
 // Save stores data in the backend at the handle.
 func (b *Local) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
 	debug.Log("Save %v", h)
-	if err := h.Valid(); err != nil {
-		return err
-	}
-
 	filename := b.Filename(h)
 
 	// create new file

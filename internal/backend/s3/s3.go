@@ -259,10 +259,6 @@ func (be *Backend) Path() string {
 func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
 	debug.Log("Save %v", h)
 
-	if err := h.Valid(); err != nil {
-		return err
-	}
-
 	objName := be.Filename(h)
 
 	be.sem.GetToken()
