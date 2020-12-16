@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"testing"
 	"time"
 
@@ -52,12 +51,7 @@ func saveIDSet(t testing.TB, filename string, s restic.BlobSet) {
 		return
 	}
 
-	var hs restic.BlobHandles
-	for h := range s {
-		hs = append(hs, h)
-	}
-
-	sort.Sort(hs)
+	hs := s.List()
 
 	enc := json.NewEncoder(f)
 	for _, h := range hs {
@@ -100,7 +94,7 @@ func TestFindUsedBlobs(t *testing.T) {
 			continue
 		}
 
-		if len(usedBlobs) == 0 {
+		if usedBlobs.Len() == 0 {
 			t.Errorf("FindUsedBlobs returned an empty set")
 			continue
 		}
@@ -159,6 +153,6 @@ func BenchmarkFindUsedBlobs(b *testing.B) {
 			b.Error(err)
 		}
 
-		b.Logf("found %v blobs", len(blobs))
+		b.Logf("found %v blobs", blobs.Len())
 	}
 }

@@ -244,7 +244,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 	}
 
 	// Check if all used blobs have been found in index
-	if len(usedBlobs) != 0 {
+	if usedBlobs.Len() != 0 {
 		Warnf("%v not found in the new index\n"+
 			"Data blobs seem to be missing, aborting prune to prevent further data loss!\n"+
 			"Please report this error (along with the output of the 'prune' run) at\n"+
@@ -546,7 +546,7 @@ func getUsedBlobs(gopts GlobalOptions, repo restic.Repository, ignoreSnapshots r
 			return nil
 		})
 	if err != nil {
-		return nil, err
+		return restic.BlobSet{}, err
 	}
 
 	Verbosef("finding data that is still in use for %d snapshots\n", len(snapshotTrees))
@@ -561,10 +561,10 @@ func getUsedBlobs(gopts GlobalOptions, repo restic.Repository, ignoreSnapshots r
 		err = restic.FindUsedBlobs(ctx, repo, tree, usedBlobs)
 		if err != nil {
 			if repo.Backend().IsNotExist(err) {
-				return nil, errors.Fatal("unable to load a tree from the repo: " + err.Error())
+				return restic.BlobSet{}, errors.Fatal("unable to load a tree from the repo: " + err.Error())
 			}
 
-			return nil, err
+			return restic.BlobSet{}, err
 		}
 
 		debug.Log("processed tree %v", tree)

@@ -127,7 +127,7 @@ func findPacksForBlobs(t *testing.T, repo restic.Repository, blobs restic.BlobSe
 	packs := restic.NewIDSet()
 
 	idx := repo.Index()
-	for h := range blobs {
+	_ = blobs.ForAll(func(h restic.BlobHandle) error {
 		list := idx.Lookup(h)
 		if len(list) == 0 {
 			t.Fatal("Failed to find blob", h.ID.Str(), "with type", h.Type)
@@ -136,7 +136,8 @@ func findPacksForBlobs(t *testing.T, repo restic.Repository, blobs restic.BlobSe
 		for _, pb := range list {
 			packs.Insert(pb.PackID)
 		}
-	}
+		return nil
+	})
 
 	return packs
 }
@@ -220,7 +221,7 @@ func TestRepack(t *testing.T) {
 	packsBefore := listPacks(t, repo)
 
 	// Running repack on empty ID sets should not do anything at all.
-	repack(t, repo, nil, nil)
+	repack(t, repo, nil, restic.NewBlobSet())
 
 	packsAfter := listPacks(t, repo)
 
@@ -248,16 +249,16 @@ func TestRepack(t *testing.T) {
 
 	idx := repo.Index()
 
-	for h := range keepBlobs {
+	_ = keepBlobs.ForAll(func(h restic.BlobHandle) error {
 		list := idx.Lookup(h)
 		if len(list) == 0 {
 			t.Errorf("unable to find blob %v in repo", h.ID.Str())
-			continue
+			return nil
 		}
 
 		if len(list) != 1 {
 			t.Errorf("expected one pack in the list, got: %v", list)
-			continue
+			return nil
 		}
 
 		pb := list[0]
@@ -265,13 +266,15 @@ func TestRepack(t *testing.T) {
 		if removePacks.Has(pb.PackID) {
 			t.Errorf("lookup returned pack ID %v that should've been removed", pb.PackID)
 		}
-	}
+		return nil
+	})
 
-	for h := range removeBlobs {
+	_ = removeBlobs.ForAll(func(h restic.BlobHandle) error {
 		if _, found := repo.LookupBlobSize(h.ID, h.Type); found {
 			t.Errorf("blob %v still contained in the repo", h)
 		}
-	}
+		return nil
+	})
 }
 
 func TestRepackWrongBlob(t *testing.T) {

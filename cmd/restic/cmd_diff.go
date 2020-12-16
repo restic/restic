@@ -132,7 +132,7 @@ func NewDiffStats() *DiffStats {
 
 // updateBlobs updates the blob counters in the stats struct.
 func updateBlobs(repo restic.Repository, blobs restic.BlobSet, stats *DiffStat) {
-	for h := range blobs {
+	_ = blobs.ForAll(func(h restic.BlobHandle) error {
 		switch h.Type {
 		case restic.DataBlob:
 			stats.DataBlobs++
@@ -143,11 +143,12 @@ func updateBlobs(repo restic.Repository, blobs restic.BlobSet, stats *DiffStat) 
 		size, found := repo.LookupBlobSize(h.ID, h.Type)
 		if !found {
 			Warnf("unable to find blob size for %v\n", h)
-			continue
+			return nil
 		}
 
 		stats.Bytes += uint64(size)
-	}
+		return nil
+	})
 }
 
 func (c *Comparer) printDir(ctx context.Context, mode string, stats *DiffStat, blobs restic.BlobSet, prefix string, id restic.ID) error {
