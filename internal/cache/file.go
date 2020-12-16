@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
+	resticErrors "github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 )
@@ -94,7 +95,7 @@ func (c *Cache) saveWriter(h restic.Handle) (io.WriteCloser, error) {
 	p := c.filename(h)
 	err := fs.MkdirAll(filepath.Dir(p), 0700)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, resticErrors.Fatal(errors.WithStack(err).Error())
 	}
 
 	f, err := fs.OpenFile(p, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0400)
@@ -117,7 +118,7 @@ func (c *Cache) Save(h restic.Handle, rd io.Reader) error {
 	if err != nil {
 		_ = f.Close()
 		_ = c.remove(h)
-		return errors.Wrap(err, "Copy")
+		return resticErrors.Fatal(errors.Wrap(err, "Copy").Error())
 	}
 
 	if n <= crypto.Extension {

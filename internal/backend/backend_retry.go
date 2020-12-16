@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"strings"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 )
 
@@ -33,14 +33,10 @@ func NewRetryBackend(be restic.Backend, maxTries int, report func(string, error,
 	}
 }
 
-func isRecoverable(err error) bool {
-	return !strings.HasSuffix(err.Error(), "no space left on device")
-}
-
 func (be *RetryBackend) retry(ctx context.Context, msg string, f func() error) error {
 	nf := func() error {
 		err := f()
-		if err != nil && !isRecoverable(err) {
+		if err != nil && errors.IsFatal(errors.Cause(err)) {
 			be.Report(msg, err, 0)
 			return backoff.Permanent(err)
 		}
