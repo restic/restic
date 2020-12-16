@@ -191,6 +191,10 @@ The ``forget`` command accepts the following parameters:
    made in the two years, five months, seven days, and three hours before the
    latest snapshot.
 
+.. note:: All calendar related ``--keep-*`` options work on the natural time
+    boundaries and not relative to when you run the ``forget`` command. Weeks
+    are Monday 00:00 -> Sunday 23:59, days 00:00 to 23:59, hours :00 to :59, etc.
+
 Multiple policies will be ORed together so as to be as inclusive as possible
 for keeping snapshots.
 
