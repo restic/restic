@@ -3,6 +3,7 @@ package errors
 import (
 	"net/url"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/pkg/errors"
 )
 
@@ -34,20 +35,19 @@ func Cause(err error) error {
 	}
 
 	for {
-		// unwrap *url.Error
-		if urlErr, ok := err.(*url.Error); ok {
-			err = urlErr.Err
-			continue
+		switch e := err.(type) {
+		case Causer: // github.com/pkg/errors
+			err = e.Cause()
+		case *backoff.PermanentError:
+			err = e.Err
+		case *url.Error:
+			err = e.Err
+		default:
+			return err
 		}
-
-		// if err is a Causer, return the cause for this error.
-		if c, ok := err.(Causer); ok {
-			err = c.Cause()
-			continue
-		}
-
-		break
 	}
-
-	return err
 }
+
+// Go 1.13-style error handling.
+
+func Is(x, y error) bool { return errors.Is(x, y) }
