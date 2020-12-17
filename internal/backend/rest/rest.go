@@ -13,11 +13,12 @@ import (
 
 	"golang.org/x/net/context/ctxhttp"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
-	"github.com/restic/restic/internal/backend"
+	"github.com/cenkalti/backoff/v4"
 )
 
 // make sure the rest backend implements restic.Backend
@@ -109,7 +110,7 @@ func (b *Backend) Location() string {
 // Save stores data in the backend at the handle.
 func (b *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
 	if err := h.Valid(); err != nil {
-		return err
+		return backoff.Permanent(err)
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -204,7 +205,7 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 func (b *Backend) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	debug.Log("Load %v, length %v, offset %v", h, length, offset)
 	if err := h.Valid(); err != nil {
-		return nil, err
+		return nil, backoff.Permanent(err)
 	}
 
 	if offset < 0 {
@@ -256,7 +257,7 @@ func (b *Backend) openReader(ctx context.Context, h restic.Handle, length int, o
 // Stat returns information about a blob.
 func (b *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, error) {
 	if err := h.Valid(); err != nil {
-		return restic.FileInfo{}, err
+		return restic.FileInfo{}, backoff.Permanent(err)
 	}
 
 	req, err := http.NewRequest(http.MethodHead, b.Filename(h), nil)
@@ -311,7 +312,7 @@ func (b *Backend) Test(ctx context.Context, h restic.Handle) (bool, error) {
 // Remove removes the blob with the given name and type.
 func (b *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	if err := h.Valid(); err != nil {
-		return err
+		return backoff.Permanent(err)
 	}
 
 	req, err := http.NewRequest("DELETE", b.Filename(h), nil)

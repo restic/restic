@@ -16,6 +16,7 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/pkg/sftp"
 )
 
@@ -99,7 +100,7 @@ func (r *SFTP) clientError() error {
 	select {
 	case err := <-r.result:
 		debug.Log("client has exited with err %v", err)
-		return err
+		return backoff.Permanent(err)
 	default:
 	}
 
@@ -263,7 +264,7 @@ func (r *SFTP) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader
 	}
 
 	if err := h.Valid(); err != nil {
-		return err
+		return backoff.Permanent(err)
 	}
 
 	filename := r.Filename(h)
@@ -310,7 +311,7 @@ func (r *SFTP) Load(ctx context.Context, h restic.Handle, length int, offset int
 func (r *SFTP) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	debug.Log("Load %v, length %v, offset %v", h, length, offset)
 	if err := h.Valid(); err != nil {
-		return nil, err
+		return nil, backoff.Permanent(err)
 	}
 
 	if offset < 0 {
@@ -345,7 +346,7 @@ func (r *SFTP) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, erro
 	}
 
 	if err := h.Valid(); err != nil {
-		return restic.FileInfo{}, err
+		return restic.FileInfo{}, backoff.Permanent(err)
 	}
 
 	fi, err := r.c.Lstat(r.Filename(h))

@@ -14,6 +14,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/ncw/swift"
 )
 
@@ -122,7 +123,7 @@ func (be *beSwift) Load(ctx context.Context, h restic.Handle, length int, offset
 func (be *beSwift) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	debug.Log("Load %v, length %v, offset %v", h, length, offset)
 	if err := h.Valid(); err != nil {
-		return nil, err
+		return nil, backoff.Permanent(err)
 	}
 
 	if offset < 0 {
@@ -162,7 +163,7 @@ func (be *beSwift) openReader(ctx context.Context, h restic.Handle, length int, 
 // Save stores data in the backend at the handle.
 func (be *beSwift) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
 	if err := h.Valid(); err != nil {
-		return err
+		return backoff.Permanent(err)
 	}
 
 	objName := be.Filename(h)

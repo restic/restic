@@ -6,6 +6,12 @@ import (
 )
 
 // Backend is used to store and access data.
+//
+// Backend operations that return an error will be retried when a Backend is
+// wrapped in a RetryBackend. To prevent that from happening, the operations
+// should return a github.com/cenkalti/backoff/v4.PermanentError. Errors from
+// the context package need not be wrapped, as context cancellation is checked
+// separately by the retrying logic.
 type Backend interface {
 	// Location returns a string that describes the type and location of the
 	// repository.

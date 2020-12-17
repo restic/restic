@@ -13,6 +13,8 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
+
+	"github.com/cenkalti/backoff/v4"
 )
 
 // Local is a backend in a local directory.
@@ -80,16 +82,24 @@ func (b *Local) IsNotExist(err error) bool {
 }
 
 // Save stores data in the backend at the handle.
-func (b *Local) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+func (b *Local) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) (err error) {
 	debug.Log("Save %v", h)
 	if err := h.Valid(); err != nil {
-		return err
+		return backoff.Permanent(err)
 	}
 
 	filename := b.Filename(h)
 
+	defer func() {
+		// Mark non-retriable errors as such (currently only
+		// "no space left on device").
+		if errors.Is(err, syscall.ENOSPC) {
+			err = backoff.Permanent(err)
+		}
+	}()
+
 	// create new file
-	f, err := fs.OpenFile(filename, os.O_CREATE|os.O_EXCL|os.O_WRONLY, backend.Modes.File)
+	f, err := openFile(filename, os.O_CREATE|os.O_EXCL|os.O_WRONLY, backend.Modes.File)
 
 	if b.IsNotExist(err) {
 		debug.Log("error %v: creating dir", err)
@@ -100,7 +110,7 @@ func (b *Local) Save(ctx context.Context, h restic.Handle, rd restic.RewindReade
 			debug.Log("error creating dir %v: %v", filepath.Dir(filename), mkdirErr)
 		} else {
 			// try again
-			f, err = fs.OpenFile(filename, os.O_CREATE|os.O_EXCL|os.O_WRONLY, backend.Modes.File)
+			f, err = openFile(filename, os.O_CREATE|os.O_EXCL|os.O_WRONLY, backend.Modes.File)
 		}
 	}
 
@@ -141,6 +151,8 @@ func (b *Local) Save(ctx context.Context, h restic.Handle, rd restic.RewindReade
 	return nil
 }
 
+var openFile = fs.OpenFile // Overridden by test.
+
 // Load runs fn with a reader that yields the contents of the file at h at the
 // given offset.
 func (b *Local) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
@@ -150,7 +162,7 @@ func (b *Local) Load(ctx context.Context, h restic.Handle, length int, offset in
 func (b *Local) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	debug.Log("Load %v, length %v, offset %v", h, length, offset)
 	if err := h.Valid(); err != nil {
-		return nil, err
+		return nil, backoff.Permanent(err)
 	}
 
 	if offset < 0 {
@@ -181,7 +193,7 @@ func (b *Local) openReader(ctx context.Context, h restic.Handle, length int, off
 func (b *Local) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, error) {
 	debug.Log("Stat %v", h)
 	if err := h.Valid(); err != nil {
-		return restic.FileInfo{}, err
+		return restic.FileInfo{}, backoff.Permanent(err)
 	}
 
 	fi, err := fs.Stat(b.Filename(h))
