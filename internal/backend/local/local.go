@@ -85,7 +85,7 @@ func (b *Local) IsNotExist(err error) bool {
 func (b *Local) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) (err error) {
 	debug.Log("Save %v", h)
 	if err := h.Valid(); err != nil {
-		return err
+		return backoff.Permanent(err)
 	}
 
 	filename := b.Filename(h)
@@ -162,7 +162,7 @@ func (b *Local) Load(ctx context.Context, h restic.Handle, length int, offset in
 func (b *Local) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	debug.Log("Load %v, length %v, offset %v", h, length, offset)
 	if err := h.Valid(); err != nil {
-		return nil, err
+		return nil, backoff.Permanent(err)
 	}
 
 	if offset < 0 {
@@ -193,7 +193,7 @@ func (b *Local) openReader(ctx context.Context, h restic.Handle, length int, off
 func (b *Local) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, error) {
 	debug.Log("Stat %v", h)
 	if err := h.Valid(); err != nil {
-		return restic.FileInfo{}, err
+		return restic.FileInfo{}, backoff.Permanent(err)
 	}
 
 	fi, err := fs.Stat(b.Filename(h))

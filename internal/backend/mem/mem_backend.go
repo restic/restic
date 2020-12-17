@@ -8,10 +8,11 @@ import (
 	"sync"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
-	"github.com/restic/restic/internal/debug"
+	"github.com/cenkalti/backoff/v4"
 )
 
 type memMap map[restic.Handle][]byte
@@ -61,7 +62,7 @@ func (be *MemoryBackend) IsNotExist(err error) bool {
 // Save adds new Data to the backend.
 func (be *MemoryBackend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
 	if err := h.Valid(); err != nil {
-		return err
+		return backoff.Permanent(err)
 	}
 
 	be.m.Lock()
@@ -94,7 +95,7 @@ func (be *MemoryBackend) Load(ctx context.Context, h restic.Handle, length int, 
 
 func (be *MemoryBackend) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	if err := h.Valid(); err != nil {
-		return nil, err
+		return nil, backoff.Permanent(err)
 	}
 
 	be.m.Lock()
@@ -133,7 +134,7 @@ func (be *MemoryBackend) Stat(ctx context.Context, h restic.Handle) (restic.File
 	defer be.m.Unlock()
 
 	if err := h.Valid(); err != nil {
-		return restic.FileInfo{}, err
+		return restic.FileInfo{}, backoff.Permanent(err)
 	}
 
 	if h.Type == restic.ConfigFile {
