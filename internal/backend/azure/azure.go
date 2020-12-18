@@ -172,6 +172,7 @@ func (be *Backend) saveLarge(ctx context.Context, objName string, rd restic.Rewi
 	// read the data, in 100 MiB chunks
 	buf := make([]byte, 100*1024*1024)
 	var blocks []storage.Block
+	uploadedBytes := 0
 
 	for {
 		n, err := io.ReadFull(rd, buf)
@@ -188,6 +189,7 @@ func (be *Backend) saveLarge(ctx context.Context, objName string, rd restic.Rewi
 		}
 
 		buf = buf[:n]
+		uploadedBytes += n
 
 		// upload it as a new "block", use the base64 hash for the ID
 		h := restic.Hash(buf)
@@ -202,6 +204,11 @@ func (be *Backend) saveLarge(ctx context.Context, objName string, rd restic.Rewi
 			ID:     id,
 			Status: "Uncommitted",
 		})
+	}
+
+	// sanity check
+	if uploadedBytes != int(rd.Length()) {
+		return errors.Errorf("wrote %d bytes instead of the expected %d bytes", uploadedBytes, rd.Length())
 	}
 
 	debug.Log("uploaded %d parts: %v", len(blocks), blocks)

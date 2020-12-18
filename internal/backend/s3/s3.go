@@ -272,9 +272,14 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 	opts.ContentType = "application/octet-stream"
 
 	debug.Log("PutObject(%v, %v, %v)", be.cfg.Bucket, objName, rd.Length())
-	n, err := be.client.PutObject(ctx, be.cfg.Bucket, objName, ioutil.NopCloser(rd), int64(rd.Length()), opts)
+	info, err := be.client.PutObject(ctx, be.cfg.Bucket, objName, ioutil.NopCloser(rd), int64(rd.Length()), opts)
 
-	debug.Log("%v -> %v bytes, err %#v: %v", objName, n, err, err)
+	debug.Log("%v -> %v bytes, err %#v: %v", objName, info.Size, err, err)
+
+	// sanity check
+	if err != nil && info.Size != rd.Length() {
+		return errors.Errorf("wrote %d bytes instead of the expected %d bytes", info.Size, rd.Length())
+	}
 
 	return errors.Wrap(err, "client.PutObject")
 }

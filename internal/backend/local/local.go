@@ -118,10 +118,15 @@ func (b *Local) Save(ctx context.Context, h restic.Handle, rd restic.RewindReade
 	}
 
 	// save data, then sync
-	_, err = io.Copy(f, rd)
+	wbytes, err := io.Copy(f, rd)
 	if err != nil {
 		_ = f.Close()
 		return errors.Wrap(err, "Write")
+	}
+	// sanity check
+	if wbytes != rd.Length() {
+		_ = f.Close()
+		return errors.Errorf("wrote %d bytes instead of the expected %d bytes", wbytes, rd.Length())
 	}
 
 	if err = f.Sync(); err != nil {
