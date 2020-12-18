@@ -26,6 +26,7 @@ func WriteTar(ctx context.Context, repo restic.Repository, tree *restic.Tree, ro
 	err := writeDump(ctx, repo, tree, rootPath, dmp, dst)
 	if err != nil {
 		dmp.w.Close()
+
 		return err
 	}
 
@@ -36,9 +37,9 @@ func WriteTar(ctx context.Context, repo restic.Repository, tree *restic.Tree, ro
 const (
 	// Mode constants from the USTAR spec:
 	// See http://pubs.opengroup.org/onlinepubs/9699919799/utilities/pax.html#tag_20_92_13_06
-	c_ISUID = 04000 // Set uid
-	c_ISGID = 02000 // Set gid
-	c_ISVTX = 01000 // Save text (sticky bit)
+	cISUID = 0o4000 // Set uid
+	cISGID = 0o2000 // Set gid
+	cISVTX = 0o1000 // Save text (sticky bit)
 )
 
 func (dmp tarDumper) dumpNode(ctx context.Context, node *restic.Node, repo restic.Repository) error {
@@ -50,7 +51,7 @@ func (dmp tarDumper) dumpNode(ctx context.Context, node *restic.Node, repo resti
 	header := &tar.Header{
 		Name:       filepath.ToSlash(relPath),
 		Size:       int64(node.Size),
-		Mode:       int64(node.Mode.Perm()), // c_IS* constants are added later
+		Mode:       int64(node.Mode.Perm()), // cIS* constants are added later
 		Uid:        int(node.UID),
 		Gid:        int(node.GID),
 		Uname:      node.User,
@@ -63,13 +64,13 @@ func (dmp tarDumper) dumpNode(ctx context.Context, node *restic.Node, repo resti
 
 	// adapted from archive/tar.FileInfoHeader
 	if node.Mode&os.ModeSetuid != 0 {
-		header.Mode |= c_ISUID
+		header.Mode |= cISUID
 	}
 	if node.Mode&os.ModeSetgid != 0 {
-		header.Mode |= c_ISGID
+		header.Mode |= cISGID
 	}
 	if node.Mode&os.ModeSticky != 0 {
-		header.Mode |= c_ISVTX
+		header.Mode |= cISVTX
 	}
 
 	if IsFile(node) {
@@ -89,7 +90,7 @@ func (dmp tarDumper) dumpNode(ctx context.Context, node *restic.Node, repo resti
 	err = dmp.w.WriteHeader(header)
 
 	if err != nil {
-		return errors.Wrap(err, "TarHeader ")
+		return errors.Wrap(err, "TarHeader")
 	}
 
 	return GetNodeData(ctx, dmp.w, repo, node)

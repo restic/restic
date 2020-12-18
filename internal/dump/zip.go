@@ -15,7 +15,7 @@ type zipDumper struct {
 }
 
 // Statically ensure that zipDumper implements dumper.
-var _ dumper = tarDumper{}
+var _ dumper = zipDumper{}
 
 // WriteZip will write the contents of the given tree, encoded as a zip to the given destination.
 func WriteZip(ctx context.Context, repo restic.Repository, tree *restic.Tree, rootPath string, dst io.Writer) error {
@@ -24,6 +24,7 @@ func WriteZip(ctx context.Context, repo restic.Repository, tree *restic.Tree, ro
 	err := writeDump(ctx, repo, tree, rootPath, dmp, dst)
 	if err != nil {
 		dmp.w.Close()
+
 		return err
 	}
 
@@ -49,7 +50,7 @@ func (dmp zipDumper) dumpNode(ctx context.Context, node *restic.Node, repo resti
 
 	w, err := dmp.w.CreateHeader(header)
 	if err != nil {
-		return errors.Wrap(err, "ZipHeader ")
+		return errors.Wrap(err, "ZipHeader")
 	}
 
 	if IsLink(node) {
