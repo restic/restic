@@ -3,7 +3,6 @@ package dump
 import (
 	"archive/tar"
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -13,99 +12,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/fs"
-	"github.com/restic/restic/internal/repository"
-	"github.com/restic/restic/internal/restic"
-	rtest "github.com/restic/restic/internal/test"
 )
 
-func prepareTempdirRepoSrc(t testing.TB, src archiver.TestDir) (tempdir string, repo restic.Repository, cleanup func()) {
-	tempdir, removeTempdir := rtest.TempDir(t)
-	repo, removeRepository := repository.TestRepository(t)
-
-	archiver.TestCreateFiles(t, tempdir, src)
-
-	cleanup = func() {
-		removeRepository()
-		removeTempdir()
-	}
-
-	return tempdir, repo, cleanup
-}
-
 func TestWriteTar(t *testing.T) {
-	tests := []struct {
-		name   string
-		args   archiver.TestDir
-		target string
-	}{
-		{
-			name: "single file in root",
-			args: archiver.TestDir{
-				"file": archiver.TestFile{Content: "string"},
-			},
-			target: "/",
-		},
-		{
-			name: "multiple files in root",
-			args: archiver.TestDir{
-				"file1": archiver.TestFile{Content: "string"},
-				"file2": archiver.TestFile{Content: "string"},
-			},
-			target: "/",
-		},
-		{
-			name: "multiple files and folders in root",
-			args: archiver.TestDir{
-				"file1": archiver.TestFile{Content: "string"},
-				"file2": archiver.TestFile{Content: "string"},
-				"firstDir": archiver.TestDir{
-					"another": archiver.TestFile{Content: "string"},
-				},
-				"secondDir": archiver.TestDir{
-					"another2": archiver.TestFile{Content: "string"},
-				},
-			},
-			target: "/",
-		},
-		{
-			name: "file and symlink in root",
-			args: archiver.TestDir{
-				"file1": archiver.TestFile{Content: "string"},
-				"file2": archiver.TestSymlink{Target: "file1"},
-			},
-			target: "/",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-
-			tmpdir, repo, cleanup := prepareTempdirRepoSrc(t, tt.args)
-			defer cleanup()
-
-			arch := archiver.New(repo, fs.Track{FS: fs.Local{}}, archiver.Options{})
-
-			back := rtest.Chdir(t, tmpdir)
-			defer back()
-
-			sn, _, err := arch.Snapshot(ctx, []string{"."}, archiver.SnapshotOptions{})
-			rtest.OK(t, err)
-
-			tree, err := repo.LoadTree(ctx, *sn.Tree)
-			rtest.OK(t, err)
-
-			dst := &bytes.Buffer{}
-			if err := WriteTar(ctx, repo, tree, tt.target, dst); err != nil {
-				t.Fatalf("WriteTar() error = %v", err)
-			}
-			if err := checkTar(t, tmpdir, dst); err != nil {
-				t.Errorf("WriteTar() = tar does not match: %v", err)
-			}
-		})
-	}
+	WriteTest(t, WriteTar, checkTar)
 }
 
 func checkTar(t *testing.T, testDir string, srcTar *bytes.Buffer) error {

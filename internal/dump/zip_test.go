@@ -3,7 +3,6 @@ package dump
 import (
 	"archive/zip"
 	"bytes"
-	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -12,83 +11,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/fs"
-	rtest "github.com/restic/restic/internal/test"
 )
 
 func TestWriteZip(t *testing.T) {
-	tests := []struct {
-		name   string
-		args   archiver.TestDir
-		target string
-	}{
-		{
-			name: "single file in root",
-			args: archiver.TestDir{
-				"file": archiver.TestFile{Content: "string"},
-			},
-			target: "/",
-		},
-		{
-			name: "multiple files in root",
-			args: archiver.TestDir{
-				"file1": archiver.TestFile{Content: "string"},
-				"file2": archiver.TestFile{Content: "string"},
-			},
-			target: "/",
-		},
-		{
-			name: "multiple files and folders in root",
-			args: archiver.TestDir{
-				"file1": archiver.TestFile{Content: "string"},
-				"file2": archiver.TestFile{Content: "string"},
-				"firstDir": archiver.TestDir{
-					"another": archiver.TestFile{Content: "string"},
-				},
-				"secondDir": archiver.TestDir{
-					"another2": archiver.TestFile{Content: "string"},
-				},
-			},
-			target: "/",
-		},
-		{
-			name: "file and symlink in root",
-			args: archiver.TestDir{
-				"file1": archiver.TestFile{Content: "string"},
-				"file2": archiver.TestSymlink{Target: "file1"},
-			},
-			target: "/",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-
-			tmpdir, repo, cleanup := prepareTempdirRepoSrc(t, tt.args)
-			defer cleanup()
-
-			arch := archiver.New(repo, fs.Track{FS: fs.Local{}}, archiver.Options{})
-
-			back := rtest.Chdir(t, tmpdir)
-			defer back()
-
-			sn, _, err := arch.Snapshot(ctx, []string{"."}, archiver.SnapshotOptions{})
-			rtest.OK(t, err)
-
-			tree, err := repo.LoadTree(ctx, *sn.Tree)
-			rtest.OK(t, err)
-
-			dst := &bytes.Buffer{}
-			if err := WriteZip(ctx, repo, tree, tt.target, dst); err != nil {
-				t.Fatalf("WriteZip() error = %v", err)
-			}
-			if err := checkZip(t, tmpdir, dst); err != nil {
-				t.Errorf("WriteZip() = zip does not match: %v", err)
-			}
-		})
-	}
+	WriteTest(t, WriteZip, checkZip)
 }
 
 func readZipFile(f *zip.File) ([]byte, error) {
@@ -123,6 +50,7 @@ func checkZip(t *testing.T, testDir string, srcZip *bytes.Buffer) error {
 		if info.Name() != filepath.Base(testDir) {
 			fileNumber++
 		}
+
 		return nil
 	})
 	if err != nil {
