@@ -128,7 +128,7 @@ e.g.:
 
 It is also possible to ``dump`` the contents of a whole folder structure to
 stdout. To retain the information about the files and folders Restic will
-output the contents in the tar (default) or zip formats:
+output the contents in the tar (default) or zip format:
 
 .. code-block:: console
 
