@@ -557,6 +557,38 @@ func (s *Suite) TestSave(t *testing.T) {
 	}
 }
 
+type incompleteByteReader struct {
+	restic.ByteReader
+}
+
+func (r *incompleteByteReader) Length() int64 {
+	return r.ByteReader.Length() + 42
+}
+
+// TestSaveError tests saving data in the backend.
+func (s *Suite) TestSaveError(t *testing.T) {
+	seedRand(t)
+
+	b := s.open(t)
+	defer func() {
+		// rclone will report an error when closing the backend. We have to ignore it
+		// otherwise this test will always fail
+		_ = b.Close()
+	}()
+
+	length := rand.Intn(1<<23) + 200000
+	data := test.Random(23, length)
+	var id restic.ID
+	copy(id[:], data)
+
+	// test that incomplete uploads fail
+	h := restic.Handle{Type: restic.PackFile, Name: id.String()}
+	err := b.Save(context.TODO(), h, &incompleteByteReader{ByteReader: *restic.NewByteReader(data)})
+	if err == nil {
+		t.Fatal("incomplete upload did not fail")
+	}
+}
+
 var filenameTests = []struct {
 	name string
 	data string
