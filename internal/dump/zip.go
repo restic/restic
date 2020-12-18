@@ -21,13 +21,10 @@ var _ dumper = zipDumper{}
 func WriteZip(ctx context.Context, repo restic.Repository, tree *restic.Tree, rootPath string, dst io.Writer) error {
 	dmp := zipDumper{w: zip.NewWriter(dst)}
 
-	err := writeDump(ctx, repo, tree, rootPath, dmp, dst)
-	if err != nil {
-		dmp.w.Close()
+	return writeDump(ctx, repo, tree, rootPath, dmp, dst)
+}
 
-		return err
-	}
-
+func (dmp zipDumper) Close() error {
 	return dmp.w.Close()
 }
 

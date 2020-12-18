@@ -12,6 +12,7 @@ import (
 
 // dumper implements saving node data.
 type dumper interface {
+	io.Closer
 	dumpNode(ctx context.Context, node *restic.Node, repo restic.Repository) error
 }
 
@@ -24,11 +25,13 @@ func writeDump(ctx context.Context, repo restic.Repository, tree *restic.Tree, r
 		rootNode.Path = rootPath
 		err := dumpTree(ctx, repo, rootNode, rootPath, dmp)
 		if err != nil {
+			dmp.Close()
+
 			return err
 		}
 	}
 
-	return nil
+	return dmp.Close()
 }
 
 func dumpTree(ctx context.Context, repo restic.Repository, rootNode *restic.Node, rootPath string, dmp dumper) error {
