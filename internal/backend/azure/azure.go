@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -118,6 +117,16 @@ func (be *Backend) Path() string {
 	return be.prefix
 }
 
+type azureAdapter struct {
+	restic.RewindReader
+}
+
+func (azureAdapter) Close() error { return nil }
+
+func (a *azureAdapter) Len() int {
+	return int(a.Length())
+}
+
 // Save stores data in the backend at the handle.
 func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
 	if err := h.Valid(); err != nil {
@@ -135,7 +144,8 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 	var err error
 	if rd.Length() < 256*1024*1024 {
 		// wrap the reader so that net/http client cannot close the reader
-		dataReader := ioutil.NopCloser(rd)
+		// CreateBlockBlobFromReader reads length from `Len()``
+		dataReader := azureAdapter{rd}
 
 		// if it's smaller than 256miB, then just create the file directly from the reader
 		err = be.container.GetBlobReference(objName).CreateBlockBlobFromReader(dataReader, nil)
