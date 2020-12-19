@@ -200,6 +200,7 @@ func (be *b2Backend) Save(ctx context.Context, h restic.Handle, rd restic.Rewind
 	debug.Log("Save %v, name %v", h, name)
 	obj := be.bucket.Object(name)
 
+	// b2 always requires sha1 checksums for uploaded file parts
 	w := obj.NewWriter(ctx)
 	n, err := io.Copy(w, rd)
 	debug.Log("  saved %d bytes, err %v", n, err)
