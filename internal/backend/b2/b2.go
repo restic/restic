@@ -2,6 +2,7 @@ package b2
 
 import (
 	"context"
+	"hash"
 	"io"
 	"net/http"
 	"path"
@@ -135,6 +136,11 @@ func (be *b2Backend) SetListMaxItems(i int) {
 // Location returns the location for the backend.
 func (be *b2Backend) Location() string {
 	return be.cfg.Bucket
+}
+
+// Hasher may return a hash function for calculating a content hash for the backend
+func (be *b2Backend) Hasher() hash.Hash {
+	return nil
 }
 
 // IsNotExist returns true if the error is caused by a non-existing file.

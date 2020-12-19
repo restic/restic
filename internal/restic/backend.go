@@ -2,6 +2,7 @@ package restic
 
 import (
 	"context"
+	"hash"
 	"io"
 )
 
@@ -16,6 +17,9 @@ type Backend interface {
 	// Location returns a string that describes the type and location of the
 	// repository.
 	Location() string
+
+	// Hasher may return a hash function for calculating a content hash for the backend
+	Hasher() hash.Hash
 
 	// Test a boolean value whether a File with the name and type exists.
 	Test(ctx context.Context, h Handle) (bool, error)

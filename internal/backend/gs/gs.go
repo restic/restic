@@ -3,6 +3,7 @@ package gs
 
 import (
 	"context"
+	"hash"
 	"io"
 	"net/http"
 	"os"
@@ -186,6 +187,11 @@ func (be *Backend) Join(p ...string) string {
 // Location returns this backend's location (the bucket name).
 func (be *Backend) Location() string {
 	return be.Join(be.bucketName, be.prefix)
+}
+
+// Hasher may return a hash function for calculating a content hash for the backend
+func (be *Backend) Hasher() hash.Hash {
+	return nil
 }
 
 // Path returns the path in the bucket that is used for this backend.

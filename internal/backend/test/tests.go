@@ -84,7 +84,7 @@ func (s *Suite) TestConfig(t *testing.T) {
 		t.Fatalf("did not get expected error for non-existing config")
 	}
 
-	err = b.Save(context.TODO(), restic.Handle{Type: restic.ConfigFile}, restic.NewByteReader([]byte(testString)))
+	err = b.Save(context.TODO(), restic.Handle{Type: restic.ConfigFile}, restic.NewByteReader([]byte(testString), b.Hasher()))
 	if err != nil {
 		t.Fatalf("Save() error: %+v", err)
 	}
@@ -134,7 +134,7 @@ func (s *Suite) TestLoad(t *testing.T) {
 	id := restic.Hash(data)
 
 	handle := restic.Handle{Type: restic.PackFile, Name: id.String()}
-	err = b.Save(context.TODO(), handle, restic.NewByteReader(data))
+	err = b.Save(context.TODO(), handle, restic.NewByteReader(data, b.Hasher()))
 	if err != nil {
 		t.Fatalf("Save() error: %+v", err)
 	}
@@ -253,7 +253,7 @@ func (s *Suite) TestList(t *testing.T) {
 		data := test.Random(rand.Int(), rand.Intn(100)+55)
 		id := restic.Hash(data)
 		h := restic.Handle{Type: restic.PackFile, Name: id.String()}
-		err := b.Save(context.TODO(), h, restic.NewByteReader(data))
+		err := b.Save(context.TODO(), h, restic.NewByteReader(data, b.Hasher()))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -343,7 +343,7 @@ func (s *Suite) TestListCancel(t *testing.T) {
 		data := []byte(fmt.Sprintf("random test blob %v", i))
 		id := restic.Hash(data)
 		h := restic.Handle{Type: restic.PackFile, Name: id.String()}
-		err := b.Save(context.TODO(), h, restic.NewByteReader(data))
+		err := b.Save(context.TODO(), h, restic.NewByteReader(data, b.Hasher()))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -447,6 +447,7 @@ type errorCloser struct {
 	io.ReadSeeker
 	l int64
 	t testing.TB
+	h []byte
 }
 
 func (ec errorCloser) Close() error {
@@ -456,6 +457,10 @@ func (ec errorCloser) Close() error {
 
 func (ec errorCloser) Length() int64 {
 	return ec.l
+}
+
+func (ec errorCloser) Hash() []byte {
+	return ec.h
 }
 
 func (ec errorCloser) Rewind() error {
@@ -486,7 +491,7 @@ func (s *Suite) TestSave(t *testing.T) {
 			Type: restic.PackFile,
 			Name: fmt.Sprintf("%s-%d", id, i),
 		}
-		err := b.Save(context.TODO(), h, restic.NewByteReader(data))
+		err := b.Save(context.TODO(), h, restic.NewByteReader(data, b.Hasher()))
 		test.OK(t, err)
 
 		buf, err := backend.LoadAll(context.TODO(), nil, b, h)
@@ -538,7 +543,19 @@ func (s *Suite) TestSave(t *testing.T) {
 
 	// wrap the tempfile in an errorCloser, so we can detect if the backend
 	// closes the reader
-	err = b.Save(context.TODO(), h, errorCloser{t: t, l: int64(length), ReadSeeker: tmpfile})
+	var beHash []byte
+	if b.Hasher() != nil {
+		beHasher := b.Hasher()
+		// must never fail according to interface
+		_, _ = beHasher.Write(data)
+		beHash = beHasher.Sum(nil)
+	}
+	err = b.Save(context.TODO(), h, errorCloser{
+		t:          t,
+		l:          int64(length),
+		ReadSeeker: tmpfile,
+		h:          beHash,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -583,7 +600,7 @@ func (s *Suite) TestSaveError(t *testing.T) {
 
 	// test that incomplete uploads fail
 	h := restic.Handle{Type: restic.PackFile, Name: id.String()}
-	err := b.Save(context.TODO(), h, &incompleteByteReader{ByteReader: *restic.NewByteReader(data)})
+	err := b.Save(context.TODO(), h, &incompleteByteReader{ByteReader: *restic.NewByteReader(data, b.Hasher())})
 	// try to delete possible leftovers
 	_ = s.delayedRemove(t, b, h)
 	if err == nil {
@@ -610,7 +627,7 @@ func (s *Suite) TestSaveFilenames(t *testing.T) {
 
 	for i, test := range filenameTests {
 		h := restic.Handle{Name: test.name, Type: restic.PackFile}
-		err := b.Save(context.TODO(), h, restic.NewByteReader([]byte(test.data)))
+		err := b.Save(context.TODO(), h, restic.NewByteReader([]byte(test.data), b.Hasher()))
 		if err != nil {
 			t.Errorf("test %d failed: Save() returned %+v", i, err)
 			continue
@@ -647,7 +664,7 @@ var testStrings = []struct {
 func store(t testing.TB, b restic.Backend, tpe restic.FileType, data []byte) restic.Handle {
 	id := restic.Hash(data)
 	h := restic.Handle{Name: id.String(), Type: tpe}
-	err := b.Save(context.TODO(), h, restic.NewByteReader([]byte(data)))
+	err := b.Save(context.TODO(), h, restic.NewByteReader([]byte(data), b.Hasher()))
 	test.OK(t, err)
 	return h
 }
@@ -801,7 +818,7 @@ func (s *Suite) TestBackend(t *testing.T) {
 		test.Assert(t, !ok, "removed blob still present")
 
 		// create blob
-		err = b.Save(context.TODO(), h, restic.NewByteReader([]byte(ts.data)))
+		err = b.Save(context.TODO(), h, restic.NewByteReader([]byte(ts.data), b.Hasher()))
 		test.OK(t, err)
 
 		// list items

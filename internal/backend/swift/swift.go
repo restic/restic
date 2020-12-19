@@ -3,6 +3,7 @@ package swift
 import (
 	"context"
 	"fmt"
+	"hash"
 	"io"
 	"net/http"
 	"path"
@@ -113,6 +114,11 @@ func (be *beSwift) createContainer(policy string) error {
 // Location returns this backend's location (the container name).
 func (be *beSwift) Location() string {
 	return be.container
+}
+
+// Hasher may return a hash function for calculating a content hash for the backend
+func (be *beSwift) Hasher() hash.Hash {
+	return nil
 }
 
 // Load runs fn with a reader that yields the contents of the file at h at the

@@ -71,7 +71,7 @@ func TestDry(t *testing.T) {
 		handle := restic.Handle{Type: restic.PackFile, Name: step.fname}
 		switch step.op {
 		case "save":
-			err = step.be.Save(ctx, handle, restic.NewByteReader([]byte(step.content)))
+			err = step.be.Save(ctx, handle, restic.NewByteReader([]byte(step.content), step.be.Hasher()))
 		case "test":
 			boolRes, err = step.be.Test(ctx, handle)
 			if boolRes != (step.content != "") {
