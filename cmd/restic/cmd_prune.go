@@ -489,7 +489,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		_, err := repository.Repack(ctx, repo, repackPacks, keepBlobs, bar)
 		bar.Done()
 		if err != nil {
-			return err
+			return errors.Fatalf("%s", err)
 		}
 
 		// Since repacking will only add new packs, we can calculate the number
@@ -505,7 +505,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 			len(removePacks) + packsAddedByRepack
 		err = rebuildIndexFiles(gopts, repo, removePacks, nil, uint64(totalpacks))
 		if err != nil {
-			return err
+			return errors.Fatalf("%s", err)
 		}
 
 		Verbosef("removing %d old packs\n", len(removePacks))
