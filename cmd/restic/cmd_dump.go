@@ -21,8 +21,8 @@ var cmdDump = &cobra.Command{
 	Long: `
 The "dump" command extracts files from a snapshot from the repository. If a
 single file is selected, it prints its contents to stdout. Folders are output
-as a tar file containing the contents of the specified folder.  Pass "/" as
-file name to dump the whole snapshot as a tar file.
+as a tar (default) or zip file containing the contents of the specified folder.
+Pass "/" as file name to dump the whole snapshot as an archive file.
 
 The special snapshot "latest" can be used to use the latest snapshot in the
 repository.
@@ -40,9 +40,10 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 // DumpOptions collects all options for the dump command.
 type DumpOptions struct {
-	Hosts []string
-	Paths []string
-	Tags  restic.TagLists
+	Hosts   []string
+	Paths   []string
+	Tags    restic.TagLists
+	Archive string
 }
 
 var dumpOptions DumpOptions
@@ -54,6 +55,7 @@ func init() {
 	flags.StringArrayVarP(&dumpOptions.Hosts, "host", "H", nil, `only consider snapshots for this host when the snapshot ID is "latest" (can be specified multiple times)`)
 	flags.Var(&dumpOptions.Tags, "tag", "only consider snapshots which include this `taglist` for snapshot ID \"latest\"")
 	flags.StringArrayVar(&dumpOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` for snapshot ID \"latest\"")
+	flags.StringVarP(&dumpOptions.Archive, "archive", "a", "tar", "set archive `format` as \"tar\" or \"zip\"")
 }
 
 func splitPath(p string) []string {
@@ -65,8 +67,7 @@ func splitPath(p string) []string {
 	return append(s, f)
 }
 
-func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repository, prefix string, pathComponents []string) error {
-
+func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repository, prefix string, pathComponents []string, writeDump dump.WriteDump) error {
 	if tree == nil {
 		return fmt.Errorf("called with a nil tree")
 	}
@@ -81,10 +82,10 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repositor
 	// If we print / we need to assume that there are multiple nodes at that
 	// level in the tree.
 	if pathComponents[0] == "" {
-		if err := checkStdoutTar(); err != nil {
+		if err := checkStdoutArchive(); err != nil {
 			return err
 		}
-		return dump.WriteTar(ctx, repo, tree, "/", os.Stdout)
+		return writeDump(ctx, repo, tree, "/", os.Stdout)
 	}
 
 	item := filepath.Join(prefix, pathComponents[0])
@@ -100,16 +101,16 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repositor
 				if err != nil {
 					return errors.Wrapf(err, "cannot load subtree for %q", item)
 				}
-				return printFromTree(ctx, subtree, repo, item, pathComponents[1:])
+				return printFromTree(ctx, subtree, repo, item, pathComponents[1:], writeDump)
 			case dump.IsDir(node):
-				if err := checkStdoutTar(); err != nil {
+				if err := checkStdoutArchive(); err != nil {
 					return err
 				}
 				subtree, err := repo.LoadTree(ctx, *node.Subtree)
 				if err != nil {
 					return err
 				}
-				return dump.WriteTar(ctx, repo, subtree, item, os.Stdout)
+				return writeDump(ctx, repo, subtree, item, os.Stdout)
 			case l > 1:
 				return fmt.Errorf("%q should be a dir, but is a %q", item, node.Type)
 			case !dump.IsFile(node):
@@ -125,6 +126,16 @@ func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
 
 	if len(args) != 2 {
 		return errors.Fatal("no file and no snapshot ID specified")
+	}
+
+	var wd dump.WriteDump
+	switch opts.Archive {
+	case "tar":
+		wd = dump.WriteTar
+	case "zip":
+		wd = dump.WriteZip
+	default:
+		return fmt.Errorf("unknown archive format %q", opts.Archive)
 	}
 
 	snapshotIDString := args[0]
@@ -176,7 +187,7 @@ func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
 		Exitf(2, "loading tree for snapshot %q failed: %v", snapshotIDString, err)
 	}
 
-	err = printFromTree(ctx, tree, repo, "/", splittedPath)
+	err = printFromTree(ctx, tree, repo, "/", splittedPath, wd)
 	if err != nil {
 		Exitf(2, "cannot dump file: %v", err)
 	}
@@ -184,7 +195,7 @@ func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
 	return nil
 }
 
-func checkStdoutTar() error {
+func checkStdoutArchive() error {
 	if stdoutIsTerminal() {
 		return fmt.Errorf("stdout is the terminal, please redirect output")
 	}
