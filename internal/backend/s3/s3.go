@@ -3,6 +3,7 @@ package s3
 import (
 	"context"
 	"fmt"
+	"hash"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -248,6 +249,11 @@ func (be *Backend) ReadDir(ctx context.Context, dir string) (list []os.FileInfo,
 // Location returns this backend's location (the bucket name).
 func (be *Backend) Location() string {
 	return be.Join(be.cfg.Bucket, be.cfg.Prefix)
+}
+
+// Hasher may return a hash function for calculating a content hash for the backend
+func (be *Backend) Hasher() hash.Hash {
+	return nil
 }
 
 // Path returns the path in the bucket that is used for this backend.

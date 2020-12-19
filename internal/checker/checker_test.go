@@ -16,6 +16,7 @@ import (
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/hashing"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
@@ -218,10 +219,16 @@ func TestModifiedIndex(t *testing.T) {
 			t.Fatal(err)
 		}
 	}()
+	wr := io.Writer(tmpfile)
+	var hw *hashing.Writer
+	if repo.Backend().Hasher() != nil {
+		hw = hashing.NewWriter(wr, repo.Backend().Hasher())
+		wr = hw
+	}
 
 	// read the file from the backend
 	err = repo.Backend().Load(context.TODO(), h, 0, 0, func(rd io.Reader) error {
-		_, err := io.Copy(tmpfile, rd)
+		_, err := io.Copy(wr, rd)
 		return err
 	})
 	test.OK(t, err)
@@ -233,7 +240,11 @@ func TestModifiedIndex(t *testing.T) {
 		Name: "80f838b4ac28735fda8644fe6a08dbc742e57aaf81b30977b4fefa357010eafd",
 	}
 
-	rd, err := restic.NewFileReader(tmpfile)
+	var hash []byte
+	if hw != nil {
+		hash = hw.Sum(nil)
+	}
+	rd, err := restic.NewFileReader(tmpfile, hash)
 	if err != nil {
 		t.Fatal(err)
 	}

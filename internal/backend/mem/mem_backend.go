@@ -3,6 +3,7 @@ package mem
 import (
 	"bytes"
 	"context"
+	"hash"
 	"io"
 	"io/ioutil"
 	"sync"
@@ -212,6 +213,11 @@ func (be *MemoryBackend) List(ctx context.Context, t restic.FileType, fn func(re
 // Location returns the location of the backend (RAM).
 func (be *MemoryBackend) Location() string {
 	return "RAM"
+}
+
+// Hasher may return a hash function for calculating a content hash for the backend
+func (be *MemoryBackend) Hasher() hash.Hash {
+	return nil
 }
 
 // Delete removes all data in the backend.

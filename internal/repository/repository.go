@@ -316,7 +316,7 @@ func (r *Repository) SaveUnpacked(ctx context.Context, t restic.FileType, p []by
 	}
 	h := restic.Handle{Type: t, Name: id.String()}
 
-	err = r.be.Save(ctx, h, restic.NewByteReader(ciphertext))
+	err = r.be.Save(ctx, h, restic.NewByteReader(ciphertext, r.be.Hasher()))
 	if err != nil {
 		debug.Log("error saving blob %v: %v", h, err)
 		return restic.ID{}, err

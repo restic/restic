@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"hash"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -105,6 +106,11 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, er
 // Location returns this backend's location (the server's URL).
 func (b *Backend) Location() string {
 	return b.url.String()
+}
+
+// Hasher may return a hash function for calculating a content hash for the backend
+func (b *Backend) Hasher() hash.Hash {
+	return nil
 }
 
 // Save stores data in the backend at the handle.

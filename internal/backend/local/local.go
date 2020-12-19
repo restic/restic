@@ -2,6 +2,7 @@ package local
 
 import (
 	"context"
+	"hash"
 	"io"
 	"os"
 	"path/filepath"
@@ -74,6 +75,11 @@ func Create(ctx context.Context, cfg Config) (*Local, error) {
 // Location returns this backend's location (the directory name).
 func (b *Local) Location() string {
 	return b.Path
+}
+
+// Hasher may return a hash function for calculating a content hash for the backend
+func (b *Local) Hasher() hash.Hash {
+	return nil
 }
 
 // IsNotExist returns true if the error is caused by a non existing file.

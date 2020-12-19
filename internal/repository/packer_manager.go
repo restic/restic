@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"hash"
+	"io"
 	"os"
 	"sync"
 
@@ -20,12 +22,14 @@ import (
 // Saver implements saving data in a backend.
 type Saver interface {
 	Save(context.Context, restic.Handle, restic.RewindReader) error
+	Hasher() hash.Hash
 }
 
 // Packer holds a pack.Packer together with a hash writer.
 type Packer struct {
 	*pack.Packer
 	hw      *hashing.Writer
+	beHw    *hashing.Writer
 	tmpfile *os.File
 }
 
@@ -71,10 +75,19 @@ func (r *packerManager) findPacker() (packer *Packer, err error) {
 		return nil, errors.Wrap(err, "fs.TempFile")
 	}
 
-	hw := hashing.NewWriter(tmpfile, sha256.New())
+	w := io.Writer(tmpfile)
+	beHasher := r.be.Hasher()
+	var beHw *hashing.Writer
+	if beHasher != nil {
+		beHw = hashing.NewWriter(w, beHasher)
+		w = beHw
+	}
+
+	hw := hashing.NewWriter(w, sha256.New())
 	p := pack.NewPacker(r.key, hw)
 	packer = &Packer{
 		Packer:  p,
+		beHw:    beHw,
 		hw:      hw,
 		tmpfile: tmpfile,
 	}
@@ -101,8 +114,11 @@ func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packe
 
 	id := restic.IDFromHash(p.hw.Sum(nil))
 	h := restic.Handle{Type: restic.PackFile, Name: id.String()}
-
-	rd, err := restic.NewFileReader(p.tmpfile)
+	var beHash []byte
+	if p.beHw != nil {
+		beHash = p.beHw.Sum(nil)
+	}
+	rd, err := restic.NewFileReader(p.tmpfile, beHash)
 	if err != nil {
 		return err
 	}

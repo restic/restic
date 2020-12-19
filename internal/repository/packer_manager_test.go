@@ -33,11 +33,11 @@ func min(a, b int) int {
 	return b
 }
 
-func saveFile(t testing.TB, be Saver, length int, f *os.File, id restic.ID) {
+func saveFile(t testing.TB, be Saver, length int, f *os.File, id restic.ID, hash []byte) {
 	h := restic.Handle{Type: restic.PackFile, Name: id.String()}
 	t.Logf("save file %v", h)
 
-	rd, err := restic.NewFileReader(f)
+	rd, err := restic.NewFileReader(f, hash)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -90,7 +90,11 @@ func fillPacks(t testing.TB, rnd *rand.Rand, be Saver, pm *packerManager, buf []
 		}
 
 		packID := restic.IDFromHash(packer.hw.Sum(nil))
-		saveFile(t, be, int(packer.Size()), packer.tmpfile, packID)
+		var beHash []byte
+		if packer.beHw != nil {
+			beHash = packer.beHw.Sum(nil)
+		}
+		saveFile(t, be, int(packer.Size()), packer.tmpfile, packID, beHash)
 	}
 
 	return bytes
@@ -106,7 +110,11 @@ func flushRemainingPacks(t testing.TB, be Saver, pm *packerManager) (bytes int) 
 			bytes += int(n)
 
 			packID := restic.IDFromHash(packer.hw.Sum(nil))
-			saveFile(t, be, int(packer.Size()), packer.tmpfile, packID)
+			var beHash []byte
+			if packer.beHw != nil {
+				beHash = packer.beHw.Sum(nil)
+			}
+			saveFile(t, be, int(packer.Size()), packer.tmpfile, packID, beHash)
 		}
 	}
 
