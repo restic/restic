@@ -567,18 +567,21 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 				errs = append(errs, Error{TreeID: id, Err: errors.Errorf("file %q has nil blob list", node.Name)})
 			}
 
-			var size uint64
 			for b, blobID := range node.Content {
 				if blobID.IsNull() {
 					errs = append(errs, Error{TreeID: id, Err: errors.Errorf("file %q blob %d has null ID", node.Name, b)})
 					continue
 				}
-				blobSize, found := c.repo.LookupBlobSize(blobID, restic.DataBlob)
+				// Note that we do not use the blob size. The "obvious" check
+				// whether the sum of the blob sizes matches the file size
+				// unfortunately fails in some cases that are not resolveable
+				// by users, so we omit this check, see #1887
+
+				_, found := c.repo.LookupBlobSize(blobID, restic.DataBlob)
 				if !found {
 					debug.Log("tree %v references blob %v which isn't contained in index", id, blobID)
 					errs = append(errs, Error{TreeID: id, Err: errors.Errorf("file %q blob %v not found in index", node.Name, blobID)})
 				}
-				size += uint64(blobSize)
 			}
 
 			if c.trackUnused {
