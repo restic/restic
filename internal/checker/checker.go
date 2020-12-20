@@ -2,10 +2,13 @@ package checker
 
 import (
 	"context"
+	cryptosha256 "crypto/sha256"
 	"fmt"
 	"io"
 	"os"
 	"sync"
+
+	simdsha256 "github.com/minio/sha256-simd"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -756,10 +759,100 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID) error {
 			continue
 		}
 
+		// inject error for testing
+		// if i == 23 {
+		// 	plaintext[0] ^= 0x01
+		// }
+
 		hash := restic.Hash(plaintext)
 		if !hash.Equal(blob.ID) {
 			debug.Log("  Blob ID does not match, want %v, got %v", blob.ID, hash)
 			errs = append(errs, errors.Errorf("Blob ID does not match, want %v, got %v", blob.ID.Str(), hash.Str()))
+
+			fmt.Fprintf(os.Stderr, "pack %v: blob %v (offset %v, length %v): ID does not match\n", id.String(), i, blob.Offset, blob.Length)
+			fmt.Fprintf(os.Stderr, "  want           %v\n", blob.ID)
+			fmt.Fprintf(os.Stderr, "  got            %v\n", hash)
+			fmt.Fprintf(os.Stderr, "  crypto/sha256  %02x\n", cryptosha256.Sum256(plaintext))
+			fmt.Fprintf(os.Stderr, "  SIMD sha256    %02x\n", simdsha256.Sum256(plaintext))
+
+			// save the blob's plaintext to a temp file
+			f, err := os.OpenFile(fmt.Sprintf("/tmp/%s.plaintext", blob.ID), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+			if err != nil {
+				panic("unable to create tempfile: " + err.Error())
+			}
+
+			_, err = f.Write(plaintext)
+			if err != nil {
+				panic("write error: " + err.Error())
+			}
+
+			err = f.Close()
+			if err != nil {
+				panic("close error: " + err.Error())
+			}
+
+			// save the raw buffer
+			f, err = os.OpenFile(fmt.Sprintf("/tmp/%s.buf", blob.ID), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+			if err != nil {
+				panic("unable to create tempfile: " + err.Error())
+			}
+
+			_, err = f.Write(buf)
+			if err != nil {
+				panic("write error: " + err.Error())
+			}
+
+			err = f.Close()
+			if err != nil {
+				panic("close error: " + err.Error())
+			}
+
+			// extract the encrypted blob again
+			f, err = os.OpenFile(fmt.Sprintf("/tmp/%s.raw", blob.ID), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+			if err != nil {
+				panic("unable to create tempfile: " + err.Error())
+			}
+
+			_, err = packfile.Seek(int64(blob.Offset), 0)
+			if err != nil {
+				panic(errors.Errorf("Seek(%v): %v", blob.Offset, err).Error())
+			}
+
+			_, err = io.CopyN(f, packfile, int64(blob.Length))
+			if err != nil {
+				panic("copyN error: " + err.Error())
+			}
+
+			err = f.Close()
+			if err != nil {
+				panic("close error: " + err.Error())
+			}
+
+			// save the raw pack file
+			f, err = os.OpenFile(fmt.Sprintf("/tmp/%s.pack", id), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+			if err != nil {
+				panic("unable to create tempfile: " + err.Error())
+			}
+
+			_, err = packfile.Seek(0, 0)
+			if err != nil {
+				panic(errors.Errorf("Seek(%v): %v", 0, err).Error())
+			}
+
+			_, err = io.Copy(f, packfile)
+			if err != nil {
+				panic("copyN error: " + err.Error())
+			}
+
+			if err == io.EOF {
+				err = nil
+			}
+
+			err = f.Close()
+			if err != nil {
+				panic("close error: " + err.Error())
+			}
+
 			continue
 		}
 	}
