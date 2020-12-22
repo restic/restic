@@ -20,12 +20,12 @@ type Func func(value uint64, runtime time.Duration, final bool)
 //
 // The Func is also called when SIGUSR1 (or SIGINFO, on BSD) is received.
 type Counter struct {
+	value   uint64 // first value in a struct is always 64bit aligned
 	report  Func
 	start   time.Time
 	stopped chan struct{} // Closed by run.
 	stop    chan struct{} // Close to stop run.
 	tick    *time.Ticker
-	value   uint64
 }
 
 // New starts a new Counter.
