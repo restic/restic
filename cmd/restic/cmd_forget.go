@@ -210,7 +210,7 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	if len(removeSnIDs) > 0 && opts.Prune && !opts.DryRun {
+	if len(removeSnIDs) > 0 && opts.Prune {
 		if !gopts.JSON {
 			Verbosef("%d snapshots have been removed, running prune\n", len(removeSnIDs))
 		}
