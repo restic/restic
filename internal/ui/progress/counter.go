@@ -3,7 +3,6 @@ package progress
 import (
 	"os"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/restic/restic/internal/debug"
@@ -25,7 +24,9 @@ type Counter struct {
 	stopped chan struct{} // Closed by run.
 	stop    chan struct{} // Close to stop run.
 	tick    *time.Ticker
-	value   uint64
+
+	valueMutex sync.Mutex
+	value      uint64
 }
 
 // New starts a new Counter.
@@ -52,7 +53,10 @@ func (c *Counter) Add(v uint64) {
 	if c == nil {
 		return
 	}
-	atomic.AddUint64(&c.value, v)
+
+	c.valueMutex.Lock()
+	c.value += v
+	c.valueMutex.Unlock()
 }
 
 // Done tells a Counter to stop and waits for it to report its final value.
@@ -66,7 +70,13 @@ func (c *Counter) Done() {
 	*c = Counter{} // Prevent reuse.
 }
 
-func (c *Counter) get() uint64 { return atomic.LoadUint64(&c.value) }
+func (c *Counter) get() uint64 {
+	c.valueMutex.Lock()
+	v := c.value
+	c.valueMutex.Unlock()
+
+	return v
+}
 
 func (c *Counter) run() {
 	defer close(c.stopped)
