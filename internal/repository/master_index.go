@@ -100,8 +100,8 @@ func (mi *MasterIndex) Has(bh restic.BlobHandle) bool {
 }
 
 // Packs returns all packs that are covered by the index.
-// If packBlacklist ist given, those packs are only contained in the
-// resulting IDSet if they are contained in a non-final index.
+// If packBlacklist is given, those packs are only contained in the
+// resulting IDSet if they are contained in a non-final (newly written) index.
 func (mi *MasterIndex) Packs(packBlacklist restic.IDSet) restic.IDSet {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
