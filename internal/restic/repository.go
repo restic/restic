@@ -65,7 +65,6 @@ type MasterIndex interface {
 	Has(BlobHandle) bool
 	Lookup(BlobHandle) []PackedBlob
 	Count(BlobType) uint
-	Packs() IDSet
 	PackSize(ctx context.Context, onlyHdr bool) map[ID]int64
 
 	// Each returns a channel that yields all blobs known to the index. When
