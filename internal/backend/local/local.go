@@ -91,9 +91,8 @@ func (b *Local) Save(ctx context.Context, h restic.Handle, rd restic.RewindReade
 	filename := b.Filename(h)
 
 	defer func() {
-		// Mark non-retriable errors as such (currently only
-		// "no space left on device").
-		if errors.Is(err, syscall.ENOSPC) {
+		// Mark non-retriable errors as such
+		if errors.Is(err, syscall.ENOSPC) || os.IsPermission(err) {
 			err = backoff.Permanent(err)
 		}
 	}()
