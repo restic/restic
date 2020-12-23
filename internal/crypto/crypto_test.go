@@ -3,11 +3,15 @@ package crypto_test
 import (
 	"bytes"
 	"crypto/rand"
+	"encoding/json"
 	"io"
+	"os"
 	"testing"
 
 	"github.com/restic/restic/internal/crypto"
+	"github.com/restic/restic/internal/errors"
 	rtest "github.com/restic/restic/internal/test"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/restic/chunker"
 )
@@ -279,24 +283,75 @@ func BenchmarkEncrypt(b *testing.B) {
 	}
 }
 
+func writeTempfile(name string, data []byte) {
+	f, err := os.Create("/tmp/" + name)
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = f.Write(data)
+	if err != nil {
+		panic(err)
+	}
+
+	err = f.Close()
+	if err != nil {
+		panic(err)
+	}
+}
+
+func writeJSON(name string, data interface{}) {
+	buf, err := json.Marshal(data)
+	if err != nil {
+		panic(err)
+	}
+
+	writeTempfile(name, buf)
+}
+
 func BenchmarkDecrypt(b *testing.B) {
 	size := 8 << 20 // 8MiB
-	data := make([]byte, size)
+	data := rtest.Random(42, size)
 
 	k := crypto.NewRandomKey()
 
-	plaintext := make([]byte, 0, size)
 	ciphertext := make([]byte, 0, size+crypto.Extension)
 	nonce := crypto.NewRandomNonce()
 	ciphertext = k.Seal(ciphertext, nonce, data, nil)
 
-	var err error
-
 	b.ResetTimer()
 	b.SetBytes(int64(size))
 
-	for i := 0; i < b.N; i++ {
-		_, err = k.Open(plaintext, nonce, ciphertext, nil)
-		rtest.OK(b, err)
+	var wg errgroup.Group
+
+	for i := 0; i < 5; i++ {
+		wg.Go(func() error {
+			buf := make([]byte, len(ciphertext))
+
+			for i := 0; i < b.N; i++ {
+				buf = buf[:cap(buf)]
+				copy(buf, ciphertext)
+				result, err := k.Open(buf[:0], nonce, buf, nil)
+				rtest.OK(b, err)
+
+				if !bytes.Equal(data, result) {
+					writeJSON("benchmark-decrypt-encryption-key.raw", k.EncryptionKey)
+					writeJSON("benchmark-decrypt-mac-key.raw", k.MACKey)
+					writeTempfile("benchmark-decrypt-nonce.raw", nonce)
+					writeTempfile("benchmark-decrypt-ciphertext.raw", ciphertext)
+					writeTempfile("benchmark-decrypt-plaintext.raw", data)
+					writeTempfile("benchmark-decrypt-result.raw", result)
+
+					return errors.New("wrong plaintext")
+				}
+			}
+
+			return nil
+		})
+	}
+
+	err := wg.Wait()
+	if err != nil {
+		b.Fatal(err)
 	}
 }
