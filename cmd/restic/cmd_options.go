@@ -23,8 +23,14 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 	DisableAutoGenTag: true,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Printf("All Extended Options:\n")
+		var maxLen int
 		for _, opt := range options.List() {
-			fmt.Printf("  %-15s   %s\n", opt.Namespace+"."+opt.Name, opt.Text)
+			if l := len(opt.Namespace + "." + opt.Name); l > maxLen {
+				maxLen = l
+			}
+		}
+		for _, opt := range options.List() {
+			fmt.Printf("  %*s  %s\n", -maxLen, opt.Namespace+"."+opt.Name, opt.Text)
 		}
 	},
 }
