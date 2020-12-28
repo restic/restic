@@ -40,6 +40,20 @@ func (l TagLists) String() string {
 	return fmt.Sprintf("%v", []TagList(l))
 }
 
+// Flatten returns the list of all tags provided in TagLists
+func (l TagLists) Flatten() (tags TagList) {
+	tags = make([]string, 0)
+	for _, list := range l {
+		for _, tag := range list {
+			if tag != "" {
+				tags = append(tags, tag)
+			}
+		}
+	}
+
+	return tags
+}
+
 // Set updates the TagList's value.
 func (l *TagLists) Set(s string) error {
 	*l = append(*l, splitTagList(s))
