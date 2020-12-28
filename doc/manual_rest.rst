@@ -133,15 +133,14 @@ command:
           --tls-client-cert file       path to a file containing PEM encoded TLS client certificate and private key
       -v, --verbose n                  be verbose (specify multiple times or a level using --verbose=n, max level/times is 3)
 
-Subcommand that support showing progress information such as ``backup``,
+Subcommands that support showing progress information such as ``backup``,
 ``check`` and ``prune`` will do so unless the quiet flag ``-q`` or
-``--quiet`` is set. When running from a non-interactive console progress
-reporting will be limited to once every 10 seconds to not fill your
-logs. Use ``backup`` with the quiet flag ``-q`` or ``--quiet`` to skip
-the initial scan of the source directory, this may shorten the backup
-time needed for large directories.
+``--quiet`` is set. For interactive consoles the environment variable
+``RESTIC_PROGRESS_FPS`` can be used to control the frequency of progress
+reporting. When running from a non-interactive console progress reporting
+is disabled to not fill your logs.
 
-Additionally on Unix systems if ``restic`` receives a SIGUSR1 signal the
+Additionally, on Unix systems if ``restic`` receives a SIGUSR1 signal the
 current progress will be written to the standard output so you can check up
 on the status at will.
 

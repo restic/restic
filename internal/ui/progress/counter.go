@@ -41,7 +41,9 @@ func New(interval time.Duration, report Func) *Counter {
 		start:   time.Now(),
 		stopped: make(chan struct{}),
 		stop:    make(chan struct{}),
-		tick:    time.NewTicker(interval),
+	}
+	if interval > 0 {
+		c.tick = time.NewTicker(interval)
 	}
 
 	go c.run()
@@ -64,7 +66,9 @@ func (c *Counter) Done() {
 	if c == nil {
 		return
 	}
-	c.tick.Stop()
+	if c.tick != nil {
+		c.tick.Stop()
+	}
 	close(c.stop)
 	<-c.stopped    // Wait for last progress report.
 	*c = Counter{} // Prevent reuse.
@@ -85,11 +89,15 @@ func (c *Counter) run() {
 		c.report(c.get(), time.Since(c.start), true)
 	}()
 
+	var tick <-chan time.Time
+	if c.tick != nil {
+		tick = c.tick.C
+	}
 	for {
 		var now time.Time
 
 		select {
-		case now = <-c.tick.C:
+		case now = <-tick:
 		case sig := <-signals.ch:
 			debug.Log("Signal received: %v\n", sig)
 			now = time.Now()
