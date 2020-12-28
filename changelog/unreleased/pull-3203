@@ -1,0 +1,9 @@
+Enhancement: Allow to check specific pack files
+
+Restic check used to check either all packfiles or a subset that is chosen
+either in a deterministic or random way but did not allow to specify the pack
+files to check directly.
+This feature is now added. It allows to fine-tune the checking process or support
+troubleshooting in case of corrupted repositories.
+
+https://github.com/restic/restic/pull/3203

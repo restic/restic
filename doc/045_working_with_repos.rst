@@ -281,3 +281,19 @@ integer:
 .. code-block:: console
 
     $ restic -r /srv/restic-repo check --read-data-subset=10%
+
+Another alternative is to use ``--read-data-from`` which allows to give one or
+more file(s) which contain(s) all pack filenames to check:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo list packs > packlist
+    $ restic -r /srv/restic-repo check --read-data-from=packlist
+
+You can also use ``-`` as filename to read from stdin, e.g. to only check one pack
+file (note that in this case you cannot enter your password from stdin):
+
+.. code-block:: console
+
+    $ echo 5873ed5dfd240c99eed14a1605a04f561ac45287a656d86730b76ae21be324f9 | \
+      restic -r /srv/restic-repo check --read-data-from=- --password-file=pass.txt

@@ -41,6 +41,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 // CheckOptions bundles all options for the 'check' command.
 type CheckOptions struct {
 	ReadData       bool
+	ReadDataFrom   []string
 	ReadDataSubset string
 	CheckUnused    bool
 	WithCache      bool
@@ -53,6 +54,7 @@ func init() {
 
 	f := cmdCheck.Flags()
 	f.BoolVar(&checkOptions.ReadData, "read-data", false, "read all data blobs")
+	f.StringArrayVar(&checkOptions.ReadDataFrom, "read-data-from", nil, "read names of pack files to check `file` (can be specified multiple times)")
 	f.StringVar(&checkOptions.ReadDataSubset, "read-data-subset", "", "read a `subset` of data packs, specified as 'n/t' for specific subset or either 'x%' or 'x.y%' for random subset")
 	f.BoolVar(&checkOptions.CheckUnused, "check-unused", false, "find unused blobs")
 	f.BoolVar(&checkOptions.WithCache, "with-cache", false, "use the cache")
@@ -61,6 +63,19 @@ func init() {
 func checkFlags(opts CheckOptions) error {
 	if opts.ReadData && opts.ReadDataSubset != "" {
 		return errors.Fatal("check flags --read-data and --read-data-subset cannot be used together")
+	}
+	if opts.ReadData && len(opts.ReadDataFrom) > 0 {
+		return errors.Fatal("check flags --read-data and --read-data-from cannot be used together")
+	}
+	if opts.ReadDataSubset != "" && len(opts.ReadDataFrom) > 0 {
+		return errors.Fatal("check flags --read-data-subset and --read-data-from cannot be used together")
+	}
+	if globalOptions.password == "" {
+		for _, filename := range opts.ReadDataFrom {
+			if filename == "-" {
+				return errors.Fatal("unable to read password from stdin when data is to be read from stdin, use --password-file or $RESTIC_PASSWORD")
+			}
+		}
 	}
 	if opts.ReadDataSubset != "" {
 		dataSubset, err := stringToIntSlice(opts.ReadDataSubset)
@@ -280,6 +295,13 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	case opts.ReadData:
 		Verbosef("read all data\n")
 		doReadData(selectPacksByBucket(chkr.GetPacks(), 1, 1))
+	case len(opts.ReadDataFrom) > 0:
+		Verbosef("read data for given pack files\n")
+		packs, err := selectPacksFromFiles(chkr.GetPacks(), opts.ReadDataFrom)
+		if err != nil {
+			return err
+		}
+		doReadData(packs)
 	case opts.ReadDataSubset != "":
 		var packs map[restic.ID]int64
 		dataSubset, err := stringToIntSlice(opts.ReadDataSubset)
@@ -320,6 +342,27 @@ func selectPacksByBucket(allPacks map[restic.ID]int64, bucket, totalBuckets uint
 		}
 	}
 	return packs
+}
+
+// selectPacksByBucket selects subsets of packs by ranges of buckets.
+func selectPacksFromFiles(allPacks map[restic.ID]int64, files []string) (map[restic.ID]int64, error) {
+	packs := make(map[restic.ID]int64)
+
+	IDs, err := getIDsFromFiles(files)
+	if err != nil {
+		return nil, err
+	}
+
+	for pack, size := range allPacks {
+		if IDs.Has(pack) {
+			packs[pack] = size
+			IDs.Delete(pack)
+		}
+	}
+	if len(IDs) > 0 {
+		return nil, errors.Fatalf("the following pack files are not existing and therefore not checked: %v\n", IDs)
+	}
+	return packs, nil
 }
 
 // selectRandomPacksByPercentage selects the given percentage of packs which are randomly choosen.
