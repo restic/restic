@@ -16,16 +16,14 @@ func newProgressMax(show bool, max uint64, description string) *progress.Counter
 	}
 
 	interval := time.Second / 60
-	if !stdoutIsTerminal() {
-		interval = 0
-	} else {
-		fps, err := strconv.ParseInt(os.Getenv("RESTIC_PROGRESS_FPS"), 10, 64)
-		if err == nil && fps >= 1 {
-			if fps > 60 {
-				fps = 60
-			}
-			interval = time.Second / time.Duration(fps)
+	fps, err := strconv.ParseInt(os.Getenv("RESTIC_PROGRESS_FPS"), 10, 64)
+	if err == nil && fps >= 1 {
+		if fps > 60 {
+			fps = 60
 		}
+		interval = time.Second / time.Duration(fps)
+	} else if !stdoutIsTerminal() {
+		interval = 0
 	}
 
 	return progress.New(interval, func(v uint64, d time.Duration, final bool) {
