@@ -83,7 +83,7 @@ type BackupOptions struct {
 	ExcludeLargerThan       string
 	Stdin                   bool
 	StdinFilename           string
-	Tags                    restic.TagList
+	Tags                    restic.TagLists
 	Host                    string
 	FilesFrom               []string
 	FilesFromVerbatim       []string
@@ -682,7 +682,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 
 	snapshotOpts := archiver.SnapshotOptions{
 		Excludes:       opts.Excludes,
-		Tags:           opts.Tags,
+		Tags:           opts.Tags.Flatten(),
 		Time:           timeStamp,
 		Hostname:       opts.Host,
 		ParentSnapshot: *parentSnapshotID,
