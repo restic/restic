@@ -358,6 +358,11 @@ The ``prune`` command accepts the following options:
   your repository exceeds the value given by ``--max-unused``.
   The default value is false.
 
+- ``--keep-packs-from`` allows to specify one or more files which contain the
+  names of pack files to always keep. This option is handy if some files in
+  the backend cannot or should not be removed, like unavailable/protected files
+  or files you want to keep in order to prevent an early deletion fee.
+
 -  ``--dry-run`` only show what ``prune`` would do.
 
 -  ``--verbose`` increased verbosity shows additional statistics for ``prune``.

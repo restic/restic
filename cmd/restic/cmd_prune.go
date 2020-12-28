@@ -47,6 +47,7 @@ type PruneOptions struct {
 	MaxRepackBytes uint64
 
 	RepackCachableOnly bool
+	KeepPacksFrom      []string
 }
 
 var pruneOptions PruneOptions
@@ -63,9 +64,18 @@ func addPruneOptions(c *cobra.Command) {
 	f.StringVar(&pruneOptions.MaxUnused, "max-unused", "5%", "tolerate given `limit` of unused data (absolute value in bytes with suffixes k/K, m/M, g/G, t/T, a value in % or the word 'unlimited')")
 	f.StringVar(&pruneOptions.MaxRepackSize, "max-repack-size", "", "maximum `size` to repack (allowed suffixes: k/K, m/M, g/G, t/T)")
 	f.BoolVar(&pruneOptions.RepackCachableOnly, "repack-cacheable-only", false, "only repack packs which are cacheable")
+	f.StringArrayVar(&pruneOptions.KeepPacksFrom, "keep-packs-from", nil, "read names of pack files to keep from `file` (can be specified multiple times)")
 }
 
 func verifyPruneOptions(opts *PruneOptions) error {
+	if globalOptions.password == "" {
+		for _, filename := range opts.KeepPacksFrom {
+			if filename == "-" {
+				return errors.Fatal("unable to read password from stdin when data is to be read from stdin, use --password-file or $RESTIC_PASSWORD")
+			}
+		}
+	}
+
 	if len(opts.MaxRepackSize) > 0 {
 		size, err := parseSizeStr(opts.MaxRepackSize)
 		if err != nil {
@@ -159,8 +169,13 @@ func runPruneWithRepo(opts PruneOptions, gopts GlobalOptions, repo *repository.R
 		Print("warning: running prune without a cache, this may be very slow!\n")
 	}
 
+	keepPacks, err := getIDsFromFiles(opts.KeepPacksFrom)
+	if err != nil {
+		return err
+	}
+
 	Verbosef("loading indexes...\n")
-	err := repo.LoadIndex(gopts.ctx)
+	err = repo.LoadIndex(gopts.ctx)
 	if err != nil {
 		return err
 	}
@@ -170,7 +185,7 @@ func runPruneWithRepo(opts PruneOptions, gopts GlobalOptions, repo *repository.R
 		return err
 	}
 
-	return prune(opts, gopts, repo, usedBlobs)
+	return prune(opts, gopts, repo, usedBlobs, keepPacks)
 }
 
 type packInfo struct {
@@ -189,7 +204,7 @@ type packInfoWithID struct {
 
 // prune selects which files to rewrite and then does that. The map usedBlobs is
 // modified in the process.
-func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedBlobs restic.BlobSet) error {
+func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedBlobs restic.BlobSet, keepPacks restic.IDSet) error {
 	ctx := gopts.ctx
 
 	var stats struct {
@@ -332,6 +347,9 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 
 		// decide what to do
 		switch {
+		case keepPacks.Has(id):
+			stats.packs.keep++
+
 		case p.usedBlobs == 0 && p.duplicateBlobs == 0:
 			// All blobs in pack are no longer used => remove pack!
 			removePacks.Insert(id)

@@ -1,0 +1,7 @@
+Enhancement: Add option to keep packs to prune and forget
+
+We've added a new option to `prune` and `forget` which allows to always keep
+some pack files. This allows `prune` to work with storages which have early
+deletion fees or locked files. 
+
+https://github.com/restic/restic/pull/3196
