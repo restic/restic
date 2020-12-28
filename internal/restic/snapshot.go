@@ -146,6 +146,11 @@ func (sn Snapshot) ID() *ID {
 	return sn.id
 }
 
+// SetID sets the snapshot's ID.
+func (sn *Snapshot) SetID(id ID) {
+	sn.id = &id
+}
+
 func (sn *Snapshot) fillUserInfo() error {
 	usr, err := user.Current()
 	if err != nil {
