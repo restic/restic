@@ -236,3 +236,38 @@ func TestBackendLoadRetry(t *testing.T) {
 	test.Equals(t, data, buf)
 	test.Equals(t, 2, attempt)
 }
+
+func assertIsCanceled(t *testing.T, err error) {
+	test.Assert(t, err == context.Canceled, "got unexpected err %v", err)
+}
+
+func TestBackendCanceledContext(t *testing.T) {
+	// unimplemented mock backend functions return an error by default
+	// check that we received the expected context canceled error instead
+	retryBackend := NewRetryBackend(mock.NewBackend(), 2, nil)
+	h := restic.Handle{Type: restic.PackFile, Name: restic.NewRandomID().String()}
+
+	// create an already canceled context
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := retryBackend.Test(ctx, h)
+	assertIsCanceled(t, err)
+	_, err = retryBackend.Stat(ctx, h)
+	assertIsCanceled(t, err)
+
+	err = retryBackend.Save(ctx, h, restic.NewByteReader([]byte{}))
+	assertIsCanceled(t, err)
+	err = retryBackend.Remove(ctx, h)
+	assertIsCanceled(t, err)
+	err = retryBackend.Load(ctx, restic.Handle{}, 0, 0, func(rd io.Reader) (err error) {
+		return nil
+	})
+	assertIsCanceled(t, err)
+	err = retryBackend.List(ctx, restic.PackFile, func(restic.FileInfo) error {
+		return nil
+	})
+	assertIsCanceled(t, err)
+
+	// don't test "Delete" as it is not used by normal code
+}
