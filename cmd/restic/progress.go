@@ -14,12 +14,12 @@ import (
 // for non-interactive terminals
 func calculateProgressInterval() time.Duration {
 	interval := time.Second / 60
-	fps, err := strconv.ParseInt(os.Getenv("RESTIC_PROGRESS_FPS"), 10, 64)
-	if err == nil && fps >= 1 {
+	fps, err := strconv.ParseFloat(os.Getenv("RESTIC_PROGRESS_FPS"), 64)
+	if err == nil && fps > 0 {
 		if fps > 60 {
 			fps = 60
 		}
-		interval = time.Second / time.Duration(fps)
+		interval = time.Duration(float64(time.Second) / fps)
 	} else if !stdoutIsTerminal() {
 		interval = 0
 	}
