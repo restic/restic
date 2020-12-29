@@ -211,15 +211,14 @@ jobs:
       - name: Cross-compile with gox
         env:
           GOFLAGS: "-trimpath"
-          GOX_ARCHS: "linux/386 linux/amd64 \
-            windows/386 windows/amd64 \
+          GOX_ARCHS: "aix/ppc64 \
             darwin/amd64 \
-            freebsd/386 freebsd/amd64 \
-            openbsd/386 openbsd/amd64 \
+            freebsd/386 freebsd/amd64 freebsd/arm \
+            linux/386 linux/amd64 linux/arm linux/arm64 linux/ppc64le \
             netbsd/386 netbsd/amd64 \
-            linux/arm freebsd/arm \
-            linux/ppc64le solaris/amd64 \
-            aix/ppc64"
+            openbsd/386 openbsd/amd64 \
+            windows/386 windows/amd64 \
+            solaris/amd64"
         run: |
           mkdir build-output
           gox -parallel 2 -verbose -osarch "$GOX_ARCHS" -output "build-output/{{.Dir}}_{{.OS}}_{{.Arch}}" ./cmd/restic
