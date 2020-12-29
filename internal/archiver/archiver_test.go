@@ -3,6 +3,7 @@ package archiver
 import (
 	"bytes"
 	"context"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -15,6 +16,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/restic/restic/internal/backend/mem"
 	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
@@ -1812,6 +1814,69 @@ func TestArchiverErrorReporting(t *testing.T) {
 			checker.TestCheckRepo(t, repo)
 		})
 	}
+}
+
+type noCancelBackend struct {
+	restic.Backend
+}
+
+func (c *noCancelBackend) Test(ctx context.Context, h restic.Handle) (bool, error) {
+	return c.Backend.Test(context.Background(), h)
+}
+
+func (c *noCancelBackend) Remove(ctx context.Context, h restic.Handle) error {
+	return c.Backend.Remove(context.Background(), h)
+}
+
+func (c *noCancelBackend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+	return c.Backend.Save(context.Background(), h, rd)
+}
+
+func (c *noCancelBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+	return c.Backend.Load(context.Background(), h, length, offset, fn)
+}
+
+func (c *noCancelBackend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, error) {
+	return c.Backend.Stat(context.Background(), h)
+}
+
+func (c *noCancelBackend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
+	return c.Backend.List(context.Background(), t, fn)
+}
+
+func (c *noCancelBackend) Delete(ctx context.Context) error {
+	return c.Backend.Delete(context.Background())
+}
+
+func TestArchiverContextCanceled(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	tempdir, removeTempdir := restictest.TempDir(t)
+	TestCreateFiles(t, tempdir, TestDir{
+		"targetfile": TestFile{Content: "foobar"},
+	})
+	defer removeTempdir()
+
+	// Ensure that the archiver itself reports the canceled context and not just the backend
+	repo, _ := repository.TestRepositoryWithBackend(t, &noCancelBackend{mem.New()})
+
+	back := restictest.Chdir(t, tempdir)
+	defer back()
+
+	arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
+
+	_, snapshotID, err := arch.Snapshot(ctx, []string{"."}, SnapshotOptions{Time: time.Now()})
+
+	if err != nil {
+		t.Logf("found expected error (%v)", err)
+		return
+	}
+	if snapshotID.IsNull() {
+		t.Fatalf("no error returned but found null id")
+	}
+
+	t.Fatalf("expected error not returned by archiver")
 }
 
 // TrackFS keeps track which files are opened. For some files, an error is injected.

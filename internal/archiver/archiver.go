@@ -178,6 +178,10 @@ func (arch *Archiver) saveTree(ctx context.Context, t *restic.Tree) (restic.ID, 
 		s.TreeBlobs++
 		s.TreeSize += uint64(len(buf))
 	}
+	// The context was canceled in the meantime, res.ID() might be invalid
+	if ctx.Err() != nil {
+		return restic.ID{}, s, ctx.Err()
+	}
 	return res.ID(), s, nil
 }
 
@@ -803,7 +807,8 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 	t.Kill(nil)
 	werr := t.Wait()
 	debug.Log("err is %v, werr is %v", err, werr)
-	if err == nil || errors.Cause(err) == context.Canceled {
+	// Use werr when it might contain a more specific error than "context canceled"
+	if err == nil || (errors.Cause(err) == context.Canceled && werr != nil) {
 		err = werr
 	}
 
