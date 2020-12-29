@@ -38,9 +38,9 @@ type TagOptions struct {
 	Hosts      []string
 	Paths      []string
 	Tags       restic.TagLists
-	SetTags    restic.TagList
-	AddTags    restic.TagList
-	RemoveTags restic.TagList
+	SetTags    restic.TagLists
+	AddTags    restic.TagLists
+	RemoveTags restic.TagLists
 }
 
 var tagOptions TagOptions
@@ -130,7 +130,7 @@ func runTag(opts TagOptions, gopts GlobalOptions, args []string) error {
 	ctx, cancel := context.WithCancel(gopts.ctx)
 	defer cancel()
 	for sn := range FindFilteredSnapshots(ctx, repo, opts.Hosts, opts.Tags, opts.Paths, args) {
-		changed, err := changeTags(ctx, repo, sn, opts.SetTags, opts.AddTags, opts.RemoveTags)
+		changed, err := changeTags(ctx, repo, sn, opts.SetTags.Flatten(), opts.AddTags.Flatten(), opts.RemoveTags.Flatten())
 		if err != nil {
 			Warnf("unable to modify the tags for snapshot ID %q, ignoring: %v\n", sn.ID(), err)
 			continue
