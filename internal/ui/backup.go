@@ -90,7 +90,11 @@ func (b *Backup) Run(ctx context.Context) error {
 	defer t.Stop()
 	defer close(b.closed)
 	// Reset status when finished
-	defer b.term.SetStatus([]string{""})
+	defer func() {
+		if b.term.CanUpdateStatus() {
+			b.term.SetStatus([]string{""})
+		}
+	}()
 
 	for {
 		select {
@@ -132,7 +136,7 @@ func (b *Backup) Run(ctx context.Context) error {
 		}
 
 		// limit update frequency
-		if time.Since(lastUpdate) < b.MinUpdatePause {
+		if time.Since(lastUpdate) < b.MinUpdatePause || b.MinUpdatePause == 0 {
 			continue
 		}
 		lastUpdate = time.Now()

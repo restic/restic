@@ -78,6 +78,11 @@ func New(wr io.Writer, errWriter io.Writer, disableStatus bool) *Terminal {
 	return t
 }
 
+// CanUpdateStatus return whether the status output is updated in place.
+func (t *Terminal) CanUpdateStatus() bool {
+	return t.canUpdateStatus
+}
+
 // Run updates the screen. It should be run in a separate goroutine. When
 // ctx is cancelled, the status lines are cleanly removed.
 func (t *Terminal) Run(ctx context.Context) {
@@ -203,8 +208,15 @@ func (t *Terminal) runWithoutStatus(ctx context.Context) {
 				fmt.Fprintf(os.Stderr, "flush failed: %v\n", err)
 			}
 
-		case <-t.status:
-			// discard status lines
+		case stat := <-t.status:
+			for _, line := range stat.lines {
+				// ensure that each line ends with newline
+				withNewline := strings.TrimRight(line, "\n") + "\n"
+				fmt.Fprint(t.wr, withNewline)
+			}
+			if err := t.wr.Flush(); err != nil {
+				fmt.Fprintf(os.Stderr, "flush failed: %v\n", err)
+			}
 		}
 	}
 }

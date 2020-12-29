@@ -135,10 +135,10 @@ command:
 
 Subcommands that support showing progress information such as ``backup``,
 ``check`` and ``prune`` will do so unless the quiet flag ``-q`` or
-``--quiet`` is set. For interactive consoles the environment variable
-``RESTIC_PROGRESS_FPS`` can be used to control the frequency of progress
-reporting. When running from a non-interactive console progress reporting
-is disabled to not fill your logs.
+``--quiet`` is set. When running from a non-interactive console progress
+reporting is disabled by default to not fill your logs. For interactive
+and non-interactive consoles the environment variable ``RESTIC_PROGRESS_FPS``
+can be used to control the frequency of progress reporting.
 
 Additionally, on Unix systems if ``restic`` receives a SIGUSR1 signal the
 current progress will be written to the standard output so you can check up
