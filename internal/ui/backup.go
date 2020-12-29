@@ -40,7 +40,6 @@ type Backup struct {
 	processedCh chan counter
 	errCh       chan struct{}
 	workerCh    chan fileWorkerMessage
-	finished    chan struct{}
 	closed      chan struct{}
 
 	summary struct {
@@ -71,7 +70,6 @@ func NewBackup(term *termstatus.Terminal, verbosity uint) *Backup {
 		processedCh: make(chan counter),
 		errCh:       make(chan struct{}),
 		workerCh:    make(chan fileWorkerMessage),
-		finished:    make(chan struct{}),
 		closed:      make(chan struct{}),
 	}
 }
@@ -98,9 +96,6 @@ func (b *Backup) Run(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			return nil
-		case <-b.finished:
-			started = false
-			b.term.SetStatus([]string{""})
 		case t, ok := <-b.totalCh:
 			if ok {
 				total = t
@@ -374,8 +369,8 @@ func (b *Backup) ReportTotal(item string, s archiver.ScanStats) {
 
 // Finish prints the finishing messages.
 func (b *Backup) Finish(snapshotID restic.ID) {
+	// wait for the status update goroutine to shut down
 	select {
-	case b.finished <- struct{}{}:
 	case <-b.closed:
 	}
 
