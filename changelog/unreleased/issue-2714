@@ -1,0 +1,11 @@
+Enhancement: Allow to set paths saved in snapshots manually
+
+Restic backup always used to save the paths specified for the backup
+in the snapshot. We've added new options to set this directly. This
+allows to have clearer snapshots and use parent snapshots e.g. if
+the files to backup comes from a external file find tool. 
+
+https://github.com/restic/restic/issues/2246
+https://github.com/restic/restic/issues/2714
+https://github.com/restic/restic/issues/3198
+https://github.com/restic/restic/pull/3200
