@@ -32,7 +32,6 @@ type Backup struct {
 	MinUpdatePause time.Duration
 
 	term  *termstatus.Terminal
-	v     uint
 	start time.Time
 
 	totalBytes uint64
@@ -61,7 +60,6 @@ func NewBackup(term *termstatus.Terminal, verbosity uint) *Backup {
 		Message:      NewMessage(term, verbosity),
 		StdioWrapper: NewStdioWrapper(term),
 		term:         term,
-		v:            verbosity,
 		start:        time.Now(),
 
 		// limit to 60fps by default
