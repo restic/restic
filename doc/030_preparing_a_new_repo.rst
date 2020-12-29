@@ -633,7 +633,17 @@ rclone e.g. via SSH on a server, for example:
 
 .. code-block:: console
 
-    $ restic -o rclone.program="ssh user@host rclone" -r rclone:b2:foo/bar
+    $ restic -o rclone.program="ssh user@remotehost rclone" -r rclone:b2:foo/bar
+
+With these options, restic works with local files. It uses rclone and
+credentials stored on ``remotehost`` to communicate with B2. All data (except
+credentials) is encrypted/decrypted locally, then sent/received via
+``remotehost`` to/from B2.
+
+A more advanced version of this setup forbids specific hosts from removing
+files in a repository. See the `blog post by Simon Ruderich
+<https://ruderich.org/simon/notes/append-only-backups-with-restic-and-rclone>`_
+for details.
 
 The rclone command may also be hard-coded in the SSH configuration or the
 user's public key, in this case it may be sufficient to just start the SSH
