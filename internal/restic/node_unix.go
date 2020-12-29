@@ -1,13 +1,15 @@
-// +build dragonfly linux netbsd openbsd freebsd solaris darwin
+// +build !windows
 
 package restic
 
 import (
 	"os"
 	"syscall"
+
+	"golang.org/x/sys/unix"
 )
 
-var mknod = syscall.Mknod
+var mknod = unix.Mknod
 var lchown = os.Lchown
 
 type statT syscall.Stat_t
