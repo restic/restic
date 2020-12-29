@@ -218,7 +218,8 @@ jobs:
             openbsd/386 openbsd/amd64 \
             netbsd/386 netbsd/amd64 \
             linux/arm freebsd/arm \
-            linux/ppc64le solaris/amd64"
+            linux/ppc64le solaris/amd64 \
+            aix/ppc64"
         run: |
           mkdir build-output
           gox -parallel 2 -verbose -osarch "$GOX_ARCHS" -output "build-output/{{.Dir}}_{{.OS}}_{{.Arch}}" ./cmd/restic
