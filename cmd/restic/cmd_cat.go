@@ -48,12 +48,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 			return err
 		}
 
-		defer func() {
-			err := unlockRepo(lock)
-			if err != nil {
-				Warnf("unlock repo failed: %v", err)
-			}
-		}()
+		defer unlockRepo(lock)
 	}
 
 	tpe := args[0]

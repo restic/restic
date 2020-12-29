@@ -85,9 +85,9 @@ func refreshLocks(wg *sync.WaitGroup, done <-chan struct{}) {
 	}
 }
 
-func unlockRepo(lock *restic.Lock) error {
+func unlockRepo(lock *restic.Lock) {
 	if lock == nil {
-		return nil
+		return
 	}
 
 	globalLocks.Lock()
@@ -99,18 +99,17 @@ func unlockRepo(lock *restic.Lock) error {
 			debug.Log("unlocking repository with lock %v", lock)
 			if err := lock.Unlock(); err != nil {
 				debug.Log("error while unlocking: %v", err)
-				return err
+				Warnf("error while unlocking: %v", err)
+				return
 			}
 
 			// remove the lock from the list of locks
 			globalLocks.locks = append(globalLocks.locks[:i], globalLocks.locks[i+1:]...)
-			return nil
+			return
 		}
 	}
 
 	debug.Log("unable to find lock %v in the global list of locks, ignoring", lock)
-
-	return nil
 }
 
 func unlockAll() error {
