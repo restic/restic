@@ -147,7 +147,9 @@ func filterTrees(ctx context.Context, trees IDs, loaderChan chan<- trackedID,
 }
 
 // StreamTrees iteratively loads the given trees and their subtrees. The skip method
-// is guaranteed to always be called from the same goroutine.
+// is guaranteed to always be called from the same goroutine. To shutdown the started
+// goroutines, either read all items from the channel or cancel the context. Then `Wait()`
+// on the errgroup until all goroutines were stopped.
 func StreamTrees(ctx context.Context, wg *errgroup.Group, repo TreeLoader, trees IDs, skip func(tree ID) bool, p *progress.Counter) <-chan TreeItem {
 	loaderChan := make(chan trackedID)
 	loadedTreeChan := make(chan trackedTreeItem)
