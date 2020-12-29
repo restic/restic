@@ -145,6 +145,9 @@ Additionally, on Unix systems if ``restic`` receives a SIGUSR1 signal the
 current progress will be written to the standard output so you can check up
 on the status at will.
 
+Setting the `RESTIC_PROGRESS_FPS` environment variable or sending a `SIGUSR1`
+signal prints a status report even when `--quiet` was specified.
+
 Manage tags
 -----------
 
