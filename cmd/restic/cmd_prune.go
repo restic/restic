@@ -245,7 +245,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 
 	// Check if all used blobs have been found in index
 	if len(usedBlobs) != 0 {
-		Warnf("%v not found in the new index\n"+
+		Warnf("%v not found in the index\n"+
 			"Data blobs seem to be missing, aborting prune to prevent further data loss!\n"+
 			"Please report this error (along with the output of the 'prune' run) at\n"+
 			"https://github.com/restic/restic/issues/new/choose", usedBlobs)
@@ -310,7 +310,11 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 			return nil
 		}
 
-		if p.unusedSize+p.usedSize != uint64(packSize) {
+		if p.unusedSize+p.usedSize != uint64(packSize) &&
+			!(p.usedBlobs == 0 && p.duplicateBlobs == 0) {
+			// Pack size does not fit and pack is needed => error
+			// If the pack is not needed, this is no error, the pack can
+			// and will be simply removed, see below.
 			Warnf("pack %s: calculated size %d does not match real size %d\nRun 'restic rebuild-index'.",
 				id.Str(), p.unusedSize+p.usedSize, packSize)
 			return errorSizeNotMatching
@@ -356,9 +360,25 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		return err
 	}
 
+	// At this point indexPacks contains only missing packs!
+
+	// missing packs that are not needed can be ignored
+	ignorePacks := restic.NewIDSet()
+	for id, p := range indexPack {
+		if p.usedBlobs == 0 && p.duplicateBlobs == 0 {
+			ignorePacks.Insert(id)
+			stats.blobs.remove += p.unusedBlobs
+			stats.size.remove += p.unusedSize
+			delete(indexPack, id)
+		}
+	}
+
 	if len(indexPack) != 0 {
-		Warnf("The index references pack files which are missing from the repository: %v\n", indexPack)
+		Warnf("The index references needed pack files which are missing from the repository: %v\n", indexPack)
 		return errorPacksMissing
+	}
+	if len(ignorePacks) != 0 {
+		Verbosef("missing but unneded pack files are referenced in the index, will be repaired\n")
 	}
 
 	repackAllPacksWithDuplicates := true
@@ -492,12 +512,20 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		removePacks.Merge(repackPacks)
 	}
 
-	if len(removePacks) != 0 {
-		err = rebuildIndexFiles(gopts, repo, removePacks, nil)
+	if len(ignorePacks) == 0 {
+		ignorePacks = removePacks
+	} else {
+		ignorePacks.Merge(removePacks)
+	}
+
+	if len(ignorePacks) != 0 {
+		err = rebuildIndexFiles(gopts, repo, ignorePacks, nil)
 		if err != nil {
 			return err
 		}
+	}
 
+	if len(removePacks) != 0 {
 		Verbosef("removing %d old packs\n", len(removePacks))
 		DeleteFiles(gopts, repo, removePacks, restic.PackFile)
 	}
