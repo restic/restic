@@ -314,17 +314,24 @@ func (t *Terminal) SetStatus(lines []string) {
 		return
 	}
 
-	width, _, err := terminal.GetSize(int(t.fd))
-	if err != nil || width <= 0 {
-		// use 80 columns by default
-		width = 80
+	// only truncate interactive status output
+	var width int
+	if t.canUpdateStatus {
+		var err error
+		width, _, err = terminal.GetSize(int(t.fd))
+		if err != nil || width <= 0 {
+			// use 80 columns by default
+			width = 80
+		}
 	}
 
 	// make sure that all lines have a line break and are not too long
 	for i, line := range lines {
 		line = strings.TrimRight(line, "\n")
-		line = truncate(line, width-2) + "\n"
-		lines[i] = line
+		if width > 0 {
+			line = truncate(line, width-2)
+		}
+		lines[i] = line + "\n"
 	}
 
 	// make sure the last line does not have a line break
