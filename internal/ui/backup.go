@@ -10,6 +10,7 @@ import (
 
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui/signals"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
@@ -87,6 +88,7 @@ func (b *Backup) Run(ctx context.Context) error {
 	)
 
 	t := time.NewTicker(time.Second)
+	signalsCh := signals.GetProgressChannel()
 	defer t.Stop()
 	defer close(b.closed)
 	// Reset status when finished
@@ -97,6 +99,8 @@ func (b *Backup) Run(ctx context.Context) error {
 	}()
 
 	for {
+		forceUpdate := false
+
 		select {
 		case <-ctx.Done():
 			return nil
@@ -133,10 +137,12 @@ func (b *Backup) Run(ctx context.Context) error {
 				todo := float64(total.Bytes - processed.Bytes)
 				secondsRemaining = uint64(secs / float64(processed.Bytes) * todo)
 			}
+		case <-signalsCh:
+			forceUpdate = true
 		}
 
 		// limit update frequency
-		if time.Since(lastUpdate) < b.MinUpdatePause || b.MinUpdatePause == 0 {
+		if !forceUpdate && (time.Since(lastUpdate) < b.MinUpdatePause || b.MinUpdatePause == 0) {
 			continue
 		}
 		lastUpdate = time.Now()
