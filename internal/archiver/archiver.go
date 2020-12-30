@@ -784,33 +784,31 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 
 	var t tomb.Tomb
 	wctx := t.Context(ctx)
-
-	arch.runWorkers(wctx, &t)
-
 	start := time.Now()
 
-	debug.Log("starting snapshot")
-	rootTreeID, stats, err := func() (restic.ID, ItemStats, error) {
+	var rootTreeID restic.ID
+	var stats ItemStats
+	t.Go(func() error {
+		arch.runWorkers(wctx, &t)
+
+		debug.Log("starting snapshot")
 		tree, err := arch.SaveTree(wctx, "/", atree, arch.loadParentTree(wctx, opts.ParentSnapshot))
 		if err != nil {
-			return restic.ID{}, ItemStats{}, err
+			return err
 		}
 
 		if len(tree.Nodes) == 0 {
-			return restic.ID{}, ItemStats{}, errors.New("snapshot is empty")
+			return errors.New("snapshot is empty")
 		}
 
-		return arch.saveTree(wctx, tree)
-	}()
-	debug.Log("saved tree, error: %v", err)
+		rootTreeID, stats, err = arch.saveTree(wctx, tree)
+		// trigger shutdown but don't set an error
+		t.Kill(nil)
+		return err
+	})
 
-	t.Kill(nil)
-	werr := t.Wait()
-	debug.Log("err is %v, werr is %v", err, werr)
-	// Use werr when it might contain a more specific error than "context canceled"
-	if err == nil || (errors.Cause(err) == context.Canceled && werr != nil) {
-		err = werr
-	}
+	err = t.Wait()
+	debug.Log("err is %v", err)
 
 	if err != nil {
 		debug.Log("error while saving tree: %v", err)
