@@ -32,7 +32,7 @@ directories in an encrypted repository stored on different backends.
 	PersistentPreRunE: func(c *cobra.Command, args []string) error {
 		// set verbosity, default is one
 		globalOptions.verbosity = 1
-		if globalOptions.Quiet && (globalOptions.Verbose > 1) {
+		if globalOptions.Quiet && globalOptions.Verbose > 0 {
 			return errors.Fatal("--quiet and --verbose cannot be specified at the same time")
 		}
 
