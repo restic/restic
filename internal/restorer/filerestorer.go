@@ -319,7 +319,7 @@ func (r *fileRestorer) loadBlob(rd io.Reader, blobID restic.ID, length int, buf 
 		buf = buf[:length]
 	}
 
-	n, err := rd.Read(buf)
+	n, err := io.ReadFull(rd, buf)
 	if err != nil {
 		return nil, nil, err
 	}
