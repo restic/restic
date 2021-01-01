@@ -287,8 +287,8 @@ func (r *SFTP) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader
 		return errors.Wrap(err, "OpenFile")
 	}
 
-	// save data
-	_, err = io.Copy(f, rd)
+	// save data, make sure to use the optimized sftp upload method
+	_, err = f.ReadFrom(rd)
 	if err != nil {
 		_ = f.Close()
 		return errors.Wrap(err, "Write")
@@ -332,6 +332,8 @@ func (r *SFTP) openReader(ctx context.Context, h restic.Handle, length int, offs
 	}
 
 	if length > 0 {
+		// unlimited reads usually use io.Copy which needs WriteTo support at the underlying reader
+		// limited reads are usually combined with io.ReadFull which reads all required bytes into a buffer in one go
 		return backend.LimitReadCloser(f, int64(length)), nil
 	}
 
