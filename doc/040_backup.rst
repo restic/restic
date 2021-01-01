@@ -471,11 +471,11 @@ use e.g. the fuse mounting option (see below) to mount the repository
 and read the file.
 
 By default, the file name ``stdin`` is used, a different name can be
-specified with ``--stdin-filename``, e.g. like this:
+specified with ``--set-path``, e.g. like this:
 
 .. code-block:: console
 
-    $ mysqldump [...] | restic -r /srv/restic-repo backup --stdin --stdin-filename production.sql
+    $ mysqldump [...] | restic -r /srv/restic-repo backup --stdin --set-path production.sql
 
 The option ``pipefail`` is highly recommended so that a non-zero exit code from
 one of the programs in the pipe (e.g. ``mysqldump`` here) makes the whole chain
