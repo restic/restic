@@ -20,6 +20,10 @@ type Limiter interface {
 	// for downloads.
 	Downstream(r io.Reader) io.Reader
 
+	// Downstream returns a rate limited reader that is intended to be used
+	// for downloads.
+	DownstreamWriter(r io.Writer) io.Writer
+
 	// Transport returns an http.RoundTripper limited with the limiter.
 	Transport(http.RoundTripper) http.RoundTripper
 }
