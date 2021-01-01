@@ -7,7 +7,25 @@ import (
 	"io"
 	"io/ioutil"
 	"testing"
+
+	rtest "github.com/restic/restic/internal/test"
 )
+
+// only expose Read method
+type onlyReader struct {
+	io.Reader
+}
+
+type traceWriterTo struct {
+	io.Reader
+	writerTo io.WriterTo
+	Traced   bool
+}
+
+func (r *traceWriterTo) WriteTo(w io.Writer) (n int64, err error) {
+	r.Traced = true
+	return r.writerTo.WriteTo(w)
+}
 
 func TestReader(t *testing.T) {
 	tests := []int{5, 23, 2<<18 + 23, 1 << 20}
@@ -21,22 +39,44 @@ func TestReader(t *testing.T) {
 
 		expectedHash := sha256.Sum256(data)
 
-		rd := NewReader(bytes.NewReader(data), sha256.New())
-		n, err := io.Copy(ioutil.Discard, rd)
-		if err != nil {
-			t.Fatal(err)
-		}
+		for _, test := range []struct {
+			innerWriteTo, outerWriteTo bool
+		}{{false, false}, {false, true}, {true, false}, {true, true}} {
+			// test both code paths in WriteTo
+			src := bytes.NewReader(data)
+			rawSrc := &traceWriterTo{Reader: src, writerTo: src}
+			innerSrc := io.Reader(rawSrc)
+			if !test.innerWriteTo {
+				innerSrc = &onlyReader{Reader: rawSrc}
+			}
 
-		if n != int64(size) {
-			t.Errorf("Reader: invalid number of bytes written: got %d, expected %d",
-				n, size)
-		}
+			rd := NewReader(innerSrc, sha256.New())
+			// test both Read and WriteTo
+			outerSrc := io.Reader(rd)
+			if !test.outerWriteTo {
+				outerSrc = &onlyReader{Reader: outerSrc}
+			}
 
-		resultingHash := rd.Sum(nil)
+			n, err := io.Copy(ioutil.Discard, outerSrc)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		if !bytes.Equal(expectedHash[:], resultingHash) {
-			t.Errorf("Reader: hashes do not match: expected %02x, got %02x",
-				expectedHash, resultingHash)
+			if n != int64(size) {
+				t.Errorf("Reader: invalid number of bytes written: got %d, expected %d",
+					n, size)
+			}
+
+			resultingHash := rd.Sum(nil)
+
+			if !bytes.Equal(expectedHash[:], resultingHash) {
+				t.Errorf("Reader: hashes do not match: expected %02x, got %02x",
+					expectedHash, resultingHash)
+			}
+
+			rtest.Assert(t, rawSrc.Traced == (test.innerWriteTo && test.outerWriteTo),
+				"unexpected/missing writeTo call innerWriteTo %v outerWriteTo %v",
+				test.innerWriteTo, test.outerWriteTo)
 		}
 	}
 }
