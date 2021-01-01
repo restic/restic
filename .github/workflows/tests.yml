@@ -182,11 +182,6 @@ jobs:
           echo "check changelog files"
           calens
         if: matrix.check_changelog
-      # debug with tmate
-      # - name: Run apt-get for tmate action
-      #   run: sudo apt-get update
-      # - name: Debugging with tmate
-      #   uses: mxschmitt/action-tmate@v1.0.1
 
   cross_compile:
     env:
@@ -208,6 +203,7 @@ jobs:
         run: |
           go get github.com/mitchellh/gox
 
+      # ATTENTION: the list of architectures must be in sync with helpers/build-release-binaries/main.go!
       - name: Cross-compile with gox
         env:
           GOFLAGS: "-trimpath"

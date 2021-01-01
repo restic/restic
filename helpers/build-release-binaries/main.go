@@ -221,6 +221,7 @@ func buildTargets(sourceDir, outputDir string, targets map[string][]string) {
 	msg("build finished in %.3fs", time.Since(start).Seconds())
 }
 
+// ATTENTION: the list of architectures must be in sync with .github/workflows/tests.yml!
 var defaultBuildTargets = map[string][]string{
 	"aix":     {"ppc64"},
 	"darwin":  {"amd64"},
