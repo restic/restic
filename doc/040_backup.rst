@@ -199,7 +199,7 @@ Combined with ``--verbose``, you can see a list of changes:
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo backup ~/work --dry-run -vv | grep added
+    $ restic -r /srv/restic-repo backup ~/work --dry-run -vv | grep "added)$"
     modified  /plan.txt, saved in 0.000s (9.110 KiB added)
     modified  /archive.tar.gz, saved in 0.140s (25.542 MiB added)
     Would be added to the repo: 25.551 MiB
