@@ -1,0 +1,17 @@
+Enhancement: Check now has more checks for consistency of index and pack files
+
+Restic used to only verify the pack file content when calling `check --read-data` or
+`check --read-data-subset` but did not check if the blobs within the pack are
+correctly contained in the index.
+This check is now added and may give an "Blob ID is not contained in index or position
+is incorrect" error.
+Also a new test is added which compares pack file sizes computed from the index and the
+pack header with the actual file size. This test is able to detect truncated pack files.
+
+If the index is not correct, it can be rebuilt by using the `rebuild-index` command.
+
+Having added these tests, `restic check` is now able to detect non-existing blobs which
+are wrongly referenced in the index. This situation could have lead to missing data.
+
+https://github.com/restic/restic/pull/3048
+https://github.com/restic/restic/pull/3082

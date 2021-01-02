@@ -25,11 +25,11 @@ func TestLoadAll(t *testing.T) {
 		data := rtest.Random(23+i, rand.Intn(MiB)+500*KiB)
 
 		id := restic.Hash(data)
-		h := restic.Handle{Name: id.String(), Type: restic.DataFile}
+		h := restic.Handle{Name: id.String(), Type: restic.PackFile}
 		err := b.Save(context.TODO(), h, restic.NewByteReader(data))
 		rtest.OK(t, err)
 
-		buf, err := backend.LoadAll(context.TODO(), buf, b, restic.Handle{Type: restic.DataFile, Name: id.String()})
+		buf, err := backend.LoadAll(context.TODO(), buf, b, restic.Handle{Type: restic.PackFile, Name: id.String()})
 		rtest.OK(t, err)
 
 		if len(buf) != len(data) {
@@ -46,7 +46,7 @@ func TestLoadAll(t *testing.T) {
 
 func save(t testing.TB, be restic.Backend, buf []byte) restic.Handle {
 	id := restic.Hash(buf)
-	h := restic.Handle{Name: id.String(), Type: restic.DataFile}
+	h := restic.Handle{Name: id.String(), Type: restic.PackFile}
 	err := be.Save(context.TODO(), h, restic.NewByteReader(buf))
 	if err != nil {
 		t.Fatal(err)
@@ -121,7 +121,7 @@ func (rd *mockReader) Close() error {
 
 func TestDefaultLoad(t *testing.T) {
 
-	h := restic.Handle{Name: "id", Type: restic.DataFile}
+	h := restic.Handle{Name: "id", Type: restic.PackFile}
 	rd := &mockReader{}
 
 	// happy case, assert correct parameters are passed around and content stream is closed

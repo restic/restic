@@ -9,7 +9,7 @@ import (
 
 // TestCheckRepo runs the checker on repo.
 func TestCheckRepo(t testing.TB, repo restic.Repository) {
-	chkr := New(repo)
+	chkr := New(repo, true)
 
 	hints, errs := chkr.LoadIndex(context.TODO())
 	if len(errs) != 0 {
@@ -37,14 +37,14 @@ func TestCheckRepo(t testing.TB, repo restic.Repository) {
 	}
 
 	// unused blobs
-	blobs := chkr.UnusedBlobs()
+	blobs := chkr.UnusedBlobs(context.TODO())
 	if len(blobs) > 0 {
 		t.Errorf("unused blobs found: %v", blobs)
 	}
 
 	// read data
 	errChan = make(chan error)
-	go chkr.ReadData(context.TODO(), nil, errChan)
+	go chkr.ReadData(context.TODO(), errChan)
 
 	for err := range errChan {
 		t.Error(err)

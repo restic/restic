@@ -1,12 +1,8 @@
-// +build !netbsd
-// +build !openbsd
-// +build !solaris
-// +build !windows
+// +build darwin freebsd linux
 
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -122,7 +118,7 @@ func checkSnapshots(t testing.TB, global GlobalOptions, repo *repository.Reposit
 	}
 
 	for _, id := range snapshotIDs {
-		snapshot, err := restic.LoadSnapshot(context.TODO(), repo, id)
+		snapshot, err := restic.LoadSnapshot(global.ctx, repo, id)
 		rtest.OK(t, err)
 
 		ts := snapshot.Time.Format(time.RFC3339)
@@ -163,9 +159,6 @@ func TestMount(t *testing.T) {
 
 	repo, err := OpenRepository(env.gopts)
 	rtest.OK(t, err)
-
-	// We remove the mountpoint now to check that cmdMount creates it
-	rtest.RemoveAll(t, env.mountpoint)
 
 	checkSnapshots(t, env.gopts, repo, env.mountpoint, env.repo, []restic.ID{}, 0)
 

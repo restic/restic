@@ -1,0 +1,9 @@
+Bugfix: Fix tar issues when dumping `/`
+
+We've fixed an issue with dumping either `/` or files on the first sublevel
+e.g. `/foo` to tar. This also fixes tar dumping issues on Windows where this
+issue could also happen.
+
+https://github.com/restic/restic/issues/2254
+https://github.com/restic/restic/issues/2357
+https://github.com/restic/restic/pull/2255

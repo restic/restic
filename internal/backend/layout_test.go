@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"context"
 	"fmt"
 	"path"
 	"path/filepath"
@@ -25,7 +26,7 @@ func TestDefaultLayout(t *testing.T) {
 		{
 			tempdir,
 			filepath.Join,
-			restic.Handle{Type: restic.DataFile, Name: "0123456"},
+			restic.Handle{Type: restic.PackFile, Name: "0123456"},
 			filepath.Join(tempdir, "data", "01", "0123456"),
 		},
 		{
@@ -61,7 +62,7 @@ func TestDefaultLayout(t *testing.T) {
 		{
 			"",
 			path.Join,
-			restic.Handle{Type: restic.DataFile, Name: "0123456"},
+			restic.Handle{Type: restic.PackFile, Name: "0123456"},
 			"data/01/0123456",
 		},
 		{
@@ -148,7 +149,7 @@ func TestRESTLayout(t *testing.T) {
 		filename string
 	}{
 		{
-			restic.Handle{Type: restic.DataFile, Name: "0123456"},
+			restic.Handle{Type: restic.PackFile, Name: "0123456"},
 			filepath.Join(path, "data", "0123456"),
 		},
 		{
@@ -216,7 +217,7 @@ func TestRESTLayoutURLs(t *testing.T) {
 	}{
 		{
 			&RESTLayout{URL: "https://hostname.foo", Path: "", Join: path.Join},
-			restic.Handle{Type: restic.DataFile, Name: "foobar"},
+			restic.Handle{Type: restic.PackFile, Name: "foobar"},
 			"https://hostname.foo/data/foobar",
 			"https://hostname.foo/data/",
 		},
@@ -234,7 +235,7 @@ func TestRESTLayoutURLs(t *testing.T) {
 		},
 		{
 			&S3LegacyLayout{URL: "https://hostname.foo", Path: "/", Join: path.Join},
-			restic.Handle{Type: restic.DataFile, Name: "foobar"},
+			restic.Handle{Type: restic.PackFile, Name: "foobar"},
 			"https://hostname.foo/data/foobar",
 			"https://hostname.foo/data/",
 		},
@@ -252,7 +253,7 @@ func TestRESTLayoutURLs(t *testing.T) {
 		},
 		{
 			&S3LegacyLayout{URL: "", Path: "", Join: path.Join},
-			restic.Handle{Type: restic.DataFile, Name: "foobar"},
+			restic.Handle{Type: restic.PackFile, Name: "foobar"},
 			"data/foobar",
 			"data/",
 		},
@@ -294,7 +295,7 @@ func TestS3LegacyLayout(t *testing.T) {
 		filename string
 	}{
 		{
-			restic.Handle{Type: restic.DataFile, Name: "0123456"},
+			restic.Handle{Type: restic.PackFile, Name: "0123456"},
 			filepath.Join(path, "data", "0123456"),
 		},
 		{
@@ -371,7 +372,7 @@ func TestDetectLayout(t *testing.T) {
 			t.Run(fmt.Sprintf("%v/fs-%T", test.filename, fs), func(t *testing.T) {
 				rtest.SetupTarTestFixture(t, path, filepath.Join("testdata", test.filename))
 
-				layout, err := DetectLayout(fs, filepath.Join(path, "repo"))
+				layout, err := DetectLayout(context.TODO(), fs, filepath.Join(path, "repo"))
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -409,7 +410,7 @@ func TestParseLayout(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.layoutName, func(t *testing.T) {
-			layout, err := ParseLayout(&LocalFilesystem{}, test.layoutName, test.defaultLayoutName, filepath.Join(path, "repo"))
+			layout, err := ParseLayout(context.TODO(), &LocalFilesystem{}, test.layoutName, test.defaultLayoutName, filepath.Join(path, "repo"))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -419,8 +420,8 @@ func TestParseLayout(t *testing.T) {
 			}
 
 			// test that the functions work (and don't panic)
-			_ = layout.Dirname(restic.Handle{Type: restic.DataFile})
-			_ = layout.Filename(restic.Handle{Type: restic.DataFile, Name: "1234"})
+			_ = layout.Dirname(restic.Handle{Type: restic.PackFile})
+			_ = layout.Filename(restic.Handle{Type: restic.PackFile, Name: "1234"})
 			_ = layout.Paths()
 
 			layoutName := fmt.Sprintf("%T", layout)
@@ -441,7 +442,7 @@ func TestParseLayoutInvalid(t *testing.T) {
 
 	for _, name := range invalidNames {
 		t.Run(name, func(t *testing.T) {
-			layout, err := ParseLayout(nil, name, "", path)
+			layout, err := ParseLayout(context.TODO(), nil, name, "", path)
 			if err == nil {
 				t.Fatalf("expected error not found for layout name %v, layout is %v", name, layout)
 			}

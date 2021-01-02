@@ -1,0 +1,29 @@
+Enhancement: Improve pruning performance and make pruning more customizable
+
+The `prune` command is now much faster. This is especially the case for remote
+repositories or repositories with not much data to remove.
+Also the memory usage of the `prune` command is now reduced.
+Restic used to rebuild the index from scratch after pruning. This could lead
+to missing packs in the index in some cases for eventually consistent 
+backends, like e.g. AWS S3.
+This behavior is now changed and the index rebuilding uses the information
+already known by `prune`.
+
+By default, the `prune` command no longer removes all unused data. This
+behavior can be fine-tuned by new options, like the acceptable amount of unused space or
+the maximum size of data to reorganize. For more details, see
+https://restic.readthedocs.io/en/stable/060_forget.html
+
+Moreover, `prune` now accepts the `--dry-run` option and `forget --dry-run --prune`
+also shows what `prune` would do.
+
+Fixes several open issues, e.g.:
+https://github.com/restic/restic/issues/1140
+https://github.com/restic/restic/issues/1599
+https://github.com/restic/restic/issues/1985
+https://github.com/restic/restic/issues/2112
+https://github.com/restic/restic/issues/2227
+https://github.com/restic/restic/issues/2305
+
+https://github.com/restic/restic/pull/2718
+https://github.com/restic/restic/pull/2842

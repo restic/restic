@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 )
@@ -93,7 +94,7 @@ func TestFindUsedBlobs(t *testing.T) {
 
 	for i, sn := range snapshots {
 		usedBlobs := restic.NewBlobSet()
-		err := restic.FindUsedBlobs(context.TODO(), repo, *sn.Tree, usedBlobs, restic.NewBlobSet())
+		err := restic.FindUsedBlobs(context.TODO(), repo, *sn.Tree, usedBlobs)
 		if err != nil {
 			t.Errorf("FindUsedBlobs returned error: %v", err)
 			continue
@@ -118,6 +119,31 @@ func TestFindUsedBlobs(t *testing.T) {
 	}
 }
 
+type ForbiddenRepo struct{}
+
+func (r ForbiddenRepo) LoadTree(ctx context.Context, id restic.ID) (*restic.Tree, error) {
+	return nil, errors.New("should not be called")
+}
+
+func TestFindUsedBlobsSkipsSeenBlobs(t *testing.T) {
+	repo, cleanup := repository.TestRepository(t)
+	defer cleanup()
+
+	snapshot := restic.TestCreateSnapshot(t, repo, findTestTime, findTestDepth, 0)
+	t.Logf("snapshot %v saved, tree %v", snapshot.ID().Str(), snapshot.Tree.Str())
+
+	usedBlobs := restic.NewBlobSet()
+	err := restic.FindUsedBlobs(context.TODO(), repo, *snapshot.Tree, usedBlobs)
+	if err != nil {
+		t.Fatalf("FindUsedBlobs returned error: %v", err)
+	}
+
+	err = restic.FindUsedBlobs(context.TODO(), ForbiddenRepo{}, *snapshot.Tree, usedBlobs)
+	if err != nil {
+		t.Fatalf("FindUsedBlobs returned error: %v", err)
+	}
+}
+
 func BenchmarkFindUsedBlobs(b *testing.B) {
 	repo, cleanup := repository.TestRepository(b)
 	defer cleanup()
@@ -127,9 +153,8 @@ func BenchmarkFindUsedBlobs(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		seen := restic.NewBlobSet()
 		blobs := restic.NewBlobSet()
-		err := restic.FindUsedBlobs(context.TODO(), repo, *sn.Tree, blobs, seen)
+		err := restic.FindUsedBlobs(context.TODO(), repo, *sn.Tree, blobs)
 		if err != nil {
 			b.Error(err)
 		}

@@ -8,7 +8,7 @@ import (
 )
 
 var cmdMigrate = &cobra.Command{
-	Use:   "migrate [name]",
+	Use:   "migrate [flags] [name]",
 	Short: "Apply migrations",
 	Long: `
 The "migrate" command applies migrations to a repository. When no migration
@@ -99,7 +99,7 @@ func runMigrate(opts MigrateOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	lock, err := lockRepoExclusive(repo)
+	lock, err := lockRepoExclusive(gopts.ctx, repo)
 	defer unlockRepo(lock)
 	if err != nil {
 		return err

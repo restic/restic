@@ -1,0 +1,9 @@
+Enhancement: Speed up rebuild-index
+
+We've optimized the command rebuild-index. Now, existing index entries are used
+to minimize the number of pack files that must be read. This speeds up the index
+rebuild a lot.
+Also the option --read-all-packs was added which implements the previous behavior.
+
+https://github.com/restic/restic/issue/2547
+https://github.com/restic/restic/pull/3006

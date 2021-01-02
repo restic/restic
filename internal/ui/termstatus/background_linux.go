@@ -1,21 +1,23 @@
 package termstatus
 
 import (
-	"syscall"
-	"unsafe"
-
 	"github.com/restic/restic/internal/debug"
+
+	"golang.org/x/sys/unix"
 )
 
-// IsProcessBackground reports whether the current process is running in the background.
-func IsProcessBackground() bool {
-	var pid int
-	_, _, err := syscall.Syscall(syscall.SYS_IOCTL, uintptr(syscall.Stdin), syscall.TIOCGPGRP, uintptr(unsafe.Pointer(&pid)))
-
-	if err != 0 {
+// IsProcessBackground reports whether the current process is running in the
+// background. fd must be a file descriptor for the terminal.
+func IsProcessBackground(fd uintptr) bool {
+	bg, err := isProcessBackground(fd)
+	if err != nil {
 		debug.Log("Can't check if we are in the background. Using default behaviour. Error: %s\n", err.Error())
 		return false
 	}
+	return bg
+}
 
-	return pid != syscall.Getpgrp()
+func isProcessBackground(fd uintptr) (bool, error) {
+	pid, err := unix.IoctlGetInt(int(fd), unix.TIOCGPGRP)
+	return pid != unix.Getpgrp(), err
 }

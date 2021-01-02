@@ -1,0 +1,12 @@
+Enhancement: Keep mountpoints as empty directories
+
+When the `--one-file-system` option is specified to `restic backup`, it
+ignores all file systems mounted below one of the target directories. This
+means that when a snapshot is restored, users needed to manually recreate the
+mountpoint directories.
+
+Restic now keeps mountpoints as empty directories and therefore implements
+the same approach as `tar`.
+
+https://github.com/restic/restic/issues/909
+https://github.com/restic/restic/pull/3119

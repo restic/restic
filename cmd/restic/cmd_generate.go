@@ -9,7 +9,7 @@ import (
 )
 
 var cmdGenerate = &cobra.Command{
-	Use:   "generate [command]",
+	Use:   "generate [flags]",
 	Short: "Generate manual pages and auto-completion files (bash, zsh)",
 	Long: `
 The "generate" command writes automatically generated files (like the man pages

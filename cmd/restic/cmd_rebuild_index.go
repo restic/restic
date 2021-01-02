@@ -1,10 +1,7 @@
 package main
 
 import (
-	"context"
-
-	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/index"
+	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/spf13/cobra"
@@ -12,7 +9,7 @@ import (
 
 var cmdRebuildIndex = &cobra.Command{
 	Use:   "rebuild-index [flags]",
-	Short: "Build a new index file",
+	Short: "Build a new index",
 	Long: `
 The "rebuild-index" command creates a new index based on the pack files in the
 repository.
@@ -24,83 +21,103 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runRebuildIndex(globalOptions)
+		return runRebuildIndex(rebuildIndexOptions, globalOptions)
 	},
 }
 
-func init() {
-	cmdRoot.AddCommand(cmdRebuildIndex)
+// RebuildIndexOptions collects all options for the rebuild-index command.
+type RebuildIndexOptions struct {
+	ReadAllPacks bool
 }
 
-func runRebuildIndex(gopts GlobalOptions) error {
+var rebuildIndexOptions RebuildIndexOptions
+
+func init() {
+	cmdRoot.AddCommand(cmdRebuildIndex)
+	f := cmdRebuildIndex.Flags()
+	f.BoolVar(&rebuildIndexOptions.ReadAllPacks, "read-all-packs", false, "read all pack files to generate new index from scratch")
+
+}
+
+func runRebuildIndex(opts RebuildIndexOptions, gopts GlobalOptions) error {
 	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err
 	}
 
-	lock, err := lockRepoExclusive(repo)
+	lock, err := lockRepoExclusive(gopts.ctx, repo)
 	defer unlockRepo(lock)
 	if err != nil {
 		return err
 	}
 
-	ctx, cancel := context.WithCancel(gopts.ctx)
-	defer cancel()
-	return rebuildIndex(ctx, repo, restic.NewIDSet())
+	return rebuildIndex(opts, gopts, repo, restic.NewIDSet())
 }
 
-func rebuildIndex(ctx context.Context, repo restic.Repository, ignorePacks restic.IDSet) error {
-	Verbosef("counting files in repo\n")
+func rebuildIndex(opts RebuildIndexOptions, gopts GlobalOptions, repo *repository.Repository, ignorePacks restic.IDSet) error {
+	ctx := gopts.ctx
 
-	var packs uint64
-	err := repo.List(ctx, restic.DataFile, func(restic.ID, int64) error {
-		packs++
+	var obsoleteIndexes restic.IDs
+	packSizeFromList := make(map[restic.ID]int64)
+	packSizeFromIndex := make(map[restic.ID]int64)
+	removePacks := restic.NewIDSet()
+
+	if opts.ReadAllPacks {
+		// get list of old index files but start with empty index
+		err := repo.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
+			obsoleteIndexes = append(obsoleteIndexes, id)
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+	} else {
+		Verbosef("loading indexes...\n")
+		err := repo.LoadIndex(gopts.ctx)
+		if err != nil {
+			return err
+		}
+		packSizeFromIndex = repo.Index().PackSize(ctx, false)
+	}
+
+	Verbosef("getting pack files to read...\n")
+	err := repo.List(ctx, restic.PackFile, func(id restic.ID, packSize int64) error {
+		size, ok := packSizeFromIndex[id]
+		if !ok || size != packSize {
+			// Pack was not referenced in index or size does not match
+			packSizeFromList[id] = packSize
+			removePacks.Insert(id)
+		}
+		delete(packSizeFromIndex, id)
 		return nil
 	})
 	if err != nil {
 		return err
 	}
-
-	bar := newProgressMax(!globalOptions.Quiet, packs-uint64(len(ignorePacks)), "packs")
-	idx, invalidFiles, err := index.New(ctx, repo, ignorePacks, bar)
-	if err != nil {
-		return err
+	for id := range packSizeFromIndex {
+		// forget pack files that are referenced in the index but do not exist
+		// when rebuilding the index
+		removePacks.Insert(id)
 	}
 
-	if globalOptions.verbosity >= 2 {
+	if len(packSizeFromList) > 0 {
+		Verbosef("reading pack files\n")
+		bar := newProgressMax(!globalOptions.Quiet, uint64(len(packSizeFromList)), "packs")
+		invalidFiles, err := repo.CreateIndexFromPacks(ctx, packSizeFromList, bar)
+		if err != nil {
+			return err
+		}
+
 		for _, id := range invalidFiles {
-			Printf("skipped incomplete pack file: %v\n", id)
+			Verboseff("skipped incomplete pack file: %v\n", id)
 		}
 	}
 
-	Verbosef("finding old index files\n")
-
-	var supersedes restic.IDs
-	err = repo.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
-		supersedes = append(supersedes, id)
-		return nil
-	})
+	err = rebuildIndexFiles(gopts, repo, removePacks, obsoleteIndexes)
 	if err != nil {
 		return err
 	}
-
-	ids, err := idx.Save(ctx, repo, supersedes)
-	if err != nil {
-		return errors.Fatalf("unable to save index, last error was: %v", err)
-	}
-
-	Verbosef("saved new indexes as %v\n", ids)
-
-	Verbosef("remove %d old index files\n", len(supersedes))
-
-	for _, id := range supersedes {
-		if err := repo.Backend().Remove(ctx, restic.Handle{
-			Type: restic.IndexFile,
-			Name: id.String(),
-		}); err != nil {
-			Warnf("error removing old index %v: %v\n", id.Str(), err)
-		}
-	}
+	Verbosef("done\n")
 
 	return nil
 }

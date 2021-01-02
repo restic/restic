@@ -22,8 +22,10 @@ other options. You can skip to the next chapter once you've read the relevant
 section here.
 
 For automated backups, restic accepts the repository location in the
-environment variable ``RESTIC_REPOSITORY``. For the password, several options
-exist:
+environment variable ``RESTIC_REPOSITORY``. Restic can also read the repository
+location from a file specified via the ``--repository-file`` option or the
+environment variable ``RESTIC_REPOSITORY_FILE``. For the password, several
+options exist:
 
  * Setting the environment variable ``RESTIC_PASSWORD``
 
@@ -43,9 +45,9 @@ command and enter the same password twice:
 .. code-block:: console
 
     $ restic init --repo /srv/restic-repo
-    enter password for new backend:
+    enter password for new repository:
     enter password again:
-    created restic backend 085b3c76b9 at /srv/restic-repo
+    created restic repository 085b3c76b9 at /srv/restic-repo
     Please note that knowledge of your password is required to access the repository.
     Losing your password means that your data is irrecoverably lost.
 
@@ -75,9 +77,9 @@ simply be achieved by changing the URL scheme in the ``init`` command:
 .. code-block:: console
 
     $ restic -r sftp:user@host:/srv/restic-repo init
-    enter password for new backend:
+    enter password for new repository:
     enter password again:
-    created restic backend f1c6108821 at sftp:user@host:/srv/restic-repo
+    created restic repository f1c6108821 at sftp:user@host:/srv/restic-repo
     Please note that knowledge of your password is required to access the repository.
     Losing your password means that your data is irrecoverably lost.
 
@@ -212,9 +214,9 @@ default location:
 .. code-block:: console
 
     $ restic -r s3:s3.amazonaws.com/bucket_name init
-    enter password for new backend:
+    enter password for new repository:
     enter password again:
-    created restic backend eefee03bbd at s3:s3.amazonaws.com/bucket_name
+    created restic repository eefee03bbd at s3:s3.amazonaws.com/bucket_name
     Please note that knowledge of your password is required to access the repository.
     Losing your password means that your data is irrecoverably lost.
 
@@ -236,6 +238,15 @@ after the bucket name like this:
 For an S3-compatible server that is not Amazon (like Minio, see below),
 or is only available via HTTP, you can specify the URL to the server
 like this: ``s3:http://server:port/bucket_name``.
+
+
+.. note:: Certain S3-compatible servers do not properly implement the
+          ``ListObjectsV2`` API, most notably Ceph versions before v14.2.5. On these
+          backends, as a temporary workaround, you can provide the
+          ``-o s3.list-objects-v1=true`` option to use the older
+          ``ListObjects`` API instead. This option may be removed in future
+          versions of restic.
+
 
 Minio Server
 ************
@@ -262,9 +273,9 @@ this command.
 .. code-block:: console
 
     $ ./restic -r s3:http://localhost:9000/restic init
-    enter password for new backend:
+    enter password for new repository:
     enter password again:
-    created restic backend 6ad29560f5 at s3:http://localhost:9000/restic1
+    created restic repository 6ad29560f5 at s3:http://localhost:9000/restic1
     Please note that knowledge of your password is required to access
     the repository. Losing your password means that your data is irrecoverably lost.
 
@@ -291,11 +302,51 @@ this command.
 .. code-block:: console
 
     $ ./restic -r s3:https://<WASABI-SERVICE-URL>/<WASABI-BUCKET-NAME> init
-    enter password for new backend:
+    enter password for new repository:
     enter password again:
-    created restic backend xxxxxxxxxx at s3:https://<WASABI-SERVICE-URL>/<WASABI-BUCKET-NAME>
+    created restic repository xxxxxxxxxx at s3:https://<WASABI-SERVICE-URL>/<WASABI-BUCKET-NAME>
     Please note that knowledge of your password is required to access
     the repository. Losing your password means that your data is irrecoverably lost.
+
+Alibaba Cloud (Aliyun) Object Storage System (OSS)
+**************************************************
+
+`Alibaba OSS <https://www.alibabacloud.com/product/oss/>`__ is an
+encrypted, secure, cost-effective, and easy-to-use object storage
+service that enables you to store, back up, and archive large amounts
+of data in the cloud.
+
+Alibaba OSS is S3 compatible so it can be used as a storage provider
+for a restic repository with a couple of extra parameters.
+
+-  Determine the correct `Alibaba OSS region endpoint <https://www.alibabacloud.com/help/doc-detail/31837.htm>`__ - this will be something like ``oss-eu-west-1.aliyuncs.com``
+-  You'll need the region name too - this will be something like ``oss-eu-west-1``
+
+You must first setup the following environment variables with the
+credentials of your Alibaba OSS account.
+
+.. code-block:: console
+
+    $ export AWS_ACCESS_KEY_ID=<YOUR-OSS-ACCESS-KEY-ID>
+    $ export AWS_SECRET_ACCESS_KEY=<YOUR-OSS-SECRET-ACCESS-KEY>
+
+Now you can easily initialize restic to use Alibaba OSS as a backend with
+this command.
+
+.. code-block:: console
+
+    $ ./restic -o s3.bucket-lookup=dns -o s3.region=<OSS-REGION> -r s3:https://<OSS-ENDPOINT>/<OSS-BUCKET-NAME> init
+    enter password for new backend:
+    enter password again:
+    created restic backend xxxxxxxxxx at s3:https://<OSS-ENDPOINT>/<OSS-BUCKET-NAME>
+    Please note that knowledge of your password is required to access
+    the repository. Losing your password means that your data is irrecoverably lost.
+
+For example with an actual endpoint:
+
+.. code-block:: console
+
+    $ restic -o s3.bucket-lookup=dns -o s3.region=oss-eu-west-1 -r s3:https://oss-eu-west-1.aliyuncs.com/bucketname init
 
 OpenStack Swift
 ***************
@@ -324,10 +375,14 @@ the naming convention of those variables follows the official Python Swift clien
    $ export OS_AUTH_URL=<MY_AUTH_URL>
    $ export OS_REGION_NAME=<MY_REGION_NAME>
    $ export OS_USERNAME=<MY_USERNAME>
+   $ export OS_USER_ID=<MY_USER_ID>
    $ export OS_PASSWORD=<MY_PASSWORD>
    $ export OS_USER_DOMAIN_NAME=<MY_DOMAIN_NAME>
+   $ export OS_USER_DOMAIN_ID=<MY_DOMAIN_ID>
    $ export OS_PROJECT_NAME=<MY_PROJECT_NAME>
    $ export OS_PROJECT_DOMAIN_NAME=<MY_PROJECT_DOMAIN_NAME>
+   $ export OS_PROJECT_DOMAIN_ID=<MY_PROJECT_DOMAIN_ID>
+   $ export OS_TRUST_ID=<MY_TRUST_ID>
 
    # For keystone v3 application credential authentication (application credential id)
    $ export OS_AUTH_URL=<MY_AUTH_URL>
@@ -357,9 +412,9 @@ the container does not exist, it will be created automatically:
 .. code-block:: console
 
    $ restic -r swift:container_name:/path init   # path is optional
-   enter password for new backend:
+   enter password for new repository:
    enter password again:
-   created restic backend eefee03bbd at swift:container_name:/path
+   created restic repository eefee03bbd at swift:container_name:/path
    Please note that knowledge of your password is required to access the repository.
    Losing your password means that your data is irrecoverably lost.
 
@@ -391,9 +446,9 @@ privilege to create buckets, it will be created automatically:
 .. code-block:: console
 
     $ restic -r b2:bucketname:path/to/repo init
-    enter password for new backend:
+    enter password for new repository:
     enter password again:
-    created restic backend eefee03bbd at b2:bucketname:path/to/repo
+    created restic repository eefee03bbd at b2:bucketname:path/to/repo
     Please note that knowledge of your password is required to access the repository.
     Losing your password means that your data is irrecoverably lost.
 
@@ -420,10 +475,10 @@ root path like this:
 .. code-block:: console
 
     $ restic -r azure:foo:/ init
-    enter password for new backend:
+    enter password for new repository:
     enter password again:
 
-    created restic backend a934bac191 at azure:foo:/
+    created restic repository a934bac191 at azure:foo:/
     [...]
 
 The number of concurrent connections to the Azure Blob Storage service can be set with the
@@ -458,16 +513,28 @@ which means if you're running in Google Container Engine or are otherwise
 located on an instance with default service accounts then these should work out of 
 the box.
 
+Alternatively, you can specify an existing access token directly:
+
+.. code-block:: console
+
+    $ export GOOGLE_ACCESS_TOKEN=ya29.a0AfH6SMC78...
+
+If ``GOOGLE_ACCESS_TOKEN`` is set all other authentication mechanisms are
+disabled. The access token must have at least the
+``https://www.googleapis.com/auth/devstorage.read_write`` scope. Keep in mind
+that access tokens are short-lived (usually one hour), so they are not suitable
+if creating a backup takes longer than that, for instance.
+
 Once authenticated, you can use the ``gs:`` backend type to create a new
 repository in the bucket ``foo`` at the root path:
 
 .. code-block:: console
 
     $ restic -r gs:foo:/ init
-    enter password for new backend:
+    enter password for new repository:
     enter password again:
 
-    created restic backend bde47d6254 at gs:foo2/
+    created restic repository bde47d6254 at gs:foo2/
     [...]
 
 The number of concurrent connections to the GCS service can be set with the
@@ -538,10 +605,9 @@ For debugging rclone, you can set the environment variable ``RCLONE_VERBOSE=2``.
 The rclone backend has two additional options:
 
  * ``-o rclone.program`` specifies the path to rclone, the default value is just ``rclone``
- * ``-o rclone.args`` allows setting the arguments passed to rclone, by default this is ``serve restic --stdio --b2-hard-delete --drive-use-trash=false``
+ * ``-o rclone.args`` allows setting the arguments passed to rclone, by default this is ``serve restic --stdio --b2-hard-delete``
 
-The reason for the two last parameters (``--b2-hard-delete`` and
-``--drive-use-trash=false``) can be found in the corresponding GitHub `issue #1657`_.
+The reason for the ``--b2-hard-delete`` parameters can be found in the corresponding GitHub `issue #1657`_.
 
 In order to start rclone, restic will build a list of arguments by joining the
 following lists (in this order): ``rclone.program``, ``rclone.args`` and as the
@@ -567,7 +633,17 @@ rclone e.g. via SSH on a server, for example:
 
 .. code-block:: console
 
-    $ restic -o rclone.program="ssh user@host rclone" -r rclone:b2:foo/bar
+    $ restic -o rclone.program="ssh user@remotehost rclone" -r rclone:b2:foo/bar
+
+With these options, restic works with local files. It uses rclone and
+credentials stored on ``remotehost`` to communicate with B2. All data (except
+credentials) is encrypted/decrypted locally, then sent/received via
+``remotehost`` to/from B2.
+
+A more advanced version of this setup forbids specific hosts from removing
+files in a repository. See the `blog post by Simon Ruderich
+<https://ruderich.org/simon/notes/append-only-backups-with-restic-and-rclone>`_
+for details.
 
 The rclone command may also be hard-coded in the SSH configuration or the
 user's public key, in this case it may be sufficient to just start the SSH

@@ -1,0 +1,3 @@
+package progress
+
+func setupSignals() {}

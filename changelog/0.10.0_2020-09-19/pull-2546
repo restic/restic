@@ -1,0 +1,19 @@
+Change: Return exit code 3 when failing to backup all source data
+
+The backup command used to return a zero exit code as long as a snapshot
+could be created successfully, even if some of the source files could not
+be read (in which case the snapshot would contain the rest of the files).
+
+This made it hard for automation/scripts to detect failures/incomplete
+backups by looking at the exit code. Restic now returns the following exit
+codes for the backup command:
+
+ - 0 when the command was successful
+ - 1 when there was a fatal error (no snapshot created)
+ - 3 when some source data could not be read (incomplete snapshot created)
+
+https://github.com/restic/restic/pull/2546
+https://github.com/restic/restic/issues/956
+https://github.com/restic/restic/issues/2064
+https://github.com/restic/restic/issues/2526
+https://github.com/restic/restic/issues/2364

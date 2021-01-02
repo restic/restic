@@ -27,6 +27,16 @@ Please see the :ref:`official_binaries` section below for various downloads.
 Official binaries can be updated in place by using the ``restic self-update``
 command.
 
+Alpine Linux
+============
+
+On `Alpine Linux <https://www.alpinelinux.org>`__ you can install the ``restic``
+package from the official community repos, e.g. using ``apk``:
+
+.. code-block:: console
+
+    $ apk add restic
+
 Arch Linux
 ==========
 
@@ -245,7 +255,7 @@ From Source
 ***********
 
 restic is written in the Go programming language and you need at least
-Go version 1.11. Building restic may also work with older versions of Go,
+Go version 1.13. Building restic may also work with older versions of Go,
 but that's not supported. See the `Getting
 started <https://golang.org/doc/install>`__ guide of the Go project for
 instructions how to install Go.
@@ -292,7 +302,7 @@ Restic can write out man pages and bash/zsh compatible autocompletion scripts:
     and the auto-completion files for bash and zsh).
 
     Usage:
-      restic generate [command] [flags]
+      restic generate [flags] [command]
 
     Flags:
           --bash-completion file   write bash completion file

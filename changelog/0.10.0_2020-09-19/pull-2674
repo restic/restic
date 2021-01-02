@@ -1,0 +1,8 @@
+Bugfix: Add stricter prune error checks
+
+Additional checks were added to the prune command in order to improve
+resiliency to backend, hardware and/or networking issues. The checks now
+detect a few more cases where such outside factors could potentially cause
+data loss.
+
+https://github.com/restic/restic/pull/2674

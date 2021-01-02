@@ -23,12 +23,11 @@ data that was referenced by the snapshot from the repository. This can
 be automated with the ``--prune`` option of the ``forget`` command,
 which runs ``prune`` automatically if snapshots have been removed.
 
-.. Warning::
-
-   Pruning snapshots can be a very time-consuming process, taking nearly
-   as long as backups themselves. During a prune operation, the index is
-   locked and backups cannot be completed. Performance improvements are 
-   planned for this feature.
+Pruning snapshots can be a time-consuming process, depending on the
+amount of snapshots and data to process. During a prune operation, the
+repository is locked and backups cannot be completed. Please plan your
+pruning so that there's time to complete it and it doesn't interfere with
+regular backup runs.
 
 It is advisable to run ``restic check`` after pruning, to make sure
 you are alerted, should the internal data structures of the repository
@@ -82,20 +81,30 @@ command must be run:
 
     $ restic -r /srv/restic-repo prune
     enter password for repository:
-
-    counting files in repo
-    building new index for repo
-    [0:00] 100.00%  22 / 22 files
-    repository contains 22 packs (8512 blobs) with 100.092 MiB bytes
-    processed 8512 blobs: 0 duplicate blobs, 0B duplicate
-    load all snapshots
-    find data that is still in use for 1 snapshots
-    [0:00] 100.00%  1 / 1 snapshots
-    found 8433 of 8512 data blobs still in use
-    will rewrite 3 packs
-    creating new index
-    [0:00] 86.36%  19 / 22 files
-    saved new index as 544a5084
+    repository 33002c5e opened successfully, password is correct
+    loading all snapshots...
+    loading indexes...
+    finding data that is still in use for 4 snapshots
+    [0:00] 100.00%  4 / 4 snapshots
+    searching used packs...
+    collecting packs for deletion and repacking
+    [0:00] 100.00%  5 / 5 packs processed
+    
+    to repack:           69 blobs / 1.078 MiB
+    this removes         67 blobs / 1.047 MiB
+    to delete:            7 blobs / 25.726 KiB
+    total prune:         74 blobs / 1.072 MiB
+    remaining:           16 blobs / 38.003 KiB
+    unused size after prune: 0 B (0.00% of remaining size)
+    
+    repacking packs
+    [0:00] 100.00%  2 / 2 packs repacked
+    rebuilding index
+    [0:00] 100.00%  3 / 3 packs processed
+    deleting obsolete index files
+    [0:00] 100.00%  3 / 3 files deleted
+    removing 3 old packs
+    [0:00] 100.00%  3 / 3 files deleted
     done
 
 Afterwards the repository is smaller.
@@ -119,19 +128,29 @@ to ``forget``:
     8c02b94b  2017-02-21 10:48:33  mopped                  /home/user/work
 
     1 snapshots have been removed, running prune
-    counting files in repo
-    building new index for repo
-    [0:00] 100.00%  37 / 37 packs
-    repository contains 37 packs (5521 blobs) with 151.012 MiB bytes
-    processed 5521 blobs: 0 duplicate blobs, 0B duplicate
-    load all snapshots
-    find data that is still in use for 1 snapshots
+    loading all snapshots...
+    loading indexes...
+    finding data that is still in use for 1 snapshots
     [0:00] 100.00%  1 / 1 snapshots
-    found 5323 of 5521 data blobs still in use, removing 198 blobs
-    will delete 0 packs and rewrite 27 packs, this frees 22.106 MiB
-    creating new index
-    [0:00] 100.00%  30 / 30 packs
-    saved new index as b49f3e68
+    searching used packs...
+    collecting packs for deletion and repacking
+    [0:00] 100.00%  5 / 5 packs processed
+    
+    to repack:           69 blobs / 1.078 MiB
+    this removes         67 blobs / 1.047 MiB
+    to delete:            7 blobs / 25.726 KiB
+    total prune:         74 blobs / 1.072 MiB
+    remaining:           16 blobs / 38.003 KiB
+    unused size after prune: 0 B (0.00% of remaining size)
+    
+    repacking packs
+    [0:00] 100.00%  2 / 2 packs repacked
+    rebuilding index
+    [0:00] 100.00%  3 / 3 packs processed
+    deleting obsolete index files
+    [0:00] 100.00%  3 / 3 files deleted
+    removing 3 old packs
+    [0:00] 100.00%  3 / 3 files deleted
     done
 
 Removing snapshots according to a policy
@@ -172,11 +191,15 @@ The ``forget`` command accepts the following parameters:
    made in the two years, five months, seven days, and three hours before the
    latest snapshot.
 
+.. note:: All calendar related ``--keep-*`` options work on the natural time
+    boundaries and not relative to when you run the ``forget`` command. Weeks
+    are Monday 00:00 -> Sunday 23:59, days 00:00 to 23:59, hours :00 to :59, etc.
+
 Multiple policies will be ORed together so as to be as inclusive as possible
 for keeping snapshots.
 
 Additionally, you can restrict removing snapshots to those which have a
-particular hostname with the ``--hostname`` parameter, or tags with the
+particular hostname with the ``--host`` parameter, or tags with the
 ``--tag`` option. When multiple tags are specified, only the snapshots
 which have all the tags are considered. For example, the following command
 removes all but the latest snapshot of all snapshots that have the tag ``foo``:
@@ -282,3 +305,59 @@ last-day-of-the-months (11 or 12 depends if the 5 weeklies cross a month).
 And finally 75 last-day-of-the-year snapshots. All other snapshots are
 removed.
 
+Customize pruning
+*****************
+
+To understand the custom options, we first explain how the pruning process works:
+
+1. All snapshots and directories within snapshots are scanned to determine
+   which data is still in use.
+2. For all files in the repository, restic finds out if the file is fully
+   used, partly used or completely unused.
+3. Completely unused files are marked for deletion. Fully used files are kept.
+   A partially used file is either kept or marked for repacking depending on user
+   options.
+
+   Note that for repacking, restic must download the file from the repository
+   storage and re-upload the needed data in the repository. This can be very
+   time-consuming for remote repositories.
+4. After deciding what to do, ``prune`` will actually perform the repack, modify
+   the index according to the changes and delete the obsolete files.
+
+The ``prune`` command accepts the following options:
+
+-  ``--max-unused limit`` allow unused data up to the specified limit within the repository.
+   This allows restic to keep partly used files instead of repacking them.
+
+   The limit can be specified in several ways:
+
+    * As an absolute size (e.g. ``200M``). If you want to minimize the space
+      used by your repository, pass ``0`` to this option.
+    * As a size relative to the total repo size (e.g. ``10%``). This means that
+      after prune, at most ``10%`` of the total data stored in the repo may be
+      unused data. If the repo after prune has as size of 500MB, then at most
+      50MB may be unused.
+    * If the string ``unlimited`` is passed, there is no limit for partly
+      unused files. This means that as long as some data is still used within
+      a file stored in the repo, restic will just leave it there. Use this if
+      you want to minimize the time and bandwidth used by the ``prune``
+      operation.
+
+   Restic tries to repack as little data as possible while still ensuring this 
+   limit for unused data.
+
+- ``--max-repack-size size`` if set limits the total size of files to repack.
+  As ``prune`` first stores all repacked files and deletes the obsolete files at the end,
+  this option might be handy if you expect many files to be repacked and fear to run low
+  on storage. 
+
+- ``--repack-cacheable-only`` if set to true only files which contain
+  metadata and would be stored in the cache are repacked. Other pack files are
+  not repacked if this option is set. This allows a very fast repacking
+  using only cached data. It can, however, imply that the unused data in
+  your repository exceeds the value given by ``--max-unused``.
+  The default value is false.
+
+-  ``--dry-run`` only show what ``prune`` would do.
+
+-  ``--verbose`` increased verbosity shows additional statistics for ``prune``.

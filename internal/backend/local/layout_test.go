@@ -17,7 +17,7 @@ func TestLayout(t *testing.T) {
 		filename        string
 		layout          string
 		failureExpected bool
-		datafiles       map[string]bool
+		packfiles       map[string]bool
 	}{
 		{"repo-layout-default.tar.gz", "", false, map[string]bool{
 			"aa464e9fd598fe4202492ee317ffa728e82fa83a1de1a61996e5bd2d6651646c": false,
@@ -36,7 +36,7 @@ func TestLayout(t *testing.T) {
 			rtest.SetupTarTestFixture(t, path, filepath.Join("..", "testdata", test.filename))
 
 			repo := filepath.Join(path, "repo")
-			be, err := Open(Config{
+			be, err := Open(context.TODO(), Config{
 				Path:   repo,
 				Layout: test.layout,
 			})
@@ -48,9 +48,9 @@ func TestLayout(t *testing.T) {
 				t.Fatalf("Open() returned nil but no error")
 			}
 
-			datafiles := make(map[string]bool)
-			err = be.List(context.TODO(), restic.DataFile, func(fi restic.FileInfo) error {
-				datafiles[fi.Name] = false
+			packs := make(map[string]bool)
+			err = be.List(context.TODO(), restic.PackFile, func(fi restic.FileInfo) error {
+				packs[fi.Name] = false
 				return nil
 			})
 
@@ -58,19 +58,19 @@ func TestLayout(t *testing.T) {
 				t.Fatalf("List() returned error %v", err)
 			}
 
-			if len(datafiles) == 0 {
-				t.Errorf("List() returned zero data files")
+			if len(packs) == 0 {
+				t.Errorf("List() returned zero pack files")
 			}
 
-			for id := range test.datafiles {
-				if _, ok := datafiles[id]; !ok {
-					t.Errorf("datafile with id %v not found", id)
+			for id := range test.packfiles {
+				if _, ok := packs[id]; !ok {
+					t.Errorf("packfile with id %v not found", id)
 				}
 
-				datafiles[id] = true
+				packs[id] = true
 			}
 
-			for id, v := range datafiles {
+			for id, v := range packs {
 				if !v {
 					t.Errorf("unexpected id %v found", id)
 				}

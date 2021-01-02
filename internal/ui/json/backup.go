@@ -43,6 +43,7 @@ type Backup struct {
 	errCh       chan struct{}
 	workerCh    chan fileWorkerMessage
 	finished    chan struct{}
+	closed      chan struct{}
 
 	summary struct {
 		sync.Mutex
@@ -73,6 +74,7 @@ func NewBackup(term *termstatus.Terminal, verbosity uint) *Backup {
 		errCh:       make(chan struct{}),
 		workerCh:    make(chan fileWorkerMessage),
 		finished:    make(chan struct{}),
+		closed:      make(chan struct{}),
 	}
 }
 
@@ -104,6 +106,7 @@ func (b *Backup) Run(ctx context.Context) error {
 
 	t := time.NewTicker(time.Second)
 	defer t.Stop()
+	defer close(b.closed)
 
 	for {
 		select {
@@ -201,20 +204,27 @@ func (b *Backup) Error(item string, fi os.FileInfo, err error) error {
 		During:      "archival",
 		Item:        item,
 	})
-	b.errCh <- struct{}{}
+	select {
+	case b.errCh <- struct{}{}:
+	case <-b.closed:
+	}
 	return nil
 }
 
 // StartFile is called when a file is being processed by a worker.
 func (b *Backup) StartFile(filename string) {
-	b.workerCh <- fileWorkerMessage{
-		filename: filename,
+	select {
+	case b.workerCh <- fileWorkerMessage{filename: filename}:
+	case <-b.closed:
 	}
 }
 
 // CompleteBlob is called for all saved blobs for files.
 func (b *Backup) CompleteBlob(filename string, bytes uint64) {
-	b.processedCh <- counter{Bytes: bytes}
+	select {
+	case b.processedCh <- counter{Bytes: bytes}:
+	case <-b.closed:
+	}
 }
 
 // CompleteItem is the status callback function for the archiver when a
@@ -226,24 +236,30 @@ func (b *Backup) CompleteItem(item string, previous, current *restic.Node, s arc
 
 	if current == nil {
 		// error occurred, tell the status display to remove the line
-		b.workerCh <- fileWorkerMessage{
-			filename: item,
-			done:     true,
+		select {
+		case b.workerCh <- fileWorkerMessage{filename: item, done: true}:
+		case <-b.closed:
 		}
 		return
-	} else {
-		b.summary.ProcessedBytes += current.Size
 	}
+
+	b.summary.ProcessedBytes += current.Size
 
 	switch current.Type {
 	case "file":
-		b.processedCh <- counter{Files: 1}
-		b.workerCh <- fileWorkerMessage{
-			filename: item,
-			done:     true,
+		select {
+		case b.processedCh <- counter{Files: 1}:
+		case <-b.closed:
+		}
+		select {
+		case b.workerCh <- fileWorkerMessage{filename: item, done: true}:
+		case <-b.closed:
 		}
 	case "dir":
-		b.processedCh <- counter{Dirs: 1}
+		select {
+		case b.processedCh <- counter{Dirs: 1}:
+		case <-b.closed:
+		}
 	}
 
 	if current.Type == "dir" {
@@ -292,10 +308,9 @@ func (b *Backup) CompleteItem(item string, previous, current *restic.Node, s arc
 		}
 
 	} else if current.Type == "file" {
-
-		b.workerCh <- fileWorkerMessage{
-			done:     true,
-			filename: item,
+		select {
+		case b.workerCh <- fileWorkerMessage{done: true, filename: item}:
+		case <-b.closed:
 		}
 
 		if previous == nil {
@@ -346,7 +361,7 @@ func (b *Backup) CompleteItem(item string, previous, current *restic.Node, s arc
 func (b *Backup) ReportTotal(item string, s archiver.ScanStats) {
 	select {
 	case b.totalCh <- counter{Files: uint64(s.Files), Dirs: uint64(s.Dirs), Bytes: s.Bytes}:
-	case <-b.finished:
+	case <-b.closed:
 	}
 
 	if item == "" {
@@ -366,7 +381,11 @@ func (b *Backup) ReportTotal(item string, s archiver.ScanStats) {
 
 // Finish prints the finishing messages.
 func (b *Backup) Finish(snapshotID restic.ID) {
-	close(b.finished)
+	select {
+	case b.finished <- struct{}{}:
+	case <-b.closed:
+	}
+
 	b.print(summaryOutput{
 		MessageType:         "summary",
 		FilesNew:            b.summary.Files.New,

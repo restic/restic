@@ -14,7 +14,7 @@ import (
 )
 
 var cmdSnapshots = &cobra.Command{
-	Use:   "snapshots [snapshotID ...]",
+	Use:   "snapshots [flags] [snapshotID ...]",
 	Short: "List all snapshots",
 	Long: `
 The "snapshots" command lists all snapshots stored in the repository.
@@ -47,9 +47,9 @@ func init() {
 
 	f := cmdSnapshots.Flags()
 	f.StringArrayVarP(&snapshotOptions.Hosts, "host", "H", nil, "only consider snapshots for this `host` (can be specified multiple times)")
-	f.Var(&snapshotOptions.Tags, "tag", "only consider snapshots which include this `taglist` (can be specified multiple times)")
+	f.Var(&snapshotOptions.Tags, "tag", "only consider snapshots which include this `taglist` in the format `tag[,tag,...]` (can be specified multiple times)")
 	f.StringArrayVar(&snapshotOptions.Paths, "path", nil, "only consider snapshots for this `path` (can be specified multiple times)")
-	f.BoolVarP(&snapshotOptions.Compact, "compact", "c", false, "use compact format")
+	f.BoolVarP(&snapshotOptions.Compact, "compact", "c", false, "use compact output format")
 	f.BoolVar(&snapshotOptions.Last, "last", false, "only show the last snapshot for each host and path")
 	f.StringVarP(&snapshotOptions.GroupBy, "group-by", "g", "", "string for grouping snapshots by host,paths,tags")
 }
@@ -61,7 +61,7 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 	}
 
 	if !gopts.NoLock {
-		lock, err := lockRepo(repo)
+		lock, err := lockRepo(gopts.ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
@@ -251,9 +251,8 @@ func PrintSnapshots(stdout io.Writer, list restic.Snapshots, reasons []restic.Ke
 // Prints nothing, if we did not group at all.
 func PrintSnapshotGroupHeader(stdout io.Writer, groupKeyJSON string) error {
 	var key restic.SnapshotGroupKey
-	var err error
 
-	err = json.Unmarshal([]byte(groupKeyJSON), &key)
+	err := json.Unmarshal([]byte(groupKeyJSON), &key)
 	if err != nil {
 		return err
 	}
@@ -299,7 +298,7 @@ type SnapshotGroup struct {
 // printSnapshotsJSON writes the JSON representation of list to stdout.
 func printSnapshotGroupJSON(stdout io.Writer, snGroups map[string]restic.Snapshots, grouped bool) error {
 	if grouped {
-		var snapshotGroups []SnapshotGroup
+		snapshotGroups := []SnapshotGroup{}
 
 		for k, list := range snGroups {
 			var key restic.SnapshotGroupKey
@@ -331,7 +330,7 @@ func printSnapshotGroupJSON(stdout io.Writer, snGroups map[string]restic.Snapsho
 	}
 
 	// Old behavior
-	var snapshots []Snapshot
+	snapshots := []Snapshot{}
 
 	for _, list := range snGroups {
 		for _, sn := range list {

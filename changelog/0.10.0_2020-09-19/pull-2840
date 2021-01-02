@@ -1,0 +1,7 @@
+Enhancement: Speed-up file deletion in forget, prune and rebuild-index
+
+We've sped up the file deletion for the commands forget, prune and
+rebuild-index, especially for remote repositories.
+Deletion was sequential before and is now run in parallel.
+
+https://github.com/restic/restic/pull/2840

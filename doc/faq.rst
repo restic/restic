@@ -3,6 +3,32 @@ FAQ
 
 This is the list of Frequently Asked Questions for restic.
 
+Will restic resume an interrupted backup?
+-----------------------------------------
+
+Yes, restic will resume interrupted backups when they are re-run.
+
+When backing up, restic periodically writes index files to keep a record of
+the uploaded data. Even if there's no snapshot created in the end (due to the
+backup being interrupted), these indexes are stored in the repository for the
+data that has been uploaded so far. Next time restic runs, it is then able to
+find the uploaded data through these indexes, and thereby reference it again
+without having to upload it a second time. This effectively makes it continue
+from where it saved the last index, which should be up to a few minutes ago.
+
+It does not matter if the backup was interrupted by the user or if it was due
+to unforeseen circumstances such as connectivity issues, power loss, etc.
+Simply re-run the backup again and restic should only upload what it needs to
+in order to complete the interrupted backup and create a snapshot.
+
+Note however that during the initial backup run and any re-tries, until there
+has been a first snapshot created for the backup set (list of files and
+directories to be backed up), restic will need to re-scan the files on disk as
+there is no parent snapshot to compare the filesystem with to determine which
+files have changed. This process should however be far quicker than the
+uploading, and it's normal to see restic scan the files again when re-running
+the backup.
+
 ``restic check`` reports packs that aren't referenced in any index, is my repository broken?
 --------------------------------------------------------------------------------------------
 

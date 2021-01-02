@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/cenkalti/backoff"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
 )
@@ -33,6 +33,16 @@ func NewRetryBackend(be restic.Backend, maxTries int, report func(string, error,
 }
 
 func (be *RetryBackend) retry(ctx context.Context, msg string, f func() error) error {
+	// Don't do anything when called with an already cancelled context. There would be
+	// no retries in that case either, so be consistent and abort always.
+	// This enforces a strict contract for backend methods: Using a cancelled context
+	// will prevent any backup repository modifications. This simplifies ensuring that
+	// a backup repository is not modified any further after a context was cancelled.
+	// The 'local' backend for example does not provide this guarantee on its own.
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
 	err := backoff.RetryNotify(f,
 		backoff.WithContext(backoff.WithMaxRetries(backoff.NewExponentialBackOff(), uint64(be.MaxTries)), ctx),
 		func(err error, d time.Duration) {

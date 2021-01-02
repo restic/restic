@@ -1,0 +1,9 @@
+Enhancement: Support filtering snapshots by tag and path in the stats command
+
+We've added filtering snapshots by `--tag tagList` and by `--path path` to
+the `stats` command. This includes filtering of only 'latest' snapshots or
+all snapshots in a repository.
+
+https://github.com/restic/restic/issues/2858
+https://github.com/restic/restic/pull/2859
+https://forum.restic.net/t/stats-for-a-host-and-filtered-snapshots/3020

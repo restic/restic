@@ -1,7 +1,4 @@
-// +build !netbsd
-// +build !openbsd
-// +build !solaris
-// +build !windows
+// +build darwin freebsd linux
 
 package restic
 
@@ -16,7 +13,8 @@ import (
 // Getxattr retrieves extended attribute data associated with path.
 func Getxattr(path, name string) ([]byte, error) {
 	b, e := xattr.Get(path, name)
-	if err, ok := e.(*xattr.Error); ok && err.Err == syscall.ENOTSUP {
+	if err, ok := e.(*xattr.Error); ok &&
+		(err.Err == syscall.ENOTSUP || err.Err == xattr.ENOATTR) {
 		return nil, nil
 	}
 	return b, errors.Wrap(e, "Getxattr")
@@ -26,7 +24,8 @@ func Getxattr(path, name string) ([]byte, error) {
 // given path in the file system.
 func Listxattr(path string) ([]string, error) {
 	s, e := xattr.List(path)
-	if err, ok := e.(*xattr.Error); ok && err.Err == syscall.ENOTSUP {
+	if err, ok := e.(*xattr.Error); ok &&
+		(err.Err == syscall.ENOTSUP || err.Err == xattr.ENOATTR) {
 		return nil, nil
 	}
 	return s, errors.Wrap(e, "Listxattr")
@@ -35,7 +34,8 @@ func Listxattr(path string) ([]string, error) {
 // Setxattr associates name and data together as an attribute of path.
 func Setxattr(path, name string, data []byte) error {
 	e := xattr.Set(path, name, data)
-	if err, ok := e.(*xattr.Error); ok && err.Err == syscall.ENOTSUP {
+	if err, ok := e.(*xattr.Error); ok &&
+		(err.Err == syscall.ENOTSUP || err.Err == xattr.ENOATTR) {
 		return nil
 	}
 	return errors.Wrap(e, "Setxattr")

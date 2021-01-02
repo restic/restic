@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -8,16 +9,14 @@ import (
 
 func TestStdioWrapper(t *testing.T) {
 	var tests = []struct {
-		inputs  [][]byte
-		outputs []string
+		inputs [][]byte
+		output string
 	}{
 		{
 			inputs: [][]byte{
 				[]byte("foo"),
 			},
-			outputs: []string{
-				"foo\n",
-			},
+			output: "foo\n",
 		},
 		{
 			inputs: [][]byte{
@@ -26,10 +25,8 @@ func TestStdioWrapper(t *testing.T) {
 				[]byte("\n"),
 				[]byte("baz"),
 			},
-			outputs: []string{
-				"foobar\n",
+			output: "foobar\n" +
 				"baz\n",
-			},
 		},
 		{
 			inputs: [][]byte{
@@ -37,11 +34,9 @@ func TestStdioWrapper(t *testing.T) {
 				[]byte("bar\nbaz\n"),
 				[]byte("bump\n"),
 			},
-			outputs: []string{
-				"foobar\n",
-				"baz\n",
+			output: "foobar\n" +
+				"baz\n" +
 				"bump\n",
-			},
 		},
 		{
 			inputs: [][]byte{
@@ -53,23 +48,17 @@ func TestStdioWrapper(t *testing.T) {
 				[]byte("x"),
 				[]byte("z"),
 			},
-			outputs: []string{
-				"foobar\n",
-				"baz\n",
-				"bump\n",
+			output: "foobar\n" +
+				"baz\n" +
+				"bump\n" +
 				"xxxz\n",
-			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			var lines []string
-			print := func(s string) {
-				lines = append(lines, s)
-			}
-
-			w := newLineWriter(print)
+			var output strings.Builder
+			w := newLineWriter(func(s string) { output.WriteString(s) })
 
 			for _, data := range test.inputs {
 				n, err := w.Write(data)
@@ -87,8 +76,8 @@ func TestStdioWrapper(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if !cmp.Equal(test.outputs, lines) {
-				t.Error(cmp.Diff(test.outputs, lines))
+			if outstr := output.String(); outstr != test.output {
+				t.Error(cmp.Diff(test.output, outstr))
 			}
 		})
 	}

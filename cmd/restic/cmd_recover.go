@@ -13,7 +13,7 @@ var cmdRecover = &cobra.Command{
 	Use:   "recover [flags]",
 	Short: "Recover data from the repository",
 	Long: `
-The "recover" command build a new snapshot from all directories it can find in
+The "recover" command builds a new snapshot from all directories it can find in
 the raw data of the repository. It can be used if, for example, a snapshot has
 been removed by accident with "forget".
 
@@ -43,7 +43,7 @@ func runRecover(gopts GlobalOptions) error {
 		return err
 	}
 
-	lock, err := lockRepo(repo)
+	lock, err := lockRepo(gopts.ctx, repo)
 	defer unlockRepo(lock)
 	if err != nil {
 		return err
@@ -128,11 +128,6 @@ func runRecover(gopts GlobalOptions) error {
 	err = repo.Flush(gopts.ctx)
 	if err != nil {
 		return errors.Fatalf("unable to save blobs to the repo: %v", err)
-	}
-
-	err = repo.SaveIndex(gopts.ctx)
-	if err != nil {
-		return errors.Fatalf("unable to save new index to the repo: %v", err)
 	}
 
 	sn, err := restic.NewSnapshot([]string{"/recover"}, []string{}, hostname, time.Now())

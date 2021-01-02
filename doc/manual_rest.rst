@@ -9,6 +9,7 @@ Usage help is available:
 .. code-block:: console
 
     $ ./restic --help
+
     restic is a backup program which allows saving multiple revisions of files and
     directories in an encrypted repository stored on different backends.
 
@@ -20,6 +21,7 @@ Usage help is available:
       cache         Operate on local cache directories
       cat           Print internal objects to stdout
       check         Check the repository for errors
+      copy          Copy snapshots from one repository to another
       diff          Show differences between two snapshots
       dump          Print a backed-up file to stdout
       find          Find a file, a directory or restic IDs
@@ -33,7 +35,7 @@ Usage help is available:
       migrate       Apply migrations
       mount         Mount the repository
       prune         Remove unneeded data from the repository
-      rebuild-index Build a new index file
+      rebuild-index Build a new index
       recover       Recover data from the repository
       restore       Extract the data from a snapshot
       self-update   Update the restic binary
@@ -53,14 +55,15 @@ Usage help is available:
           --limit-download int         limits downloads to a maximum rate in KiB/s. (default: unlimited)
           --limit-upload int           limits uploads to a maximum rate in KiB/s. (default: unlimited)
           --no-cache                   do not use a local cache
-          --no-lock                    do not lock the repo, this allows some operations on read-only repos
+          --no-lock                    do not lock the repository, this allows some operations on read-only repositories
       -o, --option key=value           set extended option (key=value, can be specified multiple times)
-          --password-command command   specify a shell command to obtain a password (default: $RESTIC_PASSWORD_COMMAND)
-      -p, --password-file file         read the repository password from a file (default: $RESTIC_PASSWORD_FILE)
+          --password-command command   shell command to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)
+      -p, --password-file file         file to read the repository password from (default: $RESTIC_PASSWORD_FILE)
       -q, --quiet                      do not output comprehensive progress report
       -r, --repo repository            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
+          --repository-file file       file to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
           --tls-client-cert file       path to a file containing PEM encoded TLS client certificate and private key
-      -v, --verbose n                  be verbose (specify --verbose multiple times or level n)
+      -v, --verbose n                  be verbose (specify multiple times or a level using --verbose=n, max level/times is 3)
 
     Use "restic [command] --help" for more information about a command.
 
@@ -73,37 +76,42 @@ command:
 .. code-block:: console
 
     $ ./restic backup --help
+
     The "backup" command creates a new snapshot and saves the files and directories
     given as the arguments.
 
     EXIT STATUS
     ===========
 
-    Exit status is 0 if the command was successful, and non-zero if there was any error.
-
-    Note that some issues such as unreadable or deleted files during backup
-    currently doesn't result in a non-zero error exit status.
+    Exit status is 0 if the command was successful.
+    Exit status is 1 if there was a fatal error (no snapshot created).
+    Exit status is 3 if some source data could not be read (incomplete snapshot created).
 
     Usage:
       restic backup [flags] FILE/DIR [FILE/DIR] ...
 
     Flags:
       -e, --exclude pattern                        exclude a pattern (can be specified multiple times)
-          --exclude-caches                         excludes cache directories that are marked with a CACHEDIR.TAG file. See http://bford.info/cachedir/spec.html for the Cache Directory Tagging Standard
+          --exclude-caches                         excludes cache directories that are marked with a CACHEDIR.TAG file. See https://bford.info/cachedir/ for the Cache Directory Tagging Standard
           --exclude-file file                      read exclude patterns from a file (can be specified multiple times)
           --exclude-if-present filename[:header]   takes filename[:header], exclude contents of directories containing filename (except filename itself) if header of that file is as provided (can be specified multiple times)
-          --files-from file                        read the files to backup from file (can be combined with file args/can be specified multiple times)
+          --exclude-larger-than size               max size of the files to be backed up (allowed suffixes: k/K, m/M, g/G, t/T)
+          --files-from file                        read the files to backup from file (can be combined with file args; can be specified multiple times)
+          --files-from-raw file                    read the files to backup from file (can be combined with file args; can be specified multiple times)
+          --files-from-verbatim file               read the files to backup from file (can be combined with file args; can be specified multiple times)
       -f, --force                                  force re-reading the target files/directories (overrides the "parent" flag)
       -h, --help                                   help for backup
       -H, --host hostname                          set the hostname for the snapshot manually. To prevent an expensive rescan use the "parent" flag
           --iexclude pattern                       same as --exclude pattern but ignores the casing of filenames
+          --iexclude-file file                     same as --exclude-file but ignores casing of filenames in patterns
           --ignore-inode                           ignore inode number changes when checking for modified files
       -x, --one-file-system                        exclude other file systems
           --parent snapshot                        use this parent snapshot (default: last snapshot in the repo that has the same target files/directories)
           --stdin                                  read backup from stdin
           --stdin-filename filename                filename to use when reading from stdin (default "stdin")
-          --tag tag                                add a tag for the new snapshot (can be specified multiple times)
+          --tag tags                               add tags for the new snapshot in the format `tag[,tag,...]` (can be specified multiple times) (default [])
           --time time                              time of the backup (ex. '2012-11-01 22:08:41') (default: now)
+          --use-fs-snapshot                        use filesystem snapshot where possible (currently only Windows VSS)
           --with-atime                             store the atime for all files and directories
 
     Global Flags:
@@ -115,14 +123,15 @@ command:
           --limit-download int         limits downloads to a maximum rate in KiB/s. (default: unlimited)
           --limit-upload int           limits uploads to a maximum rate in KiB/s. (default: unlimited)
           --no-cache                   do not use a local cache
-          --no-lock                    do not lock the repo, this allows some operations on read-only repos
+          --no-lock                    do not lock the repository, this allows some operations on read-only repositories
       -o, --option key=value           set extended option (key=value, can be specified multiple times)
-          --password-command command   specify a shell command to obtain a password (default: $RESTIC_PASSWORD_COMMAND)
-      -p, --password-file file         read the repository password from a file (default: $RESTIC_PASSWORD_FILE)
+          --password-command command   shell command to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)
+      -p, --password-file file         file to read the repository password from (default: $RESTIC_PASSWORD_FILE)
       -q, --quiet                      do not output comprehensive progress report
       -r, --repo repository            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
+          --repository-file file       file to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
           --tls-client-cert file       path to a file containing PEM encoded TLS client certificate and private key
-      -v, --verbose n                  be verbose (specify --verbose multiple times or level n)
+      -v, --verbose n                  be verbose (specify multiple times or a level using --verbose=n, max level/times is 3)
 
 Subcommand that support showing progress information such as ``backup``,
 ``check`` and ``prune`` will do so unless the quiet flag ``-q`` or
@@ -305,6 +314,10 @@ host by using the ``--host`` flag:
 There we see that it would take 482 GiB of disk space to restore the latest
 snapshot from "myserver".
 
+In case you have multiple backups running from the same host so can also use
+``--tag`` and ``--path`` to be more specific about which snapshots you
+are looking for.
+
 But how much space does that snapshot take on disk? In other words, how much
 has restic's deduplication helped? We can check:
 
@@ -361,6 +374,8 @@ lists all snapshots as JSON and uses ``jq`` to pretty-print the result:
       }
     ]
 
+.. _temporary_files:
+
 Temporary files
 ---------------
 
@@ -378,6 +393,8 @@ instead of the default, set the environment variable like this:
 
 
 
+.. _caching:
+
 Caching
 -------
 
@@ -386,9 +403,13 @@ This allows faster operations, since meta data does not need to be loaded from
 a remote repository. The cache is automatically created, usually in an
 OS-specific cache folder:
 
- * Linux/other: ``~/.cache/restic`` (or ``$XDG_CACHE_HOME/restic``)
+ * Linux/other: ``$XDG_CACHE_HOME/restic``, or ``~/.cache/restic`` if
+   ``XDG_CACHE_HOME`` is not set
  * macOS: ``~/Library/Caches/restic``
  * Windows: ``%LOCALAPPDATA%/restic``
+
+If the relevant environment variables are not set, restic exits with an error
+message.
 
 The command line parameter ``--cache-dir`` or the environment variable
 ``$RESTIC_CACHE_DIR`` can be used to override the default cache location.  The

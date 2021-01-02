@@ -73,55 +73,49 @@ func init() {
 	f.Var(&forgetOptions.Tags, "tag", "only consider snapshots which include this `taglist` in the format `tag[,tag,...]` (can be specified multiple times)")
 
 	f.StringArrayVar(&forgetOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` (can be specified multiple times)")
-	f.BoolVarP(&forgetOptions.Compact, "compact", "c", false, "use compact format")
+	f.BoolVarP(&forgetOptions.Compact, "compact", "c", false, "use compact output format")
 
 	f.StringVarP(&forgetOptions.GroupBy, "group-by", "g", "host,paths", "string for grouping snapshots by host,paths,tags")
 	f.BoolVarP(&forgetOptions.DryRun, "dry-run", "n", false, "do not delete anything, just print what would be done")
 	f.BoolVar(&forgetOptions.Prune, "prune", false, "automatically run the 'prune' command if snapshots have been removed")
 
 	f.SortFlags = false
+	addPruneOptions(cmdForget)
 }
 
 func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
+	err := verifyPruneOptions(&pruneOptions)
+	if err != nil {
+		return err
+	}
+
 	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err
 	}
 
-	lock, err := lockRepoExclusive(repo)
+	lock, err := lockRepoExclusive(gopts.ctx, repo)
 	defer unlockRepo(lock)
 	if err != nil {
 		return err
 	}
 
-	removeSnapshots := 0
-
 	ctx, cancel := context.WithCancel(gopts.ctx)
 	defer cancel()
 
 	var snapshots restic.Snapshots
+	removeSnIDs := restic.NewIDSet()
 
 	for sn := range FindFilteredSnapshots(ctx, repo, opts.Hosts, opts.Tags, opts.Paths, args) {
 		snapshots = append(snapshots, sn)
 	}
 
+	var jsonGroups []*ForgetGroup
+
 	if len(args) > 0 {
 		// When explicit snapshots args are given, remove them immediately.
 		for _, sn := range snapshots {
-			if !opts.DryRun {
-				h := restic.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
-				if err = repo.Backend().Remove(gopts.ctx, h); err != nil {
-					return err
-				}
-				if !gopts.JSON {
-					Verbosef("removed snapshot %v\n", sn.ID().Str())
-				}
-				removeSnapshots++
-			} else {
-				if !gopts.JSON {
-					Verbosef("would have removed snapshot %v\n", sn.ID().Str())
-				}
-			}
+			removeSnIDs.Insert(*sn.ID())
 		}
 	} else {
 		snapshotGroups, _, err := restic.GroupSnapshots(snapshots, opts.GroupBy)
@@ -150,8 +144,6 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 			if !gopts.JSON {
 				Verbosef("Applying Policy: %v\n", policy)
 			}
-
-			var jsonGroups []*ForgetGroup
 
 			for k, snapshotGroup := range snapshotGroups {
 				if gopts.Verbose >= 1 && !gopts.JSON {
@@ -191,35 +183,39 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 
 				jsonGroups = append(jsonGroups, &fg)
 
-				removeSnapshots += len(remove)
-
-				if !opts.DryRun {
-					for _, sn := range remove {
-						h := restic.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
-						err = repo.Backend().Remove(gopts.ctx, h)
-						if err != nil {
-							return err
-						}
-					}
-				}
-			}
-
-			if gopts.JSON {
-				err = printJSONForget(gopts.stdout, jsonGroups)
-				if err != nil {
-					return err
+				for _, sn := range remove {
+					removeSnIDs.Insert(*sn.ID())
 				}
 			}
 		}
 	}
 
-	if removeSnapshots > 0 && opts.Prune {
-		if !gopts.JSON {
-			Verbosef("%d snapshots have been removed, running prune\n", removeSnapshots)
-		}
+	if len(removeSnIDs) > 0 {
 		if !opts.DryRun {
-			return pruneRepository(gopts, repo)
+			err := DeleteFilesChecked(gopts, repo, removeSnIDs, restic.SnapshotFile)
+			if err != nil {
+				return err
+			}
+		} else {
+			if !gopts.JSON {
+				Printf("Would have removed the following snapshots:\n%v\n\n", removeSnIDs)
+			}
 		}
+	}
+
+	if gopts.JSON && len(jsonGroups) > 0 {
+		err = printJSONForget(gopts.stdout, jsonGroups)
+		if err != nil {
+			return err
+		}
+	}
+
+	if len(removeSnIDs) > 0 && opts.Prune {
+		if !gopts.JSON {
+			Verbosef("%d snapshots have been removed, running prune\n", len(removeSnIDs))
+		}
+		pruneOptions.DryRun = opts.DryRun
+		return runPruneWithRepo(pruneOptions, gopts, repo, removeSnIDs)
 	}
 
 	return nil

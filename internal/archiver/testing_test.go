@@ -17,7 +17,7 @@ import (
 )
 
 // MockT passes through all logging functions from T, but catches Fail(),
-// Error/f() and Fatal/f(). It is used to test test helper functions.
+// Error/f() and Fatal/f(). It is used to test helper functions.
 type MockT struct {
 	*testing.T
 	HasFailed bool
@@ -125,7 +125,6 @@ func TestTestCreateFiles(t *testing.T) {
 					if _, ok := item.(TestSymlink); ok {
 						continue
 					}
-					continue
 				}
 
 				targetPath := filepath.Join(tempdir, filepath.FromSlash(name))
@@ -496,7 +495,7 @@ func TestTestEnsureSnapshot(t *testing.T) {
 
 			createFilesAt(t, targetDir, test.files)
 
-			back := fs.TestChdir(t, tempdir)
+			back := restictest.Chdir(t, tempdir)
 			defer back()
 
 			repo, cleanup := repository.TestRepository(t)

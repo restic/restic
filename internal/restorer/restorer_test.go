@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -19,26 +20,28 @@ import (
 type Node interface{}
 
 type Snapshot struct {
-	Nodes  map[string]Node
-	treeID restic.ID
+	Nodes map[string]Node
 }
 
 type File struct {
-	Data  string
-	Links uint64
-	Inode uint64
+	Data    string
+	Links   uint64
+	Inode   uint64
+	Mode    os.FileMode
+	ModTime time.Time
 }
 
 type Dir struct {
-	Nodes map[string]Node
-	Mode  os.FileMode
+	Nodes   map[string]Node
+	Mode    os.FileMode
+	ModTime time.Time
 }
 
 func saveFile(t testing.TB, repo restic.Repository, node File) restic.ID {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	id, err := repo.SaveBlob(ctx, restic.DataBlob, []byte(node.Data), restic.ID{})
+	id, _, err := repo.SaveBlob(ctx, restic.DataBlob, []byte(node.Data), restic.ID{}, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,9 +70,14 @@ func saveDir(t testing.TB, repo restic.Repository, nodes map[string]Node, inode 
 			if len(n.(File).Data) > 0 {
 				fc = append(fc, saveFile(t, repo, node))
 			}
+			mode := node.Mode
+			if mode == 0 {
+				mode = 0644
+			}
 			tree.Insert(&restic.Node{
 				Type:    "file",
-				Mode:    0644,
+				Mode:    mode,
+				ModTime: node.ModTime,
 				Name:    name,
 				UID:     uint32(os.Getuid()),
 				GID:     uint32(os.Getgid()),
@@ -89,6 +97,7 @@ func saveDir(t testing.TB, repo restic.Repository, nodes map[string]Node, inode 
 			tree.Insert(&restic.Node{
 				Type:    "dir",
 				Mode:    mode,
+				ModTime: node.ModTime,
 				Name:    name,
 				UID:     uint32(os.Getuid()),
 				GID:     uint32(os.Getgid()),
@@ -118,11 +127,6 @@ func saveSnapshot(t testing.TB, repo restic.Repository, snapshot Snapshot) (*res
 		t.Fatal(err)
 	}
 
-	err = repo.SaveIndex(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	sn, err := restic.NewSnapshot([]string{"test"}, nil, "", time.Now())
 	if err != nil {
 		t.Fatal(err)
@@ -135,12 +139,6 @@ func saveSnapshot(t testing.TB, repo restic.Repository, snapshot Snapshot) (*res
 	}
 
 	return sn, id
-}
-
-// toSlash converts the OS specific path dir to a slash-separated path.
-func toSlash(dir string) string {
-	data := strings.Split(dir, string(filepath.Separator))
-	return strings.Join(data, "/")
 }
 
 func TestRestorer(t *testing.T) {
@@ -322,7 +320,7 @@ func TestRestorer(t *testing.T) {
 			_, id := saveSnapshot(t, repo, test.Snapshot)
 			t.Logf("snapshot saved as %v", id.Str())
 
-			res, err := NewRestorer(repo, id)
+			res, err := NewRestorer(context.TODO(), repo, id)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -350,7 +348,7 @@ func TestRestorer(t *testing.T) {
 
 			errors := make(map[string]map[string]struct{})
 			res.Error = func(location string, err error) error {
-				location = toSlash(location)
+				location = filepath.ToSlash(location)
 				t.Logf("restore returned error for %q: %v", location, err)
 				if errors[location] == nil {
 					errors[location] = make(map[string]struct{})
@@ -440,7 +438,7 @@ func TestRestorerRelative(t *testing.T) {
 			_, id := saveSnapshot(t, repo, test.Snapshot)
 			t.Logf("snapshot saved as %v", id.Str())
 
-			res, err := NewRestorer(repo, id)
+			res, err := NewRestorer(context.TODO(), repo, id)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -448,7 +446,7 @@ func TestRestorerRelative(t *testing.T) {
 			tempdir, cleanup := rtest.TempDir(t)
 			defer cleanup()
 
-			cleanup = fs.TestChdir(t, tempdir)
+			cleanup = rtest.Chdir(t, tempdir)
 			defer cleanup()
 
 			errors := make(map[string]string)
@@ -661,6 +659,7 @@ func TestRestorerTraverseTree(t *testing.T) {
 			},
 			Visitor: checkVisitOrder([]TreeVisit{
 				{"visitNode", "/dir/otherfile"},
+				{"leaveDir", "/dir"},
 			}),
 		},
 	}
@@ -671,7 +670,7 @@ func TestRestorerTraverseTree(t *testing.T) {
 			defer cleanup()
 			sn, id := saveSnapshot(t, repo, test.Snapshot)
 
-			res, err := NewRestorer(repo, id)
+			res, err := NewRestorer(context.TODO(), repo, id)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -687,10 +686,115 @@ func TestRestorerTraverseTree(t *testing.T) {
 			// make sure we're creating a new subdir of the tempdir
 			target := filepath.Join(tempdir, "target")
 
-			err = res.traverseTree(ctx, target, string(filepath.Separator), *sn.Tree, test.Visitor(t))
+			_, err = res.traverseTree(ctx, target, string(filepath.Separator), *sn.Tree, test.Visitor(t))
 			if err != nil {
 				t.Fatal(err)
 			}
 		})
+	}
+}
+
+func normalizeFileMode(mode os.FileMode) os.FileMode {
+	if runtime.GOOS == "windows" {
+		if mode.IsDir() {
+			return 0555 | os.ModeDir
+		}
+		return os.FileMode(0444)
+	}
+	return mode
+}
+
+func checkConsistentInfo(t testing.TB, file string, fi os.FileInfo, modtime time.Time, mode os.FileMode) {
+	if fi.Mode() != mode {
+		t.Errorf("checking %q, Mode() returned wrong value, want 0%o, got 0%o", file, mode, fi.Mode())
+	}
+
+	if !fi.ModTime().Equal(modtime) {
+		t.Errorf("checking %s, ModTime() returned wrong value, want %v, got %v", file, modtime, fi.ModTime())
+	}
+}
+
+// test inspired from test case https://github.com/restic/restic/issues/1212
+func TestRestorerConsistentTimestampsAndPermissions(t *testing.T) {
+	timeForTest := time.Date(2019, time.January, 9, 1, 46, 40, 0, time.UTC)
+
+	repo, cleanup := repository.TestRepository(t)
+	defer cleanup()
+
+	_, id := saveSnapshot(t, repo, Snapshot{
+		Nodes: map[string]Node{
+			"dir": Dir{
+				Mode:    normalizeFileMode(0750 | os.ModeDir),
+				ModTime: timeForTest,
+				Nodes: map[string]Node{
+					"file1": File{
+						Mode:    normalizeFileMode(os.FileMode(0700)),
+						ModTime: timeForTest,
+						Data:    "content: file\n",
+					},
+					"anotherfile": File{
+						Data: "content: file\n",
+					},
+					"subdir": Dir{
+						Mode:    normalizeFileMode(0700 | os.ModeDir),
+						ModTime: timeForTest,
+						Nodes: map[string]Node{
+							"file2": File{
+								Mode:    normalizeFileMode(os.FileMode(0666)),
+								ModTime: timeForTest,
+								Links:   2,
+								Inode:   1,
+							},
+						},
+					},
+				},
+			},
+		},
+	})
+
+	res, err := NewRestorer(context.TODO(), repo, id)
+	rtest.OK(t, err)
+
+	res.SelectFilter = func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
+		switch filepath.ToSlash(item) {
+		case "/dir":
+			childMayBeSelected = true
+		case "/dir/file1":
+			selectedForRestore = true
+			childMayBeSelected = false
+		case "/dir/subdir":
+			selectedForRestore = true
+			childMayBeSelected = true
+		case "/dir/subdir/file2":
+			selectedForRestore = true
+			childMayBeSelected = false
+		}
+		return selectedForRestore, childMayBeSelected
+	}
+
+	tempdir, cleanup := rtest.TempDir(t)
+	defer cleanup()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	err = res.RestoreTo(ctx, tempdir)
+	rtest.OK(t, err)
+
+	var testPatterns = []struct {
+		path    string
+		modtime time.Time
+		mode    os.FileMode
+	}{
+		{"dir", timeForTest, normalizeFileMode(0750 | os.ModeDir)},
+		{filepath.Join("dir", "file1"), timeForTest, normalizeFileMode(os.FileMode(0700))},
+		{filepath.Join("dir", "subdir"), timeForTest, normalizeFileMode(0700 | os.ModeDir)},
+		{filepath.Join("dir", "subdir", "file2"), timeForTest, normalizeFileMode(os.FileMode(0666))},
+	}
+
+	for _, test := range testPatterns {
+		f, err := os.Stat(filepath.Join(tempdir, test.path))
+		rtest.OK(t, err)
+		checkConsistentInfo(t, test.path, f, test.modtime, test.mode)
 	}
 }

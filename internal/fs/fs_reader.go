@@ -1,7 +1,6 @@
 package fs
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"path"
@@ -208,7 +207,6 @@ func (r *readerFile) Read(p []byte) (int, error) {
 
 	// return an error if we did not read any data
 	if err == io.EOF && !r.AllowEmptyFile && !r.bytesRead {
-		fmt.Printf("reader: %d bytes read, err %v, bytesRead %v, allowEmpty %v\n", n, err, r.bytesRead, r.AllowEmptyFile)
 		return n, &os.PathError{
 			Path: r.fakeFile.name,
 			Op:   "read",
@@ -252,10 +250,6 @@ func (f fakeFile) Seek(int64, int) (int64, error) {
 	return 0, os.ErrInvalid
 }
 
-func (f fakeFile) Write(p []byte) (int, error) {
-	return 0, os.ErrInvalid
-}
-
 func (f fakeFile) Read(p []byte) (int, error) {
 	return 0, os.ErrInvalid
 }
@@ -279,7 +273,7 @@ type fakeDir struct {
 }
 
 func (d fakeDir) Readdirnames(n int) ([]string, error) {
-	if n >= 0 {
+	if n > 0 {
 		return nil, errors.New("not implemented")
 	}
 	names := make([]string, 0, len(d.entries))
@@ -291,7 +285,7 @@ func (d fakeDir) Readdirnames(n int) ([]string, error) {
 }
 
 func (d fakeDir) Readdir(n int) ([]os.FileInfo, error) {
-	if n >= 0 {
+	if n > 0 {
 		return nil, errors.New("not implemented")
 	}
 	return d.entries, nil
@@ -303,7 +297,6 @@ type fakeFileInfo struct {
 	size    int64
 	mode    os.FileMode
 	modtime time.Time
-	sys     interface{}
 }
 
 func (fi fakeFileInfo) Name() string {
@@ -327,5 +320,5 @@ func (fi fakeFileInfo) IsDir() bool {
 }
 
 func (fi fakeFileInfo) Sys() interface{} {
-	return fi.sys
+	return nil
 }

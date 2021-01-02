@@ -123,7 +123,7 @@ func TestListAPI(t *testing.T) {
 			}
 
 			var list []restic.FileInfo
-			err = be.List(context.TODO(), restic.DataFile, func(fi restic.FileInfo) error {
+			err = be.List(context.TODO(), restic.PackFile, func(fi restic.FileInfo) error {
 				list = append(list, fi)
 				return nil
 			})

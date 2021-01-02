@@ -4,8 +4,8 @@ import (
 	"context"
 	"math/rand"
 	"testing"
+	"time"
 
-	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 )
@@ -31,16 +31,15 @@ func createRandomBlobs(t testing.TB, repo restic.Repository, blobs int, pData fl
 
 		buf := make([]byte, length)
 		rand.Read(buf)
-		id := restic.Hash(buf)
 
-		if repo.Index().Has(id, restic.DataBlob) {
-			t.Errorf("duplicate blob %v/%v ignored", id, restic.DataBlob)
-			continue
-		}
-
-		_, err := repo.SaveBlob(context.TODO(), tpe, buf, id)
+		id, exists, err := repo.SaveBlob(context.TODO(), tpe, buf, restic.ID{}, false)
 		if err != nil {
 			t.Fatalf("SaveFrom() error %v", err)
+		}
+
+		if exists {
+			t.Errorf("duplicate blob %v/%v ignored", id, restic.DataBlob)
+			continue
 		}
 
 		if rand.Float32() < 0.2 {
@@ -48,6 +47,24 @@ func createRandomBlobs(t testing.TB, repo restic.Repository, blobs int, pData fl
 				t.Fatalf("repo.Flush() returned error %v", err)
 			}
 		}
+	}
+
+	if err := repo.Flush(context.Background()); err != nil {
+		t.Fatalf("repo.Flush() returned error %v", err)
+	}
+}
+
+func createRandomWrongBlob(t testing.TB, repo restic.Repository) {
+	length := randomSize(10*1024, 1024*1024) // 10KiB to 1MiB of data
+	buf := make([]byte, length)
+	rand.Read(buf)
+	id := restic.Hash(buf)
+	// invert first data byte
+	buf[0] ^= 0xff
+
+	_, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, buf, id, false)
+	if err != nil {
+		t.Fatalf("SaveFrom() error %v", err)
 	}
 
 	if err := repo.Flush(context.Background()); err != nil {
@@ -63,7 +80,7 @@ func selectBlobs(t *testing.T, repo restic.Repository, p float32) (list1, list2 
 
 	blobs := restic.NewBlobSet()
 
-	err := repo.List(context.TODO(), restic.DataFile, func(id restic.ID, size int64) error {
+	err := repo.List(context.TODO(), restic.PackFile, func(id restic.ID, size int64) error {
 		entries, _, err := repo.ListPack(context.TODO(), id, size)
 		if err != nil {
 			t.Fatalf("error listing pack %v: %v", id, err)
@@ -94,7 +111,7 @@ func selectBlobs(t *testing.T, repo restic.Repository, p float32) (list1, list2 
 
 func listPacks(t *testing.T, repo restic.Repository) restic.IDSet {
 	list := restic.NewIDSet()
-	err := repo.List(context.TODO(), restic.DataFile, func(id restic.ID, size int64) error {
+	err := repo.List(context.TODO(), restic.PackFile, func(id restic.ID, size int64) error {
 		list.Insert(id)
 		return nil
 	})
@@ -111,8 +128,8 @@ func findPacksForBlobs(t *testing.T, repo restic.Repository, blobs restic.BlobSe
 
 	idx := repo.Index()
 	for h := range blobs {
-		list, found := idx.Lookup(h.ID, h.Type)
-		if !found {
+		list := idx.Lookup(h)
+		if len(list) == 0 {
 			t.Fatal("Failed to find blob", h.ID.Str(), "with type", h.Type)
 		}
 
@@ -131,7 +148,7 @@ func repack(t *testing.T, repo restic.Repository, packs restic.IDSet, blobs rest
 	}
 
 	for id := range repackedBlobs {
-		err = repo.Backend().Remove(context.TODO(), restic.Handle{Type: restic.DataFile, Name: id.String()})
+		err = repo.Backend().Remove(context.TODO(), restic.Handle{Type: restic.PackFile, Name: id.String()})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -145,7 +162,21 @@ func saveIndex(t *testing.T, repo restic.Repository) {
 }
 
 func rebuildIndex(t *testing.T, repo restic.Repository) {
-	idx, _, err := index.New(context.TODO(), repo, restic.NewIDSet(), nil)
+	err := repo.SetIndex(repository.NewMasterIndex())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	packs := make(map[restic.ID]int64)
+	err = repo.List(context.TODO(), restic.PackFile, func(id restic.ID, size int64) error {
+		packs[id] = size
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = repo.(*repository.Repository).CreateIndexFromPacks(context.TODO(), packs, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,7 +192,9 @@ func rebuildIndex(t *testing.T, repo restic.Repository) {
 		t.Fatal(err)
 	}
 
-	_, err = idx.Save(context.TODO(), repo, nil)
+	_, err = (repo.Index()).(*repository.MasterIndex).
+		Save(context.TODO(), repo, restic.NewIDSet(), nil, nil)
+
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -178,7 +211,7 @@ func TestRepack(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
-	seed := rand.Int63()
+	seed := time.Now().UnixNano()
 	rand.Seed(seed)
 	t.Logf("rand seed is %v", seed)
 
@@ -216,8 +249,8 @@ func TestRepack(t *testing.T) {
 	idx := repo.Index()
 
 	for h := range keepBlobs {
-		list, found := idx.Lookup(h.ID, h.Type)
-		if !found {
+		list := idx.Lookup(h)
+		if len(list) == 0 {
 			t.Errorf("unable to find blob %v in repo", h.ID.Str())
 			continue
 		}
@@ -235,8 +268,30 @@ func TestRepack(t *testing.T) {
 	}
 
 	for h := range removeBlobs {
-		if _, found := idx.Lookup(h.ID, h.Type); found {
+		if _, found := repo.LookupBlobSize(h.ID, h.Type); found {
 			t.Errorf("blob %v still contained in the repo", h)
 		}
 	}
+}
+
+func TestRepackWrongBlob(t *testing.T) {
+	repo, cleanup := repository.TestRepository(t)
+	defer cleanup()
+
+	seed := time.Now().UnixNano()
+	rand.Seed(seed)
+	t.Logf("rand seed is %v", seed)
+
+	createRandomBlobs(t, repo, 5, 0.7)
+	createRandomWrongBlob(t, repo)
+
+	// just keep all blobs, but also rewrite every pack
+	_, keepBlobs := selectBlobs(t, repo, 0)
+	rewritePacks := findPacksForBlobs(t, repo, keepBlobs)
+
+	_, err := repository.Repack(context.TODO(), repo, rewritePacks, keepBlobs, nil)
+	if err == nil {
+		t.Fatal("expected repack to fail but got no error")
+	}
+	t.Logf("found expected error: %v", err)
 }

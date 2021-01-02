@@ -270,7 +270,7 @@ func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error 
 
 			Printf("Unable to load tree %s\n ... which belongs to snapshot %s.\n", parentTreeID, sn.ID())
 
-			return false, walker.SkipNode
+			return false, walker.ErrSkipNode
 		}
 
 		if node == nil {
@@ -314,7 +314,7 @@ func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error 
 
 			if !childMayMatch {
 				ignoreIfNoMatch = true
-				errIfNoMatch = walker.SkipNode
+				errIfNoMatch = walker.ErrSkipNode
 			} else {
 				ignoreIfNoMatch = false
 			}
@@ -354,7 +354,7 @@ func (f *Finder) findIDs(ctx context.Context, sn *restic.Snapshot) error {
 
 			Printf("Unable to load tree %s\n ... which belongs to snapshot %s.\n", parentTreeID, sn.ID())
 
-			return false, walker.SkipNode
+			return false, walker.ErrSkipNode
 		}
 
 		if node == nil {
@@ -417,7 +417,7 @@ func (f *Finder) packsToBlobs(ctx context.Context, packs []string) error {
 	packsFound := 0
 
 	debug.Log("Looking for packs...")
-	err := f.repo.List(ctx, restic.DataFile, func(id restic.ID, size int64) error {
+	err := f.repo.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
 		if allPacksFound {
 			return nil
 		}
@@ -465,8 +465,8 @@ func (f *Finder) findObjectPack(ctx context.Context, id string, t restic.BlobTyp
 		return
 	}
 
-	blobs, found := idx.Lookup(rid, t)
-	if !found {
+	blobs := idx.Lookup(restic.BlobHandle{ID: rid, Type: t})
+	if len(blobs) == 0 {
 		Printf("Object %s not found in the index\n", rid.Str())
 		return
 	}
@@ -529,7 +529,7 @@ func runFind(opts FindOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	if !gopts.NoLock {
-		lock, err := lockRepo(repo)
+		lock, err := lockRepo(gopts.ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err

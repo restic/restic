@@ -13,11 +13,12 @@ import (
 
 	"golang.org/x/net/context/ctxhttp"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
-	"github.com/restic/restic/internal/backend"
+	"github.com/cenkalti/backoff/v4"
 )
 
 // make sure the rest backend implements restic.Backend
@@ -63,13 +64,13 @@ func Open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 }
 
 // Create creates a new REST on server configured in config.
-func Create(cfg Config, rt http.RoundTripper) (*Backend, error) {
+func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, error) {
 	be, err := Open(cfg, rt)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = be.Stat(context.TODO(), restic.Handle{Type: restic.ConfigFile})
+	_, err = be.Stat(ctx, restic.Handle{Type: restic.ConfigFile})
 	if err == nil {
 		return nil, errors.Fatal("config file already exists")
 	}
@@ -109,7 +110,7 @@ func (b *Backend) Location() string {
 // Save stores data in the backend at the handle.
 func (b *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
 	if err := h.Valid(); err != nil {
-		return err
+		return backoff.Permanent(err)
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -173,13 +174,38 @@ func (b *Backend) IsNotExist(err error) bool {
 // Load runs fn with a reader that yields the contents of the file at h at the
 // given offset.
 func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
-	return backend.DefaultLoad(ctx, h, length, offset, b.openReader, fn)
+	r, err := b.openReader(ctx, h, length, offset)
+	if err != nil {
+		return err
+	}
+	err = fn(r)
+	if err != nil {
+		_ = r.Close() // ignore error here
+		return err
+	}
+
+	// Note: readerat.ReadAt() (the fn) uses io.ReadFull() that doesn't
+	// wait for EOF after reading body. Due to HTTP/2 stream multiplexing
+	// and goroutine timings the EOF frame arrives from server (eg. rclone)
+	// with a delay after reading body. Immediate close might trigger
+	// HTTP/2 stream reset resulting in the *stream closed* error on server,
+	// so we wait for EOF before closing body.
+	var buf [1]byte
+	_, err = r.Read(buf[:])
+	if err == io.EOF {
+		err = nil
+	}
+
+	if e := r.Close(); err == nil {
+		err = e
+	}
+	return err
 }
 
 func (b *Backend) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	debug.Log("Load %v, length %v, offset %v", h, length, offset)
 	if err := h.Valid(); err != nil {
-		return nil, err
+		return nil, backoff.Permanent(err)
 	}
 
 	if offset < 0 {
@@ -231,7 +257,7 @@ func (b *Backend) openReader(ctx context.Context, h restic.Handle, length int, o
 // Stat returns information about a blob.
 func (b *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, error) {
 	if err := h.Valid(); err != nil {
-		return restic.FileInfo{}, err
+		return restic.FileInfo{}, backoff.Permanent(err)
 	}
 
 	req, err := http.NewRequest(http.MethodHead, b.Filename(h), nil)
@@ -286,7 +312,7 @@ func (b *Backend) Test(ctx context.Context, h restic.Handle) (bool, error) {
 // Remove removes the blob with the given name and type.
 func (b *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	if err := h.Valid(); err != nil {
-		return err
+		return backoff.Permanent(err)
 	}
 
 	req, err := http.NewRequest("DELETE", b.Filename(h), nil)
@@ -442,7 +468,7 @@ func (b *Backend) removeKeys(ctx context.Context, t restic.FileType) error {
 // Delete removes all data in the backend.
 func (b *Backend) Delete(ctx context.Context) error {
 	alltypes := []restic.FileType{
-		restic.DataFile,
+		restic.PackFile,
 		restic.KeyFile,
 		restic.LockFile,
 		restic.SnapshotFile,

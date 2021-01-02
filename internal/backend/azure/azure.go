@@ -10,11 +10,13 @@ import (
 	"path"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
+
+	"github.com/Azure/azure-sdk-for-go/storage"
+	"github.com/cenkalti/backoff/v4"
 )
 
 // Backend stores data on an azure endpoint.
@@ -119,7 +121,7 @@ func (be *Backend) Path() string {
 // Save stores data in the backend at the handle.
 func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
 	if err := h.Valid(); err != nil {
-		return err
+		return backoff.Permanent(err)
 	}
 
 	objName := be.Filename(h)
@@ -219,7 +221,7 @@ func (be *Backend) Load(ctx context.Context, h restic.Handle, length int, offset
 func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	debug.Log("Load %v, length %v, offset %v from %v", h, length, offset, be.Filename(h))
 	if err := h.Valid(); err != nil {
-		return nil, err
+		return nil, backoff.Permanent(err)
 	}
 
 	if offset < 0 {
@@ -383,7 +385,7 @@ func (be *Backend) removeKeys(ctx context.Context, t restic.FileType) error {
 // Delete removes all restic keys in the bucket. It will not remove the bucket itself.
 func (be *Backend) Delete(ctx context.Context) error {
 	alltypes := []restic.FileType{
-		restic.DataFile,
+		restic.PackFile,
 		restic.KeyFile,
 		restic.LockFile,
 		restic.SnapshotFile,

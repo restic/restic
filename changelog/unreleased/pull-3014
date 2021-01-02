@@ -1,0 +1,12 @@
+Bugfix: Fix sporadic stream reset between rclone and restic
+
+Sometimes when using restic with the rclone backend, an error message similar to the following is printed:
+
+    Didn't finish writing GET request (wrote 0/xxx): http2: stream closed
+
+It was found that this is caused by restic closing the connection to rclone
+when downloading data too fast. A workaround was added which waits for the end
+of the download before closing the connection.
+
+https://github.com/restic/restic/pull/3014
+https://github.com/rclone/rclone/issues/2598

@@ -2,25 +2,32 @@ package restic
 
 import (
 	"context"
-
-	"github.com/restic/restic/internal/errors"
+	"fmt"
 )
 
-// ErrNoIDPrefixFound is returned by Find() when no ID for the given prefix
-// could be found.
-var ErrNoIDPrefixFound = errors.New("no matching ID found")
+// A MultipleIDMatchesError is returned by Find() when multiple IDs with a
+// given prefix are found.
+type MultipleIDMatchesError struct{ prefix string }
 
-// ErrMultipleIDMatches is returned by Find() when multiple IDs with the given
-// prefix are found.
-var ErrMultipleIDMatches = errors.New("multiple IDs with prefix found")
+func (e *MultipleIDMatchesError) Error() string {
+	return fmt.Sprintf("multiple IDs with prefix %s found", e.prefix)
+}
+
+// A NoIDByPrefixError is returned by Find() when no ID for a given prefix
+// could be found.
+type NoIDByPrefixError struct{ prefix string }
+
+func (e *NoIDByPrefixError) Error() string {
+	return fmt.Sprintf("no matching ID found for prefix %q", e.prefix)
+}
 
 // Find loads the list of all files of type t and searches for names which
 // start with prefix. If none is found, nil and ErrNoIDPrefixFound is returned.
 // If more than one is found, nil and ErrMultipleIDMatches is returned.
-func Find(be Lister, t FileType, prefix string) (string, error) {
+func Find(ctx context.Context, be Lister, t FileType, prefix string) (string, error) {
 	match := ""
 
-	ctx, cancel := context.WithCancel(context.TODO())
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	err := be.List(ctx, t, func(fi FileInfo) error {
@@ -28,7 +35,7 @@ func Find(be Lister, t FileType, prefix string) (string, error) {
 			if match == "" {
 				match = fi.Name
 			} else {
-				return ErrMultipleIDMatches
+				return &MultipleIDMatchesError{prefix}
 			}
 		}
 
@@ -43,18 +50,18 @@ func Find(be Lister, t FileType, prefix string) (string, error) {
 		return match, nil
 	}
 
-	return "", ErrNoIDPrefixFound
+	return "", &NoIDByPrefixError{prefix}
 }
 
 const minPrefixLength = 8
 
 // PrefixLength returns the number of bytes required so that all prefixes of
 // all names of type t are unique.
-func PrefixLength(be Lister, t FileType) (int, error) {
+func PrefixLength(ctx context.Context, be Lister, t FileType) (int, error) {
 	// load all IDs of the given type
 	list := make([]string, 0, 100)
 
-	ctx, cancel := context.WithCancel(context.TODO())
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	err := be.List(ctx, t, func(fi FileInfo) error {
@@ -67,7 +74,7 @@ func PrefixLength(be Lister, t FileType) (int, error) {
 	}
 
 	// select prefixes of length l, test if the last one is the same as the current one
-	id := ID{}
+	var id ID
 outer:
 	for l := minPrefixLength; l < len(id); l++ {
 		var last string

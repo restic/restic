@@ -1,0 +1,12 @@
+Bugfix: Correctly dump directories into tar files
+
+The dump command previously wrote directories in a tar file in a way which
+can cause compatibility problems. This caused, for example, 7zip on Windows
+to not open tar files containing directories. In addition it was not possible
+to dump directories with extended attributes. These compatibility problems
+are now corrected.
+
+In addition, a tar file now includes the name of the owner and group of a file.
+
+https://github.com/restic/restic/issues/2319
+https://github.com/restic/restic/pull/3039

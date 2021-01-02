@@ -16,7 +16,8 @@ help also.
 
 The restic project uses the GitHub infrastructure (see the
 [project page](https://github.com/restic/restic)) for all related discussions
-as well as the `#restic` channel on `irc.freenode.net`.
+as well as the [forum](https://forum.restic.net/) and the `#restic` channel
+on [irc.freenode.net](https://kiwiirc.com/nextclient/irc.freenode.net/restic).
 
 If you want to find an area that currently needs improving have a look at the
 open issues listed at the
@@ -25,7 +26,10 @@ for discussing enhancement to the restic tools.
 
 If you are unsure what to do, please have a look at the issues, especially
 those tagged
-[minor complexity](https://github.com/restic/restic/labels/minor%20complexity).
+[minor complexity](https://github.com/restic/restic/labels/help%3A%20minor%20complexity)
+or [good first issue](https://github.com/restic/restic/labels/help%3A%20good%20first%20issue).
+If you are already a bit experienced with the restic internals, take a look
+at the issues tagged as [help wanted](https://github.com/restic/restic/labels/help%3A%20wanted).
 
 
 Reporting Bugs
@@ -60,16 +64,11 @@ uploading it somewhere or post only the parts that are really relevant.
 Development Environment
 =======================
 
-The repository contains several sets of directories with code: `cmd/` and
-`internal/` contain the code written for restic, whereas `vendor/` contains
-copies of libraries restic depends on. The libraries are managed with the
-command `go mod vendor`.
+The repository contains the code written for restic in the directories
+`cmd/` and `internal/`.
 
-Go >= 1.11
-----------
-
-For Go version 1.11 or later, you should clone the repo (without having
-`$GOPATH` set) and `cd` into the directory:
+Restic requires Go version 1.13 or later for compiling. Clone the repo (without
+having `$GOPATH` set) and `cd` into the directory:
 
     $ unset GOPATH
     $ git clone https://github.com/restic/restic
@@ -79,37 +78,9 @@ Then use the `go` tool to build restic:
 
     $ go build ./cmd/restic
     $ ./restic version
-    restic 0.9.2-dev (compiled manually) compiled with go1.11 on linux/amd64
+    restic 0.10.0-dev (compiled manually) compiled with go1.15.2 on linux/amd64
 
 You can run all tests with the following command:
-
-    $ go test ./...
-
-Go < 1.11
----------
-
-In order to compile restic with Go before 1.11, it needs to be checked out at
-the right path within a `GOPATH`. The concept of a `GOPATH` is explained in
-["How to write Go code"](https://golang.org/doc/code.html).
-
-If you do not have a directory with Go code yet, executing the following
-instructions in your shell will create one for you and check out the restic
-repo:
-
-    $ export GOPATH="$HOME/go"
-    $ mkdir -p "$GOPATH/src/github.com/restic"
-    $ cd "$GOPATH/src/github.com/restic"
-    $ git clone https://github.com/restic/restic
-    $ cd restic
-
-You can then build restic as follows:
-
-    $ go build ./cmd/restic
-    $ ./restic version
-    restic compiled manually
-    compiled with go1.8.3 on linux/amd64
-
-The following commands can be used to run all the tests:
 
     $ go test ./...
 

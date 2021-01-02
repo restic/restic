@@ -10,12 +10,17 @@ restic\-key \- Manage keys (passwords)
 
 .SH SYNOPSIS
 .PP
-\fBrestic key [list|add|remove|passwd] [ID] [flags]\fP
+\fBrestic key [flags] [list|add|remove|passwd] [ID]\fP
 
 
 .SH DESCRIPTION
 .PP
 The "key" command manages keys (passwords) for accessing the repository.
+
+
+.SH EXIT STATUS
+.PP
+Exit status is 0 if the command was successful, and non\-zero if there was any error.
 
 
 .SH OPTIONS
@@ -24,8 +29,16 @@ The "key" command manages keys (passwords) for accessing the repository.
     help for key
 
 .PP
+\fB\-\-host\fP=""
+    the hostname for new keys
+
+.PP
 \fB\-\-new\-password\-file\fP=""
-    the file from which to load a new password
+    \fB\fCfile\fR from which to read the new password
+
+.PP
+\fB\-\-user\fP=""
+    the username for new keys
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
@@ -35,7 +48,7 @@ The "key" command manages keys (passwords) for accessing the repository.
 
 .PP
 \fB\-\-cache\-dir\fP=""
-    set the cache directory. (default: use system default cache directory)
+    set the cache \fB\fCdirectory\fR\&. (default: use system default cache directory)
 
 .PP
 \fB\-\-cleanup\-cache\fP[=false]
@@ -47,7 +60,7 @@ The "key" command manages keys (passwords) for accessing the repository.
 
 .PP
 \fB\-\-key\-hint\fP=""
-    key ID of key to try decrypting first (default: $RESTIC\_KEY\_HINT)
+    \fB\fCkey\fR ID of key to try decrypting first (default: $RESTIC\_KEY\_HINT)
 
 .PP
 \fB\-\-limit\-download\fP=0
@@ -63,7 +76,7 @@ The "key" command manages keys (passwords) for accessing the repository.
 
 .PP
 \fB\-\-no\-lock\fP[=false]
-    do not lock the repo, this allows some operations on read\-only repos
+    do not lock the repository, this allows some operations on read\-only repositories
 
 .PP
 \fB\-o\fP, \fB\-\-option\fP=[]
@@ -71,11 +84,11 @@ The "key" command manages keys (passwords) for accessing the repository.
 
 .PP
 \fB\-\-password\-command\fP=""
-    specify a shell command to obtain a password (default: $RESTIC\_PASSWORD\_COMMAND)
+    shell \fB\fCcommand\fR to obtain the repository password from (default: $RESTIC\_PASSWORD\_COMMAND)
 
 .PP
 \fB\-p\fP, \fB\-\-password\-file\fP=""
-    read the repository password from a file (default: $RESTIC\_PASSWORD\_FILE)
+    \fB\fCfile\fR to read the repository password from (default: $RESTIC\_PASSWORD\_FILE)
 
 .PP
 \fB\-q\fP, \fB\-\-quiet\fP[=false]
@@ -83,15 +96,19 @@ The "key" command manages keys (passwords) for accessing the repository.
 
 .PP
 \fB\-r\fP, \fB\-\-repo\fP=""
-    repository to backup to or restore from (default: $RESTIC\_REPOSITORY)
+    \fB\fCrepository\fR to backup to or restore from (default: $RESTIC\_REPOSITORY)
+
+.PP
+\fB\-\-repository\-file\fP=""
+    \fB\fCfile\fR to read the repository location from (default: $RESTIC\_REPOSITORY\_FILE)
 
 .PP
 \fB\-\-tls\-client\-cert\fP=""
-    path to a file containing PEM encoded TLS client certificate and private key
+    path to a \fB\fCfile\fR containing PEM encoded TLS client certificate and private key
 
 .PP
 \fB\-v\fP, \fB\-\-verbose\fP[=0]
-    be verbose (specify \-\-verbose multiple times or level \fB\fCn\fR)
+    be verbose (specify multiple times or a level using \-\-verbose=\fB\fCn\fR, max level/times is 3)
 
 
 .SH SEE ALSO

@@ -16,7 +16,7 @@ import (
 )
 
 var cmdKey = &cobra.Command{
-	Use:   "key [list|add|remove|passwd] [ID]",
+	Use:   "key [flags] [list|add|remove|passwd] [ID]",
 	Short: "Manage keys (passwords)",
 	Long: `
 The "key" command manages keys (passwords) for accessing the repository.
@@ -32,13 +32,19 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 	},
 }
 
-var newPasswordFile string
+var (
+	newPasswordFile string
+	keyUsername     string
+	keyHostname     string
+)
 
 func init() {
 	cmdRoot.AddCommand(cmdKey)
 
 	flags := cmdKey.Flags()
-	flags.StringVarP(&newPasswordFile, "new-password-file", "", "", "the file from which to load a new password")
+	flags.StringVarP(&newPasswordFile, "new-password-file", "", "", "`file` from which to read the new password")
+	flags.StringVarP(&keyUsername, "user", "", "", "the username for new keys")
+	flags.StringVarP(&keyHostname, "host", "", "", "the hostname for new keys")
 }
 
 func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions) error {
@@ -110,7 +116,7 @@ func getNewPassword(gopts GlobalOptions) (string, error) {
 	newopts.password = ""
 
 	return ReadPasswordTwice(newopts,
-		"enter password for new key: ",
+		"enter new password: ",
 		"enter password again: ")
 }
 
@@ -120,7 +126,7 @@ func addKey(gopts GlobalOptions, repo *repository.Repository) error {
 		return err
 	}
 
-	id, err := repository.AddKey(gopts.ctx, repo, pw, repo.Key())
+	id, err := repository.AddKey(gopts.ctx, repo, pw, keyUsername, keyHostname, repo.Key())
 	if err != nil {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
@@ -151,7 +157,7 @@ func changePassword(gopts GlobalOptions, repo *repository.Repository) error {
 		return err
 	}
 
-	id, err := repository.AddKey(gopts.ctx, repo, pw, repo.Key())
+	id, err := repository.AddKey(gopts.ctx, repo, pw, "", "", repo.Key())
 	if err != nil {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
@@ -182,7 +188,7 @@ func runKey(gopts GlobalOptions, args []string) error {
 
 	switch args[0] {
 	case "list":
-		lock, err := lockRepo(repo)
+		lock, err := lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
@@ -190,7 +196,7 @@ func runKey(gopts GlobalOptions, args []string) error {
 
 		return listKeys(ctx, repo, gopts)
 	case "add":
-		lock, err := lockRepo(repo)
+		lock, err := lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
@@ -198,20 +204,20 @@ func runKey(gopts GlobalOptions, args []string) error {
 
 		return addKey(gopts, repo)
 	case "remove":
-		lock, err := lockRepoExclusive(repo)
+		lock, err := lockRepoExclusive(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
 		}
 
-		id, err := restic.Find(repo.Backend(), restic.KeyFile, args[1])
+		id, err := restic.Find(ctx, repo.Backend(), restic.KeyFile, args[1])
 		if err != nil {
 			return err
 		}
 
 		return deleteKey(gopts.ctx, repo, id)
 	case "passwd":
-		lock, err := lockRepoExclusive(repo)
+		lock, err := lockRepoExclusive(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err

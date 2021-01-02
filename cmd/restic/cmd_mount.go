@@ -1,7 +1,4 @@
-// +build !netbsd
-// +build !openbsd
-// +build !solaris
-// +build !windows
+// +build darwin freebsd linux
 
 package main
 
@@ -84,7 +81,17 @@ func init() {
 	mountFlags.StringVar(&mountOptions.SnapshotTemplate, "snapshot-template", time.RFC3339, "set `template` to use for snapshot dirs")
 }
 
-func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
+func runMount(opts MountOptions, gopts GlobalOptions, args []string) error {
+	if opts.SnapshotTemplate == "" {
+		return errors.Fatal("snapshot template string cannot be empty")
+	}
+	if strings.ContainsAny(opts.SnapshotTemplate, `\/`) {
+		return errors.Fatal("snapshot template string contains a slash (/) or backslash (\\) character")
+	}
+	if len(args) == 0 {
+		return errors.Fatal("wrong number of parameters")
+	}
+
 	debug.Log("start mount")
 	defer debug.Log("finish mount")
 
@@ -93,10 +100,12 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 		return err
 	}
 
-	lock, err := lockRepo(repo)
-	defer unlockRepo(lock)
-	if err != nil {
-		return err
+	if !gopts.NoLock {
+		lock, err := lockRepo(gopts.ctx, repo)
+		defer unlockRepo(lock)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = repo.LoadIndex(gopts.ctx)
@@ -104,14 +113,12 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 		return err
 	}
 
-	if _, err := resticfs.Stat(mountpoint); os.IsNotExist(errors.Cause(err)) {
-		Verbosef("Mountpoint %s doesn't exist, creating it\n", mountpoint)
-		err = resticfs.Mkdir(mountpoint, os.ModeDir|0700)
-		if err != nil {
-			return err
-		}
-	}
+	mountpoint := args[0]
 
+	if _, err := resticfs.Stat(mountpoint); os.IsNotExist(errors.Cause(err)) {
+		Verbosef("Mountpoint %s doesn't exist\n", mountpoint)
+		return err
+	}
 	mountOptions := []systemFuse.MountOption{
 		systemFuse.ReadOnly(),
 		systemFuse.FSName("restic"),
@@ -125,6 +132,15 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 			mountOptions = append(mountOptions, systemFuse.DefaultPermissions())
 		}
 	}
+
+	AddCleanupHandler(func() error {
+		debug.Log("running umount cleanup handler for mount at %v", mountpoint)
+		err := umount(mountpoint)
+		if err != nil {
+			Warnf("unable to umount (maybe already umounted or still in use?): %v\n", err)
+		}
+		return nil
+	})
 
 	c, err := systemFuse.Mount(mountpoint, mountOptions...)
 	if err != nil {
@@ -142,10 +158,7 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 		Paths:            opts.Paths,
 		SnapshotTemplate: opts.SnapshotTemplate,
 	}
-	root, err := fuse.NewRoot(gopts.ctx, repo, cfg)
-	if err != nil {
-		return err
-	}
+	root := fuse.NewRoot(repo, cfg)
 
 	Printf("Now serving the repository at %s\n", mountpoint)
 	Printf("When finished, quit with Ctrl-c or umount the mountpoint.\n")
@@ -162,31 +175,4 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 
 func umount(mountpoint string) error {
 	return systemFuse.Unmount(mountpoint)
-}
-
-func runMount(opts MountOptions, gopts GlobalOptions, args []string) error {
-	if opts.SnapshotTemplate == "" {
-		return errors.Fatal("snapshot template string cannot be empty")
-	}
-
-	if strings.ContainsAny(opts.SnapshotTemplate, `\/`) {
-		return errors.Fatal("snapshot template string contains a slash (/) or backslash (\\) character")
-	}
-
-	if len(args) == 0 {
-		return errors.Fatal("wrong number of parameters")
-	}
-
-	mountpoint := args[0]
-
-	AddCleanupHandler(func() error {
-		debug.Log("running umount cleanup handler for mount at %v", mountpoint)
-		err := umount(mountpoint)
-		if err != nil {
-			Warnf("unable to umount (maybe already umounted?): %v\n", err)
-		}
-		return nil
-	})
-
-	return mount(opts, gopts, mountpoint)
 }

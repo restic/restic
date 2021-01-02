@@ -12,14 +12,13 @@ import (
 	"strings"
 
 	"github.com/restic/restic/internal/fs"
-
-	"github.com/restic/restic/internal/errors"
 )
 
 var opts struct {
-	logger *log.Logger
-	funcs  map[string]bool
-	files  map[string]bool
+	isEnabled bool
+	logger    *log.Logger
+	funcs     map[string]bool
+	files     map[string]bool
 }
 
 // make sure that all the initialization happens before the init() functions
@@ -30,6 +29,12 @@ func initDebug() bool {
 	initDebugLogger()
 	initDebugTags()
 
+	if opts.logger == nil && len(opts.funcs) == 0 && len(opts.files) == 0 {
+		opts.isEnabled = false
+		return false
+	}
+
+	opts.isEnabled = true
 	fmt.Fprintf(os.Stderr, "debug enabled\n")
 
 	return true
@@ -43,20 +48,7 @@ func initDebugLogger() {
 
 	fmt.Fprintf(os.Stderr, "debug log file %v\n", debugfile)
 
-	f, err := fs.OpenFile(debugfile, os.O_WRONLY|os.O_APPEND, 0600)
-
-	if err == nil {
-		_, err = f.Seek(2, 0)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "unable to seek to the end of %v: %v\n", debugfile, err)
-			os.Exit(3)
-		}
-	}
-
-	if err != nil && os.IsNotExist(errors.Cause(err)) {
-		f, err = fs.OpenFile(debugfile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
-	}
-
+	f, err := fs.OpenFile(debugfile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to open debug log file: %v\n", err)
 		os.Exit(2)
@@ -173,6 +165,10 @@ func checkFilter(filter map[string]bool, key string) bool {
 
 // Log prints a message to the debug log (if debug is enabled).
 func Log(f string, args ...interface{}) {
+	if !opts.isEnabled {
+		return
+	}
+
 	fn, dir, file, line := getPosition()
 	goroutine := goroutineNum()
 

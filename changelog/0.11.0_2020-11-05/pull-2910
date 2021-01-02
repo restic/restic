@@ -1,0 +1,10 @@
+Enhancement: New option --repository-file
+
+We've added a new command-line option --repository-file as an alternative
+to -r. This allows to read the repository URL from a file in order to
+prevent certain types of information leaks, especially for URLs containing
+credentials.
+
+https://github.com/restic/restic/issues/1458
+https://github.com/restic/restic/issues/2900
+https://github.com/restic/restic/pull/2910

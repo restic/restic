@@ -110,7 +110,6 @@ func build(sourceDir, outputDir, goos, goarch string) (filename string) {
 	c.Dir = sourceDir
 	c.Env = append(os.Environ(),
 		"CGO_ENABLED=0",
-		"GOPROXY=off",
 		"GOOS="+goos,
 		"GOARCH="+goarch,
 	)
@@ -222,12 +221,16 @@ func buildTargets(sourceDir, outputDir string, targets map[string][]string) {
 	msg("build finished in %.3fs", time.Since(start).Seconds())
 }
 
+// ATTENTION: the list of architectures must be in sync with .github/workflows/tests.yml!
 var defaultBuildTargets = map[string][]string{
-	"darwin":  []string{"386", "amd64"},
-	"freebsd": []string{"386", "amd64", "arm"},
-	"linux":   []string{"386", "amd64", "arm", "arm64", "ppc64le"},
-	"openbsd": []string{"386", "amd64"},
-	"windows": []string{"386", "amd64"},
+	"aix":     {"ppc64"},
+	"darwin":  {"amd64"},
+	"freebsd": {"386", "amd64", "arm"},
+	"linux":   {"386", "amd64", "arm", "arm64", "ppc64le"},
+	"netbsd":  {"386", "amd64"},
+	"openbsd": {"386", "amd64"},
+	"windows": {"386", "amd64"},
+	"solaris": {"amd64"},
 }
 
 func main() {

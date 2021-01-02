@@ -1,14 +1,12 @@
-// +build !netbsd
-// +build !openbsd
-// +build !solaris
-// +build !windows
+// +build darwin freebsd linux
 
 package fuse
 
 import (
+	"context"
+
 	"bazil.org/fuse"
 	"github.com/restic/restic/internal/restic"
-	"golang.org/x/net/context"
 )
 
 type other struct {

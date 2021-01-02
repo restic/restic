@@ -63,6 +63,9 @@ func run(command string, args ...string) (*StdioConn, *exec.Cmd, *sync.WaitGroup
 
 	stdout, w, err := os.Pipe()
 	if err != nil {
+		// close first pipe
+		r.Close()
+		stdin.Close()
 		return nil, nil, nil, nil, err
 	}
 
@@ -70,14 +73,24 @@ func run(command string, args ...string) (*StdioConn, *exec.Cmd, *sync.WaitGroup
 	cmd.Stdout = w
 
 	bg, err := backend.StartForeground(cmd)
+	// close rclone side of pipes
+	errR := r.Close()
+	errW := w.Close()
+	// return first error
+	if err == nil {
+		err = errR
+	}
+	if err == nil {
+		err = errW
+	}
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
 
 	c := &StdioConn{
-		stdin:  stdout,
-		stdout: stdin,
-		cmd:    cmd,
+		receive: stdout,
+		send:    stdin,
+		cmd:     cmd,
 	}
 
 	return c, cmd, &wg, bg, nil
@@ -114,7 +127,7 @@ func wrapConn(c *StdioConn, lim limiter.Limiter) wrappedConn {
 }
 
 // New initializes a Backend and starts the process.
-func New(cfg Config, lim limiter.Limiter) (*Backend, error) {
+func newBackend(cfg Config, lim limiter.Limiter) (*Backend, error) {
 	var (
 		args []string
 		err  error
@@ -160,7 +173,8 @@ func New(cfg Config, lim limiter.Limiter) (*Backend, error) {
 		DialTLS: func(network, address string, cfg *tls.Config) (net.Conn, error) {
 			debug.Log("new connection requested, %v %v", network, address)
 			if dialCount > 0 {
-				panic("dial count > 0")
+				// the connection to the child process is already closed
+				return nil, errors.New("rclone stdio connection already closed")
 			}
 			dialCount++
 			return conn, nil
@@ -183,6 +197,8 @@ func New(cfg Config, lim limiter.Limiter) (*Backend, error) {
 		err := cmd.Wait()
 		debug.Log("Wait returned %v", err)
 		be.waitResult = err
+		// close our side of the pipes to rclone
+		stdioConn.CloseAll()
 		close(waitCh)
 	}()
 
@@ -234,7 +250,7 @@ func New(cfg Config, lim limiter.Limiter) (*Backend, error) {
 
 // Open starts an rclone process with the given config.
 func Open(cfg Config, lim limiter.Limiter) (*Backend, error) {
-	be, err := New(cfg, lim)
+	be, err := newBackend(cfg, lim)
 	if err != nil {
 		return nil, err
 	}
@@ -251,6 +267,7 @@ func Open(cfg Config, lim limiter.Limiter) (*Backend, error) {
 
 	restBackend, err := rest.Open(restConfig, debug.RoundTripper(be.tr))
 	if err != nil {
+		_ = be.Close()
 		return nil, err
 	}
 
@@ -258,9 +275,9 @@ func Open(cfg Config, lim limiter.Limiter) (*Backend, error) {
 	return be, nil
 }
 
-// Create initializes a new restic repo with clone.
-func Create(cfg Config) (*Backend, error) {
-	be, err := New(cfg, nil)
+// Create initializes a new restic repo with rclone.
+func Create(ctx context.Context, cfg Config) (*Backend, error) {
+	be, err := newBackend(cfg, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -273,11 +290,11 @@ func Create(cfg Config) (*Backend, error) {
 	}
 
 	restConfig := rest.Config{
-		Connections: 20,
+		Connections: cfg.Connections,
 		URL:         url,
 	}
 
-	restBackend, err := rest.Create(restConfig, debug.RoundTripper(be.tr))
+	restBackend, err := rest.Create(ctx, restConfig, debug.RoundTripper(be.tr))
 	if err != nil {
 		_ = be.Close()
 		return nil, err
@@ -299,7 +316,7 @@ func (be *Backend) Close() error {
 		debug.Log("rclone exited")
 	case <-time.After(waitForExit):
 		debug.Log("timeout, closing file descriptors")
-		err := be.conn.Close()
+		err := be.conn.CloseAll()
 		if err != nil {
 			return err
 		}

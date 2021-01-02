@@ -8,9 +8,8 @@ import (
 
 // Blob is one part of a file or a tree.
 type Blob struct {
-	Type   BlobType
+	BlobHandle
 	Length uint
-	ID     ID
 	Offset uint
 }
 
@@ -35,6 +34,10 @@ func (h BlobHandle) String() string {
 	return fmt.Sprintf("<%s/%s>", h.Type, h.ID.Str())
 }
 
+func NewRandomBlobHandle() BlobHandle {
+	return BlobHandle{ID: NewRandomID(), Type: DataBlob}
+}
+
 // BlobType specifies what a blob stored in a pack is.
 type BlobType uint8
 
@@ -43,6 +46,7 @@ const (
 	InvalidBlob BlobType = iota
 	DataBlob
 	TreeBlob
+	NumBlobTypes // Number of types. Must be last in this enumeration.
 )
 
 func (t BlobType) String() string {

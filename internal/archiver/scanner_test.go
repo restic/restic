@@ -33,15 +33,15 @@ func TestScanner(t *testing.T) {
 				},
 			},
 			want: map[string]ScanStats{
-				filepath.FromSlash("other"):               ScanStats{Files: 1, Bytes: 12},
-				filepath.FromSlash("work/foo"):            ScanStats{Files: 2, Bytes: 15},
-				filepath.FromSlash("work/foo.txt"):        ScanStats{Files: 3, Bytes: 28},
-				filepath.FromSlash("work/subdir/bar.txt"): ScanStats{Files: 4, Bytes: 45},
-				filepath.FromSlash("work/subdir/other"):   ScanStats{Files: 5, Bytes: 60},
-				filepath.FromSlash("work/subdir"):         ScanStats{Files: 5, Dirs: 1, Bytes: 60},
-				filepath.FromSlash("work"):                ScanStats{Files: 5, Dirs: 2, Bytes: 60},
-				filepath.FromSlash("."):                   ScanStats{Files: 5, Dirs: 3, Bytes: 60},
-				filepath.FromSlash(""):                    ScanStats{Files: 5, Dirs: 3, Bytes: 60},
+				filepath.FromSlash("other"):               {Files: 1, Bytes: 12},
+				filepath.FromSlash("work/foo"):            {Files: 2, Bytes: 15},
+				filepath.FromSlash("work/foo.txt"):        {Files: 3, Bytes: 28},
+				filepath.FromSlash("work/subdir/bar.txt"): {Files: 4, Bytes: 45},
+				filepath.FromSlash("work/subdir/other"):   {Files: 5, Bytes: 60},
+				filepath.FromSlash("work/subdir"):         {Files: 5, Dirs: 1, Bytes: 60},
+				filepath.FromSlash("work"):                {Files: 5, Dirs: 2, Bytes: 60},
+				filepath.FromSlash("."):                   {Files: 5, Dirs: 3, Bytes: 60},
+				filepath.FromSlash(""):                    {Files: 5, Dirs: 3, Bytes: 60},
 			},
 		},
 		{
@@ -68,12 +68,12 @@ func TestScanner(t *testing.T) {
 				return false
 			},
 			want: map[string]ScanStats{
-				filepath.FromSlash("work/foo.txt"):        ScanStats{Files: 1, Bytes: 13},
-				filepath.FromSlash("work/subdir/bar.txt"): ScanStats{Files: 2, Bytes: 30},
-				filepath.FromSlash("work/subdir"):         ScanStats{Files: 2, Dirs: 1, Bytes: 30},
-				filepath.FromSlash("work"):                ScanStats{Files: 2, Dirs: 2, Bytes: 30},
-				filepath.FromSlash("."):                   ScanStats{Files: 2, Dirs: 3, Bytes: 30},
-				filepath.FromSlash(""):                    ScanStats{Files: 2, Dirs: 3, Bytes: 30},
+				filepath.FromSlash("work/foo.txt"):        {Files: 1, Bytes: 13},
+				filepath.FromSlash("work/subdir/bar.txt"): {Files: 2, Bytes: 30},
+				filepath.FromSlash("work/subdir"):         {Files: 2, Dirs: 1, Bytes: 30},
+				filepath.FromSlash("work"):                {Files: 2, Dirs: 2, Bytes: 30},
+				filepath.FromSlash("."):                   {Files: 2, Dirs: 3, Bytes: 30},
+				filepath.FromSlash(""):                    {Files: 2, Dirs: 3, Bytes: 30},
 			},
 		},
 	}
@@ -88,7 +88,7 @@ func TestScanner(t *testing.T) {
 
 			TestCreateFiles(t, tempdir, test.src)
 
-			back := fs.TestChdir(t, tempdir)
+			back := restictest.Chdir(t, tempdir)
 			defer back()
 
 			cur, err := os.Getwd()
@@ -225,7 +225,7 @@ func TestScannerError(t *testing.T) {
 
 			TestCreateFiles(t, tempdir, test.src)
 
-			back := fs.TestChdir(t, tempdir)
+			back := restictest.Chdir(t, tempdir)
 			defer back()
 
 			cur, err := os.Getwd()
@@ -299,7 +299,7 @@ func TestScannerCancel(t *testing.T) {
 
 	TestCreateFiles(t, tempdir, src)
 
-	back := fs.TestChdir(t, tempdir)
+	back := restictest.Chdir(t, tempdir)
 	defer back()
 
 	cur, err := os.Getwd()

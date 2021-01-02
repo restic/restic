@@ -16,21 +16,21 @@ import (
 var errTest = errors.New("test error")
 
 type saveFail struct {
-	idx    restic.Index
+	idx    restic.MasterIndex
 	cnt    int32
 	failAt int32
 }
 
-func (b *saveFail) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID) (restic.ID, error) {
+func (b *saveFail) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicates bool) (restic.ID, bool, error) {
 	val := atomic.AddInt32(&b.cnt, 1)
 	if val == b.failAt {
-		return restic.ID{}, errTest
+		return restic.ID{}, false, errTest
 	}
 
-	return id, nil
+	return id, false, nil
 }
 
-func (b *saveFail) Index() restic.Index {
+func (b *saveFail) Index() restic.MasterIndex {
 	return b.idx
 }
 
@@ -40,7 +40,7 @@ func TestBlobSaver(t *testing.T) {
 
 	tmb, ctx := tomb.WithContext(ctx)
 	saver := &saveFail{
-		idx: repository.NewIndex(),
+		idx: repository.NewMasterIndex(),
 	}
 
 	b := NewBlobSaver(ctx, tmb, saver, uint(runtime.NumCPU()))
@@ -86,18 +86,15 @@ func TestBlobSaverError(t *testing.T) {
 
 			tmb, ctx := tomb.WithContext(ctx)
 			saver := &saveFail{
-				idx:    repository.NewIndex(),
+				idx:    repository.NewMasterIndex(),
 				failAt: int32(test.failAt),
 			}
 
 			b := NewBlobSaver(ctx, tmb, saver, uint(runtime.NumCPU()))
 
-			var results []FutureBlob
-
 			for i := 0; i < test.blobs; i++ {
 				buf := &Buffer{Data: []byte(fmt.Sprintf("foo%d", i))}
-				fb := b.Save(ctx, restic.DataBlob, buf)
-				results = append(results, fb)
+				b.Save(ctx, restic.DataBlob, buf)
 			}
 
 			tmb.Kill(nil)

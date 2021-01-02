@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"crypto/sha256"
 	"os"
 	"sync"
 
@@ -14,6 +13,8 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/pack"
+
+	"github.com/minio/sha256-simd"
 )
 
 // Saver implements saving data in a backend.
@@ -56,7 +57,10 @@ func (r *packerManager) findPacker() (packer *Packer, err error) {
 	// search for a suitable packer
 	if len(r.packers) > 0 {
 		p := r.packers[0]
-		r.packers = r.packers[1:]
+		last := len(r.packers) - 1
+		r.packers[0] = r.packers[last]
+		r.packers[last] = nil // Allow GC of stale reference.
+		r.packers = r.packers[:last]
 		return p, nil
 	}
 
@@ -96,7 +100,7 @@ func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packe
 	}
 
 	id := restic.IDFromHash(p.hw.Sum(nil))
-	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
+	h := restic.Handle{Type: restic.PackFile, Name: id.String()}
 
 	rd, err := restic.NewFileReader(p.tmpfile)
 	if err != nil {
@@ -136,20 +140,14 @@ func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packe
 	}
 
 	// update blobs in the index
-	for _, b := range p.Packer.Blobs() {
-		debug.Log("  updating blob %v to pack %v", b.ID, id)
-		r.idx.Store(restic.PackedBlob{
-			Blob: restic.Blob{
-				Type:   b.Type,
-				ID:     b.ID,
-				Offset: b.Offset,
-				Length: uint(b.Length),
-			},
-			PackID: id,
-		})
-	}
+	debug.Log("  updating blobs %v to pack %v", p.Packer.Blobs(), id)
+	r.idx.StorePack(id, p.Packer.Blobs())
 
-	return nil
+	// Save index if full
+	if r.noAutoIndexUpdate {
+		return nil
+	}
+	return r.SaveFullIndex(ctx)
 }
 
 // countPacker returns the number of open (unfinished) packers.

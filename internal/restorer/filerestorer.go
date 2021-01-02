@@ -33,6 +33,7 @@ const (
 type fileInfo struct {
 	lock     sync.Mutex
 	flags    int
+	size     int64
 	location string      // file on local filesystem relative to restorer basedir
 	blobs    interface{} // blobs of the file
 }
@@ -51,7 +52,7 @@ type packInfo struct {
 // fileRestorer restores set of files
 type fileRestorer struct {
 	key        *crypto.Key
-	idx        func(restic.ID, restic.BlobType) ([]restic.PackedBlob, bool)
+	idx        func(restic.BlobHandle) []restic.PackedBlob
 	packLoader func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error
 
 	filesWriter *filesWriter
@@ -63,7 +64,7 @@ type fileRestorer struct {
 func newFileRestorer(dst string,
 	packLoader func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error,
 	key *crypto.Key,
-	idx func(restic.ID, restic.BlobType) ([]restic.PackedBlob, bool)) *fileRestorer {
+	idx func(restic.BlobHandle) []restic.PackedBlob) *fileRestorer {
 
 	return &fileRestorer{
 		key:         key,
@@ -74,8 +75,8 @@ func newFileRestorer(dst string,
 	}
 }
 
-func (r *fileRestorer) addFile(location string, content restic.IDs) {
-	r.files = append(r.files, &fileInfo{location: location, blobs: content})
+func (r *fileRestorer) addFile(location string, content restic.IDs, size int64) {
+	r.files = append(r.files, &fileInfo{location: location, blobs: content, size: size})
 }
 
 func (r *fileRestorer) targetPath(location string) string {
@@ -88,8 +89,8 @@ func (r *fileRestorer) forEachBlob(blobIDs []restic.ID, fn func(packID restic.ID
 	}
 
 	for _, blobID := range blobIDs {
-		packs, found := r.idx(blobID, restic.DataBlob)
-		if !found {
+		packs := r.idx(restic.BlobHandle{ID: blobID, Type: restic.DataBlob})
+		if len(packs) == 0 {
 			return errors.Errorf("Unknown blob %s", blobID.String())
 		}
 		fn(packs[0].PackID, packs[0].Blob)
@@ -101,6 +102,10 @@ func (r *fileRestorer) forEachBlob(blobIDs []restic.ID, fn func(packID restic.ID
 func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 
 	packs := make(map[restic.ID]*packInfo) // all packs
+	// Process packs in order of first access. While this cannot guarantee
+	// that file chunks are restored sequentially, it offers a good enough
+	// approximation to shorten restore times by up to 19% in some test.
+	var packOrder restic.IDs
 
 	// create packInfo from fileInfo
 	for _, file := range r.files {
@@ -123,6 +128,7 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 					files: make(map[*fileInfo]struct{}),
 				}
 				packs[packID] = pack
+				packOrder = append(packOrder, packID)
 			}
 			pack.files[file] = struct{}{}
 		})
@@ -157,7 +163,8 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 	}
 
 	// the main restore loop
-	for _, pack := range packs {
+	for _, id := range packOrder {
+		pack := packs[id]
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -208,13 +215,11 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) {
 			})
 		} else if packsMap, ok := file.blobs.(map[restic.ID][]fileBlobInfo); ok {
 			for _, blob := range packsMap[pack.id] {
-				idxPacks, found := r.idx(blob.id, restic.DataBlob)
-				if found {
-					for _, idxPack := range idxPacks {
-						if idxPack.PackID.Equal(pack.id) {
-							addBlob(idxPack.Blob, blob.offset)
-							break
-						}
+				idxPacks := r.idx(restic.BlobHandle{ID: blob.id, Type: restic.DataBlob})
+				for _, idxPack := range idxPacks {
+					if idxPack.PackID.Equal(pack.id) {
+						addBlob(idxPack.Blob, blob.offset)
+						break
 					}
 				}
 			}
@@ -223,7 +228,7 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) {
 
 	packData := make([]byte, int(end-start))
 
-	h := restic.Handle{Type: restic.DataFile, Name: pack.id.String()}
+	h := restic.Handle{Type: restic.PackFile, Name: pack.id.String()}
 	err := r.packLoader(ctx, h, int(end-start), start, func(rd io.Reader) error {
 		l, err := io.ReadFull(rd, packData)
 		if err != nil {
@@ -271,13 +276,15 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) {
 					// write other blobs after releasing the lock
 					file.lock.Lock()
 					create := file.flags&fileProgress == 0
+					createSize := int64(-1)
 					if create {
 						defer file.lock.Unlock()
 						file.flags |= fileProgress
+						createSize = file.size
 					} else {
 						file.lock.Unlock()
 					}
-					return r.filesWriter.writeToFile(r.targetPath(file.location), blobData, offset, create)
+					return r.filesWriter.writeToFile(r.targetPath(file.location), blobData, offset, createSize)
 				}
 				err := writeToFile()
 				if err != nil {

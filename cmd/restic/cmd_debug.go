@@ -54,9 +54,8 @@ func prettyPrintJSON(wr io.Writer, item interface{}) error {
 	return err
 }
 
-func debugPrintSnapshots(repo *repository.Repository, wr io.Writer) error {
-	return repo.List(context.TODO(), restic.SnapshotFile, func(id restic.ID, size int64) error {
-		snapshot, err := restic.LoadSnapshot(context.TODO(), repo, id)
+func debugPrintSnapshots(ctx context.Context, repo *repository.Repository, wr io.Writer) error {
+	return restic.ForAllSnapshots(ctx, repo, nil, func(id restic.ID, snapshot *restic.Snapshot, err error) error {
 		if err != nil {
 			return err
 		}
@@ -82,14 +81,14 @@ type Blob struct {
 	Offset uint            `json:"offset"`
 }
 
-func printPacks(repo *repository.Repository, wr io.Writer) error {
+func printPacks(ctx context.Context, repo *repository.Repository, wr io.Writer) error {
 
-	return repo.List(context.TODO(), restic.DataFile, func(id restic.ID, size int64) error {
-		h := restic.Handle{Type: restic.DataFile, Name: id.String()}
+	return repo.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
+		h := restic.Handle{Type: restic.PackFile, Name: id.String()}
 
-		blobs, err := pack.List(repo.Key(), restic.ReaderAt(repo.Backend(), h), size)
+		blobs, _, err := pack.List(repo.Key(), restic.ReaderAt(ctx, repo.Backend(), h), size)
 		if err != nil {
-			fmt.Fprintf(globalOptions.stderr, "error for pack %v: %v\n", id.Str(), err)
+			Warnf("error for pack %v: %v\n", id.Str(), err)
 			return nil
 		}
 
@@ -110,11 +109,11 @@ func printPacks(repo *repository.Repository, wr io.Writer) error {
 	})
 }
 
-func dumpIndexes(repo restic.Repository, wr io.Writer) error {
-	return repo.List(context.TODO(), restic.IndexFile, func(id restic.ID, size int64) error {
-		fmt.Printf("index_id: %v\n", id)
+func dumpIndexes(ctx context.Context, repo restic.Repository, wr io.Writer) error {
+	return repo.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
+		Printf("index_id: %v\n", id)
 
-		idx, err := repository.LoadIndex(context.TODO(), repo, id)
+		idx, err := repository.LoadIndex(ctx, repo, id)
 		if err != nil {
 			return err
 		}
@@ -134,7 +133,7 @@ func runDebugDump(gopts GlobalOptions, args []string) error {
 	}
 
 	if !gopts.NoLock {
-		lock, err := lockRepo(repo)
+		lock, err := lockRepo(gopts.ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
@@ -145,20 +144,20 @@ func runDebugDump(gopts GlobalOptions, args []string) error {
 
 	switch tpe {
 	case "indexes":
-		return dumpIndexes(repo, gopts.stdout)
+		return dumpIndexes(gopts.ctx, repo, gopts.stdout)
 	case "snapshots":
-		return debugPrintSnapshots(repo, gopts.stdout)
+		return debugPrintSnapshots(gopts.ctx, repo, gopts.stdout)
 	case "packs":
-		return printPacks(repo, gopts.stdout)
+		return printPacks(gopts.ctx, repo, gopts.stdout)
 	case "all":
-		fmt.Printf("snapshots:\n")
-		err := debugPrintSnapshots(repo, gopts.stdout)
+		Printf("snapshots:\n")
+		err := debugPrintSnapshots(gopts.ctx, repo, gopts.stdout)
 		if err != nil {
 			return err
 		}
 
-		fmt.Printf("\nindexes:\n")
-		err = dumpIndexes(repo, gopts.stdout)
+		Printf("\nindexes:\n")
+		err = dumpIndexes(gopts.ctx, repo, gopts.stdout)
 		if err != nil {
 			return err
 		}

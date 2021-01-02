@@ -1,0 +1,20 @@
+Enhancement: support Alibaba/Aliyun OSS with S3 backend
+
+We've added a new flag to the s3 backend `s3.bucket-lookup` which can
+be set to these 3 values:
+
+- `auto` - existing behaviour
+- `dns` - use DNS style bucket access
+- `path` - use path style bucket access
+
+To make the s3 backend work with Alibaba/Aliyun OSS you must set
+`s3.bucket-lookup` to `dns` and set the `s3.region` parameter.  For
+example:
+
+    restic -o s3.bucket-lookup=dns -o s3.region=oss-eu-west-1 -r s3:https://oss-eu-west-1.aliyuncs.com/bucketname init
+
+Note that s3.region must be set otherwise the minio SDK tries to look
+it up and it seems that Alibaba doesn't support that properly.
+
+https://github.com/restic/restic/issues/2528
+https://github.com/restic/restic/pull/2535

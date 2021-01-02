@@ -506,43 +506,29 @@ func (node Node) sameExtendedAttributes(other Node) bool {
 	return true
 }
 
-func (node *Node) fillUser(stat statT) error {
-	node.UID = stat.uid()
-	node.GID = stat.gid()
-
-	username, err := lookupUsername(strconv.Itoa(int(stat.uid())))
-	if err != nil {
-		return err
-	}
-
-	group, err := lookupGroup(strconv.Itoa(int(stat.gid())))
-	if err != nil {
-		return err
-	}
-
-	node.User = username
-	node.Group = group
-
-	return nil
+func (node *Node) fillUser(stat *statT) {
+	uid, gid := stat.uid(), stat.gid()
+	node.UID, node.GID = uid, gid
+	node.User = lookupUsername(uid)
+	node.Group = lookupGroup(gid)
 }
 
 var (
-	uidLookupCache      = make(map[string]string)
+	uidLookupCache      = make(map[uint32]string)
 	uidLookupCacheMutex = sync.RWMutex{}
 )
 
-func lookupUsername(uid string) (string, error) {
+// Cached user name lookup by uid. Returns "" when no name can be found.
+func lookupUsername(uid uint32) string {
 	uidLookupCacheMutex.RLock()
-	value, ok := uidLookupCache[uid]
+	username, ok := uidLookupCache[uid]
 	uidLookupCacheMutex.RUnlock()
 
 	if ok {
-		return value, nil
+		return username
 	}
 
-	username := ""
-
-	u, err := user.LookupId(uid)
+	u, err := user.LookupId(strconv.Itoa(int(uid)))
 	if err == nil {
 		username = u.Username
 	}
@@ -551,26 +537,25 @@ func lookupUsername(uid string) (string, error) {
 	uidLookupCache[uid] = username
 	uidLookupCacheMutex.Unlock()
 
-	return username, nil
+	return username
 }
 
 var (
-	gidLookupCache      = make(map[string]string)
+	gidLookupCache      = make(map[uint32]string)
 	gidLookupCacheMutex = sync.RWMutex{}
 )
 
-func lookupGroup(gid string) (string, error) {
+// Cached group name lookup by gid. Returns "" when no name can be found.
+func lookupGroup(gid uint32) string {
 	gidLookupCacheMutex.RLock()
-	value, ok := gidLookupCache[gid]
+	group, ok := gidLookupCache[gid]
 	gidLookupCacheMutex.RUnlock()
 
 	if ok {
-		return value, nil
+		return group
 	}
 
-	group := ""
-
-	g, err := user.LookupGroupId(gid)
+	g, err := user.LookupGroupId(strconv.Itoa(int(gid)))
 	if err == nil {
 		group = g.Name
 	}
@@ -579,7 +564,7 @@ func lookupGroup(gid string) (string, error) {
 	gidLookupCache[gid] = group
 	gidLookupCacheMutex.Unlock()
 
-	return group, nil
+	return group
 }
 
 func (node *Node) fillExtra(path string, fi os.FileInfo) error {
@@ -597,11 +582,7 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 
 	node.fillTimes(stat)
 
-	var err error
-
-	if err = node.fillUser(stat); err != nil {
-		return err
-	}
+	node.fillUser(stat)
 
 	switch node.Type {
 	case "file":
@@ -609,6 +590,7 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 		node.Links = uint64(stat.nlink())
 	case "dir":
 	case "symlink":
+		var err error
 		node.LinkTarget, err = fs.Readlink(path)
 		node.Links = uint64(stat.nlink())
 		if err != nil {
@@ -626,7 +608,7 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 		return errors.Errorf("invalid node type %q", node.Type)
 	}
 
-	if err = node.fillExtendedAttributes(path); err != nil {
+	if err := node.fillExtendedAttributes(path); err != nil {
 		return err
 	}
 
@@ -662,24 +644,11 @@ func (node *Node) fillExtendedAttributes(path string) error {
 	return nil
 }
 
-type statT interface {
-	dev() uint64
-	ino() uint64
-	nlink() uint64
-	uid() uint32
-	gid() uint32
-	rdev() uint64
-	size() int64
-	atim() syscall.Timespec
-	mtim() syscall.Timespec
-	ctim() syscall.Timespec
-}
-
 func mkfifo(path string, mode uint32) (err error) {
 	return mknod(path, mode|syscall.S_IFIFO, 0)
 }
 
-func (node *Node) fillTimes(stat statT) {
+func (node *Node) fillTimes(stat *statT) {
 	ctim := stat.ctim()
 	atim := stat.atim()
 	node.ChangeTime = time.Unix(ctim.Unix())

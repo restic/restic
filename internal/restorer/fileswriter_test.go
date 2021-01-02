@@ -16,19 +16,19 @@ func TestFilesWriterBasic(t *testing.T) {
 	f1 := dir + "/f1"
 	f2 := dir + "/f2"
 
-	rtest.OK(t, w.writeToFile(f1, []byte{1}, 0, true))
+	rtest.OK(t, w.writeToFile(f1, []byte{1}, 0, 2))
 	rtest.Equals(t, 0, len(w.buckets[0].files))
 	rtest.Equals(t, 0, len(w.buckets[0].users))
 
-	rtest.OK(t, w.writeToFile(f2, []byte{2}, 0, true))
+	rtest.OK(t, w.writeToFile(f2, []byte{2}, 0, 2))
 	rtest.Equals(t, 0, len(w.buckets[0].files))
 	rtest.Equals(t, 0, len(w.buckets[0].users))
 
-	rtest.OK(t, w.writeToFile(f1, []byte{1}, 1, false))
+	rtest.OK(t, w.writeToFile(f1, []byte{1}, 1, -1))
 	rtest.Equals(t, 0, len(w.buckets[0].files))
 	rtest.Equals(t, 0, len(w.buckets[0].users))
 
-	rtest.OK(t, w.writeToFile(f2, []byte{2}, 1, false))
+	rtest.OK(t, w.writeToFile(f2, []byte{2}, 1, -1))
 	rtest.Equals(t, 0, len(w.buckets[0].files))
 	rtest.Equals(t, 0, len(w.buckets[0].users))
 

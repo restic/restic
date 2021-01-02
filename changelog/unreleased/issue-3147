@@ -1,0 +1,11 @@
+Enhancement: Support further environment variables for swift authentication
+
+The swift backend now supports the following additional environment variables
+to pass authentication details to restic: `OS_USER_ID`, `OS_USER_DOMAIN_ID`,
+`OS_PROJECT_DOMAIN_ID` and `OS_TRUST_ID`.
+
+Depending on the openrc configuration file these might be required when the
+user and project domains differ.
+
+https://github.com/restic/restic/issues/3147
+https://github.com/restic/restic/pull/3158

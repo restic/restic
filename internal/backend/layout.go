@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -24,7 +25,7 @@ type Layout interface {
 // Filesystem is the abstraction of a file system used for a backend.
 type Filesystem interface {
 	Join(...string) string
-	ReadDir(string) ([]os.FileInfo, error)
+	ReadDir(context.Context, string) ([]os.FileInfo, error)
 	IsNotExist(error) bool
 }
 
@@ -36,7 +37,7 @@ type LocalFilesystem struct {
 }
 
 // ReadDir returns all entries of a directory.
-func (l *LocalFilesystem) ReadDir(dir string) ([]os.FileInfo, error) {
+func (l *LocalFilesystem) ReadDir(ctx context.Context, dir string) ([]os.FileInfo, error) {
 	f, err := fs.Open(dir)
 	if err != nil {
 		return nil, err
@@ -68,8 +69,8 @@ func (l *LocalFilesystem) IsNotExist(err error) bool {
 var backendFilenameLength = len(restic.ID{}) * 2
 var backendFilename = regexp.MustCompile(fmt.Sprintf("^[a-fA-F0-9]{%d}$", backendFilenameLength))
 
-func hasBackendFile(fs Filesystem, dir string) (bool, error) {
-	entries, err := fs.ReadDir(dir)
+func hasBackendFile(ctx context.Context, fs Filesystem, dir string) (bool, error) {
+	entries, err := fs.ReadDir(ctx, dir)
 	if err != nil && fs.IsNotExist(errors.Cause(err)) {
 		return false, nil
 	}
@@ -94,20 +95,20 @@ var ErrLayoutDetectionFailed = errors.New("auto-detecting the filesystem layout 
 // DetectLayout tries to find out which layout is used in a local (or sftp)
 // filesystem at the given path. If repo is nil, an instance of LocalFilesystem
 // is used.
-func DetectLayout(repo Filesystem, dir string) (Layout, error) {
+func DetectLayout(ctx context.Context, repo Filesystem, dir string) (Layout, error) {
 	debug.Log("detect layout at %v", dir)
 	if repo == nil {
 		repo = &LocalFilesystem{}
 	}
 
 	// key file in the "keys" dir (DefaultLayout)
-	foundKeysFile, err := hasBackendFile(repo, repo.Join(dir, defaultLayoutPaths[restic.KeyFile]))
+	foundKeysFile, err := hasBackendFile(ctx, repo, repo.Join(dir, defaultLayoutPaths[restic.KeyFile]))
 	if err != nil {
 		return nil, err
 	}
 
 	// key file in the "key" dir (S3LegacyLayout)
-	foundKeyFile, err := hasBackendFile(repo, repo.Join(dir, s3LayoutPaths[restic.KeyFile]))
+	foundKeyFile, err := hasBackendFile(ctx, repo, repo.Join(dir, s3LayoutPaths[restic.KeyFile]))
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +135,7 @@ func DetectLayout(repo Filesystem, dir string) (Layout, error) {
 
 // ParseLayout parses the config string and returns a Layout. When layout is
 // the empty string, DetectLayout is used. If that fails, defaultLayout is used.
-func ParseLayout(repo Filesystem, layout, defaultLayout, path string) (l Layout, err error) {
+func ParseLayout(ctx context.Context, repo Filesystem, layout, defaultLayout, path string) (l Layout, err error) {
 	debug.Log("parse layout string %q for backend at %v", layout, path)
 	switch layout {
 	case "default":
@@ -148,12 +149,12 @@ func ParseLayout(repo Filesystem, layout, defaultLayout, path string) (l Layout,
 			Join: repo.Join,
 		}
 	case "":
-		l, err = DetectLayout(repo, path)
+		l, err = DetectLayout(ctx, repo, path)
 
 		// use the default layout if auto detection failed
 		if errors.Cause(err) == ErrLayoutDetectionFailed && defaultLayout != "" {
 			debug.Log("error: %v, use default layout %v", err, defaultLayout)
-			return ParseLayout(repo, defaultLayout, "", path)
+			return ParseLayout(ctx, repo, defaultLayout, "", path)
 		}
 
 		if err != nil {

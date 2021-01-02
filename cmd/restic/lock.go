@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"sync"
 	"time"
 
@@ -20,23 +18,23 @@ var globalLocks struct {
 	sync.Mutex
 }
 
-func lockRepo(repo *repository.Repository) (*restic.Lock, error) {
-	return lockRepository(repo, false)
+func lockRepo(ctx context.Context, repo *repository.Repository) (*restic.Lock, error) {
+	return lockRepository(ctx, repo, false)
 }
 
-func lockRepoExclusive(repo *repository.Repository) (*restic.Lock, error) {
-	return lockRepository(repo, true)
+func lockRepoExclusive(ctx context.Context, repo *repository.Repository) (*restic.Lock, error) {
+	return lockRepository(ctx, repo, true)
 }
 
-func lockRepository(repo *repository.Repository, exclusive bool) (*restic.Lock, error) {
+func lockRepository(ctx context.Context, repo *repository.Repository, exclusive bool) (*restic.Lock, error) {
 	lockFn := restic.NewLock
 	if exclusive {
 		lockFn = restic.NewExclusiveLock
 	}
 
-	lock, err := lockFn(context.TODO(), repo)
+	lock, err := lockFn(ctx, repo)
 	if err != nil {
-		return nil, errors.Fatalf("unable to create lock in backend: %v", err)
+		return nil, errors.WithMessage(err, "unable to create lock in backend")
 	}
 	debug.Log("create lock %p (exclusive %v)", lock, exclusive)
 
@@ -79,7 +77,7 @@ func refreshLocks(wg *sync.WaitGroup, done <-chan struct{}) {
 			for _, lock := range globalLocks.locks {
 				err := lock.Refresh(context.TODO())
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "unable to refresh lock: %v\n", err)
+					Warnf("unable to refresh lock: %v\n", err)
 				}
 			}
 			globalLocks.Unlock()
@@ -87,7 +85,11 @@ func refreshLocks(wg *sync.WaitGroup, done <-chan struct{}) {
 	}
 }
 
-func unlockRepo(lock *restic.Lock) error {
+func unlockRepo(lock *restic.Lock) {
+	if lock == nil {
+		return
+	}
+
 	globalLocks.Lock()
 	defer globalLocks.Unlock()
 
@@ -97,18 +99,17 @@ func unlockRepo(lock *restic.Lock) error {
 			debug.Log("unlocking repository with lock %v", lock)
 			if err := lock.Unlock(); err != nil {
 				debug.Log("error while unlocking: %v", err)
-				return err
+				Warnf("error while unlocking: %v", err)
+				return
 			}
 
 			// remove the lock from the list of locks
 			globalLocks.locks = append(globalLocks.locks[:i], globalLocks.locks[i+1:]...)
-			return nil
+			return
 		}
 	}
 
 	debug.Log("unable to find lock %v in the global list of locks, ignoring", lock)
-
-	return nil
 }
 
 func unlockAll() error {

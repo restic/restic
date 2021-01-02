@@ -19,6 +19,13 @@ The "backup" command creates a new snapshot and saves the files and directories
 given as the arguments.
 
 
+.SH EXIT STATUS
+.PP
+Exit status is 0 if the command was successful.
+Exit status is 1 if there was a fatal error (no snapshot created).
+Exit status is 3 if some source data could not be read (incomplete snapshot created).
+
+
 .SH OPTIONS
 .PP
 \fB\-e\fP, \fB\-\-exclude\fP=[]
@@ -27,7 +34,7 @@ given as the arguments.
 .PP
 \fB\-\-exclude\-caches\fP[=false]
     excludes cache directories that are marked with a CACHEDIR.TAG file. See 
-\[la]http://bford.info/cachedir/spec.html\[ra] for the Cache Directory Tagging Standard
+\[la]https://bford.info/cachedir/\[ra] for the Cache Directory Tagging Standard
 
 .PP
 \fB\-\-exclude\-file\fP=[]
@@ -35,11 +42,15 @@ given as the arguments.
 
 .PP
 \fB\-\-exclude\-if\-present\fP=[]
-    takes filename[:header], exclude contents of directories containing filename (except filename itself) if header of that file is as provided (can be specified multiple times)
+    takes \fB\fCfilename[:header]\fR, exclude contents of directories containing filename (except filename itself) if header of that file is as provided (can be specified multiple times)
+
+.PP
+\fB\-\-exclude\-larger\-than\fP=""
+    max \fB\fCsize\fR of the files to be backed up (allowed suffixes: k/K, m/M, g/G, t/T)
 
 .PP
 \fB\-\-files\-from\fP=[]
-    read the files to backup from file (can be combined with file args/can be specified multiple times)
+    read the files to backup from \fB\fCfile\fR (can be combined with file args/can be specified multiple times)
 
 .PP
 \fB\-f\fP, \fB\-\-force\fP[=false]
@@ -55,7 +66,11 @@ given as the arguments.
 
 .PP
 \fB\-\-iexclude\fP=[]
-    same as \fB\fC\-\-exclude\fR but ignores the casing of filenames
+    same as \-\-exclude \fB\fCpattern\fR but ignores the casing of filenames
+
+.PP
+\fB\-\-iexclude\-file\fP=[]
+    same as \-\-exclude\-file but ignores casing of \fB\fCfile\fRnames in patterns
 
 .PP
 \fB\-\-ignore\-inode\fP[=false]
@@ -67,7 +82,7 @@ given as the arguments.
 
 .PP
 \fB\-\-parent\fP=""
-    use this parent snapshot (default: last snapshot in the repo that has the same target files/directories)
+    use this parent \fB\fCsnapshot\fR (default: last snapshot in the repo that has the same target files/directories)
 
 .PP
 \fB\-\-stdin\fP[=false]
@@ -75,7 +90,7 @@ given as the arguments.
 
 .PP
 \fB\-\-stdin\-filename\fP="stdin"
-    file name to use when reading from stdin
+    \fB\fCfilename\fR to use when reading from stdin
 
 .PP
 \fB\-\-tag\fP=[]
@@ -83,7 +98,7 @@ given as the arguments.
 
 .PP
 \fB\-\-time\fP=""
-    time of the backup (ex. '2012\-11\-01 22:08:41') (default: now)
+    \fB\fCtime\fR of the backup (ex. '2012\-11\-01 22:08:41') (default: now)
 
 .PP
 \fB\-\-with\-atime\fP[=false]
@@ -97,7 +112,7 @@ given as the arguments.
 
 .PP
 \fB\-\-cache\-dir\fP=""
-    set the cache directory. (default: use system default cache directory)
+    set the cache \fB\fCdirectory\fR\&. (default: use system default cache directory)
 
 .PP
 \fB\-\-cleanup\-cache\fP[=false]
@@ -109,7 +124,7 @@ given as the arguments.
 
 .PP
 \fB\-\-key\-hint\fP=""
-    key ID of key to try decrypting first (default: $RESTIC\_KEY\_HINT)
+    \fB\fCkey\fR ID of key to try decrypting first (default: $RESTIC\_KEY\_HINT)
 
 .PP
 \fB\-\-limit\-download\fP=0
@@ -125,7 +140,7 @@ given as the arguments.
 
 .PP
 \fB\-\-no\-lock\fP[=false]
-    do not lock the repo, this allows some operations on read\-only repos
+    do not lock the repository, this allows some operations on read\-only repositories
 
 .PP
 \fB\-o\fP, \fB\-\-option\fP=[]
@@ -133,11 +148,11 @@ given as the arguments.
 
 .PP
 \fB\-\-password\-command\fP=""
-    specify a shell command to obtain a password (default: $RESTIC\_PASSWORD\_COMMAND)
+    shell \fB\fCcommand\fR to obtain the repository password from (default: $RESTIC\_PASSWORD\_COMMAND)
 
 .PP
 \fB\-p\fP, \fB\-\-password\-file\fP=""
-    read the repository password from a file (default: $RESTIC\_PASSWORD\_FILE)
+    \fB\fCfile\fR to read the repository password from (default: $RESTIC\_PASSWORD\_FILE)
 
 .PP
 \fB\-q\fP, \fB\-\-quiet\fP[=false]
@@ -145,15 +160,19 @@ given as the arguments.
 
 .PP
 \fB\-r\fP, \fB\-\-repo\fP=""
-    repository to backup to or restore from (default: $RESTIC\_REPOSITORY)
+    \fB\fCrepository\fR to backup to or restore from (default: $RESTIC\_REPOSITORY)
+
+.PP
+\fB\-\-repository\-file\fP=""
+    \fB\fCfile\fR to read the repository location from (default: $RESTIC\_REPOSITORY\_FILE)
 
 .PP
 \fB\-\-tls\-client\-cert\fP=""
-    path to a file containing PEM encoded TLS client certificate and private key
+    path to a \fB\fCfile\fR containing PEM encoded TLS client certificate and private key
 
 .PP
 \fB\-v\fP, \fB\-\-verbose\fP[=0]
-    be verbose (specify \-\-verbose multiple times or level \fB\fCn\fR)
+    be verbose (specify multiple times or a level using \-\-verbose=\fB\fCn\fR, max level/times is 3)
 
 
 .SH SEE ALSO

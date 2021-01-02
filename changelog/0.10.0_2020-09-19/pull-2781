@@ -1,0 +1,8 @@
+Enhancement: Reduce memory consumption of in-memory index
+
+We've improved how the index is stored in memory.
+This change can reduce memory usage for large repositories by up to 50%
+(depending on the operation).
+
+https://github.com/restic/restic/pull/2781
+https://github.com/restic/restic/pull/2812

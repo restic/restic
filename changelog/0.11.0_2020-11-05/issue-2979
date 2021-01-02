@@ -1,0 +1,9 @@
+Bugfix: Make snapshots --json output [] instead of null when no snapshots
+
+Restic previously output `null` instead of `[]` for the `--json snapshots`
+command, when there were no snapshots in the repository. This caused some
+minor problems when parsing the output, but is now fixed such that `[]` is
+output when the list of snapshots is empty.
+
+https://github.com/restic/restic/issues/2979
+https://github.com/restic/restic/pull/2984

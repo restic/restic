@@ -1,0 +1,6 @@
+Enhancement: Optimize handling of new index entries
+
+Restic now uses less memory for backups which add a lot of data, e.g. large initial backups.
+In addition, we've improved the stability in some edge cases.
+
+https://github.com/restic/restic/pull/2773

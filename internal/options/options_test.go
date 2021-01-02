@@ -3,6 +3,7 @@ package options
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"testing"
 	"time"
 )
@@ -124,6 +125,7 @@ type Target struct {
 	Name    string        `option:"name"`
 	ID      int           `option:"id"`
 	Timeout time.Duration `option:"timeout"`
+	Switch  bool          `option:"switch"`
 	Other   string
 }
 
@@ -154,7 +156,15 @@ var setTests = []struct {
 			"timeout": "10m3s",
 		},
 		Target{
-			Timeout: time.Duration(10*time.Minute + 3*time.Second),
+			Timeout: 10*time.Minute + 3*time.Second,
+		},
+	},
+	{
+		Options{
+			"switch": "true",
+		},
+		Target{
+			Switch: true,
 		},
 	},
 }
@@ -199,7 +209,14 @@ var invalidSetTests = []struct {
 			"timeout": "2134",
 		},
 		"ns",
-		`time: missing unit in duration 2134`,
+		`time: missing unit in duration "?2134"?`,
+	},
+	{
+		Options{
+			"switch": "yes",
+		},
+		"ns",
+		`strconv.ParseBool: parsing "yes": invalid syntax`,
 	},
 }
 
@@ -212,19 +229,24 @@ func TestOptionsApplyInvalid(t *testing.T) {
 				t.Fatalf("expected error %v not found", test.err)
 			}
 
-			if err.Error() != test.err {
-				t.Fatalf("expected error %q, got %q", test.err, err.Error())
+			matched, e := regexp.MatchString(test.err, err.Error())
+			if e != nil {
+				t.Fatal(e)
+			}
+
+			if !matched {
+				t.Fatalf("expected error to match %q, got %q", test.err, err.Error())
 			}
 		})
 	}
 }
 
 func TestListOptions(t *testing.T) {
-	var teststruct = struct {
+	teststruct := struct {
 		Foo string `option:"foo" help:"bar text help"`
 	}{}
 
-	var tests = []struct {
+	tests := []struct {
 		cfg  interface{}
 		opts []Help
 	}{
@@ -275,7 +297,7 @@ func TestListOptions(t *testing.T) {
 }
 
 func TestAppendAllOptions(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		cfgs map[string]interface{}
 		opts []Help
 	}{

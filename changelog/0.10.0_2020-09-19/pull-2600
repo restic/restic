@@ -1,0 +1,14 @@
+Change: Update dependencies, require Go >= 1.13
+
+Restic now requires Go to be at least 1.13. This allows simplifications in the
+build process and removing workarounds.
+
+This is also probably the last version of restic still supporting mounting
+repositories via fuse on macOS. The library we're using for fuse does not
+support macOS any more and osxfuse is not open source any more.
+
+https://github.com/restic/restic/pull/2600
+https://github.com/restic/restic/pull/2852
+https://github.com/restic/restic/pull/2927
+https://github.com/bazil/fuse/issues/224
+https://github.com/osxfuse/osxfuse/issues/590

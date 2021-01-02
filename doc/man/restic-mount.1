@@ -51,6 +51,11 @@ For details please see the documentation for time.Format() at:
 \[la]https://godoc.org/time#Time.Format\[ra]
 
 
+.SH EXIT STATUS
+.PP
+Exit status is 0 if the command was successful, and non\-zero if there was any error.
+
+
 .SH OPTIONS
 .PP
 \fB\-\-allow\-other\fP[=false]
@@ -61,8 +66,8 @@ For details please see the documentation for time.Format() at:
     help for mount
 
 .PP
-\fB\-H\fP, \fB\-\-host\fP=""
-    only consider snapshots for this host
+\fB\-H\fP, \fB\-\-host\fP=[]
+    only consider snapshots for this host (can be specified multiple times)
 
 .PP
 \fB\-\-no\-default\-permissions\fP[=false]
@@ -92,7 +97,7 @@ For details please see the documentation for time.Format() at:
 
 .PP
 \fB\-\-cache\-dir\fP=""
-    set the cache directory. (default: use system default cache directory)
+    set the cache \fB\fCdirectory\fR\&. (default: use system default cache directory)
 
 .PP
 \fB\-\-cleanup\-cache\fP[=false]
@@ -104,7 +109,7 @@ For details please see the documentation for time.Format() at:
 
 .PP
 \fB\-\-key\-hint\fP=""
-    key ID of key to try decrypting first (default: $RESTIC\_KEY\_HINT)
+    \fB\fCkey\fR ID of key to try decrypting first (default: $RESTIC\_KEY\_HINT)
 
 .PP
 \fB\-\-limit\-download\fP=0
@@ -120,7 +125,7 @@ For details please see the documentation for time.Format() at:
 
 .PP
 \fB\-\-no\-lock\fP[=false]
-    do not lock the repo, this allows some operations on read\-only repos
+    do not lock the repository, this allows some operations on read\-only repositories
 
 .PP
 \fB\-o\fP, \fB\-\-option\fP=[]
@@ -128,11 +133,11 @@ For details please see the documentation for time.Format() at:
 
 .PP
 \fB\-\-password\-command\fP=""
-    specify a shell command to obtain a password (default: $RESTIC\_PASSWORD\_COMMAND)
+    shell \fB\fCcommand\fR to obtain the repository password from (default: $RESTIC\_PASSWORD\_COMMAND)
 
 .PP
 \fB\-p\fP, \fB\-\-password\-file\fP=""
-    read the repository password from a file (default: $RESTIC\_PASSWORD\_FILE)
+    \fB\fCfile\fR to read the repository password from (default: $RESTIC\_PASSWORD\_FILE)
 
 .PP
 \fB\-q\fP, \fB\-\-quiet\fP[=false]
@@ -140,15 +145,19 @@ For details please see the documentation for time.Format() at:
 
 .PP
 \fB\-r\fP, \fB\-\-repo\fP=""
-    repository to backup to or restore from (default: $RESTIC\_REPOSITORY)
+    \fB\fCrepository\fR to backup to or restore from (default: $RESTIC\_REPOSITORY)
+
+.PP
+\fB\-\-repository\-file\fP=""
+    \fB\fCfile\fR to read the repository location from (default: $RESTIC\_REPOSITORY\_FILE)
 
 .PP
 \fB\-\-tls\-client\-cert\fP=""
-    path to a file containing PEM encoded TLS client certificate and private key
+    path to a \fB\fCfile\fR containing PEM encoded TLS client certificate and private key
 
 .PP
 \fB\-v\fP, \fB\-\-verbose\fP[=0]
-    be verbose (specify \-\-verbose multiple times or level \fB\fCn\fR)
+    be verbose (specify multiple times or a level using \-\-verbose=\fB\fCn\fR, max level/times is 3)
 
 
 .SH SEE ALSO

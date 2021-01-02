@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui/progress"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -21,13 +22,12 @@ import (
 // A Checker only tests for internal errors within the data structures of the
 // repository (e.g. missing blobs), and needs a valid Repository to work on.
 type Checker struct {
-	packs    restic.IDSet
-	blobs    restic.IDSet
+	packs    map[restic.ID]int64
 	blobRefs struct {
 		sync.Mutex
-		M map[restic.ID]uint
+		M restic.BlobSet
 	}
-	indexes map[restic.ID]*repository.Index
+	trackUnused bool
 
 	masterIndex *repository.MasterIndex
 
@@ -35,16 +35,15 @@ type Checker struct {
 }
 
 // New returns a new checker which runs on repo.
-func New(repo restic.Repository) *Checker {
+func New(repo restic.Repository, trackUnused bool) *Checker {
 	c := &Checker{
-		packs:       restic.NewIDSet(),
-		blobs:       restic.NewIDSet(),
+		packs:       make(map[restic.ID]int64),
 		masterIndex: repository.NewMasterIndex(),
-		indexes:     make(map[restic.ID]*repository.Index),
 		repo:        repo,
+		trackUnused: trackUnused,
 	}
 
-	c.blobRefs.M = make(map[restic.ID]uint)
+	c.blobRefs.M = restic.NewBlobSet()
 
 	return c
 }
@@ -77,7 +76,7 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 
 	// track spawned goroutines using wg, create a new context which is
 	// cancelled as soon as an error occurs.
-	wg, ctx := errgroup.WithContext(ctx)
+	wg, wgCtx := errgroup.WithContext(ctx)
 
 	type FileInfo struct {
 		restic.ID
@@ -96,9 +95,9 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 	// send list of index files through ch, which is closed afterwards
 	wg.Go(func() error {
 		defer close(ch)
-		return c.repo.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
+		return c.repo.List(wgCtx, restic.IndexFile, func(id restic.ID, size int64) error {
 			select {
-			case <-ctx.Done():
+			case <-wgCtx.Done():
 				return nil
 			case ch <- FileInfo{id, size}:
 			}
@@ -113,32 +112,32 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 			debug.Log("worker got file %v", fi.ID.Str())
 			var err error
 			var idx *repository.Index
-			idx, buf, err = repository.LoadIndexWithDecoder(ctx, c.repo, buf[:0], fi.ID, repository.DecodeIndex)
-			if errors.Cause(err) == repository.ErrOldIndexFormat {
+			oldFormat := false
+
+			buf, err = c.repo.LoadAndDecrypt(wgCtx, buf[:0], restic.IndexFile, fi.ID)
+			if err == nil {
+				idx, oldFormat, err = repository.DecodeIndex(buf, fi.ID)
+			}
+
+			if oldFormat {
 				debug.Log("index %v has old format", fi.ID.Str())
 				hints = append(hints, ErrOldIndexFormat{fi.ID})
-
-				idx, buf, err = repository.LoadIndexWithDecoder(ctx, c.repo, buf[:0], fi.ID, repository.DecodeOldIndex)
 			}
 
 			err = errors.Wrapf(err, "error loading index %v", fi.ID.Str())
 
 			select {
 			case resultCh <- Result{idx, fi.ID, err}:
-			case <-ctx.Done():
+			case <-wgCtx.Done():
 			}
 		}
 		return nil
 	}
 
-	// final closes indexCh after all workers have terminated
-	final := func() {
-		close(resultCh)
-	}
-
 	// run workers on ch
 	wg.Go(func() error {
-		return repository.RunWorkers(ctx, defaultParallelism, worker, final)
+		defer close(resultCh)
+		return repository.RunWorkers(defaultParallelism, worker)
 	})
 
 	// receive decoded indexes
@@ -152,15 +151,11 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 				continue
 			}
 
-			c.indexes[res.ID] = res.Index
 			c.masterIndex.Insert(res.Index)
 
 			debug.Log("process blobs")
 			cnt := 0
-			for blob := range res.Index.Each(ctx) {
-				c.packs.Insert(blob.PackID)
-				c.blobs.Insert(blob.ID)
-				c.blobRefs.M[blob.ID] = 0
+			for blob := range res.Index.Each(wgCtx) {
 				cnt++
 
 				if _, ok := packToIndex[blob.PackID]; !ok {
@@ -178,6 +173,12 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 	if err != nil {
 		errs = append(errs, err)
 	}
+
+	// Merge index before computing pack sizes, as this needs removed duplicates
+	c.masterIndex.MergeFinalIndexes()
+
+	// compute pack size using index entries
+	c.packs = c.masterIndex.PackSize(ctx, false)
 
 	debug.Log("checking for duplicate packs")
 	for packID := range c.packs {
@@ -229,10 +230,10 @@ func (c *Checker) Packs(ctx context.Context, errChan chan<- error) {
 	debug.Log("checking for %d packs", len(c.packs))
 
 	debug.Log("listing repository packs")
-	repoPacks := restic.NewIDSet()
+	repoPacks := make(map[restic.ID]int64)
 
-	err := c.repo.List(ctx, restic.DataFile, func(id restic.ID, size int64) error {
-		repoPacks.Insert(id)
+	err := c.repo.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
+		repoPacks[id] = size
 		return nil
 	})
 
@@ -240,21 +241,37 @@ func (c *Checker) Packs(ctx context.Context, errChan chan<- error) {
 		errChan <- err
 	}
 
+	for id, size := range c.packs {
+		reposize, ok := repoPacks[id]
+		// remove from repoPacks so we can find orphaned packs
+		delete(repoPacks, id)
+
+		// missing: present in c.packs but not in the repo
+		if !ok {
+			select {
+			case <-ctx.Done():
+				return
+			case errChan <- PackError{ID: id, Err: errors.New("does not exist")}:
+			}
+			continue
+		}
+
+		// size not matching: present in c.packs and in the repo, but sizes do not match
+		if size != reposize {
+			select {
+			case <-ctx.Done():
+				return
+			case errChan <- PackError{ID: id, Err: errors.Errorf("unexpected file size: got %d, expected %d", reposize, size)}:
+			}
+		}
+	}
+
 	// orphaned: present in the repo but not in c.packs
-	for orphanID := range repoPacks.Sub(c.packs) {
+	for orphanID := range repoPacks {
 		select {
 		case <-ctx.Done():
 			return
 		case errChan <- PackError{ID: orphanID, Orphaned: true, Err: errors.New("not referenced in any index")}:
-		}
-	}
-
-	// missing: present in c.packs but not in the repo
-	for missingID := range c.packs.Sub(repoPacks) {
-		select {
-		case <-ctx.Done():
-			return
-		case errChan <- PackError{ID: missingID, Err: errors.New("does not exist")}:
 		}
 	}
 }
@@ -279,86 +296,6 @@ func (e Error) Error() string {
 	}
 
 	return e.Err.Error()
-}
-
-func loadTreeFromSnapshot(ctx context.Context, repo restic.Repository, id restic.ID) (restic.ID, error) {
-	sn, err := restic.LoadSnapshot(ctx, repo, id)
-	if err != nil {
-		debug.Log("error loading snapshot %v: %v", id, err)
-		return restic.ID{}, err
-	}
-
-	if sn.Tree == nil {
-		debug.Log("snapshot %v has no tree", id)
-		return restic.ID{}, errors.Errorf("snapshot %v has no tree", id)
-	}
-
-	return *sn.Tree, nil
-}
-
-// loadSnapshotTreeIDs loads all snapshots from backend and returns the tree IDs.
-func loadSnapshotTreeIDs(ctx context.Context, repo restic.Repository) (restic.IDs, []error) {
-	var trees struct {
-		IDs restic.IDs
-		sync.Mutex
-	}
-
-	var errs struct {
-		errs []error
-		sync.Mutex
-	}
-
-	// track spawned goroutines using wg, create a new context which is
-	// cancelled as soon as an error occurs.
-	wg, ctx := errgroup.WithContext(ctx)
-
-	ch := make(chan restic.ID)
-
-	// send list of index files through ch, which is closed afterwards
-	wg.Go(func() error {
-		defer close(ch)
-		return repo.List(ctx, restic.SnapshotFile, func(id restic.ID, size int64) error {
-			select {
-			case <-ctx.Done():
-				return nil
-			case ch <- id:
-			}
-			return nil
-		})
-	})
-
-	// a worker receives an index ID from ch, loads the snapshot and the tree,
-	// and adds the result to errs and trees.
-	worker := func() error {
-		for id := range ch {
-			debug.Log("load snapshot %v", id)
-
-			treeID, err := loadTreeFromSnapshot(ctx, repo, id)
-			if err != nil {
-				errs.Lock()
-				errs.errs = append(errs.errs, err)
-				errs.Unlock()
-				continue
-			}
-
-			debug.Log("snapshot %v has tree %v", id, treeID)
-			trees.Lock()
-			trees.IDs = append(trees.IDs, treeID)
-			trees.Unlock()
-		}
-		return nil
-	}
-
-	for i := 0; i < defaultParallelism; i++ {
-		wg.Go(worker)
-	}
-
-	err := wg.Wait()
-	if err != nil {
-		errs.errs = append(errs.errs, err)
-	}
-
-	return trees.IDs, errs.errs
 }
 
 // TreeError collects several errors that occurred while processing a tree.
@@ -445,20 +382,6 @@ func (c *Checker) checkTreeWorker(ctx context.Context, in <-chan treeJob, out ch
 				return
 			}
 
-			id := job.ID
-			alreadyChecked := false
-			c.blobRefs.Lock()
-			if c.blobRefs.M[id] > 0 {
-				alreadyChecked = true
-			}
-			c.blobRefs.M[id]++
-			debug.Log("tree %v refcount %d", job.ID, c.blobRefs.M[id])
-			c.blobRefs.Unlock()
-
-			if alreadyChecked {
-				continue
-			}
-
 			debug.Log("check tree %v (tree %v, err %v)", job.ID, job.Tree, job.error)
 
 			var errs []error
@@ -483,7 +406,7 @@ func (c *Checker) checkTreeWorker(ctx context.Context, in <-chan treeJob, out ch
 	}
 }
 
-func filterTrees(ctx context.Context, backlog restic.IDs, loaderChan chan<- restic.ID, in <-chan treeJob, out chan<- treeJob) {
+func (c *Checker) filterTrees(ctx context.Context, backlog restic.IDs, loaderChan chan<- restic.ID, in <-chan treeJob, out chan<- treeJob) {
 	defer func() {
 		debug.Log("closing output channels")
 		close(loaderChan)
@@ -504,8 +427,23 @@ func filterTrees(ctx context.Context, backlog restic.IDs, loaderChan chan<- rest
 
 	for {
 		if loadCh == nil && len(backlog) > 0 {
+			// process last added ids first, that is traverse the tree in depth-first order
+			ln := len(backlog) - 1
+			nextTreeID, backlog = backlog[ln], backlog[:ln]
+
+			// use a separate flag for processed trees to ensure that check still processes trees
+			// even when a file references a tree blob
+			c.blobRefs.Lock()
+			h := restic.BlobHandle{ID: nextTreeID, Type: restic.TreeBlob}
+			blobReferenced := c.blobRefs.M.Has(h)
+			// noop if already referenced
+			c.blobRefs.M.Insert(h)
+			c.blobRefs.Unlock()
+			if blobReferenced {
+				continue
+			}
+
 			loadCh = loaderChan
-			nextTreeID, backlog = backlog[0], backlog[1:]
 		}
 
 		if loadCh == nil && outCh == nil && outstandingLoadTreeJobs == 0 {
@@ -533,16 +471,18 @@ func filterTrees(ctx context.Context, backlog restic.IDs, loaderChan chan<- rest
 
 			debug.Log("input job tree %v", j.ID)
 
-			var err error
-
 			if j.error != nil {
 				debug.Log("received job with error: %v (tree %v, ID %v)", j.error, j.Tree, j.ID)
 			} else if j.Tree == nil {
 				debug.Log("received job with nil tree pointer: %v (ID %v)", j.error, j.ID)
-				err = errors.New("tree is nil and error is nil")
+				// send a new job with the new error instead of the old one
+				j = treeJob{ID: j.ID, error: errors.New("tree is nil and error is nil")}
 			} else {
-				debug.Log("subtrees for tree %v: %v", j.ID, j.Tree.Subtrees())
-				for _, id := range j.Tree.Subtrees() {
+				subtrees := j.Tree.Subtrees()
+				debug.Log("subtrees for tree %v: %v", j.ID, subtrees)
+				// iterate backwards over subtree to compensate backwards traversal order of nextTreeID selection
+				for i := len(subtrees) - 1; i >= 0; i-- {
+					id := subtrees[i]
 					if id.IsNull() {
 						// We do not need to raise this error here, it is
 						// checked when the tree is checked. Just make sure
@@ -552,11 +492,6 @@ func filterTrees(ctx context.Context, backlog restic.IDs, loaderChan chan<- rest
 					}
 					backlog = append(backlog, id)
 				}
-			}
-
-			if err != nil {
-				// send a new job with the new error instead of the old one
-				j = treeJob{ID: j.ID, error: err}
 			}
 
 			job = j
@@ -569,6 +504,24 @@ func filterTrees(ctx context.Context, backlog restic.IDs, loaderChan chan<- rest
 			inCh = in
 		}
 	}
+}
+
+func loadSnapshotTreeIDs(ctx context.Context, repo restic.Repository) (ids restic.IDs, errs []error) {
+	err := restic.ForAllSnapshots(ctx, repo, nil, func(id restic.ID, sn *restic.Snapshot, err error) error {
+		if err != nil {
+			errs = append(errs, err)
+			return nil
+		}
+		treeID := *sn.Tree
+		debug.Log("snapshot %v has tree %v", id, treeID)
+		ids = append(ids, treeID)
+		return nil
+	})
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	return ids, errs
 }
 
 // Structure checks that for all snapshots all referenced data blobs and
@@ -599,15 +552,13 @@ func (c *Checker) Structure(ctx context.Context, errChan chan<- error) {
 		go c.checkTreeWorker(ctx, treeJobChan2, errChan, &wg)
 	}
 
-	filterTrees(ctx, trees, treeIDChan, treeJobChan1, treeJobChan2)
+	c.filterTrees(ctx, trees, treeIDChan, treeJobChan1, treeJobChan2)
 
 	wg.Wait()
 }
 
 func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 	debug.Log("checking tree %v", id)
-
-	var blobs []restic.ID
 
 	for _, node := range tree.Nodes {
 		switch node.Type {
@@ -616,19 +567,37 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 				errs = append(errs, Error{TreeID: id, Err: errors.Errorf("file %q has nil blob list", node.Name)})
 			}
 
-			var size uint64
 			for b, blobID := range node.Content {
 				if blobID.IsNull() {
 					errs = append(errs, Error{TreeID: id, Err: errors.Errorf("file %q blob %d has null ID", node.Name, b)})
 					continue
 				}
-				blobs = append(blobs, blobID)
-				blobSize, found := c.repo.LookupBlobSize(blobID, restic.DataBlob)
+				// Note that we do not use the blob size. The "obvious" check
+				// whether the sum of the blob sizes matches the file size
+				// unfortunately fails in some cases that are not resolveable
+				// by users, so we omit this check, see #1887
+
+				_, found := c.repo.LookupBlobSize(blobID, restic.DataBlob)
 				if !found {
-					errs = append(errs, Error{TreeID: id, Err: errors.Errorf("file %q blob %d size could not be found", node.Name, b)})
+					debug.Log("tree %v references blob %v which isn't contained in index", id, blobID)
+					errs = append(errs, Error{TreeID: id, Err: errors.Errorf("file %q blob %v not found in index", node.Name, blobID)})
 				}
-				size += uint64(blobSize)
 			}
+
+			if c.trackUnused {
+				// loop a second time to keep the locked section as short as possible
+				c.blobRefs.Lock()
+				for _, blobID := range node.Content {
+					if blobID.IsNull() {
+						continue
+					}
+					h := restic.BlobHandle{ID: blobID, Type: restic.DataBlob}
+					c.blobRefs.M.Insert(h)
+					debug.Log("blob %v is referenced", blobID)
+				}
+				c.blobRefs.Unlock()
+			}
+
 		case "dir":
 			if node.Subtree == nil {
 				errs = append(errs, Error{TreeID: id, Err: errors.Errorf("dir node %q has no subtree", node.Name)})
@@ -652,32 +621,26 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 		}
 	}
 
-	for _, blobID := range blobs {
-		c.blobRefs.Lock()
-		c.blobRefs.M[blobID]++
-		debug.Log("blob %v refcount %d", blobID, c.blobRefs.M[blobID])
-		c.blobRefs.Unlock()
-
-		if !c.blobs.Has(blobID) {
-			debug.Log("tree %v references blob %v which isn't contained in index", id, blobID)
-
-			errs = append(errs, Error{TreeID: id, BlobID: blobID, Err: errors.New("not found in index")})
-		}
-	}
-
 	return errs
 }
 
 // UnusedBlobs returns all blobs that have never been referenced.
-func (c *Checker) UnusedBlobs() (blobs restic.IDs) {
+func (c *Checker) UnusedBlobs(ctx context.Context) (blobs restic.BlobHandles) {
+	if !c.trackUnused {
+		panic("only works when tracking blob references")
+	}
 	c.blobRefs.Lock()
 	defer c.blobRefs.Unlock()
 
-	debug.Log("checking %d blobs", len(c.blobs))
-	for id := range c.blobs {
-		if c.blobRefs.M[id] == 0 {
-			debug.Log("blob %v not referenced", id)
-			blobs = append(blobs, id)
+	debug.Log("checking %d blobs", len(c.blobRefs.M))
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	for blob := range c.repo.Index().Each(ctx) {
+		h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
+		if !c.blobRefs.M.Has(h) {
+			debug.Log("blob %v not referenced", h)
+			blobs = append(blobs, h)
 		}
 	}
 
@@ -690,16 +653,16 @@ func (c *Checker) CountPacks() uint64 {
 }
 
 // GetPacks returns IDSet of packs in the repository
-func (c *Checker) GetPacks() restic.IDSet {
+func (c *Checker) GetPacks() map[restic.ID]int64 {
 	return c.packs
 }
 
 // checkPack reads a pack and checks the integrity of all blobs.
-func checkPack(ctx context.Context, r restic.Repository, id restic.ID) error {
+func checkPack(ctx context.Context, r restic.Repository, id restic.ID, size int64) error {
 	debug.Log("checking pack %v", id)
-	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
+	h := restic.Handle{Type: restic.PackFile, Name: id.String()}
 
-	packfile, hash, size, err := repository.DownloadAndHash(ctx, r.Backend(), h)
+	packfile, hash, realSize, err := repository.DownloadAndHash(ctx, r.Backend(), h)
 	if err != nil {
 		return errors.Wrap(err, "checkPack")
 	}
@@ -716,14 +679,22 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID) error {
 		return errors.Errorf("Pack ID does not match, want %v, got %v", id.Str(), hash.Str())
 	}
 
-	blobs, err := pack.List(r.Key(), packfile, size)
+	if realSize != size {
+		debug.Log("Pack size does not match, want %v, got %v", size, realSize)
+		return errors.Errorf("Pack size does not match, want %v, got %v", size, realSize)
+	}
+
+	blobs, hdrSize, err := pack.List(r.Key(), packfile, size)
 	if err != nil {
 		return err
 	}
 
 	var errs []error
 	var buf []byte
+	sizeFromBlobs := uint(hdrSize)
+	idx := r.Index()
 	for i, blob := range blobs {
+		sizeFromBlobs += blob.Length
 		debug.Log("  check blob %d: %v", i, blob)
 
 		buf = buf[:cap(buf)]
@@ -758,6 +729,24 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID) error {
 			errs = append(errs, errors.Errorf("Blob ID does not match, want %v, got %v", blob.ID.Str(), hash.Str()))
 			continue
 		}
+
+		// Check if blob is contained in index and position is correct
+		idxHas := false
+		for _, pb := range idx.Lookup(blob.BlobHandle) {
+			if pb.PackID == id && pb.Offset == blob.Offset && pb.Length == blob.Length {
+				idxHas = true
+				break
+			}
+		}
+		if !idxHas {
+			errs = append(errs, errors.Errorf("Blob %v is not contained in index or position is incorrect", blob.ID.Str()))
+			continue
+		}
+	}
+
+	if int64(sizeFromBlobs) != size {
+		debug.Log("Pack size does not match, want %v, got %v", size, sizeFromBlobs)
+		errs = append(errs, errors.Errorf("Pack size does not match, want %v, got %v", size, sizeFromBlobs))
 	}
 
 	if len(errs) > 0 {
@@ -768,38 +757,38 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID) error {
 }
 
 // ReadData loads all data from the repository and checks the integrity.
-func (c *Checker) ReadData(ctx context.Context, p *restic.Progress, errChan chan<- error) {
-	c.ReadPacks(ctx, c.packs, p, errChan)
+func (c *Checker) ReadData(ctx context.Context, errChan chan<- error) {
+	c.ReadPacks(ctx, c.packs, nil, errChan)
 }
 
 // ReadPacks loads data from specified packs and checks the integrity.
-func (c *Checker) ReadPacks(ctx context.Context, packs restic.IDSet, p *restic.Progress, errChan chan<- error) {
+func (c *Checker) ReadPacks(ctx context.Context, packs map[restic.ID]int64, p *progress.Counter, errChan chan<- error) {
 	defer close(errChan)
 
-	p.Start()
-	defer p.Done()
-
 	g, ctx := errgroup.WithContext(ctx)
-	ch := make(chan restic.ID)
+	type packsize struct {
+		id   restic.ID
+		size int64
+	}
+	ch := make(chan packsize)
 
 	// run workers
 	for i := 0; i < defaultParallelism; i++ {
 		g.Go(func() error {
 			for {
-				var id restic.ID
+				var ps packsize
 				var ok bool
 
 				select {
 				case <-ctx.Done():
 					return nil
-				case id, ok = <-ch:
+				case ps, ok = <-ch:
 					if !ok {
 						return nil
 					}
 				}
-
-				err := checkPack(ctx, c.repo, id)
-				p.Report(restic.Stat{Blobs: 1})
+				err := checkPack(ctx, c.repo, ps.id, ps.size)
+				p.Add(1)
 				if err == nil {
 					continue
 				}
@@ -814,9 +803,9 @@ func (c *Checker) ReadPacks(ctx context.Context, packs restic.IDSet, p *restic.P
 	}
 
 	// push packs to ch
-	for pack := range packs {
+	for pack, size := range packs {
 		select {
-		case ch <- pack:
+		case ch <- packsize{id: pack, size: size}:
 		case <-ctx.Done():
 		}
 	}

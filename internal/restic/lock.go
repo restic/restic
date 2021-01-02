@@ -284,7 +284,7 @@ func RemoveStaleLocks(ctx context.Context, repo Repository) error {
 		}
 
 		if lock.Stale() {
-			return repo.Backend().Remove(context.TODO(), Handle{Type: LockFile, Name: id.String()})
+			return repo.Backend().Remove(ctx, Handle{Type: LockFile, Name: id.String()})
 		}
 
 		return nil
@@ -294,6 +294,6 @@ func RemoveStaleLocks(ctx context.Context, repo Repository) error {
 // RemoveAllLocks removes all locks forcefully.
 func RemoveAllLocks(ctx context.Context, repo Repository) error {
 	return repo.List(ctx, LockFile, func(id ID, size int64) error {
-		return repo.Backend().Remove(context.TODO(), Handle{Type: LockFile, Name: id.String()})
+		return repo.Backend().Remove(ctx, Handle{Type: LockFile, Name: id.String()})
 	})
 }

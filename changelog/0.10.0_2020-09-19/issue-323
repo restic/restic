@@ -1,0 +1,20 @@
+Enhancement: Add command for copying snapshots between repositories
+
+We've added a copy command, allowing you to copy snapshots from one
+repository to another.
+
+Note that this process will have to read (download) and write (upload) the
+entire snapshot(s) due to the different encryption keys used on the source
+and destination repository. Also, the transferred files are not re-chunked,
+which may break deduplication between files already stored in the
+destination repo and files copied there using this command.
+
+To fully support deduplication between repositories when the copy command is
+used, the init command now supports the `--copy-chunker-params` option,
+which initializes the new repository with identical parameters for splitting
+files into chunks as an already existing repository. This allows copied
+snapshots to be equally deduplicated in both repositories.
+
+https://github.com/restic/restic/issues/323
+https://github.com/restic/restic/pull/2606
+https://github.com/restic/restic/pull/2928

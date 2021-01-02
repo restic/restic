@@ -1,0 +1,6 @@
+Enhancement: Optimize `list blobs` command
+
+We've changed the implementation of `list blobs` which should be now a bit faster
+and consume almost no memory even for large repositories.
+
+https://github.com/restic/restic/pull/2786

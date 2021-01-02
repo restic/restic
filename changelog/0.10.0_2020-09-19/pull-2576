@@ -1,0 +1,9 @@
+Enhancement: Improve the chunking algorithm
+
+We've updated the chunker library responsible for splitting files into smaller
+blocks. It should improve the chunking throughput by 5-15% depending on the
+CPU.
+
+https://github.com/restic/restic/pull/2576
+https://github.com/restic/restic/pull/2845
+https://github.com/restic/restic/issues/2820

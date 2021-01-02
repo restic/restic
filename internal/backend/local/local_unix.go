@@ -9,6 +9,6 @@ import (
 )
 
 // set file to readonly
-func setNewFileMode(f string, mode os.FileMode) error {
-	return fs.Chmod(f, mode)
+func setFileReadonly(f string, mode os.FileMode) error {
+	return fs.Chmod(f, mode&^0222)
 }

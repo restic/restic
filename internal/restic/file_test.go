@@ -9,7 +9,7 @@ var handleTests = []struct {
 	{Handle{Name: "foo"}, false},
 	{Handle{Type: "foobar"}, false},
 	{Handle{Type: ConfigFile, Name: ""}, true},
-	{Handle{Type: DataFile, Name: ""}, false},
+	{Handle{Type: PackFile, Name: ""}, false},
 	{Handle{Type: "", Name: "x"}, false},
 	{Handle{Type: LockFile, Name: "010203040506"}, true},
 }

@@ -1,0 +1,23 @@
+Enhancement: Simplify and improve restore performance
+
+Significantly improves restore performance of large files (i.e. 50M+):
+https://github.com/restic/restic/issues/2074
+https://forum.restic.net/t/restore-using-rclone-gdrive-backend-is-slow/1112/8
+https://forum.restic.net/t/degraded-restore-performance-s3-backend/1400
+
+Fixes "not enough cache capacity" error during restore:
+https://github.com/restic/restic/issues/2244
+
+NOTE: This new implementation does not guarantee order in which blobs
+are written to the target files and, for example, the last blob of a
+file can be written to the file before any of the preceeding file blobs.
+It is therefore possible to have gaps in the data written to the target
+files if restore fails or interrupted by the user.
+
+The implementation will try to preallocate space for the restored files
+on the filesystem to prevent file fragmentation. This ensures good read
+performance for large files, like for example VM images. If preallocating
+space is not supported by the filesystem, then this step is silently skipped.
+
+https://github.com/restic/restic/pull/2195
+https://github.com/restic/restic/pull/2893

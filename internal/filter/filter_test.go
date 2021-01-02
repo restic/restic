@@ -240,25 +240,28 @@ func ExampleMatch_wildcards() {
 }
 
 var filterListTests = []struct {
-	patterns []string
-	path     string
-	match    bool
+	patterns   []string
+	path       string
+	match      bool
+	childMatch bool
 }{
-	{[]string{"*.go"}, "/foo/bar/test.go", true},
-	{[]string{"*.c"}, "/foo/bar/test.go", false},
-	{[]string{"*.go", "*.c"}, "/foo/bar/test.go", true},
-	{[]string{"*"}, "/foo/bar/test.go", true},
-	{[]string{"x"}, "/foo/bar/test.go", false},
-	{[]string{"?"}, "/foo/bar/test.go", false},
-	{[]string{"?", "x"}, "/foo/bar/x", true},
-	{[]string{"/*/*/bar/test.*"}, "/foo/bar/test.go", false},
-	{[]string{"/*/*/bar/test.*", "*.go"}, "/foo/bar/test.go", true},
-	{[]string{"", "*.c"}, "/foo/bar/test.go", false},
+	{[]string{}, "/foo/bar/test.go", false, false},
+	{[]string{"*.go"}, "/foo/bar/test.go", true, true},
+	{[]string{"*.c"}, "/foo/bar/test.go", false, true},
+	{[]string{"*.go", "*.c"}, "/foo/bar/test.go", true, true},
+	{[]string{"*"}, "/foo/bar/test.go", true, true},
+	{[]string{"x"}, "/foo/bar/test.go", false, true},
+	{[]string{"?"}, "/foo/bar/test.go", false, true},
+	{[]string{"?", "x"}, "/foo/bar/x", true, true},
+	{[]string{"/*/*/bar/test.*"}, "/foo/bar/test.go", false, false},
+	{[]string{"/*/*/bar/test.*", "*.go"}, "/foo/bar/test.go", true, true},
+	{[]string{"", "*.c"}, "/foo/bar/test.go", false, true},
 }
 
 func TestList(t *testing.T) {
 	for i, test := range filterListTests {
-		match, _, err := filter.List(test.patterns, test.path)
+		patterns := filter.ParsePatterns(test.patterns)
+		match, err := filter.List(patterns, test.path)
 		if err != nil {
 			t.Errorf("test %d failed: expected no error for patterns %q, but error returned: %v",
 				i, test.patterns, err)
@@ -266,17 +269,62 @@ func TestList(t *testing.T) {
 		}
 
 		if match != test.match {
-			t.Errorf("test %d: filter.MatchList(%q, %q): expected %v, got %v",
+			t.Errorf("test %d: filter.List(%q, %q): expected %v, got %v",
 				i, test.patterns, test.path, test.match, match)
+		}
+
+		match, childMatch, err := filter.ListWithChild(patterns, test.path)
+		if err != nil {
+			t.Errorf("test %d failed: expected no error for patterns %q, but error returned: %v",
+				i, test.patterns, err)
+			continue
+		}
+
+		if match != test.match || childMatch != test.childMatch {
+			t.Errorf("test %d: filter.ListWithChild(%q, %q): expected %v, %v, got %v, %v",
+				i, test.patterns, test.path, test.match, test.childMatch, match, childMatch)
 		}
 	}
 }
 
 func ExampleList() {
-	match, _, _ := filter.List([]string{"*.c", "*.go"}, "/home/user/file.go")
+	patterns := filter.ParsePatterns([]string{"*.c", "*.go"})
+	match, _ := filter.List(patterns, "/home/user/file.go")
 	fmt.Printf("match: %v\n", match)
 	// Output:
 	// match: true
+}
+
+func TestInvalidStrs(t *testing.T) {
+	_, err := filter.Match("test", "")
+	if err == nil {
+		t.Error("Match accepted invalid path")
+	}
+
+	_, err = filter.ChildMatch("test", "")
+	if err == nil {
+		t.Error("ChildMatch accepted invalid path")
+	}
+
+	patterns := []string{"test"}
+	_, err = filter.List(filter.ParsePatterns(patterns), "")
+	if err == nil {
+		t.Error("List accepted invalid path")
+	}
+}
+
+func TestInvalidPattern(t *testing.T) {
+	patterns := []string{"test/["}
+	_, err := filter.List(filter.ParsePatterns(patterns), "test/example")
+	if err == nil {
+		t.Error("List accepted invalid pattern")
+	}
+
+	patterns = []string{"test/**/["}
+	_, err = filter.List(filter.ParsePatterns(patterns), "test/example")
+	if err == nil {
+		t.Error("List accepted invalid pattern")
+	}
 }
 
 func extractTestLines(t testing.TB) (lines []string) {
@@ -360,30 +408,60 @@ func BenchmarkFilterLines(b *testing.B) {
 }
 
 func BenchmarkFilterPatterns(b *testing.B) {
-	patterns := []string{
-		"sdk/*",
-		"*.html",
-	}
 	lines := extractTestLines(b)
-	var c uint
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		c = 0
-		for _, line := range lines {
-			match, _, err := filter.List(patterns, line)
-			if err != nil {
-				b.Fatal(err)
-			}
-
-			if match {
-				c++
-			}
+	modlines := make([]string, 200)
+	for i, line := range lines {
+		if i >= len(modlines) {
+			break
 		}
+		modlines[i] = line + "-does-not-match"
+	}
+	tests := []struct {
+		name     string
+		patterns []filter.Pattern
+		matches  uint
+	}{
+		{"Relative", filter.ParsePatterns([]string{
+			"does-not-match",
+			"sdk/*",
+			"*.html",
+		}), 22185},
+		{"Absolute", filter.ParsePatterns([]string{
+			"/etc",
+			"/home/*/test",
+			"/usr/share/doc/libreoffice/sdk/docs/java",
+		}), 150},
+		{"Wildcard", filter.ParsePatterns([]string{
+			"/etc/**/example",
+			"/home/**/test",
+			"/usr/**/java",
+		}), 150},
+		{"ManyNoMatch", filter.ParsePatterns(modlines), 0},
+	}
 
-		if c != 22185 {
-			b.Fatalf("wrong number of matches: expected 22185, got %d", c)
-		}
+	for _, test := range tests {
+		b.Run(test.name, func(b *testing.B) {
+			var c uint
+			b.ReportAllocs()
+			b.ResetTimer()
+
+			for i := 0; i < b.N; i++ {
+				c = 0
+				for _, line := range lines {
+					match, err := filter.List(test.patterns, line)
+					if err != nil {
+						b.Fatal(err)
+					}
+
+					if match {
+						c++
+					}
+				}
+
+				if c != test.matches {
+					b.Fatalf("wrong number of matches: expected %d, got %d", test.matches, c)
+				}
+			}
+		})
 	}
 }

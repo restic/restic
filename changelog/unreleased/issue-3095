@@ -1,0 +1,17 @@
+Change: Deleting files on Google Drive now moves them to the trash
+
+When deleting files on Google Drive via an rclone backend, restic used
+to bypass the trash folder and required using the `-o rclone.args`
+option to enable the trash folder. This ensured that deleted files in
+Google Drive were not kept indefinitely in the trash folder. Since
+Google Drive's trash retention policy changed to deleting trashed files
+after 30 days, this is no longer needed.
+
+Restic now leaves it up to rclone and its configuration to use or not
+use the trash folder when deleting files. The default is to use the
+trash folder, as of rclone 1.53.2. To re-enable the restic 0.11 behavior,
+set the `RCLONE_DRIVE_USE_TRASH` environment variable or change the
+rclone configuration. See the rclone documentation for details.
+
+https://github.com/restic/restic/issues/3095
+https://github.com/restic/restic/pull/3102

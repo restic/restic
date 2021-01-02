@@ -17,7 +17,7 @@ import (
 
 // Cache manages a local cache.
 type Cache struct {
-	Path             string
+	path             string
 	Base             string
 	Created          bool
 	PerformReadahead func(restic.Handle) bool
@@ -33,12 +33,12 @@ func readVersion(dir string) (v uint, err error) {
 	}
 
 	if err != nil {
-		return 0, errors.Wrap(err, "ReadFile")
+		return 0, errors.Wrap(err, "readVersion")
 	}
 
 	ver, err := strconv.ParseUint(string(buf), 10, 32)
 	if err != nil {
-		return 0, errors.Wrap(err, "ParseUint")
+		return 0, errors.Wrap(err, "readVersion")
 	}
 
 	return uint(ver), nil
@@ -46,11 +46,8 @@ func readVersion(dir string) (v uint, err error) {
 
 const cacheVersion = 1
 
-// ensure Cache implements restic.Cache
-var _ restic.Cache = &Cache{}
-
 var cacheLayoutPaths = map[restic.FileType]string{
-	restic.DataFile:     "data",
+	restic.PackFile:     "data",
 	restic.SnapshotFile: "snapshots",
 	restic.IndexFile:    "index",
 }
@@ -59,13 +56,13 @@ const cachedirTagSignature = "Signature: 8a477f597d28d172789f06886806bc55\n"
 
 func writeCachedirTag(dir string) error {
 	if err := fs.MkdirAll(dir, dirMode); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	tagfile := filepath.Join(dir, "CACHEDIR.TAG")
 	_, err := fs.Lstat(tagfile)
 	if err != nil && !os.IsNotExist(err) {
-		return errors.Wrap(err, "Lstat")
+		return errors.WithStack(err)
 	}
 
 	f, err := fs.OpenFile(tagfile, os.O_CREATE|os.O_EXCL|os.O_WRONLY, fileMode)
@@ -74,16 +71,16 @@ func writeCachedirTag(dir string) error {
 			return nil
 		}
 
-		return errors.Wrap(err, "OpenFile")
+		return errors.WithStack(err)
 	}
 
 	debug.Log("Create CACHEDIR.TAG at %v", dir)
 	if _, err := f.Write([]byte(cachedirTagSignature)); err != nil {
 		_ = f.Close()
-		return errors.Wrap(err, "Write")
+		return errors.WithStack(err)
 	}
 
-	return f.Close()
+	return errors.WithStack(f.Close())
 }
 
 // New returns a new cache for the repo ID at basedir. If basedir is the empty
@@ -99,9 +96,9 @@ func New(id string, basedir string) (c *Cache, err error) {
 		}
 	}
 
-	created, err := mkdirCacheDir(basedir)
+	err = fs.MkdirAll(basedir, 0700)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	// create base dir and tag it as a cache directory
@@ -122,11 +119,12 @@ func New(id string, basedir string) (c *Cache, err error) {
 	}
 
 	// create the repo cache dir if it does not exist yet
+	var created bool
 	_, err = fs.Lstat(cachedir)
 	if os.IsNotExist(err) {
 		err = fs.MkdirAll(cachedir, dirMode)
 		if err != nil {
-			return nil, err
+			return nil, errors.WithStack(err)
 		}
 		created = true
 	}
@@ -140,18 +138,18 @@ func New(id string, basedir string) (c *Cache, err error) {
 	if v < cacheVersion {
 		err = ioutil.WriteFile(filepath.Join(cachedir, "version"), []byte(fmt.Sprintf("%d", cacheVersion)), fileMode)
 		if err != nil {
-			return nil, errors.Wrap(err, "WriteFile")
+			return nil, errors.WithStack(err)
 		}
 	}
 
 	for _, p := range cacheLayoutPaths {
 		if err = fs.MkdirAll(filepath.Join(cachedir, p), dirMode); err != nil {
-			return nil, err
+			return nil, errors.WithStack(err)
 		}
 	}
 
 	c = &Cache{
-		Path:    cachedir,
+		path:    cachedir,
 		Base:    basedir,
 		Created: created,
 		PerformReadahead: func(restic.Handle) bool {
@@ -251,22 +249,6 @@ func Old(basedir string) ([]os.FileInfo, error) {
 func IsOld(t time.Time, maxAge time.Duration) bool {
 	oldest := time.Now().Add(-maxAge)
 	return t.Before(oldest)
-}
-
-// errNoSuchFile is returned when a file is not cached.
-type errNoSuchFile struct {
-	Type string
-	Name string
-}
-
-func (e errNoSuchFile) Error() string {
-	return fmt.Sprintf("file %v (%v) is not cached", e.Name, e.Type)
-}
-
-// IsNotExist returns true if the error was caused by a non-existing file.
-func (c *Cache) IsNotExist(err error) bool {
-	_, ok := errors.Cause(err).(errNoSuchFile)
-	return ok
 }
 
 // Wrap returns a backend with a cache.

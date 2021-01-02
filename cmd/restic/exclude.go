@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -73,8 +74,9 @@ type RejectFunc func(path string, fi os.FileInfo) bool
 // rejectByPattern returns a RejectByNameFunc which rejects files that match
 // one of the patterns.
 func rejectByPattern(patterns []string) RejectByNameFunc {
+	parsedPatterns := filter.ParsePatterns(patterns)
 	return func(item string) bool {
-		matched, _, err := filter.List(patterns, item)
+		matched, err := filter.List(parsedPatterns, item)
 		if err != nil {
 			Warnf("error for exclude pattern: %v", err)
 		}
@@ -131,7 +133,7 @@ func rejectIfPresent(excludeFileSpec string) (RejectByNameFunc, error) {
 }
 
 // isExcludedByFile interprets filename as a path and returns true if that file
-// is in a excluded directory. A directory is identified as excluded if it contains a
+// is in an excluded directory. A directory is identified as excluded if it contains a
 // tagfile which bears the name specified in tagFilename and starts with
 // header. If rc is non-nil, it is used to expedite the evaluation of a
 // directory based on previous visits.
@@ -190,19 +192,24 @@ func isDirExcludedByFile(dir, tagFilename, header string) bool {
 		Warnf("could not read signature from exclusion tagfile %q: %v\n", tf, err)
 		return false
 	}
-	if bytes.Compare(buf, []byte(header)) != 0 {
+	if !bytes.Equal(buf, []byte(header)) {
 		Warnf("invalid signature in exclusion tagfile %q\n", tf)
 		return false
 	}
 	return true
 }
 
-// gatherDevices returns the set of unique device ids of the files and/or
-// directory paths listed in "items".
-func gatherDevices(items []string) (deviceMap map[string]uint64, err error) {
-	deviceMap = make(map[string]uint64)
-	for _, item := range items {
-		item, err = filepath.Abs(filepath.Clean(item))
+// DeviceMap is used to track allowed source devices for backup. This is used to
+// check for crossing mount points during backup (for --one-file-system). It
+// maps the name of a source path to its device ID.
+type DeviceMap map[string]uint64
+
+// NewDeviceMap creates a new device map from the list of source paths.
+func NewDeviceMap(allowedSourcePaths []string) (DeviceMap, error) {
+	deviceMap := make(map[string]uint64)
+
+	for _, item := range allowedSourcePaths {
+		item, err := filepath.Abs(filepath.Clean(item))
 		if err != nil {
 			return nil, err
 		}
@@ -211,34 +218,63 @@ func gatherDevices(items []string) (deviceMap map[string]uint64, err error) {
 		if err != nil {
 			return nil, err
 		}
+
 		id, err := fs.DeviceID(fi)
 		if err != nil {
 			return nil, err
 		}
+
 		deviceMap[item] = id
 	}
+
 	if len(deviceMap) == 0 {
 		return nil, errors.New("zero allowed devices")
 	}
+
 	return deviceMap, nil
+}
+
+// IsAllowed returns true if the path is located on an allowed device.
+func (m DeviceMap) IsAllowed(item string, deviceID uint64) (bool, error) {
+	for dir := item; ; dir = filepath.Dir(dir) {
+		debug.Log("item %v, test dir %v", item, dir)
+
+		// find a parent directory that is on an allowed device (otherwise
+		// we would not traverse the directory at all)
+		allowedID, ok := m[dir]
+		if !ok {
+			if dir == filepath.Dir(dir) {
+				// arrived at root, no allowed device found. this should not happen.
+				break
+			}
+			continue
+		}
+
+		// if the item has a different device ID than the parent directory,
+		// we crossed a file system boundary
+		if allowedID != deviceID {
+			debug.Log("item %v (dir %v) on disallowed device %d", item, dir, deviceID)
+			return false, nil
+		}
+
+		// item is on allowed device, accept it
+		debug.Log("item %v allowed", item)
+		return true, nil
+	}
+
+	return false, fmt.Errorf("item %v (device ID %v) not found, deviceMap: %v", item, deviceID, m)
 }
 
 // rejectByDevice returns a RejectFunc that rejects files which are on a
 // different file systems than the files/dirs in samples.
 func rejectByDevice(samples []string) (RejectFunc, error) {
-	allowed, err := gatherDevices(samples)
+	deviceMap, err := NewDeviceMap(samples)
 	if err != nil {
 		return nil, err
 	}
-	debug.Log("allowed devices: %v\n", allowed)
+	debug.Log("allowed devices: %v\n", deviceMap)
 
 	return func(item string, fi os.FileInfo) bool {
-		if fi == nil {
-			return false
-		}
-
-		item = filepath.Clean(item)
-
 		id, err := fs.DeviceID(fi)
 		if err != nil {
 			// This should never happen because gatherDevices() would have
@@ -246,26 +282,55 @@ func rejectByDevice(samples []string) (RejectFunc, error) {
 			panic(err)
 		}
 
-		for dir := item; ; dir = filepath.Dir(dir) {
-			debug.Log("item %v, test dir %v", item, dir)
+		allowed, err := deviceMap.IsAllowed(filepath.Clean(item), id)
+		if err != nil {
+			// this should not happen
+			panic(fmt.Sprintf("error checking device ID of %v: %v", item, err))
+		}
 
-			allowedID, ok := allowed[dir]
-			if !ok {
-				if dir == filepath.Dir(dir) {
-					break
-				}
-				continue
-			}
-
-			if allowedID != id {
-				debug.Log("path %q on disallowed device %d", item, id)
-				return true
-			}
-
+		if allowed {
+			// accept item
 			return false
 		}
 
-		panic(fmt.Sprintf("item %v, device id %v not found, allowedDevs: %v", item, id, allowed))
+		// reject everything except directories
+		if !fi.IsDir() {
+			return true
+		}
+
+		// special case: make sure we keep mountpoints (directories which
+		// contain a mounted file system). Test this by checking if the parent
+		// directory would be included.
+		parentDir := filepath.Dir(filepath.Clean(item))
+
+		parentFI, err := fs.Lstat(parentDir)
+		if err != nil {
+			debug.Log("item %v: error running lstat() on parent directory: %v", item, err)
+			// if in doubt, reject
+			return true
+		}
+
+		parentDeviceID, err := fs.DeviceID(parentFI)
+		if err != nil {
+			debug.Log("item %v: getting device ID of parent directory: %v", item, err)
+			// if in doubt, reject
+			return true
+		}
+
+		parentAllowed, err := deviceMap.IsAllowed(parentDir, parentDeviceID)
+		if err != nil {
+			debug.Log("item %v: error checking parent directory: %v", item, err)
+			// if in doubt, reject
+			return true
+		}
+
+		if parentAllowed {
+			// we found a mount point, so accept the directory
+			return false
+		}
+
+		// reject everything else
+		return true
 	}, nil
 }
 
@@ -291,4 +356,55 @@ func rejectResticCache(repo *repository.Repository) (RejectByNameFunc, error) {
 
 		return false
 	}, nil
+}
+
+func rejectBySize(maxSizeStr string) (RejectFunc, error) {
+	maxSize, err := parseSizeStr(maxSizeStr)
+	if err != nil {
+		return nil, err
+	}
+
+	return func(item string, fi os.FileInfo) bool {
+		// directory will be ignored
+		if fi.IsDir() {
+			return false
+		}
+
+		filesize := fi.Size()
+		if filesize > maxSize {
+			debug.Log("file %s is oversize: %d", item, filesize)
+			return true
+		}
+
+		return false
+	}, nil
+}
+
+func parseSizeStr(sizeStr string) (int64, error) {
+	if sizeStr == "" {
+		return 0, errors.New("expected size, got empty string")
+	}
+
+	numStr := sizeStr[:len(sizeStr)-1]
+	var unit int64 = 1
+
+	switch sizeStr[len(sizeStr)-1] {
+	case 'b', 'B':
+		// use initialized values, do nothing here
+	case 'k', 'K':
+		unit = 1024
+	case 'm', 'M':
+		unit = 1024 * 1024
+	case 'g', 'G':
+		unit = 1024 * 1024 * 1024
+	case 't', 'T':
+		unit = 1024 * 1024 * 1024 * 1024
+	default:
+		numStr = sizeStr
+	}
+	value, err := strconv.ParseInt(numStr, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return value * unit, nil
 }
