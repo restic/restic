@@ -143,7 +143,7 @@ func init() {
 	f.StringVar(&backupOptions.TimeStamp, "time", "", "`time` of the backup (ex. '2012-11-01 22:08:41') (default: now)")
 	f.BoolVar(&backupOptions.WithAtime, "with-atime", false, "store the atime for all files and directories")
 	f.BoolVar(&backupOptions.IgnoreInode, "ignore-inode", false, "ignore inode number changes when checking for modified files")
-	f.BoolVarP(&backupOptions.DryRun, "dry-run", "n", false, "do not write anything, just print what would be done")
+	f.BoolVarP(&backupOptions.DryRun, "dry-run", "n", false, "do not upload or write any data, just show what would be done")
 	if runtime.GOOS == "windows" {
 		f.BoolVar(&backupOptions.UseFsSnapshot, "use-fs-snapshot", false, "use filesystem snapshot where possible (currently only Windows VSS)")
 	}
