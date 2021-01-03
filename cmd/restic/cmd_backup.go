@@ -70,23 +70,6 @@ Exit status is 3 if some source data could not be read (incomplete snapshot crea
 
 // BackupOptions bundles all options for the backup command.
 type BackupOptions struct {
-	Parent              string
-	Force               bool
-	Excludes            []string
-	InsensitiveExcludes []string
-	ExcludeFiles        []string
-	ExcludeOtherFS      bool
-	ExcludeIfPresent    []string
-	ExcludeCaches       bool
-	Stdin               bool
-	StdinFilename       string
-	Tags                []string
-	Host                string
-	FilesFrom           []string
-	TimeStamp           string
-	WithAtime           bool
-	IgnoreInode         bool
-	DryRun              bool
 	Parent                  string
 	Force                   bool
 	Excludes                []string
@@ -108,6 +91,7 @@ type BackupOptions struct {
 	WithAtime               bool
 	IgnoreInode             bool
 	UseFsSnapshot           bool
+	DryRun              	bool
 }
 
 var backupOptions BackupOptions
