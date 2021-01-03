@@ -152,16 +152,25 @@ func newTestRepo(content []TestFile) *TestRepo {
 	return repo
 }
 
-func restoreAndVerify(t *testing.T, tempdir string, content []TestFile) {
+func restoreAndVerify(t *testing.T, tempdir string, content []TestFile, files map[string]bool) {
 	repo := newTestRepo(content)
 
 	r := newFileRestorer(tempdir, repo.loader, repo.key, repo.Lookup)
-	r.files = repo.files
+
+	if files == nil {
+		r.files = repo.files
+	} else {
+		for _, file := range repo.files {
+			if files[file.location] {
+				r.files = append(r.files, file)
+			}
+		}
+	}
 
 	err := r.restoreFiles(context.TODO())
 	rtest.OK(t, err)
 
-	for _, file := range repo.files {
+	for _, file := range r.files {
 		target := r.targetPath(file.location)
 		data, err := ioutil.ReadFile(target)
 		if err != nil {
@@ -203,5 +212,36 @@ func TestFileRestorerBasic(t *testing.T) {
 				{"data3-1", "pack3-1"},
 			},
 		},
-	})
+	}, nil)
+}
+
+func TestFileRestorerPackSkip(t *testing.T) {
+	tempdir, cleanup := rtest.TempDir(t)
+	defer cleanup()
+
+	files := make(map[string]bool)
+	files["file2"] = true
+
+	restoreAndVerify(t, tempdir, []TestFile{
+		{
+			name: "file1",
+			blobs: []TestBlob{
+				{"data1-1", "pack1"},
+				{"data1-2", "pack1"},
+				{"data1-3", "pack1"},
+				{"data1-4", "pack1"},
+				{"data1-5", "pack1"},
+				{"data1-6", "pack1"},
+			},
+		},
+		{
+			name: "file2",
+			blobs: []TestBlob{
+				// file is contained in pack1 but need pack parts to be skipped
+				{"data1-2", "pack1"},
+				{"data1-4", "pack1"},
+				{"data1-6", "pack1"},
+			},
+		},
+	}, files)
 }
