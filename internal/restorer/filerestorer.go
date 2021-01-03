@@ -251,16 +251,16 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) {
 		if bufferSize > maxBufferSize {
 			bufferSize = maxBufferSize
 		}
-		BufRd := bufio.NewReaderSize(rd, bufferSize)
+		bufRd := bufio.NewReaderSize(rd, bufferSize)
 		currentBlobEnd := start
 		var blobData, buf []byte
 		for _, blobID := range sortedBlobs {
 			blob := blobs[blobID]
-			_, err := BufRd.Discard(int(blob.offset - currentBlobEnd))
+			_, err := bufRd.Discard(int(blob.offset - currentBlobEnd))
 			if err != nil {
 				return err
 			}
-			blobData, buf, err = r.loadBlob(BufRd, blobID, blob.length, buf)
+			blobData, buf, err = r.loadBlob(bufRd, blobID, blob.length, buf)
 			if err != nil {
 				for file := range blob.files {
 					markFileError(file, err)
