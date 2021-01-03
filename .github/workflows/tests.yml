@@ -184,11 +184,29 @@ jobs:
         if: matrix.check_changelog
 
   cross_compile:
+    strategy:
+
+      # ATTENTION: the list of architectures must be in sync with helpers/build-release-binaries/main.go!
+      matrix:
+        # run cross-compile in two batches parallel so the overall tests run faster
+        targets:
+          - "linux/386 linux/amd64 linux/arm linux/arm64 linux/ppc64le linux/mips linux/mipsle linux/mips64 linux/mips64le \
+            openbsd/386 openbsd/amd64"
+
+          - "freebsd/386 freebsd/amd64 freebsd/arm \
+            aix/ppc64 \
+            darwin/amd64 \
+            netbsd/386 netbsd/amd64 \
+            windows/386 windows/amd64 \
+            solaris/amd64"
+
     env:
       go: 1.15.x
       GOPROXY: https://proxy.golang.org
 
     runs-on: ubuntu-latest
+
+    name: Cross Compile for ${{ matrix.targets }}
 
     steps:
       - name: Set up Go ${{ env.go }}
@@ -203,18 +221,10 @@ jobs:
         run: |
           go get github.com/mitchellh/gox
 
-      # ATTENTION: the list of architectures must be in sync with helpers/build-release-binaries/main.go!
-      - name: Cross-compile with gox
+      - name: Cross-compile with gox for ${{ matrix.targets }}
         env:
           GOFLAGS: "-trimpath"
-          GOX_ARCHS: "aix/ppc64 \
-            darwin/amd64 \
-            freebsd/386 freebsd/amd64 freebsd/arm \
-            linux/386 linux/amd64 linux/arm linux/arm64 linux/ppc64le linux/mips linux/mipsle linux/mips64 linux/mips64le \
-            netbsd/386 netbsd/amd64 \
-            openbsd/386 openbsd/amd64 \
-            windows/386 windows/amd64 \
-            solaris/amd64"
+          GOX_ARCHS: "${{ matrix.targets }}"
         run: |
           mkdir build-output
           gox -parallel 2 -verbose -osarch "$GOX_ARCHS" -output "build-output/{{.Dir}}_{{.OS}}_{{.Arch}}" ./cmd/restic
