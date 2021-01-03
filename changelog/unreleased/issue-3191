@@ -1,0 +1,8 @@
+Enhancement: Add release binaries for MIPS architectures
+
+We've added a few new architectures for Linux to the release binaries: `mips`,
+`mipsle`, `mips64`, and `mip64le`. MIPS is mostly used for low-end embedded
+systems.
+
+https://github.com/restic/restic/issues/3191
+https://github.com/restic/restic/pull/3208
