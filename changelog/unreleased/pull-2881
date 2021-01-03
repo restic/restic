@@ -1,10 +1,11 @@
-Enhancement: Add options for warmup-possibilities to prune
+Enhancement: Add options for warmup-possibilities to prune and reabuild-index
 
 Restic `prune` did not have a good possibility to warm up pack files that need
 repacking but are stored in a cold storage backend.
-We have added the option `--warmup`` which just tries to access all needed
+We have added the option `--warm-up`` which just tries to access all needed
 files. This triggers a warmup for some cold storages.
 Also the option `--json` in combination with `--dry-run` now prints the pack
 file names in JSON format. This can be used to implement a custom warm-up.
+The `--warm-up` option is also available to `rebuild-index`.
 
 https://github.com/restic/restic/pull/2881

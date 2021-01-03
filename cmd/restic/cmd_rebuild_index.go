@@ -28,6 +28,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 // RebuildIndexOptions collects all options for the rebuild-index command.
 type RebuildIndexOptions struct {
 	ReadAllPacks bool
+	WarmUp       bool
 }
 
 var rebuildIndexOptions RebuildIndexOptions
@@ -36,7 +37,7 @@ func init() {
 	cmdRoot.AddCommand(cmdRebuildIndex)
 	f := cmdRebuildIndex.Flags()
 	f.BoolVar(&rebuildIndexOptions.ReadAllPacks, "read-all-packs", false, "read all pack files to generate new index from scratch")
-
+	f.BoolVar(&rebuildIndexOptions.WarmUp, "warm-up", false, "only warm-up pack files to be read, doesn't modify anything")
 }
 
 func runRebuildIndex(opts RebuildIndexOptions, gopts GlobalOptions) error {
@@ -104,6 +105,15 @@ func rebuildIndex(opts RebuildIndexOptions, gopts GlobalOptions, repo *repositor
 		// when rebuilding the index
 		removePacks.Insert(id)
 		Warnf("removing not found pack file %v\n", id)
+	}
+
+	if opts.WarmUp {
+		warmupFiles := restic.NewIDSet()
+		Verbosef("warming up pack files to read\n")
+		for id := range packSizeFromList {
+			warmupFiles.Insert(id)
+		}
+		return WarmUpFiles(gopts, warmupFiles, restic.PackFile)
 	}
 
 	if len(packSizeFromList) > 0 {
