@@ -71,7 +71,7 @@ type GlobalOptions struct {
 	stdout   io.Writer
 	stderr   io.Writer
 
-	backendTestHook backendWrapper
+	backendTestHook, backendInnerTestHook backendWrapper
 
 	// verbosity is set as follows:
 	//  0 means: don't print any messages except errors, this is used when --quiet is specified
@@ -695,12 +695,8 @@ func open(s string, gopts GlobalOptions, opts options.Options) (restic.Backend, 
 	switch loc.Scheme {
 	case "local":
 		be, err = local.Open(globalOptions.ctx, cfg.(local.Config))
-		// wrap the backend in a LimitBackend so that the throughput is limited
-		be = limiter.LimitBackend(be, lim)
 	case "sftp":
 		be, err = sftp.Open(globalOptions.ctx, cfg.(sftp.Config))
-		// wrap the backend in a LimitBackend so that the throughput is limited
-		be = limiter.LimitBackend(be, lim)
 	case "s3":
 		be, err = s3.Open(globalOptions.ctx, cfg.(s3.Config), rt)
 	case "gs":
@@ -722,6 +718,19 @@ func open(s string, gopts GlobalOptions, opts options.Options) (restic.Backend, 
 
 	if err != nil {
 		return nil, errors.Fatalf("unable to open repo at %v: %v", location.StripPassword(s), err)
+	}
+
+	// wrap backend if a test specified an inner hook
+	if gopts.backendInnerTestHook != nil {
+		be, err = gopts.backendInnerTestHook(be)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if loc.Scheme == "local" || loc.Scheme == "sftp" {
+		// wrap the backend in a LimitBackend so that the throughput is limited
+		be = limiter.LimitBackend(be, lim)
 	}
 
 	// check if config is there
