@@ -9,8 +9,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/restic/restic/internal/backend/dryrun"
 	"github.com/restic/chunker"
+	"github.com/restic/restic/internal/backend/dryrun"
 	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"

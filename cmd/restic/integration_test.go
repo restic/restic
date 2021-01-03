@@ -304,7 +304,7 @@ func testBackup(t *testing.T, useFsSnapshot bool) {
 	snapshotIDs := testRunList(t, "snapshots", env.gopts)
 	rtest.Assert(t, len(snapshotIDs) == 0,
 		"expected no snapshot, got %v", snapshotIDs)
-		
+
 	testSetupBackupData(t, env)
 	opts := BackupOptions{UseFsSnapshot: useFsSnapshot}
 

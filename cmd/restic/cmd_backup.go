@@ -91,7 +91,7 @@ type BackupOptions struct {
 	WithAtime               bool
 	IgnoreInode             bool
 	UseFsSnapshot           bool
-	DryRun              	bool
+	DryRun                  bool
 }
 
 var backupOptions BackupOptions
