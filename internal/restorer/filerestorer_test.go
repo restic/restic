@@ -262,5 +262,5 @@ func TestErrorRestoreFiles(t *testing.T) {
 	r.files = repo.files
 
 	err := r.restoreFiles(context.TODO())
-	rtest.Assert(t, err != nil, "restoreFiles should have reported an error!")
+	rtest.Equals(t, loadError, err)
 }
