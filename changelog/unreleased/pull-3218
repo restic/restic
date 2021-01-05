@@ -1,0 +1,7 @@
+Enhancement: Prevent Windows entering sleep/hibernation-mode
+
+Previously, restic didn't prevent Windows from going to sleep 
+during some lengthy operations. This is fixed now.
+
+https://github.com/restic/restic/pull/3218
+https://github.com/restic/restic/issues/3216
