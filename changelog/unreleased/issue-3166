@@ -1,0 +1,9 @@
+Bugfix: Improve error handling in restore
+
+Restic restore used to not print errors while downloading file contents from
+the repository. restore also incorrectly exited with a zero error code even 
+when there were errors during the restore process. Now, a non-zero code is
+returned.
+
+https://github.com/restic/restic/issues/3166
+https://github.com/restic/restic/pull/3207
