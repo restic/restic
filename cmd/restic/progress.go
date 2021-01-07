@@ -17,7 +17,7 @@ func newProgressMax(show bool, max uint64, description string) *progress.Counter
 
 	interval := time.Second / 60
 	if !stdoutIsTerminal() {
-		interval = time.Second
+		interval = progress.OnlyWhenDone
 	} else {
 		fps, err := strconv.ParseInt(os.Getenv("RESTIC_PROGRESS_FPS"), 10, 64)
 		if err == nil && fps >= 1 {

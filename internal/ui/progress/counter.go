@@ -8,6 +8,10 @@ import (
 	"github.com/restic/restic/internal/debug"
 )
 
+const (
+	OnlyWhenDone time.Duration = -1
+)
+
 // A Func is a callback for a Counter.
 //
 // The final argument is true if Counter.Done has been called,
@@ -41,10 +45,11 @@ func New(interval time.Duration, report Func) *Counter {
 		start:   time.Now(),
 		stopped: make(chan struct{}),
 		stop:    make(chan struct{}),
-		tick:    time.NewTicker(interval),
 	}
-
-	go c.run()
+	if interval != OnlyWhenDone {
+		c.tick = time.NewTicker(interval)
+		go c.run()
+	}
 	return c
 }
 
@@ -64,9 +69,13 @@ func (c *Counter) Done() {
 	if c == nil {
 		return
 	}
-	c.tick.Stop()
-	close(c.stop)
-	<-c.stopped    // Wait for last progress report.
+	if c.tick == nil {
+		c.report(c.get(), time.Since(c.start), true)
+	} else {
+		c.tick.Stop()
+		close(c.stop)
+		<-c.stopped // Wait for last progress report.
+	}
 	*c = Counter{} // Prevent reuse.
 }
 
