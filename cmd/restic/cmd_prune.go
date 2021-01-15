@@ -390,7 +390,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 	// This is equivalent to sorting by unused / total space.
 	// Instead of unused[i] / used[i] > unused[j] / used[j] we use
 	// unused[i] * used[j] > unused[j] * used[i] as uint32*uint32 < uint64
-	// Morover duplicates and mixed are sorted to the beginning
+	// Morover duplicates and packs containing trees are sorted to the beginning
 	sort.Slice(repackCandidates, func(i, j int) bool {
 		pi := repackCandidates[i].packInfo
 		pj := repackCandidates[j].packInfo
@@ -399,9 +399,9 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 			return true
 		case pj.duplicateBlobs > 0 && pi.duplicateBlobs == 0:
 			return false
-		case pi.tpe == restic.InvalidBlob && pj.tpe != restic.InvalidBlob:
+		case pi.tpe != restic.DataBlob && pj.tpe == restic.DataBlob:
 			return true
-		case pj.tpe == restic.InvalidBlob && pi.tpe != restic.InvalidBlob:
+		case pj.tpe != restic.DataBlob && pi.tpe == restic.DataBlob:
 			return false
 		}
 		return pi.unusedSize*pj.usedSize > pj.unusedSize*pi.usedSize
@@ -424,7 +424,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		}
 
 		switch {
-		case !reachedRepackSize && (p.duplicateBlobs > 0 || p.tpe == restic.InvalidBlob):
+		case !reachedRepackSize && (p.duplicateBlobs > 0 || p.tpe != restic.DataBlob):
 			// repacking duplicates/mixed is only limited by repackSize
 			repack(p.ID, p.packInfo)
 
