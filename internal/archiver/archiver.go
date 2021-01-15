@@ -53,6 +53,9 @@ type Archiver struct {
 	FS           fs.FS
 	Options      Options
 
+	// Allow to give extra previous trees that are checked for each dir
+	ExtraPreviousTrees []*restic.Tree
+
 	blobSaver *BlobSaver
 	fileSaver *FileSaver
 	treeSaver *TreeSaver
@@ -591,6 +594,13 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 
 		var oldNodes []*restic.Node
 		for _, p := range previous {
+			oldNode := p.Find(name)
+			if oldNode != nil {
+				oldNodes = append(oldNodes, oldNode)
+			}
+		}
+
+		for _, p := range arch.ExtraPreviousTrees {
 			oldNode := p.Find(name)
 			if oldNode != nil {
 				oldNodes = append(oldNodes, oldNode)
