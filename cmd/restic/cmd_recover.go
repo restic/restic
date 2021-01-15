@@ -68,52 +68,10 @@ func runRecover(gopts GlobalOptions, opts RecoverOptions) error {
 		return err
 	}
 
-	// trees maps a tree ID to whether or not it is referenced by a different
-	// tree. If it is not referenced, we have a root tree.
-	trees := make(map[restic.ID]bool)
-
-	for blob := range repo.Index().Each(gopts.ctx) {
-		if blob.Type == restic.TreeBlob {
-			trees[blob.Blob.ID] = false
-		}
-	}
-
-	Verbosef("load %d trees\n", len(trees))
-	bar := newProgressMax(!gopts.Quiet, uint64(len(trees)), "trees loaded")
-	for id := range trees {
-		tree, err := repo.LoadTree(gopts.ctx, id)
-		if err != nil {
-			Warnf("unable to load tree %v: %v\n", id.Str(), err)
-			continue
-		}
-
-		for _, node := range tree.Nodes {
-			if node.Type == "dir" && node.Subtree != nil {
-				trees[*node.Subtree] = true
-			}
-		}
-		bar.Add(1)
-	}
-	bar.Done()
-
-	Verbosef("load snapshots\n")
-	err = restic.ForAllSnapshots(gopts.ctx, repo, nil, func(id restic.ID, sn *restic.Snapshot, err error) error {
-		trees[*sn.Tree] = true
-		return nil
-	})
+	roots, err := getRootTrees(gopts, repo)
 	if err != nil {
 		return err
 	}
-	Verbosef("done\n")
-
-	roots := restic.NewIDSet()
-	for id, seen := range trees {
-		if !seen {
-			Verboseff("found root tree %v\n", id.Str())
-			roots.Insert(id)
-		}
-	}
-	Printf("\nfound %d unreferenced roots\n", len(roots))
 
 	switch {
 	case len(roots) == 0:
@@ -163,6 +121,58 @@ func runRecover(gopts GlobalOptions, opts RecoverOptions) error {
 		}
 	}
 	return nil
+}
+
+// getRootTrees finds trees that are not referenced by other trees or snapshots
+func getRootTrees(gopts GlobalOptions, repo restic.Repository) (restic.IDSet, error) {
+	// trees maps a tree ID to whether or not it is referenced by a different
+	// tree. If it is not referenced, we have a root tree.
+	trees := make(map[restic.ID]bool)
+
+	for blob := range repo.Index().Each(gopts.ctx) {
+		if blob.Type == restic.TreeBlob {
+			trees[blob.Blob.ID] = false
+		}
+	}
+
+	Verbosef("load %d trees\n", len(trees))
+	bar := newProgressMax(!gopts.Quiet, uint64(len(trees)), "trees loaded")
+	for id := range trees {
+		tree, err := repo.LoadTree(gopts.ctx, id)
+		if err != nil {
+			Warnf("unable to load tree %v: %v\n", id.Str(), err)
+			continue
+		}
+
+		for _, node := range tree.Nodes {
+			if node.Type == "dir" && node.Subtree != nil {
+				trees[*node.Subtree] = true
+			}
+		}
+		bar.Add(1)
+	}
+	bar.Done()
+
+	Verbosef("load snapshots\n")
+	err := restic.ForAllSnapshots(gopts.ctx, repo, nil, func(id restic.ID, sn *restic.Snapshot, err error) error {
+		trees[*sn.Tree] = true
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	Verbosef("done\n")
+
+	roots := restic.NewIDSet()
+	for id, seen := range trees {
+		if !seen {
+			Verboseff("found root tree %v\n", id.Str())
+			roots.Insert(id)
+		}
+	}
+	Printf("\nfound %d unreferenced roots\n", len(roots))
+
+	return roots, nil
 }
 
 func createSnapshot(ctx context.Context, name, hostname string, tags []string, repo restic.Repository, tree *restic.ID) error {
