@@ -92,6 +92,7 @@ type BackupOptions struct {
 	WithAtime               bool
 	IgnoreInode             bool
 	UseFsSnapshot           bool
+	Resume                  bool
 }
 
 var backupOptions BackupOptions
@@ -130,6 +131,7 @@ func init() {
 	if runtime.GOOS == "windows" {
 		f.BoolVar(&backupOptions.UseFsSnapshot, "use-fs-snapshot", false, "use filesystem snapshot where possible (currently only Windows VSS)")
 	}
+	f.BoolVar(&backupOptions.Resume, "resume", false, "use data from an aborted backup to speed up this backup")
 }
 
 // filterExisting returns a slice of all existing items, or an error if no
@@ -603,6 +605,18 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		}
 	}
 
+	var extraPreviousTrees []*restic.Tree
+	if opts.Resume && !opts.Force {
+		roots, err := getRootTrees(gopts, repo)
+		if err != nil {
+			return err
+		}
+		for id := range roots {
+			tree, _ := repo.LoadTree(gopts.ctx, id)
+			extraPreviousTrees = append(extraPreviousTrees, tree)
+		}
+	}
+
 	selectByNameFilter := func(item string) bool {
 		for _, reject := range rejectByNameFuncs {
 			if reject(item) {
@@ -679,6 +693,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	arch.StartFile = p.StartFile
 	arch.CompleteBlob = p.CompleteBlob
 	arch.IgnoreInode = opts.IgnoreInode
+	arch.ExtraPreviousTrees = extraPreviousTrees
 
 	snapshotOpts := archiver.SnapshotOptions{
 		Excludes:        opts.Excludes,
