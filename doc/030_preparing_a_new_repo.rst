@@ -239,6 +239,10 @@ For an S3-compatible server that is not Amazon (like Minio, see below),
 or is only available via HTTP, you can specify the URL to the server
 like this: ``s3:http://server:port/bucket_name``.
 
+.. note:: Currently, restic only supports defining the `path-style URLs <https://docs.aws.amazon.com/AmazonS3/latest/dev/UsingBucket.html#access-bucket-intro>`__.           Virtual-hosted–style URLs, where the bucket name is in the 
+          hostname itself (like ``bucket_name.s3.us-west-2.amazonaws.com``), 
+          is not supported. It should be written in the path-style URL instead, 
+          for example ``s3.us-west-2.amazonaws.com/bucket_name``.
 
 .. note:: Certain S3-compatible servers do not properly implement the
           ``ListObjectsV2`` API, most notably Ceph versions before v14.2.5. On these
