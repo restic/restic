@@ -694,6 +694,15 @@ func (r *Repository) init(ctx context.Context, password string, cfg restic.Confi
 	return err
 }
 
+// InitFrom initializes a repo using key and config from another repo.
+func (r *Repository) InitFrom(r2 *Repository) {
+	r.key = r2.key
+	r.dataPM.key = r2.key
+	r.treePM.key = r2.key
+	r.keyName = r2.keyName
+	r.cfg = r2.cfg
+}
+
 // Key returns the current master key.
 func (r *Repository) Key() *crypto.Key {
 	return r.key

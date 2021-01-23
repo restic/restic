@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
@@ -179,9 +180,33 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 		return nil
 	})
 
+	repoHot := gopts.RepoHot
+	if gopts.RepoHot != "" && (opts.ReadData || opts.ReadDataSubset != "") {
+		// if --read-data* is given, do all tests without using the hot repo
+		gopts.RepoHot = ""
+	}
+
 	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err
+	}
+
+	if repoHot != "" {
+		beHot, err := open(repoHot, gopts, gopts.extended)
+		if err != nil {
+			return err
+		}
+		// check that beHot and standard backend are identical for snapshot and index and lock files
+		// note that key files are already checked in OpenRepository
+		for _, t := range []restic.FileType{restic.SnapshotFile, restic.IndexFile, restic.LockFile} {
+			match, err := backend.CheckSameFiles(gopts.ctx, beHot, repo.Backend(), t)
+			if err != nil {
+				return err
+			}
+			if !match {
+				return errors.Fatal("hot and cold repositories do not match")
+			}
+		}
 	}
 
 	if !gopts.NoLock {

@@ -678,3 +678,38 @@ On MSYS2, you can install ``winpty`` as follows:
     $ pacman -S winpty
     $ winpty restic -r /srv/restic-repo init
 
+Saving hot data in a separate place
+*************************
+
+Some storage backends are not designed for standard read access to files, e.g. 
+some "cold cloud storages". Restic does not work well with such storage backends
+by default as it regularly needs to read config and metadata from the repository.
+
+However, you can specify another "hot repository" which only contains a copy of
+the config and metadata and is used to access those files. This "hot repository"
+should be stored in a regularly accessible storage backend and usually only needs
+a small fraction of the total space used by the full repository.
+If the "hot repository" is located on a fast local disc, an extra cache might
+not be useful, so consider using ``--no-cache`` in this case.
+To use a "hot repository", specify another storage url by giving the ``--repo-hot``
+option to all restic commands:
+
+.. code-block:: console
+
+    $ restc -r service:path/to/repo --repo-hot service:path/to/repo-hot init
+    $ restc -r service:path/to/repo --repo-hot service:path/to/repo-hot backup /data
+    ...
+
+Note that restic needs to read from ``service:path/to/repo`` whenever it needs to access
+the contents of the files that are backup'ed in the repository. This applies to:
+
+- ``restore``
+- ``mount`` if accessing file contents
+- ``dump``
+- ``cat`` for data blobs
+- ``copy`` if this is the source repository
+- ``check`` if ``--read-data`` or ``--read-data-subset`` is specified
+- ``rebuild-index``
+- ``prune`` if packs are repacked (but see the option ``--repack-cacheable-only``) 
+- ``forget --prune``, see above
+

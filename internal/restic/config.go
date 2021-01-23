@@ -16,6 +16,7 @@ type Config struct {
 	Version           uint        `json:"version"`
 	ID                string      `json:"id"`
 	ChunkerPolynomial chunker.Pol `json:"chunker_polynomial"`
+	IsHot             bool        `json:"is_hot,omitempty"`
 }
 
 // RepoVersion is the version that is written to the config when a repository

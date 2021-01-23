@@ -50,6 +50,7 @@ type backendWrapper func(r restic.Backend) (restic.Backend, error)
 type GlobalOptions struct {
 	Repo            string
 	RepositoryFile  string
+	RepoHot         string
 	PasswordFile    string
 	PasswordCommand string
 	KeyHint         string
@@ -103,6 +104,7 @@ func init() {
 	f := cmdRoot.PersistentFlags()
 	f.StringVarP(&globalOptions.Repo, "repo", "r", os.Getenv("RESTIC_REPOSITORY"), "`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)")
 	f.StringVarP(&globalOptions.RepositoryFile, "repository-file", "", os.Getenv("RESTIC_REPOSITORY_FILE"), "`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)")
+	f.StringVar(&globalOptions.RepoHot, "repo-hot", os.Getenv("RESTIC_REPOSITORY_HOT"), "`repository` to use for hot data (default: $RESTIC_REPOSITORY_HOT)")
 	f.StringVarP(&globalOptions.PasswordFile, "password-file", "p", os.Getenv("RESTIC_PASSWORD_FILE"), "`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)")
 	f.StringVarP(&globalOptions.KeyHint, "key-hint", "", os.Getenv("RESTIC_KEY_HINT"), "`key` ID of key to try decrypting first (default: $RESTIC_KEY_HINT)")
 	f.StringVarP(&globalOptions.PasswordCommand, "password-command", "", os.Getenv("RESTIC_PASSWORD_COMMAND"), "shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)")
@@ -442,6 +444,26 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 		}
 	}
 
+	if opts.RepoHot != "" {
+		beHot, err := open(opts.RepoHot, opts, opts.extended)
+		if err != nil {
+			return nil, err
+		}
+		beHot = backend.NewRetryBackend(beHot, 10, func(msg string, err error, d time.Duration) {
+			Warnf("hot: %v returned error, retrying after %v: %v\n", msg, d, err)
+		})
+
+		// Check if hot and cold repositories match by testing if all key files match
+		match, err := backend.CheckSameFiles(opts.ctx, beHot, be, restic.KeyFile)
+		if err != nil {
+			return nil, err
+		}
+		if !match {
+			return nil, errors.Fatal("hot and cold repositories do not match")
+		}
+		be = backend.NewHotColdBackend(beHot, be)
+	}
+
 	s := repository.New(be)
 
 	passwordTriesLeft := 1
@@ -480,6 +502,14 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 		if !opts.JSON {
 			Verbosef("repository %v opened successfully, password is correct\n", id)
 		}
+	}
+
+	if s.Config().IsHot && opts.RepoHot == "" {
+		return nil, errors.Fatal("repository is the hot part of a repo and cannot be used on its own")
+	}
+
+	if opts.RepoHot != "" && !s.Config().IsHot {
+		return nil, errors.Fatalf("repository %s is not a hot part of a repo", location.StripPassword(opts.RepoHot))
 	}
 
 	if opts.NoCache {

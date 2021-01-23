@@ -1624,6 +1624,50 @@ func TestListOnce(t *testing.T) {
 	rtest.OK(t, runRebuildIndex(RebuildIndexOptions{ReadAllPacks: true}, env.gopts))
 }
 
+type noReadBackend struct {
+	restic.Backend
+}
+
+// called via repo.Backend().Load()
+func (b noReadBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+	return errors.Errorf("Failed to load %v", h)
+}
+
+func TestHotRepo(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	env.gopts.backendTestHook = func(r restic.Backend) (restic.Backend, error) {
+		return noReadBackend{r}, nil
+	}
+
+	// use mountpoint as dir for hot repo
+	env.gopts.RepoHot = env.mountpoint
+	pruneOpts := PruneOptions{MaxUnused: "5%", RepackCachableOnly: true}
+	checkOpts := CheckOptions{ReadData: false, CheckUnused: false}
+
+	testSetupBackupData(t, env)
+	opts := BackupOptions{}
+
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9")}, opts, env.gopts)
+	firstSnapshot := testRunList(t, "snapshots", env.gopts)
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "2")}, opts, env.gopts)
+	// backup with parent
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "2")}, opts, env.gopts)
+	rtest.OK(t, runCheck(checkOpts, env.gopts, nil))
+
+	// run forget and prune
+	testRunForgetJSON(t, env.gopts)
+	testRunForget(t, env.gopts, firstSnapshot[0].String())
+	testRunPrune(t, env.gopts, pruneOpts)
+	rtest.OK(t, runCheck(checkOpts, env.gopts, nil))
+
+	// run check --read-data on full repo
+	env.gopts.backendTestHook = nil
+	checkOpts = CheckOptions{ReadData: true, CheckUnused: false}
+	rtest.OK(t, runCheck(checkOpts, env.gopts, nil))
+}
+
 func TestHardLink(t *testing.T) {
 	// this test assumes a test set with a single directory containing hard linked files
 	env, cleanup := withTestEnvironment(t)

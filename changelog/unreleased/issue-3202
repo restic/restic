@@ -1,0 +1,13 @@
+Enhancement: Support cold storages
+
+Restic used to access the repository regularly for config, locks and
+metadata preventing it to work in combination with "cold storages".
+We've added an option to specify a "hot repository" which saves a copy
+of metadata, config and locks and is used to read those files.
+This allows many restic commands to work with cold storages. 
+
+https://github.com/restic/restic/issues/3202
+https://github.com/restic/restic/issues/2504
+https://github.com/restic/restic/issues/2611
+https://github.com/restic/restic/issues/2817
+https://github.com/restic/restic/pull/3235
