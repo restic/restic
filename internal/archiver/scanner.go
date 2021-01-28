@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"sort"
 
+	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
 )
 
@@ -37,27 +38,63 @@ type ScanStats struct {
 	Bytes               uint64
 }
 
-// Scan traverses the targets. The function Result is called for each new item
-// found, the complete result is also returned by Scan.
-func (s *Scanner) Scan(ctx context.Context, targets []string) error {
-	var stats ScanStats
-	for _, target := range targets {
-		abstarget, err := s.FS.Abs(target)
+func (s *Scanner) scanTree(ctx context.Context, stats ScanStats, tree Tree) (ScanStats, error) {
+	// traverse the path in the file system for all leaf nodes
+	if tree.Leaf() {
+		abstarget, err := s.FS.Abs(tree.Path)
 		if err != nil {
-			return err
+			return ScanStats{}, err
 		}
 
 		stats, err = s.scan(ctx, stats, abstarget)
 		if err != nil {
-			return err
+			return ScanStats{}, err
+		}
+
+		return stats, nil
+	}
+
+	// otherwise recurse into the nodes in a deterministic order
+	for _, name := range tree.NodeNames() {
+		var err error
+		stats, err = s.scanTree(ctx, stats, tree.Nodes[name])
+		if err != nil {
+			return ScanStats{}, err
 		}
 
 		if ctx.Err() != nil {
-			return nil
+			return stats, nil
 		}
 	}
 
+	return stats, nil
+}
+
+// Scan traverses the targets. The function Result is called for each new item
+// found, the complete result is also returned by Scan.
+func (s *Scanner) Scan(ctx context.Context, targets []string) error {
+	debug.Log("start scan for %v", targets)
+
+	cleanTargets, err := resolveRelativeTargets(s.FS, targets)
+	if err != nil {
+		return err
+	}
+
+	debug.Log("clean targets %v", cleanTargets)
+
+	// we're using the same tree representation as the archiver does
+	tree, err := NewTree(s.FS, cleanTargets)
+	if err != nil {
+		return err
+	}
+
+	stats, err := s.scanTree(ctx, ScanStats{}, *tree)
+	if err != nil {
+		return err
+	}
+
 	s.Result("", stats)
+	debug.Log("result: %+v", stats)
 	return nil
 }
 
