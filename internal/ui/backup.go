@@ -10,6 +10,7 @@ import (
 
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui/signals"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
@@ -31,7 +32,6 @@ type Backup struct {
 	MinUpdatePause time.Duration
 
 	term  *termstatus.Terminal
-	v     uint
 	start time.Time
 
 	totalBytes uint64
@@ -40,7 +40,6 @@ type Backup struct {
 	processedCh chan counter
 	errCh       chan struct{}
 	workerCh    chan fileWorkerMessage
-	finished    chan struct{}
 	closed      chan struct{}
 
 	summary struct {
@@ -61,7 +60,6 @@ func NewBackup(term *termstatus.Terminal, verbosity uint) *Backup {
 		Message:      NewMessage(term, verbosity),
 		StdioWrapper: NewStdioWrapper(term),
 		term:         term,
-		v:            verbosity,
 		start:        time.Now(),
 
 		// limit to 60fps by default
@@ -71,7 +69,6 @@ func NewBackup(term *termstatus.Terminal, verbosity uint) *Backup {
 		processedCh: make(chan counter),
 		errCh:       make(chan struct{}),
 		workerCh:    make(chan fileWorkerMessage),
-		finished:    make(chan struct{}),
 		closed:      make(chan struct{}),
 	}
 }
@@ -89,18 +86,22 @@ func (b *Backup) Run(ctx context.Context) error {
 	)
 
 	t := time.NewTicker(time.Second)
+	signalsCh := signals.GetProgressChannel()
 	defer t.Stop()
 	defer close(b.closed)
 	// Reset status when finished
-	defer b.term.SetStatus([]string{""})
+	defer func() {
+		if b.term.CanUpdateStatus() {
+			b.term.SetStatus([]string{""})
+		}
+	}()
 
 	for {
+		forceUpdate := false
+
 		select {
 		case <-ctx.Done():
 			return nil
-		case <-b.finished:
-			started = false
-			b.term.SetStatus([]string{""})
 		case t, ok := <-b.totalCh:
 			if ok {
 				total = t
@@ -134,10 +135,12 @@ func (b *Backup) Run(ctx context.Context) error {
 				todo := float64(total.Bytes - processed.Bytes)
 				secondsRemaining = uint64(secs / float64(processed.Bytes) * todo)
 			}
+		case <-signalsCh:
+			forceUpdate = true
 		}
 
 		// limit update frequency
-		if time.Since(lastUpdate) < b.MinUpdatePause {
+		if !forceUpdate && (time.Since(lastUpdate) < b.MinUpdatePause || b.MinUpdatePause == 0) {
 			continue
 		}
 		lastUpdate = time.Now()
@@ -374,10 +377,8 @@ func (b *Backup) ReportTotal(item string, s archiver.ScanStats) {
 
 // Finish prints the finishing messages.
 func (b *Backup) Finish(snapshotID restic.ID) {
-	select {
-	case b.finished <- struct{}{}:
-	case <-b.closed:
-	}
+	// wait for the status update goroutine to shut down
+	<-b.closed
 
 	b.P("\n")
 	b.P("Files:       %5d new, %5d changed, %5d unmodified\n", b.summary.Files.New, b.summary.Files.Changed, b.summary.Files.Unchanged)

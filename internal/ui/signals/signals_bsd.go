@@ -1,6 +1,6 @@
 // +build darwin dragonfly freebsd netbsd openbsd
 
-package progress
+package signals
 
 import (
 	"os/signal"

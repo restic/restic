@@ -11,7 +11,6 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 
@@ -545,15 +544,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	}()
 	gopts.stdout, gopts.stderr = p.Stdout(), p.Stderr()
 
-	if s, ok := os.LookupEnv("RESTIC_PROGRESS_FPS"); ok {
-		fps, err := strconv.Atoi(s)
-		if err == nil && fps >= 1 {
-			if fps > 60 {
-				fps = 60
-			}
-			p.SetMinUpdatePause(time.Second / time.Duration(fps))
-		}
-	}
+	p.SetMinUpdatePause(calculateProgressInterval())
 
 	t.Go(func() error { return p.Run(t.Context(gopts.ctx)) })
 

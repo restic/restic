@@ -53,3 +53,22 @@ func TestCounterNil(t *testing.T) {
 	c.Add(1)
 	c.Done()
 }
+
+func TestCounterNoTick(t *testing.T) {
+	finalSeen := false
+	otherSeen := false
+
+	report := func(value uint64, d time.Duration, final bool) {
+		if final {
+			finalSeen = true
+		} else {
+			otherSeen = true
+		}
+	}
+	c := progress.New(0, report)
+	time.Sleep(time.Millisecond)
+	c.Done()
+
+	test.Assert(t, finalSeen, "final call did not happen")
+	test.Assert(t, !otherSeen, "unexpected status update")
+}

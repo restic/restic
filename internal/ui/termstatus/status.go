@@ -78,6 +78,11 @@ func New(wr io.Writer, errWriter io.Writer, disableStatus bool) *Terminal {
 	return t
 }
 
+// CanUpdateStatus return whether the status output is updated in place.
+func (t *Terminal) CanUpdateStatus() bool {
+	return t.canUpdateStatus
+}
+
 // Run updates the screen. It should be run in a separate goroutine. When
 // ctx is cancelled, the status lines are cleanly removed.
 func (t *Terminal) Run(ctx context.Context) {
@@ -203,8 +208,15 @@ func (t *Terminal) runWithoutStatus(ctx context.Context) {
 				fmt.Fprintf(os.Stderr, "flush failed: %v\n", err)
 			}
 
-		case <-t.status:
-			// discard status lines
+		case stat := <-t.status:
+			for _, line := range stat.lines {
+				// ensure that each line ends with newline
+				withNewline := strings.TrimRight(line, "\n") + "\n"
+				fmt.Fprint(t.wr, withNewline)
+			}
+			if err := t.wr.Flush(); err != nil {
+				fmt.Fprintf(os.Stderr, "flush failed: %v\n", err)
+			}
 		}
 	}
 }
@@ -302,17 +314,24 @@ func (t *Terminal) SetStatus(lines []string) {
 		return
 	}
 
-	width, _, err := terminal.GetSize(int(t.fd))
-	if err != nil || width <= 0 {
-		// use 80 columns by default
-		width = 80
+	// only truncate interactive status output
+	var width int
+	if t.canUpdateStatus {
+		var err error
+		width, _, err = terminal.GetSize(int(t.fd))
+		if err != nil || width <= 0 {
+			// use 80 columns by default
+			width = 80
+		}
 	}
 
 	// make sure that all lines have a line break and are not too long
 	for i, line := range lines {
 		line = strings.TrimRight(line, "\n")
-		line = truncate(line, width-2) + "\n"
-		lines[i] = line
+		if width > 0 {
+			line = truncate(line, width-2)
+		}
+		lines[i] = line + "\n"
 	}
 
 	// make sure the last line does not have a line break

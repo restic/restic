@@ -1,3 +1,3 @@
-package progress
+package signals
 
 func setupSignals() {}

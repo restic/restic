@@ -1,11 +1,11 @@
 package progress
 
 import (
-	"os"
 	"sync"
 	"time"
 
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/ui/signals"
 )
 
 // A Func is a callback for a Counter.
@@ -31,17 +31,14 @@ type Counter struct {
 
 // New starts a new Counter.
 func New(interval time.Duration, report Func) *Counter {
-	signals.Once.Do(func() {
-		signals.ch = make(chan os.Signal, 1)
-		setupSignals()
-	})
-
 	c := &Counter{
 		report:  report,
 		start:   time.Now(),
 		stopped: make(chan struct{}),
 		stop:    make(chan struct{}),
-		tick:    time.NewTicker(interval),
+	}
+	if interval > 0 {
+		c.tick = time.NewTicker(interval)
 	}
 
 	go c.run()
@@ -64,7 +61,9 @@ func (c *Counter) Done() {
 	if c == nil {
 		return
 	}
-	c.tick.Stop()
+	if c.tick != nil {
+		c.tick.Stop()
+	}
 	close(c.stop)
 	<-c.stopped    // Wait for last progress report.
 	*c = Counter{} // Prevent reuse.
@@ -85,12 +84,17 @@ func (c *Counter) run() {
 		c.report(c.get(), time.Since(c.start), true)
 	}()
 
+	var tick <-chan time.Time
+	if c.tick != nil {
+		tick = c.tick.C
+	}
+	signalsCh := signals.GetProgressChannel()
 	for {
 		var now time.Time
 
 		select {
-		case now = <-c.tick.C:
-		case sig := <-signals.ch:
+		case now = <-tick:
+		case sig := <-signalsCh:
 			debug.Log("Signal received: %v\n", sig)
 			now = time.Now()
 		case <-c.stop:
@@ -99,11 +103,4 @@ func (c *Counter) run() {
 
 		c.report(c.get(), now.Sub(c.start), false)
 	}
-}
-
-// XXX The fact that signals is a single global variable means that only one
-// Counter receives each incoming signal.
-var signals struct {
-	ch chan os.Signal
-	sync.Once
 }

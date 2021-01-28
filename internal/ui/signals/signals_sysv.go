@@ -1,6 +1,6 @@
 // +build aix linux solaris
 
-package progress
+package signals
 
 import (
 	"os/signal"
