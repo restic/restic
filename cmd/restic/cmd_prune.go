@@ -378,7 +378,10 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		return errorPacksMissing
 	}
 	if len(ignorePacks) != 0 {
-		Verbosef("missing but unneded pack files are referenced in the index, will be repaired\n")
+		Warnf("Missing but unneeded pack files are referenced in the index, will be repaired\n")
+		for id := range ignorePacks {
+			Warnf("will forget missing pack file %v\n", id)
+		}
 	}
 
 	repackAllPacksWithDuplicates := true
