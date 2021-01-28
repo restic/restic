@@ -505,7 +505,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		_, err := repository.Repack(ctx, repo, repackPacks, keepBlobs, bar)
 		bar.Done()
 		if err != nil {
-			return err
+			return errors.Fatalf("%s", err)
 		}
 
 		// Also remove repacked packs
@@ -521,7 +521,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 	if len(ignorePacks) != 0 {
 		err = rebuildIndexFiles(gopts, repo, ignorePacks, nil)
 		if err != nil {
-			return err
+			return errors.Fatalf("%s", err)
 		}
 	}
 
