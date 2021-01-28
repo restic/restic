@@ -30,7 +30,7 @@ func TestCheckRepo(t testing.TB, repo restic.Repository) {
 
 	// structure
 	errChan = make(chan error)
-	go chkr.Structure(context.TODO(), errChan)
+	go chkr.Structure(context.TODO(), nil, errChan)
 
 	for err := range errChan {
 		t.Error(err)

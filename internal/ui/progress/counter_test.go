@@ -10,23 +10,32 @@ import (
 
 func TestCounter(t *testing.T) {
 	const N = 100
+	const startTotal = uint64(12345)
 
 	var (
 		finalSeen  = false
 		increasing = true
 		last       uint64
+		lastTotal  = startTotal
 		ncalls     int
+		nmaxChange int
 	)
 
-	report := func(value uint64, d time.Duration, final bool) {
-		finalSeen = true
+	report := func(value uint64, total uint64, d time.Duration, final bool) {
+		if final {
+			finalSeen = true
+		}
 		if value < last {
 			increasing = false
 		}
 		last = value
+		if total != lastTotal {
+			nmaxChange++
+		}
+		lastTotal = total
 		ncalls++
 	}
-	c := progress.New(10*time.Millisecond, report)
+	c := progress.New(10*time.Millisecond, startTotal, report)
 
 	done := make(chan struct{})
 	go func() {
@@ -35,6 +44,7 @@ func TestCounter(t *testing.T) {
 			time.Sleep(time.Millisecond)
 			c.Add(1)
 		}
+		c.SetMax(42)
 	}()
 
 	<-done
@@ -43,6 +53,8 @@ func TestCounter(t *testing.T) {
 	test.Assert(t, finalSeen, "final call did not happen")
 	test.Assert(t, increasing, "values not increasing")
 	test.Equals(t, uint64(N), last)
+	test.Equals(t, uint64(42), lastTotal)
+	test.Equals(t, int(1), nmaxChange)
 
 	t.Log("number of calls:", ncalls)
 }
@@ -58,14 +70,14 @@ func TestCounterNoTick(t *testing.T) {
 	finalSeen := false
 	otherSeen := false
 
-	report := func(value uint64, d time.Duration, final bool) {
+	report := func(value, total uint64, d time.Duration, final bool) {
 		if final {
 			finalSeen = true
 		} else {
 			otherSeen = true
 		}
 	}
-	c := progress.New(0, report)
+	c := progress.New(0, 1, report)
 	time.Sleep(time.Millisecond)
 	c.Done()
 

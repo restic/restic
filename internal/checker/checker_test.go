@@ -43,7 +43,9 @@ func checkPacks(chkr *checker.Checker) []error {
 }
 
 func checkStruct(chkr *checker.Checker) []error {
-	return collectErrors(context.TODO(), chkr.Structure)
+	return collectErrors(context.TODO(), func(ctx context.Context, errChan chan<- error) {
+		chkr.Structure(ctx, nil, errChan)
+	})
 }
 
 func checkData(chkr *checker.Checker) []error {
