@@ -74,102 +74,38 @@ func (err ErrOldIndexFormat) Error() string {
 func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 	debug.Log("Start")
 
-	// track spawned goroutines using wg, create a new context which is
-	// cancelled as soon as an error occurs.
-	wg, wgCtx := errgroup.WithContext(ctx)
-
-	type FileInfo struct {
-		restic.ID
-		Size int64
-	}
-
-	type Result struct {
-		*repository.Index
-		restic.ID
-		Err error
-	}
-
-	ch := make(chan FileInfo)
-	resultCh := make(chan Result)
-
-	// send list of index files through ch, which is closed afterwards
-	wg.Go(func() error {
-		defer close(ch)
-		return c.repo.List(wgCtx, restic.IndexFile, func(id restic.ID, size int64) error {
-			select {
-			case <-wgCtx.Done():
-				return nil
-			case ch <- FileInfo{id, size}:
-			}
-			return nil
-		})
-	})
-
-	// a worker receives an index ID from ch, loads the index, and sends it to indexCh
-	worker := func() error {
-		var buf []byte
-		for fi := range ch {
-			debug.Log("worker got file %v", fi.ID.Str())
-			var err error
-			var idx *repository.Index
-			oldFormat := false
-
-			buf, err = c.repo.LoadAndDecrypt(wgCtx, buf[:0], restic.IndexFile, fi.ID)
-			if err == nil {
-				idx, oldFormat, err = repository.DecodeIndex(buf, fi.ID)
-			}
-
-			if oldFormat {
-				debug.Log("index %v has old format", fi.ID.Str())
-				hints = append(hints, ErrOldIndexFormat{fi.ID})
-			}
-
-			err = errors.Wrapf(err, "error loading index %v", fi.ID.Str())
-
-			select {
-			case resultCh <- Result{idx, fi.ID, err}:
-			case <-wgCtx.Done():
-			}
-		}
-		return nil
-	}
-
-	// run workers on ch
-	wg.Go(func() error {
-		defer close(resultCh)
-		return repository.RunWorkers(defaultParallelism, worker)
-	})
-
-	// receive decoded indexes
 	packToIndex := make(map[restic.ID]restic.IDSet)
-	wg.Go(func() error {
-		for res := range resultCh {
-			debug.Log("process index %v, err %v", res.ID, res.Err)
+	err := repository.ForAllIndexes(ctx, c.repo, func(id restic.ID, index *repository.Index, oldFormat bool, err error) error {
+		debug.Log("process index %v, err %v", id, err)
 
-			if res.Err != nil {
-				errs = append(errs, res.Err)
-				continue
-			}
-
-			c.masterIndex.Insert(res.Index)
-
-			debug.Log("process blobs")
-			cnt := 0
-			for blob := range res.Index.Each(wgCtx) {
-				cnt++
-
-				if _, ok := packToIndex[blob.PackID]; !ok {
-					packToIndex[blob.PackID] = restic.NewIDSet()
-				}
-				packToIndex[blob.PackID].Insert(res.ID)
-			}
-
-			debug.Log("%d blobs processed", cnt)
+		if oldFormat {
+			debug.Log("index %v has old format", id.Str())
+			hints = append(hints, ErrOldIndexFormat{id})
 		}
+
+		err = errors.Wrapf(err, "error loading index %v", id.Str())
+
+		if err != nil {
+			errs = append(errs, err)
+			return nil
+		}
+
+		c.masterIndex.Insert(index)
+
+		debug.Log("process blobs")
+		cnt := 0
+		for blob := range index.Each(ctx) {
+			cnt++
+
+			if _, ok := packToIndex[blob.PackID]; !ok {
+				packToIndex[blob.PackID] = restic.NewIDSet()
+			}
+			packToIndex[blob.PackID].Insert(id)
+		}
+
+		debug.Log("%d blobs processed", cnt)
 		return nil
 	})
-
-	err := wg.Wait()
 	if err != nil {
 		errs = append(errs, err)
 	}
