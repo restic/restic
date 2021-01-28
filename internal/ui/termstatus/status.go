@@ -210,9 +210,8 @@ func (t *Terminal) runWithoutStatus(ctx context.Context) {
 
 		case stat := <-t.status:
 			for _, line := range stat.lines {
-				// ensure that each line ends with newline
-				withNewline := strings.TrimRight(line, "\n") + "\n"
-				fmt.Fprint(t.wr, withNewline)
+				// Ensure that each message ends with exactly one newline.
+				fmt.Fprintln(t.wr, strings.TrimRight(line, "\n"))
 			}
 			if err := t.wr.Flush(); err != nil {
 				fmt.Fprintf(os.Stderr, "flush failed: %v\n", err)
