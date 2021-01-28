@@ -245,8 +245,9 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 
 	// Check if all used blobs have been found in index
 	if len(usedBlobs) != 0 {
-		Warnf("%v not found in the index\n"+
-			"Data blobs seem to be missing, aborting prune to prevent further data loss!\n"+
+		Warnf("%v not found in the index\n\n"+
+			"Integrity check failed: Data seems to be missing.\n"+
+			"Will not start prune to prevent (additional) data loss!\n"+
 			"Please report this error (along with the output of the 'prune' run) at\n"+
 			"https://github.com/restic/restic/issues/new/choose", usedBlobs)
 		return errorIndexIncomplete
