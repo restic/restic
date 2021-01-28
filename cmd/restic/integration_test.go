@@ -1829,3 +1829,53 @@ func TestDiff(t *testing.T) {
 		rtest.Assert(t, r.MatchString(out), "expected pattern %v in output, got\n%v", pattern, out)
 	}
 }
+
+type writeToOnly struct {
+	rd io.Reader
+}
+
+func (r *writeToOnly) Read(p []byte) (n int, err error) {
+	return 0, fmt.Errorf("should have called WriteTo instead")
+}
+
+func (r *writeToOnly) WriteTo(w io.Writer) (int64, error) {
+	return io.Copy(w, r.rd)
+}
+
+type onlyLoadWithWriteToBackend struct {
+	restic.Backend
+}
+
+func (be *onlyLoadWithWriteToBackend) Load(ctx context.Context, h restic.Handle,
+	length int, offset int64, fn func(rd io.Reader) error) error {
+
+	return be.Backend.Load(ctx, h, length, offset, func(rd io.Reader) error {
+		return fn(&writeToOnly{rd: rd})
+	})
+}
+
+func TestBackendLoadWriteTo(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	// setup backend which only works if it's WriteTo method is correctly propagated upwards
+	env.gopts.backendInnerTestHook = func(r restic.Backend) (restic.Backend, error) {
+		return &onlyLoadWithWriteToBackend{Backend: r}, nil
+	}
+
+	testSetupBackupData(t, env)
+
+	// add some data, but make sure that it isn't cached during upload
+	opts := BackupOptions{}
+	env.gopts.NoCache = true
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9")}, opts, env.gopts)
+
+	// loading snapshots must still work
+	env.gopts.NoCache = false
+	firstSnapshot := testRunList(t, "snapshots", env.gopts)
+	rtest.Assert(t, len(firstSnapshot) == 1,
+		"expected one snapshot, got %v", firstSnapshot)
+
+	// test readData using the hashing.Reader
+	testRunCheck(t, env.gopts)
+}
