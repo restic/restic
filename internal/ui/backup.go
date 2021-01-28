@@ -378,9 +378,7 @@ func (b *Backup) ReportTotal(item string, s archiver.ScanStats) {
 // Finish prints the finishing messages.
 func (b *Backup) Finish(snapshotID restic.ID) {
 	// wait for the status update goroutine to shut down
-	select {
-	case <-b.closed:
-	}
+	<-b.closed
 
 	b.P("\n")
 	b.P("Files:       %5d new, %5d changed, %5d unmodified\n", b.summary.Files.New, b.summary.Files.Changed, b.summary.Files.Unchanged)
