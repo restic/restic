@@ -90,6 +90,7 @@ type BackupOptions struct {
 	TimeStamp               string
 	WithAtime               bool
 	IgnoreInode             bool
+	IgnoreCtime             bool
 	UseFsSnapshot           bool
 }
 
@@ -126,6 +127,7 @@ func init() {
 	f.StringVar(&backupOptions.TimeStamp, "time", "", "`time` of the backup (ex. '2012-11-01 22:08:41') (default: now)")
 	f.BoolVar(&backupOptions.WithAtime, "with-atime", false, "store the atime for all files and directories")
 	f.BoolVar(&backupOptions.IgnoreInode, "ignore-inode", false, "ignore inode number changes when checking for modified files")
+	f.BoolVar(&backupOptions.IgnoreCtime, "ignore-ctime", false, "ignore ctime changes when checking for modified files")
 	if runtime.GOOS == "windows" {
 		f.BoolVar(&backupOptions.UseFsSnapshot, "use-fs-snapshot", false, "use filesystem snapshot where possible (currently only Windows VSS)")
 	}
@@ -665,7 +667,15 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	arch.CompleteItem = p.CompleteItem
 	arch.StartFile = p.StartFile
 	arch.CompleteBlob = p.CompleteBlob
-	arch.IgnoreInode = opts.IgnoreInode
+
+	if opts.IgnoreInode {
+		// --ignore-inode implies --ignore-ctime: on FUSE, the ctime is not
+		// reliable either.
+		arch.ChangeIgnoreFlags |= archiver.ChangeIgnoreCtime | archiver.ChangeIgnoreInode
+	}
+	if opts.IgnoreCtime {
+		arch.ChangeIgnoreFlags |= archiver.ChangeIgnoreCtime
+	}
 
 	if parentSnapshotID == nil {
 		parentSnapshotID = &restic.ID{}

@@ -505,6 +505,18 @@ func save(t testing.TB, filename string, data []byte) {
 	}
 }
 
+func chmodTwice(t testing.TB, name string) {
+	// POSIX says that ctime is updated "even if the file status does not
+	// change", but let's make sure it does change, just in case.
+	err := os.Chmod(name, 0700)
+	restictest.OK(t, err)
+
+	sleep()
+
+	err = os.Chmod(name, 0600)
+	restictest.OK(t, err)
+}
+
 func lstat(t testing.TB, name string) os.FileInfo {
 	fi, err := os.Lstat(name)
 	if err != nil {
@@ -533,6 +545,13 @@ func remove(t testing.TB, filename string) {
 	}
 }
 
+func rename(t testing.TB, oldname, newname string) {
+	err := os.Rename(oldname, newname)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func nodeFromFI(t testing.TB, filename string, fi os.FileInfo) *restic.Node {
 	node, err := restic.NodeFromFileInfo(filename, fi)
 	if err != nil {
@@ -542,26 +561,26 @@ func nodeFromFI(t testing.TB, filename string, fi os.FileInfo) *restic.Node {
 	return node
 }
 
+// sleep sleeps long enough to ensure a timestamp change.
+func sleep() {
+	d := 50 * time.Millisecond
+	if runtime.GOOS == "darwin" {
+		// On older Darwin instances, the file system only supports one second
+		// granularity.
+		d = 1500 * time.Millisecond
+	}
+	time.Sleep(d)
+}
+
 func TestFileChanged(t *testing.T) {
 	var defaultContent = []byte("foobar")
-
-	var d = 50 * time.Millisecond
-	if runtime.GOOS == "darwin" {
-		// on older darwin instances the file system only supports one second
-		// granularity
-		d = time.Second
-	}
-
-	sleep := func() {
-		time.Sleep(d)
-	}
 
 	var tests = []struct {
 		Name           string
 		SkipForWindows bool
 		Content        []byte
 		Modify         func(t testing.TB, filename string)
-		IgnoreInode    bool
+		ChangeIgnore   uint
 		SameFile       bool
 	}{
 		{
@@ -619,16 +638,32 @@ func TestFileChanged(t *testing.T) {
 			},
 		},
 		{
+			Name:           "ctime-change",
+			Modify:         chmodTwice,
+			SameFile:       false,
+			SkipForWindows: true, // No ctime on Windows, so this test would fail.
+		},
+		{
+			Name:           "ignore-ctime-change",
+			Modify:         chmodTwice,
+			ChangeIgnore:   ChangeIgnoreCtime,
+			SameFile:       true,
+			SkipForWindows: true, // No ctime on Windows, so this test is meaningless.
+		},
+		{
 			Name: "ignore-inode",
 			Modify: func(t testing.TB, filename string) {
 				fi := lstat(t, filename)
-				remove(t, filename)
-				sleep()
+				// First create the new file, then remove the old one,
+				// so that the old file retains its inode number.
+				tempname := filename + ".old"
+				rename(t, filename, tempname)
 				save(t, filename, defaultContent)
+				remove(t, tempname)
 				setTimestamp(t, filename, fi.ModTime(), fi.ModTime())
 			},
-			IgnoreInode: true,
-			SameFile:    true,
+			ChangeIgnore: ChangeIgnoreCtime | ChangeIgnoreInode,
+			SameFile:     true,
 		},
 	}
 
@@ -651,7 +686,7 @@ func TestFileChanged(t *testing.T) {
 			fiBefore := lstat(t, filename)
 			node := nodeFromFI(t, filename, fiBefore)
 
-			if fileChanged(fiBefore, node, false) {
+			if fileChanged(fiBefore, node, 0) {
 				t.Fatalf("unchanged file detected as changed")
 			}
 
@@ -661,12 +696,12 @@ func TestFileChanged(t *testing.T) {
 
 			if test.SameFile {
 				// file should be detected as unchanged
-				if fileChanged(fiAfter, node, test.IgnoreInode) {
+				if fileChanged(fiAfter, node, test.ChangeIgnore) {
 					t.Fatalf("unmodified file detected as changed")
 				}
 			} else {
 				// file should be detected as changed
-				if !fileChanged(fiAfter, node, test.IgnoreInode) && !test.SameFile {
+				if !fileChanged(fiAfter, node, test.ChangeIgnore) && !test.SameFile {
 					t.Fatalf("modified file detected as unchanged")
 				}
 			}
@@ -684,7 +719,7 @@ func TestFilChangedSpecialCases(t *testing.T) {
 
 	t.Run("nil-node", func(t *testing.T) {
 		fi := lstat(t, filename)
-		if !fileChanged(fi, nil, false) {
+		if !fileChanged(fi, nil, 0) {
 			t.Fatal("nil node detected as unchanged")
 		}
 	})
@@ -693,7 +728,7 @@ func TestFilChangedSpecialCases(t *testing.T) {
 		fi := lstat(t, filename)
 		node := nodeFromFI(t, filename, fi)
 		node.Type = "symlink"
-		if !fileChanged(fi, node, false) {
+		if !fileChanged(fi, node, 0) {
 			t.Fatal("node with changed type detected as unchanged")
 		}
 	})
