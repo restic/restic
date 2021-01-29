@@ -394,7 +394,6 @@ func (f *Finder) findIDs(ctx context.Context, sn *restic.Snapshot) error {
 					delete(f.blobIDs, idStr[:shortStr])
 				}
 				f.out.PrintObject("blob", idStr, nodepath, parentTreeID.String(), sn)
-				break
 			}
 		}
 

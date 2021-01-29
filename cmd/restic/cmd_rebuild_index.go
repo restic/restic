@@ -88,6 +88,11 @@ func rebuildIndex(opts RebuildIndexOptions, gopts GlobalOptions, repo *repositor
 			packSizeFromList[id] = packSize
 			removePacks.Insert(id)
 		}
+		if !ok {
+			Warnf("adding pack file to index %v\n", id)
+		} else if size != packSize {
+			Warnf("reindexing pack file %v with unexpected size %v instead of %v\n", id, packSize, size)
+		}
 		delete(packSizeFromIndex, id)
 		return nil
 	})
@@ -98,6 +103,7 @@ func rebuildIndex(opts RebuildIndexOptions, gopts GlobalOptions, repo *repositor
 		// forget pack files that are referenced in the index but do not exist
 		// when rebuilding the index
 		removePacks.Insert(id)
+		Warnf("removing not found pack file %v\n", id)
 	}
 
 	if len(packSizeFromList) > 0 {
