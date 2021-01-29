@@ -84,6 +84,11 @@ func (be *MemoryBackend) Save(ctx context.Context, h restic.Handle, rd restic.Re
 	be.data[h] = buf
 	debug.Log("saved %v bytes at %v", len(buf), h)
 
+	// sanity check
+	if int64(len(buf)) != rd.Length() {
+		return errors.Errorf("wrote %d bytes instead of the expected %d bytes", len(buf), rd.Length())
+	}
+
 	return ctx.Err()
 }
 

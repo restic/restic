@@ -288,10 +288,16 @@ func (r *SFTP) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader
 	}
 
 	// save data, make sure to use the optimized sftp upload method
-	_, err = f.ReadFrom(rd)
+	wbytes, err := f.ReadFrom(rd)
 	if err != nil {
 		_ = f.Close()
 		return errors.Wrap(err, "Write")
+	}
+
+	// sanity check
+	if wbytes != rd.Length() {
+		_ = f.Close()
+		return errors.Errorf("wrote %d bytes instead of the expected %d bytes", wbytes, rd.Length())
 	}
 
 	err = f.Close()

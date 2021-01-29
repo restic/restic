@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -176,7 +177,9 @@ func (be *beSwift) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 	encoding := "binary/octet-stream"
 
 	debug.Log("PutObject(%v, %v, %v)", be.container, objName, encoding)
-	_, err := be.conn.ObjectPut(be.container, objName, rd, true, "", encoding, nil)
+	hdr := swift.Headers{"Content-Length": strconv.FormatInt(rd.Length(), 10)}
+	_, err := be.conn.ObjectPut(be.container, objName, rd, true, "", encoding, hdr)
+	// swift does not return the upload length
 	debug.Log("%v, err %#v", objName, err)
 
 	return errors.Wrap(err, "client.PutObject")

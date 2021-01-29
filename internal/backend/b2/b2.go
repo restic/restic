@@ -209,6 +209,10 @@ func (be *b2Backend) Save(ctx context.Context, h restic.Handle, rd restic.Rewind
 		return errors.Wrap(err, "Copy")
 	}
 
+	// sanity check
+	if n != rd.Length() {
+		return errors.Errorf("wrote %d bytes instead of the expected %d bytes", n, rd.Length())
+	}
 	return errors.Wrap(w.Close(), "Close")
 }
 
