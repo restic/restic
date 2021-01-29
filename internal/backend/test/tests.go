@@ -577,13 +577,15 @@ func (s *Suite) TestSaveError(t *testing.T) {
 	}()
 
 	length := rand.Intn(1<<23) + 200000
-	data := test.Random(23, length)
+	data := test.Random(24, length)
 	var id restic.ID
 	copy(id[:], data)
 
 	// test that incomplete uploads fail
 	h := restic.Handle{Type: restic.PackFile, Name: id.String()}
 	err := b.Save(context.TODO(), h, &incompleteByteReader{ByteReader: *restic.NewByteReader(data)})
+	// try to delete possible leftovers
+	_ = s.delayedRemove(t, b, h)
 	if err == nil {
 		t.Fatal("incomplete upload did not fail")
 	}
