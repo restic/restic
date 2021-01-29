@@ -2,6 +2,7 @@ package archiver
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -197,6 +198,24 @@ func (t *Tree) add(fs fs.FS, target, root string, pc []string) error {
 
 func (t Tree) String() string {
 	return formatTree(t, "")
+}
+
+// Leaf returns true if this is a leaf node, which means Path is set to a
+// non-empty string and the contents of Path should be inserted at this point
+// in the tree.
+func (t Tree) Leaf() bool {
+	return t.Path != ""
+}
+
+// NodeNames returns the sorted list of subtree names.
+func (t Tree) NodeNames() []string {
+	// iterate over the nodes of atree in lexicographic (=deterministic) order
+	names := make([]string, 0, len(t.Nodes))
+	for name := range t.Nodes {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
 }
 
 // formatTree returns a text representation of the tree t.
