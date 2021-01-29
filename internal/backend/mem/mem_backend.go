@@ -91,7 +91,10 @@ func (be *MemoryBackend) Save(ctx context.Context, h restic.Handle, rd restic.Re
 
 	beHash := be.Hasher()
 	// must never fail according to interface
-	_, _ = beHash.Write(buf)
+	_, err = beHash.Write(buf)
+	if err != nil {
+		panic(err)
+	}
 	if !bytes.Equal(beHash.Sum(nil), rd.Hash()) {
 		return errors.Errorf("invalid file hash or content, got %s expected %s",
 			base64.RawStdEncoding.EncodeToString(beHash.Sum(nil)),

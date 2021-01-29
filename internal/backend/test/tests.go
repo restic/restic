@@ -547,7 +547,10 @@ func (s *Suite) TestSave(t *testing.T) {
 	if b.Hasher() != nil {
 		beHasher := b.Hasher()
 		// must never fail according to interface
-		_, _ = beHasher.Write(data)
+		_, err := beHasher.Write(data)
+		if err != nil {
+			panic(err)
+		}
 		beHash = beHasher.Sum(nil)
 	}
 	err = b.Save(context.TODO(), h, errorCloser{
