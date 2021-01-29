@@ -605,6 +605,10 @@ func (s *Suite) TestSaveError(t *testing.T) {
 	h := restic.Handle{Type: restic.PackFile, Name: id.String()}
 	err := b.Save(context.TODO(), h, &incompleteByteReader{ByteReader: *restic.NewByteReader(data, b.Hasher())})
 	if err == nil {
+		err = s.delayedRemove(t, b, h)
+		if err != nil {
+			t.Fatalf("error removing item: %+v", err)
+		}
 		t.Fatal("incomplete upload did not fail")
 	}
 }
