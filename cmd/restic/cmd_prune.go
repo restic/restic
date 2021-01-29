@@ -298,6 +298,14 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 	repackPacks := restic.NewIDSet()
 
 	var repackCandidates []packInfoWithID
+	repackAllPacksWithDuplicates := true
+
+	keep := func(p packInfo) {
+		stats.packs.keep++
+		if p.duplicateBlobs > 0 {
+			repackAllPacksWithDuplicates = false
+		}
+	}
 
 	// loop over all packs and decide what to do
 	bar := newProgressMax(!gopts.Quiet, uint64(len(indexPack)), "packs processed")
@@ -341,11 +349,11 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 
 		case opts.RepackCachableOnly && p.tpe == restic.DataBlob:
 			// if this is a data pack and --repack-cacheable-only is set => keep pack!
-			stats.packs.keep++
+			keep(p)
 
 		case p.unusedBlobs == 0 && p.duplicateBlobs == 0 && p.tpe != restic.InvalidBlob:
 			// All blobs in pack are used and not duplicates/mixed => keep pack!
-			stats.packs.keep++
+			keep(p)
 
 		default:
 			// all other packs are candidates for repacking
@@ -384,8 +392,6 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 			Warnf("will forget missing pack file %v\n", id)
 		}
 	}
-
-	repackAllPacksWithDuplicates := true
 
 	// calculate limit for number of unused bytes in the repo after repacking
 	maxUnusedSizeAfter := opts.maxUnusedBytes(stats.size.used)
@@ -428,16 +434,16 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		}
 
 		switch {
-		case !reachedRepackSize && (p.duplicateBlobs > 0 || p.tpe != restic.DataBlob):
-			// repacking duplicates/mixed is only limited by repackSize
+		case reachedRepackSize:
+			keep(p.packInfo)
+
+		case p.duplicateBlobs > 0, p.tpe != restic.DataBlob:
+			// repacking duplicates/non-data is only limited by repackSize
 			repack(p.ID, p.packInfo)
 
-		case reachedUnusedSizeAfter, reachedRepackSize:
+		case reachedUnusedSizeAfter:
 			// for all other packs stop repacking if tolerated unused size is reached.
-			stats.packs.keep++
-			if p.duplicateBlobs > 0 {
-				repackAllPacksWithDuplicates = false
-			}
+			keep(p.packInfo)
 
 		default:
 			repack(p.ID, p.packInfo)
