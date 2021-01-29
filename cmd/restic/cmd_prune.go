@@ -434,11 +434,14 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		}
 
 		switch {
-		case !reachedRepackSize && (p.duplicateBlobs > 0 || p.tpe != restic.DataBlob):
+		case reachedRepackSize:
+			keep(p.packInfo)
+
+		case p.duplicateBlobs > 0, p.tpe != restic.DataBlob:
 			// repacking duplicates/non-data is only limited by repackSize
 			repack(p.ID, p.packInfo)
 
-		case reachedUnusedSizeAfter, reachedRepackSize:
+		case reachedUnusedSizeAfter:
 			// for all other packs stop repacking if tolerated unused size is reached.
 			keep(p.packInfo)
 
