@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -333,7 +334,9 @@ func selectRandomPacksByPercentage(allPacks map[restic.ID]int64, percentage floa
 	if packsToCheck < 1 {
 		packsToCheck = 1
 	}
-	idx := rand.Perm(packCount)
+	timeNs := time.Now().UnixNano()
+	r := rand.New(rand.NewSource(timeNs))
+	idx := r.Perm(packCount)
 
 	var keys []restic.ID
 	for k := range allPacks {
