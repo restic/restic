@@ -123,7 +123,7 @@ type azureAdapter struct {
 
 func (azureAdapter) Close() error { return nil }
 
-func (a *azureAdapter) Len() int {
+func (a azureAdapter) Len() int {
 	return int(a.Length())
 }
 
