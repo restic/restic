@@ -54,7 +54,10 @@ func TestFileReader(t *testing.T) {
 			var hash []byte
 			if hasher != nil {
 				// must never fail according to interface
-				_, _ = hasher.Write(buf)
+				_, err := hasher.Write(buf)
+				if err != nil {
+					panic(err)
+				}
 				hash = hasher.Sum(nil)
 			}
 			rd, err := NewFileReader(f, hash)
