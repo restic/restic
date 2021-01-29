@@ -611,6 +611,52 @@ func (s *Suite) TestSaveError(t *testing.T) {
 	}
 }
 
+type wrongByteReader struct {
+	restic.ByteReader
+}
+
+func (b *wrongByteReader) Hash() []byte {
+	h := b.ByteReader.Hash()
+	modHash := make([]byte, len(h))
+	copy(modHash, h)
+	// flip a bit in the hash
+	modHash[0] ^= 0x01
+	return modHash
+}
+
+// TestSaveWrongHash tests that uploads with a wrong hash fail
+func (s *Suite) TestSaveWrongHash(t *testing.T) {
+	seedRand(t)
+
+	b := s.open(t)
+	defer s.close(t, b)
+	// nothing to do if the backend doesn't support external hashes
+	if b.Hasher() == nil {
+		return
+	}
+
+	length := rand.Intn(1<<23) + 200000
+	data := test.Random(25, length)
+	var id restic.ID
+	copy(id[:], data)
+
+	// test that upload with hash mismatch fails
+	h := restic.Handle{Type: restic.PackFile, Name: id.String()}
+	err := b.Save(context.TODO(), h, &wrongByteReader{ByteReader: *restic.NewByteReader(data, b.Hasher())})
+	exists, err2 := b.Test(context.TODO(), h)
+	if err2 != nil {
+		t.Fatal(err2)
+	}
+	_ = s.delayedRemove(t, b, h)
+	if err == nil {
+		t.Fatal("upload with wrong hash did not fail")
+	}
+	t.Logf("%v", err)
+	if exists {
+		t.Fatal("Backend returned an error but stored the file anyways")
+	}
+}
+
 var filenameTests = []struct {
 	name string
 	data string
