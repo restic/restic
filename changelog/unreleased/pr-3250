@@ -1,0 +1,6 @@
+Enhancement: Add more error checks
+
+We've added a lot more error checks in places where errors were ignored before
+(as hinted by the static analysis programm `errcheck` via `golangci-lint`).
+
+https://github.com/restic/restic/pull/3250
