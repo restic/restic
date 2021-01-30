@@ -117,7 +117,10 @@ func runRecover(gopts GlobalOptions) error {
 			ModTime:    time.Now(),
 			ChangeTime: time.Now(),
 		}
-		tree.Insert(&node)
+		err = tree.Insert(&node)
+		if err != nil {
+			return err
+		}
 	}
 
 	treeID, err := repo.SaveTree(gopts.ctx, tree)

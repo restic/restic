@@ -405,7 +405,10 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 			debug.Log("%v hasn't changed, but contents are missing!", target)
 			// There are contents missing - inform user!
 			err := errors.Errorf("parts of %v not found in the repository index; storing the file again", target)
-			arch.error(abstarget, fi, err)
+			err = arch.error(abstarget, fi, err)
+			if err != nil {
+				return FutureNode{}, false, err
+			}
 		}
 
 		// reopen file and do an fstat() on the open file to check it is still
@@ -457,7 +460,10 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 		start := time.Now()
 		oldSubtree, err := arch.loadSubtree(ctx, previous)
 		if err != nil {
-			arch.error(abstarget, fi, err)
+			err = arch.error(abstarget, fi, err)
+		}
+		if err != nil {
+			return FutureNode{}, false, err
 		}
 
 		fn.isTree = true
@@ -592,7 +598,10 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 		oldNode := previous.Find(name)
 		oldSubtree, err := arch.loadSubtree(ctx, oldNode)
 		if err != nil {
-			arch.error(join(snPath, name), nil, err)
+			err = arch.error(join(snPath, name), nil, err)
+		}
+		if err != nil {
+			return nil, err
 		}
 
 		// not a leaf node, archive subtree
@@ -751,7 +760,7 @@ func (arch *Archiver) loadParentTree(ctx context.Context, snapshotID restic.ID) 
 	tree, err := arch.Repo.LoadTree(ctx, *sn.Tree)
 	if err != nil {
 		debug.Log("unable to load tree %v: %v", *sn.Tree, err)
-		arch.error("/", nil, arch.wrapLoadTreeError(*sn.Tree, err))
+		_ = arch.error("/", nil, arch.wrapLoadTreeError(*sn.Tree, err))
 		return nil
 	}
 	return tree

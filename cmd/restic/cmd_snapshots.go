@@ -243,7 +243,10 @@ func PrintSnapshots(stdout io.Writer, list restic.Snapshots, reasons []restic.Ke
 		}
 	}
 
-	tab.Write(stdout)
+	err := tab.Write(stdout)
+	if err != nil {
+		Warnf("error printing: %v\n", err)
+	}
 }
 
 // PrintSnapshotGroupHeader prints which group of the group-by option the

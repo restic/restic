@@ -566,9 +566,9 @@ func TestBackupErrors(t *testing.T) {
 
 	// Assume failure
 	inaccessibleFile := filepath.Join(env.testdata, "0", "0", "9", "0")
-	os.Chmod(inaccessibleFile, 0000)
+	rtest.OK(t, os.Chmod(inaccessibleFile, 0000))
 	defer func() {
-		os.Chmod(inaccessibleFile, 0644)
+		rtest.OK(t, os.Chmod(inaccessibleFile, 0644))
 	}()
 	opts := BackupOptions{}
 	gopts := env.gopts
@@ -933,7 +933,7 @@ func testRunKeyAddNewKeyUserHost(t testing.TB, gopts GlobalOptions) {
 		keyHostname = ""
 	}()
 
-	cmdKey.Flags().Parse([]string{"--user=john", "--host=example.com"})
+	rtest.OK(t, cmdKey.Flags().Parse([]string{"--user=john", "--host=example.com"}))
 
 	t.Log("adding key for john@example.com")
 	rtest.OK(t, runKey(gopts, []string{"add"}))
@@ -1106,7 +1106,7 @@ func TestRestoreLatest(t *testing.T) {
 	testRunBackup(t, "", []string{filepath.Base(env.testdata)}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 
-	os.Remove(p)
+	rtest.OK(t, os.Remove(p))
 	rtest.OK(t, appendRandomData(p, 101))
 	testRunBackup(t, "", []string{filepath.Base(env.testdata)}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
@@ -1747,16 +1747,32 @@ func copyFile(dst string, src string) error {
 	if err != nil {
 		return err
 	}
-	defer srcFile.Close()
 
 	dstFile, err := os.Create(dst)
 	if err != nil {
+		// ignore subsequent errors
+		_ = srcFile.Close()
 		return err
 	}
-	defer dstFile.Close()
 
 	_, err = io.Copy(dstFile, srcFile)
-	return err
+	if err != nil {
+		// ignore subsequent errors
+		_ = srcFile.Close()
+		_ = dstFile.Close()
+	}
+
+	err = srcFile.Close()
+	if err != nil {
+		return err
+	}
+
+	err = dstFile.Close()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 var diffOutputRegexPatterns = []string{

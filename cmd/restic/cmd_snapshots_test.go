@@ -11,7 +11,8 @@ import (
 func TestEmptySnapshotGroupJSON(t *testing.T) {
 	for _, grouped := range []bool{false, true} {
 		var w strings.Builder
-		printSnapshotGroupJSON(&w, nil, grouped)
+		err := printSnapshotGroupJSON(&w, nil, grouped)
+		rtest.OK(t, err)
 
 		rtest.Equals(t, "[]", strings.TrimSpace(w.String()))
 	}
