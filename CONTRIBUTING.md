@@ -141,6 +141,14 @@ Installing the script `fmt-check` from https://github.com/edsrzf/gofmt-git-hook
 locally as a pre-commit hook checks formatting before committing automatically,
 just copy this script to `.git/hooks/pre-commit`.
 
+The project is using the program
+[`golangci-lint`](https://github.com/golangci/golangci-lint) to run a list of
+linters and checkers. It will be run on the code when you submit a PR. In order
+to check your code beforehand, you can run `golangci-lint run` manually.
+Eventually, we will enable `golangci-lint` for the whole code base. For now,
+you can ignore warnings printed for lines you did not modify, those will be
+ignored by the CI.
+
 For each pull request, several different systems run the integration tests on
 Linux, macOS and Windows. We won't merge any code that does not pass all tests
 for all systems, so when a tests fails, try to find out what's wrong and fix
