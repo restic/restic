@@ -63,9 +63,9 @@ func run(command string, args ...string) (*StdioConn, *exec.Cmd, *sync.WaitGroup
 
 	stdout, w, err := os.Pipe()
 	if err != nil {
-		// close first pipe
-		r.Close()
-		stdin.Close()
+		// close first pipe and ignore subsequent errors
+		_ = r.Close()
+		_ = stdin.Close()
 		return nil, nil, nil, nil, err
 	}
 
@@ -197,8 +197,8 @@ func newBackend(cfg Config, lim limiter.Limiter) (*Backend, error) {
 		err := cmd.Wait()
 		debug.Log("Wait returned %v", err)
 		be.waitResult = err
-		// close our side of the pipes to rclone
-		stdioConn.CloseAll()
+		// close our side of the pipes to rclone, ignore errors
+		_ = stdioConn.CloseAll()
 		close(waitCh)
 	}()
 
@@ -237,13 +237,17 @@ func newBackend(cfg Config, lim limiter.Limiter) (*Backend, error) {
 
 	res, err := ctxhttp.Do(ctx, client, req)
 	if err != nil {
-		bg()
+		// ignore subsequent errors
+		_ = bg()
 		_ = cmd.Process.Kill()
 		return nil, errors.Errorf("error talking HTTP to rclone: %v", err)
 	}
 
 	debug.Log("HTTP status %q returned, moving instance to background", res.Status)
-	bg()
+	err = bg()
+	if err != nil {
+		return nil, fmt.Errorf("error moving process to background: %w", err)
+	}
 
 	return be, nil
 }

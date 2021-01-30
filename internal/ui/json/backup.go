@@ -79,7 +79,10 @@ func NewBackup(term *termstatus.Terminal, verbosity uint) *Backup {
 
 func toJSONString(status interface{}) string {
 	buf := new(bytes.Buffer)
-	json.NewEncoder(buf).Encode(status)
+	err := json.NewEncoder(buf).Encode(status)
+	if err != nil {
+		panic(err)
+	}
 	return buf.String()
 }
 

@@ -327,7 +327,12 @@ func (c *Checker) Structure(ctx context.Context, p *progress.Counter, errChan ch
 		})
 	}
 
-	wg.Wait()
+	// the wait group should not return an error because no worker returns an
+	// error, so panic if that has changed somehow.
+	err := wg.Wait()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
