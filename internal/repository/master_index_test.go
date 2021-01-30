@@ -163,7 +163,11 @@ func TestMasterMergeFinalIndexes(t *testing.T) {
 	finalIndexes := mIdx.FinalizeNotFinalIndexes()
 	rtest.Equals(t, []*repository.Index{idx1, idx2}, finalIndexes)
 
-	mIdx.MergeFinalIndexes()
+	err := mIdx.MergeFinalIndexes()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	allIndexes := mIdx.All()
 	rtest.Equals(t, 1, len(allIndexes))
 
@@ -191,7 +195,11 @@ func TestMasterMergeFinalIndexes(t *testing.T) {
 	finalIndexes = mIdx.FinalizeNotFinalIndexes()
 	rtest.Equals(t, []*repository.Index{idx3}, finalIndexes)
 
-	mIdx.MergeFinalIndexes()
+	err = mIdx.MergeFinalIndexes()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	allIndexes = mIdx.All()
 	rtest.Equals(t, 1, len(allIndexes))
 
@@ -209,7 +217,7 @@ func TestMasterMergeFinalIndexes(t *testing.T) {
 	rtest.Equals(t, 2, blobCount)
 }
 
-func createRandomMasterIndex(rng *rand.Rand, num, size int) (*repository.MasterIndex, restic.BlobHandle) {
+func createRandomMasterIndex(t testing.TB, rng *rand.Rand, num, size int) (*repository.MasterIndex, restic.BlobHandle) {
 	mIdx := repository.NewMasterIndex()
 	for i := 0; i < num-1; i++ {
 		idx, _ := createRandomIndex(rng, size)
@@ -219,7 +227,10 @@ func createRandomMasterIndex(rng *rand.Rand, num, size int) (*repository.MasterI
 	mIdx.Insert(idx1)
 
 	mIdx.FinalizeNotFinalIndexes()
-	mIdx.MergeFinalIndexes()
+	err := mIdx.MergeFinalIndexes()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	return mIdx, lookupBh
 }
@@ -229,12 +240,12 @@ func BenchmarkMasterIndexAlloc(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		createRandomMasterIndex(rng, 10000, 5)
+		createRandomMasterIndex(b, rng, 10000, 5)
 	}
 }
 
 func BenchmarkMasterIndexLookupSingleIndex(b *testing.B) {
-	mIdx, lookupBh := createRandomMasterIndex(rand.New(rand.NewSource(0)), 1, 200000)
+	mIdx, lookupBh := createRandomMasterIndex(b, rand.New(rand.NewSource(0)), 1, 200000)
 
 	b.ResetTimer()
 
@@ -244,7 +255,7 @@ func BenchmarkMasterIndexLookupSingleIndex(b *testing.B) {
 }
 
 func BenchmarkMasterIndexLookupMultipleIndex(b *testing.B) {
-	mIdx, lookupBh := createRandomMasterIndex(rand.New(rand.NewSource(0)), 100, 10000)
+	mIdx, lookupBh := createRandomMasterIndex(b, rand.New(rand.NewSource(0)), 100, 10000)
 
 	b.ResetTimer()
 
@@ -256,7 +267,7 @@ func BenchmarkMasterIndexLookupMultipleIndex(b *testing.B) {
 func BenchmarkMasterIndexLookupSingleIndexUnknown(b *testing.B) {
 
 	lookupBh := restic.NewRandomBlobHandle()
-	mIdx, _ := createRandomMasterIndex(rand.New(rand.NewSource(0)), 1, 200000)
+	mIdx, _ := createRandomMasterIndex(b, rand.New(rand.NewSource(0)), 1, 200000)
 
 	b.ResetTimer()
 
@@ -267,7 +278,7 @@ func BenchmarkMasterIndexLookupSingleIndexUnknown(b *testing.B) {
 
 func BenchmarkMasterIndexLookupMultipleIndexUnknown(b *testing.B) {
 	lookupBh := restic.NewRandomBlobHandle()
-	mIdx, _ := createRandomMasterIndex(rand.New(rand.NewSource(0)), 100, 10000)
+	mIdx, _ := createRandomMasterIndex(b, rand.New(rand.NewSource(0)), 100, 10000)
 
 	b.ResetTimer()
 
@@ -284,7 +295,7 @@ func BenchmarkMasterIndexLookupParallel(b *testing.B) {
 
 		b.StopTimer()
 		rng := rand.New(rand.NewSource(0))
-		mIdx, lookupBh = createRandomMasterIndex(rng, numindices, 10000)
+		mIdx, lookupBh = createRandomMasterIndex(b, rng, numindices, 10000)
 		b.StartTimer()
 
 		name := fmt.Sprintf("known,indices=%d", numindices)
@@ -310,7 +321,7 @@ func BenchmarkMasterIndexLookupParallel(b *testing.B) {
 
 func BenchmarkMasterIndexLookupBlobSize(b *testing.B) {
 	rng := rand.New(rand.NewSource(0))
-	mIdx, lookupBh := createRandomMasterIndex(rand.New(rng), 5, 200000)
+	mIdx, lookupBh := createRandomMasterIndex(b, rand.New(rng), 5, 200000)
 
 	b.ResetTimer()
 

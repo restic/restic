@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/restic/restic/internal/debug"
@@ -271,7 +272,7 @@ func (mi *MasterIndex) Each(ctx context.Context) <-chan restic.PackedBlob {
 // Indexes that are not final are left untouched.
 // This merging can only be called after all index files are loaded - as
 // removing of superseded index contents is only possible for unmerged indexes.
-func (mi *MasterIndex) MergeFinalIndexes() {
+func (mi *MasterIndex) MergeFinalIndexes() error {
 	mi.idxMutex.Lock()
 	defer mi.idxMutex.Unlock()
 
@@ -284,10 +285,15 @@ func (mi *MasterIndex) MergeFinalIndexes() {
 		if !idx.Final() {
 			newIdx = append(newIdx, idx)
 		} else {
-			mi.idx[0].merge(idx)
+			err := mi.idx[0].merge(idx)
+			if err != nil {
+				return fmt.Errorf("MergeFinalIndexes: %w", err)
+			}
 		}
 	}
 	mi.idx = newIdx
+
+	return nil
 }
 
 const saveIndexParallelism = 4

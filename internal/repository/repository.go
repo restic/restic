@@ -419,7 +419,11 @@ func (r *Repository) saveIndex(ctx context.Context, indexes ...*Index) error {
 
 		debug.Log("Saved index %d as %v", i, sid)
 	}
-	r.idx.MergeFinalIndexes()
+
+	err := r.idx.MergeFinalIndexes()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -461,7 +465,10 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 		return errors.Fatal(err.Error())
 	}
 
-	r.idx.MergeFinalIndexes()
+	err = r.idx.MergeFinalIndexes()
+	if err != nil {
+		return err
+	}
 
 	// remove index files from the cache which have been removed in the repo
 	return r.PrepareCache(validIndex)

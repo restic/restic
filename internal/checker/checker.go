@@ -111,7 +111,11 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 	}
 
 	// Merge index before computing pack sizes, as this needs removed duplicates
-	c.masterIndex.MergeFinalIndexes()
+	err = c.masterIndex.MergeFinalIndexes()
+	if err != nil {
+		// abort if an error occurs merging the indexes
+		return hints, append(errs, err)
+	}
 
 	// compute pack size using index entries
 	c.packs = c.masterIndex.PackSize(ctx, false)
