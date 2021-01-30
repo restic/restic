@@ -1,0 +1,57 @@
+# This is the configuration for golangci-lint for the restic project.
+#
+# A sample config with all settings is here:
+# https://github.com/golangci/golangci-lint/blob/master/.golangci.example.yml
+
+linters:
+  # only enable the linters listed below
+  disable-all: true
+  enable:
+    # make sure all errors returned by functions are handled
+    - errcheck
+
+    # find unused code
+    - deadcode
+
+    # show how code can be simplified
+    - gosimple
+
+    # # make sure code is formatted
+    - gofmt
+
+    # examine code and report suspicious constructs, such as Printf calls whose
+    # arguments do not align with the format string
+    - govet
+
+    # make sure names and comments are used according to the conventions
+    - golint
+
+    # detect when assignments to existing variables are not used
+    - ineffassign
+
+    # run static analysis and find errors
+    - staticcheck
+
+    # find unused variables, functions, structs, types, etc.
+    - unused
+
+    # find unused struct fields
+    - structcheck
+
+    # find unused global variables
+    - varcheck
+
+    # parse and typecheck code
+    - typecheck
+
+issues:
+  # don't use the default exclude rules, this hides (among others) ignored
+  # errors from Close() calls
+  exclude-use-default: false
+
+  # list of things to not warn about
+  exclude:
+    # golint: do not warn about missing comments for exported stuff
+    - exported (function|method|var|type|const) `.*` should have comment or be unexported
+    # golint: ignore constants in all caps
+    - don't use ALL_CAPS in Go names; use CamelCase
