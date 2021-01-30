@@ -166,7 +166,7 @@ func testRunDiffOutput(gopts GlobalOptions, firstSnapshotID string, secondSnapsh
 		ShowMetadata: false,
 	}
 	err := runDiff(opts, gopts, []string{firstSnapshotID, secondSnapshotID})
-	return string(buf.Bytes()), err
+	return buf.String(), err
 }
 
 func testRunRebuildIndex(t testing.TB, gopts GlobalOptions) {
@@ -657,7 +657,11 @@ func TestBackupTags(t *testing.T) {
 	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 	newest, _ := testRunSnapshots(t, env.gopts)
-	rtest.Assert(t, newest != nil, "expected a new backup, got nil")
+
+	if newest == nil {
+		t.Fatal("expected a backup, got nil")
+	}
+
 	rtest.Assert(t, len(newest.Tags) == 0,
 		"expected no tags, got %v", newest.Tags)
 	parent := newest
@@ -666,7 +670,11 @@ func TestBackupTags(t *testing.T) {
 	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 	newest, _ = testRunSnapshots(t, env.gopts)
-	rtest.Assert(t, newest != nil, "expected a new backup, got nil")
+
+	if newest == nil {
+		t.Fatal("expected a backup, got nil")
+	}
+
 	rtest.Assert(t, len(newest.Tags) == 1 && newest.Tags[0] == "NL",
 		"expected one NL tag, got %v", newest.Tags)
 	// Tagged backup should have untagged backup as parent.
@@ -833,7 +841,10 @@ func TestTag(t *testing.T) {
 	testRunBackup(t, "", []string{env.testdata}, BackupOptions{}, env.gopts)
 	testRunCheck(t, env.gopts)
 	newest, _ := testRunSnapshots(t, env.gopts)
-	rtest.Assert(t, newest != nil, "expected a new backup, got nil")
+	if newest == nil {
+		t.Fatal("expected a new backup, got nil")
+	}
+
 	rtest.Assert(t, len(newest.Tags) == 0,
 		"expected no tags, got %v", newest.Tags)
 	rtest.Assert(t, newest.Original == nil,
@@ -843,7 +854,9 @@ func TestTag(t *testing.T) {
 	testRunTag(t, TagOptions{SetTags: restic.TagLists{[]string{"NL"}}}, env.gopts)
 	testRunCheck(t, env.gopts)
 	newest, _ = testRunSnapshots(t, env.gopts)
-	rtest.Assert(t, newest != nil, "expected a new backup, got nil")
+	if newest == nil {
+		t.Fatal("expected a backup, got nil")
+	}
 	rtest.Assert(t, len(newest.Tags) == 1 && newest.Tags[0] == "NL",
 		"set failed, expected one NL tag, got %v", newest.Tags)
 	rtest.Assert(t, newest.Original != nil, "expected original snapshot id, got nil")
@@ -853,7 +866,9 @@ func TestTag(t *testing.T) {
 	testRunTag(t, TagOptions{AddTags: restic.TagLists{[]string{"CH"}}}, env.gopts)
 	testRunCheck(t, env.gopts)
 	newest, _ = testRunSnapshots(t, env.gopts)
-	rtest.Assert(t, newest != nil, "expected a new backup, got nil")
+	if newest == nil {
+		t.Fatal("expected a backup, got nil")
+	}
 	rtest.Assert(t, len(newest.Tags) == 2 && newest.Tags[0] == "NL" && newest.Tags[1] == "CH",
 		"add failed, expected CH,NL tags, got %v", newest.Tags)
 	rtest.Assert(t, newest.Original != nil, "expected original snapshot id, got nil")
@@ -863,7 +878,9 @@ func TestTag(t *testing.T) {
 	testRunTag(t, TagOptions{RemoveTags: restic.TagLists{[]string{"NL"}}}, env.gopts)
 	testRunCheck(t, env.gopts)
 	newest, _ = testRunSnapshots(t, env.gopts)
-	rtest.Assert(t, newest != nil, "expected a new backup, got nil")
+	if newest == nil {
+		t.Fatal("expected a backup, got nil")
+	}
 	rtest.Assert(t, len(newest.Tags) == 1 && newest.Tags[0] == "CH",
 		"remove failed, expected one CH tag, got %v", newest.Tags)
 	rtest.Assert(t, newest.Original != nil, "expected original snapshot id, got nil")
@@ -874,7 +891,9 @@ func TestTag(t *testing.T) {
 	testRunTag(t, TagOptions{RemoveTags: restic.TagLists{[]string{"CH", "US", "RU"}}}, env.gopts)
 	testRunCheck(t, env.gopts)
 	newest, _ = testRunSnapshots(t, env.gopts)
-	rtest.Assert(t, newest != nil, "expected a new backup, got nil")
+	if newest == nil {
+		t.Fatal("expected a backup, got nil")
+	}
 	rtest.Assert(t, len(newest.Tags) == 0,
 		"expected no tags, got %v", newest.Tags)
 	rtest.Assert(t, newest.Original != nil, "expected original snapshot id, got nil")
@@ -885,7 +904,9 @@ func TestTag(t *testing.T) {
 	testRunTag(t, TagOptions{SetTags: restic.TagLists{[]string{""}}}, env.gopts)
 	testRunCheck(t, env.gopts)
 	newest, _ = testRunSnapshots(t, env.gopts)
-	rtest.Assert(t, newest != nil, "expected a new backup, got nil")
+	if newest == nil {
+		t.Fatal("expected a backup, got nil")
+	}
 	rtest.Assert(t, len(newest.Tags) == 0,
 		"expected no tags, got %v", newest.Tags)
 	rtest.Assert(t, newest.Original != nil, "expected original snapshot id, got nil")

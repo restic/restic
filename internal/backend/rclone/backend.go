@@ -228,12 +228,11 @@ func newBackend(cfg Config, lim limiter.Limiter) (*Backend, error) {
 	// rclone is able to accept HTTP requests.
 	url := fmt.Sprintf("http://localhost/file-%d", rand.Uint64())
 
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Accept", rest.ContentTypeV2)
-	req.Cancel = ctx.Done()
 
 	res, err := ctxhttp.Do(ctx, client, req)
 	if err != nil {
