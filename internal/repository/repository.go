@@ -419,9 +419,8 @@ func (r *Repository) saveIndex(ctx context.Context, indexes ...*Index) error {
 
 		debug.Log("Saved index %d as %v", i, sid)
 	}
-	r.idx.MergeFinalIndexes()
 
-	return nil
+	return r.idx.MergeFinalIndexes()
 }
 
 // SaveIndex saves all new indexes in the backend.
@@ -461,7 +460,10 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 		return errors.Fatal(err.Error())
 	}
 
-	r.idx.MergeFinalIndexes()
+	err = r.idx.MergeFinalIndexes()
+	if err != nil {
+		return err
+	}
 
 	// remove index files from the cache which have been removed in the repo
 	return r.PrepareCache(validIndex)
@@ -781,16 +783,19 @@ func DownloadAndHash(ctx context.Context, be Loader, h restic.Handle) (tmpfile *
 		hash = restic.IDFromHash(hrd.Sum(nil))
 		return ierr
 	})
+
 	if err != nil {
-		tmpfile.Close()
-		os.Remove(tmpfile.Name())
+		// ignore subsequent errors
+		_ = tmpfile.Close()
+		_ = os.Remove(tmpfile.Name())
 		return nil, restic.ID{}, -1, errors.Wrap(err, "Load")
 	}
 
 	_, err = tmpfile.Seek(0, io.SeekStart)
 	if err != nil {
-		tmpfile.Close()
-		os.Remove(tmpfile.Name())
+		// ignore subsequent errors
+		_ = tmpfile.Close()
+		_ = os.Remove(tmpfile.Name())
 		return nil, restic.ID{}, -1, errors.Wrap(err, "Seek")
 	}
 

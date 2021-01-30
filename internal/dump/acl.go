@@ -101,12 +101,23 @@ func (a *acl) decode(xattr []byte) {
 func (a *acl) encode() []byte {
 	buf := new(bytes.Buffer)
 	ae := new(aclElem)
-	binary.Write(buf, binary.LittleEndian, &a.Version)
+
+	err := binary.Write(buf, binary.LittleEndian, &a.Version)
+	// write to a bytes.Buffer always returns a nil error
+	if err != nil {
+		panic(err)
+	}
+
 	for _, elem := range a.List {
 		ae.Tag = uint16(elem.getType())
 		ae.Perm = elem.Perm
 		ae.ID = elem.getID()
-		binary.Write(buf, binary.LittleEndian, ae)
+
+		err := binary.Write(buf, binary.LittleEndian, ae)
+		// write to a bytes.Buffer always returns a nil error
+		if err != nil {
+			panic(err)
+		}
 	}
 	return buf.Bytes()
 }

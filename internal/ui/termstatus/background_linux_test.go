@@ -12,8 +12,9 @@ func TestIsProcessBackground(t *testing.T) {
 	if err != nil {
 		t.Skipf("can't open terminal: %v", err)
 	}
-	defer tty.Close()
 
 	_, err = isProcessBackground(tty.Fd())
 	rtest.OK(t, err)
+
+	_ = tty.Close()
 }

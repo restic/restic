@@ -29,7 +29,8 @@ func BenchmarkNodeFillUser(t *testing.B) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		restic.NodeFromFileInfo(path, fi)
+		_, err := restic.NodeFromFileInfo(path, fi)
+		rtest.OK(t, err)
 	}
 
 	rtest.OK(t, tempfile.Close())

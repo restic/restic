@@ -25,7 +25,8 @@ func writeTempfile(t testing.TB, data []byte) (string, func()) {
 			err = closeErr
 		}
 		if err != nil {
-			os.Remove(name)
+			// ignore subsequent errors
+			_ = os.Remove(name)
 			t.Fatal(err)
 		}
 	}()

@@ -54,7 +54,7 @@ func TestReadRepo(t *testing.T) {
 
 	var opts3 GlobalOptions
 	opts3.RepositoryFile = foo + "-invalid"
-	repo, err = ReadRepo(opts3)
+	_, err = ReadRepo(opts3)
 	if err == nil {
 		t.Fatal("must not read repository path from invalid file path")
 	}

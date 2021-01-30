@@ -563,7 +563,10 @@ func runFind(opts FindOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	if opts.PackID {
-		f.packsToBlobs(ctx, []string{f.pat.pattern[0]}) // TODO: support multiple packs
+		err := f.packsToBlobs(ctx, []string{f.pat.pattern[0]}) // TODO: support multiple packs
+		if err != nil {
+			return err
+		}
 	}
 
 	for sn := range FindFilteredSnapshots(ctx, repo, opts.Hosts, opts.Tags, opts.Paths, opts.Snapshots) {

@@ -180,7 +180,9 @@ func isDirExcludedByFile(dir, tagFilename, header string) bool {
 		Warnf("could not open exclusion tagfile: %v", err)
 		return false
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 	buf := make([]byte, len(header))
 	_, err = io.ReadFull(f, buf)
 	// EOF is handled with a dedicated message, otherwise the warning were too cryptic

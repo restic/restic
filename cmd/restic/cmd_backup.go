@@ -119,7 +119,11 @@ func init() {
 
 	f.StringVarP(&backupOptions.Host, "host", "H", "", "set the `hostname` for the snapshot manually. To prevent an expensive rescan use the \"parent\" flag")
 	f.StringVar(&backupOptions.Host, "hostname", "", "set the `hostname` for the snapshot manually")
-	f.MarkDeprecated("hostname", "use --host")
+	err := f.MarkDeprecated("hostname", "use --host")
+	if err != nil {
+		// MarkDeprecated only returns an error when the flag could not be found
+		panic(err)
+	}
 
 	f.StringArrayVar(&backupOptions.FilesFrom, "files-from", nil, "read the files to backup from `file` (can be combined with file args; can be specified multiple times)")
 	f.StringArrayVar(&backupOptions.FilesFromVerbatim, "files-from-verbatim", nil, "read the files to backup from `file` (can be combined with file args; can be specified multiple times)")
@@ -201,10 +205,21 @@ func readFilenamesFromFileRaw(filename string) (names []string, err error) {
 		if f, err = os.Open(filename); err != nil {
 			return nil, err
 		}
-		defer f.Close()
 	}
 
-	return readFilenamesRaw(f)
+	names, err = readFilenamesRaw(f)
+	if err != nil {
+		// ignore subsequent errors
+		_ = f.Close()
+		return nil, err
+	}
+
+	err = f.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	return names, nil
 }
 
 func readFilenamesRaw(r io.Reader) (names []string, err error) {

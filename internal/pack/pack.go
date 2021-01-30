@@ -157,7 +157,7 @@ var (
 const (
 	// size of the header-length field at the end of the file; it is a uint32
 	headerLengthSize = 4
-	// constant overhead of the header independent of #entries
+	// HeaderSize is the header's constant overhead (independent of #entries)
 	HeaderSize = headerLengthSize + crypto.Extension
 
 	maxHeaderSize = 16 * 1024 * 1024

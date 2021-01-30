@@ -25,7 +25,8 @@ func writeDump(ctx context.Context, repo restic.Repository, tree *restic.Tree, r
 		rootNode.Path = rootPath
 		err := dumpTree(ctx, repo, rootNode, rootPath, dmp)
 		if err != nil {
-			dmp.Close()
+			// ignore subsequent errors
+			_ = dmp.Close()
 
 			return err
 		}

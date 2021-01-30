@@ -52,7 +52,7 @@ func DefaultLoad(ctx context.Context, h restic.Handle, length int, offset int64,
 	}
 	err = fn(rd)
 	if err != nil {
-		rd.Close() // ignore secondary errors closing the reader
+		_ = rd.Close() // ignore secondary errors closing the reader
 		return err
 	}
 	return rd.Close()

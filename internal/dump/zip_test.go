@@ -23,10 +23,16 @@ func readZipFile(f *zip.File) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rc.Close()
 
 	b := &bytes.Buffer{}
 	_, err = b.ReadFrom(rc)
+	if err != nil {
+		// ignore subsequent errors
+		_ = rc.Close()
+		return nil, err
+	}
+
+	err = rc.Close()
 	if err != nil {
 		return nil, err
 	}

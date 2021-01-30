@@ -166,7 +166,7 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 		if err == nil {
 			err = consumer(rd)
 			if err != nil {
-				rd.Close() // ignore secondary errors
+				_ = rd.Close() // ignore secondary errors
 				return err
 			}
 			return rd.Close()

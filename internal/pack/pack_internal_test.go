@@ -61,9 +61,9 @@ func TestReadHeaderEagerLoad(t *testing.T) {
 		expectedHeader := rtest.Random(0, entryCount*int(EntrySize)+crypto.Extension)
 
 		buf := &bytes.Buffer{}
-		buf.Write(rtest.Random(0, dataSize))                                // pack blobs data
-		buf.Write(expectedHeader)                                           // pack header
-		binary.Write(buf, binary.LittleEndian, uint32(len(expectedHeader))) // pack header length
+		buf.Write(rtest.Random(0, dataSize))                                             // pack blobs data
+		buf.Write(expectedHeader)                                                        // pack header
+		rtest.OK(t, binary.Write(buf, binary.LittleEndian, uint32(len(expectedHeader)))) // pack header length
 
 		rd := &countingReaderAt{delegate: bytes.NewReader(buf.Bytes())}
 
@@ -104,9 +104,9 @@ func TestReadRecords(t *testing.T) {
 		expectedHeader := totalHeader[off:]
 
 		buf := &bytes.Buffer{}
-		buf.Write(rtest.Random(0, dataSize))                             // pack blobs data
-		buf.Write(totalHeader)                                           // pack header
-		binary.Write(buf, binary.LittleEndian, uint32(len(totalHeader))) // pack header length
+		buf.Write(rtest.Random(0, dataSize))                                          // pack blobs data
+		buf.Write(totalHeader)                                                        // pack header
+		rtest.OK(t, binary.Write(buf, binary.LittleEndian, uint32(len(totalHeader)))) // pack header length
 
 		rd := bytes.NewReader(buf.Bytes())
 

@@ -32,7 +32,7 @@ func TestCollectTargets(t *testing.T) {
 		// All mentioned files must exist for collectTargets.
 		f, err := os.Create(filepath.Join(dir, filename))
 		rtest.OK(t, err)
-		f.Close()
+		rtest.OK(t, f.Close())
 
 		expect = append(expect, f.Name())
 	}
@@ -41,7 +41,7 @@ func TestCollectTargets(t *testing.T) {
 	rtest.OK(t, err)
 	// Empty lines should be ignored. A line starting with '#' is a comment.
 	fmt.Fprintf(f1, "\n%s*\n # here's a comment\n", f1.Name())
-	f1.Close()
+	rtest.OK(t, f1.Close())
 
 	f2, err := os.Create(filepath.Join(dir, "fromfile-verbatim"))
 	rtest.OK(t, err)
@@ -49,7 +49,7 @@ func TestCollectTargets(t *testing.T) {
 		// Empty lines should be ignored. CR+LF is allowed.
 		fmt.Fprintf(f2, "%s\r\n\n", filepath.Join(dir, filename))
 	}
-	f2.Close()
+	rtest.OK(t, f2.Close())
 
 	f3, err := os.Create(filepath.Join(dir, "fromfile-raw"))
 	rtest.OK(t, err)
@@ -57,7 +57,7 @@ func TestCollectTargets(t *testing.T) {
 		fmt.Fprintf(f3, "%s\x00", filepath.Join(dir, filename))
 	}
 	rtest.OK(t, err)
-	f3.Close()
+	rtest.OK(t, f3.Close())
 
 	opts := BackupOptions{
 		FilesFrom:         []string{f1.Name()},

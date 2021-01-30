@@ -9,7 +9,7 @@ import (
 // DeleteFiles deletes the given fileList of fileType in parallel
 // it will print a warning if there is an error, but continue deleting the remaining files
 func DeleteFiles(gopts GlobalOptions, repo restic.Repository, fileList restic.IDSet, fileType restic.FileType) {
-	deleteFiles(gopts, true, repo, fileList, fileType)
+	_ = deleteFiles(gopts, true, repo, fileList, fileType)
 }
 
 // DeleteFilesChecked deletes the given fileList of fileType in parallel

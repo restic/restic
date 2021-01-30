@@ -74,7 +74,7 @@ func saveDir(t testing.TB, repo restic.Repository, nodes map[string]Node, inode 
 			if mode == 0 {
 				mode = 0644
 			}
-			tree.Insert(&restic.Node{
+			err := tree.Insert(&restic.Node{
 				Type:    "file",
 				Mode:    mode,
 				ModTime: node.ModTime,
@@ -86,6 +86,7 @@ func saveDir(t testing.TB, repo restic.Repository, nodes map[string]Node, inode 
 				Inode:   fi,
 				Links:   lc,
 			})
+			rtest.OK(t, err)
 		case Dir:
 			id := saveDir(t, repo, node.Nodes, inode)
 
@@ -94,7 +95,7 @@ func saveDir(t testing.TB, repo restic.Repository, nodes map[string]Node, inode 
 				mode = 0755
 			}
 
-			tree.Insert(&restic.Node{
+			err := tree.Insert(&restic.Node{
 				Type:    "dir",
 				Mode:    mode,
 				ModTime: node.ModTime,
@@ -103,6 +104,7 @@ func saveDir(t testing.TB, repo restic.Repository, nodes map[string]Node, inode 
 				GID:     uint32(os.Getgid()),
 				Subtree: &id,
 			})
+			rtest.OK(t, err)
 		default:
 			t.Fatalf("unknown node type %T", node)
 		}

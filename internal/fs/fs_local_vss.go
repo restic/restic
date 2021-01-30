@@ -50,7 +50,7 @@ func (fs *LocalVss) DeleteSnapshots() {
 
 	for volumeName, snapshot := range fs.snapshots {
 		if err := snapshot.Delete(); err != nil {
-			fs.msgError(volumeName, errors.Errorf("failed to delete VSS snapshot: %s", err))
+			_ = fs.msgError(volumeName, errors.Errorf("failed to delete VSS snapshot: %s", err))
 			activeSnapshots[volumeName] = snapshot
 		}
 	}
@@ -117,7 +117,7 @@ func (fs *LocalVss) snapshotPath(path string) string {
 			fs.msgMessage("creating VSS snapshot for [%s]\n", vssVolume)
 
 			if snapshot, err := NewVssSnapshot(vssVolume, 120, fs.msgError); err != nil {
-				fs.msgError(vssVolume, errors.Errorf("failed to create snapshot for [%s]: %s\n",
+				_ = fs.msgError(vssVolume, errors.Errorf("failed to create snapshot for [%s]: %s\n",
 					vssVolume, err))
 				fs.failedSnapshots[volumeNameLower] = struct{}{}
 			} else {

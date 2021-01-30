@@ -159,16 +159,17 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 		enc := json.NewEncoder(gopts.stdout)
 
 		printSnapshot = func(sn *restic.Snapshot) {
-			enc.Encode(lsSnapshot{
+			err = enc.Encode(lsSnapshot{
 				Snapshot:   sn,
 				ID:         sn.ID(),
 				ShortID:    sn.ID().Str(),
 				StructType: "snapshot",
 			})
+			panic(err)
 		}
 
 		printNode = func(path string, node *restic.Node) {
-			enc.Encode(lsNode{
+			err = enc.Encode(lsNode{
 				Name:       node.Name,
 				Type:       node.Type,
 				Path:       path,
@@ -181,6 +182,7 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 				ChangeTime: node.ChangeTime,
 				StructType: "node",
 			})
+			panic(err)
 		}
 	} else {
 		printSnapshot = func(sn *restic.Snapshot) {

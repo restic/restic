@@ -23,7 +23,9 @@ func TestForeground(t *testing.T) {
 
 	bg, err := backend.StartForeground(cmd)
 	rtest.OK(t, err)
-	defer cmd.Wait()
+	defer func() {
+		rtest.OK(t, cmd.Wait())
+	}()
 
 	err = bg()
 	rtest.OK(t, err)
