@@ -165,7 +165,6 @@ func (fs *LocalVss) isMountPointExcluded(mountPoint string) bool {
 // If creation of a snapshot fails the file's original path is returned as
 // a fallback.
 func (fs *LocalVss) snapshotPath(path string) string {
-
 	fixPath := fixpath(path)
 
 	if strings.HasPrefix(fixPath, `\\?\UNC\`) {
@@ -268,9 +267,8 @@ func (fs *LocalVss) snapshotPath(path string) string {
 		snapshotPath = fs.Join(snapshot.GetSnapshotDeviceObject(),
 			strings.TrimPrefix(fixPath, volumeName))
 		if snapshotPath == snapshot.GetSnapshotDeviceObject() {
-			snapshotPath = snapshotPath + string(filepath.Separator)
+			snapshotPath += string(filepath.Separator)
 		}
-
 	} else {
 		// no snapshot is available for the requested path:
 		//  -> try to backup without a snapshot
