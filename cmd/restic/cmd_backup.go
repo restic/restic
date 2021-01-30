@@ -119,7 +119,11 @@ func init() {
 
 	f.StringVarP(&backupOptions.Host, "host", "H", "", "set the `hostname` for the snapshot manually. To prevent an expensive rescan use the \"parent\" flag")
 	f.StringVar(&backupOptions.Host, "hostname", "", "set the `hostname` for the snapshot manually")
-	f.MarkDeprecated("hostname", "use --host")
+	err := f.MarkDeprecated("hostname", "use --host")
+	if err != nil {
+		// MarkDeprecated only returns an error when the flag could not be found
+		panic(err)
+	}
 
 	f.StringArrayVar(&backupOptions.FilesFrom, "files-from", nil, "read the files to backup from `file` (can be combined with file args; can be specified multiple times)")
 	f.StringArrayVar(&backupOptions.FilesFromVerbatim, "files-from-verbatim", nil, "read the files to backup from `file` (can be combined with file args; can be specified multiple times)")

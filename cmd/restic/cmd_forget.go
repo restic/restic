@@ -68,7 +68,11 @@ func init() {
 	f.Var(&forgetOptions.KeepTags, "keep-tag", "keep snapshots with this `taglist` (can be specified multiple times)")
 	f.StringArrayVar(&forgetOptions.Hosts, "host", nil, "only consider snapshots with the given `host` (can be specified multiple times)")
 	f.StringArrayVar(&forgetOptions.Hosts, "hostname", nil, "only consider snapshots with the given `hostname` (can be specified multiple times)")
-	f.MarkDeprecated("hostname", "use --host")
+	err := f.MarkDeprecated("hostname", "use --host")
+	if err != nil {
+		// MarkDeprecated only returns an error when the flag is not found
+		panic(err)
+	}
 
 	f.Var(&forgetOptions.Tags, "tag", "only consider snapshots which include this `taglist` in the format `tag[,tag,...]` (can be specified multiple times)")
 
