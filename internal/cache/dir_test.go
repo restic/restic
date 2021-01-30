@@ -17,7 +17,12 @@ func TestCacheDirEnv(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer os.Unsetenv("RESTIC_CACHE_DIR")
+		defer func() {
+			err := os.Unsetenv("RESTIC_CACHE_DIR")
+			if err != nil {
+				t.Fatal(err)
+			}
+		}()
 	}
 
 	dir, err := DefaultDir()

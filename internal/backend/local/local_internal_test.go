@@ -30,7 +30,9 @@ func TestNoSpacePermanent(t *testing.T) {
 
 	be, err := Open(context.Background(), Config{Path: dir})
 	rtest.OK(t, err)
-	defer be.Close()
+	defer func() {
+		rtest.OK(t, be.Close())
+	}()
 
 	h := restic.Handle{Type: restic.ConfigFile}
 	err = be.Save(context.Background(), h, nil)

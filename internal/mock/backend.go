@@ -73,7 +73,7 @@ func (m *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 	}
 	err = fn(rd)
 	if err != nil {
-		rd.Close() // ignore secondary errors closing the reader
+		_ = rd.Close() // ignore secondary errors closing the reader
 		return err
 	}
 	return rd.Close()

@@ -19,7 +19,9 @@ func TestPreallocate(t *testing.T) {
 			flags := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
 			wr, err := os.OpenFile(path.Join(dirpath, "test"), flags, 0600)
 			test.OK(t, err)
-			defer wr.Close()
+			defer func() {
+				test.OK(t, wr.Close())
+			}()
 
 			err = preallocateFile(wr, i)
 			test.OK(t, err)

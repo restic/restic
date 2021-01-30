@@ -265,9 +265,15 @@ func visitDirs(ctx context.Context, dir string, fn func(restic.FileInfo) error) 
 	if err != nil {
 		return err
 	}
-	defer d.Close()
 
 	sub, err := d.Readdirnames(-1)
+	if err != nil {
+		// ignore subsequent errors
+		_ = d.Close()
+		return err
+	}
+
+	err = d.Close()
 	if err != nil {
 		return err
 	}
@@ -286,9 +292,15 @@ func visitFiles(ctx context.Context, dir string, fn func(restic.FileInfo) error)
 	if err != nil {
 		return err
 	}
-	defer d.Close()
 
 	sub, err := d.Readdir(-1)
+	if err != nil {
+		// ignore subsequent errors
+		_ = d.Close()
+		return err
+	}
+
+	err = d.Close()
 	if err != nil {
 		return err
 	}

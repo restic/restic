@@ -39,7 +39,8 @@ func newPack(t testing.TB, k *crypto.Key, lengths []int) ([]Buf, []byte, uint) {
 	var buf bytes.Buffer
 	p := pack.NewPacker(k, &buf)
 	for _, b := range bufs {
-		p.Add(restic.TreeBlob, b.id, b.data)
+		_, err := p.Add(restic.TreeBlob, b.id, b.data)
+		rtest.OK(t, err)
 	}
 
 	_, err := p.Finalize()

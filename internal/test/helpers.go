@@ -95,7 +95,9 @@ func Random(seed, count int) []byte {
 func SetupTarTestFixture(t testing.TB, outputDir, tarFile string) {
 	input, err := os.Open(tarFile)
 	OK(t, err)
-	defer input.Close()
+	defer func() {
+		OK(t, input.Close())
+	}()
 
 	var rd io.Reader
 	switch filepath.Ext(tarFile) {
@@ -103,7 +105,9 @@ func SetupTarTestFixture(t testing.TB, outputDir, tarFile string) {
 		r, err := gzip.NewReader(input)
 		OK(t, err)
 
-		defer r.Close()
+		defer func() {
+			OK(t, r.Close())
+		}()
 		rd = r
 	case ".bzip2":
 		rd = bzip2.NewReader(input)

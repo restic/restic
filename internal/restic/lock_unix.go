@@ -38,7 +38,9 @@ func (l Lock) processExists() bool {
 		debug.Log("error searching for process %d: %v\n", l.PID, err)
 		return false
 	}
-	defer proc.Release()
+	defer func() {
+		_ = proc.Release()
+	}()
 
 	debug.Log("sending SIGHUP to process %d\n", l.PID)
 	err = proc.Signal(syscall.SIGHUP)

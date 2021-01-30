@@ -237,7 +237,9 @@ func preCheckChangelogVersion() {
 	if err != nil {
 		die("unable to open CHANGELOG.md: %v", err)
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 
 	sc := bufio.NewScanner(f)
 	for sc.Scan() {

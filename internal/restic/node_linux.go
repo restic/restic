@@ -15,7 +15,6 @@ func (node Node) restoreSymlinkTimestamps(path string, utimes [2]syscall.Timespe
 	if err != nil {
 		return errors.Wrap(err, "Open")
 	}
-	defer dir.Close()
 
 	times := []unix.Timespec{
 		{Sec: utimes[0].Sec, Nsec: utimes[0].Nsec},
@@ -25,10 +24,12 @@ func (node Node) restoreSymlinkTimestamps(path string, utimes [2]syscall.Timespe
 	err = unix.UtimesNanoAt(int(dir.Fd()), filepath.Base(path), times, unix.AT_SYMLINK_NOFOLLOW)
 
 	if err != nil {
+		// ignore subsequent errors
+		_ = dir.Close()
 		return errors.Wrap(err, "UtimesNanoAt")
 	}
 
-	return nil
+	return dir.Close()
 }
 
 func (node Node) device() int {

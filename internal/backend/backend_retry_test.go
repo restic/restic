@@ -62,11 +62,11 @@ func TestBackendListRetry(t *testing.T) {
 			// fail during first retry, succeed during second
 			retry++
 			if retry == 1 {
-				fn(restic.FileInfo{Name: ID1})
+				_ = fn(restic.FileInfo{Name: ID1})
 				return errors.New("test list error")
 			}
-			fn(restic.FileInfo{Name: ID1})
-			fn(restic.FileInfo{Name: ID2})
+			_ = fn(restic.FileInfo{Name: ID1})
+			_ = fn(restic.FileInfo{Name: ID2})
 			return nil
 		},
 	}
