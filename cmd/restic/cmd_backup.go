@@ -205,10 +205,21 @@ func readFilenamesFromFileRaw(filename string) (names []string, err error) {
 		if f, err = os.Open(filename); err != nil {
 			return nil, err
 		}
-		defer f.Close()
 	}
 
-	return readFilenamesRaw(f)
+	names, err = readFilenamesRaw(f)
+	if err != nil {
+		// ignore subsequent errors
+		_ = f.Close()
+		return nil, err
+	}
+
+	err = f.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	return names, nil
 }
 
 func readFilenamesRaw(r io.Reader) (names []string, err error) {
