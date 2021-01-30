@@ -555,13 +555,7 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 	futureNodes := make(map[string]FutureNode)
 
 	// iterate over the nodes of atree in lexicographic (=deterministic) order
-	names := make([]string, 0, len(atree.Nodes))
-	for name := range atree.Nodes {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-
-	for _, name := range names {
+	for _, name := range atree.NodeNames() {
 		subatree := atree.Nodes[name]
 
 		// test if context has been cancelled
@@ -570,7 +564,7 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 		}
 
 		// this is a leaf node
-		if subatree.Path != "" {
+		if subatree.Leaf() {
 			fn, excluded, err := arch.Save(ctx, join(snPath, name), subatree.Path, previous.Find(name))
 
 			if err != nil {

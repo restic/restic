@@ -40,8 +40,7 @@ func TestScanner(t *testing.T) {
 				filepath.FromSlash("work/subdir/other"):   {Files: 5, Bytes: 60},
 				filepath.FromSlash("work/subdir"):         {Files: 5, Dirs: 1, Bytes: 60},
 				filepath.FromSlash("work"):                {Files: 5, Dirs: 2, Bytes: 60},
-				filepath.FromSlash("."):                   {Files: 5, Dirs: 3, Bytes: 60},
-				filepath.FromSlash(""):                    {Files: 5, Dirs: 3, Bytes: 60},
+				filepath.FromSlash(""):                    {Files: 5, Dirs: 2, Bytes: 60},
 			},
 		},
 		{
@@ -72,8 +71,7 @@ func TestScanner(t *testing.T) {
 				filepath.FromSlash("work/subdir/bar.txt"): {Files: 2, Bytes: 30},
 				filepath.FromSlash("work/subdir"):         {Files: 2, Dirs: 1, Bytes: 30},
 				filepath.FromSlash("work"):                {Files: 2, Dirs: 2, Bytes: 30},
-				filepath.FromSlash("."):                   {Files: 2, Dirs: 3, Bytes: 30},
-				filepath.FromSlash(""):                    {Files: 2, Dirs: 3, Bytes: 30},
+				filepath.FromSlash(""):                    {Files: 2, Dirs: 2, Bytes: 30},
 			},
 		},
 	}
@@ -152,7 +150,7 @@ func TestScannerError(t *testing.T) {
 					},
 				},
 			},
-			result: ScanStats{Files: 5, Dirs: 3, Bytes: 60},
+			result: ScanStats{Files: 5, Dirs: 2, Bytes: 60},
 		},
 		{
 			name: "unreadable-dir",
@@ -168,7 +166,7 @@ func TestScannerError(t *testing.T) {
 					},
 				},
 			},
-			result: ScanStats{Files: 3, Dirs: 2, Bytes: 28},
+			result: ScanStats{Files: 3, Dirs: 1, Bytes: 28},
 			prepare: func(t testing.TB) {
 				err := os.Chmod(filepath.Join("work", "subdir"), 0000)
 				if err != nil {
@@ -191,7 +189,7 @@ func TestScannerError(t *testing.T) {
 				"foo":   TestFile{Content: "foo"},
 				"other": TestFile{Content: "other"},
 			},
-			result: ScanStats{Files: 3, Dirs: 1, Bytes: 11},
+			result: ScanStats{Files: 3, Dirs: 0, Bytes: 11},
 			resFn: func(t testing.TB, item string, s ScanStats) {
 				if item == "bar" {
 					err := os.Remove("foo")
@@ -289,7 +287,7 @@ func TestScannerCancel(t *testing.T) {
 		"other": TestFile{Content: "other"},
 	}
 
-	result := ScanStats{Files: 2, Dirs: 1, Bytes: 6}
+	result := ScanStats{Files: 2, Dirs: 0, Bytes: 6}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
