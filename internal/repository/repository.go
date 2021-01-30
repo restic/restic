@@ -781,16 +781,19 @@ func DownloadAndHash(ctx context.Context, be Loader, h restic.Handle) (tmpfile *
 		hash = restic.IDFromHash(hrd.Sum(nil))
 		return ierr
 	})
+
 	if err != nil {
-		tmpfile.Close()
-		os.Remove(tmpfile.Name())
+		// ignore subsequent errors
+		_ = tmpfile.Close()
+		_ = os.Remove(tmpfile.Name())
 		return nil, restic.ID{}, -1, errors.Wrap(err, "Load")
 	}
 
 	_, err = tmpfile.Seek(0, io.SeekStart)
 	if err != nil {
-		tmpfile.Close()
-		os.Remove(tmpfile.Name())
+		// ignore subsequent errors
+		_ = tmpfile.Close()
+		_ = os.Remove(tmpfile.Name())
 		return nil, restic.ID{}, -1, errors.Wrap(err, "Seek")
 	}
 

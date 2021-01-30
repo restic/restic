@@ -21,8 +21,16 @@ func NewWriter(w io.Writer, h hash.Hash) *Writer {
 
 // Write wraps the write method of the underlying writer and also hashes all data.
 func (h *Writer) Write(p []byte) (int, error) {
+	// write the data to the underlying writing
 	n, err := h.w.Write(p)
-	h.h.Write(p[:n])
+
+	// according to the interface documentation, Write() on a hash.Hash never
+	// returns an error.
+	_, hashErr := h.h.Write(p[:n])
+	if hashErr != nil {
+		panic(hashErr)
+	}
+
 	return n, err
 }
 

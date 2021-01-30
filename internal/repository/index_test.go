@@ -301,7 +301,11 @@ var (
 func initBenchmarkIndexJSON() {
 	idx, _ := createRandomIndex(rand.New(rand.NewSource(0)), 200000)
 	var buf bytes.Buffer
-	idx.Encode(&buf)
+	err := idx.Encode(&buf)
+	if err != nil {
+		panic(err)
+	}
+
 	benchmarkIndexJSON = buf.Bytes()
 }
 

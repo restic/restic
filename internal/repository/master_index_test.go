@@ -338,7 +338,10 @@ func TestIndexSave(t *testing.T) {
 	repo, cleanup := createFilledRepo(t, 3, 0)
 	defer cleanup()
 
-	repo.LoadIndex(context.TODO())
+	err := repo.LoadIndex(context.TODO())
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	obsoletes, err := repo.Index().(*repository.MasterIndex).Save(context.TODO(), repo, nil, nil, nil)
 	if err != nil {
