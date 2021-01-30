@@ -1,0 +1,7 @@
+Bugfix: Better error handling for gs backend
+
+The gs backend did not notice when the last steep of completing a file upload
+failed. Under rare circumstance, this might be able to cause missing files in
+the backup repository. This has been fixed.
+
+https://github.com/restic/restic/pull/3249

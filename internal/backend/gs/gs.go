@@ -235,7 +235,10 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 	w := be.bucket.Object(objName).NewWriter(ctx)
 	w.ChunkSize = 0
 	wbytes, err := io.Copy(w, rd)
-	w.Close()
+	cerr := w.Close()
+	if err == nil {
+		err = cerr
+	}
 
 	be.sem.ReleaseToken()
 
