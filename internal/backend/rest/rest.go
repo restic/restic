@@ -132,15 +132,10 @@ func (b *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRea
 	resp, err := ctxhttp.Do(ctx, b.client, req)
 	b.sem.ReleaseToken()
 
+	var cerr error
 	if resp != nil {
-		defer func() {
-			_, _ = io.Copy(ioutil.Discard, resp.Body)
-			e := resp.Body.Close()
-
-			if err == nil {
-				err = errors.Wrap(e, "Close")
-			}
-		}()
+		_, _ = io.Copy(ioutil.Discard, resp.Body)
+		cerr = resp.Body.Close()
 	}
 
 	if err != nil {
@@ -151,7 +146,7 @@ func (b *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRea
 		return errors.Errorf("server response unexpected: %v (%v)", resp.Status, resp.StatusCode)
 	}
 
-	return nil
+	return errors.Wrap(cerr, "Close")
 }
 
 // ErrIsNotExist is returned whenever the requested file does not exist on the
