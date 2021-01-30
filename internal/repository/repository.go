@@ -420,12 +420,7 @@ func (r *Repository) saveIndex(ctx context.Context, indexes ...*Index) error {
 		debug.Log("Saved index %d as %v", i, sid)
 	}
 
-	err := r.idx.MergeFinalIndexes()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return r.idx.MergeFinalIndexes()
 }
 
 // SaveIndex saves all new indexes in the backend.

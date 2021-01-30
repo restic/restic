@@ -24,7 +24,8 @@ func TestRcloneExit(t *testing.T) {
 	}
 	rtest.OK(t, err)
 	defer func() {
-		rtest.OK(t, be.Close())
+		// ignore the error as the test will kill rclone (see below)
+		_ = be.Close()
 	}()
 
 	err = be.cmd.Process.Kill()

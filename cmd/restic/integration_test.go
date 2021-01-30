@@ -1760,10 +1760,13 @@ func copyFile(dst string, src string) error {
 		// ignore subsequent errors
 		_ = srcFile.Close()
 		_ = dstFile.Close()
+		return err
 	}
 
 	err = srcFile.Close()
 	if err != nil {
+		// ignore subsequent errors
+		_ = dstFile.Close()
 		return err
 	}
 
