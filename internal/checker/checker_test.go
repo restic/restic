@@ -489,7 +489,7 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 		Nodes: []*restic.Node{malNode, dirNode},
 	}
 
-	rootId, err := repo.SaveTree(ctx, rootTree)
+	rootID, err := repo.SaveTree(ctx, rootTree)
 	test.OK(t, err)
 
 	test.OK(t, repo.Flush(ctx))
@@ -498,12 +498,12 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 	snapshot, err := restic.NewSnapshot([]string{"/damaged"}, []string{"test"}, "foo", time.Now())
 	test.OK(t, err)
 
-	snapshot.Tree = &rootId
+	snapshot.Tree = &rootID
 
-	snapId, err := repo.SaveJSONUnpacked(ctx, restic.SnapshotFile, snapshot)
+	snapID, err := repo.SaveJSONUnpacked(ctx, restic.SnapshotFile, snapshot)
 	test.OK(t, err)
 
-	t.Logf("saved snapshot %v", snapId.Str())
+	t.Logf("saved snapshot %v", snapID.Str())
 
 	delayRepo := &delayRepository{
 		Repository:     repo,

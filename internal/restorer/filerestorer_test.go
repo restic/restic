@@ -44,14 +44,6 @@ func (i *TestRepo) Lookup(bh restic.BlobHandle) []restic.PackedBlob {
 	return packs
 }
 
-func (i *TestRepo) packName(pack *packInfo) string {
-	return i.packsIDToName[pack.id]
-}
-
-func (i *TestRepo) packID(name string) restic.ID {
-	return i.packsNameToID[name]
-}
-
 func (i *TestRepo) fileContent(file *fileInfo) string {
 	return i.filesPathToContent[file.location]
 }

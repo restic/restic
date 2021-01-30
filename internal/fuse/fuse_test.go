@@ -219,17 +219,17 @@ func TestFuseDir(t *testing.T) {
 }
 
 // Test top-level directories for their UID and GID.
-func TestTopUidGid(t *testing.T) {
+func TestTopUIDGID(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
 	restic.TestCreateSnapshot(t, repo, time.Unix(1460289341, 207401672), 0, 0)
 
-	testTopUidGid(t, Config{}, repo, uint32(os.Getuid()), uint32(os.Getgid()))
-	testTopUidGid(t, Config{OwnerIsRoot: true}, repo, 0, 0)
+	testTopUIDGID(t, Config{}, repo, uint32(os.Getuid()), uint32(os.Getgid()))
+	testTopUIDGID(t, Config{OwnerIsRoot: true}, repo, 0, 0)
 }
 
-func testTopUidGid(t *testing.T, cfg Config, repo restic.Repository, uid, gid uint32) {
+func testTopUIDGID(t *testing.T, cfg Config, repo restic.Repository, uid, gid uint32) {
 	t.Helper()
 
 	ctx := context.Background()
