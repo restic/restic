@@ -205,12 +205,16 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) error {
 		}
 		if fileBlobs, ok := file.blobs.(restic.IDs); ok {
 			fileOffset := int64(0)
-			r.forEachBlob(fileBlobs, func(packID restic.ID, blob restic.Blob) {
+			err := r.forEachBlob(fileBlobs, func(packID restic.ID, blob restic.Blob) {
 				if packID.Equal(pack.id) {
 					addBlob(blob, fileOffset)
 				}
 				fileOffset += int64(blob.Length) - crypto.Extension
 			})
+			if err != nil {
+				// restoreFiles should have caught this error before
+				panic(err)
+			}
 		} else if packsMap, ok := file.blobs.(map[restic.ID][]fileBlobInfo); ok {
 			for _, blob := range packsMap[pack.id] {
 				idxPacks := r.idx(restic.BlobHandle{ID: blob.id, Type: restic.DataBlob})
