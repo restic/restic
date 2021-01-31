@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/crypto"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -236,4 +237,30 @@ func TestFileRestorerPackSkip(t *testing.T) {
 			},
 		},
 	}, files)
+}
+
+func TestErrorRestoreFiles(t *testing.T) {
+	tempdir, cleanup := rtest.TempDir(t)
+	defer cleanup()
+	content := []TestFile{
+		{
+			name: "file1",
+			blobs: []TestBlob{
+				{"data1-1", "pack1-1"},
+			},
+		}}
+
+	repo := newTestRepo(content)
+
+	loadError := errors.New("load error")
+	// loader always returns an error
+	repo.loader = func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+		return loadError
+	}
+
+	r := newFileRestorer(tempdir, repo.loader, repo.key, repo.Lookup)
+	r.files = repo.files
+
+	err := r.restoreFiles(context.TODO())
+	rtest.Equals(t, loadError, err)
 }
