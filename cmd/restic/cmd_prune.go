@@ -383,7 +383,10 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 	}
 
 	if len(indexPack) != 0 {
-		Warnf("The index references needed pack files which are missing from the repository: %v\n", indexPack)
+		Warnf("The index references %d needed pack files which are missing from the repository:\n", len(indexPack))
+		for id := range indexPack {
+			Warnf("  %v\n", id)
+		}
 		return errorPacksMissing
 	}
 	if len(ignorePacks) != 0 {
