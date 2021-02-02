@@ -1,4 +1,4 @@
-package restorer
+package fs
 
 import (
 	"os"
@@ -6,7 +6,7 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func preallocateFile(wr *os.File, size int64) error {
+func PreallocateFile(wr *os.File, size int64) error {
 	if size <= 0 {
 		return nil
 	}
