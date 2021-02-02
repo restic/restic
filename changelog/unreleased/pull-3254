@@ -1,0 +1,8 @@
+Enhancement: Enable HTTP/2 for backend connections
+
+Go's HTTP library usually automatically chooses between HTTP/1.x and HTTP/2
+depending on what the server supports. But for compatibility this mechanism
+is disabled if DialContext is used (which is the case for restic). This change
+allows restic's HTTP client to negotiate HTTP/2 if supported by the server.
+
+https://github.com/restic/restic/pull/3254

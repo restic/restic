@@ -70,6 +70,7 @@ func Transport(opts TransportOptions) (http.RoundTripper, error) {
 			KeepAlive: 30 * time.Second,
 			DualStack: true,
 		}).DialContext,
+		ForceAttemptHTTP2:     true,
 		MaxIdleConns:          100,
 		MaxIdleConnsPerHost:   100,
 		IdleConnTimeout:       90 * time.Second,
