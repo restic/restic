@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"sync"
+	"time"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -17,16 +18,17 @@ import (
 type Packer struct {
 	blobs []restic.Blob
 
-	bytes uint
-	k     *crypto.Key
-	wr    io.Writer
+	bytes   uint
+	created time.Time
+	k       *crypto.Key
+	wr      io.Writer
 
 	m sync.Mutex
 }
 
 // NewPacker returns a new Packer that can be used to pack blobs together.
 func NewPacker(k *crypto.Key, wr io.Writer) *Packer {
-	return &Packer{k: k, wr: wr}
+	return &Packer{k: k, wr: wr, created: time.Now()}
 }
 
 // Add saves the data read from rd as a new blob to the packer. Returned is the
@@ -119,6 +121,21 @@ func (p *Packer) makeHeader() ([]byte, error) {
 	}
 
 	return buf, nil
+}
+
+const packMaxAge = 5 * time.Minute
+
+// IsFull returns whether the pack is ready to save (large enough or old enough)
+func (p *Packer) IsFull(maxPackSize uint) bool {
+	p.m.Lock()
+	defer p.m.Unlock()
+
+	if p.bytes >= maxPackSize {
+		return true
+	}
+
+	age := time.Since(p.created)
+	return age >= packMaxAge
 }
 
 // Size returns the number of bytes written so far.
