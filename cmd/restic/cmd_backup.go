@@ -355,19 +355,21 @@ func collectRejectFuncs(opts BackupOptions, repo *repository.Repository, targets
 	return fs, nil
 }
 
+// getenvOrDollar returns $ if s is $, and returns the value of the environment
+// variable specified by s otherwise.
+func getenvOrDollar(s string) string {
+	if s == "$" {
+		return "$"
+	}
+	return os.Getenv(s)
+}
+
 // readExcludePatternsFromFiles reads all exclude files and returns the list of
 // exclude patterns. For each line, leading and trailing white space is removed
 // and comment lines are ignored. For each remaining pattern, environment
 // variables are resolved. For adding a literal dollar sign ($), write $$ to
 // the file.
 func readExcludePatternsFromFiles(excludeFiles []string) ([]string, error) {
-	getenvOrDollar := func(s string) string {
-		if s == "$" {
-			return "$"
-		}
-		return os.Getenv(s)
-	}
-
 	var excludes []string
 	for _, filename := range excludeFiles {
 		err := func() (err error) {
@@ -420,6 +422,9 @@ func collectTargets(opts BackupOptions, args []string) (targets []string, err er
 			if line == "" || line[0] == '#' { // '#' marks a comment.
 				continue
 			}
+
+			// expand environment variables
+			line = os.Expand(line, getenvOrDollar)
 
 			var expanded []string
 			expanded, err := filepath.Glob(line)
