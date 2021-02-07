@@ -1,0 +1,10 @@
+Bugfix: Expand environment variables when used in `--files-from` files
+
+Environment variables were not expanded when the file specified using the
+`--files-from` option contained any environment variables. This is now changed
+such that environment variables are expanded only in files specified using the
+`--exclude-file` (or `--iexclude-file`) and the `--files-from` options. The
+`--files-from-raw` and `--files-from-verbatim` options remain unaffected by
+this change.
+
+https://github.com/restic/restic/issues/2825
