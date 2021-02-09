@@ -165,7 +165,9 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 				ShortID:    sn.ID().Str(),
 				StructType: "snapshot",
 			})
-			panic(err)
+			if err != nil {
+				Warnf("JSON encode failed: %v\n", err)
+			}
 		}
 
 		printNode = func(path string, node *restic.Node) {
@@ -182,7 +184,9 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 				ChangeTime: node.ChangeTime,
 				StructType: "node",
 			})
-			panic(err)
+			if err != nil {
+				Warnf("JSON encode failed: %v\n", err)
+			}
 		}
 	} else {
 		printSnapshot = func(sn *restic.Snapshot) {
