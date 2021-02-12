@@ -32,21 +32,21 @@ POST {path}?create=true
 =======================
 
 This request is used to initially create a new repository. The server
-responds with "200 OK" if the repository structure was created
+responds with ``200 OK`` if the repository structure was created
 successfully or already exists, otherwise an error is returned.
 
 DELETE {path}
 =============
 
-Deletes the repository on the server side. The server responds with "200
-OK" if the repository was successfully removed. If this function is not
-implemented the server returns "501 Not Implemented", if this it is
-denied by the server it returns "403 Forbidden".
+Deletes the repository on the server side. The server responds with ``200 OK``
+if the repository was successfully removed. If this function is not
+implemented the server returns ``501 Not Implemented`` if this it is
+denied by the server it returns ``403 Forbidden``.
 
 HEAD {path}/config
 ==================
 
-Returns "200 OK" if the repository has a configuration, an HTTP error
+Returns ``200 OK`` if the repository has a configuration, an HTTP error
 otherwise.
 
 GET {path}/config
@@ -60,7 +60,7 @@ Response format: binary/octet-stream
 POST {path}/config
 ==================
 
-Returns "200 OK" if the configuration of the request body has been
+Returns ``200 OK`` if the configuration of the request body has been
 saved, an HTTP error otherwise.
 
 GET {path}/{type}/
@@ -112,18 +112,18 @@ bytes.
 HEAD {path}/{type}/{name}
 =========================
 
-Returns "200 OK" if the blob with the given name and type is stored in
-the repository, "404 not found" otherwise. If the blob exists, the HTTP
+Returns ``200 OK`` if the blob with the given name and type is stored in
+the repository, ``404 not found`` otherwise. If the blob exists, the HTTP
 header ``Content-Length`` is set to the file size.
 
 GET {path}/{type}/{name}
 ========================
 
 Returns the content of the blob with the given name and type if it is
-stored in the repository, "404 not found" otherwise.
+stored in the repository, ``404 not found`` otherwise.
 
 If the request specifies a partial read with a Range header field, then
-the status code of the response is 206 instead of 200 and the response
+the status code of the response is ``206`` instead of ``200`` and the response
 only contains the specified range.
 
 Response format: binary/octet-stream
@@ -139,5 +139,5 @@ Request format: binary/octet-stream
 DELETE {path}/{type}/{name}
 ===========================
 
-Returns "200 OK" if the blob with the given name and type has been
+Returns ``200 OK`` if the blob with the given name and type has been
 deleted from the repository, an HTTP error otherwise.
