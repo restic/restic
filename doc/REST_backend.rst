@@ -141,5 +141,3 @@ DELETE {path}/{type}/{name}
 
 Returns "200 OK" if the blob with the given name and type has been
 deleted from the repository, an HTTP error otherwise.
-
-
