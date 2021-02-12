@@ -40,7 +40,7 @@ For more options check out the [documentation](https://restic.readthedocs.io/en/
 
 ## Backends
 
-Saving a backup on the same machine is nice but not a real backup strategy.
+Although saving a backup on the same machine is nice, it is not a real backup strategy.
 Therefore, restic supports the following backends for storing backups natively:
 
 - [Local directory](https://restic.readthedocs.io/en/latest/030_preparing_a_new_repo.html#local)
