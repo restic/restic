@@ -226,7 +226,7 @@ repository:
    the repository. Losing your password means that your data is
    irrecoverably lost.
 
-restic is now ready to be used with AWS S3. Try to create a backup:
+Restic is now ready to be used with AWS S3. Try to create a backup:
 
 .. code-block:: console
 
