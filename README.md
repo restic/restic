@@ -10,8 +10,7 @@ For detailed usage and installation instructions check out the [documentation](h
 
 You can ask questions in our [Discourse forum](https://forum.restic.net).
 
-Quick start
------------
+## Quick start
 
 Once you've [installed](https://restic.readthedocs.io/en/latest/020_installation.html) restic, start
 off with creating a repository for your backups:
@@ -39,7 +38,7 @@ snapshots.
 
 For more options check out the [documentation](https://restic.readthedocs.io/en/latest/).
 
-# Backends
+## Backends
 
 Saving a backup on the same machine is nice but not a real backup strategy.
 Therefore, restic supports the following backends for storing backups natively:
@@ -54,7 +53,7 @@ Therefore, restic supports the following backends for storing backups natively:
 - [Google Cloud Storage](https://restic.readthedocs.io/en/latest/030_preparing_a_new_repo.html#google-cloud-storage)
 - And many other services via the [Rclone](https://rclone.org) [backend](https://restic.readthedocs.io/en/latest/030_preparing_a_new_repo.html#other-services-via-rclone)
 
-# Design Principles
+## Design Principles
 
 Restic is a program that does backups right and was designed with the
 following principles in mind:
@@ -84,7 +83,7 @@ following principles in mind:
    data should be de-duplicated before it is actually written to the
    storage back end to save precious backup space.
 
-# Reproducible Builds
+## Reproducible Builds
 
 The binaries released with each restic version starting at 0.6.1 are
 [reproducible](https://reproducible-builds.org/), which means that you can
@@ -92,20 +91,17 @@ reproduce a byte identical version from the source code for that
 release. Instructions on how to do that are contained in the
 [builder repository](https://github.com/restic/builder).
 
-News
-----
+## News
 
 You can follow the restic project on Twitter [@resticbackup](https://twitter.com/resticbackup) or by subscribing to
 the [project blog](https://restic.net/blog/).
 
-License
--------
+## License
 
 Restic is licensed under [BSD 2-Clause License](https://opensource.org/licenses/BSD-2-Clause). You can find the
 complete text in [``LICENSE``](LICENSE).
 
-Sponsorship
------------
+## Sponsorship
 
 Backend integration tests for Google Cloud Storage and Microsoft Azure Blob
 Storage are sponsored by [AppsCode](https://appscode.com)!
