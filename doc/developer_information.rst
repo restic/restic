@@ -1,7 +1,7 @@
-Developer Information
+Developer information
 #####################
 
-Reproducible Builds
+Reproducible builds
 *******************
 
 This section describes how to reproduce the official released binaries for
@@ -57,7 +57,7 @@ In the following example, we'll use the file ``restic-0.10.0.tar.gz`` and Go
     $ touch --reference VERSION restic_0.10.0_windows_amd64.exe
     $ TZ=Europe/Berlin zip -q -X restic_0.10.0_windows_amd64.zip restic_0.10.0_windows_amd64.exe
 
-Building the Official Binaries
+Building the official binaries
 ******************************
 
 The released binaries for restic are built using a Docker container. You can
@@ -111,7 +111,7 @@ The following steps are necessary to build the binaries:
         restic/builder \
         go run helpers/build-release-binaries/main.go --version 0.10.0 --verbose
 
-Prepare a New Release
+Prepare a new release
 *********************
 
 Publishing a new release of restic requires many different steps. We've
