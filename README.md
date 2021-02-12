@@ -37,7 +37,7 @@ Next you can either use `restic restore` to restore files or use `restic
 mount` to mount the repository via FUSE and browse the files from previous
 snapshots.
 
-For more options check out the [online documentation](https://restic.readthedocs.io/en/latest/).
+For more options check out the [documentation](https://restic.readthedocs.io/en/latest/).
 
 # Backends
 
