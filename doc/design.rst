@@ -120,7 +120,7 @@ in the following sections, so that remote repositories mounted locally e.g. via
 fuse can be accessed. The layout auto-detection can be overridden by specifying
 the option ``-o local.layout=default``, valid values are ``default`` and
 ``s3legacy``. The option for the sftp backend is named ``sftp.layout``, for the
-s3 backend ``s3.layout``.
+S3 backend ``s3.layout``.
 
 S3 legacy layout
 ----------------
