@@ -411,7 +411,7 @@ Blobs of data. The SHA-256 hashes of all Blobs are saved in an ordered
 list which then represents the content of the file.
 
 In order to relate these plaintext hashes to the actual location within
-a Pack file , an index is used. If the index is not available, the
+a Pack file, an index is used. If the index is not available, the
 header of all data Blobs can be read.
 
 Trees and data
