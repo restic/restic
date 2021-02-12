@@ -61,7 +61,7 @@ installed from the official repos, e.g. with ``apt-get``:
 Fedora
 ======
 
-restic can be installed using ``dnf``:
+Restic can be installed using ``dnf``:
 
 .. code-block:: console
 
@@ -78,7 +78,7 @@ macOS
 =====
 
 If you are using macOS, you can install restic using the
-`homebrew <https://brew.sh/>`__ package manager:
+`Homebrew <https://brew.sh/>`__ package manager:
 
 .. code-block:: console
 
@@ -131,7 +131,7 @@ On openSUSE (leap 15.0 and greater, and tumbleweed), you can install restic usin
 RHEL & CentOS
 =============
 
-restic can be installed via copr repository, for RHEL7/CentOS you can try the following:
+Restic can be installed via copr repository, for RHEL7/CentOS you can try the following:
 
 .. code-block:: console
 
@@ -154,7 +154,7 @@ For CentOS7 use:
 Solus
 =====
 
-restic can be installed from the official repo of Solus via the ``eopkg`` package manager:
+Restic can be installed from the official repo of Solus via the ``eopkg`` package manager:
 
 .. code-block:: console
 
@@ -163,7 +163,7 @@ restic can be installed from the official repo of Solus via the ``eopkg`` packag
 Windows
 =======
 
-restic can be installed using `Scoop <https://scoop.sh/>`__:
+Restic can be installed using `Scoop <https://scoop.sh/>`__:
 
 .. code-block:: console
 
@@ -254,7 +254,7 @@ binary, you can get it with `docker pull` like this:
 From Source
 ***********
 
-restic is written in the Go programming language and you need at least
+Restic is written in the Go programming language and you need at least
 Go version 1.13. Building restic may also work with older versions of Go,
 but that's not supported. See the `Getting
 started <https://golang.org/doc/install>`__ guide of the Go project for
