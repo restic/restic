@@ -1,5 +1,5 @@
 ************
-REST Backend
+REST backend
 ************
 
 Restic can interact with HTTP Backend that respects the following REST
