@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# restic documentation build configuration file, created by
+# Restic documentation build configuration file, created by
 # sphinx-quickstart on Fri Apr 14 22:44:43 2017.
 #
 # This file is execfile()d with the current directory set to its
