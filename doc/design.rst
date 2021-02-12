@@ -414,7 +414,7 @@ In order to relate these plaintext hashes to the actual location within
 a Pack file , an index is used. If the index is not available, the
 header of all data Blobs can be read.
 
-Trees and Data
+Trees and data
 ==============
 
 A snapshot references a tree by the SHA-256 hash of the JSON string
