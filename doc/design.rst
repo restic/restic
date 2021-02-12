@@ -23,7 +23,7 @@ or the directory and its contents.
 the repository. This ID is required in order to load the file from the
 repository.
 
-Repository Format
+Repository format
 =================
 
 All data is stored in a restic repository. A repository is able to store
@@ -74,7 +74,7 @@ identifies the repository, regardless if it is accessed via SFTP or
 locally. The field ``chunker_polynomial`` contains a parameter that is
 used for splitting large files into smaller chunks (see below).
 
-Repository Layout
+Repository layout
 -----------------
 
 The ``local`` and ``sftp`` backends are implemented using files and
@@ -122,7 +122,7 @@ the option ``-o local.layout=default``, valid values are ``default`` and
 ``s3legacy``. The option for the sftp backend is named ``sftp.layout``, for the
 s3 backend ``s3.layout``.
 
-S3 Legacy Layout
+S3 legacy layout
 ----------------
 
 Unfortunately during development the AWS S3 backend uses slightly different
@@ -151,7 +151,7 @@ the ``data`` directory. The S3 Legacy repository layout looks like this:
 The S3 backend understands and accepts both forms, new backends are
 always created with the default layout for compatibility reasons.
 
-Pack Format
+Pack format
 ===========
 
 All files in the repository except Key and Pack files just contain raw
@@ -265,7 +265,7 @@ There may be an arbitrary number of index files, containing information
 on non-disjoint sets of Packs. The number of packs described in a single
 file is chosen so that the file size is kept below 8 MiB.
 
-Keys, Encryption and MAC
+Keys, encryption and MAC
 ========================
 
 All data stored by restic in the repository is encrypted with AES-256 in
@@ -544,7 +544,7 @@ detected, restic creates a new lock, waits, and checks if other locks
 appeared in the repository. Depending on the type of the other locks and
 the lock to be created, restic either continues or fails.
 
-Backups and Deduplication
+Backups and deduplication
 =========================
 
 For creating a backup, restic scans the source directory for all files,
@@ -562,7 +562,7 @@ For modified files, only modified Blobs have to be saved in a subsequent
 backup. This even works if bytes are inserted or removed at arbitrary
 positions within the file.
 
-Threat Model
+Threat model
 ============
 
 The design goals for restic include being able to securely store backups

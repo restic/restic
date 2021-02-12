@@ -187,7 +187,7 @@ On **Windows**, a file is considered unchanged when its path and modification
 time match, and only ``--force`` has any effect. The other options are
 recognized but ignored.
 
-Excluding Files
+Excluding files
 ***************
 
 You can exclude folders and files by specifying exclude patterns, currently
@@ -311,7 +311,7 @@ suffix the size value with one of ``k``/``K`` for kilobytes, ``m``/``M`` for meg
 ``g``/``G`` for gigabytes and ``t``/``T`` for terabytes (e.g. ``1k``, ``10K``, ``20m``,
 ``20M``,  ``30g``, ``30G``, ``2t`` or ``2T``).
 
-Including Files
+Including files
 ***************
 
 The options ``--files-from``, ``--files-from-verbatim`` and ``--files-from-raw``
@@ -365,7 +365,7 @@ You can combine all three options with each other and with the normal file argum
     $ restic backup --files-from /tmp/files_to_backup /tmp/some_additional_file
     $ restic backup --files-from /tmp/glob-pattern --files-from-raw /tmp/generated-list /tmp/some_additional_file
 
-Comparing Snapshots
+Comparing snapshots
 *******************
 
 Restic has a `diff` command which shows the difference between two snapshots
@@ -470,7 +470,7 @@ created as it would only be written at the very (successful) end of
 the backup operation.  Previous snapshots will still be there and will still
 work.
 
-Environment Variables
+Environment variables
 *********************
 
 In addition to command-line options, restic supports passing various options in

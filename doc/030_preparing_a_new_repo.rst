@@ -550,7 +550,7 @@ established.
 .. _create a service account key: https://cloud.google.com/storage/docs/authentication#generating-a-private-key
 .. _default authentication material: https://developers.google.com/identity/protocols/application-default-credentials
 
-Other Services via rclone
+Other services via Rclone
 *************************
 
 The program `rclone`_ can be used to access many other different services and

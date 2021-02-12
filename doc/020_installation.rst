@@ -175,10 +175,10 @@ in the ``PATH``. It can be called from cmd.exe or PowerShell by typing ``restic`
 
 .. _official_binaries:
 
-Official Binaries
+Official binaries
 *****************
 
-Stable Releases
+Stable releases
 ===============
 
 You can download the latest stable release versions of restic from the `restic
@@ -220,7 +220,7 @@ GitHub to verify their authenticity. No external programs are necessary.
    If you want to save the downloaded restic binary into a different file, pass
    the file name via the option ``--output``.
 
-Unstable Builds
+Unstable builds
 ===============
 
 Another option is to use the latest builds for the master branch, available on
@@ -236,7 +236,7 @@ On Windows, put the `restic.exe` binary into `%SystemRoot%\\System32` to use res
 in scripts without the need for absolute paths to the binary. This requires
 administrator rights.
 
-Docker Container
+Docker container
 ****************
 
 We're maintaining a bare docker container with just a few files and the restic
@@ -251,7 +251,7 @@ binary, you can get it with `docker pull` like this:
    | available as a contribution (Thank you!). You can find it at
    | https://github.com/Lobaro/restic-backup-docker
 
-From Source
+From source
 ***********
 
 Restic is written in the Go programming language and you need at least
