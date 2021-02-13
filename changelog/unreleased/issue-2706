@@ -3,7 +3,8 @@ Enhancement: Configurable progress reports for non-interactive terminals
 The `backup`, `check` and `prune` commands never printed any progress
 reports on non-interactive terminals. This behavior is now configurable
 using the `RESTIC_PROGRESS_FPS` environment variable. Use for example a
-value of `1` for an update per second or `0.01666` for an update per minute.
+value of `1` for an update every second, or `0.01666` for an update every
+minute.
 
 The `backup` command now also prints the current progress when restic
 receives a `SIGUSR1` signal.

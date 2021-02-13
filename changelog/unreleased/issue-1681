@@ -1,9 +1,10 @@
-Bugfix: Make mount not create missing mount point
+Bugfix: Make `mount` not create missing mount point directory
 
-When specifying a non-existent directory as mount point for the mount
-command, restic used to create the directory automatically. This has now
-changed such that restic instead gives an error when the directory for the
-mount point doesn't exist.
+When specifying a non-existent directory as mount point for the `mount`
+command, restic used to create the specified directory automatically.
+
+This has now changed such that restic instead gives an error when the
+specified directory for the mount point does not exist.
 
 https://github.com/restic/restic/issues/1681
 https://github.com/restic/restic/pull/3008

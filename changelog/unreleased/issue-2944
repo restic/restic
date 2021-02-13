@@ -1,12 +1,13 @@
-Enhancement: Backup options --files-from-verbatim and --files-from-raw
+Enhancement: Add `backup` options `--files-from-{verbatim,raw}`
 
-The new backup options `--files-from-verbatim` and `--files-from-raw`
-read a list of files to back up from a file. Unlike the existing `--files-from`,
-these options do not interpret the listed filenames as glob patterns;
-whitespace in filenames is preserved as-is and no pattern expansion is done.
+The new `backup` options `--files-from-verbatim` and `--files-from-raw` read a
+list of files to back up from a file. Unlike the existing `--files-from`
+option, these options do not interpret the listed filenames as glob patterns;
+instead, whitespace in filenames is preserved as-is and no pattern expansion is
+done. Please see the documentation for specifics.
 
-These new options are recommended over `--files-from` when generating the
-list of files to back up from a script. Please see the documentation for specifics.
+These new options are highly recommended over `--files-from`, when using a
+script to generate the list of files to back up.
 
 https://github.com/restic/restic/issues/2944
 https://github.com/restic/restic/issues/3013

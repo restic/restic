@@ -1,9 +1,9 @@
-Bugfix: Do not require gs bucket permissions when running init 
+Bugfix: Do not require gs bucket permissions when running `init`
 
-Restic used to require bucket level permissions for the gs backend 
+Restic used to require bucket level permissions for the `gs` backend 
 in order to initialize a restic repository.
 
-It now allows a gs service account to initialize a repository if the 
+It now allows a `gs` service account to initialize a repository if the
 bucket does exist and the service account has permissions to write/read
 to that bucket.
 
