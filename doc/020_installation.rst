@@ -20,8 +20,9 @@ Packages
 Note that if at any point the package you’re trying to use is outdated, you
 always have the option to use an official binary from the restic project.
 
-These are up-to-date binaries that are built in a reproducible and verifiable way,
-which you can download and run without having to do additional installation work.
+These are up-to-date binaries that are built in a reproducible and verifiable
+way, which you can download and run without having to do additional
+installation work.
 
 Please see the :ref:`official_binaries` section below for various downloads.
 Official binaries can be updated in place by using the ``restic self-update``
@@ -30,8 +31,8 @@ command.
 Alpine Linux
 ============
 
-On `Alpine Linux <https://www.alpinelinux.org>`__ you can install the ``restic``
-package from the official community repos using ``apk``:
+On `Alpine Linux <https://www.alpinelinux.org>`__ you can install restic from
+the official community repos using ``apk``:
 
 .. code-block:: console
 
@@ -40,9 +41,8 @@ package from the official community repos using ``apk``:
 Arch Linux
 ==========
 
-On `Arch Linux <https://www.archlinux.org/>`__, there is a package named ``restic``
-that can be installed from the official community repos using the Pacman package
-manager:
+On `Arch Linux <https://www.archlinux.org/>`__, you can install restic from the
+official community repos using the Pacman package manager:
 
 .. code-block:: console
 
@@ -51,8 +51,8 @@ manager:
 Debian
 ======
 
-On `Debian <https://www.debian.org/>`__, there is a package called ``restic`` that
-can be installed from the official repos using ``apt-get``:
+On `Debian <https://www.debian.org/>`__, you can install restic from the
+official repos using ``apt-get``:
 
 .. code-block:: console
 
@@ -69,8 +69,8 @@ package manager:
 
     $ dnf install restic
 
-If you have previously installed restic via Copr, remove the Copr repo as follows to
-avoid any conflicts:
+If you have previously installed restic via Copr, remove the Copr repo as
+follows to avoid any conflicts:
 
 .. code-block:: console
 
@@ -96,8 +96,9 @@ package manager:
 Nix & NixOS
 ===========
 
-If you are using `Nix <https://nixos.org/nix/>`__ or `NixOS <https://nixos.org/>`__
-there is a package named ``restic`` which can be installed using ``nix-env``:
+If you are using `Nix <https://nixos.org/nix/>`__ or
+`NixOS <https://nixos.org/>`__ there is a package named ``restic`` which can
+be installed using ``nix-env``:
 
 .. code-block:: console
 
@@ -106,7 +107,8 @@ there is a package named ``restic`` which can be installed using ``nix-env``:
 OpenBSD
 =======
 
-On `OpenBSD <https://www.openbsd.org/>`__ 6.3 and greater, you can install restic using ``pkg_add``:
+On `OpenBSD <https://www.openbsd.org/>`__ 6.3 and greater, you can install
+restic using ``pkg_add``:
 
 .. code-block:: console
 
@@ -115,8 +117,8 @@ On `OpenBSD <https://www.openbsd.org/>`__ 6.3 and greater, you can install resti
 FreeBSD
 =======
 
-On `FreeBSD <https://www.freebsd.org/>`__ (11 and probably later versions), you can
-install restic using ``pkg install``:
+On `FreeBSD <https://www.freebsd.org/>`__ (11 and probably later versions), you
+can install restic using ``pkg``:
 
 .. code-block:: console
 
@@ -125,8 +127,8 @@ install restic using ``pkg install``:
 openSUSE
 ========
 
-On `openSUSE <https://www.opensuse.org/>`__ (Leap 15.0 and greater, and Tumbleweed),
-you can install restic using the Zypper package manager:
+On `openSUSE <https://www.opensuse.org/>`__ (Leap 15.0 and greater, and
+Tumbleweed), you can install restic using the Zypper package manager:
 
 .. code-block:: console
 
@@ -143,7 +145,8 @@ For RHEL7/CentOS, you can try installing restic via the Copr repository:
     $ yum copr enable copart/restic
     $ yum install restic
 
-If that doesn't work, you can try adding the repository directly. For CentOS 6 use:
+If that doesn't work, you can try adding the repository directly.
+For CentOS 6 use:
 
 .. code-block:: console
 
@@ -158,7 +161,8 @@ For CentOS 7 use:
 Solus
 =====
 
-Restic can be installed from the official repo of Solus via the ``eopkg`` package manager:
+Restic can be installed from the official repo of Solus via the ``eopkg``
+package manager:
 
 .. code-block:: console
 
@@ -167,14 +171,16 @@ Restic can be installed from the official repo of Solus via the ``eopkg`` packag
 Windows
 =======
 
-On Windows, restic can be installed using the `Scoop <https://scoop.sh/>`__ package manager:
+On Windows, restic can be installed using the `Scoop <https://scoop.sh/>`__
+package manager:
 
 .. code-block:: console
 
     scoop install restic
 
 Using this installation method, ``restic.exe`` will automatically be available
-in the ``PATH``. It can be called from cmd.exe or PowerShell by typing ``restic``.
+in the ``PATH``. It can be called from cmd.exe or PowerShell by typing
+``restic``.
 
 
 .. _official_binaries:
@@ -236,9 +242,9 @@ master branch.
 Windows
 =======
 
-On Windows, put the `restic.exe` binary into `%SystemRoot%\\System32` to use restic
-in scripts without the need for absolute paths to the binary. This requires
-administrator rights.
+On Windows, put the `restic.exe` binary into `%SystemRoot%\\System32` to use
+restic in scripts without the need for absolute paths to the binary. This
+requires administrator rights.
 
 Docker container
 ****************
@@ -314,7 +320,8 @@ Restic can write out man pages and bash/zsh compatible autocompletion scripts:
           --man directory          write man pages to directory
           --zsh-completion file    write zsh completion file
 
-Example for using sudo to write a bash completion script directly to the system-wide location:
+Example for using sudo to write a bash completion script directly to the system-wide
+location:
 
 .. code-block:: console
 
