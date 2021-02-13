@@ -67,7 +67,7 @@ Restic can be installed using ``dnf``:
 
     $ dnf install restic
 
-If you used restic from copr previously, remove the copr repo as follows to
+If you have previously used restic from copr, remove the copr repo as follows to
 avoid any conflicts:
 
 .. code-block:: console
