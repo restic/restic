@@ -97,8 +97,7 @@ Nix & NixOS
 ===========
 
 If you are using `Nix <https://nixos.org/nix/>`__ or
-`NixOS <https://nixos.org/>`__ there is a package named ``restic`` which can
-be installed using ``nix-env``:
+`NixOS <https://nixos.org/>`__, you can install restic using ``nix-env``:
 
 .. code-block:: console
 
@@ -161,8 +160,7 @@ For CentOS 7 use:
 Solus
 =====
 
-Restic can be installed from the official repo of Solus via the ``eopkg``
-package manager:
+On Solus, you can install restic from the official repo using ``eopkg``:
 
 .. code-block:: console
 
@@ -171,7 +169,7 @@ package manager:
 Windows
 =======
 
-On Windows, restic can be installed using the `Scoop <https://scoop.sh/>`__
+On Windows, you can install restic using the `Scoop <https://scoop.sh/>`__
 package manager:
 
 .. code-block:: console
@@ -195,8 +193,8 @@ You can download the latest stable release versions of restic from the `restic
 release page <https://github.com/restic/restic/releases/latest>`__. These builds
 are considered stable and releases are made regularly in a controlled manner.
 
-There's both pre-compiled binaries for different platforms as well as the source
-code available for download. Just download and run the one matching your system.
+There are pre-compiled binaries and source code available for various platforms
+to download. Just download and run the one matching your system.
 
 The official binaries can be updated in place using the ``restic self-update``
 command (needs restic 0.9.3 or later):
