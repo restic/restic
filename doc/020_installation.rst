@@ -40,8 +40,9 @@ package from the official community repos using ``apk``:
 Arch Linux
 ==========
 
-On `Arch Linux <https://www.archlinux.org/>`__, there is a package called ``restic``
-installed from the official community repos, e.g. with ``pacman -S``:
+On `Arch Linux <https://www.archlinux.org/>`__, there is a package named ``restic``
+that can be installed from the official community repos using the Pacman package
+manager:
 
 .. code-block:: console
 
@@ -50,8 +51,8 @@ installed from the official community repos, e.g. with ``pacman -S``:
 Debian
 ======
 
-On Debian, there's a package called ``restic`` which can be
-installed from the official repos, e.g. with ``apt-get``:
+On `Debian <https://www.debian.org/>`__, there is a package called ``restic`` that
+can be installed from the official repos using ``apt-get``:
 
 .. code-block:: console
 
@@ -61,7 +62,8 @@ installed from the official repos, e.g. with ``apt-get``:
 Fedora
 ======
 
-Restic can be installed using ``dnf``:
+On `Fedora <https://getfedora.org/>`__, restic can be installed using the DNF
+package manager:
 
 .. code-block:: console
 
@@ -84,7 +86,8 @@ If you are using macOS, you can install restic using the
 
     $ brew install restic
 
-You may also install it using `MacPorts <https://www.macports.org/>`__:
+You can also install it using the `MacPorts <https://www.macports.org/>`__
+package manager:
 
 .. code-block:: console
 
@@ -94,8 +97,7 @@ Nix & NixOS
 ===========
 
 If you are using `Nix <https://nixos.org/nix/>`__ or `NixOS <https://nixos.org/>`__
-there is a package available named ``restic``.
-It can be installed using ``nix-env``:
+there is a package named ``restic`` which can be installed using ``nix-env``:
 
 .. code-block:: console
 
@@ -104,7 +106,7 @@ It can be installed using ``nix-env``:
 OpenBSD
 =======
 
-On OpenBSD 6.3 and greater, you can install restic using ``pkg_add``:
+On `OpenBSD <https://www.openbsd.org/>`__ 6.3 and greater, you can install restic using ``pkg_add``:
 
 .. code-block:: console
 
@@ -113,7 +115,8 @@ On OpenBSD 6.3 and greater, you can install restic using ``pkg_add``:
 FreeBSD
 =======
 
-On FreeBSD (11 and probably later versions), you can install restic using ``pkg install``:
+On `FreeBSD <https://www.freebsd.org/>`__ (11 and probably later versions), you can
+install restic using ``pkg install``:
 
 .. code-block:: console
 
@@ -122,8 +125,8 @@ On FreeBSD (11 and probably later versions), you can install restic using ``pkg 
 openSUSE
 ========
 
-On openSUSE (Leap 15.0 and greater, and Tumbleweed), you can install restic
-using the Zypper package manager:
+On `openSUSE <https://www.opensuse.org/>`__ (Leap 15.0 and greater, and Tumbleweed),
+you can install restic using the Zypper package manager:
 
 .. code-block:: console
 
@@ -164,7 +167,7 @@ Restic can be installed from the official repo of Solus via the ``eopkg`` packag
 Windows
 =======
 
-Restic can be installed using `Scoop <https://scoop.sh/>`__:
+On Windows, restic can be installed using the `Scoop <https://scoop.sh/>`__ package manager:
 
 .. code-block:: console
 
