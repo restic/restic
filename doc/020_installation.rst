@@ -20,8 +20,8 @@ Packages
 Note that if at any point the package you’re trying to use is outdated, you
 always have the option to use an official binary from the restic project.
 
-These are up to date binaries, built in a reproducible and verifiable way, that
-you can download and run without having to do additional installation work.
+These are up-to-date binaries that are built in a reproducible and verifiable way,
+which you can download and run without having to do additional installation work.
 
 Please see the :ref:`official_binaries` section below for various downloads.
 Official binaries can be updated in place by using the ``restic self-update``
@@ -31,7 +31,7 @@ Alpine Linux
 ============
 
 On `Alpine Linux <https://www.alpinelinux.org>`__ you can install the ``restic``
-package from the official community repos, e.g. using ``apk``:
+package from the official community repos using ``apk``:
 
 .. code-block:: console
 
@@ -67,7 +67,7 @@ Restic can be installed using ``dnf``:
 
     $ dnf install restic
 
-If you have previously used restic from copr, remove the copr repo as follows to
+If you have previously installed restic via Copr, remove the Copr repo as follows to
 avoid any conflicts:
 
 .. code-block:: console
@@ -122,7 +122,8 @@ On FreeBSD (11 and probably later versions), you can install restic using ``pkg 
 openSUSE
 ========
 
-On openSUSE (leap 15.0 and greater, and tumbleweed), you can install restic using the ``zypper`` package manager:
+On openSUSE (Leap 15.0 and greater, and Tumbleweed), you can install restic
+using the Zypper package manager:
 
 .. code-block:: console
 
@@ -131,7 +132,7 @@ On openSUSE (leap 15.0 and greater, and tumbleweed), you can install restic usin
 RHEL & CentOS
 =============
 
-Restic can be installed via copr repository, for RHEL7/CentOS you can try the following:
+For RHEL7/CentOS, you can try installing restic via the Copr repository:
 
 .. code-block:: console
 
@@ -139,13 +140,13 @@ Restic can be installed via copr repository, for RHEL7/CentOS you can try the fo
     $ yum copr enable copart/restic
     $ yum install restic
 
-If that doesn't work, you can try adding the repository directly, for CentOS6 use:
+If that doesn't work, you can try adding the repository directly. For CentOS 6 use:
 
 .. code-block:: console
 
     $ yum-config-manager --add-repo https://copr.fedorainfracloud.org/coprs/copart/restic/repo/epel-6/copart-restic-epel-6.repo
 
-For CentOS7 use:
+For CentOS 7 use:
 
 .. code-block:: console
 
