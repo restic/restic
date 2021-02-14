@@ -1,21 +1,22 @@
-Enhancement: Add option to let backup trust mtime without checking ctime
+Enhancement: Add option to let `backup` trust mtime without checking ctime
 
-The backup command used to require that both ctime and mtime of a file matched
-with a previously backed up version to determine that the file was unchanged.
-In other words, if either ctime or mtime of the file had changed, it would be
-considered changed and restic would read the file's content again to back up
-the relevant (changed) parts of it.
+The `backup` command used to require that both `ctime` and `mtime` of a file
+matched with a previously backed up version to determine that the file was
+unchanged. In other words, if either `ctime` or `mtime` of the file had
+changed, it would be considered changed and restic would read the file's
+content again to back up the relevant (changed) parts of it.
 
-The new option --ignore-ctime makes restic look at mtime only, such that ctime
-changes for a file does not cause restic to read the file's contents again.
+The new option `--ignore-ctime` makes restic look at `mtime` only, such that
+`ctime` changes for a file does not cause restic to read the file's contents
+again.
 
-The check for both ctime and mtime was introduced in restic 0.9.6 to make
-backups more reliable in the face of programs that reset mtime (some Unix
+The check for both `ctime` and `mtime` was introduced in restic 0.9.6 to make
+backups more reliable in the face of programs that reset `mtime` (some Unix
 archivers do that), but it turned out to often be expensive because it made
 restic read file contents even if only the metadata (owner, permissions) of
-a file had changed. The new --ignore-ctime option lets the user restore the
-0.9.5 behavior when needed. The existing --ignore-inode option already turned
-off this behavior, but also removed a different check.
+a file had changed. The new `--ignore-ctime` option lets the user restore the
+0.9.5 behavior when needed. The existing `--ignore-inode` option already
+turned off this behavior, but also removed a different check.
 
 Please note that changes in files' metadata are still recorded, regardless of
 the command line options provided to the backup command.

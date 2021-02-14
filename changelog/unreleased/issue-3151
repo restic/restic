@@ -1,9 +1,9 @@
-Bugfix: Never create invalid snapshots on backup interruption
+Bugfix: Don't create invalid snapshots when `backup` is interrupted
 
-When canceling a backup run in the wrong moment it was possible that
+When canceling a backup run at a certain moment it was possible that
 restic created a snapshot with an invalid "null" tree. This caused
-check and other operations to fail. The backup command now properly
-handles interruptions and never saves a snapshot in that case.
+`check` and other operations to fail. The `backup` command now properly
+handles interruptions and never saves a snapshot when interrupted.
 
 https://github.com/restic/restic/issues/3151
 https://github.com/restic/restic/pull/3164

@@ -1,9 +1,9 @@
-Enhancement: Improve handling of permanent backend errors
+Enhancement: Report permanent/fatal backend errors earlier
 
 When encountering errors in reading from or writing to storage backends,
 restic retries the failing operation up to nine times (for a total of ten
 attempts). It used to retry all backend operations, but now detects some
-permanent error conditions so it can report fatal errors earlier.
+permanent error conditions so that it can report fatal errors earlier.
 
 Permanent failures include local disks being full, SSH connections
 dropping and permission errors.

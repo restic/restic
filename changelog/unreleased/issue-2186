@@ -1,8 +1,8 @@
-Enhancement: Allow specifying percentage in check's --read-data-subset
+Enhancement: Allow specifying percentage in `check --read-data-subset`
 
-We've enhanced the command-line option --read-data-subset to also accept a
-percentage. This will check the given percentage of pack files which are
-randomly selected on each run.
+We've enhanced the `check` command's `--read-data-subset` option to also accept
+a percentage (e.g. `2.5%` or `10%`). This will check the given percentage of
+pack files (which are randomly selected on each run).
 
 https://github.com/restic/restic/issues/2186
 https://github.com/restic/restic/pull/3038

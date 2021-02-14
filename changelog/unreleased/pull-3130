@@ -2,6 +2,7 @@ Enhancement: Parallelize reading of locks and snapshots
 
 Restic used to read snapshots sequentially. For repositories containing
 many snapshots this slowed down commands which have to read all snapshots.
+
 Now the reading of snapshots is parallelized. This speeds up for example
 `prune`, `backup` and other commands that search for snapshots with certain
 properties or which have to find the `latest` snapshot.
