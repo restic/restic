@@ -50,7 +50,15 @@ Exit status is 3 if some source data could not be read (incomplete snapshot crea
 
 .PP
 \fB\-\-files\-from\fP=[]
-    read the files to backup from \fB\fCfile\fR (can be combined with file args/can be specified multiple times)
+    read the files to backup from \fB\fCfile\fR (can be combined with file args; can be specified multiple times)
+
+.PP
+\fB\-\-files\-from\-raw\fP=[]
+    read the files to backup from \fB\fCfile\fR (can be combined with file args; can be specified multiple times)
+
+.PP
+\fB\-\-files\-from\-verbatim\fP=[]
+    read the files to backup from \fB\fCfile\fR (can be combined with file args; can be specified multiple times)
 
 .PP
 \fB\-f\fP, \fB\-\-force\fP[=false]
@@ -71,6 +79,10 @@ Exit status is 3 if some source data could not be read (incomplete snapshot crea
 .PP
 \fB\-\-iexclude\-file\fP=[]
     same as \-\-exclude\-file but ignores casing of \fB\fCfile\fRnames in patterns
+
+.PP
+\fB\-\-ignore\-ctime\fP[=false]
+    ignore ctime changes when checking for modified files
 
 .PP
 \fB\-\-ignore\-inode\fP[=false]
@@ -94,7 +106,7 @@ Exit status is 3 if some source data could not be read (incomplete snapshot crea
 
 .PP
 \fB\-\-tag\fP=[]
-    add a \fB\fCtag\fR for the new snapshot (can be specified multiple times)
+    add \fB\fCtags\fR for the new snapshot in the format \fB\fCtag[,tag,...]\fR (can be specified multiple times)
 
 .PP
 \fB\-\-time\fP=""

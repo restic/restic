@@ -5,7 +5,7 @@
 
 .SH NAME
 .PP
-restic\-rebuild\-index \- Build a new index file
+restic\-rebuild\-index \- Build a new index
 
 
 .SH SYNOPSIS
@@ -28,6 +28,10 @@ Exit status is 0 if the command was successful, and non\-zero if there was any e
 .PP
 \fB\-h\fP, \fB\-\-help\fP[=false]
     help for rebuild\-index
+
+.PP
+\fB\-\-read\-all\-packs\fP[=false]
+    read all pack files to generate new index from scratch
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS

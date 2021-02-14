@@ -26,8 +26,24 @@ Exit status is 0 if the command was successful, and non\-zero if there was any e
 
 .SH OPTIONS
 .PP
+\fB\-n\fP, \fB\-\-dry\-run\fP[=false]
+    do not modify the repository, just print what would be done
+
+.PP
 \fB\-h\fP, \fB\-\-help\fP[=false]
     help for prune
+
+.PP
+\fB\-\-max\-repack\-size\fP=""
+    maximum \fB\fCsize\fR to repack (allowed suffixes: k/K, m/M, g/G, t/T)
+
+.PP
+\fB\-\-max\-unused\fP="5%"
+    tolerate given \fB\fClimit\fR of unused data (absolute value in bytes with suffixes k/K, m/M, g/G, t/T, a value in % or the word 'unlimited')
+
+.PP
+\fB\-\-repack\-cacheable\-only\fP[=false]
+    only repack packs which are cacheable
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS

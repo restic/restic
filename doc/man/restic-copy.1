@@ -15,12 +15,21 @@ restic\-copy \- Copy snapshots from one repository to another
 
 .SH DESCRIPTION
 .PP
-The "copy" command copies one or more snapshots from one repository to another
-repository. Note that this will have to read (download) and write (upload) the
-entire snapshot(s) due to the different encryption keys on the source and
-destination, and that transferred files are not re\-chunked, which may break
-their deduplication. This can be mitigated by the "\-\-copy\-chunker\-params"
-option when initializing a new destination repository using the "init" command.
+The "copy" command copies one or more snapshots from one repository to another.
+
+.PP
+NOTE: This process will have to both download (read) and upload (write) the
+entire snapshot(s) due to the different encryption keys used in the source and
+destination repositories. This /may incur higher bandwidth usage and costs/ than
+expected during normal backup runs.
+
+.PP
+NOTE: The copying process does not re\-chunk files, which may break deduplication
+between the files copied and files already stored in the destination repository.
+This means that copied files, which existed in both the source and destination
+repository, /may occupy up to twice their space/ in the destination repository.
+This can be mitigated by the "\-\-copy\-chunker\-params" option when initializing a
+new destination repository using the "init" command.
 
 
 .SH OPTIONS

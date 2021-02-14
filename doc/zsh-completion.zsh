@@ -47,7 +47,7 @@ function _restic {
       "migrate:Apply migrations"
       "mount:Mount the repository"
       "prune:Remove unneeded data from the repository"
-      "rebuild-index:Build a new index file"
+      "rebuild-index:Build a new index"
       "recover:Recover data from the repository"
       "restore:Extract the data from a snapshot"
       "self-update:Update the restic binary"
@@ -153,18 +153,21 @@ function _restic_backup {
     '*--exclude-file[read exclude patterns from a `file` (can be specified multiple times)]:' \
     '*--exclude-if-present[takes `filename[:header]`, exclude contents of directories containing filename (except filename itself) if header of that file is as provided (can be specified multiple times)]:' \
     '--exclude-larger-than[max `size` of the files to be backed up (allowed suffixes: k/K, m/M, g/G, t/T)]:' \
-    '*--files-from[read the files to backup from `file` (can be combined with file args/can be specified multiple times)]:' \
+    '*--files-from[read the files to backup from `file` (can be combined with file args; can be specified multiple times)]:' \
+    '*--files-from-raw[read the files to backup from `file` (can be combined with file args; can be specified multiple times)]:' \
+    '*--files-from-verbatim[read the files to backup from `file` (can be combined with file args; can be specified multiple times)]:' \
     '(-f --force)'{-f,--force}'[force re-reading the target files/directories (overrides the "parent" flag)]' \
     '(-h --help)'{-h,--help}'[help for backup]' \
     '(-H --host)'{-H,--host}'[set the `hostname` for the snapshot manually. To prevent an expensive rescan use the "parent" flag]:' \
     '*--iexclude[same as --exclude `pattern` but ignores the casing of filenames]:' \
     '*--iexclude-file[same as --exclude-file but ignores casing of `file`names in patterns]:' \
+    '--ignore-ctime[ignore ctime changes when checking for modified files]' \
     '--ignore-inode[ignore inode number changes when checking for modified files]' \
     '(-x --one-file-system)'{-x,--one-file-system}'[exclude other file systems]' \
     '--parent[use this parent `snapshot` (default: last snapshot in the repo that has the same target files/directories)]:' \
     '--stdin[read backup from stdin]' \
     '--stdin-filename[`filename` to use when reading from stdin]:' \
-    '*--tag[add a `tag` for the new snapshot (can be specified multiple times)]:' \
+    '--tag[add `tags` for the new snapshot in the format `tag[,tag,...]` (can be specified multiple times)]:' \
     '--time[`time` of the backup (ex. '\''2012-11-01 22:08:41'\'') (default: now)]:' \
     '--with-atime[store the atime for all files and directories]' \
     '*--cacert[`file` to load root certificates from (default: use system certificates)]:' \
@@ -238,7 +241,7 @@ function _restic_check {
     '--check-unused[find unused blobs]' \
     '(-h --help)'{-h,--help}'[help for check]' \
     '--read-data[read all data blobs]' \
-    '--read-data-subset[read subset n of m data packs (format: `n/m`)]:' \
+    '--read-data-subset[read a `subset` of data packs, specified as '\''n/t'\'' for specific subset or either '\''x%'\'' or '\''x.y%'\'' for random subset]:' \
     '--with-cache[use the cache]' \
     '*--cacert[`file` to load root certificates from (default: use system certificates)]:' \
     '--cache-dir[set the cache `directory`. (default: use system default cache directory)]:' \
@@ -313,6 +316,7 @@ function _restic_diff {
 
 function _restic_dump {
   _arguments \
+    '(-a --archive)'{-a,--archive}'[set archive `format` as "tar" or "zip"]:' \
     '(-h --help)'{-h,--help}'[help for dump]' \
     '(*-H *--host)'{\*-H,\*--host}'[only consider snapshots for this host when the snapshot ID is "latest" (can be specified multiple times)]:' \
     '*--path[only consider snapshots which include this (absolute) `path` for snapshot ID "latest"]:' \
@@ -387,6 +391,9 @@ function _restic_forget {
     '(-g --group-by)'{-g,--group-by}'[string for grouping snapshots by host,paths,tags]:' \
     '(-n --dry-run)'{-n,--dry-run}'[do not delete anything, just print what would be done]' \
     '--prune[automatically run the '\''prune'\'' command if snapshots have been removed]' \
+    '--max-unused[tolerate given `limit` of unused data (absolute value in bytes with suffixes k/K, m/M, g/G, t/T, a value in % or the word '\''unlimited'\'')]:' \
+    '--max-repack-size[maximum `size` to repack (allowed suffixes: k/K, m/M, g/G, t/T)]:' \
+    '--repack-cacheable-only[only repack packs which are cacheable]' \
     '(-h --help)'{-h,--help}'[help for forget]' \
     '*--cacert[`file` to load root certificates from (default: use system certificates)]:' \
     '--cache-dir[set the cache `directory`. (default: use system default cache directory)]:' \
@@ -608,7 +615,11 @@ function _restic_mount {
 
 function _restic_prune {
   _arguments \
+    '(-n --dry-run)'{-n,--dry-run}'[do not modify the repository, just print what would be done]' \
     '(-h --help)'{-h,--help}'[help for prune]' \
+    '--max-repack-size[maximum `size` to repack (allowed suffixes: k/K, m/M, g/G, t/T)]:' \
+    '--max-unused[tolerate given `limit` of unused data (absolute value in bytes with suffixes k/K, m/M, g/G, t/T, a value in % or the word '\''unlimited'\'')]:' \
+    '--repack-cacheable-only[only repack packs which are cacheable]' \
     '*--cacert[`file` to load root certificates from (default: use system certificates)]:' \
     '--cache-dir[set the cache `directory`. (default: use system default cache directory)]:' \
     '--cleanup-cache[auto remove old cache directories]' \
@@ -631,6 +642,7 @@ function _restic_prune {
 function _restic_rebuild-index {
   _arguments \
     '(-h --help)'{-h,--help}'[help for rebuild-index]' \
+    '--read-all-packs[read all pack files to generate new index from scratch]' \
     '*--cacert[`file` to load root certificates from (default: use system certificates)]:' \
     '--cache-dir[set the cache `directory`. (default: use system default cache directory)]:' \
     '--cleanup-cache[auto remove old cache directories]' \
@@ -734,7 +746,7 @@ function _restic_snapshots {
     '(*-H *--host)'{\*-H,\*--host}'[only consider snapshots for this `host` (can be specified multiple times)]:' \
     '--last[only show the last snapshot for each host and path]' \
     '*--path[only consider snapshots for this `path` (can be specified multiple times)]:' \
-    '--tag[only consider snapshots which include this `taglist` (can be specified multiple times)]:' \
+    '--tag[only consider snapshots which include this `taglist` in the format `tag[,tag,...]` (can be specified multiple times)]:' \
     '*--cacert[`file` to load root certificates from (default: use system certificates)]:' \
     '--cache-dir[set the cache `directory`. (default: use system default cache directory)]:' \
     '--cleanup-cache[auto remove old cache directories]' \
@@ -782,12 +794,12 @@ function _restic_stats {
 
 function _restic_tag {
   _arguments \
-    '*--add[`tag` which will be added to the existing tags (can be given multiple times)]:' \
+    '--add[`tags` which will be added to the existing tags in the format `tag[,tag,...]` (can be given multiple times)]:' \
     '(-h --help)'{-h,--help}'[help for tag]' \
     '(*-H *--host)'{\*-H,\*--host}'[only consider snapshots for this `host`, when no snapshot ID is given (can be specified multiple times)]:' \
     '*--path[only consider snapshots which include this (absolute) `path`, when no snapshot-ID is given]:' \
-    '*--remove[`tag` which will be removed from the existing tags (can be given multiple times)]:' \
-    '*--set[`tag` which will replace the existing tags (can be given multiple times)]:' \
+    '--remove[`tags` which will be removed from the existing tags in the format `tag[,tag,...]` (can be given multiple times)]:' \
+    '--set[`tags` which will replace the existing tags in the format `tag[,tag,...]` (can be given multiple times)]:' \
     '--tag[only consider snapshots which include this `taglist`, when no snapshot-ID is given]:' \
     '*--cacert[`file` to load root certificates from (default: use system certificates)]:' \
     '--cache-dir[set the cache `directory`. (default: use system default cache directory)]:' \
