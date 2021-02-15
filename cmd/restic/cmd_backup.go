@@ -561,7 +561,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	}()
 	gopts.stdout, gopts.stderr = p.Stdout(), p.Stderr()
 
-	p.SetMinUpdatePause(calculateProgressInterval())
+	p.SetMinUpdatePause(calculateProgressInterval(!gopts.Quiet))
 
 	t.Go(func() error { return p.Run(t.Context(gopts.ctx)) })
 

@@ -1,0 +1,11 @@
+Bugfix: `backup --quiet` no longer prints status information
+
+A regression in the latest restic version caused the output of `backup --quiet`
+to contain large amounts of backup progress information when run using an
+interactive terminal. This is fixed now.
+
+A workaround for this bug is to run restic as follows:
+`restic backup --quiet [..] | cat -`.
+
+https://github.com/restic/restic/issues/3184
+https://github.com/restic/restic/pull/3186
