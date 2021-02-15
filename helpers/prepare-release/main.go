@@ -473,5 +473,5 @@ func main() {
 
 	msg("done, output dir is %v", opts.OutputDir)
 
-	msg("now run:\n\ngit push --tags origin master\ndocker push restic/restic\n")
+	msg("now run:\n\ngit push --tags origin master\ndocker push restic/restic:latest\ndocker push restic/restic:%s\n", opts.Version)
 }
