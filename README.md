@@ -1,3 +1,15 @@
+<p align="center">
+  <img src="https://restic.readthedocs.io/en/latest/_static/logo.png" alt="Restic logo">
+</p>
+
+<h1 align="center">
+  Restic
+</h1>
+
+<p align="center">
+  Fast, efficient, and secure backup program
+</p>
+
 [![Documentation](https://readthedocs.org/projects/restic/badge/?version=latest)](https://restic.readthedocs.io/en/latest/?badge=latest)
 [![Build Status](https://github.com/restic/restic/workflows/test/badge.svg)](https://github.com/restic/restic/actions?query=workflow%3Atest)
 [![Go Report Card](https://goreportcard.com/badge/github.com/restic/restic)](https://goreportcard.com/report/github.com/restic/restic)
