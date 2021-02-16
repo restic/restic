@@ -10,6 +10,13 @@
   Fast, efficient, and secure backup program
 </p>
 
+<p align="center">
+  <a href="https://restic.net/">Website</a> |
+  <a href="https://restic.readthedocs.io/">Docs</a> |
+  <a href="https://forum.restic.net/">Forum</a> |
+  <a href="https://github.com/restic/restic/issues">Issues</a>
+</p>
+
 [![Documentation](https://readthedocs.org/projects/restic/badge/?version=latest)](https://restic.readthedocs.io/en/latest/?badge=latest)
 [![Build Status](https://github.com/restic/restic/workflows/test/badge.svg)](https://github.com/restic/restic/actions?query=workflow%3Atest)
 [![Go Report Card](https://goreportcard.com/badge/github.com/restic/restic)](https://goreportcard.com/report/github.com/restic/restic)
