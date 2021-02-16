@@ -32,9 +32,8 @@ and add some data:
     duration: 0:29, 54.47MiB/s
     snapshot 40dc1520 saved
 
-Next you can either use `restic restore` to restore files or use `restic
-mount` to mount the repository via FUSE and browse the files from previous
-snapshots.
+Next, you can use `restic restore` to restore files.
+You can also use `restic mount` to mount the repository via FUSE and browse the files from previous snapshots.
 
 For more options check out the [documentation](https://restic.readthedocs.io/en/latest/).
 
