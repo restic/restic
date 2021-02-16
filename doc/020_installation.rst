@@ -169,7 +169,14 @@ On Solus, you can install restic from the official repo using ``eopkg``:
 Windows
 =======
 
-On Windows, you can install restic using the `Scoop <https://scoop.sh/>`__
+On Windows, you can install restic using the
+`Chocolatey <https://chocolatey.org/>`__ package manager:
+
+.. code-block:: console
+
+    choco install restic
+
+You can also install restic using the `Scoop <https://scoop.sh/>`__
 package manager:
 
 .. code-block:: console
