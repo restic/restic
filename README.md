@@ -40,7 +40,7 @@ You can ask questions in our [Discourse forum](https://forum.restic.net).
 ## Installation
 
 Restic is available on many platforms.
-For [installation instructions](https://restic.readthedocs.io/en/stable/020_installation.html), check out the [documentation](https://restic.readthedocs.io/).
+Check out the [documentation](https://restic.readthedocs.io/) for [installation instructions](https://restic.readthedocs.io/en/stable/020_installation.html).
 
 ## Quick start
 
