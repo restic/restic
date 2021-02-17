@@ -21,7 +21,7 @@
 
 # Restic
 
-Restic is a **fast, secure, and efficient backup program**.
+Restic is a fast, secure, and efficient backup program.
 It supports the three major operating systems (Linux, macOS, Windows) and a few smaller ones (FreeBSD, OpenBSD).
 
 For detailed usage and installation instructions check out the [documentation](https://restic.readthedocs.io/en/latest).
@@ -30,8 +30,8 @@ You can ask questions in our [Discourse forum](https://forum.restic.net).
 
 ## Quick start
 
-Once you've [installed](https://restic.readthedocs.io/en/latest/020_installation.html) restic, start
-off with creating a repository for your backups:
+Once you've [installed](https://restic.readthedocs.io/en/latest/020_installation.html) restic,
+start off with creating a repository for your backups:
 
     $ restic init --repo /tmp/backup
     enter password for new backend:
