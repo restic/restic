@@ -11,8 +11,8 @@ What changes are made in this PR? What problem does it solve?
 Describe the changes and their purpose here, as detailed as needed.
 -->
 
-Was the change discussed in an issue or on the forum before?
-------------------------------------------------------------
+Was the change previously discussed in an issue or on the forum?
+----------------------------------------------------------------
 
 <!--
 Link issues and relevant forum posts here.
