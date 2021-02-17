@@ -46,22 +46,26 @@ Check out the [documentation](https://restic.readthedocs.io/) for [installation 
 
 Once you've installed restic, start off by creating a repository for your backups:
 
-    $ restic init --repo /tmp/backup
-    enter password for new backend:
-    enter password again:
-    created restic backend 085b3c76b9 at /tmp/backup
-    Please note that knowledge of your password is required to access the repository.
-    Losing your password means that your data is irrecoverably lost.
+  ```
+  $ restic init --repo /tmp/backup
+  enter password for new backend:
+  enter password again:
+  created restic backend 085b3c76b9 at /tmp/backup
+  Please note that knowledge of your password is required to access the repository.
+  Losing your password means that your data is irrecoverably lost.
+  ```
 
 Then create a backup snapshot of some data:
 
-    $ restic --repo /tmp/backup backup ~/work
-    enter password for repository:
-    scan [/home/user/work]
-    scanned 764 directories, 1816 files in 0:00
-    [0:29] 100.00%  54.732 MiB/s  1.582 GiB / 1.582 GiB  2580 / 2580 items  0 errors  ETA 0:00
-    duration: 0:29, 54.47MiB/s
-    snapshot 40dc1520 saved
+  ```
+  $ restic --repo /tmp/backup backup ~/work
+  enter password for repository:
+  scan [/home/user/work]
+  scanned 764 directories, 1816 files in 0:00
+  [0:29] 100.00%  54.732 MiB/s  1.582 GiB / 1.582 GiB  2580 / 2580 items  0 errors  ETA 0:00
+  duration: 0:29, 54.47MiB/s
+  snapshot 40dc1520 saved
+  ```
 
 Next, you can use the `restic restore` command to restore files.
 You can also use the `restic mount` command to mount the repository via FUSE and browse the files from previous snapshots.
