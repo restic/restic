@@ -53,7 +53,7 @@ Once you've installed restic, start off by creating a repository for your backup
     Please note that knowledge of your password is required to access the repository.
     Losing your password means that your data is irrecoverably lost.
 
-Then add some data:
+Then create a backup snapshot of some data:
 
     $ restic --repo /tmp/backup backup ~/work
     enter password for repository:
@@ -63,10 +63,10 @@ Then add some data:
     duration: 0:29, 54.47MiB/s
     snapshot 40dc1520 saved
 
-Next, you can use `restic restore` to restore files.
-You can also use `restic mount` to mount the repository via FUSE and browse the files from previous snapshots.
+Next, you can use the `restic restore` command to restore files.
+You can also use the `restic mount` command to mount the repository via FUSE and browse the files from previous snapshots.
 
-For more options check out the [documentation](https://restic.readthedocs.io/en/latest/).
+Check out the [documentation](https://restic.readthedocs.io/en/latest/) for more command options.
 
 ## Backends
 
