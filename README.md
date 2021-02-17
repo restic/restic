@@ -28,6 +28,16 @@ For detailed usage and installation instructions check out the [documentation](h
 
 You can ask questions in our [Discourse forum](https://forum.restic.net).
 
+## Contents
+
+- [Quick start](#quick-start)
+- [Backends](#backends)
+- [Design principles](#design-principles)
+- [Reproducible builds](#reproducible-builds)
+- [News](#news)
+- [License](#license)
+- [Sponsorship](#sponsorship)
+
 ## Quick start
 
 Once you've [installed](https://restic.readthedocs.io/en/latest/020_installation.html) restic,
