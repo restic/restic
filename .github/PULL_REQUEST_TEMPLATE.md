@@ -34,8 +34,8 @@ check the last box.
 
 - [ ] I have read the [contribution guidelines](https://github.com/restic/restic/blob/master/CONTRIBUTING.md#providing-patches).
 - [ ] I have [enabled maintainer edits](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/allowing-changes-to-a-pull-request-branch-created-from-a-fork) for this PR.
-- [ ] I have added tests for all changes in this PR.
-- [ ] I have added documentation for the changes (in the manual).
+- [ ] I have added tests for all code changes in this PR.
+- [ ] I have added documentation for the those changes (in the manual).
 - [ ] There's a new file in `changelog/unreleased/` that describes the changes for our users (see [template](https://github.com/restic/restic/blob/master/changelog/TEMPLATE)).
 - [ ] I have run `gofmt` on the code in all commits.
 - [ ] All commit messages are formatted in the same style as [the other commits in the repo](https://github.com/restic/restic/blob/master/CONTRIBUTING.md#git-commits).
