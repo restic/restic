@@ -2,12 +2,8 @@
   <img src="https://restic.readthedocs.io/en/latest/_static/logo.png" alt="Restic logo">
 </p>
 
-<h1 align="center">
-  Restic
-</h1>
-
 <p align="center">
-  <strong>Fast</strong>, <strong>efficient</strong>, and <strong>secure</strong> backup program
+  <strong>Restic</strong> – <strong>Fast</strong>, <strong>efficient</strong>, and <strong>secure</strong> backup program
   <br>
   <a href="https://restic.net/">Website</a> |
   <a href="https://restic.readthedocs.io/">Documentation</a> |
