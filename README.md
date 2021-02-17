@@ -53,7 +53,7 @@ Once you've installed restic, start off by creating a repository for your backup
     Please note that knowledge of your password is required to access the repository.
     Losing your password means that your data is irrecoverably lost.
 
-Then create a snapshot backup of some data:
+Then create a backup snapshot of some data:
 
     $ restic --repo /tmp/backup backup ~/work
     enter password for repository:
