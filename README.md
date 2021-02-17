@@ -85,33 +85,32 @@ Therefore, restic supports the following backends for storing backups natively:
 
 ## Design principles
 
-Restic is a program that does backups right and was designed with the
-following principles in mind:
+Restic is a program that does backups right and was designed with the following principles in mind:
 
--  **Easy:** Doing backups should be a frictionless process, otherwise
-   you might be tempted to skip it. Restic should be easy to configure
-   and use, so that, in the event of a data loss, you can just restore
-   it. Likewise, restoring data should not be complicated.
+- **Easy**: Doing backups should be a frictionless process, otherwise
+  you might be tempted to skip it. Restic should be easy to configure
+  and use, so that, in the event of a data loss, you can just restore
+  it. Likewise, restoring data should not be complicated.
 
--  **Fast**: Backing up your data with restic should only be limited by
-   your network or hard disk bandwidth so that you can backup your files
-   every day. Nobody does backups if it takes too much time. Restoring
-   backups should only transfer data that is needed for the files that
-   are to be restored, so that this process is also fast.
+- **Fast**: Backing up your data with restic should only be limited by
+  your network or hard disk bandwidth so that you can backup your files
+  every day. Nobody does backups if it takes too much time. Restoring
+  backups should only transfer data that is needed for the files that
+  are to be restored, so that this process is also fast.
 
--  **Verifiable**: Much more important than backup is restore, so restic
-   enables you to easily verify that all data can be restored.
+- **Verifiable**: Much more important than backup is restore, so restic
+  enables you to easily verify that all data can be restored.
 
--  **Secure**: Restic uses cryptography to guarantee confidentiality and
-   integrity of your data. The location the backup data is stored is
-   assumed not to be a trusted environment (e.g. a shared space where
-   others like system administrators are able to access your backups).
-   Restic is built to secure your data against such attackers.
+- **Secure**: Restic uses cryptography to guarantee confidentiality and
+  integrity of your data. The location the backup data is stored is
+  assumed not to be a trusted environment (e.g. a shared space where
+  others like system administrators are able to access your backups).
+  Restic is built to secure your data against such attackers.
 
--  **Efficient**: With the growth of data, additional snapshots should
-   only take the storage of the actual increment. Even more, duplicate
-   data should be de-duplicated before it is actually written to the
-   storage back end to save precious backup space.
+- **Efficient**: With the growth of data, additional snapshots should
+  only take the storage of the actual increment. Even more, duplicate
+  data should be de-duplicated before it is actually written to the
+  storage back end to save precious backup space.
 
 ## Reproducible builds
 
