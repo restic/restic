@@ -10,7 +10,7 @@
   <strong>Fast</strong>, <strong>efficient</strong>, and <strong>secure</strong> backup program
   <br>
   <a href="https://restic.net/">Website</a> |
-  <a href="https://restic.readthedocs.io/">Docs</a> |
+  <a href="https://restic.readthedocs.io/">Documentation</a> |
   <a href="https://forum.restic.net/">Forum</a> |
   <a href="https://github.com/restic/restic/issues">Issues</a>
 </p>
