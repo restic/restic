@@ -21,17 +21,23 @@
 
 # Restic
 
-Restic is a fast, secure, and efficient backup program.
-It supports the three major operating systems (Linux, macOS, Windows) and a few smaller ones (FreeBSD, OpenBSD).
+Restic is a program that does backups right and was designed with the following principles in mind:
 
-You can ask questions in our [Discourse forum](https://forum.restic.net).
+- **Easy**: Creating backups should be a frictionless process, otherwise it may be tempting to skip it. Restic should be easy to configure and use, so that you can quickly restore your data in the event of a data loss.
+
+- **Fast**: Nobody does backups if it takes too much time. Backing up your data with restic should only be limited by your network or storage bandwidth, so that you can back up your files every day. When restoring from backups, only the data necessary for restoring is transferred.
+
+- **Verifiable**: Making sure your backups can restore your data is equally as important as creating backups. Restic enables you to easily verify the integrity of your backups
+
+- **Secure**: Restic uses cryptography to guarantee confidentiality and integrity of your data. Restic does not assume your backup data is located in a trusted environement (e.g., a shared space where system administrators are able to access your backups).
+
+- **Efficient**: Restic de-duplicates data before it is written to the storage backend to save space. A backup snapshot should only occupy the storage of the actual increment.
 
 ## Contents
 
 - [Installation](#installation)
 - [Quick start](#quick-start)
 - [Supported backends](#supported-backends)
-- [Design principles](#design-principles)
 - [Reproducible builds](#reproducible-builds)
 - [News](#news)
 - [License](#license)
@@ -40,6 +46,7 @@ You can ask questions in our [Discourse forum](https://forum.restic.net).
 ## Installation
 
 Restic is available on many platforms.
+It supports the three major operating systems (Linux, macOS, Windows) and a few smaller ones (FreeBSD, OpenBSD).
 Check out the [documentation](https://restic.readthedocs.io/) for [installation instructions](https://restic.readthedocs.io/en/stable/020_installation.html).
 
 ## Quick start
@@ -88,20 +95,6 @@ Therefore, restic supports the following backends for storing backups natively:
 - [Microsoft Azure Blob Storage](https://restic.readthedocs.io/en/latest/030_preparing_a_new_repo.html#microsoft-azure-blob-storage)
 - [Google Cloud Storage](https://restic.readthedocs.io/en/latest/030_preparing_a_new_repo.html#google-cloud-storage)
 - And many other services via the [Rclone backend](https://restic.readthedocs.io/en/latest/030_preparing_a_new_repo.html#other-services-via-rclone)
-
-## Design principles
-
-Restic is a program that does backups right and was designed with the following principles in mind:
-
-- **Easy**: Creating backups should be a frictionless process, otherwise it may be tempting to skip it. Restic should be easy to configure and use, so that you can quickly restore your data in the event of a data loss.
-
-- **Fast**: Nobody does backups if it takes too much time. Backing up your data with restic should only be limited by your network or storage bandwidth, so that you can back up your files every day. When restoring from backups, only the data necessary for restoring is transferred.
-
-- **Verifiable**: Making sure your backups can restore your data is equally as important as creating backups. Restic enables you to easily verify the integrity of your backups
-
-- **Secure**: Restic uses cryptography to guarantee confidentiality and integrity of your data. Restic does not assume your backup data is located in a trusted environement (e.g., a shared space where system administrators are able to access your backups).
-
-- **Efficient**: Restic de-duplicates data before it is written to the storage backend to save space. A backup snapshot should only occupy the storage of the actual increment.
 
 ## Reproducible builds
 
