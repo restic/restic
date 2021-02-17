@@ -42,7 +42,6 @@ Restic is a program that does backups right and was designed with the following 
 ## Installation
 
 Restic is available on many platforms.
-It supports the three major operating systems (Linux, macOS, Windows) and a few smaller ones (FreeBSD, OpenBSD).
 Check out the [documentation](https://restic.readthedocs.io/) for [installation instructions](https://restic.readthedocs.io/en/stable/020_installation.html).
 
 ## Quick start
