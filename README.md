@@ -15,11 +15,11 @@
   <a href="https://github.com/restic/restic/issues">Issues</a>
 </p>
 
-[![Documentation](https://readthedocs.org/projects/restic/badge/?version=latest)](https://restic.readthedocs.io/en/latest/?badge=latest)
+# Restic
+
+[![Documentation](https://readthedocs.org/projects/restic/badge/?version=latest)](https://restic.readthedocs.io/en/latest/)
 [![Build Status](https://github.com/restic/restic/workflows/test/badge.svg)](https://github.com/restic/restic/actions?query=workflow%3Atest)
 [![Go Report Card](https://goreportcard.com/badge/github.com/restic/restic)](https://goreportcard.com/report/github.com/restic/restic)
-
-# Restic
 
 Restic is a program that does backups right and was designed with the following principles in mind:
 
