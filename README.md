@@ -30,7 +30,7 @@ You can ask questions in our [Discourse forum](https://forum.restic.net).
 
 - [Installation](#installation)
 - [Quick start](#quick-start)
-- [Backends](#backends)
+- [Supported backends](#supported-backends)
 - [Design principles](#design-principles)
 - [Reproducible builds](#reproducible-builds)
 - [News](#news)
@@ -72,7 +72,9 @@ You can also use the `restic mount` command to mount the repository via FUSE and
 
 Check out the [documentation](https://restic.readthedocs.io/en/latest/) for more command options.
 
-## Backends
+You can also ask questions in our [Discourse forum](https://forum.restic.net).
+
+## Supported backends
 
 Although saving a backup on the same machine is nice, it is not a real backup strategy.
 Therefore, restic supports the following backends for storing backups natively:
