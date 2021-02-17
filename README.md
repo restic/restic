@@ -80,7 +80,7 @@ Therefore, restic supports the following backends for storing backups natively:
 - [Google Cloud Storage](https://restic.readthedocs.io/en/latest/030_preparing_a_new_repo.html#google-cloud-storage)
 - And many other services via the [Rclone](https://rclone.org) [backend](https://restic.readthedocs.io/en/latest/030_preparing_a_new_repo.html#other-services-via-rclone)
 
-## Design Principles
+## Design principles
 
 Restic is a program that does backups right and was designed with the
 following principles in mind:
@@ -110,7 +110,7 @@ following principles in mind:
    data should be de-duplicated before it is actually written to the
    storage back end to save precious backup space.
 
-## Reproducible Builds
+## Reproducible builds
 
 The binaries released with each restic version starting at 0.6.1 are
 [reproducible](https://reproducible-builds.org/), which means that you can
