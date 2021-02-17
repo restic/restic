@@ -17,17 +17,30 @@
 [![Build Status](https://github.com/restic/restic/workflows/test/badge.svg)](https://github.com/restic/restic/actions?query=workflow%3Atest)
 [![Go Report Card](https://goreportcard.com/badge/github.com/restic/restic)](https://goreportcard.com/report/github.com/restic/restic)
 
-Restic is a program that does backups right and was designed with the following principles in mind:
+Restic is a program that does backups right and was designed with the following
+principles in mind:
 
-- **Easy**: Creating backups should be a frictionless process, otherwise it may be tempting to skip it. Restic should be easy to configure and use, so that you can quickly restore your data in the event of a data loss.
+- **Easy**: Creating backups should be a frictionless process, otherwise it
+  may be tempting to skip it. Restic should be easy to configure and use, so
+  that you can quickly restore your data in the event of a data loss.
 
-- **Fast**: Nobody does backups if it takes too much time. Backing up your data with restic should only be limited by your network or storage bandwidth, so that you can back up your files every day. When restoring from backups, only the data necessary for restoring is transferred.
+- **Fast**: Nobody does backups if it takes too much time. Backing up your data
+  with restic should only be limited by your network or storage bandwidth, so
+  that you can back up your files every day. When restoring from backups, only
+  the data necessary for restoring is transferred.
 
-- **Verifiable**: Making sure your backups can restore your data is equally as important as creating backups. Restic enables you to easily verify the integrity of your backups
+- **Verifiable**: Making sure your backups can restore your data is equally as
+  important as creating backups. Restic enables you to easily verify the
+  integrity of your backups.
 
-- **Secure**: Restic uses cryptography to guarantee confidentiality and integrity of your data. Restic does not assume your backup data is located in a trusted environement (e.g., a shared space where system administrators are able to access your backups).
+- **Secure**: Restic uses cryptography to guarantee confidentiality and
+  integrity of your data. Restic does not assume your backup data is located in
+  a trusted environement (e.g., a shared space where system administrators are
+  able to access your backups).
 
-- **Efficient**: Restic de-duplicates data before it is written to the storage backend to save space. A backup snapshot should only occupy the storage of the actual increment.
+- **Efficient**: Restic de-duplicates data before it is written to the storage
+  backend to save space. A backup snapshot should only occupy the storage of
+  the actual increment.
 
 ## Contents
 
@@ -41,12 +54,13 @@ Restic is a program that does backups right and was designed with the following 
 
 ## Installation
 
-Restic is available on many platforms.
-Check out the [documentation](https://restic.readthedocs.io/) for [installation instructions](https://restic.readthedocs.io/en/stable/020_installation.html).
+Restic is available on many platforms. Check out the [documentation](https://restic.readthedocs.io/)
+for [installation instructions](https://restic.readthedocs.io/en/stable/020_installation.html).
 
 ## Quick start
 
-Once you've installed restic, start off by creating a repository for your backups:
+Once you've installed restic, start off by creating a repository for your
+backups:
 
   ```
   $ restic init --repo /tmp/backup
@@ -69,17 +83,18 @@ Then create a backup snapshot of some data:
   snapshot 40dc1520 saved
   ```
 
-Next, you can use the `restic restore` command to restore files.
-You can also use the `restic mount` command to mount the repository via FUSE and browse the files from previous snapshots.
+Next, you can use the `restic restore` command to restore files. You can also
+use the `restic mount` command to mount the repository via FUSE and browse the
+files from previous snapshots.
 
-Check out the [documentation](https://restic.readthedocs.io/en/latest/) for more command options.
-
-You can also ask questions in our [Discourse forum](https://forum.restic.net).
+Check out the [documentation](https://restic.readthedocs.io/en/latest/) for
+more command options. You can also ask questions in our [Discourse forum](https://forum.restic.net).
 
 ## Supported backends
 
-Although saving a backup on the same machine is nice, it is not a real backup strategy.
-Therefore, restic supports the following backends for storing backups natively:
+Although saving a backup on the same machine is nice, it is not a real backup
+strategy. Therefore, restic supports the following backends for storing backups
+natively:
 
 - [Local directory](https://restic.readthedocs.io/en/latest/030_preparing_a_new_repo.html#local)
 - [SFTP server (via SSH)](https://restic.readthedocs.io/en/latest/030_preparing_a_new_repo.html#sftp)
@@ -95,19 +110,18 @@ Therefore, restic supports the following backends for storing backups natively:
 
 The binaries released with each restic version starting at 0.6.1 are
 [reproducible](https://reproducible-builds.org/), which means that you can
-reproduce a byte identical version from the source code for that
-release. Instructions on how to do that are contained in the
-[builder repository](https://github.com/restic/builder).
+reproduce a byte identical version from the source code for that release.
+Instructions on how to do that are contained in the [builder repository](https://github.com/restic/builder).
 
 ## News
 
-You can follow the restic project on Twitter [@resticbackup](https://twitter.com/resticbackup) or by subscribing to
-the [project blog](https://restic.net/blog/).
+You can follow the restic project on Twitter [@resticbackup](https://twitter.com/resticbackup)
+or by subscribing to the [project blog](https://restic.net/blog/).
 
 ## License
 
-Restic is licensed under [BSD 2-Clause License](https://opensource.org/licenses/BSD-2-Clause). You can find the
-complete text in [``LICENSE``](LICENSE).
+Restic is licensed under [BSD 2-Clause License](https://opensource.org/licenses/BSD-2-Clause).
+You can find the complete text in [``LICENSE``](LICENSE).
 
 ## Sponsorship
 
