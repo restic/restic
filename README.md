@@ -43,8 +43,7 @@ For installation instructions, check out the [documentation](https://restic.read
 
 ## Quick start
 
-Once you've [installed](https://restic.readthedocs.io/en/latest/020_installation.html) restic,
-start off with creating a repository for your backups:
+Once you've installed restic, start off with creating a repository for your backups:
 
     $ restic init --repo /tmp/backup
     enter password for new backend:
