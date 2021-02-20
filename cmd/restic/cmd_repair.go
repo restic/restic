@@ -45,7 +45,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 	},
 }
 
-// RestoreOptions collects all options for the restore command.
+// RepairOptions collects all options for the repair command.
 type RepairOptions struct {
 	Hosts           []string
 	Paths           []string
@@ -65,7 +65,7 @@ func init() {
 	flags.Var(&repairOptions.Tags, "tag", "only consider snapshots which include this `taglist`")
 	flags.StringArrayVar(&repairOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`")
 	flags.StringVar(&repairOptions.AddTag, "add-tag", "repaired", "tag to add to repaired snapshots")
-	flags.StringVar(&repairOptions.Append, "append", ".repaired", "string to append to repaired dirs/files; remove files if emtpy or impossible to repair")
+	flags.StringVar(&repairOptions.Append, "append", ".repaired", "string to append to repaired dirs/files; remove files if empty or impossible to repair")
 	flags.BoolVarP(&repairOptions.DryRun, "dry-run", "n", true, "don't do anything, only show what would be done")
 	flags.BoolVar(&repairOptions.DeleteSnapshots, "delete-snapshots", false, "delete original snapshots")
 }
@@ -75,7 +75,7 @@ func runRepair(opts RepairOptions, args []string) error {
 	case opts.DryRun:
 		Printf("\n note: --dry-run is set\n-> repair will only show what it would do.\n\n")
 	case opts.DeleteSnapshots:
-		Printf("\n note: --dry-run is not set and --delete is set\n-> this may result in data loss!\n\n")
+		Printf("\n note: --dry-run is not set and --delete-snapshots is set\n-> this may result in data loss!\n\n")
 	}
 
 	repo, err := OpenRepository(globalOptions)
@@ -168,7 +168,7 @@ func changeSnapshot(opts RepairOptions, repo restic.Repository, sn *restic.Snaps
 		}
 		Printf("snapshot repaired -> %v created.\n", newID.Str())
 	} else {
-		Printf("would have repaired snpshot %v.\n", sn.ID().Str())
+		Printf("would have repaired snapshot %v.\n", sn.ID().Str())
 	}
 	return nil
 }
@@ -235,10 +235,10 @@ func repairTree(opts RepairOptions, repo restic.Repository, path string, treeID 
 			if !ok {
 				changed = true
 				if opts.Append == "" || newSize == 0 {
-					Printf("removed defect file '%v'\n", path+node.Name)
+					Printf("removed defective file '%v'\n", path+node.Name)
 					continue
 				}
-				Printf("repaired defect file '%v'", path+node.Name)
+				Printf("repaired defective file '%v'", path+node.Name)
 				node.Name = node.Name + opts.Append
 				Printf(" to '%v'\n", node.Name)
 				node.Content = newContent
@@ -253,9 +253,9 @@ func repairTree(opts RepairOptions, repo restic.Repository, path string, treeID 
 			case lErr:
 				// If we get an error, we remove this subtree
 				changed = true
-				Printf("removed defect dir '%v'", path+node.Name)
+				Printf("removed defective dir '%v'", path+node.Name)
 				node.Name = node.Name + opts.Append
-				Printf("(now emtpy '%v')\n", node.Name)
+				Printf("(now empty '%v')\n", node.Name)
 				empty, err := emptyTree(opts.DryRun, repo)
 				if err != nil {
 					return newID, true, false, err
