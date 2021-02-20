@@ -84,8 +84,7 @@ func runRepair(opts RepairOptions, args []string) error {
 	}
 
 	lock, err := lockRepoExclusive(globalOptions.ctx, repo)
-	// to make linter happy, as unlockRepo returns an error (which is ignored)
-	defer func() { _ = unlockRepo(lock) }()
+	defer unlockRepo(lock)
 	if err != nil {
 		return err
 	}
@@ -115,9 +114,11 @@ func repairSnapshots(opts RepairOptions, repo restic.Repository, snapshots []*re
 	for _, sn := range snapshots {
 		debug.Log("process snapshot %v", sn.ID())
 		Printf("%v:\n", sn)
-		newID, changed, err := repairTree(opts, repo, "/", *sn.Tree, replaces, seen)
+		newID, changed, lErr, err := repairTree(opts, repo, "/", sn.Tree, replaces, seen)
 		switch {
 		case err != nil:
+			return err
+		case lErr:
 			Printf("the root tree is damaged -> delete snapshot.\n")
 			deleteSn.Insert(*sn.ID())
 		case changed:
@@ -153,13 +154,13 @@ func repairSnapshots(opts RepairOptions, repo restic.Repository, snapshots []*re
 // - add the rag opts.AddTag
 // - preserve original ID
 // if opts.DryRun is set, it doesn't change anything but only
-func changeSnapshot(opts RepairOptions, repo restic.Repository, sn *restic.Snapshot, newID restic.ID) error {
+func changeSnapshot(opts RepairOptions, repo restic.Repository, sn *restic.Snapshot, newID *restic.ID) error {
 	sn.AddTags([]string{opts.AddTag})
 	// Retain the original snapshot id over all tag changes.
 	if sn.Original == nil {
 		sn.Original = sn.ID()
 	}
-	sn.Tree = &newID
+	sn.Tree = newID
 	if !opts.DryRun {
 		newID, err := repo.SaveJSONUnpacked(globalOptions.ctx, restic.SnapshotFile, sn)
 		if err != nil {
@@ -175,29 +176,43 @@ func changeSnapshot(opts RepairOptions, repo restic.Repository, sn *restic.Snaps
 type idMap map[restic.ID]restic.ID
 
 // repairTree checks and repairs a tree and all its subtrees
-// Two error cases are checked:
+// Three error cases are checked:
+// - tree is a nil tree (-> will be replaced by an empty tree)
 // - trees which cannot be loaded (-> the tree contents will be removed)
 // - files whose contents are not fully available  (-> file will be modified)
 // In case of an error, the changes made depends on:
 // - opts.Append: string to append to "repared" names; if empty files will not repaired but deleted
 // - opts.DryRun: if set to true, only print out what to but don't change anything
-func repairTree(opts RepairOptions, repo restic.Repository, path string, treeID restic.ID, replaces idMap, seen restic.IDSet) (restic.ID, bool, error) {
+// Returns:
+// - the new ID
+// - whether the ID changed
+// - whether there was a load error when loading this tre
+// - error for other errors (these are errors when saving a tree)
+func repairTree(opts RepairOptions, repo restic.Repository, path string, treeID *restic.ID, replaces idMap, seen restic.IDSet) (*restic.ID, bool, bool, error) {
 	ctx := globalOptions.ctx
 
+	// handle and repair nil trees
+	if treeID == nil {
+		empty, err := emptyTree(opts.DryRun, repo)
+		Printf("repaired nil tree '%v'\n", path)
+		return &empty, true, false, err
+	}
+
 	// check if tree was already changed
-	newID, ok := replaces[treeID]
+	newID, ok := replaces[*treeID]
 	if ok {
-		return newID, true, nil
+		return &newID, true, false, nil
 	}
 
 	// check if tree was seen but not changed
-	if seen.Has(treeID) {
-		return treeID, false, nil
+	if seen.Has(*treeID) {
+		return treeID, false, false, nil
 	}
 
-	tree, err := repo.LoadTree(ctx, treeID)
+	tree, err := repo.LoadTree(ctx, *treeID)
 	if err != nil {
-		return newID, false, err
+		// mark as load error
+		return &newID, false, true, nil
 	}
 
 	var newNodes []*restic.Node
@@ -231,17 +246,23 @@ func repairTree(opts RepairOptions, repo restic.Repository, path string, treeID 
 			}
 		case "dir":
 			// rewrite if necessary
-			newID, c, err := repairTree(opts, repo, path+node.Name+"/", *node.Subtree, replaces, seen)
+			newID, c, lErr, err := repairTree(opts, repo, path+node.Name+"/", node.Subtree, replaces, seen)
 			switch {
 			case err != nil:
+				return newID, true, false, err
+			case lErr:
 				// If we get an error, we remove this subtree
 				changed = true
 				Printf("removed defect dir '%v'", path+node.Name)
 				node.Name = node.Name + opts.Append
 				Printf("(now emtpy '%v')\n", node.Name)
-				node.Subtree = nil
+				empty, err := emptyTree(opts.DryRun, repo)
+				if err != nil {
+					return newID, true, false, err
+				}
+				node.Subtree = &empty
 			case c:
-				node.Subtree = &newID
+				node.Subtree = newID
 				changed = true
 			}
 		}
@@ -249,8 +270,8 @@ func repairTree(opts RepairOptions, repo restic.Repository, path string, treeID 
 	}
 
 	if !changed {
-		seen.Insert(treeID)
-		return treeID, false, nil
+		seen.Insert(*treeID)
+		return treeID, false, false, nil
 	}
 
 	tree.Nodes = newNodes
@@ -258,13 +279,22 @@ func repairTree(opts RepairOptions, repo restic.Repository, path string, treeID 
 	if !opts.DryRun {
 		newID, err = repo.SaveTree(ctx, tree)
 		if err != nil {
-			return newID, false, err
+			return &newID, true, false, err
 		}
 		Printf("modified tree %v, new id: %v\n", treeID.Str(), newID.Str())
 	} else {
 		Printf("would have modified tree %v\n", treeID.Str())
 	}
 
-	replaces[treeID] = newID
-	return newID, true, nil
+	replaces[*treeID] = newID
+	return &newID, true, false, nil
+}
+
+func emptyTree(dryRun bool, repo restic.Repository) (restic.ID, error) {
+	ctx := globalOptions.ctx
+	var tree restic.Tree
+	if !dryRun {
+		return repo.SaveTree(ctx, &tree)
+	}
+	return restic.ID{}, nil
 }
