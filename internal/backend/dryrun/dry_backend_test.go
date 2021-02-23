@@ -24,11 +24,9 @@ func newBackends() (*dryrun.Backend, restic.Backend) {
 }
 
 func TestDry(t *testing.T) {
-	d, m := newBackends()
-	m.Save(context.TODO(), restic.Handle{}, restic.NewByteReader([]byte("foo")))
-
 	ctx := context.TODO()
 
+	d, m := newBackends()
 	// Since the dry backend is a mostly write-only overlay, the standard backend test suite
 	// won't pass. Instead, perform a series of operations over the backend, testing the state
 	// at each step.
@@ -40,26 +38,28 @@ func TestDry(t *testing.T) {
 		wantErr string
 	}{
 		{d, "loc", "", "DRY:RAM", ""},
-		{d, "delete", "", "", "doesn't support"},
+		{d, "delete", "", "", ""},
 		{d, "stat", "a", "", "not found"},
 		{d, "list", "", "", ""},
 		{d, "save", "", "", "invalid"},
 		{d, "test", "a", "", ""},
-		{m, "save", "a", "baz", ""},
-		{d, "save", "b", "foob", ""},
-		{d, "save", "b", "asdf", "already exists"},
+		{m, "save", "a", "baz", ""},  // save a directly to the mem backend
+		{d, "save", "b", "foob", ""}, // b is not saved
+		{d, "save", "b", "xxx", ""},  // no error as b is not saved
 		{d, "test", "a", "1", ""},
-		{d, "test", "b", "1", ""},
+		{d, "test", "b", "", ""},
 		{d, "stat", "", "", "invalid"},
 		{d, "stat", "a", "a 3", ""},
-		{d, "stat", "b", "b 4", ""},
 		{d, "load", "a", "baz", ""},
-		{d, "load", "b", "", "can't read file"},
-		{d, "list", "", "a b", ""},
-		{d, "remove", "c", "", "not found"},
-		{d, "remove", "b", "", ""},
+		{d, "load", "b", "", "not found"},
+		{d, "list", "", "a", ""},
+		{d, "remove", "c", "", ""},
 		{d, "stat", "b", "", "not found"},
 		{d, "list", "", "a", ""},
+		{d, "remove", "a", "", ""}, // a is in fact not removed
+		{d, "list", "", "a", ""},
+		{m, "remove", "a", "", ""}, // remove a from the mem backend
+		{d, "list", "", "", ""},
 		{d, "close", "", "", ""},
 		{d, "close", "", "", ""},
 	}
@@ -68,7 +68,7 @@ func TestDry(t *testing.T) {
 		var err error
 		var boolRes bool
 
-		handle := restic.Handle{Type: restic.DataFile, Name: step.fname}
+		handle := restic.Handle{Type: restic.PackFile, Name: step.fname}
 		switch step.op {
 		case "save":
 			err = step.be.Save(ctx, handle, restic.NewByteReader([]byte(step.content)))
@@ -79,12 +79,7 @@ func TestDry(t *testing.T) {
 			}
 		case "list":
 			fileList := []string{}
-			err = step.be.List(ctx, restic.DataFile, func(fi restic.FileInfo) error {
-				for _, n := range fileList {
-					if n == fi.Name {
-						return nil
-					}
-				}
+			err = step.be.List(ctx, restic.PackFile, func(fi restic.FileInfo) error {
 				fileList = append(fileList, fi.Name)
 				return nil
 			})
