@@ -316,3 +316,8 @@ Example for using sudo to write a bash completion script directly to the system-
 
     $ sudo ./restic generate --bash-completion /etc/bash_completion.d/restic
     writing bash completion file to /etc/bash_completion.d/restic
+
+.. note:: The path for the ``--bash-completion`` option may vary depending on
+   the operating system used, e.g. ``/usr/share/bash-completion/completions/restic``
+   in Debian and derivatives. Please look up the correct path in the appropriate
+   documentation.
