@@ -297,25 +297,10 @@ func testBackup(t *testing.T, useFsSnapshot bool) {
 
 	testSetupBackupData(t, env)
 	opts := BackupOptions{UseFsSnapshot: useFsSnapshot}
-	rtest.SetupTarTestFixture(t, env.testdata, datafile)
-	opts := BackupOptions{}
-	dryOpts := BackupOptions{DryRun: true}
-
-	// dry run before first backup
-	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, dryOpts, env.gopts)
-	snapshotIDs := testRunList(t, "snapshots", env.gopts)
-	rtest.Assert(t, len(snapshotIDs) == 0,
-		"expected no snapshot, got %v", snapshotIDs)
 
 	// first backup
 	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
-	snapshotIDs = testRunList(t, "snapshots", env.gopts)
-	rtest.Assert(t, len(snapshotIDs) == 1,
-		"expected one snapshot, got %v", snapshotIDs)
-
-	// dry run between backups
-	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, dryOpts, env.gopts)
-	snapshotIDs = testRunList(t, "snapshots", env.gopts)
+	snapshotIDs := testRunList(t, "snapshots", env.gopts)
 	rtest.Assert(t, len(snapshotIDs) == 1,
 		"expected one snapshot, got %v", snapshotIDs)
 
@@ -358,6 +343,57 @@ func testBackup(t *testing.T, useFsSnapshot bool) {
 	}
 
 	testRunCheck(t, env.gopts)
+}
+
+func TestDryRunBackup(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	opts := BackupOptions{}
+	dryOpts := BackupOptions{DryRun: true}
+
+	// dry run before first backup
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, dryOpts, env.gopts)
+	snapshotIDs := testRunList(t, "snapshots", env.gopts)
+	rtest.Assert(t, len(snapshotIDs) == 0,
+		"expected no snapshot, got %v", snapshotIDs)
+	packIDs := testRunList(t, "packs", env.gopts)
+	rtest.Assert(t, len(packIDs) == 0,
+		"expected no data, got %v", snapshotIDs)
+	indexIDs := testRunList(t, "index", env.gopts)
+	rtest.Assert(t, len(indexIDs) == 0,
+		"expected no index, got %v", snapshotIDs)
+
+	// first backup
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
+	snapshotIDs = testRunList(t, "snapshots", env.gopts)
+	packIDs = testRunList(t, "packs", env.gopts)
+	indexIDs = testRunList(t, "index", env.gopts)
+
+	// dry run between backups
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, dryOpts, env.gopts)
+	snapshotIDsAfter := testRunList(t, "snapshots", env.gopts)
+	rtest.Equals(t, snapshotIDs, snapshotIDsAfter)
+	dataIDsAfter := testRunList(t, "packs", env.gopts)
+	rtest.Equals(t, packIDs, dataIDsAfter)
+	indexIDsAfter := testRunList(t, "index", env.gopts)
+	rtest.Equals(t, indexIDs, indexIDsAfter)
+
+	// second backup, implicit incremental
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
+	snapshotIDs = testRunList(t, "snapshots", env.gopts)
+	packIDs = testRunList(t, "packs", env.gopts)
+	indexIDs = testRunList(t, "index", env.gopts)
+
+	// another dry run
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, dryOpts, env.gopts)
+	snapshotIDsAfter = testRunList(t, "snapshots", env.gopts)
+	rtest.Equals(t, snapshotIDs, snapshotIDsAfter)
+	dataIDsAfter = testRunList(t, "packs", env.gopts)
+	rtest.Equals(t, packIDs, dataIDsAfter)
+	indexIDsAfter = testRunList(t, "index", env.gopts)
+	rtest.Equals(t, indexIDs, indexIDsAfter)
 }
 
 func TestBackupNonExistingFile(t *testing.T) {
