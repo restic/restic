@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"math"
 	"sort"
 	"strconv"
@@ -39,6 +40,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 // PruneOptions collects all options for the cleanup command.
 type PruneOptions struct {
 	DryRun bool
+	WarmUp bool
 
 	MaxUnused      string
 	maxUnusedBytes func(used uint64) (unused uint64) // calculates the number of unused bytes after repacking, according to MaxUnused
@@ -63,6 +65,7 @@ func addPruneOptions(c *cobra.Command) {
 	f.StringVar(&pruneOptions.MaxUnused, "max-unused", "5%", "tolerate given `limit` of unused data (absolute value in bytes with suffixes k/K, m/M, g/G, t/T, a value in % or the word 'unlimited')")
 	f.StringVar(&pruneOptions.MaxRepackSize, "max-repack-size", "", "maximum `size` to repack (allowed suffixes: k/K, m/M, g/G, t/T)")
 	f.BoolVar(&pruneOptions.RepackCachableOnly, "repack-cacheable-only", false, "only repack packs which are cacheable")
+	f.BoolVar(&pruneOptions.WarmUp, "warm-up", false, "only warm-up pack files to be repacked, doesn't modify anything")
 }
 
 func verifyPruneOptions(opts *PruneOptions) error {
@@ -115,7 +118,6 @@ func verifyPruneOptions(opts *PruneOptions) error {
 			return uint64(size)
 		}
 	}
-
 	return nil
 }
 
@@ -494,13 +496,31 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		Verboseff("to delete: %10d unreferenced packs\n\n", len(removePacksFirst))
 	}
 
+	if opts.WarmUp {
+		Verbosef("warming up packs to repack\n")
+		return WarmUpFiles(gopts, repackPacks, restic.PackFile)
+	}
+
 	if opts.DryRun {
-		if !gopts.JSON && gopts.verbosity >= 2 {
-			if len(removePacksFirst) > 0 {
-				Printf("Would have removed the following unreferenced packs:\n%v\n\n", removePacksFirst)
+		if gopts.JSON {
+			type PrunePacks struct {
+				MessageType  string     `json:"message_type"` // "packlists"
+				Unreferenced restic.IDs `json:"unreferenced"`
+				Repack       restic.IDs `json:"repack"`
+				Remove       restic.IDs `json:"remove"`
 			}
-			Printf("Would have repacked and removed the following packs:\n%v\n\n", repackPacks)
-			Printf("Would have removed the following no longer used packs:\n%v\n\n", removePacks)
+
+			jsonPrunePacks := PrunePacks{Unreferenced: removePacksFirst.List(), Repack: repackPacks.List(), Remove: removePacks.List(), MessageType: "packlists"}
+			err := json.NewEncoder(gopts.stdout).Encode(jsonPrunePacks)
+			if err != nil {
+				return err
+			}
+		} else {
+			if len(removePacksFirst) > 0 {
+				Verboseff("Would have removed the following unreferenced packs:\n%v\n\n", removePacksFirst)
+			}
+			Verboseff("Would have repacked and removed the following packs:\n%v\n\n", repackPacks)
+			Verboseff("Would have removed the following no longer used packs:\n%v\n\n", removePacks)
 		}
 		// Always quit here if DryRun was set!
 		return nil

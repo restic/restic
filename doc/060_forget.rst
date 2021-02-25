@@ -359,5 +359,12 @@ The ``prune`` command accepts the following options:
   The default value is false.
 
 -  ``--dry-run`` only show what ``prune`` would do.
+   If specified in combination with ``--json``, the packs to repack and to remove are
+   printed in JSON format.
+
+-  ``--warm-up`` tries to load all needed packs for repacking, but doesn't change the
+   repository. This loading can trigger a warmup of needed backend objects, e.g. when
+   using a cold storage.
 
 -  ``--verbose`` increased verbosity shows additional statistics for ``prune``.
+
