@@ -204,6 +204,54 @@ func (res *Restorer) restoreEmptyFileAt(node *restic.Node, target, location stri
 
 // RestoreTo creates the directories and files in the snapshot below dst.
 // Before an item is created, res.Filter is called.
+func (res *Restorer) NeededPacks(ctx context.Context, dst string) (restic.IDSet, error) {
+	var err error
+	if !filepath.IsAbs(dst) {
+		dst, err = filepath.Abs(dst)
+		if err != nil {
+			return nil, errors.Wrap(err, "Abs")
+		}
+	}
+
+	index := res.repo.Index()
+	packs := restic.NewIDSet()
+
+	debug.Log("first pass for %q", dst)
+
+	// first tree pass: create directories and collect all files to restore
+	_, err = res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
+		enterDir: func(node *restic.Node, target, location string) error {
+			return nil
+		},
+
+		visitNode: func(node *restic.Node, target, location string) error {
+			debug.Log("first pass, visitNode: mkdir %q, leaveDir on second pass should restore metadata", location)
+			if node.Type != "file" {
+				return nil
+			}
+
+			if node.Size == 0 {
+				return nil // deal with empty files later
+			}
+
+			for _, id := range node.Content {
+				bp := index.Lookup(restic.BlobHandle{ID: id, Type: restic.DataBlob})
+				if len(bp) == 0 {
+					return errors.Errorf("Unknown blob %s", id.String())
+				}
+				packs.Insert(bp[0].PackID)
+			}
+			return nil
+		},
+		leaveDir: func(node *restic.Node, target, location string) error {
+			return nil
+		},
+	})
+	return packs, err
+}
+
+// RestoreTo creates the directories and files in the snapshot below dst.
+// Before an item is created, res.Filter is called.
 func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 	var err error
 	if !filepath.IsAbs(dst) {
