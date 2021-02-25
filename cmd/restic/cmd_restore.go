@@ -45,6 +45,7 @@ type RestoreOptions struct {
 	Tags               restic.TagLists
 	Verify             bool
 	DryRun             bool
+	WarmUp             bool
 }
 
 var restoreOptions RestoreOptions
@@ -64,6 +65,7 @@ func init() {
 	flags.StringArrayVar(&restoreOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` for snapshot ID \"latest\"")
 	flags.BoolVar(&restoreOptions.Verify, "verify", false, "verify restored files content")
 	flags.BoolVarP(&restoreOptions.DryRun, "dry-run", "n", false, "only show needed pack files")
+	flags.BoolVar(&restoreOptions.WarmUp, "warm-up", false, "only warm-up pack files needed to restore")
 }
 
 func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
@@ -193,7 +195,7 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 	Verbosef("restoring %s to %s\n", res.Snapshot(), opts.Target)
 
 	var packs restic.IDSet
-	if opts.DryRun {
+	if opts.DryRun || opts.WarmUp {
 		Verbosef("finding needed pack files...\n")
 		packs, err = res.NeededPacks(ctx, opts.Target)
 	} else {
@@ -208,7 +210,7 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 		return errors.Fatalf("There were %d errors\n", totalErrors)
 	}
 
-	if opts.Verify && !opts.DryRun {
+	if opts.Verify && !opts.DryRun && !opts.WarmUp {
 		Verbosef("verifying files in %s\n", opts.Target)
 		var count int
 		count, err = res.VerifyFiles(ctx, opts.Target)
@@ -219,6 +221,11 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 			return errors.Fatalf("There were %d errors\n", totalErrors)
 		}
 		Verbosef("finished verifying %d files in %s\n", count, opts.Target)
+	}
+
+	if opts.WarmUp {
+		Verbosef("warming up packs needed to restore\n")
+		return WarmUpFiles(gopts, packs, restic.PackFile)
 	}
 
 	if opts.DryRun {
