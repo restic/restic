@@ -136,7 +136,7 @@ func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packe
 
 	err = fs.RemoveIfExists(p.tmpfile.Name())
 	if err != nil {
-		return errors.Wrap(err, "Remove")
+		debug.Log("Could not remove file: %s\n", p.tmpfile.Name())
 	}
 
 	// update blobs in the index
