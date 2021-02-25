@@ -1,0 +1,7 @@
+Bugfix: In case of error also Wait() for terminal goroutine
+
+This prevents a race condition where the final summary message is
+lost.  When using --json output it happened from time to time that the
+summary output was missing.
+
+https://github.com/restic/restic/pull/3305
