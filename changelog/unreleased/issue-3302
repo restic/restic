@@ -1,0 +1,8 @@
+Bugfix: Fix `fdopendir: not a directory` error for local backend
+
+The `check`, `list packs`, `prune` and `rebuild-index` commands failed
+for the local backend when the `data` folder in the repository contained
+files. This has been fixed.
+
+https://github.com/restic/restic/issues/3302
+https://github.com/restic/restic/pull/3308
