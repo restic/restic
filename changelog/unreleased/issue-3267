@@ -1,0 +1,11 @@
+Bugfix: `copy` failed to copy snapshots in rare cases
+
+The `copy` command could in rare cases fail with the error message `SaveTree(...)
+returned unexpected id ...`.  This has been fixed.
+
+On Linux/BSDs, the error could be caused by backing up symlinks with non-UTF-8
+target paths. Note that, due to limitations in the repository format, these are
+not stored properly and should be avoided if possible.
+
+https://github.com/restic/restic/issues/3267
+https://github.com/restic/restic/pull/3310
