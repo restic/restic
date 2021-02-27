@@ -364,7 +364,7 @@ func ReadPassword(opts GlobalOptions, prompt string) (string, error) {
 	}
 
 	if len(password) == 0 {
-		return "", errors.New("an empty password is not a password")
+		return "", errors.Fatal("an empty password is not a password")
 	}
 
 	return password, nil
