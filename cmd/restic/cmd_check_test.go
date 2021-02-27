@@ -122,3 +122,10 @@ func TestSelectRandomPacksByPercentage(t *testing.T) {
 		rtest.Assert(t, ok, "Expected input and output to be equal")
 	}
 }
+
+func TestSelectNoRandomPacksByPercentage(t *testing.T) {
+	// that the a repository without pack files works
+	var testPacks = make(map[restic.ID]int64)
+	selectedPacks := selectRandomPacksByPercentage(testPacks, 10.0)
+	rtest.Assert(t, len(selectedPacks) == 0, "Expected 0 selected packs")
+}
