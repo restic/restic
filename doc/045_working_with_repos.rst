@@ -216,7 +216,7 @@ If the repository structure is intact, restic will show that no errors were foun
 
 .. code-block:: console
 
-    $ restic -r /src/restic-repo check
+    $ restic -r /srv/restic-repo check
     ...
     load indexes
     check all packs
