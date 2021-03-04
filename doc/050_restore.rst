@@ -127,7 +127,7 @@ e.g.:
     $ restic -r /srv/restic-repo dump --path /production.sql latest production.sql | mysql
 
 It is also possible to ``dump`` the contents of a whole folder structure to
-stdout. To retain the information about the files and folders Restic will
+stdout. To retain the information about the files and folders, Restic will
 output the contents in the tar (default) or zip format:
 
 .. code-block:: console
