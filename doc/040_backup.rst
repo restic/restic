@@ -321,8 +321,8 @@ not in the same folder.
 
 The argument passed to ``--files-from`` must be the name of a text file that
 contains one pattern per line. The file must be encoded as UTF-8, or UTF-16
-with a byte-order mark. Leading and trailing whitespace is removed from the
-patterns. Empty lines and lines starting with a ``#`` are ignored.
+with a byte-order mark. Leading and trailing whitespaces are removed from the
+patterns. Empty lines and lines starting with ``#`` are ignored.
 The patterns are expanded, when the file is read, by the Go function
 `filepath.Glob <https://golang.org/pkg/path/filepath/#Glob>`__.
 
