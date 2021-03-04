@@ -17,8 +17,11 @@
 [![Build Status](https://github.com/restic/restic/workflows/test/badge.svg)](https://github.com/restic/restic/actions?query=workflow%3Atest)
 [![Go Report Card](https://goreportcard.com/badge/github.com/restic/restic)](https://goreportcard.com/report/github.com/restic/restic)
 
-Restic is a program that does backups right and was designed with the following
-principles in mind:
+Restic is a backup program that is fast, efficient, and secure. It supports the
+three major operating systems (Linux, macOS, Windows) and a few smaller ones
+(FreeBSD, OpenBSD).
+
+Restic is designed with the following principles in mind:
 
 - **Easy**: Creating backups should be a frictionless process, otherwise it
   may be tempting to skip it. Restic should be easy to configure and use, so
