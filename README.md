@@ -89,7 +89,7 @@ use the `restic mount` command to mount the repository via FUSE and browse the
 files from previous snapshots.
 
 Check out the [documentation](https://restic.readthedocs.io/en/latest/) for
-more command options. You can also ask questions in our [Discourse forum](https://forum.restic.net).
+more command options. You can also ask questions on our [Discourse forum](https://forum.restic.net).
 
 ## Supported backends
 
