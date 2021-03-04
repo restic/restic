@@ -15,20 +15,25 @@ jobs:
         # list of jobs to run:
         include:
           - job_name: Windows
-            go: 1.15.x
+            go: 1.16.x
             os: windows-latest
 
           - job_name: macOS
-            go: 1.15.x
+            go: 1.16.x
             os: macOS-latest
             test_fuse: false
 
           - job_name: Linux
-            go: 1.15.x
+            go: 1.16.x
             os: ubuntu-latest
             test_cloud_backends: true
             test_fuse: true
             check_changelog: true
+
+          - job_name: Linux
+            go: 1.15.x
+            os: ubuntu-latest
+            test_fuse: true
 
           - job_name: Linux
             go: 1.14.x
@@ -201,7 +206,7 @@ jobs:
             solaris/amd64"
 
     env:
-      go: 1.15.x
+      go: 1.16.x
       GOPROXY: https://proxy.golang.org
 
     runs-on: ubuntu-latest
@@ -234,7 +239,7 @@ jobs:
     name: lint
     runs-on: ubuntu-latest
     env:
-      go: 1.15.x
+      go: 1.16.x
     steps:
       - name: Set up Go ${{ env.go }}
         uses: actions/setup-go@v2
