@@ -233,7 +233,14 @@ jobs:
   lint:
     name: lint
     runs-on: ubuntu-latest
+    env:
+      go: 1.15.x
     steps:
+      - name: Set up Go ${{ env.go }}
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.go }}
+
       - name: Check out code
         uses: actions/checkout@v2
 
@@ -245,6 +252,7 @@ jobs:
           # Optional: show only new issues if it's a pull request. The default value is `false`.
           only-new-issues: true
           args: --verbose --timeout 5m
+          skip-go-installation: true
 
         # only run golangci-lint for pull requests, otherwise ALL hints get
         # reported. We need to slowly address all issues until we can enable
