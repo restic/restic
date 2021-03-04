@@ -39,9 +39,9 @@ ones (FreeBSD and OpenBSD).
   a trusted environement (e.g., a shared space where system administrators are
   able to access your backups).
 
-- **Efficient**: Restic de-duplicates data before it is written to the storage
-  backend to save space. A backup snapshot should only occupy the storage of
-  the actual increment.
+- **Efficient**: A backup snapshot should only occupy the storage of the actual
+  increment. Restic de-duplicates data before it is written to the storage
+  backend to save space.
 
 ## Contents
 
