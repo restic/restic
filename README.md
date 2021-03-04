@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://restic.readthedocs.io/en/latest/_static/logo.png" alt="Restic logo">
+  <img src="https://restic.readthedocs.io/en/latest/_static/logo.png" alt="Restic logo" width="200" height="200">
 </p>
 
 <p align="center">
