@@ -109,10 +109,10 @@ natively:
 
 ## Reproducible builds
 
-The binaries released with each restic version (starting with v0.6.1) are
-[reproducible](https://reproducible-builds.org/). This means you can reproduce
-byte-identical copies of restic from the source code for a given release. See
-the [builder repository](https://github.com/restic/builder) for instructions.
+The binaries for each restic version release (starting with v0.6.1) are
+[reproducible](https://reproducible-builds.org/). This means that you can
+reproduce byte-identical copies of restic from the source code. See the
+[builder repository](https://github.com/restic/builder) for build instructions.
 
 ## News
 
