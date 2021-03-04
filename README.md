@@ -19,7 +19,7 @@
 
 Restic is a backup program that is fast, efficient, and secure. It is supported
 on major operating systems (Linux, macOS, and Windows) as well as a few smaller
-ones (FreeBSD and OpenBSD).
+ones (FreeBSD and OpenBSD). Restic is designed with the following principles:
 
 - **Easy**: Creating backups should be a frictionless process, otherwise it
   may be tempting to skip it. Restic should be easy to configure and use, so
