@@ -245,7 +245,7 @@ func (b *Local) List(ctx context.Context, t restic.FileType, fn func(restic.File
 	if subdirs {
 		err = visitDirs(ctx, basedir, fn)
 	} else {
-		err = visitFiles(ctx, basedir, fn)
+		err = visitFiles(ctx, basedir, fn, false)
 	}
 
 	if b.IsNotExist(err) {
@@ -279,7 +279,7 @@ func visitDirs(ctx context.Context, dir string, fn func(restic.FileInfo) error) 
 	}
 
 	for _, f := range sub {
-		err = visitFiles(ctx, filepath.Join(dir, f), fn)
+		err = visitFiles(ctx, filepath.Join(dir, f), fn, true)
 		if err != nil {
 			return err
 		}
@@ -287,10 +287,17 @@ func visitDirs(ctx context.Context, dir string, fn func(restic.FileInfo) error) 
 	return ctx.Err()
 }
 
-func visitFiles(ctx context.Context, dir string, fn func(restic.FileInfo) error) error {
+func visitFiles(ctx context.Context, dir string, fn func(restic.FileInfo) error, ignoreNotADirectory bool) error {
 	d, err := fs.Open(dir)
 	if err != nil {
 		return err
+	}
+
+	if ignoreNotADirectory {
+		fi, err := d.Stat()
+		if err != nil || !fi.IsDir() {
+			return err
+		}
 	}
 
 	sub, err := d.Readdir(-1)

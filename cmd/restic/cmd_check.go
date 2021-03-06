@@ -331,7 +331,7 @@ func selectPacksByBucket(allPacks map[restic.ID]int64, bucket, totalBuckets uint
 func selectRandomPacksByPercentage(allPacks map[restic.ID]int64, percentage float64) map[restic.ID]int64 {
 	packCount := len(allPacks)
 	packsToCheck := int(float64(packCount) * (percentage / 100.0))
-	if packsToCheck < 1 {
+	if packCount > 0 && packsToCheck < 1 {
 		packsToCheck = 1
 	}
 	timeNs := time.Now().UnixNano()

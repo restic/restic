@@ -53,16 +53,16 @@ func runInit(opts InitOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	be, err := create(repo, gopts.extended)
-	if err != nil {
-		return errors.Fatalf("create repository at %s failed: %v\n", location.StripPassword(gopts.Repo), err)
-	}
-
 	gopts.password, err = ReadPasswordTwice(gopts,
 		"enter password for new repository: ",
 		"enter password again: ")
 	if err != nil {
 		return err
+	}
+
+	be, err := create(repo, gopts.extended)
+	if err != nil {
+		return errors.Fatalf("create repository at %s failed: %v\n", location.StripPassword(gopts.Repo), err)
 	}
 
 	s := repository.New(be)

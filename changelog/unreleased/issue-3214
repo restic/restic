@@ -1,0 +1,9 @@
+Bugfix: Treat an empty password as a fatal error for repository init
+
+When attempting to initialize a new repository, if an empty password was
+supplied, the repository would be created but the init command would return
+an error with a stack trace. Now, if an empty password is provided, it is
+treated as a fatal error, and no repository is created.
+
+https://github.com/restic/restic/issues/3214
+https://github.com/restic/restic/pull/3283
