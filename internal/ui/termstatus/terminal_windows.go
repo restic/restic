@@ -14,36 +14,12 @@ import (
 // clearCurrentLine removes all characters from the current line and resets the
 // cursor position to the first column.
 func clearCurrentLine(wr io.Writer, fd uintptr) func(io.Writer, uintptr) {
-	// easy case, the terminal is cmd or psh, without redirection
-	if isWindowsTerminal(fd) {
-		return windowsClearCurrentLine
-	}
-
-	// check if the output file type is a pipe (0x0003)
-	if isPipe(fd) {
-		// return empty func, update state is not possible on this terminal
-		return func(io.Writer, uintptr) {}
-	}
-
-	// assume we're running in mintty/cygwin
-	return posixClearCurrentLine
+	return windowsClearCurrentLine
 }
 
 // moveCursorUp moves the cursor to the line n lines above the current one.
 func moveCursorUp(wr io.Writer, fd uintptr) func(io.Writer, uintptr, int) {
-	// easy case, the terminal is cmd or psh, without redirection
-	if isWindowsTerminal(fd) {
-		return windowsMoveCursorUp
-	}
-
-	// check if the output file type is a pipe (0x0003)
-	if isPipe(fd) {
-		// return empty func, update state is not possible on this terminal
-		return func(io.Writer, uintptr, int) {}
-	}
-
-	// assume we're running in mintty/cygwin
-	return posixMoveCursorUp
+	return windowsMoveCursorUp
 }
 
 var kernel32 = syscall.NewLazyDLL("kernel32.dll")
@@ -82,29 +58,15 @@ func windowsMoveCursorUp(wr io.Writer, fd uintptr, n int) {
 	})
 }
 
-// isWindowsTerminal return true if the file descriptor is a windows terminal (cmd, psh).
+// isWindowsTerminal return true if the file descriptor is a windows terminal (cmd, psh, mintty).
 func isWindowsTerminal(fd uintptr) bool {
+	// IsTerminal does not return true if the output is piped to a file or other command
 	return terminal.IsTerminal(int(fd))
-}
-
-func isPipe(fd uintptr) bool {
-	typ, err := windows.GetFileType(windows.Handle(fd))
-	return err == nil && typ == windows.FILE_TYPE_PIPE
 }
 
 // canUpdateStatus returns true if status lines can be printed, the process
 // output is not redirected to a file or pipe.
 func canUpdateStatus(fd uintptr) bool {
-	// easy case, the terminal is cmd or psh, without redirection
-	if isWindowsTerminal(fd) {
-		return true
-	}
-
-	// check that the output file type is a pipe (0x0003)
-	if !isPipe(fd) {
-		return false
-	}
-
-	// assume we're running in mintty/cygwin
-	return true
+	// if running in a terminal, allow status updates
+	return isWindowsTerminal(fd)
 }
