@@ -80,9 +80,9 @@ func isPipe(fd uintptr) bool {
 	return err == nil && typ == windows.FILE_TYPE_PIPE
 }
 
-// canUpdateStatus returns true if status lines can be printed, the process
+// CanUpdateStatus returns true if status lines can be printed, the process
 // output is not redirected to a file or pipe.
-func canUpdateStatus(fd uintptr) bool {
+func CanUpdateStatus(fd uintptr) bool {
 	// easy case, the terminal is cmd or psh, without redirection
 	if isWindowsTerminal(fd) {
 		return true
