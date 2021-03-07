@@ -4,6 +4,7 @@ package termstatus
 
 import (
 	"io"
+	"strings"
 	"syscall"
 	"unsafe"
 
@@ -80,6 +81,22 @@ func isPipe(fd uintptr) bool {
 	return err == nil && typ == windows.FILE_TYPE_PIPE
 }
 
+func getFileNameByHandle(fd uintptr) (string, error) {
+	type FILE_NAME_INFO struct {
+		FileNameLength int32
+		FileName       [windows.MAX_LONG_PATH]uint16
+	}
+
+	var fi FILE_NAME_INFO
+	err := windows.GetFileInformationByHandleEx(windows.Handle(fd), windows.FileNameInfo, (*byte)(unsafe.Pointer(&fi)), uint32(unsafe.Sizeof(fi)))
+	if err != nil {
+		return "", err
+	}
+
+	filename := syscall.UTF16ToString(fi.FileName[:])
+	return filename, nil
+}
+
 // CanUpdateStatus returns true if status lines can be printed, the process
 // output is not redirected to a file or pipe.
 func CanUpdateStatus(fd uintptr) bool {
@@ -88,11 +105,23 @@ func CanUpdateStatus(fd uintptr) bool {
 		return true
 	}
 
-	// check that the output file type is a pipe (0x0003)
+	// pipes require special handling
 	if !isPipe(fd) {
 		return false
 	}
 
-	// assume we're running in mintty/cygwin
-	return true
+	fn, err := getFileNameByHandle(fd)
+	if err != nil {
+		return false
+	}
+
+	// inspired by https://github.com/RyanGlScott/mintty/blob/master/src/System/Console/MinTTY/Win32.hsc
+	// terminal: \msys-dd50a72ab4668b33-pty0-to-master
+	// pipe to cat: \msys-dd50a72ab4668b33-13244-pipe-0x16
+	if (strings.HasPrefix(fn, "\\cygwin-") || strings.HasPrefix(fn, "\\msys-")) &&
+		strings.Contains(fn, "-pty") && strings.HasSuffix(fn, "-master") {
+		return true
+	}
+
+	return false
 }
