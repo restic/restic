@@ -42,7 +42,7 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 			},
 		},
 		{
-			// Test if RepositoryFile and PasswordFile are parsed correctly.
+			// Test if RepositoryFile and PasswordCommand are parsed correctly.
 			Opts: secondaryRepoOptions{
 				RepositoryFile:  "backupDst",
 				PasswordCommand: "echo secretDst",
@@ -69,7 +69,7 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 			},
 		},
 		{
-			// Test must fail on no repo given.
+			// Test must fail as PasswordFile and PasswordCommand are both given
 			Opts: secondaryRepoOptions{
 				Repo:            "backupDst",
 				PasswordFile:    "passwordFileDst",
@@ -77,21 +77,21 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 			},
 		},
 		{
-			// Test must fail on no repo given.
+			// Test must fail as PasswordFile does not exist
 			Opts: secondaryRepoOptions{
 				Repo:         "backupDst",
 				PasswordFile: "NonExistingFile",
 			},
 		},
 		{
-			// Test must fail on no repo given.
+			// Test must fail as PasswordCommand does not exist
 			Opts: secondaryRepoOptions{
 				Repo:            "backupDst",
 				PasswordCommand: "notEmpty",
 			},
 		},
 		{
-			// Test must fail on no repo given.
+			// Test must fail as no password is given.
 			Opts: secondaryRepoOptions{
 				Repo: "backupDst",
 			},
