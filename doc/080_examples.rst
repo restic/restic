@@ -338,6 +338,13 @@ attribute, interpret it and assign capabilities accordingly.
 
    root@a3e580b6369d:/# setcap cap_dac_read_search=+ep ~restic/bin/restic
 
+.. important:: The capabilities of the ``setcap`` command only applies to this
+    specific copy of the restic binary. If you run ``restic self-update`` or
+    in any other way replace or update the binary, the capabilities you added
+    above will not be in effect for the new binary. To mitigate this, simply
+    run the ``setcap`` command again, to make sure that the new binary has the
+    same and intended capabilities.
+
 From now on the user ``restic`` can run restic to backup the whole
 system.
 
