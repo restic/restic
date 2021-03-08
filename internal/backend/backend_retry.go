@@ -84,6 +84,9 @@ func (be *RetryBackend) Save(ctx context.Context, h restic.Handle, rd restic.Rew
 		rerr := be.Backend.Remove(ctx, h)
 		if rerr != nil {
 			debug.Log("Remove(%v) returned error: %v", h, err)
+			if be.Report != nil {
+				be.Report(fmt.Sprintf("Delete-failed-Save(%v)", h), err, time.Duration(0))
+			}
 		}
 
 		// return original error
