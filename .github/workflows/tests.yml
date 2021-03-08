@@ -15,20 +15,25 @@ jobs:
         # list of jobs to run:
         include:
           - job_name: Windows
-            go: 1.15.x
+            go: 1.16.x
             os: windows-latest
 
           - job_name: macOS
-            go: 1.15.x
+            go: 1.16.x
             os: macOS-latest
             test_fuse: false
 
           - job_name: Linux
-            go: 1.15.x
+            go: 1.16.x
             os: ubuntu-latest
             test_cloud_backends: true
             test_fuse: true
             check_changelog: true
+
+          - job_name: Linux
+            go: 1.15.x
+            os: ubuntu-latest
+            test_fuse: true
 
           - job_name: Linux
             go: 1.14.x
@@ -201,7 +206,7 @@ jobs:
             solaris/amd64"
 
     env:
-      go: 1.15.x
+      go: 1.16.x
       GOPROXY: https://proxy.golang.org
 
     runs-on: ubuntu-latest
@@ -233,7 +238,14 @@ jobs:
   lint:
     name: lint
     runs-on: ubuntu-latest
+    env:
+      go: 1.16.x
     steps:
+      - name: Set up Go ${{ env.go }}
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.go }}
+
       - name: Check out code
         uses: actions/checkout@v2
 
@@ -245,6 +257,7 @@ jobs:
           # Optional: show only new issues if it's a pull request. The default value is `false`.
           only-new-issues: true
           args: --verbose --timeout 5m
+          skip-go-installation: true
 
         # only run golangci-lint for pull requests, otherwise ALL hints get
         # reported. We need to slowly address all issues until we can enable
