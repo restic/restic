@@ -60,11 +60,11 @@ Exit status is 3 if some source data could not be read (incomplete snapshot crea
 		t.Go(func() error { term.Run(t.Context(globalOptions.ctx)); return nil })
 
 		err := runBackup(backupOptions, globalOptions, term, args)
-		if err != nil {
-			return err
-		}
 		t.Kill(nil)
-		return t.Wait()
+		if werr := t.Wait(); werr != nil {
+			panic(fmt.Sprintf("term.Run() returned err: %v", err))
+		}
+		return err
 	},
 }
 
