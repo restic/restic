@@ -1,7 +1,6 @@
-Bugfix: In case of error also Wait() for terminal goroutine
+Bugfix: Fix possibly missing backup summary of json output in case of error
 
-This prevents a race condition where the final summary message is
-lost.  When using --json output it happened from time to time that the
-summary output was missing.
+When using --json output it happened from time to time that the summary output
+was missing in case an error occurred. This has been fixed.
 
 https://github.com/restic/restic/pull/3305
