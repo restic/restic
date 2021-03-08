@@ -16,6 +16,7 @@ import (
 func TestBackendSaveRetry(t *testing.T) {
 	buf := bytes.NewBuffer(nil)
 	errcount := 0
+	uploadSize := int64(0)
 	be := &mock.Backend{
 		SaveFn: func(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
 			if errcount == 0 {
@@ -28,8 +29,12 @@ func TestBackendSaveRetry(t *testing.T) {
 				return errors.New("injected error")
 			}
 
-			_, err := io.Copy(buf, rd)
+			var err error
+			uploadSize, err = io.Copy(buf, rd)
 			return err
+		},
+		StatFn: func(ctx context.Context, h restic.Handle) (restic.FileInfo, error) {
+			return restic.FileInfo{Name: h.Name, Size: uploadSize}, nil
 		},
 	}
 

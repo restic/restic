@@ -57,6 +57,7 @@ func (be *RetryBackend) retry(ctx context.Context, msg string, f func() error) e
 
 // Save stores the data in the backend under the given handle.
 func (be *RetryBackend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+	firstTry := true
 	return be.retry(ctx, fmt.Sprintf("Save(%v)", h), func() error {
 		err := rd.Rewind()
 		if err != nil {
@@ -65,8 +66,19 @@ func (be *RetryBackend) Save(ctx context.Context, h restic.Handle, rd restic.Rew
 
 		err = be.Backend.Save(ctx, h, rd)
 		if err == nil {
+			if !firstTry {
+				fi, err := be.Backend.Stat(ctx, h)
+				if err != nil {
+					return err
+				}
+				if fi.Size != rd.Length() {
+					return fmt.Errorf("Stat after save found unexpected length %q instead of %q", fi.Size, rd.Length())
+				}
+			}
+
 			return nil
 		}
+		firstTry = false
 
 		debug.Log("Save(%v) failed with error, removing file: %v", h, err)
 		rerr := be.Backend.Remove(ctx, h)
