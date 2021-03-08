@@ -117,8 +117,12 @@ be skipped by later copy runs.
     both the source and destination repository, *may occupy up to twice their
     space* in the destination repository. See below for how to avoid this.
 
-For the destination repository ``--repo2`` the password can be read from
-a file ``--password-file2`` or from a command ``--password-command2``.
+The destination repository is specified with ``--repo2`` or can be read 
+from a file specified via ``--repository-file2``. Both of these options
+can also set as environment variables ``$RESTIC_REPOSITORY2`` or
+``$RESTIC_REPOSITORY_FILE2`` respectively. For the destination repository 
+the password can be read from a file ``--password-file2`` or from a command 
+``--password-command2``.
 Alternatively the environment variables ``$RESTIC_PASSWORD_COMMAND2`` and
 ``$RESTIC_PASSWORD_FILE2`` can be used. It is also possible to directly
 pass the password via ``$RESTIC_PASSWORD2``. The key which should be used

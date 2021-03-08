@@ -1,0 +1,14 @@
+Enhancement: Add `--repository-file2` option to `init` and `copy` command
+
+The `init` and `copy` command can now be used with the `--repository-file2`
+option or the `$RESTIC_REPOSITORY_FILE2` environment variable.
+These to options are in addition to the `--repo2` flag and allow you to read
+the destination repository from a file.
+
+Using both `--repository-file` and `--repo2` options resulted in an error for
+the `copy` or `init` command. The handling of this combination of options has
+been fixed. A workaround for this issue is to only use `--repo` or `-r` and
+`--repo2` for `init` or `copy`.
+
+https://github.com/restic/restic/issues/3293
+https://github.com/restic/restic/pull/3294
