@@ -277,7 +277,7 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 	debug.Log("%v -> %v bytes, err %#v: %v", objName, info.Size, err, err)
 
 	// sanity check
-	if err != nil && info.Size != rd.Length() {
+	if err == nil && info.Size != rd.Length() {
 		return errors.Errorf("wrote %d bytes instead of the expected %d bytes", info.Size, rd.Length())
 	}
 
