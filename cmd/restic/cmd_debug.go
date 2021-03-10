@@ -426,103 +426,59 @@ func runDebugExamine(gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	blobsLoaded := false
 	for _, name := range args {
-		fmt.Printf("examine %v\n", name)
-		id, err := restic.ParseID(name)
+		examinePack(gopts.ctx, repo, name)
+	}
+	return nil
+}
+
+func examinePack(ctx context.Context, repo restic.Repository, name string) {
+	blobsLoaded := false
+	fmt.Printf("examine %v\n", name)
+	id, err := restic.ParseID(name)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+	}
+
+	h := restic.Handle{
+		Type: restic.PackFile,
+		Name: name,
+	}
+	fi, err := repo.Backend().Stat(ctx, h)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+	}
+
+	fmt.Printf("  file size is %v\n", fi.Size)
+
+	buf, err := backend.LoadAll(ctx, nil, repo.Backend(), h)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+	}
+
+	gotID := restic.Hash(buf)
+	if !id.Equal(gotID) {
+		fmt.Printf("  wanted hash %v, got %v\n", id, gotID)
+	} else {
+		fmt.Printf("  hash for file content matches\n")
+	}
+
+	fmt.Printf("  ========================================\n")
+	fmt.Printf("  looking for info in the indexes\n")
+
+	// examine all data the indexes have for the pack file
+	for _, idx := range repo.Index().(*repository.MasterIndex).All() {
+		idxIDs, err := idx.IDs()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			idxIDs = restic.IDs{}
 		}
 
-		h := restic.Handle{
-			Type: restic.PackFile,
-			Name: name,
-		}
-		fi, err := repo.Backend().Stat(gopts.ctx, h)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		blobs := idx.ListPack(id)
+		if len(blobs) == 0 {
+			continue
 		}
 
-		fmt.Printf("  file size is %v\n", fi.Size)
-
-		buf, err := backend.LoadAll(gopts.ctx, nil, repo.Backend(), h)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		}
-
-		gotID := restic.Hash(buf)
-		if !id.Equal(gotID) {
-			fmt.Printf("  wanted hash %v, got %v\n", id, gotID)
-		} else {
-			fmt.Printf("  hash for file content matches\n")
-		}
-
-		fmt.Printf("  ========================================\n")
-		fmt.Printf("  looking for info in the indexes\n")
-
-		// examine all data the indexes have for the pack file
-		for _, idx := range repo.Index().(*repository.MasterIndex).All() {
-			idxIDs, err := idx.IDs()
-			if err != nil {
-				idxIDs = restic.IDs{}
-			}
-
-			blobs := idx.ListPack(id)
-			if len(blobs) == 0 {
-				continue
-			}
-
-			fmt.Printf("    index %v:\n", idxIDs)
-
-			// track current size and offset
-			var size, offset uint64
-
-			sort.Slice(blobs, func(i, j int) bool {
-				return blobs[i].Offset < blobs[j].Offset
-			})
-
-			for _, pb := range blobs {
-				fmt.Printf("      %v blob %v, offset %-6d, raw length %-6d\n", pb.Type, pb.ID, pb.Offset, pb.Length)
-				if offset != uint64(pb.Offset) {
-					fmt.Printf("      hole in file, want offset %v, got %v\n", offset, pb.Offset)
-				}
-				offset += uint64(pb.Length)
-				size += uint64(pb.Length)
-			}
-
-			// compute header size, per blob: 1 byte type, 4 byte length, 32 byte id
-			size += uint64(restic.CiphertextLength(len(blobs) * (1 + 4 + 32)))
-			// length in uint32 little endian
-			size += 4
-
-			if uint64(fi.Size) != size {
-				fmt.Printf("      file sizes do not match: computed %v from index, file size is %v\n", size, fi.Size)
-			} else {
-				fmt.Printf("      file sizes match\n")
-			}
-
-			// convert list of blobs to []restic.Blob
-			var list []restic.Blob
-			for _, b := range blobs {
-				list = append(list, b.Blob)
-			}
-
-			err = loadBlobs(gopts.ctx, repo, name, list)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			} else {
-				blobsLoaded = true
-			}
-		}
-
-		fmt.Printf("  ========================================\n")
-		fmt.Printf("  inspect the pack itself\n")
-
-		blobs, _, err := pack.List(repo.Key(), restic.ReaderAt(gopts.ctx, repo.Backend(), h), fi.Size)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "error for pack %v: %v\n", id.Str(), err)
-			return nil
-		}
+		fmt.Printf("    index %v:\n", idxIDs)
 
 		// track current size and offset
 		var size, offset uint64
@@ -551,12 +507,60 @@ func runDebugExamine(gopts GlobalOptions, args []string) error {
 			fmt.Printf("      file sizes match\n")
 		}
 
-		if !blobsLoaded {
-			err = loadBlobs(gopts.ctx, repo, name, blobs)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			}
+		// convert list of blobs to []restic.Blob
+		var list []restic.Blob
+		for _, b := range blobs {
+			list = append(list, b.Blob)
+		}
+
+		err = loadBlobs(ctx, repo, name, list)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		} else {
+			blobsLoaded = true
 		}
 	}
-	return nil
+
+	fmt.Printf("  ========================================\n")
+	fmt.Printf("  inspect the pack itself\n")
+
+	blobs, _, err := pack.List(repo.Key(), restic.ReaderAt(ctx, repo.Backend(), h), fi.Size)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error for pack %v: %v\n", id.Str(), err)
+		return
+	}
+
+	// track current size and offset
+	var size, offset uint64
+
+	sort.Slice(blobs, func(i, j int) bool {
+		return blobs[i].Offset < blobs[j].Offset
+	})
+
+	for _, pb := range blobs {
+		fmt.Printf("      %v blob %v, offset %-6d, raw length %-6d\n", pb.Type, pb.ID, pb.Offset, pb.Length)
+		if offset != uint64(pb.Offset) {
+			fmt.Printf("      hole in file, want offset %v, got %v\n", offset, pb.Offset)
+		}
+		offset += uint64(pb.Length)
+		size += uint64(pb.Length)
+	}
+
+	// compute header size, per blob: 1 byte type, 4 byte length, 32 byte id
+	size += uint64(restic.CiphertextLength(len(blobs) * (1 + 4 + 32)))
+	// length in uint32 little endian
+	size += 4
+
+	if uint64(fi.Size) != size {
+		fmt.Printf("      file sizes do not match: computed %v from index, file size is %v\n", size, fi.Size)
+	} else {
+		fmt.Printf("      file sizes match\n")
+	}
+
+	if !blobsLoaded {
+		err = loadBlobs(ctx, repo, name, blobs)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		}
+	}
 }
