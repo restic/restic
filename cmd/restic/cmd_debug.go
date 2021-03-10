@@ -313,13 +313,13 @@ func decryptUnsigned(ctx context.Context, k *crypto.Key, buf []byte) []byte {
 	return out
 }
 
-func loadBlobs(ctx context.Context, repo restic.Repository, pack string, list []restic.Blob) error {
+func loadBlobs(ctx context.Context, repo restic.Repository, pack restic.ID, list []restic.Blob) error {
 	be := repo.Backend()
 	for _, blob := range list {
 		fmt.Printf("      loading blob %v at %v (length %v)\n", blob.ID, blob.Offset, blob.Length)
 		buf := make([]byte, blob.Length)
 		h := restic.Handle{
-			Name: pack,
+			Name: pack.String(),
 			Type: restic.PackFile,
 		}
 		err := be.Load(ctx, h, int(blob.Length), int64(blob.Offset), func(rd io.Reader) error {
@@ -408,6 +408,20 @@ func storePlainBlob(id restic.ID, prefix string, plain []byte) error {
 }
 
 func runDebugExamine(gopts GlobalOptions, args []string) error {
+	ids := make([]restic.ID, 0)
+	for _, name := range args {
+		id, err := restic.ParseID(name)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			continue
+		}
+		ids = append(ids, id)
+	}
+
+	if len(ids) == 0 {
+		return errors.Fatal("no pack files to examine")
+	}
+
 	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err
@@ -426,34 +440,34 @@ func runDebugExamine(gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	for _, name := range args {
-		examinePack(gopts.ctx, repo, name)
+	for _, id := range ids {
+		err := examinePack(gopts.ctx, repo, id)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		}
+		if err == context.Canceled {
+			break
+		}
 	}
 	return nil
 }
 
-func examinePack(ctx context.Context, repo restic.Repository, name string) {
-	blobsLoaded := false
-	fmt.Printf("examine %v\n", name)
-	id, err := restic.ParseID(name)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-	}
+func examinePack(ctx context.Context, repo restic.Repository, id restic.ID) error {
+	fmt.Printf("examine %v\n", id)
 
 	h := restic.Handle{
 		Type: restic.PackFile,
-		Name: name,
+		Name: id.String(),
 	}
 	fi, err := repo.Backend().Stat(ctx, h)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		return err
 	}
-
 	fmt.Printf("  file size is %v\n", fi.Size)
 
 	buf, err := backend.LoadAll(ctx, nil, repo.Backend(), h)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		return err
 	}
 
 	gotID := restic.Hash(buf)
@@ -466,6 +480,7 @@ func examinePack(ctx context.Context, repo restic.Repository, name string) {
 	fmt.Printf("  ========================================\n")
 	fmt.Printf("  looking for info in the indexes\n")
 
+	blobsLoaded := false
 	// examine all data the indexes have for the pack file
 	for _, idx := range repo.Index().(*repository.MasterIndex).All() {
 		idxIDs, err := idx.IDs()
@@ -513,7 +528,7 @@ func examinePack(ctx context.Context, repo restic.Repository, name string) {
 			list = append(list, b.Blob)
 		}
 
-		err = loadBlobs(ctx, repo, name, list)
+		err = loadBlobs(ctx, repo, id, list)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		} else {
@@ -526,8 +541,7 @@ func examinePack(ctx context.Context, repo restic.Repository, name string) {
 
 	blobs, _, err := pack.List(repo.Key(), restic.ReaderAt(ctx, repo.Backend(), h), fi.Size)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error for pack %v: %v\n", id.Str(), err)
-		return
+		return fmt.Errorf("pack %v: %v", id.Str(), err)
 	}
 
 	// track current size and offset
@@ -558,9 +572,7 @@ func examinePack(ctx context.Context, repo restic.Repository, name string) {
 	}
 
 	if !blobsLoaded {
-		err = loadBlobs(ctx, repo, name, blobs)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		}
+		return loadBlobs(ctx, repo, id, blobs)
 	}
+	return nil
 }
