@@ -165,17 +165,7 @@ func (r *SFTP) ReadDir(ctx context.Context, dir string) ([]os.FileInfo, error) {
 // IsNotExist returns true if the error is caused by a not existing file.
 func (r *SFTP) IsNotExist(err error) bool {
 	err = errors.Cause(err)
-
-	if os.IsNotExist(err) {
-		return true
-	}
-
-	statusError, ok := err.(*sftp.StatusError)
-	if !ok {
-		return false
-	}
-
-	return statusError.Error() == `sftp: "No such file" (SSH_FX_NO_SUCH_FILE)`
+	return errors.Is(err, os.ErrNotExist)
 }
 
 func buildSSHCommand(cfg Config) (cmd string, args []string, err error) {
