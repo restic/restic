@@ -213,86 +213,80 @@ func tryRepairWithBitflip(ctx context.Context, key *crypto.Key, input []byte, by
 			buf := make([]byte, len(input))
 			copy(buf, input)
 
-			for {
-				select {
-				case i, ok := <-ch:
-					if !ok {
-						return nil
-					}
-					if bytewise {
-						for j := 0; j < 255; j++ {
-							// flip bits
-							buf[i] ^= byte(j)
+			testFlip := func(idx int, pattern byte) bool {
+				// flip bits
+				buf[idx] ^= pattern
 
-							nonce, plaintext := buf[:key.NonceSize()], buf[key.NonceSize():]
-							plaintext, err := key.Open(plaintext[:0], nonce, plaintext, nil)
-							if err == nil {
-								fmt.Printf("\n")
-								fmt.Printf("        blob could be repaired by XORing byte %v with 0x%02x\n", i, j)
-								fmt.Printf("        hash is %v\n", restic.Hash(plaintext))
-								close(done)
-								found = true
-								fixed = plaintext
-								return nil
-							}
+				nonce, plaintext := buf[:key.NonceSize()], buf[key.NonceSize():]
+				plaintext, err := key.Open(plaintext[:0], nonce, plaintext, nil)
+				if err == nil {
+					fmt.Printf("\n")
+					fmt.Printf("        blob could be repaired by XORing byte %v with 0x%02x\n", idx, pattern)
+					fmt.Printf("        hash is %v\n", restic.Hash(plaintext))
+					close(done)
+					found = true
+					fixed = plaintext
+					return true
+				}
 
-							// flip bits back
-							buf[i] ^= byte(j)
+				// flip bits back
+				buf[idx] ^= pattern
+				return false
+			}
+
+			for i := range ch {
+				if bytewise {
+					for j := 0; j < 255; j++ {
+						if testFlip(i, byte(j)) {
+							return nil
 						}
-					} else {
-						for j := 0; j < 7; j++ {
-							// flip bit
-							buf[i] ^= (1 << uint(j))
-
-							nonce, plaintext := buf[:key.NonceSize()], buf[key.NonceSize():]
-							plaintext, err := key.Open(plaintext[:0], nonce, plaintext, nil)
-							if err == nil {
-								fmt.Printf("\n")
-								fmt.Printf("        blob could be repaired by flipping bit %v in byte %v\n", j, i)
-								fmt.Printf("        hash is %v\n", restic.Hash(plaintext))
-								close(done)
-								found = true
-								fixed = plaintext
-								return nil
-							}
-
-							// flip bit back
-							buf[i] ^= (1 << uint(j))
+					}
+				} else {
+					for j := 0; j < 7; j++ {
+						// flip each bit once
+						if testFlip(i, (1 << uint(j))) {
+							return nil
 						}
 					}
 				}
 			}
+			return nil
 		})
 	}
 
-	start := time.Now()
-	info := time.Now()
-outer:
-	for i := range input {
-		select {
-		case ch <- i:
-		case <-done:
-			fmt.Printf("     done after %v\n", time.Since(start))
-			break outer
-		}
+	wg.Go(func() error {
+		defer close(ch)
 
-		if time.Since(info) > time.Second {
-			secs := time.Since(start).Seconds()
-			gps := float64(i) / secs
-			remaining := len(input) - i
-			eta := time.Duration(float64(remaining)/gps) * time.Second
+		start := time.Now()
+		info := time.Now()
+		for i := range input {
+			select {
+			case ch <- i:
+			case <-done:
+				fmt.Printf("     done after %v\n", time.Since(start))
+				return nil
+			}
 
-			fmt.Printf("\r%d byte of %d done (%.2f%%), %.0f byte per second, ETA %v",
-				i, len(input), float32(i)/float32(len(input)*100),
-				gps, eta)
-			info = time.Now()
+			if time.Since(info) > time.Second {
+				secs := time.Since(start).Seconds()
+				gps := float64(i) / secs
+				remaining := len(input) - i
+				eta := time.Duration(float64(remaining)/gps) * time.Second
+
+				fmt.Printf("\r%d byte of %d done (%.2f%%), %.0f byte per second, ETA %v",
+					i, len(input), float32(i)/float32(len(input))*100, gps, eta)
+				info = time.Now()
+			}
 		}
+		return nil
+	})
+	err := wg.Wait()
+	if err != nil {
+		panic("all go rountines can only return nil")
 	}
-	close(ch)
-	wg.Wait()
 
 	if !found {
-		fmt.Printf("\n        blob could not be repaired by single bit flip\n")
+		fmt.Printf("\n        blob could not be repaired\n")
 	}
 	return fixed
 }
@@ -315,18 +309,17 @@ func decryptUnsigned(ctx context.Context, k *crypto.Key, buf []byte) []byte {
 
 func loadBlobs(ctx context.Context, repo restic.Repository, pack restic.ID, list []restic.Blob) error {
 	be := repo.Backend()
+	h := restic.Handle{
+		Name: pack.String(),
+		Type: restic.PackFile,
+	}
 	for _, blob := range list {
 		fmt.Printf("      loading blob %v at %v (length %v)\n", blob.ID, blob.Offset, blob.Length)
 		buf := make([]byte, blob.Length)
-		h := restic.Handle{
-			Name: pack.String(),
-			Type: restic.PackFile,
-		}
 		err := be.Load(ctx, h, int(blob.Length), int64(blob.Offset), func(rd io.Reader) error {
 			n, err := io.ReadFull(rd, buf)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "read error after %d bytes: %v\n", n, err)
-				return err
+				return fmt.Errorf("read error after %d bytes: %v\n", n, err)
 			}
 			return nil
 		})
@@ -349,9 +342,10 @@ func loadBlobs(ctx context.Context, repo restic.Repository, pack restic.ID, list
 			if plain != nil {
 				id := restic.Hash(plain)
 				if !id.Equal(blob.ID) {
-					fmt.Printf("         successfully repaired blob (length %v), hash is %v, ID does not match, wanted %v\n", len(plain), id, blob.ID)
+					fmt.Printf("         repaired blob (length %v), hash is %v, ID does not match, wanted %v\n", len(plain), id, blob.ID)
 					prefix = "repaired-wrong-hash-"
 				} else {
+					fmt.Printf("         successfully repaired blob (length %v), hash is %v, ID matches\n", len(plain), id)
 					prefix = "repaired-"
 				}
 			} else {
