@@ -319,7 +319,7 @@ func loadBlobs(ctx context.Context, repo restic.Repository, pack restic.ID, list
 		err := be.Load(ctx, h, int(blob.Length), int64(blob.Offset), func(rd io.Reader) error {
 			n, err := io.ReadFull(rd, buf)
 			if err != nil {
-				return fmt.Errorf("read error after %d bytes: %v\n", n, err)
+				return fmt.Errorf("read error after %d bytes: %v", n, err)
 			}
 			return nil
 		})
