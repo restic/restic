@@ -469,7 +469,6 @@ func examinePack(ctx context.Context, repo restic.Repository, id restic.ID) erro
 	if err != nil {
 		return err
 	}
-
 	gotID := restic.Hash(buf)
 	if !id.Equal(gotID) {
 		fmt.Printf("  wanted hash %v, got %v\n", id, gotID)
@@ -495,38 +494,12 @@ func examinePack(ctx context.Context, repo restic.Repository, id restic.ID) erro
 
 		fmt.Printf("    index %v:\n", idxIDs)
 
-		// track current size and offset
-		var size, offset uint64
-
-		sort.Slice(blobs, func(i, j int) bool {
-			return blobs[i].Offset < blobs[j].Offset
-		})
-
-		for _, pb := range blobs {
-			fmt.Printf("      %v blob %v, offset %-6d, raw length %-6d\n", pb.Type, pb.ID, pb.Offset, pb.Length)
-			if offset != uint64(pb.Offset) {
-				fmt.Printf("      hole in file, want offset %v, got %v\n", offset, pb.Offset)
-			}
-			offset += uint64(pb.Length)
-			size += uint64(pb.Length)
-		}
-
-		// compute header size, per blob: 1 byte type, 4 byte length, 32 byte id
-		size += uint64(restic.CiphertextLength(len(blobs) * (1 + 4 + 32)))
-		// length in uint32 little endian
-		size += 4
-
-		if uint64(fi.Size) != size {
-			fmt.Printf("      file sizes do not match: computed %v from index, file size is %v\n", size, fi.Size)
-		} else {
-			fmt.Printf("      file sizes match\n")
-		}
-
 		// convert list of blobs to []restic.Blob
 		var list []restic.Blob
 		for _, b := range blobs {
 			list = append(list, b.Blob)
 		}
+		checkPackSize(list, fi.Size)
 
 		err = loadBlobs(ctx, repo, id, list)
 		if err != nil {
@@ -543,7 +516,15 @@ func examinePack(ctx context.Context, repo restic.Repository, id restic.ID) erro
 	if err != nil {
 		return fmt.Errorf("pack %v: %v", id.Str(), err)
 	}
+	checkPackSize(blobs, fi.Size)
 
+	if !blobsLoaded {
+		return loadBlobs(ctx, repo, id, blobs)
+	}
+	return nil
+}
+
+func checkPackSize(blobs []restic.Blob, fileSize int64) {
 	// track current size and offset
 	var size, offset uint64
 
@@ -565,14 +546,9 @@ func examinePack(ctx context.Context, repo restic.Repository, id restic.ID) erro
 	// length in uint32 little endian
 	size += 4
 
-	if uint64(fi.Size) != size {
-		fmt.Printf("      file sizes do not match: computed %v from index, file size is %v\n", size, fi.Size)
+	if uint64(fileSize) != size {
+		fmt.Printf("      file sizes do not match: computed %v from index, file size is %v\n", size, fileSize)
 	} else {
 		fmt.Printf("      file sizes match\n")
 	}
-
-	if !blobsLoaded {
-		return loadBlobs(ctx, repo, id, blobs)
-	}
-	return nil
 }
