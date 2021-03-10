@@ -184,7 +184,7 @@ func runDebugDump(gopts GlobalOptions, args []string) error {
 }
 
 var cmdDebugExamine = &cobra.Command{
-	Use:               "examine",
+	Use:               "examine pack-ID...",
 	Short:             "Examine a pack file",
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
