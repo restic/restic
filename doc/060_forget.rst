@@ -341,7 +341,7 @@ The ``prune`` command accepts the following options:
       unused files. This means that as long as some data is still used within
       a file stored in the repo, restic will just leave it there. Use this if
       you want to minimize the time and bandwidth used by the ``prune``
-      operation.
+      operation. Note that metadata will still be repacked.
 
    Restic tries to repack as little data as possible while still ensuring this 
    limit for unused data.
