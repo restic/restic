@@ -258,6 +258,7 @@ func (r *SFTP) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader
 	}
 
 	filename := r.Filename(h)
+	dirname := r.Dirname(h)
 
 	// create new file
 	f, err := r.c.OpenFile(filename, os.O_CREATE|os.O_EXCL|os.O_WRONLY)
@@ -273,9 +274,29 @@ func (r *SFTP) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader
 		}
 	}
 
+	// pkg/sftp doesn't allow creating with a mode.
+	// Chmod while the file is still empty.
+	if err == nil {
+		err = f.Chmod(backend.Modes.File)
+	}
 	if err != nil {
 		return errors.Wrap(err, "OpenFile")
 	}
+
+	defer func() {
+		if err == nil {
+			return
+		}
+
+		// Try not to leave a partial file behind.
+		rmErr := r.c.Remove(f.Name())
+		if rmErr != nil {
+			debug.Log("sftp: failed to remove broken file %v: %v",
+				filename, rmErr)
+		}
+
+		err = r.checkNoSpace(dirname, rd.Length(), err)
+	}()
 
 	// save data, make sure to use the optimized sftp upload method
 	wbytes, err := f.ReadFrom(rd)
@@ -291,11 +312,32 @@ func (r *SFTP) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader
 	}
 
 	err = f.Close()
-	if err != nil {
-		return errors.Wrap(err, "Close")
+	return errors.Wrap(err, "Close")
+}
+
+// checkNoSpace checks if err was likely caused by lack of available space
+// on the remote, and if so, makes it permanent.
+func (r *SFTP) checkNoSpace(dir string, size int64, origErr error) error {
+	// The SFTP protocol has a message for ENOSPC,
+	// but pkg/sftp doesn't export it and OpenSSH's sftp-server
+	// sends FX_FAILURE instead.
+
+	e, ok := origErr.(*sftp.StatusError)
+	_, hasExt := r.c.HasExtension("statvfs@openssh.com")
+	if !ok || e.FxCode() != sftp.ErrSSHFxFailure || !hasExt {
+		return origErr
 	}
 
-	return errors.Wrap(r.c.Chmod(filename, backend.Modes.File), "Chmod")
+	fsinfo, err := r.c.StatVFS(dir)
+	if err != nil {
+		debug.Log("sftp: StatVFS returned %v", err)
+		return origErr
+	}
+	if fsinfo.Favail == 0 || fsinfo.FreeSpace() < uint64(size) {
+		err := errors.New("sftp: no space left on device")
+		return backoff.Permanent(err)
+	}
+	return origErr
 }
 
 // Load runs fn with a reader that yields the contents of the file at h at the
