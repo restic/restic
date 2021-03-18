@@ -84,12 +84,31 @@ func init() {
 	mountFlags.BoolVar(&mountOptions.DaemonMode, "daemon", false, "run this mount in background like a daemon")
 }
 
+func linearSearch(args []string, search string) int {
+	for i, n := range args {
+		if n == search {
+			return i
+		}
+	}
+	return -1
+}
+
+func removeElement(args []string, search string) []string {
+	index := linearSearch(args, search)
+	if index != -1 {
+		return append(args[:index], args[index+1:]...)
+	} else {
+		return args
+	}
+}
+
 func runMount(opts MountOptions, gopts GlobalOptions, args []string) error {
 	if opts.DaemonMode {
 		filename := os.Args[0]
 		attr := new(syscall.ProcAttr)
-		pid, err := syscall.ForkExec(filename, args, attr)
-		Println("Mount is now running as a daemon. PID: %d", pid)
+		argx := removeElement(args, "daemon")
+		pid, err := syscall.ForkExec(filename, argx, attr)
+		Println("Mount is now running as a daemon. PID: ", pid)
 		if err != nil {
 			panic(err)
 		}
