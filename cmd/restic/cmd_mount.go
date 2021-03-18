@@ -62,6 +62,7 @@ type MountOptions struct {
 	Tags                 restic.TagLists
 	Paths                []string
 	SnapshotTemplate     string
+	DaemonMode           bool
 }
 
 var mountOptions MountOptions
@@ -79,9 +80,14 @@ func init() {
 	mountFlags.StringArrayVar(&mountOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`")
 
 	mountFlags.StringVar(&mountOptions.SnapshotTemplate, "snapshot-template", time.RFC3339, "set `template` to use for snapshot dirs")
+	mountFlags.BoolVar(&mountOptions.DaemonMode, "daemon", false, "run this mount in background like a daemon")
 }
 
 func runMount(opts MountOptions, gopts GlobalOptions, args []string) error {
+	if opts.DaemonMode {
+		go runMount(opts, gopts, args)
+		return errors.New("Daemon mode running in background")
+	}
 	if opts.SnapshotTemplate == "" {
 		return errors.Fatal("snapshot template string cannot be empty")
 	}
@@ -164,12 +170,13 @@ func runMount(opts MountOptions, gopts GlobalOptions, args []string) error {
 	Printf("When finished, quit with Ctrl-c or umount the mountpoint.\n")
 
 	debug.Log("serving mount at %v", mountpoint)
+
 	err = fs.Serve(c, root)
 	if err != nil {
 		return err
 	}
-
 	<-c.Ready
+
 	return c.MountError
 }
 
