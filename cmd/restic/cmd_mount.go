@@ -93,7 +93,6 @@ func runMount(opts MountOptions, gopts GlobalOptions, args []string) error {
 		if err != nil {
 			panic(err)
 		}
-		go runMount(opts, gopts, args)
 		return errors.New("Daemon mode running in background")
 	}
 	if opts.SnapshotTemplate == "" {
