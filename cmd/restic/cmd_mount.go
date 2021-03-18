@@ -5,8 +5,8 @@ package main
 import (
 	"os"
 	"strings"
-	"time"
 	"syscall"
+	"time"
 
 	"github.com/spf13/cobra"
 
