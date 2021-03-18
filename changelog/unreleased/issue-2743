@@ -1,3 +1,5 @@
 Enhancement: Allow folders to be mounted in the background.
 
 Restic currently requires the process to be open continously for the folder to be mounted. By offloading this, we can keep the mount alive while restic does not have to be open.
+
+https://github.com/restic/restic/issues/2743

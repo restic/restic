@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"syscall"
 
 	"github.com/spf13/cobra"
 
@@ -85,6 +86,13 @@ func init() {
 
 func runMount(opts MountOptions, gopts GlobalOptions, args []string) error {
 	if opts.DaemonMode {
+		filename := os.Args[0]
+		attr := new(syscall.ProcAttr)
+		pid, err := syscall.ForkExec(filename, args, attr)
+		Println("Mount is now running as a daemon. PID: %d", pid)
+		if err != nil {
+			panic(err)
+		}
 		go runMount(opts, gopts, args)
 		return errors.New("Daemon mode running in background")
 	}
