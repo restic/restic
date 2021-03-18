@@ -97,9 +97,8 @@ func removeElement(args []string, search string) []string {
 	index := linearSearch(args, search)
 	if index != -1 {
 		return append(args[:index], args[index+1:]...)
-	} else {
-		return args
 	}
+	return args
 }
 
 func runMount(opts MountOptions, gopts GlobalOptions, args []string) error {
