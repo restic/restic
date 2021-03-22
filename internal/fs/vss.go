@@ -41,7 +41,7 @@ func GetVolumeNameForVolumeMountPoint(mountPoint string) (string, error) {
 
 // NewVssSnapshot creates a new vss snapshot. If creating the snapshots doesn't
 // finish within the timeout an error is returned.
-func NewVssSnapshot(
+func NewVssSnapshot(_ string,
 	_ string, _ time.Duration, _ VolumeFilter, _ ErrorHandler) (VssSnapshot, error) {
 	return VssSnapshot{}, errors.New("VSS snapshots are only supported on windows")
 }

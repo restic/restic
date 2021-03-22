@@ -17,6 +17,7 @@ type VSSConfig struct {
 	ExcludeAllMountPoints bool          `option:"excludeallmountpoints" help:"exclude mountpoints from snapshotting on all volumes"`
 	ExcludeVolumes        string        `option:"excludevolumes" help:"semicolon separated list of volumes to exclude from snapshotting (ex. 'c:\\;e:\\mnt;\\\\?\\Volume{...}')"`
 	Timeout               time.Duration `option:"timeout" help:"time that the VSS can spend creating snapshot before timing out"`
+	Provider              string        `option:"provider" help:"VSS provider identifier which will be used for snapshotting"`
 }
 
 func init() {
@@ -64,6 +65,7 @@ type LocalVss struct {
 	excludeAllMountPoints bool
 	excludeVolumes        map[string]struct{}
 	timeout               time.Duration
+	provider              string
 }
 
 // statically ensure that LocalVss implements FS.
@@ -102,6 +104,7 @@ func NewLocalVss(msgError ErrorHandler, msgMessage MessageHandler, cfg VSSConfig
 		excludeAllMountPoints: cfg.ExcludeAllMountPoints,
 		excludeVolumes:        parseMountPoints(cfg.ExcludeVolumes, msgError),
 		timeout:               cfg.Timeout,
+		provider:              cfg.Provider,
 	}
 }
 
@@ -209,7 +212,7 @@ func (fs *LocalVss) snapshotPath(path string) string {
 					}
 				}
 
-				if snapshot, err := NewVssSnapshot(vssVolume, fs.timeout, filter, fs.msgError); err != nil {
+				if snapshot, err := NewVssSnapshot(fs.provider, vssVolume, fs.timeout, filter, fs.msgError); err != nil {
 					fs.msgError(vssVolume, errors.Errorf("failed to create snapshot for [%s]: %s",
 						vssVolume, err))
 					fs.failedSnapshots[volumeNameLower] = struct{}{}
