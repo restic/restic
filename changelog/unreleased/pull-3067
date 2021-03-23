@@ -15,4 +15,8 @@ changes timeout to five minutes and disable snapshotting of mount points on all 
 
 excludes drive `D:`, mount point `C:\MNT` and specific volume from VSS snapshotting.
 
+    restic backup --use-fs-snapshot -o vss.provider={b5946137-7b9f-4925-af80-51abd60b20d5}
+    
+uses 'Microsoft Software Shadow Copy provider 1.0' instead of the default provider.
+
 https://github.com/restic/restic/pull/3067

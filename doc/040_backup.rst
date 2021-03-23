@@ -56,11 +56,12 @@ snapshot for each volume that contains files to backup. Files are read from the
 VSS snapshot instead of the regular filesystem. This allows to backup files that are
 exclusively locked by another process during the backup.
 
-You can use three additional options to change VSS behaviour:
+You can use additional options to change VSS behaviour:
 
  * ``-o vss.timeout`` specifies timeout for VSS snapshot creation, the default value is 120 seconds
  * ``-o vss.excludeallmountpoints`` disable auto snapshotting of all volume mount points
  * ``-o vss.excludevolumes`` allows excluding specific volumes or volume mount points from snapshotting
+ * ``-o vss.provider`` specifies VSS provider used for snapshotting
 
 E.g., 2.5 minutes timeout with mount points snapshotting disabled can be specified as
 
@@ -73,6 +74,20 @@ and excluding drive ``D:\``, mount point ``C:\mnt`` and volume ``\\?\Volume{04ce
 .. code-block:: console
 
     -o vss.excludevolumes="d:;c:\MNT\;\\?\volume{04ce0545-3391-11e0-ba2f-806e6f6e6963}"
+
+VSS provider can be specified by GUID
+
+.. code-block:: console
+
+    -o vss.provider={3f900f90-00e9-440e-873a-96ca5eb079e5}
+
+or by name
+
+.. code-block:: console
+
+    -o vss.provider="Hyper-V IC Software Shadow Copy Provider"
+
+Also ``MS`` can be used as alias for ``Microsoft Software Shadow Copy provider 1.0``.
 
 By default VSS ignores Outlook OST files. This is not a restriction of restic
 but the default Windows VSS configuration. The files not to snapshot are
