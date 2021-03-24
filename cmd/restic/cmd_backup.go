@@ -97,7 +97,7 @@ type BackupOptions struct {
 var backupOptions BackupOptions
 
 // ErrInvalidSourceData is used to report an incomplete backup
-var ErrInvalidSourceData = errors.New("failed to read all source data during backup")
+var ErrInvalidSourceData = errors.New("at least one source file could not be read")
 
 func init() {
 	cmdRoot.AddCommand(cmdBackup)
