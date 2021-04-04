@@ -37,3 +37,10 @@ exit code if a different error is encountered (e.g.: incorrect password
 to ``snapshots``) and it may print a different error message. If there
 are no errors, restic will return a zero exit code and print all the
 snapshots.
+
+Third-party restic APIs
+***********************
+
+Unofficial restic APIs are available:
+
+- `resticpy <https://github.com/mtlynch/resticpy>`_ (Python)
