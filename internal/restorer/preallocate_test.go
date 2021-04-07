@@ -4,6 +4,7 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"syscall"
 	"testing"
 
 	"github.com/restic/restic/internal/fs"
@@ -24,6 +25,9 @@ func TestPreallocate(t *testing.T) {
 			}()
 
 			err = preallocateFile(wr, i)
+			if err == syscall.ENOTSUP {
+				t.SkipNow()
+			}
 			test.OK(t, err)
 
 			fi, err := wr.Stat()
