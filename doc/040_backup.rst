@@ -183,9 +183,9 @@ Note that the device id of the containing mount point is never taken into
 account. Device numbers are not stable for removable devices and ZFS snapshots.
 If you want to force a re-scan in such a case, you can change the mountpoint.
 
-On **Windows**, a file is considered unchanged when its path and modification
-time match, and only ``--force`` has any effect. The other options are
-recognized but ignored.
+On **Windows**, a file is considered unchanged when its path, size
+and modification time match, and only ``--force`` has any effect.
+The other options are recognized but ignored.
 
 Excluding Files
 ***************
