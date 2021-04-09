@@ -229,9 +229,13 @@ see `filepath.Match <https://golang.org/pkg/path/filepath/#Match>`__ for
 syntax. Patterns are tested against the full path of a file/dir to be saved,
 even if restic is passed a relative path to save.
 
-Environment-variables in exclude files are expanded with `os.ExpandEnv <https://golang.org/pkg/os/#ExpandEnv>`__,
-so ``/home/$USER/foo`` will be expanded to ``/home/bob/foo`` for the user ``bob``.
-To get a literal dollar sign, write ``$$`` to the file. Note that tilde (``~``) expansion does not work, please use the ``$HOME`` environment variable instead.
+Environment variables in exclude files are expanded with `os.ExpandEnv
+<https://golang.org/pkg/os/#ExpandEnv>`__, so ``/home/$USER/foo`` will be
+expanded to ``/home/bob/foo`` for the user ``bob``. To get a literal dollar
+sign, write ``$$`` to the file - this has to be done even when there's no
+matching environment variable for the word following a single ``$``. Note
+that tilde (``~``) is not expanded, instead use the ``$HOME`` or equivalent
+environment variable (depending on your operating system).
 
 Patterns need to match on complete path components. For example, the pattern ``foo``:
 
