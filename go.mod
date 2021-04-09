@@ -19,7 +19,7 @@ require (
 	github.com/kurin/blazer v0.5.3
 	github.com/minio/minio-go/v7 v7.0.12
 	github.com/minio/sha256-simd v1.0.0
-	github.com/ncw/swift v1.0.53
+	github.com/ncw/swift/v2 v2.0.0
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/profile v1.6.0
 	github.com/pkg/sftp v1.13.2
