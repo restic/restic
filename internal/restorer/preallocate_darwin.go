@@ -2,8 +2,6 @@ package restorer
 
 import (
 	"os"
-	"runtime"
-	"unsafe"
 
 	"golang.org/x/sys/unix"
 )
@@ -16,7 +14,7 @@ func preallocateFile(wr *os.File, size int64) error {
 		Offset:  0,
 		Length:  size,
 	}
-	_, err := unix.FcntlInt(wr.Fd(), unix.F_PREALLOCATE, int(uintptr(unsafe.Pointer(&fst))))
+	err := unix.FcntlFstore(wr.Fd(), unix.F_PREALLOCATE, &fst)
 
 	if err == nil {
 		return nil
@@ -24,10 +22,7 @@ func preallocateFile(wr *os.File, size int64) error {
 
 	// just take preallocation in any form, but still ask for everything
 	fst.Flags = unix.F_ALLOCATEALL
-	_, err = unix.FcntlInt(wr.Fd(), unix.F_PREALLOCATE, int(uintptr(unsafe.Pointer(&fst))))
-
-	// Keep struct alive until fcntl has returned
-	runtime.KeepAlive(fst)
+	err = unix.FcntlFstore(wr.Fd(), unix.F_PREALLOCATE, &fst)
 
 	return err
 }
