@@ -550,7 +550,7 @@ Backups and Deduplication
 For creating a backup, restic scans the source directory for all files,
 sub-directories and other entries. The data from each file is split into
 variable length Blobs cut at offsets defined by a sliding window of 64
-byte. The implementation uses Rabin Fingerprints for implementing this
+bytes. The implementation uses Rabin Fingerprints for implementing this
 Content Defined Chunking (CDC). An irreducible polynomial is selected at
 random and saved in the file ``config`` when a repository is
 initialized, so that watermark attacks are much harder.
