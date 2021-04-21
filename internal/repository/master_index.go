@@ -153,6 +153,19 @@ func (mi *MasterIndex) Count(t restic.BlobType) (n uint) {
 	return sum
 }
 
+// TotalSize returns the total size referenced by the index.
+func (mi *MasterIndex) TotalSize() (n uint) {
+	mi.idxMutex.RLock()
+	defer mi.idxMutex.RUnlock()
+
+	var sum uint
+	for _, idx := range mi.idx {
+		sum += idx.TotalSize()
+	}
+
+	return sum
+}
+
 // Insert adds a new index to the MasterIndex.
 func (mi *MasterIndex) Insert(idx *Index) {
 	mi.idxMutex.Lock()

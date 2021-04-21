@@ -48,6 +48,7 @@ type Index struct {
 	treePacks restic.IDs
 	// only used by Store, StorePacks does not check for already saved packIDs
 	packIDToIndex map[restic.ID]int
+	totalSize     uint // the total size of data referenced in this index
 
 	final      bool       // set to true for all indexes read from the backend ("finalized")
 	ids        restic.IDs // set to the IDs of the contained finalized indexes
@@ -80,6 +81,7 @@ func (idx *Index) store(packIndex int, blob restic.Blob) {
 
 	m := &idx.byType[blob.Type]
 	m.add(blob.ID, packIndex, uint32(blob.Offset), uint32(blob.Length))
+	idx.totalSize += blob.Length
 }
 
 // Final returns true iff the index is already written to the repository, it is
@@ -350,6 +352,14 @@ func (idx *Index) Count(t restic.BlobType) (n uint) {
 	return idx.byType[t].len()
 }
 
+// TotalSize returns the total size of data referenced by the index
+func (idx *Index) TotalSize() uint {
+	idx.m.Lock()
+	defer idx.m.Unlock()
+
+	return idx.totalSize
+}
+
 type packJSON struct {
 	ID    restic.ID  `json:"id"`
 	Blobs []blobJSON `json:"blobs"`
@@ -561,6 +571,7 @@ func (idx *Index) merge(idx2 *Index) error {
 	idx.treePacks = append(idx.treePacks, idx2.treePacks...)
 	idx.ids = append(idx.ids, idx2.ids...)
 	idx.supersedes = append(idx.supersedes, idx2.supersedes...)
+	idx.totalSize += idx2.totalSize
 
 	return nil
 }
