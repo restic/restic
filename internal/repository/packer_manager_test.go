@@ -56,6 +56,8 @@ func saveFile(t testing.TB, be Saver, length int, f *os.File, id restic.ID) {
 	}
 }
 
+const minPackSize = 4 * 1024 * 1024
+
 func fillPacks(t testing.TB, rnd *rand.Rand, be Saver, pm *packerManager, buf []byte) (bytes int) {
 	for i := 0; i < 100; i++ {
 		l := rnd.Intn(maxBlobSize)

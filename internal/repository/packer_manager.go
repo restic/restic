@@ -37,7 +37,7 @@ type packerManager struct {
 	packers []*Packer
 }
 
-const minPackSize = 4 * 1024 * 1024
+const maxBlobsPerPack = 100000
 
 // newPackerManager returns an new packer manager which writes temporary files
 // to a temporary directory

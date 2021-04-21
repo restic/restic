@@ -515,3 +515,22 @@ func TestDownloadAndHashErrors(t *testing.T) {
 		})
 	}
 }
+
+func TestMinPackSize(t *testing.T) {
+	const MiB = 1024 * 1024
+	const GiB = 1024 * MiB
+	const TiB = 1024 * GiB
+	const PiB = 1024 * TiB
+
+	smallestPackSize := uint(4 * MiB)
+	largestPackSize := uint(4076 * MiB)
+
+	rtest.Equals(t, smallestPackSize, repository.MinPackSize(0))
+	rtest.Equals(t, smallestPackSize, repository.MinPackSize(50*MiB))
+	rtest.Equals(t, smallestPackSize, repository.MinPackSize(GiB))
+	rtest.Equals(t, 2*smallestPackSize, repository.MinPackSize(4*GiB))
+	rtest.Equals(t, 32*smallestPackSize, repository.MinPackSize(TiB))
+	rtest.Equals(t, 512*smallestPackSize, repository.MinPackSize(256*TiB))
+	rtest.Equals(t, largestPackSize, repository.MinPackSize(PiB))
+	rtest.Equals(t, largestPackSize, repository.MinPackSize(2*PiB))
+}

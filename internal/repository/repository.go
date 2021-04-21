@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"sync"
 
@@ -239,6 +240,27 @@ func (r *Repository) LookupBlobSize(id restic.ID, tpe restic.BlobType) (uint, bo
 	return r.idx.LookupSize(restic.BlobHandle{ID: id, Type: tpe})
 }
 
+const smallestPackSize = 1 << 22   // 4 MiB
+const maxPackSize = 4076 * 1 << 20 // 4076 MiB
+
+// MinPackSize returns the targeted pack size depending on the current repo size
+// It will return sqrt(reposize in GiB) * 4 MiB, but a minimum of 4 MiB
+// and a maximum of 4076 MiB
+// (to ensure that including the last blob and header the 4GiB is not exceeded)
+func MinPackSize(repoSize uint) uint {
+	packsize := uint(math.Sqrt(float64(repoSize))) * 128
+
+	if packsize < smallestPackSize {
+		return smallestPackSize
+	}
+
+	if packsize > maxPackSize {
+		return maxPackSize
+	}
+
+	return packsize
+}
+
 // SaveAndEncrypt encrypts data and stores it to the backend as type t. If data
 // is small enough, it will be packed together with other small blobs.
 // The caller must ensure that the id matches the data.
@@ -277,8 +299,10 @@ func (r *Repository) SaveAndEncrypt(ctx context.Context, t restic.BlobType, data
 	}
 
 	// if the pack is not full enough, put back to the list
-	if packer.Size() < minPackSize {
-		debug.Log("pack is not full enough (%d bytes)", packer.Size())
+	currRepoSize := r.Index().TotalSize()
+	if packer.Size() < MinPackSize(currRepoSize) &&
+		packer.Count() < maxBlobsPerPack {
+		debug.Log("pack is not full enough (%d bytes, %d blobs)", packer.Size(), packer.Count())
 		pm.insertPacker(packer)
 		return nil
 	}
