@@ -344,7 +344,7 @@ The ``prune`` command accepts the following options:
       operation. Note that metadata will still be repacked.
 
    Restic tries to repack as little data as possible while still ensuring this 
-   limit for unused data.
+   limit for unused data. The default value is 5%.
 
 - ``--max-repack-size size`` if set limits the total size of files to repack.
   As ``prune`` first stores all repacked files and deletes the obsolete files at the end,
