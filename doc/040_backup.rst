@@ -227,7 +227,8 @@ This instructs restic to exclude files matching the following criteria:
 Patterns use `filepath.Glob <https://golang.org/pkg/path/filepath/#Glob>`__ internally,
 see `filepath.Match <https://golang.org/pkg/path/filepath/#Match>`__ for
 syntax. Patterns are tested against the full path of a file/dir to be saved,
-even if restic is passed a relative path to save.
+even if restic is passed a relative path to save. Empty lines and lines
+starting with a ``#`` are ignored.
 
 Environment variables in exclude files are expanded with `os.ExpandEnv
 <https://golang.org/pkg/os/#ExpandEnv>`__, so ``/home/$USER/foo`` will be
@@ -245,11 +246,10 @@ Patterns need to match on complete path components. For example, the pattern ``f
 A trailing ``/`` is ignored, a leading ``/`` anchors the pattern at the root directory.
 This means, ``/bin`` matches ``/bin/bash`` but does not match ``/usr/bin/restic``.
 
-Regular wildcards cannot be used to match over the directory separator ``/``.
-For example: ``b*ash`` matches ``/bin/bash`` but does not match ``/bin/ash``.
-
-For this, the special wildcard ``**`` can be used to match arbitrary
-sub-directories: The pattern ``foo/**/bar`` matches:
+Regular wildcards cannot be used to match over the directory separator ``/``,
+e.g. ``b*ash`` matches ``/bin/bash`` but does not match ``/bin/ash``. For this,
+the special wildcard ``**`` can be used to match arbitrary sub-directories: The
+pattern ``foo/**/bar`` matches:
 
  * ``/dir1/foo/dir2/bar/file``
  * ``/foo/bar/file``
