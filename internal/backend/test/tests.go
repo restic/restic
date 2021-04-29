@@ -10,6 +10,7 @@ import (
 	"os"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -328,6 +329,11 @@ func (s *Suite) TestList(t *testing.T) {
 	}
 }
 
+func isCanceledError(err error) bool {
+	cause := strings.ToLower(fmt.Sprint(err))
+	return strings.Contains(cause, "cancel")
+}
+
 // TestListCancel tests that the context is respected and the error is returned by List.
 func (s *Suite) TestListCancel(t *testing.T) {
 	seedRand(t)
@@ -360,8 +366,8 @@ func (s *Suite) TestListCancel(t *testing.T) {
 			return nil
 		})
 
-		if errors.Cause(err) != context.Canceled {
-			t.Fatalf("expected error not found, want %v, got %v", context.Canceled, errors.Cause(err))
+		if !isCanceledError(err) {
+			t.Fatalf("expected error not found, want %v, got %v", context.Canceled, err)
 		}
 	})
 
@@ -379,7 +385,7 @@ func (s *Suite) TestListCancel(t *testing.T) {
 			return nil
 		})
 
-		if errors.Cause(err) != context.Canceled {
+		if !isCanceledError(err) {
 			t.Fatalf("expected error not found, want %v, got %v", context.Canceled, err)
 		}
 
@@ -402,7 +408,7 @@ func (s *Suite) TestListCancel(t *testing.T) {
 			return nil
 		})
 
-		if errors.Cause(err) != context.Canceled {
+		if !isCanceledError(err) {
 			t.Fatalf("expected error not found, want %v, got %v", context.Canceled, err)
 		}
 

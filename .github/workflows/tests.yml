@@ -177,7 +177,8 @@ jobs:
 
         # only run cloud backend tests for pull requests from and pushes to our
         # own repo, otherwise the secrets are not available
-        if: (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && matrix.test_cloud_backends
+        #if: (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && matrix.test_cloud_backends
+        if: ${{ false }}  # disable this step
 
       - name: Check changelog files with calens
         run: |
@@ -269,3 +270,19 @@ jobs:
           echo "check if go.mod and go.sum are up to date"
           go mod tidy
           git diff --exit-code go.mod go.sum
+
+  buildnpush:
+    name: Build and Push Docker Package
+    needs: [test, cross_compile, lint]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Build image
+        uses: VaultVulp/gp-docker-action@1.1.8
+        with:
+          github-token: ${{ secrets.PACKAGE_UPLOAD_TOKEN }}
+          image-name: restic-internal
+          dockerfile: Dockerfile
