@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	ole "github.com/go-ole/go-ole"
 	"github.com/restic/restic/internal/options"
 )
 
@@ -18,6 +19,9 @@ func matchStrings(ptrs []string, strs []string) bool {
 	}
 
 	for i, p := range ptrs {
+		if p == "" {
+			return false
+		}
 		matched, err := regexp.MatchString(p, strs[i])
 		if err != nil {
 			panic(err)
@@ -48,6 +52,7 @@ func TestVSSConfig(t *testing.T) {
 	type config struct {
 		excludeAllMountPoints bool
 		timeout               time.Duration
+		provider              string
 	}
 	setTests := []struct {
 		input  options.Options
@@ -55,19 +60,23 @@ func TestVSSConfig(t *testing.T) {
 	}{
 		{
 			options.Options{
-				"vss.timeout": "6h38m42s",
+				"vss.timeout":  "6h38m42s",
+				"vss.provider": "Ms",
 			},
 			config{
-				timeout: 23922000000000,
+				timeout:  23922000000000,
+				provider: "Ms",
 			},
 		},
 		{
 			options.Options{
 				"vss.excludeallmountpoints": "t",
+				"vss.provider":              "{b5946137-7b9f-4925-af80-51abd60b20d5}",
 			},
 			config{
 				excludeAllMountPoints: true,
 				timeout:               120000000000,
+				provider:              "{b5946137-7b9f-4925-af80-51abd60b20d5}",
 			},
 		},
 		{
@@ -75,9 +84,11 @@ func TestVSSConfig(t *testing.T) {
 				"vss.excludeallmountpoints": "0",
 				"vss.excludevolumes":        "",
 				"vss.timeout":               "120s",
+				"vss.provider":              "Microsoft Software Shadow Copy provider 1.0",
 			},
 			config{
-				timeout: 120000000000,
+				timeout:  120000000000,
+				provider: "Microsoft Software Shadow Copy provider 1.0",
 			},
 		},
 	}
@@ -98,7 +109,8 @@ func TestVSSConfig(t *testing.T) {
 			dst := NewLocalVss(errorHandler, messageHandler, cfg)
 
 			if dst.excludeAllMountPoints != test.output.excludeAllMountPoints ||
-				dst.excludeVolumes != nil || dst.timeout != test.output.timeout {
+				dst.excludeVolumes != nil || dst.timeout != test.output.timeout ||
+				dst.provider != test.output.provider {
 				t.Fatalf("wrong result, want:\n  %#v\ngot:\n  %#v", test.output, dst)
 			}
 		})
@@ -201,6 +213,74 @@ func TestParseMountPoints(t *testing.T) {
 
 			if !matchStrings(test.errors, log) {
 				t.Fatalf("wrong log, want:\n  %#v\ngot:\n  %#v", test.errors, log)
+			}
+		})
+	}
+}
+
+func TestParseProvider(t *testing.T) {
+	msProvider := ole.NewGUID("{b5946137-7b9f-4925-af80-51abd60b20d5}")
+	setTests := []struct {
+		provider string
+		id       *ole.GUID
+		result   string
+	}{
+		{
+			"",
+			ole.IID_NULL,
+			"",
+		},
+		{
+			"mS",
+			msProvider,
+			"",
+		},
+		{
+			"{B5946137-7b9f-4925-Af80-51abD60b20d5}",
+			msProvider,
+			"",
+		},
+		{
+			"Microsoft Software Shadow Copy provider 1.0",
+			msProvider,
+			"",
+		},
+		{
+			"{04560982-3d7d-4bbc-84f7-0712f833a28f}",
+			nil,
+			`invalid VSS provider "{04560982-3d7d-4bbc-84f7-0712f833a28f}"`,
+		},
+		{
+			"non-existent provider",
+			nil,
+			`invalid VSS provider "non-existent provider"`,
+		},
+	}
+
+	_ = ole.CoInitializeEx(0, ole.COINIT_MULTITHREADED)
+
+	for i, test := range setTests {
+		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
+			id, err := getProviderID(test.provider)
+
+			if err != nil && id != nil {
+				t.Fatalf("err!=nil but id=%v", id)
+			}
+
+			if test.result != "" || err != nil {
+				var result string
+				if err != nil {
+					result = err.Error()
+				}
+				matched, err := regexp.MatchString(test.result, result)
+				if err != nil {
+					panic(err)
+				}
+				if !matched || test.result == "" {
+					t.Fatalf("wrong result, want:\n  %#v\ngot:\n  %#v", test.result, result)
+				}
+			} else if !ole.IsEqualGUID(id, test.id) {
+				t.Fatalf("wrong id, want:\n  %s\ngot:\n  %s", test.id.String(), id.String())
 			}
 		})
 	}
