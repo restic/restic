@@ -276,13 +276,26 @@ jobs:
     needs: [test, cross_compile, lint]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    env:
+      USERNAME: ${{ secrets.JFROG_RESTIC_USERNAME }}
+      PASSWORD: ${{ secrets.JFROG_RESTIC_PASSWORD }}
     steps:
       - name: Check out code
         uses: actions/checkout@v2
 
       - name: Build image
-        uses: VaultVulp/gp-docker-action@1.1.8
-        with:
-          github-token: ${{ secrets.PACKAGE_UPLOAD_TOKEN }}
-          image-name: restic-internal
-          dockerfile: Dockerfile
+        run: docker build -t netappdownloads.jfrog.io/docker-restic-staging/netapp-restic:latest .
+
+      - name: Docker login
+        run: docker login -u $USERNAME -p $PASSWORD netappdownloads.jfrog.io/artifactory/docker-restic-staging
+
+      - name: Tag and push latest image
+        run: |
+          docker tag netapp-restic:latest netappdownloads.jfrog.io/docker-restic-staging/netapp-restic:latest
+          docker push netappdownloads.jfrog.io/docker-restic-staging/netapp-restic:latest
+
+      - name: Tag and push versioned image
+        run: |
+          export VERSION=$(cat VERSION)
+          docker tag netapp-restic:latest netappdownloads.jfrog.io/docker-restic-staging/netapp-restic:$VERSION
+          docker push netappdownloads.jfrog.io/docker-restic-staging/netapp-restic:$VERSION
