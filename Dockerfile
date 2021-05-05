@@ -3,7 +3,7 @@ WORKDIR /src
 COPY . .
 RUN go run build.go
 
-FROM scratch
+FROM alpine:3.12.6
 WORKDIR /app
-COPY --from=builder /src/restic .
-ENTRYPOINT ["./restic"]
+COPY --from=builder /src/restic /bin/restic
+ENTRYPOINT ["restic"]
