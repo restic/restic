@@ -7,6 +7,7 @@ import (
 	"io"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/table"
@@ -37,6 +38,7 @@ type SnapshotOptions struct {
 	Paths   []string
 	Compact bool
 	Last    bool
+	History bool
 	GroupBy string
 }
 
@@ -51,6 +53,7 @@ func init() {
 	f.StringArrayVar(&snapshotOptions.Paths, "path", nil, "only consider snapshots for this `path` (can be specified multiple times)")
 	f.BoolVarP(&snapshotOptions.Compact, "compact", "c", false, "use compact output format")
 	f.BoolVar(&snapshotOptions.Last, "last", false, "only show the last snapshot for each host and path")
+	f.BoolVar(&snapshotOptions.History, "history", false, "show the history of the snapshots")
 	f.StringVarP(&snapshotOptions.GroupBy, "group-by", "g", "", "string for grouping snapshots by host,paths,tags")
 }
 
@@ -80,7 +83,14 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 		return err
 	}
 
+	snapshotHistories := make(map[string]restic.SnapshotHistory)
+
 	for k, list := range snapshotGroups {
+		// history has to be extracted before filtering for the last
+		if opts.History {
+			sort.Sort(list)
+			snapshotHistories[k] = restic.BuildHistory(time.Now(), list)
+		}
 		if opts.Last {
 			list = FilterLastSnapshots(list)
 		}
@@ -105,6 +115,9 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 			}
 		}
 		PrintSnapshots(gopts.stdout, list, nil, opts.Compact)
+		if opts.History {
+			restic.PrintHistory(gopts.stdout, snapshotHistories[k])
+		}
 	}
 
 	return nil
