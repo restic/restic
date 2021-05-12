@@ -3,7 +3,7 @@ on:
   # run tests on push to master, but not when other branches are pushed to
   push:
     branches:
-      - master
+      - main
 
   # run tests for all pull requests
   pull_request:
@@ -177,7 +177,8 @@ jobs:
 
         # only run cloud backend tests for pull requests from and pushes to our
         # own repo, otherwise the secrets are not available
-        if: (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && matrix.test_cloud_backends
+        #if: (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && matrix.test_cloud_backends
+        if: ${{ false }}  # disable this step
 
       - name: Check changelog files with calens
         run: |
@@ -269,3 +270,32 @@ jobs:
           echo "check if go.mod and go.sum are up to date"
           go mod tidy
           git diff --exit-code go.mod go.sum
+
+  buildnpush:
+    name: Build and Push Docker Package
+    needs: [test, cross_compile, lint]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      USERNAME: ${{ secrets.JFROG_RESTIC_USERNAME }}
+      PASSWORD: ${{ secrets.JFROG_RESTIC_PASSWORD }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Build image
+        run: docker build -t netapp-restic:latest .
+
+      - name: Docker login
+        run: docker login -u $USERNAME -p $PASSWORD netappdownloads.jfrog.io/artifactory/docker-restic-staging
+
+      - name: Tag and push latest image
+        run: |
+          docker tag netapp-restic:latest netappdownloads.jfrog.io/docker-restic-staging/netapp-restic:latest
+          docker push netappdownloads.jfrog.io/docker-restic-staging/netapp-restic:latest
+
+      - name: Tag and push versioned image
+        run: |
+          export VERSION=$(cat VERSION)
+          docker tag netapp-restic:latest netappdownloads.jfrog.io/docker-restic-staging/netapp-restic:$VERSION
+          docker push netappdownloads.jfrog.io/docker-restic-staging/netapp-restic:$VERSION

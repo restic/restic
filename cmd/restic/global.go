@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -18,6 +19,7 @@ import (
 	"github.com/restic/restic/internal/backend/gs"
 	"github.com/restic/restic/internal/backend/local"
 	"github.com/restic/restic/internal/backend/location"
+	"github.com/restic/restic/internal/backend/ontap"
 	"github.com/restic/restic/internal/backend/rclone"
 	"github.com/restic/restic/internal/backend/rest"
 	"github.com/restic/restic/internal/backend/s3"
@@ -33,8 +35,6 @@ import (
 	"github.com/restic/restic/internal/textfile"
 
 	"github.com/restic/restic/internal/errors"
-
-	"os/exec"
 
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -659,6 +659,9 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 
 		debug.Log("opening rest repository at %#v", cfg)
 		return cfg, nil
+	case ontap.ProtocolScheme:
+		cfg := loc.Config.(ontap.Config)
+		return cfg, nil
 	}
 
 	return nil, errors.Fatalf("invalid backend: %q", loc.Scheme)
@@ -711,6 +714,8 @@ func open(s string, gopts GlobalOptions, opts options.Options) (restic.Backend, 
 		be, err = rest.Open(cfg.(rest.Config), rt)
 	case "rclone":
 		be, err = rclone.Open(cfg.(rclone.Config), lim)
+	case ontap.ProtocolScheme:
+		be, err = ontap.Open(globalOptions.ctx, cfg.(ontap.Config))
 
 	default:
 		return nil, errors.Fatalf("invalid backend: %q", loc.Scheme)
@@ -787,6 +792,8 @@ func create(s string, opts options.Options) (restic.Backend, error) {
 		return rest.Create(globalOptions.ctx, cfg.(rest.Config), rt)
 	case "rclone":
 		return rclone.Create(globalOptions.ctx, cfg.(rclone.Config))
+	case ontap.ProtocolScheme:
+		return ontap.Open(globalOptions.ctx, cfg.(ontap.Config))
 	}
 
 	debug.Log("invalid repository scheme: %v", s)
