@@ -279,6 +279,8 @@ jobs:
     env:
       USERNAME: ${{ secrets.JFROG_RESTIC_USERNAME }}
       PASSWORD: ${{ secrets.JFROG_RESTIC_PASSWORD }}
+      GH_USERNAME: ${{ github.actor }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Check out code
         uses: actions/checkout@v2
@@ -299,3 +301,10 @@ jobs:
           export VERSION=$(cat VERSION)
           docker tag netapp-restic:latest netappdownloads.jfrog.io/docker-restic-staging/netapp-restic:$VERSION
           docker push netappdownloads.jfrog.io/docker-restic-staging/netapp-restic:$VERSION
+
+      - name: Tag and push to GitHub Container Registry
+        run: |
+          docker login -u $GH_USERNAME -p $GH_TOKEN ghcr.io/NetApp/restic
+          docker tag netapp-restic:latest ghcr.io/NetApp/restic:latest
+          docker push ghcr.io/NetApp/restic:latest
+
