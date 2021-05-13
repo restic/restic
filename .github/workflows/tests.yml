@@ -305,6 +305,6 @@ jobs:
       - name: Tag and push to GitHub Container Registry
         run: |
           docker login -u $GH_USERNAME -p $GH_TOKEN ghcr.io/NetApp/restic
-          docker tag netapp-restic:latest ghcr.io/NetApp/restic:latest
+          docker tag netapp-restic:latest ghcr.io/netapp/restic:latest
           docker push ghcr.io/NetApp/restic:latest
 
