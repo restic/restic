@@ -57,19 +57,24 @@ func (rt roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 func (l staticLimiter) roundTripper(rt http.RoundTripper, req *http.Request) (*http.Response, error) {
+	type readCloser struct {
+		io.Reader
+		io.Closer
+	}
+
 	if req.Body != nil {
-		req.Body = limitedReadCloser{
-			Reader:   l.Upstream(req.Body),
-			original: req.Body,
+		req.Body = &readCloser{
+			Reader: l.Upstream(req.Body),
+			Closer: req.Body,
 		}
 	}
 
 	res, err := rt.RoundTrip(req)
 
 	if res != nil && res.Body != nil {
-		res.Body = limitedReadCloser{
-			Reader:   l.Downstream(res.Body),
-			original: res.Body,
+		res.Body = &readCloser{
+			Reader: l.Downstream(res.Body),
+			Closer: res.Body,
 		}
 	}
 
