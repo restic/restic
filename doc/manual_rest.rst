@@ -105,7 +105,7 @@ command:
           --iexclude pattern                       same as --exclude pattern but ignores the casing of filenames
           --iexclude-file file                     same as --exclude-file but ignores casing of filenames in patterns
           --ignore-inode                           ignore inode number changes when checking for modified files
-      -x, --one-file-system                        exclude other file systems
+      -x, --one-file-system                        exclude other file systems, don't cross filesystem boundaries and subvolumes
           --parent snapshot                        use this parent snapshot (default: last snapshot in the repo that has the same target files/directories)
           --stdin                                  read backup from stdin
           --stdin-filename filename                filename to use when reading from stdin (default "stdin")
