@@ -200,7 +200,7 @@ jobs:
 
           - "freebsd/386 freebsd/amd64 freebsd/arm \
             aix/ppc64 \
-            darwin/amd64 \
+            darwin/amd64 darwin/arm64 \
             netbsd/386 netbsd/amd64 \
             windows/386 windows/amd64 \
             solaris/amd64"
