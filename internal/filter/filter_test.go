@@ -23,6 +23,7 @@ var matchTests = []struct {
 	{"*.go", "/foo/bar/test.go", true},
 	{"*.c", "/foo/bar/test.go", false},
 	{"*", "/foo/bar/test.go", true},
+	{"**", "/foo/bar/test.go", true},
 	{"foo*", "/foo/bar/test.go", true},
 	{"bar*", "/foo/bar/test.go", true},
 	{"/bar*", "/foo/bar/test.go", false},
