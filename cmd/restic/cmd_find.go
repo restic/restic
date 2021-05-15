@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -446,7 +447,13 @@ func (f *Finder) packsToBlobs(ctx context.Context, packs []string) error {
 	}
 
 	if err != errorAllPacksFound {
-		return errors.Fatal("unable to find all specified pack(s)")
+		list := make([]string, 0, len(packIDs))
+		for h := range packIDs {
+			list = append(list, h)
+		}
+
+		sort.Strings(list)
+		return errors.Fatalf("unable to find pack(s): %v", list)
 	}
 
 	debug.Log("%d blobs found", len(f.blobIDs))
