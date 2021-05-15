@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strconv"
 	"strings"
 
 	"golang.org/x/net/context/ctxhttp"
@@ -244,6 +245,20 @@ func (b *Backend) openReader(ctx context.Context, h restic.Handle, length int, o
 	if resp.StatusCode != 200 && resp.StatusCode != 206 {
 		_ = resp.Body.Close()
 		return nil, errors.Errorf("unexpected HTTP response (%v): %v", resp.StatusCode, resp.Status)
+	}
+
+	// workaround https://github.com/golang/go/issues/46071
+	// see also https://forum.restic.net/t/http2-stream-closed-connection-reset-context-canceled/3743/10
+	if resp.ContentLength == 0 && resp.ProtoMajor == 2 && resp.ProtoMinor == 0 {
+		if clens := resp.Header["Content-Length"]; len(clens) == 1 {
+			if cl, err := strconv.ParseUint(clens[0], 10, 63); err == nil {
+				resp.ContentLength = int64(cl)
+			}
+			if resp.ContentLength != 0 {
+				_ = resp.Body.Close()
+				return nil, errors.Errorf("unexpected EOF got 0 instead of %v bytes", resp.ContentLength)
+			}
+		}
 	}
 
 	return resp.Body, nil
