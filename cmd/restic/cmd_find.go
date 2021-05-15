@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
@@ -399,6 +400,8 @@ func (f *Finder) findIDs(ctx context.Context, sn *restic.Snapshot) error {
 	})
 }
 
+var errorAllPacksFound = fmt.Errorf("all packs found")
+
 // packsToBlobs converts the list of pack IDs to a list of blob IDs that
 // belong to those packs.
 func (f *Finder) packsToBlobs(ctx context.Context, packs []string) error {
@@ -410,13 +413,8 @@ func (f *Finder) packsToBlobs(ctx context.Context, packs []string) error {
 		f.blobIDs = make(map[string]struct{})
 	}
 
-	allPacksFound := false
-
 	debug.Log("Looking for packs...")
 	err := f.repo.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
-		if allPacksFound {
-			return nil
-		}
 		idStr := id.String()
 		if _, ok := packIDs[idStr]; !ok {
 			// Look for short ID form
@@ -438,16 +436,16 @@ func (f *Finder) packsToBlobs(ctx context.Context, packs []string) error {
 		}
 		// Stop searching when all packs have been found
 		if len(packIDs) == 0 {
-			allPacksFound = true
+			return errorAllPacksFound
 		}
 		return nil
 	})
 
-	if err != nil {
+	if err != nil && err != errorAllPacksFound {
 		return err
 	}
 
-	if !allPacksFound {
+	if err != errorAllPacksFound {
 		return errors.Fatal("unable to find all specified pack(s)")
 	}
 
