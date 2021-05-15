@@ -411,7 +411,6 @@ func (f *Finder) packsToBlobs(ctx context.Context, packs []string) error {
 	}
 
 	allPacksFound := false
-	packsFound := 0
 
 	debug.Log("Looking for packs...")
 	err := f.repo.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
@@ -424,6 +423,10 @@ func (f *Finder) packsToBlobs(ctx context.Context, packs []string) error {
 			if _, ok := packIDs[id.Str()]; !ok {
 				return nil
 			}
+			delete(packIDs, id.Str())
+		} else {
+			// forget found id
+			delete(packIDs, idStr)
 		}
 		debug.Log("Found pack %s", idStr)
 		blobs, _, err := f.repo.ListPack(ctx, id, size)
@@ -434,8 +437,7 @@ func (f *Finder) packsToBlobs(ctx context.Context, packs []string) error {
 			f.blobIDs[b.ID.String()] = struct{}{}
 		}
 		// Stop searching when all packs have been found
-		packsFound++
-		if packsFound >= len(packIDs) {
+		if len(packIDs) == 0 {
 			allPacksFound = true
 		}
 		return nil
@@ -561,7 +563,7 @@ func runFind(opts FindOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	if opts.PackID {
-		err := f.packsToBlobs(ctx, []string{f.pat.pattern[0]}) // TODO: support multiple packs
+		err := f.packsToBlobs(ctx, f.pat.pattern)
 		if err != nil {
 			return err
 		}
