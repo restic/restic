@@ -447,6 +447,11 @@ func (f *Finder) packsToBlobs(ctx context.Context, packs []string) error {
 	}
 
 	if err != errorAllPacksFound {
+		// try to resolve unknown pack ids from the index
+		packIDs = f.indexPacksToBlobs(ctx, packIDs)
+	}
+
+	if len(packIDs) > 0 {
 		list := make([]string, 0, len(packIDs))
 		for h := range packIDs {
 			list = append(list, h)
@@ -458,6 +463,46 @@ func (f *Finder) packsToBlobs(ctx context.Context, packs []string) error {
 
 	debug.Log("%d blobs found", len(f.blobIDs))
 	return nil
+}
+
+func (f *Finder) indexPacksToBlobs(ctx context.Context, packIDs map[string]struct{}) map[string]struct{} {
+	wctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	// remember which packs were found in the index
+	indexPackIDs := make(map[string]struct{})
+	for pb := range f.repo.Index().Each(wctx) {
+		idStr := pb.PackID.String()
+		// keep entry in packIDs as Each() returns individual index entries
+		matchingID := false
+		if _, ok := packIDs[idStr]; ok {
+			matchingID = true
+		} else {
+			if _, ok := packIDs[pb.PackID.Str()]; ok {
+				// expand id
+				delete(packIDs, pb.PackID.Str())
+				packIDs[idStr] = struct{}{}
+				matchingID = true
+			}
+		}
+		if matchingID {
+			f.blobIDs[pb.ID.String()] = struct{}{}
+			indexPackIDs[idStr] = struct{}{}
+		}
+	}
+
+	for id := range indexPackIDs {
+		delete(packIDs, id)
+	}
+
+	if len(indexPackIDs) > 0 {
+		list := make([]string, 0, len(indexPackIDs))
+		for h := range indexPackIDs {
+			list = append(list, h)
+		}
+		Warnf("some pack files are missing from the repository, getting their blobs from the repository index: %v\n\n", list)
+	}
+	return packIDs
 }
 
 func (f *Finder) findObjectPack(ctx context.Context, id string, t restic.BlobType) {
