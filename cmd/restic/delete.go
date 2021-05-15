@@ -32,7 +32,7 @@ func deleteFiles(gopts GlobalOptions, ignoreError bool, repo restic.Repository, 
 			select {
 			case fileChan <- id:
 			case <-ctx.Done():
-				return nil
+				return ctx.Err()
 			}
 		}
 		return nil
