@@ -24,7 +24,13 @@ func (e *NoIDByPrefixError) Error() string {
 // Find loads the list of all files of type t and searches for names which
 // start with prefix. If none is found, nil and ErrNoIDPrefixFound is returned.
 // If more than one is found, nil and ErrMultipleIDMatches is returned.
+// If prefix in fact is a full filename, it is simply returned
 func Find(ctx context.Context, be Lister, t FileType, prefix string) (string, error) {
+
+	if len(prefix) == 2*idSize {
+		return prefix, nil
+	}
+
 	match := ""
 
 	ctx, cancel := context.WithCancel(ctx)
