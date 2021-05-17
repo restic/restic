@@ -58,7 +58,7 @@ command and specify the snapshot ID on the command line:
 
     $ restic -r /srv/restic-repo forget bdbd3439
     enter password for repository:
-    removed snapshot d3f01f63
+    removed snapshot bdbd3439
 
 Afterwards this snapshot is removed:
 
