@@ -31,6 +31,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/textfile"
+	"github.com/restic/restic/internal/ui/termstatus"
 
 	"github.com/restic/restic/internal/errors"
 
@@ -142,7 +143,13 @@ func stdinIsTerminal() bool {
 }
 
 func stdoutIsTerminal() bool {
-	return terminal.IsTerminal(int(os.Stdout.Fd()))
+	// mintty on windows can use pipes which behave like a posix terminal,
+	// but which are not a terminal handle
+	return terminal.IsTerminal(int(os.Stdout.Fd())) || stdoutCanUpdateStatus()
+}
+
+func stdoutCanUpdateStatus() bool {
+	return termstatus.CanUpdateStatus(os.Stdout.Fd())
 }
 
 func stdoutTerminalWidth() int {
@@ -159,7 +166,7 @@ func stdoutTerminalWidth() int {
 // program execution must revert changes to the terminal configuration itself.
 // The terminal configuration is only restored while reading a password.
 func restoreTerminal() {
-	if !stdoutIsTerminal() {
+	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
 		return
 	}
 
@@ -248,7 +255,7 @@ func PrintProgress(format string, args ...interface{}) {
 	message = fmt.Sprintf(format, args...)
 
 	if !(strings.HasSuffix(message, "\r") || strings.HasSuffix(message, "\n")) {
-		if stdoutIsTerminal() {
+		if stdoutCanUpdateStatus() {
 			carriageControl = "\r"
 		} else {
 			carriageControl = "\n"
@@ -256,7 +263,7 @@ func PrintProgress(format string, args ...interface{}) {
 		message = fmt.Sprintf("%s%s", message, carriageControl)
 	}
 
-	if stdoutIsTerminal() {
+	if stdoutCanUpdateStatus() {
 		message = fmt.Sprintf("%s%s", ClearLine(), message)
 	}
 
