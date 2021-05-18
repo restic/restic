@@ -799,6 +799,25 @@ func TestCopyIncremental(t *testing.T) {
 		len(copiedSnapshotIDs), len(snapshotIDs))
 }
 
+func TestCopyUnstableJSON(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	env2, cleanup2 := withTestEnvironment(t)
+	defer cleanup2()
+
+	// contains a symlink created using `ln -s '../i/'$'\355\246\361''d/samba' broken-symlink`
+	datafile := filepath.Join("testdata", "copy-unstable-json.tar.gz")
+	rtest.SetupTarTestFixture(t, env.base, datafile)
+
+	testRunInit(t, env2.gopts)
+	testRunCopy(t, env.gopts, env2.gopts)
+	testRunCheck(t, env2.gopts)
+
+	copiedSnapshotIDs := testRunList(t, "snapshots", env2.gopts)
+	rtest.Assert(t, 1 == len(copiedSnapshotIDs), "still expected %v snapshot, found %v",
+		1, len(copiedSnapshotIDs))
+}
+
 func TestInitCopyChunkerParams(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
