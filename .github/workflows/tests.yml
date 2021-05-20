@@ -289,18 +289,18 @@ jobs:
         run: docker build -t netapp-restic:latest .
 
       - name: Docker login
-        run: docker login -u $USERNAME -p $PASSWORD netappdownloads.jfrog.io/artifactory/docker-restic-staging
+        run: docker login -u $USERNAME -p $PASSWORD netappdownloads.jfrog.io/oss-docker-restic-production/restic
 
       - name: Tag and push latest image
         run: |
-          docker tag netapp-restic:latest netappdownloads.jfrog.io/docker-restic-staging/netapp-restic:latest
-          docker push netappdownloads.jfrog.io/docker-restic-staging/netapp-restic:latest
+          docker tag netapp-restic:latest netappdownloads.jfrog.io/oss-docker-restic-production/restic:latest
+          docker push netappdownloads.jfrog.io/oss-docker-restic-production/restic:latest
 
       - name: Tag and push versioned image
         run: |
           export VERSION=$(cat VERSION)
-          docker tag netapp-restic:latest netappdownloads.jfrog.io/docker-restic-staging/netapp-restic:$VERSION
-          docker push netappdownloads.jfrog.io/docker-restic-staging/netapp-restic:$VERSION
+          docker tag netapp-restic:latest netappdownloads.jfrog.io/oss-docker-restic-production/restic:$VERSION
+          docker push netappdownloads.jfrog.io/oss-docker-restic-production/restic:$VERSION
 
       - name: Tag and push to GitHub Container Registry
         run: |
