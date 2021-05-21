@@ -4,6 +4,7 @@ require (
 	bazil.org/fuse v0.0.0-20200407214033-5883e5a4b512
 	cloud.google.com/go/storage v1.12.0
 	github.com/Azure/azure-sdk-for-go v46.1.0+incompatible
+	github.com/Azure/azure-storage-blob-go v0.13.0 // indirect
 	github.com/Azure/go-autorest/autorest v0.11.6 // indirect
 	github.com/Azure/go-autorest/autorest/to v0.4.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.0.2

@@ -2,9 +2,10 @@ package azure
 
 import (
 	"context"
-	"encoding/base64"
+	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"strings"
@@ -14,14 +15,14 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
-	"github.com/Azure/azure-sdk-for-go/storage"
+	storage "github.com/Azure/azure-storage-blob-go/azblob"
 	"github.com/cenkalti/backoff/v4"
 )
 
 // Backend stores data on an azure endpoint.
 type Backend struct {
 	accountName  string
-	container    *storage.Container
+	container    storage.ContainerURL
 	sem          *backend.Semaphore
 	prefix       string
 	listMaxItems int
@@ -33,26 +34,51 @@ const defaultListMaxItems = 5000
 // make sure that *Backend implements backend.Backend
 var _ restic.Backend = &Backend{}
 
-func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
-	debug.Log("open, config %#v", cfg)
+func getCredential(cfg Config) (*storage.SharedKeyCredential, error) {
+	if cfg.AccountKey != "" {
+		cred, err := storage.NewSharedKeyCredential(cfg.AccountName, cfg.AccountKey)
+		if err != nil {
+			return nil, errors.Wrap(err, "Error creating SharedKeyCredential")
+		}
 
-	client, err := storage.NewBasicClient(cfg.AccountName, cfg.AccountKey)
-	if err != nil {
-		return nil, errors.Wrap(err, "NewBasicClient")
+		return cred, err
 	}
 
-	client.HTTPClient = &http.Client{Transport: rt}
+	return nil, errors.New("Not supported")
+}
 
-	service := client.GetBlobService()
+func getBSU(cfg Config) (storage.ServiceURL, error) {
+	credential, err := getCredential(cfg)
+	if err != nil {
+		return storage.ServiceURL{}, err
+	}
+
+	pipeline := storage.NewPipeline(credential, storage.PipelineOptions{})
+	blobPrimaryURL, err := url.Parse("https://" + credential.AccountName() + ".blob.core.windows.net/")
+
+	if err != nil {
+		return storage.ServiceURL{}, err
+	}
+
+	return storage.NewServiceURL(*blobPrimaryURL, pipeline), nil
+}
+
+func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
+	debug.Log("open, config %#v", cfg)
 
 	sem, err := backend.NewSemaphore(cfg.Connections)
 	if err != nil {
 		return nil, err
 	}
 
+	bsu, err := getBSU(cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	be := &Backend{
-		container:   service.GetContainerReference(cfg.Container),
 		accountName: cfg.AccountName,
+		container:   bsu.NewContainerURL(cfg.Container),
 		sem:         sem,
 		prefix:      cfg.Prefix,
 		Layout: &backend.DefaultLayout{
@@ -79,12 +105,14 @@ func Create(cfg Config, rt http.RoundTripper) (*Backend, error) {
 		return nil, errors.Wrap(err, "open")
 	}
 
-	options := storage.CreateContainerOptions{
-		Access: storage.ContainerAccessTypePrivate,
-	}
-
-	_, err = be.container.CreateIfNotExists(&options)
+	_, err = be.container.Create(context.TODO(), storage.Metadata{}, storage.PublicAccessNone)
 	if err != nil {
+		if stgErr, ok := err.(storage.StorageError); ok {
+			if stgErr.ServiceCode() == storage.ServiceCodeContainerAlreadyExists {
+				return be, nil
+			}
+		}
+
 		return nil, errors.Wrap(err, "container.CreateIfNotExists")
 	}
 
@@ -109,22 +137,12 @@ func (be *Backend) Join(p ...string) string {
 
 // Location returns this backend's location (the container name).
 func (be *Backend) Location() string {
-	return be.Join(be.container.Name, be.prefix)
+	return be.Join(be.container.String(), be.prefix)
 }
 
 // Path returns the path in the bucket that is used for this backend.
 func (be *Backend) Path() string {
 	return be.prefix
-}
-
-type azureAdapter struct {
-	restic.RewindReader
-}
-
-func (azureAdapter) Close() error { return nil }
-
-func (a azureAdapter) Len() int {
-	return int(a.Length())
 }
 
 // Save stores data in the backend at the handle.
@@ -135,86 +153,23 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 
 	objName := be.Filename(h)
 
+	fmt.Print("Saving object")
+
 	debug.Log("Save %v at %v", h, objName)
 
 	be.sem.GetToken()
 
-	debug.Log("InsertObject(%v, %v)", be.container.Name, objName)
+	debug.Log("InsertObject(%v, %v)", be.container, objName)
 
-	var err error
-	if rd.Length() < 256*1024*1024 {
-		// wrap the reader so that net/http client cannot close the reader
-		// CreateBlockBlobFromReader reads length from `Len()``
-		dataReader := azureAdapter{rd}
+	// if it's smaller than 256miB, then just create the file directly from the reader
+	blob := be.container.NewBlockBlobURL(objName)
 
-		// if it's smaller than 256miB, then just create the file directly from the reader
-		err = be.container.GetBlobReference(objName).CreateBlockBlobFromReader(dataReader, nil)
-	} else {
-		// otherwise use the more complicated method
-		err = be.saveLarge(ctx, objName, rd)
-
-	}
+	_, err := storage.UploadStreamToBlockBlob(context.TODO(), rd, blob, storage.UploadStreamToBlockBlobOptions{})
 
 	be.sem.ReleaseToken()
 	debug.Log("%v, err %#v", objName, err)
 
 	return errors.Wrap(err, "CreateBlockBlobFromReader")
-}
-
-func (be *Backend) saveLarge(ctx context.Context, objName string, rd restic.RewindReader) error {
-	// create the file on the server
-	file := be.container.GetBlobReference(objName)
-	err := file.CreateBlockBlob(nil)
-	if err != nil {
-		return errors.Wrap(err, "CreateBlockBlob")
-	}
-
-	// read the data, in 100 MiB chunks
-	buf := make([]byte, 100*1024*1024)
-	var blocks []storage.Block
-	uploadedBytes := 0
-
-	for {
-		n, err := io.ReadFull(rd, buf)
-		if err == io.ErrUnexpectedEOF {
-			err = nil
-		}
-		if err == io.EOF {
-			// end of file reached, no bytes have been read at all
-			break
-		}
-
-		if err != nil {
-			return errors.Wrap(err, "ReadFull")
-		}
-
-		buf = buf[:n]
-		uploadedBytes += n
-
-		// upload it as a new "block", use the base64 hash for the ID
-		h := restic.Hash(buf)
-		id := base64.StdEncoding.EncodeToString(h[:])
-		debug.Log("PutBlock %v with %d bytes", id, len(buf))
-		err = file.PutBlock(id, buf, nil)
-		if err != nil {
-			return errors.Wrap(err, "PutBlock")
-		}
-
-		blocks = append(blocks, storage.Block{
-			ID:     id,
-			Status: "Uncommitted",
-		})
-	}
-
-	// sanity check
-	if uploadedBytes != int(rd.Length()) {
-		return errors.Errorf("wrote %d bytes instead of the expected %d bytes", uploadedBytes, rd.Length())
-	}
-
-	debug.Log("uploaded %d parts: %v", len(blocks), blocks)
-	err = file.PutBlockList(blocks, nil)
-	debug.Log("PutBlockList returned %v", err)
-	return errors.Wrap(err, "PutBlockList")
 }
 
 // wrapReader wraps an io.ReadCloser to run an additional function on Close.
@@ -250,27 +205,17 @@ func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, 
 	}
 
 	objName := be.Filename(h)
-	blob := be.container.GetBlobReference(objName)
-
-	start := uint64(offset)
-	var end uint64
-
-	if length > 0 {
-		end = uint64(offset + int64(length) - 1)
-	} else {
-		end = 0
-	}
+	blob := be.container.NewBlockBlobURL(objName)
 
 	be.sem.GetToken()
 
-	rd, err := blob.GetRange(&storage.GetBlobRangeOptions{Range: &storage.BlobRange{Start: start, End: end}})
+	resp, err := blob.Download(context.TODO(), offset, int64(length), storage.BlobAccessConditions{}, false, storage.ClientProvidedKeyOptions{})
 	if err != nil {
 		be.sem.ReleaseToken()
 		return nil, err
 	}
-
 	closeRd := wrapReader{
-		ReadCloser: rd,
+		ReadCloser: resp.Body(storage.RetryReaderOptions{}),
 		f: func() {
 			debug.Log("Close()")
 			be.sem.ReleaseToken()
@@ -285,10 +230,9 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, 
 	debug.Log("%v", h)
 
 	objName := be.Filename(h)
-	blob := be.container.GetBlobReference(objName)
-
+	blob := be.container.NewBlockBlobURL(objName)
 	be.sem.GetToken()
-	err := blob.GetProperties(nil)
+	props, err := blob.GetProperties(context.TODO(), storage.BlobAccessConditions{}, storage.ClientProvidedKeyOptions{})
 	be.sem.ReleaseToken()
 
 	if err != nil {
@@ -297,7 +241,7 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, 
 	}
 
 	fi := restic.FileInfo{
-		Size: int64(blob.Properties.ContentLength),
+		Size: int64(props.ContentLength()),
 		Name: h.Name,
 	}
 	return fi, nil
@@ -308,13 +252,21 @@ func (be *Backend) Test(ctx context.Context, h restic.Handle) (bool, error) {
 	objName := be.Filename(h)
 
 	be.sem.GetToken()
-	found, err := be.container.GetBlobReference(objName).Exists()
-	be.sem.ReleaseToken()
-
+	blob := be.container.NewBlobURL(objName)
+	_, err := blob.GetProperties(context.TODO(), storage.BlobAccessConditions{}, storage.ClientProvidedKeyOptions{})
 	if err != nil {
+		if stgErr, ok := err.(storage.StorageError); ok {
+			if stgErr.ServiceCode() == storage.ServiceCodeBlobNotFound {
+				return false, nil
+			}
+		}
+
 		return false, err
 	}
-	return found, nil
+
+	be.sem.ReleaseToken()
+
+	return true, nil
 }
 
 // Remove removes the blob with the given name and type.
@@ -322,7 +274,7 @@ func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	objName := be.Filename(h)
 
 	be.sem.GetToken()
-	_, err := be.container.GetBlobReference(objName).DeleteIfExists(nil)
+	_, err := be.container.NewBlobURL(objName).Delete(context.TODO(), storage.DeleteSnapshotsOptionNone, storage.BlobAccessConditions{})
 	be.sem.ReleaseToken()
 
 	debug.Log("Remove(%v) at %v -> err %v", h, objName, err)
@@ -341,23 +293,25 @@ func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.F
 		prefix += "/"
 	}
 
-	params := storage.ListBlobsParameters{
-		MaxResults: uint(be.listMaxItems),
+	listOpts := storage.ListBlobsSegmentOptions{
+		MaxResults: int32(be.listMaxItems),
 		Prefix:     prefix,
 	}
 
-	for {
+	for marker := (storage.Marker{}); marker.NotDone(); {
 		be.sem.GetToken()
-		obj, err := be.container.ListBlobs(params)
+		listBlob, err := be.container.ListBlobsFlatSegment(ctx, marker, listOpts)
 		be.sem.ReleaseToken()
 
 		if err != nil {
 			return err
 		}
 
-		debug.Log("got %v objects", len(obj.Blobs))
+		debug.Log("got %v objects", len(listBlob.Segment.BlobItems))
 
-		for _, item := range obj.Blobs {
+		marker = listBlob.NextMarker
+
+		for _, item := range listBlob.Segment.BlobItems {
 			m := strings.TrimPrefix(item.Name, prefix)
 			if m == "" {
 				continue
@@ -365,7 +319,7 @@ func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.F
 
 			fi := restic.FileInfo{
 				Name: path.Base(m),
-				Size: item.Properties.ContentLength,
+				Size: *item.Properties.ContentLength,
 			}
 
 			if ctx.Err() != nil {
@@ -382,11 +336,6 @@ func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.F
 			}
 
 		}
-
-		if obj.NextMarker == "" {
-			break
-		}
-		params.Marker = obj.NextMarker
 	}
 
 	return ctx.Err()
