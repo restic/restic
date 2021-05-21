@@ -2,7 +2,6 @@ package azure
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -152,8 +151,6 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 	}
 
 	objName := be.Filename(h)
-
-	fmt.Print("Saving object")
 
 	debug.Log("Save %v at %v", h, objName)
 

@@ -608,7 +608,7 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 			return nil, err
 		}
 
-		debug.Log("opening gs repository at %#v", cfg)
+		debug.Log("opening azure repository at %#v", cfg)
 		return cfg, nil
 
 	case "swift":
