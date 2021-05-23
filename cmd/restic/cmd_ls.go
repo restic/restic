@@ -74,18 +74,42 @@ type lsSnapshot struct {
 	StructType string     `json:"struct_type"` // "snapshot"
 }
 
-type lsNode struct {
-	Name       string      `json:"name"`
-	Type       string      `json:"type"`
-	Path       string      `json:"path"`
-	UID        uint32      `json:"uid"`
-	GID        uint32      `json:"gid"`
-	Size       uint64      `json:"size,omitempty"`
-	Mode       os.FileMode `json:"mode,omitempty"`
-	ModTime    time.Time   `json:"mtime,omitempty"`
-	AccessTime time.Time   `json:"atime,omitempty"`
-	ChangeTime time.Time   `json:"ctime,omitempty"`
-	StructType string      `json:"struct_type"` // "node"
+// Print node in our custom JSON format, followed by a newline.
+func lsNodeJSON(enc *json.Encoder, path string, node *restic.Node) error {
+	n := &struct {
+		Name       string      `json:"name"`
+		Type       string      `json:"type"`
+		Path       string      `json:"path"`
+		UID        uint32      `json:"uid"`
+		GID        uint32      `json:"gid"`
+		Size       *uint64     `json:"size,omitempty"`
+		Mode       os.FileMode `json:"mode,omitempty"`
+		ModTime    time.Time   `json:"mtime,omitempty"`
+		AccessTime time.Time   `json:"atime,omitempty"`
+		ChangeTime time.Time   `json:"ctime,omitempty"`
+		StructType string      `json:"struct_type"` // "node"
+
+		size uint64 // Target for Size pointer.
+	}{
+		Name:       node.Name,
+		Type:       node.Type,
+		Path:       path,
+		UID:        node.UID,
+		GID:        node.GID,
+		size:       node.Size,
+		Mode:       node.Mode,
+		ModTime:    node.ModTime,
+		AccessTime: node.AccessTime,
+		ChangeTime: node.ChangeTime,
+		StructType: "node",
+	}
+	// Always print size for regular files, even when empty,
+	// but never for other types.
+	if node.Type == "file" {
+		n.Size = &n.size
+	}
+
+	return enc.Encode(n)
 }
 
 func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
@@ -159,7 +183,7 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 		enc := json.NewEncoder(gopts.stdout)
 
 		printSnapshot = func(sn *restic.Snapshot) {
-			err = enc.Encode(lsSnapshot{
+			err := enc.Encode(lsSnapshot{
 				Snapshot:   sn,
 				ID:         sn.ID(),
 				ShortID:    sn.ID().Str(),
@@ -171,19 +195,7 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 		}
 
 		printNode = func(path string, node *restic.Node) {
-			err = enc.Encode(lsNode{
-				Name:       node.Name,
-				Type:       node.Type,
-				Path:       path,
-				UID:        node.UID,
-				GID:        node.GID,
-				Size:       node.Size,
-				Mode:       node.Mode,
-				ModTime:    node.ModTime,
-				AccessTime: node.AccessTime,
-				ChangeTime: node.ChangeTime,
-				StructType: "node",
-			})
+			err := lsNodeJSON(enc, path, node)
 			if err != nil {
 				Warnf("JSON encode failed: %v\n", err)
 			}
