@@ -35,10 +35,9 @@ func ReadAt(ctx context.Context, be Backend, h Handle, offset int64, p []byte) (
 		return ierr
 	})
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrapf(err, "ReadFull(%v)", h)
 	}
 
 	debug.Log("ReadAt(%v) ReadFull returned %v bytes", h, n)
-
-	return n, errors.Wrapf(err, "ReadFull(%v)", h)
+	return n, nil
 }

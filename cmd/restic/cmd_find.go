@@ -40,8 +40,6 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 	},
 }
 
-const shortStr = 8 // Length of short IDs: 4 bytes as hex strings
-
 // FindOptions bundles all options for the find command.
 type FindOptions struct {
 	Oldest             string
@@ -386,12 +384,12 @@ func (f *Finder) findIDs(ctx context.Context, sn *restic.Snapshot) error {
 				idStr := id.String()
 				if _, ok := f.blobIDs[idStr]; !ok {
 					// Look for short ID form
-					if _, ok := f.blobIDs[idStr[:shortStr]]; !ok {
+					if _, ok := f.blobIDs[id.Str()]; !ok {
 						continue
 					}
 					// Replace the short ID with the long one
 					f.blobIDs[idStr] = struct{}{}
-					delete(f.blobIDs, idStr[:shortStr])
+					delete(f.blobIDs, id.Str())
 				}
 				f.out.PrintObject("blob", idStr, nodepath, parentTreeID.String(), sn)
 			}
@@ -423,7 +421,7 @@ func (f *Finder) packsToBlobs(ctx context.Context, packs []string) error {
 		idStr := id.String()
 		if _, ok := packIDs[idStr]; !ok {
 			// Look for short ID form
-			if _, ok := packIDs[idStr[:shortStr]]; !ok {
+			if _, ok := packIDs[id.Str()]; !ok {
 				return nil
 			}
 		}
