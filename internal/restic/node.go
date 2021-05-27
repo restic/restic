@@ -188,8 +188,6 @@ func (node Node) restoreMetadata(path string) error {
 	if err := lchown(path, int(node.UID), int(node.GID)); err != nil {
 		// Like "cp -a" and "rsync -a" do, we only report lchown permission errors
 		// if we run as root.
-		// On Windows, Geteuid always returns -1, and we always report lchown
-		// permission errors.
 		if os.Geteuid() > 0 && os.IsPermission(err) {
 			debug.Log("not running as root, ignoring lchown permission error for %v: %v",
 				path, err)
@@ -310,11 +308,11 @@ func (node Node) createSymlinkAt(path string) error {
 }
 
 func (node *Node) createDevAt(path string) error {
-	return mknod(path, syscall.S_IFBLK|0600, node.device())
+	return mknod(path, syscall.S_IFBLK|0600, node.Device)
 }
 
 func (node *Node) createCharDevAt(path string) error {
-	return mknod(path, syscall.S_IFCHR|0600, node.device())
+	return mknod(path, syscall.S_IFCHR|0600, node.Device)
 }
 
 func (node *Node) createFifoAt(path string) error {

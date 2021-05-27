@@ -6,24 +6,18 @@ import (
 	"github.com/restic/restic/internal/errors"
 )
 
-// mknod() creates a filesystem node (file, device
-// special file, or named pipe) named pathname, with attributes
-// specified by mode and dev.
-var mknod = func(path string, mode uint32, dev int) (err error) {
+// mknod is not supported on Windows.
+func mknod(path string, mode uint32, dev uint64) (err error) {
 	return errors.New("device nodes cannot be created on windows")
 }
 
 // Windows doesn't need lchown
-var lchown = func(path string, uid int, gid int) (err error) {
+func lchown(path string, uid int, gid int) (err error) {
 	return nil
 }
 
 func (node Node) restoreSymlinkTimestamps(path string, utimes [2]syscall.Timespec) error {
 	return nil
-}
-
-func (node Node) device() int {
-	return int(node.Device)
 }
 
 // Getxattr retrieves extended attribute data associated with path.
