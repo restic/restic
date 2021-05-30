@@ -1113,7 +1113,7 @@ func TestArchiverSaveTree(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			tree, err := arch.SaveTree(ctx, "/", atree, nil)
+			tree, err := arch.SaveTree(ctx, "/", atree, nil, false)
 			if err != nil {
 				t.Fatal(err)
 			}

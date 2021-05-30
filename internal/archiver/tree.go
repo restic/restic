@@ -228,12 +228,18 @@ func formatTree(t Tree, indent string) (s string) {
 }
 
 // unrollTree unrolls the tree so that only leaf nodes have Path set.
-func unrollTree(f fs.FS, t *Tree) error {
+func unrollTree(f fs.FS, t *Tree, skipDeleted bool) error {
 	// if the current tree is a leaf node (Path is set) and has additional
 	// nodes, add the contents of Path to the nodes.
 	if t.Path != "" && len(t.Nodes) > 0 {
 		debug.Log("resolve path %v", t.Path)
 		entries, err := readdirnames(f, t.Path, 0)
+
+		if skipDeleted && err != nil {
+			t.Nodes = nil
+			err = nil
+		}
+
 		if err != nil {
 			return err
 		}
@@ -258,7 +264,7 @@ func unrollTree(f fs.FS, t *Tree) error {
 	}
 
 	for i, subtree := range t.Nodes {
-		err := unrollTree(f, &subtree)
+		err := unrollTree(f, &subtree, skipDeleted)
 		if err != nil {
 			return err
 		}
@@ -270,7 +276,7 @@ func unrollTree(f fs.FS, t *Tree) error {
 }
 
 // NewTree creates a Tree from the target files/directories.
-func NewTree(fs fs.FS, targets []string) (*Tree, error) {
+func NewTree(fs fs.FS, targets []string, skipDeleted bool) (*Tree, error) {
 	debug.Log("targets: %v", targets)
 	tree := &Tree{}
 	seen := make(map[string]struct{})
@@ -290,7 +296,7 @@ func NewTree(fs fs.FS, targets []string) (*Tree, error) {
 	}
 
 	debug.Log("before unroll:\n%v", tree)
-	err := unrollTree(fs, tree)
+	err := unrollTree(fs, tree, skipDeleted)
 	if err != nil {
 		return nil, err
 	}

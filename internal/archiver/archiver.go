@@ -164,10 +164,48 @@ func (arch *Archiver) error(item string, fi os.FileInfo, err error) error {
 	return errf
 }
 
+func fileOrDirNotExist(path string) bool {
+	_, err := fs.Lstat(path)
+	return err != nil && os.IsNotExist(errors.Cause(err))
+}
+
+// mergeNodes merge the lists of nodes. The result is a new list of nodes in which each node from both input
+// lists appear only once, preferring the nodes from the second list.
+func (arch *Archiver) mergeNodes(listNode1, listNode2 []*restic.Node) (mergedNodes []*restic.Node) {
+	setNode := make(map[string]*restic.Node)
+	for _, node := range listNode1 {
+		setNode[node.Name] = node
+	}
+	for _, node := range listNode2 {
+
+		// check if the file (or the directory) exists
+		if node.IsPlaceholder() {
+			// remove the file or the dir if was previously added in the set
+			debug.Log("removed : %s", node.Path)
+			delete(setNode, node.Name)
+			continue
+		}
+
+		// the file exist, will update the set
+		setNode[node.Name] = node
+	}
+
+	for _, node := range setNode {
+		mergedNodes = append(mergedNodes, node)
+	}
+	return
+}
+
 // saveTree stores a tree in the repo. It checks the index and the known blobs
 // before saving anything.
-func (arch *Archiver) saveTree(ctx context.Context, t *restic.Tree) (restic.ID, ItemStats, error) {
+func (arch *Archiver) saveTree(ctx context.Context, t *restic.Tree, prevT *restic.Tree, merge bool) (restic.ID, ItemStats, error) {
 	var s ItemStats
+
+	if merge && prevT != nil {
+		debug.Log("merging nodes")
+		t.Nodes = arch.mergeNodes(prevT.Nodes, t.Nodes)
+	}
+
 	buf, err := json.Marshal(t)
 	if err != nil {
 		return restic.ID{}, s, errors.Wrap(err, "MarshalJSON")
@@ -494,6 +532,15 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 	return fn, false, nil
 }
 
+func (arch *Archiver) SavePlaceholder(path, name string) (fn FutureNode, excluded bool, err error) {
+	node := restic.NodePlaceholder(path, name)
+	fn = FutureNode{
+		snPath: path,
+		node:   node,
+	}
+	return fn, false, nil
+}
+
 // fileChanged tries to detect whether a file's content has changed compared
 // to the contents of node, which describes the same path in the parent backup.
 // It should only be run for regular files.
@@ -546,8 +593,9 @@ func (arch *Archiver) statDir(dir string) (os.FileInfo, error) {
 }
 
 // SaveTree stores a Tree in the repo, returned is the tree. snPath is the path
-// within the current snapshot.
-func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, previous *restic.Tree) (*restic.Tree, error) {
+// within the current snapshot. If mergeWithPrevious is true, will merge the tree
+// with the provided previous tree, keeping from the previous only files not included in atree.
+func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, previous *restic.Tree, mergeWithPrevious bool) (*restic.Tree, error) {
 	debug.Log("%v (%v nodes), parent %v", snPath, len(atree.Nodes), previous)
 
 	tree := restic.NewTree()
@@ -565,7 +613,15 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 
 		// this is a leaf node
 		if subatree.Leaf() {
-			fn, excluded, err := arch.Save(ctx, join(snPath, name), subatree.Path, previous.Find(name))
+
+			var fn FutureNode
+			var excluded bool
+			var err error
+			if mergeWithPrevious && fileOrDirNotExist(subatree.Path) {
+				fn, excluded, err = arch.SavePlaceholder(subatree.Path, name)
+			} else {
+				fn, excluded, err = arch.Save(ctx, join(snPath, name), subatree.Path, previous.Find(name))
+			}
 
 			if err != nil {
 				err = arch.error(subatree.Path, fn.fi, err)
@@ -599,12 +655,12 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 		}
 
 		// not a leaf node, archive subtree
-		subtree, err := arch.SaveTree(ctx, join(snPath, name), &subatree, oldSubtree)
+		subtree, err := arch.SaveTree(ctx, join(snPath, name), &subatree, oldSubtree, mergeWithPrevious)
 		if err != nil {
 			return nil, err
 		}
 
-		id, nodeStats, err := arch.saveTree(ctx, subtree)
+		id, nodeStats, err := arch.saveTree(ctx, subtree, oldSubtree, mergeWithPrevious)
 		if err != nil {
 			return nil, err
 		}
@@ -616,15 +672,20 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 		debug.Log("%v, saved subtree %v as %v", snPath, subtree, id.Str())
 
 		fi, err := arch.statDir(subatree.FileInfoPath)
-		if err != nil {
+		if err != nil && !mergeWithPrevious {
 			return nil, err
 		}
 
 		debug.Log("%v, dir node data loaded from %v", snPath, subatree.FileInfoPath)
-
-		node, err := arch.nodeFromFileInfo(subatree.FileInfoPath, fi)
-		if err != nil {
-			return nil, err
+		var node *restic.Node
+		if err != nil && mergeWithPrevious {
+			// the dir does not exist
+			node = restic.NodePlaceholder(subatree.Path, name)
+		} else {
+			node, err = arch.nodeFromFileInfo(subatree.FileInfoPath, fi)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		node.Name = name
@@ -725,11 +786,12 @@ func resolveRelativeTargets(filesys fs.FS, targets []string) ([]string, error) {
 
 // SnapshotOptions collect attributes for a new snapshot.
 type SnapshotOptions struct {
-	Tags           restic.TagList
-	Hostname       string
-	Excludes       []string
-	Time           time.Time
-	ParentSnapshot restic.ID
+	Tags            restic.TagList
+	Hostname        string
+	Excludes        []string
+	Time            time.Time
+	ParentSnapshot  restic.ID
+	MergeWithParent bool
 }
 
 // loadParentTree loads a tree referenced by snapshot id. If id is null, nil is returned.
@@ -781,7 +843,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		return nil, restic.ID{}, err
 	}
 
-	atree, err := NewTree(arch.FS, cleanTargets)
+	atree, err := NewTree(arch.FS, cleanTargets, opts.MergeWithParent)
 	if err != nil {
 		return nil, restic.ID{}, err
 	}
@@ -796,7 +858,8 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		arch.runWorkers(wctx, &t)
 
 		debug.Log("starting snapshot")
-		tree, err := arch.SaveTree(wctx, "/", atree, arch.loadParentTree(wctx, opts.ParentSnapshot))
+		parentTree := arch.loadParentTree(wctx, opts.ParentSnapshot)
+		tree, err := arch.SaveTree(wctx, "/", atree, parentTree, opts.MergeWithParent)
 		if err != nil {
 			return err
 		}
@@ -805,7 +868,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 			return errors.New("snapshot is empty")
 		}
 
-		rootTreeID, stats, err = arch.saveTree(wctx, tree)
+		rootTreeID, stats, err = arch.saveTree(wctx, tree, parentTree, opts.MergeWithParent)
 		// trigger shutdown but don't set an error
 		t.Kill(nil)
 		return err
@@ -826,7 +889,16 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		return nil, restic.ID{}, err
 	}
 
-	sn, err := restic.NewSnapshot(targets, opts.Tags, opts.Hostname, opts.Time)
+	paths := targets
+	if opts.MergeWithParent {
+		sn, err := restic.LoadSnapshot(ctx, arch.Repo, opts.ParentSnapshot)
+		if err != nil {
+			return nil, restic.ID{}, err
+		}
+		paths = sn.Paths
+	}
+
+	sn, err := restic.NewSnapshot(paths, opts.Tags, opts.Hostname, opts.Time)
 	if err != nil {
 		return nil, restic.ID{}, err
 	}

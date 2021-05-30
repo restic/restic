@@ -83,7 +83,7 @@ func (s *Scanner) Scan(ctx context.Context, targets []string) error {
 	debug.Log("clean targets %v", cleanTargets)
 
 	// we're using the same tree representation as the archiver does
-	tree, err := NewTree(s.FS, cleanTargets)
+	tree, err := NewTree(s.FS, cleanTargets, false)
 	if err != nil {
 		return err
 	}

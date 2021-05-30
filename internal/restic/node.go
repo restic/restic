@@ -103,6 +103,18 @@ func NodeFromFileInfo(path string, fi os.FileInfo) (*Node, error) {
 	return node, err
 }
 
+func NodePlaceholder(path, name string) *Node {
+	return &Node{
+		Path: path,
+		Name: name,
+		Type: "placeholder",
+	}
+}
+
+func (node *Node) IsPlaceholder() bool {
+	return node.Type == "placeholder"
+}
+
 func nodeTypeFromFileInfo(fi os.FileInfo) string {
 	switch fi.Mode() & (os.ModeType | os.ModeCharDevice) {
 	case 0:
