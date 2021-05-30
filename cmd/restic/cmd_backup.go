@@ -92,6 +92,7 @@ type BackupOptions struct {
 	IgnoreInode             bool
 	IgnoreCtime             bool
 	UseFsSnapshot           bool
+	Merge                   bool
 }
 
 var backupOptions BackupOptions
@@ -116,6 +117,7 @@ func init() {
 	f.BoolVar(&backupOptions.Stdin, "stdin", false, "read backup from stdin")
 	f.StringVar(&backupOptions.StdinFilename, "stdin-filename", "stdin", "`filename` to use when reading from stdin")
 	f.Var(&backupOptions.Tags, "tag", "add `tags` for the new snapshot in the format `tag[,tag,...]` (can be specified multiple times)")
+	f.BoolVar(&backupOptions.Merge, "merge", false, `merge the backuped files with the parent snapshot`)
 
 	f.StringVarP(&backupOptions.Host, "host", "H", "", "set the `hostname` for the snapshot manually. To prevent an expensive rescan use the \"parent\" flag")
 	f.StringVar(&backupOptions.Host, "hostname", "", "set the `hostname` for the snapshot manually")
@@ -461,9 +463,12 @@ func collectTargets(opts BackupOptions, args []string) (targets []string, err er
 		return nil, errors.Fatal("nothing to backup, please specify target files/dirs")
 	}
 
-	targets, err = filterExisting(targets)
-	if err != nil {
-		return nil, err
+	// Skip filter existing if merge option is true
+	if !opts.Merge {
+		targets, err = filterExisting(targets)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return targets, nil
@@ -697,11 +702,12 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	}
 
 	snapshotOpts := archiver.SnapshotOptions{
-		Excludes:       opts.Excludes,
-		Tags:           opts.Tags.Flatten(),
-		Time:           timeStamp,
-		Hostname:       opts.Host,
-		ParentSnapshot: *parentSnapshotID,
+		Excludes:        opts.Excludes,
+		Tags:            opts.Tags.Flatten(),
+		Time:            timeStamp,
+		Hostname:        opts.Host,
+		ParentSnapshot:  *parentSnapshotID,
+		MergeWithParent: opts.Merge,
 	}
 
 	if !gopts.JSON {
