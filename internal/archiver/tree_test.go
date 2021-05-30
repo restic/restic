@@ -447,7 +447,7 @@ func TestTree(t *testing.T) {
 			back := restictest.Chdir(t, tempdir)
 			defer back()
 
-			tree, err := NewTree(fs.Local{}, test.targets)
+			tree, err := NewTree(fs.Local{}, test.targets, false)
 			if test.mustError {
 				if err == nil {
 					t.Fatal("expected error, got nil")
