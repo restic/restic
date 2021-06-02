@@ -49,6 +49,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // config contains the configuration for the program to build.
@@ -194,6 +195,18 @@ func getVersionFromFile() string {
 	}
 
 	return strings.TrimSpace(string(buf))
+}
+// getVersion returns the version string from the file VERSION in the current
+// directory.
+func getNetappVersion() string {
+	buf, err := ioutil.ReadFile("NETAPPVERSION")
+	if err != nil {
+		verbosePrintf("error reading file NETAPPVERSION: %v\n", err)
+		return ""
+	}
+	base:=strings.TrimSpace(string(buf))
+	version:=base + "." + time.Now().Format("20060102150405")
+	return version
 }
 
 // getVersion returns a version string which is a combination of the contents
@@ -427,6 +440,11 @@ func main() {
 	if version != "" {
 		constants["main.version"] = version
 	}
+	netappVersion:=getNetappVersion()
+	if version != "" {
+		constants["main.netappversion"] = netappVersion
+	}
+
 	ldflags := constants.LDFlags()
 	if !preserveSymbols {
 		// Strip debug symbols.
