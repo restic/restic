@@ -196,6 +196,7 @@ func getVersionFromFile() string {
 
 	return strings.TrimSpace(string(buf))
 }
+
 // getVersion returns the version string from the file VERSION in the current
 // directory.
 func getNetappVersion() string {
@@ -204,8 +205,8 @@ func getNetappVersion() string {
 		verbosePrintf("error reading file NETAPPVERSION: %v\n", err)
 		return ""
 	}
-	base:=strings.TrimSpace(string(buf))
-	version:=base + "." + time.Now().Format("20060102150405")
+	base := strings.TrimSpace(string(buf))
+	version := base + "." + time.Now().Format("20060102150405")
 	return version
 }
 
@@ -440,7 +441,7 @@ func main() {
 	if version != "" {
 		constants["main.version"] = version
 	}
-	netappVersion:=getNetappVersion()
+	netappVersion := getNetappVersion()
 	if version != "" {
 		constants["main.netappversion"] = netappVersion
 	}
