@@ -40,6 +40,7 @@ import (
 )
 
 var version = "0.12.0-dev (compiled manually)"
+var netappversion = "1.0.0-dev (compiled manually)"
 
 // TimeFormat is the format used for all timestamps printed by restic.
 const TimeFormat = "2006-01-02 15:04:05"
