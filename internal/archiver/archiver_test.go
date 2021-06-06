@@ -2039,7 +2039,7 @@ func TestArchiverSnapshotMerge(t *testing.T) {
 			test.action(tempdir, t)
 
 			// merge snapshot using files in test.targets
-			snMerge, snapshotMergeId, err := arch.Snapshot(ctx, test.targets, SnapshotOptions{
+			snMerge, snapshotMergeID, err := arch.Snapshot(ctx, test.targets, SnapshotOptions{
 				Time:            time.Now(),
 				ParentSnapshot:  snapshotSrcID,
 				MergeWithParent: true,
@@ -2049,11 +2049,11 @@ func TestArchiverSnapshotMerge(t *testing.T) {
 			}
 
 			TestEnsureSnapshot(t, repo, snapshotSrcID, test.src)
-			TestEnsureSnapshot(t, repo, snapshotMergeId, test.want)
+			TestEnsureSnapshot(t, repo, snapshotMergeID, test.want)
 
 			checker.TestCheckRepo(t, repo)
 
-			if snapshotSrcID == snapshotMergeId {
+			if snapshotSrcID == snapshotMergeID {
 				t.Fatal("snapshots id are the same")
 			}
 
