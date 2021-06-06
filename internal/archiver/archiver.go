@@ -193,6 +193,10 @@ func (arch *Archiver) mergeNodes(listNode1, listNode2 []*restic.Node) (mergedNod
 	for _, node := range setNode {
 		mergedNodes = append(mergedNodes, node)
 	}
+
+	// sort nodes lexicographically
+	sort.Sort(restic.Nodes(mergedNodes))
+
 	return
 }
 
