@@ -65,7 +65,7 @@ func readPEMCertKey(filename string) (certs []byte, key []byte, err error) {
 func Transport(opts TransportOptions) (http.RoundTripper, error) {
 	var tlsConfig tls.Config
 	envVar := os.Getenv("FORCE_CERT_VALIDATION")
-	envVar = strings.TrimSpace(envVar)
+	envVar = strings.ToLower(strings.TrimSpace(envVar))
 	if "true" == envVar {
 		tlsConfig.InsecureSkipVerify = false
 	} else {
