@@ -64,7 +64,9 @@ func readPEMCertKey(filename string) (certs []byte, key []byte, err error) {
 // otherwise the function will return an error.
 func Transport(opts TransportOptions) (http.RoundTripper, error) {
 	var tlsConfig tls.Config
-	if "true" == os.Getenv("FORCE_CERT_VALIDATION") {
+	envVar := os.Getenv("FORCE_CERT_VALIDATION")
+	envVar = strings.TrimSpace(envVar)
+	if "true" == envVar {
 		tlsConfig.InsecureSkipVerify = false
 	} else {
 		tlsConfig.InsecureSkipVerify = true
