@@ -301,6 +301,11 @@ jobs:
           export VERSION=$(cat VERSION)
           docker tag netapp-restic:latest netappdownloads.jfrog.io/oss-docker-restic-production/restic:$VERSION
           docker push netappdownloads.jfrog.io/oss-docker-restic-production/restic:$VERSION
+      - name: Tag and push release image
+        run: |
+          export VERSION=$(cat RELEASE_TAG)
+          docker tag netapp-restic:latest netappdownloads.jfrog.io/oss-docker-restic-production/restic:$VERSION
+          docker push netappdownloads.jfrog.io/oss-docker-restic-production/restic:$VERSION
 
       - name: Tag and push to GitHub Container Registry
         run: |
