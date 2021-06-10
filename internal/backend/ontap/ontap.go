@@ -379,13 +379,12 @@ func Open(ctx context.Context, config Config) (*Backend, error) {
 	}
 	httpClient := &http.Client{Transport: tr}
 
-
 	newConfig := aws.Config{
 		Endpoint:         aws.String(config.GetAPIURL()),
 		DisableSSL:       aws.Bool(true),
 		S3ForcePathStyle: aws.Bool(true),
 		Region:           aws.String("ontap"),
-		HTTPClient: httpClient,
+		HTTPClient:       httpClient,
 	}
 
 	newSession, err := session.NewSession(&newConfig)
