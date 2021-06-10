@@ -253,7 +253,9 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 				idx.Add(node.Inode, node.DeviceID, location)
 			}
 
-			filerestorer.addFile(location, node.Content, int64(node.Size))
+			// Check if target exists and has the right contents
+			matches, _ := res.verifyFile(target, node)
+			filerestorer.addFile(location, node.Content, matches, int64(node.Size))
 
 			return nil
 		},
@@ -305,6 +307,59 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 	return err
 }
 
+// verifyFile checks if the given target file's contents match the
+// blobs given in node
+// It first checks the file size and then checks all file blobs
+// It always returns the successfully checked blobs
+func (res *Restorer) verifyFile(target string, node *restic.Node) (matchingBlobs []bool, err error) {
+	debug.Log("calling verifyFile")
+
+	matchingBlobs = make([]bool, len(node.Content))
+	stat, err := os.Stat(target)
+	if err != nil {
+		return
+	}
+	if int64(node.Size) != stat.Size() {
+		return matchingBlobs, errors.Errorf("Invalid file size: expected %d got %d", node.Size, stat.Size())
+	}
+
+	file, err := os.Open(target)
+	if err != nil {
+		return
+	}
+
+	offset := int64(0)
+	wrongOffset := offset
+	foundNotMatch := false
+	for i, blobID := range node.Content {
+		length, _ := res.repo.LookupBlobSize(blobID, restic.DataBlob)
+		buf := make([]byte, length) // TODO do I want to reuse the buffer somehow?
+		_, err = file.ReadAt(buf, offset)
+		if err != nil {
+			_ = file.Close()
+			return
+		}
+
+		switch {
+		case blobID.Equal(restic.Hash(buf)):
+			matchingBlobs[i] = true
+		case !foundNotMatch:
+			wrongOffset = offset
+			foundNotMatch = true
+		}
+
+		offset += int64(length)
+	}
+
+	debug.Log("file %v matching blobs: %v", target, matchingBlobs)
+
+	if foundNotMatch {
+		return matchingBlobs, errors.Errorf("Unexpected contents starting at offset %d", wrongOffset)
+	}
+
+	return matchingBlobs, file.Close()
+}
+
 // Snapshot returns the snapshot this restorer is configured to use.
 func (res *Restorer) Snapshot() *restic.Snapshot {
 	return res.sn
@@ -323,36 +378,8 @@ func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
 			}
 
 			count++
-			stat, err := os.Stat(target)
-			if err != nil {
-				return err
-			}
-			if int64(node.Size) != stat.Size() {
-				return errors.Errorf("Invalid file size: expected %d got %d", node.Size, stat.Size())
-			}
-
-			file, err := os.Open(target)
-			if err != nil {
-				return err
-			}
-
-			offset := int64(0)
-			for _, blobID := range node.Content {
-				length, _ := res.repo.LookupBlobSize(blobID, restic.DataBlob)
-				buf := make([]byte, length) // TODO do I want to reuse the buffer somehow?
-				_, err = file.ReadAt(buf, offset)
-				if err != nil {
-					_ = file.Close()
-					return err
-				}
-				if !blobID.Equal(restic.Hash(buf)) {
-					_ = file.Close()
-					return errors.Errorf("Unexpected contents starting at offset %d", offset)
-				}
-				offset += int64(length)
-			}
-
-			return file.Close()
+			_, err := res.verifyFile(target, node)
+			return err
 		},
 		leaveDir: func(node *restic.Node, target, location string) error { return nil },
 	})

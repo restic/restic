@@ -118,10 +118,12 @@ func newTestRepo(content []TestFile) *TestRepo {
 	var files []*fileInfo
 	for _, file := range content {
 		content := restic.IDs{}
+		exists := []bool{}
 		for _, blob := range file.blobs {
 			content = append(content, restic.Hash([]byte(blob.data)))
+			exists = append(exists, false)
 		}
-		files = append(files, &fileInfo{location: file.name, blobs: content})
+		files = append(files, &fileInfo{location: file.name, blobs: content, exists: exists})
 	}
 
 	repo := &TestRepo{

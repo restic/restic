@@ -35,6 +35,7 @@ type fileInfo struct {
 	size       int64
 	location   string      // file on local filesystem relative to restorer basedir
 	blobs      interface{} // blobs of the file
+	exists     []bool      // indicates blobs that already exist in file before resuming
 }
 
 type fileBlobInfo struct {
@@ -76,25 +77,37 @@ func newFileRestorer(dst string,
 	}
 }
 
-func (r *fileRestorer) addFile(location string, content restic.IDs, size int64) {
-	r.files = append(r.files, &fileInfo{location: location, blobs: content, size: size})
+func (r *fileRestorer) addFile(location string, content restic.IDs, matches []bool, size int64) {
+	fileExists := false
+	blobsOpen := false
+	for i := range content {
+		if matches[i] {
+			fileExists = true
+		} else {
+			blobsOpen = true
+		}
+	}
+
+	if blobsOpen {
+		r.files = append(r.files, &fileInfo{location: location, blobs: content, size: size, inProgress: fileExists, exists: matches})
+	}
 }
 
 func (r *fileRestorer) targetPath(location string) string {
 	return filepath.Join(r.dst, location)
 }
 
-func (r *fileRestorer) forEachBlob(blobIDs []restic.ID, fn func(packID restic.ID, packBlob restic.Blob)) error {
+func (r *fileRestorer) forEachBlob(blobIDs []restic.ID, fn func(packID restic.ID, packBlob restic.Blob, i int)) error {
 	if len(blobIDs) == 0 {
 		return nil
 	}
 
-	for _, blobID := range blobIDs {
+	for i, blobID := range blobIDs {
 		packs := r.idx(restic.BlobHandle{ID: blobID, Type: restic.DataBlob})
 		if len(packs) == 0 {
 			return errors.Errorf("Unknown blob %s", blobID.String())
 		}
-		fn(packs[0].PackID, packs[0].Blob)
+		fn(packs[0].PackID, packs[0].Blob, i)
 	}
 
 	return nil
@@ -117,10 +130,14 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 			packsMap = make(map[restic.ID][]fileBlobInfo)
 		}
 		fileOffset := int64(0)
-		err := r.forEachBlob(fileBlobs, func(packID restic.ID, blob restic.Blob) {
-			if largeFile {
+		err := r.forEachBlob(fileBlobs, func(packID restic.ID, blob restic.Blob, i int) {
+			if largeFile && !file.exists[i] {
 				packsMap[packID] = append(packsMap[packID], fileBlobInfo{id: blob.ID, offset: fileOffset})
-				fileOffset += int64(blob.Length) - crypto.Extension
+			}
+			fileOffset += int64(blob.Length) - crypto.Extension
+			if file.exists[i] {
+				debug.Log("file %v: ignoring blob %v as it already exists", file.location, blob.ID)
+				return
 			}
 			pack, ok := packs[packID]
 			if !ok {
@@ -205,8 +222,8 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) error {
 		}
 		if fileBlobs, ok := file.blobs.(restic.IDs); ok {
 			fileOffset := int64(0)
-			err := r.forEachBlob(fileBlobs, func(packID restic.ID, blob restic.Blob) {
-				if packID.Equal(pack.id) {
+			err := r.forEachBlob(fileBlobs, func(packID restic.ID, blob restic.Blob, i int) {
+				if packID.Equal(pack.id) && !file.exists[i] {
 					addBlob(blob, fileOffset)
 				}
 				fileOffset += int64(blob.Length) - crypto.Extension
