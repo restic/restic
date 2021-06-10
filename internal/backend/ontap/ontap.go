@@ -2,8 +2,10 @@ package ontap
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path"
 	"strings"
@@ -363,11 +365,26 @@ func (be *Backend) Delete(ctx context.Context) error {
 func Open(ctx context.Context, config Config) (*Backend, error) {
 	debug.Log("Open: Generating config")
 
+	envVar := os.Getenv("FORCE_CERT_VALIDATION")
+	envVar = strings.ToLower(strings.TrimSpace(envVar))
+	var skipValidation bool
+	if "true" == envVar {
+		skipValidation = false
+	} else {
+		skipValidation = true
+	}
+
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: skipValidation},
+	}
+	httpClient := &http.Client{Transport: tr}
+
 	newConfig := aws.Config{
 		Endpoint:         aws.String(config.GetAPIURL()),
 		DisableSSL:       aws.Bool(true),
 		S3ForcePathStyle: aws.Bool(true),
 		Region:           aws.String("ontap"),
+		HTTPClient:       httpClient,
 	}
 
 	newSession, err := session.NewSession(&newConfig)
