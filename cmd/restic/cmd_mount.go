@@ -122,6 +122,7 @@ func runMount(opts MountOptions, gopts GlobalOptions, args []string) error {
 	mountOptions := []systemFuse.MountOption{
 		systemFuse.ReadOnly(),
 		systemFuse.FSName("restic"),
+		systemFuse.MaxReadahead(128 * 1024),
 	}
 
 	if opts.AllowOther {
