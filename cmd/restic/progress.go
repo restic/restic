@@ -20,7 +20,7 @@ func calculateProgressInterval(show bool) time.Duration {
 			fps = 60
 		}
 		interval = time.Duration(float64(time.Second) / fps)
-	} else if !stdoutIsTerminal() || !show {
+	} else if !stdoutCanUpdateStatus() || !show {
 		interval = 0
 	}
 	return interval

@@ -345,6 +345,57 @@ func testBackup(t *testing.T, useFsSnapshot bool) {
 	testRunCheck(t, env.gopts)
 }
 
+func TestDryRunBackup(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	opts := BackupOptions{}
+	dryOpts := BackupOptions{DryRun: true}
+
+	// dry run before first backup
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, dryOpts, env.gopts)
+	snapshotIDs := testRunList(t, "snapshots", env.gopts)
+	rtest.Assert(t, len(snapshotIDs) == 0,
+		"expected no snapshot, got %v", snapshotIDs)
+	packIDs := testRunList(t, "packs", env.gopts)
+	rtest.Assert(t, len(packIDs) == 0,
+		"expected no data, got %v", snapshotIDs)
+	indexIDs := testRunList(t, "index", env.gopts)
+	rtest.Assert(t, len(indexIDs) == 0,
+		"expected no index, got %v", snapshotIDs)
+
+	// first backup
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
+	snapshotIDs = testRunList(t, "snapshots", env.gopts)
+	packIDs = testRunList(t, "packs", env.gopts)
+	indexIDs = testRunList(t, "index", env.gopts)
+
+	// dry run between backups
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, dryOpts, env.gopts)
+	snapshotIDsAfter := testRunList(t, "snapshots", env.gopts)
+	rtest.Equals(t, snapshotIDs, snapshotIDsAfter)
+	dataIDsAfter := testRunList(t, "packs", env.gopts)
+	rtest.Equals(t, packIDs, dataIDsAfter)
+	indexIDsAfter := testRunList(t, "index", env.gopts)
+	rtest.Equals(t, indexIDs, indexIDsAfter)
+
+	// second backup, implicit incremental
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
+	snapshotIDs = testRunList(t, "snapshots", env.gopts)
+	packIDs = testRunList(t, "packs", env.gopts)
+	indexIDs = testRunList(t, "index", env.gopts)
+
+	// another dry run
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, dryOpts, env.gopts)
+	snapshotIDsAfter = testRunList(t, "snapshots", env.gopts)
+	rtest.Equals(t, snapshotIDs, snapshotIDsAfter)
+	dataIDsAfter = testRunList(t, "packs", env.gopts)
+	rtest.Equals(t, packIDs, dataIDsAfter)
+	indexIDsAfter = testRunList(t, "index", env.gopts)
+	rtest.Equals(t, indexIDs, indexIDsAfter)
+}
+
 func TestBackupNonExistingFile(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
@@ -799,6 +850,25 @@ func TestCopyIncremental(t *testing.T) {
 		len(copiedSnapshotIDs), len(snapshotIDs))
 }
 
+func TestCopyUnstableJSON(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	env2, cleanup2 := withTestEnvironment(t)
+	defer cleanup2()
+
+	// contains a symlink created using `ln -s '../i/'$'\355\246\361''d/samba' broken-symlink`
+	datafile := filepath.Join("testdata", "copy-unstable-json.tar.gz")
+	rtest.SetupTarTestFixture(t, env.base, datafile)
+
+	testRunInit(t, env2.gopts)
+	testRunCopy(t, env.gopts, env2.gopts)
+	testRunCheck(t, env2.gopts)
+
+	copiedSnapshotIDs := testRunList(t, "snapshots", env2.gopts)
+	rtest.Assert(t, 1 == len(copiedSnapshotIDs), "still expected %v snapshot, found %v",
+		1, len(copiedSnapshotIDs))
+}
+
 func TestInitCopyChunkerParams(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
@@ -1012,6 +1082,41 @@ func TestKeyAddRemove(t *testing.T) {
 	testRunCheck(t, env.gopts)
 
 	testRunKeyAddNewKeyUserHost(t, env.gopts)
+}
+
+type emptySaveBackend struct {
+	restic.Backend
+}
+
+func (b *emptySaveBackend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+	return b.Backend.Save(ctx, h, restic.NewByteReader([]byte{}, nil))
+}
+
+func TestKeyProblems(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testRunInit(t, env.gopts)
+	env.gopts.backendTestHook = func(r restic.Backend) (restic.Backend, error) {
+		return &emptySaveBackend{r}, nil
+	}
+
+	testKeyNewPassword = "geheim2"
+	defer func() {
+		testKeyNewPassword = ""
+	}()
+
+	err := runKey(env.gopts, []string{"passwd"})
+	t.Log(err)
+	rtest.Assert(t, err != nil, "expected passwd change to fail")
+
+	err = runKey(env.gopts, []string{"add"})
+	t.Log(err)
+	rtest.Assert(t, err != nil, "expected key adding to fail")
+
+	t.Logf("testing access with initial password %q\n", env.gopts.password)
+	rtest.OK(t, runKey(env.gopts, []string{"list"}))
+	testRunCheck(t, env.gopts)
 }
 
 func testFileSize(filename string, size int64) error {

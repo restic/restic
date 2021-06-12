@@ -5,12 +5,11 @@ package restic
 import (
 	"os"
 	"syscall"
-
-	"golang.org/x/sys/unix"
 )
 
-var mknod = unix.Mknod
-var lchown = os.Lchown
+func lchown(name string, uid, gid int) error {
+	return os.Lchown(name, uid, gid)
+}
 
 type statT syscall.Stat_t
 

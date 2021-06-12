@@ -1,0 +1,8 @@
+Bugfix: Correctly handle download errors during `restore`
+
+Due to a regression in restic 0.12.0, the `restore` command in some cases did
+not retry download errors and only printed a warning. This has been fixed by
+retrying incomplete data downloads.
+
+https://github.com/restic/restic/issues/3439
+https://github.com/restic/restic/pull/3449

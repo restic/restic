@@ -67,7 +67,7 @@ func New(wr io.Writer, errWriter io.Writer, disableStatus bool) *Terminal {
 		return t
 	}
 
-	if d, ok := wr.(fder); ok && canUpdateStatus(d.Fd()) {
+	if d, ok := wr.(fder); ok && CanUpdateStatus(d.Fd()) {
 		// only use the fancy status code when we're running on a real terminal.
 		t.canUpdateStatus = true
 		t.fd = d.Fd()

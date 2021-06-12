@@ -1,0 +1,5 @@
+Enhancement: Add auto-completion support for fish
+
+The `generate` command now supports fish auto completion.
+
+https://github.com/restic/restic/pull/3312

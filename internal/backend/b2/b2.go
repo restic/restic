@@ -2,6 +2,7 @@ package b2
 
 import (
 	"context"
+	"hash"
 	"io"
 	"net/http"
 	"path"
@@ -137,6 +138,11 @@ func (be *b2Backend) Location() string {
 	return be.cfg.Bucket
 }
 
+// Hasher may return a hash function for calculating a content hash for the backend
+func (be *b2Backend) Hasher() hash.Hash {
+	return nil
+}
+
 // IsNotExist returns true if the error is caused by a non-existing file.
 func (be *b2Backend) IsNotExist(err error) bool {
 	return b2.IsNotExist(errors.Cause(err))
@@ -200,6 +206,7 @@ func (be *b2Backend) Save(ctx context.Context, h restic.Handle, rd restic.Rewind
 	debug.Log("Save %v, name %v", h, name)
 	obj := be.bucket.Object(name)
 
+	// b2 always requires sha1 checksums for uploaded file parts
 	w := obj.NewWriter(ctx)
 	n, err := io.Copy(w, rd)
 	debug.Log("  saved %d bytes, err %v", n, err)

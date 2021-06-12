@@ -3,6 +3,9 @@ package mem
 import (
 	"bytes"
 	"context"
+	"crypto/md5"
+	"encoding/base64"
+	"hash"
 	"io"
 	"io/ioutil"
 	"sync"
@@ -84,6 +87,19 @@ func (be *MemoryBackend) Save(ctx context.Context, h restic.Handle, rd restic.Re
 	// sanity check
 	if int64(len(buf)) != rd.Length() {
 		return errors.Errorf("wrote %d bytes instead of the expected %d bytes", len(buf), rd.Length())
+	}
+
+	beHash := be.Hasher()
+	// must never fail according to interface
+	_, err = beHash.Write(buf)
+	if err != nil {
+		panic(err)
+	}
+	if !bytes.Equal(beHash.Sum(nil), rd.Hash()) {
+		return errors.Errorf("invalid file hash or content, got %s expected %s",
+			base64.RawStdEncoding.EncodeToString(beHash.Sum(nil)),
+			base64.RawStdEncoding.EncodeToString(rd.Hash()),
+		)
 	}
 
 	be.data[h] = buf
@@ -212,6 +228,11 @@ func (be *MemoryBackend) List(ctx context.Context, t restic.FileType, fn func(re
 // Location returns the location of the backend (RAM).
 func (be *MemoryBackend) Location() string {
 	return "RAM"
+}
+
+// Hasher may return a hash function for calculating a content hash for the backend
+func (be *MemoryBackend) Hasher() hash.Hash {
+	return md5.New()
 }
 
 // Delete removes all data in the backend.

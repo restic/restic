@@ -1,0 +1,9 @@
+Enhancement: Support filtering and specifying untagged snapshots
+
+It was previously not possible to specify an empty tag with the `--tag` and
+`--keep-tag` options. This has now been fixed, such that `--tag ''` and
+`--keep-tag ''` now matches snapshots without tags. This allows e.g. the
+`snapshots` and `forget` commands to only operate on untagged snapshots.
+
+https://github.com/restic/restic/issues/3456
+https://github.com/restic/restic/pull/3457

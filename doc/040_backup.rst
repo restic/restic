@@ -73,7 +73,7 @@ repository (since all data is already there). This is de-duplication at work!
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo backup --verbose ~/work
+    $ restic -r /srv/restic-repo --verbose backup ~/work
     open repository
     enter password for repository:
     password is correct
@@ -107,7 +107,7 @@ restic encounters:
 
     $ echo 'more data foo bar' >> ~/work.txt
 
-    $ restic -r /srv/restic-repo backup --verbose --verbose ~/work.txt
+    $ restic -r /srv/restic-repo --verbose --verbose backup ~/work.txt
     open repository
     enter password for repository:
     password is correct
@@ -186,6 +186,23 @@ If you want to force a re-scan in such a case, you can change the mountpoint.
 On **Windows**, a file is considered unchanged when its path, size
 and modification time match, and only ``--force`` has any effect.
 The other options are recognized but ignored.
+
+Dry Runs
+********
+
+You can perform a backup in dry run mode to see what would happen without
+modifying the repo.
+
+-  ``--dry-run``/``-n`` Report what would be done, without writing to the repository
+
+Combined with ``--verbose``, you can see a list of changes:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo backup ~/work --dry-run -vv | grep "added"
+    modified  /plan.txt, saved in 0.000s (9.110 KiB added)
+    modified  /archive.tar.gz, saved in 0.140s (25.542 MiB added)
+    Would be added to the repo: 25.551 MiB
 
 Excluding Files
 ***************
@@ -275,7 +292,7 @@ On most Unixy shells, you can either quote or use backslashes. For example:
 By specifying the option ``--one-file-system`` you can instruct restic
 to only backup files from the file systems the initially specified files
 or directories reside on. In other words, it will prevent restic from crossing
-filesystem boundaries when performing a backup.
+filesystem boundaries and subvolumes when performing a backup.
 
 For example, if you backup ``/`` with this option and you have external
 media mounted under ``/media/usb`` then restic will not back up ``/media/usb``

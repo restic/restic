@@ -10,10 +10,10 @@ import (
 
 var cmdGenerate = &cobra.Command{
 	Use:   "generate [flags]",
-	Short: "Generate manual pages and auto-completion files (bash, zsh)",
+	Short: "Generate manual pages and auto-completion files (bash, fish, zsh)",
 	Long: `
 The "generate" command writes automatically generated files (like the man pages
-and the auto-completion files for bash and zsh).
+and the auto-completion files for bash, fish and zsh).
 
 EXIT STATUS
 ===========
@@ -27,6 +27,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 type generateOptions struct {
 	ManDir             string
 	BashCompletionFile string
+	FishCompletionFile string
 	ZSHCompletionFile  string
 }
 
@@ -37,6 +38,7 @@ func init() {
 	fs := cmdGenerate.Flags()
 	fs.StringVar(&genOpts.ManDir, "man", "", "write man pages to `directory`")
 	fs.StringVar(&genOpts.BashCompletionFile, "bash-completion", "", "write bash completion `file`")
+	fs.StringVar(&genOpts.FishCompletionFile, "fish-completion", "", "write fish completion `file`")
 	fs.StringVar(&genOpts.ZSHCompletionFile, "zsh-completion", "", "write zsh completion `file`")
 }
 
@@ -63,6 +65,11 @@ func writeBashCompletion(file string) error {
 	return cmdRoot.GenBashCompletionFile(file)
 }
 
+func writeFishCompletion(file string) error {
+	Verbosef("writing fish completion file to %v\n", file)
+	return cmdRoot.GenFishCompletionFile(file, true)
+}
+
 func writeZSHCompletion(file string) error {
 	Verbosef("writing zsh completion file to %v\n", file)
 	return cmdRoot.GenZshCompletionFile(file)
@@ -78,6 +85,13 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 
 	if genOpts.BashCompletionFile != "" {
 		err := writeBashCompletion(genOpts.BashCompletionFile)
+		if err != nil {
+			return err
+		}
+	}
+
+	if genOpts.FishCompletionFile != "" {
+		err := writeFishCompletion(genOpts.FishCompletionFile)
 		if err != nil {
 			return err
 		}

@@ -1,0 +1,8 @@
+Bugfix: Print `created new cache` message only on a terminal
+
+The message `created new cache` was printed even when the output wasn't a
+terminal. That broke piping `restic dump` output to tar or zip if cache
+directory didn't exist. The message is now only printed on a terminal.
+
+https://github.com/restic/restic/issues/3334
+https://github.com/restic/restic/pull/3343

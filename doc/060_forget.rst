@@ -58,7 +58,7 @@ command and specify the snapshot ID on the command line:
 
     $ restic -r /srv/restic-repo forget bdbd3439
     enter password for repository:
-    removed snapshot d3f01f63
+    removed snapshot bdbd3439
 
 Afterwards this snapshot is removed:
 
@@ -190,10 +190,24 @@ The ``forget`` command accepts the following parameters:
    years, months, days, and hours, e.g. ``2y5m7d3h`` will keep all snapshots
    made in the two years, five months, seven days, and three hours before the
    latest snapshot.
+-  ``--keep-within-hourly duration`` keep all hourly snapshots made within
+   specified duration of the latest snapshot. The duration is specified in 
+   the same way as for ``--keep-within`` and the method for determining
+   hourly snapshots is the same as for ``--keep-hourly``.
+-  ``--keep-within-daily duration`` keep all daily snapshots made within
+   specified duration of the latest snapshot.
+-  ``--keep-within-weekly duration`` keep all weekly snapshots made within
+   specified duration of the latest snapshot.
+-  ``--keep-within-monthly duration`` keep all monthly snapshots made within
+   specified duration of the latest snapshot.
+-  ``--keep-within-yearly duration`` keep all yearly snapshots made within
+   specified duration of the latest snapshot.
 
 .. note:: All calendar related ``--keep-*`` options work on the natural time
     boundaries and not relative to when you run the ``forget`` command. Weeks
     are Monday 00:00 -> Sunday 23:59, days 00:00 to 23:59, hours :00 to :59, etc.
+
+.. note:: Specifying ``--keep-tag ''`` will match untagged snapshots only.
 
 Multiple policies will be ORed together so as to be as inclusive as possible
 for keeping snapshots.
@@ -221,6 +235,13 @@ To only keep the last snapshot of all snapshots with both the tag ``foo`` and
 .. code-block:: console
 
    $ restic forget --tag foo,bar --keep-last 1
+
+To ensure only untagged snapshots are considered, specify the empty string '' as
+the tag.
+
+.. code-block:: console
+
+   $ restic forget --tag '' --keep-last 1
 
 All the ``--keep-*`` options above only count
 hours/days/weeks/months/years which have a snapshot, so those without a
@@ -304,6 +325,16 @@ already include a week!) last-day-of-the-weeks and 11 or 12
 last-day-of-the-months (11 or 12 depends if the 5 weeklies cross a month).
 And finally 75 last-day-of-the-year snapshots. All other snapshots are
 removed.
+
+You might want to maintain the same policy as for the example above, but have
+irregular backups. For example, the 7 snapshots specified with ``--keep-daily 7`` 
+might be spread over a longer period. If what you want is to keep daily snapshots
+for a week, weekly for a month, monthly for a year and yearly for 75 years, you 
+could specify:
+``forget --keep-within-daily 7d --keep-within-weekly 1m --keep-within-monthly 1y
+--keep-within-yearly 75y``
+(Note that `1w` is not a recognized duration, so you will have to specify 
+`7d` instead)
 
 Customize pruning
 *****************

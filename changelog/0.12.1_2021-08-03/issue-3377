@@ -1,0 +1,6 @@
+Enhancement: Add release binaries for Apple Silicon
+
+We've added release binaries for macOS on Apple Silicon (M1).
+
+https://github.com/restic/restic/issues/3377
+https://github.com/restic/restic/pull/3394

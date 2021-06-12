@@ -50,7 +50,7 @@ func runRESTServer(ctx context.Context, t testing.TB, dir string) (*url.URL, fun
 		return nil, nil
 	}
 
-	url, err := url.Parse("http://localhost:8000/restic-test")
+	url, err := url.Parse("http://localhost:8000/restic-test/")
 	if err != nil {
 		t.Fatal(err)
 	}

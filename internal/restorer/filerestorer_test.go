@@ -3,6 +3,7 @@ package restorer
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"testing"
@@ -163,6 +164,10 @@ func restoreAndVerify(t *testing.T, tempdir string, content []TestFile, files ma
 	err := r.restoreFiles(context.TODO())
 	rtest.OK(t, err)
 
+	verifyRestore(t, r, repo)
+}
+
+func verifyRestore(t *testing.T, r *fileRestorer, repo *TestRepo) {
 	for _, file := range r.files {
 		target := r.targetPath(file.location)
 		data, err := ioutil.ReadFile(target)
@@ -263,4 +268,50 @@ func TestErrorRestoreFiles(t *testing.T) {
 
 	err := r.restoreFiles(context.TODO())
 	rtest.Equals(t, loadError, err)
+}
+
+func TestDownloadError(t *testing.T) {
+	for i := 0; i < 100; i += 10 {
+		testPartialDownloadError(t, i)
+	}
+}
+
+func testPartialDownloadError(t *testing.T, part int) {
+	tempdir, cleanup := rtest.TempDir(t)
+	defer cleanup()
+	content := []TestFile{
+		{
+			name: "file1",
+			blobs: []TestBlob{
+				{"data1-1", "pack1"},
+				{"data1-2", "pack1"},
+				{"data1-3", "pack1"},
+			},
+		}}
+
+	repo := newTestRepo(content)
+
+	// loader always returns an error
+	loader := repo.loader
+	repo.loader = func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+		// only load partial data to execise fault handling in different places
+		err := loader(ctx, h, length*part/100, offset, fn)
+		if err == nil {
+			return nil
+		}
+		fmt.Println("Retry after error", err)
+		return loader(ctx, h, length, offset, fn)
+	}
+
+	r := newFileRestorer(tempdir, repo.loader, repo.key, repo.Lookup)
+	r.files = repo.files
+	r.Error = func(s string, e error) error {
+		// ignore errors as in the `restore` command
+		fmt.Println("error during restore", s, e)
+		return nil
+	}
+
+	err := r.restoreFiles(context.TODO())
+	rtest.OK(t, err)
+	verifyRestore(t, r, repo)
 }
