@@ -172,10 +172,21 @@ func fileOrDirNotExist(path string) bool {
 
 // mergeNodes merge the lists of nodes. The result is a new list of nodes in which each node from both input
 // lists appear only once, preferring the nodes from the second list.
-func (arch *Archiver) mergeNodes(listNode1, listNode2 []*restic.Node) (mergedNodes []*restic.Node) {
+func (arch *Archiver) mergeNodes(listNode1, listNode2 []*restic.Node, path string) (mergedNodes []*restic.Node) {
 	setNode := make(map[string]*restic.Node)
 	for _, node := range listNode1 {
-		setNode[node.Name] = node
+
+		// some of the files or dir in the frst set could belong to a dir
+		// that has been deleted and the recreated
+		// Will check if the file or dir is still there, before adding it to the set
+		// _, err := arch.FS.Lstat(node.Path)
+		// fmt.Println(node.Path, err)
+		fmt.Printf("mergeNodes path=%s name=%s\n", path, node.Name)
+		if !fileOrDirNotExist(join(path, node.Name)) {
+			fmt.Println("mergeNodes", join(path, node.Name), "exists")
+			setNode[node.Name] = node
+			// the file exists, will add to the set
+		}
 	}
 	for _, node := range listNode2 {
 
@@ -197,7 +208,7 @@ func (arch *Archiver) mergeNodes(listNode1, listNode2 []*restic.Node) (mergedNod
 
 	// sort nodes lexicographically
 	sort.Sort(restic.Nodes(mergedNodes))
-
+	// fmt.Println(mergedNodes)
 	return
 }
 
@@ -660,43 +671,47 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 			return nil, err
 		}
 
+		// fmt.Printf("SaveTree fileinfopath=%s path=%s\n", subatree.FileInfoPath, subatree.Path)
 		if mergeWithPrevious && oldSubtree != nil {
 			debug.Log("merging nodes")
-			subtree.Nodes = arch.mergeNodes(oldSubtree.Nodes, subtree.Nodes)
+			subtree.Nodes = arch.mergeNodes(oldSubtree.Nodes, subtree.Nodes, subatree.FileInfoPath)
+			fmt.Printf("mergedNodes path=%s nodes=%v\n", subatree.FileInfoPath, subtree.Nodes)
 		}
-
-		fmt.Println("nodes", subtree.Nodes)
-
-		id, nodeStats, err := arch.saveTree(ctx, subtree)
-		if err != nil {
-			return nil, err
-		}
-
-		if subatree.FileInfoPath == "" {
-			return nil, errors.Errorf("FileInfoPath for %v/%v is empty", snPath, name)
-		}
-
-		debug.Log("%v, saved subtree %v as %v", snPath, subtree, id.Str())
 
 		fi, err := arch.statDir(subatree.FileInfoPath)
+		fmt.Println("statDir", err)
 		if err != nil && !mergeWithPrevious {
 			return nil, err
 		}
 
 		debug.Log("%v, dir node data loaded from %v", snPath, subatree.FileInfoPath)
 		var node *restic.Node
+		var nodeStats ItemStats
+		var id restic.ID
 		if err != nil && mergeWithPrevious {
 			// the dir does not exist
-			node = restic.NodePlaceholder(subatree.Path, name)
+			fmt.Println(subatree.FileInfoPath, "placeholder")
+			node = restic.NodePlaceholder(subatree.FileInfoPath, name)
 		} else {
 			node, err = arch.nodeFromFileInfo(subatree.FileInfoPath, fi)
 			if err != nil {
 				return nil, err
 			}
+			fmt.Println("savetree", subatree.FileInfoPath, subtree)
+			id, nodeStats, err = arch.saveTree(ctx, subtree)
+			if err != nil {
+				return nil, err
+			}
+			node.Subtree = &id
 		}
 
 		node.Name = name
-		node.Subtree = &id
+
+		if subatree.FileInfoPath == "" {
+			return nil, errors.Errorf("FileInfoPath for %v/%v is empty", snPath, name)
+		}
+
+		debug.Log("%v, saved subtree %v as %v", snPath, subtree, id.Str())
 
 		err = tree.Insert(node)
 		if err != nil {
@@ -877,7 +892,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 
 		if opts.MergeWithParent && parentTree != nil {
 			debug.Log("merging nodes")
-			tree.Nodes = arch.mergeNodes(parentTree.Nodes, tree.Nodes)
+			tree.Nodes = arch.mergeNodes(parentTree.Nodes, tree.Nodes, atree.FileInfoPath)
 		}
 
 		rootTreeID, stats, err = arch.saveTree(wctx, tree)
