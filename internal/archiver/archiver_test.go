@@ -1497,521 +1497,521 @@ func TestArchiverSnapshotMerge(t *testing.T) {
 				"bar": TestFile{Content: "bar"},
 			},
 		},
-		{
-			name: "add-single-file-dir",
-			src: TestDir{
-				"dir": TestDir{
-					"foo": TestFile{Content: "foo"},
-				},
-			},
-			action: func(rootDir string, t *testing.T) {
-				createFile(rootDir, "dir/bar", "bar", t)
-			},
-			targets: []string{"dir/bar"},
-			want: TestDir{
-				"dir": TestDir{
-					"foo": TestFile{Content: "foo"},
-					"bar": TestFile{Content: "bar"},
-				},
-			},
-		},
-		{
-			name: "add-dir-empty-root",
-			src: TestDir{
-				"other": TestDir{
-					"foo": TestFile{Content: "foo"},
-				},
-			},
-			action: func(rootDir string, t *testing.T) {
-				createDir(rootDir, "dir", t)
-			},
-			targets: []string{"dir"},
-			want: TestDir{
-				"other": TestDir{
-					"foo": TestFile{Content: "foo"},
-				},
-				"dir": TestDir{},
-			},
-		},
-		{
-			name: "add-dir-not-empty-root",
-			src: TestDir{
-				"other": TestDir{
-					"foo": TestFile{Content: "foo"},
-				},
-			},
-			action: func(rootDir string, t *testing.T) {
-				createDir(rootDir, "dir", t)
-				createFile(rootDir, "dir/bar", "bar", t)
-			},
-			targets: []string{"dir/bar"},
-			want: TestDir{
-				"other": TestDir{
-					"foo": TestFile{Content: "foo"},
-				},
-				"dir": TestDir{
-					"bar": TestFile{Content: "bar"},
-				},
-			},
-		},
-		{
-			name: "update-file-root",
-			src: TestDir{
-				"foo": TestFile{Content: "foo"},
-				"bar": TestFile{Content: "bar"},
-			},
-			action: func(rootDir string, t *testing.T) {
-				writeFile(rootDir, "foo", "foobar", t)
-			},
-			targets: []string{"foo"},
-			want: TestDir{
-				"foo": TestFile{Content: "foobar"},
-				"bar": TestFile{Content: "bar"},
-			},
-		},
-		{
-			name: "update-file-dir",
-			src: TestDir{
-				"dir": TestDir{
-					"foo": TestFile{Content: "foo"},
-				},
-				"bar": TestFile{Content: "bar"},
-			},
-			action: func(rootDir string, t *testing.T) {
-				writeFile(rootDir, "dir/foo", "foobar", t)
-			},
-			targets: []string{"dir/foo"},
-			want: TestDir{
-				"dir": TestDir{
-					"foo": TestFile{Content: "foobar"},
-				},
-				"bar": TestFile{Content: "bar"},
-			},
-		},
-		{
-			name: "add-single-file-subdir",
-			src: TestDir{
-				"dir": TestDir{
-					"subdir": TestDir{
-						"foo": TestFile{Content: "foo"},
-					},
-				},
-			},
-			action: func(rootDir string, t *testing.T) {
-				createFile(rootDir, "dir/subdir/bar", "bar", t)
-			},
-			targets: []string{"dir/subdir/bar"},
-			want: TestDir{
-				"dir": TestDir{
-					"subdir": TestDir{
-						"foo": TestFile{Content: "foo"},
-						"bar": TestFile{Content: "bar"},
-					},
-				},
-			},
-		},
-		{
-			name: "add-subdir-dir-target-files",
-			src: TestDir{
-				"dir": TestDir{
-					"other": TestDir{
-						"other-file1": TestFile{Content: "other-file1"},
-						"other-file2": TestFile{Content: "other-file2"},
-					},
-				},
-			},
-			action: func(rootDir string, t *testing.T) {
-				createDir(rootDir, "dir/subdir", t)
-				createFile(rootDir, "dir/subdir/foo", "foo", t)
-				createFile(rootDir, "dir/subdir/bar", "bar", t)
-			},
-			targets: []string{"dir/subdir/bar", "dir/subdir/foo"},
-			want: TestDir{
-				"dir": TestDir{
-					"other": TestDir{
-						"other-file1": TestFile{Content: "other-file1"},
-						"other-file2": TestFile{Content: "other-file2"},
-					},
-					"subdir": TestDir{
-						"foo": TestFile{Content: "foo"},
-						"bar": TestFile{Content: "bar"},
-					},
-				},
-			},
-		},
-		{
-			name: "add-subdir-dir-target-dir",
-			src: TestDir{
-				"dir": TestDir{
-					"other": TestDir{
-						"other-file1": TestFile{Content: "other-file1"},
-						"other-file2": TestFile{Content: "other-file2"},
-					},
-				},
-			},
-			action: func(rootDir string, t *testing.T) {
-				createDir(rootDir, "dir/subdir", t)
-				createFile(rootDir, "dir/subdir/foo", "foo", t)
-				createFile(rootDir, "dir/subdir/bar", "bar", t)
-			},
-			targets: []string{"dir/subdir"},
-			want: TestDir{
-				"dir": TestDir{
-					"other": TestDir{
-						"other-file1": TestFile{Content: "other-file1"},
-						"other-file2": TestFile{Content: "other-file2"},
-					},
-					"subdir": TestDir{
-						"foo": TestFile{Content: "foo"},
-						"bar": TestFile{Content: "bar"},
-					},
-				},
-			},
-		},
-		{
-			name: "add-only-one-subdir",
-			src: TestDir{
-				"dir": TestDir{
-					"other": TestDir{
-						"other-file1": TestFile{Content: "other-file1"},
-						"other-file2": TestFile{Content: "other-file2"},
-					},
-				},
-			},
-			action: func(rootDir string, t *testing.T) {
-				createDir(rootDir, "dir/subdir", t)
-				createFile(rootDir, "dir/subdir/foo", "foo", t)
-				createFile(rootDir, "dir/subdir/bar", "bar", t)
+		// {
+		// 	name: "add-single-file-dir",
+		// 	src: TestDir{
+		// 		"dir": TestDir{
+		// 			"foo": TestFile{Content: "foo"},
+		// 		},
+		// 	},
+		// 	action: func(rootDir string, t *testing.T) {
+		// 		createFile(rootDir, "dir/bar", "bar", t)
+		// 	},
+		// 	targets: []string{"dir/bar"},
+		// 	want: TestDir{
+		// 		"dir": TestDir{
+		// 			"foo": TestFile{Content: "foo"},
+		// 			"bar": TestFile{Content: "bar"},
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	name: "add-dir-empty-root",
+		// 	src: TestDir{
+		// 		"other": TestDir{
+		// 			"foo": TestFile{Content: "foo"},
+		// 		},
+		// 	},
+		// 	action: func(rootDir string, t *testing.T) {
+		// 		createDir(rootDir, "dir", t)
+		// 	},
+		// 	targets: []string{"dir"},
+		// 	want: TestDir{
+		// 		"other": TestDir{
+		// 			"foo": TestFile{Content: "foo"},
+		// 		},
+		// 		"dir": TestDir{},
+		// 	},
+		// },
+		// {
+		// 	name: "add-dir-not-empty-root",
+		// 	src: TestDir{
+		// 		"other": TestDir{
+		// 			"foo": TestFile{Content: "foo"},
+		// 		},
+		// 	},
+		// 	action: func(rootDir string, t *testing.T) {
+		// 		createDir(rootDir, "dir", t)
+		// 		createFile(rootDir, "dir/bar", "bar", t)
+		// 	},
+		// 	targets: []string{"dir/bar"},
+		// 	want: TestDir{
+		// 		"other": TestDir{
+		// 			"foo": TestFile{Content: "foo"},
+		// 		},
+		// 		"dir": TestDir{
+		// 			"bar": TestFile{Content: "bar"},
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	name: "update-file-root",
+		// 	src: TestDir{
+		// 		"foo": TestFile{Content: "foo"},
+		// 		"bar": TestFile{Content: "bar"},
+		// 	},
+		// 	action: func(rootDir string, t *testing.T) {
+		// 		writeFile(rootDir, "foo", "foobar", t)
+		// 	},
+		// 	targets: []string{"foo"},
+		// 	want: TestDir{
+		// 		"foo": TestFile{Content: "foobar"},
+		// 		"bar": TestFile{Content: "bar"},
+		// 	},
+		// },
+		// {
+		// 	name: "update-file-dir",
+		// 	src: TestDir{
+		// 		"dir": TestDir{
+		// 			"foo": TestFile{Content: "foo"},
+		// 		},
+		// 		"bar": TestFile{Content: "bar"},
+		// 	},
+		// 	action: func(rootDir string, t *testing.T) {
+		// 		writeFile(rootDir, "dir/foo", "foobar", t)
+		// 	},
+		// 	targets: []string{"dir/foo"},
+		// 	want: TestDir{
+		// 		"dir": TestDir{
+		// 			"foo": TestFile{Content: "foobar"},
+		// 		},
+		// 		"bar": TestFile{Content: "bar"},
+		// 	},
+		// },
+		// {
+		// 	name: "add-single-file-subdir",
+		// 	src: TestDir{
+		// 		"dir": TestDir{
+		// 			"subdir": TestDir{
+		// 				"foo": TestFile{Content: "foo"},
+		// 			},
+		// 		},
+		// 	},
+		// 	action: func(rootDir string, t *testing.T) {
+		// 		createFile(rootDir, "dir/subdir/bar", "bar", t)
+		// 	},
+		// 	targets: []string{"dir/subdir/bar"},
+		// 	want: TestDir{
+		// 		"dir": TestDir{
+		// 			"subdir": TestDir{
+		// 				"foo": TestFile{Content: "foo"},
+		// 				"bar": TestFile{Content: "bar"},
+		// 			},
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	name: "add-subdir-dir-target-files",
+		// 	src: TestDir{
+		// 		"dir": TestDir{
+		// 			"other": TestDir{
+		// 				"other-file1": TestFile{Content: "other-file1"},
+		// 				"other-file2": TestFile{Content: "other-file2"},
+		// 			},
+		// 		},
+		// 	},
+		// 	action: func(rootDir string, t *testing.T) {
+		// 		createDir(rootDir, "dir/subdir", t)
+		// 		createFile(rootDir, "dir/subdir/foo", "foo", t)
+		// 		createFile(rootDir, "dir/subdir/bar", "bar", t)
+		// 	},
+		// 	targets: []string{"dir/subdir/bar", "dir/subdir/foo"},
+		// 	want: TestDir{
+		// 		"dir": TestDir{
+		// 			"other": TestDir{
+		// 				"other-file1": TestFile{Content: "other-file1"},
+		// 				"other-file2": TestFile{Content: "other-file2"},
+		// 			},
+		// 			"subdir": TestDir{
+		// 				"foo": TestFile{Content: "foo"},
+		// 				"bar": TestFile{Content: "bar"},
+		// 			},
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	name: "add-subdir-dir-target-dir",
+		// 	src: TestDir{
+		// 		"dir": TestDir{
+		// 			"other": TestDir{
+		// 				"other-file1": TestFile{Content: "other-file1"},
+		// 				"other-file2": TestFile{Content: "other-file2"},
+		// 			},
+		// 		},
+		// 	},
+		// 	action: func(rootDir string, t *testing.T) {
+		// 		createDir(rootDir, "dir/subdir", t)
+		// 		createFile(rootDir, "dir/subdir/foo", "foo", t)
+		// 		createFile(rootDir, "dir/subdir/bar", "bar", t)
+		// 	},
+		// 	targets: []string{"dir/subdir"},
+		// 	want: TestDir{
+		// 		"dir": TestDir{
+		// 			"other": TestDir{
+		// 				"other-file1": TestFile{Content: "other-file1"},
+		// 				"other-file2": TestFile{Content: "other-file2"},
+		// 			},
+		// 			"subdir": TestDir{
+		// 				"foo": TestFile{Content: "foo"},
+		// 				"bar": TestFile{Content: "bar"},
+		// 			},
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	name: "add-only-one-subdir",
+		// 	src: TestDir{
+		// 		"dir": TestDir{
+		// 			"other": TestDir{
+		// 				"other-file1": TestFile{Content: "other-file1"},
+		// 				"other-file2": TestFile{Content: "other-file2"},
+		// 			},
+		// 		},
+		// 	},
+		// 	action: func(rootDir string, t *testing.T) {
+		// 		createDir(rootDir, "dir/subdir", t)
+		// 		createFile(rootDir, "dir/subdir/foo", "foo", t)
+		// 		createFile(rootDir, "dir/subdir/bar", "bar", t)
 
-				createDir(rootDir, "dir/subdir_nobackup", t)
-				createFile(rootDir, "dir/subdir_nobackup/foo_nobackup", "foo_nobackup", t)
-				createFile(rootDir, "dir/subdir_nobackup/bar_nobackup", "bar_nobackup", t)
+		// 		createDir(rootDir, "dir/subdir_nobackup", t)
+		// 		createFile(rootDir, "dir/subdir_nobackup/foo_nobackup", "foo_nobackup", t)
+		// 		createFile(rootDir, "dir/subdir_nobackup/bar_nobackup", "bar_nobackup", t)
 
-			},
-			targets: []string{"dir/subdir/bar", "dir/subdir/foo"},
-			want: TestDir{
-				"dir": TestDir{
-					"other": TestDir{
-						"other-file1": TestFile{Content: "other-file1"},
-						"other-file2": TestFile{Content: "other-file2"},
-					},
-					"subdir": TestDir{
-						"foo": TestFile{Content: "foo"},
-						"bar": TestFile{Content: "bar"},
-					},
-				},
-			},
-		},
-		{
-			name: "add-only-one-subdir",
-			src: TestDir{
-				"dir": TestDir{
-					"other": TestDir{
-						"other-file1": TestFile{Content: "other-file1"},
-						"other-file2": TestFile{Content: "other-file2"},
-					},
-				},
-			},
-			action: func(rootDir string, t *testing.T) {
-				createDir(rootDir, "dir/subdir", t)
-				createFile(rootDir, "dir/subdir/foo", "foo", t)
-				createFile(rootDir, "dir/subdir/bar", "bar", t)
+		// 	},
+		// 	targets: []string{"dir/subdir/bar", "dir/subdir/foo"},
+		// 	want: TestDir{
+		// 		"dir": TestDir{
+		// 			"other": TestDir{
+		// 				"other-file1": TestFile{Content: "other-file1"},
+		// 				"other-file2": TestFile{Content: "other-file2"},
+		// 			},
+		// 			"subdir": TestDir{
+		// 				"foo": TestFile{Content: "foo"},
+		// 				"bar": TestFile{Content: "bar"},
+		// 			},
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	name: "add-only-one-subdir",
+		// 	src: TestDir{
+		// 		"dir": TestDir{
+		// 			"other": TestDir{
+		// 				"other-file1": TestFile{Content: "other-file1"},
+		// 				"other-file2": TestFile{Content: "other-file2"},
+		// 			},
+		// 		},
+		// 	},
+		// 	action: func(rootDir string, t *testing.T) {
+		// 		createDir(rootDir, "dir/subdir", t)
+		// 		createFile(rootDir, "dir/subdir/foo", "foo", t)
+		// 		createFile(rootDir, "dir/subdir/bar", "bar", t)
 
-				createDir(rootDir, "dir/subdir_nobackup", t)
-				createFile(rootDir, "dir/subdir_nobackup/foo_nobackup", "foo_nobackup", t)
-				createFile(rootDir, "dir/subdir_nobackup/bar_nobackup", "bar_nobackup", t)
+		// 		createDir(rootDir, "dir/subdir_nobackup", t)
+		// 		createFile(rootDir, "dir/subdir_nobackup/foo_nobackup", "foo_nobackup", t)
+		// 		createFile(rootDir, "dir/subdir_nobackup/bar_nobackup", "bar_nobackup", t)
 
-			},
-			targets: []string{"dir/subdir/bar", "dir/subdir/foo"},
-			want: TestDir{
-				"dir": TestDir{
-					"other": TestDir{
-						"other-file1": TestFile{Content: "other-file1"},
-						"other-file2": TestFile{Content: "other-file2"},
-					},
-					"subdir": TestDir{
-						"foo": TestFile{Content: "foo"},
-						"bar": TestFile{Content: "bar"},
-					},
-				},
-			},
-		},
-		{
-			name: "delete-file-root",
-			src: TestDir{
-				"foo": TestFile{Content: "foo"},
-				"bar": TestFile{Content: "bar"},
-			},
-			action: func(rootDir string, t *testing.T) {
-				deleteFile(rootDir, "foo", t)
-			},
-			targets: []string{"foo"},
-			want: TestDir{
-				"bar": TestFile{Content: "bar"},
-			},
-		},
-		{
-			name: "delete-file-dir",
-			src: TestDir{
-				"dir": TestDir{
-					"foo": TestFile{Content: "foo"},
-				},
-				"bar": TestFile{Content: "bar"},
-			},
-			action: func(rootDir string, t *testing.T) {
-				deleteFile(rootDir, "dir/foo", t)
-			},
-			targets: []string{"dir/foo"},
-			want: TestDir{
-				"dir": TestDir{},
-				"bar": TestFile{Content: "bar"},
-			},
-		},
-		{
-			name: "delete-file-dir-with-multiple-files",
-			src: TestDir{
-				"dir": TestDir{
-					"foo":   TestFile{Content: "foo"},
-					"other": TestFile{Content: "other"},
-				},
-				"bar": TestFile{Content: "bar"},
-			},
-			action: func(rootDir string, t *testing.T) {
-				deleteFile(rootDir, "dir/foo", t)
-			},
-			targets: []string{"dir/foo"},
-			want: TestDir{
-				"dir": TestDir{
-					"other": TestFile{Content: "other"},
-				},
-				"bar": TestFile{Content: "bar"},
-			},
-		},
-		{
-			name: "delete-empty-dir-root",
-			src: TestDir{
-				"dir": TestDir{},
-				"bar": TestFile{Content: "bar"},
-			},
-			action: func(rootDir string, t *testing.T) {
-				deleteDir(rootDir, "dir", t)
-			},
-			targets: []string{"dir"},
-			want: TestDir{
-				"bar": TestFile{Content: "bar"},
-			},
-		},
-		{
-			name: "delete-not-empty-dir-root",
-			src: TestDir{
-				"dir": TestDir{
-					"file1": TestFile{Content: "file1"},
-					"file2": TestFile{Content: "file2"},
-					"subdir": TestDir{
-						"subdir-file": TestFile{Content: "subdir-file"},
-					},
-				},
-				"bar": TestFile{Content: "bar"},
-			},
-			action: func(rootDir string, t *testing.T) {
-				deleteDir(rootDir, "dir", t)
-			},
-			targets: []string{"dir"},
-			want: TestDir{
-				"bar": TestFile{Content: "bar"},
-			},
-		},
-		{
-			name: "delete-empty-subdir-dir",
-			src: TestDir{
-				"dir": TestDir{
-					"subdir": TestDir{},
-				},
-				"bar": TestFile{Content: "bar"},
-			},
-			action: func(rootDir string, t *testing.T) {
-				deleteDir(rootDir, "dir/subdir", t)
-			},
-			targets: []string{"dir"},
-			want: TestDir{
-				"dir": TestDir{},
-				"bar": TestFile{Content: "bar"},
-			},
-		},
-		{
-			name: "delete-empty-subdir-dir",
-			src: TestDir{
-				"dir": TestDir{
-					"subdir": TestDir{},
-					"foo":    TestFile{Content: "foo"},
-				},
-				"bar": TestFile{Content: "bar"},
-			},
-			action: func(rootDir string, t *testing.T) {
-				deleteDir(rootDir, "dir/subdir", t)
-			},
-			targets: []string{"dir"},
-			want: TestDir{
-				"dir": TestDir{
-					"foo": TestFile{Content: "foo"},
-				},
-				"bar": TestFile{Content: "bar"},
-			},
-		},
-		{
-			name: "delete-not-empty-subdir-dir",
-			src: TestDir{
-				"dir": TestDir{
-					"subdir": TestDir{
-						"foo": TestFile{Content: "foo"},
-						"subsubdir": TestDir{
-							"subfoo": TestFile{Content: "subfoo"},
-						},
-					},
-				},
-				"bar": TestFile{Content: "bar"},
-			},
-			action: func(rootDir string, t *testing.T) {
-				deleteDir(rootDir, "dir/subdir", t)
-			},
-			targets: []string{"dir/subdir"},
-			want: TestDir{
-				"dir": TestDir{},
-				"bar": TestFile{Content: "bar"},
-			},
-		},
-		{
-			name: "delete-not-empty-subdir-dir",
-			src: TestDir{
-				"dir": TestDir{
-					"subdir": TestDir{
-						"foo": TestFile{Content: "foo"},
-						"subsubdir": TestDir{
-							"subfoo": TestFile{Content: "subfoo"},
-						},
-					},
-					"othersub": TestDir{
-						"other": TestFile{Content: "other"},
-					},
-				},
-				"bar": TestFile{Content: "bar"},
-			},
-			action: func(rootDir string, t *testing.T) {
-				deleteDir(rootDir, "dir/subdir", t)
-			},
-			targets: []string{"dir/subdir"},
-			want: TestDir{
-				"dir": TestDir{
-					"othersub": TestDir{
-						"other": TestFile{Content: "other"},
-					},
-				},
-				"bar": TestFile{Content: "bar"},
-			},
-		},
-		{
-			name: "delete-not-empty-subdir-dir",
-			src: TestDir{
-				"dir": TestDir{
-					"subdir": TestDir{
-						"foo": TestFile{Content: "foo"},
-						"subsubdir": TestDir{
-							"subfoo": TestFile{Content: "subfoo"},
-						},
-					},
-					"othersub": TestDir{
-						"other": TestFile{Content: "other"},
-					},
-				},
-				"bar": TestFile{Content: "bar"},
-			},
-			action: func(rootDir string, t *testing.T) {
-				deleteDir(rootDir, "dir/subdir", t)
-			},
-			targets: []string{"dir/subdir", "dir/subdir/foo", "dir/subdir/subsubdir", "dir/subdir/subsubdir/subfoo"},
-			want: TestDir{
-				"dir": TestDir{
-					"othersub": TestDir{
-						"other": TestFile{Content: "other"},
-					},
-				},
-				"bar": TestFile{Content: "bar"},
-			},
-		},
-		{
-			name: "delete-not-empty-subsubdir-subdir",
-			src: TestDir{
-				"dir": TestDir{
-					"subdir": TestDir{
-						"foo": TestFile{Content: "foo"},
-						"subsubdir": TestDir{
-							"subsubfoo": TestFile{Content: "subsubfoo"},
-							"subsubbar": TestFile{Content: "subsubbar"},
-							"subsubsubdir": TestDir{
-								"a":         TestFile{Content: "a"},
-								"b":         TestFile{Content: "b"},
-								"empty-dir": TestDir{},
-								"dir-files": TestDir{
-									"c": TestFile{Content: "c"},
-								},
-							},
-						},
-						"subfile": TestFile{Content: "subfile"},
-					},
-					"othersub": TestDir{
-						"other": TestFile{Content: "other"},
-					},
-					"foo": TestFile{Content: "test"},
-				},
-				"bar": TestFile{Content: "bar"},
-			},
-			action: func(rootDir string, t *testing.T) {
-				deleteDir(rootDir, "dir/subdir/subsubdir", t)
-			},
-			targets: []string{"dir/subdir", "dir/subdir/foo", "dir/subdir/subsubdir", "dir/subdir/subsubdir/subfoo"},
-			want: TestDir{
-				"dir": TestDir{
-					"subdir": TestDir{
-						"foo":     TestFile{Content: "foo"},
-						"subfile": TestFile{Content: "subfile"},
-					},
-					"othersub": TestDir{
-						"other": TestFile{Content: "other"},
-					},
-					"foo": TestFile{Content: "test"},
-				},
-				"bar": TestFile{Content: "bar"},
-			},
-		},
-		{
-			name: "delete-not-empty-subdir-dir",
-			src: TestDir{
-				"dir": TestDir{
-					"subdir": TestDir{
-						"foo": TestFile{Content: "foo"},
-						"subsubdir": TestDir{
-							"subfoo": TestFile{Content: "subfoo"},
-						},
-					},
-					"othersub": TestDir{
-						"other": TestFile{Content: "other"},
-					},
-				},
-				"bar": TestFile{Content: "bar"},
-			},
-			action: func(rootDir string, t *testing.T) {
-				deleteDir(rootDir, "dir/subdir", t)
-			},
-			targets: []string{".", "dir/subdir", "dir/subdir/foo", "dir/subdir/subsubdir", "dir/subdir/subsubdir/subfoo"},
-			want: TestDir{
-				"dir": TestDir{
-					"othersub": TestDir{
-						"other": TestFile{Content: "other"},
-					},
-				},
-				"bar": TestFile{Content: "bar"},
-			},
-		},
+		// 	},
+		// 	targets: []string{"dir/subdir/bar", "dir/subdir/foo"},
+		// 	want: TestDir{
+		// 		"dir": TestDir{
+		// 			"other": TestDir{
+		// 				"other-file1": TestFile{Content: "other-file1"},
+		// 				"other-file2": TestFile{Content: "other-file2"},
+		// 			},
+		// 			"subdir": TestDir{
+		// 				"foo": TestFile{Content: "foo"},
+		// 				"bar": TestFile{Content: "bar"},
+		// 			},
+		// 		},
+		// 	},
+		// },
+		// {
+		// 	name: "delete-file-root",
+		// 	src: TestDir{
+		// 		"foo": TestFile{Content: "foo"},
+		// 		"bar": TestFile{Content: "bar"},
+		// 	},
+		// 	action: func(rootDir string, t *testing.T) {
+		// 		deleteFile(rootDir, "foo", t)
+		// 	},
+		// 	targets: []string{"foo"},
+		// 	want: TestDir{
+		// 		"bar": TestFile{Content: "bar"},
+		// 	},
+		// },
+		// {
+		// 	name: "delete-file-dir",
+		// 	src: TestDir{
+		// 		"dir": TestDir{
+		// 			"foo": TestFile{Content: "foo"},
+		// 		},
+		// 		"bar": TestFile{Content: "bar"},
+		// 	},
+		// 	action: func(rootDir string, t *testing.T) {
+		// 		deleteFile(rootDir, "dir/foo", t)
+		// 	},
+		// 	targets: []string{"dir/foo"},
+		// 	want: TestDir{
+		// 		"dir": TestDir{},
+		// 		"bar": TestFile{Content: "bar"},
+		// 	},
+		// },
+		// {
+		// 	name: "delete-file-dir-with-multiple-files",
+		// 	src: TestDir{
+		// 		"dir": TestDir{
+		// 			"foo":   TestFile{Content: "foo"},
+		// 			"other": TestFile{Content: "other"},
+		// 		},
+		// 		"bar": TestFile{Content: "bar"},
+		// 	},
+		// 	action: func(rootDir string, t *testing.T) {
+		// 		deleteFile(rootDir, "dir/foo", t)
+		// 	},
+		// 	targets: []string{"dir/foo"},
+		// 	want: TestDir{
+		// 		"dir": TestDir{
+		// 			"other": TestFile{Content: "other"},
+		// 		},
+		// 		"bar": TestFile{Content: "bar"},
+		// 	},
+		// },
+		// {
+		// 	name: "delete-empty-dir-root",
+		// 	src: TestDir{
+		// 		"dir": TestDir{},
+		// 		"bar": TestFile{Content: "bar"},
+		// 	},
+		// 	action: func(rootDir string, t *testing.T) {
+		// 		deleteDir(rootDir, "dir", t)
+		// 	},
+		// 	targets: []string{"dir"},
+		// 	want: TestDir{
+		// 		"bar": TestFile{Content: "bar"},
+		// 	},
+		// },
+		// {
+		// 	name: "delete-not-empty-dir-root",
+		// 	src: TestDir{
+		// 		"dir": TestDir{
+		// 			"file1": TestFile{Content: "file1"},
+		// 			"file2": TestFile{Content: "file2"},
+		// 			"subdir": TestDir{
+		// 				"subdir-file": TestFile{Content: "subdir-file"},
+		// 			},
+		// 		},
+		// 		"bar": TestFile{Content: "bar"},
+		// 	},
+		// 	action: func(rootDir string, t *testing.T) {
+		// 		deleteDir(rootDir, "dir", t)
+		// 	},
+		// 	targets: []string{"dir"},
+		// 	want: TestDir{
+		// 		"bar": TestFile{Content: "bar"},
+		// 	},
+		// },
+		// {
+		// 	name: "delete-empty-subdir-dir",
+		// 	src: TestDir{
+		// 		"dir": TestDir{
+		// 			"subdir": TestDir{},
+		// 		},
+		// 		"bar": TestFile{Content: "bar"},
+		// 	},
+		// 	action: func(rootDir string, t *testing.T) {
+		// 		deleteDir(rootDir, "dir/subdir", t)
+		// 	},
+		// 	targets: []string{"dir"},
+		// 	want: TestDir{
+		// 		"dir": TestDir{},
+		// 		"bar": TestFile{Content: "bar"},
+		// 	},
+		// },
+		// {
+		// 	name: "delete-empty-subdir-dir",
+		// 	src: TestDir{
+		// 		"dir": TestDir{
+		// 			"subdir": TestDir{},
+		// 			"foo":    TestFile{Content: "foo"},
+		// 		},
+		// 		"bar": TestFile{Content: "bar"},
+		// 	},
+		// 	action: func(rootDir string, t *testing.T) {
+		// 		deleteDir(rootDir, "dir/subdir", t)
+		// 	},
+		// 	targets: []string{"dir"},
+		// 	want: TestDir{
+		// 		"dir": TestDir{
+		// 			"foo": TestFile{Content: "foo"},
+		// 		},
+		// 		"bar": TestFile{Content: "bar"},
+		// 	},
+		// },
+		// {
+		// 	name: "delete-not-empty-subdir-dir",
+		// 	src: TestDir{
+		// 		"dir": TestDir{
+		// 			"subdir": TestDir{
+		// 				"foo": TestFile{Content: "foo"},
+		// 				"subsubdir": TestDir{
+		// 					"subfoo": TestFile{Content: "subfoo"},
+		// 				},
+		// 			},
+		// 		},
+		// 		"bar": TestFile{Content: "bar"},
+		// 	},
+		// 	action: func(rootDir string, t *testing.T) {
+		// 		deleteDir(rootDir, "dir/subdir", t)
+		// 	},
+		// 	targets: []string{"dir/subdir"},
+		// 	want: TestDir{
+		// 		"dir": TestDir{},
+		// 		"bar": TestFile{Content: "bar"},
+		// 	},
+		// },
+		// {
+		// 	name: "delete-not-empty-subdir-dir",
+		// 	src: TestDir{
+		// 		"dir": TestDir{
+		// 			"subdir": TestDir{
+		// 				"foo": TestFile{Content: "foo"},
+		// 				"subsubdir": TestDir{
+		// 					"subfoo": TestFile{Content: "subfoo"},
+		// 				},
+		// 			},
+		// 			"othersub": TestDir{
+		// 				"other": TestFile{Content: "other"},
+		// 			},
+		// 		},
+		// 		"bar": TestFile{Content: "bar"},
+		// 	},
+		// 	action: func(rootDir string, t *testing.T) {
+		// 		deleteDir(rootDir, "dir/subdir", t)
+		// 	},
+		// 	targets: []string{"dir/subdir"},
+		// 	want: TestDir{
+		// 		"dir": TestDir{
+		// 			"othersub": TestDir{
+		// 				"other": TestFile{Content: "other"},
+		// 			},
+		// 		},
+		// 		"bar": TestFile{Content: "bar"},
+		// 	},
+		// },
+		// {
+		// 	name: "delete-not-empty-subdir-dir",
+		// 	src: TestDir{
+		// 		"dir": TestDir{
+		// 			"subdir": TestDir{
+		// 				"foo": TestFile{Content: "foo"},
+		// 				"subsubdir": TestDir{
+		// 					"subfoo": TestFile{Content: "subfoo"},
+		// 				},
+		// 			},
+		// 			"othersub": TestDir{
+		// 				"other": TestFile{Content: "other"},
+		// 			},
+		// 		},
+		// 		"bar": TestFile{Content: "bar"},
+		// 	},
+		// 	action: func(rootDir string, t *testing.T) {
+		// 		deleteDir(rootDir, "dir/subdir", t)
+		// 	},
+		// 	targets: []string{"dir/subdir", "dir/subdir/foo", "dir/subdir/subsubdir", "dir/subdir/subsubdir/subfoo"},
+		// 	want: TestDir{
+		// 		"dir": TestDir{
+		// 			"othersub": TestDir{
+		// 				"other": TestFile{Content: "other"},
+		// 			},
+		// 		},
+		// 		"bar": TestFile{Content: "bar"},
+		// 	},
+		// },
+		// {
+		// 	name: "delete-not-empty-subsubdir-subdir",
+		// 	src: TestDir{
+		// 		"dir": TestDir{
+		// 			"subdir": TestDir{
+		// 				"foo": TestFile{Content: "foo"},
+		// 				"subsubdir": TestDir{
+		// 					"subsubfoo": TestFile{Content: "subsubfoo"},
+		// 					"subsubbar": TestFile{Content: "subsubbar"},
+		// 					"subsubsubdir": TestDir{
+		// 						"a":         TestFile{Content: "a"},
+		// 						"b":         TestFile{Content: "b"},
+		// 						"empty-dir": TestDir{},
+		// 						"dir-files": TestDir{
+		// 							"c": TestFile{Content: "c"},
+		// 						},
+		// 					},
+		// 				},
+		// 				"subfile": TestFile{Content: "subfile"},
+		// 			},
+		// 			"othersub": TestDir{
+		// 				"other": TestFile{Content: "other"},
+		// 			},
+		// 			"foo": TestFile{Content: "test"},
+		// 		},
+		// 		"bar": TestFile{Content: "bar"},
+		// 	},
+		// 	action: func(rootDir string, t *testing.T) {
+		// 		deleteDir(rootDir, "dir/subdir/subsubdir", t)
+		// 	},
+		// 	targets: []string{"dir/subdir", "dir/subdir/foo", "dir/subdir/subsubdir", "dir/subdir/subsubdir/subfoo"},
+		// 	want: TestDir{
+		// 		"dir": TestDir{
+		// 			"subdir": TestDir{
+		// 				"foo":     TestFile{Content: "foo"},
+		// 				"subfile": TestFile{Content: "subfile"},
+		// 			},
+		// 			"othersub": TestDir{
+		// 				"other": TestFile{Content: "other"},
+		// 			},
+		// 			"foo": TestFile{Content: "test"},
+		// 		},
+		// 		"bar": TestFile{Content: "bar"},
+		// 	},
+		// },
+		// {
+		// 	name: "delete-not-empty-subdir-dir",
+		// 	src: TestDir{
+		// 		"dir": TestDir{
+		// 			"subdir": TestDir{
+		// 				"foo": TestFile{Content: "foo"},
+		// 				"subsubdir": TestDir{
+		// 					"subfoo": TestFile{Content: "subfoo"},
+		// 				},
+		// 			},
+		// 			"othersub": TestDir{
+		// 				"other": TestFile{Content: "other"},
+		// 			},
+		// 		},
+		// 		"bar": TestFile{Content: "bar"},
+		// 	},
+		// 	action: func(rootDir string, t *testing.T) {
+		// 		deleteDir(rootDir, "dir/subdir", t)
+		// 	},
+		// 	targets: []string{".", "dir/subdir", "dir/subdir/foo", "dir/subdir/subsubdir", "dir/subdir/subsubdir/subfoo"},
+		// 	want: TestDir{
+		// 		"dir": TestDir{
+		// 			"othersub": TestDir{
+		// 				"other": TestFile{Content: "other"},
+		// 			},
+		// 		},
+		// 		"bar": TestFile{Content: "bar"},
+		// 	},
+		// },
 	}
 
 	for _, test := range tests {

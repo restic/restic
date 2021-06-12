@@ -3,6 +3,7 @@ package archiver
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path"
 	"runtime"
@@ -202,13 +203,8 @@ func (arch *Archiver) mergeNodes(listNode1, listNode2 []*restic.Node) (mergedNod
 
 // saveTree stores a tree in the repo. It checks the index and the known blobs
 // before saving anything.
-func (arch *Archiver) saveTree(ctx context.Context, t *restic.Tree, prevT *restic.Tree, merge bool) (restic.ID, ItemStats, error) {
+func (arch *Archiver) saveTree(ctx context.Context, t *restic.Tree) (restic.ID, ItemStats, error) {
 	var s ItemStats
-
-	if merge && prevT != nil {
-		debug.Log("merging nodes")
-		t.Nodes = arch.mergeNodes(prevT.Nodes, t.Nodes)
-	}
 
 	buf, err := json.Marshal(t)
 	if err != nil {
@@ -664,7 +660,14 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 			return nil, err
 		}
 
-		id, nodeStats, err := arch.saveTree(ctx, subtree, oldSubtree, mergeWithPrevious)
+		if mergeWithPrevious && oldSubtree != nil {
+			debug.Log("merging nodes")
+			subtree.Nodes = arch.mergeNodes(oldSubtree.Nodes, subtree.Nodes)
+		}
+
+		fmt.Println("nodes", subtree.Nodes)
+
+		id, nodeStats, err := arch.saveTree(ctx, subtree)
 		if err != nil {
 			return nil, err
 		}
@@ -872,7 +875,12 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 			return errors.New("snapshot is empty")
 		}
 
-		rootTreeID, stats, err = arch.saveTree(wctx, tree, parentTree, opts.MergeWithParent)
+		if opts.MergeWithParent && parentTree != nil {
+			debug.Log("merging nodes")
+			tree.Nodes = arch.mergeNodes(parentTree.Nodes, tree.Nodes)
+		}
+
+		rootTreeID, stats, err = arch.saveTree(wctx, tree)
 		// trigger shutdown but don't set an error
 		t.Kill(nil)
 		return err

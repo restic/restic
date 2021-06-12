@@ -39,7 +39,7 @@ func (s *FutureTree) Stats() ItemStats {
 
 // TreeSaver concurrently saves incoming trees to the repo.
 type TreeSaver struct {
-	saveTree func(context.Context, *restic.Tree, *restic.Tree, bool) (restic.ID, ItemStats, error)
+	saveTree func(context.Context, *restic.Tree) (restic.ID, ItemStats, error)
 	errFn    ErrorFunc
 
 	ch chan<- saveTreeJob
@@ -47,7 +47,7 @@ type TreeSaver struct {
 
 // NewTreeSaver returns a new tree saver. A worker pool with treeWorkers is
 // started, it is stopped when ctx is cancelled.
-func NewTreeSaver(ctx context.Context, t *tomb.Tomb, treeWorkers uint, saveTree func(context.Context, *restic.Tree, *restic.Tree, bool) (restic.ID, ItemStats, error), errFn ErrorFunc) *TreeSaver {
+func NewTreeSaver(ctx context.Context, t *tomb.Tomb, treeWorkers uint, saveTree func(context.Context, *restic.Tree) (restic.ID, ItemStats, error), errFn ErrorFunc) *TreeSaver {
 	ch := make(chan saveTreeJob)
 
 	s := &TreeSaver{
@@ -132,7 +132,7 @@ func (s *TreeSaver) save(ctx context.Context, snPath string, node *restic.Node, 
 		}
 	}
 
-	id, treeStats, err := s.saveTree(ctx, tree, nil, false)
+	id, treeStats, err := s.saveTree(ctx, tree)
 	stats.Add(treeStats)
 	if err != nil {
 		return nil, stats, err
