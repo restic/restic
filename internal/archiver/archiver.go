@@ -3,7 +3,6 @@ package archiver
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"os"
 	"path"
 	"runtime"
@@ -179,13 +178,9 @@ func (arch *Archiver) mergeNodes(listNode1, listNode2 []*restic.Node, path strin
 		// some of the files or dir in the frst set could belong to a dir
 		// that has been deleted and the recreated
 		// Will check if the file or dir is still there, before adding it to the set
-		// _, err := arch.FS.Lstat(node.Path)
-		// fmt.Println(node.Path, err)
-		fmt.Printf("mergeNodes path=%s name=%s\n", path, node.Name)
 		if !fileOrDirNotExist(join(path, node.Name)) {
-			fmt.Println("mergeNodes", join(path, node.Name), "exists")
-			setNode[node.Name] = node
 			// the file exists, will add to the set
+			setNode[node.Name] = node
 		}
 	}
 	for _, node := range listNode2 {
@@ -208,7 +203,7 @@ func (arch *Archiver) mergeNodes(listNode1, listNode2 []*restic.Node, path strin
 
 	// sort nodes lexicographically
 	sort.Sort(restic.Nodes(mergedNodes))
-	// fmt.Println(mergedNodes)
+
 	return
 }
 
@@ -671,15 +666,12 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 			return nil, err
 		}
 
-		// fmt.Printf("SaveTree fileinfopath=%s path=%s\n", subatree.FileInfoPath, subatree.Path)
 		if mergeWithPrevious && oldSubtree != nil {
 			debug.Log("merging nodes")
 			subtree.Nodes = arch.mergeNodes(oldSubtree.Nodes, subtree.Nodes, subatree.FileInfoPath)
-			fmt.Printf("mergedNodes path=%s nodes=%v\n", subatree.FileInfoPath, subtree.Nodes)
 		}
 
 		fi, err := arch.statDir(subatree.FileInfoPath)
-		fmt.Println("statDir", err)
 		if err != nil && !mergeWithPrevious {
 			return nil, err
 		}
@@ -690,14 +682,12 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 		var id restic.ID
 		if err != nil && mergeWithPrevious {
 			// the dir does not exist
-			fmt.Println(subatree.FileInfoPath, "placeholder")
 			node = restic.NodePlaceholder(subatree.FileInfoPath, name)
 		} else {
 			node, err = arch.nodeFromFileInfo(subatree.FileInfoPath, fi)
 			if err != nil {
 				return nil, err
 			}
-			fmt.Println("savetree", subatree.FileInfoPath, subtree)
 			id, nodeStats, err = arch.saveTree(ctx, subtree)
 			if err != nil {
 				return nil, err
