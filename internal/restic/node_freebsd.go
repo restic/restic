@@ -8,8 +8,8 @@ func (node Node) restoreSymlinkTimestamps(path string, utimes [2]syscall.Timespe
 	return nil
 }
 
-func (node Node) device() uint64 {
-	return node.Device
+func mknod(path string, mode uint32, dev uint64) (err error) {
+	return syscall.Mknod(path, mode, dev)
 }
 
 func (s statT) atim() syscall.Timespec { return s.Atimespec }
