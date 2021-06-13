@@ -2208,6 +2208,59 @@ func TestArchiverSnapshotMerge(t *testing.T) {
 				"bar": TestFile{Content: "bar"},
 			},
 		},
+		{
+			name: "delete-dir-create-file-same-name-dir-in-root",
+			src: TestDir{
+				"dir": TestDir{
+					"subdir": TestDir{
+						"foo": TestFile{Content: "foo"},
+						"bar": TestFile{Content: "bar"},
+					},
+				},
+				"bar": TestFile{Content: "bar"},
+			},
+			action: func(rootDir string, t *testing.T) {
+				deleteFile(rootDir, "dir/subdir/foo", t)
+				deleteDir(rootDir, "dir/subdir", t)
+
+				createFile(rootDir, "dir/subdir", "file", t)
+			},
+			targets: []string{"dir/subdir/foo", "dir/subdir"},
+			want: TestDir{
+				"dir": TestDir{
+					"subdir": TestFile{Content: "file"},
+				},
+				"bar": TestFile{Content: "bar"},
+			},
+		},
+		{
+			name: "delete-dir-create-file-same-name-dir-in-subdir",
+			src: TestDir{
+				"dir": TestDir{
+					"subdir": TestDir{
+						"subsubdir": TestDir{
+							"foo": TestFile{Content: "foo"},
+							"bar": TestFile{Content: "bar"},
+						},
+					},
+				},
+				"bar": TestFile{Content: "bar"},
+			},
+			action: func(rootDir string, t *testing.T) {
+				deleteDir(rootDir, "dir/subdir/subsubdir", t)
+
+				createFile(rootDir, "dir/subdir/subsubdir", "file", t)
+			},
+			targets: []string{"dir/subdir/foo", "dir/subdir"},
+			want: TestDir{
+				"dir": TestDir{
+					"subdir": TestDir{
+						"subsubdir": TestFile{Content: "file"},
+					},
+				},
+				"bar": TestFile{Content: "bar"},
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -2232,6 +2285,8 @@ func TestArchiverSnapshotMerge(t *testing.T) {
 				t.Fatal(err)
 			}
 			t.Log("First repo check")
+
+			TestEnsureSnapshot(t, repo, snapshotSrcID, test.src)
 			checker.TestCheckRepo(t, repo)
 
 			test.action(tempdir, t)
@@ -2246,7 +2301,6 @@ func TestArchiverSnapshotMerge(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			TestEnsureSnapshot(t, repo, snapshotSrcID, test.src)
 			TestEnsureSnapshot(t, repo, snapshotMergeID, test.want)
 
 			t.Log("Second repo check")
