@@ -237,7 +237,7 @@ func unrollTree(f fs.FS, t *Tree, skipDeleted bool) error {
 
 		if skipDeleted && err != nil {
 			t.Nodes = nil
-			err = nil
+			return nil
 		}
 
 		if err != nil {
