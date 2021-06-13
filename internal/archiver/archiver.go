@@ -164,9 +164,14 @@ func (arch *Archiver) error(item string, fi os.FileInfo, err error) error {
 	return errf
 }
 
-func fileOrDirNotExist(path string) bool {
-	_, err := fs.Lstat(path)
+func (arch *Archiver) fileOrDirNotExist(path string) bool {
+	_, err := arch.FS.Lstat(path)
 	return err != nil && os.IsNotExist(errors.Cause(err))
+}
+
+func (arch *Archiver) fileOrDirExist(path string) bool {
+	_, err := arch.FS.Lstat(path)
+	return err == nil
 }
 
 // mergeNodes merge the lists of nodes. The result is a new list of nodes in which each node from both input
@@ -178,7 +183,7 @@ func (arch *Archiver) mergeNodes(listNode1, listNode2 []*restic.Node, path strin
 		// some of the files or dir in the frst set could belong to a dir
 		// that has been deleted and the recreated
 		// Will check if the file or dir is still there, before adding it to the set
-		if !fileOrDirNotExist(join(path, node.Name)) {
+		if arch.fileOrDirExist(join(path, node.Name)) {
 			// the file exists, will add to the set
 			setNode[node.Name] = node
 		}
@@ -203,7 +208,6 @@ func (arch *Archiver) mergeNodes(listNode1, listNode2 []*restic.Node, path strin
 
 	// sort nodes lexicographically
 	sort.Sort(restic.Nodes(mergedNodes))
-
 	return
 }
 
@@ -623,7 +627,7 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 			var fn FutureNode
 			var excluded bool
 			var err error
-			if mergeWithPrevious && fileOrDirNotExist(subatree.Path) {
+			if mergeWithPrevious && arch.fileOrDirNotExist(subatree.Path) {
 				fn, excluded, err = arch.SavePlaceholder(subatree.Path, name)
 			} else {
 				fn, excluded, err = arch.Save(ctx, join(snPath, name), subatree.Path, previous.Find(name))
