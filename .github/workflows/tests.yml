@@ -282,11 +282,14 @@ jobs:
       GH_USERNAME: ${{ github.actor }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
+      - name: Get current date
+          id: date
+          run: echo "::set-output name=date::$(date +'%Y%m%d%H%M')"
       - name: Check out code
         uses: actions/checkout@v2
 
       - name: Build image
-        run: docker build -t netapp-restic:latest .
+        run: docker build --build-arg BUILD_DATETIME=${{ steps.date.outputs.date }} -t netapp-restic:latest .
 
       - name: Docker login
         run: docker login -u $USERNAME -p $PASSWORD netappdownloads.jfrog.io/oss-docker-restic-production/restic
@@ -298,18 +301,17 @@ jobs:
 
       - name: Tag and push versioned image
         run: |
-          export VERSION=$(cat VERSION)
-          docker tag netapp-restic:latest netappdownloads.jfrog.io/oss-docker-restic-production/restic:$VERSION
-          docker push netappdownloads.jfrog.io/oss-docker-restic-production/restic:$VERSION
-      - name: Tag and push release image
-        run: |
-          export VERSION=$(cat RELEASE_TAG)
+          export VERSION=$(cat VERSION)"."${{ steps.date.outputs.date }}
           docker tag netapp-restic:latest netappdownloads.jfrog.io/oss-docker-restic-production/restic:$VERSION
           docker push netappdownloads.jfrog.io/oss-docker-restic-production/restic:$VERSION
 
       - name: Tag and push to GitHub Container Registry
         run: |
+          export VERSION=$(cat VERSION)"."${{ steps.date.outputs.date }}
           docker login -u $GH_USERNAME -p $GH_TOKEN ghcr.io/netapp/restic
           docker tag netapp-restic:latest ghcr.io/netapp/restic:latest
           docker push ghcr.io/netapp/restic:latest
+          docker tag netapp-restic:latest ghcr.io/netapp/restic:$VERSION
+          docker push ghcr.io/netapp/restic:$VERSION
+
 

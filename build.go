@@ -206,7 +206,11 @@ func getNetappVersion() string {
 		return ""
 	}
 	base := strings.TrimSpace(string(buf))
-	version := base + "." + time.Now().Format("20060102150405")
+	timestring := os.Getenv("BUILD_DATETIME")
+	if len(timestring) == 0 {
+		timestring = time.Now().Format("20060102150405")
+	}
+	version := base + "." + timestring
 	return version
 }
 

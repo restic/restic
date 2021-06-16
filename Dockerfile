@@ -1,4 +1,5 @@
 FROM golang:1.16-alpine as builder
+ARG BUILD_DATETIME
 WORKDIR /src
 COPY . .
 RUN go run build.go
