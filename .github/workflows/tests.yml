@@ -283,8 +283,8 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Get current date
-          id: date
-          run: echo "::set-output name=date::$(date +'%Y%m%d%H%M')"
+        id: date
+        run: echo "::set-output name=date::$(date +'%Y%m%d%H%M')"
       - name: Check out code
         uses: actions/checkout@v2
 
