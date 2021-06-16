@@ -99,7 +99,7 @@ func (c *Cache) Save(h restic.Handle, rd io.Reader) error {
 	finalname := c.filename(h)
 	dir := filepath.Dir(finalname)
 	err := fs.Mkdir(dir, 0700)
-	if err != nil && !os.IsExist(err) {
+	if err != nil && !errors.Is(err, os.ErrExist) {
 		return err
 	}
 
