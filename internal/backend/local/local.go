@@ -64,7 +64,7 @@ func Create(ctx context.Context, cfg Config) (*Local, error) {
 	for _, d := range be.Paths() {
 		err := fs.MkdirAll(d, backend.Modes.Dir)
 		if err != nil {
-			return nil, errors.Wrap(err, "MkdirAll")
+			return nil, errors.WithStack(err)
 		}
 	}
 
@@ -78,7 +78,7 @@ func (b *Local) Location() string {
 
 // IsNotExist returns true if the error is caused by a non existing file.
 func (b *Local) IsNotExist(err error) bool {
-	return os.IsNotExist(errors.Cause(err))
+	return errors.Is(err, os.ErrNotExist)
 }
 
 // Save stores data in the backend at the handle.
@@ -114,14 +114,14 @@ func (b *Local) Save(ctx context.Context, h restic.Handle, rd restic.RewindReade
 	}
 
 	if err != nil {
-		return errors.Wrap(err, "OpenFile")
+		return errors.WithStack(err)
 	}
 
 	// save data, then sync
 	wbytes, err := io.Copy(f, rd)
 	if err != nil {
 		_ = f.Close()
-		return errors.Wrap(err, "Write")
+		return errors.WithStack(err)
 	}
 	// sanity check
 	if wbytes != rd.Length() {
@@ -135,13 +135,13 @@ func (b *Local) Save(ctx context.Context, h restic.Handle, rd restic.RewindReade
 		// ignore error if filesystem does not support the sync operation
 		if !isNotSupported {
 			_ = f.Close()
-			return errors.Wrap(err, "Sync")
+			return errors.WithStack(err)
 		}
 	}
 
 	err = f.Close()
 	if err != nil {
-		return errors.Wrap(err, "Close")
+		return errors.WithStack(err)
 	}
 
 	// try to mark file as read-only to avoid accidential modifications
@@ -149,7 +149,7 @@ func (b *Local) Save(ctx context.Context, h restic.Handle, rd restic.RewindReade
 	// e.g. exfat and network file systems with certain mount options
 	err = setFileReadonly(filename, backend.Modes.File)
 	if err != nil && !os.IsPermission(err) {
-		return errors.Wrap(err, "Chmod")
+		return errors.WithStack(err)
 	}
 
 	return nil
@@ -202,7 +202,7 @@ func (b *Local) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, err
 
 	fi, err := fs.Stat(b.Filename(h))
 	if err != nil {
-		return restic.FileInfo{}, errors.Wrap(err, "Stat")
+		return restic.FileInfo{}, errors.WithStack(err)
 	}
 
 	return restic.FileInfo{Size: fi.Size(), Name: h.Name}, nil
@@ -213,10 +213,10 @@ func (b *Local) Test(ctx context.Context, h restic.Handle) (bool, error) {
 	debug.Log("Test %v", h)
 	_, err := fs.Stat(b.Filename(h))
 	if err != nil {
-		if os.IsNotExist(errors.Cause(err)) {
+		if b.IsNotExist(err) {
 			return false, nil
 		}
-		return false, errors.Wrap(err, "Stat")
+		return false, errors.WithStack(err)
 	}
 
 	return true, nil
@@ -230,7 +230,7 @@ func (b *Local) Remove(ctx context.Context, h restic.Handle) error {
 	// reset read-only flag
 	err := fs.Chmod(fn, 0666)
 	if err != nil && !os.IsPermission(err) {
-		return errors.Wrap(err, "Chmod")
+		return errors.WithStack(err)
 	}
 
 	return fs.Remove(fn)
