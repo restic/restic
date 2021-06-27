@@ -73,7 +73,7 @@ repository (since all data is already there). This is de-duplication at work!
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo backup --verbose ~/work
+    $ restic -r /srv/restic-repo --verbose backup ~/work
     open repository
     enter password for repository:
     password is correct
@@ -107,7 +107,7 @@ restic encounters:
 
     $ echo 'more data foo bar' >> ~/work.txt
 
-    $ restic -r /srv/restic-repo backup --verbose --verbose ~/work.txt
+    $ restic -r /srv/restic-repo --verbose --verbose backup ~/work.txt
     open repository
     enter password for repository:
     password is correct
