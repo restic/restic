@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"sort"
 	"strings"
 	"time"
@@ -401,7 +400,7 @@ func (f *Finder) findIDs(ctx context.Context, sn *restic.Snapshot) error {
 	})
 }
 
-var errorAllPacksFound = fmt.Errorf("all packs found")
+var errAllPacksFound = errors.New("all packs found")
 
 // packsToBlobs converts the list of pack IDs to a list of blob IDs that
 // belong to those packs.
@@ -437,16 +436,16 @@ func (f *Finder) packsToBlobs(ctx context.Context, packs []string) error {
 		}
 		// Stop searching when all packs have been found
 		if len(packIDs) == 0 {
-			return errorAllPacksFound
+			return errAllPacksFound
 		}
 		return nil
 	})
 
-	if err != nil && err != errorAllPacksFound {
+	if err != nil && err != errAllPacksFound {
 		return err
 	}
 
-	if err != errorAllPacksFound {
+	if err != errAllPacksFound {
 		// try to resolve unknown pack ids from the index
 		packIDs = f.indexPacksToBlobs(ctx, packIDs)
 	}
