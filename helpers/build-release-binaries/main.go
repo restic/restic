@@ -226,7 +226,7 @@ var defaultBuildTargets = map[string][]string{
 	"aix":     {"ppc64"},
 	"darwin":  {"amd64", "arm64"},
 	"freebsd": {"386", "amd64", "arm"},
-	"linux":   {"386", "amd64", "arm", "arm64", "ppc64le", "mips", "mipsle", "mips64", "mips64le"},
+	"linux":   {"386", "amd64", "arm", "arm64", "ppc64le", "mips", "mipsle", "mips64", "mips64le", "s390x"},
 	"netbsd":  {"386", "amd64"},
 	"openbsd": {"386", "amd64"},
 	"windows": {"386", "amd64"},
