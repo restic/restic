@@ -142,7 +142,9 @@ func (b *Local) Save(ctx context.Context, h restic.Handle, rd restic.RewindReade
 	}
 
 	// Ignore error if filesystem does not support fsync.
-	if err = f.Sync(); err != nil && !errors.Is(err, syscall.ENOTSUP) {
+	err = f.Sync()
+	syncNotSup := errors.Is(err, syscall.ENOTSUP)
+	if err != nil && !syncNotSup {
 		return errors.WithStack(err)
 	}
 
@@ -152,6 +154,14 @@ func (b *Local) Save(ctx context.Context, h restic.Handle, rd restic.RewindReade
 	}
 	if err = os.Rename(f.Name(), finalname); err != nil {
 		return errors.WithStack(err)
+	}
+
+	// Now sync the directory to commit the Rename.
+	if !syncNotSup {
+		err = fsyncDir(dir)
+		if err != nil {
+			return errors.WithStack(err)
+		}
 	}
 
 	// try to mark file as read-only to avoid accidential modifications

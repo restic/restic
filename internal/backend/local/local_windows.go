@@ -4,6 +4,9 @@ import (
 	"os"
 )
 
+// Can't explicitly flush directory changes on Windows.
+func fsyncDir(dir string) error { return nil }
+
 // We don't modify read-only on windows,
 // since it will make us unable to delete the file,
 // and this isn't common practice on this platform.
