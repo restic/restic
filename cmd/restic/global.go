@@ -119,6 +119,8 @@ func init() {
 	f.IntVar(&globalOptions.LimitUploadKb, "limit-upload", 0, "limits uploads to a maximum rate in KiB/s. (default: unlimited)")
 	f.IntVar(&globalOptions.LimitDownloadKb, "limit-download", 0, "limits downloads to a maximum rate in KiB/s. (default: unlimited)")
 	f.StringSliceVarP(&globalOptions.Options, "option", "o", []string{}, "set extended option (`key=value`, can be specified multiple times)")
+	// Use our "generate" command instead of the cobra provided "completion" command
+	cmdRoot.CompletionOptions.DisableDefaultCmd = true
 
 	restoreTerminal()
 }
