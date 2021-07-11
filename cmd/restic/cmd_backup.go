@@ -708,15 +708,17 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		p.V("start backup on %v", targets)
 	}
 	_, id, err := arch.Snapshot(gopts.ctx, targets, snapshotOpts)
-	if err != nil {
-		return errors.Fatalf("unable to save snapshot: %v", err)
-	}
 
 	// cleanly shutdown all running goroutines
 	t.Kill(nil)
 
 	// let's see if one returned an error
-	err = t.Wait()
+	werr := t.Wait()
+
+	// return original error
+	if err != nil {
+		return errors.Fatalf("unable to save snapshot: %v", err)
+	}
 
 	// Report finished execution
 	p.Finish(id)
@@ -728,5 +730,5 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	}
 
 	// Return error if any
-	return err
+	return werr
 }
