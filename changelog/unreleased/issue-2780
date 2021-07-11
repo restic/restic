@@ -1,0 +1,6 @@
+Enhancement: Add release binaries for s390x architecture on Linux
+
+We've added release binaries for Linux using the s390x architecture.
+
+https://github.com/restic/restic/issues/2780
+https://github.com/restic/restic/pull/3452
