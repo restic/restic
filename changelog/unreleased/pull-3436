@@ -1,0 +1,12 @@
+Enhancement: Improve local backend's resilience to (system) crashes
+
+Restic now ensures that files stored using the `local` backend are created
+atomically (that is, files are either stored completely or not at all). This
+ensures that no incomplete files are left behind even if restic is terminated
+while writing a file.
+
+In addition, restic now tries to ensure that the directory in the repository
+which contains a newly uploaded file is also written to disk. This can prevent
+missing files if the system crashes or the disk is not properly unmounted.
+
+https://github.com/restic/restic/pull/3436
