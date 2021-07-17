@@ -57,7 +57,7 @@ Exit status is 0 if the command was successful, and non\-zero if there was any e
 
 .PP
 \fB\-\-keep\-tag\fP=[]
-    keep snapshots with this \fB\fCtaglist\fR (can be specified multiple times)
+    keep snapshots with this \fB\fCtaglist\fR (can be specified multiple times). An empty tag list (--keep-tag='') will keep all untagged snapshots.
 
 .PP
 \fB\-\-host\fP=[]
@@ -65,7 +65,7 @@ Exit status is 0 if the command was successful, and non\-zero if there was any e
 
 .PP
 \fB\-\-tag\fP=[]
-    only consider snapshots which include this \fB\fCtaglist\fR in the format \fB\fCtag[,tag,...]\fR (can be specified multiple times)
+    only consider snapshots which include this \fB\fCtaglist\fR in the format \fB\fCtag[,tag,...]\fR (can be specified multiple times). The empty tag (--tag='') will only consider untagged snapshots.
 
 .PP
 \fB\-\-path\fP=[]

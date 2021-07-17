@@ -19,8 +19,8 @@ func TestTagList(t *testing.T) {
 	paths := []string{"/home/foobar"}
 	tags := []string{""}
 
-	sn,_ := restic.NewSnapshot(paths, nil, "foo", time.Now())
+	sn, _ := restic.NewSnapshot(paths, nil, "foo", time.Now())
 
 	r := sn.HasTags(tags)
-	rtest.Assert(t,  r, "Snapshot failed to match with non-empty selector")
+	rtest.Assert(t, r, "Snapshot failed to match with non-empty selector")
 }

@@ -189,6 +189,15 @@ So we can add and remove tags incrementally like this:
     $ restic -r /srv/restic-repo tag --tag NL --add SOMETHING
     no snapshots were modified
 
+The empty string '' when used as a tag filter ``--tag`` will only match
+un-tagged snapshots.  The following command will add the tag ``OTHER``
+to all untagged snapshots.
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo tag --tag '' --add OTHER
+    no snapshots were modified
+
 Under the hood
 --------------
 
