@@ -195,6 +195,9 @@ The ``forget`` command accepts the following parameters:
     boundaries and not relative to when you run the ``forget`` command. Weeks
     are Monday 00:00 -> Sunday 23:59, days 00:00 to 23:59, hours :00 to :59, etc.
 
+.. note:: The ``--keep-tag`` option with an empty string '' will match untagged
+   snapshots.
+
 Multiple policies will be ORed together so as to be as inclusive as possible
 for keeping snapshots.
 
@@ -221,6 +224,13 @@ To only keep the last snapshot of all snapshots with both the tag ``foo`` and
 .. code-block:: console
 
    $ restic forget --tag foo,bar --keep-last 1
+
+To ensure only untagged snapshots are considered, specify the empty string '' as
+the tag.
+
+.. code-block:: console
+
+   $ restic forget --tag '' --keep-last 1
 
 All the ``--keep-*`` options above only count
 hours/days/weeks/months/years which have a snapshot, so those without a

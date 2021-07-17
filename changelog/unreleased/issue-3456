@@ -1,0 +1,8 @@
+Feature: match untagged snapshots only when listing or forgetting
+
+This changes how snapshots are matched to accept the empty string "" as meaning "without any tags"
+
+restic snapshot , or restic forget can not operate ONLY on untagged snapshots by specifying a tag of ""
+
+https://github.com/restic/restic/issues/3456
+https://github.com/restic/restic/pull/3457
