@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"time"
 
@@ -11,11 +12,11 @@ import (
 
 var cmdRecover = &cobra.Command{
 	Use:   "recover [flags]",
-	Short: "Recover data from the repository",
+	Short: "Recover data from the repository not referenced by snapshots",
 	Long: `
 The "recover" command builds a new snapshot from all directories it can find in
-the raw data of the repository. It can be used if, for example, a snapshot has
-been removed by accident with "forget".
+the raw data of the repository which are not referenced in an existing snapshot.
+It can be used if, for example, a snapshot has been removed by accident with "forget".
 
 EXIT STATUS
 ===========
@@ -24,15 +25,28 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runRecover(globalOptions)
+		return runRecover(globalOptions, recoverOptions)
 	},
 }
 
-func init() {
-	cmdRoot.AddCommand(cmdRecover)
+type RecoverOptions struct {
+	Split  bool
+	DryRun bool
+	Tags   restic.TagLists
 }
 
-func runRecover(gopts GlobalOptions) error {
+var recoverOptions RecoverOptions
+
+func init() {
+	cmdRoot.AddCommand(cmdRecover)
+	recoverFlags := cmdRecover.Flags()
+	recoverFlags.BoolVar(&recoverOptions.Split, "split", false, "generate one snapshot per unreferenced directory")
+	recoverFlags.BoolVarP(&recoverOptions.DryRun, "dry-run", "n", false, "only show what would be done")
+	recoverOptions.Tags = restic.TagLists{[]string{"recovered"}}
+	recoverFlags.Var(&recoverOptions.Tags, "tag", "`tags` which will be added to the new snapshot(s) in the format `tag[,tag,...]` (can be given multiple times)")
+}
+
+func runRecover(gopts GlobalOptions, opts RecoverOptions) error {
 	hostname, err := os.Hostname()
 	if err != nil {
 		return err
@@ -59,24 +73,14 @@ func runRecover(gopts GlobalOptions) error {
 	trees := make(map[restic.ID]bool)
 
 	for blob := range repo.Index().Each(gopts.ctx) {
-		if blob.Blob.Type != restic.TreeBlob {
-			continue
+		if blob.Type == restic.TreeBlob {
+			trees[blob.Blob.ID] = false
 		}
-		trees[blob.Blob.ID] = false
 	}
 
-	cur := 0
-	max := len(trees)
-	Verbosef("load %d trees\n\n", len(trees))
-
+	Verbosef("load %d trees\n", len(trees))
+	bar := newProgressMax(!gopts.Quiet, uint64(len(trees)), "trees loaded")
 	for id := range trees {
-		cur++
-		Verbosef("\rtree (%v/%v)", cur, max)
-
-		if !trees[id] {
-			trees[id] = false
-		}
-
 		tree, err := repo.LoadTree(gopts.ctx, id)
 		if err != nil {
 			Warnf("unable to load tree %v: %v\n", id.Str(), err)
@@ -84,68 +88,96 @@ func runRecover(gopts GlobalOptions) error {
 		}
 
 		for _, node := range tree.Nodes {
-			if node.Type != "dir" || node.Subtree == nil {
-				continue
+			if node.Type == "dir" && node.Subtree != nil {
+				trees[*node.Subtree] = true
 			}
-
-			subtree := *node.Subtree
-			trees[subtree] = true
 		}
+		bar.Add(1)
 	}
-	Verbosef("\ndone\n")
+	bar.Done()
+
+	Verbosef("load snapshots\n")
+	err = restic.ForAllSnapshots(gopts.ctx, repo, nil, func(id restic.ID, sn *restic.Snapshot, err error) error {
+		trees[*sn.Tree] = true
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	Verbosef("done\n")
 
 	roots := restic.NewIDSet()
 	for id, seen := range trees {
-		if seen {
-			continue
+		if !seen {
+			Verboseff("found root tree %v\n", id.Str())
+			roots.Insert(id)
 		}
+	}
+	Printf("\nfound %d unreferenced roots\n", len(roots))
 
-		roots.Insert(id)
+	switch {
+	case len(roots) == 0:
+		Verbosef("no snapshot to write.\n")
+		return nil
+	case opts.DryRun:
+		Verbosef("dry run: not writing anything.\n")
+		return nil
 	}
 
-	Verbosef("found %d roots\n", len(roots))
-
-	tree := restic.NewTree()
-	for id := range roots {
-		var subtreeID = id
-		node := restic.Node{
-			Type:       "dir",
-			Name:       id.Str(),
-			Mode:       0755,
-			Subtree:    &subtreeID,
-			AccessTime: time.Now(),
-			ModTime:    time.Now(),
-			ChangeTime: time.Now(),
+	if !opts.Split {
+		tree := restic.NewTree()
+		for id := range roots {
+			var subtreeID = id
+			node := restic.Node{
+				Type:       "dir",
+				Name:       id.Str(),
+				Mode:       0755,
+				Subtree:    &subtreeID,
+				AccessTime: time.Now(),
+				ModTime:    time.Now(),
+				ChangeTime: time.Now(),
+			}
+			err := tree.Insert(&node)
+			if err != nil {
+				return err
+			}
 		}
-		err = tree.Insert(&node)
+
+		treeID, err := repo.SaveTree(gopts.ctx, tree)
+		if err != nil {
+			return errors.Fatalf("unable to save new tree to the repo: %v", err)
+		}
+
+		err = repo.Flush(gopts.ctx)
+		if err != nil {
+			return errors.Fatalf("unable to save blobs to the repo: %v", err)
+		}
+
+		return createSnapshot(gopts.ctx, "/recover", hostname, opts.Tags.Flatten(), repo, &treeID)
+	}
+
+	for id := range roots {
+		err := createSnapshot(gopts.ctx, "/"+id.Str(), hostname, opts.Tags.Flatten(), repo, &id)
 		if err != nil {
 			return err
 		}
 	}
+	return nil
+}
 
-	treeID, err := repo.SaveTree(gopts.ctx, tree)
-	if err != nil {
-		return errors.Fatalf("unable to save new tree to the repo: %v", err)
-	}
-
-	err = repo.Flush(gopts.ctx)
-	if err != nil {
-		return errors.Fatalf("unable to save blobs to the repo: %v", err)
-	}
-
-	sn, err := restic.NewSnapshot([]string{"/recover"}, []string{}, hostname, time.Now())
+func createSnapshot(ctx context.Context, name, hostname string, tags []string, repo restic.Repository, tree *restic.ID) error {
+	sn, err := restic.NewSnapshot([]string{name}, tags, hostname, time.Now())
 	if err != nil {
 		return errors.Fatalf("unable to save snapshot: %v", err)
 	}
 
-	sn.Tree = &treeID
+	sn.Tree = tree
 
-	id, err := repo.SaveJSONUnpacked(gopts.ctx, restic.SnapshotFile, sn)
+	id, err := repo.SaveJSONUnpacked(ctx, restic.SnapshotFile, sn)
 	if err != nil {
 		return errors.Fatalf("unable to save snapshot: %v", err)
 	}
 
 	Printf("saved new snapshot %v\n", id.Str())
-
 	return nil
 }
