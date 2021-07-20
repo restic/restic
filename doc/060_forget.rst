@@ -189,7 +189,7 @@ The ``forget`` command accepts the following parameters:
    the duration of the latest snapshot. ``duration`` needs to be a number of
    years, months, days, and hours, e.g. ``2y5m7d3h`` will keep all snapshots
    made in the two years, five months, seven days, and three hours before the
-   latest snapshot`.
+   latest snapshot.
 -  ``--keep-within-hourly duration`` keep all hourly snapshots made within
    specified duration of the latest snapshot. The duration is specified in 
    the same way as for ``--keep-within`` and the method for determining
