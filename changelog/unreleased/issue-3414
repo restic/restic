@@ -1,0 +1,20 @@
+Enhancement: Add --keep-within-hourly switch to restic forget
+
+restic forget allowed users to specify keeping a given number of 
+hourly backups, or to keep all backups within a given interval,
+but not both, that is to specify keeping hourly backups within
+a given interval.
+
+The --keep-within-hourly switch offers this functionality, and 
+parallell switches for daily/weekly/monthly/yearly are also 
+implemneted. The new switches are:
+
+  --keep-within-hourly <1y2m3d4h>
+  --keep-within-daily <1y2m3d4h>
+  --keep-within-weekly <1y2m3d4h>
+  --keep-within-monthly <1y2m3d4h>
+  --keep-within-yearly <1y2m3d4h>
+
+https://github.com/restic/restic/issues/3414
+https://github.com/restic/restic/pull/3416
+https://forum.restic.net/t/forget-policy/4014/11

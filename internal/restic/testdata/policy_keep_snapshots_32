@@ -1,0 +1,318 @@
+{
+  "keep": [
+    {
+      "time": "2016-01-18T12:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-12T21:08:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-09T21:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-03T07:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-11-22T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-11-15T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-11-08T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-10-22T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-10-11T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-10-02T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-09-22T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-09-20T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-09-11T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-09-06T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-08-22T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-08-15T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-08-08T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2014-11-22T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2014-11-15T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo",
+        "bar"
+      ]
+    }
+  ],
+  "reasons": [
+    {
+      "snapshot": {
+        "time": "2016-01-18T12:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "weekly within 1y2m3d3h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-12T21:08:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "weekly within 1y2m3d3h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-09T21:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "weekly within 1y2m3d3h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-03T07:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "weekly within 1y2m3d3h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2015-11-22T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "weekly within 1y2m3d3h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2015-11-15T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "weekly within 1y2m3d3h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2015-11-08T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "weekly within 1y2m3d3h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2015-10-22T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "weekly within 1y2m3d3h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2015-10-11T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "weekly within 1y2m3d3h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2015-10-02T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "weekly within 1y2m3d3h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2015-09-22T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "weekly within 1y2m3d3h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2015-09-20T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "weekly within 1y2m3d3h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2015-09-11T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "weekly within 1y2m3d3h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2015-09-06T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "weekly within 1y2m3d3h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2015-08-22T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "weekly within 1y2m3d3h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2015-08-15T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "weekly within 1y2m3d3h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2015-08-08T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "weekly within 1y2m3d3h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2014-11-22T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "weekly within 1y2m3d3h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2014-11-15T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo",
+          "bar"
+        ]
+      },
+      "matches": [
+        "weekly within 1y2m3d3h"
+      ],
+      "counters": {}
+    }
+  ]
+}
