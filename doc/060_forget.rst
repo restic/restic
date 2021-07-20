@@ -189,18 +189,18 @@ The ``forget`` command accepts the following parameters:
    the duration of the latest snapshot. ``duration`` needs to be a number of
    years, months, days, and hours, e.g. ``2y5m7d3h`` will keep all snapshots
    made in the two years, five months, seven days, and three hours before the
-   latest snapshot`
--  ``--keep-hourly-within duration`` keep all hourly snapshots made within
+   latest snapshot`.
+-  ``--keep-within-hourly duration`` keep all hourly snapshots made within
    specified duration of the latest snapshot. The duration is specified in 
    the same way as for ``--keep-within`` and the method for determining
-   hourly snapshots is the same as for ``--keep-hourly``
--  ``--keep-daily-within duration`` keep all daily snapshots made within
+   hourly snapshots is the same as for ``--keep-hourly``.
+-  ``--keep-within-daily duration`` keep all daily snapshots made within
    specified duration of the latest snapshot.
--  ``--keep-weekly-within duration`` keep all weekly snapshots made within
+-  ``--keep-within-weekly duration`` keep all weekly snapshots made within
    specified duration of the latest snapshot.
--  ``--keep-monthly-within duration`` keep all monthly snapshots made within
+-  ``--keep-within-monthly duration`` keep all monthly snapshots made within
    specified duration of the latest snapshot.
--  ``--keep-yearly-within duration`` keep all yearly snapshots made within
+-  ``--keep-within-yearly duration`` keep all yearly snapshots made within
    specified duration of the latest snapshot.
 
 .. note:: All calendar related ``--keep-*`` options work on the natural time

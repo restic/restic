@@ -19,11 +19,11 @@ type ExpirePolicy struct {
 	Monthly       int       // keep the last n monthly snapshots
 	Yearly        int       // keep the last n yearly snapshots
 	Within        Duration  // keep snapshots made within this duration
-	HourlyWithin  Duration  // keep hourly snapshots made within this duration
-	DailyWithin   Duration  // keep hourly snapshots made within this duration
-	WeeklyWithin  Duration  // keep hourly snapshots made within this duration
-	MonthlyWithin Duration  // keep hourly snapshots made within this duration
-	YearlyWithin  Duration  // keep hourly snapshots made within this duration
+	WithinHourly  Duration  // keep hourly snapshots made within this duration
+	WithinDaily   Duration  // keep daily snapshots made within this duration
+	WithinWeekly  Duration  // keep weekly snapshots made within this duration
+	WithinMonthly Duration  // keep monthly snapshots made within this duration
+	WithinYearly  Duration  // keep yearly snapshots made within this duration
 	Tags          []TagList // keep all snapshots that include at least one of the tag lists.
 }
 
@@ -50,24 +50,24 @@ func (e ExpirePolicy) String() (s string) {
 		keeps = append(keeps, fmt.Sprintf("%d yearly", e.Yearly))
 	}
 
-	if !e.HourlyWithin.Zero() {
-		keepw = append(keepw, fmt.Sprintf("hourly snapshots within %v", e.HourlyWithin))
+	if !e.WithinHourly.Zero() {
+		keepw = append(keepw, fmt.Sprintf("hourly snapshots within %v", e.WithinHourly))
 	}
 
-	if !e.DailyWithin.Zero() {
-		keepw = append(keepw, fmt.Sprintf("daily snapshots within %v", e.DailyWithin))
+	if !e.WithinDaily.Zero() {
+		keepw = append(keepw, fmt.Sprintf("daily snapshots within %v", e.WithinDaily))
 	}
 
-	if !e.WeeklyWithin.Zero() {
-		keepw = append(keepw, fmt.Sprintf("weekly snapshots within %v", e.WeeklyWithin))
+	if !e.WithinWeekly.Zero() {
+		keepw = append(keepw, fmt.Sprintf("weekly snapshots within %v", e.WithinWeekly))
 	}
 
-	if !e.MonthlyWithin.Zero() {
-		keepw = append(keepw, fmt.Sprintf("monthly snapshots within %v", e.MonthlyWithin))
+	if !e.WithinMonthly.Zero() {
+		keepw = append(keepw, fmt.Sprintf("monthly snapshots within %v", e.WithinMonthly))
 	}
 
-	if !e.YearlyWithin.Zero() {
-		keepw = append(keepw, fmt.Sprintf("yearly snapshots within %v", e.YearlyWithin))
+	if !e.WithinYearly.Zero() {
+		keepw = append(keepw, fmt.Sprintf("yearly snapshots within %v", e.WithinYearly))
 	}
 
 	if len(keeps) > 0 {
@@ -224,11 +224,11 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots, reason
 		Last   int
 		reason string
 	}{
-		{p.HourlyWithin, ymdh, -1, "hourly within"},
-		{p.DailyWithin, ymd, -1, "daily within"},
-		{p.WeeklyWithin, yw, -1, "weekly within"},
-		{p.MonthlyWithin, ym, -1, "monthly within"},
-		{p.YearlyWithin, y, -1, "yearly within"},
+		{p.WithinHourly, ymdh, -1, "hourly within"},
+		{p.WithinDaily, ymd, -1, "daily within"},
+		{p.WithinWeekly, yw, -1, "weekly within"},
+		{p.WithinMonthly, ym, -1, "monthly within"},
+		{p.WithinYearly, y, -1, "yearly within"},
 	}
 
 	latest := findLatestTimestamp(list)

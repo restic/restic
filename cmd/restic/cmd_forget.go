@@ -38,11 +38,11 @@ type ForgetOptions struct {
 	Monthly       int
 	Yearly        int
 	Within        restic.Duration
-	HourlyWithin  restic.Duration
-	DailyWithin   restic.Duration
-	MonthlyWithin restic.Duration
-	WeeklyWithin  restic.Duration
-	YearlyWithin  restic.Duration
+	WithinHourly  restic.Duration
+	WithinDaily   restic.Duration
+	WithinWeekly  restic.Duration
+	WithinMonthly restic.Duration
+	WithinYearly  restic.Duration
 	KeepTags      restic.TagLists
 
 	Hosts   []string
@@ -69,11 +69,11 @@ func init() {
 	f.IntVarP(&forgetOptions.Monthly, "keep-monthly", "m", 0, "keep the last `n` monthly snapshots")
 	f.IntVarP(&forgetOptions.Yearly, "keep-yearly", "y", 0, "keep the last `n` yearly snapshots")
 	f.VarP(&forgetOptions.Within, "keep-within", "", "keep snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
-	f.VarP(&forgetOptions.HourlyWithin, "keep-hourly-within", "", "keep hourly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
-	f.VarP(&forgetOptions.DailyWithin, "keep-daily-within", "", "keep daily snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
-	f.VarP(&forgetOptions.WeeklyWithin, "keep-weekly-within", "", "keep weekly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
-	f.VarP(&forgetOptions.MonthlyWithin, "keep-monthly-within", "", "keep monthly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
-	f.VarP(&forgetOptions.YearlyWithin, "keep-yearly-within", "", "keep yearly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
+	f.VarP(&forgetOptions.WithinHourly, "keep-within-hourly", "", "keep hourly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
+	f.VarP(&forgetOptions.WithinDaily, "keep-within-daily", "", "keep daily snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
+	f.VarP(&forgetOptions.WithinWeekly, "keep-within-weekly", "", "keep weekly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
+	f.VarP(&forgetOptions.WithinMonthly, "keep-within-monthly", "", "keep monthly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
+	f.VarP(&forgetOptions.WithinYearly, "keep-within-yearly", "", "keep yearly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
 
 	f.Var(&forgetOptions.KeepTags, "keep-tag", "keep snapshots with this `taglist` (can be specified multiple times)")
 	f.StringArrayVar(&forgetOptions.Hosts, "host", nil, "only consider snapshots with the given `host` (can be specified multiple times)")
@@ -145,11 +145,11 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 			Monthly:       opts.Monthly,
 			Yearly:        opts.Yearly,
 			Within:        opts.Within,
-			HourlyWithin:  opts.HourlyWithin,
-			DailyWithin:   opts.DailyWithin,
-			WeeklyWithin:  opts.WeeklyWithin,
-			MonthlyWithin: opts.MonthlyWithin,
-			YearlyWithin:  opts.YearlyWithin,
+			WithinHourly:  opts.WithinHourly,
+			WithinDaily:   opts.WithinDaily,
+			WithinWeekly:  opts.WithinWeekly,
+			WithinMonthly: opts.WithinMonthly,
+			WithinYearly:  opts.WithinYearly,
 			Tags:          opts.KeepTags,
 		}
 
