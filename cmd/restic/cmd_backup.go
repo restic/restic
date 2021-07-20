@@ -92,6 +92,7 @@ type BackupOptions struct {
 	IgnoreInode             bool
 	IgnoreCtime             bool
 	UseFsSnapshot           bool
+	DryRun                  bool
 }
 
 var backupOptions BackupOptions
@@ -132,6 +133,7 @@ func init() {
 	f.BoolVar(&backupOptions.WithAtime, "with-atime", false, "store the atime for all files and directories")
 	f.BoolVar(&backupOptions.IgnoreInode, "ignore-inode", false, "ignore inode number changes when checking for modified files")
 	f.BoolVar(&backupOptions.IgnoreCtime, "ignore-ctime", false, "ignore ctime changes when checking for modified files")
+	f.BoolVarP(&backupOptions.DryRun, "dry-run", "n", false, "do not upload or write any data, just show what would be done")
 	if runtime.GOOS == "windows" {
 		f.BoolVar(&backupOptions.UseFsSnapshot, "use-fs-snapshot", false, "use filesystem snapshot where possible (currently only Windows VSS)")
 	}
@@ -535,6 +537,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		Run(ctx context.Context) error
 		Error(item string, fi os.FileInfo, err error) error
 		Finish(snapshotID restic.ID)
+		SetDryRun()
 
 		// ui.StdioWrapper
 		Stdout() io.WriteCloser
@@ -552,6 +555,11 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		p = json.NewBackup(term, gopts.verbosity)
 	} else {
 		p = ui.NewBackup(term, gopts.verbosity)
+	}
+
+	if opts.DryRun {
+		repo.SetDryRun()
+		p.SetDryRun()
 	}
 
 	// use the terminal for stdout/stderr
@@ -722,7 +730,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 
 	// Report finished execution
 	p.Finish(id)
-	if !gopts.JSON {
+	if !gopts.JSON && !opts.DryRun {
 		p.P("snapshot %s saved\n", id.Str())
 	}
 	if !success {
