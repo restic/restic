@@ -31,14 +31,19 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 // ForgetOptions collects all options for the forget command.
 type ForgetOptions struct {
-	Last     int
-	Hourly   int
-	Daily    int
-	Weekly   int
-	Monthly  int
-	Yearly   int
-	Within   restic.Duration
-	KeepTags restic.TagLists
+	Last          int
+	Hourly        int
+	Daily         int
+	Weekly        int
+	Monthly       int
+	Yearly        int
+	Within        restic.Duration
+	WithinHourly  restic.Duration
+	WithinDaily   restic.Duration
+	WithinWeekly  restic.Duration
+	WithinMonthly restic.Duration
+	WithinYearly  restic.Duration
+	KeepTags      restic.TagLists
 
 	Hosts   []string
 	Tags    restic.TagLists
@@ -64,6 +69,11 @@ func init() {
 	f.IntVarP(&forgetOptions.Monthly, "keep-monthly", "m", 0, "keep the last `n` monthly snapshots")
 	f.IntVarP(&forgetOptions.Yearly, "keep-yearly", "y", 0, "keep the last `n` yearly snapshots")
 	f.VarP(&forgetOptions.Within, "keep-within", "", "keep snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
+	f.VarP(&forgetOptions.WithinHourly, "keep-within-hourly", "", "keep hourly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
+	f.VarP(&forgetOptions.WithinDaily, "keep-within-daily", "", "keep daily snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
+	f.VarP(&forgetOptions.WithinWeekly, "keep-within-weekly", "", "keep weekly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
+	f.VarP(&forgetOptions.WithinMonthly, "keep-within-monthly", "", "keep monthly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
+	f.VarP(&forgetOptions.WithinYearly, "keep-within-yearly", "", "keep yearly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
 
 	f.Var(&forgetOptions.KeepTags, "keep-tag", "keep snapshots with this `taglist` (can be specified multiple times)")
 	f.StringArrayVar(&forgetOptions.Hosts, "host", nil, "only consider snapshots with the given `host` (can be specified multiple times)")
@@ -128,14 +138,19 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 		}
 
 		policy := restic.ExpirePolicy{
-			Last:    opts.Last,
-			Hourly:  opts.Hourly,
-			Daily:   opts.Daily,
-			Weekly:  opts.Weekly,
-			Monthly: opts.Monthly,
-			Yearly:  opts.Yearly,
-			Within:  opts.Within,
-			Tags:    opts.KeepTags,
+			Last:          opts.Last,
+			Hourly:        opts.Hourly,
+			Daily:         opts.Daily,
+			Weekly:        opts.Weekly,
+			Monthly:       opts.Monthly,
+			Yearly:        opts.Yearly,
+			Within:        opts.Within,
+			WithinHourly:  opts.WithinHourly,
+			WithinDaily:   opts.WithinDaily,
+			WithinWeekly:  opts.WithinWeekly,
+			WithinMonthly: opts.WithinMonthly,
+			WithinYearly:  opts.WithinYearly,
+			Tags:          opts.KeepTags,
 		}
 
 		if policy.Empty() && len(args) == 0 {
