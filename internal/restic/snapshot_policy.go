@@ -147,15 +147,19 @@ func always(d time.Time, nr int) int {
 	return nr
 }
 
-// findLatestTimestamp returns the time stamp for the newest snapshot.
+// findLatestTimestamp returns the time stamp for the latest (newest) snapshot,
+// for use with policies based on time relative to latest.
 func findLatestTimestamp(list Snapshots) time.Time {
 	if len(list) == 0 {
 		panic("list of snapshots is empty")
 	}
 
 	var latest time.Time
+	now := time.Now()
 	for _, sn := range list {
-		if sn.Time.After(latest) {
+		// Find the latest snapshot in the list
+		// The latest snapshot must, however, not be in the future.
+		if sn.Time.After(latest) && sn.Time.Before(now) {
 			latest = sn.Time
 		}
 	}
