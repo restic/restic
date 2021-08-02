@@ -1,4 +1,4 @@
-Enhancement: Allow limiting the snapshots list
+Enhancement: Allow specifying limit of `snapshots` list
 
 The `--last` option allowed limiting the output of the `snapshots`
 command to the latest snapshot for each host. The new `--latest n`

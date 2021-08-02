@@ -1,6 +1,5 @@
-Enhancement: Add auto-completion file for fish
+Enhancement: Add auto-completion support for fish
 
-We added support for fish auto completion for the `generate` command by
-upgrading the Cobra library.
+The `generate` command now supports fish auto completion.
 
 https://github.com/restic/restic/pull/3312

@@ -1,13 +1,13 @@
 Enhancement: Add `--keep-within-hourly` option to restic forget
 
-Restic forget allowed users to specify keeping a given number of
-hourly backups, or to keep all backups within a given interval,
-but not both, that is to specify keeping hourly backups within
-a given interval.
+The `forget` command allowed keeping a given number of hourly
+backups or to keep all backups within a given interval, but it
+was not possible to specify keeping hourly backups within a given
+interval.
 
-The `--keep-within-hourly` option offers this functionality and
-similar options for daily/weekly/monthly/yearly are also
-implemented. The new flags are:
+The new `--keep-within-hourly` option now offers this functionality.
+Similar options for daily/weekly/monthly/yearly are also implemented,
+the new options are:
 
     --keep-within-hourly <1y2m3d4h>
     --keep-within-daily <1y2m3d4h>
