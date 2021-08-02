@@ -165,12 +165,10 @@ command does that:
     create exclusive lock for repository
     modified tags on 1 snapshots
 
-Note the snapshot ID has changed, so between each change we need to look
-up the new ID of the snapshot. But there is an even better way, the
-``tag`` command accepts ``--tag`` for a filter, so we can filter
-snapshots based on the tag we just added.
-
-So we can add and remove tags incrementally like this:
+Note the snapshot ID has changed, so between each change we need to look up the
+new ID of the snapshot. But there is an even better way - the ``tag`` command
+accepts a filter using the ``--tag`` option, so we can filter snapshots based
+on the tag we just added. This way we can add and remove tags incrementally:
 
 .. code-block:: console
 
@@ -188,6 +186,14 @@ So we can add and remove tags incrementally like this:
 
     $ restic -r /srv/restic-repo tag --tag NL --add SOMETHING
     no snapshots were modified
+
+To operate on untagged snapshots only, specify the empty string ``''`` as the
+filter value to ``--tag``. The following command will add the tag ``OTHER``
+to all untagged snapshots:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo tag --tag '' --add OTHER
 
 Under the hood
 --------------
