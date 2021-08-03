@@ -1,4 +1,4 @@
-.PHONY: all clean test restic
+.PHONY: all clean test restic install
 
 all: restic
 
@@ -10,4 +10,8 @@ clean:
 
 test:
 	go test ./cmd/... ./internal/...
+
+install:
+	cp restic /usr/bin/
+	
 
