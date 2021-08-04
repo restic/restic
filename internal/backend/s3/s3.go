@@ -56,7 +56,7 @@ func open(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, erro
 		&credentials.Static{
 			Value: credentials.Value{
 				AccessKeyID:     cfg.KeyID,
-				SecretAccessKey: cfg.Secret,
+				SecretAccessKey: cfg.Secret.Unwrap(),
 			},
 		},
 		&credentials.EnvMinio{},

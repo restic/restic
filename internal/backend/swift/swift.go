@@ -60,10 +60,10 @@ func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backend
 			TenantDomainId:              cfg.TenantDomainID,
 			TrustId:                     cfg.TrustID,
 			StorageUrl:                  cfg.StorageURL,
-			AuthToken:                   cfg.AuthToken,
+			AuthToken:                   cfg.AuthToken.Unwrap(),
 			ApplicationCredentialId:     cfg.ApplicationCredentialID,
 			ApplicationCredentialName:   cfg.ApplicationCredentialName,
-			ApplicationCredentialSecret: cfg.ApplicationCredentialSecret,
+			ApplicationCredentialSecret: cfg.ApplicationCredentialSecret.Unwrap(),
 			ConnectTimeout:              time.Minute,
 			Timeout:                     time.Minute,
 

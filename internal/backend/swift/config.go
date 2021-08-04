@@ -24,12 +24,12 @@ type Config struct {
 	TrustID        string
 
 	StorageURL string
-	AuthToken  string
+	AuthToken  options.SecretString
 
 	// auth v3 only
 	ApplicationCredentialID     string
 	ApplicationCredentialName   string
-	ApplicationCredentialSecret string
+	ApplicationCredentialSecret options.SecretString
 
 	Container              string
 	Prefix                 string
@@ -111,16 +111,25 @@ func ApplyEnvironment(prefix string, cfg interface{}) error {
 		// Application Credential auth
 		{&c.ApplicationCredentialID, prefix + "OS_APPLICATION_CREDENTIAL_ID"},
 		{&c.ApplicationCredentialName, prefix + "OS_APPLICATION_CREDENTIAL_NAME"},
-		{&c.ApplicationCredentialSecret, prefix + "OS_APPLICATION_CREDENTIAL_SECRET"},
 
 		// Manual authentication
 		{&c.StorageURL, prefix + "OS_STORAGE_URL"},
-		{&c.AuthToken, prefix + "OS_AUTH_TOKEN"},
 
 		{&c.DefaultContainerPolicy, prefix + "SWIFT_DEFAULT_CONTAINER_POLICY"},
 	} {
 		if *val.s == "" {
 			*val.s = os.Getenv(val.env)
+		}
+	}
+	for _, val := range []struct {
+		s   *options.SecretString
+		env string
+	}{
+		{&c.ApplicationCredentialSecret, prefix + "OS_APPLICATION_CREDENTIAL_SECRET"},
+		{&c.AuthToken, prefix + "OS_AUTH_TOKEN"},
+	} {
+		if val.s.String() == "" {
+			*val.s = options.NewSecretString(os.Getenv(val.env))
 		}
 	}
 	return nil

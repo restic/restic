@@ -12,13 +12,14 @@ import (
 // Config contains all configuration necessary to connect to an s3 compatible
 // server.
 type Config struct {
-	Endpoint      string
-	UseHTTP       bool
-	KeyID, Secret string
-	Bucket        string
-	Prefix        string
-	Layout        string `option:"layout" help:"use this backend layout (default: auto-detect)"`
-	StorageClass  string `option:"storage-class" help:"set S3 storage class (STANDARD, STANDARD_IA, ONEZONE_IA, INTELLIGENT_TIERING or REDUCED_REDUNDANCY)"`
+	Endpoint     string
+	UseHTTP      bool
+	KeyID        string
+	Secret       options.SecretString
+	Bucket       string
+	Prefix       string
+	Layout       string `option:"layout" help:"use this backend layout (default: auto-detect)"`
+	StorageClass string `option:"storage-class" help:"set S3 storage class (STANDARD, STANDARD_IA, ONEZONE_IA, INTELLIGENT_TIERING or REDUCED_REDUNDANCY)"`
 
 	Connections   uint   `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
 	MaxRetries    uint   `option:"retries" help:"set the number of retries attempted"`

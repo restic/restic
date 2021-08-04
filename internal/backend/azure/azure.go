@@ -39,7 +39,7 @@ var _ restic.Backend = &Backend{}
 func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	debug.Log("open, config %#v", cfg)
 
-	client, err := storage.NewBasicClient(cfg.AccountName, cfg.AccountKey)
+	client, err := storage.NewBasicClient(cfg.AccountName, cfg.AccountKey.Unwrap())
 	if err != nil {
 		return nil, errors.Wrap(err, "NewBasicClient")
 	}
