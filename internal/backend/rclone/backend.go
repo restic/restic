@@ -104,16 +104,16 @@ type wrappedConn struct {
 	io.Writer
 }
 
-func (c wrappedConn) Read(p []byte) (int, error) {
+func (c *wrappedConn) Read(p []byte) (int, error) {
 	return c.Reader.Read(p)
 }
 
-func (c wrappedConn) Write(p []byte) (int, error) {
+func (c *wrappedConn) Write(p []byte) (int, error) {
 	return c.Writer.Write(p)
 }
 
-func wrapConn(c *StdioConn, lim limiter.Limiter) wrappedConn {
-	wc := wrappedConn{
+func wrapConn(c *StdioConn, lim limiter.Limiter) *wrappedConn {
+	wc := &wrappedConn{
 		StdioConn: c,
 		Reader:    c,
 		Writer:    c,
