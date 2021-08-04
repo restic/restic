@@ -76,11 +76,22 @@ func RoundTripper(upstream http.RoundTripper) http.RoundTripper {
 }
 
 func (tr loggingRoundTripper) RoundTrip(req *http.Request) (res *http.Response, err error) {
+	// save original auth and redact it
+	origAuth, hasAuth := req.Header["Authorization"]
+	if hasAuth {
+		req.Header["Authorization"] = []string{"**redacted**"}
+	}
+
 	trace, err := httputil.DumpRequestOut(req, false)
 	if err != nil {
 		Log("DumpRequestOut() error: %v\n", err)
 	} else {
 		Log("------------  HTTP REQUEST -----------\n%s", trace)
+	}
+
+	// restore auth
+	if hasAuth {
+		req.Header["Authorization"] = origAuth
 	}
 
 	res, err = tr.RoundTripper.RoundTrip(req)
