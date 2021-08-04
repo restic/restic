@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/restic/chunker"
+	"github.com/restic/restic/internal/backend/dryrun"
 	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
@@ -70,6 +71,11 @@ func (r *Repository) UseCache(c *cache.Cache) {
 	debug.Log("using cache")
 	r.Cache = c
 	r.be = c.Wrap(r.be)
+}
+
+// SetDryRun sets the repo backend into dry-run mode.
+func (r *Repository) SetDryRun() {
+	r.be = dryrun.New(r.be)
 }
 
 // PrefixLength returns the number of bytes required so that all prefixes of
