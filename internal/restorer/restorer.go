@@ -219,7 +219,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 	}
 
 	idx := restic.NewHardlinkIndex()
-	filerestorer := newFileRestorer(dst, res.repo.Backend().Load, res.repo.Key(), res.repo.Index().Lookup)
+	filerestorer := newFileRestorer(dst, res.repo.Backend().Load, res.repo.Key(), res.repo.Index().Lookup, res.repo.Connections())
 	filerestorer.Error = res.Error
 
 	debug.Log("first pass for %q", dst)

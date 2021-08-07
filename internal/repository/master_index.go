@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"runtime"
 	"sync"
 
 	"github.com/restic/restic/internal/debug"
@@ -291,8 +292,6 @@ func (mi *MasterIndex) MergeFinalIndexes() error {
 	return nil
 }
 
-const saveIndexParallelism = 4
-
 // Save saves all known indexes to index files, leaving out any
 // packs whose ID is contained in packBlacklist from finalized indexes.
 // The new index contains the IDs of all known indexes in the "supersedes"
@@ -376,8 +375,10 @@ func (mi *MasterIndex) Save(ctx context.Context, repo restic.SaverUnpacked, pack
 		return nil
 	}
 
+	// encoding an index can take quite some time such that this can be both CPU- or IO-bound
+	workerCount := int(repo.Connections()) + runtime.GOMAXPROCS(0)
 	// run workers on ch
-	for i := 0; i < saveIndexParallelism; i++ {
+	for i := 0; i < workerCount; i++ {
 		wg.Go(worker)
 	}
 	err = wg.Wait()

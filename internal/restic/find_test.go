@@ -170,6 +170,10 @@ func (r ForbiddenRepo) LookupBlobSize(id restic.ID, tpe restic.BlobType) (uint, 
 	return 0, false
 }
 
+func (r ForbiddenRepo) Connections() uint {
+	return 2
+}
+
 func TestFindUsedBlobsSkipsSeenBlobs(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()

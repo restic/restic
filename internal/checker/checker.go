@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"runtime"
 	"sort"
 	"sync"
 
@@ -54,8 +55,6 @@ func New(repo restic.Repository, trackUnused bool) *Checker {
 
 	return c
 }
-
-const defaultParallelism = 5
 
 // ErrDuplicatePacks is returned when a pack is found in more than one index.
 type ErrDuplicatePacks struct {
@@ -322,7 +321,9 @@ func (c *Checker) Structure(ctx context.Context, p *progress.Counter, errChan ch
 	}, p)
 
 	defer close(errChan)
-	for i := 0; i < defaultParallelism; i++ {
+	// The checkTree worker only processes already decoded trees and is thus CPU-bound
+	workerCount := runtime.GOMAXPROCS(0)
+	for i := 0; i < workerCount; i++ {
 		wg.Go(func() error {
 			c.checkTreeWorker(ctx, treeStream, errChan)
 			return nil
@@ -574,8 +575,10 @@ func (c *Checker) ReadPacks(ctx context.Context, packs map[restic.ID]int64, p *p
 	}
 	ch := make(chan checkTask)
 
+	// as packs are streamed the concurrency is limited by IO
+	workerCount := int(c.repo.Connections())
 	// run workers
-	for i := 0; i < defaultParallelism; i++ {
+	for i := 0; i < workerCount; i++ {
 		g.Go(func() error {
 			// create a buffer that is large enough to be reused by repository.StreamPack
 			// this ensures that we can read the pack header later on
