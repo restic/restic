@@ -122,7 +122,9 @@ func (o Options) ApplyDefaults() Options {
 	}
 
 	if o.SaveBlobConcurrency == 0 {
-		o.SaveBlobConcurrency = uint(runtime.NumCPU())
+		// blob saving is CPU bound due to hash checking and encryption
+		// the actual upload is handled by the repository itself
+		o.SaveBlobConcurrency = uint(runtime.GOMAXPROCS(0))
 	}
 
 	if o.SaveTreeConcurrency == 0 {
