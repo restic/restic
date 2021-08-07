@@ -45,6 +45,10 @@ func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	return nil
 }
 
+func (be *Backend) Connections() uint {
+	return be.b.Connections()
+}
+
 // Location returns the location of the backend.
 func (be *Backend) Location() string {
 	return "DRY:" + be.b.Location()

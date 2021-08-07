@@ -11,17 +11,18 @@ import (
 
 // Backend implements a mock backend.
 type Backend struct {
-	CloseFn      func() error
-	IsNotExistFn func(err error) bool
-	SaveFn       func(ctx context.Context, h restic.Handle, rd restic.RewindReader) error
-	OpenReaderFn func(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error)
-	StatFn       func(ctx context.Context, h restic.Handle) (restic.FileInfo, error)
-	ListFn       func(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error
-	RemoveFn     func(ctx context.Context, h restic.Handle) error
-	TestFn       func(ctx context.Context, h restic.Handle) (bool, error)
-	DeleteFn     func(ctx context.Context) error
-	LocationFn   func() string
-	HasherFn     func() hash.Hash
+	CloseFn       func() error
+	IsNotExistFn  func(err error) bool
+	SaveFn        func(ctx context.Context, h restic.Handle, rd restic.RewindReader) error
+	OpenReaderFn  func(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error)
+	StatFn        func(ctx context.Context, h restic.Handle) (restic.FileInfo, error)
+	ListFn        func(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error
+	RemoveFn      func(ctx context.Context, h restic.Handle) error
+	TestFn        func(ctx context.Context, h restic.Handle) (bool, error)
+	DeleteFn      func(ctx context.Context) error
+	ConnectionsFn func() uint
+	LocationFn    func() string
+	HasherFn      func() hash.Hash
 }
 
 // NewBackend returns new mock Backend instance
@@ -37,6 +38,14 @@ func (m *Backend) Close() error {
 	}
 
 	return m.CloseFn()
+}
+
+func (m *Backend) Connections() uint {
+	if m.ConnectionsFn == nil {
+		return 2
+	}
+
+	return m.ConnectionsFn()
 }
 
 // Location returns a location string.

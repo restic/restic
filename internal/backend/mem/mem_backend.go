@@ -229,6 +229,10 @@ func (be *MemoryBackend) List(ctx context.Context, t restic.FileType, fn func(re
 	return ctx.Err()
 }
 
+func (be *MemoryBackend) Connections() uint {
+	return 2
+}
+
 // Location returns the location of the backend (RAM).
 func (be *MemoryBackend) Location() string {
 	return "RAM"

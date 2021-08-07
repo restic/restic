@@ -34,6 +34,7 @@ import (
 type Backend struct {
 	gcsClient    *storage.Client
 	projectID    string
+	connections  uint
 	sem          *backend.Semaphore
 	bucketName   string
 	bucket       *storage.BucketHandle
@@ -102,12 +103,13 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	}
 
 	be := &Backend{
-		gcsClient:  gcsClient,
-		projectID:  cfg.ProjectID,
-		sem:        sem,
-		bucketName: cfg.Bucket,
-		bucket:     gcsClient.Bucket(cfg.Bucket),
-		prefix:     cfg.Prefix,
+		gcsClient:   gcsClient,
+		projectID:   cfg.ProjectID,
+		connections: cfg.Connections,
+		sem:         sem,
+		bucketName:  cfg.Bucket,
+		bucket:      gcsClient.Bucket(cfg.Bucket),
+		prefix:      cfg.Prefix,
 		Layout: &backend.DefaultLayout{
 			Path: cfg.Prefix,
 			Join: path.Join,
@@ -183,6 +185,10 @@ func (be *Backend) IsNotExist(err error) bool {
 // Join combines path components with slashes.
 func (be *Backend) Join(p ...string) string {
 	return path.Join(p...)
+}
+
+func (be *Backend) Connections() uint {
+	return be.connections
 }
 
 // Location returns this backend's location (the bucket name).
