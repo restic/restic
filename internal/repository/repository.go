@@ -41,8 +41,10 @@ type Repository struct {
 
 	noAutoIndexUpdate bool
 
-	treePM *packerManager
-	dataPM *packerManager
+	packerWg *errgroup.Group
+	uploader *packerUploader
+	treePM   *packerManager
+	dataPM   *packerManager
 
 	allocEnc sync.Once
 	allocDec sync.Once
@@ -100,11 +102,9 @@ func (c *CompressionMode) Type() string {
 // New returns a new repository with backend be.
 func New(be restic.Backend, opts Options) *Repository {
 	repo := &Repository{
-		be:     be,
-		opts:   opts,
-		idx:    NewMasterIndex(),
-		dataPM: newPackerManager(be, nil),
-		treePM: newPackerManager(be, nil),
+		be:   be,
+		opts: opts,
+		idx:  NewMasterIndex(),
 	}
 
 	return repo
@@ -416,31 +416,7 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 		panic(fmt.Sprintf("invalid type: %v", t))
 	}
 
-	packer, err := pm.findPacker()
-	if err != nil {
-		return 0, err
-	}
-
-	// save ciphertext
-	size, err = packer.Add(t, id, ciphertext, uncompressedLength)
-	if err != nil {
-		return 0, err
-	}
-
-	// if the pack is not full enough, put back to the list
-	if packer.Size() < minPackSize {
-		debug.Log("pack is not full enough (%d bytes)", packer.Size())
-		pm.insertPacker(packer)
-		return size, nil
-	}
-
-	// else write the pack to the backend
-	hdrSize, err := r.savePacker(ctx, t, packer)
-	if err != nil {
-		return 0, err
-	}
-
-	return size + hdrSize, nil
+	return pm.SaveBlob(ctx, t, id, ciphertext, uncompressedLength)
 }
 
 // SaveJSONUnpacked serialises item as JSON and encrypts and saves it in the
@@ -536,31 +512,45 @@ func (r *Repository) Flush(ctx context.Context) error {
 	return r.idx.SaveIndex(ctx, r)
 }
 
-// flushPacks saves all remaining packs.
+func (r *Repository) StartPackUploader(ctx context.Context, wg *errgroup.Group) {
+	if r.packerWg != nil {
+		panic("uploader already started")
+	}
+
+	innerWg, ctx := errgroup.WithContext(ctx)
+	r.packerWg = innerWg
+	r.uploader = newPackerUploader(ctx, innerWg, r, r.be.Connections())
+	r.treePM = newPackerManager(r.key, r.be.Hasher, restic.TreeBlob, r.uploader.QueuePacker)
+	r.dataPM = newPackerManager(r.key, r.be.Hasher, restic.DataBlob, r.uploader.QueuePacker)
+
+	wg.Go(func() error {
+		return innerWg.Wait()
+	})
+}
+
+// FlushPacks saves all remaining packs.
 func (r *Repository) flushPacks(ctx context.Context) error {
-	pms := []struct {
-		t  restic.BlobType
-		pm *packerManager
-	}{
-		{restic.DataBlob, r.dataPM},
-		{restic.TreeBlob, r.treePM},
+	if r.packerWg == nil {
+		return nil
 	}
 
-	for _, p := range pms {
-		p.pm.pm.Lock()
-
-		debug.Log("manually flushing %d packs", len(p.pm.packers))
-		for _, packer := range p.pm.packers {
-			_, err := r.savePacker(ctx, p.t, packer)
-			if err != nil {
-				p.pm.pm.Unlock()
-				return err
-			}
-		}
-		p.pm.packers = p.pm.packers[:0]
-		p.pm.pm.Unlock()
+	err := r.treePM.Flush(ctx)
+	if err != nil {
+		return err
 	}
-	return nil
+	err = r.dataPM.Flush(ctx)
+	if err != nil {
+		return err
+	}
+	r.uploader.TriggerShutdown()
+	err = r.packerWg.Wait()
+
+	r.treePM = nil
+	r.dataPM = nil
+	r.uploader = nil
+	r.packerWg = nil
+
+	return err
 }
 
 // Backend returns the backend for the repository.
@@ -715,8 +705,6 @@ func (r *Repository) SearchKey(ctx context.Context, password string, maxKeys int
 	}
 
 	r.key = key.master
-	r.dataPM.key = key.master
-	r.treePM.key = key.master
 	r.keyName = key.Name()
 	cfg, err := restic.LoadConfig(ctx, r)
 	if err == crypto.ErrUnauthenticated {
@@ -768,8 +756,6 @@ func (r *Repository) init(ctx context.Context, password string, cfg restic.Confi
 	}
 
 	r.key = key.master
-	r.dataPM.key = key.master
-	r.treePM.key = key.master
 	r.keyName = key.Name()
 	r.setConfig(cfg)
 	_, err = r.SaveJSONUnpacked(ctx, restic.ConfigFile, cfg)

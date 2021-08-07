@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"hash"
 	"io"
 	"math/rand"
 	"os"
@@ -14,6 +15,12 @@ import (
 	"github.com/restic/restic/internal/mock"
 	"github.com/restic/restic/internal/restic"
 )
+
+// Saver implements saving data in a backend.
+type Saver interface {
+	Save(context.Context, restic.Handle, restic.RewindReader) error
+	Hasher() hash.Hash
+}
 
 func randomID(rd io.Reader) restic.ID {
 	id := restic.ID{}
@@ -84,7 +91,7 @@ func fillPacks(t testing.TB, rnd *rand.Rand, be Saver, pm *packerManager, buf []
 			continue
 		}
 
-		_, err = packer.Finalize()
+		err = packer.Finalize()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -103,11 +110,11 @@ func fillPacks(t testing.TB, rnd *rand.Rand, be Saver, pm *packerManager, buf []
 func flushRemainingPacks(t testing.TB, be Saver, pm *packerManager) (bytes int) {
 	if pm.countPacker() > 0 {
 		for _, packer := range pm.packers {
-			n, err := packer.Finalize()
+			err := packer.Finalize()
 			if err != nil {
 				t.Fatal(err)
 			}
-			bytes += n
+			bytes += packer.HeaderOverhead()
 
 			packID := restic.IDFromHash(packer.hw.Sum(nil))
 			var beHash []byte
@@ -137,7 +144,7 @@ func testPackerManager(t testing.TB) int64 {
 	rnd := rand.New(rand.NewSource(randomSeed))
 
 	be := mem.New()
-	pm := newPackerManager(be, crypto.NewRandomKey())
+	pm := newPackerManager(crypto.NewRandomKey(), be.Hasher, restic.DataBlob, nil)
 
 	blobBuf := make([]byte, maxBlobSize)
 
@@ -167,7 +174,7 @@ func BenchmarkPackerManager(t *testing.B) {
 
 	for i := 0; i < t.N; i++ {
 		rnd.Seed(randomSeed)
-		pm := newPackerManager(be, crypto.NewRandomKey())
+		pm := newPackerManager(crypto.NewRandomKey(), be.Hasher, restic.DataBlob, nil)
 		fillPacks(t, rnd, be, pm, blobBuf)
 		flushRemainingPacks(t, be, pm)
 	}

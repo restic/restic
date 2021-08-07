@@ -801,40 +801,47 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		return nil, restic.ID{}, err
 	}
 
-	wg, wgCtx := errgroup.WithContext(ctx)
-	start := time.Now()
-
 	var rootTreeID restic.ID
-	var stats ItemStats
-	wg.Go(func() error {
-		arch.runWorkers(wgCtx, wg)
 
-		debug.Log("starting snapshot")
-		tree, err := arch.SaveTree(wgCtx, "/", atree, arch.loadParentTree(wgCtx, opts.ParentSnapshot))
+	wgUp, wgUpCtx := errgroup.WithContext(ctx)
+	arch.Repo.StartPackUploader(wgUpCtx, wgUp)
+
+	wgUp.Go(func() error {
+		wg, wgCtx := errgroup.WithContext(wgUpCtx)
+		start := time.Now()
+
+		var stats ItemStats
+		wg.Go(func() error {
+			arch.runWorkers(wgCtx, wg)
+
+			debug.Log("starting snapshot")
+			tree, err := arch.SaveTree(wgCtx, "/", atree, arch.loadParentTree(wgCtx, opts.ParentSnapshot))
+			if err != nil {
+				return err
+			}
+
+			if len(tree.Nodes) == 0 {
+				return errors.New("snapshot is empty")
+			}
+
+			rootTreeID, stats, err = arch.saveTree(wgCtx, tree)
+			arch.stopWorkers()
+			return err
+		})
+
+		err = wg.Wait()
+		debug.Log("err is %v", err)
+
 		if err != nil {
+			debug.Log("error while saving tree: %v", err)
 			return err
 		}
 
-		if len(tree.Nodes) == 0 {
-			return errors.New("snapshot is empty")
-		}
+		arch.CompleteItem("/", nil, nil, stats, time.Since(start))
 
-		rootTreeID, stats, err = arch.saveTree(wgCtx, tree)
-		arch.stopWorkers()
-		return err
+		return arch.Repo.Flush(ctx)
 	})
-
-	err = wg.Wait()
-	debug.Log("err is %v", err)
-
-	if err != nil {
-		debug.Log("error while saving tree: %v", err)
-		return nil, restic.ID{}, err
-	}
-
-	arch.CompleteItem("/", nil, nil, stats, time.Since(start))
-
-	err = arch.Repo.Flush(ctx)
+	err = wgUp.Wait()
 	if err != nil {
 		return nil, restic.ID{}, err
 	}

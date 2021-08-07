@@ -22,6 +22,7 @@ import (
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
 	rtest "github.com/restic/restic/internal/test"
+	"golang.org/x/sync/errgroup"
 )
 
 var testSizes = []int{5, 23, 2<<18 + 23, 1 << 20}
@@ -42,6 +43,9 @@ func testSave(t *testing.T, version uint) {
 		rtest.OK(t, err)
 
 		id := restic.Hash(data)
+
+		var wg errgroup.Group
+		repo.StartPackUploader(context.TODO(), &wg)
 
 		// save
 		sid, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, data, restic.ID{}, false)
@@ -81,6 +85,9 @@ func testSaveFrom(t *testing.T, version uint) {
 		rtest.OK(t, err)
 
 		id := restic.Hash(data)
+
+		var wg errgroup.Group
+		repo.StartPackUploader(context.TODO(), &wg)
 
 		// save
 		id2, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, data, id, false)
@@ -187,6 +194,9 @@ func testLoadBlob(t *testing.T, version uint) {
 	_, err := io.ReadFull(rnd, buf)
 	rtest.OK(t, err)
 
+	var wg errgroup.Group
+	repo.StartPackUploader(context.TODO(), &wg)
+
 	id, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, buf, restic.ID{}, false)
 	rtest.OK(t, err)
 	rtest.OK(t, repo.Flush(context.Background()))
@@ -219,6 +229,9 @@ func benchmarkLoadBlob(b *testing.B, version uint) {
 	buf := restic.NewBlobBuffer(length)
 	_, err := io.ReadFull(rnd, buf)
 	rtest.OK(b, err)
+
+	var wg errgroup.Group
+	repo.StartPackUploader(context.TODO(), &wg)
 
 	id, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, buf, restic.ID{}, false)
 	rtest.OK(b, err)
@@ -389,6 +402,9 @@ func benchmarkLoadIndex(b *testing.B, version uint) {
 
 // saveRandomDataBlobs generates random data blobs and saves them to the repository.
 func saveRandomDataBlobs(t testing.TB, repo restic.Repository, num int, sizeMax int) {
+	var wg errgroup.Group
+	repo.StartPackUploader(context.TODO(), &wg)
+
 	for i := 0; i < num; i++ {
 		size := rand.Int() % sizeMax
 

@@ -42,6 +42,7 @@ func prepareTempdirRepoSrc(t testing.TB, src TestDir) (tempdir string, repo rest
 
 func saveFile(t testing.TB, repo restic.Repository, filename string, filesystem fs.FS) (*restic.Node, ItemStats) {
 	wg, ctx := errgroup.WithContext(context.TODO())
+	repo.StartPackUploader(ctx, wg)
 
 	arch := New(repo, filesystem, Options{})
 	arch.runWorkers(ctx, wg)
@@ -213,6 +214,7 @@ func TestArchiverSave(t *testing.T) {
 			defer cleanup()
 
 			wg, ctx := errgroup.WithContext(ctx)
+			repo.StartPackUploader(ctx, wg)
 
 			arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
 			arch.Error = func(item string, fi os.FileInfo, err error) error {
@@ -281,6 +283,7 @@ func TestArchiverSaveReaderFS(t *testing.T) {
 			defer cleanup()
 
 			wg, ctx := errgroup.WithContext(ctx)
+			repo.StartPackUploader(ctx, wg)
 
 			ts := time.Now()
 			filename := "xx"
@@ -830,6 +833,7 @@ func TestArchiverSaveDir(t *testing.T) {
 			defer cleanup()
 
 			wg, ctx := errgroup.WithContext(context.Background())
+			repo.StartPackUploader(ctx, wg)
 
 			arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
 			arch.runWorkers(ctx, wg)
@@ -914,6 +918,7 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 	// archiver did save the same tree several times
 	for i := 0; i < 5; i++ {
 		wg, ctx := errgroup.WithContext(context.TODO())
+		repo.StartPackUploader(ctx, wg)
 
 		arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
 		arch.runWorkers(ctx, wg)
@@ -1097,6 +1102,7 @@ func TestArchiverSaveTree(t *testing.T) {
 			}
 
 			wg, ctx := errgroup.WithContext(context.TODO())
+			repo.StartPackUploader(ctx, wg)
 
 			arch.runWorkers(ctx, wg)
 
@@ -2239,6 +2245,7 @@ func TestRacyFileSwap(t *testing.T) {
 	defer cancel()
 
 	wg, ctx := errgroup.WithContext(ctx)
+	repo.StartPackUploader(ctx, wg)
 
 	arch := New(repo, fs.Track{FS: statfs}, Options{})
 	arch.Error = func(item string, fi os.FileInfo, err error) error {

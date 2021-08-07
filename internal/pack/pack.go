@@ -70,14 +70,13 @@ type compressedHeaderEntry struct {
 }
 
 // Finalize writes the header for all added blobs and finalizes the pack.
-// Returned are the number of bytes written, not yet reported by Add.
-func (p *Packer) Finalize() (int, error) {
+func (p *Packer) Finalize() error {
 	p.m.Lock()
 	defer p.m.Unlock()
 
 	header, err := p.makeHeader()
 	if err != nil {
-		return 0, err
+		return err
 	}
 
 	encryptedHeader := make([]byte, 0, restic.CiphertextLength(len(header)))
@@ -88,22 +87,27 @@ func (p *Packer) Finalize() (int, error) {
 	// append the header
 	n, err := p.wr.Write(encryptedHeader)
 	if err != nil {
-		return 0, errors.Wrap(err, "Write")
+		return errors.Wrap(err, "Write")
 	}
 
 	hdrBytes := len(encryptedHeader)
 	if n != hdrBytes {
-		return 0, errors.New("wrong number of bytes written")
+		return errors.New("wrong number of bytes written")
 	}
 
 	// write length
 	err = binary.Write(p.wr, binary.LittleEndian, uint32(hdrBytes))
 	if err != nil {
-		return 0, errors.Wrap(err, "binary.Write")
+		return errors.Wrap(err, "binary.Write")
 	}
 	p.bytes += uint(hdrBytes + binary.Size(uint32(0)))
 
-	return restic.CiphertextLength(0) + binary.Size(uint32(0)), nil
+	return nil
+}
+
+// HeaderOverhead returns an estimate of the number of bytes written by a call to Finalize.
+func (p *Packer) HeaderOverhead() int {
+	return restic.CiphertextLength(0) + binary.Size(uint32(0))
 }
 
 // makeHeader constructs the header for p.

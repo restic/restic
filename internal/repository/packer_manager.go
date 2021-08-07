@@ -20,12 +20,6 @@ import (
 	"github.com/minio/sha256-simd"
 )
 
-// Saver implements saving data in a backend.
-type Saver interface {
-	Save(context.Context, restic.Handle, restic.RewindReader) error
-	Hasher() hash.Hash
-}
-
 // Packer holds a pack.Packer together with a hash writer.
 type Packer struct {
 	*pack.Packer
@@ -36,8 +30,11 @@ type Packer struct {
 
 // packerManager keeps a list of open packs and creates new on demand.
 type packerManager struct {
-	be      Saver
-	key     *crypto.Key
+	tpe      restic.BlobType
+	key      *crypto.Key
+	hasherFn func() hash.Hash
+	queueFn  func(ctx context.Context, t restic.BlobType, p *Packer) error
+
 	pm      sync.Mutex
 	packers []*Packer
 }
@@ -46,11 +43,56 @@ const minPackSize = 4 * 1024 * 1024
 
 // newPackerManager returns an new packer manager which writes temporary files
 // to a temporary directory
-func newPackerManager(be Saver, key *crypto.Key) *packerManager {
+func newPackerManager(key *crypto.Key, hasherFn func() hash.Hash, tpe restic.BlobType, queueFn func(ctx context.Context, t restic.BlobType, p *Packer) error) *packerManager {
 	return &packerManager{
-		be:  be,
-		key: key,
+		tpe:      tpe,
+		key:      key,
+		hasherFn: hasherFn,
+		queueFn:  queueFn,
 	}
+}
+
+func (r *packerManager) Flush(ctx context.Context) error {
+	r.pm.Lock()
+	defer r.pm.Unlock()
+
+	debug.Log("manually flushing %d packs", len(r.packers))
+	for _, packer := range r.packers {
+		err := r.queueFn(ctx, r.tpe, packer)
+		if err != nil {
+			return err
+		}
+	}
+	r.packers = r.packers[:0]
+	return nil
+}
+
+func (r *packerManager) SaveBlob(ctx context.Context, t restic.BlobType, id restic.ID, ciphertext []byte, uncompressedLength int) (int, error) {
+	packer, err := r.findPacker()
+	if err != nil {
+		return 0, err
+	}
+
+	// save ciphertext
+	size, err := packer.Add(t, id, ciphertext, uncompressedLength)
+	if err != nil {
+		return 0, err
+	}
+
+	// if the pack is not full enough, put back to the list
+	if packer.Size() < minPackSize {
+		debug.Log("pack is not full enough (%d bytes)", packer.Size())
+		r.insertPacker(packer)
+		return size, nil
+	}
+
+	// else write the pack to the backend
+	err = r.queueFn(ctx, t, packer)
+	if err != nil {
+		return 0, err
+	}
+
+	return size + packer.HeaderOverhead(), nil
 }
 
 // findPacker returns a packer for a new blob of size bytes. Either a new one is
@@ -77,7 +119,7 @@ func (r *packerManager) findPacker() (packer *Packer, err error) {
 	}
 
 	w := io.Writer(tmpfile)
-	beHasher := r.be.Hasher()
+	beHasher := r.hasherFn()
 	var beHw *hashing.Writer
 	if beHasher != nil {
 		beHw = hashing.NewWriter(w, beHasher)
@@ -106,11 +148,11 @@ func (r *packerManager) insertPacker(p *Packer) {
 }
 
 // savePacker stores p in the backend.
-func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packer) (int, error) {
+func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packer) error {
 	debug.Log("save packer for %v with %d blobs (%d bytes)\n", t, p.Packer.Count(), p.Packer.Size())
-	hdrOverhead, err := p.Packer.Finalize()
+	err := p.Packer.Finalize()
 	if err != nil {
-		return 0, err
+		return err
 	}
 
 	id := restic.IDFromHash(p.hw.Sum(nil))
@@ -122,27 +164,27 @@ func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packe
 	}
 	rd, err := restic.NewFileReader(p.tmpfile, beHash)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
 	err = r.be.Save(ctx, h, rd)
 	if err != nil {
 		debug.Log("Save(%v) error: %v", h, err)
-		return 0, err
+		return err
 	}
 
 	debug.Log("saved as %v", h)
 
 	err = p.tmpfile.Close()
 	if err != nil {
-		return 0, errors.Wrap(err, "close tempfile")
+		return errors.Wrap(err, "close tempfile")
 	}
 
 	// on windows the tempfile is automatically deleted on close
 	if runtime.GOOS != "windows" {
 		err = fs.RemoveIfExists(p.tmpfile.Name())
 		if err != nil {
-			return 0, errors.Wrap(err, "Remove")
+			return errors.Wrap(err, "Remove")
 		}
 	}
 
@@ -152,9 +194,9 @@ func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packe
 
 	// Save index if full
 	if r.noAutoIndexUpdate {
-		return hdrOverhead, nil
+		return nil
 	}
-	return hdrOverhead, r.idx.SaveFullIndex(ctx, r)
+	return r.idx.SaveFullIndex(ctx, r)
 }
 
 // countPacker returns the number of open (unfinished) packers.

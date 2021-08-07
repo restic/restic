@@ -9,6 +9,7 @@ import (
 
 	"github.com/restic/restic/internal/backend/mem"
 	"github.com/restic/restic/internal/restic"
+	"golang.org/x/sync/errgroup"
 )
 
 // Test saving a blob and loading it again, with varying buffer sizes.
@@ -22,6 +23,9 @@ func FuzzSaveLoadBlob(f *testing.F) {
 
 		id := restic.Hash(blob)
 		repo, _ := TestRepositoryWithBackend(t, mem.New(), 2)
+
+		var wg errgroup.Group
+		repo.StartPackUploader(context.TODO(), &wg)
 
 		_, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, blob, id, false)
 		if err != nil {

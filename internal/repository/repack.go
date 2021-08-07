@@ -28,9 +28,25 @@ func Repack(ctx context.Context, repo restic.Repository, dstRepo restic.Reposito
 		return nil, errors.Fatal("repack step requires a backend connection limit of at least two")
 	}
 
-	var keepMutex sync.Mutex
 	wg, wgCtx := errgroup.WithContext(ctx)
 
+	dstRepo.StartPackUploader(wgCtx, wg)
+	wg.Go(func() error {
+		var err error
+		obsoletePacks, err = repack(wgCtx, repo, dstRepo, packs, keepBlobs, p)
+		return err
+	})
+
+	if err := wg.Wait(); err != nil {
+		return nil, err
+	}
+	return obsoletePacks, nil
+}
+
+func repack(ctx context.Context, repo restic.Repository, dstRepo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet, p *progress.Counter) (obsoletePacks restic.IDSet, err error) {
+	wg, wgCtx := errgroup.WithContext(ctx)
+
+	var keepMutex sync.Mutex
 	downloadQueue := make(chan restic.PackBlobs)
 	wg.Go(func() error {
 		defer close(downloadQueue)

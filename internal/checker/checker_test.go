@@ -20,6 +20,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
+	"golang.org/x/sync/errgroup"
 )
 
 var checkerTestData = filepath.Join("testdata", "checker-test-repo.tar.gz")
@@ -476,6 +477,8 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 		Nodes: []*restic.Node{damagedNode},
 	}
 
+	wg, wgCtx := errgroup.WithContext(ctx)
+	repo.StartPackUploader(wgCtx, wg)
 	id, err := repo.SaveTree(ctx, damagedTree)
 	test.OK(t, repo.Flush(ctx))
 	test.OK(t, err)
@@ -483,6 +486,8 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 	buf, err := repo.LoadBlob(ctx, restic.TreeBlob, id, nil)
 	test.OK(t, err)
 
+	wg, wgCtx = errgroup.WithContext(ctx)
+	repo.StartPackUploader(wgCtx, wg)
 	_, _, _, err = repo.SaveBlob(ctx, restic.DataBlob, buf, id, false)
 	test.OK(t, err)
 

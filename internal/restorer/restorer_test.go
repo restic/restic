@@ -15,6 +15,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"golang.org/x/sync/errgroup"
 )
 
 type Node interface{}
@@ -122,8 +123,9 @@ func saveSnapshot(t testing.TB, repo restic.Repository, snapshot Snapshot) (*res
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	wg, wgCtx := errgroup.WithContext(ctx)
+	repo.StartPackUploader(wgCtx, wg)
 	treeID := saveDir(t, repo, snapshot.Nodes, 1000)
-
 	err := repo.Flush(ctx)
 	if err != nil {
 		t.Fatal(err)
