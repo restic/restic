@@ -89,10 +89,6 @@ func changeTags(ctx context.Context, repo *repository.Repository, sn *restic.Sna
 
 		debug.Log("new snapshot saved as %v", id)
 
-		if err = repo.Flush(ctx); err != nil {
-			return false, err
-		}
-
 		// Remove the old snapshot.
 		h := restic.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
 		if err = repo.Backend().Remove(ctx, h); err != nil {
