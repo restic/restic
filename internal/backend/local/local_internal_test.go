@@ -27,7 +27,7 @@ func TestNoSpacePermanent(t *testing.T) {
 	dir, cleanup := rtest.TempDir(t)
 	defer cleanup()
 
-	be, err := Open(context.Background(), Config{Path: dir})
+	be, err := Open(context.Background(), Config{Path: dir, Connections: 2})
 	rtest.OK(t, err)
 	defer func() {
 		rtest.OK(t, be.Close())

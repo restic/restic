@@ -22,6 +22,7 @@ import (
 // Local is a backend in a local directory.
 type Local struct {
 	Config
+	sem *backend.Semaphore
 	backend.Layout
 }
 
@@ -30,15 +31,28 @@ var _ restic.Backend = &Local{}
 
 const defaultLayout = "default"
 
-// Open opens the local backend as specified by config.
-func Open(ctx context.Context, cfg Config) (*Local, error) {
-	debug.Log("open local backend at %v (layout %q)", cfg.Path, cfg.Layout)
+func open(ctx context.Context, cfg Config) (*Local, error) {
 	l, err := backend.ParseLayout(ctx, &backend.LocalFilesystem{}, cfg.Layout, defaultLayout, cfg.Path)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Local{Config: cfg, Layout: l}, nil
+	sem, err := backend.NewSemaphore(cfg.Connections)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Local{
+		Config: cfg,
+		Layout: l,
+		sem:    sem,
+	}, nil
+}
+
+// Open opens the local backend as specified by config.
+func Open(ctx context.Context, cfg Config) (*Local, error) {
+	debug.Log("open local backend at %v (layout %q)", cfg.Path, cfg.Layout)
+	return open(ctx, cfg)
 }
 
 // Create creates all the necessary files and directories for a new local
@@ -46,14 +60,9 @@ func Open(ctx context.Context, cfg Config) (*Local, error) {
 func Create(ctx context.Context, cfg Config) (*Local, error) {
 	debug.Log("create local backend at %v (layout %q)", cfg.Path, cfg.Layout)
 
-	l, err := backend.ParseLayout(ctx, &backend.LocalFilesystem{}, cfg.Layout, defaultLayout, cfg.Path)
+	be, err := open(ctx, cfg)
 	if err != nil {
 		return nil, err
-	}
-
-	be := &Local{
-		Config: cfg,
-		Layout: l,
 	}
 
 	// test if config file already exists
@@ -71,6 +80,10 @@ func Create(ctx context.Context, cfg Config) (*Local, error) {
 	}
 
 	return be, nil
+}
+
+func (b *Local) Connections() uint {
+	return b.Config.Connections
 }
 
 // Location returns this backend's location (the directory name).
@@ -104,6 +117,9 @@ func (b *Local) Save(ctx context.Context, h restic.Handle, rd restic.RewindReade
 			err = backoff.Permanent(err)
 		}
 	}()
+
+	b.sem.GetToken()
+	defer b.sem.ReleaseToken()
 
 	// Create new file with a temporary name.
 	tmpname := filepath.Base(finalname) + "-tmp-"
@@ -199,24 +215,29 @@ func (b *Local) openReader(ctx context.Context, h restic.Handle, length int, off
 		return nil, errors.New("offset is negative")
 	}
 
+	b.sem.GetToken()
 	f, err := fs.Open(b.Filename(h))
 	if err != nil {
+		b.sem.ReleaseToken()
 		return nil, err
 	}
 
 	if offset > 0 {
 		_, err = f.Seek(offset, 0)
 		if err != nil {
+			b.sem.ReleaseToken()
 			_ = f.Close()
 			return nil, err
 		}
 	}
 
+	r := b.sem.ReleaseTokenOnClose(f, nil)
+
 	if length > 0 {
-		return backend.LimitReadCloser(f, int64(length)), nil
+		return backend.LimitReadCloser(r, int64(length)), nil
 	}
 
-	return f, nil
+	return r, nil
 }
 
 // Stat returns information about a blob.
@@ -225,6 +246,9 @@ func (b *Local) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, err
 	if err := h.Valid(); err != nil {
 		return restic.FileInfo{}, backoff.Permanent(err)
 	}
+
+	b.sem.GetToken()
+	defer b.sem.ReleaseToken()
 
 	fi, err := fs.Stat(b.Filename(h))
 	if err != nil {
@@ -237,6 +261,10 @@ func (b *Local) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, err
 // Test returns true if a blob of the given type and name exists in the backend.
 func (b *Local) Test(ctx context.Context, h restic.Handle) (bool, error) {
 	debug.Log("Test %v", h)
+
+	b.sem.GetToken()
+	defer b.sem.ReleaseToken()
+
 	_, err := fs.Stat(b.Filename(h))
 	if err != nil {
 		if b.IsNotExist(err) {
@@ -252,6 +280,9 @@ func (b *Local) Test(ctx context.Context, h restic.Handle) (bool, error) {
 func (b *Local) Remove(ctx context.Context, h restic.Handle) error {
 	debug.Log("Remove %v", h)
 	fn := b.Filename(h)
+
+	b.sem.GetToken()
+	defer b.sem.ReleaseToken()
 
 	// reset read-only flag
 	err := fs.Chmod(fn, 0666)
