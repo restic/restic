@@ -11,68 +11,68 @@ var configTests = []struct {
 	// first form, user specified sftp://user@host/dir
 	{
 		"sftp://user@host/dir/subdir",
-		Config{User: "user", Host: "host", Path: "dir/subdir"},
+		Config{User: "user", Host: "host", Path: "dir/subdir", Connections: 5},
 	},
 	{
 		"sftp://host/dir/subdir",
-		Config{Host: "host", Path: "dir/subdir"},
+		Config{Host: "host", Path: "dir/subdir", Connections: 5},
 	},
 	{
 		"sftp://host//dir/subdir",
-		Config{Host: "host", Path: "/dir/subdir"},
+		Config{Host: "host", Path: "/dir/subdir", Connections: 5},
 	},
 	{
 		"sftp://host:10022//dir/subdir",
-		Config{Host: "host", Port: "10022", Path: "/dir/subdir"},
+		Config{Host: "host", Port: "10022", Path: "/dir/subdir", Connections: 5},
 	},
 	{
 		"sftp://user@host:10022//dir/subdir",
-		Config{User: "user", Host: "host", Port: "10022", Path: "/dir/subdir"},
+		Config{User: "user", Host: "host", Port: "10022", Path: "/dir/subdir", Connections: 5},
 	},
 	{
 		"sftp://user@host/dir/subdir/../other",
-		Config{User: "user", Host: "host", Path: "dir/other"},
+		Config{User: "user", Host: "host", Path: "dir/other", Connections: 5},
 	},
 	{
 		"sftp://user@host/dir///subdir",
-		Config{User: "user", Host: "host", Path: "dir/subdir"},
+		Config{User: "user", Host: "host", Path: "dir/subdir", Connections: 5},
 	},
 
 	// IPv6 address.
 	{
 		"sftp://user@[::1]/dir",
-		Config{User: "user", Host: "::1", Path: "dir"},
+		Config{User: "user", Host: "::1", Path: "dir", Connections: 5},
 	},
 	// IPv6 address with port.
 	{
 		"sftp://user@[::1]:22/dir",
-		Config{User: "user", Host: "::1", Port: "22", Path: "dir"},
+		Config{User: "user", Host: "::1", Port: "22", Path: "dir", Connections: 5},
 	},
 
 	// second form, user specified sftp:user@host:/dir
 	{
 		"sftp:user@host:/dir/subdir",
-		Config{User: "user", Host: "host", Path: "/dir/subdir"},
+		Config{User: "user", Host: "host", Path: "/dir/subdir", Connections: 5},
 	},
 	{
 		"sftp:user@domain@host:/dir/subdir",
-		Config{User: "user@domain", Host: "host", Path: "/dir/subdir"},
+		Config{User: "user@domain", Host: "host", Path: "/dir/subdir", Connections: 5},
 	},
 	{
 		"sftp:host:../dir/subdir",
-		Config{Host: "host", Path: "../dir/subdir"},
+		Config{Host: "host", Path: "../dir/subdir", Connections: 5},
 	},
 	{
 		"sftp:user@host:dir/subdir:suffix",
-		Config{User: "user", Host: "host", Path: "dir/subdir:suffix"},
+		Config{User: "user", Host: "host", Path: "dir/subdir:suffix", Connections: 5},
 	},
 	{
 		"sftp:user@host:dir/subdir/../other",
-		Config{User: "user", Host: "host", Path: "dir/other"},
+		Config{User: "user", Host: "host", Path: "dir/other", Connections: 5},
 	},
 	{
 		"sftp:user@host:dir///subdir",
-		Config{User: "user", Host: "host", Path: "dir/subdir"},
+		Config{User: "user", Host: "host", Path: "dir/subdir", Connections: 5},
 	},
 }
 
