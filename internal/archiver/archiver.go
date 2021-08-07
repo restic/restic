@@ -128,9 +128,12 @@ func (o Options) ApplyDefaults() Options {
 	}
 
 	if o.SaveTreeConcurrency == 0 {
-		// use a relatively high concurrency here, having multiple SaveTree
-		// workers is cheap
-		o.SaveTreeConcurrency = o.SaveBlobConcurrency * 20
+		// can either wait for a file, wait for a tree, serialize a tree or wait for saveblob
+		// the last two are cpu-bound and thus mutually exclusive.
+		// Also allow waiting for FileReadConcurrency files, this is the maximum of FutureFiles
+		// which currently can be in progress. The main backup loop blocks when trying to queue
+		// more files to read.
+		o.SaveTreeConcurrency = uint(runtime.GOMAXPROCS(0)) + o.FileReadConcurrency
 	}
 
 	return o
