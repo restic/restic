@@ -172,7 +172,7 @@ func TestUploadLargeFile(t *testing.T) {
 
 	t.Logf("hash of %d bytes: %v", len(data), id)
 
-	err = be.Save(ctx, h, restic.NewByteReader(data))
+	err = be.Save(ctx, h, restic.NewByteReader(data, be.Hasher()))
 	if err != nil {
 		t.Fatal(err)
 	}

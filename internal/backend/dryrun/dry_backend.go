@@ -2,6 +2,7 @@ package dryrun
 
 import (
 	"context"
+	"hash"
 	"io"
 
 	"github.com/restic/restic/internal/debug"
@@ -56,6 +57,10 @@ func (be *Backend) Delete(ctx context.Context) error {
 
 func (be *Backend) Close() error {
 	return be.b.Close()
+}
+
+func (be *Backend) Hasher() hash.Hash {
+	return be.b.Hasher()
 }
 
 func (be *Backend) IsNotExist(err error) bool {

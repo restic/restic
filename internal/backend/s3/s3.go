@@ -3,6 +3,7 @@ package s3
 import (
 	"context"
 	"fmt"
+	"hash"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -250,6 +251,11 @@ func (be *Backend) Location() string {
 	return be.Join(be.cfg.Bucket, be.cfg.Prefix)
 }
 
+// Hasher may return a hash function for calculating a content hash for the backend
+func (be *Backend) Hasher() hash.Hash {
+	return nil
+}
+
 // Path returns the path in the bucket that is used for this backend.
 func (be *Backend) Path() string {
 	return be.cfg.Prefix
@@ -270,6 +276,8 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 
 	opts := minio.PutObjectOptions{StorageClass: be.cfg.StorageClass}
 	opts.ContentType = "application/octet-stream"
+	// the only option with the high-level api is to let the library handle the checksum computation
+	opts.SendContentMd5 = true
 
 	debug.Log("PutObject(%v, %v, %v)", be.cfg.Bucket, objName, rd.Length())
 	info, err := be.client.PutObject(ctx, be.cfg.Bucket, objName, ioutil.NopCloser(rd), int64(rd.Length()), opts)

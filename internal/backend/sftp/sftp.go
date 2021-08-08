@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"hash"
 	"io"
 	"os"
 	"os/exec"
@@ -238,6 +239,11 @@ func Create(ctx context.Context, cfg Config) (*SFTP, error) {
 // Location returns this backend's location (the directory name).
 func (r *SFTP) Location() string {
 	return r.p
+}
+
+// Hasher may return a hash function for calculating a content hash for the backend
+func (r *SFTP) Hasher() hash.Hash {
+	return nil
 }
 
 // Join joins the given paths and cleans them afterwards. This always uses
