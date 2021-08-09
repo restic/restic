@@ -1089,7 +1089,7 @@ type emptySaveBackend struct {
 }
 
 func (b *emptySaveBackend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
-	return b.Backend.Save(ctx, h, restic.NewByteReader(make([]byte, 0)))
+	return b.Backend.Save(ctx, h, restic.NewByteReader([]byte{}, nil))
 }
 
 func TestKeyProblems(t *testing.T) {
