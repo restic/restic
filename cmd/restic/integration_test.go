@@ -1084,6 +1084,41 @@ func TestKeyAddRemove(t *testing.T) {
 	testRunKeyAddNewKeyUserHost(t, env.gopts)
 }
 
+type emptySaveBackend struct {
+	restic.Backend
+}
+
+func (b *emptySaveBackend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+	return b.Backend.Save(ctx, h, restic.NewByteReader(make([]byte, 0)))
+}
+
+func TestKeyProblems(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testRunInit(t, env.gopts)
+	env.gopts.backendTestHook = func(r restic.Backend) (restic.Backend, error) {
+		return &emptySaveBackend{r}, nil
+	}
+
+	testKeyNewPassword = "geheim2"
+	defer func() {
+		testKeyNewPassword = ""
+	}()
+
+	err := runKey(env.gopts, []string{"passwd"})
+	t.Log(err)
+	rtest.Assert(t, err != nil, "expected passwd change to fail")
+
+	err = runKey(env.gopts, []string{"add"})
+	t.Log(err)
+	rtest.Assert(t, err != nil, "expected key adding to fail")
+
+	t.Logf("testing access with initial password %q\n", env.gopts.password)
+	rtest.OK(t, runKey(env.gopts, []string{"list"}))
+	testRunCheck(t, env.gopts)
+}
+
 func testFileSize(filename string, size int64) error {
 	fi, err := os.Stat(filename)
 	if err != nil {
