@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/minio/sha256-simd"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
@@ -484,12 +485,11 @@ func (s *Suite) TestSave(t *testing.T) {
 	for i := 0; i < saveTests; i++ {
 		length := rand.Intn(1<<23) + 200000
 		data := test.Random(23, length)
-		// use the first 32 byte as the ID
-		copy(id[:], data)
+		id = sha256.Sum256(data)
 
 		h := restic.Handle{
 			Type: restic.PackFile,
-			Name: fmt.Sprintf("%s-%d", id, i),
+			Name: id.String(),
 		}
 		err := b.Save(context.TODO(), h, restic.NewByteReader(data, b.Hasher()))
 		test.OK(t, err)
@@ -529,7 +529,7 @@ func (s *Suite) TestSave(t *testing.T) {
 
 	length := rand.Intn(1<<23) + 200000
 	data := test.Random(23, length)
-	copy(id[:], data)
+	id = sha256.Sum256(data)
 
 	if _, err = tmpfile.Write(data); err != nil {
 		t.Fatal(err)
@@ -654,49 +654,6 @@ func (s *Suite) TestSaveWrongHash(t *testing.T) {
 	t.Logf("%v", err)
 	if exists {
 		t.Fatal("Backend returned an error but stored the file anyways")
-	}
-}
-
-var filenameTests = []struct {
-	name string
-	data string
-}{
-	{"1dfc6bc0f06cb255889e9ea7860a5753e8eb9665c9a96627971171b444e3113e", "x"},
-	{"f00b4r", "foobar"},
-	{
-		"1dfc6bc0f06cb255889e9ea7860a5753e8eb9665c9a96627971171b444e3113e4bf8f2d9144cc5420a80f04a4880ad6155fc58903a4fb6457c476c43541dcaa6-5",
-		"foobar content of data blob",
-	},
-}
-
-// TestSaveFilenames tests saving data with various file names in the backend.
-func (s *Suite) TestSaveFilenames(t *testing.T) {
-	b := s.open(t)
-	defer s.close(t, b)
-
-	for i, test := range filenameTests {
-		h := restic.Handle{Name: test.name, Type: restic.PackFile}
-		err := b.Save(context.TODO(), h, restic.NewByteReader([]byte(test.data), b.Hasher()))
-		if err != nil {
-			t.Errorf("test %d failed: Save() returned %+v", i, err)
-			continue
-		}
-
-		buf, err := backend.LoadAll(context.TODO(), nil, b, h)
-		if err != nil {
-			t.Errorf("test %d failed: Load() returned %+v", i, err)
-			continue
-		}
-
-		if !bytes.Equal(buf, []byte(test.data)) {
-			t.Errorf("test %d: returned wrong bytes", i)
-		}
-
-		err = b.Remove(context.TODO(), h)
-		if err != nil {
-			t.Errorf("test %d failed: Remove() returned %+v", i, err)
-			continue
-		}
 	}
 }
 
