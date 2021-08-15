@@ -331,8 +331,8 @@ irregular backups. For example, the 7 snapshots specified with ``--keep-daily 7`
 might be spread over a longer period. If what you want is to keep daily snapshots
 for a week, weekly for a month, monthly for a year and yearly for 75 years, you 
 could specify:
-``forget --keep-daily-within 7d --keep-weekly-within 1m --keep-monthly-within 1y
---keep-yearly-within 75y``
+``forget --keep-within-daily 7d --keep-within-weekly 1m --keep-within-monthly 1y
+--keep-within-yearly 75y``
 (Note that `1w` is not a recognized duration, so you will have to specify 
 `7d` instead)
 
