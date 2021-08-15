@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/minio/sha256-simd"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
@@ -484,12 +485,11 @@ func (s *Suite) TestSave(t *testing.T) {
 	for i := 0; i < saveTests; i++ {
 		length := rand.Intn(1<<23) + 200000
 		data := test.Random(23, length)
-		// use the first 32 byte as the ID
-		copy(id[:], data)
+		id = sha256.Sum256(data)
 
 		h := restic.Handle{
 			Type: restic.PackFile,
-			Name: fmt.Sprintf("%s-%d", id, i),
+			Name: id.String(),
 		}
 		err := b.Save(context.TODO(), h, restic.NewByteReader(data, b.Hasher()))
 		test.OK(t, err)
@@ -529,7 +529,7 @@ func (s *Suite) TestSave(t *testing.T) {
 
 	length := rand.Intn(1<<23) + 200000
 	data := test.Random(23, length)
-	copy(id[:], data)
+	id = sha256.Sum256(data)
 
 	if _, err = tmpfile.Write(data); err != nil {
 		t.Fatal(err)
