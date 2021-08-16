@@ -736,12 +736,7 @@ func (r *Repository) PrepareCache() error {
 		fmt.Fprintf(os.Stderr, "error clearing index files in cache: %v\n", err)
 	}
 
-	packs := restic.NewIDSet()
-	for _, idx := range r.idx.All() {
-		for id := range idx.Packs() {
-			packs.Insert(id)
-		}
-	}
+	packs := r.idx.Packs(restic.NewIDSet())
 
 	// clear old packs
 	err = r.Cache.Clear(restic.PackFile, packs)
