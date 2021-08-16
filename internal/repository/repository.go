@@ -569,20 +569,7 @@ func (r *Repository) Index() restic.MasterIndex {
 // SetIndex instructs the repository to use the given index.
 func (r *Repository) SetIndex(i restic.MasterIndex) error {
 	r.idx = i.(*MasterIndex)
-
-	ids := restic.NewIDSet()
-	for _, idx := range r.idx.All() {
-		indexIDs, err := idx.IDs()
-		if err != nil {
-			debug.Log("not using index, ID() returned error %v", err)
-			continue
-		}
-		for _, id := range indexIDs {
-			ids.Insert(id)
-		}
-	}
-
-	return r.PrepareCache(ids)
+	return r.PrepareCache()
 }
 
 // SaveIndex saves an index in the repository.
@@ -628,20 +615,16 @@ func (r *Repository) SaveFullIndex(ctx context.Context) error {
 func (r *Repository) LoadIndex(ctx context.Context) error {
 	debug.Log("Loading index")
 
-	validIndex := restic.NewIDSet()
 	err := ForAllIndexes(ctx, r, func(id restic.ID, idx *Index, oldFormat bool, err error) error {
 		if err != nil {
 			return err
 		}
 
-		ids, err := idx.IDs()
+		_, err = idx.IDs()
 		if err != nil {
 			return err
 		}
 
-		for _, id := range ids {
-			validIndex.Insert(id)
-		}
 		r.idx.Insert(idx)
 		return nil
 	})
@@ -667,7 +650,7 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 	}
 
 	// remove index files from the cache which have been removed in the repo
-	return r.PrepareCache(validIndex)
+	return r.PrepareCache()
 }
 
 const listPackParallelism = 10
@@ -739,11 +722,12 @@ func (r *Repository) CreateIndexFromPacks(ctx context.Context, packsize map[rest
 
 // PrepareCache initializes the local cache. indexIDs is the list of IDs of
 // index files still present in the repo.
-func (r *Repository) PrepareCache(indexIDs restic.IDSet) error {
+func (r *Repository) PrepareCache() error {
 	if r.Cache == nil {
 		return nil
 	}
 
+	indexIDs := r.idx.IDs()
 	debug.Log("prepare cache with %d index files", len(indexIDs))
 
 	// clear old index files
