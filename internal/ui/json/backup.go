@@ -171,8 +171,21 @@ func (b *Backup) ReportTotal(item string, start time.Time, s archiver.ScanStats)
 // Finish prints the finishing messages.
 func (b *Backup) Finish(snapshotID restic.ID, start time.Time, summary *ui.Summary) {
 	b.print(summaryOutput{
-		MessageType: "summary",
-		SnapshotID:  snapshotID.Str(),
+		MessageType:         "summary",
+		FilesNew:            summary.Files.New,
+		FilesChanged:        summary.Files.Changed,
+		FilesUnmodified:     summary.Files.Unchanged,
+		DirsNew:             summary.Dirs.New,
+		DirsChanged:         summary.Dirs.Changed,
+		DirsUnmodified:      summary.Dirs.Unchanged,
+		DataBlobs:           summary.ItemStats.DataBlobs,
+		TreeBlobs:           summary.ItemStats.TreeBlobs,
+		DataAdded:           summary.ItemStats.DataSize + summary.ItemStats.TreeSize,
+		TotalFilesProcessed: summary.Files.New + summary.Files.Changed + summary.Files.Unchanged,
+		TotalBytesProcessed: summary.ProcessedBytes,
+		TotalDuration:       time.Since(start).Seconds(),
+		SnapshotID:          snapshotID.Str(),
+		DryRun:              b.dry,
 	})
 }
 
