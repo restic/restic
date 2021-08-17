@@ -151,12 +151,10 @@ func (b *Backup) CompleteItem(messageType, item string, previous, current *resti
 
 // ReportTotal sets the total stats up to now
 func (b *Backup) ReportTotal(item string, start time.Time, s archiver.ScanStats) {
-	if item == "" {
-		b.V("scan finished in %.3fs: %v files, %s",
-			time.Since(start).Seconds(),
-			s.Files, formatBytes(s.Bytes),
-		)
-	}
+	b.V("scan finished in %.3fs: %v files, %s",
+		time.Since(start).Seconds(),
+		s.Files, formatBytes(s.Bytes),
+	)
 }
 
 // Reset status

@@ -157,17 +157,14 @@ func (b *Backup) CompleteItem(messageType, item string, previous, current *resti
 
 // ReportTotal sets the total stats up to now
 func (b *Backup) ReportTotal(item string, start time.Time, s archiver.ScanStats) {
-	if item == "" {
-		if b.v >= 2 {
-			b.print(verboseUpdate{
-				MessageType: "status",
-				Action:      "scan_finished",
-				Duration:    time.Since(start).Seconds(),
-				DataSize:    s.Bytes,
-				TotalFiles:  s.Files,
-			})
-		}
-		return
+	if b.v >= 2 {
+		b.print(verboseUpdate{
+			MessageType: "status",
+			Action:      "scan_finished",
+			Duration:    time.Since(start).Seconds(),
+			DataSize:    s.Bytes,
+			TotalFiles:  s.Files,
+		})
 	}
 }
 
