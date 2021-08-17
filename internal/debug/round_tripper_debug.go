@@ -75,12 +75,31 @@ func RoundTripper(upstream http.RoundTripper) http.RoundTripper {
 	return eofRoundTripper
 }
 
+func redactHeader(header http.Header) map[string][]string {
+	removedHeaders := make(map[string][]string)
+	for _, hdr := range []string{
+		"Authorization",
+		"X-Auth-Token", // Swift headers
+		"X-Auth-Key",
+	} {
+		origHeader, hasHeader := header[hdr]
+		if hasHeader {
+			removedHeaders[hdr] = origHeader
+			header[hdr] = []string{"**redacted**"}
+		}
+	}
+	return removedHeaders
+}
+
+func restoreHeader(header http.Header, origHeaders map[string][]string) {
+	for hdr, val := range origHeaders {
+		header[hdr] = val
+	}
+}
+
 func (tr loggingRoundTripper) RoundTrip(req *http.Request) (res *http.Response, err error) {
 	// save original auth and redact it
-	origAuth, hasAuth := req.Header["Authorization"]
-	if hasAuth {
-		req.Header["Authorization"] = []string{"**redacted**"}
-	}
+	origHeaders := redactHeader(req.Header)
 
 	trace, err := httputil.DumpRequestOut(req, false)
 	if err != nil {
@@ -89,10 +108,7 @@ func (tr loggingRoundTripper) RoundTrip(req *http.Request) (res *http.Response, 
 		Log("------------  HTTP REQUEST -----------\n%s", trace)
 	}
 
-	// restore auth
-	if hasAuth {
-		req.Header["Authorization"] = origAuth
-	}
+	restoreHeader(req.Header, origHeaders)
 
 	res, err = tr.RoundTripper.RoundTrip(req)
 	if err != nil {
@@ -100,7 +116,9 @@ func (tr loggingRoundTripper) RoundTrip(req *http.Request) (res *http.Response, 
 	}
 
 	if res != nil {
+		origHeaders := redactHeader(res.Header)
 		trace, err := httputil.DumpResponse(res, false)
+		restoreHeader(res.Header, origHeaders)
 		if err != nil {
 			Log("DumpResponse() error: %v\n", err)
 		} else {
