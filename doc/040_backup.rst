@@ -392,6 +392,16 @@ You can combine all three options with each other and with the normal file argum
     $ restic backup --files-from /tmp/files_to_backup /tmp/some_additional_file
     $ restic backup --files-from /tmp/glob-pattern --files-from-raw /tmp/generated-list /tmp/some_additional_file
 
+Merging Snapshots
+*****************
+
+With the option ``--files-from-verbatim``, restic creates a new snapshot containing only the list of files specified
+by the option.
+The backup command has a ``--merge`` option that instructs restic to merge the files specified in the
+list passed to ``--files-from-verbatim`` with a parent snapshot, chosen automatically by restic, or specified manually
+throw the ``--parent`` option. The path of the merged snapshot will be the same of its parent.
+
+
 Comparing Snapshots
 *******************
 
