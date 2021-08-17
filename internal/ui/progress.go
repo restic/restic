@@ -61,7 +61,6 @@ type Summary struct {
 		Unchanged uint
 	}
 	ProcessedBytes uint64
-	TotalErrors    uint
 	archiver.ItemStats
 }
 
@@ -141,9 +140,6 @@ func (p *Progress) Run(ctx context.Context) error {
 			started = true
 		case <-p.errCh:
 			errors++
-			p.summary.Lock()
-			p.summary.TotalErrors = errors
-			p.summary.Unlock()
 			started = true
 		case m := <-p.workerCh:
 			if m.done {
