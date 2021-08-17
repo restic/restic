@@ -65,6 +65,7 @@ type Summary struct {
 	archiver.ItemStats
 }
 
+// Progress reports progress for the `backup` command.
 type Progress struct {
 	MinUpdatePause time.Duration
 
@@ -100,6 +101,8 @@ func NewProgress(printer ProgressPrinter) *Progress {
 	}
 }
 
+// Run regularly updates the status lines. It should be called in a separate
+// goroutine.
 func (p *Progress) Run(ctx context.Context) error {
 	var (
 		lastUpdate       time.Time
@@ -309,9 +312,9 @@ func (p *Progress) ReportTotal(item string, s archiver.ScanStats) {
 
 // Finish prints the finishing messages.
 func (p *Progress) Finish(snapshotID restic.ID) {
+	// wait for the status update goroutine to shut down
 	<-p.closed
-	summary := p.summary
-	p.printer.Finish(snapshotID, p.start, summary)
+	p.printer.Finish(snapshotID, p.start, p.summary)
 }
 
 // SetMinUpdatePause sets b.MinUpdatePause. It satisfies the
