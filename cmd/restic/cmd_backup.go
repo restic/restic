@@ -547,7 +547,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	}()
 	gopts.stdout, gopts.stderr = progressPrinter.Stdout(), progressPrinter.Stderr()
 
-	progressReporter.SetMinUpdatePause(calculateProgressInterval(!gopts.Quiet))
+	progressReporter.SetMinUpdatePause(calculateProgressInterval(!gopts.Quiet, gopts.JSON))
 
 	t.Go(func() error { return progressReporter.Run(t.Context(gopts.ctx)) })
 
