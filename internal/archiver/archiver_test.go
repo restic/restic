@@ -1452,7 +1452,7 @@ func TestArchiverSnapshotMerge(t *testing.T) {
 	}
 
 	writeFile := func(root, name, content string, t *testing.T) {
-		if err := os.WriteFile(path.Join(root, name), []byte(content), 0644); err != nil {
+		if err := ioutil.WriteFile(path.Join(root, name), []byte(content), 0644); err != nil {
 			t.Fatal(err)
 		}
 	}
