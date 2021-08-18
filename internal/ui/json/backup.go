@@ -20,7 +20,6 @@ type Backup struct {
 
 	term *termstatus.Terminal
 	v    uint
-	dry  bool
 }
 
 // NewBackup returns a new backup progress reporter.
@@ -169,7 +168,7 @@ func (b *Backup) ReportTotal(item string, start time.Time, s archiver.ScanStats)
 }
 
 // Finish prints the finishing messages.
-func (b *Backup) Finish(snapshotID restic.ID, start time.Time, summary *ui.Summary) {
+func (b *Backup) Finish(snapshotID restic.ID, start time.Time, summary *ui.Summary, dryRun bool) {
 	b.print(summaryOutput{
 		MessageType:         "summary",
 		FilesNew:            summary.Files.New,
@@ -185,17 +184,12 @@ func (b *Backup) Finish(snapshotID restic.ID, start time.Time, summary *ui.Summa
 		TotalBytesProcessed: summary.ProcessedBytes,
 		TotalDuration:       time.Since(start).Seconds(),
 		SnapshotID:          snapshotID.Str(),
-		DryRun:              b.dry,
+		DryRun:              dryRun,
 	})
 }
 
 // Reset no-op
 func (b *Backup) Reset() {
-}
-
-// SetDryRun marks the backup as a "dry run".
-func (b *Backup) SetDryRun() {
-	b.dry = true
 }
 
 type statusUpdate struct {

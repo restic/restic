@@ -537,7 +537,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 
 	if opts.DryRun {
 		repo.SetDryRun()
-		progressPrinter.SetDryRun()
+		progressReporter.SetDryRun()
 	}
 
 	// use the terminal for stdout/stderr

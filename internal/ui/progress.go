@@ -18,9 +18,8 @@ type ProgressPrinter interface {
 	ScannerError(item string, fi os.FileInfo, err error) error
 	CompleteItem(messageType string, item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration)
 	ReportTotal(item string, start time.Time, s archiver.ScanStats)
-	Finish(snapshotID restic.ID, start time.Time, summary *Summary)
+	Finish(snapshotID restic.ID, start time.Time, summary *Summary, dryRun bool)
 	Reset()
-	SetDryRun()
 
 	// ui.StdioWrapper
 	Stdout() io.WriteCloser
@@ -69,6 +68,7 @@ type Progress struct {
 	MinUpdatePause time.Duration
 
 	start time.Time
+	dry   bool
 
 	totalBytes uint64
 
@@ -310,11 +310,16 @@ func (p *Progress) ReportTotal(item string, s archiver.ScanStats) {
 func (p *Progress) Finish(snapshotID restic.ID) {
 	// wait for the status update goroutine to shut down
 	<-p.closed
-	p.printer.Finish(snapshotID, p.start, p.summary)
+	p.printer.Finish(snapshotID, p.start, p.summary, p.dry)
 }
 
 // SetMinUpdatePause sets b.MinUpdatePause. It satisfies the
 // ArchiveProgressReporter interface.
 func (p *Progress) SetMinUpdatePause(d time.Duration) {
 	p.MinUpdatePause = d
+}
+
+// SetDryRun marks the backup as a "dry run".
+func (p *Progress) SetDryRun() {
+	p.dry = true
 }

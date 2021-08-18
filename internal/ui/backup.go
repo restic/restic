@@ -17,7 +17,6 @@ type Backup struct {
 	*StdioWrapper
 
 	term *termstatus.Terminal
-	dry  bool // true if writes are faked
 }
 
 // NewBackup returns a new backup progress reporter.
@@ -165,14 +164,14 @@ func (b *Backup) Reset() {
 }
 
 // Finish prints the finishing messages.
-func (b *Backup) Finish(snapshotID restic.ID, start time.Time, summary *Summary) {
+func (b *Backup) Finish(snapshotID restic.ID, start time.Time, summary *Summary, dryRun bool) {
 	b.P("\n")
 	b.P("Files:       %5d new, %5d changed, %5d unmodified\n", summary.Files.New, summary.Files.Changed, summary.Files.Unchanged)
 	b.P("Dirs:        %5d new, %5d changed, %5d unmodified\n", summary.Dirs.New, summary.Dirs.Changed, summary.Dirs.Unchanged)
 	b.V("Data Blobs:  %5d new\n", summary.ItemStats.DataBlobs)
 	b.V("Tree Blobs:  %5d new\n", summary.ItemStats.TreeBlobs)
 	verb := "Added"
-	if b.dry {
+	if dryRun {
 		verb = "Would add"
 	}
 	b.P("%s to the repo: %-5s\n", verb, formatBytes(summary.ItemStats.DataSize+summary.ItemStats.TreeSize))
@@ -182,8 +181,4 @@ func (b *Backup) Finish(snapshotID restic.ID, start time.Time, summary *Summary)
 		formatBytes(summary.ProcessedBytes),
 		formatDuration(time.Since(start)),
 	)
-}
-
-func (b *Backup) SetDryRun() {
-	b.dry = true
 }
