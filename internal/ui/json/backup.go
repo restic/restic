@@ -22,6 +22,9 @@ type Backup struct {
 	v    uint
 }
 
+// assert that Backup implements the ProgressPrinter interface
+var _ ui.ProgressPrinter = &Backup{}
+
 // NewBackup returns a new backup progress reporter.
 func NewBackup(term *termstatus.Terminal, verbosity uint) *Backup {
 	return &Backup{
