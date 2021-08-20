@@ -801,6 +801,11 @@ func StreamPack(ctx context.Context, beLoad BackendLoadFn, key *crypto.Key, pack
 			}
 			currentBlobEnd = entry.Offset + entry.Length
 
+			if int(entry.Length) <= key.NonceSize() {
+				debug.Log("%v", blobs)
+				return errors.Errorf("invalid blob length %v", entry)
+			}
+
 			// decryption errors are likely permanent, give the caller a chance to skip them
 			nonce, ciphertext := buf[:key.NonceSize()], buf[key.NonceSize():]
 			plaintext, err := key.Open(ciphertext[:0], nonce, ciphertext, nil)
