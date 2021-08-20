@@ -60,6 +60,11 @@ type Lister interface {
 	List(context.Context, FileType, func(FileInfo) error) error
 }
 
+type PackBlobs struct {
+	PackID ID
+	Blobs  []Blob
+}
+
 // MasterIndex keeps track of the blobs are stored within files.
 type MasterIndex interface {
 	Has(BlobHandle) bool
@@ -71,4 +76,5 @@ type MasterIndex interface {
 	// the context is cancelled, the background goroutine terminates. This
 	// blocks any modification of the index.
 	Each(ctx context.Context) <-chan PackedBlob
+	ListPacks(ctx context.Context, packs IDSet) <-chan PackBlobs
 }
