@@ -798,7 +798,7 @@ func StreamPack(ctx context.Context, beLoad BackendLoadFn, key *crypto.Key, pack
 	sort.Slice(blobs, func(i, j int) bool {
 		return blobs[i].Offset < blobs[j].Offset
 	})
-	h := restic.Handle{Type: restic.PackFile, Name: packID.String()}
+	h := restic.Handle{Type: restic.PackFile, Name: packID.String(), ContainedBlobType: restic.DataBlob}
 
 	dataStart := blobs[0].Offset
 	dataEnd := blobs[len(blobs)-1].Offset + blobs[len(blobs)-1].Length
