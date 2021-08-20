@@ -160,7 +160,8 @@ const (
 	// HeaderSize is the header's constant overhead (independent of #entries)
 	HeaderSize = headerLengthSize + crypto.Extension
 
-	maxHeaderSize = 16 * 1024 * 1024
+	// MaxHeaderSize is the max size of header including header-length field
+	MaxHeaderSize = 16*1024*1024 + headerLengthSize
 	// number of header enries to download as part of header-length request
 	eagerEntries = 15
 )
@@ -199,7 +200,7 @@ func readRecords(rd io.ReaderAt, size int64, max int) ([]byte, int, error) {
 		err = InvalidFileError{Message: "header length is invalid"}
 	case int64(hlen) > size-int64(headerLengthSize):
 		err = InvalidFileError{Message: "header is larger than file"}
-	case int64(hlen) > maxHeaderSize:
+	case int64(hlen) > MaxHeaderSize-int64(headerLengthSize):
 		err = InvalidFileError{Message: "header is larger than maxHeaderSize"}
 	}
 	if err != nil {

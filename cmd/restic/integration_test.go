@@ -2135,7 +2135,4 @@ func TestBackendLoadWriteTo(t *testing.T) {
 	firstSnapshot := testRunList(t, "snapshots", env.gopts)
 	rtest.Assert(t, len(firstSnapshot) == 1,
 		"expected one snapshot, got %v", firstSnapshot)
-
-	// test readData using the hashing.Reader
-	testRunCheck(t, env.gopts)
 }

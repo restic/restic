@@ -27,7 +27,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const maxStreamBufferSize = 4 * 1024 * 1024
+const MaxStreamBufferSize = 4 * 1024 * 1024
 
 // Repository is used to access a repository in a backend.
 type Repository struct {
@@ -808,8 +808,8 @@ func StreamPack(ctx context.Context, beLoad BackendLoadFn, key *crypto.Key, pack
 	// stream blobs in pack
 	err := beLoad(ctx, h, int(dataEnd-dataStart), int64(dataStart), func(rd io.Reader) error {
 		bufferSize := int(dataEnd - dataStart)
-		if bufferSize > maxStreamBufferSize {
-			bufferSize = maxStreamBufferSize
+		if bufferSize > MaxStreamBufferSize {
+			bufferSize = MaxStreamBufferSize
 		}
 		bufRd := bufio.NewReaderSize(rd, bufferSize)
 		currentBlobEnd := dataStart
