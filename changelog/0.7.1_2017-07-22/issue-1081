@@ -1,4 +1,4 @@
-Enhancement: Clarify semantic for `--tasg` for the `forget` command
+Enhancement: Clarify semantic for `--tag` for the `forget` command
 
 https://github.com/restic/restic/issues/1081
 https://github.com/restic/restic/pull/1090
