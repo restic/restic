@@ -2,25 +2,15 @@ package repository
 
 import (
 	"context"
-	"hash"
 	"io"
 	"math/rand"
-	"os"
 	"sync"
 	"testing"
 
-	"github.com/restic/restic/internal/backend/mem"
 	"github.com/restic/restic/internal/crypto"
-	"github.com/restic/restic/internal/fs"
-	"github.com/restic/restic/internal/mock"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/test"
 )
-
-// Saver implements saving data in a backend.
-type Saver interface {
-	Save(context.Context, restic.Handle, restic.RewindReader) error
-	Hasher() hash.Hash
-}
 
 func randomID(rd io.Reader) restic.ID {
 	id := restic.ID{}
@@ -40,91 +30,27 @@ func min(a, b int) int {
 	return b
 }
 
-func saveFile(t testing.TB, be Saver, length int, f *os.File, id restic.ID, hash []byte) {
-	h := restic.Handle{Type: restic.PackFile, Name: id.String()}
-	t.Logf("save file %v", h)
-
-	rd, err := restic.NewFileReader(f, hash)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = be.Save(context.TODO(), h, rd)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if err := f.Close(); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := fs.RemoveIfExists(f.Name()); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func fillPacks(t testing.TB, rnd *rand.Rand, be Saver, pm *packerManager, buf []byte) (bytes int) {
+func fillPacks(t testing.TB, rnd *rand.Rand, pm *packerManager, buf []byte) (bytes int) {
 	for i := 0; i < 100; i++ {
 		l := rnd.Intn(maxBlobSize)
-
-		packer, err := pm.findPacker()
-		if err != nil {
-			t.Fatal(err)
-		}
-
 		id := randomID(rnd)
 		buf = buf[:l]
 		// Only change a few bytes so we know we're not benchmarking the RNG.
 		rnd.Read(buf[:min(l, 4)])
 
-		n, err := packer.Add(restic.DataBlob, id, buf, 0)
+		n, err := pm.SaveBlob(context.TODO(), restic.DataBlob, id, buf, 0)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if n != l+37 {
+		if n != l+37 && n != l+37+36 {
 			t.Errorf("Add() returned invalid number of bytes: want %v, got %v", l, n)
 		}
-		bytes += l
-
-		if packer.Size() < minPackSize {
-			pm.insertPacker(packer)
-			continue
-		}
-
-		err = packer.Finalize()
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		packID := restic.IDFromHash(packer.hw.Sum(nil))
-		var beHash []byte
-		if packer.beHw != nil {
-			beHash = packer.beHw.Sum(nil)
-		}
-		saveFile(t, be, int(packer.Size()), packer.tmpfile, packID, beHash)
+		bytes += n
 	}
-
-	return bytes
-}
-
-func flushRemainingPacks(t testing.TB, be Saver, pm *packerManager) (bytes int) {
-	if pm.countPacker() > 0 {
-		for _, packer := range pm.packers {
-			err := packer.Finalize()
-			if err != nil {
-				t.Fatal(err)
-			}
-			bytes += packer.HeaderOverhead()
-
-			packID := restic.IDFromHash(packer.hw.Sum(nil))
-			var beHash []byte
-			if packer.beHw != nil {
-				beHash = packer.beHw.Sum(nil)
-			}
-			saveFile(t, be, int(packer.Size()), packer.tmpfile, packID, beHash)
-		}
+	err := pm.Flush(context.TODO())
+	if err != nil {
+		t.Fatal(err)
 	}
-
 	return bytes
 }
 
@@ -143,13 +69,21 @@ func TestPackerManager(t *testing.T) {
 func testPackerManager(t testing.TB) int64 {
 	rnd := rand.New(rand.NewSource(randomSeed))
 
-	be := mem.New()
-	pm := newPackerManager(crypto.NewRandomKey(), be.Hasher, restic.DataBlob, nil)
+	savedBytes := int(0)
+	pm := newPackerManager(crypto.NewRandomKey(), restic.DataBlob, func(ctx context.Context, tp restic.BlobType, p *Packer) error {
+		err := p.Finalize()
+		if err != nil {
+			return err
+		}
+		savedBytes += int(p.Size())
+		return nil
+	})
 
 	blobBuf := make([]byte, maxBlobSize)
 
-	bytes := fillPacks(t, rnd, be, pm, blobBuf)
-	bytes += flushRemainingPacks(t, be, pm)
+	bytes := fillPacks(t, rnd, pm, blobBuf)
+	// bytes does not include the last packs header
+	test.Equals(t, savedBytes, bytes+36)
 
 	t.Logf("saved %d bytes", bytes)
 	return int64(bytes)
@@ -162,10 +96,6 @@ func BenchmarkPackerManager(t *testing.B) {
 	})
 
 	rnd := rand.New(rand.NewSource(randomSeed))
-
-	be := &mock.Backend{
-		SaveFn: func(context.Context, restic.Handle, restic.RewindReader) error { return nil },
-	}
 	blobBuf := make([]byte, maxBlobSize)
 
 	t.ReportAllocs()
@@ -174,8 +104,9 @@ func BenchmarkPackerManager(t *testing.B) {
 
 	for i := 0; i < t.N; i++ {
 		rnd.Seed(randomSeed)
-		pm := newPackerManager(crypto.NewRandomKey(), be.Hasher, restic.DataBlob, nil)
-		fillPacks(t, rnd, be, pm, blobBuf)
-		flushRemainingPacks(t, be, pm)
+		pm := newPackerManager(crypto.NewRandomKey(), restic.DataBlob, func(ctx context.Context, t restic.BlobType, p *Packer) error {
+			return nil
+		})
+		fillPacks(t, rnd, pm, blobBuf)
 	}
 }

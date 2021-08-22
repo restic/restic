@@ -520,8 +520,8 @@ func (r *Repository) StartPackUploader(ctx context.Context, wg *errgroup.Group) 
 	innerWg, ctx := errgroup.WithContext(ctx)
 	r.packerWg = innerWg
 	r.uploader = newPackerUploader(ctx, innerWg, r, r.be.Connections())
-	r.treePM = newPackerManager(r.key, r.be.Hasher, restic.TreeBlob, r.uploader.QueuePacker)
-	r.dataPM = newPackerManager(r.key, r.be.Hasher, restic.DataBlob, r.uploader.QueuePacker)
+	r.treePM = newPackerManager(r.key, restic.TreeBlob, r.uploader.QueuePacker)
+	r.dataPM = newPackerManager(r.key, restic.DataBlob, r.uploader.QueuePacker)
 
 	wg.Go(func() error {
 		return innerWg.Wait()
