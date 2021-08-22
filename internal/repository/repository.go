@@ -767,6 +767,7 @@ func StreamPack(ctx context.Context, beLoad BackendLoadFn, key *crypto.Key, pack
 		if bufferSize > MaxStreamBufferSize {
 			bufferSize = MaxStreamBufferSize
 		}
+		// create reader here to allow reusing the buffered reader from checker.checkData
 		bufRd := bufio.NewReaderSize(rd, bufferSize)
 		currentBlobEnd := dataStart
 		var buf []byte
