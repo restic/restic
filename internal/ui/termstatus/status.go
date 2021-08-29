@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"unicode"
 
 	"golang.org/x/crypto/ssh/terminal"
 	"golang.org/x/text/width"
@@ -280,7 +281,7 @@ func (t *Terminal) Errorf(msg string, args ...interface{}) {
 
 // Truncate s to fit in width (number of terminal cells) w.
 // If w is negative, returns the empty string.
-func truncate(s string, w int) string {
+func Truncate(s string, w int) string {
 	if len(s) < w {
 		// Since the display width of a character is at most 2
 		// and all of ASCII (single byte per rune) has width 1,
@@ -289,22 +290,25 @@ func truncate(s string, w int) string {
 	}
 
 	for i, r := range s {
-		// Determine width of the rune. This cannot be determined without
-		// knowing the terminal font, so let's just be careful and treat
-		// all ambigous characters as full-width, i.e., two cells.
-		wr := 2
-		switch width.LookupRune(r).Kind() {
-		case width.Neutral, width.EastAsianNarrow:
-			wr = 1
+		w--
+		if r > unicode.MaxASCII && wideRune(r) {
+			w--
 		}
 
-		w -= wr
 		if w < 0 {
 			return s[:i]
 		}
 	}
 
 	return s
+}
+
+// Guess whether r would occupy two terminal cells instead of one.
+// This cannot be determined exactly without knowing the terminal font,
+// so we treat all ambigous runes as full-width, i.e., two cells.
+func wideRune(r rune) bool {
+	kind := width.LookupRune(r).Kind()
+	return kind != width.Neutral && kind != width.EastAsianNarrow
 }
 
 // SetStatus updates the status lines.
@@ -328,7 +332,7 @@ func (t *Terminal) SetStatus(lines []string) {
 	for i, line := range lines {
 		line = strings.TrimRight(line, "\n")
 		if width > 0 {
-			line = truncate(line, width-2)
+			line = Truncate(line, width-2)
 		}
 		lines[i] = line + "\n"
 	}
