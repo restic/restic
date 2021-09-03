@@ -119,18 +119,6 @@ func verifyPruneOptions(opts *PruneOptions) error {
 	return nil
 }
 
-func shortenStatus(maxLength int, s string) string {
-	if len(s) <= maxLength {
-		return s
-	}
-
-	if maxLength < 3 {
-		return s[:maxLength]
-	}
-
-	return s[:maxLength-3] + "..."
-}
-
 func runPrune(opts PruneOptions, gopts GlobalOptions) error {
 	err := verifyPruneOptions(&opts)
 	if err != nil {
