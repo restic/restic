@@ -180,7 +180,12 @@ func (r *Repository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.
 		}
 
 		// load blob from pack
-		h := restic.Handle{Type: restic.PackFile, Name: blob.PackID.String()}
+		bt := t
+		if r.idx.IsMixedPack(blob.PackID) {
+			bt = restic.InvalidBlob
+		}
+		h := restic.Handle{Type: restic.PackFile,
+			Name: blob.PackID.String(), ContainedBlobType: bt}
 
 		switch {
 		case cap(buf) < int(blob.Length):
@@ -568,36 +573,6 @@ func (r *Repository) PrepareCache(indexIDs restic.IDSet) error {
 	err = r.Cache.Clear(restic.PackFile, packs)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error clearing pack files in cache: %v\n", err)
-	}
-
-	treePacks := restic.NewIDSet()
-	for _, idx := range r.idx.All() {
-		for _, id := range idx.TreePacks() {
-			treePacks.Insert(id)
-		}
-	}
-
-	// use readahead
-	debug.Log("using readahead")
-	cache := r.Cache
-	cache.PerformReadahead = func(h restic.Handle) bool {
-		if h.Type != restic.PackFile {
-			debug.Log("no readahead for %v, is not a pack file", h)
-			return false
-		}
-
-		id, err := restic.ParseID(h.Name)
-		if err != nil {
-			debug.Log("no readahead for %v, invalid ID", h)
-			return false
-		}
-
-		if treePacks.Has(id) {
-			debug.Log("perform readahead for %v", h)
-			return true
-		}
-		debug.Log("no readahead for %v, not tree file", h)
-		return false
 	}
 
 	return nil

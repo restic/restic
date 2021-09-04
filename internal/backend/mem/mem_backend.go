@@ -71,6 +71,7 @@ func (be *MemoryBackend) Save(ctx context.Context, h restic.Handle, rd restic.Re
 	be.m.Lock()
 	defer be.m.Unlock()
 
+	h.ContainedBlobType = restic.InvalidBlob
 	if h.Type == restic.ConfigFile {
 		h.Name = ""
 	}
@@ -122,6 +123,7 @@ func (be *MemoryBackend) openReader(ctx context.Context, h restic.Handle, length
 	be.m.Lock()
 	defer be.m.Unlock()
 
+	h.ContainedBlobType = restic.InvalidBlob
 	if h.Type == restic.ConfigFile {
 		h.Name = ""
 	}
@@ -158,6 +160,7 @@ func (be *MemoryBackend) Stat(ctx context.Context, h restic.Handle) (restic.File
 		return restic.FileInfo{}, backoff.Permanent(err)
 	}
 
+	h.ContainedBlobType = restic.InvalidBlob
 	if h.Type == restic.ConfigFile {
 		h.Name = ""
 	}
@@ -179,6 +182,7 @@ func (be *MemoryBackend) Remove(ctx context.Context, h restic.Handle) error {
 
 	debug.Log("Remove %v", h)
 
+	h.ContainedBlobType = restic.InvalidBlob
 	if _, ok := be.data[h]; !ok {
 		return errNotFound
 	}
