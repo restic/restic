@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"sort"
 	"sync"
 
@@ -470,7 +471,7 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 
 	// calculate hash on-the-fly while reading the pack and capture pack header
 	var hash restic.ID
-	var hdrBuf *bytes.Buffer
+	var hdrBuf []byte
 	hashingLoader := func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
 		return r.Backend().Load(ctx, h, int(size), 0, func(rd io.Reader) error {
 			hrd := hashing.NewReader(rd, sha256.New())
@@ -498,8 +499,7 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 			}
 
 			// read remainder, which should be the pack header
-			hdrBuf = new(bytes.Buffer)
-			_, err = io.Copy(hdrBuf, bufRd)
+			hdrBuf, err = ioutil.ReadAll(bufRd)
 			if err != nil {
 				return err
 			}
@@ -527,7 +527,7 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 		return errors.Errorf("Pack ID does not match, want %v, got %v", id.Str(), hash.Str())
 	}
 
-	blobs, hdrSize, err := pack.List(r.Key(), bytes.NewReader(hdrBuf.Bytes()), int64(hdrBuf.Len()))
+	blobs, hdrSize, err := pack.List(r.Key(), bytes.NewReader(hdrBuf), int64(len(hdrBuf)))
 	if err != nil {
 		return err
 	}
