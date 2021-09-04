@@ -11,6 +11,7 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/cenkalti/backoff"
 	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/backend/dryrun"
 	"github.com/restic/restic/internal/cache"
@@ -822,7 +823,7 @@ func StreamPack(ctx context.Context, beLoad BackendLoadFn, key *crypto.Key, pack
 
 			err = handleBlobFn(entry.BlobHandle, plaintext, err)
 			if err != nil {
-				return err
+				return backoff.Permanent(err)
 			}
 		}
 		return nil
