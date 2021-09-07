@@ -483,6 +483,16 @@ The tags can later be used to keep (or forget) snapshots with the ``forget``
 command. The command ``tag`` can be used to modify tags on an existing
 snapshot.
 
+Scheduling backups
+******************
+
+Restic does not have a built-in way of scheduling backups, as it's a tool
+that runs when executed rather than a daemon. There are plenty of different
+ways to schedule backup runs on various different platforms, e.g. systemd
+and cron on Linux/BSD and Task Scheduler in Windows, depending on one's
+needs and requirements. When scheduling restic to run recurringly, please
+make sure to detect already running instances before starting the backup.
+
 Space requirements
 ******************
 
