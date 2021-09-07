@@ -15,6 +15,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -1416,7 +1417,7 @@ func TestFindJSON(t *testing.T) {
 	rtest.Assert(t, matches[0].Hits == 3, "expected hits to show 3 matches (%v)", datafile)
 }
 
-func TestRebuildIndex(t *testing.T) {
+func testRebuildIndex(t *testing.T, backendTestHook backendWrapper) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
@@ -1436,8 +1437,10 @@ func TestRebuildIndex(t *testing.T) {
 		t.Fatalf("did not find hint for rebuild-index command")
 	}
 
+	env.gopts.backendTestHook = backendTestHook
 	testRunRebuildIndex(t, env.gopts)
 
+	env.gopts.backendTestHook = nil
 	out, err = testRunCheckOutput(env.gopts)
 	if len(out) != 0 {
 		t.Fatalf("expected no output from the checker, got: %v", out)
@@ -1448,9 +1451,57 @@ func TestRebuildIndex(t *testing.T) {
 	}
 }
 
+func TestRebuildIndex(t *testing.T) {
+	testRebuildIndex(t, nil)
+}
+
 func TestRebuildIndexAlwaysFull(t *testing.T) {
+	indexFull := repository.IndexFull
+	defer func() {
+		repository.IndexFull = indexFull
+	}()
 	repository.IndexFull = func(*repository.Index) bool { return true }
-	TestRebuildIndex(t)
+	testRebuildIndex(t, nil)
+}
+
+// indexErrorBackend modifies the first index after reading.
+type indexErrorBackend struct {
+	restic.Backend
+	lock     sync.Mutex
+	hasErred bool
+}
+
+func (b *indexErrorBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64, consumer func(rd io.Reader) error) error {
+	return b.Backend.Load(ctx, h, length, offset, func(rd io.Reader) error {
+		// protect hasErred
+		b.lock.Lock()
+		defer b.lock.Unlock()
+		if !b.hasErred && h.Type == restic.IndexFile {
+			b.hasErred = true
+			return consumer(errorReadCloser{rd})
+		}
+		return consumer(rd)
+	})
+}
+
+type errorReadCloser struct {
+	io.Reader
+}
+
+func (erd errorReadCloser) Read(p []byte) (int, error) {
+	n, err := erd.Reader.Read(p)
+	if n > 0 {
+		p[0] ^= 1
+	}
+	return n, err
+}
+
+func TestRebuildIndexDamage(t *testing.T) {
+	testRebuildIndex(t, func(r restic.Backend) (restic.Backend, error) {
+		return &indexErrorBackend{
+			Backend: r,
+		}, nil
+	})
 }
 
 type appendOnlyBackend struct {
