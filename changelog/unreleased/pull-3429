@@ -1,0 +1,12 @@
+Enhancement: Verify that new or modified keys were stored correctly
+
+When adding a new key or changing the password of a key, restic just created the
+new key (and removed the old one, when changing the password). There was no
+verification that the new key was stored correctly and that it work. As the
+repository cannot be decrypted without a valid key file, this could in rare
+cases cause the repository to become inaccessible.
+
+We have added a check that the new key actually works before continuing. This
+can protect against some (rare) cases of hardware or storage problems.
+
+https://github.com/restic/restic/pull/3429
