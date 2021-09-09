@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/restic/restic/internal/ui/progress"
+	"github.com/restic/restic/internal/ui/termstatus"
 )
 
 // calculateProgressInterval returns the interval configured via RESTIC_PROGRESS_FPS
@@ -20,7 +22,7 @@ func calculateProgressInterval(show bool) time.Duration {
 			fps = 60
 		}
 		interval = time.Duration(float64(time.Second) / fps)
-	} else if !stdoutIsTerminal() || !show {
+	} else if !stdoutCanUpdateStatus() || !show {
 		interval = 0
 	}
 	return interval
@@ -32,6 +34,7 @@ func newProgressMax(show bool, max uint64, description string) *progress.Counter
 		return nil
 	}
 	interval := calculateProgressInterval(show)
+	canUpdateStatus := stdoutCanUpdateStatus()
 
 	return progress.New(interval, max, func(v uint64, max uint64, d time.Duration, final bool) {
 		var status string
@@ -42,13 +45,36 @@ func newProgressMax(show bool, max uint64, description string) *progress.Counter
 				formatDuration(d), formatPercent(v, max), v, max, description)
 		}
 
-		if w := stdoutTerminalWidth(); w > 0 {
-			status = shortenStatus(w, status)
-		}
-
-		PrintProgress("%s", status)
+		printProgress(status, canUpdateStatus)
 		if final {
 			fmt.Print("\n")
 		}
 	})
+}
+
+func printProgress(status string, canUpdateStatus bool) {
+	w := stdoutTerminalWidth()
+	if w > 0 {
+		if w < 3 {
+			status = termstatus.Truncate(status, w)
+		} else {
+			status = termstatus.Truncate(status, w-3) + "..."
+		}
+	}
+
+	var carriageControl, clear string
+
+	if canUpdateStatus {
+		clear = clearLine(w)
+	}
+
+	if !(strings.HasSuffix(status, "\r") || strings.HasSuffix(status, "\n")) {
+		if canUpdateStatus {
+			carriageControl = "\r"
+		} else {
+			carriageControl = "\n"
+		}
+	}
+
+	_, _ = os.Stdout.Write([]byte(clear + status + carriageControl))
 }

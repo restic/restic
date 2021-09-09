@@ -15,6 +15,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -345,6 +346,57 @@ func testBackup(t *testing.T, useFsSnapshot bool) {
 	testRunCheck(t, env.gopts)
 }
 
+func TestDryRunBackup(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	opts := BackupOptions{}
+	dryOpts := BackupOptions{DryRun: true}
+
+	// dry run before first backup
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, dryOpts, env.gopts)
+	snapshotIDs := testRunList(t, "snapshots", env.gopts)
+	rtest.Assert(t, len(snapshotIDs) == 0,
+		"expected no snapshot, got %v", snapshotIDs)
+	packIDs := testRunList(t, "packs", env.gopts)
+	rtest.Assert(t, len(packIDs) == 0,
+		"expected no data, got %v", snapshotIDs)
+	indexIDs := testRunList(t, "index", env.gopts)
+	rtest.Assert(t, len(indexIDs) == 0,
+		"expected no index, got %v", snapshotIDs)
+
+	// first backup
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
+	snapshotIDs = testRunList(t, "snapshots", env.gopts)
+	packIDs = testRunList(t, "packs", env.gopts)
+	indexIDs = testRunList(t, "index", env.gopts)
+
+	// dry run between backups
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, dryOpts, env.gopts)
+	snapshotIDsAfter := testRunList(t, "snapshots", env.gopts)
+	rtest.Equals(t, snapshotIDs, snapshotIDsAfter)
+	dataIDsAfter := testRunList(t, "packs", env.gopts)
+	rtest.Equals(t, packIDs, dataIDsAfter)
+	indexIDsAfter := testRunList(t, "index", env.gopts)
+	rtest.Equals(t, indexIDs, indexIDsAfter)
+
+	// second backup, implicit incremental
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
+	snapshotIDs = testRunList(t, "snapshots", env.gopts)
+	packIDs = testRunList(t, "packs", env.gopts)
+	indexIDs = testRunList(t, "index", env.gopts)
+
+	// another dry run
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, dryOpts, env.gopts)
+	snapshotIDsAfter = testRunList(t, "snapshots", env.gopts)
+	rtest.Equals(t, snapshotIDs, snapshotIDsAfter)
+	dataIDsAfter = testRunList(t, "packs", env.gopts)
+	rtest.Equals(t, packIDs, dataIDsAfter)
+	indexIDsAfter = testRunList(t, "index", env.gopts)
+	rtest.Equals(t, indexIDs, indexIDsAfter)
+}
+
 func TestBackupNonExistingFile(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
@@ -374,10 +426,11 @@ func removePacksExcept(gopts GlobalOptions, t *testing.T, keep restic.IDSet, rem
 
 	// Get all tree packs
 	rtest.OK(t, r.LoadIndex(gopts.ctx))
+
 	treePacks := restic.NewIDSet()
-	for _, idx := range r.Index().(*repository.MasterIndex).All() {
-		for _, id := range idx.TreePacks() {
-			treePacks.Insert(id)
+	for pb := range r.Index().Each(context.TODO()) {
+		if pb.Type == restic.TreeBlob {
+			treePacks.Insert(pb.PackID)
 		}
 	}
 
@@ -436,11 +489,10 @@ func TestBackupTreeLoadError(t *testing.T) {
 	r, err := OpenRepository(env.gopts)
 	rtest.OK(t, err)
 	rtest.OK(t, r.LoadIndex(env.gopts.ctx))
-	// collect tree packs of subdirectory
-	subTreePacks := restic.NewIDSet()
-	for _, idx := range r.Index().(*repository.MasterIndex).All() {
-		for _, id := range idx.TreePacks() {
-			subTreePacks.Insert(id)
+	treePacks := restic.NewIDSet()
+	for pb := range r.Index().Each(context.TODO()) {
+		if pb.Type == restic.TreeBlob {
+			treePacks.Insert(pb.PackID)
 		}
 	}
 
@@ -448,7 +500,7 @@ func TestBackupTreeLoadError(t *testing.T) {
 	testRunCheck(t, env.gopts)
 
 	// delete the subdirectory pack first
-	for id := range subTreePacks {
+	for id := range treePacks {
 		rtest.OK(t, r.Backend().Remove(env.gopts.ctx, restic.Handle{Type: restic.PackFile, Name: id.String()}))
 	}
 	testRunRebuildIndex(t, env.gopts)
@@ -799,6 +851,25 @@ func TestCopyIncremental(t *testing.T) {
 		len(copiedSnapshotIDs), len(snapshotIDs))
 }
 
+func TestCopyUnstableJSON(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	env2, cleanup2 := withTestEnvironment(t)
+	defer cleanup2()
+
+	// contains a symlink created using `ln -s '../i/'$'\355\246\361''d/samba' broken-symlink`
+	datafile := filepath.Join("testdata", "copy-unstable-json.tar.gz")
+	rtest.SetupTarTestFixture(t, env.base, datafile)
+
+	testRunInit(t, env2.gopts)
+	testRunCopy(t, env.gopts, env2.gopts)
+	testRunCheck(t, env2.gopts)
+
+	copiedSnapshotIDs := testRunList(t, "snapshots", env2.gopts)
+	rtest.Assert(t, 1 == len(copiedSnapshotIDs), "still expected %v snapshot, found %v",
+		1, len(copiedSnapshotIDs))
+}
+
 func TestInitCopyChunkerParams(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
@@ -1012,6 +1083,41 @@ func TestKeyAddRemove(t *testing.T) {
 	testRunCheck(t, env.gopts)
 
 	testRunKeyAddNewKeyUserHost(t, env.gopts)
+}
+
+type emptySaveBackend struct {
+	restic.Backend
+}
+
+func (b *emptySaveBackend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+	return b.Backend.Save(ctx, h, restic.NewByteReader([]byte{}, nil))
+}
+
+func TestKeyProblems(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testRunInit(t, env.gopts)
+	env.gopts.backendTestHook = func(r restic.Backend) (restic.Backend, error) {
+		return &emptySaveBackend{r}, nil
+	}
+
+	testKeyNewPassword = "geheim2"
+	defer func() {
+		testKeyNewPassword = ""
+	}()
+
+	err := runKey(env.gopts, []string{"passwd"})
+	t.Log(err)
+	rtest.Assert(t, err != nil, "expected passwd change to fail")
+
+	err = runKey(env.gopts, []string{"add"})
+	t.Log(err)
+	rtest.Assert(t, err != nil, "expected key adding to fail")
+
+	t.Logf("testing access with initial password %q\n", env.gopts.password)
+	rtest.OK(t, runKey(env.gopts, []string{"list"}))
+	testRunCheck(t, env.gopts)
 }
 
 func testFileSize(filename string, size int64) error {
@@ -1311,7 +1417,7 @@ func TestFindJSON(t *testing.T) {
 	rtest.Assert(t, matches[0].Hits == 3, "expected hits to show 3 matches (%v)", datafile)
 }
 
-func TestRebuildIndex(t *testing.T) {
+func testRebuildIndex(t *testing.T, backendTestHook backendWrapper) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
@@ -1331,8 +1437,10 @@ func TestRebuildIndex(t *testing.T) {
 		t.Fatalf("did not find hint for rebuild-index command")
 	}
 
+	env.gopts.backendTestHook = backendTestHook
 	testRunRebuildIndex(t, env.gopts)
 
+	env.gopts.backendTestHook = nil
 	out, err = testRunCheckOutput(env.gopts)
 	if len(out) != 0 {
 		t.Fatalf("expected no output from the checker, got: %v", out)
@@ -1343,9 +1451,57 @@ func TestRebuildIndex(t *testing.T) {
 	}
 }
 
+func TestRebuildIndex(t *testing.T) {
+	testRebuildIndex(t, nil)
+}
+
 func TestRebuildIndexAlwaysFull(t *testing.T) {
+	indexFull := repository.IndexFull
+	defer func() {
+		repository.IndexFull = indexFull
+	}()
 	repository.IndexFull = func(*repository.Index) bool { return true }
-	TestRebuildIndex(t)
+	testRebuildIndex(t, nil)
+}
+
+// indexErrorBackend modifies the first index after reading.
+type indexErrorBackend struct {
+	restic.Backend
+	lock     sync.Mutex
+	hasErred bool
+}
+
+func (b *indexErrorBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64, consumer func(rd io.Reader) error) error {
+	return b.Backend.Load(ctx, h, length, offset, func(rd io.Reader) error {
+		// protect hasErred
+		b.lock.Lock()
+		defer b.lock.Unlock()
+		if !b.hasErred && h.Type == restic.IndexFile {
+			b.hasErred = true
+			return consumer(errorReadCloser{rd})
+		}
+		return consumer(rd)
+	})
+}
+
+type errorReadCloser struct {
+	io.Reader
+}
+
+func (erd errorReadCloser) Read(p []byte) (int, error) {
+	n, err := erd.Reader.Read(p)
+	if n > 0 {
+		p[0] ^= 1
+	}
+	return n, err
+}
+
+func TestRebuildIndexDamage(t *testing.T) {
+	testRebuildIndex(t, func(r restic.Backend) (restic.Backend, error) {
+		return &indexErrorBackend{
+			Backend: r,
+		}, nil
+	})
 }
 
 type appendOnlyBackend struct {

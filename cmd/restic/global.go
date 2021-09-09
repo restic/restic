@@ -33,13 +33,14 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/textfile"
+	"github.com/restic/restic/internal/ui/termstatus"
 
 	"github.com/restic/restic/internal/errors"
 
 	"golang.org/x/crypto/ssh/terminal"
 )
 
-var version = "0.12.0-dev (compiled manually)"
+var version = "0.12.1-dev (compiled manually)"
 var netappversion = "1.0.0-dev (compiled manually)"
 
 // TimeFormat is the format used for all timestamps printed by restic.
@@ -119,6 +120,8 @@ func init() {
 	f.IntVar(&globalOptions.LimitUploadKb, "limit-upload", 0, "limits uploads to a maximum rate in KiB/s. (default: unlimited)")
 	f.IntVar(&globalOptions.LimitDownloadKb, "limit-download", 0, "limits downloads to a maximum rate in KiB/s. (default: unlimited)")
 	f.StringSliceVarP(&globalOptions.Options, "option", "o", []string{}, "set extended option (`key=value`, can be specified multiple times)")
+	// Use our "generate" command instead of the cobra provided "completion" command
+	cmdRoot.CompletionOptions.DisableDefaultCmd = true
 
 	restoreTerminal()
 }
@@ -143,7 +146,13 @@ func stdinIsTerminal() bool {
 }
 
 func stdoutIsTerminal() bool {
-	return terminal.IsTerminal(int(os.Stdout.Fd()))
+	// mintty on windows can use pipes which behave like a posix terminal,
+	// but which are not a terminal handle
+	return terminal.IsTerminal(int(os.Stdout.Fd())) || stdoutCanUpdateStatus()
+}
+
+func stdoutCanUpdateStatus() bool {
+	return termstatus.CanUpdateStatus(os.Stdout.Fd())
 }
 
 func stdoutTerminalWidth() int {
@@ -160,7 +169,7 @@ func stdoutTerminalWidth() int {
 // program execution must revert changes to the terminal configuration itself.
 // The terminal configuration is only restored while reading a password.
 func restoreTerminal() {
-	if !stdoutIsTerminal() {
+	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
 		return
 	}
 
@@ -189,16 +198,21 @@ func restoreTerminal() {
 }
 
 // ClearLine creates a platform dependent string to clear the current
-// line, so it can be overwritten. ANSI sequences are not supported on
-// current windows cmd shell.
-func ClearLine() string {
-	if runtime.GOOS == "windows" {
-		if w := stdoutTerminalWidth(); w > 0 {
-			return strings.Repeat(" ", w-1) + "\r"
-		}
-		return ""
+// line, so it can be overwritten.
+//
+// w should be the terminal width, or 0 to let clearLine figure it out.
+func clearLine(w int) string {
+	if runtime.GOOS != "windows" {
+		return "\x1b[2K"
 	}
-	return "\x1b[2K"
+
+	// ANSI sequences are not supported on Windows cmd shell.
+	if w <= 0 {
+		if w = stdoutTerminalWidth(); w <= 0 {
+			return ""
+		}
+	}
+	return strings.Repeat(" ", w-1) + "\r"
 }
 
 // Printf writes the message to the configured stdout stream.
@@ -237,31 +251,6 @@ func Verboseff(format string, args ...interface{}) {
 	if globalOptions.verbosity >= 2 {
 		Printf(format, args...)
 	}
-}
-
-// PrintProgress wraps fmt.Printf to handle the difference in writing progress
-// information to terminals and non-terminal stdout
-func PrintProgress(format string, args ...interface{}) {
-	var (
-		message         string
-		carriageControl string
-	)
-	message = fmt.Sprintf(format, args...)
-
-	if !(strings.HasSuffix(message, "\r") || strings.HasSuffix(message, "\n")) {
-		if stdoutIsTerminal() {
-			carriageControl = "\r"
-		} else {
-			carriageControl = "\n"
-		}
-		message = fmt.Sprintf("%s%s", message, carriageControl)
-	}
-
-	if stdoutIsTerminal() {
-		message = fmt.Sprintf("%s%s", ClearLine(), message)
-	}
-
-	fmt.Print(message)
 }
 
 // Warnf writes the message to the configured stderr stream.

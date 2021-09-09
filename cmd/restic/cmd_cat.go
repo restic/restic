@@ -69,7 +69,6 @@ func runCat(gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	// handle all types that don't need an index
 	switch tpe {
 	case "config":
 		buf, err := json.MarshalIndent(repo.Config(), "", "  ")
@@ -142,15 +141,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 
 		Println(string(buf))
 		return nil
-	}
 
-	// load index, handle all the other types
-	err = repo.LoadIndex(gopts.ctx)
-	if err != nil {
-		return err
-	}
-
-	switch tpe {
 	case "pack":
 		h := restic.Handle{Type: restic.PackFile, Name: id.String()}
 		buf, err := backend.LoadAll(gopts.ctx, nil, repo.Backend(), h)
@@ -167,6 +158,11 @@ func runCat(gopts GlobalOptions, args []string) error {
 		return err
 
 	case "blob":
+		err = repo.LoadIndex(gopts.ctx)
+		if err != nil {
+			return err
+		}
+
 		for _, t := range []restic.BlobType{restic.DataBlob, restic.TreeBlob} {
 			bh := restic.BlobHandle{ID: id, Type: t}
 			if !repo.Index().Has(bh) {

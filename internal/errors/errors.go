@@ -27,6 +27,8 @@ var Wrapf = errors.Wrapf
 // returns nil.
 var WithMessage = errors.WithMessage
 
+var WithStack = errors.WithStack
+
 // Cause returns the cause of an error. It will also unwrap certain errors,
 // e.g. *url.Error returned by the net/http client.
 func Cause(err error) error {

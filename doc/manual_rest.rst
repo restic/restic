@@ -26,7 +26,7 @@ Usage help is available:
       dump          Print a backed-up file to stdout
       find          Find a file, a directory or restic IDs
       forget        Remove snapshots from the repository
-      generate      Generate manual pages and auto-completion files (bash, zsh)
+      generate      Generate manual pages and auto-completion files (bash, fish, zsh)
       help          Help about any command
       init          Initialize a new repository
       key           Manage keys (passwords)
@@ -105,7 +105,7 @@ command:
           --iexclude pattern                       same as --exclude pattern but ignores the casing of filenames
           --iexclude-file file                     same as --exclude-file but ignores casing of filenames in patterns
           --ignore-inode                           ignore inode number changes when checking for modified files
-      -x, --one-file-system                        exclude other file systems
+      -x, --one-file-system                        exclude other file systems, don't cross filesystem boundaries and subvolumes
           --parent snapshot                        use this parent snapshot (default: last snapshot in the repo that has the same target files/directories)
           --stdin                                  read backup from stdin
           --stdin-filename filename                filename to use when reading from stdin (default "stdin")
@@ -165,12 +165,10 @@ command does that:
     create exclusive lock for repository
     modified tags on 1 snapshots
 
-Note the snapshot ID has changed, so between each change we need to look
-up the new ID of the snapshot. But there is an even better way, the
-``tag`` command accepts ``--tag`` for a filter, so we can filter
-snapshots based on the tag we just added.
-
-So we can add and remove tags incrementally like this:
+Note the snapshot ID has changed, so between each change we need to look up the
+new ID of the snapshot. But there is an even better way - the ``tag`` command
+accepts a filter using the ``--tag`` option, so we can filter snapshots based
+on the tag we just added. This way we can add and remove tags incrementally:
 
 .. code-block:: console
 
@@ -188,6 +186,14 @@ So we can add and remove tags incrementally like this:
 
     $ restic -r /srv/restic-repo tag --tag NL --add SOMETHING
     no snapshots were modified
+
+To operate on untagged snapshots only, specify the empty string ``''`` as the
+filter value to ``--tag``. The following command will add the tag ``OTHER``
+to all untagged snapshots:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo tag --tag '' --add OTHER
 
 Under the hood
 --------------

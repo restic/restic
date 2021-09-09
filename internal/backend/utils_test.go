@@ -26,7 +26,7 @@ func TestLoadAll(t *testing.T) {
 
 		id := restic.Hash(data)
 		h := restic.Handle{Name: id.String(), Type: restic.PackFile}
-		err := b.Save(context.TODO(), h, restic.NewByteReader(data))
+		err := b.Save(context.TODO(), h, restic.NewByteReader(data, b.Hasher()))
 		rtest.OK(t, err)
 
 		buf, err := backend.LoadAll(context.TODO(), buf, b, restic.Handle{Type: restic.PackFile, Name: id.String()})
@@ -47,7 +47,7 @@ func TestLoadAll(t *testing.T) {
 func save(t testing.TB, be restic.Backend, buf []byte) restic.Handle {
 	id := restic.Hash(buf)
 	h := restic.Handle{Name: id.String(), Type: restic.PackFile}
-	err := be.Save(context.TODO(), h, restic.NewByteReader(buf))
+	err := be.Save(context.TODO(), h, restic.NewByteReader(buf, be.Hasher()))
 	if err != nil {
 		t.Fatal(err)
 	}

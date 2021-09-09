@@ -1,0 +1,13 @@
+Enhancement: `find --pack` fallback to index if data file is missing
+
+When investigating a repository with missing data files, it might be useful to
+determine affected snapshots before running `rebuild-index`. Previously,
+`find --pack pack-id` returned no data as it required accessing the data file.
+Now, if the necessary data is still available in the repository index, it gets
+retrieved from there.
+
+The command now also supports looking up multiple pack files in a single `find`
+run.
+
+https://github.com/restic/restic/pull/3427
+https://forum.restic.net/t/missing-packs-not-found/2600

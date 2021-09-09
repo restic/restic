@@ -303,7 +303,7 @@ func TestSave(t *testing.T) {
 	be, client := makeBackend()
 	handle := makeHandle()
 	reader := bytes.NewReader([]byte("read me"))
-	fileReader, err := restic.NewFileReader(reader)
+	fileReader, err := restic.NewFileReader(reader, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

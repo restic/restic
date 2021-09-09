@@ -4,11 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"hash"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/textproto"
 	"net/url"
 	"path"
+	"strconv"
 	"strings"
 
 	"golang.org/x/net/context/ctxhttp"
@@ -107,6 +110,11 @@ func (b *Backend) Location() string {
 	return b.url.String()
 }
 
+// Hasher may return a hash function for calculating a content hash for the backend
+func (b *Backend) Hasher() hash.Hash {
+	return nil
+}
+
 // Save stores data in the backend at the handle.
 func (b *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
 	if err := h.Valid(); err != nil {
@@ -197,6 +205,44 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 	return err
 }
 
+// checkContentLength returns an error if the server returned a value in the
+// Content-Length header in an HTTP2 connection, but closed the connection
+// before any data was sent.
+//
+// This is a workaround for https://github.com/golang/go/issues/46071
+//
+// See also https://forum.restic.net/t/http2-stream-closed-connection-reset-context-canceled/3743/10
+func checkContentLength(resp *http.Response) error {
+	// the following code is based on
+	// https://github.com/golang/go/blob/b7a85e0003cedb1b48a1fd3ae5b746ec6330102e/src/net/http/h2_bundle.go#L8646
+
+	if resp.ContentLength != 0 {
+		return nil
+	}
+
+	if resp.ProtoMajor != 2 && resp.ProtoMinor != 0 {
+		return nil
+	}
+
+	if len(resp.Header[textproto.CanonicalMIMEHeaderKey("Content-Length")]) != 1 {
+		return nil
+	}
+
+	// make sure that if the server returned a content length and we can
+	// parse it, it is really zero, otherwise return an error
+	contentLength := resp.Header.Get("Content-Length")
+	cl, err := strconv.ParseUint(contentLength, 10, 63)
+	if err != nil {
+		return fmt.Errorf("unable to parse Content-Length %q: %w", contentLength, err)
+	}
+
+	if cl != 0 {
+		return errors.Errorf("unexpected EOF: got 0 instead of %v bytes", cl)
+	}
+
+	return nil
+}
+
 func (b *Backend) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	debug.Log("Load %v, length %v, offset %v", h, length, offset)
 	if err := h.Valid(); err != nil {
@@ -244,6 +290,14 @@ func (b *Backend) openReader(ctx context.Context, h restic.Handle, length int, o
 	if resp.StatusCode != 200 && resp.StatusCode != 206 {
 		_ = resp.Body.Close()
 		return nil, errors.Errorf("unexpected HTTP response (%v): %v", resp.StatusCode, resp.Status)
+	}
+
+	// workaround https://github.com/golang/go/issues/46071
+	// see also https://forum.restic.net/t/http2-stream-closed-connection-reset-context-canceled/3743/10
+	err = checkContentLength(resp)
+	if err != nil {
+		_ = resp.Body.Close()
+		return nil, err
 	}
 
 	return resp.Body, nil

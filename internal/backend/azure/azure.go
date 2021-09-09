@@ -2,7 +2,9 @@ package azure
 
 import (
 	"context"
+	"crypto/md5"
 	"encoding/base64"
+	"hash"
 	"io"
 	"net/http"
 	"os"
@@ -112,6 +114,11 @@ func (be *Backend) Location() string {
 	return be.Join(be.container.Name, be.prefix)
 }
 
+// Hasher may return a hash function for calculating a content hash for the backend
+func (be *Backend) Hasher() hash.Hash {
+	return md5.New()
+}
+
 // Path returns the path in the bucket that is used for this backend.
 func (be *Backend) Path() string {
 	return be.prefix
@@ -148,7 +155,9 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 		dataReader := azureAdapter{rd}
 
 		// if it's smaller than 256miB, then just create the file directly from the reader
-		err = be.container.GetBlobReference(objName).CreateBlockBlobFromReader(dataReader, nil)
+		ref := be.container.GetBlobReference(objName)
+		ref.Properties.ContentMD5 = base64.StdEncoding.EncodeToString(rd.Hash())
+		err = ref.CreateBlockBlobFromReader(dataReader, nil)
 	} else {
 		// otherwise use the more complicated method
 		err = be.saveLarge(ctx, objName, rd)
@@ -192,10 +201,10 @@ func (be *Backend) saveLarge(ctx context.Context, objName string, rd restic.Rewi
 		uploadedBytes += n
 
 		// upload it as a new "block", use the base64 hash for the ID
-		h := restic.Hash(buf)
+		h := md5.Sum(buf)
 		id := base64.StdEncoding.EncodeToString(h[:])
 		debug.Log("PutBlock %v with %d bytes", id, len(buf))
-		err = file.PutBlock(id, buf, nil)
+		err = file.PutBlock(id, buf, &storage.PutBlockOptions{ContentMD5: id})
 		if err != nil {
 			return errors.Wrap(err, "PutBlock")
 		}

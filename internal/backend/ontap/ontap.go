@@ -2,8 +2,10 @@ package ontap
 
 import (
 	"context"
+	"crypto/md5"
 	"crypto/tls"
 	"fmt"
+	"hash"
 	"io"
 	"net/http"
 	"os"
@@ -43,6 +45,11 @@ type Backend struct {
 	sem    *backend.Semaphore
 	cfg    Config
 	backend.Layout
+}
+
+// Hasher may return a hash function for calculating a content hash for the backend
+func (be *Backend) Hasher() hash.Hash {
+	return md5.New()
 }
 
 func (be *Backend) Join(s ...string) string {

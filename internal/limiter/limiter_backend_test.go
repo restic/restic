@@ -39,7 +39,7 @@ func TestLimitBackendSave(t *testing.T) {
 	limiter := NewStaticLimiter(42*1024, 42*1024)
 	limbe := LimitBackend(be, limiter)
 
-	rd := restic.NewByteReader(data)
+	rd := restic.NewByteReader(data, nil)
 	err := limbe.Save(context.TODO(), testHandle, rd)
 	rtest.OK(t, err)
 }

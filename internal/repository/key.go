@@ -279,7 +279,7 @@ func AddKey(ctx context.Context, s *Repository, password, username, hostname str
 		Name: restic.Hash(buf).String(),
 	}
 
-	err = s.be.Save(ctx, h, restic.NewByteReader(buf))
+	err = s.be.Save(ctx, h, restic.NewByteReader(buf, s.be.Hasher()))
 	if err != nil {
 		return nil, err
 	}

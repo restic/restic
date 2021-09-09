@@ -92,6 +92,7 @@ type BackupOptions struct {
 	IgnoreInode             bool
 	IgnoreCtime             bool
 	UseFsSnapshot           bool
+	DryRun                  bool
 }
 
 var backupOptions BackupOptions
@@ -109,7 +110,7 @@ func init() {
 	f.StringArrayVar(&backupOptions.InsensitiveExcludes, "iexclude", nil, "same as --exclude `pattern` but ignores the casing of filenames")
 	f.StringArrayVar(&backupOptions.ExcludeFiles, "exclude-file", nil, "read exclude patterns from a `file` (can be specified multiple times)")
 	f.StringArrayVar(&backupOptions.InsensitiveExcludeFiles, "iexclude-file", nil, "same as --exclude-file but ignores casing of `file`names in patterns")
-	f.BoolVarP(&backupOptions.ExcludeOtherFS, "one-file-system", "x", false, "exclude other file systems")
+	f.BoolVarP(&backupOptions.ExcludeOtherFS, "one-file-system", "x", false, "exclude other file systems, don't cross filesystem boundaries and subvolumes")
 	f.StringArrayVar(&backupOptions.ExcludeIfPresent, "exclude-if-present", nil, "takes `filename[:header]`, exclude contents of directories containing filename (except filename itself) if header of that file is as provided (can be specified multiple times)")
 	f.BoolVar(&backupOptions.ExcludeCaches, "exclude-caches", false, `excludes cache directories that are marked with a CACHEDIR.TAG file. See https://bford.info/cachedir/ for the Cache Directory Tagging Standard`)
 	f.StringVar(&backupOptions.ExcludeLargerThan, "exclude-larger-than", "", "max `size` of the files to be backed up (allowed suffixes: k/K, m/M, g/G, t/T)")
@@ -132,6 +133,7 @@ func init() {
 	f.BoolVar(&backupOptions.WithAtime, "with-atime", false, "store the atime for all files and directories")
 	f.BoolVar(&backupOptions.IgnoreInode, "ignore-inode", false, "ignore inode number changes when checking for modified files")
 	f.BoolVar(&backupOptions.IgnoreCtime, "ignore-ctime", false, "ignore ctime changes when checking for modified files")
+	f.BoolVarP(&backupOptions.DryRun, "dry-run", "n", false, "do not upload or write any data, just show what would be done")
 	if runtime.GOOS == "windows" {
 		f.BoolVar(&backupOptions.UseFsSnapshot, "use-fs-snapshot", false, "use filesystem snapshot where possible (currently only Windows VSS)")
 	}
@@ -535,6 +537,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		Run(ctx context.Context) error
 		Error(item string, fi os.FileInfo, err error) error
 		Finish(snapshotID restic.ID)
+		SetDryRun()
 
 		// ui.StdioWrapper
 		Stdout() io.WriteCloser
@@ -552,6 +555,11 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		p = json.NewBackup(term, gopts.verbosity)
 	} else {
 		p = ui.NewBackup(term, gopts.verbosity)
+	}
+
+	if opts.DryRun {
+		repo.SetDryRun()
+		p.SetDryRun()
 	}
 
 	// use the terminal for stdout/stderr
@@ -708,19 +716,21 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		p.V("start backup on %v", targets)
 	}
 	_, id, err := arch.Snapshot(gopts.ctx, targets, snapshotOpts)
-	if err != nil {
-		return errors.Fatalf("unable to save snapshot: %v", err)
-	}
 
 	// cleanly shutdown all running goroutines
 	t.Kill(nil)
 
 	// let's see if one returned an error
-	err = t.Wait()
+	werr := t.Wait()
+
+	// return original error
+	if err != nil {
+		return errors.Fatalf("unable to save snapshot: %v", err)
+	}
 
 	// Report finished execution
 	p.Finish(id)
-	if !gopts.JSON {
+	if !gopts.JSON && !opts.DryRun {
 		p.P("snapshot %s saved\n", id.Str())
 	}
 	if !success {
@@ -728,5 +738,5 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	}
 
 	// Return error if any
-	return err
+	return werr
 }

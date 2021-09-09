@@ -8,10 +8,6 @@ func (node Node) restoreSymlinkTimestamps(path string, utimes [2]syscall.Timespe
 	return nil
 }
 
-func (node Node) device() int {
-	return int(node.Device)
-}
-
 // AIX has a funny timespec type in syscall, with 32-bit nanoseconds.
 // golang.org/x/sys/unix handles this cleanly, but we're stuck with syscall
 // because os.Stat returns a syscall type in its os.FileInfo.Sys().

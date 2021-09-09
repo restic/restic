@@ -166,6 +166,11 @@ func match(patterns Pattern, strs []string) (matched bool, err error) {
 		return true, nil
 	}
 
+	// an empty pattern never matches a non-empty path
+	if len(patterns) == 0 {
+		return false, nil
+	}
+
 	if len(patterns) <= len(strs) {
 		minOffset := 0
 		maxOffset := len(strs) - len(patterns)
