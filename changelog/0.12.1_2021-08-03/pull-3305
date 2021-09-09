@@ -1,0 +1,6 @@
+Bugfix: Fix possibly missing backup summary of JSON output in case of error
+
+When using `--json` output it happened from time to time that the summary
+output was missing in case an error occurred. This has been fixed.
+
+https://github.com/restic/restic/pull/3305

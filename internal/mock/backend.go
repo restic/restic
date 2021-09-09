@@ -2,6 +2,7 @@ package mock
 
 import (
 	"context"
+	"hash"
 	"io"
 
 	"github.com/restic/restic/internal/errors"
@@ -20,6 +21,7 @@ type Backend struct {
 	TestFn       func(ctx context.Context, h restic.Handle) (bool, error)
 	DeleteFn     func(ctx context.Context) error
 	LocationFn   func() string
+	HasherFn     func() hash.Hash
 }
 
 // NewBackend returns new mock Backend instance
@@ -44,6 +46,15 @@ func (m *Backend) Location() string {
 	}
 
 	return m.LocationFn()
+}
+
+// Hasher may return a hash function for calculating a content hash for the backend
+func (m *Backend) Hasher() hash.Hash {
+	if m.HasherFn == nil {
+		return nil
+	}
+
+	return m.HasherFn()
 }
 
 // IsNotExist returns true if the error is caused by a missing file.

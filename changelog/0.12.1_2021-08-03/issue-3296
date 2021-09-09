@@ -1,7 +1,7 @@
 Bugfix: Fix crash of `check --read-data-subset=x%` run for an empty repository
 
-`check --read-data-subset=x%` crashed when run for an empty repository. This
-has been fixed.
+The command `restic check --read-data-subset=x%` crashed when run for an empty
+repository. This has been fixed.
 
 https://github.com/restic/restic/issues/3296
 https://github.com/restic/restic/pull/3309

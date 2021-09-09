@@ -42,9 +42,11 @@ make %{?_smp_mflags}
 mkdir -p %{buildroot}%{_bindir}
 mkdir -p %{buildroot}%{_mandir}/man1
 mkdir -p %{buildroot}%{_datarootdir}/zsh/site-functions
+mkdir -p %{buildroot}%{_datarootdir}/fish/vendor_completions.d
 mkdir -p %{buildroot}%{_datarootdir}/bash-completion/completions
 install -p -m 644 doc/man/* %{buildroot}%{_mandir}/man1/
 install -p -m 644 doc/zsh-completion.zsh %{buildroot}%{_datarootdir}/zsh/site-functions/_restic
+install -p -m 644 doc/fish-completion.fish %{buildroot}%{_datarootdir}/fish/vendor_completions.d/restic.fish
 install -p -m 644 doc/bash-completion.sh %{buildroot}%{_datarootdir}/bash-completion/completions/restic
 install -p -m 755 %{name} %{buildroot}%{_bindir}
 
@@ -54,6 +56,8 @@ install -p -m 755 %{name} %{buildroot}%{_bindir}
 %{_bindir}/%{name}
 %dir %{_datadir}/zsh/site-functions
 %{_datadir}/zsh/site-functions/_restic
+%dir %{_datadir}/fish/vendor_completions.d
+%{_datadir}/fish/vendor_completions.d/restic.fish
 %dir %{_datadir}/bash-completion/
 %dir %{_datadir}/bash-completion/completions
 %{_datadir}/bash-completion/completions/restic

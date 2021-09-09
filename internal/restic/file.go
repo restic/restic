@@ -21,8 +21,9 @@ const (
 
 // Handle is used to store and access data in a backend.
 type Handle struct {
-	Type FileType
-	Name string
+	Type              FileType
+	ContainedBlobType BlobType
+	Name              string
 }
 
 func (h Handle) String() string {

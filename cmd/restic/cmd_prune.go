@@ -119,18 +119,6 @@ func verifyPruneOptions(opts *PruneOptions) error {
 	return nil
 }
 
-func shortenStatus(maxLength int, s string) string {
-	if len(s) <= maxLength {
-		return s
-	}
-
-	if maxLength < 3 {
-		return s[:maxLength]
-	}
-
-	return s[:maxLength-3] + "..."
-}
-
 func runPrune(opts PruneOptions, gopts GlobalOptions) error {
 	err := verifyPruneOptions(&opts)
 	if err != nil {
@@ -249,7 +237,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 			"Integrity check failed: Data seems to be missing.\n"+
 			"Will not start prune to prevent (additional) data loss!\n"+
 			"Please report this error (along with the output of the 'prune' run) at\n"+
-			"https://github.com/restic/restic/issues/new/choose", usedBlobs)
+			"https://github.com/restic/restic/issues/new/choose\n", usedBlobs)
 		return errorIndexIncomplete
 	}
 
@@ -324,7 +312,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 			// Pack size does not fit and pack is needed => error
 			// If the pack is not needed, this is no error, the pack can
 			// and will be simply removed, see below.
-			Warnf("pack %s: calculated size %d does not match real size %d\nRun 'restic rebuild-index'.",
+			Warnf("pack %s: calculated size %d does not match real size %d\nRun 'restic rebuild-index'.\n",
 				id.Str(), p.unusedSize+p.usedSize, packSize)
 			return errorSizeNotMatching
 		}

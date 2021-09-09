@@ -1,0 +1,11 @@
+Bugfix: Fix terminal output redirection for PowerShell
+
+When redirecting the output of restic using PowerShell on Windows, the
+output contained terminal escape characters. This has been fixed by
+properly detecting the terminal type.
+
+In addition, the mintty terminal now shows progress output for the backup
+command.
+
+https://github.com/restic/restic/issues/3111
+https://github.com/restic/restic/pull/3325

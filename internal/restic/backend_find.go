@@ -10,7 +10,7 @@ import (
 type MultipleIDMatchesError struct{ prefix string }
 
 func (e *MultipleIDMatchesError) Error() string {
-	return fmt.Sprintf("multiple IDs with prefix %s found", e.prefix)
+	return fmt.Sprintf("multiple IDs with prefix %q found", e.prefix)
 }
 
 // A NoIDByPrefixError is returned by Find() when no ID for a given prefix

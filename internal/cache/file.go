@@ -2,8 +2,10 @@ package cache
 
 import (
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/pkg/errors"
 	"github.com/restic/restic/internal/crypto"
@@ -84,31 +86,26 @@ func (c *Cache) load(h restic.Handle, length int, offset int64) (io.ReadCloser, 
 	return rd, nil
 }
 
-// SaveWriter returns a writer for the cache object h. It must be closed after writing is finished.
-func (c *Cache) saveWriter(h restic.Handle) (io.WriteCloser, error) {
-	debug.Log("Save to cache: %v", h)
-	if !c.canBeCached(h.Type) {
-		return nil, errors.New("cannot be cached")
-	}
-
-	p := c.filename(h)
-	err := fs.MkdirAll(filepath.Dir(p), 0700)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	f, err := fs.OpenFile(p, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0400)
-	return f, errors.WithStack(err)
-}
-
 // Save saves a file in the cache.
 func (c *Cache) Save(h restic.Handle, rd io.Reader) error {
 	debug.Log("Save to cache: %v", h)
 	if rd == nil {
 		return errors.New("Save() called with nil reader")
 	}
+	if !c.canBeCached(h.Type) {
+		return errors.New("cannot be cached")
+	}
 
-	f, err := c.saveWriter(h)
+	finalname := c.filename(h)
+	dir := filepath.Dir(finalname)
+	err := fs.Mkdir(dir, 0700)
+	if err != nil && !errors.Is(err, os.ErrExist) {
+		return err
+	}
+
+	// First save to a temporary location. This allows multiple concurrent
+	// restics to use a single cache dir.
+	f, err := ioutil.TempFile(dir, "tmp-")
 	if err != nil {
 		return err
 	}
@@ -116,23 +113,38 @@ func (c *Cache) Save(h restic.Handle, rd io.Reader) error {
 	n, err := io.Copy(f, rd)
 	if err != nil {
 		_ = f.Close()
-		_ = c.remove(h)
+		_ = fs.Remove(f.Name())
 		return errors.Wrap(err, "Copy")
 	}
 
 	if n <= crypto.Extension {
 		_ = f.Close()
-		_ = c.remove(h)
+		_ = fs.Remove(f.Name())
 		debug.Log("trying to cache truncated file %v, removing", h)
 		return nil
 	}
 
+	// Close, then rename. Windows doesn't like the reverse order.
 	if err = f.Close(); err != nil {
-		_ = c.remove(h)
+		_ = fs.Remove(f.Name())
 		return errors.WithStack(err)
 	}
 
-	return nil
+	err = fs.Rename(f.Name(), finalname)
+	if err != nil {
+		_ = fs.Remove(f.Name())
+	}
+	if runtime.GOOS == "windows" && errors.Is(err, os.ErrPermission) {
+		// On Windows, renaming over an existing file is ok
+		// (os.Rename is MoveFileExW with MOVEFILE_REPLACE_EXISTING
+		// since Go 1.5), but not when someone else has the file open.
+		//
+		// When we get Access denied, we assume that's the case
+		// and the other process has written the desired contents to f.
+		err = nil
+	}
+
+	return errors.WithStack(err)
 }
 
 // Remove deletes a file. When the file is not cache, no error is returned.

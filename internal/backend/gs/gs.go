@@ -3,6 +3,8 @@ package gs
 
 import (
 	"context"
+	"crypto/md5"
+	"hash"
 	"io"
 	"net/http"
 	"os"
@@ -188,6 +190,11 @@ func (be *Backend) Location() string {
 	return be.Join(be.bucketName, be.prefix)
 }
 
+// Hasher may return a hash function for calculating a content hash for the backend
+func (be *Backend) Hasher() hash.Hash {
+	return md5.New()
+}
+
 // Path returns the path in the bucket that is used for this backend.
 func (be *Backend) Path() string {
 	return be.prefix
@@ -234,6 +241,7 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 	// uploads are not providing significant benefit anyways.
 	w := be.bucket.Object(objName).NewWriter(ctx)
 	w.ChunkSize = 0
+	w.MD5 = rd.Hash()
 	wbytes, err := io.Copy(w, rd)
 	cerr := w.Close()
 	if err == nil {

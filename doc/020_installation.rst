@@ -292,20 +292,21 @@ compiler. Building restic with gccgo may work, but is not supported.
 Autocompletion
 **************
 
-Restic can write out man pages and bash/zsh compatible autocompletion scripts:
+Restic can write out man pages and bash/fish/zsh compatible autocompletion scripts:
 
 .. code-block:: console
 
     $ ./restic generate --help
 
     The "generate" command writes automatically generated files (like the man pages
-    and the auto-completion files for bash and zsh).
+    and the auto-completion files for bash, fish and zsh).
 
     Usage:
       restic generate [flags] [command]
 
     Flags:
           --bash-completion file   write bash completion file
+          --fish-completion file   write fish completion file
       -h, --help                   help for generate
           --man directory          write man pages to directory
           --zsh-completion file    write zsh completion file

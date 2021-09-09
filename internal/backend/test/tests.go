@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/minio/sha256-simd"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
@@ -85,7 +86,7 @@ func (s *Suite) TestConfig(t *testing.T) {
 		t.Fatalf("did not get expected error for non-existing config")
 	}
 
-	err = b.Save(context.TODO(), restic.Handle{Type: restic.ConfigFile}, restic.NewByteReader([]byte(testString)))
+	err = b.Save(context.TODO(), restic.Handle{Type: restic.ConfigFile}, restic.NewByteReader([]byte(testString), b.Hasher()))
 	if err != nil {
 		t.Fatalf("Save() error: %+v", err)
 	}
@@ -135,7 +136,7 @@ func (s *Suite) TestLoad(t *testing.T) {
 	id := restic.Hash(data)
 
 	handle := restic.Handle{Type: restic.PackFile, Name: id.String()}
-	err = b.Save(context.TODO(), handle, restic.NewByteReader(data))
+	err = b.Save(context.TODO(), handle, restic.NewByteReader(data, b.Hasher()))
 	if err != nil {
 		t.Fatalf("Save() error: %+v", err)
 	}
@@ -254,7 +255,7 @@ func (s *Suite) TestList(t *testing.T) {
 		data := test.Random(rand.Int(), rand.Intn(100)+55)
 		id := restic.Hash(data)
 		h := restic.Handle{Type: restic.PackFile, Name: id.String()}
-		err := b.Save(context.TODO(), h, restic.NewByteReader(data))
+		err := b.Save(context.TODO(), h, restic.NewByteReader(data, b.Hasher()))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -349,7 +350,7 @@ func (s *Suite) TestListCancel(t *testing.T) {
 		data := []byte(fmt.Sprintf("random test blob %v", i))
 		id := restic.Hash(data)
 		h := restic.Handle{Type: restic.PackFile, Name: id.String()}
-		err := b.Save(context.TODO(), h, restic.NewByteReader(data))
+		err := b.Save(context.TODO(), h, restic.NewByteReader(data, b.Hasher()))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -453,6 +454,7 @@ type errorCloser struct {
 	io.ReadSeeker
 	l int64
 	t testing.TB
+	h []byte
 }
 
 func (ec errorCloser) Close() error {
@@ -462,6 +464,10 @@ func (ec errorCloser) Close() error {
 
 func (ec errorCloser) Length() int64 {
 	return ec.l
+}
+
+func (ec errorCloser) Hash() []byte {
+	return ec.h
 }
 
 func (ec errorCloser) Rewind() error {
@@ -485,14 +491,13 @@ func (s *Suite) TestSave(t *testing.T) {
 	for i := 0; i < saveTests; i++ {
 		length := rand.Intn(1<<23) + 200000
 		data := test.Random(23, length)
-		// use the first 32 byte as the ID
-		copy(id[:], data)
+		id = sha256.Sum256(data)
 
 		h := restic.Handle{
 			Type: restic.PackFile,
-			Name: fmt.Sprintf("%s-%d", id, i),
+			Name: id.String(),
 		}
-		err := b.Save(context.TODO(), h, restic.NewByteReader(data))
+		err := b.Save(context.TODO(), h, restic.NewByteReader(data, b.Hasher()))
 		test.OK(t, err)
 
 		buf, err := backend.LoadAll(context.TODO(), nil, b, h)
@@ -530,7 +535,7 @@ func (s *Suite) TestSave(t *testing.T) {
 
 	length := rand.Intn(1<<23) + 200000
 	data := test.Random(23, length)
-	copy(id[:], data)
+	id = sha256.Sum256(data)
 
 	if _, err = tmpfile.Write(data); err != nil {
 		t.Fatal(err)
@@ -544,7 +549,22 @@ func (s *Suite) TestSave(t *testing.T) {
 
 	// wrap the tempfile in an errorCloser, so we can detect if the backend
 	// closes the reader
-	err = b.Save(context.TODO(), h, errorCloser{t: t, l: int64(length), ReadSeeker: tmpfile})
+	var beHash []byte
+	if b.Hasher() != nil {
+		beHasher := b.Hasher()
+		// must never fail according to interface
+		_, err := beHasher.Write(data)
+		if err != nil {
+			panic(err)
+		}
+		beHash = beHasher.Sum(nil)
+	}
+	err = b.Save(context.TODO(), h, errorCloser{
+		t:          t,
+		l:          int64(length),
+		ReadSeeker: tmpfile,
+		h:          beHash,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -589,7 +609,7 @@ func (s *Suite) TestSaveError(t *testing.T) {
 
 	// test that incomplete uploads fail
 	h := restic.Handle{Type: restic.PackFile, Name: id.String()}
-	err := b.Save(context.TODO(), h, &incompleteByteReader{ByteReader: *restic.NewByteReader(data)})
+	err := b.Save(context.TODO(), h, &incompleteByteReader{ByteReader: *restic.NewByteReader(data, b.Hasher())})
 	// try to delete possible leftovers
 	_ = s.delayedRemove(t, b, h)
 	if err == nil {
@@ -597,46 +617,49 @@ func (s *Suite) TestSaveError(t *testing.T) {
 	}
 }
 
-var filenameTests = []struct {
-	name string
-	data string
-}{
-	{"1dfc6bc0f06cb255889e9ea7860a5753e8eb9665c9a96627971171b444e3113e", "x"},
-	{"f00b4r", "foobar"},
-	{
-		"1dfc6bc0f06cb255889e9ea7860a5753e8eb9665c9a96627971171b444e3113e4bf8f2d9144cc5420a80f04a4880ad6155fc58903a4fb6457c476c43541dcaa6-5",
-		"foobar content of data blob",
-	},
+type wrongByteReader struct {
+	restic.ByteReader
 }
 
-// TestSaveFilenames tests saving data with various file names in the backend.
-func (s *Suite) TestSaveFilenames(t *testing.T) {
+func (b *wrongByteReader) Hash() []byte {
+	h := b.ByteReader.Hash()
+	modHash := make([]byte, len(h))
+	copy(modHash, h)
+	// flip a bit in the hash
+	modHash[0] ^= 0x01
+	return modHash
+}
+
+// TestSaveWrongHash tests that uploads with a wrong hash fail
+func (s *Suite) TestSaveWrongHash(t *testing.T) {
+	seedRand(t)
+
 	b := s.open(t)
 	defer s.close(t, b)
+	// nothing to do if the backend doesn't support external hashes
+	if b.Hasher() == nil {
+		return
+	}
 
-	for i, test := range filenameTests {
-		h := restic.Handle{Name: test.name, Type: restic.PackFile}
-		err := b.Save(context.TODO(), h, restic.NewByteReader([]byte(test.data)))
-		if err != nil {
-			t.Errorf("test %d failed: Save() returned %+v", i, err)
-			continue
-		}
+	length := rand.Intn(1<<23) + 200000
+	data := test.Random(25, length)
+	var id restic.ID
+	copy(id[:], data)
 
-		buf, err := backend.LoadAll(context.TODO(), nil, b, h)
-		if err != nil {
-			t.Errorf("test %d failed: Load() returned %+v", i, err)
-			continue
-		}
-
-		if !bytes.Equal(buf, []byte(test.data)) {
-			t.Errorf("test %d: returned wrong bytes", i)
-		}
-
-		err = b.Remove(context.TODO(), h)
-		if err != nil {
-			t.Errorf("test %d failed: Remove() returned %+v", i, err)
-			continue
-		}
+	// test that upload with hash mismatch fails
+	h := restic.Handle{Type: restic.PackFile, Name: id.String()}
+	err := b.Save(context.TODO(), h, &wrongByteReader{ByteReader: *restic.NewByteReader(data, b.Hasher())})
+	exists, err2 := b.Test(context.TODO(), h)
+	if err2 != nil {
+		t.Fatal(err2)
+	}
+	_ = s.delayedRemove(t, b, h)
+	if err == nil {
+		t.Fatal("upload with wrong hash did not fail")
+	}
+	t.Logf("%v", err)
+	if exists {
+		t.Fatal("Backend returned an error but stored the file anyways")
 	}
 }
 
@@ -653,7 +676,7 @@ var testStrings = []struct {
 func store(t testing.TB, b restic.Backend, tpe restic.FileType, data []byte) restic.Handle {
 	id := restic.Hash(data)
 	h := restic.Handle{Name: id.String(), Type: tpe}
-	err := b.Save(context.TODO(), h, restic.NewByteReader([]byte(data)))
+	err := b.Save(context.TODO(), h, restic.NewByteReader([]byte(data), b.Hasher()))
 	test.OK(t, err)
 	return h
 }
@@ -807,7 +830,7 @@ func (s *Suite) TestBackend(t *testing.T) {
 		test.Assert(t, !ok, "removed blob still present")
 
 		// create blob
-		err = b.Save(context.TODO(), h, restic.NewByteReader([]byte(ts.data)))
+		err = b.Save(context.TODO(), h, restic.NewByteReader([]byte(ts.data), b.Hasher()))
 		test.OK(t, err)
 
 		// list items

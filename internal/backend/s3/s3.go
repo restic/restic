@@ -3,6 +3,7 @@ package s3
 import (
 	"context"
 	"fmt"
+	"hash"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -186,12 +187,12 @@ type fileInfo struct {
 	isDir   bool
 }
 
-func (fi fileInfo) Name() string       { return fi.name }    // base name of the file
-func (fi fileInfo) Size() int64        { return fi.size }    // length in bytes for regular files; system-dependent for others
-func (fi fileInfo) Mode() os.FileMode  { return fi.mode }    // file mode bits
-func (fi fileInfo) ModTime() time.Time { return fi.modTime } // modification time
-func (fi fileInfo) IsDir() bool        { return fi.isDir }   // abbreviation for Mode().IsDir()
-func (fi fileInfo) Sys() interface{}   { return nil }        // underlying data source (can return nil)
+func (fi *fileInfo) Name() string       { return fi.name }    // base name of the file
+func (fi *fileInfo) Size() int64        { return fi.size }    // length in bytes for regular files; system-dependent for others
+func (fi *fileInfo) Mode() os.FileMode  { return fi.mode }    // file mode bits
+func (fi *fileInfo) ModTime() time.Time { return fi.modTime } // modification time
+func (fi *fileInfo) IsDir() bool        { return fi.isDir }   // abbreviation for Mode().IsDir()
+func (fi *fileInfo) Sys() interface{}   { return nil }        // underlying data source (can return nil)
 
 // ReadDir returns the entries for a directory.
 func (be *Backend) ReadDir(ctx context.Context, dir string) (list []os.FileInfo, err error) {
@@ -225,7 +226,7 @@ func (be *Backend) ReadDir(ctx context.Context, dir string) (list []os.FileInfo,
 		if name == "" {
 			continue
 		}
-		entry := fileInfo{
+		entry := &fileInfo{
 			name:    name,
 			size:    obj.Size,
 			modTime: obj.LastModified,
@@ -250,6 +251,11 @@ func (be *Backend) Location() string {
 	return be.Join(be.cfg.Bucket, be.cfg.Prefix)
 }
 
+// Hasher may return a hash function for calculating a content hash for the backend
+func (be *Backend) Hasher() hash.Hash {
+	return nil
+}
+
 // Path returns the path in the bucket that is used for this backend.
 func (be *Backend) Path() string {
 	return be.cfg.Prefix
@@ -270,6 +276,8 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 
 	opts := minio.PutObjectOptions{StorageClass: be.cfg.StorageClass}
 	opts.ContentType = "application/octet-stream"
+	// the only option with the high-level api is to let the library handle the checksum computation
+	opts.SendContentMd5 = true
 
 	debug.Log("PutObject(%v, %v, %v)", be.cfg.Bucket, objName, rd.Length())
 	info, err := be.client.PutObject(ctx, be.cfg.Bucket, objName, ioutil.NopCloser(rd), int64(rd.Length()), opts)

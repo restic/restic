@@ -196,13 +196,16 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 
 			// Do we already have this tree blob?
 			if !dstRepo.Index().Has(restic.BlobHandle{ID: tree.ID, Type: restic.TreeBlob}) {
-				newTreeID, err := dstRepo.SaveTree(ctx, tree.Tree)
+				// copy raw tree bytes to avoid problems if the serialization changes
+				var err error
+				buf, err = srcRepo.LoadBlob(ctx, restic.TreeBlob, tree.ID, buf)
 				if err != nil {
-					return fmt.Errorf("SaveTree(%v) returned error %v", tree.ID.Str(), err)
+					return fmt.Errorf("LoadBlob(%v) for tree returned error %v", tree.ID, err)
 				}
-				// Assurance only.
-				if newTreeID != tree.ID {
-					return fmt.Errorf("SaveTree(%v) returned unexpected id %s", tree.ID.Str(), newTreeID.Str())
+
+				_, _, err = dstRepo.SaveBlob(ctx, restic.TreeBlob, buf, tree.ID, false)
+				if err != nil {
+					return fmt.Errorf("SaveBlob(%v) for tree returned error %v", tree.ID.Str(), err)
 				}
 			}
 

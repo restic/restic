@@ -1,0 +1,102 @@
+{
+  "keep": [
+    {
+      "time": "2016-01-18T12:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-11-22T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-10-22T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-09-22T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-08-22T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2014-11-22T10:20:30Z",
+      "tree": null,
+      "paths": null
+    }
+  ],
+  "reasons": [
+    {
+      "snapshot": {
+        "time": "2016-01-18T12:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "monthly within 1y2m3d3h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2015-11-22T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "monthly within 1y2m3d3h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2015-10-22T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "monthly within 1y2m3d3h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2015-09-22T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "monthly within 1y2m3d3h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2015-08-22T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "monthly within 1y2m3d3h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2014-11-22T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "monthly within 1y2m3d3h"
+      ],
+      "counters": {}
+    }
+  ]
+}

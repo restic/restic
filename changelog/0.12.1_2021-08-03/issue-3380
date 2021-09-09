@@ -1,0 +1,7 @@
+Bugfix: Fix crash of `backup --exclude='**'`
+
+The exclude filter `**`, which excludes all files, caused restic to crash. This
+has been corrected.
+
+https://github.com/restic/restic/issues/3380
+https://github.com/restic/restic/pull/3393

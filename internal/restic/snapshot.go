@@ -195,6 +195,9 @@ func (sn *Snapshot) hasTag(tag string) bool {
 // HasTags returns true if the snapshot has all the tags in l.
 func (sn *Snapshot) HasTags(l []string) bool {
 	for _, tag := range l {
+		if tag == "" && len(sn.Tags) == 0 {
+			return true
+		}
 		if !sn.hasTag(tag) {
 			return false
 		}

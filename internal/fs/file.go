@@ -40,6 +40,14 @@ func RemoveAll(path string) error {
 	return os.RemoveAll(fixpath(path))
 }
 
+// Rename renames (moves) oldpath to newpath.
+// If newpath already exists, Rename replaces it.
+// OS-specific restrictions may apply when oldpath and newpath are in different directories.
+// If there is an error, it will be of type *LinkError.
+func Rename(oldpath, newpath string) error {
+	return os.Rename(fixpath(oldpath), fixpath(newpath))
+}
+
 // Symlink creates newname as a symbolic link to oldname.
 // If there is an error, it will be of type *LinkError.
 func Symlink(oldname, newname string) error {

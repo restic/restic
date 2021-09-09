@@ -42,10 +42,10 @@ import (
 
 // Index holds lookup tables for id -> pack.
 type Index struct {
-	m         sync.Mutex
-	byType    [restic.NumBlobTypes]indexMap
-	packs     restic.IDs
-	treePacks restic.IDs
+	m          sync.Mutex
+	byType     [restic.NumBlobTypes]indexMap
+	packs      restic.IDs
+	mixedPacks restic.IDSet
 	// only used by Store, StorePacks does not check for already saved packIDs
 	packIDToIndex map[restic.ID]int
 
@@ -59,6 +59,7 @@ type Index struct {
 func NewIndex() *Index {
 	return &Index{
 		packIDToIndex: make(map[restic.ID]int),
+		mixedPacks:    restic.NewIDSet(),
 		created:       time.Now(),
 	}
 }
@@ -511,9 +512,9 @@ func (idx *Index) Dump(w io.Writer) error {
 	return nil
 }
 
-// TreePacks returns a list of packs that contain only tree blobs.
-func (idx *Index) TreePacks() restic.IDs {
-	return idx.treePacks
+// MixedPacks returns an IDSet that contain packs which have mixed blobs.
+func (idx *Index) MixedPacks() restic.IDSet {
+	return idx.mixedPacks
 }
 
 // merge() merges indexes, i.e. idx.merge(idx2) merges the contents of idx2 into idx.
@@ -558,7 +559,7 @@ func (idx *Index) merge(idx2 *Index) error {
 		})
 	}
 
-	idx.treePacks = append(idx.treePacks, idx2.treePacks...)
+	idx.mixedPacks.Merge(idx2.mixedPacks)
 	idx.ids = append(idx.ids, idx2.ids...)
 	idx.supersedes = append(idx.supersedes, idx2.supersedes...)
 
@@ -612,8 +613,8 @@ func DecodeIndex(buf []byte, id restic.ID) (idx *Index, oldFormat bool, err erro
 			}
 		}
 
-		if !data && tree {
-			idx.treePacks = append(idx.treePacks, pack.ID)
+		if data && tree {
+			idx.mixedPacks.Insert(pack.ID)
 		}
 	}
 	idx.supersedes = idxJSON.Supersedes
@@ -657,8 +658,8 @@ func decodeOldIndex(buf []byte) (idx *Index, err error) {
 			}
 		}
 
-		if !data && tree {
-			idx.treePacks = append(idx.treePacks, pack.ID)
+		if data && tree {
+			idx.mixedPacks.Insert(pack.ID)
 		}
 	}
 	idx.final = true
