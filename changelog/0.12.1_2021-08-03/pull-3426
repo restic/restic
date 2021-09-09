@@ -1,0 +1,7 @@
+Enhancement: Optimize read performance of mount command
+
+Reading large files in a mounted repository may be up to five times faster.
+This improvement primarily applies to repositories stored at a backend that can
+be accessed with low latency, like e.g. the local backend.
+
+https://github.com/restic/restic/pull/3426

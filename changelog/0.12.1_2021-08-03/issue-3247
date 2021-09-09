@@ -1,0 +1,8 @@
+Change: Empty files now have size of 0 in `ls --json` output
+
+The `ls --json` command used to omit the sizes of empty files in its
+output. It now reports a size of zero explicitly for regular files,
+while omitting the size field for all other types.
+
+https://github.com/restic/restic/issues/3247
+https://github.com/restic/restic/pull/3257

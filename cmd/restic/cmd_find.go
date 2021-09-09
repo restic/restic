@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"sort"
 	"strings"
 	"time"
 
@@ -39,8 +40,6 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 		return runFind(findOptions, globalOptions, args)
 	},
 }
-
-const shortStr = 8 // Length of short IDs: 4 bytes as hex strings
 
 // FindOptions bundles all options for the find command.
 type FindOptions struct {
@@ -386,12 +385,12 @@ func (f *Finder) findIDs(ctx context.Context, sn *restic.Snapshot) error {
 				idStr := id.String()
 				if _, ok := f.blobIDs[idStr]; !ok {
 					// Look for short ID form
-					if _, ok := f.blobIDs[idStr[:shortStr]]; !ok {
+					if _, ok := f.blobIDs[id.Str()]; !ok {
 						continue
 					}
 					// Replace the short ID with the long one
 					f.blobIDs[idStr] = struct{}{}
-					delete(f.blobIDs, idStr[:shortStr])
+					delete(f.blobIDs, id.Str())
 				}
 				f.out.PrintObject("blob", idStr, nodepath, parentTreeID.String(), sn)
 			}
@@ -400,6 +399,8 @@ func (f *Finder) findIDs(ctx context.Context, sn *restic.Snapshot) error {
 		return false, nil
 	})
 }
+
+var errAllPacksFound = errors.New("all packs found")
 
 // packsToBlobs converts the list of pack IDs to a list of blob IDs that
 // belong to those packs.
@@ -412,20 +413,18 @@ func (f *Finder) packsToBlobs(ctx context.Context, packs []string) error {
 		f.blobIDs = make(map[string]struct{})
 	}
 
-	allPacksFound := false
-	packsFound := 0
-
 	debug.Log("Looking for packs...")
 	err := f.repo.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
-		if allPacksFound {
-			return nil
-		}
 		idStr := id.String()
 		if _, ok := packIDs[idStr]; !ok {
 			// Look for short ID form
-			if _, ok := packIDs[idStr[:shortStr]]; !ok {
+			if _, ok := packIDs[id.Str()]; !ok {
 				return nil
 			}
+			delete(packIDs, id.Str())
+		} else {
+			// forget found id
+			delete(packIDs, idStr)
 		}
 		debug.Log("Found pack %s", idStr)
 		blobs, _, err := f.repo.ListPack(ctx, id, size)
@@ -436,23 +435,73 @@ func (f *Finder) packsToBlobs(ctx context.Context, packs []string) error {
 			f.blobIDs[b.ID.String()] = struct{}{}
 		}
 		// Stop searching when all packs have been found
-		packsFound++
-		if packsFound >= len(packIDs) {
-			allPacksFound = true
+		if len(packIDs) == 0 {
+			return errAllPacksFound
 		}
 		return nil
 	})
 
-	if err != nil {
+	if err != nil && err != errAllPacksFound {
 		return err
 	}
 
-	if !allPacksFound {
-		return errors.Fatal("unable to find all specified pack(s)")
+	if err != errAllPacksFound {
+		// try to resolve unknown pack ids from the index
+		packIDs = f.indexPacksToBlobs(ctx, packIDs)
+	}
+
+	if len(packIDs) > 0 {
+		list := make([]string, 0, len(packIDs))
+		for h := range packIDs {
+			list = append(list, h)
+		}
+
+		sort.Strings(list)
+		return errors.Fatalf("unable to find pack(s): %v", list)
 	}
 
 	debug.Log("%d blobs found", len(f.blobIDs))
 	return nil
+}
+
+func (f *Finder) indexPacksToBlobs(ctx context.Context, packIDs map[string]struct{}) map[string]struct{} {
+	wctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	// remember which packs were found in the index
+	indexPackIDs := make(map[string]struct{})
+	for pb := range f.repo.Index().Each(wctx) {
+		idStr := pb.PackID.String()
+		// keep entry in packIDs as Each() returns individual index entries
+		matchingID := false
+		if _, ok := packIDs[idStr]; ok {
+			matchingID = true
+		} else {
+			if _, ok := packIDs[pb.PackID.Str()]; ok {
+				// expand id
+				delete(packIDs, pb.PackID.Str())
+				packIDs[idStr] = struct{}{}
+				matchingID = true
+			}
+		}
+		if matchingID {
+			f.blobIDs[pb.ID.String()] = struct{}{}
+			indexPackIDs[idStr] = struct{}{}
+		}
+	}
+
+	for id := range indexPackIDs {
+		delete(packIDs, id)
+	}
+
+	if len(indexPackIDs) > 0 {
+		list := make([]string, 0, len(indexPackIDs))
+		for h := range indexPackIDs {
+			list = append(list, h)
+		}
+		Warnf("some pack files are missing from the repository, getting their blobs from the repository index: %v\n\n", list)
+	}
+	return packIDs
 }
 
 func (f *Finder) findObjectPack(ctx context.Context, id string, t restic.BlobType) {
@@ -563,7 +612,7 @@ func runFind(opts FindOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	if opts.PackID {
-		err := f.packsToBlobs(ctx, []string{f.pat.pattern[0]}) // TODO: support multiple packs
+		err := f.packsToBlobs(ctx, f.pat.pattern)
 		if err != nil {
 			return err
 		}

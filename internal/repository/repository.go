@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/restic/chunker"
+	"github.com/restic/restic/internal/backend/dryrun"
 	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
@@ -70,6 +71,11 @@ func (r *Repository) UseCache(c *cache.Cache) {
 	debug.Log("using cache")
 	r.Cache = c
 	r.be = c.Wrap(r.be)
+}
+
+// SetDryRun sets the repo backend into dry-run mode.
+func (r *Repository) SetDryRun() {
+	r.be = dryrun.New(r.be)
 }
 
 // PrefixLength returns the number of bytes required so that all prefixes of
@@ -174,7 +180,12 @@ func (r *Repository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.
 		}
 
 		// load blob from pack
-		h := restic.Handle{Type: restic.PackFile, Name: blob.PackID.String()}
+		bt := t
+		if r.idx.IsMixedPack(blob.PackID) {
+			bt = restic.InvalidBlob
+		}
+		h := restic.Handle{Type: restic.PackFile,
+			Name: blob.PackID.String(), ContainedBlobType: bt}
 
 		switch {
 		case cap(buf) < int(blob.Length):
@@ -316,7 +327,7 @@ func (r *Repository) SaveUnpacked(ctx context.Context, t restic.FileType, p []by
 	}
 	h := restic.Handle{Type: t, Name: id.String()}
 
-	err = r.be.Save(ctx, h, restic.NewByteReader(ciphertext))
+	err = r.be.Save(ctx, h, restic.NewByteReader(ciphertext, r.be.Hasher()))
 	if err != nil {
 		debug.Log("error saving blob %v: %v", h, err)
 		return restic.ID{}, err
@@ -562,36 +573,6 @@ func (r *Repository) PrepareCache(indexIDs restic.IDSet) error {
 	err = r.Cache.Clear(restic.PackFile, packs)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error clearing pack files in cache: %v\n", err)
-	}
-
-	treePacks := restic.NewIDSet()
-	for _, idx := range r.idx.All() {
-		for _, id := range idx.TreePacks() {
-			treePacks.Insert(id)
-		}
-	}
-
-	// use readahead
-	debug.Log("using readahead")
-	cache := r.Cache
-	cache.PerformReadahead = func(h restic.Handle) bool {
-		if h.Type != restic.PackFile {
-			debug.Log("no readahead for %v, is not a pack file", h)
-			return false
-		}
-
-		id, err := restic.ParseID(h.Name)
-		if err != nil {
-			debug.Log("no readahead for %v, invalid ID", h)
-			return false
-		}
-
-		if treePacks.Has(id) {
-			debug.Log("perform readahead for %v", h)
-			return true
-		}
-		debug.Log("no readahead for %v, not tree file", h)
-		return false
 	}
 
 	return nil

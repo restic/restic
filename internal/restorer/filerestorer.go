@@ -243,7 +243,7 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) error {
 		return err
 	}
 
-	h := restic.Handle{Type: restic.PackFile, Name: pack.id.String()}
+	h := restic.Handle{Type: restic.PackFile, Name: pack.id.String(), ContainedBlobType: restic.DataBlob}
 	err := r.packLoader(ctx, h, int(end-start), start, func(rd io.Reader) error {
 		bufferSize := int(end - start)
 		if bufferSize > maxBufferSize {
@@ -258,7 +258,11 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) error {
 			if err != nil {
 				return err
 			}
-			blobData, buf, err = r.loadBlob(bufRd, blobID, blob.length, buf)
+			buf, err = r.downloadBlob(bufRd, blobID, blob.length, buf)
+			if err != nil {
+				return err
+			}
+			blobData, err = r.decryptBlob(blobID, buf)
 			if err != nil {
 				for file := range blob.files {
 					if errFile := sanitizeError(file, err); errFile != nil {
@@ -309,7 +313,7 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) error {
 	return nil
 }
 
-func (r *fileRestorer) loadBlob(rd io.Reader, blobID restic.ID, length int, buf []byte) ([]byte, []byte, error) {
+func (r *fileRestorer) downloadBlob(rd io.Reader, blobID restic.ID, length int, buf []byte) ([]byte, error) {
 	// TODO reconcile with Repository#loadBlob implementation
 
 	if cap(buf) < length {
@@ -320,24 +324,29 @@ func (r *fileRestorer) loadBlob(rd io.Reader, blobID restic.ID, length int, buf 
 
 	n, err := io.ReadFull(rd, buf)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	if n != length {
-		return nil, nil, errors.Errorf("error loading blob %v: wrong length returned, want %d, got %d", blobID.Str(), length, n)
+		return nil, errors.Errorf("error loading blob %v: wrong length returned, want %d, got %d", blobID.Str(), length, n)
 	}
+	return buf, nil
+}
+
+func (r *fileRestorer) decryptBlob(blobID restic.ID, buf []byte) ([]byte, error) {
+	// TODO reconcile with Repository#loadBlob implementation
 
 	// decrypt
 	nonce, ciphertext := buf[:r.key.NonceSize()], buf[r.key.NonceSize():]
 	plaintext, err := r.key.Open(ciphertext[:0], nonce, ciphertext, nil)
 	if err != nil {
-		return nil, nil, errors.Errorf("decrypting blob %v failed: %v", blobID, err)
+		return nil, errors.Errorf("decrypting blob %v failed: %v", blobID, err)
 	}
 
 	// check hash
 	if !restic.Hash(plaintext).Equal(blobID) {
-		return nil, nil, errors.Errorf("blob %v returned invalid hash", blobID)
+		return nil, errors.Errorf("blob %v returned invalid hash", blobID)
 	}
 
-	return plaintext, buf, nil
+	return plaintext, nil
 }

@@ -1,0 +1,8 @@
+Enhancement: SFTP backend now checks for disk space
+
+Backing up over SFTP previously spewed multiple generic "failure" messages
+when the remote disk was full. It now checks for disk space before writing
+a file and fails immediately with a "no space left on device" message.
+
+https://github.com/restic/restic/issues/3336
+https://github.com/restic/restic/pull/3345

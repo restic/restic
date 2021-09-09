@@ -3,14 +3,17 @@ package cache
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"math/rand"
+	"os"
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
+
+	"golang.org/x/sync/errgroup"
 )
 
 func generateRandomFiles(t testing.TB, tpe restic.FileType, c *Cache) restic.IDSet {
@@ -131,64 +134,6 @@ func TestFiles(t *testing.T) {
 	}
 }
 
-func TestFileSaveWriter(t *testing.T) {
-	seed := time.Now().Unix()
-	t.Logf("seed is %v", seed)
-	rand.Seed(seed)
-
-	c, cleanup := TestNewCache(t)
-	defer cleanup()
-
-	// save about 5 MiB of data in the cache
-	data := test.Random(rand.Int(), 5234142)
-	id := restic.ID{}
-	copy(id[:], data)
-	h := restic.Handle{
-		Type: restic.PackFile,
-		Name: id.String(),
-	}
-
-	wr, err := c.saveWriter(h)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	n, err := io.Copy(wr, bytes.NewReader(data))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if n != int64(len(data)) {
-		t.Fatalf("wrong number of bytes written, want %v, got %v", len(data), n)
-	}
-
-	if err = wr.Close(); err != nil {
-		t.Fatal(err)
-	}
-
-	rd, err := c.load(h, 0, 0)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	buf, err := ioutil.ReadAll(rd)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(buf) != len(data) {
-		t.Fatalf("wrong number of bytes read, want %v, got %v", len(data), len(buf))
-	}
-
-	if !bytes.Equal(buf, data) {
-		t.Fatalf("wrong data returned, want:\n  %02x\ngot:\n  %02x", data[:16], buf[:16])
-	}
-
-	if err = rd.Close(); err != nil {
-		t.Fatal(err)
-	}
-}
-
 func TestFileLoad(t *testing.T) {
 	seed := time.Now().Unix()
 	t.Logf("seed is %v", seed)
@@ -256,4 +201,56 @@ func TestFileLoad(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Simulate multiple processes writing to a cache, using goroutines.
+func TestFileSaveConcurrent(t *testing.T) {
+	const nproc = 40
+
+	c, cleanup := TestNewCache(t)
+	defer cleanup()
+
+	var (
+		data = test.Random(1, 10000)
+		g    errgroup.Group
+		id   restic.ID
+	)
+	rand.Read(id[:])
+
+	h := restic.Handle{
+		Type: restic.PackFile,
+		Name: id.String(),
+	}
+
+	for i := 0; i < nproc/2; i++ {
+		g.Go(func() error { return c.Save(h, bytes.NewReader(data)) })
+
+		// Can't use load because only the main goroutine may call t.Fatal.
+		g.Go(func() error {
+			// The timing is hard to get right, but the main thing we want to
+			// ensure is ENOENT or nil error.
+			time.Sleep(time.Duration(100+rand.Intn(200)) * time.Millisecond)
+
+			f, err := c.load(h, 0, 0)
+			t.Logf("Load error: %v", err)
+			switch {
+			case err == nil:
+			case errors.Is(err, os.ErrNotExist):
+				return nil
+			default:
+				return err
+			}
+			defer func() { _ = f.Close() }()
+
+			read, err := ioutil.ReadAll(f)
+			if err == nil && !bytes.Equal(read, data) {
+				err = errors.New("mismatch between Save and Load")
+			}
+			return err
+		})
+	}
+
+	test.OK(t, g.Wait())
+	saved := load(t, c, h)
+	test.Equals(t, data, saved)
 }

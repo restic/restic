@@ -1,0 +1,13 @@
+Bugfix: Improve error handling for rclone and REST backend over HTTP2
+
+When retrieving data from the rclone / REST backend while also using HTTP2
+restic did not detect when no data was returned at all. This could cause
+for example the `check` command to report the following error:
+
+    Pack ID does not match, want [...], got e3b0c442
+
+This has been fixed by correctly detecting and retrying the incomplete download.
+
+https://github.com/restic/restic/issues/2742
+https://github.com/restic/restic/pull/3453
+https://forum.restic.net/t/http2-stream-closed-connection-reset-context-canceled/3743/10

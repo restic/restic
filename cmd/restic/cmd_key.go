@@ -131,6 +131,11 @@ func addKey(gopts GlobalOptions, repo *repository.Repository) error {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
 
+	err = switchToNewKeyAndRemoveIfBroken(gopts.ctx, repo, id, pw)
+	if err != nil {
+		return err
+	}
+
 	Verbosef("saved new key as %s\n", id)
 
 	return nil
@@ -161,8 +166,14 @@ func changePassword(gopts GlobalOptions, repo *repository.Repository) error {
 	if err != nil {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
+	oldID := repo.KeyName()
 
-	h := restic.Handle{Type: restic.KeyFile, Name: repo.KeyName()}
+	err = switchToNewKeyAndRemoveIfBroken(gopts.ctx, repo, id, pw)
+	if err != nil {
+		return err
+	}
+
+	h := restic.Handle{Type: restic.KeyFile, Name: oldID}
 	err = repo.Backend().Remove(gopts.ctx, h)
 	if err != nil {
 		return err
@@ -170,6 +181,19 @@ func changePassword(gopts GlobalOptions, repo *repository.Repository) error {
 
 	Verbosef("saved new key as %s\n", id)
 
+	return nil
+}
+
+func switchToNewKeyAndRemoveIfBroken(ctx context.Context, repo *repository.Repository, key *repository.Key, pw string) error {
+	// Verify new key to make sure it really works. A broken key can render the
+	// whole repository inaccessible
+	err := repo.SearchKey(ctx, pw, 0, key.Name())
+	if err != nil {
+		// the key is invalid, try to remove it
+		h := restic.Handle{Type: restic.KeyFile, Name: key.Name()}
+		_ = repo.Backend().Remove(ctx, h)
+		return errors.Fatalf("failed to access repository with new key: %v", err)
+	}
 	return nil
 }
 

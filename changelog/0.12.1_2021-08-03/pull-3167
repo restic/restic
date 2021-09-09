@@ -1,0 +1,9 @@
+Enhancement: Allow specifying limit of `snapshots` list
+
+The `--last` option allowed limiting the output of the `snapshots`
+command to the latest snapshot for each host. The new `--latest n`
+option allows limiting the output to the latest `n` snapshots.
+
+This change deprecates the option `--last` in favour of `--latest 1`.
+
+https://github.com/restic/restic/pull/3167

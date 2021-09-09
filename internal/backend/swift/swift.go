@@ -2,7 +2,10 @@ package swift
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
+	"hash"
 	"io"
 	"net/http"
 	"path"
@@ -115,6 +118,11 @@ func (be *beSwift) Location() string {
 	return be.container
 }
 
+// Hasher may return a hash function for calculating a content hash for the backend
+func (be *beSwift) Hasher() hash.Hash {
+	return md5.New()
+}
+
 // Load runs fn with a reader that yields the contents of the file at h at the
 // given offset.
 func (be *beSwift) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
@@ -178,7 +186,7 @@ func (be *beSwift) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 
 	debug.Log("PutObject(%v, %v, %v)", be.container, objName, encoding)
 	hdr := swift.Headers{"Content-Length": strconv.FormatInt(rd.Length(), 10)}
-	_, err := be.conn.ObjectPut(be.container, objName, rd, true, "", encoding, hdr)
+	_, err := be.conn.ObjectPut(be.container, objName, rd, true, hex.EncodeToString(rd.Hash()), encoding, hdr)
 	// swift does not return the upload length
 	debug.Log("%v, err %#v", objName, err)
 
