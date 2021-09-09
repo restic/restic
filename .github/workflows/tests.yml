@@ -26,7 +26,6 @@ jobs:
           - job_name: Linux
             go: 1.17.x
             os: ubuntu-latest
-            test_cloud_backends: true
             test_fuse: true
             check_changelog: true
 
