@@ -27,6 +27,7 @@ require (
 	github.com/pkg/sftp v1.13.2
 	github.com/pkg/xattr v0.4.3
 	github.com/restic/chunker v0.4.0
+	github.com/smartystreets/assertions v1.2.0 // indirect
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
