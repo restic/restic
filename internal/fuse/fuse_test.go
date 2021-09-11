@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/blobcache"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 
@@ -27,10 +28,10 @@ func TestCache(t *testing.T) {
 
 	const (
 		kiB       = 1 << 10
-		cacheSize = 64*kiB + 3*cacheOverhead
+		cacheSize = 64*kiB + 3*blobcache.CacheOverhead
 	)
 
-	c := newBlobCache(cacheSize)
+	c := blobcache.New(cacheSize)
 
 	addAndCheck := func(id restic.ID, exp []byte) {
 		c.add(id, exp)
@@ -156,7 +157,7 @@ func TestFuseFile(t *testing.T) {
 		Size:    filesize,
 		Content: content,
 	}
-	root := &Root{repo: repo, blobCache: newBlobCache(blobCacheSize)}
+	root := &Root{repo: repo, blobCache: blobcache.New(blobCacheSize)}
 
 	inode := fs.GenerateDynamicInode(1, "foo")
 	f, err := newFile(context.TODO(), root, inode, node)
@@ -191,7 +192,7 @@ func TestFuseDir(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
-	root := &Root{repo: repo, blobCache: newBlobCache(blobCacheSize)}
+	root := &Root{repo: repo, blobCache: blobcache.New(blobCacheSize)}
 
 	node := &restic.Node{
 		Mode:       0755,

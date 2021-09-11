@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/restic/restic/internal/blobcache"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
 
@@ -27,7 +28,7 @@ type Root struct {
 	cfg       Config
 	inode     uint64
 	snapshots restic.Snapshots
-	blobCache *blobCache
+	blobCache *blobcache.BlobCache
 
 	snCount   int
 	lastCheck time.Time
@@ -54,7 +55,7 @@ func NewRoot(repo restic.Repository, cfg Config) *Root {
 		repo:      repo,
 		inode:     rootInode,
 		cfg:       cfg,
-		blobCache: newBlobCache(blobCacheSize),
+		blobCache: blobcache.New(blobCacheSize),
 	}
 
 	if !cfg.OwnerIsRoot {
