@@ -5,6 +5,7 @@ import (
 	"io"
 	"path"
 
+	"github.com/restic/restic/internal/blobcache"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/walker"
@@ -75,12 +76,19 @@ func dumpTree(ctx context.Context, repo restic.Repository, rootNode *restic.Node
 func GetNodeData(ctx context.Context, output io.Writer, repo restic.Repository, node *restic.Node) error {
 	var (
 		buf []byte
+		ok  bool
 		err error
 	)
+
+	blobCache := blobcache.New(64 << 20)
 	for _, id := range node.Content {
-		buf, err = repo.LoadBlob(ctx, restic.DataBlob, id, buf)
-		if err != nil {
-			return err
+		buf, ok = blobCache.Get(id)
+		if !ok {
+			buf, err = repo.LoadBlob(ctx, restic.DataBlob, id, buf)
+			if err != nil {
+				return err
+			}
+			blobCache.Add(id, buf)
 		}
 
 		_, err = output.Write(buf)
