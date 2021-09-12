@@ -1,4 +1,4 @@
-package json
+package backup
 
 import (
 	"bytes"
@@ -13,8 +13,8 @@ import (
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
-// Backup reports progress for the `backup` command in JSON.
-type Backup struct {
+// JSONProgress reports progress for the `backup` command in JSON.
+type JSONProgress struct {
 	*ui.Message
 	*ui.StdioWrapper
 
@@ -23,11 +23,11 @@ type Backup struct {
 }
 
 // assert that Backup implements the ProgressPrinter interface
-var _ ui.ProgressPrinter = &Backup{}
+var _ ProgressPrinter = &JSONProgress{}
 
-// NewBackup returns a new backup progress reporter.
-func NewBackup(term *termstatus.Terminal, verbosity uint) *Backup {
-	return &Backup{
+// NewJSONProgress returns a new backup progress reporter.
+func NewJSONProgress(term *termstatus.Terminal, verbosity uint) *JSONProgress {
+	return &JSONProgress{
 		Message:      ui.NewMessage(term, verbosity),
 		StdioWrapper: ui.NewStdioWrapper(term),
 		term:         term,
@@ -44,16 +44,16 @@ func toJSONString(status interface{}) string {
 	return buf.String()
 }
 
-func (b *Backup) print(status interface{}) {
+func (b *JSONProgress) print(status interface{}) {
 	b.term.Print(toJSONString(status))
 }
 
-func (b *Backup) error(status interface{}) {
+func (b *JSONProgress) error(status interface{}) {
 	b.term.Error(toJSONString(status))
 }
 
-// update updates the status lines.
-func (b *Backup) Update(total, processed ui.Counter, errors uint, currentFiles map[string]struct{}, start time.Time, secs uint64) {
+// Update updates the status lines.
+func (b *JSONProgress) Update(total, processed Counter, errors uint, currentFiles map[string]struct{}, start time.Time, secs uint64) {
 	status := statusUpdate{
 		MessageType:      "status",
 		SecondsElapsed:   uint64(time.Since(start) / time.Second),
@@ -79,7 +79,7 @@ func (b *Backup) Update(total, processed ui.Counter, errors uint, currentFiles m
 
 // ScannerError is the error callback function for the scanner, it prints the
 // error in verbose mode and returns nil.
-func (b *Backup) ScannerError(item string, fi os.FileInfo, err error) error {
+func (b *JSONProgress) ScannerError(item string, fi os.FileInfo, err error) error {
 	b.error(errorUpdate{
 		MessageType: "error",
 		Error:       err,
@@ -90,7 +90,7 @@ func (b *Backup) ScannerError(item string, fi os.FileInfo, err error) error {
 }
 
 // Error is the error callback function for the archiver, it prints the error and returns nil.
-func (b *Backup) Error(item string, fi os.FileInfo, err error) error {
+func (b *JSONProgress) Error(item string, fi os.FileInfo, err error) error {
 	b.error(errorUpdate{
 		MessageType: "error",
 		Error:       err,
@@ -102,7 +102,7 @@ func (b *Backup) Error(item string, fi os.FileInfo, err error) error {
 
 // CompleteItem is the status callback function for the archiver when a
 // file/dir has been saved successfully.
-func (b *Backup) CompleteItem(messageType, item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration) {
+func (b *JSONProgress) CompleteItem(messageType, item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration) {
 	if b.v < 2 {
 		return
 	}
@@ -158,7 +158,7 @@ func (b *Backup) CompleteItem(messageType, item string, previous, current *resti
 }
 
 // ReportTotal sets the total stats up to now
-func (b *Backup) ReportTotal(item string, start time.Time, s archiver.ScanStats) {
+func (b *JSONProgress) ReportTotal(item string, start time.Time, s archiver.ScanStats) {
 	if b.v >= 2 {
 		b.print(verboseUpdate{
 			MessageType: "status",
@@ -171,7 +171,7 @@ func (b *Backup) ReportTotal(item string, start time.Time, s archiver.ScanStats)
 }
 
 // Finish prints the finishing messages.
-func (b *Backup) Finish(snapshotID restic.ID, start time.Time, summary *ui.Summary, dryRun bool) {
+func (b *JSONProgress) Finish(snapshotID restic.ID, start time.Time, summary *Summary, dryRun bool) {
 	b.print(summaryOutput{
 		MessageType:         "summary",
 		FilesNew:            summary.Files.New,
@@ -192,7 +192,7 @@ func (b *Backup) Finish(snapshotID restic.ID, start time.Time, summary *ui.Summa
 }
 
 // Reset no-op
-func (b *Backup) Reset() {
+func (b *JSONProgress) Reset() {
 }
 
 type statusUpdate struct {

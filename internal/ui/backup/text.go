@@ -1,4 +1,4 @@
-package ui
+package backup
 
 import (
 	"fmt"
@@ -8,31 +8,32 @@ import (
 
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
-// Backup reports progress for the `backup` command.
-type Backup struct {
-	*Message
-	*StdioWrapper
+// TextProgress reports progress for the `backup` command.
+type TextProgress struct {
+	*ui.Message
+	*ui.StdioWrapper
 
 	term *termstatus.Terminal
 }
 
 // assert that Backup implements the ProgressPrinter interface
-var _ ProgressPrinter = &Backup{}
+var _ ProgressPrinter = &TextProgress{}
 
-// NewBackup returns a new backup progress reporter.
-func NewBackup(term *termstatus.Terminal, verbosity uint) *Backup {
-	return &Backup{
-		Message:      NewMessage(term, verbosity),
-		StdioWrapper: NewStdioWrapper(term),
+// NewTextProgress returns a new backup progress reporter.
+func NewTextProgress(term *termstatus.Terminal, verbosity uint) *TextProgress {
+	return &TextProgress{
+		Message:      ui.NewMessage(term, verbosity),
+		StdioWrapper: ui.NewStdioWrapper(term),
 		term:         term,
 	}
 }
 
-// update updates the status lines.
-func (b *Backup) Update(total, processed Counter, errors uint, currentFiles map[string]struct{}, start time.Time, secs uint64) {
+// Update updates the status lines.
+func (b *TextProgress) Update(total, processed Counter, errors uint, currentFiles map[string]struct{}, start time.Time, secs uint64) {
 	var status string
 	if total.Files == 0 && total.Dirs == 0 {
 		// no total count available yet
@@ -74,13 +75,13 @@ func (b *Backup) Update(total, processed Counter, errors uint, currentFiles map[
 
 // ScannerError is the error callback function for the scanner, it prints the
 // error in verbose mode and returns nil.
-func (b *Backup) ScannerError(item string, fi os.FileInfo, err error) error {
+func (b *TextProgress) ScannerError(item string, fi os.FileInfo, err error) error {
 	b.V("scan: %v\n", err)
 	return nil
 }
 
 // Error is the error callback function for the archiver, it prints the error and returns nil.
-func (b *Backup) Error(item string, fi os.FileInfo, err error) error {
+func (b *TextProgress) Error(item string, fi os.FileInfo, err error) error {
 	b.E("error: %v\n", err)
 	return nil
 }
@@ -134,7 +135,7 @@ func formatBytes(c uint64) string {
 
 // CompleteItem is the status callback function for the archiver when a
 // file/dir has been saved successfully.
-func (b *Backup) CompleteItem(messageType, item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration) {
+func (b *TextProgress) CompleteItem(messageType, item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration) {
 	switch messageType {
 	case "dir new":
 		b.VV("new       %v, saved in %.3fs (%v added, %v metadata)", item, d.Seconds(), formatBytes(s.DataSize), formatBytes(s.TreeSize))
@@ -152,7 +153,7 @@ func (b *Backup) CompleteItem(messageType, item string, previous, current *resti
 }
 
 // ReportTotal sets the total stats up to now
-func (b *Backup) ReportTotal(item string, start time.Time, s archiver.ScanStats) {
+func (b *TextProgress) ReportTotal(item string, start time.Time, s archiver.ScanStats) {
 	b.V("scan finished in %.3fs: %v files, %s",
 		time.Since(start).Seconds(),
 		s.Files, formatBytes(s.Bytes),
@@ -160,14 +161,14 @@ func (b *Backup) ReportTotal(item string, start time.Time, s archiver.ScanStats)
 }
 
 // Reset status
-func (b *Backup) Reset() {
+func (b *TextProgress) Reset() {
 	if b.term.CanUpdateStatus() {
 		b.term.SetStatus([]string{""})
 	}
 }
 
 // Finish prints the finishing messages.
-func (b *Backup) Finish(snapshotID restic.ID, start time.Time, summary *Summary, dryRun bool) {
+func (b *TextProgress) Finish(snapshotID restic.ID, start time.Time, summary *Summary, dryRun bool) {
 	b.P("\n")
 	b.P("Files:       %5d new, %5d changed, %5d unmodified\n", summary.Files.New, summary.Files.Changed, summary.Files.Unchanged)
 	b.P("Dirs:        %5d new, %5d changed, %5d unmodified\n", summary.Dirs.New, summary.Dirs.Changed, summary.Dirs.Unchanged)

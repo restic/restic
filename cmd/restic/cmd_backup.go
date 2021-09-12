@@ -24,8 +24,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/textfile"
-	"github.com/restic/restic/internal/ui"
-	"github.com/restic/restic/internal/ui/json"
+	"github.com/restic/restic/internal/ui/backup"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
@@ -527,13 +526,13 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		return err
 	}
 
-	var progressPrinter ui.ProgressPrinter
+	var progressPrinter backup.ProgressPrinter
 	if gopts.JSON {
-		progressPrinter = json.NewBackup(term, gopts.verbosity)
+		progressPrinter = backup.NewJSONProgress(term, gopts.verbosity)
 	} else {
-		progressPrinter = ui.NewBackup(term, gopts.verbosity)
+		progressPrinter = backup.NewTextProgress(term, gopts.verbosity)
 	}
-	progressReporter := ui.NewProgress(progressPrinter)
+	progressReporter := backup.NewProgress(progressPrinter)
 
 	if opts.DryRun {
 		repo.SetDryRun()
