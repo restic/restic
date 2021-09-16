@@ -222,7 +222,7 @@ func newBackend(cfg Config, lim limiter.Limiter) (*Backend, error) {
 	// send an HTTP request to the base URL, see if the server is there
 	client := &http.Client{
 		Transport: debug.RoundTripper(tr),
-		Timeout:   60 * time.Second,
+		Timeout:   cfg.Timeout * 60 * time.Second,
 	}
 
 	// request a random file which does not exist. we just want to test when

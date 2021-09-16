@@ -607,10 +607,11 @@ configuring a bandwidth limit for rclone can be achieved by setting the
 
 For debugging rclone, you can set the environment variable ``RCLONE_VERBOSE=2``.
 
-The rclone backend has two additional options:
+The rclone backend has three additional options:
 
  * ``-o rclone.program`` specifies the path to rclone, the default value is just ``rclone``
  * ``-o rclone.args`` allows setting the arguments passed to rclone, by default this is ``serve restic --stdio --b2-hard-delete``
+*  ``-o rclone.timeout`` specifies timeout for waiting on repository opening, the default value is ``1m``
 
 The reason for the ``--b2-hard-delete`` parameters can be found in the corresponding GitHub `issue #1657`_.
 
