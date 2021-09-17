@@ -28,20 +28,20 @@ func prepareStr(str string) ([]string, error) {
 	return splitPath(str), nil
 }
 
-func preparePattern(pattern string) Pattern {
-	parts := splitPath(filepath.Clean(pattern))
-	patterns := make([]patternPart, len(parts))
-	for i, part := range parts {
+func preparePattern(patternStr string) Pattern {
+	pathParts := splitPath(filepath.Clean(patternStr))
+	parts := make([]patternPart, len(pathParts))
+	for i, part := range pathParts {
 		isSimple := !strings.ContainsAny(part, "\\[]*?")
 		// Replace "**" with the empty string to get faster comparisons
 		// (length-check only) in hasDoubleWildcard.
 		if part == "**" {
 			part = ""
 		}
-		patterns[i] = patternPart{part, isSimple}
+		parts[i] = patternPart{part, isSimple}
 	}
 
-	return Pattern{patterns}
+	return Pattern{parts}
 }
 
 // Split p into path components. Assuming p has been Cleaned, no component
@@ -64,19 +64,19 @@ func splitPath(p string) []string {
 // In addition patterns suitable for filepath.Match, pattern accepts a
 // recursive wildcard '**', which greedily matches an arbitrary number of
 // intermediate directories.
-func Match(pattern, str string) (matched bool, err error) {
-	if pattern == "" {
+func Match(patternStr, str string) (matched bool, err error) {
+	if patternStr == "" {
 		return true, nil
 	}
 
-	patterns := preparePattern(pattern)
+	pattern := preparePattern(patternStr)
 	strs, err := prepareStr(str)
 
 	if err != nil {
 		return false, err
 	}
 
-	return match(patterns, strs)
+	return match(pattern, strs)
 }
 
 // ChildMatch returns true if children of str can match the pattern. When the pattern is
@@ -89,28 +89,28 @@ func Match(pattern, str string) (matched bool, err error) {
 // In addition patterns suitable for filepath.Match, pattern accepts a
 // recursive wildcard '**', which greedily matches an arbitrary number of
 // intermediate directories.
-func ChildMatch(pattern, str string) (matched bool, err error) {
-	if pattern == "" {
+func ChildMatch(patternStr, str string) (matched bool, err error) {
+	if patternStr == "" {
 		return true, nil
 	}
 
-	patterns := preparePattern(pattern)
+	pattern := preparePattern(patternStr)
 	strs, err := prepareStr(str)
 
 	if err != nil {
 		return false, err
 	}
 
-	return childMatch(patterns, strs)
+	return childMatch(pattern, strs)
 }
 
-func childMatch(patterns Pattern, strs []string) (matched bool, err error) {
-	if patterns.parts[0].pattern != "/" {
+func childMatch(pattern Pattern, strs []string) (matched bool, err error) {
+	if pattern.parts[0].pattern != "/" {
 		// relative pattern can always be nested down
 		return true, nil
 	}
 
-	ok, pos := hasDoubleWildcard(patterns)
+	ok, pos := hasDoubleWildcard(pattern)
 	if ok && len(strs) >= pos {
 		// cut off at the double wildcard
 		strs = strs[:pos]
@@ -118,12 +118,12 @@ func childMatch(patterns Pattern, strs []string) (matched bool, err error) {
 
 	// match path against absolute pattern prefix
 	l := 0
-	if len(strs) > len(patterns.parts) {
-		l = len(patterns.parts)
+	if len(strs) > len(pattern.parts) {
+		l = len(pattern.parts)
 	} else {
 		l = len(strs)
 	}
-	return match(Pattern{patterns.parts[0:l]}, strs)
+	return match(Pattern{pattern.parts[0:l]}, strs)
 }
 
 func hasDoubleWildcard(list Pattern) (ok bool, pos int) {
@@ -136,20 +136,20 @@ func hasDoubleWildcard(list Pattern) (ok bool, pos int) {
 	return false, 0
 }
 
-func match(patterns Pattern, strs []string) (matched bool, err error) {
-	if ok, pos := hasDoubleWildcard(patterns); ok {
+func match(pattern Pattern, strs []string) (matched bool, err error) {
+	if ok, pos := hasDoubleWildcard(pattern); ok {
 		// gradually expand '**' into separate wildcards
 		newPat := make([]patternPart, len(strs))
 		// copy static prefix once
-		copy(newPat, patterns.parts[:pos])
-		for i := 0; i <= len(strs)-len(patterns.parts)+1; i++ {
+		copy(newPat, pattern.parts[:pos])
+		for i := 0; i <= len(strs)-len(pattern.parts)+1; i++ {
 			// limit to static prefix and already appended '*'
 			newPat := newPat[:pos+i]
 			// in the first iteration the wildcard expands to nothing
 			if i > 0 {
 				newPat[pos+i-1] = patternPart{"*", false}
 			}
-			newPat = append(newPat, patterns.parts[pos+1:]...)
+			newPat = append(newPat, pattern.parts[pos+1:]...)
 
 			matched, err := match(Pattern{newPat}, strs)
 			if err != nil {
@@ -164,20 +164,20 @@ func match(patterns Pattern, strs []string) (matched bool, err error) {
 		return false, nil
 	}
 
-	if len(patterns.parts) == 0 && len(strs) == 0 {
+	if len(pattern.parts) == 0 && len(strs) == 0 {
 		return true, nil
 	}
 
 	// an empty pattern never matches a non-empty path
-	if len(patterns.parts) == 0 {
+	if len(pattern.parts) == 0 {
 		return false, nil
 	}
 
-	if len(patterns.parts) <= len(strs) {
+	if len(pattern.parts) <= len(strs) {
 		minOffset := 0
-		maxOffset := len(strs) - len(patterns.parts)
+		maxOffset := len(strs) - len(pattern.parts)
 		// special case absolute patterns
-		if patterns.parts[0].pattern == "/" {
+		if pattern.parts[0].pattern == "/" {
 			maxOffset = 0
 		} else if strs[0] == "/" {
 			// skip absolute path marker if pattern is not rooted
@@ -186,12 +186,12 @@ func match(patterns Pattern, strs []string) (matched bool, err error) {
 	outer:
 		for offset := maxOffset; offset >= minOffset; offset-- {
 
-			for i := len(patterns.parts) - 1; i >= 0; i-- {
+			for i := len(pattern.parts) - 1; i >= 0; i-- {
 				var ok bool
-				if patterns.parts[i].isSimple {
-					ok = patterns.parts[i].pattern == strs[offset+i]
+				if pattern.parts[i].isSimple {
+					ok = pattern.parts[i].pattern == strs[offset+i]
 				} else {
-					ok, err = filepath.Match(patterns.parts[i].pattern, strs[offset+i])
+					ok, err = filepath.Match(pattern.parts[i].pattern, strs[offset+i])
 					if err != nil {
 						return false, errors.Wrap(err, "Match")
 					}
@@ -210,9 +210,9 @@ func match(patterns Pattern, strs []string) (matched bool, err error) {
 }
 
 // ParsePatterns prepares a list of patterns for use with List.
-func ParsePatterns(patterns []string) []Pattern {
+func ParsePatterns(pattern []string) []Pattern {
 	patpat := make([]Pattern, 0)
-	for _, pat := range patterns {
+	for _, pat := range pattern {
 		if pat == "" {
 			continue
 		}
