@@ -289,7 +289,7 @@ On most Unixy shells, you can either quote or use backslashes. For example:
  * ``--exclude="foo bar star/foo.txt"``
  * ``--exclude=foo\ bar\ star/foo.txt``
 
-If a pattern is suffixed by an exclamation mark and match a file that
+If a pattern is prefixed by an exclamation mark and match a file that
 was previously matched by a regular pattern, the match is cancelled.
 It works similarly to ``gitignore``, with the same limitation: once a
 directory is excluded, it is not possible to include files inside the
