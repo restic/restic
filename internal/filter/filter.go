@@ -253,6 +253,12 @@ func list(patterns []Pattern, checkChildMatches bool, str string) (matched bool,
 	if err != nil {
 		return false, false, err
 	}
+
+	hasNegatedPattern := false
+	for _, pat := range patterns {
+		hasNegatedPattern = hasNegatedPattern || pat.isNegated
+	}
+
 	for _, pat := range patterns {
 		m, err := match(pat, strs)
 		if err != nil {
@@ -275,6 +281,11 @@ func list(patterns []Pattern, checkChildMatches bool, str string) (matched bool,
 		} else {
 			matched = matched || m
 			childMayMatch = childMayMatch || c
+
+			if matched && childMayMatch && !hasNegatedPattern {
+				// without negative patterns the result cannot change any more
+				break
+			}
 		}
 	}
 
