@@ -17,7 +17,9 @@ type patternPart struct {
 }
 
 // Pattern represents a preparsed filter pattern
-type Pattern []patternPart
+type Pattern struct {
+	parts []patternPart
+}
 
 func prepareStr(str string) ([]string, error) {
 	if str == "" {
@@ -39,7 +41,7 @@ func preparePattern(pattern string) Pattern {
 		patterns[i] = patternPart{part, isSimple}
 	}
 
-	return patterns
+	return Pattern{patterns}
 }
 
 // Split p into path components. Assuming p has been Cleaned, no component
@@ -103,7 +105,7 @@ func ChildMatch(pattern, str string) (matched bool, err error) {
 }
 
 func childMatch(patterns Pattern, strs []string) (matched bool, err error) {
-	if patterns[0].pattern != "/" {
+	if patterns.parts[0].pattern != "/" {
 		// relative pattern can always be nested down
 		return true, nil
 	}
@@ -116,16 +118,16 @@ func childMatch(patterns Pattern, strs []string) (matched bool, err error) {
 
 	// match path against absolute pattern prefix
 	l := 0
-	if len(strs) > len(patterns) {
-		l = len(patterns)
+	if len(strs) > len(patterns.parts) {
+		l = len(patterns.parts)
 	} else {
 		l = len(strs)
 	}
-	return match(patterns[0:l], strs)
+	return match(Pattern{patterns.parts[0:l]}, strs)
 }
 
 func hasDoubleWildcard(list Pattern) (ok bool, pos int) {
-	for i, item := range list {
+	for i, item := range list.parts {
 		if item.pattern == "" {
 			return true, i
 		}
@@ -137,19 +139,19 @@ func hasDoubleWildcard(list Pattern) (ok bool, pos int) {
 func match(patterns Pattern, strs []string) (matched bool, err error) {
 	if ok, pos := hasDoubleWildcard(patterns); ok {
 		// gradually expand '**' into separate wildcards
-		newPat := make(Pattern, len(strs))
+		newPat := make([]patternPart, len(strs))
 		// copy static prefix once
-		copy(newPat, patterns[:pos])
-		for i := 0; i <= len(strs)-len(patterns)+1; i++ {
+		copy(newPat, patterns.parts[:pos])
+		for i := 0; i <= len(strs)-len(patterns.parts)+1; i++ {
 			// limit to static prefix and already appended '*'
 			newPat := newPat[:pos+i]
 			// in the first iteration the wildcard expands to nothing
 			if i > 0 {
 				newPat[pos+i-1] = patternPart{"*", false}
 			}
-			newPat = append(newPat, patterns[pos+1:]...)
+			newPat = append(newPat, patterns.parts[pos+1:]...)
 
-			matched, err := match(newPat, strs)
+			matched, err := match(Pattern{newPat}, strs)
 			if err != nil {
 				return false, err
 			}
@@ -162,20 +164,20 @@ func match(patterns Pattern, strs []string) (matched bool, err error) {
 		return false, nil
 	}
 
-	if len(patterns) == 0 && len(strs) == 0 {
+	if len(patterns.parts) == 0 && len(strs) == 0 {
 		return true, nil
 	}
 
 	// an empty pattern never matches a non-empty path
-	if len(patterns) == 0 {
+	if len(patterns.parts) == 0 {
 		return false, nil
 	}
 
-	if len(patterns) <= len(strs) {
+	if len(patterns.parts) <= len(strs) {
 		minOffset := 0
-		maxOffset := len(strs) - len(patterns)
+		maxOffset := len(strs) - len(patterns.parts)
 		// special case absolute patterns
-		if patterns[0].pattern == "/" {
+		if patterns.parts[0].pattern == "/" {
 			maxOffset = 0
 		} else if strs[0] == "/" {
 			// skip absolute path marker if pattern is not rooted
@@ -184,12 +186,12 @@ func match(patterns Pattern, strs []string) (matched bool, err error) {
 	outer:
 		for offset := maxOffset; offset >= minOffset; offset-- {
 
-			for i := len(patterns) - 1; i >= 0; i-- {
+			for i := len(patterns.parts) - 1; i >= 0; i-- {
 				var ok bool
-				if patterns[i].isSimple {
-					ok = patterns[i].pattern == strs[offset+i]
+				if patterns.parts[i].isSimple {
+					ok = patterns.parts[i].pattern == strs[offset+i]
 				} else {
-					ok, err = filepath.Match(patterns[i].pattern, strs[offset+i])
+					ok, err = filepath.Match(patterns.parts[i].pattern, strs[offset+i])
 					if err != nil {
 						return false, errors.Wrap(err, "Match")
 					}
