@@ -1,12 +1,9 @@
 package repository
 
 import (
-	"crypto/rand"
-	"encoding/binary"
+	"hash/maphash"
 
 	"github.com/restic/restic/internal/restic"
-
-	"github.com/dchest/siphash"
 )
 
 // An indexMap is a chained hash table that maps blob IDs to indexEntries.
@@ -23,7 +20,7 @@ type indexMap struct {
 	buckets    []*indexEntry
 	numentries uint
 
-	key0, key1 uint64 // Key for hash randomization.
+	mh maphash.Hash
 
 	free *indexEntry // Free list.
 }
@@ -113,25 +110,20 @@ func (m *indexMap) grow() {
 }
 
 func (m *indexMap) hash(id restic.ID) uint {
-	// We use siphash with a randomly generated 128-bit key, to prevent
-	// backups of specially crafted inputs from degrading performance.
+	// We use maphash to prevent backups of specially crafted inputs
+	// from degrading performance.
 	// While SHA-256 should be collision-resistant, for hash table indices
 	// we use only a few bits of it and finding collisions for those is
 	// much easier than breaking the whole algorithm.
-	h := uint(siphash.Hash(m.key0, m.key1, id[:]))
+	m.mh.Reset()
+	_, _ = m.mh.Write(id[:])
+	h := uint(m.mh.Sum64())
 	return h & uint(len(m.buckets)-1)
 }
 
 func (m *indexMap) init() {
 	const initialBuckets = 64
 	m.buckets = make([]*indexEntry, initialBuckets)
-
-	var buf [16]byte
-	if _, err := rand.Read(buf[:]); err != nil {
-		panic(err) // Very little we can do here.
-	}
-	m.key0 = binary.LittleEndian.Uint64(buf[:8])
-	m.key1 = binary.LittleEndian.Uint64(buf[8:])
 }
 
 func (m *indexMap) len() uint { return m.numentries }

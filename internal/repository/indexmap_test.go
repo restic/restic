@@ -107,32 +107,6 @@ func TestIndexMapForeachWithID(t *testing.T) {
 	}
 }
 
-func TestIndexMapHash(t *testing.T) {
-	t.Parallel()
-
-	var m1, m2 indexMap
-
-	id := restic.NewRandomID()
-	// Add to both maps to initialize them.
-	m1.add(id, 0, 0, 0)
-	m2.add(id, 0, 0, 0)
-
-	h1 := m1.hash(id)
-	h2 := m2.hash(id)
-
-	rtest.Equals(t, len(m1.buckets), len(m2.buckets)) // just to be sure
-
-	if h1 == h2 {
-		// The probability of the zero key should be 2^(-128).
-		if m1.key0 == 0 && m1.key1 == 0 {
-			t.Error("siphash key not set for m1")
-		}
-		if m2.key0 == 0 && m2.key1 == 0 {
-			t.Error("siphash key not set for m2")
-		}
-	}
-}
-
 func BenchmarkIndexMapHash(b *testing.B) {
 	var m indexMap
 	m.add(restic.ID{}, 0, 0, 0) // Trigger lazy initialization.

@@ -8,7 +8,6 @@ require (
 	github.com/Azure/go-autorest/autorest/to v0.4.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.1
 	github.com/cespare/xxhash/v2 v2.1.1
-	github.com/dchest/siphash v1.2.2
 	github.com/dnaeon/go-vcr v1.2.0 // indirect
 	github.com/elithrar/simple-scrypt v1.3.0
 	github.com/go-ole/go-ole v1.2.5
