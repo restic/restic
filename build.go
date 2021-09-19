@@ -35,6 +35,7 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+//go:build ignore_build_go
 // +build ignore_build_go
 
 package main
@@ -123,17 +124,8 @@ func printEnv(env []string) {
 
 // build runs "go build args..." with GOPATH set to gopath.
 func build(cwd string, env map[string]string, args ...string) error {
-	a := []string{"build"}
-
-	// try to remove all absolute paths from resulting binary
-	if goVersion.AtLeast(GoVersion{1, 13, 0}) {
-		// use the new flag introduced by Go 1.13
-		a = append(a, "-trimpath")
-	} else {
-		// otherwise try to trim as many paths as possible
-		a = append(a, "-asmflags", fmt.Sprintf("all=-trimpath=%s", cwd))
-		a = append(a, "-gcflags", fmt.Sprintf("all=-trimpath=%s", cwd))
-	}
+	// -trimpath removes all absolute paths from the binary.
+	a := []string{"build", "-trimpath"}
 
 	if enablePIE {
 		a = append(a, "-buildmode=pie")
