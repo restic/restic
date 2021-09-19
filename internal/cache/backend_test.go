@@ -48,7 +48,6 @@ func remove(t testing.TB, be restic.Backend, h restic.Handle) {
 func randomData(n int) (restic.Handle, []byte) {
 	data := test.Random(rand.Int(), n)
 	id := restic.Hash(data)
-	copy(id[:], data)
 	h := restic.Handle{
 		Type: restic.IndexFile,
 		Name: id.String(),
