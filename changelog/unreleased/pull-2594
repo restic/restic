@@ -1,7 +1,6 @@
 Enhancement: Speed up restic restore --verify
 
-The --verify option causes restic restore to do some verification after it
-has restored from a snapshot. This verification now runs up to 52% faster,
-depending on the exact setup.
+The --verify option lets restic restore verify the file content after it has
+restored a snapshot. We've sped up the verification by up to a factor of two.
 
 https://github.com/restic/restic/pull/2594
