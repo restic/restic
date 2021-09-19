@@ -24,8 +24,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/textfile"
-	"github.com/restic/restic/internal/ui"
-	"github.com/restic/restic/internal/ui/json"
+	"github.com/restic/restic/internal/ui/backup"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
@@ -527,39 +526,17 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		return err
 	}
 
-	type ArchiveProgressReporter interface {
-		CompleteItem(item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration)
-		StartFile(filename string)
-		CompleteBlob(filename string, bytes uint64)
-		ScannerError(item string, fi os.FileInfo, err error) error
-		ReportTotal(item string, s archiver.ScanStats)
-		SetMinUpdatePause(d time.Duration)
-		Run(ctx context.Context) error
-		Error(item string, fi os.FileInfo, err error) error
-		Finish(snapshotID restic.ID)
-		SetDryRun()
-
-		// ui.StdioWrapper
-		Stdout() io.WriteCloser
-		Stderr() io.WriteCloser
-
-		// ui.Message
-		E(msg string, args ...interface{})
-		P(msg string, args ...interface{})
-		V(msg string, args ...interface{})
-		VV(msg string, args ...interface{})
-	}
-
-	var p ArchiveProgressReporter
+	var progressPrinter backup.ProgressPrinter
 	if gopts.JSON {
-		p = json.NewBackup(term, gopts.verbosity)
+		progressPrinter = backup.NewJSONProgress(term, gopts.verbosity)
 	} else {
-		p = ui.NewBackup(term, gopts.verbosity)
+		progressPrinter = backup.NewTextProgress(term, gopts.verbosity)
 	}
+	progressReporter := backup.NewProgress(progressPrinter)
 
 	if opts.DryRun {
 		repo.SetDryRun()
-		p.SetDryRun()
+		progressReporter.SetDryRun()
 	}
 
 	// use the terminal for stdout/stderr
@@ -567,14 +544,14 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	defer func() {
 		gopts.stdout, gopts.stderr = prevStdout, prevStderr
 	}()
-	gopts.stdout, gopts.stderr = p.Stdout(), p.Stderr()
+	gopts.stdout, gopts.stderr = progressPrinter.Stdout(), progressPrinter.Stderr()
 
-	p.SetMinUpdatePause(calculateProgressInterval(!gopts.Quiet))
+	progressReporter.SetMinUpdatePause(calculateProgressInterval(!gopts.Quiet, gopts.JSON))
 
-	t.Go(func() error { return p.Run(t.Context(gopts.ctx)) })
+	t.Go(func() error { return progressReporter.Run(t.Context(gopts.ctx)) })
 
 	if !gopts.JSON {
-		p.V("lock repository")
+		progressPrinter.V("lock repository")
 	}
 	lock, err := lockRepo(gopts.ctx, repo)
 	defer unlockRepo(lock)
@@ -595,7 +572,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	}
 
 	if !gopts.JSON {
-		p.V("load index files")
+		progressPrinter.V("load index files")
 	}
 	err = repo.LoadIndex(gopts.ctx)
 	if err != nil {
@@ -609,9 +586,9 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 
 	if !gopts.JSON {
 		if parentSnapshotID != nil {
-			p.P("using parent snapshot %v\n", parentSnapshotID.Str())
+			progressPrinter.P("using parent snapshot %v\n", parentSnapshotID.Str())
 		} else {
-			p.P("no parent snapshot found, will read all files\n")
+			progressPrinter.P("no parent snapshot found, will read all files\n")
 		}
 	}
 
@@ -640,12 +617,12 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		}
 
 		errorHandler := func(item string, err error) error {
-			return p.Error(item, nil, err)
+			return progressReporter.Error(item, nil, err)
 		}
 
 		messageHandler := func(msg string, args ...interface{}) {
 			if !gopts.JSON {
-				p.P(msg, args...)
+				progressPrinter.P(msg, args...)
 			}
 		}
 
@@ -655,7 +632,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	}
 	if opts.Stdin {
 		if !gopts.JSON {
-			p.V("read data from stdin")
+			progressPrinter.V("read data from stdin")
 		}
 		filename := path.Join("/", opts.StdinFilename)
 		targetFS = &fs.Reader{
@@ -670,11 +647,11 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	sc := archiver.NewScanner(targetFS)
 	sc.SelectByName = selectByNameFilter
 	sc.Select = selectFilter
-	sc.Error = p.ScannerError
-	sc.Result = p.ReportTotal
+	sc.Error = progressReporter.ScannerError
+	sc.Result = progressReporter.ReportTotal
 
 	if !gopts.JSON {
-		p.V("start scan on %v", targets)
+		progressPrinter.V("start scan on %v", targets)
 	}
 	t.Go(func() error { return sc.Scan(t.Context(gopts.ctx), targets) })
 
@@ -685,11 +662,11 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	success := true
 	arch.Error = func(item string, fi os.FileInfo, err error) error {
 		success = false
-		return p.Error(item, fi, err)
+		return progressReporter.Error(item, fi, err)
 	}
-	arch.CompleteItem = p.CompleteItem
-	arch.StartFile = p.StartFile
-	arch.CompleteBlob = p.CompleteBlob
+	arch.CompleteItem = progressReporter.CompleteItem
+	arch.StartFile = progressReporter.StartFile
+	arch.CompleteBlob = progressReporter.CompleteBlob
 
 	if opts.IgnoreInode {
 		// --ignore-inode implies --ignore-ctime: on FUSE, the ctime is not
@@ -713,7 +690,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	}
 
 	if !gopts.JSON {
-		p.V("start backup on %v", targets)
+		progressPrinter.V("start backup on %v", targets)
 	}
 	_, id, err := arch.Snapshot(gopts.ctx, targets, snapshotOpts)
 
@@ -729,9 +706,9 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	}
 
 	// Report finished execution
-	p.Finish(id)
+	progressReporter.Finish(id)
 	if !gopts.JSON && !opts.DryRun {
-		p.P("snapshot %s saved\n", id.Str())
+		progressPrinter.P("snapshot %s saved\n", id.Str())
 	}
 	if !success {
 		return ErrInvalidSourceData
