@@ -844,5 +844,6 @@ func TestVerifyCancel(t *testing.T) {
 	nverified, err := res.VerifyFiles(ctx, tempdir)
 	rtest.Equals(t, 0, nverified)
 	rtest.Assert(t, err != nil, "nil error from VerifyFiles")
-	rtest.Equals(t, []error(nil), errs)
+	rtest.Equals(t, 1, len(errs))
+	rtest.Assert(t, strings.Contains(errs[0].Error(), "Invalid file size for"), "wrong error %q", errs[0].Error())
 }

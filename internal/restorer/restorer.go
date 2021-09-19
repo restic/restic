@@ -351,6 +351,9 @@ func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
 			for job := range work {
 				buf, err = res.verifyFile(job.path, job.node, buf)
 				if err != nil {
+					err = res.Error(job.path, err)
+				}
+				if err != nil || ctx.Err() != nil {
 					break
 				}
 				atomic.AddUint64(&nchecked, 1)
