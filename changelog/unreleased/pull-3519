@@ -1,0 +1,6 @@
+Change: Require Go 1.14 or newer
+
+Restic now requires Go 1.14 to build. This allows it to use new
+standard library features instead of an external dependency.
+
+https://github.com/restic/restic/issues/3519
