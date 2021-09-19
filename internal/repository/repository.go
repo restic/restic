@@ -183,7 +183,10 @@ func (r *Repository) LoadUnpacked(ctx context.Context, t restic.FileType, id res
 		id = restic.ID{}
 	}
 
+	ctx, cancel := context.WithCancel(ctx)
+
 	h := restic.Handle{Type: t, Name: id.String()}
+	retriedInvalidData := false
 	err := r.be.Load(ctx, h, 0, 0, func(rd io.Reader) error {
 		// make sure this call is idempotent, in case an error occurs
 		wr := bytes.NewBuffer(buf[:0])
@@ -192,15 +195,21 @@ func (r *Repository) LoadUnpacked(ctx context.Context, t restic.FileType, id res
 			return cerr
 		}
 		buf = wr.Bytes()
+
+		if t != restic.ConfigFile && !restic.Hash(buf).Equal(id) {
+			debug.Log("retry loading broken blob %v", h)
+			if !retriedInvalidData {
+				retriedInvalidData = true
+			} else {
+				cancel()
+			}
+			return errors.Errorf("load(%v): invalid data returned", h)
+		}
 		return nil
 	})
 
 	if err != nil {
 		return nil, err
-	}
-
-	if t != restic.ConfigFile && !restic.Hash(buf).Equal(id) {
-		return nil, errors.Errorf("load %v: invalid data returned", h)
 	}
 
 	nonce, ciphertext := buf[:r.key.NonceSize()], buf[r.key.NonceSize():]

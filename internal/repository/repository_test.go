@@ -16,6 +16,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/klauspost/compress/zstd"
+	"github.com/restic/restic/internal/backend/local"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -277,6 +278,61 @@ func loadIndex(ctx context.Context, repo restic.Repository, id restic.ID) (*repo
 		fmt.Fprintf(os.Stderr, "index %v has old format\n", id.Str())
 	}
 	return idx, err
+}
+
+func TestRepositoryLoadUnpackedBroken(t *testing.T) {
+	repodir, cleanup := rtest.Env(t, repoFixture)
+	defer cleanup()
+
+	data := rtest.Random(23, 12345)
+	id := restic.Hash(data)
+	h := restic.Handle{Type: restic.IndexFile, Name: id.String()}
+	// damage buffer
+	data[0] ^= 0xff
+
+	repo := repository.TestOpenLocal(t, repodir)
+	// store broken file
+	err := repo.Backend().Save(context.TODO(), h, restic.NewByteReader(data, nil))
+	rtest.OK(t, err)
+
+	// without a retry backend this will just return an error that the file is broken
+	_, err = repo.LoadUnpacked(context.TODO(), restic.IndexFile, id, nil)
+	if err == nil {
+		t.Fatal("missing expected error")
+	}
+	rtest.Assert(t, strings.Contains(err.Error(), "invalid data returned"), "unexpected error: %v", err)
+}
+
+type damageOnceBackend struct {
+	restic.Backend
+}
+
+func (be *damageOnceBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+	// don't break the config file as we can't retry it
+	if h.Type == restic.ConfigFile {
+		return be.Backend.Load(ctx, h, length, offset, fn)
+	}
+	// return broken data on the first try
+	err := be.Backend.Load(ctx, h, length+1, offset, fn)
+	if err != nil {
+		// retry
+		err = be.Backend.Load(ctx, h, length, offset, fn)
+	}
+	return err
+}
+
+func TestRepositoryLoadUnpackedRetryBroken(t *testing.T) {
+	repodir, cleanup := rtest.Env(t, repoFixture)
+	defer cleanup()
+
+	be, err := local.Open(context.TODO(), local.Config{Path: repodir, Connections: 2})
+	rtest.OK(t, err)
+	repo, err := repository.New(&damageOnceBackend{Backend: be}, repository.Options{})
+	rtest.OK(t, err)
+	err = repo.SearchKey(context.TODO(), test.TestPassword, 10, "")
+	rtest.OK(t, err)
+
+	rtest.OK(t, repo.LoadIndex(context.TODO()))
 }
 
 func BenchmarkLoadIndex(b *testing.B) {
