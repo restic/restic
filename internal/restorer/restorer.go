@@ -375,7 +375,9 @@ func (res *Restorer) verifyFile(target string, node *restic.Node, buf []byte) ([
 	if err != nil {
 		return buf, err
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 
 	fi, err := f.Stat()
 	switch {
