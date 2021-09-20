@@ -161,7 +161,12 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 	// try loading from cache without checking that the handle is actually cached
 	inCache, err := b.loadFromCache(ctx, h, length, offset, consumer)
 	if inCache {
-		return err
+		if err == nil {
+			return nil
+		}
+
+		// drop from cache and retry once
+		_ = b.Cache.remove(h)
 	}
 	debug.Log("error loading %v from cache: %v", h, err)
 

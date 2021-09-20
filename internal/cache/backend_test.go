@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"io/ioutil"
 	"math/rand"
 	"sync"
 	"testing"
@@ -170,4 +171,38 @@ func TestErrorBackend(t *testing.T) {
 	}
 
 	wg.Wait()
+}
+
+func TestBackendRemoveBroken(t *testing.T) {
+	be := mem.New()
+
+	c, cleanup := TestNewCache(t)
+	defer cleanup()
+
+	h, data := randomData(5234142)
+	// save directly in backend
+	save(t, be, h, data)
+
+	// prime cache with broken copy
+	broken := append([]byte{}, data...)
+	broken[0] ^= 0xff
+	err := c.Save(h, bytes.NewReader(broken))
+	test.OK(t, err)
+
+	// loadall retries if broken data was returned
+	buf, err := backend.LoadAll(context.TODO(), nil, c.Wrap(be), h)
+	test.OK(t, err)
+
+	if !bytes.Equal(buf, data) {
+		t.Fatalf("wrong data returned")
+	}
+
+	// check that the cache now contains the correct data
+	rd, err := c.load(h, 0, 0)
+	test.OK(t, err)
+	cached, err := ioutil.ReadAll(rd)
+	test.OK(t, err)
+	if !bytes.Equal(cached, data) {
+		t.Fatalf("wrong data cache")
+	}
 }
