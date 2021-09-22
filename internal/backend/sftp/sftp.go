@@ -3,6 +3,8 @@ package sftp
 import (
 	"bufio"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"hash"
 	"io"
@@ -252,6 +254,17 @@ func Join(parts ...string) string {
 	return path.Clean(path.Join(parts...))
 }
 
+// tempSuffix generates a random string suffix that should be sufficiently long
+// to avoid accidential conflicts
+func tempSuffix() string {
+	var nonce [16]byte
+	_, err := rand.Read(nonce[:])
+	if err != nil {
+		panic(err)
+	}
+	return hex.EncodeToString(nonce[:])
+}
+
 // Save stores data in the backend at the handle.
 func (r *SFTP) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
 	debug.Log("Save %v", h)
@@ -264,10 +277,11 @@ func (r *SFTP) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader
 	}
 
 	filename := r.Filename(h)
+	tmpFilename := filename + "-restic-temp-" + tempSuffix()
 	dirname := r.Dirname(h)
 
 	// create new file
-	f, err := r.c.OpenFile(filename, os.O_CREATE|os.O_EXCL|os.O_WRONLY)
+	f, err := r.c.OpenFile(tmpFilename, os.O_CREATE|os.O_EXCL|os.O_WRONLY)
 
 	if r.IsNotExist(err) {
 		// error is caused by a missing directory, try to create it
@@ -276,7 +290,7 @@ func (r *SFTP) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader
 			debug.Log("error creating dir %v: %v", r.Dirname(h), mkdirErr)
 		} else {
 			// try again
-			f, err = r.c.OpenFile(filename, os.O_CREATE|os.O_EXCL|os.O_WRONLY)
+			f, err = r.c.OpenFile(tmpFilename, os.O_CREATE|os.O_EXCL|os.O_WRONLY)
 		}
 	}
 
@@ -298,7 +312,7 @@ func (r *SFTP) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader
 		rmErr := r.c.Remove(f.Name())
 		if rmErr != nil {
 			debug.Log("sftp: failed to remove broken file %v: %v",
-				filename, rmErr)
+				f.Name(), rmErr)
 		}
 
 		err = r.checkNoSpace(dirname, rd.Length(), err)
@@ -318,7 +332,12 @@ func (r *SFTP) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader
 	}
 
 	err = f.Close()
-	return errors.Wrap(err, "Close")
+	if err != nil {
+		return errors.Wrap(err, "Close")
+	}
+
+	err = r.c.Rename(tmpFilename, filename)
+	return errors.Wrap(err, "Rename")
 }
 
 // checkNoSpace checks if err was likely caused by lack of available space
