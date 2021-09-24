@@ -276,6 +276,10 @@ func (be *beSwift) List(ctx context.Context, t restic.FileType, fn func(restic.F
 				if err != nil {
 					return nil, err
 				}
+
+				if ctx.Err() != nil {
+					return nil, ctx.Err()
+				}
 			}
 			return newObjects, nil
 		})
