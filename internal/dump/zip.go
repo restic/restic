@@ -6,29 +6,33 @@ import (
 	"io"
 	"path/filepath"
 
+	"github.com/restic/restic/internal/bloblru"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 )
 
 type zipDumper struct {
-	w *zip.Writer
+	cache *bloblru.Cache
+	w     *zip.Writer
 }
 
 // Statically ensure that zipDumper implements dumper.
-var _ dumper = zipDumper{}
+var _ dumper = &zipDumper{}
 
 // WriteZip will write the contents of the given tree, encoded as a zip to the given destination.
 func WriteZip(ctx context.Context, repo restic.Repository, tree *restic.Tree, rootPath string, dst io.Writer) error {
-	dmp := zipDumper{w: zip.NewWriter(dst)}
-
+	dmp := &zipDumper{
+		cache: NewCache(),
+		w:     zip.NewWriter(dst),
+	}
 	return writeDump(ctx, repo, tree, rootPath, dmp)
 }
 
-func (dmp zipDumper) Close() error {
+func (dmp *zipDumper) Close() error {
 	return dmp.w.Close()
 }
 
-func (dmp zipDumper) dumpNode(ctx context.Context, node *restic.Node, repo restic.Repository) error {
+func (dmp *zipDumper) dumpNode(ctx context.Context, node *restic.Node, repo restic.Repository) error {
 	relPath, err := filepath.Rel("/", node.Path)
 	if err != nil {
 		return err
@@ -58,5 +62,5 @@ func (dmp zipDumper) dumpNode(ctx context.Context, node *restic.Node, repo resti
 		return nil
 	}
 
-	return GetNodeData(ctx, w, repo, node)
+	return WriteNodeData(ctx, w, repo, node, dmp.cache)
 }

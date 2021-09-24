@@ -42,7 +42,9 @@ func New(size int) *Cache {
 	return c
 }
 
-func (c *Cache) Add(id restic.ID, blob []byte) {
+// Add adds key id with value blob to c.
+// It may return an evicted buffer for reuse.
+func (c *Cache) Add(id restic.ID, blob []byte) (old []byte) {
 	debug.Log("bloblru.Cache: add %v", id)
 
 	size := len(blob) + overhead
@@ -62,11 +64,18 @@ func (c *Cache) Add(id restic.ID, blob []byte) {
 	// This loop takes at most min(maxEntries, maxchunksize/overhead)
 	// iterations.
 	for size > c.free {
-		c.c.RemoveOldest()
+		_, val, _ := c.c.RemoveOldest()
+		b := val.([]byte)
+		if len(b) > len(old) {
+			// We can only return one buffer, so pick the largest.
+			old = b
+		}
 	}
 
 	c.c.Add(key, blob)
 	c.free -= size
+
+	return old
 }
 
 func (c *Cache) Get(id restic.ID) ([]byte, bool) {
