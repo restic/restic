@@ -61,7 +61,7 @@ func newSwiftTestSuite(t testing.TB) *test.Suite {
 		Create: func(config interface{}) (restic.Backend, error) {
 			cfg := config.(swift.Config)
 
-			be, err := swift.Open(cfg, tr)
+			be, err := swift.Open(context.TODO(), cfg, tr)
 			if err != nil {
 				return nil, err
 			}
@@ -81,14 +81,14 @@ func newSwiftTestSuite(t testing.TB) *test.Suite {
 		// OpenFn is a function that opens a previously created temporary repository.
 		Open: func(config interface{}) (restic.Backend, error) {
 			cfg := config.(swift.Config)
-			return swift.Open(cfg, tr)
+			return swift.Open(context.TODO(), cfg, tr)
 		},
 
 		// CleanupFn removes data created during the tests.
 		Cleanup: func(config interface{}) error {
 			cfg := config.(swift.Config)
 
-			be, err := swift.Open(cfg, tr)
+			be, err := swift.Open(context.TODO(), cfg, tr)
 			if err != nil {
 				return err
 			}
