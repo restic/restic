@@ -8,25 +8,29 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/restic/restic/internal/bloblru"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 )
 
 type tarDumper struct {
-	w *tar.Writer
+	cache *bloblru.Cache
+	w     *tar.Writer
 }
 
 // Statically ensure that tarDumper implements dumper.
-var _ dumper = tarDumper{}
+var _ dumper = &tarDumper{}
 
 // WriteTar will write the contents of the given tree, encoded as a tar to the given destination.
 func WriteTar(ctx context.Context, repo restic.Repository, tree *restic.Tree, rootPath string, dst io.Writer) error {
-	dmp := tarDumper{w: tar.NewWriter(dst)}
-
-	return writeDump(ctx, repo, tree, rootPath, dmp, dst)
+	dmp := &tarDumper{
+		cache: NewCache(),
+		w:     tar.NewWriter(dst),
+	}
+	return writeDump(ctx, repo, tree, rootPath, dmp)
 }
 
-func (dmp tarDumper) Close() error {
+func (dmp *tarDumper) Close() error {
 	return dmp.w.Close()
 }
 
@@ -39,7 +43,7 @@ const (
 	cISVTX = 0o1000 // Save text (sticky bit)
 )
 
-func (dmp tarDumper) dumpNode(ctx context.Context, node *restic.Node, repo restic.Repository) error {
+func (dmp *tarDumper) dumpNode(ctx context.Context, node *restic.Node, repo restic.Repository) error {
 	relPath, err := filepath.Rel("/", node.Path)
 	if err != nil {
 		return err
@@ -90,7 +94,7 @@ func (dmp tarDumper) dumpNode(ctx context.Context, node *restic.Node, repo resti
 		return errors.Wrap(err, "TarHeader")
 	}
 
-	return GetNodeData(ctx, dmp.w, repo, node)
+	return WriteNodeData(ctx, dmp.w, repo, node, dmp.cache)
 }
 
 func parseXattrs(xattrs []restic.ExtendedAttribute) map[string]string {

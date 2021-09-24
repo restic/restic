@@ -5,6 +5,7 @@ import (
 	"io"
 	"path"
 
+	"github.com/restic/restic/internal/bloblru"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/walker"
@@ -20,7 +21,11 @@ type dumper interface {
 // It will loop over all nodes in the tree and dump them recursively.
 type WriteDump func(ctx context.Context, repo restic.Repository, tree *restic.Tree, rootPath string, dst io.Writer) error
 
-func writeDump(ctx context.Context, repo restic.Repository, tree *restic.Tree, rootPath string, dmp dumper, dst io.Writer) error {
+func NewCache() *bloblru.Cache {
+	return bloblru.New(64 << 20)
+}
+
+func writeDump(ctx context.Context, repo restic.Repository, tree *restic.Tree, rootPath string, dmp dumper) error {
 	for _, rootNode := range tree.Nodes {
 		rootNode.Path = rootPath
 		err := dumpTree(ctx, repo, rootNode, rootPath, dmp)
@@ -71,20 +76,24 @@ func dumpTree(ctx context.Context, repo restic.Repository, rootNode *restic.Node
 	return err
 }
 
-// GetNodeData will write the contents of the node to the given output.
-func GetNodeData(ctx context.Context, output io.Writer, repo restic.Repository, node *restic.Node) error {
+// WriteNodeData writes the contents of the node to the given Writer.
+func WriteNodeData(ctx context.Context, w io.Writer, repo restic.Repository, node *restic.Node, cache *bloblru.Cache) error {
 	var (
 		buf []byte
 		err error
 	)
 	for _, id := range node.Content {
-		buf, err = repo.LoadBlob(ctx, restic.DataBlob, id, buf)
-		if err != nil {
-			return err
+		blob, ok := cache.Get(id)
+		if !ok {
+			blob, err = repo.LoadBlob(ctx, restic.DataBlob, id, buf)
+			if err != nil {
+				return err
+			}
+
+			buf = cache.Add(id, blob) // Reuse evicted buffer.
 		}
 
-		_, err = output.Write(buf)
-		if err != nil {
+		if _, err := w.Write(blob); err != nil {
 			return errors.Wrap(err, "Write")
 		}
 	}

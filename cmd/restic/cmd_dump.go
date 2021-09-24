@@ -95,7 +95,8 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repositor
 		if node.Name == pathComponents[0] {
 			switch {
 			case l == 1 && dump.IsFile(node):
-				return dump.GetNodeData(ctx, os.Stdout, repo, node)
+				cache := dump.NewCache()
+				return dump.WriteNodeData(ctx, os.Stdout, repo, node, cache)
 			case l > 1 && dump.IsDir(node):
 				subtree, err := repo.LoadTree(ctx, *node.Subtree)
 				if err != nil {

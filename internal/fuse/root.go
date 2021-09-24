@@ -1,3 +1,4 @@
+//go:build darwin || freebsd || linux
 // +build darwin freebsd linux
 
 package fuse
@@ -6,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/restic/restic/internal/bloblru"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
 
@@ -27,7 +29,7 @@ type Root struct {
 	cfg       Config
 	inode     uint64
 	snapshots restic.Snapshots
-	blobCache *blobCache
+	blobCache *bloblru.Cache
 
 	snCount   int
 	lastCheck time.Time
@@ -54,7 +56,7 @@ func NewRoot(repo restic.Repository, cfg Config) *Root {
 		repo:      repo,
 		inode:     rootInode,
 		cfg:       cfg,
-		blobCache: newBlobCache(blobCacheSize),
+		blobCache: bloblru.New(blobCacheSize),
 	}
 
 	if !cfg.OwnerIsRoot {
