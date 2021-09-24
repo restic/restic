@@ -3,6 +3,7 @@ package dump
 import (
 	"bytes"
 	"context"
+	"io"
 	"testing"
 
 	"github.com/restic/restic/internal/archiver"
@@ -27,6 +28,7 @@ func prepareTempdirRepoSrc(t testing.TB, src archiver.TestDir) (tempdir string, 
 }
 
 type CheckDump func(t *testing.T, testDir string, testDump *bytes.Buffer) error
+type WriteDump func(ctx context.Context, repo restic.Repository, tree *restic.Tree, rootPath string, dst io.Writer) error
 
 func WriteTest(t *testing.T, wd WriteDump, cd CheckDump) {
 	tests := []struct {

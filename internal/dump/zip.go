@@ -21,7 +21,7 @@ var _ dumper = zipDumper{}
 func WriteZip(ctx context.Context, repo restic.Repository, tree *restic.Tree, rootPath string, dst io.Writer) error {
 	dmp := zipDumper{w: zip.NewWriter(dst)}
 
-	return writeDump(ctx, repo, tree, rootPath, dmp, dst)
+	return writeDump(ctx, repo, tree, rootPath, dmp)
 }
 
 func (dmp zipDumper) Close() error {

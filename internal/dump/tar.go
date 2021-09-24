@@ -23,7 +23,7 @@ var _ dumper = tarDumper{}
 func WriteTar(ctx context.Context, repo restic.Repository, tree *restic.Tree, rootPath string, dst io.Writer) error {
 	dmp := tarDumper{w: tar.NewWriter(dst)}
 
-	return writeDump(ctx, repo, tree, rootPath, dmp, dst)
+	return writeDump(ctx, repo, tree, rootPath, dmp)
 }
 
 func (dmp tarDumper) Close() error {

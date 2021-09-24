@@ -16,11 +16,7 @@ type dumper interface {
 	dumpNode(ctx context.Context, node *restic.Node, repo restic.Repository) error
 }
 
-// WriteDump will write the contents of the given tree to the given destination.
-// It will loop over all nodes in the tree and dump them recursively.
-type WriteDump func(ctx context.Context, repo restic.Repository, tree *restic.Tree, rootPath string, dst io.Writer) error
-
-func writeDump(ctx context.Context, repo restic.Repository, tree *restic.Tree, rootPath string, dmp dumper, dst io.Writer) error {
+func writeDump(ctx context.Context, repo restic.Repository, tree *restic.Tree, rootPath string, dmp dumper) error {
 	for _, rootNode := range tree.Nodes {
 		rootNode.Path = rootPath
 		err := dumpTree(ctx, repo, rootNode, rootPath, dmp)
