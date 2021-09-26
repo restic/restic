@@ -107,7 +107,7 @@ func runRecover(gopts GlobalOptions) error {
 		return nil
 	}
 
-	tree := restic.NewTree()
+	tree := restic.NewTree(len(roots))
 	for id := range roots {
 		var subtreeID = id
 		node := restic.Node{

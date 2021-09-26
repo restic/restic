@@ -23,7 +23,7 @@ func BuildTreeMap(tree TestTree) (m TreeMap, root restic.ID) {
 }
 
 func buildTreeMap(tree TestTree, m TreeMap) restic.ID {
-	res := restic.NewTree()
+	res := restic.NewTree(0)
 
 	for name, item := range tree {
 		switch elem := item.(type) {

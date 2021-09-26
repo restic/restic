@@ -14,10 +14,10 @@ type Tree struct {
 	Nodes []*Node `json:"nodes"`
 }
 
-// NewTree creates a new tree object.
-func NewTree() *Tree {
+// NewTree creates a new tree object with the given initial capacity.
+func NewTree(capacity int) *Tree {
 	return &Tree{
-		Nodes: []*Node{},
+		Nodes: make([]*Node, 0, capacity),
 	}
 }
 
@@ -51,8 +51,8 @@ func (t *Tree) Insert(node *Node) error {
 		return errors.Errorf("node %q already present", node.Name)
 	}
 
-	// https://code.google.com/p/go-wiki/wiki/SliceTricks
-	t.Nodes = append(t.Nodes, &Node{})
+	// https://github.com/golang/go/wiki/SliceTricks
+	t.Nodes = append(t.Nodes, nil)
 	copy(t.Nodes[pos+1:], t.Nodes[pos:])
 	t.Nodes[pos] = node
 
