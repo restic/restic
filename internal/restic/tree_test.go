@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	"github.com/restic/restic/internal/repository"
@@ -98,7 +99,7 @@ func TestLoadTree(t *testing.T) {
 	defer cleanup()
 
 	// save tree
-	tree := restic.NewTree()
+	tree := restic.NewTree(0)
 	id, err := repo.SaveTree(context.TODO(), tree)
 	rtest.OK(t, err)
 
@@ -112,4 +113,25 @@ func TestLoadTree(t *testing.T) {
 	rtest.Assert(t, tree.Equals(tree2),
 		"trees are not equal: want %v, got %v",
 		tree, tree2)
+}
+
+func BenchmarkBuildTree(b *testing.B) {
+	const size = 100 // Directories of this size are not uncommon.
+
+	nodes := make([]restic.Node, size)
+	for i := range nodes {
+		// Archiver.SaveTree inputs in sorted order, so do that here too.
+		nodes[i].Name = strconv.Itoa(i)
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		t := restic.NewTree(size)
+
+		for i := range nodes {
+			_ = t.Insert(&nodes[i])
+		}
+	}
 }

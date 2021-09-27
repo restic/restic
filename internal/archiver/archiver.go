@@ -550,12 +550,13 @@ func (arch *Archiver) statDir(dir string) (os.FileInfo, error) {
 func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, previous *restic.Tree) (*restic.Tree, error) {
 	debug.Log("%v (%v nodes), parent %v", snPath, len(atree.Nodes), previous)
 
-	tree := restic.NewTree()
+	nodeNames := atree.NodeNames()
+	tree := restic.NewTree(len(nodeNames))
 
 	futureNodes := make(map[string]FutureNode)
 
 	// iterate over the nodes of atree in lexicographic (=deterministic) order
-	for _, name := range atree.NodeNames() {
+	for _, name := range nodeNames {
 		subatree := atree.Nodes[name]
 
 		// test if context has been cancelled

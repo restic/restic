@@ -103,7 +103,8 @@ type saveTreeResponse struct {
 func (s *TreeSaver) save(ctx context.Context, snPath string, node *restic.Node, nodes []FutureNode) (*restic.Node, ItemStats, error) {
 	var stats ItemStats
 
-	tree := restic.NewTree()
+	tree := restic.NewTree(len(nodes))
+
 	for _, fn := range nodes {
 		fn.wait(ctx)
 
