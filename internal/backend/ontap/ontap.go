@@ -344,16 +344,17 @@ func (be *Backend) IsNotExist(err error) bool {
 
 // Remove keys for a specified backend type.
 func (be *Backend) removeKeys(ctx context.Context, t restic.FileType) error {
-	return be.List(ctx, restic.PackFile, func(fi restic.FileInfo) error {
+	return be.List(ctx, t, func(fi restic.FileInfo) error {
 		return be.Remove(ctx, restic.Handle{Type: t, Name: fi.Name})
 	})
 }
 
-// Delete removes all restic keys in the bucket. It will not remove the bucket itself.
+// Delete removes all restic keys in the bucket
 func (be *Backend) Delete(ctx context.Context) error {
 	allTypes := []restic.FileType{
 		restic.PackFile,
 		restic.KeyFile,
+		restic.KeysFile,
 		restic.LockFile,
 		restic.SnapshotFile,
 		restic.IndexFile,
