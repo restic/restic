@@ -554,6 +554,12 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 			cfg.Secret = os.Getenv("AWS_SECRET_ACCESS_KEY")
 		}
 
+		if cfg.KeyID == "" && cfg.Secret != "" {
+			return nil, errors.Fatalf("unable to open S3 backend: Key ID ($AWS_ACCESS_KEY_ID) is empty")
+		} else if cfg.KeyID != "" && cfg.Secret == "" {
+			return nil, errors.Fatalf("unable to open S3 backend: Secret ($AWS_SECRET_ACCESS_KEY) is empty")
+		}
+
 		if cfg.Region == "" {
 			cfg.Region = os.Getenv("AWS_DEFAULT_REGION")
 		}
