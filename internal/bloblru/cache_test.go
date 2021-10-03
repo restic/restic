@@ -28,9 +28,11 @@ func TestCache(t *testing.T) {
 		rtest.Equals(t, exp, blob)
 	}
 
-	addAndCheck(id1, make([]byte, 32*kiB))
-	addAndCheck(id2, make([]byte, 30*kiB))
-	addAndCheck(id3, make([]byte, 10*kiB))
+	// Our blobs have len 1 but larger cap. The cache should check the cap,
+	// since it more reliably indicates the amount of memory kept alive.
+	addAndCheck(id1, make([]byte, 1, 32*kiB))
+	addAndCheck(id2, make([]byte, 1, 30*kiB))
+	addAndCheck(id3, make([]byte, 1, 10*kiB))
 
 	_, ok := c.Get(id2)
 	rtest.Assert(t, ok, "blob %v not present", id2)
