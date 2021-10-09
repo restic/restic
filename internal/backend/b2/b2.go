@@ -265,7 +265,13 @@ func (be *b2Backend) Remove(ctx context.Context, h restic.Handle) error {
 	defer be.sem.ReleaseToken()
 
 	obj := be.bucket.Object(be.Filename(h))
-	return errors.Wrap(obj.Delete(ctx), "Delete")
+	err := obj.Delete(ctx)
+	// consider a file as removed if b2 informs us that it does not exist
+	if b2.IsNotExist(err) {
+		return nil
+	}
+
+	return errors.Wrap(err, "Delete")
 }
 
 type semLocker struct {
