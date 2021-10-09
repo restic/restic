@@ -69,6 +69,15 @@ func open(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, erro
 		},
 	})
 
+	c, err := creds.Get()
+	if err != nil {
+		return nil, errors.Wrap(err, "creds.Get")
+	}
+
+	if c.SignerType == credentials.SignatureAnonymous {
+		debug.Log("using anonymous access for %#v", cfg.Endpoint)
+	}
+
 	options := &minio.Options{
 		Creds:     creds,
 		Secure:    !cfg.UseHTTP,
