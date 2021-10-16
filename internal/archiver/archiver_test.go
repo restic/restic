@@ -1998,7 +1998,6 @@ func TestArchiverAbortEarlyOnError(t *testing.T) {
 				filepath.FromSlash("dir/file2"): 1,
 				filepath.FromSlash("dir/file3"): 1,
 				filepath.FromSlash("dir/file4"): 1,
-				filepath.FromSlash("dir/file7"): 0,
 				filepath.FromSlash("dir/file8"): 0,
 				filepath.FromSlash("dir/file9"): 0,
 			},
