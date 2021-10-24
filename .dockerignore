@@ -1,0 +1,12 @@
+# Folders
+.git/
+.github/
+changelog/
+doc/
+docker/
+helpers/
+
+# Files
+.gitignore
+.golangci.yml
+*.md
