@@ -175,14 +175,14 @@ func (l *Lock) Unlock() error {
 	return l.repo.Backend().Remove(context.TODO(), Handle{Type: LockFile, Name: l.lockID.String()})
 }
 
-var staleTimeout = 30 * time.Minute
+var StaleLockTimeout = 30 * time.Minute
 
 // Stale returns true if the lock is stale. A lock is stale if the timestamp is
 // older than 30 minutes or if it was created on the current machine and the
 // process isn't alive any more.
 func (l *Lock) Stale() bool {
 	debug.Log("testing if lock %v for process %d is stale", l, l.PID)
-	if time.Since(l.Time) > staleTimeout {
+	if time.Since(l.Time) > StaleLockTimeout {
 		debug.Log("lock is stale, timestamp is too old: %v\n", l.Time)
 		return true
 	}
