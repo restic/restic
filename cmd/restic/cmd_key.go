@@ -120,18 +120,18 @@ func getNewPassword(gopts GlobalOptions) (string, error) {
 		"enter password again: ")
 }
 
-func addKey(gopts GlobalOptions, repo *repository.Repository) error {
+func addKey(ctx context.Context, repo *repository.Repository, gopts GlobalOptions) error {
 	pw, err := getNewPassword(gopts)
 	if err != nil {
 		return err
 	}
 
-	id, err := repository.AddKey(gopts.ctx, repo, pw, keyUsername, keyHostname, repo.Key())
+	id, err := repository.AddKey(ctx, repo, pw, keyUsername, keyHostname, repo.Key())
 	if err != nil {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
 
-	err = switchToNewKeyAndRemoveIfBroken(gopts.ctx, repo, id, pw)
+	err = switchToNewKeyAndRemoveIfBroken(ctx, repo, id, pw)
 	if err != nil {
 		return err
 	}
@@ -156,25 +156,25 @@ func deleteKey(ctx context.Context, repo *repository.Repository, name string) er
 	return nil
 }
 
-func changePassword(gopts GlobalOptions, repo *repository.Repository) error {
+func changePassword(ctx context.Context, repo *repository.Repository, gopts GlobalOptions) error {
 	pw, err := getNewPassword(gopts)
 	if err != nil {
 		return err
 	}
 
-	id, err := repository.AddKey(gopts.ctx, repo, pw, "", "", repo.Key())
+	id, err := repository.AddKey(ctx, repo, pw, "", "", repo.Key())
 	if err != nil {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
 	oldID := repo.KeyName()
 
-	err = switchToNewKeyAndRemoveIfBroken(gopts.ctx, repo, id, pw)
+	err = switchToNewKeyAndRemoveIfBroken(ctx, repo, id, pw)
 	if err != nil {
 		return err
 	}
 
 	h := restic.Handle{Type: restic.KeyFile, Name: oldID}
-	err = repo.Backend().Remove(gopts.ctx, h)
+	err = repo.Backend().Remove(ctx, h)
 	if err != nil {
 		return err
 	}
@@ -198,11 +198,11 @@ func switchToNewKeyAndRemoveIfBroken(ctx context.Context, repo *repository.Repos
 }
 
 func runKey(gopts GlobalOptions, args []string) error {
+	ctx := gopts.ctx
 	if len(args) < 1 || (args[0] == "remove" && len(args) != 2) || (args[0] != "remove" && len(args) != 1) {
 		return errors.Fatal("wrong number of arguments")
 	}
 
-	ctx := gopts.ctx
 	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err
@@ -224,7 +224,7 @@ func runKey(gopts GlobalOptions, args []string) error {
 			return err
 		}
 
-		return addKey(gopts, repo)
+		return addKey(ctx, repo, gopts)
 	case "remove":
 		lock, err := lockRepoExclusive(ctx, repo)
 		defer unlockRepo(lock)
@@ -237,7 +237,7 @@ func runKey(gopts GlobalOptions, args []string) error {
 			return err
 		}
 
-		return deleteKey(gopts.ctx, repo, id)
+		return deleteKey(ctx, repo, id)
 	case "passwd":
 		lock, err := lockRepoExclusive(ctx, repo)
 		defer unlockRepo(lock)
@@ -245,7 +245,7 @@ func runKey(gopts GlobalOptions, args []string) error {
 			return err
 		}
 
-		return changePassword(gopts, repo)
+		return changePassword(ctx, repo, gopts)
 	}
 
 	return nil
