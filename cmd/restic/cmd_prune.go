@@ -165,7 +165,7 @@ func runPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions) error
 		opts.unsafeRecovery = true
 	}
 
-	lock, err := lockRepoExclusive(ctx, repo)
+	lock, ctx, err := lockRepoExclusive(ctx, repo)
 	defer unlockRepo(lock)
 	if err != nil {
 		return err

@@ -42,7 +42,8 @@ func runList(ctx context.Context, cmd *cobra.Command, opts GlobalOptions, args [
 	}
 
 	if !opts.NoLock && args[0] != "locks" {
-		lock, err := lockRepo(ctx, repo)
+		var lock *restic.Lock
+		lock, ctx, err = lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err

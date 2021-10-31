@@ -46,7 +46,7 @@ func runRecover(ctx context.Context, gopts GlobalOptions) error {
 		return err
 	}
 
-	lock, err := lockRepo(ctx, repo)
+	lock, ctx, err := lockRepo(ctx, repo)
 	defer unlockRepo(lock)
 	if err != nil {
 		return err

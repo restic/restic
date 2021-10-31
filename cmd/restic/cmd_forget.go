@@ -115,7 +115,8 @@ func runForget(ctx context.Context, opts ForgetOptions, gopts GlobalOptions, arg
 	}
 
 	if !opts.DryRun || !gopts.NoLock {
-		lock, err := lockRepoExclusive(ctx, repo)
+		var lock *restic.Lock
+		lock, ctx, err = lockRepoExclusive(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err

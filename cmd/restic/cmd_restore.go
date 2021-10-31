@@ -123,7 +123,8 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions, a
 	}
 
 	if !gopts.NoLock {
-		lock, err := lockRepo(ctx, repo)
+		var lock *restic.Lock
+		lock, ctx, err = lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err

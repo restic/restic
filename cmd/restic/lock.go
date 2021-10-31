@@ -19,15 +19,15 @@ var globalLocks struct {
 	sync.Once
 }
 
-func lockRepo(ctx context.Context, repo *repository.Repository) (*restic.Lock, error) {
+func lockRepo(ctx context.Context, repo *repository.Repository) (*restic.Lock, context.Context, error) {
 	return lockRepository(ctx, repo, false)
 }
 
-func lockRepoExclusive(ctx context.Context, repo *repository.Repository) (*restic.Lock, error) {
+func lockRepoExclusive(ctx context.Context, repo *repository.Repository) (*restic.Lock, context.Context, error) {
 	return lockRepository(ctx, repo, true)
 }
 
-func lockRepository(ctx context.Context, repo *repository.Repository, exclusive bool) (*restic.Lock, error) {
+func lockRepository(ctx context.Context, repo *repository.Repository, exclusive bool) (*restic.Lock, context.Context, error) {
 	// make sure that a repository is unlocked properly and after cancel() was
 	// called by the cleanup handler in global.go
 	globalLocks.Do(func() {
@@ -41,7 +41,7 @@ func lockRepository(ctx context.Context, repo *repository.Repository, exclusive 
 
 	lock, err := lockFn(ctx, repo)
 	if err != nil {
-		return nil, errors.WithMessage(err, "unable to create lock in backend")
+		return nil, ctx, errors.WithMessage(err, "unable to create lock in backend")
 	}
 	debug.Log("create lock %p (exclusive %v)", lock, exclusive)
 
@@ -57,7 +57,7 @@ func lockRepository(ctx context.Context, repo *repository.Repository, exclusive 
 	globalLocks.locks = append(globalLocks.locks, lock)
 	globalLocks.Unlock()
 
-	return lock, err
+	return lock, ctx, err
 }
 
 var refreshInterval = 5 * time.Minute

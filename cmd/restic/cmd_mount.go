@@ -13,6 +13,7 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/restic"
 
 	resticfs "github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/fuse"
@@ -121,7 +122,8 @@ func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args 
 	}
 
 	if !gopts.NoLock {
-		lock, err := lockRepo(ctx, repo)
+		var lock *restic.Lock
+		lock, ctx, err = lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err

@@ -48,7 +48,7 @@ func runRebuildIndex(ctx context.Context, opts RebuildIndexOptions, gopts Global
 		return err
 	}
 
-	lock, err := lockRepoExclusive(ctx, repo)
+	lock, ctx, err := lockRepoExclusive(ctx, repo)
 	defer unlockRepo(lock)
 	if err != nil {
 		return err

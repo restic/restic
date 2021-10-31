@@ -586,7 +586,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	if !gopts.JSON {
 		progressPrinter.V("lock repository")
 	}
-	lock, err := lockRepo(ctx, repo)
+	lock, ctx, err := lockRepo(ctx, repo)
 	defer unlockRepo(lock)
 	if err != nil {
 		return err

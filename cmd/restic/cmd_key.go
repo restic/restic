@@ -209,7 +209,7 @@ func runKey(ctx context.Context, gopts GlobalOptions, args []string) error {
 
 	switch args[0] {
 	case "list":
-		lock, err := lockRepo(ctx, repo)
+		lock, ctx, err := lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
@@ -217,7 +217,7 @@ func runKey(ctx context.Context, gopts GlobalOptions, args []string) error {
 
 		return listKeys(ctx, repo, gopts)
 	case "add":
-		lock, err := lockRepo(ctx, repo)
+		lock, ctx, err := lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
@@ -225,7 +225,7 @@ func runKey(ctx context.Context, gopts GlobalOptions, args []string) error {
 
 		return addKey(ctx, repo, gopts)
 	case "remove":
-		lock, err := lockRepoExclusive(ctx, repo)
+		lock, ctx, err := lockRepoExclusive(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
@@ -238,7 +238,7 @@ func runKey(ctx context.Context, gopts GlobalOptions, args []string) error {
 
 		return deleteKey(ctx, repo, id)
 	case "passwd":
-		lock, err := lockRepoExclusive(ctx, repo)
+		lock, ctx, err := lockRepoExclusive(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
