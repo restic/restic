@@ -24,7 +24,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runMigrate(migrateOptions, globalOptions, args)
+		return runMigrate(globalCtx(), migrateOptions, globalOptions, args)
 	},
 }
 
@@ -93,7 +93,7 @@ func applyMigrations(ctx context.Context, opts MigrateOptions, gopts GlobalOptio
 					checkGopts := gopts
 					// the repository is already locked
 					checkGopts.NoLock = true
-					err = runCheck(checkOptions, checkGopts, []string{})
+					err = runCheck(ctx, checkOptions, checkGopts, []string{})
 					if err != nil {
 						return err
 					}
@@ -116,21 +116,21 @@ func applyMigrations(ctx context.Context, opts MigrateOptions, gopts GlobalOptio
 	return firsterr
 }
 
-func runMigrate(opts MigrateOptions, gopts GlobalOptions, args []string) error {
-	repo, err := OpenRepository(gopts)
+func runMigrate(ctx context.Context, opts MigrateOptions, gopts GlobalOptions, args []string) error {
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
 
-	lock, err := lockRepoExclusive(gopts.ctx, repo)
+	lock, err := lockRepoExclusive(ctx, repo)
 	defer unlockRepo(lock)
 	if err != nil {
 		return err
 	}
 
 	if len(args) == 0 {
-		return checkMigrations(gopts.ctx, repo)
+		return checkMigrations(ctx, repo)
 	}
 
-	return applyMigrations(gopts.ctx, opts, gopts, repo, args)
+	return applyMigrations(ctx, opts, gopts, repo, args)
 }

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+
 	"github.com/restic/restic/internal/restic"
 	"github.com/spf13/cobra"
 )
@@ -18,7 +20,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runUnlock(unlockOptions, globalOptions)
+		return runUnlock(globalCtx(), unlockOptions, globalOptions)
 	},
 }
 
@@ -35,8 +37,8 @@ func init() {
 	unlockCmd.Flags().BoolVar(&unlockOptions.RemoveAll, "remove-all", false, "remove all locks, even non-stale ones")
 }
 
-func runUnlock(opts UnlockOptions, gopts GlobalOptions) error {
-	repo, err := OpenRepository(gopts)
+func runUnlock(ctx context.Context, opts UnlockOptions, gopts GlobalOptions) error {
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
@@ -46,7 +48,7 @@ func runUnlock(opts UnlockOptions, gopts GlobalOptions) error {
 		fn = restic.RemoveAllLocks
 	}
 
-	processed, err := fn(gopts.ctx, repo)
+	processed, err := fn(ctx, repo)
 	if err != nil {
 		return err
 	}

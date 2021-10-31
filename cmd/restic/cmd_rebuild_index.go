@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+
 	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -22,7 +24,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runRebuildIndex(rebuildIndexOptions, globalOptions)
+		return runRebuildIndex(globalCtx(), rebuildIndexOptions, globalOptions)
 	},
 }
 
@@ -40,24 +42,22 @@ func init() {
 
 }
 
-func runRebuildIndex(opts RebuildIndexOptions, gopts GlobalOptions) error {
-	repo, err := OpenRepository(gopts)
+func runRebuildIndex(ctx context.Context, opts RebuildIndexOptions, gopts GlobalOptions) error {
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
 
-	lock, err := lockRepoExclusive(gopts.ctx, repo)
+	lock, err := lockRepoExclusive(ctx, repo)
 	defer unlockRepo(lock)
 	if err != nil {
 		return err
 	}
 
-	return rebuildIndex(opts, gopts, repo, restic.NewIDSet())
+	return rebuildIndex(ctx, opts, gopts, repo, restic.NewIDSet())
 }
 
-func rebuildIndex(opts RebuildIndexOptions, gopts GlobalOptions, repo *repository.Repository, ignorePacks restic.IDSet) error {
-	ctx := gopts.ctx
-
+func rebuildIndex(ctx context.Context, opts RebuildIndexOptions, gopts GlobalOptions, repo *repository.Repository, ignorePacks restic.IDSet) error {
 	var obsoleteIndexes restic.IDs
 	packSizeFromList := make(map[restic.ID]int64)
 	packSizeFromIndex := make(map[restic.ID]int64)
@@ -141,7 +141,7 @@ func rebuildIndex(opts RebuildIndexOptions, gopts GlobalOptions, repo *repositor
 		}
 	}
 
-	err = rebuildIndexFiles(gopts, repo, removePacks, obsoleteIndexes)
+	err = rebuildIndexFiles(ctx, gopts, repo, removePacks, obsoleteIndexes)
 	if err != nil {
 		return err
 	}

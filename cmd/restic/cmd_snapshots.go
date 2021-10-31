@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -25,7 +26,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runSnapshots(snapshotOptions, globalOptions, args)
+		return runSnapshots(globalCtx(), snapshotOptions, globalOptions, args)
 	},
 }
 
@@ -56,21 +57,20 @@ func init() {
 	f.StringVarP(&snapshotOptions.GroupBy, "group-by", "g", "", "`group` snapshots by host, paths and/or tags, separated by comma")
 }
 
-func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) error {
-	repo, err := OpenRepository(gopts)
+func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions, args []string) error {
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
 
 	if !gopts.NoLock {
-		lock, err := lockRepo(gopts.ctx, repo)
+		lock, err := lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
 		}
 	}
 
-	ctx := gopts.ctx
 	var snapshots restic.Snapshots
 	for sn := range FindFilteredSnapshots(ctx, repo.Backend(), repo, opts.Hosts, opts.Tags, opts.Paths, args) {
 		snapshots = append(snapshots, sn)

@@ -32,7 +32,7 @@ This can be mitigated by the "--copy-chunker-params" option when initializing a
 new destination repository using the "init" command.
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runCopy(copyOptions, globalOptions, args)
+		return runCopy(globalCtx(), copyOptions, globalOptions, args)
 	},
 }
 
@@ -52,7 +52,7 @@ func init() {
 	initMultiSnapshotFilterOptions(f, &copyOptions.snapshotFilterOptions, true)
 }
 
-func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
+func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []string) error {
 	secondaryGopts, isFromRepo, err := fillSecondaryGlobalOpts(opts.secondaryRepoOptions, gopts, "destination")
 	if err != nil {
 		return err
@@ -62,13 +62,12 @@ func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
 		gopts, secondaryGopts = secondaryGopts, gopts
 	}
 
-	ctx := gopts.ctx
-	srcRepo, err := OpenRepository(gopts)
+	srcRepo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
 
-	dstRepo, err := OpenRepository(secondaryGopts)
+	dstRepo, err := OpenRepository(ctx, secondaryGopts)
 	if err != nil {
 		return err
 	}

@@ -29,7 +29,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runTag(tagOptions, globalOptions, args)
+		return runTag(globalCtx(), tagOptions, globalOptions, args)
 	},
 }
 
@@ -95,7 +95,7 @@ func changeTags(ctx context.Context, repo *repository.Repository, sn *restic.Sna
 	return changed, nil
 }
 
-func runTag(opts TagOptions, gopts GlobalOptions, args []string) error {
+func runTag(ctx context.Context, opts TagOptions, gopts GlobalOptions, args []string) error {
 	if len(opts.SetTags) == 0 && len(opts.AddTags) == 0 && len(opts.RemoveTags) == 0 {
 		return errors.Fatal("nothing to do!")
 	}
@@ -103,14 +103,14 @@ func runTag(opts TagOptions, gopts GlobalOptions, args []string) error {
 		return errors.Fatal("--set and --add/--remove cannot be given at the same time")
 	}
 
-	repo, err := OpenRepository(gopts)
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
 
 	if !gopts.NoLock {
 		Verbosef("create exclusive lock for repository\n")
-		lock, err := lockRepoExclusive(gopts.ctx, repo)
+		lock, err := lockRepoExclusive(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
@@ -118,7 +118,6 @@ func runTag(opts TagOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	changeCnt := 0
-	ctx := gopts.ctx
 	for sn := range FindFilteredSnapshots(ctx, repo.Backend(), repo, opts.Hosts, opts.Tags, opts.Paths, args) {
 		changed, err := changeTags(ctx, repo, sn, opts.SetTags.Flatten(), opts.AddTags.Flatten(), opts.RemoveTags.Flatten())
 		if err != nil {

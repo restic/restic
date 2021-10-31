@@ -4,6 +4,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"strings"
 	"time"
@@ -66,7 +67,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runMount(mountOptions, globalOptions, args)
+		return runMount(globalCtx(), mountOptions, globalOptions, args)
 	},
 }
 
@@ -98,7 +99,7 @@ func init() {
 	_ = mountFlags.MarkDeprecated("snapshot-template", "use --time-template")
 }
 
-func runMount(opts MountOptions, gopts GlobalOptions, args []string) error {
+func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args []string) error {
 	if opts.TimeTemplate == "" {
 		return errors.Fatal("time template string cannot be empty")
 	}
@@ -114,20 +115,20 @@ func runMount(opts MountOptions, gopts GlobalOptions, args []string) error {
 	debug.Log("start mount")
 	defer debug.Log("finish mount")
 
-	repo, err := OpenRepository(gopts)
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
 
 	if !gopts.NoLock {
-		lock, err := lockRepo(gopts.ctx, repo)
+		lock, err := lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
 		}
 	}
 
-	err = repo.LoadIndex(gopts.ctx)
+	err = repo.LoadIndex(ctx)
 	if err != nil {
 		return err
 	}

@@ -47,7 +47,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runStats(globalOptions, args)
+		return runStats(globalCtx(), globalOptions, args)
 	},
 }
 
@@ -68,14 +68,13 @@ func init() {
 	initMultiSnapshotFilterOptions(f, &statsOptions.snapshotFilterOptions, true)
 }
 
-func runStats(gopts GlobalOptions, args []string) error {
+func runStats(ctx context.Context, gopts GlobalOptions, args []string) error {
 	err := verifyStatsInput(gopts, args)
 	if err != nil {
 		return err
 	}
 
-	ctx := gopts.ctx
-	repo, err := OpenRepository(gopts)
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
@@ -88,7 +87,7 @@ func runStats(gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	snapshotLister, err := backend.MemorizeList(gopts.ctx, repo.Backend(), restic.SnapshotFile)
+	snapshotLister, err := backend.MemorizeList(ctx, repo.Backend(), restic.SnapshotFile)
 	if err != nil {
 		return err
 	}

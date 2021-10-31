@@ -28,7 +28,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runKey(globalOptions, args)
+		return runKey(globalCtx(), globalOptions, args)
 	},
 }
 
@@ -197,13 +197,12 @@ func switchToNewKeyAndRemoveIfBroken(ctx context.Context, repo *repository.Repos
 	return nil
 }
 
-func runKey(gopts GlobalOptions, args []string) error {
-	ctx := gopts.ctx
+func runKey(ctx context.Context, gopts GlobalOptions, args []string) error {
 	if len(args) < 1 || (args[0] == "remove" && len(args) != 2) || (args[0] != "remove" && len(args) != 1) {
 		return errors.Fatal("wrong number of arguments")
 	}
 
-	repo, err := OpenRepository(gopts)
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
