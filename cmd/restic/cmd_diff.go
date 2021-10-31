@@ -326,9 +326,7 @@ func runDiff(opts DiffOptions, gopts GlobalOptions, args []string) error {
 		return errors.Fatalf("specify two snapshot IDs")
 	}
 
-	ctx, cancel := context.WithCancel(gopts.ctx)
-	defer cancel()
-
+	ctx := gopts.ctx
 	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err

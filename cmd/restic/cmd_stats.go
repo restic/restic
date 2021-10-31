@@ -74,9 +74,7 @@ func runStats(gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	ctx, cancel := context.WithCancel(gopts.ctx)
-	defer cancel()
-
+	ctx := gopts.ctx
 	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err

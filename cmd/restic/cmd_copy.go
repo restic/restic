@@ -62,9 +62,7 @@ func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
 		gopts, secondaryGopts = secondaryGopts, gopts
 	}
 
-	ctx, cancel := context.WithCancel(gopts.ctx)
-	defer cancel()
-
+	ctx := gopts.ctx
 	srcRepo, err := OpenRepository(gopts)
 	if err != nil {
 		return err

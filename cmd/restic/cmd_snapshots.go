@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -71,9 +70,7 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 		}
 	}
 
-	ctx, cancel := context.WithCancel(gopts.ctx)
-	defer cancel()
-
+	ctx := gopts.ctx
 	var snapshots restic.Snapshots
 	for sn := range FindFilteredSnapshots(ctx, repo.Backend(), repo, opts.Hosts, opts.Tags, opts.Paths, args) {
 		snapshots = append(snapshots, sn)

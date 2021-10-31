@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+
 	"github.com/restic/restic/internal/migrations"
 	"github.com/restic/restic/internal/restic"
 
@@ -39,8 +41,7 @@ func init() {
 	f.BoolVarP(&migrateOptions.Force, "force", "f", false, `apply a migration a second time`)
 }
 
-func checkMigrations(opts MigrateOptions, gopts GlobalOptions, repo restic.Repository) error {
-	ctx := gopts.ctx
+func checkMigrations(ctx context.Context, repo restic.Repository) error {
 	Printf("available migrations:\n")
 	found := false
 
@@ -63,9 +64,7 @@ func checkMigrations(opts MigrateOptions, gopts GlobalOptions, repo restic.Repos
 	return nil
 }
 
-func applyMigrations(opts MigrateOptions, gopts GlobalOptions, repo restic.Repository, args []string) error {
-	ctx := gopts.ctx
-
+func applyMigrations(ctx context.Context, opts MigrateOptions, gopts GlobalOptions, repo restic.Repository, args []string) error {
 	var firsterr error
 	for _, name := range args {
 		for _, m := range migrations.All {
@@ -130,8 +129,8 @@ func runMigrate(opts MigrateOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	if len(args) == 0 {
-		return checkMigrations(opts, gopts, repo)
+		return checkMigrations(gopts.ctx, repo)
 	}
 
-	return applyMigrations(opts, gopts, repo, args)
+	return applyMigrations(gopts.ctx, opts, gopts, repo, args)
 }

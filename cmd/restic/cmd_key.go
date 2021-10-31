@@ -202,9 +202,7 @@ func runKey(gopts GlobalOptions, args []string) error {
 		return errors.Fatal("wrong number of arguments")
 	}
 
-	ctx, cancel := context.WithCancel(gopts.ctx)
-	defer cancel()
-
+	ctx := gopts.ctx
 	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err

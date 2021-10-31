@@ -590,9 +590,7 @@ func runFind(opts FindOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	ctx, cancel := context.WithCancel(gopts.ctx)
-	defer cancel()
-
+	ctx := gopts.ctx
 	f := &Finder{
 		repo:        repo,
 		pat:         pat,

@@ -118,8 +118,7 @@ func runTag(opts TagOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	changeCnt := 0
-	ctx, cancel := context.WithCancel(gopts.ctx)
-	defer cancel()
+	ctx := gopts.ctx
 	for sn := range FindFilteredSnapshots(ctx, repo.Backend(), repo, opts.Hosts, opts.Tags, opts.Paths, args) {
 		changed, err := changeTags(ctx, repo, sn, opts.SetTags.Flatten(), opts.AddTags.Flatten(), opts.RemoveTags.Flatten())
 		if err != nil {

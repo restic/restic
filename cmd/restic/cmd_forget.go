@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"io"
 
@@ -122,9 +121,7 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	ctx, cancel := context.WithCancel(gopts.ctx)
-	defer cancel()
-
+	ctx := gopts.ctx
 	var snapshots restic.Snapshots
 	removeSnIDs := restic.NewIDSet()
 

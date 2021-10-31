@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"strings"
@@ -175,9 +174,7 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	ctx, cancel := context.WithCancel(gopts.ctx)
-	defer cancel()
-
+	ctx := gopts.ctx
 	var (
 		printSnapshot func(sn *restic.Snapshot)
 		printNode     func(path string, node *restic.Node)
