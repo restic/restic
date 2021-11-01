@@ -249,9 +249,9 @@ integrity of the pack files in the repository, use the ``--read-data`` flag:
     and also that it takes more time than the default ``check``.
 
 Alternatively, use the ``--read-data-subset`` parameter to check only a
-subset of the repository pack files at a time. It supports two ways to select a
-subset. One selects a specific range of pack files, the other selects a random
-percentage of pack files.
+subset of the repository pack files at a time. It supports three ways to select a
+subset. One selects a specific range of pack files, the second selects a random
+percentage of pack files, and the third selects pack files of the specified size.
 
 Use ``--read-data-subset=n/t`` to check only a subset of the repository pack
 files at a time. The parameter takes two values, ``n`` and ``t``. When the check
@@ -285,3 +285,16 @@ integer:
 .. code-block:: console
 
     $ restic -r /srv/restic-repo check --read-data-subset=10%
+
+Use ``--read-data-subset=NS`` to check a randomly chosen subset of the repository pack files. 
+It takes one parameter, ``NS``, where 'N' is a whole number representing file size and 'S' is the unit 
+of file size (B/K/M/G/T) of pack files to check. Behind the scenes, the specified size will be converted 
+to percentage of the total repository size. The behaviour of the check command following this conversion 
+will be the same as the percentage option above. For a file size value the following command may be used:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo check --read-data-subset=50M
+    $ restic -r /srv/restic-repo check --read-data-subset=10G
+
+
