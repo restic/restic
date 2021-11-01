@@ -162,7 +162,8 @@ func runMount(opts MountOptions, gopts GlobalOptions, args []string) error {
 	root := fuse.NewRoot(repo, cfg)
 
 	Printf("Now serving the repository at %s\n", mountpoint)
-	Printf("When finished, quit with Ctrl-c or umount the mountpoint.\n")
+	Printf("Use another terminal or tool to browse the contents of this folder.\n")
+	Printf("When finished, quit with Ctrl-c here or umount the mountpoint.\n")
 
 	debug.Log("serving mount at %v", mountpoint)
 	err = fs.Serve(c, root)
