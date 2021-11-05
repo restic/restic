@@ -334,10 +334,6 @@ func runDiff(opts DiffOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	if err = repo.LoadIndex(ctx); err != nil {
-		return err
-	}
-
 	if !gopts.NoLock {
 		lock, err := lockRepo(ctx, repo)
 		defer unlockRepo(lock)
@@ -358,6 +354,10 @@ func runDiff(opts DiffOptions, gopts GlobalOptions, args []string) error {
 
 	if !gopts.JSON {
 		Verbosef("comparing snapshot %v to %v:\n\n", sn1.ID().Str(), sn2.ID().Str())
+	}
+
+	if err = repo.LoadIndex(ctx); err != nil {
+		return err
 	}
 
 	if sn1.Tree == nil {

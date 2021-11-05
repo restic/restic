@@ -86,16 +86,16 @@ func runStats(gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	if err = repo.LoadIndex(ctx); err != nil {
-		return err
-	}
-
 	if !gopts.NoLock {
 		lock, err := lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
 		}
+	}
+
+	if err = repo.LoadIndex(ctx); err != nil {
+		return err
 	}
 
 	if !gopts.JSON {

@@ -110,11 +110,6 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	err = repo.LoadIndex(ctx)
-	if err != nil {
-		return err
-	}
-
 	var id restic.ID
 
 	if snapshotIDString == "latest" {
@@ -127,6 +122,11 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 		if err != nil {
 			Exitf(1, "invalid id %q: %v", snapshotIDString, err)
 		}
+	}
+
+	err = repo.LoadIndex(ctx)
+	if err != nil {
+		return err
 	}
 
 	res, err := restorer.NewRestorer(ctx, repo, id)

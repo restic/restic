@@ -144,11 +144,6 @@ func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	err = repo.LoadIndex(ctx)
-	if err != nil {
-		return err
-	}
-
 	var id restic.ID
 
 	if snapshotIDString == "latest" {
@@ -166,6 +161,11 @@ func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
 	sn, err := restic.LoadSnapshot(gopts.ctx, repo, id)
 	if err != nil {
 		Exitf(2, "loading snapshot %q failed: %v", snapshotIDString, err)
+	}
+
+	err = repo.LoadIndex(ctx)
+	if err != nil {
+		return err
 	}
 
 	tree, err := repo.LoadTree(ctx, *sn.Tree)

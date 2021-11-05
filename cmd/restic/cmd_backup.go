@@ -571,14 +571,6 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		return err
 	}
 
-	if !gopts.JSON {
-		progressPrinter.V("load index files")
-	}
-	err = repo.LoadIndex(gopts.ctx)
-	if err != nil {
-		return err
-	}
-
 	var parentSnapshotID *restic.ID
 	if !opts.Stdin {
 		parentSnapshotID, err = findParentSnapshot(gopts.ctx, repo, opts, targets, timeStamp)
@@ -593,6 +585,14 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 				progressPrinter.P("no parent snapshot found, will read all files\n")
 			}
 		}
+	}
+
+	if !gopts.JSON {
+		progressPrinter.V("load index files")
+	}
+	err = repo.LoadIndex(gopts.ctx)
+	if err != nil {
+		return err
 	}
 
 	selectByNameFilter := func(item string) bool {
