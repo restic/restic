@@ -28,7 +28,7 @@ func prepareTempdirRepoSrc(t testing.TB, src archiver.TestDir) (tempdir string, 
 
 type CheckDump func(t *testing.T, testDir string, testDump *bytes.Buffer) error
 
-func WriteTest(t *testing.T, wd WriteDump, cd CheckDump) {
+func WriteTest(t *testing.T, format string, cd CheckDump) {
 	tests := []struct {
 		name   string
 		args   archiver.TestDir
@@ -92,8 +92,9 @@ func WriteTest(t *testing.T, wd WriteDump, cd CheckDump) {
 			rtest.OK(t, err)
 
 			dst := &bytes.Buffer{}
-			if err := wd(ctx, repo, tree, tt.target, dst); err != nil {
-				t.Fatalf("WriteDump() error = %v", err)
+			d := New(format, repo, dst)
+			if err := d.DumpTree(ctx, tree, tt.target); err != nil {
+				t.Fatalf("Dumper.Run error = %v", err)
 			}
 			if err := cd(t, tmpdir, dst); err != nil {
 				t.Errorf("WriteDump() = does not match: %v", err)

@@ -67,42 +67,31 @@ func splitPath(p string) []string {
 	return append(s, f)
 }
 
-func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repository, prefix string, pathComponents []string, writeDump dump.WriteDump) error {
-	if tree == nil {
-		return fmt.Errorf("called with a nil tree")
-	}
-	if repo == nil {
-		return fmt.Errorf("called with a nil repository")
-	}
-	l := len(pathComponents)
-	if l == 0 {
-		return fmt.Errorf("empty path components")
-	}
-
+func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repository, prefix string, pathComponents []string, d *dump.Dumper) error {
 	// If we print / we need to assume that there are multiple nodes at that
 	// level in the tree.
 	if pathComponents[0] == "" {
 		if err := checkStdoutArchive(); err != nil {
 			return err
 		}
-		return writeDump(ctx, repo, tree, "/", os.Stdout)
+		return d.DumpTree(ctx, tree, "/")
 	}
 
 	item := filepath.Join(prefix, pathComponents[0])
+	l := len(pathComponents)
 	for _, node := range tree.Nodes {
 		// If dumping something in the highest level it will just take the
 		// first item it finds and dump that according to the switch case below.
 		if node.Name == pathComponents[0] {
 			switch {
 			case l == 1 && dump.IsFile(node):
-				cache := dump.NewCache()
-				return dump.WriteNodeData(ctx, os.Stdout, repo, node, cache)
+				return d.WriteNode(ctx, node)
 			case l > 1 && dump.IsDir(node):
 				subtree, err := repo.LoadTree(ctx, *node.Subtree)
 				if err != nil {
 					return errors.Wrapf(err, "cannot load subtree for %q", item)
 				}
-				return printFromTree(ctx, subtree, repo, item, pathComponents[1:], writeDump)
+				return printFromTree(ctx, subtree, repo, item, pathComponents[1:], d)
 			case dump.IsDir(node):
 				if err := checkStdoutArchive(); err != nil {
 					return err
@@ -111,7 +100,7 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repositor
 				if err != nil {
 					return err
 				}
-				return writeDump(ctx, repo, subtree, item, os.Stdout)
+				return d.DumpTree(ctx, subtree, item)
 			case l > 1:
 				return fmt.Errorf("%q should be a dir, but is a %q", item, node.Type)
 			case !dump.IsFile(node):
@@ -129,12 +118,8 @@ func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
 		return errors.Fatal("no file and no snapshot ID specified")
 	}
 
-	var wd dump.WriteDump
 	switch opts.Archive {
-	case "tar":
-		wd = dump.WriteTar
-	case "zip":
-		wd = dump.WriteZip
+	case "tar", "zip":
 	default:
 		return fmt.Errorf("unknown archive format %q", opts.Archive)
 	}
@@ -188,7 +173,8 @@ func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
 		Exitf(2, "loading tree for snapshot %q failed: %v", snapshotIDString, err)
 	}
 
-	err = printFromTree(ctx, tree, repo, "/", splittedPath, wd)
+	d := dump.New(opts.Archive, repo, os.Stdout)
+	err = printFromTree(ctx, tree, repo, "/", splittedPath, d)
 	if err != nil {
 		Exitf(2, "cannot dump file: %v", err)
 	}

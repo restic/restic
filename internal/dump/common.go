@@ -11,49 +11,66 @@ import (
 	"github.com/restic/restic/internal/walker"
 )
 
-// dumper implements saving node data.
-type dumper interface {
-	io.Closer
-	dumpNode(ctx context.Context, node *restic.Node, repo restic.Repository) error
+// A Dumper writes trees and files from a repository to a Writer
+// in an archive format.
+type Dumper struct {
+	cache  *bloblru.Cache
+	format string
+	repo   restic.Repository
+	w      io.Writer
 }
 
-// WriteDump will write the contents of the given tree to the given destination.
-// It will loop over all nodes in the tree and dump them recursively.
-type WriteDump func(ctx context.Context, repo restic.Repository, tree *restic.Tree, rootPath string, dst io.Writer) error
-
-func NewCache() *bloblru.Cache {
-	return bloblru.New(64 << 20)
+func New(format string, repo restic.Repository, w io.Writer) *Dumper {
+	return &Dumper{
+		cache:  bloblru.New(64 << 20),
+		format: format,
+		repo:   repo,
+		w:      w,
+	}
 }
 
-func writeDump(ctx context.Context, repo restic.Repository, tree *restic.Tree, rootPath string, dmp dumper) error {
-	for _, rootNode := range tree.Nodes {
-		rootNode.Path = rootPath
-		err := dumpTree(ctx, repo, rootNode, rootPath, dmp)
-		if err != nil {
-			// ignore subsequent errors
-			_ = dmp.Close()
+func (d *Dumper) DumpTree(ctx context.Context, tree *restic.Tree, rootPath string) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
-			return err
+	// ch is buffered to deal with variable download/write speeds.
+	ch := make(chan *restic.Node, 10)
+	go sendTrees(ctx, d.repo, tree, rootPath, ch)
+
+	switch d.format {
+	case "tar":
+		return d.dumpTar(ctx, ch)
+	case "zip":
+		return d.dumpZip(ctx, ch)
+	default:
+		panic("unknown dump format")
+	}
+}
+
+func sendTrees(ctx context.Context, repo restic.Repository, tree *restic.Tree, rootPath string, ch chan *restic.Node) {
+	defer close(ch)
+
+	for _, root := range tree.Nodes {
+		root.Path = path.Join(rootPath, root.Name)
+		if sendNodes(ctx, repo, root, ch) != nil {
+			break
 		}
 	}
-
-	return dmp.Close()
 }
 
-func dumpTree(ctx context.Context, repo restic.Repository, rootNode *restic.Node, rootPath string, dmp dumper) error {
-	rootNode.Path = path.Join(rootNode.Path, rootNode.Name)
-	rootPath = rootNode.Path
-
-	if err := dmp.dumpNode(ctx, rootNode, repo); err != nil {
-		return err
+func sendNodes(ctx context.Context, repo restic.Repository, root *restic.Node, ch chan *restic.Node) error {
+	select {
+	case ch <- root:
+	case <-ctx.Done():
+		return ctx.Err()
 	}
 
 	// If this is no directory we are finished
-	if !IsDir(rootNode) {
+	if !IsDir(root) {
 		return nil
 	}
 
-	err := walker.Walk(ctx, repo, *rootNode.Subtree, nil, func(_ restic.ID, nodepath string, node *restic.Node, err error) (bool, error) {
+	err := walker.Walk(ctx, repo, *root.Subtree, nil, func(_ restic.ID, nodepath string, node *restic.Node, err error) (bool, error) {
 		if err != nil {
 			return false, err
 		}
@@ -61,13 +78,16 @@ func dumpTree(ctx context.Context, repo restic.Repository, rootNode *restic.Node
 			return false, nil
 		}
 
-		node.Path = path.Join(rootPath, nodepath)
+		node.Path = path.Join(root.Path, nodepath)
 
-		if IsFile(node) || IsLink(node) || IsDir(node) {
-			err := dmp.dumpNode(ctx, node, repo)
-			if err != nil {
-				return false, err
-			}
+		if !IsFile(node) && !IsDir(node) && !IsLink(node) {
+			return false, nil
+		}
+
+		select {
+		case ch <- node:
+		case <-ctx.Done():
+			return false, ctx.Err()
 		}
 
 		return false, nil
@@ -76,21 +96,26 @@ func dumpTree(ctx context.Context, repo restic.Repository, rootNode *restic.Node
 	return err
 }
 
-// WriteNodeData writes the contents of the node to the given Writer.
-func WriteNodeData(ctx context.Context, w io.Writer, repo restic.Repository, node *restic.Node, cache *bloblru.Cache) error {
+// WriteNode writes a file node's contents directly to d's Writer,
+// without caring about d's format.
+func (d *Dumper) WriteNode(ctx context.Context, node *restic.Node) error {
+	return d.writeNode(ctx, d.w, node)
+}
+
+func (d *Dumper) writeNode(ctx context.Context, w io.Writer, node *restic.Node) error {
 	var (
 		buf []byte
 		err error
 	)
 	for _, id := range node.Content {
-		blob, ok := cache.Get(id)
+		blob, ok := d.cache.Get(id)
 		if !ok {
-			blob, err = repo.LoadBlob(ctx, restic.DataBlob, id, buf)
+			blob, err = d.repo.LoadBlob(ctx, restic.DataBlob, id, buf)
 			if err != nil {
 				return err
 			}
 
-			buf = cache.Add(id, blob) // Reuse evicted buffer.
+			buf = d.cache.Add(id, blob) // Reuse evicted buffer.
 		}
 
 		if _, err := w.Write(blob); err != nil {
