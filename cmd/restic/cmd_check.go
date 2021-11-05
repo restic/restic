@@ -65,7 +65,7 @@ func checkFlags(opts CheckOptions) error {
 	}
 	if opts.ReadDataSubset != "" {
 		dataSubset, err := stringToIntSlice(opts.ReadDataSubset)
-		argumentError := errors.Fatal("check flag --read-data-subset must have two positive integer values or a percentage, e.g. --read-data-subset=1/2 or --read-data-subset=2.5%%")
+		argumentError := errors.Fatal("check flag --read-data-subset must have two positive integer values or a percentage or a file size, e.g. --read-data-subset=1/2 or --read-data-subset=2.5%% or --read-data-subset=10G")
 		if err == nil {
 			if len(dataSubset) != 2 {
 				return argumentError
@@ -76,7 +76,7 @@ func checkFlags(opts CheckOptions) error {
 			if dataSubset[1] > totalBucketsMax {
 				return errors.Fatalf("check flag --read-data-subset=n/t t must be at most %d", totalBucketsMax)
 			}
-		} else {
+		} else if strings.HasSuffix(opts.ReadDataSubset, "%") {
 			percentage, err := parsePercentage(opts.ReadDataSubset)
 			if err != nil {
 				return argumentError
@@ -86,6 +86,17 @@ func checkFlags(opts CheckOptions) error {
 				return errors.Fatal(
 					"check flag --read-data-subset=n% n must be above 0.0% and at most 100.0%")
 			}
+
+		} else {
+			fileSize, err := parseSizeStr(opts.ReadDataSubset)
+			if err != nil {
+				return argumentError
+			}
+			if fileSize <= 0.0 {
+				return errors.Fatal(
+					"check flag --read-data-subset=n n must be above 0.0")
+			}
+
 		}
 	}
 
@@ -294,10 +305,27 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 			packs = selectPacksByBucket(chkr.GetPacks(), bucket, totalBuckets)
 			packCount := uint64(len(packs))
 			Verbosef("read group #%d of %d data packs (out of total %d packs in %d groups)\n", bucket, packCount, chkr.CountPacks(), totalBuckets)
+		} else if strings.HasSuffix(opts.ReadDataSubset, "%") {
+			percentage, err := parsePercentage(opts.ReadDataSubset)
+			if err == nil {
+				packs = selectRandomPacksByPercentage(chkr.GetPacks(), percentage)
+				Verbosef("read %.1f%% of data packs\n", percentage)
+			}
 		} else {
-			percentage, _ := parsePercentage(opts.ReadDataSubset)
-			packs = selectRandomPacksByPercentage(chkr.GetPacks(), percentage)
-			Verbosef("read %.1f%% of data packs\n", percentage)
+			repoSize := int64(0)
+			allPacks := chkr.GetPacks()
+			for _, size := range allPacks {
+				repoSize += size
+			}
+			if repoSize == 0 {
+				return errors.Fatal("Cannot read from a repository having size 0")
+			}
+			subsetSize, _ := parseSizeStr(opts.ReadDataSubset)
+			if subsetSize > repoSize {
+				subsetSize = repoSize
+			}
+			packs = selectRandomPacksByFileSize(chkr.GetPacks(), subsetSize, repoSize)
+			Verbosef("read %d bytes of data packs\n", subsetSize)
 		}
 		if packs == nil {
 			return errors.Fatal("internal error: failed to select packs to check")
@@ -349,6 +377,11 @@ func selectRandomPacksByPercentage(allPacks map[restic.ID]int64, percentage floa
 		id := keys[idx[i]]
 		packs[id] = allPacks[id]
 	}
+	return packs
+}
 
+func selectRandomPacksByFileSize(allPacks map[restic.ID]int64, subsetSize int64, repoSize int64) map[restic.ID]int64 {
+	subsetPercentage := (float64(subsetSize) / float64(repoSize)) * 100.0
+	packs := selectRandomPacksByPercentage(allPacks, subsetPercentage)
 	return packs
 }

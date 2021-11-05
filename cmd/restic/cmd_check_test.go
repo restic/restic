@@ -129,3 +129,37 @@ func TestSelectNoRandomPacksByPercentage(t *testing.T) {
 	selectedPacks := selectRandomPacksByPercentage(testPacks, 10.0)
 	rtest.Assert(t, len(selectedPacks) == 0, "Expected 0 selected packs")
 }
+
+func TestSelectRandomPacksByFileSize(t *testing.T) {
+	var testPacks = make(map[restic.ID]int64)
+	for i := 1; i <= 10; i++ {
+		id := restic.NewRandomID()
+		// ensure unique ids
+		id[0] = byte(i)
+		testPacks[id] = 0
+	}
+
+	selectedPacks := selectRandomPacksByFileSize(testPacks, 10, 500)
+	rtest.Assert(t, len(selectedPacks) == 1, "Expected 1 selected packs")
+
+	selectedPacks = selectRandomPacksByFileSize(testPacks, 10240, 51200)
+	rtest.Assert(t, len(selectedPacks) == 2, "Expected 2 selected packs")
+	for pack := range selectedPacks {
+		_, ok := testPacks[pack]
+		rtest.Assert(t, ok, "Unexpected selection")
+	}
+
+	selectedPacks = selectRandomPacksByFileSize(testPacks, 500, 500)
+	rtest.Assert(t, len(selectedPacks) == 10, "Expected 10 selected packs")
+	for pack := range selectedPacks {
+		_, ok := testPacks[pack]
+		rtest.Assert(t, ok, "Unexpected item in selection")
+	}
+}
+
+func TestSelectNoRandomPacksByFileSize(t *testing.T) {
+	// that the a repository without pack files works
+	var testPacks = make(map[restic.ID]int64)
+	selectedPacks := selectRandomPacksByFileSize(testPacks, 10, 500)
+	rtest.Assert(t, len(selectedPacks) == 0, "Expected 0 selected packs")
+}
