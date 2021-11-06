@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/restic"
 )
 
@@ -12,10 +13,16 @@ func FindFilteredSnapshots(ctx context.Context, be restic.Lister, loader restic.
 	go func() {
 		defer close(out)
 		if len(snapshotIDs) != 0 {
+			// memorize snapshots list to prevent repeated backend listings
+			be, err := backend.MemorizeList(ctx, be, restic.SnapshotFile)
+			if err != nil {
+				Warnf("could not load snapshots: %v\n", err)
+				return
+			}
+
 			var (
 				id         restic.ID
 				usedFilter bool
-				err        error
 			)
 			ids := make(restic.IDs, 0, len(snapshotIDs))
 			// Process all snapshot IDs given as arguments.

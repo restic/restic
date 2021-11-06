@@ -81,6 +81,10 @@ func (m *memorizedLister) List(ctx context.Context, t restic.FileType, fn func(r
 }
 
 func MemorizeList(ctx context.Context, be restic.Lister, t restic.FileType) (restic.Lister, error) {
+	if _, ok := be.(*memorizedLister); ok {
+		return be, nil
+	}
+
 	var fileInfos []restic.FileInfo
 	err := be.List(ctx, t, func(fi restic.FileInfo) error {
 		fileInfos = append(fileInfos, fi)
