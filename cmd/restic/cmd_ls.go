@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
@@ -169,6 +170,11 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
+	snapshotLister, err := backend.MemorizeList(gopts.ctx, repo.Backend(), restic.SnapshotFile)
+	if err != nil {
+		return err
+	}
+
 	if err = repo.LoadIndex(gopts.ctx); err != nil {
 		return err
 	}
@@ -211,7 +217,7 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	for sn := range FindFilteredSnapshots(ctx, repo, opts.Hosts, opts.Tags, opts.Paths, args[:1]) {
+	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, opts.Hosts, opts.Tags, opts.Paths, args[:1]) {
 		printSnapshot(sn)
 
 		err := walker.Walk(ctx, repo, *sn.Tree, nil, func(_ restic.ID, nodepath string, node *restic.Node, err error) (bool, error) {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -88,6 +89,16 @@ func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
+	srcSnapshotLister, err := backend.MemorizeList(ctx, srcRepo.Backend(), restic.SnapshotFile)
+	if err != nil {
+		return err
+	}
+
+	dstSnapshotLister, err := backend.MemorizeList(ctx, dstRepo.Backend(), restic.SnapshotFile)
+	if err != nil {
+		return err
+	}
+
 	debug.Log("Loading source index")
 	if err := srcRepo.LoadIndex(ctx); err != nil {
 		return err
@@ -99,7 +110,7 @@ func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	dstSnapshotByOriginal := make(map[restic.ID][]*restic.Snapshot)
-	for sn := range FindFilteredSnapshots(ctx, dstRepo, opts.Hosts, opts.Tags, opts.Paths, nil) {
+	for sn := range FindFilteredSnapshots(ctx, dstSnapshotLister, dstRepo, opts.Hosts, opts.Tags, opts.Paths, nil) {
 		if sn.Original != nil && !sn.Original.IsNull() {
 			dstSnapshotByOriginal[*sn.Original] = append(dstSnapshotByOriginal[*sn.Original], sn)
 		}
@@ -110,7 +121,7 @@ func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
 	// remember already processed trees across all snapshots
 	visitedTrees := restic.NewIDSet()
 
-	for sn := range FindFilteredSnapshots(ctx, srcRepo, opts.Hosts, opts.Tags, opts.Paths, args) {
+	for sn := range FindFilteredSnapshots(ctx, srcSnapshotLister, srcRepo, opts.Hosts, opts.Tags, opts.Paths, args) {
 		Verbosef("\nsnapshot %s of %v at %s)\n", sn.ID().Str(), sn.Paths, sn.Time)
 
 		// check whether the destination has a snapshot with the same persistent ID which has similar snapshot fields

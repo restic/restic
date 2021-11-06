@@ -60,6 +60,11 @@ type Lister interface {
 	List(context.Context, FileType, func(FileInfo) error) error
 }
 
+// LoadJSONUnpackeder allows loading a JSON file not stored in a pack file
+type LoadJSONUnpackeder interface {
+	LoadJSONUnpacked(ctx context.Context, t FileType, id ID, dest interface{}) error
+}
+
 type PackBlobs struct {
 	PackID ID
 	Blobs  []Blob

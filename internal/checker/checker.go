@@ -279,7 +279,7 @@ func (c *Checker) checkTreeWorker(ctx context.Context, trees <-chan restic.TreeI
 }
 
 func loadSnapshotTreeIDs(ctx context.Context, repo restic.Repository) (ids restic.IDs, errs []error) {
-	err := restic.ForAllSnapshots(ctx, repo, nil, func(id restic.ID, sn *restic.Snapshot, err error) error {
+	err := restic.ForAllSnapshots(ctx, repo.Backend(), repo, nil, func(id restic.ID, sn *restic.Snapshot, err error) error {
 		if err != nil {
 			errs = append(errs, err)
 			return nil

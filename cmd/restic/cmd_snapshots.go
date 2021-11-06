@@ -79,7 +79,7 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 	defer cancel()
 
 	var snapshots restic.Snapshots
-	for sn := range FindFilteredSnapshots(ctx, repo, opts.Hosts, opts.Tags, opts.Paths, args) {
+	for sn := range FindFilteredSnapshots(ctx, repo.Backend(), repo, opts.Hosts, opts.Tags, opts.Paths, args) {
 		snapshots = append(snapshots, sn)
 	}
 	snapshotGroups, grouped, err := restic.GroupSnapshots(snapshots, opts.GroupBy)

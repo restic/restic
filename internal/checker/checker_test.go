@@ -587,7 +587,7 @@ func benchmarkSnapshotScaling(t *testing.B, newSnapshots int) {
 	chkr, repo, cleanup := loadBenchRepository(t)
 	defer cleanup()
 
-	snID, err := restic.FindSnapshot(context.TODO(), repo, "51d249d2")
+	snID, err := restic.FindSnapshot(context.TODO(), repo.Backend(), "51d249d2")
 	if err != nil {
 		t.Fatal(err)
 	}

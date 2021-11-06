@@ -16,7 +16,7 @@ func TestFindLatestSnapshot(t *testing.T) {
 	restic.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:07"), 1, 0)
 	latestSnapshot := restic.TestCreateSnapshot(t, repo, parseTimeUTC("2019-09-09 09:09:09"), 1, 0)
 
-	id, err := restic.FindLatestSnapshot(context.TODO(), repo, []string{}, []restic.TagList{}, []string{"foo"}, nil)
+	id, err := restic.FindLatestSnapshot(context.TODO(), repo.Backend(), repo, []string{}, []restic.TagList{}, []string{"foo"}, nil)
 	if err != nil {
 		t.Fatalf("FindLatestSnapshot returned error: %v", err)
 	}
@@ -36,7 +36,7 @@ func TestFindLatestSnapshotWithMaxTimestamp(t *testing.T) {
 
 	maxTimestamp := parseTimeUTC("2018-08-08 08:08:08")
 
-	id, err := restic.FindLatestSnapshot(context.TODO(), repo, []string{}, []restic.TagList{}, []string{"foo"}, &maxTimestamp)
+	id, err := restic.FindLatestSnapshot(context.TODO(), repo.Backend(), repo, []string{}, []restic.TagList{}, []string{"foo"}, &maxTimestamp)
 	if err != nil {
 		t.Fatalf("FindLatestSnapshot returned error: %v", err)
 	}
