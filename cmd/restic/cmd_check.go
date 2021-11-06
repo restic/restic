@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -252,7 +253,11 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 
 	Verbosef("check snapshots, trees and blobs\n")
 	errChan = make(chan error)
+	var wg sync.WaitGroup
+
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		bar := newProgressMax(!gopts.Quiet, 0, "snapshots")
 		defer bar.Done()
 		chkr.Structure(gopts.ctx, bar, errChan)
@@ -269,6 +274,11 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 			Warnf("error: %v\n", err)
 		}
 	}
+
+	// Wait for the progress bar to be complete before printing more below.
+	// Must happen after `errChan` is read from in the above loop to avoid
+	// deadlocking in the case of errors.
+	wg.Wait()
 
 	if opts.CheckUnused {
 		for _, id := range chkr.UnusedBlobs(gopts.ctx) {
