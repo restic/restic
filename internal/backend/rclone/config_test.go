@@ -17,6 +17,7 @@ func TestParseConfig(t *testing.T) {
 				Program:     defaultConfig.Program,
 				Args:        defaultConfig.Args,
 				Connections: defaultConfig.Connections,
+				Timeout:     defaultConfig.Timeout,
 			},
 		},
 	}
