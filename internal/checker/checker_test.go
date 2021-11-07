@@ -44,6 +44,10 @@ func checkPacks(chkr *checker.Checker) []error {
 }
 
 func checkStruct(chkr *checker.Checker) []error {
+	err := chkr.LoadSnapshots(context.TODO())
+	if err != nil {
+		return []error{err}
+	}
 	return collectErrors(context.TODO(), func(ctx context.Context, errChan chan<- error) {
 		chkr.Structure(ctx, nil, errChan)
 	})

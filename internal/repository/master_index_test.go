@@ -369,6 +369,11 @@ func TestIndexSave(t *testing.T) {
 	}
 
 	checker := checker.New(repo, false)
+	err = checker.LoadSnapshots(context.TODO())
+	if err != nil {
+		t.Error(err)
+	}
+
 	hints, errs := checker.LoadIndex(context.TODO())
 	for _, h := range hints {
 		t.Logf("hint: %v\n", h)

@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/minio/sha256-simd"
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/hashing"
@@ -35,6 +36,7 @@ type Checker struct {
 	trackUnused bool
 
 	masterIndex *repository.MasterIndex
+	snapshots   restic.Lister
 
 	repo restic.Repository
 }
@@ -73,6 +75,12 @@ type ErrOldIndexFormat struct {
 
 func (err ErrOldIndexFormat) Error() string {
 	return fmt.Sprintf("index %v has old format", err.ID.Str())
+}
+
+func (c *Checker) LoadSnapshots(ctx context.Context) error {
+	var err error
+	c.snapshots, err = backend.MemorizeList(ctx, c.repo.Backend(), restic.SnapshotFile)
+	return err
 }
 
 // LoadIndex loads all index files.
@@ -278,8 +286,8 @@ func (c *Checker) checkTreeWorker(ctx context.Context, trees <-chan restic.TreeI
 	}
 }
 
-func loadSnapshotTreeIDs(ctx context.Context, repo restic.Repository) (ids restic.IDs, errs []error) {
-	err := restic.ForAllSnapshots(ctx, repo.Backend(), repo, nil, func(id restic.ID, sn *restic.Snapshot, err error) error {
+func loadSnapshotTreeIDs(ctx context.Context, lister restic.Lister, repo restic.Repository) (ids restic.IDs, errs []error) {
+	err := restic.ForAllSnapshots(ctx, lister, repo, nil, func(id restic.ID, sn *restic.Snapshot, err error) error {
 		if err != nil {
 			errs = append(errs, err)
 			return nil
@@ -300,7 +308,7 @@ func loadSnapshotTreeIDs(ctx context.Context, repo restic.Repository) (ids resti
 // subtrees are available in the index. errChan is closed after all trees have
 // been traversed.
 func (c *Checker) Structure(ctx context.Context, p *progress.Counter, errChan chan<- error) {
-	trees, errs := loadSnapshotTreeIDs(ctx, c.repo)
+	trees, errs := loadSnapshotTreeIDs(ctx, c.snapshots, c.repo)
 	p.SetMax(uint64(len(trees)))
 	debug.Log("need to check %d trees from snapshots, %d errs returned", len(trees), len(errs))
 

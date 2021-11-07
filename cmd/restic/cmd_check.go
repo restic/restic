@@ -211,6 +211,10 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	chkr := checker.New(repo, opts.CheckUnused)
+	err = chkr.LoadSnapshots(gopts.ctx)
+	if err != nil {
+		return err
+	}
 
 	Verbosef("load indexes\n")
 	hints, errs := chkr.LoadIndex(gopts.ctx)
