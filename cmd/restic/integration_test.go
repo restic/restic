@@ -275,6 +275,11 @@ func testRunForgetJSON(t testing.TB, gopts GlobalOptions, args ...string) {
 }
 
 func testRunPrune(t testing.TB, gopts GlobalOptions, opts PruneOptions) {
+	oldHook := gopts.backendTestHook
+	gopts.backendTestHook = func(r restic.Backend) (restic.Backend, error) { return newListOnceBackend(r), nil }
+	defer func() {
+		gopts.backendTestHook = oldHook
+	}()
 	rtest.OK(t, runPrune(opts, gopts))
 }
 
@@ -1065,6 +1070,8 @@ func TestKeyAddRemove(t *testing.T) {
 	}
 
 	env, cleanup := withTestEnvironment(t)
+	// must list keys more than once
+	env.gopts.backendTestHook = nil
 	defer cleanup()
 
 	testRunInit(t, env.gopts)
@@ -1659,6 +1666,11 @@ func TestPruneWithDamagedRepository(t *testing.T) {
 	rtest.Assert(t, len(snapshotIDs) == 1,
 		"expected one snapshot, got %v", snapshotIDs)
 
+	oldHook := env.gopts.backendTestHook
+	env.gopts.backendTestHook = func(r restic.Backend) (restic.Backend, error) { return newListOnceBackend(r), nil }
+	defer func() {
+		env.gopts.backendTestHook = oldHook
+	}()
 	// prune should fail
 	rtest.Assert(t, runPrune(pruneDefaultOptions, env.gopts) == errorPacksMissing,
 		"prune should have reported index not complete error")
@@ -1752,18 +1764,31 @@ func testEdgeCaseRepo(t *testing.T, tarfile string, optionsCheck CheckOptions, o
 type listOnceBackend struct {
 	restic.Backend
 	listedFileType map[restic.FileType]bool
+	strictOrder    bool
 }
 
 func newListOnceBackend(be restic.Backend) *listOnceBackend {
 	return &listOnceBackend{
 		Backend:        be,
 		listedFileType: make(map[restic.FileType]bool),
+		strictOrder:    false,
+	}
+}
+
+func newOrderedListOnceBackend(be restic.Backend) *listOnceBackend {
+	return &listOnceBackend{
+		Backend:        be,
+		listedFileType: make(map[restic.FileType]bool),
+		strictOrder:    true,
 	}
 }
 
 func (be *listOnceBackend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
 	if t != restic.LockFile && be.listedFileType[t] {
 		return errors.Errorf("tried listing type %v the second time", t)
+	}
+	if be.strictOrder && t == restic.SnapshotFile && be.listedFileType[restic.IndexFile] {
+		return errors.Errorf("tried listing type snapshots after index")
 	}
 	be.listedFileType[t] = true
 	return be.Backend.List(ctx, t, fn)
