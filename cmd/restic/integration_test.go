@@ -2136,3 +2136,37 @@ func TestBackendLoadWriteTo(t *testing.T) {
 	rtest.Assert(t, len(firstSnapshot) == 1,
 		"expected one snapshot, got %v", firstSnapshot)
 }
+
+func TestFindListOnce(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	env.gopts.backendTestHook = func(r restic.Backend) (restic.Backend, error) {
+		return newListOnceBackend(r), nil
+	}
+
+	testSetupBackupData(t, env)
+	opts := BackupOptions{}
+
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9")}, opts, env.gopts)
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "2")}, opts, env.gopts)
+	secondSnapshot := testRunList(t, "snapshots", env.gopts)
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "3")}, opts, env.gopts)
+	thirdSnapshot := restic.NewIDSet(testRunList(t, "snapshots", env.gopts)...)
+
+	repo, err := OpenRepository(env.gopts)
+	rtest.OK(t, err)
+
+	snapshotIDs := restic.NewIDSet()
+	// specify the two oldest snapshots explicitly and use "latest" to reference the newest one
+	for sn := range FindFilteredSnapshots(context.TODO(), repo.Backend(), repo, nil, nil, nil, []string{
+		secondSnapshot[0].String(),
+		secondSnapshot[1].String()[:8],
+		"latest",
+	}) {
+		snapshotIDs.Insert(*sn.ID())
+	}
+
+	// the snapshots can only be listed once, if both lists match then the there has been only a single List() call
+	rtest.Equals(t, thirdSnapshot, snapshotIDs)
+}
