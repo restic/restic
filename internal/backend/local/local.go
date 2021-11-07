@@ -322,6 +322,8 @@ func visitFiles(ctx context.Context, dir string, fn func(restic.FileInfo) error,
 	if ignoreNotADirectory {
 		fi, err := d.Stat()
 		if err != nil || !fi.IsDir() {
+			// ignore subsequent errors
+			_ = d.Close()
 			return err
 		}
 	}
