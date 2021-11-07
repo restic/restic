@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
@@ -158,6 +159,9 @@ func prepareCheckCache(opts CheckOptions, gopts *GlobalOptions) (cleanup func())
 	}
 
 	cachedir := gopts.CacheDir
+	if cachedir == "" {
+		cachedir = cache.EnvDir()
+	}
 
 	// use a cache in a temporary directory
 	tempdir, err := ioutil.TempDir(cachedir, "restic-check-cache-")
