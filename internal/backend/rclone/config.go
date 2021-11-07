@@ -21,7 +21,7 @@ var defaultConfig = Config{
 	Program:     "rclone",
 	Args:        "serve restic --stdio --b2-hard-delete",
 	Connections: 5,
-	Timeout:     "1m",
+	Timeout:     time.Minute,
 }
 
 func init() {
