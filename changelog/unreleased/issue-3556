@@ -1,0 +1,8 @@
+Bugfix: Fix hang with Backblaze B2 if SSL certificate authority error
+
+If a request failed with an SSL unknown certificate authority error, the
+B2 backend retried indefinitely and restic would appear to hang.
+It now returns the error and restic fails with an error message.
+
+https://github.com/restic/restic/issues/3556
+https://github.com/restic/restic/issues/2355
