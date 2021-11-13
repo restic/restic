@@ -604,7 +604,7 @@ Details
    reduced.
 
    Restic used to rebuild the index from scratch after pruning. This could lead to missing packs in
-   the index in some cases for eventually consistent backends such as e.g. AWS S3. This behavior is
+   the index in some cases for eventually consistent backends such as e.g. Amazon S3. This behavior is
    now changed and the index rebuilding uses the information already known by `prune`.
 
    By default, the `prune` command no longer removes all unused data. This behavior can be

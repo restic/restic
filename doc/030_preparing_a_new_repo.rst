@@ -257,7 +257,7 @@ Minio Server
 ************
 
 `Minio <https://www.minio.io>`__ is an Open Source Object Storage,
-written in Go and compatible with AWS S3 API.
+written in Go and compatible with Amazon S3 API.
 
 -  Download and Install `Minio
    Server <https://minio.io/downloads/#minio-server>`__.
@@ -287,7 +287,7 @@ this command.
 Wasabi
 ************
 
-`Wasabi <https://wasabi.com>`__ is a low cost AWS S3 conformant object storage provider.
+`Wasabi <https://wasabi.com>`__ is a low cost Amazon S3 conformant object storage provider.
 Due to it's S3 conformance, Wasabi can be used as a storage provider for a restic repository.
 
 -  Create a Wasabi bucket using the `Wasabi Console <https://console.wasabisys.com>`__.

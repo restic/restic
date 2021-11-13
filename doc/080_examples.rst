@@ -21,7 +21,7 @@ Setting up restic with Amazon S3
 Preface
 =======
 
-This tutorial will show you how to use restic with AWS S3. It will show you how
+This tutorial will show you how to use restic with Amazon S3. It will show you how
 to navigate the AWS web interface, create an S3 bucket, create a user with
 access to only this bucket, and finally how to connect restic to this bucket.
 
@@ -226,7 +226,7 @@ repository:
    the repository. Losing your password means that your data is
    irrecoverably lost.
 
-restic is now ready to be used with AWS S3. Try to create a backup:
+restic is now ready to be used with Amazon S3. Try to create a backup:
 
 .. code-block:: console
 
@@ -247,7 +247,7 @@ restic is now ready to be used with AWS S3. Try to create a backup:
    ----------------------------------------------------------------------
    10fdbace  2017-03-26 16:41:50  blackbox                /home/philip/restic-demo/test.bin
 
-A snapshot was created and stored in the S3 bucket. By default backups to AWS S3 will use the ``STANDARD`` storage class. Available storage classes include ``STANDARD``, ``STANDARD_IA``, ``ONEZONE_IA``, ``INTELLIGENT_TIERING``, and ``REDUCED_REDUNDANCY``. A different storage class could have been specified in the above command by using ``-o`` or ``--option``:
+A snapshot was created and stored in the S3 bucket. By default backups to Amazon S3 will use the ``STANDARD`` storage class. Available storage classes include ``STANDARD``, ``STANDARD_IA``, ``ONEZONE_IA``, ``INTELLIGENT_TIERING``, and ``REDUCED_REDUNDANCY``. A different storage class could have been specified in the above command by using ``-o`` or ``--option``:
 
 .. code-block:: console
 

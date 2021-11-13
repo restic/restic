@@ -125,7 +125,7 @@ s3 backend ``s3.layout``.
 S3 Legacy Layout
 ----------------
 
-Unfortunately during development the AWS S3 backend uses slightly different
+Unfortunately during development the Amazon S3 backend uses slightly different
 paths (directory names use singular instead of plural for ``key``,
 ``lock``, and ``snapshot`` files), and the pack files are stored directly below
 the ``data`` directory. The S3 Legacy repository layout looks like this:
