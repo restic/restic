@@ -1744,7 +1744,7 @@ func testEdgeCaseRepo(t *testing.T, tarfile string, optionsCheck CheckOptions, o
 
 // a listOnceBackend only allows listing once per filetype
 // listing filetypes more than once may cause problems with eventually consistent
-// backends (like e.g. AWS S3) as the second listing may be inconsistent to what
+// backends (like e.g. Amazon S3) as the second listing may be inconsistent to what
 // is expected by the first listing + some operations.
 type listOnceBackend struct {
 	restic.Backend
