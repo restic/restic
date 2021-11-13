@@ -1,4 +1,9 @@
-// +build go1.14
+//go:build go1.14 && !go1.18
+// +build go1.14,!go1.18
+
+// missing eof error is fixed in golang >= 1.17.3 or >= 1.16.10
+// remove the workaround from rest.go when the minimum golang version
+// supported by restic reaches 1.18.
 
 package rest_test
 
@@ -63,32 +68,5 @@ func TestZeroLengthRead(t *testing.T) {
 	})
 	if err == nil {
 		t.Fatal("Got no unexpected EOF error")
-	}
-}
-
-func TestGolangZeroLengthRead(t *testing.T) {
-	// This test is intended to fail once the underlying issue has been fixed in Go
-	ts := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Length", "42")
-		// Now the handler fails for some reason and is unable to send data
-	}))
-	ts.EnableHTTP2 = true
-	ts.StartTLS()
-	defer ts.Close()
-
-	res, err := ts.Client().Get(ts.URL)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = ioutil.ReadAll(res.Body)
-	defer func() {
-		err = res.Body.Close()
-		if err != nil {
-			t.Fatal(err)
-		}
-	}()
-	if err != nil {
-		// This should fail with an 'Unexpected EOF' error
-		t.Fatal(err)
 	}
 }
