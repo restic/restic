@@ -1,0 +1,8 @@
+Enhancement: Add file mode in symbolic notation to `ls --json`
+
+Now `restic ls --json` provides mode in symbolic notation aligned
+with `restic find --json`.
+
+https://github.com/restic/restic/issues/3542
+https://github.com/restic/restic/pull/3573
+https://forum.restic.net/t/restic-ls-understanding-file-mode-with-json/4371

@@ -18,6 +18,7 @@ func TestLsNodeJSON(t *testing.T) {
 		expect string
 	}{
 		// Mode is omitted when zero.
+		// Permissions, by convention is "-" per mode bit
 		{
 			path: "/bar/baz",
 			Node: restic.Node{
@@ -31,7 +32,7 @@ func TestLsNodeJSON(t *testing.T) {
 				Group: "nobodies",
 				Links: 1,
 			},
-			expect: `{"name":"baz","type":"file","path":"/bar/baz","uid":10000000,"gid":20000000,"size":12345,"mtime":"0001-01-01T00:00:00Z","atime":"0001-01-01T00:00:00Z","ctime":"0001-01-01T00:00:00Z","struct_type":"node"}`,
+			expect: `{"name":"baz","type":"file","path":"/bar/baz","uid":10000000,"gid":20000000,"size":12345,"permissions":"----------","mtime":"0001-01-01T00:00:00Z","atime":"0001-01-01T00:00:00Z","ctime":"0001-01-01T00:00:00Z","struct_type":"node"}`,
 		},
 
 		// Even empty files get an explicit size.
@@ -48,7 +49,7 @@ func TestLsNodeJSON(t *testing.T) {
 				Group: "not printed",
 				Links: 0xF00,
 			},
-			expect: `{"name":"empty","type":"file","path":"/foo/empty","uid":1001,"gid":1001,"size":0,"mtime":"0001-01-01T00:00:00Z","atime":"0001-01-01T00:00:00Z","ctime":"0001-01-01T00:00:00Z","struct_type":"node"}`,
+			expect: `{"name":"empty","type":"file","path":"/foo/empty","uid":1001,"gid":1001,"size":0,"permissions":"----------","mtime":"0001-01-01T00:00:00Z","atime":"0001-01-01T00:00:00Z","ctime":"0001-01-01T00:00:00Z","struct_type":"node"}`,
 		},
 
 		// Non-regular files do not get a size.
@@ -61,7 +62,7 @@ func TestLsNodeJSON(t *testing.T) {
 				Mode:       os.ModeSymlink | 0777,
 				LinkTarget: "not printed",
 			},
-			expect: `{"name":"link","type":"symlink","path":"/foo/link","uid":0,"gid":0,"mode":134218239,"mtime":"0001-01-01T00:00:00Z","atime":"0001-01-01T00:00:00Z","ctime":"0001-01-01T00:00:00Z","struct_type":"node"}`,
+			expect: `{"name":"link","type":"symlink","path":"/foo/link","uid":0,"gid":0,"mode":134218239,"permissions":"Lrwxrwxrwx","mtime":"0001-01-01T00:00:00Z","atime":"0001-01-01T00:00:00Z","ctime":"0001-01-01T00:00:00Z","struct_type":"node"}`,
 		},
 
 		{
@@ -74,7 +75,7 @@ func TestLsNodeJSON(t *testing.T) {
 				AccessTime: time.Date(2021, 2, 3, 4, 5, 6, 7, time.UTC),
 				ChangeTime: time.Date(2022, 3, 4, 5, 6, 7, 8, time.UTC),
 			},
-			expect: `{"name":"directory","type":"dir","path":"/some/directory","uid":0,"gid":0,"mode":2147484141,"mtime":"2020-01-02T03:04:05Z","atime":"2021-02-03T04:05:06.000000007Z","ctime":"2022-03-04T05:06:07.000000008Z","struct_type":"node"}`,
+			expect: `{"name":"directory","type":"dir","path":"/some/directory","uid":0,"gid":0,"mode":2147484141,"permissions":"drwxr-xr-x","mtime":"2020-01-02T03:04:05Z","atime":"2021-02-03T04:05:06.000000007Z","ctime":"2022-03-04T05:06:07.000000008Z","struct_type":"node"}`,
 		},
 	} {
 		buf := new(bytes.Buffer)
