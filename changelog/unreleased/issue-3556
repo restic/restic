@@ -6,3 +6,4 @@ It now returns the error and restic fails with an error message.
 
 https://github.com/restic/restic/issues/3556
 https://github.com/restic/restic/issues/2355
+https://github.com/restic/restic/pull/3571
