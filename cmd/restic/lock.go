@@ -7,7 +7,6 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 )
 
@@ -22,17 +21,17 @@ var globalLocks struct {
 	sync.Once
 }
 
-func lockRepo(ctx context.Context, repo *repository.Repository) (*restic.Lock, context.Context, error) {
+func lockRepo(ctx context.Context, repo restic.Repository) (*restic.Lock, context.Context, error) {
 	return lockRepository(ctx, repo, false)
 }
 
-func lockRepoExclusive(ctx context.Context, repo *repository.Repository) (*restic.Lock, context.Context, error) {
+func lockRepoExclusive(ctx context.Context, repo restic.Repository) (*restic.Lock, context.Context, error) {
 	return lockRepository(ctx, repo, true)
 }
 
 // lockRepository wraps the ctx such that it is cancelled when the repository is unlocked
 // cancelling the original context also stops the lock refresh
-func lockRepository(ctx context.Context, repo *repository.Repository, exclusive bool) (*restic.Lock, context.Context, error) {
+func lockRepository(ctx context.Context, repo restic.Repository, exclusive bool) (*restic.Lock, context.Context, error) {
 	// make sure that a repository is unlocked properly and after cancel() was
 	// called by the cleanup handler in global.go
 	globalLocks.Do(func() {
