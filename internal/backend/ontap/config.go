@@ -64,7 +64,7 @@ func ParseConfig(configStr string) (interface{}, error) {
 		prefix = p[1]
 	}
 
-	bucket := strings.Trim(ontapS3APIURL.Path, prefix)
+	bucket := strings.TrimSuffix(ontapS3APIURL.Path, prefix)
 	bucket = strings.Trim(bucket, "/")
 
 	if bucket == "" {

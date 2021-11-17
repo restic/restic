@@ -447,15 +447,28 @@ func TestOpen(t *testing.T) {
 	assert.NotNil(t, be)
 }
 
+type ParseConfigData []struct {
+	url     string
+	prefix  string
+	bucket  string
+	address string
+}
+
 func TestParseConfig(t *testing.T) {
 	var connections uint = 5
-	cfg, err := ontap.ParseConfig("ontaps3:address/bucket/prefix")
-	assert.Nil(t, err)
-	config := cfg.(ontap.Config)
-	assert.Equal(t, "prefix", config.Prefix)
-	assert.Equal(t, "bucket", *config.Bucket)
-	assert.Equal(t, connections, config.Connections)
-	assert.Equal(t, "https://address", config.GetAPIURL())
+	var testOptions = ParseConfigData{
+		{"ontaps3:address/bucket/prefix", "prefix", "bucket", "https://address"},
+		{"ontaps3:10.10.10.10/ntap-nautils-bucket3/test1/integtest-p1", "test1/integtest-p1", "ntap-nautils-bucket3", "https://10.10.10.10"},
+	}
+	for _, testParam := range testOptions {
+		cfg, err := ontap.ParseConfig(testParam.url)
+		assert.Nil(t, err)
+		config := cfg.(ontap.Config)
+		assert.Equal(t, testParam.prefix, config.Prefix)
+		assert.Equal(t, testParam.bucket, *config.Bucket)
+		assert.Equal(t, connections, config.Connections)
+		assert.Equal(t, testParam.address, config.GetAPIURL())
+	}
 }
 
 func TestParseConfigNoPrefix(t *testing.T) {
