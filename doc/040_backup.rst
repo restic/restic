@@ -437,6 +437,14 @@ written, and the next backup needs to write new metadata again. If you really
 want to save the access time for files and directories, you can pass the
 ``--with-atime`` option to the ``backup`` command.
 
+Note that ``restic`` does not back up some metadata associated with files. Of
+particular note are::
+
+  - file creation date on Unix platforms
+  - inode flags on Unix platforms
+  - file ownership and ACLs on Windows
+  - the "hidden" flag on Windows
+
 Reading data from stdin
 ***********************
 
