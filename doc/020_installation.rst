@@ -191,7 +191,7 @@ code available for download. Just download and run the one matching your system.
 On your first installation, if you desire, you can verify the integrity of your
 downloads by testing the SHA-256 checksums listed in ``SHA256SUMS`` and verifying
 the integrity of the file ``SHA256SUMS`` with the PGP signature in ``SHA256SUMS.asc``. 
-The PGP signature was created using the key (`0x91A6868BD3F7A907 <https://pgp.mit.edu/pks/lookup?op=get&search=0xCF8F18F2844575973F79D4E191A6868BD3F7A907>`__):
+The PGP signature was created using the key (`0x91A6868BD3F7A907 <https://restic.net/gpg-key-alex.asc>`__):
 
 ::
 
