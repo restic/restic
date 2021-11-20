@@ -1,4 +1,4 @@
-Enhancement: Cancel commands if lock is not refresh in time
+Enhancement: Stricter repository lock handling
 
 Restic commands kept running even if they failed to refresh their locks in
 time. This can be a problem if a concurrent call to `unlock` and `prune`
@@ -7,6 +7,11 @@ be caused by a client switching to standby while running a backup.
 
 Lock handling is now much stricter. Commands requiring a lock are canceled if
 the lock is not refreshed successfully in time.
+
+In addition, if a lock file is not readable restic will not allow starting a
+command. It may be necessary to remove invalid lock file manually or using
+`unlock --remove-all`. Please make sure that no other restic processes are
+running concurrently.
 
 https://github.com/restic/restic/issues/2715
 https://github.com/restic/restic/pull/3569
