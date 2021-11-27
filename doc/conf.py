@@ -35,7 +35,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'restic'
-copyright = '2018, restic authors'
+copyright = '2021, restic authors'
 author = 'fd0'
 
 # The version info for the project you're documenting, acts as replacement for

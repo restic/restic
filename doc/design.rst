@@ -607,7 +607,7 @@ examples of things an adversary could achieve in various circumstances.
 An adversary with read access to your backup storage location could:
 
 -  Attempt a brute force password guessing attack against a copy of the
-   repository (even more reason to use long, 30+ character passwords).
+   repository (use strong passwords with sufficient entropy).
 -  Infer which packs probably contain trees via file access patterns.
 -  Infer the size of backups by using creation timestamps of repository objects.
 
@@ -648,18 +648,26 @@ An adversary with write access to your files at the storage location could:
 An adversary who compromises a host system with append-only access to the 
 backup repository could:
 
+-  Capture the password and decrypt backups from the past and in the future.
+   See the "leaked key" circumstance below.
 -  Render new backups untrustworthy *after* the host has been compromised
    (due to having complete control over new backups). An attacker cannot delete
    or manipulate old backups. As such, restoring old snapshots created *before*
    a host compromise remains possible.
-   *Note: It is **not** recommended to ever run forget automatically for an
-   append-only backup to which a potentially compromised host has access
-   because an attacker using fake snapshots could cause forget to remove
-   correct snapshots.*
+-  Potentially manipulate the ``restic forget`` command into deleting all
+   legitimate snapshots, keeping only bogus snapshots added by the attacker.
+   Ransomware might try this in order to leave only one option to get your data
+   back: paying the ransom. For safe use of ``restic forget``, see the
+   documentation on removing backup snapshots.
 
-An adversary who has a leaked key for a repository which has not been re-encrypted
-could:
+An adversary who has a leaked key for a repository could:
 
 -  Decrypt existing and future backup data. If multiple hosts backup into the same
    repository, an attacker will get access to the backup data of every host.
+   Since the local encryption key gives access to the master key, a password
+   change will not prevent this. Changing the master key can currently be done
+   using ``restic copy`` which moves the data into a new repository with a new
+   master key, or by making a completely new repository and new backup.
+   Re-encrypting all data without creating a new repository is tracked in
+   :issue:`1602`.
 

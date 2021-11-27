@@ -18,13 +18,13 @@ All backup space is finite, so restic allows removing old snapshots.
 This can be done either manually (by specifying a snapshot ID to remove)
 or by using a policy that describes which snapshots to forget. For all
 remove operations, two commands need to be called in sequence:
-``forget`` to remove a snapshot and ``prune`` to actually remove the
-data that was referenced by the snapshot from the repository. This can
+``forget`` to remove a snapshot and ``prune`` to remove the remaining
+data that was only referenced by this snapshot from the repository. This can
 be automated with the ``--prune`` option of the ``forget`` command,
 which runs ``prune`` automatically if snapshots have been removed.
 
 Pruning snapshots can be a time-consuming process, depending on the
-amount of snapshots and data to process. During a prune operation, the
+number of snapshots and data to process. During a prune operation, the
 repository is locked and backups cannot be completed. Please plan your
 pruning so that there's time to complete it and it doesn't interfere with
 regular backup runs.
@@ -164,6 +164,9 @@ The most important command-line parameter here is ``--dry-run`` which
 instructs restic to not remove anything but print which snapshots would
 be removed.
 
+.. note:: If you use append-only backups, some best practices apply.
+    Please refer to the security considerations below.
+
 When ``forget`` is run with a policy, restic loads the list of all
 snapshots, then groups these by host name and list of directories. The grouping
 options can be set with ``--group-by``, to only group snapshots by paths and
@@ -206,6 +209,8 @@ The ``forget`` command accepts the following parameters:
 .. note:: All calendar related ``--keep-*`` options work on the natural time
     boundaries and not relative to when you run the ``forget`` command. Weeks
     are Monday 00:00 -> Sunday 23:59, days 00:00 to 23:59, hours :00 to :59, etc.
+    Snapshots seemingly made in the future (relative to when you run the
+    ``forget`` command) will be ignored and never removed.
 
 .. note:: Specifying ``--keep-tag ''`` will match untagged snapshots only.
 
@@ -312,8 +317,9 @@ four Sundays, but remove the rest:
    ---------------------------------------------------------------
    8 snapshots
 
-The result of the ``forget --keep-daily`` operation does not depend on when it
-is run, it will only count the days for which a snapshot exists. This is a
+The result of the ``forget --keep-daily`` operation only partially depends on when it
+is run: it will only count the days for which a snapshot exists, although
+with a `time` lying in the future are ignored and never removed. This is a
 safety feature: it prevents restic from removing snapshots when no new ones are
 created. Otherwise, running ``forget --keep-daily 4`` on a Friday (without any
 snapshot Monday to Thursday) would remove all snapshots!
@@ -335,6 +341,38 @@ could specify:
 --keep-within-yearly 75y``
 (Note that `1w` is not a recognized duration, so you will have to specify 
 `7d` instead)
+
+Security considerations in append-only mode
+===========================================
+
+To prevent data from being deleted by a compromised backup client (for example
+due to a ransomware infection), a so-called append-only mode can be used. This
+requires the server to deny delete and overwrite operations, which is not
+possible on many standard back-ends. Software such as `rest-server`_ or
+`rclone`_ can be used instead or in addition.
+
+.. _rest-server: https://github.com/restic/rest-server/
+.. _rclone: https://rclone.org/
+
+To recover disk space from obsolete snapshots, ``forget`` and ``prune`` must be
+run on a repository with full read-write access. If an attacker can do this,
+the protection offered by append-only mode is void. However, even if only the
+trusted client runs the ``forget`` command, it can be possible for the attacker
+to add snapshots in such a pattern that all legitimate snapshots are removed.
+
+If the ``forget`` policy is to keep three weekly snapshots, the attacker can
+add an empty backup for each of the last three weeks with a `time` slightly
+newer than the existing snapshots (but still within the target week). The next
+time the repository administrator (or cron job) runs the ``forget`` policy, the
+legitimate snapshots will be removed. Even without pruning, recovering data
+would be messy and some metadata will be lost.
+
+To avoid this, policies applied to append-only repositories should use the
+``--keep-within`` option. If the system time is set correctly when ``forget``
+runs, this will allow you to notice problems with the backup or the compromised
+host. This is, of course, limited to the specified duration: if
+``restic forget --keep-within 7d`` is run 8 days after the last good snapshot,
+then the attacker can still use that opportunity to remove all good snapshots.
 
 Customize pruning
 *****************

@@ -18,6 +18,8 @@ The "forget" command removes snapshots according to a policy. Please note that
 this command really only deletes the snapshot object in the repository, which
 is a reference to data stored there. In order to remove this (now unreferenced)
 data after 'forget' was run successfully, see the 'prune' command.
+When using this command on special append-only repositories, please see the
+documentation for security considerations.
 
 EXIT STATUS
 ===========
