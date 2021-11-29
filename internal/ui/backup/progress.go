@@ -19,6 +19,7 @@ type ProgressPrinter interface {
 	CompleteItem(messageType string, item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration)
 	ReportTotal(item string, start time.Time, s archiver.ScanStats)
 	Finish(snapshotID restic.ID, start time.Time, summary *Summary, dryRun bool)
+	FinishSummary(snapshotID restic.ID, start time.Time, summary *Summary, dryRun bool) summaryOutput
 	Reset()
 
 	// ui.StdioWrapper
@@ -50,6 +51,7 @@ type ProgressReporter interface {
 	Run(ctx context.Context) error
 	Error(item string, fi os.FileInfo, err error) error
 	Finish(snapshotID restic.ID)
+	FinishSummary(snapshotID restic.ID) summaryOutput
 }
 
 type Summary struct {
@@ -312,6 +314,11 @@ func (p *Progress) Finish(snapshotID restic.ID) {
 	<-p.closed
 	p.printer.Finish(snapshotID, p.start, p.summary, p.dry)
 }
+func (p *Progress) FinishSummary(snapshotID restic.ID) summaryOutput {
+	// wait for the status update goroutine to shut down
+	<-p.closed
+	return p.printer.FinishSummary(snapshotID, p.start, p.summary, p.dry)
+}
 
 // SetMinUpdatePause sets b.MinUpdatePause. It satisfies the
 // ArchiveProgressReporter interface.
@@ -322,4 +329,21 @@ func (p *Progress) SetMinUpdatePause(d time.Duration) {
 // SetDryRun marks the backup as a "dry run".
 func (p *Progress) SetDryRun() {
 	p.dry = true
+}
+type summaryOutput struct {
+	MessageType         string  `json:"message_type"` // "summary"
+	FilesNew            uint    `json:"files_new"`
+	FilesChanged        uint    `json:"files_changed"`
+	FilesUnmodified     uint    `json:"files_unmodified"`
+	DirsNew             uint    `json:"dirs_new"`
+	DirsChanged         uint    `json:"dirs_changed"`
+	DirsUnmodified      uint    `json:"dirs_unmodified"`
+	DataBlobs           int     `json:"data_blobs"`
+	TreeBlobs           int     `json:"tree_blobs"`
+	DataAdded           uint64  `json:"data_added"`
+	TotalFilesProcessed uint    `json:"total_files_processed"`
+	TotalBytesProcessed uint64  `json:"total_bytes_processed"`
+	TotalDuration       float64 `json:"total_duration"` // in seconds
+	SnapshotID          string  `json:"snapshot_id"`
+	DryRun              bool    `json:"dry_run,omitempty"`
 }

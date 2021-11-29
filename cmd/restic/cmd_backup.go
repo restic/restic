@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -81,6 +82,7 @@ type BackupOptions struct {
 	ExcludeLargerThan       string
 	Stdin                   bool
 	StdinFilename           string
+	SummaryFilename         string
 	Tags                    restic.TagLists
 	Host                    string
 	FilesFrom               []string
@@ -115,6 +117,7 @@ func init() {
 	f.StringVar(&backupOptions.ExcludeLargerThan, "exclude-larger-than", "", "max `size` of the files to be backed up (allowed suffixes: k/K, m/M, g/G, t/T)")
 	f.BoolVar(&backupOptions.Stdin, "stdin", false, "read backup from stdin")
 	f.StringVar(&backupOptions.StdinFilename, "stdin-filename", "stdin", "`filename` to use when reading from stdin")
+	f.StringVar(&backupOptions.SummaryFilename, "summary-filename", "", "`filename` to append summary data to")
 	f.Var(&backupOptions.Tags, "tag", "add `tags` for the new snapshot in the format `tag[,tag,...]` (can be specified multiple times)")
 
 	f.StringVarP(&backupOptions.Host, "host", "H", "", "set the `hostname` for the snapshot manually. To prevent an expensive rescan use the \"parent\" flag")
@@ -710,7 +713,21 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	if !gopts.JSON && !opts.DryRun {
 		progressPrinter.P("snapshot %s saved\n", id.Str())
 	}
-	if !success {
+	if opts.SummaryFilename != "" {
+		sf, err := os.OpenFile(opts.SummaryFilename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+		if err != nil {
+			return errors.Errorf("%s: appending to summary failed: %v", opts.SummaryFilename, err)
+		}
+		buf := new(bytes.Buffer)
+		if err := json.NewEncoder(buf).Encode(progressReporter.FinishSummary(id)); err != nil {
+			return errors.Errorf("encoding summary failed: %v", err)
+		}
+		fmt.Fprintf(sf, "%s", buf.String())
+		if err := sf.Close(); err != nil {
+			return errors.Errorf("%s: closing file failed: %v", opts.SummaryFilename, err)
+		}
+	}
+        if !success {
 		return ErrInvalidSourceData
 	}
 

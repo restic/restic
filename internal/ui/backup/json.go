@@ -172,7 +172,12 @@ func (b *JSONProgress) ReportTotal(item string, start time.Time, s archiver.Scan
 
 // Finish prints the finishing messages.
 func (b *JSONProgress) Finish(snapshotID restic.ID, start time.Time, summary *Summary, dryRun bool) {
-	b.print(summaryOutput{
+	b.print(b.FinishSummary(snapshotID, start, summary, dryRun))
+}
+
+// FinishSummary returns the summary as a struct
+func (b *JSONProgress) FinishSummary(snapshotID restic.ID, start time.Time, summary *Summary, dryRun bool) summaryOutput {
+	return summaryOutput{
 		MessageType:         "summary",
 		FilesNew:            summary.Files.New,
 		FilesChanged:        summary.Files.Changed,
@@ -188,7 +193,7 @@ func (b *JSONProgress) Finish(snapshotID restic.ID, start time.Time, summary *Su
 		TotalDuration:       time.Since(start).Seconds(),
 		SnapshotID:          snapshotID.Str(),
 		DryRun:              dryRun,
-	})
+	}
 }
 
 // Reset no-op
@@ -225,20 +230,3 @@ type verboseUpdate struct {
 	TotalFiles   uint    `json:"total_files"`
 }
 
-type summaryOutput struct {
-	MessageType         string  `json:"message_type"` // "summary"
-	FilesNew            uint    `json:"files_new"`
-	FilesChanged        uint    `json:"files_changed"`
-	FilesUnmodified     uint    `json:"files_unmodified"`
-	DirsNew             uint    `json:"dirs_new"`
-	DirsChanged         uint    `json:"dirs_changed"`
-	DirsUnmodified      uint    `json:"dirs_unmodified"`
-	DataBlobs           int     `json:"data_blobs"`
-	TreeBlobs           int     `json:"tree_blobs"`
-	DataAdded           uint64  `json:"data_added"`
-	TotalFilesProcessed uint    `json:"total_files_processed"`
-	TotalBytesProcessed uint64  `json:"total_bytes_processed"`
-	TotalDuration       float64 `json:"total_duration"` // in seconds
-	SnapshotID          string  `json:"snapshot_id"`
-	DryRun              bool    `json:"dry_run,omitempty"`
-}
