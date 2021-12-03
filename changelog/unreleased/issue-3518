@@ -1,0 +1,6 @@
+Bugfix: Make copy honor `--no-lock` for source repository
+
+When passing the `--no-lock` flag to the copy command, the source directory still attempted to issue a lock, causing failures on read-only source directories. `--no-lock` is now respected and copy no longer attempts a lock.
+
+https://github.com/restic/restic/issues/3518
+https://github.com/restic/restic/pull/3589
