@@ -11,6 +11,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -92,6 +93,7 @@ type BackupOptions struct {
 	IgnoreCtime             bool
 	UseFsSnapshot           bool
 	DryRun                  bool
+	DeviceMap               []string
 }
 
 var backupOptions BackupOptions
@@ -136,6 +138,7 @@ func init() {
 	if runtime.GOOS == "windows" {
 		f.BoolVar(&backupOptions.UseFsSnapshot, "use-fs-snapshot", false, "use filesystem snapshot where possible (currently only Windows VSS)")
 	}
+	f.StringArrayVar(&backupOptions.DeviceMap, "device-map", nil, "Replace the device ID for files using the format src:dest")
 }
 
 // filterExisting returns a slice of all existing items, or an error if no
@@ -675,6 +678,26 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	}
 	if opts.IgnoreCtime {
 		arch.ChangeIgnoreFlags |= archiver.ChangeIgnoreCtime
+	}
+
+	if opts.DeviceMap != nil {
+		arch.DeviceMap = map[uint64]uint64{}
+		for _, val := range opts.DeviceMap {
+			ids := strings.Split(val, ":")
+			if len(ids) != 2 {
+				return errors.New("--device-map format is incorrect, should be src:dest")
+			}
+			src, err := strconv.ParseUint(ids[0], 10, 64)
+			if err != nil {
+				return errors.New("--device-map does not contain a valid source id")
+			}
+			dest, err := strconv.ParseUint(ids[1], 10, 64)
+			if err != nil {
+				return errors.New("--device-map does not contain a valid dest id")
+			}
+
+			arch.DeviceMap[src] = dest
+		}
 	}
 
 	if parentSnapshotID == nil {

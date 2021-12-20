@@ -82,6 +82,11 @@ type Archiver struct {
 
 	// Flags controlling change detection. See doc/040_backup.rst for details.
 	ChangeIgnoreFlags uint
+
+	// Maps DeviceIDs from the key to the value of the map
+	// For example, if a file is located on device 2, and DeviceMap = {2: 4}, then
+	// the arciver will save the file as if the file were located on device 4
+	DeviceMap map[uint64]uint64
 }
 
 // Flags for the ChangeIgnoreFlags bitfield.
@@ -197,6 +202,13 @@ func (arch *Archiver) nodeFromFileInfo(filename string, fi os.FileInfo) (*restic
 	node, err := restic.NodeFromFileInfo(filename, fi)
 	if !arch.WithAtime {
 		node.AccessTime = node.ModTime
+	}
+
+	if err == nil && arch.DeviceMap != nil {
+		if newDeviceID, ok := arch.DeviceMap[node.DeviceID]; ok {
+			debug.Log("remapping DeviceID from %d to %d", node.DeviceID, newDeviceID)
+			node.DeviceID = newDeviceID
+		}
 	}
 	return node, errors.Wrap(err, "NodeFromFileInfo")
 }
