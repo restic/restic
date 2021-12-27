@@ -73,10 +73,12 @@ func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	srcLock, err := lockRepo(ctx, srcRepo)
-	defer unlockRepo(srcLock)
-	if err != nil {
-		return err
+	if !gopts.NoLock {
+		srcLock, err := lockRepo(ctx, srcRepo)
+		defer unlockRepo(srcLock)
+		if err != nil {
+			return err
+		}
 	}
 
 	dstLock, err := lockRepo(ctx, dstRepo)
