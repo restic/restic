@@ -116,7 +116,7 @@ func lsNodeJSON(enc *json.Encoder, path string, node *restic.Node) error {
 
 func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 	if len(args) == 0 {
-		return errors.Fatal("no snapshot ID specified")
+		return errors.Fatal("no snapshot ID specified, specify snapshot ID or use special ID 'latest'")
 	}
 
 	// extract any specific directories to walk
