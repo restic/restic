@@ -24,6 +24,7 @@ func (fs Local) Open(name string) (File, error) {
 	if err != nil {
 		return nil, err
 	}
+	_ = setFlags(f)
 	return f, nil
 }
 
@@ -37,6 +38,7 @@ func (fs Local) OpenFile(name string, flag int, perm os.FileMode) (File, error) 
 	if err != nil {
 		return nil, err
 	}
+	_ = setFlags(f)
 	return f, nil
 }
 
