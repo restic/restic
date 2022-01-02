@@ -219,3 +219,9 @@ be a very strong password, if not for being in this documentation.
 
 There are plenty of tools out there, such as OpenSSL, pwgen or KeePass that can
 generate a sufficiently complex, random and long password.
+
+Restic backup command fails to find a valid file in Windows
+-----------------------------------------------------------
+
+If the name of a file in Windows contains an invalid character, Restic will not be
+able to read the file. To solve this issue, consider renaming the particular file. 
