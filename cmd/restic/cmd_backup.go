@@ -103,7 +103,7 @@ func init() {
 	cmdRoot.AddCommand(cmdBackup)
 
 	f := cmdBackup.Flags()
-	f.StringVar(&backupOptions.Parent, "parent", "", "use this parent `snapshot` (default: last snapshot in the repo that has the same target files/directories)")
+	f.StringVar(&backupOptions.Parent, "parent", "", "use this parent `snapshot` (default: last snapshot in the repo that has the same target files/directories, and is not newer than the snapshot time)")
 	f.BoolVarP(&backupOptions.Force, "force", "f", false, `force re-reading the target files/directories (overrides the "parent" flag)`)
 	f.StringArrayVarP(&backupOptions.Excludes, "exclude", "e", nil, "exclude a `pattern` (can be specified multiple times)")
 	f.StringArrayVar(&backupOptions.InsensitiveExcludes, "iexclude", nil, "same as --exclude `pattern` but ignores the casing of filenames")
@@ -472,7 +472,7 @@ func collectTargets(opts BackupOptions, args []string) (targets []string, err er
 
 // parent returns the ID of the parent snapshot. If there is none, nil is
 // returned.
-func findParentSnapshot(ctx context.Context, repo restic.Repository, opts BackupOptions, targets []string) (parentID *restic.ID, err error) {
+func findParentSnapshot(ctx context.Context, repo restic.Repository, opts BackupOptions, targets []string, timeStamp time.Time) (parentID *restic.ID, err error) {
 	// Force using a parent
 	if !opts.Force && opts.Parent != "" {
 		id, err := restic.FindSnapshot(ctx, repo, opts.Parent)
@@ -485,7 +485,7 @@ func findParentSnapshot(ctx context.Context, repo restic.Repository, opts Backup
 
 	// Find last snapshot to set it as parent, if not already set
 	if !opts.Force && parentID == nil {
-		id, err := restic.FindLatestSnapshot(ctx, repo, targets, []restic.TagList{}, []string{opts.Host})
+		id, err := restic.FindLatestSnapshot(ctx, repo, targets, []restic.TagList{}, []string{opts.Host}, &timeStamp)
 		if err == nil {
 			parentID = &id
 		} else if err != restic.ErrNoSnapshotFound {
@@ -579,7 +579,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		return err
 	}
 
-	parentSnapshotID, err := findParentSnapshot(gopts.ctx, repo, opts, targets)
+	parentSnapshotID, err := findParentSnapshot(gopts.ctx, repo, opts, targets, timeStamp)
 	if err != nil {
 		return err
 	}
