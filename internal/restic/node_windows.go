@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"os"
 	"syscall"
+	"time"
 
 	"github.com/restic/restic/internal/errors"
 )
@@ -56,10 +57,7 @@ func Listxattr(path string) ([]string, error) {
 
 	s, ok := fileinfo.Sys().(*syscall.Win32FileAttributeData)
 	if ok && s != nil {
-		if s.CreationTime.Nanoseconds() != nil{
-			return []string{"CreationTime"}, nil
-		}
-		return nil, nil
+		return []string{"CreationTime"}, nil
 	}
 	return nil, nil
 }
@@ -88,7 +86,7 @@ func Setxattr(path, name string, data []byte) error {
 		return errors.Wrap(err, "Setxattr")
 	}
    	
-	c := syscall.NsecToFiletime(creationTime)
+	c := syscall.NsecToFiletime(time.Unix(creationTime.Unix()).UnixNano())
 	if err := syscall.SetFileTime(h, &c, nil, nil); err != nil {
 		return errors.Wrap(err, "Setxattr")
 	}
