@@ -1,6 +1,9 @@
 package restic
 
 import (
+	"bytes"
+	"encoding/gob"
+	"os"
 	"syscall"
 
 	"github.com/restic/restic/internal/errors"
@@ -22,17 +25,73 @@ func (node Node) restoreSymlinkTimestamps(path string, utimes [2]syscall.Timespe
 
 // Getxattr retrieves extended attribute data associated with path.
 func Getxattr(path, name string) ([]byte, error) {
+	fileinfo, err := os.Stat(path)
+	if err != nil {
+		return nil, errors.Wrap(err, "Getxattr")
+	}
+
+	s, ok := fileinfo.Sys().(*syscall.Win32FileAttributeData)
+	if ok && s != nil {
+		if name == "CreationTime"{
+			var b bytes.Buffer
+   			e := gob.NewEncoder(&b)
+			
+			creationTime, err := e.Encode(syscall.NsecToTimespec(s.CreationTime.Nanoseconds()))
+   			if err != nil {
+      			return nil, errors.Wrap(err, "Getxattr")
+   			}
+			return creationTime, nil
+		}
+		return nil, nil
+	}
 	return nil, nil
 }
 
 // Listxattr retrieves a list of names of extended attributes associated with the
 // given path in the file system.
 func Listxattr(path string) ([]string, error) {
+	fileinfo, err := os.Stat(path)
+	if err != nil {
+		return nil, errors.Wrap(err, "Listxattr")
+	}
+
+	s, ok := fileinfo.Sys().(*syscall.Win32FileAttributeData)
+	if ok && s != nil {
+		if s.CreationTime != nil{
+			return [...]string{"CreationTime"}, nil
+		}
+		return nil, nil
+	}
 	return nil, nil
 }
 
 // Setxattr associates name and data together as an attribute of path.
 func Setxattr(path, name string, data []byte) error {
+	pathp, e := syscall.UTF16PtrFromString(path)
+	if e != nil {
+		return errors.Wrap(e, "Setxattr")
+	}
+	h, e := syscall.CreateFile(pathp,
+		syscall.FILE_WRITE_ATTRIBUTES, syscall.FILE_SHARE_WRITE, nil,
+		syscall.OPEN_EXISTING, syscall.FILE_FLAG_BACKUP_SEMANTICS, 0)
+	if e != nil {
+		return errors.Wrap(e, "Setxattr")
+	}
+	defer syscall.Close(h)
+
+	var b bytes.Buffer
+	var creationTime Timespec
+   	d := gob.NewDecoder(&b)
+	creationTime, err := d.Decode(&creationTime)
+	if err != nil {
+		return errors.Wrap(err, "Setxattr")
+	}
+   	
+	c := syscall.NsecToFiletime(creationTime)
+	if err := syscall.SetFileTime(h, &c, nil, nil); err != nil {
+		return errors.Wrap(err, "Setxattr")
+	}
+
 	return nil
 }
 
