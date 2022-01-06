@@ -90,11 +90,11 @@ command must be run:
     collecting packs for deletion and repacking
     [0:00] 100.00%  5 / 5 packs processed
     
-    to repack:           69 blobs / 1.078 MiB
-    this removes         67 blobs / 1.047 MiB
-    to delete:            7 blobs / 25.726 KiB
-    total prune:         74 blobs / 1.072 MiB
-    remaining:           16 blobs / 38.003 KiB
+    to repack:            69 blobs / 1.078 MiB
+    this removes:         67 blobs / 1.047 MiB
+    to delete:             7 blobs / 25.726 KiB
+    total prune:          74 blobs / 1.072 MiB
+    remaining:            16 blobs / 38.003 KiB
     unused size after prune: 0 B (0.00% of remaining size)
     
     repacking packs

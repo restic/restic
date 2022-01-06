@@ -447,26 +447,26 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		stats.size.repackrm += stats.size.duplicate
 	}
 
-	Verboseff("\nused:        %10d blobs / %s\n", stats.blobs.used, formatBytes(stats.size.used))
+	Verboseff("\nused:         %10d blobs / %s\n", stats.blobs.used, formatBytes(stats.size.used))
 	if stats.blobs.duplicate > 0 {
-		Verboseff("duplicates:  %10d blobs / %s\n", stats.blobs.duplicate, formatBytes(stats.size.duplicate))
+		Verboseff("duplicates:   %10d blobs / %s\n", stats.blobs.duplicate, formatBytes(stats.size.duplicate))
 	}
-	Verboseff("unused:      %10d blobs / %s\n", stats.blobs.unused, formatBytes(stats.size.unused))
+	Verboseff("unused:       %10d blobs / %s\n", stats.blobs.unused, formatBytes(stats.size.unused))
 	if stats.size.unref > 0 {
-		Verboseff("unreferenced:                   %s\n", formatBytes(stats.size.unref))
+		Verboseff("unreferenced:                    %s\n", formatBytes(stats.size.unref))
 	}
 	totalBlobs := stats.blobs.used + stats.blobs.unused + stats.blobs.duplicate
 	totalSize := stats.size.used + stats.size.duplicate + stats.size.unused + stats.size.unref
 	unusedSize := stats.size.duplicate + stats.size.unused
-	Verboseff("total:       %10d blobs / %s\n", totalBlobs, formatBytes(totalSize))
+	Verboseff("total:        %10d blobs / %s\n", totalBlobs, formatBytes(totalSize))
 	Verboseff("unused size: %s of total size\n", formatPercent(unusedSize, totalSize))
 
-	Verbosef("\nto repack:   %10d blobs / %s\n", stats.blobs.repack, formatBytes(stats.size.repack))
-	Verbosef("this removes %10d blobs / %s\n", stats.blobs.repackrm, formatBytes(stats.size.repackrm))
-	Verbosef("to delete:   %10d blobs / %s\n", stats.blobs.remove, formatBytes(stats.size.remove+stats.size.unref))
+	Verbosef("\nto repack:    %10d blobs / %s\n", stats.blobs.repack, formatBytes(stats.size.repack))
+	Verbosef("this removes: %10d blobs / %s\n", stats.blobs.repackrm, formatBytes(stats.size.repackrm))
+	Verbosef("to delete:    %10d blobs / %s\n", stats.blobs.remove, formatBytes(stats.size.remove+stats.size.unref))
 	totalPruneSize := stats.size.remove + stats.size.repackrm + stats.size.unref
-	Verbosef("total prune: %10d blobs / %s\n", stats.blobs.remove+stats.blobs.repackrm, formatBytes(totalPruneSize))
-	Verbosef("remaining:   %10d blobs / %s\n", totalBlobs-(stats.blobs.remove+stats.blobs.repackrm), formatBytes(totalSize-totalPruneSize))
+	Verbosef("total prune:  %10d blobs / %s\n", stats.blobs.remove+stats.blobs.repackrm, formatBytes(totalPruneSize))
+	Verbosef("remaining:    %10d blobs / %s\n", totalBlobs-(stats.blobs.remove+stats.blobs.repackrm), formatBytes(totalSize-totalPruneSize))
 	unusedAfter := unusedSize - stats.size.remove - stats.size.repackrm
 	Verbosef("unused size after prune: %s (%s of remaining size)\n",
 		formatBytes(unusedAfter), formatPercent(unusedAfter, totalSize-totalPruneSize))
@@ -475,11 +475,11 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 	Verboseff("partly used packs:  %10d\n", stats.packs.partlyUsed)
 	Verboseff("unused packs:       %10d\n\n", stats.packs.unused)
 
-	Verboseff("to keep:   %10d packs\n", stats.packs.keep)
-	Verboseff("to repack: %10d packs\n", len(repackPacks))
-	Verboseff("to delete: %10d packs\n", len(removePacks))
+	Verboseff("to keep:      %10d packs\n", stats.packs.keep)
+	Verboseff("to repack:    %10d packs\n", len(repackPacks))
+	Verboseff("to delete:    %10d packs\n", len(removePacks))
 	if len(removePacksFirst) > 0 {
-		Verboseff("to delete: %10d unreferenced packs\n\n", len(removePacksFirst))
+		Verboseff("to delete:    %10d unreferenced packs\n\n", len(removePacksFirst))
 	}
 
 	if opts.DryRun {
