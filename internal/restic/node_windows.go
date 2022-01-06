@@ -56,8 +56,8 @@ func Listxattr(path string) ([]string, error) {
 
 	s, ok := fileinfo.Sys().(*syscall.Win32FileAttributeData)
 	if ok && s != nil {
-		if s.CreationTime != nil{
-			return [...]string{"CreationTime"}, nil
+		if s.CreationTime.Nanoseconds() != nil{
+			return []string{"CreationTime"}, nil
 		}
 		return nil, nil
 	}
@@ -81,7 +81,7 @@ func Setxattr(path, name string, data []byte) error {
 	var inputData bytes.Buffer
 	inputData.Write(data)
 
-	var creationTime Timespec
+	var creationTime syscall.Timespec
    	dec := gob.NewDecoder(&inputData)
 	
 	if err := dec.Decode(&creationTime); err != nil {
