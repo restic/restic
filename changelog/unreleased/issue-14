@@ -1,3 +1,3 @@
-Change: Implement rewrite command
+Enhancement: Implement rewrite command
 
-TODO: write here
+We've added a new command which allows to rewrite existing snapshots removing unwanted contents.

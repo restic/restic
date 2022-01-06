@@ -14,16 +14,16 @@ import (
 
 var cmdRewrite = &cobra.Command{
 	Use:   "rewrite [f] [all|snapshotID ...]",
-	Short: "Modify existing snapshots by deleting files",
+	Short: "Rewrite existing snapshots excluding specified files",
 	Long: `
 The "rewrite" command excludes files from existing snapshots.
 
-By default 'rewrite' will create new snapshot that will contains same data as
-source snapshot except excluded data. All metadata (time, host, tags) will be preserved.
-Special tag 'rewrite' will be added to new snapshot to distinguish it from source
-(unless --inplace is used)
+By default 'rewrite' will create new snapshot that will contain the same data as the
+source snapshot, except excluded data. All metadata (time, host, tags) will be preserved.
+The special tag 'rewrite' will be added to new snapshot to distinguish them from originals
+(unless --forget is used)
 
-If --inplace option is used, old snapshot will be removed from repository.
+If --forget option is used, old snapshot will be removed from repository.
 
 Snapshots to rewrite are specified using --host, --tag, --path or by providing list of snapshotID.
 Alternatively it's possible to use special 'all' snapshot that will match all snapshots
@@ -45,11 +45,11 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 // RewriteOptions collects all options for the ls command.
 type RewriteOptions struct {
 	// TagOptions bundles all options for the 'tag' command.
-	Hosts   []string
-	Paths   []string
-	Tags    restic.TagLists
-	Inplace bool
-	DryRun  bool
+	Hosts  []string
+	Paths  []string
+	Tags   restic.TagLists
+	Forget bool
+	DryRun bool
 
 	// Exclude options
 	Excludes            []string
@@ -66,7 +66,7 @@ func init() {
 	f.StringArrayVarP(&rewriteOptions.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when no snapshot ID is given (can be specified multiple times)")
 	f.Var(&rewriteOptions.Tags, "tag", "only consider snapshots which include this `taglist`, when no snapshot-ID is given")
 	f.StringArrayVar(&rewriteOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot-ID is given")
-	f.BoolVarP(&rewriteOptions.Inplace, "inplace", "", false, "replace existing snapshots")
+	f.BoolVarP(&rewriteOptions.Forget, "forget", "", false, "Forget sources of rewritten snapshots")
 	f.BoolVarP(&rewriteOptions.DryRun, "dry-run", "n", false, "do not do anything, just print what would be done")
 
 	// Excludes
@@ -197,10 +197,6 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 	if err != nil {
 		return false, err
 	}
-	err = repo.SaveIndex(ctx)
-	if err != nil {
-		return false, err
-	}
 
 	// Retain the original snapshot id over all tag changes.
 	if sn.Original == nil {
@@ -208,7 +204,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 	}
 	*sn.Tree = filteredTree
 
-	if !opts.Inplace {
+	if !opts.Forget {
 		sn.AddTags([]string{"rewrite"})
 	}
 
@@ -222,13 +218,13 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 		return true, err
 	}
 
-	if opts.Inplace {
+	if opts.Forget {
 		h := restic.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
 		if err = repo.Backend().Remove(ctx, h); err != nil {
 			return false, err
 		}
 
-		debug.Log("old snapshot %v removed", sn.ID())
+		debug.Log("old snapshot %v forgotten", sn.ID())
 	}
 	Printf("new snapshot saved as %v\n", id)
 	return true, nil
