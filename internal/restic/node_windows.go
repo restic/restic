@@ -33,14 +33,13 @@ func Getxattr(path, name string) ([]byte, error) {
 	s, ok := fileinfo.Sys().(*syscall.Win32FileAttributeData)
 	if ok && s != nil {
 		if name == "CreationTime"{
-			var b bytes.Buffer
-   			e := gob.NewEncoder(&b)
+			var creationTime bytes.Buffer
+   			enc := gob.NewEncoder(&creationTime)
 			
-			creationTime, err := e.Encode(syscall.NsecToTimespec(s.CreationTime.Nanoseconds()))
-   			if err != nil {
-      			return nil, errors.Wrap(err, "Getxattr")
-   			}
-			return creationTime, nil
+			if err := enc.Encode(syscall.NsecToTimespec(s.CreationTime.Nanoseconds())); err != nil {
+				return nil, errors.Wrap(err, "Getxattr")
+			}
+   			return creationTime.Bytes(), nil
 		}
 		return nil, nil
 	}
@@ -79,11 +78,13 @@ func Setxattr(path, name string, data []byte) error {
 	}
 	defer syscall.Close(h)
 
-	var b bytes.Buffer
+	var inputData bytes.Buffer
+	inputData.Write(data)
+
 	var creationTime Timespec
-   	d := gob.NewDecoder(&b)
-	creationTime, err := d.Decode(&creationTime)
-	if err != nil {
+   	dec := gob.NewDecoder(&inputData)
+	
+	if err := dec.Decode(&creationTime); err != nil {
 		return errors.Wrap(err, "Setxattr")
 	}
    	
@@ -91,7 +92,6 @@ func Setxattr(path, name string, data []byte) error {
 	if err := syscall.SetFileTime(h, &c, nil, nil); err != nil {
 		return errors.Wrap(err, "Setxattr")
 	}
-
 	return nil
 }
 
