@@ -26,25 +26,43 @@ func (node Node) restoreSymlinkTimestamps(path string, utimes [2]syscall.Timespe
 
 // Getxattr retrieves extended attribute data associated with path.
 func Getxattr(path, name string) ([]byte, error) {
-	fileinfo, err := os.Stat(path)
-	if err != nil {
-		return nil, errors.Wrap(err, "Getxattr")
-	}
+	switch name {
+	case "CreationTime":
+		fileinfo, err := os.Stat(path)
+		if err != nil {
+			return nil, errors.Wrap(err, "Getxattr")
+		}
 
-	s, ok := fileinfo.Sys().(*syscall.Win32FileAttributeData)
-	if ok && s != nil {
-		if name == "CreationTime"{
+		s, ok := fileinfo.Sys().(*syscall.Win32FileAttributeData)
+		if ok && s != nil {
 			var creationTime bytes.Buffer
-   			enc := gob.NewEncoder(&creationTime)
+			enc := gob.NewEncoder(&creationTime)
 			
 			if err := enc.Encode(syscall.NsecToTimespec(s.CreationTime.Nanoseconds())); err != nil {
 				return nil, errors.Wrap(err, "Getxattr")
 			}
-   			return creationTime.Bytes(), nil
+			return creationTime.Bytes(), nil
 		}
 		return nil, nil
+	case "FileAttributes":
+		pathp, e := syscall.UTF16PtrFromString(path)
+		if e != nil {
+			return nil, errors.Wrap(e, "Getxattr")
+		}
+		attrs, e := syscall.GetFileAttributes(pathp)
+		if e != nil {
+			return nil, errors.Wrap(e, "Getxattr")
+		}
+		var fileAttributes bytes.Buffer
+		enc := gob.NewEncoder(&fileAttributes)
+		
+		if err := enc.Encode(attrs); err != nil {
+			return nil, errors.Wrap(err, "Getxattr")
+		}
+		return fileAttributes.Bytes(), nil
+	default:
+		return nil, nil
 	}
-	return nil, nil
 }
 
 // Listxattr retrieves a list of names of extended attributes associated with the
@@ -57,40 +75,61 @@ func Listxattr(path string) ([]string, error) {
 
 	s, ok := fileinfo.Sys().(*syscall.Win32FileAttributeData)
 	if ok && s != nil {
-		return []string{"CreationTime"}, nil
+		return []string{"CreationTime", "FileAttributes"}, nil
 	}
 	return nil, nil
 }
 
 // Setxattr associates name and data together as an attribute of path.
 func Setxattr(path, name string, data []byte) error {
+
 	pathp, e := syscall.UTF16PtrFromString(path)
 	if e != nil {
 		return errors.Wrap(e, "Setxattr")
 	}
-	h, e := syscall.CreateFile(pathp,
-		syscall.FILE_WRITE_ATTRIBUTES, syscall.FILE_SHARE_WRITE, nil,
-		syscall.OPEN_EXISTING, syscall.FILE_FLAG_BACKUP_SEMANTICS, 0)
-	if e != nil {
-		return errors.Wrap(e, "Setxattr")
-	}
-	defer syscall.Close(h)
 
-	var inputData bytes.Buffer
-	inputData.Write(data)
-
-	var creationTime syscall.Timespec
-   	dec := gob.NewDecoder(&inputData)
+	switch name {
+	case "CreationTime":
+		h, e := syscall.CreateFile(pathp,
+			syscall.FILE_WRITE_ATTRIBUTES, syscall.FILE_SHARE_WRITE, nil,
+			syscall.OPEN_EXISTING, syscall.FILE_FLAG_BACKUP_SEMANTICS, 0)
+		if e != nil {
+			return errors.Wrap(e, "Setxattr")
+		}
+		defer syscall.Close(h)
 	
-	if err := dec.Decode(&creationTime); err != nil {
-		return errors.Wrap(err, "Setxattr")
+		var inputData bytes.Buffer
+		inputData.Write(data)
+	
+		var creationTime syscall.Timespec
+		   dec := gob.NewDecoder(&inputData)
+		
+		if err := dec.Decode(&creationTime); err != nil {
+			return errors.Wrap(err, "Setxattr")
+		}
+		   
+		c := syscall.NsecToFiletime(time.Unix(creationTime.Unix()).UnixNano())
+		if err := syscall.SetFileTime(h, &c, nil, nil); err != nil {
+			return errors.Wrap(err, "Setxattr")
+		}
+		return nil
+	case "FileAttributes":
+		var attrs bytes.Buffer
+		attrs.Write(data)
+	
+		var creationTime uint32
+		   dec := gob.NewDecoder(&attrs)
+		
+		if err := dec.Decode(&attrs); err != nil {
+			return errors.Wrap(err, "Setxattr")
+		}
+		if err := syscall.SetFileAttributes(pathp, attrs); err != nil {
+			return errors.Wrap(err, "Setxattr")
+		}
+		return nil
+	default:
+		return nil
 	}
-   	
-	c := syscall.NsecToFiletime(time.Unix(creationTime.Unix()).UnixNano())
-	if err := syscall.SetFileTime(h, &c, nil, nil); err != nil {
-		return errors.Wrap(err, "Setxattr")
-	}
-	return nil
 }
 
 type statT syscall.Win32FileAttributeData
