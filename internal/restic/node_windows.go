@@ -55,7 +55,7 @@ func Getxattr(path, name string) ([]byte, error) {
 			return nil, errors.Wrap(e, "Getxattr")
 		}
 		fileAttributes := make([]byte, 4)
-    	binary.LittleEndian.PutUint32(fileAttributes, attrs)
+		binary.LittleEndian.PutUint32(fileAttributes, attrs)
 
 		return fileAttributes, nil
 	default:
