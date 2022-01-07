@@ -3,6 +3,7 @@ package restic
 import (
 	"bytes"
 	"encoding/gob"
+	"encoding/binary"
 	"os"
 	"syscall"
 	"time"
@@ -53,13 +54,10 @@ func Getxattr(path, name string) ([]byte, error) {
 		if e != nil {
 			return nil, errors.Wrap(e, "Getxattr")
 		}
-		var fileAttributes bytes.Buffer
-		enc := gob.NewEncoder(&fileAttributes)
-		
-		if err := enc.Encode(attrs); err != nil {
-			return nil, errors.Wrap(err, "Getxattr")
-		}
-		return fileAttributes.Bytes(), nil
+		fileAttributes := make([]byte, 4)
+    	binary.LittleEndian.PutUint32(fileAttributes, attrs)
+
+		return fileAttributes, nil
 	default:
 		return nil, nil
 	}
@@ -114,13 +112,10 @@ func Setxattr(path, name string, data []byte) error {
 		}
 		return nil
 	case "FileAttributes":
-		var inputData bytes.Buffer
-		inputData.Write(data)
-	
 		var attrs uint32
-		   dec := gob.NewDecoder(&attrs)
+		inputData := bytes.NewBuffer(data)
 		
-		if err := dec.Decode(&attrs); err != nil {
+		if err := binary.Read(inputData, binary.LittleEndian, &attrs); err != nil {
 			return errors.Wrap(err, "Setxattr")
 		}
 		if err := syscall.SetFileAttributes(pathp, attrs); err != nil {
