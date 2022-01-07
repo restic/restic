@@ -114,10 +114,10 @@ func Setxattr(path, name string, data []byte) error {
 		}
 		return nil
 	case "FileAttributes":
-		var attrs bytes.Buffer
-		attrs.Write(data)
+		var inputData bytes.Buffer
+		inputData.Write(data)
 	
-		var creationTime uint32
+		var attrs uint32
 		   dec := gob.NewDecoder(&attrs)
 		
 		if err := dec.Decode(&attrs); err != nil {
