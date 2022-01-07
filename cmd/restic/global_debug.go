@@ -1,6 +1,6 @@
 // +build debug profile
 
-package main
+package restic
 
 import (
 	"fmt"

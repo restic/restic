@@ -1,4 +1,4 @@
-package main
+package restic
 
 import (
 	"bufio"
@@ -91,7 +91,7 @@ func init() {
 	log.SetOutput(logBuffer)
 }
 
-func main() {
+func Main() {
 	debug.Log("main %#v", os.Args)
 	debug.Log("restic %s compiled with %v on %v/%v",
 		version, runtime.Version(), runtime.GOOS, runtime.GOARCH)

@@ -1,6 +1,6 @@
 // +build darwin freebsd linux
 
-package main
+package restic
 
 import (
 	"os"

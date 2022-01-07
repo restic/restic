@@ -1,6 +1,6 @@
 // xbuild selfupdate
 
-package main
+package restic
 
 import (
 	"os"

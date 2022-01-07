@@ -56,7 +56,7 @@ import (
 var config = Config{
 	Name:             "restic",                                 // name of the program executable and directory
 	Namespace:        "github.com/restic/restic",               // subdir of GOPATH, e.g. "github.com/foo/bar"
-	Main:             "./cmd/restic",                           // package name for the main package
+	Main:             "./cmd",                                  // package name for the main package
 	DefaultBuildTags: []string{"selfupdate"},                   // specify build tags which are always used
 	Tests:            []string{"./..."},                        // tests to run
 	MinVersion:       GoVersion{Major: 1, Minor: 11, Patch: 0}, // minimum Go version supported
@@ -417,7 +417,7 @@ func main() {
 	version := getVersion()
 	constants := Constants{}
 	if version != "" {
-		constants["main.version"] = version
+		constants["github.com/restic/restic/cmd/restic.version"] = version
 	}
 	ldflags := constants.LDFlags()
 	if !preserveSymbols {

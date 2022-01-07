@@ -1,4 +1,4 @@
-package main
+package restic
 
 import (
 	"path/filepath"
