@@ -49,9 +49,9 @@ looks like this:
     Fatal: repository contains errors
 
 The message means that there is more data stored in the repo than
-strictly necessary. With high probability this is duplicate data. In
-order to clean it up, the command ``restic prune`` can be used. The
-cause of this bug is not yet known.
+strictly necessary. This is uncritical. With high probability this is duplicate data
+caused by an interrupted backup run or upload operation. In
+order to clean it up, the command ``restic prune`` can be used.
 
 I ran a ``restic`` command but it is not working as intended, what do I do now?
 -------------------------------------------------------------------------------
@@ -224,4 +224,4 @@ Restic backup command fails to find a valid file in Windows
 -----------------------------------------------------------
 
 If the name of a file in Windows contains an invalid character, Restic will not be
-able to read the file. To solve this issue, consider renaming the particular file. 
+able to read the file. To solve this issue, consider renaming the particular file.
