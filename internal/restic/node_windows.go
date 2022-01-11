@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"os"
 	"syscall"
-	"time"
 
 	"github.com/restic/restic/internal/errors"
 )
