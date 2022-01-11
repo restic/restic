@@ -2,7 +2,6 @@ package restic
 
 import (
 	"bytes"
-	"encoding/gob"
 	"encoding/binary"
 	"os"
 	"syscall"
@@ -36,13 +35,10 @@ func Getxattr(path, name string) ([]byte, error) {
 
 		s, ok := fileinfo.Sys().(*syscall.Win32FileAttributeData)
 		if ok && s != nil {
-			var creationTime bytes.Buffer
-			enc := gob.NewEncoder(&creationTime)
-			
-			if err := enc.Encode(syscall.NsecToTimespec(s.CreationTime.Nanoseconds())); err != nil {
-				return nil, errors.Wrap(err, "Getxattr")
-			}
-			return creationTime.Bytes(), nil
+			var creationTime [8]byte
+			binary.LittleEndian.PutUint32(creationTime[0:4], s.CreationTime.LowDateTime)
+			binary.LittleEndian.PutUint32(creationTime[4:8], s.CreationTime.HighDateTime)
+			return creationTime[:], nil
 		}
 		return nil, nil
 	case "FileAttributes":
@@ -99,25 +95,15 @@ func Setxattr(path, name string, data []byte) error {
 		var inputData bytes.Buffer
 		inputData.Write(data)
 	
-		var creationTime syscall.Timespec
-		   dec := gob.NewDecoder(&inputData)
-		
-		if err := dec.Decode(&creationTime); err != nil {
-			return errors.Wrap(err, "Setxattr")
-		}
-		   
-		c := syscall.NsecToFiletime(time.Unix(creationTime.Unix()).UnixNano())
-		if err := syscall.SetFileTime(h, &c, nil, nil); err != nil {
+		var creationTime syscall.Filetime
+		creationTime.LowDateTime = binary.LittleEndian.Uint32(data[0:4])
+		creationTime.HighDateTime = binary.LittleEndian.Uint32(data[4:8])
+		if err := syscall.SetFileTime(h, &creationTime, nil, nil); err != nil {
 			return errors.Wrap(err, "Setxattr")
 		}
 		return nil
 	case "FileAttributes":
-		var attrs uint32
-		inputData := bytes.NewBuffer(data)
-		
-		if err := binary.Read(inputData, binary.LittleEndian, &attrs); err != nil {
-			return errors.Wrap(err, "Setxattr")
-		}
+		attrs := binary.LittleEndian.Uint32(data)
 		if err := syscall.SetFileAttributes(pathp, attrs); err != nil {
 			return errors.Wrap(err, "Setxattr")
 		}
