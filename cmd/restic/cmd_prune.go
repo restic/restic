@@ -66,6 +66,7 @@ func addPruneOptions(c *cobra.Command) {
 }
 
 func verifyPruneOptions(opts *PruneOptions) error {
+	opts.MaxRepackBytes = math.MaxUint64
 	if len(opts.MaxRepackSize) > 0 {
 		size, err := parseSizeStr(opts.MaxRepackSize)
 		if err != nil {
@@ -418,11 +419,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 
 	for _, p := range repackCandidates {
 		reachedUnusedSizeAfter := (stats.size.unused-stats.size.remove-stats.size.repackrm < maxUnusedSizeAfter)
-
-		reachedRepackSize := false
-		if opts.MaxRepackBytes > 0 {
-			reachedRepackSize = stats.size.repack+p.unusedSize+p.usedSize > opts.MaxRepackBytes
-		}
+		reachedRepackSize := stats.size.repack+p.unusedSize+p.usedSize >= opts.MaxRepackBytes
 
 		switch {
 		case reachedRepackSize:
