@@ -181,7 +181,7 @@ func TestMount(t *testing.T) {
 	checkSnapshots(t, env.gopts, repo, env.mountpoint, env.repo, snapshotIDs, 3)
 
 	// third backup, explicit incremental
-	bopts := BackupOptions{Parent: snapshotIDs[0].String()}
+	bopts := BackupOptions{Parents: []string{snapshotIDs[0].String()}}
 	testRunBackup(t, "", []string{env.testdata}, bopts, env.gopts)
 	snapshotIDs = testRunList(t, "snapshots", env.gopts)
 	rtest.Assert(t, len(snapshotIDs) == 3,
