@@ -40,13 +40,16 @@ looks like this:
 ::
 
     $ restic check
-    Create exclusive lock for repository
-    Load indexes
-    Check all packs
+    create exclusive lock for repository
+    load indexes
+    check all packs
     pack 819a9a52e4f51230afa89aefbf90df37fb70996337ae57e6f7a822959206a85e: not referenced in any index
     pack de299e69fb075354a3775b6b045d152387201f1cdc229c31d1caa34c3b340141: not referenced in any index
-    Check snapshots, trees and blobs
-    Fatal: repository contains errors
+    2 additional files were found in the repo, which likely contain duplicate data.
+    You can run `restic prune` to correct this.
+    check snapshots, trees and blobs
+    [0:00] 100.00%  16 / 16 snapshots
+    no errors were found
 
 The message means that there is more data stored in the repo than
 strictly necessary. This is uncritical. With high probability this is duplicate data
