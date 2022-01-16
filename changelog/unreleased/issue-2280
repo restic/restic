@@ -1,0 +1,10 @@
+Enhancement: Add resuming from aborted backups
+
+Restic always used re-read all files if a backup was aborted and 
+restarted after.
+This is now changed such that files in already saved directories will
+only be re-read if they are changed between the backup runs.
+
+https://github.com/restic/restic/issues/2280
+https://github.com/restic/restic/pull/3230
+https://forum.restic.net/t/quicker-interrupted-backup-resumption/3470

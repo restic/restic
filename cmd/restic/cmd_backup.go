@@ -587,11 +587,28 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		return err
 	}
 
+	resume, extraPreviousTrees := getResume(targets, repo, opts.Force)
+	completeItem := func(item string, previous []*restic.Node, current *restic.Node, s archiver.ItemStats, d time.Duration) {
+		resume.writeFinishedDir(item, current)
+		progressReporter.CompleteItem(item, previous, current, s, d)
+	}
+
 	if !gopts.JSON {
 		if len(parentSnapshotIDs) > 0 {
 			progressPrinter.P("using parent snapshots %v\n", parentSnapshotIDs)
-		} else {
-			progressPrinter.P("no parent snapshot found, will read all files\n")
+		}
+		if len(extraPreviousTrees) > 0 {
+			progressPrinter.P("using resume data\n")
+		}
+		switch {
+		case opts.Force:
+			progressPrinter.P("option --force is set, will read all files\n")
+		case len(parentSnapshotIDs) == 0 && len(extraPreviousTrees) == 0:
+			progressPrinter.P("no parent snapshot or resume data found, will read all files\n")
+		}
+
+		if resume != nil {
+			progressPrinter.VV("writing resume data to %v", resume.Name())
 		}
 	}
 
@@ -667,9 +684,10 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		success = false
 		return progressReporter.Error(item, fi, err)
 	}
-	arch.CompleteItem = progressReporter.CompleteItem
+	arch.CompleteItem = completeItem
 	arch.StartFile = progressReporter.StartFile
 	arch.CompleteBlob = progressReporter.CompleteBlob
+	arch.ExtraPreviousTrees = extraPreviousTrees
 
 	if opts.IgnoreInode {
 		// --ignore-inode implies --ignore-ctime: on FUSE, the ctime is not
@@ -709,6 +727,13 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	if !gopts.JSON && !opts.DryRun {
 		progressPrinter.P("snapshot %s saved\n", id.Str())
 	}
+
+	// clean up resume mechanism
+	resume.Done()
+	if !gopts.JSON && resume != nil {
+		progressPrinter.VV("removed resume file %v after successful backup\n", resume.Name())
+	}
+
 	if !success {
 		return ErrInvalidSourceData
 	}
