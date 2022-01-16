@@ -53,6 +53,9 @@ type Archiver struct {
 	FS           fs.FS
 	Options      Options
 
+	// Allow to give extra previous tree IDs that are checked
+	ExtraPreviousTrees map[string]restic.ID
+
 	blobSaver *BlobSaver
 	fileSaver *FileSaver
 	treeSaver *TreeSaver
@@ -488,6 +491,14 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 			last = *p.Subtree
 		}
 
+		if treeID, ok := arch.ExtraPreviousTrees[snItem]; ok && !treeID.Equal(last) {
+			debug.Log("trying to use extra previous tree %v as parent for %v", treeID, snPath)
+			tree, err := arch.Repo.LoadTree(ctx, treeID)
+			if err == nil && tree != nil {
+				oldSubtrees = append(oldSubtrees, tree)
+			}
+		}
+
 		fn.isTree = true
 		fn.tree, err = arch.SaveDir(ctx, snPath, fi, target, oldSubtrees,
 			func(node *restic.Node, stats ItemStats) {
@@ -571,6 +582,15 @@ func (arch *Archiver) statDir(dir string) (os.FileInfo, error) {
 // within the current snapshot.
 func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, previous []*restic.Tree) (*restic.Tree, error) {
 	debug.Log("%v (%v nodes), parent %v", snPath, len(atree.Nodes), previous)
+
+	snItem := snPath + "/"
+	if treeID, ok := arch.ExtraPreviousTrees[snItem]; ok {
+		debug.Log("trying to use extra previous tree %v as parent for %v", treeID, snPath)
+		tree, err := arch.Repo.LoadTree(ctx, treeID)
+		if err == nil && tree != nil {
+			previous = append(previous, tree)
+		}
+	}
 
 	nodeNames := atree.NodeNames()
 	tree := restic.NewTree(len(nodeNames))
@@ -813,6 +833,7 @@ func (arch *Archiver) runWorkers(ctx context.Context, t *tomb.Tomb) {
 
 // Snapshot saves several targets and returns a snapshot.
 func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts SnapshotOptions) (*restic.Snapshot, restic.ID, error) {
+	debug.Log("number of extra previous trees: %d", len(arch.ExtraPreviousTrees))
 	cleanTargets, err := resolveRelativeTargets(arch.FS, targets)
 	if err != nil {
 		return nil, restic.ID{}, err
