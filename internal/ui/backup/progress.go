@@ -16,7 +16,7 @@ type ProgressPrinter interface {
 	Update(total, processed Counter, errors uint, currentFiles map[string]struct{}, start time.Time, secs uint64)
 	Error(item string, fi os.FileInfo, err error) error
 	ScannerError(item string, fi os.FileInfo, err error) error
-	CompleteItem(messageType string, item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration)
+	CompleteItem(messageType string, item string, previous []*restic.Node, current *restic.Node, s archiver.ItemStats, d time.Duration)
 	ReportTotal(item string, start time.Time, s archiver.ScanStats)
 	Finish(snapshotID restic.ID, start time.Time, summary *Summary, dryRun bool)
 	Reset()
@@ -206,7 +206,7 @@ func (p *Progress) CompleteBlob(filename string, bytes uint64) {
 
 // CompleteItem is the status callback function for the archiver when a
 // file/dir has been saved successfully.
-func (p *Progress) CompleteItem(item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration) {
+func (p *Progress) CompleteItem(item string, previous []*restic.Node, current *restic.Node, s archiver.ItemStats, d time.Duration) {
 	p.summary.Lock()
 	p.summary.ItemStats.Add(s)
 
@@ -243,6 +243,14 @@ func (p *Progress) CompleteItem(item string, previous, current *restic.Node, s a
 		}
 	}
 
+	inPrevious := false
+	for _, p := range previous {
+		if p.Equals(*current) {
+			inPrevious = true
+			break
+		}
+	}
+
 	if current.Type == "dir" {
 		if previous == nil {
 			p.printer.CompleteItem("dir new", item, previous, current, s, d)
@@ -252,7 +260,7 @@ func (p *Progress) CompleteItem(item string, previous, current *restic.Node, s a
 			return
 		}
 
-		if previous.Equals(*current) {
+		if inPrevious {
 			p.printer.CompleteItem("dir unchanged", item, previous, current, s, d)
 			p.summary.Lock()
 			p.summary.Dirs.Unchanged++
@@ -278,7 +286,7 @@ func (p *Progress) CompleteItem(item string, previous, current *restic.Node, s a
 			return
 		}
 
-		if previous.Equals(*current) {
+		if inPrevious {
 			p.printer.CompleteItem("file unchanged", item, previous, current, s, d)
 			p.summary.Lock()
 			p.summary.Files.Unchanged++

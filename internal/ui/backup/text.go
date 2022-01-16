@@ -135,7 +135,7 @@ func formatBytes(c uint64) string {
 
 // CompleteItem is the status callback function for the archiver when a
 // file/dir has been saved successfully.
-func (b *TextProgress) CompleteItem(messageType, item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration) {
+func (b *TextProgress) CompleteItem(messageType, item string, previous []*restic.Node, current *restic.Node, s archiver.ItemStats, d time.Duration) {
 	switch messageType {
 	case "dir new":
 		b.VV("new       %v, saved in %.3fs (%v added, %v metadata)", item, d.Seconds(), formatBytes(s.DataSize), formatBytes(s.TreeSize))

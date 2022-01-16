@@ -102,7 +102,7 @@ func (b *JSONProgress) Error(item string, fi os.FileInfo, err error) error {
 
 // CompleteItem is the status callback function for the archiver when a
 // file/dir has been saved successfully.
-func (b *JSONProgress) CompleteItem(messageType, item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration) {
+func (b *JSONProgress) CompleteItem(messageType, item string, previous []*restic.Node, current *restic.Node, s archiver.ItemStats, d time.Duration) {
 	if b.v < 2 {
 		return
 	}
