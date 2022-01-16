@@ -248,6 +248,87 @@ func (sn *Snapshot) HasPaths(paths []string) bool {
 	return true
 }
 
+// isSubPath returns whether path is a subpath of givenPath
+func isSubPath(path, givenPath string) bool {
+	pattern := givenPath + string(filepath.Separator) + "*"
+	matched, _ := filepath.Match(pattern, path)
+	return matched
+}
+
+// matchPath returns true iff both paths are identical
+// or one is a subpath of the other
+func matchPath(path, givenPath string) bool {
+	if path == givenPath || isSubPath(givenPath, path) || isSubPath(path, givenPath) {
+		return true
+	}
+	return false
+}
+
+func supersedes(path1, path2, givenPath string) bool {
+	if path1 == givenPath || isSubPath(givenPath, path1) ||
+		(isSubPath(path1, givenPath) && isSubPath(path2, path1)) {
+		return true
+	}
+	return false
+}
+
+// MatchPath returns true iff at least one path of the snapshot matches
+// the given path.
+func (sn *Snapshot) MatchPath(path string) bool {
+	for _, snPath := range sn.Paths {
+		if matchPath(path, snPath) {
+			return true
+		}
+	}
+	return false
+}
+
+// MatchPaths returns true iff the snapshot matches at least one path
+// of the given paths.
+func (sn *Snapshot) MatchPaths(paths []string) bool {
+	for _, path := range paths {
+		if sn.MatchPath(path) {
+			return true
+		}
+	}
+	return false
+}
+
+// Supersedes returns whether sn supersedes sn2 w.r.t. of the given paths:
+// This is the case iff:
+// - the snapshot is not older
+// - for all given paths, either
+//   * sn2 does not match this path or
+//   * sn has either an identical path or a superpath
+//     (this implies that sn1 also matches that path)
+// Note that Supersedes() with fixed given paths defines a partial order on
+// a set of snapshots.
+func (sn *Snapshot) Supersedes(sn2 *Snapshot, paths []string) bool {
+	if sn.Time.Before(sn2.Time) {
+		return false
+	}
+	for _, path := range paths {
+		for _, sn2Path := range sn2.Paths {
+			// ignore paths which sn2 does not match
+			if !matchPath(sn2Path, path) {
+				continue
+			}
+			foundPath := false
+			for _, sn1Path := range sn.Paths {
+				// sn1 supersedes
+				if supersedes(sn1Path, sn2Path, path) {
+					foundPath = true
+					break
+				}
+			}
+			if !foundPath {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 // HasHostname returns true if either
 // - the snapshot hostname is in the list of the given hostnames, or
 // - the list of given hostnames is empty

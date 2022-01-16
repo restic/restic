@@ -103,7 +103,7 @@ func init() {
 	cmdRoot.AddCommand(cmdBackup)
 
 	f := cmdBackup.Flags()
-	f.StringArrayVar(&backupOptions.Parents, "parent", nil, "use this parent `snapshot` (can be specified multiple times, default: last snapshots in the repo that include the same target)")
+	f.StringArrayVar(&backupOptions.Parents, "parent", nil, "use this parent `snapshot` (can be specified multiple times, default: suitable snapshot(s) selected by targets)")
 	f.BoolVarP(&backupOptions.Force, "force", "f", false, `force re-reading the target files/directories (overrides the "parent" flag)`)
 	f.StringArrayVarP(&backupOptions.Excludes, "exclude", "e", nil, "exclude a `pattern` (can be specified multiple times)")
 	f.StringArrayVar(&backupOptions.InsensitiveExcludes, "iexclude", nil, "same as --exclude `pattern` but ignores the casing of filenames")
@@ -487,14 +487,13 @@ func findParentSnapshots(ctx context.Context, repo restic.Repository, opts Backu
 		parentIDs = append(parentIDs, id)
 	}
 
-	// Find last snapshot to set it as parent, if no parents are given
+	// Find suitable parent snapshots, if no parents are given
 	if parentIDs == nil {
-		id, err := restic.FindLatestSnapshot(ctx, repo, targets, []restic.TagList{}, []string{opts.Host})
-		if err == nil {
-			parentIDs = append(parentIDs, id)
-		} else if err != restic.ErrNoSnapshotFound {
+		ids, err := restic.FindParentSnapshots(ctx, repo, targets, opts.Host)
+		if err != nil {
 			return nil, err
 		}
+		return ids, nil
 	}
 
 	return parentIDs, nil
