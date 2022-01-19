@@ -526,7 +526,7 @@ environment variables. The following lists these environment variables:
     RESTIC_REPOSITORY_FILE              Name of file containing the repository location (replaces --repository-file)
     RESTIC_REPOSITORY                   Location of repository (replaces -r)
     RESTIC_PASSWORD_FILE                Location of password file (replaces --password-file)
-    RESTIC_PASSWORD                     The actual password for the repository
+    RESTIC_PASSWORD                     The actual password for the repository (note security notice below)
     RESTIC_PASSWORD_COMMAND             Command printing the password for the repository to stdout
     RESTIC_KEY_HINT                     ID of key to try decrypting first, before other keys
     RESTIC_CACHE_DIR                    Location of the cache directory
@@ -581,6 +581,10 @@ See :ref:`caching` for the rules concerning cache locations when
 The external programs that restic may execute include ``rclone`` (for rclone
 backends) and ``ssh`` (for the SFTP backend). These may respond to further
 environment variables and configuration files; see their respective manuals.
+
+Security note for linux when passing password via ``RESTIC_PASSWORD`` environment variable: 
+Password is still visible to other processes running as the same user 
+as restic. Environment variables can be seen by executing  ``cat /proc/`pidof restic`/environ``.
 
 
 Exit status codes
