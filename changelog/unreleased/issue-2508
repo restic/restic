@@ -1,0 +1,8 @@
+Enhancement: Support JSON output for diff
+
+We've added support for getting machine-readable output for snapshot diff, just pass the
+flag `--json` for `restic diff` and restic will output a JSON-encoded diff stats and change
+list.
+
+https://github.com/restic/restic/issues/2508
+https://github.com/restic/restic/pull/3592
