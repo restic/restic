@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	"github.com/spf13/cobra"
 )
@@ -108,10 +109,16 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	lock, err := lockRepoExclusive(gopts.ctx, repo)
-	defer unlockRepo(lock)
-	if err != nil {
-		return err
+	if gopts.NoLock && !opts.DryRun {
+		return errors.Fatal("--no-lock is only applicable in combination with --dry-run for forget command")
+	}
+
+	if !opts.DryRun || !gopts.NoLock {
+		lock, err := lockRepoExclusive(gopts.ctx, repo)
+		defer unlockRepo(lock)
+		if err != nil {
+			return err
+		}
 	}
 
 	ctx, cancel := context.WithCancel(gopts.ctx)
