@@ -111,3 +111,43 @@ func TestReadFilenamesRaw(t *testing.T) {
 	rtest.Assert(t, strings.Contains(err.Error(), "zero byte"),
 		"wrong error message: %v", err.Error())
 }
+
+// the rules for what constitues a valid filename/dirname
+// is different on windows, for example no trailing backslash
+// or no traling double quote
+func TestCollectTargetsRegression(t *testing.T) {
+	dir, cleanup := rtest.TempDir(t)
+	defer cleanup()
+
+	realDirs := []string{"cmdline arg1"}
+	if runtime.GOOS == "windows" {
+		realDirs = append(realDirs, "cmdline arg windows")
+	} else {
+		realDirs = append(realDirs, "cmdline arg nonwindows1\\")
+		realDirs = append(realDirs, "cmdline arg nonwindows2\"")
+	}
+	var expect []string
+	for _, dirname := range realDirs {
+		// All mentioned files/dirs must exist for collectTargets.
+		d := filepath.Join(dir, dirname)
+		err := os.Mkdir(d, 0755)
+		rtest.OK(t, err)
+
+		expect = append(expect, d)
+	}
+
+	realArgs := []string{filepath.Join(dir, "cmdline arg1")}
+	if runtime.GOOS == "windows" {
+		realArgs = append(realArgs, filepath.Join(dir, "cmdline arg windows\""))
+	} else {
+		realArgs = append(realArgs, filepath.Join(dir, "cmdline arg nonwindows1\\"))
+		realArgs = append(realArgs, filepath.Join(dir, "cmdline arg nonwindows2\""))
+	}
+
+	opts := BackupOptions{}
+	targets, err := collectTargets(opts, realArgs)
+	rtest.OK(t, err)
+	sort.Strings(expect)
+	sort.Strings(targets)
+	rtest.Equals(t, expect, targets)
+}

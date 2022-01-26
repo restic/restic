@@ -455,6 +455,19 @@ func collectTargets(opts BackupOptions, args []string) (targets []string, err er
 		targets = append(targets, fromfile...)
 	}
 
+	// fix dangling trailing quotes on windows
+	if runtime.GOOS == "windows" {
+		argsFixed := []string{}
+		for _, a := range args {
+			if strings.HasSuffix(a, "\"") && !strings.HasPrefix(a, "\"") {
+				argsFixed = append(argsFixed, strings.TrimRight(a, "\""))
+			} else {
+				argsFixed = append(argsFixed, a)
+			}
+		}
+		args = argsFixed
+	}
+
 	// Merge args into files-from so we can reuse the normal args checks
 	// and have the ability to use both files-from and args at the same time.
 	targets = append(targets, args...)
