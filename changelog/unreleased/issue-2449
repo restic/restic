@@ -1,0 +1,7 @@
+Bugfix: Trailing slashes in directory names on windows
+
+If you were autocompleting a path with spaces in it, e.g. `c:\test thing\`
+then restic couldn't read it because the backslash escaped the trailing quote.
+
+https://github.com/restic/restic/issues/2449
+https://github.com/restic/restic/pull/3637
