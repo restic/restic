@@ -683,7 +683,7 @@ interaction. If you use emulation environments like
 ``Mintty`` or ``rxvt``, you may get a password error.
 
 You can workaround this by using a special tool called ``winpty`` (look
-`here <https://github.com/msys2/msys2/wiki/Porting>`__ and
+`here <https://www.msys2.org/wiki/Porting/>`__ and
 `here <https://github.com/rprichard/winpty>`__ for detail information).
 On MSYS2, you can install ``winpty`` as follows:
 
