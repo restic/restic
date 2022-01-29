@@ -385,6 +385,9 @@ lists all snapshots as JSON and uses ``jq`` to pretty-print the result:
       }
     ]
 
+``--json`` automatically disables ``--quiet``. For a backup, to get only significant
+messages (strip out progress), use ``jq 'select(.message_type=="summary")'``.
+
 .. _temporary_files:
 
 Temporary files
