@@ -1,8 +1,11 @@
-Enhancement: Support JSON output for diff
+Enhancement: Support JSON output and quiet mode for diff
 
 We've added support for getting machine-readable output for snapshot diff, just pass the
 flag `--json` for `restic diff` and restic will output a JSON-encoded diff stats and change
 list.
+
+Passing the `--quiet` flag to the `diff` command will only print the summary
+and suppress the detailed output.
 
 https://github.com/restic/restic/issues/2508
 https://github.com/restic/restic/pull/3592

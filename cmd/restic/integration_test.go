@@ -2011,19 +2011,26 @@ func TestDiff(t *testing.T) {
 	testRunBackup(t, "", []string{datadir}, opts, env.gopts)
 	_, secondSnapshotID := lastSnapshot(snapshots, loadSnapshotMap(t, env.gopts))
 
+	// quiet suppresses the diff output except for the summary
+	env.gopts.Quiet = false
 	_, err := testRunDiffOutput(env.gopts, "", secondSnapshotID)
 	rtest.Assert(t, err != nil, "expected error on invalid snapshot id")
 
 	out, err := testRunDiffOutput(env.gopts, firstSnapshotID, secondSnapshotID)
-	if err != nil {
-		t.Fatalf("expected no error from diff for test repository, got %v", err)
-	}
+	rtest.OK(t, err)
 
 	for _, pattern := range diffOutputRegexPatterns {
 		r, err := regexp.Compile(pattern)
 		rtest.Assert(t, err == nil, "failed to compile regexp %v", pattern)
 		rtest.Assert(t, r.MatchString(out), "expected pattern %v in output, got\n%v", pattern, out)
 	}
+
+	// check quiet output
+	env.gopts.Quiet = true
+	outQuiet, err := testRunDiffOutput(env.gopts, firstSnapshotID, secondSnapshotID)
+	rtest.OK(t, err)
+
+	rtest.Assert(t, len(outQuiet) < len(out), "expected shorter output on quiet mode %v vs. %v", len(outQuiet), len(out))
 }
 
 type writeToOnly struct {
