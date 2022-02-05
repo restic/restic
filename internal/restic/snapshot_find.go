@@ -14,7 +14,7 @@ import (
 var ErrNoSnapshotFound = errors.New("no snapshot found")
 
 // FindLatestSnapshot finds latest snapshot with optional target/directory, tags, hostname, and timestamp filters.
-func FindLatestSnapshot(ctx context.Context, repo Repository, targets []string, tagLists []TagList, hostnames []string, timeStamp *time.Time) (ID, error) {
+func FindLatestSnapshot(ctx context.Context, repo Repository, targets []string, tagLists []TagList, hostnames []string, timeStampLimit *time.Time) (ID, error) {
 	var err error
 	absTargets := make([]string, 0, len(targets))
 	for _, target := range targets {
@@ -38,7 +38,7 @@ func FindLatestSnapshot(ctx context.Context, repo Repository, targets []string, 
 			return errors.Errorf("Error loading snapshot %v: %v", id.Str(), err)
 		}
 
-		if timeStamp != nil && snapshot.Time.After(*timeStamp) {
+		if timeStampLimit != nil && snapshot.Time.After(*timeStampLimit) {
 			return nil
 		}
 
