@@ -579,16 +579,19 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		return err
 	}
 
-	parentSnapshotID, err := findParentSnapshot(gopts.ctx, repo, opts, targets, timeStamp)
-	if err != nil {
-		return err
-	}
+	var parentSnapshotID *restic.ID
+	if !opts.Stdin {
+		parentSnapshotID, err = findParentSnapshot(gopts.ctx, repo, opts, targets, timeStamp)
+		if err != nil {
+			return err
+		}
 
-	if !gopts.JSON {
-		if parentSnapshotID != nil {
-			progressPrinter.P("using parent snapshot %v\n", parentSnapshotID.Str())
-		} else {
-			progressPrinter.P("no parent snapshot found, will read all files\n")
+		if !gopts.JSON {
+			if parentSnapshotID != nil {
+				progressPrinter.P("using parent snapshot %v\n", parentSnapshotID.Str())
+			} else {
+				progressPrinter.P("no parent snapshot found, will read all files\n")
+			}
 		}
 	}
 
