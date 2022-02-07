@@ -159,8 +159,11 @@ func testRunDiffOutput(gopts GlobalOptions, firstSnapshotID string, secondSnapsh
 	buf := bytes.NewBuffer(nil)
 
 	globalOptions.stdout = buf
+	oldStdout := gopts.stdout
+	gopts.stdout = buf
 	defer func() {
 		globalOptions.stdout = os.Stdout
+		gopts.stdout = oldStdout
 	}()
 
 	opts := DiffOptions{
@@ -1972,10 +1975,8 @@ var diffOutputRegexPatterns = []string{
 	"Removed: +2[0-9]{2}\\.[0-9]{3} KiB",
 }
 
-func TestDiff(t *testing.T) {
+func setupDiffRepo(t *testing.T) (*testEnvironment, func(), string, string) {
 	env, cleanup := withTestEnvironment(t)
-	defer cleanup()
-
 	testRunInit(t, env.gopts)
 
 	datadir := filepath.Join(env.base, "testdata")
@@ -2011,19 +2012,82 @@ func TestDiff(t *testing.T) {
 	testRunBackup(t, "", []string{datadir}, opts, env.gopts)
 	_, secondSnapshotID := lastSnapshot(snapshots, loadSnapshotMap(t, env.gopts))
 
+	return env, cleanup, firstSnapshotID, secondSnapshotID
+}
+
+func TestDiff(t *testing.T) {
+	env, cleanup, firstSnapshotID, secondSnapshotID := setupDiffRepo(t)
+	defer cleanup()
+
+	// quiet suppresses the diff output except for the summary
+	env.gopts.Quiet = false
 	_, err := testRunDiffOutput(env.gopts, "", secondSnapshotID)
 	rtest.Assert(t, err != nil, "expected error on invalid snapshot id")
 
 	out, err := testRunDiffOutput(env.gopts, firstSnapshotID, secondSnapshotID)
-	if err != nil {
-		t.Fatalf("expected no error from diff for test repository, got %v", err)
-	}
+	rtest.OK(t, err)
 
 	for _, pattern := range diffOutputRegexPatterns {
 		r, err := regexp.Compile(pattern)
 		rtest.Assert(t, err == nil, "failed to compile regexp %v", pattern)
 		rtest.Assert(t, r.MatchString(out), "expected pattern %v in output, got\n%v", pattern, out)
 	}
+
+	// check quiet output
+	env.gopts.Quiet = true
+	outQuiet, err := testRunDiffOutput(env.gopts, firstSnapshotID, secondSnapshotID)
+	rtest.OK(t, err)
+
+	rtest.Assert(t, len(outQuiet) < len(out), "expected shorter output on quiet mode %v vs. %v", len(outQuiet), len(out))
+}
+
+type typeSniffer struct {
+	MessageType string `json:"message_type"`
+}
+
+func TestDiffJSON(t *testing.T) {
+	env, cleanup, firstSnapshotID, secondSnapshotID := setupDiffRepo(t)
+	defer cleanup()
+
+	// quiet suppresses the diff output except for the summary
+	env.gopts.Quiet = false
+	env.gopts.JSON = true
+	out, err := testRunDiffOutput(env.gopts, firstSnapshotID, secondSnapshotID)
+	rtest.OK(t, err)
+
+	var stat DiffStatsContainer
+	var changes int
+
+	scanner := bufio.NewScanner(strings.NewReader(out))
+	for scanner.Scan() {
+		line := scanner.Text()
+		var sniffer typeSniffer
+		rtest.OK(t, json.Unmarshal([]byte(line), &sniffer))
+		switch sniffer.MessageType {
+		case "change":
+			changes++
+		case "statistics":
+			rtest.OK(t, json.Unmarshal([]byte(line), &stat))
+		default:
+			t.Fatalf("unexpected message type %v", sniffer.MessageType)
+		}
+	}
+	rtest.Equals(t, 9, changes)
+	rtest.Assert(t, stat.Added.Files == 2 && stat.Added.Dirs == 3 && stat.Added.DataBlobs == 2 &&
+		stat.Removed.Files == 1 && stat.Removed.Dirs == 2 && stat.Removed.DataBlobs == 1 &&
+		stat.ChangedFiles == 1, "unexpected statistics")
+
+	// check quiet output
+	env.gopts.Quiet = true
+	outQuiet, err := testRunDiffOutput(env.gopts, firstSnapshotID, secondSnapshotID)
+	rtest.OK(t, err)
+
+	stat = DiffStatsContainer{}
+	rtest.OK(t, json.Unmarshal([]byte(outQuiet), &stat))
+	rtest.Assert(t, stat.Added.Files == 2 && stat.Added.Dirs == 3 && stat.Added.DataBlobs == 2 &&
+		stat.Removed.Files == 1 && stat.Removed.Dirs == 2 && stat.Removed.DataBlobs == 1 &&
+		stat.ChangedFiles == 1, "unexpected statistics")
+	rtest.Assert(t, stat.SourceSnapshot == firstSnapshotID && stat.TargetSnapshot == secondSnapshotID, "unexpected snapshot ids")
 }
 
 type writeToOnly struct {
