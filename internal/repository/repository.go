@@ -252,10 +252,10 @@ func (r *Repository) LookupBlobSize(id restic.ID, tpe restic.BlobType) (uint, bo
 	return r.idx.LookupSize(restic.BlobHandle{ID: id, Type: tpe})
 }
 
-// SaveAndEncrypt encrypts data and stores it to the backend as type t. If data
+// saveAndEncrypt encrypts data and stores it to the backend as type t. If data
 // is small enough, it will be packed together with other small blobs.
 // The caller must ensure that the id matches the data.
-func (r *Repository) SaveAndEncrypt(ctx context.Context, t restic.BlobType, data []byte, id restic.ID) error {
+func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data []byte, id restic.ID) error {
 	debug.Log("save id %v (%v, %d bytes)", id, t, len(data))
 
 	nonce := crypto.NewRandomNonce()
@@ -698,7 +698,7 @@ func (r *Repository) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte
 
 	// only save when needed or explicitly told
 	if !known || storeDuplicate {
-		err = r.SaveAndEncrypt(ctx, t, buf, newID)
+		err = r.saveAndEncrypt(ctx, t, buf, newID)
 	}
 
 	return newID, known, err
