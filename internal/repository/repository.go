@@ -661,7 +661,15 @@ func (r *Repository) SearchKey(ctx context.Context, password string, maxKeys int
 
 // Init creates a new master key with the supplied password, initializes and
 // saves the repository config.
-func (r *Repository) Init(ctx context.Context, password string, chunkerPolynomial *chunker.Pol) error {
+func (r *Repository) Init(ctx context.Context, version uint, password string, chunkerPolynomial *chunker.Pol) error {
+	if version > restic.MaxRepoVersion {
+		return fmt.Errorf("repo version %v too high", version)
+	}
+
+	if version < restic.MinRepoVersion {
+		return fmt.Errorf("repo version %v too low", version)
+	}
+
 	has, err := r.be.Test(ctx, restic.Handle{Type: restic.ConfigFile})
 	if err != nil {
 		return err
@@ -670,7 +678,7 @@ func (r *Repository) Init(ctx context.Context, password string, chunkerPolynomia
 		return errors.New("repository master key and config already initialized")
 	}
 
-	cfg, err := restic.CreateConfig()
+	cfg, err := restic.CreateConfig(version)
 	if err != nil {
 		return err
 	}

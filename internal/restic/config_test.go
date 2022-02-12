@@ -32,7 +32,7 @@ func TestConfig(t *testing.T) {
 		return restic.ID{}, nil
 	}
 
-	cfg1, err := restic.CreateConfig()
+	cfg1, err := restic.CreateConfig(restic.MaxRepoVersion)
 	rtest.OK(t, err)
 
 	_, err = saver(save).SaveJSONUnpacked(restic.ConfigFile, cfg1)
