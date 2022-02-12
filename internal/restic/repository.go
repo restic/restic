@@ -43,10 +43,10 @@ type Repository interface {
 	SaveJSONUnpacked(context.Context, FileType, interface{}) (ID, error)
 
 	LoadJSONUnpacked(ctx context.Context, t FileType, id ID, dest interface{}) error
-	// LoadAndDecrypt loads and decrypts the file with the given type and ID,
+	// LoadUnpacked loads and decrypts the file with the given type and ID,
 	// using the supplied buffer (which must be empty). If the buffer is nil, a
 	// new buffer will be allocated and returned.
-	LoadAndDecrypt(ctx context.Context, buf []byte, t FileType, id ID) (data []byte, err error)
+	LoadUnpacked(ctx context.Context, buf []byte, t FileType, id ID) (data []byte, err error)
 
 	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
 	SaveBlob(context.Context, BlobType, []byte, ID, bool) (ID, bool, error)

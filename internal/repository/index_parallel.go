@@ -53,7 +53,7 @@ func ForAllIndexes(ctx context.Context, repo restic.Repository,
 			var idx *Index
 			oldFormat := false
 
-			buf, err = repo.LoadAndDecrypt(ctx, buf[:0], restic.IndexFile, fi.ID)
+			buf, err = repo.LoadUnpacked(ctx, buf[:0], restic.IndexFile, fi.ID)
 			if err == nil {
 				idx, oldFormat, err = DecodeIndex(buf, fi.ID)
 			}
