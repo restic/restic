@@ -23,6 +23,8 @@ type Fataler interface {
 // IsFatal returns true if err is a fatal message that should be printed to the
 // user. Then, the program should exit.
 func IsFatal(err error) bool {
+	// unwrap "Wrap" method
+	err = Cause(err)
 	e, ok := err.(Fataler)
 	return ok && e.Fatal()
 }

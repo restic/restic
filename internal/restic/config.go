@@ -78,7 +78,7 @@ func LoadConfig(ctx context.Context, r JSONUnpackedLoader) (Config, error) {
 	}
 
 	if cfg.Version != RepoVersion {
-		return Config{}, errors.New("unsupported repository version")
+		return Config{}, errors.Errorf("unsupported repository version %v", cfg.Version)
 	}
 
 	if checkPolynomial {
