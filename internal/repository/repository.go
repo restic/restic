@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/klauspost/compress/zstd"
 	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/backend/dryrun"
 	"github.com/restic/restic/internal/cache"
@@ -40,6 +41,9 @@ type Repository struct {
 
 	treePM *packerManager
 	dataPM *packerManager
+
+	enc *zstd.Encoder
+	dec *zstd.Decoder
 }
 
 // New returns a new repository with backend be.
@@ -51,6 +55,16 @@ func New(be restic.Backend) *Repository {
 		treePM: newPackerManager(be, nil),
 	}
 
+	enc, err := zstd.NewWriter(nil)
+	if err != nil {
+		panic(err)
+	}
+	repo.enc = enc
+	dec, err := zstd.NewReader(nil)
+	if err != nil {
+		panic(err)
+	}
+	repo.dec = dec
 	return repo
 }
 
@@ -124,6 +138,9 @@ func (r *Repository) LoadUnpacked(ctx context.Context, buf []byte, t restic.File
 	plaintext, err := r.key.Open(ciphertext[:0], nonce, ciphertext, nil)
 	if err != nil {
 		return nil, err
+	}
+	if t != restic.ConfigFile {
+		return r.decompressUnpacked(plaintext)
 	}
 
 	return plaintext, nil
@@ -312,9 +329,50 @@ func (r *Repository) SaveJSONUnpacked(ctx context.Context, t restic.FileType, it
 	return r.SaveUnpacked(ctx, t, plaintext)
 }
 
+func (r *Repository) compressUnpacked(p []byte) ([]byte, error) {
+	// compression is only available starting from version 2
+	if r.cfg.Version < 2 {
+		return p, nil
+	}
+
+	// version byte
+	out := []byte{2}
+	out = r.enc.EncodeAll(p, out)
+	return out, nil
+}
+
+func (r *Repository) decompressUnpacked(p []byte) ([]byte, error) {
+	// compression is only available starting from version 2
+	if r.cfg.Version < 2 {
+		return p, nil
+	}
+
+	if len(p) < 1 {
+		// too short for version header
+		return p, nil
+	}
+	if p[0] == '[' || p[0] == '{' {
+		// probably raw JSON
+		return p, nil
+	}
+	// version
+	if p[0] != 2 {
+		return nil, errors.New("not supported encoding format")
+	}
+
+	return r.dec.DecodeAll(p[1:], nil)
+}
+
 // SaveUnpacked encrypts data and stores it in the backend. Returned is the
 // storage hash.
 func (r *Repository) SaveUnpacked(ctx context.Context, t restic.FileType, p []byte) (id restic.ID, err error) {
+	if t != restic.ConfigFile {
+		p, err = r.compressUnpacked(p)
+		if err != nil {
+			return restic.ID{}, err
+		}
+	}
+
 	ciphertext := restic.NewBlobBuffer(len(p))
 	ciphertext = ciphertext[:0]
 	nonce := crypto.NewRandomNonce()
