@@ -234,6 +234,7 @@ func TestEnsureFileContent(ctx context.Context, t testing.TB, repo restic.Reposi
 			return
 		}
 
+		copy(content[pos:pos+len(part)], part)
 		pos += len(part)
 	}
 
