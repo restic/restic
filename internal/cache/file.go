@@ -8,7 +8,6 @@ import (
 	"runtime"
 
 	"github.com/pkg/errors"
-	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
@@ -59,7 +58,7 @@ func (c *Cache) load(h restic.Handle, length int, offset int64) (io.ReadCloser, 
 		return nil, errors.WithStack(err)
 	}
 
-	if fi.Size() <= crypto.Extension {
+	if fi.Size() <= int64(restic.CiphertextLength(0)) {
 		_ = f.Close()
 		_ = c.remove(h)
 		return nil, errors.Errorf("cached file %v is truncated, removing", h)
@@ -117,7 +116,7 @@ func (c *Cache) Save(h restic.Handle, rd io.Reader) error {
 		return errors.Wrap(err, "Copy")
 	}
 
-	if n <= crypto.Extension {
+	if n <= int64(restic.CiphertextLength(0)) {
 		_ = f.Close()
 		_ = fs.Remove(f.Name())
 		debug.Log("trying to cache truncated file %v, removing", h)

@@ -195,7 +195,7 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) error {
 				if packID.Equal(pack.id) {
 					addBlob(blob, fileOffset)
 				}
-				fileOffset += int64(blob.Length) - crypto.Extension
+				fileOffset += int64(restic.PlaintextLength(int(blob.Length)))
 			})
 			if err != nil {
 				// restoreFiles should have caught this error before
