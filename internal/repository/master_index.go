@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/restic/restic/internal/debug"
-	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
 	"golang.org/x/sync/errgroup"
@@ -129,27 +128,6 @@ func (mi *MasterIndex) Packs(packBlacklist restic.IDSet) restic.IDSet {
 	}
 
 	return packs
-}
-
-// PackSize returns the size of all packs computed by index information.
-// If onlyHdr is set to true, only the size of the header is returned
-// Note that this function only gives correct sizes, if there are no
-// duplicates in the index.
-func (mi *MasterIndex) PackSize(ctx context.Context, onlyHdr bool) map[restic.ID]int64 {
-	packSize := make(map[restic.ID]int64)
-
-	for blob := range mi.Each(ctx) {
-		size, ok := packSize[blob.PackID]
-		if !ok {
-			size = pack.HeaderSize
-		}
-		if !onlyHdr {
-			size += int64(blob.Length)
-		}
-		packSize[blob.PackID] = size + int64(pack.EntrySize)
-	}
-
-	return packSize
 }
 
 // Count returns the number of blobs of type t in the index.

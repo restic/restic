@@ -1,6 +1,7 @@
 package pack
 
 import (
+	"context"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -316,4 +317,29 @@ func parseHeaderEntry(p []byte) (b restic.Blob, err error) {
 	copy(b.ID[:], p[5:])
 
 	return b, nil
+}
+
+func CalculateHeaderSize(blobs []restic.Blob) int {
+	return HeaderSize + len(blobs)*int(EntrySize)
+}
+
+// Size returns the size of all packs computed by index information.
+// If onlyHdr is set to true, only the size of the header is returned
+// Note that this function only gives correct sizes, if there are no
+// duplicates in the index.
+func Size(ctx context.Context, mi restic.MasterIndex, onlyHdr bool) map[restic.ID]int64 {
+	packSize := make(map[restic.ID]int64)
+
+	for blob := range mi.Each(ctx) {
+		size, ok := packSize[blob.PackID]
+		if !ok {
+			size = HeaderSize
+		}
+		if !onlyHdr {
+			size += int64(blob.Length)
+		}
+		packSize[blob.PackID] = size + int64(EntrySize)
+	}
+
+	return packSize
 }

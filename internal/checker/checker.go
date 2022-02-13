@@ -123,7 +123,7 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 	}
 
 	// compute pack size using index entries
-	c.packs = c.masterIndex.PackSize(ctx, false)
+	c.packs = pack.Size(ctx, c.masterIndex, false)
 
 	debug.Log("checking for duplicate packs")
 	for packID := range c.packs {

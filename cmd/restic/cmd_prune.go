@@ -8,6 +8,7 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 
@@ -245,7 +246,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 	indexPack := make(map[restic.ID]packInfo)
 
 	// save computed pack header size
-	for pid, hdrSize := range repo.Index().PackSize(ctx, true) {
+	for pid, hdrSize := range pack.Size(ctx, repo.Index(), true) {
 		// initialize tpe with NumBlobTypes to indicate it's not set
 		indexPack[pid] = packInfo{tpe: restic.NumBlobTypes, usedSize: uint64(hdrSize)}
 	}
