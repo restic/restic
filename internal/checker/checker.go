@@ -542,7 +542,7 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 		// Check if blob is contained in index and position is correct
 		idxHas := false
 		for _, pb := range idx.Lookup(blob.BlobHandle) {
-			if pb.PackID == id && pb.Offset == blob.Offset && pb.Length == blob.Length {
+			if pb.PackID == id && pb.Blob == blob {
 				idxHas = true
 				break
 			}
