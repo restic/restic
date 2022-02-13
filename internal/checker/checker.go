@@ -452,7 +452,7 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 	sort.Slice(blobs, func(i, j int) bool {
 		return blobs[i].Offset < blobs[j].Offset
 	})
-	idxHdrSize := pack.HeaderSize + len(blobs)*int(pack.EntrySize)
+	idxHdrSize := pack.CalculateHeaderSize(blobs)
 	lastBlobEnd := 0
 	nonContinuousPack := false
 	for _, blob := range blobs {

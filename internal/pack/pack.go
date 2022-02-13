@@ -89,7 +89,7 @@ func (p *Packer) Finalize() (uint, error) {
 	bytesWritten += uint(hdrBytes)
 
 	// write length
-	err = binary.Write(p.wr, binary.LittleEndian, uint32(restic.CiphertextLength(len(p.blobs)*int(EntrySize))))
+	err = binary.Write(p.wr, binary.LittleEndian, uint32(hdrBytes))
 	if err != nil {
 		return 0, errors.Wrap(err, "binary.Write")
 	}
@@ -158,8 +158,8 @@ var (
 const (
 	// size of the header-length field at the end of the file; it is a uint32
 	headerLengthSize = 4
-	// HeaderSize is the header's constant overhead (independent of #entries)
-	HeaderSize = headerLengthSize + crypto.Extension
+	// headerSize is the header's constant overhead (independent of #entries)
+	headerSize = headerLengthSize + crypto.Extension
 
 	// MaxHeaderSize is the max size of header including header-length field
 	MaxHeaderSize = 16*1024*1024 + headerLengthSize
@@ -292,11 +292,6 @@ func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []restic.Blob, hdr
 	return entries, hdrSize, nil
 }
 
-// PackedSizeOfBlob returns the size a blob actually uses when saved in a pack
-func PackedSizeOfBlob(blobLength uint) uint {
-	return blobLength + EntrySize
-}
-
 func parseHeaderEntry(p []byte) (b restic.Blob, err error) {
 	if uint(len(p)) < EntrySize {
 		err = errors.Errorf("parseHeaderEntry: buffer of size %d too short", len(p))
@@ -320,7 +315,7 @@ func parseHeaderEntry(p []byte) (b restic.Blob, err error) {
 }
 
 func CalculateHeaderSize(blobs []restic.Blob) int {
-	return HeaderSize + len(blobs)*int(EntrySize)
+	return headerSize + len(blobs)*int(EntrySize)
 }
 
 // Size returns the size of all packs computed by index information.
@@ -333,7 +328,7 @@ func Size(ctx context.Context, mi restic.MasterIndex, onlyHdr bool) map[restic.I
 	for blob := range mi.Each(ctx) {
 		size, ok := packSize[blob.PackID]
 		if !ok {
-			size = HeaderSize
+			size = headerSize
 		}
 		if !onlyHdr {
 			size += int64(blob.Length)
