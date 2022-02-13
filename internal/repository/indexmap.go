@@ -32,7 +32,7 @@ const (
 
 // add inserts an indexEntry for the given arguments into the map,
 // using id as the key.
-func (m *indexMap) add(id restic.ID, packIdx int, offset, length uint32) {
+func (m *indexMap) add(id restic.ID, packIdx int, offset, length uint32, uncompressedLength uint32) {
 	switch {
 	case m.numentries == 0: // Lazy initialization.
 		m.init()
@@ -47,6 +47,7 @@ func (m *indexMap) add(id restic.ID, packIdx int, offset, length uint32) {
 	e.packIndex = packIdx
 	e.offset = offset
 	e.length = length
+	e.uncompressedLength = uncompressedLength
 
 	m.buckets[h] = e
 	m.numentries++
@@ -152,9 +153,10 @@ func (m *indexMap) newEntry() *indexEntry {
 }
 
 type indexEntry struct {
-	id        restic.ID
-	next      *indexEntry
-	packIndex int // Position in containing Index's packs field.
-	offset    uint32
-	length    uint32
+	id                 restic.ID
+	next               *indexEntry
+	packIndex          int // Position in containing Index's packs field.
+	offset             uint32
+	length             uint32
+	uncompressedLength uint32
 }

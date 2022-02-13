@@ -235,12 +235,23 @@ func (r *Repository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.
 			continue
 		}
 
+		if blob.IsCompressed() {
+			plaintext, err = r.dec.DecodeAll(plaintext, make([]byte, 0, blob.DataLength()))
+			if err != nil {
+				lastError = errors.Errorf("decompressing blob %v failed: %v", id, err)
+				continue
+			}
+		}
+
 		// check hash
 		if !restic.Hash(plaintext).Equal(id) {
 			lastError = errors.Errorf("blob %v returned invalid hash", id)
 			continue
 		}
 
+		if len(plaintext) > cap(buf) {
+			return plaintext, nil
+		}
 		// move decrypted data to the start of the buffer
 		copy(buf, plaintext)
 		return buf[:len(plaintext)], nil
@@ -275,6 +286,12 @@ func (r *Repository) LookupBlobSize(id restic.ID, tpe restic.BlobType) (uint, bo
 func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data []byte, id restic.ID) error {
 	debug.Log("save id %v (%v, %d bytes)", id, t, len(data))
 
+	uncompressedLength := 0
+	if r.cfg.Version > 1 {
+		uncompressedLength = len(data)
+		data = r.enc.EncodeAll(data, nil)
+	}
+
 	nonce := crypto.NewRandomNonce()
 
 	ciphertext := make([]byte, 0, restic.CiphertextLength(len(data)))
@@ -301,7 +318,7 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 	}
 
 	// save ciphertext
-	_, err = packer.Add(t, id, ciphertext)
+	_, err = packer.Add(t, id, ciphertext, uncompressedLength)
 	if err != nil {
 		return err
 	}
@@ -534,6 +551,17 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 	err = r.idx.MergeFinalIndexes()
 	if err != nil {
 		return err
+	}
+
+	if r.cfg.Version < 2 {
+		// sanity check
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+		for blob := range r.idx.Each(ctx) {
+			if blob.IsCompressed() {
+				return errors.Fatal("index uses feature not supported by repository version 1")
+			}
+		}
 	}
 
 	// remove index files from the cache which have been removed in the repo
@@ -834,9 +862,15 @@ func StreamPack(ctx context.Context, beLoad BackendLoadFn, key *crypto.Key, pack
 
 	debug.Log("streaming pack %v (%d to %d bytes), blobs: %v", packID, dataStart, dataEnd, len(blobs))
 
+	dec, err := zstd.NewReader(nil)
+	if err != nil {
+		panic(dec)
+	}
+	defer dec.Close()
+
 	ctx, cancel := context.WithCancel(ctx)
 	// stream blobs in pack
-	err := beLoad(ctx, h, int(dataEnd-dataStart), int64(dataStart), func(rd io.Reader) error {
+	err = beLoad(ctx, h, int(dataEnd-dataStart), int64(dataStart), func(rd io.Reader) error {
 		// prevent callbacks after cancelation
 		if ctx.Err() != nil {
 			return ctx.Err()
@@ -849,6 +883,7 @@ func StreamPack(ctx context.Context, beLoad BackendLoadFn, key *crypto.Key, pack
 		bufRd := bufio.NewReaderSize(rd, bufferSize)
 		currentBlobEnd := dataStart
 		var buf []byte
+		var decode []byte
 		for _, entry := range blobs {
 			skipBytes := int(entry.Offset - currentBlobEnd)
 			if skipBytes < 0 {
@@ -888,6 +923,16 @@ func StreamPack(ctx context.Context, beLoad BackendLoadFn, key *crypto.Key, pack
 			// decryption errors are likely permanent, give the caller a chance to skip them
 			nonce, ciphertext := buf[:key.NonceSize()], buf[key.NonceSize():]
 			plaintext, err := key.Open(ciphertext[:0], nonce, ciphertext, nil)
+			if err == nil && entry.IsCompressed() {
+				if cap(decode) < int(entry.DataLength()) {
+					decode = make([]byte, 0, entry.DataLength())
+				}
+				decode, err = dec.DecodeAll(plaintext, decode[:0])
+				plaintext = decode
+				if err != nil {
+					err = errors.Errorf("decompressing blob %v failed: %v", h, err)
+				}
+			}
 			if err == nil {
 				id := restic.Hash(plaintext)
 				if !id.Equal(entry.ID) {

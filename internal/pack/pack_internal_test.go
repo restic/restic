@@ -23,9 +23,10 @@ func TestParseHeaderEntry(t *testing.T) {
 	buf := new(bytes.Buffer)
 	_ = binary.Write(buf, binary.LittleEndian, &h)
 
-	b, err := parseHeaderEntry(buf.Bytes())
+	b, size, err := parseHeaderEntry(buf.Bytes())
 	rtest.OK(t, err)
 	rtest.Equals(t, restic.DataBlob, b.Type)
+	rtest.Equals(t, plainEntrySize, size)
 	t.Logf("%v %v", h.ID, b.ID)
 	rtest.Assert(t, bytes.Equal(h.ID[:], b.ID[:]), "id mismatch")
 	rtest.Equals(t, uint(h.Length), b.Length)
@@ -34,14 +35,14 @@ func TestParseHeaderEntry(t *testing.T) {
 	buf.Reset()
 	_ = binary.Write(buf, binary.LittleEndian, &h)
 
-	b, err = parseHeaderEntry(buf.Bytes())
+	b, _, err = parseHeaderEntry(buf.Bytes())
 	rtest.Assert(t, err != nil, "no error for invalid type")
 
 	h.Type = 0
 	buf.Reset()
 	_ = binary.Write(buf, binary.LittleEndian, &h)
 
-	b, err = parseHeaderEntry(buf.Bytes()[:entrySize-1])
+	b, _, err = parseHeaderEntry(buf.Bytes()[:plainEntrySize-1])
 	rtest.Assert(t, err != nil, "no error for short input")
 }
 
@@ -97,7 +98,8 @@ func TestReadHeaderEagerLoad(t *testing.T) {
 func TestReadRecords(t *testing.T) {
 	testReadRecords := func(dataSize, entryCount, totalRecords int) {
 		totalHeader := rtest.Random(0, totalRecords*int(entrySize)+crypto.Extension)
-		off := len(totalHeader) - (entryCount*int(entrySize) + crypto.Extension)
+		bufSize := entryCount*int(entrySize) + crypto.Extension
+		off := len(totalHeader) - bufSize
 		if off < 0 {
 			off = 0
 		}
@@ -110,10 +112,10 @@ func TestReadRecords(t *testing.T) {
 
 		rd := bytes.NewReader(buf.Bytes())
 
-		header, count, err := readRecords(rd, int64(rd.Len()), entryCount)
+		header, count, err := readRecords(rd, int64(rd.Len()), bufSize+4)
 		rtest.OK(t, err)
+		rtest.Equals(t, len(totalHeader)+4, count)
 		rtest.Equals(t, expectedHeader, header)
-		rtest.Equals(t, totalRecords, count)
 	}
 
 	// basic
