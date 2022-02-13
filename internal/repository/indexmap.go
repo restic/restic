@@ -131,12 +131,12 @@ func (m *indexMap) len() uint { return m.numentries }
 
 func (m *indexMap) newEntry() *indexEntry {
 	// Allocating in batches means that we get closer to optimal space usage,
-	// as Go's malloc will overallocate for structures of size 56 (indexEntry
+	// as Go's malloc will overallocate for structures of size 60 (indexEntry
 	// on amd64).
 	//
-	// 256*56 and 256*48 both have minimal malloc overhead among reasonable sizes.
+	// 128*60 and 128*60 both have low malloc overhead among reasonable sizes.
 	// See src/runtime/sizeclasses.go in the standard library.
-	const entryAllocBatch = 256
+	const entryAllocBatch = 128
 
 	if m.free == nil {
 		free := new([entryAllocBatch]indexEntry)
