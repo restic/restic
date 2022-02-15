@@ -74,19 +74,18 @@ format is contained in the section "Changes" below.
 
 The field ``id`` holds a unique ID which consists of 32 random bytes, encoded
 in hexadecimal. This uniquely identifies the repository, regardless if it is
-accessed via SFTP or locally. The field ``chunker_polynomial`` contains a
-parameter that is used for splitting large files into smaller chunks (see
-below).
+accessed via a remote storage backend or locally. The field
+``chunker_polynomial`` contains a parameter that is used for splitting large
+files into smaller chunks (see below).
 
 Repository Layout
 -----------------
 
 The ``local`` and ``sftp`` backends are implemented using files and
 directories stored in a file system. The directory layout is the same
-for both backend types.
+for both backend types and is also used for all other remote backends.
 
-The basic layout of a repository stored in a ``local`` or ``sftp``
-backend is shown here:
+The basic layout of a repository is shown here:
 
 ::
 
@@ -112,8 +111,7 @@ backend is shown here:
     │   └── 22a5af1bdc6e616f8a29579458c49627e01b32210d09adb288d1ecda7c5711ec
     └── tmp
 
-A local repository can be initialized with the ``restic init`` command,
-e.g.:
+A local repository can be initialized with the ``restic init`` command, e.g.:
 
 .. code-block:: console
 
@@ -459,7 +457,7 @@ Blobs of data. The SHA-256 hashes of all Blobs are saved in an ordered
 list which then represents the content of the file.
 
 In order to relate these plaintext hashes to the actual location within
-a Pack file , an index is used. If the index is not available, the
+a Pack file, an index is used. If the index is not available, the
 header of all data Blobs can be read.
 
 Trees and Data
