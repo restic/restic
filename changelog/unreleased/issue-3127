@@ -1,0 +1,7 @@
+Enhancement: Add xattr support for Solaris
+
+We added xattr support for the Solaris operating system. This enables restic
+to support xattrs on Solaris.
+
+https://github.com/restic/restic/issues/3127
+https://github.com/restic/restic/pull/3628

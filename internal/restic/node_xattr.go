@@ -1,4 +1,5 @@
-// +build darwin freebsd linux
+//go:build darwin || freebsd || linux || solaris
+// +build darwin freebsd linux solaris
 
 package restic
 
