@@ -529,7 +529,8 @@ environment variables. The following lists these environment variables:
     AWS_ACCESS_KEY_ID                   Amazon S3 access key ID
     AWS_SECRET_ACCESS_KEY               Amazon S3 secret access key
     AWS_DEFAULT_REGION                  Amazon S3 default region
-    AWS_PROFILE                         Amazon credentials profile (can be used instead of the keys and region)
+    AWS_PROFILE                         Amazon credentials profile (alternative to specifying key and region)
+    AWS_SHARED_CREDENTIALS_FILE         Location of the AWS CLI shared credentials file (default: ~/.aws/credentials)
 
     ST_AUTH                             Auth URL for keystone v1 authentication
     ST_USER                             Username for keystone v1 authentication
