@@ -11,6 +11,7 @@ import (
 // TreeLoader loads a tree from a repository.
 type TreeLoader interface {
 	LoadTree(context.Context, ID) (*Tree, error)
+	LookupBlobSize(id ID, tpe BlobType) (uint, bool)
 }
 
 // FindUsedBlobs traverses the tree ID and adds all seen blobs (trees and data

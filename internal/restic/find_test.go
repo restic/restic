@@ -166,6 +166,10 @@ func (r ForbiddenRepo) LoadTree(ctx context.Context, id restic.ID) (*restic.Tree
 	return nil, errors.New("should not be called")
 }
 
+func (r ForbiddenRepo) LookupBlobSize(id restic.ID, tpe restic.BlobType) (uint, bool) {
+	return 0, false
+}
+
 func TestFindUsedBlobsSkipsSeenBlobs(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
