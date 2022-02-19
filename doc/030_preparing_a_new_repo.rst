@@ -657,9 +657,8 @@ credentials) is encrypted/decrypted locally, then sent/received via
 A more advanced version of this setup forbids specific hosts from removing
 files in a repository. See the `blog post by Simon Ruderich
 <https://ruderich.org/simon/notes/append-only-backups-with-restic-and-rclone>`_
-for details. When using ``restic forget`` on such a repository, additional
-security considerations apply: please review the documentation on removing
-backup snapshots.
+for details and the documentation for the ``forget`` command to learn about
+important security considerations.
 
 The rclone command may also be hard-coded in the SSH configuration or the
 user's public key, in this case it may be sufficient to just start the SSH

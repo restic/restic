@@ -607,7 +607,7 @@ examples of things an adversary could achieve in various circumstances.
 An adversary with read access to your backup storage location could:
 
 -  Attempt a brute force password guessing attack against a copy of the
-   repository (use strong passwords with sufficient entropy).
+   repository (please use strong passwords with sufficient entropy).
 -  Infer which packs probably contain trees via file access patterns.
 -  Infer the size of backups by using creation timestamps of repository objects.
 
@@ -618,7 +618,7 @@ An adversary with network access could:
 -  Determine from where you create your backups (i.e., the location where the
    requests originate).
 -  Determine where you store your backups (i.e., which provider/target system).
--  Infer the size of backups by using creation timestamps of repository objects.
+-  Infer the size of backups by observing network traffic.
 
 The following are examples of the implications associated with violating some
 of the aforementioned assumptions.
@@ -629,11 +629,11 @@ system making backups could:
 -  Render the entire backup process untrustworthy (e.g., intercept password, 
    copy files, manipulate data).
 -  Create snapshots (containing garbage data) which cover all modified files
-   and wait until a trusted host has used forget often enough to forget all
+   and wait until a trusted host has used ``forget`` often enough to remove all
    correct snapshots.
--  Create a garbage snapshot for every existing snapshot with a slightly different
-   timestamp and wait until forget has run, thereby removing all correct
-   snapshots at once.
+-  Create a garbage snapshot for every existing snapshot with a slightly
+   different timestamp and wait until certain ``forget`` configurations has been
+   run, thereby removing all correct snapshots at once.
 
 An adversary with write access to your files at the storage location could:
 
@@ -645,29 +645,26 @@ An adversary with write access to your files at the storage location could:
    the snapshot cannot be restored completely. Restic is not designed to detect
    this attack.
 
-An adversary who compromises a host system with append-only access to the 
-backup repository could:
+An adversary who compromises a host system with append-only (read+write allowed,
+delete+overwrite denied) access to the backup repository could:
 
--  Capture the password and decrypt backups from the past and in the future.
-   See the "leaked key" circumstance below.
+-  Capture the password and decrypt backups from the past and in the future
+   (see the "leaked key" example below for related information).
 -  Render new backups untrustworthy *after* the host has been compromised
    (due to having complete control over new backups). An attacker cannot delete
    or manipulate old backups. As such, restoring old snapshots created *before*
    a host compromise remains possible.
--  Potentially manipulate the ``restic forget`` command into deleting all
+-  Potentially manipulate the use of the ``forget`` command into deleting all
    legitimate snapshots, keeping only bogus snapshots added by the attacker.
    Ransomware might try this in order to leave only one option to get your data
-   back: paying the ransom. For safe use of ``restic forget``, see the
-   documentation on removing backup snapshots.
+   back: paying the ransom. For safe use of ``forget``, please see the
+   corresponding documentation on removing backup snapshots and append-only mode.
 
-An adversary who has a leaked key for a repository could:
+An adversary who has a leaked (decrypted) key for a repository could:
 
--  Decrypt existing and future backup data. If multiple hosts backup into the same
-   repository, an attacker will get access to the backup data of every host.
-   Since the local encryption key gives access to the master key, a password
-   change will not prevent this. Changing the master key can currently be done
-   using ``restic copy`` which moves the data into a new repository with a new
-   master key, or by making a completely new repository and new backup.
-   Re-encrypting all data without creating a new repository is tracked in
-   :issue:`1602`.
-
+-  Decrypt existing and future backup data. If multiple hosts backup into the
+   same repository, an attacker will get access to the backup data of every host.
+   Note that since the local encryption key gives access to the master key, a
+   password change will not prevent this. Changing the master key can currently
+   be done using the ``copy`` command, which moves the data into a new repository
+   with a new master key, or by making a completely new repository and new backup.
