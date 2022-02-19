@@ -201,6 +201,11 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
+	if repo.Cache != nil && opts.WithCache {
+		// verify files in already existing cache
+		repo.Cache.EnableVerification()
+	}
+
 	if !gopts.NoLock {
 		Verbosef("create exclusive lock for repository\n")
 		lock, err := lockRepoExclusive(gopts.ctx, repo)
