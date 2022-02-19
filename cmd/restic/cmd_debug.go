@@ -15,6 +15,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/klauspost/compress/zstd"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
@@ -309,6 +310,10 @@ func decryptUnsigned(ctx context.Context, k *crypto.Key, buf []byte) []byte {
 }
 
 func loadBlobs(ctx context.Context, repo restic.Repository, pack restic.ID, list []restic.Blob) error {
+	dec, err := zstd.NewReader(nil)
+	if err != nil {
+		panic(err)
+	}
 	be := repo.Backend()
 	h := restic.Handle{
 		Name: pack.String(),
@@ -350,6 +355,16 @@ func loadBlobs(ctx context.Context, repo restic.Repository, pack restic.ID, list
 					return err
 				}
 				continue
+			}
+		}
+
+		if blob.IsCompressed() {
+			decompressed, err := dec.DecodeAll(plaintext, nil)
+			if err != nil {
+				Printf("         failed to decompress blob %v\n", blob.ID)
+			}
+			if decompressed != nil {
+				plaintext = decompressed
 			}
 		}
 
