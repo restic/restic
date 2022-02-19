@@ -23,6 +23,7 @@ import (
 
 	"github.com/minio/sha256-simd"
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
 )
 
 // Repository is used to access a repository in a backend.
@@ -702,9 +703,34 @@ func (r *Repository) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte
 	return newID, known, err
 }
 
+// Semaphore to control the max. memory usage of LoadTree.
+// Tree blobs have unbounded size and we need to have two representations
+// in memory while deserializing from JSON.
+//
+// Workaround for https://github.com/restic/restic/issues/3643,
+// https://github.com/restic/restic/issues/3650.
+const loadTreeMaxMem = 1 << 30 // 1GiB.
+
+var loadTreeSem = semaphore.NewWeighted(loadTreeMaxMem)
+
 // LoadTree loads a tree from the repository.
 func (r *Repository) LoadTree(ctx context.Context, id restic.ID) (*restic.Tree, error) {
 	debug.Log("load tree %v", id)
+
+	size, ok := r.idx.LookupSize(restic.BlobHandle{ID: id, Type: restic.TreeBlob})
+	if ok { // If !ok, let LoadBlob fail and return its error.
+		// Estimate of the combined memory use of LoadBlob and json.Unmarshal.
+		mem := 2 * int64(size)
+		if mem > loadTreeMaxMem {
+			// Even if it's too big, we still need to load it.
+			// Just lock out all other goroutines.
+			mem = loadTreeMaxMem
+		}
+		if err := loadTreeSem.Acquire(ctx, mem); err != nil {
+			return nil, err
+		}
+		defer loadTreeSem.Release(mem)
+	}
 
 	buf, err := r.LoadBlob(ctx, restic.TreeBlob, id, nil)
 	if err != nil {
