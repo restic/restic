@@ -24,8 +24,8 @@ var cmdCheck = &cobra.Command{
 The "check" command tests the repository for errors and reports any errors it
 finds. It can also be used to read all data and therefore simulate a restore.
 
-By default, the "check" command will always load all data directly from the
-repository and not use a local cache.
+By default, the "check" command will use a local cache but verify it against
+the repository. It is possible to switch to using a temporary cache.
 
 EXIT STATUS
 ===========
@@ -46,7 +46,8 @@ type CheckOptions struct {
 	ReadData       bool
 	ReadDataSubset string
 	CheckUnused    bool
-	WithCache      bool
+	NoCacheVerify  bool
+	TemporaryCache bool
 }
 
 var checkOptions CheckOptions
@@ -58,7 +59,10 @@ func init() {
 	f.BoolVar(&checkOptions.ReadData, "read-data", false, "read all data blobs")
 	f.StringVar(&checkOptions.ReadDataSubset, "read-data-subset", "", "read a `subset` of data packs, specified as 'n/t' for specific part, or either 'x%' or 'x.y%' or a size in bytes with suffixes k/K, m/M, g/G, t/T for a random subset")
 	f.BoolVar(&checkOptions.CheckUnused, "check-unused", false, "find unused blobs")
-	f.BoolVar(&checkOptions.WithCache, "with-cache", false, "use the cache")
+	f.BoolVar(&checkOptions.NoCacheVerify, "with-cache", false, "disable verification of local cache")
+	_ = f.MarkDeprecated("with-cache", "--with-cache is deprecated, use --no-cache-verify instead")
+	f.BoolVar(&checkOptions.NoCacheVerify, "no-cache-verify", false, "disable verification of local cache")
+	f.BoolVar(&checkOptions.TemporaryCache, "temporary-cache", false, "create a temporary cache")
 }
 
 func checkFlags(opts CheckOptions) error {
@@ -100,6 +104,9 @@ func checkFlags(opts CheckOptions) error {
 			}
 
 		}
+	}
+	if opts.NoCacheVerify && opts.TemporaryCache {
+		return errors.Fatal("check flags --no-cache-verify and --temporary-cache cannot be used together")
 	}
 
 	return nil
@@ -148,7 +155,7 @@ func parsePercentage(s string) (float64, error) {
 //  * by default, we use a cache in a temporary directory that is deleted after the check
 func prepareCheckCache(opts CheckOptions, gopts *GlobalOptions) (cleanup func()) {
 	cleanup = func() {}
-	if opts.WithCache {
+	if !opts.TemporaryCache {
 		// use the default cache, no setup needed
 		return cleanup
 	}
@@ -201,7 +208,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	if repo.Cache != nil && opts.WithCache {
+	if repo.Cache != nil && !opts.NoCacheVerify {
 		// verify files in already existing cache
 		repo.Cache.EnableVerification()
 	}
