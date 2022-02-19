@@ -61,9 +61,9 @@ func init() {
 
 	flags := cmdLs.Flags()
 	flags.BoolVarP(&lsOptions.ListLong, "long", "l", false, "use a long listing format showing size and mode")
-	flags.StringArrayVarP(&lsOptions.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when no snapshot ID is given (can be specified multiple times)")
-	flags.Var(&lsOptions.Tags, "tag", "only consider snapshots which include this `taglist`, when no snapshot ID is given")
-	flags.StringArrayVar(&lsOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot ID is given")
+	flags.StringArrayVarP(&lsOptions.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when snapshot ID \"latest\" is given (can be specified multiple times)")
+	flags.Var(&lsOptions.Tags, "tag", "only consider snapshots which include this `taglist`, when snapshot ID \"latest\" is given (can be specified multiple times)")
+	flags.StringArrayVar(&lsOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when snapshot ID \"latest\" is given (can be specified multiple times)")
 	flags.BoolVar(&lsOptions.Recursive, "recursive", false, "include files in subfolders of the listed directories")
 }
 
