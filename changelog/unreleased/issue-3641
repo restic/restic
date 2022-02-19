@@ -1,0 +1,13 @@
+Change: Backups from stdin no longer have a parent
+
+Snapshots made with `restic backup --stdin` no longer have a parent snapshot.
+Since parent snapshots are only used to skip files in the scanning phase
+based on filename and timestamps, the parent snapshot of a `--stdin` snapshot
+was meaningless to begin with. Not setting a parent allows `restic backup`
+to skip some startup operations.
+
+The `--parent` option is still available for `restic backup --stdin`,
+but is now ignored.
+
+https://github.com/restic/restic/issues/3641
+https://github.com/restic/restic/pull/3645
