@@ -353,6 +353,53 @@ For example with an actual endpoint:
 
     $ restic -o s3.bucket-lookup=dns -o s3.region=oss-eu-west-1 -r s3:https://oss-eu-west-1.aliyuncs.com/bucketname init
 
+IONOS Object Storage
+********************
+
+`IONOS Object storage <https://cloud.ionos.com/storage/object-storage>`__ is an Amazon S3 compatible object storage provider.
+Due to it's S3 compatibility, IONOS Object Storage can be used as a storage provider for a restic repository.
+
+To use an Object Storage bucket for restic, one has to perform the following steps:
+
+- Login to `IONOS DCD <https://dcd.ionos.com>`__
+- Create a new S3 bucket for restic by selecting **Object Storage Object Manager**, **Add new bucket**.
+- Select **Resources Manager**, **Object Storage Key Manager**
+- Select **Generate Key** to generate a new key.
+- Setup the following environment variables:
+
+.. code-block:: console
+
+    $ export AWS_ACCESS_KEY_ID=<previously generated Object Storage Key>
+    $ export AWS_SECRET_ACCESS_KEY=<previously generated Object Storage Secret>
+
+For S3 buckets created in the Germany (de) region, the access point is ``s3-de-central.profitbricks.com``. To initialize a new restic repository using the previously created S3 bucket, use the following command:
+
+.. code-block:: console
+
+    $ restic -r s3:s3:s3-de-central.profitbricks.com/<your-bucket-name> init
+    created restic repository xxxxxxxxxx at s3:s3-de-central.profitbricks.com/<your-bucket-name>
+
+    Please note that knowledge of your password is required to access
+    the repository. Losing your password means that your data is
+    irrecoverably lost.
+
+For S3 buckets created in another region, use the following access points:
+
+.. list-table::
+   :widths: 10 25
+   :header-rows: 1
+
+   * - Region
+     - Access Point
+   * - de
+     - s3-de-central.profitbricks.com
+   * - kr
+     - s3-kr-central.profitbricks.com
+   * - eu-south-2
+     - s3-eu-south-2.profitbricks.com
+   * - eu-central-2
+     - s3-eu-central-2.profitbricks.com
+
 OpenStack Swift
 ***************
 
