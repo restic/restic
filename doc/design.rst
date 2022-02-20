@@ -632,7 +632,7 @@ system making backups could:
    and wait until a trusted host has used ``forget`` often enough to remove all
    correct snapshots.
 -  Create a garbage snapshot for every existing snapshot with a slightly
-   different timestamp and wait until certain ``forget`` configurations has been
+   different timestamp and wait until certain ``forget`` configurations have been
    run, thereby removing all correct snapshots at once.
 
 An adversary with write access to your files at the storage location could:
@@ -666,5 +666,6 @@ An adversary who has a leaked (decrypted) key for a repository could:
    same repository, an attacker will get access to the backup data of every host.
    Note that since the local encryption key gives access to the master key, a
    password change will not prevent this. Changing the master key can currently
-   be done using the ``copy`` command, which moves the data into a new repository
-   with a new master key, or by making a completely new repository and new backup.
+   only be done using the ``copy`` command, which moves the data into a new
+   repository with a new master key, or by making a completely new repository
+   and new backup.

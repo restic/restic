@@ -319,9 +319,8 @@ four Sundays, but remove the rest:
    8 snapshots
 
 The result of the ``forget --keep-daily`` operation only partially depends on
-when it is run; it will only count the days for which a snapshot exists,
-although snapshots with a `time` lying in the future are ignored and never
-removed. This is a safety feature: it prevents restic from removing snapshots
+when it is run, counting only the days for which a snapshot exists.
+This is a safety feature: it prevents restic from removing snapshots
 when no new ones are created. Otherwise, running ``forget --keep-daily 4`` on
 a Friday (without any snapshot Monday to Thursday) would remove all snapshots!
 
@@ -346,6 +345,10 @@ could specify:
 Security considerations in append-only mode
 ===========================================
 
+.. note:: TL;DR: append-only repositories should use the ``--keep-within``
+    option. This will allow you to notice problems with the backup or the
+    compromised host during the specified duration.
+
 To prevent a compromised backup client from deleting its backups (for example
 due to a ransomware infection), a repository service/backend can serve the
 repository in a so-called append-only mode. This means that the repository can
@@ -358,23 +361,24 @@ standard backends do. To support append-only with such a backend, one can use
 .. _rclone: https://rclone.org/commands/rclone_serve_restic/
 
 To remove snapshots and recover the corresponding disk space, the ``forget``
-and ``prune`` commands must have full read, write and delete access to the
+and ``prune`` commands require full read, write and delete access to the
 repository. If an attacker has this, the protection offered by append-only
 mode is naturally void.
 
 However, even with append-only mode active, an attacker who is able to add
-additional and empty or otherwise useless snapshots to the repository can
-potentially cause a situation where a trusted client running ``forget`` with
-certain ``--keep-*`` options might unknowingly remove legitimate snapshots,
-leaving only the attackers useless snapshots.
+garbage snapshots to the repository could bring the snapshot list into a state
+where all legitimate snapshots are deleted by a client with full access. By
+running ``forget`` with certain ``--keep-*`` options as repository
+administrator, legitimate snapshots might be unknowingly removed, leaving only
+the attacker's useless snapshots.
 
 For example, if the ``forget`` policy is to keep three weekly snapshots, and
 the attacker adds an empty snapshot for each of the last three weeks, all with
-a timestamp (see the ``backup`` command's ``-`time`` option) slightly more
+a timestamp (see the ``backup`` command's ``--time`` option) slightly more
 recent than the existing snapshots (but still within the target week), then the
-next time the repository administrator (or scheduled job) runs the ``forget``
+next time the repository administrator (or a scheduled job) runs the ``forget``
 command with this policy, the legitimate snapshots will be removed (since the
-policy will use the most recent snapshot within each week). Even without
+policy will keep only the most recent snapshot within each week). Even without
 running ``prune``, recovering data would be messy and some metadata lost.
 
 To avoid this, ``forget`` policies applied to append-only repositories should
