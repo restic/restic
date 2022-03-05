@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/base64"
+	"fmt"
 	"hash"
 	"io"
 	"net/http"
@@ -39,10 +40,29 @@ var _ restic.Backend = &Backend{}
 
 func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	debug.Log("open, config %#v", cfg)
-
-	client, err := storage.NewBasicClient(cfg.AccountName, cfg.AccountKey.Unwrap())
-	if err != nil {
-		return nil, errors.Wrap(err, "NewBasicClient")
+	var client storage.Client
+	var err error
+	if cfg.AccountKey.String() != "" {
+		// We have an account key value, find the BlobServiceClient
+		// from with a BasicClient
+		debug.Log(" - using account key")
+		client, err = storage.NewBasicClient(cfg.AccountName, cfg.AccountKey.Unwrap())
+		if err != nil {
+			return nil, errors.Wrap(err, "NewBasicClient")
+		}
+	} else if cfg.AccountSAS.String() != "" {
+		// Get the client using the SAS Token as authentication, this
+		// is longer winded than above because the SDK wants a URL for the Account
+		// if your using a SAS token, and not just the account name
+		// we (as per the SDK ) assume the default Azure portal.
+		url := fmt.Sprintf("https://%s.blob.core.windows.net/", cfg.AccountName)
+		debug.Log(" - using sas token")
+		client, err = storage.NewAccountSASClientFromEndpointToken(url, cfg.AccountSAS.Unwrap())
+		if err != nil {
+			return nil, errors.Wrap(err, "NewAccountSASClientFromEndpointToken")
+		}
+	} else {
+		return nil, errors.New("no azure authentication information found")
 	}
 
 	client.HTTPClient = &http.Client{Transport: rt}

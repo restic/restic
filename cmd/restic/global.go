@@ -596,6 +596,10 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 			cfg.AccountKey = options.NewSecretString(os.Getenv("AZURE_ACCOUNT_KEY"))
 		}
 
+		if cfg.AccountSAS.String() == "" {
+			cfg.AccountSAS = options.NewSecretString(os.Getenv("AZURE_ACCOUNT_SAS"))
+		}
+
 		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
 			return nil, err
 		}
