@@ -619,7 +619,7 @@ The rclone backend has three additional options:
 
  * ``-o rclone.program`` specifies the path to rclone, the default value is just ``rclone``
  * ``-o rclone.args`` allows setting the arguments passed to rclone, by default this is ``serve restic --stdio --b2-hard-delete``
-*  ``-o rclone.timeout`` specifies timeout for waiting on repository opening, the default value is ``1m``
+ * ``-o rclone.timeout`` specifies timeout for waiting on repository opening, the default value is ``1m``
 
 The reason for the ``--b2-hard-delete`` parameters can be found in the corresponding GitHub `issue #1657`_.
 
