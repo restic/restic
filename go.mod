@@ -1,5 +1,9 @@
 module github.com/restic/restic
 
+replace (
+	gopkg.in/yaml.v2 => gopkg.in/yaml.v2 v2.4.0
+)
+
 require (
 	bazil.org/fuse v0.0.0-20200407214033-5883e5a4b512
 	cloud.google.com/go/storage v1.16.0
