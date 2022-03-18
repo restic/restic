@@ -4,6 +4,7 @@ replace (
 	github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt/v4 v4.0.0
 	github.com/form3tech-oss/jwt-go => github.com/golang-jwt/jwt/v4 v4.0.0
 	golang.org/x/text => golang.org/x/text v0.3.7
+	gopkg.in/yaml.v2 => gopkg.in/yaml.v2 v2.4.0
 )
 
 require (
