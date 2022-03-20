@@ -198,7 +198,7 @@ jobs:
       - name: Check changelog files with calens
         run: |
           echo "install calens"
-          go ${{ matrix.install_verb }} github.com/restic/calens
+          go install github.com/restic/calens@latest
 
           echo "check changelog files"
           calens
