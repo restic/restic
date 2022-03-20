@@ -8,6 +8,9 @@ on:
   # run tests for all pull requests
   pull_request:
 
+env:
+  latest_go: "1.18.x"
+
 jobs:
   test:
     strategy:
@@ -218,7 +221,6 @@ jobs:
             solaris/amd64"
 
     env:
-      go: 1.16.x
       GOPROXY: https://proxy.golang.org
 
     runs-on: ubuntu-latest
@@ -226,10 +228,10 @@ jobs:
     name: Cross Compile for ${{ matrix.targets }}
 
     steps:
-      - name: Set up Go ${{ env.go }}
+      - name: Set up Go ${{ env.latest_go }}
         uses: actions/setup-go@v2
         with:
-          go-version: ${{ env.go }}
+          go-version: ${{ env.latest_go }}
 
       - name: Check out code
         uses: actions/checkout@v2
@@ -250,13 +252,11 @@ jobs:
   lint:
     name: lint
     runs-on: ubuntu-latest
-    env:
-      go: 1.16.x
     steps:
-      - name: Set up Go ${{ env.go }}
+      - name: Set up Go ${{ env.latest_go }}
         uses: actions/setup-go@v2
         with:
-          go-version: ${{ env.go }}
+          go-version: ${{ env.latest_go }}
 
       - name: Check out code
         uses: actions/checkout@v2
