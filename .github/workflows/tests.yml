@@ -233,12 +233,12 @@ jobs:
         with:
           go-version: ${{ env.latest_go }}
 
-      - name: Check out code
-        uses: actions/checkout@v2
-
       - name: Install gox
         run: |
-          go install github.com/mitchellh/gox
+          go install github.com/mitchellh/gox@latest
+
+      - name: Check out code
+        uses: actions/checkout@v2
 
       - name: Cross-compile with gox for ${{ matrix.targets }}
         env:
