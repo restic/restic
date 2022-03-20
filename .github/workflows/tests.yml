@@ -8,6 +8,10 @@ on:
   # run tests for all pull requests
   pull_request:
 
+env:
+  latest_go: "1.18.x"
+  GO111MODULE: on
+
 jobs:
   test:
     strategy:
@@ -15,35 +19,47 @@ jobs:
         # list of jobs to run:
         include:
           - job_name: Windows
-            go: 1.17.x
+            go: 1.18.x
             os: windows-latest
+            install_verb: install
 
           - job_name: macOS
-            go: 1.17.x
+            go: 1.18.x
             os: macOS-latest
             test_fuse: false
+            install_verb: install
 
           - job_name: Linux
-            go: 1.17.x
+            go: 1.18.x
             os: ubuntu-latest
             test_cloud_backends: true
             test_fuse: true
             check_changelog: true
+            install_verb: install
+
+          - job_name: Linux
+            go: 1.17.x
+            os: ubuntu-latest
+            test_fuse: true
+            install_verb: install
 
           - job_name: Linux
             go: 1.16.x
             os: ubuntu-latest
             test_fuse: true
+            install_verb: get
 
           - job_name: Linux
             go: 1.15.x
             os: ubuntu-latest
             test_fuse: true
+            install_verb: get
 
           - job_name: Linux
             go: 1.14.x
             os: ubuntu-latest
             test_fuse: true
+            install_verb: get
 
     name: ${{ matrix.job_name }} Go ${{ matrix.go }}
     runs-on: ${{ matrix.os }}
@@ -60,7 +76,7 @@ jobs:
       - name: Get programs (Linux/macOS)
         run: |
           echo "build Go tools"
-          go get github.com/restic/rest-server/...
+          go ${{ matrix.install_verb }} github.com/restic/rest-server/cmd/rest-server@latest
 
           echo "install minio server"
           mkdir $HOME/bin
@@ -92,7 +108,7 @@ jobs:
           $ProgressPreference = 'SilentlyContinue'
 
           echo "build Go tools"
-          go get github.com/restic/rest-server/...
+          go ${{ matrix.install_verb }} github.com/restic/rest-server/...
 
           echo "install minio server"
           mkdir $Env:USERPROFILE/bin
@@ -182,7 +198,7 @@ jobs:
       - name: Check changelog files with calens
         run: |
           echo "install calens"
-          go get github.com/restic/calens
+          go install github.com/restic/calens@latest
 
           echo "check changelog files"
           calens
@@ -206,7 +222,6 @@ jobs:
             solaris/amd64"
 
     env:
-      go: 1.16.x
       GOPROXY: https://proxy.golang.org
 
     runs-on: ubuntu-latest
@@ -214,17 +229,17 @@ jobs:
     name: Cross Compile for ${{ matrix.targets }}
 
     steps:
-      - name: Set up Go ${{ env.go }}
+      - name: Set up Go ${{ env.latest_go }}
         uses: actions/setup-go@v2
         with:
-          go-version: ${{ env.go }}
-
-      - name: Check out code
-        uses: actions/checkout@v2
+          go-version: ${{ env.latest_go }}
 
       - name: Install gox
         run: |
-          go get github.com/mitchellh/gox
+          go install github.com/mitchellh/gox@latest
+
+      - name: Check out code
+        uses: actions/checkout@v2
 
       - name: Cross-compile with gox for ${{ matrix.targets }}
         env:
@@ -238,13 +253,11 @@ jobs:
   lint:
     name: lint
     runs-on: ubuntu-latest
-    env:
-      go: 1.16.x
     steps:
-      - name: Set up Go ${{ env.go }}
+      - name: Set up Go ${{ env.latest_go }}
         uses: actions/setup-go@v2
         with:
-          go-version: ${{ env.go }}
+          go-version: ${{ env.latest_go }}
 
       - name: Check out code
         uses: actions/checkout@v2
@@ -253,7 +266,7 @@ jobs:
         uses: golangci/golangci-lint-action@v2
         with:
           # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
-          version: v1.36
+          version: v1.45
           # Optional: show only new issues if it's a pull request. The default value is `false`.
           only-new-issues: true
           args: --verbose --timeout 5m
