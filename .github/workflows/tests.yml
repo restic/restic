@@ -10,6 +10,7 @@ on:
 
 env:
   latest_go: "1.18.x"
+  GO111MODULE: on
 
 jobs:
   test:
