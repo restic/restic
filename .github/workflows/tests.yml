@@ -15,20 +15,25 @@ jobs:
         # list of jobs to run:
         include:
           - job_name: Windows
-            go: 1.17.x
+            go: 1.18.x
             os: windows-latest
 
           - job_name: macOS
-            go: 1.17.x
+            go: 1.18.x
             os: macOS-latest
             test_fuse: false
 
           - job_name: Linux
-            go: 1.17.x
+            go: 1.18.x
             os: ubuntu-latest
             test_cloud_backends: true
             test_fuse: true
             check_changelog: true
+
+          - job_name: Linux
+            go: 1.17.x
+            os: ubuntu-latest
+            test_fuse: true
 
           - job_name: Linux
             go: 1.16.x
