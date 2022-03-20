@@ -1,6 +1,6 @@
 Enhancement: Add negative patterns for include/exclude
 
-If a pattern is prefixed by an exclamation mark and match a file that
+If a pattern starts with an exclamation mark and it matches a file that
 was previously matched by a regular pattern, the match is cancelled.
 Notably, this can be used with `--exclude-file` to cancel the
 exclusion of some files.
