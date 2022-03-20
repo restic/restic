@@ -289,6 +289,28 @@ On most Unixy shells, you can either quote or use backslashes. For example:
  * ``--exclude="foo bar star/foo.txt"``
  * ``--exclude=foo\ bar\ star/foo.txt``
 
+If a pattern starts with exclamation mark and matches a file that
+was previously matched by a regular pattern, the match is cancelled.
+It works similarly to ``gitignore``, with the same limitation: once a
+directory is excluded, it is not possible to include files inside the
+directory. Here is a complete example to backup a selection of
+directories inside the home directory. It works by excluding any
+directory, then selectively add back some of them.
+
+::
+
+    $HOME/**/*
+    !$HOME/Documents
+    !$HOME/code
+    !$HOME/.emacs.d
+    !$HOME/games
+    # [...]
+    node_modules
+    *~
+    *.o
+    *.lo
+    *.pyc
+
 By specifying the option ``--one-file-system`` you can instruct restic
 to only backup files from the file systems the initially specified files
 or directories reside on. In other words, it will prevent restic from crossing

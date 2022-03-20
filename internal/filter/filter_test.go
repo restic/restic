@@ -248,6 +248,7 @@ var filterListTests = []struct {
 }{
 	{[]string{}, "/foo/bar/test.go", false, false},
 	{[]string{"*.go"}, "/foo/bar/test.go", true, true},
+	{[]string{"*.go"}, "/foo/bar", false, true},
 	{[]string{"*.c"}, "/foo/bar/test.go", false, true},
 	{[]string{"*.go", "*.c"}, "/foo/bar/test.go", true, true},
 	{[]string{"*"}, "/foo/bar/test.go", true, true},
@@ -255,8 +256,25 @@ var filterListTests = []struct {
 	{[]string{"?"}, "/foo/bar/test.go", false, true},
 	{[]string{"?", "x"}, "/foo/bar/x", true, true},
 	{[]string{"/*/*/bar/test.*"}, "/foo/bar/test.go", false, false},
+	{[]string{"/*/*/bar/test.*"}, "/foo/bar/bar", false, true},
 	{[]string{"/*/*/bar/test.*", "*.go"}, "/foo/bar/test.go", true, true},
 	{[]string{"", "*.c"}, "/foo/bar/test.go", false, true},
+	{[]string{"!**", "*.go"}, "/foo/bar/test.go", true, true},
+	{[]string{"!**", "*.c"}, "/foo/bar/test.go", false, true},
+	{[]string{"/foo/*/test.*", "!*.c"}, "/foo/bar/test.c", false, false},
+	{[]string{"/foo/*/test.*", "!*.c"}, "/foo/bar/test.go", true, true},
+	{[]string{"/foo/*/*", "!test.*", "*.c"}, "/foo/bar/test.go", false, true},
+	{[]string{"/foo/*/*", "!test.*", "*.c"}, "/foo/bar/test.c", true, true},
+	{[]string{"/foo/*/*", "!test.*", "*.c"}, "/foo/bar/file.go", true, true},
+	{[]string{"/**/*", "!/foo", "/foo/*", "!/foo/bar"}, "/foo/other/test.go", true, true},
+	{[]string{"/**/*", "!/foo", "/foo/*", "!/foo/bar"}, "/foo/bar", false, false},
+	{[]string{"/**/*", "!/foo", "/foo/*", "!/foo/bar"}, "/foo/bar/test.go", false, false},
+	{[]string{"/**/*", "!/foo", "/foo/*", "!/foo/bar"}, "/foo/bar/test.go/child", false, false},
+	{[]string{"/**/*", "!/foo", "/foo/*", "!/foo/bar", "/foo/bar/test*"}, "/foo/bar/test.go/child", true, true},
+	{[]string{"/foo/bar/*"}, "/foo", false, true},
+	{[]string{"/foo/bar/*", "!/foo/bar/[a-m]*"}, "/foo", false, true},
+	{[]string{"/foo/**/test.c"}, "/foo/bar/foo/bar/test.c", true, true},
+	{[]string{"/foo/*/test.c"}, "/foo/bar/foo/bar/test.c", false, false},
 }
 
 func TestList(t *testing.T) {
