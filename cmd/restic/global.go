@@ -98,6 +98,8 @@ func init() {
 	var cancel context.CancelFunc
 	globalOptions.ctx, cancel = context.WithCancel(context.Background())
 	AddCleanupHandler(func() error {
+		// Must be called before the unlock cleanup handler to ensure that the latter is
+		// not blocked due to limited number of backend connections, see #1434
 		cancel()
 		return nil
 	})
