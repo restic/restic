@@ -1,0 +1,10 @@
+Enhancement: Atomic uploads for SFTP
+
+The SFTP backend did not upload files atomically. An interrupted upload could
+leave an incomplete file behind which could prevent restic from accessing the
+repository.
+
+Uploads in the SFTP backend are now done atomically.
+
+https://github.com/restic/restic/issues/3003
+https://github.com/restic/restic/pull/3524
