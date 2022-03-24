@@ -16,8 +16,9 @@ var cmdForget = &cobra.Command{
 	Long: `
 The "forget" command removes snapshots according to a policy. Please note that
 this command really only deletes the snapshot object in the repository, which
-is a reference to data stored there. In order to remove this (now unreferenced)
-data after 'forget' was run successfully, see the 'prune' command.
+is a reference to data stored there. In order to remove the unreferenced data
+after "forget" was run successfully, see the "prune" command. Please also read
+the documentation for "forget" to learn about important security considerations.
 
 EXIT STATUS
 ===========
