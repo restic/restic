@@ -10,4 +10,5 @@ RUN apk add libcap
 WORKDIR /app
 COPY --from=builder /src/restic /bin/restic
 RUN setcap cap_dac_read_search=+ep /bin/restic
+USER restic
 ENTRYPOINT ["restic"]

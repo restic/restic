@@ -13,3 +13,5 @@ test:
 
 default: restic
 
+image:
+	docker build --tag netapp-restic -f Dockerfile .

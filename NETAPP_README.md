@@ -8,6 +8,13 @@ The intent is to make these changes open source and let people enjoy them.
 
 NetApp does not imply or guarentee any support, but we are happy to help if we can.  File an issue or email the contributors if you need help
 
+# NON ROOT RUN Changes
+As of the 2.0 bump, this container is designed to run a non-root.
+It needs a specific command line option for docker:
+
+`docker run --cap-add DAC_READ_SEARCH -it --rm netapp-restic`
+
+The --cap-add DAC_READ_SEARCH is needed by restic to do backups when running non root.
 
 #License Notice
 The license for Restic is 2 Clause BSD.  We will maintain that license but deep open source scans done by NetApp show some golang modules
