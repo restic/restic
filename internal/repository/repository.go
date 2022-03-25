@@ -599,24 +599,32 @@ func (r *Repository) SearchKey(ctx context.Context, password string, maxKeys int
 
 // Init creates a new master key with the supplied password, initializes and
 // saves the repository config.
-func (r *Repository) Init(ctx context.Context, password string, chunkerPolynomial *chunker.Pol) error {
+func (r *Repository) Init(ctx context.Context, password string, chunkerPolynomial *chunker.Pol) (bool, error) {
 	has, err := r.be.Test(ctx, restic.Handle{Type: restic.ConfigFile})
 	if err != nil {
-		return err
+		return false, err
 	}
 	if has {
-		return errors.New("repository master key and config already initialized")
+		fmt.Print("Repo already exists. Testing password.\n")
+		if err := r.SearchKey(ctx, password, 1, ""); err != nil {
+			return false, err
+		}
+		return false, r.be.List(ctx, restic.LockFile, func(_ restic.FileInfo) error { return nil })
 	}
 
 	cfg, err := restic.CreateConfig()
 	if err != nil {
-		return err
+		return false, err
 	}
 	if chunkerPolynomial != nil {
 		cfg.ChunkerPolynomial = *chunkerPolynomial
 	}
 
-	return r.init(ctx, password, cfg)
+	if err := r.init(ctx, password, cfg); err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 // init creates a new master key with the supplied password and uses it to save

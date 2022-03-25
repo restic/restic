@@ -3,7 +3,7 @@ on:
   # run tests on push to master, but not when other branches are pushed to
   push:
     branches:
-      - master
+      - main
 
   # run tests for all pull requests
   pull_request:
@@ -36,16 +36,6 @@ jobs:
 
           - job_name: Linux
             go: 1.15.x
-            os: ubuntu-latest
-            test_fuse: true
-
-          - job_name: Linux
-            go: 1.14.x
-            os: ubuntu-latest
-            test_fuse: true
-
-          - job_name: Linux
-            go: 1.13.x
             os: ubuntu-latest
             test_fuse: true
 
@@ -181,7 +171,8 @@ jobs:
 
         # only run cloud backend tests for pull requests from and pushes to our
         # own repo, otherwise the secrets are not available
-        if: (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && matrix.test_cloud_backends
+        #if: (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && matrix.test_cloud_backends
+        if: ${{ false }}  # disable this step
 
       - name: Check changelog files with calens
         run: |
@@ -273,3 +264,50 @@ jobs:
           echo "check if go.mod and go.sum are up to date"
           go mod tidy
           git diff --exit-code go.mod go.sum
+
+  buildnpush:
+    name: Build and Push Docker Package
+    #needs: [test, cross_compile, lint]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      USERNAME: ${{ secrets.JFROG_RESTIC_USERNAME }}
+      PASSWORD: ${{ secrets.JFROG_RESTIC_PASSWORD }}
+      GH_USERNAME: ${{ github.actor }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Get current date
+        id: date
+        run: echo "::set-output name=date::$(date +'%Y%m%d%H%M')"
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Build image
+        run: docker build --build-arg BUILD_DATETIME=${{ steps.date.outputs.date }} -t netapp-restic:latest .
+
+      - name: Docker login
+        run: docker login -u $USERNAME -p $PASSWORD netappdownloads.jfrog.io/oss-docker-restic-production/restic
+
+      - name: Tag and push latest image
+        run: |
+          docker tag netapp-restic:latest netappdownloads.jfrog.io/oss-docker-restic-production/restic:latest
+          docker push netappdownloads.jfrog.io/oss-docker-restic-production/restic:latest
+
+      - name: Tag and push versioned image
+        run: |
+          export VERSION=$(cat NETAPPVERSION).${{ steps.date.outputs.date }}
+          echo "VERSION="$VERSION
+          docker tag netapp-restic:latest netappdownloads.jfrog.io/oss-docker-restic-production/restic:$VERSION
+          docker push netappdownloads.jfrog.io/oss-docker-restic-production/restic:$VERSION
+
+      - name: Tag and push to GitHub Container Registry
+        run: |
+          export VERSION=$(cat NETAPPVERSION)"."${{ steps.date.outputs.date }}
+          echo "VERSION="$VERSION
+          docker login -u $GH_USERNAME -p $GH_TOKEN ghcr.io/netapp/restic
+          docker tag netapp-restic:latest ghcr.io/netapp/restic:latest
+          docker push ghcr.io/netapp/restic:latest
+          docker tag netapp-restic:latest ghcr.io/netapp/restic:$VERSION
+          docker push ghcr.io/netapp/restic:$VERSION
+
+

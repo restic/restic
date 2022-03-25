@@ -1,3 +1,4 @@
 /restic
 /.vagrant
 /.vscode
+.idea
