@@ -56,7 +56,7 @@ func init() {
 
 	f := cmdCheck.Flags()
 	f.BoolVar(&checkOptions.ReadData, "read-data", false, "read all data blobs")
-	f.StringVar(&checkOptions.ReadDataSubset, "read-data-subset", "", "read a `subset` of data packs, specified as 'n/t' for specific subset or either 'x%' or 'x.y%' for random subset")
+	f.StringVar(&checkOptions.ReadDataSubset, "read-data-subset", "", "read a `subset` of data packs, specified as 'n/t' for specific part, or either 'x%' or 'x.y%' or a size in bytes with suffixes k/K, m/M, g/G, t/T for a random subset")
 	f.BoolVar(&checkOptions.CheckUnused, "check-unused", false, "find unused blobs")
 	f.BoolVar(&checkOptions.WithCache, "with-cache", false, "use the cache")
 }
@@ -67,7 +67,7 @@ func checkFlags(opts CheckOptions) error {
 	}
 	if opts.ReadDataSubset != "" {
 		dataSubset, err := stringToIntSlice(opts.ReadDataSubset)
-		argumentError := errors.Fatal("check flag --read-data-subset must have two positive integer values or a percentage or a file size, e.g. --read-data-subset=1/2 or --read-data-subset=2.5%% or --read-data-subset=10G")
+		argumentError := errors.Fatal("check flag --read-data-subset has invalid value, please see documentation")
 		if err == nil {
 			if len(dataSubset) != 2 {
 				return argumentError
@@ -86,7 +86,7 @@ func checkFlags(opts CheckOptions) error {
 
 			if percentage <= 0.0 || percentage > 100.0 {
 				return errors.Fatal(
-					"check flag --read-data-subset=n% n must be above 0.0% and at most 100.0%")
+					"check flag --read-data-subset=x% x must be above 0.0% and at most 100.0%")
 			}
 
 		} else {
@@ -96,7 +96,7 @@ func checkFlags(opts CheckOptions) error {
 			}
 			if fileSize <= 0.0 {
 				return errors.Fatal(
-					"check flag --read-data-subset=n n must be above 0.0")
+					"check flag --read-data-subset=n n must be above 0")
 			}
 
 		}
