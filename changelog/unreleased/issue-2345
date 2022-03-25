@@ -1,8 +1,9 @@
 Bugfix: Make cache crash-resistant and usable by multiple concurrent processes
 
-The restic cache directory ($RESTIC_CACHE_DIR) could end up in a broken state
+The restic cache directory (`RESTIC_CACHE_DIR`) could end up in a broken state
 in the event of restic (or the OS) crashing. This is now less likely to occur
-as files are downloaded to a temporary location before being moved in place.
+as files are downloaded to a temporary location before being moved to their
+proper location.
 
 This also allows multiple concurrent restic processes to operate on a single
 repository without conflicts. Previously, concurrent operations could cause

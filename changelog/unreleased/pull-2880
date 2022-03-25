@@ -1,7 +1,9 @@
-Enhancement: Improve recover command
+Enhancement: Make `recover` collect only unreferenced trees
 
-Restic recover used to generate a snapshot that contains all root trees
-even those which are already referenced by a snapshot.
-It now only processes trees not referenced at all.
+Previously, the `recover` command used to generate a snapshot containing *all*
+root trees, even those which were already referenced by a snapshot.
+
+This has been improved such that it now only processes trees not already
+referenced by any snapshot.
 
 https://github.com/restic/restic/pull/2880
