@@ -1,3 +1,408 @@
+Changelog for restic 0.13.0 (2022-03-26)
+=======================================
+
+The following sections list the changes in restic 0.13.0 relevant to
+restic users. The changes are ordered by importance.
+
+Summary
+-------
+
+ * Fix #1106: Never lock repository for `list locks`
+ * Fix #2345: Make cache crash-resistant and usable by multiple concurrent processes
+ * Fix #2452: Improve error handling of repository locking
+ * Fix #2738: Don't print progress for `backup --json --quiet`
+ * Fix #3382: Make `check` command honor `RESTIC_CACHE_DIR` environment variable
+ * Fix #3518: Make `copy` command honor `--no-lock` for source repository
+ * Fix #3556: Fix hang with Backblaze B2 on SSL certificate authority error
+ * Fix #3601: Fix rclone backend prematurely exiting when receiving SIGINT on Windows
+ * Fix #3667: The `mount` command now reports symlinks sizes
+ * Fix #3488: `rebuild-index` failed if an index file was damaged
+ * Fix #3591: Fix handling of `prune --max-repack-size=0`
+ * Fix #3619: Avoid choosing parent snapshots newer than time of new snapshot
+ * Chg #3641: Ignore parent snapshot for `backup --stdin`
+ * Chg #3519: Require Go 1.14 or newer
+ * Enh #1542: Add `--dry-run`/`-n` option to `backup` command
+ * Enh #2202: Add upload checksum for Azure, GS, S3 and Swift backends
+ * Enh #233: Support negative include/exclude patterns
+ * Enh #2388: Add warning for S3 if partial credentials are provided
+ * Enh #2508: Support JSON output and quiet mode for the `diff` command
+ * Enh #2656: Add flag to disable TLS verification for self-signed certificates
+ * Enh #3003: Atomic uploads for the SFTP backend
+ * Enh #3127: Add xattr (extended attributes) support for Solaris
+ * Enh #3464: Skip lock creation on `forget` if `--no-lock` and `--dry-run`
+ * Enh #3490: Support random subset by size in `check --read-data-subset`
+ * Enh #3541: Improve handling of temporary B2 delete errors
+ * Enh #3542: Add file mode in symbolic notation to `ls --json`
+ * Enh #2594: Speed up the `restore --verify` command
+ * Enh #2816: The `backup` command no longer updates file access times on Linux
+ * Enh #2880: Make `recover` collect only unreferenced trees
+ * Enh #3429: Verify that new or modified keys are stored correctly
+ * Enh #3436: Improve local backend's resilience to (system) crashes
+ * Enh #3508: Cache blobs read by the `dump` command
+ * Enh #3511: Support configurable timeout for the rclone backend
+ * Enh #3593: Improve `copy` performance by parallelizing IO
+
+Details
+-------
+
+ * Bugfix #1106: Never lock repository for `list locks`
+
+   The `list locks` command previously locked to the repository by default. This had the problem
+   that it wouldn't work for an exclusively locked repository and that the command would also
+   display its own lock file which can be confusing.
+
+   Now, the `list locks` command never locks the repository.
+
+   https://github.com/restic/restic/issues/1106
+   https://github.com/restic/restic/pull/3665
+
+ * Bugfix #2345: Make cache crash-resistant and usable by multiple concurrent processes
+
+   The restic cache directory (`RESTIC_CACHE_DIR`) could end up in a broken state in the event of
+   restic (or the OS) crashing. This is now less likely to occur as files are downloaded to a
+   temporary location before being moved to their proper location.
+
+   This also allows multiple concurrent restic processes to operate on a single repository
+   without conflicts. Previously, concurrent operations could cause segfaults because the
+   processes saw each other's partially downloaded files.
+
+   https://github.com/restic/restic/issues/2345
+   https://github.com/restic/restic/pull/2838
+
+ * Bugfix #2452: Improve error handling of repository locking
+
+   Previously, when the lock refresh failed to delete the old lock file, it forgot about the newly
+   created one. Instead it continued trying to delete the old (usually no longer existing) lock
+   file and thus over time lots of lock files accumulated. This has now been fixed.
+
+   https://github.com/restic/restic/issues/2452
+   https://github.com/restic/restic/issues/2473
+   https://github.com/restic/restic/issues/2562
+   https://github.com/restic/restic/pull/3512
+
+ * Bugfix #2738: Don't print progress for `backup --json --quiet`
+
+   Unlike the text output, the `--json` output format still printed progress information even in
+   `--quiet` mode. This has now been fixed by always disabling the progress output in quiet mode.
+
+   https://github.com/restic/restic/issues/2738
+   https://github.com/restic/restic/pull/3264
+
+ * Bugfix #3382: Make `check` command honor `RESTIC_CACHE_DIR` environment variable
+
+   Previously, the `check` command didn't honor the `RESTIC_CACHE_DIR` environment variable,
+   which caused problems in certain system/usage configurations. This has now been fixed.
+
+   https://github.com/restic/restic/issues/3382
+   https://github.com/restic/restic/pull/3474
+
+ * Bugfix #3518: Make `copy` command honor `--no-lock` for source repository
+
+   The `copy` command previously did not respect the `--no-lock` option for the source
+   repository, causing failures with read-only storage backends. This has now been fixed such
+   that the option is now respected.
+
+   https://github.com/restic/restic/issues/3518
+   https://github.com/restic/restic/pull/3589
+
+ * Bugfix #3556: Fix hang with Backblaze B2 on SSL certificate authority error
+
+   Previously, if a request failed with an SSL unknown certificate authority error, the B2
+   backend retried indefinitely and restic would appear to hang.
+
+   This has now been fixed and restic instead fails with an error message.
+
+   https://github.com/restic/restic/issues/3556
+   https://github.com/restic/restic/issues/2355
+   https://github.com/restic/restic/pull/3571
+
+ * Bugfix #3601: Fix rclone backend prematurely exiting when receiving SIGINT on Windows
+
+   Previously, pressing Ctrl+C in a Windows console where restic was running with rclone as the
+   backend would cause rclone to exit prematurely due to getting a `SIGINT` signal at the same time
+   as restic. Restic would then wait for a long time for time with "unexpected EOF" and "rclone
+   stdio connection already closed" errors.
+
+   This has now been fixed by restic starting the rclone process detached from the console restic
+   runs in (similar to starting processes in a new process group on Linux), which enables restic to
+   gracefully clean up rclone (which now never gets the `SIGINT`).
+
+   https://github.com/restic/restic/issues/3601
+   https://github.com/restic/restic/pull/3602
+
+ * Bugfix #3667: The `mount` command now reports symlinks sizes
+
+   Symlinks used to have size zero in restic mountpoints, confusing some third-party tools. They
+   now have a size equal to the byte length of their target path, as required by POSIX.
+
+   https://github.com/restic/restic/issues/3667
+   https://github.com/restic/restic/pull/3668
+
+ * Bugfix #3488: `rebuild-index` failed if an index file was damaged
+
+   Previously, the `rebuild-index` command would fail with an error if an index file was damaged
+   or truncated. This has now been fixed.
+
+   On older restic versions, a (slow) workaround is to use `rebuild-index --read-all-packs` or
+   to manually delete the damaged index.
+
+   https://github.com/restic/restic/pull/3488
+
+ * Bugfix #3591: Fix handling of `prune --max-repack-size=0`
+
+   Restic ignored the `--max-repack-size` option when passing a value of 0. This has now been
+   fixed.
+
+   As a workaround, `--max-repack-size=1` can be used with older versions of restic.
+
+   https://github.com/restic/restic/pull/3591
+
+ * Bugfix #3619: Avoid choosing parent snapshots newer than time of new snapshot
+
+   The `backup` command, when a `--parent` was not provided, previously chose the most recent
+   matching snapshot as the parent snapshot. However, this didn't make sense when the user passed
+   `--time` to create a new snapshot older than the most recent snapshot.
+
+   Instead, `backup` now chooses the most recent snapshot which is not newer than the
+   snapshot-being-created's timestamp, to avoid any time travel.
+
+   https://github.com/restic/restic/pull/3619
+
+ * Change #3641: Ignore parent snapshot for `backup --stdin`
+
+   Restic uses a parent snapshot to speed up directory scanning when performing backups, but this
+   only wasted time and memory when the backup source is stdin (using the `--stdin` option of the
+   `backup` command), since no directory scanning is performed in this case.
+
+   Snapshots made with `backup --stdin` no longer have a parent snapshot, which allows restic to
+   skip some startup operations and saves a bit of resources.
+
+   The `--parent` option is still available for `backup --stdin`, but is now ignored.
+
+   https://github.com/restic/restic/issues/3641
+   https://github.com/restic/restic/pull/3645
+
+ * Change #3519: Require Go 1.14 or newer
+
+   Restic now requires Go 1.14 to build. This allows it to use new standard library features
+   instead of an external dependency.
+
+   https://github.com/restic/restic/issues/3519
+
+ * Enhancement #1542: Add `--dry-run`/`-n` option to `backup` command
+
+   Testing exclude filters and other configuration options was error prone as wrong filters
+   could cause files to be uploaded unintentionally. It was also not possible to estimate
+   beforehand how much data would be uploaded.
+
+   The `backup` command now has a `--dry-run`/`-n` option, which performs all the normal steps of
+   a backup without actually writing anything to the repository.
+
+   Passing -vv will log information about files that would be added, allowing for verification of
+   source and exclusion options before running the real backup.
+
+   https://github.com/restic/restic/issues/1542
+   https://github.com/restic/restic/pull/2308
+   https://github.com/restic/restic/pull/3210
+   https://github.com/restic/restic/pull/3300
+
+ * Enhancement #2202: Add upload checksum for Azure, GS, S3 and Swift backends
+
+   Previously only the B2 and partially the Swift backends verified the integrity of uploaded
+   (encrypted) files. The verification works by informing the backend about the expected hash of
+   the uploaded file. The backend then verifies the upload and thereby rules out any data
+   corruption during upload.
+
+   We have now added upload checksums for the Azure, GS, S3 and Swift backends, which besides
+   integrity checking for uploads also means that restic can now be used to store backups in S3
+   buckets which have Object Lock enabled.
+
+   https://github.com/restic/restic/issues/2202
+   https://github.com/restic/restic/issues/2700
+   https://github.com/restic/restic/issues/3023
+   https://github.com/restic/restic/pull/3246
+
+ * Enhancement #233: Support negative include/exclude patterns
+
+   If a pattern starts with an exclamation mark and it matches a file that was previously matched by
+   a regular pattern, the match is cancelled. Notably, this can be used with `--exclude-file` to
+   cancel the exclusion of some files.
+
+   It works similarly to `.gitignore`, with the same limitation; Once a directory is excluded, it
+   is not possible to include files inside the directory.
+
+   Example of use as an exclude pattern for the `backup` command:
+
+   $HOME/**/* !$HOME/Documents !$HOME/code !$HOME/.emacs.d !$HOME/games # [...]
+   node_modules *~ *.o *.lo *.pyc # [...] $HOME/code/linux/* !$HOME/code/linux/.git # [...]
+
+   https://github.com/restic/restic/issues/233
+   https://github.com/restic/restic/pull/2311
+
+ * Enhancement #2388: Add warning for S3 if partial credentials are provided
+
+   Previously restic did not notify about incomplete credentials when using the S3 backend,
+   instead just reporting access denied.
+
+   Restic now checks that both the AWS key ID and secret environment variables are set before
+   connecting to the remote server, and reports an error if not.
+
+   https://github.com/restic/restic/issues/2388
+   https://github.com/restic/restic/pull/3532
+
+ * Enhancement #2508: Support JSON output and quiet mode for the `diff` command
+
+   The `diff` command now supports outputting machine-readable output in JSON format. To enable
+   this, pass the `--json` option to the command. To only print the summary and suppress detailed
+   output, pass the `--quiet` option.
+
+   https://github.com/restic/restic/issues/2508
+   https://github.com/restic/restic/pull/3592
+
+ * Enhancement #2656: Add flag to disable TLS verification for self-signed certificates
+
+   There is now an `--insecure-tls` global option in restic, which disables TLS verification for
+   self-signed certificates in order to support some development workflows.
+
+   https://github.com/restic/restic/issues/2656
+   https://github.com/restic/restic/pull/2657
+
+ * Enhancement #3003: Atomic uploads for the SFTP backend
+
+   The SFTP backend did not upload files atomically. An interrupted upload could leave an
+   incomplete file behind which could prevent restic from accessing the repository. This has now
+   been fixed and uploads in the SFTP backend are done atomically.
+
+   https://github.com/restic/restic/issues/3003
+   https://github.com/restic/restic/pull/3524
+
+ * Enhancement #3127: Add xattr (extended attributes) support for Solaris
+
+   Restic now supports xattr for the Solaris operating system.
+
+   https://github.com/restic/restic/issues/3127
+   https://github.com/restic/restic/pull/3628
+
+ * Enhancement #3464: Skip lock creation on `forget` if `--no-lock` and `--dry-run`
+
+   Restic used to silently ignore the `--no-lock` option of the `forget` command.
+
+   It now skips creation of lock file in case both `--dry-run` and `--no-lock` are specified. If
+   `--no-lock` option is specified without `--dry-run`, restic prints a warning message to
+   stderr.
+
+   https://github.com/restic/restic/issues/3464
+   https://github.com/restic/restic/pull/3623
+
+ * Enhancement #3490: Support random subset by size in `check --read-data-subset`
+
+   The `--read-data-subset` option of the `check` command now supports a third way of specifying
+   the subset to check, namely `nS` where `n` is a size in bytes with suffix `S` as k/K, m/M, g/G or
+   t/T.
+
+   https://github.com/restic/restic/issues/3490
+   https://github.com/restic/restic/pull/3548
+
+ * Enhancement #3541: Improve handling of temporary B2 delete errors
+
+   Deleting files on B2 could sometimes fail temporarily, which required restic to retry the
+   delete operation. In some cases the file was deleted nevertheless, causing the retries and
+   ultimately the restic command to fail. This has now been fixed.
+
+   https://github.com/restic/restic/issues/3541
+   https://github.com/restic/restic/pull/3544
+
+ * Enhancement #3542: Add file mode in symbolic notation to `ls --json`
+
+   The `ls --json` command now provides the file mode in symbolic notation (using the
+   `permissions` key), aligned with `find --json`.
+
+   https://github.com/restic/restic/issues/3542
+   https://github.com/restic/restic/pull/3573
+   https://forum.restic.net/t/restic-ls-understanding-file-mode-with-json/4371
+
+ * Enhancement #2594: Speed up the `restore --verify` command
+
+   The `--verify` option lets the `restore` command verify the file content after it has restored
+   a snapshot. The performance of this operation has now been improved by up to a factor of two.
+
+   https://github.com/restic/restic/pull/2594
+
+ * Enhancement #2816: The `backup` command no longer updates file access times on Linux
+
+   When reading files during backup, restic used to cause the operating system to update the
+   files' access times. Note that this did not apply to filesystems with disabled file access
+   times.
+
+   Restic now instructs the operating system not to update the file access time, if the user
+   running restic is the file owner or has root permissions.
+
+   https://github.com/restic/restic/pull/2816
+
+ * Enhancement #2880: Make `recover` collect only unreferenced trees
+
+   Previously, the `recover` command used to generate a snapshot containing *all* root trees,
+   even those which were already referenced by a snapshot.
+
+   This has been improved such that it now only processes trees not already referenced by any
+   snapshot.
+
+   https://github.com/restic/restic/pull/2880
+
+ * Enhancement #3429: Verify that new or modified keys are stored correctly
+
+   When adding a new key or changing the password of a key, restic used to just create the new key (and
+   remove the old one, when changing the password). There was no verification that the new key was
+   stored correctly and works properly. As the repository cannot be decrypted without a valid key
+   file, this could in rare cases cause the repository to become inaccessible.
+
+   Restic now checks that new key files actually work before continuing. This can protect against
+   some (rare) cases of hardware or storage problems.
+
+   https://github.com/restic/restic/pull/3429
+
+ * Enhancement #3436: Improve local backend's resilience to (system) crashes
+
+   Restic now ensures that files stored using the `local` backend are created atomically (that
+   is, files are either stored completely or not at all). This ensures that no incomplete files are
+   left behind even if restic is terminated while writing a file.
+
+   In addition, restic now tries to ensure that the directory in the repository which contains a
+   newly uploaded file is also written to disk. This can prevent missing files if the system
+   crashes or the disk is not properly unmounted.
+
+   https://github.com/restic/restic/pull/3436
+
+ * Enhancement #3508: Cache blobs read by the `dump` command
+
+   When dumping a file using the `dump` command, restic did not cache blobs in any way, so even
+   consecutive runs of the same blob were loaded from the repository again and again, slowing down
+   the dump.
+
+   Now, the caching mechanism already used by the `fuse` command is also used by the `dump`
+   command. This makes dumping much faster, especially for sparse files.
+
+   https://github.com/restic/restic/pull/3508
+
+ * Enhancement #3511: Support configurable timeout for the rclone backend
+
+   A slow rclone backend could cause restic to time out while waiting for the repository to open.
+   Restic now offers an `-o rclone.timeout` option to make this timeout configurable.
+
+   https://github.com/restic/restic/issues/3511
+   https://github.com/restic/restic/pull/3514
+
+ * Enhancement #3593: Improve `copy` performance by parallelizing IO
+
+   Restic copy previously only used a single thread for copying blobs between repositories,
+   which resulted in limited performance when copying small blobs to/from a high latency backend
+   (i.e. any remote backend, especially b2).
+
+   Copying will now use 8 parallel threads to increase the throughput of the copy operation.
+
+   https://github.com/restic/restic/pull/3593
+
+
 Changelog for restic 0.12.1 (2021-08-03)
 =======================================
 
@@ -604,7 +1009,7 @@ Details
    reduced.
 
    Restic used to rebuild the index from scratch after pruning. This could lead to missing packs in
-   the index in some cases for eventually consistent backends such as e.g. Amazon S3. This behavior is
+   the index in some cases for eventually consistent backends such as e.g. AWS S3. This behavior is
    now changed and the index rebuilding uses the information already known by `prune`.
 
    By default, the `prune` command no longer removes all unused data. This behavior can be
@@ -3083,7 +3488,7 @@ Summary
  * Enh #1055: Create subdirs below `data/` for local/sftp backends
  * Enh #1067: Allow loading credentials for s3 from IAM
  * Enh #1073: Add `migrate` cmd to migrate from `s3legacy` to `default` layout
- * Enh #1081: Clarify semantic for `--tasg` for the `forget` command
+ * Enh #1081: Clarify semantic for `--tag` for the `forget` command
  * Enh #1080: Ignore chmod() errors on filesystems which do not support it
  * Enh #1082: Print stats on SIGINFO on Darwin and FreeBSD (ctrl+t)
 
@@ -3127,7 +3532,7 @@ Details
    https://github.com/restic/restic/issues/1073
    https://github.com/restic/restic/pull/1075
 
- * Enhancement #1081: Clarify semantic for `--tasg` for the `forget` command
+ * Enhancement #1081: Clarify semantic for `--tag` for the `forget` command
 
    https://github.com/restic/restic/issues/1081
    https://github.com/restic/restic/pull/1090
