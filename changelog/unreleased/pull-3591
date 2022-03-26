@@ -1,7 +1,7 @@
 Bugfix: Fix handling of `prune --max-repack-size=0`
 
 Restic ignored the `--max-repack-size` option when passing a value of 0. This
-has been fixed.
+has now been fixed.
 
 As a workaround, `--max-repack-size=1` can be used with older versions of restic.
 

@@ -1,9 +1,8 @@
-Change: honor RESTIC_CACHE_DIR environment variable in the check command
+Bugfix: Make `check` command honor `RESTIC_CACHE_DIR` environment variable
 
---cache-dir option doesn't honor the RESTIC_CACHE_DIR environment variable by
-default. This fixes an issue with the restic check command that doesn't obey the
-RESTIC_CACHE_DIR environment variable. Extend the behavior of cache command to
-manage directories created by restic check.
+Previously, the `check` command didn't honor the `RESTIC_CACHE_DIR` environment
+variable, which caused problems in certain system/usage configurations. This
+has now been fixed.
 
 https://github.com/restic/restic/issues/3382
 https://github.com/restic/restic/pull/3474
