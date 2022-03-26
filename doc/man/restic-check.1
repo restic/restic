@@ -41,7 +41,7 @@ Exit status is 0 if the command was successful, and non\-zero if there was any e
 
 .PP
 \fB\-\-read\-data\-subset\fP=""
-	read a \fB\fCsubset\fR of data packs, specified as 'n/t' for specific subset or either 'x%' or 'x.y%' for random subset
+	read a \fB\fCsubset\fR of data packs, specified as 'n/t' for specific part, or either 'x%' or 'x.y%' or a size in bytes with suffixes k/K, m/M, g/G, t/T for a random subset
 
 .PP
 \fB\-\-with\-cache\fP[=false]
@@ -60,6 +60,10 @@ Exit status is 0 if the command was successful, and non\-zero if there was any e
 .PP
 \fB\-\-cleanup\-cache\fP[=false]
 	auto remove old cache directories
+
+.PP
+\fB\-\-insecure\-tls\fP[=false]
+	skip TLS certificate verification when connecting to the repo (insecure)
 
 .PP
 \fB\-\-json\fP[=false]

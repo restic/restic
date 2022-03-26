@@ -26,6 +26,10 @@ Exit status is 3 if some source data could not be read (incomplete snapshot crea
 
 .SH OPTIONS
 .PP
+\fB\-n\fP, \fB\-\-dry\-run\fP[=false]
+	do not upload or write any data, just show what would be done
+
+.PP
 \fB\-e\fP, \fB\-\-exclude\fP=[]
 	exclude a \fB\fCpattern\fR (can be specified multiple times)
 
@@ -91,7 +95,7 @@ Exit status is 3 if some source data could not be read (incomplete snapshot crea
 
 .PP
 \fB\-\-parent\fP=""
-	use this parent \fB\fCsnapshot\fR (default: last snapshot in the repo that has the same target files/directories)
+	use this parent \fB\fCsnapshot\fR (default: last snapshot in the repo that has the same target files/directories, and is not newer than the snapshot time)
 
 .PP
 \fB\-\-stdin\fP[=false]
@@ -126,6 +130,10 @@ Exit status is 3 if some source data could not be read (incomplete snapshot crea
 .PP
 \fB\-\-cleanup\-cache\fP[=false]
 	auto remove old cache directories
+
+.PP
+\fB\-\-insecure\-tls\fP[=false]
+	skip TLS certificate verification when connecting to the repo (insecure)
 
 .PP
 \fB\-\-json\fP[=false]

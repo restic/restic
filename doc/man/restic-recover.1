@@ -3,7 +3,7 @@
 
 .SH NAME
 .PP
-restic\-recover \- Recover data from the repository
+restic\-recover \- Recover data from the repository not referenced by snapshots
 
 
 .SH SYNOPSIS
@@ -14,8 +14,8 @@ restic\-recover \- Recover data from the repository
 .SH DESCRIPTION
 .PP
 The "recover" command builds a new snapshot from all directories it can find in
-the raw data of the repository. It can be used if, for example, a snapshot has
-been removed by accident with "forget".
+the raw data of the repository which are not referenced in an existing snapshot.
+It can be used if, for example, a snapshot has been removed by accident with "forget".
 
 
 .SH EXIT STATUS
@@ -41,6 +41,10 @@ Exit status is 0 if the command was successful, and non\-zero if there was any e
 .PP
 \fB\-\-cleanup\-cache\fP[=false]
 	auto remove old cache directories
+
+.PP
+\fB\-\-insecure\-tls\fP[=false]
+	skip TLS certificate verification when connecting to the repo (insecure)
 
 .PP
 \fB\-\-json\fP[=false]

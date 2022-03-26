@@ -15,8 +15,9 @@ restic\-forget \- Remove snapshots from the repository
 .PP
 The "forget" command removes snapshots according to a policy. Please note that
 this command really only deletes the snapshot object in the repository, which
-is a reference to data stored there. In order to remove this (now unreferenced)
-data after 'forget' was run successfully, see the 'prune' command.
+is a reference to data stored there. In order to remove the unreferenced data
+after "forget" was run successfully, see the "prune" command. Please also read
+the documentation for "forget" to learn about important security considerations.
 
 
 .SH EXIT STATUS
@@ -134,6 +135,10 @@ Exit status is 0 if the command was successful, and non\-zero if there was any e
 .PP
 \fB\-\-cleanup\-cache\fP[=false]
 	auto remove old cache directories
+
+.PP
+\fB\-\-insecure\-tls\fP[=false]
+	skip TLS certificate verification when connecting to the repo (insecure)
 
 .PP
 \fB\-\-json\fP[=false]
