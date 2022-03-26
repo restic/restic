@@ -400,3 +400,42 @@ func (mi *MasterIndex) Save(ctx context.Context, repo restic.Repository, packBla
 
 	return obsolete, err
 }
+
+// ListPacks returns the blobs of the specified pack files grouped by pack file.
+func (mi *MasterIndex) ListPacks(ctx context.Context, packs restic.IDSet) <-chan restic.PackBlobs {
+	out := make(chan restic.PackBlobs)
+	go func() {
+		defer close(out)
+		// only resort a part of the index to keep the memory overhead bounded
+		for i := byte(0); i < 16; i++ {
+			if ctx.Err() != nil {
+				return
+			}
+
+			packBlob := make(map[restic.ID][]restic.Blob)
+			for pack := range packs {
+				if pack[0]&0xf == i {
+					packBlob[pack] = nil
+				}
+			}
+			if len(packBlob) == 0 {
+				continue
+			}
+			for pb := range mi.Each(ctx) {
+				if packs.Has(pb.PackID) && pb.PackID[0]&0xf == i {
+					packBlob[pb.PackID] = append(packBlob[pb.PackID], pb.Blob)
+				}
+			}
+
+			// pass on packs
+			for packID, pbs := range packBlob {
+				select {
+				case out <- restic.PackBlobs{PackID: packID, Blobs: pbs}:
+				case <-ctx.Done():
+					return
+				}
+			}
+		}
+	}()
+	return out
+}

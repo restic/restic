@@ -1,29 +1,31 @@
 package repository
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"sync"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/backend/dryrun"
 	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/fs"
-	"github.com/restic/restic/internal/hashing"
 	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
 
-	"github.com/minio/sha256-simd"
 	"golang.org/x/sync/errgroup"
 )
+
+const MaxStreamBufferSize = 4 * 1024 * 1024
 
 // Repository is used to access a repository in a backend.
 type Repository struct {
@@ -742,43 +744,99 @@ type Loader interface {
 	Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error
 }
 
-// DownloadAndHash is all-in-one helper to download content of the file at h to a temporary filesystem location
-// and calculate ID of the contents. Returned (temporary) file is positioned at the beginning of the file;
-// it is the reponsibility of the caller to close and delete the file.
-func DownloadAndHash(ctx context.Context, be Loader, h restic.Handle) (tmpfile *os.File, hash restic.ID, size int64, err error) {
-	tmpfile, err = fs.TempFile("", "restic-temp-")
-	if err != nil {
-		return nil, restic.ID{}, -1, errors.Wrap(err, "TempFile")
+type BackendLoadFn func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error
+
+// StreamPack loads the listed blobs from the specified pack file. The plaintext blob is passed to
+// the handleBlobFn callback or an error if decryption failed or the blob hash does not match. In
+// case of download errors handleBlobFn might be called multiple times for the same blob. If the
+// callback returns an error, then StreamPack will abort and not retry it.
+func StreamPack(ctx context.Context, beLoad BackendLoadFn, key *crypto.Key, packID restic.ID, blobs []restic.Blob, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
+	if len(blobs) == 0 {
+		// nothing to do
+		return nil
 	}
 
-	err = be.Load(ctx, h, 0, 0, func(rd io.Reader) (ierr error) {
-		_, ierr = tmpfile.Seek(0, io.SeekStart)
-		if ierr == nil {
-			ierr = tmpfile.Truncate(0)
-		}
-		if ierr != nil {
-			return ierr
-		}
-		hrd := hashing.NewReader(rd, sha256.New())
-		size, ierr = io.Copy(tmpfile, hrd)
-		hash = restic.IDFromHash(hrd.Sum(nil))
-		return ierr
+	sort.Slice(blobs, func(i, j int) bool {
+		return blobs[i].Offset < blobs[j].Offset
 	})
+	h := restic.Handle{Type: restic.PackFile, Name: packID.String(), ContainedBlobType: restic.DataBlob}
 
-	if err != nil {
-		// ignore subsequent errors
-		_ = tmpfile.Close()
-		_ = os.Remove(tmpfile.Name())
-		return nil, restic.ID{}, -1, errors.Wrap(err, "Load")
-	}
+	dataStart := blobs[0].Offset
+	dataEnd := blobs[len(blobs)-1].Offset + blobs[len(blobs)-1].Length
 
-	_, err = tmpfile.Seek(0, io.SeekStart)
-	if err != nil {
-		// ignore subsequent errors
-		_ = tmpfile.Close()
-		_ = os.Remove(tmpfile.Name())
-		return nil, restic.ID{}, -1, errors.Wrap(err, "Seek")
-	}
+	debug.Log("streaming pack %v (%d to %d bytes), blobs: %v", packID, dataStart, dataEnd, len(blobs))
 
-	return tmpfile, hash, size, err
+	ctx, cancel := context.WithCancel(ctx)
+	// stream blobs in pack
+	err := beLoad(ctx, h, int(dataEnd-dataStart), int64(dataStart), func(rd io.Reader) error {
+		// prevent callbacks after cancelation
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		bufferSize := int(dataEnd - dataStart)
+		if bufferSize > MaxStreamBufferSize {
+			bufferSize = MaxStreamBufferSize
+		}
+		// create reader here to allow reusing the buffered reader from checker.checkData
+		bufRd := bufio.NewReaderSize(rd, bufferSize)
+		currentBlobEnd := dataStart
+		var buf []byte
+		for _, entry := range blobs {
+			skipBytes := int(entry.Offset - currentBlobEnd)
+			if skipBytes < 0 {
+				return errors.Errorf("overlapping blobs in pack %v", packID)
+			}
+
+			_, err := bufRd.Discard(skipBytes)
+			if err != nil {
+				return err
+			}
+
+			h := restic.BlobHandle{ID: entry.ID, Type: entry.Type}
+			debug.Log("  process blob %v, skipped %d, %v", h, skipBytes, entry)
+
+			if uint(cap(buf)) < entry.Length {
+				buf = make([]byte, entry.Length)
+			}
+			buf = buf[:entry.Length]
+
+			n, err := io.ReadFull(bufRd, buf)
+			if err != nil {
+				debug.Log("    read error %v", err)
+				return errors.Wrap(err, "ReadFull")
+			}
+
+			if n != len(buf) {
+				return errors.Errorf("read blob %v from %v: not enough bytes read, want %v, got %v",
+					h, packID.Str(), len(buf), n)
+			}
+			currentBlobEnd = entry.Offset + entry.Length
+
+			if int(entry.Length) <= key.NonceSize() {
+				debug.Log("%v", blobs)
+				return errors.Errorf("invalid blob length %v", entry)
+			}
+
+			// decryption errors are likely permanent, give the caller a chance to skip them
+			nonce, ciphertext := buf[:key.NonceSize()], buf[key.NonceSize():]
+			plaintext, err := key.Open(ciphertext[:0], nonce, ciphertext, nil)
+			if err == nil {
+				id := restic.Hash(plaintext)
+				if !id.Equal(entry.ID) {
+					debug.Log("read blob %v/%v from %v: wrong data returned, hash is %v",
+						h.Type, h.ID, packID.Str(), id)
+					err = errors.Errorf("read blob %v from %v: wrong data returned, hash is %v",
+						h, packID.Str(), id)
+				}
+			}
+
+			err = handleBlobFn(entry.BlobHandle, plaintext, err)
+			if err != nil {
+				cancel()
+				return backoff.Permanent(err)
+			}
+		}
+		return nil
+	})
+	return errors.Wrap(err, "StreamPack")
 }

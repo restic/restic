@@ -4,19 +4,22 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/restic/restic/internal/archiver"
-	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/test"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -410,108 +413,202 @@ func TestRepositoryIncrementalIndex(t *testing.T) {
 			t.Errorf("pack %v listed in %d indexes\n", packID, len(ids))
 		}
 	}
+
 }
 
-type backend struct {
-	rd io.Reader
-}
+// buildPackfileWithoutHeader returns a manually built pack file without a header.
+func buildPackfileWithoutHeader(t testing.TB, blobSizes []int, key *crypto.Key) (blobs []restic.Blob, packfile []byte) {
+	var offset uint
+	for i, size := range blobSizes {
+		plaintext := test.Random(800+i, size)
 
-func (be backend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
-	return fn(be.rd)
-}
+		// we use a deterministic nonce here so the whole process is
+		// deterministic, last byte is the blob index
+		var nonce = []byte{
+			0x15, 0x98, 0xc0, 0xf7, 0xb9, 0x65, 0x97, 0x74,
+			0x12, 0xdc, 0xd3, 0x62, 0xa9, 0x6e, 0x20, byte(i),
+		}
 
-type retryBackend struct {
-	buf []byte
-}
+		before := len(packfile)
+		packfile = append(packfile, nonce...)
+		packfile = key.Seal(packfile, nonce, plaintext, nil)
+		after := len(packfile)
 
-func (be retryBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
-	err := fn(bytes.NewReader(be.buf[:len(be.buf)/2]))
-	if err != nil {
-		return err
+		ciphertextLength := after - before
+
+		blobs = append(blobs, restic.Blob{
+			BlobHandle: restic.BlobHandle{
+				ID:   restic.Hash(plaintext),
+				Type: restic.DataBlob,
+			},
+			Length: uint(ciphertextLength),
+			Offset: offset,
+		})
+
+		offset = uint(len(packfile))
 	}
 
-	return fn(bytes.NewReader(be.buf))
+	return blobs, packfile
 }
 
-func TestDownloadAndHash(t *testing.T) {
-	buf := make([]byte, 5*1024*1024+881)
-	_, err := io.ReadFull(rnd, buf)
+func TestStreamPack(t *testing.T) {
+	// always use the same key for deterministic output
+	const jsonKey = `{"mac":{"k":"eQenuI8adktfzZMuC8rwdA==","r":"k8cfAly2qQSky48CQK7SBA=="},"encrypt":"MKO9gZnRiQFl8mDUurSDa9NMjiu9MUifUrODTHS05wo="}`
+
+	var key crypto.Key
+	err := json.Unmarshal([]byte(jsonKey), &key)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	var tests = []struct {
-		be   repository.Loader
-		want []byte
-	}{
-		{
-			be:   backend{rd: bytes.NewReader(buf)},
-			want: buf,
-		},
-		{
-			be:   retryBackend{buf: buf},
-			want: buf,
-		},
+	blobSizes := []int{
+		10,
+		5231,
+		18812,
+		123123,
+		12301,
+		892242,
+		28616,
+		13351,
+		252287,
+		188883,
+		2522811,
+		18883,
 	}
 
-	for _, test := range tests {
-		t.Run("", func(t *testing.T) {
-			f, id, size, err := repository.DownloadAndHash(context.TODO(), test.be, restic.Handle{})
-			if err != nil {
-				t.Error(err)
-			}
+	packfileBlobs, packfile := buildPackfileWithoutHeader(t, blobSizes, &key)
 
-			want := restic.Hash(test.want)
-			if !want.Equal(id) {
-				t.Errorf("wrong hash returned, want %v, got %v", want.Str(), id.Str())
-			}
+	load := func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+		data := packfile
 
-			if size != int64(len(test.want)) {
-				t.Errorf("wrong size returned, want %v, got %v", test.want, size)
-			}
+		if offset > int64(len(data)) {
+			offset = 0
+			length = 0
+		}
+		data = data[offset:]
 
-			err = f.Close()
-			if err != nil {
-				t.Error(err)
-			}
+		if length > len(data) {
+			length = len(data)
+		}
 
-			err = fs.RemoveIfExists(f.Name())
-			if err != nil {
-				t.Fatal(err)
-			}
-		})
-	}
-}
+		data = data[:length]
 
-type errorReader struct {
-	err error
-}
+		return fn(bytes.NewReader(data))
 
-func (er errorReader) Read(p []byte) (n int, err error) {
-	return 0, er.err
-}
-
-func TestDownloadAndHashErrors(t *testing.T) {
-	var tests = []struct {
-		be  repository.Loader
-		err string
-	}{
-		{
-			be:  backend{rd: errorReader{errors.New("test error 1")}},
-			err: "test error 1",
-		},
 	}
 
-	for _, test := range tests {
-		t.Run("", func(t *testing.T) {
-			_, _, _, err := repository.DownloadAndHash(context.TODO(), test.be, restic.Handle{})
-			if err == nil {
-				t.Fatalf("wanted error %q, got nil", test.err)
-			}
+	// first, test regular usage
+	t.Run("regular", func(t *testing.T) {
+		tests := []struct {
+			blobs []restic.Blob
+		}{
+			{packfileBlobs[1:2]},
+			{packfileBlobs[2:5]},
+			{packfileBlobs[2:8]},
+			{[]restic.Blob{
+				packfileBlobs[0],
+				packfileBlobs[8],
+				packfileBlobs[4],
+			}},
+			{[]restic.Blob{
+				packfileBlobs[0],
+				packfileBlobs[len(packfileBlobs)-1],
+			}},
+		}
 
-			if errors.Cause(err).Error() != test.err {
-				t.Fatalf("wanted error %q, got %q", test.err, err)
-			}
-		})
-	}
+		for _, test := range tests {
+			t.Run("", func(t *testing.T) {
+				ctx, cancel := context.WithCancel(context.Background())
+				defer cancel()
+
+				gotBlobs := make(map[restic.ID]int)
+
+				handleBlob := func(blob restic.BlobHandle, buf []byte, err error) error {
+					gotBlobs[blob.ID]++
+
+					id := restic.Hash(buf)
+					if !id.Equal(blob.ID) {
+						t.Fatalf("wrong id %v for blob %s returned", id, blob.ID)
+					}
+
+					return err
+				}
+
+				wantBlobs := make(map[restic.ID]int)
+				for _, blob := range test.blobs {
+					wantBlobs[blob.ID] = 1
+				}
+
+				err = repository.StreamPack(ctx, load, &key, restic.ID{}, test.blobs, handleBlob)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				if !cmp.Equal(wantBlobs, gotBlobs) {
+					t.Fatal(cmp.Diff(wantBlobs, gotBlobs))
+				}
+			})
+		}
+	})
+
+	// next, test invalid uses, which should return an error
+	t.Run("invalid", func(t *testing.T) {
+		tests := []struct {
+			blobs []restic.Blob
+			err   string
+		}{
+			{
+				// pass one blob several times
+				blobs: []restic.Blob{
+					packfileBlobs[3],
+					packfileBlobs[8],
+					packfileBlobs[3],
+					packfileBlobs[4],
+				},
+				err: "overlapping blobs in pack",
+			},
+
+			{
+				// pass something that's not a valid blob in the current pack file
+				blobs: []restic.Blob{
+					{
+						Offset: 123,
+						Length: 20000,
+					},
+				},
+				err: "ciphertext verification failed",
+			},
+
+			{
+				// pass a blob that's too small
+				blobs: []restic.Blob{
+					{
+						Offset: 123,
+						Length: 10,
+					},
+				},
+				err: "invalid blob length",
+			},
+		}
+
+		for _, test := range tests {
+			t.Run("", func(t *testing.T) {
+				ctx, cancel := context.WithCancel(context.Background())
+				defer cancel()
+
+				handleBlob := func(blob restic.BlobHandle, buf []byte, err error) error {
+					return err
+				}
+
+				err = repository.StreamPack(ctx, load, &key, restic.ID{}, test.blobs, handleBlob)
+				if err == nil {
+					t.Fatalf("wanted error %v, got nil", test.err)
+				}
+
+				if !strings.Contains(err.Error(), test.err) {
+					t.Fatalf("wrong error returned, it should contain %q but was %q", test.err, err)
+				}
+			})
+		}
+	})
 }

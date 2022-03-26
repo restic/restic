@@ -10,6 +10,7 @@ import (
 
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -38,7 +39,7 @@ type TestRepo struct {
 	filesPathToContent map[string]string
 
 	//
-	loader func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error
+	loader repository.BackendLoadFn
 }
 
 func (i *TestRepo) Lookup(bh restic.BlobHandle) []restic.PackedBlob {
@@ -267,7 +268,7 @@ func TestErrorRestoreFiles(t *testing.T) {
 	r.files = repo.files
 
 	err := r.restoreFiles(context.TODO())
-	rtest.Equals(t, loadError, err)
+	rtest.Assert(t, errors.Is(err, loadError), "got %v, expected contained error %v", err, loadError)
 }
 
 func TestDownloadError(t *testing.T) {
