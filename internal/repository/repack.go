@@ -20,7 +20,7 @@ const numRepackWorkers = 8
 //
 // The map keepBlobs is modified by Repack, it is used to keep track of which
 // blobs have been processed.
-func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet, p *progress.Counter) (obsoletePacks restic.IDSet, err error) {
+func Repack(ctx context.Context, repo restic.Repository, dstRepo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet, p *progress.Counter) (obsoletePacks restic.IDSet, err error) {
 	debug.Log("repacking %d packs while keeping %d blobs", len(packs), len(keepBlobs))
 
 	var keepMutex sync.Mutex
@@ -29,7 +29,7 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 	downloadQueue := make(chan restic.PackBlobs)
 	wg.Go(func() error {
 		defer close(downloadQueue)
-		for pbs := range repo.Index().ListPacks(ctx, packs) {
+		for pbs := range repo.Index().ListPacks(wgCtx, packs) {
 			var packBlobs []restic.Blob
 			keepMutex.Lock()
 			// filter out unnecessary blobs
@@ -70,7 +70,7 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 				}
 
 				// We do want to save already saved blobs!
-				_, _, err = repo.SaveBlob(wgCtx, blob.Type, buf, blob.ID, true)
+				_, _, err = dstRepo.SaveBlob(wgCtx, blob.Type, buf, blob.ID, true)
 				if err != nil {
 					return err
 				}
@@ -94,7 +94,7 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 		return nil, err
 	}
 
-	if err := repo.Flush(ctx); err != nil {
+	if err := dstRepo.Flush(ctx); err != nil {
 		return nil, err
 	}
 
