@@ -37,7 +37,7 @@ import (
 
 	"os/exec"
 
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 var version = "0.13.0-dev (compiled manually)"
@@ -145,13 +145,13 @@ func checkErrno(err error) error {
 }
 
 func stdinIsTerminal() bool {
-	return terminal.IsTerminal(int(os.Stdin.Fd()))
+	return term.IsTerminal(int(os.Stdin.Fd()))
 }
 
 func stdoutIsTerminal() bool {
 	// mintty on windows can use pipes which behave like a posix terminal,
 	// but which are not a terminal handle
-	return terminal.IsTerminal(int(os.Stdout.Fd())) || stdoutCanUpdateStatus()
+	return term.IsTerminal(int(os.Stdout.Fd())) || stdoutCanUpdateStatus()
 }
 
 func stdoutCanUpdateStatus() bool {
@@ -159,7 +159,7 @@ func stdoutCanUpdateStatus() bool {
 }
 
 func stdoutTerminalWidth() int {
-	w, _, err := terminal.GetSize(int(os.Stdout.Fd()))
+	w, _, err := term.GetSize(int(os.Stdout.Fd()))
 	if err != nil {
 		return 0
 	}
@@ -172,12 +172,12 @@ func stdoutTerminalWidth() int {
 // program execution must revert changes to the terminal configuration itself.
 // The terminal configuration is only restored while reading a password.
 func restoreTerminal() {
-	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
+	if !term.IsTerminal(int(os.Stdout.Fd())) {
 		return
 	}
 
 	fd := int(os.Stdout.Fd())
-	state, err := terminal.GetState(fd)
+	state, err := term.GetState(fd)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to get terminal state: %v\n", err)
 		return
@@ -192,7 +192,7 @@ func restoreTerminal() {
 		if !isReadingPassword {
 			return nil
 		}
-		err := checkErrno(terminal.Restore(fd, state))
+		err := checkErrno(term.Restore(fd, state))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "unable to restore terminal state: %v\n", err)
 		}
@@ -322,7 +322,7 @@ func readPassword(in io.Reader) (password string, err error) {
 func readPasswordTerminal(in *os.File, out io.Writer, prompt string) (password string, err error) {
 	fmt.Fprint(out, prompt)
 	isReadingPassword = true
-	buf, err := terminal.ReadPassword(int(in.Fd()))
+	buf, err := term.ReadPassword(int(in.Fd()))
 	isReadingPassword = false
 	fmt.Fprintln(out)
 	if err != nil {
