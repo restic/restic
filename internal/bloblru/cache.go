@@ -22,7 +22,7 @@ type Cache struct {
 	free, size int // Current and max capacity, in bytes.
 }
 
-// Construct a blob cache that stores at most size bytes worth of blobs.
+// New constructs a blob cache that stores at most size bytes worth of blobs.
 func New(size int) *Cache {
 	c := &Cache{
 		free: size,
