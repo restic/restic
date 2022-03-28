@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
-	"encoding/binary"
 	"encoding/json"
 	"io"
 	"testing"
@@ -54,17 +53,18 @@ func verifyBlobs(t testing.TB, bufs []Buf, k *crypto.Key, rd io.ReaderAt, packSi
 	for _, buf := range bufs {
 		written += len(buf.data)
 	}
-	// header length + header + header crypto
-	headerSize := binary.Size(uint32(0)) + restic.CiphertextLength(len(bufs)*int(pack.EntrySize))
-	written += headerSize
-
-	// check length
-	rtest.Equals(t, uint(written), packSize)
 
 	// read and parse it again
 	entries, hdrSize, err := pack.List(k, rd, int64(packSize))
 	rtest.OK(t, err)
 	rtest.Equals(t, len(entries), len(bufs))
+
+	// check the head size calculation for consistency
+	headerSize := pack.CalculateHeaderSize(entries)
+	written += headerSize
+
+	// check length
+	rtest.Equals(t, uint(written), packSize)
 	rtest.Equals(t, headerSize, int(hdrSize))
 
 	var buf []byte
