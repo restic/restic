@@ -24,7 +24,7 @@ linters:
     - govet
 
     # make sure names and comments are used according to the conventions
-    - golint
+    - revive
 
     # detect when assignments to existing variables are not used
     - ineffassign
@@ -51,7 +51,7 @@ issues:
 
   # list of things to not warn about
   exclude:
-    # golint: do not warn about missing comments for exported stuff
-    - exported (function|method|var|type|const) `.*` should have comment or be unexported
-    # golint: ignore constants in all caps
+    # revive: do not warn about missing comments for exported stuff
+    - exported (function|method|var|type|const) .* should have comment or be unexported
+    # revive: ignore constants in all caps
     - don't use ALL_CAPS in Go names; use CamelCase

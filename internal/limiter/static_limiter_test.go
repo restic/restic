@@ -56,7 +56,7 @@ func TestRoundTripperReader(t *testing.T) {
 	_, err := io.ReadFull(rand.Reader, data)
 	test.OK(t, err)
 
-	var send *tracedReadCloser = newTracedReadCloser(bytes.NewReader(data))
+	send := newTracedReadCloser(bytes.NewReader(data))
 	var recv *tracedReadCloser
 
 	rt := limiter.Transport(roundTripper(func(req *http.Request) (*http.Response, error) {
