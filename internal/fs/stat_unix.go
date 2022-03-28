@@ -1,3 +1,4 @@
+//go:build !windows && !darwin && !freebsd && !netbsd
 // +build !windows,!darwin,!freebsd,!netbsd
 
 package fs

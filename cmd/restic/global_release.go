@@ -1,3 +1,4 @@
+//go:build !debug && !profile
 // +build !debug,!profile
 
 package main
