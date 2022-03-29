@@ -218,7 +218,7 @@ func BenchmarkLoadBlob(b *testing.B) {
 	}
 }
 
-func BenchmarkLoadAndDecrypt(b *testing.B) {
+func BenchmarkLoadUnpacked(b *testing.B) {
 	repo, cleanup := repository.TestRepository(b)
 	defer cleanup()
 
@@ -237,7 +237,7 @@ func BenchmarkLoadAndDecrypt(b *testing.B) {
 	b.SetBytes(int64(length))
 
 	for i := 0; i < b.N; i++ {
-		data, err := repo.LoadAndDecrypt(context.TODO(), nil, restic.PackFile, storageID)
+		data, err := repo.LoadUnpacked(context.TODO(), nil, restic.PackFile, storageID)
 		rtest.OK(b, err)
 
 		// See comment in BenchmarkLoadBlob.
@@ -300,7 +300,7 @@ func TestRepositoryLoadIndex(t *testing.T) {
 
 // loadIndex loads the index id from backend and returns it.
 func loadIndex(ctx context.Context, repo restic.Repository, id restic.ID) (*repository.Index, error) {
-	buf, err := repo.LoadAndDecrypt(ctx, nil, restic.IndexFile, id)
+	buf, err := repo.LoadUnpacked(ctx, nil, restic.IndexFile, id)
 	if err != nil {
 		return nil, err
 	}

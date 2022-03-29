@@ -43,10 +43,10 @@ type Repository interface {
 	SaveJSONUnpacked(context.Context, FileType, interface{}) (ID, error)
 
 	LoadJSONUnpacked(ctx context.Context, t FileType, id ID, dest interface{}) error
-	// LoadAndDecrypt loads and decrypts the file with the given type and ID,
+	// LoadUnpacked loads and decrypts the file with the given type and ID,
 	// using the supplied buffer (which must be empty). If the buffer is nil, a
 	// new buffer will be allocated and returned.
-	LoadAndDecrypt(ctx context.Context, buf []byte, t FileType, id ID) (data []byte, err error)
+	LoadUnpacked(ctx context.Context, buf []byte, t FileType, id ID) (data []byte, err error)
 
 	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
 	SaveBlob(context.Context, BlobType, []byte, ID, bool) (ID, bool, error)
@@ -70,7 +70,6 @@ type MasterIndex interface {
 	Has(BlobHandle) bool
 	Lookup(BlobHandle) []PackedBlob
 	Count(BlobType) uint
-	PackSize(ctx context.Context, onlyHdr bool) map[ID]int64
 
 	// Each returns a channel that yields all blobs known to the index. When
 	// the context is cancelled, the background goroutine terminates. This

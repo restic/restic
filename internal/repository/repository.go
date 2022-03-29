@@ -86,10 +86,10 @@ func (r *Repository) PrefixLength(ctx context.Context, t restic.FileType) (int, 
 	return restic.PrefixLength(ctx, r.be, t)
 }
 
-// LoadAndDecrypt loads and decrypts the file with the given type and ID, using
+// LoadUnpacked loads and decrypts the file with the given type and ID, using
 // the supplied buffer (which must be empty). If the buffer is nil, a new
 // buffer will be allocated and returned.
-func (r *Repository) LoadAndDecrypt(ctx context.Context, buf []byte, t restic.FileType, id restic.ID) ([]byte, error) {
+func (r *Repository) LoadUnpacked(ctx context.Context, buf []byte, t restic.FileType, id restic.ID) ([]byte, error) {
 	if len(buf) != 0 {
 		panic("buf is not empty")
 	}
@@ -239,7 +239,7 @@ func (r *Repository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.
 // LoadJSONUnpacked decrypts the data and afterwards calls json.Unmarshal on
 // the item.
 func (r *Repository) LoadJSONUnpacked(ctx context.Context, t restic.FileType, id restic.ID, item interface{}) (err error) {
-	buf, err := r.LoadAndDecrypt(ctx, nil, t, id)
+	buf, err := r.LoadUnpacked(ctx, nil, t, id)
 	if err != nil {
 		return err
 	}
@@ -252,10 +252,10 @@ func (r *Repository) LookupBlobSize(id restic.ID, tpe restic.BlobType) (uint, bo
 	return r.idx.LookupSize(restic.BlobHandle{ID: id, Type: tpe})
 }
 
-// SaveAndEncrypt encrypts data and stores it to the backend as type t. If data
+// saveAndEncrypt encrypts data and stores it to the backend as type t. If data
 // is small enough, it will be packed together with other small blobs.
 // The caller must ensure that the id matches the data.
-func (r *Repository) SaveAndEncrypt(ctx context.Context, t restic.BlobType, data []byte, id restic.ID) error {
+func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data []byte, id restic.ID) error {
 	debug.Log("save id %v (%v, %d bytes)", id, t, len(data))
 
 	nonce := crypto.NewRandomNonce()
@@ -698,7 +698,7 @@ func (r *Repository) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte
 
 	// only save when needed or explicitly told
 	if !known || storeDuplicate {
-		err = r.SaveAndEncrypt(ctx, t, buf, newID)
+		err = r.saveAndEncrypt(ctx, t, buf, newID)
 	}
 
 	return newID, known, err

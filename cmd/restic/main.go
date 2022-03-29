@@ -102,7 +102,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "%v\nthe `unlock` command can be used to remove stale locks\n", err)
 	case err == ErrInvalidSourceData:
 		fmt.Fprintf(os.Stderr, "Warning: %v\n", err)
-	case errors.IsFatal(errors.Cause(err)):
+	case errors.IsFatal(err):
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 	case err != nil:
 		fmt.Fprintf(os.Stderr, "%+v\n", err)

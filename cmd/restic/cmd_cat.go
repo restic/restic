@@ -79,7 +79,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 		Println(string(buf))
 		return nil
 	case "index":
-		buf, err := repo.LoadAndDecrypt(gopts.ctx, nil, restic.IndexFile, id)
+		buf, err := repo.LoadUnpacked(gopts.ctx, nil, restic.IndexFile, id)
 		if err != nil {
 			return err
 		}

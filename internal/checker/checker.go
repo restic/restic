@@ -123,7 +123,7 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 	}
 
 	// compute pack size using index entries
-	c.packs = c.masterIndex.PackSize(ctx, false)
+	c.packs = pack.Size(ctx, c.masterIndex, false)
 
 	debug.Log("checking for duplicate packs")
 	for packID := range c.packs {
@@ -452,7 +452,7 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 	sort.Slice(blobs, func(i, j int) bool {
 		return blobs[i].Offset < blobs[j].Offset
 	})
-	idxHdrSize := pack.HeaderSize + len(blobs)*int(pack.EntrySize)
+	idxHdrSize := pack.CalculateHeaderSize(blobs)
 	lastBlobEnd := 0
 	nonContinuousPack := false
 	for _, blob := range blobs {
@@ -542,7 +542,7 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 		// Check if blob is contained in index and position is correct
 		idxHas := false
 		for _, pb := range idx.Lookup(blob.BlobHandle) {
-			if pb.PackID == id && pb.Offset == blob.Offset && pb.Length == blob.Length {
+			if pb.PackID == id && pb.Blob == blob {
 				idxHas = true
 				break
 			}

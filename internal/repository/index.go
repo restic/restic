@@ -543,7 +543,7 @@ func (idx *Index) merge(idx2 *Index) error {
 			m.foreachWithID(e2.id, func(e *indexEntry) {
 				b := idx.toPackedBlob(e, restic.BlobType(typ))
 				b2 := idx2.toPackedBlob(e2, restic.BlobType(typ))
-				if b.Length == b2.Length && b.Offset == b2.Offset && b.PackID == b2.PackID {
+				if b == b2 {
 					found = true
 				}
 			})
