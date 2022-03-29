@@ -10,7 +10,7 @@ import (
 	"strings"
 	"unicode"
 
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 	"golang.org/x/text/width"
 )
 
@@ -321,7 +321,7 @@ func (t *Terminal) SetStatus(lines []string) {
 	var width int
 	if t.canUpdateStatus {
 		var err error
-		width, _, err = terminal.GetSize(int(t.fd))
+		width, _, err = term.GetSize(int(t.fd))
 		if err != nil || width <= 0 {
 			// use 80 columns by default
 			width = 80

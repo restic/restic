@@ -117,7 +117,7 @@ func (fs *LocalVss) snapshotPath(path string) string {
 			fs.msgMessage("creating VSS snapshot for [%s]\n", vssVolume)
 
 			if snapshot, err := NewVssSnapshot(vssVolume, 120, fs.msgError); err != nil {
-				_ = fs.msgError(vssVolume, errors.Errorf("failed to create snapshot for [%s]: %s\n",
+				_ = fs.msgError(vssVolume, errors.Errorf("failed to create snapshot for [%s]: %s",
 					vssVolume, err))
 				fs.failedSnapshots[volumeNameLower] = struct{}{}
 			} else {

@@ -61,7 +61,7 @@ func TestCounter(t *testing.T) {
 
 func TestCounterNil(t *testing.T) {
 	// Shouldn't panic.
-	var c *progress.Counter = nil
+	var c *progress.Counter
 	c.Add(1)
 	c.Done()
 }
