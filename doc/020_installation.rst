@@ -339,6 +339,13 @@ Example for using sudo to write a bash completion script directly to the system-
     $ sudo ./restic generate --bash-completion /etc/bash_completion.d/restic
     writing bash completion file to /etc/bash_completion.d/restic
 
+Example for using sudo to write a zsh completion script directly to the system-wide location:
+
+.. code-block:: console
+
+    $ sudo ./restic generate --zsh-completion /usr/local/share/zsh/site-functions/_restic
+    writing zsh completion file to /usr/local/share/zsh/site-functions/_restic
+
 .. note:: The path for the ``--bash-completion`` option may vary depending on
    the operating system used, e.g. ``/usr/share/bash-completion/completions/restic``
    in Debian and derivatives. Please look up the correct path in the appropriate
