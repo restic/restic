@@ -170,7 +170,7 @@ func (c *Comparer) printDir(ctx context.Context, mode string, stats *DiffStat, b
 		if node.Type == "dir" {
 			name += "/"
 		}
-		c.printChange(NewChange(name, "+"))
+		c.printChange(NewChange(name, mode))
 		stats.Add(node)
 		addBlobs(blobs, node)
 
