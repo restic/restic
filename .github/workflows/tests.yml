@@ -55,12 +55,6 @@ jobs:
             test_fuse: true
             install_verb: get
 
-          - job_name: Linux
-            go: 1.14.x
-            os: ubuntu-latest
-            test_fuse: true
-            install_verb: get
-
     name: ${{ matrix.job_name }} Go ${{ matrix.go }}
     runs-on: ${{ matrix.os }}
 
