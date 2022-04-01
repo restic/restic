@@ -417,7 +417,7 @@ The ``prune`` command accepts the following options:
       used by your repository, pass ``0`` to this option.
     * As a size relative to the total repo size (e.g. ``10%``). This means that
       after prune, at most ``10%`` of the total data stored in the repo may be
-      unused data. If the repo after prune has as size of 500MB, then at most
+      unused data. If the repo after prune has a size of 500MB, then at most
       50MB may be unused.
     * If the string ``unlimited`` is passed, there is no limit for partly
       unused files. This means that as long as some data is still used within
