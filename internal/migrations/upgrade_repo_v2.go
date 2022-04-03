@@ -15,6 +15,26 @@ func init() {
 	register(&UpgradeRepoV2{})
 }
 
+type UpgradeRepoV2Error struct {
+	UploadNewConfigError   error
+	ReuploadOldConfigError error
+
+	BackupFilePath string
+}
+
+func (err *UpgradeRepoV2Error) Error() string {
+	if err.ReuploadOldConfigError != nil {
+		return fmt.Sprintf("error uploading config (%v), re-uploading old config filed failed as well (%v), but there is a backup of the config file in %v", err.UploadNewConfigError, err.ReuploadOldConfigError, err.BackupFilePath)
+	}
+
+	return fmt.Sprintf("error uploading config (%v), re-uploaded old config was successful, there is a backup of the config file in %v", err.UploadNewConfigError, err.BackupFilePath)
+}
+
+func (err *UpgradeRepoV2Error) Unwrap() error {
+	// consider the original upload error as the primary cause
+	return err.UploadNewConfigError
+}
+
 type UpgradeRepoV2 struct{}
 
 func (*UpgradeRepoV2) Name() string {
@@ -69,7 +89,8 @@ func (m *UpgradeRepoV2) Apply(ctx context.Context, repo restic.Repository) error
 		return fmt.Errorf("load config file failed: %w", err)
 	}
 
-	err = ioutil.WriteFile(filepath.Join(tempdir, "config.old"), rawConfigFile, 0600)
+	backupFileName := filepath.Join(tempdir, "config")
+	err = ioutil.WriteFile(backupFileName, rawConfigFile, 0600)
 	if err != nil {
 		return fmt.Errorf("write config file backup to %v failed: %w", tempdir, err)
 	}
@@ -77,14 +98,21 @@ func (m *UpgradeRepoV2) Apply(ctx context.Context, repo restic.Repository) error
 	// run the upgrade
 	err = m.upgrade(ctx, repo)
 	if err != nil {
-		// try contingency methods, reupload the original file
-		_ = repo.Backend().Remove(ctx, h)
-		uploadError := repo.Backend().Save(ctx, h, restic.NewByteReader(rawConfigFile, nil))
-		if uploadError != nil {
-			return fmt.Errorf("error uploading config (%w), re-uploading old config filed failed as well (%v) but there is a backup in %v", err, uploadError, tempdir)
+
+		// build an error we can return to the caller
+		repoError := &UpgradeRepoV2Error{
+			UploadNewConfigError: err,
+			BackupFilePath:       backupFileName,
 		}
 
-		return fmt.Errorf("error uploading config (%w), re-uploadid old config, there is a backup in %v", err, tempdir)
+		// try contingency methods, reupload the original file
+		_ = repo.Backend().Remove(ctx, h)
+		err = repo.Backend().Save(ctx, h, restic.NewByteReader(rawConfigFile, nil))
+		if err != nil {
+			repoError.ReuploadOldConfigError = err
+		}
+
+		return repoError
 	}
 
 	_ = os.Remove(backupFileName)
