@@ -212,7 +212,7 @@ the exclude options are:
 
 -  ``--exclude`` Specified one or more times to exclude one or more items
 -  ``--iexclude`` Same as ``--exclude`` but ignores the case of paths
--  ``--exclude-caches`` Specified once to exclude folders containing a special file
+-  ``--exclude-caches`` Specified once to exclude folders containing `this special file <https://bford.info/cachedir/>`__
 -  ``--exclude-file`` Specified one or more times to exclude items listed in a given file
 -  ``--iexclude-file`` Same as ``exclude-file`` but ignores cases like in ``--iexclude``
 -  ``--exclude-if-present foo`` Specified one or more times to exclude a folder's content if it contains a file called ``foo`` (optionally having a given header, no wildcards for the file name supported)
