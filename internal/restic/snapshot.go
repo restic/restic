@@ -59,9 +59,9 @@ func NewSnapshot(paths []string, tags []string, hostname string, time time.Time)
 }
 
 // LoadSnapshot loads the snapshot with the id and returns it.
-func LoadSnapshot(ctx context.Context, repo Repository, id ID) (*Snapshot, error) {
+func LoadSnapshot(ctx context.Context, loader LoadJSONUnpackeder, id ID) (*Snapshot, error) {
 	sn := &Snapshot{id: &id}
-	err := repo.LoadJSONUnpacked(ctx, SnapshotFile, id, sn)
+	err := loader.LoadJSONUnpacked(ctx, SnapshotFile, id, sn)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ const loadSnapshotParallelism = 5
 // If the called function returns an error, this function is cancelled and
 // also returns this error.
 // If a snapshot ID is in excludeIDs, it will be ignored.
-func ForAllSnapshots(ctx context.Context, repo Repository, excludeIDs IDSet, fn func(ID, *Snapshot, error) error) error {
+func ForAllSnapshots(ctx context.Context, be Lister, loader LoadJSONUnpackeder, excludeIDs IDSet, fn func(ID, *Snapshot, error) error) error {
 	var m sync.Mutex
 
 	// track spawned goroutines using wg, create a new context which is
@@ -88,7 +88,13 @@ func ForAllSnapshots(ctx context.Context, repo Repository, excludeIDs IDSet, fn 
 	// send list of snapshot files through ch, which is closed afterwards
 	wg.Go(func() error {
 		defer close(ch)
-		return repo.List(ctx, SnapshotFile, func(id ID, size int64) error {
+		return be.List(ctx, SnapshotFile, func(fi FileInfo) error {
+			id, err := ParseID(fi.Name)
+			if err != nil {
+				debug.Log("unable to parse %v as an ID", fi.Name)
+				return nil
+			}
+
 			if excludeIDs.Has(id) {
 				return nil
 			}
@@ -107,7 +113,7 @@ func ForAllSnapshots(ctx context.Context, repo Repository, excludeIDs IDSet, fn 
 	worker := func() error {
 		for id := range ch {
 			debug.Log("load snapshot %v", id)
-			sn, err := LoadSnapshot(ctx, repo, id)
+			sn, err := LoadSnapshot(ctx, loader, id)
 
 			m.Lock()
 			err = fn(id, sn, err)

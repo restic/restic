@@ -73,7 +73,7 @@ func prettyPrintJSON(wr io.Writer, item interface{}) error {
 }
 
 func debugPrintSnapshots(ctx context.Context, repo *repository.Repository, wr io.Writer) error {
-	return restic.ForAllSnapshots(ctx, repo, nil, func(id restic.ID, snapshot *restic.Snapshot, err error) error {
+	return restic.ForAllSnapshots(ctx, repo.Backend(), repo, nil, func(id restic.ID, snapshot *restic.Snapshot, err error) error {
 		if err != nil {
 			return err
 		}

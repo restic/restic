@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/walker"
 
@@ -86,16 +87,21 @@ func runStats(gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	if err = repo.LoadIndex(ctx); err != nil {
-		return err
-	}
-
 	if !gopts.NoLock {
 		lock, err := lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
 		}
+	}
+
+	snapshotLister, err := backend.MemorizeList(gopts.ctx, repo.Backend(), restic.SnapshotFile)
+	if err != nil {
+		return err
+	}
+
+	if err = repo.LoadIndex(ctx); err != nil {
+		return err
 	}
 
 	if !gopts.JSON {
@@ -111,7 +117,7 @@ func runStats(gopts GlobalOptions, args []string) error {
 		snapshotsCount: 0,
 	}
 
-	for sn := range FindFilteredSnapshots(ctx, repo, statsOptions.Hosts, statsOptions.Tags, statsOptions.Paths, args) {
+	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, statsOptions.Hosts, statsOptions.Tags, statsOptions.Paths, args) {
 		err = statsWalkSnapshot(ctx, sn, repo, stats)
 		if err != nil {
 			return fmt.Errorf("error walking snapshot: %v", err)

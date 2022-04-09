@@ -275,6 +275,11 @@ func testRunForgetJSON(t testing.TB, gopts GlobalOptions, args ...string) {
 }
 
 func testRunPrune(t testing.TB, gopts GlobalOptions, opts PruneOptions) {
+	oldHook := gopts.backendTestHook
+	gopts.backendTestHook = func(r restic.Backend) (restic.Backend, error) { return newListOnceBackend(r), nil }
+	defer func() {
+		gopts.backendTestHook = oldHook
+	}()
 	rtest.OK(t, runPrune(opts, gopts))
 }
 
@@ -1065,6 +1070,8 @@ func TestKeyAddRemove(t *testing.T) {
 	}
 
 	env, cleanup := withTestEnvironment(t)
+	// must list keys more than once
+	env.gopts.backendTestHook = nil
 	defer cleanup()
 
 	testRunInit(t, env.gopts)
@@ -1659,6 +1666,11 @@ func TestPruneWithDamagedRepository(t *testing.T) {
 	rtest.Assert(t, len(snapshotIDs) == 1,
 		"expected one snapshot, got %v", snapshotIDs)
 
+	oldHook := env.gopts.backendTestHook
+	env.gopts.backendTestHook = func(r restic.Backend) (restic.Backend, error) { return newListOnceBackend(r), nil }
+	defer func() {
+		env.gopts.backendTestHook = oldHook
+	}()
 	// prune should fail
 	rtest.Assert(t, runPrune(pruneDefaultOptions, env.gopts) == errorPacksMissing,
 		"prune should have reported index not complete error")
@@ -1752,18 +1764,31 @@ func testEdgeCaseRepo(t *testing.T, tarfile string, optionsCheck CheckOptions, o
 type listOnceBackend struct {
 	restic.Backend
 	listedFileType map[restic.FileType]bool
+	strictOrder    bool
 }
 
 func newListOnceBackend(be restic.Backend) *listOnceBackend {
 	return &listOnceBackend{
 		Backend:        be,
 		listedFileType: make(map[restic.FileType]bool),
+		strictOrder:    false,
+	}
+}
+
+func newOrderedListOnceBackend(be restic.Backend) *listOnceBackend {
+	return &listOnceBackend{
+		Backend:        be,
+		listedFileType: make(map[restic.FileType]bool),
+		strictOrder:    true,
 	}
 }
 
 func (be *listOnceBackend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
 	if t != restic.LockFile && be.listedFileType[t] {
 		return errors.Errorf("tried listing type %v the second time", t)
+	}
+	if be.strictOrder && t == restic.SnapshotFile && be.listedFileType[restic.IndexFile] {
+		return errors.Errorf("tried listing type snapshots after index")
 	}
 	be.listedFileType[t] = true
 	return be.Backend.List(ctx, t, fn)
@@ -2135,4 +2160,38 @@ func TestBackendLoadWriteTo(t *testing.T) {
 	firstSnapshot := testRunList(t, "snapshots", env.gopts)
 	rtest.Assert(t, len(firstSnapshot) == 1,
 		"expected one snapshot, got %v", firstSnapshot)
+}
+
+func TestFindListOnce(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	env.gopts.backendTestHook = func(r restic.Backend) (restic.Backend, error) {
+		return newListOnceBackend(r), nil
+	}
+
+	testSetupBackupData(t, env)
+	opts := BackupOptions{}
+
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9")}, opts, env.gopts)
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "2")}, opts, env.gopts)
+	secondSnapshot := testRunList(t, "snapshots", env.gopts)
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "3")}, opts, env.gopts)
+	thirdSnapshot := restic.NewIDSet(testRunList(t, "snapshots", env.gopts)...)
+
+	repo, err := OpenRepository(env.gopts)
+	rtest.OK(t, err)
+
+	snapshotIDs := restic.NewIDSet()
+	// specify the two oldest snapshots explicitly and use "latest" to reference the newest one
+	for sn := range FindFilteredSnapshots(context.TODO(), repo.Backend(), repo, nil, nil, nil, []string{
+		secondSnapshot[0].String(),
+		secondSnapshot[1].String()[:8],
+		"latest",
+	}) {
+		snapshotIDs.Insert(*sn.ID())
+	}
+
+	// the snapshots can only be listed once, if both lists match then the there has been only a single List() call
+	rtest.Equals(t, thirdSnapshot, snapshotIDs)
 }

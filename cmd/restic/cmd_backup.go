@@ -475,7 +475,7 @@ func collectTargets(opts BackupOptions, args []string) (targets []string, err er
 func findParentSnapshot(ctx context.Context, repo restic.Repository, opts BackupOptions, targets []string, timeStampLimit time.Time) (parentID *restic.ID, err error) {
 	// Force using a parent
 	if !opts.Force && opts.Parent != "" {
-		id, err := restic.FindSnapshot(ctx, repo, opts.Parent)
+		id, err := restic.FindSnapshot(ctx, repo.Backend(), opts.Parent)
 		if err != nil {
 			return nil, errors.Fatalf("invalid id %q: %v", opts.Parent, err)
 		}
@@ -485,7 +485,7 @@ func findParentSnapshot(ctx context.Context, repo restic.Repository, opts Backup
 
 	// Find last snapshot to set it as parent, if not already set
 	if !opts.Force && parentID == nil {
-		id, err := restic.FindLatestSnapshot(ctx, repo, targets, []restic.TagList{}, []string{opts.Host}, &timeStampLimit)
+		id, err := restic.FindLatestSnapshot(ctx, repo.Backend(), repo, targets, []restic.TagList{}, []string{opts.Host}, &timeStampLimit)
 		if err == nil {
 			parentID = &id
 		} else if err != restic.ErrNoSnapshotFound {
@@ -571,14 +571,6 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		return err
 	}
 
-	if !gopts.JSON {
-		progressPrinter.V("load index files")
-	}
-	err = repo.LoadIndex(gopts.ctx)
-	if err != nil {
-		return err
-	}
-
 	var parentSnapshotID *restic.ID
 	if !opts.Stdin {
 		parentSnapshotID, err = findParentSnapshot(gopts.ctx, repo, opts, targets, timeStamp)
@@ -593,6 +585,14 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 				progressPrinter.P("no parent snapshot found, will read all files\n")
 			}
 		}
+	}
+
+	if !gopts.JSON {
+		progressPrinter.V("load index files")
+	}
+	err = repo.LoadIndex(gopts.ctx)
+	if err != nil {
+		return err
 	}
 
 	selectByNameFilter := func(item string) bool {

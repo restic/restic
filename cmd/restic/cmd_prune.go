@@ -150,6 +150,7 @@ func runPruneWithRepo(opts PruneOptions, gopts GlobalOptions, repo *repository.R
 	}
 
 	Verbosef("loading indexes...\n")
+	// loading the index before the snapshots is ok, as we use an exclusive lock here
 	err := repo.LoadIndex(gopts.ctx)
 	if err != nil {
 		return err
@@ -554,7 +555,7 @@ func getUsedBlobs(gopts GlobalOptions, repo restic.Repository, ignoreSnapshots r
 
 	var snapshotTrees restic.IDs
 	Verbosef("loading all snapshots...\n")
-	err = restic.ForAllSnapshots(gopts.ctx, repo, ignoreSnapshots,
+	err = restic.ForAllSnapshots(gopts.ctx, repo.Backend(), repo, ignoreSnapshots,
 		func(id restic.ID, sn *restic.Snapshot, err error) error {
 			debug.Log("add snapshot %v (tree %v, error %v)", id, *sn.Tree, err)
 			if err != nil {

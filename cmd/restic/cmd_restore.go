@@ -110,23 +110,23 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	err = repo.LoadIndex(ctx)
-	if err != nil {
-		return err
-	}
-
 	var id restic.ID
 
 	if snapshotIDString == "latest" {
-		id, err = restic.FindLatestSnapshot(ctx, repo, opts.Paths, opts.Tags, opts.Hosts, nil)
+		id, err = restic.FindLatestSnapshot(ctx, repo.Backend(), repo, opts.Paths, opts.Tags, opts.Hosts, nil)
 		if err != nil {
 			Exitf(1, "latest snapshot for criteria not found: %v Paths:%v Hosts:%v", err, opts.Paths, opts.Hosts)
 		}
 	} else {
-		id, err = restic.FindSnapshot(ctx, repo, snapshotIDString)
+		id, err = restic.FindSnapshot(ctx, repo.Backend(), snapshotIDString)
 		if err != nil {
 			Exitf(1, "invalid id %q: %v", snapshotIDString, err)
 		}
+	}
+
+	err = repo.LoadIndex(ctx)
+	if err != nil {
+		return err
 	}
 
 	res, err := restorer.NewRestorer(ctx, repo, id)

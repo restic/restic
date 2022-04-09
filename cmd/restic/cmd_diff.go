@@ -7,9 +7,9 @@ import (
 	"reflect"
 	"sort"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/spf13/cobra"
 )
@@ -53,8 +53,8 @@ func init() {
 	f.BoolVar(&diffOptions.ShowMetadata, "metadata", false, "print changes in metadata")
 }
 
-func loadSnapshot(ctx context.Context, repo *repository.Repository, desc string) (*restic.Snapshot, error) {
-	id, err := restic.FindSnapshot(ctx, repo, desc)
+func loadSnapshot(ctx context.Context, be restic.Lister, repo restic.Repository, desc string) (*restic.Snapshot, error) {
+	id, err := restic.FindSnapshot(ctx, be, desc)
 	if err != nil {
 		return nil, errors.Fatal(err.Error())
 	}
@@ -334,10 +334,6 @@ func runDiff(opts DiffOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	if err = repo.LoadIndex(ctx); err != nil {
-		return err
-	}
-
 	if !gopts.NoLock {
 		lock, err := lockRepo(ctx, repo)
 		defer unlockRepo(lock)
@@ -346,18 +342,27 @@ func runDiff(opts DiffOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	sn1, err := loadSnapshot(ctx, repo, args[0])
+	// cache snapshots listing
+	be, err := backend.MemorizeList(ctx, repo.Backend(), restic.SnapshotFile)
+	if err != nil {
+		return err
+	}
+	sn1, err := loadSnapshot(ctx, be, repo, args[0])
 	if err != nil {
 		return err
 	}
 
-	sn2, err := loadSnapshot(ctx, repo, args[1])
+	sn2, err := loadSnapshot(ctx, be, repo, args[1])
 	if err != nil {
 		return err
 	}
 
 	if !gopts.JSON {
 		Verbosef("comparing snapshot %v to %v:\n\n", sn1.ID().Str(), sn2.ID().Str())
+	}
+
+	if err = repo.LoadIndex(ctx); err != nil {
+		return err
 	}
 
 	if sn1.Tree == nil {

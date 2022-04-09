@@ -223,7 +223,7 @@ func updateSnapshots(ctx context.Context, root *Root) error {
 		return nil
 	}
 
-	snapshots, err := restic.FindFilteredSnapshots(ctx, root.repo, root.cfg.Hosts, root.cfg.Tags, root.cfg.Paths)
+	snapshots, err := restic.FindFilteredSnapshots(ctx, root.repo.Backend(), root.repo, root.cfg.Hosts, root.cfg.Tags, root.cfg.Paths)
 	if err != nil {
 		return err
 	}

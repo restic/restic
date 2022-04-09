@@ -3,6 +3,7 @@ package backend
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/restic/restic/internal/restic"
@@ -56,4 +57,45 @@ func DefaultLoad(ctx context.Context, h restic.Handle, length int, offset int64,
 		return err
 	}
 	return rd.Close()
+}
+
+type memorizedLister struct {
+	fileInfos []restic.FileInfo
+	tpe       restic.FileType
+}
+
+func (m *memorizedLister) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
+	if t != m.tpe {
+		return fmt.Errorf("filetype mismatch, expected %s got %s", m.tpe, t)
+	}
+	for _, fi := range m.fileInfos {
+		if ctx.Err() != nil {
+			break
+		}
+		err := fn(fi)
+		if err != nil {
+			return err
+		}
+	}
+	return ctx.Err()
+}
+
+func MemorizeList(ctx context.Context, be restic.Lister, t restic.FileType) (restic.Lister, error) {
+	if _, ok := be.(*memorizedLister); ok {
+		return be, nil
+	}
+
+	var fileInfos []restic.FileInfo
+	err := be.List(ctx, t, func(fi restic.FileInfo) error {
+		fileInfos = append(fileInfos, fi)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &memorizedLister{
+		fileInfos: fileInfos,
+		tpe:       t,
+	}, nil
 }

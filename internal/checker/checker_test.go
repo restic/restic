@@ -44,6 +44,10 @@ func checkPacks(chkr *checker.Checker) []error {
 }
 
 func checkStruct(chkr *checker.Checker) []error {
+	err := chkr.LoadSnapshots(context.TODO())
+	if err != nil {
+		return []error{err}
+	}
 	return collectErrors(context.TODO(), func(ctx context.Context, errChan chan<- error) {
 		chkr.Structure(ctx, nil, errChan)
 	})
@@ -587,7 +591,7 @@ func benchmarkSnapshotScaling(t *testing.B, newSnapshots int) {
 	chkr, repo, cleanup := loadBenchRepository(t)
 	defer cleanup()
 
-	snID, err := restic.FindSnapshot(context.TODO(), repo, "51d249d2")
+	snID, err := restic.FindSnapshot(context.TODO(), repo.Backend(), "51d249d2")
 	if err != nil {
 		t.Fatal(err)
 	}

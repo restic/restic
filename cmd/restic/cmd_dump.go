@@ -144,20 +144,15 @@ func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	err = repo.LoadIndex(ctx)
-	if err != nil {
-		return err
-	}
-
 	var id restic.ID
 
 	if snapshotIDString == "latest" {
-		id, err = restic.FindLatestSnapshot(ctx, repo, opts.Paths, opts.Tags, opts.Hosts, nil)
+		id, err = restic.FindLatestSnapshot(ctx, repo.Backend(), repo, opts.Paths, opts.Tags, opts.Hosts, nil)
 		if err != nil {
 			Exitf(1, "latest snapshot for criteria not found: %v Paths:%v Hosts:%v", err, opts.Paths, opts.Hosts)
 		}
 	} else {
-		id, err = restic.FindSnapshot(ctx, repo, snapshotIDString)
+		id, err = restic.FindSnapshot(ctx, repo.Backend(), snapshotIDString)
 		if err != nil {
 			Exitf(1, "invalid id %q: %v", snapshotIDString, err)
 		}
@@ -166,6 +161,11 @@ func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
 	sn, err := restic.LoadSnapshot(gopts.ctx, repo, id)
 	if err != nil {
 		Exitf(2, "loading snapshot %q failed: %v", snapshotIDString, err)
+	}
+
+	err = repo.LoadIndex(ctx)
+	if err != nil {
+		return err
 	}
 
 	tree, err := repo.LoadTree(ctx, *sn.Tree)
