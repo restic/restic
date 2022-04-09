@@ -593,7 +593,9 @@ func (r *Repository) SearchKey(ctx context.Context, password string, maxKeys int
 	r.treePM.key = key.master
 	r.keyName = key.Name()
 	r.cfg, err = restic.LoadConfig(ctx, r)
-	if err != nil {
+	if err == crypto.ErrUnauthenticated {
+		return errors.Fatalf("config or key %v is damaged: %v", key.Name(), err)
+	} else if err != nil {
 		return errors.Fatalf("config cannot be loaded: %v", err)
 	}
 	return nil
