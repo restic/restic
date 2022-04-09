@@ -301,18 +301,6 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 	return errors.Wrap(err, "client.PutObject")
 }
 
-// wrapReader wraps an io.ReadCloser to run an additional function on Close.
-type wrapReader struct {
-	io.ReadCloser
-	f func()
-}
-
-func (wr wrapReader) Close() error {
-	err := wr.ReadCloser.Close()
-	wr.f()
-	return err
-}
-
 // Load runs fn with a reader that yields the contents of the file at h at the
 // given offset.
 func (be *Backend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
@@ -350,22 +338,17 @@ func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, 
 	}
 
 	be.sem.GetToken()
+	ctx, cancel := context.WithCancel(ctx)
+
 	coreClient := minio.Core{Client: be.client}
 	rd, _, _, err := coreClient.GetObject(ctx, be.cfg.Bucket, objName, opts)
 	if err != nil {
+		cancel()
 		be.sem.ReleaseToken()
 		return nil, err
 	}
 
-	closeRd := wrapReader{
-		ReadCloser: rd,
-		f: func() {
-			debug.Log("Close()")
-			be.sem.ReleaseToken()
-		},
-	}
-
-	return closeRd, err
+	return be.sem.ReleaseTokenOnClose(rd, cancel), err
 }
 
 // Stat returns information about a blob.

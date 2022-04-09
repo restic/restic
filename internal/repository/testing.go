@@ -93,7 +93,7 @@ func TestRepository(t testing.TB) (r restic.Repository, cleanup func()) {
 
 // TestOpenLocal opens a local repository.
 func TestOpenLocal(t testing.TB, dir string) (r restic.Repository) {
-	be, err := local.Open(context.TODO(), local.Config{Path: dir})
+	be, err := local.Open(context.TODO(), local.Config{Path: dir, Connections: 2})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -42,8 +42,9 @@ func newTestSuite(t testing.TB) *test.Suite {
 			t.Logf("create new backend at %v", dir)
 
 			cfg := sftp.Config{
-				Path:    dir,
-				Command: fmt.Sprintf("%q -e", sftpServer),
+				Path:        dir,
+				Command:     fmt.Sprintf("%q -e", sftpServer),
+				Connections: 5,
 			}
 			return cfg, nil
 		},

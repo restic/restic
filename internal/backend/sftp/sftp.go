@@ -31,6 +31,7 @@ type SFTP struct {
 	cmd    *exec.Cmd
 	result <-chan error
 
+	sem *backend.Semaphore
 	backend.Layout
 	Config
 }
@@ -116,6 +117,11 @@ func (r *SFTP) clientError() error {
 func Open(ctx context.Context, cfg Config) (*SFTP, error) {
 	debug.Log("open backend with config %#v", cfg)
 
+	sem, err := backend.NewSemaphore(cfg.Connections)
+	if err != nil {
+		return nil, err
+	}
+
 	cmd, args, err := buildSSHCommand(cfg)
 	if err != nil {
 		return nil, err
@@ -136,6 +142,7 @@ func Open(ctx context.Context, cfg Config) (*SFTP, error) {
 
 	sftp.Config = cfg
 	sftp.p = cfg.Path
+	sftp.sem = sem
 	return sftp, nil
 }
 
@@ -238,6 +245,10 @@ func Create(ctx context.Context, cfg Config) (*SFTP, error) {
 	return Open(ctx, cfg)
 }
 
+func (r *SFTP) Connections() uint {
+	return r.Config.Connections
+}
+
 // Location returns this backend's location (the directory name).
 func (r *SFTP) Location() string {
 	return r.p
@@ -279,6 +290,9 @@ func (r *SFTP) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader
 	filename := r.Filename(h)
 	tmpFilename := filename + "-restic-temp-" + tempSuffix()
 	dirname := r.Dirname(h)
+
+	r.sem.GetToken()
+	defer r.sem.ReleaseToken()
 
 	// create new file
 	f, err := r.c.OpenFile(tmpFilename, os.O_CREATE|os.O_EXCL|os.O_WRONLY)
@@ -371,6 +385,19 @@ func (r *SFTP) Load(ctx context.Context, h restic.Handle, length int, offset int
 	return backend.DefaultLoad(ctx, h, length, offset, r.openReader, fn)
 }
 
+// wrapReader wraps an io.ReadCloser to run an additional function on Close.
+type wrapReader struct {
+	io.ReadCloser
+	io.WriterTo
+	f func()
+}
+
+func (wr *wrapReader) Close() error {
+	err := wr.ReadCloser.Close()
+	wr.f()
+	return err
+}
+
 func (r *SFTP) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	debug.Log("Load %v, length %v, offset %v", h, length, offset)
 	if err := h.Valid(); err != nil {
@@ -381,26 +408,38 @@ func (r *SFTP) openReader(ctx context.Context, h restic.Handle, length int, offs
 		return nil, errors.New("offset is negative")
 	}
 
+	r.sem.GetToken()
 	f, err := r.c.Open(r.Filename(h))
 	if err != nil {
+		r.sem.ReleaseToken()
 		return nil, err
 	}
 
 	if offset > 0 {
 		_, err = f.Seek(offset, 0)
 		if err != nil {
+			r.sem.ReleaseToken()
 			_ = f.Close()
 			return nil, err
 		}
 	}
 
+	// use custom close wrapper to also provide WriteTo() on the wrapper
+	rd := &wrapReader{
+		ReadCloser: f,
+		WriterTo:   f,
+		f: func() {
+			r.sem.ReleaseToken()
+		},
+	}
+
 	if length > 0 {
 		// unlimited reads usually use io.Copy which needs WriteTo support at the underlying reader
 		// limited reads are usually combined with io.ReadFull which reads all required bytes into a buffer in one go
-		return backend.LimitReadCloser(f, int64(length)), nil
+		return backend.LimitReadCloser(rd, int64(length)), nil
 	}
 
-	return f, nil
+	return rd, nil
 }
 
 // Stat returns information about a blob.
@@ -413,6 +452,9 @@ func (r *SFTP) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, erro
 	if err := h.Valid(); err != nil {
 		return restic.FileInfo{}, backoff.Permanent(err)
 	}
+
+	r.sem.GetToken()
+	defer r.sem.ReleaseToken()
 
 	fi, err := r.c.Lstat(r.Filename(h))
 	if err != nil {
@@ -428,6 +470,9 @@ func (r *SFTP) Test(ctx context.Context, h restic.Handle) (bool, error) {
 	if err := r.clientError(); err != nil {
 		return false, err
 	}
+
+	r.sem.GetToken()
+	defer r.sem.ReleaseToken()
 
 	_, err := r.c.Lstat(r.Filename(h))
 	if os.IsNotExist(errors.Cause(err)) {
@@ -448,6 +493,9 @@ func (r *SFTP) Remove(ctx context.Context, h restic.Handle) error {
 		return err
 	}
 
+	r.sem.GetToken()
+	defer r.sem.ReleaseToken()
+
 	return r.c.Remove(r.Filename(h))
 }
 
@@ -458,7 +506,14 @@ func (r *SFTP) List(ctx context.Context, t restic.FileType, fn func(restic.FileI
 
 	basedir, subdirs := r.Basedir(t)
 	walker := r.c.Walk(basedir)
-	for walker.Step() {
+	for {
+		r.sem.GetToken()
+		ok := walker.Step()
+		r.sem.ReleaseToken()
+		if !ok {
+			break
+		}
+
 		if walker.Err() != nil {
 			if r.IsNotExist(walker.Err()) {
 				debug.Log("ignoring non-existing directory")
