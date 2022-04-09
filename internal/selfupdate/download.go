@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -40,14 +41,6 @@ func findHash(buf []byte, filename string) (hash []byte, err error) {
 }
 
 func extractToFile(buf []byte, filename, target string, printf func(string, ...interface{})) error {
-	var mode = os.FileMode(0755)
-
-	// get information about the target file
-	fi, err := os.Lstat(target)
-	if err == nil {
-		mode = fi.Mode()
-	}
-
 	var rd io.Reader = bytes.NewReader(buf)
 	switch filepath.Ext(filename) {
 	case ".bz2":
@@ -74,33 +67,44 @@ func extractToFile(buf []byte, filename, target string, printf func(string, ...i
 		rd = file
 	}
 
-	err = os.Remove(target)
-	if os.IsNotExist(err) {
-		err = nil
-	}
-	if err != nil {
-		return fmt.Errorf("unable to remove target file: %v", err)
-	}
-
-	dest, err := os.OpenFile(target, os.O_CREATE|os.O_EXCL|os.O_WRONLY, mode)
+	// Write everything to a temp file
+	dir := filepath.Dir(target)
+	new, err := ioutil.TempFile(dir, "restic")
 	if err != nil {
 		return err
 	}
 
-	n, err := io.Copy(dest, rd)
+	n, err := io.Copy(new, rd)
 	if err != nil {
-		_ = dest.Close()
-		_ = os.Remove(dest.Name())
+		_ = new.Close()
+		_ = os.Remove(new.Name())
+		return err
+	}
+	if err = new.Sync(); err != nil {
+		return err
+	}
+	if err = new.Close(); err != nil {
 		return err
 	}
 
-	err = dest.Close()
-	if err != nil {
+	mode := os.FileMode(0755)
+	// attempt to find the original mode
+	if fi, err := os.Lstat(target); err == nil {
+		mode = fi.Mode()
+	}
+
+	// Remove the original binary.
+	if err := removeResticBinary(dir, target); err != nil {
 		return err
 	}
 
-	printf("saved %d bytes in %v\n", n, dest.Name())
-	return nil
+	// Rename the temp file to the final location atomically.
+	if err := os.Rename(new.Name(), target); err != nil {
+		return err
+	}
+
+	printf("saved %d bytes in %v\n", n, target)
+	return os.Chmod(target, mode)
 }
 
 // DownloadLatestStableRelease downloads the latest stable released version of
