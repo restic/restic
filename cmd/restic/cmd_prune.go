@@ -191,6 +191,7 @@ type packInfo struct {
 	usedSize       uint64
 	unusedSize     uint64
 	tpe            restic.BlobType
+	uncompressed   bool
 }
 
 type packInfoWithID struct {
@@ -299,6 +300,9 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 			ip.unusedSize += size
 			ip.unusedBlobs++
 		}
+		if !blob.IsCompressed() {
+			ip.uncompressed = true
+		}
 		// update indexPack
 		indexPack[blob.PackID] = ip
 	}
@@ -317,6 +321,8 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 			repackAllPacksWithDuplicates = false
 		}
 	}
+
+	repoVersion := repo.Config().Version
 
 	// loop over all packs and decide what to do
 	bar := newProgressMax(!gopts.Quiet, uint64(len(indexPack)), "packs processed")
@@ -350,6 +356,11 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 			stats.packs.partlyUsed++
 		}
 
+		// repo v2: always repack tree blobs if uncompressed
+		mustCompress := repoVersion >= 2 && p.tpe == restic.TreeBlob && p.uncompressed
+		// use a flag that pack must be compressed
+		p.uncompressed = mustCompress
+
 		// decide what to do
 		switch {
 		case p.usedBlobs == 0 && p.duplicateBlobs == 0:
@@ -362,7 +373,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 			// if this is a data pack and --repack-cacheable-only is set => keep pack!
 			keep(p)
 
-		case p.unusedBlobs == 0 && p.duplicateBlobs == 0 && p.tpe != restic.InvalidBlob:
+		case p.unusedBlobs == 0 && p.duplicateBlobs == 0 && p.tpe != restic.InvalidBlob && !mustCompress:
 			// All blobs in pack are used and not duplicates/mixed => keep pack!
 			keep(p)
 
@@ -447,8 +458,8 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		case reachedRepackSize:
 			keep(p.packInfo)
 
-		case p.duplicateBlobs > 0, p.tpe != restic.DataBlob:
-			// repacking duplicates/non-data is only limited by repackSize
+		case p.duplicateBlobs > 0, p.tpe != restic.DataBlob, p.uncompressed:
+			// repacking duplicates/non-data/uncompressed-trees is only limited by repackSize
 			repack(p.ID, p.packInfo)
 
 		case reachedUnusedSizeAfter:
