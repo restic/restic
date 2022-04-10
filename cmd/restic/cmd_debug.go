@@ -53,12 +53,14 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 var tryRepair bool
 var repairByte bool
 var extractPack bool
+var reuploadBlobs bool
 
 func init() {
 	cmdRoot.AddCommand(cmdDebug)
 	cmdDebug.AddCommand(cmdDebugDump)
 	cmdDebug.AddCommand(cmdDebugExamine)
 	cmdDebugExamine.Flags().BoolVar(&extractPack, "extract-pack", false, "write blobs to the current directory")
+	cmdDebugExamine.Flags().BoolVar(&reuploadBlobs, "reupload-blobs", false, "reupload blobs to the repository")
 	cmdDebugExamine.Flags().BoolVar(&tryRepair, "try-repair", false, "try to repair broken blobs with single bit flips")
 	cmdDebugExamine.Flags().BoolVar(&repairByte, "repair-byte", false, "try to repair broken blobs by trying bytes")
 }
@@ -382,6 +384,20 @@ func loadBlobs(ctx context.Context, repo restic.Repository, pack restic.ID, list
 			if err != nil {
 				return err
 			}
+		}
+		if reuploadBlobs {
+			_, _, err := repo.SaveBlob(ctx, blob.Type, plaintext, id, true)
+			if err != nil {
+				return err
+			}
+			Printf("         uploaded %v %v\n", blob.Type, id)
+		}
+	}
+
+	if reuploadBlobs {
+		err := repo.Flush(ctx)
+		if err != nil {
+			return err
 		}
 	}
 
