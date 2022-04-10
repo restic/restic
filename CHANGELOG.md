@@ -1,3 +1,39 @@
+Changelog for restic 0.13.1 (2022-04-10)
+=======================================
+
+The following sections list the changes in restic 0.13.1 relevant to
+restic users. The changes are ordered by importance.
+
+Summary
+-------
+
+ * Fix #3685: Fix the diff command
+ * Fix #3681: Fix rclone (shimmed by Scoop) and sftp stopped working on Windows
+
+Details
+-------
+
+ * Bugfix #3685: Fix the diff command
+
+   There was a bug in the `diff` command, it would always show files in a removed directory as added.
+   We've fixed that.
+
+   https://github.com/restic/restic/issues/3685
+   https://github.com/restic/restic/pull/3686
+
+ * Bugfix #3681: Fix rclone (shimmed by Scoop) and sftp stopped working on Windows
+
+   In #3602 a fix was introduced to fix the problem that rclone prematurely exits when Ctrl+C is
+   pressed on Windows. The solution was to create the subprocess with its console detached from
+   the restic console. However, such solution fails when using rclone install by scoop or using
+   sftp with a passphrase- protected private key. We've fixed that by using a different approach
+   to prevent Ctrl-C from passing down too early.
+
+   https://github.com/restic/restic/issues/3681
+   https://github.com/restic/restic/issues/3692
+   https://github.com/restic/restic/pull/3696
+
+
 Changelog for restic 0.13.0 (2022-03-26)
 =======================================
 
