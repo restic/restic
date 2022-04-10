@@ -40,7 +40,7 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
-var version = "0.13.0"
+var version = "0.13.1"
 
 // TimeFormat is the format used for all timestamps printed by restic.
 const TimeFormat = "2006-01-02 15:04:05"
