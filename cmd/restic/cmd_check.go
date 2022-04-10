@@ -57,7 +57,13 @@ func init() {
 	f := cmdCheck.Flags()
 	f.BoolVar(&checkOptions.ReadData, "read-data", false, "read all data blobs")
 	f.StringVar(&checkOptions.ReadDataSubset, "read-data-subset", "", "read a `subset` of data packs, specified as 'n/t' for specific part, or either 'x%' or 'x.y%' or a size in bytes with suffixes k/K, m/M, g/G, t/T for a random subset")
-	f.BoolVar(&checkOptions.CheckUnused, "check-unused", false, "find unused blobs")
+	var ignored bool
+	f.BoolVar(&ignored, "check-unused", false, "find unused blobs")
+	err := f.MarkDeprecated("check-unused", "`--check-unused` is deprecated and will be ignored")
+	if err != nil {
+		// MarkDeprecated only returns an error when the flag is not found
+		panic(err)
+	}
 	f.BoolVar(&checkOptions.WithCache, "with-cache", false, "use the cache")
 }
 
