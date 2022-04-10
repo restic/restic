@@ -63,6 +63,14 @@ func checkData(chkr *checker.Checker) []error {
 	)
 }
 
+func assertOnlyMixedPackHints(t *testing.T, hints []error) {
+	for _, err := range hints {
+		if _, ok := err.(*checker.ErrMixedPack); !ok {
+			t.Fatalf("expected mixed pack hint, got %v", err)
+		}
+	}
+}
+
 func TestCheckRepo(t *testing.T) {
 	repodir, cleanup := test.Env(t, checkerTestData)
 	defer cleanup()
@@ -74,9 +82,9 @@ func TestCheckRepo(t *testing.T) {
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
-
-	if len(hints) > 0 {
-		t.Errorf("expected no hints, got %v: %v", len(hints), hints)
+	assertOnlyMixedPackHints(t, hints)
+	if len(hints) == 0 {
+		t.Fatal("expected mixed pack warnings, got none")
 	}
 
 	test.OKs(t, checkPacks(chkr))
@@ -100,10 +108,7 @@ func TestMissingPack(t *testing.T) {
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
-
-	if len(hints) > 0 {
-		t.Errorf("expected no hints, got %v: %v", len(hints), hints)
-	}
+	assertOnlyMixedPackHints(t, hints)
 
 	errs = checkPacks(chkr)
 
@@ -136,10 +141,7 @@ func TestUnreferencedPack(t *testing.T) {
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
-
-	if len(hints) > 0 {
-		t.Errorf("expected no hints, got %v: %v", len(hints), hints)
-	}
+	assertOnlyMixedPackHints(t, hints)
 
 	errs = checkPacks(chkr)
 
@@ -181,10 +183,7 @@ func TestUnreferencedBlobs(t *testing.T) {
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
-
-	if len(hints) > 0 {
-		t.Errorf("expected no hints, got %v: %v", len(hints), hints)
-	}
+	assertOnlyMixedPackHints(t, hints)
 
 	test.OKs(t, checkPacks(chkr))
 	test.OKs(t, checkStruct(chkr))
@@ -269,9 +268,7 @@ func TestModifiedIndex(t *testing.T) {
 		t.Logf("found expected error %v", err)
 	}
 
-	if len(hints) > 0 {
-		t.Errorf("expected no hints, got %v: %v", len(hints), hints)
-	}
+	assertOnlyMixedPackHints(t, hints)
 }
 
 var checkerDuplicateIndexTestData = filepath.Join("testdata", "duplicate-packs-in-index-test-repo.tar.gz")
@@ -421,10 +418,7 @@ func TestCheckerNoDuplicateTreeDecodes(t *testing.T) {
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
-
-	if len(hints) > 0 {
-		t.Errorf("expected no hints, got %v: %v", len(hints), hints)
-	}
+	assertOnlyMixedPackHints(t, hints)
 
 	test.OKs(t, checkPacks(chkr))
 	test.OKs(t, checkStruct(chkr))
@@ -572,8 +566,10 @@ func loadBenchRepository(t *testing.B) (*checker.Checker, restic.Repository, fun
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
 
-	if len(hints) > 0 {
-		t.Errorf("expected no hints, got %v: %v", len(hints), hints)
+	for _, err := range hints {
+		if _, ok := err.(*checker.ErrMixedPack); !ok {
+			t.Fatalf("expected mixed pack hint, got %v", err)
+		}
 	}
 	return chkr, repo, cleanup
 }

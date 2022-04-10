@@ -221,11 +221,15 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 
 	errorsFound := false
 	suggestIndexRebuild := false
+	mixedFound := false
 	for _, hint := range hints {
 		switch hint.(type) {
 		case *checker.ErrDuplicatePacks, *checker.ErrOldIndexFormat:
 			Printf("%v\n", hint)
 			suggestIndexRebuild = true
+		case *checker.ErrMixedPack:
+			Printf("%v\n", hint)
+			mixedFound = true
 		default:
 			Warnf("error: %v\n", hint)
 			errorsFound = true
@@ -234,6 +238,9 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 
 	if suggestIndexRebuild {
 		Printf("This is non-critical, you can run `restic rebuild-index' to correct this\n")
+	}
+	if mixedFound {
+		Printf("Mixed packs with tree and data blobs are non-critical, you can run `restic prune` to correct this.\n")
 	}
 
 	if len(errs) > 0 {

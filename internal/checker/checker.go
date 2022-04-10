@@ -66,6 +66,15 @@ func (e *ErrDuplicatePacks) Error() string {
 	return fmt.Sprintf("pack %v contained in several indexes: %v", e.PackID, e.Indexes)
 }
 
+// ErrMixedPack is returned when a pack is found that contains both tree and data blobs.
+type ErrMixedPack struct {
+	PackID restic.ID
+}
+
+func (e *ErrMixedPack) Error() string {
+	return fmt.Sprintf("pack %v contains a mix of tree and data blobs", e.PackID.Str())
+}
+
 // ErrOldIndexFormat is returned when an index with the old format is
 // found.
 type ErrOldIndexFormat struct {
@@ -139,6 +148,11 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 			hints = append(hints, &ErrDuplicatePacks{
 				PackID:  packID,
 				Indexes: packToIndex[packID],
+			})
+		}
+		if c.masterIndex.IsMixedPack(packID) {
+			hints = append(hints, &ErrMixedPack{
+				PackID: packID,
 			})
 		}
 	}
