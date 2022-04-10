@@ -260,10 +260,12 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 		if checker.IsOrphanedPack(err) {
 			orphanedPacks++
 			Verbosef("%v\n", err)
-			continue
+		} else if _, ok := err.(*checker.ErrLegacyLayout); ok {
+			Verbosef("repository still uses the S3 legacy layout\nPlease run `restic migrate s3legacy` to correct this.\n")
+		} else {
+			errorsFound = true
+			Warnf("%v\n", err)
 		}
-		errorsFound = true
-		Warnf("error: %v\n", err)
 	}
 
 	if orphanedPacks > 0 {

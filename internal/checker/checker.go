@@ -13,6 +13,7 @@ import (
 
 	"github.com/minio/sha256-simd"
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/s3"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/hashing"
@@ -54,6 +55,13 @@ func New(repo restic.Repository, trackUnused bool) *Checker {
 	c.blobRefs.M = restic.NewBlobSet()
 
 	return c
+}
+
+// ErrLegacyLayout is returned when the repository uses the S3 legacy layout.
+type ErrLegacyLayout struct{}
+
+func (e *ErrLegacyLayout) Error() string {
+	return "repository uses S3 legacy layout"
 }
 
 // ErrDuplicatePacks is returned when a pack is found in more than one index.
@@ -184,11 +192,24 @@ func IsOrphanedPack(err error) bool {
 	return errors.As(err, &e) && e.Orphaned
 }
 
+func isS3Legacy(b restic.Backend) bool {
+	be, ok := b.(*s3.Backend)
+	if !ok {
+		return false
+	}
+
+	return be.Layout.Name() == "s3legacy"
+}
+
 // Packs checks that all packs referenced in the index are still available and
 // there are no packs that aren't in an index. errChan is closed after all
 // packs have been checked.
 func (c *Checker) Packs(ctx context.Context, errChan chan<- error) {
 	defer close(errChan)
+
+	if isS3Legacy(c.repo.Backend()) {
+		errChan <- &ErrLegacyLayout{}
+	}
 
 	debug.Log("checking for %d packs", len(c.packs))
 
