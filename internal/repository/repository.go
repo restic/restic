@@ -698,6 +698,9 @@ func (r *Repository) SearchKey(ctx context.Context, password string, maxKeys int
 	} else if err != nil {
 		return errors.Fatalf("config cannot be loaded: %v", err)
 	}
+	if r.Config().Version >= 2 {
+		r.idx.markCompressed()
+	}
 	return nil
 }
 

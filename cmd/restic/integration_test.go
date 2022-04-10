@@ -1470,7 +1470,7 @@ func TestRebuildIndexAlwaysFull(t *testing.T) {
 	defer func() {
 		repository.IndexFull = indexFull
 	}()
-	repository.IndexFull = func(*repository.Index) bool { return true }
+	repository.IndexFull = func(*repository.Index, bool) bool { return true }
 	testRebuildIndex(t, nil)
 }
 

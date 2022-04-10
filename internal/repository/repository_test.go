@@ -367,7 +367,7 @@ func TestRepositoryIncrementalIndex(t *testing.T) {
 
 	repo := r.(*repository.Repository)
 
-	repository.IndexFull = func(*repository.Index) bool { return true }
+	repository.IndexFull = func(*repository.Index, bool) bool { return true }
 
 	// add 15 packs
 	for j := 0; j < 5; j++ {

@@ -93,12 +93,13 @@ func (idx *Index) Final() bool {
 }
 
 const (
-	indexMaxBlobs = 50000
-	indexMaxAge   = 10 * time.Minute
+	indexMaxBlobs           = 50000
+	indexMaxBlobsCompressed = 3 * indexMaxBlobs
+	indexMaxAge             = 10 * time.Minute
 )
 
 // IndexFull returns true iff the index is "full enough" to be saved as a preliminary index.
-var IndexFull = func(idx *Index) bool {
+var IndexFull = func(idx *Index, compress bool) bool {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
@@ -109,12 +110,18 @@ var IndexFull = func(idx *Index) bool {
 		blobs += idx.byType[typ].len()
 	}
 	age := time.Since(idx.created)
+	var maxBlobs uint
+	if compress {
+		maxBlobs = indexMaxBlobsCompressed
+	} else {
+		maxBlobs = indexMaxBlobs
+	}
 
 	switch {
 	case age >= indexMaxAge:
 		debug.Log("index %p is old enough", idx, age)
 		return true
-	case blobs >= indexMaxBlobs:
+	case blobs >= maxBlobs:
 		debug.Log("index %p has %d blobs", idx, blobs)
 		return true
 	}
