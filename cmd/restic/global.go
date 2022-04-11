@@ -471,7 +471,7 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 			id = id[:8]
 		}
 		if !opts.JSON {
-			Verbosef("repository %v opened successfully, password is correct\n", id)
+			Verbosef("repository %v opened (repo version %v) successfully, password is correct\n", id, s.Config().Version)
 		}
 	}
 
