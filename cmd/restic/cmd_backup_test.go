@@ -18,7 +18,8 @@ func TestCollectTargets(t *testing.T) {
 	defer cleanup()
 
 	fooSpace := "foo "
-	barStar := "bar*"              // Must sort before the others, below.
+	barStar := "bar*" // Must sort before the others, below.
+	bazComment := "baz"
 	if runtime.GOOS == "windows" { // Doesn't allow "*" or trailing space.
 		fooSpace = "foo"
 		barStar = "bar"
@@ -26,7 +27,7 @@ func TestCollectTargets(t *testing.T) {
 
 	var expect []string
 	for _, filename := range []string{
-		barStar, "baz", "cmdline arg", fooSpace,
+		barStar, bazComment, "cmdline arg", fooSpace,
 		"fromfile", "fromfile-raw", "fromfile-verbatim", "quux",
 	} {
 		// All mentioned files must exist for collectTargets.
@@ -40,7 +41,11 @@ func TestCollectTargets(t *testing.T) {
 	f1, err := os.Create(filepath.Join(dir, "fromfile"))
 	rtest.OK(t, err)
 	// Empty lines should be ignored. A line starting with '#' is a comment.
-	fmt.Fprintf(f1, "\n%s*\n # here's a comment\n", f1.Name())
+	fmt.Fprintf(
+		f1,
+		"\n%s*\n # here's a comment\n%s # with EOL comment\n",
+		f1.Name(),
+		filepath.Join(dir, bazComment))
 	rtest.OK(t, f1.Close())
 
 	f2, err := os.Create(filepath.Join(dir, "fromfile-verbatim"))
@@ -53,7 +58,7 @@ func TestCollectTargets(t *testing.T) {
 
 	f3, err := os.Create(filepath.Join(dir, "fromfile-raw"))
 	rtest.OK(t, err)
-	for _, filename := range []string{"baz", "quux"} {
+	for _, filename := range []string{"quux", "quuz"} {
 		fmt.Fprintf(f3, "%s\x00", filepath.Join(dir, filename))
 	}
 	rtest.OK(t, err)

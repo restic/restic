@@ -1,0 +1,11 @@
+Enhancement: Allow end-of-line comments in files read via `--files-from`
+
+`restic-backup` now supports end-of-line comments in files provided via the
+`--files-from` option. As an example:
+
+```
+/path/to/foo.bar # this comment is ignored
+```
+
+https://github.com/restic/restic/issues/3705
+https://github.com/restic/restic/pull/3706

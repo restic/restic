@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"time"
@@ -409,6 +410,11 @@ func collectTargets(opts BackupOptions, args []string) (targets []string, err er
 		return nil, nil
 	}
 
+	commentRe, err := regexp.Compile(`^(.*)+ #.*$`)
+	if err != nil {
+		return nil, err
+	}
+
 	for _, file := range opts.FilesFrom {
 		fromfile, err := readLines(file)
 		if err != nil {
@@ -420,6 +426,11 @@ func collectTargets(opts BackupOptions, args []string) (targets []string, err er
 			line = strings.TrimSpace(line)
 			if line == "" || line[0] == '#' { // '#' marks a comment.
 				continue
+			}
+
+			// remove comments at EOL
+			if commentRe.FindAllString(line, -1) != nil {
+				line = commentRe.ReplaceAllString(line, "$1")
 			}
 
 			var expanded []string
