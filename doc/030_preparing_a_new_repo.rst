@@ -167,7 +167,7 @@ scheme like this:
 
 .. code-block:: console
 
-    $ restic -r rest:http://host:8000/
+    $ restic -r rest:http://host:8000/ init
 
 Depending on your REST server setup, you can use HTTPS protocol,
 password protection, multiple repositories or any combination of
@@ -176,9 +176,9 @@ are some more examples:
 
 .. code-block:: console
 
-    $ restic -r rest:https://host:8000/
-    $ restic -r rest:https://user:pass@host:8000/
-    $ restic -r rest:https://user:pass@host:8000/my_backup_repo/
+    $ restic -r rest:https://host:8000/ init
+    $ restic -r rest:https://user:pass@host:8000/ init
+    $ restic -r rest:https://user:pass@host:8000/my_backup_repo/ init
 
 If you use TLS, restic will use the system's CA certificates to verify the
 server certificate. When the verification fails, restic refuses to proceed and
