@@ -37,6 +37,8 @@ type Repository struct {
 	idx     *MasterIndex
 	Cache   *cache.Cache
 
+	opts Options
+
 	noAutoIndexUpdate bool
 
 	treePM *packerManager
@@ -48,10 +50,58 @@ type Repository struct {
 	dec      *zstd.Decoder
 }
 
+type Options struct {
+	Compression CompressionMode
+}
+
+// CompressionMode configures if data should be compressed.
+type CompressionMode uint
+
+// Constants for the different compression levels.
+const (
+	CompressionAuto CompressionMode = 0
+	CompressionOff  CompressionMode = 1
+	CompressionMax  CompressionMode = 2
+)
+
+// Set implements the method needed for pflag command flag parsing.
+func (c *CompressionMode) Set(s string) error {
+	switch s {
+	case "auto":
+		*c = CompressionAuto
+	case "off":
+		*c = CompressionOff
+	case "max":
+		*c = CompressionMax
+	default:
+		return fmt.Errorf("invalid compression mode %q, must be one of (auto|off|max)", s)
+	}
+
+	return nil
+}
+
+func (c *CompressionMode) String() string {
+	switch *c {
+	case CompressionAuto:
+		return "auto"
+	case CompressionOff:
+		return "off"
+	case CompressionMax:
+		return "max"
+	default:
+		return "invalid"
+	}
+
+}
+func (c *CompressionMode) Type() string {
+	return "mode"
+}
+
 // New returns a new repository with backend be.
-func New(be restic.Backend) *Repository {
+func New(be restic.Backend, opts Options) *Repository {
 	repo := &Repository{
 		be:     be,
+		opts:   opts,
 		idx:    NewMasterIndex(),
 		dataPM: newPackerManager(be, nil),
 		treePM: newPackerManager(be, nil),
@@ -274,7 +324,12 @@ func (r *Repository) LookupBlobSize(id restic.ID, tpe restic.BlobType) (uint, bo
 
 func (r *Repository) getZstdEncoder() *zstd.Encoder {
 	r.allocEnc.Do(func() {
-		enc, err := zstd.NewWriter(nil)
+		level := zstd.SpeedDefault
+		if r.opts.Compression == CompressionMax {
+			level = zstd.SpeedBestCompression
+		}
+
+		enc, err := zstd.NewWriter(nil, zstd.WithEncoderLevel(level))
 		if err != nil {
 			panic(err)
 		}
@@ -302,8 +357,14 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 
 	uncompressedLength := 0
 	if r.cfg.Version > 1 {
-		uncompressedLength = len(data)
-		data = r.getZstdEncoder().EncodeAll(data, nil)
+
+		// we have a repo v2, so compression is available. if the user opts to
+		// not compress, we won't compress any data, but everything else is
+		// compressed.
+		if r.opts.Compression != CompressionOff || t != restic.DataBlob {
+			uncompressedLength = len(data)
+			data = r.getZstdEncoder().EncodeAll(data, nil)
+		}
 	}
 
 	nonce := crypto.NewRandomNonce()
