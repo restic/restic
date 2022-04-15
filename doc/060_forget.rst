@@ -212,12 +212,13 @@ The ``forget`` command accepts the following policy options:
 
 .. note:: Specifying ``--keep-tag ''`` will match untagged snapshots only.
 
-When ``forget`` is run with a policy, restic loads the list of all snapshots,
-then groups these by host name and list of directories. The grouping options can
-be set with ``--group-by``, to e.g. group snapshots by only paths and tags use
-``--group-by paths,tags``. The policy is then applied to each group of snapshots
-separately. This is a safety feature to prevent accidental removal of unrelated
-backup sets.
+When ``forget`` is run with a policy, restic first loads the list of all snapshots
+and groups them by their host name and paths. The grouping options can be set with
+``--group-by``, e.g. using ``--group-by paths,tags`` to instead group snapshots by
+paths and tags. The policy is then applied to each group of snapshots individually.
+This is a safety feature to prevent accidental removal of unrelated backup sets. To
+disable grouping and apply the policy to all snapshots regardless of their host,
+paths and tags, use ``--group-by ''`` (that is, an empty value to ``--group-by``).
 
 Additionally, you can restrict the policy to only process snapshots which have a
 particular hostname with the ``--host`` parameter, or tags with the ``--tag``
