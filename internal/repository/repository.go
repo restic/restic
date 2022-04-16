@@ -439,7 +439,7 @@ func (r *Repository) decompressUnpacked(p []byte) ([]byte, error) {
 		return p, nil
 	}
 
-	if len(p) < 1 {
+	if len(p) == 0 {
 		// too short for version header
 		return p, nil
 	}
