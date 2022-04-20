@@ -1021,9 +1021,8 @@ func StreamPack(ctx context.Context, beLoad BackendLoadFn, key *crypto.Key, pack
 			nonce, ciphertext := buf[:key.NonceSize()], buf[key.NonceSize():]
 			plaintext, err := key.Open(ciphertext[:0], nonce, ciphertext, nil)
 			if err == nil && entry.IsCompressed() {
-				if cap(decode) < int(entry.DataLength()) {
-					decode = make([]byte, 0, entry.DataLength())
-				}
+				// DecodeAll will allocate a slice if it is not large enough since it
+				// knows the decompressed size (because we're using EncodeAll)
 				decode, err = dec.DecodeAll(plaintext, decode[:0])
 				plaintext = decode
 				if err != nil {
