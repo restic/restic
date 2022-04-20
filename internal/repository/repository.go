@@ -329,7 +329,18 @@ func (r *Repository) getZstdEncoder() *zstd.Encoder {
 			level = zstd.SpeedBestCompression
 		}
 
-		enc, err := zstd.NewWriter(nil, zstd.WithEncoderLevel(level))
+		opts := []zstd.EOption{
+			// Set the compression level configured.
+			zstd.WithEncoderLevel(level),
+			// Disable CRC, we have enough checks in place, makes the
+			// compressed data four bytes shorter.
+			zstd.WithEncoderCRC(false),
+			// Set a window of 512kbyte, so we have good lookbehind for usual
+			// blob sizes.
+			zstd.WithWindowSize(512 * 1024),
+		}
+
+		enc, err := zstd.NewWriter(nil, opts...)
 		if err != nil {
 			panic(err)
 		}
@@ -340,7 +351,15 @@ func (r *Repository) getZstdEncoder() *zstd.Encoder {
 
 func (r *Repository) getZstdDecoder() *zstd.Decoder {
 	r.allocDec.Do(func() {
-		dec, err := zstd.NewReader(nil)
+		opts := []zstd.DOption{
+			// Use all available cores.
+			zstd.WithDecoderConcurrency(0),
+			// Limit the maximum decompressed memory. Set to a very high,
+			// conservative value.
+			zstd.WithDecoderMaxMemory(16 * 1024 * 1024 * 1024),
+		}
+
+		dec, err := zstd.NewReader(nil, opts...)
 		if err != nil {
 			panic(err)
 		}
