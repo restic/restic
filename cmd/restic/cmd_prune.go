@@ -132,6 +132,10 @@ func runPrune(opts PruneOptions, gopts GlobalOptions) error {
 		return err
 	}
 
+	if repo.Backend().Connections() < 2 {
+		return errors.Fatal("prune requires a backend connection limit of at least two")
+	}
+
 	lock, err := lockRepoExclusive(gopts.ctx, repo)
 	defer unlockRepo(lock)
 	if err != nil {
