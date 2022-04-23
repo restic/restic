@@ -67,9 +67,9 @@ SFTP
 ****
 
 In order to backup data via SFTP, you must first set up a server with
-SSH and let it know your public key. Passwordless login is really
-important since restic fails to connect to the repository if the server
-prompts for credentials.
+SSH and let it know your public key. Passwordless login is important
+since automatic backups are not possible if the server prompts for
+credentials.
 
 Once the server is configured, the setup of the SFTP repository can
 simply be achieved by changing the URL scheme in the ``init`` command:
@@ -148,7 +148,7 @@ SFTP connection, you can specify the command to be run with the option
 .. note:: Please be aware that sftp servers close connections when no data is
           received by the client. This can happen when restic is processing huge
           amounts of unchanged data. To avoid this issue add the following lines 
-          to the client’s .ssh/config file:
+          to the client's .ssh/config file:
 
 ::
 
