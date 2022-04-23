@@ -25,17 +25,26 @@ var _ restic.Backend = &MemoryBackend{}
 
 var errNotFound = errors.New("not found")
 
+const connectionCount = 2
+
 // MemoryBackend is a mock backend that uses a map for storing all data in
 // memory. This should only be used for tests.
 type MemoryBackend struct {
 	data memMap
 	m    sync.Mutex
+	sem  *backend.Semaphore
 }
 
 // New returns a new backend that saves all data in a map in memory.
 func New() *MemoryBackend {
+	sem, err := backend.NewSemaphore(connectionCount)
+	if err != nil {
+		panic(err)
+	}
+
 	be := &MemoryBackend{
 		data: make(memMap),
+		sem:  sem,
 	}
 
 	debug.Log("created new memory backend")
@@ -45,6 +54,9 @@ func New() *MemoryBackend {
 
 // Test returns whether a file exists.
 func (be *MemoryBackend) Test(ctx context.Context, h restic.Handle) (bool, error) {
+	be.sem.GetToken()
+	defer be.sem.ReleaseToken()
+
 	be.m.Lock()
 	defer be.m.Unlock()
 
@@ -67,6 +79,9 @@ func (be *MemoryBackend) Save(ctx context.Context, h restic.Handle, rd restic.Re
 	if err := h.Valid(); err != nil {
 		return backoff.Permanent(err)
 	}
+
+	be.sem.GetToken()
+	defer be.sem.ReleaseToken()
 
 	be.m.Lock()
 	defer be.m.Unlock()
@@ -120,6 +135,7 @@ func (be *MemoryBackend) openReader(ctx context.Context, h restic.Handle, length
 		return nil, backoff.Permanent(err)
 	}
 
+	be.sem.GetToken()
 	be.m.Lock()
 	defer be.m.Unlock()
 
@@ -131,15 +147,18 @@ func (be *MemoryBackend) openReader(ctx context.Context, h restic.Handle, length
 	debug.Log("Load %v offset %v len %v", h, offset, length)
 
 	if offset < 0 {
+		be.sem.ReleaseToken()
 		return nil, errors.New("offset is negative")
 	}
 
 	if _, ok := be.data[h]; !ok {
+		be.sem.ReleaseToken()
 		return nil, errNotFound
 	}
 
 	buf := be.data[h]
 	if offset > int64(len(buf)) {
+		be.sem.ReleaseToken()
 		return nil, errors.New("offset beyond end of file")
 	}
 
@@ -148,17 +167,20 @@ func (be *MemoryBackend) openReader(ctx context.Context, h restic.Handle, length
 		buf = buf[:length]
 	}
 
-	return ioutil.NopCloser(bytes.NewReader(buf)), ctx.Err()
+	return be.sem.ReleaseTokenOnClose(ioutil.NopCloser(bytes.NewReader(buf)), nil), ctx.Err()
 }
 
 // Stat returns information about a file in the backend.
 func (be *MemoryBackend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, error) {
-	be.m.Lock()
-	defer be.m.Unlock()
-
 	if err := h.Valid(); err != nil {
 		return restic.FileInfo{}, backoff.Permanent(err)
 	}
+
+	be.sem.GetToken()
+	defer be.sem.ReleaseToken()
+
+	be.m.Lock()
+	defer be.m.Unlock()
 
 	h.ContainedBlobType = restic.InvalidBlob
 	if h.Type == restic.ConfigFile {
@@ -177,6 +199,9 @@ func (be *MemoryBackend) Stat(ctx context.Context, h restic.Handle) (restic.File
 
 // Remove deletes a file from the backend.
 func (be *MemoryBackend) Remove(ctx context.Context, h restic.Handle) error {
+	be.sem.GetToken()
+	defer be.sem.ReleaseToken()
+
 	be.m.Lock()
 	defer be.m.Unlock()
 
@@ -230,7 +255,7 @@ func (be *MemoryBackend) List(ctx context.Context, t restic.FileType, fn func(re
 }
 
 func (be *MemoryBackend) Connections() uint {
-	return 2
+	return connectionCount
 }
 
 // Location returns the location of the backend (RAM).
