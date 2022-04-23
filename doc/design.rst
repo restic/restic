@@ -30,9 +30,10 @@ All data is stored in a restic repository. A repository is able to store
 data of several different types, which can later be requested based on
 an ID. This so-called "storage ID" is the SHA-256 hash of the content of
 a file. All files in a repository are only written once and never
-modified afterwards. This allows accessing and even writing to the
-repository with multiple clients in parallel. Only the ``prune`` operation
-removes data from the repository.
+modified afterwards. Writing should occur atomically to prevent concurrent
+operations from reading incomplete files. This allows accessing and even
+writing to the repository with multiple clients in parallel. Only the ``prune``
+operation removes data from the repository.
 
 Repositories consist of several directories and a top-level file called
 ``config``. For all other files stored in the repository, the name for
@@ -271,7 +272,7 @@ Keys, Encryption and MAC
 All data stored by restic in the repository is encrypted with AES-256 in
 counter mode and authenticated using Poly1305-AES. For encrypting new
 data first 16 bytes are read from a cryptographically secure
-pseudorandom number generator as a random nonce. This is used both as
+pseudo-random number generator as a random nonce. This is used both as
 the IV for counter mode and the nonce for Poly1305. This operation needs
 three keys: A 32 byte for AES-256 for encryption, a 16 byte AES key and
 a 16 byte key for Poly1305. For details see the original paper `The
@@ -544,6 +545,57 @@ detected, restic creates a new lock, waits, and checks if other locks
 appeared in the repository. Depending on the type of the other locks and
 the lock to be created, restic either continues or fails.
 
+Read and Write Ordering
+=======================
+The repository format allows writing (e.g. backup) and reading (e.g. restore)
+to happen concurrently. As the data for each snapshot in a repository spans
+multiple files (snapshot, index and packs), it is necessary to follow certain
+rules regarding the order in which files are read and written. These ordering
+rules also guarantee that repository modifications always maintain a correct
+repository even if the client or the storage backend crashes for example due
+to a power cut or the (network) connection between both is interrupted.
+
+The correct order to access data in a repository is derived from the following
+set of invariants that must be maintained at **any time** in a correct
+repository. *Must* in the following is a strict requirement and will lead to
+data loss if not followed. *Should* will require steps to fix a repository
+(e.g. rebuilding the index) if not followed, but should not cause data loss.
+*existing* means that the referenced data is **durably** stored in the repository.
+
+- A snapshot *must* only reference an existing tree blob.
+- A reachable tree blob *must* only reference tree and data blobs that exist
+  (recursively). *Reachable* means that the tree blob is reachable starting from
+  a snapshot.
+- An index *must* only reference valid blobs in existing packs.
+- All blobs referenced by a snapshot *should* be listed in an index.
+
+This leads to the following recommended order to store data in a repository.
+First, pack files, which contain data and tree blobs, must be written. Then the
+indexes which reference blobs in these already written pack files. And finally
+the corresponding snapshots.
+
+Note that there is no need for a specific write order of data and tree blobs
+during a backup as the blobs only become referenced once the corresponding
+snapshot is uploaded.
+
+Reading data should follow the opposite order compared to writing. Only once a
+snapshot was written, it is guaranteed that all required data exists in the
+repository. This especially means that the list of snapshots to read should be
+collected before loading the repository index. The other way round can lead to
+a race condition where a recently written snapshot is loaded but not its
+accompanying index, which results in a failure to access the snapshot's tree
+blob.
+
+For removing or rewriting data from a repository the following rules must be
+followed, which are derived from the above invariants.
+
+- A client removing data *must* acquire an exclusive lock first to prevent
+  conflicts with other clients.
+- A pack *must* be removed from the referencing index before it is deleted.
+- Rewriting a pack *must* write the new pack, update the index (add an updated
+  index and delete the old one) and only then delete the old pack.
+
+
 Backups and Deduplication
 =========================
 
@@ -584,10 +636,10 @@ General assumptions:
    key management design, it is impossible to securely revoke a leaked key
    without re-encrypting the whole repository.
 -  Advances in cryptography attacks against the cryptographic primitives used
-   by restic (i.e, AES-256-CTR-Poly1305-AES and SHA-256) have not occurred. Such
+   by restic (i.e., AES-256-CTR-Poly1305-AES and SHA-256) have not occurred. Such
    advances could render the confidentiality or integrity protections provided
    by restic useless.
--  Sufficient advances in computing have not occurred to make bruteforce
+-  Sufficient advances in computing have not occurred to make brute-force
    attacks against restic's cryptographic protections feasible.
 
 The restic backup program guarantees the following:
