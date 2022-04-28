@@ -45,7 +45,7 @@ jobs:
       - name: Sync upstream changes
         id: sync
         run: |
-          git remote add upstream https://github.com/rustic/rustic.git -f
+          git remote add upstream https://github.com/restic/restic.git -f
           git push origin --tags
   release:
     needs:
