@@ -38,9 +38,18 @@ jobs:
     if: needs.version.outputs.restic != needs.version.outputs.tstachl
     runs-on: ubuntu-latest
     steps:
-      - uses: anatawa12/fork-sync-all-branches@v1
+      - name: Checkout target repo
+        uses: actions/checkout@v2
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ needs.version.outputs.restic }}
+      - name: Sync upstream changes
+        id: sync
+        uses: aormsby/Fork-Sync-With-Upstream-action@v3.2
+        with:
+          target_sync_branch: ${{ needs.version.outputs.restic }}
+          target_repo_token: ${{ secrets.GITHUB_TOKEN }}
+          upstream_sync_branch: ${{ needs.version.outputs.restic }}
+          upstream_sync_repo: restic/restic
   release:
     needs:
       - version
