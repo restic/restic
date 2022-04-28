@@ -1,0 +1,92 @@
+name: Build and Release
+
+on:
+  schedule:
+    - cron: "0 10 * * *"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag'
+        required: false
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      restic: ${{ steps.version.outputs.restic }}
+      tstachl: ${{ steps.version.outputs.tstachl }}
+    steps:
+      - name: Fetch Release Versions
+        id: version
+        run: |
+          echo "::set-output name=restic::$( \
+            curl -sL https://api.github.com/repos/restic/restic/releases/latest \
+            | jq -r '.tag_name')"
+          if [ -z "${{ github.event.inputs.tag }}" ]; then
+            echo "::set-output name=tstachl::$( \
+              curl -sL https://api.github.com/repos/tstachl/restic/releases/latest \
+              | jq -r '.tag_name')"
+          else
+            echo "::set-output name=tstachl::${{ github.event.inputs.tag }}"
+          fi
+      - name: List Versions
+        run: |
+          echo "restic: ${{ steps.version.outputs.restic }}"
+          echo "tstachl: ${{ steps.version.outputs.tstachl }}"
+  sync:
+    needs: version
+    if: needs.version.outputs.restic != needs.version.outputs.tstachl
+    runs-on: ubuntu-latest
+    steps:
+      - uses: anatawa12/fork-sync-all-branches@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+  release:
+    needs:
+      - version
+      - sync
+    if: needs.version.outputs.restic != needs.version.outputs.tstachl
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ needs.version.outputs.restic }}
+          release_name: Release ${{ needs.version.outputs.restic }}
+          body: |
+            Updating to new restic release `${{ needs.version.outputs.restic }}`
+          draft: false
+          prerelease: false
+  build:
+    needs:
+      - version
+      - sync
+    if: needs.version.outputs.restic != needs.version.outputs.tstachl
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1.5.0
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and Push
+        uses: docker/build-push-action@v2
+        with:
+          context: ./docker
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            tstachl/restic:${{ needs.version.outputs.restic }}
+            tstachl/restic:latest
+          build-args: VERSION=${{ needs.version.outputs.restic }}
+      - name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}
