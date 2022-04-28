@@ -46,10 +46,11 @@ jobs:
         id: sync
         uses: aormsby/Fork-Sync-With-Upstream-action@v3.2
         with:
-          target_sync_branch: ${{ needs.version.outputs.restic }}
+          target_sync_branch: master
           target_repo_token: ${{ secrets.GITHUB_TOKEN }}
-          upstream_sync_branch: ${{ needs.version.outputs.restic }}
+          upstream_sync_branch: master
           upstream_sync_repo: restic/restic
+          upstream_pull_args: --tags
   release:
     needs:
       - version
