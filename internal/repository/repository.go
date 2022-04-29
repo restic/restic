@@ -116,6 +116,14 @@ func (r *Repository) DisableAutoIndexUpdate() {
 	r.noAutoIndexUpdate = true
 }
 
+// setConfig assigns the given config and updates the repository parameters accordingly
+func (r *Repository) setConfig(cfg restic.Config) {
+	r.cfg = cfg
+	if r.cfg.Version >= 2 {
+		r.idx.markCompressed()
+	}
+}
+
 // Config returns the repository configuration.
 func (r *Repository) Config() restic.Config {
 	return r.cfg
@@ -772,15 +780,14 @@ func (r *Repository) SearchKey(ctx context.Context, password string, maxKeys int
 	r.dataPM.key = key.master
 	r.treePM.key = key.master
 	r.keyName = key.Name()
-	r.cfg, err = restic.LoadConfig(ctx, r)
+	cfg, err := restic.LoadConfig(ctx, r)
 	if err == crypto.ErrUnauthenticated {
 		return errors.Fatalf("config or key %v is damaged: %v", key.Name(), err)
 	} else if err != nil {
 		return errors.Fatalf("config cannot be loaded: %v", err)
 	}
-	if r.Config().Version >= 2 {
-		r.idx.markCompressed()
-	}
+
+	r.setConfig(cfg)
 	return nil
 }
 
@@ -826,7 +833,7 @@ func (r *Repository) init(ctx context.Context, password string, cfg restic.Confi
 	r.dataPM.key = key.master
 	r.treePM.key = key.master
 	r.keyName = key.Name()
-	r.cfg = cfg
+	r.setConfig(cfg)
 	_, err = r.SaveJSONUnpacked(ctx, restic.ConfigFile, cfg)
 	return err
 }
