@@ -54,10 +54,18 @@ var plainEntrySize = uint(binary.Size(restic.BlobType(0)) + headerLengthSize + l
 // headerEntry describes the format of header entries. It serves only as
 // documentation.
 type headerEntry struct {
-	Type             uint8
-	Length           uint32
-	ID               restic.ID
-	CompressedLength uint32
+	Type   uint8
+	Length uint32
+	ID     restic.ID
+}
+
+// compressedHeaderEntry describes the format of header entries for compressed blobs.
+// It serves only as documentation.
+type compressedHeaderEntry struct {
+	Type               uint8
+	Length             uint32
+	UncompressedLength uint32
+	ID                 restic.ID
 }
 
 // Finalize writes the header for all added blobs and finalizes the pack.
