@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/klauspost/compress/zstd"
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/repository"
@@ -461,10 +462,31 @@ func testRepositoryIncrementalIndex(t *testing.T, version uint) {
 }
 
 // buildPackfileWithoutHeader returns a manually built pack file without a header.
-func buildPackfileWithoutHeader(t testing.TB, blobSizes []int, key *crypto.Key) (blobs []restic.Blob, packfile []byte) {
+func buildPackfileWithoutHeader(t testing.TB, blobSizes []int, key *crypto.Key, compress bool) (blobs []restic.Blob, packfile []byte) {
+	opts := []zstd.EOption{
+		// Set the compression level configured.
+		zstd.WithEncoderLevel(zstd.SpeedDefault),
+		// Disable CRC, we have enough checks in place, makes the
+		// compressed data four bytes shorter.
+		zstd.WithEncoderCRC(false),
+		// Set a window of 512kbyte, so we have good lookbehind for usual
+		// blob sizes.
+		zstd.WithWindowSize(512 * 1024),
+	}
+	enc, err := zstd.NewWriter(nil, opts...)
+	if err != nil {
+		panic(err)
+	}
+
 	var offset uint
 	for i, size := range blobSizes {
 		plaintext := test.Random(800+i, size)
+		id := restic.Hash(plaintext)
+		uncompressedLength := uint(0)
+		if compress {
+			uncompressedLength = uint(len(plaintext))
+			plaintext = enc.EncodeAll(plaintext, nil)
+		}
 
 		// we use a deterministic nonce here so the whole process is
 		// deterministic, last byte is the blob index
@@ -482,11 +504,12 @@ func buildPackfileWithoutHeader(t testing.TB, blobSizes []int, key *crypto.Key) 
 
 		blobs = append(blobs, restic.Blob{
 			BlobHandle: restic.BlobHandle{
-				ID:   restic.Hash(plaintext),
 				Type: restic.DataBlob,
+				ID:   id,
 			},
-			Length: uint(ciphertextLength),
-			Offset: offset,
+			Length:             uint(ciphertextLength),
+			UncompressedLength: uncompressedLength,
+			Offset:             offset,
 		})
 
 		offset = uint(len(packfile))
@@ -496,6 +519,10 @@ func buildPackfileWithoutHeader(t testing.TB, blobSizes []int, key *crypto.Key) 
 }
 
 func TestStreamPack(t *testing.T) {
+	repository.TestAllVersions(t, testStreamPack)
+}
+
+func testStreamPack(t *testing.T, version uint) {
 	// always use the same key for deterministic output
 	const jsonKey = `{"mac":{"k":"eQenuI8adktfzZMuC8rwdA==","r":"k8cfAly2qQSky48CQK7SBA=="},"encrypt":"MKO9gZnRiQFl8mDUurSDa9NMjiu9MUifUrODTHS05wo="}`
 
@@ -520,7 +547,17 @@ func TestStreamPack(t *testing.T) {
 		18883,
 	}
 
-	packfileBlobs, packfile := buildPackfileWithoutHeader(t, blobSizes, &key)
+	var compress bool
+	switch version {
+	case 1:
+		compress = false
+	case 2:
+		compress = true
+	default:
+		t.Fatal("test does not suport repository version", version)
+	}
+
+	packfileBlobs, packfile := buildPackfileWithoutHeader(t, blobSizes, &key, compress)
 
 	load := func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
 		data := packfile
