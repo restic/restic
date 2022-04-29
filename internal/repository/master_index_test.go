@@ -335,8 +335,8 @@ var (
 	depth        = 3
 )
 
-func createFilledRepo(t testing.TB, snapshots int, dup float32) (restic.Repository, func()) {
-	repo, cleanup := repository.TestRepository(t)
+func createFilledRepo(t testing.TB, snapshots int, dup float32, version uint) (restic.Repository, func()) {
+	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
 
 	for i := 0; i < 3; i++ {
 		restic.TestCreateSnapshot(t, repo, snapshotTime.Add(time.Duration(i)*time.Second), depth, dup)
@@ -346,7 +346,11 @@ func createFilledRepo(t testing.TB, snapshots int, dup float32) (restic.Reposito
 }
 
 func TestIndexSave(t *testing.T) {
-	repo, cleanup := createFilledRepo(t, 3, 0)
+	repository.TestAllVersions(t, testIndexSave)
+}
+
+func testIndexSave(t *testing.T, version uint) {
+	repo, cleanup := createFilledRepo(t, 3, 0, version)
 	defer cleanup()
 
 	err := repo.LoadIndex(context.TODO())

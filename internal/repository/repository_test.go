@@ -28,7 +28,11 @@ var testSizes = []int{5, 23, 2<<18 + 23, 1 << 20}
 var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 func TestSave(t *testing.T) {
-	repo, cleanup := repository.TestRepository(t)
+	repository.TestAllVersions(t, testSave)
+}
+
+func testSave(t *testing.T, version uint) {
+	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
 	defer cleanup()
 
 	for _, size := range testSizes {
@@ -63,7 +67,11 @@ func TestSave(t *testing.T) {
 }
 
 func TestSaveFrom(t *testing.T) {
-	repo, cleanup := repository.TestRepository(t)
+	repository.TestAllVersions(t, testSaveFrom)
+}
+
+func testSaveFrom(t *testing.T, version uint) {
+	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
 	defer cleanup()
 
 	for _, size := range testSizes {
@@ -96,7 +104,11 @@ func TestSaveFrom(t *testing.T) {
 }
 
 func BenchmarkSaveAndEncrypt(t *testing.B) {
-	repo, cleanup := repository.TestRepository(t)
+	repository.BenchmarkAllVersions(t, benchmarkSaveAndEncrypt)
+}
+
+func benchmarkSaveAndEncrypt(t *testing.B, version uint) {
+	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
 	defer cleanup()
 
 	size := 4 << 20 // 4MiB
@@ -118,7 +130,11 @@ func BenchmarkSaveAndEncrypt(t *testing.B) {
 }
 
 func TestLoadTree(t *testing.T) {
-	repo, cleanup := repository.TestRepository(t)
+	repository.TestAllVersions(t, testLoadTree)
+}
+
+func testLoadTree(t *testing.T, version uint) {
+	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
 	defer cleanup()
 
 	if rtest.BenchArchiveDirectory == "" {
@@ -134,7 +150,11 @@ func TestLoadTree(t *testing.T) {
 }
 
 func BenchmarkLoadTree(t *testing.B) {
-	repo, cleanup := repository.TestRepository(t)
+	repository.BenchmarkAllVersions(t, benchmarkLoadTree)
+}
+
+func benchmarkLoadTree(t *testing.B, version uint) {
+	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
 	defer cleanup()
 
 	if rtest.BenchArchiveDirectory == "" {
@@ -154,7 +174,11 @@ func BenchmarkLoadTree(t *testing.B) {
 }
 
 func TestLoadBlob(t *testing.T) {
-	repo, cleanup := repository.TestRepository(t)
+	repository.TestAllVersions(t, testLoadBlob)
+}
+
+func testLoadBlob(t *testing.T, version uint) {
+	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
 	defer cleanup()
 
 	length := 1000000
@@ -183,7 +207,11 @@ func TestLoadBlob(t *testing.T) {
 }
 
 func BenchmarkLoadBlob(b *testing.B) {
-	repo, cleanup := repository.TestRepository(b)
+	repository.BenchmarkAllVersions(b, benchmarkLoadBlob)
+}
+
+func benchmarkLoadBlob(b *testing.B, version uint) {
+	repo, cleanup := repository.TestRepositoryWithVersion(b, version)
 	defer cleanup()
 
 	length := 1000000
@@ -219,7 +247,11 @@ func BenchmarkLoadBlob(b *testing.B) {
 }
 
 func BenchmarkLoadUnpacked(b *testing.B) {
-	repo, cleanup := repository.TestRepository(b)
+	repository.BenchmarkAllVersions(b, benchmarkLoadUnpacked)
+}
+
+func benchmarkLoadUnpacked(b *testing.B, version uint) {
+	repo, cleanup := repository.TestRepositoryWithVersion(b, version)
 	defer cleanup()
 
 	length := 1000000
@@ -255,7 +287,11 @@ func BenchmarkLoadUnpacked(b *testing.B) {
 }
 
 func TestLoadJSONUnpacked(t *testing.T) {
-	repo, cleanup := repository.TestRepository(t)
+	repository.TestAllVersions(t, testLoadJSONUnpacked)
+}
+
+func testLoadJSONUnpacked(t *testing.T, version uint) {
+	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
 	defer cleanup()
 
 	if rtest.BenchArchiveDirectory == "" {
@@ -313,9 +349,13 @@ func loadIndex(ctx context.Context, repo restic.Repository, id restic.ID) (*repo
 }
 
 func BenchmarkLoadIndex(b *testing.B) {
+	repository.BenchmarkAllVersions(b, benchmarkLoadIndex)
+}
+
+func benchmarkLoadIndex(b *testing.B, version uint) {
 	repository.TestUseLowSecurityKDFParameters(b)
 
-	repo, cleanup := repository.TestRepository(b)
+	repo, cleanup := repository.TestRepositoryWithVersion(b, version)
 	defer cleanup()
 
 	idx := repository.NewIndex()
@@ -362,7 +402,11 @@ func saveRandomDataBlobs(t testing.TB, repo restic.Repository, num int, sizeMax 
 }
 
 func TestRepositoryIncrementalIndex(t *testing.T) {
-	r, cleanup := repository.TestRepository(t)
+	repository.TestAllVersions(t, testRepositoryIncrementalIndex)
+}
+
+func testRepositoryIncrementalIndex(t *testing.T, version uint) {
+	r, cleanup := repository.TestRepositoryWithVersion(t, version)
 	defer cleanup()
 
 	repo := r.(*repository.Repository)

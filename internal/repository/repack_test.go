@@ -212,7 +212,11 @@ func reloadIndex(t *testing.T, repo restic.Repository) {
 }
 
 func TestRepack(t *testing.T) {
-	repo, cleanup := repository.TestRepository(t)
+	repository.TestAllVersions(t, testRepack)
+}
+
+func testRepack(t *testing.T, version uint) {
+	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
 	defer cleanup()
 
 	seed := time.Now().UnixNano()
@@ -279,9 +283,13 @@ func TestRepack(t *testing.T) {
 }
 
 func TestRepackCopy(t *testing.T) {
-	repo, cleanup := repository.TestRepository(t)
+	repository.TestAllVersions(t, testRepackCopy)
+}
+
+func testRepackCopy(t *testing.T, version uint) {
+	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
 	defer cleanup()
-	dstRepo, dstCleanup := repository.TestRepository(t)
+	dstRepo, dstCleanup := repository.TestRepositoryWithVersion(t, version)
 	defer dstCleanup()
 
 	seed := time.Now().UnixNano()
@@ -318,7 +326,11 @@ func TestRepackCopy(t *testing.T) {
 }
 
 func TestRepackWrongBlob(t *testing.T) {
-	repo, cleanup := repository.TestRepository(t)
+	repository.TestAllVersions(t, testRepackWrongBlob)
+}
+
+func testRepackWrongBlob(t *testing.T, version uint) {
+	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
 	defer cleanup()
 
 	seed := time.Now().UnixNano()
