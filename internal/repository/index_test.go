@@ -23,11 +23,17 @@ func TestIndexSerialize(t *testing.T) {
 		pos := uint(0)
 		for j := 0; j < 20; j++ {
 			length := uint(i*100 + j)
+			uncompressedLength := uint(0)
+			if i >= 25 {
+				// test a mix of compressed and uncompressed packs
+				uncompressedLength = 2 * length
+			}
 			pb := restic.PackedBlob{
 				Blob: restic.Blob{
-					BlobHandle: restic.NewRandomBlobHandle(),
-					Offset:     pos,
-					Length:     length,
+					BlobHandle:         restic.NewRandomBlobHandle(),
+					Offset:             pos,
+					Length:             length,
+					UncompressedLength: uncompressedLength,
 				},
 				PackID: packID,
 			}
@@ -164,7 +170,7 @@ func TestIndexSize(t *testing.T) {
 }
 
 // example index serialization from doc/Design.rst
-var docExample = []byte(`
+var docExampleV1 = []byte(`
 {
   "supersedes": [
 	"ed54ae36197f4745ebc4b54d10e0f623eaaaedd03013eb7ae90df881b7781452"
@@ -177,12 +183,12 @@ var docExample = []byte(`
 		  "id": "3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce",
 		  "type": "data",
 		  "offset": 0,
-		  "length": 25
+		  "length": 38
 		},{
 		  "id": "9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae",
 		  "type": "tree",
 		  "offset": 38,
-		  "length": 100
+		  "length": 112
 		},
 		{
 		  "id": "d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66",
@@ -196,6 +202,41 @@ var docExample = []byte(`
 }
 `)
 
+var docExampleV2 = []byte(`
+{
+	"supersedes": [
+	  "ed54ae36197f4745ebc4b54d10e0f623eaaaedd03013eb7ae90df881b7781452"
+	],
+	"packs": [
+	  {
+		"id": "73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c",
+		"blobs": [
+		  {
+			"id": "3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce",
+			"type": "data",
+			"offset": 0,
+			"length": 38
+		  },
+		  {
+			"id": "9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae",
+			"type": "tree",
+			"offset": 38,
+			"length": 112,
+			"uncompressed_length": 511
+		  },
+		  {
+			"id": "d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66",
+			"type": "data",
+			"offset": 150,
+			"length": 123,
+			"uncompressed_length": 234
+		  }
+		]
+	  }
+	]
+  }
+`)
+
 var docOldExample = []byte(`
 [ {
   "id": "73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c",
@@ -204,12 +245,12 @@ var docOldExample = []byte(`
 	  "id": "3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce",
 	  "type": "data",
 	  "offset": 0,
-	  "length": 25
+	  "length": 38
 	},{
 	  "id": "9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae",
 	  "type": "tree",
 	  "offset": 38,
-	  "length": 100
+	  "length": 112
 	},
 	{
 	  "id": "d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66",
@@ -222,22 +263,23 @@ var docOldExample = []byte(`
 `)
 
 var exampleTests = []struct {
-	id, packID     restic.ID
-	tpe            restic.BlobType
-	offset, length uint
+	id, packID         restic.ID
+	tpe                restic.BlobType
+	offset, length     uint
+	uncompressedLength uint
 }{
 	{
 		restic.TestParseID("3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce"),
 		restic.TestParseID("73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c"),
-		restic.DataBlob, 0, 25,
+		restic.DataBlob, 0, 38, 0,
 	}, {
 		restic.TestParseID("9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae"),
 		restic.TestParseID("73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c"),
-		restic.TreeBlob, 38, 100,
+		restic.TreeBlob, 38, 112, 511,
 	}, {
 		restic.TestParseID("d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66"),
 		restic.TestParseID("73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c"),
-		restic.DataBlob, 150, 123,
+		restic.DataBlob, 150, 123, 234,
 	},
 }
 
@@ -254,41 +296,56 @@ var exampleLookupTest = struct {
 }
 
 func TestIndexUnserialize(t *testing.T) {
-	oldIdx := restic.IDs{restic.TestParseID("ed54ae36197f4745ebc4b54d10e0f623eaaaedd03013eb7ae90df881b7781452")}
+	for _, task := range []struct {
+		idxBytes []byte
+		version  int
+	}{
+		{docExampleV1, 1},
+		{docExampleV2, 2},
+	} {
+		oldIdx := restic.IDs{restic.TestParseID("ed54ae36197f4745ebc4b54d10e0f623eaaaedd03013eb7ae90df881b7781452")}
 
-	idx, oldFormat, err := repository.DecodeIndex(docExample, restic.NewRandomID())
-	rtest.OK(t, err)
-	rtest.Assert(t, !oldFormat, "new index format recognized as old format")
+		idx, oldFormat, err := repository.DecodeIndex(task.idxBytes, restic.NewRandomID())
+		rtest.OK(t, err)
+		rtest.Assert(t, !oldFormat, "new index format recognized as old format")
 
-	for _, test := range exampleTests {
-		list := idx.Lookup(restic.BlobHandle{ID: test.id, Type: test.tpe}, nil)
-		if len(list) != 1 {
-			t.Errorf("expected one result for blob %v, got %v: %v", test.id.Str(), len(list), list)
+		for _, test := range exampleTests {
+			list := idx.Lookup(restic.BlobHandle{ID: test.id, Type: test.tpe}, nil)
+			if len(list) != 1 {
+				t.Errorf("expected one result for blob %v, got %v: %v", test.id.Str(), len(list), list)
+			}
+			blob := list[0]
+
+			t.Logf("looking for blob %v/%v, got %v", test.tpe, test.id.Str(), blob)
+
+			rtest.Equals(t, test.packID, blob.PackID)
+			rtest.Equals(t, test.tpe, blob.Type)
+			rtest.Equals(t, test.offset, blob.Offset)
+			rtest.Equals(t, test.length, blob.Length)
+			if task.version == 1 {
+				rtest.Equals(t, uint(0), blob.UncompressedLength)
+			} else if task.version == 2 {
+				rtest.Equals(t, test.uncompressedLength, blob.UncompressedLength)
+			} else {
+				t.Fatal("Invalid index version")
+			}
 		}
-		blob := list[0]
 
-		t.Logf("looking for blob %v/%v, got %v", test.tpe, test.id.Str(), blob)
+		rtest.Equals(t, oldIdx, idx.Supersedes())
 
-		rtest.Equals(t, test.packID, blob.PackID)
-		rtest.Equals(t, test.tpe, blob.Type)
-		rtest.Equals(t, test.offset, blob.Offset)
-		rtest.Equals(t, test.length, blob.Length)
-	}
-
-	rtest.Equals(t, oldIdx, idx.Supersedes())
-
-	blobs := idx.ListPack(exampleLookupTest.packID)
-	if len(blobs) != len(exampleLookupTest.blobs) {
-		t.Fatalf("expected %d blobs in pack, got %d", len(exampleLookupTest.blobs), len(blobs))
-	}
-
-	for _, blob := range blobs {
-		b, ok := exampleLookupTest.blobs[blob.ID]
-		if !ok {
-			t.Errorf("unexpected blob %v found", blob.ID.Str())
+		blobs := idx.ListPack(exampleLookupTest.packID)
+		if len(blobs) != len(exampleLookupTest.blobs) {
+			t.Fatalf("expected %d blobs in pack, got %d", len(exampleLookupTest.blobs), len(blobs))
 		}
-		if blob.Type != b {
-			t.Errorf("unexpected type for blob %v: want %v, got %v", blob.ID.Str(), b, blob.Type)
+
+		for _, blob := range blobs {
+			b, ok := exampleLookupTest.blobs[blob.ID]
+			if !ok {
+				t.Errorf("unexpected blob %v found", blob.ID.Str())
+			}
+			if blob.Type != b {
+				t.Errorf("unexpected type for blob %v: want %v, got %v", blob.ID.Str(), b, blob.Type)
+			}
 		}
 	}
 }
@@ -403,8 +460,9 @@ func createRandomIndex(rng *rand.Rand, packfiles int) (idx *repository.Index, lo
 					Type: restic.DataBlob,
 					ID:   id,
 				},
-				Length: uint(size),
-				Offset: uint(offset),
+				Length:             uint(size),
+				UncompressedLength: uint(2 * size),
+				Offset:             uint(offset),
 			})
 
 			offset += size
@@ -475,11 +533,17 @@ func TestIndexHas(t *testing.T) {
 		pos := uint(0)
 		for j := 0; j < 20; j++ {
 			length := uint(i*100 + j)
+			uncompressedLength := uint(0)
+			if i >= 25 {
+				// test a mix of compressed and uncompressed packs
+				uncompressedLength = 2 * length
+			}
 			pb := restic.PackedBlob{
 				Blob: restic.Blob{
-					BlobHandle: restic.NewRandomBlobHandle(),
-					Offset:     pos,
-					Length:     length,
+					BlobHandle:         restic.NewRandomBlobHandle(),
+					Offset:             pos,
+					Length:             length,
+					UncompressedLength: uncompressedLength,
 				},
 				PackID: packID,
 			}

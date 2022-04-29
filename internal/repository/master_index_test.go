@@ -30,9 +30,10 @@ func TestMasterIndex(t *testing.T) {
 	blob2 := restic.PackedBlob{
 		PackID: restic.NewRandomID(),
 		Blob: restic.Blob{
-			BlobHandle: bhInIdx2,
-			Length:     uint(restic.CiphertextLength(100)),
-			Offset:     10,
+			BlobHandle:         bhInIdx2,
+			Length:             uint(restic.CiphertextLength(100)),
+			Offset:             10,
+			UncompressedLength: 200,
 		},
 	}
 
@@ -48,9 +49,10 @@ func TestMasterIndex(t *testing.T) {
 	blob12b := restic.PackedBlob{
 		PackID: restic.NewRandomID(),
 		Blob: restic.Blob{
-			BlobHandle: bhInIdx12,
-			Length:     uint(restic.CiphertextLength(123)),
-			Offset:     50,
+			BlobHandle:         bhInIdx12,
+			Length:             uint(restic.CiphertextLength(123)),
+			Offset:             50,
+			UncompressedLength: 80,
 		},
 	}
 
@@ -86,7 +88,7 @@ func TestMasterIndex(t *testing.T) {
 
 	size, found = mIdx.LookupSize(bhInIdx2)
 	rtest.Equals(t, true, found)
-	rtest.Equals(t, uint(100), size)
+	rtest.Equals(t, uint(200), size)
 
 	// test idInIdx12
 	found = mIdx.Has(bhInIdx12)
@@ -144,9 +146,10 @@ func TestMasterMergeFinalIndexes(t *testing.T) {
 	blob2 := restic.PackedBlob{
 		PackID: restic.NewRandomID(),
 		Blob: restic.Blob{
-			BlobHandle: bhInIdx2,
-			Length:     100,
-			Offset:     10,
+			BlobHandle:         bhInIdx2,
+			Length:             100,
+			Offset:             10,
+			UncompressedLength: 200,
 		},
 	}
 
