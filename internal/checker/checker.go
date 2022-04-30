@@ -229,18 +229,10 @@ func (c *Checker) Packs(ctx context.Context, errChan chan<- error) {
 // Error is an error that occurred while checking a repository.
 type Error struct {
 	TreeID restic.ID
-	BlobID restic.ID
 	Err    error
 }
 
 func (e Error) Error() string {
-	if !e.BlobID.IsNull() && !e.TreeID.IsNull() {
-		msg := "tree " + e.TreeID.Str()
-		msg += ", blob " + e.BlobID.Str()
-		msg += ": " + e.Err.Error()
-		return msg
-	}
-
 	if !e.TreeID.IsNull() {
 		return "tree " + e.TreeID.String() + ": " + e.Err.Error()
 	}
