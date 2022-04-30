@@ -35,6 +35,13 @@ options exist:
  * Configuring a program to be called when the password is needed via the
    option ``--password-command`` or the environment variable
    ``RESTIC_PASSWORD_COMMAND``
+   
+ * The ``init`` command has an option called ``--repository-version`` which can
+   be used to explicitely set the version for the new repository. By default,
+   the current stable version is used. Have a look at the `design documentation
+   <https://github.com/restic/restic/blob/master/doc/design.rst>`__ for
+   details.
+
 
 Local
 *****
@@ -692,4 +699,3 @@ On MSYS2, you can install ``winpty`` as follows:
 
     $ pacman -S winpty
     $ winpty restic -r /srv/restic-repo init
-
