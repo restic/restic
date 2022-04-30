@@ -62,28 +62,30 @@ like the following:
 .. code:: json
 
     {
-      "version": 1,
+      "version": 2,
       "id": "5956a3f67a6230d4a92cefb29529f10196c7d92582ec305fd71ff6d331d6271b",
       "chunker_polynomial": "25b468838dcb75"
     }
 
 After decryption, restic first checks that the version field contains a
-version number that it understands, otherwise it aborts. At the moment,
-the version is expected to be 1. The field ``id`` holds a unique ID
-which consists of 32 random bytes, encoded in hexadecimal. This uniquely
-identifies the repository, regardless if it is accessed via SFTP or
-locally. The field ``chunker_polynomial`` contains a parameter that is
-used for splitting large files into smaller chunks (see below).
+version number that it understands, otherwise it aborts. At the moment, the
+version is expected to be 1 or 2. The list of changes in the repository
+format is contained in the section "Changes" below.
+
+The field ``id`` holds a unique ID which consists of 32 random bytes, encoded
+in hexadecimal. This uniquely identifies the repository, regardless if it is
+accessed via a remote storage backend or locally. The field
+``chunker_polynomial`` contains a parameter that is used for splitting large
+files into smaller chunks (see below).
 
 Repository Layout
 -----------------
 
 The ``local`` and ``sftp`` backends are implemented using files and
 directories stored in a file system. The directory layout is the same
-for both backend types.
+for both backend types and is also used for all other remote backends.
 
-The basic layout of a repository stored in a ``local`` or ``sftp``
-backend is shown here:
+The basic layout of a repository is shown here:
 
 ::
 
@@ -109,8 +111,7 @@ backend is shown here:
     │   └── 22a5af1bdc6e616f8a29579458c49627e01b32210d09adb288d1ecda7c5711ec
     └── tmp
 
-A local repository can be initialized with the ``restic init`` command,
-e.g.:
+A local repository can be initialized with the ``restic init`` command, e.g.:
 
 .. code-block:: console
 
@@ -186,29 +187,65 @@ After decryption, a Pack's header consists of the following elements:
 
 ::
 
-    Type_Blob1 || Length(EncryptedBlob1) || Hash(Plaintext_Blob1) ||
+    Type_Blob1 || Data_Blob1 ||
     [...]
-    Type_BlobN || Length(EncryptedBlobN) || Hash(Plaintext_Blobn) ||
+    Type_BlobN || Data_BlobN ||
+
+The Blob type field is a single byte. What follows it depends on the type. The
+following Blob types are defined:
+
++-----------+----------------------+-------------------------------------------------------------------------------+
+| Type      | Meaning              |  Data                                                                         |
++===========+======================+===============================================================================+
+| 0b00      | data blob            |  ``Length(encrypted_blob) || Hash(plaintext_blob)``                           |
++-----------+----------------------+-------------------------------------------------------------------------------+
+| 0b01      | tree blob            |  ``Length(encrypted_blob) || Hash(plaintext_blob)``                           |
++-----------+----------------------+-------------------------------------------------------------------------------+
+| 0b10      | compressed data blob |  ``Length(encrypted_blob) || Length(plaintext_blob) || Hash(plaintext_blob)`` |
++-----------+----------------------+-------------------------------------------------------------------------------+
+| 0b11      | compressed tree blob |  ``Length(encrypted_blob) || Length(plaintext_blob) || Hash(plaintext_blob)`` |
++-----------+----------------------+-------------------------------------------------------------------------------+
 
 This is enough to calculate the offsets for all the Blobs in the Pack.
-Length is the length of a Blob as a four byte integer in little-endian
-format. The type field is a one byte field and labels the content of a
-blob according to the following table:
+The length fields are encoded as four byte integers in little-endian
+format. In the Data column, ``Length(plaintext_blob)`` means the length
+of the decrypted and uncompressed data a blob consists of.
 
-+--------+-----------+
-| Type   | Meaning   |
-+========+===========+
-| 0      | data      |
-+--------+-----------+
-| 1      | tree      |
-+--------+-----------+
+All other types are invalid, more types may be added in the future. The
+compressed types are only valid for repository format version 2. Data and
+tree blobs may be compressed with the zstandard compression algorithm.
 
-All other types are invalid, more types may be added in the future.
+In repository format version 1, data and tree blobs should be stored in
+separate pack files. In version 2, they must be stored in separate files.
+Compressed and non-compress blobs of the same type may be mixed in a pack
+file.
 
 For reconstructing the index or parsing a pack without an index, first
 the last four bytes must be read in order to find the length of the
 header. Afterwards, the header can be read and parsed, which yields all
 plaintext hashes, types, offsets and lengths of all included blobs.
+
+Unpacked Data Format
+====================
+
+Individual files for the index, locks or snapshots are encrypted
+and authenticated like Data and Tree Blobs, so the outer structure is
+``IV || Ciphertext || MAC`` again. In repository format version 1 the
+plaintext always consists of a JSON document which must either be an
+object or an array.
+
+Repository format version 2 adds support for compression. The plaintext
+now starts with a header to indicate the encoding version to distinguish
+it from plain JSON and to allow for further evolution of the storage format:
+``encoding_version || data``
+The ``encoding_version`` field is encoded as one byte.
+For backwards compatibility the encoding versions '[' (0x5b) and '{' (0x7b)
+are used to mark that the whole plaintext (including the encoding version
+byte) should treated as JSON document.
+
+For new data the encoding version is currently always ``2``. For that
+version ``data`` contains a JSON document compressed using the zstandard
+compression algorithm.
 
 Indexing
 ========
@@ -216,10 +253,9 @@ Indexing
 Index files contain information about Data and Tree Blobs and the Packs
 they are contained in and store this information in the repository. When
 the local cached index is not accessible any more, the index files can
-be downloaded and used to reconstruct the index. The files are encrypted
-and authenticated like Data and Tree Blobs, so the outer structure is
-``IV || Ciphertext || MAC`` again. The plaintext consists of a JSON
-document like the following:
+be downloaded and used to reconstruct the index. The file encoding is
+described in the "Unpacked Data Format" section. The plaintext consists
+of a JSON document like the following:
 
 .. code:: json
 
@@ -235,18 +271,22 @@ document like the following:
               "id": "3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce",
               "type": "data",
               "offset": 0,
-              "length": 25
-            },{
+              "length": 38,
+              // no 'uncompressed_length' as blob is not compressed
+            },
+            {
               "id": "9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae",
               "type": "tree",
               "offset": 38,
-              "length": 100
+              "length": 112,
+              "uncompressed_length": 511,
             },
             {
               "id": "d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66",
               "type": "data",
               "offset": 150,
-              "length": 123
+              "length": 123,
+              "uncompressed_length": 234,
             }
           ]
         }, [...]
@@ -255,7 +295,11 @@ document like the following:
 
 This JSON document lists Packs and the blobs contained therein. In this
 example, the Pack ``73d04e61`` contains two data Blobs and one Tree
-blob, the plaintext hashes are listed afterwards.
+blob, the plaintext hashes are listed afterwards. The ``length`` field
+corresponds to ``Length(encrypted_blob)`` in the pack file header.
+Field ``uncompressed_length`` is only present for compressed blobs and
+therefore is never present in version 1. It is set to the value of
+``Length(blob)``.
 
 The field ``supersedes`` lists the storage IDs of index files that have
 been replaced with the current index file. This happens when index files
@@ -350,8 +394,9 @@ Snapshots
 
 A snapshot represents a directory with all files and sub-directories at
 a given point in time. For each backup that is made, a new snapshot is
-created. A snapshot is a JSON document that is stored in an encrypted
-file below the directory ``snapshots`` in the repository. The filename
+created. A snapshot is a JSON document that is stored in a file below
+the directory ``snapshots`` in the repository. It uses the file encoding
+described in the "Unpacked Data Format" section. The filename
 is the storage ID. This string is unique and used within restic to
 uniquely identify a snapshot.
 
@@ -412,7 +457,7 @@ Blobs of data. The SHA-256 hashes of all Blobs are saved in an ordered
 list which then represents the content of the file.
 
 In order to relate these plaintext hashes to the actual location within
-a Pack file , an index is used. If the index is not available, the
+a Pack file, an index is used. If the index is not available, the
 header of all data Blobs can be read.
 
 Trees and Data
@@ -517,8 +562,8 @@ time there must not be any other locks (exclusive and non-exclusive).
 There may be multiple non-exclusive locks in parallel.
 
 A lock is a file in the subdir ``locks`` whose filename is the storage
-ID of the contents. It is encrypted and authenticated the same way as
-other files in the repository and contains the following JSON structure:
+ID of the contents. It is stored in the file encoding described in the
+"Unpacked Data Format" section and contains the following JSON structure:
 
 .. code:: json
 
@@ -721,3 +766,11 @@ An adversary who has a leaked (decrypted) key for a repository could:
    only be done using the ``copy`` command, which moves the data into a new
    repository with a new master key, or by making a completely new repository
    and new backup.
+
+Changes
+=======
+
+Repository Version 2
+--------------------
+
+ * Support compression for blobs (data/tree) and index / lock / snapshot files

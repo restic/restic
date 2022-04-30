@@ -75,12 +75,12 @@ const maxuint32 = 1<<32 - 1
 
 func (idx *Index) store(packIndex int, blob restic.Blob) {
 	// assert that offset and length fit into uint32!
-	if blob.Offset > maxuint32 || blob.Length > maxuint32 {
+	if blob.Offset > maxuint32 || blob.Length > maxuint32 || blob.UncompressedLength > maxuint32 {
 		panic("offset or length does not fit in uint32. You have packs > 4GB!")
 	}
 
 	m := &idx.byType[blob.Type]
-	m.add(blob.ID, packIndex, uint32(blob.Offset), uint32(blob.Length))
+	m.add(blob.ID, packIndex, uint32(blob.Offset), uint32(blob.Length), uint32(blob.UncompressedLength))
 }
 
 // Final returns true iff the index is already written to the repository, it is
@@ -93,12 +93,13 @@ func (idx *Index) Final() bool {
 }
 
 const (
-	indexMaxBlobs = 50000
-	indexMaxAge   = 10 * time.Minute
+	indexMaxBlobs           = 50000
+	indexMaxBlobsCompressed = 3 * indexMaxBlobs
+	indexMaxAge             = 10 * time.Minute
 )
 
 // IndexFull returns true iff the index is "full enough" to be saved as a preliminary index.
-var IndexFull = func(idx *Index) bool {
+var IndexFull = func(idx *Index, compress bool) bool {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
@@ -109,12 +110,18 @@ var IndexFull = func(idx *Index) bool {
 		blobs += idx.byType[typ].len()
 	}
 	age := time.Since(idx.created)
+	var maxBlobs uint
+	if compress {
+		maxBlobs = indexMaxBlobsCompressed
+	} else {
+		maxBlobs = indexMaxBlobs
+	}
 
 	switch {
 	case age >= indexMaxAge:
 		debug.Log("index %p is old enough", idx, age)
 		return true
-	case blobs >= indexMaxBlobs:
+	case blobs >= maxBlobs:
 		debug.Log("index %p has %d blobs", idx, blobs)
 		return true
 	}
@@ -169,8 +176,9 @@ func (idx *Index) toPackedBlob(e *indexEntry, t restic.BlobType) restic.PackedBl
 			BlobHandle: restic.BlobHandle{
 				ID:   e.id,
 				Type: t},
-			Length: uint(e.length),
-			Offset: uint(e.offset),
+			Length:             uint(e.length),
+			Offset:             uint(e.offset),
+			UncompressedLength: uint(e.uncompressedLength),
 		},
 		PackID: idx.packs[e.packIndex],
 	}
@@ -224,6 +232,9 @@ func (idx *Index) LookupSize(bh restic.BlobHandle) (plaintextLength uint, found 
 	e := idx.byType[bh.Type].get(bh.ID)
 	if e == nil {
 		return 0, false
+	}
+	if e.uncompressedLength != 0 {
+		return uint(e.uncompressedLength), true
 	}
 	return uint(restic.PlaintextLength(int(e.length))), true
 }
@@ -357,10 +368,11 @@ type packJSON struct {
 }
 
 type blobJSON struct {
-	ID     restic.ID       `json:"id"`
-	Type   restic.BlobType `json:"type"`
-	Offset uint            `json:"offset"`
-	Length uint            `json:"length"`
+	ID                 restic.ID       `json:"id"`
+	Type               restic.BlobType `json:"type"`
+	Offset             uint            `json:"offset"`
+	Length             uint            `json:"length"`
+	UncompressedLength uint            `json:"uncompressed_length,omitempty"`
 }
 
 // generatePackList returns a list of packs.
@@ -391,10 +403,11 @@ func (idx *Index) generatePackList() ([]*packJSON, error) {
 
 			// add blob
 			p.Blobs = append(p.Blobs, blobJSON{
-				ID:     e.id,
-				Type:   restic.BlobType(typ),
-				Offset: uint(e.offset),
-				Length: uint(e.length),
+				ID:                 e.id,
+				Type:               restic.BlobType(typ),
+				Offset:             uint(e.offset),
+				Length:             uint(e.length),
+				UncompressedLength: uint(e.uncompressedLength),
 			})
 
 			return true
@@ -553,7 +566,7 @@ func (idx *Index) merge(idx2 *Index) error {
 		m2.foreach(func(e2 *indexEntry) bool {
 			if !hasIdenticalEntry(e2) {
 				// packIndex needs to be changed as idx2.pack was appended to idx.pack, see above
-				m.add(e2.id, e2.packIndex+packlen, e2.offset, e2.length)
+				m.add(e2.id, e2.packIndex+packlen, e2.offset, e2.length, e2.uncompressedLength)
 			}
 			return true
 		})
@@ -601,8 +614,9 @@ func DecodeIndex(buf []byte, id restic.ID) (idx *Index, oldFormat bool, err erro
 				BlobHandle: restic.BlobHandle{
 					Type: blob.Type,
 					ID:   blob.ID},
-				Offset: blob.Offset,
-				Length: blob.Length,
+				Offset:             blob.Offset,
+				Length:             blob.Length,
+				UncompressedLength: blob.UncompressedLength,
 			})
 
 			switch blob.Type {
@@ -648,6 +662,7 @@ func decodeOldIndex(buf []byte) (idx *Index, err error) {
 					ID:   blob.ID},
 				Offset: blob.Offset,
 				Length: blob.Length,
+				// no compressed length in the old index format
 			})
 
 			switch blob.Type {

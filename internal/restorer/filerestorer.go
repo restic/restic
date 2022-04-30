@@ -117,7 +117,7 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 		err := r.forEachBlob(fileBlobs, func(packID restic.ID, blob restic.Blob) {
 			if largeFile {
 				packsMap[packID] = append(packsMap[packID], fileBlobInfo{id: blob.ID, offset: fileOffset})
-				fileOffset += int64(restic.PlaintextLength(int(blob.Length)))
+				fileOffset += int64(blob.DataLength())
 			}
 			pack, ok := packs[packID]
 			if !ok {
@@ -195,7 +195,7 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) error {
 				if packID.Equal(pack.id) {
 					addBlob(blob, fileOffset)
 				}
-				fileOffset += int64(restic.PlaintextLength(int(blob.Length)))
+				fileOffset += int64(blob.DataLength())
 			})
 			if err != nil {
 				// restoreFiles should have caught this error before

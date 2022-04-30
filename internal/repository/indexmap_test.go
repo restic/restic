@@ -22,7 +22,7 @@ func TestIndexMapBasic(t *testing.T) {
 		r.Read(id[:])
 		rtest.Assert(t, m.get(id) == nil, "%v retrieved but not added", id)
 
-		m.add(id, 0, 0, 0)
+		m.add(id, 0, 0, 0, 0)
 		rtest.Assert(t, m.get(id) != nil, "%v added but not retrieved", id)
 		rtest.Equals(t, uint(i), m.len())
 	}
@@ -41,7 +41,7 @@ func TestIndexMapForeach(t *testing.T) {
 	for i := 0; i < N; i++ {
 		var id restic.ID
 		id[0] = byte(i)
-		m.add(id, i, uint32(i), uint32(i))
+		m.add(id, i, uint32(i), uint32(i), uint32(i/2))
 	}
 
 	seen := make(map[int]struct{})
@@ -51,6 +51,7 @@ func TestIndexMapForeach(t *testing.T) {
 		rtest.Equals(t, i, e.packIndex)
 		rtest.Equals(t, i, int(e.length))
 		rtest.Equals(t, i, int(e.offset))
+		rtest.Equals(t, i/2, int(e.uncompressedLength))
 
 		seen[i] = struct{}{}
 		return true
@@ -85,13 +86,13 @@ func TestIndexMapForeachWithID(t *testing.T) {
 
 	// Test insertion and retrieval of duplicates.
 	for i := 0; i < ndups; i++ {
-		m.add(id, i, 0, 0)
+		m.add(id, i, 0, 0, 0)
 	}
 
 	for i := 0; i < 100; i++ {
 		var otherid restic.ID
 		r.Read(otherid[:])
-		m.add(otherid, -1, 0, 0)
+		m.add(otherid, -1, 0, 0, 0)
 	}
 
 	n = 0
@@ -109,7 +110,7 @@ func TestIndexMapForeachWithID(t *testing.T) {
 
 func BenchmarkIndexMapHash(b *testing.B) {
 	var m indexMap
-	m.add(restic.ID{}, 0, 0, 0) // Trigger lazy initialization.
+	m.add(restic.ID{}, 0, 0, 0, 0) // Trigger lazy initialization.
 
 	ids := make([]restic.ID, 128) // 4 KiB.
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))

@@ -15,6 +15,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/klauspost/compress/zstd"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
@@ -309,6 +310,10 @@ func decryptUnsigned(ctx context.Context, k *crypto.Key, buf []byte) []byte {
 }
 
 func loadBlobs(ctx context.Context, repo restic.Repository, pack restic.ID, list []restic.Blob) error {
+	dec, err := zstd.NewReader(nil)
+	if err != nil {
+		panic(err)
+	}
 	be := repo.Backend()
 	h := restic.Handle{
 		Name: pack.String(),
@@ -333,44 +338,47 @@ func loadBlobs(ctx context.Context, repo restic.Repository, pack restic.ID, list
 
 		nonce, plaintext := buf[:key.NonceSize()], buf[key.NonceSize():]
 		plaintext, err = key.Open(plaintext[:0], nonce, plaintext, nil)
+		outputPrefix := ""
+		filePrefix := ""
 		if err != nil {
 			Warnf("error decrypting blob: %v\n", err)
-			var plain []byte
 			if tryRepair || repairByte {
-				plain = tryRepairWithBitflip(ctx, key, buf, repairByte)
+				plaintext = tryRepairWithBitflip(ctx, key, buf, repairByte)
 			}
-			var prefix string
-			if plain != nil {
-				id := restic.Hash(plain)
-				if !id.Equal(blob.ID) {
-					Printf("         repaired blob (length %v), hash is %v, ID does not match, wanted %v\n", len(plain), id, blob.ID)
-					prefix = "repaired-wrong-hash-"
-				} else {
-					Printf("         successfully repaired blob (length %v), hash is %v, ID matches\n", len(plain), id)
-					prefix = "repaired-"
-				}
+			if plaintext != nil {
+				outputPrefix = "repaired "
+				filePrefix = "repaired-"
 			} else {
-				plain = decryptUnsigned(ctx, key, buf)
-				prefix = "damaged-"
+				plaintext = decryptUnsigned(ctx, key, buf)
+				err = storePlainBlob(blob.ID, "damaged-", plaintext)
+				if err != nil {
+					return err
+				}
+				continue
 			}
-			err = storePlainBlob(blob.ID, prefix, plain)
+		}
+
+		if blob.IsCompressed() {
+			decompressed, err := dec.DecodeAll(plaintext, nil)
 			if err != nil {
-				return err
+				Printf("         failed to decompress blob %v\n", blob.ID)
 			}
-			continue
+			if decompressed != nil {
+				plaintext = decompressed
+			}
 		}
 
 		id := restic.Hash(plaintext)
 		var prefix string
 		if !id.Equal(blob.ID) {
-			Printf("         successfully decrypted blob (length %v), hash is %v, ID does not match, wanted %v\n", len(plaintext), id, blob.ID)
+			Printf("         successfully %vdecrypted blob (length %v), hash is %v, ID does not match, wanted %v\n", outputPrefix, len(plaintext), id, blob.ID)
 			prefix = "wrong-hash-"
 		} else {
-			Printf("         successfully decrypted blob (length %v), hash is %v, ID matches\n", len(plaintext), id)
+			Printf("         successfully %vdecrypted blob (length %v), hash is %v, ID matches\n", outputPrefix, len(plaintext), id)
 			prefix = "correct-"
 		}
 		if extractPack {
-			err = storePlainBlob(id, prefix, plaintext)
+			err = storePlainBlob(id, filePrefix+prefix, plaintext)
 			if err != nil {
 				return err
 			}
@@ -476,27 +484,15 @@ func examinePack(ctx context.Context, repo restic.Repository, id restic.ID) erro
 
 	blobsLoaded := false
 	// examine all data the indexes have for the pack file
-	for _, idx := range repo.Index().(*repository.MasterIndex).All() {
-		idxIDs, err := idx.IDs()
-		if err != nil {
-			idxIDs = restic.IDs{}
-		}
-
-		blobs := idx.ListPack(id)
+	for b := range repo.Index().ListPacks(ctx, restic.NewIDSet(id)) {
+		blobs := b.Blobs
 		if len(blobs) == 0 {
 			continue
 		}
 
-		Printf("    index %v:\n", idxIDs)
+		checkPackSize(blobs, fi.Size)
 
-		// convert list of blobs to []restic.Blob
-		var list []restic.Blob
-		for _, b := range blobs {
-			list = append(list, b.Blob)
-		}
-		checkPackSize(list, fi.Size)
-
-		err = loadBlobs(ctx, repo, id, list)
+		err = loadBlobs(ctx, repo, id, blobs)
 		if err != nil {
 			Warnf("error: %v\n", err)
 		} else {
@@ -532,14 +528,10 @@ func checkPackSize(blobs []restic.Blob, fileSize int64) {
 		if offset != uint64(pb.Offset) {
 			Printf("      hole in file, want offset %v, got %v\n", offset, pb.Offset)
 		}
-		offset += uint64(pb.Length)
+		offset = uint64(pb.Offset + pb.Length)
 		size += uint64(pb.Length)
 	}
-
-	// compute header size, per blob: 1 byte type, 4 byte length, 32 byte id
-	size += uint64(restic.CiphertextLength(len(blobs) * (1 + 4 + 32)))
-	// length in uint32 little endian
-	size += 4
+	size += uint64(pack.CalculateHeaderSize(blobs))
 
 	if uint64(fileSize) != size {
 		Printf("      file sizes do not match: computed %v from index, file size is %v\n", size, fileSize)

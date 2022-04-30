@@ -70,7 +70,7 @@ func fillPacks(t testing.TB, rnd *rand.Rand, be Saver, pm *packerManager, buf []
 		// Only change a few bytes so we know we're not benchmarking the RNG.
 		rnd.Read(buf[:min(l, 4)])
 
-		n, err := packer.Add(restic.DataBlob, id, buf)
+		n, err := packer.Add(restic.DataBlob, id, buf, 0)
 		if err != nil {
 			t.Fatal(err)
 		}
