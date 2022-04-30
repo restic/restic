@@ -34,6 +34,7 @@ type SFTP struct {
 	sem *backend.Semaphore
 	backend.Layout
 	Config
+	backend.Modes
 }
 
 var _ restic.Backend = &SFTP{}
@@ -140,9 +141,14 @@ func Open(ctx context.Context, cfg Config) (*SFTP, error) {
 
 	debug.Log("layout: %v\n", sftp.Layout)
 
+	fi, err := sftp.c.Stat(Join(cfg.Path, backend.Paths.Config))
+	m := backend.DeriveModesFromFileInfo(fi, err)
+	debug.Log("using (%03O file, %03O dir) permissions", m.File, m.Dir)
+
 	sftp.Config = cfg
 	sftp.p = cfg.Path
 	sftp.sem = sem
+	sftp.Modes = m
 	return sftp, nil
 }
 
@@ -224,6 +230,8 @@ func Create(ctx context.Context, cfg Config) (*SFTP, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	sftp.Modes = backend.DefaultModes
 
 	// test if config file already exists
 	_, err = sftp.c.Lstat(Join(cfg.Path, backend.Paths.Config))
@@ -311,7 +319,7 @@ func (r *SFTP) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader
 	// pkg/sftp doesn't allow creating with a mode.
 	// Chmod while the file is still empty.
 	if err == nil {
-		err = f.Chmod(backend.Modes.File)
+		err = f.Chmod(r.Modes.File)
 	}
 	if err != nil {
 		return errors.Wrap(err, "OpenFile")
