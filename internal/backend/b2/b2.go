@@ -133,6 +133,10 @@ func (be *b2Backend) SetListMaxItems(i int) {
 	be.listMaxItems = i
 }
 
+func (be *b2Backend) Connections() uint {
+	return be.cfg.Connections
+}
+
 // Location returns the location for the backend.
 func (be *b2Backend) Location() string {
 	return be.cfg.Bucket

@@ -24,6 +24,7 @@ import (
 type Backend struct {
 	accountName  string
 	container    *storage.Container
+	connections  uint
 	sem          *backend.Semaphore
 	prefix       string
 	listMaxItems int
@@ -55,6 +56,7 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	be := &Backend{
 		container:   service.GetContainerReference(cfg.Container),
 		accountName: cfg.AccountName,
+		connections: cfg.Connections,
 		sem:         sem,
 		prefix:      cfg.Prefix,
 		Layout: &backend.DefaultLayout{
@@ -107,6 +109,10 @@ func (be *Backend) IsNotExist(err error) bool {
 // Join combines path components with slashes.
 func (be *Backend) Join(p ...string) string {
 	return path.Join(p...)
+}
+
+func (be *Backend) Connections() uint {
+	return be.connections
 }
 
 // Location returns this backend's location (the container name).
