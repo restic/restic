@@ -87,8 +87,8 @@ func (r *packerManager) SaveBlob(ctx context.Context, t restic.BlobType, id rest
 		return 0, err
 	}
 
-	// if the pack is not full enough, put back to the list
-	if packer.Size() < r.packSize {
+	// if the pack and header is not full enough, put back to the list
+	if packer.Size() < r.packSize && !packer.HeaderFull() {
 		debug.Log("pack is not full enough (%d bytes)", packer.Size())
 		return size, nil
 	}

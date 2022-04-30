@@ -157,6 +157,13 @@ func (p *Packer) Count() int {
 	return len(p.blobs)
 }
 
+// HeaderFull returns true if the pack header is full.
+func (p *Packer) HeaderFull() bool {
+	p.m.Lock()
+	defer p.m.Unlock()
+	return headerSize+uint(len(p.blobs)+1)*entrySize > MaxHeaderSize
+}
+
 // Blobs returns the slice of blobs that have been written.
 func (p *Packer) Blobs() []restic.Blob {
 	p.m.Lock()
