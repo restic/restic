@@ -1573,26 +1573,35 @@ func TestCheckRestoreNoLock(t *testing.T) {
 }
 
 func TestPrune(t *testing.T) {
-	t.Run("0", func(t *testing.T) {
-		opts := PruneOptions{MaxUnused: "0%"}
+	testPruneVariants(t, false)
+	testPruneVariants(t, true)
+}
+
+func testPruneVariants(t *testing.T, unsafeNoSpaceRecovery bool) {
+	suffix := ""
+	if unsafeNoSpaceRecovery {
+		suffix = "-recovery"
+	}
+	t.Run("0"+suffix, func(t *testing.T) {
+		opts := PruneOptions{MaxUnused: "0%", unsafeRecovery: unsafeNoSpaceRecovery}
 		checkOpts := CheckOptions{ReadData: true, CheckUnused: true}
 		testPrune(t, opts, checkOpts)
 	})
 
-	t.Run("50", func(t *testing.T) {
-		opts := PruneOptions{MaxUnused: "50%"}
+	t.Run("50"+suffix, func(t *testing.T) {
+		opts := PruneOptions{MaxUnused: "50%", unsafeRecovery: unsafeNoSpaceRecovery}
 		checkOpts := CheckOptions{ReadData: true}
 		testPrune(t, opts, checkOpts)
 	})
 
-	t.Run("unlimited", func(t *testing.T) {
-		opts := PruneOptions{MaxUnused: "unlimited"}
+	t.Run("unlimited"+suffix, func(t *testing.T) {
+		opts := PruneOptions{MaxUnused: "unlimited", unsafeRecovery: unsafeNoSpaceRecovery}
 		checkOpts := CheckOptions{ReadData: true}
 		testPrune(t, opts, checkOpts)
 	})
 
-	t.Run("CachableOnly", func(t *testing.T) {
-		opts := PruneOptions{MaxUnused: "5%", RepackCachableOnly: true}
+	t.Run("CachableOnly"+suffix, func(t *testing.T) {
+		opts := PruneOptions{MaxUnused: "5%", RepackCachableOnly: true, unsafeRecovery: unsafeNoSpaceRecovery}
 		checkOpts := CheckOptions{ReadData: true}
 		testPrune(t, opts, checkOpts)
 	})

@@ -39,7 +39,10 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 // PruneOptions collects all options for the cleanup command.
 type PruneOptions struct {
-	DryRun bool
+	DryRun                bool
+	UnsafeNoSpaceRecovery string
+
+	unsafeRecovery bool
 
 	MaxUnused      string
 	maxUnusedBytes func(used uint64) (unused uint64) // calculates the number of unused bytes after repacking, according to MaxUnused
@@ -56,6 +59,7 @@ func init() {
 	cmdRoot.AddCommand(cmdPrune)
 	f := cmdPrune.Flags()
 	f.BoolVarP(&pruneOptions.DryRun, "dry-run", "n", false, "do not modify the repository, just print what would be done")
+	f.StringVarP(&pruneOptions.UnsafeNoSpaceRecovery, "unsafe-recover-no-free-space", "", "", "UNSAFE, READ THE DOCUMENTATION BEFORE USING! Try to recover a repository stuck with no free space. Do not use without trying out 'prune --max-repack-size 0' first.")
 	addPruneOptions(cmdPrune)
 }
 
@@ -74,6 +78,10 @@ func verifyPruneOptions(opts *PruneOptions) error {
 			return err
 		}
 		opts.MaxRepackBytes = uint64(size)
+	}
+	if opts.UnsafeNoSpaceRecovery != "" {
+		// prevent repacking data to make sure users cannot get stuck.
+		opts.MaxRepackBytes = 0
 	}
 
 	maxUnused := strings.TrimSpace(opts.MaxUnused)
@@ -134,6 +142,14 @@ func runPrune(opts PruneOptions, gopts GlobalOptions) error {
 
 	if repo.Backend().Connections() < 2 {
 		return errors.Fatal("prune requires a backend connection limit of at least two")
+	}
+
+	if opts.UnsafeNoSpaceRecovery != "" {
+		repoID := repo.Config().ID
+		if opts.UnsafeNoSpaceRecovery != repoID {
+			return errors.Fatalf("must pass id '%s' to --unsafe-recover-no-free-space", repoID)
+		}
+		opts.unsafeRecovery = true
 	}
 
 	lock, err := lockRepoExclusive(gopts.ctx, repo)
@@ -522,7 +538,14 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		ignorePacks.Merge(removePacks)
 	}
 
-	if len(ignorePacks) != 0 {
+	if opts.unsafeRecovery {
+		Verbosef("deleting index files\n")
+		indexFiles := repo.Index().(*repository.MasterIndex).IDs()
+		err = DeleteFilesChecked(gopts, repo, indexFiles, restic.IndexFile)
+		if err != nil {
+			return errors.Fatalf("%s", err)
+		}
+	} else if len(ignorePacks) != 0 {
 		err = rebuildIndexFiles(gopts, repo, ignorePacks, nil)
 		if err != nil {
 			return errors.Fatalf("%s", err)
@@ -534,11 +557,18 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		DeleteFiles(gopts, repo, removePacks, restic.PackFile)
 	}
 
+	if opts.unsafeRecovery {
+		_, err = writeIndexFiles(gopts, repo, ignorePacks, nil)
+		if err != nil {
+			return errors.Fatalf("%s", err)
+		}
+	}
+
 	Verbosef("done\n")
 	return nil
 }
 
-func rebuildIndexFiles(gopts GlobalOptions, repo restic.Repository, removePacks restic.IDSet, extraObsolete restic.IDs) error {
+func writeIndexFiles(gopts GlobalOptions, repo restic.Repository, removePacks restic.IDSet, extraObsolete restic.IDs) (restic.IDSet, error) {
 	Verbosef("rebuilding index\n")
 
 	idx := (repo.Index()).(*repository.MasterIndex)
@@ -546,6 +576,11 @@ func rebuildIndexFiles(gopts GlobalOptions, repo restic.Repository, removePacks 
 	bar := newProgressMax(!gopts.Quiet, packcount, "packs processed")
 	obsoleteIndexes, err := idx.Save(gopts.ctx, repo, removePacks, extraObsolete, bar)
 	bar.Done()
+	return obsoleteIndexes, err
+}
+
+func rebuildIndexFiles(gopts GlobalOptions, repo restic.Repository, removePacks restic.IDSet, extraObsolete restic.IDs) error {
+	obsoleteIndexes, err := writeIndexFiles(gopts, repo, removePacks, extraObsolete)
 	if err != nil {
 		return err
 	}

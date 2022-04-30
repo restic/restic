@@ -116,6 +116,28 @@ func (mi *MasterIndex) IsMixedPack(packID restic.ID) bool {
 	return false
 }
 
+// IDs returns the IDs of all indexes contained in the index.
+func (mi *MasterIndex) IDs() restic.IDSet {
+	mi.idxMutex.RLock()
+	defer mi.idxMutex.RUnlock()
+
+	ids := restic.NewIDSet()
+	for _, idx := range mi.idx {
+		if !idx.Final() {
+			continue
+		}
+		indexIDs, err := idx.IDs()
+		if err != nil {
+			debug.Log("not using index, ID() returned error %v", err)
+			continue
+		}
+		for _, id := range indexIDs {
+			ids.Insert(id)
+		}
+	}
+	return ids
+}
+
 // Packs returns all packs that are covered by the index.
 // If packBlacklist is given, those packs are only contained in the
 // resulting IDSet if they are contained in a non-final (newly written) index.
