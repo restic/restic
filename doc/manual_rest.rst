@@ -56,6 +56,7 @@ Usage help is available:
           --key-hint key               key ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
           --limit-download int         limits downloads to a maximum rate in KiB/s. (default: unlimited)
           --limit-upload int           limits uploads to a maximum rate in KiB/s. (default: unlimited)
+          --min-packsize uint          set min pack size in MiB. (default: $RESTIC_MIN_PACKSIZE or 16)
           --no-cache                   do not use a local cache
           --no-lock                    do not lock the repository, this allows some operations on read-only repositories
       -o, --option key=value           set extended option (key=value, can be specified multiple times)
@@ -128,6 +129,7 @@ command:
           --key-hint key               key ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
           --limit-download int         limits downloads to a maximum rate in KiB/s. (default: unlimited)
           --limit-upload int           limits uploads to a maximum rate in KiB/s. (default: unlimited)
+          --min-packsize uint          set min pack size in MiB. (default: $RESTIC_MIN_PACKSIZE or 16)
           --no-cache                   do not use a local cache
           --no-lock                    do not lock the repository, this allows some operations on read-only repositories
       -o, --option key=value           set extended option (key=value, can be specified multiple times)
@@ -440,3 +442,4 @@ time it is used, so by looking at the timestamps of the sub directories of the
 cache directory it can decide which sub directories are old and probably not
 needed any more. You can either remove these directories manually, or run a
 restic command with the ``--cleanup-cache`` flag.
+

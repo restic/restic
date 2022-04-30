@@ -8,6 +8,7 @@
   - for subsections
   ^ for subsubsections
   " for paragraphs
+
 ########################
 Tuning Backup Parameters
 ########################
@@ -48,3 +49,22 @@ which will compress very fast), ``max`` (which will trade backup speed and CPU u
 slightly better compression), or ``off`` (which disables compression). Each setting is
 only applied for the single run of restic. The option can also be set via the environment
 variable ``RESTIC_COMPRESSION``.
+
+
+Pack Size
+=========
+
+In certain instances, such as very large repositories, it is desired to have larger pack
+sizes to reduce the number of files in the repository.  Notable examples are OpenStack
+Swift and some Google Drive Team accounts, where there are hard limits on the total
+number of files.  This can be achieved by either using the ``--min-packsize`` flag
+or defining the ``$RESTIC_MIN_PACKSIZE`` environment variable.  Restic currently defaults
+to a 16MB minimum pack size.
+
+The side effect of increasing the pack size is increased client memory usage.  A bit of
+tuning may be required to strike a balance between memory usage and number of pack files.
+
+Restic uses the majority of it's memory according to the pack size, multiplied by the number
+of parallel writers. For example, if you have 4 parallel writers (restic creates one per
+available CPU), With a minimum pack size of 64 (Megabytes), you'll get a *minimum* of 256MB
+of memory usage.
