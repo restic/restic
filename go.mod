@@ -21,7 +21,7 @@ require (
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/juju/ratelimit v1.0.1
-	github.com/klauspost/compress v1.15.1
+	github.com/klauspost/compress v1.15.2
 	github.com/klauspost/cpuid/v2 v2.0.12 // indirect
 	github.com/kurin/blazer v0.5.4-0.20211030221322-ba894c124ac6
 	github.com/minio/md5-simd v1.1.2 // indirect
