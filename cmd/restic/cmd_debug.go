@@ -427,23 +427,29 @@ func storePlainBlob(id restic.ID, prefix string, plain []byte) error {
 }
 
 func runDebugExamine(gopts GlobalOptions, args []string) error {
+	repo, err := OpenRepository(gopts)
+	if err != nil {
+		return err
+	}
+
 	ids := make([]restic.ID, 0)
 	for _, name := range args {
 		id, err := restic.ParseID(name)
 		if err != nil {
-			Warnf("error: %v\n", err)
-			continue
+			name, err = restic.Find(gopts.ctx, repo.Backend(), restic.PackFile, name)
+			if err == nil {
+				id, err = restic.ParseID(name)
+			}
+			if err != nil {
+				Warnf("error: %v\n", err)
+				continue
+			}
 		}
 		ids = append(ids, id)
 	}
 
 	if len(ids) == 0 {
 		return errors.Fatal("no pack files to examine")
-	}
-
-	repo, err := OpenRepository(gopts)
-	if err != nil {
-		return err
 	}
 
 	if !gopts.NoLock {
