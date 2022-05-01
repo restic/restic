@@ -31,18 +31,22 @@ type ErrorFunc func(file string, fi os.FileInfo, err error) error
 
 // ItemStats collects some statistics about a particular file or directory.
 type ItemStats struct {
-	DataBlobs int    // number of new data blobs added for this item
-	DataSize  uint64 // sum of the sizes of all new data blobs
-	TreeBlobs int    // number of new tree blobs added for this item
-	TreeSize  uint64 // sum of the sizes of all new tree blobs
+	DataBlobs      int    // number of new data blobs added for this item
+	DataSize       uint64 // sum of the sizes of all new data blobs
+	DataSizeInRepo uint64 // sum of the bytes added to the repo (including compression and crypto overhead)
+	TreeBlobs      int    // number of new tree blobs added for this item
+	TreeSize       uint64 // sum of the sizes of all new tree blobs
+	TreeSizeInRepo uint64 // sum of the bytes added to the repo (including compression and crypto overhead)
 }
 
 // Add adds other to the current ItemStats.
 func (s *ItemStats) Add(other ItemStats) {
 	s.DataBlobs += other.DataBlobs
 	s.DataSize += other.DataSize
+	s.DataSizeInRepo += other.DataSizeInRepo
 	s.TreeBlobs += other.TreeBlobs
 	s.TreeSize += other.TreeSize
+	s.TreeSizeInRepo += other.TreeSizeInRepo
 }
 
 // Archiver saves a directory structure to the repo.
@@ -183,7 +187,8 @@ func (arch *Archiver) saveTree(ctx context.Context, t *restic.Tree) (restic.ID, 
 	res.Wait(ctx)
 	if !res.Known() {
 		s.TreeBlobs++
-		s.TreeSize += uint64(len(buf))
+		s.TreeSize += uint64(res.Length())
+		s.TreeSizeInRepo += uint64(res.SizeInRepo())
 	}
 	// The context was canceled in the meantime, res.ID() might be invalid
 	if ctx.Err() != nil {

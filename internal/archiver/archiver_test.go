@@ -1019,7 +1019,7 @@ func TestArchiverSaveTree(t *testing.T) {
 			want: TestDir{
 				"targetfile": TestFile{Content: string("foobar")},
 			},
-			stat: ItemStats{1, 6, 0, 0},
+			stat: ItemStats{1, 6, 32 + 6, 0, 0, 0},
 		},
 		{
 			src: TestDir{
@@ -1031,7 +1031,7 @@ func TestArchiverSaveTree(t *testing.T) {
 				"targetfile":  TestFile{Content: string("foobar")},
 				"filesymlink": TestSymlink{Target: "targetfile"},
 			},
-			stat: ItemStats{1, 6, 0, 0},
+			stat: ItemStats{1, 6, 32 + 6, 0, 0, 0},
 		},
 		{
 			src: TestDir{
@@ -1051,7 +1051,7 @@ func TestArchiverSaveTree(t *testing.T) {
 					"symlink": TestSymlink{Target: "subdir"},
 				},
 			},
-			stat: ItemStats{0, 0, 1, 0x154},
+			stat: ItemStats{0, 0, 0, 1, 0x154, 0x16a},
 		},
 		{
 			src: TestDir{
@@ -1075,7 +1075,7 @@ func TestArchiverSaveTree(t *testing.T) {
 					},
 				},
 			},
-			stat: ItemStats{1, 6, 3, 0x47f},
+			stat: ItemStats{1, 6, 32 + 6, 3, 0x47f, 0x4c1},
 		},
 	}
 
@@ -1140,7 +1140,8 @@ func TestArchiverSaveTree(t *testing.T) {
 			bothZeroOrNeither(t, uint64(test.stat.DataBlobs), uint64(stat.DataBlobs))
 			bothZeroOrNeither(t, uint64(test.stat.TreeBlobs), uint64(stat.TreeBlobs))
 			bothZeroOrNeither(t, test.stat.DataSize, stat.DataSize)
-			bothZeroOrNeither(t, test.stat.TreeSize, stat.TreeSize)
+			bothZeroOrNeither(t, test.stat.DataSizeInRepo, stat.DataSizeInRepo)
+			bothZeroOrNeither(t, test.stat.TreeSizeInRepo, stat.TreeSizeInRepo)
 		})
 	}
 }

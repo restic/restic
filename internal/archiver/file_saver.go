@@ -210,6 +210,7 @@ func (s *FileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 		if !res.Known() {
 			stats.DataBlobs++
 			stats.DataSize += uint64(res.Length())
+			stats.DataSizeInRepo += uint64(res.SizeInRepo())
 		}
 
 		node.Content = append(node.Content, res.ID())

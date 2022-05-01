@@ -86,9 +86,15 @@ func (s *FutureBlob) Known() bool {
 	return s.res.known
 }
 
-// Length returns the length of the blob.
+// Length returns the raw length of the blob.
 func (s *FutureBlob) Length() int {
 	return s.length
+}
+
+// SizeInRepo returns the number of bytes added to the repo (including
+// compression and crypto overhead).
+func (s *FutureBlob) SizeInRepo() int {
+	return s.res.size
 }
 
 type saveBlobJob struct {
