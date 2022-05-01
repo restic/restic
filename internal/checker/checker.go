@@ -14,6 +14,7 @@ import (
 	"github.com/minio/sha256-simd"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/s3"
+	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/hashing"
@@ -193,6 +194,11 @@ func IsOrphanedPack(err error) bool {
 }
 
 func isS3Legacy(b restic.Backend) bool {
+	// unwrap cache
+	if be, ok := b.(*cache.Backend); ok {
+		b = be.Backend
+	}
+
 	be, ok := b.(*s3.Backend)
 	if !ok {
 		return false
