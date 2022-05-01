@@ -51,6 +51,7 @@ type PruneOptions struct {
 	MaxRepackBytes uint64
 
 	RepackCachableOnly bool
+	RepackUncompressed bool
 }
 
 var pruneOptions PruneOptions
@@ -68,6 +69,7 @@ func addPruneOptions(c *cobra.Command) {
 	f.StringVar(&pruneOptions.MaxUnused, "max-unused", "5%", "tolerate given `limit` of unused data (absolute value in bytes with suffixes k/K, m/M, g/G, t/T, a value in % or the word 'unlimited')")
 	f.StringVar(&pruneOptions.MaxRepackSize, "max-repack-size", "", "maximum `size` to repack (allowed suffixes: k/K, m/M, g/G, t/T)")
 	f.BoolVar(&pruneOptions.RepackCachableOnly, "repack-cacheable-only", false, "only repack packs which are cacheable")
+	f.BoolVar(&pruneOptions.RepackUncompressed, "repack-uncompressed", false, "repack all uncompressed data")
 }
 
 func verifyPruneOptions(opts *PruneOptions) error {
@@ -135,6 +137,10 @@ func runPrune(opts PruneOptions, gopts GlobalOptions) error {
 		return err
 	}
 
+	if opts.RepackUncompressed && gopts.Compression == repository.CompressionOff {
+		return errors.Fatal("disabled compression and `--repack-uncompressed` are mutually exclusive")
+	}
+
 	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err
@@ -142,6 +148,10 @@ func runPrune(opts PruneOptions, gopts GlobalOptions) error {
 
 	if repo.Backend().Connections() < 2 {
 		return errors.Fatal("prune requires a backend connection limit of at least two")
+	}
+
+	if repo.Config().Version < 2 && opts.RepackUncompressed {
+		return errors.Fatal("compression requires at least repository format version 2")
 	}
 
 	if opts.UnsafeNoSpaceRecovery != "" {
@@ -356,8 +366,12 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 			stats.packs.partlyUsed++
 		}
 
-		// repo v2: always repack tree blobs if uncompressed
-		mustCompress := repoVersion >= 2 && p.tpe == restic.TreeBlob && p.uncompressed
+		mustCompress := false
+		if repoVersion >= 2 {
+			// repo v2: always repack tree blobs if uncompressed
+			// compress data blobs if requested
+			mustCompress = (p.tpe == restic.TreeBlob || opts.RepackUncompressed) && p.uncompressed
+		}
 		// use a flag that pack must be compressed
 		p.uncompressed = mustCompress
 
