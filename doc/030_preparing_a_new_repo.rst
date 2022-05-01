@@ -40,7 +40,17 @@ options exist:
    be used to explicitely set the version for the new repository. By default,
    the current stable version is used. Have a look at the `design documentation
    <https://github.com/restic/restic/blob/master/doc/design.rst>`__ for
-   details.
+   details. The alias ``latest`` will always point to the latest repository version.
+   The below table shows which restic version is required to use a certain
+   repository version and shows new features introduced by the repository format.
+
++--------------------+------------------------+---------------------+
+| Repository version | Minimum restic version | Major new features  |
++====================+========================+=====================+
+| ``1``              | any version            |                     |
++--------------------+------------------------+---------------------+
+| ``2``              | >= 0.14.0              | Compression support |
++--------------------+------------------------+---------------------+
 
 
 Local
