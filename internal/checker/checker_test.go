@@ -289,7 +289,7 @@ func TestDuplicatePacksInIndex(t *testing.T) {
 
 	found := false
 	for _, hint := range hints {
-		if _, ok := hint.(checker.ErrDuplicatePacks); ok {
+		if _, ok := hint.(*checker.ErrDuplicatePacks); ok {
 			found = true
 		} else {
 			t.Errorf("got unexpected hint: %v", hint)

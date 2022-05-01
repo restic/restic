@@ -222,7 +222,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	dupFound := false
 	for _, hint := range hints {
 		Printf("%v\n", hint)
-		if _, ok := hint.(checker.ErrDuplicatePacks); ok {
+		if _, ok := hint.(*checker.ErrDuplicatePacks); ok {
 			dupFound = true
 		}
 	}
@@ -273,7 +273,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 
 	for err := range errChan {
 		errorsFound = true
-		if e, ok := err.(checker.TreeError); ok {
+		if e, ok := err.(*checker.TreeError); ok {
 			Warnf("error for tree %v:\n", e.ID.Str())
 			for _, treeErr := range e.Errors {
 				Warnf("  %v\n", treeErr)

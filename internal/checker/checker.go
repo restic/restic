@@ -63,7 +63,7 @@ type ErrDuplicatePacks struct {
 	Indexes restic.IDSet
 }
 
-func (e ErrDuplicatePacks) Error() string {
+func (e *ErrDuplicatePacks) Error() string {
 	return fmt.Sprintf("pack %v contained in several indexes: %v", e.PackID.Str(), e.Indexes)
 }
 
@@ -73,7 +73,7 @@ type ErrOldIndexFormat struct {
 	restic.ID
 }
 
-func (err ErrOldIndexFormat) Error() string {
+func (err *ErrOldIndexFormat) Error() string {
 	return fmt.Sprintf("index %v has old format", err.ID.Str())
 }
 
@@ -93,7 +93,7 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 
 		if oldFormat {
 			debug.Log("index %v has old format", id.Str())
-			hints = append(hints, ErrOldIndexFormat{id})
+			hints = append(hints, &ErrOldIndexFormat{id})
 		}
 
 		err = errors.Wrapf(err, "error loading index %v", id.Str())
@@ -137,7 +137,7 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 	for packID := range c.packs {
 		debug.Log("  check pack %v: contained in %d indexes", packID, len(packToIndex[packID]))
 		if len(packToIndex[packID]) > 1 {
-			hints = append(hints, ErrDuplicatePacks{
+			hints = append(hints, &ErrDuplicatePacks{
 				PackID:  packID,
 				Indexes: packToIndex[packID],
 			})
@@ -257,7 +257,7 @@ type TreeError struct {
 	Errors []error
 }
 
-func (e TreeError) Error() string {
+func (e *TreeError) Error() string {
 	return fmt.Sprintf("tree %v: %v", e.ID.Str(), e.Errors)
 }
 
@@ -276,7 +276,7 @@ func (c *Checker) checkTreeWorker(ctx context.Context, trees <-chan restic.TreeI
 		if len(errs) == 0 {
 			continue
 		}
-		treeError := TreeError{ID: job.ID, Errors: errs}
+		treeError := &TreeError{ID: job.ID, Errors: errs}
 		select {
 		case <-ctx.Done():
 			return
