@@ -483,7 +483,7 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 	buf, err := repo.LoadBlob(ctx, restic.TreeBlob, id, nil)
 	test.OK(t, err)
 
-	_, _, err = repo.SaveBlob(ctx, restic.DataBlob, buf, id, false)
+	_, _, _, err = repo.SaveBlob(ctx, restic.DataBlob, buf, id, false)
 	test.OK(t, err)
 
 	malNode := &restic.Node{

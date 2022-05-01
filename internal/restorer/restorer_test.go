@@ -41,7 +41,7 @@ func saveFile(t testing.TB, repo restic.Repository, node File) restic.ID {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	id, _, err := repo.SaveBlob(ctx, restic.DataBlob, []byte(node.Data), restic.ID{}, false)
+	id, _, _, err := repo.SaveBlob(ctx, restic.DataBlob, []byte(node.Data), restic.ID{}, false)
 	if err != nil {
 		t.Fatal(err)
 	}

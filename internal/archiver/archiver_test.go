@@ -415,16 +415,16 @@ type blobCountingRepo struct {
 	saved map[restic.BlobHandle]uint
 }
 
-func (repo *blobCountingRepo) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (restic.ID, bool, error) {
-	id, exists, err := repo.Repository.SaveBlob(ctx, t, buf, id, false)
+func (repo *blobCountingRepo) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (restic.ID, bool, int, error) {
+	id, exists, size, err := repo.Repository.SaveBlob(ctx, t, buf, id, false)
 	if exists {
-		return id, exists, err
+		return id, exists, size, err
 	}
 	h := restic.BlobHandle{ID: id, Type: t}
 	repo.m.Lock()
 	repo.saved[h]++
 	repo.m.Unlock()
-	return id, exists, err
+	return id, exists, size, err
 }
 
 func (repo *blobCountingRepo) SaveTree(ctx context.Context, t *restic.Tree) (restic.ID, error) {
@@ -1944,10 +1944,10 @@ type failSaveRepo struct {
 	err       error
 }
 
-func (f *failSaveRepo) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (restic.ID, bool, error) {
+func (f *failSaveRepo) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (restic.ID, bool, int, error) {
 	val := atomic.AddInt32(&f.cnt, 1)
 	if val >= f.failAfter {
-		return restic.ID{}, false, f.err
+		return restic.ID{}, false, 0, f.err
 	}
 
 	return f.Repository.SaveBlob(ctx, t, buf, id, storeDuplicate)

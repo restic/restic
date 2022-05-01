@@ -32,7 +32,7 @@ func createRandomBlobs(t testing.TB, repo restic.Repository, blobs int, pData fl
 		buf := make([]byte, length)
 		rand.Read(buf)
 
-		id, exists, err := repo.SaveBlob(context.TODO(), tpe, buf, restic.ID{}, false)
+		id, exists, _, err := repo.SaveBlob(context.TODO(), tpe, buf, restic.ID{}, false)
 		if err != nil {
 			t.Fatalf("SaveFrom() error %v", err)
 		}
@@ -62,7 +62,7 @@ func createRandomWrongBlob(t testing.TB, repo restic.Repository) {
 	// invert first data byte
 	buf[0] ^= 0xff
 
-	_, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, buf, id, false)
+	_, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, buf, id, false)
 	if err != nil {
 		t.Fatalf("SaveFrom() error %v", err)
 	}

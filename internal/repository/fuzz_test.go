@@ -23,7 +23,7 @@ func FuzzSaveLoadBlob(f *testing.F) {
 		id := restic.Hash(blob)
 		repo, _ := TestRepositoryWithBackend(t, mem.New(), 2)
 
-		_, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, blob, id, false)
+		_, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, blob, id, false)
 		if err != nil {
 			t.Fatal(err)
 		}

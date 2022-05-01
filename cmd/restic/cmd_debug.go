@@ -386,7 +386,7 @@ func loadBlobs(ctx context.Context, repo restic.Repository, pack restic.ID, list
 			}
 		}
 		if reuploadBlobs {
-			_, _, err := repo.SaveBlob(ctx, blob.Type, plaintext, id, true)
+			_, _, _, err := repo.SaveBlob(ctx, blob.Type, plaintext, id, true)
 			if err != nil {
 				return err
 			}
