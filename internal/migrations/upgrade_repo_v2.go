@@ -50,6 +50,9 @@ func (*UpgradeRepoV2) Check(ctx context.Context, repo restic.Repository) (bool, 
 	return isV1, nil
 }
 
+func (*UpgradeRepoV2) RepoCheckOptions() *RepositoryCheckOptions {
+	return &RepositoryCheckOptions{}
+}
 func (*UpgradeRepoV2) upgrade(ctx context.Context, repo restic.Repository) error {
 	h := restic.Handle{Type: restic.ConfigFile}
 

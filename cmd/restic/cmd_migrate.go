@@ -84,6 +84,20 @@ func applyMigrations(opts MigrateOptions, gopts GlobalOptions, repo restic.Repos
 					Warnf("check for migration %v failed, continuing anyway\n", m.Name())
 				}
 
+				repoCheckOpts := m.RepoCheckOptions()
+				if repoCheckOpts != nil {
+					Printf("checking repository integrity...\n")
+
+					checkOptions := CheckOptions{}
+					checkGopts := gopts
+					// the repository is already locked
+					checkGopts.NoLock = true
+					err = runCheck(checkOptions, checkGopts, []string{})
+					if err != nil {
+						return err
+					}
+				}
+
 				Printf("applying migration %v...\n", m.Name())
 				if err = m.Apply(ctx, repo); err != nil {
 					Warnf("migration %v failed: %v\n", m.Name(), err)

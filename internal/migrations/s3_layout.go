@@ -37,6 +37,10 @@ func (m *S3Layout) Check(ctx context.Context, repo restic.Repository) (bool, err
 	return true, nil
 }
 
+func (m *S3Layout) RepoCheckOptions() *RepositoryCheckOptions {
+	return nil
+}
+
 func retry(max int, fail func(err error), f func() error) error {
 	var err error
 	for i := 0; i < max; i++ {
