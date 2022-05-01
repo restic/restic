@@ -147,6 +147,11 @@ func (be *b2Backend) Hasher() hash.Hash {
 	return nil
 }
 
+// HasAtomicReplace returns whether Save() can atomically replace files
+func (be *b2Backend) HasAtomicReplace() bool {
+	return true
+}
+
 // IsNotExist returns true if the error is caused by a non-existing file.
 func (be *b2Backend) IsNotExist(err error) bool {
 	return b2.IsNotExist(errors.Cause(err))

@@ -129,6 +129,11 @@ func (be *beSwift) Hasher() hash.Hash {
 	return md5.New()
 }
 
+// HasAtomicReplace returns whether Save() can atomically replace files
+func (be *beSwift) HasAtomicReplace() bool {
+	return true
+}
+
 // Load runs fn with a reader that yields the contents of the file at h at the
 // given offset.
 func (be *beSwift) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {

@@ -268,6 +268,11 @@ func (be *MemoryBackend) Hasher() hash.Hash {
 	return md5.New()
 }
 
+// HasAtomicReplace returns whether Save() can atomically replace files
+func (be *MemoryBackend) HasAtomicReplace() bool {
+	return false
+}
+
 // Delete removes all data in the backend.
 func (be *MemoryBackend) Delete(ctx context.Context) error {
 	be.m.Lock()

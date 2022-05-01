@@ -53,17 +53,19 @@ func (*UpgradeRepoV2) Check(ctx context.Context, repo restic.Repository) (bool, 
 func (*UpgradeRepoV2) upgrade(ctx context.Context, repo restic.Repository) error {
 	h := restic.Handle{Type: restic.ConfigFile}
 
-	// now remove the original file
-	err := repo.Backend().Remove(ctx, h)
-	if err != nil {
-		return fmt.Errorf("remove config failed: %w", err)
+	if !repo.Backend().HasAtomicReplace() {
+		// remove the original file for backends which do not support atomic overwriting
+		err := repo.Backend().Remove(ctx, h)
+		if err != nil {
+			return fmt.Errorf("remove config failed: %w", err)
+		}
 	}
 
 	// upgrade config
 	cfg := repo.Config()
 	cfg.Version = 2
 
-	_, err = repo.SaveJSONUnpacked(ctx, restic.ConfigFile, cfg)
+	_, err := repo.SaveJSONUnpacked(ctx, restic.ConfigFile, cfg)
 	if err != nil {
 		return fmt.Errorf("save new config file failed: %w", err)
 	}

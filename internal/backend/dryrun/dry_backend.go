@@ -67,6 +67,10 @@ func (be *Backend) Hasher() hash.Hash {
 	return be.b.Hasher()
 }
 
+func (be *Backend) HasAtomicReplace() bool {
+	return be.b.HasAtomicReplace()
+}
+
 func (be *Backend) IsNotExist(err error) bool {
 	return be.b.IsNotExist(err)
 }

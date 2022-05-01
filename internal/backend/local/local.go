@@ -102,6 +102,11 @@ func (b *Local) Hasher() hash.Hash {
 	return nil
 }
 
+// HasAtomicReplace returns whether Save() can atomically replace files
+func (b *Local) HasAtomicReplace() bool {
+	return true
+}
+
 // IsNotExist returns true if the error is caused by a non existing file.
 func (b *Local) IsNotExist(err error) bool {
 	return errors.Is(err, os.ErrNotExist)
