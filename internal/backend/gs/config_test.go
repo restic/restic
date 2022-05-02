@@ -31,7 +31,7 @@ func TestParseConfig(t *testing.T) {
 			continue
 		}
 
-		if cfg != test.cfg {
+		if (cfg.(Config).Bucket != test.cfg.Bucket) || (cfg.(Config).Prefix != test.cfg.Prefix) || (cfg.(Config).Connections != test.cfg.Connections) {
 			t.Errorf("test %d:\ninput:\n  %s\n wrong config, want:\n  %v\ngot:\n  %v",
 				i, test.s, test.cfg, cfg)
 			continue

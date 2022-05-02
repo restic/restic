@@ -3,11 +3,14 @@ package main
 import (
 	"bufio"
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -580,6 +583,43 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 		cfg := loc.Config.(gs.Config)
 		if cfg.ProjectID == "" {
 			cfg.ProjectID = os.Getenv("GOOGLE_PROJECT_ID")
+		}
+		if len(cfg.EncryptionKey.Key) == 0 {
+			var err error
+			cfg.EncryptionKey.Key, err = base64.StdEncoding.DecodeString(os.Getenv("GOOGLE_ENCRYPTION_KEY"))
+			if err != nil {
+				return nil, err
+			}
+			if len(cfg.EncryptionKey.Key) != 32 {
+				err = errors.Fatalf("Google Storage customer-supplied encryption key not 256 bits long.")
+				return nil, err
+			}
+			sha := sha256.Sum256(cfg.EncryptionKey.Key)
+			cfg.EncryptionKey.KeySha = base64.StdEncoding.EncodeToString(sha[:])
+		}
+		if cfg.DecryptionKeys == nil {
+			cfg.DecryptionKeys = make(map[string][]byte, 100)
+			for i := 0; i < 100; i++ {
+				var gsDecryptKeyEnv string = os.Getenv("GOOGLE_DECRYPTION_KEY" + strconv.Itoa(i+1))
+				if gsDecryptKeyEnv != "" {
+					var gsKeyByte []byte
+					var gsKeyShaString string
+					var err error
+
+					gsKeyByte, err = base64.StdEncoding.DecodeString(gsDecryptKeyEnv)
+					if err != nil {
+						err = errors.Fatalf("Google Storage customer-supplied decryption key not Base64.")
+						return nil, err
+					}
+					if len(gsKeyByte) != 32 {
+						err = errors.Fatalf("Google Storage customer-supplied decryption key not 256 bits long.")
+						return nil, err
+					}
+					sha := sha256.Sum256(gsKeyByte)
+					gsKeyShaString = base64.StdEncoding.EncodeToString(sha[:])
+					cfg.DecryptionKeys[gsKeyShaString] = gsKeyByte
+				}
+			}
 		}
 
 		if err := opts.Apply(loc.Scheme, &cfg); err != nil {

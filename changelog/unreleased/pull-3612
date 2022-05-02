@@ -1,0 +1,8 @@
+Enhancement: Add GCS option for encryption keys
+
+We have added support Google Cloud Customer-supplied 
+encryption keys. Users can provide 256-bit AES crypto 
+keys to add an extra layer of protection to stored files in the cloud.
+
+https://github.com/restic/restic/pull/3612
+https://github.com/restic/restic/issues/3530

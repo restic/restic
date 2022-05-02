@@ -554,13 +554,30 @@ repository in the bucket ``foo`` at the root path:
     enter password for new repository:
     enter password again:
 
-    created restic repository bde47d6254 at gs:foo2/
+    created restic repository bde47d6254 at gs:foo:/
     [...]
 
 The number of concurrent connections to the GCS service can be set with the
 ``-o gs.connections=10`` switch. By default, at most five parallel connections are
 established.
 
+User can define encryption keys to enable `customer-supplied encryption`_ for the repository.
+Keys must be a base64-encoded string of the AES-256 encryption key wanted.
+
+.. code-block:: console
+
+    $ export GOOGLE_ENCRYPTION_KEY=000000000...
+
+To enable key rotation, users can also define up to 100 decryption keys which will allow
+for access to the repo after a change of encryption key from first init.
+Decryption keys are formatting identically to encryption keys.
+
+.. code-block:: console
+
+    $ export GOOGLE_DECRYPTION_KEY1=001000000...
+    $ export GOOGLE_DECRYPTION_KEY100=1000000000...
+
+.. _customer-supplied encryption: https://cloud.google.com/storage/docs/encryption/customer-supplied-keys?hl=en
 .. _service account: https://cloud.google.com/storage/docs/authentication#service_accounts
 .. _create a service account key: https://cloud.google.com/storage/docs/authentication#generating-a-private-key
 .. _default authentication material: https://developers.google.com/identity/protocols/application-default-credentials

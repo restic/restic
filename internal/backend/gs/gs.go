@@ -40,6 +40,8 @@ type Backend struct {
 	bucket       *storage.BucketHandle
 	prefix       string
 	listMaxItems int
+	encryptKey   gsKeyTuple
+	decryptKeys  map[string][]byte
 	backend.Layout
 }
 
@@ -110,6 +112,8 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 		bucketName:  cfg.Bucket,
 		bucket:      gcsClient.Bucket(cfg.Bucket),
 		prefix:      cfg.Prefix,
+		encryptKey:  cfg.EncryptionKey,
+		decryptKeys: cfg.DecryptionKeys,
 		Layout: &backend.DefaultLayout{
 			Path: cfg.Prefix,
 			Join: path.Join,
@@ -245,7 +249,14 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 	//
 	// restic typically writes small blobs (4MB-30MB), so the resumable
 	// uploads are not providing significant benefit anyways.
-	w := be.bucket.Object(objName).NewWriter(ctx)
+
+	var w *storage.Writer
+	bucket_object := be.bucket.Object(objName)
+	if len(be.encryptKey.Key) != 0 {
+		w = bucket_object.Key(be.encryptKey.Key).NewWriter(ctx)
+	} else {
+		w = bucket_object.NewWriter(ctx)
+	}
 	w.ChunkSize = 0
 	w.MD5 = rd.Hash()
 	wbytes, err := io.Copy(w, rd)
@@ -276,8 +287,9 @@ func (be *Backend) Load(ctx context.Context, h restic.Handle, length int, offset
 }
 
 func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+	var err error
 	debug.Log("Load %v, length %v, offset %v from %v", h, length, offset, be.Filename(h))
-	if err := h.Valid(); err != nil {
+	if err = h.Valid(); err != nil {
 		return nil, err
 	}
 
@@ -296,17 +308,45 @@ func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, 
 	objName := be.Filename(h)
 
 	be.sem.GetToken()
-
 	ctx, cancel := context.WithCancel(ctx)
 
-	r, err := be.bucket.Object(objName).NewRangeReader(ctx, offset, int64(length))
+	//https://cloud.google.com/storage/docs/encryption/using-customer-supplied-keys
+	err = nil
+	bucketObject := be.bucket.Object(objName)
+	objectArrts, _ := bucketObject.Attrs(ctx)
+	objectKeySha := objectArrts.CustomerKeySHA256
+	var cryptoKey []byte
+	var rangeReader *storage.Reader
+
+	if objectKeySha != "" {
+
+		//try current key first
+		if objectKeySha == be.encryptKey.KeySha {
+			cryptoKey = be.encryptKey.Key
+		}
+		//fallback to list of old keys
+		if cryptoKey == nil {
+			cryptoKey = be.decryptKeys[objectKeySha]
+		}
+		//none of the supplied keys match object key
+		if cryptoKey == nil {
+			err = errors.New(("Google Storage customer-supplied encryption keys failed."))
+		}
+		if err == nil {
+			rangeReader, err = bucketObject.Key(cryptoKey).NewRangeReader(ctx, offset, int64(length))
+		}
+	} else {
+		rangeReader, err = bucketObject.NewRangeReader(ctx, offset, int64(length))
+
+	}
+
 	if err != nil {
 		cancel()
 		be.sem.ReleaseToken()
 		return nil, err
 	}
 
-	return be.sem.ReleaseTokenOnClose(r, cancel), err
+	return be.sem.ReleaseTokenOnClose(rangeReader, cancel), err
 }
 
 // Stat returns information about a blob.

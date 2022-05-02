@@ -8,6 +8,11 @@ import (
 	"github.com/restic/restic/internal/options"
 )
 
+type gsKeyTuple struct {
+	Key    []byte
+	KeySha string
+}
+
 // Config contains all configuration necessary to connect to a Google Cloud Storage
 // bucket. We use Google's default application credentials to acquire an access token, so
 // we don't require that calling code supply any authentication material here.
@@ -17,6 +22,10 @@ type Config struct {
 	Prefix    string
 
 	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
+
+	//https://cloud.google.com/storage/docs/encryption/customer-supplied-keys#gsutil
+	EncryptionKey  gsKeyTuple        `option:"encryption_key" help:"Use custom-supplied encryption key."`
+	DecryptionKeys map[string][]byte `option:"decryption_keys" help:"Use custom-supplied decryption keys."`
 }
 
 // NewConfig returns a new Config with the default values filled in.
