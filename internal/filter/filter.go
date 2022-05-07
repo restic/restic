@@ -220,6 +220,27 @@ func match(pattern Pattern, strs []string) (matched bool, err error) {
 	return false, nil
 }
 
+// ValidatePatterns validates a slice of patterns.
+// Returns true if all patterns are valid - false otherwise, along with the invalid patterns.
+func ValidatePatterns(patterns []string) (allValid bool, invalidPatterns []string) {
+	invalidPatterns = make([]string, 0)
+
+	for _, Pattern := range ParsePatterns(patterns) {
+		// Validate all pattern parts
+		for _, part := range Pattern.parts {
+			// Validate the pattern part by trying to match it against itself
+			if _, validErr := filepath.Match(part.pattern, part.pattern); validErr != nil {
+				invalidPatterns = append(invalidPatterns, Pattern.original)
+
+				// If a single part is invalid, stop processing this pattern
+				continue
+			}
+		}
+	}
+
+	return len(invalidPatterns) == 0, invalidPatterns
+}
+
 // ParsePatterns prepares a list of patterns for use with List.
 func ParsePatterns(pattern []string) []Pattern {
 	patpat := make([]Pattern, 0)
