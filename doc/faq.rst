@@ -51,7 +51,7 @@ looks like this:
     [0:00] 100.00%  16 / 16 snapshots
     no errors were found
 
-The message means that there is more data stored in the repo than
+The message means that there is more data stored in the repository than
 strictly necessary. This is uncritical. With high probability this is duplicate data
 caused by an interrupted backup run or upload operation. In
 order to clean it up, the command ``restic prune`` can be used.
@@ -168,8 +168,8 @@ scheduling algorithm to give it the least favorable niceness (19).
 The above example makes sure that the system the backup runs on
 is not slowed down, which is particularly useful for servers.
 
-Creating new repo on a Synology NAS via sftp fails
---------------------------------------------------
+Creating new repository on a Synology NAS via sftp fails
+--------------------------------------------------------
 
 For using restic with a Synology NAS via sftp, please make sure that the
 specified path is absolute, it must start with a slash (``/``).

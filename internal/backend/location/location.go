@@ -101,7 +101,7 @@ func Parse(s string) (u Location, err error) {
 
 	// if s is not a path or contains ":", it's ambiguous
 	if !isPath(s) && strings.ContainsRune(s, ':') {
-		return Location{}, errors.New("invalid backend\nIf the repo is in a local directory, you need to add a `local:` prefix")
+		return Location{}, errors.New("invalid backend\nIf the repository is in a local directory, you need to add a `local:` prefix")
 	}
 
 	u.Scheme = "local"

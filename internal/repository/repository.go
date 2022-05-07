@@ -725,11 +725,11 @@ func (r *Repository) SearchKey(ctx context.Context, password string, maxKeys int
 // saves the repository config.
 func (r *Repository) Init(ctx context.Context, version uint, password string, chunkerPolynomial *chunker.Pol) error {
 	if version > restic.MaxRepoVersion {
-		return fmt.Errorf("repo version %v too high", version)
+		return fmt.Errorf("repository version %v too high", version)
 	}
 
 	if version < restic.MinRepoVersion {
-		return fmt.Errorf("repo version %v too low", version)
+		return fmt.Errorf("repository version %v too low", version)
 	}
 
 	has, err := r.be.Test(ctx, restic.Handle{Type: restic.ConfigFile})

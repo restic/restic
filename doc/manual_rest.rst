@@ -50,7 +50,7 @@ Usage help is available:
           --cache-dir directory        set the cache directory. (default: use system default cache directory)
           --cleanup-cache              auto remove old cache directories
       -h, --help                       help for restic
-          --insecure-tls               skip TLS certificate verification when connecting to the repo (insecure)
+          --insecure-tls               skip TLS certificate verification when connecting to the repository (insecure)
           --json                       set output mode to JSON for commands that support it
           --key-hint key               key ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
           --limit-download int         limits downloads to a maximum rate in KiB/s. (default: unlimited)
@@ -107,7 +107,7 @@ command:
           --iexclude-file file                     same as --exclude-file but ignores casing of filenames in patterns
           --ignore-inode                           ignore inode number changes when checking for modified files
       -x, --one-file-system                        exclude other file systems, don't cross filesystem boundaries and subvolumes
-          --parent snapshot                        use this parent snapshot (default: last snapshot in the repo that has the same target files/directories)
+          --parent snapshot                        use this parent snapshot (default: last snapshot in the repository that has the same target files/directories)
           --stdin                                  read backup from stdin
           --stdin-filename filename                filename to use when reading from stdin (default "stdin")
           --tag tags                               add tags for the new snapshot in the format `tag[,tag,...]` (can be specified multiple times) (default [])
@@ -119,7 +119,7 @@ command:
           --cacert file                file to load root certificates from (default: use system certificates)
           --cache-dir directory        set the cache directory. (default: use system default cache directory)
           --cleanup-cache              auto remove old cache directories
-          --insecure-tls               skip TLS certificate verification when connecting to the repo (insecure)
+          --insecure-tls               skip TLS certificate verification when connecting to the repository (insecure)
           --json                       set output mode to JSON for commands that support it
           --key-hint key               key ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
           --limit-download int         limits downloads to a maximum rate in KiB/s. (default: unlimited)
@@ -431,7 +431,7 @@ The cache is ephemeral: When a file cannot be read from the cache, it is loaded
 from the repository.
 
 Within the cache directory, there's a sub directory for each repository the
-cache was used with. Restic updates the timestamps of a repo directory each
+cache was used with. Restic updates the timestamps of a repository directory each
 time it is used, so by looking at the timestamps of the sub directories of the
 cache directory it can decide which sub directories are old and probably not
 needed any more. You can either remove these directories manually, or run a

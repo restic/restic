@@ -111,7 +111,7 @@ func init() {
 	cmdRoot.AddCommand(cmdBackup)
 
 	f := cmdBackup.Flags()
-	f.StringVar(&backupOptions.Parent, "parent", "", "use this parent `snapshot` (default: last snapshot in the repo that has the same target files/directories, and is not newer than the snapshot time)")
+	f.StringVar(&backupOptions.Parent, "parent", "", "use this parent `snapshot` (default: last snapshot in the repository that has the same target files/directories, and is not newer than the snapshot time)")
 	f.BoolVarP(&backupOptions.Force, "force", "f", false, `force re-reading the target files/directories (overrides the "parent" flag)`)
 	f.StringArrayVarP(&backupOptions.Excludes, "exclude", "e", nil, "exclude a `pattern` (can be specified multiple times)")
 	f.StringArrayVar(&backupOptions.InsensitiveExcludes, "iexclude", nil, "same as --exclude `pattern` but ignores the casing of filenames")
