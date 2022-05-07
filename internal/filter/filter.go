@@ -18,6 +18,7 @@ type patternPart struct {
 
 // Pattern represents a preparsed filter pattern
 type Pattern struct {
+	original  string
 	parts     []patternPart
 	isNegated bool
 }
@@ -31,6 +32,9 @@ func prepareStr(str string) ([]string, error) {
 
 func preparePattern(patternStr string) Pattern {
 	var negate bool
+
+	originalPattern := patternStr
+
 	if patternStr[0] == '!' {
 		negate = true
 		patternStr = patternStr[1:]
@@ -48,7 +52,7 @@ func preparePattern(patternStr string) Pattern {
 		parts[i] = patternPart{part, isSimple}
 	}
 
-	return Pattern{parts, negate}
+	return Pattern{originalPattern, parts, negate}
 }
 
 // Split p into path components. Assuming p has been Cleaned, no component
@@ -130,7 +134,7 @@ func childMatch(pattern Pattern, strs []string) (matched bool, err error) {
 	} else {
 		l = len(strs)
 	}
-	return match(Pattern{pattern.parts[0:l], pattern.isNegated}, strs)
+	return match(Pattern{pattern.original, pattern.parts[0:l], pattern.isNegated}, strs)
 }
 
 func hasDoubleWildcard(list Pattern) (ok bool, pos int) {
@@ -158,7 +162,7 @@ func match(pattern Pattern, strs []string) (matched bool, err error) {
 			}
 			newPat = append(newPat, pattern.parts[pos+1:]...)
 
-			matched, err := match(Pattern{newPat, pattern.isNegated}, strs)
+			matched, err := match(Pattern{pattern.original, newPat, pattern.isNegated}, strs)
 			if err != nil {
 				return false, err
 			}
