@@ -24,10 +24,11 @@ import (
 
 // beSwift is a backend which stores the data on a swift endpoint.
 type beSwift struct {
-	conn      *swift.Connection
-	sem       *backend.Semaphore
-	container string // Container name
-	prefix    string // Prefix of object names in the container
+	conn        *swift.Connection
+	connections uint
+	sem         *backend.Semaphore
+	container   string // Container name
+	prefix      string // Prefix of object names in the container
 	backend.Layout
 }
 
@@ -68,9 +69,10 @@ func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backend
 
 			Transport: rt,
 		},
-		sem:       sem,
-		container: cfg.Container,
-		prefix:    cfg.Prefix,
+		connections: cfg.Connections,
+		sem:         sem,
+		container:   cfg.Container,
+		prefix:      cfg.Prefix,
 		Layout: &backend.DefaultLayout{
 			Path: cfg.Prefix,
 			Join: path.Join,
@@ -111,6 +113,10 @@ func (be *beSwift) createContainer(ctx context.Context, policy string) error {
 	}
 
 	return be.conn.ContainerCreate(ctx, be.container, h)
+}
+
+func (be *beSwift) Connections() uint {
+	return be.connections
 }
 
 // Location returns this backend's location (the container name).

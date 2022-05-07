@@ -64,6 +64,7 @@ type GlobalOptions struct {
 	InsecureTLS     bool
 	TLSClientCert   string
 	CleanupCache    bool
+	Compression     repository.CompressionMode
 
 	LimitUploadKb   int
 	LimitDownloadKb int
@@ -120,6 +121,7 @@ func init() {
 	f.StringVar(&globalOptions.TLSClientCert, "tls-client-cert", "", "path to a `file` containing PEM encoded TLS client certificate and private key")
 	f.BoolVar(&globalOptions.InsecureTLS, "insecure-tls", false, "skip TLS certificate verification when connecting to the repo (insecure)")
 	f.BoolVar(&globalOptions.CleanupCache, "cleanup-cache", false, "auto remove old cache directories")
+	f.Var(&globalOptions.Compression, "compression", "compression mode (only available for repo format version 2), one of (auto|off|max)")
 	f.IntVar(&globalOptions.LimitUploadKb, "limit-upload", 0, "limits uploads to a maximum rate in KiB/s. (default: unlimited)")
 	f.IntVar(&globalOptions.LimitDownloadKb, "limit-download", 0, "limits downloads to a maximum rate in KiB/s. (default: unlimited)")
 	f.StringSliceVarP(&globalOptions.Options, "option", "o", []string{}, "set extended option (`key=value`, can be specified multiple times)")
@@ -435,7 +437,7 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 		}
 	}
 
-	s := repository.New(be)
+	s := repository.New(be, repository.Options{Compression: opts.Compression})
 
 	passwordTriesLeft := 1
 	if stdinIsTerminal() && opts.password == "" {
@@ -471,7 +473,7 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 			id = id[:8]
 		}
 		if !opts.JSON {
-			Verbosef("repository %v opened successfully, password is correct\n", id)
+			Verbosef("repository %v opened (repo version %v) successfully, password is correct\n", id, s.Config().Version)
 		}
 	}
 

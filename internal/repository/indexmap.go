@@ -32,7 +32,7 @@ const (
 
 // add inserts an indexEntry for the given arguments into the map,
 // using id as the key.
-func (m *indexMap) add(id restic.ID, packIdx int, offset, length uint32) {
+func (m *indexMap) add(id restic.ID, packIdx int, offset, length uint32, uncompressedLength uint32) {
 	switch {
 	case m.numentries == 0: // Lazy initialization.
 		m.init()
@@ -47,6 +47,7 @@ func (m *indexMap) add(id restic.ID, packIdx int, offset, length uint32) {
 	e.packIndex = packIdx
 	e.offset = offset
 	e.length = length
+	e.uncompressedLength = uncompressedLength
 
 	m.buckets[h] = e
 	m.numentries++
@@ -130,12 +131,12 @@ func (m *indexMap) len() uint { return m.numentries }
 
 func (m *indexMap) newEntry() *indexEntry {
 	// Allocating in batches means that we get closer to optimal space usage,
-	// as Go's malloc will overallocate for structures of size 56 (indexEntry
+	// as Go's malloc will overallocate for structures of size 60 (indexEntry
 	// on amd64).
 	//
-	// 256*56 and 256*48 both have minimal malloc overhead among reasonable sizes.
+	// 128*60 and 128*60 both have low malloc overhead among reasonable sizes.
 	// See src/runtime/sizeclasses.go in the standard library.
-	const entryAllocBatch = 256
+	const entryAllocBatch = 128
 
 	if m.free == nil {
 		free := new([entryAllocBatch]indexEntry)
@@ -152,9 +153,10 @@ func (m *indexMap) newEntry() *indexEntry {
 }
 
 type indexEntry struct {
-	id        restic.ID
-	next      *indexEntry
-	packIndex int // Position in containing Index's packs field.
-	offset    uint32
-	length    uint32
+	id                 restic.ID
+	next               *indexEntry
+	packIndex          int // Position in containing Index's packs field.
+	offset             uint32
+	length             uint32
+	uncompressedLength uint32
 }

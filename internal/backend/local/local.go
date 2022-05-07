@@ -24,6 +24,7 @@ type Local struct {
 	Config
 	sem *backend.Semaphore
 	backend.Layout
+	backend.Modes
 }
 
 // ensure statically that *Local implements restic.Backend.
@@ -42,10 +43,15 @@ func open(ctx context.Context, cfg Config) (*Local, error) {
 		return nil, err
 	}
 
+	fi, err := fs.Stat(l.Filename(restic.Handle{Type: restic.ConfigFile}))
+	m := backend.DeriveModesFromFileInfo(fi, err)
+	debug.Log("using (%03O file, %03O dir) permissions", m.File, m.Dir)
+
 	return &Local{
 		Config: cfg,
 		Layout: l,
 		sem:    sem,
+		Modes:  m,
 	}, nil
 }
 
@@ -73,7 +79,7 @@ func Create(ctx context.Context, cfg Config) (*Local, error) {
 
 	// create paths for data and refs
 	for _, d := range be.Paths() {
-		err := fs.MkdirAll(d, backend.Modes.Dir)
+		err := fs.MkdirAll(d, be.Modes.Dir)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
@@ -129,7 +135,7 @@ func (b *Local) Save(ctx context.Context, h restic.Handle, rd restic.RewindReade
 		debug.Log("error %v: creating dir", err)
 
 		// error is caused by a missing directory, try to create it
-		mkdirErr := fs.MkdirAll(dir, backend.Modes.Dir)
+		mkdirErr := fs.MkdirAll(dir, b.Modes.Dir)
 		if mkdirErr != nil {
 			debug.Log("error creating dir %v: %v", dir, mkdirErr)
 		} else {
@@ -189,7 +195,7 @@ func (b *Local) Save(ctx context.Context, h restic.Handle, rd restic.RewindReade
 	// try to mark file as read-only to avoid accidential modifications
 	// ignore if the operation fails as some filesystems don't allow the chmod call
 	// e.g. exfat and network file systems with certain mount options
-	err = setFileReadonly(finalname, backend.Modes.File)
+	err = setFileReadonly(finalname, b.Modes.File)
 	if err != nil && !os.IsPermission(err) {
 		return errors.WithStack(err)
 	}

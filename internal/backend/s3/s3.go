@@ -255,6 +255,10 @@ func (be *Backend) ReadDir(ctx context.Context, dir string) (list []os.FileInfo,
 	return list, nil
 }
 
+func (be *Backend) Connections() uint {
+	return be.cfg.Connections
+}
+
 // Location returns this backend's location (the bucket name).
 func (be *Backend) Location() string {
 	return be.Join(be.cfg.Bucket, be.cfg.Prefix)

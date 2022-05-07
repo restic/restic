@@ -18,9 +18,12 @@ type Config struct {
 	ChunkerPolynomial chunker.Pol `json:"chunker_polynomial"`
 }
 
-// RepoVersion is the version that is written to the config when a repository
+const MinRepoVersion = 1
+const MaxRepoVersion = 2
+
+// StableRepoVersion is the version that is written to the config when a repository
 // is newly created with Init().
-const RepoVersion = 1
+const StableRepoVersion = 1
 
 // JSONUnpackedLoader loads unpacked JSON.
 type JSONUnpackedLoader interface {
@@ -29,7 +32,7 @@ type JSONUnpackedLoader interface {
 
 // CreateConfig creates a config file with a randomly selected polynomial and
 // ID.
-func CreateConfig() (Config, error) {
+func CreateConfig(version uint) (Config, error) {
 	var (
 		err error
 		cfg Config
@@ -41,18 +44,24 @@ func CreateConfig() (Config, error) {
 	}
 
 	cfg.ID = NewRandomID().String()
-	cfg.Version = RepoVersion
+	cfg.Version = version
 
 	debug.Log("New config: %#v", cfg)
 	return cfg, nil
 }
 
 // TestCreateConfig creates a config for use within tests.
-func TestCreateConfig(t testing.TB, pol chunker.Pol) (cfg Config) {
+func TestCreateConfig(t testing.TB, pol chunker.Pol, version uint) (cfg Config) {
 	cfg.ChunkerPolynomial = pol
 
 	cfg.ID = NewRandomID().String()
-	cfg.Version = RepoVersion
+	if version == 0 {
+		version = StableRepoVersion
+	}
+	if version < MinRepoVersion || version > MaxRepoVersion {
+		t.Fatalf("version %d is out of range", version)
+	}
+	cfg.Version = version
 
 	return cfg
 }
@@ -77,7 +86,7 @@ func LoadConfig(ctx context.Context, r JSONUnpackedLoader) (Config, error) {
 		return Config{}, err
 	}
 
-	if cfg.Version != RepoVersion {
+	if cfg.Version < MinRepoVersion || cfg.Version > MaxRepoVersion {
 		return Config{}, errors.Errorf("unsupported repository version %v", cfg.Version)
 	}
 

@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/klauspost/compress/zstd"
 	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/backend/dryrun"
 	"github.com/restic/restic/internal/cache"
@@ -36,16 +37,71 @@ type Repository struct {
 	idx     *MasterIndex
 	Cache   *cache.Cache
 
+	opts Options
+
 	noAutoIndexUpdate bool
 
 	treePM *packerManager
 	dataPM *packerManager
+
+	allocEnc sync.Once
+	allocDec sync.Once
+	enc      *zstd.Encoder
+	dec      *zstd.Decoder
+}
+
+type Options struct {
+	Compression CompressionMode
+}
+
+// CompressionMode configures if data should be compressed.
+type CompressionMode uint
+
+// Constants for the different compression levels.
+const (
+	CompressionAuto CompressionMode = 0
+	CompressionOff  CompressionMode = 1
+	CompressionMax  CompressionMode = 2
+)
+
+// Set implements the method needed for pflag command flag parsing.
+func (c *CompressionMode) Set(s string) error {
+	switch s {
+	case "auto":
+		*c = CompressionAuto
+	case "off":
+		*c = CompressionOff
+	case "max":
+		*c = CompressionMax
+	default:
+		return fmt.Errorf("invalid compression mode %q, must be one of (auto|off|max)", s)
+	}
+
+	return nil
+}
+
+func (c *CompressionMode) String() string {
+	switch *c {
+	case CompressionAuto:
+		return "auto"
+	case CompressionOff:
+		return "off"
+	case CompressionMax:
+		return "max"
+	default:
+		return "invalid"
+	}
+
+}
+func (c *CompressionMode) Type() string {
+	return "mode"
 }
 
 // New returns a new repository with backend be.
-func New(be restic.Backend) *Repository {
+func New(be restic.Backend, opts Options) *Repository {
 	repo := &Repository{
 		be:     be,
+		opts:   opts,
 		idx:    NewMasterIndex(),
 		dataPM: newPackerManager(be, nil),
 		treePM: newPackerManager(be, nil),
@@ -58,6 +114,14 @@ func New(be restic.Backend) *Repository {
 // indexes once these are full
 func (r *Repository) DisableAutoIndexUpdate() {
 	r.noAutoIndexUpdate = true
+}
+
+// setConfig assigns the given config and updates the repository parameters accordingly
+func (r *Repository) setConfig(cfg restic.Config) {
+	r.cfg = cfg
+	if r.cfg.Version >= 2 {
+		r.idx.markCompressed()
+	}
 }
 
 // Config returns the repository configuration.
@@ -124,6 +188,9 @@ func (r *Repository) LoadUnpacked(ctx context.Context, buf []byte, t restic.File
 	plaintext, err := r.key.Open(ciphertext[:0], nonce, ciphertext, nil)
 	if err != nil {
 		return nil, err
+	}
+	if t != restic.ConfigFile {
+		return r.decompressUnpacked(plaintext)
 	}
 
 	return plaintext, nil
@@ -218,12 +285,23 @@ func (r *Repository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.
 			continue
 		}
 
+		if blob.IsCompressed() {
+			plaintext, err = r.getZstdDecoder().DecodeAll(plaintext, make([]byte, 0, blob.DataLength()))
+			if err != nil {
+				lastError = errors.Errorf("decompressing blob %v failed: %v", id, err)
+				continue
+			}
+		}
+
 		// check hash
 		if !restic.Hash(plaintext).Equal(id) {
 			lastError = errors.Errorf("blob %v returned invalid hash", id)
 			continue
 		}
 
+		if len(plaintext) > cap(buf) {
+			return plaintext, nil
+		}
 		// move decrypted data to the start of the buffer
 		copy(buf, plaintext)
 		return buf[:len(plaintext)], nil
@@ -252,11 +330,69 @@ func (r *Repository) LookupBlobSize(id restic.ID, tpe restic.BlobType) (uint, bo
 	return r.idx.LookupSize(restic.BlobHandle{ID: id, Type: tpe})
 }
 
+func (r *Repository) getZstdEncoder() *zstd.Encoder {
+	r.allocEnc.Do(func() {
+		level := zstd.SpeedDefault
+		if r.opts.Compression == CompressionMax {
+			level = zstd.SpeedBestCompression
+		}
+
+		opts := []zstd.EOption{
+			// Set the compression level configured.
+			zstd.WithEncoderLevel(level),
+			// Disable CRC, we have enough checks in place, makes the
+			// compressed data four bytes shorter.
+			zstd.WithEncoderCRC(false),
+			// Set a window of 512kbyte, so we have good lookbehind for usual
+			// blob sizes.
+			zstd.WithWindowSize(512 * 1024),
+		}
+
+		enc, err := zstd.NewWriter(nil, opts...)
+		if err != nil {
+			panic(err)
+		}
+		r.enc = enc
+	})
+	return r.enc
+}
+
+func (r *Repository) getZstdDecoder() *zstd.Decoder {
+	r.allocDec.Do(func() {
+		opts := []zstd.DOption{
+			// Use all available cores.
+			zstd.WithDecoderConcurrency(0),
+			// Limit the maximum decompressed memory. Set to a very high,
+			// conservative value.
+			zstd.WithDecoderMaxMemory(16 * 1024 * 1024 * 1024),
+		}
+
+		dec, err := zstd.NewReader(nil, opts...)
+		if err != nil {
+			panic(err)
+		}
+		r.dec = dec
+	})
+	return r.dec
+}
+
 // saveAndEncrypt encrypts data and stores it to the backend as type t. If data
 // is small enough, it will be packed together with other small blobs.
 // The caller must ensure that the id matches the data.
 func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data []byte, id restic.ID) error {
 	debug.Log("save id %v (%v, %d bytes)", id, t, len(data))
+
+	uncompressedLength := 0
+	if r.cfg.Version > 1 {
+
+		// we have a repo v2, so compression is available. if the user opts to
+		// not compress, we won't compress any data, but everything else is
+		// compressed.
+		if r.opts.Compression != CompressionOff || t != restic.DataBlob {
+			uncompressedLength = len(data)
+			data = r.getZstdEncoder().EncodeAll(data, nil)
+		}
+	}
 
 	nonce := crypto.NewRandomNonce()
 
@@ -284,7 +420,7 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 	}
 
 	// save ciphertext
-	_, err = packer.Add(t, id, ciphertext)
+	_, err = packer.Add(t, id, ciphertext, uncompressedLength)
 	if err != nil {
 		return err
 	}
@@ -312,9 +448,50 @@ func (r *Repository) SaveJSONUnpacked(ctx context.Context, t restic.FileType, it
 	return r.SaveUnpacked(ctx, t, plaintext)
 }
 
+func (r *Repository) compressUnpacked(p []byte) ([]byte, error) {
+	// compression is only available starting from version 2
+	if r.cfg.Version < 2 {
+		return p, nil
+	}
+
+	// version byte
+	out := []byte{2}
+	out = r.getZstdEncoder().EncodeAll(p, out)
+	return out, nil
+}
+
+func (r *Repository) decompressUnpacked(p []byte) ([]byte, error) {
+	// compression is only available starting from version 2
+	if r.cfg.Version < 2 {
+		return p, nil
+	}
+
+	if len(p) == 0 {
+		// too short for version header
+		return p, nil
+	}
+	if p[0] == '[' || p[0] == '{' {
+		// probably raw JSON
+		return p, nil
+	}
+	// version
+	if p[0] != 2 {
+		return nil, errors.New("not supported encoding format")
+	}
+
+	return r.getZstdDecoder().DecodeAll(p[1:], nil)
+}
+
 // SaveUnpacked encrypts data and stores it in the backend. Returned is the
 // storage hash.
 func (r *Repository) SaveUnpacked(ctx context.Context, t restic.FileType, p []byte) (id restic.ID, err error) {
+	if t != restic.ConfigFile {
+		p, err = r.compressUnpacked(p)
+		if err != nil {
+			return restic.ID{}, err
+		}
+	}
+
 	ciphertext := restic.NewBlobBuffer(len(p))
 	ciphertext = ciphertext[:0]
 	nonce := crypto.NewRandomNonce()
@@ -392,20 +569,7 @@ func (r *Repository) Index() restic.MasterIndex {
 // SetIndex instructs the repository to use the given index.
 func (r *Repository) SetIndex(i restic.MasterIndex) error {
 	r.idx = i.(*MasterIndex)
-
-	ids := restic.NewIDSet()
-	for _, idx := range r.idx.All() {
-		indexIDs, err := idx.IDs()
-		if err != nil {
-			debug.Log("not using index, ID() returned error %v", err)
-			continue
-		}
-		for _, id := range indexIDs {
-			ids.Insert(id)
-		}
-	}
-
-	return r.PrepareCache(ids)
+	return r.PrepareCache()
 }
 
 // SaveIndex saves an index in the repository.
@@ -451,20 +615,16 @@ func (r *Repository) SaveFullIndex(ctx context.Context) error {
 func (r *Repository) LoadIndex(ctx context.Context) error {
 	debug.Log("Loading index")
 
-	validIndex := restic.NewIDSet()
 	err := ForAllIndexes(ctx, r, func(id restic.ID, idx *Index, oldFormat bool, err error) error {
 		if err != nil {
 			return err
 		}
 
-		ids, err := idx.IDs()
+		_, err = idx.IDs()
 		if err != nil {
 			return err
 		}
 
-		for _, id := range ids {
-			validIndex.Insert(id)
-		}
 		r.idx.Insert(idx)
 		return nil
 	})
@@ -478,8 +638,19 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 		return err
 	}
 
+	if r.cfg.Version < 2 {
+		// sanity check
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+		for blob := range r.idx.Each(ctx) {
+			if blob.IsCompressed() {
+				return errors.Fatal("index uses feature not supported by repository version 1")
+			}
+		}
+	}
+
 	// remove index files from the cache which have been removed in the repo
-	return r.PrepareCache(validIndex)
+	return r.PrepareCache()
 }
 
 const listPackParallelism = 10
@@ -551,11 +722,12 @@ func (r *Repository) CreateIndexFromPacks(ctx context.Context, packsize map[rest
 
 // PrepareCache initializes the local cache. indexIDs is the list of IDs of
 // index files still present in the repo.
-func (r *Repository) PrepareCache(indexIDs restic.IDSet) error {
+func (r *Repository) PrepareCache() error {
 	if r.Cache == nil {
 		return nil
 	}
 
+	indexIDs := r.idx.IDs()
 	debug.Log("prepare cache with %d index files", len(indexIDs))
 
 	// clear old index files
@@ -564,12 +736,7 @@ func (r *Repository) PrepareCache(indexIDs restic.IDSet) error {
 		fmt.Fprintf(os.Stderr, "error clearing index files in cache: %v\n", err)
 	}
 
-	packs := restic.NewIDSet()
-	for _, idx := range r.idx.All() {
-		for id := range idx.Packs() {
-			packs.Insert(id)
-		}
-	}
+	packs := r.idx.Packs(restic.NewIDSet())
 
 	// clear old packs
 	err = r.Cache.Clear(restic.PackFile, packs)
@@ -592,18 +759,28 @@ func (r *Repository) SearchKey(ctx context.Context, password string, maxKeys int
 	r.dataPM.key = key.master
 	r.treePM.key = key.master
 	r.keyName = key.Name()
-	r.cfg, err = restic.LoadConfig(ctx, r)
+	cfg, err := restic.LoadConfig(ctx, r)
 	if err == crypto.ErrUnauthenticated {
 		return errors.Fatalf("config or key %v is damaged: %v", key.Name(), err)
 	} else if err != nil {
 		return errors.Fatalf("config cannot be loaded: %v", err)
 	}
+
+	r.setConfig(cfg)
 	return nil
 }
 
 // Init creates a new master key with the supplied password, initializes and
 // saves the repository config.
-func (r *Repository) Init(ctx context.Context, password string, chunkerPolynomial *chunker.Pol) error {
+func (r *Repository) Init(ctx context.Context, version uint, password string, chunkerPolynomial *chunker.Pol) error {
+	if version > restic.MaxRepoVersion {
+		return fmt.Errorf("repo version %v too high", version)
+	}
+
+	if version < restic.MinRepoVersion {
+		return fmt.Errorf("repo version %v too low", version)
+	}
+
 	has, err := r.be.Test(ctx, restic.Handle{Type: restic.ConfigFile})
 	if err != nil {
 		return err
@@ -612,7 +789,7 @@ func (r *Repository) Init(ctx context.Context, password string, chunkerPolynomia
 		return errors.New("repository master key and config already initialized")
 	}
 
-	cfg, err := restic.CreateConfig()
+	cfg, err := restic.CreateConfig(version)
 	if err != nil {
 		return err
 	}
@@ -635,7 +812,7 @@ func (r *Repository) init(ctx context.Context, password string, cfg restic.Confi
 	r.dataPM.key = key.master
 	r.treePM.key = key.master
 	r.keyName = key.Name()
-	r.cfg = cfg
+	r.setConfig(cfg)
 	_, err = r.SaveJSONUnpacked(ctx, restic.ConfigFile, cfg)
 	return err
 }
@@ -768,9 +945,15 @@ func StreamPack(ctx context.Context, beLoad BackendLoadFn, key *crypto.Key, pack
 
 	debug.Log("streaming pack %v (%d to %d bytes), blobs: %v", packID, dataStart, dataEnd, len(blobs))
 
+	dec, err := zstd.NewReader(nil)
+	if err != nil {
+		panic(dec)
+	}
+	defer dec.Close()
+
 	ctx, cancel := context.WithCancel(ctx)
 	// stream blobs in pack
-	err := beLoad(ctx, h, int(dataEnd-dataStart), int64(dataStart), func(rd io.Reader) error {
+	err = beLoad(ctx, h, int(dataEnd-dataStart), int64(dataStart), func(rd io.Reader) error {
 		// prevent callbacks after cancelation
 		if ctx.Err() != nil {
 			return ctx.Err()
@@ -783,6 +966,7 @@ func StreamPack(ctx context.Context, beLoad BackendLoadFn, key *crypto.Key, pack
 		bufRd := bufio.NewReaderSize(rd, bufferSize)
 		currentBlobEnd := dataStart
 		var buf []byte
+		var decode []byte
 		for _, entry := range blobs {
 			skipBytes := int(entry.Offset - currentBlobEnd)
 			if skipBytes < 0 {
@@ -822,6 +1006,15 @@ func StreamPack(ctx context.Context, beLoad BackendLoadFn, key *crypto.Key, pack
 			// decryption errors are likely permanent, give the caller a chance to skip them
 			nonce, ciphertext := buf[:key.NonceSize()], buf[key.NonceSize():]
 			plaintext, err := key.Open(ciphertext[:0], nonce, ciphertext, nil)
+			if err == nil && entry.IsCompressed() {
+				// DecodeAll will allocate a slice if it is not large enough since it
+				// knows the decompressed size (because we're using EncodeAll)
+				decode, err = dec.DecodeAll(plaintext, decode[:0])
+				plaintext = decode
+				if err != nil {
+					err = errors.Errorf("decompressing blob %v failed: %v", h, err)
+				}
+			}
 			if err == nil {
 				id := restic.Hash(plaintext)
 				if !id.Equal(entry.ID) {

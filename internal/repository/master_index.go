@@ -16,6 +16,7 @@ type MasterIndex struct {
 	idx          []*Index
 	pendingBlobs restic.BlobSet
 	idxMutex     sync.RWMutex
+	compress     bool
 }
 
 // NewMasterIndex creates a new master index.
@@ -26,6 +27,10 @@ func NewMasterIndex() *MasterIndex {
 	idx := []*Index{NewIndex()}
 	idx[0].Finalize()
 	return &MasterIndex{idx: idx, pendingBlobs: restic.NewBlobSet()}
+}
+
+func (mi *MasterIndex) markCompressed() {
+	mi.compress = true
 }
 
 // Lookup queries all known Indexes for the ID and returns all matches.
@@ -109,6 +114,28 @@ func (mi *MasterIndex) IsMixedPack(packID restic.ID) bool {
 		}
 	}
 	return false
+}
+
+// IDs returns the IDs of all indexes contained in the index.
+func (mi *MasterIndex) IDs() restic.IDSet {
+	mi.idxMutex.RLock()
+	defer mi.idxMutex.RUnlock()
+
+	ids := restic.NewIDSet()
+	for _, idx := range mi.idx {
+		if !idx.Final() {
+			continue
+		}
+		indexIDs, err := idx.IDs()
+		if err != nil {
+			debug.Log("not using index, ID() returned error %v", err)
+			continue
+		}
+		for _, id := range indexIDs {
+			ids.Insert(id)
+		}
+	}
+	return ids
 }
 
 // Packs returns all packs that are covered by the index.
@@ -206,7 +233,7 @@ func (mi *MasterIndex) FinalizeFullIndexes() []*Index {
 			continue
 		}
 
-		if IndexFull(idx) {
+		if IndexFull(idx, mi.compress) {
 			debug.Log("index %p is full", idx)
 			idx.Finalize()
 			list = append(list, idx)
@@ -334,7 +361,7 @@ func (mi *MasterIndex) Save(ctx context.Context, repo restic.Repository, packBla
 			for pbs := range idx.EachByPack(ctx, packBlacklist) {
 				newIndex.StorePack(pbs.packID, pbs.blobs)
 				p.Add(1)
-				if IndexFull(newIndex) {
+				if IndexFull(newIndex, mi.compress) {
 					select {
 					case ch <- newIndex:
 					case <-ctx.Done():

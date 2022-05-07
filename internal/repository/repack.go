@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
 
@@ -22,6 +23,10 @@ const numRepackWorkers = 8
 // blobs have been processed.
 func Repack(ctx context.Context, repo restic.Repository, dstRepo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet, p *progress.Counter) (obsoletePacks restic.IDSet, err error) {
 	debug.Log("repacking %d packs while keeping %d blobs", len(packs), len(keepBlobs))
+
+	if repo == dstRepo && dstRepo.Backend().Connections() < 2 {
+		return nil, errors.Fatal("repack step requires a backend connection limit of at least two")
+	}
 
 	var keepMutex sync.Mutex
 	wg, wgCtx := errgroup.WithContext(ctx)
@@ -86,7 +91,11 @@ func Repack(ctx context.Context, repo restic.Repository, dstRepo restic.Reposito
 		return nil
 	}
 
-	for i := 0; i < numRepackWorkers; i++ {
+	connectionLimit := dstRepo.Backend().Connections() - 1
+	if connectionLimit > numRepackWorkers {
+		connectionLimit = numRepackWorkers
+	}
+	for i := 0; i < int(connectionLimit); i++ {
 		wg.Go(worker)
 	}
 
