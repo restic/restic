@@ -110,7 +110,7 @@ func runInit(opts InitOptions, gopts GlobalOptions, args []string) error {
 
 func maybeReadChunkerPolynomial(opts InitOptions, gopts GlobalOptions) (*chunker.Pol, error) {
 	if opts.CopyChunkerParameters {
-		otherGopts, err := fillSecondaryGlobalOpts(opts.secondaryRepoOptions, gopts, "secondary")
+		otherGopts, _, err := fillSecondaryGlobalOpts(opts.secondaryRepoOptions, gopts, "secondary")
 		if err != nil {
 			return nil, err
 		}
@@ -124,7 +124,7 @@ func maybeReadChunkerPolynomial(opts InitOptions, gopts GlobalOptions) (*chunker
 		return &pol, nil
 	}
 
-	if opts.Repo != "" {
+	if opts.Repo != "" || opts.RepositoryFile != "" || opts.LegacyRepo != "" || opts.LegacyRepositoryFile != "" {
 		return nil, errors.Fatal("Secondary repository must only be specified when copying the chunker parameters")
 	}
 	return nil, nil
