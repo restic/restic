@@ -388,6 +388,8 @@ the specified duration: if ``forget --keep-within 7d`` is run 8 days after the
 last good snapshot, then the attacker can still use that opportunity to remove
 all legitimate snapshots.
 
+.. _customize-pruning:
+
 Customize pruning
 *****************
 
