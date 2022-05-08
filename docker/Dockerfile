@@ -14,5 +14,6 @@ FROM alpine:latest AS restic
 RUN apk add --update --no-cache ca-certificates fuse openssh-client tzdata
 
 COPY --from=builder /go/src/github.com/restic/restic/restic /usr/bin
+COPY --from=builder /go/src/github.com/restic/restic/docker-entrypoint.sh /docker-entrypoint.sh
 
-ENTRYPOINT ["/usr/bin/restic"]
+ENTRYPOINT ["/docker-entrypoint.sh"]
