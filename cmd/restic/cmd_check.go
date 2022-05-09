@@ -219,15 +219,20 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	Verbosef("load indexes\n")
 	hints, errs := chkr.LoadIndex(gopts.ctx)
 
-	dupFound := false
+	errorsFound := false
+	suggestIndexRebuild := false
 	for _, hint := range hints {
-		Printf("%v\n", hint)
-		if _, ok := hint.(*checker.ErrDuplicatePacks); ok {
-			dupFound = true
+		switch hint.(type) {
+		case *checker.ErrDuplicatePacks, *checker.ErrOldIndexFormat:
+			Printf("%v\n", hint)
+			suggestIndexRebuild = true
+		default:
+			Warnf("error: %v\n", hint)
+			errorsFound = true
 		}
 	}
 
-	if dupFound {
+	if suggestIndexRebuild {
 		Printf("This is non-critical, you can run `restic rebuild-index' to correct this\n")
 	}
 
@@ -238,7 +243,6 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 		return errors.Fatal("LoadIndex returned errors")
 	}
 
-	errorsFound := false
 	orphanedPacks := 0
 	errChan := make(chan error)
 
@@ -252,11 +256,11 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 			continue
 		}
 		errorsFound = true
-		Warnf("%v\n", err)
+		Warnf("error: %v\n", err)
 	}
 
 	if orphanedPacks > 0 {
-		Verbosef("%d additional files were found in the repo, which likely contain duplicate data.\nYou can run `restic prune` to correct this.\n", orphanedPacks)
+		Verbosef("%d additional files were found in the repo, which likely contain duplicate data.\nThis is non-critical, you can run `restic prune` to correct this.\n", orphanedPacks)
 	}
 
 	Verbosef("check snapshots, trees and blobs\n")
