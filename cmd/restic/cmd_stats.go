@@ -111,7 +111,6 @@ func runStats(gopts GlobalOptions, args []string) error {
 	// create a container for the stats (and other needed state)
 	stats := &statsContainer{
 		uniqueFiles:    make(map[fileID]struct{}),
-		uniqueInodes:   make(map[uint64]struct{}),
 		fileBlobs:      make(map[string]restic.IDSet),
 		blobs:          restic.NewBlobSet(),
 		snapshotsCount: 0,
@@ -175,7 +174,8 @@ func statsWalkSnapshot(ctx context.Context, snapshot *restic.Snapshot, repo rest
 		return restic.FindUsedBlobs(ctx, repo, restic.IDs{*snapshot.Tree}, stats.blobs, nil)
 	}
 
-	err := walker.Walk(ctx, repo, *snapshot.Tree, restic.NewIDSet(), statsWalkTree(repo, stats))
+	uniqueInodes := make(map[uint64]struct{})
+	err := walker.Walk(ctx, repo, *snapshot.Tree, restic.NewIDSet(), statsWalkTree(repo, stats, uniqueInodes))
 	if err != nil {
 		return fmt.Errorf("walking tree %s: %v", *snapshot.Tree, err)
 	}
@@ -183,7 +183,7 @@ func statsWalkSnapshot(ctx context.Context, snapshot *restic.Snapshot, repo rest
 	return nil
 }
 
-func statsWalkTree(repo restic.Repository, stats *statsContainer) walker.WalkFunc {
+func statsWalkTree(repo restic.Repository, stats *statsContainer, uniqueInodes map[uint64]struct{}) walker.WalkFunc {
 	return func(parentTreeID restic.ID, npath string, node *restic.Node, nodeErr error) (bool, error) {
 		if nodeErr != nil {
 			return true, nodeErr
@@ -242,8 +242,8 @@ func statsWalkTree(repo restic.Repository, stats *statsContainer) walker.WalkFun
 
 			// if inodes are present, only count each inode once
 			// (hard links do not increase restore size)
-			if _, ok := stats.uniqueInodes[node.Inode]; !ok || node.Inode == 0 {
-				stats.uniqueInodes[node.Inode] = struct{}{}
+			if _, ok := uniqueInodes[node.Inode]; !ok || node.Inode == 0 {
+				uniqueInodes[node.Inode] = struct{}{}
 				stats.TotalSize += node.Size
 			}
 
@@ -289,10 +289,6 @@ type statsContainer struct {
 	// uniqueFiles marks visited files according to their
 	// contents (hashed sequence of content blob IDs)
 	uniqueFiles map[fileID]struct{}
-
-	// uniqueInodes marks visited files according to their
-	// inode # (hashed sequence of inode numbers)
-	uniqueInodes map[uint64]struct{}
 
 	// fileBlobs maps a file name (path) to the set of
 	// blobs that have been seen as a part of the file
