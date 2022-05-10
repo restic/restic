@@ -5,6 +5,7 @@ import (
 	"hash"
 	"io"
 	"os"
+	"runtime"
 	"sync"
 
 	"github.com/restic/restic/internal/errors"
@@ -137,9 +138,12 @@ func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packe
 		return errors.Wrap(err, "close tempfile")
 	}
 
-	err = fs.RemoveIfExists(p.tmpfile.Name())
-	if err != nil {
-		return errors.Wrap(err, "Remove")
+	// on windows the tempfile is automatically deleted on close
+	if runtime.GOOS != "windows" {
+		err = fs.RemoveIfExists(p.tmpfile.Name())
+		if err != nil {
+			return errors.Wrap(err, "Remove")
+		}
 	}
 
 	// update blobs in the index
