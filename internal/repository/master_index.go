@@ -365,7 +365,7 @@ func (mi *MasterIndex) Save(ctx context.Context, repo restic.Repository, packBla
 					select {
 					case ch <- newIndex:
 					case <-ctx.Done():
-						return nil
+						return ctx.Err()
 					}
 					newIndex = NewIndex()
 				}
@@ -397,10 +397,9 @@ func (mi *MasterIndex) Save(ctx context.Context, repo restic.Repository, packBla
 	}
 
 	// run workers on ch
-	wg.Go(func() error {
-		return RunWorkers(saveIndexParallelism, worker)
-	})
-
+	for i := 0; i < saveIndexParallelism; i++ {
+		wg.Go(worker)
+	}
 	err = wg.Wait()
 
 	return obsolete, err
