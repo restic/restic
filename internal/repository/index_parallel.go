@@ -37,7 +37,7 @@ func ForAllIndexes(ctx context.Context, repo restic.Repository,
 		return repo.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
 			select {
 			case <-ctx.Done():
-				return nil
+				return ctx.Err()
 			case ch <- FileInfo{id, size}:
 			}
 			return nil
@@ -69,9 +69,9 @@ func ForAllIndexes(ctx context.Context, repo restic.Repository,
 	}
 
 	// run workers on ch
-	wg.Go(func() error {
-		return RunWorkers(loadIndexParallelism, worker)
-	})
+	for i := 0; i < loadIndexParallelism; i++ {
+		wg.Go(worker)
+	}
 
 	return wg.Wait()
 }

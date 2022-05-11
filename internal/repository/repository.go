@@ -679,7 +679,7 @@ func (r *Repository) CreateIndexFromPacks(ctx context.Context, packsize map[rest
 		for id, size := range packsize {
 			select {
 			case <-ctx.Done():
-				return nil
+				return ctx.Err()
 			case ch <- FileInfo{id, size}:
 			}
 		}
@@ -705,9 +705,9 @@ func (r *Repository) CreateIndexFromPacks(ctx context.Context, packsize map[rest
 	}
 
 	// run workers on ch
-	wg.Go(func() error {
-		return RunWorkers(listPackParallelism, worker)
-	})
+	for i := 0; i < listPackParallelism; i++ {
+		wg.Go(worker)
+	}
 
 	err = wg.Wait()
 	if err != nil {
