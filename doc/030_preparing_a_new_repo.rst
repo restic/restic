@@ -260,6 +260,35 @@ like this: ``s3:http://server:port/bucket_name``.
           versions of restic.
 
 
+IDrive e2
+************
+
+`IDrive e2 <https://idrivee2.com>`__ is a low cost Amazon S3 compatible object storage provider with no fees for egress.
+Due to it's S3 conformance, IDrive e2 can be used as a storage provider for a restic repository.
+
+-  Create a IDrive e2 bucket using the `IDrive e2 Buckets <https://app.idrivee2.com/buckets>`__.
+-  Determine the correct IDrive e2 service URL for your bucket `here <https://www.idrive.com/e2/faq-dashboard#endpoint-url>`__.
+
+You must first setup the following environment variables with the
+credentials of your IDrive e2 account.
+
+.. code-block:: console
+
+    $ export AWS_ACCESS_KEY_ID=<YOUR-IDRIVEE2-ACCESS-KEY-ID>
+    $ export AWS_SECRET_ACCESS_KEY=<YOUR-IDRIVEE2-SECRET-ACCESS-KEY>
+
+Now you can easily initialize restic to use IDrive e2 as a backend with
+this command.
+
+.. code-block:: console
+
+    $ ./restic -r s3:https://<IDRIVEE2-SERVICE-URL>/<BUCKET-NAME> init
+    enter password for new repository:
+    enter password again:
+    created restic repository xxxxxxxxxx at s3:https://<IDRIVEE2-SERVICE-URL>/<BUCKET-NAME>
+    Please note that knowledge of your password is required to access
+    the repository. Losing your password means that your data is irrecoverably lost.
+
 Minio Server
 ************
 
