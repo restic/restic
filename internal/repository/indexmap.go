@@ -130,24 +130,32 @@ func (m *indexMap) init() {
 func (m *indexMap) len() uint { return m.numentries }
 
 func (m *indexMap) newEntry() *indexEntry {
-	// Allocating in batches means that we get closer to optimal space usage,
-	// as Go's malloc will overallocate for structures of size 60 (indexEntry
-	// on amd64).
+	// We keep a free list of objects to speed up allocation and GC.
+	// There's an obvious trade-off here: allocating in larger batches
+	// means we allocate faster and the GC has to keep fewer bits to track
+	// what we have in use, but it means we waste some space.
 	//
-	// 128*60 and 128*60 both have low malloc overhead among reasonable sizes.
-	// See src/runtime/sizeclasses.go in the standard library.
-	const entryAllocBatch = 128
-
-	if m.free == nil {
-		free := new([entryAllocBatch]indexEntry)
-		for i := range free[:len(free)-1] {
-			free[i].next = &free[i+1]
-		}
-		m.free = &free[0]
-	}
+	// Then again, allocating each indexEntry separately also wastes space
+	// on 32-bit platforms, because the Go malloc has no size class for
+	// exactly 52 bytes, so it puts the indexEntry in a 64-byte slot instead.
+	// See src/runtime/sizeclasses.go in the Go source repo.
+	//
+	// The batch size of 4 means we hit the size classes for 4×64=256 bytes
+	// (64-bit) and 4×52=208 bytes (32-bit), wasting nothing in malloc on
+	// 64-bit and relatively little on 32-bit.
+	const entryAllocBatch = 4
 
 	e := m.free
-	m.free = m.free.next
+	if e != nil {
+		m.free = e.next
+	} else {
+		free := new([entryAllocBatch]indexEntry)
+		e = &free[0]
+		for i := 1; i < len(free)-1; i++ {
+			free[i].next = &free[i+1]
+		}
+		m.free = &free[1]
+	}
 
 	return e
 }
