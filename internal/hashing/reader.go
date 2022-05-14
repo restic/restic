@@ -5,14 +5,13 @@ import (
 	"io"
 )
 
-// Reader hashes all data read from the underlying reader.
+// A Reader hashes all data read from the underlying reader.
 type Reader struct {
 	r io.Reader
 	h hash.Hash
 }
 
-// NewReader returns a new Reader that uses the hash h. If the underlying
-// reader supports WriteTo then the returned reader will do so too.
+// NewReader returns a new Reader that uses the hash h.
 func NewReader(r io.Reader, h hash.Hash) *Reader {
 	return &Reader{r: r, h: h}
 }
