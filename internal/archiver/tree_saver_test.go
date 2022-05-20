@@ -3,7 +3,6 @@ package archiver
 import (
 	"context"
 	"fmt"
-	"os"
 	"runtime"
 	"sync/atomic"
 	"testing"
@@ -23,7 +22,7 @@ func TestTreeSaver(t *testing.T) {
 		return restic.NewRandomID(), ItemStats{TreeBlobs: 1, TreeSize: 123}, nil
 	}
 
-	errFn := func(snPath string, fi os.FileInfo, err error) error {
+	errFn := func(snPath string, err error) error {
 		return nil
 	}
 
@@ -83,7 +82,7 @@ func TestTreeSaverError(t *testing.T) {
 				return restic.NewRandomID(), ItemStats{TreeBlobs: 1, TreeSize: 123}, nil
 			}
 
-			errFn := func(snPath string, fi os.FileInfo, err error) error {
+			errFn := func(snPath string, err error) error {
 				t.Logf("ignoring error %v\n", err)
 				return nil
 			}

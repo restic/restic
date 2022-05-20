@@ -27,7 +27,7 @@ type SelectFunc func(item string, fi os.FileInfo) bool
 // ErrorFunc is called when an error during archiving occurs. When nil is
 // returned, the archiver continues, otherwise it aborts and passes the error
 // up the call stack.
-type ErrorFunc func(file string, fi os.FileInfo, err error) error
+type ErrorFunc func(file string, err error) error
 
 // ItemStats collects some statistics about a particular file or directory.
 type ItemStats struct {
@@ -157,7 +157,7 @@ func New(repo restic.Repository, fs fs.FS, opts Options) *Archiver {
 }
 
 // error calls arch.Error if it is set and the error is different from context.Canceled.
-func (arch *Archiver) error(item string, fi os.FileInfo, err error) error {
+func (arch *Archiver) error(item string, err error) error {
 	if arch.Error == nil || err == nil {
 		return err
 	}
@@ -166,7 +166,7 @@ func (arch *Archiver) error(item string, fi os.FileInfo, err error) error {
 		return err
 	}
 
-	errf := arch.Error(item, fi, err)
+	errf := arch.Error(item, err)
 	if err != errf {
 		debug.Log("item %v: error was filtered by handler, before: %q, after: %v", item, err, errf)
 	}
@@ -269,7 +269,7 @@ func (arch *Archiver) SaveDir(ctx context.Context, snPath string, fi os.FileInfo
 
 		// return error early if possible
 		if err != nil {
-			err = arch.error(pathname, fi, err)
+			err = arch.error(pathname, err)
 			if err == nil {
 				// ignore error
 				continue
@@ -293,9 +293,6 @@ func (arch *Archiver) SaveDir(ctx context.Context, snPath string, fi os.FileInfo
 // FutureNode holds a reference to a node, FutureFile, or FutureTree.
 type FutureNode struct {
 	snPath, target string
-
-	// kept to call the error callback function
-	fi os.FileInfo
 
 	node  *restic.Node
 	stats ItemStats
@@ -375,7 +372,7 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 	fi, err := arch.FS.Lstat(target)
 	if err != nil {
 		debug.Log("lstat() for %v returned error: %v", target, err)
-		err = arch.error(abstarget, fi, err)
+		err = arch.error(abstarget, err)
 		if err != nil {
 			return FutureNode{}, false, errors.Wrap(err, "Lstat")
 		}
@@ -412,7 +409,7 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 			debug.Log("%v hasn't changed, but contents are missing!", target)
 			// There are contents missing - inform user!
 			err := errors.Errorf("parts of %v not found in the repository index; storing the file again", target)
-			err = arch.error(abstarget, fi, err)
+			err = arch.error(abstarget, err)
 			if err != nil {
 				return FutureNode{}, false, err
 			}
@@ -423,7 +420,7 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 		file, err := arch.FS.OpenFile(target, fs.O_RDONLY|fs.O_NOFOLLOW, 0)
 		if err != nil {
 			debug.Log("Openfile() for %v returned error: %v", target, err)
-			err = arch.error(abstarget, fi, err)
+			err = arch.error(abstarget, err)
 			if err != nil {
 				return FutureNode{}, false, errors.Wrap(err, "Lstat")
 			}
@@ -434,7 +431,7 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 		if err != nil {
 			debug.Log("stat() on opened file %v returned error: %v", target, err)
 			_ = file.Close()
-			err = arch.error(abstarget, fi, err)
+			err = arch.error(abstarget, err)
 			if err != nil {
 				return FutureNode{}, false, errors.Wrap(err, "Lstat")
 			}
@@ -445,7 +442,7 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 		if !fs.IsRegularFile(fi) {
 			err = errors.Errorf("file %v changed type, refusing to archive")
 			_ = file.Close()
-			err = arch.error(abstarget, fi, err)
+			err = arch.error(abstarget, err)
 			if err != nil {
 				return FutureNode{}, false, err
 			}
@@ -467,7 +464,7 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 		start := time.Now()
 		oldSubtree, err := arch.loadSubtree(ctx, previous)
 		if err != nil {
-			err = arch.error(abstarget, fi, err)
+			err = arch.error(abstarget, err)
 		}
 		if err != nil {
 			return FutureNode{}, false, err
@@ -576,7 +573,7 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 			fn, excluded, err := arch.Save(ctx, join(snPath, name), subatree.Path, previous.Find(name))
 
 			if err != nil {
-				err = arch.error(subatree.Path, fn.fi, err)
+				err = arch.error(subatree.Path, err)
 				if err == nil {
 					// ignore error
 					continue
@@ -600,7 +597,7 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 		oldNode := previous.Find(name)
 		oldSubtree, err := arch.loadSubtree(ctx, oldNode)
 		if err != nil {
-			err = arch.error(join(snPath, name), nil, err)
+			err = arch.error(join(snPath, name), err)
 		}
 		if err != nil {
 			return nil, err
@@ -654,7 +651,7 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 
 		// return the error, or ignore it
 		if fn.err != nil {
-			fn.err = arch.error(fn.target, fn.fi, fn.err)
+			fn.err = arch.error(fn.target, fn.err)
 			if fn.err == nil {
 				// ignore error
 				continue
@@ -762,7 +759,7 @@ func (arch *Archiver) loadParentTree(ctx context.Context, snapshotID restic.ID) 
 	tree, err := restic.LoadTree(ctx, arch.Repo, *sn.Tree)
 	if err != nil {
 		debug.Log("unable to load tree %v: %v", *sn.Tree, err)
-		_ = arch.error("/", nil, arch.wrapLoadTreeError(*sn.Tree, err))
+		_ = arch.error("/", arch.wrapLoadTreeError(*sn.Tree, err))
 		return nil
 	}
 	return tree
