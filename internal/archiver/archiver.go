@@ -2,7 +2,6 @@ package archiver
 
 import (
 	"context"
-	"encoding/json"
 	"os"
 	"path"
 	"runtime"
@@ -175,16 +174,12 @@ func (arch *Archiver) error(item string, err error) error {
 
 // saveTree stores a tree in the repo. It checks the index and the known blobs
 // before saving anything.
-func (arch *Archiver) saveTree(ctx context.Context, t *restic.Tree) (restic.ID, ItemStats, error) {
+func (arch *Archiver) saveTree(ctx context.Context, t *restic.TreeJSONBuilder) (restic.ID, ItemStats, error) {
 	var s ItemStats
-	buf, err := json.Marshal(t)
+	buf, err := t.Finalize()
 	if err != nil {
-		return restic.ID{}, s, errors.Wrap(err, "MarshalJSON")
+		return restic.ID{}, s, err
 	}
-
-	// append a newline so that the data is always consistent (json.Encoder
-	// adds a newline after each object)
-	buf = append(buf, '\n')
 
 	b := &Buffer{Data: buf}
 	res := arch.blobSaver.Save(ctx, restic.TreeBlob, b)
@@ -620,7 +615,11 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 			return nil, err
 		}
 
-		id, nodeStats, err := arch.saveTree(ctx, subtree)
+		tb, err := restic.TreeToBuilder(subtree)
+		if err != nil {
+			return nil, err
+		}
+		id, nodeStats, err := arch.saveTree(ctx, tb)
 		if err != nil {
 			return nil, err
 		}
@@ -834,7 +833,11 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 				return errors.New("snapshot is empty")
 			}
 
-			rootTreeID, stats, err = arch.saveTree(wgCtx, tree)
+			tb, err := restic.TreeToBuilder(tree)
+			if err != nil {
+				return err
+			}
+			rootTreeID, stats, err = arch.saveTree(wgCtx, tb)
 			arch.stopWorkers()
 			return err
 		})

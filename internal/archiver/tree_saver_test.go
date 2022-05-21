@@ -18,7 +18,7 @@ func TestTreeSaver(t *testing.T) {
 
 	wg, ctx := errgroup.WithContext(ctx)
 
-	saveFn := func(context.Context, *restic.Tree) (restic.ID, ItemStats, error) {
+	saveFn := func(context.Context, *restic.TreeJSONBuilder) (restic.ID, ItemStats, error) {
 		return restic.NewRandomID(), ItemStats{TreeBlobs: 1, TreeSize: 123}, nil
 	}
 
@@ -73,7 +73,7 @@ func TestTreeSaverError(t *testing.T) {
 			wg, ctx := errgroup.WithContext(ctx)
 
 			var num int32
-			saveFn := func(context.Context, *restic.Tree) (restic.ID, ItemStats, error) {
+			saveFn := func(context.Context, *restic.TreeJSONBuilder) (restic.ID, ItemStats, error) {
 				val := atomic.AddInt32(&num, 1)
 				if val == test.failAt {
 					t.Logf("sending error for request %v\n", test.failAt)

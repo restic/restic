@@ -10,7 +10,7 @@ import (
 
 // TreeSaver concurrently saves incoming trees to the repo.
 type TreeSaver struct {
-	saveTree func(context.Context, *restic.Tree) (restic.ID, ItemStats, error)
+	saveTree func(context.Context, *restic.TreeJSONBuilder) (restic.ID, ItemStats, error)
 	errFn    ErrorFunc
 
 	ch chan<- saveTreeJob
@@ -18,7 +18,7 @@ type TreeSaver struct {
 
 // NewTreeSaver returns a new tree saver. A worker pool with treeWorkers is
 // started, it is stopped when ctx is cancelled.
-func NewTreeSaver(ctx context.Context, wg *errgroup.Group, treeWorkers uint, saveTree func(context.Context, *restic.Tree) (restic.ID, ItemStats, error), errFn ErrorFunc) *TreeSaver {
+func NewTreeSaver(ctx context.Context, wg *errgroup.Group, treeWorkers uint, saveTree func(context.Context, *restic.TreeJSONBuilder) (restic.ID, ItemStats, error), errFn ErrorFunc) *TreeSaver {
 	ch := make(chan saveTreeJob)
 
 	s := &TreeSaver{
@@ -78,7 +78,7 @@ func (s *TreeSaver) save(ctx context.Context, job *saveTreeJob) (*restic.Node, I
 	// allow GC of nodes array once the loop is finished
 	job.nodes = nil
 
-	tree := restic.NewTree(len(nodes))
+	builder := restic.NewTreeJSONBuilder()
 
 	for i, fn := range nodes {
 		// fn is a copy, so clear the original value explicitly
@@ -104,13 +104,13 @@ func (s *TreeSaver) save(ctx context.Context, job *saveTreeJob) (*restic.Node, I
 		}
 
 		debug.Log("insert %v", fnr.node.Name)
-		err := tree.Insert(fnr.node)
+		err := builder.AddNode(fnr.node)
 		if err != nil {
 			return nil, stats, err
 		}
 	}
 
-	id, treeStats, err := s.saveTree(ctx, tree)
+	id, treeStats, err := s.saveTree(ctx, builder)
 	stats.Add(treeStats)
 	if err != nil {
 		return nil, stats, err
