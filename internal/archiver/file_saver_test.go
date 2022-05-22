@@ -34,7 +34,7 @@ func startFileSaver(ctx context.Context, t testing.TB) (*FileSaver, context.Cont
 	wg, ctx := errgroup.WithContext(ctx)
 
 	saveBlob := func(ctx context.Context, tpe restic.BlobType, buf *Buffer) FutureBlob {
-		ch := make(chan saveBlobResponse)
+		ch := make(chan SaveBlobResponse)
 		close(ch)
 		return FutureBlob{ch: ch}
 	}

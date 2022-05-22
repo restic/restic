@@ -129,6 +129,15 @@ func (s *FileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 	chnker.Reset(f, s.pol)
 
 	var results []FutureBlob
+	complete := func(sbr SaveBlobResponse) {
+		if !sbr.known {
+			stats.DataBlobs++
+			stats.DataSize += uint64(sbr.length)
+			stats.DataSizeInRepo += uint64(sbr.sizeInRepo)
+		}
+
+		node.Content = append(node.Content, sbr.id)
+	}
 
 	node.Content = []restic.ID{}
 	var size uint64
@@ -168,6 +177,17 @@ func (s *FileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 		}
 
 		s.CompleteBlob(f.Name(), uint64(len(chunk.Data)))
+
+		// collect already completed blobs
+		for len(results) > 0 {
+			sbr := results[0].Poll()
+			if sbr == nil {
+				break
+			}
+			results[0] = FutureBlob{}
+			results = results[1:]
+			complete(*sbr)
+		}
 	}
 
 	err = f.Close()
@@ -176,15 +196,10 @@ func (s *FileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 		return fnr
 	}
 
-	for _, res := range results {
-		res.Wait(ctx)
-		if !res.Known() {
-			stats.DataBlobs++
-			stats.DataSize += uint64(res.Length())
-			stats.DataSizeInRepo += uint64(res.SizeInRepo())
-		}
-
-		node.Content = append(node.Content, res.ID())
+	for i, res := range results {
+		results[i] = FutureBlob{}
+		sbr := res.Take(ctx)
+		complete(sbr)
 	}
 
 	node.Size = size
