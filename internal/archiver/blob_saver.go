@@ -11,7 +11,6 @@ import (
 // Saver allows saving a blob.
 type Saver interface {
 	SaveBlob(ctx context.Context, t restic.BlobType, data []byte, id restic.ID, storeDuplicate bool) (restic.ID, bool, int, error)
-	Index() restic.MasterIndex
 }
 
 // BlobSaver concurrently saves incoming blobs to the repo.
