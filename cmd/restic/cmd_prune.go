@@ -596,10 +596,11 @@ func getUsedBlobs(gopts GlobalOptions, repo restic.Repository, ignoreSnapshots r
 	Verbosef("loading all snapshots...\n")
 	err = restic.ForAllSnapshots(gopts.ctx, repo.Backend(), repo, ignoreSnapshots,
 		func(id restic.ID, sn *restic.Snapshot, err error) error {
-			debug.Log("add snapshot %v (tree %v, error %v)", id, *sn.Tree, err)
 			if err != nil {
+				debug.Log("failed to load snapshot %v (error %v)", id, err)
 				return err
 			}
+			debug.Log("add snapshot %v (tree %v)", id, *sn.Tree)
 			snapshotTrees = append(snapshotTrees, *sn.Tree)
 			return nil
 		})
