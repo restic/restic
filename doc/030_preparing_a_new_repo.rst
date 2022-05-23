@@ -554,7 +554,7 @@ repository in the bucket ``foo`` at the root path:
     enter password for new repository:
     enter password again:
 
-    created restic repository bde47d6254 at gs:foo2/
+    created restic repository bde47d6254 at gs:foo/
     [...]
 
 The number of concurrent connections to the GCS service can be set with the
