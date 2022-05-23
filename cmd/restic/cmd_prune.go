@@ -605,7 +605,7 @@ func getUsedBlobs(gopts GlobalOptions, repo restic.Repository, ignoreSnapshots r
 			return nil
 		})
 	if err != nil {
-		return nil, err
+		return nil, errors.Fatalf("failed loading snapshot: %v", err)
 	}
 
 	Verbosef("finding data that is still in use for %d snapshots\n", len(snapshotTrees))
