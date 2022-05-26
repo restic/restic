@@ -519,7 +519,7 @@ func (r *Repository) SaveUnpacked(ctx context.Context, t restic.FileType, p []by
 
 // Flush saves all remaining packs and the index
 func (r *Repository) Flush(ctx context.Context) error {
-	if err := r.FlushPacks(ctx); err != nil {
+	if err := r.flushPacks(ctx); err != nil {
 		return err
 	}
 
@@ -530,8 +530,8 @@ func (r *Repository) Flush(ctx context.Context) error {
 	return r.idx.SaveIndex(ctx, r)
 }
 
-// FlushPacks saves all remaining packs.
-func (r *Repository) FlushPacks(ctx context.Context) error {
+// flushPacks saves all remaining packs.
+func (r *Repository) flushPacks(ctx context.Context) error {
 	pms := []struct {
 		t  restic.BlobType
 		pm *packerManager

@@ -414,20 +414,11 @@ func testRepositoryIncrementalIndex(t *testing.T, version uint) {
 
 	repository.IndexFull = func(*repository.Index, bool) bool { return true }
 
-	// add 15 packs
+	// add a few rounds of packs
 	for j := 0; j < 5; j++ {
-		// add 3 packs, write intermediate index
-		for i := 0; i < 3; i++ {
-			saveRandomDataBlobs(t, repo, 5, 1<<15)
-			rtest.OK(t, repo.FlushPacks(context.Background()))
-		}
+		// add some packs, write intermediate index
+		saveRandomDataBlobs(t, repo, 20, 1<<15)
 		rtest.OK(t, repo.Flush(context.TODO()))
-	}
-
-	// add another 5 packs
-	for i := 0; i < 5; i++ {
-		saveRandomDataBlobs(t, repo, 5, 1<<15)
-		rtest.OK(t, repo.FlushPacks(context.Background()))
 	}
 
 	// save final index
