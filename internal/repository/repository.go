@@ -643,7 +643,6 @@ func (r *Repository) CreateIndexFromPacks(ctx context.Context, packsize map[rest
 		return nil
 	})
 
-	idx := NewIndex()
 	// a worker receives an pack ID from ch, reads the pack contents, and adds them to idx
 	worker := func() error {
 		for fi := range ch {
@@ -654,7 +653,7 @@ func (r *Repository) CreateIndexFromPacks(ctx context.Context, packsize map[rest
 				invalid = append(invalid, fi.ID)
 				m.Unlock()
 			}
-			idx.StorePack(fi.ID, entries)
+			r.idx.StorePack(fi.ID, entries)
 			p.Add(1)
 		}
 
@@ -670,9 +669,6 @@ func (r *Repository) CreateIndexFromPacks(ctx context.Context, packsize map[rest
 	if err != nil {
 		return invalid, errors.Fatal(err.Error())
 	}
-
-	// Add idx to MasterIndex
-	r.idx.Insert(idx)
 
 	return invalid, nil
 }
