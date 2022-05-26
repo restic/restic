@@ -192,9 +192,7 @@ func rebuildIndex(t *testing.T, repo restic.Repository) {
 		t.Fatal(err)
 	}
 
-	_, err = (repo.Index()).(*repository.MasterIndex).
-		Save(context.TODO(), repo, restic.NewIDSet(), nil, nil)
-
+	_, err = repo.Index().Save(context.TODO(), repo, restic.NewIDSet(), nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

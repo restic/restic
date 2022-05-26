@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/restic/restic/internal/crypto"
+	"github.com/restic/restic/internal/ui/progress"
 )
 
 // Repository stores data in a backend. It provides high-level functions and
@@ -82,4 +83,6 @@ type MasterIndex interface {
 	// blocks any modification of the index.
 	Each(ctx context.Context) <-chan PackedBlob
 	ListPacks(ctx context.Context, packs IDSet) <-chan PackBlobs
+
+	Save(ctx context.Context, repo SaverUnpacked, packBlacklist IDSet, extraObsolete IDs, p *progress.Counter) (obsolete IDSet, err error)
 }

@@ -596,10 +596,8 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 func writeIndexFiles(gopts GlobalOptions, repo restic.Repository, removePacks restic.IDSet, extraObsolete restic.IDs) (restic.IDSet, error) {
 	Verbosef("rebuilding index\n")
 
-	idx := (repo.Index()).(*repository.MasterIndex)
-	packcount := uint64(len(idx.Packs(removePacks)))
-	bar := newProgressMax(!gopts.Quiet, packcount, "packs processed")
-	obsoleteIndexes, err := idx.Save(gopts.ctx, repo, removePacks, extraObsolete, bar)
+	bar := newProgressMax(!gopts.Quiet, 0, "packs processed")
+	obsoleteIndexes, err := repo.Index().Save(gopts.ctx, repo, removePacks, extraObsolete, bar)
 	bar.Done()
 	return obsoleteIndexes, err
 }

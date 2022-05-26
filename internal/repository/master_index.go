@@ -321,7 +321,9 @@ const saveIndexParallelism = 4
 // The new index contains the IDs of all known indexes in the "supersedes"
 // field. The IDs are also returned in the IDSet obsolete.
 // After calling this function, you should remove the obsolete index files.
-func (mi *MasterIndex) Save(ctx context.Context, repo restic.Repository, packBlacklist restic.IDSet, extraObsolete restic.IDs, p *progress.Counter) (obsolete restic.IDSet, err error) {
+func (mi *MasterIndex) Save(ctx context.Context, repo restic.SaverUnpacked, packBlacklist restic.IDSet, extraObsolete restic.IDs, p *progress.Counter) (obsolete restic.IDSet, err error) {
+	p.SetMax(uint64(len(mi.Packs(packBlacklist))))
+
 	mi.idxMutex.Lock()
 	defer mi.idxMutex.Unlock()
 

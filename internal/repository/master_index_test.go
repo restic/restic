@@ -291,14 +291,12 @@ func BenchmarkMasterIndexLookupMultipleIndexUnknown(b *testing.B) {
 }
 
 func BenchmarkMasterIndexLookupParallel(b *testing.B) {
-	mIdx := repository.NewMasterIndex()
-
 	for _, numindices := range []int{25, 50, 100} {
 		var lookupBh restic.BlobHandle
 
 		b.StopTimer()
 		rng := rand.New(rand.NewSource(0))
-		mIdx, lookupBh = createRandomMasterIndex(b, rng, numindices, 10000)
+		mIdx, lookupBh := createRandomMasterIndex(b, rng, numindices, 10000)
 		b.StartTimer()
 
 		name := fmt.Sprintf("known,indices=%d", numindices)
@@ -361,7 +359,7 @@ func testIndexSave(t *testing.T, version uint) {
 		t.Fatal(err)
 	}
 
-	obsoletes, err := repo.Index().(*repository.MasterIndex).Save(context.TODO(), repo, nil, nil, nil)
+	obsoletes, err := repo.Index().Save(context.TODO(), repo, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("unable to save new index: %v", err)
 	}
