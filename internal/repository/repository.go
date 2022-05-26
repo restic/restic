@@ -527,7 +527,7 @@ func (r *Repository) Flush(ctx context.Context) error {
 	if r.noAutoIndexUpdate {
 		return nil
 	}
-	return r.SaveIndex(ctx)
+	return r.idx.SaveIndex(ctx, r)
 }
 
 // FlushPacks saves all remaining packs.
@@ -571,44 +571,6 @@ func (r *Repository) Index() restic.MasterIndex {
 func (r *Repository) SetIndex(i restic.MasterIndex) error {
 	r.idx = i.(*MasterIndex)
 	return r.PrepareCache()
-}
-
-// SaveIndex saves an index in the repository.
-func SaveIndex(ctx context.Context, repo restic.Repository, index *Index) (restic.ID, error) {
-	buf := bytes.NewBuffer(nil)
-
-	err := index.Encode(buf)
-	if err != nil {
-		return restic.ID{}, err
-	}
-
-	return repo.SaveUnpacked(ctx, restic.IndexFile, buf.Bytes())
-}
-
-// saveIndex saves all indexes in the backend.
-func (r *Repository) saveIndex(ctx context.Context, indexes ...*Index) error {
-	for i, idx := range indexes {
-		debug.Log("Saving index %d", i)
-
-		sid, err := SaveIndex(ctx, r, idx)
-		if err != nil {
-			return err
-		}
-
-		debug.Log("Saved index %d as %v", i, sid)
-	}
-
-	return r.idx.MergeFinalIndexes()
-}
-
-// SaveIndex saves all new indexes in the backend.
-func (r *Repository) SaveIndex(ctx context.Context) error {
-	return r.saveIndex(ctx, r.idx.FinalizeNotFinalIndexes()...)
-}
-
-// SaveFullIndex saves all full indexes in the backend.
-func (r *Repository) SaveFullIndex(ctx context.Context) error {
-	return r.saveIndex(ctx, r.idx.FinalizeFullIndexes()...)
 }
 
 // LoadIndex loads all index files from the backend in parallel and stores them

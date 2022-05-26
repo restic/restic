@@ -421,8 +421,7 @@ func testRepositoryIncrementalIndex(t *testing.T, version uint) {
 			saveRandomDataBlobs(t, repo, 5, 1<<15)
 			rtest.OK(t, repo.FlushPacks(context.Background()))
 		}
-
-		rtest.OK(t, repo.SaveFullIndex(context.TODO()))
+		rtest.OK(t, repo.Flush(context.TODO()))
 	}
 
 	// add another 5 packs
@@ -432,7 +431,7 @@ func testRepositoryIncrementalIndex(t *testing.T, version uint) {
 	}
 
 	// save final index
-	rtest.OK(t, repo.SaveIndex(context.TODO()))
+	rtest.OK(t, repo.Flush(context.TODO()))
 
 	packEntries := make(map[restic.ID]map[restic.ID]struct{})
 

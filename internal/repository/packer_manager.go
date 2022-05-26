@@ -154,7 +154,7 @@ func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packe
 	if r.noAutoIndexUpdate {
 		return nil
 	}
-	return r.SaveFullIndex(ctx)
+	return r.idx.SaveFullIndex(ctx, r)
 }
 
 // countPacker returns the number of open (unfinished) packers.

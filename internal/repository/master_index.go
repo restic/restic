@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"sync"
@@ -403,6 +404,44 @@ func (mi *MasterIndex) Save(ctx context.Context, repo restic.Repository, packBla
 	err = wg.Wait()
 
 	return obsolete, err
+}
+
+// SaveIndex saves an index in the repository.
+func SaveIndex(ctx context.Context, repo restic.SaverUnpacked, index *Index) (restic.ID, error) {
+	buf := bytes.NewBuffer(nil)
+
+	err := index.Encode(buf)
+	if err != nil {
+		return restic.ID{}, err
+	}
+
+	return repo.SaveUnpacked(ctx, restic.IndexFile, buf.Bytes())
+}
+
+// saveIndex saves all indexes in the backend.
+func (mi *MasterIndex) saveIndex(ctx context.Context, r restic.SaverUnpacked, indexes ...*Index) error {
+	for i, idx := range indexes {
+		debug.Log("Saving index %d", i)
+
+		sid, err := SaveIndex(ctx, r, idx)
+		if err != nil {
+			return err
+		}
+
+		debug.Log("Saved index %d as %v", i, sid)
+	}
+
+	return mi.MergeFinalIndexes()
+}
+
+// SaveIndex saves all new indexes in the backend.
+func (mi *MasterIndex) SaveIndex(ctx context.Context, r restic.SaverUnpacked) error {
+	return mi.saveIndex(ctx, r, mi.FinalizeNotFinalIndexes()...)
+}
+
+// SaveFullIndex saves all full indexes in the backend.
+func (mi *MasterIndex) SaveFullIndex(ctx context.Context, r restic.SaverUnpacked) error {
+	return mi.saveIndex(ctx, r, mi.FinalizeFullIndexes()...)
 }
 
 // ListPacks returns the blobs of the specified pack files grouped by pack file.
