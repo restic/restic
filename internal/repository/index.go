@@ -176,24 +176,6 @@ func (idx *Index) Lookup(bh restic.BlobHandle, pbs []restic.PackedBlob) []restic
 	return pbs
 }
 
-// ListPack returns a list of blobs contained in a pack.
-func (idx *Index) ListPack(id restic.ID) (pbs []restic.PackedBlob) {
-	idx.m.Lock()
-	defer idx.m.Unlock()
-
-	for typ := range idx.byType {
-		m := &idx.byType[typ]
-		m.foreach(func(e *indexEntry) bool {
-			if idx.packs[e.packIndex] == id {
-				pbs = append(pbs, idx.toPackedBlob(e, restic.BlobType(typ)))
-			}
-			return true
-		})
-	}
-
-	return pbs
-}
-
 // Has returns true iff the id is listed in the index.
 func (idx *Index) Has(bh restic.BlobHandle) bool {
 	idx.m.Lock()

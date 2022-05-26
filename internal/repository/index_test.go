@@ -2,6 +2,7 @@ package repository_test
 
 import (
 	"bytes"
+	"context"
 	"math/rand"
 	"sync"
 	"testing"
@@ -336,7 +337,7 @@ func TestIndexUnserialize(t *testing.T) {
 
 		rtest.Equals(t, oldIdx, idx.Supersedes())
 
-		blobs := idx.ListPack(exampleLookupTest.packID)
+		blobs := listPack(idx, exampleLookupTest.packID)
 		if len(blobs) != len(exampleLookupTest.blobs) {
 			t.Fatalf("expected %d blobs in pack, got %d", len(exampleLookupTest.blobs), len(blobs))
 		}
@@ -351,6 +352,15 @@ func TestIndexUnserialize(t *testing.T) {
 			}
 		}
 	}
+}
+
+func listPack(idx *repository.Index, id restic.ID) (pbs []restic.PackedBlob) {
+	for pb := range idx.Each(context.TODO()) {
+		if pb.PackID.Equal(id) {
+			pbs = append(pbs, pb)
+		}
+	}
+	return pbs
 }
 
 var (
