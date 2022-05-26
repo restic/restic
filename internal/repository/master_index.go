@@ -188,9 +188,9 @@ func (mi *MasterIndex) StorePack(id restic.ID, blobs []restic.Blob) {
 	mi.idx = append(mi.idx, newIdx)
 }
 
-// FinalizeNotFinalIndexes finalizes all indexes that
+// finalizeNotFinalIndexes finalizes all indexes that
 // have not yet been saved and returns that list
-func (mi *MasterIndex) FinalizeNotFinalIndexes() []*Index {
+func (mi *MasterIndex) finalizeNotFinalIndexes() []*Index {
 	mi.idxMutex.Lock()
 	defer mi.idxMutex.Unlock()
 
@@ -207,8 +207,8 @@ func (mi *MasterIndex) FinalizeNotFinalIndexes() []*Index {
 	return list
 }
 
-// FinalizeFullIndexes finalizes all indexes that are full and returns that list.
-func (mi *MasterIndex) FinalizeFullIndexes() []*Index {
+// finalizeFullIndexes finalizes all indexes that are full and returns that list.
+func (mi *MasterIndex) finalizeFullIndexes() []*Index {
 	mi.idxMutex.Lock()
 	defer mi.idxMutex.Unlock()
 
@@ -217,7 +217,6 @@ func (mi *MasterIndex) FinalizeFullIndexes() []*Index {
 	debug.Log("checking %d indexes", len(mi.idx))
 	for _, idx := range mi.idx {
 		if idx.Final() {
-			debug.Log("index %p is final", idx)
 			continue
 		}
 
@@ -425,12 +424,12 @@ func (mi *MasterIndex) saveIndex(ctx context.Context, r restic.SaverUnpacked, in
 
 // SaveIndex saves all new indexes in the backend.
 func (mi *MasterIndex) SaveIndex(ctx context.Context, r restic.SaverUnpacked) error {
-	return mi.saveIndex(ctx, r, mi.FinalizeNotFinalIndexes()...)
+	return mi.saveIndex(ctx, r, mi.finalizeNotFinalIndexes()...)
 }
 
 // SaveFullIndex saves all full indexes in the backend.
 func (mi *MasterIndex) SaveFullIndex(ctx context.Context, r restic.SaverUnpacked) error {
-	return mi.saveIndex(ctx, r, mi.FinalizeFullIndexes()...)
+	return mi.saveIndex(ctx, r, mi.finalizeFullIndexes()...)
 }
 
 // ListPacks returns the blobs of the specified pack files grouped by pack file.

@@ -209,11 +209,7 @@ func createRandomMasterIndex(t testing.TB, rng *rand.Rand, num, size int) (*repo
 	idx1, lookupBh := createRandomIndex(rng, size)
 	mIdx.Insert(idx1)
 
-	mIdx.FinalizeNotFinalIndexes()
-	err := mIdx.MergeFinalIndexes()
-	if err != nil {
-		t.Fatal(err)
-	}
+	repository.TestMergeIndex(t, mIdx)
 
 	return mIdx, lookupBh
 }
