@@ -76,7 +76,6 @@ type PackBlobs struct {
 type MasterIndex interface {
 	Has(BlobHandle) bool
 	Lookup(BlobHandle) []PackedBlob
-	Count(BlobType) uint
 
 	// Each returns a channel that yields all blobs known to the index. When
 	// the context is cancelled, the background goroutine terminates. This

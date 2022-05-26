@@ -374,7 +374,7 @@ func benchmarkLoadIndex(b *testing.B, version uint) {
 	id, err := repository.SaveIndex(context.TODO(), repo, idx)
 	rtest.OK(b, err)
 
-	b.Logf("index saved as %v (%v entries)", id.Str(), idx.Count(restic.DataBlob))
+	b.Logf("index saved as %v", id.Str())
 	fi, err := repo.Backend().Stat(context.TODO(), restic.Handle{Type: restic.IndexFile, Name: id.String()})
 	rtest.OK(b, err)
 	b.Logf("filesize is %v", fi.Size)

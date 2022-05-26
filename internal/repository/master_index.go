@@ -158,19 +158,6 @@ func (mi *MasterIndex) Packs(packBlacklist restic.IDSet) restic.IDSet {
 	return packs
 }
 
-// Count returns the number of blobs of type t in the index.
-func (mi *MasterIndex) Count(t restic.BlobType) (n uint) {
-	mi.idxMutex.RLock()
-	defer mi.idxMutex.RUnlock()
-
-	var sum uint
-	for _, idx := range mi.idx {
-		sum += idx.Count(t)
-	}
-
-	return sum
-}
-
 // Insert adds a new index to the MasterIndex.
 func (mi *MasterIndex) Insert(idx *Index) {
 	mi.idxMutex.Lock()

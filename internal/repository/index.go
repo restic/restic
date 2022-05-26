@@ -314,15 +314,6 @@ func (idx *Index) Packs() restic.IDSet {
 	return packs
 }
 
-// Count returns the number of blobs of type t in the index.
-func (idx *Index) Count(t restic.BlobType) (n uint) {
-	debug.Log("counting blobs of type %v", t)
-	idx.m.Lock()
-	defer idx.m.Unlock()
-
-	return idx.byType[t].len()
-}
-
 type packJSON struct {
 	ID    restic.ID  `json:"id"`
 	Blobs []blobJSON `json:"blobs"`

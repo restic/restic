@@ -122,12 +122,6 @@ func TestMasterIndex(t *testing.T) {
 	rtest.Assert(t, blobs == nil, "Expected no blobs when fetching with a random id")
 	_, found = mIdx.LookupSize(restic.NewRandomBlobHandle())
 	rtest.Assert(t, !found, "Expected no blobs when fetching with a random id")
-
-	// Test Count
-	num := mIdx.Count(restic.DataBlob)
-	rtest.Equals(t, uint(2), num)
-	num = mIdx.Count(restic.TreeBlob)
-	rtest.Equals(t, uint(2), num)
 }
 
 func TestMasterMergeFinalIndexes(t *testing.T) {
