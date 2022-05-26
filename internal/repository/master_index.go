@@ -243,13 +243,10 @@ func (mi *MasterIndex) Each(ctx context.Context) <-chan restic.PackedBlob {
 
 	go func() {
 		defer mi.idxMutex.RUnlock()
-		defer func() {
-			close(ch)
-		}()
+		defer close(ch)
 
 		for _, idx := range mi.idx {
-			idxCh := idx.Each(ctx)
-			for pb := range idxCh {
+			for pb := range idx.Each(ctx) {
 				select {
 				case <-ctx.Done():
 					return
