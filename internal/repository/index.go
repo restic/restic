@@ -409,13 +409,6 @@ func (idx *Index) Encode(w io.Writer) error {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
-	return idx.encode(w)
-}
-
-// encode writes the JSON serialization of the index to the writer w.
-func (idx *Index) encode(w io.Writer) error {
-	debug.Log("encoding index")
-
 	list, err := idx.generatePackList()
 	if err != nil {
 		return err
