@@ -57,12 +57,12 @@ func TestMasterIndex(t *testing.T) {
 	}
 
 	idx1 := repository.NewIndex()
-	idx1.Store(blob1)
-	idx1.Store(blob12a)
+	idx1.StorePack(blob1.PackID, []restic.Blob{blob1.Blob})
+	idx1.StorePack(blob12a.PackID, []restic.Blob{blob12a.Blob})
 
 	idx2 := repository.NewIndex()
-	idx2.Store(blob2)
-	idx2.Store(blob12b)
+	idx2.StorePack(blob2.PackID, []restic.Blob{blob2.Blob})
+	idx2.StorePack(blob12b.PackID, []restic.Blob{blob12b.Blob})
 
 	mIdx := repository.NewMasterIndex()
 	mIdx.Insert(idx1)
@@ -154,10 +154,10 @@ func TestMasterMergeFinalIndexes(t *testing.T) {
 	}
 
 	idx1 := repository.NewIndex()
-	idx1.Store(blob1)
+	idx1.StorePack(blob1.PackID, []restic.Blob{blob1.Blob})
 
 	idx2 := repository.NewIndex()
-	idx2.Store(blob2)
+	idx2.StorePack(blob2.PackID, []restic.Blob{blob2.Blob})
 
 	mIdx := repository.NewMasterIndex()
 	mIdx.Insert(idx1)
@@ -191,8 +191,8 @@ func TestMasterMergeFinalIndexes(t *testing.T) {
 
 	// merge another index containing identical blobs
 	idx3 := repository.NewIndex()
-	idx3.Store(blob1)
-	idx3.Store(blob2)
+	idx3.StorePack(blob1.PackID, []restic.Blob{blob1.Blob})
+	idx3.StorePack(blob2.PackID, []restic.Blob{blob2.Blob})
 
 	mIdx.Insert(idx3)
 	finalIndexes = mIdx.FinalizeNotFinalIndexes()

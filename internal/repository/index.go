@@ -131,27 +131,6 @@ var IndexFull = func(idx *Index, compress bool) bool {
 
 }
 
-// Store remembers the id and pack in the index.
-func (idx *Index) Store(pb restic.PackedBlob) {
-	idx.m.Lock()
-	defer idx.m.Unlock()
-
-	if idx.final {
-		panic("store new item in finalized index")
-	}
-
-	debug.Log("%v", pb)
-
-	// get packIndex and save if new packID
-	packIndex, ok := idx.packIDToIndex[pb.PackID]
-	if !ok {
-		packIndex = idx.addToPacks(pb.PackID)
-		idx.packIDToIndex[pb.PackID] = packIndex
-	}
-
-	idx.store(packIndex, pb.Blob)
-}
-
 // StorePack remembers the ids of all blobs of a given pack
 // in the index
 func (idx *Index) StorePack(id restic.ID, blobs []restic.Blob) {

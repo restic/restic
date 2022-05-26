@@ -362,13 +362,12 @@ func benchmarkLoadIndex(b *testing.B, version uint) {
 	idx := repository.NewIndex()
 
 	for i := 0; i < 5000; i++ {
-		idx.Store(restic.PackedBlob{
-			Blob: restic.Blob{
+		idx.StorePack(restic.NewRandomID(), []restic.Blob{
+			{
 				BlobHandle: restic.NewRandomBlobHandle(),
 				Length:     1234,
 				Offset:     1235,
 			},
-			PackID: restic.NewRandomID(),
 		})
 	}
 
