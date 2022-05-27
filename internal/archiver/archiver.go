@@ -13,7 +13,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
-	tomb "gopkg.in/tomb.v2"
+	"golang.org/x/sync/errgroup"
 )
 
 // SelectByNameFunc returns true for all items that should be included (files and
@@ -762,17 +762,23 @@ func (arch *Archiver) loadParentTree(ctx context.Context, snapshotID restic.ID) 
 }
 
 // runWorkers starts the worker pools, which are stopped when the context is cancelled.
-func (arch *Archiver) runWorkers(ctx context.Context, t *tomb.Tomb) {
-	arch.blobSaver = NewBlobSaver(ctx, t, arch.Repo, arch.Options.SaveBlobConcurrency)
+func (arch *Archiver) runWorkers(ctx context.Context, wg *errgroup.Group) {
+	arch.blobSaver = NewBlobSaver(ctx, wg, arch.Repo, arch.Options.SaveBlobConcurrency)
 
-	arch.fileSaver = NewFileSaver(ctx, t,
+	arch.fileSaver = NewFileSaver(ctx, wg,
 		arch.blobSaver.Save,
 		arch.Repo.Config().ChunkerPolynomial,
 		arch.Options.FileReadConcurrency, arch.Options.SaveBlobConcurrency)
 	arch.fileSaver.CompleteBlob = arch.CompleteBlob
 	arch.fileSaver.NodeFromFileInfo = arch.nodeFromFileInfo
 
-	arch.treeSaver = NewTreeSaver(ctx, t, arch.Options.SaveTreeConcurrency, arch.saveTree, arch.Error)
+	arch.treeSaver = NewTreeSaver(ctx, wg, arch.Options.SaveTreeConcurrency, arch.saveTree, arch.Error)
+}
+
+func (arch *Archiver) stopWorkers() {
+	arch.blobSaver.TriggerShutdown()
+	arch.fileSaver.TriggerShutdown()
+	arch.treeSaver.TriggerShutdown()
 }
 
 // Snapshot saves several targets and returns a snapshot.
@@ -787,17 +793,16 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		return nil, restic.ID{}, err
 	}
 
-	var t tomb.Tomb
-	wctx := t.Context(ctx)
+	wg, wgCtx := errgroup.WithContext(ctx)
 	start := time.Now()
 
 	var rootTreeID restic.ID
 	var stats ItemStats
-	t.Go(func() error {
-		arch.runWorkers(wctx, &t)
+	wg.Go(func() error {
+		arch.runWorkers(wgCtx, wg)
 
 		debug.Log("starting snapshot")
-		tree, err := arch.SaveTree(wctx, "/", atree, arch.loadParentTree(wctx, opts.ParentSnapshot))
+		tree, err := arch.SaveTree(wgCtx, "/", atree, arch.loadParentTree(wgCtx, opts.ParentSnapshot))
 		if err != nil {
 			return err
 		}
@@ -806,13 +811,12 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 			return errors.New("snapshot is empty")
 		}
 
-		rootTreeID, stats, err = arch.saveTree(wctx, tree)
-		// trigger shutdown but don't set an error
-		t.Kill(nil)
+		rootTreeID, stats, err = arch.saveTree(wgCtx, tree)
+		arch.stopWorkers()
 		return err
 	})
 
-	err = t.Wait()
+	err = wg.Wait()
 	debug.Log("err is %v", err)
 
 	if err != nil {

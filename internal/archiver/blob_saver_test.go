@@ -10,7 +10,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
-	tomb "gopkg.in/tomb.v2"
+	"golang.org/x/sync/errgroup"
 )
 
 var errTest = errors.New("test error")
@@ -38,12 +38,12 @@ func TestBlobSaver(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	tmb, ctx := tomb.WithContext(ctx)
+	wg, ctx := errgroup.WithContext(ctx)
 	saver := &saveFail{
 		idx: repository.NewMasterIndex(),
 	}
 
-	b := NewBlobSaver(ctx, tmb, saver, uint(runtime.NumCPU()))
+	b := NewBlobSaver(ctx, wg, saver, uint(runtime.NumCPU()))
 
 	var results []FutureBlob
 
@@ -60,9 +60,9 @@ func TestBlobSaver(t *testing.T) {
 		}
 	}
 
-	tmb.Kill(nil)
+	b.TriggerShutdown()
 
-	err := tmb.Wait()
+	err := wg.Wait()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,22 +84,22 @@ func TestBlobSaverError(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			tmb, ctx := tomb.WithContext(ctx)
+			wg, ctx := errgroup.WithContext(ctx)
 			saver := &saveFail{
 				idx:    repository.NewMasterIndex(),
 				failAt: int32(test.failAt),
 			}
 
-			b := NewBlobSaver(ctx, tmb, saver, uint(runtime.NumCPU()))
+			b := NewBlobSaver(ctx, wg, saver, uint(runtime.NumCPU()))
 
 			for i := 0; i < test.blobs; i++ {
 				buf := &Buffer{Data: []byte(fmt.Sprintf("foo%d", i))}
 				b.Save(ctx, restic.DataBlob, buf)
 			}
 
-			tmb.Kill(nil)
+			b.TriggerShutdown()
 
-			err := tmb.Wait()
+			err := wg.Wait()
 			if err == nil {
 				t.Errorf("expected error not found")
 			}
