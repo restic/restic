@@ -3,7 +3,6 @@ package restic
 import (
 	"crypto/rand"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"io"
 
@@ -98,7 +97,13 @@ func (id ID) EqualString(other string) (bool, error) {
 
 // MarshalJSON returns the JSON encoding of id.
 func (id ID) MarshalJSON() ([]byte, error) {
-	return json.Marshal(id.String())
+	buf := make([]byte, 2+hex.EncodedLen(len(id)))
+
+	buf[0] = '"'
+	hex.Encode(buf[1:], id[:])
+	buf[len(buf)-1] = '"'
+
+	return buf, nil
 }
 
 // UnmarshalJSON parses the JSON-encoded data and stores the result in id.
