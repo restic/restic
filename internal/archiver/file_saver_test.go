@@ -64,7 +64,7 @@ func TestFileSaver(t *testing.T) {
 	testFs := fs.Local{}
 	s, ctx, wg := startFileSaver(ctx, t)
 
-	var results []FutureFile
+	var results []FutureNode
 
 	for _, filename := range files {
 		f, err := testFs.Open(filename)
@@ -77,14 +77,14 @@ func TestFileSaver(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ff := s.Save(ctx, filename, f, fi, startFn, completeFn)
+		ff := s.Save(ctx, filename, filename, f, fi, startFn, completeFn)
 		results = append(results, ff)
 	}
 
 	for _, file := range results {
-		file.Wait(ctx)
-		if file.Err() != nil {
-			t.Errorf("unable to save file: %v", file.Err())
+		fnr := file.take(ctx)
+		if fnr.err != nil {
+			t.Errorf("unable to save file: %v", fnr.err)
 		}
 	}
 

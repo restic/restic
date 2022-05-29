@@ -28,19 +28,19 @@ func TestTreeSaver(t *testing.T) {
 
 	b := NewTreeSaver(ctx, wg, uint(runtime.NumCPU()), saveFn, errFn)
 
-	var results []FutureTree
+	var results []FutureNode
 
 	for i := 0; i < 20; i++ {
 		node := &restic.Node{
 			Name: fmt.Sprintf("file-%d", i),
 		}
 
-		fb := b.Save(ctx, "/", node, nil, nil)
+		fb := b.Save(ctx, "/", node.Name, node, nil, nil)
 		results = append(results, fb)
 	}
 
 	for _, tree := range results {
-		tree.Wait(ctx)
+		tree.take(ctx)
 	}
 
 	b.TriggerShutdown()
@@ -89,19 +89,19 @@ func TestTreeSaverError(t *testing.T) {
 
 			b := NewTreeSaver(ctx, wg, uint(runtime.NumCPU()), saveFn, errFn)
 
-			var results []FutureTree
+			var results []FutureNode
 
 			for i := 0; i < test.trees; i++ {
 				node := &restic.Node{
 					Name: fmt.Sprintf("file-%d", i),
 				}
 
-				fb := b.Save(ctx, "/", node, nil, nil)
+				fb := b.Save(ctx, "/", node.Name, node, nil, nil)
 				results = append(results, fb)
 			}
 
 			for _, tree := range results {
-				tree.Wait(ctx)
+				tree.take(ctx)
 			}
 
 			b.TriggerShutdown()

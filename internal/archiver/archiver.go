@@ -239,17 +239,17 @@ func (arch *Archiver) wrapLoadTreeError(id restic.ID, err error) error {
 
 // SaveDir stores a directory in the repo and returns the node. snPath is the
 // path within the current snapshot.
-func (arch *Archiver) SaveDir(ctx context.Context, snPath string, fi os.FileInfo, dir string, previous *restic.Tree, complete CompleteFunc) (d FutureTree, err error) {
+func (arch *Archiver) SaveDir(ctx context.Context, snPath string, dir string, fi os.FileInfo, previous *restic.Tree, complete CompleteFunc) (d FutureNode, err error) {
 	debug.Log("%v %v", snPath, dir)
 
 	treeNode, err := arch.nodeFromFileInfo(dir, fi)
 	if err != nil {
-		return FutureTree{}, err
+		return FutureNode{}, err
 	}
 
 	names, err := readdirnames(arch.FS, dir, fs.O_NOFOLLOW)
 	if err != nil {
-		return FutureTree{}, err
+		return FutureNode{}, err
 	}
 	sort.Strings(names)
 
@@ -259,7 +259,7 @@ func (arch *Archiver) SaveDir(ctx context.Context, snPath string, fi os.FileInfo
 		// test if context has been cancelled
 		if ctx.Err() != nil {
 			debug.Log("context has been cancelled, aborting")
-			return FutureTree{}, ctx.Err()
+			return FutureNode{}, ctx.Err()
 		}
 
 		pathname := arch.FS.Join(dir, name)
@@ -275,7 +275,7 @@ func (arch *Archiver) SaveDir(ctx context.Context, snPath string, fi os.FileInfo
 				continue
 			}
 
-			return FutureTree{}, err
+			return FutureNode{}, err
 		}
 
 		if excluded {
@@ -285,48 +285,56 @@ func (arch *Archiver) SaveDir(ctx context.Context, snPath string, fi os.FileInfo
 		nodes = append(nodes, fn)
 	}
 
-	ft := arch.treeSaver.Save(ctx, snPath, treeNode, nodes, complete)
+	fn := arch.treeSaver.Save(ctx, snPath, dir, treeNode, nodes, complete)
 
-	return ft, nil
+	return fn, nil
 }
 
-// FutureNode holds a reference to a node, FutureFile, or FutureTree.
+// FutureNode holds a reference to a channel that returns a FutureNodeResult
+// or a reference to an already existing result. If the result is available
+// immediatelly, then storing a reference directly requires less memory than
+// using the indirection via a channel.
 type FutureNode struct {
+	ch  <-chan futureNodeResult
+	res *futureNodeResult
+}
+
+type futureNodeResult struct {
 	snPath, target string
 
 	node  *restic.Node
 	stats ItemStats
 	err   error
-
-	isFile bool
-	file   FutureFile
-	isTree bool
-	tree   FutureTree
 }
 
-func (fn *FutureNode) wait(ctx context.Context) {
-	switch {
-	case fn.isFile:
-		// wait for and collect the data for the file
-		fn.file.Wait(ctx)
-		fn.node = fn.file.Node()
-		fn.err = fn.file.Err()
-		fn.stats = fn.file.Stats()
+func newFutureNode() (FutureNode, chan<- futureNodeResult) {
+	ch := make(chan futureNodeResult, 1)
+	return FutureNode{ch: ch}, ch
+}
 
-		// ensure the other stuff can be garbage-collected
-		fn.file = FutureFile{}
-		fn.isFile = false
-
-	case fn.isTree:
-		// wait for and collect the data for the dir
-		fn.tree.Wait(ctx)
-		fn.node = fn.tree.Node()
-		fn.stats = fn.tree.Stats()
-
-		// ensure the other stuff can be garbage-collected
-		fn.tree = FutureTree{}
-		fn.isTree = false
+func newFutureNodeWithResult(res futureNodeResult) FutureNode {
+	return FutureNode{
+		res: &res,
 	}
+}
+
+func (fn *FutureNode) take(ctx context.Context) futureNodeResult {
+	if fn.res != nil {
+		res := fn.res
+		// free result
+		fn.res = nil
+		return *res
+	}
+	select {
+	case res, ok := <-fn.ch:
+		if ok {
+			// free channel
+			fn.ch = nil
+			return res
+		}
+	case <-ctx.Done():
+	}
+	return futureNodeResult{}
 }
 
 // allBlobsPresent checks if all blobs (contents) of the given node are
@@ -350,11 +358,6 @@ func (arch *Archiver) allBlobsPresent(previous *restic.Node) bool {
 // snPath is the path within the current snapshot.
 func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous *restic.Node) (fn FutureNode, excluded bool, err error) {
 	start := time.Now()
-
-	fn = FutureNode{
-		snPath: snPath,
-		target: target,
-	}
 
 	debug.Log("%v target %q, previous %v", snPath, target, previous)
 	abstarget, err := arch.FS.Abs(target)
@@ -395,14 +398,19 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 				debug.Log("%v hasn't changed, using old list of blobs", target)
 				arch.CompleteItem(snPath, previous, previous, ItemStats{}, time.Since(start))
 				arch.CompleteBlob(snPath, previous.Size)
-				fn.node, err = arch.nodeFromFileInfo(target, fi)
+				node, err := arch.nodeFromFileInfo(target, fi)
 				if err != nil {
 					return FutureNode{}, false, err
 				}
 
 				// copy list of blobs
-				fn.node.Content = previous.Content
+				node.Content = previous.Content
 
+				fn = newFutureNodeWithResult(futureNodeResult{
+					snPath: snPath,
+					target: target,
+					node:   node,
+				})
 				return fn, false, nil
 			}
 
@@ -449,9 +457,8 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 			return FutureNode{}, true, nil
 		}
 
-		fn.isFile = true
 		// Save will close the file, we don't need to do that
-		fn.file = arch.fileSaver.Save(ctx, snPath, file, fi, func() {
+		fn = arch.fileSaver.Save(ctx, snPath, target, file, fi, func() {
 			arch.StartFile(snPath)
 		}, func(node *restic.Node, stats ItemStats) {
 			arch.CompleteItem(snPath, previous, node, stats, time.Since(start))
@@ -470,8 +477,7 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 			return FutureNode{}, false, err
 		}
 
-		fn.isTree = true
-		fn.tree, err = arch.SaveDir(ctx, snPath, fi, target, oldSubtree,
+		fn, err = arch.SaveDir(ctx, snPath, target, fi, oldSubtree,
 			func(node *restic.Node, stats ItemStats) {
 				arch.CompleteItem(snItem, previous, node, stats, time.Since(start))
 			})
@@ -487,10 +493,15 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 	default:
 		debug.Log("  %v other", target)
 
-		fn.node, err = arch.nodeFromFileInfo(target, fi)
+		node, err := arch.nodeFromFileInfo(target, fi)
 		if err != nil {
 			return FutureNode{}, false, err
 		}
+		fn = newFutureNodeWithResult(futureNodeResult{
+			snPath: snPath,
+			target: target,
+			node:   node,
+		})
 	}
 
 	debug.Log("return after %.3f", time.Since(start).Seconds())
@@ -647,28 +658,28 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 
 	// process all futures
 	for name, fn := range futureNodes {
-		fn.wait(ctx)
+		fnr := fn.take(ctx)
 
 		// return the error, or ignore it
-		if fn.err != nil {
-			fn.err = arch.error(fn.target, fn.err)
-			if fn.err == nil {
+		if fnr.err != nil {
+			fnr.err = arch.error(fnr.target, fnr.err)
+			if fnr.err == nil {
 				// ignore error
 				continue
 			}
 
-			return nil, fn.err
+			return nil, fnr.err
 		}
 
 		// when the error is ignored, the node could not be saved, so ignore it
-		if fn.node == nil {
-			debug.Log("%v excluded: %v", fn.snPath, fn.target)
+		if fnr.node == nil {
+			debug.Log("%v excluded: %v", fnr.snPath, fnr.target)
 			continue
 		}
 
-		fn.node.Name = name
+		fnr.node.Name = name
 
-		err := tree.Insert(fn.node)
+		err := tree.Insert(fnr.node)
 		if err != nil {
 			return nil, err
 		}
