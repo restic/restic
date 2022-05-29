@@ -267,6 +267,12 @@ func (r *SFTP) Hasher() hash.Hash {
 	return nil
 }
 
+// HasAtomicReplace returns whether Save() can atomically replace files
+func (r *SFTP) HasAtomicReplace() bool {
+	// we use sftp's 'Rename()' in 'Save()' which does not allow overwriting
+	return false
+}
+
 // Join joins the given paths and cleans them afterwards. This always uses
 // forward slashes, which is required by sftp.
 func Join(parts ...string) string {

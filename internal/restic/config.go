@@ -23,7 +23,7 @@ const MaxRepoVersion = 2
 
 // StableRepoVersion is the version that is written to the config when a repository
 // is newly created with Init().
-const StableRepoVersion = 1
+const StableRepoVersion = 2
 
 // JSONUnpackedLoader loads unpacked JSON.
 type JSONUnpackedLoader interface {

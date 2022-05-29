@@ -269,6 +269,11 @@ func (be *Backend) Hasher() hash.Hash {
 	return nil
 }
 
+// HasAtomicReplace returns whether Save() can atomically replace files
+func (be *Backend) HasAtomicReplace() bool {
+	return true
+}
+
 // Path returns the path in the bucket that is used for this backend.
 func (be *Backend) Path() string {
 	return be.cfg.Prefix

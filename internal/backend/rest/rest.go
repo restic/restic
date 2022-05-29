@@ -121,6 +121,12 @@ func (b *Backend) Hasher() hash.Hash {
 	return nil
 }
 
+// HasAtomicReplace returns whether Save() can atomically replace files
+func (b *Backend) HasAtomicReplace() bool {
+	// rest-server prevents overwriting
+	return false
+}
+
 // Save stores data in the backend at the handle.
 func (b *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
 	if err := h.Valid(); err != nil {

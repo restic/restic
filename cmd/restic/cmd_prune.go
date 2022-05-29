@@ -51,6 +51,7 @@ type PruneOptions struct {
 	MaxRepackBytes uint64
 
 	RepackCachableOnly bool
+	RepackUncompressed bool
 }
 
 var pruneOptions PruneOptions
@@ -68,6 +69,7 @@ func addPruneOptions(c *cobra.Command) {
 	f.StringVar(&pruneOptions.MaxUnused, "max-unused", "5%", "tolerate given `limit` of unused data (absolute value in bytes with suffixes k/K, m/M, g/G, t/T, a value in % or the word 'unlimited')")
 	f.StringVar(&pruneOptions.MaxRepackSize, "max-repack-size", "", "maximum `size` to repack (allowed suffixes: k/K, m/M, g/G, t/T)")
 	f.BoolVar(&pruneOptions.RepackCachableOnly, "repack-cacheable-only", false, "only repack packs which are cacheable")
+	f.BoolVar(&pruneOptions.RepackUncompressed, "repack-uncompressed", false, "repack all uncompressed data")
 }
 
 func verifyPruneOptions(opts *PruneOptions) error {
@@ -135,6 +137,10 @@ func runPrune(opts PruneOptions, gopts GlobalOptions) error {
 		return err
 	}
 
+	if opts.RepackUncompressed && gopts.Compression == repository.CompressionOff {
+		return errors.Fatal("disabled compression and `--repack-uncompressed` are mutually exclusive")
+	}
+
 	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err
@@ -142,6 +148,10 @@ func runPrune(opts PruneOptions, gopts GlobalOptions) error {
 
 	if repo.Backend().Connections() < 2 {
 		return errors.Fatal("prune requires a backend connection limit of at least two")
+	}
+
+	if repo.Config().Version < 2 && opts.RepackUncompressed {
+		return errors.Fatal("compression requires at least repository format version 2")
 	}
 
 	if opts.UnsafeNoSpaceRecovery != "" {
@@ -191,6 +201,7 @@ type packInfo struct {
 	usedSize       uint64
 	unusedSize     uint64
 	tpe            restic.BlobType
+	uncompressed   bool
 }
 
 type packInfoWithID struct {
@@ -299,6 +310,9 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 			ip.unusedSize += size
 			ip.unusedBlobs++
 		}
+		if !blob.IsCompressed() {
+			ip.uncompressed = true
+		}
 		// update indexPack
 		indexPack[blob.PackID] = ip
 	}
@@ -317,6 +331,8 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 			repackAllPacksWithDuplicates = false
 		}
 	}
+
+	repoVersion := repo.Config().Version
 
 	// loop over all packs and decide what to do
 	bar := newProgressMax(!gopts.Quiet, uint64(len(indexPack)), "packs processed")
@@ -350,6 +366,15 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 			stats.packs.partlyUsed++
 		}
 
+		mustCompress := false
+		if repoVersion >= 2 {
+			// repo v2: always repack tree blobs if uncompressed
+			// compress data blobs if requested
+			mustCompress = (p.tpe == restic.TreeBlob || opts.RepackUncompressed) && p.uncompressed
+		}
+		// use a flag that pack must be compressed
+		p.uncompressed = mustCompress
+
 		// decide what to do
 		switch {
 		case p.usedBlobs == 0 && p.duplicateBlobs == 0:
@@ -362,7 +387,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 			// if this is a data pack and --repack-cacheable-only is set => keep pack!
 			keep(p)
 
-		case p.unusedBlobs == 0 && p.duplicateBlobs == 0 && p.tpe != restic.InvalidBlob:
+		case p.unusedBlobs == 0 && p.duplicateBlobs == 0 && p.tpe != restic.InvalidBlob && !mustCompress:
 			// All blobs in pack are used and not duplicates/mixed => keep pack!
 			keep(p)
 
@@ -447,8 +472,8 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		case reachedRepackSize:
 			keep(p.packInfo)
 
-		case p.duplicateBlobs > 0, p.tpe != restic.DataBlob:
-			// repacking duplicates/non-data is only limited by repackSize
+		case p.duplicateBlobs > 0, p.tpe != restic.DataBlob, p.uncompressed:
+			// repacking duplicates/non-data/uncompressed-trees is only limited by repackSize
 			repack(p.ID, p.packInfo)
 
 		case reachedUnusedSizeAfter:
