@@ -76,7 +76,7 @@ func NewFileSaver(ctx context.Context, t *tomb.Tomb, save SaveBlobFn, pol chunke
 
 	s := &FileSaver{
 		saveBlob:     save,
-		saveFilePool: NewBufferPool(ctx, int(poolSize), chunker.MaxSize),
+		saveFilePool: NewBufferPool(int(poolSize), chunker.MaxSize),
 		pol:          pol,
 		ch:           ch,
 
