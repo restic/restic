@@ -130,11 +130,11 @@ func runStats(gopts GlobalOptions, args []string) error {
 	if statsOptions.countMode == countModeRawData {
 		// the blob handles have been collected, but not yet counted
 		for blobHandle := range stats.blobs {
-			blobSize, found := repo.LookupBlobSize(blobHandle.ID, blobHandle.Type)
-			if !found {
+			pbs := repo.Index().Lookup(blobHandle)
+			if len(pbs) == 0 {
 				return fmt.Errorf("blob %v not found", blobHandle)
 			}
-			stats.TotalSize += uint64(blobSize)
+			stats.TotalSize += uint64(pbs[0].Length)
 			stats.TotalBlobCount++
 		}
 	}
