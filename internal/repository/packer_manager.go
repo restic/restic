@@ -106,11 +106,11 @@ func (r *packerManager) insertPacker(p *Packer) {
 }
 
 // savePacker stores p in the backend.
-func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packer) error {
+func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packer) (int, error) {
 	debug.Log("save packer for %v with %d blobs (%d bytes)\n", t, p.Packer.Count(), p.Packer.Size())
-	_, err := p.Packer.Finalize()
+	hdrOverhead, err := p.Packer.Finalize()
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	id := restic.IDFromHash(p.hw.Sum(nil))
@@ -122,27 +122,27 @@ func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packe
 	}
 	rd, err := restic.NewFileReader(p.tmpfile, beHash)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	err = r.be.Save(ctx, h, rd)
 	if err != nil {
 		debug.Log("Save(%v) error: %v", h, err)
-		return err
+		return 0, err
 	}
 
 	debug.Log("saved as %v", h)
 
 	err = p.tmpfile.Close()
 	if err != nil {
-		return errors.Wrap(err, "close tempfile")
+		return 0, errors.Wrap(err, "close tempfile")
 	}
 
 	// on windows the tempfile is automatically deleted on close
 	if runtime.GOOS != "windows" {
 		err = fs.RemoveIfExists(p.tmpfile.Name())
 		if err != nil {
-			return errors.Wrap(err, "Remove")
+			return 0, errors.Wrap(err, "Remove")
 		}
 	}
 
@@ -152,9 +152,9 @@ func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packe
 
 	// Save index if full
 	if r.noAutoIndexUpdate {
-		return nil
+		return hdrOverhead, nil
 	}
-	return r.idx.SaveFullIndex(ctx, r)
+	return hdrOverhead, r.idx.SaveFullIndex(ctx, r)
 }
 
 // countPacker returns the number of open (unfinished) packers.

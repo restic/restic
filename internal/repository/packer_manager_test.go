@@ -74,8 +74,8 @@ func fillPacks(t testing.TB, rnd *rand.Rand, be Saver, pm *packerManager, buf []
 		if err != nil {
 			t.Fatal(err)
 		}
-		if n != l {
-			t.Errorf("Add() returned invalid number of bytes: want %v, got %v", n, l)
+		if n != l+37 {
+			t.Errorf("Add() returned invalid number of bytes: want %v, got %v", l, n)
 		}
 		bytes += l
 
@@ -107,7 +107,7 @@ func flushRemainingPacks(t testing.TB, be Saver, pm *packerManager) (bytes int) 
 			if err != nil {
 				t.Fatal(err)
 			}
-			bytes += int(n)
+			bytes += n
 
 			packID := restic.IDFromHash(packer.hw.Sum(nil))
 			var beHash []byte
