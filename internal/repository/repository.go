@@ -582,12 +582,6 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-
-		_, err = idx.IDs()
-		if err != nil {
-			return err
-		}
-
 		r.idx.Insert(idx)
 		return nil
 	})

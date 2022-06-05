@@ -287,7 +287,9 @@ func (mi *MasterIndex) MergeFinalIndexes() error {
 		idx := mi.idx[i]
 		// clear reference in masterindex as it may become stale
 		mi.idx[i] = nil
-		if !idx.Final() {
+		// do not merge indexes that have no id set
+		ids, _ := idx.IDs()
+		if !idx.Final() || len(ids) == 0 {
 			newIdx = append(newIdx, idx)
 		} else {
 			err := mi.idx[0].merge(idx)
@@ -404,7 +406,13 @@ func SaveIndex(ctx context.Context, repo restic.SaverUnpacked, index *Index) (re
 		return restic.ID{}, err
 	}
 
-	return repo.SaveUnpacked(ctx, restic.IndexFile, buf.Bytes())
+	id, err := repo.SaveUnpacked(ctx, restic.IndexFile, buf.Bytes())
+	ierr := index.SetID(id)
+	if ierr != nil {
+		// logic bug
+		panic(ierr)
+	}
+	return id, err
 }
 
 // saveIndex saves all indexes in the backend.
