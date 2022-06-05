@@ -234,14 +234,6 @@ func (mi *MasterIndex) FinalizeFullIndexes() []*Index {
 	return list
 }
 
-// All returns all indexes.
-func (mi *MasterIndex) All() []*Index {
-	mi.idxMutex.Lock()
-	defer mi.idxMutex.Unlock()
-
-	return mi.idx
-}
-
 // Each returns a channel that yields all blobs known to the index. When the
 // context is cancelled, the background goroutine terminates. This blocks any
 // modification of the index.
