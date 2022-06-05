@@ -779,6 +779,9 @@ func (arch *Archiver) stopWorkers() {
 	arch.blobSaver.TriggerShutdown()
 	arch.fileSaver.TriggerShutdown()
 	arch.treeSaver.TriggerShutdown()
+	arch.blobSaver = nil
+	arch.fileSaver = nil
+	arch.treeSaver = nil
 }
 
 // Snapshot saves several targets and returns a snapshot.
