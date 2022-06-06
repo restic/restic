@@ -31,6 +31,8 @@ type SFTP struct {
 	cmd    *exec.Cmd
 	result <-chan error
 
+	posixRename bool
+
 	sem *backend.Semaphore
 	backend.Layout
 	Config
@@ -96,7 +98,8 @@ func startClient(program string, args ...string) (*SFTP, error) {
 		return nil, errors.Wrap(err, "bg")
 	}
 
-	return &SFTP{c: client, cmd: cmd, result: ch}, nil
+	_, posixRename := client.HasExtension("posix-rename@openssh.com")
+	return &SFTP{c: client, cmd: cmd, result: ch, posixRename: posixRename}, nil
 }
 
 // clientError returns an error if the client has exited. Otherwise, nil is
@@ -269,8 +272,7 @@ func (r *SFTP) Hasher() hash.Hash {
 
 // HasAtomicReplace returns whether Save() can atomically replace files
 func (r *SFTP) HasAtomicReplace() bool {
-	// we use sftp's 'Rename()' in 'Save()' which does not allow overwriting
-	return false
+	return r.posixRename
 }
 
 // Join joins the given paths and cleans them afterwards. This always uses
@@ -364,7 +366,12 @@ func (r *SFTP) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader
 		return errors.Wrap(err, "Close")
 	}
 
-	err = r.c.Rename(tmpFilename, filename)
+	// Prefer POSIX atomic rename if available.
+	if r.posixRename {
+		err = r.c.PosixRename(tmpFilename, filename)
+	} else {
+		err = r.c.Rename(tmpFilename, filename)
+	}
 	return errors.Wrap(err, "Rename")
 }
 
