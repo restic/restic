@@ -303,8 +303,9 @@ func (r *Repository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.
 			return plaintext, nil
 		}
 		// move decrypted data to the start of the buffer
+		buf = buf[:len(plaintext)]
 		copy(buf, plaintext)
-		return buf[:len(plaintext)], nil
+		return buf, nil
 	}
 
 	if lastError != nil {
