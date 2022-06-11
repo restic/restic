@@ -535,13 +535,13 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 		pi := repackCandidates[i].packInfo
 		pj := repackCandidates[j].packInfo
 		switch {
-		case opts.RepackSmall && pi.unusedSize+pi.usedSize < uint64(minPackSize) && pj.unusedSize+pj.usedSize >= uint64(minPackSize):
-			return true
-		case opts.RepackSmall && pj.unusedSize+pj.usedSize < uint64(minPackSize) && pi.unusedSize+pi.usedSize >= uint64(minPackSize):
-			return false
 		case pi.tpe != restic.DataBlob && pj.tpe == restic.DataBlob:
 			return true
 		case pj.tpe != restic.DataBlob && pi.tpe == restic.DataBlob:
+			return false
+		case opts.RepackSmall && pi.unusedSize+pi.usedSize < uint64(minPackSize) && pj.unusedSize+pj.usedSize >= uint64(minPackSize):
+			return true
+		case opts.RepackSmall && pj.unusedSize+pj.usedSize < uint64(minPackSize) && pi.unusedSize+pi.usedSize >= uint64(minPackSize):
 			return false
 		}
 		return pi.unusedSize*pj.usedSize > pj.unusedSize*pi.usedSize
