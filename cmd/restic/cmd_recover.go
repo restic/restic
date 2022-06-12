@@ -166,7 +166,7 @@ func createSnapshot(ctx context.Context, name, hostname string, tags []string, r
 
 	sn.Tree = tree
 
-	id, err := repo.SaveJSONUnpacked(ctx, restic.SnapshotFile, sn)
+	id, err := restic.SaveSnapshot(ctx, repo, sn)
 	if err != nil {
 		return errors.Fatalf("unable to save snapshot: %v", err)
 	}

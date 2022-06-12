@@ -154,7 +154,7 @@ func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
 		if sn.Original == nil {
 			sn.Original = sn.ID()
 		}
-		newID, err := dstRepo.SaveJSONUnpacked(ctx, restic.SnapshotFile, sn)
+		newID, err := restic.SaveSnapshot(ctx, dstRepo, sn)
 		if err != nil {
 			return err
 		}

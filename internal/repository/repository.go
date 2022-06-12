@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -153,7 +152,7 @@ func (r *Repository) PrefixLength(ctx context.Context, t restic.FileType) (int, 
 // LoadUnpacked loads and decrypts the file with the given type and ID, using
 // the supplied buffer (which must be empty). If the buffer is nil, a new
 // buffer will be allocated and returned.
-func (r *Repository) LoadUnpacked(ctx context.Context, buf []byte, t restic.FileType, id restic.ID) ([]byte, error) {
+func (r *Repository) LoadUnpacked(ctx context.Context, t restic.FileType, id restic.ID, buf []byte) ([]byte, error) {
 	if len(buf) != 0 {
 		panic("buf is not empty")
 	}
@@ -315,17 +314,6 @@ func (r *Repository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.
 	return nil, errors.Errorf("loading blob %v from %v packs failed", id.Str(), len(blobs))
 }
 
-// LoadJSONUnpacked decrypts the data and afterwards calls json.Unmarshal on
-// the item.
-func (r *Repository) LoadJSONUnpacked(ctx context.Context, t restic.FileType, id restic.ID, item interface{}) (err error) {
-	buf, err := r.LoadUnpacked(ctx, nil, t, id)
-	if err != nil {
-		return err
-	}
-
-	return json.Unmarshal(buf, item)
-}
-
 // LookupBlobSize returns the size of blob id.
 func (r *Repository) LookupBlobSize(id restic.ID, tpe restic.BlobType) (uint, bool) {
 	return r.idx.LookupSize(restic.BlobHandle{ID: id, Type: tpe})
@@ -417,18 +405,6 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 	}
 
 	return pm.SaveBlob(ctx, t, id, ciphertext, uncompressedLength)
-}
-
-// SaveJSONUnpacked serialises item as JSON and encrypts and saves it in the
-// backend as type t, without a pack. It returns the storage hash.
-func (r *Repository) SaveJSONUnpacked(ctx context.Context, t restic.FileType, item interface{}) (restic.ID, error) {
-	debug.Log("save new blob %v", t)
-	plaintext, err := json.Marshal(item)
-	if err != nil {
-		return restic.ID{}, errors.Wrap(err, "json.Marshal")
-	}
-
-	return r.SaveUnpacked(ctx, t, plaintext)
 }
 
 func (r *Repository) compressUnpacked(p []byte) ([]byte, error) {
@@ -762,8 +738,7 @@ func (r *Repository) init(ctx context.Context, password string, cfg restic.Confi
 	r.key = key.master
 	r.keyName = key.Name()
 	r.setConfig(cfg)
-	_, err = r.SaveJSONUnpacked(ctx, restic.ConfigFile, cfg)
-	return err
+	return restic.SaveConfig(ctx, r, cfg)
 }
 
 // Key returns the current master key.

@@ -181,7 +181,7 @@ func TestCreateSnapshot(t testing.TB, repo Repository, at time.Time, depth int, 
 		t.Fatal(err)
 	}
 
-	id, err := repo.SaveJSONUnpacked(context.TODO(), SnapshotFile, snapshot)
+	id, err := SaveSnapshot(context.TODO(), repo, snapshot)
 	if err != nil {
 		t.Fatal(err)
 	}

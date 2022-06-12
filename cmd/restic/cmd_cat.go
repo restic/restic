@@ -79,7 +79,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 		Println(string(buf))
 		return nil
 	case "index":
-		buf, err := repo.LoadUnpacked(gopts.ctx, nil, restic.IndexFile, id)
+		buf, err := repo.LoadUnpacked(gopts.ctx, restic.IndexFile, id, nil)
 		if err != nil {
 			return err
 		}
@@ -87,13 +87,12 @@ func runCat(gopts GlobalOptions, args []string) error {
 		Println(string(buf))
 		return nil
 	case "snapshot":
-		sn := &restic.Snapshot{}
-		err = repo.LoadJSONUnpacked(gopts.ctx, restic.SnapshotFile, id, sn)
+		sn, err := restic.LoadSnapshot(gopts.ctx, repo, id)
 		if err != nil {
 			return err
 		}
 
-		buf, err := json.MarshalIndent(&sn, "", "  ")
+		buf, err := json.MarshalIndent(sn, "", "  ")
 		if err != nil {
 			return err
 		}

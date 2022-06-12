@@ -519,7 +519,7 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 
 	snapshot.Tree = &rootID
 
-	snapID, err := repo.SaveJSONUnpacked(ctx, restic.SnapshotFile, snapshot)
+	snapID, err := restic.SaveSnapshot(ctx, repo, snapshot)
 	test.OK(t, err)
 
 	t.Logf("saved snapshot %v", snapID.Str())
@@ -600,8 +600,7 @@ func benchmarkSnapshotScaling(t *testing.B, newSnapshots int) {
 		t.Fatal(err)
 	}
 
-	var sn2 restic.Snapshot
-	err = repo.LoadJSONUnpacked(context.TODO(), restic.SnapshotFile, snID, &sn2)
+	sn2, err := restic.LoadSnapshot(context.TODO(), repo, snID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -615,7 +614,7 @@ func benchmarkSnapshotScaling(t *testing.B, newSnapshots int) {
 		}
 		sn.Tree = treeID
 
-		_, err = repo.SaveJSONUnpacked(context.TODO(), restic.SnapshotFile, sn)
+		_, err = restic.SaveSnapshot(context.TODO(), repo, sn)
 		if err != nil {
 			t.Fatal(err)
 		}

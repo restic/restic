@@ -158,7 +158,7 @@ func (l *Lock) checkForOtherLocks(ctx context.Context) error {
 
 // createLock acquires the lock by creating a file in the repository.
 func (l *Lock) createLock(ctx context.Context) (ID, error) {
-	id, err := l.repo.SaveJSONUnpacked(ctx, LockFile, l)
+	id, err := SaveJSONUnpacked(ctx, l.repo, LockFile, l)
 	if err != nil {
 		return ID{}, err
 	}
@@ -255,7 +255,7 @@ func init() {
 // LoadLock loads and unserializes a lock from a repository.
 func LoadLock(ctx context.Context, repo Repository, id ID) (*Lock, error) {
 	lock := &Lock{}
-	if err := repo.LoadJSONUnpacked(ctx, LockFile, id, lock); err != nil {
+	if err := LoadJSONUnpacked(ctx, repo, LockFile, id, lock); err != nil {
 		return nil, err
 	}
 	lock.lockID = &id

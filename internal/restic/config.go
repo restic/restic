@@ -76,12 +76,12 @@ func TestDisableCheckPolynomial(t testing.TB) {
 }
 
 // LoadConfig returns loads, checks and returns the config for a repository.
-func LoadConfig(ctx context.Context, r JSONUnpackedLoader) (Config, error) {
+func LoadConfig(ctx context.Context, r LoaderUnpacked) (Config, error) {
 	var (
 		cfg Config
 	)
 
-	err := r.LoadJSONUnpacked(ctx, ConfigFile, ID{}, &cfg)
+	err := LoadJSONUnpacked(ctx, r, ConfigFile, ID{}, &cfg)
 	if err != nil {
 		return Config{}, err
 	}
@@ -97,4 +97,9 @@ func LoadConfig(ctx context.Context, r JSONUnpackedLoader) (Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func SaveConfig(ctx context.Context, r SaverUnpacked, cfg Config) error {
+	_, err := SaveJSONUnpacked(ctx, r, ConfigFile, cfg)
+	return err
 }

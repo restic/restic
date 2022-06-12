@@ -238,7 +238,7 @@ func benchmarkLoadUnpacked(b *testing.B, version uint) {
 	b.SetBytes(int64(length))
 
 	for i := 0; i < b.N; i++ {
-		data, err := repo.LoadUnpacked(context.TODO(), nil, restic.PackFile, storageID)
+		data, err := repo.LoadUnpacked(context.TODO(), restic.PackFile, storageID, nil)
 		rtest.OK(b, err)
 
 		// See comment in BenchmarkLoadBlob.
@@ -255,44 +255,6 @@ func benchmarkLoadUnpacked(b *testing.B, version uint) {
 	}
 }
 
-func TestLoadJSONUnpacked(t *testing.T) {
-	repository.TestAllVersions(t, testLoadJSONUnpacked)
-}
-
-func testLoadJSONUnpacked(t *testing.T, version uint) {
-	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
-	defer cleanup()
-
-	if rtest.BenchArchiveDirectory == "" {
-		t.Skip("benchdir not set, skipping")
-	}
-
-	// archive a snapshot
-	sn := restic.Snapshot{}
-	sn.Hostname = "foobar"
-	sn.Username = "test!"
-
-	id, err := repo.SaveJSONUnpacked(context.TODO(), restic.SnapshotFile, &sn)
-	rtest.OK(t, err)
-
-	var sn2 restic.Snapshot
-
-	// restore
-	err = repo.LoadJSONUnpacked(context.TODO(), restic.SnapshotFile, id, &sn2)
-	rtest.OK(t, err)
-
-	rtest.Equals(t, sn.Hostname, sn2.Hostname)
-	rtest.Equals(t, sn.Username, sn2.Username)
-
-	var cf restic.Config
-
-	// load and check Config
-	err = repo.LoadJSONUnpacked(context.TODO(), restic.ConfigFile, id, &cf)
-	rtest.OK(t, err)
-
-	rtest.Equals(t, cf.ChunkerPolynomial, repository.TestChunkerPol)
-}
-
 var repoFixture = filepath.Join("testdata", "test-repo.tar.gz")
 
 func TestRepositoryLoadIndex(t *testing.T) {
@@ -305,7 +267,7 @@ func TestRepositoryLoadIndex(t *testing.T) {
 
 // loadIndex loads the index id from backend and returns it.
 func loadIndex(ctx context.Context, repo restic.Repository, id restic.ID) (*repository.Index, error) {
-	buf, err := repo.LoadUnpacked(ctx, nil, restic.IndexFile, id)
+	buf, err := repo.LoadUnpacked(ctx, restic.IndexFile, id, nil)
 	if err != nil {
 		return nil, err
 	}
