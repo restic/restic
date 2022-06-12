@@ -54,17 +54,21 @@ variable ``RESTIC_COMPRESSION``.
 Pack Size
 =========
 
-In certain instances, such as very large repositories, it is desired to have larger pack
-sizes to reduce the number of files in the repository.  Notable examples are OpenStack
+In certain instances, such as very large repositories (in the TiB range) or very fast
+upload connections, it is desirable to use larger pack sizes to reduce the number of
+files in the repository and improve upload performance.  Notable examples are OpenStack
 Swift and some Google Drive Team accounts, where there are hard limits on the total
-number of files.  This can be achieved by either using the ``--min-packsize`` flag
+number of files.  Larger pack size can also improve the backup speed for a repository
+stored on a local HDD.  This can be achieved by either using the ``--min-packsize`` flag
 or defining the ``$RESTIC_MIN_PACKSIZE`` environment variable.  Restic currently defaults
-to a 16MB minimum pack size.
+to a 16MiB pack size.
 
-The side effect of increasing the pack size is increased client memory usage.  A bit of
-tuning may be required to strike a balance between memory usage and number of pack files.
-
-Restic uses the majority of it's memory according to the pack size, multiplied by the number
-of parallel writers. For example, if you have 4 parallel writers (restic creates one per
-available CPU), With a minimum pack size of 64 (Megabytes), you'll get a *minimum* of 256MB
-of memory usage.
+The side effect of increasing the pack size is requiring more disk space for temporary pack
+files created before uploading.  The space must be available in the system default temp
+directory, unless overwritten by setting the ``$TMPDIR`` environment variable.  In addition,
+depending on the backend the memory usage can also increase by a similar amount. Restic
+requires temporary space according to the pack size, multiplied by the number
+of backend connections plus one. For example, if the backend uses 5 connections (the default
+for most backends), with a target pack size of 64MiB, you'll need a *minimum* of 384MiB
+of space in the temp directory. A bit of tuning may be required to strike a balance between
+resource usage at the backup client and the number of pack files in the repository.
