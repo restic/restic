@@ -18,6 +18,7 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/hashing"
+	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -38,7 +39,7 @@ type Checker struct {
 	}
 	trackUnused bool
 
-	masterIndex *repository.MasterIndex
+	masterIndex *index.MasterIndex
 	snapshots   restic.Lister
 
 	repo restic.Repository
@@ -48,7 +49,7 @@ type Checker struct {
 func New(repo restic.Repository, trackUnused bool) *Checker {
 	c := &Checker{
 		packs:       make(map[restic.ID]int64),
-		masterIndex: repository.NewMasterIndex(),
+		masterIndex: index.NewMasterIndex(),
 		repo:        repo,
 		trackUnused: trackUnused,
 	}
@@ -121,7 +122,7 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 	debug.Log("Start")
 
 	packToIndex := make(map[restic.ID]restic.IDSet)
-	err := repository.ForAllIndexes(ctx, c.repo, func(id restic.ID, index *repository.Index, oldFormat bool, err error) error {
+	err := index.ForAllIndexes(ctx, c.repo, func(id restic.ID, index *index.Index, oldFormat bool, err error) error {
 		debug.Log("process index %v, err %v", id, err)
 
 		if oldFormat {

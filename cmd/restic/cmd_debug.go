@@ -22,6 +22,7 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -129,7 +130,7 @@ func printPacks(ctx context.Context, repo *repository.Repository, wr io.Writer) 
 }
 
 func dumpIndexes(ctx context.Context, repo restic.Repository, wr io.Writer) error {
-	return repository.ForAllIndexes(ctx, repo, func(id restic.ID, idx *repository.Index, oldFormat bool, err error) error {
+	return index.ForAllIndexes(ctx, repo, func(id restic.ID, idx *index.Index, oldFormat bool, err error) error {
 		Printf("index_id: %v\n", id)
 		if err != nil {
 			return err

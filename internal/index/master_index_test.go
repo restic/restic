@@ -1,4 +1,4 @@
-package repository_test
+package index_test
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 
 	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/crypto"
+	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -57,15 +58,15 @@ func TestMasterIndex(t *testing.T) {
 		},
 	}
 
-	idx1 := repository.NewIndex()
+	idx1 := index.NewIndex()
 	idx1.StorePack(blob1.PackID, []restic.Blob{blob1.Blob})
 	idx1.StorePack(blob12a.PackID, []restic.Blob{blob12a.Blob})
 
-	idx2 := repository.NewIndex()
+	idx2 := index.NewIndex()
 	idx2.StorePack(blob2.PackID, []restic.Blob{blob2.Blob})
 	idx2.StorePack(blob12b.PackID, []restic.Blob{blob12b.Blob})
 
-	mIdx := repository.NewMasterIndex()
+	mIdx := index.NewMasterIndex()
 	mIdx.Insert(idx1)
 	mIdx.Insert(idx2)
 
@@ -148,18 +149,18 @@ func TestMasterMergeFinalIndexes(t *testing.T) {
 		},
 	}
 
-	idx1 := repository.NewIndex()
+	idx1 := index.NewIndex()
 	idx1.StorePack(blob1.PackID, []restic.Blob{blob1.Blob})
 
-	idx2 := repository.NewIndex()
+	idx2 := index.NewIndex()
 	idx2.StorePack(blob2.PackID, []restic.Blob{blob2.Blob})
 
-	mIdx := repository.NewMasterIndex()
+	mIdx := index.NewMasterIndex()
 	mIdx.Insert(idx1)
 	mIdx.Insert(idx2)
 
-	finalIndexes, idxCount := repository.TestMergeIndex(t, mIdx)
-	rtest.Equals(t, []*repository.Index{idx1, idx2}, finalIndexes)
+	finalIndexes, idxCount := index.TestMergeIndex(t, mIdx)
+	rtest.Equals(t, []*index.Index{idx1, idx2}, finalIndexes)
 	rtest.Equals(t, 1, idxCount)
 
 	blobCount := 0
@@ -178,13 +179,13 @@ func TestMasterMergeFinalIndexes(t *testing.T) {
 	rtest.Assert(t, blobs == nil, "Expected no blobs when fetching with a random id")
 
 	// merge another index containing identical blobs
-	idx3 := repository.NewIndex()
+	idx3 := index.NewIndex()
 	idx3.StorePack(blob1.PackID, []restic.Blob{blob1.Blob})
 	idx3.StorePack(blob2.PackID, []restic.Blob{blob2.Blob})
 
 	mIdx.Insert(idx3)
-	finalIndexes, idxCount = repository.TestMergeIndex(t, mIdx)
-	rtest.Equals(t, []*repository.Index{idx3}, finalIndexes)
+	finalIndexes, idxCount = index.TestMergeIndex(t, mIdx)
+	rtest.Equals(t, []*index.Index{idx3}, finalIndexes)
 	rtest.Equals(t, 1, idxCount)
 
 	// Index should have same entries as before!
@@ -201,8 +202,8 @@ func TestMasterMergeFinalIndexes(t *testing.T) {
 	rtest.Equals(t, 2, blobCount)
 }
 
-func createRandomMasterIndex(t testing.TB, rng *rand.Rand, num, size int) (*repository.MasterIndex, restic.BlobHandle) {
-	mIdx := repository.NewMasterIndex()
+func createRandomMasterIndex(t testing.TB, rng *rand.Rand, num, size int) (*index.MasterIndex, restic.BlobHandle) {
+	mIdx := index.NewMasterIndex()
 	for i := 0; i < num-1; i++ {
 		idx, _ := createRandomIndex(rng, size)
 		mIdx.Insert(idx)
@@ -210,7 +211,7 @@ func createRandomMasterIndex(t testing.TB, rng *rand.Rand, num, size int) (*repo
 	idx1, lookupBh := createRandomIndex(rng, size)
 	mIdx.Insert(idx1)
 
-	repository.TestMergeIndex(t, mIdx)
+	index.TestMergeIndex(t, mIdx)
 
 	return mIdx, lookupBh
 }

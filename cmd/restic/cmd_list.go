@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/spf13/cobra"
@@ -63,7 +63,7 @@ func runList(ctx context.Context, cmd *cobra.Command, opts GlobalOptions, args [
 	case "locks":
 		t = restic.LockFile
 	case "blobs":
-		return repository.ForAllIndexes(ctx, repo, func(id restic.ID, idx *repository.Index, oldFormat bool, err error) error {
+		return index.ForAllIndexes(ctx, repo, func(id restic.ID, idx *index.Index, oldFormat bool, err error) error {
 			if err != nil {
 				return err
 			}
