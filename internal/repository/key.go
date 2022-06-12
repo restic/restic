@@ -137,6 +137,7 @@ func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int,
 
 	// try at most maxKeys keys in repo
 	err = s.Backend().List(listCtx, restic.KeyFile, func(fi restic.FileInfo) error {
+		checked++
 		if maxKeys > 0 && checked > maxKeys {
 			return ErrMaxKeysReached
 		}
