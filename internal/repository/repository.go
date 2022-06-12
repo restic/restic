@@ -163,12 +163,6 @@ func (r *Repository) SetDryRun() {
 	r.be = dryrun.New(r.be)
 }
 
-// PrefixLength returns the number of bytes required so that all prefixes of
-// all IDs of type t are unique.
-func (r *Repository) PrefixLength(ctx context.Context, t restic.FileType) (int, error) {
-	return restic.PrefixLength(ctx, r.be, t)
-}
-
 // LoadUnpacked loads and decrypts the file with the given type and ID, using
 // the supplied buffer (which must be empty). If the buffer is nil, a new
 // buffer will be allocated and returned.
