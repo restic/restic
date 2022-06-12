@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -26,7 +27,7 @@ import (
 type beSwift struct {
 	conn        *swift.Connection
 	connections uint
-	sem         *backend.Semaphore
+	sem         sema.Semaphore
 	container   string // Container name
 	prefix      string // Prefix of object names in the container
 	backend.Layout
@@ -40,7 +41,7 @@ var _ restic.Backend = &beSwift{}
 func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 	debug.Log("config %#v", cfg)
 
-	sem, err := backend.NewSemaphore(cfg.Connections)
+	sem, err := sema.New(cfg.Connections)
 	if err != nil {
 		return nil, err
 	}

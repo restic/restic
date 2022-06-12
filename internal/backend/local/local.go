@@ -9,12 +9,12 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/restic"
-
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/restic"
 
 	"github.com/cenkalti/backoff/v4"
 )
@@ -22,7 +22,7 @@ import (
 // Local is a backend in a local directory.
 type Local struct {
 	Config
-	sem *backend.Semaphore
+	sem sema.Semaphore
 	backend.Layout
 	backend.Modes
 }
@@ -38,7 +38,7 @@ func open(ctx context.Context, cfg Config) (*Local, error) {
 		return nil, err
 	}
 
-	sem, err := backend.NewSemaphore(cfg.Connections)
+	sem, err := sema.New(cfg.Connections)
 	if err != nil {
 		return nil, err
 	}

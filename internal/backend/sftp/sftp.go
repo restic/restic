@@ -13,11 +13,11 @@ import (
 	"path"
 	"time"
 
+	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/sema"
+	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
-
-	"github.com/restic/restic/internal/backend"
-	"github.com/restic/restic/internal/debug"
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/pkg/sftp"
@@ -33,7 +33,7 @@ type SFTP struct {
 
 	posixRename bool
 
-	sem *backend.Semaphore
+	sem sema.Semaphore
 	backend.Layout
 	Config
 	backend.Modes
@@ -121,7 +121,7 @@ func (r *SFTP) clientError() error {
 func Open(ctx context.Context, cfg Config) (*SFTP, error) {
 	debug.Log("open backend with config %#v", cfg)
 
-	sem, err := backend.NewSemaphore(cfg.Connections)
+	sem, err := sema.New(cfg.Connections)
 	if err != nil {
 		return nil, err
 	}
