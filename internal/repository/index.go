@@ -43,10 +43,9 @@ import (
 
 // Index holds lookup tables for id -> pack.
 type Index struct {
-	m          sync.Mutex
-	byType     [restic.NumBlobTypes]indexMap
-	packs      restic.IDs
-	mixedPacks restic.IDSet
+	m      sync.Mutex
+	byType [restic.NumBlobTypes]indexMap
+	packs  restic.IDs
 
 	final      bool       // set to true for all indexes read from the backend ("finalized")
 	ids        restic.IDs // set to the IDs of the contained finalized indexes
@@ -57,8 +56,7 @@ type Index struct {
 // NewIndex returns a new index.
 func NewIndex() *Index {
 	return &Index{
-		mixedPacks: restic.NewIDSet(),
-		created:    time.Now(),
+		created: time.Now(),
 	}
 }
 
@@ -462,11 +460,6 @@ func (idx *Index) Dump(w io.Writer) error {
 	return nil
 }
 
-// MixedPacks returns an IDSet that contain packs which have mixed blobs.
-func (idx *Index) MixedPacks() restic.IDSet {
-	return idx.mixedPacks
-}
-
 // merge() merges indexes, i.e. idx.merge(idx2) merges the contents of idx2 into idx.
 // During merging exact duplicates are removed;  idx2 is not changed by this method.
 func (idx *Index) merge(idx2 *Index) error {
@@ -509,7 +502,6 @@ func (idx *Index) merge(idx2 *Index) error {
 		})
 	}
 
-	idx.mixedPacks.Merge(idx2.mixedPacks)
 	idx.ids = append(idx.ids, idx2.ids...)
 	idx.supersedes = append(idx.supersedes, idx2.supersedes...)
 
@@ -543,7 +535,6 @@ func DecodeIndex(buf []byte, id restic.ID) (idx *Index, oldFormat bool, err erro
 
 	idx = NewIndex()
 	for _, pack := range idxJSON.Packs {
-		var data, tree bool
 		packID := idx.addToPacks(pack.ID)
 
 		for _, blob := range pack.Blobs {
@@ -555,17 +546,6 @@ func DecodeIndex(buf []byte, id restic.ID) (idx *Index, oldFormat bool, err erro
 				Length:             blob.Length,
 				UncompressedLength: blob.UncompressedLength,
 			})
-
-			switch blob.Type {
-			case restic.DataBlob:
-				data = true
-			case restic.TreeBlob:
-				tree = true
-			}
-		}
-
-		if data && tree {
-			idx.mixedPacks.Insert(pack.ID)
 		}
 	}
 	idx.supersedes = idxJSON.Supersedes
@@ -589,7 +569,6 @@ func decodeOldIndex(buf []byte) (idx *Index, err error) {
 
 	idx = NewIndex()
 	for _, pack := range list {
-		var data, tree bool
 		packID := idx.addToPacks(pack.ID)
 
 		for _, blob := range pack.Blobs {
@@ -601,17 +580,6 @@ func decodeOldIndex(buf []byte) (idx *Index, err error) {
 				Length: blob.Length,
 				// no compressed length in the old index format
 			})
-
-			switch blob.Type {
-			case restic.DataBlob:
-				data = true
-			case restic.TreeBlob:
-				tree = true
-			}
-		}
-
-		if data && tree {
-			idx.mixedPacks.Insert(pack.ID)
 		}
 	}
 	idx.final = true

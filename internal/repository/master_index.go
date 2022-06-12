@@ -106,18 +106,6 @@ func (mi *MasterIndex) Has(bh restic.BlobHandle) bool {
 	return false
 }
 
-func (mi *MasterIndex) IsMixedPack(packID restic.ID) bool {
-	mi.idxMutex.RLock()
-	defer mi.idxMutex.RUnlock()
-
-	for _, idx := range mi.idx {
-		if idx.MixedPacks().Has(packID) {
-			return true
-		}
-	}
-	return false
-}
-
 // IDs returns the IDs of all indexes contained in the index.
 func (mi *MasterIndex) IDs() restic.IDSet {
 	mi.idxMutex.RLock()

@@ -100,6 +100,22 @@ func (c *Checker) LoadSnapshots(ctx context.Context) error {
 	return err
 }
 
+func computePackTypes(ctx context.Context, idx restic.MasterIndex) map[restic.ID]restic.BlobType {
+	packs := make(map[restic.ID]restic.BlobType)
+	idx.Each(ctx, func(pb restic.PackedBlob) {
+		tpe, exists := packs[pb.PackID]
+		if exists {
+			if pb.Type != tpe {
+				tpe = restic.InvalidBlob
+			}
+		} else {
+			tpe = pb.Type
+		}
+		packs[pb.PackID] = tpe
+	})
+	return packs
+}
+
 // LoadIndex loads all index files.
 func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 	debug.Log("Start")
@@ -149,6 +165,7 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 
 	// compute pack size using index entries
 	c.packs = pack.Size(ctx, c.masterIndex, false)
+	packTypes := computePackTypes(ctx, c.masterIndex)
 
 	debug.Log("checking for duplicate packs")
 	for packID := range c.packs {
@@ -159,7 +176,7 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 				Indexes: packToIndex[packID],
 			})
 		}
-		if c.masterIndex.IsMixedPack(packID) {
+		if packTypes[packID] == restic.InvalidBlob {
 			hints = append(hints, &ErrMixedPack{
 				PackID: packID,
 			})
