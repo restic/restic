@@ -871,11 +871,6 @@ func (r *Repository) SaveTree(ctx context.Context, t *restic.Tree) (restic.ID, e
 	return id, err
 }
 
-// Loader allows loading data from a backend.
-type Loader interface {
-	Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error
-}
-
 type BackendLoadFn func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error
 
 // StreamPack loads the listed blobs from the specified pack file. The plaintext blob is passed to
