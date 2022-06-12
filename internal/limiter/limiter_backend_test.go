@@ -8,7 +8,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/restic/restic/internal/mock"
+	"github.com/restic/restic/internal/backend/mock"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
