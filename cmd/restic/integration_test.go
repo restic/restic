@@ -1040,7 +1040,7 @@ func testRunKeyAddNewKeyUserHost(t testing.TB, gopts GlobalOptions) {
 
 	repo, err := OpenRepository(gopts)
 	rtest.OK(t, err)
-	key, err := repository.SearchKey(gopts.ctx, repo, testKeyNewPassword, 1, "")
+	key, err := repository.SearchKey(gopts.ctx, repo, testKeyNewPassword, 2, "")
 	rtest.OK(t, err)
 
 	rtest.Equals(t, "john", key.Username)
