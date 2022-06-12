@@ -105,9 +105,7 @@ type Blob struct {
 func printPacks(ctx context.Context, repo *repository.Repository, wr io.Writer) error {
 
 	return repo.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
-		h := restic.Handle{Type: restic.PackFile, Name: id.String()}
-
-		blobs, _, err := pack.List(repo.Key(), backend.ReaderAt(ctx, repo.Backend(), h), size)
+		blobs, _, err := repo.ListPack(ctx, id, size)
 		if err != nil {
 			Warnf("error for pack %v: %v\n", id.Str(), err)
 			return nil
@@ -312,14 +310,14 @@ func decryptUnsigned(ctx context.Context, k *crypto.Key, buf []byte) []byte {
 	return out
 }
 
-func loadBlobs(ctx context.Context, repo restic.Repository, pack restic.ID, list []restic.Blob) error {
+func loadBlobs(ctx context.Context, repo restic.Repository, packID restic.ID, list []restic.Blob) error {
 	dec, err := zstd.NewReader(nil)
 	if err != nil {
 		panic(err)
 	}
 	be := repo.Backend()
 	h := restic.Handle{
-		Name: pack.String(),
+		Name: packID.String(),
 		Type: restic.PackFile,
 	}
 	for _, blob := range list {
@@ -527,7 +525,7 @@ func examinePack(ctx context.Context, repo restic.Repository, id restic.ID) erro
 	Printf("  ========================================\n")
 	Printf("  inspect the pack itself\n")
 
-	blobs, _, err := pack.List(repo.Key(), backend.ReaderAt(ctx, repo.Backend(), h), fi.Size)
+	blobs, _, err := repo.ListPack(ctx, id, fi.Size)
 	if err != nil {
 		return fmt.Errorf("pack %v: %v", id.Str(), err)
 	}
@@ -558,7 +556,7 @@ func checkPackSize(blobs []restic.Blob, fileSize int64) {
 	size += uint64(pack.CalculateHeaderSize(blobs))
 
 	if uint64(fileSize) != size {
-		Printf("      file sizes do not match: computed %v from index, file size is %v\n", size, fileSize)
+		Printf("      file sizes do not match: computed %v, file size is %v\n", size, fileSize)
 	} else {
 		Printf("      file sizes match\n")
 	}
