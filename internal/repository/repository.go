@@ -575,7 +575,7 @@ func (r *Repository) Index() restic.MasterIndex {
 // SetIndex instructs the repository to use the given index.
 func (r *Repository) SetIndex(i restic.MasterIndex) error {
 	r.idx = i.(*MasterIndex)
-	return r.PrepareCache()
+	return r.prepareCache()
 }
 
 // LoadIndex loads all index files from the backend in parallel and stores them
@@ -617,7 +617,7 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 	}
 
 	// remove index files from the cache which have been removed in the repo
-	return r.PrepareCache()
+	return r.prepareCache()
 }
 
 // CreateIndexFromPacks creates a new index by reading all given pack files (with sizes).
@@ -683,9 +683,9 @@ func (r *Repository) CreateIndexFromPacks(ctx context.Context, packsize map[rest
 	return invalid, nil
 }
 
-// PrepareCache initializes the local cache. indexIDs is the list of IDs of
+// prepareCache initializes the local cache. indexIDs is the list of IDs of
 // index files still present in the repo.
-func (r *Repository) PrepareCache() error {
+func (r *Repository) prepareCache() error {
 	if r.Cache == nil {
 		return nil
 	}
