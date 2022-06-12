@@ -834,41 +834,6 @@ func (r *Repository) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte
 	return newID, known, size, err
 }
 
-// LoadTree loads a tree from the repository.
-func (r *Repository) LoadTree(ctx context.Context, id restic.ID) (*restic.Tree, error) {
-	debug.Log("load tree %v", id)
-
-	buf, err := r.LoadBlob(ctx, restic.TreeBlob, id, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	t := &restic.Tree{}
-	err = json.Unmarshal(buf, t)
-	if err != nil {
-		return nil, err
-	}
-
-	return t, nil
-}
-
-// SaveTree stores a tree into the repository and returns the ID. The ID is
-// checked against the index. The tree is only stored when the index does not
-// contain the ID.
-func (r *Repository) SaveTree(ctx context.Context, t *restic.Tree) (restic.ID, error) {
-	buf, err := json.Marshal(t)
-	if err != nil {
-		return restic.ID{}, errors.Wrap(err, "MarshalJSON")
-	}
-
-	// append a newline so that the data is always consistent (json.Encoder
-	// adds a newline after each object)
-	buf = append(buf, '\n')
-
-	id, _, _, err := r.SaveBlob(ctx, restic.TreeBlob, buf, restic.ID{}, false)
-	return id, err
-}
-
 type BackendLoadFn func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error
 
 // StreamPack loads the listed blobs from the specified pack file. The plaintext blob is passed to

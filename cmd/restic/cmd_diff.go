@@ -160,7 +160,7 @@ func updateBlobs(repo restic.Repository, blobs restic.BlobSet, stats *DiffStat) 
 
 func (c *Comparer) printDir(ctx context.Context, mode string, stats *DiffStat, blobs restic.BlobSet, prefix string, id restic.ID) error {
 	debug.Log("print %v tree %v", mode, id)
-	tree, err := c.repo.LoadTree(ctx, id)
+	tree, err := restic.LoadTree(ctx, c.repo, id)
 	if err != nil {
 		return err
 	}
@@ -187,7 +187,7 @@ func (c *Comparer) printDir(ctx context.Context, mode string, stats *DiffStat, b
 
 func (c *Comparer) collectDir(ctx context.Context, blobs restic.BlobSet, id restic.ID) error {
 	debug.Log("print tree %v", id)
-	tree, err := c.repo.LoadTree(ctx, id)
+	tree, err := restic.LoadTree(ctx, c.repo, id)
 	if err != nil {
 		return err
 	}
@@ -231,12 +231,12 @@ func uniqueNodeNames(tree1, tree2 *restic.Tree) (tree1Nodes, tree2Nodes map[stri
 
 func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, prefix string, id1, id2 restic.ID) error {
 	debug.Log("diffing %v to %v", id1, id2)
-	tree1, err := c.repo.LoadTree(ctx, id1)
+	tree1, err := restic.LoadTree(ctx, c.repo, id1)
 	if err != nil {
 		return err
 	}
 
-	tree2, err := c.repo.LoadTree(ctx, id2)
+	tree2, err := restic.LoadTree(ctx, c.repo, id2)
 	if err != nil {
 		return err
 	}

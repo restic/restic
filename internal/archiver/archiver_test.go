@@ -431,7 +431,7 @@ func (repo *blobCountingRepo) SaveBlob(ctx context.Context, t restic.BlobType, b
 }
 
 func (repo *blobCountingRepo) SaveTree(ctx context.Context, t *restic.Tree) (restic.ID, error) {
-	id, err := repo.Repository.SaveTree(ctx, t)
+	id, err := restic.SaveTree(ctx, repo.Repository, t)
 	h := restic.BlobHandle{ID: id, Type: restic.TreeBlob}
 	repo.m.Lock()
 	repo.saved[h]++
@@ -875,7 +875,7 @@ func TestArchiverSaveDir(t *testing.T) {
 
 			node.Name = targetNodeName
 			tree := &restic.Tree{Nodes: []*restic.Node{node}}
-			treeID, err := repo.SaveTree(ctx, tree)
+			treeID, err := restic.SaveTree(ctx, repo, tree)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1123,7 +1123,7 @@ func TestArchiverSaveTree(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			treeID, err := repo.SaveTree(ctx, tree)
+			treeID, err := restic.SaveTree(ctx, repo, tree)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -2076,7 +2076,7 @@ func snapshot(t testing.TB, repo restic.Repository, fs fs.FS, parent restic.ID, 
 		t.Fatal(err)
 	}
 
-	tree, err := repo.LoadTree(ctx, *snapshot.Tree)
+	tree, err := restic.LoadTree(ctx, repo, *snapshot.Tree)
 	if err != nil {
 		t.Fatal(err)
 	}

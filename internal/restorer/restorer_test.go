@@ -111,7 +111,7 @@ func saveDir(t testing.TB, repo restic.Repository, nodes map[string]Node, inode 
 		}
 	}
 
-	id, err := repo.SaveTree(ctx, tree)
+	id, err := restic.SaveTree(ctx, repo, tree)
 	if err != nil {
 		t.Fatal(err)
 	}

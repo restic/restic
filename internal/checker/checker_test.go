@@ -403,7 +403,7 @@ func (r *loadTreesOnceRepository) LoadTree(ctx context.Context, id restic.ID) (*
 		return nil, errors.Errorf("trying to load tree with id %v twice", id)
 	}
 	r.loadedTrees.Insert(id)
-	return r.Repository.LoadTree(ctx, id)
+	return restic.LoadTree(ctx, r.Repository, id)
 }
 
 func TestCheckerNoDuplicateTreeDecodes(t *testing.T) {
@@ -443,7 +443,7 @@ func (r *delayRepository) LoadTree(ctx context.Context, id restic.ID) (*restic.T
 	if id == r.DelayTree {
 		<-r.UnblockChannel
 	}
-	return r.Repository.LoadTree(ctx, id)
+	return restic.LoadTree(ctx, r.Repository, id)
 }
 
 func (r *delayRepository) LookupBlobSize(id restic.ID, t restic.BlobType) (uint, bool) {
@@ -479,7 +479,7 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 
 	wg, wgCtx := errgroup.WithContext(ctx)
 	repo.StartPackUploader(wgCtx, wg)
-	id, err := repo.SaveTree(ctx, damagedTree)
+	id, err := restic.SaveTree(ctx, repo, damagedTree)
 	test.OK(t, repo.Flush(ctx))
 	test.OK(t, err)
 
@@ -509,7 +509,7 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 		Nodes: []*restic.Node{malNode, dirNode},
 	}
 
-	rootID, err := repo.SaveTree(ctx, rootTree)
+	rootID, err := restic.SaveTree(ctx, repo, rootTree)
 	test.OK(t, err)
 
 	test.OK(t, repo.Flush(ctx))

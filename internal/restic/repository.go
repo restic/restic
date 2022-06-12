@@ -43,20 +43,18 @@ type Repository interface {
 	StartPackUploader(ctx context.Context, wg *errgroup.Group)
 	Flush(context.Context) error
 
-	SaveUnpacked(context.Context, FileType, []byte) (ID, error)
 	SaveJSONUnpacked(context.Context, FileType, interface{}) (ID, error)
 
 	LoadJSONUnpacked(ctx context.Context, t FileType, id ID, dest interface{}) error
+
 	// LoadUnpacked loads and decrypts the file with the given type and ID,
 	// using the supplied buffer (which must be empty). If the buffer is nil, a
 	// new buffer will be allocated and returned.
 	LoadUnpacked(ctx context.Context, buf []byte, t FileType, id ID) (data []byte, err error)
+	SaveUnpacked(context.Context, FileType, []byte) (ID, error)
 
 	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
 	SaveBlob(context.Context, BlobType, []byte, ID, bool) (ID, bool, int, error)
-
-	LoadTree(context.Context, ID) (*Tree, error)
-	SaveTree(context.Context, *Tree) (ID, error)
 }
 
 // Lister allows listing files in a backend.
@@ -69,6 +67,11 @@ type LoadJSONUnpackeder interface {
 	// Connections returns the maximum number of concurrent backend operations
 	Connections() uint
 	LoadJSONUnpacked(ctx context.Context, t FileType, id ID, dest interface{}) error
+}
+
+// LoaderUnpacked allows loading a blob not stored in a pack file
+type LoaderUnpacked interface {
+	LoadUnpacked(ctx context.Context, buf []byte, t FileType, id ID) (data []byte, err error)
 }
 
 // SaverUnpacked allows saving a blob not stored in a pack file

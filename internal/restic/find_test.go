@@ -162,7 +162,7 @@ func TestMultiFindUsedBlobs(t *testing.T) {
 
 type ForbiddenRepo struct{}
 
-func (r ForbiddenRepo) LoadTree(ctx context.Context, id restic.ID) (*restic.Tree, error) {
+func (r ForbiddenRepo) LoadBlob(context.Context, restic.BlobType, restic.ID, []byte) ([]byte, error) {
 	return nil, errors.New("should not be called")
 }
 

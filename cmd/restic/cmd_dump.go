@@ -87,7 +87,7 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repositor
 			case l == 1 && dump.IsFile(node):
 				return d.WriteNode(ctx, node)
 			case l > 1 && dump.IsDir(node):
-				subtree, err := repo.LoadTree(ctx, *node.Subtree)
+				subtree, err := restic.LoadTree(ctx, repo, *node.Subtree)
 				if err != nil {
 					return errors.Wrapf(err, "cannot load subtree for %q", item)
 				}
@@ -96,7 +96,7 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repositor
 				if err := checkStdoutArchive(); err != nil {
 					return err
 				}
-				subtree, err := repo.LoadTree(ctx, *node.Subtree)
+				subtree, err := restic.LoadTree(ctx, repo, *node.Subtree)
 				if err != nil {
 					return err
 				}
@@ -168,7 +168,7 @@ func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	tree, err := repo.LoadTree(ctx, *sn.Tree)
+	tree, err := restic.LoadTree(ctx, repo, *sn.Tree)
 	if err != nil {
 		Exitf(2, "loading tree for snapshot %q failed: %v", snapshotIDString, err)
 	}

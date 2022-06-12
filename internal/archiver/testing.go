@@ -250,7 +250,7 @@ func TestEnsureFileContent(ctx context.Context, t testing.TB, repo restic.Reposi
 func TestEnsureTree(ctx context.Context, t testing.TB, prefix string, repo restic.Repository, treeID restic.ID, dir TestDir) {
 	t.Helper()
 
-	tree, err := repo.LoadTree(ctx, treeID)
+	tree, err := restic.LoadTree(ctx, repo, treeID)
 	if err != nil {
 		t.Fatal(err)
 		return

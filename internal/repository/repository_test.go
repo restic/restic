@@ -16,7 +16,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/klauspost/compress/zstd"
-	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -133,50 +132,6 @@ func benchmarkSaveAndEncrypt(t *testing.B, version uint) {
 
 	for i := 0; i < t.N; i++ {
 		_, _, _, err = repo.SaveBlob(context.TODO(), restic.DataBlob, data, id, true)
-		rtest.OK(t, err)
-	}
-}
-
-func TestLoadTree(t *testing.T) {
-	repository.TestAllVersions(t, testLoadTree)
-}
-
-func testLoadTree(t *testing.T, version uint) {
-	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
-	defer cleanup()
-
-	if rtest.BenchArchiveDirectory == "" {
-		t.Skip("benchdir not set, skipping")
-	}
-
-	// archive a few files
-	sn := archiver.TestSnapshot(t, repo, rtest.BenchArchiveDirectory, nil)
-	rtest.OK(t, repo.Flush(context.Background()))
-
-	_, err := repo.LoadTree(context.TODO(), *sn.Tree)
-	rtest.OK(t, err)
-}
-
-func BenchmarkLoadTree(t *testing.B) {
-	repository.BenchmarkAllVersions(t, benchmarkLoadTree)
-}
-
-func benchmarkLoadTree(t *testing.B, version uint) {
-	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
-	defer cleanup()
-
-	if rtest.BenchArchiveDirectory == "" {
-		t.Skip("benchdir not set, skipping")
-	}
-
-	// archive a few files
-	sn := archiver.TestSnapshot(t, repo, rtest.BenchArchiveDirectory, nil)
-	rtest.OK(t, repo.Flush(context.Background()))
-
-	t.ResetTimer()
-
-	for i := 0; i < t.N; i++ {
-		_, err := repo.LoadTree(context.TODO(), *sn.Tree)
 		rtest.OK(t, err)
 	}
 }
