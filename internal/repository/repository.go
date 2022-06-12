@@ -398,7 +398,7 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 
 	nonce := crypto.NewRandomNonce()
 
-	ciphertext := make([]byte, 0, restic.CiphertextLength(len(data)))
+	ciphertext := make([]byte, 0, crypto.CiphertextLength(len(data)))
 	ciphertext = append(ciphertext, nonce...)
 
 	// encrypt blob
@@ -475,7 +475,7 @@ func (r *Repository) SaveUnpacked(ctx context.Context, t restic.FileType, p []by
 		}
 	}
 
-	ciphertext := restic.NewBlobBuffer(len(p))
+	ciphertext := crypto.NewBlobBuffer(len(p))
 	ciphertext = ciphertext[:0]
 	nonce := crypto.NewRandomNonce()
 	ciphertext = append(ciphertext, nonce...)

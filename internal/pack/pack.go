@@ -79,7 +79,7 @@ func (p *Packer) Finalize() error {
 		return err
 	}
 
-	encryptedHeader := make([]byte, 0, restic.CiphertextLength(len(header)))
+	encryptedHeader := make([]byte, 0, crypto.CiphertextLength(len(header)))
 	nonce := crypto.NewRandomNonce()
 	encryptedHeader = append(encryptedHeader, nonce...)
 	encryptedHeader = p.k.Seal(encryptedHeader, nonce, header, nil)
@@ -107,7 +107,7 @@ func (p *Packer) Finalize() error {
 
 // HeaderOverhead returns an estimate of the number of bytes written by a call to Finalize.
 func (p *Packer) HeaderOverhead() int {
-	return restic.CiphertextLength(0) + binary.Size(uint32(0))
+	return crypto.CiphertextLength(0) + binary.Size(uint32(0))
 }
 
 // makeHeader constructs the header for p.
@@ -275,7 +275,7 @@ func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []restic.Blob, hdr
 		return nil, 0, err
 	}
 
-	if len(buf) < restic.CiphertextLength(0) {
+	if len(buf) < crypto.CiphertextLength(0) {
 		return nil, 0, errors.New("invalid header, too small")
 	}
 

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/checker"
+	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -22,7 +23,7 @@ func TestMasterIndex(t *testing.T) {
 		PackID: restic.NewRandomID(),
 		Blob: restic.Blob{
 			BlobHandle: bhInIdx1,
-			Length:     uint(restic.CiphertextLength(10)),
+			Length:     uint(crypto.CiphertextLength(10)),
 			Offset:     0,
 		},
 	}
@@ -31,7 +32,7 @@ func TestMasterIndex(t *testing.T) {
 		PackID: restic.NewRandomID(),
 		Blob: restic.Blob{
 			BlobHandle:         bhInIdx2,
-			Length:             uint(restic.CiphertextLength(100)),
+			Length:             uint(crypto.CiphertextLength(100)),
 			Offset:             10,
 			UncompressedLength: 200,
 		},
@@ -41,7 +42,7 @@ func TestMasterIndex(t *testing.T) {
 		PackID: restic.NewRandomID(),
 		Blob: restic.Blob{
 			BlobHandle: bhInIdx12,
-			Length:     uint(restic.CiphertextLength(123)),
+			Length:     uint(crypto.CiphertextLength(123)),
 			Offset:     110,
 		},
 	}
@@ -50,7 +51,7 @@ func TestMasterIndex(t *testing.T) {
 		PackID: restic.NewRandomID(),
 		Blob: restic.Blob{
 			BlobHandle:         bhInIdx12,
-			Length:             uint(restic.CiphertextLength(123)),
+			Length:             uint(crypto.CiphertextLength(123)),
 			Offset:             50,
 			UncompressedLength: 80,
 		},

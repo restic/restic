@@ -263,7 +263,7 @@ func AddKey(ctx context.Context, s *Repository, password, username, hostname str
 	}
 
 	nonce := crypto.NewRandomNonce()
-	ciphertext := make([]byte, 0, restic.CiphertextLength(len(buf)))
+	ciphertext := make([]byte, 0, crypto.CiphertextLength(len(buf)))
 	ciphertext = append(ciphertext, nonce...)
 	ciphertext = newkey.user.Seal(ciphertext, nonce, buf, nil)
 	newkey.Data = ciphertext

@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
@@ -225,7 +226,7 @@ func TestEnsureFileContent(ctx context.Context, t testing.TB, repo restic.Reposi
 		return
 	}
 
-	content := make([]byte, restic.CiphertextLength(len(file.Content)))
+	content := make([]byte, crypto.CiphertextLength(len(file.Content)))
 	pos := 0
 	for _, id := range node.Content {
 		part, err := repo.LoadBlob(ctx, restic.DataBlob, id, content[pos:])

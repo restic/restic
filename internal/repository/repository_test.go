@@ -190,7 +190,7 @@ func testLoadBlob(t *testing.T, version uint) {
 	defer cleanup()
 
 	length := 1000000
-	buf := restic.NewBlobBuffer(length)
+	buf := crypto.NewBlobBuffer(length)
 	_, err := io.ReadFull(rnd, buf)
 	rtest.OK(t, err)
 
@@ -201,7 +201,7 @@ func testLoadBlob(t *testing.T, version uint) {
 	rtest.OK(t, err)
 	rtest.OK(t, repo.Flush(context.Background()))
 
-	base := restic.CiphertextLength(length)
+	base := crypto.CiphertextLength(length)
 	for _, testlength := range []int{0, base - 20, base - 1, base, base + 7, base + 15, base + 1000} {
 		buf = make([]byte, 0, testlength)
 		buf, err := repo.LoadBlob(context.TODO(), restic.DataBlob, id, buf)
@@ -226,7 +226,7 @@ func benchmarkLoadBlob(b *testing.B, version uint) {
 	defer cleanup()
 
 	length := 1000000
-	buf := restic.NewBlobBuffer(length)
+	buf := crypto.NewBlobBuffer(length)
 	_, err := io.ReadFull(rnd, buf)
 	rtest.OK(b, err)
 
@@ -269,7 +269,7 @@ func benchmarkLoadUnpacked(b *testing.B, version uint) {
 	defer cleanup()
 
 	length := 1000000
-	buf := restic.NewBlobBuffer(length)
+	buf := crypto.NewBlobBuffer(length)
 	_, err := io.ReadFull(rnd, buf)
 	rtest.OK(b, err)
 
