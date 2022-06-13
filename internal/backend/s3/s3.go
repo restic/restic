@@ -137,7 +137,7 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backe
 	}
 	found, err := be.client.BucketExists(ctx, cfg.Bucket)
 
-	if err != nil && be.IsAccessDenied(err) {
+	if err != nil && isAccessDenied(err) {
 		err = nil
 		found = true
 	}
@@ -158,29 +158,23 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backe
 	return be, nil
 }
 
-// IsAccessDenied returns true if the error is caused by Access Denied.
-func (be *Backend) IsAccessDenied(err error) bool {
-	debug.Log("IsAccessDenied(%T, %#v)", err, err)
+// isAccessDenied returns true if the error is caused by Access Denied.
+func isAccessDenied(err error) bool {
+	debug.Log("isAccessDenied(%T, %#v)", err, err)
 
-	if e, ok := errors.Cause(err).(minio.ErrorResponse); ok && e.Code == "AccessDenied" {
-		return true
-	}
-
-	return false
+	var e minio.ErrorResponse
+	return errors.As(err, &e) && e.Code == "Access Denied"
 }
 
 // IsNotExist returns true if the error is caused by a not existing file.
 func (be *Backend) IsNotExist(err error) bool {
 	debug.Log("IsNotExist(%T, %#v)", err, err)
-	if os.IsNotExist(errors.Cause(err)) {
+	if errors.Is(err, os.ErrNotExist) {
 		return true
 	}
 
-	if e, ok := errors.Cause(err).(minio.ErrorResponse); ok && e.Code == "NoSuchKey" {
-		return true
-	}
-
-	return false
+	var e minio.ErrorResponse
+	return errors.As(err, &e) && e.Code == "NoSuchKey"
 }
 
 // Join combines path components with slashes.

@@ -9,8 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/restic/restic/internal/errors"
-
 	"github.com/restic/chunker"
 )
 
@@ -44,7 +42,7 @@ func (fs *fakeFileSystem) saveFile(ctx context.Context, rd io.Reader) (blobs IDs
 	blobs = IDs{}
 	for {
 		chunk, err := fs.chunker.Next(fs.buf)
-		if errors.Cause(err) == io.EOF {
+		if err == io.EOF {
 			break
 		}
 

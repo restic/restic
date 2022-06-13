@@ -152,7 +152,7 @@ func ParseLayout(ctx context.Context, repo Filesystem, layout, defaultLayout, pa
 		l, err = DetectLayout(ctx, repo, path)
 
 		// use the default layout if auto detection failed
-		if errors.Cause(err) == ErrLayoutDetectionFailed && defaultLayout != "" {
+		if errors.Is(err, ErrLayoutDetectionFailed) && defaultLayout != "" {
 			debug.Log("error: %v, use default layout %v", err, defaultLayout)
 			return ParseLayout(ctx, repo, defaultLayout, "", path)
 		}

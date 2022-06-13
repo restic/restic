@@ -20,7 +20,7 @@ func findSFTPServerBinary() string {
 	for _, dir := range strings.Split(rtest.TestSFTPPath, ":") {
 		testpath := filepath.Join(dir, "sftp-server")
 		_, err := os.Stat(testpath)
-		if !os.IsNotExist(errors.Cause(err)) {
+		if !errors.Is(err, os.ErrNotExist) {
 			return testpath
 		}
 	}
