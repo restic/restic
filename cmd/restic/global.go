@@ -297,7 +297,7 @@ func resolvePassword(opts GlobalOptions, envStr string) (string, error) {
 	}
 	if opts.PasswordFile != "" {
 		s, err := textfile.Read(opts.PasswordFile)
-		if os.IsNotExist(errors.Cause(err)) {
+		if errors.Is(err, os.ErrNotExist) {
 			return "", errors.Fatalf("%s does not exist", opts.PasswordFile)
 		}
 		return strings.TrimSpace(string(s)), errors.Wrap(err, "Readfile")
@@ -398,7 +398,7 @@ func ReadRepo(opts GlobalOptions) (string, error) {
 		}
 
 		s, err := textfile.Read(opts.RepositoryFile)
-		if os.IsNotExist(errors.Cause(err)) {
+		if errors.Is(err, os.ErrNotExist) {
 			return "", errors.Fatalf("%s does not exist", opts.RepositoryFile)
 		}
 		if err != nil {

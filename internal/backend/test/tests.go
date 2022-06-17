@@ -361,8 +361,8 @@ func (s *Suite) TestListCancel(t *testing.T) {
 			return nil
 		})
 
-		if errors.Cause(err) != context.Canceled {
-			t.Fatalf("expected error not found, want %v, got %v", context.Canceled, errors.Cause(err))
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("expected error not found, want %v, got %v", context.Canceled, err)
 		}
 	})
 
@@ -380,7 +380,7 @@ func (s *Suite) TestListCancel(t *testing.T) {
 			return nil
 		})
 
-		if errors.Cause(err) != context.Canceled {
+		if !errors.Is(err, context.Canceled) {
 			t.Fatalf("expected error not found, want %v, got %v", context.Canceled, err)
 		}
 
@@ -403,7 +403,7 @@ func (s *Suite) TestListCancel(t *testing.T) {
 			return nil
 		})
 
-		if errors.Cause(err) != context.Canceled {
+		if !errors.Is(err, context.Canceled) {
 			t.Fatalf("expected error not found, want %v, got %v", context.Canceled, err)
 		}
 
@@ -429,7 +429,7 @@ func (s *Suite) TestListCancel(t *testing.T) {
 			return nil
 		})
 
-		if errors.Cause(err) != context.DeadlineExceeded {
+		if !errors.Is(err, context.DeadlineExceeded) {
 			t.Fatalf("expected error not found, want %#v, got %#v", context.DeadlineExceeded, err)
 		}
 

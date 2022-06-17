@@ -311,11 +311,8 @@ func (be *beSwift) removeKeys(ctx context.Context, t restic.FileType) error {
 
 // IsNotExist returns true if the error is caused by a not existing file.
 func (be *beSwift) IsNotExist(err error) bool {
-	if e, ok := errors.Cause(err).(*swift.Error); ok {
-		return e.StatusCode == http.StatusNotFound
-	}
-
-	return false
+	var e *swift.Error
+	return errors.As(err, &e) && e.StatusCode == http.StatusNotFound
 }
 
 // Delete removes all restic objects in the container.

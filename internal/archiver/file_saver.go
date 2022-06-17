@@ -165,7 +165,7 @@ func (s *FileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 	for {
 		buf := s.saveFilePool.Get()
 		chunk, err := chnker.Next(buf.Data)
-		if errors.Cause(err) == io.EOF {
+		if err == io.EOF {
 			buf.Release()
 			break
 		}

@@ -183,7 +183,6 @@ func (r *SFTP) ReadDir(ctx context.Context, dir string) ([]os.FileInfo, error) {
 
 // IsNotExist returns true if the error is caused by a not existing file.
 func (r *SFTP) IsNotExist(err error) bool {
-	err = errors.Cause(err)
 	return errors.Is(err, os.ErrNotExist)
 }
 
@@ -496,7 +495,7 @@ func (r *SFTP) Test(ctx context.Context, h restic.Handle) (bool, error) {
 	defer r.sem.ReleaseToken()
 
 	_, err := r.c.Lstat(r.Filename(h))
-	if os.IsNotExist(errors.Cause(err)) {
+	if errors.Is(err, os.ErrNotExist) {
 		return false, nil
 	}
 

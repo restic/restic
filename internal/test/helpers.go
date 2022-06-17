@@ -175,7 +175,7 @@ func ResetReadOnly(t testing.TB, dir string) {
 
 		return nil
 	})
-	if os.IsNotExist(errors.Cause(err)) {
+	if errors.Is(err, os.ErrNotExist) {
 		err = nil
 	}
 	OK(t, err)
@@ -186,7 +186,7 @@ func ResetReadOnly(t testing.TB, dir string) {
 func RemoveAll(t testing.TB, path string) {
 	ResetReadOnly(t, path)
 	err := os.RemoveAll(path)
-	if os.IsNotExist(errors.Cause(err)) {
+	if errors.Is(err, os.ErrNotExist) {
 		err = nil
 	}
 	OK(t, err)

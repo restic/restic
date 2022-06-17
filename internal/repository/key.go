@@ -154,7 +154,7 @@ func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int,
 			debug.Log("key %v returned error %v", fi.Name, err)
 
 			// ErrUnauthenticated means the password is wrong, try the next key
-			if errors.Cause(err) == crypto.ErrUnauthenticated {
+			if errors.Is(err, crypto.ErrUnauthenticated) {
 				return nil
 			}
 

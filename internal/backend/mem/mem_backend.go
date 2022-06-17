@@ -71,7 +71,7 @@ func (be *MemoryBackend) Test(ctx context.Context, h restic.Handle) (bool, error
 
 // IsNotExist returns true if the file does not exist.
 func (be *MemoryBackend) IsNotExist(err error) bool {
-	return errors.Cause(err) == errNotFound
+	return errors.Is(err, errNotFound)
 }
 
 // Save adds new Data to the backend.

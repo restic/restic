@@ -160,18 +160,15 @@ type PackError struct {
 	Err      error
 }
 
-func (e PackError) Error() string {
+func (e *PackError) Error() string {
 	return "pack " + e.ID.Str() + ": " + e.Err.Error()
 }
 
 // IsOrphanedPack returns true if the error describes a pack which is not
 // contained in any index.
 func IsOrphanedPack(err error) bool {
-	if e, ok := errors.Cause(err).(PackError); ok && e.Orphaned {
-		return true
-	}
-
-	return false
+	var e *PackError
+	return errors.As(err, &e) && e.Orphaned
 }
 
 // Packs checks that all packs referenced in the index are still available and
@@ -204,7 +201,7 @@ func (c *Checker) Packs(ctx context.Context, errChan chan<- error) {
 			select {
 			case <-ctx.Done():
 				return
-			case errChan <- PackError{ID: id, Err: errors.New("does not exist")}:
+			case errChan <- &PackError{ID: id, Err: errors.New("does not exist")}:
 			}
 			continue
 		}
@@ -214,7 +211,7 @@ func (c *Checker) Packs(ctx context.Context, errChan chan<- error) {
 			select {
 			case <-ctx.Done():
 				return
-			case errChan <- PackError{ID: id, Err: errors.Errorf("unexpected file size: got %d, expected %d", reposize, size)}:
+			case errChan <- &PackError{ID: id, Err: errors.Errorf("unexpected file size: got %d, expected %d", reposize, size)}:
 			}
 		}
 	}
@@ -224,7 +221,7 @@ func (c *Checker) Packs(ctx context.Context, errChan chan<- error) {
 		select {
 		case <-ctx.Done():
 			return
-		case errChan <- PackError{ID: orphanID, Orphaned: true, Err: errors.New("not referenced in any index")}:
+		case errChan <- &PackError{ID: orphanID, Orphaned: true, Err: errors.New("not referenced in any index")}:
 		}
 	}
 }

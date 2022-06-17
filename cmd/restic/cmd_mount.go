@@ -116,7 +116,7 @@ func runMount(opts MountOptions, gopts GlobalOptions, args []string) error {
 
 	mountpoint := args[0]
 
-	if _, err := resticfs.Stat(mountpoint); os.IsNotExist(errors.Cause(err)) {
+	if _, err := resticfs.Stat(mountpoint); errors.Is(err, os.ErrNotExist) {
 		Verbosef("Mountpoint %s doesn't exist\n", mountpoint)
 		return err
 	}

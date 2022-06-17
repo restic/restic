@@ -2040,8 +2040,8 @@ func TestArchiverAbortEarlyOnError(t *testing.T) {
 			})
 
 			_, _, err := arch.Snapshot(ctx, []string{"."}, SnapshotOptions{Time: time.Now()})
-			if errors.Cause(err) != test.err {
-				t.Errorf("expected error (%v) not found, got %v", test.err, errors.Cause(err))
+			if !errors.Is(err, test.err) {
+				t.Errorf("expected error (%v) not found, got %v", test.err, err)
 			}
 
 			t.Logf("Snapshot return error: %v", err)

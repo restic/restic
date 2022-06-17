@@ -169,21 +169,20 @@ func (b *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRea
 	return errors.Wrap(cerr, "Close")
 }
 
-// ErrIsNotExist is returned whenever the requested file does not exist on the
+// notExistError is returned whenever the requested file does not exist on the
 // server.
-type ErrIsNotExist struct {
+type notExistError struct {
 	restic.Handle
 }
 
-func (e ErrIsNotExist) Error() string {
+func (e *notExistError) Error() string {
 	return fmt.Sprintf("%v does not exist", e.Handle)
 }
 
 // IsNotExist returns true if the error was caused by a non-existing file.
 func (b *Backend) IsNotExist(err error) bool {
-	err = errors.Cause(err)
-	_, ok := err.(ErrIsNotExist)
-	return ok
+	var e *notExistError
+	return errors.As(err, &e)
 }
 
 // Load runs fn with a reader that yields the contents of the file at h at the
@@ -296,7 +295,7 @@ func (b *Backend) openReader(ctx context.Context, h restic.Handle, length int, o
 
 	if resp.StatusCode == http.StatusNotFound {
 		_ = resp.Body.Close()
-		return nil, ErrIsNotExist{h}
+		return nil, &notExistError{h}
 	}
 
 	if resp.StatusCode != 200 && resp.StatusCode != 206 {
@@ -341,7 +340,7 @@ func (b *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, e
 
 	if resp.StatusCode == http.StatusNotFound {
 		_ = resp.Body.Close()
-		return restic.FileInfo{}, ErrIsNotExist{h}
+		return restic.FileInfo{}, &notExistError{h}
 	}
 
 	if resp.StatusCode != 200 {
@@ -392,7 +391,7 @@ func (b *Backend) Remove(ctx context.Context, h restic.Handle) error {
 
 	if resp.StatusCode == http.StatusNotFound {
 		_ = resp.Body.Close()
-		return ErrIsNotExist{h}
+		return &notExistError{h}
 	}
 
 	if resp.StatusCode != 200 {

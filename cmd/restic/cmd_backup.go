@@ -144,7 +144,7 @@ func init() {
 func filterExisting(items []string) (result []string, err error) {
 	for _, item := range items {
 		_, err := fs.Lstat(item)
-		if err != nil && os.IsNotExist(errors.Cause(err)) {
+		if errors.Is(err, os.ErrNotExist) {
 			Warnf("%v does not exist, skipping\n", item)
 			continue
 		}
