@@ -2,6 +2,8 @@ package restic_test
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -10,6 +12,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/test"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -332,5 +335,40 @@ func TestFixTime(t *testing.T) {
 				t.Fatalf("wrong result for %v, want:\n  %v\ngot:\n  %v", test.src, test.want, res)
 			}
 		})
+	}
+}
+
+func TestSymlinkSerialization(t *testing.T) {
+	for _, link := range []string{
+		"válîd \t Üñi¢òde \n śẗŕinǵ",
+		string([]byte{0, 1, 2, 0xfa, 0xfb, 0xfc}),
+	} {
+		n := restic.Node{
+			LinkTarget: link,
+		}
+		ser, err := json.Marshal(n)
+		test.OK(t, err)
+		var n2 restic.Node
+		err = json.Unmarshal(ser, &n2)
+		test.OK(t, err)
+		fmt.Println(string(ser))
+
+		test.Equals(t, n.LinkTarget, n2.LinkTarget)
+	}
+}
+
+func TestSymlinkSerializationFormat(t *testing.T) {
+	for _, d := range []struct {
+		ser        string
+		linkTarget string
+	}{
+		{`{"linktarget":"test"}`, "test"},
+		{`{"linktarget":"\u0000\u0001\u0002\ufffd\ufffd\ufffd","linktarget_raw":"AAEC+vv8"}`, string([]byte{0, 1, 2, 0xfa, 0xfb, 0xfc})},
+	} {
+		var n2 restic.Node
+		err := json.Unmarshal([]byte(d.ser), &n2)
+		test.OK(t, err)
+		test.Equals(t, d.linkTarget, n2.LinkTarget)
+		test.Assert(t, n2.LinkTargetRaw == nil, "quoted link target is just a helper field and must be unset after decoding")
 	}
 }
