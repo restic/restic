@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -25,7 +26,7 @@ type Backend struct {
 	accountName  string
 	container    *storage.Container
 	connections  uint
-	sem          *backend.Semaphore
+	sem          sema.Semaphore
 	prefix       string
 	listMaxItems int
 	backend.Layout
@@ -48,7 +49,7 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 
 	service := client.GetBlobService()
 
-	sem, err := backend.NewSemaphore(cfg.Connections)
+	sem, err := sema.New(cfg.Connections)
 	if err != nil {
 		return nil, err
 	}

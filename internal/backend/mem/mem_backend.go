@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -32,12 +33,12 @@ const connectionCount = 2
 type MemoryBackend struct {
 	data memMap
 	m    sync.Mutex
-	sem  *backend.Semaphore
+	sem  sema.Semaphore
 }
 
 // New returns a new backend that saves all data in a map in memory.
 func New() *MemoryBackend {
-	sem, err := backend.NewSemaphore(connectionCount)
+	sem, err := sema.New(connectionCount)
 	if err != nil {
 		panic(err)
 	}

@@ -17,6 +17,7 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -31,7 +32,7 @@ var _ restic.Backend = &Backend{}
 type Backend struct {
 	url         *url.URL
 	connections uint
-	sem         *backend.Semaphore
+	sem         sema.Semaphore
 	client      *http.Client
 	backend.Layout
 }
@@ -46,7 +47,7 @@ const (
 func Open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	client := &http.Client{Transport: rt}
 
-	sem, err := backend.NewSemaphore(cfg.Connections)
+	sem, err := sema.New(cfg.Connections)
 	if err != nil {
 		return nil, err
 	}

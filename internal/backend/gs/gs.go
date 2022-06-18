@@ -14,6 +14,7 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/pkg/errors"
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
 
@@ -35,7 +36,7 @@ type Backend struct {
 	gcsClient    *storage.Client
 	projectID    string
 	connections  uint
-	sem          *backend.Semaphore
+	sem          sema.Semaphore
 	bucketName   string
 	bucket       *storage.BucketHandle
 	prefix       string
@@ -97,7 +98,7 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 		return nil, errors.Wrap(err, "getStorageClient")
 	}
 
-	sem, err := backend.NewSemaphore(cfg.Connections)
+	sem, err := sema.New(cfg.Connections)
 	if err != nil {
 		return nil, err
 	}

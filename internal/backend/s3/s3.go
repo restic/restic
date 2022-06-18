@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -25,7 +26,7 @@ import (
 // Backend stores data on an S3 endpoint.
 type Backend struct {
 	client *minio.Client
-	sem    *backend.Semaphore
+	sem    sema.Semaphore
 	cfg    Config
 	backend.Layout
 }
@@ -101,7 +102,7 @@ func open(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, erro
 		return nil, errors.Wrap(err, "minio.New")
 	}
 
-	sem, err := backend.NewSemaphore(cfg.Connections)
+	sem, err := sema.New(cfg.Connections)
 	if err != nil {
 		return nil, err
 	}
