@@ -98,7 +98,7 @@ func rebuildIndex(opts RebuildIndexOptions, gopts GlobalOptions, repo *repositor
 		if err != nil {
 			return err
 		}
-		packSizeFromIndex = pack.Size(ctx, repo.Index(), false)
+		packSizeFromIndex = pack.Size(ctx, repo.Index())
 	}
 
 	Verbosef("getting pack files to read...\n")

@@ -242,11 +242,26 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 
 	Verbosef("searching used packs...\n")
 
+	indexPack := make(map[restic.ID]packInfo)
 	keepBlobs := restic.NewBlobSet()
-	duplicateBlobs := restic.NewBlobSet()
 
-	// iterate over all blobs in index to find out which blobs are duplicates
+	// iterate over all blobs in index to generate packInfo and find duplicates
 	for blob := range repo.Index().Each(ctx) {
+		ip, seen := indexPack[blob.PackID]
+
+		if seen {
+			// mark mixed packs with "Invalid blob type"
+			if ip.tpe != blob.Type {
+				ip.tpe = restic.InvalidBlob
+			}
+		} else {
+			ip = packInfo{
+				tpe:      blob.Type,
+				usedSize: pack.HeaderSize,
+			}
+		}
+		ip.usedSize += uint64(pack.CalculateEntrySize(blob.Blob))
+
 		bh := blob.BlobHandle
 		size := uint64(blob.Length)
 		switch {
@@ -255,14 +270,27 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 			keepBlobs.Insert(bh)
 			stats.size.used += size
 			stats.blobs.used++
-		case keepBlobs.Has(bh): // duplicate blob
-			duplicateBlobs.Insert(bh)
+			ip.usedSize += size
+			ip.usedBlobs++
+
+		case keepBlobs.Has(bh): // duplicate of a blob that we want to keep
 			stats.size.duplicate += size
 			stats.blobs.duplicate++
-		default:
+			ip.usedSize += size
+			ip.duplicateBlobs++
+
+		default: // unused, don't care if it's a duplicate
 			stats.size.unused += size
 			stats.blobs.unused++
+			ip.unusedSize += size
+			ip.unusedBlobs++
 		}
+
+		if !blob.IsCompressed() {
+			ip.uncompressed = true
+		}
+		// update indexPack
+		indexPack[blob.PackID] = ip
 	}
 
 	// Check if all used blobs have been found in index
@@ -273,48 +301,6 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 			"Please report this error (along with the output of the 'prune' run) at\n"+
 			"https://github.com/restic/restic/issues/new/choose\n", usedBlobs)
 		return errorIndexIncomplete
-	}
-
-	indexPack := make(map[restic.ID]packInfo)
-
-	// save computed pack header size
-	for pid, hdrSize := range pack.Size(ctx, repo.Index(), true) {
-		// initialize tpe with NumBlobTypes to indicate it's not set
-		indexPack[pid] = packInfo{tpe: restic.NumBlobTypes, usedSize: uint64(hdrSize)}
-	}
-
-	// iterate over all blobs in index to generate packInfo
-	for blob := range repo.Index().Each(ctx) {
-		ip := indexPack[blob.PackID]
-
-		// Set blob type if not yet set
-		if ip.tpe == restic.NumBlobTypes {
-			ip.tpe = blob.Type
-		}
-
-		// mark mixed packs with "Invalid blob type"
-		if ip.tpe != blob.Type {
-			ip.tpe = restic.InvalidBlob
-		}
-
-		bh := blob.BlobHandle
-		size := uint64(blob.Length)
-		switch {
-		case duplicateBlobs.Has(bh): // duplicate blob
-			ip.usedSize += size
-			ip.duplicateBlobs++
-		case keepBlobs.Has(bh): // used blob, not duplicate
-			ip.usedSize += size
-			ip.usedBlobs++
-		default: // unused blob
-			ip.unusedSize += size
-			ip.unusedBlobs++
-		}
-		if !blob.IsCompressed() {
-			ip.uncompressed = true
-		}
-		// update indexPack
-		indexPack[blob.PackID] = ip
 	}
 
 	Verbosef("collecting packs for deletion and repacking\n")
