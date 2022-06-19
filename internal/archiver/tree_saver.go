@@ -5,7 +5,7 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
-	tomb "gopkg.in/tomb.v2"
+	"golang.org/x/sync/errgroup"
 )
 
 // FutureTree is returned by Save and will return the data once it
@@ -47,7 +47,7 @@ type TreeSaver struct {
 
 // NewTreeSaver returns a new tree saver. A worker pool with treeWorkers is
 // started, it is stopped when ctx is cancelled.
-func NewTreeSaver(ctx context.Context, t *tomb.Tomb, treeWorkers uint, saveTree func(context.Context, *restic.Tree) (restic.ID, ItemStats, error), errFn ErrorFunc) *TreeSaver {
+func NewTreeSaver(ctx context.Context, wg *errgroup.Group, treeWorkers uint, saveTree func(context.Context, *restic.Tree) (restic.ID, ItemStats, error), errFn ErrorFunc) *TreeSaver {
 	ch := make(chan saveTreeJob)
 
 	s := &TreeSaver{
@@ -57,12 +57,16 @@ func NewTreeSaver(ctx context.Context, t *tomb.Tomb, treeWorkers uint, saveTree 
 	}
 
 	for i := uint(0); i < treeWorkers; i++ {
-		t.Go(func() error {
-			return s.worker(t.Context(ctx), ch)
+		wg.Go(func() error {
+			return s.worker(ctx, ch)
 		})
 	}
 
 	return s
+}
+
+func (s *TreeSaver) TriggerShutdown() {
+	close(s.ch)
 }
 
 // Save stores the dir d and returns the data once it has been completed.
@@ -80,7 +84,6 @@ func (s *TreeSaver) Save(ctx context.Context, snPath string, node *restic.Node, 
 	case <-ctx.Done():
 		debug.Log("not saving tree, context is cancelled")
 		close(ch)
-		return FutureTree{ch: ch}
 	}
 
 	return FutureTree{ch: ch}
@@ -146,12 +149,15 @@ func (s *TreeSaver) save(ctx context.Context, snPath string, node *restic.Node, 
 func (s *TreeSaver) worker(ctx context.Context, jobs <-chan saveTreeJob) error {
 	for {
 		var job saveTreeJob
+		var ok bool
 		select {
 		case <-ctx.Done():
 			return nil
-		case job = <-jobs:
+		case job, ok = <-jobs:
+			if !ok {
+				return nil
+			}
 		}
-
 		node, stats, err := s.save(ctx, job.snPath, job.node, job.nodes)
 		if err != nil {
 			debug.Log("error saving tree blob: %v", err)

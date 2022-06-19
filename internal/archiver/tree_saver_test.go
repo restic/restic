@@ -10,14 +10,14 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
-	tomb "gopkg.in/tomb.v2"
+	"golang.org/x/sync/errgroup"
 )
 
 func TestTreeSaver(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	tmb, ctx := tomb.WithContext(ctx)
+	wg, ctx := errgroup.WithContext(ctx)
 
 	saveFn := func(context.Context, *restic.Tree) (restic.ID, ItemStats, error) {
 		return restic.NewRandomID(), ItemStats{TreeBlobs: 1, TreeSize: 123}, nil
@@ -27,7 +27,7 @@ func TestTreeSaver(t *testing.T) {
 		return nil
 	}
 
-	b := NewTreeSaver(ctx, tmb, uint(runtime.NumCPU()), saveFn, errFn)
+	b := NewTreeSaver(ctx, wg, uint(runtime.NumCPU()), saveFn, errFn)
 
 	var results []FutureTree
 
@@ -44,9 +44,9 @@ func TestTreeSaver(t *testing.T) {
 		tree.Wait(ctx)
 	}
 
-	tmb.Kill(nil)
+	b.TriggerShutdown()
 
-	err := tmb.Wait()
+	err := wg.Wait()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +71,7 @@ func TestTreeSaverError(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			tmb, ctx := tomb.WithContext(ctx)
+			wg, ctx := errgroup.WithContext(ctx)
 
 			var num int32
 			saveFn := func(context.Context, *restic.Tree) (restic.ID, ItemStats, error) {
@@ -88,7 +88,7 @@ func TestTreeSaverError(t *testing.T) {
 				return nil
 			}
 
-			b := NewTreeSaver(ctx, tmb, uint(runtime.NumCPU()), saveFn, errFn)
+			b := NewTreeSaver(ctx, wg, uint(runtime.NumCPU()), saveFn, errFn)
 
 			var results []FutureTree
 
@@ -105,9 +105,9 @@ func TestTreeSaverError(t *testing.T) {
 				tree.Wait(ctx)
 			}
 
-			tmb.Kill(nil)
+			b.TriggerShutdown()
 
-			err := tmb.Wait()
+			err := wg.Wait()
 			if err == nil {
 				t.Errorf("expected error not found")
 			}

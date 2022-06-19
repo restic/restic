@@ -12,10 +12,11 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/spf13/cobra"
-	tomb "gopkg.in/tomb.v2"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/debug"
@@ -55,16 +56,22 @@ Exit status is 3 if some source data could not be read (incomplete snapshot crea
 	},
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var t tomb.Tomb
-		term := termstatus.New(globalOptions.stdout, globalOptions.stderr, globalOptions.Quiet)
-		t.Go(func() error { term.Run(t.Context(globalOptions.ctx)); return nil })
+		var wg sync.WaitGroup
+		cancelCtx, cancel := context.WithCancel(globalOptions.ctx)
+		defer func() {
+			// shutdown termstatus
+			cancel()
+			wg.Wait()
+		}()
 
-		err := runBackup(backupOptions, globalOptions, term, args)
-		t.Kill(nil)
-		if werr := t.Wait(); werr != nil {
-			panic(fmt.Sprintf("term.Run() returned err: %v", err))
-		}
-		return err
+		term := termstatus.New(globalOptions.stdout, globalOptions.stderr, globalOptions.Quiet)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			term.Run(cancelCtx)
+		}()
+
+		return runBackup(backupOptions, globalOptions, term, args)
 	},
 }
 
@@ -534,8 +541,6 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		}
 	}
 
-	var t tomb.Tomb
-
 	if gopts.verbosity >= 2 && !gopts.JSON {
 		Verbosef("open repository\n")
 	}
@@ -567,7 +572,10 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 
 	progressReporter.SetMinUpdatePause(calculateProgressInterval(!gopts.Quiet, gopts.JSON))
 
-	t.Go(func() error { return progressReporter.Run(t.Context(gopts.ctx)) })
+	wg, wgCtx := errgroup.WithContext(gopts.ctx)
+	cancelCtx, cancel := context.WithCancel(wgCtx)
+	defer cancel()
+	wg.Go(func() error { return progressReporter.Run(cancelCtx) })
 
 	if !gopts.JSON {
 		progressPrinter.V("lock repository")
@@ -675,7 +683,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	if !gopts.JSON {
 		progressPrinter.V("start scan on %v", targets)
 	}
-	t.Go(func() error { return sc.Scan(t.Context(gopts.ctx), targets) })
+	wg.Go(func() error { return sc.Scan(cancelCtx, targets) })
 
 	arch := archiver.New(repo, targetFS, archiver.Options{})
 	arch.SelectByName = selectByNameFilter
@@ -717,10 +725,10 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	_, id, err := arch.Snapshot(gopts.ctx, targets, snapshotOpts)
 
 	// cleanly shutdown all running goroutines
-	t.Kill(nil)
+	cancel()
 
 	// let's see if one returned an error
-	werr := t.Wait()
+	werr := wg.Wait()
 
 	// return original error
 	if err != nil {

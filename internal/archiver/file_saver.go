@@ -10,7 +10,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
-	tomb "gopkg.in/tomb.v2"
+	"golang.org/x/sync/errgroup"
 )
 
 // FutureFile is returned by Save and will return the data once it
@@ -67,7 +67,7 @@ type FileSaver struct {
 
 // NewFileSaver returns a new file saver. A worker pool with fileWorkers is
 // started, it is stopped when ctx is cancelled.
-func NewFileSaver(ctx context.Context, t *tomb.Tomb, save SaveBlobFn, pol chunker.Pol, fileWorkers, blobWorkers uint) *FileSaver {
+func NewFileSaver(ctx context.Context, wg *errgroup.Group, save SaveBlobFn, pol chunker.Pol, fileWorkers, blobWorkers uint) *FileSaver {
 	ch := make(chan saveFileJob)
 
 	debug.Log("new file saver with %v file workers and %v blob workers", fileWorkers, blobWorkers)
@@ -84,13 +84,17 @@ func NewFileSaver(ctx context.Context, t *tomb.Tomb, save SaveBlobFn, pol chunke
 	}
 
 	for i := uint(0); i < fileWorkers; i++ {
-		t.Go(func() error {
-			s.worker(t.Context(ctx), ch)
+		wg.Go(func() error {
+			s.worker(ctx, ch)
 			return nil
 		})
 	}
 
 	return s
+}
+
+func (s *FileSaver) TriggerShutdown() {
+	close(s.ch)
 }
 
 // CompleteFunc is called when the file has been saved.
@@ -115,7 +119,6 @@ func (s *FileSaver) Save(ctx context.Context, snPath string, file fs.File, fi os
 		debug.Log("not sending job, context is cancelled: %v", ctx.Err())
 		_ = file.Close()
 		close(ch)
-		return FutureFile{ch: ch}
 	}
 
 	return FutureFile{ch: ch}
@@ -226,12 +229,15 @@ func (s *FileSaver) worker(ctx context.Context, jobs <-chan saveFileJob) {
 
 	for {
 		var job saveFileJob
+		var ok bool
 		select {
 		case <-ctx.Done():
 			return
-		case job = <-jobs:
+		case job, ok = <-jobs:
+			if !ok {
+				return
+			}
 		}
-
 		res := s.saveFile(ctx, chnker, job.snPath, job.file, job.fi, job.start)
 		if job.complete != nil {
 			job.complete(res.node, res.stats)

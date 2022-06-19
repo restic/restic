@@ -12,7 +12,7 @@ import (
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
-	tomb "gopkg.in/tomb.v2"
+	"golang.org/x/sync/errgroup"
 )
 
 func createTestFiles(t testing.TB, num int) (files []string, cleanup func()) {
@@ -30,8 +30,8 @@ func createTestFiles(t testing.TB, num int) (files []string, cleanup func()) {
 	return files, cleanup
 }
 
-func startFileSaver(ctx context.Context, t testing.TB) (*FileSaver, context.Context, *tomb.Tomb) {
-	tmb, ctx := tomb.WithContext(ctx)
+func startFileSaver(ctx context.Context, t testing.TB) (*FileSaver, context.Context, *errgroup.Group) {
+	wg, ctx := errgroup.WithContext(ctx)
 
 	saveBlob := func(ctx context.Context, tpe restic.BlobType, buf *Buffer) FutureBlob {
 		ch := make(chan saveBlobResponse)
@@ -45,10 +45,10 @@ func startFileSaver(ctx context.Context, t testing.TB) (*FileSaver, context.Cont
 		t.Fatal(err)
 	}
 
-	s := NewFileSaver(ctx, tmb, saveBlob, pol, workers, workers)
+	s := NewFileSaver(ctx, wg, saveBlob, pol, workers, workers)
 	s.NodeFromFileInfo = restic.NodeFromFileInfo
 
-	return s, ctx, tmb
+	return s, ctx, wg
 }
 
 func TestFileSaver(t *testing.T) {
@@ -62,7 +62,7 @@ func TestFileSaver(t *testing.T) {
 	completeFn := func(*restic.Node, ItemStats) {}
 
 	testFs := fs.Local{}
-	s, ctx, tmb := startFileSaver(ctx, t)
+	s, ctx, wg := startFileSaver(ctx, t)
 
 	var results []FutureFile
 
@@ -88,9 +88,9 @@ func TestFileSaver(t *testing.T) {
 		}
 	}
 
-	tmb.Kill(nil)
+	s.TriggerShutdown()
 
-	err := tmb.Wait()
+	err := wg.Wait()
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -23,7 +23,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	restictest "github.com/restic/restic/internal/test"
-	tomb "gopkg.in/tomb.v2"
+	"golang.org/x/sync/errgroup"
 )
 
 func prepareTempdirRepoSrc(t testing.TB, src TestDir) (tempdir string, repo restic.Repository, cleanup func()) {
@@ -41,11 +41,10 @@ func prepareTempdirRepoSrc(t testing.TB, src TestDir) (tempdir string, repo rest
 }
 
 func saveFile(t testing.TB, repo restic.Repository, filename string, filesystem fs.FS) (*restic.Node, ItemStats) {
-	var tmb tomb.Tomb
-	ctx := tmb.Context(context.Background())
+	wg, ctx := errgroup.WithContext(context.TODO())
 
 	arch := New(repo, filesystem, Options{})
-	arch.runWorkers(ctx, &tmb)
+	arch.runWorkers(ctx, wg)
 
 	arch.Error = func(item string, fi os.FileInfo, err error) error {
 		t.Errorf("archiver error for %v: %v", item, err)
@@ -87,14 +86,13 @@ func saveFile(t testing.TB, repo restic.Repository, filename string, filesystem 
 		t.Fatal(res.Err())
 	}
 
-	tmb.Kill(nil)
-	err = tmb.Wait()
+	arch.stopWorkers()
+	err = repo.Flush(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = repo.Flush(context.Background())
-	if err != nil {
+	if err := wg.Wait(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -214,14 +212,14 @@ func TestArchiverSave(t *testing.T) {
 			tempdir, repo, cleanup := prepareTempdirRepoSrc(t, TestDir{"file": testfile})
 			defer cleanup()
 
-			var tmb tomb.Tomb
+			wg, ctx := errgroup.WithContext(ctx)
 
 			arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
 			arch.Error = func(item string, fi os.FileInfo, err error) error {
 				t.Errorf("archiver error for %v: %v", item, err)
 				return err
 			}
-			arch.runWorkers(tmb.Context(ctx), &tmb)
+			arch.runWorkers(ctx, wg)
 
 			node, excluded, err := arch.Save(ctx, "/", filepath.Join(tempdir, "file"), nil)
 			if err != nil {
@@ -243,6 +241,7 @@ func TestArchiverSave(t *testing.T) {
 
 			stats := node.stats
 
+			arch.stopWorkers()
 			err = repo.Flush(ctx)
 			if err != nil {
 				t.Fatal(err)
@@ -281,6 +280,8 @@ func TestArchiverSaveReaderFS(t *testing.T) {
 			repo, cleanup := repository.TestRepository(t)
 			defer cleanup()
 
+			wg, ctx := errgroup.WithContext(ctx)
+
 			ts := time.Now()
 			filename := "xx"
 			readerFs := &fs.Reader{
@@ -290,14 +291,12 @@ func TestArchiverSaveReaderFS(t *testing.T) {
 				ReadCloser: ioutil.NopCloser(strings.NewReader(test.Data)),
 			}
 
-			var tmb tomb.Tomb
-
 			arch := New(repo, readerFs, Options{})
 			arch.Error = func(item string, fi os.FileInfo, err error) error {
 				t.Errorf("archiver error for %v: %v", item, err)
 				return err
 			}
-			arch.runWorkers(tmb.Context(ctx), &tmb)
+			arch.runWorkers(ctx, wg)
 
 			node, excluded, err := arch.Save(ctx, "/", filename, nil)
 			t.Logf("Save returned %v %v", node, err)
@@ -320,6 +319,7 @@ func TestArchiverSaveReaderFS(t *testing.T) {
 
 			stats := node.stats
 
+			arch.stopWorkers()
 			err = repo.Flush(ctx)
 			if err != nil {
 				t.Fatal(err)
@@ -826,14 +826,13 @@ func TestArchiverSaveDir(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			var tmb tomb.Tomb
-			ctx := tmb.Context(context.Background())
-
 			tempdir, repo, cleanup := prepareTempdirRepoSrc(t, test.src)
 			defer cleanup()
 
+			wg, ctx := errgroup.WithContext(context.Background())
+
 			arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
-			arch.runWorkers(ctx, &tmb)
+			arch.runWorkers(ctx, wg)
 
 			chdir := tempdir
 			if test.chdir != "" {
@@ -856,12 +855,6 @@ func TestArchiverSaveDir(t *testing.T) {
 			ft.Wait(ctx)
 			node, stats := ft.Node(), ft.Stats()
 
-			tmb.Kill(nil)
-			err = tmb.Wait()
-			if err != nil {
-				t.Fatal(err)
-			}
-
 			t.Logf("stats: %v", stats)
 			if stats.DataSize != 0 {
 				t.Errorf("wrong stats returned in DataSize, want 0, got %d", stats.DataSize)
@@ -876,15 +869,20 @@ func TestArchiverSaveDir(t *testing.T) {
 				t.Errorf("wrong stats returned in TreeBlobs, want > 0, got %d", stats.TreeBlobs)
 			}
 
-			ctx = context.Background()
 			node.Name = targetNodeName
 			tree := &restic.Tree{Nodes: []*restic.Node{node}}
 			treeID, err := repo.SaveTree(ctx, tree)
 			if err != nil {
 				t.Fatal(err)
 			}
+			arch.stopWorkers()
 
 			err = repo.Flush(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			err = wg.Wait()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -893,7 +891,7 @@ func TestArchiverSaveDir(t *testing.T) {
 			if want == nil {
 				want = test.src
 			}
-			TestEnsureTree(ctx, t, "/", repo, treeID, want)
+			TestEnsureTree(context.TODO(), t, "/", repo, treeID, want)
 		})
 	}
 }
@@ -915,11 +913,10 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 	// save the empty directory several times in a row, then have a look if the
 	// archiver did save the same tree several times
 	for i := 0; i < 5; i++ {
-		var tmb tomb.Tomb
-		ctx := tmb.Context(context.Background())
+		wg, ctx := errgroup.WithContext(context.TODO())
 
 		arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
-		arch.runWorkers(ctx, &tmb)
+		arch.runWorkers(ctx, wg)
 
 		fi, err := fs.Lstat(tempdir)
 		if err != nil {
@@ -934,8 +931,6 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 		ft.Wait(ctx)
 		node, stats := ft.Node(), ft.Stats()
 
-		tmb.Kill(nil)
-		err = tmb.Wait()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -972,7 +967,12 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 
 		t.Logf("node subtree %v", node.Subtree)
 
-		err = repo.Flush(context.Background())
+		arch.stopWorkers()
+		err = repo.Flush(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = wg.Wait()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1081,9 +1081,6 @@ func TestArchiverSaveTree(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			var tmb tomb.Tomb
-			ctx := tmb.Context(context.Background())
-
 			tempdir, repo, cleanup := prepareTempdirRepoSrc(t, test.src)
 			defer cleanup()
 
@@ -1099,7 +1096,9 @@ func TestArchiverSaveTree(t *testing.T) {
 				stat.Add(s)
 			}
 
-			arch.runWorkers(ctx, &tmb)
+			wg, ctx := errgroup.WithContext(context.TODO())
+
+			arch.runWorkers(ctx, wg)
 
 			back := restictest.Chdir(t, tempdir)
 			defer back()
@@ -1123,14 +1122,12 @@ func TestArchiverSaveTree(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			tmb.Kill(nil)
-			err = tmb.Wait()
+			arch.stopWorkers()
+			err = repo.Flush(ctx)
 			if err != nil {
 				t.Fatal(err)
 			}
-
-			ctx = context.Background()
-			err = repo.Flush(ctx)
+			err = wg.Wait()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1139,7 +1136,7 @@ func TestArchiverSaveTree(t *testing.T) {
 			if want == nil {
 				want = test.src
 			}
-			TestEnsureTree(ctx, t, "/", repo, treeID, want)
+			TestEnsureTree(context.TODO(), t, "/", repo, treeID, want)
 			bothZeroOrNeither(t, uint64(test.stat.DataBlobs), uint64(stat.DataBlobs))
 			bothZeroOrNeither(t, uint64(test.stat.TreeBlobs), uint64(stat.TreeBlobs))
 			bothZeroOrNeither(t, test.stat.DataSize, stat.DataSize)
@@ -2240,14 +2237,14 @@ func TestRacyFileSwap(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	var tmb tomb.Tomb
+	wg, ctx := errgroup.WithContext(ctx)
 
 	arch := New(repo, fs.Track{FS: statfs}, Options{})
 	arch.Error = func(item string, fi os.FileInfo, err error) error {
 		t.Logf("archiver error as expected for %v: %v", item, err)
 		return err
 	}
-	arch.runWorkers(tmb.Context(ctx), &tmb)
+	arch.runWorkers(ctx, wg)
 
 	// fs.Track will panic if the file was not closed
 	_, excluded, err := arch.Save(ctx, "/", tempfile, nil)

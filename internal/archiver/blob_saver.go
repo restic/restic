@@ -5,7 +5,7 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
-	tomb "gopkg.in/tomb.v2"
+	"golang.org/x/sync/errgroup"
 )
 
 // Saver allows saving a blob.
@@ -22,7 +22,7 @@ type BlobSaver struct {
 
 // NewBlobSaver returns a new blob. A worker pool is started, it is stopped
 // when ctx is cancelled.
-func NewBlobSaver(ctx context.Context, t *tomb.Tomb, repo Saver, workers uint) *BlobSaver {
+func NewBlobSaver(ctx context.Context, wg *errgroup.Group, repo Saver, workers uint) *BlobSaver {
 	ch := make(chan saveBlobJob)
 	s := &BlobSaver{
 		repo: repo,
@@ -30,12 +30,16 @@ func NewBlobSaver(ctx context.Context, t *tomb.Tomb, repo Saver, workers uint) *
 	}
 
 	for i := uint(0); i < workers; i++ {
-		t.Go(func() error {
-			return s.worker(t.Context(ctx), ch)
+		wg.Go(func() error {
+			return s.worker(ctx, ch)
 		})
 	}
 
 	return s
+}
+
+func (s *BlobSaver) TriggerShutdown() {
+	close(s.ch)
 }
 
 // Save stores a blob in the repo. It checks the index and the known blobs
@@ -114,10 +118,14 @@ func (s *BlobSaver) saveBlob(ctx context.Context, t restic.BlobType, buf []byte)
 func (s *BlobSaver) worker(ctx context.Context, jobs <-chan saveBlobJob) error {
 	for {
 		var job saveBlobJob
+		var ok bool
 		select {
 		case <-ctx.Done():
 			return nil
-		case job = <-jobs:
+		case job, ok = <-jobs:
+			if !ok {
+				return nil
+			}
 		}
 
 		res, err := s.saveBlob(ctx, job.BlobType, job.buf.Data)
