@@ -1,0 +1,9 @@
+Enhancement: Add incremental backups
+
+Restic allowed to backup files from a list passed as parameter and this created
+a new snapshot, containing only the new backuped files. Now, using the --merge
+option, the new snapshot will contain also the files (not included in the list file passed)
+of a previous parent snapshot.
+
+https://github.com/restic/restic/issues/3118
+https://forum.restic.net/t/backup-parent-behavior/3286
