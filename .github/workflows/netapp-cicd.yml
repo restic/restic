@@ -235,14 +235,3 @@ jobs:
           docker tag netapp-restic:latest netappdownloads.jfrog.io/oss-docker-restic-production/restic:$VERSION
           docker push netappdownloads.jfrog.io/oss-docker-restic-production/restic:$VERSION
 
-      - name: Tag and push to GitHub Container Registry
-        run: |
-          export VERSION=$(cat NETAPPVERSION)"."${{ steps.date.outputs.date }}
-          echo "VERSION="$VERSION
-          docker login -u $GH_USERNAME -p $GH_TOKEN ghcr.io/netapp/restic
-          docker tag netapp-restic:latest ghcr.io/netapp/restic:latest
-          docker push ghcr.io/netapp/restic:latest
-          docker tag netapp-restic:latest ghcr.io/netapp/restic:$VERSION
-          docker push ghcr.io/netapp/restic:$VERSION
-
-
