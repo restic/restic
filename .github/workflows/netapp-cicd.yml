@@ -1,9 +1,9 @@
-name: test
+name: netapp-cicd
 on:
   # run tests on push to master, but not when other branches are pushed to
   push:
     branches:
-      - main
+      - netapp-main
 
   # run tests for all pull requests
   pull_request:
@@ -14,14 +14,6 @@ jobs:
       matrix:
         # list of jobs to run:
         include:
-          - job_name: Windows
-            go: 1.17.x
-            os: windows-latest
-
-          - job_name: macOS
-            go: 1.17.x
-            os: macOS-latest
-            test_fuse: false
 
           - job_name: Linux
             go: 1.17.x
