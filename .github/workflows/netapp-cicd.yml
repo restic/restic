@@ -21,16 +21,6 @@ jobs:
             test_fuse: true
             check_changelog: true
 
-          - job_name: Linux
-            go: 1.16.x
-            os: ubuntu-latest
-            test_fuse: true
-
-          - job_name: Linux
-            go: 1.15.x
-            os: ubuntu-latest
-            test_fuse: true
-
     name: ${{ matrix.job_name }} Go ${{ matrix.go }}
     runs-on: ${{ matrix.os }}
 
@@ -175,53 +165,6 @@ jobs:
           calens
         if: matrix.check_changelog
 
-  cross_compile:
-    strategy:
-
-      # ATTENTION: the list of architectures must be in sync with helpers/build-release-binaries/main.go!
-      matrix:
-        # run cross-compile in two batches parallel so the overall tests run faster
-        targets:
-          - "linux/386 linux/amd64 linux/arm linux/arm64 linux/ppc64le linux/mips linux/mipsle linux/mips64 linux/mips64le linux/s390x \
-            openbsd/386 openbsd/amd64"
-
-          - "freebsd/386 freebsd/amd64 freebsd/arm \
-            aix/ppc64 \
-            darwin/amd64 darwin/arm64 \
-            netbsd/386 netbsd/amd64 \
-            windows/386 windows/amd64 \
-            solaris/amd64"
-
-    env:
-      go: 1.16.x
-      GOPROXY: https://proxy.golang.org
-
-    runs-on: ubuntu-latest
-
-    name: Cross Compile for ${{ matrix.targets }}
-
-    steps:
-      - name: Set up Go ${{ env.go }}
-        uses: actions/setup-go@v2
-        with:
-          go-version: ${{ env.go }}
-
-      - name: Check out code
-        uses: actions/checkout@v2
-
-      - name: Install gox
-        run: |
-          go get github.com/mitchellh/gox
-
-      - name: Cross-compile with gox for ${{ matrix.targets }}
-        env:
-          GOFLAGS: "-trimpath"
-          GOX_ARCHS: "${{ matrix.targets }}"
-        run: |
-          mkdir build-output
-          gox -parallel 2 -verbose -osarch "$GOX_ARCHS" -output "build-output/{{.Dir}}_{{.OS}}_{{.Arch}}" ./cmd/restic
-          gox -parallel 2 -verbose -osarch "$GOX_ARCHS" -tags debug -output "build-output/{{.Dir}}_{{.OS}}_{{.Arch}}_debug" ./cmd/restic
-
   lint:
     name: lint
     runs-on: ubuntu-latest
@@ -260,7 +203,7 @@ jobs:
   buildnpush:
     name: Build and Push Docker Package
     #needs: [test, cross_compile, lint]
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/netapp-main'
     runs-on: ubuntu-latest
     env:
       USERNAME: ${{ secrets.JFROG_RESTIC_USERNAME }}

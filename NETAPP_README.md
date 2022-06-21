@@ -1,6 +1,7 @@
 #Netapp Readme
 # Overview
 This fork has changes that make restic work with NetApp ONTAP and Storage Grid.
+Its the same as the netapp/restic, just moved to polaris/restic
 
 This repo uses main for its default branch and will update with master from restic/restic as we need.
 
