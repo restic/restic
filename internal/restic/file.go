@@ -13,6 +13,7 @@ type FileType string
 const (
 	PackFile     FileType = "data" // use data, as packs are stored under /data in repo
 	KeyFile      FileType = "key"
+	KeysFile     FileType = "keys"
 	LockFile     FileType = "lock"
 	SnapshotFile FileType = "snapshot"
 	IndexFile    FileType = "index"

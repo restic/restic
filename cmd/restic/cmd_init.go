@@ -67,16 +67,20 @@ func runInit(opts InitOptions, gopts GlobalOptions, args []string) error {
 
 	s := repository.New(be)
 
-	err = s.Init(gopts.ctx, gopts.password, chunkerPolynomial)
+	wasCreated, err := s.Init(gopts.ctx, gopts.password, chunkerPolynomial)
 	if err != nil {
 		return errors.Fatalf("create key in repository at %s failed: %v\n", location.StripPassword(gopts.Repo), err)
 	}
 
-	Verbosef("created restic repository %v at %s\n", s.Config().ID[:10], location.StripPassword(gopts.Repo))
-	Verbosef("\n")
-	Verbosef("Please note that knowledge of your password is required to access\n")
-	Verbosef("the repository. Losing your password means that your data is\n")
-	Verbosef("irrecoverably lost.\n")
+	if wasCreated {
+		Verbosef("Restic repository %v created at %s\n", s.Config().ID[:10], location.StripPassword(gopts.Repo))
+	} else {
+		Verbosef(
+			"Restic repository %v already exists at %s with this password\n",
+			s.Config().ID[:10],
+			location.StripPassword(gopts.Repo),
+		)
+	}
 
 	return nil
 }
