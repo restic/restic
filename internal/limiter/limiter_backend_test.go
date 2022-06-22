@@ -36,7 +36,7 @@ func TestLimitBackendSave(t *testing.T) {
 		}
 		return nil
 	}
-	limiter := NewStaticLimiter(42*1024, 42*1024)
+	limiter := NewStaticLimiter(Limits{42 * 1024, 42 * 1024})
 	limbe := LimitBackend(be, limiter)
 
 	rd := restic.NewByteReader(data, nil)
@@ -82,7 +82,7 @@ func TestLimitBackendLoad(t *testing.T) {
 			}
 			return newTracedReadCloser(src), nil
 		}
-		limiter := NewStaticLimiter(42*1024, 42*1024)
+		limiter := NewStaticLimiter(Limits{42 * 1024, 42 * 1024})
 		limbe := LimitBackend(be, limiter)
 
 		err := limbe.Load(context.TODO(), testHandle, 0, 0, func(rd io.Reader) error {

@@ -60,14 +60,11 @@ type GlobalOptions struct {
 	JSON            bool
 	CacheDir        string
 	NoCache         bool
-	CACerts         []string
-	InsecureTLS     bool
-	TLSClientCert   string
 	CleanupCache    bool
 	Compression     repository.CompressionMode
 
-	LimitUploadKb   int
-	LimitDownloadKb int
+	backend.TransportOptions
+	limiter.Limits
 
 	ctx      context.Context
 	password string
@@ -117,13 +114,13 @@ func init() {
 	f.BoolVarP(&globalOptions.JSON, "json", "", false, "set output mode to JSON for commands that support it")
 	f.StringVar(&globalOptions.CacheDir, "cache-dir", "", "set the cache `directory`. (default: use system default cache directory)")
 	f.BoolVar(&globalOptions.NoCache, "no-cache", false, "do not use a local cache")
-	f.StringSliceVar(&globalOptions.CACerts, "cacert", nil, "`file` to load root certificates from (default: use system certificates)")
-	f.StringVar(&globalOptions.TLSClientCert, "tls-client-cert", "", "path to a `file` containing PEM encoded TLS client certificate and private key")
+	f.StringSliceVar(&globalOptions.RootCertFilenames, "cacert", nil, "`file` to load root certificates from (default: use system certificates)")
+	f.StringVar(&globalOptions.TLSClientCertKeyFilename, "tls-client-cert", "", "path to a `file` containing PEM encoded TLS client certificate and private key")
 	f.BoolVar(&globalOptions.InsecureTLS, "insecure-tls", false, "skip TLS certificate verification when connecting to the repo (insecure)")
 	f.BoolVar(&globalOptions.CleanupCache, "cleanup-cache", false, "auto remove old cache directories")
 	f.Var(&globalOptions.Compression, "compression", "compression mode (only available for repo format version 2), one of (auto|off|max)")
-	f.IntVar(&globalOptions.LimitUploadKb, "limit-upload", 0, "limits uploads to a maximum rate in KiB/s. (default: unlimited)")
-	f.IntVar(&globalOptions.LimitDownloadKb, "limit-download", 0, "limits downloads to a maximum rate in KiB/s. (default: unlimited)")
+	f.IntVar(&globalOptions.Limits.UploadKb, "limit-upload", 0, "limits uploads to a maximum rate in KiB/s. (default: unlimited)")
+	f.IntVar(&globalOptions.Limits.DownloadKb, "limit-download", 0, "limits downloads to a maximum rate in KiB/s. (default: unlimited)")
 	f.StringSliceVarP(&globalOptions.Options, "option", "o", []string{}, "set extended option (`key=value`, can be specified multiple times)")
 	// Use our "generate" command instead of the cobra provided "completion" command
 	cmdRoot.CompletionOptions.DisableDefaultCmd = true
@@ -681,18 +678,13 @@ func open(s string, gopts GlobalOptions, opts options.Options) (restic.Backend, 
 		return nil, err
 	}
 
-	tropts := backend.TransportOptions{
-		RootCertFilenames:        globalOptions.CACerts,
-		TLSClientCertKeyFilename: globalOptions.TLSClientCert,
-		InsecureTLS:              globalOptions.InsecureTLS,
-	}
-	rt, err := backend.Transport(tropts)
+	rt, err := backend.Transport(globalOptions.TransportOptions)
 	if err != nil {
 		return nil, err
 	}
 
 	// wrap the transport so that the throughput via HTTP is limited
-	lim := limiter.NewStaticLimiter(gopts.LimitUploadKb, gopts.LimitDownloadKb)
+	lim := limiter.NewStaticLimiter(gopts.Limits)
 	rt = lim.Transport(rt)
 
 	switch loc.Scheme {
@@ -762,12 +754,7 @@ func create(s string, opts options.Options) (restic.Backend, error) {
 		return nil, err
 	}
 
-	tropts := backend.TransportOptions{
-		RootCertFilenames:        globalOptions.CACerts,
-		TLSClientCertKeyFilename: globalOptions.TLSClientCert,
-		InsecureTLS:              globalOptions.InsecureTLS,
-	}
-	rt, err := backend.Transport(tropts)
+	rt, err := backend.Transport(globalOptions.TransportOptions)
 	if err != nil {
 		return nil, err
 	}
