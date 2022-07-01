@@ -177,8 +177,8 @@ var (
 const (
 	// size of the header-length field at the end of the file; it is a uint32
 	headerLengthSize = 4
-	// HeaderSize is the header's constant overhead (independent of #entries)
-	HeaderSize = headerLengthSize + crypto.Extension
+	// headerSize is the header's constant overhead (independent of #entries)
+	headerSize = headerLengthSize + crypto.Extension
 
 	// MaxHeaderSize is the max size of header including header-length field
 	MaxHeaderSize = 16*1024*1024 + headerLengthSize
@@ -242,7 +242,7 @@ func readHeader(rd io.ReaderAt, size int64) ([]byte, error) {
 	// eagerly download eagerEntries header entries as part of header-length request.
 	// only make second request if actual number of entries is greater than eagerEntries
 
-	eagerSize := eagerEntries*int(entrySize) + HeaderSize
+	eagerSize := eagerEntries*int(entrySize) + headerSize
 	b, c, err := readRecords(rd, size, eagerSize)
 	if err != nil {
 		return nil, err
@@ -349,7 +349,7 @@ func CalculateEntrySize(blob restic.Blob) int {
 }
 
 func CalculateHeaderSize(blobs []restic.Blob) int {
-	size := HeaderSize
+	size := headerSize
 	for _, blob := range blobs {
 		size += CalculateEntrySize(blob)
 	}
@@ -357,17 +357,20 @@ func CalculateHeaderSize(blobs []restic.Blob) int {
 }
 
 // Size returns the size of all packs computed by index information.
+// If onlyHdr is set to true, only the size of the header is returned
 // Note that this function only gives correct sizes, if there are no
 // duplicates in the index.
-func Size(ctx context.Context, mi restic.MasterIndex) map[restic.ID]int64 {
+func Size(ctx context.Context, mi restic.MasterIndex, onlyHdr bool) map[restic.ID]int64 {
 	packSize := make(map[restic.ID]int64)
 
 	for blob := range mi.Each(ctx) {
 		size, ok := packSize[blob.PackID]
 		if !ok {
-			size = HeaderSize
+			size = headerSize
 		}
-		size += int64(blob.Length)
+		if !onlyHdr {
+			size += int64(blob.Length)
+		}
 		packSize[blob.PackID] = size + int64(CalculateEntrySize(blob.Blob))
 	}
 
