@@ -64,7 +64,7 @@ type ErrDuplicatePacks struct {
 }
 
 func (e *ErrDuplicatePacks) Error() string {
-	return fmt.Sprintf("pack %v contained in several indexes: %v", e.PackID.Str(), e.Indexes)
+	return fmt.Sprintf("pack %v contained in several indexes: %v", e.PackID, e.Indexes)
 }
 
 // ErrOldIndexFormat is returned when an index with the old format is
@@ -74,7 +74,7 @@ type ErrOldIndexFormat struct {
 }
 
 func (err *ErrOldIndexFormat) Error() string {
-	return fmt.Sprintf("index %v has old format", err.ID.Str())
+	return fmt.Sprintf("index %v has old format", err.ID)
 }
 
 func (c *Checker) LoadSnapshots(ctx context.Context) error {
@@ -92,11 +92,11 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 		debug.Log("process index %v, err %v", id, err)
 
 		if oldFormat {
-			debug.Log("index %v has old format", id.Str())
+			debug.Log("index %v has old format", id)
 			hints = append(hints, &ErrOldIndexFormat{id})
 		}
 
-		err = errors.Wrapf(err, "error loading index %v", id.Str())
+		err = errors.Wrapf(err, "error loading index %v", id)
 
 		if err != nil {
 			errs = append(errs, err)
@@ -161,7 +161,7 @@ type PackError struct {
 }
 
 func (e *PackError) Error() string {
-	return "pack " + e.ID.Str() + ": " + e.Err.Error()
+	return "pack " + e.ID.String() + ": " + e.Err.Error()
 }
 
 // IsOrphanedPack returns true if the error describes a pack which is not
@@ -229,20 +229,12 @@ func (c *Checker) Packs(ctx context.Context, errChan chan<- error) {
 // Error is an error that occurred while checking a repository.
 type Error struct {
 	TreeID restic.ID
-	BlobID restic.ID
 	Err    error
 }
 
 func (e Error) Error() string {
-	if !e.BlobID.IsNull() && !e.TreeID.IsNull() {
-		msg := "tree " + e.TreeID.Str()
-		msg += ", blob " + e.BlobID.Str()
-		msg += ": " + e.Err.Error()
-		return msg
-	}
-
 	if !e.TreeID.IsNull() {
-		return "tree " + e.TreeID.Str() + ": " + e.Err.Error()
+		return "tree " + e.TreeID.String() + ": " + e.Err.Error()
 	}
 
 	return e.Err.Error()
@@ -255,7 +247,7 @@ type TreeError struct {
 }
 
 func (e *TreeError) Error() string {
-	return fmt.Sprintf("tree %v: %v", e.ID.Str(), e.Errors)
+	return fmt.Sprintf("tree %v: %v", e.ID, e.Errors)
 }
 
 // checkTreeWorker checks the trees received and sends out errors to errChan.
@@ -525,11 +517,11 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 	if err != nil {
 		// failed to load the pack file, return as further checks cannot succeed anyways
 		debug.Log("  error streaming pack: %v", err)
-		return errors.Errorf("pack %v failed to download: %v", err)
+		return errors.Errorf("pack %v failed to download: %v", id, err)
 	}
 	if !hash.Equal(id) {
 		debug.Log("Pack ID does not match, want %v, got %v", id, hash)
-		return errors.Errorf("Pack ID does not match, want %v, got %v", id.Str(), hash.Str())
+		return errors.Errorf("Pack ID does not match, want %v, got %v", id, hash)
 	}
 
 	blobs, hdrSize, err := pack.List(r.Key(), bytes.NewReader(hdrBuf), int64(len(hdrBuf)))
@@ -553,13 +545,13 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 			}
 		}
 		if !idxHas {
-			errs = append(errs, errors.Errorf("Blob %v is not contained in index or position is incorrect", blob.ID.Str()))
+			errs = append(errs, errors.Errorf("Blob %v is not contained in index or position is incorrect", blob.ID))
 			continue
 		}
 	}
 
 	if len(errs) > 0 {
-		return errors.Errorf("pack %v contains %v errors: %v", id.Str(), len(errs), errs)
+		return errors.Errorf("pack %v contains %v errors: %v", id, len(errs), errs)
 	}
 
 	return nil
