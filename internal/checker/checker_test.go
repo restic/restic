@@ -508,7 +508,6 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 	test.OK(t, err)
 
 	test.OK(t, repo.Flush(ctx))
-	test.OK(t, repo.SaveIndex(ctx))
 
 	snapshot, err := restic.NewSnapshot([]string{"/damaged"}, []string{"test"}, "foo", time.Now())
 	test.OK(t, err)

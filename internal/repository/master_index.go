@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"sync"
@@ -157,19 +158,6 @@ func (mi *MasterIndex) Packs(packBlacklist restic.IDSet) restic.IDSet {
 	return packs
 }
 
-// Count returns the number of blobs of type t in the index.
-func (mi *MasterIndex) Count(t restic.BlobType) (n uint) {
-	mi.idxMutex.RLock()
-	defer mi.idxMutex.RUnlock()
-
-	var sum uint
-	for _, idx := range mi.idx {
-		sum += idx.Count(t)
-	}
-
-	return sum
-}
-
 // Insert adds a new index to the MasterIndex.
 func (mi *MasterIndex) Insert(idx *Index) {
 	mi.idxMutex.Lock()
@@ -200,9 +188,9 @@ func (mi *MasterIndex) StorePack(id restic.ID, blobs []restic.Blob) {
 	mi.idx = append(mi.idx, newIdx)
 }
 
-// FinalizeNotFinalIndexes finalizes all indexes that
+// finalizeNotFinalIndexes finalizes all indexes that
 // have not yet been saved and returns that list
-func (mi *MasterIndex) FinalizeNotFinalIndexes() []*Index {
+func (mi *MasterIndex) finalizeNotFinalIndexes() []*Index {
 	mi.idxMutex.Lock()
 	defer mi.idxMutex.Unlock()
 
@@ -219,8 +207,8 @@ func (mi *MasterIndex) FinalizeNotFinalIndexes() []*Index {
 	return list
 }
 
-// FinalizeFullIndexes finalizes all indexes that are full and returns that list.
-func (mi *MasterIndex) FinalizeFullIndexes() []*Index {
+// finalizeFullIndexes finalizes all indexes that are full and returns that list.
+func (mi *MasterIndex) finalizeFullIndexes() []*Index {
 	mi.idxMutex.Lock()
 	defer mi.idxMutex.Unlock()
 
@@ -229,7 +217,6 @@ func (mi *MasterIndex) FinalizeFullIndexes() []*Index {
 	debug.Log("checking %d indexes", len(mi.idx))
 	for _, idx := range mi.idx {
 		if idx.Final() {
-			debug.Log("index %p is final", idx)
 			continue
 		}
 
@@ -246,14 +233,6 @@ func (mi *MasterIndex) FinalizeFullIndexes() []*Index {
 	return list
 }
 
-// All returns all indexes.
-func (mi *MasterIndex) All() []*Index {
-	mi.idxMutex.Lock()
-	defer mi.idxMutex.Unlock()
-
-	return mi.idx
-}
-
 // Each returns a channel that yields all blobs known to the index. When the
 // context is cancelled, the background goroutine terminates. This blocks any
 // modification of the index.
@@ -264,13 +243,10 @@ func (mi *MasterIndex) Each(ctx context.Context) <-chan restic.PackedBlob {
 
 	go func() {
 		defer mi.idxMutex.RUnlock()
-		defer func() {
-			close(ch)
-		}()
+		defer close(ch)
 
 		for _, idx := range mi.idx {
-			idxCh := idx.Each(ctx)
-			for pb := range idxCh {
+			for pb := range idx.Each(ctx) {
 				select {
 				case <-ctx.Done():
 					return
@@ -299,7 +275,9 @@ func (mi *MasterIndex) MergeFinalIndexes() error {
 		idx := mi.idx[i]
 		// clear reference in masterindex as it may become stale
 		mi.idx[i] = nil
-		if !idx.Final() {
+		// do not merge indexes that have no id set
+		ids, _ := idx.IDs()
+		if !idx.Final() || len(ids) == 0 {
 			newIdx = append(newIdx, idx)
 		} else {
 			err := mi.idx[0].merge(idx)
@@ -320,7 +298,9 @@ const saveIndexParallelism = 4
 // The new index contains the IDs of all known indexes in the "supersedes"
 // field. The IDs are also returned in the IDSet obsolete.
 // After calling this function, you should remove the obsolete index files.
-func (mi *MasterIndex) Save(ctx context.Context, repo restic.Repository, packBlacklist restic.IDSet, extraObsolete restic.IDs, p *progress.Counter) (obsolete restic.IDSet, err error) {
+func (mi *MasterIndex) Save(ctx context.Context, repo restic.SaverUnpacked, packBlacklist restic.IDSet, extraObsolete restic.IDs, p *progress.Counter) (obsolete restic.IDSet, err error) {
+	p.SetMax(uint64(len(mi.Packs(packBlacklist))))
+
 	mi.idxMutex.Lock()
 	defer mi.idxMutex.Unlock()
 
@@ -403,6 +383,50 @@ func (mi *MasterIndex) Save(ctx context.Context, repo restic.Repository, packBla
 	err = wg.Wait()
 
 	return obsolete, err
+}
+
+// SaveIndex saves an index in the repository.
+func SaveIndex(ctx context.Context, repo restic.SaverUnpacked, index *Index) (restic.ID, error) {
+	buf := bytes.NewBuffer(nil)
+
+	err := index.Encode(buf)
+	if err != nil {
+		return restic.ID{}, err
+	}
+
+	id, err := repo.SaveUnpacked(ctx, restic.IndexFile, buf.Bytes())
+	ierr := index.SetID(id)
+	if ierr != nil {
+		// logic bug
+		panic(ierr)
+	}
+	return id, err
+}
+
+// saveIndex saves all indexes in the backend.
+func (mi *MasterIndex) saveIndex(ctx context.Context, r restic.SaverUnpacked, indexes ...*Index) error {
+	for i, idx := range indexes {
+		debug.Log("Saving index %d", i)
+
+		sid, err := SaveIndex(ctx, r, idx)
+		if err != nil {
+			return err
+		}
+
+		debug.Log("Saved index %d as %v", i, sid)
+	}
+
+	return mi.MergeFinalIndexes()
+}
+
+// SaveIndex saves all new indexes in the backend.
+func (mi *MasterIndex) SaveIndex(ctx context.Context, r restic.SaverUnpacked) error {
+	return mi.saveIndex(ctx, r, mi.finalizeNotFinalIndexes()...)
+}
+
+// SaveFullIndex saves all full indexes in the backend.
+func (mi *MasterIndex) SaveFullIndex(ctx context.Context, r restic.SaverUnpacked) error {
+	return mi.saveIndex(ctx, r, mi.finalizeFullIndexes()...)
 }
 
 // ListPacks returns the blobs of the specified pack files grouped by pack file.

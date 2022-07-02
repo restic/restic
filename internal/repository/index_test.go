@@ -2,6 +2,7 @@ package repository_test
 
 import (
 	"bytes"
+	"context"
 	"math/rand"
 	"sync"
 	"testing"
@@ -19,6 +20,7 @@ func TestIndexSerialize(t *testing.T) {
 	// create 50 packs with 20 blobs each
 	for i := 0; i < 50; i++ {
 		packID := restic.NewRandomID()
+		var blobs []restic.Blob
 
 		pos := uint(0)
 		for j := 0; j < 20; j++ {
@@ -37,10 +39,11 @@ func TestIndexSerialize(t *testing.T) {
 				},
 				PackID: packID,
 			}
-			idx.Store(pb)
+			blobs = append(blobs, pb.Blob)
 			tests = append(tests, pb)
 			pos += length
 		}
+		idx.StorePack(packID, blobs)
 	}
 
 	wr := bytes.NewBuffer(nil)
@@ -83,6 +86,7 @@ func TestIndexSerialize(t *testing.T) {
 	newtests := []restic.PackedBlob{}
 	for i := 0; i < 10; i++ {
 		packID := restic.NewRandomID()
+		var blobs []restic.Blob
 
 		pos := uint(0)
 		for j := 0; j < 10; j++ {
@@ -95,10 +99,11 @@ func TestIndexSerialize(t *testing.T) {
 				},
 				PackID: packID,
 			}
-			idx.Store(pb)
+			blobs = append(blobs, pb.Blob)
 			newtests = append(newtests, pb)
 			pos += length
 		}
+		idx.StorePack(packID, blobs)
 	}
 
 	// finalize; serialize idx, unserialize to idx3
@@ -141,24 +146,23 @@ func TestIndexSize(t *testing.T) {
 	idx := repository.NewIndex()
 
 	packs := 200
-	blobs := 100
+	blobCount := 100
 	for i := 0; i < packs; i++ {
 		packID := restic.NewRandomID()
+		var blobs []restic.Blob
 
 		pos := uint(0)
-		for j := 0; j < blobs; j++ {
+		for j := 0; j < blobCount; j++ {
 			length := uint(i*100 + j)
-			idx.Store(restic.PackedBlob{
-				Blob: restic.Blob{
-					BlobHandle: restic.NewRandomBlobHandle(),
-					Offset:     pos,
-					Length:     length,
-				},
-				PackID: packID,
+			blobs = append(blobs, restic.Blob{
+				BlobHandle: restic.NewRandomBlobHandle(),
+				Offset:     pos,
+				Length:     length,
 			})
 
 			pos += length
 		}
+		idx.StorePack(packID, blobs)
 	}
 
 	wr := bytes.NewBuffer(nil)
@@ -166,7 +170,7 @@ func TestIndexSize(t *testing.T) {
 	err := idx.Encode(wr)
 	rtest.OK(t, err)
 
-	t.Logf("Index file size for %d blobs in %d packs is %d", blobs*packs, packs, wr.Len())
+	t.Logf("Index file size for %d blobs in %d packs is %d", blobCount*packs, packs, wr.Len())
 }
 
 // example index serialization from doc/Design.rst
@@ -333,7 +337,7 @@ func TestIndexUnserialize(t *testing.T) {
 
 		rtest.Equals(t, oldIdx, idx.Supersedes())
 
-		blobs := idx.ListPack(exampleLookupTest.packID)
+		blobs := listPack(idx, exampleLookupTest.packID)
 		if len(blobs) != len(exampleLookupTest.blobs) {
 			t.Fatalf("expected %d blobs in pack, got %d", len(exampleLookupTest.blobs), len(blobs))
 		}
@@ -348,6 +352,15 @@ func TestIndexUnserialize(t *testing.T) {
 			}
 		}
 	}
+}
+
+func listPack(idx *repository.Index, id restic.ID) (pbs []restic.PackedBlob) {
+	for pb := range idx.Each(context.TODO()) {
+		if pb.PackID.Equal(id) {
+			pbs = append(pbs, pb)
+		}
+	}
+	return pbs
 }
 
 var (
@@ -419,13 +432,12 @@ func TestIndexPacks(t *testing.T) {
 
 	for i := 0; i < 20; i++ {
 		packID := restic.NewRandomID()
-		idx.Store(restic.PackedBlob{
-			Blob: restic.Blob{
+		idx.StorePack(packID, []restic.Blob{
+			{
 				BlobHandle: restic.NewRandomBlobHandle(),
 				Offset:     0,
 				Length:     23,
 			},
-			PackID: packID,
 		})
 
 		packs.Insert(packID)
@@ -529,6 +541,7 @@ func TestIndexHas(t *testing.T) {
 	// create 50 packs with 20 blobs each
 	for i := 0; i < 50; i++ {
 		packID := restic.NewRandomID()
+		var blobs []restic.Blob
 
 		pos := uint(0)
 		for j := 0; j < 20; j++ {
@@ -547,10 +560,11 @@ func TestIndexHas(t *testing.T) {
 				},
 				PackID: packID,
 			}
-			idx.Store(pb)
+			blobs = append(blobs, pb.Blob)
 			tests = append(tests, pb)
 			pos += length
 		}
+		idx.StorePack(packID, blobs)
 	}
 
 	for _, testBlob := range tests {

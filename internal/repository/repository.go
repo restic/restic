@@ -519,7 +519,7 @@ func (r *Repository) SaveUnpacked(ctx context.Context, t restic.FileType, p []by
 
 // Flush saves all remaining packs and the index
 func (r *Repository) Flush(ctx context.Context) error {
-	if err := r.FlushPacks(ctx); err != nil {
+	if err := r.flushPacks(ctx); err != nil {
 		return err
 	}
 
@@ -527,11 +527,11 @@ func (r *Repository) Flush(ctx context.Context) error {
 	if r.noAutoIndexUpdate {
 		return nil
 	}
-	return r.SaveIndex(ctx)
+	return r.idx.SaveIndex(ctx, r)
 }
 
-// FlushPacks saves all remaining packs.
-func (r *Repository) FlushPacks(ctx context.Context) error {
+// flushPacks saves all remaining packs.
+func (r *Repository) flushPacks(ctx context.Context) error {
 	pms := []struct {
 		t  restic.BlobType
 		pm *packerManager
@@ -573,44 +573,6 @@ func (r *Repository) SetIndex(i restic.MasterIndex) error {
 	return r.PrepareCache()
 }
 
-// SaveIndex saves an index in the repository.
-func SaveIndex(ctx context.Context, repo restic.Repository, index *Index) (restic.ID, error) {
-	buf := bytes.NewBuffer(nil)
-
-	err := index.Encode(buf)
-	if err != nil {
-		return restic.ID{}, err
-	}
-
-	return repo.SaveUnpacked(ctx, restic.IndexFile, buf.Bytes())
-}
-
-// saveIndex saves all indexes in the backend.
-func (r *Repository) saveIndex(ctx context.Context, indexes ...*Index) error {
-	for i, idx := range indexes {
-		debug.Log("Saving index %d", i)
-
-		sid, err := SaveIndex(ctx, r, idx)
-		if err != nil {
-			return err
-		}
-
-		debug.Log("Saved index %d as %v", i, sid)
-	}
-
-	return r.idx.MergeFinalIndexes()
-}
-
-// SaveIndex saves all new indexes in the backend.
-func (r *Repository) SaveIndex(ctx context.Context) error {
-	return r.saveIndex(ctx, r.idx.FinalizeNotFinalIndexes()...)
-}
-
-// SaveFullIndex saves all full indexes in the backend.
-func (r *Repository) SaveFullIndex(ctx context.Context) error {
-	return r.saveIndex(ctx, r.idx.FinalizeFullIndexes()...)
-}
-
 // LoadIndex loads all index files from the backend in parallel and stores them
 // in the master index. The first error that occurred is returned.
 func (r *Repository) LoadIndex(ctx context.Context) error {
@@ -620,12 +582,6 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-
-		_, err = idx.IDs()
-		if err != nil {
-			return err
-		}
-
 		r.idx.Insert(idx)
 		return nil
 	})
@@ -687,7 +643,6 @@ func (r *Repository) CreateIndexFromPacks(ctx context.Context, packsize map[rest
 		return nil
 	})
 
-	idx := NewIndex()
 	// a worker receives an pack ID from ch, reads the pack contents, and adds them to idx
 	worker := func() error {
 		for fi := range ch {
@@ -698,7 +653,7 @@ func (r *Repository) CreateIndexFromPacks(ctx context.Context, packsize map[rest
 				invalid = append(invalid, fi.ID)
 				m.Unlock()
 			}
-			idx.StorePack(fi.ID, entries)
+			r.idx.StorePack(fi.ID, entries)
 			p.Add(1)
 		}
 
@@ -714,9 +669,6 @@ func (r *Repository) CreateIndexFromPacks(ctx context.Context, packsize map[rest
 	if err != nil {
 		return invalid, errors.Fatal(err.Error())
 	}
-
-	// Add idx to MasterIndex
-	r.idx.Insert(idx)
 
 	return invalid, nil
 }
@@ -917,11 +869,6 @@ func (r *Repository) SaveTree(ctx context.Context, t *restic.Tree) (restic.ID, e
 
 	id, _, err := r.SaveBlob(ctx, restic.TreeBlob, buf, restic.ID{}, false)
 	return id, err
-}
-
-// Loader allows loading data from a backend.
-type Loader interface {
-	Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error
 }
 
 type BackendLoadFn func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error

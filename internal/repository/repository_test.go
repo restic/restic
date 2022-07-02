@@ -362,20 +362,19 @@ func benchmarkLoadIndex(b *testing.B, version uint) {
 	idx := repository.NewIndex()
 
 	for i := 0; i < 5000; i++ {
-		idx.Store(restic.PackedBlob{
-			Blob: restic.Blob{
+		idx.StorePack(restic.NewRandomID(), []restic.Blob{
+			{
 				BlobHandle: restic.NewRandomBlobHandle(),
 				Length:     1234,
 				Offset:     1235,
 			},
-			PackID: restic.NewRandomID(),
 		})
 	}
 
 	id, err := repository.SaveIndex(context.TODO(), repo, idx)
 	rtest.OK(b, err)
 
-	b.Logf("index saved as %v (%v entries)", id.Str(), idx.Count(restic.DataBlob))
+	b.Logf("index saved as %v", id.Str())
 	fi, err := repo.Backend().Stat(context.TODO(), restic.Handle{Type: restic.IndexFile, Name: id.String()})
 	rtest.OK(b, err)
 	b.Logf("filesize is %v", fi.Size)
@@ -414,25 +413,15 @@ func testRepositoryIncrementalIndex(t *testing.T, version uint) {
 
 	repository.IndexFull = func(*repository.Index, bool) bool { return true }
 
-	// add 15 packs
+	// add a few rounds of packs
 	for j := 0; j < 5; j++ {
-		// add 3 packs, write intermediate index
-		for i := 0; i < 3; i++ {
-			saveRandomDataBlobs(t, repo, 5, 1<<15)
-			rtest.OK(t, repo.FlushPacks(context.Background()))
-		}
-
-		rtest.OK(t, repo.SaveFullIndex(context.TODO()))
-	}
-
-	// add another 5 packs
-	for i := 0; i < 5; i++ {
-		saveRandomDataBlobs(t, repo, 5, 1<<15)
-		rtest.OK(t, repo.FlushPacks(context.Background()))
+		// add some packs, write intermediate index
+		saveRandomDataBlobs(t, repo, 20, 1<<15)
+		rtest.OK(t, repo.Flush(context.TODO()))
 	}
 
 	// save final index
-	rtest.OK(t, repo.SaveIndex(context.TODO()))
+	rtest.OK(t, repo.Flush(context.TODO()))
 
 	packEntries := make(map[restic.ID]map[restic.ID]struct{})
 

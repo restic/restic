@@ -155,8 +155,8 @@ func repack(t *testing.T, repo restic.Repository, packs restic.IDSet, blobs rest
 	}
 }
 
-func saveIndex(t *testing.T, repo restic.Repository) {
-	if err := repo.SaveIndex(context.TODO()); err != nil {
+func flush(t *testing.T, repo restic.Repository) {
+	if err := repo.Flush(context.TODO()); err != nil {
 		t.Fatalf("repo.SaveIndex() %v", err)
 	}
 }
@@ -192,9 +192,7 @@ func rebuildIndex(t *testing.T, repo restic.Repository) {
 		t.Fatal(err)
 	}
 
-	_, err = (repo.Index()).(*repository.MasterIndex).
-		Save(context.TODO(), repo, restic.NewIDSet(), nil, nil)
-
+	_, err = repo.Index().Save(context.TODO(), repo, restic.NewIDSet(), nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -237,7 +235,7 @@ func testRepack(t *testing.T, version uint) {
 			packsBefore, packsAfter)
 	}
 
-	saveIndex(t, repo)
+	flush(t, repo)
 
 	removeBlobs, keepBlobs := selectBlobs(t, repo, 0.2)
 
@@ -297,7 +295,7 @@ func testRepackCopy(t *testing.T, version uint) {
 	t.Logf("rand seed is %v", seed)
 
 	createRandomBlobs(t, repo, 100, 0.7)
-	saveIndex(t, repo)
+	flush(t, repo)
 
 	_, keepBlobs := selectBlobs(t, repo, 0.2)
 	copyPacks := findPacksForBlobs(t, repo, keepBlobs)

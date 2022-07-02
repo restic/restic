@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/restic/restic/internal/crypto"
+	"github.com/restic/restic/internal/ui/progress"
 )
 
 // Repository stores data in a backend. It provides high-level functions and
@@ -15,16 +16,12 @@ type Repository interface {
 
 	Key() *crypto.Key
 
-	SetIndex(MasterIndex) error
-
 	Index() MasterIndex
-	SaveFullIndex(context.Context) error
-	SaveIndex(context.Context) error
 	LoadIndex(context.Context) error
+	SetIndex(MasterIndex) error
+	LookupBlobSize(ID, BlobType) (uint, bool)
 
 	Config() Config
-
-	LookupBlobSize(ID, BlobType) (uint, bool)
 
 	// List calls the function fn for each file of type t in the repository.
 	// When an error is returned by fn, processing stops and List() returns the
@@ -65,6 +62,11 @@ type LoadJSONUnpackeder interface {
 	LoadJSONUnpacked(ctx context.Context, t FileType, id ID, dest interface{}) error
 }
 
+// SaverUnpacked allows saving a blob not stored in a pack file
+type SaverUnpacked interface {
+	SaveUnpacked(context.Context, FileType, []byte) (ID, error)
+}
+
 type PackBlobs struct {
 	PackID ID
 	Blobs  []Blob
@@ -74,11 +76,12 @@ type PackBlobs struct {
 type MasterIndex interface {
 	Has(BlobHandle) bool
 	Lookup(BlobHandle) []PackedBlob
-	Count(BlobType) uint
 
 	// Each returns a channel that yields all blobs known to the index. When
 	// the context is cancelled, the background goroutine terminates. This
 	// blocks any modification of the index.
 	Each(ctx context.Context) <-chan PackedBlob
 	ListPacks(ctx context.Context, packs IDSet) <-chan PackBlobs
+
+	Save(ctx context.Context, repo SaverUnpacked, packBlacklist IDSet, extraObsolete IDs, p *progress.Counter) (obsolete IDSet, err error)
 }

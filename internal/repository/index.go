@@ -46,8 +46,6 @@ type Index struct {
 	byType     [restic.NumBlobTypes]indexMap
 	packs      restic.IDs
 	mixedPacks restic.IDSet
-	// only used by Store, StorePacks does not check for already saved packIDs
-	packIDToIndex map[restic.ID]int
 
 	final      bool       // set to true for all indexes read from the backend ("finalized")
 	ids        restic.IDs // set to the IDs of the contained finalized indexes
@@ -58,9 +56,8 @@ type Index struct {
 // NewIndex returns a new index.
 func NewIndex() *Index {
 	return &Index{
-		packIDToIndex: make(map[restic.ID]int),
-		mixedPacks:    restic.NewIDSet(),
-		created:       time.Now(),
+		mixedPacks: restic.NewIDSet(),
+		created:    time.Now(),
 	}
 }
 
@@ -131,27 +128,6 @@ var IndexFull = func(idx *Index, compress bool) bool {
 
 }
 
-// Store remembers the id and pack in the index.
-func (idx *Index) Store(pb restic.PackedBlob) {
-	idx.m.Lock()
-	defer idx.m.Unlock()
-
-	if idx.final {
-		panic("store new item in finalized index")
-	}
-
-	debug.Log("%v", pb)
-
-	// get packIndex and save if new packID
-	packIndex, ok := idx.packIDToIndex[pb.PackID]
-	if !ok {
-		packIndex = idx.addToPacks(pb.PackID)
-		idx.packIDToIndex[pb.PackID] = packIndex
-	}
-
-	idx.store(packIndex, pb.Blob)
-}
-
 // StorePack remembers the ids of all blobs of a given pack
 // in the index
 func (idx *Index) StorePack(id restic.ID, blobs []restic.Blob) {
@@ -193,24 +169,6 @@ func (idx *Index) Lookup(bh restic.BlobHandle, pbs []restic.PackedBlob) []restic
 	idx.byType[bh.Type].foreachWithID(bh.ID, func(e *indexEntry) {
 		pbs = append(pbs, idx.toPackedBlob(e, bh.Type))
 	})
-
-	return pbs
-}
-
-// ListPack returns a list of blobs contained in a pack.
-func (idx *Index) ListPack(id restic.ID) (pbs []restic.PackedBlob) {
-	idx.m.Lock()
-	defer idx.m.Unlock()
-
-	for typ := range idx.byType {
-		m := &idx.byType[typ]
-		m.foreach(func(e *indexEntry) bool {
-			if idx.packs[e.packIndex] == id {
-				pbs = append(pbs, idx.toPackedBlob(e, restic.BlobType(typ)))
-			}
-			return true
-		})
-	}
 
 	return pbs
 }
@@ -353,15 +311,6 @@ func (idx *Index) Packs() restic.IDSet {
 	return packs
 }
 
-// Count returns the number of blobs of type t in the index.
-func (idx *Index) Count(t restic.BlobType) (n uint) {
-	debug.Log("counting blobs of type %v", t)
-	idx.m.Lock()
-	defer idx.m.Unlock()
-
-	return idx.byType[t].len()
-}
-
 type packJSON struct {
 	ID    restic.ID  `json:"id"`
 	Blobs []blobJSON `json:"blobs"`
@@ -430,13 +379,6 @@ func (idx *Index) Encode(w io.Writer) error {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
-	return idx.encode(w)
-}
-
-// encode writes the JSON serialization of the index to the writer w.
-func (idx *Index) encode(w io.Writer) error {
-	debug.Log("encoding index")
-
 	list, err := idx.generatePackList()
 	if err != nil {
 		return err
@@ -457,8 +399,6 @@ func (idx *Index) Finalize() {
 	defer idx.m.Unlock()
 
 	idx.final = true
-	// clear packIDToIndex as no more elements will be added
-	idx.packIDToIndex = nil
 }
 
 // IDs returns the IDs of the index, if available. If the index is not yet

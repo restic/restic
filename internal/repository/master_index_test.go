@@ -57,12 +57,12 @@ func TestMasterIndex(t *testing.T) {
 	}
 
 	idx1 := repository.NewIndex()
-	idx1.Store(blob1)
-	idx1.Store(blob12a)
+	idx1.StorePack(blob1.PackID, []restic.Blob{blob1.Blob})
+	idx1.StorePack(blob12a.PackID, []restic.Blob{blob12a.Blob})
 
 	idx2 := repository.NewIndex()
-	idx2.Store(blob2)
-	idx2.Store(blob12b)
+	idx2.StorePack(blob2.PackID, []restic.Blob{blob2.Blob})
+	idx2.StorePack(blob12b.PackID, []restic.Blob{blob12b.Blob})
 
 	mIdx := repository.NewMasterIndex()
 	mIdx.Insert(idx1)
@@ -122,12 +122,6 @@ func TestMasterIndex(t *testing.T) {
 	rtest.Assert(t, blobs == nil, "Expected no blobs when fetching with a random id")
 	_, found = mIdx.LookupSize(restic.NewRandomBlobHandle())
 	rtest.Assert(t, !found, "Expected no blobs when fetching with a random id")
-
-	// Test Count
-	num := mIdx.Count(restic.DataBlob)
-	rtest.Equals(t, uint(2), num)
-	num = mIdx.Count(restic.TreeBlob)
-	rtest.Equals(t, uint(2), num)
 }
 
 func TestMasterMergeFinalIndexes(t *testing.T) {
@@ -154,25 +148,18 @@ func TestMasterMergeFinalIndexes(t *testing.T) {
 	}
 
 	idx1 := repository.NewIndex()
-	idx1.Store(blob1)
+	idx1.StorePack(blob1.PackID, []restic.Blob{blob1.Blob})
 
 	idx2 := repository.NewIndex()
-	idx2.Store(blob2)
+	idx2.StorePack(blob2.PackID, []restic.Blob{blob2.Blob})
 
 	mIdx := repository.NewMasterIndex()
 	mIdx.Insert(idx1)
 	mIdx.Insert(idx2)
 
-	finalIndexes := mIdx.FinalizeNotFinalIndexes()
+	finalIndexes, idxCount := repository.TestMergeIndex(t, mIdx)
 	rtest.Equals(t, []*repository.Index{idx1, idx2}, finalIndexes)
-
-	err := mIdx.MergeFinalIndexes()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	allIndexes := mIdx.All()
-	rtest.Equals(t, 1, len(allIndexes))
+	rtest.Equals(t, 1, idxCount)
 
 	blobCount := 0
 	for range mIdx.Each(context.TODO()) {
@@ -191,20 +178,13 @@ func TestMasterMergeFinalIndexes(t *testing.T) {
 
 	// merge another index containing identical blobs
 	idx3 := repository.NewIndex()
-	idx3.Store(blob1)
-	idx3.Store(blob2)
+	idx3.StorePack(blob1.PackID, []restic.Blob{blob1.Blob})
+	idx3.StorePack(blob2.PackID, []restic.Blob{blob2.Blob})
 
 	mIdx.Insert(idx3)
-	finalIndexes = mIdx.FinalizeNotFinalIndexes()
+	finalIndexes, idxCount = repository.TestMergeIndex(t, mIdx)
 	rtest.Equals(t, []*repository.Index{idx3}, finalIndexes)
-
-	err = mIdx.MergeFinalIndexes()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	allIndexes = mIdx.All()
-	rtest.Equals(t, 1, len(allIndexes))
+	rtest.Equals(t, 1, idxCount)
 
 	// Index should have same entries as before!
 	blobs = mIdx.Lookup(bhInIdx1)
@@ -229,11 +209,7 @@ func createRandomMasterIndex(t testing.TB, rng *rand.Rand, num, size int) (*repo
 	idx1, lookupBh := createRandomIndex(rng, size)
 	mIdx.Insert(idx1)
 
-	mIdx.FinalizeNotFinalIndexes()
-	err := mIdx.MergeFinalIndexes()
-	if err != nil {
-		t.Fatal(err)
-	}
+	repository.TestMergeIndex(t, mIdx)
 
 	return mIdx, lookupBh
 }
@@ -291,14 +267,12 @@ func BenchmarkMasterIndexLookupMultipleIndexUnknown(b *testing.B) {
 }
 
 func BenchmarkMasterIndexLookupParallel(b *testing.B) {
-	mIdx := repository.NewMasterIndex()
-
 	for _, numindices := range []int{25, 50, 100} {
 		var lookupBh restic.BlobHandle
 
 		b.StopTimer()
 		rng := rand.New(rand.NewSource(0))
-		mIdx, lookupBh = createRandomMasterIndex(b, rng, numindices, 10000)
+		mIdx, lookupBh := createRandomMasterIndex(b, rng, numindices, 10000)
 		b.StartTimer()
 
 		name := fmt.Sprintf("known,indices=%d", numindices)
@@ -361,7 +335,7 @@ func testIndexSave(t *testing.T, version uint) {
 		t.Fatal(err)
 	}
 
-	obsoletes, err := repo.Index().(*repository.MasterIndex).Save(context.TODO(), repo, nil, nil, nil)
+	obsoletes, err := repo.Index().Save(context.TODO(), repo, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("unable to save new index: %v", err)
 	}
