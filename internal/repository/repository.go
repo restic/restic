@@ -28,6 +28,10 @@ import (
 
 const MaxStreamBufferSize = 4 * 1024 * 1024
 
+const MinPackSize = 4 * 1024 * 1024
+const DefaultPackSize = 16 * 1024 * 1024
+const MaxPackSize = 128 * 1024 * 1024
+
 // Repository is used to access a repository in a backend.
 type Repository struct {
 	be      restic.Backend
@@ -54,6 +58,7 @@ type Repository struct {
 
 type Options struct {
 	Compression CompressionMode
+	PackSize    uint
 }
 
 // CompressionMode configures if data should be compressed.
@@ -100,14 +105,23 @@ func (c *CompressionMode) Type() string {
 }
 
 // New returns a new repository with backend be.
-func New(be restic.Backend, opts Options) *Repository {
+func New(be restic.Backend, opts Options) (*Repository, error) {
+	if opts.PackSize == 0 {
+		opts.PackSize = DefaultPackSize
+	}
+	if opts.PackSize > MaxPackSize {
+		return nil, errors.Fatalf("pack size larger than limit of %v MiB", MaxPackSize/1024/1024)
+	} else if opts.PackSize < MinPackSize {
+		return nil, errors.Fatalf("pack size smaller than minimum of %v MiB", MinPackSize/1024/1024)
+	}
+
 	repo := &Repository{
 		be:   be,
 		opts: opts,
 		idx:  NewMasterIndex(),
 	}
 
-	return repo
+	return repo, nil
 }
 
 // DisableAutoIndexUpdate deactives the automatic finalization and upload of new
@@ -127,6 +141,11 @@ func (r *Repository) setConfig(cfg restic.Config) {
 // Config returns the repository configuration.
 func (r *Repository) Config() restic.Config {
 	return r.cfg
+}
+
+// MinPackSize return the minimum size of a pack file before uploading
+func (r *Repository) MinPackSize() uint {
+	return r.opts.PackSize
 }
 
 // UseCache replaces the backend with the wrapped cache.
@@ -497,8 +516,8 @@ func (r *Repository) StartPackUploader(ctx context.Context, wg *errgroup.Group) 
 	innerWg, ctx := errgroup.WithContext(ctx)
 	r.packerWg = innerWg
 	r.uploader = newPackerUploader(ctx, innerWg, r, r.be.Connections())
-	r.treePM = newPackerManager(r.key, restic.TreeBlob, r.uploader.QueuePacker)
-	r.dataPM = newPackerManager(r.key, restic.DataBlob, r.uploader.QueuePacker)
+	r.treePM = newPackerManager(r.key, restic.TreeBlob, r.MinPackSize(), r.uploader.QueuePacker)
+	r.dataPM = newPackerManager(r.key, restic.DataBlob, r.MinPackSize(), r.uploader.QueuePacker)
 
 	wg.Go(func() error {
 		return innerWg.Wait()
