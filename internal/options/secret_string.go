@@ -13,12 +13,15 @@ func (s SecretString) GoString() string {
 }
 
 func (s SecretString) String() string {
-	if len(*s.s) == 0 {
+	if s.s == nil || len(*s.s) == 0 {
 		return ``
 	}
 	return `**redacted**`
 }
 
 func (s *SecretString) Unwrap() string {
+	if s.s == nil {
+		return ""
+	}
 	return *s.s
 }
