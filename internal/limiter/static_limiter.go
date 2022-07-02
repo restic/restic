@@ -12,20 +12,27 @@ type staticLimiter struct {
 	downstream *ratelimit.Bucket
 }
 
+// Limits represents static upload and download limits.
+// For both, zero means unlimited.
+type Limits struct {
+	UploadKb   int
+	DownloadKb int
+}
+
 // NewStaticLimiter constructs a Limiter with a fixed (static) upload and
 // download rate cap
-func NewStaticLimiter(uploadKb, downloadKb int) Limiter {
+func NewStaticLimiter(l Limits) Limiter {
 	var (
 		upstreamBucket   *ratelimit.Bucket
 		downstreamBucket *ratelimit.Bucket
 	)
 
-	if uploadKb > 0 {
-		upstreamBucket = ratelimit.NewBucketWithRate(toByteRate(uploadKb), int64(toByteRate(uploadKb)))
+	if l.UploadKb > 0 {
+		upstreamBucket = ratelimit.NewBucketWithRate(toByteRate(l.UploadKb), int64(toByteRate(l.UploadKb)))
 	}
 
-	if downloadKb > 0 {
-		downstreamBucket = ratelimit.NewBucketWithRate(toByteRate(downloadKb), int64(toByteRate(downloadKb)))
+	if l.DownloadKb > 0 {
+		downstreamBucket = ratelimit.NewBucketWithRate(toByteRate(l.DownloadKb), int64(toByteRate(l.DownloadKb)))
 	}
 
 	return staticLimiter{

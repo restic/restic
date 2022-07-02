@@ -15,22 +15,19 @@ func TestLimiterWrapping(t *testing.T) {
 	reader := bytes.NewReader([]byte{})
 	writer := new(bytes.Buffer)
 
-	for _, limits := range []struct {
-		upstream   int
-		downstream int
-	}{
+	for _, limits := range []Limits{
 		{0, 0},
 		{42, 0},
 		{0, 42},
 		{42, 42},
 	} {
-		limiter := NewStaticLimiter(limits.upstream*1024, limits.downstream*1024)
+		limiter := NewStaticLimiter(limits)
 
-		mustWrapUpstream := limits.upstream > 0
+		mustWrapUpstream := limits.UploadKb > 0
 		test.Equals(t, limiter.Upstream(reader) != reader, mustWrapUpstream)
 		test.Equals(t, limiter.UpstreamWriter(writer) != writer, mustWrapUpstream)
 
-		mustWrapDownstream := limits.downstream > 0
+		mustWrapDownstream := limits.DownloadKb > 0
 		test.Equals(t, limiter.Downstream(reader) != reader, mustWrapDownstream)
 		test.Equals(t, limiter.DownstreamWriter(writer) != writer, mustWrapDownstream)
 	}
@@ -51,7 +48,7 @@ func (r *tracedReadCloser) Close() error {
 }
 
 func TestRoundTripperReader(t *testing.T) {
-	limiter := NewStaticLimiter(42*1024, 42*1024)
+	limiter := NewStaticLimiter(Limits{42 * 1024, 42 * 1024})
 	data := make([]byte, 1234)
 	_, err := io.ReadFull(rand.Reader, data)
 	test.OK(t, err)
@@ -89,7 +86,7 @@ func TestRoundTripperReader(t *testing.T) {
 }
 
 func TestRoundTripperCornerCases(t *testing.T) {
-	limiter := NewStaticLimiter(42*1024, 42*1024)
+	limiter := NewStaticLimiter(Limits{42 * 1024, 42 * 1024})
 
 	rt := limiter.Transport(roundTripper(func(req *http.Request) (*http.Response, error) {
 		return &http.Response{}, nil
