@@ -71,7 +71,7 @@ func addPruneOptions(c *cobra.Command) {
 	f.StringVar(&pruneOptions.MaxUnused, "max-unused", "5%", "tolerate given `limit` of unused data (absolute value in bytes with suffixes k/K, m/M, g/G, t/T, a value in % or the word 'unlimited')")
 	f.StringVar(&pruneOptions.MaxRepackSize, "max-repack-size", "", "maximum `size` to repack (allowed suffixes: k/K, m/M, g/G, t/T)")
 	f.BoolVar(&pruneOptions.RepackCachableOnly, "repack-cacheable-only", false, "only repack packs which are cacheable")
-	f.BoolVar(&pruneOptions.RepackSmall, "repack-small", false, "also repack small packs")
+	f.BoolVar(&pruneOptions.RepackSmall, "repack-small", false, "repack too small packs")
 	f.BoolVar(&pruneOptions.RepackUncompressed, "repack-uncompressed", false, "repack all uncompressed data")
 }
 
@@ -424,8 +424,10 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 	repackPacks := restic.NewIDSet()
 
 	var repackCandidates []packInfoWithID
+	var repackSmallCandidates []packInfoWithID
 	repoVersion := repo.Config().Version
-	targetPackSize := repo.PackSize()
+	// consider files with at least 80% of the target size as large enough
+	targetPackSize := repo.PackSize() / 5 * 4
 
 	// loop over all packs and decide what to do
 	bar := newProgressMax(!gopts.Quiet, uint64(len(indexPack)), "packs processed")
@@ -482,8 +484,12 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 			stats.packs.keep++
 
 		case p.unusedBlobs == 0 && p.tpe != restic.InvalidBlob && !mustCompress && packIsLargeEnough:
-			// All blobs in pack are used and not mixed => keep pack!
-			stats.packs.keep++
+			if packIsLargeEnough {
+				// All blobs in pack are used and not mixed => keep pack!
+				stats.packs.keep++
+			} else {
+				repackSmallCandidates = append(repackSmallCandidates, packInfoWithID{ID: id, packInfo: p})
+			}
 
 		default:
 			// all other packs are candidates for repacking
@@ -524,6 +530,14 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 		for id := range ignorePacks {
 			Warnf("will forget missing pack file %v\n", id)
 		}
+	}
+
+	if len(repackSmallCandidates) < 10 {
+		// too few small files to be worth the trouble, this also prevents endlessly repacking
+		// if there is just a single pack file below the target size
+		stats.packs.keep += uint(len(repackSmallCandidates))
+	} else {
+		repackCandidates = append(repackCandidates, repackSmallCandidates...)
 	}
 
 	// Sort repackCandidates such that packs with highest ratio unused/used space are picked first.
