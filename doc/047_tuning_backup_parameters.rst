@@ -59,8 +59,8 @@ upload connections, it is desirable to use larger pack sizes to reduce the numbe
 files in the repository and improve upload performance.  Notable examples are OpenStack
 Swift and some Google Drive Team accounts, where there are hard limits on the total
 number of files.  Larger pack sizes can also improve the backup speed for a repository
-stored on a local HDD.  This can be achieved by either using the ``--min-packsize`` option
-or defining the ``$RESTIC_MIN_PACKSIZE`` environment variable.  Restic currently defaults
+stored on a local HDD.  This can be achieved by either using the ``--pack-size`` option
+or defining the ``$RESTIC_PACK_SIZE`` environment variable.  Restic currently defaults
 to a 16 MiB pack size.
 
 The side effect of increasing the pack size is requiring more disk space for temporary pack

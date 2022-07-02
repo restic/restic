@@ -63,7 +63,7 @@ type GlobalOptions struct {
 	NoCache         bool
 	CleanupCache    bool
 	Compression     repository.CompressionMode
-	MinPackSize     uint
+	PackSize        uint
 
 	backend.TransportOptions
 	limiter.Limits
@@ -104,8 +104,8 @@ func init() {
 		return nil
 	})
 
-	// parse min pack size from env, on error the default value will be used
-	minPackSize, _ := strconv.ParseUint(os.Getenv("RESTIC_MIN_PACKSIZE"), 10, 32)
+	// parse target pack size from env, on error the default value will be used
+	targetPackSize, _ := strconv.ParseUint(os.Getenv("RESTIC_PACK_SIZE"), 10, 32)
 
 	f := cmdRoot.PersistentFlags()
 	f.StringVarP(&globalOptions.Repo, "repo", "r", os.Getenv("RESTIC_REPOSITORY"), "`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)")
@@ -126,7 +126,7 @@ func init() {
 	f.Var(&globalOptions.Compression, "compression", "compression mode (only available for repository format version 2), one of (auto|off|max)")
 	f.IntVar(&globalOptions.Limits.UploadKb, "limit-upload", 0, "limits uploads to a maximum rate in KiB/s. (default: unlimited)")
 	f.IntVar(&globalOptions.Limits.DownloadKb, "limit-download", 0, "limits downloads to a maximum rate in KiB/s. (default: unlimited)")
-	f.UintVar(&globalOptions.MinPackSize, "min-packsize", uint(minPackSize), "set min pack size in MiB. (default: $RESTIC_MIN_PACKSIZE)")
+	f.UintVar(&globalOptions.PackSize, "pack-size", uint(targetPackSize), "set target pack size in MiB. (default: $RESTIC_PACK_SIZE)")
 	f.StringSliceVarP(&globalOptions.Options, "option", "o", []string{}, "set extended option (`key=value`, can be specified multiple times)")
 	// Use our "generate" command instead of the cobra provided "completion" command
 	cmdRoot.CompletionOptions.DisableDefaultCmd = true
@@ -448,7 +448,7 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 
 	s, err := repository.New(be, repository.Options{
 		Compression: opts.Compression,
-		PackSize:    opts.MinPackSize * 1024 * 1024,
+		PackSize:    opts.PackSize * 1024 * 1024,
 	})
 	if err != nil {
 		return nil, err

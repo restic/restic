@@ -425,7 +425,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 
 	var repackCandidates []packInfoWithID
 	repoVersion := repo.Config().Version
-	minPackSize := repo.MinPackSize()
+	targetPackSize := repo.PackSize()
 
 	// loop over all packs and decide what to do
 	bar := newProgressMax(!gopts.Quiet, uint64(len(indexPack)), "packs processed")
@@ -467,7 +467,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 		// use a flag that pack must be compressed
 		p.uncompressed = mustCompress
 
-		packIsLargeEnough := !opts.RepackSmall || packSize >= int64(minPackSize)
+		packIsLargeEnough := !opts.RepackSmall || packSize >= int64(targetPackSize)
 
 		// decide what to do
 		switch {
@@ -539,9 +539,9 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 			return true
 		case pj.tpe != restic.DataBlob && pi.tpe == restic.DataBlob:
 			return false
-		case opts.RepackSmall && pi.unusedSize+pi.usedSize < uint64(minPackSize) && pj.unusedSize+pj.usedSize >= uint64(minPackSize):
+		case opts.RepackSmall && pi.unusedSize+pi.usedSize < uint64(targetPackSize) && pj.unusedSize+pj.usedSize >= uint64(targetPackSize):
 			return true
-		case opts.RepackSmall && pj.unusedSize+pj.usedSize < uint64(minPackSize) && pi.unusedSize+pi.usedSize >= uint64(minPackSize):
+		case opts.RepackSmall && pj.unusedSize+pj.usedSize < uint64(targetPackSize) && pi.unusedSize+pi.usedSize >= uint64(targetPackSize):
 			return false
 		}
 		return pi.unusedSize*pj.usedSize > pj.unusedSize*pi.usedSize
@@ -561,7 +561,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 	for _, p := range repackCandidates {
 		reachedUnusedSizeAfter := (stats.size.unused-stats.size.remove-stats.size.repackrm < maxUnusedSizeAfter)
 		reachedRepackSize := stats.size.repack+p.unusedSize+p.usedSize >= opts.MaxRepackBytes
-		packIsLargeEnough := !opts.RepackSmall || p.unusedSize+p.usedSize >= uint64(minPackSize)
+		packIsLargeEnough := !opts.RepackSmall || p.unusedSize+p.usedSize >= uint64(targetPackSize)
 
 		switch {
 		case reachedRepackSize:

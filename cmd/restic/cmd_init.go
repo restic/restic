@@ -88,7 +88,7 @@ func runInit(opts InitOptions, gopts GlobalOptions, args []string) error {
 
 	s, err := repository.New(be, repository.Options{
 		Compression: gopts.Compression,
-		PackSize:    gopts.MinPackSize * 1024 * 1024,
+		PackSize:    gopts.PackSize * 1024 * 1024,
 	})
 	if err != nil {
 		return err
