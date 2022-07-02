@@ -247,8 +247,8 @@ func (idx *Index) Each(ctx context.Context) <-chan restic.PackedBlob {
 }
 
 type EachByPackResult struct {
-	packID restic.ID
-	blobs  []restic.Blob
+	PackID restic.ID
+	Blobs  []restic.Blob
 }
 
 // EachByPack returns a channel that yields all blobs known to the index
@@ -269,28 +269,34 @@ func (idx *Index) EachByPack(ctx context.Context, packBlacklist restic.IDSet) <-
 			close(ch)
 		}()
 
+		byPack := make(map[restic.ID][][]*indexEntry)
+
 		for typ := range idx.byType {
-			byPack := make(map[restic.ID][]*indexEntry)
 			m := &idx.byType[typ]
 			m.foreach(func(e *indexEntry) bool {
 				packID := idx.packs[e.packIndex]
+				if _, ok := byPack[packID]; !ok {
+					byPack[packID] = make([][]*indexEntry, restic.NumBlobTypes)
+				}
 				if !idx.final || !packBlacklist.Has(packID) {
-					byPack[packID] = append(byPack[packID], e)
+					byPack[packID][typ] = append(byPack[packID][typ], e)
 				}
 				return true
 			})
+		}
 
-			for packID, pack := range byPack {
-				var result EachByPackResult
-				result.packID = packID
+		for packID, packByType := range byPack {
+			var result EachByPackResult
+			result.PackID = packID
+			for typ, pack := range packByType {
 				for _, e := range pack {
-					result.blobs = append(result.blobs, idx.toPackedBlob(e, restic.BlobType(typ)).Blob)
+					result.Blobs = append(result.Blobs, idx.toPackedBlob(e, restic.BlobType(typ)).Blob)
 				}
-				select {
-				case <-ctx.Done():
-					return
-				case ch <- result:
-				}
+			}
+			select {
+			case <-ctx.Done():
+				return
+			case ch <- result:
 			}
 		}
 	}()

@@ -574,3 +574,42 @@ func TestIndexHas(t *testing.T) {
 	rtest.Assert(t, !idx.Has(restic.NewRandomBlobHandle()), "Index reports having a data blob not added to it")
 	rtest.Assert(t, !idx.Has(restic.BlobHandle{ID: tests[0].ID, Type: restic.TreeBlob}), "Index reports having a tree blob added to it with the same id as a data blob")
 }
+
+func TestMixedEachByPack(t *testing.T) {
+	idx := repository.NewIndex()
+
+	expected := make(map[restic.ID]int)
+	// create 50 packs with 2 blobs each
+	for i := 0; i < 50; i++ {
+		packID := restic.NewRandomID()
+		expected[packID] = 1
+		blobs := []restic.Blob{
+			{
+				BlobHandle: restic.BlobHandle{Type: restic.DataBlob, ID: restic.NewRandomID()},
+				Offset:     0,
+				Length:     42,
+			},
+			{
+				BlobHandle: restic.BlobHandle{Type: restic.TreeBlob, ID: restic.NewRandomID()},
+				Offset:     42,
+				Length:     43,
+			},
+		}
+		idx.StorePack(packID, blobs)
+	}
+
+	reported := make(map[restic.ID]int)
+	for bp := range idx.EachByPack(context.TODO(), restic.NewIDSet()) {
+		reported[bp.PackID]++
+
+		rtest.Equals(t, 2, len(bp.Blobs)) // correct blob count
+		if bp.Blobs[0].Offset > bp.Blobs[1].Offset {
+			bp.Blobs[1], bp.Blobs[0] = bp.Blobs[0], bp.Blobs[1]
+		}
+		b0 := bp.Blobs[0]
+		rtest.Assert(t, b0.Type == restic.DataBlob && b0.Offset == 0 && b0.Length == 42, "wrong blob", b0)
+		b1 := bp.Blobs[1]
+		rtest.Assert(t, b1.Type == restic.TreeBlob && b1.Offset == 42 && b1.Length == 43, "wrong blob", b1)
+	}
+	rtest.Equals(t, expected, reported)
+}

@@ -339,7 +339,7 @@ func (mi *MasterIndex) Save(ctx context.Context, repo restic.SaverUnpacked, pack
 			debug.Log("adding index %d", i)
 
 			for pbs := range idx.EachByPack(ctx, packBlacklist) {
-				newIndex.StorePack(pbs.packID, pbs.blobs)
+				newIndex.StorePack(pbs.PackID, pbs.Blobs)
 				p.Add(1)
 				if IndexFull(newIndex, mi.compress) {
 					select {
