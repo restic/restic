@@ -426,8 +426,12 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 	var repackCandidates []packInfoWithID
 	var repackSmallCandidates []packInfoWithID
 	repoVersion := repo.Config().Version
-	// consider files with at least 80% of the target size as large enough
-	targetPackSize := repo.PackSize() / 5 * 4
+	// only repack very small files by default
+	targetPackSize := repo.PackSize() / 25
+	if opts.RepackSmall {
+		// consider files with at least 80% of the target size as large enough
+		targetPackSize = repo.PackSize() / 5 * 4
+	}
 
 	// loop over all packs and decide what to do
 	bar := newProgressMax(!gopts.Quiet, uint64(len(indexPack)), "packs processed")
@@ -469,8 +473,6 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 		// use a flag that pack must be compressed
 		p.uncompressed = mustCompress
 
-		packIsLargeEnough := !opts.RepackSmall || packSize >= int64(targetPackSize)
-
 		// decide what to do
 		switch {
 		case p.usedBlobs == 0:
@@ -483,8 +485,8 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 			// if this is a data pack and --repack-cacheable-only is set => keep pack!
 			stats.packs.keep++
 
-		case p.unusedBlobs == 0 && p.tpe != restic.InvalidBlob && !mustCompress && packIsLargeEnough:
-			if packIsLargeEnough {
+		case p.unusedBlobs == 0 && p.tpe != restic.InvalidBlob && !mustCompress:
+			if packSize >= int64(targetPackSize) {
 				// All blobs in pack are used and not mixed => keep pack!
 				stats.packs.keep++
 			} else {
@@ -544,7 +546,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 	// This is equivalent to sorting by unused / total space.
 	// Instead of unused[i] / used[i] > unused[j] / used[j] we use
 	// unused[i] * used[j] > unused[j] * used[i] as uint32*uint32 < uint64
-	// Morover packs containing trees are sorted to the beginning
+	// Moreover packs containing trees and too small packs are sorted to the beginning
 	sort.Slice(repackCandidates, func(i, j int) bool {
 		pi := repackCandidates[i].packInfo
 		pj := repackCandidates[j].packInfo
@@ -553,9 +555,9 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 			return true
 		case pj.tpe != restic.DataBlob && pi.tpe == restic.DataBlob:
 			return false
-		case opts.RepackSmall && pi.unusedSize+pi.usedSize < uint64(targetPackSize) && pj.unusedSize+pj.usedSize >= uint64(targetPackSize):
+		case pi.unusedSize+pi.usedSize < uint64(targetPackSize) && pj.unusedSize+pj.usedSize >= uint64(targetPackSize):
 			return true
-		case opts.RepackSmall && pj.unusedSize+pj.usedSize < uint64(targetPackSize) && pi.unusedSize+pi.usedSize >= uint64(targetPackSize):
+		case pj.unusedSize+pj.usedSize < uint64(targetPackSize) && pi.unusedSize+pi.usedSize >= uint64(targetPackSize):
 			return false
 		}
 		return pi.unusedSize*pj.usedSize > pj.unusedSize*pi.usedSize
@@ -575,7 +577,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 	for _, p := range repackCandidates {
 		reachedUnusedSizeAfter := (stats.size.unused-stats.size.remove-stats.size.repackrm < maxUnusedSizeAfter)
 		reachedRepackSize := stats.size.repack+p.unusedSize+p.usedSize >= opts.MaxRepackBytes
-		packIsLargeEnough := !opts.RepackSmall || p.unusedSize+p.usedSize >= uint64(targetPackSize)
+		packIsLargeEnough := p.unusedSize+p.usedSize >= uint64(targetPackSize)
 
 		switch {
 		case reachedRepackSize:
