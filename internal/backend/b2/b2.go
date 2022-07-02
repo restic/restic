@@ -35,7 +35,7 @@ var _ restic.Backend = &b2Backend{}
 func newClient(ctx context.Context, cfg Config, rt http.RoundTripper) (*b2.Client, error) {
 	opts := []b2.ClientOption{b2.Transport(rt)}
 
-	c, err := b2.NewClient(ctx, cfg.AccountID, cfg.Key, opts...)
+	c, err := b2.NewClient(ctx, cfg.AccountID, cfg.Key.Unwrap(), opts...)
 	if err != nil {
 		return nil, errors.Wrap(err, "b2.NewClient")
 	}

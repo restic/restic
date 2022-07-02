@@ -12,7 +12,7 @@ import (
 // server.
 type Config struct {
 	AccountName string
-	AccountKey  string
+	AccountKey  options.SecretString
 	Container   string
 	Prefix      string
 

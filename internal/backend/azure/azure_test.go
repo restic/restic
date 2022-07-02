@@ -13,6 +13,7 @@ import (
 	"github.com/restic/restic/internal/backend/azure"
 	"github.com/restic/restic/internal/backend/test"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -36,7 +37,7 @@ func newAzureTestSuite(t testing.TB) *test.Suite {
 
 			cfg := azcfg.(azure.Config)
 			cfg.AccountName = os.Getenv("RESTIC_TEST_AZURE_ACCOUNT_NAME")
-			cfg.AccountKey = os.Getenv("RESTIC_TEST_AZURE_ACCOUNT_KEY")
+			cfg.AccountKey = options.NewSecretString(os.Getenv("RESTIC_TEST_AZURE_ACCOUNT_KEY"))
 			cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
 			return cfg, nil
 		},
@@ -146,7 +147,7 @@ func TestUploadLargeFile(t *testing.T) {
 
 	cfg := azcfg.(azure.Config)
 	cfg.AccountName = os.Getenv("RESTIC_TEST_AZURE_ACCOUNT_NAME")
-	cfg.AccountKey = os.Getenv("RESTIC_TEST_AZURE_ACCOUNT_KEY")
+	cfg.AccountKey = options.NewSecretString(os.Getenv("RESTIC_TEST_AZURE_ACCOUNT_KEY"))
 	cfg.Prefix = fmt.Sprintf("test-upload-large-%d", time.Now().UnixNano())
 
 	tr, err := backend.Transport(backend.TransportOptions{})

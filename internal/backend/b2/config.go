@@ -13,7 +13,7 @@ import (
 // server.
 type Config struct {
 	AccountID string
-	Key       string
+	Key       options.SecretString
 	Bucket    string
 	Prefix    string
 

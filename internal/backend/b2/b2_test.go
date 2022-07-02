@@ -10,6 +10,7 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/b2"
 	"github.com/restic/restic/internal/backend/test"
+	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/restic"
 
 	rtest "github.com/restic/restic/internal/test"
@@ -37,7 +38,7 @@ func newB2TestSuite(t testing.TB) *test.Suite {
 
 			cfg := b2cfg.(b2.Config)
 			cfg.AccountID = os.Getenv("RESTIC_TEST_B2_ACCOUNT_ID")
-			cfg.Key = os.Getenv("RESTIC_TEST_B2_ACCOUNT_KEY")
+			cfg.Key = options.NewSecretString(os.Getenv("RESTIC_TEST_B2_ACCOUNT_KEY"))
 			cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
 			return cfg, nil
 		},

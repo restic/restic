@@ -555,13 +555,13 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 			cfg.KeyID = os.Getenv("AWS_ACCESS_KEY_ID")
 		}
 
-		if cfg.Secret == "" {
-			cfg.Secret = os.Getenv("AWS_SECRET_ACCESS_KEY")
+		if cfg.Secret.String() == "" {
+			cfg.Secret = options.NewSecretString(os.Getenv("AWS_SECRET_ACCESS_KEY"))
 		}
 
-		if cfg.KeyID == "" && cfg.Secret != "" {
+		if cfg.KeyID == "" && cfg.Secret.String() != "" {
 			return nil, errors.Fatalf("unable to open S3 backend: Key ID ($AWS_ACCESS_KEY_ID) is empty")
-		} else if cfg.KeyID != "" && cfg.Secret == "" {
+		} else if cfg.KeyID != "" && cfg.Secret.String() == "" {
 			return nil, errors.Fatalf("unable to open S3 backend: Secret ($AWS_SECRET_ACCESS_KEY) is empty")
 		}
 
@@ -595,8 +595,8 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 			cfg.AccountName = os.Getenv("AZURE_ACCOUNT_NAME")
 		}
 
-		if cfg.AccountKey == "" {
-			cfg.AccountKey = os.Getenv("AZURE_ACCOUNT_KEY")
+		if cfg.AccountKey.String() == "" {
+			cfg.AccountKey = options.NewSecretString(os.Getenv("AZURE_ACCOUNT_KEY"))
 		}
 
 		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
@@ -631,11 +631,11 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 			return nil, errors.Fatalf("unable to open B2 backend: Account ID ($B2_ACCOUNT_ID) is empty")
 		}
 
-		if cfg.Key == "" {
-			cfg.Key = os.Getenv("B2_ACCOUNT_KEY")
+		if cfg.Key.String() == "" {
+			cfg.Key = options.NewSecretString(os.Getenv("B2_ACCOUNT_KEY"))
 		}
 
-		if cfg.Key == "" {
+		if cfg.Key.String() == "" {
 			return nil, errors.Fatalf("unable to open B2 backend: Key ($B2_ACCOUNT_KEY) is empty")
 		}
 
