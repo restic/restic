@@ -53,3 +53,11 @@ func TestSecretStringEmpty(t *testing.T) {
 	test.Equals(t, `""`, fmt.Sprintf("%#v", secret))
 	test.Equals(t, keyStr, secret.Unwrap())
 }
+
+func TestSecretStringDefault(t *testing.T) {
+	secretStruct := &secretTest{}
+
+	test.Equals(t, "", secretStruct.str.String())
+	test.Equals(t, `""`, secretStruct.str.GoString())
+	test.Equals(t, "", secretStruct.str.Unwrap())
+}
