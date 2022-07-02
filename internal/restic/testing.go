@@ -52,7 +52,7 @@ func (fs *fakeFileSystem) saveFile(ctx context.Context, rd io.Reader) (blobs IDs
 
 		id := Hash(chunk.Data)
 		if !fs.blobIsKnown(BlobHandle{ID: id, Type: DataBlob}) {
-			_, _, err := fs.repo.SaveBlob(ctx, DataBlob, chunk.Data, id, true)
+			_, _, _, err := fs.repo.SaveBlob(ctx, DataBlob, chunk.Data, id, true)
 			if err != nil {
 				fs.t.Fatalf("error saving chunk: %v", err)
 			}
@@ -138,7 +138,7 @@ func (fs *fakeFileSystem) saveTree(ctx context.Context, seed int64, depth int) I
 		return id
 	}
 
-	_, _, err := fs.repo.SaveBlob(ctx, TreeBlob, buf, id, false)
+	_, _, _, err := fs.repo.SaveBlob(ctx, TreeBlob, buf, id, false)
 	if err != nil {
 		fs.t.Fatal(err)
 	}

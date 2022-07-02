@@ -44,7 +44,7 @@ func testSave(t *testing.T, version uint) {
 		id := restic.Hash(data)
 
 		// save
-		sid, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, data, restic.ID{}, false)
+		sid, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, data, restic.ID{}, false)
 		rtest.OK(t, err)
 
 		rtest.Equals(t, id, sid)
@@ -83,7 +83,7 @@ func testSaveFrom(t *testing.T, version uint) {
 		id := restic.Hash(data)
 
 		// save
-		id2, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, data, id, false)
+		id2, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, data, id, false)
 		rtest.OK(t, err)
 		rtest.Equals(t, id, id2)
 
@@ -125,7 +125,7 @@ func benchmarkSaveAndEncrypt(t *testing.B, version uint) {
 	t.SetBytes(int64(size))
 
 	for i := 0; i < t.N; i++ {
-		_, _, err = repo.SaveBlob(context.TODO(), restic.DataBlob, data, id, true)
+		_, _, _, err = repo.SaveBlob(context.TODO(), restic.DataBlob, data, id, true)
 		rtest.OK(t, err)
 	}
 }
@@ -187,7 +187,7 @@ func testLoadBlob(t *testing.T, version uint) {
 	_, err := io.ReadFull(rnd, buf)
 	rtest.OK(t, err)
 
-	id, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, buf, restic.ID{}, false)
+	id, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, buf, restic.ID{}, false)
 	rtest.OK(t, err)
 	rtest.OK(t, repo.Flush(context.Background()))
 
@@ -220,7 +220,7 @@ func benchmarkLoadBlob(b *testing.B, version uint) {
 	_, err := io.ReadFull(rnd, buf)
 	rtest.OK(b, err)
 
-	id, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, buf, restic.ID{}, false)
+	id, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, buf, restic.ID{}, false)
 	rtest.OK(b, err)
 	rtest.OK(b, repo.Flush(context.Background()))
 
@@ -396,7 +396,7 @@ func saveRandomDataBlobs(t testing.TB, repo restic.Repository, num int, sizeMax 
 		_, err := io.ReadFull(rnd, buf)
 		rtest.OK(t, err)
 
-		_, _, err = repo.SaveBlob(context.TODO(), restic.DataBlob, buf, restic.ID{}, false)
+		_, _, _, err = repo.SaveBlob(context.TODO(), restic.DataBlob, buf, restic.ID{}, false)
 		rtest.OK(t, err)
 	}
 }

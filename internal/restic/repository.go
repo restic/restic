@@ -46,7 +46,7 @@ type Repository interface {
 	LoadUnpacked(ctx context.Context, buf []byte, t FileType, id ID) (data []byte, err error)
 
 	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
-	SaveBlob(context.Context, BlobType, []byte, ID, bool) (ID, bool, error)
+	SaveBlob(context.Context, BlobType, []byte, ID, bool) (ID, bool, int, error)
 
 	LoadTree(context.Context, ID) (*Tree, error)
 	SaveTree(context.Context, *Tree) (ID, error)

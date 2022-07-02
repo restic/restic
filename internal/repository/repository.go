@@ -378,9 +378,10 @@ func (r *Repository) getZstdDecoder() *zstd.Decoder {
 }
 
 // saveAndEncrypt encrypts data and stores it to the backend as type t. If data
-// is small enough, it will be packed together with other small blobs.
-// The caller must ensure that the id matches the data.
-func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data []byte, id restic.ID) error {
+// is small enough, it will be packed together with other small blobs. The
+// caller must ensure that the id matches the data. Returned is the size data
+// occupies in the repo (compressed or not, including the encryption overhead).
+func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data []byte, id restic.ID) (size int, err error) {
 	debug.Log("save id %v (%v, %d bytes)", id, t, len(data))
 
 	uncompressedLength := 0
@@ -417,24 +418,29 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 
 	packer, err := pm.findPacker()
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	// save ciphertext
-	_, err = packer.Add(t, id, ciphertext, uncompressedLength)
+	size, err = packer.Add(t, id, ciphertext, uncompressedLength)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	// if the pack is not full enough, put back to the list
 	if packer.Size() < minPackSize {
 		debug.Log("pack is not full enough (%d bytes)", packer.Size())
 		pm.insertPacker(packer)
-		return nil
+		return size, nil
 	}
 
 	// else write the pack to the backend
-	return r.savePacker(ctx, t, packer)
+	hdrSize, err := r.savePacker(ctx, t, packer)
+	if err != nil {
+		return 0, err
+	}
+
+	return size + hdrSize, nil
 }
 
 // SaveJSONUnpacked serialises item as JSON and encrypts and saves it in the
@@ -545,7 +551,7 @@ func (r *Repository) flushPacks(ctx context.Context) error {
 
 		debug.Log("manually flushing %d packs", len(p.pm.packers))
 		for _, packer := range p.pm.packers {
-			err := r.savePacker(ctx, p.t, packer)
+			_, err := r.savePacker(ctx, p.t, packer)
 			if err != nil {
 				p.pm.pm.Unlock()
 				return err
@@ -815,8 +821,10 @@ func (r *Repository) Close() error {
 // It takes care that no duplicates are saved; this can be overwritten
 // by setting storeDuplicate to true.
 // If id is the null id, it will be computed and returned.
-// Also returns if the blob was already known before
-func (r *Repository) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, err error) {
+// Also returns if the blob was already known before.
+// If the blob was not known before, it returns the number of bytes the blob
+// occupies in the repo (compressed or not, including encryption overhead).
+func (r *Repository) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, size int, err error) {
 
 	// compute plaintext hash if not already set
 	if id.IsNull() {
@@ -830,10 +838,10 @@ func (r *Repository) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte
 
 	// only save when needed or explicitly told
 	if !known || storeDuplicate {
-		err = r.saveAndEncrypt(ctx, t, buf, newID)
+		size, err = r.saveAndEncrypt(ctx, t, buf, newID)
 	}
 
-	return newID, known, err
+	return newID, known, size, err
 }
 
 // LoadTree loads a tree from the repository.
@@ -867,7 +875,7 @@ func (r *Repository) SaveTree(ctx context.Context, t *restic.Tree) (restic.ID, e
 	// adds a newline after each object)
 	buf = append(buf, '\n')
 
-	id, _, err := r.SaveBlob(ctx, restic.TreeBlob, buf, restic.ID{}, false)
+	id, _, _, err := r.SaveBlob(ctx, restic.TreeBlob, buf, restic.ID{}, false)
 	return id, err
 }
 

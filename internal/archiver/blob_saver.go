@@ -10,7 +10,7 @@ import (
 
 // Saver allows saving a blob.
 type Saver interface {
-	SaveBlob(ctx context.Context, t restic.BlobType, data []byte, id restic.ID, storeDuplicate bool) (restic.ID, bool, error)
+	SaveBlob(ctx context.Context, t restic.BlobType, data []byte, id restic.ID, storeDuplicate bool) (restic.ID, bool, int, error)
 	Index() restic.MasterIndex
 }
 
@@ -86,9 +86,15 @@ func (s *FutureBlob) Known() bool {
 	return s.res.known
 }
 
-// Length returns the length of the blob.
+// Length returns the raw length of the blob.
 func (s *FutureBlob) Length() int {
 	return s.length
+}
+
+// SizeInRepo returns the number of bytes added to the repo (including
+// compression and crypto overhead).
+func (s *FutureBlob) SizeInRepo() int {
+	return s.res.size
 }
 
 type saveBlobJob struct {
@@ -100,10 +106,11 @@ type saveBlobJob struct {
 type saveBlobResponse struct {
 	id    restic.ID
 	known bool
+	size  int
 }
 
 func (s *BlobSaver) saveBlob(ctx context.Context, t restic.BlobType, buf []byte) (saveBlobResponse, error) {
-	id, known, err := s.repo.SaveBlob(ctx, t, buf, restic.ID{}, false)
+	id, known, size, err := s.repo.SaveBlob(ctx, t, buf, restic.ID{}, false)
 
 	if err != nil {
 		return saveBlobResponse{}, err
@@ -112,6 +119,7 @@ func (s *BlobSaver) saveBlob(ctx context.Context, t restic.BlobType, buf []byte)
 	return saveBlobResponse{
 		id:    id,
 		known: known,
+		size:  size,
 	}, nil
 }
 

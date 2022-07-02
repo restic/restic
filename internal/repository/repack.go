@@ -75,7 +75,7 @@ func Repack(ctx context.Context, repo restic.Repository, dstRepo restic.Reposito
 				}
 
 				// We do want to save already saved blobs!
-				_, _, err = dstRepo.SaveBlob(wgCtx, blob.Type, buf, blob.ID, true)
+				_, _, _, err = dstRepo.SaveBlob(wgCtx, blob.Type, buf, blob.ID, true)
 				if err != nil {
 					return err
 				}

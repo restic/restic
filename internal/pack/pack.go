@@ -31,7 +31,7 @@ func NewPacker(k *crypto.Key, wr io.Writer) *Packer {
 }
 
 // Add saves the data read from rd as a new blob to the packer. Returned is the
-// number of bytes written to the pack.
+// number of bytes written to the pack plus the pack header entry size.
 func (p *Packer) Add(t restic.BlobType, id restic.ID, data []byte, uncompressedLength int) (int, error) {
 	p.m.Lock()
 	defer p.m.Unlock()
@@ -44,6 +44,7 @@ func (p *Packer) Add(t restic.BlobType, id restic.ID, data []byte, uncompressedL
 	c.UncompressedLength = uint(uncompressedLength)
 	p.bytes += uint(n)
 	p.blobs = append(p.blobs, c)
+	n += CalculateEntrySize(c)
 
 	return n, errors.Wrap(err, "Write")
 }
@@ -69,12 +70,10 @@ type compressedHeaderEntry struct {
 }
 
 // Finalize writes the header for all added blobs and finalizes the pack.
-// Returned are the number of bytes written, including the header.
-func (p *Packer) Finalize() (uint, error) {
+// Returned are the number of bytes written, not yet reported by Add.
+func (p *Packer) Finalize() (int, error) {
 	p.m.Lock()
 	defer p.m.Unlock()
-
-	bytesWritten := p.bytes
 
 	header, err := p.makeHeader()
 	if err != nil {
@@ -97,17 +96,14 @@ func (p *Packer) Finalize() (uint, error) {
 		return 0, errors.New("wrong number of bytes written")
 	}
 
-	bytesWritten += uint(hdrBytes)
-
 	// write length
 	err = binary.Write(p.wr, binary.LittleEndian, uint32(hdrBytes))
 	if err != nil {
 		return 0, errors.Wrap(err, "binary.Write")
 	}
-	bytesWritten += uint(binary.Size(uint32(0)))
+	p.bytes += uint(hdrBytes + binary.Size(uint32(0)))
 
-	p.bytes = uint(bytesWritten)
-	return bytesWritten, nil
+	return restic.CiphertextLength(0) + binary.Size(uint32(0)), nil
 }
 
 // makeHeader constructs the header for p.

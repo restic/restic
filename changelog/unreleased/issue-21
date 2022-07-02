@@ -23,4 +23,7 @@ repository using `init --repository-version 2 --copy-chunker-params --repo2 path
 Then use the `copy` command to copy all snapshots to the new repository.
 
 https://github.com/restic/restic/issues/21
+https://github.com/restic/restic/issues/3779
 https://github.com/restic/restic/pull/3666
+https://github.com/restic/restic/pull/3704
+https://github.com/restic/restic/pull/3733
