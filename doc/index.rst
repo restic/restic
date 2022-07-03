@@ -9,6 +9,7 @@ Restic Documentation
    030_preparing_a_new_repo
    040_backup
    045_working_with_repos
+   047_tuning_backup_parameters
    050_restore
    060_forget
    070_encryption
