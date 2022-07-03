@@ -1,0 +1,9 @@
+Enhancement: Make restic find --newest inclusive
+
+restic find would use the first instant of a date or time passed to `--newest`
+as the maximum timestamp for files to list. Now it treats the modification time
+as a prefix instead, finding for example all files modified in 2022 for
+`--oldest 2022 --newest 2022` instead of only those modified in the first
+nanosecond of 2022 (previously `--oldest 2022 --newest 2023` had to be used).
+
+https://github.com/restic/restic/pull/3814
