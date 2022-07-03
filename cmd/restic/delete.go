@@ -18,8 +18,6 @@ func DeleteFilesChecked(gopts GlobalOptions, repo restic.Repository, fileList re
 	return deleteFiles(gopts, false, repo, fileList, fileType)
 }
 
-const numDeleteWorkers = 8
-
 // deleteFiles deletes the given fileList of fileType in parallel
 // if ignoreError=true, it will print a warning if there was an error, else it will abort.
 func deleteFiles(gopts GlobalOptions, ignoreError bool, repo restic.Repository, fileList restic.IDSet, fileType restic.FileType) error {
@@ -40,7 +38,9 @@ func deleteFiles(gopts GlobalOptions, ignoreError bool, repo restic.Repository, 
 
 	bar := newProgressMax(!gopts.JSON && !gopts.Quiet, uint64(totalCount), "files deleted")
 	defer bar.Done()
-	for i := 0; i < numDeleteWorkers; i++ {
+	// deleting files is IO-bound
+	workerCount := repo.Connections()
+	for i := 0; i < int(workerCount); i++ {
 		wg.Go(func() error {
 			for id := range fileChan {
 				h := restic.Handle{Type: fileType, Name: id.String()}

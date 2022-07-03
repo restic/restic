@@ -76,6 +76,10 @@ func (t TreeMap) LoadTree(ctx context.Context, id restic.ID) (*restic.Tree, erro
 	return tree, nil
 }
 
+func (t TreeMap) Connections() uint {
+	return 2
+}
+
 // checkFunc returns a function suitable for walking the tree to check
 // something, and a function which will check the final result.
 type checkFunc func(t testing.TB) (walker WalkFunc, final func(testing.TB))

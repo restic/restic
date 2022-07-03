@@ -12,8 +12,6 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const numRepackWorkers = 8
-
 // Repack takes a list of packs together with a list of blobs contained in
 // these packs. Each pack is loaded and the blobs listed in keepBlobs is saved
 // into a new pack. Returned is the list of obsolete packs which can then
@@ -107,11 +105,10 @@ func repack(ctx context.Context, repo restic.Repository, dstRepo restic.Reposito
 		return nil
 	}
 
-	connectionLimit := dstRepo.Backend().Connections() - 1
-	if connectionLimit > numRepackWorkers {
-		connectionLimit = numRepackWorkers
-	}
-	for i := 0; i < int(connectionLimit); i++ {
+	// as packs are streamed the concurrency is limited by IO
+	// reduce by one to ensure that uploading is always possible
+	repackWorkerCount := int(repo.Connections() - 1)
+	for i := 0; i < repackWorkerCount; i++ {
 		wg.Go(worker)
 	}
 

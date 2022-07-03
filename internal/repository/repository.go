@@ -558,6 +558,10 @@ func (r *Repository) Backend() restic.Backend {
 	return r.be
 }
 
+func (r *Repository) Connections() uint {
+	return r.be.Connections()
+}
+
 // Index returns the currently used MasterIndex.
 func (r *Repository) Index() restic.MasterIndex {
 	return r.idx
@@ -605,8 +609,6 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 	// remove index files from the cache which have been removed in the repo
 	return r.PrepareCache()
 }
-
-const listPackParallelism = 10
 
 // CreateIndexFromPacks creates a new index by reading all given pack files (with sizes).
 // The index is added to the MasterIndex but not marked as finalized.
@@ -656,8 +658,10 @@ func (r *Repository) CreateIndexFromPacks(ctx context.Context, packsize map[rest
 		return nil
 	}
 
+	// decoding the pack header is usually quite fast, thus we are primarily IO-bound
+	workerCount := int(r.Connections())
 	// run workers on ch
-	for i := 0; i < listPackParallelism; i++ {
+	for i := 0; i < workerCount; i++ {
 		wg.Go(worker)
 	}
 

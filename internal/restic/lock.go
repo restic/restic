@@ -287,8 +287,6 @@ func RemoveAllLocks(ctx context.Context, repo Repository) error {
 	})
 }
 
-const loadLockParallelism = 5
-
 // ForAllLocks reads all locks in parallel and calls the given callback.
 // It is guaranteed that the function is not run concurrently. If the
 // callback returns an error, this function is cancelled and also returns that error.
@@ -336,7 +334,8 @@ func ForAllLocks(ctx context.Context, repo Repository, excludeID *ID, fn func(ID
 		return nil
 	}
 
-	for i := 0; i < loadLockParallelism; i++ {
+	// For locks decoding is nearly for free, thus just assume were only limited by IO
+	for i := 0; i < int(repo.Connections()); i++ {
 		wg.Go(worker)
 	}
 

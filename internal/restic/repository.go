@@ -14,6 +14,8 @@ type Repository interface {
 
 	// Backend returns the backend used by the repository
 	Backend() Backend
+	// Connections returns the maximum number of concurrent backend operations
+	Connections() uint
 
 	Key() *crypto.Key
 
@@ -64,11 +66,15 @@ type Lister interface {
 
 // LoadJSONUnpackeder allows loading a JSON file not stored in a pack file
 type LoadJSONUnpackeder interface {
+	// Connections returns the maximum number of concurrent backend operations
+	Connections() uint
 	LoadJSONUnpacked(ctx context.Context, t FileType, id ID, dest interface{}) error
 }
 
 // SaverUnpacked allows saving a blob not stored in a pack file
 type SaverUnpacked interface {
+	// Connections returns the maximum number of concurrent backend operations
+	Connections() uint
 	SaveUnpacked(context.Context, FileType, []byte) (ID, error)
 }
 

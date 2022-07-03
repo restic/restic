@@ -20,8 +20,6 @@ import (
 //      con: each worker needs to keep one pack in memory
 
 const (
-	workerCount = 8
-
 	largeFileBlobCount = 25
 )
 
@@ -51,6 +49,7 @@ type fileRestorer struct {
 	idx        func(restic.BlobHandle) []restic.PackedBlob
 	packLoader repository.BackendLoadFn
 
+	workerCount int
 	filesWriter *filesWriter
 
 	dst   string
@@ -61,13 +60,18 @@ type fileRestorer struct {
 func newFileRestorer(dst string,
 	packLoader repository.BackendLoadFn,
 	key *crypto.Key,
-	idx func(restic.BlobHandle) []restic.PackedBlob) *fileRestorer {
+	idx func(restic.BlobHandle) []restic.PackedBlob,
+	connections uint) *fileRestorer {
+
+	// as packs are streamed the concurrency is limited by IO
+	workerCount := int(connections)
 
 	return &fileRestorer{
 		key:         key,
 		idx:         idx,
 		packLoader:  packLoader,
 		filesWriter: newFilesWriter(workerCount),
+		workerCount: workerCount,
 		dst:         dst,
 		Error:       restorerAbortOnAllErrors,
 	}
@@ -150,7 +154,7 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 		}
 		return nil
 	}
-	for i := 0; i < workerCount; i++ {
+	for i := 0; i < r.workerCount; i++ {
 		wg.Go(worker)
 	}
 

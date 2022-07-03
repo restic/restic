@@ -69,8 +69,6 @@ func LoadSnapshot(ctx context.Context, loader LoadJSONUnpackeder, id ID) (*Snaps
 	return sn, nil
 }
 
-const loadSnapshotParallelism = 5
-
 // ForAllSnapshots reads all snapshots in parallel and calls the
 // given function. It is guaranteed that the function is not run concurrently.
 // If the called function returns an error, this function is cancelled and
@@ -125,7 +123,8 @@ func ForAllSnapshots(ctx context.Context, be Lister, loader LoadJSONUnpackeder, 
 		return nil
 	}
 
-	for i := 0; i < loadSnapshotParallelism; i++ {
+	// For most snapshots decoding is nearly for free, thus just assume were only limited by IO
+	for i := 0; i < int(loader.Connections()); i++ {
 		wg.Go(worker)
 	}
 

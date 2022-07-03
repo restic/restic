@@ -3,14 +3,13 @@ package restic
 import (
 	"context"
 	"errors"
+	"runtime"
 	"sync"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/ui/progress"
 	"golang.org/x/sync/errgroup"
 )
-
-const streamTreeParallelism = 6
 
 // TreeItem is used to return either an error or the tree for a tree id
 type TreeItem struct {
@@ -163,7 +162,10 @@ func StreamTrees(ctx context.Context, wg *errgroup.Group, repo TreeLoader, trees
 
 	var loadTreeWg sync.WaitGroup
 
-	for i := 0; i < streamTreeParallelism; i++ {
+	// decoding a tree can take quite some time such that this can be both CPU- or IO-bound
+	// one extra worker to handle huge tree blobs
+	workerCount := int(repo.Connections()) + runtime.GOMAXPROCS(0) + 1
+	for i := 0; i < workerCount; i++ {
 		workerLoaderChan := loaderChan
 		if i == 0 {
 			workerLoaderChan = hugeTreeChan
