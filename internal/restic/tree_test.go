@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"golang.org/x/sync/errgroup"
 )
 
 var testFiles = []struct {
@@ -98,6 +99,8 @@ func TestLoadTree(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
+	var wg errgroup.Group
+	repo.StartPackUploader(context.TODO(), &wg)
 	// save tree
 	tree := restic.NewTree(0)
 	id, err := repo.SaveTree(context.TODO(), tree)

@@ -122,13 +122,18 @@ func (o Options) ApplyDefaults() Options {
 	}
 
 	if o.SaveBlobConcurrency == 0 {
-		o.SaveBlobConcurrency = uint(runtime.NumCPU())
+		// blob saving is CPU bound due to hash checking and encryption
+		// the actual upload is handled by the repository itself
+		o.SaveBlobConcurrency = uint(runtime.GOMAXPROCS(0))
 	}
 
 	if o.SaveTreeConcurrency == 0 {
-		// use a relatively high concurrency here, having multiple SaveTree
-		// workers is cheap
-		o.SaveTreeConcurrency = o.SaveBlobConcurrency * 20
+		// can either wait for a file, wait for a tree, serialize a tree or wait for saveblob
+		// the last two are cpu-bound and thus mutually exclusive.
+		// Also allow waiting for FileReadConcurrency files, this is the maximum of FutureFiles
+		// which currently can be in progress. The main backup loop blocks when trying to queue
+		// more files to read.
+		o.SaveTreeConcurrency = uint(runtime.GOMAXPROCS(0)) + o.FileReadConcurrency
 	}
 
 	return o
@@ -801,40 +806,47 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		return nil, restic.ID{}, err
 	}
 
-	wg, wgCtx := errgroup.WithContext(ctx)
-	start := time.Now()
-
 	var rootTreeID restic.ID
-	var stats ItemStats
-	wg.Go(func() error {
-		arch.runWorkers(wgCtx, wg)
 
-		debug.Log("starting snapshot")
-		tree, err := arch.SaveTree(wgCtx, "/", atree, arch.loadParentTree(wgCtx, opts.ParentSnapshot))
+	wgUp, wgUpCtx := errgroup.WithContext(ctx)
+	arch.Repo.StartPackUploader(wgUpCtx, wgUp)
+
+	wgUp.Go(func() error {
+		wg, wgCtx := errgroup.WithContext(wgUpCtx)
+		start := time.Now()
+
+		var stats ItemStats
+		wg.Go(func() error {
+			arch.runWorkers(wgCtx, wg)
+
+			debug.Log("starting snapshot")
+			tree, err := arch.SaveTree(wgCtx, "/", atree, arch.loadParentTree(wgCtx, opts.ParentSnapshot))
+			if err != nil {
+				return err
+			}
+
+			if len(tree.Nodes) == 0 {
+				return errors.New("snapshot is empty")
+			}
+
+			rootTreeID, stats, err = arch.saveTree(wgCtx, tree)
+			arch.stopWorkers()
+			return err
+		})
+
+		err = wg.Wait()
+		debug.Log("err is %v", err)
+
 		if err != nil {
+			debug.Log("error while saving tree: %v", err)
 			return err
 		}
 
-		if len(tree.Nodes) == 0 {
-			return errors.New("snapshot is empty")
-		}
+		arch.CompleteItem("/", nil, nil, stats, time.Since(start))
 
-		rootTreeID, stats, err = arch.saveTree(wgCtx, tree)
-		arch.stopWorkers()
-		return err
+		return arch.Repo.Flush(ctx)
 	})
-
-	err = wg.Wait()
-	debug.Log("err is %v", err)
-
-	if err != nil {
-		debug.Log("error while saving tree: %v", err)
-		return nil, restic.ID{}, err
-	}
-
-	arch.CompleteItem("/", nil, nil, stats, time.Since(start))
-
-	err = arch.Repo.Flush(ctx)
+	err = wgUp.Wait()
 	if err != nil {
 		return nil, restic.ID{}, err
 	}

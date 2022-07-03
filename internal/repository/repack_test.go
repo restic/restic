@@ -8,6 +8,7 @@ import (
 
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"golang.org/x/sync/errgroup"
 )
 
 func randomSize(min, max int) int {
@@ -15,6 +16,9 @@ func randomSize(min, max int) int {
 }
 
 func createRandomBlobs(t testing.TB, repo restic.Repository, blobs int, pData float32) {
+	var wg errgroup.Group
+	repo.StartPackUploader(context.TODO(), &wg)
+
 	for i := 0; i < blobs; i++ {
 		var (
 			tpe    restic.BlobType
@@ -46,6 +50,7 @@ func createRandomBlobs(t testing.TB, repo restic.Repository, blobs int, pData fl
 			if err = repo.Flush(context.Background()); err != nil {
 				t.Fatalf("repo.Flush() returned error %v", err)
 			}
+			repo.StartPackUploader(context.TODO(), &wg)
 		}
 	}
 
@@ -62,6 +67,8 @@ func createRandomWrongBlob(t testing.TB, repo restic.Repository) {
 	// invert first data byte
 	buf[0] ^= 0xff
 
+	var wg errgroup.Group
+	repo.StartPackUploader(context.TODO(), &wg)
 	_, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, buf, id, false)
 	if err != nil {
 		t.Fatalf("SaveFrom() error %v", err)

@@ -42,7 +42,7 @@ func newPack(t testing.TB, k *crypto.Key, lengths []int) ([]Buf, []byte, uint) {
 		rtest.OK(t, err)
 	}
 
-	_, err := p.Finalize()
+	err := p.Finalize()
 	rtest.OK(t, err)
 
 	return bufs, buf.Bytes(), p.Size()

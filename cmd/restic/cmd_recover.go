@@ -9,6 +9,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 )
 
 var cmdRecover = &cobra.Command{
@@ -131,14 +132,26 @@ func runRecover(gopts GlobalOptions) error {
 		}
 	}
 
-	treeID, err := repo.SaveTree(gopts.ctx, tree)
-	if err != nil {
-		return errors.Fatalf("unable to save new tree to the repo: %v", err)
-	}
+	wg, ctx := errgroup.WithContext(gopts.ctx)
+	repo.StartPackUploader(ctx, wg)
 
-	err = repo.Flush(gopts.ctx)
+	var treeID restic.ID
+	wg.Go(func() error {
+		var err error
+		treeID, err = repo.SaveTree(ctx, tree)
+		if err != nil {
+			return errors.Fatalf("unable to save new tree to the repo: %v", err)
+		}
+
+		err = repo.Flush(ctx)
+		if err != nil {
+			return errors.Fatalf("unable to save blobs to the repo: %v", err)
+		}
+		return nil
+	})
+	err = wg.Wait()
 	if err != nil {
-		return errors.Fatalf("unable to save blobs to the repo: %v", err)
+		return err
 	}
 
 	return createSnapshot(gopts.ctx, "/recover", hostname, []string{"recovered"}, repo, &treeID)

@@ -5,6 +5,7 @@ import (
 
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/ui/progress"
+	"golang.org/x/sync/errgroup"
 )
 
 // Repository stores data in a backend. It provides high-level functions and
@@ -34,6 +35,10 @@ type Repository interface {
 	// the the pack header.
 	ListPack(context.Context, ID, int64) ([]Blob, uint32, error)
 
+	// StartPackUploader start goroutines to upload new pack files. The errgroup
+	// is used to immediately notify about an upload error. Flush() will also return
+	// that error.
+	StartPackUploader(ctx context.Context, wg *errgroup.Group)
 	Flush(context.Context) error
 
 	SaveUnpacked(context.Context, FileType, []byte) (ID, error)

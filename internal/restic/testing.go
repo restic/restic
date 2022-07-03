@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/restic/chunker"
+	"golang.org/x/sync/errgroup"
 )
 
 // fakeFile returns a reader which yields deterministic pseudo-random data.
@@ -169,8 +170,16 @@ func TestCreateSnapshot(t testing.TB, repo Repository, at time.Time, depth int, 
 		rand:        rand.New(rand.NewSource(seed)),
 	}
 
+	var wg errgroup.Group
+	repo.StartPackUploader(context.TODO(), &wg)
+
 	treeID := fs.saveTree(context.TODO(), seed, depth)
 	snapshot.Tree = &treeID
+
+	err = repo.Flush(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	id, err := repo.SaveJSONUnpacked(context.TODO(), SnapshotFile, snapshot)
 	if err != nil {
@@ -180,11 +189,6 @@ func TestCreateSnapshot(t testing.TB, repo Repository, at time.Time, depth int, 
 	snapshot.id = &id
 
 	t.Logf("saved snapshot %v", id.Str())
-
-	err = repo.Flush(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	return snapshot
 }
