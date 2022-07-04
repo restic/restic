@@ -45,6 +45,8 @@ func (s *BlobSaver) TriggerShutdown() {
 // Save stores a blob in the repo. It checks the index and the known blobs
 // before saving anything. It takes ownership of the buffer passed in.
 func (s *BlobSaver) Save(ctx context.Context, t restic.BlobType, buf *Buffer) FutureBlob {
+	// buf might be freed once the job was submitted, thus calculate the length now
+	length := len(buf.Data)
 	ch := make(chan saveBlobResponse, 1)
 	select {
 	case s.ch <- saveBlobJob{BlobType: t, buf: buf, ch: ch}:
@@ -54,7 +56,7 @@ func (s *BlobSaver) Save(ctx context.Context, t restic.BlobType, buf *Buffer) Fu
 		return FutureBlob{ch: ch}
 	}
 
-	return FutureBlob{ch: ch, length: len(buf.Data)}
+	return FutureBlob{ch: ch, length: length}
 }
 
 // FutureBlob is returned by SaveBlob and will return the data once it has been processed.
