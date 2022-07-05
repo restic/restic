@@ -42,7 +42,7 @@ usage of restic.
 Compression
 ===========
 
-For a repository using a least repository format version 2, you can configure how data
+For a repository using at least repository format version 2, you can configure how data
 is compressed with the option ``--compression``. It can be set to ```auto``` (the default,
 which will compress very fast), ``max`` (which will trade backup speed and CPU usage for
 slightly better compression), or ``off`` (which disables compression). Each setting is
