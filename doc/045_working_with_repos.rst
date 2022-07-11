@@ -320,4 +320,9 @@ parameter, see :ref:`customize-pruning` for more details.
 File contents stored in the repository will not be rewritten, data from new
 backups will be compressed. Over time more and more of the repository will
 be compressed. To speed up this process and compress all not yet compressed
-data, you can run ``prune --repack-uncompressed``.
+data, you can run ``prune --repack-uncompressed``. When you plan creating 
+your backups with maximum compression you should also use this flag 
+when doing this step since you can't switch to maximum compression later.
+Complete command for repacking with maximum compression: 
+``restic prune --repack-uncompressed --compression max``.
+
