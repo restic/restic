@@ -131,6 +131,12 @@ func testRunRestoreIncludes(t testing.TB, gopts GlobalOptions, dir string, snaps
 	rtest.OK(t, runRestore(opts, gopts, []string{snapshotID.String()}))
 }
 
+func testRunRestoreAssumeFailure(t testing.TB, snapshotID string, opts RestoreOptions, gopts GlobalOptions) error {
+	err := runRestore(opts, gopts, []string{snapshotID})
+
+	return err
+}
+
 func testRunCheck(t testing.TB, gopts GlobalOptions) {
 	opts := CheckOptions{
 		ReadData:    true,

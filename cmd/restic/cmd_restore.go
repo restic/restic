@@ -70,6 +70,28 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 	hasExcludes := len(opts.Exclude) > 0 || len(opts.InsensitiveExclude) > 0
 	hasIncludes := len(opts.Include) > 0 || len(opts.InsensitiveInclude) > 0
 
+	// Validate provided patterns
+	if len(opts.Exclude) > 0 {
+		if valid, invalidPatterns := filter.ValidatePatterns(opts.Exclude); !valid {
+			return errors.Fatalf("--exclude: invalid pattern(s) provided:\n%s", strings.Join(invalidPatterns, "\n"))
+		}
+	}
+	if len(opts.InsensitiveExclude) > 0 {
+		if valid, invalidPatterns := filter.ValidatePatterns(opts.InsensitiveExclude); !valid {
+			return errors.Fatalf("--iexclude: invalid pattern(s) provided:\n%s", strings.Join(invalidPatterns, "\n"))
+		}
+	}
+	if len(opts.Include) > 0 {
+		if valid, invalidPatterns := filter.ValidatePatterns(opts.Include); !valid {
+			return errors.Fatalf("--include: invalid pattern(s) provided:\n%s", strings.Join(invalidPatterns, "\n"))
+		}
+	}
+	if len(opts.InsensitiveInclude) > 0 {
+		if valid, invalidPatterns := filter.ValidatePatterns(opts.InsensitiveInclude); !valid {
+			return errors.Fatalf("--iinclude: invalid pattern(s) provided:\n%s", strings.Join(invalidPatterns, "\n"))
+		}
+	}
+
 	for i, str := range opts.InsensitiveExclude {
 		opts.InsensitiveExclude[i] = strings.ToLower(str)
 	}
