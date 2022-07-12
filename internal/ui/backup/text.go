@@ -178,7 +178,7 @@ func (b *TextProgress) Finish(snapshotID restic.ID, start time.Time, summary *Su
 	if dryRun {
 		verb = "Would add"
 	}
-	b.P("%s to the repo: %-5s (%-5s stored)\n", verb, formatBytes(summary.ItemStats.DataSize+summary.ItemStats.TreeSize), formatBytes(summary.ItemStats.DataSizeInRepo+summary.ItemStats.TreeSizeInRepo))
+	b.P("%s to the repository: %-5s (%-5s stored)\n", verb, formatBytes(summary.ItemStats.DataSize+summary.ItemStats.TreeSize), formatBytes(summary.ItemStats.DataSizeInRepo+summary.ItemStats.TreeSizeInRepo))
 	b.P("\n")
 	b.P("processed %v files, %v in %s",
 		summary.Files.New+summary.Files.Changed+summary.Files.Unchanged,

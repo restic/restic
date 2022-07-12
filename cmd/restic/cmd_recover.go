@@ -140,12 +140,12 @@ func runRecover(gopts GlobalOptions) error {
 		var err error
 		treeID, err = repo.SaveTree(ctx, tree)
 		if err != nil {
-			return errors.Fatalf("unable to save new tree to the repo: %v", err)
+			return errors.Fatalf("unable to save new tree to the repository: %v", err)
 		}
 
 		err = repo.Flush(ctx)
 		if err != nil {
-			return errors.Fatalf("unable to save blobs to the repo: %v", err)
+			return errors.Fatalf("unable to save blobs to the repository: %v", err)
 		}
 		return nil
 	})

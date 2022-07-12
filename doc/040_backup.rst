@@ -191,7 +191,7 @@ Dry Runs
 ********
 
 You can perform a backup in dry run mode to see what would happen without
-modifying the repo.
+modifying the repository.
 
 -  ``--dry-run``/``-n`` Report what would be done, without writing to the repository
 
@@ -202,7 +202,7 @@ Combined with ``--verbose``, you can see a list of changes:
     $ restic -r /srv/restic-repo backup ~/work --dry-run -vv | grep "added"
     modified  /plan.txt, saved in 0.000s (9.110 KiB added)
     modified  /archive.tar.gz, saved in 0.140s (25.542 MiB added)
-    Would be added to the repo: 25.551 MiB
+    Would be added to the repository: 25.551 MiB
 
 Excluding Files
 ***************

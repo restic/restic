@@ -116,9 +116,9 @@ func init() {
 	f.BoolVar(&globalOptions.NoCache, "no-cache", false, "do not use a local cache")
 	f.StringSliceVar(&globalOptions.RootCertFilenames, "cacert", nil, "`file` to load root certificates from (default: use system certificates)")
 	f.StringVar(&globalOptions.TLSClientCertKeyFilename, "tls-client-cert", "", "path to a `file` containing PEM encoded TLS client certificate and private key")
-	f.BoolVar(&globalOptions.InsecureTLS, "insecure-tls", false, "skip TLS certificate verification when connecting to the repo (insecure)")
+	f.BoolVar(&globalOptions.InsecureTLS, "insecure-tls", false, "skip TLS certificate verification when connecting to the repository (insecure)")
 	f.BoolVar(&globalOptions.CleanupCache, "cleanup-cache", false, "auto remove old cache directories")
-	f.Var(&globalOptions.Compression, "compression", "compression mode (only available for repo format version 2), one of (auto|off|max)")
+	f.Var(&globalOptions.Compression, "compression", "compression mode (only available for repository format version 2), one of (auto|off|max)")
 	f.IntVar(&globalOptions.Limits.UploadKb, "limit-upload", 0, "limits uploads to a maximum rate in KiB/s. (default: unlimited)")
 	f.IntVar(&globalOptions.Limits.DownloadKb, "limit-download", 0, "limits downloads to a maximum rate in KiB/s. (default: unlimited)")
 	f.StringSliceVarP(&globalOptions.Options, "option", "o", []string{}, "set extended option (`key=value`, can be specified multiple times)")
@@ -470,7 +470,7 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 			id = id[:8]
 		}
 		if !opts.JSON {
-			Verbosef("repository %v opened (repo version %v) successfully, password is correct\n", id, s.Config().Version)
+			Verbosef("repository %v opened (repository version %v) successfully, password is correct\n", id, s.Config().Version)
 		}
 	}
 
@@ -712,7 +712,7 @@ func open(s string, gopts GlobalOptions, opts options.Options) (restic.Backend, 
 	}
 
 	if err != nil {
-		return nil, errors.Fatalf("unable to open repo at %v: %v", location.StripPassword(s), err)
+		return nil, errors.Fatalf("unable to open repository at %v: %v", location.StripPassword(s), err)
 	}
 
 	// wrap backend if a test specified an inner hook
