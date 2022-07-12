@@ -1,5 +1,5 @@
 # The first line must start with Bugfix:, Enhancement: or Change:,
-# including the colon. Use present use. Remove lines starting with '#'
+# including the colon. Use present tense. Remove lines starting with '#'
 # from this template.
 Enhancement: Allow custom bar in the foo command
 
