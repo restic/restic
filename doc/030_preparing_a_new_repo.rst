@@ -583,7 +583,7 @@ store data there. First, you need to install and `configure`_ rclone.  The
 general backend specification format is ``rclone:<remote>:<path>``, the
 ``<remote>:<path>`` component will be directly passed to rclone. When you
 configure a remote named ``foo``, you can then call restic as follows to
-initiate a new repository in the path ``bar`` in the repo:
+initiate a new repository in the path ``bar`` in the remote ``foo``:
 
 .. code-block:: console
 

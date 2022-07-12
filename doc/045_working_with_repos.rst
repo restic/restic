@@ -309,7 +309,7 @@ Upgrading must be done explicitly as a newer repository version increases the
 minimum restic version required to access the repository. For example the
 repository format version 2 is only readable using restic 0.14.0 or newer.
 
-Upgrading to repo version 2 is a two step process: first run
+Upgrading to repository version 2 is a two step process: first run
 ``migrate upgrade_repo_v2`` which will check the repository integrity and
 then upgrade the repository version. Repository problems must be corrected
 before the migration will be possible. After the migration is complete, run
