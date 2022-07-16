@@ -14,18 +14,12 @@
 Participating
 #############
 
-*********
-Debugging
-*********
+**********
+Debug Logs
+**********
 
-The program can be built with debug support like this:
-
-.. code-block:: console
-
-    $ go run build.go -tags debug
-
-Afterwards, extensive debug messages are written to the file in
-environment variable ``DEBUG_LOG``, e.g.:
+Set the environment variable ``DEBUG_LOG`` to let restic write extensive debug
+messages to the specified filed, e.g.:
 
 .. code-block:: console
 
@@ -64,6 +58,21 @@ statements originating in functions that match the pattern ``*unlock*``
 .. code-block:: console
 
     $ DEBUG_FUNCS=*unlock* restic check
+
+
+*********
+Debugging
+*********
+
+The program can be built with debug support like this:
+
+.. code-block:: console
+
+    $ go run build.go -tags debug
+
+This will make the ``restic debug <subcommand>`` available which can be used to
+inspect internal data structures. In addition, this enables profiling support
+which can help with investigation performance and memory usage issues.
 
 
 ************
