@@ -1,10 +1,10 @@
-Enhancement: Improve `prune` in presence of duplicate blobs
+Enhancement: Optimize handling of duplicate blobs in `prune`
 
-Restic `prune` always used to repack all pack files containing duplicate
-blobs. This effectively removed all duplicates during prune. However, one 
-of the consequences was that all those pack files were downloadeded and
-duplicate blobs did not contribute to the threshold for unused repository
-space.
+Restic `prune` always used to repack all data files containing duplicate
+blobs. This effectively removed all duplicates during prune. However, as a
+consequence all these data files were repacked even if the unused repository
+space threshold could be reached with less work.
+
 This is now changed and `prune` works nice and fast also if there are lots
 of duplicates.
 

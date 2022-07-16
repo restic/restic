@@ -258,12 +258,11 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 			count, ok := duplicateBlobs[bh]
 			if !ok {
 				count = 2 // this one is already the second blob!
-			} else {
+			} else if count < math.MaxUint8 {
+				// don't overflow, but saturate count at 255
+				// this can lead to a non-optimal pack selection, but won't cause
+				// problems otherwise
 				count++
-				if count == 0 {
-					// catch uint8 overflow
-					panic("too many duplicates, prune can only handly up to 255!")
-				}
 			}
 			duplicateBlobs[bh] = count
 			stats.size.duplicate += size
@@ -326,9 +325,9 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 	}
 
 	// if duplicate blobs exist, those will be set to either "used" or "unused":
-	// - mark only one occurency of duplicate blobs as used
+	// - mark only one occurence of duplicate blobs as used
 	// - if there are already some used blobs in a pack, possibly mark duplicates in this pack as "used"
-	// - if there are no used blobs in a pack, possibly mark duplicates as "usused"
+	// - if there are no used blobs in a pack, possibly mark duplicates as "unused"
 	if len(duplicateBlobs) > 0 {
 		// iterate again over all blobs in index (this is pretty cheap, all in-mem)
 		for blob := range repo.Index().Each(ctx) {
