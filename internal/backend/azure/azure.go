@@ -57,7 +57,12 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 		// we (as per the SDK ) assume the default Azure portal.
 		url := fmt.Sprintf("https://%s.blob.core.windows.net/", cfg.AccountName)
 		debug.Log(" - using sas token")
-		client, err = storage.NewAccountSASClientFromEndpointToken(url, cfg.AccountSAS.Unwrap())
+		sas := cfg.AccountSAS.Unwrap()
+		// strip query sign prefix
+		if sas[0] == '?' {
+			sas = sas[1:]
+		}
+		client, err = storage.NewAccountSASClientFromEndpointToken(url, sas)
 		if err != nil {
 			return nil, errors.Wrap(err, "NewAccountSASClientFromEndpointToken")
 		}

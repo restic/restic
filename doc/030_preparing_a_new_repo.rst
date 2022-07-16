@@ -506,10 +506,6 @@ or
     $ export AZURE_ACCOUNT_NAME=<ACCOUNT_NAME>
     $ export AZURE_ACCOUNT_SAS=<SAS_TOKEN>
 
-With the later form, ensure your ``SAS_TOKEN`` does not start with a leading
-``?``. If the generated token starts with a leading ``?`` it is safe to just
-delete the first character (the ``?``) before use.
-
 Afterwards you can initialize a repository in a container called ``foo`` in the
 root path like this:
 
