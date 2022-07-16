@@ -518,6 +518,10 @@ established.
 Google Cloud Storage
 ********************
 
+.. note:: Google Cloud Storage is not the same service as Google Drive - to use
+          the latter, please see :ref:`other-services` for instructions on using
+          the rclone backend.
+
 Restic supports Google Cloud Storage as a backend and connects via a `service account`_.
 
 For normal restic operation, the service account must have the
@@ -574,6 +578,8 @@ established.
 .. _service account: https://cloud.google.com/storage/docs/authentication#service_accounts
 .. _create a service account key: https://cloud.google.com/storage/docs/authentication#generating-a-private-key
 .. _default authentication material: https://developers.google.com/identity/protocols/application-default-credentials
+
+.. _other-services:
 
 Other Services via rclone
 *************************
