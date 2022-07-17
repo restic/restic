@@ -14,6 +14,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/klauspost/compress/zstd"
 	"github.com/restic/chunker"
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/dryrun"
 	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/crypto"
@@ -263,7 +264,7 @@ func (r *Repository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.
 			buf = buf[:blob.Length]
 		}
 
-		n, err := restic.ReadAt(ctx, r.be, h, int64(blob.Offset), buf)
+		n, err := backend.ReadAt(ctx, r.be, h, int64(blob.Offset), buf)
 		if err != nil {
 			debug.Log("error loading blob %v: %v", blob, err)
 			lastError = err
@@ -793,7 +794,7 @@ func (r *Repository) List(ctx context.Context, t restic.FileType, fn func(restic
 func (r *Repository) ListPack(ctx context.Context, id restic.ID, size int64) ([]restic.Blob, uint32, error) {
 	h := restic.Handle{Type: restic.PackFile, Name: id.String()}
 
-	return pack.List(r.Key(), restic.ReaderAt(ctx, r.Backend(), h), size)
+	return pack.List(r.Key(), backend.ReaderAt(ctx, r.Backend(), h), size)
 }
 
 // Delete calls backend.Delete() if implemented, and returns an error
