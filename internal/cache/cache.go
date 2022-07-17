@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -20,6 +21,9 @@ type Cache struct {
 	path    string
 	Base    string
 	Created bool
+
+	verifiedFiles     map[restic.Handle]struct{}
+	verifiedFilesLock sync.Mutex
 }
 
 const dirMode = 0700
@@ -156,6 +160,10 @@ func New(id string, basedir string) (c *Cache, err error) {
 func updateTimestamp(d string) error {
 	t := time.Now()
 	return fs.Chtimes(d, t, t)
+}
+
+func (c *Cache) EnableVerification() {
+	c.verifiedFiles = make(map[restic.Handle]struct{})
 }
 
 // MaxCacheAge is the default age (30 days) after which cache directories are considered old.

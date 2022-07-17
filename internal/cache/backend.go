@@ -2,6 +2,8 @@ package cache
 
 import (
 	"context"
+	"crypto/sha256"
+	"fmt"
 	"io"
 	"sync"
 
@@ -89,7 +91,7 @@ func (b *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRea
 	return nil
 }
 
-func (b *Backend) cacheFile(ctx context.Context, h restic.Handle) error {
+func (b *Backend) tryToCacheFile(ctx context.Context, h restic.Handle) error {
 	finish := make(chan struct{})
 
 	b.inProgressMutex.Lock()
@@ -106,9 +108,24 @@ func (b *Backend) cacheFile(ctx context.Context, h restic.Handle) error {
 		return nil
 	}
 
+	defer func() {
+		// signal other waiting goroutines that the file may now be cached
+		close(finish)
+
+		// remove the finish channel from the map
+		b.inProgressMutex.Lock()
+		delete(b.inProgress, h)
+		b.inProgressMutex.Unlock()
+	}()
+
+	if b.hasToVerify(h) && b.Cache.Has(h) {
+		if err := b.verify(ctx, h); err != nil {
+			return err
+		}
+	}
+
 	// test again, maybe the file was cached in the meantime
 	if !b.Cache.Has(h) {
-
 		// nope, it's still not in the cache, pull it from the repo and save it
 
 		err := b.Backend.Load(ctx, h, 0, 0, func(rd io.Reader) error {
@@ -120,14 +137,7 @@ func (b *Backend) cacheFile(ctx context.Context, h restic.Handle) error {
 		}
 	}
 
-	// signal other waiting goroutines that the file may now be cached
-	close(finish)
-
-	// remove the finish channel from the map
-	b.inProgressMutex.Lock()
-	delete(b.inProgress, h)
-	b.inProgressMutex.Unlock()
-
+	b.markVerified(h)
 	return nil
 }
 
@@ -148,6 +158,62 @@ func (b *Backend) loadFromCacheOrDelegate(ctx context.Context, h restic.Handle, 
 	return rd.Close()
 }
 
+func (b *Backend) hasToVerify(h restic.Handle) bool {
+	if b.Cache.verifiedFiles == nil {
+		return false
+	}
+
+	b.Cache.verifiedFilesLock.Lock()
+	_, ok := b.Cache.verifiedFiles[h]
+	b.Cache.verifiedFilesLock.Unlock()
+	return !ok
+}
+
+func (b *Backend) markVerified(h restic.Handle) {
+	if b.Cache.verifiedFiles != nil {
+		b.Cache.verifiedFilesLock.Lock()
+		b.Cache.verifiedFiles[h] = struct{}{}
+		b.Cache.verifiedFilesLock.Unlock()
+	}
+}
+
+func (b *Backend) verify(ctx context.Context, h restic.Handle) error {
+	// verify that the cache file is correct or at least not more broken than the version stored at the backend
+	var remoteHash, localHash restic.ID
+
+	err := b.Backend.Load(ctx, h, 0, 0, func(rd io.Reader) error {
+		hash := sha256.New()
+		_, ierr := io.Copy(hash, rd)
+		remoteHash = restic.IDFromHash(hash.Sum(nil))
+		return ierr
+	})
+	if err != nil {
+		return err
+	}
+	err = b.Backend.Load(ctx, h, 0, 0, func(rd io.Reader) error {
+		hash := sha256.New()
+		_, ierr := io.Copy(hash, rd)
+		localHash = restic.IDFromHash(hash.Sum(nil))
+		return ierr
+	})
+	if err != nil {
+		return err
+	}
+
+	if remoteHash != localHash {
+		if remoteHash.String() == h.Name {
+			// the remote version is correct, but not the local version
+			// delete the local version to repair the cache
+			_ = b.Cache.remove(h)
+		} else if localHash.String() == h.Name {
+			return fmt.Errorf("%v: remote file damaged, please re-upload the cached copy", h)
+		} else {
+			return fmt.Errorf("%v: cached and remote file differ and are both invalid", h)
+		}
+	}
+	return nil
+}
+
 // Load loads a file from the cache or the backend.
 func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset int64, consumer func(rd io.Reader) error) error {
 	b.inProgressMutex.Lock()
@@ -160,7 +226,7 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 		debug.Log("downloading %v finished", h)
 	}
 
-	if b.Cache.Has(h) {
+	if b.Cache.Has(h) && !b.hasToVerify(h) {
 		debug.Log("Load(%v, %v, %v) from cache", h, length, offset)
 		rd, err := b.Cache.load(h, length, offset)
 		if err == nil {
@@ -181,13 +247,11 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 	}
 
 	debug.Log("auto-store %v in the cache", h)
-	err := b.cacheFile(ctx, h)
-	if err == nil {
-		return b.loadFromCacheOrDelegate(ctx, h, length, offset, consumer)
+	err := b.tryToCacheFile(ctx, h)
+	if err != nil {
+		return err
 	}
-
-	debug.Log("error caching %v: %v, falling back to backend", h, err)
-	return b.Backend.Load(ctx, h, length, offset, consumer)
+	return b.loadFromCacheOrDelegate(ctx, h, length, offset, consumer)
 }
 
 // Stat tests whether the backend has a file. If it does not exist but still
