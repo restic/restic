@@ -658,6 +658,14 @@ func doPrune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, pla
 
 		// Also remove repacked packs
 		plan.removePacks.Merge(plan.repackPacks)
+
+		if len(plan.keepBlobs) != 0 {
+			Warnf("%v was not repacked\n\n"+
+				"Integrity check failed.\n"+
+				"Please report this error (along with the output of the 'prune' run) at\n"+
+				"https://github.com/restic/restic/issues/new/choose\n", plan.keepBlobs)
+			return errors.Fatal("internal error: blobs were not repacked")
+		}
 	}
 
 	if len(plan.ignorePacks) == 0 {
