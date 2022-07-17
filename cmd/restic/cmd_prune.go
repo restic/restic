@@ -367,11 +367,6 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 	repackPacks := restic.NewIDSet()
 
 	var repackCandidates []packInfoWithID
-
-	keep := func(p packInfo) {
-		stats.packs.keep++
-	}
-
 	repoVersion := repo.Config().Version
 
 	// loop over all packs and decide what to do
@@ -386,8 +381,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 			return nil
 		}
 
-		if p.unusedSize+p.usedSize != uint64(packSize) &&
-			p.usedBlobs != 0 {
+		if p.unusedSize+p.usedSize != uint64(packSize) && p.usedBlobs != 0 {
 			// Pack size does not fit and pack is needed => error
 			// If the pack is not needed, this is no error, the pack can
 			// and will be simply removed, see below.
@@ -425,11 +419,11 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 
 		case opts.RepackCachableOnly && p.tpe == restic.DataBlob:
 			// if this is a data pack and --repack-cacheable-only is set => keep pack!
-			keep(p)
+			stats.packs.keep++
 
 		case p.unusedBlobs == 0 && p.tpe != restic.InvalidBlob && !mustCompress:
 			// All blobs in pack are used and not mixed => keep pack!
-			keep(p)
+			stats.packs.keep++
 
 		default:
 			// all other packs are candidates for repacking
@@ -506,7 +500,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 
 		switch {
 		case reachedRepackSize:
-			keep(p.packInfo)
+			stats.packs.keep++
 
 		case p.tpe != restic.DataBlob, p.uncompressed:
 			// repacking non-data packs / uncompressed-trees is only limited by repackSize
@@ -514,7 +508,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 
 		case reachedUnusedSizeAfter:
 			// for all other packs stop repacking if tolerated unused size is reached.
-			keep(p.packInfo)
+			stats.packs.keep++
 
 		default:
 			repack(p.ID, p.packInfo)
