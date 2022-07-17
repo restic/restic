@@ -73,7 +73,13 @@ func repack(ctx context.Context, repo restic.Repository, dstRepo restic.Reposito
 		for t := range downloadQueue {
 			err := StreamPack(wgCtx, repo.Backend().Load, repo.Key(), t.PackID, t.Blobs, func(blob restic.BlobHandle, buf []byte, err error) error {
 				if err != nil {
-					return err
+					var ierr error
+					// check whether we can get a valid copy somewhere else
+					buf, ierr = repo.LoadBlob(wgCtx, blob.Type, blob.ID, nil)
+					if ierr != nil {
+						// no luck, return the original error
+						return err
+					}
 				}
 
 				keepMutex.Lock()
