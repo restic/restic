@@ -521,9 +521,6 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 		}
 	}
 
-	// calculate limit for number of unused bytes in the repo after repacking
-	maxUnusedSizeAfter := opts.maxUnusedBytes(stats.size.used)
-
 	// Sort repackCandidates such that packs with highest ratio unused/used space are picked first.
 	// This is equivalent to sorting by unused / total space.
 	// Instead of unused[i] / used[i] > unused[j] / used[j] we use
@@ -548,6 +545,9 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 		stats.blobs.repackrm += p.unusedBlobs
 		stats.size.repackrm += p.unusedSize
 	}
+
+	// calculate limit for number of unused bytes in the repo after repacking
+	maxUnusedSizeAfter := opts.maxUnusedBytes(stats.size.used)
 
 	for _, p := range repackCandidates {
 		reachedUnusedSizeAfter := (stats.size.unused-stats.size.remove-stats.size.repackrm < maxUnusedSizeAfter)
