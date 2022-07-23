@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
@@ -194,7 +195,7 @@ func (idx *Index) LookupSize(bh restic.BlobHandle) (plaintextLength uint, found 
 	if e.uncompressedLength != 0 {
 		return uint(e.uncompressedLength), true
 	}
-	return uint(restic.PlaintextLength(int(e.length))), true
+	return uint(crypto.PlaintextLength(int(e.length))), true
 }
 
 // Supersedes returns the list of indexes this index supersedes, if any.

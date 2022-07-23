@@ -7,8 +7,8 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/restic/restic/internal/backend/mock"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/mock"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
 )

@@ -1,16 +1,16 @@
-package restic_test
+package restorer_test
 
 import (
 	"testing"
 
-	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/restorer"
 	rtest "github.com/restic/restic/internal/test"
 )
 
 // TestHardLinks contains various tests for HardlinkIndex.
 func TestHardLinks(t *testing.T) {
 
-	idx := restic.NewHardlinkIndex()
+	idx := restorer.NewHardlinkIndex()
 
 	idx.Add(1, 2, "inode1-file1-on-device2")
 	idx.Add(2, 3, "inode2-file2-on-device3")

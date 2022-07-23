@@ -3,6 +3,7 @@ package restic
 import (
 	"fmt"
 
+	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
 )
 
@@ -23,7 +24,7 @@ func (b Blob) DataLength() uint {
 	if b.UncompressedLength != 0 {
 		return b.UncompressedLength
 	}
-	return uint(PlaintextLength(int(b.Length)))
+	return uint(crypto.PlaintextLength(int(b.Length)))
 }
 
 func (b Blob) IsCompressed() bool {

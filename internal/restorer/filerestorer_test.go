@@ -61,7 +61,7 @@ func newTestRepo(content []TestFile) *TestRepo {
 
 	key := crypto.NewRandomKey()
 	seal := func(data []byte) []byte {
-		ciphertext := restic.NewBlobBuffer(len(data))
+		ciphertext := crypto.NewBlobBuffer(len(data))
 		ciphertext = ciphertext[:0] // truncate the slice
 		nonce := crypto.NewRandomNonce()
 		ciphertext = append(ciphertext, nonce...)

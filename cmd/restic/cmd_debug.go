@@ -107,7 +107,7 @@ func printPacks(ctx context.Context, repo *repository.Repository, wr io.Writer) 
 	return repo.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
 		h := restic.Handle{Type: restic.PackFile, Name: id.String()}
 
-		blobs, _, err := pack.List(repo.Key(), restic.ReaderAt(ctx, repo.Backend(), h), size)
+		blobs, _, err := pack.List(repo.Key(), backend.ReaderAt(ctx, repo.Backend(), h), size)
 		if err != nil {
 			Warnf("error for pack %v: %v\n", id.Str(), err)
 			return nil
@@ -525,7 +525,7 @@ func examinePack(ctx context.Context, repo restic.Repository, id restic.ID) erro
 	Printf("  ========================================\n")
 	Printf("  inspect the pack itself\n")
 
-	blobs, _, err := pack.List(repo.Key(), restic.ReaderAt(ctx, repo.Backend(), h), fi.Size)
+	blobs, _, err := pack.List(repo.Key(), backend.ReaderAt(ctx, repo.Backend(), h), fi.Size)
 	if err != nil {
 		return fmt.Errorf("pack %v: %v", id.Str(), err)
 	}

@@ -1,4 +1,4 @@
-package restic
+package backend
 
 import (
 	"context"
@@ -6,12 +6,13 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/restic"
 )
 
 type backendReaderAt struct {
 	ctx context.Context
-	be  Backend
-	h   Handle
+	be  restic.Backend
+	h   restic.Handle
 }
 
 func (brd backendReaderAt) ReadAt(p []byte, offset int64) (n int, err error) {
@@ -21,12 +22,12 @@ func (brd backendReaderAt) ReadAt(p []byte, offset int64) (n int, err error) {
 // ReaderAt returns an io.ReaderAt for a file in the backend. The returned reader
 // should not escape the caller function to avoid unexpected interactions with the
 // embedded context
-func ReaderAt(ctx context.Context, be Backend, h Handle) io.ReaderAt {
+func ReaderAt(ctx context.Context, be restic.Backend, h restic.Handle) io.ReaderAt {
 	return backendReaderAt{ctx: ctx, be: be, h: h}
 }
 
 // ReadAt reads from the backend handle h at the given position.
-func ReadAt(ctx context.Context, be Backend, h Handle, offset int64, p []byte) (n int, err error) {
+func ReadAt(ctx context.Context, be restic.Backend, h restic.Handle, offset int64, p []byte) (n int, err error) {
 	debug.Log("ReadAt(%v) at %v, len %v", h, offset, len(p))
 
 	err = be.Load(ctx, h, len(p), offset, func(rd io.Reader) (ierr error) {

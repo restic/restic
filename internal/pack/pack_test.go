@@ -9,6 +9,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/mem"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/pack"
@@ -128,7 +129,7 @@ func TestUnpackReadSeeker(t *testing.T) {
 
 	handle := restic.Handle{Type: restic.PackFile, Name: id.String()}
 	rtest.OK(t, b.Save(context.TODO(), handle, restic.NewByteReader(packData, b.Hasher())))
-	verifyBlobs(t, bufs, k, restic.ReaderAt(context.TODO(), b, handle), packSize)
+	verifyBlobs(t, bufs, k, backend.ReaderAt(context.TODO(), b, handle), packSize)
 }
 
 func TestShortPack(t *testing.T) {
@@ -141,5 +142,5 @@ func TestShortPack(t *testing.T) {
 
 	handle := restic.Handle{Type: restic.PackFile, Name: id.String()}
 	rtest.OK(t, b.Save(context.TODO(), handle, restic.NewByteReader(packData, b.Hasher())))
-	verifyBlobs(t, bufs, k, restic.ReaderAt(context.TODO(), b, handle), packSize)
+	verifyBlobs(t, bufs, k, backend.ReaderAt(context.TODO(), b, handle), packSize)
 }
