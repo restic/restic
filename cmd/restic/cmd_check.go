@@ -57,7 +57,13 @@ func init() {
 	f := cmdCheck.Flags()
 	f.BoolVar(&checkOptions.ReadData, "read-data", false, "read all data blobs")
 	f.StringVar(&checkOptions.ReadDataSubset, "read-data-subset", "", "read a `subset` of data packs, specified as 'n/t' for specific part, or either 'x%' or 'x.y%' or a size in bytes with suffixes k/K, m/M, g/G, t/T for a random subset")
-	f.BoolVar(&checkOptions.CheckUnused, "check-unused", false, "find unused blobs")
+	var ignored bool
+	f.BoolVar(&ignored, "check-unused", false, "find unused blobs")
+	err := f.MarkDeprecated("check-unused", "`--check-unused` is deprecated and will be ignored")
+	if err != nil {
+		// MarkDeprecated only returns an error when the flag is not found
+		panic(err)
+	}
 	f.BoolVar(&checkOptions.WithCache, "with-cache", false, "use the cache")
 }
 
@@ -221,11 +227,15 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 
 	errorsFound := false
 	suggestIndexRebuild := false
+	mixedFound := false
 	for _, hint := range hints {
 		switch hint.(type) {
 		case *checker.ErrDuplicatePacks, *checker.ErrOldIndexFormat:
 			Printf("%v\n", hint)
 			suggestIndexRebuild = true
+		case *checker.ErrMixedPack:
+			Printf("%v\n", hint)
+			mixedFound = true
 		default:
 			Warnf("error: %v\n", hint)
 			errorsFound = true
@@ -234,6 +244,9 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 
 	if suggestIndexRebuild {
 		Printf("This is non-critical, you can run `restic rebuild-index' to correct this\n")
+	}
+	if mixedFound {
+		Printf("Mixed packs with tree and data blobs are non-critical, you can run `restic prune` to correct this.\n")
 	}
 
 	if len(errs) > 0 {
@@ -253,10 +266,12 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 		if checker.IsOrphanedPack(err) {
 			orphanedPacks++
 			Verbosef("%v\n", err)
-			continue
+		} else if _, ok := err.(*checker.ErrLegacyLayout); ok {
+			Verbosef("repository still uses the S3 legacy layout\nPlease run `restic migrate s3legacy` to correct this.\n")
+		} else {
+			errorsFound = true
+			Warnf("%v\n", err)
 		}
-		errorsFound = true
-		Warnf("error: %v\n", err)
 	}
 
 	if orphanedPacks > 0 {
