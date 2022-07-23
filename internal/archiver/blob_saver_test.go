@@ -54,8 +54,8 @@ func TestBlobSaver(t *testing.T) {
 	}
 
 	for i, blob := range results {
-		blob.Wait(ctx)
-		if blob.Known() {
+		sbr := blob.Take(ctx)
+		if sbr.known {
 			t.Errorf("blob %v is known, that should not be the case", i)
 		}
 	}

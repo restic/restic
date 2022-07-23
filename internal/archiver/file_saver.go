@@ -13,41 +13,6 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// FutureFile is returned by Save and will return the data once it
-// has been processed.
-type FutureFile struct {
-	ch  <-chan saveFileResponse
-	res saveFileResponse
-}
-
-// Wait blocks until the result of the save operation is received or ctx is
-// cancelled.
-func (s *FutureFile) Wait(ctx context.Context) {
-	select {
-	case res, ok := <-s.ch:
-		if ok {
-			s.res = res
-		}
-	case <-ctx.Done():
-		return
-	}
-}
-
-// Node returns the node once it is available.
-func (s *FutureFile) Node() *restic.Node {
-	return s.res.node
-}
-
-// Stats returns the stats for the file once they are available.
-func (s *FutureFile) Stats() ItemStats {
-	return s.res.stats
-}
-
-// Err returns the error in case an error occurred.
-func (s *FutureFile) Err() error {
-	return s.res.err
-}
-
 // SaveBlobFn saves a blob to a repo.
 type SaveBlobFn func(context.Context, restic.BlobType, *Buffer) FutureBlob
 
@@ -102,10 +67,11 @@ type CompleteFunc func(*restic.Node, ItemStats)
 
 // Save stores the file f and returns the data once it has been completed. The
 // file is closed by Save.
-func (s *FileSaver) Save(ctx context.Context, snPath string, file fs.File, fi os.FileInfo, start func(), complete CompleteFunc) FutureFile {
-	ch := make(chan saveFileResponse, 1)
+func (s *FileSaver) Save(ctx context.Context, snPath string, target string, file fs.File, fi os.FileInfo, start func(), complete CompleteFunc) FutureNode {
+	fn, ch := newFutureNode()
 	job := saveFileJob{
 		snPath:   snPath,
+		target:   target,
 		file:     file,
 		fi:       fi,
 		start:    start,
@@ -121,47 +87,57 @@ func (s *FileSaver) Save(ctx context.Context, snPath string, file fs.File, fi os
 		close(ch)
 	}
 
-	return FutureFile{ch: ch}
+	return fn
 }
 
 type saveFileJob struct {
 	snPath   string
+	target   string
 	file     fs.File
 	fi       os.FileInfo
-	ch       chan<- saveFileResponse
+	ch       chan<- futureNodeResult
 	complete CompleteFunc
 	start    func()
 }
 
-type saveFileResponse struct {
-	node  *restic.Node
-	stats ItemStats
-	err   error
-}
-
 // saveFile stores the file f in the repo, then closes it.
-func (s *FileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPath string, f fs.File, fi os.FileInfo, start func()) saveFileResponse {
+func (s *FileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPath string, target string, f fs.File, fi os.FileInfo, start func()) futureNodeResult {
 	start()
 
 	stats := ItemStats{}
+	fnr := futureNodeResult{
+		snPath: snPath,
+		target: target,
+	}
 
 	debug.Log("%v", snPath)
 
 	node, err := s.NodeFromFileInfo(f.Name(), fi)
 	if err != nil {
 		_ = f.Close()
-		return saveFileResponse{err: err}
+		fnr.err = err
+		return fnr
 	}
 
 	if node.Type != "file" {
 		_ = f.Close()
-		return saveFileResponse{err: errors.Errorf("node type %q is wrong", node.Type)}
+		fnr.err = errors.Errorf("node type %q is wrong", node.Type)
+		return fnr
 	}
 
 	// reuse the chunker
 	chnker.Reset(f, s.pol)
 
 	var results []FutureBlob
+	complete := func(sbr SaveBlobResponse) {
+		if !sbr.known {
+			stats.DataBlobs++
+			stats.DataSize += uint64(sbr.length)
+			stats.DataSizeInRepo += uint64(sbr.sizeInRepo)
+		}
+
+		node.Content = append(node.Content, sbr.id)
+	}
 
 	node.Content = []restic.ID{}
 	var size uint64
@@ -179,13 +155,15 @@ func (s *FileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 
 		if err != nil {
 			_ = f.Close()
-			return saveFileResponse{err: err}
+			fnr.err = err
+			return fnr
 		}
 
 		// test if the context has been cancelled, return the error
 		if ctx.Err() != nil {
 			_ = f.Close()
-			return saveFileResponse{err: ctx.Err()}
+			fnr.err = ctx.Err()
+			return fnr
 		}
 
 		res := s.saveBlob(ctx, restic.DataBlob, buf)
@@ -194,34 +172,40 @@ func (s *FileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 		// test if the context has been cancelled, return the error
 		if ctx.Err() != nil {
 			_ = f.Close()
-			return saveFileResponse{err: ctx.Err()}
+			fnr.err = ctx.Err()
+			return fnr
 		}
 
 		s.CompleteBlob(f.Name(), uint64(len(chunk.Data)))
+
+		// collect already completed blobs
+		for len(results) > 0 {
+			sbr := results[0].Poll()
+			if sbr == nil {
+				break
+			}
+			results[0] = FutureBlob{}
+			results = results[1:]
+			complete(*sbr)
+		}
 	}
 
 	err = f.Close()
 	if err != nil {
-		return saveFileResponse{err: err}
+		fnr.err = err
+		return fnr
 	}
 
-	for _, res := range results {
-		res.Wait(ctx)
-		if !res.Known() {
-			stats.DataBlobs++
-			stats.DataSize += uint64(res.Length())
-			stats.DataSizeInRepo += uint64(res.SizeInRepo())
-		}
-
-		node.Content = append(node.Content, res.ID())
+	for i, res := range results {
+		results[i] = FutureBlob{}
+		sbr := res.Take(ctx)
+		complete(sbr)
 	}
 
 	node.Size = size
-
-	return saveFileResponse{
-		node:  node,
-		stats: stats,
-	}
+	fnr.node = node
+	fnr.stats = stats
+	return fnr
 }
 
 func (s *FileSaver) worker(ctx context.Context, jobs <-chan saveFileJob) {
@@ -239,7 +223,8 @@ func (s *FileSaver) worker(ctx context.Context, jobs <-chan saveFileJob) {
 				return
 			}
 		}
-		res := s.saveFile(ctx, chnker, job.snPath, job.file, job.fi, job.start)
+
+		res := s.saveFile(ctx, chnker, job.snPath, job.target, job.file, job.fi, job.start)
 		if job.complete != nil {
 			job.complete(res.node, res.stats)
 		}

@@ -647,7 +647,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		}
 
 		errorHandler := func(item string, err error) error {
-			return progressReporter.Error(item, nil, err)
+			return progressReporter.Error(item, err)
 		}
 
 		messageHandler := func(msg string, args ...interface{}) {
@@ -690,9 +690,9 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	arch.Select = selectFilter
 	arch.WithAtime = opts.WithAtime
 	success := true
-	arch.Error = func(item string, fi os.FileInfo, err error) error {
+	arch.Error = func(item string, err error) error {
 		success = false
-		return progressReporter.Error(item, fi, err)
+		return progressReporter.Error(item, err)
 	}
 	arch.CompleteItem = progressReporter.CompleteItem
 	arch.StartFile = progressReporter.StartFile

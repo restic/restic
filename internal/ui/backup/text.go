@@ -2,7 +2,6 @@ package backup
 
 import (
 	"fmt"
-	"os"
 	"sort"
 	"time"
 
@@ -75,13 +74,13 @@ func (b *TextProgress) Update(total, processed Counter, errors uint, currentFile
 
 // ScannerError is the error callback function for the scanner, it prints the
 // error in verbose mode and returns nil.
-func (b *TextProgress) ScannerError(item string, fi os.FileInfo, err error) error {
+func (b *TextProgress) ScannerError(item string, err error) error {
 	b.V("scan: %v\n", err)
 	return nil
 }
 
 // Error is the error callback function for the archiver, it prints the error and returns nil.
-func (b *TextProgress) Error(item string, fi os.FileInfo, err error) error {
+func (b *TextProgress) Error(item string, err error) error {
 	b.E("error: %v\n", err)
 	return nil
 }

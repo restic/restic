@@ -3,7 +3,6 @@ package backup
 import (
 	"bytes"
 	"encoding/json"
-	"os"
 	"sort"
 	"time"
 
@@ -79,7 +78,7 @@ func (b *JSONProgress) Update(total, processed Counter, errors uint, currentFile
 
 // ScannerError is the error callback function for the scanner, it prints the
 // error in verbose mode and returns nil.
-func (b *JSONProgress) ScannerError(item string, fi os.FileInfo, err error) error {
+func (b *JSONProgress) ScannerError(item string, err error) error {
 	b.error(errorUpdate{
 		MessageType: "error",
 		Error:       err,
@@ -90,7 +89,7 @@ func (b *JSONProgress) ScannerError(item string, fi os.FileInfo, err error) erro
 }
 
 // Error is the error callback function for the archiver, it prints the error and returns nil.
-func (b *JSONProgress) Error(item string, fi os.FileInfo, err error) error {
+func (b *JSONProgress) Error(item string, err error) error {
 	b.error(errorUpdate{
 		MessageType: "error",
 		Error:       err,

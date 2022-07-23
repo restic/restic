@@ -47,7 +47,7 @@ func saveFile(t testing.TB, repo restic.Repository, filename string, filesystem 
 	arch := New(repo, filesystem, Options{})
 	arch.runWorkers(ctx, wg)
 
-	arch.Error = func(item string, fi os.FileInfo, err error) error {
+	arch.Error = func(item string, err error) error {
 		t.Errorf("archiver error for %v: %v", item, err)
 		return err
 	}
@@ -80,11 +80,11 @@ func saveFile(t testing.TB, repo restic.Repository, filename string, filesystem 
 		t.Fatal(err)
 	}
 
-	res := arch.fileSaver.Save(ctx, "/", file, fi, start, complete)
+	res := arch.fileSaver.Save(ctx, "/", filename, file, fi, start, complete)
 
-	res.Wait(ctx)
-	if res.Err() != nil {
-		t.Fatal(res.Err())
+	fnr := res.take(ctx)
+	if fnr.err != nil {
+		t.Fatal(fnr.err)
 	}
 
 	arch.stopWorkers()
@@ -109,15 +109,15 @@ func saveFile(t testing.TB, repo restic.Repository, filename string, filesystem 
 		t.Errorf("no node returned for complete callback")
 	}
 
-	if completeCallbackNode != nil && !res.Node().Equals(*completeCallbackNode) {
+	if completeCallbackNode != nil && !fnr.node.Equals(*completeCallbackNode) {
 		t.Errorf("different node returned for complete callback")
 	}
 
-	if completeCallbackStats != res.Stats() {
-		t.Errorf("different stats return for complete callback, want:\n  %v\ngot:\n  %v", res.Stats(), completeCallbackStats)
+	if completeCallbackStats != fnr.stats {
+		t.Errorf("different stats return for complete callback, want:\n  %v\ngot:\n  %v", fnr.stats, completeCallbackStats)
 	}
 
-	return res.Node(), res.Stats()
+	return fnr.node, fnr.stats
 }
 
 func TestArchiverSaveFile(t *testing.T) {
@@ -217,7 +217,7 @@ func TestArchiverSave(t *testing.T) {
 			repo.StartPackUploader(ctx, wg)
 
 			arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
-			arch.Error = func(item string, fi os.FileInfo, err error) error {
+			arch.Error = func(item string, err error) error {
 				t.Errorf("archiver error for %v: %v", item, err)
 				return err
 			}
@@ -232,16 +232,16 @@ func TestArchiverSave(t *testing.T) {
 				t.Errorf("Save() excluded the node, that's unexpected")
 			}
 
-			node.wait(ctx)
-			if node.err != nil {
-				t.Fatal(node.err)
+			fnr := node.take(ctx)
+			if fnr.err != nil {
+				t.Fatal(fnr.err)
 			}
 
-			if node.node == nil {
+			if fnr.node == nil {
 				t.Fatalf("returned node is nil")
 			}
 
-			stats := node.stats
+			stats := fnr.stats
 
 			arch.stopWorkers()
 			err = repo.Flush(ctx)
@@ -249,7 +249,7 @@ func TestArchiverSave(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			TestEnsureFileContent(ctx, t, repo, "file", node.node, testfile)
+			TestEnsureFileContent(ctx, t, repo, "file", fnr.node, testfile)
 			if stats.DataSize != uint64(len(testfile.Content)) {
 				t.Errorf("wrong stats returned in DataSize, want %d, got %d", len(testfile.Content), stats.DataSize)
 			}
@@ -295,7 +295,7 @@ func TestArchiverSaveReaderFS(t *testing.T) {
 			}
 
 			arch := New(repo, readerFs, Options{})
-			arch.Error = func(item string, fi os.FileInfo, err error) error {
+			arch.Error = func(item string, err error) error {
 				t.Errorf("archiver error for %v: %v", item, err)
 				return err
 			}
@@ -311,16 +311,16 @@ func TestArchiverSaveReaderFS(t *testing.T) {
 				t.Errorf("Save() excluded the node, that's unexpected")
 			}
 
-			node.wait(ctx)
-			if node.err != nil {
-				t.Fatal(node.err)
+			fnr := node.take(ctx)
+			if fnr.err != nil {
+				t.Fatal(fnr.err)
 			}
 
-			if node.node == nil {
+			if fnr.node == nil {
 				t.Fatalf("returned node is nil")
 			}
 
-			stats := node.stats
+			stats := fnr.stats
 
 			arch.stopWorkers()
 			err = repo.Flush(ctx)
@@ -328,7 +328,7 @@ func TestArchiverSaveReaderFS(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			TestEnsureFileContent(ctx, t, repo, "file", node.node, TestFile{Content: test.Data})
+			TestEnsureFileContent(ctx, t, repo, "file", fnr.node, TestFile{Content: test.Data})
 			if stats.DataSize != uint64(len(test.Data)) {
 				t.Errorf("wrong stats returned in DataSize, want %d, got %d", len(test.Data), stats.DataSize)
 			}
@@ -851,13 +851,13 @@ func TestArchiverSaveDir(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			ft, err := arch.SaveDir(ctx, "/", fi, test.target, nil, nil)
+			ft, err := arch.SaveDir(ctx, "/", test.target, fi, nil, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			ft.Wait(ctx)
-			node, stats := ft.Node(), ft.Stats()
+			fnr := ft.take(ctx)
+			node, stats := fnr.node, fnr.stats
 
 			t.Logf("stats: %v", stats)
 			if stats.DataSize != 0 {
@@ -928,13 +928,13 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ft, err := arch.SaveDir(ctx, "/", fi, tempdir, nil, nil)
+		ft, err := arch.SaveDir(ctx, "/", tempdir, fi, nil, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		ft.Wait(ctx)
-		node, stats := ft.Node(), ft.Stats()
+		fnr := ft.take(ctx)
+		node, stats := fnr.node, fnr.stats
 
 		if err != nil {
 			t.Fatal(err)
@@ -1723,7 +1723,7 @@ func TestArchiverParent(t *testing.T) {
 
 func TestArchiverErrorReporting(t *testing.T) {
 	ignoreErrorForBasename := func(basename string) ErrorFunc {
-		return func(item string, fi os.FileInfo, err error) error {
+		return func(item string, err error) error {
 			if filepath.Base(item) == "targetfile" {
 				t.Logf("ignoring error for targetfile: %v", err)
 				return nil
@@ -2248,7 +2248,7 @@ func TestRacyFileSwap(t *testing.T) {
 	repo.StartPackUploader(ctx, wg)
 
 	arch := New(repo, fs.Track{FS: statfs}, Options{})
-	arch.Error = func(item string, fi os.FileInfo, err error) error {
+	arch.Error = func(item string, err error) error {
 		t.Logf("archiver error as expected for %v: %v", item, err)
 		return err
 	}

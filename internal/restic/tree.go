@@ -1,6 +1,7 @@
 package restic
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -142,4 +143,53 @@ func SaveTree(ctx context.Context, r BlobSaver, t *Tree) (ID, error) {
 
 	id, _, _, err := r.SaveBlob(ctx, TreeBlob, buf, ID{}, false)
 	return id, err
+}
+
+type TreeJSONBuilder struct {
+	buf      bytes.Buffer
+	lastName string
+}
+
+func NewTreeJSONBuilder() *TreeJSONBuilder {
+	tb := &TreeJSONBuilder{}
+	_, _ = tb.buf.WriteString(`{"nodes":[`)
+	return tb
+}
+
+func (builder *TreeJSONBuilder) AddNode(node *Node) error {
+	if node.Name <= builder.lastName {
+		return errors.Errorf("nodes are not ordered got %q, last %q", node.Name, builder.lastName)
+	}
+	if builder.lastName != "" {
+		_ = builder.buf.WriteByte(',')
+	}
+	builder.lastName = node.Name
+
+	val, err := json.Marshal(node)
+	if err != nil {
+		return err
+	}
+	_, _ = builder.buf.Write(val)
+	return nil
+}
+
+func (builder *TreeJSONBuilder) Finalize() ([]byte, error) {
+	// append a newline so that the data is always consistent (json.Encoder
+	// adds a newline after each object)
+	_, _ = builder.buf.WriteString("]}\n")
+	buf := builder.buf.Bytes()
+	// drop reference to buffer
+	builder.buf = bytes.Buffer{}
+	return buf, nil
+}
+
+func TreeToBuilder(t *Tree) (*TreeJSONBuilder, error) {
+	builder := NewTreeJSONBuilder()
+	for _, node := range t.Nodes {
+		err := builder.AddNode(node)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return builder, nil
 }

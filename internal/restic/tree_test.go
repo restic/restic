@@ -119,6 +119,37 @@ func TestEmptyLoadTree(t *testing.T) {
 		tree, tree2)
 }
 
+func TestTreeEqualSerialization(t *testing.T) {
+	files := []string{"node.go", "tree.go", "tree_test.go"}
+	for i := 1; i <= len(files); i++ {
+		tree := restic.NewTree(i)
+		builder := restic.NewTreeJSONBuilder()
+
+		for _, fn := range files[:i] {
+			fi, err := os.Lstat(fn)
+			rtest.OK(t, err)
+			node, err := restic.NodeFromFileInfo(fn, fi)
+			rtest.OK(t, err)
+
+			rtest.OK(t, tree.Insert(node))
+			rtest.OK(t, builder.AddNode(node))
+
+			rtest.Assert(t, tree.Insert(node) != nil, "no error on duplicate node")
+			rtest.Assert(t, builder.AddNode(node) != nil, "no error on duplicate node")
+		}
+
+		treeBytes, err := json.Marshal(tree)
+		treeBytes = append(treeBytes, '\n')
+		rtest.OK(t, err)
+
+		stiBytes, err := builder.Finalize()
+		rtest.OK(t, err)
+
+		// compare serialization of an individual node and the SaveTreeIterator
+		rtest.Equals(t, treeBytes, stiBytes)
+	}
+}
+
 func BenchmarkBuildTree(b *testing.B) {
 	const size = 100 // Directories of this size are not uncommon.
 

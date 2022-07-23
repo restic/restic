@@ -27,7 +27,7 @@ func NewScanner(fs fs.FS) *Scanner {
 		FS:           fs,
 		SelectByName: func(item string) bool { return true },
 		Select:       func(item string, fi os.FileInfo) bool { return true },
-		Error:        func(item string, fi os.FileInfo, err error) error { return err },
+		Error:        func(item string, err error) error { return err },
 		Result:       func(item string, s ScanStats) {},
 	}
 }
@@ -111,7 +111,7 @@ func (s *Scanner) scan(ctx context.Context, stats ScanStats, target string) (Sca
 	// get file information
 	fi, err := s.FS.Lstat(target)
 	if err != nil {
-		return stats, s.Error(target, fi, err)
+		return stats, s.Error(target, err)
 	}
 
 	// run remaining select functions that require file information
@@ -126,7 +126,7 @@ func (s *Scanner) scan(ctx context.Context, stats ScanStats, target string) (Sca
 	case fi.Mode().IsDir():
 		names, err := readdirnames(s.FS, target, fs.O_NOFOLLOW)
 		if err != nil {
-			return stats, s.Error(target, fi, err)
+			return stats, s.Error(target, err)
 		}
 		sort.Strings(names)
 
