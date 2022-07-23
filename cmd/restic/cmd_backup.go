@@ -31,7 +31,7 @@ import (
 )
 
 var cmdBackup = &cobra.Command{
-	Use:   "backup [flags] FILE/DIR [FILE/DIR] ...",
+	Use:   "backup [flags] [FILE/DIR] ...",
 	Short: "Create a new backup of files and/or directories",
 	Long: `
 The "backup" command creates a new snapshot and saves the files and directories
