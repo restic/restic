@@ -14,7 +14,7 @@ import (
 var ErrNoSnapshotFound = errors.New("no snapshot found")
 
 // FindLatestSnapshot finds latest snapshot with optional target/directory, tags, hostname, and timestamp filters.
-func FindLatestSnapshot(ctx context.Context, be Lister, loader LoadJSONUnpackeder, targets []string,
+func FindLatestSnapshot(ctx context.Context, be Lister, loader LoaderUnpacked, targets []string,
 	tagLists []TagList, hostnames []string, timeStampLimit *time.Time) (ID, error) {
 
 	var err error
@@ -92,7 +92,7 @@ func FindSnapshot(ctx context.Context, be Lister, s string) (ID, error) {
 
 // FindFilteredSnapshots yields Snapshots filtered from the list of all
 // snapshots.
-func FindFilteredSnapshots(ctx context.Context, be Lister, loader LoadJSONUnpackeder, hosts []string, tags []TagList, paths []string) (Snapshots, error) {
+func FindFilteredSnapshots(ctx context.Context, be Lister, loader LoaderUnpacked, hosts []string, tags []TagList, paths []string) (Snapshots, error) {
 	results := make(Snapshots, 0, 20)
 
 	err := ForAllSnapshots(ctx, be, loader, nil, func(id ID, sn *Snapshot, err error) error {

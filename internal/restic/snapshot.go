@@ -59,9 +59,9 @@ func NewSnapshot(paths []string, tags []string, hostname string, time time.Time)
 }
 
 // LoadSnapshot loads the snapshot with the id and returns it.
-func LoadSnapshot(ctx context.Context, loader LoadJSONUnpackeder, id ID) (*Snapshot, error) {
+func LoadSnapshot(ctx context.Context, loader LoaderUnpacked, id ID) (*Snapshot, error) {
 	sn := &Snapshot{id: &id}
-	err := loader.LoadJSONUnpacked(ctx, SnapshotFile, id, sn)
+	err := LoadJSONUnpacked(ctx, loader, SnapshotFile, id, sn)
 	if err != nil {
 		return nil, err
 	}
@@ -69,12 +69,17 @@ func LoadSnapshot(ctx context.Context, loader LoadJSONUnpackeder, id ID) (*Snaps
 	return sn, nil
 }
 
+// SaveSnapshot saves the snapshot sn and returns its ID.
+func SaveSnapshot(ctx context.Context, repo SaverUnpacked, sn *Snapshot) (ID, error) {
+	return SaveJSONUnpacked(ctx, repo, SnapshotFile, sn)
+}
+
 // ForAllSnapshots reads all snapshots in parallel and calls the
 // given function. It is guaranteed that the function is not run concurrently.
 // If the called function returns an error, this function is cancelled and
 // also returns this error.
 // If a snapshot ID is in excludeIDs, it will be ignored.
-func ForAllSnapshots(ctx context.Context, be Lister, loader LoadJSONUnpackeder, excludeIDs IDSet, fn func(ID, *Snapshot, error) error) error {
+func ForAllSnapshots(ctx context.Context, be Lister, loader LoaderUnpacked, excludeIDs IDSet, fn func(ID, *Snapshot, error) error) error {
 	var m sync.Mutex
 
 	// track spawned goroutines using wg, create a new context which is

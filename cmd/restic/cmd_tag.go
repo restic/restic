@@ -82,7 +82,7 @@ func changeTags(ctx context.Context, repo *repository.Repository, sn *restic.Sna
 		}
 
 		// Save the new snapshot.
-		id, err := repo.SaveJSONUnpacked(ctx, restic.SnapshotFile, sn)
+		id, err := restic.SaveSnapshot(ctx, repo, sn)
 		if err != nil {
 			return false, err
 		}

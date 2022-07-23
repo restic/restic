@@ -29,11 +29,11 @@ type trackedID struct {
 }
 
 // loadTreeWorker loads trees from repo and sends them to out.
-func loadTreeWorker(ctx context.Context, repo TreeLoader,
+func loadTreeWorker(ctx context.Context, repo Loader,
 	in <-chan trackedID, out chan<- trackedTreeItem) {
 
 	for treeID := range in {
-		tree, err := repo.LoadTree(ctx, treeID.ID)
+		tree, err := LoadTree(ctx, repo, treeID.ID)
 		debug.Log("load tree %v (%v) returned err: %v", tree, treeID, err)
 		job := trackedTreeItem{TreeItem: TreeItem{ID: treeID.ID, Error: err, Tree: tree}, rootIdx: treeID.rootIdx}
 
@@ -45,7 +45,7 @@ func loadTreeWorker(ctx context.Context, repo TreeLoader,
 	}
 }
 
-func filterTrees(ctx context.Context, repo TreeLoader, trees IDs, loaderChan chan<- trackedID, hugeTreeLoaderChan chan<- trackedID,
+func filterTrees(ctx context.Context, repo Loader, trees IDs, loaderChan chan<- trackedID, hugeTreeLoaderChan chan<- trackedID,
 	in <-chan trackedTreeItem, out chan<- TreeItem, skip func(tree ID) bool, p *progress.Counter) {
 
 	var (
@@ -154,7 +154,7 @@ func filterTrees(ctx context.Context, repo TreeLoader, trees IDs, loaderChan cha
 // is guaranteed to always be called from the same goroutine. To shutdown the started
 // goroutines, either read all items from the channel or cancel the context. Then `Wait()`
 // on the errgroup until all goroutines were stopped.
-func StreamTrees(ctx context.Context, wg *errgroup.Group, repo TreeLoader, trees IDs, skip func(tree ID) bool, p *progress.Counter) <-chan TreeItem {
+func StreamTrees(ctx context.Context, wg *errgroup.Group, repo Loader, trees IDs, skip func(tree ID) bool, p *progress.Counter) <-chan TreeItem {
 	loaderChan := make(chan trackedID)
 	hugeTreeChan := make(chan trackedID, 10)
 	loadedTreeChan := make(chan trackedTreeItem)

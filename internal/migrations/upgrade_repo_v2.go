@@ -68,7 +68,7 @@ func (*UpgradeRepoV2) upgrade(ctx context.Context, repo restic.Repository) error
 	cfg := repo.Config()
 	cfg.Version = 2
 
-	_, err := repo.SaveJSONUnpacked(ctx, restic.ConfigFile, cfg)
+	err := restic.SaveConfig(ctx, repo, cfg)
 	if err != nil {
 		return fmt.Errorf("save new config file failed: %w", err)
 	}

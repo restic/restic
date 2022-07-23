@@ -1,6 +1,8 @@
 package restic
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 
@@ -97,4 +99,47 @@ func (t *Tree) Subtrees() (trees IDs) {
 	}
 
 	return trees
+}
+
+type BlobLoader interface {
+	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
+}
+
+// LoadTree loads a tree from the repository.
+func LoadTree(ctx context.Context, r BlobLoader, id ID) (*Tree, error) {
+	debug.Log("load tree %v", id)
+
+	buf, err := r.LoadBlob(ctx, TreeBlob, id, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	t := &Tree{}
+	err = json.Unmarshal(buf, t)
+	if err != nil {
+		return nil, err
+	}
+
+	return t, nil
+}
+
+type BlobSaver interface {
+	SaveBlob(context.Context, BlobType, []byte, ID, bool) (ID, bool, int, error)
+}
+
+// SaveTree stores a tree into the repository and returns the ID. The ID is
+// checked against the index. The tree is only stored when the index does not
+// contain the ID.
+func SaveTree(ctx context.Context, r BlobSaver, t *Tree) (ID, error) {
+	buf, err := json.Marshal(t)
+	if err != nil {
+		return ID{}, errors.Wrap(err, "MarshalJSON")
+	}
+
+	// append a newline so that the data is always consistent (json.Encoder
+	// adds a newline after each object)
+	buf = append(buf, '\n')
+
+	id, _, _, err := r.SaveBlob(ctx, TreeBlob, buf, ID{}, false)
+	return id, err
 }

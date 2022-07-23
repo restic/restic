@@ -53,7 +53,7 @@ type treeVisitor struct {
 // target is the path in the file system, location within the snapshot.
 func (res *Restorer) traverseTree(ctx context.Context, target, location string, treeID restic.ID, visitor treeVisitor) (hasRestored bool, err error) {
 	debug.Log("%v %v %v", target, location, treeID)
-	tree, err := res.repo.LoadTree(ctx, treeID)
+	tree, err := restic.LoadTree(ctx, res.repo, treeID)
 	if err != nil {
 		debug.Log("error loading tree %v: %v", treeID, err)
 		return hasRestored, res.Error(location, err)

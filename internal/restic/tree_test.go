@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -95,7 +96,7 @@ func TestNodeComparison(t *testing.T) {
 	rtest.Assert(t, !node.Equals(n2), "nodes are equal")
 }
 
-func TestLoadTree(t *testing.T) {
+func TestEmptyLoadTree(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
@@ -103,14 +104,14 @@ func TestLoadTree(t *testing.T) {
 	repo.StartPackUploader(context.TODO(), &wg)
 	// save tree
 	tree := restic.NewTree(0)
-	id, err := repo.SaveTree(context.TODO(), tree)
+	id, err := restic.SaveTree(context.TODO(), repo, tree)
 	rtest.OK(t, err)
 
 	// save packs
 	rtest.OK(t, repo.Flush(context.Background()))
 
 	// load tree again
-	tree2, err := repo.LoadTree(context.TODO(), id)
+	tree2, err := restic.LoadTree(context.TODO(), repo, id)
 	rtest.OK(t, err)
 
 	rtest.Assert(t, tree.Equals(tree2),
@@ -136,5 +137,49 @@ func BenchmarkBuildTree(b *testing.B) {
 		for i := range nodes {
 			_ = t.Insert(&nodes[i])
 		}
+	}
+}
+
+func TestLoadTree(t *testing.T) {
+	repository.TestAllVersions(t, testLoadTree)
+}
+
+func testLoadTree(t *testing.T, version uint) {
+	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
+	defer cleanup()
+
+	if rtest.BenchArchiveDirectory == "" {
+		t.Skip("benchdir not set, skipping")
+	}
+
+	// archive a few files
+	sn := archiver.TestSnapshot(t, repo, rtest.BenchArchiveDirectory, nil)
+	rtest.OK(t, repo.Flush(context.Background()))
+
+	_, err := restic.LoadTree(context.TODO(), repo, *sn.Tree)
+	rtest.OK(t, err)
+}
+
+func BenchmarkLoadTree(t *testing.B) {
+	repository.BenchmarkAllVersions(t, benchmarkLoadTree)
+}
+
+func benchmarkLoadTree(t *testing.B, version uint) {
+	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
+	defer cleanup()
+
+	if rtest.BenchArchiveDirectory == "" {
+		t.Skip("benchdir not set, skipping")
+	}
+
+	// archive a few files
+	sn := archiver.TestSnapshot(t, repo, rtest.BenchArchiveDirectory, nil)
+	rtest.OK(t, repo.Flush(context.Background()))
+
+	t.ResetTimer()
+
+	for i := 0; i < t.N; i++ {
+		_, err := restic.LoadTree(context.TODO(), repo, *sn.Tree)
+		rtest.OK(t, err)
 	}
 }

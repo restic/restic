@@ -37,26 +37,20 @@ type Repository interface {
 	// the the pack header.
 	ListPack(context.Context, ID, int64) ([]Blob, uint32, error)
 
+	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
+	SaveBlob(context.Context, BlobType, []byte, ID, bool) (ID, bool, int, error)
+
 	// StartPackUploader start goroutines to upload new pack files. The errgroup
 	// is used to immediately notify about an upload error. Flush() will also return
 	// that error.
 	StartPackUploader(ctx context.Context, wg *errgroup.Group)
 	Flush(context.Context) error
 
-	SaveUnpacked(context.Context, FileType, []byte) (ID, error)
-	SaveJSONUnpacked(context.Context, FileType, interface{}) (ID, error)
-
-	LoadJSONUnpacked(ctx context.Context, t FileType, id ID, dest interface{}) error
 	// LoadUnpacked loads and decrypts the file with the given type and ID,
 	// using the supplied buffer (which must be empty). If the buffer is nil, a
 	// new buffer will be allocated and returned.
-	LoadUnpacked(ctx context.Context, buf []byte, t FileType, id ID) (data []byte, err error)
-
-	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
-	SaveBlob(context.Context, BlobType, []byte, ID, bool) (ID, bool, int, error)
-
-	LoadTree(context.Context, ID) (*Tree, error)
-	SaveTree(context.Context, *Tree) (ID, error)
+	LoadUnpacked(ctx context.Context, t FileType, id ID, buf []byte) (data []byte, err error)
+	SaveUnpacked(context.Context, FileType, []byte) (ID, error)
 }
 
 // Lister allows listing files in a backend.
@@ -64,11 +58,11 @@ type Lister interface {
 	List(context.Context, FileType, func(FileInfo) error) error
 }
 
-// LoadJSONUnpackeder allows loading a JSON file not stored in a pack file
-type LoadJSONUnpackeder interface {
+// LoaderUnpacked allows loading a blob not stored in a pack file
+type LoaderUnpacked interface {
 	// Connections returns the maximum number of concurrent backend operations
 	Connections() uint
-	LoadJSONUnpacked(ctx context.Context, t FileType, id ID, dest interface{}) error
+	LoadUnpacked(ctx context.Context, t FileType, id ID, buf []byte) (data []byte, err error)
 }
 
 // SaverUnpacked allows saving a blob not stored in a pack file

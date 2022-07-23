@@ -218,7 +218,7 @@ func (arch *Archiver) loadSubtree(ctx context.Context, node *restic.Node) (*rest
 		return nil, nil
 	}
 
-	tree, err := arch.Repo.LoadTree(ctx, *node.Subtree)
+	tree, err := restic.LoadTree(ctx, arch.Repo, *node.Subtree)
 	if err != nil {
 		debug.Log("unable to load tree %v: %v", node.Subtree.Str(), err)
 		// a tree in the repository is not readable -> warn the user
@@ -762,7 +762,7 @@ func (arch *Archiver) loadParentTree(ctx context.Context, snapshotID restic.ID) 
 	}
 
 	debug.Log("load parent tree %v", *sn.Tree)
-	tree, err := arch.Repo.LoadTree(ctx, *sn.Tree)
+	tree, err := restic.LoadTree(ctx, arch.Repo, *sn.Tree)
 	if err != nil {
 		debug.Log("unable to load tree %v: %v", *sn.Tree, err)
 		_ = arch.error("/", nil, arch.wrapLoadTreeError(*sn.Tree, err))
@@ -863,7 +863,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 	}
 	sn.Tree = &rootTreeID
 
-	id, err := arch.Repo.SaveJSONUnpacked(ctx, restic.SnapshotFile, sn)
+	id, err := restic.SaveSnapshot(ctx, arch.Repo, sn)
 	if err != nil {
 		return nil, restic.ID{}, err
 	}
