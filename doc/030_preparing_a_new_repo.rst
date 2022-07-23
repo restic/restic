@@ -499,6 +499,13 @@ account name and key as follows:
     $ export AZURE_ACCOUNT_NAME=<ACCOUNT_NAME>
     $ export AZURE_ACCOUNT_KEY=<SECRET_KEY>
 
+or
+
+.. code-block:: console
+
+    $ export AZURE_ACCOUNT_NAME=<ACCOUNT_NAME>
+    $ export AZURE_ACCOUNT_SAS=<SAS_TOKEN>
+
 Afterwards you can initialize a repository in a container called ``foo`` in the
 root path like this:
 
