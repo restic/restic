@@ -831,6 +831,9 @@ func (r *Repository) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte
 
 type BackendLoadFn func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error
 
+// Skip sections with more than 4MB unused blobs
+const maxUnusedRange = 4 * 1024 * 1024
+
 // StreamPack loads the listed blobs from the specified pack file. The plaintext blob is passed to
 // the handleBlobFn callback or an error if decryption failed or the blob hash does not match. In
 // case of download errors handleBlobFn might be called multiple times for the same blob. If the
@@ -844,6 +847,29 @@ func StreamPack(ctx context.Context, beLoad BackendLoadFn, key *crypto.Key, pack
 	sort.Slice(blobs, func(i, j int) bool {
 		return blobs[i].Offset < blobs[j].Offset
 	})
+
+	lowerIdx := 0
+	lastPos := blobs[0].Offset
+	for i := 0; i < len(blobs); i++ {
+		if blobs[i].Offset < lastPos {
+			// don't wait for streamPackPart to fail
+			return errors.Errorf("overlapping blobs in pack %v", packID)
+		}
+		if blobs[i].Offset-lastPos > maxUnusedRange {
+			// load everything up to the skipped file section
+			err := streamPackPart(ctx, beLoad, key, packID, blobs[lowerIdx:i], handleBlobFn)
+			if err != nil {
+				return err
+			}
+			lowerIdx = i
+		}
+		lastPos = blobs[i].Offset + blobs[i].Length
+	}
+	// load remainder
+	return streamPackPart(ctx, beLoad, key, packID, blobs[lowerIdx:], handleBlobFn)
+}
+
+func streamPackPart(ctx context.Context, beLoad BackendLoadFn, key *crypto.Key, packID restic.ID, blobs []restic.Blob, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
 	h := restic.Handle{Type: restic.PackFile, Name: packID.String(), ContainedBlobType: restic.DataBlob}
 
 	dataStart := blobs[0].Offset
