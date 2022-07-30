@@ -8,6 +8,7 @@ import (
 
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	rtest "github.com/restic/restic/internal/test"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -354,4 +355,53 @@ func testRepackWrongBlob(t *testing.T, version uint) {
 		t.Fatal("expected repack to fail but got no error")
 	}
 	t.Logf("found expected error: %v", err)
+}
+
+func TestRepackBlobFallback(t *testing.T) {
+	repository.TestAllVersions(t, testRepackBlobFallback)
+}
+
+func testRepackBlobFallback(t *testing.T, version uint) {
+	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
+	defer cleanup()
+
+	seed := time.Now().UnixNano()
+	rand.Seed(seed)
+	t.Logf("rand seed is %v", seed)
+
+	length := randomSize(10*1024, 1024*1024) // 10KiB to 1MiB of data
+	buf := make([]byte, length)
+	rand.Read(buf)
+	id := restic.Hash(buf)
+
+	// corrupted copy
+	modbuf := make([]byte, len(buf))
+	copy(modbuf, buf)
+	// invert first data byte
+	modbuf[0] ^= 0xff
+
+	// create pack with broken copy
+	var wg errgroup.Group
+	repo.StartPackUploader(context.TODO(), &wg)
+	_, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, modbuf, id, false)
+	rtest.OK(t, err)
+	rtest.OK(t, repo.Flush(context.Background()))
+
+	// find pack with damaged blob
+	keepBlobs := restic.NewBlobSet(restic.BlobHandle{Type: restic.DataBlob, ID: id})
+	rewritePacks := findPacksForBlobs(t, repo, keepBlobs)
+
+	// create pack with valid copy
+	repo.StartPackUploader(context.TODO(), &wg)
+	_, _, _, err = repo.SaveBlob(context.TODO(), restic.DataBlob, buf, id, true)
+	rtest.OK(t, err)
+	rtest.OK(t, repo.Flush(context.Background()))
+
+	// repack must fallback to valid copy
+	_, err = repository.Repack(context.TODO(), repo, repo, rewritePacks, keepBlobs, nil)
+	rtest.OK(t, err)
+
+	keepBlobs = restic.NewBlobSet(restic.BlobHandle{Type: restic.DataBlob, ID: id})
+	packs := findPacksForBlobs(t, repo, keepBlobs)
+	rtest.Assert(t, len(packs) == 3, "unexpected number of copies: %v", len(packs))
 }
