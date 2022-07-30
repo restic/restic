@@ -6,7 +6,6 @@ package fuse
 import (
 	"context"
 	"os"
-	"strings"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
@@ -16,8 +15,7 @@ import (
 )
 
 // SnapshotsDir is a actual fuse directory generated from SnapshotsDirStructure
-// It uses the saved prefix to filter out the relevant subtrees or entries
-// from SnapshotsDirStructure.names and .latest, respectively.
+// It uses the saved prefix to select the corresponding MetaDirData.
 type SnapshotsDir struct {
 	root      *Root
 	inode     uint64
@@ -56,9 +54,11 @@ func (d *SnapshotsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	debug.Log("ReadDirAll()")
 
 	// update snapshots
-	err := d.dirStruct.updateSnapshots(ctx)
+	meta, err := d.dirStruct.UpdatePrefix(ctx, d.prefix)
 	if err != nil {
 		return nil, err
+	} else if meta == nil {
+		return nil, fuse.ENOENT
 	}
 
 	items := []fuse.Dirent{
@@ -74,35 +74,16 @@ func (d *SnapshotsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 		},
 	}
 
-	// map to ensure that all names are only listed once
-	hasName := make(map[string]struct{})
-
-	for name := range d.dirStruct.names {
-		if !strings.HasPrefix(name, d.prefix) {
-			continue
-		}
-		shortname := strings.Split(name[len(d.prefix):], "/")[0]
-		if shortname == "" {
-			continue
-		}
-		if _, ok := hasName[shortname]; ok {
-			continue
-		}
-		hasName[shortname] = struct{}{}
-		items = append(items, fuse.Dirent{
-			Inode: fs.GenerateDynamicInode(d.inode, shortname),
-			Name:  shortname,
+	for name, entry := range meta.names {
+		d := fuse.Dirent{
+			Inode: fs.GenerateDynamicInode(d.inode, name),
+			Name:  name,
 			Type:  fuse.DT_Dir,
-		})
-	}
-
-	// Latest
-	if _, ok := d.dirStruct.latest[d.prefix]; ok {
-		items = append(items, fuse.Dirent{
-			Inode: fs.GenerateDynamicInode(d.inode, "latest"),
-			Name:  "latest",
-			Type:  fuse.DT_Link,
-		})
+		}
+		if entry.linkTarget != "" {
+			d.Type = fuse.DT_Link
+		}
+		items = append(items, d)
 	}
 
 	return items, nil
@@ -112,33 +93,21 @@ func (d *SnapshotsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 func (d *SnapshotsDir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	debug.Log("Lookup(%s)", name)
 
-	err := d.dirStruct.updateSnapshots(ctx)
+	meta, err := d.dirStruct.UpdatePrefix(ctx, d.prefix)
 	if err != nil {
 		return nil, err
+	} else if meta == nil {
+		return nil, fuse.ENOENT
 	}
 
-	fullname := d.prefix + name
-
-	// check if this is already a complete snapshot path
-	sn := d.dirStruct.names[fullname]
-	if sn != nil {
-		return newDirFromSnapshot(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), sn)
-	}
-
-	// handle latest case
-	if name == "latest" {
-		link := d.dirStruct.latest[d.prefix]
-		sn := d.dirStruct.names[d.prefix+link]
-		if sn != nil {
-			return newSnapshotLink(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), link, sn)
-		}
-	}
-
-	// check if this is a valid subdir
-	fullname = fullname + "/"
-	for name := range d.dirStruct.names {
-		if strings.HasPrefix(name, fullname) {
-			return NewSnapshotsDir(d.root, fs.GenerateDynamicInode(d.inode, name), d.dirStruct, fullname), nil
+	entry := meta.names[name]
+	if entry != nil {
+		if entry.linkTarget != "" {
+			return newSnapshotLink(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), entry.linkTarget, entry.snapshot)
+		} else if entry.snapshot != nil {
+			return newDirFromSnapshot(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), entry.snapshot)
+		} else {
+			return NewSnapshotsDir(d.root, fs.GenerateDynamicInode(d.inode, name), d.dirStruct, d.prefix+"/"+name), nil
 		}
 	}
 
