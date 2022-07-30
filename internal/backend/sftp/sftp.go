@@ -116,8 +116,7 @@ func (r *SFTP) clientError() error {
 }
 
 // Open opens an sftp backend as described by the config by running
-// "ssh" with the appropriate arguments (or cfg.Command, if set). The function
-// preExec is run just before, postExec just after starting a program.
+// "ssh" with the appropriate arguments (or cfg.Command, if set).
 func Open(ctx context.Context, cfg Config) (*SFTP, error) {
 	debug.Log("open backend with config %#v", cfg)
 
@@ -214,8 +213,7 @@ func buildSSHCommand(cfg Config) (cmd string, args []string, err error) {
 }
 
 // Create creates an sftp backend as described by the config by running "ssh"
-// with the appropriate arguments (or cfg.Command, if set). The function
-// preExec is run just before, postExec just after starting a program.
+// with the appropriate arguments (or cfg.Command, if set).
 func Create(ctx context.Context, cfg Config) (*SFTP, error) {
 	cmd, args, err := buildSSHCommand(cfg)
 	if err != nil {
