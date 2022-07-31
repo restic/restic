@@ -21,6 +21,7 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/pkg/sftp"
+	"golang.org/x/sync/errgroup"
 )
 
 // SFTP is a backend in a directory accessed via SFTP.
@@ -116,8 +117,7 @@ func (r *SFTP) clientError() error {
 }
 
 // Open opens an sftp backend as described by the config by running
-// "ssh" with the appropriate arguments (or cfg.Command, if set). The function
-// preExec is run just before, postExec just after starting a program.
+// "ssh" with the appropriate arguments (or cfg.Command, if set).
 func Open(ctx context.Context, cfg Config) (*SFTP, error) {
 	debug.Log("open backend with config %#v", cfg)
 
@@ -155,15 +155,29 @@ func Open(ctx context.Context, cfg Config) (*SFTP, error) {
 	return sftp, nil
 }
 
-func (r *SFTP) mkdirAllDataSubdirs() error {
+func (r *SFTP) mkdirAllDataSubdirs(ctx context.Context, nconn uint) error {
+	// Run multiple MkdirAll calls concurrently. These involve multiple
+	// round-trips and we do a lot of them, so this whole operation can be slow
+	// on high-latency links.
+	g, _ := errgroup.WithContext(ctx)
+	// Use errgroup's built-in semaphore, because r.sem is not initialized yet.
+	g.SetLimit(int(nconn))
+
 	for _, d := range r.Paths() {
-		err := r.c.MkdirAll(d)
-		if err != nil {
-			return err
-		}
+		d := d
+		g.Go(func() error {
+			// First try Mkdir. For most directories in Paths, this takes one
+			// round trip, not counting duplicate parent creations causes by
+			// concurrency. MkdirAll first does Stat, then recursive MkdirAll
+			// on the parent, so calls typically take three round trips.
+			if err := r.c.Mkdir(d); err == nil {
+				return nil
+			}
+			return r.c.MkdirAll(d)
+		})
 	}
 
-	return nil
+	return g.Wait()
 }
 
 // Join combines path components with slashes (according to the sftp spec).
@@ -214,8 +228,7 @@ func buildSSHCommand(cfg Config) (cmd string, args []string, err error) {
 }
 
 // Create creates an sftp backend as described by the config by running "ssh"
-// with the appropriate arguments (or cfg.Command, if set). The function
-// preExec is run just before, postExec just after starting a program.
+// with the appropriate arguments (or cfg.Command, if set).
 func Create(ctx context.Context, cfg Config) (*SFTP, error) {
 	cmd, args, err := buildSSHCommand(cfg)
 	if err != nil {
@@ -242,7 +255,7 @@ func Create(ctx context.Context, cfg Config) (*SFTP, error) {
 	}
 
 	// create paths for data and refs
-	if err = sftp.mkdirAllDataSubdirs(); err != nil {
+	if err = sftp.mkdirAllDataSubdirs(ctx, cfg.Connections); err != nil {
 		return nil, err
 	}
 
