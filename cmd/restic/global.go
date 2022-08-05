@@ -125,6 +125,12 @@ func init() {
 	// Use our "generate" command instead of the cobra provided "completion" command
 	cmdRoot.CompletionOptions.DisableDefaultCmd = true
 
+	comp := os.Getenv("RESTIC_COMPRESSION")
+	if comp != "" {
+		// ignore error as there's no good way to handle it
+		_ = globalOptions.Compression.Set(comp)
+	}
+
 	restoreTerminal()
 }
 

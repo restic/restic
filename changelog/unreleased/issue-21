@@ -8,6 +8,7 @@ You can configure if data is compressed with the option `--compression`. It can
 be set to `auto` (the default, which will compress very fast), `max` (which
 will trade backup speed and CPU usage for better compression), or `off` (which
 disables compression). Each setting is only applied for the single run of restic.
+The option can also be set via the environment variable `RESTIC_COMPRESSION`.
 
 The new format version has not received much testing yet. Do not rely on it as
 your only backup copy! Please run `check` in regular intervals to detect any
