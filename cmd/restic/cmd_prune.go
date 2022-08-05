@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"math"
 	"sort"
 	"strconv"
@@ -186,12 +187,54 @@ func runPruneWithRepo(opts PruneOptions, gopts GlobalOptions, repo *repository.R
 		return err
 	}
 
-	usedBlobs, err := getUsedBlobs(gopts, repo, ignoreSnapshots)
+	plan, stats, err := planPrune(opts, gopts, repo, ignoreSnapshots)
 	if err != nil {
 		return err
 	}
 
-	return prune(opts, gopts, repo, usedBlobs)
+	err = printPruneStats(gopts, stats)
+	if err != nil {
+		return err
+	}
+
+	return doPrune(opts, gopts, repo, plan)
+}
+
+type pruneStats struct {
+	blobs struct {
+		used      uint
+		duplicate uint
+		unused    uint
+		remove    uint
+		repack    uint
+		repackrm  uint
+	}
+	size struct {
+		used      uint64
+		duplicate uint64
+		unused    uint64
+		remove    uint64
+		repack    uint64
+		repackrm  uint64
+		unref     uint64
+	}
+	packs struct {
+		used       uint
+		unused     uint
+		partlyUsed uint
+		unref      uint
+		keep       uint
+		repack     uint
+		remove     uint
+	}
+}
+
+type prunePlan struct {
+	removePacksFirst restic.IDSet   // packs to remove first (unreferenced packs)
+	repackPacks      restic.IDSet   // packs to repack
+	keepBlobs        restic.BlobSet // blobs to keep during repacking
+	removePacks      restic.IDSet   // packs to remove
+	ignorePacks      restic.IDSet   // packs to ignore when rebuilding the index
 }
 
 type packInfo struct {
@@ -208,44 +251,53 @@ type packInfoWithID struct {
 	packInfo
 }
 
-// prune selects which files to rewrite and then does that. The map usedBlobs is
-// modified in the process.
-func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedBlobs restic.BlobSet) error {
+// planPrune selects which files to rewrite and which to delete and which blobs to keep.
+// Also some summary statistics are returned.
+func planPrune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, ignoreSnapshots restic.IDSet) (prunePlan, pruneStats, error) {
 	ctx := gopts.ctx
+	var stats pruneStats
 
-	var stats struct {
-		blobs struct {
-			used      uint
-			duplicate uint
-			unused    uint
-			remove    uint
-			repack    uint
-			repackrm  uint
-		}
-		size struct {
-			used      uint64
-			duplicate uint64
-			unused    uint64
-			remove    uint64
-			repack    uint64
-			repackrm  uint64
-			unref     uint64
-		}
-		packs struct {
-			used       uint
-			unused     uint
-			partlyUsed uint
-			keep       uint
-		}
+	usedBlobs, err := getUsedBlobs(gopts, repo, ignoreSnapshots)
+	if err != nil {
+		return prunePlan{}, stats, err
 	}
 
 	Verbosef("searching used packs...\n")
+	keepBlobs, indexPack, err := packInfoFromIndex(ctx, repo.Index(), usedBlobs, &stats)
+	if err != nil {
+		return prunePlan{}, stats, err
+	}
 
+	Verbosef("collecting packs for deletion and repacking\n")
+	plan, err := decidePackAction(ctx, opts, gopts, repo, indexPack, &stats)
+	if err != nil {
+		return prunePlan{}, stats, err
+	}
+
+	if len(plan.repackPacks) != 0 {
+		// when repacking, we do not want to keep blobs which are
+		// already contained in kept packs, so delete them from keepBlobs
+		for blob := range repo.Index().Each(ctx) {
+			if plan.removePacks.Has(blob.PackID) || plan.repackPacks.Has(blob.PackID) {
+				continue
+			}
+			keepBlobs.Delete(blob.BlobHandle)
+		}
+	} else {
+		// keepBlobs is only needed if packs are repacked
+		keepBlobs = nil
+	}
+	plan.keepBlobs = keepBlobs
+
+	return plan, stats, nil
+}
+
+func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs restic.BlobSet, stats *pruneStats) (restic.BlobSet, map[restic.ID]packInfo, error) {
 	keepBlobs := restic.NewBlobSet()
 	duplicateBlobs := make(map[restic.BlobHandle]uint8)
 
 	// iterate over all blobs in index to find out which blobs are duplicates
-	for blob := range repo.Index().Each(ctx) {
+	for blob := range idx.Each(ctx) {
 		bh := blob.BlobHandle
 		size := uint64(blob.Length)
 		switch {
@@ -280,19 +332,19 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 			"Will not start prune to prevent (additional) data loss!\n"+
 			"Please report this error (along with the output of the 'prune' run) at\n"+
 			"https://github.com/restic/restic/issues/new/choose\n", usedBlobs)
-		return errorIndexIncomplete
+		return nil, nil, errorIndexIncomplete
 	}
 
 	indexPack := make(map[restic.ID]packInfo)
 
 	// save computed pack header size
-	for pid, hdrSize := range pack.Size(ctx, repo.Index(), true) {
+	for pid, hdrSize := range pack.Size(ctx, idx, true) {
 		// initialize tpe with NumBlobTypes to indicate it's not set
 		indexPack[pid] = packInfo{tpe: restic.NumBlobTypes, usedSize: uint64(hdrSize)}
 	}
 
 	// iterate over all blobs in index to generate packInfo
-	for blob := range repo.Index().Each(ctx) {
+	for blob := range idx.Each(ctx) {
 		ip := indexPack[blob.PackID]
 
 		// Set blob type if not yet set
@@ -330,7 +382,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 	// - if there are no used blobs in a pack, possibly mark duplicates as "unused"
 	if len(duplicateBlobs) > 0 {
 		// iterate again over all blobs in index (this is pretty cheap, all in-mem)
-		for blob := range repo.Index().Each(ctx) {
+		for blob := range idx.Each(ctx) {
 			bh := blob.BlobHandle
 			count, isDuplicate := duplicateBlobs[bh]
 			if !isDuplicate {
@@ -361,7 +413,10 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		}
 	}
 
-	Verbosef("collecting packs for deletion and repacking\n")
+	return keepBlobs, indexPack, nil
+}
+
+func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo restic.Repository, indexPack map[restic.ID]packInfo, stats *pruneStats) (prunePlan, error) {
 	removePacksFirst := restic.NewIDSet()
 	removePacks := restic.NewIDSet()
 	repackPacks := restic.NewIDSet()
@@ -436,7 +491,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 	})
 	bar.Done()
 	if err != nil {
-		return err
+		return prunePlan{}, err
 	}
 
 	// At this point indexPacks contains only missing packs!
@@ -457,7 +512,7 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		for id := range indexPack {
 			Warnf("  %v\n", id)
 		}
-		return errorPacksMissing
+		return prunePlan{}, errorPacksMissing
 	}
 	if len(ignorePacks) != 0 {
 		Warnf("Missing but unneeded pack files are referenced in the index, will be repaired\n")
@@ -465,9 +520,6 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 			Warnf("will forget missing pack file %v\n", id)
 		}
 	}
-
-	// calculate limit for number of unused bytes in the repo after repacking
-	maxUnusedSizeAfter := opts.maxUnusedBytes(stats.size.used)
 
 	// Sort repackCandidates such that packs with highest ratio unused/used space are picked first.
 	// This is equivalent to sorting by unused / total space.
@@ -494,6 +546,9 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		stats.size.repackrm += p.unusedSize
 	}
 
+	// calculate limit for number of unused bytes in the repo after repacking
+	maxUnusedSizeAfter := opts.maxUnusedBytes(stats.size.used)
+
 	for _, p := range repackCandidates {
 		reachedUnusedSizeAfter := (stats.size.unused-stats.size.remove-stats.size.repackrm < maxUnusedSizeAfter)
 		reachedRepackSize := stats.size.repack+p.unusedSize+p.usedSize >= opts.MaxRepackBytes
@@ -515,20 +570,19 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		}
 	}
 
-	if len(repackPacks) != 0 {
-		// when repacking, we do not want to keep blobs which are
-		// already contained in kept packs, so delete them from keepBlobs
-		for blob := range repo.Index().Each(ctx) {
-			if removePacks.Has(blob.PackID) || repackPacks.Has(blob.PackID) {
-				continue
-			}
-			keepBlobs.Delete(blob.BlobHandle)
-		}
-	} else {
-		// keepBlobs is only needed if packs are repacked
-		keepBlobs = nil
-	}
+	stats.packs.unref = uint(len(removePacksFirst))
+	stats.packs.repack = uint(len(repackPacks))
+	stats.packs.remove = uint(len(removePacks))
 
+	return prunePlan{removePacksFirst: removePacksFirst,
+		removePacks: removePacks,
+		repackPacks: repackPacks,
+		ignorePacks: ignorePacks,
+	}, nil
+}
+
+// printPruneStats prints out the statistics
+func printPruneStats(gopts GlobalOptions, stats pruneStats) error {
 	Verboseff("\nused:         %10d blobs / %s\n", stats.blobs.used, formatBytes(stats.size.used))
 	if stats.blobs.duplicate > 0 {
 		Verboseff("duplicates:   %10d blobs / %s\n", stats.blobs.duplicate, formatBytes(stats.size.duplicate))
@@ -558,47 +612,66 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 	Verboseff("unused packs:       %10d\n\n", stats.packs.unused)
 
 	Verboseff("to keep:      %10d packs\n", stats.packs.keep)
-	Verboseff("to repack:    %10d packs\n", len(repackPacks))
-	Verboseff("to delete:    %10d packs\n", len(removePacks))
-	if len(removePacksFirst) > 0 {
-		Verboseff("to delete:    %10d unreferenced packs\n\n", len(removePacksFirst))
+	Verboseff("to repack:    %10d packs\n", stats.packs.repack)
+	Verboseff("to delete:    %10d packs\n", stats.packs.remove)
+	if stats.packs.unref > 0 {
+		Verboseff("to delete:    %10d unreferenced packs\n\n", stats.packs.unref)
 	}
+	return nil
+}
+
+// doPrune does the actual pruning:
+// - remove unreferenced packs first
+// - repack given pack files while keeping the given blobs
+// - rebuild the index while ignoring all files that will be deleted
+// - delete the files
+// plan.removePacks and plan.ignorePacks are modified in this function.
+func doPrune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, plan prunePlan) (err error) {
+	ctx := gopts.ctx
 
 	if opts.DryRun {
 		if !gopts.JSON && gopts.verbosity >= 2 {
-			if len(removePacksFirst) > 0 {
-				Printf("Would have removed the following unreferenced packs:\n%v\n\n", removePacksFirst)
+			if len(plan.removePacksFirst) > 0 {
+				Printf("Would have removed the following unreferenced packs:\n%v\n\n", plan.removePacksFirst)
 			}
-			Printf("Would have repacked and removed the following packs:\n%v\n\n", repackPacks)
-			Printf("Would have removed the following no longer used packs:\n%v\n\n", removePacks)
+			Printf("Would have repacked and removed the following packs:\n%v\n\n", plan.repackPacks)
+			Printf("Would have removed the following no longer used packs:\n%v\n\n", plan.removePacks)
 		}
 		// Always quit here if DryRun was set!
 		return nil
 	}
 
 	// unreferenced packs can be safely deleted first
-	if len(removePacksFirst) != 0 {
+	if len(plan.removePacksFirst) != 0 {
 		Verbosef("deleting unreferenced packs\n")
-		DeleteFiles(gopts, repo, removePacksFirst, restic.PackFile)
+		DeleteFiles(gopts, repo, plan.removePacksFirst, restic.PackFile)
 	}
 
-	if len(repackPacks) != 0 {
+	if len(plan.repackPacks) != 0 {
 		Verbosef("repacking packs\n")
-		bar := newProgressMax(!gopts.Quiet, uint64(len(repackPacks)), "packs repacked")
-		_, err := repository.Repack(ctx, repo, repo, repackPacks, keepBlobs, bar)
+		bar := newProgressMax(!gopts.Quiet, uint64(len(plan.repackPacks)), "packs repacked")
+		_, err := repository.Repack(ctx, repo, repo, plan.repackPacks, plan.keepBlobs, bar)
 		bar.Done()
 		if err != nil {
 			return errors.Fatalf("%s", err)
 		}
 
 		// Also remove repacked packs
-		removePacks.Merge(repackPacks)
+		plan.removePacks.Merge(plan.repackPacks)
+
+		if len(plan.keepBlobs) != 0 {
+			Warnf("%v was not repacked\n\n"+
+				"Integrity check failed.\n"+
+				"Please report this error (along with the output of the 'prune' run) at\n"+
+				"https://github.com/restic/restic/issues/new/choose\n", plan.keepBlobs)
+			return errors.Fatal("internal error: blobs were not repacked")
+		}
 	}
 
-	if len(ignorePacks) == 0 {
-		ignorePacks = removePacks
+	if len(plan.ignorePacks) == 0 {
+		plan.ignorePacks = plan.removePacks
 	} else {
-		ignorePacks.Merge(removePacks)
+		plan.ignorePacks.Merge(plan.removePacks)
 	}
 
 	if opts.unsafeRecovery {
@@ -608,20 +681,20 @@ func prune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, usedB
 		if err != nil {
 			return errors.Fatalf("%s", err)
 		}
-	} else if len(ignorePacks) != 0 {
-		err = rebuildIndexFiles(gopts, repo, ignorePacks, nil)
+	} else if len(plan.ignorePacks) != 0 {
+		err = rebuildIndexFiles(gopts, repo, plan.ignorePacks, nil)
 		if err != nil {
 			return errors.Fatalf("%s", err)
 		}
 	}
 
-	if len(removePacks) != 0 {
-		Verbosef("removing %d old packs\n", len(removePacks))
-		DeleteFiles(gopts, repo, removePacks, restic.PackFile)
+	if len(plan.removePacks) != 0 {
+		Verbosef("removing %d old packs\n", len(plan.removePacks))
+		DeleteFiles(gopts, repo, plan.removePacks, restic.PackFile)
 	}
 
 	if opts.unsafeRecovery {
-		_, err = writeIndexFiles(gopts, repo, ignorePacks, nil)
+		_, err = writeIndexFiles(gopts, repo, plan.ignorePacks, nil)
 		if err != nil {
 			return errors.Fatalf("%s", err)
 		}
