@@ -1,6 +1,7 @@
 package main
 
 import (
+	"runtime"
 	"strings"
 	"time"
 
@@ -42,6 +43,7 @@ type RestoreOptions struct {
 	InsensitiveInclude []string
 	Target             string
 	snapshotFilterOptions
+	Sparse bool
 	Verify bool
 }
 
@@ -58,6 +60,9 @@ func init() {
 	flags.StringVarP(&restoreOptions.Target, "target", "t", "", "directory to extract data to")
 
 	initSingleSnapshotFilterOptions(flags, &restoreOptions.snapshotFilterOptions)
+	if runtime.GOOS != "windows" {
+		flags.BoolVar(&restoreOptions.Sparse, "sparse", false, "restore files as sparse (not supported on windows)")
+	}
 	flags.BoolVar(&restoreOptions.Verify, "verify", false, "verify restored files content")
 }
 
@@ -147,7 +152,7 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	res, err := restorer.NewRestorer(ctx, repo, id)
+	res, err := restorer.NewRestorer(ctx, repo, id, opts.Sparse)
 	if err != nil {
 		Exitf(2, "creating restorer failed: %v\n", err)
 	}

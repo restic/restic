@@ -24,8 +24,9 @@ type filesWriterBucket struct {
 
 type partialFile struct {
 	*os.File
-	size  int64 // File size, tracked for sparse writes (not on Windows).
-	users int   // Reference count.
+	size   int64 // File size, tracked for sparse writes (not on Windows).
+	users  int   // Reference count.
+	sparse bool
 }
 
 func newFilesWriter(count int) *filesWriter {
@@ -38,7 +39,7 @@ func newFilesWriter(count int) *filesWriter {
 	}
 }
 
-func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, createSize int64) error {
+func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, createSize int64, sparse bool) error {
 	bucket := &w.buckets[uint(xxhash.Sum64String(path))%uint(len(w.buckets))]
 
 	acquireWriter := func() (*partialFile, error) {
@@ -62,7 +63,7 @@ func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create
 			return nil, err
 		}
 
-		wr := &partialFile{File: f, users: 1}
+		wr := &partialFile{File: f, users: 1, sparse: sparse}
 		if createSize < 0 {
 			info, err := f.Stat()
 			if err != nil {
@@ -72,7 +73,7 @@ func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create
 		}
 		bucket.files[path] = wr
 
-		if createSize >= 0 {
+		if createSize >= 0 && !sparse {
 			err := preallocateFile(wr.File, createSize)
 			if err != nil {
 				// Just log the preallocate error but don't let it cause the restore process to fail.

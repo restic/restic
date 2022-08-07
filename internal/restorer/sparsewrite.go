@@ -8,6 +8,10 @@ import "bytes"
 // WriteAt writes p to f.File at offset. It tries to do a sparse write
 // and updates f.size.
 func (f *partialFile) WriteAt(p []byte, offset int64) (n int, err error) {
+	if !f.sparse {
+		return f.File.WriteAt(p, offset)
+	}
+
 	n = len(p)
 	end := offset + int64(n)
 

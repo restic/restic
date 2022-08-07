@@ -36,7 +36,7 @@ func TestRestorerRestoreEmptyHardlinkedFileds(t *testing.T) {
 		},
 	})
 
-	res, err := NewRestorer(context.TODO(), repo, id)
+	res, err := NewRestorer(context.TODO(), repo, id, false)
 	rtest.OK(t, err)
 
 	res.SelectFilter = func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
@@ -85,8 +85,9 @@ func TestRestorerSparseFiles(t *testing.T) {
 	arch := archiver.New(repo, target, archiver.Options{})
 	_, id, err := arch.Snapshot(context.Background(), []string{"/zeros"},
 		archiver.SnapshotOptions{})
+	rtest.OK(t, err)
 
-	res, err := NewRestorer(repo, id)
+	res, err := NewRestorer(context.TODO(), repo, id, true)
 	rtest.OK(t, err)
 
 	tempdir, cleanup := rtest.TempDir(t)
@@ -102,6 +103,7 @@ func TestRestorerSparseFiles(t *testing.T) {
 	content, err := ioutil.ReadFile(filename)
 	rtest.OK(t, err)
 
+	rtest.Equals(t, len(zeros[:]), len(content))
 	rtest.Equals(t, zeros[:], content)
 
 	fi, err := os.Stat(filename)

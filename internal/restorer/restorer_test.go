@@ -324,7 +324,7 @@ func TestRestorer(t *testing.T) {
 			_, id := saveSnapshot(t, repo, test.Snapshot)
 			t.Logf("snapshot saved as %v", id.Str())
 
-			res, err := NewRestorer(context.TODO(), repo, id)
+			res, err := NewRestorer(context.TODO(), repo, id, false)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -447,7 +447,7 @@ func TestRestorerRelative(t *testing.T) {
 			_, id := saveSnapshot(t, repo, test.Snapshot)
 			t.Logf("snapshot saved as %v", id.Str())
 
-			res, err := NewRestorer(context.TODO(), repo, id)
+			res, err := NewRestorer(context.TODO(), repo, id, false)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -682,7 +682,7 @@ func TestRestorerTraverseTree(t *testing.T) {
 			defer cleanup()
 			sn, id := saveSnapshot(t, repo, test.Snapshot)
 
-			res, err := NewRestorer(context.TODO(), repo, id)
+			res, err := NewRestorer(context.TODO(), repo, id, false)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -764,7 +764,7 @@ func TestRestorerConsistentTimestampsAndPermissions(t *testing.T) {
 		},
 	})
 
-	res, err := NewRestorer(context.TODO(), repo, id)
+	res, err := NewRestorer(context.TODO(), repo, id, false)
 	rtest.OK(t, err)
 
 	res.SelectFilter = func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
@@ -824,7 +824,7 @@ func TestVerifyCancel(t *testing.T) {
 
 	_, id := saveSnapshot(t, repo, snapshot)
 
-	res, err := NewRestorer(context.TODO(), repo, id)
+	res, err := NewRestorer(context.TODO(), repo, id, false)
 	rtest.OK(t, err)
 
 	tempdir, cleanup := rtest.TempDir(t)
