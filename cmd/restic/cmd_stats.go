@@ -113,7 +113,7 @@ func runStats(gopts GlobalOptions, args []string) error {
 		uniqueFiles:    make(map[fileID]struct{}),
 		fileBlobs:      make(map[string]restic.IDSet),
 		blobs:          restic.NewBlobSet(),
-		snapshotsCount: 0,
+		SnapshotsCount: 0,
 	}
 
 	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, statsOptions.Hosts, statsOptions.Tags, statsOptions.Paths, args) {
@@ -148,7 +148,7 @@ func runStats(gopts GlobalOptions, args []string) error {
 	}
 
 	Printf("Stats in %s mode:\n", statsOptions.countMode)
-	Printf("Snapshots processed:   %d\n", stats.snapshotsCount)
+	Printf("Snapshots processed:   %d\n", stats.SnapshotsCount)
 
 	if stats.TotalBlobCount > 0 {
 		Printf("   Total Blob Count:   %d\n", stats.TotalBlobCount)
@@ -166,7 +166,7 @@ func statsWalkSnapshot(ctx context.Context, snapshot *restic.Snapshot, repo rest
 		return fmt.Errorf("snapshot %s has nil tree", snapshot.ID().Str())
 	}
 
-	stats.snapshotsCount++
+	stats.SnapshotsCount++
 
 	if statsOptions.countMode == countModeRawData {
 		// count just the sizes of unique blobs; we don't need to walk the tree
@@ -285,6 +285,8 @@ type statsContainer struct {
 	TotalSize      uint64 `json:"total_size"`
 	TotalFileCount uint64 `json:"total_file_count"`
 	TotalBlobCount uint64 `json:"total_blob_count,omitempty"`
+	// holds count of all considered snapshots
+	SnapshotsCount int `json:"snapshots_count"`
 
 	// uniqueFiles marks visited files according to their
 	// contents (hashed sequence of content blob IDs)
@@ -297,9 +299,6 @@ type statsContainer struct {
 	// blobs is used to count individual unique blobs,
 	// independent of references to files
 	blobs restic.BlobSet
-
-	// holds count of all considered snapshots
-	snapshotsCount int
 }
 
 // fileID is a 256-bit hash that distinguishes unique files.
