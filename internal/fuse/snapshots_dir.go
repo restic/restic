@@ -17,10 +17,11 @@ import (
 // SnapshotsDir is a actual fuse directory generated from SnapshotsDirStructure
 // It uses the saved prefix to select the corresponding MetaDirData.
 type SnapshotsDir struct {
-	root      *Root
-	inode     uint64
-	dirStruct *SnapshotsDirStructure
-	prefix    string
+	root        *Root
+	inode       uint64
+	parentInode uint64
+	dirStruct   *SnapshotsDirStructure
+	prefix      string
 }
 
 // ensure that *SnapshotsDir implements these interfaces
@@ -28,13 +29,14 @@ var _ = fs.HandleReadDirAller(&SnapshotsDir{})
 var _ = fs.NodeStringLookuper(&SnapshotsDir{})
 
 // NewSnapshotsDir returns a new directory structure containing snapshots and "latest" links
-func NewSnapshotsDir(root *Root, inode uint64, dirStruct *SnapshotsDirStructure, prefix string) *SnapshotsDir {
+func NewSnapshotsDir(root *Root, inode, parentInode uint64, dirStruct *SnapshotsDirStructure, prefix string) *SnapshotsDir {
 	debug.Log("create snapshots dir, inode %d", inode)
 	return &SnapshotsDir{
-		root:      root,
-		inode:     inode,
-		dirStruct: dirStruct,
-		prefix:    prefix,
+		root:        root,
+		inode:       inode,
+		parentInode: parentInode,
+		dirStruct:   dirStruct,
+		prefix:      prefix,
 	}
 }
 
@@ -68,7 +70,7 @@ func (d *SnapshotsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 			Type:  fuse.DT_Dir,
 		},
 		{
-			Inode: d.root.inode,
+			Inode: d.parentInode,
 			Name:  "..",
 			Type:  fuse.DT_Dir,
 		},
@@ -107,7 +109,7 @@ func (d *SnapshotsDir) Lookup(ctx context.Context, name string) (fs.Node, error)
 		} else if entry.snapshot != nil {
 			return newDirFromSnapshot(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), entry.snapshot)
 		} else {
-			return NewSnapshotsDir(d.root, fs.GenerateDynamicInode(d.inode, name), d.dirStruct, d.prefix+"/"+name), nil
+			return NewSnapshotsDir(d.root, fs.GenerateDynamicInode(d.inode, name), d.inode, d.dirStruct, d.prefix+"/"+name), nil
 		}
 	}
 

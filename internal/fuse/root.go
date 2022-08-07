@@ -27,7 +27,6 @@ type Config struct {
 type Root struct {
 	repo      restic.Repository
 	cfg       Config
-	inode     uint64
 	blobCache *bloblru.Cache
 
 	*SnapshotsDir
@@ -50,7 +49,6 @@ func NewRoot(repo restic.Repository, cfg Config) *Root {
 
 	root := &Root{
 		repo:      repo,
-		inode:     rootInode,
 		cfg:       cfg,
 		blobCache: bloblru.New(blobCacheSize),
 	}
@@ -70,7 +68,7 @@ func NewRoot(repo restic.Repository, cfg Config) *Root {
 		}
 	}
 
-	root.SnapshotsDir = NewSnapshotsDir(root, rootInode, NewSnapshotsDirStructure(root, cfg.PathTemplates, cfg.TimeTemplate), "")
+	root.SnapshotsDir = NewSnapshotsDir(root, rootInode, rootInode, NewSnapshotsDirStructure(root, cfg.PathTemplates, cfg.TimeTemplate), "")
 
 	return root
 }
