@@ -24,8 +24,7 @@ type filesWriterBucket struct {
 
 type partialFile struct {
 	*os.File
-	size   int64 // File size, tracked for sparse writes (not on Windows).
-	users  int   // Reference count.
+	users  int // Reference count.
 	sparse bool
 }
 
@@ -64,24 +63,24 @@ func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create
 		}
 
 		wr := &partialFile{File: f, users: 1, sparse: sparse}
-		if createSize < 0 {
-			info, err := f.Stat()
-			if err != nil {
-				return nil, err
-			}
-			wr.size = info.Size()
-		}
 		bucket.files[path] = wr
 
-		if createSize >= 0 && !sparse {
-			err := preallocateFile(wr.File, createSize)
-			if err != nil {
-				// Just log the preallocate error but don't let it cause the restore process to fail.
-				// Preallocate might return an error if the filesystem (implementation) does not
-				// support preallocation or our parameters combination to the preallocate call
-				// This should yield a syscall.ENOTSUP error, but some other errors might also
-				// show up.
-				debug.Log("Failed to preallocate %v with size %v: %v", path, createSize, err)
+		if createSize >= 0 {
+			if sparse {
+				err = f.Truncate(createSize)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				err := preallocateFile(wr.File, createSize)
+				if err != nil {
+					// Just log the preallocate error but don't let it cause the restore process to fail.
+					// Preallocate might return an error if the filesystem (implementation) does not
+					// support preallocation or our parameters combination to the preallocate call
+					// This should yield a syscall.ENOTSUP error, but some other errors might also
+					// show up.
+					debug.Log("Failed to preallocate %v with size %v: %v", path, createSize, err)
+				}
 			}
 		}
 

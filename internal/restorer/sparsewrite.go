@@ -13,7 +13,6 @@ func (f *partialFile) WriteAt(p []byte, offset int64) (n int, err error) {
 	}
 
 	n = len(p)
-	end := offset + int64(n)
 
 	// Skip the longest all-zero prefix of p.
 	// If it's long enough, we can punch a hole in the file.
@@ -22,26 +21,16 @@ func (f *partialFile) WriteAt(p []byte, offset int64) (n int, err error) {
 	offset += int64(skipped)
 
 	switch {
-	case len(p) == 0 && end > f.size:
-		// We need to do a Truncate, as WriteAt with length-0 input
-		// doesn't actually extend the file.
-		err = f.Truncate(end)
-		if err != nil {
-			return 0, err
-		}
-
 	case len(p) == 0:
 		// All zeros, file already big enough. A previous WriteAt or
 		// Truncate will have produced the zeros in f.File.
 
 	default:
-		n, err = f.File.WriteAt(p, offset)
+		var n2 int
+		n2, err = f.File.WriteAt(p, offset)
+		n = skipped + n2
 	}
 
-	end = offset + int64(n)
-	if end > f.size {
-		f.size = end
-	}
 	return n, err
 }
 
