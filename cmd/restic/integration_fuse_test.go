@@ -55,7 +55,7 @@ func waitForMount(t testing.TB, dir string) {
 
 func testRunMount(t testing.TB, gopts GlobalOptions, dir string) {
 	opts := MountOptions{
-		SnapshotTemplate: time.RFC3339,
+		TimeTemplate: time.RFC3339,
 	}
 	rtest.OK(t, runMount(opts, gopts, []string{dir}))
 }

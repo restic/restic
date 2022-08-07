@@ -1,0 +1,10 @@
+Enhancement: Make snapshot directory structure of mount command custimizable
+
+We've added the possibility to customize the snapshot directory structure of
+the mount command using templates passed to `--snapshot-template`. The
+formatting of the time for a snapshot is now controlled using `--time-template`
+and supports subdirectories to for example group snapshots by year. Please
+refer to the help output of the `mount` command for further details.
+
+https://github.com/restic/restic/issues/2907
+https://github.com/restic/restic/pull/2913
