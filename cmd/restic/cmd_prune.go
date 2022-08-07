@@ -52,6 +52,7 @@ type PruneOptions struct {
 	MaxRepackBytes uint64
 
 	RepackCachableOnly bool
+	RepackSmall        bool
 	RepackUncompressed bool
 }
 
@@ -70,6 +71,7 @@ func addPruneOptions(c *cobra.Command) {
 	f.StringVar(&pruneOptions.MaxUnused, "max-unused", "5%", "tolerate given `limit` of unused data (absolute value in bytes with suffixes k/K, m/M, g/G, t/T, a value in % or the word 'unlimited')")
 	f.StringVar(&pruneOptions.MaxRepackSize, "max-repack-size", "", "maximum `size` to repack (allowed suffixes: k/K, m/M, g/G, t/T)")
 	f.BoolVar(&pruneOptions.RepackCachableOnly, "repack-cacheable-only", false, "only repack packs which are cacheable")
+	f.BoolVar(&pruneOptions.RepackSmall, "repack-small", false, "repack pack files below 80%% of target pack size")
 	f.BoolVar(&pruneOptions.RepackUncompressed, "repack-uncompressed", false, "repack all uncompressed data")
 }
 
@@ -422,7 +424,14 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 	repackPacks := restic.NewIDSet()
 
 	var repackCandidates []packInfoWithID
+	var repackSmallCandidates []packInfoWithID
 	repoVersion := repo.Config().Version
+	// only repack very small files by default
+	targetPackSize := repo.PackSize() / 25
+	if opts.RepackSmall {
+		// consider files with at least 80% of the target size as large enough
+		targetPackSize = repo.PackSize() / 5 * 4
+	}
 
 	// loop over all packs and decide what to do
 	bar := newProgressMax(!gopts.Quiet, uint64(len(indexPack)), "packs processed")
@@ -477,8 +486,12 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 			stats.packs.keep++
 
 		case p.unusedBlobs == 0 && p.tpe != restic.InvalidBlob && !mustCompress:
-			// All blobs in pack are used and not mixed => keep pack!
-			stats.packs.keep++
+			if packSize >= int64(targetPackSize) {
+				// All blobs in pack are used and not mixed => keep pack!
+				stats.packs.keep++
+			} else {
+				repackSmallCandidates = append(repackSmallCandidates, packInfoWithID{ID: id, packInfo: p})
+			}
 
 		default:
 			// all other packs are candidates for repacking
@@ -521,11 +534,19 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 		}
 	}
 
+	if len(repackSmallCandidates) < 10 {
+		// too few small files to be worth the trouble, this also prevents endlessly repacking
+		// if there is just a single pack file below the target size
+		stats.packs.keep += uint(len(repackSmallCandidates))
+	} else {
+		repackCandidates = append(repackCandidates, repackSmallCandidates...)
+	}
+
 	// Sort repackCandidates such that packs with highest ratio unused/used space are picked first.
 	// This is equivalent to sorting by unused / total space.
 	// Instead of unused[i] / used[i] > unused[j] / used[j] we use
 	// unused[i] * used[j] > unused[j] * used[i] as uint32*uint32 < uint64
-	// Morover packs containing trees are sorted to the beginning
+	// Moreover packs containing trees and too small packs are sorted to the beginning
 	sort.Slice(repackCandidates, func(i, j int) bool {
 		pi := repackCandidates[i].packInfo
 		pj := repackCandidates[j].packInfo
@@ -533,6 +554,10 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 		case pi.tpe != restic.DataBlob && pj.tpe == restic.DataBlob:
 			return true
 		case pj.tpe != restic.DataBlob && pi.tpe == restic.DataBlob:
+			return false
+		case pi.unusedSize+pi.usedSize < uint64(targetPackSize) && pj.unusedSize+pj.usedSize >= uint64(targetPackSize):
+			return true
+		case pj.unusedSize+pj.usedSize < uint64(targetPackSize) && pi.unusedSize+pi.usedSize >= uint64(targetPackSize):
 			return false
 		}
 		return pi.unusedSize*pj.usedSize > pj.unusedSize*pi.usedSize
@@ -552,6 +577,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 	for _, p := range repackCandidates {
 		reachedUnusedSizeAfter := (stats.size.unused-stats.size.remove-stats.size.repackrm < maxUnusedSizeAfter)
 		reachedRepackSize := stats.size.repack+p.unusedSize+p.usedSize >= opts.MaxRepackBytes
+		packIsLargeEnough := p.unusedSize+p.usedSize >= uint64(targetPackSize)
 
 		switch {
 		case reachedRepackSize:
@@ -561,7 +587,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 			// repacking non-data packs / uncompressed-trees is only limited by repackSize
 			repack(p.ID, p.packInfo)
 
-		case reachedUnusedSizeAfter:
+		case reachedUnusedSizeAfter && packIsLargeEnough:
 			// for all other packs stop repacking if tolerated unused size is reached.
 			stats.packs.keep++
 

@@ -86,7 +86,13 @@ func runInit(opts InitOptions, gopts GlobalOptions, args []string) error {
 		return errors.Fatalf("create repository at %s failed: %v\n", location.StripPassword(gopts.Repo), err)
 	}
 
-	s := repository.New(be, repository.Options{Compression: gopts.Compression})
+	s, err := repository.New(be, repository.Options{
+		Compression: gopts.Compression,
+		PackSize:    gopts.PackSize * 1024 * 1024,
+	})
+	if err != nil {
+		return err
+	}
 
 	err = s.Init(gopts.ctx, version, gopts.password, chunkerPolynomial)
 	if err != nil {

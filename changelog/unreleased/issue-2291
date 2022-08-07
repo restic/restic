@@ -1,0 +1,12 @@
+Enhancement: Allow pack size customization
+
+Restic now uses a target pack size of 16 MiB by default. It can be customized
+using the `--pack-size size` option. Supported pack sizes range between 4 and
+128 MiB.
+
+It is possible to migrate an existing repository to _larger_ pack files using
+`prune --repack-small`. This will rewrite every pack file which is
+significantly smaller than the target size.
+
+https://github.com/restic/restic/issues/2291
+https://github.com/restic/restic/pull/3731

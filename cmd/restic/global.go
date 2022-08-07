@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -62,6 +63,7 @@ type GlobalOptions struct {
 	NoCache         bool
 	CleanupCache    bool
 	Compression     repository.CompressionMode
+	PackSize        uint
 
 	backend.TransportOptions
 	limiter.Limits
@@ -102,6 +104,9 @@ func init() {
 		return nil
 	})
 
+	// parse target pack size from env, on error the default value will be used
+	targetPackSize, _ := strconv.ParseUint(os.Getenv("RESTIC_PACK_SIZE"), 10, 32)
+
 	f := cmdRoot.PersistentFlags()
 	f.StringVarP(&globalOptions.Repo, "repo", "r", os.Getenv("RESTIC_REPOSITORY"), "`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)")
 	f.StringVarP(&globalOptions.RepositoryFile, "repository-file", "", os.Getenv("RESTIC_REPOSITORY_FILE"), "`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)")
@@ -121,6 +126,7 @@ func init() {
 	f.Var(&globalOptions.Compression, "compression", "compression mode (only available for repository format version 2), one of (auto|off|max)")
 	f.IntVar(&globalOptions.Limits.UploadKb, "limit-upload", 0, "limits uploads to a maximum rate in KiB/s. (default: unlimited)")
 	f.IntVar(&globalOptions.Limits.DownloadKb, "limit-download", 0, "limits downloads to a maximum rate in KiB/s. (default: unlimited)")
+	f.UintVar(&globalOptions.PackSize, "pack-size", uint(targetPackSize), "set target pack size in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)")
 	f.StringSliceVarP(&globalOptions.Options, "option", "o", []string{}, "set extended option (`key=value`, can be specified multiple times)")
 	// Use our "generate" command instead of the cobra provided "completion" command
 	cmdRoot.CompletionOptions.DisableDefaultCmd = true
@@ -440,7 +446,13 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 		}
 	}
 
-	s := repository.New(be, repository.Options{Compression: opts.Compression})
+	s, err := repository.New(be, repository.Options{
+		Compression: opts.Compression,
+		PackSize:    opts.PackSize * 1024 * 1024,
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	passwordTriesLeft := 1
 	if stdinIsTerminal() && opts.password == "" {
