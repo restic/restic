@@ -9,7 +9,7 @@ on:
   pull_request:
 
 env:
-  latest_go: "1.18.x"
+  latest_go: "1.19.x"
   GO111MODULE: on
 
 jobs:
@@ -19,22 +19,28 @@ jobs:
         # list of jobs to run:
         include:
           - job_name: Windows
-            go: 1.18.x
+            go: 1.19.x
             os: windows-latest
             install_verb: install
 
           - job_name: macOS
-            go: 1.18.x
+            go: 1.19.x
             os: macOS-latest
             test_fuse: false
             install_verb: install
 
           - job_name: Linux
-            go: 1.18.x
+            go: 1.19.x
             os: ubuntu-latest
             test_cloud_backends: true
             test_fuse: true
             check_changelog: true
+            install_verb: install
+
+          - job_name: Linux
+            go: 1.18.x
+            os: ubuntu-latest
+            test_fuse: true
             install_verb: install
 
           - job_name: Linux
@@ -260,7 +266,7 @@ jobs:
         uses: golangci/golangci-lint-action@v2
         with:
           # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
-          version: v1.45
+          version: v1.48
           # Optional: show only new issues if it's a pull request. The default value is `false`.
           only-new-issues: true
           args: --verbose --timeout 5m
