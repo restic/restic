@@ -583,7 +583,7 @@ The number of concurrent connections to the GCS service can be set with the
 established.
 
 .. _service account: https://cloud.google.com/storage/docs/authentication#service_accounts
-.. _create a service account key: https://cloud.google.com/storage/docs/authentication#generating-a-private-key
+.. _create a service account key: https://cloud.google.com/iam/docs/creating-managing-service-account-keys#iam-service-account-keys-create-console
 .. _default authentication material: https://developers.google.com/identity/protocols/application-default-credentials
 
 .. _other-services:
