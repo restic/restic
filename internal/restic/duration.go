@@ -106,6 +106,8 @@ func ParseDuration(s string) (Duration, error) {
 			d.Days = num
 		case 'h':
 			d.Hours = num
+		default:
+			return Duration{}, errors.Errorf("invalid unit %q found after number %d", s[0], num)
 		}
 
 		s = s[1:]
