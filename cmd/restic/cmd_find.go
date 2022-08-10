@@ -62,8 +62,8 @@ func init() {
 	cmdRoot.AddCommand(cmdFind)
 
 	f := cmdFind.Flags()
-	f.StringVarP(&findOptions.Oldest, "oldest", "O", "", "oldest modification date/time")
-	f.StringVarP(&findOptions.Newest, "newest", "N", "", "newest modification date/time")
+	f.StringVarP(&findOptions.Oldest, "oldest", "O", "", "oldest modification date/time (inclusive)")
+	f.StringVarP(&findOptions.Newest, "newest", "N", "", "newest modification date/time (inclusive)")
 	f.StringArrayVarP(&findOptions.Snapshots, "snapshot", "s", nil, "snapshot `id` to search in (can be given multiple times)")
 	f.BoolVar(&findOptions.BlobID, "blob", false, "pattern is a blob-ID")
 	f.BoolVar(&findOptions.TreeID, "tree", false, "pattern is a tree-ID")
@@ -83,24 +83,73 @@ type findPattern struct {
 	ignoreCase     bool
 }
 
-var timeFormats = []string{
-	"2006-01-02",
-	"2006-01-02 15:04",
-	"2006-01-02 15:04:05",
-	"2006-01-02 15:04:05 -0700",
-	"2006-01-02 15:04:05 MST",
-	"02.01.2006",
-	"02.01.2006 15:04",
-	"02.01.2006 15:04:05",
-	"02.01.2006 15:04:05 -0700",
-	"02.01.2006 15:04:05 MST",
-	"Mon Jan 2 15:04:05 -0700 MST 2006",
+type inclusiveLayouts struct {
+	layouts     []string
+	lastInstant func(time.Time) time.Time
 }
 
-func parseTime(str string) (time.Time, error) {
-	for _, fmt := range timeFormats {
-		if t, err := time.ParseInLocation(fmt, str, time.Local); err == nil {
-			return t, nil
+var timeFormats = []inclusiveLayouts{
+	inclusiveLayouts{
+		[]string{
+			"2006",
+		},
+		func(t time.Time) time.Time {
+			return t.AddDate(1, 0, 0).Add(-1)
+		},
+	},
+	inclusiveLayouts{
+		[]string{
+			"2006-01",
+			"01.2006",
+		},
+		func(t time.Time) time.Time {
+			return t.AddDate(0, 1, 0).Add(-1)
+		},
+	},
+	inclusiveLayouts{
+		[]string{
+			"2006-01-02",
+			"02.01.2006",
+		},
+		func(t time.Time) time.Time {
+			return t.AddDate(0, 0, 1).Add(-1)
+		},
+	},
+	inclusiveLayouts{
+		[]string{
+			"2006-01-02 15:04",
+			"02.01.2006 15:04",
+		},
+		func(t time.Time) time.Time {
+			return t.Add(time.Minute - 1)
+		},
+	},
+	inclusiveLayouts{
+		[]string{
+			"2006-01-02 15:04:05",
+			"2006-01-02 15:04:05 -0700",
+			"2006-01-02 15:04:05 MST",
+			"02.01.2006 15:04:05",
+			"02.01.2006 15:04:05 -0700",
+			"02.01.2006 15:04:05 MST",
+			"Mon Jan 2 15:04:05 -0700 MST 2006",
+		},
+		func(t time.Time) time.Time {
+			return t.Add(time.Second - 1)
+		},
+	},
+}
+
+func parseTime(str string, inclusive bool) (time.Time, error) {
+	for _, inclusiveLayouts := range timeFormats {
+		for _, layout := range inclusiveLayouts.layouts {
+			if t, err := time.ParseInLocation(layout, str, time.Local); err == nil {
+				if inclusive {
+					return inclusiveLayouts.lastInstant(t), nil
+				} else {
+					return t, nil
+				}
+			}
 		}
 	}
 
@@ -553,13 +602,13 @@ func runFind(opts FindOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	if opts.Oldest != "" {
-		if pat.oldest, err = parseTime(opts.Oldest); err != nil {
+		if pat.oldest, err = parseTime(opts.Oldest, false); err != nil {
 			return err
 		}
 	}
 
 	if opts.Newest != "" {
-		if pat.newest, err = parseTime(opts.Newest); err != nil {
+		if pat.newest, err = parseTime(opts.Newest, true); err != nil {
 			return err
 		}
 	}
