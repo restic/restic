@@ -83,6 +83,10 @@ type Archiver struct {
 	// default.
 	WithAtime bool
 
+	// When symbolic links are encountered, dereference them and access the
+	// content they point to instead.
+	FollowSymLinks bool
+
 	// Flags controlling change detection. See doc/040_backup.rst for details.
 	ChangeIgnoreFlags uint
 }
@@ -141,15 +145,16 @@ func (o Options) ApplyDefaults() Options {
 // New initializes a new archiver.
 func New(repo restic.Repository, fs fs.FS, opts Options) *Archiver {
 	arch := &Archiver{
-		Repo:         repo,
-		SelectByName: func(item string) bool { return true },
-		Select:       func(item string, fi os.FileInfo) bool { return true },
-		FS:           fs,
-		Options:      opts.ApplyDefaults(),
+		Repo:           repo,
+		SelectByName:   func(item string) bool { return true },
+		Select:         func(item string, fi os.FileInfo) bool { return true },
+		FS:             fs,
+		Options:        opts.ApplyDefaults(),
 
-		CompleteItem: func(string, *restic.Node, *restic.Node, ItemStats, time.Duration) {},
-		StartFile:    func(string) {},
-		CompleteBlob: func(string, uint64) {},
+		CompleteItem:   func(string, *restic.Node, *restic.Node, ItemStats, time.Duration) {},
+		StartFile:      func(string) {},
+		CompleteBlob:   func(string, uint64) {},
+		FollowSymLinks: false,
 	}
 
 	return arch
@@ -367,7 +372,12 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 	}
 
 	// get file info and run remaining select functions that require file information
-	fi, err := arch.FS.Lstat(target)
+	var fi os.FileInfo
+	if arch.FollowSymLinks {
+		fi, err = arch.FS.Stat(target)
+	} else {
+		fi, err = arch.FS.Lstat(target)
+	}
 	if err != nil {
 		debug.Log("lstat() for %v returned error: %v", target, err)
 		err = arch.error(abstarget, err)
