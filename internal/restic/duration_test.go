@@ -83,8 +83,14 @@ func TestParseDuration(t *testing.T) {
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
 			d, err := ParseDuration(test.input)
-			if err != nil && !test.err {
-				t.Fatal(err)
+			if test.err {
+				if err == nil {
+					t.Fatalf("Missing error for %v", test.input)
+				}
+			} else {
+				if err != nil {
+					t.Fatal(err)
+				}
 			}
 
 			if !cmp.Equal(d, test.d) {
