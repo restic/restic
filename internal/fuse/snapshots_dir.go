@@ -58,7 +58,7 @@ func (d *SnapshotsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	// update snapshots
 	meta, err := d.dirStruct.UpdatePrefix(ctx, d.prefix)
 	if err != nil {
-		return nil, err
+		return nil, unwrapCtxCanceled(err)
 	} else if meta == nil {
 		return nil, fuse.ENOENT
 	}
@@ -97,7 +97,7 @@ func (d *SnapshotsDir) Lookup(ctx context.Context, name string) (fs.Node, error)
 
 	meta, err := d.dirStruct.UpdatePrefix(ctx, d.prefix)
 	if err != nil {
-		return nil, err
+		return nil, unwrapCtxCanceled(err)
 	} else if meta == nil {
 		return nil, fuse.ENOENT
 	}
