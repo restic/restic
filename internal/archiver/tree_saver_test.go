@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"runtime"
-	"sync/atomic"
 	"testing"
 
 	"github.com/restic/restic/internal/errors"
@@ -12,18 +11,28 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+func newFutureBlobWithResponse() FutureBlob {
+	ch := make(chan SaveBlobResponse, 1)
+	ch <- SaveBlobResponse{
+		id:         restic.NewRandomID(),
+		known:      false,
+		length:     123,
+		sizeInRepo: 123,
+	}
+	return FutureBlob{ch: ch}
+}
+
 func TestTreeSaver(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	wg, ctx := errgroup.WithContext(ctx)
 
-	saveFn := func(context.Context, *restic.TreeJSONBuilder) (restic.ID, ItemStats, error) {
-		return restic.NewRandomID(), ItemStats{TreeBlobs: 1, TreeSize: 123}, nil
+	saveFn := func(ctx context.Context, t restic.BlobType, buf *Buffer) FutureBlob {
+		return newFutureBlobWithResponse()
 	}
-
 	errFn := func(snPath string, err error) error {
-		return nil
+		return err
 	}
 
 	b := NewTreeSaver(ctx, wg, uint(runtime.NumCPU()), saveFn, errFn)
@@ -35,7 +44,7 @@ func TestTreeSaver(t *testing.T) {
 			Name: fmt.Sprintf("file-%d", i),
 		}
 
-		fb := b.Save(ctx, "/", node.Name, node, nil, nil)
+		fb := b.Save(ctx, join("/", node.Name), node.Name, node, nil, nil)
 		results = append(results, fb)
 	}
 
@@ -54,7 +63,7 @@ func TestTreeSaver(t *testing.T) {
 func TestTreeSaverError(t *testing.T) {
 	var tests = []struct {
 		trees  int
-		failAt int32
+		failAt int
 	}{
 		{1, 1},
 		{20, 2},
@@ -72,19 +81,11 @@ func TestTreeSaverError(t *testing.T) {
 
 			wg, ctx := errgroup.WithContext(ctx)
 
-			var num int32
-			saveFn := func(context.Context, *restic.TreeJSONBuilder) (restic.ID, ItemStats, error) {
-				val := atomic.AddInt32(&num, 1)
-				if val == test.failAt {
-					t.Logf("sending error for request %v\n", test.failAt)
-					return restic.ID{}, ItemStats{}, errTest
-				}
-				return restic.NewRandomID(), ItemStats{TreeBlobs: 1, TreeSize: 123}, nil
+			saveFn := func(ctx context.Context, tpe restic.BlobType, buf *Buffer) FutureBlob {
+				return newFutureBlobWithResponse()
 			}
-
 			errFn := func(snPath string, err error) error {
-				t.Logf("ignoring error %v\n", err)
-				return nil
+				return err
 			}
 
 			b := NewTreeSaver(ctx, wg, uint(runtime.NumCPU()), saveFn, errFn)
@@ -95,8 +96,18 @@ func TestTreeSaverError(t *testing.T) {
 				node := &restic.Node{
 					Name: fmt.Sprintf("file-%d", i),
 				}
+				nodes := []FutureNode{
+					newFutureNodeWithResult(futureNodeResult{node: &restic.Node{
+						Name: fmt.Sprintf("child-%d", i),
+					}}),
+				}
+				if (i + 1) == test.failAt {
+					nodes = append(nodes, newFutureNodeWithResult(futureNodeResult{
+						err: errTest,
+					}))
+				}
 
-				fb := b.Save(ctx, "/", node.Name, node, nil, nil)
+				fb := b.Save(ctx, join("/", node.Name), node.Name, node, nodes, nil)
 				results = append(results, fb)
 			}
 

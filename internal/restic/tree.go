@@ -182,14 +182,3 @@ func (builder *TreeJSONBuilder) Finalize() ([]byte, error) {
 	builder.buf = bytes.Buffer{}
 	return buf, nil
 }
-
-func TreeToBuilder(t *Tree) (*TreeJSONBuilder, error) {
-	builder := NewTreeJSONBuilder()
-	for _, node := range t.Nodes {
-		err := builder.AddNode(node)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return builder, nil
-}

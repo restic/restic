@@ -10,7 +10,7 @@ import (
 
 // TreeSaver concurrently saves incoming trees to the repo.
 type TreeSaver struct {
-	saveTree func(context.Context, *restic.TreeJSONBuilder) (restic.ID, ItemStats, error)
+	saveBlob func(ctx context.Context, t restic.BlobType, buf *Buffer) FutureBlob
 	errFn    ErrorFunc
 
 	ch chan<- saveTreeJob
@@ -18,12 +18,12 @@ type TreeSaver struct {
 
 // NewTreeSaver returns a new tree saver. A worker pool with treeWorkers is
 // started, it is stopped when ctx is cancelled.
-func NewTreeSaver(ctx context.Context, wg *errgroup.Group, treeWorkers uint, saveTree func(context.Context, *restic.TreeJSONBuilder) (restic.ID, ItemStats, error), errFn ErrorFunc) *TreeSaver {
+func NewTreeSaver(ctx context.Context, wg *errgroup.Group, treeWorkers uint, saveBlob func(ctx context.Context, t restic.BlobType, buf *Buffer) FutureBlob, errFn ErrorFunc) *TreeSaver {
 	ch := make(chan saveTreeJob)
 
 	s := &TreeSaver{
 		ch:       ch,
-		saveTree: saveTree,
+		saveBlob: saveBlob,
 		errFn:    errFn,
 	}
 
@@ -110,13 +110,26 @@ func (s *TreeSaver) save(ctx context.Context, job *saveTreeJob) (*restic.Node, I
 		}
 	}
 
-	id, treeStats, err := s.saveTree(ctx, builder)
-	stats.Add(treeStats)
+	buf, err := builder.Finalize()
 	if err != nil {
 		return nil, stats, err
 	}
 
-	node.Subtree = &id
+	b := &Buffer{Data: buf}
+	res := s.saveBlob(ctx, restic.TreeBlob, b)
+
+	sbr := res.Take(ctx)
+	if !sbr.known {
+		stats.TreeBlobs++
+		stats.TreeSize += uint64(sbr.length)
+		stats.TreeSizeInRepo += uint64(sbr.sizeInRepo)
+	}
+	// The context was canceled in the meantime, id might be invalid
+	if ctx.Err() != nil {
+		return nil, stats, ctx.Err()
+	}
+
+	node.Subtree = &sbr.id
 	return node, stats, nil
 }
 

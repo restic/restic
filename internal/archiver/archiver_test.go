@@ -1118,15 +1118,17 @@ func TestArchiverSaveTree(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			tree, err := arch.SaveTree(ctx, "/", atree, nil)
+			fn, _, err := arch.SaveTree(ctx, "/", atree, nil, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			treeID, err := restic.SaveTree(ctx, repo, tree)
-			if err != nil {
-				t.Fatal(err)
+			fnr := fn.take(context.TODO())
+			if fnr.err != nil {
+				t.Fatal(fnr.err)
 			}
+
+			treeID := *fnr.node.Subtree
 
 			arch.stopWorkers()
 			err = repo.Flush(ctx)

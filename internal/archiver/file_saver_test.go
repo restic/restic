@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -46,7 +47,9 @@ func startFileSaver(ctx context.Context, t testing.TB) (*FileSaver, context.Cont
 	}
 
 	s := NewFileSaver(ctx, wg, saveBlob, pol, workers, workers)
-	s.NodeFromFileInfo = restic.NodeFromFileInfo
+	s.NodeFromFileInfo = func(snPath, filename string, fi os.FileInfo) (*restic.Node, error) {
+		return restic.NodeFromFileInfo(filename, fi)
+	}
 
 	return s, ctx, wg
 }
