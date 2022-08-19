@@ -217,9 +217,9 @@ func (sn *Snapshot) HasTags(l []string) bool {
 }
 
 // HasTagList returns true if either
-// - the snapshot satisfies at least one TagList, so there is a TagList in l
-//   for which all tags are included in sn, or
-// - l is empty
+//   - the snapshot satisfies at least one TagList, so there is a TagList in l
+//     for which all tags are included in sn, or
+//   - l is empty
 func (sn *Snapshot) HasTagList(l []TagList) bool {
 	debug.Log("testing snapshot with tags %v against list: %v", sn.Tags, l)
 
