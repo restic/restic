@@ -355,11 +355,11 @@ func TestIndexUnserialize(t *testing.T) {
 }
 
 func listPack(idx *repository.Index, id restic.ID) (pbs []restic.PackedBlob) {
-	for pb := range idx.Each(context.TODO()) {
+	idx.Each(context.TODO(), func(pb restic.PackedBlob) {
 		if pb.PackID.Equal(id) {
 			pbs = append(pbs, pb)
 		}
-	}
+	})
 	return pbs
 }
 

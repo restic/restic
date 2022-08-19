@@ -163,9 +163,9 @@ func TestMasterMergeFinalIndexes(t *testing.T) {
 	rtest.Equals(t, 1, idxCount)
 
 	blobCount := 0
-	for range mIdx.Each(context.TODO()) {
+	mIdx.Each(context.TODO(), func(pb restic.PackedBlob) {
 		blobCount++
-	}
+	})
 	rtest.Equals(t, 2, blobCount)
 
 	blobs := mIdx.Lookup(bhInIdx1)
@@ -195,9 +195,9 @@ func TestMasterMergeFinalIndexes(t *testing.T) {
 	rtest.Equals(t, []restic.PackedBlob{blob2}, blobs)
 
 	blobCount = 0
-	for range mIdx.Each(context.TODO()) {
+	mIdx.Each(context.TODO(), func(pb restic.PackedBlob) {
 		blobCount++
-	}
+	})
 	rtest.Equals(t, 2, blobCount)
 }
 
@@ -316,9 +316,9 @@ func BenchmarkMasterIndexEach(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		entries := 0
-		for _ = range mIdx.Each(context.TODO()) {
+		mIdx.Each(context.TODO(), func(pb restic.PackedBlob) {
 			entries++
-		}
+		})
 	}
 }
 

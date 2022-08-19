@@ -279,12 +279,12 @@ func planPrune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, i
 	if len(plan.repackPacks) != 0 {
 		// when repacking, we do not want to keep blobs which are
 		// already contained in kept packs, so delete them from keepBlobs
-		for blob := range repo.Index().Each(ctx) {
+		repo.Index().Each(ctx, func(blob restic.PackedBlob) {
 			if plan.removePacks.Has(blob.PackID) || plan.repackPacks.Has(blob.PackID) {
-				continue
+				return
 			}
 			keepBlobs.Delete(blob.BlobHandle)
-		}
+		})
 	} else {
 		// keepBlobs is only needed if packs are repacked
 		keepBlobs = nil
@@ -299,7 +299,7 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 	duplicateBlobs := make(map[restic.BlobHandle]uint8)
 
 	// iterate over all blobs in index to find out which blobs are duplicates
-	for blob := range idx.Each(ctx) {
+	idx.Each(ctx, func(blob restic.PackedBlob) {
 		bh := blob.BlobHandle
 		size := uint64(blob.Length)
 		switch {
@@ -325,7 +325,7 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 			stats.size.unused += size
 			stats.blobs.unused++
 		}
-	}
+	})
 
 	// Check if all used blobs have been found in index
 	if len(usedBlobs) != 0 {
@@ -346,7 +346,7 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 	}
 
 	// iterate over all blobs in index to generate packInfo
-	for blob := range idx.Each(ctx) {
+	idx.Each(ctx, func(blob restic.PackedBlob) {
 		ip := indexPack[blob.PackID]
 
 		// Set blob type if not yet set
@@ -376,7 +376,7 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 		}
 		// update indexPack
 		indexPack[blob.PackID] = ip
-	}
+	})
 
 	// if duplicate blobs exist, those will be set to either "used" or "unused":
 	// - mark only one occurence of duplicate blobs as used
@@ -384,11 +384,11 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 	// - if there are no used blobs in a pack, possibly mark duplicates as "unused"
 	if len(duplicateBlobs) > 0 {
 		// iterate again over all blobs in index (this is pretty cheap, all in-mem)
-		for blob := range idx.Each(ctx) {
+		idx.Each(ctx, func(blob restic.PackedBlob) {
 			bh := blob.BlobHandle
 			count, isDuplicate := duplicateBlobs[bh]
 			if !isDuplicate {
-				continue
+				return
 			}
 
 			ip := indexPack[blob.PackID]
@@ -412,7 +412,7 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 			}
 			// update indexPack
 			indexPack[blob.PackID] = ip
-		}
+		})
 	}
 
 	return keepBlobs, indexPack, nil

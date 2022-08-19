@@ -83,10 +83,9 @@ type MasterIndex interface {
 	Has(BlobHandle) bool
 	Lookup(BlobHandle) []PackedBlob
 
-	// Each returns a channel that yields all blobs known to the index. When
-	// the context is cancelled, the background goroutine terminates. This
-	// blocks any modification of the index.
-	Each(ctx context.Context) <-chan PackedBlob
+	// Each runs fn on all blobs known to the index. When the context is cancelled,
+	// the index iteration return immediately. This blocks any modification of the index.
+	Each(ctx context.Context, fn func(PackedBlob))
 	ListPacks(ctx context.Context, packs IDSet) <-chan PackBlobs
 
 	Save(ctx context.Context, repo SaverUnpacked, packBlacklist IDSet, extraObsolete IDs, p *progress.Counter) (obsolete IDSet, err error)

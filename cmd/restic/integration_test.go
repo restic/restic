@@ -444,11 +444,11 @@ func removePacksExcept(gopts GlobalOptions, t *testing.T, keep restic.IDSet, rem
 	rtest.OK(t, r.LoadIndex(gopts.ctx))
 
 	treePacks := restic.NewIDSet()
-	for pb := range r.Index().Each(context.TODO()) {
+	r.Index().Each(context.TODO(), func(pb restic.PackedBlob) {
 		if pb.Type == restic.TreeBlob {
 			treePacks.Insert(pb.PackID)
 		}
-	}
+	})
 
 	// remove all packs containing data blobs
 	rtest.OK(t, r.List(gopts.ctx, restic.PackFile, func(id restic.ID, size int64) error {
@@ -506,11 +506,11 @@ func TestBackupTreeLoadError(t *testing.T) {
 	rtest.OK(t, err)
 	rtest.OK(t, r.LoadIndex(env.gopts.ctx))
 	treePacks := restic.NewIDSet()
-	for pb := range r.Index().Each(context.TODO()) {
+	r.Index().Each(context.TODO(), func(pb restic.PackedBlob) {
 		if pb.Type == restic.TreeBlob {
 			treePacks.Insert(pb.PackID)
 		}
-	}
+	})
 
 	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
