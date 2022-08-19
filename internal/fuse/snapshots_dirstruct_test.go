@@ -273,3 +273,19 @@ func TestMakeEmptyDirs(t *testing.T) {
 
 	verifyEntries(t, expNames, expLatest, sds.entries)
 }
+
+func TestFilenameFromTag(t *testing.T) {
+	for _, c := range []struct {
+		tag, filename string
+	}{
+		{"", "_"},
+		{".", "_"},
+		{"..", "__"},
+		{"%.", "%."},
+		{"foo", "foo"},
+		{"foo ", "foo "},
+		{"foo/bar_baz", "foo_bar_baz"},
+	} {
+		test.Equals(t, c.filename, filenameFromTag(c.tag))
+	}
+}
