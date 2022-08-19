@@ -52,6 +52,10 @@ func ForAllIndexes(ctx context.Context, repo restic.Repository,
 			var idx *Index
 			oldFormat := false
 
+			if cap(buf) < int(fi.Size) {
+				// overallocate a bit
+				buf = make([]byte, fi.Size+128*1024)
+			}
 			buf, err = repo.LoadUnpacked(ctx, restic.IndexFile, fi.ID, buf[:0])
 			if err == nil {
 				idx, oldFormat, err = DecodeIndex(buf, fi.ID)
