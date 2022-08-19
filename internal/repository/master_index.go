@@ -458,6 +458,8 @@ func (mi *MasterIndex) ListPacks(ctx context.Context, packs restic.IDSet) <-chan
 
 			// pass on packs
 			for packID, pbs := range packBlob {
+				// allow GC
+				packBlob[packID] = nil
 				select {
 				case out <- restic.PackBlobs{PackID: packID, Blobs: pbs}:
 				case <-ctx.Done():
