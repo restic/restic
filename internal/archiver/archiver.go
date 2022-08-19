@@ -306,7 +306,7 @@ func (fn *FutureNode) take(ctx context.Context) futureNodeResult {
 		}
 	case <-ctx.Done():
 	}
-	return futureNodeResult{}
+	return futureNodeResult{err: errors.Errorf("no result")}
 }
 
 // allBlobsPresent checks if all blobs (contents) of the given node are
