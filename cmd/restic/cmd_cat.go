@@ -100,19 +100,12 @@ func runCat(gopts GlobalOptions, args []string) error {
 		Println(string(buf))
 		return nil
 	case "key":
-		h := restic.Handle{Type: restic.KeyFile, Name: id.String()}
-		buf, err := backend.LoadAll(gopts.ctx, nil, repo.Backend(), h)
+		key, err := repository.LoadKey(gopts.ctx, repo, id.String())
 		if err != nil {
 			return err
 		}
 
-		key := &repository.Key{}
-		err = json.Unmarshal(buf, key)
-		if err != nil {
-			return err
-		}
-
-		buf, err = json.MarshalIndent(&key, "", "  ")
+		buf, err := json.MarshalIndent(&key, "", "  ")
 		if err != nil {
 			return err
 		}
