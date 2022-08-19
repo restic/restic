@@ -150,7 +150,7 @@ func (mi *MasterIndex) Packs(packBlacklist restic.IDSet) restic.IDSet {
 	packs := restic.NewIDSet()
 	for _, idx := range mi.idx {
 		idxPacks := idx.Packs()
-		if idx.final {
+		if idx.final && len(packBlacklist) > 0 {
 			idxPacks = idxPacks.Sub(packBlacklist)
 		}
 		packs.Merge(idxPacks)
