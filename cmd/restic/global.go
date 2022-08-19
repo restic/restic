@@ -104,15 +104,12 @@ func init() {
 		return nil
 	})
 
-	// parse target pack size from env, on error the default value will be used
-	targetPackSize, _ := strconv.ParseUint(os.Getenv("RESTIC_PACK_SIZE"), 10, 32)
-
 	f := cmdRoot.PersistentFlags()
-	f.StringVarP(&globalOptions.Repo, "repo", "r", os.Getenv("RESTIC_REPOSITORY"), "`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)")
-	f.StringVarP(&globalOptions.RepositoryFile, "repository-file", "", os.Getenv("RESTIC_REPOSITORY_FILE"), "`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)")
-	f.StringVarP(&globalOptions.PasswordFile, "password-file", "p", os.Getenv("RESTIC_PASSWORD_FILE"), "`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)")
-	f.StringVarP(&globalOptions.KeyHint, "key-hint", "", os.Getenv("RESTIC_KEY_HINT"), "`key` ID of key to try decrypting first (default: $RESTIC_KEY_HINT)")
-	f.StringVarP(&globalOptions.PasswordCommand, "password-command", "", os.Getenv("RESTIC_PASSWORD_COMMAND"), "shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)")
+	f.StringVarP(&globalOptions.Repo, "repo", "r", "", "`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)")
+	f.StringVarP(&globalOptions.RepositoryFile, "repository-file", "", "", "`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)")
+	f.StringVarP(&globalOptions.PasswordFile, "password-file", "p", "", "`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)")
+	f.StringVarP(&globalOptions.KeyHint, "key-hint", "", "", "`key` ID of key to try decrypting first (default: $RESTIC_KEY_HINT)")
+	f.StringVarP(&globalOptions.PasswordCommand, "password-command", "", "", "shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)")
 	f.BoolVarP(&globalOptions.Quiet, "quiet", "q", false, "do not output comprehensive progress report")
 	f.CountVarP(&globalOptions.Verbose, "verbose", "v", "be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)")
 	f.BoolVar(&globalOptions.NoLock, "no-lock", false, "do not lock the repository, this allows some operations on read-only repositories")
@@ -126,16 +123,24 @@ func init() {
 	f.Var(&globalOptions.Compression, "compression", "compression mode (only available for repository format version 2), one of (auto|off|max)")
 	f.IntVar(&globalOptions.Limits.UploadKb, "limit-upload", 0, "limits uploads to a maximum rate in KiB/s. (default: unlimited)")
 	f.IntVar(&globalOptions.Limits.DownloadKb, "limit-download", 0, "limits downloads to a maximum rate in KiB/s. (default: unlimited)")
-	f.UintVar(&globalOptions.PackSize, "pack-size", uint(targetPackSize), "set target pack size in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)")
+	f.UintVar(&globalOptions.PackSize, "pack-size", 0, "set target pack size in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)")
 	f.StringSliceVarP(&globalOptions.Options, "option", "o", []string{}, "set extended option (`key=value`, can be specified multiple times)")
 	// Use our "generate" command instead of the cobra provided "completion" command
 	cmdRoot.CompletionOptions.DisableDefaultCmd = true
 
+	globalOptions.Repo = os.Getenv("RESTIC_REPOSITORY")
+	globalOptions.RepositoryFile = os.Getenv("RESTIC_REPOSITORY_FILE")
+	globalOptions.PasswordFile = os.Getenv("RESTIC_PASSWORD_FILE")
+	globalOptions.KeyHint = os.Getenv("RESTIC_KEY_HINT")
+	globalOptions.PasswordCommand = os.Getenv("RESTIC_PASSWORD_COMMAND")
 	comp := os.Getenv("RESTIC_COMPRESSION")
 	if comp != "" {
 		// ignore error as there's no good way to handle it
 		_ = globalOptions.Compression.Set(comp)
 	}
+	// parse target pack size from env, on error the default value will be used
+	targetPackSize, _ := strconv.ParseUint(os.Getenv("RESTIC_PACK_SIZE"), 10, 32)
+	globalOptions.PackSize = uint(targetPackSize)
 
 	restoreTerminal()
 }
