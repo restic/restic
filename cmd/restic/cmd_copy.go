@@ -50,16 +50,20 @@ func init() {
 	cmdRoot.AddCommand(cmdCopy)
 
 	f := cmdCopy.Flags()
-	initSecondaryRepoOptions(f, &copyOptions.secondaryRepoOptions, "destination", "to copy snapshots to")
+	initSecondaryRepoOptions(f, &copyOptions.secondaryRepoOptions, "destination", "to copy snapshots from")
 	f.StringArrayVarP(&copyOptions.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when no snapshot ID is given (can be specified multiple times)")
 	f.Var(&copyOptions.Tags, "tag", "only consider snapshots which include this `taglist`, when no snapshot ID is given")
 	f.StringArrayVar(&copyOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot ID is given")
 }
 
 func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
-	dstGopts, err := fillSecondaryGlobalOpts(opts.secondaryRepoOptions, gopts, "destination")
+	secondaryGopts, isFromRepo, err := fillSecondaryGlobalOpts(opts.secondaryRepoOptions, gopts, "destination")
 	if err != nil {
 		return err
+	}
+	if isFromRepo {
+		// swap global options, if the secondary repo was set via from-repo
+		gopts, secondaryGopts = secondaryGopts, gopts
 	}
 
 	ctx, cancel := context.WithCancel(gopts.ctx)
@@ -70,7 +74,7 @@ func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	dstRepo, err := OpenRepository(dstGopts)
+	dstRepo, err := OpenRepository(secondaryGopts)
 	if err != nil {
 		return err
 	}

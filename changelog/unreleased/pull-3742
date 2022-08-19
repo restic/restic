@@ -1,0 +1,19 @@
+Change: Replace `--repo2` option used by init/copy with `--from-repo`
+
+The `init` and the `copy` command can read data from another repository.
+However, confusingly `--repo2` referred to the repository from which the
+`init` command copies parameters, but for the `copy` command `--repo2`
+referred to the copy destination.
+
+We have introduced a new option `--from-repo` which always refers to the
+source repository for both commands. The old parameters names have been
+deprecated but still work. To create a new repository and copy all snapshots
+to it, the commands are now as follows:
+
+```
+restic -r /srv/restic-repo-copy init --from-repo /srv/restic-repo --copy-chunker-params
+restic -r /srv/restic-repo-copy copy --from-repo /srv/restic-repo
+```
+
+https://github.com/restic/restic/pull/3742
+https://forum.restic.net/t/restic-repository2-confusion/5017
