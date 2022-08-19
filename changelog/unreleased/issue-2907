@@ -6,5 +6,10 @@ formatting of the time for a snapshot is now controlled using `--time-template`
 and supports subdirectories to for example group snapshots by year. Please
 refer to the help output of the `mount` command for further details.
 
+Characters in tag names which are not allowed in a filename are replaced by
+underscores `_`. For example a tag `foo/bar` will result in a directory name
+of `foo_bar`.
+
 https://github.com/restic/restic/issues/2907
 https://github.com/restic/restic/pull/2913
+https://github.com/restic/restic/pull/3691
