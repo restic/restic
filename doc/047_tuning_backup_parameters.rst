@@ -28,7 +28,7 @@ the REST backend the parameter would be ``-o rest.connections=5``. By default re
 ``5`` connections for each backend, except for the local backend which uses a limit of ``2``.
 The defaults should work well in most cases. For high-latency backends it can be beneficial
 to increase the number of connections. Please be aware that this increases the resource
-consumption of restic and that a too high connection count *will degrade performace*.
+consumption of restic and that a too high connection count *will degrade performance*.
 
 
 CPU Usage
