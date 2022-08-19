@@ -8,7 +8,7 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 )
 
-//TestFillSecondaryGlobalOpts tests valid and invalid data on fillSecondaryGlobalOpts-function
+// TestFillSecondaryGlobalOpts tests valid and invalid data on fillSecondaryGlobalOpts-function
 func TestFillSecondaryGlobalOpts(t *testing.T) {
 	//secondaryRepoTestCase defines a struct for test cases
 	type secondaryRepoTestCase struct {

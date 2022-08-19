@@ -1,6 +1,6 @@
 // Package restic gives a (very brief) introduction to the structure of source code.
 //
-// Overview
+// # Overview
 //
 // The packages are structured so that cmd/ contains the main package for the
 // restic binary, and internal/ contains almost all code in library form. We've
