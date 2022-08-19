@@ -280,9 +280,8 @@ func (d *SnapshotsDirStructure) updateSnapshots(ctx context.Context) error {
 	// sort snapshots ascending by time (default order is descending)
 	sort.Sort(sort.Reverse(snapshots))
 
-	d.lastCheck = time.Now()
-
 	if d.snCount == len(snapshots) {
+		d.lastCheck = time.Now()
 		return nil
 	}
 
@@ -291,8 +290,8 @@ func (d *SnapshotsDirStructure) updateSnapshots(ctx context.Context) error {
 		return err
 	}
 
+	d.lastCheck = time.Now()
 	d.snCount = len(snapshots)
-
 	d.makeDirs(snapshots)
 	return nil
 }
