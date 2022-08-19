@@ -34,7 +34,7 @@ func cleanupNodeName(name string) string {
 	return filepath.Base(name)
 }
 
-func newDir(ctx context.Context, root *Root, inode, parentInode uint64, node *restic.Node) (*dir, error) {
+func newDir(root *Root, inode, parentInode uint64, node *restic.Node) (*dir, error) {
 	debug.Log("new dir for %v (%v)", node.Name, node.Subtree)
 
 	return &dir{
@@ -74,7 +74,7 @@ func replaceSpecialNodes(ctx context.Context, repo restic.Repository, node *rest
 	return tree.Nodes, nil
 }
 
-func newDirFromSnapshot(ctx context.Context, root *Root, inode uint64, snapshot *restic.Snapshot) (*dir, error) {
+func newDirFromSnapshot(root *Root, inode uint64, snapshot *restic.Snapshot) (*dir, error) {
 	debug.Log("new dir for snapshot %v (%v)", snapshot.ID(), snapshot.Tree)
 	return &dir{
 		root: root,
@@ -206,13 +206,13 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	}
 	switch node.Type {
 	case "dir":
-		return newDir(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), d.inode, node)
+		return newDir(d.root, fs.GenerateDynamicInode(d.inode, name), d.inode, node)
 	case "file":
-		return newFile(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), node)
+		return newFile(d.root, fs.GenerateDynamicInode(d.inode, name), node)
 	case "symlink":
-		return newLink(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), node)
+		return newLink(d.root, fs.GenerateDynamicInode(d.inode, name), node)
 	case "dev", "chardev", "fifo", "socket":
-		return newOther(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), node)
+		return newOther(d.root, fs.GenerateDynamicInode(d.inode, name), node)
 	default:
 		debug.Log("  node %v has unknown type %v", name, node.Type)
 		return nil, fuse.ENOENT

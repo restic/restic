@@ -36,7 +36,7 @@ type openFile struct {
 	cumsize []uint64
 }
 
-func newFile(ctx context.Context, root *Root, inode uint64, node *restic.Node) (fusefile *file, err error) {
+func newFile(root *Root, inode uint64, node *restic.Node) (fusefile *file, err error) {
 	debug.Log("create new file for %v with %d blobs", node.Name, len(node.Content))
 	return &file{
 		inode: inode,

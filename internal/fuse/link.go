@@ -20,7 +20,7 @@ type link struct {
 	inode uint64
 }
 
-func newLink(ctx context.Context, root *Root, inode uint64, node *restic.Node) (*link, error) {
+func newLink(root *Root, inode uint64, node *restic.Node) (*link, error) {
 	return &link{root: root, inode: inode, node: node}, nil
 }
 
