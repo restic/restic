@@ -232,6 +232,18 @@ var defaultBuildTargets = map[string][]string{
 	"solaris": {"amd64"},
 }
 
+func downloadModules(sourceDir string) {
+	c := exec.Command("go", "mod", "download")
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
+	c.Dir = sourceDir
+
+	err := c.Run()
+	if err != nil {
+		die("error downloading modules: %v", err)
+	}
+}
+
 func main() {
 	if len(pflag.Args()) != 0 {
 		die("USAGE: build-release-binaries [OPTIONS]")
@@ -241,5 +253,6 @@ func main() {
 	outputDir := abs(opts.OutputDir)
 	mkdir(outputDir)
 
+	downloadModules(sourceDir)
 	buildTargets(sourceDir, outputDir, defaultBuildTargets)
 }
