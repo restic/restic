@@ -8,6 +8,7 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/test"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -115,6 +116,44 @@ func TestTreeSaverError(t *testing.T) {
 			}
 			if err != errTest {
 				t.Fatalf("unexpected error found: %v", err)
+			}
+		})
+	}
+}
+
+func TestTreeSaverDuplicates(t *testing.T) {
+	for _, identicalNodes := range []bool{true, false} {
+		t.Run("", func(t *testing.T) {
+			ctx, cancel, b, shutdown := setupTreeSaver()
+			defer cancel()
+
+			node := &restic.Node{
+				Name: "file",
+			}
+			nodes := []FutureNode{
+				newFutureNodeWithResult(futureNodeResult{node: &restic.Node{
+					Name: "child",
+				}}),
+			}
+			if identicalNodes {
+				nodes = append(nodes, newFutureNodeWithResult(futureNodeResult{node: &restic.Node{
+					Name: "child",
+				}}))
+			} else {
+				nodes = append(nodes, newFutureNodeWithResult(futureNodeResult{node: &restic.Node{
+					Name: "child",
+					Size: 42,
+				}}))
+			}
+
+			fb := b.Save(ctx, join("/", node.Name), node.Name, node, nodes, nil)
+			fb.take(ctx)
+
+			err := shutdown()
+			if identicalNodes {
+				test.Assert(t, err == nil, "unexpected error found: %v", err)
+			} else {
+				test.Assert(t, err != nil, "expected error not found")
 			}
 		})
 	}
