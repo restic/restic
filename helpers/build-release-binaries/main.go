@@ -103,15 +103,13 @@ func build(sourceDir, outputDir, goos, goarch string) (filename string) {
 	)
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
-
-	verbose("run %v %v in %v", "go", c.Args, c.Dir)
-
 	c.Dir = sourceDir
 	c.Env = append(os.Environ(),
 		"CGO_ENABLED=0",
 		"GOOS="+goos,
 		"GOARCH="+goarch,
 	)
+	verbose("run %v %v in %v", "go", c.Args, c.Dir)
 
 	err := c.Run()
 	if err != nil {
@@ -160,7 +158,6 @@ func compress(goos, inputDir, filename string) (outputFile string) {
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
 	c.Dir = inputDir
-
 	verbose("run %v %v in %v", "go", c.Args, c.Dir)
 
 	err := c.Run()
