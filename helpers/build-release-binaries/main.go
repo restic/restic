@@ -103,7 +103,6 @@ func build(sourceDir, outputDir, goos, goarch string) (filename string) {
 	)
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
-	c.Dir = sourceDir
 
 	verbose("run %v %v in %v", "go", c.Args, c.Dir)
 
@@ -151,11 +150,9 @@ func compress(goos, inputDir, filename string) (outputFile string) {
 	case "windows":
 		outputFile = strings.TrimSuffix(filename, ".exe") + ".zip"
 		c = exec.Command("zip", "-q", "-X", outputFile, filename)
-		c.Dir = inputDir
 	default:
 		outputFile = filename + ".bz2"
 		c = exec.Command("bzip2", filename)
-		c.Dir = inputDir
 	}
 
 	rm(filepath.Join(inputDir, outputFile))
