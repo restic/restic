@@ -182,14 +182,19 @@ func buildForTarget(sourceDir, outputDir, goos, goarch string) (filename string)
 
 func buildTargets(sourceDir, outputDir string, targets map[string][]string) {
 	start := time.Now()
-	msg("building with %d workers", runtime.NumCPU())
+	// the go compiler is already parallelized, thus reduce the concurrency a bit
+	workers := runtime.GOMAXPROCS(0) / 4
+	if workers < 1 {
+		workers = 1
+	}
+	msg("building with %d workers", workers)
 
 	type Job struct{ GOOS, GOARCH string }
 
 	var wg errgroup.Group
 	ch := make(chan Job)
 
-	for i := 0; i < runtime.NumCPU(); i++ {
+	for i := 0; i < workers; i++ {
 		wg.Go(func() error {
 			for job := range ch {
 				start := time.Now()
