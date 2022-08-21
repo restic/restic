@@ -68,10 +68,16 @@ func (be *RetryBackend) Save(ctx context.Context, h restic.Handle, rd restic.Rew
 			return nil
 		}
 
-		debug.Log("Save(%v) failed with error, removing file: %v", h, err)
-		rerr := be.Backend.Remove(ctx, h)
-		if rerr != nil {
-			debug.Log("Remove(%v) returned error: %v", h, err)
+		if be.Backend.HasAtomicReplace() {
+			debug.Log("Save(%v) failed with error: %v", h, err)
+			// there is no need to remove files from backends which can atomically replace files
+			// in fact if something goes wrong at the backend side the delete operation might delete the wrong instance of the file
+		} else {
+			debug.Log("Save(%v) failed with error, removing file: %v", h, err)
+			rerr := be.Backend.Remove(ctx, h)
+			if rerr != nil {
+				debug.Log("Remove(%v) returned error: %v", h, err)
+			}
 		}
 
 		// return original error
