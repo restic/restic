@@ -28,7 +28,7 @@ the REST backend the parameter would be ``-o rest.connections=5``. By default re
 ``5`` connections for each backend, except for the local backend which uses a limit of ``2``.
 The defaults should work well in most cases. For high-latency backends it can be beneficial
 to increase the number of connections. Please be aware that this increases the resource
-consumption of restic and that a too high connection count *will degrade performace*.
+consumption of restic and that a too high connection count *will degrade performance*.
 
 
 CPU Usage
@@ -72,3 +72,9 @@ of backend connections plus one. For example, if the backend uses 5 connections 
 for most backends), with a target pack size of 64 MiB, you'll need a *minimum* of 384 MiB
 of space in the temp directory. A bit of tuning may be required to strike a balance between
 resource usage at the backup client and the number of pack files in the repository.
+
+Note that larger pack files increase the chance that the temporary pack files are written
+to disk. An operating system usually caches file write operations in memory and writes
+them to disk after a short delay. As larger pack files take longer to upload, this
+increases the chance of these files being written to disk. This can increase disk wear
+for SSDs.
