@@ -27,7 +27,8 @@ type b2Backend struct {
 	sem sema.Semaphore
 }
 
-const defaultListMaxItems = 1000
+// Billing happens in 1000 item granlarity, but we are more interested in reducing the number of network round trips
+const defaultListMaxItems = 10 * 1000
 
 // ensure statically that *b2Backend implements restic.Backend.
 var _ restic.Backend = &b2Backend{}
