@@ -450,6 +450,16 @@ The policy of the new container created by restic can be changed using environme
 Backblaze B2
 ************
 
+.. warning::
+
+   The recommended way to setup Backblaze B2 is by using its S3-compatible API.
+   Follow the documentation to `generate S3-compatible access keys`_ and then
+   setup restic as described at :ref:`Amazon S3`.
+
+    Different from the B2 backend, restic's S3 backend will only hide no longer
+    necessary files. Thus, make sure to setup lifecycle rules to eventually
+    delete hidden files.
+
 Restic can backup data to any Backblaze B2 bucket. You need to first setup the
 following environment variables with the credentials you can find in the
 dashboard on the "Buckets" page when signed into your B2 account:
@@ -487,6 +497,8 @@ Note that the bucket name must be unique across all of B2.
 The number of concurrent connections to the B2 service can be set with the ``-o
 b2.connections=10`` switch. By default, at most five parallel connections are
 established.
+
+.. _generate S3-compatible access keys: https://help.backblaze.com/hc/en-us/articles/360047425453-Getting-Started-with-the-S3-Compatible-API
 
 Microsoft Azure Blob Storage
 ****************************
