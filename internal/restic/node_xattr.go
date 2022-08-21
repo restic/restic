@@ -35,12 +35,10 @@ func handleXattrErr(err error) error {
 		return nil
 
 	case *xattr.Error:
-		// On Solaris, xattr not being supported on a file is signaled
-		// by EINVAL (https://github.com/pkg/xattr/issues/67).
 		// On Linux, xattr calls on files in an SMB/CIFS mount can return
 		// ENOATTR instead of ENOTSUP.
 		switch e.Err {
-		case syscall.EINVAL, syscall.ENOTSUP, xattr.ENOATTR:
+		case syscall.ENOTSUP, xattr.ENOATTR:
 			return nil
 		}
 		return errors.WithStack(e)
