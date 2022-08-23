@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/limiter"
 	"github.com/restic/restic/internal/backend/rest"
@@ -174,7 +175,7 @@ func newBackend(cfg Config, lim limiter.Limiter) (*Backend, error) {
 			debug.Log("new connection requested, %v %v", network, address)
 			if dialCount > 0 {
 				// the connection to the child process is already closed
-				return nil, errors.New("rclone stdio connection already closed")
+				return nil, backoff.Permanent(errors.New("rclone stdio connection already closed"))
 			}
 			dialCount++
 			return conn, nil
