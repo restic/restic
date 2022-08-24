@@ -39,7 +39,7 @@ func initSecondaryRepoOptions(f *pflag.FlagSet, opts *secondaryRepoOptions, repo
 
 	f.StringVarP(&opts.Repo, "from-repo", "", os.Getenv("RESTIC_FROM_REPOSITORY"), "source `repository` "+repoUsage+" (default: $RESTIC_FROM_REPOSITORY)")
 	f.StringVarP(&opts.RepositoryFile, "from-repository-file", "", os.Getenv("RESTIC_FROM_REPOSITORY_FILE"), "`file` from which to read the source repository location "+repoUsage+" (default: $RESTIC_FROM_REPOSITORY_FILE)")
-	f.StringVarP(&opts.PasswordFile, "from-password-file", "", os.Getenv("RESTIC_FROM_PASSWORD_FILE2"), "`file` to read the source repository password from (default: $RESTIC_FROM_PASSWORD_FILE)")
+	f.StringVarP(&opts.PasswordFile, "from-password-file", "", os.Getenv("RESTIC_FROM_PASSWORD_FILE"), "`file` to read the source repository password from (default: $RESTIC_FROM_PASSWORD_FILE)")
 	f.StringVarP(&opts.KeyHint, "from-key-hint", "", os.Getenv("RESTIC_FROM_KEY_HINT"), "key ID of key to try decrypting the source repository first (default: $RESTIC_FROM_KEY_HINT)")
 	f.StringVarP(&opts.PasswordCommand, "from-password-command", "", os.Getenv("RESTIC_FROM_PASSWORD_COMMAND"), "shell `command` to obtain the source repository password from (default: $RESTIC_FROM_PASSWORD_COMMAND)")
 }
