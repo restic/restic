@@ -254,6 +254,9 @@ parameter like ``-o s3.region="us-east-1"``. If the region is not specified,
 the default region is used. Afterwards, the S3 server (at least for AWS,
 ``s3.amazonaws.com``) will redirect restic to the correct endpoint.
 
+When using temporary credentials make sure to include the session token via
+then environment variable ``AWS_SESSION_TOKEN``.
+
 Until version 0.8.0, restic used a default prefix of ``restic``, so the files
 in the bucket were placed in a directory named ``restic``. If you want to
 access a repository created with an older version of restic, specify the path
