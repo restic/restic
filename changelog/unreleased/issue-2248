@@ -1,6 +1,6 @@
-Bugfix: Support self-update on Windows
+Bugfix: Support `self-update` on Windows
 
-Restic self-update would fail in situations where the operating system
+Restic `self-update` would fail in situations where the operating system
 locks running binaries, including Windows. The new behavior works around
 this by renaming the running file and swapping the updated file in place.
 

@@ -1,11 +1,11 @@
-Enhancement: Adapt IO concurrency based on backend connections
+Enhancement: Adaptive IO concurrency based on backend connections
 
 Many commands used hard-coded limits for the number of concurrent operations.
 This prevented speed improvements by increasing the number of connections used
 by a backend.
 
-These limits have been replaced by using the configured number of backend
-connections instead. It can be controlled using the
+These limits have now been replaced by using the configured number of backend
+connections instead, which can be controlled using the
 `-o <backend-name>.connections=5` option. Commands will then automatically
 scale their parallelism accordingly.
 
