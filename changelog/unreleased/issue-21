@@ -7,8 +7,9 @@ that the repository cannot be read by restic versions prior to 0.14.0.
 You can configure whether data is compressed with the option `--compression`. It
 can be set to `auto` (the default, which will compress very fast), `max` (which
 will trade backup speed and CPU usage for better compression), or `off` (which
-disables compression). Each setting is only applied for the single run of restic.
-The option can also be set via the environment variable `RESTIC_COMPRESSION`.
+disables compression). Each setting is only applied for the current run of restic
+and does *not* apply to future runs. The option can also be set via the
+environment variable `RESTIC_COMPRESSION`.
 
 To upgrade in place run `migrate upgrade_repo_v2` followed by `prune`. See the
 documentation for more details. The migration checks the repository integrity
