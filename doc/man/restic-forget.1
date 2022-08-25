@@ -3,7 +3,7 @@
 
 .SH NAME
 .PP
-restic\-forget \- Remove snapshots from the repository
+restic-forget - Remove snapshots from the repository
 
 
 .SH SYNOPSIS
@@ -13,188 +13,211 @@ restic\-forget \- Remove snapshots from the repository
 
 .SH DESCRIPTION
 .PP
-The "forget" command removes snapshots according to a policy. Please note that
-this command really only deletes the snapshot object in the repository, which
-is a reference to data stored there. In order to remove the unreferenced data
-after "forget" was run successfully, see the "prune" command. Please also read
-the documentation for "forget" to learn about important security considerations.
+The "forget" command removes snapshots according to a policy. All snapshots are
+first divided into groups according to "--group-by", and after that the policy
+specified by the "--keep-*" options is applied to each group individually.
+
+.PP
+Please note that this command really only deletes the snapshot object in the
+repository, which is a reference to data stored there. In order to remove the
+unreferenced data after "forget" was run successfully, see the "prune" command.
+
+.PP
+Please also read the documentation for "forget" to learn about some important
+security considerations.
 
 
 .SH EXIT STATUS
 .PP
-Exit status is 0 if the command was successful, and non\-zero if there was any error.
+Exit status is 0 if the command was successful, and non-zero if there was any error.
 
 
 .SH OPTIONS
 .PP
-\fB\-l\fP, \fB\-\-keep\-last\fP=0
+\fB-l\fP, \fB--keep-last\fP=0
 	keep the last \fB\fCn\fR snapshots
 
 .PP
-\fB\-H\fP, \fB\-\-keep\-hourly\fP=0
+\fB-H\fP, \fB--keep-hourly\fP=0
 	keep the last \fB\fCn\fR hourly snapshots
 
 .PP
-\fB\-d\fP, \fB\-\-keep\-daily\fP=0
+\fB-d\fP, \fB--keep-daily\fP=0
 	keep the last \fB\fCn\fR daily snapshots
 
 .PP
-\fB\-w\fP, \fB\-\-keep\-weekly\fP=0
+\fB-w\fP, \fB--keep-weekly\fP=0
 	keep the last \fB\fCn\fR weekly snapshots
 
 .PP
-\fB\-m\fP, \fB\-\-keep\-monthly\fP=0
+\fB-m\fP, \fB--keep-monthly\fP=0
 	keep the last \fB\fCn\fR monthly snapshots
 
 .PP
-\fB\-y\fP, \fB\-\-keep\-yearly\fP=0
+\fB-y\fP, \fB--keep-yearly\fP=0
 	keep the last \fB\fCn\fR yearly snapshots
 
 .PP
-\fB\-\-keep\-within\fP=
+\fB--keep-within\fP=
 	keep snapshots that are newer than \fB\fCduration\fR (eg. 1y5m7d2h) relative to the latest snapshot
 
 .PP
-\fB\-\-keep\-within\-hourly\fP=
+\fB--keep-within-hourly\fP=
 	keep hourly snapshots that are newer than \fB\fCduration\fR (eg. 1y5m7d2h) relative to the latest snapshot
 
 .PP
-\fB\-\-keep\-within\-daily\fP=
+\fB--keep-within-daily\fP=
 	keep daily snapshots that are newer than \fB\fCduration\fR (eg. 1y5m7d2h) relative to the latest snapshot
 
 .PP
-\fB\-\-keep\-within\-weekly\fP=
+\fB--keep-within-weekly\fP=
 	keep weekly snapshots that are newer than \fB\fCduration\fR (eg. 1y5m7d2h) relative to the latest snapshot
 
 .PP
-\fB\-\-keep\-within\-monthly\fP=
+\fB--keep-within-monthly\fP=
 	keep monthly snapshots that are newer than \fB\fCduration\fR (eg. 1y5m7d2h) relative to the latest snapshot
 
 .PP
-\fB\-\-keep\-within\-yearly\fP=
+\fB--keep-within-yearly\fP=
 	keep yearly snapshots that are newer than \fB\fCduration\fR (eg. 1y5m7d2h) relative to the latest snapshot
 
 .PP
-\fB\-\-keep\-tag\fP=[]
+\fB--keep-tag\fP=[]
 	keep snapshots with this \fB\fCtaglist\fR (can be specified multiple times)
 
 .PP
-\fB\-\-host\fP=[]
+\fB--host\fP=[]
 	only consider snapshots with the given \fB\fChost\fR (can be specified multiple times)
 
 .PP
-\fB\-\-tag\fP=[]
+\fB--tag\fP=[]
 	only consider snapshots which include this \fB\fCtaglist\fR in the format \fB\fCtag[,tag,...]\fR (can be specified multiple times)
 
 .PP
-\fB\-\-path\fP=[]
+\fB--path\fP=[]
 	only consider snapshots which include this (absolute) \fB\fCpath\fR (can be specified multiple times)
 
 .PP
-\fB\-c\fP, \fB\-\-compact\fP[=false]
+\fB-c\fP, \fB--compact\fP[=false]
 	use compact output format
 
 .PP
-\fB\-g\fP, \fB\-\-group\-by\fP="host,paths"
-	string for grouping snapshots by host,paths,tags
+\fB-g\fP, \fB--group-by\fP="host,paths"
+	\fB\fCgroup\fR snapshots by host, paths and/or tags, separated by comma (disable grouping with '')
 
 .PP
-\fB\-n\fP, \fB\-\-dry\-run\fP[=false]
+\fB-n\fP, \fB--dry-run\fP[=false]
 	do not delete anything, just print what would be done
 
 .PP
-\fB\-\-prune\fP[=false]
+\fB--prune\fP[=false]
 	automatically run the 'prune' command if snapshots have been removed
 
 .PP
-\fB\-\-max\-unused\fP="5%"
+\fB--max-unused\fP="5%"
 	tolerate given \fB\fClimit\fR of unused data (absolute value in bytes with suffixes k/K, m/M, g/G, t/T, a value in % or the word 'unlimited')
 
 .PP
-\fB\-\-max\-repack\-size\fP=""
+\fB--max-repack-size\fP=""
 	maximum \fB\fCsize\fR to repack (allowed suffixes: k/K, m/M, g/G, t/T)
 
 .PP
-\fB\-\-repack\-cacheable\-only\fP[=false]
+\fB--repack-cacheable-only\fP[=false]
 	only repack packs which are cacheable
 
 .PP
-\fB\-h\fP, \fB\-\-help\fP[=false]
+\fB--repack-small\fP[=false]
+	repack pack files below 80% of target pack size
+
+.PP
+\fB--repack-uncompressed\fP[=false]
+	repack all uncompressed data
+
+.PP
+\fB-h\fP, \fB--help\fP[=false]
 	help for forget
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
 .PP
-\fB\-\-cacert\fP=[]
+\fB--cacert\fP=[]
 	\fB\fCfile\fR to load root certificates from (default: use system certificates)
 
 .PP
-\fB\-\-cache\-dir\fP=""
+\fB--cache-dir\fP=""
 	set the cache \fB\fCdirectory\fR\&. (default: use system default cache directory)
 
 .PP
-\fB\-\-cleanup\-cache\fP[=false]
+\fB--cleanup-cache\fP[=false]
 	auto remove old cache directories
 
 .PP
-\fB\-\-insecure\-tls\fP[=false]
-	skip TLS certificate verification when connecting to the repo (insecure)
+\fB--compression\fP=auto
+	compression mode (only available for repository format version 2), one of (auto|off|max)
 
 .PP
-\fB\-\-json\fP[=false]
+\fB--insecure-tls\fP[=false]
+	skip TLS certificate verification when connecting to the repository (insecure)
+
+.PP
+\fB--json\fP[=false]
 	set output mode to JSON for commands that support it
 
 .PP
-\fB\-\-key\-hint\fP=""
-	\fB\fCkey\fR ID of key to try decrypting first (default: $RESTIC\_KEY\_HINT)
+\fB--key-hint\fP=""
+	\fB\fCkey\fR ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
 
 .PP
-\fB\-\-limit\-download\fP=0
+\fB--limit-download\fP=0
 	limits downloads to a maximum rate in KiB/s. (default: unlimited)
 
 .PP
-\fB\-\-limit\-upload\fP=0
+\fB--limit-upload\fP=0
 	limits uploads to a maximum rate in KiB/s. (default: unlimited)
 
 .PP
-\fB\-\-no\-cache\fP[=false]
+\fB--no-cache\fP[=false]
 	do not use a local cache
 
 .PP
-\fB\-\-no\-lock\fP[=false]
-	do not lock the repository, this allows some operations on read\-only repositories
+\fB--no-lock\fP[=false]
+	do not lock the repository, this allows some operations on read-only repositories
 
 .PP
-\fB\-o\fP, \fB\-\-option\fP=[]
+\fB-o\fP, \fB--option\fP=[]
 	set extended option (\fB\fCkey=value\fR, can be specified multiple times)
 
 .PP
-\fB\-\-password\-command\fP=""
-	shell \fB\fCcommand\fR to obtain the repository password from (default: $RESTIC\_PASSWORD\_COMMAND)
+\fB--pack-size\fP=0
+	set target pack size in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)
 
 .PP
-\fB\-p\fP, \fB\-\-password\-file\fP=""
-	\fB\fCfile\fR to read the repository password from (default: $RESTIC\_PASSWORD\_FILE)
+\fB--password-command\fP=""
+	shell \fB\fCcommand\fR to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)
 
 .PP
-\fB\-q\fP, \fB\-\-quiet\fP[=false]
+\fB-p\fP, \fB--password-file\fP=""
+	\fB\fCfile\fR to read the repository password from (default: $RESTIC_PASSWORD_FILE)
+
+.PP
+\fB-q\fP, \fB--quiet\fP[=false]
 	do not output comprehensive progress report
 
 .PP
-\fB\-r\fP, \fB\-\-repo\fP=""
-	\fB\fCrepository\fR to backup to or restore from (default: $RESTIC\_REPOSITORY)
+\fB-r\fP, \fB--repo\fP=""
+	\fB\fCrepository\fR to backup to or restore from (default: $RESTIC_REPOSITORY)
 
 .PP
-\fB\-\-repository\-file\fP=""
-	\fB\fCfile\fR to read the repository location from (default: $RESTIC\_REPOSITORY\_FILE)
+\fB--repository-file\fP=""
+	\fB\fCfile\fR to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
 
 .PP
-\fB\-\-tls\-client\-cert\fP=""
+\fB--tls-client-cert\fP=""
 	path to a \fB\fCfile\fR containing PEM encoded TLS client certificate and private key
 
 .PP
-\fB\-v\fP, \fB\-\-verbose\fP[=0]
-	be verbose (specify multiple times or a level using \-\-verbose=\fB\fCn\fR, max level/times is 3)
+\fB-v\fP, \fB--verbose\fP[=0]
+	be verbose (specify multiple times or a level using --verbose=\fB\fCn\fR, max level/times is 3)
 
 
 .SH SEE ALSO

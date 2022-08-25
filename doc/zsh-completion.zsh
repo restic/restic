@@ -1,4 +1,4 @@
-#compdef _restic restic
+#compdef restic
 
 # zsh completion for restic                               -*- shell-script -*-
 
@@ -86,7 +86,24 @@ _restic()
         return
     fi
 
+    local activeHelpMarker="_activeHelp_ "
+    local endIndex=${#activeHelpMarker}
+    local startIndex=$((${#activeHelpMarker}+1))
+    local hasActiveHelp=0
     while IFS='\n' read -r comp; do
+        # Check if this is an activeHelp statement (i.e., prefixed with $activeHelpMarker)
+        if [ "${comp[1,$endIndex]}" = "$activeHelpMarker" ];then
+            __restic_debug "ActiveHelp found: $comp"
+            comp="${comp[$startIndex,-1]}"
+            if [ -n "$comp" ]; then
+                compadd -x "${comp}"
+                __restic_debug "ActiveHelp will need delimiter"
+                hasActiveHelp=1
+            fi
+
+            continue
+        fi
+
         if [ -n "$comp" ]; then
             # If requested, completions are returned with a description.
             # The description is preceded by a TAB character.
@@ -94,7 +111,7 @@ _restic()
             # We first need to escape any : as part of the completion itself.
             comp=${comp//:/\\:}
 
-            local tab=$(printf '\t')
+            local tab="$(printf '\t')"
             comp=${comp//$tab/:}
 
             __restic_debug "Adding completion: ${comp}"
@@ -102,6 +119,17 @@ _restic()
             lastComp=$comp
         fi
     done < <(printf "%s\n" "${out[@]}")
+
+    # Add a delimiter after the activeHelp statements, but only if:
+    # - there are completions following the activeHelp statements, or
+    # - file completion will be performed (so there will be choices after the activeHelp)
+    if [ $hasActiveHelp -eq 1 ]; then
+        if [ ${#completions} -ne 0 ] || [ $((directive & shellCompDirectiveNoFileComp)) -eq 0 ]; then
+            __restic_debug "Adding activeHelp delimiter"
+            compadd -x "--"
+            hasActiveHelp=0
+        fi
+    fi
 
     if [ $((directive & shellCompDirectiveNoSpace)) -ne 0 ]; then
         __restic_debug "Activating nospace."
@@ -125,7 +153,7 @@ _restic()
         _arguments '*:filename:'"$filteringCmd"
     elif [ $((directive & shellCompDirectiveFilterDirs)) -ne 0 ]; then
         # File completion for directories only
-        local subDir
+        local subdir
         subdir="${completions[1]}"
         if [ -n "$subdir" ]; then
             __restic_debug "Listing directories in $subdir"
@@ -173,5 +201,5 @@ _restic()
 
 # don't run the completion function when being source-ed or eval-ed
 if [ "$funcstack[1]" = "_restic" ]; then
-	_restic
+    _restic
 fi
