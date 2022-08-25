@@ -41,7 +41,7 @@ import (
 	"golang.org/x/term"
 )
 
-var version = "0.13.1-dev (compiled manually)"
+var version = "0.14.0"
 
 // TimeFormat is the format used for all timestamps printed by restic.
 const TimeFormat = "2006-01-02 15:04:05"
