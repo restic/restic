@@ -119,7 +119,7 @@ func unlockRepo(lock *restic.Lock) {
 	debug.Log("unable to find lock %v in the global list of locks, ignoring", lock)
 }
 
-func unlockAll() error {
+func unlockAll(code int) (int, error) {
 	globalLocks.Lock()
 	defer globalLocks.Unlock()
 
@@ -127,11 +127,11 @@ func unlockAll() error {
 	for _, lock := range globalLocks.locks {
 		if err := lock.Unlock(); err != nil {
 			debug.Log("error while unlocking: %v", err)
-			return err
+			return code, err
 		}
 		debug.Log("successfully removed lock")
 	}
 	globalLocks.locks = globalLocks.locks[:0]
 
-	return nil
+	return code, nil
 }

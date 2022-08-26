@@ -97,11 +97,11 @@ var isReadingPassword bool
 func init() {
 	var cancel context.CancelFunc
 	globalOptions.ctx, cancel = context.WithCancel(context.Background())
-	AddCleanupHandler(func() error {
+	AddCleanupHandler(func(code int) (int, error) {
 		// Must be called before the unlock cleanup handler to ensure that the latter is
 		// not blocked due to limited number of backend connections, see #1434
 		cancel()
-		return nil
+		return code, nil
 	})
 
 	f := cmdRoot.PersistentFlags()
@@ -199,20 +199,20 @@ func restoreTerminal() {
 		return
 	}
 
-	AddCleanupHandler(func() error {
+	AddCleanupHandler(func(code int) (int, error) {
 		// Restoring the terminal configuration while restic runs in the
 		// background, causes restic to get stopped on unix systems with
 		// a SIGTTOU signal. Thus only restore the terminal settings if
 		// they might have been modified, which is the case while reading
 		// a password.
 		if !isReadingPassword {
-			return nil
+			return code, nil
 		}
 		err := checkErrno(term.Restore(fd, state))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "unable to restore terminal state: %v\n", err)
 		}
-		return err
+		return code, err
 	})
 }
 

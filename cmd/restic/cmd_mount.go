@@ -158,13 +158,13 @@ func runMount(opts MountOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	AddCleanupHandler(func() error {
+	AddCleanupHandler(func(code int) (int, error) {
 		debug.Log("running umount cleanup handler for mount at %v", mountpoint)
 		err := umount(mountpoint)
 		if err != nil {
 			Warnf("unable to umount (maybe already umounted or still in use?): %v\n", err)
 		}
-		return nil
+		return code, nil
 	})
 
 	c, err := systemFuse.Mount(mountpoint, mountOptions...)
