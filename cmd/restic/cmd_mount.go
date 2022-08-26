@@ -164,6 +164,10 @@ func runMount(opts MountOptions, gopts GlobalOptions, args []string) error {
 		if err != nil {
 			Warnf("unable to umount (maybe already umounted or still in use?): %v\n", err)
 		}
+		// replace error code of sigint
+		if code == 130 {
+			code = 0
+		}
 		return code, nil
 	})
 
