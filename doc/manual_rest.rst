@@ -54,12 +54,12 @@ Usage help is available:
           --insecure-tls               skip TLS certificate verification when connecting to the repository (insecure)
           --json                       set output mode to JSON for commands that support it
           --key-hint key               key ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
-          --limit-download int         limits downloads to a maximum rate in KiB/s. (default: unlimited)
-          --limit-upload int           limits uploads to a maximum rate in KiB/s. (default: unlimited)
-          --pack-size uint             set target pack size in MiB. (default: $RESTIC_PACK_SIZE)
+          --limit-download rate        limits downloads to a maximum rate in KiB/s. (default: unlimited)
+          --limit-upload rate          limits uploads to a maximum rate in KiB/s. (default: unlimited)
           --no-cache                   do not use a local cache
           --no-lock                    do not lock the repository, this allows some operations on read-only repositories
       -o, --option key=value           set extended option (key=value, can be specified multiple times)
+          --pack-size size             set target pack size in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)
           --password-command command   shell command to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)
       -p, --password-file file         file to read the repository password from (default: $RESTIC_PASSWORD_FILE)
       -q, --quiet                      do not output comprehensive progress report
@@ -91,7 +91,7 @@ command:
     Exit status is 3 if some source data could not be read (incomplete snapshot created).
 
     Usage:
-      restic backup [flags] FILE/DIR [FILE/DIR] ...
+      restic backup [flags] [FILE/DIR] ...
 
     Flags:
       -n, --dry-run                                do not upload or write any data, just show what would be done
@@ -127,12 +127,12 @@ command:
           --insecure-tls               skip TLS certificate verification when connecting to the repository (insecure)
           --json                       set output mode to JSON for commands that support it
           --key-hint key               key ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
-          --limit-download int         limits downloads to a maximum rate in KiB/s. (default: unlimited)
-          --limit-upload int           limits uploads to a maximum rate in KiB/s. (default: unlimited)
-          --pack-size uint             set target pack size in MiB. (default: $RESTIC_PACK_SIZE)
+          --limit-download rate        limits downloads to a maximum rate in KiB/s. (default: unlimited)
+          --limit-upload rate          limits uploads to a maximum rate in KiB/s. (default: unlimited)
           --no-cache                   do not use a local cache
           --no-lock                    do not lock the repository, this allows some operations on read-only repositories
       -o, --option key=value           set extended option (key=value, can be specified multiple times)
+          --pack-size size             set target pack size in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)
           --password-command command   shell command to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)
       -p, --password-file file         file to read the repository password from (default: $RESTIC_PASSWORD_FILE)
       -q, --quiet                      do not output comprehensive progress report
