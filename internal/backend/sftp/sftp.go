@@ -44,7 +44,12 @@ var _ restic.Backend = &SFTP{}
 
 const defaultLayout = "default"
 
-func startClient(program string, args ...string) (*SFTP, error) {
+func startClient(cfg Config) (*SFTP, error) {
+	program, args, err := buildSSHCommand(cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	debug.Log("start client %v %v", program, args)
 	// Connect to a remote host and request the sftp subsystem via the 'ssh'
 	// command.  This assumes that passwordless login is correctly configured.
@@ -121,19 +126,18 @@ func (r *SFTP) clientError() error {
 func Open(ctx context.Context, cfg Config) (*SFTP, error) {
 	debug.Log("open backend with config %#v", cfg)
 
-	sem, err := sema.New(cfg.Connections)
-	if err != nil {
-		return nil, err
-	}
-
-	cmd, args, err := buildSSHCommand(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	sftp, err := startClient(cmd, args...)
+	sftp, err := startClient(cfg)
 	if err != nil {
 		debug.Log("unable to start program: %v", err)
+		return nil, err
+	}
+
+	return open(ctx, sftp, cfg)
+}
+
+func open(ctx context.Context, sftp *SFTP, cfg Config) (*SFTP, error) {
+	sem, err := sema.New(cfg.Connections)
+	if err != nil {
 		return nil, err
 	}
 
@@ -230,12 +234,7 @@ func buildSSHCommand(cfg Config) (cmd string, args []string, err error) {
 // Create creates an sftp backend as described by the config by running "ssh"
 // with the appropriate arguments (or cfg.Command, if set).
 func Create(ctx context.Context, cfg Config) (*SFTP, error) {
-	cmd, args, err := buildSSHCommand(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	sftp, err := startClient(cmd, args...)
+	sftp, err := startClient(cfg)
 	if err != nil {
 		debug.Log("unable to start program: %v", err)
 		return nil, err
@@ -259,13 +258,8 @@ func Create(ctx context.Context, cfg Config) (*SFTP, error) {
 		return nil, err
 	}
 
-	err = sftp.Close()
-	if err != nil {
-		return nil, errors.Wrap(err, "Close")
-	}
-
-	// open backend
-	return Open(ctx, cfg)
+	// repurpose existing connection
+	return open(ctx, sftp, cfg)
 }
 
 func (r *SFTP) Connections() uint {

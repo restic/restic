@@ -1,0 +1,11 @@
+Enhancement: only open connection once for `init` command using sftp backend
+
+The `init` command using the sftp backend used to connect twice to the
+repository. This can be inconvenient if the user must enter a password or cause
+`init` to fail if the server does not correctly close the first sftp
+connection.
+
+This has been fixed by reusing the initial sftp connection.
+
+https://github.com/restic/restic/issues/2152
+https://github.com/restic/restic/pull/3882
