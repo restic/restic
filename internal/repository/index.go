@@ -294,6 +294,8 @@ func (idx *Index) EachByPack(ctx context.Context, packBlacklist restic.IDSet) <-
 					result.Blobs = append(result.Blobs, idx.toPackedBlob(e, restic.BlobType(typ)).Blob)
 				}
 			}
+			// allow GC once entry is no longer necessary
+			byPack[packID] = nil
 			select {
 			case <-ctx.Done():
 				return
