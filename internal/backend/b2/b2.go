@@ -27,7 +27,8 @@ type b2Backend struct {
 	sem sema.Semaphore
 }
 
-const defaultListMaxItems = 1000
+// Billing happens in 1000 item granlarity, but we are more interested in reducing the number of network round trips
+const defaultListMaxItems = 10 * 1000
 
 // ensure statically that *b2Backend implements restic.Backend.
 var _ restic.Backend = &b2Backend{}
@@ -274,14 +275,22 @@ func (be *b2Backend) Remove(ctx context.Context, h restic.Handle) error {
 	be.sem.GetToken()
 	defer be.sem.ReleaseToken()
 
-	obj := be.bucket.Object(be.Filename(h))
-	err := obj.Delete(ctx)
-	// consider a file as removed if b2 informs us that it does not exist
-	if b2.IsNotExist(err) {
-		return nil
+	// the retry backend will also repeat the remove method up to 10 times
+	for i := 0; i < 3; i++ {
+		obj := be.bucket.Object(be.Filename(h))
+		err := obj.Delete(ctx)
+		if err == nil {
+			// keep deleting until we are sure that no leftover file versions exist
+			continue
+		}
+		// consider a file as removed if b2 informs us that it does not exist
+		if b2.IsNotExist(err) {
+			return nil
+		}
+		return errors.Wrap(err, "Delete")
 	}
 
-	return errors.Wrap(err, "Delete")
+	return errors.New("failed to delete all file versions")
 }
 
 type semLocker struct {

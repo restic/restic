@@ -50,6 +50,36 @@ func TestBackendSaveRetry(t *testing.T) {
 	}
 }
 
+func TestBackendSaveRetryAtomic(t *testing.T) {
+	errcount := 0
+	calledRemove := false
+	be := &mock.Backend{
+		SaveFn: func(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+			if errcount == 0 {
+				errcount++
+				return errors.New("injected error")
+			}
+			return nil
+		},
+		RemoveFn: func(ctx context.Context, h restic.Handle) error {
+			calledRemove = true
+			return nil
+		},
+		HasAtomicReplaceFn: func() bool { return true },
+	}
+
+	retryBackend := NewRetryBackend(be, 10, nil)
+
+	data := test.Random(23, 5*1024*1024+11241)
+	err := retryBackend.Save(context.TODO(), restic.Handle{}, restic.NewByteReader(data, be.Hasher()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if calledRemove {
+		t.Fatal("remove must not be called")
+	}
+}
+
 func TestBackendListRetry(t *testing.T) {
 	const (
 		ID1 = "id1"
