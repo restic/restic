@@ -43,7 +43,7 @@ type readCloser struct {
 // given handle. rd must be closed after use. If an error is returned, the
 // ReadCloser is nil.
 func (c *Cache) load(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
-	debug.Log("Load from cache: %v", h)
+	debug.Log("Load(%v, %v, %v) from cache", h, length, offset)
 	if !c.canBeCached(h.Type) {
 		return nil, errors.New("cannot be cached")
 	}
