@@ -31,6 +31,10 @@ func (s BlobSet) Delete(h BlobHandle) {
 	delete(s, h)
 }
 
+func (s BlobSet) Len() int {
+	return len(s)
+}
+
 // Equals returns true iff s equals other.
 func (s BlobSet) Equals(other BlobSet) bool {
 	if len(s) != len(other) {

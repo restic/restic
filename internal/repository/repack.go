@@ -12,6 +12,12 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+type repackBlobSet interface {
+	Has(bh restic.BlobHandle) bool
+	Delete(bh restic.BlobHandle)
+	Len() int
+}
+
 // Repack takes a list of packs together with a list of blobs contained in
 // these packs. Each pack is loaded and the blobs listed in keepBlobs is saved
 // into a new pack. Returned is the list of obsolete packs which can then
@@ -19,8 +25,8 @@ import (
 //
 // The map keepBlobs is modified by Repack, it is used to keep track of which
 // blobs have been processed.
-func Repack(ctx context.Context, repo restic.Repository, dstRepo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet, p *progress.Counter) (obsoletePacks restic.IDSet, err error) {
-	debug.Log("repacking %d packs while keeping %d blobs", len(packs), len(keepBlobs))
+func Repack(ctx context.Context, repo restic.Repository, dstRepo restic.Repository, packs restic.IDSet, keepBlobs repackBlobSet, p *progress.Counter) (obsoletePacks restic.IDSet, err error) {
+	debug.Log("repacking %d packs while keeping %d blobs", len(packs), keepBlobs.Len())
 
 	if repo == dstRepo && dstRepo.Connections() < 2 {
 		return nil, errors.Fatal("repack step requires a backend connection limit of at least two")
@@ -41,7 +47,7 @@ func Repack(ctx context.Context, repo restic.Repository, dstRepo restic.Reposito
 	return obsoletePacks, nil
 }
 
-func repack(ctx context.Context, repo restic.Repository, dstRepo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet, p *progress.Counter) (obsoletePacks restic.IDSet, err error) {
+func repack(ctx context.Context, repo restic.Repository, dstRepo restic.Repository, packs restic.IDSet, keepBlobs repackBlobSet, p *progress.Counter) (obsoletePacks restic.IDSet, err error) {
 	wg, wgCtx := errgroup.WithContext(ctx)
 
 	var keepMutex sync.Mutex
