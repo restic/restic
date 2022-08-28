@@ -114,6 +114,10 @@ func repack(ctx context.Context, repo restic.Repository, dstRepo restic.Reposito
 	// as packs are streamed the concurrency is limited by IO
 	// reduce by one to ensure that uploading is always possible
 	repackWorkerCount := int(repo.Connections() - 1)
+	if repo != dstRepo {
+		// no need to share the upload and download connections for different repositories
+		repackWorkerCount = int(repo.Connections())
+	}
 	for i := 0; i < repackWorkerCount; i++ {
 		wg.Go(worker)
 	}

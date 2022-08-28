@@ -292,11 +292,23 @@ func TestRepackCopy(t *testing.T) {
 	repository.TestAllVersions(t, testRepackCopy)
 }
 
+type oneConnectionRepo struct {
+	restic.Repository
+}
+
+func (r oneConnectionRepo) Connections() uint {
+	return 1
+}
+
 func testRepackCopy(t *testing.T, version uint) {
 	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
 	defer cleanup()
 	dstRepo, dstCleanup := repository.TestRepositoryWithVersion(t, version)
 	defer dstCleanup()
+
+	// test with minimal possible connection count
+	repoWrapped := &oneConnectionRepo{repo}
+	dstRepoWrapped := &oneConnectionRepo{dstRepo}
 
 	seed := time.Now().UnixNano()
 	rand.Seed(seed)
@@ -308,7 +320,7 @@ func testRepackCopy(t *testing.T, version uint) {
 	_, keepBlobs := selectBlobs(t, repo, 0.2)
 	copyPacks := findPacksForBlobs(t, repo, keepBlobs)
 
-	_, err := repository.Repack(context.TODO(), repo, dstRepo, copyPacks, keepBlobs, nil)
+	_, err := repository.Repack(context.TODO(), repoWrapped, dstRepoWrapped, copyPacks, keepBlobs, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
