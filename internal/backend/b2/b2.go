@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"path"
+	"sync"
 	"time"
 
 	"github.com/restic/restic/internal/backend"
@@ -34,8 +35,25 @@ const defaultListMaxItems = 10 * 1000
 // ensure statically that *b2Backend implements restic.Backend.
 var _ restic.Backend = &b2Backend{}
 
+type sniffingRoundTripper struct {
+	sync.Mutex
+	lastErr error
+	http.RoundTripper
+}
+
+func (s *sniffingRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	res, err := s.RoundTripper.RoundTrip(req)
+	if err != nil {
+		s.Lock()
+		s.lastErr = err
+		s.Unlock()
+	}
+	return res, err
+}
+
 func newClient(ctx context.Context, cfg Config, rt http.RoundTripper) (*b2.Client, error) {
-	opts := []b2.ClientOption{b2.Transport(rt)}
+	sniffer := &sniffingRoundTripper{RoundTripper: rt}
+	opts := []b2.ClientOption{b2.Transport(sniffer)}
 
 	// if the connection B2 fails, this can cause the client to hang
 	// cancel the connection after a minute to at least provide some feedback to the user
@@ -43,6 +61,9 @@ func newClient(ctx context.Context, cfg Config, rt http.RoundTripper) (*b2.Clien
 	defer cancel()
 	c, err := b2.NewClient(ctx, cfg.AccountID, cfg.Key.Unwrap(), opts...)
 	if err == context.DeadlineExceeded {
+		if sniffer.lastErr != nil {
+			return nil, sniffer.lastErr
+		}
 		return nil, errors.New("connection to B2 failed")
 	} else if err != nil {
 		return nil, errors.Wrap(err, "b2.NewClient")
