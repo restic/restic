@@ -277,6 +277,7 @@ func planPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo
 	}
 
 	if len(plan.repackPacks) != 0 {
+		blobCount := keepBlobs.Len()
 		// when repacking, we do not want to keep blobs which are
 		// already contained in kept packs, so delete them from keepBlobs
 		repo.Index().Each(ctx, func(blob restic.PackedBlob) {
@@ -285,6 +286,11 @@ func planPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo
 			}
 			keepBlobs.Delete(blob.BlobHandle)
 		})
+
+		if keepBlobs.Len() < blobCount/2 {
+			// replace with copy to shrink map to necessary size if there's a chance to benefit
+			keepBlobs = keepBlobs.Copy()
+		}
 	} else {
 		// keepBlobs is only needed if packs are repacked
 		keepBlobs = nil

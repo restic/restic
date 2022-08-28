@@ -35,3 +35,11 @@ func TestCountedBlobSet(t *testing.T) {
 	s := bs.String()
 	test.Assert(t, len(s) > 10, "invalid string: %v", s)
 }
+
+func TestCountedBlobSetCopy(t *testing.T) {
+	bs := restic.NewCountedBlobSet(restic.NewRandomBlobHandle(), restic.NewRandomBlobHandle(), restic.NewRandomBlobHandle())
+	test.Equals(t, bs.Len(), 3)
+	cp := bs.Copy()
+	test.Equals(t, cp.Len(), 3)
+	test.Equals(t, bs.List(), cp.List())
+}

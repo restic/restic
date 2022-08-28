@@ -57,3 +57,12 @@ func (s CountedBlobSet) String() string {
 
 	return "{" + str[1:len(str)-1] + "}"
 }
+
+// Copy returns a copy of the CountedBlobSet.
+func (s CountedBlobSet) Copy() CountedBlobSet {
+	cp := make(CountedBlobSet, len(s))
+	for k, v := range s {
+		cp[k] = v
+	}
+	return cp
+}
