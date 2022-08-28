@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"path"
+	"time"
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/sema"
@@ -36,8 +37,14 @@ var _ restic.Backend = &b2Backend{}
 func newClient(ctx context.Context, cfg Config, rt http.RoundTripper) (*b2.Client, error) {
 	opts := []b2.ClientOption{b2.Transport(rt)}
 
+	// if the connection B2 fails, this can cause the client to hang
+	// cancel the connection after a minute to at least provide some feedback to the user
+	ctx, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
 	c, err := b2.NewClient(ctx, cfg.AccountID, cfg.Key.Unwrap(), opts...)
-	if err != nil {
+	if err == context.DeadlineExceeded {
+		return nil, errors.New("connection to B2 failed")
+	} else if err != nil {
 		return nil, errors.Wrap(err, "b2.NewClient")
 	}
 	return c, nil
