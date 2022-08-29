@@ -57,7 +57,7 @@ func checkMigrations(opts MigrateOptions, gopts GlobalOptions, repo restic.Repos
 	}
 
 	if !found {
-		Printf("no migrations found")
+		Printf("no migrations found\n")
 	}
 
 	return nil
