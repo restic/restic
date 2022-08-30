@@ -22,7 +22,7 @@ import (
 func Repack(ctx context.Context, repo restic.Repository, dstRepo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet, p *progress.Counter) (obsoletePacks restic.IDSet, err error) {
 	debug.Log("repacking %d packs while keeping %d blobs", len(packs), len(keepBlobs))
 
-	if repo == dstRepo && dstRepo.Backend().Connections() < 2 {
+	if repo == dstRepo && dstRepo.Connections() < 2 {
 		return nil, errors.Fatal("repack step requires a backend connection limit of at least two")
 	}
 
@@ -114,6 +114,10 @@ func repack(ctx context.Context, repo restic.Repository, dstRepo restic.Reposito
 	// as packs are streamed the concurrency is limited by IO
 	// reduce by one to ensure that uploading is always possible
 	repackWorkerCount := int(repo.Connections() - 1)
+	if repo != dstRepo {
+		// no need to share the upload and download connections for different repositories
+		repackWorkerCount = int(repo.Connections())
+	}
 	for i := 0; i < repackWorkerCount; i++ {
 		wg.Go(worker)
 	}
