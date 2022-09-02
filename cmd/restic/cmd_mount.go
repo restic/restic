@@ -94,7 +94,7 @@ func init() {
 	mountFlags.BoolVar(&mountOptions.NoDefaultPermissions, "no-default-permissions", false, "for 'allow-other', ignore Unix permissions and allow users to read all snapshot files")
 
 	mountFlags.StringArrayVarP(&mountOptions.Hosts, "host", "H", nil, `only consider snapshots for this host (can be specified multiple times)`)
-	mountFlags.Var(&mountOptions.Tags, "tag", "only consider snapshots which include this `taglist`")
+	mountFlags.Var(&mountOptions.Tags, "tag", "only consider snapshots which include this `taglist` (can be specified multiple times)")
 	mountFlags.StringArrayVar(&mountOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`")
 
 	mountFlags.StringArrayVar(&mountOptions.PathTemplates, "path-template", nil, "set `template` for path names (can be specified multiple times)")
