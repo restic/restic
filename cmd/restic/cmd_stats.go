@@ -56,10 +56,7 @@ type StatsOptions struct {
 	// the mode of counting to perform (see consts for available modes)
 	countMode string
 
-	// filter snapshots by, if given by user
-	Hosts []string
-	Tags  restic.TagLists
-	Paths []string
+	snapshotFilterOptions
 }
 
 var statsOptions StatsOptions
@@ -68,9 +65,7 @@ func init() {
 	cmdRoot.AddCommand(cmdStats)
 	f := cmdStats.Flags()
 	f.StringVar(&statsOptions.countMode, "mode", countModeRestoreSize, "counting mode: restore-size (default), files-by-contents, blobs-per-file or raw-data")
-	f.StringArrayVarP(&statsOptions.Hosts, "host", "H", nil, "only consider snapshots with the given `host` (can be specified multiple times)")
-	f.Var(&statsOptions.Tags, "tag", "only consider snapshots which include this `taglist` in the format `tag[,tag,...]` (can be specified multiple times)")
-	f.StringArrayVar(&statsOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` (can be specified multiple times)")
+	initMultiSnapshotFilterOptions(f, &statsOptions.snapshotFilterOptions, true)
 }
 
 func runStats(gopts GlobalOptions, args []string) error {

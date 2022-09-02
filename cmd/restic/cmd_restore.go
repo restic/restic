@@ -41,10 +41,8 @@ type RestoreOptions struct {
 	Include            []string
 	InsensitiveInclude []string
 	Target             string
-	Hosts              []string
-	Paths              []string
-	Tags               restic.TagLists
-	Verify             bool
+	snapshotFilterOptions
+	Verify bool
 }
 
 var restoreOptions RestoreOptions
@@ -59,9 +57,7 @@ func init() {
 	flags.StringArrayVar(&restoreOptions.InsensitiveInclude, "iinclude", nil, "same as `--include` but ignores the casing of filenames")
 	flags.StringVarP(&restoreOptions.Target, "target", "t", "", "directory to extract data to")
 
-	flags.StringArrayVarP(&restoreOptions.Hosts, "host", "H", nil, `only consider snapshots for this host when the snapshot ID is "latest" (can be specified multiple times)`)
-	flags.Var(&restoreOptions.Tags, "tag", "only consider snapshots which include this `taglist`, when snapshot ID \"latest\" is given (can be specified multiple times)")
-	flags.StringArrayVar(&restoreOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when snapshot ID \"latest\" is given (can be specified multiple times)")
+	initSingleSnapshotFilterOptions(flags, &restoreOptions.snapshotFilterOptions)
 	flags.BoolVar(&restoreOptions.Verify, "verify", false, "verify restored files content")
 }
 
