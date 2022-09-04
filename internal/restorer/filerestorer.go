@@ -7,7 +7,6 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -76,7 +75,7 @@ func newFileRestorer(dst string,
 		idx:         idx,
 		packLoader:  packLoader,
 		filesWriter: newFilesWriter(workerCount),
-		zeroChunk:   restic.Hash(make([]byte, chunker.MinSize)),
+		zeroChunk:   repository.ZeroChunk(),
 		sparse:      sparse,
 		workerCount: workerCount,
 		dst:         dst,

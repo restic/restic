@@ -813,7 +813,14 @@ func (r *Repository) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte
 
 	// compute plaintext hash if not already set
 	if id.IsNull() {
-		newID = restic.Hash(buf)
+		// Special case the hash calculation for all zero chunks. This is especially
+		// useful for sparse files containing large all zero regions. For these we can
+		// process chunks as fast as we can read the from disk.
+		if len(buf) == chunker.MinSize && restic.ZeroPrefixLen(buf) == chunker.MinSize {
+			newID = ZeroChunk()
+		} else {
+			newID = restic.Hash(buf)
+		}
 	} else {
 		newID = id
 	}
@@ -966,4 +973,15 @@ func streamPackPart(ctx context.Context, beLoad BackendLoadFn, key *crypto.Key, 
 		return nil
 	})
 	return errors.Wrap(err, "StreamPack")
+}
+
+var zeroChunkOnce sync.Once
+var zeroChunkID restic.ID
+
+// ZeroChunk computes and returns (cached) the ID of an all-zero chunk with size chunker.MinSize
+func ZeroChunk() restic.ID {
+	zeroChunkOnce.Do(func() {
+		zeroChunkID = restic.Hash(make([]byte, chunker.MinSize))
+	})
+	return zeroChunkID
 }
