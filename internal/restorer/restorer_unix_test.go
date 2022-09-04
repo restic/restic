@@ -8,7 +8,6 @@ import (
 	"context"
 	"io/ioutil"
 	"math"
-	"math/rand"
 	"os"
 	"path/filepath"
 	"syscall"
@@ -122,31 +121,4 @@ func TestRestorerSparseFiles(t *testing.T) {
 	// file system as well as the OS.
 	t.Logf("wrote %d zeros as %d blocks, %.1f%% sparse",
 		len(zeros), st.Blocks, 100*sparsity)
-}
-
-func BenchmarkZeroPrefixLen(b *testing.B) {
-	var (
-		buf        [4<<20 + 37]byte
-		r          = rand.New(rand.NewSource(0x618732))
-		sumSkipped int64
-	)
-
-	b.ReportAllocs()
-	b.SetBytes(int64(len(buf)))
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		j := r.Intn(len(buf))
-		buf[j] = 0xff
-
-		skipped := zeroPrefixLen(buf[:])
-		sumSkipped += int64(skipped)
-
-		buf[j] = 0
-	}
-
-	// The closer this is to .5, the better. If it's far off, give the
-	// benchmark more time to run with -benchtime.
-	b.Logf("average number of zeros skipped: %.3f",
-		float64(sumSkipped)/(float64(b.N*len(buf))))
 }
