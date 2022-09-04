@@ -7,6 +7,11 @@ are not actually written to disk.
 How much space is saved by writing sparse files depends on the operating
 system, file system and the distribution of zeros in the file.
 
+During backup restic still reads the whole file including sparse regions. We
+have optimized the processing speed of sparse regions.
+
 https://github.com/restic/restic/issues/79
+https://github.com/restic/restic/issues/3903
 https://github.com/restic/restic/pull/2601
+https://github.com/restic/restic/pull/3854
 https://forum.restic.net/t/sparse-file-support/1264
