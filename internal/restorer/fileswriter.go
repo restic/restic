@@ -67,7 +67,7 @@ func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create
 
 		if createSize >= 0 {
 			if sparse {
-				err = f.Truncate(createSize)
+				err = truncateSparse(f, createSize)
 				if err != nil {
 					return nil, err
 				}

@@ -1,8 +1,8 @@
 Enhancement: Restore files with many zeros as sparse files
 
-On all platforms except Windows, the restorer may now write files containing
-long runs of zeros as sparse files (also called files with holes): the zeros
-are not actually written to disk.
+When using `restore --sparse`, the restorer may now write files containing long
+runs of zeros as sparse files (also called files with holes): the zeros are not
+actually written to disk.
 
 How much space is saved by writing sparse files depends on the operating
 system, file system and the distribution of zeros in the file.

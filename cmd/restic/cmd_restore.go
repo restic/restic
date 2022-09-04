@@ -1,7 +1,6 @@
 package main
 
 import (
-	"runtime"
 	"strings"
 	"time"
 
@@ -60,9 +59,7 @@ func init() {
 	flags.StringVarP(&restoreOptions.Target, "target", "t", "", "directory to extract data to")
 
 	initSingleSnapshotFilterOptions(flags, &restoreOptions.snapshotFilterOptions)
-	if runtime.GOOS != "windows" {
-		flags.BoolVar(&restoreOptions.Sparse, "sparse", false, "restore files as sparse (not supported on windows)")
-	}
+	flags.BoolVar(&restoreOptions.Sparse, "sparse", false, "restore files as sparse")
 	flags.BoolVar(&restoreOptions.Verify, "verify", false, "verify restored files content")
 }
 

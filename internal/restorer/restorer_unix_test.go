@@ -4,17 +4,12 @@
 package restorer
 
 import (
-	"bytes"
 	"context"
-	"io/ioutil"
-	"math"
 	"os"
 	"path/filepath"
 	"syscall"
 	"testing"
 
-	"github.com/restic/restic/internal/archiver"
-	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -66,59 +61,12 @@ func TestRestorerRestoreEmptyHardlinkedFileds(t *testing.T) {
 	}
 }
 
-func TestRestorerSparseFiles(t *testing.T) {
-	repo, cleanup := repository.TestRepository(t)
-	defer cleanup()
-
-	var zeros [1<<20 + 13]byte
-
-	target := &fs.Reader{
-		Mode:       0600,
-		Name:       "/zeros",
-		ReadCloser: ioutil.NopCloser(bytes.NewReader(zeros[:])),
-	}
-	sc := archiver.NewScanner(target)
-	err := sc.Scan(context.TODO(), []string{"/zeros"})
-	rtest.OK(t, err)
-
-	arch := archiver.New(repo, target, archiver.Options{})
-	_, id, err := arch.Snapshot(context.Background(), []string{"/zeros"},
-		archiver.SnapshotOptions{})
-	rtest.OK(t, err)
-
-	res, err := NewRestorer(context.TODO(), repo, id, true)
-	rtest.OK(t, err)
-
-	tempdir, cleanup := rtest.TempDir(t)
-	defer cleanup()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	err = res.RestoreTo(ctx, tempdir)
-	rtest.OK(t, err)
-
-	filename := filepath.Join(tempdir, "zeros")
-	content, err := ioutil.ReadFile(filename)
-	rtest.OK(t, err)
-
-	rtest.Equals(t, len(zeros[:]), len(content))
-	rtest.Equals(t, zeros[:], content)
-
+func getBlockCount(t *testing.T, filename string) int64 {
 	fi, err := os.Stat(filename)
 	rtest.OK(t, err)
 	st := fi.Sys().(*syscall.Stat_t)
 	if st == nil {
-		return
+		return -1
 	}
-
-	// st.Blocks is the size in 512-byte blocks.
-	denseBlocks := math.Ceil(float64(len(zeros)) / 512)
-	sparsity := 1 - float64(st.Blocks)/denseBlocks
-
-	// This should report 100% sparse. We don't assert that,
-	// as the behavior of sparse writes depends on the underlying
-	// file system as well as the OS.
-	t.Logf("wrote %d zeros as %d blocks, %.1f%% sparse",
-		len(zeros), st.Blocks, 100*sparsity)
+	return st.Blocks
 }
