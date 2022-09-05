@@ -135,6 +135,13 @@ func runStats(gopts GlobalOptions, args []string) error {
 				return fmt.Errorf("blob %v not found", blobHandle)
 			}
 			stats.TotalSize += uint64(pbs[0].Length)
+			if repo.Config().Version >= 2 {
+				if pbs[0].IsCompressed() {
+					stats.TotalUncompressedSize += uint64(pbs[0].UncompressedLength)
+				} else {
+					stats.TotalUncompressedSize += uint64(pbs[0].Length)
+				}
+			}
 			stats.TotalBlobCount++
 		}
 	}
@@ -148,15 +155,18 @@ func runStats(gopts GlobalOptions, args []string) error {
 	}
 
 	Printf("Stats in %s mode:\n", statsOptions.countMode)
-	Printf("Snapshots processed:   %d\n", stats.SnapshotsCount)
+	Printf("    Snapshots processed:  %d\n", stats.SnapshotsCount)
 
 	if stats.TotalBlobCount > 0 {
-		Printf("   Total Blob Count:   %d\n", stats.TotalBlobCount)
+		Printf("       Total Blob Count:  %d\n", stats.TotalBlobCount)
 	}
 	if stats.TotalFileCount > 0 {
-		Printf("   Total File Count:   %d\n", stats.TotalFileCount)
+		Printf("       Total File Count:  %d\n", stats.TotalFileCount)
 	}
-	Printf("         Total Size:   %-5s\n", formatBytes(stats.TotalSize))
+	if stats.TotalUncompressedSize > 0 {
+		Printf("Total Uncompressed Size:  %-5s\n", formatBytes(stats.TotalUncompressedSize))
+	}
+	Printf("             Total Size:  %-5s\n", formatBytes(stats.TotalSize))
 
 	return nil
 }
@@ -282,9 +292,10 @@ func verifyStatsInput(gopts GlobalOptions, args []string) error {
 // to collect information about it, as well as state needed
 // for a successful and efficient walk.
 type statsContainer struct {
-	TotalSize      uint64 `json:"total_size"`
-	TotalFileCount uint64 `json:"total_file_count"`
-	TotalBlobCount uint64 `json:"total_blob_count,omitempty"`
+	TotalSize             uint64 `json:"total_size"`
+	TotalUncompressedSize uint64 `json:"total_uncompressed_size"`
+	TotalFileCount        uint64 `json:"total_file_count"`
+	TotalBlobCount        uint64 `json:"total_blob_count,omitempty"`
 	// holds count of all considered snapshots
 	SnapshotsCount int `json:"snapshots_count"`
 
