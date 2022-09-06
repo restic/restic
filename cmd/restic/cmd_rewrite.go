@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
@@ -38,7 +39,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runRewrite(rewriteOptions, globalOptions, args)
+		return runRewrite(cmd.Context(), rewriteOptions, globalOptions, args)
 	},
 }
 
@@ -78,7 +79,7 @@ func init() {
 type saveTreeFunction = func(*restic.Tree) (restic.ID, error)
 
 func filterNode(ctx context.Context, repo restic.Repository, nodepath string, nodeID restic.ID, checkExclude RejectByNameFunc, saveTreeFunc saveTreeFunction) (newNodeID restic.ID, err error) {
-	curTree, err := repo.LoadTree(ctx, nodeID)
+	curTree, err := restic.LoadTree(ctx, repo, nodeID)
 	if err != nil {
 		return nodeID, err
 	}
@@ -86,7 +87,7 @@ func filterNode(ctx context.Context, repo restic.Repository, nodepath string, no
 	debug.Log("filterNode: %s, nodeId: %s\n", nodepath, nodeID.Str())
 
 	changed := false
-	newTree := restic.NewTree()
+	newTree := restic.NewTree(len(curTree.Nodes))
 	for _, node := range curTree.Nodes {
 		path := path.Join(nodepath, node.Name)
 		if !checkExclude(path) {
@@ -154,7 +155,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 	var saveTreeFunc saveTreeFunction
 	if !opts.DryRun {
 		saveTreeFunc = func(tree *restic.Tree) (restic.ID, error) {
-			return repo.SaveTree(ctx, tree)
+			return restic.SaveTree(ctx, repo, tree)
 		}
 	} else {
 		saveTreeFunc = func(tree *restic.Tree) (restic.ID, error) {
@@ -197,10 +198,6 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 	if err != nil {
 		return false, err
 	}
-	err = repo.SaveIndex(ctx)
-	if err != nil {
-		return false, err
-	}
 
 	// Retain the original snapshot id over all tag changes.
 	if sn.Original == nil {
@@ -213,7 +210,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 	}
 
 	// Save the new snapshot.
-	id, err := repo.SaveJSONUnpacked(ctx, restic.SnapshotFile, sn)
+	id, err := restic.SaveSnapshot(ctx, repo, sn)
 	if err != nil {
 		return false, err
 	}
@@ -234,7 +231,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 	return true, nil
 }
 
-func runRewrite(opts RewriteOptions, gopts GlobalOptions, args []string) error {
+func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, args []string) error {
 
 	if len(opts.Hosts) == 0 && len(opts.Tags) == 0 && len(opts.Paths) == 0 && len(args) == 0 {
 		return errors.Fatal("no snapshots provided")
@@ -248,29 +245,32 @@ func runRewrite(opts RewriteOptions, gopts GlobalOptions, args []string) error {
 		args = []string{}
 	}
 
-	repo, err := OpenRepository(gopts)
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
 
 	if !gopts.NoLock && !opts.DryRun {
 		Verbosef("create exclusive lock for repository\n")
-		lock, err := lockRepoExclusive(repo)
+		var lock *restic.Lock
+		lock, ctx, err = lockRepoExclusive(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
 		}
 	}
 
-	if err = repo.LoadIndex(gopts.ctx); err != nil {
+	snapshotLister, err := backend.MemorizeList(ctx, repo.Backend(), restic.SnapshotFile)
+	if err != nil {
 		return err
 	}
 
-	ctx, cancel := context.WithCancel(gopts.ctx)
-	defer cancel()
+	if err = repo.LoadIndex(ctx); err != nil {
+		return err
+	}
 
 	changedCount := 0
-	for sn := range FindFilteredSnapshots(ctx, repo, opts.Hosts, opts.Tags, opts.Paths, args) {
+	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, opts.Hosts, opts.Tags, opts.Paths, args) {
 		Verbosef("Checking snapshot %s\n", sn.String())
 		changed, err := rewriteSnapshot(ctx, repo, sn, opts, gopts)
 		if err != nil {
