@@ -76,9 +76,7 @@ func init() {
 	f.StringArrayVar(&rewriteOptions.ExcludeFiles, "exclude-file", nil, "read exclude patterns from a `file` (can be specified multiple times)")
 }
 
-type saveTreeFunction func([]byte) (restic.ID, error)
-
-func filterNode(ctx context.Context, repo restic.Repository, nodepath string, nodeID restic.ID, checkExclude RejectByNameFunc, saveTreeFunc saveTreeFunction) (newNodeID restic.ID, err error) {
+func filterNode(ctx context.Context, repo restic.Repository, nodepath string, nodeID restic.ID, checkExclude RejectByNameFunc) (newNodeID restic.ID, err error) {
 	curTree, err := restic.LoadTree(ctx, repo, nodeID)
 	if err != nil {
 		return nodeID, err
@@ -95,7 +93,7 @@ func filterNode(ctx context.Context, repo restic.Repository, nodepath string, no
 				tb.AddNode(node)
 				continue
 			}
-			newID, err := filterNode(ctx, repo, path, *node.Subtree, checkExclude, saveTreeFunc)
+			newID, err := filterNode(ctx, repo, path, *node.Subtree, checkExclude)
 			if err != nil {
 				return restic.ID{}, err
 			}
@@ -120,7 +118,7 @@ func filterNode(ctx context.Context, repo restic.Repository, nodepath string, no
 		}
 
 		// Save new tree
-		newTreeID, err := saveTreeFunc(tree)
+		newTreeID, _, _, err := repo.SaveBlob(ctx, restic.TreeBlob, tree, restic.ID{}, false)
 		debug.Log("filterNode: save new tree for %s as %v\n", nodepath, newTreeID)
 		return newTreeID, err
 	}
@@ -156,18 +154,6 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 		return false, errors.Errorf("snapshot %v has nil tree", sn.ID().Str())
 	}
 
-	var saveTreeFunc saveTreeFunction
-	if !opts.DryRun {
-		saveTreeFunc = func(tree []byte) (restic.ID, error) {
-			id, _, _, err := repo.SaveBlob(ctx, restic.TreeBlob, tree, restic.ID{}, false)
-			return id, err
-		}
-	} else {
-		saveTreeFunc = func(tree []byte) (restic.ID, error) {
-			return restic.ID{}, nil
-		}
-	}
-
 	rejectByNameFuncs, err := collectRejectFuncsForRewrite(opts)
 	if err != nil {
 		return false, err
@@ -182,7 +168,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 		return false
 	}
 
-	filteredTree, err := filterNode(ctx, repo, "/", *sn.Tree, checkExclude, saveTreeFunc)
+	filteredTree, err := filterNode(ctx, repo, "/", *sn.Tree, checkExclude)
 
 	if err != nil {
 		return false, err
@@ -259,6 +245,8 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 		if err != nil {
 			return err
 		}
+	} else {
+		repo.SetDryRun()
 	}
 
 	snapshotLister, err := backend.MemorizeList(ctx, repo.Backend(), restic.SnapshotFile)
