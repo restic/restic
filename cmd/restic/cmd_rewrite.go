@@ -76,7 +76,7 @@ func init() {
 	f.StringArrayVar(&rewriteOptions.ExcludeFiles, "exclude-file", nil, "read exclude patterns from a `file` (can be specified multiple times)")
 }
 
-type saveTreeFunction = func(*restic.Tree) (restic.ID, error)
+type saveTreeFunction func([]byte) (restic.ID, error)
 
 func filterNode(ctx context.Context, repo restic.Repository, nodepath string, nodeID restic.ID, checkExclude RejectByNameFunc, saveTreeFunc saveTreeFunction) (newNodeID restic.ID, err error) {
 	curTree, err := restic.LoadTree(ctx, repo, nodeID)
@@ -87,26 +87,25 @@ func filterNode(ctx context.Context, repo restic.Repository, nodepath string, no
 	debug.Log("filterNode: %s, nodeId: %s\n", nodepath, nodeID.Str())
 
 	changed := false
-	newTree := restic.NewTree(len(curTree.Nodes))
+	tb := restic.NewTreeJSONBuilder()
 	for _, node := range curTree.Nodes {
 		path := path.Join(nodepath, node.Name)
 		if !checkExclude(path) {
 			if node.Subtree == nil {
-				newTree.Insert(node)
+				tb.AddNode(node)
 				continue
 			}
-			newNode := node
 			newID, err := filterNode(ctx, repo, path, *node.Subtree, checkExclude, saveTreeFunc)
 			if err != nil {
-				return nodeID, err
+				return restic.ID{}, err
 			}
-			if newID == *node.Subtree {
-				newTree.Insert(node)
-			} else {
+			if !node.Subtree.Equal(newID) {
 				changed = true
-				newNode.Subtree = new(restic.ID)
-				*newNode.Subtree = newID
-				newTree.Insert(newNode)
+			}
+			node.Subtree = &newID
+			err = tb.AddNode(node)
+			if err != nil {
+				return restic.ID{}, err
 			}
 		} else {
 			Verbosef("excluding %s\n", path)
@@ -115,8 +114,13 @@ func filterNode(ctx context.Context, repo restic.Repository, nodepath string, no
 	}
 
 	if changed {
+		tree, err := tb.Finalize()
+		if err != nil {
+			return restic.ID{}, err
+		}
+
 		// Save new tree
-		newTreeID, err := saveTreeFunc(newTree)
+		newTreeID, err := saveTreeFunc(tree)
 		debug.Log("filterNode: save new tree for %s as %v\n", nodepath, newTreeID)
 		return newTreeID, err
 	}
@@ -154,12 +158,13 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 
 	var saveTreeFunc saveTreeFunction
 	if !opts.DryRun {
-		saveTreeFunc = func(tree *restic.Tree) (restic.ID, error) {
-			return restic.SaveTree(ctx, repo, tree)
+		saveTreeFunc = func(tree []byte) (restic.ID, error) {
+			id, _, _, err := repo.SaveBlob(ctx, restic.TreeBlob, tree, restic.ID{}, false)
+			return id, err
 		}
 	} else {
-		saveTreeFunc = func(tree *restic.Tree) (restic.ID, error) {
-			return restic.ID{0}, nil
+		saveTreeFunc = func(tree []byte) (restic.ID, error) {
+			return restic.ID{}, nil
 		}
 	}
 
