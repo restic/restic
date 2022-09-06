@@ -14,23 +14,24 @@ import (
 )
 
 var cmdRewrite = &cobra.Command{
-	Use:   "rewrite [f] [all|snapshotID ...]",
-	Short: "Modify existing snapshots by deleting files",
+	Use:   "rewrite [flags] [all|snapshotID ...]",
+	Short: "Rewrite existing snapshots",
 	Long: `
 The "rewrite" command excludes files from existing snapshots.
 
-By default 'rewrite' will create new snapshot that will contains same data as
-source snapshot except excluded data. All metadata (time, host, tags) will be preserved.
-Special tag 'rewrite' will be added to new snapshot to distinguish it from source
-(unless --inplace is used)
+By default 'rewrite' will create new snapshots that will contains same data as
+the source snapshots but without excluded files. All metadata (time, host, tags)
+will be preserved. The special tag 'rewrite' will be added to new snapshots to
+distinguish it from the source (unless --inplace is used).
 
 If --inplace option is used, old snapshot will be removed from repository.
 
-Snapshots to rewrite are specified using --host, --tag, --path or by providing list of snapshotID.
-Alternatively it's possible to use special 'all' snapshot that will match all snapshots
+Snapshots to rewrite are specified using --host, --tag, --path or by providing
+a list of snapshot ids. Alternatively it's possible to use special snapshot id 'all'
+that will match all snapshots.
 
-Please note, that this command only modifies snapshot objects. In order to delete
-data from repository use 'prune' command
+Please note, that this command only creates new snapshots. In order to delete
+data from the repository use 'prune' command.
 
 EXIT STATUS
 ===========
@@ -43,9 +44,8 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 	},
 }
 
-// RewriteOptions collects all options for the ls command.
+// RewriteOptions collects all options for the rewrite command.
 type RewriteOptions struct {
-	// TagOptions bundles all options for the 'tag' command.
 	Hosts   []string
 	Paths   []string
 	Tags    restic.TagLists
@@ -214,10 +214,6 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 	if err != nil {
 		return false, err
 	}
-	err = repo.Flush(ctx)
-	if err != nil {
-		return true, err
-	}
 
 	if opts.Inplace {
 		h := restic.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
@@ -250,7 +246,7 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 		return err
 	}
 
-	if !gopts.NoLock && !opts.DryRun {
+	if !opts.DryRun {
 		Verbosef("create exclusive lock for repository\n")
 		var lock *restic.Lock
 		lock, ctx, err = lockRepoExclusive(ctx, repo)
