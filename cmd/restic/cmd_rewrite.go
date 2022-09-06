@@ -15,7 +15,7 @@ import (
 )
 
 var cmdRewrite = &cobra.Command{
-	Use:   "rewrite [flags] [all|snapshotID ...]",
+	Use:   "rewrite [flags] [snapshotID ...]",
 	Short: "Rewrite existing snapshots",
 	Long: `
 The "rewrite" command excludes files from existing snapshots.
@@ -28,8 +28,7 @@ distinguish it from the source (unless --inplace is used).
 If --inplace option is used, old snapshot will be removed from repository.
 
 Snapshots to rewrite are specified using --host, --tag, --path or by providing
-a list of snapshot ids. Alternatively it's possible to use special snapshot id 'all'
-that will match all snapshots.
+a list of snapshot ids. Not specifying a snapshot id will rewrite all snapshots.
 
 Please note, that this command only creates new snapshots. In order to delete
 data from the repository use 'prune' command.
@@ -174,16 +173,8 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 
 func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, args []string) error {
 
-	if len(opts.Hosts) == 0 && len(opts.Tags) == 0 && len(opts.Paths) == 0 && len(args) == 0 {
-		return errors.Fatal("no snapshots provided")
-	}
-
 	if len(opts.ExcludeFiles) == 0 && len(opts.Excludes) == 0 && len(opts.InsensitiveExcludes) == 0 {
 		return errors.Fatal("Nothing to do: no excludes provided")
-	}
-
-	if len(args) == 1 && args[0] == "all" {
-		args = []string{}
 	}
 
 	repo, err := OpenRepository(ctx, gopts)
