@@ -53,9 +53,10 @@ type RewriteOptions struct {
 	DryRun  bool
 
 	// Exclude options
-	Excludes            []string
-	InsensitiveExcludes []string
-	ExcludeFiles        []string
+	Excludes                []string
+	InsensitiveExcludes     []string
+	ExcludeFiles            []string
+	InsensitiveExcludeFiles []string
 }
 
 var rewriteOptions RewriteOptions
@@ -74,29 +75,7 @@ func init() {
 	f.StringArrayVarP(&rewriteOptions.Excludes, "exclude", "e", nil, "exclude a `pattern` (can be specified multiple times)")
 	f.StringArrayVar(&rewriteOptions.InsensitiveExcludes, "iexclude", nil, "same as --exclude `pattern` but ignores the casing of filenames")
 	f.StringArrayVar(&rewriteOptions.ExcludeFiles, "exclude-file", nil, "read exclude patterns from a `file` (can be specified multiple times)")
-}
-
-func collectRejectFuncsForRewrite(opts RewriteOptions) (fs []RejectByNameFunc, err error) {
-	//TODO: merge with cmd_backup
-
-	// add patterns from file
-	if len(opts.ExcludeFiles) > 0 {
-		excludes, err := readExcludePatternsFromFiles(opts.ExcludeFiles)
-		if err != nil {
-			return nil, err
-		}
-		opts.Excludes = append(opts.Excludes, excludes...)
-	}
-
-	if len(opts.InsensitiveExcludes) > 0 {
-		fs = append(fs, rejectByInsensitivePattern(opts.InsensitiveExcludes))
-	}
-
-	if len(opts.Excludes) > 0 {
-		fs = append(fs, rejectByPattern(opts.Excludes))
-	}
-
-	return fs, nil
+	f.StringArrayVar(&rewriteOptions.InsensitiveExcludeFiles, "iexclude-file", nil, "same as --exclude-file but ignores casing of `file`names in patterns")
 }
 
 func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *restic.Snapshot, opts RewriteOptions, gopts GlobalOptions) (bool, error) {
@@ -104,7 +83,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 		return false, errors.Errorf("snapshot %v has nil tree", sn.ID().Str())
 	}
 
-	rejectByNameFuncs, err := collectRejectFuncsForRewrite(opts)
+	rejectByNameFuncs, err := collectExcludePatterns(opts.Excludes, opts.InsensitiveExcludes, opts.ExcludeFiles, opts.InsensitiveExcludeFiles)
 	if err != nil {
 		return false, err
 	}
