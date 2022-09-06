@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"path"
+	"fmt"
 
 	"github.com/spf13/cobra"
 
@@ -11,6 +11,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/walker"
 )
 
 var cmdRewrite = &cobra.Command{
@@ -76,56 +77,6 @@ func init() {
 	f.StringArrayVar(&rewriteOptions.ExcludeFiles, "exclude-file", nil, "read exclude patterns from a `file` (can be specified multiple times)")
 }
 
-func filterNode(ctx context.Context, repo restic.Repository, nodepath string, nodeID restic.ID, checkExclude RejectByNameFunc) (newNodeID restic.ID, err error) {
-	curTree, err := restic.LoadTree(ctx, repo, nodeID)
-	if err != nil {
-		return nodeID, err
-	}
-
-	debug.Log("filterNode: %s, nodeId: %s\n", nodepath, nodeID.Str())
-
-	changed := false
-	tb := restic.NewTreeJSONBuilder()
-	for _, node := range curTree.Nodes {
-		path := path.Join(nodepath, node.Name)
-		if !checkExclude(path) {
-			if node.Subtree == nil {
-				tb.AddNode(node)
-				continue
-			}
-			newID, err := filterNode(ctx, repo, path, *node.Subtree, checkExclude)
-			if err != nil {
-				return restic.ID{}, err
-			}
-			if !node.Subtree.Equal(newID) {
-				changed = true
-			}
-			node.Subtree = &newID
-			err = tb.AddNode(node)
-			if err != nil {
-				return restic.ID{}, err
-			}
-		} else {
-			Verbosef("excluding %s\n", path)
-			changed = true
-		}
-	}
-
-	if changed {
-		tree, err := tb.Finalize()
-		if err != nil {
-			return restic.ID{}, err
-		}
-
-		// Save new tree
-		newTreeID, _, _, err := repo.SaveBlob(ctx, restic.TreeBlob, tree, restic.ID{}, false)
-		debug.Log("filterNode: save new tree for %s as %v\n", nodepath, newTreeID)
-		return newTreeID, err
-	}
-
-	return nodeID, nil
-}
-
 func collectRejectFuncsForRewrite(opts RewriteOptions) (fs []RejectByNameFunc, err error) {
 	//TODO: merge with cmd_backup
 
@@ -168,20 +119,23 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 		return false
 	}
 
-	filteredTree, err := filterNode(ctx, repo, "/", *sn.Tree, checkExclude)
+	filteredTree, err := walker.FilterTree(ctx, repo, "/", *sn.Tree, &walker.TreeFilterVisitor{
+		CheckExclude: checkExclude,
+		PrintExclude: func(path string) { Verbosef(fmt.Sprintf("excluding %s\n", path)) },
+	})
 
 	if err != nil {
 		return false, err
 	}
 
 	if filteredTree == *sn.Tree {
-		debug.Log("Snapshot not touched\n")
+		debug.Log("Snapshot %v not modified", sn)
 		return false, nil
 	}
 
-	debug.Log("Snapshot modified\n")
+	debug.Log("Snapshot %v modified", sn)
 	if opts.DryRun {
-		Printf("Will modify snapshot: %s\n", sn.String())
+		Printf("Would modify snapshot: %s\n", sn.String())
 		return true, nil
 	}
 
@@ -277,7 +231,7 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 		if !opts.DryRun {
 			Verbosef("modified %v snapshots\n", changedCount)
 		} else {
-			Verbosef("dry run. %v snapshots affected\n", changedCount)
+			Verbosef("dry run. would modify %v snapshots\n", changedCount)
 		}
 	}
 
