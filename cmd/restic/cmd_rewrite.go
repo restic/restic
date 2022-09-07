@@ -52,11 +52,7 @@ type RewriteOptions struct {
 	Inplace bool
 	DryRun  bool
 
-	// Exclude options
-	Excludes                []string
-	InsensitiveExcludes     []string
-	ExcludeFiles            []string
-	InsensitiveExcludeFiles []string
+	excludePatternOptions
 }
 
 var rewriteOptions RewriteOptions
@@ -71,11 +67,7 @@ func init() {
 	f.BoolVarP(&rewriteOptions.Inplace, "inplace", "", false, "replace existing snapshots")
 	f.BoolVarP(&rewriteOptions.DryRun, "dry-run", "n", false, "do not do anything, just print what would be done")
 
-	// Excludes
-	f.StringArrayVarP(&rewriteOptions.Excludes, "exclude", "e", nil, "exclude a `pattern` (can be specified multiple times)")
-	f.StringArrayVar(&rewriteOptions.InsensitiveExcludes, "iexclude", nil, "same as --exclude `pattern` but ignores the casing of filenames")
-	f.StringArrayVar(&rewriteOptions.ExcludeFiles, "exclude-file", nil, "read exclude patterns from a `file` (can be specified multiple times)")
-	f.StringArrayVar(&rewriteOptions.InsensitiveExcludeFiles, "iexclude-file", nil, "same as --exclude-file but ignores casing of `file`names in patterns")
+	initExcludePatternOptions(f, &rewriteOptions.excludePatternOptions)
 }
 
 func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *restic.Snapshot, opts RewriteOptions, gopts GlobalOptions) (bool, error) {
@@ -83,7 +75,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 		return false, errors.Errorf("snapshot %v has nil tree", sn.ID().Str())
 	}
 
-	rejectByNameFuncs, err := collectExcludePatterns(opts.Excludes, opts.InsensitiveExcludes, opts.ExcludeFiles, opts.InsensitiveExcludeFiles)
+	rejectByNameFuncs, err := collectExcludePatterns(opts.excludePatternOptions)
 	if err != nil {
 		return false, err
 	}
