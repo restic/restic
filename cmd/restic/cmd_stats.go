@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/walker"
 
@@ -136,11 +137,7 @@ func runStats(gopts GlobalOptions, args []string) error {
 			}
 			stats.TotalSize += uint64(pbs[0].Length)
 			if repo.Config().Version >= 2 {
-				if pbs[0].IsCompressed() {
-					stats.TotalUncompressedSize += uint64(pbs[0].UncompressedLength)
-				} else {
-					stats.TotalUncompressedSize += uint64(pbs[0].Length)
-				}
+				stats.TotalUncompressedSize += uint64(crypto.CiphertextLength(int(pbs[0].DataLength())))
 			}
 			stats.TotalBlobCount++
 		}
@@ -293,7 +290,7 @@ func verifyStatsInput(gopts GlobalOptions, args []string) error {
 // for a successful and efficient walk.
 type statsContainer struct {
 	TotalSize             uint64 `json:"total_size"`
-	TotalUncompressedSize uint64 `json:"total_uncompressed_size"`
+	TotalUncompressedSize uint64 `json:"total_uncompressed_size,omitempty"`
 	TotalFileCount        uint64 `json:"total_file_count"`
 	TotalBlobCount        uint64 `json:"total_blob_count,omitempty"`
 	// holds count of all considered snapshots
