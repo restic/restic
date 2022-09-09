@@ -307,8 +307,8 @@ func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository, t
 			return nil, err
 		}
 
-		if valid, invalidPatterns := filter.ValidatePatterns(excludes); !valid {
-			return nil, errors.Fatalf("--exclude-file: invalid pattern(s) provided:\n%s", strings.Join(invalidPatterns, "\n"))
+		if err := filter.ValidatePatterns(excludes); err != nil {
+			return nil, errors.Fatalf("--exclude-file: %s", err)
 		}
 
 		opts.Excludes = append(opts.Excludes, excludes...)
@@ -320,24 +320,24 @@ func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository, t
 			return nil, err
 		}
 
-		if valid, invalidPatterns := filter.ValidatePatterns(excludes); !valid {
-			return nil, errors.Fatalf("--iexclude-file: invalid pattern(s) provided:\n%s", strings.Join(invalidPatterns, "\n"))
+		if err := filter.ValidatePatterns(excludes); err != nil {
+			return nil, errors.Fatalf("--iexclude-file: %s", err)
 		}
 
 		opts.InsensitiveExcludes = append(opts.InsensitiveExcludes, excludes...)
 	}
 
 	if len(opts.InsensitiveExcludes) > 0 {
-		if valid, invalidPatterns := filter.ValidatePatterns(opts.InsensitiveExcludes); !valid {
-			return nil, errors.Fatalf("--iexclude: invalid pattern(s) provided:\n%s", strings.Join(invalidPatterns, "\n"))
+		if err := filter.ValidatePatterns(opts.InsensitiveExcludes); err != nil {
+			return nil, errors.Fatalf("--iexclude: %s", err)
 		}
 
 		fs = append(fs, rejectByInsensitivePattern(opts.InsensitiveExcludes))
 	}
 
 	if len(opts.Excludes) > 0 {
-		if valid, invalidPatterns := filter.ValidatePatterns(opts.Excludes); !valid {
-			return nil, errors.Fatalf("--exclude: invalid pattern(s) provided:\n%s", strings.Join(invalidPatterns, "\n"))
+		if err := filter.ValidatePatterns(opts.Excludes); err != nil {
+			return nil, errors.Fatalf("--exclude: %s", err)
 		}
 
 		fs = append(fs, rejectByPattern(opts.Excludes))
