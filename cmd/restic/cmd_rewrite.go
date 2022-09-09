@@ -161,9 +161,14 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 	}
 
 	if !opts.DryRun {
-		Verbosef("create exclusive lock for repository\n")
 		var lock *restic.Lock
-		lock, ctx, err = lockRepoExclusive(ctx, repo)
+		var err error
+		if opts.Inplace {
+			Verbosef("create exclusive lock for repository\n")
+			lock, ctx, err = lockRepoExclusive(ctx, repo)
+		} else {
+			lock, ctx, err = lockRepo(ctx, repo)
+		}
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
