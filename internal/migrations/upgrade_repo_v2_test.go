@@ -23,7 +23,7 @@ func TestUpgradeRepoV2(t *testing.T) {
 
 	m := &UpgradeRepoV2{}
 
-	ok, err := m.Check(context.Background(), repo)
+	ok, _, err := m.Check(context.Background(), repo)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,7 +81,7 @@ func TestUpgradeRepoV2Failure(t *testing.T) {
 
 	m := &UpgradeRepoV2{}
 
-	ok, err := m.Check(context.Background(), repo)
+	ok, _, err := m.Check(context.Background(), repo)
 	if err != nil {
 		t.Fatal(err)
 	}
