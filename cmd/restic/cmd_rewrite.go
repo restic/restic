@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
@@ -89,11 +90,22 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 		return false
 	}
 
-	filteredTree, err := walker.FilterTree(ctx, repo, "/", *sn.Tree, &walker.TreeFilterVisitor{
-		CheckExclude: checkExclude,
-		PrintExclude: func(path string) { Verbosef(fmt.Sprintf("excluding %s\n", path)) },
-	})
+	wg, wgCtx := errgroup.WithContext(ctx)
+	repo.StartPackUploader(wgCtx, wg)
 
+	var filteredTree restic.ID
+	wg.Go(func() error {
+		filteredTree, err = walker.FilterTree(wgCtx, repo, "/", *sn.Tree, &walker.TreeFilterVisitor{
+			CheckExclude: checkExclude,
+			PrintExclude: func(path string) { Verbosef(fmt.Sprintf("excluding %s\n", path)) },
+		})
+		if err != nil {
+			return err
+		}
+
+		return repo.Flush(wgCtx)
+	})
+	err = wg.Wait()
 	if err != nil {
 		return false, err
 	}
@@ -107,11 +119,6 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 	if opts.DryRun {
 		Printf("Would modify snapshot: %s\n", sn.String())
 		return true, nil
-	}
-
-	err = repo.Flush(ctx)
-	if err != nil {
-		return false, err
 	}
 
 	// Retain the original snapshot id over all tag changes.
