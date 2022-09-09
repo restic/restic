@@ -71,7 +71,7 @@ func init() {
 	initExcludePatternOptions(f, &rewriteOptions.excludePatternOptions)
 }
 
-func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *restic.Snapshot, opts RewriteOptions, gopts GlobalOptions) (bool, error) {
+func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *restic.Snapshot, opts RewriteOptions) (bool, error) {
 	if sn.Tree == nil {
 		return false, errors.Errorf("snapshot %v has nil tree", sn.ID().Str())
 	}
@@ -117,7 +117,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 
 	debug.Log("Snapshot %v modified", sn)
 	if opts.DryRun {
-		Printf("Would modify snapshot: %s\n", sn.String())
+		Verbosef("would save new snapshot\n")
 		return true, nil
 	}
 
@@ -145,7 +145,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 
 		debug.Log("old snapshot %v removed", sn.ID())
 	}
-	Printf("new snapshot saved as %v\n", id)
+	Verbosef("new snapshot saved as %v\n", id)
 	return true, nil
 }
 
@@ -183,24 +183,24 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 
 	changedCount := 0
 	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, opts.Hosts, opts.Tags, opts.Paths, args) {
-		Verbosef("Checking snapshot %s\n", sn.String())
-		changed, err := rewriteSnapshot(ctx, repo, sn, opts, gopts)
+		Verbosef("\nsnapshot %s of %v at %s)\n", sn.ID().Str(), sn.Paths, sn.Time)
+		changed, err := rewriteSnapshot(ctx, repo, sn, opts)
 		if err != nil {
-			Warnf("unable to rewrite snapshot ID %q, ignoring: %v\n", sn.ID(), err)
-			continue
+			return errors.Fatalf("unable to rewrite snapshot ID %q: %v", sn.ID().Str(), err)
 		}
 		if changed {
 			changedCount++
 		}
 	}
 
+	Verbosef("\n")
 	if changedCount == 0 {
-		Verbosef("no snapshots modified\n")
+		Verbosef("no snapshots were modified\n")
 	} else {
 		if !opts.DryRun {
 			Verbosef("modified %v snapshots\n", changedCount)
 		} else {
-			Verbosef("dry run. would modify %v snapshots\n", changedCount)
+			Verbosef("would modify %v snapshots\n", changedCount)
 		}
 	}
 
