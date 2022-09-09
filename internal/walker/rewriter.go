@@ -8,10 +8,12 @@ import (
 	"github.com/restic/restic/internal/restic"
 )
 
-type RejectByNameFunc func(path string) bool
+// SelectByNameFunc returns true for all items that should be included (files and
+// dirs). If false is returned, files are ignored and dirs are not even walked.
+type SelectByNameFunc func(item string) bool
 
 type TreeFilterVisitor struct {
-	CheckExclude RejectByNameFunc
+	SelectByName SelectByNameFunc
 	PrintExclude func(string)
 }
 
@@ -27,7 +29,7 @@ func FilterTree(ctx context.Context, repo restic.Repository, nodepath string, no
 	tb := restic.NewTreeJSONBuilder()
 	for _, node := range curTree.Nodes {
 		path := path.Join(nodepath, node.Name)
-		if visitor.CheckExclude(path) {
+		if !visitor.SelectByName(path) {
 			if visitor.PrintExclude != nil {
 				visitor.PrintExclude(path)
 			}

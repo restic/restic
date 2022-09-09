@@ -81,13 +81,13 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 		return false, err
 	}
 
-	checkExclude := func(nodepath string) bool {
+	selectByName := func(nodepath string) bool {
 		for _, reject := range rejectByNameFuncs {
 			if reject(nodepath) {
-				return true
+				return false
 			}
 		}
-		return false
+		return true
 	}
 
 	wg, wgCtx := errgroup.WithContext(ctx)
@@ -96,7 +96,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 	var filteredTree restic.ID
 	wg.Go(func() error {
 		filteredTree, err = walker.FilterTree(wgCtx, repo, "/", *sn.Tree, &walker.TreeFilterVisitor{
-			CheckExclude: checkExclude,
+			SelectByName: selectByName,
 			PrintExclude: func(path string) { Verbosef(fmt.Sprintf("excluding %s\n", path)) },
 		})
 		if err != nil {
