@@ -21,15 +21,15 @@ func initMultiSnapshotFilterOptions(flags *pflag.FlagSet, options *snapshotFilte
 		hostShorthand = ""
 	}
 	flags.StringArrayVarP(&options.Hosts, "host", hostShorthand, nil, "only consider snapshots for this `host` (can be specified multiple times)")
-	flags.Var(&options.Tags, "tag", "only consider snapshots which include this `taglist` in the format `tag[,tag,...]` (can be specified multiple times)")
-	flags.StringArrayVar(&options.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` (can be specified multiple times)")
+	flags.Var(&options.Tags, "tag", "only consider snapshots including `tag[,tag,...]` (can be specified multiple times)")
+	flags.StringArrayVar(&options.Paths, "path", nil, "only consider snapshots including this (absolute) `path` (can be specified multiple times)")
 }
 
 // initSingleSnapshotFilterOptions is used for commands that work on a single snapshot
 func initSingleSnapshotFilterOptions(flags *pflag.FlagSet, options *snapshotFilterOptions) {
 	flags.StringArrayVarP(&options.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when snapshot ID \"latest\" is given (can be specified multiple times)")
-	flags.Var(&options.Tags, "tag", "only consider snapshots which include this `taglist`, when snapshot ID \"latest\" is given (can be specified multiple times)")
-	flags.StringArrayVar(&options.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when snapshot ID \"latest\" is given (can be specified multiple times)")
+	flags.Var(&options.Tags, "tag", "only consider snapshots including `tag[,tag,...]`, when snapshot ID \"latest\" is given (can be specified multiple times)")
+	flags.StringArrayVar(&options.Paths, "path", nil, "only consider snapshots including this (absolute) `path`, when snapshot ID \"latest\" is given (can be specified multiple times)")
 }
 
 // FindFilteredSnapshots yields Snapshots, either given explicitly by `snapshotIDs` or filtered from the list of all snapshots.
