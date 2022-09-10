@@ -197,9 +197,9 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	cleanup := prepareCheckCache(opts, &gopts)
-	AddCleanupHandler(func() error {
+	AddCleanupHandler(func(code int) (int, error) {
 		cleanup()
-		return nil
+		return code, nil
 	})
 
 	repo, err := OpenRepository(gopts)
