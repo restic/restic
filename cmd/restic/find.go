@@ -5,7 +5,32 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/restic"
+	"github.com/spf13/pflag"
 )
+
+type snapshotFilterOptions struct {
+	Hosts []string
+	Tags  restic.TagLists
+	Paths []string
+}
+
+// initMultiSnapshotFilterOptions is used for commands that work on multiple snapshots
+func initMultiSnapshotFilterOptions(flags *pflag.FlagSet, options *snapshotFilterOptions, addHostShorthand bool) {
+	hostShorthand := "H"
+	if !addHostShorthand {
+		hostShorthand = ""
+	}
+	flags.StringArrayVarP(&options.Hosts, "host", hostShorthand, nil, "only consider snapshots for this `host` (can be specified multiple times)")
+	flags.Var(&options.Tags, "tag", "only consider snapshots including `tag[,tag,...]` (can be specified multiple times)")
+	flags.StringArrayVar(&options.Paths, "path", nil, "only consider snapshots including this (absolute) `path` (can be specified multiple times)")
+}
+
+// initSingleSnapshotFilterOptions is used for commands that work on a single snapshot
+func initSingleSnapshotFilterOptions(flags *pflag.FlagSet, options *snapshotFilterOptions) {
+	flags.StringArrayVarP(&options.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when snapshot ID \"latest\" is given (can be specified multiple times)")
+	flags.Var(&options.Tags, "tag", "only consider snapshots including `tag[,tag,...]`, when snapshot ID \"latest\" is given (can be specified multiple times)")
+	flags.StringArrayVar(&options.Paths, "path", nil, "only consider snapshots including this (absolute) `path`, when snapshot ID \"latest\" is given (can be specified multiple times)")
+}
 
 // FindFilteredSnapshots yields Snapshots, either given explicitly by `snapshotIDs` or filtered from the list of all snapshots.
 func FindFilteredSnapshots(ctx context.Context, be restic.Lister, loader restic.LoaderUnpacked, hosts []string, tags []restic.TagList, paths []string, snapshotIDs []string) <-chan *restic.Snapshot {

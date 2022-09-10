@@ -39,9 +39,7 @@ new destination repository using the "init" command.
 // CopyOptions bundles all options for the copy command.
 type CopyOptions struct {
 	secondaryRepoOptions
-	Hosts []string
-	Tags  restic.TagLists
-	Paths []string
+	snapshotFilterOptions
 }
 
 var copyOptions CopyOptions
@@ -51,9 +49,7 @@ func init() {
 
 	f := cmdCopy.Flags()
 	initSecondaryRepoOptions(f, &copyOptions.secondaryRepoOptions, "destination", "to copy snapshots from")
-	f.StringArrayVarP(&copyOptions.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when no snapshot ID is given (can be specified multiple times)")
-	f.Var(&copyOptions.Tags, "tag", "only consider snapshots which include this `taglist`, when no snapshot ID is given")
-	f.StringArrayVar(&copyOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot ID is given")
+	initMultiSnapshotFilterOptions(f, &copyOptions.snapshotFilterOptions, true)
 }
 
 func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {

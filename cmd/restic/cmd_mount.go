@@ -12,7 +12,6 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/restic"
 
 	resticfs "github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/fuse"
@@ -76,11 +75,9 @@ type MountOptions struct {
 	OwnerRoot            bool
 	AllowOther           bool
 	NoDefaultPermissions bool
-	Hosts                []string
-	Tags                 restic.TagLists
-	Paths                []string
-	TimeTemplate         string
-	PathTemplates        []string
+	snapshotFilterOptions
+	TimeTemplate  string
+	PathTemplates []string
 }
 
 var mountOptions MountOptions
@@ -93,9 +90,7 @@ func init() {
 	mountFlags.BoolVar(&mountOptions.AllowOther, "allow-other", false, "allow other users to access the data in the mounted directory")
 	mountFlags.BoolVar(&mountOptions.NoDefaultPermissions, "no-default-permissions", false, "for 'allow-other', ignore Unix permissions and allow users to read all snapshot files")
 
-	mountFlags.StringArrayVarP(&mountOptions.Hosts, "host", "H", nil, `only consider snapshots for this host (can be specified multiple times)`)
-	mountFlags.Var(&mountOptions.Tags, "tag", "only consider snapshots which include this `taglist`")
-	mountFlags.StringArrayVar(&mountOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`")
+	initMultiSnapshotFilterOptions(mountFlags, &mountOptions.snapshotFilterOptions, true)
 
 	mountFlags.StringArrayVar(&mountOptions.PathTemplates, "path-template", nil, "set `template` for path names (can be specified multiple times)")
 	mountFlags.StringVar(&mountOptions.TimeTemplate, "snapshot-template", time.RFC3339, "set `template` to use for snapshot dirs")

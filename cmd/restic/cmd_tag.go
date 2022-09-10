@@ -35,9 +35,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 // TagOptions bundles all options for the 'tag' command.
 type TagOptions struct {
-	Hosts      []string
-	Paths      []string
-	Tags       restic.TagLists
+	snapshotFilterOptions
 	SetTags    restic.TagLists
 	AddTags    restic.TagLists
 	RemoveTags restic.TagLists
@@ -52,10 +50,7 @@ func init() {
 	tagFlags.Var(&tagOptions.SetTags, "set", "`tags` which will replace the existing tags in the format `tag[,tag,...]` (can be given multiple times)")
 	tagFlags.Var(&tagOptions.AddTags, "add", "`tags` which will be added to the existing tags in the format `tag[,tag,...]` (can be given multiple times)")
 	tagFlags.Var(&tagOptions.RemoveTags, "remove", "`tags` which will be removed from the existing tags in the format `tag[,tag,...]` (can be given multiple times)")
-
-	tagFlags.StringArrayVarP(&tagOptions.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when no snapshot ID is given (can be specified multiple times)")
-	tagFlags.Var(&tagOptions.Tags, "tag", "only consider snapshots which include this `taglist`, when no snapshot-ID is given")
-	tagFlags.StringArrayVar(&tagOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot-ID is given")
+	initMultiSnapshotFilterOptions(tagFlags, &tagOptions.snapshotFilterOptions, true)
 }
 
 func changeTags(ctx context.Context, repo *repository.Repository, sn *restic.Snapshot, setTags, addTags, removeTags []string) (bool, error) {

@@ -48,10 +48,8 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 // LsOptions collects all options for the ls command.
 type LsOptions struct {
-	ListLong  bool
-	Hosts     []string
-	Tags      restic.TagLists
-	Paths     []string
+	ListLong bool
+	snapshotFilterOptions
 	Recursive bool
 }
 
@@ -61,10 +59,8 @@ func init() {
 	cmdRoot.AddCommand(cmdLs)
 
 	flags := cmdLs.Flags()
+	initSingleSnapshotFilterOptions(flags, &lsOptions.snapshotFilterOptions)
 	flags.BoolVarP(&lsOptions.ListLong, "long", "l", false, "use a long listing format showing size and mode")
-	flags.StringArrayVarP(&lsOptions.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when snapshot ID \"latest\" is given (can be specified multiple times)")
-	flags.Var(&lsOptions.Tags, "tag", "only consider snapshots which include this `taglist`, when snapshot ID \"latest\" is given (can be specified multiple times)")
-	flags.StringArrayVar(&lsOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when snapshot ID \"latest\" is given (can be specified multiple times)")
 	flags.BoolVar(&lsOptions.Recursive, "recursive", false, "include files in subfolders of the listed directories")
 }
 

@@ -51,9 +51,7 @@ type FindOptions struct {
 	PackID, ShowPackID bool
 	CaseInsensitive    bool
 	ListLong           bool
-	Hosts              []string
-	Paths              []string
-	Tags               restic.TagLists
+	snapshotFilterOptions
 }
 
 var findOptions FindOptions
@@ -72,9 +70,7 @@ func init() {
 	f.BoolVarP(&findOptions.CaseInsensitive, "ignore-case", "i", false, "ignore case for pattern")
 	f.BoolVarP(&findOptions.ListLong, "long", "l", false, "use a long listing format showing size and mode")
 
-	f.StringArrayVarP(&findOptions.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when no snapshot ID is given (can be specified multiple times)")
-	f.Var(&findOptions.Tags, "tag", "only consider snapshots which include this `taglist`, when no snapshot-ID is given")
-	f.StringArrayVar(&findOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot-ID is given")
+	initMultiSnapshotFilterOptions(f, &findOptions.snapshotFilterOptions, true)
 }
 
 type findPattern struct {

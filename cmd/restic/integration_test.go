@@ -106,8 +106,10 @@ func testRunRestore(t testing.TB, opts GlobalOptions, dir string, snapshotID res
 func testRunRestoreLatest(t testing.TB, gopts GlobalOptions, dir string, paths []string, hosts []string) {
 	opts := RestoreOptions{
 		Target: dir,
-		Hosts:  hosts,
-		Paths:  paths,
+		snapshotFilterOptions: snapshotFilterOptions{
+			Hosts: hosts,
+			Paths: paths,
+		},
 	}
 
 	rtest.OK(t, runRestore(opts, gopts, []string{"latest"}))
