@@ -308,6 +308,20 @@ func BenchmarkMasterIndexLookupBlobSize(b *testing.B) {
 	}
 }
 
+func BenchmarkMasterIndexEach(b *testing.B) {
+	rng := rand.New(rand.NewSource(0))
+	mIdx, _ := createRandomMasterIndex(b, rand.New(rng), 5, 200000)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		entries := 0
+		for _ = range mIdx.Each(context.TODO()) {
+			entries++
+		}
+	}
+}
+
 var (
 	snapshotTime = time.Unix(1470492820, 207401672)
 	depth        = 3
