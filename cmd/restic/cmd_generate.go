@@ -10,7 +10,7 @@ import (
 
 var cmdGenerate = &cobra.Command{
 	Use:   "generate [flags]",
-	Short: "Generate manual pages and auto-completion files (bash, fish, zsh)",
+	Short: "Generate manual pages and auto-completion files (bash, fish, zsh, powershell)",
 	Long: `
 The "generate" command writes automatically generated files (like the man pages
 and the auto-completion files for bash, fish and zsh).
@@ -25,10 +25,11 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 }
 
 type generateOptions struct {
-	ManDir             string
-	BashCompletionFile string
-	FishCompletionFile string
-	ZSHCompletionFile  string
+	ManDir                   string
+	BashCompletionFile       string
+	FishCompletionFile       string
+	ZSHCompletionFile        string
+	PowerShellCompletionFile string
 }
 
 var genOpts generateOptions
@@ -40,6 +41,7 @@ func init() {
 	fs.StringVar(&genOpts.BashCompletionFile, "bash-completion", "", "write bash completion `file`")
 	fs.StringVar(&genOpts.FishCompletionFile, "fish-completion", "", "write fish completion `file`")
 	fs.StringVar(&genOpts.ZSHCompletionFile, "zsh-completion", "", "write zsh completion `file`")
+	fs.StringVar(&genOpts.PowerShellCompletionFile, "powershell-completion", "", "write powershell completion `file`")
 }
 
 func writeManpages(dir string) error {
@@ -75,6 +77,11 @@ func writeZSHCompletion(file string) error {
 	return cmdRoot.GenZshCompletionFile(file)
 }
 
+func writePowerShellCompletion(file string) error {
+	Verbosef("writing powershell completion file to %v\n", file)
+	return cmdRoot.GenPowerShellCompletionFile(file)
+}
+
 func runGenerate(cmd *cobra.Command, args []string) error {
 	if genOpts.ManDir != "" {
 		err := writeManpages(genOpts.ManDir)
@@ -99,6 +106,13 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 
 	if genOpts.ZSHCompletionFile != "" {
 		err := writeZSHCompletion(genOpts.ZSHCompletionFile)
+		if err != nil {
+			return err
+		}
+	}
+
+	if genOpts.PowerShellCompletionFile != "" {
+		err := writePowerShellCompletion(genOpts.PowerShellCompletionFile)
 		if err != nil {
 			return err
 		}

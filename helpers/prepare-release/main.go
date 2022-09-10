@@ -290,6 +290,7 @@ func generateFiles() {
 	run("./restic-generate.temp", "generate",
 		"--man", "doc/man",
 		"--zsh-completion", "doc/zsh-completion.zsh",
+		"--powershell-completion", "doc/powershell-completion.ps1",
 		"--fish-completion", "doc/fish-completion.fish",
 		"--bash-completion", "doc/bash-completion.sh")
 	rm("restic-generate.temp")

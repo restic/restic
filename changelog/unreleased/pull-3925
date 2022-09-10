@@ -1,0 +1,6 @@
+Enhancement: Provide command completion for powershell
+
+Restic allows generation of completion files for bash, fish and zsh. Now powershell
+is supported, too.
+
+https://github.com/restic/restic/pull/3925/files
