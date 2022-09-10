@@ -5,6 +5,7 @@ package fuse
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"sync"
@@ -33,7 +34,7 @@ func cleanupNodeName(name string) string {
 	return filepath.Base(name)
 }
 
-func newDir(ctx context.Context, root *Root, inode, parentInode uint64, node *restic.Node) (*dir, error) {
+func newDir(root *Root, inode, parentInode uint64, node *restic.Node) (*dir, error) {
 	debug.Log("new dir for %v (%v)", node.Name, node.Subtree)
 
 	return &dir{
@@ -42,6 +43,16 @@ func newDir(ctx context.Context, root *Root, inode, parentInode uint64, node *re
 		inode:       inode,
 		parentInode: parentInode,
 	}, nil
+}
+
+// returing a wrapped context.Canceled error will instead result in returing
+// an input / output error to the user. Thus unwrap the error to match the
+// expectations of bazil/fuse
+func unwrapCtxCanceled(err error) error {
+	if errors.Is(err, context.Canceled) {
+		return context.Canceled
+	}
+	return err
 }
 
 // replaceSpecialNodes replaces nodes with name "." and "/" by their contents.
@@ -57,13 +68,13 @@ func replaceSpecialNodes(ctx context.Context, repo restic.Repository, node *rest
 
 	tree, err := restic.LoadTree(ctx, repo, *node.Subtree)
 	if err != nil {
-		return nil, err
+		return nil, unwrapCtxCanceled(err)
 	}
 
 	return tree.Nodes, nil
 }
 
-func newDirFromSnapshot(ctx context.Context, root *Root, inode uint64, snapshot *restic.Snapshot) (*dir, error) {
+func newDirFromSnapshot(root *Root, inode uint64, snapshot *restic.Snapshot) (*dir, error) {
 	debug.Log("new dir for snapshot %v (%v)", snapshot.ID(), snapshot.Tree)
 	return &dir{
 		root: root,
@@ -91,7 +102,7 @@ func (d *dir) open(ctx context.Context) error {
 	tree, err := restic.LoadTree(ctx, d.root.repo, *d.node.Subtree)
 	if err != nil {
 		debug.Log("  error loading tree %v: %v", d.node.Subtree, err)
-		return err
+		return unwrapCtxCanceled(err)
 	}
 	items := make(map[string]*restic.Node)
 	for _, n := range tree.Nodes {
@@ -195,13 +206,13 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	}
 	switch node.Type {
 	case "dir":
-		return newDir(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), d.inode, node)
+		return newDir(d.root, fs.GenerateDynamicInode(d.inode, name), d.inode, node)
 	case "file":
-		return newFile(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), node)
+		return newFile(d.root, fs.GenerateDynamicInode(d.inode, name), node)
 	case "symlink":
-		return newLink(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), node)
+		return newLink(d.root, fs.GenerateDynamicInode(d.inode, name), node)
 	case "dev", "chardev", "fifo", "socket":
-		return newOther(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), node)
+		return newOther(d.root, fs.GenerateDynamicInode(d.inode, name), node)
 	default:
 		debug.Log("  node %v has unknown type %v", name, node.Type)
 		return nil, fuse.ENOENT

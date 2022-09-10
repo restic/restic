@@ -58,7 +58,7 @@ func (d *SnapshotsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	// update snapshots
 	meta, err := d.dirStruct.UpdatePrefix(ctx, d.prefix)
 	if err != nil {
-		return nil, err
+		return nil, unwrapCtxCanceled(err)
 	} else if meta == nil {
 		return nil, fuse.ENOENT
 	}
@@ -97,7 +97,7 @@ func (d *SnapshotsDir) Lookup(ctx context.Context, name string) (fs.Node, error)
 
 	meta, err := d.dirStruct.UpdatePrefix(ctx, d.prefix)
 	if err != nil {
-		return nil, err
+		return nil, unwrapCtxCanceled(err)
 	} else if meta == nil {
 		return nil, fuse.ENOENT
 	}
@@ -105,9 +105,9 @@ func (d *SnapshotsDir) Lookup(ctx context.Context, name string) (fs.Node, error)
 	entry := meta.names[name]
 	if entry != nil {
 		if entry.linkTarget != "" {
-			return newSnapshotLink(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), entry.linkTarget, entry.snapshot)
+			return newSnapshotLink(d.root, fs.GenerateDynamicInode(d.inode, name), entry.linkTarget, entry.snapshot)
 		} else if entry.snapshot != nil {
-			return newDirFromSnapshot(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), entry.snapshot)
+			return newDirFromSnapshot(d.root, fs.GenerateDynamicInode(d.inode, name), entry.snapshot)
 		} else {
 			return NewSnapshotsDir(d.root, fs.GenerateDynamicInode(d.inode, name), d.inode, d.dirStruct, d.prefix+"/"+name), nil
 		}
@@ -127,7 +127,7 @@ type snapshotLink struct {
 var _ = fs.NodeReadlinker(&snapshotLink{})
 
 // newSnapshotLink
-func newSnapshotLink(ctx context.Context, root *Root, inode uint64, target string, snapshot *restic.Snapshot) (*snapshotLink, error) {
+func newSnapshotLink(root *Root, inode uint64, target string, snapshot *restic.Snapshot) (*snapshotLink, error) {
 	return &snapshotLink{root: root, inode: inode, target: target, snapshot: snapshot}, nil
 }
 

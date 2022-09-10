@@ -36,7 +36,7 @@ type openFile struct {
 	cumsize []uint64
 }
 
-func newFile(ctx context.Context, root *Root, inode uint64, node *restic.Node) (fusefile *file, err error) {
+func newFile(root *Root, inode uint64, node *restic.Node) (fusefile *file, err error) {
 	debug.Log("create new file for %v with %d blobs", node.Name, len(node.Content))
 	return &file{
 		inode: inode,
@@ -105,7 +105,7 @@ func (f *openFile) getBlobAt(ctx context.Context, i int) (blob []byte, err error
 	blob, err = f.root.repo.LoadBlob(ctx, restic.DataBlob, f.node.Content[i], nil)
 	if err != nil {
 		debug.Log("LoadBlob(%v, %v) failed: %v", f.node.Name, f.node.Content[i], err)
-		return nil, err
+		return nil, unwrapCtxCanceled(err)
 	}
 
 	f.root.blobCache.Add(f.node.Content[i], blob)
