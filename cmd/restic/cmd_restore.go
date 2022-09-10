@@ -72,23 +72,23 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 
 	// Validate provided patterns
 	if len(opts.Exclude) > 0 {
-		if valid, invalidPatterns := filter.ValidatePatterns(opts.Exclude); !valid {
-			return errors.Fatalf("--exclude: invalid pattern(s) provided:\n%s", strings.Join(invalidPatterns, "\n"))
+		if err := filter.ValidatePatterns(opts.Exclude); err != nil {
+			return errors.Fatalf("--exclude: %s", err)
 		}
 	}
 	if len(opts.InsensitiveExclude) > 0 {
-		if valid, invalidPatterns := filter.ValidatePatterns(opts.InsensitiveExclude); !valid {
-			return errors.Fatalf("--iexclude: invalid pattern(s) provided:\n%s", strings.Join(invalidPatterns, "\n"))
+		if err := filter.ValidatePatterns(opts.InsensitiveExclude); err != nil {
+			return errors.Fatalf("--iexclude: %s", err)
 		}
 	}
 	if len(opts.Include) > 0 {
-		if valid, invalidPatterns := filter.ValidatePatterns(opts.Include); !valid {
-			return errors.Fatalf("--include: invalid pattern(s) provided:\n%s", strings.Join(invalidPatterns, "\n"))
+		if err := filter.ValidatePatterns(opts.Include); err != nil {
+			return errors.Fatalf("--include: %s", err)
 		}
 	}
 	if len(opts.InsensitiveInclude) > 0 {
-		if valid, invalidPatterns := filter.ValidatePatterns(opts.InsensitiveInclude); !valid {
-			return errors.Fatalf("--iinclude: invalid pattern(s) provided:\n%s", strings.Join(invalidPatterns, "\n"))
+		if err := filter.ValidatePatterns(opts.InsensitiveInclude); err != nil {
+			return errors.Fatalf("--iinclude: %s", err)
 		}
 	}
 
