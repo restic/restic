@@ -119,7 +119,18 @@ func refreshLocks(ctx context.Context, lock *restic.Lock, lockInfo *lockContext,
 }
 
 func monitorLockRefresh(ctx context.Context, lock *restic.Lock, lockInfo *lockContext, refreshed <-chan struct{}) {
-	timer := time.NewTimer(refreshabilityTimeout)
+	// time.Now() might use a monotonic timer which is paused during standby
+	// convert to unix time to ensure we compare real time values
+	lastRefresh := time.Now().Unix()
+	pollDuration := 1 * time.Second
+	if refreshInterval < pollDuration {
+		// require for TestLockFailedRefresh
+		pollDuration = refreshInterval / 5
+	}
+	// timers are paused during standby, which is a problem as the refresh timeout
+	// _must_ expire if the host was too long in standby. Thus fall back to periodic checks
+	// https://github.com/golang/go/issues/35012
+	timer := time.NewTimer(pollDuration)
 	defer func() {
 		timer.Stop()
 		lockInfo.cancel()
@@ -132,9 +143,14 @@ func monitorLockRefresh(ctx context.Context, lock *restic.Lock, lockInfo *lockCo
 			debug.Log("terminate expiry monitoring")
 			return
 		case <-refreshed:
-			// reset timer once the lock was refreshed successfully
-			timer.Reset(refreshabilityTimeout)
+			lastRefresh = time.Now().Unix()
 		case <-timer.C:
+			if float64(time.Now().Unix()-lastRefresh) < refreshInterval.Seconds() {
+				// restart timer
+				timer.Reset(pollDuration)
+				continue
+			}
+
 			Warnf("Fatal: failed to refresh lock in time\n")
 			return
 		}
