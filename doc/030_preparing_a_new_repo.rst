@@ -466,13 +466,16 @@ Backblaze B2
 
 .. warning::
 
-   The recommended way to setup Backblaze B2 is by using its S3-compatible API.
+   Due to issues with error handling in the current B2 library that restic uses,
+   the recommended way to utilize Backblaze B2 is by using its S3-compatible API.
+   
    Follow the documentation to `generate S3-compatible access keys`_ and then
-   setup restic as described at :ref:`Amazon S3`.
+   setup restic as described at :ref:`Amazon S3`. This is expected to work better
+   than using the Backblaze B2 backend directly.
 
-    Different from the B2 backend, restic's S3 backend will only hide no longer
-    necessary files. Thus, make sure to setup lifecycle rules to eventually
-    delete hidden files.
+   Different from the B2 backend, restic's S3 backend will only hide no longer
+   necessary files. Thus, make sure to setup lifecycle rules to eventually
+   delete hidden files.
 
 Restic can backup data to any Backblaze B2 bucket. You need to first setup the
 following environment variables with the credentials you can find in the
