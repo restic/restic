@@ -1,6 +1,0 @@
-Enhancement: Include full IDs in `check` warnings
-
-To repair or inspect a damaged repository, it is often necessary to use the full IDs of objects stored in the repository.
-The output of check now includes full IDs instead of their shortened variant.
-
-https://github.com/restic/restic/pull/3729

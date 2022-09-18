@@ -1,0 +1,11 @@
+Bugfix: Limit number of key files tested while opening a repository
+
+Previously, restic tested the password against every key in the repository
+when opening a repository. The more keys there were in the repository, the
+slower this operation became.
+
+Restic now tests the password against up to 20 key files in the repository.
+Alternatively, you can use the `--key-hint=<key ID>` option to specify a
+specific key file to use instead.
+
+https://github.com/restic/restic/pull/3776

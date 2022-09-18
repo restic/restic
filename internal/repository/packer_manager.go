@@ -34,19 +34,19 @@ type packerManager struct {
 	key     *crypto.Key
 	queueFn func(ctx context.Context, t restic.BlobType, p *Packer) error
 
-	pm     sync.Mutex
-	packer *Packer
+	pm       sync.Mutex
+	packer   *Packer
+	packSize uint
 }
-
-const minPackSize = 4 * 1024 * 1024
 
 // newPackerManager returns an new packer manager which writes temporary files
 // to a temporary directory
-func newPackerManager(key *crypto.Key, tpe restic.BlobType, queueFn func(ctx context.Context, t restic.BlobType, p *Packer) error) *packerManager {
+func newPackerManager(key *crypto.Key, tpe restic.BlobType, packSize uint, queueFn func(ctx context.Context, t restic.BlobType, p *Packer) error) *packerManager {
 	return &packerManager{
-		tpe:     tpe,
-		key:     key,
-		queueFn: queueFn,
+		tpe:      tpe,
+		key:      key,
+		queueFn:  queueFn,
+		packSize: packSize,
 	}
 }
 
@@ -87,8 +87,8 @@ func (r *packerManager) SaveBlob(ctx context.Context, t restic.BlobType, id rest
 		return 0, err
 	}
 
-	// if the pack is not full enough, put back to the list
-	if packer.Size() < minPackSize {
+	// if the pack and header is not full enough, put back to the list
+	if packer.Size() < r.packSize && !packer.HeaderFull() {
 		debug.Log("pack is not full enough (%d bytes)", packer.Size())
 		return size, nil
 	}

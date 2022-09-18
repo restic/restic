@@ -52,9 +52,7 @@ type ForgetOptions struct {
 	WithinYearly  restic.Duration
 	KeepTags      restic.TagLists
 
-	Hosts   []string
-	Tags    restic.TagLists
-	Paths   []string
+	snapshotFilterOptions
 	Compact bool
 
 	// Grouping
@@ -81,9 +79,9 @@ func init() {
 	f.VarP(&forgetOptions.WithinWeekly, "keep-within-weekly", "", "keep weekly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
 	f.VarP(&forgetOptions.WithinMonthly, "keep-within-monthly", "", "keep monthly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
 	f.VarP(&forgetOptions.WithinYearly, "keep-within-yearly", "", "keep yearly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
-
 	f.Var(&forgetOptions.KeepTags, "keep-tag", "keep snapshots with this `taglist` (can be specified multiple times)")
-	f.StringArrayVar(&forgetOptions.Hosts, "host", nil, "only consider snapshots with the given `host` (can be specified multiple times)")
+
+	initMultiSnapshotFilterOptions(f, &forgetOptions.snapshotFilterOptions, false)
 	f.StringArrayVar(&forgetOptions.Hosts, "hostname", nil, "only consider snapshots with the given `hostname` (can be specified multiple times)")
 	err := f.MarkDeprecated("hostname", "use --host")
 	if err != nil {
@@ -91,9 +89,6 @@ func init() {
 		panic(err)
 	}
 
-	f.Var(&forgetOptions.Tags, "tag", "only consider snapshots which include this `taglist` in the format `tag[,tag,...]` (can be specified multiple times)")
-
-	f.StringArrayVar(&forgetOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` (can be specified multiple times)")
 	f.BoolVarP(&forgetOptions.Compact, "compact", "c", false, "use compact output format")
 
 	f.StringVarP(&forgetOptions.GroupBy, "group-by", "g", "host,paths", "`group` snapshots by host, paths and/or tags, separated by comma (disable grouping with '')")

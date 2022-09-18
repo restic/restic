@@ -1,8 +1,0 @@
-Bugfix: `stats` fix restore size calculation for multiple snapshots
-
-Since restic 0.10.0 the restore size calculated by the `stats` command for
-multiple snapshots was too low. The hardlink detection was accidentally applied
-across multiple snapshots and thus ignored many files. This has been fixed.
-
-https://github.com/restic/restic/issues/3736
-https://github.com/restic/restic/pull/3740

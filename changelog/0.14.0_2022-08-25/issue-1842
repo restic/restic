@@ -1,0 +1,8 @@
+Change: Support debug log creation in release builds
+
+Creating a debug log was only possible in debug builds which required users to
+manually build restic. We changed the release builds to allow creating debug
+logs by simply setting the environment variable `DEBUG_LOG=logname.log`.
+
+https://github.com/restic/restic/issues/1842
+https://github.com/restic/restic/pull/3826

@@ -41,10 +41,8 @@ type RestoreOptions struct {
 	Include            []string
 	InsensitiveInclude []string
 	Target             string
-	Hosts              []string
-	Paths              []string
-	Tags               restic.TagLists
-	Verify             bool
+	snapshotFilterOptions
+	Verify bool
 }
 
 var restoreOptions RestoreOptions
@@ -59,9 +57,7 @@ func init() {
 	flags.StringArrayVar(&restoreOptions.InsensitiveInclude, "iinclude", nil, "same as `--include` but ignores the casing of filenames")
 	flags.StringVarP(&restoreOptions.Target, "target", "t", "", "directory to extract data to")
 
-	flags.StringArrayVarP(&restoreOptions.Hosts, "host", "H", nil, `only consider snapshots for this host when the snapshot ID is "latest" (can be specified multiple times)`)
-	flags.Var(&restoreOptions.Tags, "tag", "only consider snapshots which include this `taglist` for snapshot ID \"latest\"")
-	flags.StringArrayVar(&restoreOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` for snapshot ID \"latest\"")
+	initSingleSnapshotFilterOptions(flags, &restoreOptions.snapshotFilterOptions)
 	flags.BoolVar(&restoreOptions.Verify, "verify", false, "verify restored files content")
 }
 
@@ -72,23 +68,23 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 
 	// Validate provided patterns
 	if len(opts.Exclude) > 0 {
-		if valid, invalidPatterns := filter.ValidatePatterns(opts.Exclude); !valid {
-			return errors.Fatalf("--exclude: invalid pattern(s) provided:\n%s", strings.Join(invalidPatterns, "\n"))
+		if err := filter.ValidatePatterns(opts.Exclude); err != nil {
+			return errors.Fatalf("--exclude: %s", err)
 		}
 	}
 	if len(opts.InsensitiveExclude) > 0 {
-		if valid, invalidPatterns := filter.ValidatePatterns(opts.InsensitiveExclude); !valid {
-			return errors.Fatalf("--iexclude: invalid pattern(s) provided:\n%s", strings.Join(invalidPatterns, "\n"))
+		if err := filter.ValidatePatterns(opts.InsensitiveExclude); err != nil {
+			return errors.Fatalf("--iexclude: %s", err)
 		}
 	}
 	if len(opts.Include) > 0 {
-		if valid, invalidPatterns := filter.ValidatePatterns(opts.Include); !valid {
-			return errors.Fatalf("--include: invalid pattern(s) provided:\n%s", strings.Join(invalidPatterns, "\n"))
+		if err := filter.ValidatePatterns(opts.Include); err != nil {
+			return errors.Fatalf("--include: %s", err)
 		}
 	}
 	if len(opts.InsensitiveInclude) > 0 {
-		if valid, invalidPatterns := filter.ValidatePatterns(opts.InsensitiveInclude); !valid {
-			return errors.Fatalf("--iinclude: invalid pattern(s) provided:\n%s", strings.Join(invalidPatterns, "\n"))
+		if err := filter.ValidatePatterns(opts.InsensitiveInclude); err != nil {
+			return errors.Fatalf("--iinclude: %s", err)
 		}
 	}
 

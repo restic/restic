@@ -1,0 +1,10 @@
+Enhancement: Improve handling of temporary files on Windows
+
+In some cases restic failed to delete temporary files, causing the current
+command to fail. This has now been fixed by ensuring that Windows automatically
+deletes the file. In addition, temporary files are only written to disk when
+necessary, reducing disk writes.
+
+https://github.com/restic/restic/issues/3465
+https://github.com/restic/restic/issues/1551
+https://github.com/restic/restic/pull/3610

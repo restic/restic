@@ -56,10 +56,7 @@ type StatsOptions struct {
 	// the mode of counting to perform (see consts for available modes)
 	countMode string
 
-	// filter snapshots by, if given by user
-	Hosts []string
-	Tags  restic.TagLists
-	Paths []string
+	snapshotFilterOptions
 }
 
 var statsOptions StatsOptions
@@ -68,9 +65,7 @@ func init() {
 	cmdRoot.AddCommand(cmdStats)
 	f := cmdStats.Flags()
 	f.StringVar(&statsOptions.countMode, "mode", countModeRestoreSize, "counting mode: restore-size (default), files-by-contents, blobs-per-file or raw-data")
-	f.StringArrayVarP(&statsOptions.Hosts, "host", "H", nil, "only consider snapshots with the given `host` (can be specified multiple times)")
-	f.Var(&statsOptions.Tags, "tag", "only consider snapshots which include this `taglist` in the format `tag[,tag,...]` (can be specified multiple times)")
-	f.StringArrayVar(&statsOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` (can be specified multiple times)")
+	initMultiSnapshotFilterOptions(f, &statsOptions.snapshotFilterOptions, true)
 }
 
 func runStats(gopts GlobalOptions, args []string) error {
@@ -113,7 +108,7 @@ func runStats(gopts GlobalOptions, args []string) error {
 		uniqueFiles:    make(map[fileID]struct{}),
 		fileBlobs:      make(map[string]restic.IDSet),
 		blobs:          restic.NewBlobSet(),
-		snapshotsCount: 0,
+		SnapshotsCount: 0,
 	}
 
 	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, statsOptions.Hosts, statsOptions.Tags, statsOptions.Paths, args) {
@@ -148,7 +143,7 @@ func runStats(gopts GlobalOptions, args []string) error {
 	}
 
 	Printf("Stats in %s mode:\n", statsOptions.countMode)
-	Printf("Snapshots processed:   %d\n", stats.snapshotsCount)
+	Printf("Snapshots processed:   %d\n", stats.SnapshotsCount)
 
 	if stats.TotalBlobCount > 0 {
 		Printf("   Total Blob Count:   %d\n", stats.TotalBlobCount)
@@ -166,7 +161,7 @@ func statsWalkSnapshot(ctx context.Context, snapshot *restic.Snapshot, repo rest
 		return fmt.Errorf("snapshot %s has nil tree", snapshot.ID().Str())
 	}
 
-	stats.snapshotsCount++
+	stats.SnapshotsCount++
 
 	if statsOptions.countMode == countModeRawData {
 		// count just the sizes of unique blobs; we don't need to walk the tree
@@ -285,6 +280,8 @@ type statsContainer struct {
 	TotalSize      uint64 `json:"total_size"`
 	TotalFileCount uint64 `json:"total_file_count"`
 	TotalBlobCount uint64 `json:"total_blob_count,omitempty"`
+	// holds count of all considered snapshots
+	SnapshotsCount int `json:"snapshots_count"`
 
 	// uniqueFiles marks visited files according to their
 	// contents (hashed sequence of content blob IDs)
@@ -297,9 +294,6 @@ type statsContainer struct {
 	// blobs is used to count individual unique blobs,
 	// independent of references to files
 	blobs restic.BlobSet
-
-	// holds count of all considered snapshots
-	snapshotsCount int
 }
 
 // fileID is a 256-bit hash that distinguishes unique files.

@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 	"path"
+	"sync"
+	"time"
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/sema"
@@ -27,16 +29,43 @@ type b2Backend struct {
 	sem sema.Semaphore
 }
 
-const defaultListMaxItems = 1000
+// Billing happens in 1000 item granlarity, but we are more interested in reducing the number of network round trips
+const defaultListMaxItems = 10 * 1000
 
 // ensure statically that *b2Backend implements restic.Backend.
 var _ restic.Backend = &b2Backend{}
 
-func newClient(ctx context.Context, cfg Config, rt http.RoundTripper) (*b2.Client, error) {
-	opts := []b2.ClientOption{b2.Transport(rt)}
+type sniffingRoundTripper struct {
+	sync.Mutex
+	lastErr error
+	http.RoundTripper
+}
 
-	c, err := b2.NewClient(ctx, cfg.AccountID, cfg.Key.Unwrap(), opts...)
+func (s *sniffingRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	res, err := s.RoundTripper.RoundTrip(req)
 	if err != nil {
+		s.Lock()
+		s.lastErr = err
+		s.Unlock()
+	}
+	return res, err
+}
+
+func newClient(ctx context.Context, cfg Config, rt http.RoundTripper) (*b2.Client, error) {
+	sniffer := &sniffingRoundTripper{RoundTripper: rt}
+	opts := []b2.ClientOption{b2.Transport(sniffer)}
+
+	// if the connection B2 fails, this can cause the client to hang
+	// cancel the connection after a minute to at least provide some feedback to the user
+	ctx, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
+	c, err := b2.NewClient(ctx, cfg.AccountID, cfg.Key.Unwrap(), opts...)
+	if err == context.DeadlineExceeded {
+		if sniffer.lastErr != nil {
+			return nil, sniffer.lastErr
+		}
+		return nil, errors.New("connection to B2 failed")
+	} else if err != nil {
 		return nil, errors.Wrap(err, "b2.NewClient")
 	}
 	return c, nil
@@ -274,14 +303,22 @@ func (be *b2Backend) Remove(ctx context.Context, h restic.Handle) error {
 	be.sem.GetToken()
 	defer be.sem.ReleaseToken()
 
-	obj := be.bucket.Object(be.Filename(h))
-	err := obj.Delete(ctx)
-	// consider a file as removed if b2 informs us that it does not exist
-	if b2.IsNotExist(err) {
-		return nil
+	// the retry backend will also repeat the remove method up to 10 times
+	for i := 0; i < 3; i++ {
+		obj := be.bucket.Object(be.Filename(h))
+		err := obj.Delete(ctx)
+		if err == nil {
+			// keep deleting until we are sure that no leftover file versions exist
+			continue
+		}
+		// consider a file as removed if b2 informs us that it does not exist
+		if b2.IsNotExist(err) {
+			return nil
+		}
+		return errors.Wrap(err, "Delete")
 	}
 
-	return errors.Wrap(err, "Delete")
+	return errors.New("failed to delete all file versions")
 }
 
 type semLocker struct {

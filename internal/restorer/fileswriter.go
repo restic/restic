@@ -12,7 +12,7 @@ import (
 // multiple files can be written to concurrently.
 // multiple blobs can be concurrently written to the same file.
 // TODO I am not 100% convinced this is necessary, i.e. it may be okay
-//      to use multiple os.File to write to the same target file
+// to use multiple os.File to write to the same target file
 type filesWriter struct {
 	buckets []filesWriterBucket
 }

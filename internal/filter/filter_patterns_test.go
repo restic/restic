@@ -8,7 +8,6 @@
 package filter_test
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/restic/restic/internal/filter"
@@ -18,11 +17,15 @@ import (
 func TestValidPatterns(t *testing.T) {
 	// Test invalid patterns are detected and returned
 	t.Run("detect-invalid-patterns", func(t *testing.T) {
-		allValid, invalidPatterns := filter.ValidatePatterns([]string{"*.foo", "*[._]log[.-][0-9]", "!*[._]log[.-][0-9]"})
+		err := filter.ValidatePatterns([]string{"*.foo", "*[._]log[.-][0-9]", "!*[._]log[.-][0-9]"})
 
-		rtest.Assert(t, allValid == false, "Expected invalid patterns to be detected")
+		rtest.Assert(t, err != nil, "Expected invalid patterns to be detected")
 
-		rtest.Equals(t, invalidPatterns, []string{"*[._]log[.-][0-9]", "!*[._]log[.-][0-9]"})
+		if ip, ok := err.(*filter.InvalidPatternError); ok {
+			rtest.Equals(t, ip.InvalidPatterns, []string{"*[._]log[.-][0-9]", "!*[._]log[.-][0-9]"})
+		} else {
+			t.Errorf("wrong error type %v", err)
+		}
 	})
 
 	// Test all patterns defined in matchTests are valid
@@ -33,10 +36,10 @@ func TestValidPatterns(t *testing.T) {
 	}
 
 	t.Run("validate-patterns", func(t *testing.T) {
-		allValid, invalidPatterns := filter.ValidatePatterns(patterns)
+		err := filter.ValidatePatterns(patterns)
 
-		if !allValid {
-			t.Errorf("Found invalid pattern(s):\n%s", strings.Join(invalidPatterns, "\n"))
+		if err != nil {
+			t.Error(err)
 		}
 	})
 
@@ -48,10 +51,10 @@ func TestValidPatterns(t *testing.T) {
 	}
 
 	t.Run("validate-child-patterns", func(t *testing.T) {
-		allValid, invalidPatterns := filter.ValidatePatterns(childPatterns)
+		err := filter.ValidatePatterns(childPatterns)
 
-		if !allValid {
-			t.Errorf("Found invalid child pattern(s):\n%s", strings.Join(invalidPatterns, "\n"))
+		if err != nil {
+			t.Error(err)
 		}
 	})
 }

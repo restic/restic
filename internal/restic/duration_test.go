@@ -63,24 +63,34 @@ func TestParseDuration(t *testing.T) {
 		input  string
 		d      Duration
 		output string
+		err    bool
 	}{
-		{"9h", Duration{Hours: 9}, "9h"},
-		{"3d", Duration{Days: 3}, "3d"},
-		{"4d2h", Duration{Days: 4, Hours: 2}, "4d2h"},
-		{"7m5d", Duration{Months: 7, Days: 5}, "7m5d"},
-		{"6m4d8h", Duration{Months: 6, Days: 4, Hours: 8}, "6m4d8h"},
-		{"5d7m", Duration{Months: 7, Days: 5}, "7m5d"},
-		{"4h3d9m", Duration{Months: 9, Days: 3, Hours: 4}, "9m3d4h"},
-		{"-7m5d", Duration{Months: -7, Days: 5}, "-7m5d"},
-		{"1y4m-5d-3h", Duration{Years: 1, Months: 4, Days: -5, Hours: -3}, "1y4m-5d-3h"},
-		{"2y7m-5d", Duration{Years: 2, Months: 7, Days: -5}, "2y7m-5d"},
+		{input: "9h", d: Duration{Hours: 9}, output: "9h"},
+		{input: "3d", d: Duration{Days: 3}, output: "3d"},
+		{input: "4d2h", d: Duration{Days: 4, Hours: 2}, output: "4d2h"},
+		{input: "7m5d", d: Duration{Months: 7, Days: 5}, output: "7m5d"},
+		{input: "6m4d8h", d: Duration{Months: 6, Days: 4, Hours: 8}, output: "6m4d8h"},
+		{input: "5d7m", d: Duration{Months: 7, Days: 5}, output: "7m5d"},
+		{input: "4h3d9m", d: Duration{Months: 9, Days: 3, Hours: 4}, output: "9m3d4h"},
+		{input: "-7m5d", d: Duration{Months: -7, Days: 5}, output: "-7m5d"},
+		{input: "1y4m-5d-3h", d: Duration{Years: 1, Months: 4, Days: -5, Hours: -3}, output: "1y4m-5d-3h"},
+		{input: "2y7m-5d", d: Duration{Years: 2, Months: 7, Days: -5}, output: "2y7m-5d"},
+		{input: "2w", err: true},
+		{input: "1y4m3w1d", err: true},
+		{input: "s", err: true},
 	}
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
 			d, err := ParseDuration(test.input)
-			if err != nil {
-				t.Fatal(err)
+			if test.err {
+				if err == nil {
+					t.Fatalf("Missing error for %v", test.input)
+				}
+			} else {
+				if err != nil {
+					t.Fatal(err)
+				}
 			}
 
 			if !cmp.Equal(d, test.d) {

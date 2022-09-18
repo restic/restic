@@ -25,6 +25,7 @@ type Repository interface {
 	LookupBlobSize(ID, BlobType) (uint, bool)
 
 	Config() Config
+	PackSize() uint
 
 	// List calls the function fn for each file of type t in the repository.
 	// When an error is returned by fn, processing stops and List() returns the

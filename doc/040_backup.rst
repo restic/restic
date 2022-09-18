@@ -552,12 +552,15 @@ environment variables. The following lists these environment variables:
     RESTIC_PASSWORD_COMMAND             Command printing the password for the repository to stdout
     RESTIC_KEY_HINT                     ID of key to try decrypting first, before other keys
     RESTIC_CACHE_DIR                    Location of the cache directory
+    RESTIC_COMPRESSION                  Compression mode (only available for repository format version 2)
     RESTIC_PROGRESS_FPS                 Frames per second by which the progress bar is updated
+    RESTIC_PACK_SIZE                    Target size for pack files
 
     TMPDIR                              Location for temporary files
 
     AWS_ACCESS_KEY_ID                   Amazon S3 access key ID
     AWS_SECRET_ACCESS_KEY               Amazon S3 secret access key
+    AWS_SESSION_TOKEN                   Amazon S3 temporary session token
     AWS_DEFAULT_REGION                  Amazon S3 default region
     AWS_PROFILE                         Amazon credentials profile (alternative to specifying key and region)
     AWS_SHARED_CREDENTIALS_FILE         Location of the AWS CLI shared credentials file (default: ~/.aws/credentials)

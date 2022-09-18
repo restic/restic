@@ -1,0 +1,18 @@
+Enhancement: Adaptive IO concurrency based on backend connections
+
+Many commands used hard-coded limits for the number of concurrent operations.
+This prevented speed improvements by increasing the number of connections used
+by a backend.
+
+These limits have now been replaced by using the configured number of backend
+connections instead, which can be controlled using the
+`-o <backend-name>.connections=5` option. Commands will then automatically
+scale their parallelism accordingly.
+
+To limit the number of CPU cores used by restic, you can set the environment
+variable `GOMAXPROCS` accordingly. For example to use a single CPU core, use
+`GOMAXPROCS=1`.
+
+https://github.com/restic/restic/issues/2162
+https://github.com/restic/restic/issues/1467
+https://github.com/restic/restic/pull/3611

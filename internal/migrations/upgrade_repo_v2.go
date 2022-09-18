@@ -45,9 +45,13 @@ func (*UpgradeRepoV2) Desc() string {
 	return "upgrade a repository to version 2"
 }
 
-func (*UpgradeRepoV2) Check(ctx context.Context, repo restic.Repository) (bool, error) {
+func (*UpgradeRepoV2) Check(ctx context.Context, repo restic.Repository) (bool, string, error) {
 	isV1 := repo.Config().Version == 1
-	return isV1, nil
+	reason := ""
+	if !isV1 {
+		reason = fmt.Sprintf("repository is already upgraded to version %v", repo.Config().Version)
+	}
+	return isV1, reason, nil
 }
 
 func (*UpgradeRepoV2) RepoCheck() bool {

@@ -31,7 +31,7 @@ func min(a, b int) int {
 }
 
 func fillPacks(t testing.TB, rnd *rand.Rand, pm *packerManager, buf []byte) (bytes int) {
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 102; i++ {
 		l := rnd.Intn(maxBlobSize)
 		id := randomID(rnd)
 		buf = buf[:l]
@@ -70,7 +70,7 @@ func testPackerManager(t testing.TB) int64 {
 	rnd := rand.New(rand.NewSource(randomSeed))
 
 	savedBytes := int(0)
-	pm := newPackerManager(crypto.NewRandomKey(), restic.DataBlob, func(ctx context.Context, tp restic.BlobType, p *Packer) error {
+	pm := newPackerManager(crypto.NewRandomKey(), restic.DataBlob, DefaultPackSize, func(ctx context.Context, tp restic.BlobType, p *Packer) error {
 		err := p.Finalize()
 		if err != nil {
 			return err
@@ -104,7 +104,7 @@ func BenchmarkPackerManager(t *testing.B) {
 
 	for i := 0; i < t.N; i++ {
 		rnd.Seed(randomSeed)
-		pm := newPackerManager(crypto.NewRandomKey(), restic.DataBlob, func(ctx context.Context, t restic.BlobType, p *Packer) error {
+		pm := newPackerManager(crypto.NewRandomKey(), restic.DataBlob, DefaultPackSize, func(ctx context.Context, t restic.BlobType, p *Packer) error {
 			return nil
 		})
 		fillPacks(t, rnd, pm, blobBuf)

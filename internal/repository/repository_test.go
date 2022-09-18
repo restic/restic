@@ -455,17 +455,19 @@ func testStreamPack(t *testing.T, version uint) {
 	}
 
 	blobSizes := []int{
+		5522811,
 		10,
 		5231,
 		18812,
 		123123,
+		13522811,
 		12301,
 		892242,
 		28616,
 		13351,
 		252287,
 		188883,
-		2522811,
+		3522811,
 		18883,
 	}
 
@@ -481,6 +483,7 @@ func testStreamPack(t *testing.T, version uint) {
 
 	packfileBlobs, packfile := buildPackfileWithoutHeader(t, blobSizes, &key, compress)
 
+	loadCalls := 0
 	load := func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
 		data := packfile
 
@@ -495,6 +498,7 @@ func testStreamPack(t *testing.T, version uint) {
 		}
 
 		data = data[:length]
+		loadCalls++
 
 		return fn(bytes.NewReader(data))
 
@@ -504,19 +508,20 @@ func testStreamPack(t *testing.T, version uint) {
 	t.Run("regular", func(t *testing.T) {
 		tests := []struct {
 			blobs []restic.Blob
+			calls int
 		}{
-			{packfileBlobs[1:2]},
-			{packfileBlobs[2:5]},
-			{packfileBlobs[2:8]},
+			{packfileBlobs[1:2], 1},
+			{packfileBlobs[2:5], 1},
+			{packfileBlobs[2:8], 1},
 			{[]restic.Blob{
 				packfileBlobs[0],
-				packfileBlobs[8],
 				packfileBlobs[4],
-			}},
+				packfileBlobs[2],
+			}, 1},
 			{[]restic.Blob{
 				packfileBlobs[0],
 				packfileBlobs[len(packfileBlobs)-1],
-			}},
+			}, 2},
 		}
 
 		for _, test := range tests {
@@ -542,6 +547,7 @@ func testStreamPack(t *testing.T, version uint) {
 					wantBlobs[blob.ID] = 1
 				}
 
+				loadCalls = 0
 				err = repository.StreamPack(ctx, load, &key, restic.ID{}, test.blobs, handleBlob)
 				if err != nil {
 					t.Fatal(err)
@@ -550,6 +556,7 @@ func testStreamPack(t *testing.T, version uint) {
 				if !cmp.Equal(wantBlobs, gotBlobs) {
 					t.Fatal(cmp.Diff(wantBlobs, gotBlobs))
 				}
+				rtest.Equals(t, test.calls, loadCalls)
 			})
 		}
 	})

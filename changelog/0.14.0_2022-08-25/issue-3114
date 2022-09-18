@@ -1,0 +1,12 @@
+Enhancement: Optimize handling of duplicate blobs in `prune`
+
+Restic `prune` always used to repack all data files containing duplicate
+blobs. This effectively removed all duplicates during prune. However, as a
+consequence all these data files were repacked even if the unused repository
+space threshold could be reached with less work.
+
+This is now changed and `prune` works nice and fast even when there are lots
+of duplicate blobs.
+
+https://github.com/restic/restic/issues/3114
+https://github.com/restic/restic/pull/3290

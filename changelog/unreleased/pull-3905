@@ -1,0 +1,6 @@
+Enhancement: Improve speed of parent snapshot searching for `backup` command
+
+Backing up a large number of files using `--files-from-verbatim` or `--files-from-raw`
+options could require a long time to find the parent snapshot. This has been improved.
+
+https://github.com/restic/restic/pull/3905

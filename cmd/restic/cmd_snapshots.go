@@ -32,9 +32,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 // SnapshotOptions bundles all options for the snapshots command.
 type SnapshotOptions struct {
-	Hosts   []string
-	Tags    restic.TagLists
-	Paths   []string
+	snapshotFilterOptions
 	Compact bool
 	Last    bool // This option should be removed in favour of Latest.
 	Latest  int
@@ -47,9 +45,7 @@ func init() {
 	cmdRoot.AddCommand(cmdSnapshots)
 
 	f := cmdSnapshots.Flags()
-	f.StringArrayVarP(&snapshotOptions.Hosts, "host", "H", nil, "only consider snapshots for this `host` (can be specified multiple times)")
-	f.Var(&snapshotOptions.Tags, "tag", "only consider snapshots which include this `taglist` in the format `tag[,tag,...]` (can be specified multiple times)")
-	f.StringArrayVar(&snapshotOptions.Paths, "path", nil, "only consider snapshots for this `path` (can be specified multiple times)")
+	initMultiSnapshotFilterOptions(f, &snapshotOptions.snapshotFilterOptions, true)
 	f.BoolVarP(&snapshotOptions.Compact, "compact", "c", false, "use compact output format")
 	f.BoolVar(&snapshotOptions.Last, "last", false, "only show the last snapshot for each host and path")
 	err := f.MarkDeprecated("last", "use --latest 1")

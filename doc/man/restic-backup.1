@@ -3,12 +3,12 @@
 
 .SH NAME
 .PP
-restic\-backup \- Create a new backup of files and/or directories
+restic-backup - Create a new backup of files and/or directories
 
 
 .SH SYNOPSIS
 .PP
-\fBrestic backup [flags] FILE/DIR [FILE/DIR] ...\fP
+\fBrestic backup [flags] [FILE/DIR] ...\fP
 
 
 .SH DESCRIPTION
@@ -26,170 +26,178 @@ Exit status is 3 if some source data could not be read (incomplete snapshot crea
 
 .SH OPTIONS
 .PP
-\fB\-n\fP, \fB\-\-dry\-run\fP[=false]
+\fB-n\fP, \fB--dry-run\fP[=false]
 	do not upload or write any data, just show what would be done
 
 .PP
-\fB\-e\fP, \fB\-\-exclude\fP=[]
+\fB-e\fP, \fB--exclude\fP=[]
 	exclude a \fB\fCpattern\fR (can be specified multiple times)
 
 .PP
-\fB\-\-exclude\-caches\fP[=false]
+\fB--exclude-caches\fP[=false]
 	excludes cache directories that are marked with a CACHEDIR.TAG file. See https://bford.info/cachedir/ for the Cache Directory Tagging Standard
 
 .PP
-\fB\-\-exclude\-file\fP=[]
+\fB--exclude-file\fP=[]
 	read exclude patterns from a \fB\fCfile\fR (can be specified multiple times)
 
 .PP
-\fB\-\-exclude\-if\-present\fP=[]
+\fB--exclude-if-present\fP=[]
 	takes \fB\fCfilename[:header]\fR, exclude contents of directories containing filename (except filename itself) if header of that file is as provided (can be specified multiple times)
 
 .PP
-\fB\-\-exclude\-larger\-than\fP=""
+\fB--exclude-larger-than\fP=""
 	max \fB\fCsize\fR of the files to be backed up (allowed suffixes: k/K, m/M, g/G, t/T)
 
 .PP
-\fB\-\-files\-from\fP=[]
+\fB--files-from\fP=[]
 	read the files to backup from \fB\fCfile\fR (can be combined with file args; can be specified multiple times)
 
 .PP
-\fB\-\-files\-from\-raw\fP=[]
+\fB--files-from-raw\fP=[]
 	read the files to backup from \fB\fCfile\fR (can be combined with file args; can be specified multiple times)
 
 .PP
-\fB\-\-files\-from\-verbatim\fP=[]
+\fB--files-from-verbatim\fP=[]
 	read the files to backup from \fB\fCfile\fR (can be combined with file args; can be specified multiple times)
 
 .PP
-\fB\-f\fP, \fB\-\-force\fP[=false]
-	force re\-reading the target files/directories (overrides the "parent" flag)
+\fB-f\fP, \fB--force\fP[=false]
+	force re-reading the target files/directories (overrides the "parent" flag)
 
 .PP
-\fB\-h\fP, \fB\-\-help\fP[=false]
+\fB-h\fP, \fB--help\fP[=false]
 	help for backup
 
 .PP
-\fB\-H\fP, \fB\-\-host\fP=""
+\fB-H\fP, \fB--host\fP=""
 	set the \fB\fChostname\fR for the snapshot manually. To prevent an expensive rescan use the "parent" flag
 
 .PP
-\fB\-\-iexclude\fP=[]
-	same as \-\-exclude \fB\fCpattern\fR but ignores the casing of filenames
+\fB--iexclude\fP=[]
+	same as --exclude \fB\fCpattern\fR but ignores the casing of filenames
 
 .PP
-\fB\-\-iexclude\-file\fP=[]
-	same as \-\-exclude\-file but ignores casing of \fB\fCfile\fRnames in patterns
+\fB--iexclude-file\fP=[]
+	same as --exclude-file but ignores casing of \fB\fCfile\fRnames in patterns
 
 .PP
-\fB\-\-ignore\-ctime\fP[=false]
+\fB--ignore-ctime\fP[=false]
 	ignore ctime changes when checking for modified files
 
 .PP
-\fB\-\-ignore\-inode\fP[=false]
+\fB--ignore-inode\fP[=false]
 	ignore inode number changes when checking for modified files
 
 .PP
-\fB\-x\fP, \fB\-\-one\-file\-system\fP[=false]
+\fB-x\fP, \fB--one-file-system\fP[=false]
 	exclude other file systems, don't cross filesystem boundaries and subvolumes
 
 .PP
-\fB\-\-parent\fP=""
-	use this parent \fB\fCsnapshot\fR (default: last snapshot in the repo that has the same target files/directories, and is not newer than the snapshot time)
+\fB--parent\fP=""
+	use this parent \fB\fCsnapshot\fR (default: last snapshot in the repository that has the same target files/directories, and is not newer than the snapshot time)
 
 .PP
-\fB\-\-stdin\fP[=false]
+\fB--stdin\fP[=false]
 	read backup from stdin
 
 .PP
-\fB\-\-stdin\-filename\fP="stdin"
+\fB--stdin-filename\fP="stdin"
 	\fB\fCfilename\fR to use when reading from stdin
 
 .PP
-\fB\-\-tag\fP=[]
+\fB--tag\fP=[]
 	add \fB\fCtags\fR for the new snapshot in the format \fB\fCtag[,tag,...]\fR (can be specified multiple times)
 
 .PP
-\fB\-\-time\fP=""
-	\fB\fCtime\fR of the backup (ex. '2012\-11\-01 22:08:41') (default: now)
+\fB--time\fP=""
+	\fB\fCtime\fR of the backup (ex. '2012-11-01 22:08:41') (default: now)
 
 .PP
-\fB\-\-with\-atime\fP[=false]
+\fB--with-atime\fP[=false]
 	store the atime for all files and directories
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
 .PP
-\fB\-\-cacert\fP=[]
+\fB--cacert\fP=[]
 	\fB\fCfile\fR to load root certificates from (default: use system certificates)
 
 .PP
-\fB\-\-cache\-dir\fP=""
+\fB--cache-dir\fP=""
 	set the cache \fB\fCdirectory\fR\&. (default: use system default cache directory)
 
 .PP
-\fB\-\-cleanup\-cache\fP[=false]
+\fB--cleanup-cache\fP[=false]
 	auto remove old cache directories
 
 .PP
-\fB\-\-insecure\-tls\fP[=false]
-	skip TLS certificate verification when connecting to the repo (insecure)
+\fB--compression\fP=auto
+	compression mode (only available for repository format version 2), one of (auto|off|max)
 
 .PP
-\fB\-\-json\fP[=false]
+\fB--insecure-tls\fP[=false]
+	skip TLS certificate verification when connecting to the repository (insecure)
+
+.PP
+\fB--json\fP[=false]
 	set output mode to JSON for commands that support it
 
 .PP
-\fB\-\-key\-hint\fP=""
-	\fB\fCkey\fR ID of key to try decrypting first (default: $RESTIC\_KEY\_HINT)
+\fB--key-hint\fP=""
+	\fB\fCkey\fR ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
 
 .PP
-\fB\-\-limit\-download\fP=0
+\fB--limit-download\fP=0
 	limits downloads to a maximum rate in KiB/s. (default: unlimited)
 
 .PP
-\fB\-\-limit\-upload\fP=0
+\fB--limit-upload\fP=0
 	limits uploads to a maximum rate in KiB/s. (default: unlimited)
 
 .PP
-\fB\-\-no\-cache\fP[=false]
+\fB--no-cache\fP[=false]
 	do not use a local cache
 
 .PP
-\fB\-\-no\-lock\fP[=false]
-	do not lock the repository, this allows some operations on read\-only repositories
+\fB--no-lock\fP[=false]
+	do not lock the repository, this allows some operations on read-only repositories
 
 .PP
-\fB\-o\fP, \fB\-\-option\fP=[]
+\fB-o\fP, \fB--option\fP=[]
 	set extended option (\fB\fCkey=value\fR, can be specified multiple times)
 
 .PP
-\fB\-\-password\-command\fP=""
-	shell \fB\fCcommand\fR to obtain the repository password from (default: $RESTIC\_PASSWORD\_COMMAND)
+\fB--pack-size\fP=0
+	set target pack size in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)
 
 .PP
-\fB\-p\fP, \fB\-\-password\-file\fP=""
-	\fB\fCfile\fR to read the repository password from (default: $RESTIC\_PASSWORD\_FILE)
+\fB--password-command\fP=""
+	shell \fB\fCcommand\fR to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)
 
 .PP
-\fB\-q\fP, \fB\-\-quiet\fP[=false]
+\fB-p\fP, \fB--password-file\fP=""
+	\fB\fCfile\fR to read the repository password from (default: $RESTIC_PASSWORD_FILE)
+
+.PP
+\fB-q\fP, \fB--quiet\fP[=false]
 	do not output comprehensive progress report
 
 .PP
-\fB\-r\fP, \fB\-\-repo\fP=""
-	\fB\fCrepository\fR to backup to or restore from (default: $RESTIC\_REPOSITORY)
+\fB-r\fP, \fB--repo\fP=""
+	\fB\fCrepository\fR to backup to or restore from (default: $RESTIC_REPOSITORY)
 
 .PP
-\fB\-\-repository\-file\fP=""
-	\fB\fCfile\fR to read the repository location from (default: $RESTIC\_REPOSITORY\_FILE)
+\fB--repository-file\fP=""
+	\fB\fCfile\fR to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
 
 .PP
-\fB\-\-tls\-client\-cert\fP=""
+\fB--tls-client-cert\fP=""
 	path to a \fB\fCfile\fR containing PEM encoded TLS client certificate and private key
 
 .PP
-\fB\-v\fP, \fB\-\-verbose\fP[=0]
-	be verbose (specify multiple times or a level using \-\-verbose=\fB\fCn\fR, max level/times is 3)
+\fB-v\fP, \fB--verbose\fP[=0]
+	be verbose (specify multiple times or a level using --verbose=\fB\fCn\fR, max level/times is 3)
 
 
 .SH SEE ALSO

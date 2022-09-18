@@ -52,10 +52,13 @@ func TestRepositoryWithBackend(t testing.TB, be restic.Backend, version uint) (r
 		be, beCleanup = TestBackend(t)
 	}
 
-	repo := New(be, Options{})
+	repo, err := New(be, Options{})
+	if err != nil {
+		t.Fatalf("TestRepository(): new repo failed: %v", err)
+	}
 
 	cfg := restic.TestCreateConfig(t, TestChunkerPol, version)
-	err := repo.init(context.TODO(), test.TestPassword, cfg)
+	err = repo.init(context.TODO(), test.TestPassword, cfg)
 	if err != nil {
 		t.Fatalf("TestRepository(): initialize repo failed: %v", err)
 	}
@@ -104,7 +107,10 @@ func TestOpenLocal(t testing.TB, dir string) (r restic.Repository) {
 		t.Fatal(err)
 	}
 
-	repo := New(be, Options{})
+	repo, err := New(be, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	err = repo.SearchKey(context.TODO(), test.TestPassword, 10, "")
 	if err != nil {
 		t.Fatal(err)

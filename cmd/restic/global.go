@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -40,7 +41,7 @@ import (
 	"golang.org/x/term"
 )
 
-var version = "0.13.1-dev (compiled manually)"
+var version = "0.14.0-dev (compiled manually)"
 
 // TimeFormat is the format used for all timestamps printed by restic.
 const TimeFormat = "2006-01-02 15:04:05"
@@ -62,6 +63,7 @@ type GlobalOptions struct {
 	NoCache         bool
 	CleanupCache    bool
 	Compression     repository.CompressionMode
+	PackSize        uint
 
 	backend.TransportOptions
 	limiter.Limits
@@ -95,19 +97,19 @@ var isReadingPassword bool
 func init() {
 	var cancel context.CancelFunc
 	globalOptions.ctx, cancel = context.WithCancel(context.Background())
-	AddCleanupHandler(func() error {
+	AddCleanupHandler(func(code int) (int, error) {
 		// Must be called before the unlock cleanup handler to ensure that the latter is
 		// not blocked due to limited number of backend connections, see #1434
 		cancel()
-		return nil
+		return code, nil
 	})
 
 	f := cmdRoot.PersistentFlags()
-	f.StringVarP(&globalOptions.Repo, "repo", "r", os.Getenv("RESTIC_REPOSITORY"), "`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)")
-	f.StringVarP(&globalOptions.RepositoryFile, "repository-file", "", os.Getenv("RESTIC_REPOSITORY_FILE"), "`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)")
-	f.StringVarP(&globalOptions.PasswordFile, "password-file", "p", os.Getenv("RESTIC_PASSWORD_FILE"), "`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)")
-	f.StringVarP(&globalOptions.KeyHint, "key-hint", "", os.Getenv("RESTIC_KEY_HINT"), "`key` ID of key to try decrypting first (default: $RESTIC_KEY_HINT)")
-	f.StringVarP(&globalOptions.PasswordCommand, "password-command", "", os.Getenv("RESTIC_PASSWORD_COMMAND"), "shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)")
+	f.StringVarP(&globalOptions.Repo, "repo", "r", "", "`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)")
+	f.StringVarP(&globalOptions.RepositoryFile, "repository-file", "", "", "`file` to read the repository location from (default: $RESTIC_REPOSITORY_FILE)")
+	f.StringVarP(&globalOptions.PasswordFile, "password-file", "p", "", "`file` to read the repository password from (default: $RESTIC_PASSWORD_FILE)")
+	f.StringVarP(&globalOptions.KeyHint, "key-hint", "", "", "`key` ID of key to try decrypting first (default: $RESTIC_KEY_HINT)")
+	f.StringVarP(&globalOptions.PasswordCommand, "password-command", "", "", "shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)")
 	f.BoolVarP(&globalOptions.Quiet, "quiet", "q", false, "do not output comprehensive progress report")
 	f.CountVarP(&globalOptions.Verbose, "verbose", "v", "be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)")
 	f.BoolVar(&globalOptions.NoLock, "no-lock", false, "do not lock the repository, this allows some operations on read-only repositories")
@@ -119,11 +121,26 @@ func init() {
 	f.BoolVar(&globalOptions.InsecureTLS, "insecure-tls", false, "skip TLS certificate verification when connecting to the repository (insecure)")
 	f.BoolVar(&globalOptions.CleanupCache, "cleanup-cache", false, "auto remove old cache directories")
 	f.Var(&globalOptions.Compression, "compression", "compression mode (only available for repository format version 2), one of (auto|off|max)")
-	f.IntVar(&globalOptions.Limits.UploadKb, "limit-upload", 0, "limits uploads to a maximum rate in KiB/s. (default: unlimited)")
-	f.IntVar(&globalOptions.Limits.DownloadKb, "limit-download", 0, "limits downloads to a maximum rate in KiB/s. (default: unlimited)")
+	f.IntVar(&globalOptions.Limits.UploadKb, "limit-upload", 0, "limits uploads to a maximum `rate` in KiB/s. (default: unlimited)")
+	f.IntVar(&globalOptions.Limits.DownloadKb, "limit-download", 0, "limits downloads to a maximum `rate` in KiB/s. (default: unlimited)")
+	f.UintVar(&globalOptions.PackSize, "pack-size", 0, "set target pack `size` in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)")
 	f.StringSliceVarP(&globalOptions.Options, "option", "o", []string{}, "set extended option (`key=value`, can be specified multiple times)")
 	// Use our "generate" command instead of the cobra provided "completion" command
 	cmdRoot.CompletionOptions.DisableDefaultCmd = true
+
+	globalOptions.Repo = os.Getenv("RESTIC_REPOSITORY")
+	globalOptions.RepositoryFile = os.Getenv("RESTIC_REPOSITORY_FILE")
+	globalOptions.PasswordFile = os.Getenv("RESTIC_PASSWORD_FILE")
+	globalOptions.KeyHint = os.Getenv("RESTIC_KEY_HINT")
+	globalOptions.PasswordCommand = os.Getenv("RESTIC_PASSWORD_COMMAND")
+	comp := os.Getenv("RESTIC_COMPRESSION")
+	if comp != "" {
+		// ignore error as there's no good way to handle it
+		_ = globalOptions.Compression.Set(comp)
+	}
+	// parse target pack size from env, on error the default value will be used
+	targetPackSize, _ := strconv.ParseUint(os.Getenv("RESTIC_PACK_SIZE"), 10, 32)
+	globalOptions.PackSize = uint(targetPackSize)
 
 	restoreTerminal()
 }
@@ -182,20 +199,20 @@ func restoreTerminal() {
 		return
 	}
 
-	AddCleanupHandler(func() error {
+	AddCleanupHandler(func(code int) (int, error) {
 		// Restoring the terminal configuration while restic runs in the
 		// background, causes restic to get stopped on unix systems with
 		// a SIGTTOU signal. Thus only restore the terminal settings if
 		// they might have been modified, which is the case while reading
 		// a password.
 		if !isReadingPassword {
-			return nil
+			return code, nil
 		}
 		err := checkErrno(term.Restore(fd, state))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "unable to restore terminal state: %v\n", err)
 		}
-		return err
+		return code, err
 	})
 }
 
@@ -422,9 +439,13 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 		return nil, err
 	}
 
-	be = backend.NewRetryBackend(be, 10, func(msg string, err error, d time.Duration) {
+	report := func(msg string, err error, d time.Duration) {
 		Warnf("%v returned error, retrying after %v: %v\n", msg, d, err)
-	})
+	}
+	success := func(msg string, retries int) {
+		Warnf("%v operation successful after %d retries\n", msg, retries)
+	}
+	be = backend.NewRetryBackend(be, 10, report, success)
 
 	// wrap backend if a test specified a hook
 	if opts.backendTestHook != nil {
@@ -434,7 +455,13 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 		}
 	}
 
-	s := repository.New(be, repository.Options{Compression: opts.Compression})
+	s, err := repository.New(be, repository.Options{
+		Compression: opts.Compression,
+		PackSize:    opts.PackSize * 1024 * 1024,
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	passwordTriesLeft := 1
 	if stdinIsTerminal() && opts.password == "" {

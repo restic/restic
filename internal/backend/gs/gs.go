@@ -28,10 +28,10 @@ import (
 // Backend stores data in a GCS bucket.
 //
 // The service account used to access the bucket must have these permissions:
-//  * storage.objects.create
-//  * storage.objects.delete
-//  * storage.objects.get
-//  * storage.objects.list
+//   - storage.objects.create
+//   - storage.objects.delete
+//   - storage.objects.get
+//   - storage.objects.list
 type Backend struct {
 	gcsClient    *storage.Client
 	projectID    string

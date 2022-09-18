@@ -1,9 +1,0 @@
-Enhancement: Validate exclude patterns before backing up
-
-Exclude patterns provided via `--exclude`, `--iexclude`, `--exclude-file` or `--iexclude-file`
-previously weren't validated. As a consequence, invalid patterns resulted in all files being backed up.
-restic now validates all patterns before running the backup and aborts with a fatal error
-if an invalid pattern is detected.
-
-https://github.com/restic/restic/issues/3709
-https://github.com/restic/restic/pull/3734

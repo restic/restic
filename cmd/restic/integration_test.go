@@ -106,8 +106,10 @@ func testRunRestore(t testing.TB, opts GlobalOptions, dir string, snapshotID res
 func testRunRestoreLatest(t testing.TB, gopts GlobalOptions, dir string, paths []string, hosts []string) {
 	opts := RestoreOptions{
 		Target: dir,
-		Hosts:  hosts,
-		Paths:  paths,
+		snapshotFilterOptions: snapshotFilterOptions{
+			Hosts: hosts,
+			Paths: paths,
+		},
 	}
 
 	rtest.OK(t, runRestore(opts, gopts, []string{"latest"}))
@@ -749,14 +751,17 @@ func TestBackupTags(t *testing.T) {
 }
 
 func testRunCopy(t testing.TB, srcGopts GlobalOptions, dstGopts GlobalOptions) {
+	gopts := srcGopts
+	gopts.Repo = dstGopts.Repo
+	gopts.password = dstGopts.password
 	copyOpts := CopyOptions{
 		secondaryRepoOptions: secondaryRepoOptions{
-			Repo:     dstGopts.Repo,
-			password: dstGopts.password,
+			Repo:     srcGopts.Repo,
+			password: srcGopts.password,
 		},
 	}
 
-	rtest.OK(t, runCopy(copyOpts, srcGopts, nil))
+	rtest.OK(t, runCopy(copyOpts, gopts, nil))
 }
 
 func TestCopy(t *testing.T) {
@@ -1609,6 +1614,11 @@ func testPruneVariants(t *testing.T, unsafeNoSpaceRecovery bool) {
 	t.Run("CachableOnly"+suffix, func(t *testing.T) {
 		opts := PruneOptions{MaxUnused: "5%", RepackCachableOnly: true, unsafeRecovery: unsafeNoSpaceRecovery}
 		checkOpts := CheckOptions{ReadData: true}
+		testPrune(t, opts, checkOpts)
+	})
+	t.Run("Small", func(t *testing.T) {
+		opts := PruneOptions{MaxUnused: "unlimited", RepackSmall: true}
+		checkOpts := CheckOptions{ReadData: true, CheckUnused: true}
 		testPrune(t, opts, checkOpts)
 	})
 }

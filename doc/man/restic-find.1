@@ -3,7 +3,7 @@
 
 .SH NAME
 .PP
-restic\-find \- Find a file, a directory or restic IDs
+restic-find - Find a file, a directory or restic IDs
 
 
 .SH SYNOPSIS
@@ -20,130 +20,138 @@ It can also be used to search for restic blobs or trees for troubleshooting.
 
 .SH OPTIONS
 .PP
-\fB\-\-blob\fP[=false]
-	pattern is a blob\-ID
+\fB--blob\fP[=false]
+	pattern is a blob-ID
 
 .PP
-\fB\-h\fP, \fB\-\-help\fP[=false]
+\fB-h\fP, \fB--help\fP[=false]
 	help for find
 
 .PP
-\fB\-H\fP, \fB\-\-host\fP=[]
+\fB-H\fP, \fB--host\fP=[]
 	only consider snapshots for this \fB\fChost\fR, when no snapshot ID is given (can be specified multiple times)
 
 .PP
-\fB\-i\fP, \fB\-\-ignore\-case\fP[=false]
+\fB-i\fP, \fB--ignore-case\fP[=false]
 	ignore case for pattern
 
 .PP
-\fB\-l\fP, \fB\-\-long\fP[=false]
+\fB-l\fP, \fB--long\fP[=false]
 	use a long listing format showing size and mode
 
 .PP
-\fB\-N\fP, \fB\-\-newest\fP=""
+\fB-N\fP, \fB--newest\fP=""
 	newest modification date/time
 
 .PP
-\fB\-O\fP, \fB\-\-oldest\fP=""
+\fB-O\fP, \fB--oldest\fP=""
 	oldest modification date/time
 
 .PP
-\fB\-\-pack\fP[=false]
-	pattern is a pack\-ID
+\fB--pack\fP[=false]
+	pattern is a pack-ID
 
 .PP
-\fB\-\-path\fP=[]
-	only consider snapshots which include this (absolute) \fB\fCpath\fR, when no snapshot\-ID is given
+\fB--path\fP=[]
+	only consider snapshots which include this (absolute) \fB\fCpath\fR, when no snapshot-ID is given
 
 .PP
-\fB\-\-show\-pack\-id\fP[=false]
-	display the pack\-ID the blobs belong to (with \-\-blob or \-\-tree)
+\fB--show-pack-id\fP[=false]
+	display the pack-ID the blobs belong to (with --blob or --tree)
 
 .PP
-\fB\-s\fP, \fB\-\-snapshot\fP=[]
+\fB-s\fP, \fB--snapshot\fP=[]
 	snapshot \fB\fCid\fR to search in (can be given multiple times)
 
 .PP
-\fB\-\-tag\fP=[]
-	only consider snapshots which include this \fB\fCtaglist\fR, when no snapshot\-ID is given
+\fB--tag\fP=[]
+	only consider snapshots which include this \fB\fCtaglist\fR, when no snapshot-ID is given
 
 .PP
-\fB\-\-tree\fP[=false]
-	pattern is a tree\-ID
+\fB--tree\fP[=false]
+	pattern is a tree-ID
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
 .PP
-\fB\-\-cacert\fP=[]
+\fB--cacert\fP=[]
 	\fB\fCfile\fR to load root certificates from (default: use system certificates)
 
 .PP
-\fB\-\-cache\-dir\fP=""
+\fB--cache-dir\fP=""
 	set the cache \fB\fCdirectory\fR\&. (default: use system default cache directory)
 
 .PP
-\fB\-\-cleanup\-cache\fP[=false]
+\fB--cleanup-cache\fP[=false]
 	auto remove old cache directories
 
 .PP
-\fB\-\-insecure\-tls\fP[=false]
-	skip TLS certificate verification when connecting to the repo (insecure)
+\fB--compression\fP=auto
+	compression mode (only available for repository format version 2), one of (auto|off|max)
 
 .PP
-\fB\-\-json\fP[=false]
+\fB--insecure-tls\fP[=false]
+	skip TLS certificate verification when connecting to the repository (insecure)
+
+.PP
+\fB--json\fP[=false]
 	set output mode to JSON for commands that support it
 
 .PP
-\fB\-\-key\-hint\fP=""
-	\fB\fCkey\fR ID of key to try decrypting first (default: $RESTIC\_KEY\_HINT)
+\fB--key-hint\fP=""
+	\fB\fCkey\fR ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
 
 .PP
-\fB\-\-limit\-download\fP=0
+\fB--limit-download\fP=0
 	limits downloads to a maximum rate in KiB/s. (default: unlimited)
 
 .PP
-\fB\-\-limit\-upload\fP=0
+\fB--limit-upload\fP=0
 	limits uploads to a maximum rate in KiB/s. (default: unlimited)
 
 .PP
-\fB\-\-no\-cache\fP[=false]
+\fB--no-cache\fP[=false]
 	do not use a local cache
 
 .PP
-\fB\-\-no\-lock\fP[=false]
-	do not lock the repository, this allows some operations on read\-only repositories
+\fB--no-lock\fP[=false]
+	do not lock the repository, this allows some operations on read-only repositories
 
 .PP
-\fB\-o\fP, \fB\-\-option\fP=[]
+\fB-o\fP, \fB--option\fP=[]
 	set extended option (\fB\fCkey=value\fR, can be specified multiple times)
 
 .PP
-\fB\-\-password\-command\fP=""
-	shell \fB\fCcommand\fR to obtain the repository password from (default: $RESTIC\_PASSWORD\_COMMAND)
+\fB--pack-size\fP=0
+	set target pack size in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)
 
 .PP
-\fB\-p\fP, \fB\-\-password\-file\fP=""
-	\fB\fCfile\fR to read the repository password from (default: $RESTIC\_PASSWORD\_FILE)
+\fB--password-command\fP=""
+	shell \fB\fCcommand\fR to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)
 
 .PP
-\fB\-q\fP, \fB\-\-quiet\fP[=false]
+\fB-p\fP, \fB--password-file\fP=""
+	\fB\fCfile\fR to read the repository password from (default: $RESTIC_PASSWORD_FILE)
+
+.PP
+\fB-q\fP, \fB--quiet\fP[=false]
 	do not output comprehensive progress report
 
 .PP
-\fB\-r\fP, \fB\-\-repo\fP=""
-	\fB\fCrepository\fR to backup to or restore from (default: $RESTIC\_REPOSITORY)
+\fB-r\fP, \fB--repo\fP=""
+	\fB\fCrepository\fR to backup to or restore from (default: $RESTIC_REPOSITORY)
 
 .PP
-\fB\-\-repository\-file\fP=""
-	\fB\fCfile\fR to read the repository location from (default: $RESTIC\_REPOSITORY\_FILE)
+\fB--repository-file\fP=""
+	\fB\fCfile\fR to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
 
 .PP
-\fB\-\-tls\-client\-cert\fP=""
+\fB--tls-client-cert\fP=""
 	path to a \fB\fCfile\fR containing PEM encoded TLS client certificate and private key
 
 .PP
-\fB\-v\fP, \fB\-\-verbose\fP[=0]
-	be verbose (specify multiple times or a level using \-\-verbose=\fB\fCn\fR, max level/times is 3)
+\fB-v\fP, \fB--verbose\fP[=0]
+	be verbose (specify multiple times or a level using --verbose=\fB\fCn\fR, max level/times is 3)
 
 
 .SH EXAMPLE
@@ -152,16 +160,16 @@ It can also be used to search for restic blobs or trees for troubleshooting.
 
 .nf
 restic find config.json
-restic find \-\-json "*.yml" "*.json"
-restic find \-\-json \-\-blob 420f620f b46ebe8a ddd38656
-restic find \-\-show\-pack\-id \-\-blob 420f620f
-restic find \-\-tree 577c2bc9 f81f2e22 a62827a9
-restic find \-\-pack 025c1d06
+restic find --json "*.yml" "*.json"
+restic find --json --blob 420f620f b46ebe8a ddd38656
+restic find --show-pack-id --blob 420f620f
+restic find --tree 577c2bc9 f81f2e22 a62827a9
+restic find --pack 025c1d06
 
 EXIT STATUS
 ===========
 
-Exit status is 0 if the command was successful, and non\-zero if there was any error.
+Exit status is 0 if the command was successful, and non-zero if there was any error.
 
 
 .fi

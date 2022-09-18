@@ -1,0 +1,7 @@
+Bugfix: The `diff` command incorrectly listed some files as added
+
+There was a bug in the `diff` command, causing it to always show files in a
+removed directory as added. This has now been fixed.
+
+https://github.com/restic/restic/issues/3685
+https://github.com/restic/restic/pull/3686

@@ -160,19 +160,17 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 		debug.Log("downloading %v finished", h)
 	}
 
-	if b.Cache.Has(h) {
-		debug.Log("Load(%v, %v, %v) from cache", h, length, offset)
-		rd, err := b.Cache.load(h, length, offset)
-		if err == nil {
-			err = consumer(rd)
-			if err != nil {
-				_ = rd.Close() // ignore secondary errors
-				return err
-			}
-			return rd.Close()
+	// try loading from cache without checking that the handle is actually cached
+	rd, err := b.Cache.load(h, length, offset)
+	if err == nil {
+		err = consumer(rd)
+		if err != nil {
+			_ = rd.Close() // ignore secondary errors
+			return err
 		}
-		debug.Log("error loading %v from cache: %v", h, err)
+		return rd.Close()
 	}
+	debug.Log("error loading %v from cache: %v", h, err)
 
 	// if we don't automatically cache this file type, fall back to the backend
 	if !autoCacheTypes(h) {
@@ -181,7 +179,7 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 	}
 
 	debug.Log("auto-store %v in the cache", h)
-	err := b.cacheFile(ctx, h)
+	err = b.cacheFile(ctx, h)
 	if err == nil {
 		return b.loadFromCacheOrDelegate(ctx, h, length, offset, consumer)
 	}

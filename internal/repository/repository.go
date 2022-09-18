@@ -28,6 +28,10 @@ import (
 
 const MaxStreamBufferSize = 4 * 1024 * 1024
 
+const MinPackSize = 4 * 1024 * 1024
+const DefaultPackSize = 16 * 1024 * 1024
+const MaxPackSize = 128 * 1024 * 1024
+
 // Repository is used to access a repository in a backend.
 type Repository struct {
 	be      restic.Backend
@@ -54,6 +58,7 @@ type Repository struct {
 
 type Options struct {
 	Compression CompressionMode
+	PackSize    uint
 }
 
 // CompressionMode configures if data should be compressed.
@@ -100,14 +105,23 @@ func (c *CompressionMode) Type() string {
 }
 
 // New returns a new repository with backend be.
-func New(be restic.Backend, opts Options) *Repository {
+func New(be restic.Backend, opts Options) (*Repository, error) {
+	if opts.PackSize == 0 {
+		opts.PackSize = DefaultPackSize
+	}
+	if opts.PackSize > MaxPackSize {
+		return nil, errors.Fatalf("pack size larger than limit of %v MiB", MaxPackSize/1024/1024)
+	} else if opts.PackSize < MinPackSize {
+		return nil, errors.Fatalf("pack size smaller than minimum of %v MiB", MinPackSize/1024/1024)
+	}
+
 	repo := &Repository{
 		be:   be,
 		opts: opts,
 		idx:  NewMasterIndex(),
 	}
 
-	return repo
+	return repo, nil
 }
 
 // DisableAutoIndexUpdate deactives the automatic finalization and upload of new
@@ -127,6 +141,11 @@ func (r *Repository) setConfig(cfg restic.Config) {
 // Config returns the repository configuration.
 func (r *Repository) Config() restic.Config {
 	return r.cfg
+}
+
+// PackSize return the target size of a pack file when uploading
+func (r *Repository) PackSize() uint {
+	return r.opts.PackSize
 }
 
 // UseCache replaces the backend with the wrapped cache.
@@ -497,8 +516,8 @@ func (r *Repository) StartPackUploader(ctx context.Context, wg *errgroup.Group) 
 	innerWg, ctx := errgroup.WithContext(ctx)
 	r.packerWg = innerWg
 	r.uploader = newPackerUploader(ctx, innerWg, r, r.be.Connections())
-	r.treePM = newPackerManager(r.key, restic.TreeBlob, r.uploader.QueuePacker)
-	r.dataPM = newPackerManager(r.key, restic.DataBlob, r.uploader.QueuePacker)
+	r.treePM = newPackerManager(r.key, restic.TreeBlob, r.PackSize(), r.uploader.QueuePacker)
+	r.dataPM = newPackerManager(r.key, restic.DataBlob, r.PackSize(), r.uploader.QueuePacker)
 
 	wg.Go(func() error {
 		return innerWg.Wait()
@@ -812,6 +831,9 @@ func (r *Repository) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte
 
 type BackendLoadFn func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error
 
+// Skip sections with more than 4MB unused blobs
+const maxUnusedRange = 4 * 1024 * 1024
+
 // StreamPack loads the listed blobs from the specified pack file. The plaintext blob is passed to
 // the handleBlobFn callback or an error if decryption failed or the blob hash does not match. In
 // case of download errors handleBlobFn might be called multiple times for the same blob. If the
@@ -825,6 +847,29 @@ func StreamPack(ctx context.Context, beLoad BackendLoadFn, key *crypto.Key, pack
 	sort.Slice(blobs, func(i, j int) bool {
 		return blobs[i].Offset < blobs[j].Offset
 	})
+
+	lowerIdx := 0
+	lastPos := blobs[0].Offset
+	for i := 0; i < len(blobs); i++ {
+		if blobs[i].Offset < lastPos {
+			// don't wait for streamPackPart to fail
+			return errors.Errorf("overlapping blobs in pack %v", packID)
+		}
+		if blobs[i].Offset-lastPos > maxUnusedRange {
+			// load everything up to the skipped file section
+			err := streamPackPart(ctx, beLoad, key, packID, blobs[lowerIdx:i], handleBlobFn)
+			if err != nil {
+				return err
+			}
+			lowerIdx = i
+		}
+		lastPos = blobs[i].Offset + blobs[i].Length
+	}
+	// load remainder
+	return streamPackPart(ctx, beLoad, key, packID, blobs[lowerIdx:], handleBlobFn)
+}
+
+func streamPackPart(ctx context.Context, beLoad BackendLoadFn, key *crypto.Key, packID restic.ID, blobs []restic.Blob, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
 	h := restic.Handle{Type: restic.PackFile, Name: packID.String(), ContainedBlobType: restic.DataBlob}
 
 	dataStart := blobs[0].Offset

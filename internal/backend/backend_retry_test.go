@@ -6,7 +6,9 @@ import (
 	"io"
 	"io/ioutil"
 	"testing"
+	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/restic/restic/internal/backend/mock"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -33,7 +35,7 @@ func TestBackendSaveRetry(t *testing.T) {
 		},
 	}
 
-	retryBackend := NewRetryBackend(be, 10, nil)
+	retryBackend := NewRetryBackend(be, 10, nil, nil)
 
 	data := test.Random(23, 5*1024*1024+11241)
 	err := retryBackend.Save(context.TODO(), restic.Handle{}, restic.NewByteReader(data, be.Hasher()))
@@ -47,6 +49,36 @@ func TestBackendSaveRetry(t *testing.T) {
 
 	if !bytes.Equal(data, buf.Bytes()) {
 		t.Errorf("wrong data written to backend")
+	}
+}
+
+func TestBackendSaveRetryAtomic(t *testing.T) {
+	errcount := 0
+	calledRemove := false
+	be := &mock.Backend{
+		SaveFn: func(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+			if errcount == 0 {
+				errcount++
+				return errors.New("injected error")
+			}
+			return nil
+		},
+		RemoveFn: func(ctx context.Context, h restic.Handle) error {
+			calledRemove = true
+			return nil
+		},
+		HasAtomicReplaceFn: func() bool { return true },
+	}
+
+	retryBackend := NewRetryBackend(be, 10, nil, nil)
+
+	data := test.Random(23, 5*1024*1024+11241)
+	err := retryBackend.Save(context.TODO(), restic.Handle{}, restic.NewByteReader(data, be.Hasher()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if calledRemove {
+		t.Fatal("remove must not be called")
 	}
 }
 
@@ -71,7 +103,7 @@ func TestBackendListRetry(t *testing.T) {
 		},
 	}
 
-	retryBackend := NewRetryBackend(be, 10, nil)
+	retryBackend := NewRetryBackend(be, 10, nil, nil)
 
 	var listed []string
 	err := retryBackend.List(context.TODO(), restic.PackFile, func(fi restic.FileInfo) error {
@@ -100,7 +132,7 @@ func TestBackendListRetryErrorFn(t *testing.T) {
 		},
 	}
 
-	retryBackend := NewRetryBackend(be, 10, nil)
+	retryBackend := NewRetryBackend(be, 10, nil, nil)
 
 	var ErrTest = errors.New("test error")
 
@@ -156,7 +188,7 @@ func TestBackendListRetryErrorBackend(t *testing.T) {
 	}
 
 	const maxRetries = 2
-	retryBackend := NewRetryBackend(be, maxRetries, nil)
+	retryBackend := NewRetryBackend(be, maxRetries, nil, nil)
 
 	var listed []string
 	err := retryBackend.List(context.TODO(), restic.PackFile, func(fi restic.FileInfo) error {
@@ -225,7 +257,7 @@ func TestBackendLoadRetry(t *testing.T) {
 		return failingReader{data: data, limit: limit}, nil
 	}
 
-	retryBackend := NewRetryBackend(be, 10, nil)
+	retryBackend := NewRetryBackend(be, 10, nil, nil)
 
 	var buf []byte
 	err := retryBackend.Load(context.TODO(), restic.Handle{}, 0, 0, func(rd io.Reader) (err error) {
@@ -244,7 +276,7 @@ func assertIsCanceled(t *testing.T, err error) {
 func TestBackendCanceledContext(t *testing.T) {
 	// unimplemented mock backend functions return an error by default
 	// check that we received the expected context canceled error instead
-	retryBackend := NewRetryBackend(mock.NewBackend(), 2, nil)
+	retryBackend := NewRetryBackend(mock.NewBackend(), 2, nil, nil)
 	h := restic.Handle{Type: restic.PackFile, Name: restic.NewRandomID().String()}
 
 	// create an already canceled context
@@ -270,4 +302,57 @@ func TestBackendCanceledContext(t *testing.T) {
 	assertIsCanceled(t, err)
 
 	// don't test "Delete" as it is not used by normal code
+}
+
+func TestNotifyWithSuccessIsNotCalled(t *testing.T) {
+	operation := func() error {
+		return nil
+	}
+
+	notify := func(error, time.Duration) {
+		t.Fatal("Notify should not have been called")
+	}
+
+	success := func(retries int) {
+		t.Fatal("Success should not have been called")
+	}
+
+	err := retryNotifyErrorWithSuccess(operation, &backoff.ZeroBackOff{}, notify, success)
+	if err != nil {
+		t.Fatal("retry should not have returned an error")
+	}
+}
+
+func TestNotifyWithSuccessIsCalled(t *testing.T) {
+	operationCalled := 0
+	operation := func() error {
+		operationCalled++
+		if operationCalled <= 2 {
+			return errors.New("expected error in test")
+		}
+		return nil
+	}
+
+	notifyCalled := 0
+	notify := func(error, time.Duration) {
+		notifyCalled++
+	}
+
+	successCalled := 0
+	success := func(retries int) {
+		successCalled++
+	}
+
+	err := retryNotifyErrorWithSuccess(operation, &backoff.ZeroBackOff{}, notify, success)
+	if err != nil {
+		t.Fatal("retry should not have returned an error")
+	}
+
+	if notifyCalled != 2 {
+		t.Fatalf("Notify should have been called 2 times, but was called %d times instead", notifyCalled)
+	}
+
+	if successCalled != 1 {
+		t.Fatalf("Success should have been called only once, but was called %d times instead", successCalled)
+	}
 }

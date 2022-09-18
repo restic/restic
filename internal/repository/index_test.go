@@ -613,3 +613,37 @@ func TestMixedEachByPack(t *testing.T) {
 	}
 	rtest.Equals(t, expected, reported)
 }
+
+func TestEachByPackIgnoes(t *testing.T) {
+	idx := repository.NewIndex()
+
+	ignores := restic.NewIDSet()
+	expected := make(map[restic.ID]int)
+	// create 50 packs with one blob each
+	for i := 0; i < 50; i++ {
+		packID := restic.NewRandomID()
+		if i < 3 {
+			ignores.Insert(packID)
+		} else {
+			expected[packID] = 1
+		}
+		blobs := []restic.Blob{
+			{
+				BlobHandle: restic.BlobHandle{Type: restic.DataBlob, ID: restic.NewRandomID()},
+				Offset:     0,
+				Length:     42,
+			},
+		}
+		idx.StorePack(packID, blobs)
+	}
+	idx.Finalize()
+
+	reported := make(map[restic.ID]int)
+	for bp := range idx.EachByPack(context.TODO(), ignores) {
+		reported[bp.PackID]++
+		rtest.Equals(t, 1, len(bp.Blobs)) // correct blob count
+		b0 := bp.Blobs[0]
+		rtest.Assert(t, b0.Type == restic.DataBlob && b0.Offset == 0 && b0.Length == 42, "wrong blob", b0)
+	}
+	rtest.Equals(t, expected, reported)
+}

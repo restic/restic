@@ -17,6 +17,7 @@ type RetryBackend struct {
 	restic.Backend
 	MaxTries int
 	Report   func(string, error, time.Duration)
+	Success  func(string, int)
 }
 
 // statically ensure that RetryBackend implements restic.Backend.
@@ -24,12 +25,34 @@ var _ restic.Backend = &RetryBackend{}
 
 // NewRetryBackend wraps be with a backend that retries operations after a
 // backoff. report is called with a description and the error, if one occurred.
-func NewRetryBackend(be restic.Backend, maxTries int, report func(string, error, time.Duration)) *RetryBackend {
+// success is called with the number of retries before a successful operation
+// (it is not called if it succeeded on the first try)
+func NewRetryBackend(be restic.Backend, maxTries int, report func(string, error, time.Duration), success func(string, int)) *RetryBackend {
 	return &RetryBackend{
 		Backend:  be,
 		MaxTries: maxTries,
 		Report:   report,
+		Success:  success,
 	}
+}
+
+// retryNotifyErrorWithSuccess is an extension of backoff.RetryNotify with notification of success after an error.
+// success is NOT notified on the first run of operation (only after an error).
+func retryNotifyErrorWithSuccess(operation backoff.Operation, b backoff.BackOff, notify backoff.Notify, success func(retries int)) error {
+	if success == nil {
+		return backoff.RetryNotify(operation, b, notify)
+	}
+	retries := 0
+	operationWrapper := func() error {
+		err := operation()
+		if err != nil {
+			retries++
+		} else if retries > 0 {
+			success(retries)
+		}
+		return err
+	}
+	return backoff.RetryNotify(operationWrapper, b, notify)
 }
 
 func (be *RetryBackend) retry(ctx context.Context, msg string, f func() error) error {
@@ -43,11 +66,16 @@ func (be *RetryBackend) retry(ctx context.Context, msg string, f func() error) e
 		return ctx.Err()
 	}
 
-	err := backoff.RetryNotify(f,
+	err := retryNotifyErrorWithSuccess(f,
 		backoff.WithContext(backoff.WithMaxRetries(backoff.NewExponentialBackOff(), uint64(be.MaxTries)), ctx),
 		func(err error, d time.Duration) {
 			if be.Report != nil {
 				be.Report(msg, err, d)
+			}
+		},
+		func(retries int) {
+			if be.Success != nil {
+				be.Success(msg, retries)
 			}
 		},
 	)
@@ -68,10 +96,16 @@ func (be *RetryBackend) Save(ctx context.Context, h restic.Handle, rd restic.Rew
 			return nil
 		}
 
-		debug.Log("Save(%v) failed with error, removing file: %v", h, err)
-		rerr := be.Backend.Remove(ctx, h)
-		if rerr != nil {
-			debug.Log("Remove(%v) returned error: %v", h, err)
+		if be.Backend.HasAtomicReplace() {
+			debug.Log("Save(%v) failed with error: %v", h, err)
+			// there is no need to remove files from backends which can atomically replace files
+			// in fact if something goes wrong at the backend side the delete operation might delete the wrong instance of the file
+		} else {
+			debug.Log("Save(%v) failed with error, removing file: %v", h, err)
+			rerr := be.Backend.Remove(ctx, h)
+			if rerr != nil {
+				debug.Log("Remove(%v) returned error: %v", h, err)
+			}
 		}
 
 		// return original error

@@ -153,33 +153,33 @@
     {
       "time": "2015-10-22T10:20:30Z",
       "tree": null,
-      "paths": [
-        "path1",
-        "path2"
-      ],
-      "tags": [
-        "foo",
-        "bar"
-      ]
-    },
-    {
-      "time": "2015-10-22T10:20:30Z",
-      "tree": null,
-      "paths": null,
-      "tags": [
-        "foo",
-        "bar"
-      ]
-    },
-    {
-      "time": "2015-10-22T10:20:30Z",
-      "tree": null,
       "paths": null
     },
     {
       "time": "2015-10-22T10:20:30Z",
       "tree": null,
       "paths": null,
+      "tags": [
+        "foo",
+        "bar"
+      ]
+    },
+    {
+      "time": "2015-10-22T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo",
+        "bar"
+      ]
+    },
+    {
+      "time": "2015-10-22T10:20:30Z",
+      "tree": null,
+      "paths": [
+        "path1",
+        "path2"
+      ],
       "tags": [
         "foo",
         "bar"
@@ -695,39 +695,6 @@
       "snapshot": {
         "time": "2015-10-22T10:20:30Z",
         "tree": null,
-        "paths": [
-          "path1",
-          "path2"
-        ],
-        "tags": [
-          "foo",
-          "bar"
-        ]
-      },
-      "matches": [
-        "within 1y2m3d3h"
-      ],
-      "counters": {}
-    },
-    {
-      "snapshot": {
-        "time": "2015-10-22T10:20:30Z",
-        "tree": null,
-        "paths": null,
-        "tags": [
-          "foo",
-          "bar"
-        ]
-      },
-      "matches": [
-        "within 1y2m3d3h"
-      ],
-      "counters": {}
-    },
-    {
-      "snapshot": {
-        "time": "2015-10-22T10:20:30Z",
-        "tree": null,
         "paths": null
       },
       "matches": [
@@ -740,6 +707,39 @@
         "time": "2015-10-22T10:20:30Z",
         "tree": null,
         "paths": null,
+        "tags": [
+          "foo",
+          "bar"
+        ]
+      },
+      "matches": [
+        "within 1y2m3d3h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2015-10-22T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo",
+          "bar"
+        ]
+      },
+      "matches": [
+        "within 1y2m3d3h"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2015-10-22T10:20:30Z",
+        "tree": null,
+        "paths": [
+          "path1",
+          "path2"
+        ],
         "tags": [
           "foo",
           "bar"

@@ -1,8 +1,0 @@
-Enhancement: SFTP backend initialization is faster on slow links
-
-Restic init on an SFTP backend now sends multiple mkdir commands to the
-backend concurrently, to reduce the wait when creating a repository
-over a very slow link.
-
-https://github.com/restic/restic/issues/3837
-https://github.com/restic/restic/pull/3840

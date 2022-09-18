@@ -86,7 +86,13 @@ func runInit(opts InitOptions, gopts GlobalOptions, args []string) error {
 		return errors.Fatalf("create repository at %s failed: %v\n", location.StripPassword(gopts.Repo), err)
 	}
 
-	s := repository.New(be, repository.Options{Compression: gopts.Compression})
+	s, err := repository.New(be, repository.Options{
+		Compression: gopts.Compression,
+		PackSize:    gopts.PackSize * 1024 * 1024,
+	})
+	if err != nil {
+		return err
+	}
 
 	err = s.Init(gopts.ctx, version, gopts.password, chunkerPolynomial)
 	if err != nil {
@@ -104,7 +110,7 @@ func runInit(opts InitOptions, gopts GlobalOptions, args []string) error {
 
 func maybeReadChunkerPolynomial(opts InitOptions, gopts GlobalOptions) (*chunker.Pol, error) {
 	if opts.CopyChunkerParameters {
-		otherGopts, err := fillSecondaryGlobalOpts(opts.secondaryRepoOptions, gopts, "secondary")
+		otherGopts, _, err := fillSecondaryGlobalOpts(opts.secondaryRepoOptions, gopts, "secondary")
 		if err != nil {
 			return nil, err
 		}
@@ -118,7 +124,7 @@ func maybeReadChunkerPolynomial(opts InitOptions, gopts GlobalOptions) (*chunker
 		return &pol, nil
 	}
 
-	if opts.Repo != "" {
+	if opts.Repo != "" || opts.RepositoryFile != "" || opts.LegacyRepo != "" || opts.LegacyRepositoryFile != "" {
 		return nil, errors.Fatal("Secondary repository must only be specified when copying the chunker parameters")
 	}
 	return nil, nil

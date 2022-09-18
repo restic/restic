@@ -217,9 +217,9 @@ func (sn *Snapshot) HasTags(l []string) bool {
 }
 
 // HasTagList returns true if either
-// - the snapshot satisfies at least one TagList, so there is a TagList in l
-//   for which all tags are included in sn, or
-// - l is empty
+//   - the snapshot satisfies at least one TagList, so there is a TagList in l
+//     for which all tags are included in sn, or
+//   - l is empty
 func (sn *Snapshot) HasTagList(l []TagList) bool {
 	debug.Log("testing snapshot with tags %v against list: %v", sn.Tags, l)
 
@@ -237,19 +237,14 @@ func (sn *Snapshot) HasTagList(l []TagList) bool {
 	return false
 }
 
-func (sn *Snapshot) hasPath(path string) bool {
-	for _, snPath := range sn.Paths {
-		if path == snPath {
-			return true
-		}
-	}
-	return false
-}
-
 // HasPaths returns true if the snapshot has all of the paths.
 func (sn *Snapshot) HasPaths(paths []string) bool {
+	m := make(map[string]struct{}, len(sn.Paths))
+	for _, snPath := range sn.Paths {
+		m[snPath] = struct{}{}
+	}
 	for _, path := range paths {
-		if !sn.hasPath(path) {
+		if _, ok := m[path]; !ok {
 			return false
 		}
 	}

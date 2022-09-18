@@ -40,9 +40,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 // DumpOptions collects all options for the dump command.
 type DumpOptions struct {
-	Hosts   []string
-	Paths   []string
-	Tags    restic.TagLists
+	snapshotFilterOptions
 	Archive string
 }
 
@@ -52,9 +50,7 @@ func init() {
 	cmdRoot.AddCommand(cmdDump)
 
 	flags := cmdDump.Flags()
-	flags.StringArrayVarP(&dumpOptions.Hosts, "host", "H", nil, `only consider snapshots for this host when the snapshot ID is "latest" (can be specified multiple times)`)
-	flags.Var(&dumpOptions.Tags, "tag", "only consider snapshots which include this `taglist` for snapshot ID \"latest\"")
-	flags.StringArrayVar(&dumpOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` for snapshot ID \"latest\"")
+	initMultiSnapshotFilterOptions(flags, &dumpOptions.snapshotFilterOptions, true)
 	flags.StringVarP(&dumpOptions.Archive, "archive", "a", "tar", "set archive `format` as \"tar\" or \"zip\"")
 }
 

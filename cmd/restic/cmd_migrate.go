@@ -45,7 +45,7 @@ func checkMigrations(opts MigrateOptions, gopts GlobalOptions, repo restic.Repos
 	found := false
 
 	for _, m := range migrations.All {
-		ok, err := m.Check(ctx, repo)
+		ok, _, err := m.Check(ctx, repo)
 		if err != nil {
 			return err
 		}
@@ -57,7 +57,7 @@ func checkMigrations(opts MigrateOptions, gopts GlobalOptions, repo restic.Repos
 	}
 
 	if !found {
-		Printf("no migrations found")
+		Printf("no migrations found\n")
 	}
 
 	return nil
@@ -70,14 +70,17 @@ func applyMigrations(opts MigrateOptions, gopts GlobalOptions, repo restic.Repos
 	for _, name := range args {
 		for _, m := range migrations.All {
 			if m.Name() == name {
-				ok, err := m.Check(ctx, repo)
+				ok, reason, err := m.Check(ctx, repo)
 				if err != nil {
 					return err
 				}
 
 				if !ok {
 					if !opts.Force {
-						Warnf("migration %v cannot be applied: check failed\nIf you want to apply this migration anyway, re-run with option --force\n", m.Name())
+						if reason == "" {
+							reason = "check failed"
+						}
+						Warnf("migration %v cannot be applied: %v\nIf you want to apply this migration anyway, re-run with option --force\n", m.Name(), reason)
 						continue
 					}
 

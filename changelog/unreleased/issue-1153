@@ -1,9 +1,0 @@
-Enhancement: Support pruning even after running out of disk space
-
-When running out of disk space it was no longer possible to add or remove
-data from a repository. To help with recovering from such a deadlock, the
-prune command now supports an `--unsafe-recover-no-free-space` option to
-recover from such situations. Make sure to read the documentation first!
-
-https://github.com/restic/restic/issues/1153
-https://github.com/restic/restic/pull/3481

@@ -1,3 +1,453 @@
+Changelog for restic 0.14.0 (2022-08-25)
+=======================================
+
+The following sections list the changes in restic 0.14.0 relevant to
+restic users. The changes are ordered by importance.
+
+Summary
+-------
+
+ * Fix #2248: Support `self-update` on Windows
+ * Fix #3428: List snapshots in backend at most once to resolve snapshot IDs
+ * Fix #3432: Fix rare 'not found in repository' error for `copy` command
+ * Fix #3685: The `diff` command incorrectly listed some files as added
+ * Fix #3681: Fix rclone (shimmed by Scoop) and sftp not working on Windows
+ * Fix #3720: Directory sync errors for repositories accessed via SMB
+ * Fix #3736: The `stats` command miscalculated restore size for multiple snapshots
+ * Fix #3861: Yield error on invalid policy to `forget`
+ * Fix #3716: Print "wrong password" to stderr instead of stdout
+ * Fix #3772: Correctly rebuild index for legacy repositories
+ * Fix #3776: Limit number of key files tested while opening a repository
+ * Chg #1842: Support debug log creation in release builds
+ * Chg #3295: Deprecate `check --check-unused` and add further checks
+ * Chg #3680: Update dependencies and require Go 1.15 or newer
+ * Chg #3742: Replace `--repo2` option used by `init`/`copy` with `--from-repo`
+ * Enh #1153: Support pruning even when the disk is full
+ * Enh #21: Add compression support
+ * Enh #2162: Adaptive IO concurrency based on backend connections
+ * Enh #2291: Allow pack size customization
+ * Enh #2295: Allow use of SAS token to authenticate to Azure
+ * Enh #2696: Improve backup speed with many small files
+ * Enh #2907: Make snapshot directory structure of `mount` command customizable
+ * Enh #3114: Optimize handling of duplicate blobs in `prune`
+ * Enh #3465: Improve handling of temporary files on Windows
+ * Enh #3709: Validate exclude patterns before backing up
+ * Enh #3837: Improve SFTP repository initialization over slow links
+ * Enh #2351: Use config file permissions to control file group access
+ * Enh #3475: Allow limiting IO concurrency for local and SFTP backend
+ * Enh #3484: Stream data in `check` and `prune` commands
+ * Enh #2923: Improve speed of `copy` command
+ * Enh #3729: Display full IDs in `check` warnings
+ * Enh #3773: Optimize memory usage for directories with many files
+ * Enh #3819: Validate include/exclude patterns before restoring
+
+Details
+-------
+
+ * Bugfix #2248: Support `self-update` on Windows
+
+   Restic `self-update` would fail in situations where the operating system locks running
+   binaries, including Windows. The new behavior works around this by renaming the running file
+   and swapping the updated file in place.
+
+   https://github.com/restic/restic/issues/2248
+   https://github.com/restic/restic/pull/3675
+
+ * Bugfix #3428: List snapshots in backend at most once to resolve snapshot IDs
+
+   Many commands support specifying a list of snapshot IDs which are then used to determine the
+   snapshots to be processed by the command. To resolve snapshot IDs or `latest`, and check that
+   these exist, restic previously listed all snapshots stored in the repository. Depending on
+   the backend this could be a slow and/or expensive operation.
+
+   Restic now lists the snapshots only once and remembers the result in order to resolve all
+   further snapshot IDs swiftly.
+
+   https://github.com/restic/restic/issues/3428
+   https://github.com/restic/restic/pull/3570
+   https://github.com/restic/restic/pull/3395
+
+ * Bugfix #3432: Fix rare 'not found in repository' error for `copy` command
+
+   In rare cases `copy` (and other commands) would report that `LoadTree(...)` returned an `id
+   [...] not found in repository` error. This could be caused by a backup or copy command running
+   concurrently. The error was only temporary; running the failed restic command a second time as
+   a workaround did resolve the error.
+
+   This issue has now been fixed by correcting the order in which restic reads data from the
+   repository. It is now guaranteed that restic only loads snapshots for which all necessary data
+   is already available.
+
+   https://github.com/restic/restic/issues/3432
+   https://github.com/restic/restic/pull/3570
+
+ * Bugfix #3685: The `diff` command incorrectly listed some files as added
+
+   There was a bug in the `diff` command, causing it to always show files in a removed directory as
+   added. This has now been fixed.
+
+   https://github.com/restic/restic/issues/3685
+   https://github.com/restic/restic/pull/3686
+
+ * Bugfix #3681: Fix rclone (shimmed by Scoop) and sftp not working on Windows
+
+   In #3602 a fix was introduced to address the problem of `rclone` prematurely exiting when
+   Ctrl+C is pressed on Windows. The solution was to create the subprocess with its console
+   detached from the restic console.
+
+   However, this solution failed when using `rclone` installed by Scoop or using `sftp` with a
+   passphrase-protected private key. We've now fixed this by using a different approach to
+   prevent Ctrl-C from passing down too early.
+
+   https://github.com/restic/restic/issues/3681
+   https://github.com/restic/restic/issues/3692
+   https://github.com/restic/restic/pull/3696
+
+ * Bugfix #3720: Directory sync errors for repositories accessed via SMB
+
+   On Linux and macOS, accessing a repository via a SMB/CIFS mount resulted in restic failing to
+   save the lock file, yielding the following errors:
+
+   Save(<lock/071fe833f0>) returned error, retrying after 552.330144ms: sync /repo/locks:
+   no such file or directory Save(<lock/bf789d7343>) returned error, retrying after
+   552.330144ms: sync /repo/locks: invalid argument
+
+   This has now been fixed by ignoring the relevant error codes.
+
+   https://github.com/restic/restic/issues/3720
+   https://github.com/restic/restic/issues/3751
+   https://github.com/restic/restic/pull/3752
+
+ * Bugfix #3736: The `stats` command miscalculated restore size for multiple snapshots
+
+   Since restic 0.10.0 the restore size calculated by the `stats` command for multiple snapshots
+   was too low. The hardlink detection was accidentally applied across multiple snapshots and
+   thus ignored many files. This has now been fixed.
+
+   https://github.com/restic/restic/issues/3736
+   https://github.com/restic/restic/pull/3740
+
+ * Bugfix #3861: Yield error on invalid policy to `forget`
+
+   The `forget` command previously silently ignored invalid/unsupported units in the duration
+   options, such as e.g. `--keep-within-daily 2w`.
+
+   Specifying an invalid/unsupported duration unit now results in an error.
+
+   https://github.com/restic/restic/issues/3861
+   https://github.com/restic/restic/pull/3862
+
+ * Bugfix #3716: Print "wrong password" to stderr instead of stdout
+
+   If an invalid password was entered, the error message was printed on stdout and not on stderr as
+   intended. This has now been fixed.
+
+   https://github.com/restic/restic/pull/3716
+   https://forum.restic.net/t/4965
+
+ * Bugfix #3772: Correctly rebuild index for legacy repositories
+
+   After running `rebuild-index` on a legacy repository containing mixed pack files (that is,
+   pack files which store both metadata and file data), `check` printed warnings like `pack
+   12345678 contained in several indexes: ...`. This warning was not critical, but has now
+   nonetheless been fixed by properly handling mixed pack files while rebuilding the index.
+
+   Running `prune` for such legacy repositories will also fix the warning by reorganizing the
+   pack files which caused it.
+
+   https://github.com/restic/restic/pull/3772
+   https://github.com/restic/restic/pull/3884
+   https://forum.restic.net/t/5044/13
+
+ * Bugfix #3776: Limit number of key files tested while opening a repository
+
+   Previously, restic tested the password against every key in the repository when opening a
+   repository. The more keys there were in the repository, the slower this operation became.
+
+   Restic now tests the password against up to 20 key files in the repository. Alternatively, you
+   can use the `--key-hint=<key ID>` option to specify a specific key file to use instead.
+
+   https://github.com/restic/restic/pull/3776
+
+ * Change #1842: Support debug log creation in release builds
+
+   Creating a debug log was only possible in debug builds which required users to manually build
+   restic. We changed the release builds to allow creating debug logs by simply setting the
+   environment variable `DEBUG_LOG=logname.log`.
+
+   https://github.com/restic/restic/issues/1842
+   https://github.com/restic/restic/pull/3826
+
+ * Change #3295: Deprecate `check --check-unused` and add further checks
+
+   Since restic 0.12.0, it is expected to still have unused blobs after running `prune`. This made
+   the `--check-unused` option of the `check` command rather useless and tended to confuse
+   users. This option has been deprecated and is now ignored.
+
+   The `check` command now also warns if a repository is using either the legacy S3 layout or mixed
+   pack files with both tree and data blobs. The latter is known to cause performance problems.
+
+   https://github.com/restic/restic/issues/3295
+   https://github.com/restic/restic/pull/3730
+
+ * Change #3680: Update dependencies and require Go 1.15 or newer
+
+   We've updated most dependencies. Since some libraries require newer language features we're
+   dropping support for Go 1.14, which means that restic now requires at least Go 1.15 to build.
+
+   https://github.com/restic/restic/issues/3680
+   https://github.com/restic/restic/issues/3883
+
+ * Change #3742: Replace `--repo2` option used by `init`/`copy` with `--from-repo`
+
+   The `init` and `copy` commands can read data from another repository. However, confusingly
+   `--repo2` referred to the repository *from* which the `init` command copies parameters, but
+   for the `copy` command `--repo2` referred to the copy *destination*.
+
+   We've introduced a new option, `--from-repo`, which always refers to the source repository
+   for both commands. The old parameter names have been deprecated but still work. To create a new
+   repository and copy all snapshots to it, the commands are now as follows:
+
+   ``` restic -r /srv/restic-repo-copy init --from-repo /srv/restic-repo
+   --copy-chunker-params restic -r /srv/restic-repo-copy copy --from-repo
+   /srv/restic-repo ```
+
+   https://github.com/restic/restic/pull/3742
+   https://forum.restic.net/t/5017
+
+ * Enhancement #1153: Support pruning even when the disk is full
+
+   When running out of disk space it was no longer possible to add or remove data from a repository.
+   To help with recovering from such a deadlock, the prune command now supports an
+   `--unsafe-recover-no-free-space` option to recover from these situations. Make sure to
+   read the documentation first!
+
+   https://github.com/restic/restic/issues/1153
+   https://github.com/restic/restic/pull/3481
+
+ * Enhancement #21: Add compression support
+
+   We've added compression support to the restic repository format. To create a repository using
+   the new format run `init --repository-version 2`. Please note that the repository cannot be
+   read by restic versions prior to 0.14.0.
+
+   You can configure whether data is compressed with the option `--compression`. It can be set to
+   `auto` (the default, which will compress very fast), `max` (which will trade backup speed and
+   CPU usage for better compression), or `off` (which disables compression). Each setting is
+   only applied for the current run of restic and does *not* apply to future runs. The option can
+   also be set via the environment variable `RESTIC_COMPRESSION`.
+
+   To upgrade in place run `migrate upgrade_repo_v2` followed by `prune`. See the documentation
+   for more details. The migration checks the repository integrity and upgrades the repository
+   format, but will not change any data. Afterwards, prune will rewrite the metadata to make use of
+   compression.
+
+   As an alternative you can use the `copy` command to migrate snapshots; First create a new
+   repository using `init --repository-version 2 --copy-chunker-params --repo2
+   path/to/old/repo`, and then use the `copy` command to copy all snapshots to the new
+   repository.
+
+   https://github.com/restic/restic/issues/21
+   https://github.com/restic/restic/issues/3779
+   https://github.com/restic/restic/pull/3666
+   https://github.com/restic/restic/pull/3704
+   https://github.com/restic/restic/pull/3733
+
+ * Enhancement #2162: Adaptive IO concurrency based on backend connections
+
+   Many commands used hard-coded limits for the number of concurrent operations. This prevented
+   speed improvements by increasing the number of connections used by a backend.
+
+   These limits have now been replaced by using the configured number of backend connections
+   instead, which can be controlled using the `-o <backend-name>.connections=5` option.
+   Commands will then automatically scale their parallelism accordingly.
+
+   To limit the number of CPU cores used by restic, you can set the environment variable
+   `GOMAXPROCS` accordingly. For example to use a single CPU core, use `GOMAXPROCS=1`.
+
+   https://github.com/restic/restic/issues/2162
+   https://github.com/restic/restic/issues/1467
+   https://github.com/restic/restic/pull/3611
+
+ * Enhancement #2291: Allow pack size customization
+
+   Restic now uses a target pack size of 16 MiB by default. This can be customized using the
+   `--pack-size size` option. Supported pack sizes range between 4 and 128 MiB.
+
+   It is possible to migrate an existing repository to _larger_ pack files using `prune
+   --repack-small`. This will rewrite every pack file which is significantly smaller than the
+   target size.
+
+   https://github.com/restic/restic/issues/2291
+   https://github.com/restic/restic/pull/3731
+
+ * Enhancement #2295: Allow use of SAS token to authenticate to Azure
+
+   Previously restic only supported AccountKeys to authenticate to Azure storage accounts,
+   which necessitates giving a significant amount of access.
+
+   We added support for Azure SAS tokens which are a more fine-grained and time-limited manner of
+   granting access. Set the `AZURE_ACCOUNT_NAME` and `AZURE_ACCOUNT_SAS` environment
+   variables to use a SAS token for authentication. Note that if `AZURE_ACCOUNT_KEY` is set, it
+   will take precedence.
+
+   https://github.com/restic/restic/issues/2295
+   https://github.com/restic/restic/pull/3661
+
+ * Enhancement #2696: Improve backup speed with many small files
+
+   We have restructured the backup pipeline to continue reading files while all upload
+   connections are busy. This allows the backup to already prepare the next data file such that the
+   upload can continue as soon as a connection becomes available. This can especially improve the
+   backup performance for high latency backends.
+
+   The upload concurrency is now controlled using the `-o <backend-name>.connections=5`
+   option.
+
+   https://github.com/restic/restic/issues/2696
+   https://github.com/restic/restic/pull/3489
+
+ * Enhancement #2907: Make snapshot directory structure of `mount` command customizable
+
+   We've added the possibility to customize the snapshot directory structure of the `mount`
+   command using templates passed to the `--snapshot-template` option. The formatting of
+   snapshots' timestamps is now controlled using `--time-template` and supports
+   subdirectories to for example group snapshots by year. Please see `restic help mount` for
+   further details.
+
+   Characters in tag names which are not allowed in a filename are replaced by underscores `_`. For
+   example a tag `foo/bar` will result in a directory name of `foo_bar`.
+
+   https://github.com/restic/restic/issues/2907
+   https://github.com/restic/restic/pull/2913
+   https://github.com/restic/restic/pull/3691
+
+ * Enhancement #3114: Optimize handling of duplicate blobs in `prune`
+
+   Restic `prune` always used to repack all data files containing duplicate blobs. This
+   effectively removed all duplicates during prune. However, as a consequence all these data
+   files were repacked even if the unused repository space threshold could be reached with less
+   work.
+
+   This is now changed and `prune` works nice and fast even when there are lots of duplicate blobs.
+
+   https://github.com/restic/restic/issues/3114
+   https://github.com/restic/restic/pull/3290
+
+ * Enhancement #3465: Improve handling of temporary files on Windows
+
+   In some cases restic failed to delete temporary files, causing the current command to fail.
+   This has now been fixed by ensuring that Windows automatically deletes the file. In addition,
+   temporary files are only written to disk when necessary, reducing disk writes.
+
+   https://github.com/restic/restic/issues/3465
+   https://github.com/restic/restic/issues/1551
+   https://github.com/restic/restic/pull/3610
+
+ * Enhancement #3709: Validate exclude patterns before backing up
+
+   Exclude patterns provided via `--exclude`, `--iexclude`, `--exclude-file` or
+   `--iexclude-file` previously weren't validated. As a consequence, invalid patterns
+   resulted in files that were meant to be excluded being backed up.
+
+   Restic now validates all patterns before running the backup and aborts with a fatal error if an
+   invalid pattern is detected.
+
+   https://github.com/restic/restic/issues/3709
+   https://github.com/restic/restic/pull/3734
+
+ * Enhancement #3837: Improve SFTP repository initialization over slow links
+
+   The `init` command, when used on an SFTP backend, now sends multiple `mkdir` commands to the
+   backend concurrently. This reduces the waiting times when creating a repository over a very
+   slow connection.
+
+   https://github.com/restic/restic/issues/3837
+   https://github.com/restic/restic/pull/3840
+
+ * Enhancement #2351: Use config file permissions to control file group access
+
+   Previously files in a local/SFTP repository would always end up with very restrictive access
+   permissions, allowing access only to the owner. This prevented a number of valid use-cases
+   involving groups and ACLs.
+
+   We now use the permissions of the config file in the repository to decide whether group access
+   should be given to newly created repository files or not. We arrange for repository files to be
+   created group readable exactly when the repository config file is group readable.
+
+   To opt-in to group readable repositories, a simple `chmod -R g+r` or equivalent on the config
+   file can be used. For repositories that should be writable by group members a tad more setup is
+   required, see the docs.
+
+   Posix ACLs can also be used now that the group permissions being forced to zero no longer masks
+   the effect of ACL entries.
+
+   https://github.com/restic/restic/issues/2351
+   https://github.com/restic/restic/pull/3419
+   https://forum.restic.net/t/1391
+
+ * Enhancement #3475: Allow limiting IO concurrency for local and SFTP backend
+
+   Restic did not support limiting the IO concurrency / number of connections for accessing
+   repositories stored using the local or SFTP backends. The number of connections is now limited
+   as for other backends, and can be configured via the the `-o local.connections=2` and `-o
+   sftp.connections=5` options. This ensures that restic does not overwhelm the backend with
+   concurrent IO operations.
+
+   https://github.com/restic/restic/pull/3475
+
+ * Enhancement #3484: Stream data in `check` and `prune` commands
+
+   The commands `check --read-data` and `prune` previously downloaded data files into
+   temporary files which could end up being written to disk. This could cause a large amount of data
+   being written to disk.
+
+   The pack files are now instead streamed, which removes the need for temporary files. Please
+   note that *uploads* during `backup` and `prune` still require temporary files.
+
+   https://github.com/restic/restic/issues/3710
+   https://github.com/restic/restic/pull/3484
+   https://github.com/restic/restic/pull/3717
+
+ * Enhancement #2923: Improve speed of `copy` command
+
+   The `copy` command could require a long time to copy snapshots for non-local backends. This has
+   been improved to provide a throughput comparable to the `restore` command.
+
+   Additionally, `copy` now displays a progress bar.
+
+   https://github.com/restic/restic/issues/2923
+   https://github.com/restic/restic/pull/3513
+
+ * Enhancement #3729: Display full IDs in `check` warnings
+
+   When running commands to inspect or repair a damaged repository, it is often necessary to
+   supply the full IDs of objects stored in the repository.
+
+   The output of `check` now includes full IDs instead of their shortened variant.
+
+   https://github.com/restic/restic/pull/3729
+
+ * Enhancement #3773: Optimize memory usage for directories with many files
+
+   Backing up a directory with hundreds of thousands or more files caused restic to require large
+   amounts of memory. We've now optimized the `backup` command such that it requires up to 30% less
+   memory.
+
+   https://github.com/restic/restic/pull/3773
+
+ * Enhancement #3819: Validate include/exclude patterns before restoring
+
+   Patterns provided to `restore` via `--exclude`, `--iexclude`, `--include` and
+   `--iinclude` weren't validated before running the restore. Invalid patterns would result in
+   error messages being printed repeatedly, and possibly unwanted files being restored.
+
+   Restic now validates all patterns before running the restore, and aborts with a fatal error if
+   an invalid pattern is detected.
+
+   https://github.com/restic/restic/pull/3819
+
+
 Changelog for restic 0.13.0 (2022-03-26)
 =======================================
 

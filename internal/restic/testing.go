@@ -207,3 +207,8 @@ func TestParseID(s string) ID {
 func TestParseHandle(s string, t BlobType) BlobHandle {
 	return BlobHandle{ID: TestParseID(s), Type: t}
 }
+
+// TestSetSnapshotID sets the snapshot's ID.
+func TestSetSnapshotID(t testing.TB, sn *Snapshot, id ID) {
+	sn.id = &id
+}
