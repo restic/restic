@@ -184,7 +184,8 @@ func TestLockWithStaleLock(t *testing.T) {
 	id3, err := createFakeLock(repo, time.Now().Add(-time.Minute), os.Getpid()+500000)
 	rtest.OK(t, err)
 
-	rtest.OK(t, restic.RemoveStaleLocks(context.TODO(), repo))
+	processed, err := restic.RemoveStaleLocks(context.TODO(), repo)
+	rtest.OK(t, err)
 
 	rtest.Assert(t, lockExists(repo, t, id1) == false,
 		"stale lock still exists after RemoveStaleLocks was called")
@@ -192,6 +193,9 @@ func TestLockWithStaleLock(t *testing.T) {
 		"non-stale lock was removed by RemoveStaleLocks")
 	rtest.Assert(t, lockExists(repo, t, id3) == false,
 		"stale lock still exists after RemoveStaleLocks was called")
+	rtest.Assert(t, processed == 2,
+		"number of locks removed does not match: expected %d, got %d",
+		2, processed)
 
 	rtest.OK(t, removeLock(repo, id2))
 }
@@ -209,7 +213,8 @@ func TestRemoveAllLocks(t *testing.T) {
 	id3, err := createFakeLock(repo, time.Now().Add(-time.Minute), os.Getpid()+500000)
 	rtest.OK(t, err)
 
-	rtest.OK(t, restic.RemoveAllLocks(context.TODO(), repo))
+	processed, err := restic.RemoveAllLocks(context.TODO(), repo)
+	rtest.OK(t, err)
 
 	rtest.Assert(t, lockExists(repo, t, id1) == false,
 		"lock still exists after RemoveAllLocks was called")
@@ -217,6 +222,9 @@ func TestRemoveAllLocks(t *testing.T) {
 		"lock still exists after RemoveAllLocks was called")
 	rtest.Assert(t, lockExists(repo, t, id3) == false,
 		"lock still exists after RemoveAllLocks was called")
+	rtest.Assert(t, processed == 3,
+		"number of locks removed does not match: expected %d, got %d",
+		3, processed)
 }
 
 func TestLockRefresh(t *testing.T) {

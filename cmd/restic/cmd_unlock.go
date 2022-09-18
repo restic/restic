@@ -46,11 +46,13 @@ func runUnlock(opts UnlockOptions, gopts GlobalOptions) error {
 		fn = restic.RemoveAllLocks
 	}
 
-	err = fn(gopts.ctx, repo)
+	processed, err := fn(gopts.ctx, repo)
 	if err != nil {
 		return err
 	}
 
-	Verbosef("successfully removed locks\n")
+	if processed > 0 {
+		Verbosef("successfully removed %d locks\n", processed)
+	}
 	return nil
 }
