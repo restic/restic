@@ -85,6 +85,9 @@ func run(command string, args ...string) (*StdioConn, *sync.WaitGroup, func() er
 		err = errW
 	}
 	if err != nil {
+		if backend.IsErrDot(err) {
+			return nil, nil, nil, errors.Errorf("cannot implicitly run relative executable %v found in current directory, use -o rclone.program=./<program> to override", cmd.Path)
+		}
 		return nil, nil, nil, err
 	}
 

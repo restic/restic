@@ -80,7 +80,10 @@ func startClient(cfg Config) (*SFTP, error) {
 
 	bg, err := backend.StartForeground(cmd)
 	if err != nil {
-		return nil, errors.Wrap(err, "cmd.Start")
+		if backend.IsErrDot(err) {
+			return nil, errors.Errorf("cannot implicitly run relative executable %v found in current directory, use -o sftp.command=./<command> to override", cmd.Path)
+		}
+		return nil, err
 	}
 
 	// wait in a different goroutine

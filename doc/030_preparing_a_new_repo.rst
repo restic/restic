@@ -633,6 +633,13 @@ initiate a new repository in the path ``bar`` in the remote ``foo``:
 
 Restic takes care of starting and stopping rclone.
 
+.. note:: If you get an error message saying "cannot implicitly run relative
+          executable rclone found in current directory", this means that an
+          rclone executable was found in the current directory. For security
+          reasons restic will not run this implicitly, instead you have to
+          use the ``-o rclone.program=./rclone`` extended option to override
+          this security check and explicitly tell restic to use the executable.
+
 As a more concrete example, suppose you have configured a remote named
 ``b2prod`` for Backblaze B2 with rclone, with a bucket called ``yggdrasil``.
 You can then use rclone to list files in the bucket like this:
