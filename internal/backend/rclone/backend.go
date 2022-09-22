@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -244,7 +245,15 @@ func newBackend(cfg Config, lim limiter.Limiter) (*Backend, error) {
 		// ignore subsequent errors
 		_ = bg()
 		_ = cmd.Process.Kill()
-		return nil, errors.Errorf("error talking HTTP to rclone: %v", err)
+
+		// wait for rclone to exit
+		wg.Wait()
+		// try to return the program exit code if communication with rclone has failed
+		if be.waitResult != nil && (err == context.Canceled || errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, syscall.EPIPE)) {
+			err = be.waitResult
+		}
+
+		return nil, fmt.Errorf("error talking HTTP to rclone: %w", err)
 	}
 
 	debug.Log("HTTP status %q returned, moving instance to background", res.Status)
