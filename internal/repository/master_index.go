@@ -234,30 +234,15 @@ func (mi *MasterIndex) finalizeFullIndexes() []*Index {
 	return list
 }
 
-// Each returns a channel that yields all blobs known to the index. When the
-// context is cancelled, the background goroutine terminates. This blocks any
-// modification of the index.
-func (mi *MasterIndex) Each(ctx context.Context) <-chan restic.PackedBlob {
+// Each runs fn on all blobs known to the index. When the context is cancelled,
+// the index iteration return immediately. This blocks any modification of the index.
+func (mi *MasterIndex) Each(ctx context.Context, fn func(restic.PackedBlob)) {
 	mi.idxMutex.RLock()
+	defer mi.idxMutex.RUnlock()
 
-	ch := make(chan restic.PackedBlob)
-
-	go func() {
-		defer mi.idxMutex.RUnlock()
-		defer close(ch)
-
-		for _, idx := range mi.idx {
-			for pb := range idx.Each(ctx) {
-				select {
-				case <-ctx.Done():
-					return
-				case ch <- pb:
-				}
-			}
-		}
-	}()
-
-	return ch
+	for _, idx := range mi.idx {
+		idx.Each(ctx, fn)
+	}
 }
 
 // MergeFinalIndexes merges all final indexes together.
@@ -450,11 +435,11 @@ func (mi *MasterIndex) ListPacks(ctx context.Context, packs restic.IDSet) <-chan
 			if len(packBlob) == 0 {
 				continue
 			}
-			for pb := range mi.Each(ctx) {
+			mi.Each(ctx, func(pb restic.PackedBlob) {
 				if packs.Has(pb.PackID) && pb.PackID[0]&0xf == i {
 					packBlob[pb.PackID] = append(packBlob[pb.PackID], pb.Blob)
 				}
-			}
+			})
 
 			// pass on packs
 			for packID, pbs := range packBlob {

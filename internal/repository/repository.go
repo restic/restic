@@ -595,10 +595,15 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 		// sanity check
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
-		for blob := range r.idx.Each(ctx) {
+
+		invalidIndex := false
+		r.idx.Each(ctx, func(blob restic.PackedBlob) {
 			if blob.IsCompressed() {
-				return errors.Fatal("index uses feature not supported by repository version 1")
+				invalidIndex = true
 			}
+		})
+		if invalidIndex {
+			return errors.Fatal("index uses feature not supported by repository version 1")
 		}
 	}
 

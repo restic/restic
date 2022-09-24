@@ -124,14 +124,14 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 
 		debug.Log("process blobs")
 		cnt := 0
-		for blob := range index.Each(ctx) {
+		index.Each(ctx, func(blob restic.PackedBlob) {
 			cnt++
 
 			if _, ok := packToIndex[blob.PackID]; !ok {
 				packToIndex[blob.PackID] = restic.NewIDSet()
 			}
 			packToIndex[blob.PackID].Insert(id)
-		}
+		})
 
 		debug.Log("%d blobs processed", cnt)
 		return nil
@@ -458,13 +458,13 @@ func (c *Checker) UnusedBlobs(ctx context.Context) (blobs restic.BlobHandles) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	for blob := range c.repo.Index().Each(ctx) {
+	c.repo.Index().Each(ctx, func(blob restic.PackedBlob) {
 		h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
 		if !c.blobRefs.M.Has(h) {
 			debug.Log("blob %v not referenced", h)
 			blobs = append(blobs, h)
 		}
-	}
+	})
 
 	return blobs
 }

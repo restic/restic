@@ -217,34 +217,22 @@ func (idx *Index) AddToSupersedes(ids ...restic.ID) error {
 	return nil
 }
 
-// Each returns a channel that yields all blobs known to the index. When the
-// context is cancelled, the background goroutine terminates. This blocks any
+// Each passes all blobs known to the index to the callback fn. This blocks any
 // modification of the index.
-func (idx *Index) Each(ctx context.Context) <-chan restic.PackedBlob {
+func (idx *Index) Each(ctx context.Context, fn func(restic.PackedBlob)) {
 	idx.m.Lock()
+	defer idx.m.Unlock()
 
-	ch := make(chan restic.PackedBlob)
-
-	go func() {
-		defer idx.m.Unlock()
-		defer func() {
-			close(ch)
-		}()
-
-		for typ := range idx.byType {
-			m := &idx.byType[typ]
-			m.foreach(func(e *indexEntry) bool {
-				select {
-				case <-ctx.Done():
-					return false
-				case ch <- idx.toPackedBlob(e, restic.BlobType(typ)):
-					return true
-				}
-			})
-		}
-	}()
-
-	return ch
+	for typ := range idx.byType {
+		m := &idx.byType[typ]
+		m.foreach(func(e *indexEntry) bool {
+			if ctx.Err() != nil {
+				return false
+			}
+			fn(idx.toPackedBlob(e, restic.BlobType(typ)))
+			return true
+		})
+	}
 }
 
 type EachByPackResult struct {

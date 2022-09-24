@@ -467,7 +467,7 @@ func (f *Finder) indexPacksToBlobs(ctx context.Context, packIDs map[string]struc
 
 	// remember which packs were found in the index
 	indexPackIDs := make(map[string]struct{})
-	for pb := range f.repo.Index().Each(wctx) {
+	f.repo.Index().Each(wctx, func(pb restic.PackedBlob) {
 		idStr := pb.PackID.String()
 		// keep entry in packIDs as Each() returns individual index entries
 		matchingID := false
@@ -485,7 +485,7 @@ func (f *Finder) indexPacksToBlobs(ctx context.Context, packIDs map[string]struc
 			f.blobIDs[pb.ID.String()] = struct{}{}
 			indexPackIDs[idStr] = struct{}{}
 		}
-	}
+	})
 
 	for id := range indexPackIDs {
 		delete(packIDs, id)

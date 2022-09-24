@@ -64,9 +64,9 @@ func runList(cmd *cobra.Command, opts GlobalOptions, args []string) error {
 			if err != nil {
 				return err
 			}
-			for blobs := range idx.Each(opts.ctx) {
+			idx.Each(opts.ctx, func(blobs restic.PackedBlob) {
 				Printf("%v %v\n", blobs.Type, blobs.ID)
-			}
+			})
 			return nil
 		})
 	default:

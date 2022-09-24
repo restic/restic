@@ -66,11 +66,11 @@ func runRecover(gopts GlobalOptions) error {
 	// tree. If it is not referenced, we have a root tree.
 	trees := make(map[restic.ID]bool)
 
-	for blob := range repo.Index().Each(gopts.ctx) {
+	repo.Index().Each(gopts.ctx, func(blob restic.PackedBlob) {
 		if blob.Type == restic.TreeBlob {
 			trees[blob.Blob.ID] = false
 		}
-	}
+	})
 
 	Verbosef("load %d trees\n", len(trees))
 	bar := newProgressMax(!gopts.Quiet, uint64(len(trees)), "trees loaded")
