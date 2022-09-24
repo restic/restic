@@ -207,10 +207,13 @@ func TestFileLoad(t *testing.T) {
 // Simulate multiple processes writing to a cache, using goroutines.
 //
 // The possibility of sharing a cache between multiple concurrent restic
-// processes isn't guaranteed in the docs and doesn't always work on Windows
-// due to the Go runtime opening files without FILE_SHARE_DELETE, hence the
-// check on GOOS. This is considered a "nice to have" on POSIX, for now.
+// processes isn't guaranteed in the docs and doesn't always work on Windows, hence the
+// check on GOOS. Cache sharing is considered a "nice to have" on POSIX, for now.
 //
+// The cache first creates a temporary file and then renames it to its final name.
+// On Windows renaming internally creates a file handle with a shareMode which
+// includes FILE_SHARE_DELETE. The Go runtime opens files without FILE_SHARE_DELETE,
+// thus Open(fn) will fail until the file handle used for renaming was closed.
 // See https://devblogs.microsoft.com/oldnewthing/20211022-00/?p=105822
 // for hints on how to fix this properly.
 func TestFileSaveConcurrent(t *testing.T) {
