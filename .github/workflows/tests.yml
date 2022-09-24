@@ -69,7 +69,7 @@ jobs:
 
     steps:
       - name: Set up Go ${{ matrix.go }}
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go }}
 
@@ -98,7 +98,7 @@ jobs:
           chmod 755 $HOME/bin/rclone
           rm -rf rclone*
 
-          # add $HOME/bin to path ($GOBIN was already added to the path by setup-go@v2)
+          # add $HOME/bin to path ($GOBIN was already added to the path by setup-go@v3)
           echo $HOME/bin >> $GITHUB_PATH
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'macOS-latest'
 
@@ -120,7 +120,7 @@ jobs:
           unzip rclone.zip
           copy rclone*/rclone.exe $Env:USERPROFILE/bin
 
-          # add $USERPROFILE/bin to path ($GOBIN was already added to the path by setup-go@v2)
+          # add $USERPROFILE/bin to path ($GOBIN was already added to the path by setup-go@v3)
           echo $Env:USERPROFILE\bin >> $Env:GITHUB_PATH
 
           echo "install tar"
@@ -142,7 +142,7 @@ jobs:
         if: matrix.os == 'windows-latest'
 
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Build with build.go
         run: |
@@ -230,7 +230,7 @@ jobs:
 
     steps:
       - name: Set up Go ${{ env.latest_go }}
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ env.latest_go }}
 
@@ -239,7 +239,7 @@ jobs:
           go install github.com/mitchellh/gox@latest
 
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Cross-compile with gox for ${{ matrix.targets }}
         env:
@@ -255,22 +255,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set up Go ${{ env.latest_go }}
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ env.latest_go }}
 
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v2
+        uses: golangci/golangci-lint-action@v3
         with:
           # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
           version: v1.48
           # Optional: show only new issues if it's a pull request. The default value is `false`.
           only-new-issues: true
           args: --verbose --timeout 5m
-          skip-go-installation: true
 
         # only run golangci-lint for pull requests, otherwise ALL hints get
         # reported. We need to slowly address all issues until we can enable
@@ -288,11 +287,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v3
+        uses: docker/metadata-action@v4
         with:
           # list of Docker images to use as base name for tags
           images: |
@@ -308,14 +307,14 @@ jobs:
             type=sha
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
+        uses: docker/setup-qemu-action@v2
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Build and push
         id: docker_build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           push: false
           context: .
