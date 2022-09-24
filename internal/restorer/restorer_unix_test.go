@@ -30,7 +30,7 @@ func TestRestorerRestoreEmptyHardlinkedFileds(t *testing.T) {
 		},
 	})
 
-	res, err := NewRestorer(context.TODO(), repo, id)
+	res, err := NewRestorer(context.TODO(), repo, id, false)
 	rtest.OK(t, err)
 
 	res.SelectFilter = func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
@@ -59,4 +59,14 @@ func TestRestorerRestoreEmptyHardlinkedFileds(t *testing.T) {
 	if ok1 && ok2 {
 		rtest.Equals(t, s1.Ino, s2.Ino)
 	}
+}
+
+func getBlockCount(t *testing.T, filename string) int64 {
+	fi, err := os.Stat(filename)
+	rtest.OK(t, err)
+	st := fi.Sys().(*syscall.Stat_t)
+	if st == nil {
+		return -1
+	}
+	return st.Blocks
 }
