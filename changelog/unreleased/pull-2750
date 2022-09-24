@@ -1,5 +1,6 @@
 Enhancement: Make backup file read concurrency configurable
 
-In order to tune restic for special situations we need to be able to configure `backup --file-read-concurrency`.
+The `backup` command now supports a `--read-concurrency` flag to allowing
+tuning restic for very fast storage like NVME disks.
 
 https://github.com/restic/restic/pull/2750

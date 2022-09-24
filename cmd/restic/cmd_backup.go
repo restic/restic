@@ -101,7 +101,7 @@ type BackupOptions struct {
 	IgnoreCtime             bool
 	UseFsSnapshot           bool
 	DryRun                  bool
-	FileReadConcurrency     uint
+	ReadConcurrency         uint
 }
 
 var backupOptions BackupOptions
@@ -110,12 +110,6 @@ var backupOptions BackupOptions
 var ErrInvalidSourceData = errors.New("at least one source file could not be read")
 
 func init() {
-	//set FileReadConcurrency to 2 if not set in env
-	fileReadConcurrency, err := strconv.ParseUint(os.Getenv("RESTIC_FILE_READ_CONCURRENCY"), 10, 32)
-	if err != nil || fileReadConcurrency < 1 {
-		fileReadConcurrency = 2
-	}
-
 	cmdRoot.AddCommand(cmdBackup)
 
 	f := cmdBackup.Flags()
@@ -132,10 +126,10 @@ func init() {
 	f.BoolVar(&backupOptions.Stdin, "stdin", false, "read backup from stdin")
 	f.StringVar(&backupOptions.StdinFilename, "stdin-filename", "stdin", "`filename` to use when reading from stdin")
 	f.Var(&backupOptions.Tags, "tag", "add `tags` for the new snapshot in the format `tag[,tag,...]` (can be specified multiple times)")
-	f.UintVar(&backupOptions.FileReadConcurrency, "file-read-concurrency", uint(fileReadConcurrency), "set concurrency on file reads. (default: $RESTIC_FILE_READ_CONCURRENCY or 2)")
+	f.UintVar(&backupOptions.ReadConcurrency, "read-concurrency", 0, "read `n` file concurrently. (default: $RESTIC_READ_CONCURRENCY or 2)")
 	f.StringVarP(&backupOptions.Host, "host", "H", "", "set the `hostname` for the snapshot manually. To prevent an expensive rescan use the \"parent\" flag")
 	f.StringVar(&backupOptions.Host, "hostname", "", "set the `hostname` for the snapshot manually")
-	err = f.MarkDeprecated("hostname", "use --host")
+	err := f.MarkDeprecated("hostname", "use --host")
 	if err != nil {
 		// MarkDeprecated only returns an error when the flag could not be found
 		panic(err)
@@ -152,6 +146,9 @@ func init() {
 		f.BoolVar(&backupOptions.UseFsSnapshot, "use-fs-snapshot", false, "use filesystem snapshot where possible (currently only Windows VSS)")
 	}
 
+	// parse read concurrency from env, on error the default value will be used
+	readConcurrency, _ := strconv.ParseUint(os.Getenv("RESTIC_READ_CONCURRENCY"), 10, 32)
+	backupOptions.ReadConcurrency = uint(readConcurrency)
 }
 
 // filterExisting returns a slice of all existing items, or an error if no
@@ -290,10 +287,6 @@ func (opts BackupOptions) Check(gopts GlobalOptions, args []string) error {
 		if len(args) > 0 {
 			return errors.Fatal("--stdin was specified and files/dirs were listed as arguments")
 		}
-	}
-
-	if backupOptions.FileReadConcurrency == 0 {
-		return errors.Fatal("--file-read-concurrency must be a positive, nonzero integer")
 	}
 
 	return nil
@@ -697,7 +690,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	}
 	wg.Go(func() error { return sc.Scan(cancelCtx, targets) })
 
-	arch := archiver.New(repo, targetFS, archiver.Options{FileReadConcurrency: backupOptions.FileReadConcurrency})
+	arch := archiver.New(repo, targetFS, archiver.Options{ReadConcurrency: backupOptions.ReadConcurrency})
 	arch.SelectByName = selectByNameFilter
 	arch.Select = selectFilter
 	arch.WithAtime = opts.WithAtime
