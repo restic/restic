@@ -299,8 +299,12 @@ func (node Node) createSymlinkAt(path string) error {
 	if runtime.GOOS == "windows" {
 		return nil
 	}
-	err := fs.Symlink(node.LinkTarget, path)
-	if err != nil {
+
+	if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return errors.Wrap(err, "Symlink")
+	}
+
+	if err := fs.Symlink(node.LinkTarget, path); err != nil {
 		return errors.Wrap(err, "Symlink")
 	}
 
