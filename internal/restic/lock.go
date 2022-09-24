@@ -264,8 +264,9 @@ func LoadLock(ctx context.Context, repo Repository, id ID) (*Lock, error) {
 }
 
 // RemoveStaleLocks deletes all locks detected as stale from the repository.
-func RemoveStaleLocks(ctx context.Context, repo Repository) error {
-	return ForAllLocks(ctx, repo, nil, func(id ID, lock *Lock, err error) error {
+func RemoveStaleLocks(ctx context.Context, repo Repository) (uint, error) {
+	var processed uint
+	err := ForAllLocks(ctx, repo, nil, func(id ID, lock *Lock, err error) error {
 		if err != nil {
 			// ignore locks that cannot be loaded
 			debug.Log("ignore lock %v: %v", id, err)
@@ -273,18 +274,29 @@ func RemoveStaleLocks(ctx context.Context, repo Repository) error {
 		}
 
 		if lock.Stale() {
-			return repo.Backend().Remove(ctx, Handle{Type: LockFile, Name: id.String()})
+			err = repo.Backend().Remove(ctx, Handle{Type: LockFile, Name: id.String()})
+			if err == nil {
+				processed++
+			}
+			return err
 		}
 
 		return nil
 	})
+	return processed, err
 }
 
 // RemoveAllLocks removes all locks forcefully.
-func RemoveAllLocks(ctx context.Context, repo Repository) error {
-	return repo.List(ctx, LockFile, func(id ID, size int64) error {
-		return repo.Backend().Remove(ctx, Handle{Type: LockFile, Name: id.String()})
+func RemoveAllLocks(ctx context.Context, repo Repository) (uint, error) {
+	var processed uint
+	err := repo.List(ctx, LockFile, func(id ID, size int64) error {
+		err := repo.Backend().Remove(ctx, Handle{Type: LockFile, Name: id.String()})
+		if err == nil {
+			processed++
+		}
+		return err
 	})
+	return processed, err
 }
 
 // ForAllLocks reads all locks in parallel and calls the given callback.
