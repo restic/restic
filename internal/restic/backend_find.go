@@ -3,6 +3,8 @@ package restic
 import (
 	"context"
 	"fmt"
+
+	"github.com/restic/restic/internal/debug"
 )
 
 // A MultipleIDMatchesError is returned by Find() when multiple IDs with a
@@ -31,6 +33,13 @@ func Find(ctx context.Context, be Lister, t FileType, prefix string) (string, er
 	defer cancel()
 
 	err := be.List(ctx, t, func(fi FileInfo) error {
+		// ignore filename which are not an id
+		_, err := ParseID(fi.Name)
+		if err != nil {
+			debug.Log("unable to parse %v as an ID", fi.Name)
+			return nil
+		}
+
 		if len(fi.Name) >= len(prefix) && prefix == fi.Name[:len(prefix)] {
 			if match == "" {
 				match = fi.Name
