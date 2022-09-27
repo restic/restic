@@ -24,9 +24,9 @@ The "rewrite" command excludes files from existing snapshots.
 By default 'rewrite' will create new snapshots that will contains same data as
 the source snapshots but without excluded files. All metadata (time, host, tags)
 will be preserved. The special tag 'rewrite' will be added to new snapshots to
-distinguish it from the source (unless --inplace is used).
+distinguish it from the source (unless --forget is used).
 
-If --inplace option is used, old snapshot will be removed from repository.
+If --forget option is used, old snapshot will be removed from repository.
 
 Snapshots to rewrite are specified using --host, --tag, --path or by providing
 a list of snapshot ids. Not specifying a snapshot id will rewrite all snapshots.
@@ -47,8 +47,8 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 // RewriteOptions collects all options for the rewrite command.
 type RewriteOptions struct {
-	Inplace bool
-	DryRun  bool
+	Forget bool
+	DryRun bool
 
 	snapshotFilterOptions
 	excludePatternOptions
@@ -60,7 +60,7 @@ func init() {
 	cmdRoot.AddCommand(cmdRewrite)
 
 	f := cmdRewrite.Flags()
-	f.BoolVarP(&rewriteOptions.Inplace, "inplace", "", false, "replace existing snapshots")
+	f.BoolVarP(&rewriteOptions.Forget, "forget", "", false, "replace existing snapshots")
 	f.BoolVarP(&rewriteOptions.DryRun, "dry-run", "n", false, "do not do anything, just print what would be done")
 
 	initMultiSnapshotFilterOptions(f, &rewriteOptions.snapshotFilterOptions, true)
@@ -123,7 +123,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 	}
 	*sn.Tree = filteredTree
 
-	if !opts.Inplace {
+	if !opts.Forget {
 		sn.AddTags([]string{"rewrite"})
 	}
 
@@ -133,7 +133,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 		return false, err
 	}
 
-	if opts.Inplace {
+	if opts.Forget {
 		h := restic.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
 		if err = repo.Backend().Remove(ctx, h); err != nil {
 			return false, err
@@ -159,7 +159,7 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 	if !opts.DryRun {
 		var lock *restic.Lock
 		var err error
-		if opts.Inplace {
+		if opts.Forget {
 			Verbosef("create exclusive lock for repository\n")
 			lock, ctx, err = lockRepoExclusive(ctx, repo)
 		} else {
