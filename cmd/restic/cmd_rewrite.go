@@ -47,12 +47,10 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 // RewriteOptions collects all options for the rewrite command.
 type RewriteOptions struct {
-	Hosts   []string
-	Paths   []string
-	Tags    restic.TagLists
 	Inplace bool
 	DryRun  bool
 
+	snapshotFilterOptions
 	excludePatternOptions
 }
 
@@ -62,12 +60,10 @@ func init() {
 	cmdRoot.AddCommand(cmdRewrite)
 
 	f := cmdRewrite.Flags()
-	f.StringArrayVarP(&rewriteOptions.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when no snapshot ID is given (can be specified multiple times)")
-	f.Var(&rewriteOptions.Tags, "tag", "only consider snapshots which include this `taglist`, when no snapshot-ID is given")
-	f.StringArrayVar(&rewriteOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot-ID is given")
 	f.BoolVarP(&rewriteOptions.Inplace, "inplace", "", false, "replace existing snapshots")
 	f.BoolVarP(&rewriteOptions.DryRun, "dry-run", "n", false, "do not do anything, just print what would be done")
 
+	initMultiSnapshotFilterOptions(f, &rewriteOptions.snapshotFilterOptions, true)
 	initExcludePatternOptions(f, &rewriteOptions.excludePatternOptions)
 }
 
