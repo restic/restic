@@ -55,3 +55,5 @@ issues:
     - exported (function|method|var|type|const) .* should have comment or be unexported
     # revive: ignore constants in all caps
     - don't use ALL_CAPS in Go names; use CamelCase
+    # revive: lots of packages don't have such a comment
+    - "package-comments: should have a package comment"
