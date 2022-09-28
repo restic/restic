@@ -1,3 +1,4 @@
+#touch
 name: netapp-cicd
 on:
   # run tests on push to master, but not when other branches are pushed to
