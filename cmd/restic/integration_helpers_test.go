@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -193,7 +192,6 @@ func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
 		Repo:     env.repo,
 		Quiet:    true,
 		CacheDir: env.cache,
-		ctx:      context.Background(),
 		password: rtest.TestPassword,
 		stdout:   os.Stdout,
 		stderr:   os.Stderr,

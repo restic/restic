@@ -35,7 +35,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runDiff(diffOptions, globalOptions, args)
+		return runDiff(cmd.Context(), diffOptions, globalOptions, args)
 	},
 }
 
@@ -321,21 +321,19 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 	return nil
 }
 
-func runDiff(opts DiffOptions, gopts GlobalOptions, args []string) error {
+func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []string) error {
 	if len(args) != 2 {
 		return errors.Fatalf("specify two snapshot IDs")
 	}
 
-	ctx, cancel := context.WithCancel(gopts.ctx)
-	defer cancel()
-
-	repo, err := OpenRepository(gopts)
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
 
 	if !gopts.NoLock {
-		lock, err := lockRepo(ctx, repo)
+		var lock *restic.Lock
+		lock, ctx, err = lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err

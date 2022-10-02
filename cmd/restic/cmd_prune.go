@@ -34,7 +34,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runPrune(pruneOptions, globalOptions)
+		return runPrune(cmd.Context(), pruneOptions, globalOptions)
 	},
 }
 
@@ -134,7 +134,7 @@ func verifyPruneOptions(opts *PruneOptions) error {
 	return nil
 }
 
-func runPrune(opts PruneOptions, gopts GlobalOptions) error {
+func runPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions) error {
 	err := verifyPruneOptions(&opts)
 	if err != nil {
 		return err
@@ -144,7 +144,7 @@ func runPrune(opts PruneOptions, gopts GlobalOptions) error {
 		return errors.Fatal("disabled compression and `--repack-uncompressed` are mutually exclusive")
 	}
 
-	repo, err := OpenRepository(gopts)
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
@@ -165,16 +165,16 @@ func runPrune(opts PruneOptions, gopts GlobalOptions) error {
 		opts.unsafeRecovery = true
 	}
 
-	lock, err := lockRepoExclusive(gopts.ctx, repo)
+	lock, ctx, err := lockRepoExclusive(ctx, repo)
 	defer unlockRepo(lock)
 	if err != nil {
 		return err
 	}
 
-	return runPruneWithRepo(opts, gopts, repo, restic.NewIDSet())
+	return runPruneWithRepo(ctx, opts, gopts, repo, restic.NewIDSet())
 }
 
-func runPruneWithRepo(opts PruneOptions, gopts GlobalOptions, repo *repository.Repository, ignoreSnapshots restic.IDSet) error {
+func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo *repository.Repository, ignoreSnapshots restic.IDSet) error {
 	// we do not need index updates while pruning!
 	repo.DisableAutoIndexUpdate()
 
@@ -184,12 +184,12 @@ func runPruneWithRepo(opts PruneOptions, gopts GlobalOptions, repo *repository.R
 
 	Verbosef("loading indexes...\n")
 	// loading the index before the snapshots is ok, as we use an exclusive lock here
-	err := repo.LoadIndex(gopts.ctx)
+	err := repo.LoadIndex(ctx)
 	if err != nil {
 		return err
 	}
 
-	plan, stats, err := planPrune(opts, gopts, repo, ignoreSnapshots)
+	plan, stats, err := planPrune(ctx, opts, gopts, repo, ignoreSnapshots)
 	if err != nil {
 		return err
 	}
@@ -199,7 +199,7 @@ func runPruneWithRepo(opts PruneOptions, gopts GlobalOptions, repo *repository.R
 		return err
 	}
 
-	return doPrune(opts, gopts, repo, plan)
+	return doPrune(ctx, opts, gopts, repo, plan)
 }
 
 type pruneStats struct {
@@ -255,11 +255,10 @@ type packInfoWithID struct {
 
 // planPrune selects which files to rewrite and which to delete and which blobs to keep.
 // Also some summary statistics are returned.
-func planPrune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, ignoreSnapshots restic.IDSet) (prunePlan, pruneStats, error) {
-	ctx := gopts.ctx
+func planPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo restic.Repository, ignoreSnapshots restic.IDSet) (prunePlan, pruneStats, error) {
 	var stats pruneStats
 
-	usedBlobs, err := getUsedBlobs(gopts, repo, ignoreSnapshots)
+	usedBlobs, err := getUsedBlobs(ctx, gopts, repo, ignoreSnapshots)
 	if err != nil {
 		return prunePlan{}, stats, err
 	}
@@ -652,9 +651,7 @@ func printPruneStats(gopts GlobalOptions, stats pruneStats) error {
 // - rebuild the index while ignoring all files that will be deleted
 // - delete the files
 // plan.removePacks and plan.ignorePacks are modified in this function.
-func doPrune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, plan prunePlan) (err error) {
-	ctx := gopts.ctx
-
+func doPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo restic.Repository, plan prunePlan) (err error) {
 	if opts.DryRun {
 		if !gopts.JSON && gopts.verbosity >= 2 {
 			if len(plan.removePacksFirst) > 0 {
@@ -670,7 +667,7 @@ func doPrune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, pla
 	// unreferenced packs can be safely deleted first
 	if len(plan.removePacksFirst) != 0 {
 		Verbosef("deleting unreferenced packs\n")
-		DeleteFiles(gopts, repo, plan.removePacksFirst, restic.PackFile)
+		DeleteFiles(ctx, gopts, repo, plan.removePacksFirst, restic.PackFile)
 	}
 
 	if len(plan.repackPacks) != 0 {
@@ -703,12 +700,12 @@ func doPrune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, pla
 	if opts.unsafeRecovery {
 		Verbosef("deleting index files\n")
 		indexFiles := repo.Index().(*repository.MasterIndex).IDs()
-		err = DeleteFilesChecked(gopts, repo, indexFiles, restic.IndexFile)
+		err = DeleteFilesChecked(ctx, gopts, repo, indexFiles, restic.IndexFile)
 		if err != nil {
 			return errors.Fatalf("%s", err)
 		}
 	} else if len(plan.ignorePacks) != 0 {
-		err = rebuildIndexFiles(gopts, repo, plan.ignorePacks, nil)
+		err = rebuildIndexFiles(ctx, gopts, repo, plan.ignorePacks, nil)
 		if err != nil {
 			return errors.Fatalf("%s", err)
 		}
@@ -716,11 +713,11 @@ func doPrune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, pla
 
 	if len(plan.removePacks) != 0 {
 		Verbosef("removing %d old packs\n", len(plan.removePacks))
-		DeleteFiles(gopts, repo, plan.removePacks, restic.PackFile)
+		DeleteFiles(ctx, gopts, repo, plan.removePacks, restic.PackFile)
 	}
 
 	if opts.unsafeRecovery {
-		_, err = writeIndexFiles(gopts, repo, plan.ignorePacks, nil)
+		_, err = writeIndexFiles(ctx, gopts, repo, plan.ignorePacks, nil)
 		if err != nil {
 			return errors.Fatalf("%s", err)
 		}
@@ -730,31 +727,29 @@ func doPrune(opts PruneOptions, gopts GlobalOptions, repo restic.Repository, pla
 	return nil
 }
 
-func writeIndexFiles(gopts GlobalOptions, repo restic.Repository, removePacks restic.IDSet, extraObsolete restic.IDs) (restic.IDSet, error) {
+func writeIndexFiles(ctx context.Context, gopts GlobalOptions, repo restic.Repository, removePacks restic.IDSet, extraObsolete restic.IDs) (restic.IDSet, error) {
 	Verbosef("rebuilding index\n")
 
 	bar := newProgressMax(!gopts.Quiet, 0, "packs processed")
-	obsoleteIndexes, err := repo.Index().Save(gopts.ctx, repo, removePacks, extraObsolete, bar)
+	obsoleteIndexes, err := repo.Index().Save(ctx, repo, removePacks, extraObsolete, bar)
 	bar.Done()
 	return obsoleteIndexes, err
 }
 
-func rebuildIndexFiles(gopts GlobalOptions, repo restic.Repository, removePacks restic.IDSet, extraObsolete restic.IDs) error {
-	obsoleteIndexes, err := writeIndexFiles(gopts, repo, removePacks, extraObsolete)
+func rebuildIndexFiles(ctx context.Context, gopts GlobalOptions, repo restic.Repository, removePacks restic.IDSet, extraObsolete restic.IDs) error {
+	obsoleteIndexes, err := writeIndexFiles(ctx, gopts, repo, removePacks, extraObsolete)
 	if err != nil {
 		return err
 	}
 
 	Verbosef("deleting obsolete index files\n")
-	return DeleteFilesChecked(gopts, repo, obsoleteIndexes, restic.IndexFile)
+	return DeleteFilesChecked(ctx, gopts, repo, obsoleteIndexes, restic.IndexFile)
 }
 
-func getUsedBlobs(gopts GlobalOptions, repo restic.Repository, ignoreSnapshots restic.IDSet) (usedBlobs restic.BlobSet, err error) {
-	ctx := gopts.ctx
-
+func getUsedBlobs(ctx context.Context, gopts GlobalOptions, repo restic.Repository, ignoreSnapshots restic.IDSet) (usedBlobs restic.BlobSet, err error) {
 	var snapshotTrees restic.IDs
 	Verbosef("loading all snapshots...\n")
-	err = restic.ForAllSnapshots(gopts.ctx, repo.Backend(), repo, ignoreSnapshots,
+	err = restic.ForAllSnapshots(ctx, repo.Backend(), repo, ignoreSnapshots,
 		func(id restic.ID, sn *restic.Snapshot, err error) error {
 			if err != nil {
 				debug.Log("failed to load snapshot %v (error %v)", id, err)

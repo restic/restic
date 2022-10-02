@@ -2,10 +2,13 @@ package restic_test
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/backend/mem"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -47,6 +50,31 @@ func TestMultipleLock(t *testing.T) {
 
 	rtest.OK(t, lock1.Unlock())
 	rtest.OK(t, lock2.Unlock())
+}
+
+type failLockLoadingBackend struct {
+	restic.Backend
+}
+
+func (be *failLockLoadingBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+	if h.Type == restic.LockFile {
+		return fmt.Errorf("error loading lock")
+	}
+	return be.Backend.Load(ctx, h, length, offset, fn)
+}
+
+func TestMultipleLockFailure(t *testing.T) {
+	be := &failLockLoadingBackend{Backend: mem.New()}
+	repo, cleanup := repository.TestRepositoryWithBackend(t, be, 0)
+	defer cleanup()
+
+	lock1, err := restic.NewLock(context.TODO(), repo)
+	rtest.OK(t, err)
+
+	_, err = restic.NewLock(context.TODO(), repo)
+	rtest.Assert(t, err != nil, "unreadable lock file did not result in an error")
+
+	rtest.OK(t, lock1.Unlock())
 }
 
 func TestLockExclusive(t *testing.T) {

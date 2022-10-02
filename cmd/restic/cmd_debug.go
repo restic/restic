@@ -46,7 +46,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runDebugDump(globalOptions, args)
+		return runDebugDump(cmd.Context(), globalOptions, args)
 	},
 }
 
@@ -141,18 +141,19 @@ func dumpIndexes(ctx context.Context, repo restic.Repository, wr io.Writer) erro
 	})
 }
 
-func runDebugDump(gopts GlobalOptions, args []string) error {
+func runDebugDump(ctx context.Context, gopts GlobalOptions, args []string) error {
 	if len(args) != 1 {
 		return errors.Fatal("type not specified")
 	}
 
-	repo, err := OpenRepository(gopts)
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
 
 	if !gopts.NoLock {
-		lock, err := lockRepo(gopts.ctx, repo)
+		var lock *restic.Lock
+		lock, ctx, err = lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
@@ -163,20 +164,20 @@ func runDebugDump(gopts GlobalOptions, args []string) error {
 
 	switch tpe {
 	case "indexes":
-		return dumpIndexes(gopts.ctx, repo, gopts.stdout)
+		return dumpIndexes(ctx, repo, gopts.stdout)
 	case "snapshots":
-		return debugPrintSnapshots(gopts.ctx, repo, gopts.stdout)
+		return debugPrintSnapshots(ctx, repo, gopts.stdout)
 	case "packs":
-		return printPacks(gopts.ctx, repo, gopts.stdout)
+		return printPacks(ctx, repo, gopts.stdout)
 	case "all":
 		Printf("snapshots:\n")
-		err := debugPrintSnapshots(gopts.ctx, repo, gopts.stdout)
+		err := debugPrintSnapshots(ctx, repo, gopts.stdout)
 		if err != nil {
 			return err
 		}
 
 		Printf("\nindexes:\n")
-		err = dumpIndexes(gopts.ctx, repo, gopts.stdout)
+		err = dumpIndexes(ctx, repo, gopts.stdout)
 		if err != nil {
 			return err
 		}
@@ -192,7 +193,7 @@ var cmdDebugExamine = &cobra.Command{
 	Short:             "Examine a pack file",
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runDebugExamine(globalOptions, args)
+		return runDebugExamine(cmd.Context(), globalOptions, args)
 	},
 }
 
@@ -426,8 +427,8 @@ func storePlainBlob(id restic.ID, prefix string, plain []byte) error {
 	return nil
 }
 
-func runDebugExamine(gopts GlobalOptions, args []string) error {
-	repo, err := OpenRepository(gopts)
+func runDebugExamine(ctx context.Context, gopts GlobalOptions, args []string) error {
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
@@ -436,7 +437,7 @@ func runDebugExamine(gopts GlobalOptions, args []string) error {
 	for _, name := range args {
 		id, err := restic.ParseID(name)
 		if err != nil {
-			name, err = restic.Find(gopts.ctx, repo.Backend(), restic.PackFile, name)
+			name, err = restic.Find(ctx, repo.Backend(), restic.PackFile, name)
 			if err == nil {
 				id, err = restic.ParseID(name)
 			}
@@ -453,20 +454,21 @@ func runDebugExamine(gopts GlobalOptions, args []string) error {
 	}
 
 	if !gopts.NoLock {
-		lock, err := lockRepo(gopts.ctx, repo)
+		var lock *restic.Lock
+		lock, ctx, err = lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
 		}
 	}
 
-	err = repo.LoadIndex(gopts.ctx)
+	err = repo.LoadIndex(ctx)
 	if err != nil {
 		return err
 	}
 
 	for _, id := range ids {
-		err := examinePack(gopts.ctx, repo, id)
+		err := examinePack(ctx, repo, id)
 		if err != nil {
 			Warnf("error: %v\n", err)
 		}

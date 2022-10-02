@@ -38,7 +38,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runFind(findOptions, globalOptions, args)
+		return runFind(cmd.Context(), findOptions, globalOptions, args)
 	},
 }
 
@@ -534,7 +534,7 @@ func (f *Finder) findObjectsPacks(ctx context.Context) {
 	}
 }
 
-func runFind(opts FindOptions, gopts GlobalOptions, args []string) error {
+func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []string) error {
 	if len(args) == 0 {
 		return errors.Fatal("wrong number of arguments")
 	}
@@ -568,30 +568,28 @@ func runFind(opts FindOptions, gopts GlobalOptions, args []string) error {
 		return errors.Fatal("cannot have several ID types")
 	}
 
-	repo, err := OpenRepository(gopts)
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
 
 	if !gopts.NoLock {
-		lock, err := lockRepo(gopts.ctx, repo)
+		var lock *restic.Lock
+		lock, ctx, err = lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
 		}
 	}
 
-	snapshotLister, err := backend.MemorizeList(gopts.ctx, repo.Backend(), restic.SnapshotFile)
+	snapshotLister, err := backend.MemorizeList(ctx, repo.Backend(), restic.SnapshotFile)
 	if err != nil {
 		return err
 	}
 
-	if err = repo.LoadIndex(gopts.ctx); err != nil {
+	if err = repo.LoadIndex(ctx); err != nil {
 		return err
 	}
-
-	ctx, cancel := context.WithCancel(gopts.ctx)
-	defer cancel()
 
 	f := &Finder{
 		repo:        repo,

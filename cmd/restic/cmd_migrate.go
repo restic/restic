@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+
 	"github.com/restic/restic/internal/migrations"
 	"github.com/restic/restic/internal/restic"
 
@@ -22,7 +24,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runMigrate(migrateOptions, globalOptions, args)
+		return runMigrate(cmd.Context(), migrateOptions, globalOptions, args)
 	},
 }
 
@@ -39,8 +41,7 @@ func init() {
 	f.BoolVarP(&migrateOptions.Force, "force", "f", false, `apply a migration a second time`)
 }
 
-func checkMigrations(opts MigrateOptions, gopts GlobalOptions, repo restic.Repository) error {
-	ctx := gopts.ctx
+func checkMigrations(ctx context.Context, repo restic.Repository) error {
 	Printf("available migrations:\n")
 	found := false
 
@@ -63,9 +64,7 @@ func checkMigrations(opts MigrateOptions, gopts GlobalOptions, repo restic.Repos
 	return nil
 }
 
-func applyMigrations(opts MigrateOptions, gopts GlobalOptions, repo restic.Repository, args []string) error {
-	ctx := gopts.ctx
-
+func applyMigrations(ctx context.Context, opts MigrateOptions, gopts GlobalOptions, repo restic.Repository, args []string) error {
 	var firsterr error
 	for _, name := range args {
 		for _, m := range migrations.All {
@@ -94,7 +93,7 @@ func applyMigrations(opts MigrateOptions, gopts GlobalOptions, repo restic.Repos
 					checkGopts := gopts
 					// the repository is already locked
 					checkGopts.NoLock = true
-					err = runCheck(checkOptions, checkGopts, []string{})
+					err = runCheck(ctx, checkOptions, checkGopts, []string{})
 					if err != nil {
 						return err
 					}
@@ -117,21 +116,21 @@ func applyMigrations(opts MigrateOptions, gopts GlobalOptions, repo restic.Repos
 	return firsterr
 }
 
-func runMigrate(opts MigrateOptions, gopts GlobalOptions, args []string) error {
-	repo, err := OpenRepository(gopts)
+func runMigrate(ctx context.Context, opts MigrateOptions, gopts GlobalOptions, args []string) error {
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
 
-	lock, err := lockRepoExclusive(gopts.ctx, repo)
+	lock, ctx, err := lockRepoExclusive(ctx, repo)
 	defer unlockRepo(lock)
 	if err != nil {
 		return err
 	}
 
 	if len(args) == 0 {
-		return checkMigrations(opts, gopts, repo)
+		return checkMigrations(ctx, repo)
 	}
 
-	return applyMigrations(opts, gopts, repo, args)
+	return applyMigrations(ctx, opts, gopts, repo, args)
 }

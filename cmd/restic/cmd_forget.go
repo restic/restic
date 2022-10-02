@@ -32,7 +32,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runForget(forgetOptions, globalOptions, args)
+		return runForget(cmd.Context(), forgetOptions, globalOptions, args)
 	},
 }
 
@@ -99,13 +99,13 @@ func init() {
 	addPruneOptions(cmdForget)
 }
 
-func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
+func runForget(ctx context.Context, opts ForgetOptions, gopts GlobalOptions, args []string) error {
 	err := verifyPruneOptions(&pruneOptions)
 	if err != nil {
 		return err
 	}
 
-	repo, err := OpenRepository(gopts)
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
@@ -115,15 +115,13 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	if !opts.DryRun || !gopts.NoLock {
-		lock, err := lockRepoExclusive(gopts.ctx, repo)
+		var lock *restic.Lock
+		lock, ctx, err = lockRepoExclusive(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
 		}
 	}
-
-	ctx, cancel := context.WithCancel(gopts.ctx)
-	defer cancel()
 
 	var snapshots restic.Snapshots
 	removeSnIDs := restic.NewIDSet()
@@ -219,7 +217,7 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 
 	if len(removeSnIDs) > 0 {
 		if !opts.DryRun {
-			err := DeleteFilesChecked(gopts, repo, removeSnIDs, restic.SnapshotFile)
+			err := DeleteFilesChecked(ctx, gopts, repo, removeSnIDs, restic.SnapshotFile)
 			if err != nil {
 				return err
 			}
@@ -242,7 +240,7 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 			Verbosef("%d snapshots have been removed, running prune\n", len(removeSnIDs))
 		}
 		pruneOptions.DryRun = opts.DryRun
-		return runPruneWithRepo(pruneOptions, gopts, repo, removeSnIDs)
+		return runPruneWithRepo(ctx, pruneOptions, gopts, repo, removeSnIDs)
 	}
 
 	return nil

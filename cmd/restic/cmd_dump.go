@@ -34,7 +34,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runDump(dumpOptions, globalOptions, args)
+		return runDump(cmd.Context(), dumpOptions, globalOptions, args)
 	},
 }
 
@@ -107,9 +107,7 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repositor
 	return fmt.Errorf("path %q not found in snapshot", item)
 }
 
-func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
-	ctx := gopts.ctx
-
+func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []string) error {
 	if len(args) != 2 {
 		return errors.Fatal("no file and no snapshot ID specified")
 	}
@@ -127,13 +125,14 @@ func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
 
 	splittedPath := splitPath(path.Clean(pathToPrint))
 
-	repo, err := OpenRepository(gopts)
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
 
 	if !gopts.NoLock {
-		lock, err := lockRepo(ctx, repo)
+		var lock *restic.Lock
+		lock, ctx, err = lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
@@ -154,7 +153,7 @@ func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	sn, err := restic.LoadSnapshot(gopts.ctx, repo, id)
+	sn, err := restic.LoadSnapshot(ctx, repo, id)
 	if err != nil {
 		Exitf(2, "loading snapshot %q failed: %v", snapshotIDString, err)
 	}

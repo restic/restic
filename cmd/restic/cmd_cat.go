@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/spf13/cobra"
@@ -24,7 +25,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runCat(globalOptions, args)
+		return runCat(cmd.Context(), globalOptions, args)
 	},
 }
 
@@ -32,23 +33,23 @@ func init() {
 	cmdRoot.AddCommand(cmdCat)
 }
 
-func runCat(gopts GlobalOptions, args []string) error {
+func runCat(ctx context.Context, gopts GlobalOptions, args []string) error {
 	if len(args) < 1 || (args[0] != "masterkey" && args[0] != "config" && len(args) != 2) {
 		return errors.Fatal("type or ID not specified")
 	}
 
-	repo, err := OpenRepository(gopts)
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
 
 	if !gopts.NoLock {
-		lock, err := lockRepo(gopts.ctx, repo)
+		var lock *restic.Lock
+		lock, ctx, err = lockRepo(ctx, repo)
+		defer unlockRepo(lock)
 		if err != nil {
 			return err
 		}
-
-		defer unlockRepo(lock)
 	}
 
 	tpe := args[0]
@@ -62,7 +63,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 			}
 
 			// find snapshot id with prefix
-			id, err = restic.FindSnapshot(gopts.ctx, repo.Backend(), args[1])
+			id, err = restic.FindSnapshot(ctx, repo.Backend(), args[1])
 			if err != nil {
 				return errors.Fatalf("could not find snapshot: %v\n", err)
 			}
@@ -79,7 +80,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 		Println(string(buf))
 		return nil
 	case "index":
-		buf, err := repo.LoadUnpacked(gopts.ctx, restic.IndexFile, id, nil)
+		buf, err := repo.LoadUnpacked(ctx, restic.IndexFile, id, nil)
 		if err != nil {
 			return err
 		}
@@ -87,7 +88,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 		Println(string(buf))
 		return nil
 	case "snapshot":
-		sn, err := restic.LoadSnapshot(gopts.ctx, repo, id)
+		sn, err := restic.LoadSnapshot(ctx, repo, id)
 		if err != nil {
 			return err
 		}
@@ -100,7 +101,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 		Println(string(buf))
 		return nil
 	case "key":
-		key, err := repository.LoadKey(gopts.ctx, repo, id.String())
+		key, err := repository.LoadKey(ctx, repo, id.String())
 		if err != nil {
 			return err
 		}
@@ -121,7 +122,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 		Println(string(buf))
 		return nil
 	case "lock":
-		lock, err := restic.LoadLock(gopts.ctx, repo, id)
+		lock, err := restic.LoadLock(ctx, repo, id)
 		if err != nil {
 			return err
 		}
@@ -136,7 +137,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 
 	case "pack":
 		h := restic.Handle{Type: restic.PackFile, Name: id.String()}
-		buf, err := backend.LoadAll(gopts.ctx, nil, repo.Backend(), h)
+		buf, err := backend.LoadAll(ctx, nil, repo.Backend(), h)
 		if err != nil {
 			return err
 		}
@@ -150,7 +151,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 		return err
 
 	case "blob":
-		err = repo.LoadIndex(gopts.ctx)
+		err = repo.LoadIndex(ctx)
 		if err != nil {
 			return err
 		}
@@ -161,7 +162,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 				continue
 			}
 
-			buf, err := repo.LoadBlob(gopts.ctx, t, id, nil)
+			buf, err := repo.LoadBlob(ctx, t, id, nil)
 			if err != nil {
 				return err
 			}

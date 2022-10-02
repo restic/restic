@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"strconv"
 
 	"github.com/restic/chunker"
@@ -25,7 +26,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runInit(initOptions, globalOptions, args)
+		return runInit(cmd.Context(), initOptions, globalOptions, args)
 	},
 }
 
@@ -47,7 +48,7 @@ func init() {
 	f.StringVar(&initOptions.RepositoryVersion, "repository-version", "stable", "repository format version to use, allowed values are a format version, 'latest' and 'stable'")
 }
 
-func runInit(opts InitOptions, gopts GlobalOptions, args []string) error {
+func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []string) error {
 	var version uint
 	if opts.RepositoryVersion == "latest" || opts.RepositoryVersion == "" {
 		version = restic.MaxRepoVersion
@@ -64,7 +65,7 @@ func runInit(opts InitOptions, gopts GlobalOptions, args []string) error {
 		return errors.Fatalf("only repository versions between %v and %v are allowed", restic.MinRepoVersion, restic.MaxRepoVersion)
 	}
 
-	chunkerPolynomial, err := maybeReadChunkerPolynomial(opts, gopts)
+	chunkerPolynomial, err := maybeReadChunkerPolynomial(ctx, opts, gopts)
 	if err != nil {
 		return err
 	}
@@ -81,7 +82,7 @@ func runInit(opts InitOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	be, err := create(repo, gopts.extended)
+	be, err := create(ctx, repo, gopts.extended)
 	if err != nil {
 		return errors.Fatalf("create repository at %s failed: %v\n", location.StripPassword(gopts.Repo), err)
 	}
@@ -94,7 +95,7 @@ func runInit(opts InitOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	err = s.Init(gopts.ctx, version, gopts.password, chunkerPolynomial)
+	err = s.Init(ctx, version, gopts.password, chunkerPolynomial)
 	if err != nil {
 		return errors.Fatalf("create key in repository at %s failed: %v\n", location.StripPassword(gopts.Repo), err)
 	}
@@ -108,14 +109,14 @@ func runInit(opts InitOptions, gopts GlobalOptions, args []string) error {
 	return nil
 }
 
-func maybeReadChunkerPolynomial(opts InitOptions, gopts GlobalOptions) (*chunker.Pol, error) {
+func maybeReadChunkerPolynomial(ctx context.Context, opts InitOptions, gopts GlobalOptions) (*chunker.Pol, error) {
 	if opts.CopyChunkerParameters {
 		otherGopts, _, err := fillSecondaryGlobalOpts(opts.secondaryRepoOptions, gopts, "secondary")
 		if err != nil {
 			return nil, err
 		}
 
-		otherRepo, err := OpenRepository(otherGopts)
+		otherRepo, err := OpenRepository(ctx, otherGopts)
 		if err != nil {
 			return nil, err
 		}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -30,7 +31,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runRestore(restoreOptions, globalOptions, args)
+		return runRestore(cmd.Context(), restoreOptions, globalOptions, args)
 	},
 }
 
@@ -63,8 +64,7 @@ func init() {
 	flags.BoolVar(&restoreOptions.Verify, "verify", false, "verify restored files content")
 }
 
-func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
-	ctx := gopts.ctx
+func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions, args []string) error {
 	hasExcludes := len(opts.Exclude) > 0 || len(opts.InsensitiveExclude) > 0
 	hasIncludes := len(opts.Include) > 0 || len(opts.InsensitiveInclude) > 0
 
@@ -117,13 +117,14 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 
 	debug.Log("restore %v to %v", snapshotIDString, opts.Target)
 
-	repo, err := OpenRepository(gopts)
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
 
 	if !gopts.NoLock {
-		lock, err := lockRepo(ctx, repo)
+		var lock *restic.Lock
+		lock, ctx, err = lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err

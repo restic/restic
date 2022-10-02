@@ -52,12 +52,12 @@ func testRunInit(t testing.TB, opts GlobalOptions) {
 	restic.TestDisableCheckPolynomial(t)
 	restic.TestSetLockTimeout(t, 0)
 
-	rtest.OK(t, runInit(InitOptions{}, opts, nil))
+	rtest.OK(t, runInit(context.TODO(), InitOptions{}, opts, nil))
 	t.Logf("repository initialized at %v", opts.Repo)
 }
 
 func testRunBackupAssumeFailure(t testing.TB, dir string, target []string, opts BackupOptions, gopts GlobalOptions) error {
-	ctx, cancel := context.WithCancel(gopts.ctx)
+	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
 
 	var wg errgroup.Group
@@ -71,7 +71,7 @@ func testRunBackupAssumeFailure(t testing.TB, dir string, target []string, opts 
 		defer cleanup()
 	}
 
-	backupErr := runBackup(opts, gopts, term, target)
+	backupErr := runBackup(ctx, opts, gopts, term, target)
 
 	cancel()
 
@@ -95,7 +95,7 @@ func testRunList(t testing.TB, tpe string, opts GlobalOptions) restic.IDs {
 		globalOptions.stdout = os.Stdout
 	}()
 
-	rtest.OK(t, runList(cmdList, opts, []string{tpe}))
+	rtest.OK(t, runList(context.TODO(), cmdList, opts, []string{tpe}))
 	return parseIDsFromReader(t, buf)
 }
 
@@ -112,7 +112,7 @@ func testRunRestoreLatest(t testing.TB, gopts GlobalOptions, dir string, paths [
 		},
 	}
 
-	rtest.OK(t, runRestore(opts, gopts, []string{"latest"}))
+	rtest.OK(t, runRestore(context.TODO(), opts, gopts, []string{"latest"}))
 }
 
 func testRunRestoreExcludes(t testing.TB, gopts GlobalOptions, dir string, snapshotID restic.ID, excludes []string) {
@@ -121,7 +121,7 @@ func testRunRestoreExcludes(t testing.TB, gopts GlobalOptions, dir string, snaps
 		Exclude: excludes,
 	}
 
-	rtest.OK(t, runRestore(opts, gopts, []string{snapshotID.String()}))
+	rtest.OK(t, runRestore(context.TODO(), opts, gopts, []string{snapshotID.String()}))
 }
 
 func testRunRestoreIncludes(t testing.TB, gopts GlobalOptions, dir string, snapshotID restic.ID, includes []string) {
@@ -130,11 +130,11 @@ func testRunRestoreIncludes(t testing.TB, gopts GlobalOptions, dir string, snaps
 		Include: includes,
 	}
 
-	rtest.OK(t, runRestore(opts, gopts, []string{snapshotID.String()}))
+	rtest.OK(t, runRestore(context.TODO(), opts, gopts, []string{snapshotID.String()}))
 }
 
 func testRunRestoreAssumeFailure(t testing.TB, snapshotID string, opts RestoreOptions, gopts GlobalOptions) error {
-	err := runRestore(opts, gopts, []string{snapshotID})
+	err := runRestore(context.TODO(), opts, gopts, []string{snapshotID})
 
 	return err
 }
@@ -144,7 +144,7 @@ func testRunCheck(t testing.TB, gopts GlobalOptions) {
 		ReadData:    true,
 		CheckUnused: true,
 	}
-	rtest.OK(t, runCheck(opts, gopts, nil))
+	rtest.OK(t, runCheck(context.TODO(), opts, gopts, nil))
 }
 
 func testRunCheckOutput(gopts GlobalOptions) (string, error) {
@@ -159,7 +159,7 @@ func testRunCheckOutput(gopts GlobalOptions) (string, error) {
 		ReadData: true,
 	}
 
-	err := runCheck(opts, gopts, nil)
+	err := runCheck(context.TODO(), opts, gopts, nil)
 	return buf.String(), err
 }
 
@@ -177,7 +177,7 @@ func testRunDiffOutput(gopts GlobalOptions, firstSnapshotID string, secondSnapsh
 	opts := DiffOptions{
 		ShowMetadata: false,
 	}
-	err := runDiff(opts, gopts, []string{firstSnapshotID, secondSnapshotID})
+	err := runDiff(context.TODO(), opts, gopts, []string{firstSnapshotID, secondSnapshotID})
 	return buf.String(), err
 }
 
@@ -187,7 +187,7 @@ func testRunRebuildIndex(t testing.TB, gopts GlobalOptions) {
 		globalOptions.stdout = os.Stdout
 	}()
 
-	rtest.OK(t, runRebuildIndex(RebuildIndexOptions{}, gopts))
+	rtest.OK(t, runRebuildIndex(context.TODO(), RebuildIndexOptions{}, gopts))
 }
 
 func testRunLs(t testing.TB, gopts GlobalOptions, snapshotID string) []string {
@@ -202,7 +202,7 @@ func testRunLs(t testing.TB, gopts GlobalOptions, snapshotID string) []string {
 
 	opts := LsOptions{}
 
-	rtest.OK(t, runLs(opts, gopts, []string{snapshotID}))
+	rtest.OK(t, runLs(context.TODO(), opts, gopts, []string{snapshotID}))
 
 	return strings.Split(buf.String(), "\n")
 }
@@ -218,7 +218,7 @@ func testRunFind(t testing.TB, wantJSON bool, gopts GlobalOptions, pattern strin
 
 	opts := FindOptions{}
 
-	rtest.OK(t, runFind(opts, gopts, []string{pattern}))
+	rtest.OK(t, runFind(context.TODO(), opts, gopts, []string{pattern}))
 
 	return buf.Bytes()
 }
@@ -234,7 +234,7 @@ func testRunSnapshots(t testing.TB, gopts GlobalOptions) (newest *Snapshot, snap
 
 	opts := SnapshotOptions{}
 
-	rtest.OK(t, runSnapshots(opts, globalOptions, []string{}))
+	rtest.OK(t, runSnapshots(context.TODO(), opts, globalOptions, []string{}))
 
 	snapshots := []Snapshot{}
 	rtest.OK(t, json.Unmarshal(buf.Bytes(), &snapshots))
@@ -251,7 +251,7 @@ func testRunSnapshots(t testing.TB, gopts GlobalOptions) (newest *Snapshot, snap
 
 func testRunForget(t testing.TB, gopts GlobalOptions, args ...string) {
 	opts := ForgetOptions{}
-	rtest.OK(t, runForget(opts, gopts, args))
+	rtest.OK(t, runForget(context.TODO(), opts, gopts, args))
 }
 
 func testRunForgetJSON(t testing.TB, gopts GlobalOptions, args ...string) {
@@ -269,7 +269,7 @@ func testRunForgetJSON(t testing.TB, gopts GlobalOptions, args ...string) {
 		Last:   1,
 	}
 
-	rtest.OK(t, runForget(opts, gopts, args))
+	rtest.OK(t, runForget(context.TODO(), opts, gopts, args))
 
 	var forgets []*ForgetGroup
 	rtest.OK(t, json.Unmarshal(buf.Bytes(), &forgets))
@@ -288,7 +288,7 @@ func testRunPrune(t testing.TB, gopts GlobalOptions, opts PruneOptions) {
 	defer func() {
 		gopts.backendTestHook = oldHook
 	}()
-	rtest.OK(t, runPrune(opts, gopts))
+	rtest.OK(t, runPrune(context.TODO(), opts, gopts))
 }
 
 func testSetupBackupData(t testing.TB, env *testEnvironment) string {
@@ -437,11 +437,11 @@ func TestBackupNonExistingFile(t *testing.T) {
 }
 
 func removePacksExcept(gopts GlobalOptions, t *testing.T, keep restic.IDSet, removeTreePacks bool) {
-	r, err := OpenRepository(gopts)
+	r, err := OpenRepository(context.TODO(), gopts)
 	rtest.OK(t, err)
 
 	// Get all tree packs
-	rtest.OK(t, r.LoadIndex(gopts.ctx))
+	rtest.OK(t, r.LoadIndex(context.TODO()))
 
 	treePacks := restic.NewIDSet()
 	r.Index().Each(context.TODO(), func(pb restic.PackedBlob) {
@@ -451,11 +451,11 @@ func removePacksExcept(gopts GlobalOptions, t *testing.T, keep restic.IDSet, rem
 	})
 
 	// remove all packs containing data blobs
-	rtest.OK(t, r.List(gopts.ctx, restic.PackFile, func(id restic.ID, size int64) error {
+	rtest.OK(t, r.List(context.TODO(), restic.PackFile, func(id restic.ID, size int64) error {
 		if treePacks.Has(id) != removeTreePacks || keep.Has(id) {
 			return nil
 		}
-		return r.Backend().Remove(gopts.ctx, restic.Handle{Type: restic.PackFile, Name: id.String()})
+		return r.Backend().Remove(context.TODO(), restic.Handle{Type: restic.PackFile, Name: id.String()})
 	}))
 }
 
@@ -479,7 +479,7 @@ func TestBackupSelfHealing(t *testing.T) {
 
 	testRunRebuildIndex(t, env.gopts)
 	// now the repo is also missing the data blob in the index; check should report this
-	rtest.Assert(t, runCheck(CheckOptions{}, env.gopts, nil) != nil,
+	rtest.Assert(t, runCheck(context.TODO(), CheckOptions{}, env.gopts, nil) != nil,
 		"check should have reported an error")
 
 	// second backup should report an error but "heal" this situation
@@ -502,9 +502,9 @@ func TestBackupTreeLoadError(t *testing.T) {
 	// Backup a subdirectory first, such that we can remove the tree pack for the subdirectory
 	testRunBackup(t, env.testdata, []string{"test"}, opts, env.gopts)
 
-	r, err := OpenRepository(env.gopts)
+	r, err := OpenRepository(context.TODO(), env.gopts)
 	rtest.OK(t, err)
-	rtest.OK(t, r.LoadIndex(env.gopts.ctx))
+	rtest.OK(t, r.LoadIndex(context.TODO()))
 	treePacks := restic.NewIDSet()
 	r.Index().Each(context.TODO(), func(pb restic.PackedBlob) {
 		if pb.Type == restic.TreeBlob {
@@ -517,11 +517,11 @@ func TestBackupTreeLoadError(t *testing.T) {
 
 	// delete the subdirectory pack first
 	for id := range treePacks {
-		rtest.OK(t, r.Backend().Remove(env.gopts.ctx, restic.Handle{Type: restic.PackFile, Name: id.String()}))
+		rtest.OK(t, r.Backend().Remove(context.TODO(), restic.Handle{Type: restic.PackFile, Name: id.String()}))
 	}
 	testRunRebuildIndex(t, env.gopts)
 	// now the repo is missing the tree blob in the index; check should report this
-	rtest.Assert(t, runCheck(CheckOptions{}, env.gopts, nil) != nil, "check should have reported an error")
+	rtest.Assert(t, runCheck(context.TODO(), CheckOptions{}, env.gopts, nil) != nil, "check should have reported an error")
 	// second backup should report an error but "heal" this situation
 	err = testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
 	rtest.Assert(t, err != nil, "backup should have reported an error for the subdirectory")
@@ -531,7 +531,7 @@ func TestBackupTreeLoadError(t *testing.T) {
 	removePacksExcept(env.gopts, t, restic.NewIDSet(), true)
 	testRunRebuildIndex(t, env.gopts)
 	// now the repo is also missing the data blob in the index; check should report this
-	rtest.Assert(t, runCheck(CheckOptions{}, env.gopts, nil) != nil, "check should have reported an error")
+	rtest.Assert(t, runCheck(context.TODO(), CheckOptions{}, env.gopts, nil) != nil, "check should have reported an error")
 	// second backup should report an error but "heal" this situation
 	err = testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
 	rtest.Assert(t, err != nil, "backup should have reported an error")
@@ -761,7 +761,7 @@ func testRunCopy(t testing.TB, srcGopts GlobalOptions, dstGopts GlobalOptions) {
 		},
 	}
 
-	rtest.OK(t, runCopy(copyOpts, gopts, nil))
+	rtest.OK(t, runCopy(context.TODO(), copyOpts, gopts, nil))
 }
 
 func TestCopy(t *testing.T) {
@@ -903,15 +903,15 @@ func TestInitCopyChunkerParams(t *testing.T) {
 			password: env2.gopts.password,
 		},
 	}
-	rtest.Assert(t, runInit(initOpts, env.gopts, nil) != nil, "expected invalid init options to fail")
+	rtest.Assert(t, runInit(context.TODO(), initOpts, env.gopts, nil) != nil, "expected invalid init options to fail")
 
 	initOpts.CopyChunkerParameters = true
-	rtest.OK(t, runInit(initOpts, env.gopts, nil))
+	rtest.OK(t, runInit(context.TODO(), initOpts, env.gopts, nil))
 
-	repo, err := OpenRepository(env.gopts)
+	repo, err := OpenRepository(context.TODO(), env.gopts)
 	rtest.OK(t, err)
 
-	otherRepo, err := OpenRepository(env2.gopts)
+	otherRepo, err := OpenRepository(context.TODO(), env2.gopts)
 	rtest.OK(t, err)
 
 	rtest.Assert(t, repo.Config().ChunkerPolynomial == otherRepo.Config().ChunkerPolynomial,
@@ -920,7 +920,7 @@ func TestInitCopyChunkerParams(t *testing.T) {
 }
 
 func testRunTag(t testing.TB, opts TagOptions, gopts GlobalOptions) {
-	rtest.OK(t, runTag(opts, gopts, []string{}))
+	rtest.OK(t, runTag(context.TODO(), opts, gopts, []string{}))
 }
 
 func TestTag(t *testing.T) {
@@ -1012,7 +1012,7 @@ func testRunKeyListOtherIDs(t testing.TB, gopts GlobalOptions) []string {
 		globalOptions.stdout = os.Stdout
 	}()
 
-	rtest.OK(t, runKey(gopts, []string{"list"}))
+	rtest.OK(t, runKey(context.TODO(), gopts, []string{"list"}))
 
 	scanner := bufio.NewScanner(buf)
 	exp := regexp.MustCompile(`^ ([a-f0-9]+) `)
@@ -1033,7 +1033,7 @@ func testRunKeyAddNewKey(t testing.TB, newPassword string, gopts GlobalOptions) 
 		testKeyNewPassword = ""
 	}()
 
-	rtest.OK(t, runKey(gopts, []string{"add"}))
+	rtest.OK(t, runKey(context.TODO(), gopts, []string{"add"}))
 }
 
 func testRunKeyAddNewKeyUserHost(t testing.TB, gopts GlobalOptions) {
@@ -1047,11 +1047,11 @@ func testRunKeyAddNewKeyUserHost(t testing.TB, gopts GlobalOptions) {
 	rtest.OK(t, cmdKey.Flags().Parse([]string{"--user=john", "--host=example.com"}))
 
 	t.Log("adding key for john@example.com")
-	rtest.OK(t, runKey(gopts, []string{"add"}))
+	rtest.OK(t, runKey(context.TODO(), gopts, []string{"add"}))
 
-	repo, err := OpenRepository(gopts)
+	repo, err := OpenRepository(context.TODO(), gopts)
 	rtest.OK(t, err)
-	key, err := repository.SearchKey(gopts.ctx, repo, testKeyNewPassword, 2, "")
+	key, err := repository.SearchKey(context.TODO(), repo, testKeyNewPassword, 2, "")
 	rtest.OK(t, err)
 
 	rtest.Equals(t, "john", key.Username)
@@ -1064,13 +1064,13 @@ func testRunKeyPasswd(t testing.TB, newPassword string, gopts GlobalOptions) {
 		testKeyNewPassword = ""
 	}()
 
-	rtest.OK(t, runKey(gopts, []string{"passwd"}))
+	rtest.OK(t, runKey(context.TODO(), gopts, []string{"passwd"}))
 }
 
 func testRunKeyRemove(t testing.TB, gopts GlobalOptions, IDs []string) {
 	t.Logf("remove %d keys: %q\n", len(IDs), IDs)
 	for _, id := range IDs {
-		rtest.OK(t, runKey(gopts, []string{"remove", id}))
+		rtest.OK(t, runKey(context.TODO(), gopts, []string{"remove", id}))
 	}
 }
 
@@ -1100,7 +1100,7 @@ func TestKeyAddRemove(t *testing.T) {
 
 	env.gopts.password = passwordList[len(passwordList)-1]
 	t.Logf("testing access with last password %q\n", env.gopts.password)
-	rtest.OK(t, runKey(env.gopts, []string{"list"}))
+	rtest.OK(t, runKey(context.TODO(), env.gopts, []string{"list"}))
 	testRunCheck(t, env.gopts)
 
 	testRunKeyAddNewKeyUserHost(t, env.gopts)
@@ -1128,16 +1128,16 @@ func TestKeyProblems(t *testing.T) {
 		testKeyNewPassword = ""
 	}()
 
-	err := runKey(env.gopts, []string{"passwd"})
+	err := runKey(context.TODO(), env.gopts, []string{"passwd"})
 	t.Log(err)
 	rtest.Assert(t, err != nil, "expected passwd change to fail")
 
-	err = runKey(env.gopts, []string{"add"})
+	err = runKey(context.TODO(), env.gopts, []string{"add"})
 	t.Log(err)
 	rtest.Assert(t, err != nil, "expected key adding to fail")
 
 	t.Logf("testing access with initial password %q\n", env.gopts.password)
-	rtest.OK(t, runKey(env.gopts, []string{"list"}))
+	rtest.OK(t, runKey(context.TODO(), env.gopts, []string{"list"}))
 	testRunCheck(t, env.gopts)
 }
 
@@ -1549,7 +1549,7 @@ func TestRebuildIndexFailsOnAppendOnly(t *testing.T) {
 	env.gopts.backendTestHook = func(r restic.Backend) (restic.Backend, error) {
 		return &appendOnlyBackend{r}, nil
 	}
-	err := runRebuildIndex(RebuildIndexOptions{}, env.gopts)
+	err := runRebuildIndex(context.TODO(), RebuildIndexOptions{}, env.gopts)
 	if err == nil {
 		t.Error("expected rebuildIndex to fail")
 	}
@@ -1645,18 +1645,18 @@ func testPrune(t *testing.T, pruneOpts PruneOptions, checkOpts CheckOptions) {
 	testRunForgetJSON(t, env.gopts)
 	testRunForget(t, env.gopts, firstSnapshot[0].String())
 	testRunPrune(t, env.gopts, pruneOpts)
-	rtest.OK(t, runCheck(checkOpts, env.gopts, nil))
+	rtest.OK(t, runCheck(context.TODO(), checkOpts, env.gopts, nil))
 }
 
 var pruneDefaultOptions = PruneOptions{MaxUnused: "5%"}
 
 func listPacks(gopts GlobalOptions, t *testing.T) restic.IDSet {
-	r, err := OpenRepository(gopts)
+	r, err := OpenRepository(context.TODO(), gopts)
 	rtest.OK(t, err)
 
 	packs := restic.NewIDSet()
 
-	rtest.OK(t, r.List(gopts.ctx, restic.PackFile, func(id restic.ID, size int64) error {
+	rtest.OK(t, r.List(context.TODO(), restic.PackFile, func(id restic.ID, size int64) error {
 		packs.Insert(id)
 		return nil
 	}))
@@ -1697,7 +1697,7 @@ func TestPruneWithDamagedRepository(t *testing.T) {
 		env.gopts.backendTestHook = oldHook
 	}()
 	// prune should fail
-	rtest.Assert(t, runPrune(pruneDefaultOptions, env.gopts) == errorPacksMissing,
+	rtest.Assert(t, runPrune(context.TODO(), pruneDefaultOptions, env.gopts) == errorPacksMissing,
 		"prune should have reported index not complete error")
 }
 
@@ -1769,7 +1769,7 @@ func testEdgeCaseRepo(t *testing.T, tarfile string, optionsCheck CheckOptions, o
 	if checkOK {
 		testRunCheck(t, env.gopts)
 	} else {
-		rtest.Assert(t, runCheck(optionsCheck, env.gopts, nil) != nil,
+		rtest.Assert(t, runCheck(context.TODO(), optionsCheck, env.gopts, nil) != nil,
 			"check should have reported an error")
 	}
 
@@ -1777,7 +1777,7 @@ func testEdgeCaseRepo(t *testing.T, tarfile string, optionsCheck CheckOptions, o
 		testRunPrune(t, env.gopts, optionsPrune)
 		testRunCheck(t, env.gopts)
 	} else {
-		rtest.Assert(t, runPrune(optionsPrune, env.gopts) != nil,
+		rtest.Assert(t, runPrune(context.TODO(), optionsPrune, env.gopts) != nil,
 			"prune should have reported an error")
 	}
 }
@@ -1848,10 +1848,10 @@ func TestListOnce(t *testing.T) {
 	testRunForgetJSON(t, env.gopts)
 	testRunForget(t, env.gopts, firstSnapshot[0].String())
 	testRunPrune(t, env.gopts, pruneOpts)
-	rtest.OK(t, runCheck(checkOpts, env.gopts, nil))
+	rtest.OK(t, runCheck(context.TODO(), checkOpts, env.gopts, nil))
 
-	rtest.OK(t, runRebuildIndex(RebuildIndexOptions{}, env.gopts))
-	rtest.OK(t, runRebuildIndex(RebuildIndexOptions{ReadAllPacks: true}, env.gopts))
+	rtest.OK(t, runRebuildIndex(context.TODO(), RebuildIndexOptions{}, env.gopts))
+	rtest.OK(t, runRebuildIndex(context.TODO(), RebuildIndexOptions{ReadAllPacks: true}, env.gopts))
 }
 
 func TestHardLink(t *testing.T) {
@@ -2204,7 +2204,7 @@ func TestFindListOnce(t *testing.T) {
 	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "3")}, opts, env.gopts)
 	thirdSnapshot := restic.NewIDSet(testRunList(t, "snapshots", env.gopts)...)
 
-	repo, err := OpenRepository(env.gopts)
+	repo, err := OpenRepository(context.TODO(), env.gopts)
 	rtest.OK(t, err)
 
 	snapshotIDs := restic.NewIDSet()

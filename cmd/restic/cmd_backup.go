@@ -57,8 +57,9 @@ Exit status is 3 if some source data could not be read (incomplete snapshot crea
 	},
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := cmd.Context()
 		var wg sync.WaitGroup
-		cancelCtx, cancel := context.WithCancel(globalOptions.ctx)
+		cancelCtx, cancel := context.WithCancel(ctx)
 		defer func() {
 			// shutdown termstatus
 			cancel()
@@ -72,7 +73,7 @@ Exit status is 3 if some source data could not be read (incomplete snapshot crea
 			term.Run(cancelCtx)
 		}()
 
-		return runBackup(backupOptions, globalOptions, term, args)
+		return runBackup(ctx, backupOptions, globalOptions, term, args)
 	},
 }
 
@@ -527,7 +528,7 @@ func findParentSnapshot(ctx context.Context, repo restic.Repository, opts Backup
 	return parentID, nil
 }
 
-func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Terminal, args []string) error {
+func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, term *termstatus.Terminal, args []string) error {
 	err := opts.Check(gopts, args)
 	if err != nil {
 		return err
@@ -550,7 +551,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 		Verbosef("open repository\n")
 	}
 
-	repo, err := OpenRepository(gopts)
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
@@ -577,7 +578,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 
 	progressReporter.SetMinUpdatePause(calculateProgressInterval(!gopts.Quiet, gopts.JSON))
 
-	wg, wgCtx := errgroup.WithContext(gopts.ctx)
+	wg, wgCtx := errgroup.WithContext(ctx)
 	cancelCtx, cancel := context.WithCancel(wgCtx)
 	defer cancel()
 	wg.Go(func() error { return progressReporter.Run(cancelCtx) })
@@ -585,7 +586,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	if !gopts.JSON {
 		progressPrinter.V("lock repository")
 	}
-	lock, err := lockRepo(gopts.ctx, repo)
+	lock, ctx, err := lockRepo(ctx, repo)
 	defer unlockRepo(lock)
 	if err != nil {
 		return err
@@ -605,7 +606,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 
 	var parentSnapshotID *restic.ID
 	if !opts.Stdin {
-		parentSnapshotID, err = findParentSnapshot(gopts.ctx, repo, opts, targets, timeStamp)
+		parentSnapshotID, err = findParentSnapshot(ctx, repo, opts, targets, timeStamp)
 		if err != nil {
 			return err
 		}
@@ -622,7 +623,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	if !gopts.JSON {
 		progressPrinter.V("load index files")
 	}
-	err = repo.LoadIndex(gopts.ctx)
+	err = repo.LoadIndex(ctx)
 	if err != nil {
 		return err
 	}
@@ -727,7 +728,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, term *termstatus.Termina
 	if !gopts.JSON {
 		progressPrinter.V("start backup on %v", targets)
 	}
-	_, id, err := arch.Snapshot(gopts.ctx, targets, snapshotOpts)
+	_, id, err := arch.Snapshot(ctx, targets, snapshotOpts)
 
 	// cleanly shutdown all running goroutines
 	cancel()

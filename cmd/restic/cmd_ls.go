@@ -42,7 +42,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runLs(lsOptions, globalOptions, args)
+		return runLs(cmd.Context(), lsOptions, globalOptions, args)
 	},
 }
 
@@ -111,7 +111,7 @@ func lsNodeJSON(enc *json.Encoder, path string, node *restic.Node) error {
 	return enc.Encode(n)
 }
 
-func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
+func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []string) error {
 	if len(args) == 0 {
 		return errors.Fatal("no snapshot ID specified, specify snapshot ID or use special ID 'latest'")
 	}
@@ -161,22 +161,19 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 		return false
 	}
 
-	repo, err := OpenRepository(gopts)
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
 
-	snapshotLister, err := backend.MemorizeList(gopts.ctx, repo.Backend(), restic.SnapshotFile)
+	snapshotLister, err := backend.MemorizeList(ctx, repo.Backend(), restic.SnapshotFile)
 	if err != nil {
 		return err
 	}
 
-	if err = repo.LoadIndex(gopts.ctx); err != nil {
+	if err = repo.LoadIndex(ctx); err != nil {
 		return err
 	}
-
-	ctx, cancel := context.WithCancel(gopts.ctx)
-	defer cancel()
 
 	var (
 		printSnapshot func(sn *restic.Snapshot)

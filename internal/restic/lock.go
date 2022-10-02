@@ -137,23 +137,37 @@ func (l *Lock) fillUserInfo() error {
 // non-exclusive lock is to be created, an error is only returned when an
 // exclusive lock is found.
 func (l *Lock) checkForOtherLocks(ctx context.Context) error {
-	return ForAllLocks(ctx, l.repo, l.lockID, func(id ID, lock *Lock, err error) error {
-		if err != nil {
-			// ignore locks that cannot be loaded
-			debug.Log("ignore lock %v: %v", id, err)
+	var err error
+	// retry locking a few times
+	for i := 0; i < 3; i++ {
+		err = ForAllLocks(ctx, l.repo, l.lockID, func(id ID, lock *Lock, err error) error {
+			if err != nil {
+				// if we cannot load a lock then it is unclear whether it can be ignored
+				// it could either be invalid or just unreadable due to network/permission problems
+				debug.Log("ignore lock %v: %v", id, err)
+				return errors.Fatal(err.Error())
+			}
+
+			if l.Exclusive {
+				return &alreadyLockedError{otherLock: lock}
+			}
+
+			if !l.Exclusive && lock.Exclusive {
+				return &alreadyLockedError{otherLock: lock}
+			}
+
+			return nil
+		})
+		// no lock detected
+		if err == nil {
 			return nil
 		}
-
-		if l.Exclusive {
-			return &alreadyLockedError{otherLock: lock}
+		// lock conflicts are permanent
+		if _, ok := err.(*alreadyLockedError); ok {
+			return err
 		}
-
-		if !l.Exclusive && lock.Exclusive {
-			return &alreadyLockedError{otherLock: lock}
-		}
-
-		return nil
-	})
+	}
+	return err
 }
 
 // createLock acquires the lock by creating a file in the repository.
@@ -175,14 +189,14 @@ func (l *Lock) Unlock() error {
 	return l.repo.Backend().Remove(context.TODO(), Handle{Type: LockFile, Name: l.lockID.String()})
 }
 
-var staleTimeout = 30 * time.Minute
+var StaleLockTimeout = 30 * time.Minute
 
 // Stale returns true if the lock is stale. A lock is stale if the timestamp is
 // older than 30 minutes or if it was created on the current machine and the
 // process isn't alive any more.
 func (l *Lock) Stale() bool {
 	debug.Log("testing if lock %v for process %d is stale", l, l.PID)
-	if time.Since(l.Time) > staleTimeout {
+	if time.Since(l.Time) > StaleLockTimeout {
 		debug.Log("lock is stale, timestamp is too old: %v\n", l.Time)
 		return true
 	}

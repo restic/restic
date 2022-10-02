@@ -68,7 +68,6 @@ type GlobalOptions struct {
 	backend.TransportOptions
 	limiter.Limits
 
-	ctx      context.Context
 	password string
 	stdout   io.Writer
 	stderr   io.Writer
@@ -93,10 +92,11 @@ var globalOptions = GlobalOptions{
 }
 
 var isReadingPassword bool
+var internalGlobalCtx context.Context
 
 func init() {
 	var cancel context.CancelFunc
-	globalOptions.ctx, cancel = context.WithCancel(context.Background())
+	internalGlobalCtx, cancel = context.WithCancel(context.Background())
 	AddCleanupHandler(func(code int) (int, error) {
 		// Must be called before the unlock cleanup handler to ensure that the latter is
 		// not blocked due to limited number of backend connections, see #1434
@@ -428,13 +428,13 @@ func ReadRepo(opts GlobalOptions) (string, error) {
 const maxKeys = 20
 
 // OpenRepository reads the password and opens the repository.
-func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
+func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Repository, error) {
 	repo, err := ReadRepo(opts)
 	if err != nil {
 		return nil, err
 	}
 
-	be, err := open(repo, opts, opts.extended)
+	be, err := open(ctx, repo, opts, opts.extended)
 	if err != nil {
 		return nil, err
 	}
@@ -478,7 +478,7 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 			continue
 		}
 
-		err = s.SearchKey(opts.ctx, opts.password, maxKeys, opts.KeyHint)
+		err = s.SearchKey(ctx, opts.password, maxKeys, opts.KeyHint)
 		if err != nil && passwordTriesLeft > 1 {
 			opts.password = ""
 			fmt.Fprintf(os.Stderr, "%s. Try again\n", err)
@@ -695,7 +695,7 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 }
 
 // Open the backend specified by a location config.
-func open(s string, gopts GlobalOptions, opts options.Options) (restic.Backend, error) {
+func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Options) (restic.Backend, error) {
 	debug.Log("parsing location %v", location.StripPassword(s))
 	loc, err := location.Parse(s)
 	if err != nil {
@@ -720,19 +720,19 @@ func open(s string, gopts GlobalOptions, opts options.Options) (restic.Backend, 
 
 	switch loc.Scheme {
 	case "local":
-		be, err = local.Open(globalOptions.ctx, cfg.(local.Config))
+		be, err = local.Open(ctx, cfg.(local.Config))
 	case "sftp":
-		be, err = sftp.Open(globalOptions.ctx, cfg.(sftp.Config))
+		be, err = sftp.Open(ctx, cfg.(sftp.Config))
 	case "s3":
-		be, err = s3.Open(globalOptions.ctx, cfg.(s3.Config), rt)
+		be, err = s3.Open(ctx, cfg.(s3.Config), rt)
 	case "gs":
 		be, err = gs.Open(cfg.(gs.Config), rt)
 	case "azure":
 		be, err = azure.Open(cfg.(azure.Config), rt)
 	case "swift":
-		be, err = swift.Open(globalOptions.ctx, cfg.(swift.Config), rt)
+		be, err = swift.Open(ctx, cfg.(swift.Config), rt)
 	case "b2":
-		be, err = b2.Open(globalOptions.ctx, cfg.(b2.Config), rt)
+		be, err = b2.Open(ctx, cfg.(b2.Config), rt)
 	case "rest":
 		be, err = rest.Open(cfg.(rest.Config), rt)
 	case "rclone":
@@ -760,7 +760,7 @@ func open(s string, gopts GlobalOptions, opts options.Options) (restic.Backend, 
 	}
 
 	// check if config is there
-	fi, err := be.Stat(globalOptions.ctx, restic.Handle{Type: restic.ConfigFile})
+	fi, err := be.Stat(ctx, restic.Handle{Type: restic.ConfigFile})
 	if err != nil {
 		return nil, errors.Fatalf("unable to open config file: %v\nIs there a repository at the following location?\n%v", err, location.StripPassword(s))
 	}
@@ -773,7 +773,7 @@ func open(s string, gopts GlobalOptions, opts options.Options) (restic.Backend, 
 }
 
 // Create the backend specified by URI.
-func create(s string, opts options.Options) (restic.Backend, error) {
+func create(ctx context.Context, s string, opts options.Options) (restic.Backend, error) {
 	debug.Log("parsing location %v", s)
 	loc, err := location.Parse(s)
 	if err != nil {
@@ -792,23 +792,23 @@ func create(s string, opts options.Options) (restic.Backend, error) {
 
 	switch loc.Scheme {
 	case "local":
-		return local.Create(globalOptions.ctx, cfg.(local.Config))
+		return local.Create(ctx, cfg.(local.Config))
 	case "sftp":
-		return sftp.Create(globalOptions.ctx, cfg.(sftp.Config))
+		return sftp.Create(ctx, cfg.(sftp.Config))
 	case "s3":
-		return s3.Create(globalOptions.ctx, cfg.(s3.Config), rt)
+		return s3.Create(ctx, cfg.(s3.Config), rt)
 	case "gs":
 		return gs.Create(cfg.(gs.Config), rt)
 	case "azure":
 		return azure.Create(cfg.(azure.Config), rt)
 	case "swift":
-		return swift.Open(globalOptions.ctx, cfg.(swift.Config), rt)
+		return swift.Open(ctx, cfg.(swift.Config), rt)
 	case "b2":
-		return b2.Create(globalOptions.ctx, cfg.(b2.Config), rt)
+		return b2.Create(ctx, cfg.(b2.Config), rt)
 	case "rest":
-		return rest.Create(globalOptions.ctx, cfg.(rest.Config), rt)
+		return rest.Create(ctx, cfg.(rest.Config), rt)
 	case "rclone":
-		return rclone.Create(globalOptions.ctx, cfg.(rclone.Config))
+		return rclone.Create(ctx, cfg.(rclone.Config))
 	}
 
 	debug.Log("invalid repository scheme: %v", s)
