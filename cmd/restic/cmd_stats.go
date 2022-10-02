@@ -47,7 +47,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runStats(globalCtx(), globalOptions, args)
+		return runStats(cmd.Context(), globalOptions, args)
 	},
 }
 

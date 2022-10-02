@@ -46,7 +46,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runDebugDump(globalCtx(), globalOptions, args)
+		return runDebugDump(cmd.Context(), globalOptions, args)
 	},
 }
 
@@ -193,7 +193,7 @@ var cmdDebugExamine = &cobra.Command{
 	Short:             "Examine a pack file",
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runDebugExamine(globalCtx(), globalOptions, args)
+		return runDebugExamine(cmd.Context(), globalOptions, args)
 	},
 }
 

@@ -145,10 +145,6 @@ func init() {
 	restoreTerminal()
 }
 
-func globalCtx() context.Context {
-	return internalGlobalCtx
-}
-
 // checkErrno returns nil when err is set to syscall.Errno(0), since this is no
 // error condition.
 func checkErrno(err error) error {

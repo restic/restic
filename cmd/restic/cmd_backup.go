@@ -57,7 +57,7 @@ Exit status is 3 if some source data could not be read (incomplete snapshot crea
 	},
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx := globalCtx()
+		ctx := cmd.Context()
 		var wg sync.WaitGroup
 		cancelCtx, cancel := context.WithCancel(ctx)
 		defer func() {

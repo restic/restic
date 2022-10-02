@@ -32,7 +32,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runForget(globalCtx(), forgetOptions, globalOptions, args)
+		return runForget(cmd.Context(), forgetOptions, globalOptions, args)
 	},
 }
 
