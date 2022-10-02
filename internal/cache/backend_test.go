@@ -199,6 +199,9 @@ func TestBackendRemoveBroken(t *testing.T) {
 
 	// check that the cache now contains the correct data
 	rd, err := c.load(h, 0, 0)
+	defer func() {
+		_ = rd.Close()
+	}()
 	test.OK(t, err)
 	cached, err := ioutil.ReadAll(rd)
 	test.OK(t, err)
