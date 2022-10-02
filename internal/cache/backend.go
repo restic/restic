@@ -131,21 +131,19 @@ func (b *Backend) cacheFile(ctx context.Context, h restic.Handle) error {
 	return nil
 }
 
-// loadFromCacheOrDelegate will try to load the file from the cache, and fall
-// back to the backend if that fails.
-func (b *Backend) loadFromCacheOrDelegate(ctx context.Context, h restic.Handle, length int, offset int64, consumer func(rd io.Reader) error) error {
+// loadFromCache will try to load the file from the cache.
+func (b *Backend) loadFromCache(ctx context.Context, h restic.Handle, length int, offset int64, consumer func(rd io.Reader) error) (bool, error) {
 	rd, err := b.Cache.load(h, length, offset)
 	if err != nil {
-		debug.Log("error caching %v: %v, falling back to backend", h, err)
-		return b.Backend.Load(ctx, h, length, offset, consumer)
+		return false, err
 	}
 
 	err = consumer(rd)
 	if err != nil {
 		_ = rd.Close() // ignore secondary errors
-		return err
+		return true, err
 	}
-	return rd.Close()
+	return true, rd.Close()
 }
 
 // Load loads a file from the cache or the backend.
@@ -161,14 +159,14 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 	}
 
 	// try loading from cache without checking that the handle is actually cached
-	rd, err := b.Cache.load(h, length, offset)
-	if err == nil {
-		err = consumer(rd)
-		if err != nil {
-			_ = rd.Close() // ignore secondary errors
-			return err
+	inCache, err := b.loadFromCache(ctx, h, length, offset, consumer)
+	if inCache {
+		if err == nil {
+			return nil
 		}
-		return rd.Close()
+
+		// drop from cache and retry once
+		_ = b.Cache.remove(h)
 	}
 	debug.Log("error loading %v from cache: %v", h, err)
 
@@ -181,7 +179,10 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 	debug.Log("auto-store %v in the cache", h)
 	err = b.cacheFile(ctx, h)
 	if err == nil {
-		return b.loadFromCacheOrDelegate(ctx, h, length, offset, consumer)
+		inCache, err = b.loadFromCache(ctx, h, length, offset, consumer)
+		if inCache {
+			return err
+		}
 	}
 
 	debug.Log("error caching %v: %v, falling back to backend", h, err)
