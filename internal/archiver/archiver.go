@@ -95,10 +95,10 @@ const (
 
 // Options is used to configure the archiver.
 type Options struct {
-	// FileReadConcurrency sets how many files are read in concurrently. If
+	// ReadConcurrency sets how many files are read in concurrently. If
 	// it's set to zero, at most two files are read in concurrently (which
 	// turned out to be a good default for most situations).
-	FileReadConcurrency uint
+	ReadConcurrency uint
 
 	// SaveBlobConcurrency sets how many blobs are hashed and saved
 	// concurrently. If it's set to zero, the default is the number of CPUs
@@ -113,11 +113,11 @@ type Options struct {
 // ApplyDefaults returns a copy of o with the default options set for all unset
 // fields.
 func (o Options) ApplyDefaults() Options {
-	if o.FileReadConcurrency == 0 {
+	if o.ReadConcurrency == 0 {
 		// two is a sweet spot for almost all situations. We've done some
 		// experiments documented here:
 		// https://github.com/borgbackup/borg/issues/3500
-		o.FileReadConcurrency = 2
+		o.ReadConcurrency = 2
 	}
 
 	if o.SaveBlobConcurrency == 0 {
@@ -132,7 +132,7 @@ func (o Options) ApplyDefaults() Options {
 		// Also allow waiting for FileReadConcurrency files, this is the maximum of FutureFiles
 		// which currently can be in progress. The main backup loop blocks when trying to queue
 		// more files to read.
-		o.SaveTreeConcurrency = uint(runtime.GOMAXPROCS(0)) + o.FileReadConcurrency
+		o.SaveTreeConcurrency = uint(runtime.GOMAXPROCS(0)) + o.ReadConcurrency
 	}
 
 	return o
@@ -782,7 +782,7 @@ func (arch *Archiver) runWorkers(ctx context.Context, wg *errgroup.Group) {
 	arch.fileSaver = NewFileSaver(ctx, wg,
 		arch.blobSaver.Save,
 		arch.Repo.Config().ChunkerPolynomial,
-		arch.Options.FileReadConcurrency, arch.Options.SaveBlobConcurrency)
+		arch.Options.ReadConcurrency, arch.Options.SaveBlobConcurrency)
 	arch.fileSaver.CompleteBlob = arch.CompleteBlob
 	arch.fileSaver.NodeFromFileInfo = arch.nodeFromFileInfo
 

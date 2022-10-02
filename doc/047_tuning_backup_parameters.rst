@@ -51,6 +51,16 @@ only applied for the single run of restic. The option can also be set via the en
 variable ``RESTIC_COMPRESSION``.
 
 
+File Read Concurrency
+=====================
+
+When backing up fast storage like NVME disks, it can be beneficial to increase the read
+concurrency. This can increase the overall performance of the backup operation by reading
+more files in parallel. You can specify the concurrency of file reads with the
+``RESTIC_READ_CONCURRENCY`` environment variable or the ``--read-concurrency`` flag for
+the ``backup`` command.
+
+
 Pack Size
 =========
 

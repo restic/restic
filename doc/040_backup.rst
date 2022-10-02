@@ -555,6 +555,7 @@ environment variables. The following lists these environment variables:
     RESTIC_COMPRESSION                  Compression mode (only available for repository format version 2)
     RESTIC_PROGRESS_FPS                 Frames per second by which the progress bar is updated
     RESTIC_PACK_SIZE                    Target size for pack files
+    RESTIC_READ_CONCURRENCY             Concurrency for file reads
 
     TMPDIR                              Location for temporary files
 

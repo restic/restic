@@ -2040,7 +2040,7 @@ func TestArchiverAbortEarlyOnError(t *testing.T) {
 
 			// at most two files may be queued
 			arch := New(testRepo, testFS, Options{
-				FileReadConcurrency: 2,
+				ReadConcurrency: 2,
 			})
 
 			_, _, err := arch.Snapshot(ctx, []string{"."}, SnapshotOptions{Time: time.Now()})
