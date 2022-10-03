@@ -88,6 +88,22 @@ func FindSnapshot(ctx context.Context, be Lister, s string) (ID, error) {
 	return ParseID(name)
 }
 
+func FindFilteredSnapshot(ctx context.Context, be Lister, loader LoaderUnpacked, hosts []string, tags []TagList, paths []string, snapshotID string) (ID, error) {
+	if snapshotID == "latest" {
+		id, err := FindLatestSnapshot(ctx, be, loader, paths, tags, hosts, nil)
+		if err == ErrNoSnapshotFound {
+			err = errors.Errorf("no snapshot matched given filter (Paths:%v Tags:%v Hosts:%v)", paths, tags, hosts)
+		}
+		return id, err
+	} else {
+		id, err := FindSnapshot(ctx, be, snapshotID)
+		if err != nil {
+			return ID{}, err
+		}
+		return id, err
+	}
+}
+
 type SnapshotFindCb func(string, *Snapshot, error) error
 
 // FindFilteredSnapshots yields Snapshots, either given explicitly by `snapshotIDs` or filtered from the list of all snapshots.
