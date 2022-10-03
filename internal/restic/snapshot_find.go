@@ -73,15 +73,19 @@ func findLatestSnapshot(ctx context.Context, be Lister, loader LoaderUnpacked, h
 // FindSnapshot takes a string and tries to find a snapshot whose ID matches
 // the string as closely as possible.
 func FindSnapshot(ctx context.Context, be Lister, loader LoaderUnpacked, s string) (*Snapshot, error) {
-	// find snapshot id with prefix
-	name, err := Find(ctx, be, SnapshotFile, s)
+	// no need to list snapshots if `s` is already a full id
+	id, err := ParseID(s)
 	if err != nil {
-		return nil, err
-	}
+		// find snapshot id with prefix
+		name, err := Find(ctx, be, SnapshotFile, s)
+		if err != nil {
+			return nil, err
+		}
 
-	id, err := ParseID(name)
-	if err != nil {
-		return nil, err
+		id, err = ParseID(name)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return LoadSnapshot(ctx, loader, id)
 }
