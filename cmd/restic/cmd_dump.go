@@ -50,7 +50,7 @@ func init() {
 	cmdRoot.AddCommand(cmdDump)
 
 	flags := cmdDump.Flags()
-	initMultiSnapshotFilterOptions(flags, &dumpOptions.snapshotFilterOptions, true)
+	initSingleSnapshotFilterOptions(flags, &dumpOptions.snapshotFilterOptions)
 	flags.StringVarP(&dumpOptions.Archive, "archive", "a", "tar", "set archive `format` as \"tar\" or \"zip\"")
 }
 
