@@ -13,12 +13,12 @@ import (
 var ErrNoSnapshotFound = errors.New("no snapshot found")
 
 // findLatestSnapshot finds latest snapshot with optional target/directory, tags, hostname, and timestamp filters.
-func findLatestSnapshot(ctx context.Context, be Lister, loader LoaderUnpacked, targets []string,
-	tagLists []TagList, hostnames []string, timeStampLimit *time.Time) (ID, error) {
+func findLatestSnapshot(ctx context.Context, be Lister, loader LoaderUnpacked,
+	hosts []string, tags []TagList, paths []string, timeStampLimit *time.Time) (ID, error) {
 
 	var err error
-	absTargets := make([]string, 0, len(targets))
-	for _, target := range targets {
+	absTargets := make([]string, 0, len(paths))
+	for _, target := range paths {
 		if !filepath.IsAbs(target) {
 			target, err = filepath.Abs(target)
 			if err != nil {
@@ -47,11 +47,11 @@ func findLatestSnapshot(ctx context.Context, be Lister, loader LoaderUnpacked, t
 			return nil
 		}
 
-		if !snapshot.HasHostname(hostnames) {
+		if !snapshot.HasHostname(hosts) {
 			return nil
 		}
 
-		if !snapshot.HasTagList(tagLists) {
+		if !snapshot.HasTagList(tags) {
 			return nil
 		}
 
@@ -91,7 +91,7 @@ func FindSnapshot(ctx context.Context, be Lister, s string) (ID, error) {
 
 func FindFilteredSnapshot(ctx context.Context, be Lister, loader LoaderUnpacked, hosts []string, tags []TagList, paths []string, timeStampLimit *time.Time, snapshotID string) (ID, error) {
 	if snapshotID == "latest" {
-		id, err := findLatestSnapshot(ctx, be, loader, paths, tags, hosts, timeStampLimit)
+		id, err := findLatestSnapshot(ctx, be, loader, hosts, tags, paths, timeStampLimit)
 		if err == ErrNoSnapshotFound {
 			err = fmt.Errorf("snapshot filter (Paths:%v Tags:%v Hosts:%v): %w", paths, tags, hosts, err)
 		}
@@ -124,7 +124,7 @@ func FindFilteredSnapshots(ctx context.Context, be Lister, loader LoaderUnpacked
 
 				usedFilter = true
 
-				id, err = findLatestSnapshot(ctx, be, loader, paths, tags, hosts, nil)
+				id, err = findLatestSnapshot(ctx, be, loader, hosts, tags, paths, nil)
 				if err == ErrNoSnapshotFound {
 					err = errors.Errorf("no snapshot matched given filter (Paths:%v Tags:%v Hosts:%v)", paths, tags, hosts)
 				}
