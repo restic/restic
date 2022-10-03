@@ -210,45 +210,52 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		}
 	}
 
-	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, opts.Hosts, opts.Tags, opts.Paths, args[:1]) {
-		printSnapshot(sn)
+	id, err := restic.FindFilteredSnapshot(ctx, snapshotLister, repo, opts.Hosts, opts.Tags, opts.Paths, args[0])
+	if err != nil {
+		return err
+	}
+	sn, err := restic.LoadSnapshot(ctx, repo, id)
+	if err != nil {
+		return err
+	}
 
-		err := walker.Walk(ctx, repo, *sn.Tree, nil, func(_ restic.ID, nodepath string, node *restic.Node, err error) (bool, error) {
-			if err != nil {
-				return false, err
-			}
-			if node == nil {
-				return false, nil
-			}
+	printSnapshot(sn)
 
-			if withinDir(nodepath) {
-				// if we're within a dir, print the node
-				printNode(nodepath, node)
-
-				// if recursive listing is requested, signal the walker that it
-				// should continue walking recursively
-				if opts.Recursive {
-					return false, nil
-				}
-			}
-
-			// if there's an upcoming match deeper in the tree (but we're not
-			// there yet), signal the walker to descend into any subdirs
-			if approachingMatchingTree(nodepath) {
-				return false, nil
-			}
-
-			// otherwise, signal the walker to not walk recursively into any
-			// subdirs
-			if node.Type == "dir" {
-				return false, walker.ErrSkipNode
-			}
-			return false, nil
-		})
-
+	err = walker.Walk(ctx, repo, *sn.Tree, nil, func(_ restic.ID, nodepath string, node *restic.Node, err error) (bool, error) {
 		if err != nil {
-			return err
+			return false, err
 		}
+		if node == nil {
+			return false, nil
+		}
+
+		if withinDir(nodepath) {
+			// if we're within a dir, print the node
+			printNode(nodepath, node)
+
+			// if recursive listing is requested, signal the walker that it
+			// should continue walking recursively
+			if opts.Recursive {
+				return false, nil
+			}
+		}
+
+		// if there's an upcoming match deeper in the tree (but we're not
+		// there yet), signal the walker to descend into any subdirs
+		if approachingMatchingTree(nodepath) {
+			return false, nil
+		}
+
+		// otherwise, signal the walker to not walk recursively into any
+		// subdirs
+		if node.Type == "dir" {
+			return false, walker.ErrSkipNode
+		}
+		return false, nil
+	})
+
+	if err != nil {
+		return err
 	}
 
 	return nil
