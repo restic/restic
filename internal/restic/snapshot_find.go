@@ -2,8 +2,6 @@ package restic
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"path/filepath"
 	"time"
 
@@ -90,28 +88,64 @@ func FindSnapshot(ctx context.Context, be Lister, s string) (ID, error) {
 	return ParseID(name)
 }
 
-// FindFilteredSnapshots yields Snapshots filtered from the list of all
-// snapshots.
-func FindFilteredSnapshots(ctx context.Context, be Lister, loader LoaderUnpacked, hosts []string, tags []TagList, paths []string) (Snapshots, error) {
-	results := make(Snapshots, 0, 20)
+type SnapshotFindCb func(string, *Snapshot, error) error
 
-	err := ForAllSnapshots(ctx, be, loader, nil, func(id ID, sn *Snapshot, err error) error {
+// FindFilteredSnapshots yields Snapshots, either given explicitly by `snapshotIDs` or filtered from the list of all snapshots.
+func FindFilteredSnapshots(ctx context.Context, be Lister, loader LoaderUnpacked, hosts []string, tags []TagList, paths []string, snapshotIDs []string, fn SnapshotFindCb) error {
+	if len(snapshotIDs) != 0 {
+		var err error
+		usedFilter := false
+
+		ids := NewIDSet()
+		// Process all snapshot IDs given as arguments.
+		for _, s := range snapshotIDs {
+			var id ID
+			if s == "latest" {
+				if usedFilter {
+					continue
+				}
+
+				usedFilter = true
+
+				id, err = FindLatestSnapshot(ctx, be, loader, paths, tags, hosts, nil)
+				if err == ErrNoSnapshotFound {
+					err = errors.Errorf("no snapshot matched given filter (Paths:%v Tags:%v Hosts:%v)", paths, tags, hosts)
+				}
+			} else {
+				id, err = FindSnapshot(ctx, be, s)
+			}
+
+			var sn *Snapshot
+			if ids.Has(id) {
+				continue
+			} else if !id.IsNull() {
+				ids.Insert(id)
+				sn, err = LoadSnapshot(ctx, loader, id)
+				s = id.String()
+			}
+
+			err = fn(s, sn, err)
+			if err != nil {
+				return err
+			}
+		}
+
+		// Give the user some indication their filters are not used.
+		if !usedFilter && (len(hosts) != 0 || len(tags) != 0 || len(paths) != 0) {
+			return fn("filters", nil, errors.Errorf("explicit snapshot ids are given"))
+		}
+		return nil
+	}
+
+	return ForAllSnapshots(ctx, be, loader, nil, func(id ID, sn *Snapshot, err error) error {
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "could not load snapshot %v: %v\n", id.Str(), err)
-			return nil
+			return fn(id.String(), sn, err)
 		}
 
 		if !sn.HasHostname(hosts) || !sn.HasTagList(tags) || !sn.HasPaths(paths) {
 			return nil
 		}
 
-		results = append(results, sn)
-		return nil
+		return fn(id.String(), sn, err)
 	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return results, nil
 }
