@@ -15,6 +15,7 @@ type snapshotFilterOptions struct {
 }
 
 // initMultiSnapshotFilterOptions is used for commands that work on multiple snapshots
+// MUST be combined with restic.FindFilteredSnapshots or FindFilteredSnapshots
 func initMultiSnapshotFilterOptions(flags *pflag.FlagSet, options *snapshotFilterOptions, addHostShorthand bool) {
 	hostShorthand := "H"
 	if !addHostShorthand {
@@ -26,6 +27,7 @@ func initMultiSnapshotFilterOptions(flags *pflag.FlagSet, options *snapshotFilte
 }
 
 // initSingleSnapshotFilterOptions is used for commands that work on a single snapshot
+// MUST be combined with restic.FindFilteredSnapshot
 func initSingleSnapshotFilterOptions(flags *pflag.FlagSet, options *snapshotFilterOptions) {
 	flags.StringArrayVarP(&options.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when snapshot ID \"latest\" is given (can be specified multiple times)")
 	flags.Var(&options.Tags, "tag", "only consider snapshots including `tag[,tag,...]`, when snapshot ID \"latest\" is given (can be specified multiple times)")
