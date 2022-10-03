@@ -16,13 +16,13 @@ func TestFindLatestSnapshot(t *testing.T) {
 	restic.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:07"), 1, 0)
 	latestSnapshot := restic.TestCreateSnapshot(t, repo, parseTimeUTC("2019-09-09 09:09:09"), 1, 0)
 
-	id, err := restic.FindFilteredSnapshot(context.TODO(), repo.Backend(), repo, []string{"foo"}, []restic.TagList{}, []string{}, nil, "latest")
+	sn, err := restic.FindFilteredSnapshot(context.TODO(), repo.Backend(), repo, []string{"foo"}, []restic.TagList{}, []string{}, nil, "latest")
 	if err != nil {
 		t.Fatalf("FindLatestSnapshot returned error: %v", err)
 	}
 
-	if id != *latestSnapshot.ID() {
-		t.Errorf("FindLatestSnapshot returned wrong snapshot ID: %v", id)
+	if *sn.ID() != *latestSnapshot.ID() {
+		t.Errorf("FindLatestSnapshot returned wrong snapshot ID: %v", *sn.ID())
 	}
 }
 
@@ -36,12 +36,12 @@ func TestFindLatestSnapshotWithMaxTimestamp(t *testing.T) {
 
 	maxTimestamp := parseTimeUTC("2018-08-08 08:08:08")
 
-	id, err := restic.FindFilteredSnapshot(context.TODO(), repo.Backend(), repo, []string{"foo"}, []restic.TagList{}, []string{}, &maxTimestamp, "latest")
+	sn, err := restic.FindFilteredSnapshot(context.TODO(), repo.Backend(), repo, []string{"foo"}, []restic.TagList{}, []string{}, &maxTimestamp, "latest")
 	if err != nil {
 		t.Fatalf("FindLatestSnapshot returned error: %v", err)
 	}
 
-	if id != *desiredSnapshot.ID() {
-		t.Errorf("FindLatestSnapshot returned wrong snapshot ID: %v", id)
+	if *sn.ID() != *desiredSnapshot.ID() {
+		t.Errorf("FindLatestSnapshot returned wrong snapshot ID: %v", *sn.ID())
 	}
 }

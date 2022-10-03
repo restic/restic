@@ -13,8 +13,8 @@ import (
 var ErrNoSnapshotFound = errors.New("no snapshot found")
 
 // findLatestSnapshot finds latest snapshot with optional target/directory, tags, hostname, and timestamp filters.
-func findLatestSnapshot(ctx context.Context, be Lister, loader LoaderUnpacked,
-	hosts []string, tags []TagList, paths []string, timeStampLimit *time.Time) (ID, error) {
+func findLatestSnapshot(ctx context.Context, be Lister, loader LoaderUnpacked, hosts []string,
+	tags []TagList, paths []string, timeStampLimit *time.Time) (*Snapshot, error) {
 
 	var err error
 	absTargets := make([]string, 0, len(paths))
@@ -22,17 +22,13 @@ func findLatestSnapshot(ctx context.Context, be Lister, loader LoaderUnpacked,
 		if !filepath.IsAbs(target) {
 			target, err = filepath.Abs(target)
 			if err != nil {
-				return ID{}, errors.Wrap(err, "Abs")
+				return nil, errors.Wrap(err, "Abs")
 			}
 		}
 		absTargets = append(absTargets, filepath.Clean(target))
 	}
 
-	var (
-		latest   time.Time
-		latestID ID
-		found    bool
-	)
+	var latest *Snapshot
 
 	err = ForAllSnapshots(ctx, be, loader, nil, func(id ID, snapshot *Snapshot, err error) error {
 		if err != nil {
@@ -43,7 +39,7 @@ func findLatestSnapshot(ctx context.Context, be Lister, loader LoaderUnpacked,
 			return nil
 		}
 
-		if snapshot.Time.Before(latest) {
+		if latest != nil && snapshot.Time.Before(latest.Time) {
 			return nil
 		}
 
@@ -59,50 +55,47 @@ func findLatestSnapshot(ctx context.Context, be Lister, loader LoaderUnpacked,
 			return nil
 		}
 
-		latest = snapshot.Time
-		latestID = id
-		found = true
+		latest = snapshot
 		return nil
 	})
 
 	if err != nil {
-		return ID{}, err
+		return nil, err
 	}
 
-	if !found {
-		return ID{}, ErrNoSnapshotFound
+	if latest == nil {
+		return nil, ErrNoSnapshotFound
 	}
 
-	return latestID, nil
+	return latest, nil
 }
 
 // FindSnapshot takes a string and tries to find a snapshot whose ID matches
 // the string as closely as possible.
-func FindSnapshot(ctx context.Context, be Lister, s string) (ID, error) {
-
+func FindSnapshot(ctx context.Context, be Lister, loader LoaderUnpacked, s string) (*Snapshot, error) {
 	// find snapshot id with prefix
 	name, err := Find(ctx, be, SnapshotFile, s)
 	if err != nil {
-		return ID{}, err
+		return nil, err
 	}
 
-	return ParseID(name)
+	id, err := ParseID(name)
+	if err != nil {
+		return nil, err
+	}
+	return LoadSnapshot(ctx, loader, id)
 }
 
-func FindFilteredSnapshot(ctx context.Context, be Lister, loader LoaderUnpacked, hosts []string, tags []TagList, paths []string, timeStampLimit *time.Time, snapshotID string) (ID, error) {
+// FindFilteredSnapshot returns either the latests from a filtered list of all snapshots or a snapshot specified by `snapshotID`.
+func FindFilteredSnapshot(ctx context.Context, be Lister, loader LoaderUnpacked, hosts []string, tags []TagList, paths []string, timeStampLimit *time.Time, snapshotID string) (*Snapshot, error) {
 	if snapshotID == "latest" {
-		id, err := findLatestSnapshot(ctx, be, loader, hosts, tags, paths, timeStampLimit)
+		sn, err := findLatestSnapshot(ctx, be, loader, hosts, tags, paths, timeStampLimit)
 		if err == ErrNoSnapshotFound {
 			err = fmt.Errorf("snapshot filter (Paths:%v Tags:%v Hosts:%v): %w", paths, tags, hosts, err)
 		}
-		return id, err
-	} else {
-		id, err := FindSnapshot(ctx, be, snapshotID)
-		if err != nil {
-			return ID{}, err
-		}
-		return id, err
+		return sn, err
 	}
+	return FindSnapshot(ctx, be, loader, snapshotID)
 }
 
 type SnapshotFindCb func(string, *Snapshot, error) error
@@ -116,7 +109,7 @@ func FindFilteredSnapshots(ctx context.Context, be Lister, loader LoaderUnpacked
 		ids := NewIDSet()
 		// Process all snapshot IDs given as arguments.
 		for _, s := range snapshotIDs {
-			var id ID
+			var sn *Snapshot
 			if s == "latest" {
 				if usedFilter {
 					continue
@@ -124,23 +117,24 @@ func FindFilteredSnapshots(ctx context.Context, be Lister, loader LoaderUnpacked
 
 				usedFilter = true
 
-				id, err = findLatestSnapshot(ctx, be, loader, hosts, tags, paths, nil)
+				sn, err = findLatestSnapshot(ctx, be, loader, hosts, tags, paths, nil)
 				if err == ErrNoSnapshotFound {
 					err = errors.Errorf("no snapshot matched given filter (Paths:%v Tags:%v Hosts:%v)", paths, tags, hosts)
 				}
+				if sn != nil {
+					ids.Insert(*sn.ID())
+				}
 			} else {
-				id, err = FindSnapshot(ctx, be, s)
+				sn, err = FindSnapshot(ctx, be, loader, s)
+				if err == nil {
+					if ids.Has(*sn.ID()) {
+						continue
+					} else {
+						ids.Insert(*sn.ID())
+						s = sn.ID().String()
+					}
+				}
 			}
-
-			var sn *Snapshot
-			if ids.Has(id) {
-				continue
-			} else if !id.IsNull() {
-				ids.Insert(id)
-				sn, err = LoadSnapshot(ctx, loader, id)
-				s = id.String()
-			}
-
 			err = fn(s, sn, err)
 			if err != nil {
 				return err

@@ -131,9 +131,9 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions, a
 		}
 	}
 
-	id, err := restic.FindFilteredSnapshot(ctx, repo.Backend(), repo, opts.Hosts, opts.Tags, opts.Paths, nil, snapshotIDString)
+	sn, err := restic.FindFilteredSnapshot(ctx, repo.Backend(), repo, opts.Hosts, opts.Tags, opts.Paths, nil, snapshotIDString)
 	if err != nil {
-		Exitf(1, "failed to find snapshot %q: %v", snapshotIDString, err)
+		Exitf(1, "failed to find snapshot: %v", err)
 	}
 
 	err = repo.LoadIndex(ctx)
@@ -141,10 +141,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions, a
 		return err
 	}
 
-	res, err := restorer.NewRestorer(ctx, repo, id, opts.Sparse)
-	if err != nil {
-		Exitf(2, "creating restorer failed: %v\n", err)
-	}
+	res := restorer.NewRestorer(ctx, repo, sn, opts.Sparse)
 
 	totalErrors := 0
 	res.Error = func(location string, err error) error {

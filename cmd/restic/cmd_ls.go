@@ -210,11 +210,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		}
 	}
 
-	id, err := restic.FindFilteredSnapshot(ctx, snapshotLister, repo, opts.Hosts, opts.Tags, opts.Paths, nil, args[0])
-	if err != nil {
-		return err
-	}
-	sn, err := restic.LoadSnapshot(ctx, repo, id)
+	sn, err := restic.FindFilteredSnapshot(ctx, snapshotLister, repo, opts.Hosts, opts.Tags, opts.Paths, nil, args[0])
 	if err != nil {
 		return err
 	}

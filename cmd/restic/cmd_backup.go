@@ -504,7 +504,7 @@ func collectTargets(opts BackupOptions, args []string) (targets []string, err er
 
 // parent returns the ID of the parent snapshot. If there is none, nil is
 // returned.
-func findParentSnapshot(ctx context.Context, repo restic.Repository, opts BackupOptions, targets []string, timeStampLimit time.Time) (parentID *restic.ID, err error) {
+func findParentSnapshot(ctx context.Context, repo restic.Repository, opts BackupOptions, targets []string, timeStampLimit time.Time) (*restic.Snapshot, error) {
 	if opts.Force {
 		return nil, nil
 	}
@@ -513,12 +513,12 @@ func findParentSnapshot(ctx context.Context, repo restic.Repository, opts Backup
 	if snName == "" {
 		snName = "latest"
 	}
-	id, err := restic.FindFilteredSnapshot(ctx, repo.Backend(), repo, []string{opts.Host}, []restic.TagList{}, targets, &timeStampLimit, snName)
+	sn, err := restic.FindFilteredSnapshot(ctx, repo.Backend(), repo, []string{opts.Host}, []restic.TagList{}, targets, &timeStampLimit, snName)
 	// Snapshot not found is ok if no explicit parent was set
 	if opts.Parent == "" && errors.Is(err, restic.ErrNoSnapshotFound) {
 		err = nil
 	}
-	return &id, err
+	return sn, err
 }
 
 func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, term *termstatus.Terminal, args []string) error {
@@ -597,16 +597,16 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		return err
 	}
 
-	var parentSnapshotID *restic.ID
+	var parentSnapshot *restic.Snapshot
 	if !opts.Stdin {
-		parentSnapshotID, err = findParentSnapshot(ctx, repo, opts, targets, timeStamp)
+		parentSnapshot, err = findParentSnapshot(ctx, repo, opts, targets, timeStamp)
 		if err != nil {
 			return err
 		}
 
 		if !gopts.JSON {
-			if parentSnapshotID != nil {
-				progressPrinter.P("using parent snapshot %v\n", parentSnapshotID.Str())
+			if parentSnapshot != nil {
+				progressPrinter.P("using parent snapshot %v\n", parentSnapshot.ID().Str())
 			} else {
 				progressPrinter.P("no parent snapshot found, will read all files\n")
 			}
@@ -706,16 +706,12 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		arch.ChangeIgnoreFlags |= archiver.ChangeIgnoreCtime
 	}
 
-	if parentSnapshotID == nil {
-		parentSnapshotID = &restic.ID{}
-	}
-
 	snapshotOpts := archiver.SnapshotOptions{
 		Excludes:       opts.Excludes,
 		Tags:           opts.Tags.Flatten(),
 		Time:           timeStamp,
 		Hostname:       opts.Host,
-		ParentSnapshot: *parentSnapshotID,
+		ParentSnapshot: parentSnapshot,
 	}
 
 	if !gopts.JSON {

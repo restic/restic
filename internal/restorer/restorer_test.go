@@ -323,13 +323,10 @@ func TestRestorer(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			repo, cleanup := repository.TestRepository(t)
 			defer cleanup()
-			_, id := saveSnapshot(t, repo, test.Snapshot)
+			sn, id := saveSnapshot(t, repo, test.Snapshot)
 			t.Logf("snapshot saved as %v", id.Str())
 
-			res, err := NewRestorer(context.TODO(), repo, id, false)
-			if err != nil {
-				t.Fatal(err)
-			}
+			res := NewRestorer(context.TODO(), repo, sn, false)
 
 			tempdir, cleanup := rtest.TempDir(t)
 			defer cleanup()
@@ -366,7 +363,7 @@ func TestRestorer(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			err = res.RestoreTo(ctx, tempdir)
+			err := res.RestoreTo(ctx, tempdir)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -446,13 +443,10 @@ func TestRestorerRelative(t *testing.T) {
 			repo, cleanup := repository.TestRepository(t)
 			defer cleanup()
 
-			_, id := saveSnapshot(t, repo, test.Snapshot)
+			sn, id := saveSnapshot(t, repo, test.Snapshot)
 			t.Logf("snapshot saved as %v", id.Str())
 
-			res, err := NewRestorer(context.TODO(), repo, id, false)
-			if err != nil {
-				t.Fatal(err)
-			}
+			res := NewRestorer(context.TODO(), repo, sn, false)
 
 			tempdir, cleanup := rtest.TempDir(t)
 			defer cleanup()
@@ -470,7 +464,7 @@ func TestRestorerRelative(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			err = res.RestoreTo(ctx, "restore")
+			err := res.RestoreTo(ctx, "restore")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -682,12 +676,9 @@ func TestRestorerTraverseTree(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			repo, cleanup := repository.TestRepository(t)
 			defer cleanup()
-			sn, id := saveSnapshot(t, repo, test.Snapshot)
+			sn, _ := saveSnapshot(t, repo, test.Snapshot)
 
-			res, err := NewRestorer(context.TODO(), repo, id, false)
-			if err != nil {
-				t.Fatal(err)
-			}
+			res := NewRestorer(context.TODO(), repo, sn, false)
 
 			res.SelectFilter = test.Select
 
@@ -700,7 +691,7 @@ func TestRestorerTraverseTree(t *testing.T) {
 			// make sure we're creating a new subdir of the tempdir
 			target := filepath.Join(tempdir, "target")
 
-			_, err = res.traverseTree(ctx, target, string(filepath.Separator), *sn.Tree, test.Visitor(t))
+			_, err := res.traverseTree(ctx, target, string(filepath.Separator), *sn.Tree, test.Visitor(t))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -735,7 +726,7 @@ func TestRestorerConsistentTimestampsAndPermissions(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
-	_, id := saveSnapshot(t, repo, Snapshot{
+	sn, _ := saveSnapshot(t, repo, Snapshot{
 		Nodes: map[string]Node{
 			"dir": Dir{
 				Mode:    normalizeFileMode(0750 | os.ModeDir),
@@ -766,8 +757,7 @@ func TestRestorerConsistentTimestampsAndPermissions(t *testing.T) {
 		},
 	})
 
-	res, err := NewRestorer(context.TODO(), repo, id, false)
-	rtest.OK(t, err)
+	res := NewRestorer(context.TODO(), repo, sn, false)
 
 	res.SelectFilter = func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
 		switch filepath.ToSlash(item) {
@@ -792,7 +782,7 @@ func TestRestorerConsistentTimestampsAndPermissions(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	err = res.RestoreTo(ctx, tempdir)
+	err := res.RestoreTo(ctx, tempdir)
 	rtest.OK(t, err)
 
 	var testPatterns = []struct {
@@ -824,10 +814,9 @@ func TestVerifyCancel(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
-	_, id := saveSnapshot(t, repo, snapshot)
+	sn, _ := saveSnapshot(t, repo, snapshot)
 
-	res, err := NewRestorer(context.TODO(), repo, id, false)
-	rtest.OK(t, err)
+	res := NewRestorer(context.TODO(), repo, sn, false)
 
 	tempdir, cleanup := rtest.TempDir(t)
 	defer cleanup()
@@ -836,7 +825,7 @@ func TestVerifyCancel(t *testing.T) {
 	defer cancel()
 
 	rtest.OK(t, res.RestoreTo(ctx, tempdir))
-	err = ioutil.WriteFile(filepath.Join(tempdir, "foo"), []byte("bar"), 0644)
+	err := ioutil.WriteFile(filepath.Join(tempdir, "foo"), []byte("bar"), 0644)
 	rtest.OK(t, err)
 
 	var errs []error
@@ -868,12 +857,11 @@ func TestRestorerSparseFiles(t *testing.T) {
 	rtest.OK(t, err)
 
 	arch := archiver.New(repo, target, archiver.Options{})
-	_, id, err := arch.Snapshot(context.Background(), []string{"/zeros"},
+	sn, _, err := arch.Snapshot(context.Background(), []string{"/zeros"},
 		archiver.SnapshotOptions{})
 	rtest.OK(t, err)
 
-	res, err := NewRestorer(context.TODO(), repo, id, true)
-	rtest.OK(t, err)
+	res := NewRestorer(context.TODO(), repo, sn, true)
 
 	tempdir, cleanup := rtest.TempDir(t)
 	defer cleanup()

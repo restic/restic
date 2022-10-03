@@ -1662,7 +1662,7 @@ func TestArchiverParent(t *testing.T) {
 			back := restictest.Chdir(t, tempdir)
 			defer back()
 
-			_, firstSnapshotID, err := arch.Snapshot(ctx, []string{"."}, SnapshotOptions{Time: time.Now()})
+			firstSnapshot, firstSnapshotID, err := arch.Snapshot(ctx, []string{"."}, SnapshotOptions{Time: time.Now()})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1690,7 +1690,7 @@ func TestArchiverParent(t *testing.T) {
 
 			opts := SnapshotOptions{
 				Time:           time.Now(),
-				ParentSnapshot: firstSnapshotID,
+				ParentSnapshot: firstSnapshot,
 			}
 			_, secondSnapshotID, err := arch.Snapshot(ctx, []string{"."}, opts)
 			if err != nil {
@@ -2063,7 +2063,7 @@ func TestArchiverAbortEarlyOnError(t *testing.T) {
 	}
 }
 
-func snapshot(t testing.TB, repo restic.Repository, fs fs.FS, parent restic.ID, filename string) (restic.ID, *restic.Node) {
+func snapshot(t testing.TB, repo restic.Repository, fs fs.FS, parent *restic.Snapshot, filename string) (*restic.Snapshot, *restic.Node) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -2073,7 +2073,7 @@ func snapshot(t testing.TB, repo restic.Repository, fs fs.FS, parent restic.ID, 
 		Time:           time.Now(),
 		ParentSnapshot: parent,
 	}
-	snapshot, snapshotID, err := arch.Snapshot(ctx, []string{filename}, sopts)
+	snapshot, _, err := arch.Snapshot(ctx, []string{filename}, sopts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2088,7 +2088,7 @@ func snapshot(t testing.TB, repo restic.Repository, fs fs.FS, parent restic.ID, 
 		t.Fatalf("unable to find node for testfile in snapshot")
 	}
 
-	return snapshotID, node
+	return snapshot, node
 }
 
 // StatFS allows overwriting what is returned by the Lstat function.
@@ -2170,7 +2170,7 @@ func TestMetadataChanged(t *testing.T) {
 		},
 	}
 
-	snapshotID, node2 := snapshot(t, repo, fs, restic.ID{}, "testfile")
+	sn, node2 := snapshot(t, repo, fs, nil, "testfile")
 
 	// set some values so we can then compare the nodes
 	want.Content = node2.Content
@@ -2201,7 +2201,7 @@ func TestMetadataChanged(t *testing.T) {
 	want.Group = ""
 
 	// make another snapshot
-	_, node3 := snapshot(t, repo, fs, snapshotID, "testfile")
+	_, node3 := snapshot(t, repo, fs, sn, "testfile")
 	// Override username and group to empty string - in case underlying system has user with UID 51234
 	// See https://github.com/restic/restic/issues/2372
 	node3.User = ""

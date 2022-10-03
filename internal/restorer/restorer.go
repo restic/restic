@@ -27,22 +27,16 @@ type Restorer struct {
 var restorerAbortOnAllErrors = func(location string, err error) error { return err }
 
 // NewRestorer creates a restorer preloaded with the content from the snapshot id.
-func NewRestorer(ctx context.Context, repo restic.Repository, id restic.ID, sparse bool) (*Restorer, error) {
+func NewRestorer(ctx context.Context, repo restic.Repository, sn *restic.Snapshot, sparse bool) *Restorer {
 	r := &Restorer{
 		repo:         repo,
 		sparse:       sparse,
 		Error:        restorerAbortOnAllErrors,
 		SelectFilter: func(string, string, *restic.Node) (bool, bool) { return true, true },
+		sn:           sn,
 	}
 
-	var err error
-
-	r.sn, err = restic.LoadSnapshot(ctx, repo, id)
-	if err != nil {
-		return nil, err
-	}
-
-	return r, nil
+	return r
 }
 
 type treeVisitor struct {
