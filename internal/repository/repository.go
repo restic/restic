@@ -163,12 +163,6 @@ func (r *Repository) SetDryRun() {
 	r.be = dryrun.New(r.be)
 }
 
-// PrefixLength returns the number of bytes required so that all prefixes of
-// all IDs of type t are unique.
-func (r *Repository) PrefixLength(ctx context.Context, t restic.FileType) (int, error) {
-	return restic.PrefixLength(ctx, r.be, t)
-}
-
 // LoadUnpacked loads and decrypts the file with the given type and ID, using
 // the supplied buffer (which must be empty). If the buffer is nil, a new
 // buffer will be allocated and returned.
@@ -575,7 +569,7 @@ func (r *Repository) Index() restic.MasterIndex {
 // SetIndex instructs the repository to use the given index.
 func (r *Repository) SetIndex(i restic.MasterIndex) error {
 	r.idx = i.(*MasterIndex)
-	return r.PrepareCache()
+	return r.prepareCache()
 }
 
 // LoadIndex loads all index files from the backend in parallel and stores them
@@ -617,7 +611,7 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 	}
 
 	// remove index files from the cache which have been removed in the repo
-	return r.PrepareCache()
+	return r.prepareCache()
 }
 
 // CreateIndexFromPacks creates a new index by reading all given pack files (with sizes).
@@ -683,9 +677,9 @@ func (r *Repository) CreateIndexFromPacks(ctx context.Context, packsize map[rest
 	return invalid, nil
 }
 
-// PrepareCache initializes the local cache. indexIDs is the list of IDs of
+// prepareCache initializes the local cache. indexIDs is the list of IDs of
 // index files still present in the repo.
-func (r *Repository) PrepareCache() error {
+func (r *Repository) prepareCache() error {
 	if r.Cache == nil {
 		return nil
 	}
