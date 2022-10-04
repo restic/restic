@@ -144,14 +144,14 @@ and / or a comma-separated tag list:
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo copy --repo2 /srv/restic-repo-copy --host luigi --path /srv --tag foo,bar
+    $ restic -r /srv/restic-repo-copy copy --from-repo /srv/restic-repo --host luigi --path /srv --tag foo,bar
 
 It is also possible to explicitly specify the list of snapshots to copy, in
 which case only these instead of all snapshots will be copied:
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo copy --repo2 /srv/restic-repo-copy 410b18a2 4e5d5487 latest
+    $ restic -r /srv/restic-repo-copy copy --from-repo /srv/restic-repo 410b18a2 4e5d5487 latest
 
 Ensuring deduplication for copied snapshots
 -------------------------------------------
@@ -170,7 +170,7 @@ using the same chunker parameters as the source repository:
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo-copy init --repo2 /srv/restic-repo --copy-chunker-params
+    $ restic -r /srv/restic-repo-copy init --from-repo /srv/restic-repo --copy-chunker-params
 
 Note that it is not possible to change the chunker parameters of an existing repository.
 
