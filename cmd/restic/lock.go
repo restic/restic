@@ -145,7 +145,7 @@ func monitorLockRefresh(ctx context.Context, lock *restic.Lock, lockInfo *lockCo
 		case <-refreshed:
 			lastRefresh = time.Now().Unix()
 		case <-timer.C:
-			if float64(time.Now().Unix()-lastRefresh) < refreshInterval.Seconds() {
+			if float64(time.Now().Unix()-lastRefresh) < refreshabilityTimeout.Seconds() {
 				// restart timer
 				timer.Reset(pollDuration)
 				continue
