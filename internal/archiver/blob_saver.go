@@ -43,51 +43,18 @@ func (s *BlobSaver) TriggerShutdown() {
 
 // Save stores a blob in the repo. It checks the index and the known blobs
 // before saving anything. It takes ownership of the buffer passed in.
-func (s *BlobSaver) Save(ctx context.Context, t restic.BlobType, buf *Buffer) FutureBlob {
-	ch := make(chan SaveBlobResponse, 1)
+func (s *BlobSaver) Save(ctx context.Context, t restic.BlobType, buf *Buffer, cb func(res SaveBlobResponse)) {
 	select {
-	case s.ch <- saveBlobJob{BlobType: t, buf: buf, ch: ch}:
+	case s.ch <- saveBlobJob{BlobType: t, buf: buf, cb: cb}:
 	case <-ctx.Done():
 		debug.Log("not sending job, context is cancelled")
-		close(ch)
-		return FutureBlob{ch: ch}
 	}
-
-	return FutureBlob{ch: ch}
-}
-
-// FutureBlob is returned by SaveBlob and will return the data once it has been processed.
-type FutureBlob struct {
-	ch <-chan SaveBlobResponse
-}
-
-func (s *FutureBlob) Poll() *SaveBlobResponse {
-	select {
-	case res, ok := <-s.ch:
-		if ok {
-			return &res
-		}
-	default:
-	}
-	return nil
-}
-
-// Take blocks until the result is available or the context is cancelled.
-func (s *FutureBlob) Take(ctx context.Context) SaveBlobResponse {
-	select {
-	case res, ok := <-s.ch:
-		if ok {
-			return res
-		}
-	case <-ctx.Done():
-	}
-	return SaveBlobResponse{}
 }
 
 type saveBlobJob struct {
 	restic.BlobType
 	buf *Buffer
-	ch  chan<- SaveBlobResponse
+	cb  func(res SaveBlobResponse)
 }
 
 type SaveBlobResponse struct {
@@ -128,11 +95,9 @@ func (s *BlobSaver) worker(ctx context.Context, jobs <-chan saveBlobJob) error {
 		res, err := s.saveBlob(ctx, job.BlobType, job.buf.Data)
 		if err != nil {
 			debug.Log("saveBlob returned error, exiting: %v", err)
-			close(job.ch)
 			return err
 		}
-		job.ch <- res
-		close(job.ch)
+		job.cb(res)
 		job.buf.Release()
 	}
 }

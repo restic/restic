@@ -34,10 +34,8 @@ func createTestFiles(t testing.TB, num int) (files []string, cleanup func()) {
 func startFileSaver(ctx context.Context, t testing.TB) (*FileSaver, context.Context, *errgroup.Group) {
 	wg, ctx := errgroup.WithContext(ctx)
 
-	saveBlob := func(ctx context.Context, tpe restic.BlobType, buf *Buffer) FutureBlob {
-		ch := make(chan SaveBlobResponse)
-		close(ch)
-		return FutureBlob{ch: ch}
+	saveBlob := func(ctx context.Context, tpe restic.BlobType, buf *Buffer, cb func(SaveBlobResponse)) {
+		cb(SaveBlobResponse{})
 	}
 
 	workers := uint(runtime.NumCPU())
