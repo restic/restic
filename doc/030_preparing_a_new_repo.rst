@@ -301,7 +301,7 @@ credentials of your Minio Server.
 .. code-block:: console
 
     $ export AWS_ACCESS_KEY_ID=<YOUR-MINIO-ACCESS-KEY-ID>
-    $ export AWS_SECRET_ACCESS_KEY= <YOUR-MINIO-SECRET-ACCESS-KEY>
+    $ export AWS_SECRET_ACCESS_KEY=<YOUR-MINIO-SECRET-ACCESS-KEY>
 
 Now you can easily initialize restic to use Minio server as a backend with
 this command.
