@@ -271,12 +271,7 @@ func (r *Repository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.
 		}
 
 		// load blob from pack
-		bt := t
-		if r.idx.IsMixedPack(blob.PackID) {
-			bt = restic.InvalidBlob
-		}
-		h := restic.Handle{Type: restic.PackFile,
-			Name: blob.PackID.String(), ContainedBlobType: bt}
+		h := restic.Handle{Type: restic.PackFile, Name: blob.PackID.String(), ContainedBlobType: t}
 
 		switch {
 		case cap(buf) < int(blob.Length):

@@ -157,8 +157,7 @@ func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packe
 	}
 
 	id := restic.IDFromHash(hr.Sum(nil))
-	h := restic.Handle{Type: restic.PackFile, Name: id.String(),
-		ContainedBlobType: t}
+	h := restic.Handle{Type: restic.PackFile, Name: id.String(), ContainedBlobType: t}
 	var beHash []byte
 	if beHr != nil {
 		beHash = beHr.Sum(nil)
