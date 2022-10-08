@@ -3,6 +3,7 @@ package restic_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -136,6 +137,7 @@ func TestTreeEqualSerialization(t *testing.T) {
 
 			rtest.Assert(t, tree.Insert(node) != nil, "no error on duplicate node")
 			rtest.Assert(t, builder.AddNode(node) != nil, "no error on duplicate node")
+			rtest.Assert(t, errors.Is(builder.AddNode(node), restic.ErrTreeNotOrdered), "wrong error returned")
 		}
 
 		treeBytes, err := json.Marshal(tree)

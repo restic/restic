@@ -27,7 +27,7 @@ type FileSaver struct {
 
 	CompleteBlob func(filename string, bytes uint64)
 
-	NodeFromFileInfo func(filename string, fi os.FileInfo) (*restic.Node, error)
+	NodeFromFileInfo func(snPath, filename string, fi os.FileInfo) (*restic.Node, error)
 }
 
 // NewFileSaver returns a new file saver. A worker pool with fileWorkers is
@@ -112,7 +112,7 @@ func (s *FileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 
 	debug.Log("%v", snPath)
 
-	node, err := s.NodeFromFileInfo(f.Name(), fi)
+	node, err := s.NodeFromFileInfo(snPath, f.Name(), fi)
 	if err != nil {
 		_ = f.Close()
 		fnr.err = err
