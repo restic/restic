@@ -174,13 +174,8 @@ func (be *Backend) IsNotExist(err error) bool {
 		return true
 	}
 
-	if er, ok := err.(*googleapi.Error); ok {
-		if er.Code == 404 {
-			return true
-		}
-	}
-
-	return false
+	var gerr *googleapi.Error
+	return errors.As(err, &gerr) && gerr.Code == 404
 }
 
 // Join combines path components with slashes.

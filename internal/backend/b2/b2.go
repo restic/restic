@@ -184,7 +184,14 @@ func (be *b2Backend) HasAtomicReplace() bool {
 
 // IsNotExist returns true if the error is caused by a non-existing file.
 func (be *b2Backend) IsNotExist(err error) bool {
-	return b2.IsNotExist(errors.Cause(err))
+	// blazer/b2 does not export its error types and values,
+	// so we can't use errors.{As,Is}.
+	for ; err != nil; err = errors.Unwrap(err) {
+		if b2.IsNotExist(err) {
+			return true
+		}
+	}
+	return false
 }
 
 // Load runs fn with a reader that yields the contents of the file at h at the
@@ -386,7 +393,7 @@ func (be *b2Backend) Delete(ctx context.Context) error {
 		}
 	}
 	err := be.Remove(ctx, restic.Handle{Type: restic.ConfigFile})
-	if err != nil && b2.IsNotExist(errors.Cause(err)) {
+	if err != nil && be.IsNotExist(err) {
 		err = nil
 	}
 

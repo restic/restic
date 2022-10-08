@@ -1197,7 +1197,7 @@ func TestRestoreFilter(t *testing.T) {
 			if ok, _ := filter.Match(pat, filepath.Base(testFile.name)); !ok {
 				rtest.OK(t, err)
 			} else {
-				rtest.Assert(t, os.IsNotExist(errors.Cause(err)),
+				rtest.Assert(t, os.IsNotExist(err),
 					"expected %v to not exist in restore step %v, but it exists, err %v", testFile.name, i+1, err)
 			}
 		}
@@ -1283,15 +1283,15 @@ func TestRestoreLatest(t *testing.T) {
 
 	testRunRestoreLatest(t, env.gopts, filepath.Join(env.base, "restore1"), []string{filepath.Dir(p1)}, nil)
 	rtest.OK(t, testFileSize(p1rAbs, int64(102)))
-	if _, err := os.Stat(p2rAbs); os.IsNotExist(errors.Cause(err)) {
-		rtest.Assert(t, os.IsNotExist(errors.Cause(err)),
+	if _, err := os.Stat(p2rAbs); os.IsNotExist(err) {
+		rtest.Assert(t, os.IsNotExist(err),
 			"expected %v to not exist in restore, but it exists, err %v", p2rAbs, err)
 	}
 
 	testRunRestoreLatest(t, env.gopts, filepath.Join(env.base, "restore2"), []string{filepath.Dir(p2)}, nil)
 	rtest.OK(t, testFileSize(p2rAbs, int64(103)))
-	if _, err := os.Stat(p1rAbs); os.IsNotExist(errors.Cause(err)) {
-		rtest.Assert(t, os.IsNotExist(errors.Cause(err)),
+	if _, err := os.Stat(p1rAbs); os.IsNotExist(err) {
+		rtest.Assert(t, os.IsNotExist(err),
 			"expected %v to not exist in restore, but it exists, err %v", p1rAbs, err)
 	}
 }
@@ -1861,7 +1861,7 @@ func TestHardLink(t *testing.T) {
 
 	datafile := filepath.Join("testdata", "test.hl.tar.gz")
 	fd, err := os.Open(datafile)
-	if os.IsNotExist(errors.Cause(err)) {
+	if os.IsNotExist(err) {
 		t.Skipf("unable to find data file %q, skipping", datafile)
 		return
 	}

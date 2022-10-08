@@ -64,6 +64,9 @@ type Backend interface {
 
 	// IsNotExist returns true if the error was caused by a non-existing file
 	// in the backend.
+	//
+	// The argument may be a wrapped error. The implementation is responsible
+	// for unwrapping it.
 	IsNotExist(err error) bool
 
 	// Delete removes all data in the backend.
