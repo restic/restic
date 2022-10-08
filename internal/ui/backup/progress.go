@@ -87,10 +87,13 @@ func NewProgress(printer ProgressPrinter) *Progress {
 		MinUpdatePause: time.Second / 60,
 		start:          time.Now(),
 
-		totalCh:     make(chan Counter),
-		processedCh: make(chan Counter),
+		// use buffered channels for the information used to update the status
+		// the shutdown of the `Run()` method is somewhat racy, but won't affect
+		// the final backup statistics
+		totalCh:     make(chan Counter, 100),
+		processedCh: make(chan Counter, 100),
 		errCh:       make(chan struct{}),
-		workerCh:    make(chan fileWorkerMessage),
+		workerCh:    make(chan fileWorkerMessage, 100),
 		closed:      make(chan struct{}),
 
 		summary: &Summary{},
