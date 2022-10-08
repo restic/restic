@@ -41,3 +41,16 @@ func TestRcloneExit(t *testing.T) {
 		rtest.Assert(t, err != nil, "expected an error")
 	}
 }
+
+// restic should detect rclone startup failures
+func TestRcloneFailedStart(t *testing.T) {
+	cfg := NewConfig()
+	// exits with exit code 1
+	cfg.Program = "false"
+	_, err := Open(cfg, nil)
+	var e *exec.ExitError
+	if !errors.As(err, &e) {
+		// unexpected error
+		rtest.OK(t, err)
+	}
+}

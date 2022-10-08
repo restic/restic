@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -37,29 +38,32 @@ type Backend struct {
 }
 
 // run starts command with args and initializes the StdioConn.
-func run(command string, args ...string) (*StdioConn, *sync.WaitGroup, func() error, error) {
+func run(command string, args ...string) (*StdioConn, *sync.WaitGroup, chan struct{}, func() error, error) {
 	cmd := exec.Command(command, args...)
 
 	p, err := cmd.StderrPipe()
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	var wg sync.WaitGroup
+	waitCh := make(chan struct{})
 
 	// start goroutine to add a prefix to all messages printed by to stderr by rclone
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		defer close(waitCh)
 		sc := bufio.NewScanner(p)
 		for sc.Scan() {
 			fmt.Fprintf(os.Stderr, "rclone: %v\n", sc.Text())
 		}
+		debug.Log("command has exited, closing waitCh")
 	}()
 
 	r, stdin, err := os.Pipe()
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	stdout, w, err := os.Pipe()
@@ -67,7 +71,7 @@ func run(command string, args ...string) (*StdioConn, *sync.WaitGroup, func() er
 		// close first pipe and ignore subsequent errors
 		_ = r.Close()
 		_ = stdin.Close()
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	cmd.Stdin = r
@@ -86,9 +90,9 @@ func run(command string, args ...string) (*StdioConn, *sync.WaitGroup, func() er
 	}
 	if err != nil {
 		if backend.IsErrDot(err) {
-			return nil, nil, nil, errors.Errorf("cannot implicitly run relative executable %v found in current directory, use -o rclone.program=./<program> to override", cmd.Path)
+			return nil, nil, nil, nil, errors.Errorf("cannot implicitly run relative executable %v found in current directory, use -o rclone.program=./<program> to override", cmd.Path)
 		}
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	c := &StdioConn{
@@ -97,7 +101,7 @@ func run(command string, args ...string) (*StdioConn, *sync.WaitGroup, func() er
 		cmd:     cmd,
 	}
 
-	return c, &wg, bg, nil
+	return c, &wg, waitCh, bg, nil
 }
 
 // wrappedConn adds bandwidth limiting capabilities to the StdioConn by
@@ -161,7 +165,7 @@ func newBackend(cfg Config, lim limiter.Limiter) (*Backend, error) {
 	arg0, args := args[0], args[1:]
 
 	debug.Log("running command: %v %v", arg0, args)
-	stdioConn, wg, bg, err := run(arg0, args...)
+	stdioConn, wg, waitCh, bg, err := run(arg0, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +190,6 @@ func newBackend(cfg Config, lim limiter.Limiter) (*Backend, error) {
 	}
 
 	cmd := stdioConn.cmd
-	waitCh := make(chan struct{})
 	be := &Backend{
 		tr:     tr,
 		cmd:    cmd,
@@ -195,32 +198,21 @@ func newBackend(cfg Config, lim limiter.Limiter) (*Backend, error) {
 		wg:     wg,
 	}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		debug.Log("waiting for error result")
-		err := cmd.Wait()
-		debug.Log("Wait returned %v", err)
-		be.waitResult = err
-		// close our side of the pipes to rclone, ignore errors
-		_ = stdioConn.CloseAll()
-		close(waitCh)
-	}()
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		debug.Log("monitoring command to cancel first HTTP request context")
-		select {
-		case <-ctx.Done():
-			debug.Log("context has been cancelled, returning")
-		case <-be.waitCh:
-			debug.Log("command has exited, cancelling context")
-			cancel()
-		}
+		<-waitCh
+		cancel()
+
+		// according to the documentation of StdErrPipe, Wait() must only be called after the former has completed
+		err := cmd.Wait()
+		debug.Log("Wait returned %v", err)
+		be.waitResult = err
+		// close our side of the pipes to rclone, ignore errors
+		_ = stdioConn.CloseAll()
 	}()
 
 	// send an HTTP request to the base URL, see if the server is there
@@ -244,7 +236,15 @@ func newBackend(cfg Config, lim limiter.Limiter) (*Backend, error) {
 		// ignore subsequent errors
 		_ = bg()
 		_ = cmd.Process.Kill()
-		return nil, errors.Errorf("error talking HTTP to rclone: %v", err)
+
+		// wait for rclone to exit
+		wg.Wait()
+		// try to return the program exit code if communication with rclone has failed
+		if be.waitResult != nil && (err == context.Canceled || errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, syscall.EPIPE)) {
+			err = be.waitResult
+		}
+
+		return nil, fmt.Errorf("error talking HTTP to rclone: %w", err)
 	}
 
 	debug.Log("HTTP status %q returned, moving instance to background", res.Status)
