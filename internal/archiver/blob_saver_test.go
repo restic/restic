@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/restic"
 	"golang.org/x/sync/errgroup"
 )
@@ -40,7 +40,7 @@ func TestBlobSaver(t *testing.T) {
 
 	wg, ctx := errgroup.WithContext(ctx)
 	saver := &saveFail{
-		idx: repository.NewMasterIndex(),
+		idx: index.NewMasterIndex(),
 	}
 
 	b := NewBlobSaver(ctx, wg, saver, uint(runtime.NumCPU()))
@@ -86,7 +86,7 @@ func TestBlobSaverError(t *testing.T) {
 
 			wg, ctx := errgroup.WithContext(ctx)
 			saver := &saveFail{
-				idx:    repository.NewMasterIndex(),
+				idx:    index.NewMasterIndex(),
 				failAt: int32(test.failAt),
 			}
 

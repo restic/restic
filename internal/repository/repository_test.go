@@ -18,6 +18,7 @@ import (
 	"github.com/klauspost/compress/zstd"
 	"github.com/restic/restic/internal/backend/local"
 	"github.com/restic/restic/internal/crypto"
+	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
@@ -267,13 +268,13 @@ func TestRepositoryLoadIndex(t *testing.T) {
 }
 
 // loadIndex loads the index id from backend and returns it.
-func loadIndex(ctx context.Context, repo restic.Repository, id restic.ID) (*repository.Index, error) {
+func loadIndex(ctx context.Context, repo restic.Repository, id restic.ID) (*index.Index, error) {
 	buf, err := repo.LoadUnpacked(ctx, restic.IndexFile, id, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	idx, oldFormat, err := repository.DecodeIndex(buf, id)
+	idx, oldFormat, err := index.DecodeIndex(buf, id)
 	if oldFormat {
 		fmt.Fprintf(os.Stderr, "index %v has old format\n", id.Str())
 	}
@@ -345,7 +346,7 @@ func benchmarkLoadIndex(b *testing.B, version uint) {
 	repo, cleanup := repository.TestRepositoryWithVersion(b, version)
 	defer cleanup()
 
-	idx := repository.NewIndex()
+	idx := index.NewIndex()
 
 	for i := 0; i < 5000; i++ {
 		idx.StorePack(restic.NewRandomID(), []restic.Blob{
@@ -357,7 +358,7 @@ func benchmarkLoadIndex(b *testing.B, version uint) {
 		})
 	}
 
-	id, err := repository.SaveIndex(context.TODO(), repo, idx)
+	id, err := index.SaveIndex(context.TODO(), repo, idx)
 	rtest.OK(b, err)
 
 	b.Logf("index saved as %v", id.Str())
@@ -400,7 +401,7 @@ func testRepositoryIncrementalIndex(t *testing.T, version uint) {
 
 	repo := r.(*repository.Repository)
 
-	repository.IndexFull = func(*repository.Index, bool) bool { return true }
+	index.IndexFull = func(*index.Index, bool) bool { return true }
 
 	// add a few rounds of packs
 	for j := 0; j < 5; j++ {

@@ -19,6 +19,7 @@ import (
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
@@ -38,7 +39,7 @@ type Repository struct {
 	cfg     restic.Config
 	key     *crypto.Key
 	keyName string
-	idx     *MasterIndex
+	idx     *index.MasterIndex
 	Cache   *cache.Cache
 
 	opts Options
@@ -118,7 +119,7 @@ func New(be restic.Backend, opts Options) (*Repository, error) {
 	repo := &Repository{
 		be:   be,
 		opts: opts,
-		idx:  NewMasterIndex(),
+		idx:  index.NewMasterIndex(),
 	}
 
 	return repo, nil
@@ -134,7 +135,7 @@ func (r *Repository) DisableAutoIndexUpdate() {
 func (r *Repository) setConfig(cfg restic.Config) {
 	r.cfg = cfg
 	if r.cfg.Version >= 2 {
-		r.idx.markCompressed()
+		r.idx.MarkCompressed()
 	}
 }
 
@@ -563,7 +564,7 @@ func (r *Repository) Index() restic.MasterIndex {
 
 // SetIndex instructs the repository to use the given index.
 func (r *Repository) SetIndex(i restic.MasterIndex) error {
-	r.idx = i.(*MasterIndex)
+	r.idx = i.(*index.MasterIndex)
 	return r.prepareCache()
 }
 
@@ -572,7 +573,7 @@ func (r *Repository) SetIndex(i restic.MasterIndex) error {
 func (r *Repository) LoadIndex(ctx context.Context) error {
 	debug.Log("Loading index")
 
-	err := ForAllIndexes(ctx, r, func(id restic.ID, idx *Index, oldFormat bool, err error) error {
+	err := index.ForAllIndexes(ctx, r, func(id restic.ID, idx *index.Index, oldFormat bool, err error) error {
 		if err != nil {
 			return err
 		}
@@ -829,7 +830,7 @@ func (r *Repository) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte
 	}
 
 	// first try to add to pending blobs; if not successful, this blob is already known
-	known = !r.idx.addPending(restic.BlobHandle{ID: newID, Type: t})
+	known = !r.idx.AddPending(restic.BlobHandle{ID: newID, Type: t})
 
 	// only save when needed or explicitly told
 	if !known || storeDuplicate {

@@ -23,6 +23,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -1477,11 +1478,11 @@ func TestRebuildIndex(t *testing.T) {
 }
 
 func TestRebuildIndexAlwaysFull(t *testing.T) {
-	indexFull := repository.IndexFull
+	indexFull := index.IndexFull
 	defer func() {
-		repository.IndexFull = indexFull
+		index.IndexFull = indexFull
 	}()
-	repository.IndexFull = func(*repository.Index, bool) bool { return true }
+	index.IndexFull = func(*index.Index, bool) bool { return true }
 	testRebuildIndex(t, nil)
 }
 

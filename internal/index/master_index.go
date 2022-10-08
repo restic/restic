@@ -1,4 +1,4 @@
-package repository
+package index
 
 import (
 	"bytes"
@@ -31,7 +31,7 @@ func NewMasterIndex() *MasterIndex {
 	return &MasterIndex{idx: idx, pendingBlobs: restic.NewBlobSet()}
 }
 
-func (mi *MasterIndex) markCompressed() {
+func (mi *MasterIndex) MarkCompressed() {
 	mi.compress = true
 }
 
@@ -65,7 +65,7 @@ func (mi *MasterIndex) LookupSize(bh restic.BlobHandle) (uint, bool) {
 // Before doing so it checks if this blob is already known.
 // Returns true if adding was successful and false if the blob
 // was already known
-func (mi *MasterIndex) addPending(bh restic.BlobHandle) bool {
+func (mi *MasterIndex) AddPending(bh restic.BlobHandle) bool {
 
 	mi.idxMutex.Lock()
 	defer mi.idxMutex.Unlock()

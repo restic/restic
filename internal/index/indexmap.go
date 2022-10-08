@@ -1,4 +1,4 @@
-package repository
+package index
 
 import (
 	"hash/maphash"

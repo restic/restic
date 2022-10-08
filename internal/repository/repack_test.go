@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -170,7 +171,7 @@ func flush(t *testing.T, repo restic.Repository) {
 }
 
 func rebuildIndex(t *testing.T, repo restic.Repository) {
-	err := repo.SetIndex(repository.NewMasterIndex())
+	err := repo.SetIndex(index.NewMasterIndex())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -207,7 +208,7 @@ func rebuildIndex(t *testing.T, repo restic.Repository) {
 }
 
 func reloadIndex(t *testing.T, repo restic.Repository) {
-	err := repo.SetIndex(repository.NewMasterIndex())
+	err := repo.SetIndex(index.NewMasterIndex())
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,4 +1,4 @@
-package repository_test
+package index_test
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -15,7 +15,7 @@ import (
 func TestIndexSerialize(t *testing.T) {
 	tests := []restic.PackedBlob{}
 
-	idx := repository.NewIndex()
+	idx := index.NewIndex()
 
 	// create 50 packs with 20 blobs each
 	for i := 0; i < 50; i++ {
@@ -51,7 +51,7 @@ func TestIndexSerialize(t *testing.T) {
 	rtest.OK(t, err)
 
 	idx2ID := restic.NewRandomID()
-	idx2, oldFormat, err := repository.DecodeIndex(wr.Bytes(), idx2ID)
+	idx2, oldFormat, err := index.DecodeIndex(wr.Bytes(), idx2ID)
 	rtest.OK(t, err)
 	rtest.Assert(t, idx2 != nil,
 		"nil returned for decoded index")
@@ -121,7 +121,7 @@ func TestIndexSerialize(t *testing.T) {
 	rtest.OK(t, err)
 	rtest.Equals(t, restic.IDs{id}, ids)
 
-	idx3, oldFormat, err := repository.DecodeIndex(wr3.Bytes(), id)
+	idx3, oldFormat, err := index.DecodeIndex(wr3.Bytes(), id)
 	rtest.OK(t, err)
 	rtest.Assert(t, idx3 != nil,
 		"nil returned for decoded index")
@@ -143,7 +143,7 @@ func TestIndexSerialize(t *testing.T) {
 }
 
 func TestIndexSize(t *testing.T) {
-	idx := repository.NewIndex()
+	idx := index.NewIndex()
 
 	packs := 200
 	blobCount := 100
@@ -309,7 +309,7 @@ func TestIndexUnserialize(t *testing.T) {
 	} {
 		oldIdx := restic.IDs{restic.TestParseID("ed54ae36197f4745ebc4b54d10e0f623eaaaedd03013eb7ae90df881b7781452")}
 
-		idx, oldFormat, err := repository.DecodeIndex(task.idxBytes, restic.NewRandomID())
+		idx, oldFormat, err := index.DecodeIndex(task.idxBytes, restic.NewRandomID())
 		rtest.OK(t, err)
 		rtest.Assert(t, !oldFormat, "new index format recognized as old format")
 
@@ -354,7 +354,7 @@ func TestIndexUnserialize(t *testing.T) {
 	}
 }
 
-func listPack(idx *repository.Index, id restic.ID) (pbs []restic.PackedBlob) {
+func listPack(idx *index.Index, id restic.ID) (pbs []restic.PackedBlob) {
 	idx.Each(context.TODO(), func(pb restic.PackedBlob) {
 		if pb.PackID.Equal(id) {
 			pbs = append(pbs, pb)
@@ -386,7 +386,7 @@ func BenchmarkDecodeIndex(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, _, err := repository.DecodeIndex(benchmarkIndexJSON, id)
+		_, _, err := index.DecodeIndex(benchmarkIndexJSON, id)
 		rtest.OK(b, err)
 	}
 }
@@ -399,14 +399,14 @@ func BenchmarkDecodeIndexParallel(b *testing.B) {
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			_, _, err := repository.DecodeIndex(benchmarkIndexJSON, id)
+			_, _, err := index.DecodeIndex(benchmarkIndexJSON, id)
 			rtest.OK(b, err)
 		}
 	})
 }
 
 func TestIndexUnserializeOld(t *testing.T) {
-	idx, oldFormat, err := repository.DecodeIndex(docOldExample, restic.NewRandomID())
+	idx, oldFormat, err := index.DecodeIndex(docOldExample, restic.NewRandomID())
 	rtest.OK(t, err)
 	rtest.Assert(t, oldFormat, "old index format recognized as new format")
 
@@ -427,7 +427,7 @@ func TestIndexUnserializeOld(t *testing.T) {
 }
 
 func TestIndexPacks(t *testing.T) {
-	idx := repository.NewIndex()
+	idx := index.NewIndex()
 	packs := restic.NewIDSet()
 
 	for i := 0; i < 20; i++ {
@@ -456,8 +456,8 @@ func NewRandomTestID(rng *rand.Rand) restic.ID {
 	return id
 }
 
-func createRandomIndex(rng *rand.Rand, packfiles int) (idx *repository.Index, lookupBh restic.BlobHandle) {
-	idx = repository.NewIndex()
+func createRandomIndex(rng *rand.Rand, packfiles int) (idx *index.Index, lookupBh restic.BlobHandle) {
+	idx = index.NewIndex()
 
 	// create index with given number of pack files
 	for i := 0; i < packfiles; i++ {
@@ -536,7 +536,7 @@ func BenchmarkIndexAllocParallel(b *testing.B) {
 func TestIndexHas(t *testing.T) {
 	tests := []restic.PackedBlob{}
 
-	idx := repository.NewIndex()
+	idx := index.NewIndex()
 
 	// create 50 packs with 20 blobs each
 	for i := 0; i < 50; i++ {
@@ -576,7 +576,7 @@ func TestIndexHas(t *testing.T) {
 }
 
 func TestMixedEachByPack(t *testing.T) {
-	idx := repository.NewIndex()
+	idx := index.NewIndex()
 
 	expected := make(map[restic.ID]int)
 	// create 50 packs with 2 blobs each
@@ -615,7 +615,7 @@ func TestMixedEachByPack(t *testing.T) {
 }
 
 func TestEachByPackIgnoes(t *testing.T) {
-	idx := repository.NewIndex()
+	idx := index.NewIndex()
 
 	ignores := restic.NewIDSet()
 	expected := make(map[restic.ID]int)

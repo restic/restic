@@ -9,6 +9,7 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -699,7 +700,7 @@ func doPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo r
 
 	if opts.unsafeRecovery {
 		Verbosef("deleting index files\n")
-		indexFiles := repo.Index().(*repository.MasterIndex).IDs()
+		indexFiles := repo.Index().(*index.MasterIndex).IDs()
 		err = DeleteFilesChecked(ctx, gopts, repo, indexFiles, restic.IndexFile)
 		if err != nil {
 			return errors.Fatalf("%s", err)
