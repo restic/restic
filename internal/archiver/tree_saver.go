@@ -2,6 +2,7 @@ package archiver
 
 import (
 	"context"
+	"errors"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
@@ -79,6 +80,7 @@ func (s *TreeSaver) save(ctx context.Context, job *saveTreeJob) (*restic.Node, I
 	job.nodes = nil
 
 	builder := restic.NewTreeJSONBuilder()
+	var lastNode *restic.Node
 
 	for i, fn := range nodes {
 		// fn is a copy, so clear the original value explicitly
@@ -105,9 +107,15 @@ func (s *TreeSaver) save(ctx context.Context, job *saveTreeJob) (*restic.Node, I
 
 		debug.Log("insert %v", fnr.node.Name)
 		err := builder.AddNode(fnr.node)
+		if err != nil && errors.Is(err, restic.ErrTreeNotOrdered) && lastNode != nil && fnr.node.Equals(*lastNode) {
+			// ignore error if an _identical_ node already exists, but nevertheless issue a warning
+			_ = s.errFn(fnr.target, err)
+			err = nil
+		}
 		if err != nil {
 			return nil, stats, err
 		}
+		lastNode = fnr.node
 	}
 
 	buf, err := builder.Finalize()
