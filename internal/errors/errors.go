@@ -1,9 +1,8 @@
 package errors
 
 import (
-	"net/url"
+	stderrors "errors"
 
-	"github.com/cenkalti/backoff/v4"
 	"github.com/pkg/errors"
 )
 
@@ -29,29 +28,10 @@ var WithMessage = errors.WithMessage
 
 var WithStack = errors.WithStack
 
-// Cause returns the cause of an error. It will also unwrap certain errors,
-// e.g. *url.Error returned by the net/http client.
-func Cause(err error) error {
-	type Causer interface {
-		Cause() error
-	}
-
-	for {
-		switch e := err.(type) {
-		case Causer: // github.com/pkg/errors
-			err = e.Cause()
-		case *backoff.PermanentError:
-			err = e.Err
-		case *url.Error:
-			err = e.Err
-		default:
-			return err
-		}
-	}
-}
-
 // Go 1.13-style error handling.
 
-func As(err error, tgt interface{}) bool { return errors.As(err, tgt) }
+func As(err error, tgt interface{}) bool { return stderrors.As(err, tgt) }
 
-func Is(x, y error) bool { return errors.Is(x, y) }
+func Is(x, y error) bool { return stderrors.Is(x, y) }
+
+func Unwrap(err error) error { return stderrors.Unwrap(err) }

@@ -71,7 +71,7 @@ var backendFilename = regexp.MustCompile(fmt.Sprintf("^[a-fA-F0-9]{%d}$", backen
 
 func hasBackendFile(ctx context.Context, fs Filesystem, dir string) (bool, error) {
 	entries, err := fs.ReadDir(ctx, dir)
-	if err != nil && fs.IsNotExist(errors.Cause(err)) {
+	if err != nil && fs.IsNotExist(err) {
 		return false, nil
 	}
 
