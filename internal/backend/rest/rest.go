@@ -14,8 +14,6 @@ import (
 	"strconv"
 	"strings"
 
-	"golang.org/x/net/context/ctxhttp"
-
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
@@ -33,7 +31,7 @@ type Backend struct {
 	url         *url.URL
 	connections uint
 	sem         sema.Semaphore
-	client      *http.Client
+	client      http.Client
 	backend.Layout
 }
 
@@ -45,8 +43,6 @@ const (
 
 // Open opens the REST backend with the given config.
 func Open(cfg Config, rt http.RoundTripper) (*Backend, error) {
-	client := &http.Client{Transport: rt}
-
 	sem, err := sema.New(cfg.Connections)
 	if err != nil {
 		return nil, err
@@ -60,7 +56,7 @@ func Open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 
 	be := &Backend{
 		url:         cfg.URL,
-		client:      client,
+		client:      http.Client{Transport: rt},
 		Layout:      &backend.RESTLayout{URL: url, Join: path.Join},
 		connections: cfg.Connections,
 		sem:         sem,
@@ -138,9 +134,10 @@ func (b *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRea
 	defer cancel()
 
 	// make sure that client.Post() cannot close the reader by wrapping it
-	req, err := http.NewRequest(http.MethodPost, b.Filename(h), ioutil.NopCloser(rd))
+	req, err := http.NewRequestWithContext(ctx,
+		http.MethodPost, b.Filename(h), ioutil.NopCloser(rd))
 	if err != nil {
-		return errors.Wrap(err, "NewRequest")
+		return errors.WithStack(err)
 	}
 	req.Header.Set("Content-Type", "application/octet-stream")
 	req.Header.Set("Accept", ContentTypeV2)
@@ -150,7 +147,7 @@ func (b *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRea
 	req.ContentLength = rd.Length()
 
 	b.sem.GetToken()
-	resp, err := ctxhttp.Do(ctx, b.client, req)
+	resp, err := b.client.Do(req)
 	b.sem.ReleaseToken()
 
 	var cerr error
@@ -160,7 +157,7 @@ func (b *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRea
 	}
 
 	if err != nil {
-		return errors.Wrap(err, "client.Post")
+		return errors.WithStack(err)
 	}
 
 	if resp.StatusCode != 200 {
@@ -269,9 +266,9 @@ func (b *Backend) openReader(ctx context.Context, h restic.Handle, length int, o
 		return nil, errors.Errorf("invalid length %d", length)
 	}
 
-	req, err := http.NewRequest("GET", b.Filename(h), nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", b.Filename(h), nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "http.NewRequest")
+		return nil, errors.WithStack(err)
 	}
 
 	byteRange := fmt.Sprintf("bytes=%d-", offset)
@@ -283,7 +280,7 @@ func (b *Backend) openReader(ctx context.Context, h restic.Handle, length int, o
 	debug.Log("Load(%v) send range %v", h, byteRange)
 
 	b.sem.GetToken()
-	resp, err := ctxhttp.Do(ctx, b.client, req)
+	resp, err := b.client.Do(req)
 	b.sem.ReleaseToken()
 
 	if err != nil {
@@ -321,17 +318,17 @@ func (b *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, e
 		return restic.FileInfo{}, backoff.Permanent(err)
 	}
 
-	req, err := http.NewRequest(http.MethodHead, b.Filename(h), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodHead, b.Filename(h), nil)
 	if err != nil {
-		return restic.FileInfo{}, errors.Wrap(err, "NewRequest")
+		return restic.FileInfo{}, errors.WithStack(err)
 	}
 	req.Header.Set("Accept", ContentTypeV2)
 
 	b.sem.GetToken()
-	resp, err := ctxhttp.Do(ctx, b.client, req)
+	resp, err := b.client.Do(req)
 	b.sem.ReleaseToken()
 	if err != nil {
-		return restic.FileInfo{}, errors.Wrap(err, "client.Head")
+		return restic.FileInfo{}, errors.WithStack(err)
 	}
 
 	_, _ = io.Copy(ioutil.Discard, resp.Body)
@@ -376,14 +373,14 @@ func (b *Backend) Remove(ctx context.Context, h restic.Handle) error {
 		return backoff.Permanent(err)
 	}
 
-	req, err := http.NewRequest("DELETE", b.Filename(h), nil)
+	req, err := http.NewRequestWithContext(ctx, "DELETE", b.Filename(h), nil)
 	if err != nil {
-		return errors.Wrap(err, "http.NewRequest")
+		return errors.WithStack(err)
 	}
 	req.Header.Set("Accept", ContentTypeV2)
 
 	b.sem.GetToken()
-	resp, err := ctxhttp.Do(ctx, b.client, req)
+	resp, err := b.client.Do(req)
 	b.sem.ReleaseToken()
 
 	if err != nil {
@@ -415,14 +412,14 @@ func (b *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.Fi
 		url += "/"
 	}
 
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return errors.Wrap(err, "NewRequest")
+		return errors.WithStack(err)
 	}
 	req.Header.Set("Accept", ContentTypeV2)
 
 	b.sem.GetToken()
-	resp, err := ctxhttp.Do(ctx, b.client, req)
+	resp, err := b.client.Do(req)
 	b.sem.ReleaseToken()
 
 	if err != nil {

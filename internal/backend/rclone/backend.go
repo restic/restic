@@ -22,7 +22,6 @@ import (
 	"github.com/restic/restic/internal/backend/rest"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
-	"golang.org/x/net/context/ctxhttp"
 	"golang.org/x/net/http2"
 )
 
@@ -216,7 +215,7 @@ func newBackend(cfg Config, lim limiter.Limiter) (*Backend, error) {
 	}()
 
 	// send an HTTP request to the base URL, see if the server is there
-	client := &http.Client{
+	client := http.Client{
 		Transport: debug.RoundTripper(tr),
 		Timeout:   cfg.Timeout,
 	}
@@ -231,7 +230,7 @@ func newBackend(cfg Config, lim limiter.Limiter) (*Backend, error) {
 	}
 	req.Header.Set("Accept", rest.ContentTypeV2)
 
-	res, err := ctxhttp.Do(ctx, client, req)
+	res, err := client.Do(req)
 	if err != nil {
 		// ignore subsequent errors
 		_ = bg()
@@ -240,7 +239,7 @@ func newBackend(cfg Config, lim limiter.Limiter) (*Backend, error) {
 		// wait for rclone to exit
 		wg.Wait()
 		// try to return the program exit code if communication with rclone has failed
-		if be.waitResult != nil && (err == context.Canceled || errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, syscall.EPIPE)) {
+		if be.waitResult != nil && (errors.Is(err, context.Canceled) || errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, syscall.EPIPE)) {
 			err = be.waitResult
 		}
 
