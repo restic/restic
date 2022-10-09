@@ -39,18 +39,6 @@ type fileWorkerMessage struct {
 	done     bool
 }
 
-type ProgressReporter interface {
-	CompleteItem(item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration)
-	StartFile(filename string)
-	CompleteBlob(filename string, bytes uint64)
-	ScannerError(item string, err error) error
-	ReportTotal(item string, s archiver.ScanStats)
-	SetMinUpdatePause(d time.Duration)
-	Run(ctx context.Context) error
-	Error(item string, err error) error
-	Finish(snapshotID restic.ID)
-}
-
 type Summary struct {
 	sync.Mutex
 	Files, Dirs struct {
@@ -68,8 +56,6 @@ type Progress struct {
 
 	start time.Time
 	dry   bool
-
-	totalBytes uint64
 
 	totalCh     chan Counter
 	processedCh chan Counter
@@ -130,7 +116,6 @@ func (p *Progress) Run(ctx context.Context) error {
 			} else {
 				// scan has finished
 				p.totalCh = nil
-				p.totalBytes = total.Bytes
 			}
 		case s := <-p.processedCh:
 			processed.Files += s.Files
@@ -312,8 +297,7 @@ func (p *Progress) Finish(snapshotID restic.ID) {
 	p.printer.Finish(snapshotID, p.start, p.summary, p.dry)
 }
 
-// SetMinUpdatePause sets b.MinUpdatePause. It satisfies the
-// ArchiveProgressReporter interface.
+// SetMinUpdatePause sets b.MinUpdatePause.
 func (p *Progress) SetMinUpdatePause(d time.Duration) {
 	p.MinUpdatePause = d
 }
