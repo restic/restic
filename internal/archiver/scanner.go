@@ -14,21 +14,23 @@ import (
 // stats concerning the files and folders found. Select is used to decide which
 // items should be included. Error is called when an error occurs.
 type Scanner struct {
-	FS           fs.FS
-	SelectByName SelectByNameFunc
-	Select       SelectFunc
-	Error        ErrorFunc
-	Result       func(item string, s ScanStats)
+	FS             fs.FS
+	SelectByName   SelectByNameFunc
+	Select         SelectFunc
+	Error          ErrorFunc
+	Result         func(item string, s ScanStats)
+	FollowSymLinks bool
 }
 
 // NewScanner initializes a new Scanner.
 func NewScanner(fs fs.FS) *Scanner {
 	return &Scanner{
-		FS:           fs,
-		SelectByName: func(item string) bool { return true },
-		Select:       func(item string, fi os.FileInfo) bool { return true },
-		Error:        func(item string, err error) error { return err },
-		Result:       func(item string, s ScanStats) {},
+		FS:             fs,
+		SelectByName:   func(item string) bool { return true },
+		Select:         func(item string, fi os.FileInfo) bool { return true },
+		Error:          func(item string, err error) error { return err },
+		Result:         func(item string, s ScanStats) {},
+		FollowSymLinks: false,
 	}
 }
 
@@ -109,7 +111,13 @@ func (s *Scanner) scan(ctx context.Context, stats ScanStats, target string) (Sca
 	}
 
 	// get file information
-	fi, err := s.FS.Lstat(target)
+	var fi os.FileInfo
+	var err error
+	if s.FollowSymLinks {
+		fi, err = s.FS.Stat(target)
+	} else {
+		fi, err = s.FS.Lstat(target)
+	}
 	if err != nil {
 		return stats, s.Error(target, err)
 	}
