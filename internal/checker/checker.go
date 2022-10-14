@@ -290,7 +290,7 @@ type Error struct {
 	Err    error
 }
 
-func (e Error) Error() string {
+func (e *Error) Error() string {
 	if !e.TreeID.IsNull() {
 		return "tree " + e.TreeID.String() + ": " + e.Err.Error()
 	}
@@ -404,12 +404,12 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 		switch node.Type {
 		case "file":
 			if node.Content == nil {
-				errs = append(errs, Error{TreeID: id, Err: errors.Errorf("file %q has nil blob list", node.Name)})
+				errs = append(errs, &Error{TreeID: id, Err: errors.Errorf("file %q has nil blob list", node.Name)})
 			}
 
 			for b, blobID := range node.Content {
 				if blobID.IsNull() {
-					errs = append(errs, Error{TreeID: id, Err: errors.Errorf("file %q blob %d has null ID", node.Name, b)})
+					errs = append(errs, &Error{TreeID: id, Err: errors.Errorf("file %q blob %d has null ID", node.Name, b)})
 					continue
 				}
 				// Note that we do not use the blob size. The "obvious" check
@@ -420,7 +420,7 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 				_, found := c.repo.LookupBlobSize(blobID, restic.DataBlob)
 				if !found {
 					debug.Log("tree %v references blob %v which isn't contained in index", id, blobID)
-					errs = append(errs, Error{TreeID: id, Err: errors.Errorf("file %q blob %v not found in index", node.Name, blobID)})
+					errs = append(errs, &Error{TreeID: id, Err: errors.Errorf("file %q blob %v not found in index", node.Name, blobID)})
 				}
 			}
 
@@ -440,12 +440,12 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 
 		case "dir":
 			if node.Subtree == nil {
-				errs = append(errs, Error{TreeID: id, Err: errors.Errorf("dir node %q has no subtree", node.Name)})
+				errs = append(errs, &Error{TreeID: id, Err: errors.Errorf("dir node %q has no subtree", node.Name)})
 				continue
 			}
 
 			if node.Subtree.IsNull() {
-				errs = append(errs, Error{TreeID: id, Err: errors.Errorf("dir node %q subtree id is null", node.Name)})
+				errs = append(errs, &Error{TreeID: id, Err: errors.Errorf("dir node %q subtree id is null", node.Name)})
 				continue
 			}
 
@@ -453,11 +453,11 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 			// nothing to check
 
 		default:
-			errs = append(errs, Error{TreeID: id, Err: errors.Errorf("node %q with invalid type %q", node.Name, node.Type)})
+			errs = append(errs, &Error{TreeID: id, Err: errors.Errorf("node %q with invalid type %q", node.Name, node.Type)})
 		}
 
 		if node.Name == "" {
-			errs = append(errs, Error{TreeID: id, Err: errors.New("node with empty name")})
+			errs = append(errs, &Error{TreeID: id, Err: errors.New("node with empty name")})
 		}
 	}
 
