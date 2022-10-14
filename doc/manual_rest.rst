@@ -26,7 +26,7 @@ Usage help is available:
       dump          Print a backed-up file to stdout
       find          Find a file, a directory or restic IDs
       forget        Remove snapshots from the repository
-      generate      Generate manual pages and auto-completion files (bash, fish, zsh)
+      generate      Generate manual pages and auto-completion files (bash, fish, zsh, powershell)
       help          Help about any command
       init          Initialize a new repository
       key           Manage keys (passwords)
@@ -38,6 +38,7 @@ Usage help is available:
       rebuild-index Build a new index
       recover       Recover data from the repository not referenced by snapshots
       restore       Extract the data from a snapshot
+      rewrite       Rewrite existing snapshots
       self-update   Update the restic binary
       snapshots     List all snapshots
       stats         Scan the repository and show basic statistics
