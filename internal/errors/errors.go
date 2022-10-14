@@ -22,10 +22,6 @@ var Wrap = errors.Wrap
 // nil, Wrapf returns nil.
 var Wrapf = errors.Wrapf
 
-// WithMessage annotates err with a new message. If err is nil, WithMessage
-// returns nil.
-var WithMessage = errors.WithMessage
-
 var WithStack = errors.WithStack
 
 // Go 1.13-style error handling.

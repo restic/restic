@@ -420,7 +420,7 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 
 		// make sure it's still a file
 		if !fs.IsRegularFile(fi) {
-			err = errors.Errorf("file %v changed type, refusing to archive")
+			err = errors.Errorf("file %v changed type, refusing to archive", fi.Name())
 			_ = file.Close()
 			err = arch.error(abstarget, err)
 			if err != nil {
