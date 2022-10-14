@@ -2,8 +2,8 @@ package walker
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"sort"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -23,12 +23,18 @@ func BuildTreeMap(tree TestTree) (m TreeMap, root restic.ID) {
 }
 
 func buildTreeMap(tree TestTree, m TreeMap) restic.ID {
-	res := restic.NewTree(0)
+	tb := restic.NewTreeJSONBuilder()
+	var names []string
+	for name := range tree {
+		names = append(names, name)
+	}
+	sort.Strings(names)
 
-	for name, item := range tree {
+	for _, name := range names {
+		item := tree[name]
 		switch elem := item.(type) {
 		case TestFile:
-			err := res.Insert(&restic.Node{
+			err := tb.AddNode(&restic.Node{
 				Name: name,
 				Type: "file",
 			})
@@ -37,7 +43,7 @@ func buildTreeMap(tree TestTree, m TreeMap) restic.ID {
 			}
 		case TestTree:
 			id := buildTreeMap(elem, m)
-			err := res.Insert(&restic.Node{
+			err := tb.AddNode(&restic.Node{
 				Name:    name,
 				Subtree: &id,
 				Type:    "dir",
@@ -50,7 +56,7 @@ func buildTreeMap(tree TestTree, m TreeMap) restic.ID {
 		}
 	}
 
-	buf, err := json.Marshal(res)
+	buf, err := tb.Finalize()
 	if err != nil {
 		panic(err)
 	}
@@ -58,14 +64,14 @@ func buildTreeMap(tree TestTree, m TreeMap) restic.ID {
 	id := restic.Hash(buf)
 
 	if _, ok := m[id]; !ok {
-		m[id] = res
+		m[id] = buf
 	}
 
 	return id
 }
 
 // TreeMap returns the trees from the map on LoadTree.
-type TreeMap map[restic.ID]*restic.Tree
+type TreeMap map[restic.ID][]byte
 
 func (t TreeMap) LoadBlob(ctx context.Context, tpe restic.BlobType, id restic.ID, buf []byte) ([]byte, error) {
 	if tpe != restic.TreeBlob {
@@ -75,14 +81,7 @@ func (t TreeMap) LoadBlob(ctx context.Context, tpe restic.BlobType, id restic.ID
 	if !ok {
 		return nil, errors.New("tree not found")
 	}
-
-	tbuf, err := json.Marshal(tree)
-	if err != nil {
-		panic(err)
-	}
-	tbuf = append(tbuf, '\n')
-
-	return tbuf, nil
+	return tree, nil
 }
 
 func (t TreeMap) Connections() uint {
@@ -256,10 +255,10 @@ func TestWalker(t *testing.T) {
 					"/subdir/subfile",
 				}),
 				checkParentTreeOrder([]string{
-					"2593e9dba52232c043d68c40d0f9c236b4448e37224941298ea6e223ca1e3a1b", // tree /
-					"2593e9dba52232c043d68c40d0f9c236b4448e37224941298ea6e223ca1e3a1b", // tree /
-					"2593e9dba52232c043d68c40d0f9c236b4448e37224941298ea6e223ca1e3a1b", // tree /
-					"a7f5be55bdd94db9df706a428e0726a4044720c9c94b9ebeb81000debe032087", // tree /subdir
+					"a760536a8fd64dd63f8dd95d85d788d71fd1bee6828619350daf6959dcb499a0", // tree /
+					"a760536a8fd64dd63f8dd95d85d788d71fd1bee6828619350daf6959dcb499a0", // tree /
+					"a760536a8fd64dd63f8dd95d85d788d71fd1bee6828619350daf6959dcb499a0", // tree /
+					"670046b44353a89b7cd6ef84c78422232438f10eb225c29c07989ae05283d797", // tree /subdir
 				}),
 				checkSkipFor(
 					map[string]struct{}{
@@ -307,14 +306,14 @@ func TestWalker(t *testing.T) {
 					"/subdir2/subsubdir2/subsubfile3",
 				}),
 				checkParentTreeOrder([]string{
-					"31c86f0bc298086b787b5d24e9e33ea566c224be2939ed66a817f7fb6fdba700", // tree /
-					"31c86f0bc298086b787b5d24e9e33ea566c224be2939ed66a817f7fb6fdba700", // tree /
-					"31c86f0bc298086b787b5d24e9e33ea566c224be2939ed66a817f7fb6fdba700", // tree /
-					"af838dc7a83d353f0273c33d93fcdba3220d4517576f09694a971dd23b8e94dc", // tree /subdir1
-					"31c86f0bc298086b787b5d24e9e33ea566c224be2939ed66a817f7fb6fdba700", // tree /
-					"fb749ba6ae01a3814bed9b59d74af8d7593d3074a681d4112c4983d461089e5b", // tree /subdir2
-					"fb749ba6ae01a3814bed9b59d74af8d7593d3074a681d4112c4983d461089e5b", // tree /subdir2
-					"eb8dd587a9c5e6be87b69d2c5264a19622f75bf6704927aaebaee78d0992531d", // tree /subdir2/subsubdir2
+					"7a0e59b986cc83167d9fbeeefc54e4629770124c5825d391f7ee0598667fcdf1", // tree /
+					"7a0e59b986cc83167d9fbeeefc54e4629770124c5825d391f7ee0598667fcdf1", // tree /
+					"7a0e59b986cc83167d9fbeeefc54e4629770124c5825d391f7ee0598667fcdf1", // tree /
+					"22c9feefa0b9fabc7ec5383c90cfe84ba714babbe4d2968fcb78f0ec7612e82f", // tree /subdir1
+					"7a0e59b986cc83167d9fbeeefc54e4629770124c5825d391f7ee0598667fcdf1", // tree /
+					"9bfe4aab3ac0ad7a81909355d7221801441fb20f7ed06c0142196b3f10358493", // tree /subdir2
+					"9bfe4aab3ac0ad7a81909355d7221801441fb20f7ed06c0142196b3f10358493", // tree /subdir2
+					"6b962fef064ef9beecc27dfcd6e0f2e7beeebc9c1f1f4f477d4af59fc45f411d", // tree /subdir2/subsubdir2
 				}),
 				checkSkipFor(
 					map[string]struct{}{
@@ -391,21 +390,21 @@ func TestWalker(t *testing.T) {
 					"/zzz other",
 				}),
 				checkParentTreeOrder([]string{
-					"b37368f62fdd6f8f3d19f9ef23c6534988e26db4e5dddc21d206b16b6a17a58f", // tree /
-					"b37368f62fdd6f8f3d19f9ef23c6534988e26db4e5dddc21d206b16b6a17a58f", // tree /
-					"b37368f62fdd6f8f3d19f9ef23c6534988e26db4e5dddc21d206b16b6a17a58f", // tree /
-					"787b9260d4f0f8298f5cf58945681961982eb6aa1c526845206c5b353aeb4351", // tree /subdir1
-					"787b9260d4f0f8298f5cf58945681961982eb6aa1c526845206c5b353aeb4351", // tree /subdir1
-					"787b9260d4f0f8298f5cf58945681961982eb6aa1c526845206c5b353aeb4351", // tree /subdir1
-					"b37368f62fdd6f8f3d19f9ef23c6534988e26db4e5dddc21d206b16b6a17a58f", // tree /
-					"787b9260d4f0f8298f5cf58945681961982eb6aa1c526845206c5b353aeb4351", // tree /subdir2
-					"787b9260d4f0f8298f5cf58945681961982eb6aa1c526845206c5b353aeb4351", // tree /subdir2
-					"787b9260d4f0f8298f5cf58945681961982eb6aa1c526845206c5b353aeb4351", // tree /subdir2
-					"b37368f62fdd6f8f3d19f9ef23c6534988e26db4e5dddc21d206b16b6a17a58f", // tree /
-					"787b9260d4f0f8298f5cf58945681961982eb6aa1c526845206c5b353aeb4351", // tree /subdir3
-					"787b9260d4f0f8298f5cf58945681961982eb6aa1c526845206c5b353aeb4351", // tree /subdir3
-					"787b9260d4f0f8298f5cf58945681961982eb6aa1c526845206c5b353aeb4351", // tree /subdir3
-					"b37368f62fdd6f8f3d19f9ef23c6534988e26db4e5dddc21d206b16b6a17a58f", // tree /
+					"c2efeff7f217a4dfa12a16e8bb3cefedd37c00873605c29e5271c6061030672f", // tree /
+					"c2efeff7f217a4dfa12a16e8bb3cefedd37c00873605c29e5271c6061030672f", // tree /
+					"c2efeff7f217a4dfa12a16e8bb3cefedd37c00873605c29e5271c6061030672f", // tree /
+					"57ee8960c7a86859b090a76e5d013f83d10c0ce11d5460076ca8468706f784ab", // tree /subdir1
+					"57ee8960c7a86859b090a76e5d013f83d10c0ce11d5460076ca8468706f784ab", // tree /subdir1
+					"57ee8960c7a86859b090a76e5d013f83d10c0ce11d5460076ca8468706f784ab", // tree /subdir1
+					"c2efeff7f217a4dfa12a16e8bb3cefedd37c00873605c29e5271c6061030672f", // tree /
+					"57ee8960c7a86859b090a76e5d013f83d10c0ce11d5460076ca8468706f784ab", // tree /subdir2
+					"57ee8960c7a86859b090a76e5d013f83d10c0ce11d5460076ca8468706f784ab", // tree /subdir2
+					"57ee8960c7a86859b090a76e5d013f83d10c0ce11d5460076ca8468706f784ab", // tree /subdir2
+					"c2efeff7f217a4dfa12a16e8bb3cefedd37c00873605c29e5271c6061030672f", // tree /
+					"57ee8960c7a86859b090a76e5d013f83d10c0ce11d5460076ca8468706f784ab", // tree /subdir3
+					"57ee8960c7a86859b090a76e5d013f83d10c0ce11d5460076ca8468706f784ab", // tree /subdir3
+					"57ee8960c7a86859b090a76e5d013f83d10c0ce11d5460076ca8468706f784ab", // tree /subdir3
+					"c2efeff7f217a4dfa12a16e8bb3cefedd37c00873605c29e5271c6061030672f", // tree /
 				}),
 				checkIgnore(
 					map[string]struct{}{
