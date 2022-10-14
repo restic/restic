@@ -126,7 +126,7 @@ func (l *Lock) fillUserInfo() error {
 	}
 	l.Username = usr.Username
 
-	l.UID, l.GID, err = uidGidInt(*usr)
+	l.UID, l.GID, err = uidGidInt(usr)
 	return err
 }
 

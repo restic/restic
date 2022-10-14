@@ -154,7 +154,7 @@ func (sn *Snapshot) fillUserInfo() error {
 	sn.Username = usr.Username
 
 	// set userid and groupid
-	sn.UID, sn.GID, err = uidGidInt(*usr)
+	sn.UID, sn.GID, err = uidGidInt(usr)
 	return err
 }
 

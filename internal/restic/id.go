@@ -82,19 +82,6 @@ func (id ID) Equal(other ID) bool {
 	return id == other
 }
 
-// EqualString compares this ID to another one, given as a string.
-func (id ID) EqualString(other string) (bool, error) {
-	s, err := hex.DecodeString(other)
-	if err != nil {
-		return false, errors.Wrap(err, "hex.DecodeString")
-	}
-
-	id2 := ID{}
-	copy(id2[:], s)
-
-	return id == id2, nil
-}
-
 // MarshalJSON returns the JSON encoding of id.
 func (id ID) MarshalJSON() ([]byte, error) {
 	buf := make([]byte, 2+hex.EncodedLen(len(id)))

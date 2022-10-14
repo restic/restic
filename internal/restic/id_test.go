@@ -30,14 +30,6 @@ func TestID(t *testing.T) {
 			t.Errorf("ID.Equal() does not work as expected")
 		}
 
-		ret, err := id.EqualString(test.id)
-		if err != nil {
-			t.Error(err)
-		}
-		if !ret {
-			t.Error("ID.EqualString() returned wrong value")
-		}
-
 		// test json marshalling
 		buf, err := id.MarshalJSON()
 		if err != nil {
