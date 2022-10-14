@@ -17,7 +17,12 @@ type TreeFilterVisitor struct {
 	PrintExclude func(string)
 }
 
-func FilterTree(ctx context.Context, repo restic.Repository, nodepath string, nodeID restic.ID, visitor *TreeFilterVisitor) (newNodeID restic.ID, err error) {
+type BlobLoadSaver interface {
+	restic.BlobSaver
+	restic.BlobLoader
+}
+
+func FilterTree(ctx context.Context, repo BlobLoadSaver, nodepath string, nodeID restic.ID, visitor *TreeFilterVisitor) (newNodeID restic.ID, err error) {
 	curTree, err := restic.LoadTree(ctx, repo, nodeID)
 	if err != nil {
 		return restic.ID{}, err
