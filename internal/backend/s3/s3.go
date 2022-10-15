@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/layout"
 	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -28,7 +29,7 @@ type Backend struct {
 	client *minio.Client
 	sem    sema.Semaphore
 	cfg    Config
-	backend.Layout
+	layout.Layout
 }
 
 // make sure that *Backend implements backend.Backend
@@ -113,7 +114,7 @@ func open(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, erro
 		cfg:    cfg,
 	}
 
-	l, err := backend.ParseLayout(ctx, be, cfg.Layout, defaultLayout, cfg.Prefix)
+	l, err := layout.ParseLayout(ctx, be, cfg.Layout, defaultLayout, cfg.Prefix)
 	if err != nil {
 		return nil, err
 	}
@@ -514,7 +515,7 @@ func (be *Backend) Delete(ctx context.Context) error {
 func (be *Backend) Close() error { return nil }
 
 // Rename moves a file based on the new layout l.
-func (be *Backend) Rename(ctx context.Context, h restic.Handle, l backend.Layout) error {
+func (be *Backend) Rename(ctx context.Context, h restic.Handle, l layout.Layout) error {
 	debug.Log("Rename %v to %v", h, l)
 	oldname := be.Filename(h)
 	newname := l.Filename(h)

@@ -1,4 +1,4 @@
-package backend
+package layout
 
 import "github.com/restic/restic/internal/restic"
 

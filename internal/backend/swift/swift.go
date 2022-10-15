@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/layout"
 	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -30,7 +31,7 @@ type beSwift struct {
 	sem         sema.Semaphore
 	container   string // Container name
 	prefix      string // Prefix of object names in the container
-	backend.Layout
+	layout.Layout
 }
 
 // ensure statically that *beSwift implements restic.Backend.
@@ -74,7 +75,7 @@ func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backend
 		sem:         sem,
 		container:   cfg.Container,
 		prefix:      cfg.Prefix,
-		Layout: &backend.DefaultLayout{
+		Layout: &layout.DefaultLayout{
 			Path: cfg.Prefix,
 			Join: path.Join,
 		},

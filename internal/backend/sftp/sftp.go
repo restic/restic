@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/layout"
 	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -35,7 +36,7 @@ type SFTP struct {
 	posixRename bool
 
 	sem sema.Semaphore
-	backend.Layout
+	layout.Layout
 	Config
 	backend.Modes
 }
@@ -144,7 +145,7 @@ func open(ctx context.Context, sftp *SFTP, cfg Config) (*SFTP, error) {
 		return nil, err
 	}
 
-	sftp.Layout, err = backend.ParseLayout(ctx, sftp, cfg.Layout, defaultLayout, cfg.Path)
+	sftp.Layout, err = layout.ParseLayout(ctx, sftp, cfg.Layout, defaultLayout, cfg.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -243,7 +244,7 @@ func Create(ctx context.Context, cfg Config) (*SFTP, error) {
 		return nil, err
 	}
 
-	sftp.Layout, err = backend.ParseLayout(ctx, sftp, cfg.Layout, defaultLayout, cfg.Path)
+	sftp.Layout, err = layout.ParseLayout(ctx, sftp, cfg.Layout, defaultLayout, cfg.Path)
 	if err != nil {
 		return nil, err
 	}
