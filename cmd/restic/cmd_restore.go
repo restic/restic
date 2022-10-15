@@ -131,18 +131,9 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions, a
 		}
 	}
 
-	var id restic.ID
-
-	if snapshotIDString == "latest" {
-		id, err = restic.FindLatestSnapshot(ctx, repo.Backend(), repo, opts.Paths, opts.Tags, opts.Hosts, nil)
-		if err != nil {
-			Exitf(1, "latest snapshot for criteria not found: %v Paths:%v Hosts:%v", err, opts.Paths, opts.Hosts)
-		}
-	} else {
-		id, err = restic.FindSnapshot(ctx, repo.Backend(), snapshotIDString)
-		if err != nil {
-			Exitf(1, "invalid id %q: %v", snapshotIDString, err)
-		}
+	sn, err := restic.FindFilteredSnapshot(ctx, repo.Backend(), repo, opts.Hosts, opts.Tags, opts.Paths, nil, snapshotIDString)
+	if err != nil {
+		Exitf(1, "failed to find snapshot: %v", err)
 	}
 
 	err = repo.LoadIndex(ctx)
@@ -150,10 +141,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions, a
 		return err
 	}
 
-	res, err := restorer.NewRestorer(ctx, repo, id, opts.Sparse)
-	if err != nil {
-		Exitf(2, "creating restorer failed: %v\n", err)
-	}
+	res := restorer.NewRestorer(ctx, repo, sn, opts.Sparse)
 
 	totalErrors := 0
 	res.Error = func(location string, err error) error {

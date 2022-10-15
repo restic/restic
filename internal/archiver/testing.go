@@ -26,7 +26,11 @@ func TestSnapshot(t testing.TB, repo restic.Repository, path string, parent *res
 		Tags:     []string{"test"},
 	}
 	if parent != nil {
-		opts.ParentSnapshot = *parent
+		sn, err := restic.LoadSnapshot(context.TODO(), arch.Repo, *parent)
+		if err != nil {
+			t.Fatal(err)
+		}
+		opts.ParentSnapshot = sn
 	}
 	sn, _, err := arch.Snapshot(context.TODO(), []string{path}, opts)
 	if err != nil {

@@ -50,7 +50,7 @@ func init() {
 	cmdRoot.AddCommand(cmdDump)
 
 	flags := cmdDump.Flags()
-	initMultiSnapshotFilterOptions(flags, &dumpOptions.snapshotFilterOptions, true)
+	initSingleSnapshotFilterOptions(flags, &dumpOptions.snapshotFilterOptions)
 	flags.StringVarP(&dumpOptions.Archive, "archive", "a", "tar", "set archive `format` as \"tar\" or \"zip\"")
 }
 
@@ -139,23 +139,9 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 		}
 	}
 
-	var id restic.ID
-
-	if snapshotIDString == "latest" {
-		id, err = restic.FindLatestSnapshot(ctx, repo.Backend(), repo, opts.Paths, opts.Tags, opts.Hosts, nil)
-		if err != nil {
-			Exitf(1, "latest snapshot for criteria not found: %v Paths:%v Hosts:%v", err, opts.Paths, opts.Hosts)
-		}
-	} else {
-		id, err = restic.FindSnapshot(ctx, repo.Backend(), snapshotIDString)
-		if err != nil {
-			Exitf(1, "invalid id %q: %v", snapshotIDString, err)
-		}
-	}
-
-	sn, err := restic.LoadSnapshot(ctx, repo, id)
+	sn, err := restic.FindFilteredSnapshot(ctx, repo.Backend(), repo, opts.Paths, opts.Tags, opts.Hosts, nil, snapshotIDString)
 	if err != nil {
-		Exitf(2, "loading snapshot %q failed: %v", snapshotIDString, err)
+		Exitf(1, "failed to find snapshot: %v", err)
 	}
 
 	err = repo.LoadIndex(ctx)

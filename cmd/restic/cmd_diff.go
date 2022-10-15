@@ -54,11 +54,11 @@ func init() {
 }
 
 func loadSnapshot(ctx context.Context, be restic.Lister, repo restic.Repository, desc string) (*restic.Snapshot, error) {
-	id, err := restic.FindSnapshot(ctx, be, desc)
+	sn, err := restic.FindSnapshot(ctx, be, repo, desc)
 	if err != nil {
 		return nil, errors.Fatal(err.Error())
 	}
-	return restic.LoadSnapshot(ctx, repo, id)
+	return sn, err
 }
 
 // Comparer collects all things needed to compare two snapshots.

@@ -55,18 +55,10 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string) error {
 	tpe := args[0]
 
 	var id restic.ID
-	if tpe != "masterkey" && tpe != "config" {
+	if tpe != "masterkey" && tpe != "config" && tpe != "snapshot" {
 		id, err = restic.ParseID(args[1])
 		if err != nil {
-			if tpe != "snapshot" {
-				return errors.Fatalf("unable to parse ID: %v\n", err)
-			}
-
-			// find snapshot id with prefix
-			id, err = restic.FindSnapshot(ctx, repo.Backend(), args[1])
-			if err != nil {
-				return errors.Fatalf("could not find snapshot: %v\n", err)
-			}
+			return errors.Fatalf("unable to parse ID: %v\n", err)
 		}
 	}
 
@@ -88,9 +80,9 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string) error {
 		Println(string(buf))
 		return nil
 	case "snapshot":
-		sn, err := restic.LoadSnapshot(ctx, repo, id)
+		sn, err := restic.FindSnapshot(ctx, repo.Backend(), repo, args[1])
 		if err != nil {
-			return err
+			return errors.Fatalf("could not find snapshot: %v\n", err)
 		}
 
 		buf, err := json.MarshalIndent(sn, "", "  ")
