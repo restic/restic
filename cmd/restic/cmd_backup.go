@@ -22,7 +22,6 @@ import (
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -79,30 +78,28 @@ Exit status is 3 if some source data could not be read (incomplete snapshot crea
 
 // BackupOptions bundles all options for the backup command.
 type BackupOptions struct {
-	Parent                  string
-	Force                   bool
-	Excludes                []string
-	InsensitiveExcludes     []string
-	ExcludeFiles            []string
-	InsensitiveExcludeFiles []string
-	ExcludeOtherFS          bool
-	ExcludeIfPresent        []string
-	ExcludeCaches           bool
-	ExcludeLargerThan       string
-	Stdin                   bool
-	StdinFilename           string
-	Tags                    restic.TagLists
-	Host                    string
-	FilesFrom               []string
-	FilesFromVerbatim       []string
-	FilesFromRaw            []string
-	TimeStamp               string
-	WithAtime               bool
-	IgnoreInode             bool
-	IgnoreCtime             bool
-	UseFsSnapshot           bool
-	DryRun                  bool
-	ReadConcurrency         uint
+	excludePatternOptions
+
+	Parent            string
+	Force             bool
+	ExcludeOtherFS    bool
+	ExcludeIfPresent  []string
+	ExcludeCaches     bool
+	ExcludeLargerThan string
+	Stdin             bool
+	StdinFilename     string
+	Tags              restic.TagLists
+	Host              string
+	FilesFrom         []string
+	FilesFromVerbatim []string
+	FilesFromRaw      []string
+	TimeStamp         string
+	WithAtime         bool
+	IgnoreInode       bool
+	IgnoreCtime       bool
+	UseFsSnapshot     bool
+	DryRun            bool
+	ReadConcurrency   uint
 }
 
 var backupOptions BackupOptions
@@ -116,10 +113,9 @@ func init() {
 	f := cmdBackup.Flags()
 	f.StringVar(&backupOptions.Parent, "parent", "", "use this parent `snapshot` (default: last snapshot in the repository that has the same target files/directories, and is not newer than the snapshot time)")
 	f.BoolVarP(&backupOptions.Force, "force", "f", false, `force re-reading the target files/directories (overrides the "parent" flag)`)
-	f.StringArrayVarP(&backupOptions.Excludes, "exclude", "e", nil, "exclude a `pattern` (can be specified multiple times)")
-	f.StringArrayVar(&backupOptions.InsensitiveExcludes, "iexclude", nil, "same as --exclude `pattern` but ignores the casing of filenames")
-	f.StringArrayVar(&backupOptions.ExcludeFiles, "exclude-file", nil, "read exclude patterns from a `file` (can be specified multiple times)")
-	f.StringArrayVar(&backupOptions.InsensitiveExcludeFiles, "iexclude-file", nil, "same as --exclude-file but ignores casing of `file`names in patterns")
+
+	initExcludePatternOptions(f, &backupOptions.excludePatternOptions)
+
 	f.BoolVarP(&backupOptions.ExcludeOtherFS, "one-file-system", "x", false, "exclude other file systems, don't cross filesystem boundaries and subvolumes")
 	f.StringArrayVar(&backupOptions.ExcludeIfPresent, "exclude-if-present", nil, "takes `filename[:header]`, exclude contents of directories containing filename (except filename itself) if header of that file is as provided (can be specified multiple times)")
 	f.BoolVar(&backupOptions.ExcludeCaches, "exclude-caches", false, `excludes cache directories that are marked with a CACHEDIR.TAG file. See https://bford.info/cachedir/ for the Cache Directory Tagging Standard`)
@@ -306,48 +302,11 @@ func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository, t
 		fs = append(fs, f)
 	}
 
-	// add patterns from file
-	if len(opts.ExcludeFiles) > 0 {
-		excludes, err := readExcludePatternsFromFiles(opts.ExcludeFiles)
-		if err != nil {
-			return nil, err
-		}
-
-		if err := filter.ValidatePatterns(excludes); err != nil {
-			return nil, errors.Fatalf("--exclude-file: %s", err)
-		}
-
-		opts.Excludes = append(opts.Excludes, excludes...)
+	fsPatterns, err := collectExcludePatterns(opts.excludePatternOptions)
+	if err != nil {
+		return nil, err
 	}
-
-	if len(opts.InsensitiveExcludeFiles) > 0 {
-		excludes, err := readExcludePatternsFromFiles(opts.InsensitiveExcludeFiles)
-		if err != nil {
-			return nil, err
-		}
-
-		if err := filter.ValidatePatterns(excludes); err != nil {
-			return nil, errors.Fatalf("--iexclude-file: %s", err)
-		}
-
-		opts.InsensitiveExcludes = append(opts.InsensitiveExcludes, excludes...)
-	}
-
-	if len(opts.InsensitiveExcludes) > 0 {
-		if err := filter.ValidatePatterns(opts.InsensitiveExcludes); err != nil {
-			return nil, errors.Fatalf("--iexclude: %s", err)
-		}
-
-		fs = append(fs, rejectByInsensitivePattern(opts.InsensitiveExcludes))
-	}
-
-	if len(opts.Excludes) > 0 {
-		if err := filter.ValidatePatterns(opts.Excludes); err != nil {
-			return nil, errors.Fatalf("--exclude: %s", err)
-		}
-
-		fs = append(fs, rejectByPattern(opts.Excludes))
-	}
+	fs = append(fs, fsPatterns...)
 
 	if opts.ExcludeCaches {
 		opts.ExcludeIfPresent = append(opts.ExcludeIfPresent, "CACHEDIR.TAG:Signature: 8a477f597d28d172789f06886806bc55")
@@ -386,53 +345,6 @@ func collectRejectFuncs(opts BackupOptions, repo *repository.Repository, targets
 	}
 
 	return fs, nil
-}
-
-// readExcludePatternsFromFiles reads all exclude files and returns the list of
-// exclude patterns. For each line, leading and trailing white space is removed
-// and comment lines are ignored. For each remaining pattern, environment
-// variables are resolved. For adding a literal dollar sign ($), write $$ to
-// the file.
-func readExcludePatternsFromFiles(excludeFiles []string) ([]string, error) {
-	getenvOrDollar := func(s string) string {
-		if s == "$" {
-			return "$"
-		}
-		return os.Getenv(s)
-	}
-
-	var excludes []string
-	for _, filename := range excludeFiles {
-		err := func() (err error) {
-			data, err := textfile.Read(filename)
-			if err != nil {
-				return err
-			}
-
-			scanner := bufio.NewScanner(bytes.NewReader(data))
-			for scanner.Scan() {
-				line := strings.TrimSpace(scanner.Text())
-
-				// ignore empty lines
-				if line == "" {
-					continue
-				}
-
-				// strip comments
-				if strings.HasPrefix(line, "#") {
-					continue
-				}
-
-				line = os.Expand(line, getenvOrDollar)
-				excludes = append(excludes, line)
-			}
-			return scanner.Err()
-		}()
-		if err != nil {
-			return nil, err
-		}
-	}
-	return excludes, nil
 }
 
 // collectTargets returns a list of target files/dirs from several sources.
