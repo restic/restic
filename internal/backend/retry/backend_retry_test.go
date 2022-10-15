@@ -1,4 +1,4 @@
-package backend
+package retry
 
 import (
 	"bytes"
@@ -36,7 +36,7 @@ func TestBackendSaveRetry(t *testing.T) {
 	}
 
 	TestFastRetries(t)
-	retryBackend := NewRetryBackend(be, 10, nil, nil)
+	retryBackend := New(be, 10, nil, nil)
 
 	data := test.Random(23, 5*1024*1024+11241)
 	err := retryBackend.Save(context.TODO(), restic.Handle{}, restic.NewByteReader(data, be.Hasher()))
@@ -72,7 +72,7 @@ func TestBackendSaveRetryAtomic(t *testing.T) {
 	}
 
 	TestFastRetries(t)
-	retryBackend := NewRetryBackend(be, 10, nil, nil)
+	retryBackend := New(be, 10, nil, nil)
 
 	data := test.Random(23, 5*1024*1024+11241)
 	err := retryBackend.Save(context.TODO(), restic.Handle{}, restic.NewByteReader(data, be.Hasher()))
@@ -106,7 +106,7 @@ func TestBackendListRetry(t *testing.T) {
 	}
 
 	TestFastRetries(t)
-	retryBackend := NewRetryBackend(be, 10, nil, nil)
+	retryBackend := New(be, 10, nil, nil)
 
 	var listed []string
 	err := retryBackend.List(context.TODO(), restic.PackFile, func(fi restic.FileInfo) error {
@@ -136,7 +136,7 @@ func TestBackendListRetryErrorFn(t *testing.T) {
 	}
 
 	TestFastRetries(t)
-	retryBackend := NewRetryBackend(be, 10, nil, nil)
+	retryBackend := New(be, 10, nil, nil)
 
 	var ErrTest = errors.New("test error")
 
@@ -193,7 +193,7 @@ func TestBackendListRetryErrorBackend(t *testing.T) {
 
 	TestFastRetries(t)
 	const maxRetries = 2
-	retryBackend := NewRetryBackend(be, maxRetries, nil, nil)
+	retryBackend := New(be, maxRetries, nil, nil)
 
 	var listed []string
 	err := retryBackend.List(context.TODO(), restic.PackFile, func(fi restic.FileInfo) error {
@@ -263,7 +263,7 @@ func TestBackendLoadRetry(t *testing.T) {
 	}
 
 	TestFastRetries(t)
-	retryBackend := NewRetryBackend(be, 10, nil, nil)
+	retryBackend := New(be, 10, nil, nil)
 
 	var buf []byte
 	err := retryBackend.Load(context.TODO(), restic.Handle{}, 0, 0, func(rd io.Reader) (err error) {
@@ -283,7 +283,7 @@ func TestBackendCanceledContext(t *testing.T) {
 	// unimplemented mock backend functions return an error by default
 	// check that we received the expected context canceled error instead
 	TestFastRetries(t)
-	retryBackend := NewRetryBackend(mock.NewBackend(), 2, nil, nil)
+	retryBackend := New(mock.NewBackend(), 2, nil, nil)
 	h := restic.Handle{Type: restic.PackFile, Name: restic.NewRandomID().String()}
 
 	// create an already canceled context
