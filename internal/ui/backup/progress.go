@@ -184,7 +184,7 @@ func (p *Progress) StartFile(filename string) {
 }
 
 // CompleteBlob is called for all saved blobs for files.
-func (p *Progress) CompleteBlob(filename string, bytes uint64) {
+func (p *Progress) CompleteBlob(bytes uint64) {
 	select {
 	case p.processedCh <- Counter{Bytes: bytes}:
 	case <-p.closed:

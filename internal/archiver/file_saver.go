@@ -25,7 +25,7 @@ type FileSaver struct {
 
 	ch chan<- saveFileJob
 
-	CompleteBlob func(filename string, bytes uint64)
+	CompleteBlob func(bytes uint64)
 
 	NodeFromFileInfo func(snPath, filename string, fi os.FileInfo) (*restic.Node, error)
 }
@@ -45,7 +45,7 @@ func NewFileSaver(ctx context.Context, wg *errgroup.Group, save SaveBlobFn, pol 
 		pol:          pol,
 		ch:           ch,
 
-		CompleteBlob: func(string, uint64) {},
+		CompleteBlob: func(uint64) {},
 	}
 
 	for i := uint(0); i < fileWorkers; i++ {
@@ -176,7 +176,7 @@ func (s *FileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 			return fnr
 		}
 
-		s.CompleteBlob(f.Name(), uint64(len(chunk.Data)))
+		s.CompleteBlob(uint64(len(chunk.Data)))
 
 		// collect already completed blobs
 		for len(results) > 0 {
