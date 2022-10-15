@@ -436,10 +436,7 @@ func runDebugExamine(ctx context.Context, gopts GlobalOptions, args []string) er
 	for _, name := range args {
 		id, err := restic.ParseID(name)
 		if err != nil {
-			name, err = restic.Find(ctx, repo.Backend(), restic.PackFile, name)
-			if err == nil {
-				id, err = restic.ParseID(name)
-			}
+			id, err = restic.Find(ctx, repo.Backend(), restic.PackFile, name)
 			if err != nil {
 				Warnf("error: %v\n", err)
 				continue

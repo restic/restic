@@ -119,7 +119,7 @@ func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int,
 		id, err := restic.Find(ctx, s.Backend(), restic.KeyFile, keyHint)
 
 		if err == nil {
-			key, err := OpenKey(ctx, s, id, password)
+			key, err := OpenKey(ctx, s, id.String(), password)
 
 			if err == nil {
 				debug.Log("successfully opened hinted key %v", id)

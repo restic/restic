@@ -236,7 +236,7 @@ func runKey(ctx context.Context, gopts GlobalOptions, args []string) error {
 			return err
 		}
 
-		return deleteKey(ctx, repo, id)
+		return deleteKey(ctx, repo, id.String())
 	case "passwd":
 		lock, ctx, err := lockRepoExclusive(ctx, repo)
 		defer unlockRepo(lock)
