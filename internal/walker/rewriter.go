@@ -2,6 +2,7 @@ package walker
 
 import (
 	"context"
+	"fmt"
 	"path"
 
 	"github.com/restic/restic/internal/debug"
@@ -26,6 +27,17 @@ func FilterTree(ctx context.Context, repo BlobLoadSaver, nodepath string, nodeID
 	curTree, err := restic.LoadTree(ctx, repo, nodeID)
 	if err != nil {
 		return restic.ID{}, err
+	}
+
+	// check that we can properly encode this tree without losing information
+	// The alternative of using json/Decoder.DisallowUnknownFields() doesn't work as we use
+	// a custom UnmarshalJSON to decode trees, see also https://github.com/golang/go/issues/41144
+	testID, err := restic.SaveTree(ctx, repo, curTree)
+	if err != nil {
+		return restic.ID{}, err
+	}
+	if nodeID != testID {
+		return restic.ID{}, fmt.Errorf("cannot encode tree at %q without loosing information", nodepath)
 	}
 
 	debug.Log("filterTree: %s, nodeId: %s\n", nodepath, nodeID.Str())

@@ -204,3 +204,19 @@ func TestRewriter(t *testing.T) {
 		})
 	}
 }
+
+func TestRewriterFailOnUnknownFields(t *testing.T) {
+	tm := WritableTreeMap{TreeMap{}}
+	node := []byte(`{"nodes":[{"name":"subfile","type":"file","mtime":"0001-01-01T00:00:00Z","atime":"0001-01-01T00:00:00Z","ctime":"0001-01-01T00:00:00Z","uid":0,"gid":0,"content":null,"unknown_field":42}]}`)
+	id := restic.Hash(node)
+	tm.TreeMap[id] = node
+
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
+	// use nil visitor to crash if the tree loading works unexpectedly
+	_, err := FilterTree(ctx, tm, "/", id, nil)
+
+	if err == nil {
+		t.Error("missing error on unknown field")
+	}
+}
