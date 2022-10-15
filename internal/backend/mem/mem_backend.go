@@ -3,13 +3,13 @@ package mem
 import (
 	"bytes"
 	"context"
-	"crypto/md5"
 	"encoding/base64"
 	"hash"
 	"io"
 	"io/ioutil"
 	"sync"
 
+	"github.com/cespare/xxhash/v2"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
@@ -266,7 +266,7 @@ func (be *MemoryBackend) Location() string {
 
 // Hasher may return a hash function for calculating a content hash for the backend
 func (be *MemoryBackend) Hasher() hash.Hash {
-	return md5.New()
+	return xxhash.New()
 }
 
 // HasAtomicReplace returns whether Save() can atomically replace files
