@@ -121,7 +121,7 @@ func refreshLocks(ctx context.Context, lock *restic.Lock, lockInfo *lockContext,
 func monitorLockRefresh(ctx context.Context, lock *restic.Lock, lockInfo *lockContext, refreshed <-chan struct{}) {
 	// time.Now() might use a monotonic timer which is paused during standby
 	// convert to unix time to ensure we compare real time values
-	lastRefresh := time.Now().Unix()
+	lastRefresh := time.Now().UnixNano()
 	pollDuration := 1 * time.Second
 	if refreshInterval < pollDuration {
 		// require for TestLockFailedRefresh
@@ -145,7 +145,7 @@ func monitorLockRefresh(ctx context.Context, lock *restic.Lock, lockInfo *lockCo
 		case <-refreshed:
 			lastRefresh = time.Now().Unix()
 		case <-timer.C:
-			if float64(time.Now().Unix()-lastRefresh) < refreshabilityTimeout.Seconds() {
+			if time.Now().UnixNano()-lastRefresh < refreshabilityTimeout.Nanoseconds() {
 				// restart timer
 				timer.Reset(pollDuration)
 				continue
