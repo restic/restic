@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
@@ -56,9 +57,10 @@ func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions
 		Created  string `json:"created"`
 	}
 
+	var m sync.Mutex
 	var keys []keyInfo
 
-	err := s.List(ctx, restic.KeyFile, func(id restic.ID, size int64) error {
+	err := restic.ParallelList(ctx, s.Backend(), restic.KeyFile, s.Connections(), func(ctx context.Context, id restic.ID, size int64) error {
 		k, err := repository.LoadKey(ctx, s, id)
 		if err != nil {
 			Warnf("LoadKey() failed: %v\n", err)
@@ -73,6 +75,8 @@ func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions
 			Created:  k.Created.Local().Format(TimeFormat),
 		}
 
+		m.Lock()
+		defer m.Unlock()
 		keys = append(keys, key)
 		return nil
 	})
