@@ -76,7 +76,7 @@ type Archiver struct {
 	StartFile func(filename string)
 
 	// CompleteBlob is called for all saved blobs for files.
-	CompleteBlob func(filename string, bytes uint64)
+	CompleteBlob func(bytes uint64)
 
 	// WithAtime configures if the access time for files and directories should
 	// be saved. Enabling it may result in much metadata, so it's off by
@@ -149,7 +149,7 @@ func New(repo restic.Repository, fs fs.FS, opts Options) *Archiver {
 
 		CompleteItem: func(string, *restic.Node, *restic.Node, ItemStats, time.Duration) {},
 		StartFile:    func(string) {},
-		CompleteBlob: func(string, uint64) {},
+		CompleteBlob: func(uint64) {},
 	}
 
 	return arch
@@ -369,7 +369,7 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 			if arch.allBlobsPresent(previous) {
 				debug.Log("%v hasn't changed, using old list of blobs", target)
 				arch.CompleteItem(snPath, previous, previous, ItemStats{}, time.Since(start))
-				arch.CompleteBlob(snPath, previous.Size)
+				arch.CompleteBlob(previous.Size)
 				node, err := arch.nodeFromFileInfo(snPath, target, fi)
 				if err != nil {
 					return FutureNode{}, false, err
