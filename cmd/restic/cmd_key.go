@@ -59,14 +59,14 @@ func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions
 	var keys []keyInfo
 
 	err := s.List(ctx, restic.KeyFile, func(id restic.ID, size int64) error {
-		k, err := repository.LoadKey(ctx, s, id.String())
+		k, err := repository.LoadKey(ctx, s, id)
 		if err != nil {
 			Warnf("LoadKey() failed: %v\n", err)
 			return nil
 		}
 
 		key := keyInfo{
-			Current:  id.String() == s.KeyName(),
+			Current:  id == s.KeyID(),
 			ID:       id.Str(),
 			UserName: k.Username,
 			HostName: k.Hostname,
@@ -141,18 +141,18 @@ func addKey(ctx context.Context, repo *repository.Repository, gopts GlobalOption
 	return nil
 }
 
-func deleteKey(ctx context.Context, repo *repository.Repository, name string) error {
-	if name == repo.KeyName() {
+func deleteKey(ctx context.Context, repo *repository.Repository, id restic.ID) error {
+	if id == repo.KeyID() {
 		return errors.Fatal("refusing to remove key currently used to access repository")
 	}
 
-	h := restic.Handle{Type: restic.KeyFile, Name: name}
+	h := restic.Handle{Type: restic.KeyFile, Name: id.String()}
 	err := repo.Backend().Remove(ctx, h)
 	if err != nil {
 		return err
 	}
 
-	Verbosef("removed key %v\n", name)
+	Verbosef("removed key %v\n", id)
 	return nil
 }
 
@@ -166,14 +166,14 @@ func changePassword(ctx context.Context, repo *repository.Repository, gopts Glob
 	if err != nil {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
-	oldID := repo.KeyName()
+	oldID := repo.KeyID()
 
 	err = switchToNewKeyAndRemoveIfBroken(ctx, repo, id, pw)
 	if err != nil {
 		return err
 	}
 
-	h := restic.Handle{Type: restic.KeyFile, Name: oldID}
+	h := restic.Handle{Type: restic.KeyFile, Name: oldID.String()}
 	err = repo.Backend().Remove(ctx, h)
 	if err != nil {
 		return err
@@ -187,10 +187,10 @@ func changePassword(ctx context.Context, repo *repository.Repository, gopts Glob
 func switchToNewKeyAndRemoveIfBroken(ctx context.Context, repo *repository.Repository, key *repository.Key, pw string) error {
 	// Verify new key to make sure it really works. A broken key can render the
 	// whole repository inaccessible
-	err := repo.SearchKey(ctx, pw, 0, key.Name())
+	err := repo.SearchKey(ctx, pw, 0, key.ID().String())
 	if err != nil {
 		// the key is invalid, try to remove it
-		h := restic.Handle{Type: restic.KeyFile, Name: key.Name()}
+		h := restic.Handle{Type: restic.KeyFile, Name: key.ID().String()}
 		_ = repo.Backend().Remove(ctx, h)
 		return errors.Fatalf("failed to access repository with new key: %v", err)
 	}
@@ -236,7 +236,7 @@ func runKey(ctx context.Context, gopts GlobalOptions, args []string) error {
 			return err
 		}
 
-		return deleteKey(ctx, repo, id.String())
+		return deleteKey(ctx, repo, id)
 	case "passwd":
 		lock, ctx, err := lockRepoExclusive(ctx, repo)
 		defer unlockRepo(lock)
