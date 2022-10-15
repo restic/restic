@@ -152,7 +152,7 @@ func open(ctx context.Context, sftp *SFTP, cfg Config) (*SFTP, error) {
 
 	debug.Log("layout: %v\n", sftp.Layout)
 
-	fi, err := sftp.c.Stat(Join(cfg.Path, backend.Paths.Config))
+	fi, err := sftp.c.Stat(sftp.Layout.Filename(restic.Handle{Type: restic.ConfigFile}))
 	m := backend.DeriveModesFromFileInfo(fi, err)
 	debug.Log("using (%03O file, %03O dir) permissions", m.File, m.Dir)
 
@@ -252,7 +252,7 @@ func Create(ctx context.Context, cfg Config) (*SFTP, error) {
 	sftp.Modes = backend.DefaultModes
 
 	// test if config file already exists
-	_, err = sftp.c.Lstat(Join(cfg.Path, backend.Paths.Config))
+	_, err = sftp.c.Lstat(sftp.Layout.Filename(restic.Handle{Type: restic.ConfigFile}))
 	if err == nil {
 		return nil, errors.New("config file already exists")
 	}
