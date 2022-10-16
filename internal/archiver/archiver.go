@@ -183,7 +183,7 @@ func (arch *Archiver) nodeFromFileInfo(snPath, filename string, fi os.FileInfo) 
 	}
 	// overwrite name to match that within the snapshot
 	node.Name = path.Base(snPath)
-	return node, errors.Wrap(err, "NodeFromFileInfo")
+	return node, errors.WithStack(err)
 }
 
 // loadSubtree tries to load the subtree referenced by node. In case of an error, nil is returned.
@@ -352,7 +352,7 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 		debug.Log("lstat() for %v returned error: %v", target, err)
 		err = arch.error(abstarget, err)
 		if err != nil {
-			return FutureNode{}, false, errors.Wrap(err, "Lstat")
+			return FutureNode{}, false, errors.WithStack(err)
 		}
 		return FutureNode{}, true, nil
 	}
@@ -404,7 +404,7 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 			debug.Log("Openfile() for %v returned error: %v", target, err)
 			err = arch.error(abstarget, err)
 			if err != nil {
-				return FutureNode{}, false, errors.Wrap(err, "Lstat")
+				return FutureNode{}, false, errors.WithStack(err)
 			}
 			return FutureNode{}, true, nil
 		}
@@ -415,7 +415,7 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 			_ = file.Close()
 			err = arch.error(abstarget, err)
 			if err != nil {
-				return FutureNode{}, false, errors.Wrap(err, "Lstat")
+				return FutureNode{}, false, errors.WithStack(err)
 			}
 			return FutureNode{}, true, nil
 		}
@@ -524,7 +524,7 @@ func join(elem ...string) string {
 func (arch *Archiver) statDir(dir string) (os.FileInfo, error) {
 	fi, err := arch.FS.Stat(dir)
 	if err != nil {
-		return nil, errors.Wrap(err, "Lstat")
+		return nil, errors.WithStack(err)
 	}
 
 	tpe := fi.Mode() & (os.ModeType | os.ModeCharDevice)
@@ -626,7 +626,7 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 func readdirnames(filesystem fs.FS, dir string, flags int) ([]string, error) {
 	f, err := filesystem.OpenFile(dir, fs.O_RDONLY|flags, 0)
 	if err != nil {
-		return nil, errors.Wrap(err, "Open")
+		return nil, errors.WithStack(err)
 	}
 
 	entries, err := f.Readdirnames(-1)

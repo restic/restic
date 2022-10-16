@@ -2,6 +2,7 @@ package fs
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"os"
 	"path"
@@ -288,7 +289,7 @@ func TestFSReader(t *testing.T) {
 			name: "dir/Lstat-error-not-exist",
 			f: func(t *testing.T, fs FS) {
 				_, err := fs.Lstat("other")
-				if err != os.ErrNotExist {
+				if !errors.Is(err, os.ErrNotExist) {
 					t.Fatal(err)
 				}
 			},
