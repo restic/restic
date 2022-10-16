@@ -24,10 +24,8 @@ type ProgressPrinter interface {
 	Stdout() io.WriteCloser
 	Stderr() io.WriteCloser
 
-	E(msg string, args ...interface{})
 	P(msg string, args ...interface{})
 	V(msg string, args ...interface{})
-	VV(msg string, args ...interface{})
 }
 
 type Counter struct {
@@ -52,10 +50,8 @@ type Summary struct {
 
 // Progress reports progress for the `backup` command.
 type Progress struct {
-	MinUpdatePause time.Duration
-
-	start time.Time
-	dry   bool
+	interval time.Duration
+	start    time.Time
 
 	totalCh     chan Counter
 	processedCh chan Counter
@@ -63,15 +59,14 @@ type Progress struct {
 	workerCh    chan fileWorkerMessage
 	closed      chan struct{}
 
-	summary *Summary
+	summary Summary
 	printer ProgressPrinter
 }
 
-func NewProgress(printer ProgressPrinter) *Progress {
+func NewProgress(printer ProgressPrinter, interval time.Duration) *Progress {
 	return &Progress{
-		// limit to 60fps by default
-		MinUpdatePause: time.Second / 60,
-		start:          time.Now(),
+		interval: interval,
+		start:    time.Now(),
 
 		// use buffered channels for the information used to update the status
 		// the shutdown of the `Run()` method is somewhat racy, but won't affect
@@ -82,15 +77,13 @@ func NewProgress(printer ProgressPrinter) *Progress {
 		workerCh:    make(chan fileWorkerMessage, 100),
 		closed:      make(chan struct{}),
 
-		summary: &Summary{},
-
 		printer: printer,
 	}
 }
 
 // Run regularly updates the status lines. It should be called in a separate
 // goroutine.
-func (p *Progress) Run(ctx context.Context) error {
+func (p *Progress) Run(ctx context.Context) {
 	var (
 		lastUpdate       time.Time
 		total, processed Counter
@@ -111,7 +104,7 @@ func (p *Progress) Run(ctx context.Context) error {
 		forceUpdate := false
 		select {
 		case <-ctx.Done():
-			return nil
+			return
 		case t, ok := <-p.totalCh:
 			if ok {
 				total = t
@@ -149,19 +142,13 @@ func (p *Progress) Run(ctx context.Context) error {
 		}
 
 		// limit update frequency
-		if !forceUpdate && (time.Since(lastUpdate) < p.MinUpdatePause || p.MinUpdatePause == 0) {
+		if !forceUpdate && (p.interval == 0 || time.Since(lastUpdate) < p.interval) {
 			continue
 		}
 		lastUpdate = time.Now()
 
 		p.printer.Update(total, processed, errors, currentFiles, p.start, secondsRemaining)
 	}
-}
-
-// ScannerError is the error callback function for the scanner, it prints the
-// error in verbose mode and returns nil.
-func (p *Progress) ScannerError(item string, err error) error {
-	return p.printer.ScannerError(item, err)
 }
 
 // Error is the error callback function for the archiver, it prints the error and returns nil.
@@ -214,23 +201,12 @@ func (p *Progress) CompleteItem(item string, previous, current *restic.Node, s a
 	}
 
 	switch current.Type {
-	case "file":
-		select {
-		case p.processedCh <- Counter{Files: 1}:
-		case <-p.closed:
-		}
-		select {
-		case p.workerCh <- fileWorkerMessage{filename: item, done: true}:
-		case <-p.closed:
-		}
 	case "dir":
 		select {
 		case p.processedCh <- Counter{Dirs: 1}:
 		case <-p.closed:
 		}
-	}
 
-	if current.Type == "dir" {
 		if previous == nil {
 			p.printer.CompleteItem("dir new", item, previous, current, s, d)
 			p.summary.Lock()
@@ -251,9 +227,13 @@ func (p *Progress) CompleteItem(item string, previous, current *restic.Node, s a
 			p.summary.Unlock()
 		}
 
-	} else if current.Type == "file" {
+	case "file":
 		select {
-		case p.workerCh <- fileWorkerMessage{done: true, filename: item}:
+		case p.processedCh <- Counter{Files: 1}:
+		case <-p.closed:
+		}
+		select {
+		case p.workerCh <- fileWorkerMessage{filename: item, done: true}:
 		case <-p.closed:
 		}
 
@@ -294,18 +274,8 @@ func (p *Progress) ReportTotal(item string, s archiver.ScanStats) {
 }
 
 // Finish prints the finishing messages.
-func (p *Progress) Finish(snapshotID restic.ID) {
+func (p *Progress) Finish(snapshotID restic.ID, dryrun bool) {
 	// wait for the status update goroutine to shut down
 	<-p.closed
-	p.printer.Finish(snapshotID, p.start, p.summary, p.dry)
-}
-
-// SetMinUpdatePause sets b.MinUpdatePause.
-func (p *Progress) SetMinUpdatePause(d time.Duration) {
-	p.MinUpdatePause = d
-}
-
-// SetDryRun marks the backup as a "dry run".
-func (p *Progress) SetDryRun() {
-	p.dry = true
+	p.printer.Finish(snapshotID, p.start, &p.summary, dryrun)
 }
