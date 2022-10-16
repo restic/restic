@@ -217,7 +217,7 @@ func TestTestWalkFiles(t *testing.T) {
 					return err
 				}
 
-				got[p] = fmt.Sprintf("%v", item)
+				got[p] = fmt.Sprint(item)
 				return nil
 			})
 

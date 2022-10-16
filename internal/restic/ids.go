@@ -65,5 +65,5 @@ func (ids IDs) String() string {
 	for _, id := range ids {
 		elements = append(elements, shortID(id))
 	}
-	return fmt.Sprintf("%v", elements)
+	return fmt.Sprint(elements)
 }

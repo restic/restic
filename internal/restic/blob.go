@@ -114,11 +114,7 @@ func (h BlobHandles) Less(i, j int) bool {
 			continue
 		}
 
-		if b < h[j].ID[k] {
-			return true
-		}
-
-		return false
+		return b < h[j].ID[k]
 	}
 
 	return h[i].Type < h[j].Type
@@ -133,5 +129,5 @@ func (h BlobHandles) String() string {
 	for _, e := range h {
 		elements = append(elements, e.String())
 	}
-	return fmt.Sprintf("%v", elements)
+	return fmt.Sprint(elements)
 }
