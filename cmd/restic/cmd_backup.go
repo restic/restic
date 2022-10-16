@@ -555,11 +555,11 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	} else {
 		progressPrinter = backup.NewTextProgress(term, gopts.verbosity)
 	}
-	progressReporter := backup.NewProgress(progressPrinter)
+	progressReporter := backup.NewProgress(progressPrinter,
+		calculateProgressInterval(!gopts.Quiet, gopts.JSON))
 
 	if opts.DryRun {
 		repo.SetDryRun()
-		progressReporter.SetDryRun()
 	}
 
 	// use the terminal for stdout/stderr
@@ -568,8 +568,6 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		gopts.stdout, gopts.stderr = prevStdout, prevStderr
 	}()
 	gopts.stdout, gopts.stderr = progressPrinter.Stdout(), progressPrinter.Stderr()
-
-	progressReporter.SetMinUpdatePause(calculateProgressInterval(!gopts.Quiet, gopts.JSON))
 
 	wg, wgCtx := errgroup.WithContext(ctx)
 	cancelCtx, cancel := context.WithCancel(wgCtx)
@@ -676,7 +674,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	sc := archiver.NewScanner(targetFS)
 	sc.SelectByName = selectByNameFilter
 	sc.Select = selectFilter
-	sc.Error = progressReporter.ScannerError
+	sc.Error = progressPrinter.ScannerError
 	sc.Result = progressReporter.ReportTotal
 
 	if !gopts.JSON {
@@ -731,7 +729,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	}
 
 	// Report finished execution
-	progressReporter.Finish(id)
+	progressReporter.Finish(id, opts.DryRun)
 	if !gopts.JSON && !opts.DryRun {
 		progressPrinter.P("snapshot %s saved\n", id.Str())
 	}
