@@ -97,7 +97,7 @@ func TestFiles(t *testing.T) {
 	}
 
 	for _, tpe := range tests {
-		t.Run(fmt.Sprintf("%v", tpe), func(t *testing.T) {
+		t.Run(tpe.String(), func(t *testing.T) {
 			ids := generateRandomFiles(t, tpe, c)
 			id := randomID(ids)
 
