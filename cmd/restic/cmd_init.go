@@ -110,9 +110,9 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 
 	} else {
 		status := initSuccess{
-			Status:     "success",
-			ID:         s.Config().ID,
-			Repository: location.StripPassword(gopts.Repo),
+			MessageType: "initialized",
+			ID:          s.Config().ID,
+			Repository:  location.StripPassword(gopts.Repo),
 		}
 		return json.NewEncoder(gopts.stdout).Encode(status)
 	}
@@ -143,7 +143,7 @@ func maybeReadChunkerPolynomial(ctx context.Context, opts InitOptions, gopts Glo
 }
 
 type initSuccess struct {
-	Status     string `json:"status"` // "success"
-	ID         string `json:"id"`
-	Repository string `json:"repository"`
+	MessageType string `json:"message_type"` // "initialized"
+	ID          string `json:"id"`
+	Repository  string `json:"repository"`
 }
