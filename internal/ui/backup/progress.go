@@ -11,6 +11,8 @@ import (
 	"github.com/restic/restic/internal/ui/signals"
 )
 
+// A ProgressPrinter can print various progress messages.
+// It must be safe to call its methods from concurrent goroutines.
 type ProgressPrinter interface {
 	Update(total, processed Counter, errors uint, currentFiles map[string]struct{}, start time.Time, secs uint64)
 	Error(item string, err error) error
@@ -32,13 +34,7 @@ type Counter struct {
 	Files, Dirs, Bytes uint64
 }
 
-type fileWorkerMessage struct {
-	filename string
-	done     bool
-}
-
 type Summary struct {
-	sync.Mutex
 	Files, Dirs struct {
 		New       uint
 		Changed   uint
@@ -50,14 +46,18 @@ type Summary struct {
 
 // Progress reports progress for the `backup` command.
 type Progress struct {
+	mu sync.Mutex
+
 	interval time.Duration
 	start    time.Time
 
-	totalCh     chan Counter
-	processedCh chan Counter
-	errCh       chan struct{}
-	workerCh    chan fileWorkerMessage
-	closed      chan struct{}
+	scanStarted, scanFinished bool
+
+	currentFiles     map[string]struct{}
+	processed, total Counter
+	errors           uint
+
+	closed chan struct{}
 
 	summary Summary
 	printer ProgressPrinter
@@ -68,14 +68,8 @@ func NewProgress(printer ProgressPrinter, interval time.Duration) *Progress {
 		interval: interval,
 		start:    time.Now(),
 
-		// use buffered channels for the information used to update the status
-		// the shutdown of the `Run()` method is somewhat racy, but won't affect
-		// the final backup statistics
-		totalCh:     make(chan Counter, 100),
-		processedCh: make(chan Counter, 100),
-		errCh:       make(chan struct{}),
-		workerCh:    make(chan fileWorkerMessage, 100),
-		closed:      make(chan struct{}),
+		currentFiles: make(map[string]struct{}),
+		closed:       make(chan struct{}),
 
 		printer: printer,
 	}
@@ -84,104 +78,82 @@ func NewProgress(printer ProgressPrinter, interval time.Duration) *Progress {
 // Run regularly updates the status lines. It should be called in a separate
 // goroutine.
 func (p *Progress) Run(ctx context.Context) {
-	var (
-		lastUpdate       time.Time
-		total, processed Counter
-		errors           uint
-		started          bool
-		currentFiles     = make(map[string]struct{})
-		secondsRemaining uint64
-	)
-
-	t := time.NewTicker(time.Second)
-	signalsCh := signals.GetProgressChannel()
-	defer t.Stop()
 	defer close(p.closed)
 	// Reset status when finished
 	defer p.printer.Reset()
 
+	var tick <-chan time.Time
+	if p.interval != 0 {
+		t := time.NewTicker(p.interval)
+		defer t.Stop()
+		tick = t.C
+	}
+
+	signalsCh := signals.GetProgressChannel()
+
 	for {
-		forceUpdate := false
+		var now time.Time
 		select {
 		case <-ctx.Done():
 			return
-		case t, ok := <-p.totalCh:
-			if ok {
-				total = t
-				started = true
-			} else {
-				// scan has finished
-				p.totalCh = nil
-			}
-		case s := <-p.processedCh:
-			processed.Files += s.Files
-			processed.Dirs += s.Dirs
-			processed.Bytes += s.Bytes
-			started = true
-		case <-p.errCh:
-			errors++
-			started = true
-		case m := <-p.workerCh:
-			if m.done {
-				delete(currentFiles, m.filename)
-			} else {
-				currentFiles[m.filename] = struct{}{}
-			}
-		case <-t.C:
-			if !started {
-				continue
-			}
-
-			if p.totalCh == nil {
-				secs := float64(time.Since(p.start) / time.Second)
-				todo := float64(total.Bytes - processed.Bytes)
-				secondsRemaining = uint64(secs / float64(processed.Bytes) * todo)
-			}
+		case now = <-tick:
 		case <-signalsCh:
-			forceUpdate = true
+			now = time.Now()
 		}
 
-		// limit update frequency
-		if !forceUpdate && (p.interval == 0 || time.Since(lastUpdate) < p.interval) {
+		p.mu.Lock()
+		if p.scanStarted {
+			p.mu.Unlock()
 			continue
 		}
-		lastUpdate = time.Now()
 
-		p.printer.Update(total, processed, errors, currentFiles, p.start, secondsRemaining)
+		var secondsRemaining uint64
+		if p.scanFinished {
+			secs := float64(now.Sub(p.start) / time.Second)
+			todo := float64(p.total.Bytes - p.processed.Bytes)
+			secondsRemaining = uint64(secs / float64(p.processed.Bytes) * todo)
+		}
+
+		p.printer.Update(p.total, p.processed, p.errors, p.currentFiles, p.start, secondsRemaining)
+		p.mu.Unlock()
 	}
 }
 
 // Error is the error callback function for the archiver, it prints the error and returns nil.
 func (p *Progress) Error(item string, err error) error {
-	cbErr := p.printer.Error(item, err)
+	p.mu.Lock()
+	p.errors++
+	p.scanStarted = true
+	p.mu.Unlock()
 
-	select {
-	case p.errCh <- struct{}{}:
-	case <-p.closed:
-	}
-	return cbErr
+	return p.printer.Error(item, err)
 }
 
 // StartFile is called when a file is being processed by a worker.
 func (p *Progress) StartFile(filename string) {
-	select {
-	case p.workerCh <- fileWorkerMessage{filename: filename}:
-	case <-p.closed:
-	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.currentFiles[filename] = struct{}{}
+}
+
+func (p *Progress) addProcessed(c Counter) {
+	p.processed.Files += c.Files
+	p.processed.Dirs += c.Dirs
+	p.processed.Bytes += c.Bytes
+	p.scanStarted = true
 }
 
 // CompleteBlob is called for all saved blobs for files.
 func (p *Progress) CompleteBlob(bytes uint64) {
-	select {
-	case p.processedCh <- Counter{Bytes: bytes}:
-	case <-p.closed:
-	}
+	p.mu.Lock()
+	p.addProcessed(Counter{Bytes: bytes})
+	p.mu.Unlock()
 }
 
 // CompleteItem is the status callback function for the archiver when a
 // file/dir has been saved successfully.
 func (p *Progress) CompleteItem(item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration) {
-	p.summary.Lock()
+	p.mu.Lock()
 	p.summary.ItemStats.Add(s)
 
 	// for the last item "/", current is nil
@@ -189,86 +161,80 @@ func (p *Progress) CompleteItem(item string, previous, current *restic.Node, s a
 		p.summary.ProcessedBytes += current.Size
 	}
 
-	p.summary.Unlock()
+	p.mu.Unlock()
 
 	if current == nil {
 		// error occurred, tell the status display to remove the line
-		select {
-		case p.workerCh <- fileWorkerMessage{filename: item, done: true}:
-		case <-p.closed:
-		}
+		p.mu.Lock()
+		delete(p.currentFiles, item)
+		p.mu.Unlock()
 		return
 	}
 
 	switch current.Type {
 	case "dir":
-		select {
-		case p.processedCh <- Counter{Dirs: 1}:
-		case <-p.closed:
-		}
+		p.mu.Lock()
+		p.addProcessed(Counter{Dirs: 1})
+		p.mu.Unlock()
 
-		if previous == nil {
+		switch {
+		case previous == nil:
 			p.printer.CompleteItem("dir new", item, previous, current, s, d)
-			p.summary.Lock()
+			p.mu.Lock()
 			p.summary.Dirs.New++
-			p.summary.Unlock()
-			return
-		}
+			p.mu.Unlock()
 
-		if previous.Equals(*current) {
+		case previous.Equals(*current):
 			p.printer.CompleteItem("dir unchanged", item, previous, current, s, d)
-			p.summary.Lock()
+			p.mu.Lock()
 			p.summary.Dirs.Unchanged++
-			p.summary.Unlock()
-		} else {
+			p.mu.Unlock()
+
+		default:
 			p.printer.CompleteItem("dir modified", item, previous, current, s, d)
-			p.summary.Lock()
+			p.mu.Lock()
 			p.summary.Dirs.Changed++
-			p.summary.Unlock()
+			p.mu.Unlock()
 		}
 
 	case "file":
-		select {
-		case p.processedCh <- Counter{Files: 1}:
-		case <-p.closed:
-		}
-		select {
-		case p.workerCh <- fileWorkerMessage{filename: item, done: true}:
-		case <-p.closed:
-		}
+		p.mu.Lock()
+		p.addProcessed(Counter{Files: 1})
+		delete(p.currentFiles, item)
+		p.mu.Unlock()
 
-		if previous == nil {
+		switch {
+		case previous == nil:
 			p.printer.CompleteItem("file new", item, previous, current, s, d)
-			p.summary.Lock()
+			p.mu.Lock()
 			p.summary.Files.New++
-			p.summary.Unlock()
-			return
-		}
+			p.mu.Unlock()
 
-		if previous.Equals(*current) {
+		case previous.Equals(*current):
 			p.printer.CompleteItem("file unchanged", item, previous, current, s, d)
-			p.summary.Lock()
+			p.mu.Lock()
 			p.summary.Files.Unchanged++
-			p.summary.Unlock()
-		} else {
+			p.mu.Unlock()
+
+		default:
 			p.printer.CompleteItem("file modified", item, previous, current, s, d)
-			p.summary.Lock()
+			p.mu.Lock()
 			p.summary.Files.Changed++
-			p.summary.Unlock()
+			p.mu.Unlock()
 		}
 	}
 }
 
 // ReportTotal sets the total stats up to now
 func (p *Progress) ReportTotal(item string, s archiver.ScanStats) {
-	select {
-	case p.totalCh <- Counter{Files: uint64(s.Files), Dirs: uint64(s.Dirs), Bytes: s.Bytes}:
-	case <-p.closed:
-	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	p.total = Counter{Files: uint64(s.Files), Dirs: uint64(s.Dirs), Bytes: s.Bytes}
 
 	if item == "" {
 		p.printer.ReportTotal(item, p.start, s)
-		close(p.totalCh)
+		p.scanStarted = true
 		return
 	}
 }
