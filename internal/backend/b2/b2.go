@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/layout"
 	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -25,7 +26,7 @@ type b2Backend struct {
 	bucket       *b2.Bucket
 	cfg          Config
 	listMaxItems int
-	backend.Layout
+	layout.Layout
 	sem sema.Semaphore
 }
 
@@ -97,7 +98,7 @@ func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backend
 		client: client,
 		bucket: bucket,
 		cfg:    cfg,
-		Layout: &backend.DefaultLayout{
+		Layout: &layout.DefaultLayout{
 			Join: path.Join,
 			Path: cfg.Prefix,
 		},
@@ -138,7 +139,7 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backe
 		client: client,
 		bucket: bucket,
 		cfg:    cfg,
-		Layout: &backend.DefaultLayout{
+		Layout: &layout.DefaultLayout{
 			Join: path.Join,
 			Path: cfg.Prefix,
 		},

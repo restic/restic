@@ -14,6 +14,7 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/pkg/errors"
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/layout"
 	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
@@ -41,7 +42,7 @@ type Backend struct {
 	bucket       *storage.BucketHandle
 	prefix       string
 	listMaxItems int
-	backend.Layout
+	layout.Layout
 }
 
 // Ensure that *Backend implements restic.Backend.
@@ -111,7 +112,7 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 		bucketName:  cfg.Bucket,
 		bucket:      gcsClient.Bucket(cfg.Bucket),
 		prefix:      cfg.Prefix,
-		Layout: &backend.DefaultLayout{
+		Layout: &layout.DefaultLayout{
 			Path: cfg.Prefix,
 			Join: path.Join,
 		},

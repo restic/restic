@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/layout"
 	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -30,7 +31,7 @@ type Backend struct {
 	sem          sema.Semaphore
 	prefix       string
 	listMaxItems int
-	backend.Layout
+	layout.Layout
 }
 
 const defaultListMaxItems = 5000
@@ -85,7 +86,7 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 		connections: cfg.Connections,
 		sem:         sem,
 		prefix:      cfg.Prefix,
-		Layout: &backend.DefaultLayout{
+		Layout: &layout.DefaultLayout{
 			Path: cfg.Prefix,
 			Join: path.Join,
 		},

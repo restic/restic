@@ -1,4 +1,4 @@
-package backend
+package retry
 
 import (
 	"context"
@@ -11,9 +11,9 @@ import (
 	"github.com/restic/restic/internal/restic"
 )
 
-// RetryBackend retries operations on the backend in case of an error with a
+// Backend retries operations on the backend in case of an error with a
 // backoff.
-type RetryBackend struct {
+type Backend struct {
 	restic.Backend
 	MaxTries int
 	Report   func(string, error, time.Duration)
@@ -21,14 +21,14 @@ type RetryBackend struct {
 }
 
 // statically ensure that RetryBackend implements restic.Backend.
-var _ restic.Backend = &RetryBackend{}
+var _ restic.Backend = &Backend{}
 
-// NewRetryBackend wraps be with a backend that retries operations after a
+// New wraps be with a backend that retries operations after a
 // backoff. report is called with a description and the error, if one occurred.
 // success is called with the number of retries before a successful operation
 // (it is not called if it succeeded on the first try)
-func NewRetryBackend(be restic.Backend, maxTries int, report func(string, error, time.Duration), success func(string, int)) *RetryBackend {
-	return &RetryBackend{
+func New(be restic.Backend, maxTries int, report func(string, error, time.Duration), success func(string, int)) *Backend {
+	return &Backend{
 		Backend:  be,
 		MaxTries: maxTries,
 		Report:   report,
@@ -57,7 +57,7 @@ func retryNotifyErrorWithSuccess(operation backoff.Operation, b backoff.BackOff,
 
 var fastRetries = false
 
-func (be *RetryBackend) retry(ctx context.Context, msg string, f func() error) error {
+func (be *Backend) retry(ctx context.Context, msg string, f func() error) error {
 	// Don't do anything when called with an already cancelled context. There would be
 	// no retries in that case either, so be consistent and abort always.
 	// This enforces a strict contract for backend methods: Using a cancelled context
@@ -92,7 +92,7 @@ func (be *RetryBackend) retry(ctx context.Context, msg string, f func() error) e
 }
 
 // Save stores the data in the backend under the given handle.
-func (be *RetryBackend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
 	return be.retry(ctx, fmt.Sprintf("Save(%v)", h), func() error {
 		err := rd.Rewind()
 		if err != nil {
@@ -125,7 +125,7 @@ func (be *RetryBackend) Save(ctx context.Context, h restic.Handle, rd restic.Rew
 // given offset. If length is larger than zero, only a portion of the file
 // is returned. rd must be closed after use. If an error is returned, the
 // ReadCloser must be nil.
-func (be *RetryBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64, consumer func(rd io.Reader) error) (err error) {
+func (be *Backend) Load(ctx context.Context, h restic.Handle, length int, offset int64, consumer func(rd io.Reader) error) (err error) {
 	return be.retry(ctx, fmt.Sprintf("Load(%v, %v, %v)", h, length, offset),
 		func() error {
 			return be.Backend.Load(ctx, h, length, offset, consumer)
@@ -133,7 +133,7 @@ func (be *RetryBackend) Load(ctx context.Context, h restic.Handle, length int, o
 }
 
 // Stat returns information about the File identified by h.
-func (be *RetryBackend) Stat(ctx context.Context, h restic.Handle) (fi restic.FileInfo, err error) {
+func (be *Backend) Stat(ctx context.Context, h restic.Handle) (fi restic.FileInfo, err error) {
 	err = be.retry(ctx, fmt.Sprintf("Stat(%v)", h),
 		func() error {
 			var innerError error
@@ -145,14 +145,14 @@ func (be *RetryBackend) Stat(ctx context.Context, h restic.Handle) (fi restic.Fi
 }
 
 // Remove removes a File with type t and name.
-func (be *RetryBackend) Remove(ctx context.Context, h restic.Handle) (err error) {
+func (be *Backend) Remove(ctx context.Context, h restic.Handle) (err error) {
 	return be.retry(ctx, fmt.Sprintf("Remove(%v)", h), func() error {
 		return be.Backend.Remove(ctx, h)
 	})
 }
 
 // Test a boolean value whether a File with the name and type exists.
-func (be *RetryBackend) Test(ctx context.Context, h restic.Handle) (exists bool, err error) {
+func (be *Backend) Test(ctx context.Context, h restic.Handle) (exists bool, err error) {
 	err = be.retry(ctx, fmt.Sprintf("Test(%v)", h), func() error {
 		var innerError error
 		exists, innerError = be.Backend.Test(ctx, h)
@@ -166,7 +166,7 @@ func (be *RetryBackend) Test(ctx context.Context, h restic.Handle) (exists bool,
 // error is returned by the underlying backend, the request is retried. When fn
 // returns an error, the operation is aborted and the error is returned to the
 // caller.
-func (be *RetryBackend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
+func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
 	// create a new context that we can cancel when fn returns an error, so
 	// that listing is aborted
 	listCtx, cancel := context.WithCancel(ctx)

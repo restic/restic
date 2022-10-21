@@ -1,4 +1,4 @@
-package backend
+package layout
 
 import (
 	"context"
@@ -362,15 +362,15 @@ func TestDetectLayout(t *testing.T) {
 		filename string
 		want     string
 	}{
-		{"repo-layout-default.tar.gz", "*backend.DefaultLayout"},
-		{"repo-layout-s3legacy.tar.gz", "*backend.S3LegacyLayout"},
+		{"repo-layout-default.tar.gz", "*layout.DefaultLayout"},
+		{"repo-layout-s3legacy.tar.gz", "*layout.S3LegacyLayout"},
 	}
 
 	var fs = &LocalFilesystem{}
 	for _, test := range tests {
 		for _, fs := range []Filesystem{fs, nil} {
 			t.Run(fmt.Sprintf("%v/fs-%T", test.filename, fs), func(t *testing.T) {
-				rtest.SetupTarTestFixture(t, path, filepath.Join("testdata", test.filename))
+				rtest.SetupTarTestFixture(t, path, filepath.Join("../testdata", test.filename))
 
 				layout, err := DetectLayout(context.TODO(), fs, filepath.Join(path, "repo"))
 				if err != nil {
@@ -401,12 +401,12 @@ func TestParseLayout(t *testing.T) {
 		defaultLayoutName string
 		want              string
 	}{
-		{"default", "", "*backend.DefaultLayout"},
-		{"s3legacy", "", "*backend.S3LegacyLayout"},
-		{"", "", "*backend.DefaultLayout"},
+		{"default", "", "*layout.DefaultLayout"},
+		{"s3legacy", "", "*layout.S3LegacyLayout"},
+		{"", "", "*layout.DefaultLayout"},
 	}
 
-	rtest.SetupTarTestFixture(t, path, filepath.Join("testdata", "repo-layout-default.tar.gz"))
+	rtest.SetupTarTestFixture(t, path, filepath.Join("..", "testdata", "repo-layout-default.tar.gz"))
 
 	for _, test := range tests {
 		t.Run(test.layoutName, func(t *testing.T) {

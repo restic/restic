@@ -22,6 +22,7 @@ import (
 	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/backend/rclone"
 	"github.com/restic/restic/internal/backend/rest"
+	"github.com/restic/restic/internal/backend/retry"
 	"github.com/restic/restic/internal/backend/s3"
 	"github.com/restic/restic/internal/backend/sftp"
 	"github.com/restic/restic/internal/backend/swift"
@@ -445,7 +446,7 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 	success := func(msg string, retries int) {
 		Warnf("%v operation successful after %d retries\n", msg, retries)
 	}
-	be = backend.NewRetryBackend(be, 10, report, success)
+	be = retry.New(be, 10, report, success)
 
 	// wrap backend if a test specified a hook
 	if opts.backendTestHook != nil {

@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/layout"
 	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -32,7 +32,7 @@ type Backend struct {
 	connections uint
 	sem         sema.Semaphore
 	client      http.Client
-	backend.Layout
+	layout.Layout
 }
 
 // the REST API protocol version is decided by HTTP request headers, these are the constants.
@@ -57,7 +57,7 @@ func Open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	be := &Backend{
 		url:         cfg.URL,
 		client:      http.Client{Transport: rt},
-		Layout:      &backend.RESTLayout{URL: url, Join: path.Join},
+		Layout:      &layout.RESTLayout{URL: url, Join: path.Join},
 		connections: cfg.Connections,
 		sem:         sem,
 	}

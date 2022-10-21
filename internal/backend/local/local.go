@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/layout"
 	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -23,7 +24,7 @@ import (
 type Local struct {
 	Config
 	sem sema.Semaphore
-	backend.Layout
+	layout.Layout
 	backend.Modes
 }
 
@@ -33,7 +34,7 @@ var _ restic.Backend = &Local{}
 const defaultLayout = "default"
 
 func open(ctx context.Context, cfg Config) (*Local, error) {
-	l, err := backend.ParseLayout(ctx, &backend.LocalFilesystem{}, cfg.Layout, defaultLayout, cfg.Path)
+	l, err := layout.ParseLayout(ctx, &layout.LocalFilesystem{}, cfg.Layout, defaultLayout, cfg.Path)
 	if err != nil {
 		return nil, err
 	}

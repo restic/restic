@@ -6,7 +6,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/layout"
 	"github.com/restic/restic/internal/backend/s3"
 	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/debug"
@@ -74,7 +74,7 @@ func retry(max int, fail func(err error), f func() error) error {
 // maxErrors for retrying renames on s3.
 const maxErrors = 20
 
-func (m *S3Layout) moveFiles(ctx context.Context, be *s3.Backend, l backend.Layout, t restic.FileType) error {
+func (m *S3Layout) moveFiles(ctx context.Context, be *s3.Backend, l layout.Layout, t restic.FileType) error {
 	printErr := func(err error) {
 		fmt.Fprintf(os.Stderr, "renaming file returned error: %v\n", err)
 	}
@@ -97,12 +97,12 @@ func (m *S3Layout) Apply(ctx context.Context, repo restic.Repository) error {
 		return errors.New("backend is not s3")
 	}
 
-	oldLayout := &backend.S3LegacyLayout{
+	oldLayout := &layout.S3LegacyLayout{
 		Path: be.Path(),
 		Join: path.Join,
 	}
 
-	newLayout := &backend.DefaultLayout{
+	newLayout := &layout.DefaultLayout{
 		Path: be.Path(),
 		Join: path.Join,
 	}
