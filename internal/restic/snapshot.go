@@ -8,8 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/sync/errgroup"
-
 	"github.com/restic/restic/internal/debug"
 )
 
@@ -82,58 +80,17 @@ func SaveSnapshot(ctx context.Context, repo SaverUnpacked, sn *Snapshot) (ID, er
 func ForAllSnapshots(ctx context.Context, be Lister, loader LoaderUnpacked, excludeIDs IDSet, fn func(ID, *Snapshot, error) error) error {
 	var m sync.Mutex
 
-	// track spawned goroutines using wg, create a new context which is
-	// cancelled as soon as an error occurs.
-	wg, ctx := errgroup.WithContext(ctx)
-
-	ch := make(chan ID)
-
-	// send list of snapshot files through ch, which is closed afterwards
-	wg.Go(func() error {
-		defer close(ch)
-		return be.List(ctx, SnapshotFile, func(fi FileInfo) error {
-			id, err := ParseID(fi.Name)
-			if err != nil {
-				debug.Log("unable to parse %v as an ID", fi.Name)
-				return nil
-			}
-
-			if excludeIDs.Has(id) {
-				return nil
-			}
-
-			select {
-			case <-ctx.Done():
-				return nil
-			case ch <- id:
-			}
-			return nil
-		})
-	})
-
-	// a worker receives an snapshot ID from ch, loads the snapshot
-	// and runs fn with id, the snapshot and the error
-	worker := func() error {
-		for id := range ch {
-			debug.Log("load snapshot %v", id)
-			sn, err := LoadSnapshot(ctx, loader, id)
-
-			m.Lock()
-			err = fn(id, sn, err)
-			m.Unlock()
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-
 	// For most snapshots decoding is nearly for free, thus just assume were only limited by IO
-	for i := 0; i < int(loader.Connections()); i++ {
-		wg.Go(worker)
-	}
+	return ParallelList(ctx, be, SnapshotFile, loader.Connections(), func(ctx context.Context, id ID, size int64) error {
+		if excludeIDs.Has(id) {
+			return nil
+		}
 
-	return wg.Wait()
+		sn, err := LoadSnapshot(ctx, loader, id)
+		m.Lock()
+		defer m.Unlock()
+		return fn(id, sn, err)
+	})
 }
 
 func (sn Snapshot) String() string {

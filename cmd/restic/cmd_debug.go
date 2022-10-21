@@ -13,6 +13,7 @@ import (
 	"os"
 	"runtime"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/klauspost/compress/zstd"
@@ -105,7 +106,8 @@ type Blob struct {
 
 func printPacks(ctx context.Context, repo *repository.Repository, wr io.Writer) error {
 
-	return repo.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
+	var m sync.Mutex
+	return restic.ParallelList(ctx, repo.Backend(), restic.PackFile, repo.Connections(), func(ctx context.Context, id restic.ID, size int64) error {
 		blobs, _, err := repo.ListPack(ctx, id, size)
 		if err != nil {
 			Warnf("error for pack %v: %v\n", id.Str(), err)
@@ -125,6 +127,8 @@ func printPacks(ctx context.Context, repo *repository.Repository, wr io.Writer) 
 			}
 		}
 
+		m.Lock()
+		defer m.Unlock()
 		return prettyPrintJSON(wr, p)
 	})
 }

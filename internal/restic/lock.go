@@ -7,12 +7,12 @@ import (
 	"os/signal"
 	"os/user"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"testing"
 	"time"
 
 	"github.com/restic/restic/internal/errors"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/restic/restic/internal/debug"
 )
@@ -302,15 +302,15 @@ func RemoveStaleLocks(ctx context.Context, repo Repository) (uint, error) {
 
 // RemoveAllLocks removes all locks forcefully.
 func RemoveAllLocks(ctx context.Context, repo Repository) (uint, error) {
-	var processed uint
-	err := repo.List(ctx, LockFile, func(id ID, size int64) error {
+	var processed uint32
+	err := ParallelList(ctx, repo.Backend(), LockFile, repo.Connections(), func(ctx context.Context, id ID, size int64) error {
 		err := repo.Backend().Remove(ctx, Handle{Type: LockFile, Name: id.String()})
 		if err == nil {
-			processed++
+			atomic.AddUint32(&processed, 1)
 		}
 		return err
 	})
-	return processed, err
+	return uint(processed), err
 }
 
 // ForAllLocks reads all locks in parallel and calls the given callback.
@@ -320,50 +320,15 @@ func RemoveAllLocks(ctx context.Context, repo Repository) (uint, error) {
 func ForAllLocks(ctx context.Context, repo Repository, excludeID *ID, fn func(ID, *Lock, error) error) error {
 	var m sync.Mutex
 
-	// track spawned goroutines using wg, create a new context which is
-	// cancelled as soon as an error occurs.
-	wg, ctx := errgroup.WithContext(ctx)
-
-	ch := make(chan ID)
-
-	// send list of lock files through ch, which is closed afterwards
-	wg.Go(func() error {
-		defer close(ch)
-		return repo.List(ctx, LockFile, func(id ID, size int64) error {
-			if excludeID != nil && id.Equal(*excludeID) {
-				return nil
-			}
-
-			select {
-			case <-ctx.Done():
-				return nil
-			case ch <- id:
-			}
-			return nil
-		})
-	})
-
-	// a worker receives an snapshot ID from ch, loads the snapshot
-	// and runs fn with id, the snapshot and the error
-	worker := func() error {
-		for id := range ch {
-			debug.Log("load lock %v", id)
-			lock, err := LoadLock(ctx, repo, id)
-
-			m.Lock()
-			err = fn(id, lock, err)
-			m.Unlock()
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-
 	// For locks decoding is nearly for free, thus just assume were only limited by IO
-	for i := 0; i < int(repo.Connections()); i++ {
-		wg.Go(worker)
-	}
+	return ParallelList(ctx, repo.Backend(), LockFile, repo.Connections(), func(ctx context.Context, id ID, size int64) error {
+		if excludeID != nil && id.Equal(*excludeID) {
+			return nil
+		}
+		lock, err := LoadLock(ctx, repo, id)
 
-	return wg.Wait()
+		m.Lock()
+		defer m.Unlock()
+		return fn(id, lock, err)
+	})
 }
