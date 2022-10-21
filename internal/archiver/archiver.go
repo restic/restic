@@ -361,7 +361,6 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 	switch {
 	case fs.IsRegularFile(fi):
 		debug.Log("  %v regular file", target)
-		start := time.Now()
 
 		// check if the file has not changed before performing a fopen operation (more expensive, specially
 		// in network filesystems)
@@ -440,7 +439,6 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 		debug.Log("  %v dir", target)
 
 		snItem := snPath + "/"
-		start := time.Now()
 		oldSubtree, err := arch.loadSubtree(ctx, previous)
 		if err != nil {
 			err = arch.error(abstarget, err)
