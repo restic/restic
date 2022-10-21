@@ -11,6 +11,7 @@ import (
 	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/table"
 	"github.com/spf13/cobra"
 )
@@ -138,7 +139,7 @@ func runCache(opts CacheOptions, gopts GlobalOptions, args []string) error {
 			if err != nil {
 				return err
 			}
-			size = fmt.Sprintf("%11s", formatBytes(uint64(bytes)))
+			size = fmt.Sprintf("%11s", ui.FormatBytes(uint64(bytes)))
 		}
 
 		name := entry.Name()

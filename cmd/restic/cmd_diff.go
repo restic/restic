@@ -11,6 +11,7 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -425,8 +426,8 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []
 		Printf("Others:      %5d new, %5d removed\n", stats.Added.Others, stats.Removed.Others)
 		Printf("Data Blobs:  %5d new, %5d removed\n", stats.Added.DataBlobs, stats.Removed.DataBlobs)
 		Printf("Tree Blobs:  %5d new, %5d removed\n", stats.Added.TreeBlobs, stats.Removed.TreeBlobs)
-		Printf("  Added:   %-5s\n", formatBytes(uint64(stats.Added.Bytes)))
-		Printf("  Removed: %-5s\n", formatBytes(uint64(stats.Removed.Bytes)))
+		Printf("  Added:   %-5s\n", ui.FormatBytes(uint64(stats.Added.Bytes)))
+		Printf("  Removed: %-5s\n", ui.FormatBytes(uint64(stats.Removed.Bytes)))
 	}
 
 	return nil
