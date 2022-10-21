@@ -77,12 +77,7 @@ func FindSnapshot(ctx context.Context, be Lister, loader LoaderUnpacked, s strin
 	id, err := ParseID(s)
 	if err != nil {
 		// find snapshot id with prefix
-		name, err := Find(ctx, be, SnapshotFile, s)
-		if err != nil {
-			return nil, err
-		}
-
-		id, err = ParseID(name)
+		id, err = Find(ctx, be, SnapshotFile, s)
 		if err != nil {
 			return nil, err
 		}

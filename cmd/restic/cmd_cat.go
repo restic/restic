@@ -93,7 +93,7 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string) error {
 		Println(string(buf))
 		return nil
 	case "key":
-		key, err := repository.LoadKey(ctx, repo, id.String())
+		key, err := repository.LoadKey(ctx, repo, id)
 		if err != nil {
 			return err
 		}

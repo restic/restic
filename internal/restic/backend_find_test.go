@@ -43,7 +43,7 @@ func TestFind(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	expectedMatch := "20bdc1402a6fc9b633aaffffffffffffffffffffffffffffffffffffffffffff"
+	expectedMatch := TestParseID("20bdc1402a6fc9b633aaffffffffffffffffffffffffffffffffffffffffffff")
 	if f != expectedMatch {
 		t.Errorf("Wrong match returned want %s, got %s", expectedMatch, f)
 	}
@@ -52,7 +52,7 @@ func TestFind(t *testing.T) {
 	if _, ok := err.(*NoIDByPrefixError); !ok || !strings.Contains(err.Error(), "NotAPrefix") {
 		t.Error("Expected no snapshots to be found.")
 	}
-	if f != "" {
+	if !f.IsNull() {
 		t.Errorf("Find should not return a match on error.")
 	}
 
@@ -62,7 +62,7 @@ func TestFind(t *testing.T) {
 	if _, ok := err.(*NoIDByPrefixError); !ok || !strings.Contains(err.Error(), extraLengthID) {
 		t.Errorf("Wrong error %v for no snapshots matched", err)
 	}
-	if f != "" {
+	if !f.IsNull() {
 		t.Errorf("Find should not return a match on error.")
 	}
 
@@ -71,7 +71,7 @@ func TestFind(t *testing.T) {
 	if _, ok := err.(*MultipleIDMatchesError); !ok {
 		t.Errorf("Wrong error %v for multiple snapshots", err)
 	}
-	if f != "" {
+	if !f.IsNull() {
 		t.Errorf("Find should not return a match on error.")
 	}
 }

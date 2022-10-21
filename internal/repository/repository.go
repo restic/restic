@@ -35,12 +35,12 @@ const MaxPackSize = 128 * 1024 * 1024
 
 // Repository is used to access a repository in a backend.
 type Repository struct {
-	be      restic.Backend
-	cfg     restic.Config
-	key     *crypto.Key
-	keyName string
-	idx     *index.MasterIndex
-	Cache   *cache.Cache
+	be    restic.Backend
+	cfg   restic.Config
+	key   *crypto.Key
+	keyID restic.ID
+	idx   *index.MasterIndex
+	Cache *cache.Cache
 
 	opts Options
 
@@ -709,10 +709,10 @@ func (r *Repository) SearchKey(ctx context.Context, password string, maxKeys int
 	}
 
 	r.key = key.master
-	r.keyName = key.Name()
+	r.keyID = key.ID()
 	cfg, err := restic.LoadConfig(ctx, r)
 	if err == crypto.ErrUnauthenticated {
-		return errors.Fatalf("config or key %v is damaged: %v", key.Name(), err)
+		return errors.Fatalf("config or key %v is damaged: %v", key.ID(), err)
 	} else if err != nil {
 		return errors.Fatalf("config cannot be loaded: %v", err)
 	}
@@ -760,7 +760,7 @@ func (r *Repository) init(ctx context.Context, password string, cfg restic.Confi
 	}
 
 	r.key = key.master
-	r.keyName = key.Name()
+	r.keyID = key.ID()
 	r.setConfig(cfg)
 	return restic.SaveConfig(ctx, r, cfg)
 }
@@ -770,9 +770,9 @@ func (r *Repository) Key() *crypto.Key {
 	return r.key
 }
 
-// KeyName returns the name of the current key in the backend.
-func (r *Repository) KeyName() string {
-	return r.keyName
+// KeyID returns the id of the current key in the backend.
+func (r *Repository) KeyID() restic.ID {
+	return r.keyID
 }
 
 // List runs fn for all files of type t in the repo.
