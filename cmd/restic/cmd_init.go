@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"strconv"
@@ -51,12 +50,6 @@ func init() {
 }
 
 func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []string) error {
-	type JSONSuccess struct {
-		Status     string `json:"status"`
-		ID         string `json:"id"`
-		Repository string `json:"repository"`
-	}
-
 	var version uint
 	if opts.RepositoryVersion == "latest" || opts.RepositoryVersion == "" {
 		version = restic.MaxRepoVersion
@@ -116,24 +109,15 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 		Verbosef("irrecoverably lost.\n")
 
 	} else {
-		status := JSONSuccess{
+		status := initSuccess{
 			Status:     "success",
 			ID:         s.Config().ID,
 			Repository: location.StripPassword(gopts.Repo),
 		}
-		Verbosef(toJSONString(status))
+		return json.NewEncoder(gopts.stdout).Encode(status)
 	}
 
 	return nil
-}
-
-func toJSONString(status interface{}) string {
-	buf := new(bytes.Buffer)
-	err := json.NewEncoder(buf).Encode(status)
-	if err != nil {
-		panic("ERROR: Could not encode JSON string")
-	}
-	return buf.String()
 }
 
 func maybeReadChunkerPolynomial(ctx context.Context, opts InitOptions, gopts GlobalOptions) (*chunker.Pol, error) {
@@ -156,4 +140,10 @@ func maybeReadChunkerPolynomial(ctx context.Context, opts InitOptions, gopts Glo
 		return nil, errors.Fatal("Secondary repository must only be specified when copying the chunker parameters")
 	}
 	return nil, nil
+}
+
+type initSuccess struct {
+	Status     string `json:"status"` // "success"
+	ID         string `json:"id"`
+	Repository string `json:"repository"`
 }

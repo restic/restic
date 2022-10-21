@@ -1,7 +1,7 @@
-Enhancement: Enable support for json output on init command
+Enhancement: Support json output for the `init` command
 
-Init command did not listen to the --json flag, it now outputs a struct depending on a successful or failed creation of a repository, with all relevant information
-
+The `init` command ignored the `--json` flag. It now outputs a JSON message if
+the repository was created successfully.
 
 https://github.com/restic/restic/issues/3124
 https://github.com/restic/restic/pull/3132
