@@ -299,7 +299,7 @@ directory, then selectively add back some of them.
 
 ::
 
-    $HOME/**/*
+    $HOME/*
     !$HOME/Documents
     !$HOME/code
     !$HOME/.emacs.d
