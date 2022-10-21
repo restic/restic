@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/walker"
 
@@ -128,7 +129,21 @@ func runStats(ctx context.Context, gopts GlobalOptions, args []string) error {
 				return fmt.Errorf("blob %v not found", blobHandle)
 			}
 			stats.TotalSize += uint64(pbs[0].Length)
+			if repo.Config().Version >= 2 {
+				stats.TotalUncompressedSize += uint64(crypto.CiphertextLength(int(pbs[0].DataLength())))
+				if pbs[0].IsCompressed() {
+					stats.TotalCompressedBlobsSize += uint64(pbs[0].Length)
+					stats.TotalCompressedBlobsUncompressedSize += uint64(crypto.CiphertextLength(int(pbs[0].DataLength())))
+				}
+			}
 			stats.TotalBlobCount++
+		}
+		if stats.TotalCompressedBlobsSize > 0 {
+			stats.CompressionRatio = float64(stats.TotalCompressedBlobsUncompressedSize) / float64(stats.TotalCompressedBlobsSize)
+		}
+		if stats.TotalUncompressedSize > 0 {
+			stats.CompressionProgress = float64(stats.TotalCompressedBlobsUncompressedSize) / float64(stats.TotalUncompressedSize) * 100
+			stats.CompressionSpaceSaving = (1 - float64(stats.TotalSize)/float64(stats.TotalUncompressedSize)) * 100
 		}
 	}
 
@@ -141,15 +156,26 @@ func runStats(ctx context.Context, gopts GlobalOptions, args []string) error {
 	}
 
 	Printf("Stats in %s mode:\n", statsOptions.countMode)
-	Printf("Snapshots processed:   %d\n", stats.SnapshotsCount)
-
+	Printf("     Snapshots processed:  %d\n", stats.SnapshotsCount)
 	if stats.TotalBlobCount > 0 {
-		Printf("   Total Blob Count:   %d\n", stats.TotalBlobCount)
+		Printf("        Total Blob Count:  %d\n", stats.TotalBlobCount)
 	}
 	if stats.TotalFileCount > 0 {
-		Printf("   Total File Count:   %d\n", stats.TotalFileCount)
+		Printf("        Total File Count:  %d\n", stats.TotalFileCount)
 	}
-	Printf("         Total Size:   %-5s\n", formatBytes(stats.TotalSize))
+	if stats.TotalUncompressedSize > 0 {
+		Printf(" Total Uncompressed Size:  %-5s\n", formatBytes(stats.TotalUncompressedSize))
+	}
+	Printf("              Total Size:  %-5s\n", formatBytes(stats.TotalSize))
+	if stats.CompressionProgress > 0 {
+		Printf("    Compression Progress:  %.2f%%\n", stats.CompressionProgress)
+	}
+	if stats.CompressionRatio > 0 {
+		Printf("       Compression Ratio:  %.2fx\n", stats.CompressionRatio)
+	}
+	if stats.CompressionSpaceSaving > 0 {
+		Printf("Compression Space Saving:  %.2f%%\n", stats.CompressionSpaceSaving)
+	}
 
 	return nil
 }
@@ -275,9 +301,15 @@ func verifyStatsInput(gopts GlobalOptions, args []string) error {
 // to collect information about it, as well as state needed
 // for a successful and efficient walk.
 type statsContainer struct {
-	TotalSize      uint64 `json:"total_size"`
-	TotalFileCount uint64 `json:"total_file_count"`
-	TotalBlobCount uint64 `json:"total_blob_count,omitempty"`
+	TotalSize                            uint64  `json:"total_size"`
+	TotalUncompressedSize                uint64  `json:"total_uncompressed_size,omitempty"`
+	TotalCompressedBlobsSize             uint64  `json:"-"`
+	TotalCompressedBlobsUncompressedSize uint64  `json:"-"`
+	CompressionRatio                     float64 `json:"compression_ratio,omitempty"`
+	CompressionProgress                  float64 `json:"compression_progress,omitempty"`
+	CompressionSpaceSaving               float64 `json:"compression_space_saving,omitempty"`
+	TotalFileCount                       uint64  `json:"total_file_count,omitempty"`
+	TotalBlobCount                       uint64  `json:"total_blob_count,omitempty"`
 	// holds count of all considered snapshots
 	SnapshotsCount int `json:"snapshots_count"`
 
