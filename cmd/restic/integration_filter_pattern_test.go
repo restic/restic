@@ -24,14 +24,14 @@ func TestBackupFailsWhenUsingInvalidPatterns(t *testing.T) {
 	var err error
 
 	// Test --exclude
-	err = testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{"testdata"}, BackupOptions{Excludes: []string{"*[._]log[.-][0-9]", "!*[._]log[.-][0-9]"}}, env.gopts)
+	err = testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{"testdata"}, BackupOptions{excludePatternOptions: excludePatternOptions{Excludes: []string{"*[._]log[.-][0-9]", "!*[._]log[.-][0-9]"}}}, env.gopts)
 
 	rtest.Equals(t, `Fatal: --exclude: invalid pattern(s) provided:
 *[._]log[.-][0-9]
 !*[._]log[.-][0-9]`, err.Error())
 
 	// Test --iexclude
-	err = testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{"testdata"}, BackupOptions{InsensitiveExcludes: []string{"*[._]log[.-][0-9]", "!*[._]log[.-][0-9]"}}, env.gopts)
+	err = testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{"testdata"}, BackupOptions{excludePatternOptions: excludePatternOptions{InsensitiveExcludes: []string{"*[._]log[.-][0-9]", "!*[._]log[.-][0-9]"}}}, env.gopts)
 
 	rtest.Equals(t, `Fatal: --iexclude: invalid pattern(s) provided:
 *[._]log[.-][0-9]
@@ -54,14 +54,14 @@ func TestBackupFailsWhenUsingInvalidPatternsFromFile(t *testing.T) {
 	var err error
 
 	// Test --exclude-file:
-	err = testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{"testdata"}, BackupOptions{ExcludeFiles: []string{excludeFile}}, env.gopts)
+	err = testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{"testdata"}, BackupOptions{excludePatternOptions: excludePatternOptions{ExcludeFiles: []string{excludeFile}}}, env.gopts)
 
 	rtest.Equals(t, `Fatal: --exclude-file: invalid pattern(s) provided:
 *[._]log[.-][0-9]
 !*[._]log[.-][0-9]`, err.Error())
 
 	// Test --iexclude-file
-	err = testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{"testdata"}, BackupOptions{InsensitiveExcludeFiles: []string{excludeFile}}, env.gopts)
+	err = testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{"testdata"}, BackupOptions{excludePatternOptions: excludePatternOptions{InsensitiveExcludeFiles: []string{excludeFile}}}, env.gopts)
 
 	rtest.Equals(t, `Fatal: --iexclude-file: invalid pattern(s) provided:
 *[._]log[.-][0-9]
