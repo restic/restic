@@ -55,6 +55,8 @@ func retryNotifyErrorWithSuccess(operation backoff.Operation, b backoff.BackOff,
 	return backoff.RetryNotify(operationWrapper, b, notify)
 }
 
+var fastRetries = false
+
 func (be *RetryBackend) retry(ctx context.Context, msg string, f func() error) error {
 	// Don't do anything when called with an already cancelled context. There would be
 	// no retries in that case either, so be consistent and abort always.
@@ -66,8 +68,14 @@ func (be *RetryBackend) retry(ctx context.Context, msg string, f func() error) e
 		return ctx.Err()
 	}
 
+	bo := backoff.NewExponentialBackOff()
+	if fastRetries {
+		// speed up integration tests
+		bo.InitialInterval = 1 * time.Millisecond
+	}
+
 	err := retryNotifyErrorWithSuccess(f,
-		backoff.WithContext(backoff.WithMaxRetries(backoff.NewExponentialBackOff(), uint64(be.MaxTries)), ctx),
+		backoff.WithContext(backoff.WithMaxRetries(bo, uint64(be.MaxTries)), ctx),
 		func(err error, d time.Duration) {
 			if be.Report != nil {
 				be.Report(msg, err, d)

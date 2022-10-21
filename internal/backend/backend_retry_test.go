@@ -35,6 +35,7 @@ func TestBackendSaveRetry(t *testing.T) {
 		},
 	}
 
+	TestFastRetries(t)
 	retryBackend := NewRetryBackend(be, 10, nil, nil)
 
 	data := test.Random(23, 5*1024*1024+11241)
@@ -70,6 +71,7 @@ func TestBackendSaveRetryAtomic(t *testing.T) {
 		HasAtomicReplaceFn: func() bool { return true },
 	}
 
+	TestFastRetries(t)
 	retryBackend := NewRetryBackend(be, 10, nil, nil)
 
 	data := test.Random(23, 5*1024*1024+11241)
@@ -103,6 +105,7 @@ func TestBackendListRetry(t *testing.T) {
 		},
 	}
 
+	TestFastRetries(t)
 	retryBackend := NewRetryBackend(be, 10, nil, nil)
 
 	var listed []string
@@ -132,6 +135,7 @@ func TestBackendListRetryErrorFn(t *testing.T) {
 		},
 	}
 
+	TestFastRetries(t)
 	retryBackend := NewRetryBackend(be, 10, nil, nil)
 
 	var ErrTest = errors.New("test error")
@@ -187,6 +191,7 @@ func TestBackendListRetryErrorBackend(t *testing.T) {
 		},
 	}
 
+	TestFastRetries(t)
 	const maxRetries = 2
 	retryBackend := NewRetryBackend(be, maxRetries, nil, nil)
 
@@ -257,6 +262,7 @@ func TestBackendLoadRetry(t *testing.T) {
 		return failingReader{data: data, limit: limit}, nil
 	}
 
+	TestFastRetries(t)
 	retryBackend := NewRetryBackend(be, 10, nil, nil)
 
 	var buf []byte
@@ -276,6 +282,7 @@ func assertIsCanceled(t *testing.T, err error) {
 func TestBackendCanceledContext(t *testing.T) {
 	// unimplemented mock backend functions return an error by default
 	// check that we received the expected context canceled error instead
+	TestFastRetries(t)
 	retryBackend := NewRetryBackend(mock.NewBackend(), 2, nil, nil)
 	h := restic.Handle{Type: restic.PackFile, Name: restic.NewRandomID().String()}
 
