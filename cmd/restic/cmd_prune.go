@@ -233,11 +233,11 @@ type pruneStats struct {
 }
 
 type prunePlan struct {
-	removePacksFirst restic.IDSet   // packs to remove first (unreferenced packs)
-	repackPacks      restic.IDSet   // packs to repack
-	keepBlobs        restic.BlobSet // blobs to keep during repacking
-	removePacks      restic.IDSet   // packs to remove
-	ignorePacks      restic.IDSet   // packs to ignore when rebuilding the index
+	removePacksFirst restic.IDSet          // packs to remove first (unreferenced packs)
+	repackPacks      restic.IDSet          // packs to repack
+	keepBlobs        restic.CountedBlobSet // blobs to keep during repacking
+	removePacks      restic.IDSet          // packs to remove
+	ignorePacks      restic.IDSet          // packs to ignore when rebuilding the index
 }
 
 type packInfo struct {
@@ -277,6 +277,7 @@ func planPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo
 	}
 
 	if len(plan.repackPacks) != 0 {
+		blobCount := keepBlobs.Len()
 		// when repacking, we do not want to keep blobs which are
 		// already contained in kept packs, so delete them from keepBlobs
 		repo.Index().Each(ctx, func(blob restic.PackedBlob) {
@@ -285,6 +286,11 @@ func planPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo
 			}
 			keepBlobs.Delete(blob.BlobHandle)
 		})
+
+		if keepBlobs.Len() < blobCount/2 {
+			// replace with copy to shrink map to necessary size if there's a chance to benefit
+			keepBlobs = keepBlobs.Copy()
+		}
 	} else {
 		// keepBlobs is only needed if packs are repacked
 		keepBlobs = nil
@@ -294,46 +300,53 @@ func planPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo
 	return plan, stats, nil
 }
 
-func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs restic.BlobSet, stats *pruneStats) (restic.BlobSet, map[restic.ID]packInfo, error) {
-	keepBlobs := restic.NewBlobSet()
-	duplicateBlobs := make(map[restic.BlobHandle]uint8)
-
+func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs restic.CountedBlobSet, stats *pruneStats) (restic.CountedBlobSet, map[restic.ID]packInfo, error) {
 	// iterate over all blobs in index to find out which blobs are duplicates
+	// The counter in usedBlobs describes how many instances of the blob exist in the repository index
+	// Thus 0 == blob is missing, 1 == blob exists once, >= 2 == duplicates exist
 	idx.Each(ctx, func(blob restic.PackedBlob) {
 		bh := blob.BlobHandle
 		size := uint64(blob.Length)
-		switch {
-		case usedBlobs.Has(bh): // used blob, move to keepBlobs
-			usedBlobs.Delete(bh)
-			keepBlobs.Insert(bh)
-			stats.size.used += size
-			stats.blobs.used++
-		case keepBlobs.Has(bh): // duplicate blob
-			count, ok := duplicateBlobs[bh]
-			if !ok {
-				count = 2 // this one is already the second blob!
-			} else if count < math.MaxUint8 {
+		count, ok := usedBlobs[bh]
+		if ok {
+			if count < math.MaxUint8 {
 				// don't overflow, but saturate count at 255
 				// this can lead to a non-optimal pack selection, but won't cause
 				// problems otherwise
 				count++
 			}
-			duplicateBlobs[bh] = count
-			stats.size.duplicate += size
-			stats.blobs.duplicate++
-		default:
+
+			if count == 1 {
+				stats.size.used += size
+				stats.blobs.used++
+			} else {
+				// duplicate if counted more than once
+				stats.size.duplicate += size
+				stats.blobs.duplicate++
+			}
+
+			usedBlobs[bh] = count
+		} else {
 			stats.size.unused += size
 			stats.blobs.unused++
 		}
 	})
 
 	// Check if all used blobs have been found in index
-	if len(usedBlobs) != 0 {
+	missingBlobs := restic.NewBlobSet()
+	for bh, count := range usedBlobs {
+		if count == 0 {
+			// blob does not exist in any pack files
+			missingBlobs.Insert(bh)
+		}
+	}
+
+	if len(missingBlobs) != 0 {
 		Warnf("%v not found in the index\n\n"+
 			"Integrity check failed: Data seems to be missing.\n"+
 			"Will not start prune to prevent (additional) data loss!\n"+
 			"Please report this error (along with the output of the 'prune' run) at\n"+
-			"https://github.com/restic/restic/issues/new/choose\n", usedBlobs)
+			"https://github.com/restic/restic/issues/new/choose\n", missingBlobs)
 		return nil, nil, errorIndexIncomplete
 	}
 
@@ -345,6 +358,7 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 		indexPack[pid] = packInfo{tpe: restic.NumBlobTypes, usedSize: uint64(hdrSize)}
 	}
 
+	hasDuplicates := false
 	// iterate over all blobs in index to generate packInfo
 	idx.Each(ctx, func(blob restic.PackedBlob) {
 		ip := indexPack[blob.PackID]
@@ -361,10 +375,14 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 
 		bh := blob.BlobHandle
 		size := uint64(blob.Length)
-		_, isDuplicate := duplicateBlobs[bh]
+		dupCount := usedBlobs[bh]
 		switch {
-		case isDuplicate: // duplicate blobs will be handled later
-		case keepBlobs.Has(bh): // used blob, not duplicate
+		case dupCount >= 2:
+			hasDuplicates = true
+			// mark as unused for now, we will later on select one copy
+			ip.unusedSize += size
+			ip.unusedBlobs++
+		case dupCount == 1: // used blob, not duplicate
 			ip.usedSize += size
 			ip.usedBlobs++
 		default: // unused blob
@@ -382,40 +400,52 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 	// - mark only one occurence of duplicate blobs as used
 	// - if there are already some used blobs in a pack, possibly mark duplicates in this pack as "used"
 	// - if there are no used blobs in a pack, possibly mark duplicates as "unused"
-	if len(duplicateBlobs) > 0 {
+	if hasDuplicates {
 		// iterate again over all blobs in index (this is pretty cheap, all in-mem)
 		idx.Each(ctx, func(blob restic.PackedBlob) {
 			bh := blob.BlobHandle
-			count, isDuplicate := duplicateBlobs[bh]
-			if !isDuplicate {
+			count, ok := usedBlobs[bh]
+			// skip non-duplicate, aka. normal blobs
+			// count == 0 is used to mark that this was a duplicate blob with only a single occurence remaining
+			if !ok || count == 1 {
 				return
 			}
 
 			ip := indexPack[blob.PackID]
 			size := uint64(blob.Length)
 			switch {
-			case count == 0:
-				// used duplicate exists ->  mark as unused
-				ip.unusedSize += size
-				ip.unusedBlobs++
-			case ip.usedBlobs > 0, count == 1:
-				// other used blobs in pack or "last" occurency ->  mark as used
+			case ip.usedBlobs > 0, count == 0:
+				// other used blobs in pack or "last" occurence ->  transition to used
 				ip.usedSize += size
 				ip.usedBlobs++
-				// let other occurences be marked as unused
-				duplicateBlobs[bh] = 0
+				ip.unusedSize -= size
+				ip.unusedBlobs--
+				// let other occurences remain marked as unused
+				usedBlobs[bh] = 1
 			default:
-				// mark as unused and decrease counter
-				ip.unusedSize += size
-				ip.unusedBlobs++
-				duplicateBlobs[bh] = count - 1
+				// remain unused and decrease counter
+				count--
+				if count == 1 {
+					// setting count to 1 would lead to forgetting that this blob had duplicates
+					// thus use the special value zero. This will select the last instance of the blob for keeping.
+					count = 0
+				}
+				usedBlobs[bh] = count
 			}
 			// update indexPack
 			indexPack[blob.PackID] = ip
 		})
 	}
 
-	return keepBlobs, indexPack, nil
+	// Sanity check. If no duplicates exist, all blobs have value 1. After handling
+	// duplicates, this also applies to duplicates.
+	for _, count := range usedBlobs {
+		if count != 1 {
+			panic("internal error during blob selection")
+		}
+	}
+
+	return usedBlobs, indexPack, nil
 }
 
 func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo restic.Repository, indexPack map[restic.ID]packInfo, stats *pruneStats) (prunePlan, error) {
@@ -690,6 +720,9 @@ func doPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo r
 				"https://github.com/restic/restic/issues/new/choose\n", plan.keepBlobs)
 			return errors.Fatal("internal error: blobs were not repacked")
 		}
+
+		// allow GC of the blob set
+		plan.keepBlobs = nil
 	}
 
 	if len(plan.ignorePacks) == 0 {
@@ -747,7 +780,7 @@ func rebuildIndexFiles(ctx context.Context, gopts GlobalOptions, repo restic.Rep
 	return DeleteFilesChecked(ctx, gopts, repo, obsoleteIndexes, restic.IndexFile)
 }
 
-func getUsedBlobs(ctx context.Context, gopts GlobalOptions, repo restic.Repository, ignoreSnapshots restic.IDSet) (usedBlobs restic.BlobSet, err error) {
+func getUsedBlobs(ctx context.Context, gopts GlobalOptions, repo restic.Repository, ignoreSnapshots restic.IDSet) (usedBlobs restic.CountedBlobSet, err error) {
 	var snapshotTrees restic.IDs
 	Verbosef("loading all snapshots...\n")
 	err = restic.ForAllSnapshots(ctx, repo.Backend(), repo, ignoreSnapshots,
@@ -766,7 +799,7 @@ func getUsedBlobs(ctx context.Context, gopts GlobalOptions, repo restic.Reposito
 
 	Verbosef("finding data that is still in use for %d snapshots\n", len(snapshotTrees))
 
-	usedBlobs = restic.NewBlobSet()
+	usedBlobs = restic.NewCountedBlobSet()
 
 	bar := newProgressMax(!gopts.Quiet, uint64(len(snapshotTrees)), "snapshots")
 	defer bar.Done()
