@@ -306,7 +306,6 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 	// Thus 0 == blob is missing, 1 == blob exists once, >= 2 == duplicates exist
 	idx.Each(ctx, func(blob restic.PackedBlob) {
 		bh := blob.BlobHandle
-		size := uint64(blob.Length)
 		count, ok := usedBlobs[bh]
 		if ok {
 			if count < math.MaxUint8 {
@@ -316,19 +315,7 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 				count++
 			}
 
-			if count == 1 {
-				stats.size.used += size
-				stats.blobs.used++
-			} else {
-				// duplicate if counted more than once
-				stats.size.duplicate += size
-				stats.blobs.duplicate++
-			}
-
 			usedBlobs[bh] = count
-		} else {
-			stats.size.unused += size
-			stats.blobs.unused++
 		}
 	})
 
@@ -382,12 +369,22 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 			// mark as unused for now, we will later on select one copy
 			ip.unusedSize += size
 			ip.unusedBlobs++
+
+			// count as duplicate, will later on change one copy to be counted as used
+			stats.size.duplicate += size
+			stats.blobs.duplicate++
 		case dupCount == 1: // used blob, not duplicate
 			ip.usedSize += size
 			ip.usedBlobs++
+
+			stats.size.used += size
+			stats.blobs.used++
 		default: // unused blob
 			ip.unusedSize += size
 			ip.unusedBlobs++
+
+			stats.size.unused += size
+			stats.blobs.unused++
 		}
 		if !blob.IsCompressed() {
 			ip.uncompressed = true
@@ -420,6 +417,11 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 				ip.usedBlobs++
 				ip.unusedSize -= size
 				ip.unusedBlobs--
+				// same for the global statistics
+				stats.size.used += size
+				stats.blobs.used++
+				stats.size.duplicate -= size
+				stats.blobs.duplicate--
 				// let other occurences remain marked as unused
 				usedBlobs[bh] = 1
 			default:
