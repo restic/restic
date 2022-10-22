@@ -720,6 +720,9 @@ func doPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo r
 				"https://github.com/restic/restic/issues/new/choose\n", plan.keepBlobs)
 			return errors.Fatal("internal error: blobs were not repacked")
 		}
+
+		// allow GC of the blob set
+		plan.keepBlobs = nil
 	}
 
 	if len(plan.ignorePacks) == 0 {
