@@ -214,13 +214,14 @@ type pruneStats struct {
 		repackrm  uint
 	}
 	size struct {
-		used      uint64
-		duplicate uint64
-		unused    uint64
-		remove    uint64
-		repack    uint64
-		repackrm  uint64
-		unref     uint64
+		used         uint64
+		duplicate    uint64
+		unused       uint64
+		remove       uint64
+		repack       uint64
+		repackrm     uint64
+		unref        uint64
+		uncompressed uint64
 	}
 	packs struct {
 		used       uint
@@ -497,13 +498,16 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 			stats.packs.partlyUsed++
 		}
 
+		if p.uncompressed {
+			stats.size.uncompressed += p.unusedSize + p.usedSize
+		}
 		mustCompress := false
 		if repoVersion >= 2 {
 			// repo v2: always repack tree blobs if uncompressed
 			// compress data blobs if requested
 			mustCompress = (p.tpe == restic.TreeBlob || opts.RepackUncompressed) && p.uncompressed
 		}
-		// use a flag that pack must be compressed
+		// use as flag that pack must be compressed
 		p.uncompressed = mustCompress
 
 		// decide what to do
@@ -602,6 +606,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 		stats.size.repack += p.unusedSize + p.usedSize
 		stats.blobs.repackrm += p.unusedBlobs
 		stats.size.repackrm += p.unusedSize
+		stats.size.uncompressed -= p.unusedSize + p.usedSize
 	}
 
 	// calculate limit for number of unused bytes in the repo after repacking
@@ -633,6 +638,11 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 	stats.packs.repack = uint(len(repackPacks))
 	stats.packs.remove = uint(len(removePacks))
 
+	if repo.Config().Version < 2 {
+		// compression not supported for repository format version 1
+		stats.size.uncompressed = 0
+	}
+
 	return prunePlan{removePacksFirst: removePacksFirst,
 		removePacks: removePacks,
 		repackPacks: repackPacks,
@@ -661,6 +671,9 @@ func printPruneStats(gopts GlobalOptions, stats pruneStats) error {
 	Verbosef("to delete:    %10d blobs / %s\n", stats.blobs.remove, ui.FormatBytes(stats.size.remove+stats.size.unref))
 	totalPruneSize := stats.size.remove + stats.size.repackrm + stats.size.unref
 	Verbosef("total prune:  %10d blobs / %s\n", stats.blobs.remove+stats.blobs.repackrm, ui.FormatBytes(totalPruneSize))
+	if stats.size.uncompressed > 0 {
+		Verbosef("not yet compressed:              %s\n", ui.FormatBytes(stats.size.uncompressed))
+	}
 	Verbosef("remaining:    %10d blobs / %s\n", totalBlobs-(stats.blobs.remove+stats.blobs.repackrm), ui.FormatBytes(totalSize-totalPruneSize))
 	unusedAfter := unusedSize - stats.size.remove - stats.size.repackrm
 	Verbosef("unused size after prune: %s (%s of remaining size)\n",
