@@ -60,6 +60,7 @@ func TestFileSaver(t *testing.T) {
 	defer cleanup()
 
 	startFn := func() {}
+	completeReadingFn := func() {}
 	completeFn := func(*restic.Node, ItemStats) {}
 
 	testFs := fs.Local{}
@@ -78,7 +79,7 @@ func TestFileSaver(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ff := s.Save(ctx, filename, filename, f, fi, startFn, completeFn)
+		ff := s.Save(ctx, filename, filename, f, fi, startFn, completeReadingFn, completeFn)
 		results = append(results, ff)
 	}
 

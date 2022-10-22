@@ -68,6 +68,9 @@ type Archiver struct {
 	// be in the snapshot after saving. s contains some statistics about this
 	// particular file/dir.
 	//
+	// Once reading a file has completed successfully (but not saving it yet),
+	// CompleteItem will be called with current == nil.
+	//
 	// CompleteItem may be called asynchronously from several different
 	// goroutines!
 	CompleteItem func(item string, previous, current *restic.Node, s ItemStats, d time.Duration)
@@ -431,6 +434,8 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 		// Save will close the file, we don't need to do that
 		fn = arch.fileSaver.Save(ctx, snPath, target, file, fi, func() {
 			arch.StartFile(snPath)
+		}, func() {
+			arch.CompleteItem(snPath, nil, nil, ItemStats{}, 0)
 		}, func(node *restic.Node, stats ItemStats) {
 			arch.CompleteItem(snPath, previous, node, stats, time.Since(start))
 		})

@@ -67,17 +67,21 @@ func (s *FileSaver) TriggerShutdown() {
 type CompleteFunc func(*restic.Node, ItemStats)
 
 // Save stores the file f and returns the data once it has been completed. The
-// file is closed by Save.
-func (s *FileSaver) Save(ctx context.Context, snPath string, target string, file fs.File, fi os.FileInfo, start func(), complete CompleteFunc) FutureNode {
+// file is closed by Save. completeReading is only called if the file was read
+// successfully. complete is always called. If completeReading is called, then
+// this will always happen before calling complete.
+func (s *FileSaver) Save(ctx context.Context, snPath string, target string, file fs.File, fi os.FileInfo, start func(), completeReading func(), complete CompleteFunc) FutureNode {
 	fn, ch := newFutureNode()
 	job := saveFileJob{
-		snPath:   snPath,
-		target:   target,
-		file:     file,
-		fi:       fi,
-		start:    start,
-		complete: complete,
-		ch:       ch,
+		snPath: snPath,
+		target: target,
+		file:   file,
+		fi:     fi,
+		ch:     ch,
+
+		start:           start,
+		completeReading: completeReading,
+		complete:        complete,
 	}
 
 	select {
@@ -92,17 +96,19 @@ func (s *FileSaver) Save(ctx context.Context, snPath string, target string, file
 }
 
 type saveFileJob struct {
-	snPath   string
-	target   string
-	file     fs.File
-	fi       os.FileInfo
-	ch       chan<- futureNodeResult
-	complete CompleteFunc
-	start    func()
+	snPath string
+	target string
+	file   fs.File
+	fi     os.FileInfo
+	ch     chan<- futureNodeResult
+
+	start           func()
+	completeReading func()
+	complete        CompleteFunc
 }
 
 // saveFile stores the file f in the repo, then closes it.
-func (s *FileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPath string, target string, f fs.File, fi os.FileInfo, start func(), finish func(res futureNodeResult)) {
+func (s *FileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPath string, target string, f fs.File, fi os.FileInfo, start func(), finishReading func(), finish func(res futureNodeResult)) {
 	start()
 
 	fnr := futureNodeResult{
@@ -227,6 +233,7 @@ func (s *FileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 	// after reaching the end of this method
 	remaining += idx + 1
 	lock.Unlock()
+	finishReading()
 	completeBlob()
 }
 
@@ -246,7 +253,11 @@ func (s *FileSaver) worker(ctx context.Context, jobs <-chan saveFileJob) {
 			}
 		}
 
-		s.saveFile(ctx, chnker, job.snPath, job.target, job.file, job.fi, job.start, func(res futureNodeResult) {
+		s.saveFile(ctx, chnker, job.snPath, job.target, job.file, job.fi, job.start, func() {
+			if job.completeReading != nil {
+				job.completeReading()
+			}
+		}, func(res futureNodeResult) {
 			if job.complete != nil {
 				job.complete(res.node, res.stats)
 			}
