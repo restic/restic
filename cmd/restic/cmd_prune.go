@@ -687,6 +687,7 @@ func printPruneStats(gopts GlobalOptions, stats pruneStats) error {
 func doPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo restic.Repository, plan prunePlan) (err error) {
 	if opts.DryRun {
 		if !gopts.JSON && gopts.verbosity >= 2 {
+			Printf("Repeated prune dry-runs can report slightly different amounts of data to keep or repack. This is expected behavior.\n\n")
 			if len(plan.removePacksFirst) > 0 {
 				Printf("Would have removed the following unreferenced packs:\n%v\n\n", plan.removePacksFirst)
 			}
