@@ -8,8 +8,13 @@ func TestFormatBytes(t *testing.T) {
 		want string
 	}{
 		{0, "0 B"},
-		{1025, "1.001 KiB"},
-		{1<<30 + 7, "1.000 GiB"},
+		{1023, "1023 B"},
+		{1024, "1.000 KiB"},
+		{5<<20 + 1<<19, "5.500 MiB"},
+		{1 << 30, "1.000 GiB"},
+		{2 << 30, "2.000 GiB"},
+		{1<<40 - 1<<36, "960.000 GiB"},
+		{1 << 40, "1.000 TiB"},
 	} {
 		if got := FormatBytes(c.size); got != c.want {
 			t.Errorf("want %q, got %q", c.want, got)
