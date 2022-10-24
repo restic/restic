@@ -26,7 +26,7 @@ Usage help is available:
       dump          Print a backed-up file to stdout
       find          Find a file, a directory or restic IDs
       forget        Remove snapshots from the repository
-      generate      Generate manual pages and auto-completion files (bash, fish, zsh, powershell)
+      generate      Generate manual pages and auto-completion files (bash, fish, zsh)
       help          Help about any command
       init          Initialize a new repository
       key           Manage keys (passwords)
