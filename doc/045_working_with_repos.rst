@@ -141,7 +141,7 @@ Filtering snapshots to copy
 ---------------------------
 
 The list of snapshots to copy can be filtered by host, path in the backup
-and / or a comma-separated tag list:
+and/or a comma-separated tag list:
 
 .. code-block:: console
 
@@ -179,9 +179,11 @@ Note that it is not possible to change the chunker parameters of an existing rep
 Removing files from snapshots
 =============================
 
-Sometimes a backup includes more files that intended. Instead of removing the snapshot,
-it is possible to rewrite its contents to remove the files in question. For this you
-can use the ``rewrite`` command:
+Snapshots sometimes turn out to include more files that intended. Instead of
+removing the snapshots entirely and running the corresponding backup commands
+again (which is not always practical after the fact) it is possible to remove
+the unwanted files from affected snapshots by rewriting them using the
+``rewrite`` command:
 
 .. code-block:: console
 
@@ -190,7 +192,7 @@ can use the ``rewrite`` command:
 
     snapshot 6160ddb2 of [/home/user/work] at 2022-06-12 16:01:28.406630608 +0200 CEST)
     excluding /home/user/work/secret-file
-    new snapshot saved as b6aee1ff7f5e0ac15157f16370015978e496fa60f7351bc94a8d6049e4c7096d
+    saved new snapshot b6aee1ff
 
     snapshot 4fbaf325 of [/home/user/work] at 2022-05-01 11:22:26.500093107 +0200 CEST)
 
@@ -201,29 +203,32 @@ can use the ``rewrite`` command:
 
     snapshot 6160ddb2 of [/home/user/work] at 2022-06-12 16:01:28.406630608 +0200 CEST)
     excluding /home/user/work/secret-file
-    new snapshot saved as b6aee1ff7f5e0ac15157f16370015978e496fa60f7351bc94a8d6049e4c7096d
+    new snapshot saved as b6aee1ff
 
     modified 1 snapshots
 
-The options ``--exclude``, ``--exclude-file``, ``--iexclude`` and ``--iexclude-file`` are
-supported. They behave the same way as for the backup command, see :ref:`backup-excluding-files`
-for details.
+The options ``--exclude``, ``--exclude-file``, ``--iexclude`` and
+``--iexclude-file`` are supported. They behave the same way as for the backup
+command, see :ref:`backup-excluding-files` for details.
 
-It is possible to only rewrite a subset of snapshots. Filtering the snapshots works the
-same way as for the ``copy`` command, see :ref:`copy-filtering-snapshots`.
+It is possible to rewrite only a subset of snapshots by filtering them the same
+way as for the ``copy`` command, see :ref:`copy-filtering-snapshots`.
 
-By default, the ``rewrite`` command will keep the original snapshot and create a new
-snapshot for every snapshot which was modified while rewriting. All new snapshots are
-marked with the tag ``rewrite``.
+By default, the ``rewrite`` command will keep the original snapshots and create
+new ones for every snapshot which was modified during rewriting. The new
+snapshots are marked with the tag ``rewrite`` to differentiate them from the
+original, rewritten snapshots.
 
-Alternatively, you can use the ``--forget`` option to immediatelly remove the original
-snapshot. In this case, no tag is added to the snapshots. Please note that only the
-original snapshot file is removed from the repository, but not the excluded data.
-Run the ``prune`` command afterwards to cleanup the now unused data.
+Alternatively, you can use the ``--forget`` option to immediately remove the
+original snapshots. In this case, no tag is added to the new snapshots. Please
+note that this only removes the snapshots and not the actual data stored in the
+repository. Run the ``prune`` command afterwards to remove the now unreferenced
+data (just like when having used the ``forget`` command).
 
-In order to preview the changes which ``rewrite`` would make, you can use the ``--dry-run``
-option. This will simulate the rewriting process without actually modifying the repository.
-Instead restic will only print the expected changes.
+In order to preview the changes which ``rewrite`` would make, you can use the
+``--dry-run`` option. This will simulate the rewriting process without actually
+modifying the repository. Instead restic will only print the actions it would
+perform.
 
 
 Checking integrity and consistency

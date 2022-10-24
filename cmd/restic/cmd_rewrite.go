@@ -17,22 +17,23 @@ import (
 
 var cmdRewrite = &cobra.Command{
 	Use:   "rewrite [flags] [snapshotID ...]",
-	Short: "Rewrite existing snapshots",
+	Short: "Rewrite snapshots to exclude unwanted files",
 	Long: `
-The "rewrite" command excludes files from existing snapshots.
+The "rewrite" command excludes files from existing snapshots. It creates new
+snapshots containing the same data as the original ones, but without the files
+you specify to exclude. All metadata (time, host, tags) will be preserved.
 
-By default 'rewrite' will create new snapshots that will contains same data as
-the source snapshots but without excluded files. All metadata (time, host, tags)
-will be preserved. The special tag 'rewrite' will be added to new snapshots to
-distinguish it from the source (unless --forget is used).
+The snapshots to rewrite are specified using the --host, --tag and --path options,
+or by providing a list of snapshot IDs. Please note that specifying neither any of
+these options nor a snapshot ID will cause the command to rewrite all snapshots.
 
-If --forget option is used, old snapshot will be removed from repository.
+The special tag 'rewrite' will be added to the new snapshots to distinguish
+them from the original ones, unless --forget is used. If the --forget option is
+used, the original snapshots will instead be directly removed from the repository.
 
-Snapshots to rewrite are specified using --host, --tag, --path or by providing
-a list of snapshot ids. Not specifying a snapshot id will rewrite all snapshots.
-
-Please note, that this command only creates new snapshots. In order to delete
-data from the repository use 'prune' command.
+Please note that the --forget option only removes the snapshots and not the actual
+data stored in the repository. In order to delete the no longer referenced data,
+use the "prune" command.
 
 EXIT STATUS
 ===========
@@ -60,7 +61,7 @@ func init() {
 	cmdRoot.AddCommand(cmdRewrite)
 
 	f := cmdRewrite.Flags()
-	f.BoolVarP(&rewriteOptions.Forget, "forget", "", false, "replace existing snapshots")
+	f.BoolVarP(&rewriteOptions.Forget, "forget", "", false, "remove original snapshots after creating new ones")
 	f.BoolVarP(&rewriteOptions.DryRun, "dry-run", "n", false, "do not do anything, just print what would be done")
 
 	initMultiSnapshotFilterOptions(f, &rewriteOptions.snapshotFilterOptions, true)
