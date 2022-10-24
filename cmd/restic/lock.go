@@ -143,7 +143,7 @@ func monitorLockRefresh(ctx context.Context, lock *restic.Lock, lockInfo *lockCo
 			debug.Log("terminate expiry monitoring")
 			return
 		case <-refreshed:
-			lastRefresh = time.Now().Unix()
+			lastRefresh = time.Now().UnixNano()
 		case <-timer.C:
 			if time.Now().UnixNano()-lastRefresh < refreshabilityTimeout.Nanoseconds() {
 				// restart timer
