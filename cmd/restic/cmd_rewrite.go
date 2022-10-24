@@ -114,6 +114,11 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 	debug.Log("Snapshot %v modified", sn)
 	if opts.DryRun {
 		Verbosef("would save new snapshot\n")
+
+		if opts.Forget {
+			Verbosef("would remove old snapshot\n")
+		}
+
 		return true, nil
 	}
 
@@ -138,15 +143,14 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 		if err = repo.Backend().Remove(ctx, h); err != nil {
 			return false, err
 		}
-
-		debug.Log("old snapshot %v removed", sn.ID())
+		debug.Log("removed old snapshot %v", sn.ID())
+		Verbosef("removed old snapshot %v\n", sn.ID().Str())
 	}
-	Verbosef("new snapshot saved as %v\n", id)
+	Verbosef("saved new snapshot %v\n", id.Str())
 	return true, nil
 }
 
 func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, args []string) error {
-
 	if len(opts.ExcludeFiles) == 0 && len(opts.Excludes) == 0 && len(opts.InsensitiveExcludes) == 0 {
 		return errors.Fatal("Nothing to do: no excludes provided")
 	}
@@ -196,7 +200,11 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 
 	Verbosef("\n")
 	if changedCount == 0 {
-		Verbosef("no snapshots were modified\n")
+		if !opts.DryRun {
+			Verbosef("no snapshots were modified\n")
+		} else {
+			Verbosef("no snapshots would be modified\n")
+		}
 	} else {
 		if !opts.DryRun {
 			Verbosef("modified %v snapshots\n", changedCount)
