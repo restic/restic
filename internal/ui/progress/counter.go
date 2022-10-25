@@ -78,32 +78,25 @@ func (c *Counter) Done() {
 		c.tick.Stop()
 	}
 	close(c.stop)
-	<-c.stopped    // Wait for last progress report.
-	*c = Counter{} // Prevent reuse.
+	<-c.stopped // Wait for last progress report.
 }
 
-// Get the current Counter value. This method is concurrency-safe.
-func (c *Counter) Get() uint64 {
+// Get returns the current value and the maximum of c.
+// This method is concurrency-safe.
+func (c *Counter) Get() (v, max uint64) {
 	c.valueMutex.Lock()
-	v := c.value
+	v, max = c.value, c.max
 	c.valueMutex.Unlock()
 
-	return v
-}
-
-func (c *Counter) getMax() uint64 {
-	c.valueMutex.Lock()
-	max := c.max
-	c.valueMutex.Unlock()
-
-	return max
+	return v, max
 }
 
 func (c *Counter) run() {
 	defer close(c.stopped)
 	defer func() {
 		// Must be a func so that time.Since isn't called at defer time.
-		c.report(c.Get(), c.getMax(), time.Since(c.start), true)
+		v, max := c.Get()
+		c.report(v, max, time.Since(c.start), true)
 	}()
 
 	var tick <-chan time.Time
@@ -123,6 +116,7 @@ func (c *Counter) run() {
 			return
 		}
 
-		c.report(c.Get(), c.getMax(), now.Sub(c.start), false)
+		v, max := c.Get()
+		c.report(v, max, now.Sub(c.start), false)
 	}
 }
