@@ -521,7 +521,7 @@ Microsoft Azure Blob Storage
 ****************************
 
 You can also store backups on Microsoft Azure Blob Storage. Export the Azure
-account name and key as follows:
+Blob Storage account name and key as follows:
 
 .. code-block:: console
 
