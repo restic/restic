@@ -112,7 +112,7 @@ func testRunRestoreLatest(t testing.TB, gopts GlobalOptions, dir string, paths [
 		},
 	}
 
-	rtest.OK(t, runRestore(context.TODO(), opts, gopts, []string{"latest"}))
+	rtest.OK(t, runRestore(context.TODO(), opts, gopts, nil, []string{"latest"}))
 }
 
 func testRunRestoreExcludes(t testing.TB, gopts GlobalOptions, dir string, snapshotID restic.ID, excludes []string) {
@@ -121,7 +121,7 @@ func testRunRestoreExcludes(t testing.TB, gopts GlobalOptions, dir string, snaps
 		Exclude: excludes,
 	}
 
-	rtest.OK(t, runRestore(context.TODO(), opts, gopts, []string{snapshotID.String()}))
+	rtest.OK(t, runRestore(context.TODO(), opts, gopts, nil, []string{snapshotID.String()}))
 }
 
 func testRunRestoreIncludes(t testing.TB, gopts GlobalOptions, dir string, snapshotID restic.ID, includes []string) {
@@ -130,11 +130,11 @@ func testRunRestoreIncludes(t testing.TB, gopts GlobalOptions, dir string, snaps
 		Include: includes,
 	}
 
-	rtest.OK(t, runRestore(context.TODO(), opts, gopts, []string{snapshotID.String()}))
+	rtest.OK(t, runRestore(context.TODO(), opts, gopts, nil, []string{snapshotID.String()}))
 }
 
 func testRunRestoreAssumeFailure(t testing.TB, snapshotID string, opts RestoreOptions, gopts GlobalOptions) error {
-	err := runRestore(context.TODO(), opts, gopts, []string{snapshotID})
+	err := runRestore(context.TODO(), opts, gopts, nil, []string{snapshotID})
 
 	return err
 }

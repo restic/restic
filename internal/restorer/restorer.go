@@ -10,6 +10,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
+	restoreui "github.com/restic/restic/internal/ui/restore"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -20,6 +21,8 @@ type Restorer struct {
 	sn     *restic.Snapshot
 	sparse bool
 
+	progress *restoreui.Progress
+
 	Error        func(location string, err error) error
 	SelectFilter func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool)
 }
@@ -27,12 +30,14 @@ type Restorer struct {
 var restorerAbortOnAllErrors = func(location string, err error) error { return err }
 
 // NewRestorer creates a restorer preloaded with the content from the snapshot id.
-func NewRestorer(ctx context.Context, repo restic.Repository, sn *restic.Snapshot, sparse bool) *Restorer {
+func NewRestorer(ctx context.Context, repo restic.Repository, sn *restic.Snapshot, sparse bool,
+	progress *restoreui.Progress) *Restorer {
 	r := &Restorer{
 		repo:         repo,
 		sparse:       sparse,
 		Error:        restorerAbortOnAllErrors,
 		SelectFilter: func(string, string, *restic.Node) (bool, bool) { return true, true },
+		progress:     progress,
 		sn:           sn,
 	}
 
@@ -186,6 +191,11 @@ func (res *Restorer) restoreHardlinkAt(node *restic.Node, target, path, location
 	if err != nil {
 		return errors.WithStack(err)
 	}
+
+	if res.progress != nil {
+		res.progress.AddProgress(location, 0, 0)
+	}
+
 	// TODO investigate if hardlinks have separate metadata on any supported system
 	return res.restoreNodeMetadataTo(node, path, location)
 }
@@ -198,6 +208,10 @@ func (res *Restorer) restoreEmptyFileAt(node *restic.Node, target, location stri
 	err = wr.Close()
 	if err != nil {
 		return err
+	}
+
+	if res.progress != nil {
+		res.progress.AddProgress(location, 0, 0)
 	}
 
 	return res.restoreNodeMetadataTo(node, target, location)
@@ -215,7 +229,8 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 	}
 
 	idx := NewHardlinkIndex()
-	filerestorer := newFileRestorer(dst, res.repo.Backend().Load, res.repo.Key(), res.repo.Index().Lookup, res.repo.Connections(), res.sparse)
+	filerestorer := newFileRestorer(dst, res.repo.Backend().Load, res.repo.Key(), res.repo.Index().Lookup,
+		res.repo.Connections(), res.sparse, res.progress)
 	filerestorer.Error = res.Error
 
 	debug.Log("first pass for %q", dst)
@@ -240,6 +255,10 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 
 			if node.Type != "file" {
 				return nil
+			}
+
+			if res.progress != nil {
+				res.progress.AddFile(node.Size)
 			}
 
 			if node.Size == 0 {

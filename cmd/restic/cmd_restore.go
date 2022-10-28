@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/restic/restic/internal/debug"
@@ -10,6 +11,9 @@ import (
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/restorer"
+	"github.com/restic/restic/internal/ui"
+	restoreui "github.com/restic/restic/internal/ui/restore"
+	"github.com/restic/restic/internal/ui/termstatus"
 
 	"github.com/spf13/cobra"
 )
@@ -31,7 +35,31 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runRestore(cmd.Context(), restoreOptions, globalOptions, args)
+		ctx := cmd.Context()
+		var wg sync.WaitGroup
+		cancelCtx, cancel := context.WithCancel(ctx)
+		defer func() {
+			// shutdown termstatus
+			cancel()
+			wg.Wait()
+		}()
+
+		term := termstatus.New(globalOptions.stdout, globalOptions.stderr, globalOptions.Quiet)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			term.Run(cancelCtx)
+		}()
+
+		// allow usage of warnf / verbosef
+		prevStdout, prevStderr := globalOptions.stdout, globalOptions.stderr
+		defer func() {
+			globalOptions.stdout, globalOptions.stderr = prevStdout, prevStderr
+		}()
+		stdioWrapper := ui.NewStdioWrapper(term)
+		globalOptions.stdout, globalOptions.stderr = stdioWrapper.Stdout(), stdioWrapper.Stderr()
+
+		return runRestore(ctx, restoreOptions, globalOptions, term, args)
 	},
 }
 
@@ -64,7 +92,9 @@ func init() {
 	flags.BoolVar(&restoreOptions.Verify, "verify", false, "verify restored files content")
 }
 
-func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions, args []string) error {
+func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
+	term *termstatus.Terminal, args []string) error {
+
 	hasExcludes := len(opts.Exclude) > 0 || len(opts.InsensitiveExclude) > 0
 	hasIncludes := len(opts.Include) > 0 || len(opts.InsensitiveInclude) > 0
 
@@ -145,7 +175,12 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions, a
 		return err
 	}
 
-	res := restorer.NewRestorer(ctx, repo, sn, opts.Sparse)
+	var progress *restoreui.Progress
+	if !globalOptions.Quiet && !globalOptions.JSON {
+		progress = restoreui.NewProgress(restoreui.NewProgressPrinter(term), calculateProgressInterval(!gopts.Quiet, gopts.JSON))
+	}
+
+	res := restorer.NewRestorer(ctx, repo, sn, opts.Sparse, progress)
 
 	totalErrors := 0
 	res.Error = func(location string, err error) error {
@@ -207,6 +242,10 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions, a
 	err = res.RestoreTo(ctx, opts.Target)
 	if err != nil {
 		return err
+	}
+
+	if progress != nil {
+		progress.Finish()
 	}
 
 	if totalErrors > 0 {

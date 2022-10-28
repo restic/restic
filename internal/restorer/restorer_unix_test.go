@@ -29,7 +29,7 @@ func TestRestorerRestoreEmptyHardlinkedFileds(t *testing.T) {
 		},
 	})
 
-	res := NewRestorer(context.TODO(), repo, sn, false)
+	res := NewRestorer(context.TODO(), repo, sn, false, nil)
 
 	res.SelectFilter = func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
 		return true, true

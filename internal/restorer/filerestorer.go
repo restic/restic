@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui/restore"
 )
 
 // TODO if a blob is corrupt, there may be good blob copies in other packs
@@ -54,6 +55,7 @@ type fileRestorer struct {
 	filesWriter *filesWriter
 	zeroChunk   restic.ID
 	sparse      bool
+	progress    *restore.Progress
 
 	dst   string
 	files []*fileInfo
@@ -65,7 +67,8 @@ func newFileRestorer(dst string,
 	key *crypto.Key,
 	idx func(restic.BlobHandle) []restic.PackedBlob,
 	connections uint,
-	sparse bool) *fileRestorer {
+	sparse bool,
+	progress *restore.Progress) *fileRestorer {
 
 	// as packs are streamed the concurrency is limited by IO
 	workerCount := int(connections)
@@ -77,6 +80,7 @@ func newFileRestorer(dst string,
 		filesWriter: newFilesWriter(workerCount),
 		zeroChunk:   repository.ZeroChunk(),
 		sparse:      sparse,
+		progress:    progress,
 		workerCount: workerCount,
 		dst:         dst,
 		Error:       restorerAbortOnAllErrors,
@@ -268,7 +272,13 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) error {
 						file.inProgress = true
 						createSize = file.size
 					}
-					return r.filesWriter.writeToFile(r.targetPath(file.location), blobData, offset, createSize, file.sparse)
+					writeErr := r.filesWriter.writeToFile(r.targetPath(file.location), blobData, offset, createSize, file.sparse)
+
+					if r.progress != nil {
+						r.progress.AddProgress(file.location, uint64(len(blobData)), uint64(file.size))
+					}
+
+					return writeErr
 				}
 				err := sanitizeError(file, writeToFile())
 				if err != nil {
