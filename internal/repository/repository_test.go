@@ -127,6 +127,8 @@ func benchmarkSaveAndEncrypt(t *testing.B, version uint) {
 	rtest.OK(t, err)
 
 	id := restic.ID(sha256.Sum256(data))
+	var wg errgroup.Group
+	repo.StartPackUploader(context.Background(), &wg)
 
 	t.ReportAllocs()
 	t.ResetTimer()

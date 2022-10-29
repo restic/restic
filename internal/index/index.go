@@ -252,21 +252,18 @@ func (idx *Index) EachByPack(ctx context.Context, packBlacklist restic.IDSet) <-
 
 	go func() {
 		defer idx.m.Unlock()
-		defer func() {
-			close(ch)
-		}()
+		defer close(ch)
 
-		byPack := make(map[restic.ID][][]*indexEntry)
+		byPack := make(map[restic.ID][restic.NumBlobTypes][]*indexEntry)
 
 		for typ := range idx.byType {
 			m := &idx.byType[typ]
 			m.foreach(func(e *indexEntry) bool {
 				packID := idx.packs[e.packIndex]
 				if !idx.final || !packBlacklist.Has(packID) {
-					if _, ok := byPack[packID]; !ok {
-						byPack[packID] = make([][]*indexEntry, restic.NumBlobTypes)
-					}
-					byPack[packID][typ] = append(byPack[packID][typ], e)
+					v := byPack[packID]
+					v[typ] = append(v[typ], e)
+					byPack[packID] = v
 				}
 				return true
 			})
@@ -281,7 +278,7 @@ func (idx *Index) EachByPack(ctx context.Context, packBlacklist restic.IDSet) <-
 				}
 			}
 			// allow GC once entry is no longer necessary
-			byPack[packID] = nil
+			delete(byPack, packID)
 			select {
 			case <-ctx.Done():
 				return
