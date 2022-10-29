@@ -128,3 +128,27 @@ func TestLockFailedRefresh(t *testing.T) {
 	// unlockRepo should not crash
 	unlockRepo(lock)
 }
+
+func TestLockSuccessfulRefresh(t *testing.T) {
+	repo, cleanup, _ := openTestRepo(t, nil)
+	defer cleanup()
+
+	// reduce locking intervals to be suitable for testing
+	ri, rt := refreshInterval, refreshabilityTimeout
+	refreshInterval = 20 * time.Millisecond
+	refreshabilityTimeout = 100 * time.Millisecond
+	defer func() {
+		refreshInterval, refreshabilityTimeout = ri, rt
+	}()
+
+	lock, wrappedCtx := checkedLockRepo(context.Background(), t, repo)
+
+	select {
+	case <-wrappedCtx.Done():
+		t.Fatal("lock refresh failed")
+	case <-time.After(2 * refreshabilityTimeout):
+		// expected lock refresh to work
+	}
+	// unlockRepo should not crash
+	unlockRepo(lock)
+}
