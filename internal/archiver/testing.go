@@ -78,10 +78,6 @@ func TestCreateFiles(t testing.TB, target string, dir TestDir) {
 				t.Fatal(err)
 			}
 		case TestSymlink:
-			if runtime.GOOS == "windows" {
-				continue
-			}
-
 			err := fs.Symlink(filepath.FromSlash(it.Target), targetPath)
 			if err != nil {
 				t.Fatal(err)
@@ -139,16 +135,6 @@ func TestEnsureFiles(t testing.TB, target string, dir TestDir) {
 
 	// first, test that all items are there
 	TestWalkFiles(t, target, dir, func(path string, item interface{}) error {
-		// ignore symlinks on Windows
-		if _, ok := item.(TestSymlink); ok && runtime.GOOS == "windows" {
-			// mark paths and parents as checked
-			pathsChecked[path] = struct{}{}
-			for parent := filepath.Dir(path); parent != target; parent = filepath.Dir(parent) {
-				pathsChecked[parent] = struct{}{}
-			}
-			return nil
-		}
-
 		fi, err := fs.Lstat(path)
 		if err != nil {
 			return err
@@ -298,10 +284,6 @@ func TestEnsureTree(ctx context.Context, t testing.TB, prefix string, repo resti
 			}
 			TestEnsureFileContent(ctx, t, repo, nodePrefix, node, e)
 		case TestSymlink:
-			// skip symlinks on windows
-			if runtime.GOOS == "windows" {
-				continue
-			}
 			if node.Type != "symlink" {
 				t.Errorf("tree node %v has wrong type %q, want %q", nodePrefix, node.Type, "file")
 			}
@@ -313,12 +295,6 @@ func TestEnsureTree(ctx context.Context, t testing.TB, prefix string, repo resti
 	}
 
 	for name := range dir {
-		// skip checking symlinks on Windows
-		entry := dir[name]
-		if _, ok := entry.(TestSymlink); ok && runtime.GOOS == "windows" {
-			continue
-		}
-
 		_, ok := checked[name]
 		if !ok {
 			t.Errorf("tree %v: expected node %q not found, has: %v", prefix, name, nodeNames)

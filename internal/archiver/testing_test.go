@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 	"time"
 
@@ -68,10 +67,6 @@ func createFilesAt(t testing.TB, targetdir string, files map[string]interface{})
 				t.Fatal(err)
 			}
 		case TestSymlink:
-			// ignore symlinks on windows
-			if runtime.GOOS == "windows" {
-				continue
-			}
 			err := fs.Symlink(filepath.FromSlash(it.Target), target)
 			if err != nil {
 				t.Fatal(err)
@@ -93,7 +88,7 @@ func TestTestCreateFiles(t *testing.T) {
 				},
 				"sub": TestDir{
 					"subsub": TestDir{
-						"link": TestSymlink{Target: "x/y/z"},
+						"link": TestSymlink{Target: filepath.Clean("x/y/z")},
 					},
 				},
 			},
@@ -101,7 +96,7 @@ func TestTestCreateFiles(t *testing.T) {
 				"foo":             TestFile{Content: "foo"},
 				"subdir":          TestDir{},
 				"subdir/subfile":  TestFile{Content: "bar"},
-				"sub/subsub/link": TestSymlink{Target: "x/y/z"},
+				"sub/subsub/link": TestSymlink{Target: filepath.Clean("x/y/z")},
 			},
 		},
 	}
@@ -120,13 +115,6 @@ func TestTestCreateFiles(t *testing.T) {
 			TestCreateFiles(t, tempdir, test.dir)
 
 			for name, item := range test.files {
-				// don't check symlinks on windows
-				if runtime.GOOS == "windows" {
-					if _, ok := item.(TestSymlink); ok {
-						continue
-					}
-				}
-
 				targetPath := filepath.Join(tempdir, filepath.FromSlash(name))
 				fi, err := fs.Lstat(targetPath)
 				if err != nil {
@@ -233,13 +221,12 @@ func TestTestEnsureFiles(t *testing.T) {
 		expectFailure bool
 		files         map[string]interface{}
 		want          TestDir
-		unixOnly      bool
 	}{
 		{
 			files: map[string]interface{}{
 				"foo":            TestFile{Content: "foo"},
 				"subdir/subfile": TestFile{Content: "bar"},
-				"x/y/link":       TestSymlink{Target: "../../foo"},
+				"x/y/link":       TestSymlink{Target: filepath.Clean("../../foo")},
 			},
 			want: TestDir{
 				"foo": TestFile{Content: "foo"},
@@ -248,7 +235,7 @@ func TestTestEnsureFiles(t *testing.T) {
 				},
 				"x": TestDir{
 					"y": TestDir{
-						"link": TestSymlink{Target: "../../foo"},
+						"link": TestSymlink{Target: filepath.Clean("../../foo")},
 					},
 				},
 			},
@@ -295,7 +282,6 @@ func TestTestEnsureFiles(t *testing.T) {
 		},
 		{
 			expectFailure: true,
-			unixOnly:      true,
 			files: map[string]interface{}{
 				"foo": TestFile{Content: "foo"},
 			},
@@ -305,7 +291,6 @@ func TestTestEnsureFiles(t *testing.T) {
 		},
 		{
 			expectFailure: true,
-			unixOnly:      true,
 			files: map[string]interface{}{
 				"foo": TestSymlink{Target: "xxx"},
 			},
@@ -339,11 +324,6 @@ func TestTestEnsureFiles(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			if test.unixOnly && runtime.GOOS == "windows" {
-				t.Skip("skip on Windows")
-				return
-			}
-
 			tempdir, cleanup := restictest.TempDir(t)
 			defer cleanup()
 
@@ -368,7 +348,6 @@ func TestTestEnsureSnapshot(t *testing.T) {
 		expectFailure bool
 		files         map[string]interface{}
 		want          TestDir
-		unixOnly      bool
 	}{
 		{
 			files: map[string]interface{}{
@@ -451,7 +430,6 @@ func TestTestEnsureSnapshot(t *testing.T) {
 		},
 		{
 			expectFailure: true,
-			unixOnly:      true,
 			files: map[string]interface{}{
 				"foo": TestSymlink{Target: filepath.FromSlash("x/y/z")},
 			},
@@ -476,11 +454,6 @@ func TestTestEnsureSnapshot(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			if test.unixOnly && runtime.GOOS == "windows" {
-				t.Skip("skip on Windows")
-				return
-			}
-
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
