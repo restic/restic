@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"runtime"
+	"sync"
 	"sync/atomic"
 	"testing"
 
@@ -45,16 +46,22 @@ func TestBlobSaver(t *testing.T) {
 
 	b := NewBlobSaver(ctx, wg, saver, uint(runtime.NumCPU()))
 
-	var results []FutureBlob
+	var wait sync.WaitGroup
+	var results []SaveBlobResponse
 
+	wait.Add(20)
 	for i := 0; i < 20; i++ {
 		buf := &Buffer{Data: []byte(fmt.Sprintf("foo%d", i))}
-		fb := b.Save(ctx, restic.DataBlob, buf)
-		results = append(results, fb)
+		idx := i
+		results = append(results, SaveBlobResponse{})
+		b.Save(ctx, restic.DataBlob, buf, func(res SaveBlobResponse) {
+			results[idx] = res
+			wait.Done()
+		})
 	}
 
-	for i, blob := range results {
-		sbr := blob.Take(ctx)
+	wait.Wait()
+	for i, sbr := range results {
 		if sbr.known {
 			t.Errorf("blob %v is known, that should not be the case", i)
 		}
@@ -94,7 +101,7 @@ func TestBlobSaverError(t *testing.T) {
 
 			for i := 0; i < test.blobs; i++ {
 				buf := &Buffer{Data: []byte(fmt.Sprintf("foo%d", i))}
-				b.Save(ctx, restic.DataBlob, buf)
+				b.Save(ctx, restic.DataBlob, buf, func(res SaveBlobResponse) {})
 			}
 
 			b.TriggerShutdown()

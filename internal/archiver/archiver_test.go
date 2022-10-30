@@ -53,12 +53,21 @@ func saveFile(t testing.TB, repo restic.Repository, filename string, filesystem 
 	}
 
 	var (
+		completeReadingCallback bool
+
 		completeCallbackNode  *restic.Node
 		completeCallbackStats ItemStats
 		completeCallback      bool
 
 		startCallback bool
 	)
+
+	completeReading := func() {
+		completeReadingCallback = true
+		if completeCallback {
+			t.Error("callbacks called in wrong order")
+		}
+	}
 
 	complete := func(node *restic.Node, stats ItemStats) {
 		completeCallback = true
@@ -80,7 +89,7 @@ func saveFile(t testing.TB, repo restic.Repository, filename string, filesystem 
 		t.Fatal(err)
 	}
 
-	res := arch.fileSaver.Save(ctx, "/", filename, file, fi, start, complete)
+	res := arch.fileSaver.Save(ctx, "/", filename, file, fi, start, completeReading, complete)
 
 	fnr := res.take(ctx)
 	if fnr.err != nil {
@@ -99,6 +108,10 @@ func saveFile(t testing.TB, repo restic.Repository, filename string, filesystem 
 
 	if !startCallback {
 		t.Errorf("start callback did not happen")
+	}
+
+	if !completeReadingCallback {
+		t.Errorf("completeReading callback did not happen")
 	}
 
 	if !completeCallback {

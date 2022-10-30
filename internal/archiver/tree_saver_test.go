@@ -12,15 +12,13 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func treeSaveHelper(ctx context.Context, t restic.BlobType, buf *Buffer) FutureBlob {
-	ch := make(chan SaveBlobResponse, 1)
-	ch <- SaveBlobResponse{
+func treeSaveHelper(ctx context.Context, t restic.BlobType, buf *Buffer, cb func(res SaveBlobResponse)) {
+	cb(SaveBlobResponse{
 		id:         restic.NewRandomID(),
 		known:      false,
 		length:     len(buf.Data),
 		sizeInRepo: len(buf.Data),
-	}
-	return FutureBlob{ch: ch}
+	})
 }
 
 func setupTreeSaver() (context.Context, context.CancelFunc, *TreeSaver, func() error) {
