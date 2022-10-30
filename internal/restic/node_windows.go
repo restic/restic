@@ -17,7 +17,21 @@ func lchown(path string, uid int, gid int) (err error) {
 }
 
 func (node Node) restoreSymlinkTimestamps(path string, utimes [2]syscall.Timespec) error {
-	return nil
+	// tweaked version of UtimesNano from go/src/syscall/syscall_windows.go
+	pathp, e := syscall.UTF16PtrFromString(path)
+	if e != nil {
+		return e
+	}
+	h, e := syscall.CreateFile(pathp,
+		syscall.FILE_WRITE_ATTRIBUTES, syscall.FILE_SHARE_WRITE, nil, syscall.OPEN_EXISTING,
+		syscall.FILE_FLAG_BACKUP_SEMANTICS|syscall.FILE_FLAG_OPEN_REPARSE_POINT, 0)
+	if e != nil {
+		return e
+	}
+	defer syscall.Close(h)
+	a := syscall.NsecToFiletime(syscall.TimespecToNsec(utimes[0]))
+	w := syscall.NsecToFiletime(syscall.TimespecToNsec(utimes[1]))
+	return syscall.SetFileTime(h, nil, &a, &w)
 }
 
 // Getxattr retrieves extended attribute data associated with path.
