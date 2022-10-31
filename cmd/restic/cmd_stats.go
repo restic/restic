@@ -9,6 +9,7 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/walker"
 
 	"github.com/minio/sha256-simd"
@@ -164,9 +165,9 @@ func runStats(ctx context.Context, gopts GlobalOptions, args []string) error {
 		Printf("        Total File Count:  %d\n", stats.TotalFileCount)
 	}
 	if stats.TotalUncompressedSize > 0 {
-		Printf(" Total Uncompressed Size:  %-5s\n", formatBytes(stats.TotalUncompressedSize))
+		Printf(" Total Uncompressed Size:  %-5s\n", ui.FormatBytes(stats.TotalUncompressedSize))
 	}
-	Printf("              Total Size:  %-5s\n", formatBytes(stats.TotalSize))
+	Printf("              Total Size:  %-5s\n", ui.FormatBytes(stats.TotalSize))
 	if stats.CompressionProgress > 0 {
 		Printf("    Compression Progress:  %.2f%%\n", stats.CompressionProgress)
 	}

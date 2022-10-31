@@ -13,6 +13,7 @@ import (
 	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
 
 	"github.com/spf13/cobra"
 )
@@ -639,29 +640,29 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 
 // printPruneStats prints out the statistics
 func printPruneStats(gopts GlobalOptions, stats pruneStats) error {
-	Verboseff("\nused:         %10d blobs / %s\n", stats.blobs.used, formatBytes(stats.size.used))
+	Verboseff("\nused:         %10d blobs / %s\n", stats.blobs.used, ui.FormatBytes(stats.size.used))
 	if stats.blobs.duplicate > 0 {
-		Verboseff("duplicates:   %10d blobs / %s\n", stats.blobs.duplicate, formatBytes(stats.size.duplicate))
+		Verboseff("duplicates:   %10d blobs / %s\n", stats.blobs.duplicate, ui.FormatBytes(stats.size.duplicate))
 	}
-	Verboseff("unused:       %10d blobs / %s\n", stats.blobs.unused, formatBytes(stats.size.unused))
+	Verboseff("unused:       %10d blobs / %s\n", stats.blobs.unused, ui.FormatBytes(stats.size.unused))
 	if stats.size.unref > 0 {
-		Verboseff("unreferenced:                    %s\n", formatBytes(stats.size.unref))
+		Verboseff("unreferenced:                    %s\n", ui.FormatBytes(stats.size.unref))
 	}
 	totalBlobs := stats.blobs.used + stats.blobs.unused + stats.blobs.duplicate
 	totalSize := stats.size.used + stats.size.duplicate + stats.size.unused + stats.size.unref
 	unusedSize := stats.size.duplicate + stats.size.unused
-	Verboseff("total:        %10d blobs / %s\n", totalBlobs, formatBytes(totalSize))
-	Verboseff("unused size: %s of total size\n", formatPercent(unusedSize, totalSize))
+	Verboseff("total:        %10d blobs / %s\n", totalBlobs, ui.FormatBytes(totalSize))
+	Verboseff("unused size: %s of total size\n", ui.FormatPercent(unusedSize, totalSize))
 
-	Verbosef("\nto repack:    %10d blobs / %s\n", stats.blobs.repack, formatBytes(stats.size.repack))
-	Verbosef("this removes: %10d blobs / %s\n", stats.blobs.repackrm, formatBytes(stats.size.repackrm))
-	Verbosef("to delete:    %10d blobs / %s\n", stats.blobs.remove, formatBytes(stats.size.remove+stats.size.unref))
+	Verbosef("\nto repack:    %10d blobs / %s\n", stats.blobs.repack, ui.FormatBytes(stats.size.repack))
+	Verbosef("this removes: %10d blobs / %s\n", stats.blobs.repackrm, ui.FormatBytes(stats.size.repackrm))
+	Verbosef("to delete:    %10d blobs / %s\n", stats.blobs.remove, ui.FormatBytes(stats.size.remove+stats.size.unref))
 	totalPruneSize := stats.size.remove + stats.size.repackrm + stats.size.unref
-	Verbosef("total prune:  %10d blobs / %s\n", stats.blobs.remove+stats.blobs.repackrm, formatBytes(totalPruneSize))
-	Verbosef("remaining:    %10d blobs / %s\n", totalBlobs-(stats.blobs.remove+stats.blobs.repackrm), formatBytes(totalSize-totalPruneSize))
+	Verbosef("total prune:  %10d blobs / %s\n", stats.blobs.remove+stats.blobs.repackrm, ui.FormatBytes(totalPruneSize))
+	Verbosef("remaining:    %10d blobs / %s\n", totalBlobs-(stats.blobs.remove+stats.blobs.repackrm), ui.FormatBytes(totalSize-totalPruneSize))
 	unusedAfter := unusedSize - stats.size.remove - stats.size.repackrm
 	Verbosef("unused size after prune: %s (%s of remaining size)\n",
-		formatBytes(unusedAfter), formatPercent(unusedAfter, totalSize-totalPruneSize))
+		ui.FormatBytes(unusedAfter), ui.FormatPercent(unusedAfter, totalSize-totalPruneSize))
 	Verbosef("\n")
 	Verboseff("totally used packs: %10d\n", stats.packs.used)
 	Verboseff("partly used packs:  %10d\n", stats.packs.partlyUsed)
