@@ -102,7 +102,7 @@ func (p *Progress) Run(ctx context.Context) {
 		}
 
 		p.mu.Lock()
-		if p.scanStarted {
+		if !p.scanStarted {
 			p.mu.Unlock()
 			continue
 		}
@@ -231,11 +231,10 @@ func (p *Progress) ReportTotal(item string, s archiver.ScanStats) {
 	defer p.mu.Unlock()
 
 	p.total = Counter{Files: uint64(s.Files), Dirs: uint64(s.Dirs), Bytes: s.Bytes}
+	p.scanStarted = true
 
 	if item == "" {
 		p.printer.ReportTotal(item, p.start, s)
-		p.scanStarted = true
-		return
 	}
 }
 
