@@ -4,6 +4,7 @@
 package fuse
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"path"
@@ -14,6 +15,8 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
+
+	"github.com/minio/sha256-simd"
 )
 
 type MetaDirData struct {
@@ -39,7 +42,7 @@ type SnapshotsDirStructure struct {
 	// that way we don't need path processing special cases when using the entries tree
 	entries map[string]*MetaDirData
 
-	snCount   int
+	hash      [sha256.Size]byte // Hash at last check.
 	lastCheck time.Time
 }
 
@@ -49,7 +52,6 @@ func NewSnapshotsDirStructure(root *Root, pathTemplates []string, timeTemplate s
 		root:          root,
 		pathTemplates: pathTemplates,
 		timeTemplate:  timeTemplate,
-		snCount:       -1,
 	}
 }
 
@@ -302,10 +304,26 @@ func (d *SnapshotsDirStructure) updateSnapshots(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	// sort snapshots ascending by time (default order is descending)
-	sort.Sort(sort.Reverse(snapshots))
 
-	if d.snCount == len(snapshots) {
+	// Sort snapshots ascending by time, using the id to break ties.
+	// This needs to be done before hashing.
+	sort.Slice(snapshots, func(i, j int) bool {
+		si, sj := snapshots[i], snapshots[j]
+		if si.Time.Equal(sj.Time) {
+			return bytes.Compare(si.ID()[:], sj.ID()[:]) < 0
+		}
+		return si.Time.Before(sj.Time)
+	})
+
+	// We update the snapshots when the hash of their id's changes.
+	h := sha256.New()
+	for _, sn := range snapshots {
+		h.Write(sn.ID()[:])
+	}
+	var hash [sha256.Size]byte
+	h.Sum(hash[:0])
+
+	if d.hash == hash {
 		d.lastCheck = time.Now()
 		return nil
 	}
@@ -316,7 +334,7 @@ func (d *SnapshotsDirStructure) updateSnapshots(ctx context.Context) error {
 	}
 
 	d.lastCheck = time.Now()
-	d.snCount = len(snapshots)
+	d.hash = hash
 	d.makeDirs(snapshots)
 	return nil
 }
