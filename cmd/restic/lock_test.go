@@ -133,10 +133,11 @@ func TestLockSuccessfulRefresh(t *testing.T) {
 	repo, cleanup, _ := openTestRepo(t, nil)
 	defer cleanup()
 
+	t.Log("test for successful lock refresh")
 	// reduce locking intervals to be suitable for testing
 	ri, rt := refreshInterval, refreshabilityTimeout
-	refreshInterval = 20 * time.Millisecond
-	refreshabilityTimeout = 100 * time.Millisecond
+	refreshInterval = 40 * time.Millisecond
+	refreshabilityTimeout = 200 * time.Millisecond
 	defer func() {
 		refreshInterval, refreshabilityTimeout = ri, rt
 	}()
