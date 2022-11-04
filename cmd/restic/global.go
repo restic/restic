@@ -498,7 +498,11 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 			id = id[:8]
 		}
 		if !opts.JSON {
-			Verbosef("repository %v opened (version %v, compression level %v)\n", id, s.Config().Version, opts.Compression.String())
+			extra := ""
+			if s.Config().Version >= 2 {
+				extra = ", compression level " + opts.Compression.String()
+			}
+			Verbosef("repository %v opened (version %v%s)\n", id, s.Config().Version, extra)
 		}
 	}
 
