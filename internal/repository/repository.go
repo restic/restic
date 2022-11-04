@@ -67,9 +67,10 @@ type CompressionMode uint
 
 // Constants for the different compression levels.
 const (
-	CompressionAuto CompressionMode = 0
-	CompressionOff  CompressionMode = 1
-	CompressionMax  CompressionMode = 2
+	CompressionAuto    CompressionMode = 0
+	CompressionOff     CompressionMode = 1
+	CompressionMax     CompressionMode = 2
+	CompressionInvalid CompressionMode = 3
 )
 
 // Set implements the method needed for pflag command flag parsing.
@@ -82,6 +83,7 @@ func (c *CompressionMode) Set(s string) error {
 	case "max":
 		*c = CompressionMax
 	default:
+		*c = CompressionInvalid
 		return fmt.Errorf("invalid compression mode %q, must be one of (auto|off|max)", s)
 	}
 
@@ -107,6 +109,10 @@ func (c *CompressionMode) Type() string {
 
 // New returns a new repository with backend be.
 func New(be restic.Backend, opts Options) (*Repository, error) {
+	if opts.Compression == CompressionInvalid {
+		return nil, errors.Fatalf("invalid compression mode")
+	}
+
 	if opts.PackSize == 0 {
 		opts.PackSize = DefaultPackSize
 	}

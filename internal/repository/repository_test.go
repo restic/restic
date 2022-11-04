@@ -681,3 +681,11 @@ func testStreamPack(t *testing.T, version uint) {
 		}
 	})
 }
+
+func TestInvalidCompression(t *testing.T) {
+	var comp repository.CompressionMode
+	err := comp.Set("nope")
+	rtest.Assert(t, err != nil, "missing error")
+	_, err = repository.New(nil, repository.Options{Compression: comp})
+	rtest.Assert(t, err != nil, "missing error")
+}
