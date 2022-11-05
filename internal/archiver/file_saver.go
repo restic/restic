@@ -128,6 +128,11 @@ func (s *FileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 			if isCompleted {
 				panic("completed twice")
 			}
+			for _, id := range fnr.node.Content {
+				if id.IsNull() {
+					panic("completed file with null ID")
+				}
+			}
 			isCompleted = true
 			finish(fnr)
 		}

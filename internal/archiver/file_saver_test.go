@@ -35,7 +35,12 @@ func startFileSaver(ctx context.Context, t testing.TB) (*FileSaver, context.Cont
 	wg, ctx := errgroup.WithContext(ctx)
 
 	saveBlob := func(ctx context.Context, tpe restic.BlobType, buf *Buffer, cb func(SaveBlobResponse)) {
-		cb(SaveBlobResponse{})
+		cb(SaveBlobResponse{
+			id:         restic.Hash(buf.Data),
+			length:     len(buf.Data),
+			sizeInRepo: len(buf.Data),
+			known:      false,
+		})
 	}
 
 	workers := uint(runtime.NumCPU())
