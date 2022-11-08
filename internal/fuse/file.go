@@ -95,24 +95,6 @@ func (f *file) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenR
 	return &of, nil
 }
 
-func (f *openFile) getBlobAt(ctx context.Context, i int) (blob []byte, err error) {
-
-	blob, ok := f.root.blobCache.Get(f.node.Content[i])
-	if ok {
-		return blob, nil
-	}
-
-	blob, err = f.root.repo.LoadBlob(ctx, restic.DataBlob, f.node.Content[i], nil)
-	if err != nil {
-		debug.Log("LoadBlob(%v, %v) failed: %v", f.node.Name, f.node.Content[i], err)
-		return nil, unwrapCtxCanceled(err)
-	}
-
-	f.root.blobCache.Add(f.node.Content[i], blob)
-
-	return blob, nil
-}
-
 func (f *openFile) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
 	debug.Log("Read(%v, %v, %v), file size %v", f.node.Name, req.Size, req.Offset, f.node.Size)
 	offset := uint64(req.Offset)
@@ -127,10 +109,10 @@ func (f *openFile) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.R
 	}
 
 	// Skip blobs before the offset
-	startContent := -1 + sort.Search(len(f.cumsize), func(i int) bool {
+	i := -1 + sort.Search(len(f.cumsize), func(i int) bool {
 		return f.cumsize[i] > offset
 	})
-	offset -= f.cumsize[startContent]
+	offset -= f.cumsize[i]
 
 	dst := resp.Data[0:req.Size]
 	readBytes := 0
@@ -142,10 +124,9 @@ func (f *openFile) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.R
 	// Multiple goroutines may call service methods simultaneously;
 	// the methods being called are responsible for appropriate synchronization.
 	//
-	// However, no lock needed here as getBlobAt can be called conurrently
-	// (blobCache has it's own locking)
-	for i := startContent; remainingBytes > 0 && i < len(f.cumsize)-1; i++ {
-		blob, err := f.getBlobAt(ctx, i)
+	// However, no lock needed here as root.readBlob can be called concurrently.
+	for ; remainingBytes > 0 && i < len(f.cumsize)-1; i++ {
+		blob, err := f.root.readBlob(ctx, f.node.Content[i])
 		if err != nil {
 			return err
 		}
@@ -163,6 +144,11 @@ func (f *openFile) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.R
 	}
 	resp.Data = resp.Data[:readBytes]
 
+	if i++; i < len(f.cumsize)-1 {
+		// If we're not yet at EOF, start reading one block ahead, concurrently.
+		size := int64(f.cumsize[i] - f.cumsize[i-1])
+		f.root.readBlobAhead(f.node.Content[i], size)
+	}
 	return nil
 }
 

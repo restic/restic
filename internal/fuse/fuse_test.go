@@ -116,7 +116,7 @@ func TestFuseFile(t *testing.T) {
 		Size:    filesize,
 		Content: content,
 	}
-	root := &Root{repo: repo, blobCache: bloblru.New(blobCacheSize)}
+	root := NewRoot(repo, Config{OwnerIsRoot: true})
 
 	inode := fs.GenerateDynamicInode(1, "foo")
 	f, err := newFile(root, inode, node)

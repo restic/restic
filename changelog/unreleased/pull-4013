@@ -1,0 +1,8 @@
+Enhancement: Throughput improvement in restic mount
+
+Instead of only reading file contents on demand, restic mount now also
+fetches file contents from the repository ahead of time. This speeds up
+viewing files inside the mount point and copying them out.
+
+https://github.com/restic/restic/issues/3828
+https://github.com/restic/restic/pull/4013

@@ -4,6 +4,7 @@
 package fuse
 
 import (
+	"context"
 	"os"
 
 	"github.com/restic/restic/internal/bloblru"
@@ -11,6 +12,8 @@ import (
 	"github.com/restic/restic/internal/restic"
 
 	"bazil.org/fuse/fs"
+	"golang.org/x/sync/semaphore"
+	"golang.org/x/sync/singleflight"
 )
 
 // Config holds settings for the fuse mount.
@@ -28,6 +31,8 @@ type Root struct {
 	repo      restic.Repository
 	cfg       Config
 	blobCache *bloblru.Cache
+	single    singleflight.Group
+	readahead *semaphore.Weighted
 
 	*SnapshotsDir
 
@@ -40,8 +45,15 @@ var _ = fs.NodeStringLookuper(&Root{})
 
 const rootInode = 1
 
-// Size of the blob cache. TODO: make this configurable.
-const blobCacheSize = 64 << 20
+const (
+	// Size of the blob cache. TODO: make this configurable?
+	blobCacheSize = 64 << 20
+
+	// Max. memory used by readahead. This must be less than the size of the
+	// blob cache, since the purpose of readahead is to pre-fill that cache.
+	// This also implicitly controls the number of goroutines used.
+	readaheadSize = 16 << 20
+)
 
 // NewRoot initializes a new root node from a repository.
 func NewRoot(repo restic.Repository, cfg Config) *Root {
@@ -51,6 +63,7 @@ func NewRoot(repo restic.Repository, cfg Config) *Root {
 		repo:      repo,
 		cfg:       cfg,
 		blobCache: bloblru.New(blobCacheSize),
+		readahead: semaphore.NewWeighted(readaheadSize),
 	}
 
 	if !cfg.OwnerIsRoot {
@@ -77,4 +90,58 @@ func NewRoot(repo restic.Repository, cfg Config) *Root {
 func (r *Root) Root() (fs.Node, error) {
 	debug.Log("Root()")
 	return r, nil
+}
+
+func (r *Root) readBlob(ctx context.Context, id restic.ID) ([]byte, error) {
+	blob, ok := r.blobCache.Get(id)
+	if ok {
+		return blob, nil
+	}
+
+	b, err, _ := r.single.Do(string(id[:]), func() (interface{}, error) {
+		return r.repo.LoadBlob(ctx, restic.DataBlob, id, nil)
+	})
+	if err != nil {
+		debug.Log("readBlob(%v) failed: %v", id, err)
+		return nil, unwrapCtxCanceled(err)
+	}
+
+	blob = b.([]byte)
+	r.blobCache.Add(id, blob)
+	return blob, nil
+}
+
+// readBlobAhead may spawn a goroutine that fetches a blob
+// and stores it in r.blobCache. It does nothing if the blob
+// is in the cache or no memory is available.
+func (r *Root) readBlobAhead(id restic.ID, size int64) {
+	if _, ok := r.blobCache.Get(id); ok {
+		return
+	}
+
+	// Sloppy estimate of the memory cost of a DoChan call.
+	const (
+		costGoroutine = 2048
+		costOther     = 512 // singleflight data structures
+	)
+	mem := size + costGoroutine + costOther
+	if !r.readahead.TryAcquire(mem) {
+		return
+	}
+
+	// We don't care about the result of this call.
+	// DoChan creates a buffered channel, so not consuming it
+	// does not cause a memory leak.
+	r.single.DoChan(string(id[:]), func() (interface{}, error) {
+		defer r.readahead.Release(mem)
+
+		ctx := context.Background()
+		blob, err := r.repo.LoadBlob(ctx, restic.DataBlob, id, nil)
+
+		if err == nil {
+			r.blobCache.Add(id, blob)
+		}
+		debug.Log("readBlobAhead(%v): %v", id, err)
+		return blob, err
+	})
 }
