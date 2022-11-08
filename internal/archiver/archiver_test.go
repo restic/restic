@@ -1969,7 +1969,7 @@ type failSaveRepo struct {
 func (f *failSaveRepo) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (restic.ID, bool, int, error) {
 	val := atomic.AddInt32(&f.cnt, 1)
 	if val >= f.failAfter {
-		return restic.ID{}, false, 0, f.err
+		return restic.Hash(buf), false, 0, f.err
 	}
 
 	return f.Repository.SaveBlob(ctx, t, buf, id, storeDuplicate)
