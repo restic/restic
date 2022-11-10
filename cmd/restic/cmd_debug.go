@@ -325,87 +325,94 @@ func loadBlobs(ctx context.Context, repo restic.Repository, packID restic.ID, li
 		Name: packID.String(),
 		Type: restic.PackFile,
 	}
-	for _, blob := range list {
-		Printf("      loading blob %v at %v (length %v)\n", blob.ID, blob.Offset, blob.Length)
-		buf := make([]byte, blob.Length)
-		err := be.Load(ctx, h, int(blob.Length), int64(blob.Offset), func(rd io.Reader) error {
-			n, err := io.ReadFull(rd, buf)
+
+	wg, ctx := errgroup.WithContext(ctx)
+
+	if reuploadBlobs {
+		repo.StartPackUploader(ctx, wg)
+	}
+
+	wg.Go(func() error {
+		for _, blob := range list {
+			Printf("      loading blob %v at %v (length %v)\n", blob.ID, blob.Offset, blob.Length)
+			buf := make([]byte, blob.Length)
+			err := be.Load(ctx, h, int(blob.Length), int64(blob.Offset), func(rd io.Reader) error {
+				n, err := io.ReadFull(rd, buf)
+				if err != nil {
+					return fmt.Errorf("read error after %d bytes: %v", n, err)
+				}
+				return nil
+			})
 			if err != nil {
-				return fmt.Errorf("read error after %d bytes: %v", n, err)
+				Warnf("error read: %v\n", err)
+				continue
 			}
-			return nil
-		})
-		if err != nil {
-			Warnf("error read: %v\n", err)
-			continue
-		}
 
-		key := repo.Key()
+			key := repo.Key()
 
-		nonce, plaintext := buf[:key.NonceSize()], buf[key.NonceSize():]
-		plaintext, err = key.Open(plaintext[:0], nonce, plaintext, nil)
-		outputPrefix := ""
-		filePrefix := ""
-		if err != nil {
-			Warnf("error decrypting blob: %v\n", err)
-			if tryRepair || repairByte {
-				plaintext = tryRepairWithBitflip(ctx, key, buf, repairByte)
+			nonce, plaintext := buf[:key.NonceSize()], buf[key.NonceSize():]
+			plaintext, err = key.Open(plaintext[:0], nonce, plaintext, nil)
+			outputPrefix := ""
+			filePrefix := ""
+			if err != nil {
+				Warnf("error decrypting blob: %v\n", err)
+				if tryRepair || repairByte {
+					plaintext = tryRepairWithBitflip(ctx, key, buf, repairByte)
+				}
+				if plaintext != nil {
+					outputPrefix = "repaired "
+					filePrefix = "repaired-"
+				} else {
+					plaintext = decryptUnsigned(ctx, key, buf)
+					err = storePlainBlob(blob.ID, "damaged-", plaintext)
+					if err != nil {
+						return err
+					}
+					continue
+				}
 			}
-			if plaintext != nil {
-				outputPrefix = "repaired "
-				filePrefix = "repaired-"
+
+			if blob.IsCompressed() {
+				decompressed, err := dec.DecodeAll(plaintext, nil)
+				if err != nil {
+					Printf("         failed to decompress blob %v\n", blob.ID)
+				}
+				if decompressed != nil {
+					plaintext = decompressed
+				}
+			}
+
+			id := restic.Hash(plaintext)
+			var prefix string
+			if !id.Equal(blob.ID) {
+				Printf("         successfully %vdecrypted blob (length %v), hash is %v, ID does not match, wanted %v\n", outputPrefix, len(plaintext), id, blob.ID)
+				prefix = "wrong-hash-"
 			} else {
-				plaintext = decryptUnsigned(ctx, key, buf)
-				err = storePlainBlob(blob.ID, "damaged-", plaintext)
+				Printf("         successfully %vdecrypted blob (length %v), hash is %v, ID matches\n", outputPrefix, len(plaintext), id)
+				prefix = "correct-"
+			}
+			if extractPack {
+				err = storePlainBlob(id, filePrefix+prefix, plaintext)
 				if err != nil {
 					return err
 				}
-				continue
+			}
+			if reuploadBlobs {
+				_, _, _, err := repo.SaveBlob(ctx, blob.Type, plaintext, id, true)
+				if err != nil {
+					return err
+				}
+				Printf("         uploaded %v %v\n", blob.Type, id)
 			}
 		}
 
-		if blob.IsCompressed() {
-			decompressed, err := dec.DecodeAll(plaintext, nil)
-			if err != nil {
-				Printf("         failed to decompress blob %v\n", blob.ID)
-			}
-			if decompressed != nil {
-				plaintext = decompressed
-			}
-		}
-
-		id := restic.Hash(plaintext)
-		var prefix string
-		if !id.Equal(blob.ID) {
-			Printf("         successfully %vdecrypted blob (length %v), hash is %v, ID does not match, wanted %v\n", outputPrefix, len(plaintext), id, blob.ID)
-			prefix = "wrong-hash-"
-		} else {
-			Printf("         successfully %vdecrypted blob (length %v), hash is %v, ID matches\n", outputPrefix, len(plaintext), id)
-			prefix = "correct-"
-		}
-		if extractPack {
-			err = storePlainBlob(id, filePrefix+prefix, plaintext)
-			if err != nil {
-				return err
-			}
-		}
 		if reuploadBlobs {
-			_, _, _, err := repo.SaveBlob(ctx, blob.Type, plaintext, id, true)
-			if err != nil {
-				return err
-			}
-			Printf("         uploaded %v %v\n", blob.Type, id)
+			return repo.Flush(ctx)
 		}
-	}
+		return nil
+	})
 
-	if reuploadBlobs {
-		err := repo.Flush(ctx)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return wg.Wait()
 }
 
 func storePlainBlob(id restic.ID, prefix string, plain []byte) error {
