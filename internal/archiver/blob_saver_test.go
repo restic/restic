@@ -48,14 +48,19 @@ func TestBlobSaver(t *testing.T) {
 
 	var wait sync.WaitGroup
 	var results []SaveBlobResponse
+	var lock sync.Mutex
 
 	wait.Add(20)
 	for i := 0; i < 20; i++ {
 		buf := &Buffer{Data: []byte(fmt.Sprintf("foo%d", i))}
 		idx := i
+		lock.Lock()
 		results = append(results, SaveBlobResponse{})
+		lock.Unlock()
 		b.Save(ctx, restic.DataBlob, buf, func(res SaveBlobResponse) {
+			lock.Lock()
 			results[idx] = res
+			lock.Unlock()
 			wait.Done()
 		})
 	}
