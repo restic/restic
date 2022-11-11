@@ -37,6 +37,13 @@ jobs:
             check_changelog: true
             install_verb: install
 
+          - job_name: Linux (race)
+            go: 1.19.x
+            os: ubuntu-latest
+            test_fuse: true
+            test_opts: "-race"
+            install_verb: install
+
           - job_name: Linux
             go: 1.18.x
             os: ubuntu-latest
@@ -152,7 +159,7 @@ jobs:
         env:
           RESTIC_TEST_FUSE: ${{ matrix.test_fuse }}
         run: |
-          go test -cover ./...
+          go test -cover ${{matrix.test_opts}} ./...
 
       - name: Test cloud backends
         env:
