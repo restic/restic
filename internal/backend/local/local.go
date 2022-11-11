@@ -177,7 +177,7 @@ func (b *Local) Save(ctx context.Context, h restic.Handle, rd restic.RewindReade
 
 	// Ignore error if filesystem does not support fsync.
 	err = f.Sync()
-	syncNotSup := errors.Is(err, syscall.ENOTSUP)
+	syncNotSup := err != nil && (errors.Is(err, syscall.ENOTSUP) || isMacENOTTY(err))
 	if err != nil && !syncNotSup {
 		return errors.WithStack(err)
 	}
