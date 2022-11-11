@@ -26,6 +26,7 @@ import (
 // A lock must be refreshed regularly to not be considered stale, this must be
 // triggered by regularly calling Refresh.
 type Lock struct {
+	lock      sync.Mutex
 	Time      time.Time `json:"time"`
 	Exclusive bool      `json:"exclusive"`
 	Hostname  string    `json:"hostname"`
@@ -195,6 +196,8 @@ var StaleLockTimeout = 30 * time.Minute
 // older than 30 minutes or if it was created on the current machine and the
 // process isn't alive any more.
 func (l *Lock) Stale() bool {
+	l.lock.Lock()
+	defer l.lock.Unlock()
 	debug.Log("testing if lock %v for process %d is stale", l, l.PID)
 	if time.Since(l.Time) > StaleLockTimeout {
 		debug.Log("lock is stale, timestamp is too old: %v\n", l.Time)
@@ -229,11 +232,16 @@ func (l *Lock) Stale() bool {
 // timestamp. Afterwards the old lock is removed.
 func (l *Lock) Refresh(ctx context.Context) error {
 	debug.Log("refreshing lock %v", l.lockID)
+	l.lock.Lock()
 	l.Time = time.Now()
+	l.lock.Unlock()
 	id, err := l.createLock(ctx)
 	if err != nil {
 		return err
 	}
+
+	l.lock.Lock()
+	defer l.lock.Unlock()
 
 	debug.Log("new lock ID %v", id)
 	oldLockID := l.lockID
@@ -242,7 +250,10 @@ func (l *Lock) Refresh(ctx context.Context) error {
 	return l.repo.Backend().Remove(context.TODO(), Handle{Type: LockFile, Name: oldLockID.String()})
 }
 
-func (l Lock) String() string {
+func (l *Lock) String() string {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+
 	text := fmt.Sprintf("PID %d on %s by %s (UID %d, GID %d)\nlock was created at %s (%s ago)\nstorage ID %v",
 		l.PID, l.Hostname, l.Username, l.UID, l.GID,
 		l.Time.Format("2006-01-02 15:04:05"), time.Since(l.Time),
