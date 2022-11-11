@@ -78,7 +78,7 @@ func (d *SnapshotsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 
 	for name, entry := range meta.names {
 		d := fuse.Dirent{
-			Inode: fs.GenerateDynamicInode(d.inode, name),
+			Inode: inodeFromName(d.inode, name),
 			Name:  name,
 			Type:  fuse.DT_Dir,
 		}
@@ -105,11 +105,11 @@ func (d *SnapshotsDir) Lookup(ctx context.Context, name string) (fs.Node, error)
 	entry := meta.names[name]
 	if entry != nil {
 		if entry.linkTarget != "" {
-			return newSnapshotLink(d.root, fs.GenerateDynamicInode(d.inode, name), entry.linkTarget, entry.snapshot)
+			return newSnapshotLink(d.root, inodeFromName(d.inode, name), entry.linkTarget, entry.snapshot)
 		} else if entry.snapshot != nil {
-			return newDirFromSnapshot(d.root, fs.GenerateDynamicInode(d.inode, name), entry.snapshot)
+			return newDirFromSnapshot(d.root, inodeFromName(d.inode, name), entry.snapshot)
 		} else {
-			return NewSnapshotsDir(d.root, fs.GenerateDynamicInode(d.inode, name), d.inode, d.dirStruct, d.prefix+"/"+name), nil
+			return NewSnapshotsDir(d.root, inodeFromName(d.inode, name), d.inode, d.dirStruct, d.prefix+"/"+name), nil
 		}
 	}
 

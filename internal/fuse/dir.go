@@ -182,7 +182,7 @@ func (d *dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 		}
 
 		ret = append(ret, fuse.Dirent{
-			Inode: fs.GenerateDynamicInode(d.inode, name),
+			Inode: inodeFromNode(d.inode, node),
 			Type:  typ,
 			Name:  name,
 		})
@@ -206,13 +206,13 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	}
 	switch node.Type {
 	case "dir":
-		return newDir(d.root, fs.GenerateDynamicInode(d.inode, name), d.inode, node)
+		return newDir(d.root, inodeFromNode(d.inode, node), d.inode, node)
 	case "file":
-		return newFile(d.root, fs.GenerateDynamicInode(d.inode, name), node)
+		return newFile(d.root, inodeFromNode(d.inode, node), node)
 	case "symlink":
-		return newLink(d.root, fs.GenerateDynamicInode(d.inode, name), node)
+		return newLink(d.root, inodeFromNode(d.inode, node), node)
 	case "dev", "chardev", "fifo", "socket":
-		return newOther(d.root, fs.GenerateDynamicInode(d.inode, name), node)
+		return newOther(d.root, inodeFromNode(d.inode, node), node)
 	default:
 		debug.Log("  node %v has unknown type %v", name, node.Type)
 		return nil, fuse.ENOENT
