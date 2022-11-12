@@ -14,7 +14,6 @@ import (
 	"github.com/restic/restic/internal/errors"
 
 	"bytes"
-	"runtime"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
@@ -295,10 +294,6 @@ func (node Node) writeNodeContent(ctx context.Context, repo Repository, f *os.Fi
 }
 
 func (node Node) createSymlinkAt(path string) error {
-	// Windows does not allow non-admins to create soft links.
-	if runtime.GOOS == "windows" {
-		return nil
-	}
 
 	if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return errors.Wrap(err, "Symlink")

@@ -51,7 +51,7 @@ func Rename(oldpath, newpath string) error {
 // Symlink creates newname as a symbolic link to oldname.
 // If there is an error, it will be of type *LinkError.
 func Symlink(oldname, newname string) error {
-	return os.Symlink(fixpath(oldname), fixpath(newname))
+	return os.Symlink(oldname, fixpath(newname))
 }
 
 // Link creates newname as a hard link to oldname.

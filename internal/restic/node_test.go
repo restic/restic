@@ -183,9 +183,6 @@ func TestNodeRestoreAt(t *testing.T) {
 		rtest.OK(t, test.CreateAt(context.TODO(), nodePath, nil))
 		rtest.OK(t, test.RestoreMetadata(nodePath))
 
-		if test.Type == "symlink" && runtime.GOOS == "windows" {
-			continue
-		}
 		if test.Type == "dir" {
 			rtest.OK(t, test.RestoreTimestamps(nodePath))
 		}
