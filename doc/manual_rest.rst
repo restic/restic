@@ -38,6 +38,7 @@ Usage help is available:
       rebuild-index Build a new index
       recover       Recover data from the repository not referenced by snapshots
       restore       Extract the data from a snapshot
+      rewrite       Rewrite snapshots to exclude unwanted files
       self-update   Update the restic binary
       snapshots     List all snapshots
       stats         Scan the repository and show basic statistics

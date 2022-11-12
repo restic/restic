@@ -475,7 +475,11 @@ func initExcludePatternOptions(f *pflag.FlagSet, opts *excludePatternOptions) {
 	f.StringArrayVar(&opts.InsensitiveExcludeFiles, "iexclude-file", nil, "same as --exclude-file but ignores casing of `file`names in patterns")
 }
 
-func collectExcludePatterns(opts excludePatternOptions) ([]RejectByNameFunc, error) {
+func (opts *excludePatternOptions) Empty() bool {
+	return len(opts.Excludes) == 0 && len(opts.InsensitiveExcludes) == 0 && len(opts.ExcludeFiles) == 0 && len(opts.InsensitiveExcludeFiles) == 0
+}
+
+func (opts excludePatternOptions) CollectPatterns() ([]RejectByNameFunc, error) {
 	var fs []RejectByNameFunc
 	// add patterns from file
 	if len(opts.ExcludeFiles) > 0 {

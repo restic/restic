@@ -204,6 +204,7 @@ Combined with ``--verbose``, you can see a list of changes:
     modified  /archive.tar.gz, saved in 0.140s (25.542 MiB added)
     Would be added to the repository: 25.551 MiB
 
+.. _backup-excluding-files:
 Excluding Files
 ***************
 
