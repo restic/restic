@@ -4,10 +4,13 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/" # Location of package manifests
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+    ignore:
+      - dependency-name: "bazil.org/fuse"
+      - dependency-name: "golang.org/x/oauth2" 
 
   # Dependencies listed in .github/workflows/*.yml
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
