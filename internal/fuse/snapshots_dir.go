@@ -10,8 +10,8 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
 
-	"bazil.org/fuse"
-	"bazil.org/fuse/fs"
+	"github.com/anacrolix/fuse"
+	"github.com/anacrolix/fuse/fs"
 )
 
 // SnapshotsDir is a actual fuse directory generated from SnapshotsDirStructure

@@ -11,8 +11,8 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
-	"bazil.org/fuse"
-	"bazil.org/fuse/fs"
+	"github.com/anacrolix/fuse"
+	"github.com/anacrolix/fuse/fs"
 )
 
 // The default block size to report in stat

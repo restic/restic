@@ -18,8 +18,8 @@ import (
 	resticfs "github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/fuse"
 
-	systemFuse "bazil.org/fuse"
-	"bazil.org/fuse/fs"
+	systemFuse "github.com/anacrolix/fuse"
+	"github.com/anacrolix/fuse/fs"
 )
 
 var cmdMount = &cobra.Command{
