@@ -1,0 +1,8 @@
+Enhancement: Add support for `credential_process` to S3 backend
+
+We have updated the library used for the S3 backend. This adds support for the
+`credential_process` option in the aws credential configuration.
+
+https://github.com/restic/restic/issues/3029
+https://github.com/restic/restic/issues/4034
+https://github.com/restic/restic/pull/4025
