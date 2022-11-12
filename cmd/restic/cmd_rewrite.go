@@ -73,7 +73,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 		return false, errors.Errorf("snapshot %v has nil tree", sn.ID().Str())
 	}
 
-	rejectByNameFuncs, err := collectExcludePatterns(opts.excludePatternOptions)
+	rejectByNameFuncs, err := opts.excludePatternOptions.CollectPatterns()
 	if err != nil {
 		return false, err
 	}

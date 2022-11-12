@@ -306,7 +306,7 @@ func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository, t
 		fs = append(fs, f)
 	}
 
-	fsPatterns, err := collectExcludePatterns(opts.excludePatternOptions)
+	fsPatterns, err := opts.excludePatternOptions.CollectPatterns()
 	if err != nil {
 		return nil, err
 	}

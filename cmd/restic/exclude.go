@@ -479,7 +479,7 @@ func (opts *excludePatternOptions) Empty() bool {
 	return len(opts.Excludes) == 0 && len(opts.InsensitiveExcludes) == 0 && len(opts.ExcludeFiles) == 0 && len(opts.InsensitiveExcludeFiles) == 0
 }
 
-func collectExcludePatterns(opts excludePatternOptions) ([]RejectByNameFunc, error) {
+func (opts excludePatternOptions) CollectPatterns() ([]RejectByNameFunc, error) {
 	var fs []RejectByNameFunc
 	// add patterns from file
 	if len(opts.ExcludeFiles) > 0 {
