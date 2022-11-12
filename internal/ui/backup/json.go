@@ -191,7 +191,7 @@ func (b *JSONProgress) Finish(snapshotID restic.ID, start time.Time, summary *Su
 		TotalFilesProcessed: summary.Files.New + summary.Files.Changed + summary.Files.Unchanged,
 		TotalBytesProcessed: summary.ProcessedBytes,
 		TotalDuration:       time.Since(start).Seconds(),
-		SnapshotID:          snapshotID.Str(),
+		SnapshotID:          snapshotID.String(),
 		DryRun:              dryRun,
 	})
 }
