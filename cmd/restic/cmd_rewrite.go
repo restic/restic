@@ -152,7 +152,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 }
 
 func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, args []string) error {
-	if len(opts.ExcludeFiles) == 0 && len(opts.Excludes) == 0 && len(opts.InsensitiveExcludes) == 0 {
+	if opts.excludePatternOptions.Empty() {
 		return errors.Fatal("Nothing to do: no excludes provided")
 	}
 
