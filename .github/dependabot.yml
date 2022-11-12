@@ -1,0 +1,16 @@
+version: 2
+updates:
+  # Dependencies listed in go.mod
+  - package-ecosystem: "gomod"
+    directory: "/" # Location of package manifests
+    schedule:
+      interval: "monthly"
+    ignore:
+      - dependency-name: "bazil.org/fuse"
+      - dependency-name: "golang.org/x/oauth2" 
+
+  # Dependencies listed in .github/workflows/*.yml
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
