@@ -46,7 +46,8 @@ func newAzureTestSuite(t testing.TB) *test.Suite {
 		Create: func(config interface{}) (restic.Backend, error) {
 			cfg := config.(azure.Config)
 
-			be, err := azure.Create(cfg, tr)
+			ctx := context.TODO()
+			be, err := azure.Create(ctx, cfg, tr)
 			if err != nil {
 				return nil, err
 			}
@@ -66,15 +67,15 @@ func newAzureTestSuite(t testing.TB) *test.Suite {
 		// OpenFn is a function that opens a previously created temporary repository.
 		Open: func(config interface{}) (restic.Backend, error) {
 			cfg := config.(azure.Config)
-
-			return azure.Open(cfg, tr)
+			ctx := context.TODO()
+			return azure.Open(ctx, cfg, tr)
 		},
 
 		// CleanupFn removes data created during the tests.
 		Cleanup: func(config interface{}) error {
 			cfg := config.(azure.Config)
-
-			be, err := azure.Open(cfg, tr)
+			ctx := context.TODO()
+			be, err := azure.Open(ctx, cfg, tr)
 			if err != nil {
 				return err
 			}
@@ -155,7 +156,7 @@ func TestUploadLargeFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	be, err := azure.Create(cfg, tr)
+	be, err := azure.Create(ctx, cfg, tr)
 	if err != nil {
 		t.Fatal(err)
 	}
