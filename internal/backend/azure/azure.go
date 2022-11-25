@@ -206,13 +206,10 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 		// if it's smaller than 256miB, then just create the file directly from the reader
 		blockBlobClient := be.container.NewBlockBlobClient(objName)
 
-		buf := make([]byte, saveLargeSize)
-
 		// upload it as a new "block", use the base64 hash for the ID
 		id := base64.StdEncoding.EncodeToString(rd.Hash())
 
-		blocks := []string{id}
-
+		buf := make([]byte, saveLargeSize)
 		reader := bytes.NewReader(buf)
 		_, err = blockBlobClient.StageBlock(ctx, id, streaming.NopCloser(reader), &blockblob.StageBlockOptions{
 			TransactionalContentMD5: rd.Hash(),
@@ -221,6 +218,7 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 			return errors.Wrap(err, "StageBlock")
 		}
 
+		blocks := []string{id}
 		_, err := blockBlobClient.CommitBlockList(ctx, blocks, &blockblob.CommitBlockListOptions{})
 		if err != nil {
 			return errors.Wrap(err, "CommitBlockList")
@@ -315,11 +313,11 @@ func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, 
 	objName := be.Filename(h)
 	blockBlobClient := be.container.NewBlobClient(objName)
 
-	start := int64(offset)
+	start := offset
 	var end int64
 
 	if length > 0 {
-		end = int64(offset + int64(length) - 1)
+		end = offset + int64(length) - 1
 	} else {
 		end = 0
 	}
@@ -327,7 +325,7 @@ func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, 
 	be.sem.GetToken()
 	resp, err := blockBlobClient.DownloadStream(ctx, &blob.DownloadStreamOptions{
 		Range: azblob.HTTPRange{
-			Offset: int64(start),
+			Offset: start,
 			Count:  end - start,
 		},
 	})
@@ -345,10 +343,9 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, 
 	debug.Log("%v", h)
 
 	objName := be.Filename(h)
+	blobClient := be.container.NewBlobClient(objName)
 
 	be.sem.GetToken()
-
-	blobClient := be.container.NewBlobClient(objName)
 	props, err := blobClient.GetProperties(ctx, nil)
 
 	if err != nil {
@@ -368,11 +365,10 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, 
 // Remove removes the blob with the given name and type.
 func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	objName := be.Filename(h)
+	blob := be.container.NewBlobClient(objName)
 
 	be.sem.GetToken()
-	blob := be.container.NewBlobClient(objName)
 	_, err := blob.Delete(ctx, &azblob.DeleteBlobOptions{})
-
 	be.sem.ReleaseToken()
 
 	debug.Log("Remove(%v) at %v -> err %v", h, objName, err)
@@ -401,7 +397,6 @@ func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.F
 
 	for lister.More() {
 		be.sem.GetToken()
-
 		resp, err := lister.NextPage(ctx)
 		be.sem.ReleaseToken()
 
