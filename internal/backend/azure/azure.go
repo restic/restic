@@ -347,13 +347,12 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, 
 
 	be.sem.GetToken()
 	props, err := blobClient.GetProperties(ctx, nil)
+	be.sem.ReleaseToken()
 
 	if err != nil {
 		debug.Log("blob.GetProperties err %v", err)
 		return restic.FileInfo{}, errors.Wrap(err, "blob.GetProperties")
 	}
-
-	be.sem.ReleaseToken()
 
 	fi := restic.FileInfo{
 		Size: *props.ContentLength,
