@@ -59,7 +59,7 @@ var config = Config{
 	Main:             "./cmd/restic",                           // package name for the main package
 	DefaultBuildTags: []string{"selfupdate"},                   // specify build tags which are always used
 	Tests:            []string{"./..."},                        // tests to run
-	MinVersion:       GoVersion{Major: 1, Minor: 15, Patch: 0}, // minimum Go version supported
+	MinVersion:       GoVersion{Major: 1, Minor: 18, Patch: 0}, // minimum Go version supported
 }
 
 // Config configures the build.
