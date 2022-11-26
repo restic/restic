@@ -7,7 +7,6 @@ updates:
       interval: "monthly"
     ignore:
       - dependency-name: "bazil.org/fuse"
-      - dependency-name: "golang.org/x/oauth2" 
 
   # Dependencies listed in .github/workflows/*.yml
   - package-ecosystem: "github-actions"
