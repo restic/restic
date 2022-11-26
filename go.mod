@@ -17,7 +17,7 @@ require (
 	github.com/gofrs/uuid v4.2.0+incompatible // indirect
 	github.com/golang-jwt/jwt/v4 v4.4.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/google/go-cmp v0.5.8
+	github.com/google/go-cmp v0.5.9
 	github.com/googleapis/gax-go/v2 v2.5.1 // indirect
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
