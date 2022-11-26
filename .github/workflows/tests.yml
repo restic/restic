@@ -200,7 +200,9 @@ jobs:
 
         # only run cloud backend tests for pull requests from and pushes to our
         # own repo, otherwise the secrets are not available
-        if: (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && matrix.test_cloud_backends
+        # Skip for Dependabot pull requests as these are run without secrets
+        # https://docs.github.com/en/code-security/dependabot/working-with-dependabot/automating-dependabot-with-github-actions#responding-to-events
+        if: (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && (github.actor != 'dependabot[bot]') && matrix.test_cloud_backends
 
       - name: Check changelog files with calens
         run: |
