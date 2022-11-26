@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -54,7 +55,8 @@ func waitForMount(t testing.TB, dir string) {
 	t.Errorf("subdir %q of dir %s never appeared", mountTestSubdir, dir)
 }
 
-func testRunMount(t testing.TB, gopts GlobalOptions, dir string) {
+func testRunMount(t testing.TB, gopts GlobalOptions, dir string, wg *sync.WaitGroup) {
+	defer wg.Done()
 	opts := MountOptions{
 		TimeTemplate: time.RFC3339,
 	}
@@ -87,8 +89,11 @@ func listSnapshots(t testing.TB, dir string) []string {
 func checkSnapshots(t testing.TB, global GlobalOptions, repo *repository.Repository, mountpoint, repodir string, snapshotIDs restic.IDs, expectedSnapshotsInFuseDir int) {
 	t.Logf("checking for %d snapshots: %v", len(snapshotIDs), snapshotIDs)
 
-	go testRunMount(t, global, mountpoint)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go testRunMount(t, global, mountpoint, &wg)
 	waitForMount(t, mountpoint)
+	defer wg.Wait()
 	defer testRunUmount(t, global, mountpoint)
 
 	if !snapshotsDirExists(t, mountpoint) {
