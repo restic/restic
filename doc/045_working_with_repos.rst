@@ -137,6 +137,7 @@ or the environment variable ``$RESTIC_FROM_KEY_HINT``.
     along with remotes which are configured in rclone.
 
 .. _copy-filtering-snapshots:
+
 Filtering snapshots to copy
 ---------------------------
 
