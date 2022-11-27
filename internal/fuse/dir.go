@@ -204,15 +204,16 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 		debug.Log("  Lookup(%v) -> not found", name)
 		return nil, fuse.ENOENT
 	}
+	inode := inodeFromNode(d.inode, node)
 	switch node.Type {
 	case "dir":
-		return newDir(d.root, inodeFromNode(d.inode, node), d.inode, node)
+		return newDir(d.root, inode, d.inode, node)
 	case "file":
-		return newFile(d.root, inodeFromNode(d.inode, node), node)
+		return newFile(d.root, inode, node)
 	case "symlink":
-		return newLink(d.root, inodeFromNode(d.inode, node), node)
+		return newLink(d.root, inode, node)
 	case "dev", "chardev", "fifo", "socket":
-		return newOther(d.root, inodeFromNode(d.inode, node), node)
+		return newOther(d.root, inode, node)
 	default:
 		debug.Log("  node %v has unknown type %v", name, node.Type)
 		return nil, fuse.ENOENT

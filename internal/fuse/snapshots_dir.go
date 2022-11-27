@@ -104,12 +104,13 @@ func (d *SnapshotsDir) Lookup(ctx context.Context, name string) (fs.Node, error)
 
 	entry := meta.names[name]
 	if entry != nil {
+		inode := inodeFromName(d.inode, name)
 		if entry.linkTarget != "" {
-			return newSnapshotLink(d.root, inodeFromName(d.inode, name), entry.linkTarget, entry.snapshot)
+			return newSnapshotLink(d.root, inode, entry.linkTarget, entry.snapshot)
 		} else if entry.snapshot != nil {
-			return newDirFromSnapshot(d.root, inodeFromName(d.inode, name), entry.snapshot)
+			return newDirFromSnapshot(d.root, inode, entry.snapshot)
 		} else {
-			return NewSnapshotsDir(d.root, inodeFromName(d.inode, name), d.inode, d.dirStruct, d.prefix+"/"+name), nil
+			return NewSnapshotsDir(d.root, inode, d.inode, d.dirStruct, d.prefix+"/"+name), nil
 		}
 	}
 
