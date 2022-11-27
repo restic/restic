@@ -5,8 +5,6 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "monthly"
-    ignore:
-      - dependency-name: "bazil.org/fuse"
 
   # Dependencies listed in .github/workflows/*.yml
   - package-ecosystem: "github-actions"
