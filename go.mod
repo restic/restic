@@ -4,7 +4,7 @@ require (
 	cloud.google.com/go/storage v1.25.0
 	github.com/Azure/azure-sdk-for-go v66.0.0+incompatible
 	github.com/anacrolix/fuse v0.2.0
-	github.com/cenkalti/backoff/v4 v4.1.3
+	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/cespare/xxhash/v2 v2.1.2
 	github.com/elithrar/simple-scrypt v1.3.0
 	github.com/go-ole/go-ole v1.2.6
