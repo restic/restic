@@ -9,7 +9,7 @@ require (
 	github.com/elithrar/simple-scrypt v1.3.0
 	github.com/go-ole/go-ole v1.2.6
 	github.com/google/go-cmp v0.5.9
-	github.com/hashicorp/golang-lru v0.5.4
+	github.com/hashicorp/golang-lru/v2 v2.0.1
 	github.com/juju/ratelimit v1.0.2
 	github.com/klauspost/compress v1.15.9
 	github.com/kurin/blazer v0.5.4-0.20211030221322-ba894c124ac6
