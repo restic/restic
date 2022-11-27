@@ -42,7 +42,7 @@ func ParseConfig(s string) (interface{}, error) {
 		// parse the "sftp://user@host/path" url format
 		url, err := url.Parse(s)
 		if err != nil {
-			return nil, errors.Wrap(err, "url.Parse")
+			return nil, errors.WithStack(err)
 		}
 		if url.User != nil {
 			user = url.User.Username()
