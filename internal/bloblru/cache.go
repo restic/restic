@@ -6,7 +6,7 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
 
-	"github.com/hashicorp/golang-lru/simplelru"
+	"github.com/hashicorp/golang-lru/v2/simplelru"
 )
 
 // Crude estimate of the overhead per blob: a SHA-256, a linked list node
@@ -17,7 +17,7 @@ const overhead = len(restic.ID{}) + 64
 // It is safe for concurrent access.
 type Cache struct {
 	mu sync.Mutex
-	c  *simplelru.LRU
+	c  *simplelru.LRU[restic.ID, []byte]
 
 	free, size int // Current and max capacity, in bytes.
 }
@@ -33,7 +33,7 @@ func New(size int) *Cache {
 	// The actual maximum will be smaller than size/overhead, because we
 	// evict entries (RemoveOldest in add) to maintain our size bound.
 	maxEntries := size / overhead
-	lru, err := simplelru.NewLRU(maxEntries, c.evict)
+	lru, err := simplelru.NewLRU[restic.ID, []byte](maxEntries, c.evict)
 	if err != nil {
 		panic(err) // Can only be maxEntries <= 0.
 	}
@@ -55,24 +55,21 @@ func (c *Cache) Add(id restic.ID, blob []byte) (old []byte) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	var key interface{} = id
-
-	if c.c.Contains(key) { // Doesn't update the recency list.
+	if c.c.Contains(id) { // Doesn't update the recency list.
 		return
 	}
 
 	// This loop takes at most min(maxEntries, maxchunksize/overhead)
 	// iterations.
 	for size > c.free {
-		_, val, _ := c.c.RemoveOldest()
-		b := val.([]byte)
+		_, b, _ := c.c.RemoveOldest()
 		if cap(b) > cap(old) {
 			// We can only return one buffer, so pick the largest.
 			old = b
 		}
 	}
 
-	c.c.Add(key, blob)
+	c.c.Add(id, blob)
 	c.free -= size
 
 	return old
@@ -80,17 +77,15 @@ func (c *Cache) Add(id restic.ID, blob []byte) (old []byte) {
 
 func (c *Cache) Get(id restic.ID) ([]byte, bool) {
 	c.mu.Lock()
-	value, ok := c.c.Get(id)
+	blob, ok := c.c.Get(id)
 	c.mu.Unlock()
 
 	debug.Log("bloblru.Cache: get %v, hit %v", id, ok)
 
-	blob, ok := value.([]byte)
 	return blob, ok
 }
 
-func (c *Cache) evict(key, value interface{}) {
-	blob := value.([]byte)
+func (c *Cache) evict(key restic.ID, blob []byte) {
 	debug.Log("bloblru.Cache: evict %v, %d bytes", key, cap(blob))
 	c.free += cap(blob) + overhead
 }
