@@ -51,17 +51,13 @@ func NewConfig() Config {
 
 // ParseConfig parses the string s and extract swift's container name and prefix.
 func ParseConfig(s string) (interface{}, error) {
-	data := strings.SplitN(s, ":", 3)
-	if len(data) != 3 {
+	if !strings.HasPrefix(s, "swift:") {
 		return nil, errors.New("invalid URL, expected: swift:container-name:/[prefix]")
 	}
+	s = strings.TrimPrefix(s, "swift:")
 
-	scheme, container, prefix := data[0], data[1], data[2]
-	if scheme != "swift" {
-		return nil, errors.Errorf("unexpected prefix: %s", data[0])
-	}
-
-	if len(prefix) == 0 {
+	container, prefix, _ := strings.Cut(s, ":")
+	if prefix == "" {
 		return nil, errors.Errorf("prefix is empty")
 	}
 

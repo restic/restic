@@ -92,14 +92,10 @@ func (h helpList) Swap(i, j int) {
 
 // splitKeyValue splits at the first equals (=) sign.
 func splitKeyValue(s string) (key string, value string) {
-	data := strings.SplitN(s, "=", 2)
-	key = strings.ToLower(strings.TrimSpace(data[0]))
-	if len(data) == 1 {
-		// no equals sign is treated as the empty value
-		return key, ""
-	}
-
-	return key, strings.TrimSpace(data[1])
+	key, value, _ = strings.Cut(s, "=")
+	key = strings.ToLower(strings.TrimSpace(key))
+	value = strings.TrimSpace(value)
+	return key, value
 }
 
 // Parse takes a slice of key=value pairs and returns an Options type.
