@@ -209,7 +209,12 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 		// upload it as a new "block", use the base64 hash for the ID
 		id := base64.StdEncoding.EncodeToString(rd.Hash())
 
-		buf := make([]byte, saveLargeSize)
+		buf := make([]byte, rd.Length())
+		_, err = io.ReadFull(rd, buf)
+		if err != nil {
+			return errors.Wrap(err, "ReadFull")
+		}
+
 		reader := bytes.NewReader(buf)
 		_, err = blockBlobClient.StageBlock(ctx, id, streaming.NopCloser(reader), &blockblob.StageBlockOptions{
 			TransactionalContentMD5: rd.Hash(),
