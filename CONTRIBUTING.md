@@ -76,7 +76,7 @@ Then use the `go` tool to build restic:
 
     $ go build ./cmd/restic
     $ ./restic version
-    restic 0.10.0-dev (compiled manually) compiled with go1.15.2 on linux/amd64
+    restic 0.14.0-dev (compiled manually) compiled with go1.19 on linux/amd64
 
 You can run all tests with the following command:
 

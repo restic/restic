@@ -1,10 +1,3 @@
-//go:build go1.16
-// +build go1.16
-
-// Before Go 1.16 filepath.Match returned early on a failed match,
-// and thus did not report any later syntax error in the pattern.
-// https://go.dev/doc/go1.16#path/filepath
-
 package filter_test
 
 import (
