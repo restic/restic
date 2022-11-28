@@ -372,6 +372,11 @@ func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	be.sem.ReleaseToken()
 
 	debug.Log("Remove(%v) at %v -> err %v", h, objName, err)
+
+	if bloberror.HasCode(err, bloberror.BlobNotFound) {
+		return nil
+	}
+
 	return errors.Wrap(err, "client.RemoveObject")
 }
 
