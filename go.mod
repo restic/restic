@@ -19,7 +19,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/profile v1.7.0
 	github.com/pkg/sftp v1.13.5
-	github.com/pkg/xattr v0.4.8
+	github.com/pkg/xattr v0.4.10-0.20221120235825-35026bbbd013
 	github.com/restic/chunker v0.4.0
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
@@ -27,7 +27,7 @@ require (
 	golang.org/x/net v0.0.0-20221014081412-f15817d10f9b
 	golang.org/x/oauth2 v0.0.0-20221014153046-6fdb5e3db783
 	golang.org/x/sync v0.1.0
-	golang.org/x/sys v0.0.0-20220818161305-2296e01440c6
+	golang.org/x/sys v0.2.0
 	golang.org/x/term v0.0.0-20220722155259-a9ba230a4035
 	golang.org/x/text v0.4.0
 	google.golang.org/api v0.103.0
