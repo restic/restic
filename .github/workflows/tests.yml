@@ -21,13 +21,11 @@ jobs:
           - job_name: Windows
             go: 1.19.x
             os: windows-latest
-            install_verb: install
 
           - job_name: macOS
             go: 1.19.x
             os: macOS-latest
             test_fuse: false
-            install_verb: install
 
           - job_name: Linux
             go: 1.19.x
@@ -35,20 +33,17 @@ jobs:
             test_cloud_backends: true
             test_fuse: true
             check_changelog: true
-            install_verb: install
 
           - job_name: Linux (race)
             go: 1.19.x
             os: ubuntu-latest
             test_fuse: true
             test_opts: "-race"
-            install_verb: install
 
           - job_name: Linux
             go: 1.18.x
             os: ubuntu-latest
             test_fuse: true
-            install_verb: install
 
     name: ${{ matrix.job_name }} Go ${{ matrix.go }}
     runs-on: ${{ matrix.os }}
@@ -65,7 +60,7 @@ jobs:
       - name: Get programs (Linux/macOS)
         run: |
           echo "build Go tools"
-          go ${{ matrix.install_verb }} github.com/restic/rest-server/cmd/rest-server@latest
+          go install github.com/restic/rest-server/cmd/rest-server@latest
 
           echo "install minio server"
           mkdir $HOME/bin
@@ -97,7 +92,7 @@ jobs:
           $ProgressPreference = 'SilentlyContinue'
 
           echo "build Go tools"
-          go ${{ matrix.install_verb }} github.com/restic/rest-server/...
+          go install github.com/restic/rest-server/...
 
           echo "install minio server"
           mkdir $Env:USERPROFILE/bin
