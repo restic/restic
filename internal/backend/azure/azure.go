@@ -200,36 +200,8 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 
 	var err error
 	if rd.Length() < saveLargeSize {
-		// wrap the reader so that net/http client cannot close the reader
-		// CreateBlockBlobFromReader reads length from `Len()``
-
 		// if it's smaller than 256miB, then just create the file directly from the reader
-		blockBlobClient := be.container.NewBlockBlobClient(objName)
-
-		// upload it as a new "block", use the base64 hash for the ID
-		id := base64.StdEncoding.EncodeToString(rd.Hash())
-
-		buf := make([]byte, rd.Length())
-		_, err = io.ReadFull(rd, buf)
-		if err != nil {
-			return errors.Wrap(err, "ReadFull")
-		}
-
-		reader := bytes.NewReader(buf)
-		_, err = blockBlobClient.StageBlock(ctx, id, streaming.NopCloser(reader), &blockblob.StageBlockOptions{
-			TransactionalContentMD5: rd.Hash(),
-		})
-		if err != nil {
-			return errors.Wrap(err, "StageBlock")
-		}
-
-		blocks := []string{id}
-		_, err := blockBlobClient.CommitBlockList(ctx, blocks, &blockblob.CommitBlockListOptions{})
-		if err != nil {
-			return errors.Wrap(err, "CommitBlockList")
-		}
-
-		return errors.Wrap(err, "CommitBlockList")
+		err = be.saveSmall(ctx, objName, rd)
 	} else {
 		// otherwise use the more complicated method
 		err = be.saveLarge(ctx, objName, rd)
@@ -238,11 +210,35 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 	be.sem.ReleaseToken()
 	debug.Log("%v, err %#v", objName, err)
 
-	return errors.Wrap(err, "CreateBlockBlobFromReader")
+	return err
+}
+
+func (be *Backend) saveSmall(ctx context.Context, objName string, rd restic.RewindReader) error {
+	blockBlobClient := be.container.NewBlockBlobClient(objName)
+
+	// upload it as a new "block", use the base64 hash for the ID
+	id := base64.StdEncoding.EncodeToString(rd.Hash())
+
+	buf := make([]byte, rd.Length())
+	_, err := io.ReadFull(rd, buf)
+	if err != nil {
+		return errors.Wrap(err, "ReadFull")
+	}
+
+	reader := bytes.NewReader(buf)
+	_, err = blockBlobClient.StageBlock(ctx, id, streaming.NopCloser(reader), &blockblob.StageBlockOptions{
+		TransactionalContentMD5: rd.Hash(),
+	})
+	if err != nil {
+		return errors.Wrap(err, "StageBlock")
+	}
+
+	blocks := []string{id}
+	_, err = blockBlobClient.CommitBlockList(ctx, blocks, &blockblob.CommitBlockListOptions{})
+	return errors.Wrap(err, "CommitBlockList")
 }
 
 func (be *Backend) saveLarge(ctx context.Context, objName string, rd restic.RewindReader) error {
-	// create the file on the server
 	blockBlobClient := be.container.NewBlockBlobClient(objName)
 
 	buf := make([]byte, 100*1024*1024)
