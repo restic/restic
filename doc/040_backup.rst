@@ -205,6 +205,7 @@ Combined with ``--verbose``, you can see a list of changes:
     Would be added to the repository: 25.551 MiB
 
 .. _backup-excluding-files:
+
 Excluding Files
 ***************
 

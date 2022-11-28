@@ -221,6 +221,8 @@ REST server uses exactly the same directory structure as local backend,
 so you should be able to access it both locally and via HTTP, even
 simultaneously.
 
+.. _Amazon S3:
+
 Amazon S3
 *********
 
