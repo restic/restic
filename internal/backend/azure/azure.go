@@ -314,20 +314,11 @@ func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, 
 	objName := be.Filename(h)
 	blockBlobClient := be.container.NewBlobClient(objName)
 
-	start := offset
-	var end int64
-
-	if length > 0 {
-		end = offset + int64(length) - 1
-	} else {
-		end = 0
-	}
-
 	be.sem.GetToken()
 	resp, err := blockBlobClient.DownloadStream(ctx, &blob.DownloadStreamOptions{
 		Range: azblob.HTTPRange{
-			Offset: start,
-			Count:  end - start,
+			Offset: offset,
+			Count:  int64(length),
 		},
 	})
 
