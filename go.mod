@@ -13,7 +13,7 @@ require (
 	github.com/juju/ratelimit v1.0.2
 	github.com/klauspost/compress v1.15.12
 	github.com/kurin/blazer v0.5.4-0.20211030221322-ba894c124ac6
-	github.com/minio/minio-go/v7 v7.0.44
+	github.com/minio/minio-go/v7 v7.0.45
 	github.com/minio/sha256-simd v1.0.0
 	github.com/ncw/swift/v2 v2.0.1
 	github.com/pkg/errors v0.9.1
