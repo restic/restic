@@ -1,0 +1,7 @@
+Enhancement: Support json output for the `init` command
+
+The `init` command ignored the `--json` flag. It now outputs a JSON message if
+the repository was created successfully.
+
+https://github.com/restic/restic/issues/3124
+https://github.com/restic/restic/pull/3132
