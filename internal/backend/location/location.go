@@ -127,6 +127,6 @@ func StripPassword(s string) string {
 }
 
 func extractScheme(s string) string {
-	data := strings.SplitN(s, ":", 2)
-	return data[0]
+	scheme, _, _ := strings.Cut(s, ":")
+	return scheme
 }
