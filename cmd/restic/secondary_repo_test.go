@@ -1,7 +1,7 @@
 package main
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -167,7 +167,7 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 	defer cleanup()
 
 	//Create temporary password file
-	err := ioutil.WriteFile(filepath.Join(dir, "passwordFileDst"), []byte("secretDst"), 0666)
+	err := os.WriteFile(filepath.Join(dir, "passwordFileDst"), []byte("secretDst"), 0666)
 	rtest.OK(t, err)
 
 	// Test all valid cases

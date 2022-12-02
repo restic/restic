@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -89,13 +88,13 @@ func TestIsExcludedByFile(t *testing.T) {
 			defer cleanup()
 
 			foo := filepath.Join(tempDir, "foo")
-			err := ioutil.WriteFile(foo, []byte("foo"), 0666)
+			err := os.WriteFile(foo, []byte("foo"), 0666)
 			if err != nil {
 				t.Fatalf("could not write file: %v", err)
 			}
 			if tc.tagFile != "" {
 				tagFile := filepath.Join(tempDir, tc.tagFile)
-				err = ioutil.WriteFile(tagFile, []byte(tc.content), 0666)
+				err = os.WriteFile(tagFile, []byte(tc.content), 0666)
 				if err != nil {
 					t.Fatalf("could not write tagfile: %v", err)
 				}
@@ -150,7 +149,7 @@ func TestMultipleIsExcludedByFile(t *testing.T) {
 		// create directories first, then the file
 		p := filepath.Join(tempDir, filepath.FromSlash(f.path))
 		errs = append(errs, os.MkdirAll(filepath.Dir(p), 0700))
-		errs = append(errs, ioutil.WriteFile(p, []byte(f.path), 0600))
+		errs = append(errs, os.WriteFile(p, []byte(f.path), 0600))
 	}
 	test.OKs(t, errs) // see if anything went wrong during the creation
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -81,7 +80,7 @@ func (*UpgradeRepoV2) upgrade(ctx context.Context, repo restic.Repository) error
 }
 
 func (m *UpgradeRepoV2) Apply(ctx context.Context, repo restic.Repository) error {
-	tempdir, err := ioutil.TempDir("", "restic-migrate-upgrade-repo-v2-")
+	tempdir, err := os.MkdirTemp("", "restic-migrate-upgrade-repo-v2-")
 	if err != nil {
 		return fmt.Errorf("create temp dir failed: %w", err)
 	}
@@ -91,7 +90,7 @@ func (m *UpgradeRepoV2) Apply(ctx context.Context, repo restic.Repository) error
 	// read raw config file and save it to a temp dir, just in case
 	var rawConfigFile []byte
 	err = repo.Backend().Load(ctx, h, 0, 0, func(rd io.Reader) (err error) {
-		rawConfigFile, err = ioutil.ReadAll(rd)
+		rawConfigFile, err = io.ReadAll(rd)
 		return err
 	})
 	if err != nil {
@@ -99,7 +98,7 @@ func (m *UpgradeRepoV2) Apply(ctx context.Context, repo restic.Repository) error
 	}
 
 	backupFileName := filepath.Join(tempdir, "config")
-	err = ioutil.WriteFile(backupFileName, rawConfigFile, 0600)
+	err = os.WriteFile(backupFileName, rawConfigFile, 0600)
 	if err != nil {
 		return fmt.Errorf("write config file backup to %v failed: %w", tempdir, err)
 	}

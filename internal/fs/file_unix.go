@@ -4,7 +4,6 @@
 package fs
 
 import (
-	"io/ioutil"
 	"os"
 	"syscall"
 )
@@ -18,7 +17,7 @@ func fixpath(name string) string {
 // TempFile creates a temporary file which has already been deleted (on
 // supported platforms)
 func TempFile(dir, prefix string) (f *os.File, err error) {
-	f, err = ioutil.TempFile(dir, prefix)
+	f, err = os.CreateTemp(dir, prefix)
 	if err != nil {
 		return nil, err
 	}

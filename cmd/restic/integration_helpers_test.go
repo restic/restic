@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -174,7 +173,7 @@ func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
 	restic.TestDisableCheckPolynomial(t)
 	retry.TestFastRetries(t)
 
-	tempdir, err := ioutil.TempDir(rtest.TestTempDir, "restic-test-")
+	tempdir, err := os.MkdirTemp(rtest.TestTempDir, "restic-test-")
 	rtest.OK(t, err)
 
 	env = &testEnvironment{

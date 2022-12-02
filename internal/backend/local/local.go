@@ -4,7 +4,6 @@ import (
 	"context"
 	"hash"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"syscall"
@@ -209,7 +208,7 @@ func (b *Local) Save(ctx context.Context, h restic.Handle, rd restic.RewindReade
 	return nil
 }
 
-var tempFile = ioutil.TempFile // Overridden by test.
+var tempFile = os.CreateTemp // Overridden by test.
 
 // Load runs fn with a reader that yields the contents of the file at h at the
 // given offset.

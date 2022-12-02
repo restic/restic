@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"io/ioutil"
 	"testing"
 	"time"
 
@@ -22,7 +21,7 @@ func TestBackendSaveRetry(t *testing.T) {
 		SaveFn: func(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
 			if errcount == 0 {
 				errcount++
-				_, err := io.CopyN(ioutil.Discard, rd, 120)
+				_, err := io.CopyN(io.Discard, rd, 120)
 				if err != nil {
 					return err
 				}
@@ -267,7 +266,7 @@ func TestBackendLoadRetry(t *testing.T) {
 
 	var buf []byte
 	err := retryBackend.Load(context.TODO(), restic.Handle{}, 0, 0, func(rd io.Reader) (err error) {
-		buf, err = ioutil.ReadAll(rd)
+		buf, err = io.ReadAll(rd)
 		return err
 	})
 	test.OK(t, err)

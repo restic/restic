@@ -1,7 +1,7 @@
 package fs
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -13,7 +13,7 @@ func TestExtendedStat(t *testing.T) {
 	defer cleanup()
 
 	filename := filepath.Join(tempdir, "file")
-	err := ioutil.WriteFile(filename, []byte("foobar"), 0640)
+	err := os.WriteFile(filename, []byte("foobar"), 0640)
 	if err != nil {
 		t.Fatal(err)
 	}

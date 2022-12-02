@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"strings"
 	"sync"
@@ -255,7 +254,7 @@ func runKey(ctx context.Context, gopts GlobalOptions, args []string) error {
 }
 
 func loadPasswordFromFile(pwdFile string) (string, error) {
-	s, err := ioutil.ReadFile(pwdFile)
+	s, err := os.ReadFile(pwdFile)
 	if os.IsNotExist(err) {
 		return "", errors.Fatalf("%s does not exist", pwdFile)
 	}

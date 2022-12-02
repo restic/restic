@@ -1,7 +1,7 @@
 package main
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -39,7 +39,7 @@ func TestBackupFailsWhenUsingInvalidPatternsFromFile(t *testing.T) {
 
 	// Create an exclude file with some invalid patterns
 	excludeFile := env.base + "/excludefile"
-	fileErr := ioutil.WriteFile(excludeFile, []byte("*.go\n*[._]log[.-][0-9]\n!*[._]log[.-][0-9]"), 0644)
+	fileErr := os.WriteFile(excludeFile, []byte("*.go\n*[._]log[.-][0-9]\n!*[._]log[.-][0-9]"), 0644)
 	if fileErr != nil {
 		t.Fatalf("Could not write exclude file: %v", fileErr)
 	}

@@ -3,7 +3,6 @@ package archiver
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -62,7 +61,7 @@ func createFilesAt(t testing.TB, targetdir string, files map[string]interface{})
 
 		switch it := item.(type) {
 		case TestFile:
-			err := ioutil.WriteFile(target, []byte(it.Content), 0600)
+			err := os.WriteFile(target, []byte(it.Content), 0600)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -129,7 +128,7 @@ func TestTestCreateFiles(t *testing.T) {
 						continue
 					}
 
-					content, err := ioutil.ReadFile(targetPath)
+					content, err := os.ReadFile(targetPath)
 					if err != nil {
 						t.Error(err)
 						continue

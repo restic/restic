@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"hash"
 	"io"
-	"io/ioutil"
 	"sync"
 
 	"github.com/cespare/xxhash/v2"
@@ -96,7 +95,7 @@ func (be *MemoryBackend) Save(ctx context.Context, h restic.Handle, rd restic.Re
 		return errors.New("file already exists")
 	}
 
-	buf, err := ioutil.ReadAll(rd)
+	buf, err := io.ReadAll(rd)
 	if err != nil {
 		return err
 	}
@@ -168,7 +167,7 @@ func (be *MemoryBackend) openReader(ctx context.Context, h restic.Handle, length
 		buf = buf[:length]
 	}
 
-	return be.sem.ReleaseTokenOnClose(ioutil.NopCloser(bytes.NewReader(buf)), nil), ctx.Err()
+	return be.sem.ReleaseTokenOnClose(io.NopCloser(bytes.NewReader(buf)), nil), ctx.Err()
 }
 
 // Stat returns information about a file in the backend.

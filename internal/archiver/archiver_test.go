@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -189,7 +188,7 @@ func TestArchiverSaveFileReaderFS(t *testing.T) {
 				ModTime:    ts,
 				Mode:       0123,
 				Name:       filename,
-				ReadCloser: ioutil.NopCloser(strings.NewReader(test.Data)),
+				ReadCloser: io.NopCloser(strings.NewReader(test.Data)),
 			}
 
 			node, stats := saveFile(t, repo, filename, readerFs)
@@ -304,7 +303,7 @@ func TestArchiverSaveReaderFS(t *testing.T) {
 				ModTime:    ts,
 				Mode:       0123,
 				Name:       filename,
-				ReadCloser: ioutil.NopCloser(strings.NewReader(test.Data)),
+				ReadCloser: io.NopCloser(strings.NewReader(test.Data)),
 			}
 
 			arch := New(repo, readerFs, Options{})

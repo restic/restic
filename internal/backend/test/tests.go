@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"reflect"
@@ -148,7 +147,7 @@ func (s *Suite) TestLoad(t *testing.T) {
 	}
 
 	err = b.Load(context.TODO(), handle, 0, 0, func(rd io.Reader) error {
-		_, err := io.Copy(ioutil.Discard, rd)
+		_, err := io.Copy(io.Discard, rd)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -189,7 +188,7 @@ func (s *Suite) TestLoad(t *testing.T) {
 
 		var buf []byte
 		err := b.Load(context.TODO(), handle, getlen, int64(o), func(rd io.Reader) (ierr error) {
-			buf, ierr = ioutil.ReadAll(rd)
+			buf, ierr = io.ReadAll(rd)
 			return ierr
 		})
 		if err != nil {
@@ -522,7 +521,7 @@ func (s *Suite) TestSave(t *testing.T) {
 	}
 
 	// test saving from a tempfile
-	tmpfile, err := ioutil.TempFile("", "restic-backend-save-test-")
+	tmpfile, err := os.CreateTemp("", "restic-backend-save-test-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -678,7 +677,7 @@ func store(t testing.TB, b restic.Backend, tpe restic.FileType, data []byte) res
 // testLoad loads a blob (but discards its contents).
 func testLoad(b restic.Backend, h restic.Handle, length int, offset int64) error {
 	return b.Load(context.TODO(), h, 0, 0, func(rd io.Reader) (ierr error) {
-		_, ierr = io.Copy(ioutil.Discard, rd)
+		_, ierr = io.Copy(io.Discard, rd)
 		return ierr
 	})
 }

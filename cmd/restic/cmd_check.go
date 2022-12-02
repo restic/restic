@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-	"io/ioutil"
 	"math/rand"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -171,7 +171,7 @@ func prepareCheckCache(opts CheckOptions, gopts *GlobalOptions) (cleanup func())
 	}
 
 	// use a cache in a temporary directory
-	tempdir, err := ioutil.TempDir(cachedir, "restic-check-cache-")
+	tempdir, err := os.MkdirTemp(cachedir, "restic-check-cache-")
 	if err != nil {
 		// if an error occurs, don't use any cache
 		Warnf("unable to create temporary directory for cache during check, disabling cache: %v\n", err)

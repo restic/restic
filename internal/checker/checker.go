@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"runtime"
 	"sort"
 	"sync"
@@ -556,7 +555,7 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 			}
 
 			// read remainder, which should be the pack header
-			hdrBuf, err = ioutil.ReadAll(bufRd)
+			hdrBuf, err = io.ReadAll(bufRd)
 			if err != nil {
 				return err
 			}

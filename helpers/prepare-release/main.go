@@ -73,13 +73,13 @@ func run(cmd string, args ...string) {
 func replace(filename, from, to string) {
 	reg := regexp.MustCompile(from)
 
-	buf, err := ioutil.ReadFile(filename)
+	buf, err := os.ReadFile(filename)
 	if err != nil {
 		die("error reading file %v: %v", filename, err)
 	}
 
 	buf = reg.ReplaceAll(buf, []byte(to))
-	err = ioutil.WriteFile(filename, buf, 0644)
+	err = os.WriteFile(filename, buf, 0644)
 	if err != nil {
 		die("error writing file %v: %v", filename, err)
 	}
@@ -308,7 +308,7 @@ var versionPattern = `var version = ".*"`
 const versionCodeFile = "cmd/restic/global.go"
 
 func updateVersion() {
-	err := ioutil.WriteFile("VERSION", []byte(opts.Version+"\n"), 0644)
+	err := os.WriteFile("VERSION", []byte(opts.Version+"\n"), 0644)
 	if err != nil {
 		die("unable to write version to file: %v", err)
 	}
@@ -420,7 +420,7 @@ func updateDocker(outputDir, version string) {
 }
 
 func tempdir(prefix string) string {
-	dir, err := ioutil.TempDir(getwd(), prefix)
+	dir, err := os.MkdirTemp(getwd(), prefix)
 	if err != nil {
 		die("unable to create temp dir %q: %v", prefix, err)
 	}

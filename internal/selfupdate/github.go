@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -80,7 +80,7 @@ func GitHubLatestRelease(ctx context.Context, owner, repo string) (Release, erro
 		return Release{}, fmt.Errorf("unexpected status %v (%v) returned", res.StatusCode, res.Status)
 	}
 
-	buf, err := ioutil.ReadAll(res.Body)
+	buf, err := io.ReadAll(res.Body)
 	if err != nil {
 		_ = res.Body.Close()
 		return Release{}, err
@@ -128,7 +128,7 @@ func getGithubData(ctx context.Context, url string) ([]byte, error) {
 		return nil, fmt.Errorf("unexpected status %v (%v) returned", res.StatusCode, res.Status)
 	}
 
-	buf, err := ioutil.ReadAll(res.Body)
+	buf, err := io.ReadAll(res.Body)
 	if err != nil {
 		_ = res.Body.Close()
 		return nil, err

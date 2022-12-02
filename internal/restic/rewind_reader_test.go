@@ -5,7 +5,6 @@ import (
 	"crypto/md5"
 	"hash"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -32,7 +31,7 @@ func TestFileReader(t *testing.T) {
 	defer cleanup()
 
 	filename := filepath.Join(d, "file-reader-test")
-	err := ioutil.WriteFile(filename, buf, 0600)
+	err := os.WriteFile(filename, buf, 0600)
 	if err != nil {
 		t.Fatal(err)
 	}

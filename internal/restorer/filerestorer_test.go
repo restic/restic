@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/restic/restic/internal/crypto"
@@ -171,7 +171,7 @@ func restoreAndVerify(t *testing.T, tempdir string, content []TestFile, files ma
 func verifyRestore(t *testing.T, r *fileRestorer, repo *TestRepo) {
 	for _, file := range r.files {
 		target := r.targetPath(file.location)
-		data, err := ioutil.ReadFile(target)
+		data, err := os.ReadFile(target)
 		if err != nil {
 			t.Errorf("unable to read file %v: %v", file.location, err)
 			continue

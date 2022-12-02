@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"io"
-	"io/ioutil"
 	"testing"
 )
 
@@ -22,7 +21,7 @@ func TestReader(t *testing.T) {
 		expectedHash := sha256.Sum256(data)
 
 		rd := NewReader(bytes.NewReader(data), sha256.New())
-		n, err := io.Copy(ioutil.Discard, rd)
+		n, err := io.Copy(io.Discard, rd)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -54,7 +53,7 @@ func BenchmarkReader(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		rd := NewReader(bytes.NewReader(buf), sha256.New())
-		n, err := io.Copy(ioutil.Discard, rd)
+		n, err := io.Copy(io.Discard, rd)
 		if err != nil {
 			b.Fatal(err)
 		}
