@@ -2,7 +2,6 @@ package local_test
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -17,7 +16,7 @@ func newTestSuite(t testing.TB) *test.Suite {
 	return &test.Suite{
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
 		NewConfig: func() (interface{}, error) {
-			dir, err := ioutil.TempDir(rtest.TestTempDir, "restic-test-local-")
+			dir, err := os.MkdirTemp(rtest.TestTempDir, "restic-test-local-")
 			if err != nil {
 				t.Fatal(err)
 			}

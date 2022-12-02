@@ -10,7 +10,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -69,7 +68,7 @@ func extractToFile(buf []byte, filename, target string, printf func(string, ...i
 
 	// Write everything to a temp file
 	dir := filepath.Dir(target)
-	new, err := ioutil.TempFile(dir, "restic")
+	new, err := os.CreateTemp(dir, "restic")
 	if err != nil {
 		return err
 	}

@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"io"
-	"io/ioutil"
 	"os"
 	"runtime"
 	"sync"
@@ -151,7 +150,7 @@ func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packe
 	}
 
 	hr := hashing.NewReader(rd, sha256.New())
-	_, err = io.Copy(ioutil.Discard, hr)
+	_, err = io.Copy(io.Discard, hr)
 	if err != nil {
 		return err
 	}

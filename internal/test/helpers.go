@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -131,7 +130,7 @@ func SetupTarTestFixture(t testing.TB, outputDir, tarFile string) {
 // Env creates a test environment and extracts the repository fixture.
 // Returned is the repo path and a cleanup function.
 func Env(t testing.TB, repoFixture string) (repodir string, cleanup func()) {
-	tempdir, err := ioutil.TempDir(TestTempDir, "restic-test-env-")
+	tempdir, err := os.MkdirTemp(TestTempDir, "restic-test-env-")
 	OK(t, err)
 
 	fd, err := os.Open(repoFixture)
@@ -195,7 +194,7 @@ func RemoveAll(t testing.TB, path string) {
 // TempDir returns a temporary directory that is removed when cleanup is
 // called, except if TestCleanupTempDirs is set to false.
 func TempDir(t testing.TB) (path string, cleanup func()) {
-	tempdir, err := ioutil.TempDir(TestTempDir, "restic-test-")
+	tempdir, err := os.MkdirTemp(TestTempDir, "restic-test-")
 	if err != nil {
 		t.Fatal(err)
 	}

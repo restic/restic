@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"sync"
 	"testing"
@@ -203,7 +202,7 @@ func TestBackendRemoveBroken(t *testing.T) {
 		_ = rd.Close()
 	}()
 	test.OK(t, err)
-	cached, err := ioutil.ReadAll(rd)
+	cached, err := io.ReadAll(rd)
 	test.OK(t, err)
 	if !bytes.Equal(cached, data) {
 		t.Fatalf("wrong data cache")

@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	mrand "math/rand"
 	"os"
 	"path/filepath"
@@ -65,7 +64,7 @@ func testRunBackupAssumeFailure(t testing.TB, dir string, target []string, opts 
 	term := termstatus.New(gopts.stdout, gopts.stderr, gopts.Quiet)
 	wg.Go(func() error { term.Run(ctx); return nil })
 
-	gopts.stdout = ioutil.Discard
+	gopts.stdout = io.Discard
 	t.Logf("backing up %v in %v", target, dir)
 	if dir != "" {
 		cleanup := rtest.Chdir(t, dir)
@@ -183,7 +182,7 @@ func testRunDiffOutput(gopts GlobalOptions, firstSnapshotID string, secondSnapsh
 }
 
 func testRunRebuildIndex(t testing.TB, gopts GlobalOptions) {
-	globalOptions.stdout = ioutil.Discard
+	globalOptions.stdout = io.Discard
 	defer func() {
 		globalOptions.stdout = os.Stdout
 	}()
@@ -419,7 +418,7 @@ func TestBackupNonExistingFile(t *testing.T) {
 	defer cleanup()
 
 	testSetupBackupData(t, env)
-	globalOptions.stderr = ioutil.Discard
+	globalOptions.stderr = io.Discard
 	defer func() {
 		globalOptions.stderr = os.Stderr
 	}()
@@ -641,7 +640,7 @@ func TestBackupErrors(t *testing.T) {
 	}()
 	opts := BackupOptions{}
 	gopts := env.gopts
-	gopts.stderr = ioutil.Discard
+	gopts.stderr = io.Discard
 	err := testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, gopts)
 	rtest.Assert(t, err != nil, "Assumed failure, but no error occurred.")
 	rtest.Assert(t, err == ErrInvalidSourceData, "Wrong error returned")
@@ -1243,7 +1242,7 @@ func TestRestoreLatest(t *testing.T) {
 	opts := BackupOptions{}
 
 	// chdir manually here so we can get the current directory. This is not the
-	// same as the temp dir returned by ioutil.TempDir() on darwin.
+	// same as the temp dir returned by os.MkdirTemp() on darwin.
 	back := rtest.Chdir(t, filepath.Dir(env.testdata))
 	defer back()
 
@@ -1308,7 +1307,7 @@ func TestRestoreWithPermissionFailure(t *testing.T) {
 	rtest.Assert(t, len(snapshots) > 0,
 		"no snapshots found in repo (%v)", datafile)
 
-	globalOptions.stderr = ioutil.Discard
+	globalOptions.stderr = io.Discard
 	defer func() {
 		globalOptions.stderr = os.Stderr
 	}()
@@ -1542,7 +1541,7 @@ func TestRebuildIndexFailsOnAppendOnly(t *testing.T) {
 	datafile := filepath.Join("..", "..", "internal", "checker", "testdata", "duplicate-packs-in-index-test-repo.tar.gz")
 	rtest.SetupTarTestFixture(t, env.base, datafile)
 
-	globalOptions.stdout = ioutil.Discard
+	globalOptions.stdout = io.Discard
 	defer func() {
 		globalOptions.stdout = os.Stdout
 	}()

@@ -3,7 +3,7 @@ package cache
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"os"
 	"runtime"
@@ -55,7 +55,7 @@ func load(t testing.TB, c *Cache, h restic.Handle) []byte {
 		t.Fatalf("load() returned nil reader")
 	}
 
-	buf, err := ioutil.ReadAll(rd)
+	buf, err := io.ReadAll(rd)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -174,7 +174,7 @@ func TestFileLoad(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			buf, err := ioutil.ReadAll(rd)
+			buf, err := io.ReadAll(rd)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -258,7 +258,7 @@ func TestFileSaveConcurrent(t *testing.T) {
 			}
 			defer func() { _ = f.Close() }()
 
-			read, err := ioutil.ReadAll(f)
+			read, err := io.ReadAll(f)
 			if err == nil && !bytes.Equal(read, data) {
 				err = errors.New("mismatch between Save and Load")
 			}

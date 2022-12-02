@@ -36,7 +36,7 @@ func fixpath(name string) string {
 
 // TempFile creates a temporary file which is marked as delete-on-close
 func TempFile(dir, prefix string) (f *os.File, err error) {
-	// slightly modified implementation of ioutil.TempFile(dir, prefix) to allow us to add
+	// slightly modified implementation of os.CreateTemp(dir, prefix) to allow us to add
 	// the FILE_ATTRIBUTE_TEMPORARY | FILE_FLAG_DELETE_ON_CLOSE flags.
 	// These provide two large benefits:
 	// FILE_ATTRIBUTE_TEMPORARY tells Windows to keep the file in memory only if possible

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"hash"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
@@ -89,7 +88,7 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, er
 		return nil, errors.Fatalf("server response unexpected: %v (%v)", resp.Status, resp.StatusCode)
 	}
 
-	_, err = io.Copy(ioutil.Discard, resp.Body)
+	_, err = io.Copy(io.Discard, resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +132,7 @@ func (b *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRea
 
 	// make sure that client.Post() cannot close the reader by wrapping it
 	req, err := http.NewRequestWithContext(ctx,
-		http.MethodPost, b.Filename(h), ioutil.NopCloser(rd))
+		http.MethodPost, b.Filename(h), io.NopCloser(rd))
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -150,7 +149,7 @@ func (b *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRea
 
 	var cerr error
 	if resp != nil {
-		_, _ = io.Copy(ioutil.Discard, resp.Body)
+		_, _ = io.Copy(io.Discard, resp.Body)
 		cerr = resp.Body.Close()
 	}
 
@@ -245,7 +244,7 @@ func (b *Backend) openReader(ctx context.Context, h restic.Handle, length int, o
 
 	if err != nil {
 		if resp != nil {
-			_, _ = io.Copy(ioutil.Discard, resp.Body)
+			_, _ = io.Copy(io.Discard, resp.Body)
 			_ = resp.Body.Close()
 		}
 		return nil, errors.Wrap(err, "client.Do")
@@ -283,7 +282,7 @@ func (b *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, e
 		return restic.FileInfo{}, errors.WithStack(err)
 	}
 
-	_, _ = io.Copy(ioutil.Discard, resp.Body)
+	_, _ = io.Copy(io.Discard, resp.Body)
 	if err = resp.Body.Close(); err != nil {
 		return restic.FileInfo{}, errors.Wrap(err, "Close")
 	}
@@ -348,7 +347,7 @@ func (b *Backend) Remove(ctx context.Context, h restic.Handle) error {
 		return errors.Errorf("blob not removed, server response: %v (%v)", resp.Status, resp.StatusCode)
 	}
 
-	_, err = io.Copy(ioutil.Discard, resp.Body)
+	_, err = io.Copy(io.Discard, resp.Body)
 	if err != nil {
 		return errors.Wrap(err, "Copy")
 	}

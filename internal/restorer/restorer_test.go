@@ -3,7 +3,7 @@ package restorer
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
+	"io"
 	"math"
 	"os"
 	"path/filepath"
@@ -401,7 +401,7 @@ func TestRestorer(t *testing.T) {
 			}
 
 			for filename, content := range test.Files {
-				data, err := ioutil.ReadFile(filepath.Join(tempdir, filepath.FromSlash(filename)))
+				data, err := os.ReadFile(filepath.Join(tempdir, filepath.FromSlash(filename)))
 				if err != nil {
 					t.Errorf("unable to read file %v: %v", filename, err)
 					continue
@@ -477,7 +477,7 @@ func TestRestorerRelative(t *testing.T) {
 			}
 
 			for filename, content := range test.Files {
-				data, err := ioutil.ReadFile(filepath.Join(tempdir, "restore", filepath.FromSlash(filename)))
+				data, err := os.ReadFile(filepath.Join(tempdir, "restore", filepath.FromSlash(filename)))
 				if err != nil {
 					t.Errorf("unable to read file %v: %v", filename, err)
 					continue
@@ -825,7 +825,7 @@ func TestVerifyCancel(t *testing.T) {
 	defer cancel()
 
 	rtest.OK(t, res.RestoreTo(ctx, tempdir))
-	err := ioutil.WriteFile(filepath.Join(tempdir, "foo"), []byte("bar"), 0644)
+	err := os.WriteFile(filepath.Join(tempdir, "foo"), []byte("bar"), 0644)
 	rtest.OK(t, err)
 
 	var errs []error
@@ -850,7 +850,7 @@ func TestRestorerSparseFiles(t *testing.T) {
 	target := &fs.Reader{
 		Mode:       0600,
 		Name:       "/zeros",
-		ReadCloser: ioutil.NopCloser(bytes.NewReader(zeros[:])),
+		ReadCloser: io.NopCloser(bytes.NewReader(zeros[:])),
 	}
 	sc := archiver.NewScanner(target)
 	err := sc.Scan(context.TODO(), []string{"/zeros"})
@@ -873,7 +873,7 @@ func TestRestorerSparseFiles(t *testing.T) {
 	rtest.OK(t, err)
 
 	filename := filepath.Join(tempdir, "zeros")
-	content, err := ioutil.ReadFile(filename)
+	content, err := os.ReadFile(filename)
 	rtest.OK(t, err)
 
 	rtest.Equals(t, len(zeros[:]), len(content))

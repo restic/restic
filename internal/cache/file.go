@@ -2,7 +2,6 @@ package cache
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -106,7 +105,7 @@ func (c *Cache) Save(h restic.Handle, rd io.Reader) error {
 
 	// First save to a temporary location. This allows multiple concurrent
 	// restics to use a single cache dir.
-	f, err := ioutil.TempFile(dir, "tmp-")
+	f, err := os.CreateTemp(dir, "tmp-")
 	if err != nil {
 		return err
 	}
