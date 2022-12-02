@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -366,7 +365,7 @@ func runBuild(sourceDir, outputDir, version string) {
 }
 
 func readdir(dir string) []string {
-	fis, err := ioutil.ReadDir(dir)
+	fis, err := os.ReadDir(dir)
 	if err != nil {
 		die("readdir %v failed: %v", dir, err)
 	}
