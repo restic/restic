@@ -191,12 +191,12 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOption
 		return err
 	}
 
-	plan, stats, err := planPrune(ctx, opts, gopts, repo, ignoreSnapshots)
+	plan, stats, err := planPrune(ctx, opts, repo, ignoreSnapshots, gopts.Quiet)
 	if err != nil {
 		return err
 	}
 
-	err = printPruneStats(gopts, stats)
+	err = printPruneStats(stats)
 	if err != nil {
 		return err
 	}
@@ -257,10 +257,10 @@ type packInfoWithID struct {
 
 // planPrune selects which files to rewrite and which to delete and which blobs to keep.
 // Also some summary statistics are returned.
-func planPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo restic.Repository, ignoreSnapshots restic.IDSet) (prunePlan, pruneStats, error) {
+func planPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, ignoreSnapshots restic.IDSet, quiet bool) (prunePlan, pruneStats, error) {
 	var stats pruneStats
 
-	usedBlobs, err := getUsedBlobs(ctx, gopts, repo, ignoreSnapshots)
+	usedBlobs, err := getUsedBlobs(ctx, repo, ignoreSnapshots, quiet)
 	if err != nil {
 		return prunePlan{}, stats, err
 	}
@@ -272,7 +272,7 @@ func planPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo
 	}
 
 	Verbosef("collecting packs for deletion and repacking\n")
-	plan, err := decidePackAction(ctx, opts, gopts, repo, indexPack, &stats)
+	plan, err := decidePackAction(ctx, opts, repo, indexPack, &stats, quiet)
 	if err != nil {
 		return prunePlan{}, stats, err
 	}
@@ -451,7 +451,7 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 	return usedBlobs, indexPack, nil
 }
 
-func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo restic.Repository, indexPack map[restic.ID]packInfo, stats *pruneStats) (prunePlan, error) {
+func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Repository, indexPack map[restic.ID]packInfo, stats *pruneStats, quiet bool) (prunePlan, error) {
 	removePacksFirst := restic.NewIDSet()
 	removePacks := restic.NewIDSet()
 	repackPacks := restic.NewIDSet()
@@ -467,7 +467,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 	}
 
 	// loop over all packs and decide what to do
-	bar := newProgressMax(!gopts.Quiet, uint64(len(indexPack)), "packs processed")
+	bar := newProgressMax(quiet, uint64(len(indexPack)), "packs processed")
 	err := repo.List(ctx, restic.PackFile, func(id restic.ID, packSize int64) error {
 		p, ok := indexPack[id]
 		if !ok {
@@ -641,7 +641,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 }
 
 // printPruneStats prints out the statistics
-func printPruneStats(gopts GlobalOptions, stats pruneStats) error {
+func printPruneStats(stats pruneStats) error {
 	Verboseff("\nused:         %10d blobs / %s\n", stats.blobs.used, ui.FormatBytes(stats.size.used))
 	if stats.blobs.duplicate > 0 {
 		Verboseff("duplicates:   %10d blobs / %s\n", stats.blobs.duplicate, ui.FormatBytes(stats.size.duplicate))
@@ -784,7 +784,7 @@ func rebuildIndexFiles(ctx context.Context, gopts GlobalOptions, repo restic.Rep
 	return DeleteFilesChecked(ctx, gopts, repo, obsoleteIndexes, restic.IndexFile)
 }
 
-func getUsedBlobs(ctx context.Context, gopts GlobalOptions, repo restic.Repository, ignoreSnapshots restic.IDSet) (usedBlobs restic.CountedBlobSet, err error) {
+func getUsedBlobs(ctx context.Context, repo restic.Repository, ignoreSnapshots restic.IDSet, quiet bool) (usedBlobs restic.CountedBlobSet, err error) {
 	var snapshotTrees restic.IDs
 	Verbosef("loading all snapshots...\n")
 	err = restic.ForAllSnapshots(ctx, repo.Backend(), repo, ignoreSnapshots,
@@ -805,7 +805,7 @@ func getUsedBlobs(ctx context.Context, gopts GlobalOptions, repo restic.Reposito
 
 	usedBlobs = restic.NewCountedBlobSet()
 
-	bar := newProgressMax(!gopts.Quiet, uint64(len(snapshotTrees)), "snapshots")
+	bar := newProgressMax(!quiet, uint64(len(snapshotTrees)), "snapshots")
 	defer bar.Done()
 
 	err = restic.FindUsedBlobs(ctx, repo, snapshotTrees, usedBlobs, bar)
