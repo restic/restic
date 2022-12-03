@@ -26,11 +26,8 @@ func (c *Cache) canBeCached(t restic.FileType) bool {
 		return false
 	}
 
-	if _, ok := cacheLayoutPaths[t]; !ok {
-		return false
-	}
-
-	return true
+	_, ok := cacheLayoutPaths[t]
+	return ok
 }
 
 type readCloser struct {
