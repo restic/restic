@@ -120,7 +120,6 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 	visitedTrees := restic.NewIDSet()
 
 	for sn := range FindFilteredSnapshots(ctx, srcSnapshotLister, srcRepo, opts.Hosts, opts.Tags, opts.Paths, args) {
-		Verbosef("\nsnapshot %s of %v at %s)\n", sn.ID().Str(), sn.Paths, sn.Time)
 
 		// check whether the destination has a snapshot with the same persistent ID which has similar snapshot fields
 		srcOriginal := *sn.ID()
@@ -131,7 +130,8 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 			isCopy := false
 			for _, originalSn := range originalSns {
 				if similarSnapshots(originalSn, sn) {
-					Verbosef("skipping source snapshot %s, was already copied to snapshot %s\n", sn.ID().Str(), originalSn.ID().Str())
+					Verboseff("\nsnapshot %s of %v at %s)\n", sn.ID().Str(), sn.Paths, sn.Time)
+					Verboseff("skipping source snapshot %s, was already copied to snapshot %s\n", sn.ID().Str(), originalSn.ID().Str())
 					isCopy = true
 					break
 				}
@@ -140,6 +140,7 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 				continue
 			}
 		}
+		Verbosef("\nsnapshot %s of %v at %s)\n", sn.ID().Str(), sn.Paths, sn.Time)
 		Verbosef("  copy started, this may take a while...\n")
 		if err := copyTree(ctx, srcRepo, dstRepo, visitedTrees, *sn.Tree, gopts.Quiet); err != nil {
 			return err

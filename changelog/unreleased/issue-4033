@@ -1,0 +1,9 @@
+Change: copy command no longer prints skipped existing snapshots by default
+
+Restic copy always printed each skipped snapshot that existed on the remote and
+would bury the snapshots that were copied amongst the output.  The new default
+only outputs new copies.  Increase the verbose level to see skipped existing
+snapshots.
+
+https://github.com/restic/restic/issues/4033
+https://github.com/restic/restic/pull/4066
