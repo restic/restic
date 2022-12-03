@@ -129,11 +129,26 @@ func TestLockFailedRefresh(t *testing.T) {
 	unlockRepo(lock)
 }
 
+type loggingBackend struct {
+	restic.Backend
+	t *testing.T
+}
+
+func (b *loggingBackend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+	b.t.Logf("save %v @ %v", h, time.Now())
+	return b.Backend.Save(ctx, h, rd)
+}
+
 func TestLockSuccessfulRefresh(t *testing.T) {
-	repo, cleanup, _ := openTestRepo(t, nil)
+	repo, cleanup, _ := openTestRepo(t, func(r restic.Backend) (restic.Backend, error) {
+		return &loggingBackend{
+			Backend: r,
+			t:       t,
+		}, nil
+	})
 	defer cleanup()
 
-	t.Log("test for successful lock refresh")
+	t.Logf("test for successful lock refresh %v", time.Now())
 	// reduce locking intervals to be suitable for testing
 	ri, rt := refreshInterval, refreshabilityTimeout
 	refreshInterval = 40 * time.Millisecond
