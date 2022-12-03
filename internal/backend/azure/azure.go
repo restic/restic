@@ -8,7 +8,6 @@ import (
 	"hash"
 	"io"
 	"net/http"
-	"os"
 	"path"
 	"strings"
 
@@ -130,7 +129,8 @@ func (be *Backend) SetListMaxItems(i int) {
 // IsNotExist returns true if the error is caused by a not existing file.
 func (be *Backend) IsNotExist(err error) bool {
 	debug.Log("IsNotExist(%T, %#v)", err, err)
-	return os.IsNotExist(err)
+	var aerr storage.AzureStorageServiceError
+	return errors.As(err, &aerr) && aerr.StatusCode == http.StatusNotFound
 }
 
 // Join combines path components with slashes.

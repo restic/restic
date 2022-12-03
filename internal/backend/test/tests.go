@@ -92,6 +92,7 @@ func (s *Suite) TestConfig(t *testing.T) {
 	if err == nil {
 		t.Fatalf("did not get expected error for non-existing config")
 	}
+	test.Assert(t, b.IsNotExist(err), "IsNotExist() did not recognize error from LoadAll(): %v", err)
 
 	err = b.Save(context.TODO(), restic.Handle{Type: restic.ConfigFile}, restic.NewByteReader([]byte(testString), b.Hasher()))
 	if err != nil {
@@ -131,11 +132,13 @@ func (s *Suite) TestLoad(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Load() did not return an error for invalid handle")
 	}
+	test.Assert(t, !b.IsNotExist(err), "IsNotExist() should not accept an invalid handle error: %v", err)
 
 	err = testLoad(b, restic.Handle{Type: restic.PackFile, Name: "foobar"}, 0, 0)
 	if err == nil {
 		t.Fatalf("Load() did not return an error for non-existing blob")
 	}
+	test.Assert(t, b.IsNotExist(err), "IsNotExist() did not recognize non-existing blob: %v", err)
 
 	length := rand.Intn(1<<24) + 2000
 
@@ -762,6 +765,8 @@ func (s *Suite) TestBackend(t *testing.T) {
 	b := s.open(t)
 	defer s.close(t, b)
 
+	test.Assert(t, !b.IsNotExist(nil), "IsNotExist() recognized nil error")
+
 	for _, tpe := range []restic.FileType{
 		restic.PackFile, restic.KeyFile, restic.LockFile,
 		restic.SnapshotFile, restic.IndexFile,
@@ -780,10 +785,12 @@ func (s *Suite) TestBackend(t *testing.T) {
 			// try to stat a not existing blob
 			_, err = b.Stat(context.TODO(), h)
 			test.Assert(t, err != nil, "blob data could be extracted before creation")
+			test.Assert(t, b.IsNotExist(err), "IsNotExist() did not recognize Stat() error: %v", err)
 
 			// try to read not existing blob
 			err = testLoad(b, h, 0, 0)
 			test.Assert(t, err != nil, "blob could be read before creation")
+			test.Assert(t, b.IsNotExist(err), "IsNotExist() did not recognize Load() error: %v", err)
 
 			// try to get string out, should fail
 			ret, err = beTest(context.TODO(), b, h)
