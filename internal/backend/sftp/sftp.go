@@ -495,28 +495,6 @@ func (r *SFTP) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, erro
 	return restic.FileInfo{Size: fi.Size(), Name: h.Name}, nil
 }
 
-// Test returns true if a blob of the given type and name exists in the backend.
-func (r *SFTP) Test(ctx context.Context, h restic.Handle) (bool, error) {
-	debug.Log("Test(%v)", h)
-	if err := r.clientError(); err != nil {
-		return false, err
-	}
-
-	r.sem.GetToken()
-	defer r.sem.ReleaseToken()
-
-	_, err := r.c.Lstat(r.Filename(h))
-	if errors.Is(err, os.ErrNotExist) {
-		return false, nil
-	}
-
-	if err != nil {
-		return false, errors.Wrap(err, "Lstat")
-	}
-
-	return true, nil
-}
-
 // Remove removes the content stored at name.
 func (r *SFTP) Remove(ctx context.Context, h restic.Handle) error {
 	debug.Log("Remove(%v)", h)

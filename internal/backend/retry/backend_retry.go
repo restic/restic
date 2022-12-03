@@ -151,17 +151,6 @@ func (be *Backend) Remove(ctx context.Context, h restic.Handle) (err error) {
 	})
 }
 
-// Test a boolean value whether a File with the name and type exists.
-func (be *Backend) Test(ctx context.Context, h restic.Handle) (exists bool, err error) {
-	err = be.retry(ctx, fmt.Sprintf("Test(%v)", h), func() error {
-		var innerError error
-		exists, innerError = be.Backend.Test(ctx, h)
-
-		return innerError
-	})
-	return exists, err
-}
-
 // List runs fn for each file in the backend which has the type t. When an
 // error is returned by the underlying backend, the request is retried. When fn
 // returns an error, the operation is aborted and the error is returned to the

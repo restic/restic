@@ -738,11 +738,11 @@ func (r *Repository) Init(ctx context.Context, version uint, password string, ch
 		return fmt.Errorf("repository version %v too low", version)
 	}
 
-	has, err := r.be.Test(ctx, restic.Handle{Type: restic.ConfigFile})
-	if err != nil {
+	_, err := r.be.Stat(ctx, restic.Handle{Type: restic.ConfigFile})
+	if err != nil && !r.be.IsNotExist(err) {
 		return err
 	}
-	if has {
+	if err == nil {
 		return errors.New("repository master key and config already initialized")
 	}
 

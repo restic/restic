@@ -1873,10 +1873,6 @@ type noCancelBackend struct {
 	restic.Backend
 }
 
-func (c *noCancelBackend) Test(ctx context.Context, h restic.Handle) (bool, error) {
-	return c.Backend.Test(context.Background(), h)
-}
-
 func (c *noCancelBackend) Remove(ctx context.Context, h restic.Handle) error {
 	return c.Backend.Remove(context.Background(), h)
 }

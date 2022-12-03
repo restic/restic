@@ -308,16 +308,6 @@ func (b *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, e
 	return bi, nil
 }
 
-// Test returns true if a blob of the given type and name exists in the backend.
-func (b *Backend) Test(ctx context.Context, h restic.Handle) (bool, error) {
-	_, err := b.Stat(ctx, h)
-	if err != nil {
-		return false, nil
-	}
-
-	return true, nil
-}
-
 // Remove removes the blob with the given name and type.
 func (b *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	if err := h.Valid(); err != nil {

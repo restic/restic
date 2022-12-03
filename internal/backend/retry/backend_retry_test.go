@@ -289,9 +289,7 @@ func TestBackendCanceledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	_, err := retryBackend.Test(ctx, h)
-	assertIsCanceled(t, err)
-	_, err = retryBackend.Stat(ctx, h)
+	_, err := retryBackend.Stat(ctx, h)
 	assertIsCanceled(t, err)
 
 	err = retryBackend.Save(ctx, h, restic.NewByteReader([]byte{}, nil))

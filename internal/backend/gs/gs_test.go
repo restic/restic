@@ -47,12 +47,12 @@ func newGSTestSuite(t testing.TB) *test.Suite {
 				return nil, err
 			}
 
-			exists, err := be.Test(context.TODO(), restic.Handle{Type: restic.ConfigFile})
-			if err != nil {
+			_, err = be.Stat(context.TODO(), restic.Handle{Type: restic.ConfigFile})
+			if err != nil && !be.IsNotExist(err) {
 				return nil, err
 			}
 
-			if exists {
+			if err == nil {
 				return nil, errors.New("config already exists")
 			}
 
