@@ -170,9 +170,6 @@ func isAccessDenied(err error) bool {
 // IsNotExist returns true if the error is caused by a not existing file.
 func (be *Backend) IsNotExist(err error) bool {
 	debug.Log("IsNotExist(%T, %#v)", err, err)
-	if errors.Is(err, os.ErrNotExist) {
-		return true
-	}
 
 	var e minio.ErrorResponse
 	return errors.As(err, &e) && e.Code == "NoSuchKey"

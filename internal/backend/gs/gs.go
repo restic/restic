@@ -170,11 +170,6 @@ func (be *Backend) SetListMaxItems(i int) {
 // IsNotExist returns true if the error is caused by a not existing file.
 func (be *Backend) IsNotExist(err error) bool {
 	debug.Log("IsNotExist(%T, %#v)", err, err)
-
-	if os.IsNotExist(err) {
-		return true
-	}
-
 	var gerr *googleapi.Error
 	return errors.As(err, &gerr) && gerr.Code == 404
 }
