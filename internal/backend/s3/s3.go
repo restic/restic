@@ -392,23 +392,6 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 	return restic.FileInfo{Size: fi.Size, Name: h.Name}, nil
 }
 
-// Test returns true if a blob of the given type and name exists in the backend.
-func (be *Backend) Test(ctx context.Context, h restic.Handle) (bool, error) {
-	found := false
-	objName := be.Filename(h)
-
-	be.sem.GetToken()
-	_, err := be.client.StatObject(ctx, be.cfg.Bucket, objName, minio.StatObjectOptions{})
-	be.sem.ReleaseToken()
-
-	if err == nil {
-		found = true
-	}
-
-	// If error, then not found
-	return found, nil
-}
-
 // Remove removes the blob with the given name and type.
 func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	objName := be.Filename(h)

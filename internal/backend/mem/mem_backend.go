@@ -52,23 +52,6 @@ func New() *MemoryBackend {
 	return be
 }
 
-// Test returns whether a file exists.
-func (be *MemoryBackend) Test(ctx context.Context, h restic.Handle) (bool, error) {
-	be.sem.GetToken()
-	defer be.sem.ReleaseToken()
-
-	be.m.Lock()
-	defer be.m.Unlock()
-
-	debug.Log("Test %v", h)
-
-	if _, ok := be.data[h]; ok {
-		return true, ctx.Err()
-	}
-
-	return false, ctx.Err()
-}
-
 // IsNotExist returns true if the file does not exist.
 func (be *MemoryBackend) IsNotExist(err error) bool {
 	return errors.Is(err, errNotFound)
