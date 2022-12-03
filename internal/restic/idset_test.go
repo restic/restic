@@ -2,6 +2,8 @@ package restic
 
 import (
 	"testing"
+
+	rtest "github.com/restic/restic/internal/test"
 )
 
 var idsetTests = []struct {
@@ -22,6 +24,8 @@ var idsetTests = []struct {
 
 func TestIDSet(t *testing.T) {
 	set := NewIDSet()
+	rtest.Equals(t, "{}", set.String())
+
 	for i, test := range idsetTests {
 		seen := set.Has(test.id)
 		if seen != test.seen {
@@ -29,4 +33,6 @@ func TestIDSet(t *testing.T) {
 		}
 		set.Insert(test.id)
 	}
+
+	rtest.Equals(t, "{1285b303 7bb086db f658198b}", set.String())
 }
