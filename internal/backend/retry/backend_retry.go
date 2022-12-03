@@ -139,6 +139,10 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (fi restic.FileInf
 			var innerError error
 			fi, innerError = be.Backend.Stat(ctx, h)
 
+			if be.Backend.IsNotExist(innerError) {
+				// do not retry if file is not found, as stat is usually used  to check whether a file exists
+				return backoff.Permanent(innerError)
+			}
 			return innerError
 		})
 	return fi, err

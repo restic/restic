@@ -274,6 +274,32 @@ func TestBackendLoadRetry(t *testing.T) {
 	test.Equals(t, 2, attempt)
 }
 
+func TestBackendStatNotExists(t *testing.T) {
+	// stat should not retry if the error matches IsNotExist
+	notFound := errors.New("not found")
+	attempt := 0
+
+	be := mock.NewBackend()
+	be.StatFn = func(ctx context.Context, h restic.Handle) (restic.FileInfo, error) {
+		attempt++
+		if attempt > 1 {
+			t.Fail()
+			return restic.FileInfo{}, errors.New("must not retry")
+		}
+		return restic.FileInfo{}, notFound
+	}
+	be.IsNotExistFn = func(err error) bool {
+		return errors.Is(err, notFound)
+	}
+
+	TestFastRetries(t)
+	retryBackend := New(be, 10, nil, nil)
+
+	_, err := retryBackend.Stat(context.TODO(), restic.Handle{})
+	test.Assert(t, be.IsNotExistFn(err), "unexpected error %v", err)
+	test.Equals(t, 1, attempt)
+}
+
 func assertIsCanceled(t *testing.T, err error) {
 	test.Assert(t, err == context.Canceled, "got unexpected err %v", err)
 }
