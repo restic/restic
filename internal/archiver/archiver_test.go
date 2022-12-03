@@ -1996,6 +1996,7 @@ func TestArchiverAbortEarlyOnError(t *testing.T) {
 		{
 			src: TestDir{
 				"dir": TestDir{
+					"file0": TestFile{Content: string(restictest.Random(0, 1024))},
 					"file1": TestFile{Content: string(restictest.Random(1, 1024))},
 					"file2": TestFile{Content: string(restictest.Random(2, 1024))},
 					"file3": TestFile{Content: string(restictest.Random(3, 1024))},
@@ -2008,15 +2009,15 @@ func TestArchiverAbortEarlyOnError(t *testing.T) {
 				},
 			},
 			wantOpen: map[string]uint{
+				filepath.FromSlash("dir/file0"): 1,
 				filepath.FromSlash("dir/file1"): 1,
 				filepath.FromSlash("dir/file2"): 1,
 				filepath.FromSlash("dir/file3"): 1,
-				filepath.FromSlash("dir/file4"): 1,
 				filepath.FromSlash("dir/file8"): 0,
 				filepath.FromSlash("dir/file9"): 0,
 			},
-			// fails four to six files were opened as the FileReadConcurrency allows for
-			// two queued files
+			// fails after four to seven files were opened, as the ReadConcurrency allows for
+			// two queued files and SaveBlobConcurrency for one blob queued for saving.
 			failAfter: 4,
 			err:       testErr,
 		},
@@ -2050,7 +2051,8 @@ func TestArchiverAbortEarlyOnError(t *testing.T) {
 
 			// at most two files may be queued
 			arch := New(testRepo, testFS, Options{
-				ReadConcurrency: 2,
+				ReadConcurrency:     2,
+				SaveBlobConcurrency: 1,
 			})
 
 			_, _, err := arch.Snapshot(ctx, []string{"."}, SnapshotOptions{Time: time.Now()})
