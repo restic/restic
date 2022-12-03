@@ -31,7 +31,7 @@ func (s IDSet) Delete(id ID) {
 	delete(s, id)
 }
 
-// List returns a slice of all IDs in the set.
+// List returns a sorted slice of all IDs in the set.
 func (s IDSet) List() IDs {
 	list := make(IDs, 0, len(s))
 	for id := range s {
@@ -103,9 +103,5 @@ func (s IDSet) Sub(other IDSet) (result IDSet) {
 
 func (s IDSet) String() string {
 	str := s.List().String()
-	if len(str) < 2 {
-		return "{}"
-	}
-
 	return "{" + str[1:len(str)-1] + "}"
 }
