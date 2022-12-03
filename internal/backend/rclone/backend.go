@@ -239,7 +239,7 @@ func newBackend(cfg Config, lim limiter.Limiter) (*Backend, error) {
 		// wait for rclone to exit
 		wg.Wait()
 		// try to return the program exit code if communication with rclone has failed
-		if be.waitResult != nil && (errors.Is(err, context.Canceled) || errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, syscall.EPIPE)) {
+		if be.waitResult != nil && (errors.Is(err, context.Canceled) || errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, syscall.EPIPE) || errors.Is(err, os.ErrClosed)) {
 			err = be.waitResult
 		}
 
