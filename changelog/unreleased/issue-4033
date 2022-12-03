@@ -1,0 +1,20 @@
+# The first line must start with Bugfix:, Enhancement: or Change:,
+# including the colon. Use present tense. Remove lines starting with '#'
+# from this template.
+Change: copy command no longer prints skipped existing snapshots by default
+
+# Describe the problem in the past tense, the new behavior in the present
+# tense. Mention the affected commands, backends, operating systems, etc.
+# Focus on user-facing behavior, not the implementation.
+
+Restic copy always printed each skipped snapshot that existed on the remote and
+would bury the snapshots that were copied amongst the output.  The new default
+only outputs new copies.  Increase the verbose level to see skipped existing
+snapshots.
+
+# The last section is a list of issue, PR and forum URLs.
+# The first issue ID determines the filename for the changelog entry:
+# changelog/unreleased/issue-1234. If there are no relevant issue links,
+# use the PR ID and call the file pull-55555.
+
+https://github.com/restic/restic/issues/4033
