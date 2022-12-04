@@ -164,9 +164,10 @@ yearly snapshots to keep, and any other snapshots will be removed.
     removal, some security considerations are important. Please refer to the
     section below for more information.
 
-.. note:: You can always use the ``--dry-run`` option of the ``forget`` command,
-    which instructs restic to not remove anything but instead just print what
-    actions would be performed.
+.. note:: You can always use the ``--dry-run`` option of the ``forget``
+    command or set the environment variable RESTIC_DRY_RUN, which instructs
+    restic to not remove anything but instead just print what actions would be
+    performed.
 
 The ``forget`` command accepts the following policy options:
 
@@ -443,7 +444,8 @@ The ``prune`` command accepts the following options:
   your repository exceeds the value given by ``--max-unused``.
   The default value is false.
 
--  ``--dry-run`` only show what ``prune`` would do.
+-  ``--dry-run`` only show what ``prune`` would do. Alternatively, set the
+  environment variable RESTIC_DRY_RUN
 
 -  ``--verbose`` increased verbosity shows additional statistics for ``prune``.
 

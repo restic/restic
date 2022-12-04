@@ -226,9 +226,9 @@ repository. Run the ``prune`` command afterwards to remove the now unreferenced
 data (just like when having used the ``forget`` command).
 
 In order to preview the changes which ``rewrite`` would make, you can use the
-``--dry-run`` option. This will simulate the rewriting process without actually
-modifying the repository. Instead restic will only print the actions it would
-perform.
+``--dry-run`` option or set the environment variable $RESTIC_DRY_RUN. This
+will simulate the rewriting process without actually modifying the repository.
+Instead restic will only print the actions it would perform.
 
 
 Checking integrity and consistency

@@ -195,6 +195,8 @@ modifying the repository.
 
 -  ``--dry-run``/``-n`` Report what would be done, without writing to the repository
 
+Alternatively, you can set the environment variable RESTIC_DRY_RUN.
+
 Combined with ``--verbose``, you can see a list of changes:
 
 .. code-block:: console

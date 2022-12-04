@@ -95,7 +95,7 @@ command:
       restic backup [flags] [FILE/DIR] ...
 
     Flags:
-      -n, --dry-run                                do not upload or write any data, just show what would be done
+      -n, --dry-run                                do not upload or write any data, just show what would be done (or set $RESTIC_DRY_MODE)
       -e, --exclude pattern                        exclude a pattern (can be specified multiple times)
           --exclude-caches                         excludes cache directories that are marked with a CACHEDIR.TAG file. See https://bford.info/cachedir/ for the Cache Directory Tagging Standard
           --exclude-file file                      read exclude patterns from a file (can be specified multiple times)
