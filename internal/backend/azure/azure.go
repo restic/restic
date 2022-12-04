@@ -151,8 +151,7 @@ func (be *Backend) SetListMaxItems(i int) {
 // IsNotExist returns true if the error is caused by a not existing file.
 func (be *Backend) IsNotExist(err error) bool {
 	debug.Log("IsNotExist(%T, %#v)", err, err)
-	var aerr bloberror.BlobNotFound
-	return errors.As(err, &aerr) && aerr.StatusCode == http.StatusNotFound
+	return bloberror.HasCode(err, bloberror.BlobNotFound)
 }
 
 // Join combines path components with slashes.
