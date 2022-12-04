@@ -265,11 +265,6 @@ binary, you can get it with `docker pull` like this:
 
     $ docker pull restic/restic
 
-.. note::
-   | Another docker container which offers more configuration options is
-   | available as a contribution (Thank you!). You can find it at
-   | https://github.com/Lobaro/restic-backup-docker
-
 From Source
 ***********
 
