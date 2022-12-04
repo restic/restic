@@ -66,6 +66,8 @@ func init() {
 
 	initMultiSnapshotFilterOptions(f, &rewriteOptions.snapshotFilterOptions, true)
 	initExcludePatternOptions(f, &rewriteOptions.excludePatternOptions)
+
+	backupOptions.DryRun = isDryRunByEnv(backupOptions.DryRun)
 }
 
 func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *restic.Snapshot, opts RewriteOptions) (bool, error) {

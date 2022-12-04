@@ -97,6 +97,8 @@ func init() {
 
 	f.SortFlags = false
 	addPruneOptions(cmdForget)
+
+	backupOptions.DryRun = isDryRunByEnv(backupOptions.DryRun)
 }
 
 func runForget(ctx context.Context, opts ForgetOptions, gopts GlobalOptions, args []string) error {

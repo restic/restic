@@ -146,6 +146,8 @@ func init() {
 	// parse read concurrency from env, on error the default value will be used
 	readConcurrency, _ := strconv.ParseUint(os.Getenv("RESTIC_READ_CONCURRENCY"), 10, 32)
 	backupOptions.ReadConcurrency = uint(readConcurrency)
+
+	backupOptions.DryRun = isDryRunByEnv(backupOptions.DryRun)
 }
 
 // filterExisting returns a slice of all existing items, or an error if no

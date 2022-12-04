@@ -66,6 +66,8 @@ func init() {
 	f.BoolVarP(&pruneOptions.DryRun, "dry-run", "n", false, "do not modify the repository, just print what would be done")
 	f.StringVarP(&pruneOptions.UnsafeNoSpaceRecovery, "unsafe-recover-no-free-space", "", "", "UNSAFE, READ THE DOCUMENTATION BEFORE USING! Try to recover a repository stuck with no free space. Do not use without trying out 'prune --max-repack-size 0' first.")
 	addPruneOptions(cmdPrune)
+
+	backupOptions.DryRun = isDryRunByEnv(backupOptions.DryRun)
 }
 
 func addPruneOptions(c *cobra.Command) {
