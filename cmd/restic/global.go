@@ -733,7 +733,7 @@ func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Optio
 	case "gs":
 		be, err = gs.Open(cfg.(gs.Config), rt)
 	case "azure":
-		be, err = azure.Open(cfg.(azure.Config), rt)
+		be, err = azure.Open(ctx, cfg.(azure.Config), rt)
 	case "swift":
 		be, err = swift.Open(ctx, cfg.(swift.Config), rt)
 	case "b2":
@@ -805,7 +805,7 @@ func create(ctx context.Context, s string, opts options.Options) (restic.Backend
 	case "gs":
 		return gs.Create(cfg.(gs.Config), rt)
 	case "azure":
-		return azure.Create(cfg.(azure.Config), rt)
+		return azure.Create(ctx, cfg.(azure.Config), rt)
 	case "swift":
 		return swift.Open(ctx, cfg.(swift.Config), rt)
 	case "b2":
