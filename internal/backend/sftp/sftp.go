@@ -354,14 +354,13 @@ func (r *SFTP) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader
 			debug.Log("sftp: failed to remove broken file %v: %v",
 				f.Name(), rmErr)
 		}
-
-		err = r.checkNoSpace(dirname, rd.Length(), err)
 	}()
 
 	// save data, make sure to use the optimized sftp upload method
 	wbytes, err := f.ReadFrom(rd)
 	if err != nil {
 		_ = f.Close()
+		err = r.checkNoSpace(dirname, rd.Length(), err)
 		return errors.Wrap(err, "Write")
 	}
 
@@ -403,7 +402,7 @@ func (r *SFTP) checkNoSpace(dir string, size int64, origErr error) error {
 		debug.Log("sftp: StatVFS returned %v", err)
 		return origErr
 	}
-	if fsinfo.Favail == 0 || fsinfo.FreeSpace() < uint64(size) {
+	if fsinfo.Favail == 0 || fsinfo.Frsize*fsinfo.Bavail < uint64(size) {
 		err := errors.New("sftp: no space left on device")
 		return backoff.Permanent(err)
 	}
