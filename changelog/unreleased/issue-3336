@@ -1,0 +1,12 @@
+Bugfix: SFTP backend now checks for disk space
+
+A backup to an SFTP backend would spew repeated SSH_FX_FAILURE messages when
+the remote disk is full. Restic now reports "sftp: no space left on device"
+and exits immediately when it detects this condition.
+
+A fix for this issue was promised in restic 0.12.1, but the fix itself
+contained a bug that prevented it from triggering.
+
+https://github.com/restic/restic/issues/3336
+https://github.com/restic/restic/pull/3345
+https://github.com/restic/restic/pull/4075
