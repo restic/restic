@@ -15,8 +15,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func createTestFiles(t testing.TB, num int) (files []string, cleanup func()) {
-	tempdir, cleanup := test.TempDir(t)
+func createTestFiles(t testing.TB, num int) (files []string) {
+	tempdir := test.TempDir(t)
 
 	for i := 0; i < 15; i++ {
 		filename := fmt.Sprintf("testfile-%d", i)
@@ -27,7 +27,7 @@ func createTestFiles(t testing.TB, num int) (files []string, cleanup func()) {
 		files = append(files, filepath.Join(tempdir, filename))
 	}
 
-	return files, cleanup
+	return files
 }
 
 func startFileSaver(ctx context.Context, t testing.TB) (*FileSaver, context.Context, *errgroup.Group) {
@@ -60,8 +60,7 @@ func TestFileSaver(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	files, cleanup := createTestFiles(t, 15)
-	defer cleanup()
+	files := createTestFiles(t, 15)
 
 	startFn := func() {}
 	completeReadingFn := func() {}

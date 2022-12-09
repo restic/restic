@@ -14,8 +14,7 @@ import (
 )
 
 func TestDefaultLayout(t *testing.T) {
-	tempdir, cleanup := rtest.TempDir(t)
-	defer cleanup()
+	tempdir := rtest.TempDir(t)
 
 	var tests = []struct {
 		path string
@@ -141,8 +140,7 @@ func TestDefaultLayout(t *testing.T) {
 }
 
 func TestRESTLayout(t *testing.T) {
-	path, cleanup := rtest.TempDir(t)
-	defer cleanup()
+	path := rtest.TempDir(t)
 
 	var tests = []struct {
 		restic.Handle
@@ -287,8 +285,7 @@ func TestRESTLayoutURLs(t *testing.T) {
 }
 
 func TestS3LegacyLayout(t *testing.T) {
-	path, cleanup := rtest.TempDir(t)
-	defer cleanup()
+	path := rtest.TempDir(t)
 
 	var tests = []struct {
 		restic.Handle
@@ -355,8 +352,7 @@ func TestS3LegacyLayout(t *testing.T) {
 }
 
 func TestDetectLayout(t *testing.T) {
-	path, cleanup := rtest.TempDir(t)
-	defer cleanup()
+	path := rtest.TempDir(t)
 
 	var tests = []struct {
 		filename string
@@ -393,8 +389,7 @@ func TestDetectLayout(t *testing.T) {
 }
 
 func TestParseLayout(t *testing.T) {
-	path, cleanup := rtest.TempDir(t)
-	defer cleanup()
+	path := rtest.TempDir(t)
 
 	var tests = []struct {
 		layoutName        string
@@ -433,8 +428,7 @@ func TestParseLayout(t *testing.T) {
 }
 
 func TestParseLayoutInvalid(t *testing.T) {
-	path, cleanup := rtest.TempDir(t)
-	defer cleanup()
+	path := rtest.TempDir(t)
 
 	var invalidNames = []string{
 		"foo", "bar", "local",

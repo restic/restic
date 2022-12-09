@@ -87,8 +87,7 @@ func TestFiles(t *testing.T) {
 	t.Logf("seed is %v", seed)
 	rand.Seed(seed)
 
-	c, cleanup := TestNewCache(t)
-	defer cleanup()
+	c := TestNewCache(t)
 
 	var tests = []restic.FileType{
 		restic.SnapshotFile,
@@ -140,8 +139,7 @@ func TestFileLoad(t *testing.T) {
 	t.Logf("seed is %v", seed)
 	rand.Seed(seed)
 
-	c, cleanup := TestNewCache(t)
-	defer cleanup()
+	c := TestNewCache(t)
 
 	// save about 5 MiB of data in the cache
 	data := test.Random(rand.Int(), 5234142)
@@ -223,10 +221,8 @@ func TestFileSaveConcurrent(t *testing.T) {
 
 	const nproc = 40
 
-	c, cleanup := TestNewCache(t)
-	defer cleanup()
-
 	var (
+		c    = TestNewCache(t)
 		data = test.Random(1, 10000)
 		g    errgroup.Group
 		id   restic.ID

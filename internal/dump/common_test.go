@@ -13,17 +13,12 @@ import (
 )
 
 func prepareTempdirRepoSrc(t testing.TB, src archiver.TestDir) (tempdir string, repo restic.Repository, cleanup func()) {
-	tempdir, removeTempdir := rtest.TempDir(t)
+	tempdir = rtest.TempDir(t)
 	repo, removeRepository := repository.TestRepository(t)
 
 	archiver.TestCreateFiles(t, tempdir, src)
 
-	cleanup = func() {
-		removeRepository()
-		removeTempdir()
-	}
-
-	return tempdir, repo, cleanup
+	return tempdir, repo, removeRepository
 }
 
 type CheckDump func(t *testing.T, testDir string, testDump *bytes.Buffer) error

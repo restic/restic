@@ -24,8 +24,7 @@ func TestNoSpacePermanent(t *testing.T) {
 		return nil, fmt.Errorf("not creating tempfile, %w", syscall.ENOSPC)
 	}
 
-	dir, cleanup := rtest.TempDir(t)
-	defer cleanup()
+	dir := rtest.TempDir(t)
 
 	be, err := Open(context.Background(), Config{Path: dir, Connections: 2})
 	rtest.OK(t, err)

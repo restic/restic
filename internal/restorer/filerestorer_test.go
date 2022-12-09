@@ -185,8 +185,7 @@ func verifyRestore(t *testing.T, r *fileRestorer, repo *TestRepo) {
 }
 
 func TestFileRestorerBasic(t *testing.T) {
-	tempdir, cleanup := rtest.TempDir(t)
-	defer cleanup()
+	tempdir := rtest.TempDir(t)
 
 	for _, sparse := range []bool{false, true} {
 		restoreAndVerify(t, tempdir, []TestFile{
@@ -217,8 +216,7 @@ func TestFileRestorerBasic(t *testing.T) {
 }
 
 func TestFileRestorerPackSkip(t *testing.T) {
-	tempdir, cleanup := rtest.TempDir(t)
-	defer cleanup()
+	tempdir := rtest.TempDir(t)
 
 	files := make(map[string]bool)
 	files["file2"] = true
@@ -250,8 +248,7 @@ func TestFileRestorerPackSkip(t *testing.T) {
 }
 
 func TestErrorRestoreFiles(t *testing.T) {
-	tempdir, cleanup := rtest.TempDir(t)
-	defer cleanup()
+	tempdir := rtest.TempDir(t)
 	content := []TestFile{
 		{
 			name: "file1",
@@ -282,8 +279,7 @@ func TestDownloadError(t *testing.T) {
 }
 
 func testPartialDownloadError(t *testing.T, part int) {
-	tempdir, cleanup := rtest.TempDir(t)
-	defer cleanup()
+	tempdir := rtest.TempDir(t)
 	content := []TestFile{
 		{
 			name: "file1",

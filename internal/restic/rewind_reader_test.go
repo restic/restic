@@ -27,9 +27,7 @@ func TestByteReader(t *testing.T) {
 func TestFileReader(t *testing.T) {
 	buf := []byte("foobar")
 
-	d, cleanup := test.TempDir(t)
-	defer cleanup()
-
+	d := test.TempDir(t)
 	filename := filepath.Join(d, "file-reader-test")
 	err := os.WriteFile(filename, buf, 0600)
 	if err != nil {

@@ -120,8 +120,7 @@ func removeAll(t testing.TB, dir string) {
 }
 
 func TestOpenNotExistingDirectory(t *testing.T) {
-	dir, cleanup := rtest.TempDir(t)
-	defer cleanup()
+	dir := rtest.TempDir(t)
 
 	// local.Open must not create any files dirs in the repo
 	openclose(t, filepath.Join(dir, "repo"))

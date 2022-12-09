@@ -101,8 +101,7 @@ func TestTestCreateFiles(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		tempdir, cleanup := restictest.TempDir(t)
-		defer cleanup()
+		tempdir := restictest.TempDir(t)
 
 		t.Run("", func(t *testing.T) {
 			tempdir := filepath.Join(tempdir, fmt.Sprintf("test-%d", i))
@@ -192,8 +191,7 @@ func TestTestWalkFiles(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			tempdir, cleanup := restictest.TempDir(t)
-			defer cleanup()
+			tempdir := restictest.TempDir(t)
 
 			got := make(map[string]string)
 
@@ -323,9 +321,7 @@ func TestTestEnsureFiles(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			tempdir, cleanup := restictest.TempDir(t)
-			defer cleanup()
-
+			tempdir := restictest.TempDir(t)
 			createFilesAt(t, tempdir, test.files)
 
 			subtestT := testing.TB(t)
@@ -456,8 +452,7 @@ func TestTestEnsureSnapshot(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			tempdir, cleanup := restictest.TempDir(t)
-			defer cleanup()
+			tempdir := restictest.TempDir(t)
 
 			targetDir := filepath.Join(tempdir, "target")
 			err := fs.Mkdir(targetDir, 0700)

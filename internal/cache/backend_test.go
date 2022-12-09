@@ -57,10 +57,7 @@ func randomData(n int) (restic.Handle, []byte) {
 
 func TestBackend(t *testing.T) {
 	be := mem.New()
-
-	c, cleanup := TestNewCache(t)
-	defer cleanup()
-
+	c := TestNewCache(t)
 	wbe := c.Wrap(be)
 
 	h, data := randomData(5234142)
@@ -128,10 +125,7 @@ func (be loadErrorBackend) Load(ctx context.Context, h restic.Handle, length int
 
 func TestErrorBackend(t *testing.T) {
 	be := mem.New()
-
-	c, cleanup := TestNewCache(t)
-	defer cleanup()
-
+	c := TestNewCache(t)
 	h, data := randomData(5234142)
 
 	// save directly in backend
@@ -174,9 +168,7 @@ func TestErrorBackend(t *testing.T) {
 
 func TestBackendRemoveBroken(t *testing.T) {
 	be := mem.New()
-
-	c, cleanup := TestNewCache(t)
-	defer cleanup()
+	c := TestNewCache(t)
 
 	h, data := randomData(5234142)
 	// save directly in backend
