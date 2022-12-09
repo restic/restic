@@ -8,9 +8,7 @@ import (
 )
 
 func TestFilesWriterBasic(t *testing.T) {
-	dir, cleanup := rtest.TempDir(t)
-	defer cleanup()
-
+	dir := rtest.TempDir(t)
 	w := newFilesWriter(1)
 
 	f1 := dir + "/f1"

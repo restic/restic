@@ -12,9 +12,7 @@ import (
 
 // restic should detect rclone exiting.
 func TestRcloneExit(t *testing.T) {
-	dir, cleanup := rtest.TempDir(t)
-	defer cleanup()
-
+	dir := rtest.TempDir(t)
 	cfg := NewConfig()
 	cfg.Remote = dir
 	be, err := Open(cfg, nil)

@@ -160,10 +160,8 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 	}
 
 	//Create temp dir to create password file.
-	dir, cleanup := rtest.TempDir(t)
-	defer cleanup()
-
-	cleanup = rtest.Chdir(t, dir)
+	dir := rtest.TempDir(t)
+	cleanup := rtest.Chdir(t, dir)
 	defer cleanup()
 
 	//Create temporary password file

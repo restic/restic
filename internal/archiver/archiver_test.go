@@ -26,17 +26,12 @@ import (
 )
 
 func prepareTempdirRepoSrc(t testing.TB, src TestDir) (tempdir string, repo restic.Repository, cleanup func()) {
-	tempdir, removeTempdir := restictest.TempDir(t)
+	tempdir = restictest.TempDir(t)
 	repo, removeRepository := repository.TestRepository(t)
 
 	TestCreateFiles(t, tempdir, src)
 
-	cleanup = func() {
-		removeRepository()
-		removeTempdir()
-	}
-
-	return tempdir, repo, cleanup
+	return tempdir, repo, removeRepository
 }
 
 func saveFile(t testing.TB, repo restic.Repository, filename string, filesystem fs.FS) (*restic.Node, ItemStats) {
@@ -470,8 +465,7 @@ func appendToFile(t testing.TB, filename string, data []byte) {
 }
 
 func TestArchiverSaveFileIncremental(t *testing.T) {
-	tempdir, removeTempdir := restictest.TempDir(t)
-	defer removeTempdir()
+	tempdir := restictest.TempDir(t)
 
 	testRepo, removeRepository := repository.TestRepository(t)
 	defer removeRepository()
@@ -688,8 +682,7 @@ func TestFileChanged(t *testing.T) {
 				t.Skip("don't run test on Windows")
 			}
 
-			tempdir, cleanup := restictest.TempDir(t)
-			defer cleanup()
+			tempdir := restictest.TempDir(t)
 
 			filename := filepath.Join(tempdir, "file")
 			content := defaultContent
@@ -725,8 +718,7 @@ func TestFileChanged(t *testing.T) {
 }
 
 func TestFilChangedSpecialCases(t *testing.T) {
-	tempdir, cleanup := restictest.TempDir(t)
-	defer cleanup()
+	tempdir := restictest.TempDir(t)
 
 	filename := filepath.Join(tempdir, "file")
 	content := []byte("foobar")
@@ -913,8 +905,7 @@ func TestArchiverSaveDir(t *testing.T) {
 }
 
 func TestArchiverSaveDirIncremental(t *testing.T) {
-	tempdir, removeTempdir := restictest.TempDir(t)
-	defer removeTempdir()
+	tempdir := restictest.TempDir(t)
 
 	testRepo, removeRepository := repository.TestRepository(t)
 	defer removeRepository()
@@ -1901,11 +1892,10 @@ func TestArchiverContextCanceled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	tempdir, removeTempdir := restictest.TempDir(t)
+	tempdir := restictest.TempDir(t)
 	TestCreateFiles(t, tempdir, TestDir{
 		"targetfile": TestFile{Content: "foobar"},
 	})
-	defer removeTempdir()
 
 	// Ensure that the archiver itself reports the canceled context and not just the backend
 	repo, _ := repository.TestRepositoryWithBackend(t, &noCancelBackend{mem.New()}, 0)

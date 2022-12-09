@@ -191,22 +191,23 @@ func RemoveAll(t testing.TB, path string) {
 	OK(t, err)
 }
 
-// TempDir returns a temporary directory that is removed when cleanup is
-// called, except if TestCleanupTempDirs is set to false.
-func TempDir(t testing.TB) (path string, cleanup func()) {
+// TempDir returns a temporary directory that is removed by t.Cleanup,
+// except if TestCleanupTempDirs is set to false.
+func TempDir(t testing.TB) string {
 	tempdir, err := os.MkdirTemp(TestTempDir, "restic-test-")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	return tempdir, func() {
+	t.Cleanup(func() {
 		if !TestCleanupTempDirs {
 			t.Logf("leaving temporary directory %v used for test", tempdir)
 			return
 		}
 
 		RemoveAll(t, tempdir)
-	}
+	})
+	return tempdir
 }
 
 // Chdir changes the current directory to dest.

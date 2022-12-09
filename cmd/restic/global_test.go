@@ -31,8 +31,7 @@ func Test_PrintFunctionsRespectsGlobalStdout(t *testing.T) {
 }
 
 func TestReadRepo(t *testing.T) {
-	tempDir, cleanup := test.TempDir(t)
-	defer cleanup()
+	tempDir := test.TempDir(t)
 
 	// test --repo option
 	var opts GlobalOptions

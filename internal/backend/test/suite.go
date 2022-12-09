@@ -60,8 +60,10 @@ func (s *Suite) RunTests(t *testing.T) {
 		return
 	}
 
-	if err = s.Cleanup(s.Config); err != nil {
-		t.Fatal(err)
+	if s.Cleanup != nil {
+		if err = s.Cleanup(s.Config); err != nil {
+			t.Fatal(err)
+		}
 	}
 }
 

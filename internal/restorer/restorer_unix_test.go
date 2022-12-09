@@ -36,9 +36,7 @@ func TestRestorerRestoreEmptyHardlinkedFileds(t *testing.T) {
 		return true, true
 	}
 
-	tempdir, cleanup := rtest.TempDir(t)
-	defer cleanup()
-
+	tempdir := rtest.TempDir(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

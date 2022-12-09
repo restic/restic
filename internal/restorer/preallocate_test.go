@@ -14,8 +14,7 @@ import (
 func TestPreallocate(t *testing.T) {
 	for _, i := range []int64{0, 1, 4096, 1024 * 1024} {
 		t.Run(strconv.FormatInt(i, 10), func(t *testing.T) {
-			dirpath, cleanup := test.TempDir(t)
-			defer cleanup()
+			dirpath := test.TempDir(t)
 
 			flags := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
 			wr, err := os.OpenFile(path.Join(dirpath, "test"), flags, 0600)

@@ -9,9 +9,7 @@ import (
 )
 
 func TestExtendedStat(t *testing.T) {
-	tempdir, cleanup := restictest.TempDir(t)
-	defer cleanup()
-
+	tempdir := restictest.TempDir(t)
 	filename := filepath.Join(tempdir, "file")
 	err := os.WriteFile(filename, []byte("foobar"), 0640)
 	if err != nil {

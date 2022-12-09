@@ -14,8 +14,7 @@ import (
 )
 
 func TestCollectTargets(t *testing.T) {
-	dir, cleanup := rtest.TempDir(t)
-	defer cleanup()
+	dir := rtest.TempDir(t)
 
 	fooSpace := "foo "
 	barStar := "bar*"              // Must sort before the others, below.

@@ -328,9 +328,7 @@ func TestRestorer(t *testing.T) {
 
 			res := NewRestorer(context.TODO(), repo, sn, false)
 
-			tempdir, cleanup := rtest.TempDir(t)
-			defer cleanup()
-
+			tempdir := rtest.TempDir(t)
 			// make sure we're creating a new subdir of the tempdir
 			tempdir = filepath.Join(tempdir, "target")
 
@@ -448,9 +446,7 @@ func TestRestorerRelative(t *testing.T) {
 
 			res := NewRestorer(context.TODO(), repo, sn, false)
 
-			tempdir, cleanup := rtest.TempDir(t)
-			defer cleanup()
-
+			tempdir := rtest.TempDir(t)
 			cleanup = rtest.Chdir(t, tempdir)
 			defer cleanup()
 
@@ -682,9 +678,7 @@ func TestRestorerTraverseTree(t *testing.T) {
 
 			res.SelectFilter = test.Select
 
-			tempdir, cleanup := rtest.TempDir(t)
-			defer cleanup()
-
+			tempdir := rtest.TempDir(t)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
@@ -776,9 +770,7 @@ func TestRestorerConsistentTimestampsAndPermissions(t *testing.T) {
 		return selectedForRestore, childMayBeSelected
 	}
 
-	tempdir, cleanup := rtest.TempDir(t)
-	defer cleanup()
-
+	tempdir := rtest.TempDir(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -818,9 +810,7 @@ func TestVerifyCancel(t *testing.T) {
 
 	res := NewRestorer(context.TODO(), repo, sn, false)
 
-	tempdir, cleanup := rtest.TempDir(t)
-	defer cleanup()
-
+	tempdir := rtest.TempDir(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -863,9 +853,7 @@ func TestRestorerSparseFiles(t *testing.T) {
 
 	res := NewRestorer(context.TODO(), repo, sn, true)
 
-	tempdir, cleanup := rtest.TempDir(t)
-	defer cleanup()
-
+	tempdir := rtest.TempDir(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

@@ -101,9 +101,8 @@ func newRandomCredentials(t testing.TB) (key, secret string) {
 type MinioTestConfig struct {
 	s3.Config
 
-	tempdir       string
-	removeTempdir func()
-	stopServer    func()
+	tempdir    string
+	stopServer func()
 }
 
 func createS3(t testing.TB, cfg MinioTestConfig, tr http.RoundTripper) (be restic.Backend, err error) {
@@ -132,7 +131,7 @@ func newMinioTestSuite(ctx context.Context, t testing.TB) *test.Suite {
 		NewConfig: func() (interface{}, error) {
 			cfg := MinioTestConfig{}
 
-			cfg.tempdir, cfg.removeTempdir = rtest.TempDir(t)
+			cfg.tempdir = rtest.TempDir(t)
 			key, secret := newRandomCredentials(t)
 			cfg.stopServer = runMinio(ctx, t, cfg.tempdir, key, secret)
 
@@ -178,9 +177,6 @@ func newMinioTestSuite(ctx context.Context, t testing.TB) *test.Suite {
 			cfg := config.(MinioTestConfig)
 			if cfg.stopServer != nil {
 				cfg.stopServer()
-			}
-			if cfg.removeTempdir != nil {
-				cfg.removeTempdir()
 			}
 			return nil
 		},

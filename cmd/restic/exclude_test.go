@@ -84,8 +84,7 @@ func TestIsExcludedByFile(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tempDir, cleanup := test.TempDir(t)
-			defer cleanup()
+			tempDir := test.TempDir(t)
 
 			foo := filepath.Join(tempDir, "foo")
 			err := os.WriteFile(foo, []byte("foo"), 0666)
@@ -115,8 +114,7 @@ func TestIsExcludedByFile(t *testing.T) {
 // cancel each other out. It was initially written to demonstrate a bug in
 // rejectIfPresent.
 func TestMultipleIsExcludedByFile(t *testing.T) {
-	tempDir, cleanup := test.TempDir(t)
-	defer cleanup()
+	tempDir := test.TempDir(t)
 
 	// Create some files in a temporary directory.
 	// Files in UPPERCASE will be used as exclusion triggers later on.
@@ -240,8 +238,7 @@ func TestParseInvalidSizeStr(t *testing.T) {
 // TestIsExcludedByFileSize is for testing the instance of
 // --exclude-larger-than parameters
 func TestIsExcludedByFileSize(t *testing.T) {
-	tempDir, cleanup := test.TempDir(t)
-	defer cleanup()
+	tempDir := test.TempDir(t)
 
 	// Max size of file is set to be 1k
 	maxSizeStr := "1k"
