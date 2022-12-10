@@ -11,10 +11,15 @@ import (
 )
 
 var cmdRepair = &cobra.Command{
-	Use:   "repair [flags] [snapshot ID] [...]",
+	Use:   "repair",
+	Short: "Repair commands",
+}
+
+var cmdRepairSnapshots = &cobra.Command{
+	Use:   "snapshots [flags] [snapshot ID] [...]",
 	Short: "Repair snapshots",
 	Long: `
-The "repair" command allows to repair broken snapshots.
+The "repair snapshots" command allows to repair broken snapshots.
 It scans the given snapshots and generates new ones where
 damaged tress and file contents are removed.
 If the broken snapshots are deleted, a prune run will
@@ -44,7 +49,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runRepair(cmd.Context(), globalOptions, repairOptions, args)
+		return runRepairSnapshots(cmd.Context(), globalOptions, repairSnapshotOptions, args)
 	},
 }
 
@@ -58,21 +63,22 @@ type RepairOptions struct {
 	DeleteSnapshots bool
 }
 
-var repairOptions RepairOptions
+var repairSnapshotOptions RepairOptions
 
 func init() {
 	cmdRoot.AddCommand(cmdRepair)
-	flags := cmdRepair.Flags()
+	cmdRepair.AddCommand(cmdRepairSnapshots)
+	flags := cmdRepairSnapshots.Flags()
 
-	initMultiSnapshotFilter(flags, &repairOptions.SnapshotFilter, true)
+	initMultiSnapshotFilter(flags, &repairSnapshotOptions.SnapshotFilter, true)
 
-	flags.StringVar(&repairOptions.AddTag, "add-tag", "repaired", "tag to add to repaired snapshots")
-	flags.StringVar(&repairOptions.Append, "append", ".repaired", "string to append to repaired dirs/files; remove files if empty or impossible to repair")
-	flags.BoolVarP(&repairOptions.DryRun, "dry-run", "n", true, "don't do anything, only show what would be done")
-	flags.BoolVar(&repairOptions.DeleteSnapshots, "delete-snapshots", false, "delete original snapshots")
+	flags.StringVar(&repairSnapshotOptions.AddTag, "add-tag", "repaired", "tag to add to repaired snapshots")
+	flags.StringVar(&repairSnapshotOptions.Append, "append", ".repaired", "string to append to repaired dirs/files; remove files if empty or impossible to repair")
+	flags.BoolVarP(&repairSnapshotOptions.DryRun, "dry-run", "n", true, "don't do anything, only show what would be done")
+	flags.BoolVar(&repairSnapshotOptions.DeleteSnapshots, "delete-snapshots", false, "delete original snapshots")
 }
 
-func runRepair(ctx context.Context, gopts GlobalOptions, opts RepairOptions, args []string) error {
+func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOptions, args []string) error {
 	switch {
 	case opts.DryRun:
 		Printf("\n note: --dry-run is set\n-> repair will only show what it would do.\n\n")
