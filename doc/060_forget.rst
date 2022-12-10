@@ -219,6 +219,8 @@ paths and tags. The policy is then applied to each group of snapshots individual
 This is a safety feature to prevent accidental removal of unrelated backup sets. To
 disable grouping and apply the policy to all snapshots regardless of their host,
 paths and tags, use ``--group-by ''`` (that is, an empty value to ``--group-by``).
+Note that one would normally set the ``--group-by`` option for the ``backup``
+command to the same value.
 
 Additionally, you can restrict the policy to only process snapshots which have a
 particular hostname with the ``--host`` parameter, or tags with the ``--tag``
