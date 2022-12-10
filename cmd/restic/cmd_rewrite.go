@@ -123,10 +123,8 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 		return true, nil
 	}
 
-	// Retain the original snapshot id over all tag changes.
-	if sn.Original == nil {
-		sn.Original = sn.ID()
-	}
+	// Always set the original snapshot id as this essentially a new snapshot.
+	sn.Original = sn.ID()
 	*sn.Tree = filteredTree
 
 	if !opts.Forget {
