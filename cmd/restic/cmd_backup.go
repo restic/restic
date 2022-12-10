@@ -89,6 +89,7 @@ type BackupOptions struct {
 	excludePatternOptions
 
 	Parent            string
+	GroupBy           restic.SnapshotGroupByOptions
 	Force             bool
 	ExcludeOtherFS    bool
 	ExcludeIfPresent  []string
@@ -121,6 +122,8 @@ func init() {
 
 	f := cmdBackup.Flags()
 	f.StringVar(&backupOptions.Parent, "parent", "", "use this parent `snapshot` (default: last snapshot in the repository that has the same target files/directories, and is not newer than the snapshot time)")
+	backupOptions.GroupBy = restic.SnapshotGroupByOptions{Host: true, Path: true}
+	f.VarP(&backupOptions.GroupBy, "group-by", "g", "`group` snapshots by host, paths and/or tags, separated by comma (disable grouping with '')")
 	f.BoolVarP(&backupOptions.Force, "force", "f", false, `force re-reading the target files/directories (overrides the "parent" flag)`)
 
 	initExcludePatternOptions(f, &backupOptions.excludePatternOptions)
@@ -439,7 +442,21 @@ func findParentSnapshot(ctx context.Context, repo restic.Repository, opts Backup
 	if snName == "" {
 		snName = "latest"
 	}
-	sn, err := restic.FindFilteredSnapshot(ctx, repo.Backend(), repo, []string{opts.Host}, []restic.TagList{}, targets, &timeStampLimit, snName)
+
+	var hosts []string
+	var paths []string
+	var tags []restic.TagList
+	if opts.GroupBy.Host {
+		hosts = []string{opts.Host}
+	}
+	if opts.GroupBy.Path {
+		paths = targets
+	}
+	if opts.GroupBy.Tag {
+		tags = []restic.TagList{opts.Tags.Flatten()}
+	}
+
+	sn, err := restic.FindFilteredSnapshot(ctx, repo.Backend(), repo, hosts, tags, paths, &timeStampLimit, snName)
 	// Snapshot not found is ok if no explicit parent was set
 	if opts.Parent == "" && errors.Is(err, restic.ErrNoSnapshotFound) {
 		err = nil
