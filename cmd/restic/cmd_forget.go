@@ -56,7 +56,7 @@ type ForgetOptions struct {
 	Compact bool
 
 	// Grouping
-	GroupBy string
+	GroupBy restic.SnapshotGroupByOptions
 	DryRun  bool
 	Prune   bool
 }
@@ -90,8 +90,8 @@ func init() {
 	}
 
 	f.BoolVarP(&forgetOptions.Compact, "compact", "c", false, "use compact output format")
-
-	f.StringVarP(&forgetOptions.GroupBy, "group-by", "g", "host,paths", "`group` snapshots by host, paths and/or tags, separated by comma (disable grouping with '')")
+	forgetOptions.GroupBy = restic.SnapshotGroupByOptions{Host: true, Path: true}
+	f.VarP(&forgetOptions.GroupBy, "group-by", "g", "`group` snapshots by host, paths and/or tags, separated by comma (disable grouping with '')")
 	f.BoolVarP(&forgetOptions.DryRun, "dry-run", "n", false, "do not delete anything, just print what would be done")
 	f.BoolVar(&forgetOptions.Prune, "prune", false, "automatically run the 'prune' command if snapshots have been removed")
 
