@@ -32,8 +32,7 @@ func TestLoadJSONUnpacked(t *testing.T) {
 }
 
 func testLoadJSONUnpacked(t *testing.T, version uint) {
-	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
-	defer cleanup()
+	repo := repository.TestRepositoryWithVersion(t, version)
 
 	// archive a snapshot
 	sn := restic.Snapshot{}

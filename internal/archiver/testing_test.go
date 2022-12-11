@@ -465,8 +465,7 @@ func TestTestEnsureSnapshot(t *testing.T) {
 			back := restictest.Chdir(t, tempdir)
 			defer back()
 
-			repo, cleanup := repository.TestRepository(t)
-			defer cleanup()
+			repo := repository.TestRepository(t)
 
 			arch := New(repo, fs.Local{}, Options{})
 			opts := SnapshotOptions{
