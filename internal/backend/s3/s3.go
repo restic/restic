@@ -164,7 +164,7 @@ func isAccessDenied(err error) bool {
 	debug.Log("isAccessDenied(%T, %#v)", err, err)
 
 	var e minio.ErrorResponse
-	return errors.As(err, &e) && e.Code == "Access Denied"
+	return errors.As(err, &e) && e.Code == "AccessDenied"
 }
 
 // IsNotExist returns true if the error is caused by a not existing file.
