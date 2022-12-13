@@ -18,6 +18,7 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/kurin/blazer/b2"
+	"github.com/kurin/blazer/base"
 )
 
 // b2Backend is a backend which stores its data on Backblaze B2.
@@ -28,6 +29,8 @@ type b2Backend struct {
 	listMaxItems int
 	layout.Layout
 	sem sema.Semaphore
+
+	canDelete bool
 }
 
 // Billing happens in 1000 item granlarity, but we are more interested in reducing the number of network round trips
@@ -104,6 +107,7 @@ func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backend
 		},
 		listMaxItems: defaultListMaxItems,
 		sem:          sem,
+		canDelete:    true,
 	}
 
 	return be, nil
@@ -297,11 +301,27 @@ func (be *b2Backend) Remove(ctx context.Context, h restic.Handle) error {
 	// the retry backend will also repeat the remove method up to 10 times
 	for i := 0; i < 3; i++ {
 		obj := be.bucket.Object(be.Filename(h))
-		err := obj.Delete(ctx)
-		if err == nil {
-			// keep deleting until we are sure that no leftover file versions exist
-			continue
+
+		var err error
+		if be.canDelete {
+			err = obj.Delete(ctx)
+			if err == nil {
+				// keep deleting until we are sure that no leftover file versions exist
+				continue
+			}
+
+			code, _ := base.Code(err)
+			if code == 401 { // unauthorized
+				// fallback to hide if not allowed to delete files
+				be.canDelete = false
+				debug.Log("Removing %v failed, falling back to b2_hide_file.", h)
+				continue
+			}
+		} else {
+			// hide adds a new file version hiding all older ones, thus retries are not necessary
+			err = obj.Hide(ctx)
 		}
+
 		// consider a file as removed if b2 informs us that it does not exist
 		if b2.IsNotExist(err) {
 			return nil
