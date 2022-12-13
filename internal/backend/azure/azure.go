@@ -130,6 +130,8 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, er
 		return nil, errors.Wrap(err, "open")
 	}
 
+	_, err = be.container.GetProperties(ctx, &azContainer.GetPropertiesOptions{})
+
 	if err != nil && bloberror.HasCode(err, bloberror.ContainerNotFound) {
 		_, err = be.container.Create(ctx, &azContainer.CreateOptions{})
 
@@ -363,7 +365,7 @@ func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 
 	debug.Log("Remove(%v) at %v -> err %v", h, objName, err)
 
-	if bloberror.HasCode(err, bloberror.BlobNotFound) {
+	if be.IsNotExist(err) {
 		return nil
 	}
 
