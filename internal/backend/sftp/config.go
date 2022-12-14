@@ -16,13 +16,15 @@ type Config struct {
 	Layout  string `option:"layout" help:"use this backend directory layout (default: auto-detect)"`
 	Command string `option:"command" help:"specify command to create sftp connection"`
 
-	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
+	Connections   uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
+	MaxReconnects uint `option:"max-reconnects" help:"set a limit for the number of reconnects when the connection is dropped (default: 0)"`
 }
 
 // NewConfig returns a new config with default options applied.
 func NewConfig() Config {
 	return Config{
-		Connections: 5,
+		Connections:   5,
+		MaxReconnects: 0,
 	}
 }
 

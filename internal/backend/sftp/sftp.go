@@ -30,6 +30,8 @@ type SFTP struct {
 	Config
 	*Connection
 	backend.Modes
+	mutex          sync.Mutex
+	reconnectsLeft uint
 }
 
 var _ restic.Backend = &SFTP{}
@@ -46,11 +48,21 @@ func startClient(cfg Config) (*SFTP, error) {
 
 func (r *SFTP) reconnect() error {
 	debug.Log("RECONNECT")
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	debug.Log("after mutext")
+
+	r.reconnectsLeft--
+
+	if r.reconnectsLeft < 0 {
+		debug.Log("LIMIT REACHED!!!!")
+		err := errors.Wrapf(r.Connection.clientError(), "max reconnections limit reached")
+		return backoff.Permanent(err)
+	}
 	if r.isClosing {
 		return nil
 	}
 
-	// TODO(ibash) make this thread safe
 	// TODO(ibash) error handling here...?
 	r.Connection.Close()
 	connection, err := NewConnection(r.Config)
@@ -60,7 +72,6 @@ func (r *SFTP) reconnect() error {
 	}
 
 	r.Connection = connection
-	// TODO(ibash) if already connected, clear out the old connection
 	return nil
 }
 
