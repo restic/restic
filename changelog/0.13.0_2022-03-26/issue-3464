@@ -1,0 +1,10 @@
+Enhancement: Skip lock creation on `forget` if `--no-lock` and `--dry-run`
+
+Restic used to silently ignore the `--no-lock` option of the `forget` command.
+
+It now skips creation of lock file in case both `--dry-run` and `--no-lock`
+are specified. If `--no-lock` option is specified without `--dry-run`, restic
+prints a warning message to stderr.
+
+https://github.com/restic/restic/issues/3464
+https://github.com/restic/restic/pull/3623

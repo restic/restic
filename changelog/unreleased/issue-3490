@@ -1,9 +1,0 @@
-Enhancement: Support for specifying file size in `check --read-data-subset`
-
-To check a subset of repository files, the `check --read-data-subset` command
-used to support two ways to select a subset - A specific range of pack files, 
-or random percentage of pack files. We have added a third method to select pack 
-files - By specifying file size. This new option is available with the 'restic check' command.
-
-https://github.com/restic/restic/issues/3490
-https://github.com/restic/restic/pull/3548

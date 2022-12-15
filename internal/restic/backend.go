@@ -18,11 +18,14 @@ type Backend interface {
 	// repository.
 	Location() string
 
+	// Connections returns the maxmimum number of concurrent backend operations.
+	Connections() uint
+
 	// Hasher may return a hash function for calculating a content hash for the backend
 	Hasher() hash.Hash
 
-	// Test a boolean value whether a File with the name and type exists.
-	Test(ctx context.Context, h Handle) (bool, error)
+	// HasAtomicReplace returns whether Save() can atomically replace files
+	HasAtomicReplace() bool
 
 	// Remove removes a File described  by h.
 	Remove(ctx context.Context, h Handle) error
@@ -58,6 +61,9 @@ type Backend interface {
 
 	// IsNotExist returns true if the error was caused by a non-existing file
 	// in the backend.
+	//
+	// The argument may be a wrapped error. The implementation is responsible
+	// for unwrapping it.
 	IsNotExist(err error) bool
 
 	// Delete removes all data in the backend.

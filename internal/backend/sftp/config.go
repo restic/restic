@@ -15,6 +15,15 @@ type Config struct {
 
 	Layout  string `option:"layout" help:"use this backend directory layout (default: auto-detect)"`
 	Command string `option:"command" help:"specify command to create sftp connection"`
+
+	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
+}
+
+// NewConfig returns a new config with default options applied.
+func NewConfig() Config {
+	return Config{
+		Connections: 5,
+	}
 }
 
 func init() {
@@ -23,9 +32,9 @@ func init() {
 
 // ParseConfig parses the string s and extracts the sftp config. The
 // supported configuration formats are sftp://user@host[:port]/directory
-//  and sftp:user@host:directory.  The directory will be path Cleaned and can
-//  be an absolute path if it starts with a '/' (e.g.
-//  sftp://user@host//absolute and sftp:user@host:/absolute).
+// and sftp:user@host:directory.  The directory will be path Cleaned and can
+// be an absolute path if it starts with a '/' (e.g.
+// sftp://user@host//absolute and sftp:user@host:/absolute).
 func ParseConfig(s string) (interface{}, error) {
 	var user, host, port, dir string
 	switch {
@@ -51,14 +60,13 @@ func ParseConfig(s string) (interface{}, error) {
 		// "user@host:path" in s
 		s = s[5:]
 		// split user@host and path at the colon
-		data := strings.SplitN(s, ":", 2)
-		if len(data) < 2 {
+		var colon bool
+		host, dir, colon = strings.Cut(s, ":")
+		if !colon {
 			return nil, errors.New("sftp: invalid format, hostname or path not found")
 		}
-		host = data[0]
-		dir = data[1]
 		// split user and host at the "@"
-		data = strings.SplitN(host, "@", 3)
+		data := strings.SplitN(host, "@", 3)
 		if len(data) == 3 {
 			user = data[0] + "@" + data[1]
 			host = data[2]
@@ -75,10 +83,11 @@ func ParseConfig(s string) (interface{}, error) {
 		return nil, errors.Fatal("sftp path starts with the tilde (~) character, that fails for most sftp servers.\nUse a relative directory, most servers interpret this as relative to the user's home directory.")
 	}
 
-	return Config{
-		User: user,
-		Host: host,
-		Port: port,
-		Path: p,
-	}, nil
+	cfg := NewConfig()
+	cfg.User = user
+	cfg.Host = host
+	cfg.Port = port
+	cfg.Path = p
+
+	return cfg, nil
 }

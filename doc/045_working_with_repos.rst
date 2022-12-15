@@ -90,7 +90,7 @@ example from a local to a remote repository, you can use the ``copy`` command:
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo copy --repo2 /srv/restic-repo-copy
+    $ restic -r /srv/restic-repo-copy copy --from-repo /srv/restic-repo
     repository d6504c63 opened successfully, password is correct
     repository 3dd0878c opened successfully, password is correct
 
@@ -117,17 +117,17 @@ be skipped by later copy runs.
     both the source and destination repository, *may occupy up to twice their
     space* in the destination repository. See below for how to avoid this.
 
-The destination repository is specified with ``--repo2`` or can be read 
-from a file specified via ``--repository-file2``. Both of these options
-can also set as environment variables ``$RESTIC_REPOSITORY2`` or
-``$RESTIC_REPOSITORY_FILE2`` respectively. For the destination repository 
-the password can be read from a file ``--password-file2`` or from a command 
-``--password-command2``.
-Alternatively the environment variables ``$RESTIC_PASSWORD_COMMAND2`` and
-``$RESTIC_PASSWORD_FILE2`` can be used. It is also possible to directly
-pass the password via ``$RESTIC_PASSWORD2``. The key which should be used
-for decryption can be selected by passing its ID via the flag ``--key-hint2``
-or the environment variable ``$RESTIC_KEY_HINT2``.
+The source repository is specified with ``--from-repo`` or can be read
+from a file specified via ``--from-repository-file``. Both of these options
+can also be set as environment variables ``$RESTIC_FROM_REPOSITORY`` or
+``$RESTIC_FROM_REPOSITORY_FILE``, respectively. For the destination repository
+the password can be read from a file ``--from-password-file`` or from a command
+``--from-password-command``.
+Alternatively the environment variables ``$RESTIC_FROM_PASSWORD_COMMAND`` and
+``$RESTIC_FROM_PASSWORD_FILE`` can be used. It is also possible to directly
+pass the password via ``$RESTIC_FROM_PASSWORD``. The key which should be used
+for decryption can be selected by passing its ID via the flag ``--from-key-hint``
+or the environment variable ``$RESTIC_FROM_KEY_HINT``.
 
 .. note:: In case the source and destination repository use the same backend,
     the configuration options and environment variables used to configure the
@@ -136,22 +136,24 @@ or the environment variable ``$RESTIC_KEY_HINT2``.
     repository. You can avoid this limitation by using the rclone backend
     along with remotes which are configured in rclone.
 
+.. _copy-filtering-snapshots:
+
 Filtering snapshots to copy
 ---------------------------
 
 The list of snapshots to copy can be filtered by host, path in the backup
-and / or a comma-separated tag list:
+and/or a comma-separated tag list:
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo copy --repo2 /srv/restic-repo-copy --host luigi --path /srv --tag foo,bar
+    $ restic -r /srv/restic-repo-copy copy --from-repo /srv/restic-repo --host luigi --path /srv --tag foo,bar
 
 It is also possible to explicitly specify the list of snapshots to copy, in
 which case only these instead of all snapshots will be copied:
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo copy --repo2 /srv/restic-repo-copy 410b18a2 4e5d5487 latest
+    $ restic -r /srv/restic-repo-copy copy --from-repo /srv/restic-repo 410b18a2 4e5d5487 latest
 
 Ensuring deduplication for copied snapshots
 -------------------------------------------
@@ -170,9 +172,64 @@ using the same chunker parameters as the source repository:
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo-copy init --repo2 /srv/restic-repo --copy-chunker-params
+    $ restic -r /srv/restic-repo-copy init --from-repo /srv/restic-repo --copy-chunker-params
 
 Note that it is not possible to change the chunker parameters of an existing repository.
+
+
+Removing files from snapshots
+=============================
+
+Snapshots sometimes turn out to include more files that intended. Instead of
+removing the snapshots entirely and running the corresponding backup commands
+again (which is not always practical after the fact) it is possible to remove
+the unwanted files from affected snapshots by rewriting them using the
+``rewrite`` command:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo rewrite --exclude secret-file
+    repository c881945a opened (repository version 2) successfully, password is correct
+
+    snapshot 6160ddb2 of [/home/user/work] at 2022-06-12 16:01:28.406630608 +0200 CEST)
+    excluding /home/user/work/secret-file
+    saved new snapshot b6aee1ff
+
+    snapshot 4fbaf325 of [/home/user/work] at 2022-05-01 11:22:26.500093107 +0200 CEST)
+
+    modified 1 snapshots
+
+    $ restic -r /srv/restic-repo rewrite --exclude secret-file 6160ddb2
+    repository c881945a opened (repository version 2) successfully, password is correct
+
+    snapshot 6160ddb2 of [/home/user/work] at 2022-06-12 16:01:28.406630608 +0200 CEST)
+    excluding /home/user/work/secret-file
+    new snapshot saved as b6aee1ff
+
+    modified 1 snapshots
+
+The options ``--exclude``, ``--exclude-file``, ``--iexclude`` and
+``--iexclude-file`` are supported. They behave the same way as for the backup
+command, see :ref:`backup-excluding-files` for details.
+
+It is possible to rewrite only a subset of snapshots by filtering them the same
+way as for the ``copy`` command, see :ref:`copy-filtering-snapshots`.
+
+By default, the ``rewrite`` command will keep the original snapshots and create
+new ones for every snapshot which was modified during rewriting. The new
+snapshots are marked with the tag ``rewrite`` to differentiate them from the
+original, rewritten snapshots.
+
+Alternatively, you can use the ``--forget`` option to immediately remove the
+original snapshots. In this case, no tag is added to the new snapshots. Please
+note that this only removes the snapshots and not the actual data stored in the
+repository. Run the ``prune`` command afterwards to remove the now unreferenced
+data (just like when having used the ``forget`` command).
+
+In order to preview the changes which ``rewrite`` would make, you can use the
+``--dry-run`` option. This will simulate the rewriting process without actually
+modifying the repository. Instead restic will only print the actions it would
+perform.
 
 
 Checking integrity and consistency
@@ -248,12 +305,12 @@ integrity of the pack files in the repository, use the ``--read-data`` flag:
     repository, beware that it might incur higher bandwidth costs than usual
     and also that it takes more time than the default ``check``.
 
-Alternatively, use the ``--read-data-subset`` parameter to check only a
-subset of the repository pack files at a time. It supports three ways to select a
-subset. One selects a specific range of pack files, the second selects a random
-percentage of pack files, and the third selects pack files of the specified size.
+Alternatively, use the ``--read-data-subset`` parameter to check only a subset
+of the repository pack files at a time. It supports three ways to select a
+subset. One selects a specific part of pack files, the second and third
+selects a random subset of the pack files by the given percentage or size.
 
-Use ``--read-data-subset=n/t`` to check only a subset of the repository pack
+Use ``--read-data-subset=n/t`` to check a specific part of the repository pack
 files at a time. The parameter takes two values, ``n`` and ``t``. When the check
 command runs, all pack files in the repository are logically divided in ``t``
 (roughly equal) groups, and only files that belong to group number ``n`` are
@@ -268,29 +325,31 @@ over 5 separate invocations:
     $ restic -r /srv/restic-repo check --read-data-subset=4/5
     $ restic -r /srv/restic-repo check --read-data-subset=5/5
 
-Use ``--read-data-subset=n%`` to check a randomly choosen subset of the
-repository pack files. It takes one parameter, ``n``, the percentage of pack
-files to check as an integer or floating point number. This will not guarantee
-to cover all available pack files after sufficient runs, but it is easy to
-automate checking a small subset of data after each backup. For a floating point
-value the following command may be used:
+Use ``--read-data-subset=x%`` to check a randomly choosen subset of the
+repository pack files. It takes one parameter, ``x``, the percentage of
+pack files to check as an integer or floating point number. This will not
+guarantee to cover all available pack files after sufficient runs, but it is
+easy to automate checking a small subset of data after each backup. For a
+floating point value the following command may be used:
 
 .. code-block:: console
 
     $ restic -r /srv/restic-repo check --read-data-subset=2.5%
 
-When checking bigger subsets you most likely specify the percentage as an
-integer:
+When checking bigger subsets you most likely want to specify the percentage
+as an integer:
 
 .. code-block:: console
 
     $ restic -r /srv/restic-repo check --read-data-subset=10%
 
-Use ``--read-data-subset=NS`` to check a randomly chosen subset of the repository pack files. 
-It takes one parameter, ``NS``, where 'N' is a whole number representing file size and 'S' is the unit 
-of file size (B/K/M/G/T) of pack files to check. Behind the scenes, the specified size will be converted 
-to percentage of the total repository size. The behaviour of the check command following this conversion 
-will be the same as the percentage option above. For a file size value the following command may be used:
+Use ``--read-data-subset=nS`` to check a randomly chosen subset of the
+repository pack files. It takes one parameter, ``nS``, where 'n' is a whole
+number representing file size and 'S' is the unit of file size (K/M/G/T) of
+pack files to check. Behind the scenes, the specified size will be converted
+to percentage of the total repository size. The behaviour of the check command
+following this conversion will be the same as the percentage option above. For
+a file size value the following command may be used:
 
 .. code-block:: console
 
@@ -298,3 +357,27 @@ will be the same as the percentage option above. For a file size value the follo
     $ restic -r /srv/restic-repo check --read-data-subset=10G
 
 
+Upgrading the repository format version
+=======================================
+
+Repositories created using earlier restic versions use an older repository
+format version and have to be upgraded to allow using all new features.
+Upgrading must be done explicitly as a newer repository version increases the
+minimum restic version required to access the repository. For example the
+repository format version 2 is only readable using restic 0.14.0 or newer.
+
+Upgrading to repository version 2 is a two step process: first run
+``migrate upgrade_repo_v2`` which will check the repository integrity and
+then upgrade the repository version. Repository problems must be corrected
+before the migration will be possible. After the migration is complete, run
+``prune`` to compress the repository metadata. To limit the amount of data
+rewritten in at once, you can use the ``prune --max-repack-size size``
+parameter, see :ref:`customize-pruning` for more details.
+
+File contents stored in the repository will not be rewritten, data from new
+backups will be compressed. Over time more and more of the repository will
+be compressed. To speed up this process and compress all not yet compressed
+data, you can run ``prune --repack-uncompressed``. When you plan to create
+your backups with maximum compression, you should also add the
+``--compression max`` flag to the prune command. For already backed up data,
+the compression level cannot be changed later on.

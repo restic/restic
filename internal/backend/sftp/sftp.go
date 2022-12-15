@@ -3,6 +3,8 @@ package sftp
 import (
 	"bufio"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"hash"
 	"io"
@@ -11,14 +13,16 @@ import (
 	"path"
 	"time"
 
+	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/layout"
+	"github.com/restic/restic/internal/backend/sema"
+	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
-	"github.com/restic/restic/internal/backend"
-	"github.com/restic/restic/internal/debug"
-
 	"github.com/cenkalti/backoff/v4"
 	"github.com/pkg/sftp"
+	"golang.org/x/sync/errgroup"
 )
 
 // SFTP is a backend in a directory accessed via SFTP.
@@ -29,15 +33,24 @@ type SFTP struct {
 	cmd    *exec.Cmd
 	result <-chan error
 
-	backend.Layout
+	posixRename bool
+
+	sem sema.Semaphore
+	layout.Layout
 	Config
+	backend.Modes
 }
 
 var _ restic.Backend = &SFTP{}
 
 const defaultLayout = "default"
 
-func startClient(program string, args ...string) (*SFTP, error) {
+func startClient(cfg Config) (*SFTP, error) {
+	program, args, err := buildSSHCommand(cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	debug.Log("start client %v %v", program, args)
 	// Connect to a remote host and request the sftp subsystem via the 'ssh'
 	// command.  This assumes that passwordless login is correctly configured.
@@ -68,7 +81,10 @@ func startClient(program string, args ...string) (*SFTP, error) {
 
 	bg, err := backend.StartForeground(cmd)
 	if err != nil {
-		return nil, errors.Wrap(err, "cmd.Start")
+		if backend.IsErrDot(err) {
+			return nil, errors.Errorf("cannot implicitly run relative executable %v found in current directory, use -o sftp.command=./<command> to override", cmd.Path)
+		}
+		return nil, err
 	}
 
 	// wait in a different goroutine
@@ -92,7 +108,8 @@ func startClient(program string, args ...string) (*SFTP, error) {
 		return nil, errors.Wrap(err, "bg")
 	}
 
-	return &SFTP{c: client, cmd: cmd, result: ch}, nil
+	_, posixRename := client.HasExtension("posix-rename@openssh.com")
+	return &SFTP{c: client, cmd: cmd, result: ch, posixRename: posixRename}, nil
 }
 
 // clientError returns an error if the client has exited. Otherwise, nil is
@@ -109,43 +126,66 @@ func (r *SFTP) clientError() error {
 }
 
 // Open opens an sftp backend as described by the config by running
-// "ssh" with the appropriate arguments (or cfg.Command, if set). The function
-// preExec is run just before, postExec just after starting a program.
+// "ssh" with the appropriate arguments (or cfg.Command, if set).
 func Open(ctx context.Context, cfg Config) (*SFTP, error) {
 	debug.Log("open backend with config %#v", cfg)
 
-	cmd, args, err := buildSSHCommand(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	sftp, err := startClient(cmd, args...)
+	sftp, err := startClient(cfg)
 	if err != nil {
 		debug.Log("unable to start program: %v", err)
 		return nil, err
 	}
 
-	sftp.Layout, err = backend.ParseLayout(ctx, sftp, cfg.Layout, defaultLayout, cfg.Path)
+	return open(ctx, sftp, cfg)
+}
+
+func open(ctx context.Context, sftp *SFTP, cfg Config) (*SFTP, error) {
+	sem, err := sema.New(cfg.Connections)
+	if err != nil {
+		return nil, err
+	}
+
+	sftp.Layout, err = layout.ParseLayout(ctx, sftp, cfg.Layout, defaultLayout, cfg.Path)
 	if err != nil {
 		return nil, err
 	}
 
 	debug.Log("layout: %v\n", sftp.Layout)
 
+	fi, err := sftp.c.Stat(sftp.Layout.Filename(restic.Handle{Type: restic.ConfigFile}))
+	m := backend.DeriveModesFromFileInfo(fi, err)
+	debug.Log("using (%03O file, %03O dir) permissions", m.File, m.Dir)
+
 	sftp.Config = cfg
 	sftp.p = cfg.Path
+	sftp.sem = sem
+	sftp.Modes = m
 	return sftp, nil
 }
 
-func (r *SFTP) mkdirAllDataSubdirs() error {
+func (r *SFTP) mkdirAllDataSubdirs(ctx context.Context, nconn uint) error {
+	// Run multiple MkdirAll calls concurrently. These involve multiple
+	// round-trips and we do a lot of them, so this whole operation can be slow
+	// on high-latency links.
+	g, _ := errgroup.WithContext(ctx)
+	// Use errgroup's built-in semaphore, because r.sem is not initialized yet.
+	g.SetLimit(int(nconn))
+
 	for _, d := range r.Paths() {
-		err := r.c.MkdirAll(d)
-		if err != nil {
-			return err
-		}
+		d := d
+		g.Go(func() error {
+			// First try Mkdir. For most directories in Paths, this takes one
+			// round trip, not counting duplicate parent creations causes by
+			// concurrency. MkdirAll first does Stat, then recursive MkdirAll
+			// on the parent, so calls typically take three round trips.
+			if err := r.c.Mkdir(d); err == nil {
+				return nil
+			}
+			return r.c.MkdirAll(d)
+		})
 	}
 
-	return nil
+	return g.Wait()
 }
 
 // Join combines path components with slashes (according to the sftp spec).
@@ -165,7 +205,6 @@ func (r *SFTP) ReadDir(ctx context.Context, dir string) ([]os.FileInfo, error) {
 
 // IsNotExist returns true if the error is caused by a not existing file.
 func (r *SFTP) IsNotExist(err error) bool {
-	err = errors.Cause(err)
 	return errors.Is(err, os.ErrNotExist)
 }
 
@@ -197,43 +236,38 @@ func buildSSHCommand(cfg Config) (cmd string, args []string, err error) {
 }
 
 // Create creates an sftp backend as described by the config by running "ssh"
-// with the appropriate arguments (or cfg.Command, if set). The function
-// preExec is run just before, postExec just after starting a program.
+// with the appropriate arguments (or cfg.Command, if set).
 func Create(ctx context.Context, cfg Config) (*SFTP, error) {
-	cmd, args, err := buildSSHCommand(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	sftp, err := startClient(cmd, args...)
+	sftp, err := startClient(cfg)
 	if err != nil {
 		debug.Log("unable to start program: %v", err)
 		return nil, err
 	}
 
-	sftp.Layout, err = backend.ParseLayout(ctx, sftp, cfg.Layout, defaultLayout, cfg.Path)
+	sftp.Layout, err = layout.ParseLayout(ctx, sftp, cfg.Layout, defaultLayout, cfg.Path)
 	if err != nil {
 		return nil, err
 	}
 
+	sftp.Modes = backend.DefaultModes
+
 	// test if config file already exists
-	_, err = sftp.c.Lstat(Join(cfg.Path, backend.Paths.Config))
+	_, err = sftp.c.Lstat(sftp.Layout.Filename(restic.Handle{Type: restic.ConfigFile}))
 	if err == nil {
 		return nil, errors.New("config file already exists")
 	}
 
 	// create paths for data and refs
-	if err = sftp.mkdirAllDataSubdirs(); err != nil {
+	if err = sftp.mkdirAllDataSubdirs(ctx, cfg.Connections); err != nil {
 		return nil, err
 	}
 
-	err = sftp.Close()
-	if err != nil {
-		return nil, errors.Wrap(err, "Close")
-	}
+	// repurpose existing connection
+	return open(ctx, sftp, cfg)
+}
 
-	// open backend
-	return Open(ctx, cfg)
+func (r *SFTP) Connections() uint {
+	return r.Config.Connections
 }
 
 // Location returns this backend's location (the directory name).
@@ -246,10 +280,26 @@ func (r *SFTP) Hasher() hash.Hash {
 	return nil
 }
 
+// HasAtomicReplace returns whether Save() can atomically replace files
+func (r *SFTP) HasAtomicReplace() bool {
+	return r.posixRename
+}
+
 // Join joins the given paths and cleans them afterwards. This always uses
 // forward slashes, which is required by sftp.
 func Join(parts ...string) string {
 	return path.Clean(path.Join(parts...))
+}
+
+// tempSuffix generates a random string suffix that should be sufficiently long
+// to avoid accidential conflicts
+func tempSuffix() string {
+	var nonce [16]byte
+	_, err := rand.Read(nonce[:])
+	if err != nil {
+		panic(err)
+	}
+	return hex.EncodeToString(nonce[:])
 }
 
 // Save stores data in the backend at the handle.
@@ -264,10 +314,14 @@ func (r *SFTP) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader
 	}
 
 	filename := r.Filename(h)
+	tmpFilename := filename + "-restic-temp-" + tempSuffix()
 	dirname := r.Dirname(h)
 
+	r.sem.GetToken()
+	defer r.sem.ReleaseToken()
+
 	// create new file
-	f, err := r.c.OpenFile(filename, os.O_CREATE|os.O_EXCL|os.O_WRONLY)
+	f, err := r.c.OpenFile(tmpFilename, os.O_CREATE|os.O_EXCL|os.O_WRONLY)
 
 	if r.IsNotExist(err) {
 		// error is caused by a missing directory, try to create it
@@ -276,14 +330,14 @@ func (r *SFTP) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader
 			debug.Log("error creating dir %v: %v", r.Dirname(h), mkdirErr)
 		} else {
 			// try again
-			f, err = r.c.OpenFile(filename, os.O_CREATE|os.O_EXCL|os.O_WRONLY)
+			f, err = r.c.OpenFile(tmpFilename, os.O_CREATE|os.O_EXCL|os.O_WRONLY)
 		}
 	}
 
 	// pkg/sftp doesn't allow creating with a mode.
 	// Chmod while the file is still empty.
 	if err == nil {
-		err = f.Chmod(backend.Modes.File)
+		err = f.Chmod(r.Modes.File)
 	}
 	if err != nil {
 		return errors.Wrap(err, "OpenFile")
@@ -298,16 +352,15 @@ func (r *SFTP) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader
 		rmErr := r.c.Remove(f.Name())
 		if rmErr != nil {
 			debug.Log("sftp: failed to remove broken file %v: %v",
-				filename, rmErr)
+				f.Name(), rmErr)
 		}
-
-		err = r.checkNoSpace(dirname, rd.Length(), err)
 	}()
 
 	// save data, make sure to use the optimized sftp upload method
 	wbytes, err := f.ReadFrom(rd)
 	if err != nil {
 		_ = f.Close()
+		err = r.checkNoSpace(dirname, rd.Length(), err)
 		return errors.Wrap(err, "Write")
 	}
 
@@ -318,7 +371,17 @@ func (r *SFTP) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader
 	}
 
 	err = f.Close()
-	return errors.Wrap(err, "Close")
+	if err != nil {
+		return errors.Wrap(err, "Close")
+	}
+
+	// Prefer POSIX atomic rename if available.
+	if r.posixRename {
+		err = r.c.PosixRename(tmpFilename, filename)
+	} else {
+		err = r.c.Rename(tmpFilename, filename)
+	}
+	return errors.Wrap(err, "Rename")
 }
 
 // checkNoSpace checks if err was likely caused by lack of available space
@@ -339,7 +402,7 @@ func (r *SFTP) checkNoSpace(dir string, size int64, origErr error) error {
 		debug.Log("sftp: StatVFS returned %v", err)
 		return origErr
 	}
-	if fsinfo.Favail == 0 || fsinfo.FreeSpace() < uint64(size) {
+	if fsinfo.Favail == 0 || fsinfo.Frsize*fsinfo.Bavail < uint64(size) {
 		err := errors.New("sftp: no space left on device")
 		return backoff.Permanent(err)
 	}
@@ -352,6 +415,19 @@ func (r *SFTP) Load(ctx context.Context, h restic.Handle, length int, offset int
 	return backend.DefaultLoad(ctx, h, length, offset, r.openReader, fn)
 }
 
+// wrapReader wraps an io.ReadCloser to run an additional function on Close.
+type wrapReader struct {
+	io.ReadCloser
+	io.WriterTo
+	f func()
+}
+
+func (wr *wrapReader) Close() error {
+	err := wr.ReadCloser.Close()
+	wr.f()
+	return err
+}
+
 func (r *SFTP) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	debug.Log("Load %v, length %v, offset %v", h, length, offset)
 	if err := h.Valid(); err != nil {
@@ -362,26 +438,38 @@ func (r *SFTP) openReader(ctx context.Context, h restic.Handle, length int, offs
 		return nil, errors.New("offset is negative")
 	}
 
+	r.sem.GetToken()
 	f, err := r.c.Open(r.Filename(h))
 	if err != nil {
+		r.sem.ReleaseToken()
 		return nil, err
 	}
 
 	if offset > 0 {
 		_, err = f.Seek(offset, 0)
 		if err != nil {
+			r.sem.ReleaseToken()
 			_ = f.Close()
 			return nil, err
 		}
 	}
 
+	// use custom close wrapper to also provide WriteTo() on the wrapper
+	rd := &wrapReader{
+		ReadCloser: f,
+		WriterTo:   f,
+		f: func() {
+			r.sem.ReleaseToken()
+		},
+	}
+
 	if length > 0 {
 		// unlimited reads usually use io.Copy which needs WriteTo support at the underlying reader
 		// limited reads are usually combined with io.ReadFull which reads all required bytes into a buffer in one go
-		return backend.LimitReadCloser(f, int64(length)), nil
+		return backend.LimitReadCloser(rd, int64(length)), nil
 	}
 
-	return f, nil
+	return rd, nil
 }
 
 // Stat returns information about a blob.
@@ -395,6 +483,9 @@ func (r *SFTP) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, erro
 		return restic.FileInfo{}, backoff.Permanent(err)
 	}
 
+	r.sem.GetToken()
+	defer r.sem.ReleaseToken()
+
 	fi, err := r.c.Lstat(r.Filename(h))
 	if err != nil {
 		return restic.FileInfo{}, errors.Wrap(err, "Lstat")
@@ -403,31 +494,15 @@ func (r *SFTP) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, erro
 	return restic.FileInfo{Size: fi.Size(), Name: h.Name}, nil
 }
 
-// Test returns true if a blob of the given type and name exists in the backend.
-func (r *SFTP) Test(ctx context.Context, h restic.Handle) (bool, error) {
-	debug.Log("Test(%v)", h)
-	if err := r.clientError(); err != nil {
-		return false, err
-	}
-
-	_, err := r.c.Lstat(r.Filename(h))
-	if os.IsNotExist(errors.Cause(err)) {
-		return false, nil
-	}
-
-	if err != nil {
-		return false, errors.Wrap(err, "Lstat")
-	}
-
-	return true, nil
-}
-
 // Remove removes the content stored at name.
 func (r *SFTP) Remove(ctx context.Context, h restic.Handle) error {
 	debug.Log("Remove(%v)", h)
 	if err := r.clientError(); err != nil {
 		return err
 	}
+
+	r.sem.GetToken()
+	defer r.sem.ReleaseToken()
 
 	return r.c.Remove(r.Filename(h))
 }
@@ -439,7 +514,14 @@ func (r *SFTP) List(ctx context.Context, t restic.FileType, fn func(restic.FileI
 
 	basedir, subdirs := r.Basedir(t)
 	walker := r.c.Walk(basedir)
-	for walker.Step() {
+	for {
+		r.sem.GetToken()
+		ok := walker.Step()
+		r.sem.ReleaseToken()
+		if !ok {
+			break
+		}
+
 		if walker.Err() != nil {
 			if r.IsNotExist(walker.Err()) {
 				debug.Log("ignoring non-existing directory")

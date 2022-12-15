@@ -1,0 +1,14 @@
+Enhancement: Allow use of SAS token to authenticate to Azure
+
+Previously restic only supported AccountKeys to authenticate to Azure
+storage accounts, which necessitates giving a significant amount of
+access.
+
+We added support for Azure SAS tokens which are a more fine-grained
+and time-limited manner of granting access. Set the `AZURE_ACCOUNT_NAME`
+and `AZURE_ACCOUNT_SAS` environment variables to use a SAS token for
+authentication. Note that if `AZURE_ACCOUNT_KEY` is set, it will take
+precedence.
+
+https://github.com/restic/restic/issues/2295
+https://github.com/restic/restic/pull/3661

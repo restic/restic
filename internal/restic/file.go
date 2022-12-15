@@ -7,17 +7,37 @@ import (
 )
 
 // FileType is the type of a file in the backend.
-type FileType string
+type FileType uint8
 
 // These are the different data types a backend can store.
 const (
-	PackFile     FileType = "data" // use data, as packs are stored under /data in repo
-	KeyFile      FileType = "key"
-	LockFile     FileType = "lock"
-	SnapshotFile FileType = "snapshot"
-	IndexFile    FileType = "index"
-	ConfigFile   FileType = "config"
+	PackFile FileType = 1 + iota
+	KeyFile
+	LockFile
+	SnapshotFile
+	IndexFile
+	ConfigFile
 )
+
+func (t FileType) String() string {
+	s := "invalid"
+	switch t {
+	case PackFile:
+		// Spelled "data" instead of "pack" for historical reasons.
+		s = "data"
+	case KeyFile:
+		s = "key"
+	case LockFile:
+		s = "lock"
+	case SnapshotFile:
+		s = "snapshot"
+	case IndexFile:
+		s = "index"
+	case ConfigFile:
+		s = "config"
+	}
+	return s
+}
 
 // Handle is used to store and access data in a backend.
 type Handle struct {
@@ -36,10 +56,6 @@ func (h Handle) String() string {
 
 // Valid returns an error if h is not valid.
 func (h Handle) Valid() error {
-	if h.Type == "" {
-		return errors.New("type is empty")
-	}
-
 	switch h.Type {
 	case PackFile:
 	case KeyFile:
@@ -48,7 +64,7 @@ func (h Handle) Valid() error {
 	case IndexFile:
 	case ConfigFile:
 	default:
-		return errors.Errorf("invalid Type %q", h.Type)
+		return errors.Errorf("invalid Type %d", h.Type)
 	}
 
 	if h.Type == ConfigFile {

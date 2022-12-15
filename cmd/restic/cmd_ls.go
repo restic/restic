@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
@@ -41,16 +42,14 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runLs(lsOptions, globalOptions, args)
+		return runLs(cmd.Context(), lsOptions, globalOptions, args)
 	},
 }
 
 // LsOptions collects all options for the ls command.
 type LsOptions struct {
-	ListLong  bool
-	Hosts     []string
-	Tags      restic.TagLists
-	Paths     []string
+	ListLong bool
+	snapshotFilterOptions
 	Recursive bool
 }
 
@@ -60,10 +59,8 @@ func init() {
 	cmdRoot.AddCommand(cmdLs)
 
 	flags := cmdLs.Flags()
+	initSingleSnapshotFilterOptions(flags, &lsOptions.snapshotFilterOptions)
 	flags.BoolVarP(&lsOptions.ListLong, "long", "l", false, "use a long listing format showing size and mode")
-	flags.StringArrayVarP(&lsOptions.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when no snapshot ID is given (can be specified multiple times)")
-	flags.Var(&lsOptions.Tags, "tag", "only consider snapshots which include this `taglist`, when no snapshot ID is given")
-	flags.StringArrayVar(&lsOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot ID is given")
 	flags.BoolVar(&lsOptions.Recursive, "recursive", false, "include files in subfolders of the listed directories")
 }
 
@@ -114,7 +111,7 @@ func lsNodeJSON(enc *json.Encoder, path string, node *restic.Node) error {
 	return enc.Encode(n)
 }
 
-func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
+func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []string) error {
 	if len(args) == 0 {
 		return errors.Fatal("no snapshot ID specified, specify snapshot ID or use special ID 'latest'")
 	}
@@ -164,17 +161,19 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 		return false
 	}
 
-	repo, err := OpenRepository(gopts)
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
 
-	if err = repo.LoadIndex(gopts.ctx); err != nil {
+	snapshotLister, err := backend.MemorizeList(ctx, repo.Backend(), restic.SnapshotFile)
+	if err != nil {
 		return err
 	}
 
-	ctx, cancel := context.WithCancel(gopts.ctx)
-	defer cancel()
+	if err = repo.LoadIndex(ctx); err != nil {
+		return err
+	}
 
 	var (
 		printSnapshot func(sn *restic.Snapshot)
@@ -211,45 +210,48 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	for sn := range FindFilteredSnapshots(ctx, repo, opts.Hosts, opts.Tags, opts.Paths, args[:1]) {
-		printSnapshot(sn)
+	sn, err := restic.FindFilteredSnapshot(ctx, snapshotLister, repo, opts.Hosts, opts.Tags, opts.Paths, nil, args[0])
+	if err != nil {
+		return err
+	}
 
-		err := walker.Walk(ctx, repo, *sn.Tree, nil, func(_ restic.ID, nodepath string, node *restic.Node, err error) (bool, error) {
-			if err != nil {
-				return false, err
-			}
-			if node == nil {
-				return false, nil
-			}
+	printSnapshot(sn)
 
-			if withinDir(nodepath) {
-				// if we're within a dir, print the node
-				printNode(nodepath, node)
-
-				// if recursive listing is requested, signal the walker that it
-				// should continue walking recursively
-				if opts.Recursive {
-					return false, nil
-				}
-			}
-
-			// if there's an upcoming match deeper in the tree (but we're not
-			// there yet), signal the walker to descend into any subdirs
-			if approachingMatchingTree(nodepath) {
-				return false, nil
-			}
-
-			// otherwise, signal the walker to not walk recursively into any
-			// subdirs
-			if node.Type == "dir" {
-				return false, walker.ErrSkipNode
-			}
-			return false, nil
-		})
-
+	err = walker.Walk(ctx, repo, *sn.Tree, nil, func(_ restic.ID, nodepath string, node *restic.Node, err error) (bool, error) {
 		if err != nil {
-			return err
+			return false, err
 		}
+		if node == nil {
+			return false, nil
+		}
+
+		if withinDir(nodepath) {
+			// if we're within a dir, print the node
+			printNode(nodepath, node)
+
+			// if recursive listing is requested, signal the walker that it
+			// should continue walking recursively
+			if opts.Recursive {
+				return false, nil
+			}
+		}
+
+		// if there's an upcoming match deeper in the tree (but we're not
+		// there yet), signal the walker to descend into any subdirs
+		if approachingMatchingTree(nodepath) {
+			return false, nil
+		}
+
+		// otherwise, signal the walker to not walk recursively into any
+		// subdirs
+		if node.Type == "dir" {
+			return false, walker.ErrSkipNode
+		}
+		return false, nil
+	})
+
+	if err != nil {
+		return err
 	}
 
 	return nil

@@ -13,6 +13,7 @@ import (
 	"github.com/restic/restic/internal/backend/azure"
 	"github.com/restic/restic/internal/backend/test"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -36,7 +37,7 @@ func newAzureTestSuite(t testing.TB) *test.Suite {
 
 			cfg := azcfg.(azure.Config)
 			cfg.AccountName = os.Getenv("RESTIC_TEST_AZURE_ACCOUNT_NAME")
-			cfg.AccountKey = os.Getenv("RESTIC_TEST_AZURE_ACCOUNT_KEY")
+			cfg.AccountKey = options.NewSecretString(os.Getenv("RESTIC_TEST_AZURE_ACCOUNT_KEY"))
 			cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
 			return cfg, nil
 		},
@@ -45,17 +46,18 @@ func newAzureTestSuite(t testing.TB) *test.Suite {
 		Create: func(config interface{}) (restic.Backend, error) {
 			cfg := config.(azure.Config)
 
-			be, err := azure.Create(cfg, tr)
+			ctx := context.TODO()
+			be, err := azure.Create(ctx, cfg, tr)
 			if err != nil {
 				return nil, err
 			}
 
-			exists, err := be.Test(context.TODO(), restic.Handle{Type: restic.ConfigFile})
-			if err != nil {
+			_, err = be.Stat(context.TODO(), restic.Handle{Type: restic.ConfigFile})
+			if err != nil && !be.IsNotExist(err) {
 				return nil, err
 			}
 
-			if exists {
+			if err == nil {
 				return nil, errors.New("config already exists")
 			}
 
@@ -65,15 +67,15 @@ func newAzureTestSuite(t testing.TB) *test.Suite {
 		// OpenFn is a function that opens a previously created temporary repository.
 		Open: func(config interface{}) (restic.Backend, error) {
 			cfg := config.(azure.Config)
-
-			return azure.Open(cfg, tr)
+			ctx := context.TODO()
+			return azure.Open(ctx, cfg, tr)
 		},
 
 		// CleanupFn removes data created during the tests.
 		Cleanup: func(config interface{}) error {
 			cfg := config.(azure.Config)
-
-			be, err := azure.Open(cfg, tr)
+			ctx := context.TODO()
+			be, err := azure.Open(ctx, cfg, tr)
 			if err != nil {
 				return err
 			}
@@ -146,7 +148,7 @@ func TestUploadLargeFile(t *testing.T) {
 
 	cfg := azcfg.(azure.Config)
 	cfg.AccountName = os.Getenv("RESTIC_TEST_AZURE_ACCOUNT_NAME")
-	cfg.AccountKey = os.Getenv("RESTIC_TEST_AZURE_ACCOUNT_KEY")
+	cfg.AccountKey = options.NewSecretString(os.Getenv("RESTIC_TEST_AZURE_ACCOUNT_KEY"))
 	cfg.Prefix = fmt.Sprintf("test-upload-large-%d", time.Now().UnixNano())
 
 	tr, err := backend.Transport(backend.TransportOptions{})
@@ -154,7 +156,7 @@ func TestUploadLargeFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	be, err := azure.Create(cfg, tr)
+	be, err := azure.Create(ctx, cfg, tr)
 	if err != nil {
 		t.Fatal(err)
 	}

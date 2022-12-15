@@ -190,7 +190,7 @@ type KeepReason struct {
 // according to the policy p. list is sorted in the process. reasons contains
 // the reasons to keep each snapshot, it is in the same order as keep.
 func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots, reasons []KeepReason) {
-	sort.Sort(list)
+	sort.Stable(list)
 
 	if p.Empty() {
 		for _, sn := range list {

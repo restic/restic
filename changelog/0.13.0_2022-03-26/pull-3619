@@ -1,0 +1,11 @@
+Bugfix: Avoid choosing parent snapshots newer than time of new snapshot
+
+The `backup` command, when a `--parent` was not provided, previously chose the
+most recent matching snapshot as the parent snapshot. However, this didn't make
+sense when the user passed `--time` to create a new snapshot older than the most
+recent snapshot.
+
+Instead, `backup` now chooses the most recent snapshot which is not newer than
+the snapshot-being-created's timestamp, to avoid any time travel.
+
+https://github.com/restic/restic/pull/3619

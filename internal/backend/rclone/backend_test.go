@@ -13,7 +13,7 @@ import (
 )
 
 func newTestSuite(t testing.TB) *test.Suite {
-	dir, cleanup := rtest.TempDir(t)
+	dir := rtest.TempDir(t)
 
 	return &test.Suite{
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
@@ -29,7 +29,8 @@ func newTestSuite(t testing.TB) *test.Suite {
 			t.Logf("Create()")
 			cfg := config.(rclone.Config)
 			be, err := rclone.Create(context.TODO(), cfg)
-			if e, ok := errors.Cause(err).(*exec.Error); ok && e.Err == exec.ErrNotFound {
+			var e *exec.Error
+			if errors.As(err, &e) && e.Err == exec.ErrNotFound {
 				t.Skipf("program %q not found", e.Name)
 				return nil, nil
 			}
@@ -41,13 +42,6 @@ func newTestSuite(t testing.TB) *test.Suite {
 			t.Logf("Open()")
 			cfg := config.(rclone.Config)
 			return rclone.Open(cfg, nil)
-		},
-
-		// CleanupFn removes data created during the tests.
-		Cleanup: func(config interface{}) error {
-			t.Logf("cleanup dir %v", dir)
-			cleanup()
-			return nil
 		},
 	}
 }

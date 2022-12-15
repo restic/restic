@@ -1,0 +1,15 @@
+Bugfix: Fix rclone backend prematurely exiting when receiving SIGINT on Windows
+
+Previously, pressing Ctrl+C in a Windows console where restic was running with
+rclone as the backend would cause rclone to exit prematurely due to getting a
+`SIGINT` signal at the same time as restic. Restic would then wait for a long
+time for time with "unexpected EOF" and "rclone stdio connection already closed"
+errors.
+
+This has now been fixed by restic starting the rclone process detached from the
+console restic runs in (similar to starting processes in a new process group on
+Linux), which enables restic to gracefully clean up rclone (which now never gets
+the `SIGINT`).
+
+https://github.com/restic/restic/issues/3601
+https://github.com/restic/restic/pull/3602

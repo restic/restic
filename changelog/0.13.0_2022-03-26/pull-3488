@@ -1,0 +1,9 @@
+Bugfix: `rebuild-index` failed if an index file was damaged
+
+Previously, the `rebuild-index` command would fail with an error if an index
+file was damaged or truncated. This has now been fixed.
+
+On older restic versions, a (slow) workaround is to use
+`rebuild-index --read-all-packs` or to manually delete the damaged index.
+
+https://github.com/restic/restic/pull/3488

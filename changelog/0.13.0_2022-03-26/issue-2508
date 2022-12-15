@@ -1,0 +1,8 @@
+Enhancement: Support JSON output and quiet mode for the `diff` command
+
+The `diff` command now supports outputting machine-readable output in JSON
+format. To enable this, pass the `--json` option to the command. To only print
+the summary and suppress detailed output, pass the `--quiet` option.
+
+https://github.com/restic/restic/issues/2508
+https://github.com/restic/restic/pull/3592

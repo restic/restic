@@ -202,11 +202,12 @@ configuration of restic will be placed into environment variables. This will
 include sensitive information, such as your AWS secret and repository password.
 Therefore, make sure the next commands **do not** end up in your shell's
 history file. Adjust the contents of the environment variables to fit your
-bucket's name and your user's API credentials.
+bucket's name, region, and your user's API credentials.
 
 .. code-block:: console
 
    $ unset HISTFILE
+   $ export AWS_DEFAULT_REGION="eu-west-1"
    $ export RESTIC_REPOSITORY="s3:https://s3.amazonaws.com/restic-demo"
    $ export AWS_ACCESS_KEY_ID="AKIAJAJSLTZCAZ4SRI5Q"
    $ export AWS_SECRET_ACCESS_KEY="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"

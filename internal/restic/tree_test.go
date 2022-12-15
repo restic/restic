@@ -3,15 +3,17 @@ package restic_test
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"errors"
 	"os"
 	"path/filepath"
 	"strconv"
 	"testing"
 
+	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"golang.org/x/sync/errgroup"
 )
 
 var testFiles = []struct {
@@ -24,7 +26,7 @@ var testFiles = []struct {
 }
 
 func createTempDir(t *testing.T) string {
-	tempdir, err := ioutil.TempDir(rtest.TestTempDir, "restic-test-")
+	tempdir, err := os.MkdirTemp(rtest.TestTempDir, "restic-test-")
 	rtest.OK(t, err)
 
 	for _, test := range testFiles {
@@ -94,25 +96,59 @@ func TestNodeComparison(t *testing.T) {
 	rtest.Assert(t, !node.Equals(n2), "nodes are equal")
 }
 
-func TestLoadTree(t *testing.T) {
+func TestEmptyLoadTree(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
+	var wg errgroup.Group
+	repo.StartPackUploader(context.TODO(), &wg)
 	// save tree
 	tree := restic.NewTree(0)
-	id, err := repo.SaveTree(context.TODO(), tree)
+	id, err := restic.SaveTree(context.TODO(), repo, tree)
 	rtest.OK(t, err)
 
 	// save packs
 	rtest.OK(t, repo.Flush(context.Background()))
 
 	// load tree again
-	tree2, err := repo.LoadTree(context.TODO(), id)
+	tree2, err := restic.LoadTree(context.TODO(), repo, id)
 	rtest.OK(t, err)
 
 	rtest.Assert(t, tree.Equals(tree2),
 		"trees are not equal: want %v, got %v",
 		tree, tree2)
+}
+
+func TestTreeEqualSerialization(t *testing.T) {
+	files := []string{"node.go", "tree.go", "tree_test.go"}
+	for i := 1; i <= len(files); i++ {
+		tree := restic.NewTree(i)
+		builder := restic.NewTreeJSONBuilder()
+
+		for _, fn := range files[:i] {
+			fi, err := os.Lstat(fn)
+			rtest.OK(t, err)
+			node, err := restic.NodeFromFileInfo(fn, fi)
+			rtest.OK(t, err)
+
+			rtest.OK(t, tree.Insert(node))
+			rtest.OK(t, builder.AddNode(node))
+
+			rtest.Assert(t, tree.Insert(node) != nil, "no error on duplicate node")
+			rtest.Assert(t, builder.AddNode(node) != nil, "no error on duplicate node")
+			rtest.Assert(t, errors.Is(builder.AddNode(node), restic.ErrTreeNotOrdered), "wrong error returned")
+		}
+
+		treeBytes, err := json.Marshal(tree)
+		treeBytes = append(treeBytes, '\n')
+		rtest.OK(t, err)
+
+		stiBytes, err := builder.Finalize()
+		rtest.OK(t, err)
+
+		// compare serialization of an individual node and the SaveTreeIterator
+		rtest.Equals(t, treeBytes, stiBytes)
+	}
 }
 
 func BenchmarkBuildTree(b *testing.B) {
@@ -133,5 +169,49 @@ func BenchmarkBuildTree(b *testing.B) {
 		for i := range nodes {
 			_ = t.Insert(&nodes[i])
 		}
+	}
+}
+
+func TestLoadTree(t *testing.T) {
+	repository.TestAllVersions(t, testLoadTree)
+}
+
+func testLoadTree(t *testing.T, version uint) {
+	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
+	defer cleanup()
+
+	if rtest.BenchArchiveDirectory == "" {
+		t.Skip("benchdir not set, skipping")
+	}
+
+	// archive a few files
+	sn := archiver.TestSnapshot(t, repo, rtest.BenchArchiveDirectory, nil)
+	rtest.OK(t, repo.Flush(context.Background()))
+
+	_, err := restic.LoadTree(context.TODO(), repo, *sn.Tree)
+	rtest.OK(t, err)
+}
+
+func BenchmarkLoadTree(t *testing.B) {
+	repository.BenchmarkAllVersions(t, benchmarkLoadTree)
+}
+
+func benchmarkLoadTree(t *testing.B, version uint) {
+	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
+	defer cleanup()
+
+	if rtest.BenchArchiveDirectory == "" {
+		t.Skip("benchdir not set, skipping")
+	}
+
+	// archive a few files
+	sn := archiver.TestSnapshot(t, repo, rtest.BenchArchiveDirectory, nil)
+	rtest.OK(t, repo.Flush(context.Background()))
+
+	t.ResetTimer()
+
+	for i := 0; i < t.N; i++ {
+		_, err := restic.LoadTree(context.TODO(), repo, *sn.Tree)
+		rtest.OK(t, err)
 	}
 }

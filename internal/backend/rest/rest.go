@@ -6,17 +6,13 @@ import (
 	"fmt"
 	"hash"
 	"io"
-	"io/ioutil"
 	"net/http"
-	"net/textproto"
 	"net/url"
 	"path"
-	"strconv"
 	"strings"
 
-	"golang.org/x/net/context/ctxhttp"
-
-	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/layout"
+	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -29,10 +25,11 @@ var _ restic.Backend = &Backend{}
 
 // Backend uses the REST protocol to access data stored on a server.
 type Backend struct {
-	url    *url.URL
-	sem    *backend.Semaphore
-	client *http.Client
-	backend.Layout
+	url         *url.URL
+	connections uint
+	sem         sema.Semaphore
+	client      http.Client
+	layout.Layout
 }
 
 // the REST API protocol version is decided by HTTP request headers, these are the constants.
@@ -43,9 +40,7 @@ const (
 
 // Open opens the REST backend with the given config.
 func Open(cfg Config, rt http.RoundTripper) (*Backend, error) {
-	client := &http.Client{Transport: rt}
-
-	sem, err := backend.NewSemaphore(cfg.Connections)
+	sem, err := sema.New(cfg.Connections)
 	if err != nil {
 		return nil, err
 	}
@@ -57,10 +52,11 @@ func Open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	}
 
 	be := &Backend{
-		url:    cfg.URL,
-		client: client,
-		Layout: &backend.RESTLayout{URL: url, Join: path.Join},
-		sem:    sem,
+		url:         cfg.URL,
+		client:      http.Client{Transport: rt},
+		Layout:      &layout.RESTLayout{URL: url, Join: path.Join},
+		connections: cfg.Connections,
+		sem:         sem,
 	}
 
 	return be, nil
@@ -92,7 +88,7 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, er
 		return nil, errors.Fatalf("server response unexpected: %v (%v)", resp.Status, resp.StatusCode)
 	}
 
-	_, err = io.Copy(ioutil.Discard, resp.Body)
+	_, err = io.Copy(io.Discard, resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -105,6 +101,10 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, er
 	return be, nil
 }
 
+func (b *Backend) Connections() uint {
+	return b.connections
+}
+
 // Location returns this backend's location (the server's URL).
 func (b *Backend) Location() string {
 	return b.url.String()
@@ -113,6 +113,12 @@ func (b *Backend) Location() string {
 // Hasher may return a hash function for calculating a content hash for the backend
 func (b *Backend) Hasher() hash.Hash {
 	return nil
+}
+
+// HasAtomicReplace returns whether Save() can atomically replace files
+func (b *Backend) HasAtomicReplace() bool {
+	// rest-server prevents overwriting
+	return false
 }
 
 // Save stores data in the backend at the handle.
@@ -125,9 +131,10 @@ func (b *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRea
 	defer cancel()
 
 	// make sure that client.Post() cannot close the reader by wrapping it
-	req, err := http.NewRequest(http.MethodPost, b.Filename(h), ioutil.NopCloser(rd))
+	req, err := http.NewRequestWithContext(ctx,
+		http.MethodPost, b.Filename(h), io.NopCloser(rd))
 	if err != nil {
-		return errors.Wrap(err, "NewRequest")
+		return errors.WithStack(err)
 	}
 	req.Header.Set("Content-Type", "application/octet-stream")
 	req.Header.Set("Accept", ContentTypeV2)
@@ -137,17 +144,17 @@ func (b *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRea
 	req.ContentLength = rd.Length()
 
 	b.sem.GetToken()
-	resp, err := ctxhttp.Do(ctx, b.client, req)
+	resp, err := b.client.Do(req)
 	b.sem.ReleaseToken()
 
 	var cerr error
 	if resp != nil {
-		_, _ = io.Copy(ioutil.Discard, resp.Body)
+		_, _ = io.Copy(io.Discard, resp.Body)
 		cerr = resp.Body.Close()
 	}
 
 	if err != nil {
-		return errors.Wrap(err, "client.Post")
+		return errors.WithStack(err)
 	}
 
 	if resp.StatusCode != 200 {
@@ -157,21 +164,20 @@ func (b *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRea
 	return errors.Wrap(cerr, "Close")
 }
 
-// ErrIsNotExist is returned whenever the requested file does not exist on the
+// notExistError is returned whenever the requested file does not exist on the
 // server.
-type ErrIsNotExist struct {
+type notExistError struct {
 	restic.Handle
 }
 
-func (e ErrIsNotExist) Error() string {
+func (e *notExistError) Error() string {
 	return fmt.Sprintf("%v does not exist", e.Handle)
 }
 
 // IsNotExist returns true if the error was caused by a non-existing file.
 func (b *Backend) IsNotExist(err error) bool {
-	err = errors.Cause(err)
-	_, ok := err.(ErrIsNotExist)
-	return ok
+	var e *notExistError
+	return errors.As(err, &e)
 }
 
 // Load runs fn with a reader that yields the contents of the file at h at the
@@ -205,44 +211,6 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 	return err
 }
 
-// checkContentLength returns an error if the server returned a value in the
-// Content-Length header in an HTTP2 connection, but closed the connection
-// before any data was sent.
-//
-// This is a workaround for https://github.com/golang/go/issues/46071
-//
-// See also https://forum.restic.net/t/http2-stream-closed-connection-reset-context-canceled/3743/10
-func checkContentLength(resp *http.Response) error {
-	// the following code is based on
-	// https://github.com/golang/go/blob/b7a85e0003cedb1b48a1fd3ae5b746ec6330102e/src/net/http/h2_bundle.go#L8646
-
-	if resp.ContentLength != 0 {
-		return nil
-	}
-
-	if resp.ProtoMajor != 2 && resp.ProtoMinor != 0 {
-		return nil
-	}
-
-	if len(resp.Header[textproto.CanonicalMIMEHeaderKey("Content-Length")]) != 1 {
-		return nil
-	}
-
-	// make sure that if the server returned a content length and we can
-	// parse it, it is really zero, otherwise return an error
-	contentLength := resp.Header.Get("Content-Length")
-	cl, err := strconv.ParseUint(contentLength, 10, 63)
-	if err != nil {
-		return fmt.Errorf("unable to parse Content-Length %q: %w", contentLength, err)
-	}
-
-	if cl != 0 {
-		return errors.Errorf("unexpected EOF: got 0 instead of %v bytes", cl)
-	}
-
-	return nil
-}
-
 func (b *Backend) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	debug.Log("Load %v, length %v, offset %v", h, length, offset)
 	if err := h.Valid(); err != nil {
@@ -257,9 +225,9 @@ func (b *Backend) openReader(ctx context.Context, h restic.Handle, length int, o
 		return nil, errors.Errorf("invalid length %d", length)
 	}
 
-	req, err := http.NewRequest("GET", b.Filename(h), nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", b.Filename(h), nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "http.NewRequest")
+		return nil, errors.WithStack(err)
 	}
 
 	byteRange := fmt.Sprintf("bytes=%d-", offset)
@@ -271,12 +239,12 @@ func (b *Backend) openReader(ctx context.Context, h restic.Handle, length int, o
 	debug.Log("Load(%v) send range %v", h, byteRange)
 
 	b.sem.GetToken()
-	resp, err := ctxhttp.Do(ctx, b.client, req)
+	resp, err := b.client.Do(req)
 	b.sem.ReleaseToken()
 
 	if err != nil {
 		if resp != nil {
-			_, _ = io.Copy(ioutil.Discard, resp.Body)
+			_, _ = io.Copy(io.Discard, resp.Body)
 			_ = resp.Body.Close()
 		}
 		return nil, errors.Wrap(err, "client.Do")
@@ -284,20 +252,12 @@ func (b *Backend) openReader(ctx context.Context, h restic.Handle, length int, o
 
 	if resp.StatusCode == http.StatusNotFound {
 		_ = resp.Body.Close()
-		return nil, ErrIsNotExist{h}
+		return nil, &notExistError{h}
 	}
 
 	if resp.StatusCode != 200 && resp.StatusCode != 206 {
 		_ = resp.Body.Close()
 		return nil, errors.Errorf("unexpected HTTP response (%v): %v", resp.StatusCode, resp.Status)
-	}
-
-	// workaround https://github.com/golang/go/issues/46071
-	// see also https://forum.restic.net/t/http2-stream-closed-connection-reset-context-canceled/3743/10
-	err = checkContentLength(resp)
-	if err != nil {
-		_ = resp.Body.Close()
-		return nil, err
 	}
 
 	return resp.Body, nil
@@ -309,27 +269,27 @@ func (b *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, e
 		return restic.FileInfo{}, backoff.Permanent(err)
 	}
 
-	req, err := http.NewRequest(http.MethodHead, b.Filename(h), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodHead, b.Filename(h), nil)
 	if err != nil {
-		return restic.FileInfo{}, errors.Wrap(err, "NewRequest")
+		return restic.FileInfo{}, errors.WithStack(err)
 	}
 	req.Header.Set("Accept", ContentTypeV2)
 
 	b.sem.GetToken()
-	resp, err := ctxhttp.Do(ctx, b.client, req)
+	resp, err := b.client.Do(req)
 	b.sem.ReleaseToken()
 	if err != nil {
-		return restic.FileInfo{}, errors.Wrap(err, "client.Head")
+		return restic.FileInfo{}, errors.WithStack(err)
 	}
 
-	_, _ = io.Copy(ioutil.Discard, resp.Body)
+	_, _ = io.Copy(io.Discard, resp.Body)
 	if err = resp.Body.Close(); err != nil {
 		return restic.FileInfo{}, errors.Wrap(err, "Close")
 	}
 
 	if resp.StatusCode == http.StatusNotFound {
 		_ = resp.Body.Close()
-		return restic.FileInfo{}, ErrIsNotExist{h}
+		return restic.FileInfo{}, &notExistError{h}
 	}
 
 	if resp.StatusCode != 200 {
@@ -348,30 +308,20 @@ func (b *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, e
 	return bi, nil
 }
 
-// Test returns true if a blob of the given type and name exists in the backend.
-func (b *Backend) Test(ctx context.Context, h restic.Handle) (bool, error) {
-	_, err := b.Stat(ctx, h)
-	if err != nil {
-		return false, nil
-	}
-
-	return true, nil
-}
-
 // Remove removes the blob with the given name and type.
 func (b *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	if err := h.Valid(); err != nil {
 		return backoff.Permanent(err)
 	}
 
-	req, err := http.NewRequest("DELETE", b.Filename(h), nil)
+	req, err := http.NewRequestWithContext(ctx, "DELETE", b.Filename(h), nil)
 	if err != nil {
-		return errors.Wrap(err, "http.NewRequest")
+		return errors.WithStack(err)
 	}
 	req.Header.Set("Accept", ContentTypeV2)
 
 	b.sem.GetToken()
-	resp, err := ctxhttp.Do(ctx, b.client, req)
+	resp, err := b.client.Do(req)
 	b.sem.ReleaseToken()
 
 	if err != nil {
@@ -380,14 +330,14 @@ func (b *Backend) Remove(ctx context.Context, h restic.Handle) error {
 
 	if resp.StatusCode == http.StatusNotFound {
 		_ = resp.Body.Close()
-		return ErrIsNotExist{h}
+		return &notExistError{h}
 	}
 
 	if resp.StatusCode != 200 {
 		return errors.Errorf("blob not removed, server response: %v (%v)", resp.Status, resp.StatusCode)
 	}
 
-	_, err = io.Copy(ioutil.Discard, resp.Body)
+	_, err = io.Copy(io.Discard, resp.Body)
 	if err != nil {
 		return errors.Wrap(err, "Copy")
 	}
@@ -403,14 +353,14 @@ func (b *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.Fi
 		url += "/"
 	}
 
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return errors.Wrap(err, "NewRequest")
+		return errors.WithStack(err)
 	}
 	req.Header.Set("Accept", ContentTypeV2)
 
 	b.sem.GetToken()
-	resp, err := ctxhttp.Do(ctx, b.client, req)
+	resp, err := b.client.Do(req)
 	b.sem.ReleaseToken()
 
 	if err != nil {

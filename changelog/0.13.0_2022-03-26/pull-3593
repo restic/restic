@@ -1,0 +1,10 @@
+Enhancement: Improve `copy` performance by parallelizing IO
+
+Restic copy previously only used a single thread for copying blobs between
+repositories, which resulted in limited performance when copying small blobs
+to/from a high latency backend (i.e. any remote backend, especially b2).
+
+Copying will now use 8 parallel threads to increase the throughput of the copy
+operation.
+
+https://github.com/restic/restic/pull/3593

@@ -1,3 +1,4 @@
+//go:build aix || solaris
 // +build aix solaris
 
 package backend

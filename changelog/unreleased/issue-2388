@@ -1,7 +1,0 @@
-Enhancement: Add warning for S3 if partial credentials are provided
-
-Check if both the AWS key ID and secret environment variables are set
-before connecting to the remote server and report an error if not.
-
-https://github.com/restic/restic/issues/2388
-https://github.com/restic/restic/pull/3532

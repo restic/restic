@@ -2,7 +2,6 @@ package restic_test
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -14,7 +13,7 @@ import (
 )
 
 func BenchmarkNodeFillUser(t *testing.B) {
-	tempfile, err := ioutil.TempFile("", "restic-test-temp-")
+	tempfile, err := os.CreateTemp("", "restic-test-temp-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -38,7 +37,7 @@ func BenchmarkNodeFillUser(t *testing.B) {
 }
 
 func BenchmarkNodeFromFileInfo(t *testing.B) {
-	tempfile, err := ioutil.TempFile("", "restic-test-temp-")
+	tempfile, err := os.CreateTemp("", "restic-test-temp-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -167,7 +166,7 @@ var nodeTests = []restic.Node{
 }
 
 func TestNodeRestoreAt(t *testing.T) {
-	tempdir, err := ioutil.TempDir(rtest.TestTempDir, "restic-test-")
+	tempdir, err := os.MkdirTemp(rtest.TestTempDir, "restic-test-")
 	rtest.OK(t, err)
 
 	defer func() {
@@ -183,9 +182,6 @@ func TestNodeRestoreAt(t *testing.T) {
 		rtest.OK(t, test.CreateAt(context.TODO(), nodePath, nil))
 		rtest.OK(t, test.RestoreMetadata(nodePath))
 
-		if test.Type == "symlink" && runtime.GOOS == "windows" {
-			continue
-		}
 		if test.Type == "dir" {
 			rtest.OK(t, test.RestoreTimestamps(nodePath))
 		}
@@ -210,7 +206,7 @@ func TestNodeRestoreAt(t *testing.T) {
 				"%v: GID doesn't match (%v != %v)", test.Type, test.GID, n2.GID)
 			if test.Type != "symlink" {
 				// On OpenBSD only root can set sticky bit (see sticky(8)).
-				if runtime.GOOS != "openbsd" && runtime.GOOS != "netbsd" && test.Name == "testSticky" {
+				if runtime.GOOS != "openbsd" && runtime.GOOS != "netbsd" && runtime.GOOS != "solaris" && test.Name == "testSticky" {
 					rtest.Assert(t, test.Mode == n2.Mode,
 						"%v: mode doesn't match (0%o != 0%o)", test.Type, test.Mode, n2.Mode)
 				}
@@ -228,7 +224,7 @@ func AssertFsTimeEqual(t *testing.T, label string, nodeType string, t1 time.Time
 	// Go currently doesn't support setting timestamps of symbolic links on darwin and bsd
 	if nodeType == "symlink" {
 		switch runtime.GOOS {
-		case "darwin", "freebsd", "openbsd", "netbsd":
+		case "darwin", "freebsd", "openbsd", "netbsd", "solaris":
 			return
 		}
 	}

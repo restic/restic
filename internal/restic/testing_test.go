@@ -20,7 +20,7 @@ const (
 // LoadAllSnapshots returns a list of all snapshots in the repo.
 // If a snapshot ID is in excludeIDs, it will not be included in the result.
 func loadAllSnapshots(ctx context.Context, repo restic.Repository, excludeIDs restic.IDSet) (snapshots restic.Snapshots, err error) {
-	err = restic.ForAllSnapshots(ctx, repo, excludeIDs, func(id restic.ID, sn *restic.Snapshot, err error) error {
+	err = restic.ForAllSnapshots(ctx, repo.Backend(), repo, excludeIDs, func(id restic.ID, sn *restic.Snapshot, err error) error {
 		if err != nil {
 			return err
 		}

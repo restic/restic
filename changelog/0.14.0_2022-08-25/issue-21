@@ -1,0 +1,28 @@
+Enhancement: Add compression support
+
+We've added compression support to the restic repository format. To create a
+repository using the new format run `init --repository-version 2`. Please note
+that the repository cannot be read by restic versions prior to 0.14.0.
+
+You can configure whether data is compressed with the option `--compression`. It
+can be set to `auto` (the default, which will compress very fast), `max` (which
+will trade backup speed and CPU usage for better compression), or `off` (which
+disables compression). Each setting is only applied for the current run of restic
+and does *not* apply to future runs. The option can also be set via the
+environment variable `RESTIC_COMPRESSION`.
+
+To upgrade in place run `migrate upgrade_repo_v2` followed by `prune`. See the
+documentation for more details. The migration checks the repository integrity
+and upgrades the repository format, but will not change any data. Afterwards,
+prune will rewrite the metadata to make use of compression.
+
+As an alternative you can use the `copy` command to migrate snapshots; First
+create a new repository using
+`init --repository-version 2 --copy-chunker-params --repo2 path/to/old/repo`,
+and then use the `copy` command to copy all snapshots to the new repository.
+
+https://github.com/restic/restic/issues/21
+https://github.com/restic/restic/issues/3779
+https://github.com/restic/restic/pull/3666
+https://github.com/restic/restic/pull/3704
+https://github.com/restic/restic/pull/3733

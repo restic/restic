@@ -1,0 +1,12 @@
+Bugfix: Correct prune statistics for partially compressed repositories
+
+In a partially compressed repository, one data blob can exist both in an
+uncompressed and a compressed version. This caused the prune statistics to
+become inaccurate and for example report a too high value for the unused size:
+
+> unused size after prune: 16777215.991 TiB
+
+This has been fixed.
+
+https://github.com/restic/restic/issues/3918
+https://github.com/restic/restic/pull/3980

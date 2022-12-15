@@ -1,9 +1,9 @@
+//go:build !windows && !darwin && !freebsd && !netbsd
 // +build !windows,!darwin,!freebsd,!netbsd
 
 package fs
 
 import (
-	"fmt"
 	"os"
 	"syscall"
 	"time"
@@ -11,10 +11,7 @@ import (
 
 // extendedStat extracts info into an ExtendedFileInfo for unix based operating systems.
 func extendedStat(fi os.FileInfo) ExtendedFileInfo {
-	s, ok := fi.Sys().(*syscall.Stat_t)
-	if !ok {
-		panic(fmt.Sprintf("conversion to syscall.Stat_t failed, type is %T", fi.Sys()))
-	}
+	s := fi.Sys().(*syscall.Stat_t)
 
 	extFI := ExtendedFileInfo{
 		FileInfo:  fi,

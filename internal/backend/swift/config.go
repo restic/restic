@@ -24,12 +24,12 @@ type Config struct {
 	TrustID        string
 
 	StorageURL string
-	AuthToken  string
+	AuthToken  options.SecretString
 
 	// auth v3 only
 	ApplicationCredentialID     string
 	ApplicationCredentialName   string
-	ApplicationCredentialSecret string
+	ApplicationCredentialSecret options.SecretString
 
 	Container              string
 	Prefix                 string
@@ -51,17 +51,13 @@ func NewConfig() Config {
 
 // ParseConfig parses the string s and extract swift's container name and prefix.
 func ParseConfig(s string) (interface{}, error) {
-	data := strings.SplitN(s, ":", 3)
-	if len(data) != 3 {
+	if !strings.HasPrefix(s, "swift:") {
 		return nil, errors.New("invalid URL, expected: swift:container-name:/[prefix]")
 	}
+	s = strings.TrimPrefix(s, "swift:")
 
-	scheme, container, prefix := data[0], data[1], data[2]
-	if scheme != "swift" {
-		return nil, errors.Errorf("unexpected prefix: %s", data[0])
-	}
-
-	if len(prefix) == 0 {
+	container, prefix, _ := strings.Cut(s, ":")
+	if prefix == "" {
 		return nil, errors.Errorf("prefix is empty")
 	}
 
@@ -111,16 +107,25 @@ func ApplyEnvironment(prefix string, cfg interface{}) error {
 		// Application Credential auth
 		{&c.ApplicationCredentialID, prefix + "OS_APPLICATION_CREDENTIAL_ID"},
 		{&c.ApplicationCredentialName, prefix + "OS_APPLICATION_CREDENTIAL_NAME"},
-		{&c.ApplicationCredentialSecret, prefix + "OS_APPLICATION_CREDENTIAL_SECRET"},
 
 		// Manual authentication
 		{&c.StorageURL, prefix + "OS_STORAGE_URL"},
-		{&c.AuthToken, prefix + "OS_AUTH_TOKEN"},
 
 		{&c.DefaultContainerPolicy, prefix + "SWIFT_DEFAULT_CONTAINER_POLICY"},
 	} {
 		if *val.s == "" {
 			*val.s = os.Getenv(val.env)
+		}
+	}
+	for _, val := range []struct {
+		s   *options.SecretString
+		env string
+	}{
+		{&c.ApplicationCredentialSecret, prefix + "OS_APPLICATION_CREDENTIAL_SECRET"},
+		{&c.AuthToken, prefix + "OS_AUTH_TOKEN"},
+	} {
+		if val.s.String() == "" {
+			*val.s = options.NewSecretString(os.Getenv(val.env))
 		}
 	}
 	return nil

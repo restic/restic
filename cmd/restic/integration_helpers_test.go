@@ -2,14 +2,13 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
 
+	"github.com/restic/restic/internal/backend/retry"
 	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -67,7 +66,7 @@ func isSymlink(fi os.FileInfo) bool {
 
 func sameModTime(fi1, fi2 os.FileInfo) bool {
 	switch runtime.GOOS {
-	case "darwin", "freebsd", "openbsd", "netbsd":
+	case "darwin", "freebsd", "openbsd", "netbsd", "solaris":
 		if isSymlink(fi1) && isSymlink(fi2) {
 			return true
 		}
@@ -172,8 +171,9 @@ func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
 
 	repository.TestUseLowSecurityKDFParameters(t)
 	restic.TestDisableCheckPolynomial(t)
+	retry.TestFastRetries(t)
 
-	tempdir, err := ioutil.TempDir(rtest.TestTempDir, "restic-test-")
+	tempdir, err := os.MkdirTemp(rtest.TestTempDir, "restic-test-")
 	rtest.OK(t, err)
 
 	env = &testEnvironment{
@@ -193,11 +193,13 @@ func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
 		Repo:     env.repo,
 		Quiet:    true,
 		CacheDir: env.cache,
-		ctx:      context.Background(),
 		password: rtest.TestPassword,
 		stdout:   os.Stdout,
 		stderr:   os.Stderr,
 		extended: make(options.Options),
+
+		// replace this hook with "nil" if listing a filetype more than once is necessary
+		backendTestHook: func(r restic.Backend) (restic.Backend, error) { return newOrderedListOnceBackend(r), nil },
 	}
 
 	// always overwrite global options

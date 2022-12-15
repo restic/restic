@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"io"
-	"io/ioutil"
 	"testing"
 )
 
@@ -21,7 +20,7 @@ func TestWriter(t *testing.T) {
 
 		expectedHash := sha256.Sum256(data)
 
-		wr := NewWriter(ioutil.Discard, sha256.New())
+		wr := NewWriter(io.Discard, sha256.New())
 
 		n, err := io.Copy(wr, bytes.NewReader(data))
 		if err != nil {
@@ -54,7 +53,7 @@ func BenchmarkWriter(b *testing.B) {
 	b.SetBytes(int64(len(buf)))
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		wr := NewWriter(ioutil.Discard, sha256.New())
+		wr := NewWriter(io.Discard, sha256.New())
 		n, err := io.Copy(wr, bytes.NewReader(buf))
 		if err != nil {
 			b.Fatal(err)

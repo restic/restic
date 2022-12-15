@@ -1,0 +1,10 @@
+Enhancement: The `backup` command no longer updates file access times on Linux
+
+When reading files during backup, restic used to cause the operating system to
+update the files' access times. Note that this did not apply to filesystems with
+disabled file access times.
+
+Restic now instructs the operating system not to update the file access time,
+if the user running restic is the file owner or has root permissions.
+
+https://github.com/restic/restic/pull/2816

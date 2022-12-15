@@ -10,8 +10,7 @@ import (
 )
 
 func TestLayout(t *testing.T) {
-	path, cleanup := rtest.TempDir(t)
-	defer cleanup()
+	path := rtest.TempDir(t)
 
 	var tests = []struct {
 		filename        string
@@ -37,8 +36,9 @@ func TestLayout(t *testing.T) {
 
 			repo := filepath.Join(path, "repo")
 			be, err := Open(context.TODO(), Config{
-				Path:   repo,
-				Layout: test.layout,
+				Path:        repo,
+				Layout:      test.layout,
+				Connections: 2,
 			})
 			if err != nil {
 				t.Fatal(err)

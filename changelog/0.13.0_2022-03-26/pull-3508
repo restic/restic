@@ -1,0 +1,10 @@
+Enhancement: Cache blobs read by the `dump` command
+
+When dumping a file using the `dump` command, restic did not cache blobs in any
+way, so even consecutive runs of the same blob were loaded from the repository
+again and again, slowing down the dump.
+
+Now, the caching mechanism already used by the `fuse` command is also used by
+the `dump` command. This makes dumping much faster, especially for sparse files.
+
+https://github.com/restic/restic/pull/3508

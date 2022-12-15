@@ -2,7 +2,6 @@ package cache
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -26,7 +25,7 @@ const dirMode = 0700
 const fileMode = 0644
 
 func readVersion(dir string) (v uint, err error) {
-	buf, err := ioutil.ReadFile(filepath.Join(dir, "version"))
+	buf, err := os.ReadFile(filepath.Join(dir, "version"))
 	if errors.Is(err, os.ErrNotExist) {
 		return 0, nil
 	}
@@ -59,11 +58,6 @@ func writeCachedirTag(dir string) error {
 	}
 
 	tagfile := filepath.Join(dir, "CACHEDIR.TAG")
-	_, err := fs.Lstat(tagfile)
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return errors.WithStack(err)
-	}
-
 	f, err := fs.OpenFile(tagfile, os.O_CREATE|os.O_EXCL|os.O_WRONLY, fileMode)
 	if err != nil {
 		if errors.Is(err, os.ErrExist) {
@@ -135,7 +129,7 @@ func New(id string, basedir string) (c *Cache, err error) {
 	}
 
 	if v < cacheVersion {
-		err = ioutil.WriteFile(filepath.Join(cachedir, "version"), []byte(fmt.Sprintf("%d", cacheVersion)), fileMode)
+		err = os.WriteFile(filepath.Join(cachedir, "version"), []byte(fmt.Sprintf("%d", cacheVersion)), fileMode)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}

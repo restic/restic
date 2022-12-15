@@ -6,8 +6,9 @@ import (
 	"os"
 	"path"
 
-	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/layout"
 	"github.com/restic/restic/internal/backend/s3"
+	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -21,20 +22,39 @@ func init() {
 // "default" layout.
 type S3Layout struct{}
 
-// Check tests whether the migration can be applied.
-func (m *S3Layout) Check(ctx context.Context, repo restic.Repository) (bool, error) {
-	be, ok := repo.Backend().(*s3.Backend)
+func toS3Backend(repo restic.Repository) *s3.Backend {
+	b := repo.Backend()
+	// unwrap cache
+	if be, ok := b.(*cache.Backend); ok {
+		b = be.Backend
+	}
+
+	be, ok := b.(*s3.Backend)
 	if !ok {
 		debug.Log("backend is not s3")
-		return false, nil
+		return nil
+	}
+	return be
+}
+
+// Check tests whether the migration can be applied.
+func (m *S3Layout) Check(ctx context.Context, repo restic.Repository) (bool, string, error) {
+	be := toS3Backend(repo)
+	if be == nil {
+		debug.Log("backend is not s3")
+		return false, "backend is not s3", nil
 	}
 
 	if be.Layout.Name() != "s3legacy" {
 		debug.Log("layout is not s3legacy")
-		return false, nil
+		return false, "not using the legacy s3 layout", nil
 	}
 
-	return true, nil
+	return true, "", nil
+}
+
+func (m *S3Layout) RepoCheck() bool {
+	return false
 }
 
 func retry(max int, fail func(err error), f func() error) error {
@@ -54,7 +74,7 @@ func retry(max int, fail func(err error), f func() error) error {
 // maxErrors for retrying renames on s3.
 const maxErrors = 20
 
-func (m *S3Layout) moveFiles(ctx context.Context, be *s3.Backend, l backend.Layout, t restic.FileType) error {
+func (m *S3Layout) moveFiles(ctx context.Context, be *s3.Backend, l layout.Layout, t restic.FileType) error {
 	printErr := func(err error) {
 		fmt.Fprintf(os.Stderr, "renaming file returned error: %v\n", err)
 	}
@@ -71,18 +91,18 @@ func (m *S3Layout) moveFiles(ctx context.Context, be *s3.Backend, l backend.Layo
 
 // Apply runs the migration.
 func (m *S3Layout) Apply(ctx context.Context, repo restic.Repository) error {
-	be, ok := repo.Backend().(*s3.Backend)
-	if !ok {
+	be := toS3Backend(repo)
+	if be == nil {
 		debug.Log("backend is not s3")
 		return errors.New("backend is not s3")
 	}
 
-	oldLayout := &backend.S3LegacyLayout{
+	oldLayout := &layout.S3LegacyLayout{
 		Path: be.Path(),
 		Join: path.Join,
 	}
 
-	newLayout := &backend.DefaultLayout{
+	newLayout := &layout.DefaultLayout{
 		Path: be.Path(),
 		Join: path.Join,
 	}

@@ -191,7 +191,7 @@ Dry Runs
 ********
 
 You can perform a backup in dry run mode to see what would happen without
-modifying the repo.
+modifying the repository.
 
 -  ``--dry-run``/``-n`` Report what would be done, without writing to the repository
 
@@ -202,7 +202,9 @@ Combined with ``--verbose``, you can see a list of changes:
     $ restic -r /srv/restic-repo backup ~/work --dry-run -vv | grep "added"
     modified  /plan.txt, saved in 0.000s (9.110 KiB added)
     modified  /archive.tar.gz, saved in 0.140s (25.542 MiB added)
-    Would be added to the repo: 25.551 MiB
+    Would be added to the repository: 25.551 MiB
+
+.. _backup-excluding-files:
 
 Excluding Files
 ***************
@@ -212,7 +214,7 @@ the exclude options are:
 
 -  ``--exclude`` Specified one or more times to exclude one or more items
 -  ``--iexclude`` Same as ``--exclude`` but ignores the case of paths
--  ``--exclude-caches`` Specified once to exclude folders containing a special file
+-  ``--exclude-caches`` Specified once to exclude folders containing `this special file <https://bford.info/cachedir/>`__
 -  ``--exclude-file`` Specified one or more times to exclude items listed in a given file
 -  ``--iexclude-file`` Same as ``exclude-file`` but ignores cases like in ``--iexclude``
 -  ``--exclude-if-present foo`` Specified one or more times to exclude a folder's content if it contains a file called ``foo`` (optionally having a given header, no wildcards for the file name supported)
@@ -289,6 +291,28 @@ On most Unixy shells, you can either quote or use backslashes. For example:
  * ``--exclude="foo bar star/foo.txt"``
  * ``--exclude=foo\ bar\ star/foo.txt``
 
+If a pattern starts with exclamation mark and matches a file that
+was previously matched by a regular pattern, the match is cancelled.
+It works similarly to ``gitignore``, with the same limitation: once a
+directory is excluded, it is not possible to include files inside the
+directory. Here is a complete example to backup a selection of
+directories inside the home directory. It works by excluding any
+directory, then selectively add back some of them.
+
+::
+
+    $HOME/*
+    !$HOME/Documents
+    !$HOME/code
+    !$HOME/.emacs.d
+    !$HOME/games
+    # [...]
+    node_modules
+    *~
+    *.o
+    *.lo
+    *.pyc
+
 By specifying the option ``--one-file-system`` you can instruct restic
 to only backup files from the file systems the initially specified files
 or directories reside on. In other words, it will prevent restic from crossing
@@ -324,12 +348,12 @@ option:
 
     $ restic -r /srv/restic-repo backup ~/work --exclude-larger-than 1M
 
-This excludes files in ``~/work`` which are larger than 1 MB from the backup.
+This excludes files in ``~/work`` which are larger than 1 MiB from the backup.
 
 The default unit for the size value is bytes, so e.g. ``--exclude-larger-than 2048``
-would exclude files larger than 2048 bytes (2 kilobytes). To specify other units,
-suffix the size value with one of ``k``/``K`` for kilobytes, ``m``/``M`` for megabytes,
-``g``/``G`` for gigabytes and ``t``/``T`` for terabytes (e.g. ``1k``, ``10K``, ``20m``,
+would exclude files larger than 2048 bytes (2 KiB). To specify other units,
+suffix the size value with one of ``k``/``K`` for KiB (1024 bytes), ``m``/``M`` for MiB (1024^2 bytes),
+``g``/``G`` for GiB (1024^3 bytes) and ``t``/``T`` for TiB (1024^4 bytes), e.g. ``1k``, ``10K``, ``20m``,
 ``20M``,  ``30g``, ``30G``, ``2t`` or ``2T``).
 
 Including Files
@@ -530,13 +554,19 @@ environment variables. The following lists these environment variables:
     RESTIC_PASSWORD_COMMAND             Command printing the password for the repository to stdout
     RESTIC_KEY_HINT                     ID of key to try decrypting first, before other keys
     RESTIC_CACHE_DIR                    Location of the cache directory
+    RESTIC_COMPRESSION                  Compression mode (only available for repository format version 2)
     RESTIC_PROGRESS_FPS                 Frames per second by which the progress bar is updated
+    RESTIC_PACK_SIZE                    Target size for pack files
+    RESTIC_READ_CONCURRENCY             Concurrency for file reads
 
     TMPDIR                              Location for temporary files
 
     AWS_ACCESS_KEY_ID                   Amazon S3 access key ID
     AWS_SECRET_ACCESS_KEY               Amazon S3 secret access key
+    AWS_SESSION_TOKEN                   Amazon S3 temporary session token
     AWS_DEFAULT_REGION                  Amazon S3 default region
+    AWS_PROFILE                         Amazon credentials profile (alternative to specifying key and region)
+    AWS_SHARED_CREDENTIALS_FILE         Location of the AWS CLI shared credentials file (default: ~/.aws/credentials)
 
     ST_AUTH                             Auth URL for keystone v1 authentication
     ST_USER                             Username for keystone v1 authentication
@@ -569,6 +599,7 @@ environment variables. The following lists these environment variables:
 
     AZURE_ACCOUNT_NAME                  Account name for Azure
     AZURE_ACCOUNT_KEY                   Account key for Azure
+    AZURE_ACCOUNT_SAS                   Shared access signatures (SAS) for Azure
 
     GOOGLE_PROJECT_ID                   Project ID for Google Cloud Storage
     GOOGLE_APPLICATION_CREDENTIALS      Application Credentials for Google Cloud Storage (e.g. $HOME/.config/gs-secret-restic-key.json)

@@ -1,0 +1,8 @@
+Bugfix: The `mount` command now reports symlinks sizes
+
+Symlinks used to have size zero in restic mountpoints, confusing some
+third-party tools. They now have a size equal to the byte length of their
+target path, as required by POSIX.
+
+https://github.com/restic/restic/issues/3667
+https://github.com/restic/restic/pull/3668

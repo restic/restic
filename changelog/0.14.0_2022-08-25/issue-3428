@@ -1,0 +1,14 @@
+Bugfix: List snapshots in backend at most once to resolve snapshot IDs
+
+Many commands support specifying a list of snapshot IDs which are then used to
+determine the snapshots to be processed by the command. To resolve snapshot IDs
+or `latest`, and check that these exist, restic previously listed all snapshots
+stored in the repository. Depending on the backend this could be a slow and/or
+expensive operation.
+
+Restic now lists the snapshots only once and remembers the result in order to
+resolve all further snapshot IDs swiftly.
+
+https://github.com/restic/restic/issues/3428
+https://github.com/restic/restic/pull/3570
+https://github.com/restic/restic/pull/3395

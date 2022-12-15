@@ -30,9 +30,10 @@ All data is stored in a restic repository. A repository is able to store
 data of several different types, which can later be requested based on
 an ID. This so-called "storage ID" is the SHA-256 hash of the content of
 a file. All files in a repository are only written once and never
-modified afterwards. This allows accessing and even writing to the
-repository with multiple clients in parallel. Only the ``prune`` operation
-removes data from the repository.
+modified afterwards. Writing should occur atomically to prevent concurrent
+operations from reading incomplete files. This allows accessing and even
+writing to the repository with multiple clients in parallel. Only the ``prune``
+operation removes data from the repository.
 
 Repositories consist of several directories and a top-level file called
 ``config``. For all other files stored in the repository, the name for
@@ -61,28 +62,30 @@ like the following:
 .. code:: json
 
     {
-      "version": 1,
+      "version": 2,
       "id": "5956a3f67a6230d4a92cefb29529f10196c7d92582ec305fd71ff6d331d6271b",
       "chunker_polynomial": "25b468838dcb75"
     }
 
 After decryption, restic first checks that the version field contains a
-version number that it understands, otherwise it aborts. At the moment,
-the version is expected to be 1. The field ``id`` holds a unique ID
-which consists of 32 random bytes, encoded in hexadecimal. This uniquely
-identifies the repository, regardless if it is accessed via SFTP or
-locally. The field ``chunker_polynomial`` contains a parameter that is
-used for splitting large files into smaller chunks (see below).
+version number that it understands, otherwise it aborts. At the moment, the
+version is expected to be 1 or 2. The list of changes in the repository
+format is contained in the section "Changes" below.
+
+The field ``id`` holds a unique ID which consists of 32 random bytes, encoded
+in hexadecimal. This uniquely identifies the repository, regardless if it is
+accessed via a remote storage backend or locally. The field
+``chunker_polynomial`` contains a parameter that is used for splitting large
+files into smaller chunks (see below).
 
 Repository Layout
 -----------------
 
 The ``local`` and ``sftp`` backends are implemented using files and
 directories stored in a file system. The directory layout is the same
-for both backend types.
+for both backend types and is also used for all other remote backends.
 
-The basic layout of a repository stored in a ``local`` or ``sftp``
-backend is shown here:
+The basic layout of a repository is shown here:
 
 ::
 
@@ -108,8 +111,7 @@ backend is shown here:
     │   └── 22a5af1bdc6e616f8a29579458c49627e01b32210d09adb288d1ecda7c5711ec
     └── tmp
 
-A local repository can be initialized with the ``restic init`` command,
-e.g.:
+A local repository can be initialized with the ``restic init`` command, e.g.:
 
 .. code-block:: console
 
@@ -185,29 +187,65 @@ After decryption, a Pack's header consists of the following elements:
 
 ::
 
-    Type_Blob1 || Length(EncryptedBlob1) || Hash(Plaintext_Blob1) ||
+    Type_Blob1 || Data_Blob1 ||
     [...]
-    Type_BlobN || Length(EncryptedBlobN) || Hash(Plaintext_Blobn) ||
+    Type_BlobN || Data_BlobN ||
+
+The Blob type field is a single byte. What follows it depends on the type. The
+following Blob types are defined:
+
++-----------+----------------------+-------------------------------------------------------------------------------+
+| Type      | Meaning              |  Data                                                                         |
++===========+======================+===============================================================================+
+| 0b00      | data blob            |  ``Length(encrypted_blob) || Hash(plaintext_blob)``                           |
++-----------+----------------------+-------------------------------------------------------------------------------+
+| 0b01      | tree blob            |  ``Length(encrypted_blob) || Hash(plaintext_blob)``                           |
++-----------+----------------------+-------------------------------------------------------------------------------+
+| 0b10      | compressed data blob |  ``Length(encrypted_blob) || Length(plaintext_blob) || Hash(plaintext_blob)`` |
++-----------+----------------------+-------------------------------------------------------------------------------+
+| 0b11      | compressed tree blob |  ``Length(encrypted_blob) || Length(plaintext_blob) || Hash(plaintext_blob)`` |
++-----------+----------------------+-------------------------------------------------------------------------------+
 
 This is enough to calculate the offsets for all the Blobs in the Pack.
-Length is the length of a Blob as a four byte integer in little-endian
-format. The type field is a one byte field and labels the content of a
-blob according to the following table:
+The length fields are encoded as four byte integers in little-endian
+format. In the Data column, ``Length(plaintext_blob)`` means the length
+of the decrypted and uncompressed data a blob consists of.
 
-+--------+-----------+
-| Type   | Meaning   |
-+========+===========+
-| 0      | data      |
-+--------+-----------+
-| 1      | tree      |
-+--------+-----------+
+All other types are invalid, more types may be added in the future. The
+compressed types are only valid for repository format version 2. Data and
+tree blobs may be compressed with the zstandard compression algorithm.
 
-All other types are invalid, more types may be added in the future.
+In repository format version 1, data and tree blobs should be stored in
+separate pack files. In version 2, they must be stored in separate files.
+Compressed and non-compress blobs of the same type may be mixed in a pack
+file.
 
 For reconstructing the index or parsing a pack without an index, first
 the last four bytes must be read in order to find the length of the
 header. Afterwards, the header can be read and parsed, which yields all
 plaintext hashes, types, offsets and lengths of all included blobs.
+
+Unpacked Data Format
+====================
+
+Individual files for the index, locks or snapshots are encrypted
+and authenticated like Data and Tree Blobs, so the outer structure is
+``IV || Ciphertext || MAC`` again. In repository format version 1 the
+plaintext always consists of a JSON document which must either be an
+object or an array.
+
+Repository format version 2 adds support for compression. The plaintext
+now starts with a header to indicate the encoding version to distinguish
+it from plain JSON and to allow for further evolution of the storage format:
+``encoding_version || data``
+The ``encoding_version`` field is encoded as one byte.
+For backwards compatibility the encoding versions '[' (0x5b) and '{' (0x7b)
+are used to mark that the whole plaintext (including the encoding version
+byte) should treated as JSON document.
+
+For new data the encoding version is currently always ``2``. For that
+version ``data`` contains a JSON document compressed using the zstandard
+compression algorithm.
 
 Indexing
 ========
@@ -215,12 +253,11 @@ Indexing
 Index files contain information about Data and Tree Blobs and the Packs
 they are contained in and store this information in the repository. When
 the local cached index is not accessible any more, the index files can
-be downloaded and used to reconstruct the index. The files are encrypted
-and authenticated like Data and Tree Blobs, so the outer structure is
-``IV || Ciphertext || MAC`` again. The plaintext consists of a JSON
-document like the following:
+be downloaded and used to reconstruct the index. The file encoding is
+described in the "Unpacked Data Format" section. The plaintext consists
+of a JSON document like the following:
 
-.. code:: json
+.. code:: javascript
 
     {
       "supersedes": [
@@ -234,18 +271,22 @@ document like the following:
               "id": "3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce",
               "type": "data",
               "offset": 0,
-              "length": 25
-            },{
+              "length": 38,
+              // no 'uncompressed_length' as blob is not compressed
+            },
+            {
               "id": "9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae",
               "type": "tree",
               "offset": 38,
-              "length": 100
+              "length": 112,
+              "uncompressed_length": 511,
             },
             {
               "id": "d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66",
               "type": "data",
               "offset": 150,
-              "length": 123
+              "length": 123,
+              "uncompressed_length": 234,
             }
           ]
         }, [...]
@@ -254,7 +295,11 @@ document like the following:
 
 This JSON document lists Packs and the blobs contained therein. In this
 example, the Pack ``73d04e61`` contains two data Blobs and one Tree
-blob, the plaintext hashes are listed afterwards.
+blob, the plaintext hashes are listed afterwards. The ``length`` field
+corresponds to ``Length(encrypted_blob)`` in the pack file header.
+Field ``uncompressed_length`` is only present for compressed blobs and
+therefore is never present in version 1. It is set to the value of
+``Length(blob)``.
 
 The field ``supersedes`` lists the storage IDs of index files that have
 been replaced with the current index file. This happens when index files
@@ -271,7 +316,7 @@ Keys, Encryption and MAC
 All data stored by restic in the repository is encrypted with AES-256 in
 counter mode and authenticated using Poly1305-AES. For encrypting new
 data first 16 bytes are read from a cryptographically secure
-pseudorandom number generator as a random nonce. This is used both as
+pseudo-random number generator as a random nonce. This is used both as
 the IV for counter mode and the nonce for Poly1305. This operation needs
 three keys: A 32 byte for AES-256 for encryption, a 16 byte AES key and
 a 16 byte key for Poly1305. For details see the original paper `The
@@ -349,8 +394,9 @@ Snapshots
 
 A snapshot represents a directory with all files and sub-directories at
 a given point in time. For each backup that is made, a new snapshot is
-created. A snapshot is a JSON document that is stored in an encrypted
-file below the directory ``snapshots`` in the repository. The filename
+created. A snapshot is a JSON document that is stored in a file below
+the directory ``snapshots`` in the repository. It uses the file encoding
+described in the "Unpacked Data Format" section. The filename
 is the storage ID. This string is unique and used within restic to
 uniquely identify a snapshot.
 
@@ -411,7 +457,7 @@ Blobs of data. The SHA-256 hashes of all Blobs are saved in an ordered
 list which then represents the content of the file.
 
 In order to relate these plaintext hashes to the actual location within
-a Pack file , an index is used. If the index is not available, the
+a Pack file, an index is used. If the index is not available, the
 header of all data Blobs can be read.
 
 Trees and Data
@@ -516,8 +562,8 @@ time there must not be any other locks (exclusive and non-exclusive).
 There may be multiple non-exclusive locks in parallel.
 
 A lock is a file in the subdir ``locks`` whose filename is the storage
-ID of the contents. It is encrypted and authenticated the same way as
-other files in the repository and contains the following JSON structure:
+ID of the contents. It is stored in the file encoding described in the
+"Unpacked Data Format" section and contains the following JSON structure:
 
 .. code:: json
 
@@ -543,6 +589,57 @@ When a new lock is to be created and no other conflicting locks are
 detected, restic creates a new lock, waits, and checks if other locks
 appeared in the repository. Depending on the type of the other locks and
 the lock to be created, restic either continues or fails.
+
+Read and Write Ordering
+=======================
+The repository format allows writing (e.g. backup) and reading (e.g. restore)
+to happen concurrently. As the data for each snapshot in a repository spans
+multiple files (snapshot, index and packs), it is necessary to follow certain
+rules regarding the order in which files are read and written. These ordering
+rules also guarantee that repository modifications always maintain a correct
+repository even if the client or the storage backend crashes for example due
+to a power cut or the (network) connection between both is interrupted.
+
+The correct order to access data in a repository is derived from the following
+set of invariants that must be maintained at **any time** in a correct
+repository. *Must* in the following is a strict requirement and will lead to
+data loss if not followed. *Should* will require steps to fix a repository
+(e.g. rebuilding the index) if not followed, but should not cause data loss.
+*existing* means that the referenced data is **durably** stored in the repository.
+
+- A snapshot *must* only reference an existing tree blob.
+- A reachable tree blob *must* only reference tree and data blobs that exist
+  (recursively). *Reachable* means that the tree blob is reachable starting from
+  a snapshot.
+- An index *must* only reference valid blobs in existing packs.
+- All blobs referenced by a snapshot *should* be listed in an index.
+
+This leads to the following recommended order to store data in a repository.
+First, pack files, which contain data and tree blobs, must be written. Then the
+indexes which reference blobs in these already written pack files. And finally
+the corresponding snapshots.
+
+Note that there is no need for a specific write order of data and tree blobs
+during a backup as the blobs only become referenced once the corresponding
+snapshot is uploaded.
+
+Reading data should follow the opposite order compared to writing. Only once a
+snapshot was written, it is guaranteed that all required data exists in the
+repository. This especially means that the list of snapshots to read should be
+collected before loading the repository index. The other way round can lead to
+a race condition where a recently written snapshot is loaded but not its
+accompanying index, which results in a failure to access the snapshot's tree
+blob.
+
+For removing or rewriting data from a repository the following rules must be
+followed, which are derived from the above invariants.
+
+- A client removing data *must* acquire an exclusive lock first to prevent
+  conflicts with other clients.
+- A pack *must* be removed from the referencing index before it is deleted.
+- Rewriting a pack *must* write the new pack, update the index (add an updated
+  index and delete the old one) and only then delete the old pack.
+
 
 Backups and Deduplication
 =========================
@@ -584,10 +681,10 @@ General assumptions:
    key management design, it is impossible to securely revoke a leaked key
    without re-encrypting the whole repository.
 -  Advances in cryptography attacks against the cryptographic primitives used
-   by restic (i.e, AES-256-CTR-Poly1305-AES and SHA-256) have not occurred. Such
+   by restic (i.e., AES-256-CTR-Poly1305-AES and SHA-256) have not occurred. Such
    advances could render the confidentiality or integrity protections provided
    by restic useless.
--  Sufficient advances in computing have not occurred to make bruteforce
+-  Sufficient advances in computing have not occurred to make brute-force
    attacks against restic's cryptographic protections feasible.
 
 The restic backup program guarantees the following:
@@ -607,7 +704,7 @@ examples of things an adversary could achieve in various circumstances.
 An adversary with read access to your backup storage location could:
 
 -  Attempt a brute force password guessing attack against a copy of the
-   repository (even more reason to use long, 30+ character passwords).
+   repository (please use strong passwords with sufficient entropy).
 -  Infer which packs probably contain trees via file access patterns.
 -  Infer the size of backups by using creation timestamps of repository objects.
 
@@ -618,7 +715,7 @@ An adversary with network access could:
 -  Determine from where you create your backups (i.e., the location where the
    requests originate).
 -  Determine where you store your backups (i.e., which provider/target system).
--  Infer the size of backups by using creation timestamps of repository objects.
+-  Infer the size of backups by observing network traffic.
 
 The following are examples of the implications associated with violating some
 of the aforementioned assumptions.
@@ -629,11 +726,11 @@ system making backups could:
 -  Render the entire backup process untrustworthy (e.g., intercept password, 
    copy files, manipulate data).
 -  Create snapshots (containing garbage data) which cover all modified files
-   and wait until a trusted host has used forget often enough to forget all
+   and wait until a trusted host has used ``forget`` often enough to remove all
    correct snapshots.
--  Create a garbage snapshot for every existing snapshot with a slightly different
-   timestamp and wait until forget has run, thereby removing all correct
-   snapshots at once.
+-  Create a garbage snapshot for every existing snapshot with a slightly
+   different timestamp and wait until certain ``forget`` configurations have been
+   run, thereby removing all correct snapshots at once.
 
 An adversary with write access to your files at the storage location could:
 
@@ -645,21 +742,35 @@ An adversary with write access to your files at the storage location could:
    the snapshot cannot be restored completely. Restic is not designed to detect
    this attack.
 
-An adversary who compromises a host system with append-only access to the 
-backup repository could:
+An adversary who compromises a host system with append-only (read+write allowed,
+delete+overwrite denied) access to the backup repository could:
 
+-  Capture the password and decrypt backups from the past and in the future
+   (see the "leaked key" example below for related information).
 -  Render new backups untrustworthy *after* the host has been compromised
    (due to having complete control over new backups). An attacker cannot delete
    or manipulate old backups. As such, restoring old snapshots created *before*
    a host compromise remains possible.
-   *Note: It is **not** recommended to ever run forget automatically for an
-   append-only backup to which a potentially compromised host has access
-   because an attacker using fake snapshots could cause forget to remove
-   correct snapshots.*
+-  Potentially manipulate the use of the ``forget`` command into deleting all
+   legitimate snapshots, keeping only bogus snapshots added by the attacker.
+   Ransomware might try this in order to leave only one option to get your data
+   back: paying the ransom. For safe use of ``forget``, please see the
+   corresponding documentation on removing backup snapshots and append-only mode.
 
-An adversary who has a leaked key for a repository which has not been re-encrypted
-could:
+An adversary who has a leaked (decrypted) key for a repository could:
 
--  Decrypt existing and future backup data. If multiple hosts backup into the same
-   repository, an attacker will get access to the backup data of every host.
+-  Decrypt existing and future backup data. If multiple hosts backup into the
+   same repository, an attacker will get access to the backup data of every host.
+   Note that since the local encryption key gives access to the master key, a
+   password change will not prevent this. Changing the master key can currently
+   only be done using the ``copy`` command, which moves the data into a new
+   repository with a new master key, or by making a completely new repository
+   and new backup.
 
+Changes
+=======
+
+Repository Version 2
+--------------------
+
+ * Support compression for blobs (data/tree) and index / lock / snapshot files

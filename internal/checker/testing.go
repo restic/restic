@@ -20,6 +20,11 @@ func TestCheckRepo(t testing.TB, repo restic.Repository) {
 		t.Fatalf("errors loading index: %v", hints)
 	}
 
+	err := chkr.LoadSnapshots(context.TODO())
+	if err != nil {
+		t.Error(err)
+	}
+
 	// packs
 	errChan := make(chan error)
 	go chkr.Packs(context.TODO(), errChan)

@@ -18,6 +18,7 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/s3"
 	"github.com/restic/restic/internal/backend/test"
+	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -100,9 +101,8 @@ func newRandomCredentials(t testing.TB) (key, secret string) {
 type MinioTestConfig struct {
 	s3.Config
 
-	tempdir       string
-	removeTempdir func()
-	stopServer    func()
+	tempdir    string
+	stopServer func()
 }
 
 func createS3(t testing.TB, cfg MinioTestConfig, tr http.RoundTripper) (be restic.Backend, err error) {
@@ -131,7 +131,7 @@ func newMinioTestSuite(ctx context.Context, t testing.TB) *test.Suite {
 		NewConfig: func() (interface{}, error) {
 			cfg := MinioTestConfig{}
 
-			cfg.tempdir, cfg.removeTempdir = rtest.TempDir(t)
+			cfg.tempdir = rtest.TempDir(t)
 			key, secret := newRandomCredentials(t)
 			cfg.stopServer = runMinio(ctx, t, cfg.tempdir, key, secret)
 
@@ -141,7 +141,7 @@ func newMinioTestSuite(ctx context.Context, t testing.TB) *test.Suite {
 			cfg.Config.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
 			cfg.Config.UseHTTP = true
 			cfg.Config.KeyID = key
-			cfg.Config.Secret = secret
+			cfg.Config.Secret = options.NewSecretString(secret)
 			return cfg, nil
 		},
 
@@ -154,12 +154,12 @@ func newMinioTestSuite(ctx context.Context, t testing.TB) *test.Suite {
 				return nil, err
 			}
 
-			exists, err := be.Test(ctx, restic.Handle{Type: restic.ConfigFile})
-			if err != nil {
+			_, err = be.Stat(context.TODO(), restic.Handle{Type: restic.ConfigFile})
+			if err != nil && !be.IsNotExist(err) {
 				return nil, err
 			}
 
-			if exists {
+			if err == nil {
 				return nil, errors.New("config already exists")
 			}
 
@@ -177,9 +177,6 @@ func newMinioTestSuite(ctx context.Context, t testing.TB) *test.Suite {
 			cfg := config.(MinioTestConfig)
 			if cfg.stopServer != nil {
 				cfg.stopServer()
-			}
-			if cfg.removeTempdir != nil {
-				cfg.removeTempdir()
 			}
 			return nil
 		},
@@ -239,7 +236,7 @@ func newS3TestSuite(t testing.TB) *test.Suite {
 
 			cfg := s3cfg.(s3.Config)
 			cfg.KeyID = os.Getenv("RESTIC_TEST_S3_KEY")
-			cfg.Secret = os.Getenv("RESTIC_TEST_S3_SECRET")
+			cfg.Secret = options.NewSecretString(os.Getenv("RESTIC_TEST_S3_SECRET"))
 			cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
 			return cfg, nil
 		},
@@ -253,12 +250,12 @@ func newS3TestSuite(t testing.TB) *test.Suite {
 				return nil, err
 			}
 
-			exists, err := be.Test(context.TODO(), restic.Handle{Type: restic.ConfigFile})
-			if err != nil {
+			_, err = be.Stat(context.TODO(), restic.Handle{Type: restic.ConfigFile})
+			if err != nil && !be.IsNotExist(err) {
 				return nil, err
 			}
 
-			if exists {
+			if err == nil {
 				return nil, errors.New("config already exists")
 			}
 

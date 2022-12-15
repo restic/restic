@@ -1,3 +1,4 @@
+//go:build debug
 // +build debug
 
 package main
@@ -12,14 +13,17 @@ import (
 	"os"
 	"runtime"
 	"sort"
+	"sync"
 	"time"
 
+	"github.com/klauspost/compress/zstd"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -44,19 +48,21 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runDebugDump(globalOptions, args)
+		return runDebugDump(cmd.Context(), globalOptions, args)
 	},
 }
 
 var tryRepair bool
 var repairByte bool
 var extractPack bool
+var reuploadBlobs bool
 
 func init() {
 	cmdRoot.AddCommand(cmdDebug)
 	cmdDebug.AddCommand(cmdDebugDump)
 	cmdDebug.AddCommand(cmdDebugExamine)
 	cmdDebugExamine.Flags().BoolVar(&extractPack, "extract-pack", false, "write blobs to the current directory")
+	cmdDebugExamine.Flags().BoolVar(&reuploadBlobs, "reupload-blobs", false, "reupload blobs to the repository")
 	cmdDebugExamine.Flags().BoolVar(&tryRepair, "try-repair", false, "try to repair broken blobs with single bit flips")
 	cmdDebugExamine.Flags().BoolVar(&repairByte, "repair-byte", false, "try to repair broken blobs by trying bytes")
 }
@@ -72,7 +78,7 @@ func prettyPrintJSON(wr io.Writer, item interface{}) error {
 }
 
 func debugPrintSnapshots(ctx context.Context, repo *repository.Repository, wr io.Writer) error {
-	return restic.ForAllSnapshots(ctx, repo, nil, func(id restic.ID, snapshot *restic.Snapshot, err error) error {
+	return restic.ForAllSnapshots(ctx, repo.Backend(), repo, nil, func(id restic.ID, snapshot *restic.Snapshot, err error) error {
 		if err != nil {
 			return err
 		}
@@ -100,10 +106,9 @@ type Blob struct {
 
 func printPacks(ctx context.Context, repo *repository.Repository, wr io.Writer) error {
 
-	return repo.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
-		h := restic.Handle{Type: restic.PackFile, Name: id.String()}
-
-		blobs, _, err := pack.List(repo.Key(), restic.ReaderAt(ctx, repo.Backend(), h), size)
+	var m sync.Mutex
+	return restic.ParallelList(ctx, repo.Backend(), restic.PackFile, repo.Connections(), func(ctx context.Context, id restic.ID, size int64) error {
+		blobs, _, err := repo.ListPack(ctx, id, size)
 		if err != nil {
 			Warnf("error for pack %v: %v\n", id.Str(), err)
 			return nil
@@ -122,12 +127,14 @@ func printPacks(ctx context.Context, repo *repository.Repository, wr io.Writer) 
 			}
 		}
 
+		m.Lock()
+		defer m.Unlock()
 		return prettyPrintJSON(wr, p)
 	})
 }
 
 func dumpIndexes(ctx context.Context, repo restic.Repository, wr io.Writer) error {
-	return repository.ForAllIndexes(ctx, repo, func(id restic.ID, idx *repository.Index, oldFormat bool, err error) error {
+	return index.ForAllIndexes(ctx, repo, func(id restic.ID, idx *index.Index, oldFormat bool, err error) error {
 		Printf("index_id: %v\n", id)
 		if err != nil {
 			return err
@@ -137,18 +144,19 @@ func dumpIndexes(ctx context.Context, repo restic.Repository, wr io.Writer) erro
 	})
 }
 
-func runDebugDump(gopts GlobalOptions, args []string) error {
+func runDebugDump(ctx context.Context, gopts GlobalOptions, args []string) error {
 	if len(args) != 1 {
 		return errors.Fatal("type not specified")
 	}
 
-	repo, err := OpenRepository(gopts)
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
 
 	if !gopts.NoLock {
-		lock, err := lockRepo(gopts.ctx, repo)
+		var lock *restic.Lock
+		lock, ctx, err = lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
@@ -159,20 +167,20 @@ func runDebugDump(gopts GlobalOptions, args []string) error {
 
 	switch tpe {
 	case "indexes":
-		return dumpIndexes(gopts.ctx, repo, gopts.stdout)
+		return dumpIndexes(ctx, repo, gopts.stdout)
 	case "snapshots":
-		return debugPrintSnapshots(gopts.ctx, repo, gopts.stdout)
+		return debugPrintSnapshots(ctx, repo, gopts.stdout)
 	case "packs":
-		return printPacks(gopts.ctx, repo, gopts.stdout)
+		return printPacks(ctx, repo, gopts.stdout)
 	case "all":
 		Printf("snapshots:\n")
-		err := debugPrintSnapshots(gopts.ctx, repo, gopts.stdout)
+		err := debugPrintSnapshots(ctx, repo, gopts.stdout)
 		if err != nil {
 			return err
 		}
 
 		Printf("\nindexes:\n")
-		err = dumpIndexes(gopts.ctx, repo, gopts.stdout)
+		err = dumpIndexes(ctx, repo, gopts.stdout)
 		if err != nil {
 			return err
 		}
@@ -188,7 +196,7 @@ var cmdDebugExamine = &cobra.Command{
 	Short:             "Examine a pack file",
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runDebugExamine(globalOptions, args)
+		return runDebugExamine(cmd.Context(), globalOptions, args)
 	},
 }
 
@@ -307,76 +315,104 @@ func decryptUnsigned(ctx context.Context, k *crypto.Key, buf []byte) []byte {
 	return out
 }
 
-func loadBlobs(ctx context.Context, repo restic.Repository, pack restic.ID, list []restic.Blob) error {
+func loadBlobs(ctx context.Context, repo restic.Repository, packID restic.ID, list []restic.Blob) error {
+	dec, err := zstd.NewReader(nil)
+	if err != nil {
+		panic(err)
+	}
 	be := repo.Backend()
 	h := restic.Handle{
-		Name: pack.String(),
+		Name: packID.String(),
 		Type: restic.PackFile,
 	}
-	for _, blob := range list {
-		Printf("      loading blob %v at %v (length %v)\n", blob.ID, blob.Offset, blob.Length)
-		buf := make([]byte, blob.Length)
-		err := be.Load(ctx, h, int(blob.Length), int64(blob.Offset), func(rd io.Reader) error {
-			n, err := io.ReadFull(rd, buf)
-			if err != nil {
-				return fmt.Errorf("read error after %d bytes: %v", n, err)
-			}
-			return nil
-		})
-		if err != nil {
-			Warnf("error read: %v\n", err)
-			continue
-		}
 
-		key := repo.Key()
+	wg, ctx := errgroup.WithContext(ctx)
 
-		nonce, plaintext := buf[:key.NonceSize()], buf[key.NonceSize():]
-		plaintext, err = key.Open(plaintext[:0], nonce, plaintext, nil)
-		if err != nil {
-			Warnf("error decrypting blob: %v\n", err)
-			var plain []byte
-			if tryRepair || repairByte {
-				plain = tryRepairWithBitflip(ctx, key, buf, repairByte)
-			}
-			var prefix string
-			if plain != nil {
-				id := restic.Hash(plain)
-				if !id.Equal(blob.ID) {
-					Printf("         repaired blob (length %v), hash is %v, ID does not match, wanted %v\n", len(plain), id, blob.ID)
-					prefix = "repaired-wrong-hash-"
-				} else {
-					Printf("         successfully repaired blob (length %v), hash is %v, ID matches\n", len(plain), id)
-					prefix = "repaired-"
-				}
-			} else {
-				plain = decryptUnsigned(ctx, key, buf)
-				prefix = "damaged-"
-			}
-			err = storePlainBlob(blob.ID, prefix, plain)
-			if err != nil {
-				return err
-			}
-			continue
-		}
-
-		id := restic.Hash(plaintext)
-		var prefix string
-		if !id.Equal(blob.ID) {
-			Printf("         successfully decrypted blob (length %v), hash is %v, ID does not match, wanted %v\n", len(plaintext), id, blob.ID)
-			prefix = "wrong-hash-"
-		} else {
-			Printf("         successfully decrypted blob (length %v), hash is %v, ID matches\n", len(plaintext), id)
-			prefix = "correct-"
-		}
-		if extractPack {
-			err = storePlainBlob(id, prefix, plaintext)
-			if err != nil {
-				return err
-			}
-		}
+	if reuploadBlobs {
+		repo.StartPackUploader(ctx, wg)
 	}
 
-	return nil
+	wg.Go(func() error {
+		for _, blob := range list {
+			Printf("      loading blob %v at %v (length %v)\n", blob.ID, blob.Offset, blob.Length)
+			buf := make([]byte, blob.Length)
+			err := be.Load(ctx, h, int(blob.Length), int64(blob.Offset), func(rd io.Reader) error {
+				n, err := io.ReadFull(rd, buf)
+				if err != nil {
+					return fmt.Errorf("read error after %d bytes: %v", n, err)
+				}
+				return nil
+			})
+			if err != nil {
+				Warnf("error read: %v\n", err)
+				continue
+			}
+
+			key := repo.Key()
+
+			nonce, plaintext := buf[:key.NonceSize()], buf[key.NonceSize():]
+			plaintext, err = key.Open(plaintext[:0], nonce, plaintext, nil)
+			outputPrefix := ""
+			filePrefix := ""
+			if err != nil {
+				Warnf("error decrypting blob: %v\n", err)
+				if tryRepair || repairByte {
+					plaintext = tryRepairWithBitflip(ctx, key, buf, repairByte)
+				}
+				if plaintext != nil {
+					outputPrefix = "repaired "
+					filePrefix = "repaired-"
+				} else {
+					plaintext = decryptUnsigned(ctx, key, buf)
+					err = storePlainBlob(blob.ID, "damaged-", plaintext)
+					if err != nil {
+						return err
+					}
+					continue
+				}
+			}
+
+			if blob.IsCompressed() {
+				decompressed, err := dec.DecodeAll(plaintext, nil)
+				if err != nil {
+					Printf("         failed to decompress blob %v\n", blob.ID)
+				}
+				if decompressed != nil {
+					plaintext = decompressed
+				}
+			}
+
+			id := restic.Hash(plaintext)
+			var prefix string
+			if !id.Equal(blob.ID) {
+				Printf("         successfully %vdecrypted blob (length %v), hash is %v, ID does not match, wanted %v\n", outputPrefix, len(plaintext), id, blob.ID)
+				prefix = "wrong-hash-"
+			} else {
+				Printf("         successfully %vdecrypted blob (length %v), hash is %v, ID matches\n", outputPrefix, len(plaintext), id)
+				prefix = "correct-"
+			}
+			if extractPack {
+				err = storePlainBlob(id, filePrefix+prefix, plaintext)
+				if err != nil {
+					return err
+				}
+			}
+			if reuploadBlobs {
+				_, _, _, err := repo.SaveBlob(ctx, blob.Type, plaintext, id, true)
+				if err != nil {
+					return err
+				}
+				Printf("         uploaded %v %v\n", blob.Type, id)
+			}
+		}
+
+		if reuploadBlobs {
+			return repo.Flush(ctx)
+		}
+		return nil
+	})
+
+	return wg.Wait()
 }
 
 func storePlainBlob(id restic.ID, prefix string, plain []byte) error {
@@ -401,13 +437,21 @@ func storePlainBlob(id restic.ID, prefix string, plain []byte) error {
 	return nil
 }
 
-func runDebugExamine(gopts GlobalOptions, args []string) error {
+func runDebugExamine(ctx context.Context, gopts GlobalOptions, args []string) error {
+	repo, err := OpenRepository(ctx, gopts)
+	if err != nil {
+		return err
+	}
+
 	ids := make([]restic.ID, 0)
 	for _, name := range args {
 		id, err := restic.ParseID(name)
 		if err != nil {
-			Warnf("error: %v\n", err)
-			continue
+			id, err = restic.Find(ctx, repo.Backend(), restic.PackFile, name)
+			if err != nil {
+				Warnf("error: %v\n", err)
+				continue
+			}
 		}
 		ids = append(ids, id)
 	}
@@ -416,26 +460,22 @@ func runDebugExamine(gopts GlobalOptions, args []string) error {
 		return errors.Fatal("no pack files to examine")
 	}
 
-	repo, err := OpenRepository(gopts)
-	if err != nil {
-		return err
-	}
-
 	if !gopts.NoLock {
-		lock, err := lockRepo(gopts.ctx, repo)
+		var lock *restic.Lock
+		lock, ctx, err = lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
 		}
 	}
 
-	err = repo.LoadIndex(gopts.ctx)
+	err = repo.LoadIndex(ctx)
 	if err != nil {
 		return err
 	}
 
 	for _, id := range ids {
-		err := examinePack(gopts.ctx, repo, id)
+		err := examinePack(ctx, repo, id)
 		if err != nil {
 			Warnf("error: %v\n", err)
 		}
@@ -475,27 +515,15 @@ func examinePack(ctx context.Context, repo restic.Repository, id restic.ID) erro
 
 	blobsLoaded := false
 	// examine all data the indexes have for the pack file
-	for _, idx := range repo.Index().(*repository.MasterIndex).All() {
-		idxIDs, err := idx.IDs()
-		if err != nil {
-			idxIDs = restic.IDs{}
-		}
-
-		blobs := idx.ListPack(id)
+	for b := range repo.Index().ListPacks(ctx, restic.NewIDSet(id)) {
+		blobs := b.Blobs
 		if len(blobs) == 0 {
 			continue
 		}
 
-		Printf("    index %v:\n", idxIDs)
+		checkPackSize(blobs, fi.Size)
 
-		// convert list of blobs to []restic.Blob
-		var list []restic.Blob
-		for _, b := range blobs {
-			list = append(list, b.Blob)
-		}
-		checkPackSize(list, fi.Size)
-
-		err = loadBlobs(ctx, repo, id, list)
+		err = loadBlobs(ctx, repo, id, blobs)
 		if err != nil {
 			Warnf("error: %v\n", err)
 		} else {
@@ -506,7 +534,7 @@ func examinePack(ctx context.Context, repo restic.Repository, id restic.ID) erro
 	Printf("  ========================================\n")
 	Printf("  inspect the pack itself\n")
 
-	blobs, _, err := pack.List(repo.Key(), restic.ReaderAt(ctx, repo.Backend(), h), fi.Size)
+	blobs, _, err := repo.ListPack(ctx, id, fi.Size)
 	if err != nil {
 		return fmt.Errorf("pack %v: %v", id.Str(), err)
 	}
@@ -531,17 +559,13 @@ func checkPackSize(blobs []restic.Blob, fileSize int64) {
 		if offset != uint64(pb.Offset) {
 			Printf("      hole in file, want offset %v, got %v\n", offset, pb.Offset)
 		}
-		offset += uint64(pb.Length)
+		offset = uint64(pb.Offset + pb.Length)
 		size += uint64(pb.Length)
 	}
-
-	// compute header size, per blob: 1 byte type, 4 byte length, 32 byte id
-	size += uint64(restic.CiphertextLength(len(blobs) * (1 + 4 + 32)))
-	// length in uint32 little endian
-	size += 4
+	size += uint64(pack.CalculateHeaderSize(blobs))
 
 	if uint64(fileSize) != size {
-		Printf("      file sizes do not match: computed %v from index, file size is %v\n", size, fileSize)
+		Printf("      file sizes do not match: computed %v, file size is %v\n", size, fileSize)
 	} else {
 		Printf("      file sizes match\n")
 	}

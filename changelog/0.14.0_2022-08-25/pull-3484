@@ -1,0 +1,13 @@
+Enhancement: Stream data in `check` and `prune` commands
+
+The commands `check --read-data` and `prune` previously downloaded data files
+into temporary files which could end up being written to disk. This could cause
+a large amount of data being written to disk.
+
+The pack files are now instead streamed, which removes the need for temporary
+files. Please note that *uploads* during `backup` and `prune` still require
+temporary files.
+
+https://github.com/restic/restic/pull/3484
+https://github.com/restic/restic/issues/3710
+https://github.com/restic/restic/pull/3717

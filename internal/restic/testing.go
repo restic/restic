@@ -9,9 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/restic/restic/internal/errors"
-
 	"github.com/restic/chunker"
+	"golang.org/x/sync/errgroup"
 )
 
 // fakeFile returns a reader which yields deterministic pseudo-random data.
@@ -44,7 +43,7 @@ func (fs *fakeFileSystem) saveFile(ctx context.Context, rd io.Reader) (blobs IDs
 	blobs = IDs{}
 	for {
 		chunk, err := fs.chunker.Next(fs.buf)
-		if errors.Cause(err) == io.EOF {
+		if err == io.EOF {
 			break
 		}
 
@@ -54,7 +53,7 @@ func (fs *fakeFileSystem) saveFile(ctx context.Context, rd io.Reader) (blobs IDs
 
 		id := Hash(chunk.Data)
 		if !fs.blobIsKnown(BlobHandle{ID: id, Type: DataBlob}) {
-			_, _, err := fs.repo.SaveBlob(ctx, DataBlob, chunk.Data, id, true)
+			_, _, _, err := fs.repo.SaveBlob(ctx, DataBlob, chunk.Data, id, true)
 			if err != nil {
 				fs.t.Fatalf("error saving chunk: %v", err)
 			}
@@ -140,7 +139,7 @@ func (fs *fakeFileSystem) saveTree(ctx context.Context, seed int64, depth int) I
 		return id
 	}
 
-	_, _, err := fs.repo.SaveBlob(ctx, TreeBlob, buf, id, false)
+	_, _, _, err := fs.repo.SaveBlob(ctx, TreeBlob, buf, id, false)
 	if err != nil {
 		fs.t.Fatal(err)
 	}
@@ -171,10 +170,18 @@ func TestCreateSnapshot(t testing.TB, repo Repository, at time.Time, depth int, 
 		rand:        rand.New(rand.NewSource(seed)),
 	}
 
+	var wg errgroup.Group
+	repo.StartPackUploader(context.TODO(), &wg)
+
 	treeID := fs.saveTree(context.TODO(), seed, depth)
 	snapshot.Tree = &treeID
 
-	id, err := repo.SaveJSONUnpacked(context.TODO(), SnapshotFile, snapshot)
+	err = repo.Flush(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	id, err := SaveSnapshot(context.TODO(), repo, snapshot)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -182,11 +189,6 @@ func TestCreateSnapshot(t testing.TB, repo Repository, at time.Time, depth int, 
 	snapshot.id = &id
 
 	t.Logf("saved snapshot %v", id.Str())
-
-	err = repo.Flush(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	return snapshot
 }
@@ -204,4 +206,9 @@ func TestParseID(s string) ID {
 // TestParseHandle parses s as a ID, panics if that fails and creates a BlobHandle with t.
 func TestParseHandle(s string, t BlobType) BlobHandle {
 	return BlobHandle{ID: TestParseID(s), Type: t}
+}
+
+// TestSetSnapshotID sets the snapshot's ID.
+func TestSetSnapshotID(t testing.TB, sn *Snapshot, id ID) {
+	sn.id = &id
 }

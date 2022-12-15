@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	"github.com/spf13/cobra"
 )
@@ -13,10 +14,16 @@ var cmdForget = &cobra.Command{
 	Use:   "forget [flags] [snapshot ID] [...]",
 	Short: "Remove snapshots from the repository",
 	Long: `
-The "forget" command removes snapshots according to a policy. Please note that
-this command really only deletes the snapshot object in the repository, which
-is a reference to data stored there. In order to remove this (now unreferenced)
-data after 'forget' was run successfully, see the 'prune' command.
+The "forget" command removes snapshots according to a policy. All snapshots are
+first divided into groups according to "--group-by", and after that the policy
+specified by the "--keep-*" options is applied to each group individually.
+
+Please note that this command really only deletes the snapshot object in the
+repository, which is a reference to data stored there. In order to remove the
+unreferenced data after "forget" was run successfully, see the "prune" command.
+
+Please also read the documentation for "forget" to learn about some important
+security considerations.
 
 EXIT STATUS
 ===========
@@ -25,7 +32,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runForget(forgetOptions, globalOptions, args)
+		return runForget(cmd.Context(), forgetOptions, globalOptions, args)
 	},
 }
 
@@ -45,9 +52,7 @@ type ForgetOptions struct {
 	WithinYearly  restic.Duration
 	KeepTags      restic.TagLists
 
-	Hosts   []string
-	Tags    restic.TagLists
-	Paths   []string
+	snapshotFilterOptions
 	Compact bool
 
 	// Grouping
@@ -74,9 +79,9 @@ func init() {
 	f.VarP(&forgetOptions.WithinWeekly, "keep-within-weekly", "", "keep weekly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
 	f.VarP(&forgetOptions.WithinMonthly, "keep-within-monthly", "", "keep monthly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
 	f.VarP(&forgetOptions.WithinYearly, "keep-within-yearly", "", "keep yearly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
-
 	f.Var(&forgetOptions.KeepTags, "keep-tag", "keep snapshots with this `taglist` (can be specified multiple times)")
-	f.StringArrayVar(&forgetOptions.Hosts, "host", nil, "only consider snapshots with the given `host` (can be specified multiple times)")
+
+	initMultiSnapshotFilterOptions(f, &forgetOptions.snapshotFilterOptions, false)
 	f.StringArrayVar(&forgetOptions.Hosts, "hostname", nil, "only consider snapshots with the given `hostname` (can be specified multiple times)")
 	err := f.MarkDeprecated("hostname", "use --host")
 	if err != nil {
@@ -84,12 +89,9 @@ func init() {
 		panic(err)
 	}
 
-	f.Var(&forgetOptions.Tags, "tag", "only consider snapshots which include this `taglist` in the format `tag[,tag,...]` (can be specified multiple times)")
-
-	f.StringArrayVar(&forgetOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` (can be specified multiple times)")
 	f.BoolVarP(&forgetOptions.Compact, "compact", "c", false, "use compact output format")
 
-	f.StringVarP(&forgetOptions.GroupBy, "group-by", "g", "host,paths", "string for grouping snapshots by host,paths,tags")
+	f.StringVarP(&forgetOptions.GroupBy, "group-by", "g", "host,paths", "`group` snapshots by host, paths and/or tags, separated by comma (disable grouping with '')")
 	f.BoolVarP(&forgetOptions.DryRun, "dry-run", "n", false, "do not delete anything, just print what would be done")
 	f.BoolVar(&forgetOptions.Prune, "prune", false, "automatically run the 'prune' command if snapshots have been removed")
 
@@ -97,30 +99,34 @@ func init() {
 	addPruneOptions(cmdForget)
 }
 
-func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
+func runForget(ctx context.Context, opts ForgetOptions, gopts GlobalOptions, args []string) error {
 	err := verifyPruneOptions(&pruneOptions)
 	if err != nil {
 		return err
 	}
 
-	repo, err := OpenRepository(gopts)
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
 
-	lock, err := lockRepoExclusive(gopts.ctx, repo)
-	defer unlockRepo(lock)
-	if err != nil {
-		return err
+	if gopts.NoLock && !opts.DryRun {
+		return errors.Fatal("--no-lock is only applicable in combination with --dry-run for forget command")
 	}
 
-	ctx, cancel := context.WithCancel(gopts.ctx)
-	defer cancel()
+	if !opts.DryRun || !gopts.NoLock {
+		var lock *restic.Lock
+		lock, ctx, err = lockRepoExclusive(ctx, repo)
+		defer unlockRepo(lock)
+		if err != nil {
+			return err
+		}
+	}
 
 	var snapshots restic.Snapshots
 	removeSnIDs := restic.NewIDSet()
 
-	for sn := range FindFilteredSnapshots(ctx, repo, opts.Hosts, opts.Tags, opts.Paths, args) {
+	for sn := range FindFilteredSnapshots(ctx, repo.Backend(), repo, opts.Hosts, opts.Tags, opts.Paths, args) {
 		snapshots = append(snapshots, sn)
 	}
 
@@ -211,7 +217,7 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 
 	if len(removeSnIDs) > 0 {
 		if !opts.DryRun {
-			err := DeleteFilesChecked(gopts, repo, removeSnIDs, restic.SnapshotFile)
+			err := DeleteFilesChecked(ctx, gopts, repo, removeSnIDs, restic.SnapshotFile)
 			if err != nil {
 				return err
 			}
@@ -234,7 +240,7 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 			Verbosef("%d snapshots have been removed, running prune\n", len(removeSnIDs))
 		}
 		pruneOptions.DryRun = opts.DryRun
-		return runPruneWithRepo(pruneOptions, gopts, repo, removeSnIDs)
+		return runPruneWithRepo(ctx, pruneOptions, gopts, repo, removeSnIDs)
 	}
 
 	return nil

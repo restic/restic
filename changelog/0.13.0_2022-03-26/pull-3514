@@ -1,0 +1,8 @@
+Enhancement: Support configurable timeout for the rclone backend
+
+A slow rclone backend could cause restic to time out while waiting for the
+repository to open. Restic now offers an `-o rclone.timeout` option to make
+this timeout configurable.
+
+https://github.com/restic/restic/issues/3511
+https://github.com/restic/restic/pull/3514

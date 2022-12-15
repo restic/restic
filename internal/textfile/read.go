@@ -4,7 +4,7 @@ package textfile
 
 import (
 	"bytes"
-	"io/ioutil"
+	"os"
 
 	"golang.org/x/text/encoding/unicode"
 )
@@ -34,7 +34,7 @@ func Decode(data []byte) ([]byte, error) {
 
 // Read returns the contents of the file, converted to UTF-8, stripped of any BOM.
 func Read(filename string) ([]byte, error) {
-	data, err := ioutil.ReadFile(filename)
+	data, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}

@@ -1,0 +1,6 @@
+Enhancement: Add xattr (extended attributes) support for Solaris
+
+Restic now supports xattr for the Solaris operating system.
+
+https://github.com/restic/restic/issues/3127
+https://github.com/restic/restic/pull/3628

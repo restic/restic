@@ -1,0 +1,7 @@
+Enhancement: Speed up the `restore --verify` command
+
+The `--verify` option lets the `restore` command verify the file content
+after it has restored a snapshot. The performance of this operation has
+now been improved by up to a factor of two.
+
+https://github.com/restic/restic/pull/2594

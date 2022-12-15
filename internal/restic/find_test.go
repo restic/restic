@@ -110,7 +110,8 @@ func TestFindUsedBlobs(t *testing.T) {
 			continue
 		}
 
-		test.Equals(t, p.Get(), uint64(i+1))
+		v, _ := p.Get()
+		test.Equals(t, v, uint64(i+1))
 
 		goldenFilename := filepath.Join("testdata", fmt.Sprintf("used_blobs_snapshot%d", i))
 		want := loadIDSet(t, goldenFilename)
@@ -151,7 +152,8 @@ func TestMultiFindUsedBlobs(t *testing.T) {
 	for i := 1; i < 3; i++ {
 		err := restic.FindUsedBlobs(context.TODO(), repo, snapshotTrees, usedBlobs, p)
 		test.OK(t, err)
-		test.Equals(t, p.Get(), uint64(i*len(snapshotTrees)))
+		v, _ := p.Get()
+		test.Equals(t, v, uint64(i*len(snapshotTrees)))
 
 		if !want.Equals(usedBlobs) {
 			t.Errorf("wrong list of blobs returned:\n  missing blobs: %v\n  extra blobs: %v",
@@ -162,8 +164,16 @@ func TestMultiFindUsedBlobs(t *testing.T) {
 
 type ForbiddenRepo struct{}
 
-func (r ForbiddenRepo) LoadTree(ctx context.Context, id restic.ID) (*restic.Tree, error) {
+func (r ForbiddenRepo) LoadBlob(context.Context, restic.BlobType, restic.ID, []byte) ([]byte, error) {
 	return nil, errors.New("should not be called")
+}
+
+func (r ForbiddenRepo) LookupBlobSize(id restic.ID, tpe restic.BlobType) (uint, bool) {
+	return 0, false
+}
+
+func (r ForbiddenRepo) Connections() uint {
+	return 2
 }
 
 func TestFindUsedBlobsSkipsSeenBlobs(t *testing.T) {

@@ -3,7 +3,6 @@ package sftp_test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,7 +19,7 @@ func findSFTPServerBinary() string {
 	for _, dir := range strings.Split(rtest.TestSFTPPath, ":") {
 		testpath := filepath.Join(dir, "sftp-server")
 		_, err := os.Stat(testpath)
-		if !os.IsNotExist(errors.Cause(err)) {
+		if !errors.Is(err, os.ErrNotExist) {
 			return testpath
 		}
 	}
@@ -34,7 +33,7 @@ func newTestSuite(t testing.TB) *test.Suite {
 	return &test.Suite{
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
 		NewConfig: func() (interface{}, error) {
-			dir, err := ioutil.TempDir(rtest.TestTempDir, "restic-test-sftp-")
+			dir, err := os.MkdirTemp(rtest.TestTempDir, "restic-test-sftp-")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -42,8 +41,9 @@ func newTestSuite(t testing.TB) *test.Suite {
 			t.Logf("create new backend at %v", dir)
 
 			cfg := sftp.Config{
-				Path:    dir,
-				Command: fmt.Sprintf("%q -e", sftpServer),
+				Path:        dir,
+				Command:     fmt.Sprintf("%q -e", sftpServer),
+				Connections: 5,
 			}
 			return cfg, nil
 		},

@@ -3,7 +3,7 @@ package restic_test
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -61,7 +61,7 @@ type ApplyPolicyResult struct {
 }
 
 func loadGoldenFile(t testing.TB, filename string) (res ApplyPolicyResult) {
-	buf, err := ioutil.ReadFile(filename)
+	buf, err := os.ReadFile(filename)
 	if err != nil {
 		t.Fatalf("error loading golden file %v: %v", filename, err)
 	}
@@ -85,7 +85,7 @@ func saveGoldenFile(t testing.TB, filename string, keep restic.Snapshots, reason
 		t.Fatalf("error marshaling result: %v", err)
 	}
 
-	if err = ioutil.WriteFile(filename, buf, 0644); err != nil {
+	if err = os.WriteFile(filename, buf, 0644); err != nil {
 		t.Fatalf("unable to update golden file: %v", err)
 	}
 }

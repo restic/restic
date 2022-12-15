@@ -16,8 +16,7 @@ func TestLayout(t *testing.T) {
 		t.Skip("sftp server binary not available")
 	}
 
-	path, cleanup := rtest.TempDir(t)
-	defer cleanup()
+	path := rtest.TempDir(t)
 
 	var tests = []struct {
 		filename        string
@@ -43,9 +42,10 @@ func TestLayout(t *testing.T) {
 
 			repo := filepath.Join(path, "repo")
 			be, err := sftp.Open(context.TODO(), sftp.Config{
-				Command: fmt.Sprintf("%q -e", sftpServer),
-				Path:    repo,
-				Layout:  test.layout,
+				Command:     fmt.Sprintf("%q -e", sftpServer),
+				Path:        repo,
+				Layout:      test.layout,
+				Connections: 5,
 			})
 			if err != nil {
 				t.Fatal(err)

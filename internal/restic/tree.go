@@ -1,6 +1,9 @@
 package restic
 
 import (
+	"bytes"
+	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 
@@ -97,4 +100,87 @@ func (t *Tree) Subtrees() (trees IDs) {
 	}
 
 	return trees
+}
+
+type BlobLoader interface {
+	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
+}
+
+// LoadTree loads a tree from the repository.
+func LoadTree(ctx context.Context, r BlobLoader, id ID) (*Tree, error) {
+	debug.Log("load tree %v", id)
+
+	buf, err := r.LoadBlob(ctx, TreeBlob, id, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	t := &Tree{}
+	err = json.Unmarshal(buf, t)
+	if err != nil {
+		return nil, err
+	}
+
+	return t, nil
+}
+
+type BlobSaver interface {
+	SaveBlob(context.Context, BlobType, []byte, ID, bool) (ID, bool, int, error)
+}
+
+// SaveTree stores a tree into the repository and returns the ID. The ID is
+// checked against the index. The tree is only stored when the index does not
+// contain the ID.
+func SaveTree(ctx context.Context, r BlobSaver, t *Tree) (ID, error) {
+	buf, err := json.Marshal(t)
+	if err != nil {
+		return ID{}, errors.Wrap(err, "MarshalJSON")
+	}
+
+	// append a newline so that the data is always consistent (json.Encoder
+	// adds a newline after each object)
+	buf = append(buf, '\n')
+
+	id, _, _, err := r.SaveBlob(ctx, TreeBlob, buf, ID{}, false)
+	return id, err
+}
+
+var ErrTreeNotOrdered = errors.New("nodes are not ordered or duplicate")
+
+type TreeJSONBuilder struct {
+	buf      bytes.Buffer
+	lastName string
+}
+
+func NewTreeJSONBuilder() *TreeJSONBuilder {
+	tb := &TreeJSONBuilder{}
+	_, _ = tb.buf.WriteString(`{"nodes":[`)
+	return tb
+}
+
+func (builder *TreeJSONBuilder) AddNode(node *Node) error {
+	if node.Name <= builder.lastName {
+		return fmt.Errorf("node %q, last%q: %w", node.Name, builder.lastName, ErrTreeNotOrdered)
+	}
+	if builder.lastName != "" {
+		_ = builder.buf.WriteByte(',')
+	}
+	builder.lastName = node.Name
+
+	val, err := json.Marshal(node)
+	if err != nil {
+		return err
+	}
+	_, _ = builder.buf.Write(val)
+	return nil
+}
+
+func (builder *TreeJSONBuilder) Finalize() ([]byte, error) {
+	// append a newline so that the data is always consistent (json.Encoder
+	// adds a newline after each object)
+	_, _ = builder.buf.WriteString("]}\n")
+	buf := builder.buf.Bytes()
+	// drop reference to buffer
+	builder.buf = bytes.Buffer{}
+	return buf, nil
 }

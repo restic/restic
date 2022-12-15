@@ -1,0 +1,14 @@
+Change: Ignore parent snapshot for `backup --stdin`
+
+Restic uses a parent snapshot to speed up directory scanning when performing
+backups, but this only wasted time and memory when the backup source is stdin
+(using the `--stdin` option of the `backup` command), since no directory scanning
+is performed in this case.
+
+Snapshots made with `backup --stdin` no longer have a parent snapshot, which allows
+restic to skip some startup operations and saves a bit of resources.
+
+The `--parent` option is still available for `backup --stdin`, but is now ignored.
+
+https://github.com/restic/restic/issues/3641
+https://github.com/restic/restic/pull/3645

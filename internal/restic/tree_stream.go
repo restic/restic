@@ -3,14 +3,13 @@ package restic
 import (
 	"context"
 	"errors"
+	"runtime"
 	"sync"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/ui/progress"
 	"golang.org/x/sync/errgroup"
 )
-
-const streamTreeParallelism = 5
 
 // TreeItem is used to return either an error or the tree for a tree id
 type TreeItem struct {
@@ -30,11 +29,11 @@ type trackedID struct {
 }
 
 // loadTreeWorker loads trees from repo and sends them to out.
-func loadTreeWorker(ctx context.Context, repo TreeLoader,
+func loadTreeWorker(ctx context.Context, repo Loader,
 	in <-chan trackedID, out chan<- trackedTreeItem) {
 
 	for treeID := range in {
-		tree, err := repo.LoadTree(ctx, treeID.ID)
+		tree, err := LoadTree(ctx, repo, treeID.ID)
 		debug.Log("load tree %v (%v) returned err: %v", tree, treeID, err)
 		job := trackedTreeItem{TreeItem: TreeItem{ID: treeID.ID, Error: err, Tree: tree}, rootIdx: treeID.rootIdx}
 
@@ -46,7 +45,7 @@ func loadTreeWorker(ctx context.Context, repo TreeLoader,
 	}
 }
 
-func filterTrees(ctx context.Context, trees IDs, loaderChan chan<- trackedID,
+func filterTrees(ctx context.Context, repo Loader, trees IDs, loaderChan chan<- trackedID, hugeTreeLoaderChan chan<- trackedID,
 	in <-chan trackedTreeItem, out chan<- TreeItem, skip func(tree ID) bool, p *progress.Counter) {
 
 	var (
@@ -78,7 +77,12 @@ func filterTrees(ctx context.Context, trees IDs, loaderChan chan<- trackedID,
 				continue
 			}
 
-			loadCh = loaderChan
+			treeSize, found := repo.LookupBlobSize(nextTreeID.ID, TreeBlob)
+			if found && treeSize > 50*1024*1024 {
+				loadCh = hugeTreeLoaderChan
+			} else {
+				loadCh = loaderChan
+			}
 		}
 
 		if loadCh == nil && outCh == nil && outstandingLoadTreeJobs == 0 {
@@ -150,18 +154,26 @@ func filterTrees(ctx context.Context, trees IDs, loaderChan chan<- trackedID,
 // is guaranteed to always be called from the same goroutine. To shutdown the started
 // goroutines, either read all items from the channel or cancel the context. Then `Wait()`
 // on the errgroup until all goroutines were stopped.
-func StreamTrees(ctx context.Context, wg *errgroup.Group, repo TreeLoader, trees IDs, skip func(tree ID) bool, p *progress.Counter) <-chan TreeItem {
+func StreamTrees(ctx context.Context, wg *errgroup.Group, repo Loader, trees IDs, skip func(tree ID) bool, p *progress.Counter) <-chan TreeItem {
 	loaderChan := make(chan trackedID)
+	hugeTreeChan := make(chan trackedID, 10)
 	loadedTreeChan := make(chan trackedTreeItem)
 	treeStream := make(chan TreeItem)
 
 	var loadTreeWg sync.WaitGroup
 
-	for i := 0; i < streamTreeParallelism; i++ {
+	// decoding a tree can take quite some time such that this can be both CPU- or IO-bound
+	// one extra worker to handle huge tree blobs
+	workerCount := int(repo.Connections()) + runtime.GOMAXPROCS(0) + 1
+	for i := 0; i < workerCount; i++ {
+		workerLoaderChan := loaderChan
+		if i == 0 {
+			workerLoaderChan = hugeTreeChan
+		}
 		loadTreeWg.Add(1)
 		wg.Go(func() error {
 			defer loadTreeWg.Done()
-			loadTreeWorker(ctx, repo, loaderChan, loadedTreeChan)
+			loadTreeWorker(ctx, repo, workerLoaderChan, loadedTreeChan)
 			return nil
 		})
 	}
@@ -175,8 +187,9 @@ func StreamTrees(ctx context.Context, wg *errgroup.Group, repo TreeLoader, trees
 
 	wg.Go(func() error {
 		defer close(loaderChan)
+		defer close(hugeTreeChan)
 		defer close(treeStream)
-		filterTrees(ctx, trees, loaderChan, loadedTreeChan, treeStream, skip, p)
+		filterTrees(ctx, repo, trees, loaderChan, hugeTreeChan, loadedTreeChan, treeStream, skip, p)
 		return nil
 	})
 	return treeStream

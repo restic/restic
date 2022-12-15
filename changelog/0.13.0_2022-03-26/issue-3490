@@ -1,0 +1,8 @@
+Enhancement: Support random subset by size in `check --read-data-subset`
+
+The `--read-data-subset` option of the `check` command now supports a third way
+of specifying the subset to check, namely `nS` where `n` is a size in bytes with
+suffix `S` as k/K, m/M, g/G or t/T.
+
+https://github.com/restic/restic/issues/3490
+https://github.com/restic/restic/pull/3548

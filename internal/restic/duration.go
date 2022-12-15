@@ -76,8 +76,7 @@ func nextNumber(input string) (num int, rest string, err error) {
 	return num, rest, nil
 }
 
-// ParseDuration parses a duration from a string. The format is:
-//    6y5m234d37h
+// ParseDuration parses a duration from a string. The format is `6y5m234d37h`
 func ParseDuration(s string) (Duration, error) {
 	var (
 		d   Duration
@@ -106,6 +105,8 @@ func ParseDuration(s string) (Duration, error) {
 			d.Days = num
 		case 'h':
 			d.Hours = num
+		default:
+			return Duration{}, errors.Errorf("invalid unit %q found after number %d", s[0], num)
 		}
 
 		s = s[1:]

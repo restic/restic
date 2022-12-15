@@ -1,3 +1,4 @@
+//go:build darwin || freebsd || linux
 // +build darwin freebsd linux
 
 package fuse
@@ -5,7 +6,7 @@ package fuse
 import (
 	"context"
 
-	"bazil.org/fuse"
+	"github.com/anacrolix/fuse"
 	"github.com/restic/restic/internal/restic"
 )
 
@@ -15,7 +16,7 @@ type other struct {
 	inode uint64
 }
 
-func newOther(ctx context.Context, root *Root, inode uint64, node *restic.Node) (*other, error) {
+func newOther(root *Root, inode uint64, node *restic.Node) (*other, error) {
 	return &other{root: root, inode: inode, node: node}, nil
 }
 

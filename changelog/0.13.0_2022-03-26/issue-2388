@@ -1,0 +1,10 @@
+Enhancement: Add warning for S3 if partial credentials are provided
+
+Previously restic did not notify about incomplete credentials when using the
+S3 backend, instead just reporting access denied.
+
+Restic now checks that both the AWS key ID and secret environment variables are
+set before connecting to the remote server, and reports an error if not.
+
+https://github.com/restic/restic/issues/2388
+https://github.com/restic/restic/pull/3532

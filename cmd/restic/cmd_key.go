@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
@@ -28,7 +28,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runKey(globalOptions, args)
+		return runKey(cmd.Context(), globalOptions, args)
 	},
 }
 
@@ -56,23 +56,26 @@ func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions
 		Created  string `json:"created"`
 	}
 
+	var m sync.Mutex
 	var keys []keyInfo
 
-	err := s.List(ctx, restic.KeyFile, func(id restic.ID, size int64) error {
-		k, err := repository.LoadKey(ctx, s, id.String())
+	err := restic.ParallelList(ctx, s.Backend(), restic.KeyFile, s.Connections(), func(ctx context.Context, id restic.ID, size int64) error {
+		k, err := repository.LoadKey(ctx, s, id)
 		if err != nil {
 			Warnf("LoadKey() failed: %v\n", err)
 			return nil
 		}
 
 		key := keyInfo{
-			Current:  id.String() == s.KeyName(),
+			Current:  id == s.KeyID(),
 			ID:       id.Str(),
 			UserName: k.Username,
 			HostName: k.Hostname,
 			Created:  k.Created.Local().Format(TimeFormat),
 		}
 
+		m.Lock()
+		defer m.Unlock()
 		keys = append(keys, key)
 		return nil
 	})
@@ -120,18 +123,18 @@ func getNewPassword(gopts GlobalOptions) (string, error) {
 		"enter password again: ")
 }
 
-func addKey(gopts GlobalOptions, repo *repository.Repository) error {
+func addKey(ctx context.Context, repo *repository.Repository, gopts GlobalOptions) error {
 	pw, err := getNewPassword(gopts)
 	if err != nil {
 		return err
 	}
 
-	id, err := repository.AddKey(gopts.ctx, repo, pw, keyUsername, keyHostname, repo.Key())
+	id, err := repository.AddKey(ctx, repo, pw, keyUsername, keyHostname, repo.Key())
 	if err != nil {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
 
-	err = switchToNewKeyAndRemoveIfBroken(gopts.ctx, repo, id, pw)
+	err = switchToNewKeyAndRemoveIfBroken(ctx, repo, id, pw)
 	if err != nil {
 		return err
 	}
@@ -141,40 +144,40 @@ func addKey(gopts GlobalOptions, repo *repository.Repository) error {
 	return nil
 }
 
-func deleteKey(ctx context.Context, repo *repository.Repository, name string) error {
-	if name == repo.KeyName() {
+func deleteKey(ctx context.Context, repo *repository.Repository, id restic.ID) error {
+	if id == repo.KeyID() {
 		return errors.Fatal("refusing to remove key currently used to access repository")
 	}
 
-	h := restic.Handle{Type: restic.KeyFile, Name: name}
+	h := restic.Handle{Type: restic.KeyFile, Name: id.String()}
 	err := repo.Backend().Remove(ctx, h)
 	if err != nil {
 		return err
 	}
 
-	Verbosef("removed key %v\n", name)
+	Verbosef("removed key %v\n", id)
 	return nil
 }
 
-func changePassword(gopts GlobalOptions, repo *repository.Repository) error {
+func changePassword(ctx context.Context, repo *repository.Repository, gopts GlobalOptions) error {
 	pw, err := getNewPassword(gopts)
 	if err != nil {
 		return err
 	}
 
-	id, err := repository.AddKey(gopts.ctx, repo, pw, "", "", repo.Key())
+	id, err := repository.AddKey(ctx, repo, pw, "", "", repo.Key())
 	if err != nil {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
-	oldID := repo.KeyName()
+	oldID := repo.KeyID()
 
-	err = switchToNewKeyAndRemoveIfBroken(gopts.ctx, repo, id, pw)
+	err = switchToNewKeyAndRemoveIfBroken(ctx, repo, id, pw)
 	if err != nil {
 		return err
 	}
 
-	h := restic.Handle{Type: restic.KeyFile, Name: oldID}
-	err = repo.Backend().Remove(gopts.ctx, h)
+	h := restic.Handle{Type: restic.KeyFile, Name: oldID.String()}
+	err = repo.Backend().Remove(ctx, h)
 	if err != nil {
 		return err
 	}
@@ -187,32 +190,29 @@ func changePassword(gopts GlobalOptions, repo *repository.Repository) error {
 func switchToNewKeyAndRemoveIfBroken(ctx context.Context, repo *repository.Repository, key *repository.Key, pw string) error {
 	// Verify new key to make sure it really works. A broken key can render the
 	// whole repository inaccessible
-	err := repo.SearchKey(ctx, pw, 0, key.Name())
+	err := repo.SearchKey(ctx, pw, 0, key.ID().String())
 	if err != nil {
 		// the key is invalid, try to remove it
-		h := restic.Handle{Type: restic.KeyFile, Name: key.Name()}
+		h := restic.Handle{Type: restic.KeyFile, Name: key.ID().String()}
 		_ = repo.Backend().Remove(ctx, h)
 		return errors.Fatalf("failed to access repository with new key: %v", err)
 	}
 	return nil
 }
 
-func runKey(gopts GlobalOptions, args []string) error {
+func runKey(ctx context.Context, gopts GlobalOptions, args []string) error {
 	if len(args) < 1 || (args[0] == "remove" && len(args) != 2) || (args[0] != "remove" && len(args) != 1) {
 		return errors.Fatal("wrong number of arguments")
 	}
 
-	ctx, cancel := context.WithCancel(gopts.ctx)
-	defer cancel()
-
-	repo, err := OpenRepository(gopts)
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
 
 	switch args[0] {
 	case "list":
-		lock, err := lockRepo(ctx, repo)
+		lock, ctx, err := lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
@@ -220,15 +220,15 @@ func runKey(gopts GlobalOptions, args []string) error {
 
 		return listKeys(ctx, repo, gopts)
 	case "add":
-		lock, err := lockRepo(ctx, repo)
+		lock, ctx, err := lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
 		}
 
-		return addKey(gopts, repo)
+		return addKey(ctx, repo, gopts)
 	case "remove":
-		lock, err := lockRepoExclusive(ctx, repo)
+		lock, ctx, err := lockRepoExclusive(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
@@ -239,22 +239,22 @@ func runKey(gopts GlobalOptions, args []string) error {
 			return err
 		}
 
-		return deleteKey(gopts.ctx, repo, id)
+		return deleteKey(ctx, repo, id)
 	case "passwd":
-		lock, err := lockRepoExclusive(ctx, repo)
+		lock, ctx, err := lockRepoExclusive(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
 		}
 
-		return changePassword(gopts, repo)
+		return changePassword(ctx, repo, gopts)
 	}
 
 	return nil
 }
 
 func loadPasswordFromFile(pwdFile string) (string, error) {
-	s, err := ioutil.ReadFile(pwdFile)
+	s, err := os.ReadFile(pwdFile)
 	if os.IsNotExist(err) {
 		return "", errors.Fatalf("%s does not exist", pwdFile)
 	}

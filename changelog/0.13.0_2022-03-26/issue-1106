@@ -1,0 +1,10 @@
+Bugfix: Never lock repository for `list locks`
+
+The `list locks` command previously locked to the repository by default. This
+had the problem that it wouldn't work for an exclusively locked repository and
+that the command would also display its own lock file which can be confusing.
+
+Now, the `list locks` command never locks the repository.
+
+https://github.com/restic/restic/issues/1106
+https://github.com/restic/restic/pull/3665

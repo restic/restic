@@ -1,0 +1,8 @@
+Bugfix: Don't print progress for `backup --json --quiet`
+
+Unlike the text output, the `--json` output format still printed progress
+information even in `--quiet` mode. This has now been fixed by always
+disabling the progress output in quiet mode.
+
+https://github.com/restic/restic/issues/2738
+https://github.com/restic/restic/pull/3264

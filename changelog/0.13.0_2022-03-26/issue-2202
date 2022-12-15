@@ -1,0 +1,15 @@
+Enhancement: Add upload checksum for Azure, GS, S3 and Swift backends
+
+Previously only the B2 and partially the Swift backends verified the integrity
+of uploaded (encrypted) files. The verification works by informing the backend
+about the expected hash of the uploaded file. The backend then verifies the
+upload and thereby rules out any data corruption during upload.
+
+We have now added upload checksums for the Azure, GS, S3 and Swift backends,
+which besides integrity checking for uploads also means that restic can now be
+used to store backups in S3 buckets which have Object Lock enabled.
+
+https://github.com/restic/restic/issues/2202
+https://github.com/restic/restic/issues/2700
+https://github.com/restic/restic/issues/3023
+https://github.com/restic/restic/pull/3246

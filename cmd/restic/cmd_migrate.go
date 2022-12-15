@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+
 	"github.com/restic/restic/internal/migrations"
 	"github.com/restic/restic/internal/restic"
 
@@ -8,11 +10,12 @@ import (
 )
 
 var cmdMigrate = &cobra.Command{
-	Use:   "migrate [flags] [name]",
+	Use:   "migrate [flags] [migration name] [...]",
 	Short: "Apply migrations",
 	Long: `
-The "migrate" command applies migrations to a repository. When no migration
-name is explicitly given, a list of migrations that can be applied is printed.
+The "migrate" command checks which migrations can be applied for a repository
+and prints a list with available migration names. If one or more migration
+names are specified, these migrations are applied.
 
 EXIT STATUS
 ===========
@@ -21,7 +24,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runMigrate(migrateOptions, globalOptions, args)
+		return runMigrate(cmd.Context(), migrateOptions, globalOptions, args)
 	},
 }
 
@@ -38,42 +41,62 @@ func init() {
 	f.BoolVarP(&migrateOptions.Force, "force", "f", false, `apply a migration a second time`)
 }
 
-func checkMigrations(opts MigrateOptions, gopts GlobalOptions, repo restic.Repository) error {
-	ctx := gopts.ctx
+func checkMigrations(ctx context.Context, repo restic.Repository) error {
 	Printf("available migrations:\n")
+	found := false
+
 	for _, m := range migrations.All {
-		ok, err := m.Check(ctx, repo)
+		ok, _, err := m.Check(ctx, repo)
 		if err != nil {
 			return err
 		}
 
 		if ok {
-			Printf("  %v: %v\n", m.Name(), m.Desc())
+			Printf("  %v\t%v\n", m.Name(), m.Desc())
+			found = true
 		}
+	}
+
+	if !found {
+		Printf("no migrations found\n")
 	}
 
 	return nil
 }
 
-func applyMigrations(opts MigrateOptions, gopts GlobalOptions, repo restic.Repository, args []string) error {
-	ctx := gopts.ctx
-
+func applyMigrations(ctx context.Context, opts MigrateOptions, gopts GlobalOptions, repo restic.Repository, args []string) error {
 	var firsterr error
 	for _, name := range args {
 		for _, m := range migrations.All {
 			if m.Name() == name {
-				ok, err := m.Check(ctx, repo)
+				ok, reason, err := m.Check(ctx, repo)
 				if err != nil {
 					return err
 				}
 
 				if !ok {
 					if !opts.Force {
-						Warnf("migration %v cannot be applied: check failed\nIf you want to apply this migration anyway, re-run with option --force\n", m.Name())
+						if reason == "" {
+							reason = "check failed"
+						}
+						Warnf("migration %v cannot be applied: %v\nIf you want to apply this migration anyway, re-run with option --force\n", m.Name(), reason)
 						continue
 					}
 
 					Warnf("check for migration %v failed, continuing anyway\n", m.Name())
+				}
+
+				if m.RepoCheck() {
+					Printf("checking repository integrity...\n")
+
+					checkOptions := CheckOptions{}
+					checkGopts := gopts
+					// the repository is already locked
+					checkGopts.NoLock = true
+					err = runCheck(ctx, checkOptions, checkGopts, []string{})
+					if err != nil {
+						return err
+					}
 				}
 
 				Printf("applying migration %v...\n", m.Name())
@@ -93,21 +116,21 @@ func applyMigrations(opts MigrateOptions, gopts GlobalOptions, repo restic.Repos
 	return firsterr
 }
 
-func runMigrate(opts MigrateOptions, gopts GlobalOptions, args []string) error {
-	repo, err := OpenRepository(gopts)
+func runMigrate(ctx context.Context, opts MigrateOptions, gopts GlobalOptions, args []string) error {
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
 
-	lock, err := lockRepoExclusive(gopts.ctx, repo)
+	lock, ctx, err := lockRepoExclusive(ctx, repo)
 	defer unlockRepo(lock)
 	if err != nil {
 		return err
 	}
 
 	if len(args) == 0 {
-		return checkMigrations(opts, gopts, repo)
+		return checkMigrations(ctx, repo)
 	}
 
-	return applyMigrations(opts, gopts, repo, args)
+	return applyMigrations(ctx, opts, gopts, repo, args)
 }

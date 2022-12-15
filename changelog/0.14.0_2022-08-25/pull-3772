@@ -1,0 +1,14 @@
+Bugfix: Correctly rebuild index for legacy repositories
+
+After running `rebuild-index` on a legacy repository containing mixed pack
+files (that is, pack files which store both metadata and file data), `check`
+printed warnings like `pack 12345678 contained in several indexes: ...`.
+This warning was not critical, but has now nonetheless been fixed by properly
+handling mixed pack files while rebuilding the index.
+
+Running `prune` for such legacy repositories will also fix the warning by
+reorganizing the pack files which caused it.
+
+https://github.com/restic/restic/pull/3772
+https://github.com/restic/restic/pull/3884
+https://forum.restic.net/t/5044/13

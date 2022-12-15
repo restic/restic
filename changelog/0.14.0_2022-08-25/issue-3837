@@ -1,0 +1,8 @@
+Enhancement: Improve SFTP repository initialization over slow links
+
+The `init` command, when used on an SFTP backend, now sends multiple `mkdir`
+commands to the backend concurrently. This reduces the waiting times when
+creating a repository over a very slow connection.
+
+https://github.com/restic/restic/issues/3837
+https://github.com/restic/restic/pull/3840

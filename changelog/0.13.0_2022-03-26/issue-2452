@@ -1,0 +1,11 @@
+Bugfix: Improve error handling of repository locking
+
+Previously, when the lock refresh failed to delete the old lock file, it forgot
+about the newly created one. Instead it continued trying to delete the old
+(usually no longer existing) lock file and thus over time lots of lock files
+accumulated. This has now been fixed.
+
+https://github.com/restic/restic/issues/2452
+https://github.com/restic/restic/issues/2473
+https://github.com/restic/restic/issues/2562
+https://github.com/restic/restic/pull/3512

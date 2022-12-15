@@ -36,8 +36,9 @@ Usage help is available:
       mount         Mount the repository
       prune         Remove unneeded data from the repository
       rebuild-index Build a new index
-      recover       Recover data from the repository
+      recover       Recover data from the repository not referenced by snapshots
       restore       Extract the data from a snapshot
+      rewrite       Rewrite snapshots to exclude unwanted files
       self-update   Update the restic binary
       snapshots     List all snapshots
       stats         Scan the repository and show basic statistics
@@ -49,15 +50,17 @@ Usage help is available:
           --cacert file                file to load root certificates from (default: use system certificates)
           --cache-dir directory        set the cache directory. (default: use system default cache directory)
           --cleanup-cache              auto remove old cache directories
+          --compression mode           compression mode (only available for repository format version 2), one of (auto|off|max) (default auto)
       -h, --help                       help for restic
-          --insecure-tls               skip TLS certificate verification when connecting to the repo (insecure)
+          --insecure-tls               skip TLS certificate verification when connecting to the repository (insecure)
           --json                       set output mode to JSON for commands that support it
           --key-hint key               key ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
-          --limit-download int         limits downloads to a maximum rate in KiB/s. (default: unlimited)
-          --limit-upload int           limits uploads to a maximum rate in KiB/s. (default: unlimited)
+          --limit-download rate        limits downloads to a maximum rate in KiB/s. (default: unlimited)
+          --limit-upload rate          limits uploads to a maximum rate in KiB/s. (default: unlimited)
           --no-cache                   do not use a local cache
           --no-lock                    do not lock the repository, this allows some operations on read-only repositories
       -o, --option key=value           set extended option (key=value, can be specified multiple times)
+          --pack-size size             set target pack size in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)
           --password-command command   shell command to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)
       -p, --password-file file         file to read the repository password from (default: $RESTIC_PASSWORD_FILE)
       -q, --quiet                      do not output comprehensive progress report
@@ -89,9 +92,10 @@ command:
     Exit status is 3 if some source data could not be read (incomplete snapshot created).
 
     Usage:
-      restic backup [flags] FILE/DIR [FILE/DIR] ...
+      restic backup [flags] [FILE/DIR] ...
 
     Flags:
+      -n, --dry-run                                do not upload or write any data, just show what would be done
       -e, --exclude pattern                        exclude a pattern (can be specified multiple times)
           --exclude-caches                         excludes cache directories that are marked with a CACHEDIR.TAG file. See https://bford.info/cachedir/ for the Cache Directory Tagging Standard
           --exclude-file file                      read exclude patterns from a file (can be specified multiple times)
@@ -105,9 +109,11 @@ command:
       -H, --host hostname                          set the hostname for the snapshot manually. To prevent an expensive rescan use the "parent" flag
           --iexclude pattern                       same as --exclude pattern but ignores the casing of filenames
           --iexclude-file file                     same as --exclude-file but ignores casing of filenames in patterns
+          --ignore-ctime                           ignore ctime changes when checking for modified files
           --ignore-inode                           ignore inode number changes when checking for modified files
       -x, --one-file-system                        exclude other file systems, don't cross filesystem boundaries and subvolumes
-          --parent snapshot                        use this parent snapshot (default: last snapshot in the repo that has the same target files/directories)
+          --parent snapshot                        use this parent snapshot (default: last snapshot in the repository that has the same target files/directories, and is not newer than the snapshot time)
+          --read-concurrency n                     read n file concurrently. (default: $RESTIC_READ_CONCURRENCY or 2)
           --stdin                                  read backup from stdin
           --stdin-filename filename                filename to use when reading from stdin (default "stdin")
           --tag tags                               add tags for the new snapshot in the format `tag[,tag,...]` (can be specified multiple times) (default [])
@@ -119,14 +125,16 @@ command:
           --cacert file                file to load root certificates from (default: use system certificates)
           --cache-dir directory        set the cache directory. (default: use system default cache directory)
           --cleanup-cache              auto remove old cache directories
-          --insecure-tls               skip TLS certificate verification when connecting to the repo (insecure)
+          --compression mode           compression mode (only available for repository format version 2), one of (auto|off|max) (default auto)
+          --insecure-tls               skip TLS certificate verification when connecting to the repository (insecure)
           --json                       set output mode to JSON for commands that support it
           --key-hint key               key ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
-          --limit-download int         limits downloads to a maximum rate in KiB/s. (default: unlimited)
-          --limit-upload int           limits uploads to a maximum rate in KiB/s. (default: unlimited)
+          --limit-download rate        limits downloads to a maximum rate in KiB/s. (default: unlimited)
+          --limit-upload rate          limits uploads to a maximum rate in KiB/s. (default: unlimited)
           --no-cache                   do not use a local cache
           --no-lock                    do not lock the repository, this allows some operations on read-only repositories
       -o, --option key=value           set extended option (key=value, can be specified multiple times)
+          --pack-size size             set target pack size in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)
           --password-command command   shell command to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)
       -p, --password-file file         file to read the repository password from (default: $RESTIC_PASSWORD_FILE)
       -q, --quiet                      do not output comprehensive progress report
@@ -425,14 +433,15 @@ message.
 The command line parameter ``--cache-dir`` or the environment variable
 ``$RESTIC_CACHE_DIR`` can be used to override the default cache location.  The
 parameter ``--no-cache`` disables the cache entirely. In this case, all data
-is loaded from the repo.
+is loaded from the repository.
 
 The cache is ephemeral: When a file cannot be read from the cache, it is loaded
 from the repository.
 
 Within the cache directory, there's a sub directory for each repository the
-cache was used with. Restic updates the timestamps of a repo directory each
+cache was used with. Restic updates the timestamps of a repository directory each
 time it is used, so by looking at the timestamps of the sub directories of the
 cache directory it can decide which sub directories are old and probably not
 needed any more. You can either remove these directories manually, or run a
 restic command with the ``--cleanup-cache`` flag.
+

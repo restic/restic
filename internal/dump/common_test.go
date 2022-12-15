@@ -13,17 +13,12 @@ import (
 )
 
 func prepareTempdirRepoSrc(t testing.TB, src archiver.TestDir) (tempdir string, repo restic.Repository, cleanup func()) {
-	tempdir, removeTempdir := rtest.TempDir(t)
+	tempdir = rtest.TempDir(t)
 	repo, removeRepository := repository.TestRepository(t)
 
 	archiver.TestCreateFiles(t, tempdir, src)
 
-	cleanup = func() {
-		removeRepository()
-		removeTempdir()
-	}
-
-	return tempdir, repo, cleanup
+	return tempdir, repo, removeRepository
 }
 
 type CheckDump func(t *testing.T, testDir string, testDump *bytes.Buffer) error
@@ -88,7 +83,7 @@ func WriteTest(t *testing.T, format string, cd CheckDump) {
 			sn, _, err := arch.Snapshot(ctx, []string{"."}, archiver.SnapshotOptions{})
 			rtest.OK(t, err)
 
-			tree, err := repo.LoadTree(ctx, *sn.Tree)
+			tree, err := restic.LoadTree(ctx, repo, *sn.Tree)
 			rtest.OK(t, err)
 
 			dst := &bytes.Buffer{}

@@ -1,0 +1,8 @@
+Bugfix: Make `copy` command honor `--no-lock` for source repository
+
+The `copy` command previously did not respect the `--no-lock` option for the
+source repository, causing failures with read-only storage backends. This has
+now been fixed such that the option is now respected.
+
+https://github.com/restic/restic/issues/3518
+https://github.com/restic/restic/pull/3589

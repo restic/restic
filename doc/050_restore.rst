@@ -56,6 +56,10 @@ There are case insensitive variants of ``--exclude`` and ``--include`` called
 ``--iexclude`` and ``--iinclude``. These options will behave the same way but
 ignore the casing of paths.
 
+Restoring symbolic links on windows is only possible when the user has
+``SeCreateSymbolicLinkPrivilege`` privilege or is running as admin. This is a
+restriction of windows not restic.
+
 Restore using mount
 ===================
 
@@ -96,7 +100,7 @@ the data directly. This can be achieved by using the `dump` command, like this:
 
 If you have saved multiple different things into the same repo, the ``latest``
 snapshot may not be the right one. For example, consider the following
-snapshots in a repo:
+snapshots in a repository:
 
 .. code-block:: console
 

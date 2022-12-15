@@ -5,13 +5,12 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
-	tomb "gopkg.in/tomb.v2"
+	"golang.org/x/sync/errgroup"
 )
 
 // Saver allows saving a blob.
 type Saver interface {
-	SaveBlob(ctx context.Context, t restic.BlobType, data []byte, id restic.ID, storeDuplicate bool) (restic.ID, bool, error)
-	Index() restic.MasterIndex
+	SaveBlob(ctx context.Context, t restic.BlobType, data []byte, id restic.ID, storeDuplicate bool) (restic.ID, bool, int, error)
 }
 
 // BlobSaver concurrently saves incoming blobs to the repo.
@@ -22,7 +21,7 @@ type BlobSaver struct {
 
 // NewBlobSaver returns a new blob. A worker pool is started, it is stopped
 // when ctx is cancelled.
-func NewBlobSaver(ctx context.Context, t *tomb.Tomb, repo Saver, workers uint) *BlobSaver {
+func NewBlobSaver(ctx context.Context, wg *errgroup.Group, repo Saver, workers uint) *BlobSaver {
 	ch := make(chan saveBlobJob)
 	s := &BlobSaver{
 		repo: repo,
@@ -30,104 +29,75 @@ func NewBlobSaver(ctx context.Context, t *tomb.Tomb, repo Saver, workers uint) *
 	}
 
 	for i := uint(0); i < workers; i++ {
-		t.Go(func() error {
-			return s.worker(t.Context(ctx), ch)
+		wg.Go(func() error {
+			return s.worker(ctx, ch)
 		})
 	}
 
 	return s
 }
 
+func (s *BlobSaver) TriggerShutdown() {
+	close(s.ch)
+}
+
 // Save stores a blob in the repo. It checks the index and the known blobs
 // before saving anything. It takes ownership of the buffer passed in.
-func (s *BlobSaver) Save(ctx context.Context, t restic.BlobType, buf *Buffer) FutureBlob {
-	ch := make(chan saveBlobResponse, 1)
+func (s *BlobSaver) Save(ctx context.Context, t restic.BlobType, buf *Buffer, cb func(res SaveBlobResponse)) {
 	select {
-	case s.ch <- saveBlobJob{BlobType: t, buf: buf, ch: ch}:
+	case s.ch <- saveBlobJob{BlobType: t, buf: buf, cb: cb}:
 	case <-ctx.Done():
 		debug.Log("not sending job, context is cancelled")
-		close(ch)
-		return FutureBlob{ch: ch}
 	}
-
-	return FutureBlob{ch: ch, length: len(buf.Data)}
-}
-
-// FutureBlob is returned by SaveBlob and will return the data once it has been processed.
-type FutureBlob struct {
-	ch     <-chan saveBlobResponse
-	length int
-	res    saveBlobResponse
-}
-
-// Wait blocks until the result is available or the context is cancelled.
-func (s *FutureBlob) Wait(ctx context.Context) {
-	select {
-	case <-ctx.Done():
-		return
-	case res, ok := <-s.ch:
-		if ok {
-			s.res = res
-		}
-	}
-}
-
-// ID returns the ID of the blob after it has been saved.
-func (s *FutureBlob) ID() restic.ID {
-	return s.res.id
-}
-
-// Known returns whether or not the blob was already known.
-func (s *FutureBlob) Known() bool {
-	return s.res.known
-}
-
-// Length returns the length of the blob.
-func (s *FutureBlob) Length() int {
-	return s.length
 }
 
 type saveBlobJob struct {
 	restic.BlobType
 	buf *Buffer
-	ch  chan<- saveBlobResponse
+	cb  func(res SaveBlobResponse)
 }
 
-type saveBlobResponse struct {
-	id    restic.ID
-	known bool
+type SaveBlobResponse struct {
+	id         restic.ID
+	length     int
+	sizeInRepo int
+	known      bool
 }
 
-func (s *BlobSaver) saveBlob(ctx context.Context, t restic.BlobType, buf []byte) (saveBlobResponse, error) {
-	id, known, err := s.repo.SaveBlob(ctx, t, buf, restic.ID{}, false)
+func (s *BlobSaver) saveBlob(ctx context.Context, t restic.BlobType, buf []byte) (SaveBlobResponse, error) {
+	id, known, sizeInRepo, err := s.repo.SaveBlob(ctx, t, buf, restic.ID{}, false)
 
 	if err != nil {
-		return saveBlobResponse{}, err
+		return SaveBlobResponse{}, err
 	}
 
-	return saveBlobResponse{
-		id:    id,
-		known: known,
+	return SaveBlobResponse{
+		id:         id,
+		length:     len(buf),
+		sizeInRepo: sizeInRepo,
+		known:      known,
 	}, nil
 }
 
 func (s *BlobSaver) worker(ctx context.Context, jobs <-chan saveBlobJob) error {
 	for {
 		var job saveBlobJob
+		var ok bool
 		select {
 		case <-ctx.Done():
 			return nil
-		case job = <-jobs:
+		case job, ok = <-jobs:
+			if !ok {
+				return nil
+			}
 		}
 
 		res, err := s.saveBlob(ctx, job.BlobType, job.buf.Data)
 		if err != nil {
 			debug.Log("saveBlob returned error, exiting: %v", err)
-			close(job.ch)
 			return err
 		}
-		job.ch <- res
-		close(job.ch)
+		job.cb(res)
 		job.buf.Release()
 	}
 }

@@ -1,0 +1,29 @@
+Enhancement: Support negative include/exclude patterns
+
+If a pattern starts with an exclamation mark and it matches a file that was
+previously matched by a regular pattern, the match is cancelled. Notably,
+this can be used with `--exclude-file` to cancel the exclusion of some files.
+
+It works similarly to `.gitignore`, with the same limitation; Once a directory
+is excluded, it is not possible to include files inside the directory.
+
+Example of use as an exclude pattern for the `backup` command:
+
+    $HOME/**/*
+    !$HOME/Documents
+    !$HOME/code
+    !$HOME/.emacs.d
+    !$HOME/games
+    # [...]
+    node_modules
+    *~
+    *.o
+    *.lo
+    *.pyc
+    # [...]
+    $HOME/code/linux/*
+    !$HOME/code/linux/.git
+    # [...]
+
+https://github.com/restic/restic/issues/233
+https://github.com/restic/restic/pull/2311

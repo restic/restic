@@ -1,0 +1,9 @@
+Enhancement: Improve handling of temporary B2 delete errors
+
+Deleting files on B2 could sometimes fail temporarily, which required restic to
+retry the delete operation. In some cases the file was deleted nevertheless,
+causing the retries and ultimately the restic command to fail. This has now been
+fixed.
+
+https://github.com/restic/restic/issues/3541
+https://github.com/restic/restic/pull/3544

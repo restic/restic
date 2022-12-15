@@ -1,0 +1,8 @@
+Bugfix: Make `check` command honor `RESTIC_CACHE_DIR` environment variable
+
+Previously, the `check` command didn't honor the `RESTIC_CACHE_DIR` environment
+variable, which caused problems in certain system/usage configurations. This
+has now been fixed.
+
+https://github.com/restic/restic/issues/3382
+https://github.com/restic/restic/pull/3474

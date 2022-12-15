@@ -1,7 +1,0 @@
-Enhancement: Improve recover command
-
-Restic recover used to generate a snapshot that contains all root trees
-even those which are already referenced by a snapshot.
-It now only processes trees not referenced at all.
-
-https://github.com/restic/restic/pull/2880

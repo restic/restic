@@ -1,0 +1,16 @@
+Enhancement: Add `--dry-run`/`-n` option to `backup` command
+
+Testing exclude filters and other configuration options was error prone as
+wrong filters could cause files to be uploaded unintentionally. It was also
+not possible to estimate beforehand how much data would be uploaded.
+
+The `backup` command now has a `--dry-run`/`-n` option, which performs all the
+normal steps of a backup without actually writing anything to the repository.
+
+Passing -vv will log information about files that would be added, allowing for
+verification of source and exclusion options before running the real backup.
+
+https://github.com/restic/restic/issues/1542
+https://github.com/restic/restic/pull/2308
+https://github.com/restic/restic/pull/3210
+https://github.com/restic/restic/pull/3300

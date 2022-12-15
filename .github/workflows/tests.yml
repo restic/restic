@@ -8,6 +8,10 @@ on:
   # run tests for all pull requests
   pull_request:
 
+env:
+  latest_go: "1.19.x"
+  GO111MODULE: on
+
 jobs:
   test:
     strategy:
@@ -15,33 +19,29 @@ jobs:
         # list of jobs to run:
         include:
           - job_name: Windows
-            go: 1.17.x
+            go: 1.19.x
             os: windows-latest
 
           - job_name: macOS
-            go: 1.17.x
+            go: 1.19.x
             os: macOS-latest
             test_fuse: false
 
           - job_name: Linux
-            go: 1.17.x
+            go: 1.19.x
             os: ubuntu-latest
             test_cloud_backends: true
             test_fuse: true
             check_changelog: true
 
-          - job_name: Linux
-            go: 1.16.x
+          - job_name: Linux (race)
+            go: 1.19.x
             os: ubuntu-latest
             test_fuse: true
+            test_opts: "-race"
 
           - job_name: Linux
-            go: 1.15.x
-            os: ubuntu-latest
-            test_fuse: true
-
-          - job_name: Linux
-            go: 1.14.x
+            go: 1.18.x
             os: ubuntu-latest
             test_fuse: true
 
@@ -53,14 +53,14 @@ jobs:
 
     steps:
       - name: Set up Go ${{ matrix.go }}
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go }}
 
       - name: Get programs (Linux/macOS)
         run: |
           echo "build Go tools"
-          go get github.com/restic/rest-server/...
+          go install github.com/restic/rest-server/cmd/rest-server@latest
 
           echo "install minio server"
           mkdir $HOME/bin
@@ -82,7 +82,7 @@ jobs:
           chmod 755 $HOME/bin/rclone
           rm -rf rclone*
 
-          # add $HOME/bin to path ($GOBIN was already added to the path by setup-go@v2)
+          # add $HOME/bin to path ($GOBIN was already added to the path by setup-go@v3)
           echo $HOME/bin >> $GITHUB_PATH
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'macOS-latest'
 
@@ -92,7 +92,7 @@ jobs:
           $ProgressPreference = 'SilentlyContinue'
 
           echo "build Go tools"
-          go get github.com/restic/rest-server/...
+          go install github.com/restic/rest-server/...
 
           echo "install minio server"
           mkdir $Env:USERPROFILE/bin
@@ -104,7 +104,7 @@ jobs:
           unzip rclone.zip
           copy rclone*/rclone.exe $Env:USERPROFILE/bin
 
-          # add $USERPROFILE/bin to path ($GOBIN was already added to the path by setup-go@v2)
+          # add $USERPROFILE/bin to path ($GOBIN was already added to the path by setup-go@v3)
           echo $Env:USERPROFILE\bin >> $Env:GITHUB_PATH
 
           echo "install tar"
@@ -126,7 +126,7 @@ jobs:
         if: matrix.os == 'windows-latest'
 
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Build with build.go
         run: |
@@ -136,7 +136,7 @@ jobs:
         env:
           RESTIC_TEST_FUSE: ${{ matrix.test_fuse }}
         run: |
-          go test -cover ./...
+          go test -cover ${{matrix.test_opts}} ./...
 
       - name: Test cloud backends
         env:
@@ -177,12 +177,14 @@ jobs:
 
         # only run cloud backend tests for pull requests from and pushes to our
         # own repo, otherwise the secrets are not available
-        if: (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && matrix.test_cloud_backends
+        # Skip for Dependabot pull requests as these are run without secrets
+        # https://docs.github.com/en/code-security/dependabot/working-with-dependabot/automating-dependabot-with-github-actions#responding-to-events
+        if: (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && (github.actor != 'dependabot[bot]') && matrix.test_cloud_backends
 
       - name: Check changelog files with calens
         run: |
           echo "install calens"
-          go get github.com/restic/calens
+          go install github.com/restic/calens@latest
 
           echo "check changelog files"
           calens
@@ -193,20 +195,20 @@ jobs:
 
       # ATTENTION: the list of architectures must be in sync with helpers/build-release-binaries/main.go!
       matrix:
-        # run cross-compile in two batches parallel so the overall tests run faster
+        # run cross-compile in three batches parallel so the overall tests run faster
         targets:
-          - "linux/386 linux/amd64 linux/arm linux/arm64 linux/ppc64le linux/mips linux/mipsle linux/mips64 linux/mips64le linux/s390x \
-            openbsd/386 openbsd/amd64"
+          - "linux/386 linux/amd64 linux/arm linux/arm64 linux/ppc64le linux/mips linux/mipsle linux/mips64 linux/mips64le linux/s390x"
 
-          - "freebsd/386 freebsd/amd64 freebsd/arm \
+          - "openbsd/386 openbsd/amd64 \
+            freebsd/386 freebsd/amd64 freebsd/arm \
             aix/ppc64 \
-            darwin/amd64 darwin/arm64 \
-            netbsd/386 netbsd/amd64 \
+            darwin/amd64 darwin/arm64"
+
+          - "netbsd/386 netbsd/amd64 \
             windows/386 windows/amd64 \
             solaris/amd64"
 
     env:
-      go: 1.16.x
       GOPROXY: https://proxy.golang.org
 
     runs-on: ubuntu-latest
@@ -214,17 +216,17 @@ jobs:
     name: Cross Compile for ${{ matrix.targets }}
 
     steps:
-      - name: Set up Go ${{ env.go }}
-        uses: actions/setup-go@v2
+      - name: Set up Go ${{ env.latest_go }}
+        uses: actions/setup-go@v3
         with:
-          go-version: ${{ env.go }}
-
-      - name: Check out code
-        uses: actions/checkout@v2
+          go-version: ${{ env.latest_go }}
 
       - name: Install gox
         run: |
-          go get github.com/mitchellh/gox
+          go install github.com/mitchellh/gox@latest
+
+      - name: Check out code
+        uses: actions/checkout@v3
 
       - name: Cross-compile with gox for ${{ matrix.targets }}
         env:
@@ -238,26 +240,23 @@ jobs:
   lint:
     name: lint
     runs-on: ubuntu-latest
-    env:
-      go: 1.16.x
     steps:
-      - name: Set up Go ${{ env.go }}
-        uses: actions/setup-go@v2
+      - name: Set up Go ${{ env.latest_go }}
+        uses: actions/setup-go@v3
         with:
-          go-version: ${{ env.go }}
+          go-version: ${{ env.latest_go }}
 
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v2
+        uses: golangci/golangci-lint-action@v3
         with:
           # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
-          version: v1.36
+          version: v1.49
           # Optional: show only new issues if it's a pull request. The default value is `false`.
           only-new-issues: true
           args: --verbose --timeout 5m
-          skip-go-installation: true
 
         # only run golangci-lint for pull requests, otherwise ALL hints get
         # reported. We need to slowly address all issues until we can enable
@@ -275,11 +274,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v3
+        uses: docker/metadata-action@v4
         with:
           # list of Docker images to use as base name for tags
           images: |
@@ -295,14 +294,14 @@ jobs:
             type=sha
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
+        uses: docker/setup-qemu-action@v2
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Build and push
         id: docker_build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           push: false
           context: .
