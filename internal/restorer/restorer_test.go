@@ -321,8 +321,7 @@ func TestRestorer(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			repo, cleanup := repository.TestRepository(t)
-			defer cleanup()
+			repo := repository.TestRepository(t)
 			sn, id := saveSnapshot(t, repo, test.Snapshot)
 			t.Logf("snapshot saved as %v", id.Str())
 
@@ -438,8 +437,7 @@ func TestRestorerRelative(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			repo, cleanup := repository.TestRepository(t)
-			defer cleanup()
+			repo := repository.TestRepository(t)
 
 			sn, id := saveSnapshot(t, repo, test.Snapshot)
 			t.Logf("snapshot saved as %v", id.Str())
@@ -447,7 +445,7 @@ func TestRestorerRelative(t *testing.T) {
 			res := NewRestorer(context.TODO(), repo, sn, false)
 
 			tempdir := rtest.TempDir(t)
-			cleanup = rtest.Chdir(t, tempdir)
+			cleanup := rtest.Chdir(t, tempdir)
 			defer cleanup()
 
 			errors := make(map[string]string)
@@ -670,8 +668,7 @@ func TestRestorerTraverseTree(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			repo, cleanup := repository.TestRepository(t)
-			defer cleanup()
+			repo := repository.TestRepository(t)
 			sn, _ := saveSnapshot(t, repo, test.Snapshot)
 
 			res := NewRestorer(context.TODO(), repo, sn, false)
@@ -717,8 +714,7 @@ func checkConsistentInfo(t testing.TB, file string, fi os.FileInfo, modtime time
 func TestRestorerConsistentTimestampsAndPermissions(t *testing.T) {
 	timeForTest := time.Date(2019, time.January, 9, 1, 46, 40, 0, time.UTC)
 
-	repo, cleanup := repository.TestRepository(t)
-	defer cleanup()
+	repo := repository.TestRepository(t)
 
 	sn, _ := saveSnapshot(t, repo, Snapshot{
 		Nodes: map[string]Node{
@@ -803,9 +799,7 @@ func TestVerifyCancel(t *testing.T) {
 		},
 	}
 
-	repo, cleanup := repository.TestRepository(t)
-	defer cleanup()
-
+	repo := repository.TestRepository(t)
 	sn, _ := saveSnapshot(t, repo, snapshot)
 
 	res := NewRestorer(context.TODO(), repo, sn, false)
@@ -832,8 +826,7 @@ func TestVerifyCancel(t *testing.T) {
 }
 
 func TestRestorerSparseFiles(t *testing.T) {
-	repo, cleanup := repository.TestRepository(t)
-	defer cleanup()
+	repo := repository.TestRepository(t)
 
 	var zeros [1<<20 + 13]byte
 

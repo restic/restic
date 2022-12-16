@@ -340,9 +340,7 @@ func induceError(data []byte) {
 }
 
 func TestCheckerModifiedData(t *testing.T) {
-	repo, cleanup := repository.TestRepository(t)
-	defer cleanup()
-
+	repo := repository.TestRepository(t)
 	sn := archiver.TestSnapshot(t, repo, ".", nil)
 	t.Logf("archived as %v", sn.ID().Str())
 
@@ -457,8 +455,7 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	repo, cleanup := repository.TestRepository(t)
-	defer cleanup()
+	repo := repository.TestRepository(t)
 
 	damagedNode := &restic.Node{
 		Name:    "damaged",

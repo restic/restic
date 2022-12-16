@@ -65,8 +65,7 @@ func loadTree(t testing.TB, repo restic.Repository, id restic.ID) *restic.Tree {
 }
 
 func TestFuseFile(t *testing.T) {
-	repo, cleanup := repository.TestRepository(t)
-	defer cleanup()
+	repo := repository.TestRepository(t)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -148,8 +147,7 @@ func TestFuseFile(t *testing.T) {
 }
 
 func TestFuseDir(t *testing.T) {
-	repo, cleanup := repository.TestRepository(t)
-	defer cleanup()
+	repo := repository.TestRepository(t)
 
 	root := &Root{repo: repo, blobCache: bloblru.New(blobCacheSize)}
 
@@ -180,9 +178,7 @@ func TestFuseDir(t *testing.T) {
 
 // Test top-level directories for their UID and GID.
 func TestTopUIDGID(t *testing.T) {
-	repo, cleanup := repository.TestRepository(t)
-	defer cleanup()
-
+	repo := repository.TestRepository(t)
 	restic.TestCreateSnapshot(t, repo, time.Unix(1460289341, 207401672), 0, 0)
 
 	testTopUIDGID(t, Config{}, repo, uint32(os.Getuid()), uint32(os.Getgid()))

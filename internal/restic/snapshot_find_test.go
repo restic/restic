@@ -9,9 +9,7 @@ import (
 )
 
 func TestFindLatestSnapshot(t *testing.T) {
-	repo, cleanup := repository.TestRepository(t)
-	defer cleanup()
-
+	repo := repository.TestRepository(t)
 	restic.TestCreateSnapshot(t, repo, parseTimeUTC("2015-05-05 05:05:05"), 1, 0)
 	restic.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:07"), 1, 0)
 	latestSnapshot := restic.TestCreateSnapshot(t, repo, parseTimeUTC("2019-09-09 09:09:09"), 1, 0)
@@ -27,9 +25,7 @@ func TestFindLatestSnapshot(t *testing.T) {
 }
 
 func TestFindLatestSnapshotWithMaxTimestamp(t *testing.T) {
-	repo, cleanup := repository.TestRepository(t)
-	defer cleanup()
-
+	repo := repository.TestRepository(t)
 	restic.TestCreateSnapshot(t, repo, parseTimeUTC("2015-05-05 05:05:05"), 1, 0)
 	desiredSnapshot := restic.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:07"), 1, 0)
 	restic.TestCreateSnapshot(t, repo, parseTimeUTC("2019-09-09 09:09:09"), 1, 0)

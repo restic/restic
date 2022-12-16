@@ -14,9 +14,7 @@ import (
 )
 
 func TestUpgradeRepoV2(t *testing.T) {
-	repo, cleanup := repository.TestRepositoryWithVersion(t, 1)
-	defer cleanup()
-
+	repo := repository.TestRepositoryWithVersion(t, 1)
 	if repo.Config().Version != 1 {
 		t.Fatal("test repo has wrong version")
 	}
@@ -63,8 +61,7 @@ func (be *failBackend) Save(ctx context.Context, h restic.Handle, rd restic.Rewi
 }
 
 func TestUpgradeRepoV2Failure(t *testing.T) {
-	be, cleanup := repository.TestBackend(t)
-	defer cleanup()
+	be := repository.TestBackend(t)
 
 	// wrap backend so that it fails upgrading the config after the initial write
 	be = &failBackend{
@@ -72,9 +69,7 @@ func TestUpgradeRepoV2Failure(t *testing.T) {
 		Backend:                   be,
 	}
 
-	repo, cleanup := repository.TestRepositoryWithBackend(t, be, 1)
-	defer cleanup()
-
+	repo := repository.TestRepositoryWithBackend(t, be, 1)
 	if repo.Config().Version != 1 {
 		t.Fatal("test repo has wrong version")
 	}
