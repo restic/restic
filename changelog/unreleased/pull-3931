@@ -1,0 +1,8 @@
+Enhancement: Allow backup file tree scanner to be disabled
+
+Restic walks the file tree in a separate scanner process to find the total size
+and file/directory count, and uses that to provide an ETA.  This can slow down
+backups, especially of network filesystems.  The new flag `--no-scan`
+can be used to speed up such backups.
+
+https://github.com/restic/restic/pull/3931

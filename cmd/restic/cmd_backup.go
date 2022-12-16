@@ -99,6 +99,7 @@ type BackupOptions struct {
 	UseFsSnapshot     bool
 	DryRun            bool
 	ReadConcurrency   uint
+	NoScan            bool
 }
 
 var backupOptions BackupOptions
@@ -138,6 +139,7 @@ func init() {
 	f.BoolVar(&backupOptions.IgnoreInode, "ignore-inode", false, "ignore inode number changes when checking for modified files")
 	f.BoolVar(&backupOptions.IgnoreCtime, "ignore-ctime", false, "ignore ctime changes when checking for modified files")
 	f.BoolVarP(&backupOptions.DryRun, "dry-run", "n", false, "do not upload or write any data, just show what would be done")
+	f.BoolVar(&backupOptions.NoScan, "no-scan", false, "do not run scanner to estimate size of backup")
 	if runtime.GOOS == "windows" {
 		f.BoolVar(&backupOptions.UseFsSnapshot, "use-fs-snapshot", false, "use filesystem snapshot where possible (currently only Windows VSS)")
 	}
@@ -586,16 +588,18 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		targets = []string{filename}
 	}
 
-	sc := archiver.NewScanner(targetFS)
-	sc.SelectByName = selectByNameFilter
-	sc.Select = selectFilter
-	sc.Error = progressPrinter.ScannerError
-	sc.Result = progressReporter.ReportTotal
+	if !opts.NoScan {
+		sc := archiver.NewScanner(targetFS)
+		sc.SelectByName = selectByNameFilter
+		sc.Select = selectFilter
+		sc.Error = progressPrinter.ScannerError
+		sc.Result = progressReporter.ReportTotal
 
-	if !gopts.JSON {
-		progressPrinter.V("start scan on %v", targets)
+		if !gopts.JSON {
+			progressPrinter.V("start scan on %v", targets)
+		}
+		wg.Go(func() error { return sc.Scan(cancelCtx, targets) })
 	}
-	wg.Go(func() error { return sc.Scan(cancelCtx, targets) })
 
 	arch := archiver.New(repo, targetFS, archiver.Options{ReadConcurrency: backupOptions.ReadConcurrency})
 	arch.SelectByName = selectByNameFilter
