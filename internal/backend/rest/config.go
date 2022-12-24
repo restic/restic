@@ -34,9 +34,8 @@ func ParseConfig(s string) (interface{}, error) {
 	s = prepareURL(s)
 
 	u, err := url.Parse(s)
-
 	if err != nil {
-		return nil, errors.Wrap(err, "url.Parse")
+		return nil, errors.WithStack(err)
 	}
 
 	cfg := NewConfig()

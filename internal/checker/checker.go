@@ -59,11 +59,7 @@ func New(repo restic.Repository, trackUnused bool) *Checker {
 }
 
 // ErrLegacyLayout is returned when the repository uses the S3 legacy layout.
-type ErrLegacyLayout struct{}
-
-func (e *ErrLegacyLayout) Error() string {
-	return "repository uses S3 legacy layout"
-}
+var ErrLegacyLayout = errors.New("repository uses S3 legacy layout")
 
 // ErrDuplicatePacks is returned when a pack is found in more than one index.
 type ErrDuplicatePacks struct {
@@ -231,7 +227,7 @@ func (c *Checker) Packs(ctx context.Context, errChan chan<- error) {
 	defer close(errChan)
 
 	if isS3Legacy(c.repo.Backend()) {
-		errChan <- &ErrLegacyLayout{}
+		errChan <- ErrLegacyLayout
 	}
 
 	debug.Log("checking for %d packs", len(c.packs))

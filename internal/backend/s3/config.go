@@ -52,7 +52,7 @@ func ParseConfig(s string) (interface{}, error) {
 		// bucket name and prefix
 		url, err := url.Parse(s[3:])
 		if err != nil {
-			return nil, errors.Wrap(err, "url.Parse")
+			return nil, errors.WithStack(err)
 		}
 
 		if url.Path == "" {
