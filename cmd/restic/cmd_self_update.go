@@ -1,4 +1,4 @@
-// xbuild selfupdate
+//go:build selfupdate
 
 package main
 
