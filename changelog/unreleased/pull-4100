@@ -1,0 +1,9 @@
+Bugfix: Restore self-update to disabled-by-default
+
+Due to a typo, the `self-update` feature was always compiled, even if the
+`selfupdate` tag was not explicitly enabled.
+
+As intended, it is now disabled by default.
+Official builds using `build.go` continue to explicitly enable it.
+
+https://github.com/restic/restic/pull/4100
