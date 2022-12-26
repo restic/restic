@@ -564,12 +564,23 @@ func lookupGroup(gid uint32) string {
 	return group
 }
 
+// substitute negative uid and gid that is returned in Windows
+// with maximum value that is allowed in v7 and ustar tar formats;
+// this avoids creating a tar with dump that has negative uid and gid
+func fixId(id int) int {
+	if id < 0 {
+		return 0o7777777
+	} else {
+		return id
+	}
+}
+
 func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 	stat, ok := toStatT(fi.Sys())
 	if !ok {
 		// fill minimal info with current values for uid, gid
-		node.UID = uint32(os.Getuid())
-		node.GID = uint32(os.Getgid())
+		node.UID = uint32(fixId(os.Getuid()))
+		node.GID = uint32(fixId(os.Getgid()))
 		node.ChangeTime = node.ModTime
 		return nil
 	}
