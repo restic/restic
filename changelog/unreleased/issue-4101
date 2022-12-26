@@ -1,0 +1,11 @@
+Bugfix: fix restic dump of tar file with 32-bit binary 
+
+In restic up to 0.14.0, the restic dump from a 32-bit binary of a
+snapshot of standard input that was created in Windows has as a
+result a tar file whose content has a negative uid and gid. As a
+result gnu tar exits with failure status whenever it tries to
+access such a tar file. With this fix, the tar file that is now
+dumped from a 32-bit binary has content with positive uid and gid.
+
+https://github.com/restic/restic/issues/4101
+https://github.com/restic/restic/pull/4102
