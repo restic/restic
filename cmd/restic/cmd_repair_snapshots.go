@@ -4,10 +4,9 @@ import (
 	"context"
 
 	"github.com/restic/restic/internal/backend"
-	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/walker"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/spf13/cobra"
 )
@@ -97,16 +96,6 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 		return err
 	}
 
-	// get snapshots to check & repair
-	var snapshots []*restic.Snapshot
-	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args) {
-		snapshots = append(snapshots, sn)
-	}
-
-	return repairSnapshots(ctx, opts, repo, snapshots)
-}
-
-func repairSnapshots(ctx context.Context, opts RepairOptions, repo restic.Repository, snapshots []*restic.Snapshot) error {
 	// Three error cases are checked:
 	// - tree is a nil tree (-> will be replaced by an empty tree)
 	// - trees which cannot be loaded (-> the tree contents will be removed)
@@ -157,72 +146,35 @@ func repairSnapshots(ctx context.Context, opts RepairOptions, repo restic.Reposi
 		AllowUnstableSerialization: true,
 	})
 
-	deleteSn := restic.NewIDSet()
-
-	Verbosef("check and repair %d snapshots\n", len(snapshots))
-	bar := newProgressMax(!globalOptions.Quiet, uint64(len(snapshots)), "snapshots")
-	wg, ctx := errgroup.WithContext(ctx)
-	repo.StartPackUploader(ctx, wg)
-	wg.Go(func() error {
-		for _, sn := range snapshots {
-			debug.Log("process snapshot %v", sn.ID())
-			Printf("%v:\n", sn)
-			newID, err := rewriter.RewriteTree(ctx, repo, "/", *sn.Tree)
-
-			switch {
-			case err != nil:
-				return err
-			case newID.IsNull():
-				Printf("the root tree is damaged -> delete snapshot.\n")
-				deleteSn.Insert(*sn.ID())
-			case !newID.Equal(*sn.Tree):
-				err = changeSnapshot(ctx, opts.DryRun, repo, sn, &newID)
-				if err != nil {
-					return err
-				}
-				deleteSn.Insert(*sn.ID())
-			default:
-				Printf("is ok.\n")
-			}
-			debug.Log("processed snapshot %v", sn.ID())
-			bar.Add(1)
-		}
-		bar.Done()
-		return repo.Flush(ctx)
-	})
-
-	err := wg.Wait()
-	if err != nil {
-		return err
-	}
-
-	if len(deleteSn) > 0 && opts.Forget {
-		Verbosef("delete %d snapshots...\n", len(deleteSn))
-		if !opts.DryRun {
-			DeleteFiles(ctx, globalOptions, repo, deleteSn, restic.SnapshotFile)
-		}
-	}
-	return nil
-}
-
-// changeSnapshot creates a modified snapshot:
-// - set the tree to newID
-// - add the rag opts.AddTag
-// - preserve original ID
-// if opts.DryRun is set, it doesn't change anything but only
-func changeSnapshot(ctx context.Context, dryRun bool, repo restic.Repository, sn *restic.Snapshot, newID *restic.ID) error {
-	sn.AddTags([]string{"repaired"})
-	// Always set the original snapshot id as this essentially a new snapshot.
-	sn.Original = sn.ID()
-	sn.Tree = newID
-	if !dryRun {
-		newID, err := restic.SaveSnapshot(ctx, repo, sn)
+	changedCount := 0
+	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args) {
+		Verbosef("\nsnapshot %s of %v at %s)\n", sn.ID().Str(), sn.Paths, sn.Time)
+		changed, err := filterAndReplaceSnapshot(ctx, repo, sn,
+			func(ctx context.Context, sn *restic.Snapshot) (restic.ID, error) {
+				return rewriter.RewriteTree(ctx, repo, "/", *sn.Tree)
+			}, opts.DryRun, opts.Forget, "repaired")
 		if err != nil {
-			return err
+			return errors.Fatalf("unable to rewrite snapshot ID %q: %v", sn.ID().Str(), err)
 		}
-		Printf("snapshot repaired -> %v created.\n", newID.Str())
-	} else {
-		Printf("would have repaired snapshot %v.\n", sn.ID().Str())
+		if changed {
+			changedCount++
+		}
 	}
+
+	Verbosef("\n")
+	if changedCount == 0 {
+		if !opts.DryRun {
+			Verbosef("no snapshots were modified\n")
+		} else {
+			Verbosef("no snapshots would be modified\n")
+		}
+	} else {
+		if !opts.DryRun {
+			Verbosef("modified %v snapshots\n", changedCount)
+		} else {
+			Verbosef("would modify %v snapshots\n", changedCount)
+		}
+	}
+
 	return nil
 }

@@ -124,6 +124,20 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 		return false, err
 	}
 
+	if filteredTree.IsNull() {
+		if dryRun {
+			Verbosef("would delete empty snapshot\n")
+		} else {
+			h := restic.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
+			if err = repo.Backend().Remove(ctx, h); err != nil {
+				return false, err
+			}
+			debug.Log("removed empty snapshot %v", sn.ID())
+			Verbosef("removed empty snapshot %v\n", sn.ID().Str())
+		}
+		return true, nil
+	}
+
 	if filteredTree == *sn.Tree {
 		debug.Log("Snapshot %v not modified", sn)
 		return false, nil
