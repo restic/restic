@@ -1,0 +1,3 @@
+package signals
+
+func setupSignals() {}
