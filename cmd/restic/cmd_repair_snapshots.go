@@ -240,9 +240,7 @@ func repairTree(ctx context.Context, opts RepairOptions, repo restic.Repository,
 					Printf("removed defective file '%v'\n", path+node.Name)
 					continue
 				}
-				Printf("repaired defective file '%v'", path+node.Name)
-				node.Name = node.Name + ".repaired"
-				Printf(" to '%v'\n", node.Name)
+				Printf("repaired defective file '%v'\n", path+node.Name)
 				node.Content = newContent
 				node.Size = newSize
 			}
@@ -255,9 +253,7 @@ func repairTree(ctx context.Context, opts RepairOptions, repo restic.Repository,
 			case lErr:
 				// If we get an error, we remove this subtree
 				changed = true
-				Printf("removed defective dir '%v'", path+node.Name)
-				node.Name = node.Name + ".repaired"
-				Printf("(now empty '%v')\n", node.Name)
+				Printf("replaced defective dir '%v'", path+node.Name)
 				empty, err := emptyTree(ctx, repo, opts.DryRun)
 				if err != nil {
 					return newID, true, false, err
