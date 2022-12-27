@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
 	"golang.org/x/sync/errgroup"
@@ -50,12 +51,10 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 // RepairOptions collects all options for the repair command.
 type RepairOptions struct {
-	restic.SnapshotFilter
+	DryRun bool
+	Forget bool
 
-	AddTag          string
-	Append          string
-	DryRun          bool
-	DeleteSnapshots bool
+	restic.SnapshotFilter
 }
 
 var repairSnapshotOptions RepairOptions
@@ -64,28 +63,31 @@ func init() {
 	cmdRepair.AddCommand(cmdRepairSnapshots)
 	flags := cmdRepairSnapshots.Flags()
 
+	flags.BoolVarP(&repairSnapshotOptions.DryRun, "dry-run", "n", false, "do not do anything, just print what would be done")
+	flags.BoolVarP(&repairSnapshotOptions.Forget, "forget", "", false, "remove original snapshots after creating new ones")
+
 	initMultiSnapshotFilter(flags, &repairSnapshotOptions.SnapshotFilter, true)
-	flags.StringVar(&repairSnapshotOptions.AddTag, "add-tag", "repaired", "tag to add to repaired snapshots")
-	flags.StringVar(&repairSnapshotOptions.Append, "append", ".repaired", "string to append to repaired dirs/files; remove files if empty or impossible to repair")
-	flags.BoolVarP(&repairSnapshotOptions.DryRun, "dry-run", "n", true, "don't do anything, only show what would be done")
-	flags.BoolVar(&repairSnapshotOptions.DeleteSnapshots, "delete-snapshots", false, "delete original snapshots")
 }
 
 func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOptions, args []string) error {
-	switch {
-	case opts.DryRun:
-		Printf("\n note: --dry-run is set\n-> repair will only show what it would do.\n\n")
-	case opts.DeleteSnapshots:
-		Printf("\n note: --dry-run is not set and --delete-snapshots is set\n-> this may result in data loss!\n\n")
-	}
-
 	repo, err := OpenRepository(ctx, globalOptions)
 	if err != nil {
 		return err
 	}
 
-	lock, ctx, err := lockRepoExclusive(ctx, repo, gopts.RetryLock, gopts.JSON)
-	defer unlockRepo(lock)
+	if !opts.DryRun {
+		var lock *restic.Lock
+		var err error
+		lock, ctx, err = lockRepoExclusive(ctx, repo, gopts.RetryLock, gopts.JSON)
+		defer unlockRepo(lock)
+		if err != nil {
+			return err
+		}
+	} else {
+		repo.SetDryRun()
+	}
+
+	snapshotLister, err := backend.MemorizeList(ctx, repo.Backend(), restic.SnapshotFile)
 	if err != nil {
 		return err
 	}
@@ -96,7 +98,7 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 
 	// get snapshots to check & repair
 	var snapshots []*restic.Snapshot
-	for sn := range FindFilteredSnapshots(ctx, repo.Backend(), repo, &opts.SnapshotFilter, args) {
+	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args) {
 		snapshots = append(snapshots, sn)
 	}
 
@@ -124,7 +126,7 @@ func repairSnapshots(ctx context.Context, opts RepairOptions, repo restic.Reposi
 				Printf("the root tree is damaged -> delete snapshot.\n")
 				deleteSn.Insert(*sn.ID())
 			case changed:
-				err = changeSnapshot(ctx, opts, repo, sn, newID)
+				err = changeSnapshot(ctx, opts.DryRun, repo, sn, newID)
 				if err != nil {
 					return err
 				}
@@ -144,7 +146,7 @@ func repairSnapshots(ctx context.Context, opts RepairOptions, repo restic.Reposi
 		return err
 	}
 
-	if len(deleteSn) > 0 && opts.DeleteSnapshots {
+	if len(deleteSn) > 0 && opts.Forget {
 		Verbosef("delete %d snapshots...\n", len(deleteSn))
 		if !opts.DryRun {
 			DeleteFiles(ctx, globalOptions, repo, deleteSn, restic.SnapshotFile)
@@ -158,14 +160,12 @@ func repairSnapshots(ctx context.Context, opts RepairOptions, repo restic.Reposi
 // - add the rag opts.AddTag
 // - preserve original ID
 // if opts.DryRun is set, it doesn't change anything but only
-func changeSnapshot(ctx context.Context, opts RepairOptions, repo restic.Repository, sn *restic.Snapshot, newID *restic.ID) error {
-	sn.AddTags([]string{opts.AddTag})
-	// Retain the original snapshot id over all tag changes.
-	if sn.Original == nil {
-		sn.Original = sn.ID()
-	}
+func changeSnapshot(ctx context.Context, dryRun bool, repo restic.Repository, sn *restic.Snapshot, newID *restic.ID) error {
+	sn.AddTags([]string{"repaired"})
+	// Always set the original snapshot id as this essentially a new snapshot.
+	sn.Original = sn.ID()
 	sn.Tree = newID
-	if !opts.DryRun {
+	if !dryRun {
 		newID, err := restic.SaveSnapshot(ctx, repo, sn)
 		if err != nil {
 			return err
@@ -236,12 +236,12 @@ func repairTree(ctx context.Context, opts RepairOptions, repo restic.Repository,
 			}
 			if !ok {
 				changed = true
-				if opts.Append == "" || newSize == 0 {
+				if newSize == 0 {
 					Printf("removed defective file '%v'\n", path+node.Name)
 					continue
 				}
 				Printf("repaired defective file '%v'", path+node.Name)
-				node.Name = node.Name + opts.Append
+				node.Name = node.Name + ".repaired"
 				Printf(" to '%v'\n", node.Name)
 				node.Content = newContent
 				node.Size = newSize
@@ -256,7 +256,7 @@ func repairTree(ctx context.Context, opts RepairOptions, repo restic.Repository,
 				// If we get an error, we remove this subtree
 				changed = true
 				Printf("removed defective dir '%v'", path+node.Name)
-				node.Name = node.Name + opts.Append
+				node.Name = node.Name + ".repaired"
 				Printf("(now empty '%v')\n", node.Name)
 				empty, err := emptyTree(ctx, repo, opts.DryRun)
 				if err != nil {
