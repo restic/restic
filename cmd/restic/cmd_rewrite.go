@@ -87,22 +87,31 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 		return true
 	}
 
+	return filterAndReplaceSnapshot(ctx, repo, sn,
+		func(ctx context.Context, sn *restic.Snapshot) (restic.ID, error) {
+			return walker.FilterTree(ctx, repo, "/", *sn.Tree, &walker.TreeFilterVisitor{
+				SelectByName: selectByName,
+				PrintExclude: func(path string) { Verbosef(fmt.Sprintf("excluding %s\n", path)) },
+			})
+		}, opts.DryRun, opts.Forget, "rewrite")
+}
+
+func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *restic.Snapshot, filter func(ctx context.Context, sn *restic.Snapshot) (restic.ID, error), dryRun bool, forget bool, addTag string) (bool, error) {
+
 	wg, wgCtx := errgroup.WithContext(ctx)
 	repo.StartPackUploader(wgCtx, wg)
 
 	var filteredTree restic.ID
 	wg.Go(func() error {
-		filteredTree, err = walker.FilterTree(wgCtx, repo, "/", *sn.Tree, &walker.TreeFilterVisitor{
-			SelectByName: selectByName,
-			PrintExclude: func(path string) { Verbosef(fmt.Sprintf("excluding %s\n", path)) },
-		})
+		var err error
+		filteredTree, err = filter(ctx, sn)
 		if err != nil {
 			return err
 		}
 
 		return repo.Flush(wgCtx)
 	})
-	err = wg.Wait()
+	err := wg.Wait()
 	if err != nil {
 		return false, err
 	}
@@ -113,10 +122,10 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 	}
 
 	debug.Log("Snapshot %v modified", sn)
-	if opts.DryRun {
+	if dryRun {
 		Verbosef("would save new snapshot\n")
 
-		if opts.Forget {
+		if forget {
 			Verbosef("would remove old snapshot\n")
 		}
 
@@ -125,10 +134,10 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 
 	// Always set the original snapshot id as this essentially a new snapshot.
 	sn.Original = sn.ID()
-	*sn.Tree = filteredTree
+	sn.Tree = &filteredTree
 
-	if !opts.Forget {
-		sn.AddTags([]string{"rewrite"})
+	if !forget {
+		sn.AddTags([]string{addTag})
 	}
 
 	// Save the new snapshot.
@@ -138,7 +147,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 	}
 	Verbosef("saved new snapshot %v\n", id.Str())
 
-	if opts.Forget {
+	if forget {
 		h := restic.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
 		if err = repo.Backend().Remove(ctx, h); err != nil {
 			return false, err
