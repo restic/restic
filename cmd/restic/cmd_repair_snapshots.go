@@ -10,11 +10,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var cmdRepair = &cobra.Command{
-	Use:   "repair",
-	Short: "Repair commands",
-}
-
 var cmdRepairSnapshots = &cobra.Command{
 	Use:   "snapshots [flags] [snapshot ID] [...]",
 	Short: "Repair snapshots",
@@ -27,7 +22,7 @@ be able to refit the repository.
 
 The command depends on a good state of the index, so if
 there are inaccurancies in the index, make sure to run
-"rebuild-index" before!
+"repair index" before!
 
 
 WARNING:
@@ -66,12 +61,10 @@ type RepairOptions struct {
 var repairSnapshotOptions RepairOptions
 
 func init() {
-	cmdRoot.AddCommand(cmdRepair)
 	cmdRepair.AddCommand(cmdRepairSnapshots)
 	flags := cmdRepairSnapshots.Flags()
 
 	initMultiSnapshotFilter(flags, &repairSnapshotOptions.SnapshotFilter, true)
-
 	flags.StringVar(&repairSnapshotOptions.AddTag, "add-tag", "repaired", "tag to add to repaired snapshots")
 	flags.StringVar(&repairSnapshotOptions.Append, "append", ".repaired", "string to append to repaired dirs/files; remove files if empty or impossible to repair")
 	flags.BoolVarP(&repairSnapshotOptions.DryRun, "dry-run", "n", true, "don't do anything, only show what would be done")

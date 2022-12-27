@@ -7,15 +7,15 @@ import (
 	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
-
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
-var cmdRebuildIndex = &cobra.Command{
-	Use:   "rebuild-index [flags]",
+var cmdRepairIndex = &cobra.Command{
+	Use:   "index [flags]",
 	Short: "Build a new index",
 	Long: `
-The "rebuild-index" command creates a new index based on the pack files in the
+The "repair index" command creates a new index based on the pack files in the
 repository.
 
 EXIT STATUS
@@ -25,25 +25,37 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runRebuildIndex(cmd.Context(), rebuildIndexOptions, globalOptions)
+		return runRebuildIndex(cmd.Context(), repairIndexOptions, globalOptions)
 	},
 }
 
-// RebuildIndexOptions collects all options for the rebuild-index command.
-type RebuildIndexOptions struct {
+var cmdRebuildIndex = &cobra.Command{
+	Use:               "rebuild-index [flags]",
+	Short:             cmdRepairIndex.Short,
+	Long:              cmdRepairIndex.Long,
+	Deprecated:        `Use "repair index" instead`,
+	DisableAutoGenTag: true,
+	RunE:              cmdRepairIndex.RunE,
+}
+
+// RepairIndexOptions collects all options for the repair index command.
+type RepairIndexOptions struct {
 	ReadAllPacks bool
 }
 
-var rebuildIndexOptions RebuildIndexOptions
+var repairIndexOptions RepairIndexOptions
 
 func init() {
+	cmdRepair.AddCommand(cmdRepairIndex)
+	// add alias for old name
 	cmdRoot.AddCommand(cmdRebuildIndex)
-	f := cmdRebuildIndex.Flags()
-	f.BoolVar(&rebuildIndexOptions.ReadAllPacks, "read-all-packs", false, "read all pack files to generate new index from scratch")
 
+	for _, f := range []*pflag.FlagSet{cmdRepairIndex.Flags(), cmdRebuildIndex.Flags()} {
+		f.BoolVar(&repairIndexOptions.ReadAllPacks, "read-all-packs", false, "read all pack files to generate new index from scratch")
+	}
 }
 
-func runRebuildIndex(ctx context.Context, opts RebuildIndexOptions, gopts GlobalOptions) error {
+func runRebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOptions) error {
 	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
@@ -58,7 +70,7 @@ func runRebuildIndex(ctx context.Context, opts RebuildIndexOptions, gopts Global
 	return rebuildIndex(ctx, opts, gopts, repo, restic.NewIDSet())
 }
 
-func rebuildIndex(ctx context.Context, opts RebuildIndexOptions, gopts GlobalOptions, repo *repository.Repository, ignorePacks restic.IDSet) error {
+func rebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOptions, repo *repository.Repository, ignorePacks restic.IDSet) error {
 	var obsoleteIndexes restic.IDs
 	packSizeFromList := make(map[restic.ID]int64)
 	packSizeFromIndex := make(map[restic.ID]int64)

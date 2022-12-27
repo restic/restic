@@ -58,17 +58,17 @@ But make sure that your needed data is also still contained in your repository ;
 Note that `check` also prints out warning in some cases. These warnings point out that the repo may be 
 optimized but is still in perfect shape and does not need any troubleshooting. 
 
-3. Index trouble -> `rebuild-index`
+3. Index trouble -> `repair index`
 ********************************************
 
 A common problem with broken repostories is that the index does no longer correctly represent the contents
 of your pack files. This is especially the case if some pack files got lost.
-`rebuild-index` recovers this situation and ensures that the index exactly represents the pack files.
+`repair index` recovers this situation and ensures that the index exactly represents the pack files.
 
 You might even need to manually remove corrupted pack files. In this case make sure, you run 
-`restic rebuild-index` after.
+`restic repair index` after.
 
-Also if you encounter problems with the index files itselves, `rebuild-index` will solve these problems
+Also if you encounter problems with the index files itselves, `repair index` will solve these problems
 immediately.
 
 However, rebuilding the index does not solve every problem, e.g. lost pack files.
@@ -91,7 +91,7 @@ backup again and check if this did heal your repository.
 If you realize that a specific file is broken in your repository and you have this file, any run of
 `backup` which includes that file will be able to heal the situation.
 
-Note that `backup` relies on a correct index state, so make sure your index is fine or run `rebuild-index`
+Note that `backup` relies on a correct index state, so make sure your index is fine or run `repair index`
 before running `backup`.
 
 6. Unreferenced tree -> `recover`
@@ -101,7 +101,7 @@ If for some reason you have unreferenced trees in your repository but you actual
 `recover` it will generate a new snapshot which allows access to all trees that you have in your
 repository. 
 
-Note that `recover` relies on a correct index state, so make sure your index is fine or run `rebuild-index`
+Note that `recover` relies on a correct index state, so make sure your index is fine or run `repair index`
 before running `recover`.
 
 7. Repair defect snapshots using `repair`

@@ -472,7 +472,7 @@ space. However, a **failed** ``prune`` run can cause the repository to become
 **temporarily unusable**. Therefore, make sure that you have a stable connection to the
 repository storage, before running this command. In case the command fails, it may become
 necessary to manually remove all files from the `index/` folder of the repository and
-run `rebuild-index` afterwards.
+run `repair index` afterwards.
 
 To prevent accidental usages of the ``--unsafe-recover-no-free-space`` option it is
 necessary to first run ``prune --unsafe-recover-no-free-space SOME-ID`` and then replace
