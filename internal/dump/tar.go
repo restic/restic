@@ -3,6 +3,7 @@ package dump
 import (
 	"archive/tar"
 	"context"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -38,6 +39,14 @@ const (
 	cISVTX = 0o1000 // Save text (sticky bit)
 )
 
+// substitute a uid or gid of -1 (which is converted to 2^32 - 1) with zero
+func tarId(id uint32) int {
+	if id == math.MaxUint32 {
+		return 0
+	}
+	return int(id)
+}
+
 func (d *Dumper) dumpNodeTar(ctx context.Context, node *restic.Node, w *tar.Writer) error {
 	relPath, err := filepath.Rel("/", node.Path)
 	if err != nil {
@@ -48,8 +57,8 @@ func (d *Dumper) dumpNodeTar(ctx context.Context, node *restic.Node, w *tar.Writ
 		Name:       filepath.ToSlash(relPath),
 		Size:       int64(node.Size),
 		Mode:       int64(node.Mode.Perm()), // cIS* constants are added later
-		Uid:        int(node.UID),
-		Gid:        int(node.GID),
+		Uid:        tarId(node.UID),
+		Gid:        tarId(node.GID),
 		Uname:      node.User,
 		Gname:      node.Group,
 		ModTime:    node.ModTime,
