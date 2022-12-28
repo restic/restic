@@ -1,14 +1,18 @@
-Enhancement: Add new command repair
+Enhancement: Add `repair index` and `repair snapshots` commands
 
-We've added a new command repair which allows to repair snapshots even if needed
-parts of it are not accessable in the repository. Note that using this command
-can lead to data loss!
+The `rebuild-index` command has been renamed to `repair index`. The old name
+will still work, but is deprecated.
 
-Some corrupted repositories were reported in several issues and so far restic
-lacked a possibility to accept data loss but clean those up such that the
-repository returns to a sane state. This possibility was now added.
+When a snapshot was damaged, the only option up to now was to completely forget
+the snapshot, even if only some unimportant file was damaged.
+
+We've added a `repair snapshots` command, which can repair snapshots by removing
+damaged directories and missing files contents. Note that using this command
+can lead to data loss! Please see the "Troubleshooting" section in the documentation
+for more details.
 
 https://github.com/restic/restic/issues/1759
+https://github.com/restic/restic/issues/1714
 https://github.com/restic/restic/issues/1798
 https://github.com/restic/restic/issues/2334
 https://github.com/restic/restic/pull/2876
