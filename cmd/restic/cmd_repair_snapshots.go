@@ -6,6 +6,7 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/walker"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/spf13/cobra"
@@ -106,8 +107,56 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 }
 
 func repairSnapshots(ctx context.Context, opts RepairOptions, repo restic.Repository, snapshots []*restic.Snapshot) error {
-	replaces := make(idMap)
-	seen := restic.NewIDSet()
+	// Three error cases are checked:
+	// - tree is a nil tree (-> will be replaced by an empty tree)
+	// - trees which cannot be loaded (-> the tree contents will be removed)
+	// - files whose contents are not fully available  (-> file will be modified)
+	rewriter := walker.NewTreeRewriter(walker.RewriteOpts{
+		RewriteNode: func(node *restic.Node, path string) *restic.Node {
+			if node.Type != "file" {
+				return node
+			}
+
+			ok := true
+			var newContent restic.IDs
+			var newSize uint64
+			// check all contents and remove if not available
+			for _, id := range node.Content {
+				if size, found := repo.LookupBlobSize(id, restic.DataBlob); !found {
+					ok = false
+				} else {
+					newContent = append(newContent, id)
+					newSize += uint64(size)
+				}
+			}
+			if !ok {
+				if newSize == 0 {
+					Printf("removed defective file '%v'\n", path+node.Name)
+					node = nil
+				} else {
+					Printf("repaired defective file '%v'\n", path+node.Name)
+					node.Content = newContent
+					node.Size = newSize
+				}
+			}
+			return node
+		},
+		RewriteFailedTree: func(nodeID restic.ID, path string, _ error) (restic.ID, error) {
+			if path == "/" {
+				// remove snapshots with invalid root node
+				return restic.ID{}, nil
+			}
+			// If a subtree fails to load, remove it
+			Printf("removed defective dir '%v'", path)
+			emptyID, err := restic.SaveTree(ctx, repo, &restic.Tree{})
+			if err != nil {
+				return restic.ID{}, err
+			}
+			return emptyID, nil
+		},
+		AllowUnstableSerialization: true,
+	})
+
 	deleteSn := restic.NewIDSet()
 
 	Verbosef("check and repair %d snapshots\n", len(snapshots))
@@ -118,15 +167,16 @@ func repairSnapshots(ctx context.Context, opts RepairOptions, repo restic.Reposi
 		for _, sn := range snapshots {
 			debug.Log("process snapshot %v", sn.ID())
 			Printf("%v:\n", sn)
-			newID, changed, lErr, err := repairTree(ctx, opts, repo, "/", sn.Tree, replaces, seen)
+			newID, err := rewriter.RewriteTree(ctx, repo, "/", *sn.Tree)
+
 			switch {
 			case err != nil:
 				return err
-			case lErr:
+			case newID.IsNull():
 				Printf("the root tree is damaged -> delete snapshot.\n")
 				deleteSn.Insert(*sn.ID())
-			case changed:
-				err = changeSnapshot(ctx, opts.DryRun, repo, sn, newID)
+			case !newID.Equal(*sn.Tree):
+				err = changeSnapshot(ctx, opts.DryRun, repo, sn, &newID)
 				if err != nil {
 					return err
 				}
@@ -175,122 +225,4 @@ func changeSnapshot(ctx context.Context, dryRun bool, repo restic.Repository, sn
 		Printf("would have repaired snapshot %v.\n", sn.ID().Str())
 	}
 	return nil
-}
-
-type idMap map[restic.ID]restic.ID
-
-// repairTree checks and repairs a tree and all its subtrees
-// Three error cases are checked:
-// - tree is a nil tree (-> will be replaced by an empty tree)
-// - trees which cannot be loaded (-> the tree contents will be removed)
-// - files whose contents are not fully available  (-> file will be modified)
-// In case of an error, the changes made depends on:
-// - opts.Append: string to append to "repared" names; if empty files will not repaired but deleted
-// - opts.DryRun: if set to true, only print out what to but don't change anything
-// Returns:
-// - the new ID
-// - whether the ID changed
-// - whether there was a load error when loading this tre
-// - error for other errors (these are errors when saving a tree)
-func repairTree(ctx context.Context, opts RepairOptions, repo restic.Repository, path string, treeID *restic.ID, replaces idMap, seen restic.IDSet) (*restic.ID, bool, bool, error) {
-	// handle and repair nil trees
-	if treeID == nil {
-		empty, err := emptyTree(ctx, repo, opts.DryRun)
-		Printf("repaired nil tree '%v'\n", path)
-		return &empty, true, false, err
-	}
-
-	// check if tree was already changed
-	newID, ok := replaces[*treeID]
-	if ok {
-		return &newID, true, false, nil
-	}
-
-	// check if tree was seen but not changed
-	if seen.Has(*treeID) {
-		return treeID, false, false, nil
-	}
-
-	tree, err := restic.LoadTree(ctx, repo, *treeID)
-	if err != nil {
-		// mark as load error
-		return &newID, false, true, nil
-	}
-
-	var newNodes []*restic.Node
-	changed := false
-	for _, node := range tree.Nodes {
-		switch node.Type {
-		case "file":
-			ok := true
-			var newContent restic.IDs
-			var newSize uint64
-			// check all contents and remove if not available
-			for _, id := range node.Content {
-				if size, found := repo.LookupBlobSize(id, restic.DataBlob); !found {
-					ok = false
-				} else {
-					newContent = append(newContent, id)
-					newSize += uint64(size)
-				}
-			}
-			if !ok {
-				changed = true
-				if newSize == 0 {
-					Printf("removed defective file '%v'\n", path+node.Name)
-					continue
-				}
-				Printf("repaired defective file '%v'\n", path+node.Name)
-				node.Content = newContent
-				node.Size = newSize
-			}
-		case "dir":
-			// rewrite if necessary
-			newID, c, lErr, err := repairTree(ctx, opts, repo, path+node.Name+"/", node.Subtree, replaces, seen)
-			switch {
-			case err != nil:
-				return newID, true, false, err
-			case lErr:
-				// If we get an error, we remove this subtree
-				changed = true
-				Printf("replaced defective dir '%v'", path+node.Name)
-				empty, err := emptyTree(ctx, repo, opts.DryRun)
-				if err != nil {
-					return newID, true, false, err
-				}
-				node.Subtree = &empty
-			case c:
-				node.Subtree = newID
-				changed = true
-			}
-		}
-		newNodes = append(newNodes, node)
-	}
-
-	if !changed {
-		seen.Insert(*treeID)
-		return treeID, false, false, nil
-	}
-
-	tree.Nodes = newNodes
-
-	if !opts.DryRun {
-		newID, err = restic.SaveTree(ctx, repo, tree)
-		if err != nil {
-			return &newID, true, false, err
-		}
-		Printf("modified tree %v, new id: %v\n", treeID.Str(), newID.Str())
-	} else {
-		Printf("would have modified tree %v\n", treeID.Str())
-	}
-
-	replaces[*treeID] = newID
-	return &newID, true, false, nil
-}
-
-func emptyTree(ctx context.Context, repo restic.Repository, dryRun bool) (restic.ID, error) {
-	if !dryRun {
-		return restic.SaveTree(ctx, repo, &restic.Tree{})
-	}
-	return restic.ID{}, nil
 }
