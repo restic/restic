@@ -52,7 +52,7 @@ func FilterTree(ctx context.Context, repo BlobLoadSaver, nodepath string, nodeID
 			continue
 		}
 
-		if node.Subtree == nil {
+		if node.Type != "dir" {
 			err = tb.AddNode(node)
 			if err != nil {
 				return restic.ID{}, err
