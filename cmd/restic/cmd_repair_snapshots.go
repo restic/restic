@@ -130,11 +130,12 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 		},
 		RewriteFailedTree: func(nodeID restic.ID, path string, _ error) (restic.ID, error) {
 			if path == "/" {
+				Verbosef("  dir %q: not readable\n", path)
 				// remove snapshots with invalid root node
 				return restic.ID{}, nil
 			}
 			// If a subtree fails to load, remove it
-			Printf("removed defective dir '%v'", path)
+			Verbosef("  dir %q: replaced with empty directory\n", path)
 			emptyID, err := restic.SaveTree(ctx, repo, &restic.Tree{})
 			if err != nil {
 				return restic.ID{}, err
