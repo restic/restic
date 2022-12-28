@@ -14,98 +14,181 @@
 Troubleshooting
 #########################
 
-Being a backup software, the repository format ensures that the data saved in the repository
-is verifiable and error-restistant. Restic even implements some self-healing functionalities.
+The repository format used by restic is designed to be error resistant. In
+particular, commands like, for example, ``backup`` or ``prune`` can be interrupted
+at *any* point in time without damaging the repository. You might have to run
+``unlock`` manually though, but that's it.
 
-However, situations might occur where your repository gets in an incorrect state and measurements
-need to be done to get you out of this situation. These situations might be due to hardware failure,
-accidentially removing files directly from the repository or bugs in the restic implementation.
+However, a repository might be damaged if some of its files are damaged or lost.
+This can occur due to hardware failures, accidentally removing files from the
+repository or bugs in the implementation of restic.
 
-This document is meant to give you some hints about how to recover from such situations.
+The following steps will help you recover a repository. This guide does not cover
+all possible types of repository damages. Thus, if the steps do not work for you
+or you are unsure how to proceed, then ask for help. Please always include the
+check output discussed in the next section and what steps you've taken to repair
+the repository so far.
 
-1. Stay calm and don't over-react
-********************************************
+* `Forum <https://forum.restic.net/>`_
+* Our IRC channel ``#restic`` on ``irc.libera.chat``
 
-The most important thing if you find yourself in the situation of a damaged repository is to
-stay calm and don't do anything you might regret later.
-
-The following point should be always considered:
-
-- Make a copy of you repository and try to recover from that copy. If you suspect a storage failure,
-  it may be even better, to make *two* copies: one to get all data out of the possibly failing storage
-  and another one to try the recovery process.
-- Pause your regular operations on the repository or let them run on a copy. You will especially make
-  sure that no `forget` or `prune` is run as these command are supposed to remove data and may result
-  in data loss.
-- Search if your issue is already known and solved. Good starting points are the restic forum and the
-  github issues.
-- Get you some help if you are unsure what to do. Find a colleage or friend to discuss what should be done.
-  Also feel free to consult the restic forum.
-- When using the commands below, make sure you read and understand the documentation. Some of the commands
-  may not be your every-day commands, so make sure you really understand what they are doing. 
+Make sure that you **use the latest available restic version**. It can contain
+bugfixes, and improvements to simplify the repair of a repository. It might also
+contain a fix for your repository problems!
 
 
-2. `check` is your friend
-********************************************
+1. Find out what is damaged
+***************************
 
-Run `restic check` to find out what type of error you have. The results may be technical but can give you
-a good hint what's really wrong. 
+The first step is always to check the repository.
 
-Moreover, you can always run a `check` to ensure that your repair really was sucessful and your repository
-is in a sane state again.
-But make sure that your needed data is also still contained in your repository ;-)
- 
-Note that `check` also prints out warning in some cases. These warnings point out that the repo may be 
-optimized but is still in perfect shape and does not need any troubleshooting. 
+.. code-block:: console
 
-3. Index trouble -> `repair index`
-********************************************
+  $ restic check --read-data
 
-A common problem with broken repostories is that the index does no longer correctly represent the contents
-of your pack files. This is especially the case if some pack files got lost.
-`repair index` recovers this situation and ensures that the index exactly represents the pack files.
+  using temporary cache in /tmp/restic-check-cache-1418935501
+  repository 12345678 opened (version 2, compression level auto)
+  created new cache in /tmp/restic-check-cache-1418935501
+  create exclusive lock for repository
+  load indexes
+  check all packs
+  check snapshots, trees and blobs
+  error for tree 7ef8ebab:
+    id 7ef8ebabc59aadda1a237d23ca7abac487b627a9b86508aa0194690446ff71f6 not found in repository
+  [0:02] 100.00%  7 / 7 snapshots
+  read all data
+  [0:05] 100.00%  25 / 25 packs
+  Fatal: repository contains errors
 
-You might even need to manually remove corrupted pack files. In this case make sure, you run 
-`restic repair index` after.
+.. note::
 
-Also if you encounter problems with the index files itselves, `repair index` will solve these problems
-immediately.
+  This will download the whole repository. If retrieving data from the backend is
+  expensive, then omit the ``--read-data`` option. Keep a copy of the check output
+  as it might be necessary later on!
 
-However, rebuilding the index does not solve every problem, e.g. lost pack files.
+If the output contains warnings that the ``ciphertext verification failed`` for
+some blobs in the repository, then please ask for help in the forum or our IRC
+channel. These errors are often caused by hardware problems which **must** be
+investigated and fixed. Otherwise, the backup will be damaged again and again.
 
-4. Delete unneeded defect snapshots -> `forget`
-********************************************
+Similarly, if a repository is repeatedly damaged, please open an `issue on Github
+<https://github.com/restic/restic/issues/new/choose>`_ as this could indicate a bug
+somewhere. Please include the check output and additional information that might
+help locate the problem.
 
-If you encounter defect snapshots but realize you can spare them, it is often a good idea to simply
-delete them using `forget`. In case that your repository remains with just sane snapshots (including
-all trees and files) the next `prune` run will put your repository in a sane state.
 
-This can be also used if you manage to create new snapshots which can replace the defect ones, see
-below.
+2. Backup the repository
+************************
 
-5. No fear to `backup` again
-********************************************
+Create a full copy of the repository if possible. Or at the very least make a
+copy of the ``index`` and ``snapshots`` folders. This will allow you to roll back
+the repository if the repair procedure fails. If your repository resides in a
+cloud storage, then you can for example use `rclone <https://rclone.org/>`_ to
+make such a copy.
 
-There are quite some self-healing mechanisms withing the `backup` command. So it is always a good idea to
-backup again and check if this did heal your repository.
-If you realize that a specific file is broken in your repository and you have this file, any run of
-`backup` which includes that file will be able to heal the situation.
+Please disable all regular operations on the repository to prevent unexpected
+changes. Especially, ``forget`` or ``prune`` must be disabled as they could
+remove data unexpectedly.
 
-Note that `backup` relies on a correct index state, so make sure your index is fine or run `repair index`
-before running `backup`.
+.. warning::
 
-6. Unreferenced tree -> `recover`
-********************************************
+   If you suspect hardware problems, then you *must* investigate those first.
+   Otherwise, the repository will soon be damaged again.
 
-If for some reason you have unreferenced trees in your repository but you actually need them, run
-`recover` it will generate a new snapshot which allows access to all trees that you have in your
-repository. 
+Please take the time to understand what the commands described in the following
+do. If you are unsure, then ask for help in the forum or our IRC channel. Search
+whether your issue is already known and solved. Please take a look at the
+`forum`_ and `Github issues <https://github.com/restic/restic/issues>`_.
 
-Note that `recover` relies on a correct index state, so make sure your index is fine or run `repair index`
-before running `recover`.
 
-7. Repair defect snapshots using `repair`
-********************************************
+3. Repair the index
+*******************
 
-If all other things did not help, you can repair defect snapshots with `repair`. Note that the repaired
-snapshots will miss data which was referenced in the defect snapshot.
+Restic relies on its index to contain correct information about what data is
+stored in the repository. Thus, the first step to repair a repository is to
+repair the index:
+
+.. code-block:: console
+
+    $ restic repair index
+
+    repository a14e5863 opened (version 2, compression level auto)
+    loading indexes...
+    getting pack files to read...
+    removing not found pack file 83ad44f59b05f6bce13376b022ac3194f24ca19e7a74926000b6e316ec6ea5a4
+    rebuilding index
+    [0:00] 100.00%  27 / 27 packs processed
+    deleting obsolete index files
+    [0:00] 100.00%  3 / 3 files deleted
+    done
+
+This ensures that no longer existing files are removed from the index. All later
+steps to repair the repository rely on a correct index. That is, you must always
+repair the index first!
+
+Please note that it is not recommended to repair the index unless the repository
+is actually damaged.
+
+
+4. Run all backups (optional)
+*****************************
+
+With a correct index, the ``backup`` command guarantees that newly created
+snapshots can be restored successfully. It can also heal older snapshots,
+if the missing data is also contained in the new snapshot.
+
+Therefore, it is recommended to run all your ``backup`` tasks again. In some
+cases, this is enough to fully repair the repository.
+
+
+5. Remove missing data from snapshots
+*************************************
+
+If your repository is still missing data, then you can use the ``repair snapshots``
+command to remove all inaccessible data from the snapshots. That is, this will
+result in a limited amount of data loss. Using the ``--forget`` option, the
+command will automatically remove the original, damaged snapshots.
+
+.. code-block:: console
+
+  $ restic repair snapshots --forget
+
+  snapshot 6979421e of [/home/user/restic/restic] at 2022-11-02 20:59:18.617503315 +0100 CET)
+    file "/restic/internal/fuse/snapshots_dir.go": removed missing content
+    file "/restic/internal/restorer/restorer_unix_test.go": removed missing content
+    file "/restic/internal/walker/walker.go": removed missing content
+  saved new snapshot 7b094cea
+  removed old snapshot 6979421e
+
+  modified 1 snapshots
+
+If you did not add the ``--forget`` option, then you have to manually delete all
+modified snapshots using the ``forget`` command. In the example above, you'd have
+to run ``restic forget 6979421e``.
+
+
+6. Check the repository again
+*****************************
+
+Phew, we're almost done now. To make sure that the repository has been successfully
+repaired please run ``check`` again.
+
+.. code-block:: console
+
+  $ restic check --read-data
+
+  using temporary cache in /tmp/restic-check-cache-2569290785
+  repository a14e5863 opened (version 2, compression level auto)
+  created new cache in /tmp/restic-check-cache-2569290785
+  create exclusive lock for repository
+  load indexes
+  check all packs
+  check snapshots, trees and blobs
+  [0:00] 100.00%  7 / 7 snapshots
+  read all data
+  [0:00] 100.00%  25 / 25 packs
+  no errors were found
+
+If the ``check`` command did not complete with ``no errors were found``, then
+the repository is still damaged. At this point, please ask for help at the
+`forum`_ or our IRC channel ``#restic`` on ``irc.libera.chat``.
