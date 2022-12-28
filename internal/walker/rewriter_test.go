@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 	"github.com/restic/restic/internal/restic"
 )
@@ -38,26 +37,26 @@ func (t WritableTreeMap) Dump() {
 	}
 }
 
-type checkRewriteFunc func(t testing.TB) (visitor TreeFilterVisitor, final func(testing.TB))
+type checkRewriteFunc func(t testing.TB) (rewriter *TreeRewriter, final func(testing.TB))
 
 // checkRewriteItemOrder ensures that the order of the 'path' arguments is the one passed in as 'want'.
 func checkRewriteItemOrder(want []string) checkRewriteFunc {
 	pos := 0
-	return func(t testing.TB) (visitor TreeFilterVisitor, final func(testing.TB)) {
-		vis := TreeFilterVisitor{
-			SelectByName: func(path string) bool {
+	return func(t testing.TB) (rewriter *TreeRewriter, final func(testing.TB)) {
+		rewriter = NewTreeRewriter(RewriteOpts{
+			RewriteNode: func(node *restic.Node, path string) *restic.Node {
 				if pos >= len(want) {
 					t.Errorf("additional unexpected path found: %v", path)
-					return false
+					return nil
 				}
 
 				if path != want[pos] {
 					t.Errorf("wrong path found, want %q, got %q", want[pos], path)
 				}
 				pos++
-				return true
+				return node
 			},
-		}
+		})
 
 		final = func(t testing.TB) {
 			if pos != len(want) {
@@ -65,21 +64,20 @@ func checkRewriteItemOrder(want []string) checkRewriteFunc {
 			}
 		}
 
-		return vis, final
+		return rewriter, final
 	}
 }
 
-// checkRewriteSkips excludes nodes if path is in skipFor, it checks that all excluded entries are printed.
+// checkRewriteSkips excludes nodes if path is in skipFor, it checks that rewriting proceedes in the correct order.
 func checkRewriteSkips(skipFor map[string]struct{}, want []string) checkRewriteFunc {
 	var pos int
-	printed := make(map[string]struct{})
 
-	return func(t testing.TB) (visitor TreeFilterVisitor, final func(testing.TB)) {
-		vis := TreeFilterVisitor{
-			SelectByName: func(path string) bool {
+	return func(t testing.TB) (rewriter *TreeRewriter, final func(testing.TB)) {
+		rewriter = NewTreeRewriter(RewriteOpts{
+			RewriteNode: func(node *restic.Node, path string) *restic.Node {
 				if pos >= len(want) {
 					t.Errorf("additional unexpected path found: %v", path)
-					return false
+					return nil
 				}
 
 				if path != want[pos] {
@@ -87,27 +85,39 @@ func checkRewriteSkips(skipFor map[string]struct{}, want []string) checkRewriteF
 				}
 				pos++
 
-				_, ok := skipFor[path]
-				return !ok
-			},
-			PrintExclude: func(s string) {
-				if _, ok := printed[s]; ok {
-					t.Errorf("path was already printed %v", s)
+				_, skip := skipFor[path]
+				if skip {
+					return nil
 				}
-				printed[s] = struct{}{}
+				return node
 			},
-		}
+		})
 
 		final = func(t testing.TB) {
-			if !cmp.Equal(skipFor, printed) {
-				t.Errorf("unexpected paths skipped: %s", cmp.Diff(skipFor, printed))
-			}
 			if pos != len(want) {
 				t.Errorf("not enough items returned, want %d, got %d", len(want), pos)
 			}
 		}
 
-		return vis, final
+		return rewriter, final
+	}
+}
+
+// checkIncreaseNodeSize modifies each node by changing its size.
+func checkIncreaseNodeSize(increase uint64) checkRewriteFunc {
+	return func(t testing.TB) (rewriter *TreeRewriter, final func(testing.TB)) {
+		rewriter = NewTreeRewriter(RewriteOpts{
+			RewriteNode: func(node *restic.Node, path string) *restic.Node {
+				if node.Type == "file" {
+					node.Size += increase
+				}
+				return node
+			},
+		})
+
+		final = func(t testing.TB) {}
+
+		return rewriter, final
 	}
 }
 
@@ -172,6 +182,21 @@ func TestRewriter(t *testing.T) {
 				},
 			),
 		},
+		{ // modify node
+			tree: TestTree{
+				"foo": TestFile{Size: 21},
+				"subdir": TestTree{
+					"subfile": TestFile{Size: 21},
+				},
+			},
+			newTree: TestTree{
+				"foo": TestFile{Size: 42},
+				"subdir": TestTree{
+					"subfile": TestFile{Size: 42},
+				},
+			},
+			check: checkIncreaseNodeSize(21),
+		},
 	}
 
 	for _, test := range tests {
@@ -186,8 +211,8 @@ func TestRewriter(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.TODO())
 			defer cancel()
 
-			vis, last := test.check(t)
-			newRoot, err := FilterTree(ctx, modrepo, "/", root, &vis)
+			rewriter, last := test.check(t)
+			newRoot, err := rewriter.RewriteTree(ctx, modrepo, "/", root)
 			if err != nil {
 				t.Error(err)
 			}
@@ -213,8 +238,15 @@ func TestRewriterFailOnUnknownFields(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
-	// use nil visitor to crash if the tree loading works unexpectedly
-	_, err := FilterTree(ctx, tm, "/", id, nil)
+
+	rewriter := NewTreeRewriter(RewriteOpts{
+		RewriteNode: func(node *restic.Node, path string) *restic.Node {
+			// tree loading must not succeed
+			t.Fail()
+			return node
+		},
+	})
+	_, err := rewriter.RewriteTree(ctx, tm, "/", id)
 
 	if err == nil {
 		t.Error("missing error on unknown field")

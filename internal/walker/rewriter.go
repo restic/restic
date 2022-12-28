@@ -9,13 +9,28 @@ import (
 	"github.com/restic/restic/internal/restic"
 )
 
-// SelectByNameFunc returns true for all items that should be included (files and
-// dirs). If false is returned, files are ignored and dirs are not even walked.
-type SelectByNameFunc func(item string) bool
+type NodeRewriteFunc func(node *restic.Node, path string) *restic.Node
 
-type TreeFilterVisitor struct {
-	SelectByName SelectByNameFunc
-	PrintExclude func(string)
+type RewriteOpts struct {
+	// return nil to remove the node
+	RewriteNode NodeRewriteFunc
+}
+
+type TreeRewriter struct {
+	opts RewriteOpts
+}
+
+func NewTreeRewriter(opts RewriteOpts) *TreeRewriter {
+	rw := &TreeRewriter{
+		opts: opts,
+	}
+	// setup default implementations
+	if rw.opts.RewriteNode == nil {
+		rw.opts.RewriteNode = func(node *restic.Node, path string) *restic.Node {
+			return node
+		}
+	}
+	return rw
 }
 
 type BlobLoadSaver interface {
@@ -23,7 +38,7 @@ type BlobLoadSaver interface {
 	restic.BlobLoader
 }
 
-func FilterTree(ctx context.Context, repo BlobLoadSaver, nodepath string, nodeID restic.ID, visitor *TreeFilterVisitor) (newNodeID restic.ID, err error) {
+func (t *TreeRewriter) RewriteTree(ctx context.Context, repo BlobLoadSaver, nodepath string, nodeID restic.ID) (newNodeID restic.ID, err error) {
 	curTree, err := restic.LoadTree(ctx, repo, nodeID)
 	if err != nil {
 		return restic.ID{}, err
@@ -45,10 +60,8 @@ func FilterTree(ctx context.Context, repo BlobLoadSaver, nodepath string, nodeID
 	tb := restic.NewTreeJSONBuilder()
 	for _, node := range curTree.Nodes {
 		path := path.Join(nodepath, node.Name)
-		if !visitor.SelectByName(path) {
-			if visitor.PrintExclude != nil {
-				visitor.PrintExclude(path)
-			}
+		node = t.opts.RewriteNode(node, path)
+		if node == nil {
 			continue
 		}
 
@@ -59,7 +72,7 @@ func FilterTree(ctx context.Context, repo BlobLoadSaver, nodepath string, nodeID
 			}
 			continue
 		}
-		newID, err := FilterTree(ctx, repo, path, *node.Subtree, visitor)
+		newID, err := t.RewriteTree(ctx, repo, path, *node.Subtree)
 		if err != nil {
 			return restic.ID{}, err
 		}

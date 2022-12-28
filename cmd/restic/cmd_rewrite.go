@@ -87,12 +87,19 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 		return true
 	}
 
+	rewriter := walker.NewTreeRewriter(walker.RewriteOpts{
+		RewriteNode: func(node *restic.Node, path string) *restic.Node {
+			if selectByName(path) {
+				return node
+			}
+			Verbosef(fmt.Sprintf("excluding %s\n", path))
+			return nil
+		},
+	})
+
 	return filterAndReplaceSnapshot(ctx, repo, sn,
 		func(ctx context.Context, sn *restic.Snapshot) (restic.ID, error) {
-			return walker.FilterTree(ctx, repo, "/", *sn.Tree, &walker.TreeFilterVisitor{
-				SelectByName: selectByName,
-				PrintExclude: func(path string) { Verbosef(fmt.Sprintf("excluding %s\n", path)) },
-			})
+			return rewriter.RewriteTree(ctx, repo, "/", *sn.Tree)
 		}, opts.DryRun, opts.Forget, "rewrite")
 }
 
