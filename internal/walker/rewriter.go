@@ -42,7 +42,6 @@ func FilterTree(ctx context.Context, repo BlobLoadSaver, nodepath string, nodeID
 
 	debug.Log("filterTree: %s, nodeId: %s\n", nodepath, nodeID.Str())
 
-	changed := false
 	tb := restic.NewTreeJSONBuilder()
 	for _, node := range curTree.Nodes {
 		path := path.Join(nodepath, node.Name)
@@ -50,7 +49,6 @@ func FilterTree(ctx context.Context, repo BlobLoadSaver, nodepath string, nodeID
 			if visitor.PrintExclude != nil {
 				visitor.PrintExclude(path)
 			}
-			changed = true
 			continue
 		}
 
@@ -65,9 +63,6 @@ func FilterTree(ctx context.Context, repo BlobLoadSaver, nodepath string, nodeID
 		if err != nil {
 			return restic.ID{}, err
 		}
-		if !node.Subtree.Equal(newID) {
-			changed = true
-		}
 		node.Subtree = &newID
 		err = tb.AddNode(node)
 		if err != nil {
@@ -75,17 +70,15 @@ func FilterTree(ctx context.Context, repo BlobLoadSaver, nodepath string, nodeID
 		}
 	}
 
-	if changed {
-		tree, err := tb.Finalize()
-		if err != nil {
-			return restic.ID{}, err
-		}
-
-		// Save new tree
-		newTreeID, _, _, err := repo.SaveBlob(ctx, restic.TreeBlob, tree, restic.ID{}, false)
-		debug.Log("filterTree: save new tree for %s as %v\n", nodepath, newTreeID)
-		return newTreeID, err
+	tree, err := tb.Finalize()
+	if err != nil {
+		return restic.ID{}, err
 	}
 
-	return nodeID, nil
+	// Save new tree
+	newTreeID, _, _, err := repo.SaveBlob(ctx, restic.TreeBlob, tree, restic.ID{}, false)
+	if !newTreeID.Equal(nodeID) {
+		debug.Log("filterTree: save new tree for %s as %v\n", nodepath, newTreeID)
+	}
+	return newTreeID, err
 }
