@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/test"
 )
 
 // WritableTreeMap also support saving
@@ -69,7 +70,7 @@ func checkRewriteItemOrder(want []string) checkRewriteFunc {
 }
 
 // checkRewriteSkips excludes nodes if path is in skipFor, it checks that rewriting proceedes in the correct order.
-func checkRewriteSkips(skipFor map[string]struct{}, want []string) checkRewriteFunc {
+func checkRewriteSkips(skipFor map[string]struct{}, want []string, disableCache bool) checkRewriteFunc {
 	var pos int
 
 	return func(t testing.TB) (rewriter *TreeRewriter, final func(testing.TB)) {
@@ -91,6 +92,7 @@ func checkRewriteSkips(skipFor map[string]struct{}, want []string) checkRewriteF
 				}
 				return node
 			},
+			DisableNodeCache: disableCache,
 		})
 
 		final = func(t testing.TB) {
@@ -160,6 +162,7 @@ func TestRewriter(t *testing.T) {
 					"/subdir",
 					"/subdir/subfile",
 				},
+				false,
 			),
 		},
 		{ // exclude dir
@@ -180,6 +183,7 @@ func TestRewriter(t *testing.T) {
 					"/foo",
 					"/subdir",
 				},
+				false,
 			),
 		},
 		{ // modify node
@@ -196,6 +200,75 @@ func TestRewriter(t *testing.T) {
 				},
 			},
 			check: checkIncreaseNodeSize(21),
+		},
+		{ // test cache
+			tree: TestTree{
+				// both subdirs are identical
+				"subdir1": TestTree{
+					"subfile":  TestFile{},
+					"subfile2": TestFile{},
+				},
+				"subdir2": TestTree{
+					"subfile":  TestFile{},
+					"subfile2": TestFile{},
+				},
+			},
+			newTree: TestTree{
+				"subdir1": TestTree{
+					"subfile2": TestFile{},
+				},
+				"subdir2": TestTree{
+					"subfile2": TestFile{},
+				},
+			},
+			check: checkRewriteSkips(
+				map[string]struct{}{
+					"/subdir1/subfile": {},
+				},
+				[]string{
+					"/subdir1",
+					"/subdir1/subfile",
+					"/subdir1/subfile2",
+					"/subdir2",
+				},
+				false,
+			),
+		},
+		{ // test disabled cache
+			tree: TestTree{
+				// both subdirs are identical
+				"subdir1": TestTree{
+					"subfile":  TestFile{},
+					"subfile2": TestFile{},
+				},
+				"subdir2": TestTree{
+					"subfile":  TestFile{},
+					"subfile2": TestFile{},
+				},
+			},
+			newTree: TestTree{
+				"subdir1": TestTree{
+					"subfile2": TestFile{},
+				},
+				"subdir2": TestTree{
+					"subfile":  TestFile{},
+					"subfile2": TestFile{},
+				},
+			},
+			check: checkRewriteSkips(
+				map[string]struct{}{
+					"/subdir1/subfile": {},
+				},
+				[]string{
+					"/subdir1",
+					"/subdir1/subfile",
+					"/subdir1/subfile2",
+					"/subdir2",
+					"/subdir2/subfile",
+					"/subdir2/subfile2",
+				},
+				true,
+			),
 		},
 	}
 
@@ -251,4 +324,43 @@ func TestRewriterFailOnUnknownFields(t *testing.T) {
 	if err == nil {
 		t.Error("missing error on unknown field")
 	}
+
+	// check that the serialization check can be disabled
+	rewriter = NewTreeRewriter(RewriteOpts{
+		AllowUnstableSerialization: true,
+	})
+	root, err := rewriter.RewriteTree(ctx, tm, "/", id)
+	test.OK(t, err)
+	_, expRoot := BuildTreeMap(TestTree{
+		"subfile": TestFile{},
+	})
+	test.Assert(t, root == expRoot, "mismatched trees")
+}
+
+func TestRewriterTreeLoadError(t *testing.T) {
+	tm := WritableTreeMap{TreeMap{}}
+	id := restic.NewRandomID()
+
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
+
+	// also check that load error by default cause the operation to fail
+	rewriter := NewTreeRewriter(RewriteOpts{})
+	_, err := rewriter.RewriteTree(ctx, tm, "/", id)
+	if err == nil {
+		t.Fatal("missing error on unloadable tree")
+	}
+
+	replacementID := restic.NewRandomID()
+	rewriter = NewTreeRewriter(RewriteOpts{
+		RewriteFailedTree: func(nodeID restic.ID, path string, err error) (restic.ID, error) {
+			if nodeID != id || path != "/" {
+				t.Fail()
+			}
+			return replacementID, nil
+		},
+	})
+	newRoot, err := rewriter.RewriteTree(ctx, tm, "/", id)
+	test.OK(t, err)
+	test.Equals(t, replacementID, newRoot)
 }

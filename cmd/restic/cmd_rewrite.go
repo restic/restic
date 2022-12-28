@@ -95,6 +95,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 			Verbosef(fmt.Sprintf("excluding %s\n", path))
 			return nil
 		},
+		DisableNodeCache: true,
 	})
 
 	return filterAndReplaceSnapshot(ctx, repo, sn,
