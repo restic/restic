@@ -14,7 +14,6 @@ import (
 // TextProgress reports progress for the `backup` command.
 type TextProgress struct {
 	*ui.Message
-	*ui.StdioWrapper
 
 	term *termstatus.Terminal
 }
@@ -25,9 +24,8 @@ var _ ProgressPrinter = &TextProgress{}
 // NewTextProgress returns a new backup progress reporter.
 func NewTextProgress(term *termstatus.Terminal, verbosity uint) *TextProgress {
 	return &TextProgress{
-		Message:      ui.NewMessage(term, verbosity),
-		StdioWrapper: ui.NewStdioWrapper(term),
-		term:         term,
+		Message: ui.NewMessage(term, verbosity),
+		term:    term,
 	}
 }
 

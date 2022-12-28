@@ -2,7 +2,6 @@ package backup
 
 import (
 	"context"
-	"io"
 	"sync"
 	"time"
 
@@ -21,10 +20,6 @@ type ProgressPrinter interface {
 	ReportTotal(item string, start time.Time, s archiver.ScanStats)
 	Finish(snapshotID restic.ID, start time.Time, summary *Summary, dryRun bool)
 	Reset()
-
-	// ui.StdioWrapper
-	Stdout() io.WriteCloser
-	Stderr() io.WriteCloser
 
 	P(msg string, args ...interface{})
 	V(msg string, args ...interface{})

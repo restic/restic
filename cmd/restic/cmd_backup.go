@@ -25,6 +25,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/textfile"
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/backup"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
@@ -70,6 +71,14 @@ Exit status is 3 if some source data could not be read (incomplete snapshot crea
 			defer wg.Done()
 			term.Run(cancelCtx)
 		}()
+
+		// use the terminal for stdout/stderr
+		prevStdout, prevStderr := globalOptions.stdout, globalOptions.stderr
+		defer func() {
+			globalOptions.stdout, globalOptions.stderr = prevStdout, prevStderr
+		}()
+		stdioWrapper := ui.NewStdioWrapper(term)
+		globalOptions.stdout, globalOptions.stderr = stdioWrapper.Stdout(), stdioWrapper.Stderr()
 
 		return runBackup(ctx, backupOptions, globalOptions, term, args)
 	},
@@ -478,13 +487,6 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	if opts.DryRun {
 		repo.SetDryRun()
 	}
-
-	// use the terminal for stdout/stderr
-	prevStdout, prevStderr := gopts.stdout, gopts.stderr
-	defer func() {
-		gopts.stdout, gopts.stderr = prevStdout, prevStderr
-	}()
-	gopts.stdout, gopts.stderr = progressPrinter.Stdout(), progressPrinter.Stderr()
 
 	wg, wgCtx := errgroup.WithContext(ctx)
 	cancelCtx, cancel := context.WithCancel(wgCtx)
