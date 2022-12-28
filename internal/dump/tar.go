@@ -39,7 +39,7 @@ const (
 )
 
 // substitute a uid or gid of -1 (which was converted to 2^32 - 1) with zero
-func tarId(id uint32) int {
+func tarIdentifier(id uint32) int {
 	if int32(id) == -1 {
 		return 0
 	}
@@ -56,8 +56,8 @@ func (d *Dumper) dumpNodeTar(ctx context.Context, node *restic.Node, w *tar.Writ
 		Name:       filepath.ToSlash(relPath),
 		Size:       int64(node.Size),
 		Mode:       int64(node.Mode.Perm()), // cIS* constants are added later
-		Uid:        tarId(node.UID),
-		Gid:        tarId(node.GID),
+		Uid:        tarIdentifier(node.UID),
+		Gid:        tarIdentifier(node.GID),
 		Uname:      node.User,
 		Gname:      node.Group,
 		ModTime:    node.ModTime,
