@@ -3,7 +3,6 @@ package dump
 import (
 	"archive/tar"
 	"context"
-	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -39,9 +38,9 @@ const (
 	cISVTX = 0o1000 // Save text (sticky bit)
 )
 
-// substitute a uid or gid of -1 (which is converted to 2^32 - 1) with zero
+// substitute a uid or gid of -1 (which was converted to 2^32 - 1) with zero
 func tarId(id uint32) int {
-	if id == math.MaxUint32 {
+	if int32(id) == -1 {
 		return 0
 	}
 	return int(id)
