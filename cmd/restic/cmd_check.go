@@ -245,7 +245,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	}
 
 	if suggestIndexRebuild {
-		Printf("This is non-critical, you can run `restic rebuild-index' to correct this\n")
+		Printf("Duplicate packs/old indexes are non-critical, you can run `restic rebuild-index' to correct this.\n")
 	}
 	if mixedFound {
 		Printf("Mixed packs with tree and data blobs are non-critical, you can run `restic prune` to correct this.\n")
