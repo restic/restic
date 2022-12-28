@@ -15,28 +15,25 @@ var cmdRepairSnapshots = &cobra.Command{
 	Use:   "snapshots [flags] [snapshot ID] [...]",
 	Short: "Repair snapshots",
 	Long: `
-The "repair snapshots" command allows to repair broken snapshots.
-It scans the given snapshots and generates new ones where
-damaged tress and file contents are removed.
-If the broken snapshots are deleted, a prune run will
-be able to refit the repository.
+The "repair snapshots" command repairs broken snapshots. It scans the given
+snapshots and generates new ones with damaged directories and file contents
+removed. If the broken snapshots are deleted, a prune run will be able to
+clean up the repository.
 
-The command depends on a good state of the index, so if
-there are inaccurancies in the index, make sure to run
-"repair index" before!
+The command depends on a correct index, thus make sure to run "repair index"
+first!
 
 
-WARNING:
-========
-Repairing and deleting broken snapshots causes data loss!
-It will remove broken dirs and modify broken files in
-the modified snapshots.
+WARNING
+=======
 
-If the contents of directories and files are still available,
-the better option is to redo a backup which in that case is 
-able to "heal" already present snapshots.
-Only use this command if you need to recover an old and
-broken snapshot!
+Repairing and deleting broken snapshots causes data loss! It will remove broken
+directories and modify broken files in the modified snapshots.
+
+If the contents of directories and files are still available, the better option
+is to run "backup" which in that case is able to heal existing snapshots. Only
+use the "repair snapshots" command if you need to recover an old and broken
+snapshot!
 
 EXIT STATUS
 ===========
