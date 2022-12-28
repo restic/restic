@@ -107,7 +107,7 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 			}
 
 			ok := true
-			var newContent restic.IDs
+			var newContent restic.IDs = restic.IDs{}
 			var newSize uint64
 			// check all contents and remove if not available
 			for _, id := range node.Content {
@@ -119,15 +119,13 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 				}
 			}
 			if !ok {
-				if newSize == 0 {
-					Printf("removed defective file '%v'\n", path+node.Name)
-					node = nil
-				} else {
-					Printf("repaired defective file '%v'\n", path+node.Name)
-					node.Content = newContent
-					node.Size = newSize
-				}
+				Verbosef("  file %q: removed missing content\n", path)
+			} else if newSize != node.Size {
+				Verbosef("  file %q: fixed incorrect size\n", path)
 			}
+			// no-ops if already correct
+			node.Content = newContent
+			node.Size = newSize
 			return node
 		},
 		RewriteFailedTree: func(nodeID restic.ID, path string, _ error) (restic.ID, error) {
