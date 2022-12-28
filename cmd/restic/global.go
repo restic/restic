@@ -281,17 +281,6 @@ func Warnf(format string, args ...interface{}) {
 	}
 }
 
-// Exitf uses Warnf to write the message and then terminates the process with
-// the given exit code.
-func Exitf(exitcode int, format string, args ...interface{}) {
-	if !(strings.HasSuffix(format, "\n")) {
-		format += "\n"
-	}
-
-	Warnf(format, args...)
-	Exit(exitcode)
-}
-
 // resolvePassword determines the password to be used for opening the repository.
 func resolvePassword(opts GlobalOptions, envStr string) (string, error) {
 	if opts.PasswordFile != "" && opts.PasswordCommand != "" {
