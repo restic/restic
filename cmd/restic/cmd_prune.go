@@ -254,6 +254,7 @@ type packInfo struct {
 type packInfoWithID struct {
 	ID restic.ID
 	packInfo
+	mustCompress bool
 }
 
 // planPrune selects which files to rewrite and which to delete and which blobs to keep.
@@ -507,8 +508,6 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Reposi
 			// compress data blobs if requested
 			mustCompress = (p.tpe == restic.TreeBlob || opts.RepackUncompressed) && p.uncompressed
 		}
-		// use as flag that pack must be compressed
-		p.uncompressed = mustCompress
 
 		// decide what to do
 		switch {
@@ -527,12 +526,12 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Reposi
 				// All blobs in pack are used and not mixed => keep pack!
 				stats.packs.keep++
 			} else {
-				repackSmallCandidates = append(repackSmallCandidates, packInfoWithID{ID: id, packInfo: p})
+				repackSmallCandidates = append(repackSmallCandidates, packInfoWithID{ID: id, packInfo: p, mustCompress: mustCompress})
 			}
 
 		default:
 			// all other packs are candidates for repacking
-			repackCandidates = append(repackCandidates, packInfoWithID{ID: id, packInfo: p})
+			repackCandidates = append(repackCandidates, packInfoWithID{ID: id, packInfo: p, mustCompress: mustCompress})
 		}
 
 		delete(indexPack, id)
@@ -606,7 +605,9 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Reposi
 		stats.size.repack += p.unusedSize + p.usedSize
 		stats.blobs.repackrm += p.unusedBlobs
 		stats.size.repackrm += p.unusedSize
-		stats.size.uncompressed -= p.unusedSize + p.usedSize
+		if p.uncompressed {
+			stats.size.uncompressed -= p.unusedSize + p.usedSize
+		}
 	}
 
 	// calculate limit for number of unused bytes in the repo after repacking
@@ -621,7 +622,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Reposi
 		case reachedRepackSize:
 			stats.packs.keep++
 
-		case p.tpe != restic.DataBlob, p.uncompressed:
+		case p.tpe != restic.DataBlob, p.mustCompress:
 			// repacking non-data packs / uncompressed-trees is only limited by repackSize
 			repack(p.ID, p.packInfo)
 
