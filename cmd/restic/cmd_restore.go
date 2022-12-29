@@ -133,7 +133,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions, a
 
 	sn, err := restic.FindFilteredSnapshot(ctx, repo.Backend(), repo, opts.Hosts, opts.Tags, opts.Paths, nil, snapshotIDString)
 	if err != nil {
-		Exitf(1, "failed to find snapshot: %v", err)
+		return errors.Fatalf("failed to find snapshot: %v", err)
 	}
 
 	err = repo.LoadIndex(ctx)
