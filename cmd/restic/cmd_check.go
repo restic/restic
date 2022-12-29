@@ -245,7 +245,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	}
 
 	if suggestIndexRebuild {
-		Printf("This is non-critical, you can run `restic rebuild-index' to correct this\n")
+		Printf("Duplicate packs/old indexes are non-critical, you can run `restic rebuild-index' to correct this.\n")
 	}
 	if mixedFound {
 		Printf("Mixed packs with tree and data blobs are non-critical, you can run `restic prune` to correct this.\n")
@@ -295,7 +295,11 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	for err := range errChan {
 		errorsFound = true
 		if e, ok := err.(*checker.TreeError); ok {
-			Warnf("error for tree %v:\n", e.ID.Str())
+			var clean string
+			if stdoutCanUpdateStatus() {
+				clean = clearLine(0)
+			}
+			Warnf(clean+"error for tree %v:\n", e.ID.Str())
 			for _, treeErr := range e.Errors {
 				Warnf("  %v\n", treeErr)
 			}
