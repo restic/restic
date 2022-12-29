@@ -483,15 +483,11 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	}
 	progressReporter := backup.NewProgress(progressPrinter,
 		calculateProgressInterval(!gopts.Quiet, gopts.JSON))
+	defer progressReporter.Done()
 
 	if opts.DryRun {
 		repo.SetDryRun()
 	}
-
-	wg, wgCtx := errgroup.WithContext(ctx)
-	cancelCtx, cancel := context.WithCancel(wgCtx)
-	defer cancel()
-	wg.Go(func() error { progressReporter.Run(cancelCtx); return nil })
 
 	if !gopts.JSON {
 		progressPrinter.V("lock repository")
@@ -589,6 +585,10 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		}
 		targets = []string{filename}
 	}
+
+	wg, wgCtx := errgroup.WithContext(ctx)
+	cancelCtx, cancel := context.WithCancel(wgCtx)
+	defer cancel()
 
 	if !opts.NoScan {
 		sc := archiver.NewScanner(targetFS)

@@ -1,7 +1,6 @@
 package backup
 
 import (
-	"context"
 	"sync"
 	"testing"
 	"time"
@@ -53,9 +52,6 @@ func TestProgress(t *testing.T) {
 	prnt := &mockPrinter{}
 	prog := NewProgress(prnt, time.Millisecond)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	go prog.Run(ctx)
-
 	prog.StartFile("foo")
 	prog.CompleteBlob(1024)
 
@@ -67,7 +63,6 @@ func TestProgress(t *testing.T) {
 	prog.CompleteItem("foo", nil, &node, archiver.ItemStats{}, 0)
 
 	time.Sleep(10 * time.Millisecond)
-	cancel()
 	id := restic.NewRandomID()
 	prog.Finish(id, false)
 
