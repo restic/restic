@@ -38,9 +38,10 @@ const (
 	cISVTX = 0o1000 // Save text (sticky bit)
 )
 
-// substitute a uid or gid of -1 (which was converted to 2^32 - 1) with zero
+// in a 32-bit build of restic:
+// substitute a uid or gid of -1 (which was converted to 2^32 - 1) with 0
 func tarIdentifier(id uint32) int {
-	if int32(id) == -1 {
+	if int(id) == -1 {
 		return 0
 	}
 	return int(id)
