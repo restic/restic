@@ -237,7 +237,11 @@ func runForget(ctx context.Context, opts ForgetOptions, gopts GlobalOptions, arg
 
 	if len(removeSnIDs) > 0 && opts.Prune {
 		if !gopts.JSON {
-			Verbosef("%d snapshots have been removed, running prune\n", len(removeSnIDs))
+			if opts.DryRun {
+				Verbosef("%d snapshots would be removed, running prune dry run\n", len(removeSnIDs))
+			} else {
+				Verbosef("%d snapshots have been removed, running prune\n", len(removeSnIDs))
+			}
 		}
 		pruneOptions.DryRun = opts.DryRun
 		return runPruneWithRepo(ctx, pruneOptions, gopts, repo, removeSnIDs)
