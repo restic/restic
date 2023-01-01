@@ -3,7 +3,7 @@ module github.com/restic/restic
 require (
 	cloud.google.com/go/storage v1.28.1
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.2.0
-	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.5.1
+	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.6.1
 	github.com/anacrolix/fuse v0.2.0
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/cespare/xxhash/v2 v2.2.0
