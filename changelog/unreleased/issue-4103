@@ -1,0 +1,9 @@
+Bugfix: fix restic dump of tar file with 32-bit binary
+
+When using a 32-bit build of restic, the `restic dump` command could in some
+cases create tar files containing negative uid and gid. These files cannot be
+read by gnu tar. This corner case especially applies to backups from stdin on Windows.
+We have changed the dump command to create valid tar files in this case.
+
+https://github.com/restic/restic/issues/4103
+https://github.com/restic/restic/pull/4104

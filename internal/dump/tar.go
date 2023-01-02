@@ -38,6 +38,15 @@ const (
 	cISVTX = 0o1000 // Save text (sticky bit)
 )
 
+// in a 32-bit build of restic:
+// substitute a uid or gid of -1 (which was converted to 2^32 - 1) with 0
+func tarIdentifier(id uint32) int {
+	if int(id) == -1 {
+		return 0
+	}
+	return int(id)
+}
+
 func (d *Dumper) dumpNodeTar(ctx context.Context, node *restic.Node, w *tar.Writer) error {
 	relPath, err := filepath.Rel("/", node.Path)
 	if err != nil {
@@ -48,8 +57,8 @@ func (d *Dumper) dumpNodeTar(ctx context.Context, node *restic.Node, w *tar.Writ
 		Name:       filepath.ToSlash(relPath),
 		Size:       int64(node.Size),
 		Mode:       int64(node.Mode.Perm()), // cIS* constants are added later
-		Uid:        int(node.UID),
-		Gid:        int(node.GID),
+		Uid:        tarIdentifier(node.UID),
+		Gid:        tarIdentifier(node.GID),
 		Uname:      node.User,
 		Gname:      node.Group,
 		ModTime:    node.ModTime,
