@@ -7,6 +7,7 @@ import (
 	"runtime"
 
 	"github.com/pkg/errors"
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
@@ -28,11 +29,6 @@ func (c *Cache) canBeCached(t restic.FileType) bool {
 
 	_, ok := cacheLayoutPaths[t]
 	return ok
-}
-
-type readCloser struct {
-	io.Reader
-	io.Closer
 }
 
 // Load returns a reader that yields the contents of the file with the
@@ -75,12 +71,10 @@ func (c *Cache) load(h restic.Handle, length int, offset int64) (io.ReadCloser, 
 		}
 	}
 
-	rd := readCloser{Reader: f, Closer: f}
-	if length > 0 {
-		rd.Reader = io.LimitReader(f, int64(length))
+	if length <= 0 {
+		return f, nil
 	}
-
-	return rd, nil
+	return backend.LimitReadCloser(f, int64(length)), nil
 }
 
 // Save saves a file in the cache.
