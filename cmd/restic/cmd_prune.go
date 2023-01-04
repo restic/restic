@@ -196,6 +196,10 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOption
 		return err
 	}
 
+	if opts.DryRun {
+		Verbosef("\nWould have made the following changes:")
+	}
+
 	err = printPruneStats(stats)
 	if err != nil {
 		return err
