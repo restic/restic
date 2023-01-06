@@ -1,0 +1,12 @@
+Enhancement: JSON logging: output "unchanged" only if level -vv
+
+JSON logging now outputs "action": "unchanged" only, if the log level is at least -vv.
+Previously, this also happened on log level -v.
+
+Other actions like "new" and "modified" will still be printed
+on log-level -v. That way it is possible to opt out of the
+large amount of messages regarding "unchanged" files and dirs,
+which might not be of interest and still get all the information
+regarding what has changed to the previous snapshot.
+
+https://github.com/restic/restic/pull/4132
