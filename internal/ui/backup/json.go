@@ -119,11 +119,13 @@ func (b *JSONProgress) CompleteItem(messageType, item string, previous, current 
 			MetadataSizeInRepo: s.TreeSizeInRepo,
 		})
 	case "dir unchanged":
-		b.print(verboseUpdate{
-			MessageType: "verbose_status",
-			Action:      "unchanged",
-			Item:        item,
-		})
+		if b.v > 2 {
+			b.print(verboseUpdate{
+				MessageType: "verbose_status",
+				Action:      "unchanged",
+				Item:        item,
+			})
+		}
 	case "dir modified":
 		b.print(verboseUpdate{
 			MessageType:        "verbose_status",
@@ -145,11 +147,13 @@ func (b *JSONProgress) CompleteItem(messageType, item string, previous, current 
 			DataSizeInRepo: s.DataSizeInRepo,
 		})
 	case "file unchanged":
-		b.print(verboseUpdate{
-			MessageType: "verbose_status",
-			Action:      "unchanged",
-			Item:        item,
-		})
+		if b.v > 2 {
+			b.print(verboseUpdate{
+				MessageType: "verbose_status",
+				Action:      "unchanged",
+				Item:        item,
+			})
+		}
 	case "file modified":
 		b.print(verboseUpdate{
 			MessageType:    "verbose_status",
