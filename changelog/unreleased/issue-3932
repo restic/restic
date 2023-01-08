@@ -1,8 +1,8 @@
 Enhancement: Improve handling of ErrDot errors in rclone and sftp backends
 
 Since Go 1.19, restic can no longer implicitly run relative executables which
-are found in the current directory (e.g. `rclone` if it's found in `.`). This
-is a security feature of Go to prevent against running unintended and possibly
+are found in the current directory (e.g. `rclone` if found in `.`). This is a
+security feature of Go to prevent against running unintended and possibly
 harmful executables.
 
 The error message for this was just "cannot run executable found relative to
