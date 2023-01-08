@@ -1,9 +1,11 @@
-Bugfix: Restore self-update to disabled-by-default
+Bugfix: Make `self-update` enabled by default only in release builds
 
-Due to a typo, the `self-update` feature was always compiled, even if the
-`selfupdate` tag was not explicitly enabled.
+The `self-update` command was previously included by default in all builds of
+restic as opposed to only in official release builds, even if the `selfupdate`
+tag was not explicitly enabled when building.
 
-As intended, it is now disabled by default.
-Official builds using `build.go` continue to explicitly enable it.
+This has now been corrected, and the `self-update` command is only available
+if restic was built with `-tags selfupdate` (as done for official release
+builds by `build.go`).
 
 https://github.com/restic/restic/pull/4100

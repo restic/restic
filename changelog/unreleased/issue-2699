@@ -1,8 +1,8 @@
-Bugfix: Restore symbolic links on windows
+Enhancement: Support restoring symbolic links on Windows
 
-We've added support to restore symbolic links on windows.
-Because of windows specific restrictions this is only possible when running
-restic having SeCreateSymbolicLinkPrivilege privilege or when running as admin.
+The `restore` command now supports restoring symbolic links on Windows. Because
+of Windows specific restrictions this is only possible when running restic with
+the `SeCreateSymbolicLinkPrivilege` privilege or as an administrator.
 
 https://github.com/restic/restic/issues/1078
 https://github.com/restic/restic/issues/2699

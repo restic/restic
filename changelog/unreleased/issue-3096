@@ -1,8 +1,8 @@
-Enhancement: Support mount command on macOS using macFUSE 4.x
+Enhancement: Make `mount` command support macOS using macFUSE 4.x
 
-We have switched to a different version of the fuse library used to mount
-snapshots. This adds support for macFUSE 4.x which is necessary for recent
-macOS versions.
+Restic now uses a different FUSE library for mounting snapshots and making them
+available as a FUSE filesystem using the `mount` command. This adds support for
+macFUSE 4.x which can be used to make this work on recent macOS versions.
 
 https://github.com/restic/restic/issues/3096
 https://github.com/restic/restic/pull/4024
