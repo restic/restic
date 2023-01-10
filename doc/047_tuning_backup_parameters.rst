@@ -19,6 +19,15 @@ values. As the restic commands evolve over time, the optimal value for each para
 can also change across restic versions.
 
 
+Disabling Backup Progress Estimation
+************************************
+
+When you start a backup, restic will concurrently count the number of files and
+their total size, which is used to estimate how long it will take. This will
+cause some extra I/O, which can slow down backups of network file systems or
+FUSE mounts. To avoid this overhead at the cost of not seeing a progress
+estimate, use the ``--no-scan`` option which disables this file scanning.
+
 Backend Connections
 ===================
 

@@ -204,16 +204,6 @@ Combined with ``--verbose``, you can see a list of changes:
     modified  /archive.tar.gz, saved in 0.140s (25.542 MiB added)
     Would be added to the repository: 25.551 MiB
 
-Disabling Backup Progress Estimation
-************************************
-
-When you start a backup, restic will concurrently count the number of
-files and their total size, which is used to estimate how long it will
-take.  This will cause some extra I/O, which can slow down backup of
-network file systems or fuse mounts.
-
--  ``--no-scan``  Do not run scanner to estimate size of backup
-
 .. _backup-excluding-files:
 Excluding Files
 ***************
