@@ -258,7 +258,10 @@ Metadata handling
 ~~~~~~~~~~~~~~~~~
 
 Restic saves and restores most default attributes, including extended attributes like ACLs.
-Sparse files are not handled in a special way yet, and aren't restored.
+Information about holes in a sparse file is not stored explicitly, that is during a backup
+the zero bytes in a hole are deduplicated and compressed like any other data backed up.
+Instead, the restore command optionally creates holes in files by detecting and replacing
+long runs of zeros, in filesystems that support sparse files.
 
 The following metadata is handled by restic:
 
