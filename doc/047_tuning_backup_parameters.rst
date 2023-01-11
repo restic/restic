@@ -20,7 +20,7 @@ can also change across restic versions.
 
 
 Disabling Backup Progress Estimation
-************************************
+====================================
 
 When you start a backup, restic will concurrently count the number of files and
 their total size, which is used to estimate how long it will take. This will
