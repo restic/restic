@@ -111,9 +111,10 @@ command:
           --iexclude-file file                     same as --exclude-file but ignores casing of filenames in patterns
           --ignore-ctime                           ignore ctime changes when checking for modified files
           --ignore-inode                           ignore inode number changes when checking for modified files
+          --no-scan                                do not run scanner to estimate size of backup
       -x, --one-file-system                        exclude other file systems, don't cross filesystem boundaries and subvolumes
           --parent snapshot                        use this parent snapshot (default: last snapshot in the repository that has the same target files/directories, and is not newer than the snapshot time)
-          --read-concurrency n                     read n file concurrently. (default: $RESTIC_READ_CONCURRENCY or 2)
+          --read-concurrency n                     read n file concurrently (default: $RESTIC_READ_CONCURRENCY or 2)
           --stdin                                  read backup from stdin
           --stdin-filename filename                filename to use when reading from stdin (default "stdin")
           --tag tags                               add tags for the new snapshot in the format `tag[,tag,...]` (can be specified multiple times) (default [])
