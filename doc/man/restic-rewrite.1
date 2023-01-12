@@ -3,24 +3,34 @@
 
 .SH NAME
 .PP
-restic-tag - Modify tags on snapshots
+restic-rewrite - Rewrite snapshots to exclude unwanted files
 
 
 .SH SYNOPSIS
 .PP
-\fBrestic tag [flags] [snapshot-ID ...]\fP
+\fBrestic rewrite [flags] [snapshotID ...]\fP
 
 
 .SH DESCRIPTION
 .PP
-The "tag" command allows you to modify tags on exiting snapshots.
+The "rewrite" command excludes files from existing snapshots. It creates new
+snapshots containing the same data as the original ones, but without the files
+you specify to exclude. All metadata (time, host, tags) will be preserved.
 
 .PP
-You can either set/replace the entire set of tags on a snapshot, or
-add tags to/remove tags from the existing set.
+The snapshots to rewrite are specified using the --host, --tag and --path options,
+or by providing a list of snapshot IDs. Please note that specifying neither any of
+these options nor a snapshot ID will cause the command to rewrite all snapshots.
 
 .PP
-When no snapshot-ID is given, all snapshots matching the host, tag and path filter criteria are modified.
+The special tag 'rewrite' will be added to the new snapshots to distinguish
+them from the original ones, unless --forget is used. If the --forget option is
+used, the original snapshots will instead be directly removed from the repository.
+
+.PP
+Please note that the --forget option only removes the snapshots and not the actual
+data stored in the repository. In order to delete the no longer referenced data,
+use the "prune" command.
 
 
 .SH EXIT STATUS
@@ -30,28 +40,40 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 .SH OPTIONS
 .PP
-\fB--add\fP=[]
-	\fB\fCtags\fR which will be added to the existing tags in the format \fB\fCtag[,tag,...]\fR (can be given multiple times)
+\fB-n\fP, \fB--dry-run\fP[=false]
+	do not do anything, just print what would be done
+
+.PP
+\fB-e\fP, \fB--exclude\fP=[]
+	exclude a \fB\fCpattern\fR (can be specified multiple times)
+
+.PP
+\fB--exclude-file\fP=[]
+	read exclude patterns from a \fB\fCfile\fR (can be specified multiple times)
+
+.PP
+\fB--forget\fP[=false]
+	remove original snapshots after creating new ones
 
 .PP
 \fB-h\fP, \fB--help\fP[=false]
-	help for tag
+	help for rewrite
 
 .PP
 \fB-H\fP, \fB--host\fP=[]
 	only consider snapshots for this \fB\fChost\fR (can be specified multiple times)
 
 .PP
+\fB--iexclude\fP=[]
+	same as --exclude \fB\fCpattern\fR but ignores the casing of filenames
+
+.PP
+\fB--iexclude-file\fP=[]
+	same as --exclude-file but ignores casing of \fB\fCfile\fRnames in patterns
+
+.PP
 \fB--path\fP=[]
 	only consider snapshots including this (absolute) \fB\fCpath\fR (can be specified multiple times)
-
-.PP
-\fB--remove\fP=[]
-	\fB\fCtags\fR which will be removed from the existing tags in the format \fB\fCtag[,tag,...]\fR (can be given multiple times)
-
-.PP
-\fB--set\fP=[]
-	\fB\fCtags\fR which will replace the existing tags in the format \fB\fCtag[,tag,...]\fR (can be given multiple times)
 
 .PP
 \fB--tag\fP=[]
