@@ -146,7 +146,7 @@ func (l *Lock) checkForOtherLocks(ctx context.Context) error {
 				// if we cannot load a lock then it is unclear whether it can be ignored
 				// it could either be invalid or just unreadable due to network/permission problems
 				debug.Log("ignore lock %v: %v", id, err)
-				return errors.Fatal(err.Error())
+				return err
 			}
 
 			if l.Exclusive {
