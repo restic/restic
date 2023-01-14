@@ -60,6 +60,27 @@ func IsAlreadyLocked(err error) bool {
 	return errors.As(err, &e)
 }
 
+// invalidLockError is returned when NewLock or NewExclusiveLock fail due
+// to an invalid lock.
+type invalidLockError struct {
+	err error
+}
+
+func (e *invalidLockError) Error() string {
+	return fmt.Sprintf("invalid lock file: %v", e.err)
+}
+
+func (e *invalidLockError) Unwrap() error {
+	return e.err
+}
+
+// IsInvalidLock returns true iff err indicates that locking failed due to
+// an invalid lock.
+func IsInvalidLock(err error) bool {
+	var e *invalidLockError
+	return errors.As(err, &e)
+}
+
 // NewLock returns a new, non-exclusive lock for the repository. If an
 // exclusive lock is already held by another process, it returns an error
 // that satisfies IsAlreadyLocked.
@@ -167,6 +188,9 @@ func (l *Lock) checkForOtherLocks(ctx context.Context) error {
 		if _, ok := err.(*alreadyLockedError); ok {
 			return err
 		}
+	}
+	if errors.Is(err, ErrInvalidData) {
+		return &invalidLockError{err}
 	}
 	return err
 }
