@@ -3,9 +3,6 @@ package progress
 import (
 	"sync"
 	"time"
-
-	"github.com/restic/restic/internal/debug"
-	"github.com/restic/restic/internal/ui/signals"
 )
 
 // A Func is a callback for a Counter.
@@ -19,32 +16,22 @@ type Func func(value uint64, total uint64, runtime time.Duration, final bool)
 //
 // The Func is also called when SIGUSR1 (or SIGINFO, on BSD) is received.
 type Counter struct {
-	report  Func
-	start   time.Time
-	stopped chan struct{} // Closed by run.
-	stop    chan struct{} // Close to stop run.
-	tick    *time.Ticker
+	Updater
 
 	valueMutex sync.Mutex
 	value      uint64
 	max        uint64
 }
 
-// New starts a new Counter.
-func New(interval time.Duration, total uint64, report Func) *Counter {
+// NewCounter starts a new Counter.
+func NewCounter(interval time.Duration, total uint64, report Func) *Counter {
 	c := &Counter{
-		report:  report,
-		start:   time.Now(),
-		stopped: make(chan struct{}),
-		stop:    make(chan struct{}),
-		max:     total,
+		max: total,
 	}
-
-	if interval > 0 {
-		c.tick = time.NewTicker(interval)
-	}
-
-	go c.run()
+	c.Updater = *NewUpdater(interval, func(runtime time.Duration, final bool) {
+		v, max := c.Get()
+		report(v, max, runtime, final)
+	})
 	return c
 }
 
@@ -69,18 +56,6 @@ func (c *Counter) SetMax(max uint64) {
 	c.valueMutex.Unlock()
 }
 
-// Done tells a Counter to stop and waits for it to report its final value.
-func (c *Counter) Done() {
-	if c == nil {
-		return
-	}
-	if c.tick != nil {
-		c.tick.Stop()
-	}
-	close(c.stop)
-	<-c.stopped // Wait for last progress report.
-}
-
 // Get returns the current value and the maximum of c.
 // This method is concurrency-safe.
 func (c *Counter) Get() (v, max uint64) {
@@ -91,32 +66,8 @@ func (c *Counter) Get() (v, max uint64) {
 	return v, max
 }
 
-func (c *Counter) run() {
-	defer close(c.stopped)
-	defer func() {
-		// Must be a func so that time.Since isn't called at defer time.
-		v, max := c.Get()
-		c.report(v, max, time.Since(c.start), true)
-	}()
-
-	var tick <-chan time.Time
-	if c.tick != nil {
-		tick = c.tick.C
-	}
-	signalsCh := signals.GetProgressChannel()
-	for {
-		var now time.Time
-
-		select {
-		case now = <-tick:
-		case sig := <-signalsCh:
-			debug.Log("Signal received: %v\n", sig)
-			now = time.Now()
-		case <-c.stop:
-			return
-		}
-
-		v, max := c.Get()
-		c.report(v, max, now.Sub(c.start), false)
+func (c *Counter) Done() {
+	if c != nil {
+		c.Updater.Done()
 	}
 }

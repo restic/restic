@@ -93,7 +93,7 @@ func TestFindUsedBlobs(t *testing.T) {
 		snapshots = append(snapshots, sn)
 	}
 
-	p := progress.New(time.Second, findTestSnapshots, func(value uint64, total uint64, runtime time.Duration, final bool) {})
+	p := progress.NewCounter(time.Second, findTestSnapshots, func(value uint64, total uint64, runtime time.Duration, final bool) {})
 	defer p.Done()
 
 	for i, sn := range snapshots {
@@ -142,7 +142,7 @@ func TestMultiFindUsedBlobs(t *testing.T) {
 		want.Merge(loadIDSet(t, goldenFilename))
 	}
 
-	p := progress.New(time.Second, findTestSnapshots, func(value uint64, total uint64, runtime time.Duration, final bool) {})
+	p := progress.NewCounter(time.Second, findTestSnapshots, func(value uint64, total uint64, runtime time.Duration, final bool) {})
 	defer p.Done()
 
 	// run twice to check progress bar handling of duplicate tree roots
