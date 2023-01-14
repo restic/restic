@@ -1,0 +1,7 @@
+Bugfix: Make `prune --quiet` not print progress
+
+We have fixed a regression in restic 0.15.0 which caused `prune --quiet` to
+show a progress bar while deciding how to process each pack files.
+
+https://github.com/restic/restic/issues/4147
+https://github.com/restic/restic/pull/4153

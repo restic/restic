@@ -473,7 +473,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Reposi
 	}
 
 	// loop over all packs and decide what to do
-	bar := newProgressMax(quiet, uint64(len(indexPack)), "packs processed")
+	bar := newProgressMax(!quiet, uint64(len(indexPack)), "packs processed")
 	err := repo.List(ctx, restic.PackFile, func(id restic.ID, packSize int64) error {
 		p, ok := indexPack[id]
 		if !ok {
