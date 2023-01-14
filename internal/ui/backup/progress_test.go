@@ -2,7 +2,6 @@ package backup
 
 import (
 	"context"
-	"io"
 	"sync"
 	"testing"
 	"time"
@@ -44,9 +43,6 @@ func (p *mockPrinter) Finish(id restic.ID, _ time.Time, summary *Summary, dryRun
 }
 
 func (p *mockPrinter) Reset() {}
-
-func (p *mockPrinter) Stdout() io.WriteCloser { return nil }
-func (p *mockPrinter) Stderr() io.WriteCloser { return nil }
 
 func (p *mockPrinter) P(msg string, args ...interface{}) {}
 func (p *mockPrinter) V(msg string, args ...interface{}) {}
