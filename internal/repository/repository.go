@@ -204,7 +204,8 @@ func (r *Repository) LoadUnpacked(ctx context.Context, t restic.FileType, id res
 			} else {
 				cancel()
 			}
-			return errors.Errorf("load(%v): invalid data returned", h)
+			return restic.ErrInvalidData
+
 		}
 		return nil
 	})
