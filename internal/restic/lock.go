@@ -360,6 +360,12 @@ func ForAllLocks(ctx context.Context, repo Repository, excludeID *ID, fn func(ID
 		if excludeID != nil && id.Equal(*excludeID) {
 			return nil
 		}
+		if size == 0 {
+			// Ignore empty lock files as some backends do not guarantee atomic uploads.
+			// These may leave empty files behind if an upload was interrupted between
+			// creating the file and writing its data.
+			return nil
+		}
 		lock, err := LoadLock(ctx, repo, id)
 
 		m.Lock()
