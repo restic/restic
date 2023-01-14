@@ -1623,10 +1623,7 @@ func testPruneVariants(t *testing.T, unsafeNoSpaceRecovery bool) {
 	})
 }
 
-func testPrune(t *testing.T, pruneOpts PruneOptions, checkOpts CheckOptions) {
-	env, cleanup := withTestEnvironment(t)
-	defer cleanup()
-
+func createPrunableRepo(t *testing.T, env *testEnvironment) {
 	testSetupBackupData(t, env)
 	opts := BackupOptions{}
 
@@ -1644,6 +1641,13 @@ func testPrune(t *testing.T, pruneOpts PruneOptions, checkOpts CheckOptions) {
 
 	testRunForgetJSON(t, env.gopts)
 	testRunForget(t, env.gopts, firstSnapshot[0].String())
+}
+
+func testPrune(t *testing.T, pruneOpts PruneOptions, checkOpts CheckOptions) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	createPrunableRepo(t, env)
 	testRunPrune(t, env.gopts, pruneOpts)
 	rtest.OK(t, runCheck(context.TODO(), checkOpts, env.gopts, nil))
 }
@@ -1826,27 +1830,10 @@ func TestListOnce(t *testing.T) {
 	env.gopts.backendTestHook = func(r restic.Backend) (restic.Backend, error) {
 		return newListOnceBackend(r), nil
 	}
-
 	pruneOpts := PruneOptions{MaxUnused: "0"}
 	checkOpts := CheckOptions{ReadData: true, CheckUnused: true}
 
-	testSetupBackupData(t, env)
-	opts := BackupOptions{}
-
-	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9")}, opts, env.gopts)
-	firstSnapshot := testRunList(t, "snapshots", env.gopts)
-	rtest.Assert(t, len(firstSnapshot) == 1,
-		"expected one snapshot, got %v", firstSnapshot)
-
-	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "2")}, opts, env.gopts)
-	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "3")}, opts, env.gopts)
-
-	snapshotIDs := testRunList(t, "snapshots", env.gopts)
-	rtest.Assert(t, len(snapshotIDs) == 3,
-		"expected 3 snapshot, got %v", snapshotIDs)
-
-	testRunForgetJSON(t, env.gopts)
-	testRunForget(t, env.gopts, firstSnapshot[0].String())
+	createPrunableRepo(t, env)
 	testRunPrune(t, env.gopts, pruneOpts)
 	rtest.OK(t, runCheck(context.TODO(), checkOpts, env.gopts, nil))
 
