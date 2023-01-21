@@ -199,6 +199,7 @@ func (p *Progress) ReportTotal(item string, s archiver.ScanStats) {
 	p.scanStarted = true
 
 	if item == "" {
+		p.scanFinished = true
 		p.printer.ReportTotal(item, p.start, s)
 	}
 }
