@@ -317,9 +317,9 @@ type blobJSON struct {
 }
 
 // generatePackList returns a list of packs.
-func (idx *Index) generatePackList() ([]*packJSON, error) {
-	list := []*packJSON{}
-	packs := make(map[restic.ID]*packJSON)
+func (idx *Index) generatePackList() ([]packJSON, error) {
+	list := make([]packJSON, 0, len(idx.packs))
+	packs := make(map[restic.ID]int, len(list)) // Maps to index in list.
 
 	for typ := range idx.byType {
 		m := &idx.byType[typ]
@@ -329,18 +329,13 @@ func (idx *Index) generatePackList() ([]*packJSON, error) {
 				panic("null pack id")
 			}
 
-			debug.Log("handle blob %v", e.id)
-
-			// see if pack is already in map
-			p, ok := packs[packID]
+			i, ok := packs[packID]
 			if !ok {
-				// else create new pack
-				p = &packJSON{ID: packID}
-
-				// and append it to the list and map
-				list = append(list, p)
-				packs[p.ID] = p
+				i = len(list)
+				list = append(list, packJSON{ID: packID})
+				packs[packID] = i
 			}
+			p := &list[i]
 
 			// add blob
 			p.Blobs = append(p.Blobs, blobJSON{
@@ -355,14 +350,12 @@ func (idx *Index) generatePackList() ([]*packJSON, error) {
 		})
 	}
 
-	debug.Log("done")
-
 	return list, nil
 }
 
 type jsonIndex struct {
-	Supersedes restic.IDs  `json:"supersedes,omitempty"`
-	Packs      []*packJSON `json:"packs"`
+	Supersedes restic.IDs `json:"supersedes,omitempty"`
+	Packs      []packJSON `json:"packs"`
 }
 
 // Encode writes the JSON serialization of the index to the writer w.
