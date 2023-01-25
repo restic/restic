@@ -60,6 +60,27 @@ func IsAlreadyLocked(err error) bool {
 	return errors.As(err, &e)
 }
 
+// invalidLockError is returned when NewLock or NewExclusiveLock fail due
+// to an invalid lock.
+type invalidLockError struct {
+	err error
+}
+
+func (e *invalidLockError) Error() string {
+	return fmt.Sprintf("invalid lock file: %v", e.err)
+}
+
+func (e *invalidLockError) Unwrap() error {
+	return e.err
+}
+
+// IsInvalidLock returns true iff err indicates that locking failed due to
+// an invalid lock.
+func IsInvalidLock(err error) bool {
+	var e *invalidLockError
+	return errors.As(err, &e)
+}
+
 // NewLock returns a new, non-exclusive lock for the repository. If an
 // exclusive lock is already held by another process, it returns an error
 // that satisfies IsAlreadyLocked.
@@ -146,7 +167,7 @@ func (l *Lock) checkForOtherLocks(ctx context.Context) error {
 				// if we cannot load a lock then it is unclear whether it can be ignored
 				// it could either be invalid or just unreadable due to network/permission problems
 				debug.Log("ignore lock %v: %v", id, err)
-				return errors.Fatal(err.Error())
+				return err
 			}
 
 			if l.Exclusive {
@@ -167,6 +188,9 @@ func (l *Lock) checkForOtherLocks(ctx context.Context) error {
 		if _, ok := err.(*alreadyLockedError); ok {
 			return err
 		}
+	}
+	if errors.Is(err, ErrInvalidData) {
+		return &invalidLockError{err}
 	}
 	return err
 }
@@ -334,6 +358,12 @@ func ForAllLocks(ctx context.Context, repo Repository, excludeID *ID, fn func(ID
 	// For locks decoding is nearly for free, thus just assume were only limited by IO
 	return ParallelList(ctx, repo.Backend(), LockFile, repo.Connections(), func(ctx context.Context, id ID, size int64) error {
 		if excludeID != nil && id.Equal(*excludeID) {
+			return nil
+		}
+		if size == 0 {
+			// Ignore empty lock files as some backends do not guarantee atomic uploads.
+			// These may leave empty files behind if an upload was interrupted between
+			// creating the file and writing its data.
 			return nil
 		}
 		lock, err := LoadLock(ctx, repo, id)

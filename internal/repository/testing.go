@@ -8,6 +8,7 @@ import (
 
 	"github.com/restic/restic/internal/backend/local"
 	"github.com/restic/restic/internal/backend/mem"
+	"github.com/restic/restic/internal/backend/retry"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
@@ -97,10 +98,13 @@ func TestRepositoryWithVersion(t testing.TB, version uint) restic.Repository {
 
 // TestOpenLocal opens a local repository.
 func TestOpenLocal(t testing.TB, dir string) (r restic.Repository) {
+	var be restic.Backend
 	be, err := local.Open(context.TODO(), local.Config{Path: dir, Connections: 2})
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	be = retry.New(be, 3, nil, nil)
 
 	repo, err := New(be, Options{})
 	if err != nil {

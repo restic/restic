@@ -188,6 +188,7 @@ func (r *Repository) LoadUnpacked(ctx context.Context, t restic.FileType, id res
 
 	h := restic.Handle{Type: t, Name: id.String()}
 	retriedInvalidData := false
+	var dataErr error
 	err := r.be.Load(ctx, h, 0, 0, func(rd io.Reader) error {
 		// make sure this call is idempotent, in case an error occurs
 		wr := bytes.NewBuffer(buf[:0])
@@ -202,13 +203,20 @@ func (r *Repository) LoadUnpacked(ctx context.Context, t restic.FileType, id res
 			if !retriedInvalidData {
 				retriedInvalidData = true
 			} else {
+				// with a canceled context there is not guarantee which error will
+				// be returned by `be.Load`.
+				dataErr = fmt.Errorf("load(%v): %w", h, restic.ErrInvalidData)
 				cancel()
 			}
-			return errors.Errorf("load(%v): invalid data returned", h)
+			return restic.ErrInvalidData
+
 		}
 		return nil
 	})
 
+	if dataErr != nil {
+		return nil, dataErr
+	}
 	if err != nil {
 		return nil, err
 	}
