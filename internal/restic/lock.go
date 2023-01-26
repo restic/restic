@@ -222,7 +222,7 @@ var StaleLockTimeout = 30 * time.Minute
 func (l *Lock) Stale() bool {
 	l.lock.Lock()
 	defer l.lock.Unlock()
-	debug.Log("testing if lock %v for process %d is stale", l, l.PID)
+	debug.Log("testing if lock %v for process %d is stale", l.lockID, l.PID)
 	if time.Since(l.Time) > StaleLockTimeout {
 		debug.Log("lock is stale, timestamp is too old: %v\n", l.Time)
 		return true
