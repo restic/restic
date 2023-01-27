@@ -12,7 +12,6 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/restic/restic"
 	"github.com/restic/restic/internal/errors"
 
 	mrand "math/rand"
@@ -195,7 +194,7 @@ func RemoveAll(t testing.TB, path string) {
 // TempDir returns a temporary directory that is removed by t.Cleanup,
 // except if TestCleanupTempDirs is set to false.
 func TempDir(t testing.TB) string {
-	tempdir, err := restic.ResticDir(TestTempDir, "restic-test-")
+	tempdir, err := os.MkdirTemp(TestTempDir, "restic-test-")
 	if err != nil {
 		t.Fatal(err)
 	}
