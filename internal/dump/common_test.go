@@ -5,8 +5,8 @@ import (
 	"context"
 	"testing"
 
+	_restic "github.com/restic/restic"
 	"github.com/restic/restic/internal/archiver"
-	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -67,13 +67,14 @@ func WriteTest(t *testing.T, format string, cd CheckDump) {
 			target: "/",
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
 			tmpdir, repo := prepareTempdirRepoSrc(t, tt.args)
-			arch := archiver.New(repo, fs.Track{FS: fs.Local{}}, archiver.Options{})
+			arch := _restic.Archiver(repo)
 
 			back := rtest.Chdir(t, tmpdir)
 			defer back()
