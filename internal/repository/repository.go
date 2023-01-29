@@ -365,9 +365,6 @@ func (r *Repository) getZstdEncoder() *zstd.Encoder {
 			// Disable CRC, we have enough checks in place, makes the
 			// compressed data four bytes shorter.
 			zstd.WithEncoderCRC(false),
-			// Set a window of 512kbyte, so we have good lookbehind for usual
-			// blob sizes.
-			zstd.WithWindowSize(512 * 1024),
 		}
 
 		enc, err := zstd.NewWriter(nil, opts...)
