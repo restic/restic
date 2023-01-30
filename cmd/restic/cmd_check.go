@@ -65,7 +65,7 @@ func init() {
 		// MarkDeprecated only returns an error when the flag is not found
 		panic(err)
 	}
-	f.BoolVar(&checkOptions.WithCache, "with-cache", false, "use the cache")
+	f.BoolVar(&checkOptions.WithCache, "with-cache", false, "use existing cache, only read uncached data from repository")
 }
 
 func checkFlags(opts CheckOptions) error {
