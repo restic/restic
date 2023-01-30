@@ -66,8 +66,8 @@ func open(ctx context.Context, cfg Config) (*Backend, error) {
 	debug.Log("open, config %#v", cfg)
 
 	// set the pool drainer timer going
-	if b.Config.IdleTimeout != nil && *b.Config.IdleTimeout > 0 {
-		b.drain = time.AfterFunc(*b.Config.IdleTimeout, func() { _ = b.drainPool() })
+	if b.Config.IdleTimeout > 0 {
+		b.drain = time.AfterFunc(b.Config.IdleTimeout, func() { _ = b.drainPool() })
 	}
 
 	cn, err := b.getConnection(ctx, b.ShareName)

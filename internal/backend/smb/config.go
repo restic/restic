@@ -17,16 +17,16 @@ type Config struct {
 	ShareName string
 	Path      string
 
-	Layout                string         `option:"layout" help:"use this backend directory layout (default: auto-detect)"`
-	Connections           uint           `option:"connections" help:"set a limit for the number of concurrent operations (default: 2)"`
-	IdleTimeout           *time.Duration `option:"idle-timeout" help:"Max time in seconds before closing idle connections. If no connections have been returned to the connection pool in the time given, the connection pool will be emptied. Set to 0 to keep connections indefinitely.(default: 60)"`
-	RequireMessageSigning *bool          `option:"require-message-signing" help:"Mandates message signing otherwise does not allow the connection. If this is false, messaging signing is just enabled and not enforced. (default: false)"`
-	Dialect               uint16         `option:"dialect" help:"Force a specific dialect to be used. SMB311:785, SMB302:770, SMB300:768, SMB210:528, SMB202:514, SMB2:767. If unspecfied (0), following dialects are tried in order - SMB311, SMB302, SMB300, SMB210, SMB202 (default: 0)"`
-	ClientGuid            string         `option:"client-guid" help:"A 16-byte GUID to uniquely identify a client. If not specific a random GUID is used. (default: \"\")"`
+	User     string               `option:"user" help:"specify the SMB user for NTLM authentication."`
+	Password options.SecretString `option:"password" help:"specify the SMB password for NTLM authentication."`
+	Domain   string               `option:"domain" help:"specify the domain for authentication."`
 
-	User     string               `option:"user"`
-	Password options.SecretString `option:"password"`
-	Domain   string               `option:"domain"`
+	Layout                string        `option:"layout" help:"use this backend directory layout (default: auto-detect)"`
+	Connections           uint          `option:"connections" help:"set a limit for the number of concurrent operations (default: 2)"`
+	IdleTimeout           time.Duration `option:"idle-timeout" help:"Max time in seconds before closing idle connections. If no connections have been returned to the connection pool in the time given, the connection pool will be emptied. Set to 0 to keep connections indefinitely.(default: 60)"`
+	RequireMessageSigning bool          `option:"require-message-signing" help:"Mandates message signing otherwise does not allow the connection. If this is false, messaging signing is just enabled and not enforced. (default: false)"`
+	Dialect               uint16        `option:"dialect" help:"Force a specific dialect to be used. SMB311:785, SMB302:770, SMB300:768, SMB210:528, SMB202:514, SMB2:767. If unspecfied (0), following dialects are tried in order - SMB311, SMB302, SMB300, SMB210, SMB202 (default: 0)"`
+	ClientGuid            string        `option:"client-guid" help:"A 16-byte GUID to uniquely identify a client. If not specific a random GUID is used. (default: \"\")"`
 }
 
 const (
@@ -39,7 +39,10 @@ const (
 // NewConfig returns a new Config with the default values filled in.
 func NewConfig() Config {
 	return Config{
-		Port: DefaultSmbPort,
+		Port:        DefaultSmbPort,
+		Domain:      DefaultDomain,
+		IdleTimeout: DefaultIdleTimeout,
+		Connections: DefaultConnections,
 	}
 }
 

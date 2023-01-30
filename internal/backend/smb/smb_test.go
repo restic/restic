@@ -25,7 +25,7 @@ func newTestSuite(t testing.TB) *test.Suite {
 			cfg.Password = options.NewSecretString("mGoWwqvgdnwtmh07")
 			cfg.Connections = smb.DefaultConnections
 			timeout := smb.DefaultIdleTimeout
-			cfg.IdleTimeout = &timeout
+			cfg.IdleTimeout = timeout
 			cfg.Domain = smb.DefaultDomain
 
 			t.Logf("create new backend at %v", cfg.Address+"/"+cfg.ShareName)

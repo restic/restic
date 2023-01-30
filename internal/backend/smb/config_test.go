@@ -10,16 +10,22 @@ var configTests = []struct {
 	cfg Config
 }{
 	{"smb://shareaddress/sharename/directory", Config{
-		Address:   "shareaddress",
-		Port:      DefaultSmbPort,
-		ShareName: "sharename",
-		Path:      "directory",
+		Address:     "shareaddress",
+		Port:        DefaultSmbPort,
+		ShareName:   "sharename",
+		Path:        "directory",
+		Domain:      DefaultDomain,
+		Connections: DefaultConnections,
+		IdleTimeout: DefaultIdleTimeout,
 	}},
 	{"smb://shareaddress:456/sharename/directory", Config{
-		Address:   "shareaddress",
-		Port:      456,
-		ShareName: "sharename",
-		Path:      "directory",
+		Address:     "shareaddress",
+		Port:        456,
+		ShareName:   "sharename",
+		Path:        "directory",
+		Domain:      DefaultDomain,
+		Connections: DefaultConnections,
+		IdleTimeout: DefaultIdleTimeout,
 	}},
 }
 

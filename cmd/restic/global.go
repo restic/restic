@@ -704,57 +704,6 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 			cfg.Domain = smb.DefaultDomain
 		}
 
-		//0 is an acceptable value for timeout, hence using -1 as the default unset value.
-		if cfg.IdleTimeout == nil {
-			it := os.Getenv("RESTIC_SMB_IDLETIMEOUTSECS")
-			if it == "" {
-				timeout := smb.DefaultIdleTimeout
-				cfg.IdleTimeout = &timeout
-			} else {
-				t, err := strconv.Atoi(it)
-				if err != nil {
-					return nil, err
-				}
-				timeout := (time.Duration(int64(t) * int64(time.Second)))
-				cfg.IdleTimeout = &timeout
-			}
-		}
-
-		if cfg.Connections == 0 {
-			c := os.Getenv("RESTIC_SMB_CONNECTIONS")
-			if c == "" {
-				cfg.Connections = smb.DefaultConnections
-			} else {
-				con, err := strconv.Atoi(c)
-				if err != nil {
-					return nil, err
-				}
-				cfg.Connections = uint(con)
-			}
-		}
-
-		if cfg.RequireMessageSigning == nil {
-			v := os.Getenv("RESTIC_SMB_REQUIRE_MESSAGESIGNING")
-			rms := strings.ToLower(v) == "true"
-			cfg.RequireMessageSigning = &rms
-		}
-
-		if cfg.ClientGuid == "" {
-			c := os.Getenv("RESTIC_SMB_CLIENTGUID")
-			cfg.ClientGuid = c
-		}
-
-		if cfg.Dialect == 0 {
-			d := os.Getenv("RESTIC_SMB_DIALECT")
-			if d != "" {
-				v, err := strconv.Atoi(d)
-				if err != nil {
-					return nil, err
-				}
-				cfg.Dialect = uint16(v)
-			}
-		}
-
 		debug.Log("opening smb repository at %#v", cfg)
 		return cfg, nil
 
