@@ -24,7 +24,7 @@ func ForAllIndexes(ctx context.Context, repo restic.Repository,
 		var idx *Index
 		oldFormat := false
 
-		buf, err := repo.LoadUnpacked(ctx, restic.IndexFile, id, nil)
+		buf, err := repo.LoadUnpacked(ctx, restic.IndexFile, id)
 		if err == nil {
 			idx, oldFormat, err = DecodeIndex(buf, id)
 		}

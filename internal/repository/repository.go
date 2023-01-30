@@ -170,14 +170,8 @@ func (r *Repository) SetDryRun() {
 	r.be = dryrun.New(r.be)
 }
 
-// LoadUnpacked loads and decrypts the file with the given type and ID, using
-// the supplied buffer (which must be empty). If the buffer is nil, a new
-// buffer will be allocated and returned.
-func (r *Repository) LoadUnpacked(ctx context.Context, t restic.FileType, id restic.ID, buf []byte) ([]byte, error) {
-	if len(buf) != 0 {
-		panic("buf is not empty")
-	}
-
+// LoadUnpacked loads and decrypts the file with the given type and ID.
+func (r *Repository) LoadUnpacked(ctx context.Context, t restic.FileType, id restic.ID) ([]byte, error) {
 	debug.Log("load %v with id %v", t, id)
 
 	if t == restic.ConfigFile {
@@ -189,15 +183,17 @@ func (r *Repository) LoadUnpacked(ctx context.Context, t restic.FileType, id res
 	h := restic.Handle{Type: t, Name: id.String()}
 	retriedInvalidData := false
 	var dataErr error
+	wr := new(bytes.Buffer)
+
 	err := r.be.Load(ctx, h, 0, 0, func(rd io.Reader) error {
 		// make sure this call is idempotent, in case an error occurs
-		wr := bytes.NewBuffer(buf[:0])
+		wr.Reset()
 		_, cerr := io.Copy(wr, rd)
 		if cerr != nil {
 			return cerr
 		}
-		buf = wr.Bytes()
 
+		buf := wr.Bytes()
 		if t != restic.ConfigFile && !restic.Hash(buf).Equal(id) {
 			debug.Log("retry loading broken blob %v", h)
 			if !retriedInvalidData {
@@ -221,6 +217,7 @@ func (r *Repository) LoadUnpacked(ctx context.Context, t restic.FileType, id res
 		return nil, err
 	}
 
+	buf := wr.Bytes()
 	nonce, ciphertext := buf[:r.key.NonceSize()], buf[r.key.NonceSize():]
 	plaintext, err := r.key.Open(ciphertext[:0], nonce, ciphertext, nil)
 	if err != nil {
