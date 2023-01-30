@@ -1,9 +1,10 @@
 name: test
 on:
   # run tests on push to master, but not when other branches are pushed to
+  workflow_dispatch: {}
   push:
     branches:
-      - master
+      - 'feature/smb-test-setup'
 
   # run tests for all pull requests
   pull_request:
@@ -26,6 +27,7 @@ jobs:
             go: 1.19.x
             os: macOS-latest
             test_fuse: false
+            test_smb: false
 
           - job_name: Linux
             go: 1.19.x
@@ -82,6 +84,65 @@ jobs:
           chmod 755 $HOME/bin/rclone
           rm -rf rclone*
 
+          echo "install samba"
+          user="smbuser"
+          pass="mGoWwqvgdnwtmh07"
+
+          if [ "$RUNNER_OS" == "macOS" ]; then
+            #NONINTERACTIVE=1 brew install samba
+          else
+            sudo apt-get update
+            sudo apt-get install samba -y      
+                        
+            echo "Allow Samba in firewall"
+            sudo ufw allow 'Samba'
+
+            echo "modifying samba config"
+            echo '' | sudo tee -a /etc/samba/smb.conf
+            echo '    interfaces = 127.0.0.0/8 eth0' | sudo tee -a /etc/samba/smb.conf
+            echo '    bind interfaces only = yes' | sudo tee -a /etc/samba/smb.conf
+            echo '' | sudo tee -a /etc/samba/smb.conf
+            echo "[$user]" | sudo tee -a /etc/samba/smb.conf
+            echo '    comment = Samba on Ubuntu' | sudo tee -a /etc/samba/smb.conf
+            echo "    path = /samba/$user" | sudo tee -a /etc/samba/smb.conf
+            echo '    browseable = yes' | sudo tee -a /etc/samba/smb.conf
+            echo '    read only = no' | sudo tee -a /etc/samba/smb.conf
+            echo '    force create mode = 0660' | sudo tee -a /etc/samba/smb.conf
+            echo '    force directory mode = 2770' | sudo tee -a /etc/samba/smb.conf
+            echo "    valid users = $user" | sudo tee -a /etc/samba/smb.conf
+            
+            echo "restart services"
+            sudo systemctl restart smbd
+            sudo systemctl restart nmbd
+
+            echo "create samba share directory"
+            sudo mkdir /samba
+
+            echo "change sambashare group"
+            sudo chgrp sambashare /samba
+
+            echo "add samba user"
+            sudo id -u "$user" &>/dev/null || sudo useradd -M -d "/samba/$user" -s /usr/sbin/nologin -G sambashare "$user"
+
+            echo "create samba share user directory"
+            sudo mkdir "/samba/$user"
+
+            echo "change samba share user directory ownership"
+            sudo chown "$user":sambashare "/samba/$user"
+
+            echo "modify permissions on samba share user directory"
+            sudo chmod 2770 "/samba/$user"
+
+            echo "change smb password"
+            (echo "$pass"; echo "$pass") | sudo smbpasswd -a "$user"
+
+            echo "enable samba user"
+            sudo smbpasswd -e "$user"
+
+            echo "restart services"
+            sudo systemctl restart smbd
+            sudo systemctl restart nmbd
+          fi
           # add $HOME/bin to path ($GOBIN was already added to the path by setup-go@v3)
           echo $HOME/bin >> $GITHUB_PATH
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'macOS-latest'
@@ -121,6 +182,26 @@ jobs:
           Invoke-WebRequest https://github.com/restic/test-assets/raw/master/libiconv-1.8-1-bin.zip -OutFile libiconv.zip
           unzip libiconv.zip
 
+          # Create new smbshare
+          $user="smbuser"
+          $pass="mGoWwqvgdnwtmh07"
+          $SecurePassword = $pass | ConvertTo-SecureString -AsPlainText -Force	
+
+          echo "Create user"
+          New-LocalUser $user -Password $SecurePassword -FullName "SMB User" -Description "Account used for smb access."
+
+          echo "Making user admin"
+          Add-LocalGroupMember -Group "Administrators" -Member "$user"
+          
+          $path="C:\$user"	
+          mkdir $path
+
+          echo "Create share"
+          New-SmbShare -Name $user -Path $path -FullAccess "Administrators" -EncryptData $True
+
+          echo "Grant access to share"
+          Grant-SmbShareAccess -Name $user -AccountName $user -AccessRight Full -Force
+
           # add $USERPROFILE/tar/bin to path
           echo $Env:USERPROFILE\tar\bin >> $Env:GITHUB_PATH
         if: matrix.os == 'windows-latest'
@@ -135,6 +216,7 @@ jobs:
       - name: Run local Tests
         env:
           RESTIC_TEST_FUSE: ${{ matrix.test_fuse }}
+          RESTIC_TEST_SMB: ${{ matrix.test_smb }}
         run: |
           go test -cover ${{matrix.test_opts}} ./...
 

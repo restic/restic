@@ -11,6 +11,7 @@ require (
 	github.com/go-ole/go-ole v1.2.6
 	github.com/google/go-cmp v0.5.9
 	github.com/hashicorp/golang-lru/v2 v2.0.1
+	github.com/hirochachacha/go-smb2 v1.1.0
 	github.com/juju/ratelimit v1.0.2
 	github.com/klauspost/compress v1.15.15
 	github.com/kurin/blazer v0.5.4-0.20230113224640-3887e1ec64b5
@@ -24,6 +25,7 @@ require (
 	github.com/restic/chunker v0.4.0
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
+	github.com/valyala/fastrand v1.1.0
 	golang.org/x/crypto v0.5.0
 	golang.org/x/net v0.5.0
 	golang.org/x/oauth2 v0.4.0
@@ -44,6 +46,7 @@ require (
 	github.com/dnaeon/go-vcr v1.2.0 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/felixge/fgprof v0.9.3 // indirect
+	github.com/geoffgarside/ber v1.1.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/pprof v0.0.0-20230111200839-76d1ae5aea2b // indirect

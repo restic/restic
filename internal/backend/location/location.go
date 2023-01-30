@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/backend/rest"
 	"github.com/restic/restic/internal/backend/s3"
 	"github.com/restic/restic/internal/backend/sftp"
+	"github.com/restic/restic/internal/backend/smb"
 	"github.com/restic/restic/internal/backend/swift"
 	"github.com/restic/restic/internal/errors"
 )
@@ -41,6 +42,7 @@ var parsers = []parser{
 	{"swift", swift.ParseConfig, noPassword},
 	{"rest", rest.ParseConfig, rest.StripPassword},
 	{"rclone", rclone.ParseConfig, noPassword},
+	{"smb", smb.ParseConfig, noPassword},
 }
 
 // noPassword returns the repository location unchanged (there's no sensitive information there)

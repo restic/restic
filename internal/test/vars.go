@@ -13,6 +13,7 @@ var (
 	TestTempDir                 = getStringVar("RESTIC_TEST_TMPDIR", "")
 	RunIntegrationTest          = getBoolVar("RESTIC_TEST_INTEGRATION", true)
 	RunFuseTest                 = getBoolVar("RESTIC_TEST_FUSE", true)
+	RunSMBTest                  = getBoolVar("RESTIC_TEST_SMB", true)
 	TestSFTPPath                = getStringVar("RESTIC_TEST_SFTPPATH", "/usr/lib/ssh:/usr/lib/openssh:/usr/libexec")
 	TestWalkerPath              = getStringVar("RESTIC_TEST_PATH", ".")
 	BenchArchiveDirectory       = getStringVar("RESTIC_BENCH_DIR", ".")
