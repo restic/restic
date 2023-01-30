@@ -1,10 +1,9 @@
 name: test
 on:
   # run tests on push to master, but not when other branches are pushed to
-  workflow_dispatch: {}
   push:
     branches:
-      - 'feature/smb-test-setup'
+      - master
 
   # run tests for all pull requests
   pull_request:
