@@ -1,3 +1,78 @@
+Changelog for restic 0.15.1 (2023-01-30)
+=======================================
+
+The following sections list the changes in restic 0.15.1 relevant to
+restic users. The changes are ordered by importance.
+
+Summary
+-------
+
+ * Fix #3750: Remove `b2_download_file_by_name: 404` warning from B2 backend
+ * Fix #4147: Make `prune --quiet` not print progress bar
+ * Fix #4163: Make `self-update --output` work with new filename on Windows
+ * Fix #4167: Add missing ETA in `backup` progress bar
+ * Enh #4143: Ignore empty lock files
+
+Details
+-------
+
+ * Bugfix #3750: Remove `b2_download_file_by_name: 404` warning from B2 backend
+
+   In some cases the B2 backend could print `b2_download_file_by_name: 404: : b2.b2err`
+   warnings. These are only debug messages and can be safely ignored.
+
+   Restic now uses an updated library for accessing B2, which removes the warning.
+
+   https://github.com/restic/restic/issues/3750
+   https://github.com/restic/restic/issues/4144
+   https://github.com/restic/restic/pull/4146
+
+ * Bugfix #4147: Make `prune --quiet` not print progress bar
+
+   A regression in restic 0.15.0 caused `prune --quiet` to show a progress bar while deciding how
+   to process each pack files. This has now been fixed.
+
+   https://github.com/restic/restic/issues/4147
+   https://github.com/restic/restic/pull/4153
+
+ * Bugfix #4163: Make `self-update --output` work with new filename on Windows
+
+   Since restic 0.14.0 the `self-update` command did not work when a custom output filename was
+   specified via the `--output` option. This has now been fixed.
+
+   As a workaround, either use an older restic version to run the self-update or create an empty
+   file with the output filename before updating e.g. using CMD:
+
+   `type nul > new-file.exe` `restic self-update --output new-file.exe`
+
+   https://github.com/restic/restic/pull/4163
+   https://forum.restic.net/t/self-update-windows-started-failing-after-release-of-0-15/5836
+
+ * Bugfix #4167: Add missing ETA in `backup` progress bar
+
+   A regression in restic 0.15.0 caused the ETA to be missing from the progress bar displayed by the
+   `backup` command. This has now been fixed.
+
+   https://github.com/restic/restic/pull/4167
+
+ * Enhancement #4143: Ignore empty lock files
+
+   With restic 0.15.0 the checks for stale locks became much stricter than before. In particular,
+   empty or unreadable locks were no longer silently ignored. This made restic to complain with
+   `Load(<lock/1234567812>, 0, 0) returned error, retrying after 552.330144ms:
+   load(<lock/1234567812>): invalid data returned` and fail in the end.
+
+   The error message is now clarified and the implementation changed to ignore empty lock files
+   which are sometimes created as the result of a failed uploads on some backends.
+
+   Please note that unreadable lock files still have to cleaned up manually. To do so, you can run
+   `restic unlock --remove-all` which removes all existing lock files. But first make sure that
+   no other restic process is currently using the repository.
+
+   https://github.com/restic/restic/issues/4143
+   https://github.com/restic/restic/pull/4152
+
+
 Changelog for restic 0.15.0 (2023-01-12)
 =======================================
 
