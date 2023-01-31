@@ -87,9 +87,7 @@ jobs:
           user="smbuser"
           pass="mGoWwqvgdnwtmh07"
 
-          if [ "$RUNNER_OS" == "macOS" ]; then
-            #NONINTERACTIVE=1 brew install samba
-          else
+          if [ "$RUNNER_OS" != "macOS" ]; then
             sudo apt-get update
             sudo apt-get install samba -y      
                         
