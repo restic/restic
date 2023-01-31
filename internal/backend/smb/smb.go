@@ -149,7 +149,7 @@ func (b *Backend) IsNotExist(err error) bool {
 }
 
 // Join combines path components with slashes.
-func (be *Backend) Join(p ...string) string {
+func (b *Backend) Join(p ...string) string {
 	return path.Join(p...)
 }
 
@@ -366,9 +366,9 @@ func (b *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.Fi
 
 	basedir, subdirs := b.Basedir(t)
 	if subdirs {
-		err = b.visitDirs(cn, ctx, basedir, fn)
+		err = b.visitDirs(ctx, cn, basedir, fn)
 	} else {
-		err = b.visitFiles(cn, ctx, basedir, fn, false)
+		err = b.visitFiles(ctx, cn, basedir, fn, false)
 	}
 
 	if b.IsNotExist(err) {
@@ -383,7 +383,7 @@ func (b *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.Fi
 // two levels of directory structure (including dir itself as the first level).
 // Also, visitDirs assumes it sees a directory full of directories, while
 // visitFiles wants a directory full or regular files.
-func (b *Backend) visitDirs(cn *conn, ctx context.Context, dir string, fn func(restic.FileInfo) error) error {
+func (b *Backend) visitDirs(ctx context.Context, cn *conn, dir string, fn func(restic.FileInfo) error) error {
 	d, err := cn.smbShare.Open(dir)
 	if err != nil {
 		return err
@@ -402,7 +402,7 @@ func (b *Backend) visitDirs(cn *conn, ctx context.Context, dir string, fn func(r
 	}
 
 	for _, f := range sub {
-		err = b.visitFiles(cn, ctx, filepath.Join(dir, f), fn, true)
+		err = b.visitFiles(ctx, cn, filepath.Join(dir, f), fn, true)
 		if err != nil {
 			return err
 		}
@@ -410,7 +410,7 @@ func (b *Backend) visitDirs(cn *conn, ctx context.Context, dir string, fn func(r
 	return ctx.Err()
 }
 
-func (b *Backend) visitFiles(cn *conn, ctx context.Context, dir string, fn func(restic.FileInfo) error, ignoreNotADirectory bool) error {
+func (b *Backend) visitFiles(ctx context.Context, cn *conn, dir string, fn func(restic.FileInfo) error, ignoreNotADirectory bool) error {
 	d, err := cn.smbShare.Open(dir)
 	if err != nil {
 		return err
@@ -473,16 +473,8 @@ func (b *Backend) Close() error {
 	return err
 }
 
-var (
-	ErrExist = fs.ErrExist // "file already exists"
-)
-
-// PathError records an error and the operation and file path that caused it.
-type PathError = fs.PathError
-
 const (
-	PathSeparator     = '/' // OS-specific path separator
-	PathListSeparator = ';' // OS-specific path list separator
+	pathSeparator = '/' // Always using '/' for SMB
 )
 
 // CreateTemp creates a new temporary file in the directory dir,
@@ -500,7 +492,7 @@ func (b *Backend) CreateTemp(cn *conn, dir, pattern string) (*smb2.File, error) 
 
 	prefix, suffix, err := prefixAndSuffix(pattern)
 	if err != nil {
-		return nil, &PathError{Op: "createtemp", Path: pattern, Err: err}
+		return nil, &fs.PathError{Op: "createtemp", Path: pattern, Err: err}
 	}
 	prefix = joinPath(dir, prefix)
 
@@ -513,7 +505,7 @@ func (b *Backend) CreateTemp(cn *conn, dir, pattern string) (*smb2.File, error) 
 			if try++; try < 10000 {
 				continue
 			}
-			return nil, &PathError{Op: "createtemp", Path: prefix + "*" + suffix, Err: ErrExist}
+			return nil, &fs.PathError{Op: "createtemp", Path: prefix + "*" + suffix, Err: fs.ErrExist}
 		}
 		return f, err
 	}
@@ -555,7 +547,7 @@ func joinPath(dir, name string) string {
 	if len(dir) > 0 && IsPathSeparator(dir[len(dir)-1]) {
 		return dir + name
 	}
-	return dir + string(PathSeparator) + name
+	return dir + string(pathSeparator) + name
 }
 
 // IsPathSeparator reports whether c is a directory separator character.

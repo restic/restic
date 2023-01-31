@@ -70,16 +70,16 @@ func (b *Backend) dial(ctx context.Context, network, addr string) (*conn, error)
 	if err != nil {
 		return nil, err
 	}
-	var clientId [16]byte
-	if b.ClientGuid != "" {
-		copy(clientId[:], []byte(b.ClientGuid))
+	var clientID [16]byte
+	if b.ClientGUID != "" {
+		copy(clientID[:], []byte(b.ClientGUID))
 	}
 
 	d := &smb2.Dialer{
 		Negotiator: smb2.Negotiator{
 			RequireMessageSigning: b.RequireMessageSigning,
 			SpecifiedDialect:      b.Dialect,
-			ClientGuid:            clientId,
+			ClientGuid:            clientID,
 		},
 		Initiator: &smb2.NTLMInitiator{
 			User:     b.User,

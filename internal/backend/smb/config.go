@@ -27,14 +27,14 @@ type Config struct {
 	IdleTimeout           time.Duration `option:"idle-timeout" help:"Max time in seconds before closing idle connections. If no connections have been returned to the connection pool in the time given, the connection pool will be emptied. Set to 0 to keep connections indefinitely.(default: 60)"`
 	RequireMessageSigning bool          `option:"require-message-signing" help:"Mandates message signing otherwise does not allow the connection. If this is false, messaging signing is just enabled and not enforced. (default: false)"`
 	Dialect               uint16        `option:"dialect" help:"Force a specific dialect to be used. For SMB311 use '785', for SMB302 use '770', for SMB300 use '768', for SMB210 use '528', for SMB202 use '514', for SMB2 use '767'. If unspecfied (0), following dialects are tried in order - SMB311, SMB302, SMB300, SMB210, SMB202 (default: 0)"`
-	ClientGuid            string        `option:"client-guid" help:"A 16-byte GUID to uniquely identify a client. If not specific a random GUID is used. (default: \"\")"`
+	ClientGUID            string        `option:"client-guid" help:"A 16-byte GUID to uniquely identify a client. If not specific a random GUID is used. (default: \"\")"`
 }
 
 const (
-	DefaultSmbPort     int           = 445
-	DefaultDomain      string        = "WORKGROUP"
-	DefaultConnections uint          = 2
-	DefaultIdleTimeout time.Duration = 60 * time.Second
+	DefaultSmbPort     int           = 445              // DefaultSmbPort returns the default port for SMB
+	DefaultDomain      string        = "WORKGROUP"      // DefaultDomain returns the default domain for SMB
+	DefaultConnections uint          = 2                // DefaultConnections returns the number of concurrent connections for SMB.
+	DefaultIdleTimeout time.Duration = 60 * time.Second // DefaultIdleTimeout returns the default max time before closing idle connections for SMB.
 )
 
 // NewConfig returns a new Config with the default values filled in.
