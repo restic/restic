@@ -1,6 +1,7 @@
 package smb
 
 import (
+	"net/url"
 	"path"
 	"strconv"
 	"strings"
@@ -12,7 +13,7 @@ import (
 
 // Config contains all configuration necessary to connect to an SMB server
 type Config struct {
-	Address   string
+	Host      string
 	Port      int
 	ShareName string
 	Path      string
@@ -25,7 +26,7 @@ type Config struct {
 	Connections           uint          `option:"connections" help:"set a limit for the number of concurrent operations (default: 2)"`
 	IdleTimeout           time.Duration `option:"idle-timeout" help:"Max time in seconds before closing idle connections. If no connections have been returned to the connection pool in the time given, the connection pool will be emptied. Set to 0 to keep connections indefinitely.(default: 60)"`
 	RequireMessageSigning bool          `option:"require-message-signing" help:"Mandates message signing otherwise does not allow the connection. If this is false, messaging signing is just enabled and not enforced. (default: false)"`
-	Dialect               uint16        `option:"dialect" help:"Force a specific dialect to be used. SMB311:785, SMB302:770, SMB300:768, SMB210:528, SMB202:514, SMB2:767. If unspecfied (0), following dialects are tried in order - SMB311, SMB302, SMB300, SMB210, SMB202 (default: 0)"`
+	Dialect               uint16        `option:"dialect" help:"Force a specific dialect to be used. For SMB311 use '785', for SMB302 use '770', for SMB300 use '768', for SMB210 use '528', for SMB202 use '514', for SMB2 use '767'. If unspecfied (0), following dialects are tried in order - SMB311, SMB302, SMB300, SMB210, SMB202 (default: 0)"`
 	ClientGuid            string        `option:"client-guid" help:"A 16-byte GUID to uniquely identify a client. If not specific a random GUID is used. (default: \"\")"`
 }
 
@@ -50,40 +51,64 @@ func init() {
 	options.Register("smb", Config{})
 }
 
-// ParseConfig parses the string s and extracts the s3 config. The two
-// supported configuration formats are smb://address:port/sharename/directory and
-// smb://address/sharename/directory in which case default port 445 is used.
-// If no prefix is given the prefix "restic" will be used.
+// ParseConfig parses the string s and extracts the s3 config. The
+// supported configuration format is smb://[user@]host[:port]/sharename/directory.
+// User and port are optional. Default port is 445.
 func ParseConfig(s string) (interface{}, error) {
+	var repo string
 	switch {
 	case strings.HasPrefix(s, "smb://"):
-		s = s[6:]
+		repo = s
 	case strings.HasPrefix(s, "smb:"):
-		s = s[4:]
+		repo = "smb://" + s[4:]
 	default:
 		return nil, errors.New("smb: invalid format")
 	}
-	// use the first entry of the path as the endpoint and the
-	// remainder as bucket name and prefix
-	fullAddress, rest, _ := strings.Cut(s, "/")
-	address, portString, hasPort := strings.Cut(fullAddress, ":")
-	var port int
-	if !hasPort {
-		port = DefaultSmbPort
+	var user, host, port, dir string
+
+	// parse the "smb://user@host/sharename/directory." url format
+	url, err := url.Parse(repo)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	if url.User != nil {
+		user = url.User.Username()
+		//Intentionally not allowing passwords to be set in url as
+		//it can cause issues when passwords have special characters
+		//like '@' and it is not recommended to pass passwords in the url.
+	}
+
+	host = url.Hostname()
+	if host == "" {
+		return nil, errors.New("smb: invalid format, host name not found")
+	}
+	port = url.Port()
+	dir = url.Path
+	if dir == "" {
+		return nil, errors.Errorf("smb: invalid format, sharename/directory not found")
+	}
+
+	dir = dir[1:]
+
+	var portNum int
+	if port == "" {
+		portNum = DefaultSmbPort
 	} else {
 		var err error
-		port, err = strconv.Atoi(portString)
+		portNum, err = strconv.Atoi(port)
 		if err != nil {
 			return nil, err
 		}
 	}
-	sharename, directory, _ := strings.Cut(rest, "/")
-	return createConfig(address, port, sharename, directory)
+
+	sharename, directory, _ := strings.Cut(dir, "/")
+
+	return createConfig(user, host, portNum, sharename, directory)
 }
 
-func createConfig(address string, port int, sharename string, directory string) (interface{}, error) {
-	if address == "" {
-		return nil, errors.New("smb: invalid format, address not found")
+func createConfig(user string, host string, port int, sharename, directory string) (interface{}, error) {
+	if host == "" {
+		return nil, errors.New("smb: invalid format, Host not found")
 	}
 
 	if directory != "" {
@@ -91,7 +116,8 @@ func createConfig(address string, port int, sharename string, directory string) 
 	}
 
 	cfg := NewConfig()
-	cfg.Address = address
+	cfg.User = user
+	cfg.Host = host
 	cfg.Port = port
 	cfg.ShareName = sharename
 	cfg.Path = directory

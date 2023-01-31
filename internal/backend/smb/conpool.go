@@ -105,7 +105,7 @@ func (b *Backend) newConnection(share string) (c *conn, err error) {
 	// them from the current context
 	ctx := context.Background()
 
-	c, err = b.dial(ctx, "tcp", b.Address+":"+strconv.Itoa(b.Port))
+	c, err = b.dial(ctx, "tcp", b.Host+":"+strconv.Itoa(b.Port))
 	if err != nil {
 		return nil, fmt.Errorf("couldn't connect SMB: %w", err)
 	}

@@ -18,7 +18,7 @@ func newTestSuite(t testing.TB) *test.Suite {
 		NewConfig: func() (interface{}, error) {
 
 			cfg := smb.NewConfig()
-			cfg.Address = "127.0.0.1"
+			cfg.Host = "127.0.0.1"
 			cfg.User = "smbuser"
 			cfg.ShareName = cfg.User
 			cfg.Path = "Repo-" + uuid.New().String()
@@ -28,7 +28,7 @@ func newTestSuite(t testing.TB) *test.Suite {
 			cfg.IdleTimeout = timeout
 			cfg.Domain = smb.DefaultDomain
 
-			t.Logf("create new backend at %v", cfg.Address+"/"+cfg.ShareName)
+			t.Logf("create new backend at %v", cfg.Host+"/"+cfg.ShareName)
 
 			return cfg, nil
 		},

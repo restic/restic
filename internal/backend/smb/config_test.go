@@ -9,21 +9,51 @@ var configTests = []struct {
 	s   string
 	cfg Config
 }{
-	{"smb://shareaddress/sharename/directory", Config{
-		Address:     "shareaddress",
+	{"smb://user@host/sharename/directory", Config{
+		Host:        "host",
 		Port:        DefaultSmbPort,
+		User:        "user",
+		Domain:      DefaultDomain,
 		ShareName:   "sharename",
 		Path:        "directory",
-		Domain:      DefaultDomain,
 		Connections: DefaultConnections,
 		IdleTimeout: DefaultIdleTimeout,
 	}},
-	{"smb://shareaddress:456/sharename/directory", Config{
-		Address:     "shareaddress",
+	{"smb://user@host:456/sharename/directory", Config{
+		Host:        "host",
 		Port:        456,
+		User:        "user",
+		Domain:      DefaultDomain,
 		ShareName:   "sharename",
 		Path:        "directory",
+		Connections: DefaultConnections,
+		IdleTimeout: DefaultIdleTimeout,
+	}},
+	{"smb://host/sharename/directory", Config{
+		Host:        "host",
+		Port:        DefaultSmbPort,
 		Domain:      DefaultDomain,
+		ShareName:   "sharename",
+		Path:        "directory",
+		Connections: DefaultConnections,
+		IdleTimeout: DefaultIdleTimeout,
+	}},
+	{"smb://host:446/sharename/directory", Config{
+		Host:        "host",
+		Port:        446,
+		Domain:      DefaultDomain,
+		ShareName:   "sharename",
+		Path:        "directory",
+		Connections: DefaultConnections,
+		IdleTimeout: DefaultIdleTimeout,
+	}},
+	{"smb:user@host:466/sharename/directory", Config{
+		Host:        "host",
+		Port:        466,
+		User:        "user",
+		Domain:      DefaultDomain,
+		ShareName:   "sharename",
+		Path:        "directory",
 		Connections: DefaultConnections,
 		IdleTimeout: DefaultIdleTimeout,
 	}},
@@ -48,7 +78,7 @@ func TestParseConfig(t *testing.T) {
 func TestParseError(t *testing.T) {
 	const prefix = "smb: invalid format,"
 
-	for _, s := range []string{"", "/", "//", "/sharename/directory"} {
+	for _, s := range []string{"", "/", "//", "host", "user@host", "user@host:445", "/sharename/directory"} {
 		_, err := ParseConfig("smb://" + s)
 		if err == nil || !strings.HasPrefix(err.Error(), prefix) {
 			t.Errorf("expected %q, got %q", prefix, err)

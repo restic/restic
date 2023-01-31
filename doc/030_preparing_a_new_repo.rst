@@ -620,6 +620,34 @@ established.
 
 .. _other-services:
 
+SMB/CIFS
+********
+
+In order to backup data to SMB/CIFS, you must specify the host (with port if not default port `445`) as the backend.
+You must first setup the following environment variables with the SMB credentials and the domain if it is not the default `WORKGROUP`.
+
+.. code-block:: console
+
+    $ export RESTIC_SMB_USER=<MY_SMB_USER>
+    $ export RESTIC_SMB_PASSWORD=<MY_SMB_PASSWORD>
+    $ export RESTIC_SMB_DOMAIN=<MY_SMB_DOMAIN>
+
+
+Once the server is configured, the setup of the SFTP repository can
+simply be achieved by changing the URL scheme in the ``init`` command:
+
+.. code-block:: console
+
+    $ restic -r smb://user@host:445/sharename/restic-repo init
+    enter password for new repository:
+    enter password again:
+    created restic repository c7s8ffs329 at smb://host:445/sharename/restic-repo
+    Please note that knowledge of your password is required to access the repository.
+    Losing your password means that your data is irrecoverably lost.
+
+Optionally, you can also pass the ``user``, ``password`` and ``domain`` as options. Configurations specified as options take highest precendence.
+You can also specify other smb specific optional configurations like ``dialect``, ``client-guid``, ``require-message-signing``, ``idle-timeout`` and ``connections`` as options.
+
 Other Services via rclone
 *************************
 

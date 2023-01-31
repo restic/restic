@@ -686,9 +686,6 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 		return cfg, nil
 	case "smb":
 		cfg := loc.Config.(smb.Config)
-		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
-			return nil, err
-		}
 		if cfg.User == "" {
 			cfg.User = os.Getenv("RESTIC_SMB_USER")
 		}
@@ -702,6 +699,9 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 		}
 		if cfg.Domain == "" {
 			cfg.Domain = smb.DefaultDomain
+		}
+		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
+			return nil, err
 		}
 
 		debug.Log("opening smb repository at %#v", cfg)
