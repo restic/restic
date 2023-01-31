@@ -603,6 +603,10 @@ environment variables. The following lists these environment variables:
     GOOGLE_PROJECT_ID                   Project ID for Google Cloud Storage
     GOOGLE_APPLICATION_CREDENTIALS      Application Credentials for Google Cloud Storage (e.g. $HOME/.config/gs-secret-restic-key.json)
 
+    RESTIC_SMB_USER                     SMB user for NTLM authentication
+    RESTIC_SMB_PASSWORD                 SMB password for NTLM authentication
+    RESTIC_SMB_DOMAIN                   DOMAIN for SMB authentication
+
     RCLONE_BWLIMIT                      rclone bandwidth limit
 
 See :ref:`caching` for the rules concerning cache locations when
