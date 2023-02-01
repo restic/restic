@@ -211,6 +211,10 @@ func (o Options) Apply(ns string, dst interface{}) error {
 
 			v.Field(i).SetInt(int64(d))
 
+		case "SecretString":
+			ss := NewSecretString(value)
+			v.Field(i).Set(reflect.ValueOf(ss))
+
 		default:
 			panic("type " + v.Type().Field(i).Type.Name() + " not handled")
 		}
