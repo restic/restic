@@ -213,6 +213,7 @@ func (o Options) Apply(ns string, dst interface{}) error {
 
 		case "SecretString":
 			ss := NewSecretString(value)
+
 			v.Field(i).Set(reflect.ValueOf(ss))
 
 		default:
