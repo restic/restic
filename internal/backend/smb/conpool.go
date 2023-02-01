@@ -1,3 +1,16 @@
+package smb
+
+import (
+	"context"
+	"fmt"
+	"net"
+	"strconv"
+	"sync/atomic"
+
+	"github.com/hirochachacha/go-smb2"
+	"github.com/restic/restic/internal/debug"
+)
+
 // Parts of this code have been copied from Rclone (https://github.com/rclone)
 // Copyright (C) 2012 by Nick Craig-Wood http://www.craig-wood.com/nick/
 
@@ -18,18 +31,6 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-package smb
-
-import (
-	"context"
-	"fmt"
-	"net"
-	"strconv"
-	"sync/atomic"
-
-	"github.com/hirochachacha/go-smb2"
-	"github.com/restic/restic/internal/debug"
-)
 
 // conn encapsulates a SMB client and corresponding SMB client
 type conn struct {
