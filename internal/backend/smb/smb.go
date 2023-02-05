@@ -93,7 +93,7 @@ func open(ctx context.Context, cfg Config) (*Backend, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer b.putConnection(&cn)
+	defer b.putConnection(cn)
 
 	stat, err := cn.smbShare.Stat(l.Filename(restic.Handle{Type: restic.ConfigFile}))
 	m := backend.DeriveModesFromFileInfo(stat, err)
@@ -124,7 +124,7 @@ func Create(ctx context.Context, cfg Config) (*Backend, error) {
 	if err != nil {
 		return b, err
 	}
-	defer b.putConnection(&cn)
+	defer b.putConnection(cn)
 
 	// test if config file already exists
 	_, err = cn.smbShare.Lstat(b.Filename(restic.Handle{Type: restic.ConfigFile}))
@@ -200,7 +200,7 @@ func (b *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRea
 	if err != nil {
 		return err
 	}
-	defer b.putConnection(&cn)
+	defer b.putConnection(cn)
 
 	// create new file
 	f, err := cn.smbShare.OpenFile(tmpFilename, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
@@ -297,7 +297,7 @@ func (b *Backend) openReader(ctx context.Context, h restic.Handle, length int, o
 	if err != nil {
 		return nil, err
 	}
-	defer b.putConnection(&cn)
+	defer b.putConnection(cn)
 
 	b.sem.GetToken()
 	f, err := cn.smbShare.Open(b.Filename(h))
@@ -338,7 +338,7 @@ func (b *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, e
 	if err != nil {
 		return restic.FileInfo{}, err
 	}
-	defer b.putConnection(&cn)
+	defer b.putConnection(cn)
 
 	fi, err := cn.smbShare.Stat(b.Filename(h))
 	if err != nil {
@@ -360,7 +360,7 @@ func (b *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	if err != nil {
 		return err
 	}
-	defer b.putConnection(&cn)
+	defer b.putConnection(cn)
 
 	// reset read-only flag
 	err = cn.smbShare.Chmod(fn, 0666)
@@ -380,7 +380,7 @@ func (b *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.Fi
 	if err != nil {
 		return err
 	}
-	defer b.putConnection(&cn)
+	defer b.putConnection(cn)
 
 	basedir, subdirs := b.Basedir(t)
 	if subdirs {
@@ -480,7 +480,7 @@ func (b *Backend) Delete(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer b.putConnection(&cn)
+	defer b.putConnection(cn)
 	return cn.smbShare.RemoveAll(b.Location())
 }
 

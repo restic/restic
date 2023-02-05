@@ -188,12 +188,7 @@ func (b *Backend) getConnection(ctx context.Context, share string) (c *conn, err
 }
 
 // Return a SMB connection to the pool
-//
-// It nils the pointed to connection out so it can't be reused
-func (b *Backend) putConnection(pc **conn) {
-	c := *pc
-	*pc = nil
-
+func (b *Backend) putConnection(c *conn) {
 	var nopErr error
 	if c.smbShare != nil {
 		// stat the current directory
