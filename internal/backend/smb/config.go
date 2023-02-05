@@ -33,7 +33,7 @@ type Config struct {
 const (
 	DefaultSmbPort     int           = 445              // DefaultSmbPort returns the default port for SMB
 	DefaultDomain      string        = "WORKGROUP"      // DefaultDomain returns the default domain for SMB
-	DefaultConnections uint          = 2                // DefaultConnections returns the number of concurrent connections for SMB.
+	DefaultConnections uint          = 5                // DefaultConnections returns the number of concurrent connections for SMB.
 	DefaultIdleTimeout time.Duration = 60 * time.Second // DefaultIdleTimeout returns the default max time before closing idle connections for SMB.
 )
 
