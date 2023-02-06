@@ -67,7 +67,7 @@ Usage help is available:
       -r, --repo repository            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
           --repository-file file       file to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
           --tls-client-cert file       path to a file containing PEM encoded TLS client certificate and private key
-      -v, --verbose n                  be verbose (specify multiple times or a level using --verbose=n, max level/times is 2)
+      -v, --verbose                    be verbose (specify multiple times or a level using --verbose=n, max level/times is 2)
 
     Use "restic [command] --help" for more information about a command.
 
@@ -142,7 +142,7 @@ command:
       -r, --repo repository            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
           --repository-file file       file to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
           --tls-client-cert file       path to a file containing PEM encoded TLS client certificate and private key
-      -v, --verbose n                  be verbose (specify multiple times or a level using --verbose=n, max level/times is 2)
+      -v, --verbose                    be verbose (specify multiple times or a level using --verbose=n, max level/times is 2)
 
 Subcommands that support showing progress information such as ``backup``,
 ``check`` and ``prune`` will do so unless the quiet flag ``-q`` or
