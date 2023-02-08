@@ -137,14 +137,14 @@ jobs:
             echo '    interfaces = 127.0.0.0/8 eth0' | sudo tee -a /etc/samba/smb.conf
             echo '    bind interfaces only = yes' | sudo tee -a /etc/samba/smb.conf
             echo '' | sudo tee -a /etc/samba/smb.conf
-            echo "[$user]" | sudo tee -a /etc/samba/smb.conf
+            echo "[$smbuser]" | sudo tee -a /etc/samba/smb.conf
             echo '    comment = Samba on Ubuntu' | sudo tee -a /etc/samba/smb.conf
-            echo "    path = /samba/$user" | sudo tee -a /etc/samba/smb.conf
+            echo "    path = /samba/$smbuser" | sudo tee -a /etc/samba/smb.conf
             echo '    browseable = yes' | sudo tee -a /etc/samba/smb.conf
             echo '    read only = no' | sudo tee -a /etc/samba/smb.conf
             echo '    force create mode = 0660' | sudo tee -a /etc/samba/smb.conf
             echo '    force directory mode = 2770' | sudo tee -a /etc/samba/smb.conf
-            echo "    valid users = $user" | sudo tee -a /etc/samba/smb.conf
+            echo "    valid users = $smbuser" | sudo tee -a /etc/samba/smb.conf
             
             echo "restart services"
             sudo systemctl restart smbd
@@ -157,22 +157,22 @@ jobs:
             sudo chgrp sambashare /samba
 
             echo "add samba user"
-            sudo id -u "$user" &>/dev/null || sudo useradd -M -d "/samba/$user" -s /usr/sbin/nologin -G sambashare "$user"
+            sudo id -u "$smbuser" &>/dev/null || sudo useradd -M -d "/samba/$smbuser" -s /usr/sbin/nologin -G sambashare "$smbuser"
 
             echo "create samba share user directory"
-            sudo mkdir "/samba/$user"
+            sudo mkdir "/samba/$smbuser"
 
             echo "change samba share user directory ownership"
-            sudo chown "$user":sambashare "/samba/$user"
+            sudo chown "$smbuser":sambashare "/samba/$smbuser"
 
             echo "modify permissions on samba share user directory"
-            sudo chmod 2770 "/samba/$user"
+            sudo chmod 2770 "/samba/$smbuser"
 
             echo "change smb password"
-            (echo "$pass"; echo "$pass") | sudo smbpasswd -a "$user"
+            (echo "$smbpass"; echo "$smbpass") | sudo smbpasswd -a "$smbuser"
 
             echo "enable samba user"
-            sudo smbpasswd -e "$user"
+            sudo smbpasswd -e "$smbuser"
 
             echo "restart services"
             sudo systemctl restart smbd
@@ -218,24 +218,24 @@ jobs:
           unzip libiconv.zip
 
           # Create new smbshare
-          $user="smbuser"
-          $pass="mGoWwqvgdnwtmh07"
-          $SecurePassword = $pass | ConvertTo-SecureString -AsPlainText -Force	
+          $smbuser="smbuser"
+          $smbpass="mGoWwqvgdnwtmh07"
+          $SecurePassword = $smbpass | ConvertTo-SecureString -AsPlainText -Force	
 
           echo "Create user"
-          New-LocalUser $user -Password $SecurePassword -FullName "SMB User" -Description "Account used for smb access."
+          New-LocalUser $smbuser -Password $SecurePassword -FullName "SMB User" -Description "Account used for smb access."
 
           echo "Making user admin"
-          Add-LocalGroupMember -Group "Administrators" -Member "$user"
+          Add-LocalGroupMember -Group "Administrators" -Member "$smbuser"
           
-          $path="C:\$user"	
+          $path="C:\$smbuser"	
           mkdir $path
 
           echo "Create share"
-          New-SmbShare -Name $user -Path $path -FullAccess "Administrators" -EncryptData $True
+          New-SmbShare -Name $smbuser -Path $path -FullAccess "Administrators" -EncryptData $True
 
           echo "Grant access to share"
-          Grant-SmbShareAccess -Name $user -AccountName $user -AccessRight Full -Force
+          Grant-SmbShareAccess -Name $smbuser -AccountName $smbuser -AccessRight Full -Force
 
           # add $USERPROFILE/tar/bin to path
           echo $Env:USERPROFILE\tar\bin >> $Env:GITHUB_PATH
