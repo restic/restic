@@ -2,6 +2,7 @@ package smb_test
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/google/uuid"
@@ -26,7 +27,10 @@ func newTestSuite(t testing.TB) *test.Suite {
 			cfg.Connections = smb.DefaultConnections
 			timeout := smb.DefaultIdleTimeout
 			cfg.IdleTimeout = timeout
-			cfg.Domain = smb.DefaultDomain
+			domain := os.Getenv("RESTIC_SMB_DOMAIN")
+			if domain == "" {
+				cfg.Domain = smb.DefaultDomain
+			}
 
 			t.Logf("create new backend at %v", cfg.Host+"/"+cfg.ShareName)
 

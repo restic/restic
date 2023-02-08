@@ -23,7 +23,7 @@ import (
 	"github.com/restic/restic/internal/restic"
 )
 
-// Parts of this code have been copied from Rclone (https://github.com/rclone)
+// Parts of this code have been adapted from Rclone (https://github.com/rclone)
 // Copyright (C) 2012 by Nick Craig-Wood http://www.craig-wood.com/nick/
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy

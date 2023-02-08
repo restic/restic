@@ -21,30 +21,34 @@ jobs:
           - job_name: Windows
             go: 1.19.x
             os: windows-latest
+            test_smb: true
 
           - job_name: macOS
             go: 1.19.x
             os: macOS-latest
             test_fuse: false
-            test_smb: false
+            test_smb: true
 
           - job_name: Linux
             go: 1.19.x
             os: ubuntu-latest
             test_cloud_backends: true
             test_fuse: true
+            test_smb: true
             check_changelog: true
 
           - job_name: Linux (race)
             go: 1.19.x
             os: ubuntu-latest
             test_fuse: true
+            test_smb: true
             test_opts: "-race"
 
           - job_name: Linux
             go: 1.18.x
             os: ubuntu-latest
             test_fuse: true
+            test_smb: true
 
     name: ${{ matrix.job_name }} Go ${{ matrix.go }}
     runs-on: ${{ matrix.os }}
@@ -83,11 +87,45 @@ jobs:
           chmod 755 $HOME/bin/rclone
           rm -rf rclone*
 
-          echo "install samba"
-          user="smbuser"
-          pass="mGoWwqvgdnwtmh07"
+          smbuser="smbuser"
+          smbpass="mGoWwqvgdnwtmh07"
 
-          if [ "$RUNNER_OS" != "macOS" ]; then
+          if [ "$RUNNER_OS" == "macOS" ]; then
+            smbhome=/Users/$smbuser
+            echo "Get computer name"
+            computername=$(sudo -S scutil --get ComputerName)
+            echo "Create smb user"
+            sudo dscl . -create $smbhome
+            sudo dscl . -create $smbhome UserShell /bin/bash
+            sudo dscl . -create $smbhome RealName $smbuser
+            LastID=`dscl . -list /Users UniqueID | awk '{print $2}' | sort -n | tail -1`
+            NextID=$((LastID + 1))
+            sudo dscl . -create $smbhome UniqueID $NextID
+            sudo dscl . -create $smbhome PrimaryGroupID 80
+            sudo dscl . -create $smbhome NFSHomeDirectory $smbhome
+            sudo dscl . -passwd $smbhome $smbpass
+            sudo dscl . -append /Groups/admin GroupMembership $smbuser
+            echo "Make home dir"
+            cd /Users/
+            sudo createhomedir -u $smbuser -c
+            sudo mkdir $smbhome/smbshare
+            sudo chown -R $smbuser $smbhome
+            sudo chmod -R 755 $smbhome
+            echo "Setup smb share"
+            sudo sharing -a $smbhome/smbshare -S smbuser -n smbuser -s 001
+            echo "Enable share for os user"
+            sudo pwpolicy -u $smbuser -sethashtypes SMB-NT off
+            sudo pwpolicy -u $smbuser -enableuser
+            echo "Export domain"
+            if [[ $computername != *.local ]]; then computername=$computername".local"; fi
+            export RESTIC_SMB_DOMAIN=$computername
+            sudo pwpolicy -u $smbuser -sethashtypes SMB-NT on
+            sudo dscl . -passwd /Users/$smbuser $smbpass
+            sudo launchctl load -w /System/Library/LaunchDaemons/com.apple.smbd.plist
+            sudo defaults write /Library/Preferences/SystemConfiguration/com.apple.smb.server.plist EnabledServices -array disk
+
+          else
+            echo "install samba"
             sudo apt-get update
             sudo apt-get install samba -y      
                         
