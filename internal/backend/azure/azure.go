@@ -11,6 +11,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/sema"
@@ -33,7 +34,36 @@ type Backend struct {
 	backend.Layout
 }
 
-const defaultListMaxItems = 5000
+const (
+	defaultListMaxItems = 5000
+
+	// the default timeout is set to 0 which means no timeout i.e. potentially wait forever.
+	defaultHTTPTimeout = 0
+
+	// set AZURE_HTTP_TIMEOUT string like "1m" "1h1m" etc
+	httpTimeoutEnvironmentVar = "AZURE_HTTP_TIMEOUT"
+)
+
+var httpTimeout time.Duration
+
+func init() {
+
+	httpTimeout = defaultHTTPTimeout
+
+	if timeoutString, ok := os.LookupEnv(httpTimeoutEnvironmentVar); ok {
+		timeout, err := time.ParseDuration(timeoutString)
+		if err != nil {
+			debug.Log(
+				"failed to parse environment variable %v as time.Duration, defaulting to %v",
+				httpTimeoutEnvironmentVar,
+				httpTimeout,
+			)
+			return
+		}
+		httpTimeout = timeout
+	}
+	debug.Log("setting Azure HTTP timeout to %v", httpTimeout)
+}
 
 // make sure that *Backend implements backend.Backend
 var _ restic.Backend = &Backend{}
@@ -70,7 +100,10 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 		return nil, errors.New("no azure authentication information found")
 	}
 
-	client.HTTPClient = &http.Client{Transport: rt}
+	client.HTTPClient = &http.Client{
+		Transport: rt,
+		Timeout:   httpTimeout,
+	}
 
 	service := client.GetBlobService()
 
