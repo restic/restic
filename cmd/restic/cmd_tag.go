@@ -82,16 +82,12 @@ func changeTags(ctx context.Context, repo *repository.Repository, sn *restic.Sna
 		}
 
 		// Save the new snapshot.
-		id, err := repo.SaveJSONUnpacked(ctx, restic.SnapshotFile, sn)
+		id, err := restic.SaveSnapshot(ctx, repo, sn)
 		if err != nil {
 			return false, err
 		}
 
 		debug.Log("new snapshot saved as %v", id)
-
-		if err = repo.Flush(ctx); err != nil {
-			return false, err
-		}
 
 		// Remove the old snapshot.
 		h := restic.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
@@ -129,7 +125,7 @@ func runTag(opts TagOptions, gopts GlobalOptions, args []string) error {
 	changeCnt := 0
 	ctx, cancel := context.WithCancel(gopts.ctx)
 	defer cancel()
-	for sn := range FindFilteredSnapshots(ctx, repo, opts.Hosts, opts.Tags, opts.Paths, args) {
+	for sn := range FindFilteredSnapshots(ctx, repo.Backend(), repo, opts.Hosts, opts.Tags, opts.Paths, args) {
 		changed, err := changeTags(ctx, repo, sn, opts.SetTags.Flatten(), opts.AddTags.Flatten(), opts.RemoveTags.Flatten())
 		if err != nil {
 			Warnf("unable to modify the tags for snapshot ID %q, ignoring: %v\n", sn.ID(), err)

@@ -5,47 +5,24 @@ import (
 	"io"
 )
 
-// ReadSumer hashes all data read from the underlying reader.
-type ReadSumer interface {
-	io.Reader
-	// Sum returns the hash of the data read so far.
-	Sum(d []byte) []byte
-}
-
-type reader struct {
-	io.Reader
+// A Reader hashes all data read from the underlying reader.
+type Reader struct {
+	r io.Reader
 	h hash.Hash
 }
 
-type readWriterTo struct {
-	reader
-	writerTo io.WriterTo
+// NewReader returns a new Reader that uses the hash h.
+func NewReader(r io.Reader, h hash.Hash) *Reader {
+	return &Reader{r: r, h: h}
 }
 
-// NewReader returns a new ReadSummer that uses the hash h. If the underlying
-// reader supports WriteTo then the returned reader will do so too.
-func NewReader(r io.Reader, h hash.Hash) ReadSumer {
-	rs := reader{
-		Reader: io.TeeReader(r, h),
-		h:      h,
-	}
-
-	if _, ok := r.(io.WriterTo); ok {
-		return &readWriterTo{
-			reader:   rs,
-			writerTo: r.(io.WriterTo),
-		}
-	}
-
-	return &rs
+func (h *Reader) Read(p []byte) (int, error) {
+	n, err := h.r.Read(p)
+	_, _ = h.h.Write(p[:n]) // Never returns an error.
+	return n, err
 }
 
 // Sum returns the hash of the data read so far.
-func (h *reader) Sum(d []byte) []byte {
+func (h *Reader) Sum(d []byte) []byte {
 	return h.h.Sum(d)
-}
-
-// WriteTo reads all data into the passed writer
-func (h *readWriterTo) WriteTo(w io.Writer) (int64, error) {
-	return h.writerTo.WriteTo(NewWriter(w, h.h))
 }

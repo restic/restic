@@ -18,9 +18,12 @@ type Config struct {
 	ChunkerPolynomial chunker.Pol `json:"chunker_polynomial"`
 }
 
-// RepoVersion is the version that is written to the config when a repository
+const MinRepoVersion = 1
+const MaxRepoVersion = 2
+
+// StableRepoVersion is the version that is written to the config when a repository
 // is newly created with Init().
-const RepoVersion = 1
+const StableRepoVersion = 2
 
 // JSONUnpackedLoader loads unpacked JSON.
 type JSONUnpackedLoader interface {
@@ -29,7 +32,7 @@ type JSONUnpackedLoader interface {
 
 // CreateConfig creates a config file with a randomly selected polynomial and
 // ID.
-func CreateConfig() (Config, error) {
+func CreateConfig(version uint) (Config, error) {
 	var (
 		err error
 		cfg Config
@@ -41,18 +44,24 @@ func CreateConfig() (Config, error) {
 	}
 
 	cfg.ID = NewRandomID().String()
-	cfg.Version = RepoVersion
+	cfg.Version = version
 
 	debug.Log("New config: %#v", cfg)
 	return cfg, nil
 }
 
 // TestCreateConfig creates a config for use within tests.
-func TestCreateConfig(t testing.TB, pol chunker.Pol) (cfg Config) {
+func TestCreateConfig(t testing.TB, pol chunker.Pol, version uint) (cfg Config) {
 	cfg.ChunkerPolynomial = pol
 
 	cfg.ID = NewRandomID().String()
-	cfg.Version = RepoVersion
+	if version == 0 {
+		version = StableRepoVersion
+	}
+	if version < MinRepoVersion || version > MaxRepoVersion {
+		t.Fatalf("version %d is out of range", version)
+	}
+	cfg.Version = version
 
 	return cfg
 }
@@ -67,18 +76,18 @@ func TestDisableCheckPolynomial(t testing.TB) {
 }
 
 // LoadConfig returns loads, checks and returns the config for a repository.
-func LoadConfig(ctx context.Context, r JSONUnpackedLoader) (Config, error) {
+func LoadConfig(ctx context.Context, r LoaderUnpacked) (Config, error) {
 	var (
 		cfg Config
 	)
 
-	err := r.LoadJSONUnpacked(ctx, ConfigFile, ID{}, &cfg)
+	err := LoadJSONUnpacked(ctx, r, ConfigFile, ID{}, &cfg)
 	if err != nil {
 		return Config{}, err
 	}
 
-	if cfg.Version != RepoVersion {
-		return Config{}, errors.New("unsupported repository version")
+	if cfg.Version < MinRepoVersion || cfg.Version > MaxRepoVersion {
+		return Config{}, errors.Errorf("unsupported repository version %v", cfg.Version)
 	}
 
 	if checkPolynomial {
@@ -88,4 +97,9 @@ func LoadConfig(ctx context.Context, r JSONUnpackedLoader) (Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func SaveConfig(ctx context.Context, r SaverUnpacked, cfg Config) error {
+	_, err := SaveJSONUnpacked(ctx, r, ConfigFile, cfg)
+	return err
 }

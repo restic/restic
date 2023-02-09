@@ -59,7 +59,7 @@ func loadFirstSnapshot(t testing.TB, repo restic.Repository) *restic.Snapshot {
 }
 
 func loadTree(t testing.TB, repo restic.Repository, id restic.ID) *restic.Tree {
-	tree, err := repo.LoadTree(context.TODO(), id)
+	tree, err := restic.LoadTree(context.TODO(), repo, id)
 	rtest.OK(t, err)
 	return tree
 }

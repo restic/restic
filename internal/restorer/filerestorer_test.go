@@ -10,6 +10,7 @@ import (
 
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -38,7 +39,7 @@ type TestRepo struct {
 	filesPathToContent map[string]string
 
 	//
-	loader func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error
+	loader repository.BackendLoadFn
 }
 
 func (i *TestRepo) Lookup(bh restic.BlobHandle) []restic.PackedBlob {
@@ -60,7 +61,7 @@ func newTestRepo(content []TestFile) *TestRepo {
 
 	key := crypto.NewRandomKey()
 	seal := func(data []byte) []byte {
-		ciphertext := restic.NewBlobBuffer(len(data))
+		ciphertext := crypto.NewBlobBuffer(len(data))
 		ciphertext = ciphertext[:0] // truncate the slice
 		nonce := crypto.NewRandomNonce()
 		ciphertext = append(ciphertext, nonce...)
@@ -149,7 +150,7 @@ func newTestRepo(content []TestFile) *TestRepo {
 func restoreAndVerify(t *testing.T, tempdir string, content []TestFile, files map[string]bool) {
 	repo := newTestRepo(content)
 
-	r := newFileRestorer(tempdir, repo.loader, repo.key, repo.Lookup)
+	r := newFileRestorer(tempdir, repo.loader, repo.key, repo.Lookup, 2)
 
 	if files == nil {
 		r.files = repo.files
@@ -263,11 +264,11 @@ func TestErrorRestoreFiles(t *testing.T) {
 		return loadError
 	}
 
-	r := newFileRestorer(tempdir, repo.loader, repo.key, repo.Lookup)
+	r := newFileRestorer(tempdir, repo.loader, repo.key, repo.Lookup, 2)
 	r.files = repo.files
 
 	err := r.restoreFiles(context.TODO())
-	rtest.Equals(t, loadError, err)
+	rtest.Assert(t, errors.Is(err, loadError), "got %v, expected contained error %v", err, loadError)
 }
 
 func TestDownloadError(t *testing.T) {
@@ -303,7 +304,7 @@ func testPartialDownloadError(t *testing.T, part int) {
 		return loader(ctx, h, length, offset, fn)
 	}
 
-	r := newFileRestorer(tempdir, repo.loader, repo.key, repo.Lookup)
+	r := newFileRestorer(tempdir, repo.loader, repo.key, repo.Lookup, 2)
 	r.files = repo.files
 	r.Error = func(s string, e error) error {
 		// ignore errors as in the `restore` command

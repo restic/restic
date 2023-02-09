@@ -8,10 +8,10 @@
 // Here is high-level pseudo-code of how the Restorer attempts to achieve
 // these goals:
 //
-//   while there are packs to process
-//     choose a pack to process                      [1]
-//     retrieve the pack from the backend            [2]
-//     write pack blobs to the files that need them  [3]
+//	while there are packs to process
+//	  choose a pack to process                      [1]
+//	  retrieve the pack from the backend            [2]
+//	  write pack blobs to the files that need them  [3]
 //
 // Retrieval of repository packs (step [2]) and writing target files (step [3])
 // are performed concurrently on multiple goroutines.

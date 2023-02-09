@@ -57,7 +57,13 @@ func init() {
 	f := cmdCheck.Flags()
 	f.BoolVar(&checkOptions.ReadData, "read-data", false, "read all data blobs")
 	f.StringVar(&checkOptions.ReadDataSubset, "read-data-subset", "", "read a `subset` of data packs, specified as 'n/t' for specific part, or either 'x%' or 'x.y%' or a size in bytes with suffixes k/K, m/M, g/G, t/T for a random subset")
-	f.BoolVar(&checkOptions.CheckUnused, "check-unused", false, "find unused blobs")
+	var ignored bool
+	f.BoolVar(&ignored, "check-unused", false, "find unused blobs")
+	err := f.MarkDeprecated("check-unused", "`--check-unused` is deprecated and will be ignored")
+	if err != nil {
+		// MarkDeprecated only returns an error when the flag is not found
+		panic(err)
+	}
 	f.BoolVar(&checkOptions.WithCache, "with-cache", false, "use the cache")
 }
 
@@ -142,10 +148,10 @@ func parsePercentage(s string) (float64, error) {
 
 // prepareCheckCache configures a special cache directory for check.
 //
-//  * if --with-cache is specified, the default cache is used
-//  * if the user explicitly requested --no-cache, we don't use any cache
-//  * if the user provides --cache-dir, we use a cache in a temporary sub-directory of the specified directory and the sub-directory is deleted after the check
-//  * by default, we use a cache in a temporary directory that is deleted after the check
+//   - if --with-cache is specified, the default cache is used
+//   - if the user explicitly requested --no-cache, we don't use any cache
+//   - if the user provides --cache-dir, we use a cache in a temporary sub-directory of the specified directory and the sub-directory is deleted after the check
+//   - by default, we use a cache in a temporary directory that is deleted after the check
 func prepareCheckCache(opts CheckOptions, gopts *GlobalOptions) (cleanup func()) {
 	cleanup = func() {}
 	if opts.WithCache {
@@ -211,20 +217,36 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	chkr := checker.New(repo, opts.CheckUnused)
+	err = chkr.LoadSnapshots(gopts.ctx)
+	if err != nil {
+		return err
+	}
 
 	Verbosef("load indexes\n")
 	hints, errs := chkr.LoadIndex(gopts.ctx)
 
-	dupFound := false
+	errorsFound := false
+	suggestIndexRebuild := false
+	mixedFound := false
 	for _, hint := range hints {
-		Printf("%v\n", hint)
-		if _, ok := hint.(checker.ErrDuplicatePacks); ok {
-			dupFound = true
+		switch hint.(type) {
+		case *checker.ErrDuplicatePacks, *checker.ErrOldIndexFormat:
+			Printf("%v\n", hint)
+			suggestIndexRebuild = true
+		case *checker.ErrMixedPack:
+			Printf("%v\n", hint)
+			mixedFound = true
+		default:
+			Warnf("error: %v\n", hint)
+			errorsFound = true
 		}
 	}
 
-	if dupFound {
+	if suggestIndexRebuild {
 		Printf("This is non-critical, you can run `restic rebuild-index' to correct this\n")
+	}
+	if mixedFound {
+		Printf("Mixed packs with tree and data blobs are non-critical, you can run `restic prune` to correct this.\n")
 	}
 
 	if len(errs) > 0 {
@@ -234,7 +256,6 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 		return errors.Fatal("LoadIndex returned errors")
 	}
 
-	errorsFound := false
 	orphanedPacks := 0
 	errChan := make(chan error)
 
@@ -245,14 +266,16 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 		if checker.IsOrphanedPack(err) {
 			orphanedPacks++
 			Verbosef("%v\n", err)
-			continue
+		} else if _, ok := err.(*checker.ErrLegacyLayout); ok {
+			Verbosef("repository still uses the S3 legacy layout\nPlease run `restic migrate s3legacy` to correct this.\n")
+		} else {
+			errorsFound = true
+			Warnf("%v\n", err)
 		}
-		errorsFound = true
-		Warnf("%v\n", err)
 	}
 
 	if orphanedPacks > 0 {
-		Verbosef("%d additional files were found in the repo, which likely contain duplicate data.\nYou can run `restic prune` to correct this.\n", orphanedPacks)
+		Verbosef("%d additional files were found in the repo, which likely contain duplicate data.\nThis is non-critical, you can run `restic prune` to correct this.\n", orphanedPacks)
 	}
 
 	Verbosef("check snapshots, trees and blobs\n")
@@ -269,7 +292,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 
 	for err := range errChan {
 		errorsFound = true
-		if e, ok := err.(checker.TreeError); ok {
+		if e, ok := err.(*checker.TreeError); ok {
 			Warnf("error for tree %v:\n", e.ID.Str())
 			for _, treeErr := range e.Errors {
 				Warnf("  %v\n", treeErr)

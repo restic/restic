@@ -12,7 +12,8 @@ import (
 // server.
 type Config struct {
 	AccountName string
-	AccountKey  string
+	AccountSAS  options.SecretString
+	AccountKey  options.SecretString
 	Container   string
 	Prefix      string
 

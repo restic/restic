@@ -88,7 +88,7 @@ func WriteTest(t *testing.T, format string, cd CheckDump) {
 			sn, _, err := arch.Snapshot(ctx, []string{"."}, archiver.SnapshotOptions{})
 			rtest.OK(t, err)
 
-			tree, err := repo.LoadTree(ctx, *sn.Tree)
+			tree, err := restic.LoadTree(ctx, repo, *sn.Tree)
 			rtest.OK(t, err)
 
 			dst := &bytes.Buffer{}

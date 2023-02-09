@@ -1,0 +1,13 @@
+Enhancement: Improve backup speed with many small files
+
+We have restructured the backup pipeline to continue reading files while all
+upload connections are busy. This allows the backup to already prepare the next
+data file such that the upload can continue as soon as a connection becomes
+available. This can especially improve the backup performance for high latency
+backends.
+
+The upload concurrency is now controlled using the `-o <backend-name>.connections=5`
+option.
+
+https://github.com/restic/restic/issues/2696
+https://github.com/restic/restic/pull/3489

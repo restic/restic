@@ -1,0 +1,7 @@
+Bugfix: Print "wrong password" to stderr instead of stdout
+
+If an invalid password was entered, the error message was printed on stdout and
+not on stderr as intended. This has now been fixed.
+
+https://github.com/restic/restic/pull/3716
+https://forum.restic.net/t/4965

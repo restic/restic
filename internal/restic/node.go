@@ -166,7 +166,7 @@ func (node *Node) CreateAt(ctx context.Context, path string, repo Repository) er
 	case "socket":
 		return nil
 	default:
-		return errors.Errorf("filetype %q not implemented!\n", node.Type)
+		return errors.Errorf("filetype %q not implemented", node.Type)
 	}
 
 	return nil

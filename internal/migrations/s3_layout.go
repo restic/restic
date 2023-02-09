@@ -8,6 +8,7 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/s3"
+	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -21,10 +22,25 @@ func init() {
 // "default" layout.
 type S3Layout struct{}
 
+func toS3Backend(repo restic.Repository) *s3.Backend {
+	b := repo.Backend()
+	// unwrap cache
+	if be, ok := b.(*cache.Backend); ok {
+		b = be.Backend
+	}
+
+	be, ok := b.(*s3.Backend)
+	if !ok {
+		debug.Log("backend is not s3")
+		return nil
+	}
+	return be
+}
+
 // Check tests whether the migration can be applied.
 func (m *S3Layout) Check(ctx context.Context, repo restic.Repository) (bool, error) {
-	be, ok := repo.Backend().(*s3.Backend)
-	if !ok {
+	be := toS3Backend(repo)
+	if be == nil {
 		debug.Log("backend is not s3")
 		return false, nil
 	}
@@ -35,6 +51,10 @@ func (m *S3Layout) Check(ctx context.Context, repo restic.Repository) (bool, err
 	}
 
 	return true, nil
+}
+
+func (m *S3Layout) RepoCheck() bool {
+	return false
 }
 
 func retry(max int, fail func(err error), f func() error) error {
@@ -71,8 +91,8 @@ func (m *S3Layout) moveFiles(ctx context.Context, be *s3.Backend, l backend.Layo
 
 // Apply runs the migration.
 func (m *S3Layout) Apply(ctx context.Context, repo restic.Repository) error {
-	be, ok := repo.Backend().(*s3.Backend)
-	if !ok {
+	be := toS3Backend(repo)
+	if be == nil {
 		debug.Log("backend is not s3")
 		return errors.New("backend is not s3")
 	}

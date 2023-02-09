@@ -38,13 +38,13 @@ type Lock struct {
 	lockID *ID
 }
 
-// ErrAlreadyLocked is returned when NewLock or NewExclusiveLock are unable to
+// alreadyLockedError is returned when NewLock or NewExclusiveLock are unable to
 // acquire the desired lock.
-type ErrAlreadyLocked struct {
+type alreadyLockedError struct {
 	otherLock *Lock
 }
 
-func (e ErrAlreadyLocked) Error() string {
+func (e *alreadyLockedError) Error() string {
 	s := ""
 	if e.otherLock.Exclusive {
 		s = "exclusively "
@@ -52,25 +52,23 @@ func (e ErrAlreadyLocked) Error() string {
 	return fmt.Sprintf("repository is already locked %sby %v", s, e.otherLock)
 }
 
-// IsAlreadyLocked returns true iff err is an instance of ErrAlreadyLocked.
+// IsAlreadyLocked returns true iff err indicates that a repository is
+// already locked.
 func IsAlreadyLocked(err error) bool {
-	if _, ok := errors.Cause(err).(ErrAlreadyLocked); ok {
-		return true
-	}
-
-	return false
+	var e *alreadyLockedError
+	return errors.As(err, &e)
 }
 
 // NewLock returns a new, non-exclusive lock for the repository. If an
-// exclusive lock is already held by another process, ErrAlreadyLocked is
-// returned.
+// exclusive lock is already held by another process, it returns an error
+// that satisfies IsAlreadyLocked.
 func NewLock(ctx context.Context, repo Repository) (*Lock, error) {
 	return newLock(ctx, repo, false)
 }
 
 // NewExclusiveLock returns a new, exclusive lock for the repository. If
 // another lock (normal and exclusive) is already held by another process,
-// ErrAlreadyLocked is returned.
+// it returns an error that satisfies IsAlreadyLocked.
 func NewExclusiveLock(ctx context.Context, repo Repository) (*Lock, error) {
 	return newLock(ctx, repo, true)
 }
@@ -147,11 +145,11 @@ func (l *Lock) checkForOtherLocks(ctx context.Context) error {
 		}
 
 		if l.Exclusive {
-			return ErrAlreadyLocked{otherLock: lock}
+			return &alreadyLockedError{otherLock: lock}
 		}
 
 		if !l.Exclusive && lock.Exclusive {
-			return ErrAlreadyLocked{otherLock: lock}
+			return &alreadyLockedError{otherLock: lock}
 		}
 
 		return nil
@@ -160,7 +158,7 @@ func (l *Lock) checkForOtherLocks(ctx context.Context) error {
 
 // createLock acquires the lock by creating a file in the repository.
 func (l *Lock) createLock(ctx context.Context) (ID, error) {
-	id, err := l.repo.SaveJSONUnpacked(ctx, LockFile, l)
+	id, err := SaveJSONUnpacked(ctx, l.repo, LockFile, l)
 	if err != nil {
 		return ID{}, err
 	}
@@ -257,7 +255,7 @@ func init() {
 // LoadLock loads and unserializes a lock from a repository.
 func LoadLock(ctx context.Context, repo Repository, id ID) (*Lock, error) {
 	lock := &Lock{}
-	if err := repo.LoadJSONUnpacked(ctx, LockFile, id, lock); err != nil {
+	if err := LoadJSONUnpacked(ctx, repo, LockFile, id, lock); err != nil {
 		return nil, err
 	}
 	lock.lockID = &id
@@ -288,8 +286,6 @@ func RemoveAllLocks(ctx context.Context, repo Repository) error {
 		return repo.Backend().Remove(ctx, Handle{Type: LockFile, Name: id.String()})
 	})
 }
-
-const loadLockParallelism = 5
 
 // ForAllLocks reads all locks in parallel and calls the given callback.
 // It is guaranteed that the function is not run concurrently. If the
@@ -338,7 +334,8 @@ func ForAllLocks(ctx context.Context, repo Repository, excludeID *ID, fn func(ID
 		return nil
 	}
 
-	for i := 0; i < loadLockParallelism; i++ {
+	// For locks decoding is nearly for free, thus just assume were only limited by IO
+	for i := 0; i < int(repo.Connections()); i++ {
 		wg.Go(worker)
 	}
 

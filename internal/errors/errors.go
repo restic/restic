@@ -52,4 +52,6 @@ func Cause(err error) error {
 
 // Go 1.13-style error handling.
 
+func As(err error, tgt interface{}) bool { return errors.As(err, tgt) }
+
 func Is(x, y error) bool { return errors.Is(x, y) }

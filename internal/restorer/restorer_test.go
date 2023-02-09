@@ -15,6 +15,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"golang.org/x/sync/errgroup"
 )
 
 type Node interface{}
@@ -41,7 +42,7 @@ func saveFile(t testing.TB, repo restic.Repository, node File) restic.ID {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	id, _, err := repo.SaveBlob(ctx, restic.DataBlob, []byte(node.Data), restic.ID{}, false)
+	id, _, _, err := repo.SaveBlob(ctx, restic.DataBlob, []byte(node.Data), restic.ID{}, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,7 +111,7 @@ func saveDir(t testing.TB, repo restic.Repository, nodes map[string]Node, inode 
 		}
 	}
 
-	id, err := repo.SaveTree(ctx, tree)
+	id, err := restic.SaveTree(ctx, repo, tree)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -122,8 +123,9 @@ func saveSnapshot(t testing.TB, repo restic.Repository, snapshot Snapshot) (*res
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	wg, wgCtx := errgroup.WithContext(ctx)
+	repo.StartPackUploader(wgCtx, wg)
 	treeID := saveDir(t, repo, snapshot.Nodes, 1000)
-
 	err := repo.Flush(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -135,7 +137,7 @@ func saveSnapshot(t testing.TB, repo restic.Repository, snapshot Snapshot) (*res
 	}
 
 	sn.Tree = &treeID
-	id, err := repo.SaveJSONUnpacked(ctx, restic.SnapshotFile, sn)
+	id, err := restic.SaveSnapshot(ctx, repo, sn)
 	if err != nil {
 		t.Fatal(err)
 	}

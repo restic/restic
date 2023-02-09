@@ -1,0 +1,10 @@
+Enhancement: Improve speed of `copy` command
+
+The `copy` command could require a long time to copy snapshots for non-local
+backends. This has been improved to provide a throughput comparable to the
+`restore` command.
+
+Additionally, `copy` now displays a progress bar.
+
+https://github.com/restic/restic/issues/2923
+https://github.com/restic/restic/pull/3513

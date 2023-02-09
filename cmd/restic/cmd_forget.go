@@ -14,11 +14,16 @@ var cmdForget = &cobra.Command{
 	Use:   "forget [flags] [snapshot ID] [...]",
 	Short: "Remove snapshots from the repository",
 	Long: `
-The "forget" command removes snapshots according to a policy. Please note that
-this command really only deletes the snapshot object in the repository, which
-is a reference to data stored there. In order to remove the unreferenced data
-after "forget" was run successfully, see the "prune" command. Please also read
-the documentation for "forget" to learn about important security considerations.
+The "forget" command removes snapshots according to a policy. All snapshots are
+first divided into groups according to "--group-by", and after that the policy
+specified by the "--keep-*" options is applied to each group individually.
+
+Please note that this command really only deletes the snapshot object in the
+repository, which is a reference to data stored there. In order to remove the
+unreferenced data after "forget" was run successfully, see the "prune" command.
+
+Please also read the documentation for "forget" to learn about some important
+security considerations.
 
 EXIT STATUS
 ===========
@@ -94,7 +99,7 @@ func init() {
 	f.StringArrayVar(&forgetOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` (can be specified multiple times)")
 	f.BoolVarP(&forgetOptions.Compact, "compact", "c", false, "use compact output format")
 
-	f.StringVarP(&forgetOptions.GroupBy, "group-by", "g", "host,paths", "string for grouping snapshots by host,paths,tags")
+	f.StringVarP(&forgetOptions.GroupBy, "group-by", "g", "host,paths", "`group` snapshots by host, paths and/or tags, separated by comma (disable grouping with '')")
 	f.BoolVarP(&forgetOptions.DryRun, "dry-run", "n", false, "do not delete anything, just print what would be done")
 	f.BoolVar(&forgetOptions.Prune, "prune", false, "automatically run the 'prune' command if snapshots have been removed")
 	f.BoolVar(&forgetOptions.deleteEmptyRepo, "delete-empty-repo", false, "delete the repo if there are no more snapshots")
@@ -132,7 +137,7 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 	var snapshots restic.Snapshots
 	removeSnIDs := restic.NewIDSet()
 
-	for sn := range FindFilteredSnapshots(ctx, repo, opts.Hosts, opts.Tags, opts.Paths, args) {
+	for sn := range FindFilteredSnapshots(ctx, repo.Backend(), repo, opts.Hosts, opts.Tags, opts.Paths, args) {
 		snapshots = append(snapshots, sn)
 	}
 
@@ -254,7 +259,7 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 
 	if opts.deleteEmptyRepo {
 		snapshotCount := 0
-		for range FindFilteredSnapshots(ctx, repo, opts.Hosts, opts.Tags, opts.Paths, []string{}) {
+		for range FindFilteredSnapshots(ctx, repo.Backend(),repo, opts.Hosts, opts.Tags, opts.Paths, []string{}) {
 			snapshotCount++
 		}
 

@@ -11,6 +11,8 @@ type Migration interface {
 	// Check returns true if the migration can be applied to a repo.
 	Check(context.Context, restic.Repository) (bool, error)
 
+	RepoCheck() bool
+
 	// Apply runs the migration.
 	Apply(context.Context, restic.Repository) error
 

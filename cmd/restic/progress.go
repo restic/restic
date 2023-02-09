@@ -58,7 +58,10 @@ func printProgress(status string, canUpdateStatus bool) {
 		if w < 3 {
 			status = termstatus.Truncate(status, w)
 		} else {
-			status = termstatus.Truncate(status, w-3) + "..."
+			trunc := termstatus.Truncate(status, w-3)
+			if len(trunc) < len(status) {
+				status = trunc + "..."
+			}
 		}
 	}
 

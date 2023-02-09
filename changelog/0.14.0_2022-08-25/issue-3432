@@ -1,0 +1,14 @@
+Bugfix: Fix rare 'not found in repository' error for `copy` command
+
+In rare cases `copy` (and other commands) would report that `LoadTree(...)`
+returned an `id [...] not found in repository` error. This could be caused by
+a backup or copy command running concurrently. The error was only temporary;
+running the failed restic command a second time as a workaround did resolve the
+error.
+
+This issue has now been fixed by correcting the order in which restic reads data
+from the repository. It is now guaranteed that restic only loads snapshots for
+which all necessary data is already available.
+
+https://github.com/restic/restic/issues/3432
+https://github.com/restic/restic/pull/3570

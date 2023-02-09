@@ -3,19 +3,32 @@ package restic
 import (
 	"fmt"
 
+	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
 )
 
 // Blob is one part of a file or a tree.
 type Blob struct {
 	BlobHandle
-	Length uint
-	Offset uint
+	Length             uint
+	Offset             uint
+	UncompressedLength uint
 }
 
 func (b Blob) String() string {
-	return fmt.Sprintf("<Blob (%v) %v, offset %v, length %v>",
-		b.Type, b.ID.Str(), b.Offset, b.Length)
+	return fmt.Sprintf("<Blob (%v) %v, offset %v, length %v, uncompressed length %v>",
+		b.Type, b.ID.Str(), b.Offset, b.Length, b.UncompressedLength)
+}
+
+func (b Blob) DataLength() uint {
+	if b.UncompressedLength != 0 {
+		return b.UncompressedLength
+	}
+	return uint(crypto.PlaintextLength(int(b.Length)))
+}
+
+func (b Blob) IsCompressed() bool {
+	return b.UncompressedLength != 0
 }
 
 // PackedBlob is a blob stored within a file.

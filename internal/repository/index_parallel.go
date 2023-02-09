@@ -2,14 +2,13 @@ package repository
 
 import (
 	"context"
+	"runtime"
 	"sync"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
 	"golang.org/x/sync/errgroup"
 )
-
-const loadIndexParallelism = 5
 
 // ForAllIndexes loads all index files in parallel and calls the given callback.
 // It is guaranteed that the function is not run concurrently. If the callback
@@ -37,7 +36,7 @@ func ForAllIndexes(ctx context.Context, repo restic.Repository,
 		return repo.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
 			select {
 			case <-ctx.Done():
-				return nil
+				return ctx.Err()
 			case ch <- FileInfo{id, size}:
 			}
 			return nil
@@ -53,7 +52,7 @@ func ForAllIndexes(ctx context.Context, repo restic.Repository,
 			var idx *Index
 			oldFormat := false
 
-			buf, err = repo.LoadAndDecrypt(ctx, buf[:0], restic.IndexFile, fi.ID)
+			buf, err = repo.LoadUnpacked(ctx, restic.IndexFile, fi.ID, buf[:0])
 			if err == nil {
 				idx, oldFormat, err = DecodeIndex(buf, fi.ID)
 			}
@@ -68,10 +67,13 @@ func ForAllIndexes(ctx context.Context, repo restic.Repository,
 		return nil
 	}
 
+	// decoding an index can take quite some time such that this can be both CPU- or IO-bound
+	// as the whole index is kept in memory anyways, a few workers too much don't matter
+	workerCount := int(repo.Connections()) + runtime.GOMAXPROCS(0)
 	// run workers on ch
-	wg.Go(func() error {
-		return RunWorkers(loadIndexParallelism, worker)
-	})
+	for i := 0; i < workerCount; i++ {
+		wg.Go(worker)
+	}
 
 	return wg.Wait()
 }

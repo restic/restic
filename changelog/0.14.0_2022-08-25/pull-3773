@@ -1,0 +1,7 @@
+Enhancement: Optimize memory usage for directories with many files
+
+Backing up a directory with hundreds of thousands or more files caused restic
+to require large amounts of memory. We've now optimized the `backup` command
+such that it requires up to 30% less memory.
+
+https://github.com/restic/restic/pull/3773

@@ -3,7 +3,6 @@ package backup
 import (
 	"bytes"
 	"encoding/json"
-	"os"
 	"sort"
 	"time"
 
@@ -79,7 +78,7 @@ func (b *JSONProgress) Update(total, processed Counter, errors uint, currentFile
 
 // ScannerError is the error callback function for the scanner, it prints the
 // error in verbose mode and returns nil.
-func (b *JSONProgress) ScannerError(item string, fi os.FileInfo, err error) error {
+func (b *JSONProgress) ScannerError(item string, err error) error {
 	b.error(errorUpdate{
 		MessageType: "error",
 		Error:       err,
@@ -90,7 +89,7 @@ func (b *JSONProgress) ScannerError(item string, fi os.FileInfo, err error) erro
 }
 
 // Error is the error callback function for the archiver, it prints the error and returns nil.
-func (b *JSONProgress) Error(item string, fi os.FileInfo, err error) error {
+func (b *JSONProgress) Error(item string, err error) error {
 	b.error(errorUpdate{
 		MessageType: "error",
 		Error:       err,
@@ -110,12 +109,14 @@ func (b *JSONProgress) CompleteItem(messageType, item string, previous, current 
 	switch messageType {
 	case "dir new":
 		b.print(verboseUpdate{
-			MessageType:  "verbose_status",
-			Action:       "new",
-			Item:         item,
-			Duration:     d.Seconds(),
-			DataSize:     s.DataSize,
-			MetadataSize: s.TreeSize,
+			MessageType:        "verbose_status",
+			Action:             "new",
+			Item:               item,
+			Duration:           d.Seconds(),
+			DataSize:           s.DataSize,
+			DataSizeInRepo:     s.DataSizeInRepo,
+			MetadataSize:       s.TreeSize,
+			MetadataSizeInRepo: s.TreeSizeInRepo,
 		})
 	case "dir unchanged":
 		b.print(verboseUpdate{
@@ -125,20 +126,23 @@ func (b *JSONProgress) CompleteItem(messageType, item string, previous, current 
 		})
 	case "dir modified":
 		b.print(verboseUpdate{
-			MessageType:  "verbose_status",
-			Action:       "modified",
-			Item:         item,
-			Duration:     d.Seconds(),
-			DataSize:     s.DataSize,
-			MetadataSize: s.TreeSize,
+			MessageType:        "verbose_status",
+			Action:             "modified",
+			Item:               item,
+			Duration:           d.Seconds(),
+			DataSize:           s.DataSize,
+			DataSizeInRepo:     s.DataSizeInRepo,
+			MetadataSize:       s.TreeSize,
+			MetadataSizeInRepo: s.TreeSizeInRepo,
 		})
 	case "file new":
 		b.print(verboseUpdate{
-			MessageType: "verbose_status",
-			Action:      "new",
-			Item:        item,
-			Duration:    d.Seconds(),
-			DataSize:    s.DataSize,
+			MessageType:    "verbose_status",
+			Action:         "new",
+			Item:           item,
+			Duration:       d.Seconds(),
+			DataSize:       s.DataSize,
+			DataSizeInRepo: s.DataSizeInRepo,
 		})
 	case "file unchanged":
 		b.print(verboseUpdate{
@@ -148,11 +152,12 @@ func (b *JSONProgress) CompleteItem(messageType, item string, previous, current 
 		})
 	case "file modified":
 		b.print(verboseUpdate{
-			MessageType: "verbose_status",
-			Action:      "modified",
-			Item:        item,
-			Duration:    d.Seconds(),
-			DataSize:    s.DataSize,
+			MessageType:    "verbose_status",
+			Action:         "modified",
+			Item:           item,
+			Duration:       d.Seconds(),
+			DataSize:       s.DataSize,
+			DataSizeInRepo: s.DataSizeInRepo,
 		})
 	}
 }
@@ -216,13 +221,15 @@ type errorUpdate struct {
 }
 
 type verboseUpdate struct {
-	MessageType  string  `json:"message_type"` // "verbose_status"
-	Action       string  `json:"action"`
-	Item         string  `json:"item"`
-	Duration     float64 `json:"duration"` // in seconds
-	DataSize     uint64  `json:"data_size"`
-	MetadataSize uint64  `json:"metadata_size"`
-	TotalFiles   uint    `json:"total_files"`
+	MessageType        string  `json:"message_type"` // "verbose_status"
+	Action             string  `json:"action"`
+	Item               string  `json:"item"`
+	Duration           float64 `json:"duration"` // in seconds
+	DataSize           uint64  `json:"data_size"`
+	DataSizeInRepo     uint64  `json:"data_size_in_repo"`
+	MetadataSize       uint64  `json:"metadata_size"`
+	MetadataSizeInRepo uint64  `json:"metadata_size_in_repo"`
+	TotalFiles         uint    `json:"total_files"`
 }
 
 type summaryOutput struct {

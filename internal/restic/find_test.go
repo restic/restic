@@ -162,12 +162,16 @@ func TestMultiFindUsedBlobs(t *testing.T) {
 
 type ForbiddenRepo struct{}
 
-func (r ForbiddenRepo) LoadTree(ctx context.Context, id restic.ID) (*restic.Tree, error) {
+func (r ForbiddenRepo) LoadBlob(context.Context, restic.BlobType, restic.ID, []byte) ([]byte, error) {
 	return nil, errors.New("should not be called")
 }
 
 func (r ForbiddenRepo) LookupBlobSize(id restic.ID, tpe restic.BlobType) (uint, bool) {
 	return 0, false
+}
+
+func (r ForbiddenRepo) Connections() uint {
+	return 2
 }
 
 func TestFindUsedBlobsSkipsSeenBlobs(t *testing.T) {

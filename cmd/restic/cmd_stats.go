@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/walker"
 
@@ -86,16 +87,21 @@ func runStats(gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	if err = repo.LoadIndex(ctx); err != nil {
-		return err
-	}
-
 	if !gopts.NoLock {
 		lock, err := lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
 		}
+	}
+
+	snapshotLister, err := backend.MemorizeList(gopts.ctx, repo.Backend(), restic.SnapshotFile)
+	if err != nil {
+		return err
+	}
+
+	if err = repo.LoadIndex(ctx); err != nil {
+		return err
 	}
 
 	if !gopts.JSON {
@@ -105,13 +111,12 @@ func runStats(gopts GlobalOptions, args []string) error {
 	// create a container for the stats (and other needed state)
 	stats := &statsContainer{
 		uniqueFiles:    make(map[fileID]struct{}),
-		uniqueInodes:   make(map[uint64]struct{}),
 		fileBlobs:      make(map[string]restic.IDSet),
 		blobs:          restic.NewBlobSet(),
-		snapshotsCount: 0,
+		SnapshotsCount: 0,
 	}
 
-	for sn := range FindFilteredSnapshots(ctx, repo, statsOptions.Hosts, statsOptions.Tags, statsOptions.Paths, args) {
+	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, statsOptions.Hosts, statsOptions.Tags, statsOptions.Paths, args) {
 		err = statsWalkSnapshot(ctx, sn, repo, stats)
 		if err != nil {
 			return fmt.Errorf("error walking snapshot: %v", err)
@@ -125,11 +130,11 @@ func runStats(gopts GlobalOptions, args []string) error {
 	if statsOptions.countMode == countModeRawData {
 		// the blob handles have been collected, but not yet counted
 		for blobHandle := range stats.blobs {
-			blobSize, found := repo.LookupBlobSize(blobHandle.ID, blobHandle.Type)
-			if !found {
+			pbs := repo.Index().Lookup(blobHandle)
+			if len(pbs) == 0 {
 				return fmt.Errorf("blob %v not found", blobHandle)
 			}
-			stats.TotalSize += uint64(blobSize)
+			stats.TotalSize += uint64(pbs[0].Length)
 			stats.TotalBlobCount++
 		}
 	}
@@ -143,7 +148,7 @@ func runStats(gopts GlobalOptions, args []string) error {
 	}
 
 	Printf("Stats in %s mode:\n", statsOptions.countMode)
-	Printf("Snapshots processed:   %d\n", stats.snapshotsCount)
+	Printf("Snapshots processed:   %d\n", stats.SnapshotsCount)
 
 	if stats.TotalBlobCount > 0 {
 		Printf("   Total Blob Count:   %d\n", stats.TotalBlobCount)
@@ -161,7 +166,7 @@ func statsWalkSnapshot(ctx context.Context, snapshot *restic.Snapshot, repo rest
 		return fmt.Errorf("snapshot %s has nil tree", snapshot.ID().Str())
 	}
 
-	stats.snapshotsCount++
+	stats.SnapshotsCount++
 
 	if statsOptions.countMode == countModeRawData {
 		// count just the sizes of unique blobs; we don't need to walk the tree
@@ -169,7 +174,8 @@ func statsWalkSnapshot(ctx context.Context, snapshot *restic.Snapshot, repo rest
 		return restic.FindUsedBlobs(ctx, repo, restic.IDs{*snapshot.Tree}, stats.blobs, nil)
 	}
 
-	err := walker.Walk(ctx, repo, *snapshot.Tree, restic.NewIDSet(), statsWalkTree(repo, stats))
+	uniqueInodes := make(map[uint64]struct{})
+	err := walker.Walk(ctx, repo, *snapshot.Tree, restic.NewIDSet(), statsWalkTree(repo, stats, uniqueInodes))
 	if err != nil {
 		return fmt.Errorf("walking tree %s: %v", *snapshot.Tree, err)
 	}
@@ -177,7 +183,7 @@ func statsWalkSnapshot(ctx context.Context, snapshot *restic.Snapshot, repo rest
 	return nil
 }
 
-func statsWalkTree(repo restic.Repository, stats *statsContainer) walker.WalkFunc {
+func statsWalkTree(repo restic.Repository, stats *statsContainer, uniqueInodes map[uint64]struct{}) walker.WalkFunc {
 	return func(parentTreeID restic.ID, npath string, node *restic.Node, nodeErr error) (bool, error) {
 		if nodeErr != nil {
 			return true, nodeErr
@@ -236,8 +242,8 @@ func statsWalkTree(repo restic.Repository, stats *statsContainer) walker.WalkFun
 
 			// if inodes are present, only count each inode once
 			// (hard links do not increase restore size)
-			if _, ok := stats.uniqueInodes[node.Inode]; !ok || node.Inode == 0 {
-				stats.uniqueInodes[node.Inode] = struct{}{}
+			if _, ok := uniqueInodes[node.Inode]; !ok || node.Inode == 0 {
+				uniqueInodes[node.Inode] = struct{}{}
 				stats.TotalSize += node.Size
 			}
 
@@ -279,14 +285,12 @@ type statsContainer struct {
 	TotalSize      uint64 `json:"total_size"`
 	TotalFileCount uint64 `json:"total_file_count"`
 	TotalBlobCount uint64 `json:"total_blob_count,omitempty"`
+	// holds count of all considered snapshots
+	SnapshotsCount int `json:"snapshots_count"`
 
 	// uniqueFiles marks visited files according to their
 	// contents (hashed sequence of content blob IDs)
 	uniqueFiles map[fileID]struct{}
-
-	// uniqueInodes marks visited files according to their
-	// inode # (hashed sequence of inode numbers)
-	uniqueInodes map[uint64]struct{}
 
 	// fileBlobs maps a file name (path) to the set of
 	// blobs that have been seen as a part of the file
@@ -295,9 +299,6 @@ type statsContainer struct {
 	// blobs is used to count individual unique blobs,
 	// independent of references to files
 	blobs restic.BlobSet
-
-	// holds count of all considered snapshots
-	snapshotsCount int
 }
 
 // fileID is a 256-bit hash that distinguishes unique files.

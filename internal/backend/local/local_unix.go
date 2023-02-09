@@ -1,3 +1,4 @@
+//go:build !windows
 // +build !windows
 
 package local
@@ -18,7 +19,7 @@ func fsyncDir(dir string) error {
 	}
 
 	err = d.Sync()
-	if errors.Is(err, syscall.ENOTSUP) {
+	if errors.Is(err, syscall.ENOTSUP) || errors.Is(err, syscall.ENOENT) || errors.Is(err, syscall.EINVAL) {
 		err = nil
 	}
 

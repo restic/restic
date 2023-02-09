@@ -137,6 +137,7 @@ func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int,
 
 	// try at most maxKeys keys in repo
 	err = s.Backend().List(listCtx, restic.KeyFile, func(fi restic.FileInfo) error {
+		checked++
 		if maxKeys > 0 && checked > maxKeys {
 			return ErrMaxKeysReached
 		}
@@ -153,7 +154,7 @@ func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int,
 			debug.Log("key %v returned error %v", fi.Name, err)
 
 			// ErrUnauthenticated means the password is wrong, try the next key
-			if errors.Cause(err) == crypto.ErrUnauthenticated {
+			if errors.Is(err, crypto.ErrUnauthenticated) {
 				return nil
 			}
 
@@ -262,7 +263,7 @@ func AddKey(ctx context.Context, s *Repository, password, username, hostname str
 	}
 
 	nonce := crypto.NewRandomNonce()
-	ciphertext := make([]byte, 0, len(buf)+newkey.user.Overhead()+newkey.user.NonceSize())
+	ciphertext := make([]byte, 0, crypto.CiphertextLength(len(buf)))
 	ciphertext = append(ciphertext, nonce...)
 	ciphertext = newkey.user.Seal(ciphertext, nonce, buf, nil)
 	newkey.Data = ciphertext

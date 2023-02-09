@@ -131,6 +131,12 @@ func testRunRestoreIncludes(t testing.TB, gopts GlobalOptions, dir string, snaps
 	rtest.OK(t, runRestore(opts, gopts, []string{snapshotID.String()}))
 }
 
+func testRunRestoreAssumeFailure(t testing.TB, snapshotID string, opts RestoreOptions, gopts GlobalOptions) error {
+	err := runRestore(opts, gopts, []string{snapshotID})
+
+	return err
+}
+
 func testRunCheck(t testing.TB, gopts GlobalOptions) {
 	opts := CheckOptions{
 		ReadData:    true,
@@ -275,6 +281,11 @@ func testRunForgetJSON(t testing.TB, gopts GlobalOptions, args ...string) {
 }
 
 func testRunPrune(t testing.TB, gopts GlobalOptions, opts PruneOptions) {
+	oldHook := gopts.backendTestHook
+	gopts.backendTestHook = func(r restic.Backend) (restic.Backend, error) { return newListOnceBackend(r), nil }
+	defer func() {
+		gopts.backendTestHook = oldHook
+	}()
 	rtest.OK(t, runPrune(opts, gopts))
 }
 
@@ -738,14 +749,17 @@ func TestBackupTags(t *testing.T) {
 }
 
 func testRunCopy(t testing.TB, srcGopts GlobalOptions, dstGopts GlobalOptions) {
+	gopts := srcGopts
+	gopts.Repo = dstGopts.Repo
+	gopts.password = dstGopts.password
 	copyOpts := CopyOptions{
 		secondaryRepoOptions: secondaryRepoOptions{
-			Repo:     dstGopts.Repo,
-			password: dstGopts.password,
+			Repo:     srcGopts.Repo,
+			password: srcGopts.password,
 		},
 	}
 
-	rtest.OK(t, runCopy(copyOpts, srcGopts, nil))
+	rtest.OK(t, runCopy(copyOpts, gopts, nil))
 }
 
 func TestCopy(t *testing.T) {
@@ -1035,7 +1049,7 @@ func testRunKeyAddNewKeyUserHost(t testing.TB, gopts GlobalOptions) {
 
 	repo, err := OpenRepository(gopts)
 	rtest.OK(t, err)
-	key, err := repository.SearchKey(gopts.ctx, repo, testKeyNewPassword, 1, "")
+	key, err := repository.SearchKey(gopts.ctx, repo, testKeyNewPassword, 2, "")
 	rtest.OK(t, err)
 
 	rtest.Equals(t, "john", key.Username)
@@ -1065,6 +1079,8 @@ func TestKeyAddRemove(t *testing.T) {
 	}
 
 	env, cleanup := withTestEnvironment(t)
+	// must list keys more than once
+	env.gopts.backendTestHook = nil
 	defer cleanup()
 
 	testRunInit(t, env.gopts)
@@ -1463,7 +1479,7 @@ func TestRebuildIndexAlwaysFull(t *testing.T) {
 	defer func() {
 		repository.IndexFull = indexFull
 	}()
-	repository.IndexFull = func(*repository.Index) bool { return true }
+	repository.IndexFull = func(*repository.Index, bool) bool { return true }
 	testRebuildIndex(t, nil)
 }
 
@@ -1566,27 +1582,41 @@ func TestCheckRestoreNoLock(t *testing.T) {
 }
 
 func TestPrune(t *testing.T) {
-	t.Run("0", func(t *testing.T) {
-		opts := PruneOptions{MaxUnused: "0%"}
+	testPruneVariants(t, false)
+	testPruneVariants(t, true)
+}
+
+func testPruneVariants(t *testing.T, unsafeNoSpaceRecovery bool) {
+	suffix := ""
+	if unsafeNoSpaceRecovery {
+		suffix = "-recovery"
+	}
+	t.Run("0"+suffix, func(t *testing.T) {
+		opts := PruneOptions{MaxUnused: "0%", unsafeRecovery: unsafeNoSpaceRecovery}
 		checkOpts := CheckOptions{ReadData: true, CheckUnused: true}
 		testPrune(t, opts, checkOpts)
 	})
 
-	t.Run("50", func(t *testing.T) {
-		opts := PruneOptions{MaxUnused: "50%"}
+	t.Run("50"+suffix, func(t *testing.T) {
+		opts := PruneOptions{MaxUnused: "50%", unsafeRecovery: unsafeNoSpaceRecovery}
 		checkOpts := CheckOptions{ReadData: true}
 		testPrune(t, opts, checkOpts)
 	})
 
-	t.Run("unlimited", func(t *testing.T) {
-		opts := PruneOptions{MaxUnused: "unlimited"}
+	t.Run("unlimited"+suffix, func(t *testing.T) {
+		opts := PruneOptions{MaxUnused: "unlimited", unsafeRecovery: unsafeNoSpaceRecovery}
 		checkOpts := CheckOptions{ReadData: true}
 		testPrune(t, opts, checkOpts)
 	})
 
-	t.Run("CachableOnly", func(t *testing.T) {
-		opts := PruneOptions{MaxUnused: "5%", RepackCachableOnly: true}
+	t.Run("CachableOnly"+suffix, func(t *testing.T) {
+		opts := PruneOptions{MaxUnused: "5%", RepackCachableOnly: true, unsafeRecovery: unsafeNoSpaceRecovery}
 		checkOpts := CheckOptions{ReadData: true}
+		testPrune(t, opts, checkOpts)
+	})
+	t.Run("Small", func(t *testing.T) {
+		opts := PruneOptions{MaxUnused: "unlimited", RepackSmall: true}
+		checkOpts := CheckOptions{ReadData: true, CheckUnused: true}
 		testPrune(t, opts, checkOpts)
 	})
 }
@@ -1659,6 +1689,11 @@ func TestPruneWithDamagedRepository(t *testing.T) {
 	rtest.Assert(t, len(snapshotIDs) == 1,
 		"expected one snapshot, got %v", snapshotIDs)
 
+	oldHook := env.gopts.backendTestHook
+	env.gopts.backendTestHook = func(r restic.Backend) (restic.Backend, error) { return newListOnceBackend(r), nil }
+	defer func() {
+		env.gopts.backendTestHook = oldHook
+	}()
 	// prune should fail
 	rtest.Assert(t, runPrune(pruneDefaultOptions, env.gopts) == errorPacksMissing,
 		"prune should have reported index not complete error")
@@ -1752,18 +1787,31 @@ func testEdgeCaseRepo(t *testing.T, tarfile string, optionsCheck CheckOptions, o
 type listOnceBackend struct {
 	restic.Backend
 	listedFileType map[restic.FileType]bool
+	strictOrder    bool
 }
 
 func newListOnceBackend(be restic.Backend) *listOnceBackend {
 	return &listOnceBackend{
 		Backend:        be,
 		listedFileType: make(map[restic.FileType]bool),
+		strictOrder:    false,
+	}
+}
+
+func newOrderedListOnceBackend(be restic.Backend) *listOnceBackend {
+	return &listOnceBackend{
+		Backend:        be,
+		listedFileType: make(map[restic.FileType]bool),
+		strictOrder:    true,
 	}
 }
 
 func (be *listOnceBackend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
 	if t != restic.LockFile && be.listedFileType[t] {
 		return errors.Errorf("tried listing type %v the second time", t)
+	}
+	if be.strictOrder && t == restic.SnapshotFile && be.listedFileType[restic.IndexFile] {
+		return errors.Errorf("tried listing type snapshots after index")
 	}
 	be.listedFileType[t] = true
 	return be.Backend.List(ctx, t, fn)
@@ -2135,7 +2183,38 @@ func TestBackendLoadWriteTo(t *testing.T) {
 	firstSnapshot := testRunList(t, "snapshots", env.gopts)
 	rtest.Assert(t, len(firstSnapshot) == 1,
 		"expected one snapshot, got %v", firstSnapshot)
+}
 
-	// test readData using the hashing.Reader
-	testRunCheck(t, env.gopts)
+func TestFindListOnce(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	env.gopts.backendTestHook = func(r restic.Backend) (restic.Backend, error) {
+		return newListOnceBackend(r), nil
+	}
+
+	testSetupBackupData(t, env)
+	opts := BackupOptions{}
+
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9")}, opts, env.gopts)
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "2")}, opts, env.gopts)
+	secondSnapshot := testRunList(t, "snapshots", env.gopts)
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "3")}, opts, env.gopts)
+	thirdSnapshot := restic.NewIDSet(testRunList(t, "snapshots", env.gopts)...)
+
+	repo, err := OpenRepository(env.gopts)
+	rtest.OK(t, err)
+
+	snapshotIDs := restic.NewIDSet()
+	// specify the two oldest snapshots explicitly and use "latest" to reference the newest one
+	for sn := range FindFilteredSnapshots(context.TODO(), repo.Backend(), repo, nil, nil, nil, []string{
+		secondSnapshot[0].String(),
+		secondSnapshot[1].String()[:8],
+		"latest",
+	}) {
+		snapshotIDs.Insert(*sn.ID())
+	}
+
+	// the snapshots can only be listed once, if both lists match then the there has been only a single List() call
+	rtest.Equals(t, thirdSnapshot, snapshotIDs)
 }

@@ -90,7 +90,7 @@ example from a local to a remote repository, you can use the ``copy`` command:
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo copy --repo2 /srv/restic-repo-copy
+    $ restic -r /srv/restic-repo-copy copy --from-repo /srv/restic-repo
     repository d6504c63 opened successfully, password is correct
     repository 3dd0878c opened successfully, password is correct
 
@@ -117,17 +117,17 @@ be skipped by later copy runs.
     both the source and destination repository, *may occupy up to twice their
     space* in the destination repository. See below for how to avoid this.
 
-The destination repository is specified with ``--repo2`` or can be read 
-from a file specified via ``--repository-file2``. Both of these options
-can also set as environment variables ``$RESTIC_REPOSITORY2`` or
-``$RESTIC_REPOSITORY_FILE2`` respectively. For the destination repository 
-the password can be read from a file ``--password-file2`` or from a command 
-``--password-command2``.
-Alternatively the environment variables ``$RESTIC_PASSWORD_COMMAND2`` and
-``$RESTIC_PASSWORD_FILE2`` can be used. It is also possible to directly
-pass the password via ``$RESTIC_PASSWORD2``. The key which should be used
-for decryption can be selected by passing its ID via the flag ``--key-hint2``
-or the environment variable ``$RESTIC_KEY_HINT2``.
+The source repository is specified with ``--from-repo`` or can be read
+from a file specified via ``--from-repository-file``. Both of these options
+can also be set as environment variables ``$RESTIC_FROM_REPOSITORY`` or
+``$RESTIC_FROM_REPOSITORY_FILE``, respectively. For the destination repository
+the password can be read from a file ``--from-password-file`` or from a command
+``--from-password-command``.
+Alternatively the environment variables ``$RESTIC_FROM_PASSWORD_COMMAND`` and
+``$RESTIC_FROM_PASSWORD_FILE`` can be used. It is also possible to directly
+pass the password via ``$RESTIC_FROM_PASSWORD``. The key which should be used
+for decryption can be selected by passing its ID via the flag ``--from-key-hint``
+or the environment variable ``$RESTIC_FROM_KEY_HINT``.
 
 .. note:: In case the source and destination repository use the same backend,
     the configuration options and environment variables used to configure the
@@ -298,3 +298,29 @@ a file size value the following command may be used:
 
     $ restic -r /srv/restic-repo check --read-data-subset=50M
     $ restic -r /srv/restic-repo check --read-data-subset=10G
+
+
+Upgrading the repository format version
+=======================================
+
+Repositories created using earlier restic versions use an older repository
+format version and have to be upgraded to allow using all new features.
+Upgrading must be done explicitly as a newer repository version increases the
+minimum restic version required to access the repository. For example the
+repository format version 2 is only readable using restic 0.14.0 or newer.
+
+Upgrading to repository version 2 is a two step process: first run
+``migrate upgrade_repo_v2`` which will check the repository integrity and
+then upgrade the repository version. Repository problems must be corrected
+before the migration will be possible. After the migration is complete, run
+``prune`` to compress the repository metadata. To limit the amount of data
+rewritten in at once, you can use the ``prune --max-repack-size size``
+parameter, see :ref:`customize-pruning` for more details.
+
+File contents stored in the repository will not be rewritten, data from new
+backups will be compressed. Over time more and more of the repository will
+be compressed. To speed up this process and compress all not yet compressed
+data, you can run ``prune --repack-uncompressed``. When you plan to create
+your backups with maximum compression, you should also add the
+``--compression max`` flag to the prune command. For already backed up data,
+the compression level cannot be changed later on.

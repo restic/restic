@@ -3,7 +3,7 @@
 
 .SH NAME
 .PP
-restic\-mount \- Mount the repository
+restic-mount - Mount the repository
 
 
 .SH SYNOPSIS
@@ -14,19 +14,23 @@ restic\-mount \- Mount the repository
 .SH DESCRIPTION
 .PP
 The "mount" command mounts the repository via fuse to a directory. This is a
-read\-only mount.
+read-only mount.
 
 
 .SH Snapshot Directories
 .PP
-If you need a different template for all directories that contain snapshots,
-you can pass a template via \-\-snapshot\-template. Example without colons:
+If you need a different template for directories that contain snapshots,
+you can pass a time template via --time-template and path templates via
+--path-template.
+
+.PP
+Example time template without colons:
 
 .PP
 .RS
 
 .nf
-\-\-snapshot\-template "2006\-01\-02\_15\-04\-05"
+--time-template "2006-01-02_15-04-05"
 
 .fi
 .RE
@@ -38,7 +42,7 @@ You need to specify a sample format for exactly the following timestamp:
 .RS
 
 .nf
-Mon Jan 2 15:04:05 \-0700 MST 2006
+Mon Jan 2 15:04:05 -0700 MST 2006
 
 .fi
 .RE
@@ -47,118 +51,146 @@ Mon Jan 2 15:04:05 \-0700 MST 2006
 For details please see the documentation for time.Format() at:
   https://godoc.org/time#Time.Format
 
+.PP
+For path templates, you can use the following patterns which will be replaced:
+    %i by short snapshot ID
+    %I by long snapshot ID
+    %u by username
+    %h by hostname
+    %t by tags
+    %T by timestamp as specified by --time-template
+
+.PP
+The default path templates are:
+    "ids/%i"
+    "snapshots/%T"
+    "hosts/%h/%T"
+    "tags/%t/%T"
+
 
 .SH EXIT STATUS
 .PP
-Exit status is 0 if the command was successful, and non\-zero if there was any error.
+Exit status is 0 if the command was successful, and non-zero if there was any error.
 
 
 .SH OPTIONS
 .PP
-\fB\-\-allow\-other\fP[=false]
+\fB--allow-other\fP[=false]
 	allow other users to access the data in the mounted directory
 
 .PP
-\fB\-h\fP, \fB\-\-help\fP[=false]
+\fB-h\fP, \fB--help\fP[=false]
 	help for mount
 
 .PP
-\fB\-H\fP, \fB\-\-host\fP=[]
+\fB-H\fP, \fB--host\fP=[]
 	only consider snapshots for this host (can be specified multiple times)
 
 .PP
-\fB\-\-no\-default\-permissions\fP[=false]
-	for 'allow\-other', ignore Unix permissions and allow users to read all snapshot files
+\fB--no-default-permissions\fP[=false]
+	for 'allow-other', ignore Unix permissions and allow users to read all snapshot files
 
 .PP
-\fB\-\-owner\-root\fP[=false]
+\fB--owner-root\fP[=false]
 	use 'root' as the owner of files and dirs
 
 .PP
-\fB\-\-path\fP=[]
+\fB--path\fP=[]
 	only consider snapshots which include this (absolute) \fB\fCpath\fR
 
 .PP
-\fB\-\-snapshot\-template\fP="2006\-01\-02T15:04:05Z07:00"
-	set \fB\fCtemplate\fR to use for snapshot dirs
+\fB--path-template\fP=[]
+	set \fB\fCtemplate\fR for path names (can be specified multiple times)
 
 .PP
-\fB\-\-tag\fP=[]
+\fB--tag\fP=[]
 	only consider snapshots which include this \fB\fCtaglist\fR
+
+.PP
+\fB--time-template\fP="2006-01-02T15:04:05Z07:00"
+	set \fB\fCtemplate\fR to use for times
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
 .PP
-\fB\-\-cacert\fP=[]
+\fB--cacert\fP=[]
 	\fB\fCfile\fR to load root certificates from (default: use system certificates)
 
 .PP
-\fB\-\-cache\-dir\fP=""
+\fB--cache-dir\fP=""
 	set the cache \fB\fCdirectory\fR\&. (default: use system default cache directory)
 
 .PP
-\fB\-\-cleanup\-cache\fP[=false]
+\fB--cleanup-cache\fP[=false]
 	auto remove old cache directories
 
 .PP
-\fB\-\-insecure\-tls\fP[=false]
-	skip TLS certificate verification when connecting to the repo (insecure)
+\fB--compression\fP=auto
+	compression mode (only available for repository format version 2), one of (auto|off|max)
 
 .PP
-\fB\-\-json\fP[=false]
+\fB--insecure-tls\fP[=false]
+	skip TLS certificate verification when connecting to the repository (insecure)
+
+.PP
+\fB--json\fP[=false]
 	set output mode to JSON for commands that support it
 
 .PP
-\fB\-\-key\-hint\fP=""
-	\fB\fCkey\fR ID of key to try decrypting first (default: $RESTIC\_KEY\_HINT)
+\fB--key-hint\fP=""
+	\fB\fCkey\fR ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
 
 .PP
-\fB\-\-limit\-download\fP=0
+\fB--limit-download\fP=0
 	limits downloads to a maximum rate in KiB/s. (default: unlimited)
 
 .PP
-\fB\-\-limit\-upload\fP=0
+\fB--limit-upload\fP=0
 	limits uploads to a maximum rate in KiB/s. (default: unlimited)
 
 .PP
-\fB\-\-no\-cache\fP[=false]
+\fB--no-cache\fP[=false]
 	do not use a local cache
 
 .PP
-\fB\-\-no\-lock\fP[=false]
-	do not lock the repository, this allows some operations on read\-only repositories
+\fB--no-lock\fP[=false]
+	do not lock the repository, this allows some operations on read-only repositories
 
 .PP
-\fB\-o\fP, \fB\-\-option\fP=[]
+\fB-o\fP, \fB--option\fP=[]
 	set extended option (\fB\fCkey=value\fR, can be specified multiple times)
 
 .PP
-\fB\-\-password\-command\fP=""
-	shell \fB\fCcommand\fR to obtain the repository password from (default: $RESTIC\_PASSWORD\_COMMAND)
+\fB--pack-size\fP=0
+	set target pack size in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)
 
 .PP
-\fB\-p\fP, \fB\-\-password\-file\fP=""
-	\fB\fCfile\fR to read the repository password from (default: $RESTIC\_PASSWORD\_FILE)
+\fB--password-command\fP=""
+	shell \fB\fCcommand\fR to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)
 
 .PP
-\fB\-q\fP, \fB\-\-quiet\fP[=false]
+\fB-p\fP, \fB--password-file\fP=""
+	\fB\fCfile\fR to read the repository password from (default: $RESTIC_PASSWORD_FILE)
+
+.PP
+\fB-q\fP, \fB--quiet\fP[=false]
 	do not output comprehensive progress report
 
 .PP
-\fB\-r\fP, \fB\-\-repo\fP=""
-	\fB\fCrepository\fR to backup to or restore from (default: $RESTIC\_REPOSITORY)
+\fB-r\fP, \fB--repo\fP=""
+	\fB\fCrepository\fR to backup to or restore from (default: $RESTIC_REPOSITORY)
 
 .PP
-\fB\-\-repository\-file\fP=""
-	\fB\fCfile\fR to read the repository location from (default: $RESTIC\_REPOSITORY\_FILE)
+\fB--repository-file\fP=""
+	\fB\fCfile\fR to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
 
 .PP
-\fB\-\-tls\-client\-cert\fP=""
+\fB--tls-client-cert\fP=""
 	path to a \fB\fCfile\fR containing PEM encoded TLS client certificate and private key
 
 .PP
-\fB\-v\fP, \fB\-\-verbose\fP[=0]
-	be verbose (specify multiple times or a level using \-\-verbose=\fB\fCn\fR, max level/times is 3)
+\fB-v\fP, \fB--verbose\fP[=0]
+	be verbose (specify multiple times or a level using --verbose=\fB\fCn\fR, max level/times is 3)
 
 
 .SH SEE ALSO

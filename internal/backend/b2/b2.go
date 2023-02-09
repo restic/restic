@@ -8,6 +8,7 @@ import (
 	"path"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -23,7 +24,7 @@ type b2Backend struct {
 	cfg          Config
 	listMaxItems int
 	backend.Layout
-	sem *backend.Semaphore
+	sem sema.Semaphore
 }
 
 const defaultListMaxItems = 1000
@@ -34,7 +35,7 @@ var _ restic.Backend = &b2Backend{}
 func newClient(ctx context.Context, cfg Config, rt http.RoundTripper) (*b2.Client, error) {
 	opts := []b2.ClientOption{b2.Transport(rt)}
 
-	c, err := b2.NewClient(ctx, cfg.AccountID, cfg.Key, opts...)
+	c, err := b2.NewClient(ctx, cfg.AccountID, cfg.Key.Unwrap(), opts...)
 	if err != nil {
 		return nil, errors.Wrap(err, "b2.NewClient")
 	}
@@ -58,7 +59,7 @@ func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backend
 		return nil, errors.Wrap(err, "Bucket")
 	}
 
-	sem, err := backend.NewSemaphore(cfg.Connections)
+	sem, err := sema.New(cfg.Connections)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +100,7 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backe
 		return nil, errors.Wrap(err, "NewBucket")
 	}
 
-	sem, err := backend.NewSemaphore(cfg.Connections)
+	sem, err := sema.New(cfg.Connections)
 	if err != nil {
 		return nil, err
 	}
@@ -133,6 +134,10 @@ func (be *b2Backend) SetListMaxItems(i int) {
 	be.listMaxItems = i
 }
 
+func (be *b2Backend) Connections() uint {
+	return be.cfg.Connections
+}
+
 // Location returns the location for the backend.
 func (be *b2Backend) Location() string {
 	return be.cfg.Bucket
@@ -141,6 +146,11 @@ func (be *b2Backend) Location() string {
 // Hasher may return a hash function for calculating a content hash for the backend
 func (be *b2Backend) Hasher() hash.Hash {
 	return nil
+}
+
+// HasAtomicReplace returns whether Save() can atomically replace files
+func (be *b2Backend) HasAtomicReplace() bool {
+	return true
 }
 
 // IsNotExist returns true if the error is caused by a non-existing file.
@@ -275,11 +285,11 @@ func (be *b2Backend) Remove(ctx context.Context, h restic.Handle) error {
 }
 
 type semLocker struct {
-	*backend.Semaphore
+	sema.Semaphore
 }
 
-func (sm semLocker) Lock()   { sm.GetToken() }
-func (sm semLocker) Unlock() { sm.ReleaseToken() }
+func (sm *semLocker) Lock()   { sm.GetToken() }
+func (sm *semLocker) Unlock() { sm.ReleaseToken() }
 
 // List returns a channel that yields all names of blobs of type t.
 func (be *b2Backend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
@@ -289,7 +299,7 @@ func (be *b2Backend) List(ctx context.Context, t restic.FileType, fn func(restic
 	defer cancel()
 
 	prefix, _ := be.Basedir(t)
-	iter := be.bucket.List(ctx, b2.ListPrefix(prefix), b2.ListPageSize(be.listMaxItems), b2.ListLocker(semLocker{be.sem}))
+	iter := be.bucket.List(ctx, b2.ListPrefix(prefix), b2.ListPageSize(be.listMaxItems), b2.ListLocker(&semLocker{be.sem}))
 
 	for iter.Next() {
 		obj := iter.Object()

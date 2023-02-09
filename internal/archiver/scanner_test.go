@@ -133,7 +133,7 @@ func TestScannerError(t *testing.T) {
 		src     TestDir
 		result  ScanStats
 		selFn   SelectFunc
-		errFn   func(t testing.TB, item string, fi os.FileInfo, err error) error
+		errFn   func(t testing.TB, item string, err error) error
 		resFn   func(t testing.TB, item string, s ScanStats)
 		prepare func(t testing.TB)
 	}{
@@ -173,7 +173,7 @@ func TestScannerError(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			errFn: func(t testing.TB, item string, fi os.FileInfo, err error) error {
+			errFn: func(t testing.TB, item string, err error) error {
 				if item == filepath.FromSlash("work/subdir") {
 					return nil
 				}
@@ -198,7 +198,7 @@ func TestScannerError(t *testing.T) {
 					}
 				}
 			},
-			errFn: func(t testing.TB, item string, fi os.FileInfo, err error) error {
+			errFn: func(t testing.TB, item string, err error) error {
 				if item == "foo" {
 					t.Logf("ignoring error for %v: %v", item, err)
 					return nil
@@ -257,13 +257,13 @@ func TestScannerError(t *testing.T) {
 				}
 			}
 			if test.errFn != nil {
-				sc.Error = func(item string, fi os.FileInfo, err error) error {
+				sc.Error = func(item string, err error) error {
 					p, relErr := filepath.Rel(cur, item)
 					if relErr != nil {
 						panic(relErr)
 					}
 
-					return test.errFn(t, p, fi, err)
+					return test.errFn(t, p, err)
 				}
 			}
 

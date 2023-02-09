@@ -1,0 +1,9 @@
+Bugfix: Yield error on invalid policy to `forget`
+
+The `forget` command previously silently ignored invalid/unsupported
+units in the duration options, such as e.g. `--keep-within-daily 2w`.
+
+Specifying an invalid/unsupported duration unit now results in an error.
+
+https://github.com/restic/restic/issues/3861
+https://github.com/restic/restic/pull/3862

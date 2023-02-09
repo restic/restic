@@ -1,0 +1,15 @@
+Enhancement: Make snapshot directory structure of `mount` command customizable
+
+We've added the possibility to customize the snapshot directory structure of
+the `mount` command using templates passed to the `--snapshot-template` option.
+The formatting of snapshots' timestamps is now controlled using `--time-template`
+and supports subdirectories to for example group snapshots by year. Please
+see `restic help mount` for further details.
+
+Characters in tag names which are not allowed in a filename are replaced by
+underscores `_`. For example a tag `foo/bar` will result in a directory name
+of `foo_bar`.
+
+https://github.com/restic/restic/issues/2907
+https://github.com/restic/restic/pull/2913
+https://github.com/restic/restic/pull/3691

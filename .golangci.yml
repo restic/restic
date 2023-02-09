@@ -16,15 +16,9 @@ linters:
     # show how code can be simplified
     - gosimple
 
-    # # make sure code is formatted
-    - gofmt
-
     # examine code and report suspicious constructs, such as Printf calls whose
     # arguments do not align with the format string
     - govet
-
-    # make sure names and comments are used according to the conventions
-    - golint
 
     # detect when assignments to existing variables are not used
     - ineffassign
@@ -51,7 +45,7 @@ issues:
 
   # list of things to not warn about
   exclude:
-    # golint: do not warn about missing comments for exported stuff
-    - exported (function|method|var|type|const) `.*` should have comment or be unexported
-    # golint: ignore constants in all caps
+    # revive: do not warn about missing comments for exported stuff
+    - exported (function|method|var|type|const) .* should have comment or be unexported
+    # revive: ignore constants in all caps
     - don't use ALL_CAPS in Go names; use CamelCase

@@ -99,7 +99,7 @@ func createFakeLock(repo restic.Repository, t time.Time, pid int) (restic.ID, er
 	}
 
 	newLock := &restic.Lock{Time: t, PID: pid, Hostname: hostname}
-	return repo.SaveJSONUnpacked(context.TODO(), restic.LockFile, &newLock)
+	return restic.SaveJSONUnpacked(context.TODO(), repo, restic.LockFile, &newLock)
 }
 
 func removeLock(repo restic.Repository, id restic.ID) error {

@@ -2,7 +2,6 @@ package backup
 
 import (
 	"fmt"
-	"os"
 	"sort"
 	"time"
 
@@ -75,13 +74,13 @@ func (b *TextProgress) Update(total, processed Counter, errors uint, currentFile
 
 // ScannerError is the error callback function for the scanner, it prints the
 // error in verbose mode and returns nil.
-func (b *TextProgress) ScannerError(item string, fi os.FileInfo, err error) error {
+func (b *TextProgress) ScannerError(item string, err error) error {
 	b.V("scan: %v\n", err)
 	return nil
 }
 
 // Error is the error callback function for the archiver, it prints the error and returns nil.
-func (b *TextProgress) Error(item string, fi os.FileInfo, err error) error {
+func (b *TextProgress) Error(item string, err error) error {
 	b.E("error: %v\n", err)
 	return nil
 }
@@ -138,17 +137,17 @@ func formatBytes(c uint64) string {
 func (b *TextProgress) CompleteItem(messageType, item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration) {
 	switch messageType {
 	case "dir new":
-		b.VV("new       %v, saved in %.3fs (%v added, %v metadata)", item, d.Seconds(), formatBytes(s.DataSize), formatBytes(s.TreeSize))
+		b.VV("new       %v, saved in %.3fs (%v added, %v stored, %v metadata)", item, d.Seconds(), formatBytes(s.DataSize), formatBytes(s.DataSizeInRepo), formatBytes(s.TreeSizeInRepo))
 	case "dir unchanged":
 		b.VV("unchanged %v", item)
 	case "dir modified":
-		b.VV("modified  %v, saved in %.3fs (%v added, %v metadata)", item, d.Seconds(), formatBytes(s.DataSize), formatBytes(s.TreeSize))
+		b.VV("modified  %v, saved in %.3fs (%v added, %v stored, %v metadata)", item, d.Seconds(), formatBytes(s.DataSize), formatBytes(s.DataSizeInRepo), formatBytes(s.TreeSizeInRepo))
 	case "file new":
 		b.VV("new       %v, saved in %.3fs (%v added)", item, d.Seconds(), formatBytes(s.DataSize))
 	case "file unchanged":
 		b.VV("unchanged %v", item)
 	case "file modified":
-		b.VV("modified  %v, saved in %.3fs (%v added)", item, d.Seconds(), formatBytes(s.DataSize))
+		b.VV("modified  %v, saved in %.3fs (%v added, %v stored)", item, d.Seconds(), formatBytes(s.DataSize), formatBytes(s.DataSizeInRepo))
 	}
 }
 
@@ -178,7 +177,7 @@ func (b *TextProgress) Finish(snapshotID restic.ID, start time.Time, summary *Su
 	if dryRun {
 		verb = "Would add"
 	}
-	b.P("%s to the repo: %-5s\n", verb, formatBytes(summary.ItemStats.DataSize+summary.ItemStats.TreeSize))
+	b.P("%s to the repository: %-5s (%-5s stored)\n", verb, formatBytes(summary.ItemStats.DataSize+summary.ItemStats.TreeSize), formatBytes(summary.ItemStats.DataSizeInRepo+summary.ItemStats.TreeSizeInRepo))
 	b.P("\n")
 	b.P("processed %v files, %v in %s",
 		summary.Files.New+summary.Files.Changed+summary.Files.Unchanged,

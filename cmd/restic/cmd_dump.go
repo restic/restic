@@ -87,7 +87,7 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repositor
 			case l == 1 && dump.IsFile(node):
 				return d.WriteNode(ctx, node)
 			case l > 1 && dump.IsDir(node):
-				subtree, err := repo.LoadTree(ctx, *node.Subtree)
+				subtree, err := restic.LoadTree(ctx, repo, *node.Subtree)
 				if err != nil {
 					return errors.Wrapf(err, "cannot load subtree for %q", item)
 				}
@@ -96,7 +96,7 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repositor
 				if err := checkStdoutArchive(); err != nil {
 					return err
 				}
-				subtree, err := repo.LoadTree(ctx, *node.Subtree)
+				subtree, err := restic.LoadTree(ctx, repo, *node.Subtree)
 				if err != nil {
 					return err
 				}
@@ -144,20 +144,15 @@ func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	err = repo.LoadIndex(ctx)
-	if err != nil {
-		return err
-	}
-
 	var id restic.ID
 
 	if snapshotIDString == "latest" {
-		id, err = restic.FindLatestSnapshot(ctx, repo, opts.Paths, opts.Tags, opts.Hosts, nil)
+		id, err = restic.FindLatestSnapshot(ctx, repo.Backend(), repo, opts.Paths, opts.Tags, opts.Hosts, nil)
 		if err != nil {
 			Exitf(1, "latest snapshot for criteria not found: %v Paths:%v Hosts:%v", err, opts.Paths, opts.Hosts)
 		}
 	} else {
-		id, err = restic.FindSnapshot(ctx, repo, snapshotIDString)
+		id, err = restic.FindSnapshot(ctx, repo.Backend(), snapshotIDString)
 		if err != nil {
 			Exitf(1, "invalid id %q: %v", snapshotIDString, err)
 		}
@@ -168,7 +163,12 @@ func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
 		Exitf(2, "loading snapshot %q failed: %v", snapshotIDString, err)
 	}
 
-	tree, err := repo.LoadTree(ctx, *sn.Tree)
+	err = repo.LoadIndex(ctx)
+	if err != nil {
+		return err
+	}
+
+	tree, err := restic.LoadTree(ctx, repo, *sn.Tree)
 	if err != nil {
 		Exitf(2, "loading tree for snapshot %q failed: %v", snapshotIDString, err)
 	}

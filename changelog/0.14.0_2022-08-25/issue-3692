@@ -1,0 +1,13 @@
+Bugfix: Fix rclone (shimmed by Scoop) and sftp not working on Windows
+
+In #3602 a fix was introduced to address the problem of `rclone` prematurely
+exiting when Ctrl+C is pressed on Windows. The solution was to create the
+subprocess with its console detached from the restic console.
+
+However, this solution failed when using `rclone` installed by Scoop or using
+`sftp` with a passphrase-protected private key. We've now fixed this by using
+a different approach to prevent Ctrl-C from passing down too early.
+
+https://github.com/restic/restic/issues/3681
+https://github.com/restic/restic/issues/3692
+https://github.com/restic/restic/pull/3696

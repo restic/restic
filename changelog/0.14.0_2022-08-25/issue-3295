@@ -1,0 +1,13 @@
+Change: Deprecate `check --check-unused` and add further checks
+
+Since restic 0.12.0, it is expected to still have unused blobs after running
+`prune`. This made the `--check-unused` option of the `check` command rather
+useless and tended to confuse users. This option has been deprecated and is
+now ignored.
+
+The `check` command now also warns if a repository is using either the legacy
+S3 layout or mixed pack files with both tree and data blobs. The latter is
+known to cause performance problems.
+
+https://github.com/restic/restic/issues/3295
+https://github.com/restic/restic/pull/3730

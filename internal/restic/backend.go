@@ -18,8 +18,14 @@ type Backend interface {
 	// repository.
 	Location() string
 
+	// Connections returns the maxmimum number of concurrent backend operations.
+	Connections() uint
+
 	// Hasher may return a hash function for calculating a content hash for the backend
 	Hasher() hash.Hash
+
+	// HasAtomicReplace returns whether Save() can atomically replace files
+	HasAtomicReplace() bool
 
 	// Test a boolean value whether a File with the name and type exists.
 	Test(ctx context.Context, h Handle) (bool, error)

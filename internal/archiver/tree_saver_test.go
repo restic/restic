@@ -3,50 +3,49 @@ package archiver
 import (
 	"context"
 	"fmt"
-	"os"
 	"runtime"
 	"sync/atomic"
 	"testing"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
-	tomb "gopkg.in/tomb.v2"
+	"golang.org/x/sync/errgroup"
 )
 
 func TestTreeSaver(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	tmb, ctx := tomb.WithContext(ctx)
+	wg, ctx := errgroup.WithContext(ctx)
 
-	saveFn := func(context.Context, *restic.Tree) (restic.ID, ItemStats, error) {
+	saveFn := func(context.Context, *restic.TreeJSONBuilder) (restic.ID, ItemStats, error) {
 		return restic.NewRandomID(), ItemStats{TreeBlobs: 1, TreeSize: 123}, nil
 	}
 
-	errFn := func(snPath string, fi os.FileInfo, err error) error {
+	errFn := func(snPath string, err error) error {
 		return nil
 	}
 
-	b := NewTreeSaver(ctx, tmb, uint(runtime.NumCPU()), saveFn, errFn)
+	b := NewTreeSaver(ctx, wg, uint(runtime.NumCPU()), saveFn, errFn)
 
-	var results []FutureTree
+	var results []FutureNode
 
 	for i := 0; i < 20; i++ {
 		node := &restic.Node{
 			Name: fmt.Sprintf("file-%d", i),
 		}
 
-		fb := b.Save(ctx, "/", node, nil, nil)
+		fb := b.Save(ctx, "/", node.Name, node, nil, nil)
 		results = append(results, fb)
 	}
 
 	for _, tree := range results {
-		tree.Wait(ctx)
+		tree.take(ctx)
 	}
 
-	tmb.Kill(nil)
+	b.TriggerShutdown()
 
-	err := tmb.Wait()
+	err := wg.Wait()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,10 +70,10 @@ func TestTreeSaverError(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			tmb, ctx := tomb.WithContext(ctx)
+			wg, ctx := errgroup.WithContext(ctx)
 
 			var num int32
-			saveFn := func(context.Context, *restic.Tree) (restic.ID, ItemStats, error) {
+			saveFn := func(context.Context, *restic.TreeJSONBuilder) (restic.ID, ItemStats, error) {
 				val := atomic.AddInt32(&num, 1)
 				if val == test.failAt {
 					t.Logf("sending error for request %v\n", test.failAt)
@@ -83,31 +82,31 @@ func TestTreeSaverError(t *testing.T) {
 				return restic.NewRandomID(), ItemStats{TreeBlobs: 1, TreeSize: 123}, nil
 			}
 
-			errFn := func(snPath string, fi os.FileInfo, err error) error {
+			errFn := func(snPath string, err error) error {
 				t.Logf("ignoring error %v\n", err)
 				return nil
 			}
 
-			b := NewTreeSaver(ctx, tmb, uint(runtime.NumCPU()), saveFn, errFn)
+			b := NewTreeSaver(ctx, wg, uint(runtime.NumCPU()), saveFn, errFn)
 
-			var results []FutureTree
+			var results []FutureNode
 
 			for i := 0; i < test.trees; i++ {
 				node := &restic.Node{
 					Name: fmt.Sprintf("file-%d", i),
 				}
 
-				fb := b.Save(ctx, "/", node, nil, nil)
+				fb := b.Save(ctx, "/", node.Name, node, nil, nil)
 				results = append(results, fb)
 			}
 
 			for _, tree := range results {
-				tree.Wait(ctx)
+				tree.take(ctx)
 			}
 
-			tmb.Kill(nil)
+			b.TriggerShutdown()
 
-			err := tmb.Wait()
+			err := wg.Wait()
 			if err == nil {
 				t.Errorf("expected error not found")
 			}

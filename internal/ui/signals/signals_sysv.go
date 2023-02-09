@@ -1,3 +1,4 @@
+//go:build aix || linux || solaris
 // +build aix linux solaris
 
 package signals

@@ -53,7 +53,7 @@ type treeVisitor struct {
 // target is the path in the file system, location within the snapshot.
 func (res *Restorer) traverseTree(ctx context.Context, target, location string, treeID restic.ID, visitor treeVisitor) (hasRestored bool, err error) {
 	debug.Log("%v %v %v", target, location, treeID)
-	tree, err := res.repo.LoadTree(ctx, treeID)
+	tree, err := restic.LoadTree(ctx, res.repo, treeID)
 	if err != nil {
 		debug.Log("error loading tree %v: %v", treeID, err)
 		return hasRestored, res.Error(location, err)
@@ -218,8 +218,8 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 		}
 	}
 
-	idx := restic.NewHardlinkIndex()
-	filerestorer := newFileRestorer(dst, res.repo.Backend().Load, res.repo.Key(), res.repo.Index().Lookup)
+	idx := NewHardlinkIndex()
+	filerestorer := newFileRestorer(dst, res.repo.Backend().Load, res.repo.Key(), res.repo.Index().Lookup, res.repo.Connections())
 	filerestorer.Error = res.Error
 
 	debug.Log("first pass for %q", dst)

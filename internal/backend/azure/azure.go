@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/base64"
+	"fmt"
 	"hash"
 	"io"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -24,7 +26,8 @@ import (
 type Backend struct {
 	accountName  string
 	container    *storage.Container
-	sem          *backend.Semaphore
+	connections  uint
+	sem          sema.Semaphore
 	prefix       string
 	listMaxItems int
 	backend.Layout
@@ -37,17 +40,41 @@ var _ restic.Backend = &Backend{}
 
 func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	debug.Log("open, config %#v", cfg)
-
-	client, err := storage.NewBasicClient(cfg.AccountName, cfg.AccountKey)
-	if err != nil {
-		return nil, errors.Wrap(err, "NewBasicClient")
+	var client storage.Client
+	var err error
+	if cfg.AccountKey.String() != "" {
+		// We have an account key value, find the BlobServiceClient
+		// from with a BasicClient
+		debug.Log(" - using account key")
+		client, err = storage.NewBasicClient(cfg.AccountName, cfg.AccountKey.Unwrap())
+		if err != nil {
+			return nil, errors.Wrap(err, "NewBasicClient")
+		}
+	} else if cfg.AccountSAS.String() != "" {
+		// Get the client using the SAS Token as authentication, this
+		// is longer winded than above because the SDK wants a URL for the Account
+		// if your using a SAS token, and not just the account name
+		// we (as per the SDK ) assume the default Azure portal.
+		url := fmt.Sprintf("https://%s.blob.core.windows.net/", cfg.AccountName)
+		debug.Log(" - using sas token")
+		sas := cfg.AccountSAS.Unwrap()
+		// strip query sign prefix
+		if sas[0] == '?' {
+			sas = sas[1:]
+		}
+		client, err = storage.NewAccountSASClientFromEndpointToken(url, sas)
+		if err != nil {
+			return nil, errors.Wrap(err, "NewAccountSASClientFromEndpointToken")
+		}
+	} else {
+		return nil, errors.New("no azure authentication information found")
 	}
 
 	client.HTTPClient = &http.Client{Transport: rt}
 
 	service := client.GetBlobService()
 
-	sem, err := backend.NewSemaphore(cfg.Connections)
+	sem, err := sema.New(cfg.Connections)
 	if err != nil {
 		return nil, err
 	}
@@ -55,6 +82,7 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	be := &Backend{
 		container:   service.GetContainerReference(cfg.Container),
 		accountName: cfg.AccountName,
+		connections: cfg.Connections,
 		sem:         sem,
 		prefix:      cfg.Prefix,
 		Layout: &backend.DefaultLayout{
@@ -109,6 +137,10 @@ func (be *Backend) Join(p ...string) string {
 	return path.Join(p...)
 }
 
+func (be *Backend) Connections() uint {
+	return be.connections
+}
+
 // Location returns this backend's location (the container name).
 func (be *Backend) Location() string {
 	return be.Join(be.container.Name, be.prefix)
@@ -117,6 +149,11 @@ func (be *Backend) Location() string {
 // Hasher may return a hash function for calculating a content hash for the backend
 func (be *Backend) Hasher() hash.Hash {
 	return md5.New()
+}
+
+// HasAtomicReplace returns whether Save() can atomically replace files
+func (be *Backend) HasAtomicReplace() bool {
+	return true
 }
 
 // Path returns the path in the bucket that is used for this backend.
@@ -226,18 +263,6 @@ func (be *Backend) saveLarge(ctx context.Context, objName string, rd restic.Rewi
 	return errors.Wrap(err, "PutBlockList")
 }
 
-// wrapReader wraps an io.ReadCloser to run an additional function on Close.
-type wrapReader struct {
-	io.ReadCloser
-	f func()
-}
-
-func (wr wrapReader) Close() error {
-	err := wr.ReadCloser.Close()
-	wr.f()
-	return err
-}
-
 // Load runs fn with a reader that yields the contents of the file at h at the
 // given offset.
 func (be *Backend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
@@ -278,15 +303,7 @@ func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, 
 		return nil, err
 	}
 
-	closeRd := wrapReader{
-		ReadCloser: rd,
-		f: func() {
-			debug.Log("Close()")
-			be.sem.ReleaseToken()
-		},
-	}
-
-	return closeRd, err
+	return be.sem.ReleaseTokenOnClose(rd, nil), err
 }
 
 // Stat returns information about a blob.

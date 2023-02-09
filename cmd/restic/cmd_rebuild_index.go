@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 
@@ -97,7 +98,7 @@ func rebuildIndex(opts RebuildIndexOptions, gopts GlobalOptions, repo *repositor
 		if err != nil {
 			return err
 		}
-		packSizeFromIndex = repo.Index().PackSize(ctx, false)
+		packSizeFromIndex = pack.Size(ctx, repo.Index(), false)
 	}
 
 	Verbosef("getting pack files to read...\n")

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 
@@ -41,7 +42,7 @@ const TestChunkerPol = chunker.Pol(0x3DA3358B4DC173)
 // TestRepositoryWithBackend returns a repository initialized with a test
 // password. If be is nil, an in-memory backend is used. A constant polynomial
 // is used for the chunker and low-security test parameters.
-func TestRepositoryWithBackend(t testing.TB, be restic.Backend) (r restic.Repository, cleanup func()) {
+func TestRepositoryWithBackend(t testing.TB, be restic.Backend, version uint) (r restic.Repository, cleanup func()) {
 	t.Helper()
 	TestUseLowSecurityKDFParameters(t)
 	restic.TestDisableCheckPolynomial(t)
@@ -51,10 +52,13 @@ func TestRepositoryWithBackend(t testing.TB, be restic.Backend) (r restic.Reposi
 		be, beCleanup = TestBackend(t)
 	}
 
-	repo := New(be)
+	repo, err := New(be, Options{})
+	if err != nil {
+		t.Fatalf("TestRepository(): new repo failed: %v", err)
+	}
 
-	cfg := restic.TestCreateConfig(t, TestChunkerPol)
-	err := repo.init(context.TODO(), test.TestPassword, cfg)
+	cfg := restic.TestCreateConfig(t, TestChunkerPol, version)
+	err = repo.init(context.TODO(), test.TestPassword, cfg)
 	if err != nil {
 		t.Fatalf("TestRepository(): initialize repo failed: %v", err)
 	}
@@ -72,6 +76,11 @@ func TestRepositoryWithBackend(t testing.TB, be restic.Backend) (r restic.Reposi
 // instead. The directory is not removed, but left there for inspection.
 func TestRepository(t testing.TB) (r restic.Repository, cleanup func()) {
 	t.Helper()
+	return TestRepositoryWithVersion(t, 0)
+}
+
+func TestRepositoryWithVersion(t testing.TB, version uint) (r restic.Repository, cleanup func()) {
+	t.Helper()
 	dir := os.Getenv("RESTIC_TEST_REPO")
 	if dir != "" {
 		_, err := os.Stat(dir)
@@ -80,7 +89,7 @@ func TestRepository(t testing.TB) (r restic.Repository, cleanup func()) {
 			if err != nil {
 				t.Fatalf("error creating local backend at %v: %v", dir, err)
 			}
-			return TestRepositoryWithBackend(t, be)
+			return TestRepositoryWithBackend(t, be, version)
 		}
 
 		if err == nil {
@@ -88,21 +97,54 @@ func TestRepository(t testing.TB) (r restic.Repository, cleanup func()) {
 		}
 	}
 
-	return TestRepositoryWithBackend(t, nil)
+	return TestRepositoryWithBackend(t, nil, version)
 }
 
 // TestOpenLocal opens a local repository.
 func TestOpenLocal(t testing.TB, dir string) (r restic.Repository) {
-	be, err := local.Open(context.TODO(), local.Config{Path: dir})
+	be, err := local.Open(context.TODO(), local.Config{Path: dir, Connections: 2})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	repo := New(be)
+	repo, err := New(be, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	err = repo.SearchKey(context.TODO(), test.TestPassword, 10, "")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	return repo
+}
+
+type VersionedTest func(t *testing.T, version uint)
+
+func TestAllVersions(t *testing.T, test VersionedTest) {
+	for version := restic.MinRepoVersion; version <= restic.MaxRepoVersion; version++ {
+		t.Run(fmt.Sprintf("v%d", version), func(t *testing.T) {
+			test(t, uint(version))
+		})
+	}
+}
+
+type VersionedBenchmark func(b *testing.B, version uint)
+
+func BenchmarkAllVersions(b *testing.B, bench VersionedBenchmark) {
+	for version := restic.MinRepoVersion; version <= restic.MaxRepoVersion; version++ {
+		b.Run(fmt.Sprintf("v%d", version), func(b *testing.B) {
+			bench(b, uint(version))
+		})
+	}
+}
+
+func TestMergeIndex(t testing.TB, mi *MasterIndex) ([]*Index, int) {
+	finalIndexes := mi.finalizeNotFinalIndexes()
+	for _, idx := range finalIndexes {
+		test.OK(t, idx.SetID(restic.NewRandomID()))
+	}
+
+	test.OK(t, mi.MergeFinalIndexes())
+	return finalIndexes, len(mi.idx)
 }

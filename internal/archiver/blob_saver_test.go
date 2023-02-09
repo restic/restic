@@ -10,7 +10,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
-	tomb "gopkg.in/tomb.v2"
+	"golang.org/x/sync/errgroup"
 )
 
 var errTest = errors.New("test error")
@@ -21,13 +21,13 @@ type saveFail struct {
 	failAt int32
 }
 
-func (b *saveFail) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicates bool) (restic.ID, bool, error) {
+func (b *saveFail) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicates bool) (restic.ID, bool, int, error) {
 	val := atomic.AddInt32(&b.cnt, 1)
 	if val == b.failAt {
-		return restic.ID{}, false, errTest
+		return restic.ID{}, false, 0, errTest
 	}
 
-	return id, false, nil
+	return id, false, 0, nil
 }
 
 func (b *saveFail) Index() restic.MasterIndex {
@@ -38,12 +38,12 @@ func TestBlobSaver(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	tmb, ctx := tomb.WithContext(ctx)
+	wg, ctx := errgroup.WithContext(ctx)
 	saver := &saveFail{
 		idx: repository.NewMasterIndex(),
 	}
 
-	b := NewBlobSaver(ctx, tmb, saver, uint(runtime.NumCPU()))
+	b := NewBlobSaver(ctx, wg, saver, uint(runtime.NumCPU()))
 
 	var results []FutureBlob
 
@@ -54,15 +54,15 @@ func TestBlobSaver(t *testing.T) {
 	}
 
 	for i, blob := range results {
-		blob.Wait(ctx)
-		if blob.Known() {
+		sbr := blob.Take(ctx)
+		if sbr.known {
 			t.Errorf("blob %v is known, that should not be the case", i)
 		}
 	}
 
-	tmb.Kill(nil)
+	b.TriggerShutdown()
 
-	err := tmb.Wait()
+	err := wg.Wait()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,22 +84,22 @@ func TestBlobSaverError(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			tmb, ctx := tomb.WithContext(ctx)
+			wg, ctx := errgroup.WithContext(ctx)
 			saver := &saveFail{
 				idx:    repository.NewMasterIndex(),
 				failAt: int32(test.failAt),
 			}
 
-			b := NewBlobSaver(ctx, tmb, saver, uint(runtime.NumCPU()))
+			b := NewBlobSaver(ctx, wg, saver, uint(runtime.NumCPU()))
 
 			for i := 0; i < test.blobs; i++ {
 				buf := &Buffer{Data: []byte(fmt.Sprintf("foo%d", i))}
 				b.Save(ctx, restic.DataBlob, buf)
 			}
 
-			tmb.Kill(nil)
+			b.TriggerShutdown()
 
-			err := tmb.Wait()
+			err := wg.Wait()
 			if err == nil {
 				t.Errorf("expected error not found")
 			}

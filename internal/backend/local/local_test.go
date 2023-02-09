@@ -25,7 +25,8 @@ func newTestSuite(t testing.TB) *test.Suite {
 			t.Logf("create new backend at %v", dir)
 
 			cfg := local.Config{
-				Path: dir,
+				Path:        dir,
+				Connections: 2,
 			}
 			return cfg, nil
 		},

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -24,10 +25,11 @@ import (
 
 // beSwift is a backend which stores the data on a swift endpoint.
 type beSwift struct {
-	conn      *swift.Connection
-	sem       *backend.Semaphore
-	container string // Container name
-	prefix    string // Prefix of object names in the container
+	conn        *swift.Connection
+	connections uint
+	sem         sema.Semaphore
+	container   string // Container name
+	prefix      string // Prefix of object names in the container
 	backend.Layout
 }
 
@@ -39,7 +41,7 @@ var _ restic.Backend = &beSwift{}
 func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 	debug.Log("config %#v", cfg)
 
-	sem, err := backend.NewSemaphore(cfg.Connections)
+	sem, err := sema.New(cfg.Connections)
 	if err != nil {
 		return nil, err
 	}
@@ -59,18 +61,19 @@ func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backend
 			TenantDomainId:              cfg.TenantDomainID,
 			TrustId:                     cfg.TrustID,
 			StorageUrl:                  cfg.StorageURL,
-			AuthToken:                   cfg.AuthToken,
+			AuthToken:                   cfg.AuthToken.Unwrap(),
 			ApplicationCredentialId:     cfg.ApplicationCredentialID,
 			ApplicationCredentialName:   cfg.ApplicationCredentialName,
-			ApplicationCredentialSecret: cfg.ApplicationCredentialSecret,
+			ApplicationCredentialSecret: cfg.ApplicationCredentialSecret.Unwrap(),
 			ConnectTimeout:              time.Minute,
 			Timeout:                     time.Minute,
 
 			Transport: rt,
 		},
-		sem:       sem,
-		container: cfg.Container,
-		prefix:    cfg.Prefix,
+		connections: cfg.Connections,
+		sem:         sem,
+		container:   cfg.Container,
+		prefix:      cfg.Prefix,
 		Layout: &backend.DefaultLayout{
 			Path: cfg.Prefix,
 			Join: path.Join,
@@ -113,6 +116,10 @@ func (be *beSwift) createContainer(ctx context.Context, policy string) error {
 	return be.conn.ContainerCreate(ctx, be.container, h)
 }
 
+func (be *beSwift) Connections() uint {
+	return be.connections
+}
+
 // Location returns this backend's location (the container name).
 func (be *beSwift) Location() string {
 	return be.container
@@ -121,6 +128,11 @@ func (be *beSwift) Location() string {
 // Hasher may return a hash function for calculating a content hash for the backend
 func (be *beSwift) Hasher() hash.Hash {
 	return md5.New()
+}
+
+// HasAtomicReplace returns whether Save() can atomically replace files
+func (be *beSwift) HasAtomicReplace() bool {
+	return true
 }
 
 // Load runs fn with a reader that yields the contents of the file at h at the
@@ -300,11 +312,8 @@ func (be *beSwift) removeKeys(ctx context.Context, t restic.FileType) error {
 
 // IsNotExist returns true if the error is caused by a not existing file.
 func (be *beSwift) IsNotExist(err error) bool {
-	if e, ok := errors.Cause(err).(*swift.Error); ok {
-		return e.StatusCode == http.StatusNotFound
-	}
-
-	return false
+	var e *swift.Error
+	return errors.As(err, &e) && e.StatusCode == http.StatusNotFound
 }
 
 // Delete removes all restic objects in the container.

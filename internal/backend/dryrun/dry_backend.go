@@ -45,6 +45,10 @@ func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	return nil
 }
 
+func (be *Backend) Connections() uint {
+	return be.b.Connections()
+}
+
 // Location returns the location of the backend.
 func (be *Backend) Location() string {
 	return "DRY:" + be.b.Location()
@@ -61,6 +65,10 @@ func (be *Backend) Close() error {
 
 func (be *Backend) Hasher() hash.Hash {
 	return be.b.Hasher()
+}
+
+func (be *Backend) HasAtomicReplace() bool {
+	return be.b.HasAtomicReplace()
 }
 
 func (be *Backend) IsNotExist(err error) bool {

@@ -274,7 +274,7 @@ From Source
 ***********
 
 restic is written in the Go programming language and you need at least
-Go version 1.14. Building restic may also work with older versions of Go,
+Go version 1.15. Building restic may also work with older versions of Go,
 but that's not supported. See the `Getting
 started <https://golang.org/doc/install>`__ guide of the Go project for
 instructions how to install Go.
@@ -338,6 +338,13 @@ Example for using sudo to write a bash completion script directly to the system-
 
     $ sudo ./restic generate --bash-completion /etc/bash_completion.d/restic
     writing bash completion file to /etc/bash_completion.d/restic
+
+Example for using sudo to write a zsh completion script directly to the system-wide location:
+
+.. code-block:: console
+
+    $ sudo ./restic generate --zsh-completion /usr/local/share/zsh/site-functions/_restic
+    writing zsh completion file to /usr/local/share/zsh/site-functions/_restic
 
 .. note:: The path for the ``--bash-completion`` option may vary depending on
    the operating system used, e.g. ``/usr/share/bash-completion/completions/restic``

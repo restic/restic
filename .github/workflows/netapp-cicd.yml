@@ -166,40 +166,6 @@ jobs:
           calens
         if: matrix.check_changelog
 
-  lint:
-    name: lint
-    runs-on: ubuntu-latest
-    env:
-      go: 1.16.x
-    steps:
-      - name: Set up Go ${{ env.go }}
-        uses: actions/setup-go@v2
-        with:
-          go-version: ${{ env.go }}
-
-      - name: Check out code
-        uses: actions/checkout@v2
-
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v2
-        with:
-          # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
-          version: v1.36
-          # Optional: show only new issues if it's a pull request. The default value is `false`.
-          only-new-issues: true
-          args: --verbose --timeout 5m
-          skip-go-installation: true
-
-        # only run golangci-lint for pull requests, otherwise ALL hints get
-        # reported. We need to slowly address all issues until we can enable
-        # linting the master branch :)
-        if: github.event_name == 'pull_request'
-
-      - name: Check go.mod/go.sum
-        run: |
-          echo "check if go.mod and go.sum are up to date"
-          go mod tidy
-          git diff --exit-code go.mod go.sum
 
   buildnpush:
     name: Build and Push Docker Package

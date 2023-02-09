@@ -59,9 +59,9 @@ func NewSnapshot(paths []string, tags []string, hostname string, time time.Time)
 }
 
 // LoadSnapshot loads the snapshot with the id and returns it.
-func LoadSnapshot(ctx context.Context, repo Repository, id ID) (*Snapshot, error) {
+func LoadSnapshot(ctx context.Context, loader LoaderUnpacked, id ID) (*Snapshot, error) {
 	sn := &Snapshot{id: &id}
-	err := repo.LoadJSONUnpacked(ctx, SnapshotFile, id, sn)
+	err := LoadJSONUnpacked(ctx, loader, SnapshotFile, id, sn)
 	if err != nil {
 		return nil, err
 	}
@@ -69,14 +69,17 @@ func LoadSnapshot(ctx context.Context, repo Repository, id ID) (*Snapshot, error
 	return sn, nil
 }
 
-const loadSnapshotParallelism = 5
+// SaveSnapshot saves the snapshot sn and returns its ID.
+func SaveSnapshot(ctx context.Context, repo SaverUnpacked, sn *Snapshot) (ID, error) {
+	return SaveJSONUnpacked(ctx, repo, SnapshotFile, sn)
+}
 
 // ForAllSnapshots reads all snapshots in parallel and calls the
 // given function. It is guaranteed that the function is not run concurrently.
 // If the called function returns an error, this function is cancelled and
 // also returns this error.
 // If a snapshot ID is in excludeIDs, it will be ignored.
-func ForAllSnapshots(ctx context.Context, repo Repository, excludeIDs IDSet, fn func(ID, *Snapshot, error) error) error {
+func ForAllSnapshots(ctx context.Context, be Lister, loader LoaderUnpacked, excludeIDs IDSet, fn func(ID, *Snapshot, error) error) error {
 	var m sync.Mutex
 
 	// track spawned goroutines using wg, create a new context which is
@@ -88,7 +91,13 @@ func ForAllSnapshots(ctx context.Context, repo Repository, excludeIDs IDSet, fn 
 	// send list of snapshot files through ch, which is closed afterwards
 	wg.Go(func() error {
 		defer close(ch)
-		return repo.List(ctx, SnapshotFile, func(id ID, size int64) error {
+		return be.List(ctx, SnapshotFile, func(fi FileInfo) error {
+			id, err := ParseID(fi.Name)
+			if err != nil {
+				debug.Log("unable to parse %v as an ID", fi.Name)
+				return nil
+			}
+
 			if excludeIDs.Has(id) {
 				return nil
 			}
@@ -107,7 +116,7 @@ func ForAllSnapshots(ctx context.Context, repo Repository, excludeIDs IDSet, fn 
 	worker := func() error {
 		for id := range ch {
 			debug.Log("load snapshot %v", id)
-			sn, err := LoadSnapshot(ctx, repo, id)
+			sn, err := LoadSnapshot(ctx, loader, id)
 
 			m.Lock()
 			err = fn(id, sn, err)
@@ -119,7 +128,8 @@ func ForAllSnapshots(ctx context.Context, repo Repository, excludeIDs IDSet, fn 
 		return nil
 	}
 
-	for i := 0; i < loadSnapshotParallelism; i++ {
+	// For most snapshots decoding is nearly for free, thus just assume were only limited by IO
+	for i := 0; i < int(loader.Connections()); i++ {
 		wg.Go(worker)
 	}
 
@@ -207,9 +217,9 @@ func (sn *Snapshot) HasTags(l []string) bool {
 }
 
 // HasTagList returns true if either
-// - the snapshot satisfies at least one TagList, so there is a TagList in l
-//   for which all tags are included in sn, or
-// - l is empty
+//   - the snapshot satisfies at least one TagList, so there is a TagList in l
+//     for which all tags are included in sn, or
+//   - l is empty
 func (sn *Snapshot) HasTagList(l []TagList) bool {
 	debug.Log("testing snapshot with tags %v against list: %v", sn.Tags, l)
 

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/restic/restic/internal/backend/sema"
 	"io"
 	"net/http"
 	"net/url"
@@ -203,7 +204,7 @@ func (client *mockS3Api) GetObjectWithContext(_ aws.Context, input *s3.GetObject
 
 func makeBackend() (*ontap.Backend, *mockS3Api) {
 	client := &mockS3Api{}
-	sem, _ := backend.NewSemaphore(1)
+	sem, _ := sema.New(1)
 	config := ontap.Config{Bucket: aws.String("foobucket"), Prefix: "fooprefix"}
 	be := ontap.NewBackend(client, sem, config)
 	layout, err := backend.ParseLayout(context.TODO(), be, "default", "default", config.Prefix)

@@ -3,7 +3,6 @@ package backup
 import (
 	"context"
 	"io"
-	"os"
 	"sync"
 	"time"
 
@@ -14,8 +13,8 @@ import (
 
 type ProgressPrinter interface {
 	Update(total, processed Counter, errors uint, currentFiles map[string]struct{}, start time.Time, secs uint64)
-	Error(item string, fi os.FileInfo, err error) error
-	ScannerError(item string, fi os.FileInfo, err error) error
+	Error(item string, err error) error
+	ScannerError(item string, err error) error
 	CompleteItem(messageType string, item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration)
 	ReportTotal(item string, start time.Time, s archiver.ScanStats)
 	Finish(snapshotID restic.ID, start time.Time, summary *Summary, dryRun bool)
@@ -44,11 +43,11 @@ type ProgressReporter interface {
 	CompleteItem(item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration)
 	StartFile(filename string)
 	CompleteBlob(filename string, bytes uint64)
-	ScannerError(item string, fi os.FileInfo, err error) error
+	ScannerError(item string, err error) error
 	ReportTotal(item string, s archiver.ScanStats)
 	SetMinUpdatePause(d time.Duration)
 	Run(ctx context.Context) error
-	Error(item string, fi os.FileInfo, err error) error
+	Error(item string, err error) error
 	Finish(snapshotID restic.ID)
 }
 
@@ -173,13 +172,13 @@ func (p *Progress) Run(ctx context.Context) error {
 
 // ScannerError is the error callback function for the scanner, it prints the
 // error in verbose mode and returns nil.
-func (p *Progress) ScannerError(item string, fi os.FileInfo, err error) error {
-	return p.printer.ScannerError(item, fi, err)
+func (p *Progress) ScannerError(item string, err error) error {
+	return p.printer.ScannerError(item, err)
 }
 
 // Error is the error callback function for the archiver, it prints the error and returns nil.
-func (p *Progress) Error(item string, fi os.FileInfo, err error) error {
-	cbErr := p.printer.Error(item, fi, err)
+func (p *Progress) Error(item string, err error) error {
+	cbErr := p.printer.Error(item, err)
 
 	select {
 	case p.errCh <- struct{}{}:

@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/restic/restic/internal/crypto"
+	"github.com/restic/restic/internal/ui/progress"
+	"golang.org/x/sync/errgroup"
 )
 
 // Repository stores data in a backend. It provides high-level functions and
@@ -12,19 +14,18 @@ type Repository interface {
 
 	// Backend returns the backend used by the repository
 	Backend() Backend
+	// Connections returns the maximum number of concurrent backend operations
+	Connections() uint
 
 	Key() *crypto.Key
 
-	SetIndex(MasterIndex) error
-
 	Index() MasterIndex
-	SaveFullIndex(context.Context) error
-	SaveIndex(context.Context) error
 	LoadIndex(context.Context) error
+	SetIndex(MasterIndex) error
+	LookupBlobSize(ID, BlobType) (uint, bool)
 
 	Config() Config
-
-	LookupBlobSize(ID, BlobType) (uint, bool)
+	PackSize() uint
 
 	// List calls the function fn for each file of type t in the repository.
 	// When an error is returned by fn, processing stops and List() returns the
@@ -37,22 +38,20 @@ type Repository interface {
 	// the the pack header.
 	ListPack(context.Context, ID, int64) ([]Blob, uint32, error)
 
+	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
+	SaveBlob(context.Context, BlobType, []byte, ID, bool) (ID, bool, int, error)
+
+	// StartPackUploader start goroutines to upload new pack files. The errgroup
+	// is used to immediately notify about an upload error. Flush() will also return
+	// that error.
+	StartPackUploader(ctx context.Context, wg *errgroup.Group)
 	Flush(context.Context) error
 
-	SaveUnpacked(context.Context, FileType, []byte) (ID, error)
-	SaveJSONUnpacked(context.Context, FileType, interface{}) (ID, error)
-
-	LoadJSONUnpacked(ctx context.Context, t FileType, id ID, dest interface{}) error
-	// LoadAndDecrypt loads and decrypts the file with the given type and ID,
+	// LoadUnpacked loads and decrypts the file with the given type and ID,
 	// using the supplied buffer (which must be empty). If the buffer is nil, a
 	// new buffer will be allocated and returned.
-	LoadAndDecrypt(ctx context.Context, buf []byte, t FileType, id ID) (data []byte, err error)
-
-	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
-	SaveBlob(context.Context, BlobType, []byte, ID, bool) (ID, bool, error)
-
-	LoadTree(context.Context, ID) (*Tree, error)
-	SaveTree(context.Context, *Tree) (ID, error)
+	LoadUnpacked(ctx context.Context, t FileType, id ID, buf []byte) (data []byte, err error)
+	SaveUnpacked(context.Context, FileType, []byte) (ID, error)
 }
 
 // Lister allows listing files in a backend.
@@ -60,15 +59,35 @@ type Lister interface {
 	List(context.Context, FileType, func(FileInfo) error) error
 }
 
+// LoaderUnpacked allows loading a blob not stored in a pack file
+type LoaderUnpacked interface {
+	// Connections returns the maximum number of concurrent backend operations
+	Connections() uint
+	LoadUnpacked(ctx context.Context, t FileType, id ID, buf []byte) (data []byte, err error)
+}
+
+// SaverUnpacked allows saving a blob not stored in a pack file
+type SaverUnpacked interface {
+	// Connections returns the maximum number of concurrent backend operations
+	Connections() uint
+	SaveUnpacked(context.Context, FileType, []byte) (ID, error)
+}
+
+type PackBlobs struct {
+	PackID ID
+	Blobs  []Blob
+}
+
 // MasterIndex keeps track of the blobs are stored within files.
 type MasterIndex interface {
 	Has(BlobHandle) bool
 	Lookup(BlobHandle) []PackedBlob
-	Count(BlobType) uint
-	PackSize(ctx context.Context, onlyHdr bool) map[ID]int64
 
 	// Each returns a channel that yields all blobs known to the index. When
 	// the context is cancelled, the background goroutine terminates. This
 	// blocks any modification of the index.
 	Each(ctx context.Context) <-chan PackedBlob
+	ListPacks(ctx context.Context, packs IDSet) <-chan PackBlobs
+
+	Save(ctx context.Context, repo SaverUnpacked, packBlacklist IDSet, extraObsolete IDs, p *progress.Counter) (obsolete IDSet, err error)
 }

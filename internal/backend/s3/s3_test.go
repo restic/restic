@@ -18,6 +18,7 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/s3"
 	"github.com/restic/restic/internal/backend/test"
+	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -141,7 +142,7 @@ func newMinioTestSuite(ctx context.Context, t testing.TB) *test.Suite {
 			cfg.Config.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
 			cfg.Config.UseHTTP = true
 			cfg.Config.KeyID = key
-			cfg.Config.Secret = secret
+			cfg.Config.Secret = options.NewSecretString(secret)
 			return cfg, nil
 		},
 
@@ -239,7 +240,7 @@ func newS3TestSuite(t testing.TB) *test.Suite {
 
 			cfg := s3cfg.(s3.Config)
 			cfg.KeyID = os.Getenv("RESTIC_TEST_S3_KEY")
-			cfg.Secret = os.Getenv("RESTIC_TEST_S3_SECRET")
+			cfg.Secret = options.NewSecretString(os.Getenv("RESTIC_TEST_S3_SECRET"))
 			cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
 			return cfg, nil
 		},

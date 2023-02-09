@@ -8,11 +8,12 @@ import (
 )
 
 var cmdMigrate = &cobra.Command{
-	Use:   "migrate [flags] [name]",
+	Use:   "migrate [flags] [migration name] [...]",
 	Short: "Apply migrations",
 	Long: `
-The "migrate" command applies migrations to a repository. When no migration
-name is explicitly given, a list of migrations that can be applied is printed.
+The "migrate" command checks which migrations can be applied for a repository
+and prints a list with available migration names. If one or more migration
+names are specified, these migrations are applied.
 
 EXIT STATUS
 ===========
@@ -41,6 +42,8 @@ func init() {
 func checkMigrations(opts MigrateOptions, gopts GlobalOptions, repo restic.Repository) error {
 	ctx := gopts.ctx
 	Printf("available migrations:\n")
+	found := false
+
 	for _, m := range migrations.All {
 		ok, err := m.Check(ctx, repo)
 		if err != nil {
@@ -48,8 +51,13 @@ func checkMigrations(opts MigrateOptions, gopts GlobalOptions, repo restic.Repos
 		}
 
 		if ok {
-			Printf("  %v: %v\n", m.Name(), m.Desc())
+			Printf("  %v\t%v\n", m.Name(), m.Desc())
+			found = true
 		}
+	}
+
+	if !found {
+		Printf("no migrations found")
 	}
 
 	return nil
@@ -74,6 +82,19 @@ func applyMigrations(opts MigrateOptions, gopts GlobalOptions, repo restic.Repos
 					}
 
 					Warnf("check for migration %v failed, continuing anyway\n", m.Name())
+				}
+
+				if m.RepoCheck() {
+					Printf("checking repository integrity...\n")
+
+					checkOptions := CheckOptions{}
+					checkGopts := gopts
+					// the repository is already locked
+					checkGopts.NoLock = true
+					err = runCheck(checkOptions, checkGopts, []string{})
+					if err != nil {
+						return err
+					}
 				}
 
 				Printf("applying migration %v...\n", m.Name())

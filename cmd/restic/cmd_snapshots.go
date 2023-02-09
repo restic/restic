@@ -58,7 +58,7 @@ func init() {
 		panic(err)
 	}
 	f.IntVar(&snapshotOptions.Latest, "latest", 0, "only show the last `n` snapshots for each host and path")
-	f.StringVarP(&snapshotOptions.GroupBy, "group-by", "g", "", "string for grouping snapshots by host,paths,tags")
+	f.StringVarP(&snapshotOptions.GroupBy, "group-by", "g", "", "`group` snapshots by host, paths and/or tags, separated by comma")
 }
 
 func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) error {
@@ -79,7 +79,7 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 	defer cancel()
 
 	var snapshots restic.Snapshots
-	for sn := range FindFilteredSnapshots(ctx, repo, opts.Hosts, opts.Tags, opts.Paths, args) {
+	for sn := range FindFilteredSnapshots(ctx, repo.Backend(), repo, opts.Hosts, opts.Tags, opts.Paths, args) {
 		snapshots = append(snapshots, sn)
 	}
 	snapshotGroups, grouped, err := restic.GroupSnapshots(snapshots, opts.GroupBy)

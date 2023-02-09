@@ -212,12 +212,13 @@ The ``forget`` command accepts the following policy options:
 
 .. note:: Specifying ``--keep-tag ''`` will match untagged snapshots only.
 
-When ``forget`` is run with a policy, restic loads the list of all snapshots,
-then groups these by host name and list of directories. The grouping options can
-be set with ``--group-by``, to e.g. group snapshots by only paths and tags use
-``--group-by paths,tags``. The policy is then applied to each group of snapshots
-separately. This is a safety feature to prevent accidental removal of unrelated
-backup sets.
+When ``forget`` is run with a policy, restic first loads the list of all snapshots
+and groups them by their host name and paths. The grouping options can be set with
+``--group-by``, e.g. using ``--group-by paths,tags`` to instead group snapshots by
+paths and tags. The policy is then applied to each group of snapshots individually.
+This is a safety feature to prevent accidental removal of unrelated backup sets. To
+disable grouping and apply the policy to all snapshots regardless of their host,
+paths and tags, use ``--group-by ''`` (that is, an empty value to ``--group-by``).
 
 Additionally, you can restrict the policy to only process snapshots which have a
 particular hostname with the ``--host`` parameter, or tags with the ``--tag``
@@ -387,6 +388,8 @@ the specified duration: if ``forget --keep-within 7d`` is run 8 days after the
 last good snapshot, then the attacker can still use that opportunity to remove
 all legitimate snapshots.
 
+.. _customize-pruning:
+
 Customize pruning
 *****************
 
@@ -415,9 +418,9 @@ The ``prune`` command accepts the following options:
 
     * As an absolute size (e.g. ``200M``). If you want to minimize the space
       used by your repository, pass ``0`` to this option.
-    * As a size relative to the total repo size (e.g. ``10%``). This means that
-      after prune, at most ``10%`` of the total data stored in the repo may be
-      unused data. If the repo after prune has as size of 500MB, then at most
+    * As a size relative to the total repository size (e.g. ``10%``). This means that
+      after prune, at most ``10%`` of the total data stored in the repository may be
+      unused data. If the repository after prune has a size of 500MB, then at most
       50MB may be unused.
     * If the string ``unlimited`` is passed, there is no limit for partly
       unused files. This means that as long as some data is still used within
@@ -443,3 +446,31 @@ The ``prune`` command accepts the following options:
 -  ``--dry-run`` only show what ``prune`` would do.
 
 -  ``--verbose`` increased verbosity shows additional statistics for ``prune``.
+
+
+Recovering from "no free space" errors
+**************************************
+
+In some cases when a repository has grown large enough to fill up all disk space or the
+allocated quota, then ``prune`` might fail to free space. ``prune`` works in such a way
+that a repository remains usable no matter at which point the command is interrupted.
+However, this also means that ``prune`` requires some scratch space to work.
+
+In most cases it is sufficient to instruct ``prune`` to use as little scratch space as
+possible by running it as ``prune --max-repack-size 0``. Note that for restic versions
+before 0.13.0 ``prune --max-repack-size 1`` must be used. Obviously, this can only work
+if several snapshots have been removed using ``forget`` before. This then allows the
+``prune`` command to actually remove data from the repository. If the command succeeds,
+but there is still little free space, then remove a few more snapshots and run ``prune`` again.
+
+If ``prune`` fails to complete, then ``prune --unsafe-recover-no-free-space SOME-ID``
+is available as a method of last resort. It allows prune to work with little to no free
+space. However, a **failed** ``prune`` run can cause the repository to become
+**temporarily unusable**. Therefore, make sure that you have a stable connection to the
+repository storage, before running this command. In case the command fails, it may become
+necessary to manually remove all files from the `index/` folder of the repository and
+run `rebuild-index` afterwards.
+
+To prevent accidental usages of the ``--unsafe-recover-no-free-space`` option it is
+necessary to first run ``prune --unsafe-recover-no-free-space SOME-ID`` and then replace
+``SOME-ID`` with the requested ID.

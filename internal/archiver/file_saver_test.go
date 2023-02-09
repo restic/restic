@@ -12,7 +12,7 @@ import (
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
-	tomb "gopkg.in/tomb.v2"
+	"golang.org/x/sync/errgroup"
 )
 
 func createTestFiles(t testing.TB, num int) (files []string, cleanup func()) {
@@ -30,11 +30,11 @@ func createTestFiles(t testing.TB, num int) (files []string, cleanup func()) {
 	return files, cleanup
 }
 
-func startFileSaver(ctx context.Context, t testing.TB) (*FileSaver, context.Context, *tomb.Tomb) {
-	tmb, ctx := tomb.WithContext(ctx)
+func startFileSaver(ctx context.Context, t testing.TB) (*FileSaver, context.Context, *errgroup.Group) {
+	wg, ctx := errgroup.WithContext(ctx)
 
 	saveBlob := func(ctx context.Context, tpe restic.BlobType, buf *Buffer) FutureBlob {
-		ch := make(chan saveBlobResponse)
+		ch := make(chan SaveBlobResponse)
 		close(ch)
 		return FutureBlob{ch: ch}
 	}
@@ -45,10 +45,10 @@ func startFileSaver(ctx context.Context, t testing.TB) (*FileSaver, context.Cont
 		t.Fatal(err)
 	}
 
-	s := NewFileSaver(ctx, tmb, saveBlob, pol, workers, workers)
+	s := NewFileSaver(ctx, wg, saveBlob, pol, workers, workers)
 	s.NodeFromFileInfo = restic.NodeFromFileInfo
 
-	return s, ctx, tmb
+	return s, ctx, wg
 }
 
 func TestFileSaver(t *testing.T) {
@@ -62,9 +62,9 @@ func TestFileSaver(t *testing.T) {
 	completeFn := func(*restic.Node, ItemStats) {}
 
 	testFs := fs.Local{}
-	s, ctx, tmb := startFileSaver(ctx, t)
+	s, ctx, wg := startFileSaver(ctx, t)
 
-	var results []FutureFile
+	var results []FutureNode
 
 	for _, filename := range files {
 		f, err := testFs.Open(filename)
@@ -77,20 +77,20 @@ func TestFileSaver(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ff := s.Save(ctx, filename, f, fi, startFn, completeFn)
+		ff := s.Save(ctx, filename, filename, f, fi, startFn, completeFn)
 		results = append(results, ff)
 	}
 
 	for _, file := range results {
-		file.Wait(ctx)
-		if file.Err() != nil {
-			t.Errorf("unable to save file: %v", file.Err())
+		fnr := file.take(ctx)
+		if fnr.err != nil {
+			t.Errorf("unable to save file: %v", fnr.err)
 		}
 	}
 
-	tmb.Kill(nil)
+	s.TriggerShutdown()
 
-	err := tmb.Wait()
+	err := wg.Wait()
 	if err != nil {
 		t.Fatal(err)
 	}

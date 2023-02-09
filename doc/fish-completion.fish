@@ -18,7 +18,8 @@ function __restic_perform_completion
     __restic_debug "args: $args"
     __restic_debug "last arg: $lastArg"
 
-    set -l requestComp "$args[1] __complete $args[2..-1] $lastArg"
+    # Disable ActiveHelp which is not supported for fish shell
+    set -l requestComp "RESTIC_ACTIVE_HELP=0 $args[1] __complete $args[2..-1] $lastArg"
 
     __restic_debug "Calling $requestComp"
     set -l results (eval $requestComp 2> /dev/null)

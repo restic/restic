@@ -5,9 +5,11 @@ import (
 	"os"
 	"time"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 )
 
 var cmdRecover = &cobra.Command{
@@ -50,6 +52,11 @@ func runRecover(gopts GlobalOptions) error {
 		return err
 	}
 
+	snapshotLister, err := backend.MemorizeList(gopts.ctx, repo.Backend(), restic.SnapshotFile)
+	if err != nil {
+		return err
+	}
+
 	Verbosef("load index files\n")
 	if err = repo.LoadIndex(gopts.ctx); err != nil {
 		return err
@@ -68,7 +75,7 @@ func runRecover(gopts GlobalOptions) error {
 	Verbosef("load %d trees\n", len(trees))
 	bar := newProgressMax(!gopts.Quiet, uint64(len(trees)), "trees loaded")
 	for id := range trees {
-		tree, err := repo.LoadTree(gopts.ctx, id)
+		tree, err := restic.LoadTree(gopts.ctx, repo, id)
 		if err != nil {
 			Warnf("unable to load tree %v: %v\n", id.Str(), err)
 			continue
@@ -84,7 +91,7 @@ func runRecover(gopts GlobalOptions) error {
 	bar.Done()
 
 	Verbosef("load snapshots\n")
-	err = restic.ForAllSnapshots(gopts.ctx, repo, nil, func(id restic.ID, sn *restic.Snapshot, err error) error {
+	err = restic.ForAllSnapshots(gopts.ctx, snapshotLister, repo, nil, func(id restic.ID, sn *restic.Snapshot, err error) error {
 		trees[*sn.Tree] = true
 		return nil
 	})
@@ -125,14 +132,26 @@ func runRecover(gopts GlobalOptions) error {
 		}
 	}
 
-	treeID, err := repo.SaveTree(gopts.ctx, tree)
-	if err != nil {
-		return errors.Fatalf("unable to save new tree to the repo: %v", err)
-	}
+	wg, ctx := errgroup.WithContext(gopts.ctx)
+	repo.StartPackUploader(ctx, wg)
 
-	err = repo.Flush(gopts.ctx)
+	var treeID restic.ID
+	wg.Go(func() error {
+		var err error
+		treeID, err = restic.SaveTree(ctx, repo, tree)
+		if err != nil {
+			return errors.Fatalf("unable to save new tree to the repository: %v", err)
+		}
+
+		err = repo.Flush(ctx)
+		if err != nil {
+			return errors.Fatalf("unable to save blobs to the repository: %v", err)
+		}
+		return nil
+	})
+	err = wg.Wait()
 	if err != nil {
-		return errors.Fatalf("unable to save blobs to the repo: %v", err)
+		return err
 	}
 
 	return createSnapshot(gopts.ctx, "/recover", hostname, []string{"recovered"}, repo, &treeID)
@@ -147,7 +166,7 @@ func createSnapshot(ctx context.Context, name, hostname string, tags []string, r
 
 	sn.Tree = tree
 
-	id, err := repo.SaveJSONUnpacked(ctx, restic.SnapshotFile, sn)
+	id, err := restic.SaveSnapshot(ctx, repo, sn)
 	if err != nil {
 		return errors.Fatalf("unable to save snapshot: %v", err)
 	}
