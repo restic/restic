@@ -34,15 +34,13 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runDump(dumpOptions, globalOptions, args)
+		return runDump(cmd.Context(), dumpOptions, globalOptions, args)
 	},
 }
 
 // DumpOptions collects all options for the dump command.
 type DumpOptions struct {
-	Hosts   []string
-	Paths   []string
-	Tags    restic.TagLists
+	snapshotFilterOptions
 	Archive string
 }
 
@@ -52,9 +50,7 @@ func init() {
 	cmdRoot.AddCommand(cmdDump)
 
 	flags := cmdDump.Flags()
-	flags.StringArrayVarP(&dumpOptions.Hosts, "host", "H", nil, `only consider snapshots for this host when the snapshot ID is "latest" (can be specified multiple times)`)
-	flags.Var(&dumpOptions.Tags, "tag", "only consider snapshots which include this `taglist` for snapshot ID \"latest\"")
-	flags.StringArrayVar(&dumpOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` for snapshot ID \"latest\"")
+	initSingleSnapshotFilterOptions(flags, &dumpOptions.snapshotFilterOptions)
 	flags.StringVarP(&dumpOptions.Archive, "archive", "a", "tar", "set archive `format` as \"tar\" or \"zip\"")
 }
 
@@ -111,9 +107,7 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repositor
 	return fmt.Errorf("path %q not found in snapshot", item)
 }
 
-func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
-	ctx := gopts.ctx
-
+func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []string) error {
 	if len(args) != 2 {
 		return errors.Fatal("no file and no snapshot ID specified")
 	}
@@ -131,36 +125,23 @@ func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
 
 	splittedPath := splitPath(path.Clean(pathToPrint))
 
-	repo, err := OpenRepository(gopts)
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
 
 	if !gopts.NoLock {
-		lock, err := lockRepo(ctx, repo)
+		var lock *restic.Lock
+		lock, ctx, err = lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
 		}
 	}
 
-	var id restic.ID
-
-	if snapshotIDString == "latest" {
-		id, err = restic.FindLatestSnapshot(ctx, repo.Backend(), repo, opts.Paths, opts.Tags, opts.Hosts, nil)
-		if err != nil {
-			Exitf(1, "latest snapshot for criteria not found: %v Paths:%v Hosts:%v", err, opts.Paths, opts.Hosts)
-		}
-	} else {
-		id, err = restic.FindSnapshot(ctx, repo.Backend(), snapshotIDString)
-		if err != nil {
-			Exitf(1, "invalid id %q: %v", snapshotIDString, err)
-		}
-	}
-
-	sn, err := restic.LoadSnapshot(gopts.ctx, repo, id)
+	sn, err := restic.FindFilteredSnapshot(ctx, repo.Backend(), repo, opts.Paths, opts.Tags, opts.Hosts, nil, snapshotIDString)
 	if err != nil {
-		Exitf(2, "loading snapshot %q failed: %v", snapshotIDString, err)
+		return errors.Fatalf("failed to find snapshot: %v", err)
 	}
 
 	err = repo.LoadIndex(ctx)
@@ -170,13 +151,13 @@ func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
 
 	tree, err := restic.LoadTree(ctx, repo, *sn.Tree)
 	if err != nil {
-		Exitf(2, "loading tree for snapshot %q failed: %v", snapshotIDString, err)
+		return errors.Fatalf("loading tree for snapshot %q failed: %v", snapshotIDString, err)
 	}
 
 	d := dump.New(opts.Archive, repo, os.Stdout)
 	err = printFromTree(ctx, tree, repo, "/", splittedPath, d)
 	if err != nil {
-		Exitf(2, "cannot dump file: %v", err)
+		return errors.Fatalf("cannot dump file: %v", err)
 	}
 
 	return nil

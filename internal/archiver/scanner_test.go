@@ -81,9 +81,7 @@ func TestScanner(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			tempdir, cleanup := restictest.TempDir(t)
-			defer cleanup()
-
+			tempdir := restictest.TempDir(t)
 			TestCreateFiles(t, tempdir, test.src)
 
 			back := restictest.Chdir(t, tempdir)
@@ -218,9 +216,7 @@ func TestScannerError(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			tempdir, cleanup := restictest.TempDir(t)
-			defer cleanup()
-
+			tempdir := restictest.TempDir(t)
 			TestCreateFiles(t, tempdir, test.src)
 
 			back := restictest.Chdir(t, tempdir)
@@ -292,9 +288,7 @@ func TestScannerCancel(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	tempdir, cleanup := restictest.TempDir(t)
-	defer cleanup()
-
+	tempdir := restictest.TempDir(t)
 	TestCreateFiles(t, tempdir, src)
 
 	back := restictest.Chdir(t, tempdir)

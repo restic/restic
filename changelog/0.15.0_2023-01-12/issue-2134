@@ -1,0 +1,19 @@
+Enhancement: Support B2 API keys restricted to hiding but not deleting files
+
+When the B2 backend does not have the necessary permissions to permanently
+delete files, it now automatically falls back to hiding files. This allows
+using restic with an application key which is not allowed to delete files.
+This can prevent an attacker from deleting backups with such an API key.
+
+To use this feature create an application key without the `deleteFiles`
+capability. It is recommended to restrict the key to just one bucket.
+For example using the `b2` command line tool:
+
+`b2 create-key --bucket <bucketName> <keyName> listBuckets,readFiles,writeFiles,listFiles`
+
+Alternatively, you can use the S3 backend to access B2, as described
+in the documentation. In this mode, files are also only hidden instead
+of being deleted permanently.
+
+https://github.com/restic/restic/issues/2134
+https://github.com/restic/restic/pull/2398

@@ -43,7 +43,7 @@ func TestFind(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	expectedMatch := "20bdc1402a6fc9b633aaffffffffffffffffffffffffffffffffffffffffffff"
+	expectedMatch := TestParseID("20bdc1402a6fc9b633aaffffffffffffffffffffffffffffffffffffffffffff")
 	if f != expectedMatch {
 		t.Errorf("Wrong match returned want %s, got %s", expectedMatch, f)
 	}
@@ -52,7 +52,7 @@ func TestFind(t *testing.T) {
 	if _, ok := err.(*NoIDByPrefixError); !ok || !strings.Contains(err.Error(), "NotAPrefix") {
 		t.Error("Expected no snapshots to be found.")
 	}
-	if f != "" {
+	if !f.IsNull() {
 		t.Errorf("Find should not return a match on error.")
 	}
 
@@ -62,7 +62,7 @@ func TestFind(t *testing.T) {
 	if _, ok := err.(*NoIDByPrefixError); !ok || !strings.Contains(err.Error(), extraLengthID) {
 		t.Errorf("Wrong error %v for no snapshots matched", err)
 	}
-	if f != "" {
+	if !f.IsNull() {
 		t.Errorf("Find should not return a match on error.")
 	}
 
@@ -71,48 +71,7 @@ func TestFind(t *testing.T) {
 	if _, ok := err.(*MultipleIDMatchesError); !ok {
 		t.Errorf("Wrong error %v for multiple snapshots", err)
 	}
-	if f != "" {
+	if !f.IsNull() {
 		t.Errorf("Find should not return a match on error.")
-	}
-}
-
-func TestPrefixLength(t *testing.T) {
-	list := samples
-
-	m := mockBackend{}
-	m.list = func(ctx context.Context, t FileType, fn func(FileInfo) error) error {
-		for _, id := range list {
-			err := fn(FileInfo{Name: id.String()})
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-
-	l, err := PrefixLength(context.TODO(), m, SnapshotFile)
-	if err != nil {
-		t.Error(err)
-	}
-	if l != 19 {
-		t.Errorf("wrong prefix length returned, want %d, got %d", 19, l)
-	}
-
-	list = samples[:3]
-	l, err = PrefixLength(context.TODO(), m, SnapshotFile)
-	if err != nil {
-		t.Error(err)
-	}
-	if l != 19 {
-		t.Errorf("wrong prefix length returned, want %d, got %d", 19, l)
-	}
-
-	list = samples[3:]
-	l, err = PrefixLength(context.TODO(), m, SnapshotFile)
-	if err != nil {
-		t.Error(err)
-	}
-	if l != 8 {
-		t.Errorf("wrong prefix length returned, want %d, got %d", 8, l)
 	}
 }

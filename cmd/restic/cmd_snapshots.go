@@ -26,15 +26,13 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runSnapshots(snapshotOptions, globalOptions, args)
+		return runSnapshots(cmd.Context(), snapshotOptions, globalOptions, args)
 	},
 }
 
 // SnapshotOptions bundles all options for the snapshots command.
 type SnapshotOptions struct {
-	Hosts   []string
-	Tags    restic.TagLists
-	Paths   []string
+	snapshotFilterOptions
 	Compact bool
 	Last    bool // This option should be removed in favour of Latest.
 	Latest  int
@@ -47,9 +45,7 @@ func init() {
 	cmdRoot.AddCommand(cmdSnapshots)
 
 	f := cmdSnapshots.Flags()
-	f.StringArrayVarP(&snapshotOptions.Hosts, "host", "H", nil, "only consider snapshots for this `host` (can be specified multiple times)")
-	f.Var(&snapshotOptions.Tags, "tag", "only consider snapshots which include this `taglist` in the format `tag[,tag,...]` (can be specified multiple times)")
-	f.StringArrayVar(&snapshotOptions.Paths, "path", nil, "only consider snapshots for this `path` (can be specified multiple times)")
+	initMultiSnapshotFilterOptions(f, &snapshotOptions.snapshotFilterOptions, true)
 	f.BoolVarP(&snapshotOptions.Compact, "compact", "c", false, "use compact output format")
 	f.BoolVar(&snapshotOptions.Last, "last", false, "only show the last snapshot for each host and path")
 	err := f.MarkDeprecated("last", "use --latest 1")
@@ -61,22 +57,20 @@ func init() {
 	f.StringVarP(&snapshotOptions.GroupBy, "group-by", "g", "", "`group` snapshots by host, paths and/or tags, separated by comma")
 }
 
-func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) error {
-	repo, err := OpenRepository(gopts)
+func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions, args []string) error {
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
 
 	if !gopts.NoLock {
-		lock, err := lockRepo(gopts.ctx, repo)
+		var lock *restic.Lock
+		lock, ctx, err = lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
 		}
 	}
-
-	ctx, cancel := context.WithCancel(gopts.ctx)
-	defer cancel()
 
 	var snapshots restic.Snapshots
 	for sn := range FindFilteredSnapshots(ctx, repo.Backend(), repo, opts.Hosts, opts.Tags, opts.Paths, args) {

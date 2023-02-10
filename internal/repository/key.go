@@ -40,7 +40,7 @@ type Key struct {
 	user   *crypto.Key
 	master *crypto.Key
 
-	name string
+	id restic.ID
 }
 
 // Params tracks the parameters used for the KDF. If not set, it will be
@@ -62,10 +62,10 @@ func createMasterKey(ctx context.Context, s *Repository, password string) (*Key,
 }
 
 // OpenKey tries do decrypt the key specified by name with the given password.
-func OpenKey(ctx context.Context, s *Repository, name string, password string) (*Key, error) {
-	k, err := LoadKey(ctx, s, name)
+func OpenKey(ctx context.Context, s *Repository, id restic.ID, password string) (*Key, error) {
+	k, err := LoadKey(ctx, s, id)
 	if err != nil {
-		debug.Log("LoadKey(%v) returned error %v", name, err)
+		debug.Log("LoadKey(%v) returned error %v", id.String(), err)
 		return nil, err
 	}
 
@@ -99,7 +99,7 @@ func OpenKey(ctx context.Context, s *Repository, name string, password string) (
 		debug.Log("Unmarshal() returned error %v", err)
 		return nil, errors.Wrap(err, "Unmarshal")
 	}
-	k.name = name
+	k.id = id
 
 	if !k.Valid() {
 		return nil, errors.New("Invalid key for repository")
@@ -136,22 +136,16 @@ func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int,
 	defer cancel()
 
 	// try at most maxKeys keys in repo
-	err = s.Backend().List(listCtx, restic.KeyFile, func(fi restic.FileInfo) error {
+	err = s.List(listCtx, restic.KeyFile, func(id restic.ID, size int64) error {
 		checked++
 		if maxKeys > 0 && checked > maxKeys {
 			return ErrMaxKeysReached
 		}
 
-		_, err := restic.ParseID(fi.Name)
+		debug.Log("trying key %q", id.String())
+		key, err := OpenKey(ctx, s, id, password)
 		if err != nil {
-			debug.Log("rejecting key with invalid name: %v", fi.Name)
-			return nil
-		}
-
-		debug.Log("trying key %q", fi.Name)
-		key, err := OpenKey(ctx, s, fi.Name, password)
-		if err != nil {
-			debug.Log("key %v returned error %v", fi.Name, err)
+			debug.Log("key %v returned error %v", id.String(), err)
 
 			// ErrUnauthenticated means the password is wrong, try the next key
 			if errors.Is(err, crypto.ErrUnauthenticated) {
@@ -161,7 +155,7 @@ func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int,
 			return err
 		}
 
-		debug.Log("successfully opened key %v", fi.Name)
+		debug.Log("successfully opened key %v", id.String())
 		k = key
 		cancel()
 		return nil
@@ -183,8 +177,8 @@ func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int,
 }
 
 // LoadKey loads a key from the backend.
-func LoadKey(ctx context.Context, s *Repository, name string) (k *Key, err error) {
-	h := restic.Handle{Type: restic.KeyFile, Name: name}
+func LoadKey(ctx context.Context, s *Repository, id restic.ID) (k *Key, err error) {
+	h := restic.Handle{Type: restic.KeyFile, Name: id.String()}
 	data, err := backend.LoadAll(ctx, nil, s.be, h)
 	if err != nil {
 		return nil, err
@@ -274,10 +268,11 @@ func AddKey(ctx context.Context, s *Repository, password, username, hostname str
 		return nil, errors.Wrap(err, "Marshal")
 	}
 
+	id := restic.Hash(buf)
 	// store in repository and return
 	h := restic.Handle{
 		Type: restic.KeyFile,
-		Name: restic.Hash(buf).String(),
+		Name: id.String(),
 	}
 
 	err = s.be.Save(ctx, h, restic.NewByteReader(buf, s.be.Hasher()))
@@ -285,7 +280,7 @@ func AddKey(ctx context.Context, s *Repository, password, username, hostname str
 		return nil, err
 	}
 
-	newkey.name = h.Name
+	newkey.id = id
 
 	return newkey, nil
 }
@@ -297,9 +292,9 @@ func (k *Key) String() string {
 	return fmt.Sprintf("<Key of %s@%s, created on %s>", k.Username, k.Hostname, k.Created)
 }
 
-// Name returns an identifier for the key.
-func (k Key) Name() string {
-	return k.name
+// ID returns an identifier for the key.
+func (k Key) ID() restic.ID {
+	return k.id
 }
 
 // Valid tests whether the mac and encryption keys are valid (i.e. not zero)

@@ -112,9 +112,7 @@ func TestBackendREST(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	dir, cleanup := rtest.TempDir(t)
-	defer cleanup()
-
+	dir := rtest.TempDir(t)
 	serverURL, cleanup := runRESTServer(ctx, t, dir)
 	defer cleanup()
 
@@ -144,9 +142,7 @@ func BenchmarkBackendREST(t *testing.B) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	dir, cleanup := rtest.TempDir(t)
-	defer cleanup()
-
+	dir := rtest.TempDir(t)
 	serverURL, cleanup := runRESTServer(ctx, t, dir)
 	defer cleanup()
 

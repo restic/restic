@@ -439,9 +439,7 @@ func TestTree(t *testing.T) {
 				t.Skip("skip test on unix")
 			}
 
-			tempdir, cleanup := restictest.TempDir(t)
-			defer cleanup()
-
+			tempdir := restictest.TempDir(t)
 			TestCreateFiles(t, tempdir, test.src)
 
 			back := restictest.Chdir(t, tempdir)

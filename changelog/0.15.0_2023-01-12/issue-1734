@@ -1,0 +1,15 @@
+Enhancement: Inform about successful retries after errors
+
+When a recoverable error is encountered, restic shows a warning message saying
+that it's retrying, e.g.:
+
+`Save(<data/956b9ced99>) returned error, retrying after 357.131936ms: ...`
+
+This message can be confusing in that it never clearly states whether the retry
+is successful or not. This has now been fixed such that restic follows up with
+a message confirming a successful retry, e.g.:
+
+`Save(<data/956b9ced99>) operation successful after 1 retries`
+
+https://github.com/restic/restic/issues/1734
+https://github.com/restic/restic/pull/2661

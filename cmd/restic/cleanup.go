@@ -11,7 +11,7 @@ import (
 
 var cleanupHandlers struct {
 	sync.Mutex
-	list []func() error
+	list []func(code int) (int, error)
 	done bool
 	ch   chan os.Signal
 }
@@ -25,7 +25,7 @@ func init() {
 // AddCleanupHandler adds the function f to the list of cleanup handlers so
 // that it is executed when all the cleanup handlers are run, e.g. when SIGINT
 // is received.
-func AddCleanupHandler(f func() error) {
+func AddCleanupHandler(f func(code int) (int, error)) {
 	cleanupHandlers.Lock()
 	defer cleanupHandlers.Unlock()
 
@@ -36,22 +36,24 @@ func AddCleanupHandler(f func() error) {
 }
 
 // RunCleanupHandlers runs all registered cleanup handlers
-func RunCleanupHandlers() {
+func RunCleanupHandlers(code int) int {
 	cleanupHandlers.Lock()
 	defer cleanupHandlers.Unlock()
 
 	if cleanupHandlers.done {
-		return
+		return code
 	}
 	cleanupHandlers.done = true
 
 	for _, f := range cleanupHandlers.list {
-		err := f()
+		var err error
+		code, err = f(code)
 		if err != nil {
 			Warnf("error in cleanup handler: %v\n", err)
 		}
 	}
 	cleanupHandlers.list = nil
+	return code
 }
 
 // CleanupHandler handles the SIGINT signals.
@@ -75,6 +77,6 @@ func CleanupHandler(c <-chan os.Signal) {
 // Exit runs the cleanup handlers and then terminates the process with the
 // given exit code.
 func Exit(code int) {
-	RunCleanupHandlers()
+	code = RunCleanupHandlers(code)
 	os.Exit(code)
 }

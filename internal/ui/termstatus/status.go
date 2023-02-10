@@ -25,6 +25,7 @@ type Terminal struct {
 	msg             chan message
 	status          chan status
 	canUpdateStatus bool
+	lastStatusLen   int
 
 	// will be closed when the goroutine which runs Run() terminates, so it'll
 	// yield a default value immediately
@@ -154,6 +155,18 @@ func (t *Terminal) run(ctx context.Context) {
 }
 
 func (t *Terminal) writeStatus(status []string) {
+	statusLen := len(status)
+	status = append([]string{}, status...)
+	for i := len(status); i < t.lastStatusLen; i++ {
+		// clear no longer used status lines
+		status = append(status, "")
+		if i > 0 {
+			// all lines except the last one must have a line break
+			status[i-1] = status[i-1] + "\n"
+		}
+	}
+	t.lastStatusLen = statusLen
+
 	for _, line := range status {
 		t.clearCurrentLine(t.wr, t.fd)
 

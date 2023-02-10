@@ -220,10 +220,18 @@ func match(pattern Pattern, strs []string) (matched bool, err error) {
 	return false, nil
 }
 
+type InvalidPatternError struct {
+	InvalidPatterns []string
+}
+
+func (e *InvalidPatternError) Error() string {
+	return "invalid pattern(s) provided:\n" + strings.Join(e.InvalidPatterns, "\n")
+}
+
 // ValidatePatterns validates a slice of patterns.
 // Returns true if all patterns are valid - false otherwise, along with the invalid patterns.
-func ValidatePatterns(patterns []string) (allValid bool, invalidPatterns []string) {
-	invalidPatterns = make([]string, 0)
+func ValidatePatterns(patterns []string) error {
+	invalidPatterns := make([]string, 0)
 
 	for _, Pattern := range ParsePatterns(patterns) {
 		// Validate all pattern parts
@@ -238,7 +246,10 @@ func ValidatePatterns(patterns []string) (allValid bool, invalidPatterns []strin
 		}
 	}
 
-	return len(invalidPatterns) == 0, invalidPatterns
+	if len(invalidPatterns) > 0 {
+		return &InvalidPatternError{InvalidPatterns: invalidPatterns}
+	}
+	return nil
 }
 
 // ParsePatterns prepares a list of patterns for use with List.

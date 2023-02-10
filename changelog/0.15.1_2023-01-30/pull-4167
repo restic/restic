@@ -1,0 +1,6 @@
+Bugfix: Add missing ETA in `backup` progress bar
+
+A regression in restic 0.15.0 caused the ETA to be missing from the progress
+bar displayed by the `backup` command. This has now been fixed.
+
+https://github.com/restic/restic/pull/4167

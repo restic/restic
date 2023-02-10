@@ -1,0 +1,10 @@
+Enhancement: Allow `backup` file tree scanner to be disabled
+
+The `backup` command walks the file tree in a separate scanner process to find
+the total size and file/directory count, and uses this to provide an ETA. This
+can slow down backups, especially of network filesystems.
+
+The command now has a new option `--no-scan` which can be used to disable this
+scanning in order to speed up backups when needed.
+
+https://github.com/restic/restic/pull/3931

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -30,7 +31,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runRestore(restoreOptions, globalOptions, args)
+		return runRestore(cmd.Context(), restoreOptions, globalOptions, args)
 	},
 }
 
@@ -41,10 +42,9 @@ type RestoreOptions struct {
 	Include            []string
 	InsensitiveInclude []string
 	Target             string
-	Hosts              []string
-	Paths              []string
-	Tags               restic.TagLists
-	Verify             bool
+	snapshotFilterOptions
+	Sparse bool
+	Verify bool
 }
 
 var restoreOptions RestoreOptions
@@ -59,36 +59,34 @@ func init() {
 	flags.StringArrayVar(&restoreOptions.InsensitiveInclude, "iinclude", nil, "same as `--include` but ignores the casing of filenames")
 	flags.StringVarP(&restoreOptions.Target, "target", "t", "", "directory to extract data to")
 
-	flags.StringArrayVarP(&restoreOptions.Hosts, "host", "H", nil, `only consider snapshots for this host when the snapshot ID is "latest" (can be specified multiple times)`)
-	flags.Var(&restoreOptions.Tags, "tag", "only consider snapshots which include this `taglist` for snapshot ID \"latest\"")
-	flags.StringArrayVar(&restoreOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` for snapshot ID \"latest\"")
+	initSingleSnapshotFilterOptions(flags, &restoreOptions.snapshotFilterOptions)
+	flags.BoolVar(&restoreOptions.Sparse, "sparse", false, "restore files as sparse")
 	flags.BoolVar(&restoreOptions.Verify, "verify", false, "verify restored files content")
 }
 
-func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
-	ctx := gopts.ctx
+func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions, args []string) error {
 	hasExcludes := len(opts.Exclude) > 0 || len(opts.InsensitiveExclude) > 0
 	hasIncludes := len(opts.Include) > 0 || len(opts.InsensitiveInclude) > 0
 
 	// Validate provided patterns
 	if len(opts.Exclude) > 0 {
-		if valid, invalidPatterns := filter.ValidatePatterns(opts.Exclude); !valid {
-			return errors.Fatalf("--exclude: invalid pattern(s) provided:\n%s", strings.Join(invalidPatterns, "\n"))
+		if err := filter.ValidatePatterns(opts.Exclude); err != nil {
+			return errors.Fatalf("--exclude: %s", err)
 		}
 	}
 	if len(opts.InsensitiveExclude) > 0 {
-		if valid, invalidPatterns := filter.ValidatePatterns(opts.InsensitiveExclude); !valid {
-			return errors.Fatalf("--iexclude: invalid pattern(s) provided:\n%s", strings.Join(invalidPatterns, "\n"))
+		if err := filter.ValidatePatterns(opts.InsensitiveExclude); err != nil {
+			return errors.Fatalf("--iexclude: %s", err)
 		}
 	}
 	if len(opts.Include) > 0 {
-		if valid, invalidPatterns := filter.ValidatePatterns(opts.Include); !valid {
-			return errors.Fatalf("--include: invalid pattern(s) provided:\n%s", strings.Join(invalidPatterns, "\n"))
+		if err := filter.ValidatePatterns(opts.Include); err != nil {
+			return errors.Fatalf("--include: %s", err)
 		}
 	}
 	if len(opts.InsensitiveInclude) > 0 {
-		if valid, invalidPatterns := filter.ValidatePatterns(opts.InsensitiveInclude); !valid {
-			return errors.Fatalf("--iinclude: invalid pattern(s) provided:\n%s", strings.Join(invalidPatterns, "\n"))
+		if err := filter.ValidatePatterns(opts.InsensitiveInclude); err != nil {
+			return errors.Fatalf("--iinclude: %s", err)
 		}
 	}
 
@@ -119,31 +117,23 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 
 	debug.Log("restore %v to %v", snapshotIDString, opts.Target)
 
-	repo, err := OpenRepository(gopts)
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
 
 	if !gopts.NoLock {
-		lock, err := lockRepo(ctx, repo)
+		var lock *restic.Lock
+		lock, ctx, err = lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
 		}
 	}
 
-	var id restic.ID
-
-	if snapshotIDString == "latest" {
-		id, err = restic.FindLatestSnapshot(ctx, repo.Backend(), repo, opts.Paths, opts.Tags, opts.Hosts, nil)
-		if err != nil {
-			Exitf(1, "latest snapshot for criteria not found: %v Paths:%v Hosts:%v", err, opts.Paths, opts.Hosts)
-		}
-	} else {
-		id, err = restic.FindSnapshot(ctx, repo.Backend(), snapshotIDString)
-		if err != nil {
-			Exitf(1, "invalid id %q: %v", snapshotIDString, err)
-		}
+	sn, err := restic.FindFilteredSnapshot(ctx, repo.Backend(), repo, opts.Hosts, opts.Tags, opts.Paths, nil, snapshotIDString)
+	if err != nil {
+		return errors.Fatalf("failed to find snapshot: %v", err)
 	}
 
 	err = repo.LoadIndex(ctx)
@@ -151,10 +141,7 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	res, err := restorer.NewRestorer(ctx, repo, id)
-	if err != nil {
-		Exitf(2, "creating restorer failed: %v\n", err)
-	}
+	res := restorer.NewRestorer(ctx, repo, sn, opts.Sparse)
 
 	totalErrors := 0
 	res.Error = func(location string, err error) error {

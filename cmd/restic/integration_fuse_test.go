@@ -4,9 +4,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -53,11 +55,12 @@ func waitForMount(t testing.TB, dir string) {
 	t.Errorf("subdir %q of dir %s never appeared", mountTestSubdir, dir)
 }
 
-func testRunMount(t testing.TB, gopts GlobalOptions, dir string) {
+func testRunMount(t testing.TB, gopts GlobalOptions, dir string, wg *sync.WaitGroup) {
+	defer wg.Done()
 	opts := MountOptions{
 		TimeTemplate: time.RFC3339,
 	}
-	rtest.OK(t, runMount(opts, gopts, []string{dir}))
+	rtest.OK(t, runMount(context.TODO(), opts, gopts, []string{dir}))
 }
 
 func testRunUmount(t testing.TB, gopts GlobalOptions, dir string) {
@@ -86,8 +89,11 @@ func listSnapshots(t testing.TB, dir string) []string {
 func checkSnapshots(t testing.TB, global GlobalOptions, repo *repository.Repository, mountpoint, repodir string, snapshotIDs restic.IDs, expectedSnapshotsInFuseDir int) {
 	t.Logf("checking for %d snapshots: %v", len(snapshotIDs), snapshotIDs)
 
-	go testRunMount(t, global, mountpoint)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go testRunMount(t, global, mountpoint, &wg)
 	waitForMount(t, mountpoint)
+	defer wg.Wait()
 	defer testRunUmount(t, global, mountpoint)
 
 	if !snapshotsDirExists(t, mountpoint) {
@@ -119,7 +125,7 @@ func checkSnapshots(t testing.TB, global GlobalOptions, repo *repository.Reposit
 	}
 
 	for _, id := range snapshotIDs {
-		snapshot, err := restic.LoadSnapshot(global.ctx, repo, id)
+		snapshot, err := restic.LoadSnapshot(context.TODO(), repo, id)
 		rtest.OK(t, err)
 
 		ts := snapshot.Time.Format(time.RFC3339)
@@ -160,7 +166,7 @@ func TestMount(t *testing.T) {
 
 	testRunInit(t, env.gopts)
 
-	repo, err := OpenRepository(env.gopts)
+	repo, err := OpenRepository(context.TODO(), env.gopts)
 	rtest.OK(t, err)
 
 	checkSnapshots(t, env.gopts, repo, env.mountpoint, env.repo, []restic.ID{}, 0)
@@ -205,7 +211,7 @@ func TestMountSameTimestamps(t *testing.T) {
 
 	rtest.SetupTarTestFixture(t, env.base, filepath.Join("testdata", "repo-same-timestamps.tar.gz"))
 
-	repo, err := OpenRepository(env.gopts)
+	repo, err := OpenRepository(context.TODO(), env.gopts)
 	rtest.OK(t, err)
 
 	ids := []restic.ID{

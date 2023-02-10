@@ -12,9 +12,7 @@ import (
 
 // restic should detect rclone exiting.
 func TestRcloneExit(t *testing.T) {
-	dir, cleanup := rtest.TempDir(t)
-	defer cleanup()
-
+	dir := rtest.TempDir(t)
 	cfg := NewConfig()
 	cfg.Remote = dir
 	be, err := Open(cfg, nil)
@@ -39,5 +37,18 @@ func TestRcloneExit(t *testing.T) {
 			Type: restic.PackFile,
 		})
 		rtest.Assert(t, err != nil, "expected an error")
+	}
+}
+
+// restic should detect rclone startup failures
+func TestRcloneFailedStart(t *testing.T) {
+	cfg := NewConfig()
+	// exits with exit code 1
+	cfg.Program = "false"
+	_, err := Open(cfg, nil)
+	var e *exec.ExitError
+	if !errors.As(err, &e) {
+		// unexpected error
+		rtest.OK(t, err)
 	}
 }

@@ -43,14 +43,13 @@ func ParseConfig(s string) (interface{}, error) {
 
 	// use the first entry of the path as the bucket name and the
 	// remainder as prefix
-	data := strings.SplitN(s, ":", 2)
-	if len(data) < 2 {
+	container, prefix, colon := strings.Cut(s, ":")
+	if !colon {
 		return nil, errors.New("azure: invalid format: bucket name or path not found")
 	}
-	container, path := data[0], path.Clean(data[1])
-	path = strings.TrimPrefix(path, "/")
+	prefix = strings.TrimPrefix(path.Clean(prefix), "/")
 	cfg := NewConfig()
 	cfg.Container = container
-	cfg.Prefix = path
+	cfg.Prefix = prefix
 	return cfg, nil
 }

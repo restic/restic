@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -107,7 +106,7 @@ func checkZip(t *testing.T, testDir string, srcZip *bytes.Buffer) error {
 			if uint64(match.Size()) != f.UncompressedSize64 {
 				return fmt.Errorf("size does not match got %v want %v", f.UncompressedSize64, match.Size())
 			}
-			contentsFile, err := ioutil.ReadFile(matchPath)
+			contentsFile, err := os.ReadFile(matchPath)
 			if err != nil {
 				t.Fatal(err)
 			}

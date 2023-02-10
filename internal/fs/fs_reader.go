@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path"
@@ -47,7 +48,7 @@ func (fs *Reader) Open(name string) (f File, err error) {
 		})
 
 		if f == nil {
-			return nil, syscall.EIO
+			return nil, pathError("open", name, syscall.EIO)
 		}
 
 		return f, nil
@@ -58,7 +59,7 @@ func (fs *Reader) Open(name string) (f File, err error) {
 		return f, nil
 	}
 
-	return nil, syscall.ENOENT
+	return nil, pathError("open", name, syscall.ENOENT)
 }
 
 func (fs *Reader) fi() os.FileInfo {
@@ -74,10 +75,11 @@ func (fs *Reader) fi() os.FileInfo {
 // or Create instead.  It opens the named file with specified flag
 // (O_RDONLY etc.) and perm, (0666 etc.) if applicable.  If successful,
 // methods on the returned File can be used for I/O.
-// If there is an error, it will be of type *PathError.
+// If there is an error, it will be of type *os.PathError.
 func (fs *Reader) OpenFile(name string, flag int, perm os.FileMode) (f File, err error) {
 	if flag & ^(O_RDONLY|O_NOFOLLOW) != 0 {
-		return nil, errors.Errorf("invalid combination of flags 0x%x", flag)
+		return nil, pathError("open", name,
+			fmt.Errorf("invalid combination of flags 0x%x", flag))
 	}
 
 	fs.open.Do(func() {
@@ -85,14 +87,14 @@ func (fs *Reader) OpenFile(name string, flag int, perm os.FileMode) (f File, err
 	})
 
 	if f == nil {
-		return nil, syscall.EIO
+		return nil, pathError("open", name, syscall.EIO)
 	}
 
 	return f, nil
 }
 
 // Stat returns a FileInfo describing the named file. If there is an error, it
-// will be of type *PathError.
+// will be of type *os.PathError.
 func (fs *Reader) Stat(name string) (os.FileInfo, error) {
 	return fs.Lstat(name)
 }
@@ -100,7 +102,7 @@ func (fs *Reader) Stat(name string) (os.FileInfo, error) {
 // Lstat returns the FileInfo structure describing the named file.
 // If the file is a symbolic link, the returned FileInfo
 // describes the symbolic link.  Lstat makes no attempt to follow the link.
-// If there is an error, it will be of type *PathError.
+// If there is an error, it will be of type *os.PathError.
 func (fs *Reader) Lstat(name string) (os.FileInfo, error) {
 	getDirInfo := func(name string) os.FileInfo {
 		fi := fakeFileInfo{
@@ -130,7 +132,7 @@ func (fs *Reader) Lstat(name string) (os.FileInfo, error) {
 		dir = fs.Dir(dir)
 	}
 
-	return nil, os.ErrNotExist
+	return nil, pathError("lstat", name, os.ErrNotExist)
 }
 
 // Join joins any number of path elements into a single path, adding a
@@ -207,11 +209,7 @@ func (r *readerFile) Read(p []byte) (int, error) {
 
 	// return an error if we did not read any data
 	if err == io.EOF && !r.AllowEmptyFile && !r.bytesRead {
-		return n, &os.PathError{
-			Path: r.fakeFile.name,
-			Op:   "read",
-			Err:  ErrFileEmpty,
-		}
+		return n, pathError("read", r.fakeFile.name, ErrFileEmpty)
 	}
 
 	return n, err
@@ -239,19 +237,19 @@ func (f fakeFile) Fd() uintptr {
 }
 
 func (f fakeFile) Readdirnames(n int) ([]string, error) {
-	return nil, os.ErrInvalid
+	return nil, pathError("readdirnames", f.name, os.ErrInvalid)
 }
 
 func (f fakeFile) Readdir(n int) ([]os.FileInfo, error) {
-	return nil, os.ErrInvalid
+	return nil, pathError("readdir", f.name, os.ErrInvalid)
 }
 
 func (f fakeFile) Seek(int64, int) (int64, error) {
-	return 0, os.ErrInvalid
+	return 0, pathError("seek", f.name, os.ErrInvalid)
 }
 
 func (f fakeFile) Read(p []byte) (int, error) {
-	return 0, os.ErrInvalid
+	return 0, pathError("read", f.name, os.ErrInvalid)
 }
 
 func (f fakeFile) Close() error {
@@ -274,7 +272,7 @@ type fakeDir struct {
 
 func (d fakeDir) Readdirnames(n int) ([]string, error) {
 	if n > 0 {
-		return nil, errors.New("not implemented")
+		return nil, pathError("readdirnames", d.name, errors.New("not implemented"))
 	}
 	names := make([]string, 0, len(d.entries))
 	for _, entry := range d.entries {
@@ -286,7 +284,7 @@ func (d fakeDir) Readdirnames(n int) ([]string, error) {
 
 func (d fakeDir) Readdir(n int) ([]os.FileInfo, error) {
 	if n > 0 {
-		return nil, errors.New("not implemented")
+		return nil, pathError("readdir", d.name, errors.New("not implemented"))
 	}
 	return d.entries, nil
 }
@@ -321,4 +319,8 @@ func (fi fakeFileInfo) IsDir() bool {
 
 func (fi fakeFileInfo) Sys() interface{} {
 	return nil
+}
+
+func pathError(op, name string, err error) *os.PathError {
+	return &os.PathError{Op: op, Path: name, Err: err}
 }

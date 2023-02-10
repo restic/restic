@@ -9,31 +9,27 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/restic/restic/internal/errors"
-
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
 )
 
 // uidGidInt returns uid, gid of the user as a number.
-func uidGidInt(u user.User) (uid, gid uint32, err error) {
-	var ui, gi int64
-	ui, err = strconv.ParseInt(u.Uid, 10, 32)
+func uidGidInt(u *user.User) (uid, gid uint32, err error) {
+	ui, err := strconv.ParseUint(u.Uid, 10, 32)
 	if err != nil {
-		return uid, gid, errors.Wrap(err, "ParseInt")
+		return 0, 0, errors.Errorf("invalid UID %q", u.Uid)
 	}
-	gi, err = strconv.ParseInt(u.Gid, 10, 32)
+	gi, err := strconv.ParseUint(u.Gid, 10, 32)
 	if err != nil {
-		return uid, gid, errors.Wrap(err, "ParseInt")
+		return 0, 0, errors.Errorf("invalid GID %q", u.Gid)
 	}
-	uid = uint32(ui)
-	gid = uint32(gi)
-	return
+	return uint32(ui), uint32(gi), nil
 }
 
 // checkProcess will check if the process retaining the lock
 // exists and responds to SIGHUP signal.
 // Returns true if the process exists and responds.
-func (l Lock) processExists() bool {
+func (l *Lock) processExists() bool {
 	proc, err := os.FindProcess(l.PID)
 	if err != nil {
 		debug.Log("error searching for process %d: %v\n", l.PID, err)

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -85,17 +84,16 @@ func TestIsExcludedByFile(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tempDir, cleanup := test.TempDir(t)
-			defer cleanup()
+			tempDir := test.TempDir(t)
 
 			foo := filepath.Join(tempDir, "foo")
-			err := ioutil.WriteFile(foo, []byte("foo"), 0666)
+			err := os.WriteFile(foo, []byte("foo"), 0666)
 			if err != nil {
 				t.Fatalf("could not write file: %v", err)
 			}
 			if tc.tagFile != "" {
 				tagFile := filepath.Join(tempDir, tc.tagFile)
-				err = ioutil.WriteFile(tagFile, []byte(tc.content), 0666)
+				err = os.WriteFile(tagFile, []byte(tc.content), 0666)
 				if err != nil {
 					t.Fatalf("could not write tagfile: %v", err)
 				}
@@ -116,8 +114,7 @@ func TestIsExcludedByFile(t *testing.T) {
 // cancel each other out. It was initially written to demonstrate a bug in
 // rejectIfPresent.
 func TestMultipleIsExcludedByFile(t *testing.T) {
-	tempDir, cleanup := test.TempDir(t)
-	defer cleanup()
+	tempDir := test.TempDir(t)
 
 	// Create some files in a temporary directory.
 	// Files in UPPERCASE will be used as exclusion triggers later on.
@@ -150,7 +147,7 @@ func TestMultipleIsExcludedByFile(t *testing.T) {
 		// create directories first, then the file
 		p := filepath.Join(tempDir, filepath.FromSlash(f.path))
 		errs = append(errs, os.MkdirAll(filepath.Dir(p), 0700))
-		errs = append(errs, ioutil.WriteFile(p, []byte(f.path), 0600))
+		errs = append(errs, os.WriteFile(p, []byte(f.path), 0600))
 	}
 	test.OKs(t, errs) // see if anything went wrong during the creation
 
@@ -241,8 +238,7 @@ func TestParseInvalidSizeStr(t *testing.T) {
 // TestIsExcludedByFileSize is for testing the instance of
 // --exclude-larger-than parameters
 func TestIsExcludedByFileSize(t *testing.T) {
-	tempDir, cleanup := test.TempDir(t)
-	defer cleanup()
+	tempDir := test.TempDir(t)
 
 	// Max size of file is set to be 1k
 	maxSizeStr := "1k"

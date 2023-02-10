@@ -27,9 +27,6 @@ type Backend interface {
 	// HasAtomicReplace returns whether Save() can atomically replace files
 	HasAtomicReplace() bool
 
-	// Test a boolean value whether a File with the name and type exists.
-	Test(ctx context.Context, h Handle) (bool, error)
-
 	// Remove removes a File described  by h.
 	Remove(ctx context.Context, h Handle) error
 
@@ -64,6 +61,9 @@ type Backend interface {
 
 	// IsNotExist returns true if the error was caused by a non-existing file
 	// in the backend.
+	//
+	// The argument may be a wrapped error. The implementation is responsible
+	// for unwrapping it.
 	IsNotExist(err error) bool
 
 	// Delete removes all data in the backend.

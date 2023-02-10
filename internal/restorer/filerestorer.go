@@ -27,6 +27,7 @@ const (
 type fileInfo struct {
 	lock       sync.Mutex
 	inProgress bool
+	sparse     bool
 	size       int64
 	location   string      // file on local filesystem relative to restorer basedir
 	blobs      interface{} // blobs of the file
@@ -51,6 +52,8 @@ type fileRestorer struct {
 
 	workerCount int
 	filesWriter *filesWriter
+	zeroChunk   restic.ID
+	sparse      bool
 
 	dst   string
 	files []*fileInfo
@@ -61,7 +64,8 @@ func newFileRestorer(dst string,
 	packLoader repository.BackendLoadFn,
 	key *crypto.Key,
 	idx func(restic.BlobHandle) []restic.PackedBlob,
-	connections uint) *fileRestorer {
+	connections uint,
+	sparse bool) *fileRestorer {
 
 	// as packs are streamed the concurrency is limited by IO
 	workerCount := int(connections)
@@ -71,6 +75,8 @@ func newFileRestorer(dst string,
 		idx:         idx,
 		packLoader:  packLoader,
 		filesWriter: newFilesWriter(workerCount),
+		zeroChunk:   repository.ZeroChunk(),
+		sparse:      sparse,
 		workerCount: workerCount,
 		dst:         dst,
 		Error:       restorerAbortOnAllErrors,
@@ -133,7 +139,16 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 				packOrder = append(packOrder, packID)
 			}
 			pack.files[file] = struct{}{}
+			if blob.ID.Equal(r.zeroChunk) {
+				file.sparse = r.sparse
+			}
 		})
+		if len(fileBlobs) == 1 {
+			// no need to preallocate files with a single block, thus we can always consider them to be sparse
+			// in addition, a short chunk will never match r.zeroChunk which would prevent sparseness for short files
+			file.sparse = r.sparse
+		}
+
 		if err != nil {
 			// repository index is messed up, can't do anything
 			return err
@@ -253,7 +268,7 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) error {
 						file.inProgress = true
 						createSize = file.size
 					}
-					return r.filesWriter.writeToFile(r.targetPath(file.location), blobData, offset, createSize)
+					return r.filesWriter.writeToFile(r.targetPath(file.location), blobData, offset, createSize, file.sparse)
 				}
 				err := sanitizeError(file, writeToFile())
 				if err != nil {

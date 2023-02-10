@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/restic/restic/internal/crypto"
@@ -147,10 +147,10 @@ func newTestRepo(content []TestFile) *TestRepo {
 	return repo
 }
 
-func restoreAndVerify(t *testing.T, tempdir string, content []TestFile, files map[string]bool) {
+func restoreAndVerify(t *testing.T, tempdir string, content []TestFile, files map[string]bool, sparse bool) {
 	repo := newTestRepo(content)
 
-	r := newFileRestorer(tempdir, repo.loader, repo.key, repo.Lookup, 2)
+	r := newFileRestorer(tempdir, repo.loader, repo.key, repo.Lookup, 2, sparse)
 
 	if files == nil {
 		r.files = repo.files
@@ -171,7 +171,7 @@ func restoreAndVerify(t *testing.T, tempdir string, content []TestFile, files ma
 func verifyRestore(t *testing.T, r *fileRestorer, repo *TestRepo) {
 	for _, file := range r.files {
 		target := r.targetPath(file.location)
-		data, err := ioutil.ReadFile(target)
+		data, err := os.ReadFile(target)
 		if err != nil {
 			t.Errorf("unable to read file %v: %v", file.location, err)
 			continue
@@ -185,69 +185,70 @@ func verifyRestore(t *testing.T, r *fileRestorer, repo *TestRepo) {
 }
 
 func TestFileRestorerBasic(t *testing.T) {
-	tempdir, cleanup := rtest.TempDir(t)
-	defer cleanup()
+	tempdir := rtest.TempDir(t)
 
-	restoreAndVerify(t, tempdir, []TestFile{
-		{
-			name: "file1",
-			blobs: []TestBlob{
-				{"data1-1", "pack1-1"},
-				{"data1-2", "pack1-2"},
+	for _, sparse := range []bool{false, true} {
+		restoreAndVerify(t, tempdir, []TestFile{
+			{
+				name: "file1",
+				blobs: []TestBlob{
+					{"data1-1", "pack1-1"},
+					{"data1-2", "pack1-2"},
+				},
 			},
-		},
-		{
-			name: "file2",
-			blobs: []TestBlob{
-				{"data2-1", "pack2-1"},
-				{"data2-2", "pack2-2"},
+			{
+				name: "file2",
+				blobs: []TestBlob{
+					{"data2-1", "pack2-1"},
+					{"data2-2", "pack2-2"},
+				},
 			},
-		},
-		{
-			name: "file3",
-			blobs: []TestBlob{
-				// same blob multiple times
-				{"data3-1", "pack3-1"},
-				{"data3-1", "pack3-1"},
+			{
+				name: "file3",
+				blobs: []TestBlob{
+					// same blob multiple times
+					{"data3-1", "pack3-1"},
+					{"data3-1", "pack3-1"},
+				},
 			},
-		},
-	}, nil)
+		}, nil, sparse)
+	}
 }
 
 func TestFileRestorerPackSkip(t *testing.T) {
-	tempdir, cleanup := rtest.TempDir(t)
-	defer cleanup()
+	tempdir := rtest.TempDir(t)
 
 	files := make(map[string]bool)
 	files["file2"] = true
 
-	restoreAndVerify(t, tempdir, []TestFile{
-		{
-			name: "file1",
-			blobs: []TestBlob{
-				{"data1-1", "pack1"},
-				{"data1-2", "pack1"},
-				{"data1-3", "pack1"},
-				{"data1-4", "pack1"},
-				{"data1-5", "pack1"},
-				{"data1-6", "pack1"},
+	for _, sparse := range []bool{false, true} {
+		restoreAndVerify(t, tempdir, []TestFile{
+			{
+				name: "file1",
+				blobs: []TestBlob{
+					{"data1-1", "pack1"},
+					{"data1-2", "pack1"},
+					{"data1-3", "pack1"},
+					{"data1-4", "pack1"},
+					{"data1-5", "pack1"},
+					{"data1-6", "pack1"},
+				},
 			},
-		},
-		{
-			name: "file2",
-			blobs: []TestBlob{
-				// file is contained in pack1 but need pack parts to be skipped
-				{"data1-2", "pack1"},
-				{"data1-4", "pack1"},
-				{"data1-6", "pack1"},
+			{
+				name: "file2",
+				blobs: []TestBlob{
+					// file is contained in pack1 but need pack parts to be skipped
+					{"data1-2", "pack1"},
+					{"data1-4", "pack1"},
+					{"data1-6", "pack1"},
+				},
 			},
-		},
-	}, files)
+		}, files, sparse)
+	}
 }
 
 func TestErrorRestoreFiles(t *testing.T) {
-	tempdir, cleanup := rtest.TempDir(t)
-	defer cleanup()
+	tempdir := rtest.TempDir(t)
 	content := []TestFile{
 		{
 			name: "file1",
@@ -264,7 +265,7 @@ func TestErrorRestoreFiles(t *testing.T) {
 		return loadError
 	}
 
-	r := newFileRestorer(tempdir, repo.loader, repo.key, repo.Lookup, 2)
+	r := newFileRestorer(tempdir, repo.loader, repo.key, repo.Lookup, 2, false)
 	r.files = repo.files
 
 	err := r.restoreFiles(context.TODO())
@@ -278,8 +279,7 @@ func TestDownloadError(t *testing.T) {
 }
 
 func testPartialDownloadError(t *testing.T, part int) {
-	tempdir, cleanup := rtest.TempDir(t)
-	defer cleanup()
+	tempdir := rtest.TempDir(t)
 	content := []TestFile{
 		{
 			name: "file1",
@@ -304,7 +304,7 @@ func testPartialDownloadError(t *testing.T, part int) {
 		return loader(ctx, h, length, offset, fn)
 	}
 
-	r := newFileRestorer(tempdir, repo.loader, repo.key, repo.Lookup, 2)
+	r := newFileRestorer(tempdir, repo.loader, repo.key, repo.Lookup, 2, false)
 	r.files = repo.files
 	r.Error = func(s string, e error) error {
 		// ignore errors as in the `restore` command

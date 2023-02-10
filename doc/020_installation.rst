@@ -265,16 +265,11 @@ binary, you can get it with `docker pull` like this:
 
     $ docker pull restic/restic
 
-.. note::
-   | Another docker container which offers more configuration options is
-   | available as a contribution (Thank you!). You can find it at
-   | https://github.com/Lobaro/restic-backup-docker
-
 From Source
 ***********
 
 restic is written in the Go programming language and you need at least
-Go version 1.15. Building restic may also work with older versions of Go,
+Go version 1.18. Building restic may also work with older versions of Go,
 but that's not supported. See the `Getting
 started <https://golang.org/doc/install>`__ guide of the Go project for
 instructions how to install Go.
@@ -313,14 +308,14 @@ compiler. Building restic with gccgo may work, but is not supported.
 Autocompletion
 **************
 
-Restic can write out man pages and bash/fish/zsh compatible autocompletion scripts:
+Restic can write out man pages and bash/fish/zsh/powershell compatible autocompletion scripts:
 
 .. code-block:: console
 
     $ ./restic generate --help
 
     The "generate" command writes automatically generated files (like the man pages
-    and the auto-completion files for bash, fish and zsh).
+    and the auto-completion files for bash, fish, zsh and powershell).
 
     Usage:
       restic generate [flags] [command]
@@ -330,6 +325,7 @@ Restic can write out man pages and bash/fish/zsh compatible autocompletion scrip
           --fish-completion file   write fish completion file
       -h, --help                   help for generate
           --man directory          write man pages to directory
+          --powershell-completion  write powershell completion file
           --zsh-completion file    write zsh completion file
 
 Example for using sudo to write a bash completion script directly to the system-wide location:

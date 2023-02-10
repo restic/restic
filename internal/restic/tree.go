@@ -145,6 +145,8 @@ func SaveTree(ctx context.Context, r BlobSaver, t *Tree) (ID, error) {
 	return id, err
 }
 
+var ErrTreeNotOrdered = errors.New("nodes are not ordered or duplicate")
+
 type TreeJSONBuilder struct {
 	buf      bytes.Buffer
 	lastName string
@@ -158,7 +160,7 @@ func NewTreeJSONBuilder() *TreeJSONBuilder {
 
 func (builder *TreeJSONBuilder) AddNode(node *Node) error {
 	if node.Name <= builder.lastName {
-		return errors.Errorf("nodes are not ordered got %q, last %q", node.Name, builder.lastName)
+		return fmt.Errorf("node %q, last%q: %w", node.Name, builder.lastName, ErrTreeNotOrdered)
 	}
 	if builder.lastName != "" {
 		_ = builder.buf.WriteByte(',')
@@ -181,15 +183,4 @@ func (builder *TreeJSONBuilder) Finalize() ([]byte, error) {
 	// drop reference to buffer
 	builder.buf = bytes.Buffer{}
 	return buf, nil
-}
-
-func TreeToBuilder(t *Tree) (*TreeJSONBuilder, error) {
-	builder := NewTreeJSONBuilder()
-	for _, node := range t.Nodes {
-		err := builder.AddNode(node)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return builder, nil
 }

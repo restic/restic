@@ -1,0 +1,10 @@
+Bugfix: Improve handling of interrupted syscalls in `mount` command
+
+Accessing restic's FUSE mount could result in "input/output" errors when using
+programs in which syscalls can be interrupted. This is for example the case for
+Go programs. This has now been fixed by improved error handling of interrupted
+syscalls.
+
+https://github.com/restic/restic/issues/3567
+https://github.com/restic/restic/issues/3694
+https://github.com/restic/restic/pull/3875

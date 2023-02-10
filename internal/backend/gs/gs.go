@@ -14,6 +14,7 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/pkg/errors"
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/layout"
 	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
@@ -41,7 +42,7 @@ type Backend struct {
 	bucket       *storage.BucketHandle
 	prefix       string
 	listMaxItems int
-	backend.Layout
+	layout.Layout
 }
 
 // Ensure that *Backend implements restic.Backend.
@@ -111,7 +112,7 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 		bucketName:  cfg.Bucket,
 		bucket:      gcsClient.Bucket(cfg.Bucket),
 		prefix:      cfg.Prefix,
-		Layout: &backend.DefaultLayout{
+		Layout: &layout.DefaultLayout{
 			Path: cfg.Prefix,
 			Join: path.Join,
 		},
@@ -169,18 +170,7 @@ func (be *Backend) SetListMaxItems(i int) {
 // IsNotExist returns true if the error is caused by a not existing file.
 func (be *Backend) IsNotExist(err error) bool {
 	debug.Log("IsNotExist(%T, %#v)", err, err)
-
-	if os.IsNotExist(err) {
-		return true
-	}
-
-	if er, ok := err.(*googleapi.Error); ok {
-		if er.Code == 404 {
-			return true
-		}
-	}
-
-	return false
+	return errors.Is(err, storage.ErrObjectNotExist)
 }
 
 // Join combines path components with slashes.
@@ -331,22 +321,6 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 	}
 
 	return restic.FileInfo{Size: attr.Size, Name: h.Name}, nil
-}
-
-// Test returns true if a blob of the given type and name exists in the backend.
-func (be *Backend) Test(ctx context.Context, h restic.Handle) (bool, error) {
-	found := false
-	objName := be.Filename(h)
-
-	be.sem.GetToken()
-	_, err := be.bucket.Object(objName).Attrs(ctx)
-	be.sem.ReleaseToken()
-
-	if err == nil {
-		found = true
-	}
-	// If error, then not found
-	return found, nil
 }
 
 // Remove removes the blob with the given name and type.

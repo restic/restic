@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 	"runtime"
+	"sync"
 	"sync/atomic"
 	"testing"
 
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/restic"
 	"golang.org/x/sync/errgroup"
 )
@@ -40,21 +41,32 @@ func TestBlobSaver(t *testing.T) {
 
 	wg, ctx := errgroup.WithContext(ctx)
 	saver := &saveFail{
-		idx: repository.NewMasterIndex(),
+		idx: index.NewMasterIndex(),
 	}
 
 	b := NewBlobSaver(ctx, wg, saver, uint(runtime.NumCPU()))
 
-	var results []FutureBlob
+	var wait sync.WaitGroup
+	var results []SaveBlobResponse
+	var lock sync.Mutex
 
+	wait.Add(20)
 	for i := 0; i < 20; i++ {
 		buf := &Buffer{Data: []byte(fmt.Sprintf("foo%d", i))}
-		fb := b.Save(ctx, restic.DataBlob, buf)
-		results = append(results, fb)
+		idx := i
+		lock.Lock()
+		results = append(results, SaveBlobResponse{})
+		lock.Unlock()
+		b.Save(ctx, restic.DataBlob, buf, func(res SaveBlobResponse) {
+			lock.Lock()
+			results[idx] = res
+			lock.Unlock()
+			wait.Done()
+		})
 	}
 
-	for i, blob := range results {
-		sbr := blob.Take(ctx)
+	wait.Wait()
+	for i, sbr := range results {
 		if sbr.known {
 			t.Errorf("blob %v is known, that should not be the case", i)
 		}
@@ -86,7 +98,7 @@ func TestBlobSaverError(t *testing.T) {
 
 			wg, ctx := errgroup.WithContext(ctx)
 			saver := &saveFail{
-				idx:    repository.NewMasterIndex(),
+				idx:    index.NewMasterIndex(),
 				failAt: int32(test.failAt),
 			}
 
@@ -94,7 +106,7 @@ func TestBlobSaverError(t *testing.T) {
 
 			for i := 0; i < test.blobs; i++ {
 				buf := &Buffer{Data: []byte(fmt.Sprintf("foo%d", i))}
-				b.Save(ctx, restic.DataBlob, buf)
+				b.Save(ctx, restic.DataBlob, buf, func(res SaveBlobResponse) {})
 			}
 
 			b.TriggerShutdown()

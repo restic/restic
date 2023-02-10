@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
 	"strconv"
 
 	"github.com/restic/chunker"
@@ -25,7 +27,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runInit(initOptions, globalOptions, args)
+		return runInit(cmd.Context(), initOptions, globalOptions, args)
 	},
 }
 
@@ -47,7 +49,7 @@ func init() {
 	f.StringVar(&initOptions.RepositoryVersion, "repository-version", "stable", "repository format version to use, allowed values are a format version, 'latest' and 'stable'")
 }
 
-func runInit(opts InitOptions, gopts GlobalOptions, args []string) error {
+func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []string) error {
 	var version uint
 	if opts.RepositoryVersion == "latest" || opts.RepositoryVersion == "" {
 		version = restic.MaxRepoVersion
@@ -64,7 +66,7 @@ func runInit(opts InitOptions, gopts GlobalOptions, args []string) error {
 		return errors.Fatalf("only repository versions between %v and %v are allowed", restic.MinRepoVersion, restic.MaxRepoVersion)
 	}
 
-	chunkerPolynomial, err := maybeReadChunkerPolynomial(opts, gopts)
+	chunkerPolynomial, err := maybeReadChunkerPolynomial(ctx, opts, gopts)
 	if err != nil {
 		return err
 	}
@@ -81,7 +83,7 @@ func runInit(opts InitOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	be, err := create(repo, gopts.extended)
+	be, err := create(ctx, repo, gopts.extended)
 	if err != nil {
 		return errors.Fatalf("create repository at %s failed: %v\n", location.StripPassword(gopts.Repo), err)
 	}
@@ -94,7 +96,7 @@ func runInit(opts InitOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	wasCreated,err:= s.Init(gopts.ctx, version, gopts.password, chunkerPolynomial)
+	wasCreated, err := s.Init(ctx, version, gopts.password, chunkerPolynomial)
 	if err != nil {
 		return errors.Fatalf("create key in repository at %s failed: %v\n", location.StripPassword(gopts.Repo), err)
 	}
@@ -109,17 +111,33 @@ func runInit(opts InitOptions, gopts GlobalOptions, args []string) error {
 		)
 	}
 
+	if !gopts.JSON {
+		Verbosef("created restic repository %v at %s\n", s.Config().ID[:10], location.StripPassword(gopts.Repo))
+		Verbosef("\n")
+		Verbosef("Please note that knowledge of your password is required to access\n")
+		Verbosef("the repository. Losing your password means that your data is\n")
+		Verbosef("irrecoverably lost.\n")
+
+	} else {
+		status := initSuccess{
+			MessageType: "initialized",
+			ID:          s.Config().ID,
+			Repository:  location.StripPassword(gopts.Repo),
+		}
+		return json.NewEncoder(gopts.stdout).Encode(status)
+	}
+
 	return nil
 }
 
-func maybeReadChunkerPolynomial(opts InitOptions, gopts GlobalOptions) (*chunker.Pol, error) {
+func maybeReadChunkerPolynomial(ctx context.Context, opts InitOptions, gopts GlobalOptions) (*chunker.Pol, error) {
 	if opts.CopyChunkerParameters {
 		otherGopts, _, err := fillSecondaryGlobalOpts(opts.secondaryRepoOptions, gopts, "secondary")
 		if err != nil {
 			return nil, err
 		}
 
-		otherRepo, err := OpenRepository(otherGopts)
+		otherRepo, err := OpenRepository(ctx, otherGopts)
 		if err != nil {
 			return nil, err
 		}
@@ -132,4 +150,10 @@ func maybeReadChunkerPolynomial(opts InitOptions, gopts GlobalOptions) (*chunker
 		return nil, errors.Fatal("Secondary repository must only be specified when copying the chunker parameters")
 	}
 	return nil, nil
+}
+
+type initSuccess struct {
+	MessageType string `json:"message_type"` // "initialized"
+	ID          string `json:"id"`
+	Repository  string `json:"repository"`
 }

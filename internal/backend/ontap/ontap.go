@@ -5,7 +5,6 @@ import (
 	"crypto/md5"
 	"crypto/tls"
 	"fmt"
-	"github.com/restic/restic/internal/backend/sema"
 	"hash"
 	"io"
 	"net/http"
@@ -13,6 +12,9 @@ import (
 	"path"
 	"strings"
 	"time"
+
+	"github.com/restic/restic/internal/backend/layout"
+	"github.com/restic/restic/internal/backend/sema"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -45,7 +47,7 @@ type Backend struct {
 	client s3iface.S3API
 	cfg    Config
 	sem    sema.Semaphore
-	backend.Layout
+	layout.Layout
 }
 
 //Connections returns the max number of back end operations, just pulled 42 out of the book
@@ -413,9 +415,9 @@ func Open(ctx context.Context, config Config) (*Backend, error) {
 	client := s3.New(newSession)
 
 	sem, _ := sema.New(1)
-	newBackend := NewBackend(client, sem,config)
+	newBackend := NewBackend(client, sem, config)
 
-	layout, err := backend.ParseLayout(ctx, newBackend, "default", defaultLayout, config.Prefix)
+	layout, err := layout.ParseLayout(ctx, newBackend, "default", defaultLayout, config.Prefix)
 	if err != nil {
 		return nil, err
 	}
@@ -425,7 +427,7 @@ func Open(ctx context.Context, config Config) (*Backend, error) {
 	return newBackend, nil
 }
 
-func NewBackend(client s3iface.S3API,sem sema.Semaphore, config Config) *Backend {
+func NewBackend(client s3iface.S3API, sem sema.Semaphore, config Config) *Backend {
 
 	return &Backend{
 		client: client,

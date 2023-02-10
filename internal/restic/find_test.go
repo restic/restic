@@ -84,8 +84,7 @@ const (
 var findTestTime = time.Unix(1469960361, 23)
 
 func TestFindUsedBlobs(t *testing.T) {
-	repo, cleanup := repository.TestRepository(t)
-	defer cleanup()
+	repo := repository.TestRepository(t)
 
 	var snapshots []*restic.Snapshot
 	for i := 0; i < findTestSnapshots; i++ {
@@ -94,7 +93,7 @@ func TestFindUsedBlobs(t *testing.T) {
 		snapshots = append(snapshots, sn)
 	}
 
-	p := progress.New(time.Second, findTestSnapshots, func(value uint64, total uint64, runtime time.Duration, final bool) {})
+	p := progress.NewCounter(time.Second, findTestSnapshots, func(value uint64, total uint64, runtime time.Duration, final bool) {})
 	defer p.Done()
 
 	for i, sn := range snapshots {
@@ -110,7 +109,8 @@ func TestFindUsedBlobs(t *testing.T) {
 			continue
 		}
 
-		test.Equals(t, p.Get(), uint64(i+1))
+		v, _ := p.Get()
+		test.Equals(t, v, uint64(i+1))
 
 		goldenFilename := filepath.Join("testdata", fmt.Sprintf("used_blobs_snapshot%d", i))
 		want := loadIDSet(t, goldenFilename)
@@ -127,8 +127,7 @@ func TestFindUsedBlobs(t *testing.T) {
 }
 
 func TestMultiFindUsedBlobs(t *testing.T) {
-	repo, cleanup := repository.TestRepository(t)
-	defer cleanup()
+	repo := repository.TestRepository(t)
 
 	var snapshotTrees restic.IDs
 	for i := 0; i < findTestSnapshots; i++ {
@@ -143,7 +142,7 @@ func TestMultiFindUsedBlobs(t *testing.T) {
 		want.Merge(loadIDSet(t, goldenFilename))
 	}
 
-	p := progress.New(time.Second, findTestSnapshots, func(value uint64, total uint64, runtime time.Duration, final bool) {})
+	p := progress.NewCounter(time.Second, findTestSnapshots, func(value uint64, total uint64, runtime time.Duration, final bool) {})
 	defer p.Done()
 
 	// run twice to check progress bar handling of duplicate tree roots
@@ -151,7 +150,8 @@ func TestMultiFindUsedBlobs(t *testing.T) {
 	for i := 1; i < 3; i++ {
 		err := restic.FindUsedBlobs(context.TODO(), repo, snapshotTrees, usedBlobs, p)
 		test.OK(t, err)
-		test.Equals(t, p.Get(), uint64(i*len(snapshotTrees)))
+		v, _ := p.Get()
+		test.Equals(t, v, uint64(i*len(snapshotTrees)))
 
 		if !want.Equals(usedBlobs) {
 			t.Errorf("wrong list of blobs returned:\n  missing blobs: %v\n  extra blobs: %v",
@@ -175,8 +175,7 @@ func (r ForbiddenRepo) Connections() uint {
 }
 
 func TestFindUsedBlobsSkipsSeenBlobs(t *testing.T) {
-	repo, cleanup := repository.TestRepository(t)
-	defer cleanup()
+	repo := repository.TestRepository(t)
 
 	snapshot := restic.TestCreateSnapshot(t, repo, findTestTime, findTestDepth, 0)
 	t.Logf("snapshot %v saved, tree %v", snapshot.ID().Str(), snapshot.Tree.Str())
@@ -194,8 +193,7 @@ func TestFindUsedBlobsSkipsSeenBlobs(t *testing.T) {
 }
 
 func BenchmarkFindUsedBlobs(b *testing.B) {
-	repo, cleanup := repository.TestRepository(b)
-	defer cleanup()
+	repo := repository.TestRepository(b)
 
 	sn := restic.TestCreateSnapshot(b, repo, findTestTime, findTestDepth, 0)
 

@@ -370,7 +370,7 @@ func CalculateHeaderSize(blobs []restic.Blob) int {
 func Size(ctx context.Context, mi restic.MasterIndex, onlyHdr bool) map[restic.ID]int64 {
 	packSize := make(map[restic.ID]int64)
 
-	for blob := range mi.Each(ctx) {
+	mi.Each(ctx, func(blob restic.PackedBlob) {
 		size, ok := packSize[blob.PackID]
 		if !ok {
 			size = headerSize
@@ -379,7 +379,7 @@ func Size(ctx context.Context, mi restic.MasterIndex, onlyHdr bool) map[restic.I
 			size += int64(blob.Length)
 		}
 		packSize[blob.PackID] = size + int64(CalculateEntrySize(blob.Blob))
-	}
+	})
 
 	return packSize
 }

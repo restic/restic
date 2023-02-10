@@ -1,0 +1,8 @@
+Bugfix: Make `backup` no longer hang on Solaris when seeing a FIFO file
+
+The `backup` command used to hang on Solaris whenever it encountered a FIFO
+file (named pipe), due to a bug in the handling of extended attributes. This
+bug has now been fixed.
+
+https://github.com/restic/restic/issues/4003
+https://github.com/restic/restic/pull/4053

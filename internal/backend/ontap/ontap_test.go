@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/restic/restic/internal/backend/sema"
 	"io"
 	"net/http"
 	"net/url"
@@ -13,11 +12,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/backend/layout"
+	"github.com/restic/restic/internal/backend/sema"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/ontap"
 	"github.com/restic/restic/internal/backend/test"
 	"github.com/restic/restic/internal/errors"
@@ -207,7 +208,7 @@ func makeBackend() (*ontap.Backend, *mockS3Api) {
 	sem, _ := sema.New(1)
 	config := ontap.Config{Bucket: aws.String("foobucket"), Prefix: "fooprefix"}
 	be := ontap.NewBackend(client, sem, config)
-	layout, err := backend.ParseLayout(context.TODO(), be, "default", "default", config.Prefix)
+	layout, err := layout.ParseLayout(context.TODO(), be, "default", "default", config.Prefix)
 	if err != nil {
 		panic(err)
 	}

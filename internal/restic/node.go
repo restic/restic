@@ -14,7 +14,6 @@ import (
 	"github.com/restic/restic/internal/errors"
 
 	"bytes"
-	"runtime"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
@@ -192,14 +191,14 @@ func (node Node) restoreMetadata(path string) error {
 			debug.Log("not running as root, ignoring lchown permission error for %v: %v",
 				path, err)
 		} else {
-			firsterr = errors.Wrap(err, "Lchown")
+			firsterr = errors.WithStack(err)
 		}
 	}
 
 	if node.Type != "symlink" {
 		if err := fs.Chmod(path, node.Mode); err != nil {
 			if firsterr != nil {
-				firsterr = errors.Wrap(err, "Chmod")
+				firsterr = errors.WithStack(err)
 			}
 		}
 	}
@@ -251,7 +250,7 @@ func (node Node) RestoreTimestamps(path string) error {
 func (node Node) createDirAt(path string) error {
 	err := fs.Mkdir(path, node.Mode)
 	if err != nil && !os.IsExist(err) {
-		return errors.Wrap(err, "Mkdir")
+		return errors.WithStack(err)
 	}
 
 	return nil
@@ -260,7 +259,7 @@ func (node Node) createDirAt(path string) error {
 func (node Node) createFileAt(ctx context.Context, path string, repo Repository) error {
 	f, err := fs.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
-		return errors.Wrap(err, "OpenFile")
+		return errors.WithStack(err)
 	}
 
 	err = node.writeNodeContent(ctx, repo, f)
@@ -271,7 +270,7 @@ func (node Node) createFileAt(ctx context.Context, path string, repo Repository)
 	}
 
 	if closeErr != nil {
-		return errors.Wrap(closeErr, "Close")
+		return errors.WithStack(closeErr)
 	}
 
 	return nil
@@ -287,7 +286,7 @@ func (node Node) writeNodeContent(ctx context.Context, repo Repository, f *os.Fi
 
 		_, err = f.Write(buf)
 		if err != nil {
-			return errors.Wrap(err, "Write")
+			return errors.WithStack(err)
 		}
 	}
 
@@ -295,13 +294,13 @@ func (node Node) writeNodeContent(ctx context.Context, repo Repository, f *os.Fi
 }
 
 func (node Node) createSymlinkAt(path string) error {
-	// Windows does not allow non-admins to create soft links.
-	if runtime.GOOS == "windows" {
-		return nil
-	}
-	err := fs.Symlink(node.LinkTarget, path)
-	if err != nil {
+
+	if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return errors.Wrap(err, "Symlink")
+	}
+
+	if err := fs.Symlink(node.LinkTarget, path); err != nil {
+		return errors.WithStack(err)
 	}
 
 	return nil
@@ -592,7 +591,7 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 		node.LinkTarget, err = fs.Readlink(path)
 		node.Links = uint64(stat.nlink())
 		if err != nil {
-			return errors.Wrap(err, "Readlink")
+			return errors.WithStack(err)
 		}
 	case "dev":
 		node.Device = uint64(stat.rdev())

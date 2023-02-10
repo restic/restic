@@ -1,0 +1,11 @@
+Change: Don't print skipped snapshots by default in `copy` command
+
+The `copy` command used to print each snapshot that was skipped because it
+already existed in the target repository. The amount of this output could
+practically bury the list of snapshots that were actually copied.
+
+From now on, the skipped snapshots are by default not printed at all, but
+this can be re-enabled by increasing the verbosity level of the command.
+
+https://github.com/restic/restic/issues/4033
+https://github.com/restic/restic/pull/4066

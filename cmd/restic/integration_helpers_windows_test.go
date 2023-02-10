@@ -6,7 +6,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 )
 
@@ -39,7 +38,7 @@ func inode(info os.FileInfo) uint64 {
 
 func createFileSetPerHardlink(dir string) map[uint64][]string {
 	linkTests := make(map[uint64][]string)
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		return nil
 	}

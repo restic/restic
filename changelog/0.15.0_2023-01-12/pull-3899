@@ -1,0 +1,6 @@
+Enhancement: Optimize prune memory usage
+
+The `prune` command needs large amounts of memory in order to determine what to
+keep and what to remove. This is now optimized to use up to 30% less memory.
+
+https://github.com/restic/restic/pull/3899

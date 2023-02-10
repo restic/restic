@@ -58,9 +58,9 @@ versions.
 +--------------------+-------------------------+---------------------+------------------+
 | Repository version | Required restic version | Major new features  | Comment          |
 +====================+=========================+=====================+==================+
-| ``1``              | Any                     |                     | Current default  |
+| ``1``              | Any                     |                     |                  |
 +--------------------+-------------------------+---------------------+------------------+
-| ``2``              | 0.14.0 or newer         | Compression support |                  |
+| ``2``              | 0.14.0 or newer         | Compression support | Current default  |
 +--------------------+-------------------------+---------------------+------------------+
 
 
@@ -86,10 +86,11 @@ command and enter the same password twice:
 
 .. warning::
 
-   On Linux, storing the backup repository on a CIFS (SMB) share is not
-   recommended due to compatibility issues. Either use another backend
-   or set the environment variable `GODEBUG` to `asyncpreemptoff=1`.
-   Refer to GitHub issue `#2659 <https://github.com/restic/restic/issues/2659>`_ for further explanations.
+   On Linux, storing the backup repository on a CIFS (SMB) share or backing up
+   data from a CIFS share is not recommended due to compatibility issues in
+   older Linux kernels. Either use another backend or set the environment
+   variable `GODEBUG` to `asyncpreemptoff=1`. Refer to GitHub issue
+   `#2659 <https://github.com/restic/restic/issues/2659>`_ for further explanations.
 
 SFTP
 ****
@@ -221,6 +222,8 @@ REST server uses exactly the same directory structure as local backend,
 so you should be able to access it both locally and via HTTP, even
 simultaneously.
 
+.. _Amazon S3:
+
 Amazon S3
 *********
 
@@ -301,7 +304,7 @@ credentials of your Minio Server.
 .. code-block:: console
 
     $ export AWS_ACCESS_KEY_ID=<YOUR-MINIO-ACCESS-KEY-ID>
-    $ export AWS_SECRET_ACCESS_KEY= <YOUR-MINIO-SECRET-ACCESS-KEY>
+    $ export AWS_SECRET_ACCESS_KEY=<YOUR-MINIO-SECRET-ACCESS-KEY>
 
 Now you can easily initialize restic to use Minio server as a backend with
 this command.
@@ -464,6 +467,19 @@ The policy of the new container created by restic can be changed using environme
 Backblaze B2
 ************
 
+.. warning::
+
+   Due to issues with error handling in the current B2 library that restic uses,
+   the recommended way to utilize Backblaze B2 is by using its S3-compatible API.
+   
+   Follow the documentation to `generate S3-compatible access keys`_ and then
+   setup restic as described at :ref:`Amazon S3`. This is expected to work better
+   than using the Backblaze B2 backend directly.
+
+   Different from the B2 backend, restic's S3 backend will only hide no longer
+   necessary files. Thus, make sure to setup lifecycle rules to eventually
+   delete hidden files.
+
 Restic can backup data to any Backblaze B2 bucket. You need to first setup the
 following environment variables with the credentials you can find in the
 dashboard on the "Buckets" page when signed into your B2 account:
@@ -502,11 +518,13 @@ The number of concurrent connections to the B2 service can be set with the ``-o
 b2.connections=10`` switch. By default, at most five parallel connections are
 established.
 
+.. _generate S3-compatible access keys: https://help.backblaze.com/hc/en-us/articles/360047425453-Getting-Started-with-the-S3-Compatible-API
+
 Microsoft Azure Blob Storage
 ****************************
 
 You can also store backups on Microsoft Azure Blob Storage. Export the Azure
-account name and key as follows:
+Blob Storage account name and key as follows:
 
 .. code-block:: console
 
@@ -617,6 +635,13 @@ initiate a new repository in the path ``bar`` in the remote ``foo``:
     $ restic -r rclone:foo:bar init
 
 Restic takes care of starting and stopping rclone.
+
+.. note:: If you get an error message saying "cannot implicitly run relative
+          executable rclone found in current directory", this means that an
+          rclone executable was found in the current directory. For security
+          reasons restic will not run this implicitly, instead you have to
+          use the ``-o rclone.program=./rclone`` extended option to override
+          this security check and explicitly tell restic to use the executable.
 
 As a more concrete example, suppose you have configured a remote named
 ``b2prod`` for Backblaze B2 with rclone, with a bucket called ``yggdrasil``.

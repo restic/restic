@@ -1,0 +1,13 @@
+Enhancement: Handle cache corruption on disk and in downloads
+
+In rare situations, like for example after a system crash, the data stored
+in the cache might be corrupted. This could cause restic to fail and required
+manually deleting the cache.
+
+Restic now automatically removes broken data from the cache, allowing it
+to recover from such a situation without user intervention. In addition,
+restic retries downloads which return corrupt data in order to also handle
+temporary download problems.
+
+https://github.com/restic/restic/issues/2533
+https://github.com/restic/restic/pull/3521

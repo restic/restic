@@ -85,17 +85,15 @@ func needsPassword(cmd string) bool {
 
 var logBuffer = bytes.NewBuffer(nil)
 
-func init() {
+func main() {
 	// install custom global logger into a buffer, if an error occurs
 	// we can show the logs
 	log.SetOutput(logBuffer)
-}
 
-func main() {
 	debug.Log("main %#v", os.Args)
 	debug.Log("restic %s compiled with %v on %v/%v",
 		version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
-	err := cmdRoot.Execute()
+	err := cmdRoot.ExecuteContext(internalGlobalCtx)
 
 	switch {
 	case restic.IsAlreadyLocked(err):

@@ -1,0 +1,7 @@
+Bugfix: Fix stuck `copy` command when `-o <backend>.connections=1`
+
+When running the `copy` command with `-o <backend>.connections=1` the
+command would be infinitely stuck. This has now been fixed.
+
+https://github.com/restic/restic/issues/3897
+https://github.com/restic/restic/pull/3898

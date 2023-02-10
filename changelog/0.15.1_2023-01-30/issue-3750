@@ -1,0 +1,10 @@
+Bugfix: Remove `b2_download_file_by_name: 404` warning from B2 backend
+
+In some cases the B2 backend could print `b2_download_file_by_name: 404: :
+b2.b2err` warnings. These are only debug messages and can be safely ignored.
+
+Restic now uses an updated library for accessing B2, which removes the warning.
+
+https://github.com/restic/restic/issues/3750
+https://github.com/restic/restic/issues/4144
+https://github.com/restic/restic/pull/4146

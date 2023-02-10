@@ -2,6 +2,7 @@ package archiver
 
 import (
 	"context"
+	"errors"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
@@ -10,7 +11,7 @@ import (
 
 // TreeSaver concurrently saves incoming trees to the repo.
 type TreeSaver struct {
-	saveTree func(context.Context, *restic.TreeJSONBuilder) (restic.ID, ItemStats, error)
+	saveBlob func(ctx context.Context, t restic.BlobType, buf *Buffer, cb func(res SaveBlobResponse))
 	errFn    ErrorFunc
 
 	ch chan<- saveTreeJob
@@ -18,12 +19,12 @@ type TreeSaver struct {
 
 // NewTreeSaver returns a new tree saver. A worker pool with treeWorkers is
 // started, it is stopped when ctx is cancelled.
-func NewTreeSaver(ctx context.Context, wg *errgroup.Group, treeWorkers uint, saveTree func(context.Context, *restic.TreeJSONBuilder) (restic.ID, ItemStats, error), errFn ErrorFunc) *TreeSaver {
+func NewTreeSaver(ctx context.Context, wg *errgroup.Group, treeWorkers uint, saveBlob func(ctx context.Context, t restic.BlobType, buf *Buffer, cb func(res SaveBlobResponse)), errFn ErrorFunc) *TreeSaver {
 	ch := make(chan saveTreeJob)
 
 	s := &TreeSaver{
 		ch:       ch,
-		saveTree: saveTree,
+		saveBlob: saveBlob,
 		errFn:    errFn,
 	}
 
@@ -79,6 +80,7 @@ func (s *TreeSaver) save(ctx context.Context, job *saveTreeJob) (*restic.Node, I
 	job.nodes = nil
 
 	builder := restic.NewTreeJSONBuilder()
+	var lastNode *restic.Node
 
 	for i, fn := range nodes {
 		// fn is a copy, so clear the original value explicitly
@@ -105,19 +107,41 @@ func (s *TreeSaver) save(ctx context.Context, job *saveTreeJob) (*restic.Node, I
 
 		debug.Log("insert %v", fnr.node.Name)
 		err := builder.AddNode(fnr.node)
+		if err != nil && errors.Is(err, restic.ErrTreeNotOrdered) && lastNode != nil && fnr.node.Equals(*lastNode) {
+			// ignore error if an _identical_ node already exists, but nevertheless issue a warning
+			_ = s.errFn(fnr.target, err)
+			err = nil
+		}
 		if err != nil {
 			return nil, stats, err
 		}
+		lastNode = fnr.node
 	}
 
-	id, treeStats, err := s.saveTree(ctx, builder)
-	stats.Add(treeStats)
+	buf, err := builder.Finalize()
 	if err != nil {
 		return nil, stats, err
 	}
 
-	node.Subtree = &id
-	return node, stats, nil
+	b := &Buffer{Data: buf}
+	ch := make(chan SaveBlobResponse, 1)
+	s.saveBlob(ctx, restic.TreeBlob, b, func(res SaveBlobResponse) {
+		ch <- res
+	})
+
+	select {
+	case sbr := <-ch:
+		if !sbr.known {
+			stats.TreeBlobs++
+			stats.TreeSize += uint64(sbr.length)
+			stats.TreeSizeInRepo += uint64(sbr.sizeInRepo)
+		}
+
+		node.Subtree = &sbr.id
+		return node, stats, nil
+	case <-ctx.Done():
+		return nil, stats, ctx.Err()
+	}
 }
 
 func (s *TreeSaver) worker(ctx context.Context, jobs <-chan saveTreeJob) error {

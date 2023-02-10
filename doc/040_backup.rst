@@ -204,6 +204,7 @@ Combined with ``--verbose``, you can see a list of changes:
     modified  /archive.tar.gz, saved in 0.140s (25.542 MiB added)
     Would be added to the repository: 25.551 MiB
 
+.. _backup-excluding-files:
 Excluding Files
 ***************
 
@@ -299,7 +300,7 @@ directory, then selectively add back some of them.
 
 ::
 
-    $HOME/**/*
+    $HOME/*
     !$HOME/Documents
     !$HOME/code
     !$HOME/.emacs.d
@@ -555,6 +556,7 @@ environment variables. The following lists these environment variables:
     RESTIC_COMPRESSION                  Compression mode (only available for repository format version 2)
     RESTIC_PROGRESS_FPS                 Frames per second by which the progress bar is updated
     RESTIC_PACK_SIZE                    Target size for pack files
+    RESTIC_READ_CONCURRENCY             Concurrency for file reads
 
     TMPDIR                              Location for temporary files
 

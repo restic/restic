@@ -57,15 +57,15 @@ new destination repository using the "init" command.
 
 .PP
 \fB-H\fP, \fB--host\fP=[]
-	only consider snapshots for this \fB\fChost\fR, when no snapshot ID is given (can be specified multiple times)
+	only consider snapshots for this \fB\fChost\fR (can be specified multiple times)
 
 .PP
 \fB--path\fP=[]
-	only consider snapshots which include this (absolute) \fB\fCpath\fR, when no snapshot ID is given
+	only consider snapshots including this (absolute) \fB\fCpath\fR (can be specified multiple times)
 
 .PP
 \fB--tag\fP=[]
-	only consider snapshots which include this \fB\fCtaglist\fR, when no snapshot ID is given
+	only consider snapshots including \fB\fCtag[,tag,...]\fR (can be specified multiple times)
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
@@ -99,11 +99,11 @@ new destination repository using the "init" command.
 
 .PP
 \fB--limit-download\fP=0
-	limits downloads to a maximum rate in KiB/s. (default: unlimited)
+	limits downloads to a maximum \fB\fCrate\fR in KiB/s. (default: unlimited)
 
 .PP
 \fB--limit-upload\fP=0
-	limits uploads to a maximum rate in KiB/s. (default: unlimited)
+	limits uploads to a maximum \fB\fCrate\fR in KiB/s. (default: unlimited)
 
 .PP
 \fB--no-cache\fP[=false]
@@ -119,7 +119,7 @@ new destination repository using the "init" command.
 
 .PP
 \fB--pack-size\fP=0
-	set target pack size in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)
+	set target pack \fB\fCsize\fR in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)
 
 .PP
 \fB--password-command\fP=""
@@ -147,7 +147,7 @@ new destination repository using the "init" command.
 
 .PP
 \fB-v\fP, \fB--verbose\fP[=0]
-	be verbose (specify multiple times or a level using --verbose=\fB\fCn\fR, max level/times is 3)
+	be verbose (specify multiple times or a level using --verbose=\fB\fCn\fR, max level/times is 2)
 
 
 .SH SEE ALSO

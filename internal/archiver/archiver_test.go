@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -26,18 +25,13 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func prepareTempdirRepoSrc(t testing.TB, src TestDir) (tempdir string, repo restic.Repository, cleanup func()) {
-	tempdir, removeTempdir := restictest.TempDir(t)
-	repo, removeRepository := repository.TestRepository(t)
+func prepareTempdirRepoSrc(t testing.TB, src TestDir) (string, restic.Repository) {
+	tempdir := restictest.TempDir(t)
+	repo := repository.TestRepository(t)
 
 	TestCreateFiles(t, tempdir, src)
 
-	cleanup = func() {
-		removeRepository()
-		removeTempdir()
-	}
-
-	return tempdir, repo, cleanup
+	return tempdir, repo
 }
 
 func saveFile(t testing.TB, repo restic.Repository, filename string, filesystem fs.FS) (*restic.Node, ItemStats) {
@@ -53,12 +47,21 @@ func saveFile(t testing.TB, repo restic.Repository, filename string, filesystem 
 	}
 
 	var (
+		completeReadingCallback bool
+
 		completeCallbackNode  *restic.Node
 		completeCallbackStats ItemStats
 		completeCallback      bool
 
 		startCallback bool
 	)
+
+	completeReading := func() {
+		completeReadingCallback = true
+		if completeCallback {
+			t.Error("callbacks called in wrong order")
+		}
+	}
 
 	complete := func(node *restic.Node, stats ItemStats) {
 		completeCallback = true
@@ -80,7 +83,7 @@ func saveFile(t testing.TB, repo restic.Repository, filename string, filesystem 
 		t.Fatal(err)
 	}
 
-	res := arch.fileSaver.Save(ctx, "/", filename, file, fi, start, complete)
+	res := arch.fileSaver.Save(ctx, "/", filename, file, fi, start, completeReading, complete)
 
 	fnr := res.take(ctx)
 	if fnr.err != nil {
@@ -99,6 +102,10 @@ func saveFile(t testing.TB, repo restic.Repository, filename string, filesystem 
 
 	if !startCallback {
 		t.Errorf("start callback did not happen")
+	}
+
+	if !completeReadingCallback {
+		t.Errorf("completeReading callback did not happen")
 	}
 
 	if !completeCallback {
@@ -132,9 +139,7 @@ func TestArchiverSaveFile(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			tempdir, repo, cleanup := prepareTempdirRepoSrc(t, TestDir{"file": testfile})
-			defer cleanup()
-
+			tempdir, repo := prepareTempdirRepoSrc(t, TestDir{"file": testfile})
 			node, stats := saveFile(t, repo, filepath.Join(tempdir, "file"), fs.Track{FS: fs.Local{}})
 
 			TestEnsureFileContent(ctx, t, repo, "file", node, testfile)
@@ -167,8 +172,7 @@ func TestArchiverSaveFileReaderFS(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			repo, cleanup := repository.TestRepository(t)
-			defer cleanup()
+			repo := repository.TestRepository(t)
 
 			ts := time.Now()
 			filename := "xx"
@@ -176,7 +180,7 @@ func TestArchiverSaveFileReaderFS(t *testing.T) {
 				ModTime:    ts,
 				Mode:       0123,
 				Name:       filename,
-				ReadCloser: ioutil.NopCloser(strings.NewReader(test.Data)),
+				ReadCloser: io.NopCloser(strings.NewReader(test.Data)),
 			}
 
 			node, stats := saveFile(t, repo, filename, readerFs)
@@ -210,8 +214,7 @@ func TestArchiverSave(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			tempdir, repo, cleanup := prepareTempdirRepoSrc(t, TestDir{"file": testfile})
-			defer cleanup()
+			tempdir, repo := prepareTempdirRepoSrc(t, TestDir{"file": testfile})
 
 			wg, ctx := errgroup.WithContext(ctx)
 			repo.StartPackUploader(ctx, wg)
@@ -279,8 +282,7 @@ func TestArchiverSaveReaderFS(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			repo, cleanup := repository.TestRepository(t)
-			defer cleanup()
+			repo := repository.TestRepository(t)
 
 			wg, ctx := errgroup.WithContext(ctx)
 			repo.StartPackUploader(ctx, wg)
@@ -291,7 +293,7 @@ func TestArchiverSaveReaderFS(t *testing.T) {
 				ModTime:    ts,
 				Mode:       0123,
 				Name:       filename,
-				ReadCloser: ioutil.NopCloser(strings.NewReader(test.Data)),
+				ReadCloser: io.NopCloser(strings.NewReader(test.Data)),
 			}
 
 			arch := New(repo, readerFs, Options{})
@@ -355,7 +357,7 @@ func BenchmarkArchiverSaveFileSmall(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		tempdir, repo, cleanup := prepareTempdirRepoSrc(b, d)
+		tempdir, repo := prepareTempdirRepoSrc(b, d)
 		b.StartTimer()
 
 		_, stats := saveFile(b, repo, filepath.Join(tempdir, "file"), fs.Track{FS: fs.Local{}})
@@ -373,7 +375,6 @@ func BenchmarkArchiverSaveFileSmall(b *testing.B) {
 		if stats.TreeBlobs != 0 {
 			b.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs)
 		}
-		cleanup()
 		b.StartTimer()
 	}
 }
@@ -388,7 +389,7 @@ func BenchmarkArchiverSaveFileLarge(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		tempdir, repo, cleanup := prepareTempdirRepoSrc(b, d)
+		tempdir, repo := prepareTempdirRepoSrc(b, d)
 		b.StartTimer()
 
 		_, stats := saveFile(b, repo, filepath.Join(tempdir, "file"), fs.Track{FS: fs.Local{}})
@@ -406,7 +407,6 @@ func BenchmarkArchiverSaveFileLarge(b *testing.B) {
 		if stats.TreeBlobs != 0 {
 			b.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs)
 		}
-		cleanup()
 		b.StartTimer()
 	}
 }
@@ -458,14 +458,10 @@ func appendToFile(t testing.TB, filename string, data []byte) {
 }
 
 func TestArchiverSaveFileIncremental(t *testing.T) {
-	tempdir, removeTempdir := restictest.TempDir(t)
-	defer removeTempdir()
-
-	testRepo, removeRepository := repository.TestRepository(t)
-	defer removeRepository()
+	tempdir := restictest.TempDir(t)
 
 	repo := &blobCountingRepo{
-		Repository: testRepo,
+		Repository: repository.TestRepository(t),
 		saved:      make(map[restic.BlobHandle]uint),
 	}
 
@@ -676,8 +672,7 @@ func TestFileChanged(t *testing.T) {
 				t.Skip("don't run test on Windows")
 			}
 
-			tempdir, cleanup := restictest.TempDir(t)
-			defer cleanup()
+			tempdir := restictest.TempDir(t)
 
 			filename := filepath.Join(tempdir, "file")
 			content := defaultContent
@@ -713,8 +708,7 @@ func TestFileChanged(t *testing.T) {
 }
 
 func TestFilChangedSpecialCases(t *testing.T) {
-	tempdir, cleanup := restictest.TempDir(t)
-	defer cleanup()
+	tempdir := restictest.TempDir(t)
 
 	filename := filepath.Join(tempdir, "file")
 	content := []byte("foobar")
@@ -829,8 +823,7 @@ func TestArchiverSaveDir(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			tempdir, repo, cleanup := prepareTempdirRepoSrc(t, test.src)
-			defer cleanup()
+			tempdir, repo := prepareTempdirRepoSrc(t, test.src)
 
 			wg, ctx := errgroup.WithContext(context.Background())
 			repo.StartPackUploader(ctx, wg)
@@ -901,14 +894,10 @@ func TestArchiverSaveDir(t *testing.T) {
 }
 
 func TestArchiverSaveDirIncremental(t *testing.T) {
-	tempdir, removeTempdir := restictest.TempDir(t)
-	defer removeTempdir()
-
-	testRepo, removeRepository := repository.TestRepository(t)
-	defer removeRepository()
+	tempdir := restictest.TempDir(t)
 
 	repo := &blobCountingRepo{
-		Repository: testRepo,
+		Repository: repository.TestRepository(t),
 		saved:      make(map[restic.BlobHandle]uint),
 	}
 
@@ -1086,8 +1075,7 @@ func TestArchiverSaveTree(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			tempdir, repo, cleanup := prepareTempdirRepoSrc(t, test.src)
-			defer cleanup()
+			tempdir, repo := prepareTempdirRepoSrc(t, test.src)
 
 			testFS := fs.Track{FS: fs.Local{}}
 
@@ -1118,15 +1106,17 @@ func TestArchiverSaveTree(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			tree, err := arch.SaveTree(ctx, "/", atree, nil)
+			fn, _, err := arch.SaveTree(ctx, "/", atree, nil, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			treeID, err := restic.SaveTree(ctx, repo, tree)
-			if err != nil {
-				t.Fatal(err)
+			fnr := fn.take(context.TODO())
+			if fnr.err != nil {
+				t.Fatal(fnr.err)
 			}
+
+			treeID := *fnr.node.Subtree
 
 			arch.stopWorkers()
 			err = repo.Flush(ctx)
@@ -1386,8 +1376,7 @@ func TestArchiverSnapshot(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			tempdir, repo, cleanup := prepareTempdirRepoSrc(t, test.src)
-			defer cleanup()
+			tempdir, repo := prepareTempdirRepoSrc(t, test.src)
 
 			arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
 
@@ -1544,8 +1533,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			tempdir, repo, cleanup := prepareTempdirRepoSrc(t, test.src)
-			defer cleanup()
+			tempdir, repo := prepareTempdirRepoSrc(t, test.src)
 
 			arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
 			arch.Select = test.selFn
@@ -1647,8 +1635,7 @@ func TestArchiverParent(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			tempdir, repo, cleanup := prepareTempdirRepoSrc(t, test.src)
-			defer cleanup()
+			tempdir, repo := prepareTempdirRepoSrc(t, test.src)
 
 			testFS := &MockFS{
 				FS:        fs.Track{FS: fs.Local{}},
@@ -1660,7 +1647,7 @@ func TestArchiverParent(t *testing.T) {
 			back := restictest.Chdir(t, tempdir)
 			defer back()
 
-			_, firstSnapshotID, err := arch.Snapshot(ctx, []string{"."}, SnapshotOptions{Time: time.Now()})
+			firstSnapshot, firstSnapshotID, err := arch.Snapshot(ctx, []string{"."}, SnapshotOptions{Time: time.Now()})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1688,7 +1675,7 @@ func TestArchiverParent(t *testing.T) {
 
 			opts := SnapshotOptions{
 				Time:           time.Now(),
-				ParentSnapshot: firstSnapshotID,
+				ParentSnapshot: firstSnapshot,
 			}
 			_, secondSnapshotID, err := arch.Snapshot(ctx, []string{"."}, opts)
 			if err != nil {
@@ -1814,8 +1801,7 @@ func TestArchiverErrorReporting(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			tempdir, repo, cleanup := prepareTempdirRepoSrc(t, test.src)
-			defer cleanup()
+			tempdir, repo := prepareTempdirRepoSrc(t, test.src)
 
 			back := restictest.Chdir(t, tempdir)
 			defer back()
@@ -1859,10 +1845,6 @@ type noCancelBackend struct {
 	restic.Backend
 }
 
-func (c *noCancelBackend) Test(ctx context.Context, h restic.Handle) (bool, error) {
-	return c.Backend.Test(context.Background(), h)
-}
-
 func (c *noCancelBackend) Remove(ctx context.Context, h restic.Handle) error {
 	return c.Backend.Remove(context.Background(), h)
 }
@@ -1891,14 +1873,13 @@ func TestArchiverContextCanceled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	tempdir, removeTempdir := restictest.TempDir(t)
+	tempdir := restictest.TempDir(t)
 	TestCreateFiles(t, tempdir, TestDir{
 		"targetfile": TestFile{Content: "foobar"},
 	})
-	defer removeTempdir()
 
 	// Ensure that the archiver itself reports the canceled context and not just the backend
-	repo, _ := repository.TestRepositoryWithBackend(t, &noCancelBackend{mem.New()}, 0)
+	repo := repository.TestRepositoryWithBackend(t, &noCancelBackend{mem.New()}, 0)
 
 	back := restictest.Chdir(t, tempdir)
 	defer back()
@@ -1954,7 +1935,7 @@ type failSaveRepo struct {
 func (f *failSaveRepo) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (restic.ID, bool, int, error) {
 	val := atomic.AddInt32(&f.cnt, 1)
 	if val >= f.failAfter {
-		return restic.ID{}, false, 0, f.err
+		return restic.Hash(buf), false, 0, f.err
 	}
 
 	return f.Repository.SaveBlob(ctx, t, buf, id, storeDuplicate)
@@ -1986,6 +1967,7 @@ func TestArchiverAbortEarlyOnError(t *testing.T) {
 		{
 			src: TestDir{
 				"dir": TestDir{
+					"file0": TestFile{Content: string(restictest.Random(0, 1024))},
 					"file1": TestFile{Content: string(restictest.Random(1, 1024))},
 					"file2": TestFile{Content: string(restictest.Random(2, 1024))},
 					"file3": TestFile{Content: string(restictest.Random(3, 1024))},
@@ -1998,15 +1980,15 @@ func TestArchiverAbortEarlyOnError(t *testing.T) {
 				},
 			},
 			wantOpen: map[string]uint{
+				filepath.FromSlash("dir/file0"): 1,
 				filepath.FromSlash("dir/file1"): 1,
 				filepath.FromSlash("dir/file2"): 1,
 				filepath.FromSlash("dir/file3"): 1,
-				filepath.FromSlash("dir/file4"): 1,
 				filepath.FromSlash("dir/file8"): 0,
 				filepath.FromSlash("dir/file9"): 0,
 			},
-			// fails four to six files were opened as the FileReadConcurrency allows for
-			// two queued files
+			// fails after four to seven files were opened, as the ReadConcurrency allows for
+			// two queued files and SaveBlobConcurrency for one blob queued for saving.
 			failAfter: 4,
 			err:       testErr,
 		},
@@ -2017,8 +1999,7 @@ func TestArchiverAbortEarlyOnError(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			tempdir, repo, cleanup := prepareTempdirRepoSrc(t, test.src)
-			defer cleanup()
+			tempdir, repo := prepareTempdirRepoSrc(t, test.src)
 
 			back := restictest.Chdir(t, tempdir)
 			defer back()
@@ -2040,7 +2021,8 @@ func TestArchiverAbortEarlyOnError(t *testing.T) {
 
 			// at most two files may be queued
 			arch := New(testRepo, testFS, Options{
-				FileReadConcurrency: 2,
+				ReadConcurrency:     2,
+				SaveBlobConcurrency: 1,
 			})
 
 			_, _, err := arch.Snapshot(ctx, []string{"."}, SnapshotOptions{Time: time.Now()})
@@ -2061,7 +2043,7 @@ func TestArchiverAbortEarlyOnError(t *testing.T) {
 	}
 }
 
-func snapshot(t testing.TB, repo restic.Repository, fs fs.FS, parent restic.ID, filename string) (restic.ID, *restic.Node) {
+func snapshot(t testing.TB, repo restic.Repository, fs fs.FS, parent *restic.Snapshot, filename string) (*restic.Snapshot, *restic.Node) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -2071,7 +2053,7 @@ func snapshot(t testing.TB, repo restic.Repository, fs fs.FS, parent restic.ID, 
 		Time:           time.Now(),
 		ParentSnapshot: parent,
 	}
-	snapshot, snapshotID, err := arch.Snapshot(ctx, []string{filename}, sopts)
+	snapshot, _, err := arch.Snapshot(ctx, []string{filename}, sopts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2086,7 +2068,7 @@ func snapshot(t testing.TB, repo restic.Repository, fs fs.FS, parent restic.ID, 
 		t.Fatalf("unable to find node for testfile in snapshot")
 	}
 
-	return snapshotID, node
+	return snapshot, node
 }
 
 // StatFS allows overwriting what is returned by the Lstat function.
@@ -2148,8 +2130,7 @@ func TestMetadataChanged(t *testing.T) {
 		},
 	}
 
-	tempdir, repo, cleanup := prepareTempdirRepoSrc(t, files)
-	defer cleanup()
+	tempdir, repo := prepareTempdirRepoSrc(t, files)
 
 	back := restictest.Chdir(t, tempdir)
 	defer back()
@@ -2168,7 +2149,7 @@ func TestMetadataChanged(t *testing.T) {
 		},
 	}
 
-	snapshotID, node2 := snapshot(t, repo, fs, restic.ID{}, "testfile")
+	sn, node2 := snapshot(t, repo, fs, nil, "testfile")
 
 	// set some values so we can then compare the nodes
 	want.Content = node2.Content
@@ -2199,7 +2180,7 @@ func TestMetadataChanged(t *testing.T) {
 	want.Group = ""
 
 	// make another snapshot
-	_, node3 := snapshot(t, repo, fs, snapshotID, "testfile")
+	_, node3 := snapshot(t, repo, fs, sn, "testfile")
 	// Override username and group to empty string - in case underlying system has user with UID 51234
 	// See https://github.com/restic/restic/issues/2372
 	node3.User = ""
@@ -2223,8 +2204,7 @@ func TestRacyFileSwap(t *testing.T) {
 		},
 	}
 
-	tempdir, repo, cleanup := prepareTempdirRepoSrc(t, files)
-	defer cleanup()
+	tempdir, repo := prepareTempdirRepoSrc(t, files)
 
 	back := restictest.Chdir(t, tempdir)
 	defer back()

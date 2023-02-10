@@ -56,6 +56,18 @@ There are case insensitive variants of ``--exclude`` and ``--include`` called
 ``--iexclude`` and ``--iinclude``. These options will behave the same way but
 ignore the casing of paths.
 
+Restoring symbolic links on windows is only possible when the user has
+``SeCreateSymbolicLinkPrivilege`` privilege or is running as admin. This is a
+restriction of windows not restic.
+
+By default, restic does not restore files as sparse. Use ``restore --sparse`` to
+enable the creation of sparse files if supported by the filesystem. Then restic
+will restore long runs of zero bytes as holes in the corresponding files.
+Reading from a hole returns the original zero bytes, but it does not consume
+disk space. Note that the exact location of the holes can differ from those in
+the original file, as their location is determined while restoring and is not
+stored explicitly.
+
 Restore using mount
 ===================
 

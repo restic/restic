@@ -15,7 +15,6 @@ import (
 // JSONProgress reports progress for the `backup` command in JSON.
 type JSONProgress struct {
 	*ui.Message
-	*ui.StdioWrapper
 
 	term *termstatus.Terminal
 	v    uint
@@ -27,10 +26,9 @@ var _ ProgressPrinter = &JSONProgress{}
 // NewJSONProgress returns a new backup progress reporter.
 func NewJSONProgress(term *termstatus.Terminal, verbosity uint) *JSONProgress {
 	return &JSONProgress{
-		Message:      ui.NewMessage(term, verbosity),
-		StdioWrapper: ui.NewStdioWrapper(term),
-		term:         term,
-		v:            verbosity,
+		Message: ui.NewMessage(term, verbosity),
+		term:    term,
+		v:       verbosity,
 	}
 }
 
@@ -191,7 +189,7 @@ func (b *JSONProgress) Finish(snapshotID restic.ID, start time.Time, summary *Su
 		TotalFilesProcessed: summary.Files.New + summary.Files.Changed + summary.Files.Unchanged,
 		TotalBytesProcessed: summary.ProcessedBytes,
 		TotalDuration:       time.Since(start).Seconds(),
-		SnapshotID:          snapshotID.Str(),
+		SnapshotID:          snapshotID.String(),
 		DryRun:              dryRun,
 	})
 }

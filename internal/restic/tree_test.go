@@ -3,7 +3,7 @@ package restic_test
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"errors"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -26,7 +26,7 @@ var testFiles = []struct {
 }
 
 func createTempDir(t *testing.T) string {
-	tempdir, err := ioutil.TempDir(rtest.TestTempDir, "restic-test-")
+	tempdir, err := os.MkdirTemp(rtest.TestTempDir, "restic-test-")
 	rtest.OK(t, err)
 
 	for _, test := range testFiles {
@@ -97,8 +97,7 @@ func TestNodeComparison(t *testing.T) {
 }
 
 func TestEmptyLoadTree(t *testing.T) {
-	repo, cleanup := repository.TestRepository(t)
-	defer cleanup()
+	repo := repository.TestRepository(t)
 
 	var wg errgroup.Group
 	repo.StartPackUploader(context.TODO(), &wg)
@@ -136,6 +135,7 @@ func TestTreeEqualSerialization(t *testing.T) {
 
 			rtest.Assert(t, tree.Insert(node) != nil, "no error on duplicate node")
 			rtest.Assert(t, builder.AddNode(node) != nil, "no error on duplicate node")
+			rtest.Assert(t, errors.Is(builder.AddNode(node), restic.ErrTreeNotOrdered), "wrong error returned")
 		}
 
 		treeBytes, err := json.Marshal(tree)
@@ -176,14 +176,12 @@ func TestLoadTree(t *testing.T) {
 }
 
 func testLoadTree(t *testing.T, version uint) {
-	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
-	defer cleanup()
-
 	if rtest.BenchArchiveDirectory == "" {
 		t.Skip("benchdir not set, skipping")
 	}
 
 	// archive a few files
+	repo := repository.TestRepositoryWithVersion(t, version)
 	sn := archiver.TestSnapshot(t, repo, rtest.BenchArchiveDirectory, nil)
 	rtest.OK(t, repo.Flush(context.Background()))
 
@@ -196,14 +194,12 @@ func BenchmarkLoadTree(t *testing.B) {
 }
 
 func benchmarkLoadTree(t *testing.B, version uint) {
-	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
-	defer cleanup()
-
 	if rtest.BenchArchiveDirectory == "" {
 		t.Skip("benchdir not set, skipping")
 	}
 
 	// archive a few files
+	repo := repository.TestRepositoryWithVersion(t, version)
 	sn := archiver.TestSnapshot(t, repo, rtest.BenchArchiveDirectory, nil)
 	rtest.OK(t, repo.Flush(context.Background()))
 

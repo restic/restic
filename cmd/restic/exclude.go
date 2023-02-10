@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"io"
@@ -15,6 +16,8 @@ import (
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/textfile"
+	"github.com/spf13/pflag"
 )
 
 type rejectionCache struct {
@@ -409,4 +412,116 @@ func parseSizeStr(sizeStr string) (int64, error) {
 		return 0, err
 	}
 	return value * unit, nil
+}
+
+// readExcludePatternsFromFiles reads all exclude files and returns the list of
+// exclude patterns. For each line, leading and trailing white space is removed
+// and comment lines are ignored. For each remaining pattern, environment
+// variables are resolved. For adding a literal dollar sign ($), write $$ to
+// the file.
+func readExcludePatternsFromFiles(excludeFiles []string) ([]string, error) {
+	getenvOrDollar := func(s string) string {
+		if s == "$" {
+			return "$"
+		}
+		return os.Getenv(s)
+	}
+
+	var excludes []string
+	for _, filename := range excludeFiles {
+		err := func() (err error) {
+			data, err := textfile.Read(filename)
+			if err != nil {
+				return err
+			}
+
+			scanner := bufio.NewScanner(bytes.NewReader(data))
+			for scanner.Scan() {
+				line := strings.TrimSpace(scanner.Text())
+
+				// ignore empty lines
+				if line == "" {
+					continue
+				}
+
+				// strip comments
+				if strings.HasPrefix(line, "#") {
+					continue
+				}
+
+				line = os.Expand(line, getenvOrDollar)
+				excludes = append(excludes, line)
+			}
+			return scanner.Err()
+		}()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return excludes, nil
+}
+
+type excludePatternOptions struct {
+	Excludes                []string
+	InsensitiveExcludes     []string
+	ExcludeFiles            []string
+	InsensitiveExcludeFiles []string
+}
+
+func initExcludePatternOptions(f *pflag.FlagSet, opts *excludePatternOptions) {
+	f.StringArrayVarP(&opts.Excludes, "exclude", "e", nil, "exclude a `pattern` (can be specified multiple times)")
+	f.StringArrayVar(&opts.InsensitiveExcludes, "iexclude", nil, "same as --exclude `pattern` but ignores the casing of filenames")
+	f.StringArrayVar(&opts.ExcludeFiles, "exclude-file", nil, "read exclude patterns from a `file` (can be specified multiple times)")
+	f.StringArrayVar(&opts.InsensitiveExcludeFiles, "iexclude-file", nil, "same as --exclude-file but ignores casing of `file`names in patterns")
+}
+
+func (opts *excludePatternOptions) Empty() bool {
+	return len(opts.Excludes) == 0 && len(opts.InsensitiveExcludes) == 0 && len(opts.ExcludeFiles) == 0 && len(opts.InsensitiveExcludeFiles) == 0
+}
+
+func (opts excludePatternOptions) CollectPatterns() ([]RejectByNameFunc, error) {
+	var fs []RejectByNameFunc
+	// add patterns from file
+	if len(opts.ExcludeFiles) > 0 {
+		excludePatterns, err := readExcludePatternsFromFiles(opts.ExcludeFiles)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := filter.ValidatePatterns(excludePatterns); err != nil {
+			return nil, errors.Fatalf("--exclude-file: %s", err)
+		}
+
+		opts.Excludes = append(opts.Excludes, excludePatterns...)
+	}
+
+	if len(opts.InsensitiveExcludeFiles) > 0 {
+		excludes, err := readExcludePatternsFromFiles(opts.InsensitiveExcludeFiles)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := filter.ValidatePatterns(excludes); err != nil {
+			return nil, errors.Fatalf("--iexclude-file: %s", err)
+		}
+
+		opts.InsensitiveExcludes = append(opts.InsensitiveExcludes, excludes...)
+	}
+
+	if len(opts.InsensitiveExcludes) > 0 {
+		if err := filter.ValidatePatterns(opts.InsensitiveExcludes); err != nil {
+			return nil, errors.Fatalf("--iexclude: %s", err)
+		}
+
+		fs = append(fs, rejectByInsensitivePattern(opts.InsensitiveExcludes))
+	}
+
+	if len(opts.Excludes) > 0 {
+		if err := filter.ValidatePatterns(opts.Excludes); err != nil {
+			return nil, errors.Fatalf("--exclude: %s", err)
+		}
+
+		fs = append(fs, rejectByPattern(opts.Excludes))
+	}
+	return fs, nil
 }

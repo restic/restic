@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -170,7 +171,7 @@ func flush(t *testing.T, repo restic.Repository) {
 }
 
 func rebuildIndex(t *testing.T, repo restic.Repository) {
-	err := repo.SetIndex(repository.NewMasterIndex())
+	err := repo.SetIndex(index.NewMasterIndex())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -207,7 +208,7 @@ func rebuildIndex(t *testing.T, repo restic.Repository) {
 }
 
 func reloadIndex(t *testing.T, repo restic.Repository) {
-	err := repo.SetIndex(repository.NewMasterIndex())
+	err := repo.SetIndex(index.NewMasterIndex())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -222,8 +223,7 @@ func TestRepack(t *testing.T) {
 }
 
 func testRepack(t *testing.T, version uint) {
-	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
-	defer cleanup()
+	repo := repository.TestRepositoryWithVersion(t, version)
 
 	seed := time.Now().UnixNano()
 	rand.Seed(seed)
@@ -292,11 +292,21 @@ func TestRepackCopy(t *testing.T) {
 	repository.TestAllVersions(t, testRepackCopy)
 }
 
+type oneConnectionRepo struct {
+	restic.Repository
+}
+
+func (r oneConnectionRepo) Connections() uint {
+	return 1
+}
+
 func testRepackCopy(t *testing.T, version uint) {
-	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
-	defer cleanup()
-	dstRepo, dstCleanup := repository.TestRepositoryWithVersion(t, version)
-	defer dstCleanup()
+	repo := repository.TestRepositoryWithVersion(t, version)
+	dstRepo := repository.TestRepositoryWithVersion(t, version)
+
+	// test with minimal possible connection count
+	repoWrapped := &oneConnectionRepo{repo}
+	dstRepoWrapped := &oneConnectionRepo{dstRepo}
 
 	seed := time.Now().UnixNano()
 	rand.Seed(seed)
@@ -308,7 +318,7 @@ func testRepackCopy(t *testing.T, version uint) {
 	_, keepBlobs := selectBlobs(t, repo, 0.2)
 	copyPacks := findPacksForBlobs(t, repo, keepBlobs)
 
-	_, err := repository.Repack(context.TODO(), repo, dstRepo, copyPacks, keepBlobs, nil)
+	_, err := repository.Repack(context.TODO(), repoWrapped, dstRepoWrapped, copyPacks, keepBlobs, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -336,8 +346,7 @@ func TestRepackWrongBlob(t *testing.T) {
 }
 
 func testRepackWrongBlob(t *testing.T, version uint) {
-	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
-	defer cleanup()
+	repo := repository.TestRepositoryWithVersion(t, version)
 
 	seed := time.Now().UnixNano()
 	rand.Seed(seed)
@@ -362,8 +371,7 @@ func TestRepackBlobFallback(t *testing.T) {
 }
 
 func testRepackBlobFallback(t *testing.T, version uint) {
-	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
-	defer cleanup()
+	repo := repository.TestRepositoryWithVersion(t, version)
 
 	seed := time.Now().UnixNano()
 	rand.Seed(seed)

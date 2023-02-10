@@ -16,8 +16,7 @@ func TestLayout(t *testing.T) {
 		t.Skip("sftp server binary not available")
 	}
 
-	path, cleanup := rtest.TempDir(t)
-	defer cleanup()
+	path := rtest.TempDir(t)
 
 	var tests = []struct {
 		filename        string

@@ -3,7 +3,6 @@ package textfile
 import (
 	"bytes"
 	"encoding/hex"
-	"io/ioutil"
 	"os"
 	"testing"
 )
@@ -13,7 +12,7 @@ import (
 func writeTempfile(t testing.TB, data []byte) (string, func()) {
 	t.Helper()
 
-	f, err := ioutil.TempFile("", "restic-test-textfile-read-")
+	f, err := os.CreateTemp("", "restic-test-textfile-read-")
 	if err != nil {
 		t.Fatal(err)
 	}
