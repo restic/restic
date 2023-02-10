@@ -42,7 +42,7 @@ import (
 	"golang.org/x/term"
 )
 
-var netappversion = "3.0.0-dev (compiled manually)"
+var netappversion = "4.0.0-dev (compiled manually)"
 
 var version = "0.15.1"
 
