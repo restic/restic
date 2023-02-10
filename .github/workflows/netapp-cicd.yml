@@ -209,6 +209,12 @@ jobs:
           docker push netappdownloads.jfrog.io/oss-docker-restic-production/restic:latest
 
       - name: Tag and push versioned image
+        run: |
+          export VERSION=$(cat NETAPPVERSION).${{ steps.date.outputs.date }}
+          echo "VERSION="$VERSION
+          docker tag netapp-restic:latest netappdownloads.jfrog.io/oss-docker-restic-production/restic:$VERSION
+          docker push netappdownloads.jfrog.io/oss-docker-restic-production/restic:$VERSION
+
   lint:
     name: lint
     runs-on: ubuntu-latest
