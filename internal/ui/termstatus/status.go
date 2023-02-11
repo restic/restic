@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -325,6 +326,7 @@ func wideRune(r rune) bool {
 }
 
 // SetStatus updates the status lines.
+// The lines should not contain newlines; this method adds them.
 func (t *Terminal) SetStatus(lines []string) {
 	if len(lines) == 0 {
 		return
@@ -341,21 +343,34 @@ func (t *Terminal) SetStatus(lines []string) {
 		}
 	}
 
-	// make sure that all lines have a line break and are not too long
+	// Sanitize lines and truncate them if they're too long.
 	for i, line := range lines {
-		line = strings.TrimRight(line, "\n")
+		line = Quote(line)
 		if width > 0 {
 			line = Truncate(line, width-2)
 		}
-		lines[i] = line + "\n"
+		if i < len(lines)-1 { // Last line gets no line break.
+			lines[i] = line + "\n"
+		}
 	}
-
-	// make sure the last line does not have a line break
-	last := len(lines) - 1
-	lines[last] = strings.TrimRight(lines[last], "\n")
 
 	select {
 	case t.status <- status{lines: lines}:
 	case <-t.closed:
 	}
+}
+
+// Quote lines with funny characters in them, meaning control chars, newlines,
+// tabs, anything else non-printable and invalid UTF-8.
+//
+// This is intended to produce a string that does not mess up the terminal
+// rather than produce an unambiguous quoted string.
+func Quote(line string) string {
+	for _, r := range line {
+		// The replacement character usually means the input is not UTF-8.
+		if r == unicode.ReplacementChar || !unicode.IsPrint(r) {
+			return strconv.Quote(line)
+		}
+	}
+	return line
 }
