@@ -1,0 +1,14 @@
+Enhancement: Support `--group-by` for backup parent selection
+
+The backup command by default selected the parent snapshot based on the hostname
+and the backup targets. When the backup path list changed, the backup command
+was unable to determine a suitable parent snapshot and had to read all
+files again.
+
+The new `--group-by` option for the backup command allows filtering snapshots
+for the parent selection by `host`, `paths` and `tags`. It defaults to
+`host,paths` which selects the latest snapshot with hostname and paths matching
+those of the backup run. It should be used consistently with `forget --group-by`.
+
+https://github.com/restic/restic/issues/3941
+https://github.com/restic/restic/pull/4081

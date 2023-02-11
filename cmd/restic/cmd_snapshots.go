@@ -36,7 +36,7 @@ type SnapshotOptions struct {
 	Compact bool
 	Last    bool // This option should be removed in favour of Latest.
 	Latest  int
-	GroupBy string
+	GroupBy restic.SnapshotGroupByOptions
 }
 
 var snapshotOptions SnapshotOptions
@@ -54,7 +54,7 @@ func init() {
 		panic(err)
 	}
 	f.IntVar(&snapshotOptions.Latest, "latest", 0, "only show the last `n` snapshots for each host and path")
-	f.StringVarP(&snapshotOptions.GroupBy, "group-by", "g", "", "`group` snapshots by host, paths and/or tags, separated by comma")
+	f.VarP(&snapshotOptions.GroupBy, "group-by", "g", "`group` snapshots by host, paths and/or tags, separated by comma")
 }
 
 func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions, args []string) error {
