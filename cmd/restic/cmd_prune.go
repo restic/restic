@@ -396,9 +396,6 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 		if !blob.IsCompressed() {
 			ip.uncompressed = true
 		}
-		if !blob.IsCompressed() {
-			ip.uncompressed = true
-		}
 		// update indexPack
 		indexPack[blob.PackID] = ip
 	})
