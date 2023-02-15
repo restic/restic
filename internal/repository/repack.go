@@ -32,10 +32,6 @@ func Repack(ctx context.Context, repo restic.Repository, dstRepo restic.Reposito
 		return nil, errors.Fatal("repack step requires a backend connection limit of at least two")
 	}
 
-	if repo == dstRepo && dstRepo.Backend().Connections() < 2 {
-		return nil, errors.Fatal("repack step requires a backend connection limit of at least two")
-	}
-
 	wg, wgCtx := errgroup.WithContext(ctx)
 
 	dstRepo.StartPackUploader(wgCtx, wg)

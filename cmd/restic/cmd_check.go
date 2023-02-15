@@ -250,9 +250,6 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	if mixedFound {
 		Printf("Mixed packs with tree and data blobs are non-critical, you can run `restic prune` to correct this.\n")
 	}
-	if mixedFound {
-		Printf("Mixed packs with tree and data blobs are non-critical, you can run `restic prune` to correct this.\n")
-	}
 
 	if len(errs) > 0 {
 		for _, err := range errs {
