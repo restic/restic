@@ -164,7 +164,7 @@ jobs:
       - name: Check changelog files with calens
         run: |
           echo "install calens"
-          go get github.com/restic/calens
+          go install github.com/restic/calens
 
           echo "check changelog files"
           calens
