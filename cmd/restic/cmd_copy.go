@@ -66,10 +66,6 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 	if err != nil {
 		return err
 	}
-	if isFromRepo {
-		// swap global options, if the secondary repo was set via from-repo
-		gopts, secondaryGopts = secondaryGopts, gopts
-	}
 
 	dstRepo, err := OpenRepository(ctx, secondaryGopts)
 	if err != nil {
