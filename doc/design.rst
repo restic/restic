@@ -45,10 +45,12 @@ comparing its output to the file name. If the prefix of a filename is
 unique amongst all the other files in the same directory, the prefix may
 be used instead of the complete filename.
 
-Apart from the files stored within the ``keys`` directory, all files are
-encrypted with AES-256 in counter mode (CTR). The integrity of the
-encrypted data is secured by a Poly1305-AES message authentication code
-(sometimes also referred to as a "signature").
+Apart from the files stored within the ``keys`` and ``data``directories,
+all files are encrypted with AES-256 in counter mode (CTR). The integrity
+of the encrypted data is secured by a Poly1305-AES message authentication
+code (sometimes also referred to as a "signature").
+Files in the ``data`` directory ("pack files") consist of multiple parts
+which are all independently enccrypted and authenticated, see below.
 
 In the first 16 bytes of each encrypted file the initialisation vector
 (IV) is stored. It is followed by the encrypted data and completed by
@@ -298,8 +300,8 @@ example, the Pack ``73d04e61`` contains two data Blobs and one Tree
 blob, the plaintext hashes are listed afterwards. The ``length`` field
 corresponds to ``Length(encrypted_blob)`` in the pack file header.
 Field ``uncompressed_length`` is only present for compressed blobs and
-therefore is never present in version 1. It is set to the value of
-``Length(blob)``.
+therefore is never present in the Repository format version 1. It is set
+to the value of ``Length(blob)``.
 
 The field ``supersedes`` lists the storage IDs of index files that have
 been replaced with the current index file. This happens when index files
@@ -410,7 +412,9 @@ and pretty-print the contents of a snapshot file:
     {
       "time": "2015-01-02T18:10:50.895208559+01:00",
       "tree": "2da81727b6585232894cfbb8f8bdab8d1eccd3d8f7c92bc934d62e62e618ffdf",
-      "dir": "/tmp/testdata",
+      "paths": [
+        "/tmp/testdata"
+      ],
       "hostname": "kasimir",
       "username": "fd0",
       "uid": 1000,
@@ -436,7 +440,9 @@ becomes:
     {
       "time": "2015-01-02T18:10:50.895208559+01:00",
       "tree": "2da81727b6585232894cfbb8f8bdab8d1eccd3d8f7c92bc934d62e62e618ffdf",
-      "dir": "/tmp/testdata",
+      "paths": [
+        "/tmp/testdata"
+      ],
       "hostname": "kasimir",
       "username": "fd0",
       "uid": 1000,
@@ -495,9 +501,18 @@ the JSON is indented):
     }
 
 A tree contains a list of entries (in the field ``nodes``) which contain
-meta data like a name and timestamps. When the entry references a
-directory, the field ``subtree`` contains the plain text ID of another
-tree object.
+meta data like a name and timestamps. Note that there are some specialities of how
+this metadata is generated:
+
+- The name is quoted using <https://pkg.go.dev/strconv#Quote> before being saved.
+  This handles non-unicode names, but also changes the representation of names
+  containing `"` or `\\`.
+
+- The filemode saved is the mode defined by <https://pkg.go.dev/io/fs#FileMode> masked 
+  by ``os.ModePerm | os.ModeType | os.ModeSetuid | os.ModeSetgid | os.ModeSticky``
+
+When the entry references a directory, the field ``subtree`` contains the plain text
+ID of another tree object.
 
 When the command ``restic cat blob`` is used, the plaintext ID is needed
 to print a tree. The tree referenced above can be dumped as follows:
