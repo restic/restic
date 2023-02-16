@@ -21,17 +21,29 @@ var globalLocks struct {
 	sync.Once
 }
 
-func lockRepo(ctx context.Context, repo restic.Repository) (*restic.Lock, context.Context, error) {
-	return lockRepository(ctx, repo, false)
+func lockRepo(ctx context.Context, repo restic.Repository, retryLock time.Duration, json bool) (*restic.Lock, context.Context, error) {
+	return lockRepository(ctx, repo, false, retryLock, json)
 }
 
-func lockRepoExclusive(ctx context.Context, repo restic.Repository) (*restic.Lock, context.Context, error) {
-	return lockRepository(ctx, repo, true)
+func lockRepoExclusive(ctx context.Context, repo restic.Repository, retryLock time.Duration, json bool) (*restic.Lock, context.Context, error) {
+	return lockRepository(ctx, repo, true, retryLock, json)
+}
+
+var (
+	retrySleepStart = 5 * time.Second
+	retrySleepMax   = 60 * time.Second
+)
+
+func minDuration(a, b time.Duration) time.Duration {
+	if a <= b {
+		return a
+	}
+	return b
 }
 
 // lockRepository wraps the ctx such that it is cancelled when the repository is unlocked
 // cancelling the original context also stops the lock refresh
-func lockRepository(ctx context.Context, repo restic.Repository, exclusive bool) (*restic.Lock, context.Context, error) {
+func lockRepository(ctx context.Context, repo restic.Repository, exclusive bool, retryLock time.Duration, json bool) (*restic.Lock, context.Context, error) {
 	// make sure that a repository is unlocked properly and after cancel() was
 	// called by the cleanup handler in global.go
 	globalLocks.Do(func() {
@@ -43,7 +55,44 @@ func lockRepository(ctx context.Context, repo restic.Repository, exclusive bool)
 		lockFn = restic.NewExclusiveLock
 	}
 
-	lock, err := lockFn(ctx, repo)
+	var lock *restic.Lock
+	var err error
+
+	retrySleep := minDuration(retrySleepStart, retryLock)
+	retryMessagePrinted := false
+	retryTimeout := time.After(retryLock)
+
+retryLoop:
+	for {
+		lock, err = lockFn(ctx, repo)
+		if err != nil && restic.IsAlreadyLocked(err) {
+
+			if !retryMessagePrinted {
+				if !json {
+					Verbosef("repo already locked, waiting up to %s for the lock\n", retryLock)
+				}
+				retryMessagePrinted = true
+			}
+
+			debug.Log("repo already locked, retrying in %v", retrySleep)
+			retrySleepCh := time.After(retrySleep)
+
+			select {
+			case <-ctx.Done():
+				return nil, ctx, ctx.Err()
+			case <-retryTimeout:
+				debug.Log("repo already locked, timeout expired")
+				// Last lock attempt
+				lock, err = lockFn(ctx, repo)
+				break retryLoop
+			case <-retrySleepCh:
+				retrySleep = minDuration(retrySleep*2, retrySleepMax)
+			}
+		} else {
+			// anything else, either a successful lock or another error
+			break retryLoop
+		}
+	}
 	if restic.IsInvalidLock(err) {
 		return nil, ctx, errors.Fatalf("%v\n\nthe `unlock --remove-all` command can be used to remove invalid locks. Make sure that no other restic process is accessing the repository when running the command", err)
 	}

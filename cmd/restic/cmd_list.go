@@ -31,19 +31,19 @@ func init() {
 	cmdRoot.AddCommand(cmdList)
 }
 
-func runList(ctx context.Context, cmd *cobra.Command, opts GlobalOptions, args []string) error {
+func runList(ctx context.Context, cmd *cobra.Command, gopts GlobalOptions, args []string) error {
 	if len(args) != 1 {
 		return errors.Fatal("type not specified, usage: " + cmd.Use)
 	}
 
-	repo, err := OpenRepository(ctx, opts)
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
 
-	if !opts.NoLock && args[0] != "locks" {
+	if !gopts.NoLock && args[0] != "locks" {
 		var lock *restic.Lock
-		lock, ctx, err = lockRepo(ctx, repo)
+		lock, ctx, err = lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err

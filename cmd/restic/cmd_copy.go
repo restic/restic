@@ -74,14 +74,14 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 
 	if !gopts.NoLock {
 		var srcLock *restic.Lock
-		srcLock, ctx, err = lockRepo(ctx, srcRepo)
+		srcLock, ctx, err = lockRepo(ctx, srcRepo, gopts.RetryLock, gopts.JSON)
 		defer unlockRepo(srcLock)
 		if err != nil {
 			return err
 		}
 	}
 
-	dstLock, ctx, err := lockRepo(ctx, dstRepo)
+	dstLock, ctx, err := lockRepo(ctx, dstRepo, gopts.RetryLock, gopts.JSON)
 	defer unlockRepo(dstLock)
 	if err != nil {
 		return err

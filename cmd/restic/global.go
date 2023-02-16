@@ -59,6 +59,7 @@ type GlobalOptions struct {
 	Quiet           bool
 	Verbose         int
 	NoLock          bool
+	RetryLock       time.Duration
 	JSON            bool
 	CacheDir        string
 	NoCache         bool
@@ -115,6 +116,7 @@ func init() {
 	// use empty paremeter name as `-v, --verbose n` instead of the correct `--verbose=n` is confusing
 	f.CountVarP(&globalOptions.Verbose, "verbose", "v", "be verbose (specify multiple times or a level using --verbose=n``, max level/times is 2)")
 	f.BoolVar(&globalOptions.NoLock, "no-lock", false, "do not lock the repository, this allows some operations on read-only repositories")
+	f.DurationVar(&globalOptions.RetryLock, "retry-lock", 0, "retry to lock the repository if it is already locked, takes a value like 5m or 2h (default: no retries)")
 	f.BoolVarP(&globalOptions.JSON, "json", "", false, "set output mode to JSON for commands that support it")
 	f.StringVar(&globalOptions.CacheDir, "cache-dir", "", "set the cache `directory`. (default: use system default cache directory)")
 	f.BoolVar(&globalOptions.NoCache, "no-cache", false, "do not use a local cache")

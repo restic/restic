@@ -164,9 +164,9 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 		var err error
 		if opts.Forget {
 			Verbosef("create exclusive lock for repository\n")
-			lock, ctx, err = lockRepoExclusive(ctx, repo)
+			lock, ctx, err = lockRepoExclusive(ctx, repo, gopts.RetryLock, gopts.JSON)
 		} else {
-			lock, ctx, err = lockRepo(ctx, repo)
+			lock, ctx, err = lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
 		}
 		defer unlockRepo(lock)
 		if err != nil {

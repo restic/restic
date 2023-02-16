@@ -211,7 +211,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	if !gopts.NoLock {
 		Verbosef("create exclusive lock for repository\n")
 		var lock *restic.Lock
-		lock, ctx, err = lockRepoExclusive(ctx, repo)
+		lock, ctx, err = lockRepoExclusive(ctx, repo, gopts.RetryLock, gopts.JSON)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
