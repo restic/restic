@@ -35,7 +35,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 // TagOptions bundles all options for the 'tag' command.
 type TagOptions struct {
-	snapshotFilterOptions
+	restic.SnapshotFilter
 	SetTags    restic.TagLists
 	AddTags    restic.TagLists
 	RemoveTags restic.TagLists
@@ -50,7 +50,7 @@ func init() {
 	tagFlags.Var(&tagOptions.SetTags, "set", "`tags` which will replace the existing tags in the format `tag[,tag,...]` (can be given multiple times)")
 	tagFlags.Var(&tagOptions.AddTags, "add", "`tags` which will be added to the existing tags in the format `tag[,tag,...]` (can be given multiple times)")
 	tagFlags.Var(&tagOptions.RemoveTags, "remove", "`tags` which will be removed from the existing tags in the format `tag[,tag,...]` (can be given multiple times)")
-	initMultiSnapshotFilterOptions(tagFlags, &tagOptions.snapshotFilterOptions, true)
+	initMultiSnapshotFilter(tagFlags, &tagOptions.SnapshotFilter, true)
 }
 
 func changeTags(ctx context.Context, repo *repository.Repository, sn *restic.Snapshot, setTags, addTags, removeTags []string) (bool, error) {
@@ -119,7 +119,7 @@ func runTag(ctx context.Context, opts TagOptions, gopts GlobalOptions, args []st
 	}
 
 	changeCnt := 0
-	for sn := range FindFilteredSnapshots(ctx, repo.Backend(), repo, opts.Hosts, opts.Tags, opts.Paths, args) {
+	for sn := range FindFilteredSnapshots(ctx, repo.Backend(), repo, &opts.SnapshotFilter, args) {
 		changed, err := changeTags(ctx, repo, sn, opts.SetTags.Flatten(), opts.AddTags.Flatten(), opts.RemoveTags.Flatten())
 		if err != nil {
 			Warnf("unable to modify the tags for snapshot ID %q, ignoring: %v\n", sn.ID(), err)

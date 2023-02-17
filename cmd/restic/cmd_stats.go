@@ -58,7 +58,7 @@ type StatsOptions struct {
 	// the mode of counting to perform (see consts for available modes)
 	countMode string
 
-	snapshotFilterOptions
+	restic.SnapshotFilter
 }
 
 var statsOptions StatsOptions
@@ -67,7 +67,7 @@ func init() {
 	cmdRoot.AddCommand(cmdStats)
 	f := cmdStats.Flags()
 	f.StringVar(&statsOptions.countMode, "mode", countModeRestoreSize, "counting mode: restore-size (default), files-by-contents, blobs-per-file or raw-data")
-	initMultiSnapshotFilterOptions(f, &statsOptions.snapshotFilterOptions, true)
+	initMultiSnapshotFilter(f, &statsOptions.SnapshotFilter, true)
 }
 
 func runStats(ctx context.Context, gopts GlobalOptions, args []string) error {
@@ -111,7 +111,7 @@ func runStats(ctx context.Context, gopts GlobalOptions, args []string) error {
 		SnapshotsCount: 0,
 	}
 
-	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, statsOptions.Hosts, statsOptions.Tags, statsOptions.Paths, args) {
+	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &statsOptions.SnapshotFilter, args) {
 		err = statsWalkSnapshot(ctx, sn, repo, stats)
 		if err != nil {
 			return fmt.Errorf("error walking snapshot: %v", err)

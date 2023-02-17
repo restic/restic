@@ -12,13 +12,32 @@ import (
 // ErrNoSnapshotFound is returned when no snapshot for the given criteria could be found.
 var ErrNoSnapshotFound = errors.New("no snapshot found")
 
-// findLatestSnapshot finds latest snapshot with optional target/directory, tags, hostname, and timestamp filters.
-func findLatestSnapshot(ctx context.Context, be Lister, loader LoaderUnpacked, hosts []string,
-	tags []TagList, paths []string, timeStampLimit *time.Time) (*Snapshot, error) {
+// A SnapshotFilter denotes a set of snapshots based on hosts, tags and paths.
+type SnapshotFilter struct {
+	_ struct{} // Force naming fields in literals.
+
+	Hosts []string
+	Tags  TagLists
+	Paths []string
+	// Match snapshots from before this timestamp. Zero for no limit.
+	TimestampLimit time.Time
+}
+
+func (f *SnapshotFilter) empty() bool {
+	return len(f.Hosts)+len(f.Tags)+len(f.Paths) == 0
+}
+
+func (f *SnapshotFilter) matches(sn *Snapshot) bool {
+	return sn.HasHostname(f.Hosts) && sn.HasTagList(f.Tags) && sn.HasPaths(f.Paths)
+}
+
+// findLatest finds the latest snapshot with optional target/directory,
+// tags, hostname, and timestamp filters.
+func (f *SnapshotFilter) findLatest(ctx context.Context, be Lister, loader LoaderUnpacked) (*Snapshot, error) {
 
 	var err error
-	absTargets := make([]string, 0, len(paths))
-	for _, target := range paths {
+	absTargets := make([]string, 0, len(f.Paths))
+	for _, target := range f.Paths {
 		if !filepath.IsAbs(target) {
 			target, err = filepath.Abs(target)
 			if err != nil {
@@ -35,7 +54,7 @@ func findLatestSnapshot(ctx context.Context, be Lister, loader LoaderUnpacked, h
 			return errors.Errorf("Error loading snapshot %v: %v", id.Str(), err)
 		}
 
-		if timeStampLimit != nil && snapshot.Time.After(*timeStampLimit) {
+		if !f.TimestampLimit.IsZero() && snapshot.Time.After(f.TimestampLimit) {
 			return nil
 		}
 
@@ -43,15 +62,7 @@ func findLatestSnapshot(ctx context.Context, be Lister, loader LoaderUnpacked, h
 			return nil
 		}
 
-		if !snapshot.HasHostname(hosts) {
-			return nil
-		}
-
-		if !snapshot.HasTagList(tags) {
-			return nil
-		}
-
-		if !snapshot.HasPaths(absTargets) {
+		if !f.matches(snapshot) {
 			return nil
 		}
 
@@ -85,12 +96,14 @@ func FindSnapshot(ctx context.Context, be Lister, loader LoaderUnpacked, s strin
 	return LoadSnapshot(ctx, loader, id)
 }
 
-// FindFilteredSnapshot returns either the latests from a filtered list of all snapshots or a snapshot specified by `snapshotID`.
-func FindFilteredSnapshot(ctx context.Context, be Lister, loader LoaderUnpacked, hosts []string, tags []TagList, paths []string, timeStampLimit *time.Time, snapshotID string) (*Snapshot, error) {
+// FindLatest returns either the latest of a filtered list of all snapshots
+// or a snapshot specified by `snapshotID`.
+func (f *SnapshotFilter) FindLatest(ctx context.Context, be Lister, loader LoaderUnpacked, snapshotID string) (*Snapshot, error) {
 	if snapshotID == "latest" {
-		sn, err := findLatestSnapshot(ctx, be, loader, hosts, tags, paths, timeStampLimit)
+		sn, err := f.findLatest(ctx, be, loader)
 		if err == ErrNoSnapshotFound {
-			err = fmt.Errorf("snapshot filter (Paths:%v Tags:%v Hosts:%v): %w", paths, tags, hosts, err)
+			err = fmt.Errorf("snapshot filter (Paths:%v Tags:%v Hosts:%v): %w",
+				f.Paths, f.Tags, f.Hosts, err)
 		}
 		return sn, err
 	}
@@ -99,8 +112,8 @@ func FindFilteredSnapshot(ctx context.Context, be Lister, loader LoaderUnpacked,
 
 type SnapshotFindCb func(string, *Snapshot, error) error
 
-// FindFilteredSnapshots yields Snapshots, either given explicitly by `snapshotIDs` or filtered from the list of all snapshots.
-func FindFilteredSnapshots(ctx context.Context, be Lister, loader LoaderUnpacked, hosts []string, tags []TagList, paths []string, snapshotIDs []string, fn SnapshotFindCb) error {
+// FindAll yields Snapshots, either given explicitly by `snapshotIDs` or filtered from the list of all snapshots.
+func (f *SnapshotFilter) FindAll(ctx context.Context, be Lister, loader LoaderUnpacked, snapshotIDs []string, fn SnapshotFindCb) error {
 	if len(snapshotIDs) != 0 {
 		var err error
 		usedFilter := false
@@ -116,9 +129,10 @@ func FindFilteredSnapshots(ctx context.Context, be Lister, loader LoaderUnpacked
 
 				usedFilter = true
 
-				sn, err = findLatestSnapshot(ctx, be, loader, hosts, tags, paths, nil)
+				sn, err = f.findLatest(ctx, be, loader)
 				if err == ErrNoSnapshotFound {
-					err = errors.Errorf("no snapshot matched given filter (Paths:%v Tags:%v Hosts:%v)", paths, tags, hosts)
+					err = errors.Errorf("no snapshot matched given filter (Paths:%v Tags:%v Hosts:%v)",
+						f.Paths, f.Tags, f.Hosts)
 				}
 				if sn != nil {
 					ids.Insert(*sn.ID())
@@ -141,18 +155,14 @@ func FindFilteredSnapshots(ctx context.Context, be Lister, loader LoaderUnpacked
 		}
 
 		// Give the user some indication their filters are not used.
-		if !usedFilter && (len(hosts) != 0 || len(tags) != 0 || len(paths) != 0) {
+		if !usedFilter && !f.empty() {
 			return fn("filters", nil, errors.Errorf("explicit snapshot ids are given"))
 		}
 		return nil
 	}
 
 	return ForAllSnapshots(ctx, be, loader, nil, func(id ID, sn *Snapshot, err error) error {
-		if err != nil {
-			return fn(id.String(), sn, err)
-		}
-
-		if !sn.HasHostname(hosts) || !sn.HasTagList(tags) || !sn.HasPaths(paths) {
+		if err == nil && !f.matches(sn) {
 			return nil
 		}
 
