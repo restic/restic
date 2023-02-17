@@ -45,12 +45,12 @@ comparing its output to the file name. If the prefix of a filename is
 unique amongst all the other files in the same directory, the prefix may
 be used instead of the complete filename.
 
-Apart from the files stored within the ``keys`` and ``data``directories,
+Apart from the files stored within the ``keys`` and ``data`` directories,
 all files are encrypted with AES-256 in counter mode (CTR). The integrity
 of the encrypted data is secured by a Poly1305-AES message authentication
 code (sometimes also referred to as a "signature").
 Files in the ``data`` directory ("pack files") consist of multiple parts
-which are all independently enccrypted and authenticated, see below.
+which are all independently encrypted and authenticated, see below.
 
 In the first 16 bytes of each encrypted file the initialisation vector
 (IV) is stored. It is followed by the encrypted data and completed by
