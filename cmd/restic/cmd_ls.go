@@ -49,7 +49,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 // LsOptions collects all options for the ls command.
 type LsOptions struct {
 	ListLong bool
-	snapshotFilterOptions
+	restic.SnapshotFilter
 	Recursive bool
 }
 
@@ -59,7 +59,7 @@ func init() {
 	cmdRoot.AddCommand(cmdLs)
 
 	flags := cmdLs.Flags()
-	initSingleSnapshotFilterOptions(flags, &lsOptions.snapshotFilterOptions)
+	initSingleSnapshotFilter(flags, &lsOptions.SnapshotFilter)
 	flags.BoolVarP(&lsOptions.ListLong, "long", "l", false, "use a long listing format showing size and mode")
 	flags.BoolVar(&lsOptions.Recursive, "recursive", false, "include files in subfolders of the listed directories")
 }
@@ -210,7 +210,11 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		}
 	}
 
-	sn, err := restic.FindFilteredSnapshot(ctx, snapshotLister, repo, opts.Hosts, opts.Tags, opts.Paths, nil, args[0])
+	sn, err := (&restic.SnapshotFilter{
+		Hosts: opts.Hosts,
+		Paths: opts.Paths,
+		Tags:  opts.Tags,
+	}).FindLatest(ctx, snapshotLister, repo, args[0])
 	if err != nil {
 		return err
 	}

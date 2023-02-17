@@ -439,7 +439,13 @@ func findParentSnapshot(ctx context.Context, repo restic.Repository, opts Backup
 	if snName == "" {
 		snName = "latest"
 	}
-	sn, err := restic.FindFilteredSnapshot(ctx, repo.Backend(), repo, []string{opts.Host}, []restic.TagList{}, targets, &timeStampLimit, snName)
+	f := restic.SnapshotFilter{
+		Hosts:          []string{opts.Host},
+		Paths:          targets,
+		TimestampLimit: timeStampLimit,
+	}
+
+	sn, err := f.FindLatest(ctx, repo.Backend(), repo, snName)
 	// Snapshot not found is ok if no explicit parent was set
 	if opts.Parent == "" && errors.Is(err, restic.ErrNoSnapshotFound) {
 		err = nil

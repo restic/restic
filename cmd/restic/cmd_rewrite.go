@@ -51,7 +51,7 @@ type RewriteOptions struct {
 	Forget bool
 	DryRun bool
 
-	snapshotFilterOptions
+	restic.SnapshotFilter
 	excludePatternOptions
 }
 
@@ -64,7 +64,7 @@ func init() {
 	f.BoolVarP(&rewriteOptions.Forget, "forget", "", false, "remove original snapshots after creating new ones")
 	f.BoolVarP(&rewriteOptions.DryRun, "dry-run", "n", false, "do not do anything, just print what would be done")
 
-	initMultiSnapshotFilterOptions(f, &rewriteOptions.snapshotFilterOptions, true)
+	initMultiSnapshotFilter(f, &rewriteOptions.SnapshotFilter, true)
 	initExcludePatternOptions(f, &rewriteOptions.excludePatternOptions)
 }
 
@@ -186,7 +186,7 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 	}
 
 	changedCount := 0
-	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, opts.Hosts, opts.Tags, opts.Paths, args) {
+	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args) {
 		Verbosef("\nsnapshot %s of %v at %s)\n", sn.ID().Str(), sn.Paths, sn.Time)
 		changed, err := rewriteSnapshot(ctx, repo, sn, opts)
 		if err != nil {

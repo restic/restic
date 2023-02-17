@@ -40,7 +40,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 // DumpOptions collects all options for the dump command.
 type DumpOptions struct {
-	snapshotFilterOptions
+	restic.SnapshotFilter
 	Archive string
 }
 
@@ -50,7 +50,7 @@ func init() {
 	cmdRoot.AddCommand(cmdDump)
 
 	flags := cmdDump.Flags()
-	initSingleSnapshotFilterOptions(flags, &dumpOptions.snapshotFilterOptions)
+	initSingleSnapshotFilter(flags, &dumpOptions.SnapshotFilter)
 	flags.StringVarP(&dumpOptions.Archive, "archive", "a", "tar", "set archive `format` as \"tar\" or \"zip\"")
 }
 
@@ -139,7 +139,11 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 		}
 	}
 
-	sn, err := restic.FindFilteredSnapshot(ctx, repo.Backend(), repo, opts.Paths, opts.Tags, opts.Hosts, nil, snapshotIDString)
+	sn, err := (&restic.SnapshotFilter{
+		Hosts: opts.Hosts,
+		Paths: opts.Paths,
+		Tags:  opts.Tags,
+	}).FindLatest(ctx, repo.Backend(), repo, snapshotIDString)
 	if err != nil {
 		return errors.Fatalf("failed to find snapshot: %v", err)
 	}

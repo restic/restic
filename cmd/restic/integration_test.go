@@ -106,7 +106,7 @@ func testRunRestore(t testing.TB, opts GlobalOptions, dir string, snapshotID res
 func testRunRestoreLatest(t testing.TB, gopts GlobalOptions, dir string, paths []string, hosts []string) {
 	opts := RestoreOptions{
 		Target: dir,
-		snapshotFilterOptions: snapshotFilterOptions{
+		SnapshotFilter: restic.SnapshotFilter{
 			Hosts: hosts,
 			Paths: paths,
 		},
@@ -2196,7 +2196,7 @@ func TestFindListOnce(t *testing.T) {
 
 	snapshotIDs := restic.NewIDSet()
 	// specify the two oldest snapshots explicitly and use "latest" to reference the newest one
-	for sn := range FindFilteredSnapshots(context.TODO(), repo.Backend(), repo, nil, nil, nil, []string{
+	for sn := range FindFilteredSnapshots(context.TODO(), repo.Backend(), repo, &restic.SnapshotFilter{}, []string{
 		secondSnapshot[0].String(),
 		secondSnapshot[1].String()[:8],
 		"latest",
