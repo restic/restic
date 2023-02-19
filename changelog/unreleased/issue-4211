@@ -1,0 +1,8 @@
+Bugfix: Restic dump now interprets --host and --path correctly
+
+Restic dump previously confused its --host=<host> and --path=<path>
+options: it looked for snapshots with paths called <host> from hosts
+called <path>. It now treats the options as intended.
+
+https://github.com/restic/restic/issues/4211
+https://github.com/restic/restic/pull/4212

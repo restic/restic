@@ -51,7 +51,7 @@ type FindOptions struct {
 	PackID, ShowPackID bool
 	CaseInsensitive    bool
 	ListLong           bool
-	snapshotFilterOptions
+	restic.SnapshotFilter
 }
 
 var findOptions FindOptions
@@ -70,7 +70,7 @@ func init() {
 	f.BoolVarP(&findOptions.CaseInsensitive, "ignore-case", "i", false, "ignore case for pattern")
 	f.BoolVarP(&findOptions.ListLong, "long", "l", false, "use a long listing format showing size and mode")
 
-	initMultiSnapshotFilterOptions(f, &findOptions.snapshotFilterOptions, true)
+	initMultiSnapshotFilter(f, &findOptions.SnapshotFilter, true)
 }
 
 type findPattern struct {
@@ -618,7 +618,7 @@ func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []
 		}
 	}
 
-	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, opts.Hosts, opts.Tags, opts.Paths, opts.Snapshots) {
+	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, opts.Snapshots) {
 		if f.blobIDs != nil || f.treeIDs != nil {
 			if err = f.findIDs(ctx, sn); err != nil && err.Error() != "OK" {
 				return err

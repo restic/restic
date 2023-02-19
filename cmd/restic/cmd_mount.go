@@ -77,7 +77,7 @@ type MountOptions struct {
 	OwnerRoot            bool
 	AllowOther           bool
 	NoDefaultPermissions bool
-	snapshotFilterOptions
+	restic.SnapshotFilter
 	TimeTemplate  string
 	PathTemplates []string
 }
@@ -92,7 +92,7 @@ func init() {
 	mountFlags.BoolVar(&mountOptions.AllowOther, "allow-other", false, "allow other users to access the data in the mounted directory")
 	mountFlags.BoolVar(&mountOptions.NoDefaultPermissions, "no-default-permissions", false, "for 'allow-other', ignore Unix permissions and allow users to read all snapshot files")
 
-	initMultiSnapshotFilterOptions(mountFlags, &mountOptions.snapshotFilterOptions, true)
+	initMultiSnapshotFilter(mountFlags, &mountOptions.SnapshotFilter, true)
 
 	mountFlags.StringArrayVar(&mountOptions.PathTemplates, "path-template", nil, "set `template` for path names (can be specified multiple times)")
 	mountFlags.StringVar(&mountOptions.TimeTemplate, "snapshot-template", time.RFC3339, "set `template` to use for snapshot dirs")
@@ -180,9 +180,7 @@ func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args 
 
 	cfg := fuse.Config{
 		OwnerIsRoot:   opts.OwnerRoot,
-		Hosts:         opts.Hosts,
-		Tags:          opts.Tags,
-		Paths:         opts.Paths,
+		Filter:        opts.SnapshotFilter,
 		TimeTemplate:  opts.TimeTemplate,
 		PathTemplates: opts.PathTemplates,
 	}

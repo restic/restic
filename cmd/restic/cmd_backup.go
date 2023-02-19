@@ -442,21 +442,18 @@ func findParentSnapshot(ctx context.Context, repo restic.Repository, opts Backup
 	if snName == "" {
 		snName = "latest"
 	}
-
-	var hosts []string
-	var paths []string
-	var tags []restic.TagList
+	f := restic.SnapshotFilter{TimestampLimit: timeStampLimit}
 	if opts.GroupBy.Host {
-		hosts = []string{opts.Host}
+		f.Hosts = []string{opts.Host}
 	}
 	if opts.GroupBy.Path {
-		paths = targets
+		f.Paths = targets
 	}
 	if opts.GroupBy.Tag {
-		tags = []restic.TagList{opts.Tags.Flatten()}
+		f.Tags = []restic.TagList{opts.Tags.Flatten()}
 	}
 
-	sn, err := restic.FindFilteredSnapshot(ctx, repo.Backend(), repo, hosts, tags, paths, &timeStampLimit, snName)
+	sn, err := f.FindLatest(ctx, repo.Backend(), repo, snName)
 	// Snapshot not found is ok if no explicit parent was set
 	if opts.Parent == "" && errors.Is(err, restic.ErrNoSnapshotFound) {
 		err = nil
