@@ -1,0 +1,14 @@
+Bugfix: Delete files on Backblaze B2 more reliably
+
+Restic used to only delete the latest version of files stored in B2. In most
+cases this worked well as there was only a single version of the file. However,
+due to retries while uploading it is possible for multiple file versions to be
+stored at B2. This could lead to various problems for files that should have
+been deleted but still existed.
+
+The implementation has now been changed to delete all versions of files, which
+doubles the amount of Class B transactions necessary to delete files, but
+assures that no file versions are left behind.
+
+https://github.com/restic/restic/issues/3161
+https://github.com/restic/restic/pull/3885

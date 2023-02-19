@@ -1,7 +1,0 @@
-Enhancement: Only display the message if there were locks to be removed
-
-`restic unlock` now only shows `successfully removed locks` if there were locks to be removed.
-In addition, it also reports the number of the removed lock files.
-
-https://github.com/restic/restic/issues/3929
-https://github.com/restic/restic/pull/3935

@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"reflect"
@@ -28,6 +27,15 @@ func seedRand(t testing.TB) {
 	t.Logf("rand initialized with seed %d", seed)
 }
 
+func beTest(ctx context.Context, be restic.Backend, h restic.Handle) (bool, error) {
+	_, err := be.Stat(ctx, h)
+	if err != nil && be.IsNotExist(err) {
+		return false, nil
+	}
+
+	return err == nil, err
+}
+
 // TestCreateWithConfig tests that creating a backend in a location which already
 // has a config file fails.
 func (s *Suite) TestCreateWithConfig(t *testing.T) {
@@ -36,7 +44,7 @@ func (s *Suite) TestCreateWithConfig(t *testing.T) {
 
 	// remove a config if present
 	cfgHandle := restic.Handle{Type: restic.ConfigFile}
-	cfgPresent, err := b.Test(context.TODO(), cfgHandle)
+	cfgPresent, err := beTest(context.TODO(), b, cfgHandle)
 	if err != nil {
 		t.Fatalf("unable to test for config: %+v", err)
 	}
@@ -84,6 +92,7 @@ func (s *Suite) TestConfig(t *testing.T) {
 	if err == nil {
 		t.Fatalf("did not get expected error for non-existing config")
 	}
+	test.Assert(t, b.IsNotExist(err), "IsNotExist() did not recognize error from LoadAll(): %v", err)
 
 	err = b.Save(context.TODO(), restic.Handle{Type: restic.ConfigFile}, restic.NewByteReader([]byte(testString), b.Hasher()))
 	if err != nil {
@@ -123,11 +132,13 @@ func (s *Suite) TestLoad(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Load() did not return an error for invalid handle")
 	}
+	test.Assert(t, !b.IsNotExist(err), "IsNotExist() should not accept an invalid handle error: %v", err)
 
 	err = testLoad(b, restic.Handle{Type: restic.PackFile, Name: "foobar"}, 0, 0)
 	if err == nil {
 		t.Fatalf("Load() did not return an error for non-existing blob")
 	}
+	test.Assert(t, b.IsNotExist(err), "IsNotExist() did not recognize non-existing blob: %v", err)
 
 	length := rand.Intn(1<<24) + 2000
 
@@ -148,7 +159,7 @@ func (s *Suite) TestLoad(t *testing.T) {
 	}
 
 	err = b.Load(context.TODO(), handle, 0, 0, func(rd io.Reader) error {
-		_, err := io.Copy(ioutil.Discard, rd)
+		_, err := io.Copy(io.Discard, rd)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -189,7 +200,7 @@ func (s *Suite) TestLoad(t *testing.T) {
 
 		var buf []byte
 		err := b.Load(context.TODO(), handle, getlen, int64(o), func(rd io.Reader) (ierr error) {
-			buf, ierr = ioutil.ReadAll(rd)
+			buf, ierr = io.ReadAll(rd)
 			return ierr
 		})
 		if err != nil {
@@ -522,7 +533,7 @@ func (s *Suite) TestSave(t *testing.T) {
 	}
 
 	// test saving from a tempfile
-	tmpfile, err := ioutil.TempFile("", "restic-backend-save-test-")
+	tmpfile, err := os.CreateTemp("", "restic-backend-save-test-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -643,7 +654,7 @@ func (s *Suite) TestSaveWrongHash(t *testing.T) {
 	// test that upload with hash mismatch fails
 	h := restic.Handle{Type: restic.PackFile, Name: id.String()}
 	err := b.Save(context.TODO(), h, &wrongByteReader{ByteReader: *restic.NewByteReader(data, b.Hasher())})
-	exists, err2 := b.Test(context.TODO(), h)
+	exists, err2 := beTest(context.TODO(), b, h)
 	if err2 != nil {
 		t.Fatal(err2)
 	}
@@ -678,7 +689,7 @@ func store(t testing.TB, b restic.Backend, tpe restic.FileType, data []byte) res
 // testLoad loads a blob (but discards its contents).
 func testLoad(b restic.Backend, h restic.Handle, length int, offset int64) error {
 	return b.Load(context.TODO(), h, 0, 0, func(rd io.Reader) (ierr error) {
-		_, ierr = io.Copy(ioutil.Discard, rd)
+		_, ierr = io.Copy(io.Discard, rd)
 		return ierr
 	})
 }
@@ -703,7 +714,7 @@ func (s *Suite) delayedRemove(t testing.TB, be restic.Backend, handles ...restic
 		var found bool
 		var err error
 		for time.Since(start) <= s.WaitForDelayedRemoval {
-			found, err = be.Test(context.TODO(), h)
+			found, err = beTest(context.TODO(), be, h)
 			if s.ErrorHandler != nil {
 				err = s.ErrorHandler(t, be, err)
 			}
@@ -754,6 +765,8 @@ func (s *Suite) TestBackend(t *testing.T) {
 	b := s.open(t)
 	defer s.close(t, b)
 
+	test.Assert(t, !b.IsNotExist(nil), "IsNotExist() recognized nil error")
+
 	for _, tpe := range []restic.FileType{
 		restic.PackFile, restic.KeyFile, restic.LockFile,
 		restic.SnapshotFile, restic.IndexFile,
@@ -765,20 +778,22 @@ func (s *Suite) TestBackend(t *testing.T) {
 
 			// test if blob is already in repository
 			h := restic.Handle{Type: tpe, Name: id.String()}
-			ret, err := b.Test(context.TODO(), h)
+			ret, err := beTest(context.TODO(), b, h)
 			test.OK(t, err)
 			test.Assert(t, !ret, "blob was found to exist before creating")
 
 			// try to stat a not existing blob
 			_, err = b.Stat(context.TODO(), h)
 			test.Assert(t, err != nil, "blob data could be extracted before creation")
+			test.Assert(t, b.IsNotExist(err), "IsNotExist() did not recognize Stat() error: %v", err)
 
 			// try to read not existing blob
 			err = testLoad(b, h, 0, 0)
 			test.Assert(t, err != nil, "blob could be read before creation")
+			test.Assert(t, b.IsNotExist(err), "IsNotExist() did not recognize Load() error: %v", err)
 
 			// try to get string out, should fail
-			ret, err = b.Test(context.TODO(), h)
+			ret, err = beTest(context.TODO(), b, h)
 			test.OK(t, err)
 			test.Assert(t, !ret, "id %q was found (but should not have)", ts.id)
 		}
@@ -819,7 +834,7 @@ func (s *Suite) TestBackend(t *testing.T) {
 		test.OK(t, err)
 
 		// test that the blob is gone
-		ok, err := b.Test(context.TODO(), h)
+		ok, err := beTest(context.TODO(), b, h)
 		test.OK(t, err)
 		test.Assert(t, !ok, "removed blob still present")
 
@@ -855,9 +870,9 @@ func (s *Suite) TestBackend(t *testing.T) {
 
 			h := restic.Handle{Type: tpe, Name: id.String()}
 
-			found, err := b.Test(context.TODO(), h)
+			found, err := beTest(context.TODO(), b, h)
 			test.OK(t, err)
-			test.Assert(t, found, fmt.Sprintf("id %q not found", id))
+			test.Assert(t, found, fmt.Sprintf("id %v/%q not found", tpe, id))
 
 			handles = append(handles, h)
 		}

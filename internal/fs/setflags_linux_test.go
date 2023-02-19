@@ -2,7 +2,6 @@ package fs
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"testing"
 	"time"
@@ -13,7 +12,7 @@ import (
 )
 
 func TestNoatime(t *testing.T) {
-	f, err := ioutil.TempFile("", "restic-test-noatime")
+	f, err := os.CreateTemp("", "restic-test-noatime")
 	if err != nil {
 		t.Fatal(err)
 	}

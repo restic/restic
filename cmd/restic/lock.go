@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 )
 
@@ -44,8 +44,11 @@ func lockRepository(ctx context.Context, repo restic.Repository, exclusive bool)
 	}
 
 	lock, err := lockFn(ctx, repo)
+	if restic.IsInvalidLock(err) {
+		return nil, ctx, errors.Fatalf("%v\n\nthe `unlock --remove-all` command can be used to remove invalid locks. Make sure that no other restic process is accessing the repository when running the command", err)
+	}
 	if err != nil {
-		return nil, ctx, fmt.Errorf("unable to create lock in backend: %w", err)
+		return nil, ctx, errors.Fatalf("unable to create lock in backend: %v", err)
 	}
 	debug.Log("create lock %p (exclusive %v)", lock, exclusive)
 

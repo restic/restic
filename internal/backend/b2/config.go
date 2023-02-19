@@ -37,7 +37,7 @@ var bucketName = regexp.MustCompile("^[a-zA-Z0-9-]+$")
 // https://help.backblaze.com/hc/en-us/articles/217666908-What-you-need-to-know-about-B2-Bucket-names
 func checkBucketName(name string) error {
 	if name == "" {
-		return errors.New("bucket name is empty")
+		return errors.New("bucket name not found")
 	}
 
 	if len(name) < 6 {
@@ -64,30 +64,18 @@ func ParseConfig(s string) (interface{}, error) {
 	}
 
 	s = s[3:]
-	data := strings.SplitN(s, ":", 2)
-	if len(data) == 0 || len(data[0]) == 0 {
-		return nil, errors.New("bucket name not found")
-	}
-
-	cfg := NewConfig()
-	cfg.Bucket = data[0]
-
-	if err := checkBucketName(cfg.Bucket); err != nil {
+	bucket, prefix, _ := strings.Cut(s, ":")
+	if err := checkBucketName(bucket); err != nil {
 		return nil, err
 	}
 
-	if len(data) == 2 {
-		p := data[1]
-		if len(p) > 0 {
-			p = path.Clean(p)
-		}
-
-		if len(p) > 0 && path.IsAbs(p) {
-			p = p[1:]
-		}
-
-		cfg.Prefix = p
+	if len(prefix) > 0 {
+		prefix = strings.TrimPrefix(path.Clean(prefix), "/")
 	}
+
+	cfg := NewConfig()
+	cfg.Bucket = bucket
+	cfg.Prefix = prefix
 
 	return cfg, nil
 }

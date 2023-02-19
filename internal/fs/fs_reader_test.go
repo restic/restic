@@ -2,7 +2,8 @@ package fs
 
 import (
 	"bytes"
-	"io/ioutil"
+	"errors"
+	"io"
 	"os"
 	"path"
 	"sort"
@@ -20,7 +21,7 @@ func verifyFileContentOpen(t testing.TB, fs FS, filename string, want []byte) {
 		t.Fatal(err)
 	}
 
-	buf, err := ioutil.ReadAll(f)
+	buf, err := io.ReadAll(f)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -41,7 +42,7 @@ func verifyFileContentOpenFile(t testing.TB, fs FS, filename string, want []byte
 		t.Fatal(err)
 	}
 
-	buf, err := ioutil.ReadAll(f)
+	buf, err := io.ReadAll(f)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -288,7 +289,7 @@ func TestFSReader(t *testing.T) {
 			name: "dir/Lstat-error-not-exist",
 			f: func(t *testing.T, fs FS) {
 				_, err := fs.Lstat("other")
-				if err != os.ErrNotExist {
+				if !errors.Is(err, os.ErrNotExist) {
 					t.Fatal(err)
 				}
 			},
@@ -320,7 +321,7 @@ func TestFSReader(t *testing.T) {
 	for _, test := range tests {
 		fs := &Reader{
 			Name:       filename,
-			ReadCloser: ioutil.NopCloser(bytes.NewReader(data)),
+			ReadCloser: io.NopCloser(bytes.NewReader(data)),
 
 			Mode:    0644,
 			Size:    int64(len(data)),
@@ -355,7 +356,7 @@ func TestFSReaderDir(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			fs := &Reader{
 				Name:       test.filename,
-				ReadCloser: ioutil.NopCloser(bytes.NewReader(data)),
+				ReadCloser: io.NopCloser(bytes.NewReader(data)),
 
 				Mode:    0644,
 				Size:    int64(len(data)),
@@ -410,7 +411,7 @@ func TestFSReaderMinFileSize(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			fs := &Reader{
 				Name:           "testfile",
-				ReadCloser:     ioutil.NopCloser(strings.NewReader(test.data)),
+				ReadCloser:     io.NopCloser(strings.NewReader(test.data)),
 				Mode:           0644,
 				ModTime:        time.Now(),
 				AllowEmptyFile: test.allowEmpty,
@@ -421,7 +422,7 @@ func TestFSReaderMinFileSize(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			buf, err := ioutil.ReadAll(f)
+			buf, err := io.ReadAll(f)
 			if test.readMustErr {
 				if err == nil {
 					t.Fatal("expected error not found, got nil")

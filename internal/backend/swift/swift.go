@@ -226,25 +226,6 @@ func (be *beSwift) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 	return restic.FileInfo{Size: obj.Bytes, Name: h.Name}, nil
 }
 
-// Test returns true if a blob of the given type and name exists in the backend.
-func (be *beSwift) Test(ctx context.Context, h restic.Handle) (bool, error) {
-	objName := be.Filename(h)
-
-	be.sem.GetToken()
-	defer be.sem.ReleaseToken()
-
-	switch _, _, err := be.conn.Object(ctx, be.container, objName); err {
-	case nil:
-		return true, nil
-
-	case swift.ObjectNotFound:
-		return false, nil
-
-	default:
-		return false, errors.Wrap(err, "conn.Object")
-	}
-}
-
 // Remove removes the blob with the given name and type.
 func (be *beSwift) Remove(ctx context.Context, h restic.Handle) error {
 	objName := be.Filename(h)

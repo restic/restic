@@ -1,0 +1,17 @@
+Bugfix: Don't read password from stdin for `backup --stdin`
+
+The `backup` command when used with `--stdin` previously tried to read first
+the password, then the data to be backed up from standard input. This meant
+it would often confuse part of the data for the password.
+
+From now on, it will instead exit with the message `Fatal: cannot read both
+password and data from stdin` unless the password is passed in some other
+way (such as `--restic-password-file`, `RESTIC_PASSWORD`, etc).
+
+To enter the password interactively a password command has to be used. For
+example on Linux, `mysqldump somedatabase | restic backup --stdin
+--password-command='sh -c "systemd-ask-password < /dev/tty"'` securely reads
+the password from the terminal.
+
+https://github.com/restic/restic/issues/2591
+https://github.com/restic/restic/pull/4011

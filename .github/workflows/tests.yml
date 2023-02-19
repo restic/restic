@@ -21,13 +21,11 @@ jobs:
           - job_name: Windows
             go: 1.19.x
             os: windows-latest
-            install_verb: install
 
           - job_name: macOS
             go: 1.19.x
             os: macOS-latest
             test_fuse: false
-            install_verb: install
 
           - job_name: Linux
             go: 1.19.x
@@ -35,31 +33,17 @@ jobs:
             test_cloud_backends: true
             test_fuse: true
             check_changelog: true
-            install_verb: install
+
+          - job_name: Linux (race)
+            go: 1.19.x
+            os: ubuntu-latest
+            test_fuse: true
+            test_opts: "-race"
 
           - job_name: Linux
             go: 1.18.x
             os: ubuntu-latest
             test_fuse: true
-            install_verb: install
-
-          - job_name: Linux
-            go: 1.17.x
-            os: ubuntu-latest
-            test_fuse: true
-            install_verb: install
-
-          - job_name: Linux
-            go: 1.16.x
-            os: ubuntu-latest
-            test_fuse: true
-            install_verb: get
-
-          - job_name: Linux
-            go: 1.15.x
-            os: ubuntu-latest
-            test_fuse: true
-            install_verb: get
 
     name: ${{ matrix.job_name }} Go ${{ matrix.go }}
     runs-on: ${{ matrix.os }}
@@ -76,7 +60,7 @@ jobs:
       - name: Get programs (Linux/macOS)
         run: |
           echo "build Go tools"
-          go ${{ matrix.install_verb }} github.com/restic/rest-server/cmd/rest-server@latest
+          go install github.com/restic/rest-server/cmd/rest-server@latest
 
           echo "install minio server"
           mkdir $HOME/bin
@@ -108,7 +92,7 @@ jobs:
           $ProgressPreference = 'SilentlyContinue'
 
           echo "build Go tools"
-          go ${{ matrix.install_verb }} github.com/restic/rest-server/...
+          go install github.com/restic/rest-server/...
 
           echo "install minio server"
           mkdir $Env:USERPROFILE/bin
@@ -152,7 +136,7 @@ jobs:
         env:
           RESTIC_TEST_FUSE: ${{ matrix.test_fuse }}
         run: |
-          go test -cover ./...
+          go test -cover ${{matrix.test_opts}} ./...
 
       - name: Test cloud backends
         env:
@@ -193,7 +177,9 @@ jobs:
 
         # only run cloud backend tests for pull requests from and pushes to our
         # own repo, otherwise the secrets are not available
-        if: (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && matrix.test_cloud_backends
+        # Skip for Dependabot pull requests as these are run without secrets
+        # https://docs.github.com/en/code-security/dependabot/working-with-dependabot/automating-dependabot-with-github-actions#responding-to-events
+        if: (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && (github.actor != 'dependabot[bot]') && matrix.test_cloud_backends
 
       - name: Check changelog files with calens
         run: |
@@ -211,7 +197,7 @@ jobs:
       matrix:
         # run cross-compile in three batches parallel so the overall tests run faster
         targets:
-          - "linux/386 linux/amd64 linux/arm linux/arm64 linux/ppc64le linux/mips linux/mipsle linux/mips64 linux/mips64le linux/s390x"
+          - "linux/386 linux/amd64 linux/arm linux/arm64 linux/ppc64le linux/mips linux/mipsle linux/mips64 linux/mips64le linux/riscv64 linux/s390x"
 
           - "openbsd/386 openbsd/amd64 \
             freebsd/386 freebsd/amd64 freebsd/arm \
@@ -315,7 +301,7 @@ jobs:
 
       - name: Build and push
         id: docker_build
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           push: false
           context: .

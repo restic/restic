@@ -1,0 +1,8 @@
+Enhancement: Implement `rewrite` command
+
+Restic now has a `rewrite` command which allows to rewrite existing snapshots
+to remove unwanted files.
+
+https://github.com/restic/restic/issues/14
+https://github.com/restic/restic/pull/2731
+https://github.com/restic/restic/pull/4079

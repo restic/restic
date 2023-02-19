@@ -3,7 +3,7 @@ package cache
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"os"
 	"runtime"
@@ -55,7 +55,7 @@ func load(t testing.TB, c *Cache, h restic.Handle) []byte {
 		t.Fatalf("load() returned nil reader")
 	}
 
-	buf, err := ioutil.ReadAll(rd)
+	buf, err := io.ReadAll(rd)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,8 +87,7 @@ func TestFiles(t *testing.T) {
 	t.Logf("seed is %v", seed)
 	rand.Seed(seed)
 
-	c, cleanup := TestNewCache(t)
-	defer cleanup()
+	c := TestNewCache(t)
 
 	var tests = []restic.FileType{
 		restic.SnapshotFile,
@@ -140,8 +139,7 @@ func TestFileLoad(t *testing.T) {
 	t.Logf("seed is %v", seed)
 	rand.Seed(seed)
 
-	c, cleanup := TestNewCache(t)
-	defer cleanup()
+	c := TestNewCache(t)
 
 	// save about 5 MiB of data in the cache
 	data := test.Random(rand.Int(), 5234142)
@@ -174,7 +172,7 @@ func TestFileLoad(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			buf, err := ioutil.ReadAll(rd)
+			buf, err := io.ReadAll(rd)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -223,10 +221,8 @@ func TestFileSaveConcurrent(t *testing.T) {
 
 	const nproc = 40
 
-	c, cleanup := TestNewCache(t)
-	defer cleanup()
-
 	var (
+		c    = TestNewCache(t)
 		data = test.Random(1, 10000)
 		g    errgroup.Group
 		id   restic.ID
@@ -258,7 +254,7 @@ func TestFileSaveConcurrent(t *testing.T) {
 			}
 			defer func() { _ = f.Close() }()
 
-			read, err := ioutil.ReadAll(f)
+			read, err := io.ReadAll(f)
 			if err == nil && !bytes.Equal(read, data) {
 				err = errors.New("mismatch between Save and Load")
 			}

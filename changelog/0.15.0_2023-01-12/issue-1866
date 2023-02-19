@@ -1,0 +1,12 @@
+Enhancement: Improve handling of directories with duplicate entries
+
+If for some reason a directory contains a duplicate entry, the `backup` command
+would previously fail with a `node "path/to/file" already present` or `nodes
+are not ordered got "path/to/file", last "path/to/file"` error.
+
+The error handling has been improved to only report a warning in this case. Make
+sure to check that the filesystem in question is not damaged if you see this!
+
+https://github.com/restic/restic/issues/1866
+https://github.com/restic/restic/issues/3937
+https://github.com/restic/restic/pull/3880

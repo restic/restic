@@ -56,7 +56,7 @@ type ForgetOptions struct {
 	Compact bool
 
 	// Grouping
-	GroupBy string
+	GroupBy restic.SnapshotGroupByOptions
 	DryRun  bool
 	Prune   bool
 }
@@ -90,8 +90,8 @@ func init() {
 	}
 
 	f.BoolVarP(&forgetOptions.Compact, "compact", "c", false, "use compact output format")
-
-	f.StringVarP(&forgetOptions.GroupBy, "group-by", "g", "host,paths", "`group` snapshots by host, paths and/or tags, separated by comma (disable grouping with '')")
+	forgetOptions.GroupBy = restic.SnapshotGroupByOptions{Host: true, Path: true}
+	f.VarP(&forgetOptions.GroupBy, "group-by", "g", "`group` snapshots by host, paths and/or tags, separated by comma (disable grouping with '')")
 	f.BoolVarP(&forgetOptions.DryRun, "dry-run", "n", false, "do not delete anything, just print what would be done")
 	f.BoolVar(&forgetOptions.Prune, "prune", false, "automatically run the 'prune' command if snapshots have been removed")
 
@@ -237,7 +237,11 @@ func runForget(ctx context.Context, opts ForgetOptions, gopts GlobalOptions, arg
 
 	if len(removeSnIDs) > 0 && opts.Prune {
 		if !gopts.JSON {
-			Verbosef("%d snapshots have been removed, running prune\n", len(removeSnIDs))
+			if opts.DryRun {
+				Verbosef("%d snapshots would be removed, running prune dry run\n", len(removeSnIDs))
+			} else {
+				Verbosef("%d snapshots have been removed, running prune\n", len(removeSnIDs))
+			}
 		}
 		pruneOptions.DryRun = opts.DryRun
 		return runPruneWithRepo(ctx, pruneOptions, gopts, repo, removeSnIDs)

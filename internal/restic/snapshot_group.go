@@ -8,6 +8,57 @@ import (
 	"github.com/restic/restic/internal/errors"
 )
 
+type SnapshotGroupByOptions struct {
+	Tag  bool
+	Host bool
+	Path bool
+}
+
+func splitSnapshotGroupBy(s string) (SnapshotGroupByOptions, error) {
+	var l SnapshotGroupByOptions
+	for _, option := range strings.Split(s, ",") {
+		switch option {
+		case "host", "hosts":
+			l.Host = true
+		case "path", "paths":
+			l.Path = true
+		case "tag", "tags":
+			l.Tag = true
+		case "":
+		default:
+			return SnapshotGroupByOptions{}, errors.Fatal("unknown grouping option: '" + option + "'")
+		}
+	}
+	return l, nil
+}
+
+func (l SnapshotGroupByOptions) String() string {
+	var parts []string
+	if l.Host {
+		parts = append(parts, "host")
+	}
+	if l.Path {
+		parts = append(parts, "paths")
+	}
+	if l.Tag {
+		parts = append(parts, "tags")
+	}
+	return strings.Join(parts, ",")
+}
+
+func (l *SnapshotGroupByOptions) Set(s string) error {
+	parts, err := splitSnapshotGroupBy(s)
+	if err != nil {
+		return err
+	}
+	*l = parts
+	return nil
+}
+
+func (l *SnapshotGroupByOptions) Type() string {
+	return "group"
+}
+
 // SnapshotGroupKey is the structure for identifying groups in a grouped
 // snapshot list. This is used by GroupSnapshots()
 type SnapshotGroupKey struct {
@@ -18,28 +69,9 @@ type SnapshotGroupKey struct {
 
 // GroupSnapshots takes a list of snapshots and a grouping criteria and creates
 // a group list of snapshots.
-func GroupSnapshots(snapshots Snapshots, options string) (map[string]Snapshots, bool, error) {
+func GroupSnapshots(snapshots Snapshots, groupBy SnapshotGroupByOptions) (map[string]Snapshots, bool, error) {
 	// group by hostname and dirs
 	snapshotGroups := make(map[string]Snapshots)
-
-	var GroupByTag bool
-	var GroupByHost bool
-	var GroupByPath bool
-	GroupOptionList := strings.Split(options, ",")
-
-	for _, option := range GroupOptionList {
-		switch option {
-		case "host", "hosts":
-			GroupByHost = true
-		case "path", "paths":
-			GroupByPath = true
-		case "tag", "tags":
-			GroupByTag = true
-		case "":
-		default:
-			return nil, false, errors.Fatal("unknown grouping option: '" + option + "'")
-		}
-	}
 
 	for _, sn := range snapshots {
 		// Determining grouping-keys
@@ -47,14 +79,14 @@ func GroupSnapshots(snapshots Snapshots, options string) (map[string]Snapshots, 
 		var hostname string
 		var paths []string
 
-		if GroupByTag {
+		if groupBy.Tag {
 			tags = sn.Tags
 			sort.Strings(tags)
 		}
-		if GroupByHost {
+		if groupBy.Host {
 			hostname = sn.Hostname
 		}
-		if GroupByPath {
+		if groupBy.Path {
 			paths = sn.Paths
 		}
 
@@ -70,5 +102,5 @@ func GroupSnapshots(snapshots Snapshots, options string) (map[string]Snapshots, 
 		snapshotGroups[string(k)] = append(snapshotGroups[string(k)], sn)
 	}
 
-	return snapshotGroups, GroupByTag || GroupByHost || GroupByPath, nil
+	return snapshotGroups, groupBy.Tag || groupBy.Host || groupBy.Path, nil
 }

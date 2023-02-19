@@ -1,0 +1,9 @@
+Enhancement: Support restoring symbolic links on Windows
+
+The `restore` command now supports restoring symbolic links on Windows. Because
+of Windows specific restrictions this is only possible when running restic with
+the `SeCreateSymbolicLinkPrivilege` privilege or as an administrator.
+
+https://github.com/restic/restic/issues/1078
+https://github.com/restic/restic/issues/2699
+https://github.com/restic/restic/pull/2875

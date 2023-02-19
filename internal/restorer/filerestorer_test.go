@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/restic/restic/internal/crypto"
@@ -171,7 +171,7 @@ func restoreAndVerify(t *testing.T, tempdir string, content []TestFile, files ma
 func verifyRestore(t *testing.T, r *fileRestorer, repo *TestRepo) {
 	for _, file := range r.files {
 		target := r.targetPath(file.location)
-		data, err := ioutil.ReadFile(target)
+		data, err := os.ReadFile(target)
 		if err != nil {
 			t.Errorf("unable to read file %v: %v", file.location, err)
 			continue
@@ -185,8 +185,7 @@ func verifyRestore(t *testing.T, r *fileRestorer, repo *TestRepo) {
 }
 
 func TestFileRestorerBasic(t *testing.T) {
-	tempdir, cleanup := rtest.TempDir(t)
-	defer cleanup()
+	tempdir := rtest.TempDir(t)
 
 	for _, sparse := range []bool{false, true} {
 		restoreAndVerify(t, tempdir, []TestFile{
@@ -217,8 +216,7 @@ func TestFileRestorerBasic(t *testing.T) {
 }
 
 func TestFileRestorerPackSkip(t *testing.T) {
-	tempdir, cleanup := rtest.TempDir(t)
-	defer cleanup()
+	tempdir := rtest.TempDir(t)
 
 	files := make(map[string]bool)
 	files["file2"] = true
@@ -250,8 +248,7 @@ func TestFileRestorerPackSkip(t *testing.T) {
 }
 
 func TestErrorRestoreFiles(t *testing.T) {
-	tempdir, cleanup := rtest.TempDir(t)
-	defer cleanup()
+	tempdir := rtest.TempDir(t)
 	content := []TestFile{
 		{
 			name: "file1",
@@ -282,8 +279,7 @@ func TestDownloadError(t *testing.T) {
 }
 
 func testPartialDownloadError(t *testing.T, part int) {
-	tempdir, cleanup := rtest.TempDir(t)
-	defer cleanup()
+	tempdir := rtest.TempDir(t)
 	content := []TestFile{
 		{
 			name: "file1",

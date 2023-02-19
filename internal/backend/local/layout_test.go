@@ -10,8 +10,7 @@ import (
 )
 
 func TestLayout(t *testing.T) {
-	path, cleanup := rtest.TempDir(t)
-	defer cleanup()
+	path := rtest.TempDir(t)
 
 	var tests = []struct {
 		filename        string

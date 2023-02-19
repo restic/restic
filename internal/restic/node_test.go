@@ -2,7 +2,6 @@ package restic_test
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -14,7 +13,7 @@ import (
 )
 
 func BenchmarkNodeFillUser(t *testing.B) {
-	tempfile, err := ioutil.TempFile("", "restic-test-temp-")
+	tempfile, err := os.CreateTemp("", "restic-test-temp-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -38,7 +37,7 @@ func BenchmarkNodeFillUser(t *testing.B) {
 }
 
 func BenchmarkNodeFromFileInfo(t *testing.B) {
-	tempfile, err := ioutil.TempFile("", "restic-test-temp-")
+	tempfile, err := os.CreateTemp("", "restic-test-temp-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -167,7 +166,7 @@ var nodeTests = []restic.Node{
 }
 
 func TestNodeRestoreAt(t *testing.T) {
-	tempdir, err := ioutil.TempDir(rtest.TestTempDir, "restic-test-")
+	tempdir, err := os.MkdirTemp(rtest.TestTempDir, "restic-test-")
 	rtest.OK(t, err)
 
 	defer func() {
@@ -183,9 +182,6 @@ func TestNodeRestoreAt(t *testing.T) {
 		rtest.OK(t, test.CreateAt(context.TODO(), nodePath, nil))
 		rtest.OK(t, test.RestoreMetadata(nodePath))
 
-		if test.Type == "symlink" && runtime.GOOS == "windows" {
-			continue
-		}
 		if test.Type == "dir" {
 			rtest.OK(t, test.RestoreTimestamps(nodePath))
 		}

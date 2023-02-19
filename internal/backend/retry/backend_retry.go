@@ -139,6 +139,10 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (fi restic.FileInf
 			var innerError error
 			fi, innerError = be.Backend.Stat(ctx, h)
 
+			if be.Backend.IsNotExist(innerError) {
+				// do not retry if file is not found, as stat is usually used  to check whether a file exists
+				return backoff.Permanent(innerError)
+			}
 			return innerError
 		})
 	return fi, err
@@ -149,17 +153,6 @@ func (be *Backend) Remove(ctx context.Context, h restic.Handle) (err error) {
 	return be.retry(ctx, fmt.Sprintf("Remove(%v)", h), func() error {
 		return be.Backend.Remove(ctx, h)
 	})
-}
-
-// Test a boolean value whether a File with the name and type exists.
-func (be *Backend) Test(ctx context.Context, h restic.Handle) (exists bool, err error) {
-	err = be.retry(ctx, fmt.Sprintf("Test(%v)", h), func() error {
-		var innerError error
-		exists, innerError = be.Backend.Test(ctx, h)
-
-		return innerError
-	})
-	return exists, err
 }
 
 // List runs fn for each file in the backend which has the type t. When an

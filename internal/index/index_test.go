@@ -3,6 +3,7 @@ package index_test
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"math/rand"
 	"sync"
 	"testing"
@@ -403,6 +404,26 @@ func BenchmarkDecodeIndexParallel(b *testing.B) {
 			rtest.OK(b, err)
 		}
 	})
+}
+
+func BenchmarkEncodeIndex(b *testing.B) {
+	for _, n := range []int{100, 1000, 10000} {
+		idx, _ := createRandomIndex(rand.New(rand.NewSource(0)), n)
+
+		b.Run(fmt.Sprint(n), func(b *testing.B) {
+			buf := new(bytes.Buffer)
+			err := idx.Encode(buf)
+			rtest.OK(b, err)
+
+			b.ResetTimer()
+			b.ReportAllocs()
+
+			for i := 0; i < b.N; i++ {
+				buf.Reset()
+				_ = idx.Encode(buf)
+			}
+		})
+	}
 }
 
 func TestIndexUnserializeOld(t *testing.T) {

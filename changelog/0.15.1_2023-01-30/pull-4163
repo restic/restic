@@ -1,0 +1,13 @@
+Bugfix: Make `self-update --output` work with new filename on Windows
+
+Since restic 0.14.0 the `self-update` command did not work when a custom output
+filename was specified via the `--output` option. This has now been fixed.
+
+As a workaround, either use an older restic version to run the self-update or
+create an empty file with the output filename before updating e.g. using CMD:
+
+`type nul > new-file.exe`
+`restic self-update --output new-file.exe`
+
+https://github.com/restic/restic/pull/4163
+https://forum.restic.net/t/self-update-windows-started-failing-after-release-of-0-15/5836

@@ -184,7 +184,7 @@ func (res *Restorer) restoreHardlinkAt(node *restic.Node, target, path, location
 	}
 	err := fs.Link(target, path)
 	if err != nil {
-		return errors.Wrap(err, "CreateHardlink")
+		return errors.WithStack(err)
 	}
 	// TODO investigate if hardlinks have separate metadata on any supported system
 	return res.restoreNodeMetadataTo(node, path, location)

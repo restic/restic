@@ -1,16 +1,14 @@
 package restorer
 
 import (
-	"io/ioutil"
+	"os"
 	"testing"
 
 	rtest "github.com/restic/restic/internal/test"
 )
 
 func TestFilesWriterBasic(t *testing.T) {
-	dir, cleanup := rtest.TempDir(t)
-	defer cleanup()
-
+	dir := rtest.TempDir(t)
 	w := newFilesWriter(1)
 
 	f1 := dir + "/f1"
@@ -28,11 +26,11 @@ func TestFilesWriterBasic(t *testing.T) {
 	rtest.OK(t, w.writeToFile(f2, []byte{2}, 1, -1, false))
 	rtest.Equals(t, 0, len(w.buckets[0].files))
 
-	buf, err := ioutil.ReadFile(f1)
+	buf, err := os.ReadFile(f1)
 	rtest.OK(t, err)
 	rtest.Equals(t, []byte{1, 1}, buf)
 
-	buf, err = ioutil.ReadFile(f2)
+	buf, err = os.ReadFile(f2)
 	rtest.OK(t, err)
 	rtest.Equals(t, []byte{2, 2}, buf)
 }

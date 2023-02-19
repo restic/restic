@@ -16,8 +16,7 @@ import (
 )
 
 func TestRestorerRestoreEmptyHardlinkedFileds(t *testing.T) {
-	repo, cleanup := repository.TestRepository(t)
-	defer cleanup()
+	repo := repository.TestRepository(t)
 
 	sn, _ := saveSnapshot(t, repo, Snapshot{
 		Nodes: map[string]Node{
@@ -36,9 +35,7 @@ func TestRestorerRestoreEmptyHardlinkedFileds(t *testing.T) {
 		return true, true
 	}
 
-	tempdir, cleanup := rtest.TempDir(t)
-	defer cleanup()
-
+	tempdir := rtest.TempDir(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

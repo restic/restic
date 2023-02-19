@@ -1,0 +1,12 @@
+Enhancement: Add compression statistics to the `stats` command
+
+When executed with `--mode raw-data` on a repository that supports compression,
+the `stats` command now calculates and displays, for the selected repository or
+snapshots: the uncompressed size of the data; the compression progress
+(percentage of data that has been compressed); the compression ratio of the
+compressed data; the total space saving.
+
+It also takes into account both the compressed and uncompressed data if the
+repository is only partially compressed.
+
+https://github.com/restic/restic/pull/3915

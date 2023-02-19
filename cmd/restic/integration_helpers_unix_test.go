@@ -6,7 +6,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"syscall"
@@ -57,7 +56,7 @@ func nlink(info os.FileInfo) uint64 {
 func createFileSetPerHardlink(dir string) map[uint64][]string {
 	var stat syscall.Stat_t
 	linkTests := make(map[uint64][]string)
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		return nil
 	}

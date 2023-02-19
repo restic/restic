@@ -72,7 +72,7 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string) error {
 		Println(string(buf))
 		return nil
 	case "index":
-		buf, err := repo.LoadUnpacked(ctx, restic.IndexFile, id, nil)
+		buf, err := repo.LoadUnpacked(ctx, restic.IndexFile, id)
 		if err != nil {
 			return err
 		}

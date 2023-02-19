@@ -170,13 +170,7 @@ func (be *Backend) SetListMaxItems(i int) {
 // IsNotExist returns true if the error is caused by a not existing file.
 func (be *Backend) IsNotExist(err error) bool {
 	debug.Log("IsNotExist(%T, %#v)", err, err)
-
-	if os.IsNotExist(err) {
-		return true
-	}
-
-	var gerr *googleapi.Error
-	return errors.As(err, &gerr) && gerr.Code == 404
+	return errors.Is(err, storage.ErrObjectNotExist)
 }
 
 // Join combines path components with slashes.
@@ -327,22 +321,6 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 	}
 
 	return restic.FileInfo{Size: attr.Size, Name: h.Name}, nil
-}
-
-// Test returns true if a blob of the given type and name exists in the backend.
-func (be *Backend) Test(ctx context.Context, h restic.Handle) (bool, error) {
-	found := false
-	objName := be.Filename(h)
-
-	be.sem.GetToken()
-	_, err := be.bucket.Object(objName).Attrs(ctx)
-	be.sem.ReleaseToken()
-
-	if err == nil {
-		found = true
-	}
-	// If error, then not found
-	return found, nil
 }
 
 // Remove removes the blob with the given name and type.

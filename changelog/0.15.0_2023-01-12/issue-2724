@@ -1,0 +1,9 @@
+Change: Include full snapshot ID in JSON output of `backup`
+
+We have changed the JSON output of the backup command to include the full
+snapshot ID instead of just a shortened version, as the latter can be ambiguous
+in some rare cases. To derive the short ID, please truncate the full ID down to
+eight characters.
+
+https://github.com/restic/restic/issues/2724
+https://github.com/restic/restic/pull/3993

@@ -1,0 +1,8 @@
+Bugfix: Make `restore` replace existing symlinks
+
+When restoring a symlink, restic used to report an error if the target path
+already existed. This has now been fixed such that the potentially existing
+target path is first removed before the symlink is restored.
+
+https://github.com/restic/restic/issues/2578
+https://github.com/restic/restic/pull/3780

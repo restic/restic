@@ -3,8 +3,8 @@
 // This program aims to make building Go programs for end users easier by just
 // calling it with `go run`, without having to setup a GOPATH.
 //
-// This program needs Go >= 1.12. It'll use Go modules for compilation. It
-// builds the package configured as Main in the Config struct.
+// This program checks for a minimum Go version. It will use Go modules for
+// compilation. It builds the package configured as Main in the Config struct.
 
 // BSD 2-Clause License
 //
@@ -43,7 +43,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -59,7 +58,7 @@ var config = Config{
 	Main:             "./cmd/restic",                           // package name for the main package
 	DefaultBuildTags: []string{"selfupdate"},                   // specify build tags which are always used
 	Tests:            []string{"./..."},                        // tests to run
-	MinVersion:       GoVersion{Major: 1, Minor: 14, Patch: 0}, // minimum Go version supported
+	MinVersion:       GoVersion{Major: 1, Minor: 18, Patch: 0}, // minimum Go version supported
 }
 
 // Config configures the build.
@@ -179,7 +178,7 @@ func test(cwd string, env map[string]string, args ...string) error {
 // getVersion returns the version string from the file VERSION in the current
 // directory.
 func getVersionFromFile() string {
-	buf, err := ioutil.ReadFile("VERSION")
+	buf, err := os.ReadFile("VERSION")
 	if err != nil {
 		verbosePrintf("error reading file VERSION: %v\n", err)
 		return ""
@@ -319,12 +318,8 @@ func (v GoVersion) String() string {
 }
 
 func main() {
-	if !goVersion.AtLeast(GoVersion{1, 12, 0}) {
-		die("Go version (%v) is too old, restic requires Go >= 1.12\n", goVersion)
-	}
-
 	if !goVersion.AtLeast(config.MinVersion) {
-		fmt.Fprintf(os.Stderr, "%s detected, this program requires at least %s\n", goVersion, config.MinVersion)
+		fmt.Fprintf(os.Stderr, "Detected version %s is too old, restic requires at least %s\n", goVersion, config.MinVersion)
 		os.Exit(1)
 	}
 

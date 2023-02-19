@@ -191,12 +191,16 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOption
 		return err
 	}
 
-	plan, stats, err := planPrune(ctx, opts, gopts, repo, ignoreSnapshots)
+	plan, stats, err := planPrune(ctx, opts, repo, ignoreSnapshots, gopts.Quiet)
 	if err != nil {
 		return err
 	}
 
-	err = printPruneStats(gopts, stats)
+	if opts.DryRun {
+		Verbosef("\nWould have made the following changes:")
+	}
+
+	err = printPruneStats(stats)
 	if err != nil {
 		return err
 	}
@@ -214,13 +218,14 @@ type pruneStats struct {
 		repackrm  uint
 	}
 	size struct {
-		used      uint64
-		duplicate uint64
-		unused    uint64
-		remove    uint64
-		repack    uint64
-		repackrm  uint64
-		unref     uint64
+		used         uint64
+		duplicate    uint64
+		unused       uint64
+		remove       uint64
+		repack       uint64
+		repackrm     uint64
+		unref        uint64
+		uncompressed uint64
 	}
 	packs struct {
 		used       uint
@@ -253,14 +258,15 @@ type packInfo struct {
 type packInfoWithID struct {
 	ID restic.ID
 	packInfo
+	mustCompress bool
 }
 
 // planPrune selects which files to rewrite and which to delete and which blobs to keep.
 // Also some summary statistics are returned.
-func planPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo restic.Repository, ignoreSnapshots restic.IDSet) (prunePlan, pruneStats, error) {
+func planPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, ignoreSnapshots restic.IDSet, quiet bool) (prunePlan, pruneStats, error) {
 	var stats pruneStats
 
-	usedBlobs, err := getUsedBlobs(ctx, gopts, repo, ignoreSnapshots)
+	usedBlobs, err := getUsedBlobs(ctx, repo, ignoreSnapshots, quiet)
 	if err != nil {
 		return prunePlan{}, stats, err
 	}
@@ -272,7 +278,7 @@ func planPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo
 	}
 
 	Verbosef("collecting packs for deletion and repacking\n")
-	plan, err := decidePackAction(ctx, opts, gopts, repo, indexPack, &stats)
+	plan, err := decidePackAction(ctx, opts, repo, indexPack, &stats, quiet)
 	if err != nil {
 		return prunePlan{}, stats, err
 	}
@@ -307,7 +313,6 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 	// Thus 0 == blob is missing, 1 == blob exists once, >= 2 == duplicates exist
 	idx.Each(ctx, func(blob restic.PackedBlob) {
 		bh := blob.BlobHandle
-		size := uint64(blob.Length)
 		count, ok := usedBlobs[bh]
 		if ok {
 			if count < math.MaxUint8 {
@@ -317,19 +322,7 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 				count++
 			}
 
-			if count == 1 {
-				stats.size.used += size
-				stats.blobs.used++
-			} else {
-				// duplicate if counted more than once
-				stats.size.duplicate += size
-				stats.blobs.duplicate++
-			}
-
 			usedBlobs[bh] = count
-		} else {
-			stats.size.unused += size
-			stats.blobs.unused++
 		}
 	})
 
@@ -383,12 +376,22 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 			// mark as unused for now, we will later on select one copy
 			ip.unusedSize += size
 			ip.unusedBlobs++
+
+			// count as duplicate, will later on change one copy to be counted as used
+			stats.size.duplicate += size
+			stats.blobs.duplicate++
 		case dupCount == 1: // used blob, not duplicate
 			ip.usedSize += size
 			ip.usedBlobs++
+
+			stats.size.used += size
+			stats.blobs.used++
 		default: // unused blob
 			ip.unusedSize += size
 			ip.unusedBlobs++
+
+			stats.size.unused += size
+			stats.blobs.unused++
 		}
 		if !blob.IsCompressed() {
 			ip.uncompressed = true
@@ -421,6 +424,11 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 				ip.usedBlobs++
 				ip.unusedSize -= size
 				ip.unusedBlobs--
+				// same for the global statistics
+				stats.size.used += size
+				stats.blobs.used++
+				stats.size.duplicate -= size
+				stats.blobs.duplicate--
 				// let other occurences remain marked as unused
 				usedBlobs[bh] = 1
 			default:
@@ -449,7 +457,7 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 	return usedBlobs, indexPack, nil
 }
 
-func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo restic.Repository, indexPack map[restic.ID]packInfo, stats *pruneStats) (prunePlan, error) {
+func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Repository, indexPack map[restic.ID]packInfo, stats *pruneStats, quiet bool) (prunePlan, error) {
 	removePacksFirst := restic.NewIDSet()
 	removePacks := restic.NewIDSet()
 	repackPacks := restic.NewIDSet()
@@ -465,7 +473,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 	}
 
 	// loop over all packs and decide what to do
-	bar := newProgressMax(!gopts.Quiet, uint64(len(indexPack)), "packs processed")
+	bar := newProgressMax(!quiet, uint64(len(indexPack)), "packs processed")
 	err := repo.List(ctx, restic.PackFile, func(id restic.ID, packSize int64) error {
 		p, ok := indexPack[id]
 		if !ok {
@@ -495,14 +503,15 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 			stats.packs.partlyUsed++
 		}
 
+		if p.uncompressed {
+			stats.size.uncompressed += p.unusedSize + p.usedSize
+		}
 		mustCompress := false
 		if repoVersion >= 2 {
 			// repo v2: always repack tree blobs if uncompressed
 			// compress data blobs if requested
 			mustCompress = (p.tpe == restic.TreeBlob || opts.RepackUncompressed) && p.uncompressed
 		}
-		// use a flag that pack must be compressed
-		p.uncompressed = mustCompress
 
 		// decide what to do
 		switch {
@@ -521,12 +530,12 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 				// All blobs in pack are used and not mixed => keep pack!
 				stats.packs.keep++
 			} else {
-				repackSmallCandidates = append(repackSmallCandidates, packInfoWithID{ID: id, packInfo: p})
+				repackSmallCandidates = append(repackSmallCandidates, packInfoWithID{ID: id, packInfo: p, mustCompress: mustCompress})
 			}
 
 		default:
 			// all other packs are candidates for repacking
-			repackCandidates = append(repackCandidates, packInfoWithID{ID: id, packInfo: p})
+			repackCandidates = append(repackCandidates, packInfoWithID{ID: id, packInfo: p, mustCompress: mustCompress})
 		}
 
 		delete(indexPack, id)
@@ -600,6 +609,9 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 		stats.size.repack += p.unusedSize + p.usedSize
 		stats.blobs.repackrm += p.unusedBlobs
 		stats.size.repackrm += p.unusedSize
+		if p.uncompressed {
+			stats.size.uncompressed -= p.unusedSize + p.usedSize
+		}
 	}
 
 	// calculate limit for number of unused bytes in the repo after repacking
@@ -614,7 +626,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 		case reachedRepackSize:
 			stats.packs.keep++
 
-		case p.tpe != restic.DataBlob, p.uncompressed:
+		case p.tpe != restic.DataBlob, p.mustCompress:
 			// repacking non-data packs / uncompressed-trees is only limited by repackSize
 			repack(p.ID, p.packInfo)
 
@@ -631,6 +643,11 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 	stats.packs.repack = uint(len(repackPacks))
 	stats.packs.remove = uint(len(removePacks))
 
+	if repo.Config().Version < 2 {
+		// compression not supported for repository format version 1
+		stats.size.uncompressed = 0
+	}
+
 	return prunePlan{removePacksFirst: removePacksFirst,
 		removePacks: removePacks,
 		repackPacks: repackPacks,
@@ -639,7 +656,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, gopts GlobalOption
 }
 
 // printPruneStats prints out the statistics
-func printPruneStats(gopts GlobalOptions, stats pruneStats) error {
+func printPruneStats(stats pruneStats) error {
 	Verboseff("\nused:         %10d blobs / %s\n", stats.blobs.used, ui.FormatBytes(stats.size.used))
 	if stats.blobs.duplicate > 0 {
 		Verboseff("duplicates:   %10d blobs / %s\n", stats.blobs.duplicate, ui.FormatBytes(stats.size.duplicate))
@@ -659,6 +676,9 @@ func printPruneStats(gopts GlobalOptions, stats pruneStats) error {
 	Verbosef("to delete:    %10d blobs / %s\n", stats.blobs.remove, ui.FormatBytes(stats.size.remove+stats.size.unref))
 	totalPruneSize := stats.size.remove + stats.size.repackrm + stats.size.unref
 	Verbosef("total prune:  %10d blobs / %s\n", stats.blobs.remove+stats.blobs.repackrm, ui.FormatBytes(totalPruneSize))
+	if stats.size.uncompressed > 0 {
+		Verbosef("not yet compressed:              %s\n", ui.FormatBytes(stats.size.uncompressed))
+	}
 	Verbosef("remaining:    %10d blobs / %s\n", totalBlobs-(stats.blobs.remove+stats.blobs.repackrm), ui.FormatBytes(totalSize-totalPruneSize))
 	unusedAfter := unusedSize - stats.size.remove - stats.size.repackrm
 	Verbosef("unused size after prune: %s (%s of remaining size)\n",
@@ -686,6 +706,7 @@ func printPruneStats(gopts GlobalOptions, stats pruneStats) error {
 func doPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo restic.Repository, plan prunePlan) (err error) {
 	if opts.DryRun {
 		if !gopts.JSON && gopts.verbosity >= 2 {
+			Printf("Repeated prune dry-runs can report slightly different amounts of data to keep or repack. This is expected behavior.\n\n")
 			if len(plan.removePacksFirst) > 0 {
 				Printf("Would have removed the following unreferenced packs:\n%v\n\n", plan.removePacksFirst)
 			}
@@ -781,7 +802,7 @@ func rebuildIndexFiles(ctx context.Context, gopts GlobalOptions, repo restic.Rep
 	return DeleteFilesChecked(ctx, gopts, repo, obsoleteIndexes, restic.IndexFile)
 }
 
-func getUsedBlobs(ctx context.Context, gopts GlobalOptions, repo restic.Repository, ignoreSnapshots restic.IDSet) (usedBlobs restic.CountedBlobSet, err error) {
+func getUsedBlobs(ctx context.Context, repo restic.Repository, ignoreSnapshots restic.IDSet, quiet bool) (usedBlobs restic.CountedBlobSet, err error) {
 	var snapshotTrees restic.IDs
 	Verbosef("loading all snapshots...\n")
 	err = restic.ForAllSnapshots(ctx, repo.Backend(), repo, ignoreSnapshots,
@@ -802,7 +823,7 @@ func getUsedBlobs(ctx context.Context, gopts GlobalOptions, repo restic.Reposito
 
 	usedBlobs = restic.NewCountedBlobSet()
 
-	bar := newProgressMax(!gopts.Quiet, uint64(len(snapshotTrees)), "snapshots")
+	bar := newProgressMax(!quiet, uint64(len(snapshotTrees)), "snapshots")
 	defer bar.Done()
 
 	err = restic.FindUsedBlobs(ctx, repo, snapshotTrees, usedBlobs, bar)

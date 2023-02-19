@@ -1,14 +1,12 @@
 package backup
 
 import (
-	"context"
-	"io"
 	"sync"
 	"time"
 
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/ui/signals"
+	"github.com/restic/restic/internal/ui/progress"
 )
 
 // A ProgressPrinter can print various progress messages.
@@ -21,10 +19,6 @@ type ProgressPrinter interface {
 	ReportTotal(item string, start time.Time, s archiver.ScanStats)
 	Finish(snapshotID restic.ID, start time.Time, summary *Summary, dryRun bool)
 	Reset()
-
-	// ui.StdioWrapper
-	Stdout() io.WriteCloser
-	Stderr() io.WriteCloser
 
 	P(msg string, args ...interface{})
 	V(msg string, args ...interface{})
@@ -46,10 +40,10 @@ type Summary struct {
 
 // Progress reports progress for the `backup` command.
 type Progress struct {
+	progress.Updater
 	mu sync.Mutex
 
-	interval time.Duration
-	start    time.Time
+	start time.Time
 
 	scanStarted, scanFinished bool
 
@@ -57,66 +51,37 @@ type Progress struct {
 	processed, total Counter
 	errors           uint
 
-	closed chan struct{}
-
 	summary Summary
 	printer ProgressPrinter
 }
 
 func NewProgress(printer ProgressPrinter, interval time.Duration) *Progress {
-	return &Progress{
-		interval: interval,
-		start:    time.Now(),
-
+	p := &Progress{
+		start:        time.Now(),
 		currentFiles: make(map[string]struct{}),
-		closed:       make(chan struct{}),
-
-		printer: printer,
+		printer:      printer,
 	}
-}
+	p.Updater = *progress.NewUpdater(interval, func(runtime time.Duration, final bool) {
+		if final {
+			p.printer.Reset()
+		} else {
+			p.mu.Lock()
+			defer p.mu.Unlock()
+			if !p.scanStarted {
+				return
+			}
 
-// Run regularly updates the status lines. It should be called in a separate
-// goroutine.
-func (p *Progress) Run(ctx context.Context) {
-	defer close(p.closed)
-	// Reset status when finished
-	defer p.printer.Reset()
+			var secondsRemaining uint64
+			if p.scanFinished {
+				secs := float64(runtime / time.Second)
+				todo := float64(p.total.Bytes - p.processed.Bytes)
+				secondsRemaining = uint64(secs / float64(p.processed.Bytes) * todo)
+			}
 
-	var tick <-chan time.Time
-	if p.interval != 0 {
-		t := time.NewTicker(p.interval)
-		defer t.Stop()
-		tick = t.C
-	}
-
-	signalsCh := signals.GetProgressChannel()
-
-	for {
-		var now time.Time
-		select {
-		case <-ctx.Done():
-			return
-		case now = <-tick:
-		case <-signalsCh:
-			now = time.Now()
+			p.printer.Update(p.total, p.processed, p.errors, p.currentFiles, p.start, secondsRemaining)
 		}
-
-		p.mu.Lock()
-		if p.scanStarted {
-			p.mu.Unlock()
-			continue
-		}
-
-		var secondsRemaining uint64
-		if p.scanFinished {
-			secs := float64(now.Sub(p.start) / time.Second)
-			todo := float64(p.total.Bytes - p.processed.Bytes)
-			secondsRemaining = uint64(secs / float64(p.processed.Bytes) * todo)
-		}
-
-		p.printer.Update(p.total, p.processed, p.errors, p.currentFiles, p.start, secondsRemaining)
-		p.mu.Unlock()
-	}
+	})
+	return p
 }
 
 // Error is the error callback function for the archiver, it prints the error and returns nil.
@@ -231,17 +196,17 @@ func (p *Progress) ReportTotal(item string, s archiver.ScanStats) {
 	defer p.mu.Unlock()
 
 	p.total = Counter{Files: uint64(s.Files), Dirs: uint64(s.Dirs), Bytes: s.Bytes}
+	p.scanStarted = true
 
 	if item == "" {
+		p.scanFinished = true
 		p.printer.ReportTotal(item, p.start, s)
-		p.scanStarted = true
-		return
 	}
 }
 
 // Finish prints the finishing messages.
 func (p *Progress) Finish(snapshotID restic.ID, dryrun bool) {
 	// wait for the status update goroutine to shut down
-	<-p.closed
+	p.Updater.Done()
 	p.printer.Finish(snapshotID, p.start, &p.summary, dryrun)
 }

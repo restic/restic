@@ -128,6 +128,11 @@ func (s *FileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 			if isCompleted {
 				panic("completed twice")
 			}
+			for _, id := range fnr.node.Content {
+				if id.IsNull() {
+					panic("completed file with null ID")
+				}
+			}
 			isCompleted = true
 			finish(fnr)
 		}
@@ -194,7 +199,10 @@ func (s *FileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 
 		// add a place to store the saveBlob result
 		pos := idx
+
+		lock.Lock()
 		node.Content = append(node.Content, restic.ID{})
+		lock.Unlock()
 
 		s.saveBlob(ctx, restic.DataBlob, buf, func(sbr SaveBlobResponse) {
 			lock.Lock()

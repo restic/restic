@@ -37,7 +37,7 @@ func newProgressMax(show bool, max uint64, description string) *progress.Counter
 	interval := calculateProgressInterval(show, false)
 	canUpdateStatus := stdoutCanUpdateStatus()
 
-	return progress.New(interval, max, func(v uint64, max uint64, d time.Duration, final bool) {
+	return progress.NewCounter(interval, max, func(v uint64, max uint64, d time.Duration, final bool) {
 		var status string
 		if max == 0 {
 			status = fmt.Sprintf("[%s]          %d %s",

@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"hash"
 	"io"
-	"io/ioutil"
 	"sync"
 
 	"github.com/cespare/xxhash/v2"
@@ -53,23 +52,6 @@ func New() *MemoryBackend {
 	return be
 }
 
-// Test returns whether a file exists.
-func (be *MemoryBackend) Test(ctx context.Context, h restic.Handle) (bool, error) {
-	be.sem.GetToken()
-	defer be.sem.ReleaseToken()
-
-	be.m.Lock()
-	defer be.m.Unlock()
-
-	debug.Log("Test %v", h)
-
-	if _, ok := be.data[h]; ok {
-		return true, ctx.Err()
-	}
-
-	return false, ctx.Err()
-}
-
 // IsNotExist returns true if the file does not exist.
 func (be *MemoryBackend) IsNotExist(err error) bool {
 	return errors.Is(err, errNotFound)
@@ -96,7 +78,7 @@ func (be *MemoryBackend) Save(ctx context.Context, h restic.Handle, rd restic.Re
 		return errors.New("file already exists")
 	}
 
-	buf, err := ioutil.ReadAll(rd)
+	buf, err := io.ReadAll(rd)
 	if err != nil {
 		return err
 	}
@@ -168,7 +150,7 @@ func (be *MemoryBackend) openReader(ctx context.Context, h restic.Handle, length
 		buf = buf[:length]
 	}
 
-	return be.sem.ReleaseTokenOnClose(ioutil.NopCloser(bytes.NewReader(buf)), nil), ctx.Err()
+	return be.sem.ReleaseTokenOnClose(io.NopCloser(bytes.NewReader(buf)), nil), ctx.Err()
 }
 
 // Stat returns information about a file in the backend.

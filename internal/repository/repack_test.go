@@ -223,8 +223,7 @@ func TestRepack(t *testing.T) {
 }
 
 func testRepack(t *testing.T, version uint) {
-	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
-	defer cleanup()
+	repo := repository.TestRepositoryWithVersion(t, version)
 
 	seed := time.Now().UnixNano()
 	rand.Seed(seed)
@@ -302,10 +301,8 @@ func (r oneConnectionRepo) Connections() uint {
 }
 
 func testRepackCopy(t *testing.T, version uint) {
-	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
-	defer cleanup()
-	dstRepo, dstCleanup := repository.TestRepositoryWithVersion(t, version)
-	defer dstCleanup()
+	repo := repository.TestRepositoryWithVersion(t, version)
+	dstRepo := repository.TestRepositoryWithVersion(t, version)
 
 	// test with minimal possible connection count
 	repoWrapped := &oneConnectionRepo{repo}
@@ -349,8 +346,7 @@ func TestRepackWrongBlob(t *testing.T) {
 }
 
 func testRepackWrongBlob(t *testing.T, version uint) {
-	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
-	defer cleanup()
+	repo := repository.TestRepositoryWithVersion(t, version)
 
 	seed := time.Now().UnixNano()
 	rand.Seed(seed)
@@ -375,8 +371,7 @@ func TestRepackBlobFallback(t *testing.T) {
 }
 
 func testRepackBlobFallback(t *testing.T, version uint) {
-	repo, cleanup := repository.TestRepositoryWithVersion(t, version)
-	defer cleanup()
+	repo := repository.TestRepositoryWithVersion(t, version)
 
 	seed := time.Now().UnixNano()
 	rand.Seed(seed)

@@ -3,7 +3,6 @@ package debug
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"os"
@@ -30,7 +29,7 @@ func (rd *eofDetectReader) Read(p []byte) (n int, err error) {
 
 func (rd *eofDetectReader) Close() error {
 	if !rd.eofSeen {
-		buf, err := ioutil.ReadAll(rd)
+		buf, err := io.ReadAll(rd)
 		msg := fmt.Sprintf("body not drained, %d bytes not read", len(buf))
 		if err != nil {
 			msg += fmt.Sprintf(", error: %v", err)

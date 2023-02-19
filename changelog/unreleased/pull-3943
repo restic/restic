@@ -1,9 +1,0 @@
-Enhancement: Ignore additional files in repository
-
-Some commands like `find` and `restore` could become confused by additional
-files in the repository. This could cause restic to fail with an `multiple IDs
-with prefix "12345678" found` error. These commands now ignore additional
-files.
-
-https://github.com/restic/restic/pull/3943
-https://forum.restic.net/t/which-protocol-should-i-choose-for-remote-linux-backups/5446/17

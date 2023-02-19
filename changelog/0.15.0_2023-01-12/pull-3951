@@ -1,0 +1,7 @@
+Bugfix: Make `ls` return exit code 1 if snapshot cannot be loaded
+
+The `ls` command used to show a warning and return exit code 0 when failing
+to load a snapshot. This has now been fixed such that it instead returns exit
+code 1 (still showing a warning).
+
+https://github.com/restic/restic/pull/3951

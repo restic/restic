@@ -38,6 +38,7 @@ Usage help is available:
       rebuild-index Build a new index
       recover       Recover data from the repository not referenced by snapshots
       restore       Extract the data from a snapshot
+      rewrite       Rewrite snapshots to exclude unwanted files
       self-update   Update the restic binary
       snapshots     List all snapshots
       stats         Scan the repository and show basic statistics
@@ -66,7 +67,7 @@ Usage help is available:
       -r, --repo repository            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
           --repository-file file       file to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
           --tls-client-cert file       path to a file containing PEM encoded TLS client certificate and private key
-      -v, --verbose n                  be verbose (specify multiple times or a level using --verbose=n, max level/times is 3)
+      -v, --verbose                    be verbose (specify multiple times or a level using --verbose=n, max level/times is 2)
 
     Use "restic [command] --help" for more information about a command.
 
@@ -110,9 +111,10 @@ command:
           --iexclude-file file                     same as --exclude-file but ignores casing of filenames in patterns
           --ignore-ctime                           ignore ctime changes when checking for modified files
           --ignore-inode                           ignore inode number changes when checking for modified files
+          --no-scan                                do not run scanner to estimate size of backup
       -x, --one-file-system                        exclude other file systems, don't cross filesystem boundaries and subvolumes
           --parent snapshot                        use this parent snapshot (default: last snapshot in the repository that has the same target files/directories, and is not newer than the snapshot time)
-          --read-concurrency n                     read n file concurrently. (default: $RESTIC_READ_CONCURRENCY or 2)
+          --read-concurrency n                     read n file concurrently (default: $RESTIC_READ_CONCURRENCY or 2)
           --stdin                                  read backup from stdin
           --stdin-filename filename                filename to use when reading from stdin (default "stdin")
           --tag tags                               add tags for the new snapshot in the format `tag[,tag,...]` (can be specified multiple times) (default [])
@@ -140,7 +142,7 @@ command:
       -r, --repo repository            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
           --repository-file file       file to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
           --tls-client-cert file       path to a file containing PEM encoded TLS client certificate and private key
-      -v, --verbose n                  be verbose (specify multiple times or a level using --verbose=n, max level/times is 3)
+      -v, --verbose                    be verbose (specify multiple times or a level using --verbose=n, max level/times is 2)
 
 Subcommands that support showing progress information such as ``backup``,
 ``check`` and ``prune`` will do so unless the quiet flag ``-q`` or
@@ -257,7 +259,10 @@ Metadata handling
 ~~~~~~~~~~~~~~~~~
 
 Restic saves and restores most default attributes, including extended attributes like ACLs.
-Sparse files are not handled in a special way yet, and aren't restored.
+Information about holes in a sparse file is not stored explicitly, that is during a backup
+the zero bytes in a hole are deduplicated and compressed like any other data backed up.
+Instead, the restore command optionally creates holes in files by detecting and replacing
+long runs of zeros, in filesystems that support sparse files.
 
 The following metadata is handled by restic:
 

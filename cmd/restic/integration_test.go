@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	mrand "math/rand"
 	"os"
 	"path/filepath"
@@ -65,7 +64,7 @@ func testRunBackupAssumeFailure(t testing.TB, dir string, target []string, opts 
 	term := termstatus.New(gopts.stdout, gopts.stderr, gopts.Quiet)
 	wg.Go(func() error { term.Run(ctx); return nil })
 
-	gopts.stdout = ioutil.Discard
+	gopts.stdout = io.Discard
 	t.Logf("backing up %v in %v", target, dir)
 	if dir != "" {
 		cleanup := rtest.Chdir(t, dir)
@@ -183,7 +182,7 @@ func testRunDiffOutput(gopts GlobalOptions, firstSnapshotID string, secondSnapsh
 }
 
 func testRunRebuildIndex(t testing.TB, gopts GlobalOptions) {
-	globalOptions.stdout = ioutil.Discard
+	globalOptions.stdout = io.Discard
 	defer func() {
 		globalOptions.stdout = os.Stdout
 	}()
@@ -419,7 +418,7 @@ func TestBackupNonExistingFile(t *testing.T) {
 	defer cleanup()
 
 	testSetupBackupData(t, env)
-	globalOptions.stderr = ioutil.Discard
+	globalOptions.stderr = io.Discard
 	defer func() {
 		globalOptions.stderr = os.Stderr
 	}()
@@ -641,7 +640,7 @@ func TestBackupErrors(t *testing.T) {
 	}()
 	opts := BackupOptions{}
 	gopts := env.gopts
-	gopts.stderr = ioutil.Discard
+	gopts.stderr = io.Discard
 	err := testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, gopts)
 	rtest.Assert(t, err != nil, "Assumed failure, but no error occurred.")
 	rtest.Assert(t, err == ErrInvalidSourceData, "Wrong error returned")
@@ -1243,7 +1242,7 @@ func TestRestoreLatest(t *testing.T) {
 	opts := BackupOptions{}
 
 	// chdir manually here so we can get the current directory. This is not the
-	// same as the temp dir returned by ioutil.TempDir() on darwin.
+	// same as the temp dir returned by os.MkdirTemp() on darwin.
 	back := rtest.Chdir(t, filepath.Dir(env.testdata))
 	defer back()
 
@@ -1308,7 +1307,7 @@ func TestRestoreWithPermissionFailure(t *testing.T) {
 	rtest.Assert(t, len(snapshots) > 0,
 		"no snapshots found in repo (%v)", datafile)
 
-	globalOptions.stderr = ioutil.Discard
+	globalOptions.stderr = io.Discard
 	defer func() {
 		globalOptions.stderr = os.Stderr
 	}()
@@ -1542,7 +1541,7 @@ func TestRebuildIndexFailsOnAppendOnly(t *testing.T) {
 	datafile := filepath.Join("..", "..", "internal", "checker", "testdata", "duplicate-packs-in-index-test-repo.tar.gz")
 	rtest.SetupTarTestFixture(t, env.base, datafile)
 
-	globalOptions.stdout = ioutil.Discard
+	globalOptions.stdout = io.Discard
 	defer func() {
 		globalOptions.stdout = os.Stdout
 	}()
@@ -1624,10 +1623,7 @@ func testPruneVariants(t *testing.T, unsafeNoSpaceRecovery bool) {
 	})
 }
 
-func testPrune(t *testing.T, pruneOpts PruneOptions, checkOpts CheckOptions) {
-	env, cleanup := withTestEnvironment(t)
-	defer cleanup()
-
+func createPrunableRepo(t *testing.T, env *testEnvironment) {
 	testSetupBackupData(t, env)
 	opts := BackupOptions{}
 
@@ -1645,6 +1641,13 @@ func testPrune(t *testing.T, pruneOpts PruneOptions, checkOpts CheckOptions) {
 
 	testRunForgetJSON(t, env.gopts)
 	testRunForget(t, env.gopts, firstSnapshot[0].String())
+}
+
+func testPrune(t *testing.T, pruneOpts PruneOptions, checkOpts CheckOptions) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	createPrunableRepo(t, env)
 	testRunPrune(t, env.gopts, pruneOpts)
 	rtest.OK(t, runCheck(context.TODO(), checkOpts, env.gopts, nil))
 }
@@ -1827,27 +1830,10 @@ func TestListOnce(t *testing.T) {
 	env.gopts.backendTestHook = func(r restic.Backend) (restic.Backend, error) {
 		return newListOnceBackend(r), nil
 	}
-
 	pruneOpts := PruneOptions{MaxUnused: "0"}
 	checkOpts := CheckOptions{ReadData: true, CheckUnused: true}
 
-	testSetupBackupData(t, env)
-	opts := BackupOptions{}
-
-	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9")}, opts, env.gopts)
-	firstSnapshot := testRunList(t, "snapshots", env.gopts)
-	rtest.Assert(t, len(firstSnapshot) == 1,
-		"expected one snapshot, got %v", firstSnapshot)
-
-	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "2")}, opts, env.gopts)
-	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "3")}, opts, env.gopts)
-
-	snapshotIDs := testRunList(t, "snapshots", env.gopts)
-	rtest.Assert(t, len(snapshotIDs) == 3,
-		"expected 3 snapshot, got %v", snapshotIDs)
-
-	testRunForgetJSON(t, env.gopts)
-	testRunForget(t, env.gopts, firstSnapshot[0].String())
+	createPrunableRepo(t, env)
 	testRunPrune(t, env.gopts, pruneOpts)
 	rtest.OK(t, runCheck(context.TODO(), checkOpts, env.gopts, nil))
 

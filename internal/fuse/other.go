@@ -6,7 +6,7 @@ package fuse
 import (
 	"context"
 
-	"bazil.org/fuse"
+	"github.com/anacrolix/fuse"
 	"github.com/restic/restic/internal/restic"
 )
 

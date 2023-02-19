@@ -265,16 +265,11 @@ binary, you can get it with `docker pull` like this:
 
     $ docker pull restic/restic
 
-.. note::
-   | Another docker container which offers more configuration options is
-   | available as a contribution (Thank you!). You can find it at
-   | https://github.com/Lobaro/restic-backup-docker
-
 From Source
 ***********
 
 restic is written in the Go programming language and you need at least
-Go version 1.15. Building restic may also work with older versions of Go,
+Go version 1.18. Building restic may also work with older versions of Go,
 but that's not supported. See the `Getting
 started <https://golang.org/doc/install>`__ guide of the Go project for
 instructions how to install Go.

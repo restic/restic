@@ -1,7 +1,0 @@
-Bugfix: Fix stuck `copy` command when setting backend connections to 1
-
-When calling the copy command using `copy -o <backend>.connections=1` this
-caused the command to be stuck permanently. This has been fixed.
-
-https://github.com/restic/restic/issues/3897
-https://github.com/restic/restic/pull/3898

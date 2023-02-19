@@ -42,7 +42,7 @@ import (
 	"golang.org/x/term"
 )
 
-var version = "0.14.0-dev (compiled manually)"
+var version = "0.15.1-dev (compiled manually)"
 
 // TimeFormat is the format used for all timestamps printed by restic.
 const TimeFormat = "2006-01-02 15:04:05"
@@ -112,7 +112,8 @@ func init() {
 	f.StringVarP(&globalOptions.KeyHint, "key-hint", "", "", "`key` ID of key to try decrypting first (default: $RESTIC_KEY_HINT)")
 	f.StringVarP(&globalOptions.PasswordCommand, "password-command", "", "", "shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)")
 	f.BoolVarP(&globalOptions.Quiet, "quiet", "q", false, "do not output comprehensive progress report")
-	f.CountVarP(&globalOptions.Verbose, "verbose", "v", "be verbose (specify multiple times or a level using --verbose=`n`, max level/times is 3)")
+	// use empty paremeter name as `-v, --verbose n` instead of the correct `--verbose=n` is confusing
+	f.CountVarP(&globalOptions.Verbose, "verbose", "v", "be verbose (specify multiple times or a level using --verbose=n``, max level/times is 2)")
 	f.BoolVar(&globalOptions.NoLock, "no-lock", false, "do not lock the repository, this allows some operations on read-only repositories")
 	f.BoolVarP(&globalOptions.JSON, "json", "", false, "set output mode to JSON for commands that support it")
 	f.StringVar(&globalOptions.CacheDir, "cache-dir", "", "set the cache `directory`. (default: use system default cache directory)")
@@ -279,17 +280,6 @@ func Warnf(format string, args ...interface{}) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to write to stderr: %v\n", err)
 	}
-}
-
-// Exitf uses Warnf to write the message and then terminates the process with
-// the given exit code.
-func Exitf(exitcode int, format string, args ...interface{}) {
-	if !(strings.HasSuffix(format, "\n")) {
-		format += "\n"
-	}
-
-	Warnf(format, args...)
-	Exit(exitcode)
 }
 
 // resolvePassword determines the password to be used for opening the repository.
@@ -498,7 +488,11 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 			id = id[:8]
 		}
 		if !opts.JSON {
-			Verbosef("repository %v opened (version %v, compression level %v)\n", id, s.Config().Version, opts.Compression.String())
+			extra := ""
+			if s.Config().Version >= 2 {
+				extra = ", compression level " + opts.Compression.String()
+			}
+			Verbosef("repository %v opened (version %v%s)\n", id, s.Config().Version, extra)
 		}
 	}
 
@@ -729,7 +723,7 @@ func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Optio
 	case "gs":
 		be, err = gs.Open(cfg.(gs.Config), rt)
 	case "azure":
-		be, err = azure.Open(cfg.(azure.Config), rt)
+		be, err = azure.Open(ctx, cfg.(azure.Config), rt)
 	case "swift":
 		be, err = swift.Open(ctx, cfg.(swift.Config), rt)
 	case "b2":
@@ -801,7 +795,7 @@ func create(ctx context.Context, s string, opts options.Options) (restic.Backend
 	case "gs":
 		return gs.Create(cfg.(gs.Config), rt)
 	case "azure":
-		return azure.Create(cfg.(azure.Config), rt)
+		return azure.Create(ctx, cfg.(azure.Config), rt)
 	case "swift":
 		return swift.Open(ctx, cfg.(swift.Config), rt)
 	case "b2":

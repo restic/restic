@@ -1,7 +1,0 @@
-Bugfix: Make sure that symlinks can be created during recovery
-
-When restoring a symlink, restic reported an error if the target path already existed.
-With this change, the potentially existing target path is first removed before the symlink is recreated.
-
-https://github.com/restic/restic/issues/2578
-https://github.com/restic/restic/pull/3780

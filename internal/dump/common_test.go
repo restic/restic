@@ -12,18 +12,13 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func prepareTempdirRepoSrc(t testing.TB, src archiver.TestDir) (tempdir string, repo restic.Repository, cleanup func()) {
-	tempdir, removeTempdir := rtest.TempDir(t)
-	repo, removeRepository := repository.TestRepository(t)
+func prepareTempdirRepoSrc(t testing.TB, src archiver.TestDir) (string, restic.Repository) {
+	tempdir := rtest.TempDir(t)
+	repo := repository.TestRepository(t)
 
 	archiver.TestCreateFiles(t, tempdir, src)
 
-	cleanup = func() {
-		removeRepository()
-		removeTempdir()
-	}
-
-	return tempdir, repo, cleanup
+	return tempdir, repo
 }
 
 type CheckDump func(t *testing.T, testDir string, testDump *bytes.Buffer) error
@@ -77,9 +72,7 @@ func WriteTest(t *testing.T, format string, cd CheckDump) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			tmpdir, repo, cleanup := prepareTempdirRepoSrc(t, tt.args)
-			defer cleanup()
-
+			tmpdir, repo := prepareTempdirRepoSrc(t, tt.args)
 			arch := archiver.New(repo, fs.Track{FS: fs.Local{}}, archiver.Options{})
 
 			back := rtest.Chdir(t, tmpdir)

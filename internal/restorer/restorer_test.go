@@ -3,7 +3,7 @@ package restorer
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
+	"io"
 	"math"
 	"os"
 	"path/filepath"
@@ -321,16 +321,13 @@ func TestRestorer(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			repo, cleanup := repository.TestRepository(t)
-			defer cleanup()
+			repo := repository.TestRepository(t)
 			sn, id := saveSnapshot(t, repo, test.Snapshot)
 			t.Logf("snapshot saved as %v", id.Str())
 
 			res := NewRestorer(context.TODO(), repo, sn, false)
 
-			tempdir, cleanup := rtest.TempDir(t)
-			defer cleanup()
-
+			tempdir := rtest.TempDir(t)
 			// make sure we're creating a new subdir of the tempdir
 			tempdir = filepath.Join(tempdir, "target")
 
@@ -401,7 +398,7 @@ func TestRestorer(t *testing.T) {
 			}
 
 			for filename, content := range test.Files {
-				data, err := ioutil.ReadFile(filepath.Join(tempdir, filepath.FromSlash(filename)))
+				data, err := os.ReadFile(filepath.Join(tempdir, filepath.FromSlash(filename)))
 				if err != nil {
 					t.Errorf("unable to read file %v: %v", filename, err)
 					continue
@@ -440,18 +437,15 @@ func TestRestorerRelative(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			repo, cleanup := repository.TestRepository(t)
-			defer cleanup()
+			repo := repository.TestRepository(t)
 
 			sn, id := saveSnapshot(t, repo, test.Snapshot)
 			t.Logf("snapshot saved as %v", id.Str())
 
 			res := NewRestorer(context.TODO(), repo, sn, false)
 
-			tempdir, cleanup := rtest.TempDir(t)
-			defer cleanup()
-
-			cleanup = rtest.Chdir(t, tempdir)
+			tempdir := rtest.TempDir(t)
+			cleanup := rtest.Chdir(t, tempdir)
 			defer cleanup()
 
 			errors := make(map[string]string)
@@ -477,7 +471,7 @@ func TestRestorerRelative(t *testing.T) {
 			}
 
 			for filename, content := range test.Files {
-				data, err := ioutil.ReadFile(filepath.Join(tempdir, "restore", filepath.FromSlash(filename)))
+				data, err := os.ReadFile(filepath.Join(tempdir, "restore", filepath.FromSlash(filename)))
 				if err != nil {
 					t.Errorf("unable to read file %v: %v", filename, err)
 					continue
@@ -674,17 +668,14 @@ func TestRestorerTraverseTree(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			repo, cleanup := repository.TestRepository(t)
-			defer cleanup()
+			repo := repository.TestRepository(t)
 			sn, _ := saveSnapshot(t, repo, test.Snapshot)
 
 			res := NewRestorer(context.TODO(), repo, sn, false)
 
 			res.SelectFilter = test.Select
 
-			tempdir, cleanup := rtest.TempDir(t)
-			defer cleanup()
-
+			tempdir := rtest.TempDir(t)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
@@ -723,8 +714,7 @@ func checkConsistentInfo(t testing.TB, file string, fi os.FileInfo, modtime time
 func TestRestorerConsistentTimestampsAndPermissions(t *testing.T) {
 	timeForTest := time.Date(2019, time.January, 9, 1, 46, 40, 0, time.UTC)
 
-	repo, cleanup := repository.TestRepository(t)
-	defer cleanup()
+	repo := repository.TestRepository(t)
 
 	sn, _ := saveSnapshot(t, repo, Snapshot{
 		Nodes: map[string]Node{
@@ -776,9 +766,7 @@ func TestRestorerConsistentTimestampsAndPermissions(t *testing.T) {
 		return selectedForRestore, childMayBeSelected
 	}
 
-	tempdir, cleanup := rtest.TempDir(t)
-	defer cleanup()
-
+	tempdir := rtest.TempDir(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -811,21 +799,17 @@ func TestVerifyCancel(t *testing.T) {
 		},
 	}
 
-	repo, cleanup := repository.TestRepository(t)
-	defer cleanup()
-
+	repo := repository.TestRepository(t)
 	sn, _ := saveSnapshot(t, repo, snapshot)
 
 	res := NewRestorer(context.TODO(), repo, sn, false)
 
-	tempdir, cleanup := rtest.TempDir(t)
-	defer cleanup()
-
+	tempdir := rtest.TempDir(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	rtest.OK(t, res.RestoreTo(ctx, tempdir))
-	err := ioutil.WriteFile(filepath.Join(tempdir, "foo"), []byte("bar"), 0644)
+	err := os.WriteFile(filepath.Join(tempdir, "foo"), []byte("bar"), 0644)
 	rtest.OK(t, err)
 
 	var errs []error
@@ -842,15 +826,14 @@ func TestVerifyCancel(t *testing.T) {
 }
 
 func TestRestorerSparseFiles(t *testing.T) {
-	repo, cleanup := repository.TestRepository(t)
-	defer cleanup()
+	repo := repository.TestRepository(t)
 
 	var zeros [1<<20 + 13]byte
 
 	target := &fs.Reader{
 		Mode:       0600,
 		Name:       "/zeros",
-		ReadCloser: ioutil.NopCloser(bytes.NewReader(zeros[:])),
+		ReadCloser: io.NopCloser(bytes.NewReader(zeros[:])),
 	}
 	sc := archiver.NewScanner(target)
 	err := sc.Scan(context.TODO(), []string{"/zeros"})
@@ -863,9 +846,7 @@ func TestRestorerSparseFiles(t *testing.T) {
 
 	res := NewRestorer(context.TODO(), repo, sn, true)
 
-	tempdir, cleanup := rtest.TempDir(t)
-	defer cleanup()
-
+	tempdir := rtest.TempDir(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -873,7 +854,7 @@ func TestRestorerSparseFiles(t *testing.T) {
 	rtest.OK(t, err)
 
 	filename := filepath.Join(tempdir, "zeros")
-	content, err := ioutil.ReadFile(filename)
+	content, err := os.ReadFile(filename)
 	rtest.OK(t, err)
 
 	rtest.Equals(t, len(zeros[:]), len(content))

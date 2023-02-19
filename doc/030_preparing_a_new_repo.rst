@@ -86,10 +86,11 @@ command and enter the same password twice:
 
 .. warning::
 
-   On Linux, storing the backup repository on a CIFS (SMB) share is not
-   recommended due to compatibility issues. Either use another backend
-   or set the environment variable `GODEBUG` to `asyncpreemptoff=1`.
-   Refer to GitHub issue `#2659 <https://github.com/restic/restic/issues/2659>`_ for further explanations.
+   On Linux, storing the backup repository on a CIFS (SMB) share or backing up
+   data from a CIFS share is not recommended due to compatibility issues in
+   older Linux kernels. Either use another backend or set the environment
+   variable `GODEBUG` to `asyncpreemptoff=1`. Refer to GitHub issue
+   `#2659 <https://github.com/restic/restic/issues/2659>`_ for further explanations.
 
 SFTP
 ****
@@ -220,6 +221,8 @@ not considered at all.
 REST server uses exactly the same directory structure as local backend,
 so you should be able to access it both locally and via HTTP, even
 simultaneously.
+
+.. _Amazon S3:
 
 Amazon S3
 *********

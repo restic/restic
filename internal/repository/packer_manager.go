@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"io"
-	"io/ioutil"
 	"os"
 	"runtime"
 	"sync"
@@ -111,7 +110,7 @@ func (r *packerManager) newPacker() (packer *Packer, err error) {
 	debug.Log("create new pack")
 	tmpfile, err := fs.TempFile("", "restic-temp-pack-")
 	if err != nil {
-		return nil, errors.Wrap(err, "fs.TempFile")
+		return nil, errors.WithStack(err)
 	}
 
 	bufWr := bufio.NewWriter(tmpfile)
@@ -151,7 +150,7 @@ func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packe
 	}
 
 	hr := hashing.NewReader(rd, sha256.New())
-	_, err = io.Copy(ioutil.Discard, hr)
+	_, err = io.Copy(io.Discard, hr)
 	if err != nil {
 		return err
 	}
@@ -184,7 +183,7 @@ func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packe
 	if runtime.GOOS != "windows" {
 		err = fs.RemoveIfExists(p.tmpfile.Name())
 		if err != nil {
-			return errors.Wrap(err, "Remove")
+			return errors.WithStack(err)
 		}
 	}
 

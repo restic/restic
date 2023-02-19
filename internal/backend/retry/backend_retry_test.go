@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"io/ioutil"
 	"testing"
 	"time"
 
@@ -22,7 +21,7 @@ func TestBackendSaveRetry(t *testing.T) {
 		SaveFn: func(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
 			if errcount == 0 {
 				errcount++
-				_, err := io.CopyN(ioutil.Discard, rd, 120)
+				_, err := io.CopyN(io.Discard, rd, 120)
 				if err != nil {
 					return err
 				}
@@ -267,12 +266,38 @@ func TestBackendLoadRetry(t *testing.T) {
 
 	var buf []byte
 	err := retryBackend.Load(context.TODO(), restic.Handle{}, 0, 0, func(rd io.Reader) (err error) {
-		buf, err = ioutil.ReadAll(rd)
+		buf, err = io.ReadAll(rd)
 		return err
 	})
 	test.OK(t, err)
 	test.Equals(t, data, buf)
 	test.Equals(t, 2, attempt)
+}
+
+func TestBackendStatNotExists(t *testing.T) {
+	// stat should not retry if the error matches IsNotExist
+	notFound := errors.New("not found")
+	attempt := 0
+
+	be := mock.NewBackend()
+	be.StatFn = func(ctx context.Context, h restic.Handle) (restic.FileInfo, error) {
+		attempt++
+		if attempt > 1 {
+			t.Fail()
+			return restic.FileInfo{}, errors.New("must not retry")
+		}
+		return restic.FileInfo{}, notFound
+	}
+	be.IsNotExistFn = func(err error) bool {
+		return errors.Is(err, notFound)
+	}
+
+	TestFastRetries(t)
+	retryBackend := New(be, 10, nil, nil)
+
+	_, err := retryBackend.Stat(context.TODO(), restic.Handle{})
+	test.Assert(t, be.IsNotExistFn(err), "unexpected error %v", err)
+	test.Equals(t, 1, attempt)
 }
 
 func assertIsCanceled(t *testing.T, err error) {
@@ -290,9 +315,7 @@ func TestBackendCanceledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	_, err := retryBackend.Test(ctx, h)
-	assertIsCanceled(t, err)
-	_, err = retryBackend.Stat(ctx, h)
+	_, err := retryBackend.Stat(ctx, h)
 	assertIsCanceled(t, err)
 
 	err = retryBackend.Save(ctx, h, restic.NewByteReader([]byte{}, nil))

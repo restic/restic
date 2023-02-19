@@ -11,7 +11,7 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
 
-	"bazil.org/fuse/fs"
+	"github.com/anacrolix/fuse/fs"
 	"golang.org/x/sync/semaphore"
 	"golang.org/x/sync/singleflight"
 )

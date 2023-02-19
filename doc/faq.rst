@@ -179,7 +179,7 @@ with an error similar to the following:
 
 ::
 
-    $ restic init -r sftp:user@nas:/volume1/restic-repo init
+    $ restic -r sftp:user@nas:/volume1/restic-repo init
     create backend at sftp:user@nas:/volume1/restic-repo/ failed:
         mkdirAll(/volume1/restic-repo/index): unable to create directories: [...]
 
@@ -199,7 +199,7 @@ The following may work:
 
 ::
 
-    $ restic init -r sftp:user@nas:/restic-repo init
+    $ restic -r sftp:user@nas:/restic-repo init
 
 Why does restic perform so poorly on Windows?
 ---------------------------------------------

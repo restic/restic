@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-	"io/ioutil"
 	"math/rand"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -171,7 +171,7 @@ func prepareCheckCache(opts CheckOptions, gopts *GlobalOptions) (cleanup func())
 	}
 
 	// use a cache in a temporary directory
-	tempdir, err := ioutil.TempDir(cachedir, "restic-check-cache-")
+	tempdir, err := os.MkdirTemp(cachedir, "restic-check-cache-")
 	if err != nil {
 		// if an error occurs, don't use any cache
 		Warnf("unable to create temporary directory for cache during check, disabling cache: %v\n", err)
@@ -245,7 +245,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	}
 
 	if suggestIndexRebuild {
-		Printf("This is non-critical, you can run `restic rebuild-index' to correct this\n")
+		Printf("Duplicate packs/old indexes are non-critical, you can run `restic rebuild-index' to correct this.\n")
 	}
 	if mixedFound {
 		Printf("Mixed packs with tree and data blobs are non-critical, you can run `restic prune` to correct this.\n")
@@ -268,7 +268,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		if checker.IsOrphanedPack(err) {
 			orphanedPacks++
 			Verbosef("%v\n", err)
-		} else if _, ok := err.(*checker.ErrLegacyLayout); ok {
+		} else if err == checker.ErrLegacyLayout {
 			Verbosef("repository still uses the S3 legacy layout\nPlease run `restic migrate s3legacy` to correct this.\n")
 		} else {
 			errorsFound = true
@@ -295,7 +295,11 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	for err := range errChan {
 		errorsFound = true
 		if e, ok := err.(*checker.TreeError); ok {
-			Warnf("error for tree %v:\n", e.ID.Str())
+			var clean string
+			if stdoutCanUpdateStatus() {
+				clean = clearLine(0)
+			}
+			Warnf(clean+"error for tree %v:\n", e.ID.Str())
 			for _, treeErr := range e.Errors {
 				Warnf("  %v\n", treeErr)
 			}

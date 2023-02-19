@@ -1,6 +1,9 @@
 package s3
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 var configTests = []struct {
 	s   string
@@ -108,6 +111,17 @@ func TestParseConfig(t *testing.T) {
 			t.Errorf("test %d:\ninput:\n  %s\n wrong config, want:\n  %v\ngot:\n  %v",
 				i, test.s, test.cfg, cfg)
 			continue
+		}
+	}
+}
+
+func TestParseError(t *testing.T) {
+	const prefix = "s3: invalid format,"
+
+	for _, s := range []string{"", "/", "//", "/bucket/prefix"} {
+		_, err := ParseConfig("s3://" + s)
+		if err == nil || !strings.HasPrefix(err.Error(), prefix) {
+			t.Errorf("expected %q, got %q", prefix, err)
 		}
 	}
 }

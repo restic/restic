@@ -141,7 +141,7 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 
 	sn, err := restic.FindFilteredSnapshot(ctx, repo.Backend(), repo, opts.Paths, opts.Tags, opts.Hosts, nil, snapshotIDString)
 	if err != nil {
-		Exitf(1, "failed to find snapshot: %v", err)
+		return errors.Fatalf("failed to find snapshot: %v", err)
 	}
 
 	err = repo.LoadIndex(ctx)
@@ -151,13 +151,13 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 
 	tree, err := restic.LoadTree(ctx, repo, *sn.Tree)
 	if err != nil {
-		Exitf(2, "loading tree for snapshot %q failed: %v", snapshotIDString, err)
+		return errors.Fatalf("loading tree for snapshot %q failed: %v", snapshotIDString, err)
 	}
 
 	d := dump.New(opts.Archive, repo, os.Stdout)
 	err = printFromTree(ctx, tree, repo, "/", splittedPath, d)
 	if err != nil {
-		Exitf(2, "cannot dump file: %v", err)
+		return errors.Fatalf("cannot dump file: %v", err)
 	}
 
 	return nil

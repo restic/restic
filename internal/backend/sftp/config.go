@@ -42,7 +42,7 @@ func ParseConfig(s string) (interface{}, error) {
 		// parse the "sftp://user@host/path" url format
 		url, err := url.Parse(s)
 		if err != nil {
-			return nil, errors.Wrap(err, "url.Parse")
+			return nil, errors.WithStack(err)
 		}
 		if url.User != nil {
 			user = url.User.Username()
@@ -60,14 +60,13 @@ func ParseConfig(s string) (interface{}, error) {
 		// "user@host:path" in s
 		s = s[5:]
 		// split user@host and path at the colon
-		data := strings.SplitN(s, ":", 2)
-		if len(data) < 2 {
+		var colon bool
+		host, dir, colon = strings.Cut(s, ":")
+		if !colon {
 			return nil, errors.New("sftp: invalid format, hostname or path not found")
 		}
-		host = data[0]
-		dir = data[1]
 		// split user and host at the "@"
-		data = strings.SplitN(host, "@", 3)
+		data := strings.SplitN(host, "@", 3)
 		if len(data) == 3 {
 			user = data[0] + "@" + data[1]
 			host = data[2]

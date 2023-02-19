@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"sync"
 
-	"bazil.org/fuse"
-	"bazil.org/fuse/fs"
+	"github.com/anacrolix/fuse"
+	"github.com/anacrolix/fuse/fs"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
@@ -182,7 +182,7 @@ func (d *dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 		}
 
 		ret = append(ret, fuse.Dirent{
-			Inode: fs.GenerateDynamicInode(d.inode, name),
+			Inode: inodeFromNode(d.inode, node),
 			Type:  typ,
 			Name:  name,
 		})
@@ -204,15 +204,16 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 		debug.Log("  Lookup(%v) -> not found", name)
 		return nil, fuse.ENOENT
 	}
+	inode := inodeFromNode(d.inode, node)
 	switch node.Type {
 	case "dir":
-		return newDir(d.root, fs.GenerateDynamicInode(d.inode, name), d.inode, node)
+		return newDir(d.root, inode, d.inode, node)
 	case "file":
-		return newFile(d.root, fs.GenerateDynamicInode(d.inode, name), node)
+		return newFile(d.root, inode, node)
 	case "symlink":
-		return newLink(d.root, fs.GenerateDynamicInode(d.inode, name), node)
+		return newLink(d.root, inode, node)
 	case "dev", "chardev", "fifo", "socket":
-		return newOther(d.root, fs.GenerateDynamicInode(d.inode, name), node)
+		return newOther(d.root, inode, node)
 	default:
 		debug.Log("  node %v has unknown type %v", name, node.Type)
 		return nil, fuse.ENOENT
