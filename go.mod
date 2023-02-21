@@ -14,7 +14,7 @@ require (
 	github.com/juju/ratelimit v1.0.2
 	github.com/klauspost/compress v1.15.15
 	github.com/kurin/blazer v0.5.4-0.20230113224640-3887e1ec64b5
-	github.com/minio/minio-go/v7 v7.0.47
+	github.com/minio/minio-go/v7 v7.0.49
 	github.com/minio/sha256-simd v1.0.0
 	github.com/ncw/swift/v2 v2.0.1
 	github.com/pkg/errors v0.9.1
@@ -24,7 +24,7 @@ require (
 	github.com/restic/chunker v0.4.0
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
-	golang.org/x/crypto v0.5.0
+	golang.org/x/crypto v0.6.0
 	golang.org/x/net v0.7.0
 	golang.org/x/oauth2 v0.5.0
 	golang.org/x/sync v0.1.0
@@ -42,7 +42,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.1.2 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/dnaeon/go-vcr v1.2.0 // indirect
-	github.com/dustin/go-humanize v1.0.0 // indirect
+	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/felixge/fgprof v0.9.3 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
