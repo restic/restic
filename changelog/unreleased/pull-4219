@@ -1,0 +1,5 @@
+Enhancement: Upgrade Minio to 7.0.49
+
+Upgraded to allow use of the ap-southeast-4 region (Melbourne)
+
+https://github.com/restic/restic/pull/4219
