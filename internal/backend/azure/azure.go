@@ -42,23 +42,15 @@ type Backend struct {
 	layout.Layout
 }
 
-const (
-	defaultListMaxItems = 5000
+const saveLargeSize = 256 * 1024 * 1024
+const defaultListMaxItems = 5000
 
-	// the default timeout is set to 0 which means no timeout i.e. potentially wait forever.
-	defaultHTTPTimeout = 0
+// set AZURE_HTTP_TIMEOUT string like "1m" "1h1m" etc
+const httpTimeoutEnvironmentVar = "AZURE_HTTP_TIMEOUT"
 
-	// set AZURE_HTTP_TIMEOUT string like "1m" "1h1m" etc
-	httpTimeoutEnvironmentVar = "AZURE_HTTP_TIMEOUT"
-
-	saveLargeSize = 256 * 1024 * 1024
-)
-
-var httpTimeout time.Duration
+var httpTimeout *time.Duration
 
 func init() {
-
-	httpTimeout = defaultHTTPTimeout
 
 	if timeoutString, ok := os.LookupEnv(httpTimeoutEnvironmentVar); ok {
 		timeout, err := time.ParseDuration(timeoutString)
@@ -70,9 +62,10 @@ func init() {
 			)
 			return
 		}
-		httpTimeout = timeout
+		httpTimeout = &timeout
+		debug.Log("setting Azure HTTP timeout to %v", httpTimeout)
 	}
-	debug.Log("setting Azure HTTP timeout to %v", httpTimeout)
+
 }
 
 // make sure that *Backend implements backend.Backend
@@ -84,8 +77,9 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	var err error
 
 	httpClient := http.DefaultClient
-	httpClient.Timeout = httpTimeout
-
+	if httpTimeout != nil {
+		httpClient.Timeout = *httpTimeout
+	}
 	url := fmt.Sprintf("https://%s.blob.core.windows.net/%s", cfg.AccountName, cfg.Container)
 	opts := &azContainer.ClientOptions{
 		ClientOptions: azcore.ClientOptions{
