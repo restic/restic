@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -311,6 +312,522 @@ func TestIsExcludedByFileSize(t *testing.T) {
 		p := filepath.Join(tempDir, filepath.FromSlash(f.path))
 		if m[p] != f.incl {
 			t.Errorf("inclusion status of %s is wrong: want %v, got %v", f.path, f.incl, m[p])
+		}
+	}
+}
+
+// TestIsExcludedByGitignore is for testing the workings of
+// the --exclude-gitignored flag
+func TestIsExcludedByGitignore(t *testing.T) {
+	tempDir := test.TempDir(t)
+
+	type File struct {
+		path    string
+		include bool
+	}
+
+	type Gitignore struct {
+		directory string
+		content   string
+		include   bool
+	}
+
+	type Case struct {
+		gitignores []Gitignore
+		files      []File
+	}
+
+	cases := []Case{
+		{
+			gitignores: []Gitignore{
+				{
+					directory: ".",
+					content: `
+#42
+excludeme
+					`,
+					include: true,
+				},
+			},
+			files: []File{
+				{path: "42", include: true},
+				{path: "excludeme", include: false},
+			},
+		},
+		{
+			gitignores: []Gitignore{
+				{
+					directory: ".",
+					content: `
+#Should consider the following as a re-include pattern
+!includeme\!.txt
+					`,
+					include: true,
+				},
+			},
+			files: []File{
+				{path: "!includeme!.txt", include: true},
+			},
+		},
+		{
+			gitignores: []Gitignore{
+				{
+					directory: ".",
+					content: `
+# Should be able to exclude files with special characters in the name by escaping them
+\!excludeme_too\!.txt
+\!excludeme!.txt
+\#excludeme.txt
+#The trailing space in the following line is important
+final_space\ 
+\!excludeme_also!.txt
+					`,
+					include: true,
+				},
+			},
+			files: []File{
+				{path: "!excludeme_too!.txt", include: false},
+				{path: "!excludeme_also!.txt", include: false},
+				{path: "!excludeme!.txt", include: false},
+				{path: "#excludeme.txt", include: false},
+				{path: "final_space ", include: false},
+			},
+		},
+		{
+			gitignores: []Gitignore{
+				{
+					directory: ".",
+					content: `
+# Trailing slash should match a directory but not a file
+excludeme/
+# Trailing slash should match a directory but not a file
+includeme_f/
+`,
+					include: true,
+				},
+			},
+			files: []File{
+				{path: "excludeme/.gitkeep", include: false},
+				{path: "includeme_f", include: true},
+			},
+		},
+		{
+			gitignores: []Gitignore{
+				{
+					directory: ".",
+					content: `
+# Should expand pattern and exclude these
+excludeme_*.txt
+					`,
+					include: true,
+				},
+			},
+			files: []File{
+				{path: "excludeme_1.txt", include: false},
+				{path: "excludeme_2.txt", include: false},
+				{path: "excludeme_200.txt", include: false},
+			},
+		},
+		{
+			gitignores: []Gitignore{
+				{
+					directory: ".",
+					content: `
+# Should not be able to re-include since parent directory is excluded
+bardir
+#!bardir/barsub/
+
+# Should be able to re-include since parent directory is not excluded
+foodir/*
+!foodir/foosub
+
+					`,
+					include: true,
+				},
+				{
+					directory: "bardir",
+					content: `
+#Should have no effect, and not be included in the backup
+#since barsub is excluded in the parent directory
+!basrub
+					`,
+					include: false,
+				},
+			},
+			files: []File{
+				{path: "foodir/foosub/includeme.txt", include: true},
+				{path: "foodir/excludeme.txt", include: false},
+				// {path: "bardir/barsub/excludeme.txt", include: false}, https://github.com/go-git/go-git/issues/694
+				{path: "bardir/excludeme_1.txt", include: false},
+				{path: "bardir/excludeme_2.txt", include: false},
+			},
+		},
+		{
+			gitignores: []Gitignore{
+				{
+					directory: ".",
+					content: `
+bardir
+					`,
+					include: true,
+				},
+				{
+					directory: "bardir",
+					content: `
+#Should have no effect, and not be included in the backup
+#since barsub is excluded in the parent directory
+!basrub
+					`,
+					include: false,
+				},
+			},
+			files: []File{
+				{path: "bardir/barsub/excludeme.txt", include: false},
+				{path: "bardir/excludeme_1.txt", include: false},
+				{path: "bardir/excludeme_2.txt", include: false},
+			},
+		},
+		{
+			gitignores: []Gitignore{
+				{
+					directory: ".",
+					content: `
+# Leading slash matches in current directory but not in subdirectories
+/*.c
+					`,
+					include: true,
+				},
+			},
+			files: []File{
+				{path: "excludeme.c", include: false},
+				{path: "foo/includeme.c", include: true},
+			},
+		},
+		{
+			gitignores: []Gitignore{},
+			files: []File{
+				{path: "foo", include: true},
+				{path: "anotherfoo", include: true},
+				{path: "foosub/underfoo", include: true},
+			},
+		},
+		{
+			gitignores: []Gitignore{
+				{
+					directory: ".",
+					content: `
+#This file should not be included in the backup
+.gitignore
+					`,
+					include: false,
+				},
+			}, files: []File{},
+		},
+		{
+			gitignores: []Gitignore{
+				{
+					directory: ".",
+					content:   "excludeme",
+					include:   true,
+				},
+			},
+			files: []File{
+				{path: "excludeme", include: false},
+				{path: "foo/excludeme", include: false},
+				{path: "foo/foosub/excludeme", include: false},
+				{path: "bar/excludeme", include: false},
+				{path: "bar/barsub/excludeme", include: false},
+				{path: "includeme", include: true},
+				{path: "foo/includeme", include: true},
+				{path: "foo/foosub/includeme", include: true},
+				{path: "bar/includeme", include: true},
+				{path: "bar/barsub/includeme", include: true},
+			},
+		},
+		{
+			gitignores: []Gitignore{
+				{
+					directory: ".",
+					content:   "*",
+					include:   false,
+				},
+			},
+			files: []File{
+				{path: "excludeme", include: false},
+				{path: "foo/excludeme", include: false},
+				{path: "foo/foosub/excludeme", include: false},
+				{path: "bar/excludeme", include: false},
+				{path: "bar/barsub/excludeme", include: false},
+			},
+		},
+		{
+			gitignores: []Gitignore{
+				{
+					directory: ".",
+					content: `
+# A space before the asterisk makes it so that it does not match
+	*
+					`,
+					include: true,
+				},
+			},
+			files: []File{
+				{path: "includeme", include: true},
+				{path: "foo/includeme", include: true},
+				{path: "foo/foosub/includeme", include: true},
+				{path: "bar/includeme", include: true},
+				{path: "bar/barsub/includeme", include: true},
+			},
+		},
+		{
+			gitignores: []Gitignore{
+				{
+					directory: "foo",
+					content: `
+bar
+					`,
+					include: true,
+				},
+			},
+			files: []File{
+				{path: "bar", include: true},
+				{path: "foo/bar", include: false},
+			},
+		},
+		{
+			gitignores: []Gitignore{
+				{
+					directory: ".",
+					content: `
+**build/
+					`,
+					include: true,
+				},
+			},
+			files: []File{
+				{path: "foo/foobuild/excludeme", include: false},
+				{path: "foo/foobar/includeme", include: true},
+			},
+		},
+	}
+
+	// Test that when we specify one case as the only target it is handled properly
+	for i, c := range cases {
+		var errs []error
+		baseDir := filepath.Join(tempDir, fmt.Sprintf("%d", i))
+		for _, f := range c.files {
+			// create directories first, then the file
+			p := filepath.Join(baseDir, filepath.FromSlash(f.path))
+			errs = append(errs, os.MkdirAll(filepath.Dir(p), 0700))
+			file, err := os.OpenFile(p, os.O_CREATE, 0600)
+			errs = append(errs, err)
+			errs = append(errs, file.Close())
+		}
+		test.OKs(t, errs) // see if anything went wrong during the creation
+		for _, f := range c.gitignores {
+			// create directories first, then the file
+			p := filepath.Join(baseDir, filepath.FromSlash(f.directory), ".gitignore")
+			errs = append(errs, os.MkdirAll(filepath.Dir(p), 0700))
+			file, err := os.OpenFile(p, os.O_RDWR|os.O_CREATE, 0600)
+			errs = append(errs, err)
+			_, err = file.WriteString(f.content)
+			errs = append(errs, err)
+			errs = append(errs, file.Close())
+		}
+		test.OKs(t, errs) // see if anything went wrong during the creation
+
+		// create rejection function
+		checkExcludeGitignore, err := rejectGitignored([]string{baseDir})
+		test.OK(t, err)
+
+		// To mock the archiver scanning walk, we create filepath.WalkFn
+		// that tests against the two rejection functions and stores
+		// the result in a map against we can test later.
+		includedFiles := make(map[string]bool)
+		walk := func(p string, fi os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+
+			excluded := checkExcludeGitignore(p)
+			// The log message helps debugging in case the test fails
+			// t.Logf("%q: dir:%t; excluded:%v", p, fi.IsDir(), excluded)
+			includedFiles[p] = !excluded
+			return nil
+		}
+		// Walk through the temporary file and check the error
+		test.OK(t, filepath.Walk(baseDir, walk))
+
+		// Compare whether the walk gave the expected values for the test cases
+		for _, f := range c.files {
+			p := filepath.Join(baseDir, filepath.FromSlash(f.path))
+			if includedFiles[p] != f.include {
+				t.Errorf("inclusion status of %s is wrong: want %v, got %v", f.path, f.include, includedFiles[p])
+			}
+		}
+		for _, f := range c.gitignores {
+			// create directories first, then the file
+			p := filepath.Join(baseDir, filepath.FromSlash(f.directory), ".gitignore")
+			if includedFiles[p] != f.include {
+				t.Errorf("inclusion status of %s is wrong: want %v, got %v", p, f.include, includedFiles[p])
+			}
+		}
+	}
+
+	// Test that a combination of multiple targets gets handled correctly
+	for casesToConsider := 1; casesToConsider < len(cases); casesToConsider += 1 {
+		os.RemoveAll(filepath.Join(tempDir, "/*"))
+		var errs []error
+		var baseDirs []string
+		casesNow := cases[:casesToConsider]
+		for i, c := range casesNow {
+			baseDir := filepath.Join(tempDir, fmt.Sprintf("%d", i))
+			for _, f := range c.files {
+				// create directories first, then the file
+				p := filepath.Join(baseDir, filepath.FromSlash(f.path))
+				errs = append(errs, os.MkdirAll(filepath.Dir(p), 0700))
+				file, err := os.OpenFile(p, os.O_CREATE, 0600)
+				errs = append(errs, err)
+				errs = append(errs, file.Close())
+			}
+			test.OKs(t, errs) // see if anything went wrong during the creation
+			for _, f := range c.gitignores {
+				// create directories first, then the file
+				p := filepath.Join(baseDir, filepath.FromSlash(f.directory), ".gitignore")
+				errs = append(errs, os.MkdirAll(filepath.Dir(p), 0700))
+				file, err := os.OpenFile(p, os.O_RDWR|os.O_CREATE, 0600)
+				errs = append(errs, err)
+				_, err = file.WriteString(f.content)
+				errs = append(errs, err)
+				errs = append(errs, file.Close())
+			}
+			test.OKs(t, errs) // see if anything went wrong during the creation
+			baseDirs = append(baseDirs, baseDir)
+		}
+
+		// create rejection function
+		checkExcludeGitignore, err := rejectGitignored(baseDirs)
+		test.OK(t, err)
+
+		for i, c := range casesNow {
+
+			baseDir := filepath.Join(tempDir, fmt.Sprintf("%d", i))
+
+			// To mock the archiver scanning walk, we create filepath.WalkFn
+			// that tests against the two rejection functions and stores
+			// the result in a map against we can test later.
+			includedFiles := make(map[string]bool)
+			walk := func(p string, fi os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+
+				excluded := checkExcludeGitignore(p)
+				// The log message helps debugging in case the test fails
+				// t.Logf("%q: dir:%t; excluded:%v", p, fi.IsDir(), excluded)
+				includedFiles[p] = !excluded
+				return nil
+			}
+			// Walk through the temporary file and check the error
+			test.OK(t, filepath.Walk(baseDir, walk))
+
+			// Compare whether the walk gave the expected values for the test cases
+			for _, f := range c.files {
+				p := filepath.Join(baseDir, filepath.FromSlash(f.path))
+				if includedFiles[p] != f.include {
+					t.Errorf("inclusion status of %s is wrong: want %v, got %v", f.path, f.include, includedFiles[p])
+				}
+			}
+			for _, f := range c.gitignores {
+				// create directories first, then the file
+				p := filepath.Join(baseDir, filepath.FromSlash(f.directory), ".gitignore")
+				if includedFiles[p] != f.include {
+					t.Errorf("inclusion status of %s is wrong: want %v, got %v", p, f.include, includedFiles[p])
+				}
+			}
+		}
+	}
+
+	//Test that we can specify the target with a variety of paths
+	casePathTest := Case{
+		files: []File{
+			{path: "test/subdir/includeme", include: true},
+			{path: "test/excludeme", include: false},
+		},
+		gitignores: []Gitignore{
+			{
+				directory: ".",
+				content:   "excludeme",
+				include:   true,
+			},
+		},
+	}
+	var errs []error
+	baseDir := tempDir
+	for _, f := range casePathTest.files {
+		// create directories first, then the file
+		p := filepath.Join(baseDir, filepath.FromSlash(f.path))
+		errs = append(errs, os.MkdirAll(filepath.Dir(p), 0700))
+		file, err := os.OpenFile(p, os.O_CREATE, 0600)
+		errs = append(errs, err)
+		errs = append(errs, file.Close())
+	}
+	test.OKs(t, errs) // see if anything went wrong during the creation
+	for _, f := range casePathTest.gitignores {
+		// create directories first, then the file
+		p := filepath.Join(baseDir, filepath.FromSlash(f.directory), ".gitignore")
+		errs = append(errs, os.MkdirAll(filepath.Dir(p), 0700))
+		file, err := os.OpenFile(p, os.O_RDWR|os.O_CREATE, 0600)
+		errs = append(errs, err)
+		_, err = file.WriteString(f.content)
+		errs = append(errs, err)
+		errs = append(errs, file.Close())
+	}
+	test.OKs(t, errs) // see if anything went wrong during the creation
+
+	paths := []string{
+		filepath.Join(tempDir, "/"),
+		filepath.Join(tempDir, "/./"),
+		filepath.Join(tempDir, "/test/.."),
+		filepath.Join(tempDir, "/test/./subdir/./../subdir/../.."),
+		filepath.Join(tempDir, "/test/./subdir/./../subdir/.././../"),
+	}
+	for _, p := range paths {
+		// create rejection function
+		checkExcludeGitignore, err := rejectGitignored([]string{p})
+		test.OK(t, err)
+
+		// To mock the archiver scanning walk, we create filepath.WalkFn
+		// that tests against the two rejection functions and stores
+		// the result in a map against we can test later.
+		includedFiles := make(map[string]bool)
+		walk := func(p string, fi os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+
+			excluded := checkExcludeGitignore(p)
+			// The log message helps debugging in case the test fails
+			// t.Logf("%q: dir:%t; excluded:%v", p, fi.IsDir(), excluded)
+			includedFiles[p] = !excluded
+			return nil
+		}
+		// Walk through the temporary file and check the error
+		test.OK(t, filepath.Walk(baseDir, walk))
+
+		// Compare whether the walk gave the expected values for the test cases
+		for _, f := range casePathTest.files {
+			p := filepath.Join(baseDir, filepath.FromSlash(f.path))
+			if includedFiles[p] != f.include {
+				t.Errorf("inclusion status of %s is wrong: want %v, got %v", f.path, f.include, includedFiles[p])
+			}
+		}
+		for _, f := range casePathTest.gitignores {
+			// create directories first, then the file
+			p := filepath.Join(baseDir, filepath.FromSlash(f.directory), ".gitignore")
+			if includedFiles[p] != f.include {
+				t.Errorf("inclusion status of %s is wrong: want %v, got %v", p, f.include, includedFiles[p])
+			}
 		}
 	}
 }
