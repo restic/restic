@@ -50,6 +50,10 @@ Exit status is 3 if some source data could not be read (incomplete snapshot crea
 	max \fB\fCsize\fR of the files to be backed up (allowed suffixes: k/K, m/M, g/G, t/T)
 
 .PP
+\fB-n\fP, \fB--exclude-gitignored\fP[=false]
+	excludes anything (file, directory, symlink) that would be ignored by git
+
+.PP
 \fB--files-from\fP=[]
 	read the files to backup from \fB\fCfile\fR (can be combined with file args; can be specified multiple times)
 
