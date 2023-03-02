@@ -243,5 +243,5 @@ jobs:
         uses: mathieudutour/github-tag-action@v6.1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          custom_tag: $VERSION
+          custom_tag: $(cat NETAPPVERSION).${{ steps.date.outputs.date }}
 
