@@ -223,7 +223,10 @@ jobs:
     steps:
       - name: Get current date
         id: date
-        run: echo "::set-output name=date::$(date +'%Y%m%d%H%M')"
+        run: | 
+          echo "::set-output name=date::$(date +'%Y%m%d%H%M')"
+          export VERSION=$BASEVERSION.${{ steps.date.outputs.date }}
+          echo "::set-output name=version::$VERSION"
       - name: Check out code
         uses: actions/checkout@v2
 
@@ -242,10 +245,10 @@ jobs:
           docker tag netapp-restic:latest netappdownloads.jfrog.io/oss-docker-restic-production/restic:$VERSION-beta
           docker tag netapp-restic:latest netapp/restic:$VERSION-beta
           docker push netapp/restic:$VERSION-beta
-#      - name: tag github
-#        id: github_tag
-#        uses: mathieudutour/github-tag-action@v6.1
-#        with:
-#          github_token: ${{ secrets.GITHUB_TOKEN }}
-#          custom_tag: ${{ steps.date.outputs.version }}
+      - name: tag github
+        id: github_tag
+        uses: mathieudutour/github-tag-action@v6.1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          custom_tag: ${{ steps.date.outputs.version }}
 
