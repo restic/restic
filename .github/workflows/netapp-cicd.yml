@@ -231,16 +231,5 @@ jobs:
           docker login -u $USERNAME -p $PASSWORD netappdownloads.jfrog.io/oss-docker-restic-production/restic
           docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
 
-      - name: Tag and push versioned image
-        run: |
-          export VERSION=$(cat NETAPPVERSION).${{ steps.date.outputs.date }}
-          echo "VERSION="$VERSION
-          docker tag netapp-restic:latest netappdownloads.jfrog.io/oss-docker-restic-production/restic:$VERSION-beta
-          docker tag netapp-restic:latest netapp/restic:$VERSION-beta
-          docker push netapp/restic:$VERSION-beta
-      - name: tag github
-        id: $VERSION-beta
-        uses: mathieudutour/github-tag-action@v6.1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+    
 
