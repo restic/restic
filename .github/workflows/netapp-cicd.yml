@@ -240,8 +240,9 @@ jobs:
           docker push netapp/restic:$VERSION-beta
       - name: tag github
         run: |
-              echo $$target_commitis
+              echo $target_commitis
               export VERSION=$(cat NETAPPVERSION).${{ steps.date.outputs.date }}
-              git tag -a $VERSION-beta  $target_commitis -m"build tag"
-              git push origin $VERSION-beta
+              echo $VERSION-beta
+              # git tag -a $VERSION-beta  $target_commitis -m"build tag"
+              # git push origin $VERSION-beta
           
