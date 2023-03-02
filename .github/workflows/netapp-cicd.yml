@@ -241,3 +241,5 @@ jobs:
       - name: tag github
         run: |
               git tag $VERSION-beta  $target_commitis
+              git push origin $VERSION-beta
+          
