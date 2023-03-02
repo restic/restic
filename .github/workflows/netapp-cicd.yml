@@ -180,7 +180,11 @@ jobs:
     steps:
       - name: Get current date
         id: date
-        run: echo "::set-output name=date::$(date +'%Y%m%d%H%M')"
+        run: |
+          export BASEVERSION=$(cat NETAPPVERSION)
+          echo "::set-output name=date::$(date +'%Y%m%d%H%M')"
+          export VERSION=$BASEVERSION.${{ steps.date.outputs.date }}
+          echo "::set-output name=version::$VERSION"
       - name: Check out code
         uses: actions/checkout@v2
 
@@ -243,5 +247,5 @@ jobs:
         uses: mathieudutour/github-tag-action@v6.1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          custom_tag: $(cat NETAPPVERSION).${{ steps.date.outputs.date }}
+          custom_tag: ${{ steps.date.outputs.version }}
 
