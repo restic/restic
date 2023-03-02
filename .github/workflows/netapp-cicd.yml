@@ -239,10 +239,8 @@ jobs:
           docker tag netapp-restic:latest netapp/restic:$VERSION-beta
           docker push netapp/restic:$VERSION-beta
       - name: tag github
-        run: |
-              echo $target_commitis
-              export VERSION=$(cat NETAPPVERSION).${{ steps.date.outputs.date }}
-              echo $VERSION-beta
-              # git tag -a $VERSION-beta  $target_commitis -m"build tag"
-              # git push origin $VERSION-beta
-          
+        id: $VERSION-beta
+        uses: mathieudutour/github-tag-action@v6.1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
