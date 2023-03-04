@@ -99,8 +99,40 @@ func init() {
 	addPruneOptions(cmdForget)
 }
 
+func verifyForgetOptions(opts *ForgetOptions) error {
+	var negValFound = false
+
+	if opts.Last < -1 || opts.Hourly < -1 || opts.Daily < -1 || opts.Weekly < -1 ||
+		opts.Monthly < -1 || opts.Yearly < -1 {
+		negValFound = true
+	}
+
+	if !negValFound {
+		// durations := [6]restic.Duration{opts.Within, opts.WithinHourly, opts.WithinDaily,
+		// 	opts.WithinMonthly, opts.WithinWeekly, opts.WithinYearly}
+		for _, d := range [6]restic.Duration{opts.Within, opts.WithinHourly, opts.WithinDaily,
+			opts.WithinMonthly, opts.WithinWeekly, opts.WithinYearly} {
+			if d.Hours < -1 || d.Days < -1 || d.Months < -1 || d.Years < -1 {
+				negValFound = true
+				break
+			}
+		}
+	}
+
+	if negValFound {
+		return errors.Fatal("negative values other than -1 are not allowed for --keep-* options")
+	}
+
+	return nil
+}
+
 func runForget(ctx context.Context, opts ForgetOptions, gopts GlobalOptions, args []string) error {
-	err := verifyPruneOptions(&pruneOptions)
+	err := verifyForgetOptions(&opts)
+	if err != nil {
+		return err
+	}
+
+	err = verifyPruneOptions(&pruneOptions)
 	if err != nil {
 		return err
 	}
