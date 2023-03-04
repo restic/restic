@@ -68,7 +68,7 @@ type SnapshotGroupKey struct {
 }
 
 // GroupSnapshots takes a list of snapshots and a grouping criteria and creates
-// a group list of snapshots.
+// a grouped list of snapshots.
 func GroupSnapshots(snapshots Snapshots, groupBy SnapshotGroupByOptions) (map[string]Snapshots, bool, error) {
 	// group by hostname and dirs
 	snapshotGroups := make(map[string]Snapshots)
