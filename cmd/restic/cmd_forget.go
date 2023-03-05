@@ -108,8 +108,6 @@ func verifyForgetOptions(opts *ForgetOptions) error {
 	}
 
 	if !negValFound {
-		// durations := [6]restic.Duration{opts.Within, opts.WithinHourly, opts.WithinDaily,
-		// 	opts.WithinMonthly, opts.WithinWeekly, opts.WithinYearly}
 		for _, d := range [6]restic.Duration{opts.Within, opts.WithinHourly, opts.WithinDaily,
 			opts.WithinMonthly, opts.WithinWeekly, opts.WithinYearly} {
 			if d.Hours < -1 || d.Days < -1 || d.Months < -1 || d.Years < -1 {

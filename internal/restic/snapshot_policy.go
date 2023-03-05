@@ -260,13 +260,16 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots, reason
 
 		// Now update the other buckets and see if they have some counts left.
 		for i, b := range buckets {
-			if b.Count > 0 {
+			if b.Count <= -1 || b.Count > 0 {
 				val := b.bucker(cur.Time, nr)
 				if val != b.Last {
 					debug.Log("keep %v %v, bucker %v, val %v\n", cur.Time, cur.id.Str(), i, val)
 					keepSnap = true
 					buckets[i].Last = val
 					buckets[i].Count--
+					if buckets[i].Count < -1 {
+						buckets[i].Count = -1
+					}
 					keepSnapReasons = append(keepSnapReasons, b.reason)
 				}
 			}

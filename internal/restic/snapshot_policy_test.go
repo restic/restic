@@ -239,6 +239,12 @@ func TestApplyPolicy(t *testing.T) {
 			WithinWeekly:  parseDuration("1m"),
 			WithinMonthly: parseDuration("1y"),
 			WithinYearly:  parseDuration("9999y")},
+		{Last: -1},             // keep all
+		{Last: -1, Hourly: -1}, // keep all (Last overrides Hourly)
+		// {Hourly: -1},           // keep all hourlies
+		// {Daily: -1},            // keep all dailies
+		// {Daily: -1, Weekly: 4}, // keep all dailies and 4 weeklies
+		// {Daily: 3, Weekly: -1}, // keep 3 dailies and all weeklies
 	}
 
 	for i, p := range tests {
