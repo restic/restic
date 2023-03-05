@@ -1,0 +1,194 @@
+{
+  "keep": [
+    {
+      "time": "2016-01-18T12:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-12T21:08:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2016-01-09T21:02:03Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-11-22T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-10-22T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-09-22T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2015-08-22T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2014-11-22T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2014-10-22T10:20:30Z",
+      "tree": null,
+      "paths": null,
+      "tags": [
+        "foo"
+      ]
+    },
+    {
+      "time": "2014-09-22T10:20:30Z",
+      "tree": null,
+      "paths": null
+    },
+    {
+      "time": "2014-08-22T10:20:30Z",
+      "tree": null,
+      "paths": null
+    }
+  ],
+  "reasons": [
+    {
+      "snapshot": {
+        "time": "2016-01-18T12:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "daily snapshot",
+        "weekly snapshot",
+  			"monthly snapshot",
+  			"yearly snapshot"
+      ],
+      "counters": {"Daily": 2, "Weekly": 1, "Monthly": -1, "Yearly": -1}
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-12T21:08:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "daily snapshot",
+        "weekly snapshot"
+      ],
+      "counters": {"Daily": 1, "Monthly": -1, "Yearly": -1}
+    },
+    {
+      "snapshot": {
+        "time": "2016-01-09T21:02:03Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "daily snapshot"
+      ],
+      "counters": {"Monthly": -1, "Yearly": -1}
+    },
+    {
+      "snapshot": {
+        "time": "2015-11-22T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "monthly snapshot",
+        "yearly snapshot"
+      ],
+      "counters": {"Monthly": -1, "Yearly": -1}
+    },
+    {
+      "snapshot": {
+        "time": "2015-10-22T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "monthly snapshot"
+      ],
+      "counters": {"Monthly": -1, "Yearly": -1}
+    },
+    {
+      "snapshot": {
+        "time": "2015-09-22T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "monthly snapshot"
+      ],
+      "counters": {"Monthly": -1, "Yearly": -1}
+    },
+    {
+      "snapshot": {
+        "time": "2015-08-22T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "monthly snapshot"
+      ],
+      "counters": {"Monthly": -1, "Yearly": -1}
+    },
+    {
+      "snapshot": {
+        "time": "2014-11-22T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "monthly snapshot",
+        "yearly snapshot"
+      ],
+      "counters": {"Monthly": -1, "Yearly": -1}
+    },
+    {
+      "snapshot": {
+        "time": "2014-10-22T10:20:30Z",
+        "tree": null,
+        "paths": null,
+        "tags": [
+          "foo"
+        ]
+      },
+      "matches": [
+        "monthly snapshot"
+      ],
+      "counters": {"Monthly": -1, "Yearly": -1}
+    },
+    {
+      "snapshot": {
+        "time": "2014-09-22T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "monthly snapshot"
+      ],
+      "counters": {"Monthly": -1, "Yearly": -1}
+    },
+    {
+      "snapshot": {
+        "time": "2014-08-22T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "monthly snapshot"
+      ],
+      "counters": {"Monthly": -1, "Yearly": -1}
+    }
+  ]
+}

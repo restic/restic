@@ -242,7 +242,7 @@ func TestApplyPolicy(t *testing.T) {
 		{Last: -1},             // keep all
 		{Last: -1, Hourly: -1}, // keep all (Last overrides Hourly)
 		{Hourly: -1},           // keep all hourlies
-		// {Daily: 3, Weekly: 2, Monthly: -1, Yearly: -1},
+		{Daily: 3, Weekly: 2, Monthly: -1, Yearly: -1},
 	}
 
 	for i, p := range tests {
@@ -255,9 +255,11 @@ func TestApplyPolicy(t *testing.T) {
 					len(keep)+len(remove), len(testExpireSnapshots))
 			}
 
-			if p.Sum() > 0 && len(keep) > p.Sum() {
-				t.Errorf("not enough snapshots removed: policy allows %v snapshots to remain, but ended up with %v",
-					p.Sum(), len(keep))
+			if p.Last >= 0 && p.Hourly >= 0 && p.Daily >= 0 && p.Weekly >= 0 && p.Monthly >= 0 && p.Yearly >= 0 {
+				if p.Sum() > 0 && len(keep) > p.Sum() {
+					t.Errorf("not enough snapshots removed: policy allows %v snapshots to remain, but ended up with %v",
+						p.Sum(), len(keep))
+				}
 			}
 
 			if len(keep) != len(reasons) {
