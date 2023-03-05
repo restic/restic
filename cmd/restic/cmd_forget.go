@@ -107,16 +107,6 @@ func verifyForgetOptions(opts *ForgetOptions) error {
 		negValFound = true
 	}
 
-	if !negValFound {
-		for _, d := range [6]restic.Duration{opts.Within, opts.WithinHourly, opts.WithinDaily,
-			opts.WithinMonthly, opts.WithinWeekly, opts.WithinYearly} {
-			if d.Hours < -1 || d.Days < -1 || d.Months < -1 || d.Years < -1 {
-				negValFound = true
-				break
-			}
-		}
-	}
-
 	if negValFound {
 		return errors.Fatal("negative values other than -1 are not allowed for --keep-* options")
 	}
