@@ -17,6 +17,7 @@ import (
 	"github.com/restic/restic/internal/backend/sema"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
@@ -346,8 +347,10 @@ func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.F
 // IsNotExist returns true if the error is caused by a not existing file.
 func (be *Backend) IsNotExist(err error) bool {
 	debug.Log("IsNotExist(%T, %#v)", err, err)
-	if strings.Contains(err.Error(), "NoSuchKey: The specified key does not exist") {
-		return true
+	if aerr, ok := err.(awserr.Error); ok {
+		if aerr.Code() == s3.ErrCodeNoSuchKey {
+			return true
+		}
 	}
 
 	debug.Log("Unknown error %T: %v", err, err)
