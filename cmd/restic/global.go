@@ -810,6 +810,8 @@ func create(ctx context.Context, s string, opts options.Options) (restic.Backend
 		return rest.Create(ctx, cfg.(rest.Config), rt)
 	case "rclone":
 		return rclone.Create(ctx, cfg.(rclone.Config))
+	case ontap.ProtocolScheme:
+		return ontap.Open(ctx, cfg.(ontap.Config))
 	}
 
 	debug.Log("invalid repository scheme: %v", s)
