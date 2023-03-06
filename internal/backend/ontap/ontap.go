@@ -346,7 +346,7 @@ func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.F
 // IsNotExist returns true if the error is caused by a not existing file.
 func (be *Backend) IsNotExist(err error) bool {
 	debug.Log("IsNotExist(%T, %#v)", err, err)
-	if os.IsNotExist(errors.Cause(err)) {
+	if strings.Contains(err.Error(), "NoSuchKey: The specified key does not exist") {
 		return true
 	}
 
