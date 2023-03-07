@@ -42,7 +42,7 @@ func (l *link) Attr(ctx context.Context, a *fuse.Attr) error {
 
 	a.Nlink = uint32(l.node.Links)
 	a.Size = uint64(len(l.node.LinkTarget))
-	a.Blocks = 1 + a.Size/blockSize
+	a.Blocks = (a.Size + blockSize - 1) / blockSize
 
 	return nil
 }
