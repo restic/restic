@@ -750,8 +750,13 @@ func (r *Repository) Init(ctx context.Context, version uint, password string, ch
 	if err != nil && !r.be.IsNotExist(err) {
 		return false, err
 	}
-	if err == nil {
-		return false, errors.New("repository master key and config already initialized")
+
+	if err != nil && r.be.IsNotExist(err) {
+		fmt.Print("Repo already exists. Testing password.\n")
+		if err := r.SearchKey(ctx, password, 1, ""); err != nil {
+			return false, err
+		}
+		return false, r.be.List(ctx, restic.LockFile, func(_ restic.FileInfo) error { return nil })
 	}
 
 	cfg, err := restic.CreateConfig(version)
