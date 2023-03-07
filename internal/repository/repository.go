@@ -751,7 +751,7 @@ func (r *Repository) Init(ctx context.Context, version uint, password string, ch
 		return false, err
 	}
 
-	if err != nil && r.be.IsNotExist(err) {
+	if err == nil {
 		fmt.Print("Repo already exists. Testing password.\n")
 		if err := r.SearchKey(ctx, password, 1, ""); err != nil {
 			return false, err
