@@ -347,7 +347,9 @@ func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.F
 // IsNotExist returns true if the error is caused by a not existing file.
 func (be *Backend) IsNotExist(err error) bool {
 	debug.Log("IsNotExist(%T, %#v)", err, err)
-	if aerr, ok := err.(awserr.Error); ok {
+
+	var aerr awserr.Error
+	if errors.As(err, &aerr) {
 		if aerr.Code() == s3.ErrCodeNoSuchKey {
 			return true
 		}
