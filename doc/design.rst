@@ -276,7 +276,7 @@ of a JSON document like the following:
             },
             {
               "id": "9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae",
-              "type": "tree",
+              "type": "data",
               "offset": 38,
               "length": 112,
               "uncompressed_length": 511,
