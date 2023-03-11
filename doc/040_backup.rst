@@ -229,6 +229,7 @@ the exclude options are:
 -  ``--iexclude-file`` Same as ``exclude-file`` but ignores cases like in ``--iexclude``
 -  ``--exclude-if-present foo`` Specified one or more times to exclude a folder's content if it contains a file called ``foo`` (optionally having a given header, no wildcards for the file name supported)
 -  ``--exclude-larger-than size`` Specified once to excludes files larger than the given size
+-  ``--exclude-gitignored`` Specified once to exclude all the files that have been excluded through `.gitignore` files. Please note that whilst the majority of common patterns are covered, the parser is not perfect yet. See, for example issues `#694 <https://github.com/go-git/go-git/issues/694>`__ and `#154 <https://github.com/go-git/go-git/issues/154>`__.
 
 Please see ``restic help backup`` for more specific information about each exclude option.
 

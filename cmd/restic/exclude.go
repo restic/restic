@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/go-git/go-git/plumbing/format/gitignore"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/filter"
@@ -18,6 +19,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/textfile"
 	"github.com/spf13/pflag"
+	"gopkg.in/src-d/go-billy.v4/osfs"
 )
 
 type rejectionCache struct {
@@ -412,6 +414,72 @@ func parseSizeStr(sizeStr string) (int64, error) {
 		return 0, err
 	}
 	return value * unit, nil
+}
+
+// Returns a RejectByNameFunc that rejects any file or
+// directory which has been excluded through .gitignore files
+func rejectGitignored(targets []string) (RejectByNameFunc, error) {
+	var patterns []gitignore.Pattern
+
+	fs := osfs.New("/")
+	for _, target := range targets {
+
+		parts, err := pathToArray(target)
+		if err != nil {
+			return nil, err
+		}
+
+		patternsNow, err := gitignore.ReadPatterns(fs, parts)
+		if err != nil {
+			return nil, err
+		}
+
+		patterns = append(patterns, patternsNow...)
+	}
+
+	matcher := gitignore.NewMatcher(patterns)
+
+	return func(filename string) bool {
+		isDir := isDir(filename)
+		p, err := pathToArray(filename)
+		if err != nil {
+			return false
+		}
+		return matcher.Match(p, isDir)
+	}, nil
+}
+
+// Returns if this path is a directory or not
+func isDir(filename string) bool {
+	file, err := os.Open(filename)
+	if err != nil {
+		return false
+	}
+	defer file.Close()
+	fileInfo, err := file.Stat()
+	if err != nil {
+		return false
+	}
+	isDir := fileInfo.IsDir()
+	return isDir
+}
+
+func pathToArray(path string) ([]string, error) {
+	absolute, err := filepath.Abs(path)
+	if err != nil {
+		return nil, err
+	}
+	parts := strings.Split(absolute, string(filepath.Separator))
+
+	//Filter out empty strings
+	result := []string{}
+	for _, p := range parts {
+		if p != "" {
+			result = append(result, p)
+		}
+	}
+
+	return result, nil
 }
 
 // readExcludePatternsFromFiles reads all exclude files and returns the list of

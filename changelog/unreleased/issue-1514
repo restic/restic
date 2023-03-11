@@ -1,0 +1,11 @@
+Enhancement: Add the ability to use .gitignore files for excluding files
+
+Restic did not have the capability to parse `.gitignore`
+files.
+
+The new optional flag -`-exclude-gitignored` tells
+restic to take into account any `.gitignore` file
+it finds and use it to exclude entities from the backup.
+
+https://github.com/restic/restic/issues/1514
+https://github.com/restic/restic/pull/4227
