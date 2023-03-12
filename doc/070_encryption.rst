@@ -19,7 +19,7 @@ Encryption
 the implementation looks sane and I guess the deduplication trade-off is worth
 it. So… I’m going to use restic for my personal backups.*" `Filippo Valsorda`_
 
-.. _Filippo Valsorda: https://blog.filippo.io/restic-cryptography/
+.. _Filippo Valsorda: https://words.filippo.io/restic-cryptography/
 
 **********************
 Manage repository keys

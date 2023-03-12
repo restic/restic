@@ -253,14 +253,14 @@ This instructs restic to exclude files matching the following criteria:
  * All files matching ``*.go`` (second line in ``excludes.txt``)
  * All files and sub-directories named ``bar`` which reside somewhere below a directory called ``foo`` (fourth line in ``excludes.txt``)
 
-Patterns use `filepath.Glob <https://golang.org/pkg/path/filepath/#Glob>`__ internally,
-see `filepath.Match <https://golang.org/pkg/path/filepath/#Match>`__ for
-syntax. Patterns are tested against the full path of a file/dir to be saved,
+Patterns use the syntax of the Go function
+`filepath.Match <https://pkg.go.dev/path/filepath#Match>`__
+and are tested against the full path of a file/dir to be saved,
 even if restic is passed a relative path to save. Empty lines and lines
 starting with a ``#`` are ignored.
 
 Environment variables in exclude files are expanded with `os.ExpandEnv
-<https://golang.org/pkg/os/#ExpandEnv>`__, so ``/home/$USER/foo`` will be
+<https://pkg.go.dev/os#ExpandEnv>`__, so ``/home/$USER/foo`` will be
 expanded to ``/home/bob/foo`` for the user ``bob``. To get a literal dollar
 sign, write ``$$`` to the file - this has to be done even when there's no
 matching environment variable for the word following a single ``$``. Note
@@ -380,7 +380,7 @@ contains one *pattern* per line. The file must be encoded as UTF-8, or UTF-16
 with a byte-order mark. Leading and trailing whitespace is removed from the
 patterns. Empty lines and lines starting with a ``#`` are ignored and each
 pattern is expanded when read, such that special characters in it are expanded
-using the Go function `filepath.Glob <https://golang.org/pkg/path/filepath/#Glob>`__
+using the Go function `filepath.Glob <https://pkg.go.dev/path/filepath#Glob>`__
 - please see its documentation for the syntax you can use in the patterns.
 
 The argument passed to ``--files-from-verbatim`` must be the name of a text file

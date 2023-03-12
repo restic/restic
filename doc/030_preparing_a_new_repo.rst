@@ -290,7 +290,7 @@ like this: ``s3:http://server:port/bucket_name``.
 Minio Server
 ************
 
-`Minio <https://www.minio.io>`__ is an Open Source Object Storage,
+`Minio <https://www.min.io>`__ is an Open Source Object Storage,
 written in Go and compatible with Amazon S3 API.
 
 -  Download and Install `Minio
@@ -350,7 +350,7 @@ this command.
 Alibaba Cloud (Aliyun) Object Storage System (OSS)
 **************************************************
 
-`Alibaba OSS <https://www.alibabacloud.com/product/oss/>`__ is an
+`Alibaba OSS <https://www.alibabacloud.com/product/object-storage-service>`__ is an
 encrypted, secure, cost-effective, and easy-to-use object storage
 service that enables you to store, back up, and archive large amounts
 of data in the cloud.
@@ -616,7 +616,7 @@ established.
 
 .. _service account: https://cloud.google.com/iam/docs/service-accounts
 .. _create a service account key: https://cloud.google.com/iam/docs/creating-managing-service-account-keys#iam-service-account-keys-create-console
-.. _default authentication material: https://cloud.google.com/docs/authentication/production
+.. _default authentication material: https://cloud.google.com/docs/authentication#service-accounts
 
 .. _other-services:
 
