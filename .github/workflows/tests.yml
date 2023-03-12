@@ -261,7 +261,7 @@ jobs:
           version: v1.49
           # Optional: show only new issues if it's a pull request. The default value is `false`.
           only-new-issues: true
-          args: --verbose --timeout 5m
+          args: --verbose --timeout 10m
 
         # only run golangci-lint for pull requests, otherwise ALL hints get
         # reported. We need to slowly address all issues until we can enable
