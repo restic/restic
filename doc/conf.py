@@ -106,5 +106,5 @@ html_static_path = ['_static']
 htmlhelp_basename = 'resticdoc'
 
 extlinks = {
-    'issue': ('https://github.com/restic/restic/issues/%s', '#'),
+    'issue': ('https://github.com/restic/restic/issues/%s', '#%s'),
 }
