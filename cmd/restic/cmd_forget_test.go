@@ -1,25 +1,65 @@
 package main
 
 import (
-	"fmt"
 	"testing"
 
+	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func TestPreventNegativeForgetOptionValues(t *testing.T) {
-	invalidForgetOpts := []ForgetOptions{
-		{Last: -2},
-		{Hourly: -2},
-		{Daily: -2},
-		{Weekly: -2},
-		{Monthly: -2},
-		{Yearly: -2},
+func TestForgetOptionValues(t *testing.T) {
+	const negValErrorMsg = "Fatal: negative values other than -1 are not allowed for --keep-*"
+	const negDurationValErrorMsg = "Fatal: durations containing negative values are not allowed for --keep-within*"
+	testCases := []struct {
+		input        ForgetOptions
+		expectsError bool
+		errorMsg     string
+	}{
+		{ForgetOptions{Last: 1}, false, ""},
+		{ForgetOptions{Hourly: 1}, false, ""},
+		{ForgetOptions{Daily: 1}, false, ""},
+		{ForgetOptions{Weekly: 1}, false, ""},
+		{ForgetOptions{Monthly: 1}, false, ""},
+		{ForgetOptions{Yearly: 1}, false, ""},
+		{ForgetOptions{Last: 0}, false, ""},
+		{ForgetOptions{Hourly: 0}, false, ""},
+		{ForgetOptions{Daily: 0}, false, ""},
+		{ForgetOptions{Weekly: 0}, false, ""},
+		{ForgetOptions{Monthly: 0}, false, ""},
+		{ForgetOptions{Yearly: 0}, false, ""},
+		{ForgetOptions{Last: -1}, false, ""},
+		{ForgetOptions{Hourly: -1}, false, ""},
+		{ForgetOptions{Daily: -1}, false, ""},
+		{ForgetOptions{Weekly: -1}, false, ""},
+		{ForgetOptions{Monthly: -1}, false, ""},
+		{ForgetOptions{Yearly: -1}, false, ""},
+		{ForgetOptions{Last: -2}, true, negValErrorMsg},
+		{ForgetOptions{Hourly: -2}, true, negValErrorMsg},
+		{ForgetOptions{Daily: -2}, true, negValErrorMsg},
+		{ForgetOptions{Weekly: -2}, true, negValErrorMsg},
+		{ForgetOptions{Monthly: -2}, true, negValErrorMsg},
+		{ForgetOptions{Yearly: -2}, true, negValErrorMsg},
+		{ForgetOptions{Within: restic.ParseDurationOrPanic("1y2m3d3h")}, false, ""},
+		{ForgetOptions{WithinHourly: restic.ParseDurationOrPanic("1y2m3d3h")}, false, ""},
+		{ForgetOptions{WithinDaily: restic.ParseDurationOrPanic("1y2m3d3h")}, false, ""},
+		{ForgetOptions{WithinWeekly: restic.ParseDurationOrPanic("1y2m3d3h")}, false, ""},
+		{ForgetOptions{WithinMonthly: restic.ParseDurationOrPanic("2y4m6d8h")}, false, ""},
+		{ForgetOptions{WithinYearly: restic.ParseDurationOrPanic("2y4m6d8h")}, false, ""},
+		{ForgetOptions{Within: restic.ParseDurationOrPanic("-1y2m3d3h")}, true, negDurationValErrorMsg},
+		{ForgetOptions{WithinHourly: restic.ParseDurationOrPanic("1y-2m3d3h")}, true, negDurationValErrorMsg},
+		{ForgetOptions{WithinDaily: restic.ParseDurationOrPanic("1y2m-3d3h")}, true, negDurationValErrorMsg},
+		{ForgetOptions{WithinWeekly: restic.ParseDurationOrPanic("1y2m3d-3h")}, true, negDurationValErrorMsg},
+		{ForgetOptions{WithinMonthly: restic.ParseDurationOrPanic("-2y4m6d8h")}, true, negDurationValErrorMsg},
+		{ForgetOptions{WithinYearly: restic.ParseDurationOrPanic("2y-4m6d8h")}, true, negDurationValErrorMsg},
 	}
 
-	for _, opts := range invalidForgetOpts {
-		err := verifyForgetOptions(&opts)
-		rtest.Assert(t, err != nil, fmt.Sprintf("should have returned error for %+v", opts))
-		rtest.Equals(t, "Fatal: negative values other than -1 are not allowed for --keep-* options", err.Error())
+	for _, testCase := range testCases {
+		err := verifyForgetOptions(&testCase.input)
+		if testCase.expectsError {
+			rtest.Assert(t, err != nil, "should have returned error for input %+v", testCase.input)
+			rtest.Equals(t, testCase.errorMsg, err.Error())
+		} else {
+			rtest.Assert(t, err == nil, "expected no error for input %+v", testCase.input)
+		}
 	}
 }

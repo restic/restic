@@ -100,15 +100,16 @@ func init() {
 }
 
 func verifyForgetOptions(opts *ForgetOptions) error {
-	var negValFound = false
-
 	if opts.Last < -1 || opts.Hourly < -1 || opts.Daily < -1 || opts.Weekly < -1 ||
 		opts.Monthly < -1 || opts.Yearly < -1 {
-		negValFound = true
+		return errors.Fatal("negative values other than -1 are not allowed for --keep-*")
 	}
 
-	if negValFound {
-		return errors.Fatal("negative values other than -1 are not allowed for --keep-* options")
+	for _, d := range []restic.Duration{opts.Within, opts.WithinHourly, opts.WithinDaily,
+		opts.WithinMonthly, opts.WithinWeekly, opts.WithinYearly} {
+		if d.Hours < 0 || d.Days < 0 || d.Months < 0 || d.Years < 0 {
+			return errors.Fatal("durations containing negative values are not allowed for --keep-within*")
+		}
 	}
 
 	return nil
