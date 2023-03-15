@@ -31,23 +31,22 @@ func (e ExpirePolicy) String() (s string) {
 	var keeps []string
 	var keepw []string
 
-	if e.Last > 0 {
-		keeps = append(keeps, fmt.Sprintf("%d latest", e.Last))
-	}
-	if e.Hourly > 0 {
-		keeps = append(keeps, fmt.Sprintf("%d hourly", e.Hourly))
-	}
-	if e.Daily > 0 {
-		keeps = append(keeps, fmt.Sprintf("%d daily", e.Daily))
-	}
-	if e.Weekly > 0 {
-		keeps = append(keeps, fmt.Sprintf("%d weekly", e.Weekly))
-	}
-	if e.Monthly > 0 {
-		keeps = append(keeps, fmt.Sprintf("%d monthly", e.Monthly))
-	}
-	if e.Yearly > 0 {
-		keeps = append(keeps, fmt.Sprintf("%d yearly", e.Yearly))
+	for _, opt := range []struct {
+		count int
+		descr string
+	}{
+		{e.Last, "latest"},
+		{e.Hourly, "hourly"},
+		{e.Daily, "daily"},
+		{e.Weekly, "weekly"},
+		{e.Monthly, "monthly"},
+		{e.Yearly, "yearly"},
+	} {
+		if opt.count > 0 {
+			keeps = append(keeps, fmt.Sprintf("%d %s", opt.count, opt.descr))
+		} else if opt.count == -1 {
+			keeps = append(keeps, fmt.Sprintf("all %s", opt.descr))
+		}
 	}
 
 	if !e.WithinHourly.Zero() {
