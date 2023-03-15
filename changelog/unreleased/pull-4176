@@ -1,0 +1,7 @@
+Change: Fix JSON message type of `scan_finished` for the `backup` command
+
+Restic incorrectly set the `message_type` of the `scan_finished` message to
+`status` instead of `verbose_status`. This has now been corrected so that
+the messages report the correct type.
+
+https://github.com/restic/restic/pull/4176

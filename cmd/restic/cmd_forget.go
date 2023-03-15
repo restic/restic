@@ -52,11 +52,11 @@ type ForgetOptions struct {
 	WithinYearly  restic.Duration
 	KeepTags      restic.TagLists
 
-	snapshotFilterOptions
+	restic.SnapshotFilter
 	Compact bool
 
 	// Grouping
-	GroupBy string
+	GroupBy restic.SnapshotGroupByOptions
 	DryRun  bool
 	Prune   bool
 }
@@ -81,7 +81,7 @@ func init() {
 	f.VarP(&forgetOptions.WithinYearly, "keep-within-yearly", "", "keep yearly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
 	f.Var(&forgetOptions.KeepTags, "keep-tag", "keep snapshots with this `taglist` (can be specified multiple times)")
 
-	initMultiSnapshotFilterOptions(f, &forgetOptions.snapshotFilterOptions, false)
+	initMultiSnapshotFilter(f, &forgetOptions.SnapshotFilter, false)
 	f.StringArrayVar(&forgetOptions.Hosts, "hostname", nil, "only consider snapshots with the given `hostname` (can be specified multiple times)")
 	err := f.MarkDeprecated("hostname", "use --host")
 	if err != nil {
@@ -90,8 +90,8 @@ func init() {
 	}
 
 	f.BoolVarP(&forgetOptions.Compact, "compact", "c", false, "use compact output format")
-
-	f.StringVarP(&forgetOptions.GroupBy, "group-by", "g", "host,paths", "`group` snapshots by host, paths and/or tags, separated by comma (disable grouping with '')")
+	forgetOptions.GroupBy = restic.SnapshotGroupByOptions{Host: true, Path: true}
+	f.VarP(&forgetOptions.GroupBy, "group-by", "g", "`group` snapshots by host, paths and/or tags, separated by comma (disable grouping with '')")
 	f.BoolVarP(&forgetOptions.DryRun, "dry-run", "n", false, "do not delete anything, just print what would be done")
 	f.BoolVar(&forgetOptions.Prune, "prune", false, "automatically run the 'prune' command if snapshots have been removed")
 
@@ -126,7 +126,7 @@ func runForget(ctx context.Context, opts ForgetOptions, gopts GlobalOptions, arg
 	var snapshots restic.Snapshots
 	removeSnIDs := restic.NewIDSet()
 
-	for sn := range FindFilteredSnapshots(ctx, repo.Backend(), repo, opts.Hosts, opts.Tags, opts.Paths, args) {
+	for sn := range FindFilteredSnapshots(ctx, repo.Backend(), repo, &opts.SnapshotFilter, args) {
 		snapshots = append(snapshots, sn)
 	}
 

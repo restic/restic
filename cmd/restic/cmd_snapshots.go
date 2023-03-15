@@ -32,11 +32,11 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 // SnapshotOptions bundles all options for the snapshots command.
 type SnapshotOptions struct {
-	snapshotFilterOptions
+	restic.SnapshotFilter
 	Compact bool
 	Last    bool // This option should be removed in favour of Latest.
 	Latest  int
-	GroupBy string
+	GroupBy restic.SnapshotGroupByOptions
 }
 
 var snapshotOptions SnapshotOptions
@@ -45,7 +45,7 @@ func init() {
 	cmdRoot.AddCommand(cmdSnapshots)
 
 	f := cmdSnapshots.Flags()
-	initMultiSnapshotFilterOptions(f, &snapshotOptions.snapshotFilterOptions, true)
+	initMultiSnapshotFilter(f, &snapshotOptions.SnapshotFilter, true)
 	f.BoolVarP(&snapshotOptions.Compact, "compact", "c", false, "use compact output format")
 	f.BoolVar(&snapshotOptions.Last, "last", false, "only show the last snapshot for each host and path")
 	err := f.MarkDeprecated("last", "use --latest 1")
@@ -54,7 +54,7 @@ func init() {
 		panic(err)
 	}
 	f.IntVar(&snapshotOptions.Latest, "latest", 0, "only show the last `n` snapshots for each host and path")
-	f.StringVarP(&snapshotOptions.GroupBy, "group-by", "g", "", "`group` snapshots by host, paths and/or tags, separated by comma")
+	f.VarP(&snapshotOptions.GroupBy, "group-by", "g", "`group` snapshots by host, paths and/or tags, separated by comma")
 }
 
 func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions, args []string) error {
@@ -73,7 +73,7 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions
 	}
 
 	var snapshots restic.Snapshots
-	for sn := range FindFilteredSnapshots(ctx, repo.Backend(), repo, opts.Hosts, opts.Tags, opts.Paths, args) {
+	for sn := range FindFilteredSnapshots(ctx, repo.Backend(), repo, &opts.SnapshotFilter, args) {
 		snapshots = append(snapshots, sn)
 	}
 	snapshotGroups, grouped, err := restic.GroupSnapshots(snapshots, opts.GroupBy)

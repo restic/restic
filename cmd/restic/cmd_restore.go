@@ -42,7 +42,7 @@ type RestoreOptions struct {
 	Include            []string
 	InsensitiveInclude []string
 	Target             string
-	snapshotFilterOptions
+	restic.SnapshotFilter
 	Sparse bool
 	Verify bool
 }
@@ -59,7 +59,7 @@ func init() {
 	flags.StringArrayVar(&restoreOptions.InsensitiveInclude, "iinclude", nil, "same as `--include` but ignores the casing of filenames")
 	flags.StringVarP(&restoreOptions.Target, "target", "t", "", "directory to extract data to")
 
-	initSingleSnapshotFilterOptions(flags, &restoreOptions.snapshotFilterOptions)
+	initSingleSnapshotFilter(flags, &restoreOptions.SnapshotFilter)
 	flags.BoolVar(&restoreOptions.Sparse, "sparse", false, "restore files as sparse")
 	flags.BoolVar(&restoreOptions.Verify, "verify", false, "verify restored files content")
 }
@@ -131,7 +131,11 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions, a
 		}
 	}
 
-	sn, err := restic.FindFilteredSnapshot(ctx, repo.Backend(), repo, opts.Hosts, opts.Tags, opts.Paths, nil, snapshotIDString)
+	sn, err := (&restic.SnapshotFilter{
+		Hosts: opts.Hosts,
+		Paths: opts.Paths,
+		Tags:  opts.Tags,
+	}).FindLatest(ctx, repo.Backend(), repo, snapshotIDString)
 	if err != nil {
 		return errors.Fatalf("failed to find snapshot: %v", err)
 	}

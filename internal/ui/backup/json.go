@@ -164,7 +164,7 @@ func (b *JSONProgress) CompleteItem(messageType, item string, previous, current 
 func (b *JSONProgress) ReportTotal(item string, start time.Time, s archiver.ScanStats) {
 	if b.v >= 2 {
 		b.print(verboseUpdate{
-			MessageType: "status",
+			MessageType: "verbose_status",
 			Action:      "scan_finished",
 			Duration:    time.Since(start).Seconds(),
 			DataSize:    s.Bytes,
