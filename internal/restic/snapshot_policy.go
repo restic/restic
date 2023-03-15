@@ -100,13 +100,7 @@ func (e ExpirePolicy) String() (s string) {
 	return s
 }
 
-// Sum returns the maximum number of snapshots to be kept according to this
-// policy.
-func (e ExpirePolicy) Sum() int {
-	return e.Last + e.Hourly + e.Daily + e.Weekly + e.Monthly + e.Yearly
-}
-
-// Empty returns true iff no policy has been configured (all values zero).
+// Empty returns true if no policy has been configured (all values zero).
 func (e ExpirePolicy) Empty() bool {
 	if len(e.Tags) != 0 {
 		return false
@@ -260,15 +254,15 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots, reason
 
 		// Now update the other buckets and see if they have some counts left.
 		for i, b := range buckets {
-			if b.Count <= -1 || b.Count > 0 {
+			// -1 means "keep all"
+			if b.Count > 0 || b.Count == -1 {
 				val := b.bucker(cur.Time, nr)
 				if val != b.Last {
 					debug.Log("keep %v %v, bucker %v, val %v\n", cur.Time, cur.id.Str(), i, val)
 					keepSnap = true
 					buckets[i].Last = val
-					buckets[i].Count--
-					if buckets[i].Count < -1 {
-						buckets[i].Count = -1
+					if buckets[i].Count > 0 {
+						buckets[i].Count--
 					}
 					keepSnapReasons = append(keepSnapReasons, b.reason)
 				}
