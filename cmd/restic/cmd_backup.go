@@ -289,7 +289,7 @@ func (opts BackupOptions) Check(gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	if opts.Stdin {
+	if opts.Stdin || opts.StdinCommand {
 		if len(opts.FilesFrom) > 0 {
 			return errors.Fatal("--stdin and --files-from cannot be used together")
 		}
@@ -300,7 +300,7 @@ func (opts BackupOptions) Check(gopts GlobalOptions, args []string) error {
 			return errors.Fatal("--stdin and --files-from-raw cannot be used together")
 		}
 
-		if len(args) > 0 {
+		if len(args) > 0 && opts.StdinCommand == false {
 			return errors.Fatal("--stdin was specified and files/dirs were listed as arguments")
 		}
 	}
@@ -368,7 +368,7 @@ func collectRejectFuncs(opts BackupOptions, targets []string) (fs []RejectFunc, 
 
 // collectTargets returns a list of target files/dirs from several sources.
 func collectTargets(opts BackupOptions, args []string) (targets []string, err error) {
-	if opts.Stdin {
+	if opts.Stdin || opts.StdinCommand {
 		return nil, nil
 	}
 
