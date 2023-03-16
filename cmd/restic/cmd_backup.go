@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -594,16 +595,37 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		defer localVss.DeleteSnapshots()
 		targetFS = localVss
 	}
-	if opts.Stdin {
+
+	var command *exec.Cmd
+	var stderr io.ReadCloser
+	if opts.Stdin || opts.StdinCommand {
 		if !gopts.JSON {
 			progressPrinter.V("read data from stdin")
 		}
 		filename := path.Join("/", opts.StdinFilename)
+		var closer io.ReadCloser
+		if opts.StdinCommand {
+			command = exec.CommandContext(ctx, args[0], args[1:]...)
+			stdout, err := command.StdoutPipe()
+			if err != nil {
+				return err
+			}
+			stderr, err = command.StderrPipe()
+			if err != nil {
+				return err
+			}
+			if err := command.Start(); err != nil {
+				return err
+			}
+			closer = stdout
+		} else {
+			closer = os.Stdin
+		}
 		targetFS = &fs.Reader{
 			ModTime:    timeStamp,
 			Name:       filename,
 			Mode:       0644,
-			ReadCloser: os.Stdin,
+			ReadCloser: closer,
 		}
 		targets = []string{filename}
 	}
