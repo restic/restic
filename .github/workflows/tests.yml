@@ -48,6 +48,7 @@ jobs:
             go: 1.19.x
             os: ubuntu-latest
             test_fuse: true
+            test_smb: true
 
           - job_name: Linux
             go: 1.18.x
