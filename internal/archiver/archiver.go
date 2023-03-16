@@ -795,6 +795,15 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		return nil, restic.ID{}, err
 	}
 
+	if opts.Command != nil {
+		errBytes, _ := io.ReadAll(opts.CommandStderr)
+		cmdErr := opts.Command.Wait()
+		if cmdErr != nil {
+			debug.Log("error while executing command: %v", cmdErr)
+			return nil, restic.ID{}, errors.New(string(errBytes))
+		}
+	}
+
 	sn, err := restic.NewSnapshot(targets, opts.Tags, opts.Hostname, opts.Time)
 	if err != nil {
 		return nil, restic.ID{}, err
