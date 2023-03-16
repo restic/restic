@@ -2,7 +2,9 @@ package archiver
 
 import (
 	"context"
+	"io"
 	"os"
+	"os/exec"
 	"path"
 	"runtime"
 	"sort"
@@ -681,6 +683,8 @@ type SnapshotOptions struct {
 	Time           time.Time
 	ParentSnapshot *restic.Snapshot
 	ProgramVersion string
+	Command        *exec.Cmd
+	CommandStderr  io.ReadCloser
 }
 
 // loadParentTree loads a tree referenced by snapshot id. If id is null, nil is returned.
