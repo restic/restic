@@ -4,6 +4,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"strings"
 	"time"
@@ -17,8 +18,8 @@ import (
 	resticfs "github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/fuse"
 
-	systemFuse "bazil.org/fuse"
-	"bazil.org/fuse/fs"
+	systemFuse "github.com/anacrolix/fuse"
+	"github.com/anacrolix/fuse/fs"
 )
 
 var cmdMount = &cobra.Command{
@@ -67,7 +68,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runMount(mountOptions, globalOptions, args)
+		return runMount(cmd.Context(), mountOptions, globalOptions, args)
 	},
 }
 
@@ -76,11 +77,9 @@ type MountOptions struct {
 	OwnerRoot            bool
 	AllowOther           bool
 	NoDefaultPermissions bool
-	Hosts                []string
-	Tags                 restic.TagLists
-	Paths                []string
-	TimeTemplate         string
-	PathTemplates        []string
+	snapshotFilterOptions
+	TimeTemplate  string
+	PathTemplates []string
 }
 
 var mountOptions MountOptions
@@ -93,9 +92,7 @@ func init() {
 	mountFlags.BoolVar(&mountOptions.AllowOther, "allow-other", false, "allow other users to access the data in the mounted directory")
 	mountFlags.BoolVar(&mountOptions.NoDefaultPermissions, "no-default-permissions", false, "for 'allow-other', ignore Unix permissions and allow users to read all snapshot files")
 
-	mountFlags.StringArrayVarP(&mountOptions.Hosts, "host", "H", nil, `only consider snapshots for this host (can be specified multiple times)`)
-	mountFlags.Var(&mountOptions.Tags, "tag", "only consider snapshots which include this `taglist`")
-	mountFlags.StringArrayVar(&mountOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`")
+	initMultiSnapshotFilterOptions(mountFlags, &mountOptions.snapshotFilterOptions, true)
 
 	mountFlags.StringArrayVar(&mountOptions.PathTemplates, "path-template", nil, "set `template` for path names (can be specified multiple times)")
 	mountFlags.StringVar(&mountOptions.TimeTemplate, "snapshot-template", time.RFC3339, "set `template` to use for snapshot dirs")
@@ -103,7 +100,7 @@ func init() {
 	_ = mountFlags.MarkDeprecated("snapshot-template", "use --time-template")
 }
 
-func runMount(opts MountOptions, gopts GlobalOptions, args []string) error {
+func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args []string) error {
 	if opts.TimeTemplate == "" {
 		return errors.Fatal("time template string cannot be empty")
 	}
@@ -119,20 +116,21 @@ func runMount(opts MountOptions, gopts GlobalOptions, args []string) error {
 	debug.Log("start mount")
 	defer debug.Log("finish mount")
 
-	repo, err := OpenRepository(gopts)
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
 
 	if !gopts.NoLock {
-		lock, err := lockRepo(gopts.ctx, repo)
+		var lock *restic.Lock
+		lock, ctx, err = lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
 		}
 	}
 
-	err = repo.LoadIndex(gopts.ctx)
+	err = repo.LoadIndex(ctx)
 	if err != nil {
 		return err
 	}
@@ -158,13 +156,17 @@ func runMount(opts MountOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	AddCleanupHandler(func() error {
+	AddCleanupHandler(func(code int) (int, error) {
 		debug.Log("running umount cleanup handler for mount at %v", mountpoint)
 		err := umount(mountpoint)
 		if err != nil {
 			Warnf("unable to umount (maybe already umounted or still in use?): %v\n", err)
 		}
-		return nil
+		// replace error code of sigint
+		if code == 130 {
+			code = 0
+		}
+		return code, nil
 	})
 
 	c, err := systemFuse.Mount(mountpoint, mountOptions...)

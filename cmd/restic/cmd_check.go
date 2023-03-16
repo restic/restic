@@ -1,8 +1,9 @@
 package main
 
 import (
-	"io/ioutil"
+	"context"
 	"math/rand"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -34,7 +35,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runCheck(checkOptions, globalOptions, args)
+		return runCheck(cmd.Context(), checkOptions, globalOptions, args)
 	},
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		return checkFlags(checkOptions)
@@ -170,7 +171,7 @@ func prepareCheckCache(opts CheckOptions, gopts *GlobalOptions) (cleanup func())
 	}
 
 	// use a cache in a temporary directory
-	tempdir, err := ioutil.TempDir(cachedir, "restic-check-cache-")
+	tempdir, err := os.MkdirTemp(cachedir, "restic-check-cache-")
 	if err != nil {
 		// if an error occurs, don't use any cache
 		Warnf("unable to create temporary directory for cache during check, disabling cache: %v\n", err)
@@ -191,25 +192,26 @@ func prepareCheckCache(opts CheckOptions, gopts *GlobalOptions) (cleanup func())
 	return cleanup
 }
 
-func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
+func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args []string) error {
 	if len(args) != 0 {
 		return errors.Fatal("the check command expects no arguments, only options - please see `restic help check` for usage and flags")
 	}
 
 	cleanup := prepareCheckCache(opts, &gopts)
-	AddCleanupHandler(func() error {
+	AddCleanupHandler(func(code int) (int, error) {
 		cleanup()
-		return nil
+		return code, nil
 	})
 
-	repo, err := OpenRepository(gopts)
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
 
 	if !gopts.NoLock {
 		Verbosef("create exclusive lock for repository\n")
-		lock, err := lockRepoExclusive(gopts.ctx, repo)
+		var lock *restic.Lock
+		lock, ctx, err = lockRepoExclusive(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
@@ -217,13 +219,13 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	chkr := checker.New(repo, opts.CheckUnused)
-	err = chkr.LoadSnapshots(gopts.ctx)
+	err = chkr.LoadSnapshots(ctx)
 	if err != nil {
 		return err
 	}
 
 	Verbosef("load indexes\n")
-	hints, errs := chkr.LoadIndex(gopts.ctx)
+	hints, errs := chkr.LoadIndex(ctx)
 
 	errorsFound := false
 	suggestIndexRebuild := false
@@ -243,7 +245,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	if suggestIndexRebuild {
-		Printf("This is non-critical, you can run `restic rebuild-index' to correct this\n")
+		Printf("Duplicate packs/old indexes are non-critical, you can run `restic rebuild-index' to correct this.\n")
 	}
 	if mixedFound {
 		Printf("Mixed packs with tree and data blobs are non-critical, you can run `restic prune` to correct this.\n")
@@ -260,13 +262,13 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	errChan := make(chan error)
 
 	Verbosef("check all packs\n")
-	go chkr.Packs(gopts.ctx, errChan)
+	go chkr.Packs(ctx, errChan)
 
 	for err := range errChan {
 		if checker.IsOrphanedPack(err) {
 			orphanedPacks++
 			Verbosef("%v\n", err)
-		} else if _, ok := err.(*checker.ErrLegacyLayout); ok {
+		} else if err == checker.ErrLegacyLayout {
 			Verbosef("repository still uses the S3 legacy layout\nPlease run `restic migrate s3legacy` to correct this.\n")
 		} else {
 			errorsFound = true
@@ -287,13 +289,17 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 		defer wg.Done()
 		bar := newProgressMax(!gopts.Quiet, 0, "snapshots")
 		defer bar.Done()
-		chkr.Structure(gopts.ctx, bar, errChan)
+		chkr.Structure(ctx, bar, errChan)
 	}()
 
 	for err := range errChan {
 		errorsFound = true
 		if e, ok := err.(*checker.TreeError); ok {
-			Warnf("error for tree %v:\n", e.ID.Str())
+			var clean string
+			if stdoutCanUpdateStatus() {
+				clean = clearLine(0)
+			}
+			Warnf(clean+"error for tree %v:\n", e.ID.Str())
 			for _, treeErr := range e.Errors {
 				Warnf("  %v\n", treeErr)
 			}
@@ -308,7 +314,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	wg.Wait()
 
 	if opts.CheckUnused {
-		for _, id := range chkr.UnusedBlobs(gopts.ctx) {
+		for _, id := range chkr.UnusedBlobs(ctx) {
 			Verbosef("unused blob %v\n", id)
 			errorsFound = true
 		}
@@ -320,7 +326,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 		p := newProgressMax(!gopts.Quiet, packCount, "packs")
 		errChan := make(chan error)
 
-		go chkr.ReadPacks(gopts.ctx, packs, p, errChan)
+		go chkr.ReadPacks(ctx, packs, p, errChan)
 
 		for err := range errChan {
 			errorsFound = true

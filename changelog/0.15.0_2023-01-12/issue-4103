@@ -1,0 +1,10 @@
+Bugfix: Don't generate negative UIDs and GIDs in tar files from `dump`
+
+When using a 32-bit build of restic, the `dump` command could in some cases
+create tar files containing negative UIDs and GIDs, which cannot be read by
+GNU tar. This corner case especially applies to backups from stdin on Windows.
+
+This is now fixed such that `dump` creates valid tar files in these cases too.
+
+https://github.com/restic/restic/issues/4103
+https://github.com/restic/restic/pull/4104

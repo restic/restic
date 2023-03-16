@@ -1,0 +1,15 @@
+Enhancement: Improve handling of ErrDot errors in rclone and sftp backends
+
+Since Go 1.19, restic can no longer implicitly run relative executables which
+are found in the current directory (e.g. `rclone` if found in `.`). This is a
+security feature of Go to prevent against running unintended and possibly
+harmful executables.
+
+The error message for this was just "cannot run executable found relative to
+current directory". This has now been improved to yield a more specific error
+message, informing the user how to explicitly allow running the executable
+using the `-o rclone.program` and `-o sftp.command` extended options with `./`.
+
+https://github.com/restic/restic/issues/3932
+https://pkg.go.dev/os/exec#hdr-Executables_in_the_current_directory
+https://go.dev/blog/path-security

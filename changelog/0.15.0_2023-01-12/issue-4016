@@ -1,0 +1,8 @@
+Bugfix: Support ExFAT-formatted local backends on macOS Ventura
+
+ExFAT-formatted disks could not be used as local backends starting from macOS
+Ventura. Restic commands would fail with an "inappropriate ioctl for device"
+error. This has now been fixed.
+
+https://github.com/restic/restic/issues/4016
+https://github.com/restic/restic/pull/4021

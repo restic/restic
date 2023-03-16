@@ -9,6 +9,10 @@ on:
   # run tests for all pull requests
   pull_request:
 
+env:
+  latest_go: "1.19.x"
+  GO111MODULE: on
+
 jobs:
   test:
     strategy:
@@ -16,8 +20,8 @@ jobs:
         # list of jobs to run:
         include:
 
-          - job_name: Linux
-            go: 1.17.x
+          - job_name: Linux (race)
+            go: 1.19.x
             os: ubuntu-latest
             test_fuse: true
             check_changelog: true
@@ -30,14 +34,14 @@ jobs:
 
     steps:
       - name: Set up Go ${{ matrix.go }}
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go }}
 
       - name: Get programs (Linux/macOS)
         run: |
           echo "build Go tools"
-          go get github.com/restic/rest-server/...
+          go install github.com/restic/rest-server/cmd/rest-server@latest
 
           echo "install minio server"
           mkdir $HOME/bin
@@ -59,7 +63,7 @@ jobs:
           chmod 755 $HOME/bin/rclone
           rm -rf rclone*
 
-          # add $HOME/bin to path ($GOBIN was already added to the path by setup-go@v2)
+          # add $HOME/bin to path ($GOBIN was already added to the path by setup-go@v3)
           echo $HOME/bin >> $GITHUB_PATH
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'macOS-latest'
 
@@ -69,7 +73,7 @@ jobs:
           $ProgressPreference = 'SilentlyContinue'
 
           echo "build Go tools"
-          go get github.com/restic/rest-server/...
+          go install github.com/restic/rest-server/...
 
           echo "install minio server"
           mkdir $Env:USERPROFILE/bin
@@ -81,7 +85,7 @@ jobs:
           unzip rclone.zip
           copy rclone*/rclone.exe $Env:USERPROFILE/bin
 
-          # add $USERPROFILE/bin to path ($GOBIN was already added to the path by setup-go@v2)
+          # add $USERPROFILE/bin to path ($GOBIN was already added to the path by setup-go@v3)
           echo $Env:USERPROFILE\bin >> $Env:GITHUB_PATH
 
           echo "install tar"
@@ -103,7 +107,7 @@ jobs:
         if: matrix.os == 'windows-latest'
 
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Build with build.go
         run: |
@@ -113,7 +117,7 @@ jobs:
         env:
           RESTIC_TEST_FUSE: ${{ matrix.test_fuse }}
         run: |
-          go test -cover ./...
+          go test -cover ${{matrix.test_opts}} ./...
 
       - name: Test cloud backends
         env:
@@ -160,7 +164,7 @@ jobs:
       - name: Check changelog files with calens
         run: |
           echo "install calens"
-          go get github.com/restic/calens
+          go install github.com/restic/calens@latest
 
           echo "check changelog files"
           calens
@@ -180,9 +184,13 @@ jobs:
     steps:
       - name: Get current date
         id: date
-        run: echo "::set-output name=date::$(date +'%Y%m%d%H%M')"
+        run: |
+          export BASEVERSION=$(cat NETAPPVERSION)
+          echo "::set-output name=date::$(date +'%Y%m%d%H%M')"
+          export VERSION=$BASEVERSION.${{ steps.date.outputs.date }}
+          echo "::set-output name=version::$VERSION"
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Build image
         run: docker build --build-arg BUILD_DATETIME=${{ steps.date.outputs.date }} -t netapp-restic:latest .
@@ -201,4 +209,50 @@ jobs:
           echo "VERSION="$VERSION
           docker tag netapp-restic:latest netappdownloads.jfrog.io/oss-docker-restic-production/restic:$VERSION
           docker push netappdownloads.jfrog.io/oss-docker-restic-production/restic:$VERSION
+
+  buildnpushBetas:
+    name: Build and Push Docker Package For Testing
+    #needs: [test, cross_compile, lint]
+    if: github.ref != 'refs/heads/netapp-main'
+    runs-on: ubuntu-latest
+    env:
+      USERNAME: ${{ secrets.JFROG_RESTIC_USERNAME }}
+      PASSWORD: ${{ secrets.JFROG_RESTIC_PASSWORD }}
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USER }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+
+      GH_USERNAME: ${{ github.actor }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      target_commitish: '{{ .Commit }}'
+    steps:
+      - name: Get current date
+        id: date
+        run: | 
+          echo "::set-output name=date::$(date +'%Y%m%d%H%M')"
+          export VERSION=$BASEVERSION.${{ steps.date.outputs.date }}
+          echo "::set-output name=version::$VERSION"
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Build image
+        run: docker build --build-arg BUILD_DATETIME=${{ steps.date.outputs.date }} -t netapp-restic:latest .
+
+      - name: Docker login
+        run: |
+          docker login -u $USERNAME -p $PASSWORD netappdownloads.jfrog.io/oss-docker-restic-production/restic
+          docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+
+      - name: Tag and push versioned image
+        run: |
+          export VERSION=$(cat NETAPPVERSION).${{ steps.date.outputs.date }}
+          echo "VERSION="$VERSION
+          docker tag netapp-restic:latest netappdownloads.jfrog.io/oss-docker-restic-production/restic:$VERSION-beta
+          docker tag netapp-restic:latest netapp/restic:$VERSION-beta
+          docker push netapp/restic:$VERSION-beta
+#      - name: tag github
+#        id: github_tag
+#        uses: mathieudutour/github-tag-action@v6.1
+#        with:
+#          github_token: ${{ secrets.GITHUB_TOKEN }}
+#          custom_tag: ${{ steps.date.outputs.version }}
 

@@ -1,6 +1,3 @@
-//go:build go1.18
-// +build go1.18
-
 package repository
 
 import (
@@ -22,7 +19,7 @@ func FuzzSaveLoadBlob(f *testing.F) {
 		}
 
 		id := restic.Hash(blob)
-		repo, _ := TestRepositoryWithBackend(t, mem.New(), 2)
+		repo := TestRepositoryWithBackend(t, mem.New(), 2)
 
 		var wg errgroup.Group
 		repo.StartPackUploader(context.TODO(), &wg)

@@ -84,9 +84,9 @@ func runDebug() error {
 	}
 
 	if prof != nil {
-		AddCleanupHandler(func() error {
+		AddCleanupHandler(func(code int) (int, error) {
 			prof.Stop()
-			return nil
+			return code, nil
 		})
 	}
 

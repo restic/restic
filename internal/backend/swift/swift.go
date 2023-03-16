@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/layout"
 	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -30,7 +31,7 @@ type beSwift struct {
 	sem         sema.Semaphore
 	container   string // Container name
 	prefix      string // Prefix of object names in the container
-	backend.Layout
+	layout.Layout
 }
 
 // ensure statically that *beSwift implements restic.Backend.
@@ -74,7 +75,7 @@ func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backend
 		sem:         sem,
 		container:   cfg.Container,
 		prefix:      cfg.Prefix,
-		Layout: &backend.DefaultLayout{
+		Layout: &layout.DefaultLayout{
 			Path: cfg.Prefix,
 			Join: path.Join,
 		},
@@ -223,25 +224,6 @@ func (be *beSwift) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 	}
 
 	return restic.FileInfo{Size: obj.Bytes, Name: h.Name}, nil
-}
-
-// Test returns true if a blob of the given type and name exists in the backend.
-func (be *beSwift) Test(ctx context.Context, h restic.Handle) (bool, error) {
-	objName := be.Filename(h)
-
-	be.sem.GetToken()
-	defer be.sem.ReleaseToken()
-
-	switch _, _, err := be.conn.Object(ctx, be.container, objName); err {
-	case nil:
-		return true, nil
-
-	case swift.ObjectNotFound:
-		return false, nil
-
-	default:
-		return false, errors.Wrap(err, "conn.Object")
-	}
 }
 
 // Remove removes the blob with the given name and type.

@@ -1,0 +1,11 @@
+Bugfix: Make `self-update` enabled by default only in release builds
+
+The `self-update` command was previously included by default in all builds of
+restic as opposed to only in official release builds, even if the `selfupdate`
+tag was not explicitly enabled when building.
+
+This has now been corrected, and the `self-update` command is only available
+if restic was built with `-tags selfupdate` (as done for official release
+builds by `build.go`).
+
+https://github.com/restic/restic/pull/4100

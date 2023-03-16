@@ -9,39 +9,35 @@ import (
 )
 
 func TestFindLatestSnapshot(t *testing.T) {
-	repo, cleanup := repository.TestRepository(t)
-	defer cleanup()
-
+	repo := repository.TestRepository(t)
 	restic.TestCreateSnapshot(t, repo, parseTimeUTC("2015-05-05 05:05:05"), 1, 0)
 	restic.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:07"), 1, 0)
 	latestSnapshot := restic.TestCreateSnapshot(t, repo, parseTimeUTC("2019-09-09 09:09:09"), 1, 0)
 
-	id, err := restic.FindLatestSnapshot(context.TODO(), repo.Backend(), repo, []string{}, []restic.TagList{}, []string{"foo"}, nil)
+	sn, err := restic.FindFilteredSnapshot(context.TODO(), repo.Backend(), repo, []string{"foo"}, []restic.TagList{}, []string{}, nil, "latest")
 	if err != nil {
 		t.Fatalf("FindLatestSnapshot returned error: %v", err)
 	}
 
-	if id != *latestSnapshot.ID() {
-		t.Errorf("FindLatestSnapshot returned wrong snapshot ID: %v", id)
+	if *sn.ID() != *latestSnapshot.ID() {
+		t.Errorf("FindLatestSnapshot returned wrong snapshot ID: %v", *sn.ID())
 	}
 }
 
 func TestFindLatestSnapshotWithMaxTimestamp(t *testing.T) {
-	repo, cleanup := repository.TestRepository(t)
-	defer cleanup()
-
+	repo := repository.TestRepository(t)
 	restic.TestCreateSnapshot(t, repo, parseTimeUTC("2015-05-05 05:05:05"), 1, 0)
 	desiredSnapshot := restic.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:07"), 1, 0)
 	restic.TestCreateSnapshot(t, repo, parseTimeUTC("2019-09-09 09:09:09"), 1, 0)
 
 	maxTimestamp := parseTimeUTC("2018-08-08 08:08:08")
 
-	id, err := restic.FindLatestSnapshot(context.TODO(), repo.Backend(), repo, []string{}, []restic.TagList{}, []string{"foo"}, &maxTimestamp)
+	sn, err := restic.FindFilteredSnapshot(context.TODO(), repo.Backend(), repo, []string{"foo"}, []restic.TagList{}, []string{}, &maxTimestamp, "latest")
 	if err != nil {
 		t.Fatalf("FindLatestSnapshot returned error: %v", err)
 	}
 
-	if id != *desiredSnapshot.ID() {
-		t.Errorf("FindLatestSnapshot returned wrong snapshot ID: %v", id)
+	if *sn.ID() != *desiredSnapshot.ID() {
+		t.Errorf("FindLatestSnapshot returned wrong snapshot ID: %v", *sn.ID())
 	}
 }

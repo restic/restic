@@ -1,6 +1,7 @@
 package bloblru
 
 import (
+	"math/rand"
 	"testing"
 
 	"github.com/restic/restic/internal/restic"
@@ -49,4 +50,30 @@ func TestCache(t *testing.T) {
 
 	rtest.Equals(t, cacheSize, c.size)
 	rtest.Equals(t, cacheSize, c.free)
+}
+
+func BenchmarkAdd(b *testing.B) {
+	const (
+		MiB    = 1 << 20
+		nblobs = 64
+	)
+
+	c := New(64 * MiB)
+
+	buf := make([]byte, 8*MiB)
+	ids := make([]restic.ID, nblobs)
+	sizes := make([]int, nblobs)
+
+	r := rand.New(rand.NewSource(100))
+	for i := range ids {
+		r.Read(ids[i][:])
+		sizes[i] = r.Intn(8 * MiB)
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		c.Add(ids[i%nblobs], buf[:sizes[i%nblobs]])
+	}
 }

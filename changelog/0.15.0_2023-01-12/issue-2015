@@ -1,0 +1,10 @@
+Bugfix: Make `mount` return exit code 0 after receiving Ctrl-C / SIGINT
+
+To stop the `mount` command, a user has to press Ctrl-C or send a SIGINT
+signal to restic. This used to cause restic to exit with a non-zero exit code.
+
+The exit code has now been changed to zero as the above is the expected way
+to stop the `mount` command and should therefore be considered successful.
+
+https://github.com/restic/restic/issues/2015
+https://github.com/restic/restic/pull/3894

@@ -2,12 +2,12 @@ package cache
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
 
 	"github.com/pkg/errors"
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
@@ -27,23 +27,15 @@ func (c *Cache) canBeCached(t restic.FileType) bool {
 		return false
 	}
 
-	if _, ok := cacheLayoutPaths[t]; !ok {
-		return false
-	}
-
-	return true
-}
-
-type readCloser struct {
-	io.Reader
-	io.Closer
+	_, ok := cacheLayoutPaths[t]
+	return ok
 }
 
 // Load returns a reader that yields the contents of the file with the
 // given handle. rd must be closed after use. If an error is returned, the
 // ReadCloser is nil.
 func (c *Cache) load(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
-	debug.Log("Load from cache: %v", h)
+	debug.Log("Load(%v, %v, %v) from cache", h, length, offset)
 	if !c.canBeCached(h.Type) {
 		return nil, errors.New("cannot be cached")
 	}
@@ -59,13 +51,14 @@ func (c *Cache) load(h restic.Handle, length int, offset int64) (io.ReadCloser, 
 		return nil, errors.WithStack(err)
 	}
 
-	if fi.Size() <= int64(crypto.CiphertextLength(0)) {
+	size := fi.Size()
+	if size <= int64(crypto.CiphertextLength(0)) {
 		_ = f.Close()
 		_ = c.remove(h)
 		return nil, errors.Errorf("cached file %v is truncated, removing", h)
 	}
 
-	if fi.Size() < offset+int64(length) {
+	if size < offset+int64(length) {
 		_ = f.Close()
 		_ = c.remove(h)
 		return nil, errors.Errorf("cached file %v is too small, removing", h)
@@ -78,12 +71,10 @@ func (c *Cache) load(h restic.Handle, length int, offset int64) (io.ReadCloser, 
 		}
 	}
 
-	rd := readCloser{Reader: f, Closer: f}
-	if length > 0 {
-		rd.Reader = io.LimitReader(f, int64(length))
+	if length <= 0 {
+		return f, nil
 	}
-
-	return rd, nil
+	return backend.LimitReadCloser(f, int64(length)), nil
 }
 
 // Save saves a file in the cache.
@@ -105,7 +96,7 @@ func (c *Cache) Save(h restic.Handle, rd io.Reader) error {
 
 	// First save to a temporary location. This allows multiple concurrent
 	// restics to use a single cache dir.
-	f, err := ioutil.TempFile(dir, "tmp-")
+	f, err := os.CreateTemp(dir, "tmp-")
 	if err != nil {
 		return err
 	}

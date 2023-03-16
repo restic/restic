@@ -1,0 +1,11 @@
+Change: Make `unlock` display message only when locks were actually removed
+
+The `unlock` command used to print the "successfully removed locks" message
+whenever it was run, regardless of lock files having being removed or not.
+
+This has now been changed such that it only prints the message if any lock
+files were actually removed. In addition, it also reports the number of
+removed lock files.
+
+https://github.com/restic/restic/issues/3929
+https://github.com/restic/restic/pull/3935

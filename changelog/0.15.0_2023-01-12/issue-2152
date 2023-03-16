@@ -1,0 +1,11 @@
+Enhancement: Make `init` open only one connection for the SFTP backend
+
+The `init` command using the SFTP backend used to connect twice to the
+repository. This could be inconvenient if the user must enter a password,
+or cause `init` to fail if the server does not correctly close the first SFTP
+connection.
+
+This has now been fixed by reusing the first/initial SFTP connection opened.
+
+https://github.com/restic/restic/issues/2152
+https://github.com/restic/restic/pull/3882

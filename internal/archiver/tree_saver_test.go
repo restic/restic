@@ -4,29 +4,44 @@ import (
 	"context"
 	"fmt"
 	"runtime"
-	"sync/atomic"
 	"testing"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/test"
 	"golang.org/x/sync/errgroup"
 )
 
-func TestTreeSaver(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+func treeSaveHelper(ctx context.Context, t restic.BlobType, buf *Buffer, cb func(res SaveBlobResponse)) {
+	cb(SaveBlobResponse{
+		id:         restic.NewRandomID(),
+		known:      false,
+		length:     len(buf.Data),
+		sizeInRepo: len(buf.Data),
+	})
+}
 
+func setupTreeSaver() (context.Context, context.CancelFunc, *TreeSaver, func() error) {
+	ctx, cancel := context.WithCancel(context.Background())
 	wg, ctx := errgroup.WithContext(ctx)
 
-	saveFn := func(context.Context, *restic.TreeJSONBuilder) (restic.ID, ItemStats, error) {
-		return restic.NewRandomID(), ItemStats{TreeBlobs: 1, TreeSize: 123}, nil
-	}
-
 	errFn := func(snPath string, err error) error {
-		return nil
+		return err
 	}
 
-	b := NewTreeSaver(ctx, wg, uint(runtime.NumCPU()), saveFn, errFn)
+	b := NewTreeSaver(ctx, wg, uint(runtime.NumCPU()), treeSaveHelper, errFn)
+
+	shutdown := func() error {
+		b.TriggerShutdown()
+		return wg.Wait()
+	}
+
+	return ctx, cancel, b, shutdown
+}
+
+func TestTreeSaver(t *testing.T) {
+	ctx, cancel, b, shutdown := setupTreeSaver()
+	defer cancel()
 
 	var results []FutureNode
 
@@ -35,7 +50,7 @@ func TestTreeSaver(t *testing.T) {
 			Name: fmt.Sprintf("file-%d", i),
 		}
 
-		fb := b.Save(ctx, "/", node.Name, node, nil, nil)
+		fb := b.Save(ctx, join("/", node.Name), node.Name, node, nil, nil)
 		results = append(results, fb)
 	}
 
@@ -43,9 +58,7 @@ func TestTreeSaver(t *testing.T) {
 		tree.take(ctx)
 	}
 
-	b.TriggerShutdown()
-
-	err := wg.Wait()
+	err := shutdown()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,7 +67,7 @@ func TestTreeSaver(t *testing.T) {
 func TestTreeSaverError(t *testing.T) {
 	var tests = []struct {
 		trees  int
-		failAt int32
+		failAt int
 	}{
 		{1, 1},
 		{20, 2},
@@ -67,27 +80,8 @@ func TestTreeSaverError(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel, b, shutdown := setupTreeSaver()
 			defer cancel()
-
-			wg, ctx := errgroup.WithContext(ctx)
-
-			var num int32
-			saveFn := func(context.Context, *restic.TreeJSONBuilder) (restic.ID, ItemStats, error) {
-				val := atomic.AddInt32(&num, 1)
-				if val == test.failAt {
-					t.Logf("sending error for request %v\n", test.failAt)
-					return restic.ID{}, ItemStats{}, errTest
-				}
-				return restic.NewRandomID(), ItemStats{TreeBlobs: 1, TreeSize: 123}, nil
-			}
-
-			errFn := func(snPath string, err error) error {
-				t.Logf("ignoring error %v\n", err)
-				return nil
-			}
-
-			b := NewTreeSaver(ctx, wg, uint(runtime.NumCPU()), saveFn, errFn)
 
 			var results []FutureNode
 
@@ -95,8 +89,18 @@ func TestTreeSaverError(t *testing.T) {
 				node := &restic.Node{
 					Name: fmt.Sprintf("file-%d", i),
 				}
+				nodes := []FutureNode{
+					newFutureNodeWithResult(futureNodeResult{node: &restic.Node{
+						Name: fmt.Sprintf("child-%d", i),
+					}}),
+				}
+				if (i + 1) == test.failAt {
+					nodes = append(nodes, newFutureNodeWithResult(futureNodeResult{
+						err: errTest,
+					}))
+				}
 
-				fb := b.Save(ctx, "/", node.Name, node, nil, nil)
+				fb := b.Save(ctx, join("/", node.Name), node.Name, node, nodes, nil)
 				results = append(results, fb)
 			}
 
@@ -104,15 +108,50 @@ func TestTreeSaverError(t *testing.T) {
 				tree.take(ctx)
 			}
 
-			b.TriggerShutdown()
-
-			err := wg.Wait()
+			err := shutdown()
 			if err == nil {
 				t.Errorf("expected error not found")
 			}
-
 			if err != errTest {
 				t.Fatalf("unexpected error found: %v", err)
+			}
+		})
+	}
+}
+
+func TestTreeSaverDuplicates(t *testing.T) {
+	for _, identicalNodes := range []bool{true, false} {
+		t.Run("", func(t *testing.T) {
+			ctx, cancel, b, shutdown := setupTreeSaver()
+			defer cancel()
+
+			node := &restic.Node{
+				Name: "file",
+			}
+			nodes := []FutureNode{
+				newFutureNodeWithResult(futureNodeResult{node: &restic.Node{
+					Name: "child",
+				}}),
+			}
+			if identicalNodes {
+				nodes = append(nodes, newFutureNodeWithResult(futureNodeResult{node: &restic.Node{
+					Name: "child",
+				}}))
+			} else {
+				nodes = append(nodes, newFutureNodeWithResult(futureNodeResult{node: &restic.Node{
+					Name: "child",
+					Size: 42,
+				}}))
+			}
+
+			fb := b.Save(ctx, join("/", node.Name), node.Name, node, nodes, nil)
+			fb.take(ctx)
+
+			err := shutdown()
+			if identicalNodes {
+				test.Assert(t, err == nil, "unexpected error found: %v", err)
+			} else {
+				test.Assert(t, err != nil, "expected error not found")
 			}
 		})
 	}

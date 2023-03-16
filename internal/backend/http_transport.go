@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -31,7 +30,7 @@ type TransportOptions struct {
 // readPEMCertKey reads a file and returns the PEM encoded certificate and key
 // blocks.
 func readPEMCertKey(filename string) (certs []byte, key []byte, err error) {
-	data, err := ioutil.ReadFile(filename)
+	data, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "ReadFile")
 	}
@@ -115,7 +114,7 @@ func Transport(opts TransportOptions) (http.RoundTripper, error) {
 			if filename == "" {
 				return nil, errors.Errorf("empty filename for root certificate supplied")
 			}
-			b, err := ioutil.ReadFile(filename)
+			b, err := os.ReadFile(filename)
 			if err != nil {
 				return nil, errors.Errorf("unable to read root certificate: %v", err)
 			}

@@ -58,7 +58,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 .PP
 \fB-H\fP, \fB--host\fP=[]
-	only consider snapshots with the given \fB\fChost\fR (can be specified multiple times)
+	only consider snapshots for this \fB\fChost\fR (can be specified multiple times)
 
 .PP
 \fB--mode\fP="restore-size"
@@ -66,11 +66,11 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 .PP
 \fB--path\fP=[]
-	only consider snapshots which include this (absolute) \fB\fCpath\fR (can be specified multiple times)
+	only consider snapshots including this (absolute) \fB\fCpath\fR (can be specified multiple times)
 
 .PP
 \fB--tag\fP=[]
-	only consider snapshots which include this \fB\fCtaglist\fR in the format \fB\fCtag[,tag,...]\fR (can be specified multiple times)
+	only consider snapshots including \fB\fCtag[,tag,...]\fR (can be specified multiple times)
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
@@ -104,11 +104,11 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 .PP
 \fB--limit-download\fP=0
-	limits downloads to a maximum rate in KiB/s. (default: unlimited)
+	limits downloads to a maximum \fB\fCrate\fR in KiB/s. (default: unlimited)
 
 .PP
 \fB--limit-upload\fP=0
-	limits uploads to a maximum rate in KiB/s. (default: unlimited)
+	limits uploads to a maximum \fB\fCrate\fR in KiB/s. (default: unlimited)
 
 .PP
 \fB--no-cache\fP[=false]
@@ -124,7 +124,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 .PP
 \fB--pack-size\fP=0
-	set target pack size in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)
+	set target pack \fB\fCsize\fR in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)
 
 .PP
 \fB--password-command\fP=""
@@ -152,7 +152,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 .PP
 \fB-v\fP, \fB--verbose\fP[=0]
-	be verbose (specify multiple times or a level using --verbose=\fB\fCn\fR, max level/times is 3)
+	be verbose (specify multiple times or a level using --verbose=\fB\fCn\fR, max level/times is 2)
 
 
 .SH SEE ALSO

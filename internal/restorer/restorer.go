@@ -16,8 +16,9 @@ import (
 
 // Restorer is used to restore a snapshot to a directory.
 type Restorer struct {
-	repo restic.Repository
-	sn   *restic.Snapshot
+	repo   restic.Repository
+	sn     *restic.Snapshot
+	sparse bool
 
 	Error        func(location string, err error) error
 	SelectFilter func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool)
@@ -26,21 +27,16 @@ type Restorer struct {
 var restorerAbortOnAllErrors = func(location string, err error) error { return err }
 
 // NewRestorer creates a restorer preloaded with the content from the snapshot id.
-func NewRestorer(ctx context.Context, repo restic.Repository, id restic.ID) (*Restorer, error) {
+func NewRestorer(ctx context.Context, repo restic.Repository, sn *restic.Snapshot, sparse bool) *Restorer {
 	r := &Restorer{
 		repo:         repo,
+		sparse:       sparse,
 		Error:        restorerAbortOnAllErrors,
 		SelectFilter: func(string, string, *restic.Node) (bool, bool) { return true, true },
+		sn:           sn,
 	}
 
-	var err error
-
-	r.sn, err = restic.LoadSnapshot(ctx, repo, id)
-	if err != nil {
-		return nil, err
-	}
-
-	return r, nil
+	return r
 }
 
 type treeVisitor struct {
@@ -188,7 +184,7 @@ func (res *Restorer) restoreHardlinkAt(node *restic.Node, target, path, location
 	}
 	err := fs.Link(target, path)
 	if err != nil {
-		return errors.Wrap(err, "CreateHardlink")
+		return errors.WithStack(err)
 	}
 	// TODO investigate if hardlinks have separate metadata on any supported system
 	return res.restoreNodeMetadataTo(node, path, location)
@@ -219,7 +215,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 	}
 
 	idx := NewHardlinkIndex()
-	filerestorer := newFileRestorer(dst, res.repo.Backend().Load, res.repo.Key(), res.repo.Index().Lookup, res.repo.Connections())
+	filerestorer := newFileRestorer(dst, res.repo.Backend().Load, res.repo.Key(), res.repo.Index().Lookup, res.repo.Connections(), res.sparse)
 	filerestorer.Error = res.Error
 
 	debug.Log("first pass for %q", dst)

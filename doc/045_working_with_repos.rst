@@ -136,22 +136,24 @@ or the environment variable ``$RESTIC_FROM_KEY_HINT``.
     repository. You can avoid this limitation by using the rclone backend
     along with remotes which are configured in rclone.
 
+.. _copy-filtering-snapshots:
+
 Filtering snapshots to copy
 ---------------------------
 
 The list of snapshots to copy can be filtered by host, path in the backup
-and / or a comma-separated tag list:
+and/or a comma-separated tag list:
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo copy --repo2 /srv/restic-repo-copy --host luigi --path /srv --tag foo,bar
+    $ restic -r /srv/restic-repo-copy copy --from-repo /srv/restic-repo --host luigi --path /srv --tag foo,bar
 
 It is also possible to explicitly specify the list of snapshots to copy, in
 which case only these instead of all snapshots will be copied:
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo copy --repo2 /srv/restic-repo-copy 410b18a2 4e5d5487 latest
+    $ restic -r /srv/restic-repo-copy copy --from-repo /srv/restic-repo 410b18a2 4e5d5487 latest
 
 Ensuring deduplication for copied snapshots
 -------------------------------------------
@@ -170,9 +172,64 @@ using the same chunker parameters as the source repository:
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo-copy init --repo2 /srv/restic-repo --copy-chunker-params
+    $ restic -r /srv/restic-repo-copy init --from-repo /srv/restic-repo --copy-chunker-params
 
 Note that it is not possible to change the chunker parameters of an existing repository.
+
+
+Removing files from snapshots
+=============================
+
+Snapshots sometimes turn out to include more files that intended. Instead of
+removing the snapshots entirely and running the corresponding backup commands
+again (which is not always practical after the fact) it is possible to remove
+the unwanted files from affected snapshots by rewriting them using the
+``rewrite`` command:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo rewrite --exclude secret-file
+    repository c881945a opened (repository version 2) successfully, password is correct
+
+    snapshot 6160ddb2 of [/home/user/work] at 2022-06-12 16:01:28.406630608 +0200 CEST)
+    excluding /home/user/work/secret-file
+    saved new snapshot b6aee1ff
+
+    snapshot 4fbaf325 of [/home/user/work] at 2022-05-01 11:22:26.500093107 +0200 CEST)
+
+    modified 1 snapshots
+
+    $ restic -r /srv/restic-repo rewrite --exclude secret-file 6160ddb2
+    repository c881945a opened (repository version 2) successfully, password is correct
+
+    snapshot 6160ddb2 of [/home/user/work] at 2022-06-12 16:01:28.406630608 +0200 CEST)
+    excluding /home/user/work/secret-file
+    new snapshot saved as b6aee1ff
+
+    modified 1 snapshots
+
+The options ``--exclude``, ``--exclude-file``, ``--iexclude`` and
+``--iexclude-file`` are supported. They behave the same way as for the backup
+command, see :ref:`backup-excluding-files` for details.
+
+It is possible to rewrite only a subset of snapshots by filtering them the same
+way as for the ``copy`` command, see :ref:`copy-filtering-snapshots`.
+
+By default, the ``rewrite`` command will keep the original snapshots and create
+new ones for every snapshot which was modified during rewriting. The new
+snapshots are marked with the tag ``rewrite`` to differentiate them from the
+original, rewritten snapshots.
+
+Alternatively, you can use the ``--forget`` option to immediately remove the
+original snapshots. In this case, no tag is added to the new snapshots. Please
+note that this only removes the snapshots and not the actual data stored in the
+repository. Run the ``prune`` command afterwards to remove the now unreferenced
+data (just like when having used the ``forget`` command).
+
+In order to preview the changes which ``rewrite`` would make, you can use the
+``--dry-run`` option. This will simulate the rewriting process without actually
+modifying the repository. Instead restic will only print the actions it would
+perform.
 
 
 Checking integrity and consistency

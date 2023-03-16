@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -91,7 +90,7 @@ func checkTar(t *testing.T, testDir string, srcTar *bytes.Buffer) error {
 			if match.Size() != hdr.Size {
 				return fmt.Errorf("size does not match got %v want %v", hdr.Size, match.Size())
 			}
-			contentsFile, err := ioutil.ReadFile(matchPath)
+			contentsFile, err := os.ReadFile(matchPath)
 			if err != nil {
 				t.Fatal(err)
 			}

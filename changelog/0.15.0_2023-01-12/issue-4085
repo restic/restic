@@ -1,0 +1,10 @@
+Bugfix: Make `init` ignore "Access Denied" errors when creating S3 buckets
+
+In restic 0.9.0 through 0.13.0, the `init` command ignored some permission
+errors from S3 backends when trying to check for bucket existence, so that
+manually created buckets with custom permissions could be used for backups.
+
+This feature became broken in 0.14.0, but has now been restored again.
+
+https://github.com/restic/restic/issues/4085
+https://github.com/restic/restic/pull/4086

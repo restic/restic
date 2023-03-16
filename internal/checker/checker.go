@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"runtime"
 	"sort"
 	"sync"
@@ -18,6 +17,7 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/hashing"
+	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -38,7 +38,7 @@ type Checker struct {
 	}
 	trackUnused bool
 
-	masterIndex *repository.MasterIndex
+	masterIndex *index.MasterIndex
 	snapshots   restic.Lister
 
 	repo restic.Repository
@@ -48,7 +48,7 @@ type Checker struct {
 func New(repo restic.Repository, trackUnused bool) *Checker {
 	c := &Checker{
 		packs:       make(map[restic.ID]int64),
-		masterIndex: repository.NewMasterIndex(),
+		masterIndex: index.NewMasterIndex(),
 		repo:        repo,
 		trackUnused: trackUnused,
 	}
@@ -59,11 +59,7 @@ func New(repo restic.Repository, trackUnused bool) *Checker {
 }
 
 // ErrLegacyLayout is returned when the repository uses the S3 legacy layout.
-type ErrLegacyLayout struct{}
-
-func (e *ErrLegacyLayout) Error() string {
-	return "repository uses S3 legacy layout"
-}
+var ErrLegacyLayout = errors.New("repository uses S3 legacy layout")
 
 // ErrDuplicatePacks is returned when a pack is found in more than one index.
 type ErrDuplicatePacks struct {
@@ -100,12 +96,28 @@ func (c *Checker) LoadSnapshots(ctx context.Context) error {
 	return err
 }
 
+func computePackTypes(ctx context.Context, idx restic.MasterIndex) map[restic.ID]restic.BlobType {
+	packs := make(map[restic.ID]restic.BlobType)
+	idx.Each(ctx, func(pb restic.PackedBlob) {
+		tpe, exists := packs[pb.PackID]
+		if exists {
+			if pb.Type != tpe {
+				tpe = restic.InvalidBlob
+			}
+		} else {
+			tpe = pb.Type
+		}
+		packs[pb.PackID] = tpe
+	})
+	return packs
+}
+
 // LoadIndex loads all index files.
 func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 	debug.Log("Start")
 
 	packToIndex := make(map[restic.ID]restic.IDSet)
-	err := repository.ForAllIndexes(ctx, c.repo, func(id restic.ID, index *repository.Index, oldFormat bool, err error) error {
+	err := index.ForAllIndexes(ctx, c.repo, func(id restic.ID, index *index.Index, oldFormat bool, err error) error {
 		debug.Log("process index %v, err %v", id, err)
 
 		if oldFormat {
@@ -124,14 +136,14 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 
 		debug.Log("process blobs")
 		cnt := 0
-		for blob := range index.Each(ctx) {
+		index.Each(ctx, func(blob restic.PackedBlob) {
 			cnt++
 
 			if _, ok := packToIndex[blob.PackID]; !ok {
 				packToIndex[blob.PackID] = restic.NewIDSet()
 			}
 			packToIndex[blob.PackID].Insert(id)
-		}
+		})
 
 		debug.Log("%d blobs processed", cnt)
 		return nil
@@ -149,6 +161,7 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 
 	// compute pack size using index entries
 	c.packs = pack.Size(ctx, c.masterIndex, false)
+	packTypes := computePackTypes(ctx, c.masterIndex)
 
 	debug.Log("checking for duplicate packs")
 	for packID := range c.packs {
@@ -159,7 +172,7 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 				Indexes: packToIndex[packID],
 			})
 		}
-		if c.masterIndex.IsMixedPack(packID) {
+		if packTypes[packID] == restic.InvalidBlob {
 			hints = append(hints, &ErrMixedPack{
 				PackID: packID,
 			})
@@ -214,7 +227,7 @@ func (c *Checker) Packs(ctx context.Context, errChan chan<- error) {
 	defer close(errChan)
 
 	if isS3Legacy(c.repo.Backend()) {
-		errChan <- &ErrLegacyLayout{}
+		errChan <- ErrLegacyLayout
 	}
 
 	debug.Log("checking for %d packs", len(c.packs))
@@ -272,7 +285,7 @@ type Error struct {
 	Err    error
 }
 
-func (e Error) Error() string {
+func (e *Error) Error() string {
 	if !e.TreeID.IsNull() {
 		return "tree " + e.TreeID.String() + ": " + e.Err.Error()
 	}
@@ -386,12 +399,12 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 		switch node.Type {
 		case "file":
 			if node.Content == nil {
-				errs = append(errs, Error{TreeID: id, Err: errors.Errorf("file %q has nil blob list", node.Name)})
+				errs = append(errs, &Error{TreeID: id, Err: errors.Errorf("file %q has nil blob list", node.Name)})
 			}
 
 			for b, blobID := range node.Content {
 				if blobID.IsNull() {
-					errs = append(errs, Error{TreeID: id, Err: errors.Errorf("file %q blob %d has null ID", node.Name, b)})
+					errs = append(errs, &Error{TreeID: id, Err: errors.Errorf("file %q blob %d has null ID", node.Name, b)})
 					continue
 				}
 				// Note that we do not use the blob size. The "obvious" check
@@ -402,7 +415,7 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 				_, found := c.repo.LookupBlobSize(blobID, restic.DataBlob)
 				if !found {
 					debug.Log("tree %v references blob %v which isn't contained in index", id, blobID)
-					errs = append(errs, Error{TreeID: id, Err: errors.Errorf("file %q blob %v not found in index", node.Name, blobID)})
+					errs = append(errs, &Error{TreeID: id, Err: errors.Errorf("file %q blob %v not found in index", node.Name, blobID)})
 				}
 			}
 
@@ -422,12 +435,12 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 
 		case "dir":
 			if node.Subtree == nil {
-				errs = append(errs, Error{TreeID: id, Err: errors.Errorf("dir node %q has no subtree", node.Name)})
+				errs = append(errs, &Error{TreeID: id, Err: errors.Errorf("dir node %q has no subtree", node.Name)})
 				continue
 			}
 
 			if node.Subtree.IsNull() {
-				errs = append(errs, Error{TreeID: id, Err: errors.Errorf("dir node %q subtree id is null", node.Name)})
+				errs = append(errs, &Error{TreeID: id, Err: errors.Errorf("dir node %q subtree id is null", node.Name)})
 				continue
 			}
 
@@ -435,11 +448,11 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 			// nothing to check
 
 		default:
-			errs = append(errs, Error{TreeID: id, Err: errors.Errorf("node %q with invalid type %q", node.Name, node.Type)})
+			errs = append(errs, &Error{TreeID: id, Err: errors.Errorf("node %q with invalid type %q", node.Name, node.Type)})
 		}
 
 		if node.Name == "" {
-			errs = append(errs, Error{TreeID: id, Err: errors.New("node with empty name")})
+			errs = append(errs, &Error{TreeID: id, Err: errors.New("node with empty name")})
 		}
 	}
 
@@ -458,13 +471,13 @@ func (c *Checker) UnusedBlobs(ctx context.Context) (blobs restic.BlobHandles) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	for blob := range c.repo.Index().Each(ctx) {
+	c.repo.Index().Each(ctx, func(blob restic.PackedBlob) {
 		h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
 		if !c.blobRefs.M.Has(h) {
 			debug.Log("blob %v not referenced", h)
 			blobs = append(blobs, h)
 		}
-	}
+	})
 
 	return blobs
 }
@@ -538,7 +551,7 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 			}
 
 			// read remainder, which should be the pack header
-			hdrBuf, err = ioutil.ReadAll(bufRd)
+			hdrBuf, err = io.ReadAll(bufRd)
 			if err != nil {
 				return err
 			}

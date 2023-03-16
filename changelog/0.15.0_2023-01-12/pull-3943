@@ -1,0 +1,9 @@
+Enhancement: Ignore additional/unknown files in repository
+
+If a restic repository had additional files in it (not created by restic),
+commands like `find` and `restore` could become confused and fail with an
+`multiple IDs with prefix "12345678" found` error. These commands now
+ignore such additional files.
+
+https://github.com/restic/restic/pull/3943
+https://forum.restic.net/t/which-protocol-should-i-choose-for-remote-linux-backups/5446/17

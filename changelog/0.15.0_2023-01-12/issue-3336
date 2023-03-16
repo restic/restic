@@ -1,0 +1,12 @@
+Bugfix: Make SFTP backend report no space left on device
+
+Backing up to an SFTP backend would spew repeated SSH_FX_FAILURE messages when
+the remote disk was full. Restic now reports "sftp: no space left on device"
+and exits immediately when it detects this condition.
+
+A fix for this issue was implemented in restic 0.12.1, but unfortunately the
+fix itself contained a bug that prevented it from taking effect.
+
+https://github.com/restic/restic/issues/3336
+https://github.com/restic/restic/pull/3345
+https://github.com/restic/restic/pull/4075

@@ -4,13 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
-	"golang.org/x/net/context/ctxhttp"
 )
 
 // Release collects data about a single release on GitHub.
@@ -53,7 +52,7 @@ func GitHubLatestRelease(ctx context.Context, owner, repo string) (Release, erro
 	defer cancel()
 
 	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest", owner, repo)
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return Release{}, err
 	}
@@ -61,7 +60,7 @@ func GitHubLatestRelease(ctx context.Context, owner, repo string) (Release, erro
 	// pin API version 3
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
 
-	res, err := ctxhttp.Do(ctx, http.DefaultClient, req)
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return Release{}, err
 	}
@@ -81,7 +80,7 @@ func GitHubLatestRelease(ctx context.Context, owner, repo string) (Release, erro
 		return Release{}, fmt.Errorf("unexpected status %v (%v) returned", res.StatusCode, res.Status)
 	}
 
-	buf, err := ioutil.ReadAll(res.Body)
+	buf, err := io.ReadAll(res.Body)
 	if err != nil {
 		_ = res.Body.Close()
 		return Release{}, err
@@ -112,7 +111,7 @@ func GitHubLatestRelease(ctx context.Context, owner, repo string) (Release, erro
 }
 
 func getGithubData(ctx context.Context, url string) ([]byte, error) {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +119,7 @@ func getGithubData(ctx context.Context, url string) ([]byte, error) {
 	// request binary data
 	req.Header.Set("Accept", "application/octet-stream")
 
-	res, err := ctxhttp.Do(ctx, http.DefaultClient, req)
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +128,7 @@ func getGithubData(ctx context.Context, url string) ([]byte, error) {
 		return nil, fmt.Errorf("unexpected status %v (%v) returned", res.StatusCode, res.Status)
 	}
 
-	buf, err := ioutil.ReadAll(res.Body)
+	buf, err := io.ReadAll(res.Body)
 	if err != nil {
 		_ = res.Body.Close()
 		return nil, err

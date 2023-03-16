@@ -1,0 +1,17 @@
+Enhancement: Restore files with long runs of zeros as sparse files
+
+When using `restore --sparse`, the restorer may now write files containing long
+runs of zeros as sparse files (also called files with holes), where the zeros
+are not actually written to disk.
+
+How much space is saved by writing sparse files depends on the operating
+system, file system and the distribution of zeros in the file.
+
+During backup restic still reads the whole file including sparse regions, but
+with optimized processing speed of sparse regions.
+
+https://github.com/restic/restic/issues/79
+https://github.com/restic/restic/issues/3903
+https://github.com/restic/restic/pull/2601
+https://github.com/restic/restic/pull/3854
+https://forum.restic.net/t/sparse-file-support/1264

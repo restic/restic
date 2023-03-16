@@ -3,7 +3,6 @@ package checker_test
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -208,7 +207,7 @@ func TestModifiedIndex(t *testing.T) {
 		Name: "90f838b4ac28735fda8644fe6a08dbc742e57aaf81b30977b4fefa357010eafd",
 	}
 
-	tmpfile, err := ioutil.TempFile("", "restic-test-mod-index-")
+	tmpfile, err := os.CreateTemp("", "restic-test-mod-index-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -341,9 +340,7 @@ func induceError(data []byte) {
 }
 
 func TestCheckerModifiedData(t *testing.T) {
-	repo, cleanup := repository.TestRepository(t)
-	defer cleanup()
-
+	repo := repository.TestRepository(t)
 	sn := archiver.TestSnapshot(t, repo, ".", nil)
 	t.Logf("archived as %v", sn.ID().Str())
 
@@ -458,8 +455,7 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	repo, cleanup := repository.TestRepository(t)
-	defer cleanup()
+	repo := repository.TestRepository(t)
 
 	damagedNode := &restic.Node{
 		Name:    "damaged",
@@ -592,11 +588,7 @@ func benchmarkSnapshotScaling(t *testing.B, newSnapshots int) {
 	chkr, repo, cleanup := loadBenchRepository(t)
 	defer cleanup()
 
-	snID, err := restic.FindSnapshot(context.TODO(), repo.Backend(), "51d249d2")
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	snID := restic.TestParseID("51d249d28815200d59e4be7b3f21a157b864dc343353df9d8e498220c2499b02")
 	sn2, err := restic.LoadSnapshot(context.TODO(), repo, snID)
 	if err != nil {
 		t.Fatal(err)

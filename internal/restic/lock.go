@@ -7,12 +7,12 @@ import (
 	"os/signal"
 	"os/user"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"testing"
 	"time"
 
 	"github.com/restic/restic/internal/errors"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/restic/restic/internal/debug"
 )
@@ -26,6 +26,7 @@ import (
 // A lock must be refreshed regularly to not be considered stale, this must be
 // triggered by regularly calling Refresh.
 type Lock struct {
+	lock      sync.Mutex
 	Time      time.Time `json:"time"`
 	Exclusive bool      `json:"exclusive"`
 	Hostname  string    `json:"hostname"`
@@ -56,6 +57,27 @@ func (e *alreadyLockedError) Error() string {
 // already locked.
 func IsAlreadyLocked(err error) bool {
 	var e *alreadyLockedError
+	return errors.As(err, &e)
+}
+
+// invalidLockError is returned when NewLock or NewExclusiveLock fail due
+// to an invalid lock.
+type invalidLockError struct {
+	err error
+}
+
+func (e *invalidLockError) Error() string {
+	return fmt.Sprintf("invalid lock file: %v", e.err)
+}
+
+func (e *invalidLockError) Unwrap() error {
+	return e.err
+}
+
+// IsInvalidLock returns true iff err indicates that locking failed due to
+// an invalid lock.
+func IsInvalidLock(err error) bool {
+	var e *invalidLockError
 	return errors.As(err, &e)
 }
 
@@ -126,7 +148,7 @@ func (l *Lock) fillUserInfo() error {
 	}
 	l.Username = usr.Username
 
-	l.UID, l.GID, err = uidGidInt(*usr)
+	l.UID, l.GID, err = uidGidInt(usr)
 	return err
 }
 
@@ -137,23 +159,40 @@ func (l *Lock) fillUserInfo() error {
 // non-exclusive lock is to be created, an error is only returned when an
 // exclusive lock is found.
 func (l *Lock) checkForOtherLocks(ctx context.Context) error {
-	return ForAllLocks(ctx, l.repo, l.lockID, func(id ID, lock *Lock, err error) error {
-		if err != nil {
-			// ignore locks that cannot be loaded
-			debug.Log("ignore lock %v: %v", id, err)
+	var err error
+	// retry locking a few times
+	for i := 0; i < 3; i++ {
+		err = ForAllLocks(ctx, l.repo, l.lockID, func(id ID, lock *Lock, err error) error {
+			if err != nil {
+				// if we cannot load a lock then it is unclear whether it can be ignored
+				// it could either be invalid or just unreadable due to network/permission problems
+				debug.Log("ignore lock %v: %v", id, err)
+				return err
+			}
+
+			if l.Exclusive {
+				return &alreadyLockedError{otherLock: lock}
+			}
+
+			if !l.Exclusive && lock.Exclusive {
+				return &alreadyLockedError{otherLock: lock}
+			}
+
+			return nil
+		})
+		// no lock detected
+		if err == nil {
 			return nil
 		}
-
-		if l.Exclusive {
-			return &alreadyLockedError{otherLock: lock}
+		// lock conflicts are permanent
+		if _, ok := err.(*alreadyLockedError); ok {
+			return err
 		}
-
-		if !l.Exclusive && lock.Exclusive {
-			return &alreadyLockedError{otherLock: lock}
-		}
-
-		return nil
-	})
+	}
+	if errors.Is(err, ErrInvalidData) {
+		return &invalidLockError{err}
+	}
+	return err
 }
 
 // createLock acquires the lock by creating a file in the repository.
@@ -175,14 +214,16 @@ func (l *Lock) Unlock() error {
 	return l.repo.Backend().Remove(context.TODO(), Handle{Type: LockFile, Name: l.lockID.String()})
 }
 
-var staleTimeout = 30 * time.Minute
+var StaleLockTimeout = 30 * time.Minute
 
 // Stale returns true if the lock is stale. A lock is stale if the timestamp is
 // older than 30 minutes or if it was created on the current machine and the
 // process isn't alive any more.
 func (l *Lock) Stale() bool {
-	debug.Log("testing if lock %v for process %d is stale", l, l.PID)
-	if time.Since(l.Time) > staleTimeout {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+	debug.Log("testing if lock %v for process %d is stale", l.lockID, l.PID)
+	if time.Since(l.Time) > StaleLockTimeout {
 		debug.Log("lock is stale, timestamp is too old: %v\n", l.Time)
 		return true
 	}
@@ -215,11 +256,16 @@ func (l *Lock) Stale() bool {
 // timestamp. Afterwards the old lock is removed.
 func (l *Lock) Refresh(ctx context.Context) error {
 	debug.Log("refreshing lock %v", l.lockID)
+	l.lock.Lock()
 	l.Time = time.Now()
+	l.lock.Unlock()
 	id, err := l.createLock(ctx)
 	if err != nil {
 		return err
 	}
+
+	l.lock.Lock()
+	defer l.lock.Unlock()
 
 	debug.Log("new lock ID %v", id)
 	oldLockID := l.lockID
@@ -228,7 +274,10 @@ func (l *Lock) Refresh(ctx context.Context) error {
 	return l.repo.Backend().Remove(context.TODO(), Handle{Type: LockFile, Name: oldLockID.String()})
 }
 
-func (l Lock) String() string {
+func (l *Lock) String() string {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+
 	text := fmt.Sprintf("PID %d on %s by %s (UID %d, GID %d)\nlock was created at %s (%s ago)\nstorage ID %v",
 		l.PID, l.Hostname, l.Username, l.UID, l.GID,
 		l.Time.Format("2006-01-02 15:04:05"), time.Since(l.Time),
@@ -264,8 +313,9 @@ func LoadLock(ctx context.Context, repo Repository, id ID) (*Lock, error) {
 }
 
 // RemoveStaleLocks deletes all locks detected as stale from the repository.
-func RemoveStaleLocks(ctx context.Context, repo Repository) error {
-	return ForAllLocks(ctx, repo, nil, func(id ID, lock *Lock, err error) error {
+func RemoveStaleLocks(ctx context.Context, repo Repository) (uint, error) {
+	var processed uint
+	err := ForAllLocks(ctx, repo, nil, func(id ID, lock *Lock, err error) error {
 		if err != nil {
 			// ignore locks that cannot be loaded
 			debug.Log("ignore lock %v: %v", id, err)
@@ -273,18 +323,29 @@ func RemoveStaleLocks(ctx context.Context, repo Repository) error {
 		}
 
 		if lock.Stale() {
-			return repo.Backend().Remove(ctx, Handle{Type: LockFile, Name: id.String()})
+			err = repo.Backend().Remove(ctx, Handle{Type: LockFile, Name: id.String()})
+			if err == nil {
+				processed++
+			}
+			return err
 		}
 
 		return nil
 	})
+	return processed, err
 }
 
 // RemoveAllLocks removes all locks forcefully.
-func RemoveAllLocks(ctx context.Context, repo Repository) error {
-	return repo.List(ctx, LockFile, func(id ID, size int64) error {
-		return repo.Backend().Remove(ctx, Handle{Type: LockFile, Name: id.String()})
+func RemoveAllLocks(ctx context.Context, repo Repository) (uint, error) {
+	var processed uint32
+	err := ParallelList(ctx, repo.Backend(), LockFile, repo.Connections(), func(ctx context.Context, id ID, size int64) error {
+		err := repo.Backend().Remove(ctx, Handle{Type: LockFile, Name: id.String()})
+		if err == nil {
+			atomic.AddUint32(&processed, 1)
+		}
+		return err
 	})
+	return uint(processed), err
 }
 
 // ForAllLocks reads all locks in parallel and calls the given callback.
@@ -294,50 +355,21 @@ func RemoveAllLocks(ctx context.Context, repo Repository) error {
 func ForAllLocks(ctx context.Context, repo Repository, excludeID *ID, fn func(ID, *Lock, error) error) error {
 	var m sync.Mutex
 
-	// track spawned goroutines using wg, create a new context which is
-	// cancelled as soon as an error occurs.
-	wg, ctx := errgroup.WithContext(ctx)
-
-	ch := make(chan ID)
-
-	// send list of lock files through ch, which is closed afterwards
-	wg.Go(func() error {
-		defer close(ch)
-		return repo.List(ctx, LockFile, func(id ID, size int64) error {
-			if excludeID != nil && id.Equal(*excludeID) {
-				return nil
-			}
-
-			select {
-			case <-ctx.Done():
-				return nil
-			case ch <- id:
-			}
-			return nil
-		})
-	})
-
-	// a worker receives an snapshot ID from ch, loads the snapshot
-	// and runs fn with id, the snapshot and the error
-	worker := func() error {
-		for id := range ch {
-			debug.Log("load lock %v", id)
-			lock, err := LoadLock(ctx, repo, id)
-
-			m.Lock()
-			err = fn(id, lock, err)
-			m.Unlock()
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-
 	// For locks decoding is nearly for free, thus just assume were only limited by IO
-	for i := 0; i < int(repo.Connections()); i++ {
-		wg.Go(worker)
-	}
+	return ParallelList(ctx, repo.Backend(), LockFile, repo.Connections(), func(ctx context.Context, id ID, size int64) error {
+		if excludeID != nil && id.Equal(*excludeID) {
+			return nil
+		}
+		if size == 0 {
+			// Ignore empty lock files as some backends do not guarantee atomic uploads.
+			// These may leave empty files behind if an upload was interrupted between
+			// creating the file and writing its data.
+			return nil
+		}
+		lock, err := LoadLock(ctx, repo, id)
 
-	return wg.Wait()
+		m.Lock()
+		defer m.Unlock()
+		return fn(id, lock, err)
+	})
 }

@@ -4,12 +4,12 @@ import (
 	"context"
 	"hash"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"syscall"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/layout"
 	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -23,7 +23,7 @@ import (
 type Local struct {
 	Config
 	sem sema.Semaphore
-	backend.Layout
+	layout.Layout
 	backend.Modes
 }
 
@@ -33,7 +33,7 @@ var _ restic.Backend = &Local{}
 const defaultLayout = "default"
 
 func open(ctx context.Context, cfg Config) (*Local, error) {
-	l, err := backend.ParseLayout(ctx, &backend.LocalFilesystem{}, cfg.Layout, defaultLayout, cfg.Path)
+	l, err := layout.ParseLayout(ctx, &layout.LocalFilesystem{}, cfg.Layout, defaultLayout, cfg.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +176,7 @@ func (b *Local) Save(ctx context.Context, h restic.Handle, rd restic.RewindReade
 
 	// Ignore error if filesystem does not support fsync.
 	err = f.Sync()
-	syncNotSup := errors.Is(err, syscall.ENOTSUP)
+	syncNotSup := err != nil && (errors.Is(err, syscall.ENOTSUP) || isMacENOTTY(err))
 	if err != nil && !syncNotSup {
 		return errors.WithStack(err)
 	}
@@ -208,7 +208,7 @@ func (b *Local) Save(ctx context.Context, h restic.Handle, rd restic.RewindReade
 	return nil
 }
 
-var tempFile = ioutil.TempFile // Overridden by test.
+var tempFile = os.CreateTemp // Overridden by test.
 
 // Load runs fn with a reader that yields the contents of the file at h at the
 // given offset.
@@ -267,24 +267,6 @@ func (b *Local) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, err
 	}
 
 	return restic.FileInfo{Size: fi.Size(), Name: h.Name}, nil
-}
-
-// Test returns true if a blob of the given type and name exists in the backend.
-func (b *Local) Test(ctx context.Context, h restic.Handle) (bool, error) {
-	debug.Log("Test %v", h)
-
-	b.sem.GetToken()
-	defer b.sem.ReleaseToken()
-
-	_, err := fs.Stat(b.Filename(h))
-	if err != nil {
-		if b.IsNotExist(err) {
-			return false, nil
-		}
-		return false, errors.WithStack(err)
-	}
-
-	return true, nil
 }
 
 // Remove removes the blob with the given name and type.

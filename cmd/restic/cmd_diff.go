@@ -11,6 +11,7 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -35,7 +36,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runDiff(diffOptions, globalOptions, args)
+		return runDiff(cmd.Context(), diffOptions, globalOptions, args)
 	},
 }
 
@@ -54,11 +55,11 @@ func init() {
 }
 
 func loadSnapshot(ctx context.Context, be restic.Lister, repo restic.Repository, desc string) (*restic.Snapshot, error) {
-	id, err := restic.FindSnapshot(ctx, be, desc)
+	sn, err := restic.FindSnapshot(ctx, be, repo, desc)
 	if err != nil {
 		return nil, errors.Fatal(err.Error())
 	}
-	return restic.LoadSnapshot(ctx, repo, id)
+	return sn, err
 }
 
 // Comparer collects all things needed to compare two snapshots.
@@ -321,21 +322,19 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 	return nil
 }
 
-func runDiff(opts DiffOptions, gopts GlobalOptions, args []string) error {
+func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []string) error {
 	if len(args) != 2 {
 		return errors.Fatalf("specify two snapshot IDs")
 	}
 
-	ctx, cancel := context.WithCancel(gopts.ctx)
-	defer cancel()
-
-	repo, err := OpenRepository(gopts)
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
 
 	if !gopts.NoLock {
-		lock, err := lockRepo(ctx, repo)
+		var lock *restic.Lock
+		lock, ctx, err = lockRepo(ctx, repo)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err
@@ -427,8 +426,8 @@ func runDiff(opts DiffOptions, gopts GlobalOptions, args []string) error {
 		Printf("Others:      %5d new, %5d removed\n", stats.Added.Others, stats.Removed.Others)
 		Printf("Data Blobs:  %5d new, %5d removed\n", stats.Added.DataBlobs, stats.Removed.DataBlobs)
 		Printf("Tree Blobs:  %5d new, %5d removed\n", stats.Added.TreeBlobs, stats.Removed.TreeBlobs)
-		Printf("  Added:   %-5s\n", formatBytes(uint64(stats.Added.Bytes)))
-		Printf("  Removed: %-5s\n", formatBytes(uint64(stats.Removed.Bytes)))
+		Printf("  Added:   %-5s\n", ui.FormatBytes(uint64(stats.Added.Bytes)))
+		Printf("  Removed: %-5s\n", ui.FormatBytes(uint64(stats.Removed.Bytes)))
 	}
 
 	return nil

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
@@ -36,13 +37,14 @@ func newProgressMax(show bool, max uint64, description string) *progress.Counter
 	interval := calculateProgressInterval(show, false)
 	canUpdateStatus := stdoutCanUpdateStatus()
 
-	return progress.New(interval, max, func(v uint64, max uint64, d time.Duration, final bool) {
+	return progress.NewCounter(interval, max, func(v uint64, max uint64, d time.Duration, final bool) {
 		var status string
 		if max == 0 {
-			status = fmt.Sprintf("[%s]          %d %s", formatDuration(d), v, description)
+			status = fmt.Sprintf("[%s]          %d %s",
+				ui.FormatDuration(d), v, description)
 		} else {
 			status = fmt.Sprintf("[%s] %s  %d / %d %s",
-				formatDuration(d), formatPercent(v, max), v, max, description)
+				ui.FormatDuration(d), ui.FormatPercent(v, max), v, max, description)
 		}
 
 		printProgress(status, canUpdateStatus)

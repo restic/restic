@@ -1,0 +1,20 @@
+Enhancement: Stricter repository lock handling
+
+Previously, restic commands kept running even if they failed to refresh their
+locks in time. This could be a problem e.g. in case the client system running
+a backup entered the standby power mode while the backup was still in progress
+(which would prevent the client from refreshing its lock), and after a short
+delay another host successfully runs `unlock` and `prune` on the repository,
+which would remove all data added by the in-progress backup. If the backup
+client later continues its backup, even though its lock had expired in the
+meantime, this would lead to an incomplete snapshot.
+
+To address this, lock handling is now much stricter. Commands requiring a lock
+are canceled if the lock is not refreshed successfully in time. In addition,
+if a lock file is not readable restic will not allow starting a command. It may
+be necessary to remove invalid lock files manually or use `unlock --remove-all`.
+Please make sure that no other restic processes are running concurrently before
+doing this, however.
+
+https://github.com/restic/restic/issues/2715
+https://github.com/restic/restic/pull/3569

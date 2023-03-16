@@ -1,0 +1,9 @@
+Enhancement: Improve `backup` performance for small files
+
+When backing up small files restic was slower than it could be. In particular
+this affected backups using maximum compression.
+
+This has been fixed by reworking the internal parallelism of the backup
+command, making it back up small files around two times faster.
+
+https://github.com/restic/restic/pull/3955

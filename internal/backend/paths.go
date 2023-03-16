@@ -2,25 +2,6 @@ package backend
 
 import "os"
 
-// Paths contains the default paths for file-based backends (e.g. local).
-var Paths = struct {
-	Data      string
-	Snapshots string
-	Index     string
-	Locks     string
-	Keys      string
-	Temp      string
-	Config    string
-}{
-	"data",
-	"snapshots",
-	"index",
-	"locks",
-	"keys",
-	"tmp",
-	"config",
-}
-
 type Modes struct {
 	Dir  os.FileMode
 	File os.FileMode

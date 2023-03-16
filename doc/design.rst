@@ -257,7 +257,7 @@ be downloaded and used to reconstruct the index. The file encoding is
 described in the "Unpacked Data Format" section. The plaintext consists
 of a JSON document like the following:
 
-.. code:: json
+.. code:: javascript
 
     {
       "supersedes": [

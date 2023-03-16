@@ -15,9 +15,14 @@ type Loader interface {
 	Connections() uint
 }
 
+type findBlobSet interface {
+	Has(bh BlobHandle) bool
+	Insert(bh BlobHandle)
+}
+
 // FindUsedBlobs traverses the tree ID and adds all seen blobs (trees and data
 // blobs) to the set blobs. Already seen tree blobs will not be visited again.
-func FindUsedBlobs(ctx context.Context, repo Loader, treeIDs IDs, blobs BlobSet, p *progress.Counter) error {
+func FindUsedBlobs(ctx context.Context, repo Loader, treeIDs IDs, blobs findBlobSet, p *progress.Counter) error {
 	var lock sync.Mutex
 
 	wg, ctx := errgroup.WithContext(ctx)

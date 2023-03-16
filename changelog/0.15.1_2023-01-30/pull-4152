@@ -1,0 +1,19 @@
+Enhancement: Ignore empty lock files
+
+With restic 0.15.0 the checks for stale locks became much stricter than before.
+In particular, empty or unreadable locks were no longer silently ignored. This
+made restic to complain with `Load(<lock/1234567812>, 0, 0) returned error,
+retrying after 552.330144ms: load(<lock/1234567812>): invalid data returned`
+and fail in the end.
+
+The error message is now clarified and the implementation changed to ignore
+empty lock files which are sometimes created as the result of a failed uploads
+on some backends.
+
+Please note that unreadable lock files still have to cleaned up manually. To do
+so, you can run `restic unlock --remove-all` which removes all existing lock
+files. But first make sure that no other restic process is currently using the
+repository.
+
+https://github.com/restic/restic/issues/4143
+https://github.com/restic/restic/pull/4152

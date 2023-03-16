@@ -19,6 +19,15 @@ values. As the restic commands evolve over time, the optimal value for each para
 can also change across restic versions.
 
 
+Disabling Backup Progress Estimation
+====================================
+
+When you start a backup, restic will concurrently count the number of files and
+their total size, which is used to estimate how long it will take. This will
+cause some extra I/O, which can slow down backups of network file systems or
+FUSE mounts. To avoid this overhead at the cost of not seeing a progress
+estimate, use the ``--no-scan`` option which disables this file scanning.
+
 Backend Connections
 ===================
 
@@ -49,6 +58,16 @@ which will compress very fast), ``max`` (which will trade backup speed and CPU u
 slightly better compression), or ``off`` (which disables compression). Each setting is
 only applied for the single run of restic. The option can also be set via the environment
 variable ``RESTIC_COMPRESSION``.
+
+
+File Read Concurrency
+=====================
+
+When backing up files from fast storage like NVMe disks, it can be beneficial to increase
+the read concurrency. This can increase the overall performance of the backup operation
+by reading more files in parallel. You can specify the concurrency of file reads with the
+``RESTIC_READ_CONCURRENCY`` environment variable or the ``--read-concurrency`` option of
+the ``backup`` command.
 
 
 Pack Size

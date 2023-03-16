@@ -56,6 +56,47 @@ func save(t testing.TB, be restic.Backend, buf []byte) restic.Handle {
 	return h
 }
 
+type quickRetryBackend struct {
+	restic.Backend
+}
+
+func (be *quickRetryBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+	err := be.Backend.Load(ctx, h, length, offset, fn)
+	if err != nil {
+		// retry
+		err = be.Backend.Load(ctx, h, length, offset, fn)
+	}
+	return err
+}
+
+func TestLoadAllBroken(t *testing.T) {
+	b := mock.NewBackend()
+
+	data := rtest.Random(23, rand.Intn(MiB)+500*KiB)
+	id := restic.Hash(data)
+	// damage buffer
+	data[0] ^= 0xff
+
+	b.OpenReaderFn = func(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+		return io.NopCloser(bytes.NewReader(data)), nil
+	}
+
+	// must fail on first try
+	_, err := backend.LoadAll(context.TODO(), nil, b, restic.Handle{Type: restic.PackFile, Name: id.String()})
+	if err == nil {
+		t.Fatalf("missing expected error")
+	}
+
+	// must return the broken data after a retry
+	be := &quickRetryBackend{Backend: b}
+	buf, err := backend.LoadAll(context.TODO(), nil, be, restic.Handle{Type: restic.PackFile, Name: id.String()})
+	rtest.OK(t, err)
+
+	if !bytes.Equal(buf, data) {
+		t.Fatalf("wrong data returned")
+	}
+}
+
 func TestLoadAllAppend(t *testing.T) {
 	b := mem.New()
 

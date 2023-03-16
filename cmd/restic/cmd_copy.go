@@ -32,16 +32,14 @@ This can be mitigated by the "--copy-chunker-params" option when initializing a
 new destination repository using the "init" command.
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runCopy(copyOptions, globalOptions, args)
+		return runCopy(cmd.Context(), copyOptions, globalOptions, args)
 	},
 }
 
 // CopyOptions bundles all options for the copy command.
 type CopyOptions struct {
 	secondaryRepoOptions
-	Hosts []string
-	Tags  restic.TagLists
-	Paths []string
+	snapshotFilterOptions
 }
 
 var copyOptions CopyOptions
@@ -51,12 +49,10 @@ func init() {
 
 	f := cmdCopy.Flags()
 	initSecondaryRepoOptions(f, &copyOptions.secondaryRepoOptions, "destination", "to copy snapshots from")
-	f.StringArrayVarP(&copyOptions.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when no snapshot ID is given (can be specified multiple times)")
-	f.Var(&copyOptions.Tags, "tag", "only consider snapshots which include this `taglist`, when no snapshot ID is given")
-	f.StringArrayVar(&copyOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot ID is given")
+	initMultiSnapshotFilterOptions(f, &copyOptions.snapshotFilterOptions, true)
 }
 
-func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
+func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []string) error {
 	secondaryGopts, isFromRepo, err := fillSecondaryGlobalOpts(opts.secondaryRepoOptions, gopts, "destination")
 	if err != nil {
 		return err
@@ -66,28 +62,26 @@ func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
 		gopts, secondaryGopts = secondaryGopts, gopts
 	}
 
-	ctx, cancel := context.WithCancel(gopts.ctx)
-	defer cancel()
-
-	srcRepo, err := OpenRepository(gopts)
+	srcRepo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}
 
-	dstRepo, err := OpenRepository(secondaryGopts)
+	dstRepo, err := OpenRepository(ctx, secondaryGopts)
 	if err != nil {
 		return err
 	}
 
 	if !gopts.NoLock {
-		srcLock, err := lockRepo(ctx, srcRepo)
+		var srcLock *restic.Lock
+		srcLock, ctx, err = lockRepo(ctx, srcRepo)
 		defer unlockRepo(srcLock)
 		if err != nil {
 			return err
 		}
 	}
 
-	dstLock, err := lockRepo(ctx, dstRepo)
+	dstLock, ctx, err := lockRepo(ctx, dstRepo)
 	defer unlockRepo(dstLock)
 	if err != nil {
 		return err
@@ -126,7 +120,6 @@ func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
 	visitedTrees := restic.NewIDSet()
 
 	for sn := range FindFilteredSnapshots(ctx, srcSnapshotLister, srcRepo, opts.Hosts, opts.Tags, opts.Paths, args) {
-		Verbosef("\nsnapshot %s of %v at %s)\n", sn.ID().Str(), sn.Paths, sn.Time)
 
 		// check whether the destination has a snapshot with the same persistent ID which has similar snapshot fields
 		srcOriginal := *sn.ID()
@@ -137,7 +130,8 @@ func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
 			isCopy := false
 			for _, originalSn := range originalSns {
 				if similarSnapshots(originalSn, sn) {
-					Verbosef("skipping source snapshot %s, was already copied to snapshot %s\n", sn.ID().Str(), originalSn.ID().Str())
+					Verboseff("\nsnapshot %s of %v at %s)\n", sn.ID().Str(), sn.Paths, sn.Time)
+					Verboseff("skipping source snapshot %s, was already copied to snapshot %s\n", sn.ID().Str(), originalSn.ID().Str())
 					isCopy = true
 					break
 				}
@@ -146,6 +140,7 @@ func runCopy(opts CopyOptions, gopts GlobalOptions, args []string) error {
 				continue
 			}
 		}
+		Verbosef("\nsnapshot %s of %v at %s)\n", sn.ID().Str(), sn.Paths, sn.Time)
 		Verbosef("  copy started, this may take a while...\n")
 		if err := copyTree(ctx, srcRepo, dstRepo, visitedTrees, *sn.Tree, gopts.Quiet); err != nil {
 			return err

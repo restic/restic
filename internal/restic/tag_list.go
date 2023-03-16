@@ -37,7 +37,7 @@ func (TagList) Type() string {
 type TagLists []TagList
 
 func (l TagLists) String() string {
-	return fmt.Sprintf("%v", []TagList(l))
+	return fmt.Sprint([]TagList(l))
 }
 
 // Flatten returns the list of all tags provided in TagLists

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"hash"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -13,6 +12,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/layout"
 	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -28,7 +28,7 @@ type Backend struct {
 	client *minio.Client
 	sem    sema.Semaphore
 	cfg    Config
-	backend.Layout
+	layout.Layout
 }
 
 // make sure that *Backend implements backend.Backend
@@ -113,7 +113,7 @@ func open(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, erro
 		cfg:    cfg,
 	}
 
-	l, err := backend.ParseLayout(ctx, be, cfg.Layout, defaultLayout, cfg.Prefix)
+	l, err := layout.ParseLayout(ctx, be, cfg.Layout, defaultLayout, cfg.Prefix)
 	if err != nil {
 		return nil, err
 	}
@@ -164,15 +164,12 @@ func isAccessDenied(err error) bool {
 	debug.Log("isAccessDenied(%T, %#v)", err, err)
 
 	var e minio.ErrorResponse
-	return errors.As(err, &e) && e.Code == "Access Denied"
+	return errors.As(err, &e) && e.Code == "AccessDenied"
 }
 
 // IsNotExist returns true if the error is caused by a not existing file.
 func (be *Backend) IsNotExist(err error) bool {
 	debug.Log("IsNotExist(%T, %#v)", err, err)
-	if errors.Is(err, os.ErrNotExist) {
-		return true
-	}
 
 	var e minio.ErrorResponse
 	return errors.As(err, &e) && e.Code == "NoSuchKey"
@@ -295,7 +292,7 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 	opts.PartSize = 200 * 1024 * 1024
 
 	debug.Log("PutObject(%v, %v, %v)", be.cfg.Bucket, objName, rd.Length())
-	info, err := be.client.PutObject(ctx, be.cfg.Bucket, objName, ioutil.NopCloser(rd), int64(rd.Length()), opts)
+	info, err := be.client.PutObject(ctx, be.cfg.Bucket, objName, io.NopCloser(rd), int64(rd.Length()), opts)
 
 	debug.Log("%v -> %v bytes, err %#v: %v", objName, info.Size, err, err)
 
@@ -390,23 +387,6 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 	}
 
 	return restic.FileInfo{Size: fi.Size, Name: h.Name}, nil
-}
-
-// Test returns true if a blob of the given type and name exists in the backend.
-func (be *Backend) Test(ctx context.Context, h restic.Handle) (bool, error) {
-	found := false
-	objName := be.Filename(h)
-
-	be.sem.GetToken()
-	_, err := be.client.StatObject(ctx, be.cfg.Bucket, objName, minio.StatObjectOptions{})
-	be.sem.ReleaseToken()
-
-	if err == nil {
-		found = true
-	}
-
-	// If error, then not found
-	return found, nil
 }
 
 // Remove removes the blob with the given name and type.
@@ -515,7 +495,7 @@ func (be *Backend) Delete(ctx context.Context) error {
 func (be *Backend) Close() error { return nil }
 
 // Rename moves a file based on the new layout l.
-func (be *Backend) Rename(ctx context.Context, h restic.Handle, l backend.Layout) error {
+func (be *Backend) Rename(ctx context.Context, h restic.Handle, l layout.Layout) error {
 	debug.Log("Rename %v to %v", h, l)
 	oldname := be.Filename(h)
 	newname := l.Filename(h)
