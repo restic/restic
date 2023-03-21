@@ -17,6 +17,8 @@ Talks
 
 The following talks will be or have been given about restic:
 
+-  2021-04-02: `The Changelog: Restic has your backup 
+   (Podcast) <https://changelog.com/podcast/434>`__
 -  2016-01-31: Lightning Talk at the Go Devroom at FOSDEM 2016,
    Brussels, Belgium
 -  2016-01-29: `restic - Backups mal
