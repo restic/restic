@@ -10,9 +10,11 @@ import (
 	"github.com/restic/restic/internal/restic"
 )
 
+const prime = 11400714785074694791 // prime1 from xxhash.
+
 // inodeFromName generates an inode number for a file in a meta dir.
 func inodeFromName(parent uint64, name string) uint64 {
-	inode := parent ^ xxhash.Sum64String(cleanupNodeName(name))
+	inode := prime*parent ^ xxhash.Sum64String(cleanupNodeName(name))
 
 	// Inode 0 is invalid and 1 is the root. Remap those.
 	if inode < 2 {
@@ -33,7 +35,7 @@ func inodeFromNode(parent uint64, node *restic.Node) (inode uint64) {
 	} else {
 		// Else, use the name and the parent inode.
 		// node.{DeviceID,Inode} may not even be reliable.
-		inode = parent ^ xxhash.Sum64String(cleanupNodeName(node.Name))
+		inode = prime*parent ^ xxhash.Sum64String(cleanupNodeName(node.Name))
 	}
 
 	// Inode 0 is invalid and 1 is the root. Remap those.

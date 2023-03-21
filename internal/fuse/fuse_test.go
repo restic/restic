@@ -226,6 +226,17 @@ func TestInodeFromNode(t *testing.T) {
 	ino1 = inodeFromNode(1, node)
 	ino2 = inodeFromNode(2, node)
 	rtest.Assert(t, ino1 != ino2, "same inode %d but different parent", ino1)
+
+	// Regression test: in a path a/b/b, the grandchild should not get the
+	// same inode as the grandparent.
+	a := &restic.Node{Name: "a", Type: "dir", Links: 2}
+	ab := &restic.Node{Name: "b", Type: "dir", Links: 2}
+	abb := &restic.Node{Name: "b", Type: "dir", Links: 2}
+	inoA := inodeFromNode(1, a)
+	inoAb := inodeFromNode(inoA, ab)
+	inoAbb := inodeFromNode(inoAb, abb)
+	rtest.Assert(t, inoA != inoAb, "inode(a/b) = inode(a)")
+	rtest.Assert(t, inoA != inoAbb, "inode(a/b/b) = inode(a)")
 }
 
 var sink uint64
