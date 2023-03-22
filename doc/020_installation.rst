@@ -93,7 +93,7 @@ You may also install it using `MacPorts <https://www.macports.org/>`__:
 Nix & NixOS
 ===========
 
-If you are using `Nix <https://nixos.org/nix/>`__ or `NixOS <https://nixos.org/>`__
+If you are using `Nix / NixOS <https://nixos.org>`__
 there is a package available named ``restic``.
 It can be installed using ``nix-env``:
 

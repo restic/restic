@@ -224,7 +224,7 @@ locks with the following command:
     d369ccc7d126594950bf74f0a348d5d98d9e99f3215082eb69bf02dc9b3e464c
 
 The ``find`` command searches for a given
-`pattern <https://golang.org/pkg/path/filepath/#Match>`__ in the
+`pattern <https://pkg.go.dev/path/filepath#Match>`__ in the
 repository.
 
 .. code-block:: console
