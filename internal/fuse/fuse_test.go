@@ -8,6 +8,7 @@ import (
 	"context"
 	"math/rand"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -214,6 +215,37 @@ func testTopUIDGID(t *testing.T, cfg Config, repo restic.Repository, uid, gid ui
 	rtest.OK(t, err)
 	rtest.Equals(t, uint32(0), attr.Uid)
 	rtest.Equals(t, uint32(0), attr.Gid)
+}
+
+// Test reporting of fuse.Attr.Blocks in multiples of 512.
+func TestBlocks(t *testing.T) {
+	root := &Root{}
+
+	for _, c := range []struct {
+		size, blocks uint64
+	}{
+		{0, 0},
+		{1, 1},
+		{511, 1},
+		{512, 1},
+		{513, 2},
+		{1024, 2},
+		{1025, 3},
+		{41253, 81},
+	} {
+		target := strings.Repeat("x", int(c.size))
+
+		for _, n := range []fs.Node{
+			&file{root: root, node: &restic.Node{Size: uint64(c.size)}},
+			&link{root: root, node: &restic.Node{LinkTarget: target}},
+			&snapshotLink{root: root, snapshot: &restic.Snapshot{}, target: target},
+		} {
+			var a fuse.Attr
+			err := n.Attr(context.TODO(), &a)
+			rtest.OK(t, err)
+			rtest.Equals(t, c.blocks, a.Blocks)
+		}
+	}
 }
 
 func TestInodeFromNode(t *testing.T) {

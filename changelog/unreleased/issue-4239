@@ -1,0 +1,11 @@
+Bugfix: Correct number of blocks reported in mount point
+
+Restic mount points incorrectly reported the number of 512-byte (POSIX
+standard) blocks for files and links, due to a rounding bug. In particular,
+empty files were reported as taking one block instead of zero.
+
+The rounding is now fixed: the number of blocks reported is the file size
+(or link target size), divided by 512 and rounded up to a whole number.
+
+https://github.com/restic/restic/issues/4239
+https://github.com/restic/restic/pull/4240
