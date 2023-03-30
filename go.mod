@@ -1,9 +1,6 @@
 module github.com/restic/restic
 
-replace (
-	golang.org/x/text => golang.org/x/text v0.3.7
-	gopkg.in/yaml.v2 => gopkg.in/yaml.v2 v2.4.0
-)
+replace gopkg.in/yaml.v2 => gopkg.in/yaml.v2 v2.4.0
 
 require (
 	cloud.google.com/go/storage v1.29.0
