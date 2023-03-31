@@ -2,10 +2,8 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"html/template"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -143,13 +141,12 @@ func runWebServer(ctx context.Context, opts WebOptions, gopts GlobalOptions, arg
 	filesPage := template.Must(template.New("files").Parse(FilesTpl))
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(os.Stderr, "GET: %s\n", r.URL.Path)
-		uri := strings.Split(r.URL.Path, "/")
+		Verbosef("HTTP REQ: %s\n", r.URL.Path)
 
 		// Static assets
 		if r.URL.Path == "/style.css" {
 			w.Header().Set("Cache-Control", "max-age=300")
-			w.Write([]byte(StyleTxt))
+			_, _ = w.Write([]byte(StyleTxt))
 			return
 		}
 
@@ -157,7 +154,7 @@ func runWebServer(ctx context.Context, opts WebOptions, gopts GlobalOptions, arg
 		if r.URL.Path == "/" {
 			var rows []IndexRow
 			for sn := range FindFilteredSnapshots(ctx, repo.Backend(), repo, &restic.SnapshotFilter{}, nil) {
-				rows = append(rows, IndexRow{"/" + sn.ID().Str(), sn.ID().Str(), sn.Time.String(), sn.Hostname, sn.Tags, sn.Paths})
+				rows = append(rows, IndexRow{"/" + sn.ID().Str() + "/", sn.ID().Str(), sn.Time.String(), sn.Hostname, sn.Tags, sn.Paths})
 			}
 			if err := indexPage.Execute(w, IndexPage{"Snapshots", rows}); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -166,11 +163,16 @@ func runWebServer(ctx context.Context, opts WebOptions, gopts GlobalOptions, arg
 		}
 
 		// Snapshot page, list files
-		if sn, _ := restic.FindSnapshot(ctx, repo.Backend(), repo, uri[1]); sn != nil {
-			reqPath := "/" + strings.Trim(strings.Join(uri[2:], "/"), "/")
-			items := make(map[string]*restic.Node)
+		if uri := strings.Split(r.URL.Path[1:], "/"); len(uri) >= 2 {
+			sn, err := restic.FindSnapshot(ctx, repo.Backend(), repo, uri[0])
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusNotFound)
+				return
+			}
 
-			walker.Walk(ctx, repo, *sn.Tree, nil, func(_ restic.ID, nodepath string, node *restic.Node, err error) (bool, error) {
+			reqPath := "/" + strings.Join(uri[1:], "/")
+			items := make(map[string]*restic.Node)
+			err = walker.Walk(ctx, repo, *sn.Tree, nil, func(_ restic.ID, nodepath string, node *restic.Node, err error) (bool, error) {
 				if err != nil {
 					return false, err
 				}
@@ -186,17 +188,18 @@ func runWebServer(ctx context.Context, opts WebOptions, gopts GlobalOptions, arg
 				return false, nil
 			})
 
-			// Requested path is a file, dump it
-			if node, ok := items[reqPath]; ok && node.Type == "file" {
-				d := dump.New("zip", repo, w)
-				if err := d.WriteNode(ctx, node); err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-				}
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 
-			// List snapshot content
-			if len(items) > 0 {
+			if node, ok := items[reqPath]; ok && node.Type == "file" {
+				// Requested path is a file, dump it
+				if err := dump.New("zip", repo, w).WriteNode(ctx, node); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+				}
+			} else {
+				// Requested path is a folder, list it
 				var dirs []FileRow
 				var files []FileRow
 				for path, node := range items {
@@ -217,9 +220,10 @@ func runWebServer(ctx context.Context, opts WebOptions, gopts GlobalOptions, arg
 			}
 		}
 
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		http.NotFound(w, r)
 	})
 
-	fmt.Fprintf(os.Stdout, "Server started on http://%s\n", opts.Listen)
+	Printf("Now serving the repository at http://%s\n", opts.Listen)
+	Printf("When finished, quit with Ctrl-c here.\n")
 	return http.ListenAndServe(opts.Listen, nil)
 }
