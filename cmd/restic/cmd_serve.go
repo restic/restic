@@ -139,6 +139,7 @@ func runWebServer(ctx context.Context, opts WebOptions, gopts GlobalOptions, arg
 
 		// Static assets
 		if r.URL.Path == "/style.css" {
+			w.Header().Set("Cache-Control", "max-age=300")
 			w.Write([]byte(StyleTxt))
 			return
 		}
@@ -182,22 +183,23 @@ func runWebServer(ctx context.Context, opts WebOptions, gopts GlobalOptions, arg
 			}
 			
 			// List snapshot content
-			var dirs []FileRow
-			var files []FileRow
-			for path, node := range items {
-				fullpath := "/" + sn.ID().Str() + "/" + path
-				row := FileRow{fullpath, node.Name, node.Type, node.Size}
-				if fs.HasPathPrefix(fullpath, r.URL.Path) {
-					//
-				} else if node.Type == "dir" {
-					dirs = append(dirs, row)
-				} else {
-					files = append(files, row)
+			if len(items) > 0 {
+				var dirs []FileRow
+				var files []FileRow
+				for path, node := range items {
+					fullpath := "/" + sn.ID().Str() + "/" + path
+					row := FileRow{fullpath, node.Name, node.Type, node.Size}
+					if fs.HasPathPrefix(fullpath, r.URL.Path) {
+						//
+					} else if node.Type == "dir" {
+						dirs = append(dirs, row)
+					} else {
+						files = append(files, row)
+					}
 				}
+				filesPage.Execute(w, FilesPage{sn.ID().Str() + ": " + reqPath, append(dirs, files...)})
+				return
 			}
-
-			filesPage.Execute(w, FilesPage{sn.ID().Str() + ": " + reqPath, append(dirs, files...)})
-			return
 		}
 
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
