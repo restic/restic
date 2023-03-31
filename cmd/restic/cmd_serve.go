@@ -56,13 +56,13 @@ type IndexRow struct {
 	ID    string
 	Time  string
 	Host  string
-	Tags  string
-	Paths string
+	Tags  []string
+	Paths []string
 }
 
 type IndexPage struct {
 	Title string
-	Rows []IndexRow
+	Rows  []IndexRow
 }
 
 const IndexTpl = `<html>
@@ -92,7 +92,7 @@ type FileRow struct {
 
 type FilesPage struct {
 	Title string
-	Rows []FileRow
+	Rows  []FileRow
 }
 
 const FilesTpl = `<html>
@@ -157,12 +157,14 @@ func runWebServer(ctx context.Context, opts WebOptions, gopts GlobalOptions, arg
 		if r.URL.Path == "/" {
 			var rows []IndexRow
 			for sn := range FindFilteredSnapshots(ctx, repo.Backend(), repo, &restic.SnapshotFilter{}, nil) {
-				rows = append(rows, IndexRow{"/" + sn.ID().Str(), sn.ID().Str(), sn.Time.String(), sn.Hostname, strings.Join(sn.Tags, ", "), strings.Join(sn.Paths, ", ")})
+				rows = append(rows, IndexRow{"/" + sn.ID().Str(), sn.ID().Str(), sn.Time.String(), sn.Hostname, sn.Tags, sn.Paths})
 			}
-			indexPage.Execute(w, IndexPage{"Snapshots", rows})
+			if err := indexPage.Execute(w, IndexPage{"Snapshots", rows}); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
 			return
 		}
-		
+
 		// Snapshot page, list files
 		if sn, _ := restic.FindSnapshot(ctx, repo.Backend(), repo, uri[1]); sn != nil {
 			reqPath := "/" + strings.Trim(strings.Join(uri[2:], "/"), "/")
@@ -187,10 +189,12 @@ func runWebServer(ctx context.Context, opts WebOptions, gopts GlobalOptions, arg
 			// Requested path is a file, dump it
 			if node, ok := items[reqPath]; ok && node.Type == "file" {
 				d := dump.New("zip", repo, w)
-				d.WriteNode(ctx, node)
+				if err := d.WriteNode(ctx, node); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+				}
 				return
 			}
-			
+
 			// List snapshot content
 			if len(items) > 0 {
 				var dirs []FileRow
@@ -206,7 +210,9 @@ func runWebServer(ctx context.Context, opts WebOptions, gopts GlobalOptions, arg
 						files = append(files, row)
 					}
 				}
-				filesPage.Execute(w, FilesPage{sn.ID().Str() + ": " + reqPath, append(dirs, files...)})
+				if err := filesPage.Execute(w, FilesPage{sn.ID().Str() + ": " + reqPath, append(dirs, files...)}); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+				}
 				return
 			}
 		}
@@ -214,6 +220,6 @@ func runWebServer(ctx context.Context, opts WebOptions, gopts GlobalOptions, arg
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 	})
 
-	fmt.Fprintf(os.Stdout, "Server started on http://%s\n", opts.Listen);
+	fmt.Fprintf(os.Stdout, "Server started on http://%s\n", opts.Listen)
 	return http.ListenAndServe(opts.Listen, nil)
 }
