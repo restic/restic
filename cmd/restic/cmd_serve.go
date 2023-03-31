@@ -125,6 +125,15 @@ func runWebServer(ctx context.Context, opts WebOptions, gopts GlobalOptions, arg
 		return err
 	}
 
+	if !gopts.NoLock {
+		var lock *restic.Lock
+		lock, ctx, err = lockRepo(ctx, repo)
+		defer unlockRepo(lock)
+		if err != nil {
+			return err
+		}
+	}
+
 	err = repo.LoadIndex(ctx)
 	if err != nil {
 		return err
