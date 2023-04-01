@@ -25,120 +25,23 @@ The serve command runs a web server to browse a repository.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runWebServer(cmd.Context(), cmdOptions, globalOptions, args)
+		return runWebServer(cmd.Context(), serveOptions, globalOptions, args)
 	},
 }
 
-type WebOptions struct {
+type ServeOptions struct {
 	Listen string
 }
 
-var cmdOptions WebOptions
+var serveOptions ServeOptions
 
 func init() {
 	cmdRoot.AddCommand(cmdServe)
 	cmdFlags := cmdServe.Flags()
-	cmdFlags.StringVarP(&cmdOptions.Listen, "listen", "l", "localhost:3080", "set the listen host name and `address`")
+	cmdFlags.StringVarP(&serveOptions.Listen, "listen", "l", "localhost:3080", "set the listen host name and `address`")
 }
 
-const StyleTxt = `
-h1,h2,h3 {text-align:center; margin: 0.5em;}
-table {margin: 0 auto;border-collapse: collapse; }
-thead th {text-align: left; font-weight: bold;}
-tbody tr:hover {background: #eee;}
-table, td, tr, th { border: 1px solid black; padding: .1em .5em;}
-a.file:before {content: '\1F4C4'}
-a.dir:before {content: '\1F4C1'}
-`
-
-type IndexRow struct {
-	Link  string
-	ID    string
-	Time  time.Time
-	Host  string
-	Tags  []string
-	Paths []string
-}
-
-type IndexPage struct {
-	Title string
-	Rows  []IndexRow
-}
-
-const IndexTpl = `<html>
-<head>
-<link rel="stylesheet" href="/style.css">
-<title>{{.Title}} :: restic</title>
-</head>
-<body>
-<h1>{{.Title}}</h1>
-<table>
-<thead><tr><th>ID</th><th>Time</th><th>Host</th><th>Tags</th><th>Paths</th></tr></thead>
-<tbody>
-{{range .Rows}}
-<tr><td><a href="{{.Link}}">{{.ID}}</a></td><td>{{.Time}}</td><td>{{.Host}}</td><td>{{.Tags}}</td><td>{{.Paths}}</td></tr>
-{{end}}
-</tbody>
-</table>
-</body>
-</html>`
-
-type FileRow struct {
-	Link string
-	Name string
-	Type string
-	Size uint64
-}
-
-type TreePage struct {
-	Title string
-	Rows  []FileRow
-}
-
-const TreeTpl = `<html>
-<head>
-<link rel="stylesheet" href="/style.css">
-<title>{{.Title}} :: restic</title>
-</head>
-<body>
-<h1>{{.Title}}</h1>
-<table>
-<thead><tr><th>Name</th><th>Type</th><th>Size</th></tr></thead>
-<tbody>
-{{range .Rows}}
-<tr><td><a class="{{.Type}}" href="{{.Link}}">{{.Name}}</a></td><td>{{.Type}}</td><td>{{.Size}}</td></tr>
-{{end}}
-</tbody>
-</table>
-</body>
-</html>`
-
-type NodePath struct {
-	Path string
-	Node *restic.Node
-}
-
-func listNodes(ctx context.Context, repo restic.Repository, sn *restic.Snapshot, path string) ([]NodePath, error) {
-	var items []NodePath
-	err := walker.Walk(ctx, repo, *sn.Tree, nil, func(_ restic.ID, nodepath string, node *restic.Node, err error) (bool, error) {
-		if err != nil {
-			return false, err
-		}
-		if node == nil {
-			return false, nil
-		}
-		if fs.HasPathPrefix(path, nodepath) {
-			items = append(items, NodePath{nodepath, node})
-		}
-		if node.Type == "dir" && !fs.HasPathPrefix(nodepath, path) {
-			return false, walker.ErrSkipNode
-		}
-		return false, nil
-	})
-	return items, err
-}
-
-func runWebServer(ctx context.Context, opts WebOptions, gopts GlobalOptions, args []string) error {
+func runWebServer(ctx context.Context, opts ServeOptions, gopts GlobalOptions, args []string) error {
 	if len(args) > 0 {
 		return errors.Fatal("this command does not accept additional arguments")
 	}
@@ -162,8 +65,8 @@ func runWebServer(ctx context.Context, opts WebOptions, gopts GlobalOptions, arg
 		return err
 	}
 
-	indexPage := template.Must(template.New("index").Parse(IndexTpl))
-	treePage := template.Must(template.New("tree").Parse(TreeTpl))
+	indexPage := template.Must(template.New("index").Parse(indexPageTpl))
+	treePage := template.Must(template.New("tree").Parse(treePageTpl))
 
 	http.HandleFunc("/tree/", func(w http.ResponseWriter, r *http.Request) {
 		snapshotID, curPath, _ := strings.Cut(r.URL.Path[6:], "/")
@@ -175,37 +78,56 @@ func runWebServer(ctx context.Context, opts WebOptions, gopts GlobalOptions, arg
 			return
 		}
 
-		items, err := listNodes(ctx, repo, sn, curPath)
-		if err != nil || len(items) == 0 {
+		type fileNode struct {
+			Path string
+			Node *restic.Node
+		}
+
+		var files []fileNode
+
+		err = walker.Walk(ctx, repo, *sn.Tree, nil, func(_ restic.ID, nodepath string, node *restic.Node, err error) (bool, error) {
+			if err != nil || node == nil {
+				return false, err
+			}
+			if fs.HasPathPrefix(curPath, nodepath) {
+				files = append(files, fileNode{nodepath, node})
+			}
+			if node.Type == "dir" && !fs.HasPathPrefix(nodepath, curPath) {
+				return false, walker.ErrSkipNode
+			}
+			return false, nil
+		})
+
+		if err != nil || len(files) == 0 {
 			http.Error(w, "Path not found in snapshot", http.StatusNotFound)
 			return
 		}
 
-		if len(items) == 1 && items[0].Node.Type == "file" {
+		if len(files) == 1 && files[0].Node.Type == "file" {
 			// Requested path is a file, dump it
-			if err := dump.New("zip", repo, w).WriteNode(ctx, items[0].Node); err != nil {
+			if err := dump.New("zip", repo, w).WriteNode(ctx, files[0].Node); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
 		} else {
 			// Requested path is a folder, list it
-			var files []FileRow
-			for _, item := range items {
+			var rows []treePageRow
+			for _, item := range files {
 				if !fs.HasPathPrefix(item.Path, curPath) {
-					files = append(files, FileRow{"/tree/" + snapshotID + item.Path, item.Node.Name, item.Node.Type, item.Node.Size})
+					rows = append(rows, treePageRow{"/tree/" + snapshotID + item.Path, item.Node.Name, item.Node.Type, item.Node.Size})
 				}
 			}
-			sort.SliceStable(files, func(i, j int) bool {
-				return strings.ToLower(files[i].Name) < strings.ToLower(files[j].Name)
+			sort.SliceStable(rows, func(i, j int) bool {
+				return strings.ToLower(rows[i].Name) < strings.ToLower(rows[j].Name)
 			})
-			sort.SliceStable(files, func(i, j int) bool {
-				return files[i].Type == "dir" && files[j].Type != "dir"
+			sort.SliceStable(rows, func(i, j int) bool {
+				return rows[i].Type == "dir" && rows[j].Type != "dir"
 			})
 			if curPath != "/" {
-				files = append([]FileRow{{"/tree/" + snapshotID + curPath + "/..", "..", "parent", 0}}, files...)
+				rows = append([]treePageRow{{"/tree/" + snapshotID + curPath + "/..", "..", "parent", 0}}, rows...)
 			} else {
-				files = append([]FileRow{{"/", "..", "index", 0}}, files...)
+				rows = append([]treePageRow{{"/", "..", "index", 0}}, rows...)
 			}
-			if err := treePage.Execute(w, TreePage{snapshotID + ": " + curPath, files}); err != nil {
+			if err := treePage.Execute(w, treePageData{snapshotID + ": " + curPath, rows}); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
 		}
@@ -216,21 +138,21 @@ func runWebServer(ctx context.Context, opts WebOptions, gopts GlobalOptions, arg
 			http.NotFound(w, r)
 			return
 		}
-		var rows []IndexRow
+		var rows []indexPageRow
 		for sn := range FindFilteredSnapshots(ctx, repo.Backend(), repo, &restic.SnapshotFilter{}, nil) {
-			rows = append(rows, IndexRow{"/tree/" + sn.ID().Str() + "/", sn.ID().Str(), sn.Time, sn.Hostname, sn.Tags, sn.Paths})
+			rows = append(rows, indexPageRow{"/tree/" + sn.ID().Str() + "/", sn.ID().Str(), sn.Time, sn.Hostname, sn.Tags, sn.Paths})
 		}
 		sort.Slice(rows, func(i, j int) bool {
 			return rows[i].Time.After(rows[j].Time)
 		})
-		if err := indexPage.Execute(w, IndexPage{"Snapshots", rows}); err != nil {
+		if err := indexPage.Execute(w, indexPageData{"Snapshots", rows}); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	})
 
 	http.HandleFunc("/style.css", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "max-age=300")
-		_, _ = w.Write([]byte(StyleTxt))
+		_, _ = w.Write([]byte(stylesheetTxt))
 	})
 
 	Printf("Now serving the repository at http://%s\n", opts.Listen)
@@ -238,3 +160,75 @@ func runWebServer(ctx context.Context, opts WebOptions, gopts GlobalOptions, arg
 
 	return http.ListenAndServe(opts.Listen, nil)
 }
+
+type indexPageRow struct {
+	Link  string
+	ID    string
+	Time  time.Time
+	Host  string
+	Tags  []string
+	Paths []string
+}
+
+type indexPageData struct {
+	Title string
+	Rows  []indexPageRow
+}
+
+type treePageRow struct {
+	Link string
+	Name string
+	Type string
+	Size uint64
+}
+
+type treePageData struct {
+	Title string
+	Rows  []treePageRow
+}
+
+const indexPageTpl = `<html>
+<head>
+<link rel="stylesheet" href="/style.css">
+<title>{{.Title}} :: restic</title>
+</head>
+<body>
+<h1>{{.Title}}</h1>
+<table>
+<thead><tr><th>ID</th><th>Time</th><th>Host</th><th>Tags</th><th>Paths</th></tr></thead>
+<tbody>
+{{range .Rows}}
+<tr><td><a href="{{.Link}}">{{.ID}}</a></td><td>{{.Time}}</td><td>{{.Host}}</td><td>{{.Tags}}</td><td>{{.Paths}}</td></tr>
+{{end}}
+</tbody>
+</table>
+</body>
+</html>`
+
+const treePageTpl = `<html>
+<head>
+<link rel="stylesheet" href="/style.css">
+<title>{{.Title}} :: restic</title>
+</head>
+<body>
+<h1>{{.Title}}</h1>
+<table>
+<thead><tr><th>Name</th><th>Type</th><th>Size</th></tr></thead>
+<tbody>
+{{range .Rows}}
+<tr><td><a class="{{.Type}}" href="{{.Link}}">{{.Name}}</a></td><td>{{.Type}}</td><td>{{.Size}}</td></tr>
+{{end}}
+</tbody>
+</table>
+</body>
+</html>`
+
+const stylesheetTxt = `
+h1,h2,h3 {text-align:center; margin: 0.5em;}
+table {margin: 0 auto;border-collapse: collapse; }
+thead th {text-align: left; font-weight: bold;}
+tbody tr:hover {background: #eee;}
+table, td, tr, th { border: 1px solid black; padding: .1em .5em;}
+a.file:before {content: '\1F4C4'}
+a.dir:before {content: '\1F4C1'}
+`
