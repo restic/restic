@@ -4,7 +4,9 @@ import (
 	"context"
 	"html/template"
 	"net/http"
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -52,7 +54,7 @@ a.dir:before {content: '\1F4C1'}
 type IndexRow struct {
 	Link  string
 	ID    string
-	Time  string
+	Time  time.Time
 	Host  string
 	Tags  []string
 	Paths []string
@@ -113,6 +115,11 @@ const FilesTpl = `<html>
 </html>
 `
 
+type NodePath struct {
+	Path string
+	Node *restic.Node
+}
+
 func runWebServer(ctx context.Context, opts WebOptions, gopts GlobalOptions, args []string) error {
 	if len(args) > 0 {
 		return errors.Fatal("this command does not accept additional arguments")
@@ -154,8 +161,11 @@ func runWebServer(ctx context.Context, opts WebOptions, gopts GlobalOptions, arg
 		if r.URL.Path == "/" {
 			var rows []IndexRow
 			for sn := range FindFilteredSnapshots(ctx, repo.Backend(), repo, &restic.SnapshotFilter{}, nil) {
-				rows = append(rows, IndexRow{"/" + sn.ID().Str() + "/", sn.ID().Str(), sn.Time.String(), sn.Hostname, sn.Tags, sn.Paths})
+				rows = append(rows, IndexRow{"/" + sn.ID().Str() + "/", sn.ID().Str(), sn.Time, sn.Hostname, sn.Tags, sn.Paths})
 			}
+			sort.Slice(rows, func(i, j int) bool {
+				return rows[i].Time.After(rows[j].Time)
+			})
 			if err := indexPage.Execute(w, IndexPage{"Snapshots", rows}); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
@@ -166,12 +176,13 @@ func runWebServer(ctx context.Context, opts WebOptions, gopts GlobalOptions, arg
 		if uri := strings.Split(r.URL.Path[1:], "/"); len(uri) >= 2 {
 			sn, err := restic.FindSnapshot(ctx, repo.Backend(), repo, uri[0])
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusNotFound)
+				http.Error(w, "Snapshot not found: "+err.Error(), http.StatusNotFound)
 				return
 			}
 
+			var items []NodePath
+
 			reqPath := "/" + strings.Join(uri[1:], "/")
-			items := make(map[string]*restic.Node)
 			err = walker.Walk(ctx, repo, *sn.Tree, nil, func(_ restic.ID, nodepath string, node *restic.Node, err error) (bool, error) {
 				if err != nil {
 					return false, err
@@ -180,7 +191,7 @@ func runWebServer(ctx context.Context, opts WebOptions, gopts GlobalOptions, arg
 					return false, nil
 				}
 				if fs.HasPathPrefix(reqPath, nodepath) {
-					items[nodepath] = node
+					items = append(items, NodePath{"/" + sn.ID().Str() + nodepath, node})
 				}
 				if node.Type == "dir" && !fs.HasPathPrefix(nodepath, reqPath) {
 					return false, walker.ErrSkipNode
@@ -188,32 +199,31 @@ func runWebServer(ctx context.Context, opts WebOptions, gopts GlobalOptions, arg
 				return false, nil
 			})
 
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+			if err != nil || len(items) == 0 {
+				http.Error(w, "Path not found in snapshot", http.StatusNotFound)
 				return
 			}
 
-			if node, ok := items[reqPath]; ok && node.Type == "file" {
+			if len(items) == 1 && items[0].Node.Type == "file" {
 				// Requested path is a file, dump it
-				if err := dump.New("zip", repo, w).WriteNode(ctx, node); err != nil {
+				if err := dump.New("zip", repo, w).WriteNode(ctx, items[0].Node); err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 				}
 			} else {
 				// Requested path is a folder, list it
-				var dirs []FileRow
 				var files []FileRow
-				for path, node := range items {
-					fullpath := "/" + sn.ID().Str() + "/" + path
-					row := FileRow{fullpath, node.Name, node.Type, node.Size}
-					if fs.HasPathPrefix(fullpath, r.URL.Path) {
-						//
-					} else if node.Type == "dir" {
-						dirs = append(dirs, row)
-					} else {
-						files = append(files, row)
+				for _, item := range items {
+					if !fs.HasPathPrefix(item.Path, r.URL.Path) {
+						files = append(files, FileRow{item.Path, item.Node.Name, item.Node.Type, item.Node.Size})
 					}
 				}
-				if err := filesPage.Execute(w, FilesPage{sn.ID().Str() + ": " + reqPath, append(dirs, files...)}); err != nil {
+				sort.SliceStable(files, func(i, j int) bool {
+					return strings.ToLower(files[i].Name) < strings.ToLower(files[j].Name)
+				})
+				sort.SliceStable(files, func(i, j int) bool {
+					return files[i].Type == "dir" && files[j].Type != "dir"
+				})
+				if err := filesPage.Execute(w, FilesPage{sn.ID().Str() + ": " + reqPath, files}); err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 				}
 				return
@@ -225,5 +235,6 @@ func runWebServer(ctx context.Context, opts WebOptions, gopts GlobalOptions, arg
 
 	Printf("Now serving the repository at http://%s\n", opts.Listen)
 	Printf("When finished, quit with Ctrl-c here.\n")
+
 	return http.ListenAndServe(opts.Listen, nil)
 }
