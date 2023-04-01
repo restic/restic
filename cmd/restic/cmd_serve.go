@@ -68,7 +68,7 @@ type IndexPage struct {
 const IndexTpl = `<html>
 <head>
 <link rel="stylesheet" href="/style.css">
-<title>Index :: restic</title>
+<title>{{.Title}} :: restic</title>
 </head>
 <body>
 <h1>{{.Title}}</h1>
@@ -98,7 +98,7 @@ type FilesPage struct {
 const FilesTpl = `<html>
 <head>
 <link rel="stylesheet" href="/style.css">
-<title>Files :: restic</title>
+<title>{{.Title}} :: restic</title>
 </head>
 <body>
 <h1>{{.Title}}</h1>
@@ -112,8 +112,7 @@ const FilesTpl = `<html>
 </tbody>
 </table>
 </body>
-</html>
-`
+</html>`
 
 type NodePath struct {
 	Path string
