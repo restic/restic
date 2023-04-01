@@ -105,7 +105,6 @@ const TreeTpl = `<html>
 <table>
 <thead><tr><th>Name</th><th>Type</th><th>Size</th></tr></thead>
 <tbody>
-<tr><td><a href='..'>..</a></td><td>Parent</td><td>-</td></tr>
 {{range .Rows}}
 <tr><td><a class="{{.Type}}" href="{{.Link}}">{{.Name}}</a></td><td>{{.Type}}</td><td>{{.Size}}</td></tr>
 {{end}}
@@ -167,14 +166,8 @@ func runWebServer(ctx context.Context, opts WebOptions, gopts GlobalOptions, arg
 	treePage := template.Must(template.New("tree").Parse(TreeTpl))
 
 	http.HandleFunc("/tree/", func(w http.ResponseWriter, r *http.Request) {
-		uriParts := strings.Split(r.URL.Path[1:], "/")
-		if len(uriParts) < 3 {
-			http.Redirect(w, r, "/", http.StatusMovedPermanently)
-			return
-		}
-
-		snapshotID := uriParts[1]
-		curPath := "/" + strings.Join(uriParts[2:], "/")
+		snapshotID, curPath, _ := strings.Cut(r.URL.Path[6:], "/")
+		curPath = "/" + strings.Trim(curPath, "/")
 
 		sn, err := restic.FindSnapshot(ctx, repo.Backend(), repo, snapshotID)
 		if err != nil {
@@ -207,6 +200,11 @@ func runWebServer(ctx context.Context, opts WebOptions, gopts GlobalOptions, arg
 			sort.SliceStable(files, func(i, j int) bool {
 				return files[i].Type == "dir" && files[j].Type != "dir"
 			})
+			if curPath != "/" {
+				files = append([]FileRow{{"/tree/" + snapshotID + curPath + "/..", "..", "parent", 0}}, files...)
+			} else {
+				files = append([]FileRow{{"/", "..", "index", 0}}, files...)
+			}
 			if err := treePage.Execute(w, TreePage{snapshotID + ": " + curPath, files}); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
