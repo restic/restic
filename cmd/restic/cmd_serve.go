@@ -90,12 +90,12 @@ type FileRow struct {
 	Size uint64
 }
 
-type FilesPage struct {
+type TreePage struct {
 	Title string
 	Rows  []FileRow
 }
 
-const FilesTpl = `<html>
+const TreeTpl = `<html>
 <head>
 <link rel="stylesheet" href="/style.css">
 <title>{{.Title}} :: restic</title>
@@ -117,6 +117,26 @@ const FilesTpl = `<html>
 type NodePath struct {
 	Path string
 	Node *restic.Node
+}
+
+func listNodes(ctx context.Context, repo restic.Repository, sn *restic.Snapshot, path string) ([]NodePath, error) {
+	var items []NodePath
+	err := walker.Walk(ctx, repo, *sn.Tree, nil, func(_ restic.ID, nodepath string, node *restic.Node, err error) (bool, error) {
+		if err != nil {
+			return false, err
+		}
+		if node == nil {
+			return false, nil
+		}
+		if fs.HasPathPrefix(path, nodepath) {
+			items = append(items, NodePath{nodepath, node})
+		}
+		if node.Type == "dir" && !fs.HasPathPrefix(nodepath, path) {
+			return false, walker.ErrSkipNode
+		}
+		return false, nil
+	})
+	return items, err
 }
 
 func runWebServer(ctx context.Context, opts WebOptions, gopts GlobalOptions, args []string) error {
@@ -144,92 +164,75 @@ func runWebServer(ctx context.Context, opts WebOptions, gopts GlobalOptions, arg
 	}
 
 	indexPage := template.Must(template.New("index").Parse(IndexTpl))
-	filesPage := template.Must(template.New("files").Parse(FilesTpl))
+	treePage := template.Must(template.New("tree").Parse(TreeTpl))
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		Verbosef("HTTP REQ: %s\n", r.URL.Path)
-
-		// Static assets
-		if r.URL.Path == "/style.css" {
-			w.Header().Set("Cache-Control", "max-age=300")
-			_, _ = w.Write([]byte(StyleTxt))
+	http.HandleFunc("/tree/", func(w http.ResponseWriter, r *http.Request) {
+		uriParts := strings.Split(r.URL.Path[1:], "/")
+		if len(uriParts) < 3 {
+			http.Redirect(w, r, "/", http.StatusMovedPermanently)
 			return
 		}
 
-		// Index page, list snapshots
-		if r.URL.Path == "/" {
-			var rows []IndexRow
-			for sn := range FindFilteredSnapshots(ctx, repo.Backend(), repo, &restic.SnapshotFilter{}, nil) {
-				rows = append(rows, IndexRow{"/" + sn.ID().Str() + "/", sn.ID().Str(), sn.Time, sn.Hostname, sn.Tags, sn.Paths})
-			}
-			sort.Slice(rows, func(i, j int) bool {
-				return rows[i].Time.After(rows[j].Time)
-			})
-			if err := indexPage.Execute(w, IndexPage{"Snapshots", rows}); err != nil {
+		snapshotID := uriParts[1]
+		curPath := "/" + strings.Join(uriParts[2:], "/")
+
+		sn, err := restic.FindSnapshot(ctx, repo.Backend(), repo, snapshotID)
+		if err != nil {
+			http.Error(w, "Snapshot not found: "+err.Error(), http.StatusNotFound)
+			return
+		}
+
+		items, err := listNodes(ctx, repo, sn, curPath)
+		if err != nil || len(items) == 0 {
+			http.Error(w, "Path not found in snapshot", http.StatusNotFound)
+			return
+		}
+
+		if len(items) == 1 && items[0].Node.Type == "file" {
+			// Requested path is a file, dump it
+			if err := dump.New("zip", repo, w).WriteNode(ctx, items[0].Node); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
+		} else {
+			// Requested path is a folder, list it
+			var files []FileRow
+			for _, item := range items {
+				if !fs.HasPathPrefix(item.Path, curPath) {
+					files = append(files, FileRow{"/tree/" + snapshotID + item.Path, item.Node.Name, item.Node.Type, item.Node.Size})
+				}
+			}
+			sort.SliceStable(files, func(i, j int) bool {
+				return strings.ToLower(files[i].Name) < strings.ToLower(files[j].Name)
+			})
+			sort.SliceStable(files, func(i, j int) bool {
+				return files[i].Type == "dir" && files[j].Type != "dir"
+			})
+			if err := treePage.Execute(w, TreePage{snapshotID + ": " + curPath, files}); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+		}
+	})
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
 			return
 		}
-
-		// Snapshot page, list files
-		if uri := strings.Split(r.URL.Path[1:], "/"); len(uri) >= 2 {
-			sn, err := restic.FindSnapshot(ctx, repo.Backend(), repo, uri[0])
-			if err != nil {
-				http.Error(w, "Snapshot not found: "+err.Error(), http.StatusNotFound)
-				return
-			}
-
-			var items []NodePath
-
-			reqPath := "/" + strings.Join(uri[1:], "/")
-			err = walker.Walk(ctx, repo, *sn.Tree, nil, func(_ restic.ID, nodepath string, node *restic.Node, err error) (bool, error) {
-				if err != nil {
-					return false, err
-				}
-				if node == nil {
-					return false, nil
-				}
-				if fs.HasPathPrefix(reqPath, nodepath) {
-					items = append(items, NodePath{"/" + sn.ID().Str() + nodepath, node})
-				}
-				if node.Type == "dir" && !fs.HasPathPrefix(nodepath, reqPath) {
-					return false, walker.ErrSkipNode
-				}
-				return false, nil
-			})
-
-			if err != nil || len(items) == 0 {
-				http.Error(w, "Path not found in snapshot", http.StatusNotFound)
-				return
-			}
-
-			if len(items) == 1 && items[0].Node.Type == "file" {
-				// Requested path is a file, dump it
-				if err := dump.New("zip", repo, w).WriteNode(ctx, items[0].Node); err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-				}
-			} else {
-				// Requested path is a folder, list it
-				var files []FileRow
-				for _, item := range items {
-					if !fs.HasPathPrefix(item.Path, r.URL.Path) {
-						files = append(files, FileRow{item.Path, item.Node.Name, item.Node.Type, item.Node.Size})
-					}
-				}
-				sort.SliceStable(files, func(i, j int) bool {
-					return strings.ToLower(files[i].Name) < strings.ToLower(files[j].Name)
-				})
-				sort.SliceStable(files, func(i, j int) bool {
-					return files[i].Type == "dir" && files[j].Type != "dir"
-				})
-				if err := filesPage.Execute(w, FilesPage{sn.ID().Str() + ": " + reqPath, files}); err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-				}
-				return
-			}
+		var rows []IndexRow
+		for sn := range FindFilteredSnapshots(ctx, repo.Backend(), repo, &restic.SnapshotFilter{}, nil) {
+			rows = append(rows, IndexRow{"/tree/" + sn.ID().Str() + "/", sn.ID().Str(), sn.Time, sn.Hostname, sn.Tags, sn.Paths})
 		}
+		sort.Slice(rows, func(i, j int) bool {
+			return rows[i].Time.After(rows[j].Time)
+		})
+		if err := indexPage.Execute(w, IndexPage{"Snapshots", rows}); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	})
 
-		http.NotFound(w, r)
+	http.HandleFunc("/style.css", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "max-age=300")
+		_, _ = w.Write([]byte(StyleTxt))
 	})
 
 	Printf("Now serving the repository at http://%s\n", opts.Listen)
