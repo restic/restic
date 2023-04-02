@@ -97,6 +97,7 @@ func runWebServer(ctx context.Context, opts ServeOptions, gopts GlobalOptions, a
 	http.HandleFunc("/tree/", func(w http.ResponseWriter, r *http.Request) {
 		snapshotID, curPath, _ := strings.Cut(r.URL.Path[6:], "/")
 		curPath = "/" + strings.Trim(curPath, "/")
+		_ = r.ParseForm()
 
 		sn, err := restic.FindSnapshot(ctx, repo.Backend(), repo, snapshotID)
 		if err != nil {
@@ -108,6 +109,26 @@ func runWebServer(ctx context.Context, opts ServeOptions, gopts GlobalOptions, a
 		if err != nil || len(files) == 0 {
 			http.Error(w, "Path not found in snapshot", http.StatusNotFound)
 			return
+		}
+
+		if r.Form.Get("action") == "dump" {
+			var tree restic.Tree
+			for _, file := range files {
+				for _, name := range r.Form["name"] {
+					if name == file.Node.Name {
+						tree.Nodes = append(tree.Nodes, file.Node)
+					}
+				}
+			}
+			if len(tree.Nodes) > 0 {
+				filename := strings.ReplaceAll(strings.Trim(snapshotID+curPath, "/"), "/", "_") + ".tar.gz"
+				w.Header().Set("Content-Disposition", "attachment; filename="+filename)
+				// For now it's hardcoded to tar because it's the only format that supports all node types correctly
+				if err := dump.New("tar", repo, w).DumpTree(ctx, &tree, "/"); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+				}
+				return
+			}
 		}
 
 		if len(files) == 1 && files[0].Node.Type == "file" {
@@ -219,15 +240,20 @@ const treePageTpl = `<html>
 </head>
 <body>
 <h1>{{.Title}}</h1>
+<form method="post">
 <table>
-<thead><tr><th><input type="checkbox"></th><th>Name</th><th>Type</th><th>Size</th><th>Date modified</th></tr></thead>
-<tbody>
+<thead><tr><th><input type="checkbox" onclick="document.querySelectorAll('.content input[type=checkbox]').forEach(cb => cb.checked = this.checked)"></th><th>Name</th><th>Type</th><th>Size</th><th>Date modified</th></tr></thead>
+<tbody class="content">
 {{if .Parent}}<tr><td></td><td><a href="{{.Parent}}">..</a></td><td>parent</td><td></td><td></tr>{{end}}
 {{range .Rows}}
-<tr><td><input type="checkbox"></td><td><a class="{{.Type}}" href="{{.Link}}">{{.Name}}</a></td><td>{{.Type}}</td><td>{{.Size}}</td><td>{{.Time | FormatTime}}</td></td></tr>
+<tr><td><input type="checkbox" name="name" value="{{.Name}}"></td><td><a class="{{.Type}}" href="{{.Link}}">{{.Name}}</a></td><td>{{.Type}}</td><td>{{.Size}}</td><td>{{.Time | FormatTime}}</td></td></tr>
 {{end}}
 </tbody>
+<tbody class="actions">
+<tr><td colspan="100"><button name="action" value="dump" type="submit">Download selection</button></td></tr>
+</tbody>
 </table>
+</form>
 </body>
 </html>`
 
@@ -235,8 +261,9 @@ const stylesheetTxt = `
 h1,h2,h3 {text-align:center; margin: 0.5em;}
 table {margin: 0 auto;border-collapse: collapse; }
 thead th {text-align: left; font-weight: bold;}
-tbody tr:hover {background: #eee;}
+tbody.content tr:hover {background: #eee;}
+tbody.content a.file:before {content: '\1F4C4'}
+tbody.content a.dir:before {content: '\1F4C1'}
+tbody.actions td {padding:.5em;}
 table, td, tr, th { border: 1px solid black; padding: .1em .5em;}
-a.file:before {content: '\1F4C4'}
-a.dir:before {content: '\1F4C1'}
 `
