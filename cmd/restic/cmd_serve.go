@@ -41,6 +41,29 @@ func init() {
 	cmdFlags.StringVarP(&serveOptions.Listen, "listen", "l", "localhost:3080", "set the listen host name and `address`")
 }
 
+type fileNode struct {
+	Path string
+	Node *restic.Node
+}
+
+// listNodes returns all the nodes contained in any of the paths, optionally recursively
+func listNodes(ctx context.Context, repo restic.Repository, tree restic.ID, path string) ([]fileNode, error) {
+	var files []fileNode
+	err := walker.Walk(ctx, repo, tree, nil, func(_ restic.ID, nodepath string, node *restic.Node, err error) (bool, error) {
+		if err != nil || node == nil {
+			return false, err
+		}
+		if fs.HasPathPrefix(path, nodepath) {
+			files = append(files, fileNode{nodepath, node})
+		}
+		if node.Type == "dir" && !fs.HasPathPrefix(nodepath, path) {
+			return false, walker.ErrSkipNode
+		}
+		return false, nil
+	})
+	return files, err
+}
+
 func runWebServer(ctx context.Context, opts ServeOptions, gopts GlobalOptions, args []string) error {
 	if len(args) > 0 {
 		return errors.Fatal("this command does not accept additional arguments")
@@ -81,57 +104,37 @@ func runWebServer(ctx context.Context, opts ServeOptions, gopts GlobalOptions, a
 			return
 		}
 
-		type fileNode struct {
-			Path string
-			Node *restic.Node
-		}
-
-		var files []fileNode
-
-		err = walker.Walk(ctx, repo, *sn.Tree, nil, func(_ restic.ID, nodepath string, node *restic.Node, err error) (bool, error) {
-			if err != nil || node == nil {
-				return false, err
-			}
-			if fs.HasPathPrefix(curPath, nodepath) {
-				files = append(files, fileNode{nodepath, node})
-			}
-			if node.Type == "dir" && !fs.HasPathPrefix(nodepath, curPath) {
-				return false, walker.ErrSkipNode
-			}
-			return false, nil
-		})
-
+		files, err := listNodes(ctx, repo, *sn.Tree, curPath)
 		if err != nil || len(files) == 0 {
 			http.Error(w, "Path not found in snapshot", http.StatusNotFound)
 			return
 		}
 
 		if len(files) == 1 && files[0].Node.Type == "file" {
-			// Requested path is a file, dump it
 			if err := dump.New("zip", repo, w).WriteNode(ctx, files[0].Node); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
-		} else {
-			// Requested path is a folder, list it
-			var rows []treePageRow
-			for _, item := range files {
-				if !fs.HasPathPrefix(item.Path, curPath) {
-					rows = append(rows, treePageRow{"/tree/" + snapshotID + item.Path, item.Node.Name, item.Node.Type, item.Node.Size, item.Node.ModTime})
-				}
+			return
+		}
+
+		var rows []treePageRow
+		for _, item := range files {
+			if item.Path != curPath {
+				rows = append(rows, treePageRow{"/tree/" + snapshotID + item.Path, item.Node.Name, item.Node.Type, item.Node.Size, item.Node.ModTime})
 			}
-			sort.SliceStable(rows, func(i, j int) bool {
-				return strings.ToLower(rows[i].Name) < strings.ToLower(rows[j].Name)
-			})
-			sort.SliceStable(rows, func(i, j int) bool {
-				return rows[i].Type == "dir" && rows[j].Type != "dir"
-			})
-			parent := "/tree/" + snapshotID + curPath + "/.."
-			if curPath == "/" {
-				parent = "/"
-			}
-			if err := treePage.Execute(w, treePageData{snapshotID + ": " + curPath, parent, rows}); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-			}
+		}
+		sort.SliceStable(rows, func(i, j int) bool {
+			return strings.ToLower(rows[i].Name) < strings.ToLower(rows[j].Name)
+		})
+		sort.SliceStable(rows, func(i, j int) bool {
+			return rows[i].Type == "dir" && rows[j].Type != "dir"
+		})
+		parent := "/tree/" + snapshotID + curPath + "/.."
+		if curPath == "/" {
+			parent = "/"
+		}
+		if err := treePage.Execute(w, treePageData{snapshotID + ": " + curPath, parent, rows}); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	})
 
