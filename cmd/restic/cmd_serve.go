@@ -122,12 +122,11 @@ func runWebServer(ctx context.Context, opts ServeOptions, gopts GlobalOptions, a
 			sort.SliceStable(rows, func(i, j int) bool {
 				return rows[i].Type == "dir" && rows[j].Type != "dir"
 			})
-			if curPath != "/" {
-				rows = append([]treePageRow{{"/tree/" + snapshotID + curPath + "/..", "..", "parent", 0}}, rows...)
-			} else {
-				rows = append([]treePageRow{{"/", "..", "index", 0}}, rows...)
+			parent := "/tree/" + snapshotID + curPath + "/.."
+			if curPath == "/" {
+				parent = "/"
 			}
-			if err := treePage.Execute(w, treePageData{snapshotID + ": " + curPath, rows}); err != nil {
+			if err := treePage.Execute(w, treePageData{snapshotID + ": " + curPath, parent, rows}); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
 		}
@@ -183,8 +182,9 @@ type treePageRow struct {
 }
 
 type treePageData struct {
-	Title string
-	Rows  []treePageRow
+	Title  string
+	Parent string
+	Rows   []treePageRow
 }
 
 const indexPageTpl = `<html>
@@ -213,10 +213,11 @@ const treePageTpl = `<html>
 <body>
 <h1>{{.Title}}</h1>
 <table>
-<thead><tr><th>Name</th><th>Type</th><th>Size</th></tr></thead>
+<thead><tr><th><input type="checkbox"></th><th>Name</th><th>Type</th><th>Size</th></tr></thead>
 <tbody>
+{{if .Parent}}<tr><td></td><td><a href="{{.Parent}}">..</a></td><td>parent</td><td></td></td></tr>{{end}}
 {{range .Rows}}
-<tr><td><a class="{{.Type}}" href="{{.Link}}">{{.Name}}</a></td><td>{{.Type}}</td><td>{{.Size}}</td></tr>
+<tr><td><input type="checkbox"></td><td><a class="{{.Type}}" href="{{.Link}}">{{.Name}}</a></td><td>{{.Type}}</td><td>{{.Size}}</td></td></tr>
 {{end}}
 </tbody>
 </table>
