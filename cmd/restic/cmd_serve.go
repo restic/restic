@@ -65,8 +65,11 @@ func runWebServer(ctx context.Context, opts ServeOptions, gopts GlobalOptions, a
 		return err
 	}
 
-	indexPage := template.Must(template.New("index").Parse(indexPageTpl))
-	treePage := template.Must(template.New("tree").Parse(treePageTpl))
+	funcMap := template.FuncMap{
+		"FormatTime": func(time time.Time) string { return time.Format(TimeFormat) },
+	}
+	indexPage := template.Must(template.New("index").Funcs(funcMap).Parse(indexPageTpl))
+	treePage := template.Must(template.New("tree").Funcs(funcMap).Parse(treePageTpl))
 
 	http.HandleFunc("/tree/", func(w http.ResponseWriter, r *http.Request) {
 		snapshotID, curPath, _ := strings.Cut(r.URL.Path[6:], "/")
@@ -113,7 +116,7 @@ func runWebServer(ctx context.Context, opts ServeOptions, gopts GlobalOptions, a
 			var rows []treePageRow
 			for _, item := range files {
 				if !fs.HasPathPrefix(item.Path, curPath) {
-					rows = append(rows, treePageRow{"/tree/" + snapshotID + item.Path, item.Node.Name, item.Node.Type, item.Node.Size})
+					rows = append(rows, treePageRow{"/tree/" + snapshotID + item.Path, item.Node.Name, item.Node.Type, item.Node.Size, item.Node.ModTime})
 				}
 			}
 			sort.SliceStable(rows, func(i, j int) bool {
@@ -179,6 +182,7 @@ type treePageRow struct {
 	Name string
 	Type string
 	Size uint64
+	Time time.Time
 }
 
 type treePageData struct {
@@ -198,7 +202,7 @@ const indexPageTpl = `<html>
 <thead><tr><th>ID</th><th>Time</th><th>Host</th><th>Tags</th><th>Paths</th></tr></thead>
 <tbody>
 {{range .Rows}}
-<tr><td><a href="{{.Link}}">{{.ID}}</a></td><td>{{.Time}}</td><td>{{.Host}}</td><td>{{.Tags}}</td><td>{{.Paths}}</td></tr>
+<tr><td><a href="{{.Link}}">{{.ID}}</a></td><td>{{.Time | FormatTime}}</td><td>{{.Host}}</td><td>{{.Tags}}</td><td>{{.Paths}}</td></tr>
 {{end}}
 </tbody>
 </table>
@@ -213,11 +217,11 @@ const treePageTpl = `<html>
 <body>
 <h1>{{.Title}}</h1>
 <table>
-<thead><tr><th><input type="checkbox"></th><th>Name</th><th>Type</th><th>Size</th></tr></thead>
+<thead><tr><th><input type="checkbox"></th><th>Name</th><th>Type</th><th>Size</th><th>Date modified</th></tr></thead>
 <tbody>
-{{if .Parent}}<tr><td></td><td><a href="{{.Parent}}">..</a></td><td>parent</td><td></td></td></tr>{{end}}
+{{if .Parent}}<tr><td></td><td><a href="{{.Parent}}">..</a></td><td>parent</td><td></td><td></tr>{{end}}
 {{range .Rows}}
-<tr><td><input type="checkbox"></td><td><a class="{{.Type}}" href="{{.Link}}">{{.Name}}</a></td><td>{{.Type}}</td><td>{{.Size}}</td></td></tr>
+<tr><td><input type="checkbox"></td><td><a class="{{.Type}}" href="{{.Link}}">{{.Name}}</a></td><td>{{.Type}}</td><td>{{.Size}}</td><td>{{.Time | FormatTime}}</td></td></tr>
 {{end}}
 </tbody>
 </table>
