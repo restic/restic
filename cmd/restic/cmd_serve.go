@@ -46,7 +46,6 @@ type fileNode struct {
 	Node *restic.Node
 }
 
-// listNodes returns all the nodes contained in any of the paths, optionally recursively
 func listNodes(ctx context.Context, repo restic.Repository, tree restic.ID, path string) ([]fileNode, error) {
 	var files []fileNode
 	err := walker.Walk(ctx, repo, tree, nil, func(_ restic.ID, nodepath string, node *restic.Node, err error) (bool, error) {
