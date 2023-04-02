@@ -386,6 +386,36 @@ For example with an actual endpoint:
 
     $ restic -o s3.bucket-lookup=dns -o s3.region=oss-eu-west-1 -r s3:https://oss-eu-west-1.aliyuncs.com/bucketname init
 
+IDrive® e2
+**********
+`IDrive® e2 <https://www.idrive.com/object-storage-e2/>`__ is a fast, reliable and affordable object storage solution with S3 API compatibility.
+
+- Create bucket in any region using `web console <https://app.idrivee2.com>`__.
+- Determine bucket URL - you'll find it in bucket settings in such format: ``<IDRIVEE2-BUCKET-NAME>.<IDRIVEE2-SERVICE-URL>``.
+
+In order to use this bucket with restic you need to modify URL found in settings and move ``IDRIVEE2-BUCKET-NAME`` to the end so it is becomes URL path instead of subdomain: ``<IDRIVEE2-SERVICE-URL>/<IDRIVEE2-BUCKET-NAME>``.
+
+You must first setup the following environment variables with the
+credentials of your IDrive® e2 account.
+Each region requires different set of ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY``.
+
+.. code-block:: console
+
+    $ export AWS_ACCESS_KEY_ID=<YOUR-IDRIVEE2-ACCESS-KEY-ID>
+    $ export AWS_SECRET_ACCESS_KEY=<YOUR-IDRIVEE2-SECRET-ACCESS-KEY>
+
+Now you can easily initialize restic to use IDrive® e2 as a backend with
+this command.
+
+.. code-block:: console
+
+    $ ./restic -r s3:<IDRIVEE2-SERVICE-URL>/<IDRIVEE2-BUCKET-NAME> init
+    enter password for new repository:
+    enter password again:
+    created restic repository xxxxxxxxxx at s3:<IDRIVEE2-SERVICE-URL>/<IDRIVEE2-BUCKET-NAME>
+    Please note that knowledge of your password is required to access
+    the repository. Losing your password means that your data is irrecoverably lost.
+
 OpenStack Swift
 ***************
 
