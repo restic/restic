@@ -121,7 +121,7 @@ func runWebServer(ctx context.Context, opts ServeOptions, gopts GlobalOptions, a
 			}
 			if len(tree.Nodes) > 0 {
 				filename := strings.ReplaceAll(strings.Trim(snapshotID+curPath, "/"), "/", "_") + ".tar.gz"
-				w.Header().Set("Content-Disposition", "attachment; filename="+filename)
+				w.Header().Set("Content-Disposition", "attachment; filename=\""+filename+"\"")
 				// For now it's hardcoded to tar because it's the only format that supports all node types correctly
 				if err := dump.New("tar", repo, w).DumpTree(ctx, &tree, "/"); err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
