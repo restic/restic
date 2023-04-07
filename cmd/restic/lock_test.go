@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"testing"
 	"time"
 
@@ -165,6 +166,13 @@ func TestLockSuccessfulRefresh(t *testing.T) {
 	case <-wrappedCtx.Done():
 		// don't call t.Fatal to allow the lock to be properly cleaned up
 		t.Error("lock refresh failed", time.Now())
+
+		// Dump full stacktrace
+		buf := make([]byte, 1024*1024)
+		n := runtime.Stack(buf, true)
+		buf = buf[:n]
+		t.Log(string(buf))
+
 	case <-time.After(2 * refreshabilityTimeout):
 		// expected lock refresh to work
 	}
