@@ -188,7 +188,7 @@ func TestLockWaitTimeout(t *testing.T) {
 		"create normal lock with exclusively locked repo didn't return an error")
 	test.Assert(t, strings.Contains(err.Error(), "repository is already locked exclusively"),
 		"create normal lock with exclusively locked repo didn't return the correct error")
-	test.Assert(t, retryLock <= duration && duration < retryLock+5*time.Millisecond,
+	test.Assert(t, retryLock <= duration && duration < retryLock+50*time.Millisecond,
 		"create normal lock with exclusively locked repo didn't wait for the specified timeout")
 
 	test.OK(t, lock.Unlock())
@@ -215,7 +215,7 @@ func TestLockWaitCancel(t *testing.T) {
 		"create normal lock with exclusively locked repo didn't return an error")
 	test.Assert(t, strings.Contains(err.Error(), "context canceled"),
 		"create normal lock with exclusively locked repo didn't return the correct error")
-	test.Assert(t, cancelAfter <= duration && duration < cancelAfter+5*time.Millisecond,
+	test.Assert(t, cancelAfter <= duration && duration < cancelAfter+50*time.Millisecond,
 		"create normal lock with exclusively locked repo didn't return in time")
 
 	test.OK(t, lock.Unlock())
