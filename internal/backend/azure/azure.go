@@ -228,7 +228,7 @@ func (be *Backend) saveSmall(ctx context.Context, objName string, rd restic.Rewi
 
 	reader := bytes.NewReader(buf)
 	_, err = blockBlobClient.StageBlock(ctx, id, streaming.NopCloser(reader), &blockblob.StageBlockOptions{
-		TransactionalContentMD5: rd.Hash(),
+		TransactionalValidation: blob.TransferValidationTypeMD5(rd.Hash()),
 	})
 	if err != nil {
 		return errors.Wrap(err, "StageBlock")
@@ -271,7 +271,7 @@ func (be *Backend) saveLarge(ctx context.Context, objName string, rd restic.Rewi
 		reader := bytes.NewReader(buf)
 		debug.Log("StageBlock %v with %d bytes", id, len(buf))
 		_, err = blockBlobClient.StageBlock(ctx, id, streaming.NopCloser(reader), &blockblob.StageBlockOptions{
-			TransactionalContentMD5: h[:],
+			TransactionalValidation: blob.TransferValidationTypeMD5(h[:]),
 		})
 
 		if err != nil {
