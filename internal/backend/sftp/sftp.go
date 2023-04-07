@@ -430,13 +430,6 @@ func (wr *wrapReader) Close() error {
 
 func (r *SFTP) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	debug.Log("Load %v, length %v, offset %v", h, length, offset)
-	if err := h.Valid(); err != nil {
-		return nil, backoff.Permanent(err)
-	}
-
-	if offset < 0 {
-		return nil, errors.New("offset is negative")
-	}
 
 	r.sem.GetToken()
 	f, err := r.c.Open(r.Filename(h))

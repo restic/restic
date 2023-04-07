@@ -114,9 +114,6 @@ func (be *MemoryBackend) Load(ctx context.Context, h restic.Handle, length int, 
 }
 
 func (be *MemoryBackend) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
-	if err := h.Valid(); err != nil {
-		return nil, backoff.Permanent(err)
-	}
 
 	be.sem.GetToken()
 	be.m.Lock()
