@@ -102,7 +102,6 @@ func (be *MemoryBackend) Save(ctx context.Context, h restic.Handle, rd restic.Re
 	}
 
 	be.data[h] = buf
-	debug.Log("saved %v bytes at %v", len(buf), h)
 
 	return ctx.Err()
 }
@@ -166,8 +165,6 @@ func (be *MemoryBackend) Stat(ctx context.Context, h restic.Handle) (restic.File
 	if h.Type == restic.ConfigFile {
 		h.Name = ""
 	}
-
-	debug.Log("stat %v", h)
 
 	e, ok := be.data[h]
 	if !ok {

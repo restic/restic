@@ -169,7 +169,6 @@ func (be *Backend) SetListMaxItems(i int) {
 
 // IsNotExist returns true if the error is caused by a not existing file.
 func (be *Backend) IsNotExist(err error) bool {
-	debug.Log("IsNotExist(%T, %#v)", err, err)
 	return errors.Is(err, storage.ErrObjectNotExist)
 }
 
@@ -209,8 +208,6 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 	}
 
 	objName := be.Filename(h)
-
-	debug.Log("Save %v at %v", h, objName)
 
 	be.sem.GetToken()
 
@@ -253,11 +250,9 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 	be.sem.ReleaseToken()
 
 	if err != nil {
-		debug.Log("%v: err %#v: %v", objName, err, err)
 		return errors.Wrap(err, "service.Objects.Insert")
 	}
 
-	debug.Log("%v -> %v bytes", objName, wbytes)
 	// sanity check
 	if wbytes != rd.Length() {
 		return errors.Errorf("wrote %d bytes instead of the expected %d bytes", wbytes, rd.Length())
@@ -272,8 +267,6 @@ func (be *Backend) Load(ctx context.Context, h restic.Handle, length int, offset
 }
 
 func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
-	debug.Log("Load %v, length %v, offset %v from %v", h, length, offset, be.Filename(h))
-
 	if length == 0 {
 		// negative length indicates read till end to GCS lib
 		length = -1
@@ -297,8 +290,6 @@ func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, 
 
 // Stat returns information about a blob.
 func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInfo, err error) {
-	debug.Log("%v", h)
-
 	objName := be.Filename(h)
 
 	be.sem.GetToken()
@@ -306,7 +297,6 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 	be.sem.ReleaseToken()
 
 	if err != nil {
-		debug.Log("GetObjectAttributes() err %v", err)
 		return restic.FileInfo{}, errors.Wrap(err, "service.Objects.Get")
 	}
 
@@ -325,15 +315,12 @@ func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 		err = nil
 	}
 
-	debug.Log("Remove(%v) at %v -> err %v", h, objName, err)
 	return errors.Wrap(err, "client.RemoveObject")
 }
 
 // List runs fn for each file in the backend which has the type t. When an
 // error occurs (or fn returns an error), List stops and returns it.
 func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
-	debug.Log("listing %v", t)
-
 	prefix, _ := be.Basedir(t)
 
 	// make sure prefix ends with a slash

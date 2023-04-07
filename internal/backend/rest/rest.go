@@ -212,7 +212,6 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 }
 
 func (b *Backend) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
-	debug.Log("Load %v, length %v, offset %v", h, length, offset)
 	if err := h.Valid(); err != nil {
 		return nil, backoff.Permanent(err)
 	}

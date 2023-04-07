@@ -114,7 +114,6 @@ func (b *Local) IsNotExist(err error) bool {
 
 // Save stores data in the backend at the handle.
 func (b *Local) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) (err error) {
-	debug.Log("Save %v", h)
 	if err := h.Valid(); err != nil {
 		return backoff.Permanent(err)
 	}
@@ -217,8 +216,6 @@ func (b *Local) Load(ctx context.Context, h restic.Handle, length int, offset in
 }
 
 func (b *Local) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
-	debug.Log("Load %v, length %v, offset %v", h, length, offset)
-
 	b.sem.GetToken()
 	f, err := fs.Open(b.Filename(h))
 	if err != nil {
@@ -246,7 +243,6 @@ func (b *Local) openReader(ctx context.Context, h restic.Handle, length int, off
 
 // Stat returns information about a blob.
 func (b *Local) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, error) {
-	debug.Log("Stat %v", h)
 	if err := h.Valid(); err != nil {
 		return restic.FileInfo{}, backoff.Permanent(err)
 	}
@@ -264,7 +260,6 @@ func (b *Local) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, err
 
 // Remove removes the blob with the given name and type.
 func (b *Local) Remove(ctx context.Context, h restic.Handle) error {
-	debug.Log("Remove %v", h)
 	fn := b.Filename(h)
 
 	b.sem.GetToken()
@@ -282,8 +277,6 @@ func (b *Local) Remove(ctx context.Context, h restic.Handle) error {
 // List runs fn for each file in the backend which has the type t. When an
 // error occurs (or fn returns an error), List stops and returns it.
 func (b *Local) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) (err error) {
-	debug.Log("List %v", t)
-
 	basedir, subdirs := b.Basedir(t)
 	if subdirs {
 		err = visitDirs(ctx, basedir, fn)
@@ -377,13 +370,11 @@ func visitFiles(ctx context.Context, dir string, fn func(restic.FileInfo) error,
 
 // Delete removes the repository and all files.
 func (b *Local) Delete(ctx context.Context) error {
-	debug.Log("Delete()")
 	return fs.RemoveAll(b.Path)
 }
 
 // Close closes all open files.
 func (b *Local) Close() error {
-	debug.Log("Close()")
 	// this does not need to do anything, all open files are closed within the
 	// same function.
 	return nil

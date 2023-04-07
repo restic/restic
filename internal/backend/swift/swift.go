@@ -143,7 +143,6 @@ func (be *beSwift) Load(ctx context.Context, h restic.Handle, length int, offset
 }
 
 func (be *beSwift) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
-	debug.Log("Load %v, length %v, offset %v", h, length, offset)
 
 	objName := be.Filename(h)
 
@@ -163,7 +162,6 @@ func (be *beSwift) openReader(ctx context.Context, h restic.Handle, length int, 
 	be.sem.GetToken()
 	obj, _, err := be.conn.ObjectOpen(ctx, be.container, objName, false, headers)
 	if err != nil {
-		debug.Log("  err %v", err)
 		be.sem.ReleaseToken()
 		return nil, errors.Wrap(err, "conn.ObjectOpen")
 	}
@@ -179,8 +177,6 @@ func (be *beSwift) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 
 	objName := be.Filename(h)
 
-	debug.Log("Save %v at %v", h, objName)
-
 	be.sem.GetToken()
 	defer be.sem.ReleaseToken()
 
@@ -192,15 +188,12 @@ func (be *beSwift) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 		be.container, objName, rd, true, hex.EncodeToString(rd.Hash()),
 		encoding, hdr)
 	// swift does not return the upload length
-	debug.Log("%v, err %#v", objName, err)
 
 	return errors.Wrap(err, "client.PutObject")
 }
 
 // Stat returns information about a blob.
 func (be *beSwift) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInfo, err error) {
-	debug.Log("%v", h)
-
 	objName := be.Filename(h)
 
 	be.sem.GetToken()
@@ -208,7 +201,6 @@ func (be *beSwift) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 
 	obj, _, err := be.conn.Object(ctx, be.container, objName)
 	if err != nil {
-		debug.Log("Object() err %v", err)
 		return restic.FileInfo{}, errors.Wrap(err, "conn.Object")
 	}
 
@@ -223,15 +215,12 @@ func (be *beSwift) Remove(ctx context.Context, h restic.Handle) error {
 	defer be.sem.ReleaseToken()
 
 	err := be.conn.ObjectDelete(ctx, be.container, objName)
-	debug.Log("Remove(%v) -> err %v", h, err)
 	return errors.Wrap(err, "conn.ObjectDelete")
 }
 
 // List runs fn for each file in the backend which has the type t. When an
 // error occurs (or fn returns an error), List stops and returns it.
 func (be *beSwift) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
-	debug.Log("listing %v", t)
-
 	prefix, _ := be.Basedir(t)
 	prefix += "/"
 

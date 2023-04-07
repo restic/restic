@@ -304,7 +304,6 @@ func tempSuffix() string {
 
 // Save stores data in the backend at the handle.
 func (r *SFTP) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
-	debug.Log("Save %v", h)
 	if err := r.clientError(); err != nil {
 		return err
 	}
@@ -429,8 +428,6 @@ func (wr *wrapReader) Close() error {
 }
 
 func (r *SFTP) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
-	debug.Log("Load %v, length %v, offset %v", h, length, offset)
-
 	r.sem.GetToken()
 	f, err := r.c.Open(r.Filename(h))
 	if err != nil {
@@ -467,7 +464,6 @@ func (r *SFTP) openReader(ctx context.Context, h restic.Handle, length int, offs
 
 // Stat returns information about a blob.
 func (r *SFTP) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, error) {
-	debug.Log("Stat(%v)", h)
 	if err := r.clientError(); err != nil {
 		return restic.FileInfo{}, err
 	}
@@ -489,7 +485,6 @@ func (r *SFTP) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, erro
 
 // Remove removes the content stored at name.
 func (r *SFTP) Remove(ctx context.Context, h restic.Handle) error {
-	debug.Log("Remove(%v)", h)
 	if err := r.clientError(); err != nil {
 		return err
 	}
@@ -503,8 +498,6 @@ func (r *SFTP) Remove(ctx context.Context, h restic.Handle) error {
 // List runs fn for each file in the backend which has the type t. When an
 // error occurs (or fn returns an error), List stops and returns it.
 func (r *SFTP) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
-	debug.Log("List %v", t)
-
 	basedir, subdirs := r.Basedir(t)
 	walker := r.c.Walk(basedir)
 	for {
@@ -565,7 +558,6 @@ var closeTimeout = 2 * time.Second
 
 // Close closes the sftp connection and terminates the underlying command.
 func (r *SFTP) Close() error {
-	debug.Log("Close")
 	if r == nil {
 		return nil
 	}

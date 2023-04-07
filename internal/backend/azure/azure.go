@@ -152,7 +152,6 @@ func (be *Backend) SetListMaxItems(i int) {
 
 // IsNotExist returns true if the error is caused by a not existing file.
 func (be *Backend) IsNotExist(err error) bool {
-	debug.Log("IsNotExist(%T, %#v)", err, err)
 	return bloberror.HasCode(err, bloberror.BlobNotFound)
 }
 
@@ -193,8 +192,6 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 
 	objName := be.Filename(h)
 
-	debug.Log("Save %v at %v", h, objName)
-
 	be.sem.GetToken()
 
 	debug.Log("InsertObject(%v, %v)", be.cfg.AccountName, objName)
@@ -209,8 +206,6 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 	}
 
 	be.sem.ReleaseToken()
-	debug.Log("%v, err %#v", objName, err)
-
 	return err
 }
 
@@ -299,8 +294,6 @@ func (be *Backend) Load(ctx context.Context, h restic.Handle, length int, offset
 }
 
 func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
-	debug.Log("Load %v, length %v, offset %v from %v", h, length, offset, be.Filename(h))
-
 	objName := be.Filename(h)
 	blockBlobClient := be.container.NewBlobClient(objName)
 
@@ -322,8 +315,6 @@ func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, 
 
 // Stat returns information about a blob.
 func (be *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, error) {
-	debug.Log("%v", h)
-
 	objName := be.Filename(h)
 	blobClient := be.container.NewBlobClient(objName)
 
@@ -332,7 +323,6 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, 
 	be.sem.ReleaseToken()
 
 	if err != nil {
-		debug.Log("blob.GetProperties err %v", err)
 		return restic.FileInfo{}, errors.Wrap(err, "blob.GetProperties")
 	}
 
@@ -352,8 +342,6 @@ func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	_, err := blob.Delete(ctx, &azblob.DeleteBlobOptions{})
 	be.sem.ReleaseToken()
 
-	debug.Log("Remove(%v) at %v -> err %v", h, objName, err)
-
 	if be.IsNotExist(err) {
 		return nil
 	}
@@ -364,8 +352,6 @@ func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 // List runs fn for each file in the backend which has the type t. When an
 // error occurs (or fn returns an error), List stops and returns it.
 func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
-	debug.Log("listing %v", t)
-
 	prefix, _ := be.Basedir(t)
 
 	// make sure prefix ends with a slash

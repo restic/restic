@@ -34,8 +34,6 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 		return err
 	}
 
-	debug.Log("faked saving %v bytes at %v", rd.Length(), h)
-
 	// don't save anything, just return ok
 	return nil
 }

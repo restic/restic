@@ -169,8 +169,6 @@ func isAccessDenied(err error) bool {
 
 // IsNotExist returns true if the error is caused by a not existing file.
 func (be *Backend) IsNotExist(err error) bool {
-	debug.Log("IsNotExist(%T, %#v)", err, err)
-
 	var e minio.ErrorResponse
 	return errors.As(err, &e) && e.Code == "NoSuchKey"
 }
@@ -273,8 +271,6 @@ func (be *Backend) Path() string {
 
 // Save stores data in the backend at the handle.
 func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
-	debug.Log("Save %v", h)
-
 	if err := h.Valid(); err != nil {
 		return backoff.Permanent(err)
 	}
@@ -294,8 +290,6 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 	debug.Log("PutObject(%v, %v, %v)", be.cfg.Bucket, objName, rd.Length())
 	info, err := be.client.PutObject(ctx, be.cfg.Bucket, objName, io.NopCloser(rd), int64(rd.Length()), opts)
 
-	debug.Log("%v -> %v bytes, err %#v: %v", objName, info.Size, err, err)
-
 	// sanity check
 	if err == nil && info.Size != rd.Length() {
 		return errors.Errorf("wrote %d bytes instead of the expected %d bytes", info.Size, rd.Length())
@@ -311,8 +305,6 @@ func (be *Backend) Load(ctx context.Context, h restic.Handle, length int, offset
 }
 
 func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
-	debug.Log("Load %v, length %v, offset %v from %v", h, length, offset, be.Filename(h))
-
 	objName := be.Filename(h)
 	opts := minio.GetObjectOptions{}
 
@@ -345,8 +337,6 @@ func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, 
 
 // Stat returns information about a blob.
 func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInfo, err error) {
-	debug.Log("%v", h)
-
 	objName := be.Filename(h)
 	var obj *minio.Object
 
@@ -355,7 +345,6 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 	be.sem.GetToken()
 	obj, err = be.client.GetObject(ctx, be.cfg.Bucket, objName, opts)
 	if err != nil {
-		debug.Log("GetObject() err %v", err)
 		be.sem.ReleaseToken()
 		return restic.FileInfo{}, errors.Wrap(err, "client.GetObject")
 	}
@@ -371,7 +360,6 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 
 	fi, err := obj.Stat()
 	if err != nil {
-		debug.Log("Stat() err %v", err)
 		return restic.FileInfo{}, errors.Wrap(err, "Stat")
 	}
 
@@ -386,8 +374,6 @@ func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	err := be.client.RemoveObject(ctx, be.cfg.Bucket, objName, minio.RemoveObjectOptions{})
 	be.sem.ReleaseToken()
 
-	debug.Log("Remove(%v) at %v -> err %v", h, objName, err)
-
 	if be.IsNotExist(err) {
 		err = nil
 	}
@@ -398,8 +384,6 @@ func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 // List runs fn for each file in the backend which has the type t. When an
 // error occurs (or fn returns an error), List stops and returns it.
 func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
-	debug.Log("listing %v", t)
-
 	prefix, recursive := be.Basedir(t)
 
 	// make sure prefix ends with a slash

@@ -206,8 +206,6 @@ func (be *b2Backend) Load(ctx context.Context, h restic.Handle, length int, offs
 }
 
 func (be *b2Backend) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
-	debug.Log("Load %v, length %v, offset %v from %v", h, length, offset, be.Filename(h))
-
 	ctx, cancel := context.WithCancel(ctx)
 
 	be.sem.GetToken()
@@ -249,7 +247,6 @@ func (be *b2Backend) Save(ctx context.Context, h restic.Handle, rd restic.Rewind
 	// b2 always requires sha1 checksums for uploaded file parts
 	w := obj.NewWriter(ctx)
 	n, err := io.Copy(w, rd)
-	debug.Log("  saved %d bytes, err %v", n, err)
 
 	if err != nil {
 		_ = w.Close()
@@ -265,8 +262,6 @@ func (be *b2Backend) Save(ctx context.Context, h restic.Handle, rd restic.Rewind
 
 // Stat returns information about a blob.
 func (be *b2Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInfo, err error) {
-	debug.Log("Stat %v", h)
-
 	be.sem.GetToken()
 	defer be.sem.ReleaseToken()
 
@@ -274,7 +269,6 @@ func (be *b2Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileI
 	obj := be.bucket.Object(name)
 	info, err := obj.Attrs(ctx)
 	if err != nil {
-		debug.Log("Attrs() err %v", err)
 		return restic.FileInfo{}, errors.Wrap(err, "Stat")
 	}
 	return restic.FileInfo{Size: info.Size, Name: h.Name}, nil
@@ -282,8 +276,6 @@ func (be *b2Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileI
 
 // Remove removes the blob with the given name and type.
 func (be *b2Backend) Remove(ctx context.Context, h restic.Handle) error {
-	debug.Log("Remove %v", h)
-
 	be.sem.GetToken()
 	defer be.sem.ReleaseToken()
 
@@ -330,8 +322,6 @@ func (sm *semLocker) Unlock() { sm.ReleaseToken() }
 
 // List returns a channel that yields all names of blobs of type t.
 func (be *b2Backend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
-	debug.Log("List %v", t)
-
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -356,7 +346,6 @@ func (be *b2Backend) List(ctx context.Context, t restic.FileType, fn func(restic
 		}
 	}
 	if err := iter.Err(); err != nil {
-		debug.Log("List: %v", err)
 		return err
 	}
 	return nil
@@ -364,7 +353,6 @@ func (be *b2Backend) List(ctx context.Context, t restic.FileType, fn func(restic
 
 // Remove keys for a specified backend type.
 func (be *b2Backend) removeKeys(ctx context.Context, t restic.FileType) error {
-	debug.Log("removeKeys %v", t)
 	return be.List(ctx, t, func(fi restic.FileInfo) error {
 		return be.Remove(ctx, restic.Handle{Type: t, Name: fi.Name})
 	})
