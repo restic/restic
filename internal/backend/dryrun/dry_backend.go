@@ -18,10 +18,9 @@ type Backend struct {
 	b restic.Backend
 }
 
-// statically ensure that RetryBackend implements restic.Backend.
+// statically ensure that Backend implements restic.Backend.
 var _ restic.Backend = &Backend{}
 
-// New returns a new backend that saves all data in a map in memory.
 func New(be restic.Backend) *Backend {
 	b := &Backend{b: be}
 	debug.Log("created new dry backend")
