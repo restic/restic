@@ -231,13 +231,6 @@ func (be *beSwift) List(ctx context.Context, t restic.FileType, fn func(restic.F
 	return ctx.Err()
 }
 
-// Remove keys for a specified backend type.
-func (be *beSwift) removeKeys(ctx context.Context, t restic.FileType) error {
-	return be.List(ctx, t, func(fi restic.FileInfo) error {
-		return be.Remove(ctx, restic.Handle{Type: t, Name: fi.Name})
-	})
-}
-
 // IsNotExist returns true if the error is caused by a not existing file.
 func (be *beSwift) IsNotExist(err error) bool {
 	var e *swift.Error
@@ -247,26 +240,7 @@ func (be *beSwift) IsNotExist(err error) bool {
 // Delete removes all restic objects in the container.
 // It will not remove the container itself.
 func (be *beSwift) Delete(ctx context.Context) error {
-	alltypes := []restic.FileType{
-		restic.PackFile,
-		restic.KeyFile,
-		restic.LockFile,
-		restic.SnapshotFile,
-		restic.IndexFile}
-
-	for _, t := range alltypes {
-		err := be.removeKeys(ctx, t)
-		if err != nil {
-			return nil
-		}
-	}
-
-	err := be.Remove(ctx, restic.Handle{Type: restic.ConfigFile})
-	if err != nil && !be.IsNotExist(err) {
-		return err
-	}
-
-	return nil
+	return backend.DefaultDelete(ctx, be)
 }
 
 // Close does nothing

@@ -75,6 +75,31 @@ func DefaultLoad(ctx context.Context, h restic.Handle, length int, offset int64,
 	return rd.Close()
 }
 
+// DefaultDelete removes all restic keys in the bucket. It will not remove the bucket itself.
+func DefaultDelete(ctx context.Context, be restic.Backend) error {
+	alltypes := []restic.FileType{
+		restic.PackFile,
+		restic.KeyFile,
+		restic.LockFile,
+		restic.SnapshotFile,
+		restic.IndexFile}
+
+	for _, t := range alltypes {
+		err := be.List(ctx, t, func(fi restic.FileInfo) error {
+			return be.Remove(ctx, restic.Handle{Type: t, Name: fi.Name})
+		})
+		if err != nil {
+			return nil
+		}
+	}
+	err := be.Remove(ctx, restic.Handle{Type: restic.ConfigFile})
+	if err != nil && be.IsNotExist(err) {
+		err = nil
+	}
+
+	return err
+}
+
 type memorizedLister struct {
 	fileInfos []restic.FileInfo
 	tpe       restic.FileType

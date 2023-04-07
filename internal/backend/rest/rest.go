@@ -11,6 +11,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -411,32 +412,7 @@ func (b *Backend) Close() error {
 	return nil
 }
 
-// Remove keys for a specified backend type.
-func (b *Backend) removeKeys(ctx context.Context, t restic.FileType) error {
-	return b.List(ctx, t, func(fi restic.FileInfo) error {
-		return b.Remove(ctx, restic.Handle{Type: t, Name: fi.Name})
-	})
-}
-
 // Delete removes all data in the backend.
 func (b *Backend) Delete(ctx context.Context) error {
-	alltypes := []restic.FileType{
-		restic.PackFile,
-		restic.KeyFile,
-		restic.LockFile,
-		restic.SnapshotFile,
-		restic.IndexFile}
-
-	for _, t := range alltypes {
-		err := b.removeKeys(ctx, t)
-		if err != nil {
-			return nil
-		}
-	}
-
-	err := b.Remove(ctx, restic.Handle{Type: restic.ConfigFile})
-	if err != nil && b.IsNotExist(err) {
-		return nil
-	}
-	return err
+	return backend.DefaultDelete(ctx, b)
 }
