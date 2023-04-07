@@ -136,7 +136,9 @@ type loggingBackend struct {
 
 func (b *loggingBackend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
 	b.t.Logf("save %v @ %v", h, time.Now())
-	return b.Backend.Save(ctx, h, rd)
+	err := b.Backend.Save(ctx, h, rd)
+	b.t.Logf("save finished %v @ %v", h, time.Now())
+	return err
 }
 
 func TestLockSuccessfulRefresh(t *testing.T) {
@@ -161,7 +163,8 @@ func TestLockSuccessfulRefresh(t *testing.T) {
 
 	select {
 	case <-wrappedCtx.Done():
-		t.Fatal("lock refresh failed")
+		// don't call t.Fatal to allow the lock to be properly cleaned up
+		t.Error("lock refresh failed", time.Now())
 	case <-time.After(2 * refreshabilityTimeout):
 		// expected lock refresh to work
 	}
