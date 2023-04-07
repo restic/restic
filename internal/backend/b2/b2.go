@@ -11,12 +11,10 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
-	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
-	"github.com/cenkalti/backoff/v4"
 	"github.com/kurin/blazer/b2"
 	"github.com/kurin/blazer/base"
 )
@@ -28,7 +26,6 @@ type b2Backend struct {
 	cfg          Config
 	listMaxItems int
 	layout.Layout
-	sem sema.Semaphore
 
 	canDelete bool
 }
@@ -92,11 +89,6 @@ func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backend
 		return nil, errors.Wrap(err, "Bucket")
 	}
 
-	sem, err := sema.New(cfg.Connections)
-	if err != nil {
-		return nil, err
-	}
-
 	be := &b2Backend{
 		client: client,
 		bucket: bucket,
@@ -106,7 +98,6 @@ func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backend
 			Path: cfg.Prefix,
 		},
 		listMaxItems: defaultListMaxItems,
-		sem:          sem,
 		canDelete:    true,
 	}
 
@@ -134,11 +125,6 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backe
 		return nil, errors.Wrap(err, "NewBucket")
 	}
 
-	sem, err := sema.New(cfg.Connections)
-	if err != nil {
-		return nil, err
-	}
-
 	be := &b2Backend{
 		client: client,
 		bucket: bucket,
@@ -148,7 +134,6 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backe
 			Path: cfg.Prefix,
 		},
 		listMaxItems: defaultListMaxItems,
-		sem:          sem,
 	}
 
 	_, err = be.Stat(ctx, restic.Handle{Type: restic.ConfigFile})
@@ -202,20 +187,18 @@ func (be *b2Backend) IsNotExist(err error) bool {
 // Load runs fn with a reader that yields the contents of the file at h at the
 // given offset.
 func (be *b2Backend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	return backend.DefaultLoad(ctx, h, length, offset, be.openReader, fn)
 }
 
 func (be *b2Backend) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
-	ctx, cancel := context.WithCancel(ctx)
-
-	be.sem.GetToken()
-
 	name := be.Layout.Filename(h)
 	obj := be.bucket.Object(name)
 
 	if offset == 0 && length == 0 {
-		rd := obj.NewReader(ctx)
-		return be.sem.ReleaseTokenOnClose(rd, cancel), nil
+		return obj.NewReader(ctx), nil
 	}
 
 	// pass a negative length to NewRangeReader so that the remainder of the
@@ -224,8 +207,7 @@ func (be *b2Backend) openReader(ctx context.Context, h restic.Handle, length int
 		length = -1
 	}
 
-	rd := obj.NewRangeReader(ctx, offset, int64(length))
-	return be.sem.ReleaseTokenOnClose(rd, cancel), nil
+	return obj.NewRangeReader(ctx, offset, int64(length)), nil
 }
 
 // Save stores data in the backend at the handle.
@@ -233,15 +215,7 @@ func (be *b2Backend) Save(ctx context.Context, h restic.Handle, rd restic.Rewind
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	if err := h.Valid(); err != nil {
-		return backoff.Permanent(err)
-	}
-
-	be.sem.GetToken()
-	defer be.sem.ReleaseToken()
-
 	name := be.Filename(h)
-	debug.Log("Save %v, name %v", h, name)
 	obj := be.bucket.Object(name)
 
 	// b2 always requires sha1 checksums for uploaded file parts
@@ -262,9 +236,6 @@ func (be *b2Backend) Save(ctx context.Context, h restic.Handle, rd restic.Rewind
 
 // Stat returns information about a blob.
 func (be *b2Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInfo, err error) {
-	be.sem.GetToken()
-	defer be.sem.ReleaseToken()
-
 	name := be.Filename(h)
 	obj := be.bucket.Object(name)
 	info, err := obj.Attrs(ctx)
@@ -276,9 +247,6 @@ func (be *b2Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileI
 
 // Remove removes the blob with the given name and type.
 func (be *b2Backend) Remove(ctx context.Context, h restic.Handle) error {
-	be.sem.GetToken()
-	defer be.sem.ReleaseToken()
-
 	// the retry backend will also repeat the remove method up to 10 times
 	for i := 0; i < 3; i++ {
 		obj := be.bucket.Object(be.Filename(h))
@@ -313,20 +281,13 @@ func (be *b2Backend) Remove(ctx context.Context, h restic.Handle) error {
 	return errors.New("failed to delete all file versions")
 }
 
-type semLocker struct {
-	sema.Semaphore
-}
-
-func (sm *semLocker) Lock()   { sm.GetToken() }
-func (sm *semLocker) Unlock() { sm.ReleaseToken() }
-
 // List returns a channel that yields all names of blobs of type t.
 func (be *b2Backend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	prefix, _ := be.Basedir(t)
-	iter := be.bucket.List(ctx, b2.ListPrefix(prefix), b2.ListPageSize(be.listMaxItems), b2.ListLocker(&semLocker{be.sem}))
+	iter := be.bucket.List(ctx, b2.ListPrefix(prefix), b2.ListPageSize(be.listMaxItems))
 
 	for iter.Next() {
 		obj := iter.Object()

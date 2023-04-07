@@ -15,7 +15,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
-	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
 
@@ -37,7 +36,6 @@ type Backend struct {
 	gcsClient    *storage.Client
 	projectID    string
 	connections  uint
-	sem          sema.Semaphore
 	bucketName   string
 	bucket       *storage.BucketHandle
 	prefix       string
@@ -99,16 +97,10 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 		return nil, errors.Wrap(err, "getStorageClient")
 	}
 
-	sem, err := sema.New(cfg.Connections)
-	if err != nil {
-		return nil, err
-	}
-
 	be := &Backend{
 		gcsClient:   gcsClient,
 		projectID:   cfg.ProjectID,
 		connections: cfg.Connections,
-		sem:         sem,
 		bucketName:  cfg.Bucket,
 		bucket:      gcsClient.Bucket(cfg.Bucket),
 		prefix:      cfg.Prefix,
@@ -203,15 +195,7 @@ func (be *Backend) Path() string {
 
 // Save stores data in the backend at the handle.
 func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
-	if err := h.Valid(); err != nil {
-		return err
-	}
-
 	objName := be.Filename(h)
-
-	be.sem.GetToken()
-
-	debug.Log("InsertObject(%v, %v)", be.bucketName, objName)
 
 	// Set chunk size to zero to disable resumable uploads.
 	//
@@ -247,8 +231,6 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 		err = cerr
 	}
 
-	be.sem.ReleaseToken()
-
 	if err != nil {
 		return errors.Wrap(err, "service.Objects.Insert")
 	}
@@ -263,6 +245,9 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 // Load runs fn with a reader that yields the contents of the file at h at the
 // given offset.
 func (be *Backend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	return backend.DefaultLoad(ctx, h, length, offset, be.openReader, fn)
 }
 
@@ -274,27 +259,19 @@ func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, 
 
 	objName := be.Filename(h)
 
-	be.sem.GetToken()
-
-	ctx, cancel := context.WithCancel(ctx)
-
 	r, err := be.bucket.Object(objName).NewRangeReader(ctx, offset, int64(length))
 	if err != nil {
-		cancel()
-		be.sem.ReleaseToken()
 		return nil, err
 	}
 
-	return be.sem.ReleaseTokenOnClose(r, cancel), err
+	return r, err
 }
 
 // Stat returns information about a blob.
 func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInfo, err error) {
 	objName := be.Filename(h)
 
-	be.sem.GetToken()
 	attr, err := be.bucket.Object(objName).Attrs(ctx)
-	be.sem.ReleaseToken()
 
 	if err != nil {
 		return restic.FileInfo{}, errors.Wrap(err, "service.Objects.Get")
@@ -307,9 +284,7 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	objName := be.Filename(h)
 
-	be.sem.GetToken()
 	err := be.bucket.Object(objName).Delete(ctx)
-	be.sem.ReleaseToken()
 
 	if err == storage.ErrObjectNotExist {
 		err = nil
@@ -334,9 +309,7 @@ func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.F
 	itr := be.bucket.Objects(ctx, &storage.Query{Prefix: prefix})
 
 	for {
-		be.sem.GetToken()
 		attrs, err := itr.Next()
-		be.sem.ReleaseToken()
 		if err == iterator.Done {
 			break
 		}

@@ -13,12 +13,10 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
-	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
-	"github.com/cenkalti/backoff/v4"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
@@ -26,7 +24,6 @@ import (
 // Backend stores data on an S3 endpoint.
 type Backend struct {
 	client *minio.Client
-	sem    sema.Semaphore
 	cfg    Config
 	layout.Layout
 }
@@ -102,14 +99,8 @@ func open(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, erro
 		return nil, errors.Wrap(err, "minio.New")
 	}
 
-	sem, err := sema.New(cfg.Connections)
-	if err != nil {
-		return nil, err
-	}
-
 	be := &Backend{
 		client: client,
-		sem:    sem,
 		cfg:    cfg,
 	}
 
@@ -271,14 +262,7 @@ func (be *Backend) Path() string {
 
 // Save stores data in the backend at the handle.
 func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
-	if err := h.Valid(); err != nil {
-		return backoff.Permanent(err)
-	}
-
 	objName := be.Filename(h)
-
-	be.sem.GetToken()
-	defer be.sem.ReleaseToken()
 
 	opts := minio.PutObjectOptions{StorageClass: be.cfg.StorageClass}
 	opts.ContentType = "application/octet-stream"
@@ -301,6 +285,9 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 // Load runs fn with a reader that yields the contents of the file at h at the
 // given offset.
 func (be *Backend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	return backend.DefaultLoad(ctx, h, length, offset, be.openReader, fn)
 }
 
@@ -321,18 +308,13 @@ func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, 
 		return nil, errors.Wrap(err, "SetRange")
 	}
 
-	be.sem.GetToken()
-	ctx, cancel := context.WithCancel(ctx)
-
 	coreClient := minio.Core{Client: be.client}
 	rd, _, _, err := coreClient.GetObject(ctx, be.cfg.Bucket, objName, opts)
 	if err != nil {
-		cancel()
-		be.sem.ReleaseToken()
 		return nil, err
 	}
 
-	return be.sem.ReleaseTokenOnClose(rd, cancel), err
+	return rd, err
 }
 
 // Stat returns information about a blob.
@@ -342,17 +324,14 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 
 	opts := minio.GetObjectOptions{}
 
-	be.sem.GetToken()
 	obj, err = be.client.GetObject(ctx, be.cfg.Bucket, objName, opts)
 	if err != nil {
-		be.sem.ReleaseToken()
 		return restic.FileInfo{}, errors.Wrap(err, "client.GetObject")
 	}
 
 	// make sure that the object is closed properly.
 	defer func() {
 		e := obj.Close()
-		be.sem.ReleaseToken()
 		if err == nil {
 			err = errors.Wrap(e, "Close")
 		}
@@ -370,9 +349,7 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	objName := be.Filename(h)
 
-	be.sem.GetToken()
 	err := be.client.RemoveObject(ctx, be.cfg.Bucket, objName, minio.RemoveObjectOptions{})
-	be.sem.ReleaseToken()
 
 	if be.IsNotExist(err) {
 		err = nil

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/cenkalti/backoff/v4"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -63,15 +62,7 @@ func LimitReadCloser(r io.ReadCloser, n int64) *LimitedReadCloser {
 func DefaultLoad(ctx context.Context, h restic.Handle, length int, offset int64,
 	openReader func(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error),
 	fn func(rd io.Reader) error) error {
-	if err := h.Valid(); err != nil {
-		return backoff.Permanent(err)
-	}
-	if offset < 0 {
-		return errors.New("offset is negative")
-	}
-	if length < 0 {
-		return errors.Errorf("invalid length %d", length)
-	}
+
 	rd, err := openReader(ctx, h, length, offset)
 	if err != nil {
 		return err

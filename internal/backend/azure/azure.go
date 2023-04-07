@@ -14,7 +14,6 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
-	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -26,7 +25,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blockblob"
 	azContainer "github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
-	"github.com/cenkalti/backoff/v4"
 )
 
 // Backend stores data on an azure endpoint.
@@ -34,7 +32,6 @@ type Backend struct {
 	cfg          Config
 	container    *azContainer.Client
 	connections  uint
-	sem          sema.Semaphore
 	prefix       string
 	listMaxItems int
 	layout.Layout
@@ -96,16 +93,10 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 		return nil, errors.New("no azure authentication information found")
 	}
 
-	sem, err := sema.New(cfg.Connections)
-	if err != nil {
-		return nil, err
-	}
-
 	be := &Backend{
 		container:   client,
 		cfg:         cfg,
 		connections: cfg.Connections,
-		sem:         sem,
 		Layout: &layout.DefaultLayout{
 			Path: cfg.Prefix,
 			Join: path.Join,
@@ -186,13 +177,7 @@ func (be *Backend) Path() string {
 
 // Save stores data in the backend at the handle.
 func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
-	if err := h.Valid(); err != nil {
-		return backoff.Permanent(err)
-	}
-
 	objName := be.Filename(h)
-
-	be.sem.GetToken()
 
 	debug.Log("InsertObject(%v, %v)", be.cfg.AccountName, objName)
 
@@ -205,7 +190,6 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 		err = be.saveLarge(ctx, objName, rd)
 	}
 
-	be.sem.ReleaseToken()
 	return err
 }
 
@@ -297,7 +281,6 @@ func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, 
 	objName := be.Filename(h)
 	blockBlobClient := be.container.NewBlobClient(objName)
 
-	be.sem.GetToken()
 	resp, err := blockBlobClient.DownloadStream(ctx, &blob.DownloadStreamOptions{
 		Range: azblob.HTTPRange{
 			Offset: offset,
@@ -306,11 +289,10 @@ func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, 
 	})
 
 	if err != nil {
-		be.sem.ReleaseToken()
 		return nil, err
 	}
 
-	return be.sem.ReleaseTokenOnClose(resp.Body, nil), err
+	return resp.Body, err
 }
 
 // Stat returns information about a blob.
@@ -318,9 +300,7 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, 
 	objName := be.Filename(h)
 	blobClient := be.container.NewBlobClient(objName)
 
-	be.sem.GetToken()
 	props, err := blobClient.GetProperties(ctx, nil)
-	be.sem.ReleaseToken()
 
 	if err != nil {
 		return restic.FileInfo{}, errors.Wrap(err, "blob.GetProperties")
@@ -338,9 +318,7 @@ func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	objName := be.Filename(h)
 	blob := be.container.NewBlobClient(objName)
 
-	be.sem.GetToken()
 	_, err := blob.Delete(ctx, &azblob.DeleteBlobOptions{})
-	be.sem.ReleaseToken()
 
 	if be.IsNotExist(err) {
 		return nil
@@ -368,9 +346,7 @@ func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.F
 	lister := be.container.NewListBlobsFlatPager(opts)
 
 	for lister.More() {
-		be.sem.GetToken()
 		resp, err := lister.NextPage(ctx)
-		be.sem.ReleaseToken()
 
 		if err != nil {
 			return err

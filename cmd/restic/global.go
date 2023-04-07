@@ -25,6 +25,7 @@ import (
 	"github.com/restic/restic/internal/backend/rest"
 	"github.com/restic/restic/internal/backend/retry"
 	"github.com/restic/restic/internal/backend/s3"
+	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/backend/sftp"
 	"github.com/restic/restic/internal/backend/swift"
 	"github.com/restic/restic/internal/cache"
@@ -744,8 +745,8 @@ func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Optio
 		return nil, errors.Fatalf("unable to open repository at %v: %v", location.StripPassword(s), err)
 	}
 
-	// wrap with debug logging
-	be = logger.New(be)
+	// wrap with debug logging and connection limiting
+	be = logger.New(sema.New(be))
 
 	// wrap backend if a test specified an inner hook
 	if gopts.backendInnerTestHook != nil {
@@ -820,5 +821,5 @@ func create(ctx context.Context, s string, opts options.Options) (restic.Backend
 		return nil, err
 	}
 
-	return logger.New(be), nil
+	return logger.New(sema.New(be)), nil
 }

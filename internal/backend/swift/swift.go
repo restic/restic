@@ -15,12 +15,10 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
-	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
-	"github.com/cenkalti/backoff/v4"
 	"github.com/ncw/swift/v2"
 )
 
@@ -28,7 +26,6 @@ import (
 type beSwift struct {
 	conn        *swift.Connection
 	connections uint
-	sem         sema.Semaphore
 	container   string // Container name
 	prefix      string // Prefix of object names in the container
 	layout.Layout
@@ -41,11 +38,6 @@ var _ restic.Backend = &beSwift{}
 // created if it does not exist yet.
 func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 	debug.Log("config %#v", cfg)
-
-	sem, err := sema.New(cfg.Connections)
-	if err != nil {
-		return nil, err
-	}
 
 	be := &beSwift{
 		conn: &swift.Connection{
@@ -72,7 +64,6 @@ func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backend
 			Transport: rt,
 		},
 		connections: cfg.Connections,
-		sem:         sem,
 		container:   cfg.Container,
 		prefix:      cfg.Prefix,
 		Layout: &layout.DefaultLayout{
@@ -159,27 +150,17 @@ func (be *beSwift) openReader(ctx context.Context, h restic.Handle, length int, 
 		debug.Log("Load(%v) send range %v", h, headers["Range"])
 	}
 
-	be.sem.GetToken()
 	obj, _, err := be.conn.ObjectOpen(ctx, be.container, objName, false, headers)
 	if err != nil {
-		be.sem.ReleaseToken()
 		return nil, errors.Wrap(err, "conn.ObjectOpen")
 	}
 
-	return be.sem.ReleaseTokenOnClose(obj, nil), nil
+	return obj, nil
 }
 
 // Save stores data in the backend at the handle.
 func (be *beSwift) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
-	if err := h.Valid(); err != nil {
-		return backoff.Permanent(err)
-	}
-
 	objName := be.Filename(h)
-
-	be.sem.GetToken()
-	defer be.sem.ReleaseToken()
-
 	encoding := "binary/octet-stream"
 
 	debug.Log("PutObject(%v, %v, %v)", be.container, objName, encoding)
@@ -196,9 +177,6 @@ func (be *beSwift) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 func (be *beSwift) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInfo, err error) {
 	objName := be.Filename(h)
 
-	be.sem.GetToken()
-	defer be.sem.ReleaseToken()
-
 	obj, _, err := be.conn.Object(ctx, be.container, objName)
 	if err != nil {
 		return restic.FileInfo{}, errors.Wrap(err, "conn.Object")
@@ -210,9 +188,6 @@ func (be *beSwift) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 // Remove removes the blob with the given name and type.
 func (be *beSwift) Remove(ctx context.Context, h restic.Handle) error {
 	objName := be.Filename(h)
-
-	be.sem.GetToken()
-	defer be.sem.ReleaseToken()
 
 	err := be.conn.ObjectDelete(ctx, be.container, objName)
 	return errors.Wrap(err, "conn.ObjectDelete")
@@ -226,9 +201,7 @@ func (be *beSwift) List(ctx context.Context, t restic.FileType, fn func(restic.F
 
 	err := be.conn.ObjectsWalk(ctx, be.container, &swift.ObjectsOpts{Prefix: prefix},
 		func(ctx context.Context, opts *swift.ObjectsOpts) (interface{}, error) {
-			be.sem.GetToken()
 			newObjects, err := be.conn.Objects(ctx, be.container, opts)
-			be.sem.ReleaseToken()
 
 			if err != nil {
 				return nil, errors.Wrap(err, "conn.ObjectNames")
