@@ -207,7 +207,6 @@ func (b *Backend) openReader(ctx context.Context, h restic.Handle, length int, o
 	}
 	req.Header.Set("Range", byteRange)
 	req.Header.Set("Accept", ContentTypeV2)
-	debug.Log("Load(%v) send range %v", h, byteRange)
 
 	resp, err := b.client.Do(req)
 

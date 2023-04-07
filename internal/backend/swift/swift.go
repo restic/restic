@@ -146,10 +146,6 @@ func (be *beSwift) openReader(ctx context.Context, h restic.Handle, length int, 
 		headers["Range"] = fmt.Sprintf("bytes=%d-%d", offset, offset+int64(length)-1)
 	}
 
-	if _, ok := headers["Range"]; ok {
-		debug.Log("Load(%v) send range %v", h, headers["Range"])
-	}
-
 	obj, _, err := be.conn.ObjectOpen(ctx, be.container, objName, false, headers)
 	if err != nil {
 		return nil, errors.Wrap(err, "conn.ObjectOpen")
@@ -163,7 +159,6 @@ func (be *beSwift) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 	objName := be.Filename(h)
 	encoding := "binary/octet-stream"
 
-	debug.Log("PutObject(%v, %v, %v)", be.container, objName, encoding)
 	hdr := swift.Headers{"Content-Length": strconv.FormatInt(rd.Length(), 10)}
 	_, err := be.conn.ObjectPut(ctx,
 		be.container, objName, rd, true, hex.EncodeToString(rd.Hash()),

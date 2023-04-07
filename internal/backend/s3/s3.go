@@ -271,7 +271,6 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 	// only use multipart uploads for very large files
 	opts.PartSize = 200 * 1024 * 1024
 
-	debug.Log("PutObject(%v, %v, %v)", be.cfg.Bucket, objName, rd.Length())
 	info, err := be.client.PutObject(ctx, be.cfg.Bucket, objName, io.NopCloser(rd), int64(rd.Length()), opts)
 
 	// sanity check
@@ -297,10 +296,8 @@ func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, 
 
 	var err error
 	if length > 0 {
-		debug.Log("range: %v-%v", offset, offset+int64(length)-1)
 		err = opts.SetRange(offset, offset+int64(length)-1)
 	} else if offset > 0 {
-		debug.Log("range: %v-", offset)
 		err = opts.SetRange(offset, 0)
 	}
 

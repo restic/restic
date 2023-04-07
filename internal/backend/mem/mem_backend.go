@@ -144,8 +144,6 @@ func (be *MemoryBackend) Remove(ctx context.Context, h restic.Handle) error {
 	be.m.Lock()
 	defer be.m.Unlock()
 
-	debug.Log("Remove %v", h)
-
 	h.ContainedBlobType = restic.InvalidBlob
 	if _, ok := be.data[h]; !ok {
 		return errNotFound
