@@ -286,7 +286,7 @@ func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 
 	err := be.bucket.Object(objName).Delete(ctx)
 
-	if err == storage.ErrObjectNotExist {
+	if be.IsNotExist(err) {
 		err = nil
 	}
 
