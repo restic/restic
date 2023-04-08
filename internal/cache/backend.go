@@ -211,3 +211,7 @@ func (b *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, e
 func (b *Backend) IsNotExist(err error) bool {
 	return b.Backend.IsNotExist(err)
 }
+
+func (b *Backend) Unwrap() restic.Backend {
+	return b.Backend
+}

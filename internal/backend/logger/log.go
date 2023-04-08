@@ -75,3 +75,5 @@ func (be *Backend) Close() error {
 	debug.Log("  close err %v", err)
 	return err
 }
+
+func (be *Backend) Unwrap() restic.Backend { return be.Backend }

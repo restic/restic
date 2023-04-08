@@ -46,6 +46,8 @@ func (r rateLimitedBackend) Load(ctx context.Context, h restic.Handle, length in
 	})
 }
 
+func (r rateLimitedBackend) Unwrap() restic.Backend { return r.Backend }
+
 type limitedReader struct {
 	io.Reader
 	writerTo io.WriterTo

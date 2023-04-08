@@ -85,3 +85,7 @@ func (be *SemaphoreBackend) Remove(ctx context.Context, h restic.Handle) error {
 
 	return be.Backend.Remove(ctx, h)
 }
+
+func (be *SemaphoreBackend) Unwrap() restic.Backend {
+	return be.Backend
+}

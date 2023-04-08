@@ -191,3 +191,7 @@ func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.F
 
 	return err
 }
+
+func (be *Backend) Unwrap() restic.Backend {
+	return be.Backend
+}
