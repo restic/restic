@@ -124,14 +124,13 @@ func Open(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 //
 // The service account must have the "storage.buckets.create" permission to
 // create a bucket the does not yet exist.
-func Create(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
+func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 	be, err := open(cfg, rt)
 	if err != nil {
 		return nil, errors.Wrap(err, "open")
 	}
 
 	// Try to determine if the bucket exists. If it does not, try to create it.
-	ctx := context.Background()
 	exists, err := be.bucketExists(ctx, be.bucket)
 	if err != nil {
 		if e, ok := err.(*googleapi.Error); ok && e.Code == http.StatusForbidden {

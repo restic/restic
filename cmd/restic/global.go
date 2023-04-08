@@ -801,7 +801,7 @@ func create(ctx context.Context, s string, opts options.Options) (restic.Backend
 	case "s3":
 		be, err = s3.Create(ctx, cfg.(s3.Config), rt)
 	case "gs":
-		be, err = gs.Create(cfg.(gs.Config), rt)
+		be, err = gs.Create(ctx, cfg.(gs.Config), rt)
 	case "azure":
 		be, err = azure.Create(ctx, cfg.(azure.Config), rt)
 	case "swift":
