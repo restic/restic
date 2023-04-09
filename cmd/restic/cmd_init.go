@@ -102,7 +102,12 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 	}
 
 	if !gopts.JSON {
-		Verbosef("created restic repository %v at %s\n", s.Config().ID[:10], location.StripPassword(gopts.Repo))
+		Verbosef("created restic repository %v at %s", s.Config().ID[:10], location.StripPassword(gopts.Repo))
+		if opts.CopyChunkerParameters && chunkerPolynomial != nil {
+			Verbosef(" with chunker parameters copied from secondary repository\n")
+		} else {
+			Verbosef("\n")
+		}
 		Verbosef("\n")
 		Verbosef("Please note that knowledge of your password is required to access\n")
 		Verbosef("the repository. Losing your password means that your data is\n")
