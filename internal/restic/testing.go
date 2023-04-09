@@ -213,7 +213,7 @@ func TestSetSnapshotID(t testing.TB, sn *Snapshot, id ID) {
 	sn.id = &id
 }
 
-// Convenience function that parses a duration from a string or panics if string is invalid.
+// ParseDurationOrPanic parses a duration from a string or panics if string is invalid.
 // The format is `6y5m234d37h`.
 func ParseDurationOrPanic(s string) Duration {
 	d, err := ParseDuration(s)
