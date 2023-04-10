@@ -1,17 +1,13 @@
 package sftp
 
 import (
-	"bufio"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"fmt"
 	"hash"
 	"io"
 	"os"
-	"os/exec"
 	"path"
-	"time"
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
@@ -27,18 +23,15 @@ import (
 
 // SFTP is a backend in a directory accessed via SFTP.
 type SFTP struct {
-	c *sftp.Client
-	p string
-
-	cmd    *exec.Cmd
-	result <-chan error
-
-	posixRename bool
-
-	sem sema.Semaphore
+	p         string
+	sem       sema.Semaphore
+	isClosing bool
 	layout.Layout
 	Config
+	*Connection
 	backend.Modes
+	mutex          sync.Mutex
+	reconnectsLeft uint
 }
 
 var _ restic.Backend = &SFTP{}
@@ -46,83 +39,61 @@ var _ restic.Backend = &SFTP{}
 const defaultLayout = "default"
 
 func startClient(cfg Config) (*SFTP, error) {
-	program, args, err := buildSSHCommand(cfg)
+	connection, err := NewConnection(cfg)
 	if err != nil {
 		return nil, err
 	}
-
-	debug.Log("start client %v %v", program, args)
-	// Connect to a remote host and request the sftp subsystem via the 'ssh'
-	// command.  This assumes that passwordless login is correctly configured.
-	cmd := exec.Command(program, args...)
-
-	// prefix the errors with the program name
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return nil, errors.Wrap(err, "cmd.StderrPipe")
-	}
-
-	go func() {
-		sc := bufio.NewScanner(stderr)
-		for sc.Scan() {
-			fmt.Fprintf(os.Stderr, "subprocess %v: %v\n", program, sc.Text())
-		}
-	}()
-
-	// get stdin and stdout
-	wr, err := cmd.StdinPipe()
-	if err != nil {
-		return nil, errors.Wrap(err, "cmd.StdinPipe")
-	}
-	rd, err := cmd.StdoutPipe()
-	if err != nil {
-		return nil, errors.Wrap(err, "cmd.StdoutPipe")
-	}
-
-	bg, err := backend.StartForeground(cmd)
-	if err != nil {
-		if backend.IsErrDot(err) {
-			return nil, errors.Errorf("cannot implicitly run relative executable %v found in current directory, use -o sftp.command=./<command> to override", cmd.Path)
-		}
-		return nil, err
-	}
-
-	// wait in a different goroutine
-	ch := make(chan error, 1)
-	go func() {
-		err := cmd.Wait()
-		debug.Log("ssh command exited, err %v", err)
-		for {
-			ch <- errors.Wrap(err, "ssh command exited")
-		}
-	}()
-
-	// open the SFTP session
-	client, err := sftp.NewClientPipe(rd, wr)
-	if err != nil {
-		return nil, errors.Errorf("unable to start the sftp session, error: %v", err)
-	}
-
-	err = bg()
-	if err != nil {
-		return nil, errors.Wrap(err, "bg")
-	}
-
-	_, posixRename := client.HasExtension("posix-rename@openssh.com")
-	return &SFTP{c: client, cmd: cmd, result: ch, posixRename: posixRename}, nil
+	return &SFTP{Connection: connection}, nil
 }
 
-// clientError returns an error if the client has exited. Otherwise, nil is
-// returned immediately.
-func (r *SFTP) clientError() error {
-	select {
-	case err := <-r.result:
-		debug.Log("client has exited with err %v", err)
+func (r *SFTP) reconnect() error {
+	debug.Log("RECONNECT")
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	debug.Log("after mutext")
+
+	r.reconnectsLeft--
+
+	if r.reconnectsLeft < 0 {
+		debug.Log("LIMIT REACHED!!!!")
+		err := errors.Wrapf(r.Connection.clientError(), "max reconnections limit reached")
 		return backoff.Permanent(err)
-	default:
+	}
+	if r.isClosing {
+		return nil
 	}
 
+	// TODO(ibash) error handling here...?
+	r.Connection.Close()
+	connection, err := NewConnection(r.Config)
+	if err != nil {
+		debug.Log("unable to start program: %v", err)
+		return err
+	}
+
+	r.Connection = connection
 	return nil
+}
+
+func (r *SFTP) clientError() error {
+	debug.Log("CLIENT ERROR CALLED")
+
+	err := r.Connection.clientError()
+
+	debug.Log("CLIENT ERROR CALLED AND ERR WAS NOT NIL")
+	debug.Log("%v", err)
+
+	if err == nil {
+		return nil
+	}
+
+	if r.isClosing {
+		debug.Log("CONNECTION CLOSING SO RETURNING ERR %v", err)
+		return backoff.Permanent(err)
+	}
+
+	debug.Log("clientError: RECONNECTING")
+	return r.reconnect()
 }
 
 // Open opens an sftp backend as described by the config by running
@@ -412,6 +383,10 @@ func (r *SFTP) checkNoSpace(dir string, size int64, origErr error) error {
 // Load runs fn with a reader that yields the contents of the file at h at the
 // given offset.
 func (r *SFTP) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+	if err := r.clientError(); err != nil {
+		return err
+	}
+
 	return backend.DefaultLoad(ctx, h, length, offset, r.openReader, fn)
 }
 
@@ -504,13 +479,18 @@ func (r *SFTP) Remove(ctx context.Context, h restic.Handle) error {
 	r.sem.GetToken()
 	defer r.sem.ReleaseToken()
 
-	return r.c.Remove(r.Filename(h))
+	err := r.c.Remove(r.Filename(h))
+	return err
 }
 
 // List runs fn for each file in the backend which has the type t. When an
 // error occurs (or fn returns an error), List stops and returns it.
 func (r *SFTP) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
 	debug.Log("List %v", t)
+
+	if err := r.clientError(); err != nil {
+		return err
+	}
 
 	basedir, subdirs := r.Basedir(t)
 	walker := r.c.Walk(basedir)
@@ -568,8 +548,6 @@ func (r *SFTP) List(ctx context.Context, t restic.FileType, fn func(restic.FileI
 	return ctx.Err()
 }
 
-var closeTimeout = 2 * time.Second
-
 // Close closes the sftp connection and terminates the underlying command.
 func (r *SFTP) Close() error {
 	debug.Log("Close")
@@ -577,23 +555,9 @@ func (r *SFTP) Close() error {
 		return nil
 	}
 
-	err := r.c.Close()
-	debug.Log("Close returned error %v", err)
+	r.isClosing = true
 
-	// wait for closeTimeout before killing the process
-	select {
-	case err := <-r.result:
-		return err
-	case <-time.After(closeTimeout):
-	}
-
-	if err := r.cmd.Process.Kill(); err != nil {
-		return err
-	}
-
-	// get the error, but ignore it
-	<-r.result
-	return nil
+	return r.Connection.Close()
 }
 
 func (r *SFTP) deleteRecursive(ctx context.Context, name string) error {
