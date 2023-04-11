@@ -380,6 +380,12 @@ func main() {
 		}
 	}
 
+	solarisMinVersion := GoVersion{Major: 1, Minor: 20, Patch: 0}
+	if env["GOARCH"] == "solaris" && !goVersion.AtLeast(solarisMinVersion) {
+		fmt.Fprintf(os.Stderr, "Detected version %s is too old, restic requires at least %s for Solaris\n", goVersion, solarisMinVersion)
+		os.Exit(1)
+	}
+
 	verbosePrintf("detected Go version %v\n", goVersion)
 
 	preserveSymbols := false
