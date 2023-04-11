@@ -1,0 +1,5 @@
+Enhancement: Add jq to container image
+
+The Docker container image now contains jq which can be useful when restic outputs json data.
+
+https://github.com/restic/restic/pull/4220
