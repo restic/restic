@@ -78,5 +78,6 @@ func CleanupHandler(c <-chan os.Signal) {
 // given exit code.
 func Exit(code int) {
 	code = RunCleanupHandlers(code)
+	debug.Log("exiting with status code %d", code)
 	os.Exit(code)
 }
