@@ -67,12 +67,12 @@ func init() {
 	cmdRoot.AddCommand(cmdForget)
 
 	f := cmdForget.Flags()
-	f.IntVarP(&forgetOptions.Last, "keep-last", "l", 0, "keep the last `n` snapshots")
-	f.IntVarP(&forgetOptions.Hourly, "keep-hourly", "H", 0, "keep the last `n` hourly snapshots")
-	f.IntVarP(&forgetOptions.Daily, "keep-daily", "d", 0, "keep the last `n` daily snapshots")
-	f.IntVarP(&forgetOptions.Weekly, "keep-weekly", "w", 0, "keep the last `n` weekly snapshots")
-	f.IntVarP(&forgetOptions.Monthly, "keep-monthly", "m", 0, "keep the last `n` monthly snapshots")
-	f.IntVarP(&forgetOptions.Yearly, "keep-yearly", "y", 0, "keep the last `n` yearly snapshots")
+	f.IntVarP(&forgetOptions.Last, "keep-last", "l", 0, "keep the last `n` snapshots (use '-1' to keep all snapshots)")
+	f.IntVarP(&forgetOptions.Hourly, "keep-hourly", "H", 0, "keep the last `n` hourly snapshots (use '-1' to keep all hourly snapshots)")
+	f.IntVarP(&forgetOptions.Daily, "keep-daily", "d", 0, "keep the last `n` daily snapshots (use '-1' to keep all daily snapshots)")
+	f.IntVarP(&forgetOptions.Weekly, "keep-weekly", "w", 0, "keep the last `n` weekly snapshots (use '-1' to keep all weekly snapshots)")
+	f.IntVarP(&forgetOptions.Monthly, "keep-monthly", "m", 0, "keep the last `n` monthly snapshots (use '-1' to keep all monthly snapshots)")
+	f.IntVarP(&forgetOptions.Yearly, "keep-yearly", "y", 0, "keep the last `n` yearly snapshots (use '-1' to keep all yearly snapshots)")
 	f.VarP(&forgetOptions.Within, "keep-within", "", "keep snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
 	f.VarP(&forgetOptions.WithinHourly, "keep-within-hourly", "", "keep hourly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
 	f.VarP(&forgetOptions.WithinDaily, "keep-within-daily", "", "keep daily snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
@@ -99,8 +99,29 @@ func init() {
 	addPruneOptions(cmdForget)
 }
 
+func verifyForgetOptions(opts *ForgetOptions) error {
+	if opts.Last < -1 || opts.Hourly < -1 || opts.Daily < -1 || opts.Weekly < -1 ||
+		opts.Monthly < -1 || opts.Yearly < -1 {
+		return errors.Fatal("negative values other than -1 are not allowed for --keep-*")
+	}
+
+	for _, d := range []restic.Duration{opts.Within, opts.WithinHourly, opts.WithinDaily,
+		opts.WithinMonthly, opts.WithinWeekly, opts.WithinYearly} {
+		if d.Hours < 0 || d.Days < 0 || d.Months < 0 || d.Years < 0 {
+			return errors.Fatal("durations containing negative values are not allowed for --keep-within*")
+		}
+	}
+
+	return nil
+}
+
 func runForget(ctx context.Context, opts ForgetOptions, gopts GlobalOptions, args []string) error {
-	err := verifyPruneOptions(&pruneOptions)
+	err := verifyForgetOptions(&opts)
+	if err != nil {
+		return err
+	}
+
+	err = verifyPruneOptions(&pruneOptions)
 	if err != nil {
 		return err
 	}
