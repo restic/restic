@@ -71,6 +71,7 @@ func testRunBackupAssumeFailure(t testing.TB, dir string, target []string, opts 
 		defer cleanup()
 	}
 
+	opts.GroupBy = restic.SnapshotGroupByOptions{Host: true, Path: true}
 	backupErr := runBackup(ctx, opts, gopts, term, target)
 
 	cancel()
