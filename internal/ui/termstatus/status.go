@@ -302,26 +302,35 @@ func Truncate(s string, w int) string {
 		return s
 	}
 
-	for i, r := range s {
+	for i := uint(0); i < uint(len(s)); {
+		utfsize := uint(1) // UTF-8 encoding size of first rune in s.
 		w--
-		if r > unicode.MaxASCII && wideRune(r) {
-			w--
+
+		if s[i] > unicode.MaxASCII {
+			var wide bool
+			if wide, utfsize = wideRune(s[i:]); wide {
+				w--
+			}
 		}
 
 		if w < 0 {
 			return s[:i]
 		}
+		i += utfsize
 	}
 
 	return s
 }
 
-// Guess whether r would occupy two terminal cells instead of one.
-// This cannot be determined exactly without knowing the terminal font,
-// so we treat all ambigous runes as full-width, i.e., two cells.
-func wideRune(r rune) bool {
-	kind := width.LookupRune(r).Kind()
-	return kind != width.Neutral && kind != width.EastAsianNarrow
+// Guess whether the first rune in s would occupy two terminal cells
+// instead of one. This cannot be determined exactly without knowing
+// the terminal font, so we treat all ambigous runes as full-width,
+// i.e., two cells.
+func wideRune(s string) (wide bool, utfsize uint) {
+	prop, size := width.LookupString(s)
+	kind := prop.Kind()
+	wide = kind != width.Neutral && kind != width.EastAsianNarrow
+	return wide, uint(size)
 }
 
 // SetStatus updates the status lines.

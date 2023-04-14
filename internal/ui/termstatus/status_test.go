@@ -49,11 +49,15 @@ func BenchmarkTruncateASCII(b *testing.B) {
 func BenchmarkTruncateUnicode(b *testing.B) {
 	s := "Hello World or Καλημέρα κόσμε or こんにちは 世界"
 	w := 0
-	for _, r := range s {
+	for i := 0; i < len(s); {
 		w++
-		if wideRune(r) {
+		wide, utfsize := wideRune(s[i:])
+		if wide {
 			w++
 		}
+		i += int(utfsize)
 	}
+	b.ResetTimer()
+
 	benchmarkTruncate(b, s, w-1)
 }
