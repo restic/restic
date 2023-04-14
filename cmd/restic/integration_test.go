@@ -363,6 +363,28 @@ func testBackup(t *testing.T, useFsSnapshot bool) {
 	testRunCheck(t, env.gopts)
 }
 
+func TestBackupWithRelativePath(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	opts := BackupOptions{}
+
+	// first backup
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
+	snapshotIDs := testRunList(t, "snapshots", env.gopts)
+	rtest.Assert(t, len(snapshotIDs) == 1, "expected one snapshot, got %v", snapshotIDs)
+	firstSnapshotID := snapshotIDs[0]
+
+	// second backup, implicit incremental
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
+
+	// that the correct parent snapshot was used
+	latestSn, _ := testRunSnapshots(t, env.gopts)
+	rtest.Assert(t, latestSn != nil, "missing latest snapshot")
+	rtest.Assert(t, latestSn.Parent != nil && latestSn.Parent.Equal(firstSnapshotID), "second snapshot selected unexpected parent %v instead of %v", latestSn.Parent, firstSnapshotID)
+}
+
 func TestDryRunBackup(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
