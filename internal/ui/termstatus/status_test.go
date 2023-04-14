@@ -1,6 +1,36 @@
 package termstatus
 
-import "testing"
+import (
+	"strconv"
+	"testing"
+
+	rtest "github.com/restic/restic/internal/test"
+)
+
+func TestQuote(t *testing.T) {
+	for _, c := range []struct {
+		in        string
+		needQuote bool
+	}{
+		{"foo.bar/baz", false},
+		{"föó_bàŕ-bãẑ", false},
+		{" foo ", false},
+		{"foo bar", false},
+		{"foo\nbar", true},
+		{"foo\rbar", true},
+		{"foo\abar", true},
+		{"\xff", true},
+		{`c:\foo\bar`, false},
+		// Issue #2260: terminal control characters.
+		{"\x1bm_red_is_beautiful", true},
+	} {
+		if c.needQuote {
+			rtest.Equals(t, strconv.Quote(c.in), Quote(c.in))
+		} else {
+			rtest.Equals(t, c.in, Quote(c.in))
+		}
+	}
+}
 
 func TestTruncate(t *testing.T) {
 	var tests = []struct {
