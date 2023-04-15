@@ -1,6 +1,7 @@
 package gs
 
 import (
+	"os"
 	"path"
 	"strings"
 
@@ -55,4 +56,13 @@ func ParseConfig(s string) (interface{}, error) {
 	cfg.Bucket = bucket
 	cfg.Prefix = prefix
 	return cfg, nil
+}
+
+// ApplyEnvironment saves values from the environment to the config.
+func ApplyEnvironment(cfgRaw interface{}) error {
+	cfg := cfgRaw.(*Config)
+	if cfg.ProjectID == "" {
+		cfg.ProjectID = os.Getenv("GOOGLE_PROJECT_ID")
+	}
+	return nil
 }

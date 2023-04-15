@@ -2,6 +2,7 @@ package s3
 
 import (
 	"net/url"
+	"os"
 	"path"
 	"strings"
 
@@ -90,4 +91,28 @@ func createConfig(endpoint, bucket, prefix string, useHTTP bool) (interface{}, e
 	cfg.Bucket = bucket
 	cfg.Prefix = prefix
 	return cfg, nil
+}
+
+// ApplyEnvironment saves values from the environment to the config.
+func ApplyEnvironment(cfgRaw interface{}) error {
+	cfg := cfgRaw.(*Config)
+	if cfg.KeyID == "" {
+		cfg.KeyID = os.Getenv("AWS_ACCESS_KEY_ID")
+	}
+
+	if cfg.Secret.String() == "" {
+		cfg.Secret = options.NewSecretString(os.Getenv("AWS_SECRET_ACCESS_KEY"))
+	}
+
+	if cfg.KeyID == "" && cfg.Secret.String() != "" {
+		return errors.Fatalf("unable to open S3 backend: Key ID ($AWS_ACCESS_KEY_ID) is empty")
+	} else if cfg.KeyID != "" && cfg.Secret.String() == "" {
+		return errors.Fatalf("unable to open S3 backend: Secret ($AWS_SECRET_ACCESS_KEY) is empty")
+	}
+
+	if cfg.Region == "" {
+		cfg.Region = os.Getenv("AWS_DEFAULT_REGION")
+	}
+
+	return nil
 }

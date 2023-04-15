@@ -1,6 +1,7 @@
 package b2
 
 import (
+	"os"
 	"path"
 	"regexp"
 	"strings"
@@ -78,4 +79,25 @@ func ParseConfig(s string) (interface{}, error) {
 	cfg.Prefix = prefix
 
 	return cfg, nil
+}
+
+// ApplyEnvironment saves values from the environment to the config.
+func ApplyEnvironment(cfgRaw interface{}) error {
+	cfg := cfgRaw.(*Config)
+	if cfg.AccountID == "" {
+		cfg.AccountID = os.Getenv("B2_ACCOUNT_ID")
+	}
+
+	if cfg.AccountID == "" {
+		return errors.Fatalf("unable to open B2 backend: Account ID ($B2_ACCOUNT_ID) is empty")
+	}
+
+	if cfg.Key.String() == "" {
+		cfg.Key = options.NewSecretString(os.Getenv("B2_ACCOUNT_KEY"))
+	}
+
+	if cfg.Key.String() == "" {
+		return errors.Fatalf("unable to open B2 backend: Key ($B2_ACCOUNT_KEY) is empty")
+	}
+	return nil
 }

@@ -1,6 +1,7 @@
 package azure
 
 import (
+	"os"
 	"path"
 	"strings"
 
@@ -52,4 +53,21 @@ func ParseConfig(s string) (interface{}, error) {
 	cfg.Container = container
 	cfg.Prefix = prefix
 	return cfg, nil
+}
+
+// ApplyEnvironment saves values from the environment to the config.
+func ApplyEnvironment(cfgRaw interface{}) error {
+	cfg := cfgRaw.(*Config)
+	if cfg.AccountName == "" {
+		cfg.AccountName = os.Getenv("AZURE_ACCOUNT_NAME")
+	}
+
+	if cfg.AccountKey.String() == "" {
+		cfg.AccountKey = options.NewSecretString(os.Getenv("AZURE_ACCOUNT_KEY"))
+	}
+
+	if cfg.AccountSAS.String() == "" {
+		cfg.AccountSAS = options.NewSecretString(os.Getenv("AZURE_ACCOUNT_SAS"))
+	}
+	return nil
 }

@@ -559,24 +559,10 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 
 	case "s3":
 		cfg := loc.Config.(s3.Config)
-		if cfg.KeyID == "" {
-			cfg.KeyID = os.Getenv("AWS_ACCESS_KEY_ID")
-		}
 
-		if cfg.Secret.String() == "" {
-			cfg.Secret = options.NewSecretString(os.Getenv("AWS_SECRET_ACCESS_KEY"))
+		if err := s3.ApplyEnvironment(&cfg); err != nil {
+			return nil, err
 		}
-
-		if cfg.KeyID == "" && cfg.Secret.String() != "" {
-			return nil, errors.Fatalf("unable to open S3 backend: Key ID ($AWS_ACCESS_KEY_ID) is empty")
-		} else if cfg.KeyID != "" && cfg.Secret.String() == "" {
-			return nil, errors.Fatalf("unable to open S3 backend: Secret ($AWS_SECRET_ACCESS_KEY) is empty")
-		}
-
-		if cfg.Region == "" {
-			cfg.Region = os.Getenv("AWS_DEFAULT_REGION")
-		}
-
 		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
 			return nil, err
 		}
@@ -586,10 +572,10 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 
 	case "gs":
 		cfg := loc.Config.(gs.Config)
-		if cfg.ProjectID == "" {
-			cfg.ProjectID = os.Getenv("GOOGLE_PROJECT_ID")
-		}
 
+		if err := gs.ApplyEnvironment(&cfg); err != nil {
+			return nil, err
+		}
 		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
 			return nil, err
 		}
@@ -599,18 +585,10 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 
 	case "azure":
 		cfg := loc.Config.(azure.Config)
-		if cfg.AccountName == "" {
-			cfg.AccountName = os.Getenv("AZURE_ACCOUNT_NAME")
-		}
 
-		if cfg.AccountKey.String() == "" {
-			cfg.AccountKey = options.NewSecretString(os.Getenv("AZURE_ACCOUNT_KEY"))
+		if err := azure.ApplyEnvironment(&cfg); err != nil {
+			return nil, err
 		}
-
-		if cfg.AccountSAS.String() == "" {
-			cfg.AccountSAS = options.NewSecretString(os.Getenv("AZURE_ACCOUNT_SAS"))
-		}
-
 		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
 			return nil, err
 		}
@@ -635,22 +613,9 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 	case "b2":
 		cfg := loc.Config.(b2.Config)
 
-		if cfg.AccountID == "" {
-			cfg.AccountID = os.Getenv("B2_ACCOUNT_ID")
+		if err := b2.ApplyEnvironment(&cfg); err != nil {
+			return nil, err
 		}
-
-		if cfg.AccountID == "" {
-			return nil, errors.Fatalf("unable to open B2 backend: Account ID ($B2_ACCOUNT_ID) is empty")
-		}
-
-		if cfg.Key.String() == "" {
-			cfg.Key = options.NewSecretString(os.Getenv("B2_ACCOUNT_KEY"))
-		}
-
-		if cfg.Key.String() == "" {
-			return nil, errors.Fatalf("unable to open B2 backend: Key ($B2_ACCOUNT_KEY) is empty")
-		}
-
 		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
 			return nil, err
 		}
