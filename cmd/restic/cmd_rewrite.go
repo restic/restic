@@ -136,6 +136,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 	if err != nil {
 		return false, err
 	}
+	Verbosef("saved new snapshot %v\n", id.Str())
 
 	if opts.Forget {
 		h := restic.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
@@ -145,7 +146,6 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 		debug.Log("removed old snapshot %v", sn.ID())
 		Verbosef("removed old snapshot %v\n", sn.ID().Str())
 	}
-	Verbosef("saved new snapshot %v\n", id.Str())
 	return true, nil
 }
 
