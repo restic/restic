@@ -1,11 +1,12 @@
 package gs
 
-import "testing"
+import (
+	"testing"
 
-var configTests = []struct {
-	s   string
-	cfg Config
-}{
+	"github.com/restic/restic/internal/backend/test"
+)
+
+var configTests = []test.ConfigTestData[Config]{
 	{"gs:bucketname:/", Config{
 		Bucket:      "bucketname",
 		Prefix:      "",
@@ -27,17 +28,5 @@ var configTests = []struct {
 }
 
 func TestParseConfig(t *testing.T) {
-	for i, test := range configTests {
-		cfg, err := ParseConfig(test.s)
-		if err != nil {
-			t.Errorf("test %d:%s failed: %v", i, test.s, err)
-			continue
-		}
-
-		if cfg != test.cfg {
-			t.Errorf("test %d:\ninput:\n  %s\n wrong config, want:\n  %v\ngot:\n  %v",
-				i, test.s, test.cfg, cfg)
-			continue
-		}
-	}
+	test.ParseConfigTester(t, ParseConfig, configTests)
 }

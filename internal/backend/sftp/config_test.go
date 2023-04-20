@@ -2,12 +2,11 @@ package sftp
 
 import (
 	"testing"
+
+	"github.com/restic/restic/internal/backend/test"
 )
 
-var configTests = []struct {
-	in  string
-	cfg Config
-}{
+var configTests = []test.ConfigTestData[Config]{
 	// first form, user specified sftp://user@host/dir
 	{
 		"sftp://user@host/dir/subdir",
@@ -77,19 +76,7 @@ var configTests = []struct {
 }
 
 func TestParseConfig(t *testing.T) {
-	for i, test := range configTests {
-		cfg, err := ParseConfig(test.in)
-		if err != nil {
-			t.Errorf("test %d:%s failed: %v", i, test.in, err)
-			continue
-		}
-
-		if cfg != test.cfg {
-			t.Errorf("test %d:\ninput:\n  %s\n wrong config, want:\n  %v\ngot:\n  %v",
-				i, test.in, test.cfg, cfg)
-			continue
-		}
-	}
+	test.ParseConfigTester(t, ParseConfig, configTests)
 }
 
 var configTestsInvalid = []string{

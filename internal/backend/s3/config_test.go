@@ -3,12 +3,11 @@ package s3
 import (
 	"strings"
 	"testing"
+
+	"github.com/restic/restic/internal/backend/test"
 )
 
-var configTests = []struct {
-	s   string
-	cfg Config
-}{
+var configTests = []test.ConfigTestData[Config]{
 	{"s3://eu-central-1/bucketname", Config{
 		Endpoint:    "eu-central-1",
 		Bucket:      "bucketname",
@@ -100,19 +99,7 @@ var configTests = []struct {
 }
 
 func TestParseConfig(t *testing.T) {
-	for i, test := range configTests {
-		cfg, err := ParseConfig(test.s)
-		if err != nil {
-			t.Errorf("test %d:%s failed: %v", i, test.s, err)
-			continue
-		}
-
-		if cfg != test.cfg {
-			t.Errorf("test %d:\ninput:\n  %s\n wrong config, want:\n  %v\ngot:\n  %v",
-				i, test.s, test.cfg, cfg)
-			continue
-		}
-	}
+	test.ParseConfigTester(t, ParseConfig, configTests)
 }
 
 func TestParseError(t *testing.T) {

@@ -1,11 +1,12 @@
 package swift
 
-import "testing"
+import (
+	"testing"
 
-var configTests = []struct {
-	s   string
-	cfg Config
-}{
+	"github.com/restic/restic/internal/backend/test"
+)
+
+var configTests = []test.ConfigTestData[Config]{
 	{
 		"swift:cnt1:/",
 		Config{
@@ -31,19 +32,7 @@ var configTests = []struct {
 }
 
 func TestParseConfig(t *testing.T) {
-	for _, test := range configTests {
-		t.Run("", func(t *testing.T) {
-			cfg, err := ParseConfig(test.s)
-			if err != nil {
-				t.Fatalf("parsing %q failed: %v", test.s, err)
-			}
-
-			if cfg != test.cfg {
-				t.Fatalf("wrong output for %q, want:\n  %#v\ngot:\n  %#v",
-					test.s, test.cfg, cfg)
-			}
-		})
-	}
+	test.ParseConfigTester(t, ParseConfig, configTests)
 }
 
 var configTestsInvalid = []string{
