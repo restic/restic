@@ -35,14 +35,14 @@ func init() {
 // and sftp:user@host:directory.  The directory will be path Cleaned and can
 // be an absolute path if it starts with a '/' (e.g.
 // sftp://user@host//absolute and sftp:user@host:/absolute).
-func ParseConfig(s string) (interface{}, error) {
+func ParseConfig(s string) (Config, error) {
 	var user, host, port, dir string
 	switch {
 	case strings.HasPrefix(s, "sftp://"):
 		// parse the "sftp://user@host/path" url format
 		url, err := url.Parse(s)
 		if err != nil {
-			return nil, errors.WithStack(err)
+			return Config{}, errors.WithStack(err)
 		}
 		if url.User != nil {
 			user = url.User.Username()
@@ -51,7 +51,7 @@ func ParseConfig(s string) (interface{}, error) {
 		port = url.Port()
 		dir = url.Path
 		if dir == "" {
-			return nil, errors.Errorf("invalid backend %q, no directory specified", s)
+			return Config{}, errors.Errorf("invalid backend %q, no directory specified", s)
 		}
 
 		dir = dir[1:]
@@ -63,7 +63,7 @@ func ParseConfig(s string) (interface{}, error) {
 		var colon bool
 		host, dir, colon = strings.Cut(s, ":")
 		if !colon {
-			return nil, errors.New("sftp: invalid format, hostname or path not found")
+			return Config{}, errors.New("sftp: invalid format, hostname or path not found")
 		}
 		// split user and host at the "@"
 		data := strings.SplitN(host, "@", 3)
@@ -75,12 +75,12 @@ func ParseConfig(s string) (interface{}, error) {
 			host = data[1]
 		}
 	default:
-		return nil, errors.New(`invalid format, does not start with "sftp:"`)
+		return Config{}, errors.New(`invalid format, does not start with "sftp:"`)
 	}
 
 	p := path.Clean(dir)
 	if strings.HasPrefix(p, "~") {
-		return nil, errors.New("sftp path starts with the tilde (~) character, that fails for most sftp servers.\nUse a relative directory, most servers interpret this as relative to the user's home directory")
+		return Config{}, errors.New("sftp path starts with the tilde (~) character, that fails for most sftp servers.\nUse a relative directory, most servers interpret this as relative to the user's home directory")
 	}
 
 	cfg := NewConfig()

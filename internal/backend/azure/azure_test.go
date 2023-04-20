@@ -30,12 +30,11 @@ func newAzureTestSuite(t testing.TB) *test.Suite {
 
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
 		NewConfig: func() (interface{}, error) {
-			azcfg, err := azure.ParseConfig(os.Getenv("RESTIC_TEST_AZURE_REPOSITORY"))
+			cfg, err := azure.ParseConfig(os.Getenv("RESTIC_TEST_AZURE_REPOSITORY"))
 			if err != nil {
 				return nil, err
 			}
 
-			cfg := azcfg.(azure.Config)
 			cfg.AccountName = os.Getenv("RESTIC_TEST_AZURE_ACCOUNT_NAME")
 			cfg.AccountKey = options.NewSecretString(os.Getenv("RESTIC_TEST_AZURE_ACCOUNT_KEY"))
 			cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
@@ -141,12 +140,11 @@ func TestUploadLargeFile(t *testing.T) {
 		return
 	}
 
-	azcfg, err := azure.ParseConfig(os.Getenv("RESTIC_TEST_AZURE_REPOSITORY"))
+	cfg, err := azure.ParseConfig(os.Getenv("RESTIC_TEST_AZURE_REPOSITORY"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	cfg := azcfg.(azure.Config)
 	cfg.AccountName = os.Getenv("RESTIC_TEST_AZURE_ACCOUNT_NAME")
 	cfg.AccountKey = options.NewSecretString(os.Getenv("RESTIC_TEST_AZURE_ACCOUNT_KEY"))
 	cfg.Prefix = fmt.Sprintf("test-upload-large-%d", time.Now().UnixNano())

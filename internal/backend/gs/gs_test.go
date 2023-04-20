@@ -27,12 +27,11 @@ func newGSTestSuite(t testing.TB) *test.Suite {
 
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
 		NewConfig: func() (interface{}, error) {
-			gscfg, err := gs.ParseConfig(os.Getenv("RESTIC_TEST_GS_REPOSITORY"))
+			cfg, err := gs.ParseConfig(os.Getenv("RESTIC_TEST_GS_REPOSITORY"))
 			if err != nil {
 				return nil, err
 			}
 
-			cfg := gscfg.(gs.Config)
 			cfg.ProjectID = os.Getenv("RESTIC_TEST_GS_PROJECT_ID")
 			cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
 			return cfg, nil

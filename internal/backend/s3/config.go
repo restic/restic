@@ -45,7 +45,7 @@ func init() {
 // supported configuration formats are s3://host/bucketname/prefix and
 // s3:host/bucketname/prefix. The host can also be a valid s3 region
 // name. If no prefix is given the prefix "restic" will be used.
-func ParseConfig(s string) (interface{}, error) {
+func ParseConfig(s string) (Config, error) {
 	switch {
 	case strings.HasPrefix(s, "s3:http"):
 		// assume that a URL has been specified, parse it and
@@ -53,11 +53,11 @@ func ParseConfig(s string) (interface{}, error) {
 		// bucket name and prefix
 		url, err := url.Parse(s[3:])
 		if err != nil {
-			return nil, errors.WithStack(err)
+			return Config{}, errors.WithStack(err)
 		}
 
 		if url.Path == "" {
-			return nil, errors.New("s3: bucket name not found")
+			return Config{}, errors.New("s3: bucket name not found")
 		}
 
 		bucket, path, _ := strings.Cut(url.Path[1:], "/")
@@ -67,7 +67,7 @@ func ParseConfig(s string) (interface{}, error) {
 	case strings.HasPrefix(s, "s3:"):
 		s = s[3:]
 	default:
-		return nil, errors.New("s3: invalid format")
+		return Config{}, errors.New("s3: invalid format")
 	}
 	// use the first entry of the path as the endpoint and the
 	// remainder as bucket name and prefix
@@ -76,9 +76,9 @@ func ParseConfig(s string) (interface{}, error) {
 	return createConfig(endpoint, bucket, prefix, false)
 }
 
-func createConfig(endpoint, bucket, prefix string, useHTTP bool) (interface{}, error) {
+func createConfig(endpoint, bucket, prefix string, useHTTP bool) (Config, error) {
 	if endpoint == "" {
-		return nil, errors.New("s3: invalid format, host/region or bucket name not found")
+		return Config{}, errors.New("s3: invalid format, host/region or bucket name not found")
 	}
 
 	if prefix != "" {

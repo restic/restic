@@ -31,12 +31,11 @@ func newB2TestSuite(t testing.TB) *test.Suite {
 
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
 		NewConfig: func() (interface{}, error) {
-			b2cfg, err := b2.ParseConfig(os.Getenv("RESTIC_TEST_B2_REPOSITORY"))
+			cfg, err := b2.ParseConfig(os.Getenv("RESTIC_TEST_B2_REPOSITORY"))
 			if err != nil {
 				return nil, err
 			}
 
-			cfg := b2cfg.(b2.Config)
 			cfg.AccountID = os.Getenv("RESTIC_TEST_B2_ACCOUNT_ID")
 			cfg.Key = options.NewSecretString(os.Getenv("RESTIC_TEST_B2_ACCOUNT_KEY"))
 			cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())

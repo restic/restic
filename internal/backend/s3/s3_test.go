@@ -229,12 +229,11 @@ func newS3TestSuite(t testing.TB) *test.Suite {
 
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
 		NewConfig: func() (interface{}, error) {
-			s3cfg, err := s3.ParseConfig(os.Getenv("RESTIC_TEST_S3_REPOSITORY"))
+			cfg, err := s3.ParseConfig(os.Getenv("RESTIC_TEST_S3_REPOSITORY"))
 			if err != nil {
 				return nil, err
 			}
 
-			cfg := s3cfg.(s3.Config)
 			cfg.KeyID = os.Getenv("RESTIC_TEST_S3_KEY")
 			cfg.Secret = options.NewSecretString(os.Getenv("RESTIC_TEST_S3_SECRET"))
 			cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())

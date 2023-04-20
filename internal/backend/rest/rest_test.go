@@ -130,12 +130,10 @@ func TestBackendRESTExternalServer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	c := cfg.(rest.Config)
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	newTestSuite(ctx, t, c.URL, true).RunTests(t)
+	newTestSuite(ctx, t, cfg.URL, true).RunTests(t)
 }
 
 func BenchmarkBackendREST(t *testing.B) {

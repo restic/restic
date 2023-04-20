@@ -33,14 +33,9 @@ var configTests = []struct {
 func TestParseConfig(t *testing.T) {
 	for _, test := range configTests {
 		t.Run("", func(t *testing.T) {
-			v, err := ParseConfig(test.s)
+			cfg, err := ParseConfig(test.s)
 			if err != nil {
 				t.Fatalf("parsing %q failed: %v", test.s, err)
-			}
-
-			cfg, ok := v.(Config)
-			if !ok {
-				t.Fatalf("wrong type returned, want Config, got %T", cfg)
 			}
 
 			if cfg != test.cfg {

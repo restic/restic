@@ -43,12 +43,11 @@ func newSwiftTestSuite(t testing.TB) *test.Suite {
 
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
 		NewConfig: func() (interface{}, error) {
-			swiftcfg, err := swift.ParseConfig(os.Getenv("RESTIC_TEST_SWIFT"))
+			cfg, err := swift.ParseConfig(os.Getenv("RESTIC_TEST_SWIFT"))
 			if err != nil {
 				return nil, err
 			}
 
-			cfg := swiftcfg.(swift.Config)
 			if err = swift.ApplyEnvironment("RESTIC_TEST_", &cfg); err != nil {
 				return nil, err
 			}

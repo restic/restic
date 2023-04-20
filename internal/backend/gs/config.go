@@ -35,9 +35,9 @@ func init() {
 
 // ParseConfig parses the string s and extracts the gcs config. The
 // supported configuration format is gs:bucketName:/[prefix].
-func ParseConfig(s string) (interface{}, error) {
+func ParseConfig(s string) (Config, error) {
 	if !strings.HasPrefix(s, "gs:") {
-		return nil, errors.New("gs: invalid format")
+		return Config{}, errors.New("gs: invalid format")
 	}
 
 	// strip prefix "gs:"
@@ -47,7 +47,7 @@ func ParseConfig(s string) (interface{}, error) {
 	// remainder as prefix
 	bucket, prefix, colon := strings.Cut(s, ":")
 	if !colon {
-		return nil, errors.New("gs: invalid format: bucket name or path not found")
+		return Config{}, errors.New("gs: invalid format: bucket name or path not found")
 	}
 
 	prefix = strings.TrimPrefix(path.Clean(prefix), "/")
