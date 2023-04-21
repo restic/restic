@@ -35,8 +35,11 @@ func newAzureTestSuite(t testing.TB) *test.Suite[azure.Config] {
 				return nil, err
 			}
 
-			cfg.AccountName = os.Getenv("RESTIC_TEST_AZURE_ACCOUNT_NAME")
-			cfg.AccountKey = options.NewSecretString(os.Getenv("RESTIC_TEST_AZURE_ACCOUNT_KEY"))
+			err = cfg.ApplyEnvironment("RESTIC_TEST_")
+			if err != nil {
+				return nil, err
+			}
+
 			cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
 			return cfg, nil
 		},
