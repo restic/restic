@@ -7,32 +7,32 @@ import (
 )
 
 var configTests = []test.ConfigTestData[Config]{
-	{"b2:bucketname", Config{
+	{S: "b2:bucketname", Cfg: Config{
 		Bucket:      "bucketname",
 		Prefix:      "",
 		Connections: 5,
 	}},
-	{"b2:bucketname:", Config{
+	{S: "b2:bucketname:", Cfg: Config{
 		Bucket:      "bucketname",
 		Prefix:      "",
 		Connections: 5,
 	}},
-	{"b2:bucketname:/prefix/directory", Config{
+	{S: "b2:bucketname:/prefix/directory", Cfg: Config{
 		Bucket:      "bucketname",
 		Prefix:      "prefix/directory",
 		Connections: 5,
 	}},
-	{"b2:foobar", Config{
+	{S: "b2:foobar", Cfg: Config{
 		Bucket:      "foobar",
 		Prefix:      "",
 		Connections: 5,
 	}},
-	{"b2:foobar:", Config{
+	{S: "b2:foobar:", Cfg: Config{
 		Bucket:      "foobar",
 		Prefix:      "",
 		Connections: 5,
 	}},
-	{"b2:foobar:/", Config{
+	{S: "b2:foobar:/", Cfg: Config{
 		Bucket:      "foobar",
 		Prefix:      "",
 		Connections: 5,

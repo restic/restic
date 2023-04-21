@@ -8,88 +8,88 @@ import (
 )
 
 var configTests = []test.ConfigTestData[Config]{
-	{"s3://eu-central-1/bucketname", Config{
+	{S: "s3://eu-central-1/bucketname", Cfg: Config{
 		Endpoint:    "eu-central-1",
 		Bucket:      "bucketname",
 		Prefix:      "",
 		Connections: 5,
 	}},
-	{"s3://eu-central-1/bucketname/", Config{
+	{S: "s3://eu-central-1/bucketname/", Cfg: Config{
 		Endpoint:    "eu-central-1",
 		Bucket:      "bucketname",
 		Prefix:      "",
 		Connections: 5,
 	}},
-	{"s3://eu-central-1/bucketname/prefix/directory", Config{
+	{S: "s3://eu-central-1/bucketname/prefix/directory", Cfg: Config{
 		Endpoint:    "eu-central-1",
 		Bucket:      "bucketname",
 		Prefix:      "prefix/directory",
 		Connections: 5,
 	}},
-	{"s3://eu-central-1/bucketname/prefix/directory/", Config{
+	{S: "s3://eu-central-1/bucketname/prefix/directory/", Cfg: Config{
 		Endpoint:    "eu-central-1",
 		Bucket:      "bucketname",
 		Prefix:      "prefix/directory",
 		Connections: 5,
 	}},
-	{"s3:eu-central-1/foobar", Config{
+	{S: "s3:eu-central-1/foobar", Cfg: Config{
 		Endpoint:    "eu-central-1",
 		Bucket:      "foobar",
 		Prefix:      "",
 		Connections: 5,
 	}},
-	{"s3:eu-central-1/foobar/", Config{
+	{S: "s3:eu-central-1/foobar/", Cfg: Config{
 		Endpoint:    "eu-central-1",
 		Bucket:      "foobar",
 		Prefix:      "",
 		Connections: 5,
 	}},
-	{"s3:eu-central-1/foobar/prefix/directory", Config{
+	{S: "s3:eu-central-1/foobar/prefix/directory", Cfg: Config{
 		Endpoint:    "eu-central-1",
 		Bucket:      "foobar",
 		Prefix:      "prefix/directory",
 		Connections: 5,
 	}},
-	{"s3:eu-central-1/foobar/prefix/directory/", Config{
+	{S: "s3:eu-central-1/foobar/prefix/directory/", Cfg: Config{
 		Endpoint:    "eu-central-1",
 		Bucket:      "foobar",
 		Prefix:      "prefix/directory",
 		Connections: 5,
 	}},
-	{"s3:https://hostname:9999/foobar", Config{
+	{S: "s3:https://hostname:9999/foobar", Cfg: Config{
 		Endpoint:    "hostname:9999",
 		Bucket:      "foobar",
 		Prefix:      "",
 		Connections: 5,
 	}},
-	{"s3:https://hostname:9999/foobar/", Config{
+	{S: "s3:https://hostname:9999/foobar/", Cfg: Config{
 		Endpoint:    "hostname:9999",
 		Bucket:      "foobar",
 		Prefix:      "",
 		Connections: 5,
 	}},
-	{"s3:http://hostname:9999/foobar", Config{
-		Endpoint:    "hostname:9999",
-		Bucket:      "foobar",
-		Prefix:      "",
-		UseHTTP:     true,
-		Connections: 5,
-	}},
-	{"s3:http://hostname:9999/foobar/", Config{
+	{S: "s3:http://hostname:9999/foobar", Cfg: Config{
 		Endpoint:    "hostname:9999",
 		Bucket:      "foobar",
 		Prefix:      "",
 		UseHTTP:     true,
 		Connections: 5,
 	}},
-	{"s3:http://hostname:9999/bucket/prefix/directory", Config{
+	{S: "s3:http://hostname:9999/foobar/", Cfg: Config{
+		Endpoint:    "hostname:9999",
+		Bucket:      "foobar",
+		Prefix:      "",
+		UseHTTP:     true,
+		Connections: 5,
+	}},
+	{S: "s3:http://hostname:9999/bucket/prefix/directory", Cfg: Config{
 		Endpoint:    "hostname:9999",
 		Bucket:      "bucket",
 		Prefix:      "prefix/directory",
 		UseHTTP:     true,
 		Connections: 5,
 	}},
-	{"s3:http://hostname:9999/bucket/prefix/directory/", Config{
+	{S: "s3:http://hostname:9999/bucket/prefix/directory/", Cfg: Config{
 		Endpoint:    "hostname:9999",
 		Bucket:      "bucket",
 		Prefix:      "prefix/directory",

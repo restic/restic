@@ -8,8 +8,8 @@ import (
 
 var configTests = []test.ConfigTestData[Config]{
 	{
-		"rclone:local:foo:/bar",
-		Config{
+		S: "rclone:local:foo:/bar",
+		Cfg: Config{
 			Remote:      "local:foo:/bar",
 			Program:     defaultConfig.Program,
 			Args:        defaultConfig.Args,

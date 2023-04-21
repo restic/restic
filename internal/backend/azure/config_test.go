@@ -7,17 +7,17 @@ import (
 )
 
 var configTests = []test.ConfigTestData[Config]{
-	{"azure:container-name:/", Config{
+	{S: "azure:container-name:/", Cfg: Config{
 		Container:   "container-name",
 		Prefix:      "",
 		Connections: 5,
 	}},
-	{"azure:container-name:/prefix/directory", Config{
+	{S: "azure:container-name:/prefix/directory", Cfg: Config{
 		Container:   "container-name",
 		Prefix:      "prefix/directory",
 		Connections: 5,
 	}},
-	{"azure:container-name:/prefix/directory/", Config{
+	{S: "azure:container-name:/prefix/directory/", Cfg: Config{
 		Container:   "container-name",
 		Prefix:      "prefix/directory",
 		Connections: 5,

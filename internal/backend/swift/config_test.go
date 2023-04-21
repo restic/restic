@@ -8,23 +8,23 @@ import (
 
 var configTests = []test.ConfigTestData[Config]{
 	{
-		"swift:cnt1:/",
-		Config{
+		S: "swift:cnt1:/",
+		Cfg: Config{
 			Container:   "cnt1",
 			Prefix:      "",
 			Connections: 5,
 		},
 	},
 	{
-		"swift:cnt2:/prefix",
-		Config{Container: "cnt2",
+		S: "swift:cnt2:/prefix",
+		Cfg: Config{Container: "cnt2",
 			Prefix:      "prefix",
 			Connections: 5,
 		},
 	},
 	{
-		"swift:cnt3:/prefix/longer",
-		Config{Container: "cnt3",
+		S: "swift:cnt3:/prefix/longer",
+		Cfg: Config{Container: "cnt3",
 			Prefix:      "prefix/longer",
 			Connections: 5,
 		},
