@@ -46,6 +46,7 @@ func (f *SnapshotFilter) findLatest(ctx context.Context, be Lister, loader Loade
 		}
 		absTargets = append(absTargets, filepath.Clean(target))
 	}
+	f.Paths = absTargets
 
 	var latest *Snapshot
 
