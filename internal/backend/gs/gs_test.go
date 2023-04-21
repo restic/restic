@@ -15,21 +15,21 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func newGSTestSuite(t testing.TB) *test.Suite {
+func newGSTestSuite(t testing.TB) *test.Suite[gs.Config] {
 	tr, err := backend.Transport(backend.TransportOptions{})
 	if err != nil {
 		t.Fatalf("cannot create transport for tests: %v", err)
 	}
 
-	return &test.Suite{
+	return &test.Suite[gs.Config]{
 		// do not use excessive data
 		MinimalData: true,
 
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
-		NewConfig: func() (interface{}, error) {
+		NewConfig: func() (gs.Config, error) {
 			cfg, err := gs.ParseConfig(os.Getenv("RESTIC_TEST_GS_REPOSITORY"))
 			if err != nil {
-				return nil, err
+				return gs.Config{}, err
 			}
 
 			cfg.ProjectID = os.Getenv("RESTIC_TEST_GS_PROJECT_ID")
@@ -38,9 +38,7 @@ func newGSTestSuite(t testing.TB) *test.Suite {
 		},
 
 		// CreateFn is a function that creates a temporary repository for the tests.
-		Create: func(config interface{}) (restic.Backend, error) {
-			cfg := config.(gs.Config)
-
+		Create: func(cfg gs.Config) (restic.Backend, error) {
 			be, err := gs.Create(context.Background(), cfg, tr)
 			if err != nil {
 				return nil, err
@@ -59,15 +57,12 @@ func newGSTestSuite(t testing.TB) *test.Suite {
 		},
 
 		// OpenFn is a function that opens a previously created temporary repository.
-		Open: func(config interface{}) (restic.Backend, error) {
-			cfg := config.(gs.Config)
+		Open: func(cfg gs.Config) (restic.Backend, error) {
 			return gs.Open(cfg, tr)
 		},
 
 		// CleanupFn removes data created during the tests.
-		Cleanup: func(config interface{}) error {
-			cfg := config.(gs.Config)
-
+		Cleanup: func(cfg gs.Config) error {
 			be, err := gs.Open(cfg, tr)
 			if err != nil {
 				return err

@@ -120,15 +120,15 @@ func createS3(t testing.TB, cfg MinioTestConfig, tr http.RoundTripper) (be resti
 	return be, err
 }
 
-func newMinioTestSuite(ctx context.Context, t testing.TB) *test.Suite {
+func newMinioTestSuite(ctx context.Context, t testing.TB) *test.Suite[MinioTestConfig] {
 	tr, err := backend.Transport(backend.TransportOptions{})
 	if err != nil {
 		t.Fatalf("cannot create transport for tests: %v", err)
 	}
 
-	return &test.Suite{
+	return &test.Suite[MinioTestConfig]{
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
-		NewConfig: func() (interface{}, error) {
+		NewConfig: func() (MinioTestConfig, error) {
 			cfg := MinioTestConfig{}
 
 			cfg.tempdir = rtest.TempDir(t)
@@ -146,9 +146,7 @@ func newMinioTestSuite(ctx context.Context, t testing.TB) *test.Suite {
 		},
 
 		// CreateFn is a function that creates a temporary repository for the tests.
-		Create: func(config interface{}) (restic.Backend, error) {
-			cfg := config.(MinioTestConfig)
-
+		Create: func(cfg MinioTestConfig) (restic.Backend, error) {
 			be, err := createS3(t, cfg, tr)
 			if err != nil {
 				return nil, err
@@ -167,14 +165,12 @@ func newMinioTestSuite(ctx context.Context, t testing.TB) *test.Suite {
 		},
 
 		// OpenFn is a function that opens a previously created temporary repository.
-		Open: func(config interface{}) (restic.Backend, error) {
-			cfg := config.(MinioTestConfig)
+		Open: func(cfg MinioTestConfig) (restic.Backend, error) {
 			return s3.Open(ctx, cfg.Config, tr)
 		},
 
 		// CleanupFn removes data created during the tests.
-		Cleanup: func(config interface{}) error {
-			cfg := config.(MinioTestConfig)
+		Cleanup: func(cfg MinioTestConfig) error {
 			if cfg.stopServer != nil {
 				cfg.stopServer()
 			}
@@ -217,21 +213,21 @@ func BenchmarkBackendMinio(t *testing.B) {
 	newMinioTestSuite(ctx, t).RunBenchmarks(t)
 }
 
-func newS3TestSuite(t testing.TB) *test.Suite {
+func newS3TestSuite(t testing.TB) *test.Suite[s3.Config] {
 	tr, err := backend.Transport(backend.TransportOptions{})
 	if err != nil {
 		t.Fatalf("cannot create transport for tests: %v", err)
 	}
 
-	return &test.Suite{
+	return &test.Suite[s3.Config]{
 		// do not use excessive data
 		MinimalData: true,
 
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
-		NewConfig: func() (interface{}, error) {
+		NewConfig: func() (s3.Config, error) {
 			cfg, err := s3.ParseConfig(os.Getenv("RESTIC_TEST_S3_REPOSITORY"))
 			if err != nil {
-				return nil, err
+				return s3.Config{}, err
 			}
 
 			cfg.KeyID = os.Getenv("RESTIC_TEST_S3_KEY")
@@ -241,9 +237,7 @@ func newS3TestSuite(t testing.TB) *test.Suite {
 		},
 
 		// CreateFn is a function that creates a temporary repository for the tests.
-		Create: func(config interface{}) (restic.Backend, error) {
-			cfg := config.(s3.Config)
-
+		Create: func(cfg s3.Config) (restic.Backend, error) {
 			be, err := s3.Create(context.TODO(), cfg, tr)
 			if err != nil {
 				return nil, err
@@ -262,15 +256,12 @@ func newS3TestSuite(t testing.TB) *test.Suite {
 		},
 
 		// OpenFn is a function that opens a previously created temporary repository.
-		Open: func(config interface{}) (restic.Backend, error) {
-			cfg := config.(s3.Config)
+		Open: func(cfg s3.Config) (restic.Backend, error) {
 			return s3.Open(context.TODO(), cfg, tr)
 		},
 
 		// CleanupFn removes data created during the tests.
-		Cleanup: func(config interface{}) error {
-			cfg := config.(s3.Config)
-
+		Cleanup: func(cfg s3.Config) error {
 			be, err := s3.Open(context.TODO(), cfg, tr)
 			if err != nil {
 				return err

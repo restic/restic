@@ -11,21 +11,21 @@ import (
 )
 
 // Suite implements a test suite for restic backends.
-type Suite struct {
+type Suite[C any] struct {
 	// Config should be used to configure the backend.
-	Config interface{}
+	Config C
 
 	// NewConfig returns a config for a new temporary backend that will be used in tests.
-	NewConfig func() (interface{}, error)
+	NewConfig func() (C, error)
 
 	// CreateFn is a function that creates a temporary repository for the tests.
-	Create func(cfg interface{}) (restic.Backend, error)
+	Create func(cfg C) (restic.Backend, error)
 
 	// OpenFn is a function that opens a previously created temporary repository.
-	Open func(cfg interface{}) (restic.Backend, error)
+	Open func(cfg C) (restic.Backend, error)
 
 	// CleanupFn removes data created during the tests.
-	Cleanup func(cfg interface{}) error
+	Cleanup func(cfg C) error
 
 	// MinimalData instructs the tests to not use excessive data.
 	MinimalData bool
@@ -40,7 +40,7 @@ type Suite struct {
 }
 
 // RunTests executes all defined tests as subtests of t.
-func (s *Suite) RunTests(t *testing.T) {
+func (s *Suite[C]) RunTests(t *testing.T) {
 	var err error
 	s.Config, err = s.NewConfig()
 	if err != nil {
@@ -72,7 +72,7 @@ type testFunction struct {
 	Fn   func(*testing.T)
 }
 
-func (s *Suite) testFuncs(t testing.TB) (funcs []testFunction) {
+func (s *Suite[C]) testFuncs(t testing.TB) (funcs []testFunction) {
 	tpe := reflect.TypeOf(s)
 	v := reflect.ValueOf(s)
 
@@ -107,7 +107,7 @@ type benchmarkFunction struct {
 	Fn   func(*testing.B)
 }
 
-func (s *Suite) benchmarkFuncs(t testing.TB) (funcs []benchmarkFunction) {
+func (s *Suite[C]) benchmarkFuncs(t testing.TB) (funcs []benchmarkFunction) {
 	tpe := reflect.TypeOf(s)
 	v := reflect.ValueOf(s)
 
@@ -138,7 +138,7 @@ func (s *Suite) benchmarkFuncs(t testing.TB) (funcs []benchmarkFunction) {
 }
 
 // RunBenchmarks executes all defined benchmarks as subtests of b.
-func (s *Suite) RunBenchmarks(b *testing.B) {
+func (s *Suite[C]) RunBenchmarks(b *testing.B) {
 	var err error
 	s.Config, err = s.NewConfig()
 	if err != nil {
@@ -163,7 +163,7 @@ func (s *Suite) RunBenchmarks(b *testing.B) {
 	}
 }
 
-func (s *Suite) create(t testing.TB) restic.Backend {
+func (s *Suite[C]) create(t testing.TB) restic.Backend {
 	be, err := s.Create(s.Config)
 	if err != nil {
 		t.Fatal(err)
@@ -171,7 +171,7 @@ func (s *Suite) create(t testing.TB) restic.Backend {
 	return be
 }
 
-func (s *Suite) open(t testing.TB) restic.Backend {
+func (s *Suite[C]) open(t testing.TB) restic.Backend {
 	be, err := s.Open(s.Config)
 	if err != nil {
 		t.Fatal(err)
@@ -179,7 +179,7 @@ func (s *Suite) open(t testing.TB) restic.Backend {
 	return be
 }
 
-func (s *Suite) close(t testing.TB, be restic.Backend) {
+func (s *Suite[C]) close(t testing.TB, be restic.Backend) {
 	err := be.Close()
 	if err != nil {
 		t.Fatal(err)

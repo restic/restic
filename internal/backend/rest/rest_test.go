@@ -67,36 +67,34 @@ func runRESTServer(ctx context.Context, t testing.TB, dir string) (*url.URL, fun
 	return url, cleanup
 }
 
-func newTestSuite(_ context.Context, t testing.TB, url *url.URL, minimalData bool) *test.Suite {
+func newTestSuite(_ context.Context, t testing.TB, url *url.URL, minimalData bool) *test.Suite[rest.Config] {
 	tr, err := backend.Transport(backend.TransportOptions{})
 	if err != nil {
 		t.Fatalf("cannot create transport for tests: %v", err)
 	}
 
-	return &test.Suite{
+	return &test.Suite[rest.Config]{
 		MinimalData: minimalData,
 
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
-		NewConfig: func() (interface{}, error) {
+		NewConfig: func() (rest.Config, error) {
 			cfg := rest.NewConfig()
 			cfg.URL = url
 			return cfg, nil
 		},
 
 		// CreateFn is a function that creates a temporary repository for the tests.
-		Create: func(config interface{}) (restic.Backend, error) {
-			cfg := config.(rest.Config)
+		Create: func(cfg rest.Config) (restic.Backend, error) {
 			return rest.Create(context.TODO(), cfg, tr)
 		},
 
 		// OpenFn is a function that opens a previously created temporary repository.
-		Open: func(config interface{}) (restic.Backend, error) {
-			cfg := config.(rest.Config)
+		Open: func(cfg rest.Config) (restic.Backend, error) {
 			return rest.Open(cfg, tr)
 		},
 
 		// CleanupFn removes data created during the tests.
-		Cleanup: func(config interface{}) error {
+		Cleanup: func(cfg rest.Config) error {
 			return nil
 		},
 	}

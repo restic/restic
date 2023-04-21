@@ -18,21 +18,21 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func newAzureTestSuite(t testing.TB) *test.Suite {
+func newAzureTestSuite(t testing.TB) *test.Suite[azure.Config] {
 	tr, err := backend.Transport(backend.TransportOptions{})
 	if err != nil {
 		t.Fatalf("cannot create transport for tests: %v", err)
 	}
 
-	return &test.Suite{
+	return &test.Suite[azure.Config]{
 		// do not use excessive data
 		MinimalData: true,
 
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
-		NewConfig: func() (interface{}, error) {
+		NewConfig: func() (azure.Config, error) {
 			cfg, err := azure.ParseConfig(os.Getenv("RESTIC_TEST_AZURE_REPOSITORY"))
 			if err != nil {
-				return nil, err
+				return azure.Config{}, err
 			}
 
 			cfg.AccountName = os.Getenv("RESTIC_TEST_AZURE_ACCOUNT_NAME")
@@ -42,9 +42,7 @@ func newAzureTestSuite(t testing.TB) *test.Suite {
 		},
 
 		// CreateFn is a function that creates a temporary repository for the tests.
-		Create: func(config interface{}) (restic.Backend, error) {
-			cfg := config.(azure.Config)
-
+		Create: func(cfg azure.Config) (restic.Backend, error) {
 			ctx := context.TODO()
 			be, err := azure.Create(ctx, cfg, tr)
 			if err != nil {
@@ -64,15 +62,13 @@ func newAzureTestSuite(t testing.TB) *test.Suite {
 		},
 
 		// OpenFn is a function that opens a previously created temporary repository.
-		Open: func(config interface{}) (restic.Backend, error) {
-			cfg := config.(azure.Config)
+		Open: func(cfg azure.Config) (restic.Backend, error) {
 			ctx := context.TODO()
 			return azure.Open(ctx, cfg, tr)
 		},
 
 		// CleanupFn removes data created during the tests.
-		Cleanup: func(config interface{}) error {
-			cfg := config.(azure.Config)
+		Cleanup: func(cfg azure.Config) error {
 			ctx := context.TODO()
 			be, err := azure.Open(ctx, cfg, tr)
 			if err != nil {

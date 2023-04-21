@@ -15,13 +15,13 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func newSwiftTestSuite(t testing.TB) *test.Suite {
+func newSwiftTestSuite(t testing.TB) *test.Suite[swift.Config] {
 	tr, err := backend.Transport(backend.TransportOptions{})
 	if err != nil {
 		t.Fatalf("cannot create transport for tests: %v", err)
 	}
 
-	return &test.Suite{
+	return &test.Suite[swift.Config]{
 		// do not use excessive data
 		MinimalData: true,
 
@@ -42,14 +42,14 @@ func newSwiftTestSuite(t testing.TB) *test.Suite {
 		},
 
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
-		NewConfig: func() (interface{}, error) {
+		NewConfig: func() (swift.Config, error) {
 			cfg, err := swift.ParseConfig(os.Getenv("RESTIC_TEST_SWIFT"))
 			if err != nil {
-				return nil, err
+				return swift.Config{}, err
 			}
 
 			if err = swift.ApplyEnvironment("RESTIC_TEST_", &cfg); err != nil {
-				return nil, err
+				return swift.Config{}, err
 			}
 			cfg.Prefix += fmt.Sprintf("/test-%d", time.Now().UnixNano())
 			t.Logf("using prefix %v", cfg.Prefix)
@@ -57,9 +57,7 @@ func newSwiftTestSuite(t testing.TB) *test.Suite {
 		},
 
 		// CreateFn is a function that creates a temporary repository for the tests.
-		Create: func(config interface{}) (restic.Backend, error) {
-			cfg := config.(swift.Config)
-
+		Create: func(cfg swift.Config) (restic.Backend, error) {
 			be, err := swift.Open(context.TODO(), cfg, tr)
 			if err != nil {
 				return nil, err
@@ -78,15 +76,12 @@ func newSwiftTestSuite(t testing.TB) *test.Suite {
 		},
 
 		// OpenFn is a function that opens a previously created temporary repository.
-		Open: func(config interface{}) (restic.Backend, error) {
-			cfg := config.(swift.Config)
+		Open: func(cfg swift.Config) (restic.Backend, error) {
 			return swift.Open(context.TODO(), cfg, tr)
 		},
 
 		// CleanupFn removes data created during the tests.
-		Cleanup: func(config interface{}) error {
-			cfg := config.(swift.Config)
-
+		Cleanup: func(cfg swift.Config) error {
 			be, err := swift.Open(context.TODO(), cfg, tr)
 			if err != nil {
 				return err
