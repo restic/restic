@@ -8,6 +8,7 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/options"
+	"github.com/restic/restic/internal/restic"
 )
 
 // Config contains all configuration necessary to connect to an s3 compatible
@@ -93,15 +94,16 @@ func createConfig(endpoint, bucket, prefix string, useHTTP bool) (*Config, error
 	return &cfg, nil
 }
 
+var _ restic.ApplyEnvironmenter = &Config{}
+
 // ApplyEnvironment saves values from the environment to the config.
-func ApplyEnvironment(cfgRaw interface{}) error {
-	cfg := cfgRaw.(*Config)
+func (cfg *Config) ApplyEnvironment(prefix string) error {
 	if cfg.KeyID == "" {
-		cfg.KeyID = os.Getenv("AWS_ACCESS_KEY_ID")
+		cfg.KeyID = os.Getenv(prefix + "AWS_ACCESS_KEY_ID")
 	}
 
 	if cfg.Secret.String() == "" {
-		cfg.Secret = options.NewSecretString(os.Getenv("AWS_SECRET_ACCESS_KEY"))
+		cfg.Secret = options.NewSecretString(os.Getenv(prefix + "AWS_SECRET_ACCESS_KEY"))
 	}
 
 	if cfg.KeyID == "" && cfg.Secret.String() != "" {
@@ -111,7 +113,7 @@ func ApplyEnvironment(cfgRaw interface{}) error {
 	}
 
 	if cfg.Region == "" {
-		cfg.Region = os.Getenv("AWS_DEFAULT_REGION")
+		cfg.Region = os.Getenv(prefix + "AWS_DEFAULT_REGION")
 	}
 
 	return nil

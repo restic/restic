@@ -535,112 +535,21 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 }
 
 func parseConfig(loc location.Location, opts options.Options) (interface{}, error) {
-	// only apply options for a particular backend here
-	opts = opts.Extract(loc.Scheme)
-
-	switch loc.Scheme {
-	case "local":
-		cfg := loc.Config.(*local.Config)
-		if err := opts.Apply(loc.Scheme, cfg); err != nil {
+	cfg := loc.Config
+	if cfg, ok := cfg.(restic.ApplyEnvironmenter); ok {
+		if err := cfg.ApplyEnvironment(""); err != nil {
 			return nil, err
 		}
-
-		debug.Log("opening local repository at %#v", cfg)
-		return cfg, nil
-
-	case "sftp":
-		cfg := loc.Config.(*sftp.Config)
-		if err := opts.Apply(loc.Scheme, cfg); err != nil {
-			return nil, err
-		}
-
-		debug.Log("opening sftp repository at %#v", cfg)
-		return cfg, nil
-
-	case "s3":
-		cfg := loc.Config.(*s3.Config)
-
-		if err := s3.ApplyEnvironment(cfg); err != nil {
-			return nil, err
-		}
-		if err := opts.Apply(loc.Scheme, cfg); err != nil {
-			return nil, err
-		}
-
-		debug.Log("opening s3 repository at %#v", cfg)
-		return cfg, nil
-
-	case "gs":
-		cfg := loc.Config.(*gs.Config)
-
-		if err := gs.ApplyEnvironment(cfg); err != nil {
-			return nil, err
-		}
-		if err := opts.Apply(loc.Scheme, cfg); err != nil {
-			return nil, err
-		}
-
-		debug.Log("opening gs repository at %#v", cfg)
-		return cfg, nil
-
-	case "azure":
-		cfg := loc.Config.(*azure.Config)
-
-		if err := azure.ApplyEnvironment(cfg); err != nil {
-			return nil, err
-		}
-		if err := opts.Apply(loc.Scheme, cfg); err != nil {
-			return nil, err
-		}
-
-		debug.Log("opening gs repository at %#v", cfg)
-		return cfg, nil
-
-	case "swift":
-		cfg := loc.Config.(*swift.Config)
-
-		if err := swift.ApplyEnvironment("", cfg); err != nil {
-			return nil, err
-		}
-
-		if err := opts.Apply(loc.Scheme, cfg); err != nil {
-			return nil, err
-		}
-
-		debug.Log("opening swift repository at %#v", cfg)
-		return cfg, nil
-
-	case "b2":
-		cfg := loc.Config.(*b2.Config)
-
-		if err := b2.ApplyEnvironment(cfg); err != nil {
-			return nil, err
-		}
-		if err := opts.Apply(loc.Scheme, cfg); err != nil {
-			return nil, err
-		}
-
-		debug.Log("opening b2 repository at %#v", cfg)
-		return cfg, nil
-	case "rest":
-		cfg := loc.Config.(*rest.Config)
-		if err := opts.Apply(loc.Scheme, cfg); err != nil {
-			return nil, err
-		}
-
-		debug.Log("opening rest repository at %#v", cfg)
-		return cfg, nil
-	case "rclone":
-		cfg := loc.Config.(*rclone.Config)
-		if err := opts.Apply(loc.Scheme, cfg); err != nil {
-			return nil, err
-		}
-
-		debug.Log("opening rest repository at %#v", cfg)
-		return cfg, nil
 	}
 
-	return nil, errors.Fatalf("invalid backend: %q", loc.Scheme)
+	// only apply options for a particular backend here
+	opts = opts.Extract(loc.Scheme)
+	if err := opts.Apply(loc.Scheme, cfg); err != nil {
+		return nil, err
+	}
+
+	debug.Log("opening %v repository at %#v", loc.Scheme, cfg)
+	return cfg, nil
 }
 
 // Open the backend specified by a location config.

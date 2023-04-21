@@ -7,6 +7,7 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/options"
+	"github.com/restic/restic/internal/restic"
 )
 
 // Config contains all configuration necessary to connect to an azure compatible
@@ -55,19 +56,20 @@ func ParseConfig(s string) (*Config, error) {
 	return &cfg, nil
 }
 
+var _ restic.ApplyEnvironmenter = &Config{}
+
 // ApplyEnvironment saves values from the environment to the config.
-func ApplyEnvironment(cfgRaw interface{}) error {
-	cfg := cfgRaw.(*Config)
+func (cfg *Config) ApplyEnvironment(prefix string) error {
 	if cfg.AccountName == "" {
-		cfg.AccountName = os.Getenv("AZURE_ACCOUNT_NAME")
+		cfg.AccountName = os.Getenv(prefix + "AZURE_ACCOUNT_NAME")
 	}
 
 	if cfg.AccountKey.String() == "" {
-		cfg.AccountKey = options.NewSecretString(os.Getenv("AZURE_ACCOUNT_KEY"))
+		cfg.AccountKey = options.NewSecretString(os.Getenv(prefix + "AZURE_ACCOUNT_KEY"))
 	}
 
 	if cfg.AccountSAS.String() == "" {
-		cfg.AccountSAS = options.NewSecretString(os.Getenv("AZURE_ACCOUNT_SAS"))
+		cfg.AccountSAS = options.NewSecretString(os.Getenv(prefix + "AZURE_ACCOUNT_SAS"))
 	}
 	return nil
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/options"
+	"github.com/restic/restic/internal/restic"
 )
 
 // Config contains all configuration necessary to connect to a Google Cloud Storage
@@ -58,11 +59,12 @@ func ParseConfig(s string) (*Config, error) {
 	return &cfg, nil
 }
 
+var _ restic.ApplyEnvironmenter = &Config{}
+
 // ApplyEnvironment saves values from the environment to the config.
-func ApplyEnvironment(cfgRaw interface{}) error {
-	cfg := cfgRaw.(*Config)
+func (cfg *Config) ApplyEnvironment(prefix string) error {
 	if cfg.ProjectID == "" {
-		cfg.ProjectID = os.Getenv("GOOGLE_PROJECT_ID")
+		cfg.ProjectID = os.Getenv(prefix + "GOOGLE_PROJECT_ID")
 	}
 	return nil
 }

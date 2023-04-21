@@ -6,6 +6,7 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/options"
+	"github.com/restic/restic/internal/restic"
 )
 
 // Config contains basic configuration needed to specify swift location for a swift server
@@ -73,45 +74,46 @@ func ParseConfig(s string) (*Config, error) {
 	return &cfg, nil
 }
 
+var _ restic.ApplyEnvironmenter = &Config{}
+
 // ApplyEnvironment saves values from the environment to the config.
-func ApplyEnvironment(prefix string, cfg interface{}) error {
-	c := cfg.(*Config)
+func (cfg *Config) ApplyEnvironment(prefix string) error {
 	for _, val := range []struct {
 		s   *string
 		env string
 	}{
 		// v2/v3 specific
-		{&c.UserName, prefix + "OS_USERNAME"},
-		{&c.APIKey, prefix + "OS_PASSWORD"},
-		{&c.Region, prefix + "OS_REGION_NAME"},
-		{&c.AuthURL, prefix + "OS_AUTH_URL"},
+		{&cfg.UserName, prefix + "OS_USERNAME"},
+		{&cfg.APIKey, prefix + "OS_PASSWORD"},
+		{&cfg.Region, prefix + "OS_REGION_NAME"},
+		{&cfg.AuthURL, prefix + "OS_AUTH_URL"},
 
 		// v3 specific
-		{&c.UserID, prefix + "OS_USER_ID"},
-		{&c.Domain, prefix + "OS_USER_DOMAIN_NAME"},
-		{&c.DomainID, prefix + "OS_USER_DOMAIN_ID"},
-		{&c.Tenant, prefix + "OS_PROJECT_NAME"},
-		{&c.TenantDomain, prefix + "OS_PROJECT_DOMAIN_NAME"},
-		{&c.TenantDomainID, prefix + "OS_PROJECT_DOMAIN_ID"},
-		{&c.TrustID, prefix + "OS_TRUST_ID"},
+		{&cfg.UserID, prefix + "OS_USER_ID"},
+		{&cfg.Domain, prefix + "OS_USER_DOMAIN_NAME"},
+		{&cfg.DomainID, prefix + "OS_USER_DOMAIN_ID"},
+		{&cfg.Tenant, prefix + "OS_PROJECT_NAME"},
+		{&cfg.TenantDomain, prefix + "OS_PROJECT_DOMAIN_NAME"},
+		{&cfg.TenantDomainID, prefix + "OS_PROJECT_DOMAIN_ID"},
+		{&cfg.TrustID, prefix + "OS_TRUST_ID"},
 
 		// v2 specific
-		{&c.TenantID, prefix + "OS_TENANT_ID"},
-		{&c.Tenant, prefix + "OS_TENANT_NAME"},
+		{&cfg.TenantID, prefix + "OS_TENANT_ID"},
+		{&cfg.Tenant, prefix + "OS_TENANT_NAME"},
 
 		// v1 specific
-		{&c.AuthURL, prefix + "ST_AUTH"},
-		{&c.UserName, prefix + "ST_USER"},
-		{&c.APIKey, prefix + "ST_KEY"},
+		{&cfg.AuthURL, prefix + "ST_AUTH"},
+		{&cfg.UserName, prefix + "ST_USER"},
+		{&cfg.APIKey, prefix + "ST_KEY"},
 
 		// Application Credential auth
-		{&c.ApplicationCredentialID, prefix + "OS_APPLICATION_CREDENTIAL_ID"},
-		{&c.ApplicationCredentialName, prefix + "OS_APPLICATION_CREDENTIAL_NAME"},
+		{&cfg.ApplicationCredentialID, prefix + "OS_APPLICATION_CREDENTIAL_ID"},
+		{&cfg.ApplicationCredentialName, prefix + "OS_APPLICATION_CREDENTIAL_NAME"},
 
 		// Manual authentication
-		{&c.StorageURL, prefix + "OS_STORAGE_URL"},
+		{&cfg.StorageURL, prefix + "OS_STORAGE_URL"},
 
-		{&c.DefaultContainerPolicy, prefix + "SWIFT_DEFAULT_CONTAINER_POLICY"},
+		{&cfg.DefaultContainerPolicy, prefix + "SWIFT_DEFAULT_CONTAINER_POLICY"},
 	} {
 		if *val.s == "" {
 			*val.s = os.Getenv(val.env)
@@ -121,8 +123,8 @@ func ApplyEnvironment(prefix string, cfg interface{}) error {
 		s   *options.SecretString
 		env string
 	}{
-		{&c.ApplicationCredentialSecret, prefix + "OS_APPLICATION_CREDENTIAL_SECRET"},
-		{&c.AuthToken, prefix + "OS_AUTH_TOKEN"},
+		{&cfg.ApplicationCredentialSecret, prefix + "OS_APPLICATION_CREDENTIAL_SECRET"},
+		{&cfg.AuthToken, prefix + "OS_AUTH_TOKEN"},
 	} {
 		if val.s.String() == "" {
 			*val.s = options.NewSecretString(os.Getenv(val.env))

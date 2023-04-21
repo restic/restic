@@ -8,6 +8,7 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/options"
+	"github.com/restic/restic/internal/restic"
 )
 
 // Config contains all configuration necessary to connect to an b2 compatible
@@ -81,11 +82,12 @@ func ParseConfig(s string) (*Config, error) {
 	return &cfg, nil
 }
 
+var _ restic.ApplyEnvironmenter = &Config{}
+
 // ApplyEnvironment saves values from the environment to the config.
-func ApplyEnvironment(cfgRaw interface{}) error {
-	cfg := cfgRaw.(*Config)
+func (cfg *Config) ApplyEnvironment(prefix string) error {
 	if cfg.AccountID == "" {
-		cfg.AccountID = os.Getenv("B2_ACCOUNT_ID")
+		cfg.AccountID = os.Getenv(prefix + "B2_ACCOUNT_ID")
 	}
 
 	if cfg.AccountID == "" {
@@ -93,7 +95,7 @@ func ApplyEnvironment(cfgRaw interface{}) error {
 	}
 
 	if cfg.Key.String() == "" {
-		cfg.Key = options.NewSecretString(os.Getenv("B2_ACCOUNT_KEY"))
+		cfg.Key = options.NewSecretString(os.Getenv(prefix + "B2_ACCOUNT_KEY"))
 	}
 
 	if cfg.Key.String() == "" {

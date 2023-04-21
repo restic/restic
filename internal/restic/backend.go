@@ -80,3 +80,8 @@ type FileInfo struct {
 	Size int64
 	Name string
 }
+
+// ApplyEnvironmenter fills in a backend configuration from the environment
+type ApplyEnvironmenter interface {
+	ApplyEnvironment(prefix string) error
+}
