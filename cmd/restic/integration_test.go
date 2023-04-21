@@ -385,6 +385,33 @@ func TestBackupWithRelativePath(t *testing.T) {
 	rtest.Assert(t, latestSn.Parent != nil && latestSn.Parent.Equal(firstSnapshotID), "second snapshot selected unexpected parent %v instead of %v", latestSn.Parent, firstSnapshotID)
 }
 
+func TestBackupParentSelection(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	opts := BackupOptions{}
+
+	// first backup
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata/0/0"}, opts, env.gopts)
+	snapshotIDs := testRunList(t, "snapshots", env.gopts)
+	rtest.Assert(t, len(snapshotIDs) == 1, "expected one snapshot, got %v", snapshotIDs)
+	firstSnapshotID := snapshotIDs[0]
+
+	// second backup, sibling path
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata/0/tests"}, opts, env.gopts)
+	snapshotIDs = testRunList(t, "snapshots", env.gopts)
+	rtest.Assert(t, len(snapshotIDs) == 2, "expected two snapshots, got %v", snapshotIDs)
+
+	// third backup, incremental for the first backup
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata/0/0"}, opts, env.gopts)
+
+	// test that the correct parent snapshot was used
+	latestSn, _ := testRunSnapshots(t, env.gopts)
+	rtest.Assert(t, latestSn != nil, "missing latest snapshot")
+	rtest.Assert(t, latestSn.Parent != nil && latestSn.Parent.Equal(firstSnapshotID), "third snapshot selected unexpected parent %v instead of %v", latestSn.Parent, firstSnapshotID)
+}
+
 func TestDryRunBackup(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
