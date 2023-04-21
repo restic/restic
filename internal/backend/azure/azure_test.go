@@ -29,10 +29,10 @@ func newAzureTestSuite(t testing.TB) *test.Suite[azure.Config] {
 		MinimalData: true,
 
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
-		NewConfig: func() (azure.Config, error) {
+		NewConfig: func() (*azure.Config, error) {
 			cfg, err := azure.ParseConfig(os.Getenv("RESTIC_TEST_AZURE_REPOSITORY"))
 			if err != nil {
-				return azure.Config{}, err
+				return nil, err
 			}
 
 			cfg.AccountName = os.Getenv("RESTIC_TEST_AZURE_ACCOUNT_NAME")
@@ -150,7 +150,7 @@ func TestUploadLargeFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	be, err := azure.Create(ctx, cfg, tr)
+	be, err := azure.Create(ctx, *cfg, tr)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -30,10 +30,10 @@ func newB2TestSuite(t testing.TB) *test.Suite[b2.Config] {
 		WaitForDelayedRemoval: 10 * time.Second,
 
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
-		NewConfig: func() (b2.Config, error) {
+		NewConfig: func() (*b2.Config, error) {
 			cfg, err := b2.ParseConfig(os.Getenv("RESTIC_TEST_B2_REPOSITORY"))
 			if err != nil {
-				return b2.Config{}, err
+				return nil, err
 			}
 
 			cfg.AccountID = os.Getenv("RESTIC_TEST_B2_ACCOUNT_ID")

@@ -42,14 +42,14 @@ func newSwiftTestSuite(t testing.TB) *test.Suite[swift.Config] {
 		},
 
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
-		NewConfig: func() (swift.Config, error) {
+		NewConfig: func() (*swift.Config, error) {
 			cfg, err := swift.ParseConfig(os.Getenv("RESTIC_TEST_SWIFT"))
 			if err != nil {
-				return swift.Config{}, err
+				return nil, err
 			}
 
 			if err = swift.ApplyEnvironment("RESTIC_TEST_", &cfg); err != nil {
-				return swift.Config{}, err
+				return nil, err
 			}
 			cfg.Prefix += fmt.Sprintf("/test-%d", time.Now().UnixNano())
 			t.Logf("using prefix %v", cfg.Prefix)

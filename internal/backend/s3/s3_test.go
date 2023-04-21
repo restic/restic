@@ -128,7 +128,7 @@ func newMinioTestSuite(ctx context.Context, t testing.TB) *test.Suite[MinioTestC
 
 	return &test.Suite[MinioTestConfig]{
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
-		NewConfig: func() (MinioTestConfig, error) {
+		NewConfig: func() (*MinioTestConfig, error) {
 			cfg := MinioTestConfig{}
 
 			cfg.tempdir = rtest.TempDir(t)
@@ -142,7 +142,7 @@ func newMinioTestSuite(ctx context.Context, t testing.TB) *test.Suite[MinioTestC
 			cfg.Config.UseHTTP = true
 			cfg.Config.KeyID = key
 			cfg.Config.Secret = options.NewSecretString(secret)
-			return cfg, nil
+			return &cfg, nil
 		},
 
 		// CreateFn is a function that creates a temporary repository for the tests.
@@ -224,10 +224,10 @@ func newS3TestSuite(t testing.TB) *test.Suite[s3.Config] {
 		MinimalData: true,
 
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
-		NewConfig: func() (s3.Config, error) {
+		NewConfig: func() (*s3.Config, error) {
 			cfg, err := s3.ParseConfig(os.Getenv("RESTIC_TEST_S3_REPOSITORY"))
 			if err != nil {
-				return s3.Config{}, err
+				return nil, err
 			}
 
 			cfg.KeyID = os.Getenv("RESTIC_TEST_S3_KEY")

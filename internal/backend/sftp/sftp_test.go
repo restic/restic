@@ -32,7 +32,7 @@ var sftpServer = findSFTPServerBinary()
 func newTestSuite(t testing.TB) *test.Suite[sftp.Config] {
 	return &test.Suite[sftp.Config]{
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
-		NewConfig: func() (sftp.Config, error) {
+		NewConfig: func() (*sftp.Config, error) {
 			dir, err := os.MkdirTemp(rtest.TestTempDir, "restic-test-sftp-")
 			if err != nil {
 				t.Fatal(err)
@@ -40,7 +40,7 @@ func newTestSuite(t testing.TB) *test.Suite[sftp.Config] {
 
 			t.Logf("create new backend at %v", dir)
 
-			cfg := sftp.Config{
+			cfg := &sftp.Config{
 				Path:        dir,
 				Command:     fmt.Sprintf("%q -e", sftpServer),
 				Connections: 5,

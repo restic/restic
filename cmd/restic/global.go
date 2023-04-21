@@ -540,8 +540,8 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 
 	switch loc.Scheme {
 	case "local":
-		cfg := loc.Config.(local.Config)
-		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
+		cfg := loc.Config.(*local.Config)
+		if err := opts.Apply(loc.Scheme, cfg); err != nil {
 			return nil, err
 		}
 
@@ -549,8 +549,8 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 		return cfg, nil
 
 	case "sftp":
-		cfg := loc.Config.(sftp.Config)
-		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
+		cfg := loc.Config.(*sftp.Config)
+		if err := opts.Apply(loc.Scheme, cfg); err != nil {
 			return nil, err
 		}
 
@@ -558,12 +558,12 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 		return cfg, nil
 
 	case "s3":
-		cfg := loc.Config.(s3.Config)
+		cfg := loc.Config.(*s3.Config)
 
-		if err := s3.ApplyEnvironment(&cfg); err != nil {
+		if err := s3.ApplyEnvironment(cfg); err != nil {
 			return nil, err
 		}
-		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
+		if err := opts.Apply(loc.Scheme, cfg); err != nil {
 			return nil, err
 		}
 
@@ -571,12 +571,12 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 		return cfg, nil
 
 	case "gs":
-		cfg := loc.Config.(gs.Config)
+		cfg := loc.Config.(*gs.Config)
 
-		if err := gs.ApplyEnvironment(&cfg); err != nil {
+		if err := gs.ApplyEnvironment(cfg); err != nil {
 			return nil, err
 		}
-		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
+		if err := opts.Apply(loc.Scheme, cfg); err != nil {
 			return nil, err
 		}
 
@@ -584,12 +584,12 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 		return cfg, nil
 
 	case "azure":
-		cfg := loc.Config.(azure.Config)
+		cfg := loc.Config.(*azure.Config)
 
-		if err := azure.ApplyEnvironment(&cfg); err != nil {
+		if err := azure.ApplyEnvironment(cfg); err != nil {
 			return nil, err
 		}
-		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
+		if err := opts.Apply(loc.Scheme, cfg); err != nil {
 			return nil, err
 		}
 
@@ -597,13 +597,13 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 		return cfg, nil
 
 	case "swift":
-		cfg := loc.Config.(swift.Config)
+		cfg := loc.Config.(*swift.Config)
 
-		if err := swift.ApplyEnvironment("", &cfg); err != nil {
+		if err := swift.ApplyEnvironment("", cfg); err != nil {
 			return nil, err
 		}
 
-		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
+		if err := opts.Apply(loc.Scheme, cfg); err != nil {
 			return nil, err
 		}
 
@@ -611,28 +611,28 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 		return cfg, nil
 
 	case "b2":
-		cfg := loc.Config.(b2.Config)
+		cfg := loc.Config.(*b2.Config)
 
-		if err := b2.ApplyEnvironment(&cfg); err != nil {
+		if err := b2.ApplyEnvironment(cfg); err != nil {
 			return nil, err
 		}
-		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
+		if err := opts.Apply(loc.Scheme, cfg); err != nil {
 			return nil, err
 		}
 
 		debug.Log("opening b2 repository at %#v", cfg)
 		return cfg, nil
 	case "rest":
-		cfg := loc.Config.(rest.Config)
-		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
+		cfg := loc.Config.(*rest.Config)
+		if err := opts.Apply(loc.Scheme, cfg); err != nil {
 			return nil, err
 		}
 
 		debug.Log("opening rest repository at %#v", cfg)
 		return cfg, nil
 	case "rclone":
-		cfg := loc.Config.(rclone.Config)
-		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
+		cfg := loc.Config.(*rclone.Config)
+		if err := opts.Apply(loc.Scheme, cfg); err != nil {
 			return nil, err
 		}
 
@@ -669,23 +669,23 @@ func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Optio
 
 	switch loc.Scheme {
 	case "local":
-		be, err = local.Open(ctx, cfg.(local.Config))
+		be, err = local.Open(ctx, *cfg.(*local.Config))
 	case "sftp":
-		be, err = sftp.Open(ctx, cfg.(sftp.Config))
+		be, err = sftp.Open(ctx, *cfg.(*sftp.Config))
 	case "s3":
-		be, err = s3.Open(ctx, cfg.(s3.Config), rt)
+		be, err = s3.Open(ctx, *cfg.(*s3.Config), rt)
 	case "gs":
-		be, err = gs.Open(cfg.(gs.Config), rt)
+		be, err = gs.Open(*cfg.(*gs.Config), rt)
 	case "azure":
-		be, err = azure.Open(ctx, cfg.(azure.Config), rt)
+		be, err = azure.Open(ctx, *cfg.(*azure.Config), rt)
 	case "swift":
-		be, err = swift.Open(ctx, cfg.(swift.Config), rt)
+		be, err = swift.Open(ctx, *cfg.(*swift.Config), rt)
 	case "b2":
-		be, err = b2.Open(ctx, cfg.(b2.Config), rt)
+		be, err = b2.Open(ctx, *cfg.(*b2.Config), rt)
 	case "rest":
-		be, err = rest.Open(cfg.(rest.Config), rt)
+		be, err = rest.Open(*cfg.(*rest.Config), rt)
 	case "rclone":
-		be, err = rclone.Open(cfg.(rclone.Config), lim)
+		be, err = rclone.Open(*cfg.(*rclone.Config), lim)
 
 	default:
 		return nil, errors.Fatalf("invalid backend: %q", loc.Scheme)
@@ -745,23 +745,23 @@ func create(ctx context.Context, s string, opts options.Options) (restic.Backend
 	var be restic.Backend
 	switch loc.Scheme {
 	case "local":
-		be, err = local.Create(ctx, cfg.(local.Config))
+		be, err = local.Create(ctx, *cfg.(*local.Config))
 	case "sftp":
-		be, err = sftp.Create(ctx, cfg.(sftp.Config))
+		be, err = sftp.Create(ctx, *cfg.(*sftp.Config))
 	case "s3":
-		be, err = s3.Create(ctx, cfg.(s3.Config), rt)
+		be, err = s3.Create(ctx, *cfg.(*s3.Config), rt)
 	case "gs":
-		be, err = gs.Create(ctx, cfg.(gs.Config), rt)
+		be, err = gs.Create(ctx, *cfg.(*gs.Config), rt)
 	case "azure":
-		be, err = azure.Create(ctx, cfg.(azure.Config), rt)
+		be, err = azure.Create(ctx, *cfg.(*azure.Config), rt)
 	case "swift":
-		be, err = swift.Open(ctx, cfg.(swift.Config), rt)
+		be, err = swift.Open(ctx, *cfg.(*swift.Config), rt)
 	case "b2":
-		be, err = b2.Create(ctx, cfg.(b2.Config), rt)
+		be, err = b2.Create(ctx, *cfg.(*b2.Config), rt)
 	case "rest":
-		be, err = rest.Create(ctx, cfg.(rest.Config), rt)
+		be, err = rest.Create(ctx, *cfg.(*rest.Config), rt)
 	case "rclone":
-		be, err = rclone.Create(ctx, cfg.(rclone.Config))
+		be, err = rclone.Create(ctx, *cfg.(*rclone.Config))
 	default:
 		debug.Log("invalid repository scheme: %v", s)
 		return nil, errors.Fatalf("invalid scheme %q", loc.Scheme)

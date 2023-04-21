@@ -17,11 +17,11 @@ func newTestSuite(t testing.TB) *test.Suite[rclone.Config] {
 
 	return &test.Suite[rclone.Config]{
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
-		NewConfig: func() (rclone.Config, error) {
+		NewConfig: func() (*rclone.Config, error) {
 			t.Logf("use backend at %v", dir)
 			cfg := rclone.NewConfig()
 			cfg.Remote = dir
-			return cfg, nil
+			return &cfg, nil
 		},
 
 		// CreateFn is a function that creates a temporary repository for the tests.

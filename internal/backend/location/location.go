@@ -29,7 +29,7 @@ type parser struct {
 	stripPassword func(string) string
 }
 
-func configToAny[C any](parser func(string) (C, error)) func(string) (interface{}, error) {
+func configToAny[C any](parser func(string) (*C, error)) func(string) (interface{}, error) {
 	return func(s string) (interface{}, error) {
 		return parser(s)
 	}

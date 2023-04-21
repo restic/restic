@@ -15,7 +15,7 @@ import (
 func newTestSuite(t testing.TB) *test.Suite[local.Config] {
 	return &test.Suite[local.Config]{
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
-		NewConfig: func() (local.Config, error) {
+		NewConfig: func() (*local.Config, error) {
 			dir, err := os.MkdirTemp(rtest.TestTempDir, "restic-test-local-")
 			if err != nil {
 				t.Fatal(err)
@@ -23,7 +23,7 @@ func newTestSuite(t testing.TB) *test.Suite[local.Config] {
 
 			t.Logf("create new backend at %v", dir)
 
-			cfg := local.Config{
+			cfg := &local.Config{
 				Path:        dir,
 				Connections: 2,
 			}

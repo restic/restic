@@ -26,10 +26,10 @@ func newGSTestSuite(t testing.TB) *test.Suite[gs.Config] {
 		MinimalData: true,
 
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
-		NewConfig: func() (gs.Config, error) {
+		NewConfig: func() (*gs.Config, error) {
 			cfg, err := gs.ParseConfig(os.Getenv("RESTIC_TEST_GS_REPOSITORY"))
 			if err != nil {
-				return gs.Config{}, err
+				return nil, err
 			}
 
 			cfg.ProjectID = os.Getenv("RESTIC_TEST_GS_PROJECT_ID")

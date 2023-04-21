@@ -13,10 +13,10 @@ import (
 // Suite implements a test suite for restic backends.
 type Suite[C any] struct {
 	// Config should be used to configure the backend.
-	Config C
+	Config *C
 
 	// NewConfig returns a config for a new temporary backend that will be used in tests.
-	NewConfig func() (C, error)
+	NewConfig func() (*C, error)
 
 	// CreateFn is a function that creates a temporary repository for the tests.
 	Create func(cfg C) (restic.Backend, error)
@@ -61,7 +61,7 @@ func (s *Suite[C]) RunTests(t *testing.T) {
 	}
 
 	if s.Cleanup != nil {
-		if err = s.Cleanup(s.Config); err != nil {
+		if err = s.Cleanup(*s.Config); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -158,13 +158,13 @@ func (s *Suite[C]) RunBenchmarks(b *testing.B) {
 		return
 	}
 
-	if err = s.Cleanup(s.Config); err != nil {
+	if err = s.Cleanup(*s.Config); err != nil {
 		b.Fatal(err)
 	}
 }
 
 func (s *Suite[C]) create(t testing.TB) restic.Backend {
-	be, err := s.Create(s.Config)
+	be, err := s.Create(*s.Config)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -172,7 +172,7 @@ func (s *Suite[C]) create(t testing.TB) restic.Backend {
 }
 
 func (s *Suite[C]) open(t testing.TB) restic.Backend {
-	be, err := s.Open(s.Config)
+	be, err := s.Open(*s.Config)
 	if err != nil {
 		t.Fatal(err)
 	}

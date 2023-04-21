@@ -18,8 +18,9 @@ type memConfig struct {
 func newTestSuite() *test.Suite[*memConfig] {
 	return &test.Suite[*memConfig]{
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
-		NewConfig: func() (*memConfig, error) {
-			return &memConfig{}, nil
+		NewConfig: func() (**memConfig, error) {
+			cfg := &memConfig{}
+			return &cfg, nil
 		},
 
 		// CreateFn is a function that creates a temporary repository for the tests.

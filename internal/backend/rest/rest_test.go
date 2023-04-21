@@ -77,10 +77,10 @@ func newTestSuite(_ context.Context, t testing.TB, url *url.URL, minimalData boo
 		MinimalData: minimalData,
 
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
-		NewConfig: func() (rest.Config, error) {
+		NewConfig: func() (*rest.Config, error) {
 			cfg := rest.NewConfig()
 			cfg.URL = url
-			return cfg, nil
+			return &cfg, nil
 		},
 
 		// CreateFn is a function that creates a temporary repository for the tests.

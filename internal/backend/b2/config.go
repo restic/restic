@@ -59,15 +59,15 @@ func checkBucketName(name string) error {
 // ParseConfig parses the string s and extracts the b2 config. The supported
 // configuration format is b2:bucketname/prefix. If no prefix is given the
 // prefix "restic" will be used.
-func ParseConfig(s string) (Config, error) {
+func ParseConfig(s string) (*Config, error) {
 	if !strings.HasPrefix(s, "b2:") {
-		return Config{}, errors.New("invalid format, want: b2:bucket-name[:path]")
+		return nil, errors.New("invalid format, want: b2:bucket-name[:path]")
 	}
 
 	s = s[3:]
 	bucket, prefix, _ := strings.Cut(s, ":")
 	if err := checkBucketName(bucket); err != nil {
-		return Config{}, err
+		return nil, err
 	}
 
 	if len(prefix) > 0 {
@@ -78,7 +78,7 @@ func ParseConfig(s string) (Config, error) {
 	cfg.Bucket = bucket
 	cfg.Prefix = prefix
 
-	return cfg, nil
+	return &cfg, nil
 }
 
 // ApplyEnvironment saves values from the environment to the config.

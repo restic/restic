@@ -11,7 +11,7 @@ type ConfigTestData[C comparable] struct {
 	Cfg C
 }
 
-func ParseConfigTester[C comparable](t *testing.T, parser func(s string) (C, error), tests []ConfigTestData[C]) {
+func ParseConfigTester[C comparable](t *testing.T, parser func(s string) (*C, error), tests []ConfigTestData[C]) {
 	for i, test := range tests {
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
 			cfg, err := parser(test.S)
@@ -19,9 +19,9 @@ func ParseConfigTester[C comparable](t *testing.T, parser func(s string) (C, err
 				t.Fatalf("%s failed: %v", test.S, err)
 			}
 
-			if !reflect.DeepEqual(cfg, test.Cfg) {
+			if !reflect.DeepEqual(*cfg, test.Cfg) {
 				t.Fatalf("input: %s\n wrong config, want:\n  %#v\ngot:\n  %#v",
-					test.S, test.Cfg, cfg)
+					test.S, test.Cfg, *cfg)
 			}
 		})
 	}
