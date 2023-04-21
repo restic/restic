@@ -9,30 +9,30 @@ import (
 	"github.com/restic/restic/internal/restic"
 )
 
-// make sure that SemaphoreBackend implements restic.Backend
-var _ restic.Backend = &SemaphoreBackend{}
+// make sure that connectionLimitedBackend implements restic.Backend
+var _ restic.Backend = &connectionLimitedBackend{}
 
-// SemaphoreBackend limits the number of concurrent operations.
-type SemaphoreBackend struct {
+// connectionLimitedBackend limits the number of concurrent operations.
+type connectionLimitedBackend struct {
 	restic.Backend
 	sem semaphore
 }
 
 // New creates a backend that limits the concurrent operations on the underlying backend
-func New(be restic.Backend) *SemaphoreBackend {
+func New(be restic.Backend) restic.Backend {
 	sem, err := newSemaphore(be.Connections())
 	if err != nil {
 		panic(err)
 	}
 
-	return &SemaphoreBackend{
+	return &connectionLimitedBackend{
 		Backend: be,
 		sem:     sem,
 	}
 }
 
 // Save adds new Data to the backend.
-func (be *SemaphoreBackend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+func (be *connectionLimitedBackend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
 	if err := h.Valid(); err != nil {
 		return backoff.Permanent(err)
 	}
@@ -45,7 +45,7 @@ func (be *SemaphoreBackend) Save(ctx context.Context, h restic.Handle, rd restic
 
 // Load runs fn with a reader that yields the contents of the file at h at the
 // given offset.
-func (be *SemaphoreBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+func (be *connectionLimitedBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
 	if err := h.Valid(); err != nil {
 		return backoff.Permanent(err)
 	}
@@ -63,7 +63,7 @@ func (be *SemaphoreBackend) Load(ctx context.Context, h restic.Handle, length in
 }
 
 // Stat returns information about a file in the backend.
-func (be *SemaphoreBackend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, error) {
+func (be *connectionLimitedBackend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, error) {
 	if err := h.Valid(); err != nil {
 		return restic.FileInfo{}, backoff.Permanent(err)
 	}
@@ -75,7 +75,7 @@ func (be *SemaphoreBackend) Stat(ctx context.Context, h restic.Handle) (restic.F
 }
 
 // Remove deletes a file from the backend.
-func (be *SemaphoreBackend) Remove(ctx context.Context, h restic.Handle) error {
+func (be *connectionLimitedBackend) Remove(ctx context.Context, h restic.Handle) error {
 	if err := h.Valid(); err != nil {
 		return backoff.Permanent(err)
 	}
@@ -86,6 +86,6 @@ func (be *SemaphoreBackend) Remove(ctx context.Context, h restic.Handle) error {
 	return be.Backend.Remove(ctx, h)
 }
 
-func (be *SemaphoreBackend) Unwrap() restic.Backend {
+func (be *connectionLimitedBackend) Unwrap() restic.Backend {
 	return be.Backend
 }
