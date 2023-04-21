@@ -282,6 +282,7 @@ func Warnf(format string, args ...interface{}) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to write to stderr: %v\n", err)
 	}
+	debug.Log(format, args...)
 }
 
 // resolvePassword determines the password to be used for opening the repository.
