@@ -18,8 +18,8 @@ type connectionLimitedBackend struct {
 	sem semaphore
 }
 
-// New creates a backend that limits the concurrent operations on the underlying backend
-func New(be restic.Backend) restic.Backend {
+// NewBackend creates a backend that limits the concurrent operations on the underlying backend
+func NewBackend(be restic.Backend) restic.Backend {
 	sem, err := newSemaphore(be.Connections())
 	if err != nil {
 		panic(err)

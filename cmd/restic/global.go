@@ -746,7 +746,7 @@ func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Optio
 	}
 
 	// wrap with debug logging and connection limiting
-	be = logger.New(sema.New(be))
+	be = logger.New(sema.NewBackend(be))
 
 	// wrap backend if a test specified an inner hook
 	if gopts.backendInnerTestHook != nil {
@@ -821,5 +821,5 @@ func create(ctx context.Context, s string, opts options.Options) (restic.Backend
 		return nil, err
 	}
 
-	return logger.New(sema.New(be)), nil
+	return logger.New(sema.NewBackend(be)), nil
 }
