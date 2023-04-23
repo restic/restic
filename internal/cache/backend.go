@@ -83,7 +83,7 @@ func (b *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRea
 	if err != nil {
 		debug.Log("unable to save %v to cache: %v", h, err)
 		_ = b.Cache.remove(h)
-		return nil
+		return err
 	}
 
 	return nil
@@ -106,11 +106,19 @@ func (b *Backend) cacheFile(ctx context.Context, h restic.Handle) error {
 		return nil
 	}
 
+	defer func() {
+		// signal other waiting goroutines that the file may now be cached
+		close(finish)
+
+		// remove the finish channel from the map
+		b.inProgressMutex.Lock()
+		delete(b.inProgress, h)
+		b.inProgressMutex.Unlock()
+	}()
+
 	// test again, maybe the file was cached in the meantime
 	if !b.Cache.Has(h) {
-
 		// nope, it's still not in the cache, pull it from the repo and save it
-
 		err := b.Backend.Load(ctx, h, 0, 0, func(rd io.Reader) error {
 			return b.Cache.Save(h, rd)
 		})
@@ -118,15 +126,8 @@ func (b *Backend) cacheFile(ctx context.Context, h restic.Handle) error {
 			// try to remove from the cache, ignore errors
 			_ = b.Cache.remove(h)
 		}
+		return err
 	}
-
-	// signal other waiting goroutines that the file may now be cached
-	close(finish)
-
-	// remove the finish channel from the map
-	b.inProgressMutex.Lock()
-	delete(b.inProgress, h)
-	b.inProgressMutex.Unlock()
 
 	return nil
 }
@@ -178,11 +179,13 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 
 	debug.Log("auto-store %v in the cache", h)
 	err = b.cacheFile(ctx, h)
-	if err == nil {
-		inCache, err = b.loadFromCache(ctx, h, length, offset, consumer)
-		if inCache {
-			return err
-		}
+	if err != nil {
+		return err
+	}
+
+	inCache, err = b.loadFromCache(ctx, h, length, offset, consumer)
+	if inCache {
+		return err
 	}
 
 	debug.Log("error caching %v: %v, falling back to backend", h, err)
