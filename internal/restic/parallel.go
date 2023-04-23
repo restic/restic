@@ -41,7 +41,7 @@ func ParallelList(ctx context.Context, r Lister, t FileType, parallelism uint, f
 	// a worker receives an index ID from ch, loads the index, and sends it to indexCh
 	worker := func() error {
 		for fi := range ch {
-			debug.Log("worker got file %v", fi.ID.Str())
+			debug.Log("worker got file %v/%v", t, fi.ID.Str())
 			err := fn(ctx, fi.ID, fi.Size)
 			if err != nil {
 				return err
