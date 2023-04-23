@@ -50,7 +50,7 @@ Usage help is available:
           --cacert file                file to load root certificates from (default: use system certificates)
           --cache-dir directory        set the cache directory. (default: use system default cache directory)
           --cleanup-cache              auto remove old cache directories
-          --compression mode           compression mode (only available for repository format version 2), one of (auto|off|max) (default auto)
+          --compression mode           compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION) (default auto)
       -h, --help                       help for restic
           --insecure-tls               skip TLS certificate verification when connecting to the repository (insecure)
           --json                       set output mode to JSON for commands that support it
@@ -127,7 +127,7 @@ command:
           --cacert file                file to load root certificates from (default: use system certificates)
           --cache-dir directory        set the cache directory. (default: use system default cache directory)
           --cleanup-cache              auto remove old cache directories
-          --compression mode           compression mode (only available for repository format version 2), one of (auto|off|max) (default auto)
+          --compression mode           compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION) (default auto)
           --insecure-tls               skip TLS certificate verification when connecting to the repository (insecure)
           --json                       set output mode to JSON for commands that support it
           --key-hint key               key ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
