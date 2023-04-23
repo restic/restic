@@ -58,6 +58,16 @@ Please be aware that the debug log file will contain potentially sensitive
 things like file and directory names, so please either redact it before
 uploading it somewhere or post only the parts that are really relevant.
 
+If restic gets stuck, please also include a stacktrace in the description.
+On non-Windows systems, you can send a SIGQUIT signal to restic or press
+`Ctrl-\` to achieve the same result. This causes restic to print a stacktrace
+and then exit immediatelly. This will not damage your repository, however,
+it might be necessary to manually clean up stale lock files using
+`restic unlock`.
+
+On Windows, please set the environment variable `RESTIC_DEBUG_STACKTRACE_SIGINT`
+to `true` and press `Ctrl-C` to create a stacktrace.
+
 
 Development Environment
 =======================
