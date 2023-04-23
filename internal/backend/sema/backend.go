@@ -31,14 +31,24 @@ func NewBackend(be restic.Backend) restic.Backend {
 	}
 }
 
+// typeDependentLimit acquire a token unless the FileType is a lock file. The returned function
+// must be called to release the token.
+func (be *connectionLimitedBackend) typeDependentLimit(t restic.FileType) func() {
+	// allow concurrent lock file operations to ensure that the lock refresh is always possible
+	if t == restic.LockFile {
+		return func() {}
+	}
+	be.sem.GetToken()
+	return be.sem.ReleaseToken
+}
+
 // Save adds new Data to the backend.
 func (be *connectionLimitedBackend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
 	if err := h.Valid(); err != nil {
 		return backoff.Permanent(err)
 	}
 
-	be.sem.GetToken()
-	defer be.sem.ReleaseToken()
+	defer be.typeDependentLimit(h.Type)()
 
 	return be.Backend.Save(ctx, h, rd)
 }
@@ -56,8 +66,7 @@ func (be *connectionLimitedBackend) Load(ctx context.Context, h restic.Handle, l
 		return backoff.Permanent(errors.Errorf("invalid length %d", length))
 	}
 
-	be.sem.GetToken()
-	defer be.sem.ReleaseToken()
+	defer be.typeDependentLimit(h.Type)()
 
 	return be.Backend.Load(ctx, h, length, offset, fn)
 }
@@ -68,8 +77,7 @@ func (be *connectionLimitedBackend) Stat(ctx context.Context, h restic.Handle) (
 		return restic.FileInfo{}, backoff.Permanent(err)
 	}
 
-	be.sem.GetToken()
-	defer be.sem.ReleaseToken()
+	defer be.typeDependentLimit(h.Type)()
 
 	return be.Backend.Stat(ctx, h)
 }
@@ -80,8 +88,7 @@ func (be *connectionLimitedBackend) Remove(ctx context.Context, h restic.Handle)
 		return backoff.Permanent(err)
 	}
 
-	be.sem.GetToken()
-	defer be.sem.ReleaseToken()
+	defer be.typeDependentLimit(h.Type)()
 
 	return be.Backend.Remove(ctx, h)
 }

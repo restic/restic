@@ -88,7 +88,7 @@ func countingBlocker() (func(), func(int) int) {
 	unblock := func(expected int) int {
 		// give goroutines enough time to block
 		var blocked int64
-		for i := 0; i < 100 && blocked != int64(expected); i++ {
+		for i := 0; i < 100 && blocked < int64(expected); i++ {
 			time.Sleep(100 * time.Microsecond)
 			blocked = atomic.LoadInt64(&ctr)
 		}
@@ -99,8 +99,9 @@ func countingBlocker() (func(), func(int) int) {
 	return wait, unblock
 }
 
-func concurrencyTester(t *testing.T, setup func(m *mock.Backend), handler func(be restic.Backend) func() error, unblock func(int) int) {
+func concurrencyTester(t *testing.T, setup func(m *mock.Backend), handler func(be restic.Backend) func() error, unblock func(int) int, isUnlimited bool) {
 	expectBlocked := int(2)
+	workerCount := expectBlocked + 1
 
 	m := mock.NewBackend()
 	setup(m)
@@ -108,10 +109,13 @@ func concurrencyTester(t *testing.T, setup func(m *mock.Backend), handler func(b
 	be := sema.NewBackend(m)
 
 	var wg errgroup.Group
-	for i := 0; i < int(expectBlocked+1); i++ {
+	for i := 0; i < workerCount; i++ {
 		wg.Go(handler(be))
 	}
 
+	if isUnlimited {
+		expectBlocked = workerCount
+	}
 	blocked := unblock(expectBlocked)
 	test.Assert(t, blocked == expectBlocked, "Unexpected number of goroutines blocked: %v", blocked)
 	test.OK(t, wg.Wait())
@@ -129,7 +133,7 @@ func TestConcurrencyLimitSave(t *testing.T) {
 			h := restic.Handle{Type: restic.PackFile, Name: "foobar"}
 			return be.Save(context.TODO(), h, nil)
 		}
-	}, unblock)
+	}, unblock, false)
 }
 
 func TestConcurrencyLimitLoad(t *testing.T) {
@@ -145,7 +149,7 @@ func TestConcurrencyLimitLoad(t *testing.T) {
 			nilCb := func(rd io.Reader) error { return nil }
 			return be.Load(context.TODO(), h, 10, 0, nilCb)
 		}
-	}, unblock)
+	}, unblock, false)
 }
 
 func TestConcurrencyLimitStat(t *testing.T) {
@@ -161,7 +165,7 @@ func TestConcurrencyLimitStat(t *testing.T) {
 			_, err := be.Stat(context.TODO(), h)
 			return err
 		}
-	}, unblock)
+	}, unblock, false)
 }
 
 func TestConcurrencyLimitDelete(t *testing.T) {
@@ -176,5 +180,20 @@ func TestConcurrencyLimitDelete(t *testing.T) {
 			h := restic.Handle{Type: restic.PackFile, Name: "foobar"}
 			return be.Remove(context.TODO(), h)
 		}
-	}, unblock)
+	}, unblock, false)
+}
+
+func TestConcurrencyUnlimitedLockSave(t *testing.T) {
+	wait, unblock := countingBlocker()
+	concurrencyTester(t, func(m *mock.Backend) {
+		m.SaveFn = func(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+			wait()
+			return nil
+		}
+	}, func(be restic.Backend) func() error {
+		return func() error {
+			h := restic.Handle{Type: restic.LockFile, Name: "foobar"}
+			return be.Save(context.TODO(), h, nil)
+		}
+	}, unblock, true)
 }
