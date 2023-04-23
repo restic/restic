@@ -1,11 +1,10 @@
-Bugfix: Mount command should no longer create spurious filesystem loops
+Bugfix: `mount` should no longer create spurious filesystem loops
 
-When a backup contains a directory that has the same name as its parent,
-say, a/b/b, and the GNU find command were run on this backup in a restic
-mount, find command would refuse to traverse the lowest "b" directory,
-instead printing "File system loop detected". This is due to the way the
-restic mount command generates inode numbers for directories in the mount
-point.
+When a backup contains a directory that has the same name as its parent, say
+`a/b/b`, and the GNU `find` command were run on this backup in a restic mount,
+`find` would refuse to traverse the lowest `b` directory, instead printing
+`File system loop detected`. This is due to the way the restic mount command
+generates inode numbers for directories in the mount point.
 
 The rule for generating these inode numbers was changed in 0.15.0. It has
 now been changed again to avoid this issue. A perfect rule does not exist,
