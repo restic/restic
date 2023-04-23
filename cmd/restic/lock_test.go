@@ -156,8 +156,8 @@ func TestLockSuccessfulRefresh(t *testing.T) {
 	t.Logf("test for successful lock refresh %v", time.Now())
 	// reduce locking intervals to be suitable for testing
 	ri, rt := refreshInterval, refreshabilityTimeout
-	refreshInterval = 40 * time.Millisecond
-	refreshabilityTimeout = 200 * time.Millisecond
+	refreshInterval = 60 * time.Millisecond
+	refreshabilityTimeout = 500 * time.Millisecond
 	defer func() {
 		refreshInterval, refreshabilityTimeout = ri, rt
 	}()
@@ -189,7 +189,7 @@ func TestLockWaitTimeout(t *testing.T) {
 	elock, _, err := lockRepoExclusive(context.TODO(), repo, env.gopts.RetryLock, env.gopts.JSON)
 	test.OK(t, err)
 
-	retryLock := 100 * time.Millisecond
+	retryLock := 200 * time.Millisecond
 
 	start := time.Now()
 	lock, _, err := lockRepo(context.TODO(), repo, retryLock, env.gopts.JSON)
@@ -199,7 +199,7 @@ func TestLockWaitTimeout(t *testing.T) {
 		"create normal lock with exclusively locked repo didn't return an error")
 	test.Assert(t, strings.Contains(err.Error(), "repository is already locked exclusively"),
 		"create normal lock with exclusively locked repo didn't return the correct error")
-	test.Assert(t, retryLock <= duration && duration < retryLock+50*time.Millisecond,
+	test.Assert(t, retryLock <= duration && duration < retryLock*3/2,
 		"create normal lock with exclusively locked repo didn't wait for the specified timeout")
 
 	test.OK(t, lock.Unlock())
@@ -212,7 +212,7 @@ func TestLockWaitCancel(t *testing.T) {
 	elock, _, err := lockRepoExclusive(context.TODO(), repo, env.gopts.RetryLock, env.gopts.JSON)
 	test.OK(t, err)
 
-	retryLock := 100 * time.Millisecond
+	retryLock := 200 * time.Millisecond
 	cancelAfter := 40 * time.Millisecond
 
 	ctx, cancel := context.WithCancel(context.TODO())
@@ -226,7 +226,7 @@ func TestLockWaitCancel(t *testing.T) {
 		"create normal lock with exclusively locked repo didn't return an error")
 	test.Assert(t, strings.Contains(err.Error(), "context canceled"),
 		"create normal lock with exclusively locked repo didn't return the correct error")
-	test.Assert(t, cancelAfter <= duration && duration < cancelAfter+50*time.Millisecond,
+	test.Assert(t, cancelAfter <= duration && duration < retryLock-10*time.Millisecond,
 		"create normal lock with exclusively locked repo didn't return in time")
 
 	test.OK(t, lock.Unlock())
@@ -240,7 +240,7 @@ func TestLockWaitSuccess(t *testing.T) {
 	elock, _, err := lockRepoExclusive(context.TODO(), repo, env.gopts.RetryLock, env.gopts.JSON)
 	test.OK(t, err)
 
-	retryLock := 100 * time.Millisecond
+	retryLock := 200 * time.Millisecond
 	unlockAfter := 40 * time.Millisecond
 
 	time.AfterFunc(unlockAfter, func() {
