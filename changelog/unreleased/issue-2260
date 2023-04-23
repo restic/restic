@@ -1,9 +1,8 @@
-Bugfix: Exotic filenames no longer break restic backup's status output
+Bugfix: Sanitize filenames printed by `backup` during processing
 
-Restic `backup` shows the names of files that it is working on. In previous
-versions of restic, those names were printed without first sanitizing them,
-so that filenames containing newlines or terminal control characters could
-mangle the status output or even change the state of a terminal.
+The `backup` command would previously not sanitize the filenames it printed
+during processing, potentially causing newlines or terminal control characters
+to mangle the status output or even change the state of a terminal.
 
 Filenames are now checked and quoted if they contain non-printable or
 non-Unicode characters.

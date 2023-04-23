@@ -1,4 +1,4 @@
-Bugfix: Make `dump` interpret --host and --path correctly
+Bugfix: Make `dump` interpret `--host` and `--path` correctly
 
 A regression in restic 0.15.0 caused `dump` to confuse its `--host=<host>` and
 `--path=<path>` options: it looked for snapshots with paths called `<host>`
