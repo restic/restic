@@ -20,10 +20,12 @@ import (
 	"github.com/restic/restic/internal/backend/limiter"
 	"github.com/restic/restic/internal/backend/local"
 	"github.com/restic/restic/internal/backend/location"
+	"github.com/restic/restic/internal/backend/logger"
 	"github.com/restic/restic/internal/backend/rclone"
 	"github.com/restic/restic/internal/backend/rest"
 	"github.com/restic/restic/internal/backend/retry"
 	"github.com/restic/restic/internal/backend/s3"
+	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/backend/sftp"
 	"github.com/restic/restic/internal/backend/swift"
 	"github.com/restic/restic/internal/cache"
@@ -744,6 +746,9 @@ func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Optio
 		return nil, errors.Fatalf("unable to open repository at %v: %v", location.StripPassword(s), err)
 	}
 
+	// wrap with debug logging and connection limiting
+	be = logger.New(sema.NewBackend(be))
+
 	// wrap backend if a test specified an inner hook
 	if gopts.backendInnerTestHook != nil {
 		be, err = gopts.backendInnerTestHook(be)
@@ -788,27 +793,34 @@ func create(ctx context.Context, s string, opts options.Options) (restic.Backend
 		return nil, err
 	}
 
+	var be restic.Backend
 	switch loc.Scheme {
 	case "local":
-		return local.Create(ctx, cfg.(local.Config))
+		be, err = local.Create(ctx, cfg.(local.Config))
 	case "sftp":
-		return sftp.Create(ctx, cfg.(sftp.Config))
+		be, err = sftp.Create(ctx, cfg.(sftp.Config))
 	case "s3":
-		return s3.Create(ctx, cfg.(s3.Config), rt)
+		be, err = s3.Create(ctx, cfg.(s3.Config), rt)
 	case "gs":
-		return gs.Create(cfg.(gs.Config), rt)
+		be, err = gs.Create(ctx, cfg.(gs.Config), rt)
 	case "azure":
-		return azure.Create(ctx, cfg.(azure.Config), rt)
+		be, err = azure.Create(ctx, cfg.(azure.Config), rt)
 	case "swift":
-		return swift.Open(ctx, cfg.(swift.Config), rt)
+		be, err = swift.Open(ctx, cfg.(swift.Config), rt)
 	case "b2":
-		return b2.Create(ctx, cfg.(b2.Config), rt)
+		be, err = b2.Create(ctx, cfg.(b2.Config), rt)
 	case "rest":
-		return rest.Create(ctx, cfg.(rest.Config), rt)
+		be, err = rest.Create(ctx, cfg.(rest.Config), rt)
 	case "rclone":
-		return rclone.Create(ctx, cfg.(rclone.Config))
+		be, err = rclone.Create(ctx, cfg.(rclone.Config))
+	default:
+		debug.Log("invalid repository scheme: %v", s)
+		return nil, errors.Fatalf("invalid scheme %q", loc.Scheme)
 	}
 
-	debug.Log("invalid repository scheme: %v", s)
-	return nil, errors.Fatalf("invalid scheme %q", loc.Scheme)
+	if err != nil {
+		return nil, err
+	}
+
+	return logger.New(sema.NewBackend(be)), nil
 }

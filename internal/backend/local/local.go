@@ -10,7 +10,6 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
-	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
@@ -22,7 +21,6 @@ import (
 // Local is a backend in a local directory.
 type Local struct {
 	Config
-	sem sema.Semaphore
 	layout.Layout
 	backend.Modes
 }
@@ -38,11 +36,6 @@ func open(ctx context.Context, cfg Config) (*Local, error) {
 		return nil, err
 	}
 
-	sem, err := sema.New(cfg.Connections)
-	if err != nil {
-		return nil, err
-	}
-
 	fi, err := fs.Stat(l.Filename(restic.Handle{Type: restic.ConfigFile}))
 	m := backend.DeriveModesFromFileInfo(fi, err)
 	debug.Log("using (%03O file, %03O dir) permissions", m.File, m.Dir)
@@ -50,7 +43,6 @@ func open(ctx context.Context, cfg Config) (*Local, error) {
 	return &Local{
 		Config: cfg,
 		Layout: l,
-		sem:    sem,
 		Modes:  m,
 	}, nil
 }
@@ -114,11 +106,6 @@ func (b *Local) IsNotExist(err error) bool {
 
 // Save stores data in the backend at the handle.
 func (b *Local) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) (err error) {
-	debug.Log("Save %v", h)
-	if err := h.Valid(); err != nil {
-		return backoff.Permanent(err)
-	}
-
 	finalname := b.Filename(h)
 	dir := filepath.Dir(finalname)
 
@@ -128,9 +115,6 @@ func (b *Local) Save(ctx context.Context, h restic.Handle, rd restic.RewindReade
 			err = backoff.Permanent(err)
 		}
 	}()
-
-	b.sem.GetToken()
-	defer b.sem.ReleaseToken()
 
 	// Create new file with a temporary name.
 	tmpname := filepath.Base(finalname) + "-tmp-"
@@ -217,50 +201,28 @@ func (b *Local) Load(ctx context.Context, h restic.Handle, length int, offset in
 }
 
 func (b *Local) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
-	debug.Log("Load %v, length %v, offset %v", h, length, offset)
-	if err := h.Valid(); err != nil {
-		return nil, backoff.Permanent(err)
-	}
-
-	if offset < 0 {
-		return nil, errors.New("offset is negative")
-	}
-
-	b.sem.GetToken()
 	f, err := fs.Open(b.Filename(h))
 	if err != nil {
-		b.sem.ReleaseToken()
 		return nil, err
 	}
 
 	if offset > 0 {
 		_, err = f.Seek(offset, 0)
 		if err != nil {
-			b.sem.ReleaseToken()
 			_ = f.Close()
 			return nil, err
 		}
 	}
 
-	r := b.sem.ReleaseTokenOnClose(f, nil)
-
 	if length > 0 {
-		return backend.LimitReadCloser(r, int64(length)), nil
+		return backend.LimitReadCloser(f, int64(length)), nil
 	}
 
-	return r, nil
+	return f, nil
 }
 
 // Stat returns information about a blob.
 func (b *Local) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, error) {
-	debug.Log("Stat %v", h)
-	if err := h.Valid(); err != nil {
-		return restic.FileInfo{}, backoff.Permanent(err)
-	}
-
-	b.sem.GetToken()
-	defer b.sem.ReleaseToken()
-
 	fi, err := fs.Stat(b.Filename(h))
 	if err != nil {
 		return restic.FileInfo{}, errors.WithStack(err)
@@ -271,11 +233,7 @@ func (b *Local) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, err
 
 // Remove removes the blob with the given name and type.
 func (b *Local) Remove(ctx context.Context, h restic.Handle) error {
-	debug.Log("Remove %v", h)
 	fn := b.Filename(h)
-
-	b.sem.GetToken()
-	defer b.sem.ReleaseToken()
 
 	// reset read-only flag
 	err := fs.Chmod(fn, 0666)
@@ -289,8 +247,6 @@ func (b *Local) Remove(ctx context.Context, h restic.Handle) error {
 // List runs fn for each file in the backend which has the type t. When an
 // error occurs (or fn returns an error), List stops and returns it.
 func (b *Local) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) (err error) {
-	debug.Log("List %v", t)
-
 	basedir, subdirs := b.Basedir(t)
 	if subdirs {
 		err = visitDirs(ctx, basedir, fn)
@@ -384,13 +340,11 @@ func visitFiles(ctx context.Context, dir string, fn func(restic.FileInfo) error,
 
 // Delete removes the repository and all files.
 func (b *Local) Delete(ctx context.Context) error {
-	debug.Log("Delete()")
 	return fs.RemoveAll(b.Path)
 }
 
 // Close closes all open files.
 func (b *Local) Close() error {
-	debug.Log("Close()")
 	// this does not need to do anything, all open files are closed within the
 	// same function.
 	return nil

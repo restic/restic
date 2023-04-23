@@ -42,7 +42,7 @@ func newGSTestSuite(t testing.TB) *test.Suite {
 		Create: func(config interface{}) (restic.Backend, error) {
 			cfg := config.(gs.Config)
 
-			be, err := gs.Create(cfg, tr)
+			be, err := gs.Create(context.Background(), cfg, tr)
 			if err != nil {
 				return nil, err
 			}

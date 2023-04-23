@@ -14,7 +14,6 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
-	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -26,7 +25,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blockblob"
 	azContainer "github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
-	"github.com/cenkalti/backoff/v4"
 )
 
 // Backend stores data on an azure endpoint.
@@ -34,7 +32,6 @@ type Backend struct {
 	cfg          Config
 	container    *azContainer.Client
 	connections  uint
-	sem          sema.Semaphore
 	prefix       string
 	listMaxItems int
 	layout.Layout
@@ -96,16 +93,10 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 		return nil, errors.New("no azure authentication information found")
 	}
 
-	sem, err := sema.New(cfg.Connections)
-	if err != nil {
-		return nil, err
-	}
-
 	be := &Backend{
 		container:   client,
 		cfg:         cfg,
 		connections: cfg.Connections,
-		sem:         sem,
 		Layout: &layout.DefaultLayout{
 			Path: cfg.Prefix,
 			Join: path.Join,
@@ -152,7 +143,6 @@ func (be *Backend) SetListMaxItems(i int) {
 
 // IsNotExist returns true if the error is caused by a not existing file.
 func (be *Backend) IsNotExist(err error) bool {
-	debug.Log("IsNotExist(%T, %#v)", err, err)
 	return bloberror.HasCode(err, bloberror.BlobNotFound)
 }
 
@@ -187,15 +177,7 @@ func (be *Backend) Path() string {
 
 // Save stores data in the backend at the handle.
 func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
-	if err := h.Valid(); err != nil {
-		return backoff.Permanent(err)
-	}
-
 	objName := be.Filename(h)
-
-	debug.Log("Save %v at %v", h, objName)
-
-	be.sem.GetToken()
 
 	debug.Log("InsertObject(%v, %v)", be.cfg.AccountName, objName)
 
@@ -207,9 +189,6 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 		// otherwise use the more complicated method
 		err = be.saveLarge(ctx, objName, rd)
 	}
-
-	be.sem.ReleaseToken()
-	debug.Log("%v, err %#v", objName, err)
 
 	return err
 }
@@ -299,23 +278,9 @@ func (be *Backend) Load(ctx context.Context, h restic.Handle, length int, offset
 }
 
 func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
-	debug.Log("Load %v, length %v, offset %v from %v", h, length, offset, be.Filename(h))
-	if err := h.Valid(); err != nil {
-		return nil, backoff.Permanent(err)
-	}
-
-	if offset < 0 {
-		return nil, errors.New("offset is negative")
-	}
-
-	if length < 0 {
-		return nil, errors.Errorf("invalid length %d", length)
-	}
-
 	objName := be.Filename(h)
 	blockBlobClient := be.container.NewBlobClient(objName)
 
-	be.sem.GetToken()
 	resp, err := blockBlobClient.DownloadStream(ctx, &blob.DownloadStreamOptions{
 		Range: azblob.HTTPRange{
 			Offset: offset,
@@ -324,26 +289,20 @@ func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, 
 	})
 
 	if err != nil {
-		be.sem.ReleaseToken()
 		return nil, err
 	}
 
-	return be.sem.ReleaseTokenOnClose(resp.Body, nil), err
+	return resp.Body, err
 }
 
 // Stat returns information about a blob.
 func (be *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, error) {
-	debug.Log("%v", h)
-
 	objName := be.Filename(h)
 	blobClient := be.container.NewBlobClient(objName)
 
-	be.sem.GetToken()
 	props, err := blobClient.GetProperties(ctx, nil)
-	be.sem.ReleaseToken()
 
 	if err != nil {
-		debug.Log("blob.GetProperties err %v", err)
 		return restic.FileInfo{}, errors.Wrap(err, "blob.GetProperties")
 	}
 
@@ -359,11 +318,7 @@ func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	objName := be.Filename(h)
 	blob := be.container.NewBlobClient(objName)
 
-	be.sem.GetToken()
 	_, err := blob.Delete(ctx, &azblob.DeleteBlobOptions{})
-	be.sem.ReleaseToken()
-
-	debug.Log("Remove(%v) at %v -> err %v", h, objName, err)
 
 	if be.IsNotExist(err) {
 		return nil
@@ -375,8 +330,6 @@ func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 // List runs fn for each file in the backend which has the type t. When an
 // error occurs (or fn returns an error), List stops and returns it.
 func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
-	debug.Log("listing %v", t)
-
 	prefix, _ := be.Basedir(t)
 
 	// make sure prefix ends with a slash
@@ -393,9 +346,7 @@ func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.F
 	lister := be.container.NewListBlobsFlatPager(opts)
 
 	for lister.More() {
-		be.sem.GetToken()
 		resp, err := lister.NextPage(ctx)
-		be.sem.ReleaseToken()
 
 		if err != nil {
 			return err
@@ -433,30 +384,9 @@ func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.F
 	return ctx.Err()
 }
 
-// Remove keys for a specified backend type.
-func (be *Backend) removeKeys(ctx context.Context, t restic.FileType) error {
-	return be.List(ctx, t, func(fi restic.FileInfo) error {
-		return be.Remove(ctx, restic.Handle{Type: t, Name: fi.Name})
-	})
-}
-
 // Delete removes all restic keys in the bucket. It will not remove the bucket itself.
 func (be *Backend) Delete(ctx context.Context) error {
-	alltypes := []restic.FileType{
-		restic.PackFile,
-		restic.KeyFile,
-		restic.LockFile,
-		restic.SnapshotFile,
-		restic.IndexFile}
-
-	for _, t := range alltypes {
-		err := be.removeKeys(ctx, t)
-		if err != nil {
-			return nil
-		}
-	}
-
-	return be.Remove(ctx, restic.Handle{Type: restic.ConfigFile})
+	return backend.DefaultDelete(ctx, be)
 }
 
 // Close does nothing
