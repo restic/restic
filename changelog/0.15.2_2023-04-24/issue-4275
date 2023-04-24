@@ -1,0 +1,4 @@
+Security: Update golang.org/x/net to address CVE-2022-41723
+
+https://github.com/restic/restic/issues/4275
+https://github.com/restic/restic/pull/4213

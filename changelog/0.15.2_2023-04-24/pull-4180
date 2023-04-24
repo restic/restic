@@ -1,5 +1,6 @@
 Enhancement: Add release binaries for riscv64 architecture on Linux
 
-We've added release binaries for riscv64 architecture on Linux.
+Builds for the `riscv64` architecture on Linux are now included in the
+release binaries.
 
 https://github.com/restic/restic/pull/4180

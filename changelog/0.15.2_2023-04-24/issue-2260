@@ -1,0 +1,12 @@
+Bugfix: Sanitize filenames printed by `backup` during processing
+
+The `backup` command would previously not sanitize the filenames it printed
+during processing, potentially causing newlines or terminal control characters
+to mangle the status output or even change the state of a terminal.
+
+Filenames are now checked and quoted if they contain non-printable or
+non-Unicode characters.
+
+https://github.com/restic/restic/issues/2260
+https://github.com/restic/restic/issues/4191
+https://github.com/restic/restic/pull/4192
