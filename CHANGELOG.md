@@ -1,3 +1,92 @@
+Changelog for restic 0.15.2 (2023-04-24)
+=======================================
+
+The following sections list the changes in restic 0.15.2 relevant to
+restic users. The changes are ordered by importance.
+
+Summary
+-------
+
+ * Sec #4275: Update golang.org/x/net to address CVE-2022-41723
+ * Fix #2260: Sanitize filenames printed by `backup` during processing
+ * Fix #4211: Make `dump` interpret `--host` and `--path` correctly
+ * Fix #4239: Correct number of blocks reported in mount point
+ * Fix #4253: Minimize risk of spurious filesystem loops with `mount`
+ * Enh #4180: Add release binaries for riscv64 architecture on Linux
+ * Enh #4219: Upgrade Minio to version 7.0.49
+
+Details
+-------
+
+ * Security #4275: Update golang.org/x/net to address CVE-2022-41723
+
+   https://github.com/restic/restic/issues/4275
+   https://github.com/restic/restic/pull/4213
+
+ * Bugfix #2260: Sanitize filenames printed by `backup` during processing
+
+   The `backup` command would previously not sanitize the filenames it printed during
+   processing, potentially causing newlines or terminal control characters to mangle the
+   status output or even change the state of a terminal.
+
+   Filenames are now checked and quoted if they contain non-printable or non-Unicode
+   characters.
+
+   https://github.com/restic/restic/issues/2260
+   https://github.com/restic/restic/issues/4191
+   https://github.com/restic/restic/pull/4192
+
+ * Bugfix #4211: Make `dump` interpret `--host` and `--path` correctly
+
+   A regression in restic 0.15.0 caused `dump` to confuse its `--host=<host>` and
+   `--path=<path>` options: it looked for snapshots with paths called `<host>` from hosts
+   called `<path>`. It now treats the options as intended.
+
+   https://github.com/restic/restic/issues/4211
+   https://github.com/restic/restic/pull/4212
+
+ * Bugfix #4239: Correct number of blocks reported in mount point
+
+   Restic mount points reported an incorrect number of 512-byte (POSIX standard) blocks for
+   files and links due to a rounding bug. In particular, empty files were reported as taking one
+   block instead of zero.
+
+   The rounding is now fixed: the number of blocks reported is the file size (or link target size)
+   divided by 512 and rounded up to a whole number.
+
+   https://github.com/restic/restic/issues/4239
+   https://github.com/restic/restic/pull/4240
+
+ * Bugfix #4253: Minimize risk of spurious filesystem loops with `mount`
+
+   When a backup contains a directory that has the same name as its parent, say `a/b/b`, and the GNU
+   `find` command was run on this backup in a restic mount, `find` would refuse to traverse the
+   lowest `b` directory, instead printing `File system loop detected`. This was due to the way the
+   restic mount command generates inode numbers for directories in the mount point.
+
+   The rule for generating these inode numbers was changed in 0.15.0. It has now been changed again
+   to avoid this issue. A perfect rule does not exist, but the probability of this behavior
+   occurring is now extremely small.
+
+   When it does occur, the mount point is not broken, and scripts that traverse the mount point
+   should work as long as they don't rely on inode numbers for detecting filesystem loops.
+
+   https://github.com/restic/restic/issues/4253
+   https://github.com/restic/restic/pull/4255
+
+ * Enhancement #4180: Add release binaries for riscv64 architecture on Linux
+
+   Builds for the `riscv64` architecture on Linux are now included in the release binaries.
+
+   https://github.com/restic/restic/pull/4180
+
+ * Enhancement #4219: Upgrade Minio to version 7.0.49
+
+   The upgraded version now allows use of the `ap-southeast-4` region (Melbourne).
+
+   https://github.com/restic/restic/pull/4219
+
+
 Changelog for restic 0.15.1 (2023-01-30)
 =======================================
 
