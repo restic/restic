@@ -3,6 +3,7 @@ package dump
 import (
 	"archive/tar"
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -94,9 +95,8 @@ func (d *Dumper) dumpNodeTar(ctx context.Context, node *restic.Node, w *tar.Writ
 
 	err = w.WriteHeader(header)
 	if err != nil {
-		return errors.Wrap(err, "TarHeader")
+		return fmt.Errorf("writing header for %q: %w", node.Path, err)
 	}
-
 	return d.writeNode(ctx, w, node)
 }
 
