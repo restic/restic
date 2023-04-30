@@ -37,7 +37,7 @@ func FilterTree(ctx context.Context, repo BlobLoadSaver, nodepath string, nodeID
 		return restic.ID{}, err
 	}
 	if nodeID != testID {
-		return restic.ID{}, fmt.Errorf("cannot encode tree at %q without loosing information", nodepath)
+		return restic.ID{}, fmt.Errorf("cannot encode tree at %q without losing information", nodepath)
 	}
 
 	debug.Log("filterTree: %s, nodeId: %s\n", nodepath, nodeID.Str())
