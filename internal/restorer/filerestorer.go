@@ -181,6 +181,8 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 	wg.Go(func() error {
 		for _, id := range packOrder {
 			pack := packs[id]
+			// allow garbage collection of packInfo
+			delete(packs, id)
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
