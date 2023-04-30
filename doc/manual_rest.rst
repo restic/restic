@@ -26,7 +26,7 @@ Usage help is available:
       dump          Print a backed-up file to stdout
       find          Find a file, a directory or restic IDs
       forget        Remove snapshots from the repository
-      generate      Generate manual pages and auto-completion files (bash, fish, zsh)
+      generate      Generate manual pages and auto-completion files (bash, fish, zsh, powershell)
       help          Help about any command
       init          Initialize a new repository
       key           Manage keys (passwords)
@@ -106,6 +106,7 @@ command:
           --files-from-raw file                    read the files to backup from file (can be combined with file args; can be specified multiple times)
           --files-from-verbatim file               read the files to backup from file (can be combined with file args; can be specified multiple times)
       -f, --force                                  force re-reading the target files/directories (overrides the "parent" flag)
+      -g, --group-by group                         group snapshots by host, paths and/or tags, separated by comma (disable grouping with '') (default host,paths)
       -h, --help                                   help for backup
       -H, --host hostname                          set the hostname for the snapshot manually. To prevent an expensive rescan use the "parent" flag
           --iexclude pattern                       same as --exclude pattern but ignores the casing of filenames
@@ -114,8 +115,8 @@ command:
           --ignore-inode                           ignore inode number changes when checking for modified files
           --no-scan                                do not run scanner to estimate size of backup
       -x, --one-file-system                        exclude other file systems, don't cross filesystem boundaries and subvolumes
-          --parent snapshot                        use this parent snapshot (default: last snapshot in the repository that has the same target files/directories, and is not newer than the snapshot time)
-          --read-concurrency n                     read n file concurrently (default: $RESTIC_READ_CONCURRENCY or 2)
+          --parent snapshot                        use this parent snapshot (default: latest snapshot in the group determined by --group-by and not newer than the timestamp determined by --time)
+          --read-concurrency n                     read n files concurrently (default: $RESTIC_READ_CONCURRENCY or 2)
           --stdin                                  read backup from stdin
           --stdin-filename filename                filename to use when reading from stdin (default "stdin")
           --tag tags                               add tags for the new snapshot in the format `tag[,tag,...]` (can be specified multiple times) (default [])
