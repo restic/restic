@@ -257,19 +257,26 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 				return nil
 			}
 
-			if res.progress != nil {
-				res.progress.AddFile(node.Size)
-			}
-
 			if node.Size == 0 {
+				if res.progress != nil {
+					res.progress.AddFile(node.Size)
+				}
 				return nil // deal with empty files later
 			}
 
 			if node.Links > 1 {
 				if idx.Has(node.Inode, node.DeviceID) {
+					if res.progress != nil {
+						// a hardlinked file does not increase the restore size
+						res.progress.AddFile(0)
+					}
 					return nil
 				}
 				idx.Add(node.Inode, node.DeviceID, location)
+			}
+
+			if res.progress != nil {
+				res.progress.AddFile(node.Size)
 			}
 
 			filerestorer.addFile(location, node.Content, int64(node.Size))
