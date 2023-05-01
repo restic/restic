@@ -331,10 +331,6 @@ func (erd errorReadCloser) Read(p []byte) (int, error) {
 
 // induceError flips a bit in the slice.
 func induceError(data []byte) {
-	if rand.Float32() < 0.2 {
-		return
-	}
-
 	pos := rand.Intn(len(data))
 	data[pos] ^= 1
 }
