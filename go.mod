@@ -12,7 +12,7 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/hashicorp/golang-lru/v2 v2.0.1
 	github.com/juju/ratelimit v1.0.2
-	github.com/klauspost/compress v1.16.0
+	github.com/klauspost/compress v1.16.5
 	github.com/kurin/blazer v0.5.4-0.20230113224640-3887e1ec64b5
 	github.com/minio/minio-go/v7 v7.0.52
 	github.com/minio/sha256-simd v1.0.0
