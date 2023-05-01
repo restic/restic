@@ -177,7 +177,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 
 	var progress *restoreui.Progress
 	if !gopts.Quiet && !gopts.JSON {
-		progress = restoreui.NewProgress(restoreui.NewProgressPrinter(term), calculateProgressInterval(!gopts.Quiet, gopts.JSON))
+		progress = restoreui.NewProgress(restoreui.NewTextPrinter(term), calculateProgressInterval(!gopts.Quiet, gopts.JSON))
 	}
 
 	res := restorer.NewRestorer(repo, sn, opts.Sparse, progress)
