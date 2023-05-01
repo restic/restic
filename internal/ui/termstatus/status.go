@@ -334,6 +334,21 @@ func wideRune(s string) (wide bool, utfsize uint) {
 	return wide, uint(size)
 }
 
+func sanitizeLines(lines []string, width int) []string {
+	// Sanitize lines and truncate them if they're too long.
+	for i, line := range lines {
+		line = Quote(line)
+		if width > 0 {
+			line = Truncate(line, width-2)
+		}
+		if i < len(lines)-1 { // Last line gets no line break.
+			line += "\n"
+		}
+		lines[i] = line
+	}
+	return lines
+}
+
 // SetStatus updates the status lines.
 // The lines should not contain newlines; this method adds them.
 func (t *Terminal) SetStatus(lines []string) {
@@ -352,17 +367,7 @@ func (t *Terminal) SetStatus(lines []string) {
 		}
 	}
 
-	// Sanitize lines and truncate them if they're too long.
-	for i, line := range lines {
-		line = Quote(line)
-		if width > 0 {
-			line = Truncate(line, width-2)
-		}
-		if i < len(lines)-1 { // Last line gets no line break.
-			line += "\n"
-		}
-		lines[i] = line
-	}
+	sanitizeLines(lines, width)
 
 	select {
 	case t.status <- status{lines: lines}:

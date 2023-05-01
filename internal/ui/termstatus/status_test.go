@@ -1,6 +1,7 @@
 package termstatus
 
 import (
+	"reflect"
 	"strconv"
 	"testing"
 
@@ -90,4 +91,27 @@ func BenchmarkTruncateUnicode(b *testing.B) {
 	b.ResetTimer()
 
 	benchmarkTruncate(b, s, w-1)
+}
+
+func TestSanitizeLines(t *testing.T) {
+	var tests = []struct {
+		input  []string
+		width  int
+		output []string
+	}{
+		{[]string{""}, 80, []string{""}},
+		{[]string{"too long test line"}, 10, []string{"too long"}},
+		{[]string{"too long test line", "text"}, 10, []string{"too long\n", "text"}},
+		{[]string{"too long test line", "second long test line"}, 10, []string{"too long\n", "second l"}},
+	}
+
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			out := sanitizeLines(test.input, test.width)
+			if !reflect.DeepEqual(out, test.output) {
+				t.Fatalf("wrong output for input %v, width %d: want %q, got %q",
+					test.input, test.width, test.output, out)
+			}
+		})
+	}
 }
