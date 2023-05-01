@@ -166,12 +166,14 @@ func (res *Restorer) restoreNodeTo(ctx context.Context, node *restic.Node, targe
 	err := node.CreateAt(ctx, target, res.repo)
 	if err != nil {
 		debug.Log("node.CreateAt(%s) error %v", target, err)
-	}
-	if err == nil {
-		err = res.restoreNodeMetadataTo(node, target, location)
+		return err
 	}
 
-	return err
+	if res.progress != nil {
+		res.progress.AddProgress(location, 0, 0)
+	}
+
+	return res.restoreNodeMetadataTo(node, target, location)
 }
 
 func (res *Restorer) restoreNodeMetadataTo(node *restic.Node, target, location string) error {
@@ -239,6 +241,9 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 	_, err = res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
 		enterDir: func(node *restic.Node, target, location string) error {
 			debug.Log("first pass, enterDir: mkdir %q, leaveDir should restore metadata", location)
+			if res.progress != nil {
+				res.progress.AddFile(0)
+			}
 			// create dir with default permissions
 			// #leaveDir restores dir metadata after visiting all children
 			return fs.MkdirAll(target, 0700)
@@ -254,6 +259,9 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 			}
 
 			if node.Type != "file" {
+				if res.progress != nil {
+					res.progress.AddFile(0)
+				}
 				return nil
 			}
 
@@ -317,7 +325,13 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 
 			return res.restoreNodeMetadataTo(node, target, location)
 		},
-		leaveDir: res.restoreNodeMetadataTo,
+		leaveDir: func(node *restic.Node, target, location string) error {
+			err := res.restoreNodeMetadataTo(node, target, location)
+			if err == nil && res.progress != nil {
+				res.progress.AddProgress(location, 0, 0)
+			}
+			return err
+		},
 	})
 	return err
 }
