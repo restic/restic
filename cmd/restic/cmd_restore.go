@@ -175,11 +175,14 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		return err
 	}
 
-	var progress *restoreui.Progress
-	if !gopts.Quiet && !gopts.JSON {
-		progress = restoreui.NewProgress(restoreui.NewTextPrinter(term), calculateProgressInterval(!gopts.Quiet, gopts.JSON))
+	var printer restoreui.ProgressPrinter
+	if gopts.JSON {
+		printer = restoreui.NewJSONProgress(term)
+	} else {
+		printer = restoreui.NewTextProgress(term)
 	}
 
+	progress := restoreui.NewProgress(printer, calculateProgressInterval(!gopts.Quiet, gopts.JSON))
 	res := restorer.NewRestorer(repo, sn, opts.Sparse, progress)
 
 	totalErrors := 0
@@ -237,23 +240,25 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		res.SelectFilter = selectIncludeFilter
 	}
 
-	Verbosef("restoring %s to %s\n", res.Snapshot(), opts.Target)
+	if !gopts.JSON {
+		Verbosef("restoring %s to %s\n", res.Snapshot(), opts.Target)
+	}
 
 	err = res.RestoreTo(ctx, opts.Target)
 	if err != nil {
 		return err
 	}
 
-	if progress != nil {
-		progress.Finish()
-	}
+	progress.Finish()
 
 	if totalErrors > 0 {
 		return errors.Fatalf("There were %d errors\n", totalErrors)
 	}
 
 	if opts.Verify {
-		Verbosef("verifying files in %s\n", opts.Target)
+		if !gopts.JSON {
+			Verbosef("verifying files in %s\n", opts.Target)
+		}
 		var count int
 		t0 := time.Now()
 		count, err = res.VerifyFiles(ctx, opts.Target)
@@ -263,8 +268,11 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		if totalErrors > 0 {
 			return errors.Fatalf("There were %d errors\n", totalErrors)
 		}
-		Verbosef("finished verifying %d files in %s (took %s)\n", count, opts.Target,
-			time.Since(t0).Round(time.Millisecond))
+
+		if !gopts.JSON {
+			Verbosef("finished verifying %d files in %s (took %s)\n", count, opts.Target,
+				time.Since(t0).Round(time.Millisecond))
+		}
 	}
 
 	return nil

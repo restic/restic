@@ -11,7 +11,7 @@ type textPrinter struct {
 	terminal term
 }
 
-func NewTextPrinter(terminal term) ProgressPrinter {
+func NewTextProgress(terminal term) ProgressPrinter {
 	return &textPrinter{
 		terminal: terminal,
 	}
