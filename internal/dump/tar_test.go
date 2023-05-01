@@ -3,6 +3,8 @@ package dump
 import (
 	"archive/tar"
 	"bytes"
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -12,6 +14,8 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/restic"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 func TestWriteTar(t *testing.T) {
@@ -111,4 +115,30 @@ func checkTar(t *testing.T, testDir string, srcTar *bytes.Buffer) error {
 	}
 
 	return nil
+}
+
+// #4307.
+func TestFieldTooLong(t *testing.T) {
+	const maxSpecialFileSize = 1 << 20 // Unexported limit in archive/tar.
+
+	node := restic.Node{
+		Name: "file_with_xattr",
+		Path: "/file_with_xattr",
+		Type: "file",
+		Mode: 0644,
+		ExtendedAttributes: []restic.ExtendedAttribute{
+			{
+				Name:  "user.way_too_large",
+				Value: make([]byte, 2*maxSpecialFileSize),
+			},
+		},
+	}
+
+	d := Dumper{format: "tar"}
+	err := d.dumpNodeTar(context.Background(), &node, tar.NewWriter(io.Discard))
+
+	// We want a tar.ErrFieldTooLong that has the filename.
+	rtest.Assert(t, errors.Is(err, tar.ErrFieldTooLong), "wrong type %T", err)
+	rtest.Assert(t, strings.Contains(err.Error(), node.Path),
+		"no filename in %q", err)
 }
