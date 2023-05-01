@@ -14,6 +14,7 @@ import (
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui/termstatus"
 )
 
 func testRunRestore(t testing.TB, opts GlobalOptions, dir string, snapshotID restic.ID) {
@@ -26,11 +27,13 @@ func testRunRestoreExcludes(t testing.TB, gopts GlobalOptions, dir string, snaps
 		Exclude: excludes,
 	}
 
-	rtest.OK(t, runRestore(context.TODO(), opts, gopts, nil, []string{snapshotID.String()}))
+	rtest.OK(t, testRunRestoreAssumeFailure(snapshotID.String(), opts, gopts))
 }
 
 func testRunRestoreAssumeFailure(snapshotID string, opts RestoreOptions, gopts GlobalOptions) error {
-	return runRestore(context.TODO(), opts, gopts, nil, []string{snapshotID})
+	return withTermStatus(gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+		return runRestore(ctx, opts, gopts, term, []string{snapshotID})
+	})
 }
 
 func testRunRestoreLatest(t testing.TB, gopts GlobalOptions, dir string, paths []string, hosts []string) {
@@ -42,7 +45,7 @@ func testRunRestoreLatest(t testing.TB, gopts GlobalOptions, dir string, paths [
 		},
 	}
 
-	rtest.OK(t, runRestore(context.TODO(), opts, gopts, nil, []string{"latest"}))
+	rtest.OK(t, testRunRestoreAssumeFailure("latest", opts, gopts))
 }
 
 func testRunRestoreIncludes(t testing.TB, gopts GlobalOptions, dir string, snapshotID restic.ID, includes []string) {
@@ -51,7 +54,7 @@ func testRunRestoreIncludes(t testing.TB, gopts GlobalOptions, dir string, snaps
 		Include: includes,
 	}
 
-	rtest.OK(t, runRestore(context.TODO(), opts, gopts, nil, []string{snapshotID.String()}))
+	rtest.OK(t, testRunRestoreAssumeFailure(snapshotID.String(), opts, gopts))
 }
 
 func TestRestoreFilter(t *testing.T) {

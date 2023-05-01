@@ -13,34 +13,19 @@ import (
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui/termstatus"
-	"golang.org/x/sync/errgroup"
 )
 
 func testRunBackupAssumeFailure(t testing.TB, dir string, target []string, opts BackupOptions, gopts GlobalOptions) error {
-	ctx, cancel := context.WithCancel(context.TODO())
-	defer cancel()
+	return withTermStatus(gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+		t.Logf("backing up %v in %v", target, dir)
+		if dir != "" {
+			cleanup := rtest.Chdir(t, dir)
+			defer cleanup()
+		}
 
-	var wg errgroup.Group
-	term := termstatus.New(gopts.stdout, gopts.stderr, gopts.Quiet)
-	wg.Go(func() error { term.Run(ctx); return nil })
-
-	t.Logf("backing up %v in %v", target, dir)
-	if dir != "" {
-		cleanup := rtest.Chdir(t, dir)
-		defer cleanup()
-	}
-
-	opts.GroupBy = restic.SnapshotGroupByOptions{Host: true, Path: true}
-	backupErr := runBackup(ctx, opts, gopts, term, target)
-
-	cancel()
-
-	err := wg.Wait()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return backupErr
+		opts.GroupBy = restic.SnapshotGroupByOptions{Host: true, Path: true}
+		return runBackup(ctx, opts, gopts, term, target)
+	})
 }
 
 func testRunBackup(t testing.TB, dir string, target []string, opts BackupOptions, gopts GlobalOptions) {
