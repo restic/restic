@@ -359,8 +359,9 @@ func (t *Terminal) SetStatus(lines []string) {
 			line = Truncate(line, width-2)
 		}
 		if i < len(lines)-1 { // Last line gets no line break.
-			lines[i] = line + "\n"
+			line += "\n"
 		}
+		lines[i] = line
 	}
 
 	select {
