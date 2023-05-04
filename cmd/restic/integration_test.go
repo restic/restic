@@ -100,6 +100,13 @@ func testRunList(t testing.TB, tpe string, opts GlobalOptions) restic.IDs {
 	return parseIDsFromReader(t, buf)
 }
 
+func testListSnapshots(t testing.TB, opts GlobalOptions, expected int) restic.IDs {
+	t.Helper()
+	snapshotIDs := testRunList(t, "snapshots", opts)
+	rtest.Assert(t, len(snapshotIDs) == expected, "expected %v snapshot, got %v", expected, snapshotIDs)
+	return snapshotIDs
+}
+
 func testRunRestore(t testing.TB, opts GlobalOptions, dir string, snapshotID restic.ID) {
 	testRunRestoreExcludes(t, opts, dir, snapshotID, nil)
 }
@@ -162,6 +169,11 @@ func testRunCheckOutput(gopts GlobalOptions) (string, error) {
 
 	err := runCheck(context.TODO(), opts, gopts, nil)
 	return buf.String(), err
+}
+
+func testRunCheckMustFail(t testing.TB, gopts GlobalOptions) {
+	_, err := testRunCheckOutput(gopts)
+	rtest.Assert(t, err != nil, "expected non nil error after check of damaged repository")
 }
 
 func testRunDiffOutput(gopts GlobalOptions, firstSnapshotID string, secondSnapshotID string) (string, error) {
@@ -486,7 +498,16 @@ func TestBackupNonExistingFile(t *testing.T) {
 	testRunBackup(t, "", dirs, opts, env.gopts)
 }
 
-func removePacksExcept(gopts GlobalOptions, t *testing.T, keep restic.IDSet, removeTreePacks bool) {
+func removePacks(gopts GlobalOptions, t testing.TB, remove restic.IDSet) {
+	r, err := OpenRepository(context.TODO(), gopts)
+	rtest.OK(t, err)
+
+	for id := range remove {
+		rtest.OK(t, r.Backend().Remove(context.TODO(), restic.Handle{Type: restic.PackFile, Name: id.String()}))
+	}
+}
+
+func removePacksExcept(gopts GlobalOptions, t testing.TB, keep restic.IDSet, removeTreePacks bool) {
 	r, err := OpenRepository(context.TODO(), gopts)
 	rtest.OK(t, err)
 
