@@ -332,18 +332,14 @@ func testBackup(t *testing.T, useFsSnapshot bool) {
 
 	// first backup
 	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
-	snapshotIDs := testRunList(t, "snapshots", env.gopts)
-	rtest.Assert(t, len(snapshotIDs) == 1,
-		"expected one snapshot, got %v", snapshotIDs)
+	snapshotIDs := testListSnapshots(t, env.gopts, 1)
 
 	testRunCheck(t, env.gopts)
 	stat1 := dirStats(env.repo)
 
 	// second backup, implicit incremental
 	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
-	snapshotIDs = testRunList(t, "snapshots", env.gopts)
-	rtest.Assert(t, len(snapshotIDs) == 2,
-		"expected two snapshots, got %v", snapshotIDs)
+	snapshotIDs = testListSnapshots(t, env.gopts, 2)
 
 	stat2 := dirStats(env.repo)
 	if stat2.size > stat1.size+stat1.size/10 {
@@ -355,9 +351,7 @@ func testBackup(t *testing.T, useFsSnapshot bool) {
 	// third backup, explicit incremental
 	opts.Parent = snapshotIDs[0].String()
 	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
-	snapshotIDs = testRunList(t, "snapshots", env.gopts)
-	rtest.Assert(t, len(snapshotIDs) == 3,
-		"expected three snapshots, got %v", snapshotIDs)
+	snapshotIDs = testListSnapshots(t, env.gopts, 3)
 
 	stat3 := dirStats(env.repo)
 	if stat3.size > stat1.size+stat1.size/10 {
@@ -386,9 +380,7 @@ func TestBackupWithRelativePath(t *testing.T) {
 
 	// first backup
 	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
-	snapshotIDs := testRunList(t, "snapshots", env.gopts)
-	rtest.Assert(t, len(snapshotIDs) == 1, "expected one snapshot, got %v", snapshotIDs)
-	firstSnapshotID := snapshotIDs[0]
+	firstSnapshotID := testListSnapshots(t, env.gopts, 1)[0]
 
 	// second backup, implicit incremental
 	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
@@ -408,14 +400,11 @@ func TestBackupParentSelection(t *testing.T) {
 
 	// first backup
 	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata/0/0"}, opts, env.gopts)
-	snapshotIDs := testRunList(t, "snapshots", env.gopts)
-	rtest.Assert(t, len(snapshotIDs) == 1, "expected one snapshot, got %v", snapshotIDs)
-	firstSnapshotID := snapshotIDs[0]
+	firstSnapshotID := testListSnapshots(t, env.gopts, 1)[0]
 
 	// second backup, sibling path
 	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata/0/tests"}, opts, env.gopts)
-	snapshotIDs = testRunList(t, "snapshots", env.gopts)
-	rtest.Assert(t, len(snapshotIDs) == 2, "expected two snapshots, got %v", snapshotIDs)
+	testListSnapshots(t, env.gopts, 2)
 
 	// third backup, incremental for the first backup
 	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata/0/0"}, opts, env.gopts)
@@ -436,9 +425,7 @@ func TestDryRunBackup(t *testing.T) {
 
 	// dry run before first backup
 	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, dryOpts, env.gopts)
-	snapshotIDs := testRunList(t, "snapshots", env.gopts)
-	rtest.Assert(t, len(snapshotIDs) == 0,
-		"expected no snapshot, got %v", snapshotIDs)
+	snapshotIDs := testListSnapshots(t, env.gopts, 0)
 	packIDs := testRunList(t, "packs", env.gopts)
 	rtest.Assert(t, len(packIDs) == 0,
 		"expected no data, got %v", snapshotIDs)
@@ -448,13 +435,13 @@ func TestDryRunBackup(t *testing.T) {
 
 	// first backup
 	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
-	snapshotIDs = testRunList(t, "snapshots", env.gopts)
+	snapshotIDs = testListSnapshots(t, env.gopts, 1)
 	packIDs = testRunList(t, "packs", env.gopts)
 	indexIDs = testRunList(t, "index", env.gopts)
 
 	// dry run between backups
 	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, dryOpts, env.gopts)
-	snapshotIDsAfter := testRunList(t, "snapshots", env.gopts)
+	snapshotIDsAfter := testListSnapshots(t, env.gopts, 1)
 	rtest.Equals(t, snapshotIDs, snapshotIDsAfter)
 	dataIDsAfter := testRunList(t, "packs", env.gopts)
 	rtest.Equals(t, packIDs, dataIDsAfter)
@@ -463,13 +450,13 @@ func TestDryRunBackup(t *testing.T) {
 
 	// second backup, implicit incremental
 	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
-	snapshotIDs = testRunList(t, "snapshots", env.gopts)
+	snapshotIDs = testListSnapshots(t, env.gopts, 2)
 	packIDs = testRunList(t, "packs", env.gopts)
 	indexIDs = testRunList(t, "index", env.gopts)
 
 	// another dry run
 	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, dryOpts, env.gopts)
-	snapshotIDsAfter = testRunList(t, "snapshots", env.gopts)
+	snapshotIDsAfter = testListSnapshots(t, env.gopts, 2)
 	rtest.Equals(t, snapshotIDs, snapshotIDsAfter)
 	dataIDsAfter = testRunList(t, "packs", env.gopts)
 	rtest.Equals(t, packIDs, dataIDsAfter)
@@ -717,9 +704,7 @@ func TestBackupErrors(t *testing.T) {
 	err := testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, gopts)
 	rtest.Assert(t, err != nil, "Assumed failure, but no error occurred.")
 	rtest.Assert(t, err == ErrInvalidSourceData, "Wrong error returned")
-	snapshotIDs := testRunList(t, "snapshots", env.gopts)
-	rtest.Assert(t, len(snapshotIDs) == 1,
-		"expected one snapshot, got %v", snapshotIDs)
+	testListSnapshots(t, env.gopts, 1)
 }
 
 const (
@@ -853,12 +838,10 @@ func TestCopy(t *testing.T) {
 	testRunInit(t, env2.gopts)
 	testRunCopy(t, env.gopts, env2.gopts)
 
-	snapshotIDs := testRunList(t, "snapshots", env.gopts)
-	copiedSnapshotIDs := testRunList(t, "snapshots", env2.gopts)
+	snapshotIDs := testListSnapshots(t, env.gopts, 3)
+	copiedSnapshotIDs := testListSnapshots(t, env2.gopts, 3)
 
 	// Check that the copies size seems reasonable
-	rtest.Assert(t, len(snapshotIDs) == len(copiedSnapshotIDs), "expected %v snapshots, found %v",
-		len(snapshotIDs), len(copiedSnapshotIDs))
 	stat := dirStats(env.repo)
 	stat2 := dirStats(env2.repo)
 	sizeDiff := int64(stat.size) - int64(stat2.size)
@@ -911,36 +894,28 @@ func TestCopyIncremental(t *testing.T) {
 	testRunInit(t, env2.gopts)
 	testRunCopy(t, env.gopts, env2.gopts)
 
-	snapshotIDs := testRunList(t, "snapshots", env.gopts)
-	copiedSnapshotIDs := testRunList(t, "snapshots", env2.gopts)
+	testListSnapshots(t, env.gopts, 2)
+	testListSnapshots(t, env2.gopts, 2)
 
 	// Check that the copies size seems reasonable
 	testRunCheck(t, env2.gopts)
-	rtest.Assert(t, len(snapshotIDs) == len(copiedSnapshotIDs), "expected %v snapshots, found %v",
-		len(snapshotIDs), len(copiedSnapshotIDs))
 
 	// check that no snapshots are copied, as there are no new ones
 	testRunCopy(t, env.gopts, env2.gopts)
 	testRunCheck(t, env2.gopts)
-	copiedSnapshotIDs = testRunList(t, "snapshots", env2.gopts)
-	rtest.Assert(t, len(snapshotIDs) == len(copiedSnapshotIDs), "still expected %v snapshots, found %v",
-		len(snapshotIDs), len(copiedSnapshotIDs))
+	testListSnapshots(t, env2.gopts, 2)
 
 	// check that only new snapshots are copied
 	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "3")}, opts, env.gopts)
 	testRunCopy(t, env.gopts, env2.gopts)
 	testRunCheck(t, env2.gopts)
-	snapshotIDs = testRunList(t, "snapshots", env.gopts)
-	copiedSnapshotIDs = testRunList(t, "snapshots", env2.gopts)
-	rtest.Assert(t, len(snapshotIDs) == len(copiedSnapshotIDs), "still expected %v snapshots, found %v",
-		len(snapshotIDs), len(copiedSnapshotIDs))
+	testListSnapshots(t, env.gopts, 3)
+	testListSnapshots(t, env2.gopts, 3)
 
 	// also test the reverse direction
 	testRunCopy(t, env2.gopts, env.gopts)
 	testRunCheck(t, env.gopts)
-	snapshotIDs = testRunList(t, "snapshots", env.gopts)
-	rtest.Assert(t, len(snapshotIDs) == len(copiedSnapshotIDs), "still expected %v snapshots, found %v",
-		len(copiedSnapshotIDs), len(snapshotIDs))
+	testListSnapshots(t, env.gopts, 3)
 }
 
 func TestCopyUnstableJSON(t *testing.T) {
@@ -956,10 +931,7 @@ func TestCopyUnstableJSON(t *testing.T) {
 	testRunInit(t, env2.gopts)
 	testRunCopy(t, env.gopts, env2.gopts)
 	testRunCheck(t, env2.gopts)
-
-	copiedSnapshotIDs := testRunList(t, "snapshots", env2.gopts)
-	rtest.Assert(t, 1 == len(copiedSnapshotIDs), "still expected %v snapshot, found %v",
-		1, len(copiedSnapshotIDs))
+	testListSnapshots(t, env2.gopts, 1)
 }
 
 func TestInitCopyChunkerParams(t *testing.T) {
@@ -1254,7 +1226,7 @@ func TestRestoreFilter(t *testing.T) {
 	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 
-	snapshotID := testRunList(t, "snapshots", env.gopts)[0]
+	snapshotID := testListSnapshots(t, env.gopts, 1)[0]
 
 	// no restore filter should restore all files
 	testRunRestore(t, env.gopts, filepath.Join(env.base, "restore0"), snapshotID)
@@ -1376,9 +1348,7 @@ func TestRestoreWithPermissionFailure(t *testing.T) {
 	datafile := filepath.Join("testdata", "repo-restore-permissions-test.tar.gz")
 	rtest.SetupTarTestFixture(t, env.base, datafile)
 
-	snapshots := testRunList(t, "snapshots", env.gopts)
-	rtest.Assert(t, len(snapshots) > 0,
-		"no snapshots found in repo (%v)", datafile)
+	snapshots := testListSnapshots(t, env.gopts, 1)
 
 	globalOptions.stderr = io.Discard
 	defer func() {
@@ -1424,7 +1394,7 @@ func TestRestoreNoMetadataOnIgnoredIntermediateDirs(t *testing.T) {
 	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 
-	snapshotID := testRunList(t, "snapshots", env.gopts)[0]
+	snapshotID := testListSnapshots(t, env.gopts, 1)[0]
 
 	// restore with filter "*.ext", this should restore "file.ext", but
 	// since the directories are ignored and only created because of
@@ -1648,11 +1618,7 @@ func TestCheckRestoreNoLock(t *testing.T) {
 
 	testRunCheck(t, env.gopts)
 
-	snapshotIDs := testRunList(t, "snapshots", env.gopts)
-	if len(snapshotIDs) == 0 {
-		t.Fatalf("found no snapshots")
-	}
-
+	snapshotIDs := testListSnapshots(t, env.gopts, 4)
 	testRunRestore(t, env.gopts, filepath.Join(env.base, "restore"), snapshotIDs[0])
 }
 
@@ -1701,19 +1667,14 @@ func createPrunableRepo(t *testing.T, env *testEnvironment) {
 	opts := BackupOptions{}
 
 	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9")}, opts, env.gopts)
-	firstSnapshot := testRunList(t, "snapshots", env.gopts)
-	rtest.Assert(t, len(firstSnapshot) == 1,
-		"expected one snapshot, got %v", firstSnapshot)
+	firstSnapshot := testListSnapshots(t, env.gopts, 1)[0]
 
 	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "2")}, opts, env.gopts)
 	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "3")}, opts, env.gopts)
-
-	snapshotIDs := testRunList(t, "snapshots", env.gopts)
-	rtest.Assert(t, len(snapshotIDs) == 3,
-		"expected 3 snapshot, got %v", snapshotIDs)
+	testListSnapshots(t, env.gopts, 3)
 
 	testRunForgetJSON(t, env.gopts)
-	testRunForget(t, env.gopts, firstSnapshot[0].String())
+	testRunForget(t, env.gopts, firstSnapshot.String())
 }
 
 func testPrune(t *testing.T, pruneOpts PruneOptions, checkOpts CheckOptions) {
@@ -1752,21 +1713,15 @@ func TestPruneWithDamagedRepository(t *testing.T) {
 
 	// create and delete snapshot to create unused blobs
 	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "2")}, opts, env.gopts)
-	firstSnapshot := testRunList(t, "snapshots", env.gopts)
-	rtest.Assert(t, len(firstSnapshot) == 1,
-		"expected one snapshot, got %v", firstSnapshot)
-	testRunForget(t, env.gopts, firstSnapshot[0].String())
+	firstSnapshot := testListSnapshots(t, env.gopts, 1)[0]
+	testRunForget(t, env.gopts, firstSnapshot.String())
 
 	oldPacks := listPacks(env.gopts, t)
 
 	// create new snapshot, but lose all data
 	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "3")}, opts, env.gopts)
-	snapshotIDs := testRunList(t, "snapshots", env.gopts)
-
+	testListSnapshots(t, env.gopts, 1)
 	removePacksExcept(env.gopts, t, oldPacks, false)
-
-	rtest.Assert(t, len(snapshotIDs) == 1,
-		"expected one snapshot, got %v", snapshotIDs)
 
 	oldHook := env.gopts.backendTestHook
 	env.gopts.backendTestHook = func(r restic.Backend) (restic.Backend, error) { return newListOnceBackend(r), nil }
@@ -1938,9 +1893,7 @@ func TestHardLink(t *testing.T) {
 
 	// first backup
 	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
-	snapshotIDs := testRunList(t, "snapshots", env.gopts)
-	rtest.Assert(t, len(snapshotIDs) == 1,
-		"expected one snapshot, got %v", snapshotIDs)
+	snapshotIDs := testListSnapshots(t, env.gopts, 1)
 
 	testRunCheck(t, env.gopts)
 
@@ -2017,17 +1970,13 @@ func TestQuietBackup(t *testing.T) {
 
 	env.gopts.Quiet = false
 	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
-	snapshotIDs := testRunList(t, "snapshots", env.gopts)
-	rtest.Assert(t, len(snapshotIDs) == 1,
-		"expected one snapshot, got %v", snapshotIDs)
+	testListSnapshots(t, env.gopts, 1)
 
 	testRunCheck(t, env.gopts)
 
 	env.gopts.Quiet = true
 	testRunBackup(t, "", []string{env.testdata}, opts, env.gopts)
-	snapshotIDs = testRunList(t, "snapshots", env.gopts)
-	rtest.Assert(t, len(snapshotIDs) == 2,
-		"expected two snapshots, got %v", snapshotIDs)
+	testListSnapshots(t, env.gopts, 2)
 
 	testRunCheck(t, env.gopts)
 }
@@ -2242,9 +2191,7 @@ func TestBackendLoadWriteTo(t *testing.T) {
 
 	// loading snapshots must still work
 	env.gopts.NoCache = false
-	firstSnapshot := testRunList(t, "snapshots", env.gopts)
-	rtest.Assert(t, len(firstSnapshot) == 1,
-		"expected one snapshot, got %v", firstSnapshot)
+	testListSnapshots(t, env.gopts, 1)
 }
 
 func TestFindListOnce(t *testing.T) {
@@ -2260,9 +2207,9 @@ func TestFindListOnce(t *testing.T) {
 
 	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9")}, opts, env.gopts)
 	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "2")}, opts, env.gopts)
-	secondSnapshot := testRunList(t, "snapshots", env.gopts)
+	secondSnapshot := testListSnapshots(t, env.gopts, 2)
 	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "3")}, opts, env.gopts)
-	thirdSnapshot := restic.NewIDSet(testRunList(t, "snapshots", env.gopts)...)
+	thirdSnapshot := restic.NewIDSet(testListSnapshots(t, env.gopts, 3)...)
 
 	repo, err := OpenRepository(context.TODO(), env.gopts)
 	rtest.OK(t, err)
