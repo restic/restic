@@ -150,14 +150,20 @@ func testRunRestoreAssumeFailure(snapshotID string, opts RestoreOptions, gopts G
 
 func testRunCheck(t testing.TB, gopts GlobalOptions) {
 	t.Helper()
-	opts := CheckOptions{
-		ReadData:    true,
-		CheckUnused: true,
+	output, err := testRunCheckOutput(gopts, true)
+	if err != nil {
+		t.Error(output)
+		t.Fatalf("unexpected error: %+v", err)
 	}
-	rtest.OK(t, runCheck(context.TODO(), opts, gopts, nil))
 }
 
-func testRunCheckOutput(gopts GlobalOptions) (string, error) {
+func testRunCheckMustFail(t testing.TB, gopts GlobalOptions) {
+	t.Helper()
+	_, err := testRunCheckOutput(gopts, false)
+	rtest.Assert(t, err != nil, "expected non nil error after check of damaged repository")
+}
+
+func testRunCheckOutput(gopts GlobalOptions, checkUnused bool) (string, error) {
 	buf := bytes.NewBuffer(nil)
 
 	globalOptions.stdout = buf
@@ -166,16 +172,12 @@ func testRunCheckOutput(gopts GlobalOptions) (string, error) {
 	}()
 
 	opts := CheckOptions{
-		ReadData: true,
+		ReadData:    true,
+		CheckUnused: checkUnused,
 	}
 
 	err := runCheck(context.TODO(), opts, gopts, nil)
 	return buf.String(), err
-}
-
-func testRunCheckMustFail(t testing.TB, gopts GlobalOptions) {
-	_, err := testRunCheckOutput(gopts)
-	rtest.Assert(t, err != nil, "expected non nil error after check of damaged repository")
 }
 
 func testRunDiffOutput(gopts GlobalOptions, firstSnapshotID string, secondSnapshotID string) (string, error) {
@@ -1488,7 +1490,7 @@ func testRebuildIndex(t *testing.T, backendTestHook backendWrapper) {
 	datafile := filepath.Join("..", "..", "internal", "checker", "testdata", "duplicate-packs-in-index-test-repo.tar.gz")
 	rtest.SetupTarTestFixture(t, env.base, datafile)
 
-	out, err := testRunCheckOutput(env.gopts)
+	out, err := testRunCheckOutput(env.gopts, false)
 	if !strings.Contains(out, "contained in several indexes") {
 		t.Fatalf("did not find checker hint for packs in several indexes")
 	}
@@ -1505,7 +1507,7 @@ func testRebuildIndex(t *testing.T, backendTestHook backendWrapper) {
 	testRunRebuildIndex(t, env.gopts)
 
 	env.gopts.backendTestHook = nil
-	out, err = testRunCheckOutput(env.gopts)
+	out, err = testRunCheckOutput(env.gopts, false)
 	if len(out) != 0 {
 		t.Fatalf("expected no output from the checker, got: %v", out)
 	}
