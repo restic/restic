@@ -100,6 +100,13 @@ func testRunList(t testing.TB, tpe string, opts GlobalOptions) restic.IDs {
 	return parseIDsFromReader(t, buf)
 }
 
+func testListSnapshots(t testing.TB, opts GlobalOptions, expected int) restic.IDs {
+	t.Helper()
+	snapshotIDs := testRunList(t, "snapshots", opts)
+	rtest.Assert(t, len(snapshotIDs) == expected, "expected %v snapshot, got %v", expected, snapshotIDs)
+	return snapshotIDs
+}
+
 func testRunRestore(t testing.TB, opts GlobalOptions, dir string, snapshotID restic.ID) {
 	testRunRestoreExcludes(t, opts, dir, snapshotID, nil)
 }
@@ -164,6 +171,11 @@ func testRunCheckOutput(gopts GlobalOptions) (string, error) {
 	return buf.String(), err
 }
 
+func testRunCheckMustFail(t testing.TB, gopts GlobalOptions) {
+	_, err := testRunCheckOutput(gopts)
+	rtest.Assert(t, err != nil, "expected non nil error after check of damaged repository")
+}
+
 func testRunDiffOutput(gopts GlobalOptions, firstSnapshotID string, secondSnapshotID string) (string, error) {
 	buf := bytes.NewBuffer(nil)
 
@@ -188,7 +200,7 @@ func testRunRebuildIndex(t testing.TB, gopts GlobalOptions) {
 		globalOptions.stdout = os.Stdout
 	}()
 
-	rtest.OK(t, runRebuildIndex(context.TODO(), RebuildIndexOptions{}, gopts))
+	rtest.OK(t, runRebuildIndex(context.TODO(), RepairIndexOptions{}, gopts))
 }
 
 func testRunLs(t testing.TB, gopts GlobalOptions, snapshotID string) []string {
@@ -486,7 +498,16 @@ func TestBackupNonExistingFile(t *testing.T) {
 	testRunBackup(t, "", dirs, opts, env.gopts)
 }
 
-func removePacksExcept(gopts GlobalOptions, t *testing.T, keep restic.IDSet, removeTreePacks bool) {
+func removePacks(gopts GlobalOptions, t testing.TB, remove restic.IDSet) {
+	r, err := OpenRepository(context.TODO(), gopts)
+	rtest.OK(t, err)
+
+	for id := range remove {
+		rtest.OK(t, r.Backend().Remove(context.TODO(), restic.Handle{Type: restic.PackFile, Name: id.String()}))
+	}
+}
+
+func removePacksExcept(gopts GlobalOptions, t testing.TB, keep restic.IDSet, removeTreePacks bool) {
 	r, err := OpenRepository(context.TODO(), gopts)
 	rtest.OK(t, err)
 
@@ -1504,8 +1525,8 @@ func testRebuildIndex(t *testing.T, backendTestHook backendWrapper) {
 		t.Fatalf("expected no error from checker for test repository, got %v", err)
 	}
 
-	if !strings.Contains(out, "restic rebuild-index") {
-		t.Fatalf("did not find hint for rebuild-index command")
+	if !strings.Contains(out, "restic repair index") {
+		t.Fatalf("did not find hint for repair index command")
 	}
 
 	env.gopts.backendTestHook = backendTestHook
@@ -1518,7 +1539,7 @@ func testRebuildIndex(t *testing.T, backendTestHook backendWrapper) {
 	}
 
 	if err != nil {
-		t.Fatalf("expected no error from checker after rebuild-index, got: %v", err)
+		t.Fatalf("expected no error from checker after repair index, got: %v", err)
 	}
 }
 
@@ -1599,7 +1620,7 @@ func TestRebuildIndexFailsOnAppendOnly(t *testing.T) {
 	env.gopts.backendTestHook = func(r restic.Backend) (restic.Backend, error) {
 		return &appendOnlyBackend{r}, nil
 	}
-	err := runRebuildIndex(context.TODO(), RebuildIndexOptions{}, env.gopts)
+	err := runRebuildIndex(context.TODO(), RepairIndexOptions{}, env.gopts)
 	if err == nil {
 		t.Error("expected rebuildIndex to fail")
 	}
@@ -1887,8 +1908,8 @@ func TestListOnce(t *testing.T) {
 	testRunPrune(t, env.gopts, pruneOpts)
 	rtest.OK(t, runCheck(context.TODO(), checkOpts, env.gopts, nil))
 
-	rtest.OK(t, runRebuildIndex(context.TODO(), RebuildIndexOptions{}, env.gopts))
-	rtest.OK(t, runRebuildIndex(context.TODO(), RebuildIndexOptions{ReadAllPacks: true}, env.gopts))
+	rtest.OK(t, runRebuildIndex(context.TODO(), RepairIndexOptions{}, env.gopts))
+	rtest.OK(t, runRebuildIndex(context.TODO(), RepairIndexOptions{ReadAllPacks: true}, env.gopts))
 }
 
 func TestHardLink(t *testing.T) {

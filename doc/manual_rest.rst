@@ -35,8 +35,8 @@ Usage help is available:
       migrate       Apply migrations
       mount         Mount the repository
       prune         Remove unneeded data from the repository
-      rebuild-index Build a new index
       recover       Recover data from the repository not referenced by snapshots
+      repair        Repair the repository
       restore       Extract the data from a snapshot
       rewrite       Rewrite snapshots to exclude unwanted files
       self-update   Update the restic binary
