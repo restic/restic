@@ -31,6 +31,7 @@ import (
 )
 
 func parseIDsFromReader(t testing.TB, rd io.Reader) restic.IDs {
+	t.Helper()
 	IDs := restic.IDs{}
 	sc := bufio.NewScanner(rd)
 
@@ -148,6 +149,7 @@ func testRunRestoreAssumeFailure(snapshotID string, opts RestoreOptions, gopts G
 }
 
 func testRunCheck(t testing.TB, gopts GlobalOptions) {
+	t.Helper()
 	opts := CheckOptions{
 		ReadData:    true,
 		CheckUnused: true,
