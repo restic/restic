@@ -1,12 +1,53 @@
 package termstatus
 
 import (
-	"reflect"
+	"bytes"
+	"context"
+	"fmt"
+	"io"
 	"strconv"
 	"testing"
 
 	rtest "github.com/restic/restic/internal/test"
 )
+
+func TestSetStatus(t *testing.T) {
+	var buf bytes.Buffer
+	term := New(&buf, io.Discard, false)
+
+	term.canUpdateStatus = true
+	term.fd = ^uintptr(0)
+	term.clearCurrentLine = posixClearCurrentLine
+	term.moveCursorUp = posixMoveCursorUp
+
+	ctx, cancel := context.WithCancel(context.Background())
+	go term.Run(ctx)
+
+	const (
+		clear = posixControlClearLine
+		home  = posixControlMoveCursorHome
+		up    = posixControlMoveCursorUp
+	)
+
+	term.SetStatus([]string{"first"})
+	exp := home + clear + "first" + home
+
+	term.SetStatus([]string{"foo", "bar", "baz"})
+	exp += home + clear + "foo\n" + home + clear + "bar\n" +
+		home + clear + "baz" + home + up + up
+
+	term.SetStatus([]string{"quux", "needs\nquote"})
+	exp += home + clear + "quux\n" +
+		home + clear + "\"needs\\nquote\"\n" +
+		home + clear + home + up + up // Third line implicit.
+
+	cancel()
+	exp += home + clear + "\n" + home + clear + "\n" +
+		home + up + up // Status cleared.
+
+	<-term.closed
+	rtest.Equals(t, exp, buf.String())
+}
 
 func TestQuote(t *testing.T) {
 	for _, c := range []struct {
@@ -106,12 +147,9 @@ func TestSanitizeLines(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run("", func(t *testing.T) {
+		t.Run(fmt.Sprintf("%s %d", test.input, test.width), func(t *testing.T) {
 			out := sanitizeLines(test.input, test.width)
-			if !reflect.DeepEqual(out, test.output) {
-				t.Fatalf("wrong output for input %v, width %d: want %q, got %q",
-					test.input, test.width, test.output, out)
-			}
+			rtest.Equals(t, test.output, out)
 		})
 	}
 }
