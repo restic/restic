@@ -541,8 +541,7 @@ func TestBackupSelfHealing(t *testing.T) {
 
 	testRunRebuildIndex(t, env.gopts)
 	// now the repo is also missing the data blob in the index; check should report this
-	rtest.Assert(t, runCheck(context.TODO(), CheckOptions{}, env.gopts, nil) != nil,
-		"check should have reported an error")
+	testRunCheckMustFail(t, env.gopts)
 
 	// second backup should report an error but "heal" this situation
 	err := testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
@@ -583,7 +582,7 @@ func TestBackupTreeLoadError(t *testing.T) {
 	}
 	testRunRebuildIndex(t, env.gopts)
 	// now the repo is missing the tree blob in the index; check should report this
-	rtest.Assert(t, runCheck(context.TODO(), CheckOptions{}, env.gopts, nil) != nil, "check should have reported an error")
+	testRunCheckMustFail(t, env.gopts)
 	// second backup should report an error but "heal" this situation
 	err = testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
 	rtest.Assert(t, err != nil, "backup should have reported an error for the subdirectory")
@@ -593,7 +592,7 @@ func TestBackupTreeLoadError(t *testing.T) {
 	removePacksExcept(env.gopts, t, restic.NewIDSet(), true)
 	testRunRebuildIndex(t, env.gopts)
 	// now the repo is also missing the data blob in the index; check should report this
-	rtest.Assert(t, runCheck(context.TODO(), CheckOptions{}, env.gopts, nil) != nil, "check should have reported an error")
+	testRunCheckMustFail(t, env.gopts)
 	// second backup should report an error but "heal" this situation
 	err = testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
 	rtest.Assert(t, err != nil, "backup should have reported an error")
