@@ -11,7 +11,7 @@ import (
 
 func testRunSnapshots(t testing.TB, gopts GlobalOptions) (newest *Snapshot, snapmap map[restic.ID]Snapshot) {
 	buf, err := withCaptureStdout(func() error {
-		globalOptions.JSON = true
+		gopts.JSON = true
 
 		opts := SnapshotOptions{}
 		return runSnapshots(context.TODO(), opts, gopts, []string{})

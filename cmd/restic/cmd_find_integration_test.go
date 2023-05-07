@@ -12,7 +12,7 @@ import (
 
 func testRunFind(t testing.TB, wantJSON bool, gopts GlobalOptions, pattern string) []byte {
 	buf, err := withCaptureStdout(func() error {
-		globalOptions.JSON = wantJSON
+		gopts.JSON = wantJSON
 
 		opts := FindOptions{}
 		return runFind(context.TODO(), opts, gopts, []string{pattern})

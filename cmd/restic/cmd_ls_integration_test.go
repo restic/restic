@@ -10,7 +10,7 @@ import (
 
 func testRunLs(t testing.TB, gopts GlobalOptions, snapshotID string) []string {
 	buf, err := withCaptureStdout(func() error {
-		globalOptions.Quiet = true
+		gopts.Quiet = true
 		opts := LsOptions{}
 		return runLs(context.TODO(), opts, gopts, []string{snapshotID})
 	})
