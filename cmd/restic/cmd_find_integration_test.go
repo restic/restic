@@ -1,10 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -13,18 +11,13 @@ import (
 )
 
 func testRunFind(t testing.TB, wantJSON bool, gopts GlobalOptions, pattern string) []byte {
-	buf := bytes.NewBuffer(nil)
-	globalOptions.stdout = buf
-	globalOptions.JSON = wantJSON
-	defer func() {
-		globalOptions.stdout = os.Stdout
-		globalOptions.JSON = false
-	}()
+	buf, err := withCaptureStdout(func() error {
+		globalOptions.JSON = wantJSON
 
-	opts := FindOptions{}
-
-	rtest.OK(t, runFind(context.TODO(), opts, gopts, []string{pattern}))
-
+		opts := FindOptions{}
+		return runFind(context.TODO(), opts, gopts, []string{pattern})
+	})
+	rtest.OK(t, err)
 	return buf.Bytes()
 }
 

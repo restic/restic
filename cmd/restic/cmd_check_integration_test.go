@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"os"
 	"testing"
 
 	rtest "github.com/restic/restic/internal/test"
@@ -25,18 +23,12 @@ func testRunCheckMustFail(t testing.TB, gopts GlobalOptions) {
 }
 
 func testRunCheckOutput(gopts GlobalOptions, checkUnused bool) (string, error) {
-	buf := bytes.NewBuffer(nil)
-
-	globalOptions.stdout = buf
-	defer func() {
-		globalOptions.stdout = os.Stdout
-	}()
-
-	opts := CheckOptions{
-		ReadData:    true,
-		CheckUnused: checkUnused,
-	}
-
-	err := runCheck(context.TODO(), opts, gopts, nil)
+	buf, err := withCaptureStdout(func() error {
+		opts := CheckOptions{
+			ReadData:    true,
+			CheckUnused: checkUnused,
+		}
+		return runCheck(context.TODO(), opts, gopts, nil)
+	})
 	return buf.String(), err
 }

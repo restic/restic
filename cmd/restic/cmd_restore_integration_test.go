@@ -205,12 +205,11 @@ func TestRestoreWithPermissionFailure(t *testing.T) {
 
 	snapshots := testListSnapshots(t, env.gopts, 1)
 
-	globalOptions.stderr = io.Discard
-	defer func() {
-		globalOptions.stderr = os.Stderr
-	}()
-
-	testRunRestore(t, env.gopts, filepath.Join(env.base, "restore"), snapshots[0])
+	_ = withRestoreGlobalOptions(func() error {
+		globalOptions.stderr = io.Discard
+		testRunRestore(t, env.gopts, filepath.Join(env.base, "restore"), snapshots[0])
+		return nil
+	})
 
 	// make sure that all files have been restored, regardless of any
 	// permission errors

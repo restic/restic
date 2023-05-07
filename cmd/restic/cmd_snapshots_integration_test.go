@@ -1,10 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"os"
 	"testing"
 
 	"github.com/restic/restic/internal/restic"
@@ -12,17 +10,13 @@ import (
 )
 
 func testRunSnapshots(t testing.TB, gopts GlobalOptions) (newest *Snapshot, snapmap map[restic.ID]Snapshot) {
-	buf := bytes.NewBuffer(nil)
-	globalOptions.stdout = buf
-	globalOptions.JSON = true
-	defer func() {
-		globalOptions.stdout = os.Stdout
-		globalOptions.JSON = gopts.JSON
-	}()
+	buf, err := withCaptureStdout(func() error {
+		globalOptions.JSON = true
 
-	opts := SnapshotOptions{}
-
-	rtest.OK(t, runSnapshots(context.TODO(), opts, globalOptions, []string{}))
+		opts := SnapshotOptions{}
+		return runSnapshots(context.TODO(), opts, gopts, []string{})
+	})
+	rtest.OK(t, err)
 
 	snapshots := []Snapshot{}
 	rtest.OK(t, json.Unmarshal(buf.Bytes(), &snapshots))

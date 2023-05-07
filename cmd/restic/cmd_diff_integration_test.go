@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"io"
@@ -16,20 +15,14 @@ import (
 )
 
 func testRunDiffOutput(gopts GlobalOptions, firstSnapshotID string, secondSnapshotID string) (string, error) {
-	buf := bytes.NewBuffer(nil)
+	buf, err := withCaptureStdout(func() error {
+		gopts.stdout = globalOptions.stdout
 
-	globalOptions.stdout = buf
-	oldStdout := gopts.stdout
-	gopts.stdout = buf
-	defer func() {
-		globalOptions.stdout = os.Stdout
-		gopts.stdout = oldStdout
-	}()
-
-	opts := DiffOptions{
-		ShowMetadata: false,
-	}
-	err := runDiff(context.TODO(), opts, gopts, []string{firstSnapshotID, secondSnapshotID})
+		opts := DiffOptions{
+			ShowMetadata: false,
+		}
+		return runDiff(context.TODO(), opts, gopts, []string{firstSnapshotID, secondSnapshotID})
+	})
 	return buf.String(), err
 }
 

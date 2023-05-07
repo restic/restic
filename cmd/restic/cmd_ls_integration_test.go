@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"os"
 	"strings"
 	"testing"
 
@@ -11,18 +9,11 @@ import (
 )
 
 func testRunLs(t testing.TB, gopts GlobalOptions, snapshotID string) []string {
-	buf := bytes.NewBuffer(nil)
-	globalOptions.stdout = buf
-	quiet := globalOptions.Quiet
-	globalOptions.Quiet = true
-	defer func() {
-		globalOptions.stdout = os.Stdout
-		globalOptions.Quiet = quiet
-	}()
-
-	opts := LsOptions{}
-
-	rtest.OK(t, runLs(context.TODO(), opts, gopts, []string{snapshotID}))
-
+	buf, err := withCaptureStdout(func() error {
+		globalOptions.Quiet = true
+		opts := LsOptions{}
+		return runLs(context.TODO(), opts, gopts, []string{snapshotID})
+	})
+	rtest.OK(t, err)
 	return strings.Split(buf.String(), "\n")
 }

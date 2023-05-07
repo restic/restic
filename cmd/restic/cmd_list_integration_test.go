@@ -2,10 +2,8 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"io"
-	"os"
 	"testing"
 
 	"github.com/restic/restic/internal/restic"
@@ -13,13 +11,10 @@ import (
 )
 
 func testRunList(t testing.TB, tpe string, opts GlobalOptions) restic.IDs {
-	buf := bytes.NewBuffer(nil)
-	globalOptions.stdout = buf
-	defer func() {
-		globalOptions.stdout = os.Stdout
-	}()
-
-	rtest.OK(t, runList(context.TODO(), cmdList, opts, []string{tpe}))
+	buf, err := withCaptureStdout(func() error {
+		return runList(context.TODO(), cmdList, opts, []string{tpe})
+	})
+	rtest.OK(t, err)
 	return parseIDsFromReader(t, buf)
 }
 

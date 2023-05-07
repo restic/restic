@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"io"
-	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -16,12 +15,10 @@ import (
 )
 
 func testRunRebuildIndex(t testing.TB, gopts GlobalOptions) {
-	globalOptions.stdout = io.Discard
-	defer func() {
-		globalOptions.stdout = os.Stdout
-	}()
-
-	rtest.OK(t, runRebuildIndex(context.TODO(), RepairIndexOptions{}, gopts))
+	rtest.OK(t, withRestoreGlobalOptions(func() error {
+		globalOptions.stdout = io.Discard
+		return runRebuildIndex(context.TODO(), RepairIndexOptions{}, gopts)
+	}))
 }
 
 func testRebuildIndex(t *testing.T, backendTestHook backendWrapper) {
@@ -127,15 +124,15 @@ func TestRebuildIndexFailsOnAppendOnly(t *testing.T) {
 	datafile := filepath.Join("..", "..", "internal", "checker", "testdata", "duplicate-packs-in-index-test-repo.tar.gz")
 	rtest.SetupTarTestFixture(t, env.base, datafile)
 
-	globalOptions.stdout = io.Discard
-	defer func() {
-		globalOptions.stdout = os.Stdout
-	}()
+	err := withRestoreGlobalOptions(func() error {
+		globalOptions.stdout = io.Discard
 
-	env.gopts.backendTestHook = func(r restic.Backend) (restic.Backend, error) {
-		return &appendOnlyBackend{r}, nil
-	}
-	err := runRebuildIndex(context.TODO(), RepairIndexOptions{}, env.gopts)
+		env.gopts.backendTestHook = func(r restic.Backend) (restic.Backend, error) {
+			return &appendOnlyBackend{r}, nil
+		}
+		return runRebuildIndex(context.TODO(), RepairIndexOptions{}, env.gopts)
+	})
+
 	if err == nil {
 		t.Error("expected rebuildIndex to fail")
 	}

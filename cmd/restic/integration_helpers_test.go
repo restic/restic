@@ -338,3 +338,21 @@ func testFileSize(filename string, size int64) error {
 
 	return nil
 }
+
+func withRestoreGlobalOptions(inner func() error) error {
+	gopts := globalOptions
+	defer func() {
+		globalOptions = gopts
+	}()
+	return inner()
+}
+
+func withCaptureStdout(inner func() error) (*bytes.Buffer, error) {
+	buf := bytes.NewBuffer(nil)
+	err := withRestoreGlobalOptions(func() error {
+		globalOptions.stdout = buf
+		return inner()
+	})
+
+	return buf, err
+}

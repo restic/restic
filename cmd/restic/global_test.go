@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
@@ -10,22 +9,16 @@ import (
 )
 
 func Test_PrintFunctionsRespectsGlobalStdout(t *testing.T) {
-	gopts := globalOptions
-	defer func() {
-		globalOptions = gopts
-	}()
-
-	buf := bytes.NewBuffer(nil)
-	globalOptions.stdout = buf
-
 	for _, p := range []func(){
 		func() { Println("message") },
 		func() { Print("message\n") },
 		func() { Printf("mes%s\n", "sage") },
 	} {
-		p()
+		buf, _ := withCaptureStdout(func() error {
+			p()
+			return nil
+		})
 		rtest.Equals(t, "message\n", buf.String())
-		buf.Reset()
 	}
 }
 

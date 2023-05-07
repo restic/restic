@@ -2,9 +2,7 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"context"
-	"os"
 	"regexp"
 	"testing"
 
@@ -14,14 +12,10 @@ import (
 )
 
 func testRunKeyListOtherIDs(t testing.TB, gopts GlobalOptions) []string {
-	buf := bytes.NewBuffer(nil)
-
-	globalOptions.stdout = buf
-	defer func() {
-		globalOptions.stdout = os.Stdout
-	}()
-
-	rtest.OK(t, runKey(context.TODO(), gopts, []string{"list"}))
+	buf, err := withCaptureStdout(func() error {
+		return runKey(context.TODO(), gopts, []string{"list"})
+	})
+	rtest.OK(t, err)
 
 	scanner := bufio.NewScanner(buf)
 	exp := regexp.MustCompile(`^ ([a-f0-9]+) `)
