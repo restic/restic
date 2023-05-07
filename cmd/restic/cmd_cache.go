@@ -155,7 +155,7 @@ func runCache(opts CacheOptions, gopts GlobalOptions, args []string) error {
 		})
 	}
 
-	_ = tab.Write(gopts.stdout)
+	_ = tab.Write(globalOptions.stdout)
 	Printf("%d cache dirs in %s\n", len(dirs), cachedir)
 
 	return nil

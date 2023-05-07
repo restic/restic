@@ -24,7 +24,6 @@ func testRunBackupAssumeFailure(t testing.TB, dir string, target []string, opts 
 	term := termstatus.New(gopts.stdout, gopts.stderr, gopts.Quiet)
 	wg.Go(func() error { term.Run(ctx); return nil })
 
-	gopts.stdout = io.Discard
 	t.Logf("backing up %v in %v", target, dir)
 	if dir != "" {
 		cleanup := rtest.Chdir(t, dir)
@@ -371,9 +370,7 @@ func TestBackupErrors(t *testing.T) {
 		rtest.OK(t, os.Chmod(inaccessibleFile, 0644))
 	}()
 	opts := BackupOptions{}
-	gopts := env.gopts
-	gopts.stderr = io.Discard
-	err := testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, gopts)
+	err := testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
 	rtest.Assert(t, err != nil, "Assumed failure, but no error occurred.")
 	rtest.Assert(t, err == ErrInvalidSourceData, "Wrong error returned")
 	testListSnapshots(t, env.gopts, 1)

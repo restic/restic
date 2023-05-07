@@ -193,7 +193,7 @@ func runForget(ctx context.Context, opts ForgetOptions, gopts GlobalOptions, arg
 
 			for k, snapshotGroup := range snapshotGroups {
 				if gopts.Verbose >= 1 && !gopts.JSON {
-					err = PrintSnapshotGroupHeader(gopts.stdout, k)
+					err = PrintSnapshotGroupHeader(globalOptions.stdout, k)
 					if err != nil {
 						return err
 					}
@@ -250,7 +250,7 @@ func runForget(ctx context.Context, opts ForgetOptions, gopts GlobalOptions, arg
 	}
 
 	if gopts.JSON && len(jsonGroups) > 0 {
-		err = printJSONForget(gopts.stdout, jsonGroups)
+		err = printJSONForget(globalOptions.stdout, jsonGroups)
 		if err != nil {
 			return err
 		}

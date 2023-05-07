@@ -16,8 +16,6 @@ import (
 
 func testRunDiffOutput(gopts GlobalOptions, firstSnapshotID string, secondSnapshotID string) (string, error) {
 	buf, err := withCaptureStdout(func() error {
-		gopts.stdout = globalOptions.stdout
-
 		opts := DiffOptions{
 			ShowMetadata: false,
 		}
