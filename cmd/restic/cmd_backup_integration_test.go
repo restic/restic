@@ -205,7 +205,7 @@ func TestBackupNonExistingFile(t *testing.T) {
 
 	testSetupBackupData(t, env)
 
-	withRestoreGlobalOptions(func() error {
+	_ = withRestoreGlobalOptions(func() error {
 		globalOptions.stderr = io.Discard
 
 		p := filepath.Join(env.testdata, "0", "0", "9")
