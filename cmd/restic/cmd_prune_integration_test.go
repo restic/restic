@@ -1,10 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -77,21 +75,15 @@ func createPrunableRepo(t *testing.T, env *testEnvironment) {
 }
 
 func testRunForgetJSON(t testing.TB, gopts GlobalOptions, args ...string) {
-	buf := bytes.NewBuffer(nil)
-	oldJSON := gopts.JSON
-	gopts.stdout = buf
-	gopts.JSON = true
-	defer func() {
-		gopts.stdout = os.Stdout
-		gopts.JSON = oldJSON
-	}()
-
-	opts := ForgetOptions{
-		DryRun: true,
-		Last:   1,
-	}
-
-	rtest.OK(t, runForget(context.TODO(), opts, gopts, args))
+	buf, err := withCaptureStdout(func() error {
+		gopts.JSON = true
+		opts := ForgetOptions{
+			DryRun: true,
+			Last:   1,
+		}
+		return runForget(context.TODO(), opts, gopts, args)
+	})
+	rtest.OK(t, err)
 
 	var forgets []*ForgetGroup
 	rtest.OK(t, json.Unmarshal(buf.Bytes(), &forgets))
