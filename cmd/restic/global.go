@@ -456,7 +456,7 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 		PackSize:    opts.PackSize * 1024 * 1024,
 	})
 	if err != nil {
-		return nil, err
+		return nil, errors.Fatal(err.Error())
 	}
 
 	passwordTriesLeft := 1

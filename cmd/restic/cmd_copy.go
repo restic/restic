@@ -6,6 +6,7 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"golang.org/x/sync/errgroup"
@@ -236,5 +237,8 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 	bar := newProgressMax(!quiet, uint64(len(packList)), "packs copied")
 	_, err = repository.Repack(ctx, srcRepo, dstRepo, packList, copyBlobs, bar)
 	bar.Done()
-	return err
+	if err != nil {
+		return errors.Fatal(err.Error())
+	}
+	return nil
 }
