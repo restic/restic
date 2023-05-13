@@ -175,6 +175,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		return err
 	}
 
+	msg := ui.NewMessage(term, gopts.verbosity)
 	var printer restoreui.ProgressPrinter
 	if gopts.JSON {
 		printer = restoreui.NewJSONProgress(term)
@@ -187,7 +188,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 
 	totalErrors := 0
 	res.Error = func(location string, err error) error {
-		Warnf("ignoring error for %s: %s\n", location, err)
+		msg.E("ignoring error for %s: %s\n", location, err)
 		totalErrors++
 		return nil
 	}
@@ -197,12 +198,12 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	selectExcludeFilter := func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
 		matched, err := filter.List(excludePatterns, item)
 		if err != nil {
-			Warnf("error for exclude pattern: %v", err)
+			msg.E("error for exclude pattern: %v", err)
 		}
 
 		matchedInsensitive, err := filter.List(insensitiveExcludePatterns, strings.ToLower(item))
 		if err != nil {
-			Warnf("error for iexclude pattern: %v", err)
+			msg.E("error for iexclude pattern: %v", err)
 		}
 
 		// An exclude filter is basically a 'wildcard but foo',
@@ -220,12 +221,12 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	selectIncludeFilter := func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
 		matched, childMayMatch, err := filter.ListWithChild(includePatterns, item)
 		if err != nil {
-			Warnf("error for include pattern: %v", err)
+			msg.E("error for include pattern: %v", err)
 		}
 
 		matchedInsensitive, childMayMatchInsensitive, err := filter.ListWithChild(insensitiveIncludePatterns, strings.ToLower(item))
 		if err != nil {
-			Warnf("error for iexclude pattern: %v", err)
+			msg.E("error for iexclude pattern: %v", err)
 		}
 
 		selectedForRestore = matched || matchedInsensitive
@@ -241,7 +242,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	}
 
 	if !gopts.JSON {
-		Verbosef("restoring %s to %s\n", res.Snapshot(), opts.Target)
+		msg.P("restoring %s to %s\n", res.Snapshot(), opts.Target)
 	}
 
 	err = res.RestoreTo(ctx, opts.Target)
@@ -257,7 +258,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 
 	if opts.Verify {
 		if !gopts.JSON {
-			Verbosef("verifying files in %s\n", opts.Target)
+			msg.P("verifying files in %s\n", opts.Target)
 		}
 		var count int
 		t0 := time.Now()
@@ -270,7 +271,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		}
 
 		if !gopts.JSON {
-			Verbosef("finished verifying %d files in %s (took %s)\n", count, opts.Target,
+			msg.P("finished verifying %d files in %s (took %s)\n", count, opts.Target,
 				time.Since(t0).Round(time.Millisecond))
 		}
 	}
