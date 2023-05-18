@@ -85,7 +85,7 @@ func (b *TextProgress) Error(_ string, err error) error {
 
 // CompleteItem is the status callback function for the archiver when a
 // file/dir has been saved successfully.
-func (b *TextProgress) CompleteItem(messageType, item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration) {
+func (b *TextProgress) CompleteItem(messageType, item string, s archiver.ItemStats, d time.Duration) {
 	item = termstatus.Quote(item)
 
 	switch messageType {
@@ -111,7 +111,7 @@ func (b *TextProgress) CompleteItem(messageType, item string, previous, current 
 }
 
 // ReportTotal sets the total stats up to now
-func (b *TextProgress) ReportTotal(item string, start time.Time, s archiver.ScanStats) {
+func (b *TextProgress) ReportTotal(start time.Time, s archiver.ScanStats) {
 	b.V("scan finished in %.3fs: %v files, %s",
 		time.Since(start).Seconds(),
 		s.Files, ui.FormatBytes(s.Bytes),
