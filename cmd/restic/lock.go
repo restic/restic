@@ -111,7 +111,7 @@ retryLoop:
 	globalLocks.Lock()
 	globalLocks.locks[lock] = lockInfo
 	go refreshLocks(ctx, lock, lockInfo, refreshChan)
-	go monitorLockRefresh(ctx, lock, lockInfo, refreshChan)
+	go monitorLockRefresh(ctx, lockInfo, refreshChan)
 	globalLocks.Unlock()
 
 	return lock, ctx, err
@@ -170,7 +170,7 @@ func refreshLocks(ctx context.Context, lock *restic.Lock, lockInfo *lockContext,
 	}
 }
 
-func monitorLockRefresh(ctx context.Context, lock *restic.Lock, lockInfo *lockContext, refreshed <-chan struct{}) {
+func monitorLockRefresh(ctx context.Context, lockInfo *lockContext, refreshed <-chan struct{}) {
 	// time.Now() might use a monotonic timer which is paused during standby
 	// convert to unix time to ensure we compare real time values
 	lastRefresh := time.Now().UnixNano()
