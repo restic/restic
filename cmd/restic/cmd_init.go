@@ -50,6 +50,10 @@ func init() {
 }
 
 func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []string) error {
+	if len(args) > 0 {
+		return errors.Fatal("the init command expects no arguments, only options - please see `restic help init` for usage and flags")
+	}
+
 	var version uint
 	if opts.RepositoryVersion == "latest" || opts.RepositoryVersion == "" {
 		version = restic.MaxRepoVersion
