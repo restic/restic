@@ -67,10 +67,10 @@ func runRebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalO
 		return err
 	}
 
-	return rebuildIndex(ctx, opts, gopts, repo, restic.NewIDSet())
+	return rebuildIndex(ctx, opts, gopts, repo)
 }
 
-func rebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOptions, repo *repository.Repository, ignorePacks restic.IDSet) error {
+func rebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOptions, repo *repository.Repository) error {
 	var obsoleteIndexes restic.IDs
 	packSizeFromList := make(map[restic.ID]int64)
 	packSizeFromIndex := make(map[restic.ID]int64)
