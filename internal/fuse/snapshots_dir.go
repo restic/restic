@@ -6,6 +6,7 @@ package fuse
 import (
 	"context"
 	"os"
+	"syscall"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
@@ -60,7 +61,7 @@ func (d *SnapshotsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	if err != nil {
 		return nil, unwrapCtxCanceled(err)
 	} else if meta == nil {
-		return nil, fuse.ENOENT
+		return nil, syscall.ENOENT
 	}
 
 	items := []fuse.Dirent{
@@ -99,7 +100,7 @@ func (d *SnapshotsDir) Lookup(ctx context.Context, name string) (fs.Node, error)
 	if err != nil {
 		return nil, unwrapCtxCanceled(err)
 	} else if meta == nil {
-		return nil, fuse.ENOENT
+		return nil, syscall.ENOENT
 	}
 
 	entry := meta.names[name]
@@ -114,7 +115,7 @@ func (d *SnapshotsDir) Lookup(ctx context.Context, name string) (fs.Node, error)
 		}
 	}
 
-	return nil, fuse.ENOENT
+	return nil, syscall.ENOENT
 }
 
 // SnapshotLink

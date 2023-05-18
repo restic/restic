@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"syscall"
 
 	"github.com/anacrolix/fuse"
 	"github.com/anacrolix/fuse/fs"
@@ -202,7 +203,7 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	node, ok := d.items[name]
 	if !ok {
 		debug.Log("  Lookup(%v) -> not found", name)
-		return nil, fuse.ENOENT
+		return nil, syscall.ENOENT
 	}
 	inode := inodeFromNode(d.inode, node)
 	switch node.Type {
@@ -216,7 +217,7 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 		return newOther(d.root, inode, node)
 	default:
 		debug.Log("  node %v has unknown type %v", name, node.Type)
-		return nil, fuse.ENOENT
+		return nil, syscall.ENOENT
 	}
 }
 
