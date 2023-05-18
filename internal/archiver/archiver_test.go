@@ -419,7 +419,7 @@ type blobCountingRepo struct {
 }
 
 func (repo *blobCountingRepo) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (restic.ID, bool, int, error) {
-	id, exists, size, err := repo.Repository.SaveBlob(ctx, t, buf, id, false)
+	id, exists, size, err := repo.Repository.SaveBlob(ctx, t, buf, id, storeDuplicate)
 	if exists {
 		return id, exists, size, err
 	}
