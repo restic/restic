@@ -143,10 +143,10 @@ func (f *SnapshotFilter) FindAll(ctx context.Context, be Lister, loader LoaderUn
 				if err == nil {
 					if ids.Has(*sn.ID()) {
 						continue
-					} else {
-						ids.Insert(*sn.ID())
-						s = sn.ID().String()
 					}
+
+					ids.Insert(*sn.ID())
+					s = sn.ID().String()
 				}
 			}
 			err = fn(s, sn, err)
