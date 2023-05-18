@@ -222,6 +222,10 @@ func (s *Suite[C]) TestLoad(t *testing.T) {
 	test.OK(t, b.Remove(context.TODO(), handle))
 }
 
+type setter interface {
+	SetListMaxItems(int)
+}
+
 // TestList makes sure that the backend implements List() pagination correctly.
 func (s *Suite[C]) TestList(t *testing.T) {
 	seedRand(t)
@@ -268,10 +272,6 @@ func (s *Suite[C]) TestList(t *testing.T) {
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("max-%v", test.maxItems), func(t *testing.T) {
 			list2 := make(map[restic.ID]int64)
-
-			type setter interface {
-				SetListMaxItems(int)
-			}
 
 			if s, ok := b.(setter); ok {
 				t.Logf("setting max list items to %d", test.maxItems)
