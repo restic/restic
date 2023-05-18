@@ -1601,7 +1601,7 @@ type appendOnlyBackend struct {
 }
 
 // called via repo.Backend().Remove()
-func (b *appendOnlyBackend) Remove(ctx context.Context, h restic.Handle) error {
+func (b *appendOnlyBackend) Remove(_ context.Context, h restic.Handle) error {
 	return errors.Errorf("Failed to remove %v", h)
 }
 

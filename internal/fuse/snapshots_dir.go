@@ -42,7 +42,7 @@ func NewSnapshotsDir(root *Root, inode, parentInode uint64, dirStruct *Snapshots
 }
 
 // Attr returns the attributes for any dir in the snapshots directory structure
-func (d *SnapshotsDir) Attr(ctx context.Context, attr *fuse.Attr) error {
+func (d *SnapshotsDir) Attr(_ context.Context, attr *fuse.Attr) error {
 	attr.Inode = d.inode
 	attr.Mode = os.ModeDir | 0555
 	attr.Uid = d.root.uid
@@ -134,12 +134,12 @@ func newSnapshotLink(root *Root, inode uint64, target string, snapshot *restic.S
 }
 
 // Readlink
-func (l *snapshotLink) Readlink(ctx context.Context, req *fuse.ReadlinkRequest) (string, error) {
+func (l *snapshotLink) Readlink(_ context.Context, req *fuse.ReadlinkRequest) (string, error) {
 	return l.target, nil
 }
 
 // Attr
-func (l *snapshotLink) Attr(ctx context.Context, a *fuse.Attr) error {
+func (l *snapshotLink) Attr(_ context.Context, a *fuse.Attr) error {
 	a.Inode = l.inode
 	a.Mode = os.ModeSymlink | 0777
 	a.Size = uint64(len(l.target))

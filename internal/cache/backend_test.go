@@ -118,7 +118,7 @@ type loadErrorBackend struct {
 	loadError error
 }
 
-func (be loadErrorBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+func (be loadErrorBackend) Load(_ context.Context, _ restic.Handle, _ int, _ int64, _ func(rd io.Reader) error) error {
 	time.Sleep(10 * time.Millisecond)
 	return be.loadError
 }

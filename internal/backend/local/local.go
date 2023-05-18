@@ -105,7 +105,7 @@ func (b *Local) IsNotExist(err error) bool {
 }
 
 // Save stores data in the backend at the handle.
-func (b *Local) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) (err error) {
+func (b *Local) Save(_ context.Context, h restic.Handle, rd restic.RewindReader) (err error) {
 	finalname := b.Filename(h)
 	dir := filepath.Dir(finalname)
 
@@ -200,7 +200,7 @@ func (b *Local) Load(ctx context.Context, h restic.Handle, length int, offset in
 	return backend.DefaultLoad(ctx, h, length, offset, b.openReader, fn)
 }
 
-func (b *Local) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+func (b *Local) openReader(_ context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	f, err := fs.Open(b.Filename(h))
 	if err != nil {
 		return nil, err
@@ -222,7 +222,7 @@ func (b *Local) openReader(ctx context.Context, h restic.Handle, length int, off
 }
 
 // Stat returns information about a blob.
-func (b *Local) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, error) {
+func (b *Local) Stat(_ context.Context, h restic.Handle) (restic.FileInfo, error) {
 	fi, err := fs.Stat(b.Filename(h))
 	if err != nil {
 		return restic.FileInfo{}, errors.WithStack(err)
@@ -232,7 +232,7 @@ func (b *Local) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, err
 }
 
 // Remove removes the blob with the given name and type.
-func (b *Local) Remove(ctx context.Context, h restic.Handle) error {
+func (b *Local) Remove(_ context.Context, h restic.Handle) error {
 	fn := b.Filename(h)
 
 	// reset read-only flag
@@ -339,7 +339,7 @@ func visitFiles(ctx context.Context, dir string, fn func(restic.FileInfo) error,
 }
 
 // Delete removes the repository and all files.
-func (b *Local) Delete(ctx context.Context) error {
+func (b *Local) Delete(_ context.Context) error {
 	return fs.RemoveAll(b.Path)
 }
 

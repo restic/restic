@@ -15,7 +15,7 @@ type WritableTreeMap struct {
 	TreeMap
 }
 
-func (t WritableTreeMap) SaveBlob(ctx context.Context, tpe restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, size int, err error) {
+func (t WritableTreeMap) SaveBlob(_ context.Context, tpe restic.BlobType, buf []byte, id restic.ID, _ bool) (newID restic.ID, known bool, size int, err error) {
 	if tpe != restic.TreeBlob {
 		return restic.ID{}, false, 0, errors.New("can only save trees")
 	}

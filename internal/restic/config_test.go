@@ -12,7 +12,7 @@ type saver struct {
 	fn func(restic.FileType, []byte) (restic.ID, error)
 }
 
-func (s saver) SaveUnpacked(ctx context.Context, t restic.FileType, buf []byte) (restic.ID, error) {
+func (s saver) SaveUnpacked(_ context.Context, t restic.FileType, buf []byte) (restic.ID, error) {
 	return s.fn(t, buf)
 }
 
@@ -24,7 +24,7 @@ type loader struct {
 	fn func(restic.FileType, restic.ID) ([]byte, error)
 }
 
-func (l loader) LoadUnpacked(ctx context.Context, t restic.FileType, id restic.ID) (data []byte, err error) {
+func (l loader) LoadUnpacked(_ context.Context, t restic.FileType, id restic.ID) (data []byte, err error) {
 	return l.fn(t, id)
 }
 
