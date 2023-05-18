@@ -8,7 +8,7 @@ import (
 
 // TestLogToStderr configures debug to log to stderr if not the debug log is
 // not already configured and returns whether logging was enabled.
-func TestLogToStderr(t testing.TB) bool {
+func TestLogToStderr(_ testing.TB) bool {
 	if opts.isEnabled {
 		return false
 	}
@@ -17,7 +17,7 @@ func TestLogToStderr(t testing.TB) bool {
 	return true
 }
 
-func TestDisableLog(t testing.TB) {
+func TestDisableLog(_ testing.TB) {
 	opts.logger = nil
 	opts.isEnabled = false
 }
