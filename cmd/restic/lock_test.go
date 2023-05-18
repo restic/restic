@@ -11,7 +11,6 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
-	rtest "github.com/restic/restic/internal/test"
 )
 
 func openTestRepo(t *testing.T, wrapper backendWrapper) (*repository.Repository, func(), *testEnvironment) {
@@ -22,14 +21,14 @@ func openTestRepo(t *testing.T, wrapper backendWrapper) (*repository.Repository,
 	testRunInit(t, env.gopts)
 
 	repo, err := OpenRepository(context.TODO(), env.gopts)
-	rtest.OK(t, err)
+	test.OK(t, err)
 	return repo, cleanup, env
 }
 
 func checkedLockRepo(ctx context.Context, t *testing.T, repo restic.Repository, env *testEnvironment) (*restic.Lock, context.Context) {
 	lock, wrappedCtx, err := lockRepo(ctx, repo, env.gopts.RetryLock, env.gopts.JSON)
-	rtest.OK(t, err)
-	rtest.OK(t, wrappedCtx.Err())
+	test.OK(t, err)
+	test.OK(t, wrappedCtx.Err())
 	if lock.Stale() {
 		t.Fatal("lock returned stale lock")
 	}
@@ -69,7 +68,7 @@ func TestLockUnlockAll(t *testing.T) {
 
 	lock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, env)
 	_, err := unlockAll(0)
-	rtest.OK(t, err)
+	test.OK(t, err)
 	if wrappedCtx.Err() == nil {
 		t.Fatal("canceled parent context did not cancel context")
 	}
@@ -82,10 +81,10 @@ func TestLockConflict(t *testing.T) {
 	repo, cleanup, env := openTestRepo(t, nil)
 	defer cleanup()
 	repo2, err := OpenRepository(context.TODO(), env.gopts)
-	rtest.OK(t, err)
+	test.OK(t, err)
 
 	lock, _, err := lockRepoExclusive(context.Background(), repo, env.gopts.RetryLock, env.gopts.JSON)
-	rtest.OK(t, err)
+	test.OK(t, err)
 	defer unlockRepo(lock)
 	_, _, err = lockRepo(context.Background(), repo2, env.gopts.RetryLock, env.gopts.JSON)
 	if err == nil {
