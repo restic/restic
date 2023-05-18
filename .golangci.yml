@@ -48,3 +48,6 @@ issues:
     - don't use ALL_CAPS in Go names; use CamelCase
     # revive: lots of packages don't have such a comment
     - "package-comments: should have a package comment"
+    # staticcheck: there's no easy way to replace these packages
+    - "SA1019: \"golang.org/x/crypto/poly1305\" is deprecated"
+    - "SA1019: \"golang.org/x/crypto/openpgp\" is deprecated"
