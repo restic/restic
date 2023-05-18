@@ -73,9 +73,9 @@ type printerMock struct {
 	filesFinished, filesTotal, allBytesWritten, allBytesTotal uint64
 }
 
-func (p *printerMock) Update(filesFinished, filesTotal, allBytesWritten, allBytesTotal uint64, duration time.Duration) {
+func (p *printerMock) Update(_, _, _, _ uint64, _ time.Duration) {
 }
-func (p *printerMock) Finish(filesFinished, filesTotal, allBytesWritten, allBytesTotal uint64, duration time.Duration) {
+func (p *printerMock) Finish(filesFinished, filesTotal, allBytesWritten, allBytesTotal uint64, _ time.Duration) {
 	p.filesFinished = filesFinished
 	p.filesTotal = filesTotal
 	p.allBytesWritten = allBytesWritten

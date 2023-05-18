@@ -20,7 +20,7 @@ func newOther(root *Root, inode uint64, node *restic.Node) (*other, error) {
 	return &other{root: root, inode: inode, node: node}, nil
 }
 
-func (l *other) Readlink(_ context.Context, req *fuse.ReadlinkRequest) (string, error) {
+func (l *other) Readlink(_ context.Context, _ *fuse.ReadlinkRequest) (string, error) {
 	return l.node.LinkTarget, nil
 }
 

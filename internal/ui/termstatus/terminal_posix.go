@@ -15,7 +15,7 @@ const (
 
 // posixClearCurrentLine removes all characters from the current line and resets the
 // cursor position to the first column.
-func posixClearCurrentLine(wr io.Writer, fd uintptr) {
+func posixClearCurrentLine(wr io.Writer, _ uintptr) {
 	// clear current line
 	_, err := wr.Write([]byte(posixControlMoveCursorHome + posixControlClearLine))
 	if err != nil {
@@ -25,7 +25,7 @@ func posixClearCurrentLine(wr io.Writer, fd uintptr) {
 }
 
 // posixMoveCursorUp moves the cursor to the line n lines above the current one.
-func posixMoveCursorUp(wr io.Writer, fd uintptr, n int) {
+func posixMoveCursorUp(wr io.Writer, _ uintptr, n int) {
 	data := []byte(posixControlMoveCursorHome)
 	data = append(data, bytes.Repeat([]byte(posixControlMoveCursorUp), n)...)
 	_, err := wr.Write(data)

@@ -1181,7 +1181,7 @@ type emptySaveBackend struct {
 	restic.Backend
 }
 
-func (b *emptySaveBackend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+func (b *emptySaveBackend) Save(ctx context.Context, h restic.Handle, _ restic.RewindReader) error {
 	return b.Backend.Save(ctx, h, restic.NewByteReader([]byte{}, nil))
 }
 
@@ -2202,7 +2202,7 @@ type writeToOnly struct {
 	rd io.Reader
 }
 
-func (r *writeToOnly) Read(p []byte) (n int, err error) {
+func (r *writeToOnly) Read(_ []byte) (n int, err error) {
 	return 0, fmt.Errorf("should have called WriteTo instead")
 }
 

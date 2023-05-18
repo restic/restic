@@ -24,7 +24,7 @@ func newLink(root *Root, inode uint64, node *restic.Node) (*link, error) {
 	return &link{root: root, inode: inode, node: node}, nil
 }
 
-func (l *link) Readlink(_ context.Context, req *fuse.ReadlinkRequest) (string, error) {
+func (l *link) Readlink(_ context.Context, _ *fuse.ReadlinkRequest) (string, error) {
 	return l.node.LinkTarget, nil
 }
 

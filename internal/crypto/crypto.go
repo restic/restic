@@ -322,7 +322,7 @@ func (k *Key) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 //
 // Even if the function fails, the contents of dst, up to its capacity,
 // may be overwritten.
-func (k *Key) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, error) {
+func (k *Key) Open(dst, nonce, ciphertext, _ []byte) ([]byte, error) {
 	if !k.Valid() {
 		return nil, errors.New("invalid key")
 	}

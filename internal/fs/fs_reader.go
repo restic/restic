@@ -35,7 +35,7 @@ var _ FS = &Reader{}
 
 // VolumeName returns leading volume name, for the Reader file system it's
 // always the empty string.
-func (fs *Reader) VolumeName(path string) string {
+func (fs *Reader) VolumeName(_ string) string {
 	return ""
 }
 
@@ -76,7 +76,7 @@ func (fs *Reader) fi() os.FileInfo {
 // (O_RDONLY etc.) and perm, (0666 etc.) if applicable.  If successful,
 // methods on the returned File can be used for I/O.
 // If there is an error, it will be of type *os.PathError.
-func (fs *Reader) OpenFile(name string, flag int, perm os.FileMode) (f File, err error) {
+func (fs *Reader) OpenFile(name string, flag int, _ os.FileMode) (f File, err error) {
 	if flag & ^(O_RDONLY|O_NOFOLLOW) != 0 {
 		return nil, pathError("open", name,
 			fmt.Errorf("invalid combination of flags 0x%x", flag))
@@ -149,7 +149,7 @@ func (fs *Reader) Separator() string {
 }
 
 // IsAbs reports whether the path is absolute. For the Reader, this is always the case.
-func (fs *Reader) IsAbs(p string) bool {
+func (fs *Reader) IsAbs(_ string) bool {
 	return true
 }
 
@@ -236,11 +236,11 @@ func (f fakeFile) Fd() uintptr {
 	return 0
 }
 
-func (f fakeFile) Readdirnames(n int) ([]string, error) {
+func (f fakeFile) Readdirnames(_ int) ([]string, error) {
 	return nil, pathError("readdirnames", f.name, os.ErrInvalid)
 }
 
-func (f fakeFile) Readdir(n int) ([]os.FileInfo, error) {
+func (f fakeFile) Readdir(_ int) ([]os.FileInfo, error) {
 	return nil, pathError("readdir", f.name, os.ErrInvalid)
 }
 
@@ -248,7 +248,7 @@ func (f fakeFile) Seek(int64, int) (int64, error) {
 	return 0, pathError("seek", f.name, os.ErrInvalid)
 }
 
-func (f fakeFile) Read(p []byte) (int, error) {
+func (f fakeFile) Read(_ []byte) (int, error) {
 	return 0, pathError("read", f.name, os.ErrInvalid)
 }
 

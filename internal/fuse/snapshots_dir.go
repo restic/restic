@@ -134,7 +134,7 @@ func newSnapshotLink(root *Root, inode uint64, target string, snapshot *restic.S
 }
 
 // Readlink
-func (l *snapshotLink) Readlink(_ context.Context, req *fuse.ReadlinkRequest) (string, error) {
+func (l *snapshotLink) Readlink(_ context.Context, _ *fuse.ReadlinkRequest) (string, error) {
 	return l.target, nil
 }
 
