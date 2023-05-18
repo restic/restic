@@ -21,7 +21,7 @@ var (
 	ErrNoKeyFound = errors.New("wrong password or no key found")
 
 	// ErrMaxKeysReached is returned when the maximum number of keys was checked and no key could be found.
-	ErrMaxKeysReached = errors.Fatal("maximum number of keys reached")
+	ErrMaxKeysReached = errors.New("maximum number of keys reached")
 )
 
 // Key represents an encrypted master key for a repository.

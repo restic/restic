@@ -62,7 +62,7 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, er
 
 	_, err = be.Stat(ctx, restic.Handle{Type: restic.ConfigFile})
 	if err == nil {
-		return nil, errors.Fatal("config file already exists")
+		return nil, errors.New("config file already exists")
 	}
 
 	url := *cfg.URL
@@ -76,7 +76,7 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, er
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.Fatalf("server response unexpected: %v (%v)", resp.Status, resp.StatusCode)
+		return nil, fmt.Errorf("server response unexpected: %v (%v)", resp.Status, resp.StatusCode)
 	}
 
 	_, err = io.Copy(io.Discard, resp.Body)
