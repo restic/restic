@@ -5,7 +5,6 @@ package archiver
 
 import (
 	"os"
-	"testing"
 )
 
 type wrappedFileInfo struct {
@@ -18,7 +17,7 @@ func (fi wrappedFileInfo) Mode() os.FileMode {
 }
 
 // wrapFileInfo returns a new os.FileInfo with the mode, owner, and group fields changed.
-func wrapFileInfo(t testing.TB, fi os.FileInfo) os.FileInfo {
+func wrapFileInfo(fi os.FileInfo) os.FileInfo {
 	// wrap the os.FileInfo and return the modified mode, uid and gid are ignored on Windows
 	res := wrappedFileInfo{
 		FileInfo: fi,

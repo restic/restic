@@ -31,7 +31,7 @@ func TestRestorerRestoreEmptyHardlinkedFileds(t *testing.T) {
 		},
 	})
 
-	res := NewRestorer(context.TODO(), repo, sn, false, nil)
+	res := NewRestorer(repo, sn, false, nil)
 
 	res.SelectFilter = func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
 		return true, true
@@ -99,7 +99,7 @@ func TestRestorerProgressBar(t *testing.T) {
 
 	mock := &printerMock{}
 	progress := restoreui.NewProgress(mock, 0)
-	res := NewRestorer(context.TODO(), repo, sn, false, progress)
+	res := NewRestorer(repo, sn, false, progress)
 	res.SelectFilter = func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
 		return true, true
 	}

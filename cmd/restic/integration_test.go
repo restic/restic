@@ -141,7 +141,7 @@ func testRunRestoreIncludes(t testing.TB, gopts GlobalOptions, dir string, snaps
 	rtest.OK(t, runRestore(context.TODO(), opts, gopts, nil, []string{snapshotID.String()}))
 }
 
-func testRunRestoreAssumeFailure(t testing.TB, snapshotID string, opts RestoreOptions, gopts GlobalOptions) error {
+func testRunRestoreAssumeFailure(snapshotID string, opts RestoreOptions, gopts GlobalOptions) error {
 	err := runRestore(context.TODO(), opts, gopts, nil, []string{snapshotID})
 
 	return err

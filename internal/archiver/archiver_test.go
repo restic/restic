@@ -2166,7 +2166,7 @@ func TestMetadataChanged(t *testing.T) {
 	}
 
 	// modify the mode by wrapping it in a new struct, uses the consts defined above
-	fs.OverrideLstat["testfile"] = wrapFileInfo(t, fi)
+	fs.OverrideLstat["testfile"] = wrapFileInfo(fi)
 
 	// set the override values in the 'want' node which
 	want.Mode = 0400

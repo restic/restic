@@ -427,7 +427,7 @@ func testRepositoryIncrementalIndex(t *testing.T, version uint) {
 }
 
 // buildPackfileWithoutHeader returns a manually built pack file without a header.
-func buildPackfileWithoutHeader(t testing.TB, blobSizes []int, key *crypto.Key, compress bool) (blobs []restic.Blob, packfile []byte) {
+func buildPackfileWithoutHeader(blobSizes []int, key *crypto.Key, compress bool) (blobs []restic.Blob, packfile []byte) {
 	opts := []zstd.EOption{
 		// Set the compression level configured.
 		zstd.WithEncoderLevel(zstd.SpeedDefault),
@@ -524,7 +524,7 @@ func testStreamPack(t *testing.T, version uint) {
 		t.Fatal("test does not suport repository version", version)
 	}
 
-	packfileBlobs, packfile := buildPackfileWithoutHeader(t, blobSizes, &key, compress)
+	packfileBlobs, packfile := buildPackfileWithoutHeader(blobSizes, &key, compress)
 
 	loadCalls := 0
 	load := func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {

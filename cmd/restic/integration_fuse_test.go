@@ -64,7 +64,7 @@ func testRunMount(t testing.TB, gopts GlobalOptions, dir string, wg *sync.WaitGr
 	rtest.OK(t, runMount(context.TODO(), opts, gopts, []string{dir}))
 }
 
-func testRunUmount(t testing.TB, gopts GlobalOptions, dir string) {
+func testRunUmount(t testing.TB, dir string) {
 	var err error
 	for i := 0; i < mountWait; i++ {
 		if err = umount(dir); err == nil {
@@ -95,7 +95,7 @@ func checkSnapshots(t testing.TB, global GlobalOptions, repo *repository.Reposit
 	go testRunMount(t, global, mountpoint, &wg)
 	waitForMount(t, mountpoint)
 	defer wg.Wait()
-	defer testRunUmount(t, global, mountpoint)
+	defer testRunUmount(t, mountpoint)
 
 	if !snapshotsDirExists(t, mountpoint) {
 		t.Fatal(`virtual directory "snapshots" doesn't exist`)
