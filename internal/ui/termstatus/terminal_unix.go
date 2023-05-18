@@ -12,12 +12,12 @@ import (
 
 // clearCurrentLine removes all characters from the current line and resets the
 // cursor position to the first column.
-func clearCurrentLine(wr io.Writer, fd uintptr) func(io.Writer, uintptr) {
+func clearCurrentLine(_ uintptr) func(io.Writer, uintptr) {
 	return posixClearCurrentLine
 }
 
 // moveCursorUp moves the cursor to the line n lines above the current one.
-func moveCursorUp(wr io.Writer, fd uintptr) func(io.Writer, uintptr, int) {
+func moveCursorUp(_ uintptr) func(io.Writer, uintptr, int) {
 	return posixMoveCursorUp
 }
 

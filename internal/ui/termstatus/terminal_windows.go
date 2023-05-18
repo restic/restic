@@ -15,7 +15,7 @@ import (
 
 // clearCurrentLine removes all characters from the current line and resets the
 // cursor position to the first column.
-func clearCurrentLine(wr io.Writer, fd uintptr) func(io.Writer, uintptr) {
+func clearCurrentLine(fd uintptr) func(io.Writer, uintptr) {
 	// easy case, the terminal is cmd or psh, without redirection
 	if isWindowsTerminal(fd) {
 		return windowsClearCurrentLine
@@ -26,7 +26,7 @@ func clearCurrentLine(wr io.Writer, fd uintptr) func(io.Writer, uintptr) {
 }
 
 // moveCursorUp moves the cursor to the line n lines above the current one.
-func moveCursorUp(wr io.Writer, fd uintptr) func(io.Writer, uintptr, int) {
+func moveCursorUp(fd uintptr) func(io.Writer, uintptr, int) {
 	// easy case, the terminal is cmd or psh, without redirection
 	if isWindowsTerminal(fd) {
 		return windowsMoveCursorUp
