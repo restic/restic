@@ -80,7 +80,7 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string) error {
 		Println(string(buf))
 		return nil
 	case "snapshot":
-		sn, err := restic.FindSnapshot(ctx, repo.Backend(), repo, args[1])
+		sn, _, err := restic.FindSnapshot(ctx, repo.Backend(), repo, args[1])
 		if err != nil {
 			return errors.Fatalf("could not find snapshot: %v\n", err)
 		}
