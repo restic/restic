@@ -177,10 +177,10 @@ func (t *Table) Write(w io.Writer) error {
 
 	// write all the lines
 	for i, line := range lines {
-		print := func(w io.Writer, s string) error {
+		printer := func(w io.Writer, s string) error {
 			return t.PrintData(w, i, s)
 		}
-		err := printLine(w, print, t.CellSeparator, line, columnWidths)
+		err := printLine(w, printer, t.CellSeparator, line, columnWidths)
 		if err != nil {
 			return err
 		}
