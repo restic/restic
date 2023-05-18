@@ -86,6 +86,8 @@ func (b *TextProgress) Error(item string, err error) error {
 // CompleteItem is the status callback function for the archiver when a
 // file/dir has been saved successfully.
 func (b *TextProgress) CompleteItem(messageType, item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration) {
+	item = termstatus.Quote(item)
+
 	switch messageType {
 	case "dir new":
 		b.VV("new       %v, saved in %.3fs (%v added, %v stored, %v metadata)",

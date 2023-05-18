@@ -124,17 +124,7 @@ func (s *Suite) TestLoad(t *testing.T) {
 	b := s.open(t)
 	defer s.close(t, b)
 
-	noop := func(rd io.Reader) error {
-		return nil
-	}
-
-	err := b.Load(context.TODO(), restic.Handle{}, 0, 0, noop)
-	if err == nil {
-		t.Fatalf("Load() did not return an error for invalid handle")
-	}
-	test.Assert(t, !b.IsNotExist(err), "IsNotExist() should not accept an invalid handle error: %v", err)
-
-	err = testLoad(b, restic.Handle{Type: restic.PackFile, Name: "foobar"}, 0, 0)
+	err := testLoad(b, restic.Handle{Type: restic.PackFile, Name: "foobar"}, 0, 0)
 	if err == nil {
 		t.Fatalf("Load() did not return an error for non-existing blob")
 	}
@@ -152,11 +142,6 @@ func (s *Suite) TestLoad(t *testing.T) {
 	}
 
 	t.Logf("saved %d bytes as %v", length, handle)
-
-	err = b.Load(context.TODO(), handle, 100, -1, noop)
-	if err == nil {
-		t.Fatalf("Load() returned no error for negative offset!")
-	}
 
 	err = b.Load(context.TODO(), handle, 0, 0, func(rd io.Reader) error {
 		_, err := io.Copy(io.Discard, rd)

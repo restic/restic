@@ -9,13 +9,47 @@ import (
 	"github.com/restic/restic/internal/restic"
 )
 
-// SelectByNameFunc returns true for all items that should be included (files and
-// dirs). If false is returned, files are ignored and dirs are not even walked.
-type SelectByNameFunc func(item string) bool
+type NodeRewriteFunc func(node *restic.Node, path string) *restic.Node
+type FailedTreeRewriteFunc func(nodeID restic.ID, path string, err error) (restic.ID, error)
 
-type TreeFilterVisitor struct {
-	SelectByName SelectByNameFunc
-	PrintExclude func(string)
+type RewriteOpts struct {
+	// return nil to remove the node
+	RewriteNode NodeRewriteFunc
+	// decide what to do with a tree that could not be loaded. Return nil to remove the node. By default the load error is returned which causes the operation to fail.
+	RewriteFailedTree FailedTreeRewriteFunc
+
+	AllowUnstableSerialization bool
+	DisableNodeCache           bool
+}
+
+type idMap map[restic.ID]restic.ID
+
+type TreeRewriter struct {
+	opts RewriteOpts
+
+	replaces idMap
+}
+
+func NewTreeRewriter(opts RewriteOpts) *TreeRewriter {
+	rw := &TreeRewriter{
+		opts: opts,
+	}
+	if !opts.DisableNodeCache {
+		rw.replaces = make(idMap)
+	}
+	// setup default implementations
+	if rw.opts.RewriteNode == nil {
+		rw.opts.RewriteNode = func(node *restic.Node, path string) *restic.Node {
+			return node
+		}
+	}
+	if rw.opts.RewriteFailedTree == nil {
+		// fail with error by default
+		rw.opts.RewriteFailedTree = func(nodeID restic.ID, path string, err error) (restic.ID, error) {
+			return restic.ID{}, err
+		}
+	}
+	return rw
 }
 
 type BlobLoadSaver interface {
@@ -23,50 +57,57 @@ type BlobLoadSaver interface {
 	restic.BlobLoader
 }
 
-func FilterTree(ctx context.Context, repo BlobLoadSaver, nodepath string, nodeID restic.ID, visitor *TreeFilterVisitor) (newNodeID restic.ID, err error) {
-	curTree, err := restic.LoadTree(ctx, repo, nodeID)
-	if err != nil {
-		return restic.ID{}, err
+func (t *TreeRewriter) RewriteTree(ctx context.Context, repo BlobLoadSaver, nodepath string, nodeID restic.ID) (newNodeID restic.ID, err error) {
+	// check if tree was already changed
+	newID, ok := t.replaces[nodeID]
+	if ok {
+		return newID, nil
 	}
 
-	// check that we can properly encode this tree without losing information
-	// The alternative of using json/Decoder.DisallowUnknownFields() doesn't work as we use
-	// a custom UnmarshalJSON to decode trees, see also https://github.com/golang/go/issues/41144
-	testID, err := restic.SaveTree(ctx, repo, curTree)
+	// a nil nodeID will lead to a load error
+	curTree, err := restic.LoadTree(ctx, repo, nodeID)
 	if err != nil {
-		return restic.ID{}, err
+		return t.opts.RewriteFailedTree(nodeID, nodepath, err)
 	}
-	if nodeID != testID {
-		return restic.ID{}, fmt.Errorf("cannot encode tree at %q without loosing information", nodepath)
+
+	if !t.opts.AllowUnstableSerialization {
+		// check that we can properly encode this tree without losing information
+		// The alternative of using json/Decoder.DisallowUnknownFields() doesn't work as we use
+		// a custom UnmarshalJSON to decode trees, see also https://github.com/golang/go/issues/41144
+		testID, err := restic.SaveTree(ctx, repo, curTree)
+		if err != nil {
+			return restic.ID{}, err
+		}
+		if nodeID != testID {
+			return restic.ID{}, fmt.Errorf("cannot encode tree at %q without losing information", nodepath)
+		}
 	}
 
 	debug.Log("filterTree: %s, nodeId: %s\n", nodepath, nodeID.Str())
 
-	changed := false
 	tb := restic.NewTreeJSONBuilder()
 	for _, node := range curTree.Nodes {
 		path := path.Join(nodepath, node.Name)
-		if !visitor.SelectByName(path) {
-			if visitor.PrintExclude != nil {
-				visitor.PrintExclude(path)
-			}
-			changed = true
+		node = t.opts.RewriteNode(node, path)
+		if node == nil {
 			continue
 		}
 
-		if node.Subtree == nil {
+		if node.Type != "dir" {
 			err = tb.AddNode(node)
 			if err != nil {
 				return restic.ID{}, err
 			}
 			continue
 		}
-		newID, err := FilterTree(ctx, repo, path, *node.Subtree, visitor)
+		// treat nil as null id
+		var subtree restic.ID
+		if node.Subtree != nil {
+			subtree = *node.Subtree
+		}
+		newID, err := t.RewriteTree(ctx, repo, path, subtree)
 		if err != nil {
 			return restic.ID{}, err
-		}
-		if !node.Subtree.Equal(newID) {
-			changed = true
 		}
 		node.Subtree = &newID
 		err = tb.AddNode(node)
@@ -75,17 +116,18 @@ func FilterTree(ctx context.Context, repo BlobLoadSaver, nodepath string, nodeID
 		}
 	}
 
-	if changed {
-		tree, err := tb.Finalize()
-		if err != nil {
-			return restic.ID{}, err
-		}
-
-		// Save new tree
-		newTreeID, _, _, err := repo.SaveBlob(ctx, restic.TreeBlob, tree, restic.ID{}, false)
-		debug.Log("filterTree: save new tree for %s as %v\n", nodepath, newTreeID)
-		return newTreeID, err
+	tree, err := tb.Finalize()
+	if err != nil {
+		return restic.ID{}, err
 	}
 
-	return nodeID, nil
+	// Save new tree
+	newTreeID, _, _, err := repo.SaveBlob(ctx, restic.TreeBlob, tree, restic.ID{}, false)
+	if t.replaces != nil {
+		t.replaces[nodeID] = newTreeID
+	}
+	if !newTreeID.Equal(nodeID) {
+		debug.Log("filterTree: save new tree for %s as %v\n", nodepath, newTreeID)
+	}
+	return newTreeID, err
 }

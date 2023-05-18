@@ -8,6 +8,7 @@ import (
 	"context"
 	"math/rand"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -216,6 +217,37 @@ func testTopUIDGID(t *testing.T, cfg Config, repo restic.Repository, uid, gid ui
 	rtest.Equals(t, uint32(0), attr.Gid)
 }
 
+// Test reporting of fuse.Attr.Blocks in multiples of 512.
+func TestBlocks(t *testing.T) {
+	root := &Root{}
+
+	for _, c := range []struct {
+		size, blocks uint64
+	}{
+		{0, 0},
+		{1, 1},
+		{511, 1},
+		{512, 1},
+		{513, 2},
+		{1024, 2},
+		{1025, 3},
+		{41253, 81},
+	} {
+		target := strings.Repeat("x", int(c.size))
+
+		for _, n := range []fs.Node{
+			&file{root: root, node: &restic.Node{Size: uint64(c.size)}},
+			&link{root: root, node: &restic.Node{LinkTarget: target}},
+			&snapshotLink{root: root, snapshot: &restic.Snapshot{}, target: target},
+		} {
+			var a fuse.Attr
+			err := n.Attr(context.TODO(), &a)
+			rtest.OK(t, err)
+			rtest.Equals(t, c.blocks, a.Blocks)
+		}
+	}
+}
+
 func TestInodeFromNode(t *testing.T) {
 	node := &restic.Node{Name: "foo.txt", Type: "chardev", Links: 2}
 	ino1 := inodeFromNode(1, node)
@@ -226,6 +258,17 @@ func TestInodeFromNode(t *testing.T) {
 	ino1 = inodeFromNode(1, node)
 	ino2 = inodeFromNode(2, node)
 	rtest.Assert(t, ino1 != ino2, "same inode %d but different parent", ino1)
+
+	// Regression test: in a path a/b/b, the grandchild should not get the
+	// same inode as the grandparent.
+	a := &restic.Node{Name: "a", Type: "dir", Links: 2}
+	ab := &restic.Node{Name: "b", Type: "dir", Links: 2}
+	abb := &restic.Node{Name: "b", Type: "dir", Links: 2}
+	inoA := inodeFromNode(1, a)
+	inoAb := inodeFromNode(inoA, ab)
+	inoAbb := inodeFromNode(inoAb, abb)
+	rtest.Assert(t, inoA != inoAb, "inode(a/b) = inode(a)")
+	rtest.Assert(t, inoA != inoAbb, "inode(a/b/b) = inode(a)")
 }
 
 var sink uint64

@@ -61,7 +61,7 @@ func LoadSnapshot(ctx context.Context, loader LoaderUnpacked, id ID) (*Snapshot,
 	sn := &Snapshot{id: &id}
 	err := LoadJSONUnpacked(ctx, loader, SnapshotFile, id, sn)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load snapshot %v: %w", id.Str(), err)
 	}
 
 	return sn, nil

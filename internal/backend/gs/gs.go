@@ -15,7 +15,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
-	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
 
@@ -37,7 +36,6 @@ type Backend struct {
 	gcsClient    *storage.Client
 	projectID    string
 	connections  uint
-	sem          sema.Semaphore
 	bucketName   string
 	bucket       *storage.BucketHandle
 	prefix       string
@@ -99,16 +97,10 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 		return nil, errors.Wrap(err, "getStorageClient")
 	}
 
-	sem, err := sema.New(cfg.Connections)
-	if err != nil {
-		return nil, err
-	}
-
 	be := &Backend{
 		gcsClient:   gcsClient,
 		projectID:   cfg.ProjectID,
 		connections: cfg.Connections,
-		sem:         sem,
 		bucketName:  cfg.Bucket,
 		bucket:      gcsClient.Bucket(cfg.Bucket),
 		prefix:      cfg.Prefix,
@@ -132,14 +124,13 @@ func Open(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 //
 // The service account must have the "storage.buckets.create" permission to
 // create a bucket the does not yet exist.
-func Create(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
+func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 	be, err := open(cfg, rt)
 	if err != nil {
 		return nil, errors.Wrap(err, "open")
 	}
 
 	// Try to determine if the bucket exists. If it does not, try to create it.
-	ctx := context.Background()
 	exists, err := be.bucketExists(ctx, be.bucket)
 	if err != nil {
 		if e, ok := err.(*googleapi.Error); ok && e.Code == http.StatusForbidden {
@@ -169,7 +160,6 @@ func (be *Backend) SetListMaxItems(i int) {
 
 // IsNotExist returns true if the error is caused by a not existing file.
 func (be *Backend) IsNotExist(err error) bool {
-	debug.Log("IsNotExist(%T, %#v)", err, err)
 	return errors.Is(err, storage.ErrObjectNotExist)
 }
 
@@ -204,17 +194,7 @@ func (be *Backend) Path() string {
 
 // Save stores data in the backend at the handle.
 func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
-	if err := h.Valid(); err != nil {
-		return err
-	}
-
 	objName := be.Filename(h)
-
-	debug.Log("Save %v at %v", h, objName)
-
-	be.sem.GetToken()
-
-	debug.Log("InsertObject(%v, %v)", be.bucketName, objName)
 
 	// Set chunk size to zero to disable resumable uploads.
 	//
@@ -250,14 +230,10 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 		err = cerr
 	}
 
-	be.sem.ReleaseToken()
-
 	if err != nil {
-		debug.Log("%v: err %#v: %v", objName, err, err)
 		return errors.Wrap(err, "service.Objects.Insert")
 	}
 
-	debug.Log("%v -> %v bytes", objName, wbytes)
 	// sanity check
 	if wbytes != rd.Length() {
 		return errors.Errorf("wrote %d bytes instead of the expected %d bytes", wbytes, rd.Length())
@@ -268,22 +244,13 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 // Load runs fn with a reader that yields the contents of the file at h at the
 // given offset.
 func (be *Backend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	return backend.DefaultLoad(ctx, h, length, offset, be.openReader, fn)
 }
 
 func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
-	debug.Log("Load %v, length %v, offset %v from %v", h, length, offset, be.Filename(h))
-	if err := h.Valid(); err != nil {
-		return nil, err
-	}
-
-	if offset < 0 {
-		return nil, errors.New("offset is negative")
-	}
-
-	if length < 0 {
-		return nil, errors.Errorf("invalid length %d", length)
-	}
 	if length == 0 {
 		// negative length indicates read till end to GCS lib
 		length = -1
@@ -291,32 +258,21 @@ func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, 
 
 	objName := be.Filename(h)
 
-	be.sem.GetToken()
-
-	ctx, cancel := context.WithCancel(ctx)
-
 	r, err := be.bucket.Object(objName).NewRangeReader(ctx, offset, int64(length))
 	if err != nil {
-		cancel()
-		be.sem.ReleaseToken()
 		return nil, err
 	}
 
-	return be.sem.ReleaseTokenOnClose(r, cancel), err
+	return r, err
 }
 
 // Stat returns information about a blob.
 func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInfo, err error) {
-	debug.Log("%v", h)
-
 	objName := be.Filename(h)
 
-	be.sem.GetToken()
 	attr, err := be.bucket.Object(objName).Attrs(ctx)
-	be.sem.ReleaseToken()
 
 	if err != nil {
-		debug.Log("GetObjectAttributes() err %v", err)
 		return restic.FileInfo{}, errors.Wrap(err, "service.Objects.Get")
 	}
 
@@ -327,23 +283,18 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	objName := be.Filename(h)
 
-	be.sem.GetToken()
 	err := be.bucket.Object(objName).Delete(ctx)
-	be.sem.ReleaseToken()
 
-	if err == storage.ErrObjectNotExist {
+	if be.IsNotExist(err) {
 		err = nil
 	}
 
-	debug.Log("Remove(%v) at %v -> err %v", h, objName, err)
 	return errors.Wrap(err, "client.RemoveObject")
 }
 
 // List runs fn for each file in the backend which has the type t. When an
 // error occurs (or fn returns an error), List stops and returns it.
 func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
-	debug.Log("listing %v", t)
-
 	prefix, _ := be.Basedir(t)
 
 	// make sure prefix ends with a slash
@@ -357,9 +308,7 @@ func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.F
 	itr := be.bucket.Objects(ctx, &storage.Query{Prefix: prefix})
 
 	for {
-		be.sem.GetToken()
 		attrs, err := itr.Next()
-		be.sem.ReleaseToken()
 		if err == iterator.Done {
 			break
 		}
@@ -389,30 +338,9 @@ func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.F
 	return ctx.Err()
 }
 
-// Remove keys for a specified backend type.
-func (be *Backend) removeKeys(ctx context.Context, t restic.FileType) error {
-	return be.List(ctx, t, func(fi restic.FileInfo) error {
-		return be.Remove(ctx, restic.Handle{Type: t, Name: fi.Name})
-	})
-}
-
 // Delete removes all restic keys in the bucket. It will not remove the bucket itself.
 func (be *Backend) Delete(ctx context.Context) error {
-	alltypes := []restic.FileType{
-		restic.PackFile,
-		restic.KeyFile,
-		restic.LockFile,
-		restic.SnapshotFile,
-		restic.IndexFile}
-
-	for _, t := range alltypes {
-		err := be.removeKeys(ctx, t)
-		if err != nil {
-			return nil
-		}
-	}
-
-	return be.Remove(ctx, restic.Handle{Type: restic.ConfigFile})
+	return backend.DefaultDelete(ctx, be)
 }
 
 // Close does nothing.

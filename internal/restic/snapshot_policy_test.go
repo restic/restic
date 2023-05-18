@@ -22,13 +22,14 @@ func parseTimeUTC(s string) time.Time {
 	return t.UTC()
 }
 
-func parseDuration(s string) restic.Duration {
-	d, err := restic.ParseDuration(s)
-	if err != nil {
-		panic(err)
+// Returns the maximum number of snapshots to be kept according to this policy.
+// If any of the counts is -1 it will return 0.
+func policySum(e *restic.ExpirePolicy) int {
+	if e.Last == -1 || e.Hourly == -1 || e.Daily == -1 || e.Weekly == -1 || e.Monthly == -1 || e.Yearly == -1 {
+		return 0
 	}
 
-	return d
+	return e.Last + e.Hourly + e.Daily + e.Weekly + e.Monthly + e.Yearly
 }
 
 func TestExpireSnapshotOps(t *testing.T) {
@@ -46,7 +47,7 @@ func TestExpireSnapshotOps(t *testing.T) {
 		if isEmpty != d.expectEmpty {
 			t.Errorf("empty test %v: wrong result, want:\n  %#v\ngot:\n  %#v", i, d.expectEmpty, isEmpty)
 		}
-		hasSum := d.p.Sum()
+		hasSum := policySum(d.p)
 		if hasSum != d.expectSum {
 			t.Errorf("sum test %v: wrong result, want:\n  %#v\ngot:\n  %#v", i, d.expectSum, hasSum)
 		}
@@ -219,26 +220,30 @@ func TestApplyPolicy(t *testing.T) {
 		{Tags: []restic.TagList{{"foo"}}},
 		{Tags: []restic.TagList{{"foo", "bar"}}},
 		{Tags: []restic.TagList{{"foo"}, {"bar"}}},
-		{Within: parseDuration("1d")},
-		{Within: parseDuration("2d")},
-		{Within: parseDuration("7d")},
-		{Within: parseDuration("1m")},
-		{Within: parseDuration("1m14d")},
-		{Within: parseDuration("1y1d1m")},
-		{Within: parseDuration("13d23h")},
-		{Within: parseDuration("2m2h")},
-		{Within: parseDuration("1y2m3d3h")},
-		{WithinHourly: parseDuration("1y2m3d3h")},
-		{WithinDaily: parseDuration("1y2m3d3h")},
-		{WithinWeekly: parseDuration("1y2m3d3h")},
-		{WithinMonthly: parseDuration("1y2m3d3h")},
-		{WithinYearly: parseDuration("1y2m3d3h")},
-		{Within: parseDuration("1h"),
-			WithinHourly:  parseDuration("1d"),
-			WithinDaily:   parseDuration("7d"),
-			WithinWeekly:  parseDuration("1m"),
-			WithinMonthly: parseDuration("1y"),
-			WithinYearly:  parseDuration("9999y")},
+		{Within: restic.ParseDurationOrPanic("1d")},
+		{Within: restic.ParseDurationOrPanic("2d")},
+		{Within: restic.ParseDurationOrPanic("7d")},
+		{Within: restic.ParseDurationOrPanic("1m")},
+		{Within: restic.ParseDurationOrPanic("1m14d")},
+		{Within: restic.ParseDurationOrPanic("1y1d1m")},
+		{Within: restic.ParseDurationOrPanic("13d23h")},
+		{Within: restic.ParseDurationOrPanic("2m2h")},
+		{Within: restic.ParseDurationOrPanic("1y2m3d3h")},
+		{WithinHourly: restic.ParseDurationOrPanic("1y2m3d3h")},
+		{WithinDaily: restic.ParseDurationOrPanic("1y2m3d3h")},
+		{WithinWeekly: restic.ParseDurationOrPanic("1y2m3d3h")},
+		{WithinMonthly: restic.ParseDurationOrPanic("1y2m3d3h")},
+		{WithinYearly: restic.ParseDurationOrPanic("1y2m3d3h")},
+		{Within: restic.ParseDurationOrPanic("1h"),
+			WithinHourly:  restic.ParseDurationOrPanic("1d"),
+			WithinDaily:   restic.ParseDurationOrPanic("7d"),
+			WithinWeekly:  restic.ParseDurationOrPanic("1m"),
+			WithinMonthly: restic.ParseDurationOrPanic("1y"),
+			WithinYearly:  restic.ParseDurationOrPanic("9999y")},
+		{Last: -1},             // keep all
+		{Last: -1, Hourly: -1}, // keep all (Last overrides Hourly)
+		{Hourly: -1},           // keep all hourlies
+		{Daily: 3, Weekly: 2, Monthly: -1, Yearly: -1},
 	}
 
 	for i, p := range tests {
@@ -251,9 +256,9 @@ func TestApplyPolicy(t *testing.T) {
 					len(keep)+len(remove), len(testExpireSnapshots))
 			}
 
-			if p.Sum() > 0 && len(keep) > p.Sum() {
+			if policySum(&p) > 0 && len(keep) > policySum(&p) {
 				t.Errorf("not enough snapshots removed: policy allows %v snapshots to remain, but ended up with %v",
-					p.Sum(), len(keep))
+					policySum(&p), len(keep))
 			}
 
 			if len(keep) != len(reasons) {

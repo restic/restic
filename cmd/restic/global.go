@@ -20,10 +20,12 @@ import (
 	"github.com/restic/restic/internal/backend/limiter"
 	"github.com/restic/restic/internal/backend/local"
 	"github.com/restic/restic/internal/backend/location"
+	"github.com/restic/restic/internal/backend/logger"
 	"github.com/restic/restic/internal/backend/rclone"
 	"github.com/restic/restic/internal/backend/rest"
 	"github.com/restic/restic/internal/backend/retry"
 	"github.com/restic/restic/internal/backend/s3"
+	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/backend/sftp"
 	"github.com/restic/restic/internal/backend/smb"
 	"github.com/restic/restic/internal/backend/swift"
@@ -43,7 +45,7 @@ import (
 	"golang.org/x/term"
 )
 
-var version = "0.15.1-dev (compiled manually)"
+var version = "0.15.2-dev (compiled manually)"
 
 // TimeFormat is the format used for all timestamps printed by restic.
 const TimeFormat = "2006-01-02 15:04:05"
@@ -60,6 +62,7 @@ type GlobalOptions struct {
 	Quiet           bool
 	Verbose         int
 	NoLock          bool
+	RetryLock       time.Duration
 	JSON            bool
 	CacheDir        string
 	NoCache         bool
@@ -116,6 +119,7 @@ func init() {
 	// use empty paremeter name as `-v, --verbose n` instead of the correct `--verbose=n` is confusing
 	f.CountVarP(&globalOptions.Verbose, "verbose", "v", "be verbose (specify multiple times or a level using --verbose=n``, max level/times is 2)")
 	f.BoolVar(&globalOptions.NoLock, "no-lock", false, "do not lock the repository, this allows some operations on read-only repositories")
+	f.DurationVar(&globalOptions.RetryLock, "retry-lock", 0, "retry to lock the repository if it is already locked, takes a value like 5m or 2h (default: no retries)")
 	f.BoolVarP(&globalOptions.JSON, "json", "", false, "set output mode to JSON for commands that support it")
 	f.StringVar(&globalOptions.CacheDir, "cache-dir", "", "set the cache `directory`. (default: use system default cache directory)")
 	f.BoolVar(&globalOptions.NoCache, "no-cache", false, "do not use a local cache")
@@ -123,7 +127,7 @@ func init() {
 	f.StringVar(&globalOptions.TLSClientCertKeyFilename, "tls-client-cert", "", "path to a `file` containing PEM encoded TLS client certificate and private key")
 	f.BoolVar(&globalOptions.InsecureTLS, "insecure-tls", false, "skip TLS certificate verification when connecting to the repository (insecure)")
 	f.BoolVar(&globalOptions.CleanupCache, "cleanup-cache", false, "auto remove old cache directories")
-	f.Var(&globalOptions.Compression, "compression", "compression mode (only available for repository format version 2), one of (auto|off|max)")
+	f.Var(&globalOptions.Compression, "compression", "compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION)")
 	f.IntVar(&globalOptions.Limits.UploadKb, "limit-upload", 0, "limits uploads to a maximum `rate` in KiB/s. (default: unlimited)")
 	f.IntVar(&globalOptions.Limits.DownloadKb, "limit-download", 0, "limits downloads to a maximum `rate` in KiB/s. (default: unlimited)")
 	f.UintVar(&globalOptions.PackSize, "pack-size", 0, "set target pack `size` in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)")
@@ -281,6 +285,7 @@ func Warnf(format string, args ...interface{}) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to write to stderr: %v\n", err)
 	}
+	debug.Log(format, args...)
 }
 
 // resolvePassword determines the password to be used for opening the repository.
@@ -767,6 +772,9 @@ func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Optio
 		return nil, errors.Fatalf("unable to open repository at %v: %v", location.StripPassword(s), err)
 	}
 
+	// wrap with debug logging and connection limiting
+	be = logger.New(sema.NewBackend(be))
+
 	// wrap backend if a test specified an inner hook
 	if gopts.backendInnerTestHook != nil {
 		be, err = gopts.backendInnerTestHook(be)
@@ -811,29 +819,36 @@ func create(ctx context.Context, s string, opts options.Options) (restic.Backend
 		return nil, err
 	}
 
+	var be restic.Backend
 	switch loc.Scheme {
 	case "local":
-		return local.Create(ctx, cfg.(local.Config))
+		be, err = local.Create(ctx, cfg.(local.Config))
 	case "sftp":
-		return sftp.Create(ctx, cfg.(sftp.Config))
+		be, err = sftp.Create(ctx, cfg.(sftp.Config))
 	case "smb":
-		return smb.Create(ctx, cfg.(smb.Config))
+		be, err = smb.Create(ctx, cfg.(smb.Config))
 	case "s3":
-		return s3.Create(ctx, cfg.(s3.Config), rt)
+		be, err = s3.Create(ctx, cfg.(s3.Config), rt)
 	case "gs":
-		return gs.Create(cfg.(gs.Config), rt)
+		be, err = gs.Create(ctx, cfg.(gs.Config), rt)
 	case "azure":
-		return azure.Create(ctx, cfg.(azure.Config), rt)
+		be, err = azure.Create(ctx, cfg.(azure.Config), rt)
 	case "swift":
-		return swift.Open(ctx, cfg.(swift.Config), rt)
+		be, err = swift.Open(ctx, cfg.(swift.Config), rt)
 	case "b2":
-		return b2.Create(ctx, cfg.(b2.Config), rt)
+		be, err = b2.Create(ctx, cfg.(b2.Config), rt)
 	case "rest":
-		return rest.Create(ctx, cfg.(rest.Config), rt)
+		be, err = rest.Create(ctx, cfg.(rest.Config), rt)
 	case "rclone":
-		return rclone.Create(ctx, cfg.(rclone.Config))
+		be, err = rclone.Create(ctx, cfg.(rclone.Config))
+	default:
+		debug.Log("invalid repository scheme: %v", s)
+		return nil, errors.Fatalf("invalid scheme %q", loc.Scheme)
 	}
 
-	debug.Log("invalid repository scheme: %v", s)
-	return nil, errors.Fatalf("invalid scheme %q", loc.Scheme)
+	if err != nil {
+		return nil, err
+	}
+
+	return logger.New(sema.NewBackend(be)), nil
 }

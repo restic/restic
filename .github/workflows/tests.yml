@@ -64,7 +64,7 @@ jobs:
 
     steps:
       - name: Set up Go ${{ matrix.go }}
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
           go-version: ${{ matrix.go }}
 
@@ -340,7 +340,7 @@ jobs:
 
     steps:
       - name: Set up Go ${{ env.latest_go }}
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
           go-version: ${{ env.latest_go }}
 
@@ -365,7 +365,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set up Go ${{ env.latest_go }}
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
           go-version: ${{ env.latest_go }}
 

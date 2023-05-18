@@ -70,6 +70,11 @@ type Backend interface {
 	Delete(ctx context.Context) error
 }
 
+type BackendUnwrapper interface {
+	// Unwrap returns the underlying backend or nil if there is none.
+	Unwrap() Backend
+}
+
 // FileInfo is contains information about a file in the backend.
 type FileInfo struct {
 	Size int64

@@ -150,7 +150,7 @@ func newTestRepo(content []TestFile) *TestRepo {
 func restoreAndVerify(t *testing.T, tempdir string, content []TestFile, files map[string]bool, sparse bool) {
 	repo := newTestRepo(content)
 
-	r := newFileRestorer(tempdir, repo.loader, repo.key, repo.Lookup, 2, sparse)
+	r := newFileRestorer(tempdir, repo.loader, repo.key, repo.Lookup, 2, sparse, nil)
 
 	if files == nil {
 		r.files = repo.files
@@ -265,7 +265,7 @@ func TestErrorRestoreFiles(t *testing.T) {
 		return loadError
 	}
 
-	r := newFileRestorer(tempdir, repo.loader, repo.key, repo.Lookup, 2, false)
+	r := newFileRestorer(tempdir, repo.loader, repo.key, repo.Lookup, 2, false, nil)
 	r.files = repo.files
 
 	err := r.restoreFiles(context.TODO())
@@ -304,7 +304,7 @@ func testPartialDownloadError(t *testing.T, part int) {
 		return loader(ctx, h, length, offset, fn)
 	}
 
-	r := newFileRestorer(tempdir, repo.loader, repo.key, repo.Lookup, 2, false)
+	r := newFileRestorer(tempdir, repo.loader, repo.key, repo.Lookup, 2, false, nil)
 	r.files = repo.files
 	r.Error = func(s string, e error) error {
 		// ignore errors as in the `restore` command

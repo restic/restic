@@ -40,11 +40,9 @@ func TestDry(t *testing.T) {
 		{d, "delete", "", "", ""},
 		{d, "stat", "a", "", "not found"},
 		{d, "list", "", "", ""},
-		{d, "save", "", "", "invalid"},
 		{m, "save", "a", "baz", ""},  // save a directly to the mem backend
 		{d, "save", "b", "foob", ""}, // b is not saved
 		{d, "save", "b", "xxx", ""},  // no error as b is not saved
-		{d, "stat", "", "", "invalid"},
 		{d, "stat", "a", "a 3", ""},
 		{d, "load", "a", "baz", ""},
 		{d, "load", "b", "", "not found"},

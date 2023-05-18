@@ -63,22 +63,30 @@ func writeManpages(dir string) error {
 }
 
 func writeBashCompletion(file string) error {
-	Verbosef("writing bash completion file to %v\n", file)
+	if stdoutIsTerminal() {
+		Verbosef("writing bash completion file to %v\n", file)
+	}
 	return cmdRoot.GenBashCompletionFile(file)
 }
 
 func writeFishCompletion(file string) error {
-	Verbosef("writing fish completion file to %v\n", file)
+	if stdoutIsTerminal() {
+		Verbosef("writing fish completion file to %v\n", file)
+	}
 	return cmdRoot.GenFishCompletionFile(file, true)
 }
 
 func writeZSHCompletion(file string) error {
-	Verbosef("writing zsh completion file to %v\n", file)
+	if stdoutIsTerminal() {
+		Verbosef("writing zsh completion file to %v\n", file)
+	}
 	return cmdRoot.GenZshCompletionFile(file)
 }
 
 func writePowerShellCompletion(file string) error {
-	Verbosef("writing powershell completion file to %v\n", file)
+	if stdoutIsTerminal() {
+		Verbosef("writing powershell completion file to %v\n", file)
+	}
 	return cmdRoot.GenPowerShellCompletionFile(file)
 }
 

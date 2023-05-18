@@ -62,6 +62,12 @@ func CleanupHandler(c <-chan os.Signal) {
 		debug.Log("signal %v received, cleaning up", s)
 		Warnf("%ssignal %v received, cleaning up\n", clearLine(0), s)
 
+		if val, _ := os.LookupEnv("RESTIC_DEBUG_STACKTRACE_SIGINT"); val != "" {
+			_, _ = os.Stderr.WriteString("\n--- STACKTRACE START ---\n\n")
+			_, _ = os.Stderr.WriteString(debug.DumpStacktrace())
+			_, _ = os.Stderr.WriteString("\n--- STACKTRACE END ---\n")
+		}
+
 		code := 0
 
 		if s == syscall.SIGINT {
@@ -78,5 +84,6 @@ func CleanupHandler(c <-chan os.Signal) {
 // given exit code.
 func Exit(code int) {
 	code = RunCleanupHandlers(code)
+	debug.Log("exiting with status code %d", code)
 	os.Exit(code)
 }

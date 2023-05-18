@@ -225,7 +225,7 @@ the exclude options are:
 
 -  ``--exclude`` Specified one or more times to exclude one or more items
 -  ``--iexclude`` Same as ``--exclude`` but ignores the case of paths
--  ``--exclude-caches`` Specified once to exclude folders containing `this special file <https://bford.info/cachedir/>`__
+-  ``--exclude-caches`` Specified once to exclude a folder's content if it contains `the special CACHEDIR.TAG file <https://bford.info/cachedir/>`__, but keep ``CACHEDIR.TAG``.
 -  ``--exclude-file`` Specified one or more times to exclude items listed in a given file
 -  ``--iexclude-file`` Same as ``exclude-file`` but ignores cases like in ``--iexclude``
 -  ``--exclude-if-present foo`` Specified one or more times to exclude a folder's content if it contains a file called ``foo`` (optionally having a given header, no wildcards for the file name supported)
@@ -254,14 +254,14 @@ This instructs restic to exclude files matching the following criteria:
  * All files matching ``*.go`` (second line in ``excludes.txt``)
  * All files and sub-directories named ``bar`` which reside somewhere below a directory called ``foo`` (fourth line in ``excludes.txt``)
 
-Patterns use `filepath.Glob <https://golang.org/pkg/path/filepath/#Glob>`__ internally,
-see `filepath.Match <https://golang.org/pkg/path/filepath/#Match>`__ for
-syntax. Patterns are tested against the full path of a file/dir to be saved,
+Patterns use the syntax of the Go function
+`filepath.Match <https://pkg.go.dev/path/filepath#Match>`__
+and are tested against the full path of a file/dir to be saved,
 even if restic is passed a relative path to save. Empty lines and lines
 starting with a ``#`` are ignored.
 
 Environment variables in exclude files are expanded with `os.ExpandEnv
-<https://golang.org/pkg/os/#ExpandEnv>`__, so ``/home/$USER/foo`` will be
+<https://pkg.go.dev/os#ExpandEnv>`__, so ``/home/$USER/foo`` will be
 expanded to ``/home/bob/foo`` for the user ``bob``. To get a literal dollar
 sign, write ``$$`` to the file - this has to be done even when there's no
 matching environment variable for the word following a single ``$``. Note
@@ -381,7 +381,7 @@ contains one *pattern* per line. The file must be encoded as UTF-8, or UTF-16
 with a byte-order mark. Leading and trailing whitespace is removed from the
 patterns. Empty lines and lines starting with a ``#`` are ignored and each
 pattern is expanded when read, such that special characters in it are expanded
-using the Go function `filepath.Glob <https://golang.org/pkg/path/filepath/#Glob>`__
+using the Go function `filepath.Glob <https://pkg.go.dev/path/filepath#Glob>`__
 - please see its documentation for the syntax you can use in the patterns.
 
 The argument passed to ``--files-from-verbatim`` must be the name of a text file
@@ -533,8 +533,11 @@ Restic does not have a built-in way of scheduling backups, as it's a tool
 that runs when executed rather than a daemon. There are plenty of different
 ways to schedule backup runs on various different platforms, e.g. systemd
 and cron on Linux/BSD and Task Scheduler in Windows, depending on one's
-needs and requirements. When scheduling restic to run recurringly, please
-make sure to detect already running instances before starting the backup.
+needs and requirements. If you don't want to implement your own scheduling,
+you can use `resticprofile <https://github.com/creativeprojects/resticprofile/#resticprofile>`__.
+
+When scheduling restic to run recurringly, please make sure to detect already
+running instances before starting the backup.
 
 Space requirements
 ******************

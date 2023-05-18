@@ -10,7 +10,7 @@ refer to the documentation for the respective version. The binary produced
 depends on the following things:
 
  * The source code for the release
- * The exact version of the official `Go compiler <https://golang.org>`__ used to produce the binaries (running ``restic version`` will print this)
+ * The exact version of the official `Go compiler <https://go.dev>`__ used to produce the binaries (running ``restic version`` will print this)
  * The architecture and operating system the Go compiler runs on (Linux, ``amd64``)
  * The build tags (for official binaries, it's the tag ``selfupdate``)
  * The path where the source code is extracted to (``/restic``)

@@ -87,24 +87,55 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 		return true
 	}
 
+	rewriter := walker.NewTreeRewriter(walker.RewriteOpts{
+		RewriteNode: func(node *restic.Node, path string) *restic.Node {
+			if selectByName(path) {
+				return node
+			}
+			Verbosef(fmt.Sprintf("excluding %s\n", path))
+			return nil
+		},
+		DisableNodeCache: true,
+	})
+
+	return filterAndReplaceSnapshot(ctx, repo, sn,
+		func(ctx context.Context, sn *restic.Snapshot) (restic.ID, error) {
+			return rewriter.RewriteTree(ctx, repo, "/", *sn.Tree)
+		}, opts.DryRun, opts.Forget, "rewrite")
+}
+
+func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *restic.Snapshot, filter func(ctx context.Context, sn *restic.Snapshot) (restic.ID, error), dryRun bool, forget bool, addTag string) (bool, error) {
+
 	wg, wgCtx := errgroup.WithContext(ctx)
 	repo.StartPackUploader(wgCtx, wg)
 
 	var filteredTree restic.ID
 	wg.Go(func() error {
-		filteredTree, err = walker.FilterTree(wgCtx, repo, "/", *sn.Tree, &walker.TreeFilterVisitor{
-			SelectByName: selectByName,
-			PrintExclude: func(path string) { Verbosef(fmt.Sprintf("excluding %s\n", path)) },
-		})
+		var err error
+		filteredTree, err = filter(ctx, sn)
 		if err != nil {
 			return err
 		}
 
 		return repo.Flush(wgCtx)
 	})
-	err = wg.Wait()
+	err := wg.Wait()
 	if err != nil {
 		return false, err
+	}
+
+	if filteredTree.IsNull() {
+		if dryRun {
+			Verbosef("would delete empty snapshot\n")
+		} else {
+			h := restic.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
+			if err = repo.Backend().Remove(ctx, h); err != nil {
+				return false, err
+			}
+			debug.Log("removed empty snapshot %v", sn.ID())
+			Verbosef("removed empty snapshot %v\n", sn.ID().Str())
+		}
+		return true, nil
 	}
 
 	if filteredTree == *sn.Tree {
@@ -113,10 +144,10 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 	}
 
 	debug.Log("Snapshot %v modified", sn)
-	if opts.DryRun {
+	if dryRun {
 		Verbosef("would save new snapshot\n")
 
-		if opts.Forget {
+		if forget {
 			Verbosef("would remove old snapshot\n")
 		}
 
@@ -125,10 +156,10 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 
 	// Always set the original snapshot id as this essentially a new snapshot.
 	sn.Original = sn.ID()
-	*sn.Tree = filteredTree
+	sn.Tree = &filteredTree
 
-	if !opts.Forget {
-		sn.AddTags([]string{"rewrite"})
+	if !forget {
+		sn.AddTags([]string{addTag})
 	}
 
 	// Save the new snapshot.
@@ -136,8 +167,9 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 	if err != nil {
 		return false, err
 	}
+	Verbosef("saved new snapshot %v\n", id.Str())
 
-	if opts.Forget {
+	if forget {
 		h := restic.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
 		if err = repo.Backend().Remove(ctx, h); err != nil {
 			return false, err
@@ -145,7 +177,6 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 		debug.Log("removed old snapshot %v", sn.ID())
 		Verbosef("removed old snapshot %v\n", sn.ID().Str())
 	}
-	Verbosef("saved new snapshot %v\n", id.Str())
 	return true, nil
 }
 
@@ -164,9 +195,9 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 		var err error
 		if opts.Forget {
 			Verbosef("create exclusive lock for repository\n")
-			lock, ctx, err = lockRepoExclusive(ctx, repo)
+			lock, ctx, err = lockRepoExclusive(ctx, repo, gopts.RetryLock, gopts.JSON)
 		} else {
-			lock, ctx, err = lockRepo(ctx, repo)
+			lock, ctx, err = lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
 		}
 		defer unlockRepo(lock)
 		if err != nil {

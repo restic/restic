@@ -207,7 +207,7 @@ func (arch *Archiver) wrapLoadTreeError(id restic.ID, err error) error {
 	if arch.Repo.Index().Has(restic.BlobHandle{ID: id, Type: restic.TreeBlob}) {
 		err = errors.Errorf("tree %v could not be loaded; the repository could be damaged: %v", id, err)
 	} else {
-		err = errors.Errorf("tree %v is not known; the repository could be damaged, run `rebuild-index` to try to repair it", id)
+		err = errors.Errorf("tree %v is not known; the repository could be damaged, run `repair index` to try to repair it", id)
 	}
 	return err
 }

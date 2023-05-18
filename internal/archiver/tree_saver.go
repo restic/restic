@@ -105,14 +105,15 @@ func (s *TreeSaver) save(ctx context.Context, job *saveTreeJob) (*restic.Node, I
 			continue
 		}
 
-		debug.Log("insert %v", fnr.node.Name)
 		err := builder.AddNode(fnr.node)
 		if err != nil && errors.Is(err, restic.ErrTreeNotOrdered) && lastNode != nil && fnr.node.Equals(*lastNode) {
+			debug.Log("insert %v failed: %v", fnr.node.Name, err)
 			// ignore error if an _identical_ node already exists, but nevertheless issue a warning
 			_ = s.errFn(fnr.target, err)
 			err = nil
 		}
 		if err != nil {
+			debug.Log("insert %v failed: %v", fnr.node.Name, err)
 			return nil, stats, err
 		}
 		lastNode = fnr.node

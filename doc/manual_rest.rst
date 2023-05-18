@@ -26,7 +26,7 @@ Usage help is available:
       dump          Print a backed-up file to stdout
       find          Find a file, a directory or restic IDs
       forget        Remove snapshots from the repository
-      generate      Generate manual pages and auto-completion files (bash, fish, zsh)
+      generate      Generate manual pages and auto-completion files (bash, fish, zsh, powershell)
       help          Help about any command
       init          Initialize a new repository
       key           Manage keys (passwords)
@@ -35,8 +35,8 @@ Usage help is available:
       migrate       Apply migrations
       mount         Mount the repository
       prune         Remove unneeded data from the repository
-      rebuild-index Build a new index
       recover       Recover data from the repository not referenced by snapshots
+      repair        Repair the repository
       restore       Extract the data from a snapshot
       rewrite       Rewrite snapshots to exclude unwanted files
       self-update   Update the restic binary
@@ -50,7 +50,7 @@ Usage help is available:
           --cacert file                file to load root certificates from (default: use system certificates)
           --cache-dir directory        set the cache directory. (default: use system default cache directory)
           --cleanup-cache              auto remove old cache directories
-          --compression mode           compression mode (only available for repository format version 2), one of (auto|off|max) (default auto)
+          --compression mode           compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION) (default auto)
       -h, --help                       help for restic
           --insecure-tls               skip TLS certificate verification when connecting to the repository (insecure)
           --json                       set output mode to JSON for commands that support it
@@ -66,6 +66,7 @@ Usage help is available:
       -q, --quiet                      do not output comprehensive progress report
       -r, --repo repository            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
           --repository-file file       file to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
+          --retry-lock duration        retry to lock the repository if it is already locked, takes a value like 5m or 2h (default: no retries)
           --tls-client-cert file       path to a file containing PEM encoded TLS client certificate and private key
       -v, --verbose                    be verbose (specify multiple times or a level using --verbose=n, max level/times is 2)
 
@@ -105,6 +106,7 @@ command:
           --files-from-raw file                    read the files to backup from file (can be combined with file args; can be specified multiple times)
           --files-from-verbatim file               read the files to backup from file (can be combined with file args; can be specified multiple times)
       -f, --force                                  force re-reading the target files/directories (overrides the "parent" flag)
+      -g, --group-by group                         group snapshots by host, paths and/or tags, separated by comma (disable grouping with '') (default host,paths)
       -h, --help                                   help for backup
       -H, --host hostname                          set the hostname for the snapshot manually. To prevent an expensive rescan use the "parent" flag
           --iexclude pattern                       same as --exclude pattern but ignores the casing of filenames
@@ -113,8 +115,8 @@ command:
           --ignore-inode                           ignore inode number changes when checking for modified files
           --no-scan                                do not run scanner to estimate size of backup
       -x, --one-file-system                        exclude other file systems, don't cross filesystem boundaries and subvolumes
-          --parent snapshot                        use this parent snapshot (default: last snapshot in the repository that has the same target files/directories, and is not newer than the snapshot time)
-          --read-concurrency n                     read n file concurrently (default: $RESTIC_READ_CONCURRENCY or 2)
+          --parent snapshot                        use this parent snapshot (default: latest snapshot in the group determined by --group-by and not newer than the timestamp determined by --time)
+          --read-concurrency n                     read n files concurrently (default: $RESTIC_READ_CONCURRENCY or 2)
           --stdin                                  read backup from stdin
           --stdin-filename filename                filename to use when reading from stdin (default "stdin")
           --tag tags                               add tags for the new snapshot in the format `tag[,tag,...]` (can be specified multiple times) (default [])
@@ -126,7 +128,7 @@ command:
           --cacert file                file to load root certificates from (default: use system certificates)
           --cache-dir directory        set the cache directory. (default: use system default cache directory)
           --cleanup-cache              auto remove old cache directories
-          --compression mode           compression mode (only available for repository format version 2), one of (auto|off|max) (default auto)
+          --compression mode           compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION) (default auto)
           --insecure-tls               skip TLS certificate verification when connecting to the repository (insecure)
           --json                       set output mode to JSON for commands that support it
           --key-hint key               key ID of key to try decrypting first (default: $RESTIC_KEY_HINT)
@@ -141,6 +143,7 @@ command:
       -q, --quiet                      do not output comprehensive progress report
       -r, --repo repository            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
           --repository-file file       file to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
+          --retry-lock duration        retry to lock the repository if it is already locked, takes a value like 5m or 2h (default: no retries)
           --tls-client-cert file       path to a file containing PEM encoded TLS client certificate and private key
       -v, --verbose                    be verbose (specify multiple times or a level using --verbose=n, max level/times is 2)
 
@@ -224,7 +227,7 @@ locks with the following command:
     d369ccc7d126594950bf74f0a348d5d98d9e99f3215082eb69bf02dc9b3e464c
 
 The ``find`` command searches for a given
-`pattern <https://golang.org/pkg/path/filepath/#Match>`__ in the
+`pattern <https://pkg.go.dev/path/filepath#Match>`__ in the
 repository.
 
 .. code-block:: console

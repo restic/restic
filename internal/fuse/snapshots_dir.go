@@ -142,7 +142,7 @@ func (l *snapshotLink) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Inode = l.inode
 	a.Mode = os.ModeSymlink | 0777
 	a.Size = uint64(len(l.target))
-	a.Blocks = 1 + a.Size/blockSize
+	a.Blocks = (a.Size + blockSize - 1) / blockSize
 	a.Uid = l.root.uid
 	a.Gid = l.root.gid
 	a.Atime = l.snapshot.Time

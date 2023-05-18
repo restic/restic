@@ -575,7 +575,7 @@ func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []
 
 	if !gopts.NoLock {
 		var lock *restic.Lock
-		lock, ctx, err = lockRepo(ctx, repo)
+		lock, ctx, err = lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
 		defer unlockRepo(lock)
 		if err != nil {
 			return err

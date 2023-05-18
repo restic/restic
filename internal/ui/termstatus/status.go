@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -302,29 +303,54 @@ func Truncate(s string, w int) string {
 		return s
 	}
 
-	for i, r := range s {
+	for i := uint(0); i < uint(len(s)); {
+		utfsize := uint(1) // UTF-8 encoding size of first rune in s.
 		w--
-		if r > unicode.MaxASCII && wideRune(r) {
-			w--
+
+		if s[i] > unicode.MaxASCII {
+			var wide bool
+			if wide, utfsize = wideRune(s[i:]); wide {
+				w--
+			}
 		}
 
 		if w < 0 {
 			return s[:i]
 		}
+		i += utfsize
 	}
 
 	return s
 }
 
-// Guess whether r would occupy two terminal cells instead of one.
-// This cannot be determined exactly without knowing the terminal font,
-// so we treat all ambigous runes as full-width, i.e., two cells.
-func wideRune(r rune) bool {
-	kind := width.LookupRune(r).Kind()
-	return kind != width.Neutral && kind != width.EastAsianNarrow
+// Guess whether the first rune in s would occupy two terminal cells
+// instead of one. This cannot be determined exactly without knowing
+// the terminal font, so we treat all ambigous runes as full-width,
+// i.e., two cells.
+func wideRune(s string) (wide bool, utfsize uint) {
+	prop, size := width.LookupString(s)
+	kind := prop.Kind()
+	wide = kind != width.Neutral && kind != width.EastAsianNarrow
+	return wide, uint(size)
+}
+
+func sanitizeLines(lines []string, width int) []string {
+	// Sanitize lines and truncate them if they're too long.
+	for i, line := range lines {
+		line = Quote(line)
+		if width > 0 {
+			line = Truncate(line, width-2)
+		}
+		if i < len(lines)-1 { // Last line gets no line break.
+			line += "\n"
+		}
+		lines[i] = line
+	}
+	return lines
 }
 
 // SetStatus updates the status lines.
+// The lines should not contain newlines; this method adds them.
 func (t *Terminal) SetStatus(lines []string) {
 	if len(lines) == 0 {
 		return
@@ -341,21 +367,25 @@ func (t *Terminal) SetStatus(lines []string) {
 		}
 	}
 
-	// make sure that all lines have a line break and are not too long
-	for i, line := range lines {
-		line = strings.TrimRight(line, "\n")
-		if width > 0 {
-			line = Truncate(line, width-2)
-		}
-		lines[i] = line + "\n"
-	}
-
-	// make sure the last line does not have a line break
-	last := len(lines) - 1
-	lines[last] = strings.TrimRight(lines[last], "\n")
+	sanitizeLines(lines, width)
 
 	select {
 	case t.status <- status{lines: lines}:
 	case <-t.closed:
 	}
+}
+
+// Quote lines with funny characters in them, meaning control chars, newlines,
+// tabs, anything else non-printable and invalid UTF-8.
+//
+// This is intended to produce a string that does not mess up the terminal
+// rather than produce an unambiguous quoted string.
+func Quote(line string) string {
+	for _, r := range line {
+		// The replacement character usually means the input is not UTF-8.
+		if r == unicode.ReplacementChar || !unicode.IsPrint(r) {
+			return strconv.Quote(line)
+		}
+	}
+	return line
 }

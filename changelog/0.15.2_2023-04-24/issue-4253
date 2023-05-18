@@ -1,0 +1,18 @@
+Bugfix: Minimize risk of spurious filesystem loops with `mount`
+
+When a backup contains a directory that has the same name as its parent, say
+`a/b/b`, and the GNU `find` command was run on this backup in a restic mount,
+`find` would refuse to traverse the lowest `b` directory, instead printing
+`File system loop detected`. This was due to the way the restic mount command
+generates inode numbers for directories in the mount point.
+
+The rule for generating these inode numbers was changed in 0.15.0. It has
+now been changed again to avoid this issue. A perfect rule does not exist,
+but the probability of this behavior occurring is now extremely small.
+
+When it does occur, the mount point is not broken, and scripts that traverse
+the mount point should work as long as they don't rely on inode numbers for
+detecting filesystem loops.
+
+https://github.com/restic/restic/issues/4253
+https://github.com/restic/restic/pull/4255

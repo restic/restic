@@ -167,7 +167,7 @@ func runPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions) error
 		opts.unsafeRecovery = true
 	}
 
-	lock, ctx, err := lockRepoExclusive(ctx, repo)
+	lock, ctx, err := lockRepoExclusive(ctx, repo, gopts.RetryLock, gopts.JSON)
 	defer unlockRepo(lock)
 	if err != nil {
 		return err
@@ -488,7 +488,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Reposi
 			// Pack size does not fit and pack is needed => error
 			// If the pack is not needed, this is no error, the pack can
 			// and will be simply removed, see below.
-			Warnf("pack %s: calculated size %d does not match real size %d\nRun 'restic rebuild-index'.\n",
+			Warnf("pack %s: calculated size %d does not match real size %d\nRun 'restic repair index'.\n",
 				id.Str(), p.unusedSize+p.usedSize, packSize)
 			return errorSizeNotMatching
 		}

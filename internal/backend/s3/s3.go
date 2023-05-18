@@ -13,12 +13,10 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
-	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
-	"github.com/cenkalti/backoff/v4"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
@@ -26,7 +24,6 @@ import (
 // Backend stores data on an S3 endpoint.
 type Backend struct {
 	client *minio.Client
-	sem    sema.Semaphore
 	cfg    Config
 	layout.Layout
 }
@@ -102,14 +99,8 @@ func open(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, erro
 		return nil, errors.Wrap(err, "minio.New")
 	}
 
-	sem, err := sema.New(cfg.Connections)
-	if err != nil {
-		return nil, err
-	}
-
 	be := &Backend{
 		client: client,
-		sem:    sem,
 		cfg:    cfg,
 	}
 
@@ -169,8 +160,6 @@ func isAccessDenied(err error) bool {
 
 // IsNotExist returns true if the error is caused by a not existing file.
 func (be *Backend) IsNotExist(err error) bool {
-	debug.Log("IsNotExist(%T, %#v)", err, err)
-
 	var e minio.ErrorResponse
 	return errors.As(err, &e) && e.Code == "NoSuchKey"
 }
@@ -273,16 +262,7 @@ func (be *Backend) Path() string {
 
 // Save stores data in the backend at the handle.
 func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
-	debug.Log("Save %v", h)
-
-	if err := h.Valid(); err != nil {
-		return backoff.Permanent(err)
-	}
-
 	objName := be.Filename(h)
-
-	be.sem.GetToken()
-	defer be.sem.ReleaseToken()
 
 	opts := minio.PutObjectOptions{StorageClass: be.cfg.StorageClass}
 	opts.ContentType = "application/octet-stream"
@@ -291,10 +271,7 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 	// only use multipart uploads for very large files
 	opts.PartSize = 200 * 1024 * 1024
 
-	debug.Log("PutObject(%v, %v, %v)", be.cfg.Bucket, objName, rd.Length())
 	info, err := be.client.PutObject(ctx, be.cfg.Bucket, objName, io.NopCloser(rd), int64(rd.Length()), opts)
-
-	debug.Log("%v -> %v bytes, err %#v: %v", objName, info.Size, err, err)
 
 	// sanity check
 	if err == nil && info.Size != rd.Length() {
@@ -307,32 +284,20 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 // Load runs fn with a reader that yields the contents of the file at h at the
 // given offset.
 func (be *Backend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	return backend.DefaultLoad(ctx, h, length, offset, be.openReader, fn)
 }
 
 func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
-	debug.Log("Load %v, length %v, offset %v from %v", h, length, offset, be.Filename(h))
-	if err := h.Valid(); err != nil {
-		return nil, backoff.Permanent(err)
-	}
-
-	if offset < 0 {
-		return nil, errors.New("offset is negative")
-	}
-
-	if length < 0 {
-		return nil, errors.Errorf("invalid length %d", length)
-	}
-
 	objName := be.Filename(h)
 	opts := minio.GetObjectOptions{}
 
 	var err error
 	if length > 0 {
-		debug.Log("range: %v-%v", offset, offset+int64(length)-1)
 		err = opts.SetRange(offset, offset+int64(length)-1)
 	} else if offset > 0 {
-		debug.Log("range: %v-", offset)
 		err = opts.SetRange(offset, 0)
 	}
 
@@ -340,41 +305,30 @@ func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, 
 		return nil, errors.Wrap(err, "SetRange")
 	}
 
-	be.sem.GetToken()
-	ctx, cancel := context.WithCancel(ctx)
-
 	coreClient := minio.Core{Client: be.client}
 	rd, _, _, err := coreClient.GetObject(ctx, be.cfg.Bucket, objName, opts)
 	if err != nil {
-		cancel()
-		be.sem.ReleaseToken()
 		return nil, err
 	}
 
-	return be.sem.ReleaseTokenOnClose(rd, cancel), err
+	return rd, err
 }
 
 // Stat returns information about a blob.
 func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInfo, err error) {
-	debug.Log("%v", h)
-
 	objName := be.Filename(h)
 	var obj *minio.Object
 
 	opts := minio.GetObjectOptions{}
 
-	be.sem.GetToken()
 	obj, err = be.client.GetObject(ctx, be.cfg.Bucket, objName, opts)
 	if err != nil {
-		debug.Log("GetObject() err %v", err)
-		be.sem.ReleaseToken()
 		return restic.FileInfo{}, errors.Wrap(err, "client.GetObject")
 	}
 
 	// make sure that the object is closed properly.
 	defer func() {
 		e := obj.Close()
-		be.sem.ReleaseToken()
 		if err == nil {
 			err = errors.Wrap(e, "Close")
 		}
@@ -382,7 +336,6 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 
 	fi, err := obj.Stat()
 	if err != nil {
-		debug.Log("Stat() err %v", err)
 		return restic.FileInfo{}, errors.Wrap(err, "Stat")
 	}
 
@@ -393,11 +346,7 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	objName := be.Filename(h)
 
-	be.sem.GetToken()
 	err := be.client.RemoveObject(ctx, be.cfg.Bucket, objName, minio.RemoveObjectOptions{})
-	be.sem.ReleaseToken()
-
-	debug.Log("Remove(%v) at %v -> err %v", h, objName, err)
 
 	if be.IsNotExist(err) {
 		err = nil
@@ -409,8 +358,6 @@ func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 // List runs fn for each file in the backend which has the type t. When an
 // error occurs (or fn returns an error), List stops and returns it.
 func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
-	debug.Log("listing %v", t)
-
 	prefix, recursive := be.Basedir(t)
 
 	// make sure prefix ends with a slash
@@ -464,30 +411,9 @@ func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.F
 	return ctx.Err()
 }
 
-// Remove keys for a specified backend type.
-func (be *Backend) removeKeys(ctx context.Context, t restic.FileType) error {
-	return be.List(ctx, restic.PackFile, func(fi restic.FileInfo) error {
-		return be.Remove(ctx, restic.Handle{Type: t, Name: fi.Name})
-	})
-}
-
 // Delete removes all restic keys in the bucket. It will not remove the bucket itself.
 func (be *Backend) Delete(ctx context.Context) error {
-	alltypes := []restic.FileType{
-		restic.PackFile,
-		restic.KeyFile,
-		restic.LockFile,
-		restic.SnapshotFile,
-		restic.IndexFile}
-
-	for _, t := range alltypes {
-		err := be.removeKeys(ctx, t)
-		if err != nil {
-			return nil
-		}
-	}
-
-	return be.Remove(ctx, restic.Handle{Type: restic.ConfigFile})
+	return backend.DefaultDelete(ctx, be)
 }
 
 // Close does nothing

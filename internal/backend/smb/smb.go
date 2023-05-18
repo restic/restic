@@ -17,7 +17,6 @@ import (
 	"github.com/hirochachacha/go-smb2"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
-	"github.com/restic/restic/internal/backend/sema"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -46,7 +45,6 @@ import (
 
 // Backend stores data on an SMB endpoint.
 type Backend struct {
-	sem sema.Semaphore
 	Config
 	layout.Layout
 	backend.Modes
@@ -71,14 +69,8 @@ func open(ctx context.Context, cfg Config) (*Backend, error) {
 		return nil, err
 	}
 
-	sem, err := sema.New(cfg.Connections)
-	if err != nil {
-		return nil, err
-	}
-
 	b := &Backend{
 		Config: cfg,
-		sem:    sem,
 		Layout: l,
 	}
 
@@ -174,11 +166,6 @@ func (b *Backend) Join(p ...string) string {
 
 // Save stores data in the backend at the handle.
 func (b *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) (err error) {
-	debug.Log("Save %v", h)
-	if err := h.Valid(); err != nil {
-		return backoff.Permanent(err)
-	}
-
 	filename := b.Filename(h)
 	tmpFilename := filename + "-restic-temp-" + tempSuffix()
 	dir := filepath.Dir(tmpFilename)
@@ -189,9 +176,6 @@ func (b *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRea
 			err = backoff.Permanent(err)
 		}
 	}()
-
-	b.sem.GetToken()
-	defer b.sem.ReleaseToken()
 
 	b.addSession() // Show session in use
 	defer b.removeSession()
@@ -282,15 +266,6 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 }
 
 func (b *Backend) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
-	debug.Log("Load %v, length %v, offset %v", h, length, offset)
-	if err := h.Valid(); err != nil {
-		return nil, backoff.Permanent(err)
-	}
-
-	if offset < 0 {
-		return nil, errors.New("offset is negative")
-	}
-
 	b.addSession() // Show session in use
 	defer b.removeSession()
 	cn, err := b.getConnection(ctx, b.ShareName)
@@ -299,41 +274,28 @@ func (b *Backend) openReader(ctx context.Context, h restic.Handle, length int, o
 	}
 	defer b.putConnection(cn)
 
-	b.sem.GetToken()
 	f, err := cn.smbShare.Open(b.Filename(h))
 	if err != nil {
-		b.sem.ReleaseToken()
 		return nil, err
 	}
 
 	if offset > 0 {
 		_, err = f.Seek(offset, 0)
 		if err != nil {
-			b.sem.ReleaseToken()
 			_ = f.Close()
 			return nil, err
 		}
 	}
 
-	r := b.sem.ReleaseTokenOnClose(f, nil)
-
 	if length > 0 {
-		return backend.LimitReadCloser(r, int64(length)), nil
+		return backend.LimitReadCloser(f, int64(length)), nil
 	}
 
-	return r, nil
+	return f, nil
 }
 
 // Stat returns information about a blob.
 func (b *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, error) {
-	debug.Log("Stat %v", h)
-	if err := h.Valid(); err != nil {
-		return restic.FileInfo{}, backoff.Permanent(err)
-	}
-
-	b.sem.GetToken()
-	defer b.sem.ReleaseToken()
-
 	cn, err := b.getConnection(ctx, b.ShareName)
 	if err != nil {
 		return restic.FileInfo{}, err
@@ -350,11 +312,7 @@ func (b *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, e
 
 // Remove removes the blob with the given name and type.
 func (b *Backend) Remove(ctx context.Context, h restic.Handle) error {
-	debug.Log("Remove %v", h)
 	fn := b.Filename(h)
-
-	b.sem.GetToken()
-	defer b.sem.ReleaseToken()
 
 	cn, err := b.getConnection(ctx, b.ShareName)
 	if err != nil {
@@ -374,8 +332,6 @@ func (b *Backend) Remove(ctx context.Context, h restic.Handle) error {
 // List runs fn for each file in the backend which has the type t. When an
 // error occurs (or fn returns an error), List stops and returns it.
 func (b *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) (err error) {
-	debug.Log("List %v", t)
-
 	cn, err := b.getConnection(ctx, b.ShareName)
 	if err != nil {
 		return err
@@ -475,7 +431,6 @@ func (b *Backend) visitFiles(ctx context.Context, cn *conn, dir string, fn func(
 
 // Delete removes the repository and all files.
 func (b *Backend) Delete(ctx context.Context) error {
-	debug.Log("Delete()")
 	cn, err := b.getConnection(ctx, b.ShareName)
 	if err != nil {
 		return err
@@ -486,7 +441,6 @@ func (b *Backend) Delete(ctx context.Context) error {
 
 // Close closes all open files.
 func (b *Backend) Close() error {
-	debug.Log("Close()")
 	err := b.drainPool()
 	return err
 }
