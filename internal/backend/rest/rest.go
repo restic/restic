@@ -327,7 +327,7 @@ func (b *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.Fi
 	}
 
 	if resp.Header.Get("Content-Type") == ContentTypeV2 {
-		return b.listv2(ctx, t, resp, fn)
+		return b.listv2(ctx, resp, fn)
 	}
 
 	return b.listv1(ctx, t, resp, fn)
@@ -370,7 +370,7 @@ func (b *Backend) listv1(ctx context.Context, t restic.FileType, resp *http.Resp
 
 // listv2 uses the REST protocol v2, where a list HTTP request (e.g. `GET
 // /data/`) returns the names and sizes of all files.
-func (b *Backend) listv2(ctx context.Context, t restic.FileType, resp *http.Response, fn func(restic.FileInfo) error) error {
+func (b *Backend) listv2(ctx context.Context, resp *http.Response, fn func(restic.FileInfo) error) error {
 	debug.Log("parsing API v2 response")
 	dec := json.NewDecoder(resp.Body)
 
