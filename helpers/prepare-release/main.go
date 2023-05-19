@@ -409,13 +409,19 @@ func signFiles(filenames ...string) {
 	}
 }
 
-func updateDocker(outputDir, version string) {
-	cmd := fmt.Sprintf("bzcat %s/restic_%s_linux_amd64.bz2 > restic", outputDir, version)
-	run("sh", "-c", cmd)
-	run("chmod", "+x", "restic")
-	run("docker", "pull", "alpine:latest")
-	run("docker", "build", "--rm", "--tag", "restic/restic:latest", "-f", "docker/Dockerfile", ".")
-	run("docker", "tag", "restic/restic:latest", "restic/restic:"+version)
+func updateDocker(outputDir, version string) string {
+	run("docker", "buildx", "create", "--name", "restic-release-builder", "--driver", "docker-container", "--bootstrap")
+
+	cmds := ""
+
+	for _, tag := range []string{"restic/restic:latest", "restic/restic:" + version} {
+		cmd := fmt.Sprintf("docker buildx build --builder restic-release-builder --platform linux/386,linux/amd64,linux/arm,linux/arm64 --pull --tag %q -f docker/Dockerfile.release --build-arg VERSION=%q %q", tag, version, outputDir)
+		run("sh", "-c", cmd)
+
+		cmds += cmd + " --push\n"
+	}
+
+	return cmds + "\ndocker buildx rm restic-release-builder"
 }
 
 func tempdir(prefix string) string {
@@ -470,9 +476,9 @@ func main() {
 
 	signFiles(filepath.Join(opts.OutputDir, "SHA256SUMS"), tarFilename)
 
-	updateDocker(opts.OutputDir, opts.Version)
+	dockerCmds := updateDocker(opts.OutputDir, opts.Version)
 
 	msg("done, output dir is %v", opts.OutputDir)
 
-	msg("now run:\n\ngit push --tags origin master\ndocker push restic/restic:latest\ndocker push restic/restic:%s\n", opts.Version)
+	msg("now run:\n\ngit push --tags origin master\n%s\n", dockerCmds)
 }
