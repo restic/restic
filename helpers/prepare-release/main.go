@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -409,19 +410,19 @@ func signFiles(filenames ...string) {
 	}
 }
 
-func updateDocker(outputDir, version string) string {
-	run("docker", "buildx", "create", "--name", "restic-release-builder", "--driver", "docker-container", "--bootstrap")
+func updateDocker(sourceDir, version string) string {
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	builderName := fmt.Sprintf("restic-release-builder-%d", r.Int())
+	run("docker", "buildx", "create", "--name", builderName, "--driver", "docker-container", "--bootstrap")
 
-	cmds := ""
+	buildCmd := fmt.Sprintf("docker buildx build --builder %s --platform linux/386,linux/amd64,linux/arm,linux/arm64 --pull -f docker/Dockerfile.release %q", builderName, sourceDir)
+	run("sh", "-c", buildCmd+" --no-cache")
 
+	publishCmds := ""
 	for _, tag := range []string{"restic/restic:latest", "restic/restic:" + version} {
-		cmd := fmt.Sprintf("docker buildx build --builder restic-release-builder --platform linux/386,linux/amd64,linux/arm,linux/arm64 --pull --tag %q -f docker/Dockerfile.release --build-arg VERSION=%q %q", tag, version, outputDir)
-		run("sh", "-c", cmd)
-
-		cmds += cmd + " --push\n"
+		publishCmds += buildCmd + fmt.Sprintf(" --tag %q --push\n", tag)
 	}
-
-	return cmds + "\ndocker buildx rm restic-release-builder"
+	return publishCmds + "\ndocker buildx rm " + builderName
 }
 
 func tempdir(prefix string) string {
@@ -470,15 +471,14 @@ func main() {
 
 	extractTar(tarFilename, sourceDir)
 	runBuild(sourceDir, opts.OutputDir, opts.Version)
-	rmdir(sourceDir)
 
 	sha256sums(opts.OutputDir, filepath.Join(opts.OutputDir, "SHA256SUMS"))
 
 	signFiles(filepath.Join(opts.OutputDir, "SHA256SUMS"), tarFilename)
 
-	dockerCmds := updateDocker(opts.OutputDir, opts.Version)
+	dockerCmds := updateDocker(sourceDir, opts.Version)
 
 	msg("done, output dir is %v", opts.OutputDir)
 
-	msg("now run:\n\ngit push --tags origin master\n%s\n", dockerCmds)
+	msg("now run:\n\ngit push --tags origin master\n%s\n\nrm -rf %q", dockerCmds, sourceDir)
 }
