@@ -7,21 +7,17 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
-	"syscall"
-	"unsafe"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+
+	"golang.org/x/sys/unix"
 )
 
 func tcsetpgrp(fd int, pid int) error {
-	_, _, errno := syscall.RawSyscall(syscall.SYS_IOCTL, uintptr(fd),
-		uintptr(syscall.TIOCSPGRP), uintptr(unsafe.Pointer(&pid)))
-	if errno == 0 {
-		return nil
-	}
-
-	return errno
+	// IoctlSetPointerInt silently casts to int32 internally,
+	// so this assumes pid fits in 31 bits.
+	return unix.IoctlSetPointerInt(fd, unix.TIOCSPGRP, pid)
 }
 
 func startForeground(cmd *exec.Cmd) (bg func() error, err error) {
@@ -35,11 +31,11 @@ func startForeground(cmd *exec.Cmd) (bg func() error, err error) {
 		return bg, cmd.Start()
 	}
 
-	signal.Ignore(syscall.SIGTTIN)
-	signal.Ignore(syscall.SIGTTOU)
+	signal.Ignore(unix.SIGTTIN)
+	signal.Ignore(unix.SIGTTOU)
 
 	// run the command in its own process group
-	cmd.SysProcAttr = &syscall.SysProcAttr{
+	cmd.SysProcAttr = &unix.SysProcAttr{
 		Setpgid: true,
 	}
 
@@ -51,7 +47,7 @@ func startForeground(cmd *exec.Cmd) (bg func() error, err error) {
 	}
 
 	// move the command's process group into the foreground
-	prev := syscall.Getpgrp()
+	prev := unix.Getpgrp()
 	err = tcsetpgrp(int(tty.Fd()), cmd.Process.Pid)
 	if err != nil {
 		_ = tty.Close()
@@ -59,8 +55,8 @@ func startForeground(cmd *exec.Cmd) (bg func() error, err error) {
 	}
 
 	bg = func() error {
-		signal.Reset(syscall.SIGTTIN)
-		signal.Reset(syscall.SIGTTOU)
+		signal.Reset(unix.SIGTTIN)
+		signal.Reset(unix.SIGTTOU)
 
 		// reset the foreground process group
 		err = tcsetpgrp(int(tty.Fd()), prev)
