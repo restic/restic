@@ -94,7 +94,7 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions
 	}
 
 	if gopts.JSON {
-		err := printSnapshotGroupJSON(gopts.stdout, snapshotGroups, grouped)
+		err := printSnapshotGroupJSON(globalOptions.stdout, snapshotGroups, grouped)
 		if err != nil {
 			Warnf("error printing snapshots: %v\n", err)
 		}
@@ -103,13 +103,13 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions
 
 	for k, list := range snapshotGroups {
 		if grouped {
-			err := PrintSnapshotGroupHeader(gopts.stdout, k)
+			err := PrintSnapshotGroupHeader(globalOptions.stdout, k)
 			if err != nil {
 				Warnf("error printing snapshots: %v\n", err)
 				return nil
 			}
 		}
-		PrintSnapshots(gopts.stdout, list, nil, opts.Compact)
+		PrintSnapshots(globalOptions.stdout, list, nil, opts.Compact)
 	}
 
 	return nil

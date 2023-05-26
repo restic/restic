@@ -181,7 +181,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 	)
 
 	if gopts.JSON {
-		enc := json.NewEncoder(gopts.stdout)
+		enc := json.NewEncoder(globalOptions.stdout)
 
 		printSnapshot = func(sn *restic.Snapshot) {
 			err := enc.Encode(lsSnapshot{

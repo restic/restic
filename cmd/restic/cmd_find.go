@@ -594,7 +594,7 @@ func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []
 	f := &Finder{
 		repo:        repo,
 		pat:         pat,
-		out:         statefulOutput{ListLong: opts.ListLong, JSON: globalOptions.JSON},
+		out:         statefulOutput{ListLong: opts.ListLong, JSON: gopts.JSON},
 		ignoreTrees: restic.NewIDSet(),
 	}
 

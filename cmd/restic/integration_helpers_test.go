@@ -2,13 +2,17 @@ package main
 
 import (
 	"bytes"
+	"context"
+	"crypto/rand"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
 
 	"github.com/restic/restic/internal/backend/retry"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -214,4 +218,141 @@ func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
 	}
 
 	return env, cleanup
+}
+
+func testSetupBackupData(t testing.TB, env *testEnvironment) string {
+	datafile := filepath.Join("testdata", "backup-data.tar.gz")
+	testRunInit(t, env.gopts)
+	rtest.SetupTarTestFixture(t, env.testdata, datafile)
+	return datafile
+}
+
+func listPacks(gopts GlobalOptions, t *testing.T) restic.IDSet {
+	r, err := OpenRepository(context.TODO(), gopts)
+	rtest.OK(t, err)
+
+	packs := restic.NewIDSet()
+
+	rtest.OK(t, r.List(context.TODO(), restic.PackFile, func(id restic.ID, size int64) error {
+		packs.Insert(id)
+		return nil
+	}))
+	return packs
+}
+
+func removePacks(gopts GlobalOptions, t testing.TB, remove restic.IDSet) {
+	r, err := OpenRepository(context.TODO(), gopts)
+	rtest.OK(t, err)
+
+	for id := range remove {
+		rtest.OK(t, r.Backend().Remove(context.TODO(), restic.Handle{Type: restic.PackFile, Name: id.String()}))
+	}
+}
+
+func removePacksExcept(gopts GlobalOptions, t testing.TB, keep restic.IDSet, removeTreePacks bool) {
+	r, err := OpenRepository(context.TODO(), gopts)
+	rtest.OK(t, err)
+
+	// Get all tree packs
+	rtest.OK(t, r.LoadIndex(context.TODO()))
+
+	treePacks := restic.NewIDSet()
+	r.Index().Each(context.TODO(), func(pb restic.PackedBlob) {
+		if pb.Type == restic.TreeBlob {
+			treePacks.Insert(pb.PackID)
+		}
+	})
+
+	// remove all packs containing data blobs
+	rtest.OK(t, r.List(context.TODO(), restic.PackFile, func(id restic.ID, size int64) error {
+		if treePacks.Has(id) != removeTreePacks || keep.Has(id) {
+			return nil
+		}
+		return r.Backend().Remove(context.TODO(), restic.Handle{Type: restic.PackFile, Name: id.String()})
+	}))
+}
+
+func includes(haystack []string, needle string) bool {
+	for _, s := range haystack {
+		if s == needle {
+			return true
+		}
+	}
+
+	return false
+}
+
+func loadSnapshotMap(t testing.TB, gopts GlobalOptions) map[string]struct{} {
+	snapshotIDs := testRunList(t, "snapshots", gopts)
+
+	m := make(map[string]struct{})
+	for _, id := range snapshotIDs {
+		m[id.String()] = struct{}{}
+	}
+
+	return m
+}
+
+func lastSnapshot(old, new map[string]struct{}) (map[string]struct{}, string) {
+	for k := range new {
+		if _, ok := old[k]; !ok {
+			old[k] = struct{}{}
+			return old, k
+		}
+	}
+
+	return old, ""
+}
+
+func appendRandomData(filename string, bytes uint) error {
+	f, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		fmt.Fprint(os.Stderr, err)
+		return err
+	}
+
+	_, err = f.Seek(0, 2)
+	if err != nil {
+		fmt.Fprint(os.Stderr, err)
+		return err
+	}
+
+	_, err = io.Copy(f, io.LimitReader(rand.Reader, int64(bytes)))
+	if err != nil {
+		fmt.Fprint(os.Stderr, err)
+		return err
+	}
+
+	return f.Close()
+}
+
+func testFileSize(filename string, size int64) error {
+	fi, err := os.Stat(filename)
+	if err != nil {
+		return err
+	}
+
+	if fi.Size() != size {
+		return errors.Fatalf("wrong file size for %v: expected %v, got %v", filename, size, fi.Size())
+	}
+
+	return nil
+}
+
+func withRestoreGlobalOptions(inner func() error) error {
+	gopts := globalOptions
+	defer func() {
+		globalOptions = gopts
+	}()
+	return inner()
+}
+
+func withCaptureStdout(inner func() error) (*bytes.Buffer, error) {
+	buf := bytes.NewBuffer(nil)
+	err := withRestoreGlobalOptions(func() error {
+		globalOptions.stdout = buf
+		return inner()
+	})
+
+	return buf, err
 }

@@ -142,7 +142,7 @@ func rebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOpti
 
 	if len(packSizeFromList) > 0 {
 		Verbosef("reading pack files\n")
-		bar := newProgressMax(!globalOptions.Quiet, uint64(len(packSizeFromList)), "packs")
+		bar := newProgressMax(!gopts.Quiet, uint64(len(packSizeFromList)), "packs")
 		invalidFiles, err := repo.CreateIndexFromPacks(ctx, packSizeFromList, bar)
 		bar.Done()
 		if err != nil {
