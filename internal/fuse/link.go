@@ -24,11 +24,11 @@ func newLink(root *Root, inode uint64, node *restic.Node) (*link, error) {
 	return &link{root: root, inode: inode, node: node}, nil
 }
 
-func (l *link) Readlink(ctx context.Context, req *fuse.ReadlinkRequest) (string, error) {
+func (l *link) Readlink(_ context.Context, _ *fuse.ReadlinkRequest) (string, error) {
 	return l.node.LinkTarget, nil
 }
 
-func (l *link) Attr(ctx context.Context, a *fuse.Attr) error {
+func (l *link) Attr(_ context.Context, a *fuse.Attr) error {
 	a.Inode = l.inode
 	a.Mode = l.node.Mode
 

@@ -306,10 +306,7 @@ func (be *b2Backend) List(ctx context.Context, t restic.FileType, fn func(restic
 			return err
 		}
 	}
-	if err := iter.Err(); err != nil {
-		return err
-	}
-	return nil
+	return iter.Err()
 }
 
 // Delete removes all restic keys in the bucket. It will not remove the bucket itself.

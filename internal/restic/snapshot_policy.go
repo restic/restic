@@ -136,7 +136,7 @@ func y(d time.Time, _ int) int {
 }
 
 // always returns a unique number for d.
-func always(d time.Time, nr int) int {
+func always(_ time.Time, nr int) int {
 	return nr
 }
 

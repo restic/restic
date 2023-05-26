@@ -325,7 +325,7 @@ func TestRestorer(t *testing.T) {
 			sn, id := saveSnapshot(t, repo, test.Snapshot)
 			t.Logf("snapshot saved as %v", id.Str())
 
-			res := NewRestorer(context.TODO(), repo, sn, false, nil)
+			res := NewRestorer(repo, sn, false, nil)
 
 			tempdir := rtest.TempDir(t)
 			// make sure we're creating a new subdir of the tempdir
@@ -442,7 +442,7 @@ func TestRestorerRelative(t *testing.T) {
 			sn, id := saveSnapshot(t, repo, test.Snapshot)
 			t.Logf("snapshot saved as %v", id.Str())
 
-			res := NewRestorer(context.TODO(), repo, sn, false, nil)
+			res := NewRestorer(repo, sn, false, nil)
 
 			tempdir := rtest.TempDir(t)
 			cleanup := rtest.Chdir(t, tempdir)
@@ -671,7 +671,7 @@ func TestRestorerTraverseTree(t *testing.T) {
 			repo := repository.TestRepository(t)
 			sn, _ := saveSnapshot(t, repo, test.Snapshot)
 
-			res := NewRestorer(context.TODO(), repo, sn, false, nil)
+			res := NewRestorer(repo, sn, false, nil)
 
 			res.SelectFilter = test.Select
 
@@ -747,7 +747,7 @@ func TestRestorerConsistentTimestampsAndPermissions(t *testing.T) {
 		},
 	})
 
-	res := NewRestorer(context.TODO(), repo, sn, false, nil)
+	res := NewRestorer(repo, sn, false, nil)
 
 	res.SelectFilter = func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
 		switch filepath.ToSlash(item) {
@@ -802,7 +802,7 @@ func TestVerifyCancel(t *testing.T) {
 	repo := repository.TestRepository(t)
 	sn, _ := saveSnapshot(t, repo, snapshot)
 
-	res := NewRestorer(context.TODO(), repo, sn, false, nil)
+	res := NewRestorer(repo, sn, false, nil)
 
 	tempdir := rtest.TempDir(t)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -844,7 +844,7 @@ func TestRestorerSparseFiles(t *testing.T) {
 		archiver.SnapshotOptions{})
 	rtest.OK(t, err)
 
-	res := NewRestorer(context.TODO(), repo, sn, true, nil)
+	res := NewRestorer(repo, sn, true, nil)
 
 	tempdir := rtest.TempDir(t)
 	ctx, cancel := context.WithCancel(context.Background())

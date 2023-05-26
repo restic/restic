@@ -25,7 +25,7 @@ const mockFinishDuration = 42 * time.Second
 func (p *mockPrinter) Update(filesFinished, filesTotal, allBytesWritten, allBytesTotal uint64, duration time.Duration) {
 	p.trace = append(p.trace, printerTraceEntry{filesFinished, filesTotal, allBytesWritten, allBytesTotal, duration, false})
 }
-func (p *mockPrinter) Finish(filesFinished, filesTotal, allBytesWritten, allBytesTotal uint64, duration time.Duration) {
+func (p *mockPrinter) Finish(filesFinished, filesTotal, allBytesWritten, allBytesTotal uint64, _ time.Duration) {
 	p.trace = append(p.trace, printerTraceEntry{filesFinished, filesTotal, allBytesWritten, allBytesTotal, mockFinishDuration, true})
 }
 

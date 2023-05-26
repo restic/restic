@@ -90,7 +90,11 @@ func writePowerShellCompletion(file string) error {
 	return cmdRoot.GenPowerShellCompletionFile(file)
 }
 
-func runGenerate(cmd *cobra.Command, args []string) error {
+func runGenerate(_ *cobra.Command, args []string) error {
+	if len(args) > 0 {
+		return errors.Fatal("the generate command expects no arguments, only options - please see `restic help generate` for usage and flags")
+	}
+
 	if genOpts.ManDir != "" {
 		err := writeManpages(genOpts.ManDir)
 		if err != nil {

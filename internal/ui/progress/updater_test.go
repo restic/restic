@@ -26,7 +26,8 @@ func TestUpdater(t *testing.T) {
 	test.Assert(t, ncalls > 0, "no progress was reported")
 }
 
-func TestUpdaterStopTwice(t *testing.T) {
+func TestUpdaterStopTwice(_ *testing.T) {
+	// must not panic
 	c := progress.NewUpdater(0, func(runtime time.Duration, final bool) {})
 	c.Done()
 	c.Done()

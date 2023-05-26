@@ -308,7 +308,7 @@ func (opts BackupOptions) Check(gopts GlobalOptions, args []string) error {
 
 // collectRejectByNameFuncs returns a list of all functions which may reject data
 // from being saved in a snapshot based on path only
-func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository, targets []string) (fs []RejectByNameFunc, err error) {
+func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository) (fs []RejectByNameFunc, err error) {
 	// exclude restic cache
 	if repo.Cache != nil {
 		f, err := rejectResticCache(repo)
@@ -343,7 +343,7 @@ func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository, t
 
 // collectRejectFuncs returns a list of all functions which may reject data
 // from being saved in a snapshot based on path and file info
-func collectRejectFuncs(opts BackupOptions, repo *repository.Repository, targets []string) (fs []RejectFunc, err error) {
+func collectRejectFuncs(opts BackupOptions, targets []string) (fs []RejectFunc, err error) {
 	// allowed devices
 	if opts.ExcludeOtherFS && !opts.Stdin {
 		f, err := rejectByDevice(targets)
@@ -513,13 +513,13 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	}
 
 	// rejectByNameFuncs collect functions that can reject items from the backup based on path only
-	rejectByNameFuncs, err := collectRejectByNameFuncs(opts, repo, targets)
+	rejectByNameFuncs, err := collectRejectByNameFuncs(opts, repo)
 	if err != nil {
 		return err
 	}
 
 	// rejectFuncs collect functions that can reject items from the backup based on path and file info
-	rejectFuncs, err := collectRejectFuncs(opts, repo, targets)
+	rejectFuncs, err := collectRejectFuncs(opts, targets)
 	if err != nil {
 		return err
 	}

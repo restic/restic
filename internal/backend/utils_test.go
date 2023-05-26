@@ -154,7 +154,7 @@ type mockReader struct {
 	closed bool
 }
 
-func (rd *mockReader) Read(p []byte) (n int, err error) {
+func (rd *mockReader) Read(_ []byte) (n int, err error) {
 	return 0, nil
 }
 func (rd *mockReader) Close() error {

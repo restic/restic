@@ -31,7 +31,7 @@ func TestRestorerRestoreEmptyHardlinkedFileds(t *testing.T) {
 		},
 	})
 
-	res := NewRestorer(context.TODO(), repo, sn, false, nil)
+	res := NewRestorer(repo, sn, false, nil)
 
 	res.SelectFilter = func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
 		return true, true
@@ -73,9 +73,9 @@ type printerMock struct {
 	filesFinished, filesTotal, allBytesWritten, allBytesTotal uint64
 }
 
-func (p *printerMock) Update(filesFinished, filesTotal, allBytesWritten, allBytesTotal uint64, duration time.Duration) {
+func (p *printerMock) Update(_, _, _, _ uint64, _ time.Duration) {
 }
-func (p *printerMock) Finish(filesFinished, filesTotal, allBytesWritten, allBytesTotal uint64, duration time.Duration) {
+func (p *printerMock) Finish(filesFinished, filesTotal, allBytesWritten, allBytesTotal uint64, _ time.Duration) {
 	p.filesFinished = filesFinished
 	p.filesTotal = filesTotal
 	p.allBytesWritten = allBytesWritten
@@ -99,7 +99,7 @@ func TestRestorerProgressBar(t *testing.T) {
 
 	mock := &printerMock{}
 	progress := restoreui.NewProgress(mock, 0)
-	res := NewRestorer(context.TODO(), repo, sn, false, progress)
+	res := NewRestorer(repo, sn, false, progress)
 	res.SelectFilter = func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
 		return true, true
 	}

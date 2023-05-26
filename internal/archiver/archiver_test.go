@@ -419,7 +419,7 @@ type blobCountingRepo struct {
 }
 
 func (repo *blobCountingRepo) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (restic.ID, bool, int, error) {
-	id, exists, size, err := repo.Repository.SaveBlob(ctx, t, buf, id, false)
+	id, exists, size, err := repo.Repository.SaveBlob(ctx, t, buf, id, storeDuplicate)
 	if exists {
 		return id, exists, size, err
 	}
@@ -1845,27 +1845,27 @@ type noCancelBackend struct {
 	restic.Backend
 }
 
-func (c *noCancelBackend) Remove(ctx context.Context, h restic.Handle) error {
+func (c *noCancelBackend) Remove(_ context.Context, h restic.Handle) error {
 	return c.Backend.Remove(context.Background(), h)
 }
 
-func (c *noCancelBackend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+func (c *noCancelBackend) Save(_ context.Context, h restic.Handle, rd restic.RewindReader) error {
 	return c.Backend.Save(context.Background(), h, rd)
 }
 
-func (c *noCancelBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+func (c *noCancelBackend) Load(_ context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
 	return c.Backend.Load(context.Background(), h, length, offset, fn)
 }
 
-func (c *noCancelBackend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, error) {
+func (c *noCancelBackend) Stat(_ context.Context, h restic.Handle) (restic.FileInfo, error) {
 	return c.Backend.Stat(context.Background(), h)
 }
 
-func (c *noCancelBackend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
+func (c *noCancelBackend) List(_ context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
 	return c.Backend.List(context.Background(), t, fn)
 }
 
-func (c *noCancelBackend) Delete(ctx context.Context) error {
+func (c *noCancelBackend) Delete(_ context.Context) error {
 	return c.Backend.Delete(context.Background())
 }
 
@@ -2166,7 +2166,7 @@ func TestMetadataChanged(t *testing.T) {
 	}
 
 	// modify the mode by wrapping it in a new struct, uses the consts defined above
-	fs.OverrideLstat["testfile"] = wrapFileInfo(t, fi)
+	fs.OverrideLstat["testfile"] = wrapFileInfo(fi)
 
 	// set the override values in the 'want' node which
 	want.Mode = 0400

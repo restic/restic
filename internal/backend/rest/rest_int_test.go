@@ -93,12 +93,12 @@ func TestListAPI(t *testing.T) {
 					// stat file in data/, use the first two bytes in the name
 					// of the file as the size :)
 					filename := req.URL.Path[6:]
-					len, err := strconv.ParseInt(filename[:4], 16, 64)
+					length, err := strconv.ParseInt(filename[:4], 16, 64)
 					if err != nil {
 						t.Fatal(err)
 					}
 
-					res.Header().Set("Content-Length", fmt.Sprintf("%d", len))
+					res.Header().Set("Content-Length", fmt.Sprintf("%d", length))
 					res.WriteHeader(http.StatusOK)
 					return
 				}

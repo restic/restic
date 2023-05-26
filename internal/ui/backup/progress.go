@@ -15,8 +15,8 @@ type ProgressPrinter interface {
 	Update(total, processed Counter, errors uint, currentFiles map[string]struct{}, start time.Time, secs uint64)
 	Error(item string, err error) error
 	ScannerError(item string, err error) error
-	CompleteItem(messageType string, item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration)
-	ReportTotal(item string, start time.Time, s archiver.ScanStats)
+	CompleteItem(messageType string, item string, s archiver.ItemStats, d time.Duration)
+	ReportTotal(start time.Time, s archiver.ScanStats)
 	Finish(snapshotID restic.ID, start time.Time, summary *Summary, dryRun bool)
 	Reset()
 
@@ -144,19 +144,19 @@ func (p *Progress) CompleteItem(item string, previous, current *restic.Node, s a
 
 		switch {
 		case previous == nil:
-			p.printer.CompleteItem("dir new", item, previous, current, s, d)
+			p.printer.CompleteItem("dir new", item, s, d)
 			p.mu.Lock()
 			p.summary.Dirs.New++
 			p.mu.Unlock()
 
 		case previous.Equals(*current):
-			p.printer.CompleteItem("dir unchanged", item, previous, current, s, d)
+			p.printer.CompleteItem("dir unchanged", item, s, d)
 			p.mu.Lock()
 			p.summary.Dirs.Unchanged++
 			p.mu.Unlock()
 
 		default:
-			p.printer.CompleteItem("dir modified", item, previous, current, s, d)
+			p.printer.CompleteItem("dir modified", item, s, d)
 			p.mu.Lock()
 			p.summary.Dirs.Changed++
 			p.mu.Unlock()
@@ -170,19 +170,19 @@ func (p *Progress) CompleteItem(item string, previous, current *restic.Node, s a
 
 		switch {
 		case previous == nil:
-			p.printer.CompleteItem("file new", item, previous, current, s, d)
+			p.printer.CompleteItem("file new", item, s, d)
 			p.mu.Lock()
 			p.summary.Files.New++
 			p.mu.Unlock()
 
 		case previous.Equals(*current):
-			p.printer.CompleteItem("file unchanged", item, previous, current, s, d)
+			p.printer.CompleteItem("file unchanged", item, s, d)
 			p.mu.Lock()
 			p.summary.Files.Unchanged++
 			p.mu.Unlock()
 
 		default:
-			p.printer.CompleteItem("file modified", item, previous, current, s, d)
+			p.printer.CompleteItem("file modified", item, s, d)
 			p.mu.Lock()
 			p.summary.Files.Changed++
 			p.mu.Unlock()
@@ -200,7 +200,7 @@ func (p *Progress) ReportTotal(item string, s archiver.ScanStats) {
 
 	if item == "" {
 		p.scanFinished = true
-		p.printer.ReportTotal(item, p.start, s)
+		p.printer.ReportTotal(p.start, s)
 	}
 }
 

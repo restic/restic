@@ -605,11 +605,7 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 		return errors.Errorf("invalid node type %q", node.Type)
 	}
 
-	if err := node.fillExtendedAttributes(path); err != nil {
-		return err
-	}
-
-	return nil
+	return node.fillExtendedAttributes(path)
 }
 
 func (node *Node) fillExtendedAttributes(path string) error {

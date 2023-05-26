@@ -141,7 +141,7 @@ func testRunRestoreIncludes(t testing.TB, gopts GlobalOptions, dir string, snaps
 	rtest.OK(t, runRestore(context.TODO(), opts, gopts, nil, []string{snapshotID.String()}))
 }
 
-func testRunRestoreAssumeFailure(t testing.TB, snapshotID string, opts RestoreOptions, gopts GlobalOptions) error {
+func testRunRestoreAssumeFailure(snapshotID string, opts RestoreOptions, gopts GlobalOptions) error {
 	err := runRestore(context.TODO(), opts, gopts, nil, []string{snapshotID})
 
 	return err
@@ -1181,7 +1181,7 @@ type emptySaveBackend struct {
 	restic.Backend
 }
 
-func (b *emptySaveBackend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+func (b *emptySaveBackend) Save(ctx context.Context, h restic.Handle, _ restic.RewindReader) error {
 	return b.Backend.Save(ctx, h, restic.NewByteReader([]byte{}, nil))
 }
 
@@ -1601,7 +1601,7 @@ type appendOnlyBackend struct {
 }
 
 // called via repo.Backend().Remove()
-func (b *appendOnlyBackend) Remove(ctx context.Context, h restic.Handle) error {
+func (b *appendOnlyBackend) Remove(_ context.Context, h restic.Handle) error {
 	return errors.Errorf("Failed to remove %v", h)
 }
 
@@ -2202,7 +2202,7 @@ type writeToOnly struct {
 	rd io.Reader
 }
 
-func (r *writeToOnly) Read(p []byte) (n int, err error) {
+func (r *writeToOnly) Read(_ []byte) (n int, err error) {
 	return 0, fmt.Errorf("should have called WriteTo instead")
 }
 

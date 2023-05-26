@@ -34,7 +34,7 @@ func TestUseLowSecurityKDFParameters(t logger) {
 }
 
 // TestBackend returns a fully configured in-memory backend.
-func TestBackend(t testing.TB) restic.Backend {
+func TestBackend(_ testing.TB) restic.Backend {
 	return mem.New()
 }
 

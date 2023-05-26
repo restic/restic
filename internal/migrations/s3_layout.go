@@ -39,7 +39,7 @@ func toS3Backend(b restic.Backend) *s3.Backend {
 }
 
 // Check tests whether the migration can be applied.
-func (m *S3Layout) Check(ctx context.Context, repo restic.Repository) (bool, string, error) {
+func (m *S3Layout) Check(_ context.Context, repo restic.Repository) (bool, string, error) {
 	be := toS3Backend(repo.Backend())
 	if be == nil {
 		debug.Log("backend is not s3")
