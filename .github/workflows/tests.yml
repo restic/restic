@@ -8,6 +8,9 @@ on:
   # run tests for all pull requests
   pull_request:
 
+permissions:
+  contents: read
+
 env:
   latest_go: "1.20.x"
   GO111MODULE: on
