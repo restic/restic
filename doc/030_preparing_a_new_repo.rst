@@ -613,6 +613,8 @@ The number of concurrent connections to the GCS service can be set with the
 ``-o gs.connections=10`` switch. By default, at most five parallel connections are
 established.
 
+The region, where a bucket should be created, can be specified with the ``-o gs.region=us`` switch. By default, the region is set to ``us``.
+
 .. _service account: https://cloud.google.com/iam/docs/service-account-overview
 .. _create a service account key: https://cloud.google.com/iam/docs/keys-create-delete
 .. _default authentication material: https://cloud.google.com/docs/authentication#service-accounts

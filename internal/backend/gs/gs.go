@@ -37,6 +37,7 @@ type Backend struct {
 	projectID    string
 	connections  uint
 	bucketName   string
+	region       string
 	bucket       *storage.BucketHandle
 	prefix       string
 	listMaxItems int
@@ -102,6 +103,7 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 		projectID:   cfg.ProjectID,
 		connections: cfg.Connections,
 		bucketName:  cfg.Bucket,
+		region:      cfg.Region,
 		bucket:      gcsClient.Bucket(cfg.Bucket),
 		prefix:      cfg.Prefix,
 		Layout: &layout.DefaultLayout{
@@ -142,8 +144,11 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backe
 	}
 
 	if !exists {
+		bucketAttrs := &storage.BucketAttrs{
+			Location: cfg.Region,
+		}
 		// Bucket doesn't exist, try to create it.
-		if err := be.bucket.Create(ctx, be.projectID, nil); err != nil {
+		if err := be.bucket.Create(ctx, be.projectID, bucketAttrs); err != nil {
 			// Always an error, as the bucket definitely doesn't exist.
 			return nil, errors.Wrap(err, "service.Buckets.Insert")
 		}
