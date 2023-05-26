@@ -1,0 +1,3 @@
+Bugfix: `generate` and `init` no longer silently ignore unexpected arguments
+
+https://github.com/restic/restic/pull/4333
