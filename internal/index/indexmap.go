@@ -1,6 +1,7 @@
 package index
 
 import (
+	"fmt"
 	"hash/maphash"
 
 	"github.com/restic/restic/internal/restic"
@@ -22,7 +23,7 @@ type indexMap struct {
 
 	mh maphash.Hash
 
-	blockList []indexEntry
+	blockList hashedArrayTree
 }
 
 const (
@@ -134,22 +135,18 @@ func (m *indexMap) init() {
 	const initialBuckets = 64
 	m.buckets = make([]uint, initialBuckets)
 	// first entry in blockList serves as null byte
-	m.blockList = make([]indexEntry, 1)
+	m.blockList = *newHAT()
+	m.newEntry()
 }
 
 func (m *indexMap) len() uint { return m.numentries }
 
 func (m *indexMap) newEntry() (*indexEntry, uint) {
-	m.blockList = append(m.blockList, indexEntry{})
-
-	idx := uint(len(m.blockList) - 1)
-	e := &m.blockList[idx]
-
-	return e, idx
+	return m.blockList.Alloc()
 }
 
 func (m *indexMap) resolve(idx uint) *indexEntry {
-	return &m.blockList[idx]
+	return m.blockList.Ref(idx)
 }
 
 type indexEntry struct {
@@ -159,4 +156,83 @@ type indexEntry struct {
 	offset             uint32
 	length             uint32
 	uncompressedLength uint32
+}
+
+type hashedArrayTree struct {
+	mask      uint
+	maskShift uint
+	blockSize uint
+
+	size      uint
+	blockList [][]indexEntry
+}
+
+func newHAT() *hashedArrayTree {
+	// start with a small block size
+	blockSizePower := uint(2)
+	blockSize := uint(1 << blockSizePower)
+
+	return &hashedArrayTree{
+		mask:      blockSize - 1,
+		maskShift: blockSizePower,
+		blockSize: blockSize,
+		size:      0,
+		blockList: make([][]indexEntry, blockSize),
+	}
+}
+
+func (h *hashedArrayTree) Alloc() (*indexEntry, uint) {
+	h.grow()
+	size := h.size
+	idx, subIdx := h.index(size)
+	h.size++
+	return &h.blockList[idx][subIdx], size
+}
+
+func (h *hashedArrayTree) index(pos uint) (idx uint, subIdx uint) {
+	subIdx = pos & h.mask
+	idx = pos >> h.maskShift
+	return
+}
+
+func (h *hashedArrayTree) Ref(pos uint) *indexEntry {
+	if pos >= h.size {
+		panic(fmt.Sprintf("array index %d out of bounds %d", pos, h.size))
+	}
+
+	idx, subIdx := h.index(pos)
+	return &h.blockList[idx][subIdx]
+}
+
+func (h *hashedArrayTree) Size() uint {
+	return h.size
+}
+
+func (h *hashedArrayTree) grow() {
+	idx, subIdx := h.index(h.size)
+	if int(idx) == len(h.blockList) {
+		// blockList is too small -> double list and block size
+		oldBlocks := h.blockList
+		h.blockList = make([][]indexEntry, h.blockSize)
+
+		h.blockSize *= 2
+		h.mask = h.mask*2 + 1
+		h.maskShift++
+		idx = idx / 2
+
+		// pairwise merging of blocks
+		for i := 0; i < len(oldBlocks); i += 2 {
+			block := make([]indexEntry, 0, h.blockSize)
+			block = append(block, oldBlocks[i]...)
+			block = append(block, oldBlocks[i+1]...)
+			h.blockList[i/2] = block
+			// allow GC
+			oldBlocks[i] = nil
+			oldBlocks[i+1] = nil
+		}
+	}
+	if subIdx == 0 {
+		// new index entry batch
+		h.blockList[idx] = make([]indexEntry, h.blockSize)
+	}
 }
