@@ -1,7 +1,6 @@
 package index
 
 import (
-	"fmt"
 	"hash/maphash"
 
 	"github.com/restic/restic/internal/restic"
@@ -197,7 +196,7 @@ func (h *hashedArrayTree) index(pos uint) (idx uint, subIdx uint) {
 
 func (h *hashedArrayTree) Ref(pos uint) *indexEntry {
 	if pos >= h.size {
-		panic(fmt.Sprintf("array index %d out of bounds %d", pos, h.size))
+		panic("array index out of bounds")
 	}
 
 	idx, subIdx := h.index(pos)
