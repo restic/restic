@@ -2,6 +2,7 @@ package index
 
 import (
 	"hash/maphash"
+	"math"
 
 	"github.com/restic/restic/internal/restic"
 )
@@ -17,8 +18,7 @@ import (
 // needs to be resized when the table grows, preventing memory usage spikes.
 type indexMap struct {
 	// The number of buckets is always a power of two and never zero.
-	buckets    []uint
-	numentries uint
+	buckets []uint
 
 	mh maphash.Hash
 
@@ -34,9 +34,9 @@ const (
 // using id as the key.
 func (m *indexMap) add(id restic.ID, packIdx int, offset, length uint32, uncompressedLength uint32) {
 	switch {
-	case m.numentries == 0: // Lazy initialization.
+	case m.len() == math.MaxUint: // Lazy initialization.
 		m.init()
-	case m.numentries >= maxLoad*uint(len(m.buckets)):
+	case m.len() >= maxLoad*uint(len(m.buckets)):
 		m.grow()
 	}
 
@@ -50,7 +50,6 @@ func (m *indexMap) add(id restic.ID, packIdx int, offset, length uint32, uncompr
 	e.uncompressedLength = uncompressedLength
 
 	m.buckets[h] = idx
-	m.numentries++
 }
 
 // foreach calls fn for all entries in the map, until fn returns false.
@@ -138,7 +137,7 @@ func (m *indexMap) init() {
 	m.newEntry()
 }
 
-func (m *indexMap) len() uint { return m.numentries }
+func (m *indexMap) len() uint { return m.blockList.Size() - 1 }
 
 func (m *indexMap) newEntry() (*indexEntry, uint) {
 	return m.blockList.Alloc()
