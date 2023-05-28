@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
+	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 )
@@ -104,21 +104,28 @@ func parseXattrs(xattrs []restic.ExtendedAttribute) map[string]string {
 	tmpMap := make(map[string]string)
 
 	for _, attr := range xattrs {
-		attrString := string(attr.Value)
+		// Check for Linux POSIX.1e ACLs.
+		//
+		// TODO support ACLs from other operating systems.
+		// FreeBSD ACLs have names "posix1e.acl_(access|default)",
+		// but their binary format may not match the Linux format.
+		aclKey := ""
+		switch attr.Name {
+		case "system.posix_acl_access":
+			aclKey = "SCHILY.acl.access"
+		case "system.posix_acl_default":
+			aclKey = "SCHILY.acl.default"
+		}
 
-		if strings.HasPrefix(attr.Name, "system.posix_acl_") {
-			na := acl{}
-			na.decode(attr.Value)
-
-			if na.String() != "" {
-				if strings.Contains(attr.Name, "system.posix_acl_access") {
-					tmpMap["SCHILY.acl.access"] = na.String()
-				} else if strings.Contains(attr.Name, "system.posix_acl_default") {
-					tmpMap["SCHILY.acl.default"] = na.String()
-				}
+		if aclKey != "" {
+			text, err := formatLinuxACL(attr.Value)
+			if err != nil {
+				debug.Log("parsing Linux ACL: %v, skipping", err)
+				continue
 			}
+			tmpMap[aclKey] = text
 		} else {
-			tmpMap["SCHILY.xattr."+attr.Name] = attrString
+			tmpMap["SCHILY.xattr."+attr.Name] = string(attr.Value)
 		}
 	}
 
