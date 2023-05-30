@@ -99,18 +99,15 @@ func (m *indexMap) get(id restic.ID) *indexEntry {
 }
 
 func (m *indexMap) grow() {
-	old := m.buckets
 	m.buckets = make([]uint, growthFactor*len(m.buckets))
 
-	for _, ei := range old {
-		for ei != 0 {
-			e := m.resolve(ei)
-			h := m.hash(e.id)
-			next := e.next
-			e.next = m.buckets[h]
-			m.buckets[h] = ei
-			ei = next
-		}
+	blockCount := m.blockList.Size()
+	for i := uint(1); i < blockCount; i++ {
+		e := m.resolve(i)
+
+		h := m.hash(e.id)
+		e.next = m.buckets[h]
+		m.buckets[h] = i
 	}
 }
 
