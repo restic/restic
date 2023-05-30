@@ -54,13 +54,10 @@ func (m *indexMap) add(id restic.ID, packIdx int, offset, length uint32, uncompr
 
 // foreach calls fn for all entries in the map, until fn returns false.
 func (m *indexMap) foreach(fn func(*indexEntry) bool) {
-	for _, ei := range m.buckets {
-		for ei != 0 {
-			e := m.resolve(ei)
-			if !fn(e) {
-				return
-			}
-			ei = e.next
+	blockCount := m.blockList.Size()
+	for i := uint(1); i < blockCount; i++ {
+		if !fn(m.resolve(i)) {
+			return
 		}
 	}
 }
