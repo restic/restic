@@ -10,7 +10,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/restic/restic/internal/backend"
@@ -151,21 +150,6 @@ func init() {
 	restoreTerminal()
 }
 
-// checkErrno returns nil when err is set to syscall.Errno(0), since this is no
-// error condition.
-func checkErrno(err error) error {
-	e, ok := err.(syscall.Errno)
-	if !ok {
-		return err
-	}
-
-	if e == 0 {
-		return nil
-	}
-
-	return err
-}
-
 func stdinIsTerminal() bool {
 	return term.IsTerminal(int(os.Stdin.Fd()))
 }
@@ -214,7 +198,7 @@ func restoreTerminal() {
 		if !isReadingPassword {
 			return code, nil
 		}
-		err := checkErrno(term.Restore(fd, state))
+		err := term.Restore(fd, state)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "unable to restore terminal state: %v\n", err)
 		}
