@@ -243,11 +243,11 @@ type pruneStats struct {
 }
 
 type prunePlan struct {
-	removePacksFirst restic.IDSet          // packs to remove first (unreferenced packs)
-	repackPacks      restic.IDSet          // packs to repack
-	keepBlobs        *index.AssociatedData // blobs to keep during repacking
-	removePacks      restic.IDSet          // packs to remove
-	ignorePacks      restic.IDSet          // packs to ignore when rebuilding the index
+	removePacksFirst restic.IDSet                 // packs to remove first (unreferenced packs)
+	repackPacks      restic.IDSet                 // packs to repack
+	keepBlobs        *index.AssociatedData[uint8] // blobs to keep during repacking
+	removePacks      restic.IDSet                 // packs to remove
+	ignorePacks      restic.IDSet                 // packs to ignore when rebuilding the index
 }
 
 type packInfo struct {
@@ -305,7 +305,7 @@ func planPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, i
 	return plan, stats, nil
 }
 
-func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs *index.AssociatedData, stats *pruneStats) (*index.AssociatedData, map[restic.ID]packInfo, error) {
+func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs *index.AssociatedData[uint8], stats *pruneStats) (*index.AssociatedData[uint8], map[restic.ID]packInfo, error) {
 	// iterate over all blobs in index to find out which blobs are duplicates
 	// The counter in usedBlobs describes how many instances of the blob exist in the repository index
 	// Thus 0 == blob is missing, 1 == blob exists once, >= 2 == duplicates exist
@@ -800,7 +800,7 @@ func rebuildIndexFiles(ctx context.Context, gopts GlobalOptions, repo restic.Rep
 	return DeleteFilesChecked(ctx, gopts, repo, obsoleteIndexes, restic.IndexFile)
 }
 
-func getUsedBlobs(ctx context.Context, repo restic.Repository, ignoreSnapshots restic.IDSet, quiet bool) (usedBlobs *index.AssociatedData, err error) {
+func getUsedBlobs(ctx context.Context, repo restic.Repository, ignoreSnapshots restic.IDSet, quiet bool) (usedBlobs *index.AssociatedData[uint8], err error) {
 	var snapshotTrees restic.IDs
 	Verbosef("loading all snapshots...\n")
 	err = restic.ForAllSnapshots(ctx, repo.Backend(), repo, ignoreSnapshots,
@@ -819,7 +819,7 @@ func getUsedBlobs(ctx context.Context, repo restic.Repository, ignoreSnapshots r
 
 	Verbosef("finding data that is still in use for %d snapshots\n", len(snapshotTrees))
 
-	usedBlobs = index.NewAssociated(repo.Index().(*index.MasterIndex))
+	usedBlobs = index.NewAssociated[uint8](repo.Index().(*index.MasterIndex))
 
 	bar := newProgressMax(!quiet, uint64(len(snapshotTrees)), "snapshots")
 	defer bar.Done()

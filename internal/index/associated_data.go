@@ -6,20 +6,20 @@ import (
 	"github.com/restic/restic/internal/restic"
 )
 
-type associatedDataSub struct {
-	value []uint8
+type associatedDataSub[T any] struct {
+	value []T
 	isSet []bool
 }
 
-type AssociatedData struct {
-	byType   [restic.NumBlobTypes]associatedDataSub
-	overflow map[restic.BlobHandle]uint8
+type AssociatedData[T any] struct {
+	byType   [restic.NumBlobTypes]associatedDataSub[T]
+	overflow map[restic.BlobHandle]T
 	idx      *MasterIndex
 }
 
-func NewAssociated(mi *MasterIndex) *AssociatedData {
-	a := AssociatedData{
-		overflow: make(map[restic.BlobHandle]uint8),
+func NewAssociated[T any](mi *MasterIndex) *AssociatedData[T] {
+	a := AssociatedData[T]{
+		overflow: make(map[restic.BlobHandle]T),
 		idx:      mi,
 	}
 
@@ -28,14 +28,14 @@ func NewAssociated(mi *MasterIndex) *AssociatedData {
 			continue
 		}
 		count := mi.len(restic.BlobType(typ))
-		a.byType[typ].value = make([]uint8, count)
+		a.byType[typ].value = make([]T, count)
 		a.byType[typ].isSet = make([]bool, count)
 	}
 
 	return &a
 }
 
-func (a *AssociatedData) Get(bh restic.BlobHandle) (uint8, bool) {
+func (a *AssociatedData[T]) Get(bh restic.BlobHandle) (T, bool) {
 	if val, ok := a.overflow[bh]; ok {
 		return val, true
 	}
@@ -43,23 +43,29 @@ func (a *AssociatedData) Get(bh restic.BlobHandle) (uint8, bool) {
 	idx := a.idx.getBlobIndex(bh)
 	bt := &a.byType[bh.Type]
 	if idx >= len(bt.value) || idx == -1 {
-		return 0, false
+		var zero T
+		return zero, false
 	}
 
 	has := bt.isSet[idx]
 	if has {
 		return bt.value[idx], has
 	} else {
-		return 0, false
+		var zero T
+		return zero, false
 	}
 }
 
-func (a *AssociatedData) Has(bh restic.BlobHandle) bool {
+func (a *AssociatedData[T]) Has(bh restic.BlobHandle) bool {
 	_, ok := a.Get(bh)
 	return ok
 }
 
-func (a *AssociatedData) Set(bh restic.BlobHandle, val uint8) {
+func (a *AssociatedData[T]) Set(bh restic.BlobHandle, val T) {
+	a.set(bh, val)
+}
+
+func (a *AssociatedData[T]) set(bh restic.BlobHandle, val T) {
 	if _, ok := a.overflow[bh]; ok {
 		a.overflow[bh] = val
 		return
@@ -75,11 +81,12 @@ func (a *AssociatedData) Set(bh restic.BlobHandle, val uint8) {
 	}
 }
 
-func (a *AssociatedData) Insert(bh restic.BlobHandle) {
-	a.Set(bh, 0)
+func (a *AssociatedData[T]) Insert(bh restic.BlobHandle) {
+	var zero T
+	a.set(bh, zero)
 }
 
-func (a *AssociatedData) Delete(bh restic.BlobHandle) {
+func (a *AssociatedData[T]) Delete(bh restic.BlobHandle) {
 	if _, ok := a.overflow[bh]; ok {
 		delete(a.overflow, bh)
 		return
@@ -92,15 +99,15 @@ func (a *AssociatedData) Delete(bh restic.BlobHandle) {
 	}
 }
 
-func (a *AssociatedData) Len() int {
+func (a *AssociatedData[T]) Len() int {
 	count := 0
-	a.For(func(_ restic.BlobHandle, _ uint8) {
+	a.For(func(_ restic.BlobHandle, _ T) {
 		count++
 	})
 	return count
 }
 
-func (a *AssociatedData) For(cb func(bh restic.BlobHandle, val uint8)) {
+func (a *AssociatedData[T]) For(cb func(bh restic.BlobHandle, val T)) {
 	for k, v := range a.overflow {
 		cb(k, v)
 	}
