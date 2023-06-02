@@ -578,14 +578,14 @@ func decodeOldIndex(buf []byte) (idx *Index, err error) {
 	return idx, nil
 }
 
-func (idx *Index) GetBlobIndex(bh restic.BlobHandle) int {
+func (idx *Index) getBlobIndex(bh restic.BlobHandle) int {
 	idx.m.RLock()
 	defer idx.m.RUnlock()
 
 	return idx.byType[bh.Type].getMinIndex(bh.ID)
 }
 
-func (idx *Index) Len(t restic.BlobType) uint {
+func (idx *Index) len(t restic.BlobType) uint {
 	idx.m.RLock()
 	defer idx.m.RUnlock()
 

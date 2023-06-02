@@ -243,11 +243,11 @@ type pruneStats struct {
 }
 
 type prunePlan struct {
-	removePacksFirst restic.IDSet    // packs to remove first (unreferenced packs)
-	repackPacks      restic.IDSet    // packs to repack
-	keepBlobs        *associatedData // blobs to keep during repacking
-	removePacks      restic.IDSet    // packs to remove
-	ignorePacks      restic.IDSet    // packs to ignore when rebuilding the index
+	removePacksFirst restic.IDSet          // packs to remove first (unreferenced packs)
+	repackPacks      restic.IDSet          // packs to repack
+	keepBlobs        *index.AssociatedData // blobs to keep during repacking
+	removePacks      restic.IDSet          // packs to remove
+	ignorePacks      restic.IDSet          // packs to ignore when rebuilding the index
 }
 
 type packInfo struct {
@@ -305,7 +305,7 @@ func planPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, i
 	return plan, stats, nil
 }
 
-func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs *associatedData, stats *pruneStats) (*associatedData, map[restic.ID]packInfo, error) {
+func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs *index.AssociatedData, stats *pruneStats) (*index.AssociatedData, map[restic.ID]packInfo, error) {
 	// iterate over all blobs in index to find out which blobs are duplicates
 	// The counter in usedBlobs describes how many instances of the blob exist in the repository index
 	// Thus 0 == blob is missing, 1 == blob exists once, >= 2 == duplicates exist
@@ -800,7 +800,7 @@ func rebuildIndexFiles(ctx context.Context, gopts GlobalOptions, repo restic.Rep
 	return DeleteFilesChecked(ctx, gopts, repo, obsoleteIndexes, restic.IndexFile)
 }
 
-func getUsedBlobs(ctx context.Context, repo restic.Repository, ignoreSnapshots restic.IDSet, quiet bool) (usedBlobs *associatedData, err error) {
+func getUsedBlobs(ctx context.Context, repo restic.Repository, ignoreSnapshots restic.IDSet, quiet bool) (usedBlobs *index.AssociatedData, err error) {
 	var snapshotTrees restic.IDs
 	Verbosef("loading all snapshots...\n")
 	err = restic.ForAllSnapshots(ctx, repo.Backend(), repo, ignoreSnapshots,
@@ -819,7 +819,7 @@ func getUsedBlobs(ctx context.Context, repo restic.Repository, ignoreSnapshots r
 
 	Verbosef("finding data that is still in use for %d snapshots\n", len(snapshotTrees))
 
-	usedBlobs = NewAssociated(repo.Index().(*index.MasterIndex))
+	usedBlobs = index.NewAssociated(repo.Index().(*index.MasterIndex))
 
 	bar := newProgressMax(!quiet, uint64(len(snapshotTrees)), "snapshots")
 	defer bar.Done()
@@ -833,111 +833,4 @@ func getUsedBlobs(ctx context.Context, repo restic.Repository, ignoreSnapshots r
 		return nil, err
 	}
 	return usedBlobs, nil
-}
-
-type associatedDataSub struct {
-	value []uint8
-	isSet []bool
-}
-
-type associatedData struct {
-	byType   [restic.NumBlobTypes]associatedDataSub
-	overflow map[restic.BlobHandle]uint8
-	idx      *index.MasterIndex
-}
-
-func NewAssociated(mi *index.MasterIndex) *associatedData {
-	a := associatedData{
-		overflow: make(map[restic.BlobHandle]uint8),
-		idx:      mi,
-	}
-
-	for typ := range a.byType {
-		if typ == 0 {
-			continue
-		}
-		count := mi.Len(restic.BlobType(typ))
-		a.byType[typ].value = make([]uint8, count)
-		a.byType[typ].isSet = make([]bool, count)
-	}
-
-	return &a
-}
-
-func (a *associatedData) Get(bh restic.BlobHandle) (uint8, bool) {
-	if val, ok := a.overflow[bh]; ok {
-		return val, true
-	}
-
-	idx := a.idx.GetBlobIndex(bh)
-	bt := &a.byType[bh.Type]
-	if idx >= len(bt.value) || idx == -1 {
-		return 0, false
-	}
-
-	has := bt.isSet[idx]
-	if has {
-		return bt.value[idx], has
-	} else {
-		return 0, false
-	}
-}
-
-func (a *associatedData) Has(bh restic.BlobHandle) bool {
-	_, ok := a.Get(bh)
-	return ok
-}
-
-func (a *associatedData) Set(bh restic.BlobHandle, val uint8) {
-	if _, ok := a.overflow[bh]; ok {
-		a.overflow[bh] = val
-		return
-	}
-
-	idx := a.idx.GetBlobIndex(bh)
-	bt := &a.byType[bh.Type]
-	if idx >= len(bt.value) || idx == -1 {
-		a.overflow[bh] = val
-	} else {
-		bt.value[idx] = val
-		bt.isSet[idx] = true
-	}
-}
-
-func (a *associatedData) Insert(bh restic.BlobHandle) {
-	a.Set(bh, 0)
-}
-
-func (a *associatedData) Delete(bh restic.BlobHandle) {
-	if _, ok := a.overflow[bh]; ok {
-		delete(a.overflow, bh)
-		return
-	}
-
-	idx := a.idx.GetBlobIndex(bh)
-	bt := &a.byType[bh.Type]
-	if idx < len(bt.value) && idx != -1 {
-		bt.isSet[idx] = false
-	}
-}
-
-func (a *associatedData) Len() int {
-	count := 0
-	a.For(func(_ restic.BlobHandle, _ uint8) {
-		count++
-	})
-	return count
-}
-
-func (a *associatedData) For(cb func(bh restic.BlobHandle, val uint8)) {
-	for k, v := range a.overflow {
-		cb(k, v)
-	}
-
-	a.idx.Each(context.TODO(), func(pb restic.PackedBlob) {
-		val, known := a.Get(pb.BlobHandle)
-		if known {
-			cb(pb.BlobHandle, val)
-		}
-	})
 }

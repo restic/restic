@@ -444,18 +444,18 @@ func (mi *MasterIndex) ListPacks(ctx context.Context, packs restic.IDSet) <-chan
 	return out
 }
 
-func (mi *MasterIndex) GetBlobIndex(h restic.BlobHandle) int {
+func (mi *MasterIndex) getBlobIndex(h restic.BlobHandle) int {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 
 	// other indexes are ignored as their ids can change we merged in to the main index
-	return mi.idx[0].GetBlobIndex(h)
+	return mi.idx[0].getBlobIndex(h)
 }
 
-func (mi *MasterIndex) Len(t restic.BlobType) uint {
+func (mi *MasterIndex) len(t restic.BlobType) uint {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 
-	// FIXME
-	return mi.idx[0].Len(t)
+	// other indexes are ignored as their ids can change we merged in to the main index
+	return mi.idx[0].len(t)
 }
