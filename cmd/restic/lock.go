@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -97,7 +98,7 @@ retryLoop:
 		return nil, ctx, errors.Fatalf("%v\n\nthe `unlock --remove-all` command can be used to remove invalid locks. Make sure that no other restic process is accessing the repository when running the command", err)
 	}
 	if err != nil {
-		return nil, ctx, errors.Fatalf("unable to create lock in backend: %v", err)
+		return nil, ctx, fmt.Errorf("unable to create lock in backend: %w", err)
 	}
 	debug.Log("create lock %p (exclusive %v)", lock, exclusive)
 
