@@ -11,3 +11,4 @@ values, with an appropriate suffix depending on the output size. For
 example, a value of `14680064` will be shown as `14.000 MiB`.
 
 https://github.com/restic/restic/issues/4159
+https://github.com/restic/restic/pull/4351
