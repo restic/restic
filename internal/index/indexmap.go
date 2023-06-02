@@ -204,13 +204,13 @@ func (h *hashedArrayTree) grow() {
 	idx, subIdx := h.index(h.size)
 	if int(idx) == len(h.blockList) {
 		// blockList is too small -> double list and block size
-		oldBlocks := h.blockList
-		h.blockList = make([][]indexEntry, h.blockSize)
-
 		h.blockSize *= 2
 		h.mask = h.mask*2 + 1
 		h.maskShift++
 		idx = idx / 2
+
+		oldBlocks := h.blockList
+		h.blockList = make([][]indexEntry, h.blockSize)
 
 		// pairwise merging of blocks
 		for i := 0; i < len(oldBlocks); i += 2 {
