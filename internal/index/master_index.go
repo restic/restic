@@ -638,3 +638,21 @@ func (mi *MasterIndex) ListPacks(ctx context.Context, packs restic.IDSet) <-chan
 	}()
 	return out
 }
+
+// Only for use by AssociatedSet
+func (mi *MasterIndex) blobIndex(h restic.BlobHandle) int {
+	mi.idxMutex.RLock()
+	defer mi.idxMutex.RUnlock()
+
+	// other indexes are ignored as their ids can change when merged into the main index
+	return mi.idx[0].BlobIndex(h)
+}
+
+// Only for use by AssociatedSet
+func (mi *MasterIndex) stableLen(t restic.BlobType) uint {
+	mi.idxMutex.RLock()
+	defer mi.idxMutex.RUnlock()
+
+	// other indexes are ignored as their ids can change when merged into the main index
+	return mi.idx[0].Len(t)
+}

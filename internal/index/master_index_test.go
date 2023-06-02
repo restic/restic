@@ -161,9 +161,12 @@ func TestMasterMergeFinalIndexes(t *testing.T) {
 	mIdx.Insert(idx1)
 	mIdx.Insert(idx2)
 
-	finalIndexes, idxCount := index.TestMergeIndex(t, mIdx)
+	rtest.Equals(t, restic.NewIDSet(), mIdx.IDs())
+
+	finalIndexes, idxCount, ids := index.TestMergeIndex(t, mIdx)
 	rtest.Equals(t, []*index.Index{idx1, idx2}, finalIndexes)
 	rtest.Equals(t, 1, idxCount)
+	rtest.Equals(t, ids, mIdx.IDs())
 
 	blobCount := 0
 	rtest.OK(t, mIdx.Each(context.TODO(), func(pb restic.PackedBlob) {
@@ -186,9 +189,11 @@ func TestMasterMergeFinalIndexes(t *testing.T) {
 	idx3.StorePack(blob2.PackID, []restic.Blob{blob2.Blob})
 
 	mIdx.Insert(idx3)
-	finalIndexes, idxCount = index.TestMergeIndex(t, mIdx)
+	finalIndexes, idxCount, newIDs := index.TestMergeIndex(t, mIdx)
 	rtest.Equals(t, []*index.Index{idx3}, finalIndexes)
 	rtest.Equals(t, 1, idxCount)
+	ids.Merge(newIDs)
+	rtest.Equals(t, ids, mIdx.IDs())
 
 	// Index should have same entries as before!
 	blobs = mIdx.Lookup(bhInIdx1)

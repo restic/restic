@@ -7,6 +7,7 @@ import (
 	"sort"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
@@ -60,11 +61,11 @@ type PruneStats struct {
 }
 
 type PrunePlan struct {
-	removePacksFirst restic.IDSet           // packs to remove first (unreferenced packs)
-	repackPacks      restic.IDSet           // packs to repack
-	keepBlobs        *restic.CountedBlobSet // blobs to keep during repacking
-	removePacks      restic.IDSet           // packs to remove
-	ignorePacks      restic.IDSet           // packs to ignore when rebuilding the index
+	removePacksFirst restic.IDSet                // packs to remove first (unreferenced packs)
+	repackPacks      restic.IDSet                // packs to repack
+	keepBlobs        *index.AssociatedSet[uint8] // blobs to keep during repacking
+	removePacks      restic.IDSet                // packs to remove
+	ignorePacks      restic.IDSet                // packs to ignore when rebuilding the index
 
 	repo  *Repository
 	stats PruneStats
@@ -90,7 +91,7 @@ type packInfoWithID struct {
 
 // PlanPrune selects which files to rewrite and which to delete and which blobs to keep.
 // Also some summary statistics are returned.
-func PlanPrune(ctx context.Context, opts PruneOptions, repo *Repository, getUsedBlobs func(ctx context.Context, repo restic.Repository) (usedBlobs *restic.CountedBlobSet, err error), printer progress.Printer) (*PrunePlan, error) {
+func PlanPrune(ctx context.Context, opts PruneOptions, repo *Repository, getUsedBlobs func(ctx context.Context, repo restic.Repository) (usedBlobs *index.AssociatedSet[uint8], err error), printer progress.Printer) (*PrunePlan, error) {
 	var stats PruneStats
 
 	if opts.UnsafeRecovery {
@@ -122,7 +123,6 @@ func PlanPrune(ctx context.Context, opts PruneOptions, repo *Repository, getUsed
 	}
 
 	if len(plan.repackPacks) != 0 {
-		blobCount := keepBlobs.Len()
 		// when repacking, we do not want to keep blobs which are
 		// already contained in kept packs, so delete them from keepBlobs
 		err := repo.ListBlobs(ctx, func(blob restic.PackedBlob) {
@@ -133,11 +133,6 @@ func PlanPrune(ctx context.Context, opts PruneOptions, repo *Repository, getUsed
 		})
 		if err != nil {
 			return nil, err
-		}
-
-		if keepBlobs.Len() < blobCount/2 {
-			// replace with copy to shrink map to necessary size if there's a chance to benefit
-			keepBlobs = keepBlobs.Copy()
 		}
 	} else {
 		// keepBlobs is only needed if packs are repacked
@@ -152,7 +147,7 @@ func PlanPrune(ctx context.Context, opts PruneOptions, repo *Repository, getUsed
 	return &plan, nil
 }
 
-func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs *restic.CountedBlobSet, stats *PruneStats, printer progress.Printer) (*restic.CountedBlobSet, map[restic.ID]packInfo, error) {
+func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs *index.AssociatedSet[uint8], stats *PruneStats, printer progress.Printer) (*index.AssociatedSet[uint8], map[restic.ID]packInfo, error) {
 	// iterate over all blobs in index to find out which blobs are duplicates
 	// The counter in usedBlobs describes how many instances of the blob exist in the repository index
 	// Thus 0 == blob is missing, 1 == blob exists once, >= 2 == duplicates exist

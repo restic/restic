@@ -172,6 +172,9 @@ func TestIndexSize(t *testing.T) {
 	err := idx.Encode(wr)
 	rtest.OK(t, err)
 
+	rtest.Equals(t, uint(packs*blobCount), idx.Len(restic.DataBlob))
+	rtest.Equals(t, uint(0), idx.Len(restic.TreeBlob))
+
 	t.Logf("Index file size for %d blobs in %d packs is %d", blobCount*packs, packs, wr.Len())
 }
 

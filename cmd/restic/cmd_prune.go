@@ -9,6 +9,7 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
@@ -188,7 +189,7 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOption
 		RepackUncompressed: opts.RepackUncompressed,
 	}
 
-	plan, err := repository.PlanPrune(ctx, popts, repo, func(ctx context.Context, repo restic.Repository) (usedBlobs *restic.CountedBlobSet, err error) {
+	plan, err := repository.PlanPrune(ctx, popts, repo, func(ctx context.Context, repo restic.Repository) (usedBlobs *index.AssociatedSet[uint8], err error) {
 		return getUsedBlobs(ctx, repo, ignoreSnapshots, printer)
 	}, printer)
 	if err != nil {
@@ -255,7 +256,7 @@ func printPruneStats(printer progress.Printer, stats repository.PruneStats) erro
 	return nil
 }
 
-func getUsedBlobs(ctx context.Context, repo restic.Repository, ignoreSnapshots restic.IDSet, printer progress.Printer) (usedBlobs *restic.CountedBlobSet, err error) {
+func getUsedBlobs(ctx context.Context, repo restic.Repository, ignoreSnapshots restic.IDSet, printer progress.Printer) (usedBlobs *index.AssociatedSet[uint8], err error) {
 	var snapshotTrees restic.IDs
 	printer.P("loading all snapshots...\n")
 	err = restic.ForAllSnapshots(ctx, repo, repo, ignoreSnapshots,
@@ -274,7 +275,7 @@ func getUsedBlobs(ctx context.Context, repo restic.Repository, ignoreSnapshots r
 
 	printer.P("finding data that is still in use for %d snapshots\n", len(snapshotTrees))
 
-	usedBlobs = restic.NewCountedBlobSet()
+	usedBlobs = index.NewAssociatedSet[uint8](repo.Index().(*index.MasterIndex))
 
 	bar := printer.NewCounter("snapshots")
 	bar.SetMax(uint64(len(snapshotTrees)))
