@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"math"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -204,6 +205,9 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOption
 	if err != nil {
 		return err
 	}
+
+	// Trigger GC to reset garbage collection threshold
+	runtime.GC()
 
 	return doPrune(ctx, opts, gopts, repo, plan)
 }
