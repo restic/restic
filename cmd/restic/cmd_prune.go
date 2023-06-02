@@ -288,7 +288,6 @@ func planPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, i
 	}
 
 	if len(plan.repackPacks) != 0 {
-		// blobCount := keepBlobs.Len()
 		// when repacking, we do not want to keep blobs which are
 		// already contained in kept packs, so delete them from keepBlobs
 		repo.Index().Each(ctx, func(blob restic.PackedBlob) {
@@ -297,11 +296,6 @@ func planPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, i
 			}
 			keepBlobs.Delete(blob.BlobHandle)
 		})
-
-		// if keepBlobs.Len() < blobCount/2 {
-		// 	// replace with copy to shrink map to necessary size if there's a chance to benefit
-		// 	keepBlobs = keepBlobs.Copy()
-		// }
 	} else {
 		// keepBlobs is only needed if packs are repacked
 		keepBlobs = nil
@@ -319,7 +313,7 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs *a
 		bh := blob.BlobHandle
 		count, ok := usedBlobs.Get(bh)
 		if ok {
-			if count < math.MaxUint8-1 {
+			if count < math.MaxUint8 {
 				// don't overflow, but saturate count at 255
 				// this can lead to a non-optimal pack selection, but won't cause
 				// problems otherwise
@@ -825,7 +819,7 @@ func getUsedBlobs(ctx context.Context, repo restic.Repository, ignoreSnapshots r
 
 	Verbosef("finding data that is still in use for %d snapshots\n", len(snapshotTrees))
 
-	usedBlobs = NewAssociated(repo.Index())
+	usedBlobs = NewAssociated(repo.Index().(*index.MasterIndex))
 
 	bar := newProgressMax(!quiet, uint64(len(snapshotTrees)), "snapshots")
 	defer bar.Done()
@@ -841,13 +835,18 @@ func getUsedBlobs(ctx context.Context, repo restic.Repository, ignoreSnapshots r
 	return usedBlobs, nil
 }
 
-type associatedData struct {
-	byType   [restic.NumBlobTypes][]uint8
-	overflow map[restic.BlobHandle]uint8
-	idx      restic.MasterIndex
+type associatedDataSub struct {
+	value []uint8
+	isSet []bool
 }
 
-func NewAssociated(mi restic.MasterIndex) *associatedData {
+type associatedData struct {
+	byType   [restic.NumBlobTypes]associatedDataSub
+	overflow map[restic.BlobHandle]uint8
+	idx      *index.MasterIndex
+}
+
+func NewAssociated(mi *index.MasterIndex) *associatedData {
 	a := associatedData{
 		overflow: make(map[restic.BlobHandle]uint8),
 		idx:      mi,
@@ -857,7 +856,9 @@ func NewAssociated(mi restic.MasterIndex) *associatedData {
 		if typ == 0 {
 			continue
 		}
-		a.byType[typ] = make([]uint8, mi.(*index.MasterIndex).Len(restic.BlobType(typ)))
+		count := mi.Len(restic.BlobType(typ))
+		a.byType[typ].value = make([]uint8, count)
+		a.byType[typ].isSet = make([]bool, count)
 	}
 
 	return &a
@@ -865,20 +866,18 @@ func NewAssociated(mi restic.MasterIndex) *associatedData {
 
 func (a *associatedData) Get(bh restic.BlobHandle) (uint8, bool) {
 	if val, ok := a.overflow[bh]; ok {
-		// FIXME?
-		return val - 1, true
+		return val, true
 	}
 
-	idx := a.idx.(*index.MasterIndex).GetBlobIndex(bh)
-
-	bt := a.byType[bh.Type]
-	if idx >= len(bt) || idx == -1 {
+	idx := a.idx.GetBlobIndex(bh)
+	bt := &a.byType[bh.Type]
+	if idx >= len(bt.value) || idx == -1 {
 		return 0, false
 	}
 
-	has := bt[idx] > 0
+	has := bt.isSet[idx]
 	if has {
-		return bt[idx] - 1, has
+		return bt.value[idx], has
 	} else {
 		return 0, false
 	}
@@ -890,52 +889,49 @@ func (a *associatedData) Has(bh restic.BlobHandle) bool {
 }
 
 func (a *associatedData) Set(bh restic.BlobHandle, val uint8) {
-	if val == 255 {
-		panic("overflow")
-	}
-	a.set(bh, val+1)
-}
-
-func (a *associatedData) set(bh restic.BlobHandle, val uint8) {
 	if _, ok := a.overflow[bh]; ok {
-		if val == 0 {
-			delete(a.overflow, bh)
-		} else {
-			a.overflow[bh] = val
-		}
+		a.overflow[bh] = val
 		return
 	}
 
-	idx := a.idx.(*index.MasterIndex).GetBlobIndex(bh)
-
-	bt := a.byType[bh.Type]
-	if idx >= len(bt) || idx == -1 {
-		if val > 0 {
-			a.overflow[bh] = val
-		}
+	idx := a.idx.GetBlobIndex(bh)
+	bt := &a.byType[bh.Type]
+	if idx >= len(bt.value) || idx == -1 {
+		a.overflow[bh] = val
 	} else {
-		bt[idx] = val
+		bt.value[idx] = val
+		bt.isSet[idx] = true
 	}
 }
 
 func (a *associatedData) Insert(bh restic.BlobHandle) {
-	a.set(bh, 1)
+	a.Set(bh, 0)
 }
 
 func (a *associatedData) Delete(bh restic.BlobHandle) {
-	a.set(bh, 0)
+	if _, ok := a.overflow[bh]; ok {
+		delete(a.overflow, bh)
+		return
+	}
+
+	idx := a.idx.GetBlobIndex(bh)
+	bt := &a.byType[bh.Type]
+	if idx < len(bt.value) && idx != -1 {
+		bt.isSet[idx] = false
+	}
 }
 
 func (a *associatedData) Len() int {
-	// FIXME
-	return 0
+	count := 0
+	a.For(func(_ restic.BlobHandle, _ uint8) {
+		count++
+	})
+	return count
 }
 
 func (a *associatedData) For(cb func(bh restic.BlobHandle, val uint8)) {
 	for k, v := range a.overflow {
-		if v > 0 {
-			cb(k, v-1)
-		}
+		cb(k, v)
 	}
 
 	a.idx.Each(context.TODO(), func(pb restic.PackedBlob) {
