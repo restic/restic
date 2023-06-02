@@ -243,11 +243,11 @@ type pruneStats struct {
 }
 
 type prunePlan struct {
-	removePacksFirst restic.IDSet           // packs to remove first (unreferenced packs)
-	repackPacks      restic.IDSet           // packs to repack
-	keepBlobs        *restic.CountedBlobSet // blobs to keep during repacking
-	removePacks      restic.IDSet           // packs to remove
-	ignorePacks      restic.IDSet           // packs to ignore when rebuilding the index
+	removePacksFirst restic.IDSet    // packs to remove first (unreferenced packs)
+	repackPacks      restic.IDSet    // packs to repack
+	keepBlobs        *associatedData // blobs to keep during repacking
+	removePacks      restic.IDSet    // packs to remove
+	ignorePacks      restic.IDSet    // packs to ignore when rebuilding the index
 }
 
 type packInfo struct {
@@ -288,7 +288,7 @@ func planPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, i
 	}
 
 	if len(plan.repackPacks) != 0 {
-		blobCount := keepBlobs.Len()
+		// blobCount := keepBlobs.Len()
 		// when repacking, we do not want to keep blobs which are
 		// already contained in kept packs, so delete them from keepBlobs
 		repo.Index().Each(ctx, func(blob restic.PackedBlob) {
@@ -298,10 +298,10 @@ func planPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, i
 			keepBlobs.Delete(blob.BlobHandle)
 		})
 
-		if keepBlobs.Len() < blobCount/2 {
-			// replace with copy to shrink map to necessary size if there's a chance to benefit
-			keepBlobs = keepBlobs.Copy()
-		}
+		// if keepBlobs.Len() < blobCount/2 {
+		// 	// replace with copy to shrink map to necessary size if there's a chance to benefit
+		// 	keepBlobs = keepBlobs.Copy()
+		// }
 	} else {
 		// keepBlobs is only needed if packs are repacked
 		keepBlobs = nil
@@ -311,7 +311,7 @@ func planPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, i
 	return plan, stats, nil
 }
 
-func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs *restic.CountedBlobSet, stats *pruneStats) (*restic.CountedBlobSet, map[restic.ID]packInfo, error) {
+func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs *associatedData, stats *pruneStats) (*associatedData, map[restic.ID]packInfo, error) {
 	// iterate over all blobs in index to find out which blobs are duplicates
 	// The counter in usedBlobs describes how many instances of the blob exist in the repository index
 	// Thus 0 == blob is missing, 1 == blob exists once, >= 2 == duplicates exist
@@ -319,7 +319,7 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs *r
 		bh := blob.BlobHandle
 		count, ok := usedBlobs.Get(bh)
 		if ok {
-			if count < math.MaxUint8 {
+			if count < math.MaxUint8-1 {
 				// don't overflow, but saturate count at 255
 				// this can lead to a non-optimal pack selection, but won't cause
 				// problems otherwise
@@ -806,7 +806,7 @@ func rebuildIndexFiles(ctx context.Context, gopts GlobalOptions, repo restic.Rep
 	return DeleteFilesChecked(ctx, gopts, repo, obsoleteIndexes, restic.IndexFile)
 }
 
-func getUsedBlobs(ctx context.Context, repo restic.Repository, ignoreSnapshots restic.IDSet, quiet bool) (usedBlobs *restic.CountedBlobSet, err error) {
+func getUsedBlobs(ctx context.Context, repo restic.Repository, ignoreSnapshots restic.IDSet, quiet bool) (usedBlobs *associatedData, err error) {
 	var snapshotTrees restic.IDs
 	Verbosef("loading all snapshots...\n")
 	err = restic.ForAllSnapshots(ctx, repo.Backend(), repo, ignoreSnapshots,
@@ -825,7 +825,7 @@ func getUsedBlobs(ctx context.Context, repo restic.Repository, ignoreSnapshots r
 
 	Verbosef("finding data that is still in use for %d snapshots\n", len(snapshotTrees))
 
-	usedBlobs = restic.NewCountedBlobSet()
+	usedBlobs = NewAssociated(repo.Index())
 
 	bar := newProgressMax(!quiet, uint64(len(snapshotTrees)), "snapshots")
 	defer bar.Done()
@@ -839,4 +839,109 @@ func getUsedBlobs(ctx context.Context, repo restic.Repository, ignoreSnapshots r
 		return nil, err
 	}
 	return usedBlobs, nil
+}
+
+type associatedData struct {
+	byType   [restic.NumBlobTypes][]uint8
+	overflow map[restic.BlobHandle]uint8
+	idx      restic.MasterIndex
+}
+
+func NewAssociated(mi restic.MasterIndex) *associatedData {
+	a := associatedData{
+		overflow: make(map[restic.BlobHandle]uint8),
+		idx:      mi,
+	}
+
+	for typ := range a.byType {
+		if typ == 0 {
+			continue
+		}
+		a.byType[typ] = make([]uint8, mi.(*index.MasterIndex).Len(restic.BlobType(typ)))
+	}
+
+	return &a
+}
+
+func (a *associatedData) Get(bh restic.BlobHandle) (uint8, bool) {
+	if val, ok := a.overflow[bh]; ok {
+		// FIXME?
+		return val - 1, true
+	}
+
+	idx := a.idx.(*index.MasterIndex).GetBlobIndex(bh)
+
+	bt := a.byType[bh.Type]
+	if idx >= len(bt) || idx == -1 {
+		return 0, false
+	}
+
+	has := bt[idx] > 0
+	if has {
+		return bt[idx] - 1, has
+	} else {
+		return 0, false
+	}
+}
+
+func (a *associatedData) Has(bh restic.BlobHandle) bool {
+	_, ok := a.Get(bh)
+	return ok
+}
+
+func (a *associatedData) Set(bh restic.BlobHandle, val uint8) {
+	if val == 255 {
+		panic("overflow")
+	}
+	a.set(bh, val+1)
+}
+
+func (a *associatedData) set(bh restic.BlobHandle, val uint8) {
+	if _, ok := a.overflow[bh]; ok {
+		if val == 0 {
+			delete(a.overflow, bh)
+		} else {
+			a.overflow[bh] = val
+		}
+		return
+	}
+
+	idx := a.idx.(*index.MasterIndex).GetBlobIndex(bh)
+
+	bt := a.byType[bh.Type]
+	if idx >= len(bt) || idx == -1 {
+		if val > 0 {
+			a.overflow[bh] = val
+		}
+	} else {
+		bt[idx] = val
+	}
+}
+
+func (a *associatedData) Insert(bh restic.BlobHandle) {
+	a.set(bh, 1)
+}
+
+func (a *associatedData) Delete(bh restic.BlobHandle) {
+	a.set(bh, 0)
+}
+
+func (a *associatedData) Len() int {
+	// FIXME
+	return 0
+}
+
+func (a *associatedData) For(cb func(bh restic.BlobHandle, val uint8)) {
+	for k, v := range a.overflow {
+		if v > 0 {
+			cb(k, v-1)
+		}
+	}
+
+	a.idx.Each(context.TODO(), func(pb restic.PackedBlob) {
+		val, known := a.Get(pb.BlobHandle)
+		if known {
+			cb(pb.BlobHandle, val)
+		}
+	})
 }
