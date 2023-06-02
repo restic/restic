@@ -22,7 +22,7 @@ require (
 	github.com/pkg/sftp v1.13.5
 	github.com/pkg/xattr v0.4.10-0.20221120235825-35026bbbd013
 	github.com/restic/chunker v0.4.0
-	github.com/spf13/cobra v1.6.1
+	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/crypto v0.8.0
 	golang.org/x/net v0.10.0
