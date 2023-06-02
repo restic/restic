@@ -1,0 +1,13 @@
+Enhancement: Add --human-readable flag to ls and find commands
+
+Previously, the `ls` and `find` commands showed with the `-l` option 
+showed size in bytes, and did not have an option for a more human 
+readable format that converted these longer numbers into values such 
+as MiB or GiB
+
+The new `--human-readable` option for `ls` and `find` when used with
+the `-l` option will convert longer size values into more human friendly
+values, with an appropriate suffix depending on the output size. For 
+example, a value of `14680064` will be shown as `14.000 MiB`.
+
+https://github.com/restic/restic/issues/4159

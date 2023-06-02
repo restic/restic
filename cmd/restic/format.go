@@ -5,15 +5,21 @@ import (
 	"os"
 
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
 )
 
-func formatNode(path string, n *restic.Node, long bool) string {
+func formatNode(path string, n *restic.Node, long bool, human bool) string {
 	if !long {
 		return path
 	}
 
 	var mode os.FileMode
 	var target string
+
+	size := fmt.Sprintf("%6d", n.Size)
+	if human {
+		size = ui.FormatBytes(n.Size)
+	}
 
 	switch n.Type {
 	case "file":
@@ -33,8 +39,8 @@ func formatNode(path string, n *restic.Node, long bool) string {
 		mode = os.ModeSocket
 	}
 
-	return fmt.Sprintf("%s %5d %5d %6d %s %s%s",
-		mode|n.Mode, n.UID, n.GID, n.Size,
+	return fmt.Sprintf("%s %5d %5d %s %s %s%s",
+		mode|n.Mode, n.UID, n.GID, size,
 		n.ModTime.Local().Format(TimeFormat), path,
 		target)
 }
