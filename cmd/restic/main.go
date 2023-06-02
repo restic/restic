@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"runtime"
+	godebug "runtime/debug"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/options"
@@ -81,7 +82,16 @@ func needsPassword(cmd string) bool {
 
 var logBuffer = bytes.NewBuffer(nil)
 
+func tweakGoGC() {
+	// lower GOGC from 100 to 50, unless it was manually overwritten by the user
+	oldValue := godebug.SetGCPercent(50)
+	if oldValue != 100 {
+		godebug.SetGCPercent(oldValue)
+	}
+}
+
 func main() {
+	tweakGoGC()
 	// install custom global logger into a buffer, if an error occurs
 	// we can show the logs
 	log.SetOutput(logBuffer)
