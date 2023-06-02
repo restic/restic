@@ -50,10 +50,9 @@ func (a *AssociatedData[T]) Get(bh restic.BlobHandle) (T, bool) {
 	has := bt.isSet[idx]
 	if has {
 		return bt.value[idx], has
-	} else {
-		var zero T
-		return zero, false
 	}
+	var zero T
+	return zero, false
 }
 
 func (a *AssociatedData[T]) Has(bh restic.BlobHandle) bool {
