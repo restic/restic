@@ -188,7 +188,7 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOption
 		RepackUncompressed: opts.RepackUncompressed,
 	}
 
-	plan, err := repository.PlanPrune(ctx, popts, repo, func(ctx context.Context, repo restic.Repository) (usedBlobs restic.CountedBlobSet, err error) {
+	plan, err := repository.PlanPrune(ctx, popts, repo, func(ctx context.Context, repo restic.Repository) (usedBlobs *restic.CountedBlobSet, err error) {
 		return getUsedBlobs(ctx, repo, ignoreSnapshots, printer)
 	}, printer)
 	if err != nil {
@@ -255,7 +255,7 @@ func printPruneStats(printer progress.Printer, stats repository.PruneStats) erro
 	return nil
 }
 
-func getUsedBlobs(ctx context.Context, repo restic.Repository, ignoreSnapshots restic.IDSet, printer progress.Printer) (usedBlobs restic.CountedBlobSet, err error) {
+func getUsedBlobs(ctx context.Context, repo restic.Repository, ignoreSnapshots restic.IDSet, printer progress.Printer) (usedBlobs *restic.CountedBlobSet, err error) {
 	var snapshotTrees restic.IDs
 	printer.P("loading all snapshots...\n")
 	err = restic.ForAllSnapshots(ctx, repo, repo, ignoreSnapshots,
