@@ -43,7 +43,7 @@ exist:
  * Configuring a program to be called when the password is needed via the
    option ``--password-command`` or the environment variable
    ``RESTIC_PASSWORD_COMMAND``
-   
+
 The ``init`` command has an option called ``--repository-version`` which can
 be used to explicitly set the version of the new repository. By default, the
 current stable version is used (see table below). The alias ``latest`` will
@@ -77,7 +77,7 @@ command and enter the same password twice:
     enter password again:
     created restic repository 085b3c76b9 at /srv/restic-repo
     Please note that knowledge of your password is required to access the repository.
-    Losing your password means that your data is irrecoverably lost.
+    Losing your password means that your data is irrevocably lost.
 
 .. warning::
 
@@ -110,7 +110,7 @@ simply be achieved by changing the URL scheme in the ``init`` command:
     enter password again:
     created restic repository f1c6108821 at sftp:user@host:/srv/restic-repo
     Please note that knowledge of your password is required to access the repository.
-    Losing your password means that your data is irrecoverably lost.
+    Losing your password means that your data is irrevocably lost.
 
 You can also specify a relative (read: no slash (``/``) character at the
 beginning) directory, in this case the dir is relative to the remote
@@ -176,15 +176,15 @@ SFTP connection, you can specify the command to be run with the option
 
 .. note:: Please be aware that sftp servers close connections when no data is
           received by the client. This can happen when restic is processing huge
-          amounts of unchanged data. To avoid this issue add the following lines 
+          amounts of unchanged data. To avoid this issue add the following lines
           to the client's .ssh/config file:
 
 ::
 
     ServerAliveInterval 60
     ServerAliveCountMax 240
-          
-          
+
+
 REST Server
 ***********
 
@@ -249,7 +249,7 @@ default location:
     enter password again:
     created restic repository eefee03bbd at s3:s3.amazonaws.com/bucket_name
     Please note that knowledge of your password is required to access the repository.
-    Losing your password means that your data is irrecoverably lost.
+    Losing your password means that your data is irrevocably lost.
 
 If needed, you can manually specify the region to use by either setting the
 environment variable ``AWS_DEFAULT_REGION`` or calling restic with an option
@@ -272,7 +272,7 @@ after the bucket name like this:
 For an S3-compatible server that is not Amazon (like Minio, see below),
 or is only available via HTTP, you can specify the URL to the server
 like this: ``s3:http://server:port/bucket_name``.
-          
+
 .. note:: restic expects `path-style URLs <https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-bucket-intro.html>`__
           like for example ``s3.us-west-2.amazonaws.com/bucket_name``.
           Virtual-hosted–style URLs like ``bucket_name.s3.us-west-2.amazonaws.com``,
@@ -315,7 +315,7 @@ this command.
     enter password again:
     created restic repository 6ad29560f5 at s3:http://localhost:9000/restic1
     Please note that knowledge of your password is required to access
-    the repository. Losing your password means that your data is irrecoverably lost.
+    the repository. Losing your password means that your data is irrevocably lost.
 
 Wasabi
 ************
@@ -344,7 +344,7 @@ this command.
     enter password again:
     created restic repository xxxxxxxxxx at s3:https://<WASABI-SERVICE-URL>/<WASABI-BUCKET-NAME>
     Please note that knowledge of your password is required to access
-    the repository. Losing your password means that your data is irrecoverably lost.
+    the repository. Losing your password means that your data is irrevocably lost.
 
 Alibaba Cloud (Aliyun) Object Storage System (OSS)
 **************************************************
@@ -378,7 +378,7 @@ this command.
     enter password again:
     created restic backend xxxxxxxxxx at s3:https://<OSS-ENDPOINT>/<OSS-BUCKET-NAME>
     Please note that knowledge of your password is required to access
-    the repository. Losing your password means that your data is irrecoverably lost.
+    the repository. Losing your password means that your data is irrevocably lost.
 
 For example with an actual endpoint:
 
@@ -454,7 +454,7 @@ the container does not exist, it will be created automatically:
    enter password again:
    created restic repository eefee03bbd at swift:container_name:/path
    Please note that knowledge of your password is required to access the repository.
-   Losing your password means that your data is irrecoverably lost.
+   Losing your password means that your data is irrevocably lost.
 
 The policy of the new container created by restic can be changed using environment variable:
 
@@ -470,7 +470,7 @@ Backblaze B2
 
    Due to issues with error handling in the current B2 library that restic uses,
    the recommended way to utilize Backblaze B2 is by using its S3-compatible API.
-   
+
    Follow the documentation to `generate S3-compatible access keys`_ and then
    setup restic as described at :ref:`Amazon S3`. This is expected to work better
    than using the Backblaze B2 backend directly.
@@ -509,7 +509,7 @@ privilege to create buckets, it will be created automatically:
     enter password again:
     created restic repository eefee03bbd at b2:bucketname:path/to/repo
     Please note that knowledge of your password is required to access the repository.
-    Losing your password means that your data is irrecoverably lost.
+    Losing your password means that your data is irrevocably lost.
 
 Note that the bucket name must be unique across all of B2.
 
@@ -582,7 +582,7 @@ key file and the project ID as follows:
 
 Restic uses  Google's client library to generate `default authentication material`_,
 which means if you're running in Google Container Engine or are otherwise
-located on an instance with default service accounts then these should work out of 
+located on an instance with default service accounts then these should work out of
 the box.
 
 Alternatively, you can specify an existing access token directly:

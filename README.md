@@ -21,7 +21,7 @@ off with creating a repository for your backups:
     enter password again:
     created restic backend 085b3c76b9 at /tmp/backup
     Please note that knowledge of your password is required to access the repository.
-    Losing your password means that your data is irrecoverably lost.
+    Losing your password means that your data is irrevocably lost.
 
 and add some data:
 

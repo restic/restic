@@ -115,7 +115,7 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 		Verbosef("\n")
 		Verbosef("Please note that knowledge of your password is required to access\n")
 		Verbosef("the repository. Losing your password means that your data is\n")
-		Verbosef("irrecoverably lost.\n")
+		Verbosef("irrevocably lost.\n")
 
 	} else {
 		status := initSuccess{

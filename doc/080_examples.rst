@@ -225,7 +225,7 @@ repository:
 
    Please note that knowledge of your password is required to access
    the repository. Losing your password means that your data is
-   irrecoverably lost.
+   irrevocably lost.
 
 restic is now ready to be used with Amazon S3. Try to create a backup:
 
@@ -239,7 +239,7 @@ restic is now ready to be used with Amazon S3. Try to create a backup:
    $ ./restic backup test.bin
    scan [/home/philip/restic-demo/test.bin]
    scanned 0 directories, 1 files in 0:00
-   [0:04] 100.00%  2.500 MiB/s  10.000 MiB / 10.000 MiB  1 / 1 items ... ETA 0:00 
+   [0:04] 100.00%  2.500 MiB/s  10.000 MiB / 10.000 MiB  1 / 1 items ... ETA 0:00
    duration: 0:04, 2.47MiB/s
    snapshot 10fdbace saved
 
@@ -312,7 +312,7 @@ the backups:
 
    root@a3e580b6369d:/# useradd --system --create-home --shell /sbin/nologin restic
 
-Then we download and install the restic binary into the user's home 
+Then we download and install the restic binary into the user's home
 directory (please adjust the URL to refer to the latest restic version).
 
 .. code-block:: console
