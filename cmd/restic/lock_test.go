@@ -90,6 +90,7 @@ func TestLockConflict(t *testing.T) {
 	if err == nil {
 		t.Fatal("second lock should have failed")
 	}
+	test.Assert(t, restic.IsAlreadyLocked(err), "unexpected error %v", err)
 }
 
 type writeOnceBackend struct {
