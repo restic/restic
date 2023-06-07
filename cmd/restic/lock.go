@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -97,7 +98,7 @@ retryLoop:
 		return nil, ctx, errors.Fatalf("%v\n\nthe `unlock --remove-all` command can be used to remove invalid locks. Make sure that no other restic process is accessing the repository when running the command", err)
 	}
 	if err != nil {
-		return nil, ctx, errors.Fatalf("unable to create lock in backend: %v", err)
+		return nil, ctx, fmt.Errorf("unable to create lock in backend: %w", err)
 	}
 	debug.Log("create lock %p (exclusive %v)", lock, exclusive)
 
@@ -111,7 +112,7 @@ retryLoop:
 	globalLocks.Lock()
 	globalLocks.locks[lock] = lockInfo
 	go refreshLocks(ctx, lock, lockInfo, refreshChan)
-	go monitorLockRefresh(ctx, lock, lockInfo, refreshChan)
+	go monitorLockRefresh(ctx, lockInfo, refreshChan)
 	globalLocks.Unlock()
 
 	return lock, ctx, err
@@ -170,7 +171,7 @@ func refreshLocks(ctx context.Context, lock *restic.Lock, lockInfo *lockContext,
 	}
 }
 
-func monitorLockRefresh(ctx context.Context, lock *restic.Lock, lockInfo *lockContext, refreshed <-chan struct{}) {
+func monitorLockRefresh(ctx context.Context, lockInfo *lockContext, refreshed <-chan struct{}) {
 	// time.Now() might use a monotonic timer which is paused during standby
 	// convert to unix time to ensure we compare real time values
 	lastRefresh := time.Now().UnixNano()

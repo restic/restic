@@ -63,11 +63,7 @@ directories in an encrypted repository stored on different backends.
 
 		// run the debug functions for all subcommands (if build tag "debug" is
 		// enabled)
-		if err := runDebug(); err != nil {
-			return err
-		}
-
-		return nil
+		return runDebug()
 	},
 }
 

@@ -68,21 +68,21 @@ func extractToFile(buf []byte, filename, target string, printf func(string, ...i
 
 	// Write everything to a temp file
 	dir := filepath.Dir(target)
-	new, err := os.CreateTemp(dir, "restic")
+	newFile, err := os.CreateTemp(dir, "restic")
 	if err != nil {
 		return err
 	}
 
-	n, err := io.Copy(new, rd)
+	n, err := io.Copy(newFile, rd)
 	if err != nil {
-		_ = new.Close()
-		_ = os.Remove(new.Name())
+		_ = newFile.Close()
+		_ = os.Remove(newFile.Name())
 		return err
 	}
-	if err = new.Sync(); err != nil {
+	if err = newFile.Sync(); err != nil {
 		return err
 	}
-	if err = new.Close(); err != nil {
+	if err = newFile.Close(); err != nil {
 		return err
 	}
 
@@ -98,7 +98,7 @@ func extractToFile(buf []byte, filename, target string, printf func(string, ...i
 	}
 
 	// Rename the temp file to the final location atomically.
-	if err := os.Rename(new.Name(), target); err != nil {
+	if err := os.Rename(newFile.Name(), target); err != nil {
 		return err
 	}
 

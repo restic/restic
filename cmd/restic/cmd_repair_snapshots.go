@@ -67,7 +67,7 @@ func init() {
 }
 
 func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOptions, args []string) error {
-	repo, err := OpenRepository(ctx, globalOptions)
+	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
 	}

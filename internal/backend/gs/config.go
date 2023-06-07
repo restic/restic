@@ -16,13 +16,15 @@ type Config struct {
 	Bucket    string
 	Prefix    string
 
-	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
+	Connections uint   `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
+	Region      string `option:"region" help:"region to create the bucket in (default: us)"`
 }
 
 // NewConfig returns a new Config with the default values filled in.
 func NewConfig() Config {
 	return Config{
 		Connections: 5,
+		Region:      "us",
 	}
 }
 

@@ -2,10 +2,9 @@ package restic
 
 import (
 	"encoding/json"
+	"fmt"
 	"sort"
 	"strings"
-
-	"github.com/restic/restic/internal/errors"
 )
 
 type SnapshotGroupByOptions struct {
@@ -26,7 +25,7 @@ func splitSnapshotGroupBy(s string) (SnapshotGroupByOptions, error) {
 			l.Tag = true
 		case "":
 		default:
-			return SnapshotGroupByOptions{}, errors.Fatal("unknown grouping option: '" + option + "'")
+			return SnapshotGroupByOptions{}, fmt.Errorf("unknown grouping option: %q", option)
 		}
 	}
 	return l, nil

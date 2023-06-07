@@ -96,6 +96,11 @@ hard links from a fuse mount should be done by a program that preserves
 hard links. A program that does so is ``rsync``, used with the option
 --hard-links.
 
+.. note:: ``restic mount`` is mostly useful if you want to restore just a few
+   files out of a snapshot, or to check which files are contained in a snapshot.
+   To restore many files or a whole snapshot, ``restic restore`` is the best
+   alternative, often it is *significantly* faster.
+
 Printing files to stdout
 ========================
 

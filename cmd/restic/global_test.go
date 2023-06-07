@@ -1,37 +1,29 @@
 package main
 
 import (
-	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/restic/restic/internal/test"
 	rtest "github.com/restic/restic/internal/test"
 )
 
 func Test_PrintFunctionsRespectsGlobalStdout(t *testing.T) {
-	gopts := globalOptions
-	defer func() {
-		globalOptions = gopts
-	}()
-
-	buf := bytes.NewBuffer(nil)
-	globalOptions.stdout = buf
-
 	for _, p := range []func(){
 		func() { Println("message") },
 		func() { Print("message\n") },
 		func() { Printf("mes%s\n", "sage") },
 	} {
-		p()
+		buf, _ := withCaptureStdout(func() error {
+			p()
+			return nil
+		})
 		rtest.Equals(t, "message\n", buf.String())
-		buf.Reset()
 	}
 }
 
 func TestReadRepo(t *testing.T) {
-	tempDir := test.TempDir(t)
+	tempDir := rtest.TempDir(t)
 
 	// test --repo option
 	var opts GlobalOptions

@@ -133,7 +133,7 @@ func (b *Backend) cacheFile(ctx context.Context, h restic.Handle) error {
 }
 
 // loadFromCache will try to load the file from the cache.
-func (b *Backend) loadFromCache(ctx context.Context, h restic.Handle, length int, offset int64, consumer func(rd io.Reader) error) (bool, error) {
+func (b *Backend) loadFromCache(h restic.Handle, length int, offset int64, consumer func(rd io.Reader) error) (bool, error) {
 	rd, err := b.Cache.load(h, length, offset)
 	if err != nil {
 		return false, err
@@ -160,7 +160,7 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 	}
 
 	// try loading from cache without checking that the handle is actually cached
-	inCache, err := b.loadFromCache(ctx, h, length, offset, consumer)
+	inCache, err := b.loadFromCache(h, length, offset, consumer)
 	if inCache {
 		if err == nil {
 			return nil
@@ -183,7 +183,7 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 		return err
 	}
 
-	inCache, err = b.loadFromCache(ctx, h, length, offset, consumer)
+	inCache, err = b.loadFromCache(h, length, offset, consumer)
 	if inCache {
 		return err
 	}

@@ -8,6 +8,9 @@ on:
   # run tests for all pull requests
   pull_request:
 
+permissions:
+  contents: read
+
 env:
   latest_go: "1.20.x"
   GO111MODULE: on
@@ -376,10 +379,8 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
-          version: v1.51
-          # Optional: show only new issues if it's a pull request. The default value is `false`.
-          only-new-issues: true
-          args: --verbose --timeout 10m
+          version: v1.52.2
+          args: --verbose --timeout 5m
 
         # only run golangci-lint for pull requests, otherwise ALL hints get
         # reported. We need to slowly address all issues until we can enable

@@ -59,7 +59,7 @@ func TestCounter(t *testing.T) {
 	t.Log("number of calls:", ncalls)
 }
 
-func TestCounterNil(t *testing.T) {
+func TestCounterNil(_ *testing.T) {
 	// Shouldn't panic.
 	var c *progress.Counter
 	c.Add(1)

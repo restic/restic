@@ -187,7 +187,7 @@ func (r *SFTP) Join(p ...string) string {
 }
 
 // ReadDir returns the entries for a directory.
-func (r *SFTP) ReadDir(ctx context.Context, dir string) ([]os.FileInfo, error) {
+func (r *SFTP) ReadDir(_ context.Context, dir string) ([]os.FileInfo, error) {
 	fi, err := r.c.ReadDir(dir)
 
 	// sftp client does not specify dir name on error, so add it here
@@ -296,7 +296,7 @@ func tempSuffix() string {
 }
 
 // Save stores data in the backend at the handle.
-func (r *SFTP) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+func (r *SFTP) Save(_ context.Context, h restic.Handle, rd restic.RewindReader) error {
 	if err := r.clientError(); err != nil {
 		return err
 	}
@@ -400,7 +400,7 @@ func (r *SFTP) Load(ctx context.Context, h restic.Handle, length int, offset int
 	return backend.DefaultLoad(ctx, h, length, offset, r.openReader, fn)
 }
 
-func (r *SFTP) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+func (r *SFTP) openReader(_ context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	f, err := r.c.Open(r.Filename(h))
 	if err != nil {
 		return nil, err
@@ -424,7 +424,7 @@ func (r *SFTP) openReader(ctx context.Context, h restic.Handle, length int, offs
 }
 
 // Stat returns information about a blob.
-func (r *SFTP) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, error) {
+func (r *SFTP) Stat(_ context.Context, h restic.Handle) (restic.FileInfo, error) {
 	if err := r.clientError(); err != nil {
 		return restic.FileInfo{}, err
 	}
@@ -438,7 +438,7 @@ func (r *SFTP) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, erro
 }
 
 // Remove removes the content stored at name.
-func (r *SFTP) Remove(ctx context.Context, h restic.Handle) error {
+func (r *SFTP) Remove(_ context.Context, h restic.Handle) error {
 	if err := r.clientError(); err != nil {
 		return err
 	}

@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"syscall"
 
 	"github.com/anacrolix/fuse"
 	"github.com/anacrolix/fuse/fs"
@@ -119,7 +120,7 @@ func (d *dir) open(ctx context.Context) error {
 	return nil
 }
 
-func (d *dir) Attr(ctx context.Context, a *fuse.Attr) error {
+func (d *dir) Attr(_ context.Context, a *fuse.Attr) error {
 	debug.Log("Attr()")
 	a.Inode = d.inode
 	a.Mode = os.ModeDir | d.node.Mode
@@ -202,7 +203,7 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	node, ok := d.items[name]
 	if !ok {
 		debug.Log("  Lookup(%v) -> not found", name)
-		return nil, fuse.ENOENT
+		return nil, syscall.ENOENT
 	}
 	inode := inodeFromNode(d.inode, node)
 	switch node.Type {
@@ -216,11 +217,11 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 		return newOther(d.root, inode, node)
 	default:
 		debug.Log("  node %v has unknown type %v", name, node.Type)
-		return nil, fuse.ENOENT
+		return nil, syscall.ENOENT
 	}
 }
 
-func (d *dir) Listxattr(ctx context.Context, req *fuse.ListxattrRequest, resp *fuse.ListxattrResponse) error {
+func (d *dir) Listxattr(_ context.Context, req *fuse.ListxattrRequest, resp *fuse.ListxattrResponse) error {
 	debug.Log("Listxattr(%v, %v)", d.node.Name, req.Size)
 	for _, attr := range d.node.ExtendedAttributes {
 		resp.Append(attr.Name)
@@ -228,7 +229,7 @@ func (d *dir) Listxattr(ctx context.Context, req *fuse.ListxattrRequest, resp *f
 	return nil
 }
 
-func (d *dir) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, resp *fuse.GetxattrResponse) error {
+func (d *dir) Getxattr(_ context.Context, req *fuse.GetxattrRequest, resp *fuse.GetxattrResponse) error {
 	debug.Log("Getxattr(%v, %v, %v)", d.node.Name, req.Name, req.Size)
 	attrval := d.node.GetExtendedAttribute(req.Name)
 	if attrval != nil {

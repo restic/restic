@@ -72,20 +72,20 @@ func (b *TextProgress) Update(total, processed Counter, errors uint, currentFile
 
 // ScannerError is the error callback function for the scanner, it prints the
 // error in verbose mode and returns nil.
-func (b *TextProgress) ScannerError(item string, err error) error {
+func (b *TextProgress) ScannerError(_ string, err error) error {
 	b.V("scan: %v\n", err)
 	return nil
 }
 
 // Error is the error callback function for the archiver, it prints the error and returns nil.
-func (b *TextProgress) Error(item string, err error) error {
+func (b *TextProgress) Error(_ string, err error) error {
 	b.E("error: %v\n", err)
 	return nil
 }
 
 // CompleteItem is the status callback function for the archiver when a
 // file/dir has been saved successfully.
-func (b *TextProgress) CompleteItem(messageType, item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration) {
+func (b *TextProgress) CompleteItem(messageType, item string, s archiver.ItemStats, d time.Duration) {
 	item = termstatus.Quote(item)
 
 	switch messageType {
@@ -111,7 +111,7 @@ func (b *TextProgress) CompleteItem(messageType, item string, previous, current 
 }
 
 // ReportTotal sets the total stats up to now
-func (b *TextProgress) ReportTotal(item string, start time.Time, s archiver.ScanStats) {
+func (b *TextProgress) ReportTotal(start time.Time, s archiver.ScanStats) {
 	b.V("scan finished in %.3fs: %v files, %s",
 		time.Since(start).Seconds(),
 		s.Files, ui.FormatBytes(s.Bytes),
@@ -126,7 +126,7 @@ func (b *TextProgress) Reset() {
 }
 
 // Finish prints the finishing messages.
-func (b *TextProgress) Finish(snapshotID restic.ID, start time.Time, summary *Summary, dryRun bool) {
+func (b *TextProgress) Finish(_ restic.ID, start time.Time, summary *Summary, dryRun bool) {
 	b.P("\n")
 	b.P("Files:       %5d new, %5d changed, %5d unmodified\n", summary.Files.New, summary.Files.Changed, summary.Files.Unchanged)
 	b.P("Dirs:        %5d new, %5d changed, %5d unmodified\n", summary.Dirs.New, summary.Dirs.Changed, summary.Dirs.Unchanged)

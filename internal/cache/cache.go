@@ -26,10 +26,6 @@ const fileMode = 0644
 
 func readVersion(dir string) (v uint, err error) {
 	buf, err := os.ReadFile(filepath.Join(dir, "version"))
-	if errors.Is(err, os.ErrNotExist) {
-		return 0, nil
-	}
-
 	if err != nil {
 		return 0, errors.Wrap(err, "readVersion")
 	}
@@ -53,10 +49,6 @@ var cacheLayoutPaths = map[restic.FileType]string{
 const cachedirTagSignature = "Signature: 8a477f597d28d172789f06886806bc55\n"
 
 func writeCachedirTag(dir string) error {
-	if err := fs.MkdirAll(dir, dirMode); err != nil {
-		return errors.WithStack(err)
-	}
-
 	tagfile := filepath.Join(dir, "CACHEDIR.TAG")
 	f, err := fs.OpenFile(tagfile, os.O_CREATE|os.O_EXCL|os.O_WRONLY, fileMode)
 	if err != nil {
@@ -89,7 +81,7 @@ func New(id string, basedir string) (c *Cache, err error) {
 		}
 	}
 
-	err = fs.MkdirAll(basedir, 0700)
+	err = fs.MkdirAll(basedir, dirMode)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -102,30 +94,32 @@ func New(id string, basedir string) (c *Cache, err error) {
 	cachedir := filepath.Join(basedir, id)
 	debug.Log("using cache dir %v", cachedir)
 
+	created := false
 	v, err := readVersion(cachedir)
-	if err != nil {
-		return nil, err
-	}
-
-	if v > cacheVersion {
-		return nil, errors.New("cache version is newer")
-	}
-
-	// create the repo cache dir if it does not exist yet
-	var created bool
-	_, err = fs.Lstat(cachedir)
-	if errors.Is(err, os.ErrNotExist) {
-		err = fs.MkdirAll(cachedir, dirMode)
+	switch {
+	case err == nil:
+		if v > cacheVersion {
+			return nil, errors.New("cache version is newer")
+		}
+		// Update the timestamp so that we can detect old cache dirs.
+		err = updateTimestamp(cachedir)
 		if err != nil {
+			return nil, err
+		}
+
+	case errors.Is(err, os.ErrNotExist):
+		// Create the repo cache dir. The parent exists, so Mkdir suffices.
+		err := fs.Mkdir(cachedir, dirMode)
+		switch {
+		case err == nil:
+			created = true
+		case errors.Is(err, os.ErrExist):
+		default:
 			return nil, errors.WithStack(err)
 		}
-		created = true
-	}
 
-	// update the timestamp so that we can detect old cache dirs
-	err = updateTimestamp(cachedir)
-	if err != nil {
-		return nil, err
+	default:
+		return nil, errors.Wrap(err, "readVersion")
 	}
 
 	if v < cacheVersion {

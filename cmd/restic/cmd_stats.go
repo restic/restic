@@ -49,7 +49,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runStats(cmd.Context(), globalOptions, args)
+		return runStats(cmd.Context(), statsOptions, globalOptions, args)
 	},
 }
 
@@ -70,8 +70,8 @@ func init() {
 	initMultiSnapshotFilter(f, &statsOptions.SnapshotFilter, true)
 }
 
-func runStats(ctx context.Context, gopts GlobalOptions, args []string) error {
-	err := verifyStatsInput(gopts, args)
+func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args []string) error {
+	err := verifyStatsInput(opts)
 	if err != nil {
 		return err
 	}
@@ -111,8 +111,8 @@ func runStats(ctx context.Context, gopts GlobalOptions, args []string) error {
 		SnapshotsCount: 0,
 	}
 
-	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &statsOptions.SnapshotFilter, args) {
-		err = statsWalkSnapshot(ctx, sn, repo, stats)
+	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args) {
+		err = statsWalkSnapshot(ctx, sn, repo, opts, stats)
 		if err != nil {
 			return fmt.Errorf("error walking snapshot: %v", err)
 		}
@@ -122,7 +122,7 @@ func runStats(ctx context.Context, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	if statsOptions.countMode == countModeRawData {
+	if opts.countMode == countModeRawData {
 		// the blob handles have been collected, but not yet counted
 		for blobHandle := range stats.blobs {
 			pbs := repo.Index().Lookup(blobHandle)
@@ -156,7 +156,7 @@ func runStats(ctx context.Context, gopts GlobalOptions, args []string) error {
 		return nil
 	}
 
-	Printf("Stats in %s mode:\n", statsOptions.countMode)
+	Printf("Stats in %s mode:\n", opts.countMode)
 	Printf("     Snapshots processed:  %d\n", stats.SnapshotsCount)
 	if stats.TotalBlobCount > 0 {
 		Printf("        Total Blob Count:  %d\n", stats.TotalBlobCount)
@@ -181,21 +181,21 @@ func runStats(ctx context.Context, gopts GlobalOptions, args []string) error {
 	return nil
 }
 
-func statsWalkSnapshot(ctx context.Context, snapshot *restic.Snapshot, repo restic.Repository, stats *statsContainer) error {
+func statsWalkSnapshot(ctx context.Context, snapshot *restic.Snapshot, repo restic.Repository, opts StatsOptions, stats *statsContainer) error {
 	if snapshot.Tree == nil {
 		return fmt.Errorf("snapshot %s has nil tree", snapshot.ID().Str())
 	}
 
 	stats.SnapshotsCount++
 
-	if statsOptions.countMode == countModeRawData {
+	if opts.countMode == countModeRawData {
 		// count just the sizes of unique blobs; we don't need to walk the tree
 		// ourselves in this case, since a nifty function does it for us
 		return restic.FindUsedBlobs(ctx, repo, restic.IDs{*snapshot.Tree}, stats.blobs, nil)
 	}
 
 	uniqueInodes := make(map[uint64]struct{})
-	err := walker.Walk(ctx, repo, *snapshot.Tree, restic.NewIDSet(), statsWalkTree(repo, stats, uniqueInodes))
+	err := walker.Walk(ctx, repo, *snapshot.Tree, restic.NewIDSet(), statsWalkTree(repo, opts, stats, uniqueInodes))
 	if err != nil {
 		return fmt.Errorf("walking tree %s: %v", *snapshot.Tree, err)
 	}
@@ -203,7 +203,7 @@ func statsWalkSnapshot(ctx context.Context, snapshot *restic.Snapshot, repo rest
 	return nil
 }
 
-func statsWalkTree(repo restic.Repository, stats *statsContainer, uniqueInodes map[uint64]struct{}) walker.WalkFunc {
+func statsWalkTree(repo restic.Repository, opts StatsOptions, stats *statsContainer, uniqueInodes map[uint64]struct{}) walker.WalkFunc {
 	return func(parentTreeID restic.ID, npath string, node *restic.Node, nodeErr error) (bool, error) {
 		if nodeErr != nil {
 			return true, nodeErr
@@ -212,19 +212,19 @@ func statsWalkTree(repo restic.Repository, stats *statsContainer, uniqueInodes m
 			return true, nil
 		}
 
-		if statsOptions.countMode == countModeUniqueFilesByContents || statsOptions.countMode == countModeBlobsPerFile {
+		if opts.countMode == countModeUniqueFilesByContents || opts.countMode == countModeBlobsPerFile {
 			// only count this file if we haven't visited it before
 			fid := makeFileIDByContents(node)
 			if _, ok := stats.uniqueFiles[fid]; !ok {
 				// mark the file as visited
 				stats.uniqueFiles[fid] = struct{}{}
 
-				if statsOptions.countMode == countModeUniqueFilesByContents {
+				if opts.countMode == countModeUniqueFilesByContents {
 					// simply count the size of each unique file (unique by contents only)
 					stats.TotalSize += node.Size
 					stats.TotalFileCount++
 				}
-				if statsOptions.countMode == countModeBlobsPerFile {
+				if opts.countMode == countModeBlobsPerFile {
 					// count the size of each unique blob reference, which is
 					// by unique file (unique by contents and file path)
 					for _, blobID := range node.Content {
@@ -254,7 +254,7 @@ func statsWalkTree(repo restic.Repository, stats *statsContainer, uniqueInodes m
 			}
 		}
 
-		if statsOptions.countMode == countModeRestoreSize {
+		if opts.countMode == countModeRestoreSize {
 			// as this is a file in the snapshot, we can simply count its
 			// size without worrying about uniqueness, since duplicate files
 			// will still be restored
@@ -284,15 +284,15 @@ func makeFileIDByContents(node *restic.Node) fileID {
 	return sha256.Sum256(bb)
 }
 
-func verifyStatsInput(gopts GlobalOptions, args []string) error {
+func verifyStatsInput(opts StatsOptions) error {
 	// require a recognized counting mode
-	switch statsOptions.countMode {
+	switch opts.countMode {
 	case countModeRestoreSize:
 	case countModeUniqueFilesByContents:
 	case countModeBlobsPerFile:
 	case countModeRawData:
 	default:
-		return fmt.Errorf("unknown counting mode: %s (use the -h flag to get a list of supported modes)", statsOptions.countMode)
+		return fmt.Errorf("unknown counting mode: %s (use the -h flag to get a list of supported modes)", opts.countMode)
 	}
 
 	return nil

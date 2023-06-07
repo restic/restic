@@ -10,13 +10,10 @@ linters:
     # make sure all errors returned by functions are handled
     - errcheck
 
-    # find unused code
-    - deadcode
-
     # show how code can be simplified
     - gosimple
 
-    # # make sure code is formatted
+    # make sure code is formatted
     - gofmt
 
     # examine code and report suspicious constructs, such as Printf calls whose
@@ -35,12 +32,6 @@ linters:
     # find unused variables, functions, structs, types, etc.
     - unused
 
-    # find unused struct fields
-    - structcheck
-
-    # find unused global variables
-    - varcheck
-
     # parse and typecheck code
     - typecheck
 
@@ -57,3 +48,6 @@ issues:
     - don't use ALL_CAPS in Go names; use CamelCase
     # revive: lots of packages don't have such a comment
     - "package-comments: should have a package comment"
+    # staticcheck: there's no easy way to replace these packages
+    - "SA1019: \"golang.org/x/crypto/poly1305\" is deprecated"
+    - "SA1019: \"golang.org/x/crypto/openpgp\" is deprecated"

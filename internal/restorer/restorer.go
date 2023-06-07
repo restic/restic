@@ -30,7 +30,7 @@ type Restorer struct {
 var restorerAbortOnAllErrors = func(location string, err error) error { return err }
 
 // NewRestorer creates a restorer preloaded with the content from the snapshot id.
-func NewRestorer(ctx context.Context, repo restic.Repository, sn *restic.Snapshot, sparse bool,
+func NewRestorer(repo restic.Repository, sn *restic.Snapshot, sparse bool,
 	progress *restoreui.Progress) *Restorer {
 	r := &Restorer{
 		repo:         repo,

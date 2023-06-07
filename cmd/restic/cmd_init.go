@@ -50,6 +50,10 @@ func init() {
 }
 
 func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []string) error {
+	if len(args) > 0 {
+		return errors.Fatal("the init command expects no arguments, only options - please see `restic help init` for usage and flags")
+	}
+
 	var version uint
 	if opts.RepositoryVersion == "latest" || opts.RepositoryVersion == "" {
 		version = restic.MaxRepoVersion
@@ -93,7 +97,7 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 		PackSize:    gopts.PackSize * 1024 * 1024,
 	})
 	if err != nil {
-		return err
+		return errors.Fatal(err.Error())
 	}
 
 	err = s.Init(ctx, version, gopts.password, chunkerPolynomial)
@@ -119,7 +123,7 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 			ID:          s.Config().ID,
 			Repository:  location.StripPassword(gopts.Repo),
 		}
-		return json.NewEncoder(gopts.stdout).Encode(status)
+		return json.NewEncoder(globalOptions.stdout).Encode(status)
 	}
 
 	return nil

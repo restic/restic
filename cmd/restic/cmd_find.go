@@ -501,7 +501,7 @@ func (f *Finder) indexPacksToBlobs(ctx context.Context, packIDs map[string]struc
 	return packIDs
 }
 
-func (f *Finder) findObjectPack(ctx context.Context, id string, t restic.BlobType) {
+func (f *Finder) findObjectPack(id string, t restic.BlobType) {
 	idx := f.repo.Index()
 
 	rid, err := restic.ParseID(id)
@@ -524,13 +524,13 @@ func (f *Finder) findObjectPack(ctx context.Context, id string, t restic.BlobTyp
 	}
 }
 
-func (f *Finder) findObjectsPacks(ctx context.Context) {
+func (f *Finder) findObjectsPacks() {
 	for i := range f.blobIDs {
-		f.findObjectPack(ctx, i, restic.DataBlob)
+		f.findObjectPack(i, restic.DataBlob)
 	}
 
 	for i := range f.treeIDs {
-		f.findObjectPack(ctx, i, restic.TreeBlob)
+		f.findObjectPack(i, restic.TreeBlob)
 	}
 }
 
@@ -594,7 +594,7 @@ func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []
 	f := &Finder{
 		repo:        repo,
 		pat:         pat,
-		out:         statefulOutput{ListLong: opts.ListLong, JSON: globalOptions.JSON},
+		out:         statefulOutput{ListLong: opts.ListLong, JSON: gopts.JSON},
 		ignoreTrees: restic.NewIDSet(),
 	}
 
@@ -632,7 +632,7 @@ func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []
 	f.out.Finish()
 
 	if opts.ShowPackID && (f.blobIDs != nil || f.treeIDs != nil) {
-		f.findObjectsPacks(ctx)
+		f.findObjectsPacks()
 	}
 
 	return nil

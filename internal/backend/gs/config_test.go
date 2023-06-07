@@ -10,16 +10,19 @@ var configTests = []struct {
 		Bucket:      "bucketname",
 		Prefix:      "",
 		Connections: 5,
+		Region:      "us",
 	}},
 	{"gs:bucketname:/prefix/directory", Config{
 		Bucket:      "bucketname",
 		Prefix:      "prefix/directory",
 		Connections: 5,
+		Region:      "us",
 	}},
 	{"gs:bucketname:/prefix/directory/", Config{
 		Bucket:      "bucketname",
 		Prefix:      "prefix/directory",
 		Connections: 5,
+		Region:      "us",
 	}},
 }
 

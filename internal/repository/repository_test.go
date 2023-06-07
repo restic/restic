@@ -21,7 +21,6 @@ import (
 	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/test"
 	rtest "github.com/restic/restic/internal/test"
 	"golang.org/x/sync/errgroup"
 )
@@ -322,7 +321,7 @@ func TestRepositoryLoadUnpackedRetryBroken(t *testing.T) {
 	rtest.OK(t, err)
 	repo, err := repository.New(&damageOnceBackend{Backend: be}, repository.Options{})
 	rtest.OK(t, err)
-	err = repo.SearchKey(context.TODO(), test.TestPassword, 10, "")
+	err = repo.SearchKey(context.TODO(), rtest.TestPassword, 10, "")
 	rtest.OK(t, err)
 
 	rtest.OK(t, repo.LoadIndex(context.TODO()))
@@ -428,7 +427,7 @@ func testRepositoryIncrementalIndex(t *testing.T, version uint) {
 }
 
 // buildPackfileWithoutHeader returns a manually built pack file without a header.
-func buildPackfileWithoutHeader(t testing.TB, blobSizes []int, key *crypto.Key, compress bool) (blobs []restic.Blob, packfile []byte) {
+func buildPackfileWithoutHeader(blobSizes []int, key *crypto.Key, compress bool) (blobs []restic.Blob, packfile []byte) {
 	opts := []zstd.EOption{
 		// Set the compression level configured.
 		zstd.WithEncoderLevel(zstd.SpeedDefault),
@@ -446,7 +445,7 @@ func buildPackfileWithoutHeader(t testing.TB, blobSizes []int, key *crypto.Key, 
 
 	var offset uint
 	for i, size := range blobSizes {
-		plaintext := test.Random(800+i, size)
+		plaintext := rtest.Random(800+i, size)
 		id := restic.Hash(plaintext)
 		uncompressedLength := uint(0)
 		if compress {
@@ -525,7 +524,7 @@ func testStreamPack(t *testing.T, version uint) {
 		t.Fatal("test does not suport repository version", version)
 	}
 
-	packfileBlobs, packfile := buildPackfileWithoutHeader(t, blobSizes, &key, compress)
+	packfileBlobs, packfile := buildPackfileWithoutHeader(blobSizes, &key, compress)
 
 	loadCalls := 0
 	load := func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {

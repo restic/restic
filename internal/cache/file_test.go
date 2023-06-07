@@ -14,7 +14,6 @@ import (
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
-	rtest "github.com/restic/restic/internal/test"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -271,7 +270,7 @@ func TestFileSaveConcurrent(t *testing.T) {
 
 func TestFileSaveAfterDamage(t *testing.T) {
 	c := TestNewCache(t)
-	rtest.OK(t, fs.RemoveAll(c.path))
+	test.OK(t, fs.RemoveAll(c.path))
 
 	// save a few bytes of data in the cache
 	data := test.Random(123456789, 42)

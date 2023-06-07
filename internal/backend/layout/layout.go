@@ -37,7 +37,7 @@ type LocalFilesystem struct {
 }
 
 // ReadDir returns all entries of a directory.
-func (l *LocalFilesystem) ReadDir(ctx context.Context, dir string) ([]os.FileInfo, error) {
+func (l *LocalFilesystem) ReadDir(_ context.Context, dir string) ([]os.FileInfo, error) {
 	f, err := fs.Open(dir)
 	if err != nil {
 		return nil, err

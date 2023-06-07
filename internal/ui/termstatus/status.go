@@ -74,8 +74,8 @@ func New(wr io.Writer, errWriter io.Writer, disableStatus bool) *Terminal {
 		// only use the fancy status code when we're running on a real terminal.
 		t.canUpdateStatus = true
 		t.fd = d.Fd()
-		t.clearCurrentLine = clearCurrentLine(wr, t.fd)
-		t.moveCursorUp = moveCursorUp(wr, t.fd)
+		t.clearCurrentLine = clearCurrentLine(t.fd)
+		t.moveCursorUp = moveCursorUp(t.fd)
 	}
 
 	return t

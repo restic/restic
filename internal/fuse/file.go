@@ -45,7 +45,7 @@ func newFile(root *Root, inode uint64, node *restic.Node) (fusefile *file, err e
 	}, nil
 }
 
-func (f *file) Attr(ctx context.Context, a *fuse.Attr) error {
+func (f *file) Attr(_ context.Context, a *fuse.Attr) error {
 	debug.Log("Attr(%v)", f.node.Name)
 	a.Inode = f.inode
 	a.Mode = f.node.Mode
@@ -66,7 +66,7 @@ func (f *file) Attr(ctx context.Context, a *fuse.Attr) error {
 
 }
 
-func (f *file) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenResponse) (fs.Handle, error) {
+func (f *file) Open(_ context.Context, _ *fuse.OpenRequest, _ *fuse.OpenResponse) (fs.Handle, error) {
 	debug.Log("open file %v with %d blobs", f.node.Name, len(f.node.Content))
 
 	var bytes uint64
@@ -166,7 +166,7 @@ func (f *openFile) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.R
 	return nil
 }
 
-func (f *file) Listxattr(ctx context.Context, req *fuse.ListxattrRequest, resp *fuse.ListxattrResponse) error {
+func (f *file) Listxattr(_ context.Context, req *fuse.ListxattrRequest, resp *fuse.ListxattrResponse) error {
 	debug.Log("Listxattr(%v, %v)", f.node.Name, req.Size)
 	for _, attr := range f.node.ExtendedAttributes {
 		resp.Append(attr.Name)
@@ -174,7 +174,7 @@ func (f *file) Listxattr(ctx context.Context, req *fuse.ListxattrRequest, resp *
 	return nil
 }
 
-func (f *file) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, resp *fuse.GetxattrResponse) error {
+func (f *file) Getxattr(_ context.Context, req *fuse.GetxattrRequest, resp *fuse.GetxattrResponse) error {
 	debug.Log("Getxattr(%v, %v, %v)", f.node.Name, req.Name, req.Size)
 	attrval := f.node.GetExtendedAttribute(req.Name)
 	if attrval != nil {

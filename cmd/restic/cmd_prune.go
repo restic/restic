@@ -729,7 +729,7 @@ func doPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo r
 		_, err := repository.Repack(ctx, repo, repo, plan.repackPacks, plan.keepBlobs, bar)
 		bar.Done()
 		if err != nil {
-			return errors.Fatalf("%s", err)
+			return errors.Fatal(err.Error())
 		}
 
 		// Also remove repacked packs

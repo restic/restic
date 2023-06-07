@@ -67,10 +67,10 @@ func runRebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalO
 		return err
 	}
 
-	return rebuildIndex(ctx, opts, gopts, repo, restic.NewIDSet())
+	return rebuildIndex(ctx, opts, gopts, repo)
 }
 
-func rebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOptions, repo *repository.Repository, ignorePacks restic.IDSet) error {
+func rebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOptions, repo *repository.Repository) error {
 	var obsoleteIndexes restic.IDs
 	packSizeFromList := make(map[restic.ID]int64)
 	packSizeFromIndex := make(map[restic.ID]int64)
@@ -142,7 +142,7 @@ func rebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOpti
 
 	if len(packSizeFromList) > 0 {
 		Verbosef("reading pack files\n")
-		bar := newProgressMax(!globalOptions.Quiet, uint64(len(packSizeFromList)), "packs")
+		bar := newProgressMax(!gopts.Quiet, uint64(len(packSizeFromList)), "packs")
 		invalidFiles, err := repo.CreateIndexFromPacks(ctx, packSizeFromList, bar)
 		bar.Done()
 		if err != nil {

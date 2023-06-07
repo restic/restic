@@ -6,7 +6,6 @@ package archiver
 import (
 	"os"
 	"syscall"
-	"testing"
 )
 
 type wrappedFileInfo struct {
@@ -24,7 +23,7 @@ func (fi wrappedFileInfo) Mode() os.FileMode {
 }
 
 // wrapFileInfo returns a new os.FileInfo with the mode, owner, and group fields changed.
-func wrapFileInfo(t testing.TB, fi os.FileInfo) os.FileInfo {
+func wrapFileInfo(fi os.FileInfo) os.FileInfo {
 	// get the underlying stat_t and modify the values
 	stat := fi.Sys().(*syscall.Stat_t)
 	stat.Mode = mockFileInfoMode

@@ -28,7 +28,7 @@ func New(be restic.Backend) *Backend {
 }
 
 // Save adds new Data to the backend.
-func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+func (be *Backend) Save(_ context.Context, h restic.Handle, _ restic.RewindReader) error {
 	if err := h.Valid(); err != nil {
 		return err
 	}
@@ -38,7 +38,7 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 }
 
 // Remove deletes a file from the backend.
-func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
+func (be *Backend) Remove(_ context.Context, _ restic.Handle) error {
 	return nil
 }
 
@@ -52,7 +52,7 @@ func (be *Backend) Location() string {
 }
 
 // Delete removes all data in the backend.
-func (be *Backend) Delete(ctx context.Context) error {
+func (be *Backend) Delete(_ context.Context) error {
 	return nil
 }
 

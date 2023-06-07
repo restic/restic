@@ -51,7 +51,7 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	url := fmt.Sprintf("https://%s.blob.core.windows.net/%s", cfg.AccountName, cfg.Container)
 	opts := &azContainer.ClientOptions{
 		ClientOptions: azcore.ClientOptions{
-			Transport: http.DefaultClient,
+			Transport: &http.Client{Transport: rt},
 		},
 	}
 
@@ -108,7 +108,7 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 }
 
 // Open opens the Azure backend at specified container.
-func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, error) {
+func Open(_ context.Context, cfg Config, rt http.RoundTripper) (*Backend, error) {
 	return open(cfg, rt)
 }
 
