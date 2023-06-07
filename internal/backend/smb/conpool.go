@@ -167,7 +167,7 @@ func (c *conn) mountShare(share string) (err error) {
 }
 
 // Get a SMB connection from the pool, or open a new one
-func (b *Backend) getConnection(ctx context.Context, share string) (c *conn, err error) {
+func (b *Backend) getConnection(_ context.Context, share string) (c *conn, err error) {
 	b.poolMu.Lock()
 	for len(b.pool) > 0 {
 		c = b.pool[0]
