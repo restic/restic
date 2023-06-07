@@ -418,6 +418,7 @@ instead of the default, set the environment variable like this:
     $ restic -r /srv/restic-repo backup ~/work
 
 
+If the environment variable ``$RESTIC_CACHE_DIR`` is not set, ``check`` creates its temporary cache directory in the temporary directory. If ``$RESTIC_CACHE_DIR`` is set, ``check`` creates its temporary cache directory in ``$RESTIC_CACHE_DIR``.
 
 .. _caching:
 
