@@ -147,16 +147,6 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backe
 		},
 		listMaxItems: defaultListMaxItems,
 	}
-
-	_, err = be.Stat(ctx, restic.Handle{Type: restic.ConfigFile})
-	if err != nil && !be.IsNotExist(err) {
-		return nil, err
-	}
-
-	if err == nil {
-		return nil, errors.New("config already exists")
-	}
-
 	return be, nil
 }
 
