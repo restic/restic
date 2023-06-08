@@ -38,24 +38,50 @@ to ``cat config``) and it may print a different error message. If there
 are no errors, restic will return a zero exit code and print the repository
 metadata.
 
-Restic and JSON
-***************
+JSON output
+***********
 
-Restic can output json data if requested with the ``--json`` flag.
+Restic outputs JSON data to ``stdout`` if requested with the ``--json`` flag.
 The structure of that data varies depending on the circumstance.  The
-json output of most restic commands are documented here.
+JSON output of most restic commands are documented here.
 
 .. note::
-    Not all commands support json output.  If a command does not support json output,
+    Not all commands support JSON output.  If a command does not support JSON output,
     feel free to submit a pull request!
 
-Backup
+.. warning::
+    We try to keep the JSON output backwards compatible. However, new message types
+    or fields may be added at any time. Similarly, enum-like fields for which a fixed
+    list of allowed values is documented may be extended at any time.
+
+
+Output formats
+--------------
+
+Currently only the output on ``stdout`` is JSON formatted. Errors printed on ``stderr``
+are still printed as plain text messages. The generated JSON output uses one of the
+following two formats.
+
+Single JSON document
+^^^^^^^^^^^^^^^^^^^^
+
+Several commands output a single JSON document that can be parsed in its entirety.
+Depending on the command, the output consists of either a single or multiple lines.
+
+JSON lines
+^^^^^^^^^^
+
+Several commands, in particular long running ones or those that generate a large output,
+use a format also known as JSON lines. It consists of a stream of new-line separated JSON
+messages. You can determine the nature of the message using the ``message_type`` field.
+
+As an exception, the ``ls`` command uses the field ``struct_type`` instead.
+
+
+backup
 ------
 
-The backup command has multiple json structures, outlined below.
-
-During the backup process, Restic will print out a stream of new-line separated JSON
-messages.  You can determine the nature of the message by the ``message_type`` field.
+The ``backup`` command uses the JSON lines format with the following message types.
 
 Status
 ^^^^^^
@@ -71,11 +97,11 @@ Status
 +----------------------+------------------------------------------------------------+
 |``total_files``       | Total number of files detected                             |
 +----------------------+------------------------------------------------------------+
-|``files_done``        | Files completed (backed up or confirmed in repo)           |
+|``files_done``        | Files completed (backed up to repo)                        |
 +----------------------+------------------------------------------------------------+
 |``total_bytes``       | Total number of bytes in backup set                        |
 +----------------------+------------------------------------------------------------+
-|``bytes_done``        | Number of bytes completed (backed up or confirmed in repo) |
+|``bytes_done``        | Number of bytes completed (backed up to repo)              |
 +----------------------+------------------------------------------------------------+
 |``error_count``       | Number of errors                                           |
 +----------------------+------------------------------------------------------------+
@@ -98,23 +124,23 @@ Error
 Verbose Status
 ^^^^^^^^^^^^^^
 
-Verbose status is a status line that supplements 
+Verbose status provides details about the progress, including details about backed up files.
 
-+----------------------+-------------------------------------------+
-| ``message_type``     | Always "verbose_status"                   |
-+----------------------+-------------------------------------------+
-| ``action``           | Either "new", "unchanged" or "modified"   |
-+----------------------+-------------------------------------------+
-| ``item``             | The item in question                      |
-+----------------------+-------------------------------------------+
-| ``duration``         | How long it took, in seconds              |
-+----------------------+-------------------------------------------+
-| ``data_size``        | How big the item is                       |
-+----------------------+-------------------------------------------+
-| ``metadata_size``    | How big the metadata is                   |
-+----------------------+-------------------------------------------+
-| ``total_files``      | Total number of files                     |
-+----------------------+-------------------------------------------+
++----------------------+-----------------------------------------------------------+
+| ``message_type``     | Always "verbose_status"                                   |
++----------------------+-----------------------------------------------------------+
+| ``action``           | Either "new", "unchanged", "modified" or "scan_finished"  |
++----------------------+-----------------------------------------------------------+
+| ``item``             | The item in question                                      |
++----------------------+-----------------------------------------------------------+
+| ``duration``         | How long it took, in seconds                              |
++----------------------+-----------------------------------------------------------+
+| ``data_size``        | How big the item is                                       |
++----------------------+-----------------------------------------------------------+
+| ``metadata_size``    | How big the metadata is                                   |
++----------------------+-----------------------------------------------------------+
+| ``total_files``      | Total number of files                                     |
++----------------------+-----------------------------------------------------------+
 
 Summary
 ^^^^^^^
@@ -148,69 +174,96 @@ Summary is the last output line in a successful backup.
 +---------------------------+---------------------------------------------------------+
 | ``total_duration``        | Total time it took for the operation to complete        |
 +---------------------------+---------------------------------------------------------+
-| ``snapshot_id``           | The short ID of the new snapshot                        |
+| ``snapshot_id``           | ID of the new snapshot                                  |
 +---------------------------+---------------------------------------------------------+
 
-snapshots
----------
-
-The snapshots command returns a single JSON object, an array with the structure outlined below.
-
-+----------------+------------------------------------------------------------------------+
-| ``hostname``   | The hostname of the machine that's being backed up                     |
-+----------------+------------------------------------------------------------------------+
-| ``username``   | The username that the backup command was run as                        |
-+----------------+------------------------------------------------------------------------+
-| ``excludes``   | A list of paths and globs that were excluded from the backup           |
-+----------------+------------------------------------------------------------------------+
-| ``tags``       | A list of tags for the snapshot in question                            |
-+----------------+------------------------------------------------------------------------+
-| ``id``         | The long snapshot ID                                                   |
-+----------------+------------------------------------------------------------------------+
-| ``short_id``   | The short snapshot ID                                                  |
-+----------------+------------------------------------------------------------------------+
-| ``time``       | The timestamp of when the backup was started                           |
-+----------------+------------------------------------------------------------------------+
-| ``parent``     | The ID of the previous snapshot                                        |
-+----------------+------------------------------------------------------------------------+
-| ``tree``       | The ID of the root tree blob                                           |
-+----------------+------------------------------------------------------------------------+
-| ``paths``      | A list of paths that were included in the backup                       |
-+----------------+------------------------------------------------------------------------+
 
 cat
 ---
 
-Cat will return data about various objects in the repository, already in json form.
-By specifying ``--json``, it will suppress any non-json messages the command generates.
+The ``cat`` command returns data about various objects in the repository, which
+are stored in JSON form. Specifying ``--json``  or ``--quiet`` will suppress any
+non-JSON messages the command generates.
+
+
+diff
+----
+
+The ``diff`` command uses the JSON lines format with the following message types.
+
+change
+^^^^^^
+
++------------------+--------------------------------------------------------------+
+| ``message_type`` | Always "change"                                              |
++------------------+--------------------------------------------------------------+
+| ``path``         | Path that has changed                                        |
++------------------+--------------------------------------------------------------+
+| ``modifier``     | Type of change, a concatenation of the following characters: |
+|                  | "+" = added, "-" = removed, "T" = entry type changed,        |
+|                  | "M" = file content changed, "U" = metadata changed           |
++------------------+--------------------------------------------------------------+
+
+statistics
+^^^^^^^^^^
+
++---------------------+----------------------------+
+| ``message_type``    | Always "statistics"        |
++---------------------+----------------------------+
+| ``source_snapshot`` | ID of first snapshot       |
++---------------------+----------------------------+
+| ``target_snapshot`` | ID of second snapshot      |
++---------------------+----------------------------+
+| ``changed_files``   | Number of changed files    |
++---------------------+----------------------------+
+| ``added``           | DiffStat object, see below |
++---------------------+----------------------------+
+| ``removed``         | DiffStat object, see below |
++---------------------+----------------------------+
+
+DiffStat object
+
++----------------+-------------------------------------------+
+| ``files``      | Number of changed files                   |
++----------------+-------------------------------------------+
+| ``dirs``       | Number of changed directories             |
++----------------+-------------------------------------------+
+| ``others``     | Number of changed other directory entries |
++----------------+-------------------------------------------+
+| ``data_blobs`` | Number of data blobs                      |
++----------------+-------------------------------------------+
+| ``tree_blobs`` | Number of tree blobs                      |
++----------------+-------------------------------------------+
+| ``bytes``      | Number of bytes                           |
++----------------+-------------------------------------------+
+
 
 find
 ----
 
-The find command outputs an array of json objects with matches for your search term.  These
-matches are organized by snapshot.
+The ``find`` command outputs a single JSON document containing an array of JSON
+objects with matches for your search term.  These matches are organized by snapshot.
 
-Snapshot
-^^^^^^^^
-
-+-----------------+----------------------------------------------+
-| ``hits``        | The number of matches in the snapshot        |
-+-----------------+----------------------------------------------+
-| ``snapshot``    | The long ID of the snapshot                  |
-+-----------------+----------------------------------------------+
-| ``matches``     | Array of JSON objects detailing a match.     |
-+-----------------+----------------------------------------------+
+If the ``--blob`` or ``--tree`` option is passed, then the output is an array of
+Blob objects.
 
 
-Match
-^^^^^
++-----------------+----------------------------------------------+
+| ``hits``        | Number of matches in the snapshot            |
++-----------------+----------------------------------------------+
+| ``snapshot``    | ID of the snapshot                           |
++-----------------+----------------------------------------------+
+| ``matches``     | Array of Match objects detailing a match     |
++-----------------+----------------------------------------------+
+
+Match object
 
 +-----------------+----------------------------------------------+
 | ``path``        | Object path                                  |
 +-----------------+----------------------------------------------+
 | ``permissions`` | UNIX permissions                             |
 +-----------------+----------------------------------------------+
-| ``type``        | what type it is e.g. file, dir, etc...       |
+| ``type``        | Object type e.g. file, dir, etc...           |
 +-----------------+----------------------------------------------+
 | ``atime``       | Access time                                  |
 +-----------------+----------------------------------------------+
@@ -226,7 +279,7 @@ Match
 +-----------------+----------------------------------------------+
 | ``mode``        | UNIX file mode, shorthand of ``permissions`` |
 +-----------------+----------------------------------------------+
-| ``device_id``   | Unique machine Identifier                    |
+| ``device_id``   | OS specific device identifier                |
 +-----------------+----------------------------------------------+
 | ``links``       | Number of hardlinks                          |
 +-----------------+----------------------------------------------+
@@ -237,10 +290,106 @@ Match
 | ``size``        | Size of object in bytes                      |
 +-----------------+----------------------------------------------+
 
+Blob object
+
++-----------------+--------------------------------------------+
+| ``object_type`` | Either "blob" or "tree"                    |
++-----------------+--------------------------------------------+
+| ``id``          | ID of found blob                           |
++-----------------+--------------------------------------------+
+| ``path``        | Path in snapshot                           |
++-----------------+--------------------------------------------+
+| ``parent_tree`` | Parent tree blob, only set for type "blob" |
++-----------------+--------------------------------------------+
+| ``snapshot``    | Snapshot ID                                |
++-----------------+--------------------------------------------+
+| ``time``        | Snapshot timestamp                         |
++-----------------+--------------------------------------------+
+
+
+forget
+------
+
+The ``forget`` command prints a single JSON document containing an array of
+ForgetGroups. If specific snapshot IDs are specified, then no output is generated.
+
+The ``prune`` command does not yet support JSON such that ``forget --prune``
+results in a mix of JSON and text output.
+
+ForgetGroup
+^^^^^^^^^^^
+
++-------------+-----------------------------------------------------------+
+| ``tags``    | Tags identifying the snapshot group                       |
++-------------+-----------------------------------------------------------+
+| ``host``    | Host identifying the snapshot group                       |
++-------------+-----------------------------------------------------------+
+| ``paths``   | Paths identifying the snapshot group                      |
++-------------+-----------------------------------------------------------+
+| ``keep``    | Array of Snapshot objects that are kept                   |
++-------------+-----------------------------------------------------------+
+| ``remove``  | Array of Snapshot objects that were removed               |
++-------------+-----------------------------------------------------------+
+| ``reasons`` | Array of Reason objects describing why a snapshot is kept |
++-------------+-----------------------------------------------------------+
+
+Snapshot object
+
++----------------+--------------------------------------------------+
+| ``time``       | Timestamp of when the backup was started         |
++----------------+--------------------------------------------------+
+| ``parent``     | ID of the parent snapshot                        |
++----------------+--------------------------------------------------+
+| ``tree``       | ID of the root tree blob                         |
++----------------+--------------------------------------------------+
+| ``paths``      | List of paths included in the backup             |
++----------------+--------------------------------------------------+
+| ``hostname``   | Hostname of the backed up machine                |
++----------------+--------------------------------------------------+
+| ``username``   | Username the backup command was run as           |
++----------------+--------------------------------------------------+
+| ``uid``        | ID of owner                                      |
++----------------+--------------------------------------------------+
+| ``gid``        | ID of group                                      |
++----------------+--------------------------------------------------+
+| ``excludes``   | List of paths and globs excluded from the backup |
++----------------+--------------------------------------------------+
+| ``tags``       | List of tags for the snapshot in question        |
++----------------+--------------------------------------------------+
+| ``id``         | Snapshot ID                                      |
++----------------+--------------------------------------------------+
+| ``short_id``   | Snapshot ID, short form                          |
++----------------+--------------------------------------------------+
+
+Reason object
+
++----------------+---------------------------------------------------------+
+| ``snapshot``   | Snapshot object, without ``id`` and ``short_id`` fields |
++----------------+---------------------------------------------------------+
+| ``matches``    | Array containing descriptions of the matching criteria  |
++----------------+---------------------------------------------------------+
+| ``counters``   | Object containing counters used by the policies         |
++----------------+---------------------------------------------------------+
+
+
+init
+----
+
+The ``init`` command uses the JSON lines format, but only outputs a single message.
+
++------------------+--------------------------------+
+| ``message_type`` | Always "initialized"           |
++------------------+--------------------------------+
+| ``id``           | ID of the created repository   |
++------------------+--------------------------------+
+| ``repository``   | URL of the repository          |
++------------------+--------------------------------+
+
+
 key list
 --------
 
-The key list command returns an array of objects with the following structure.
+The ``key list`` command returns an array of objects with the following structure.
 
 +--------------+------------------------------------+
 | ``current``  | Is currently used key?             |
@@ -254,41 +403,50 @@ The key list command returns an array of objects with the following structure.
 | ``created``  | Timestamp when it was created      |
 +--------------+------------------------------------+
 
+
 ls
 --
 
-The ls command spits out a series of newline-separated JSON objects,
-the nature of which can be determined by the ``struct_type`` field.
+The ``ls`` command uses the JSON lines format with the following message types.
+As an exception, the ``struct_type`` field is used to determine the message type.
 
 snapshot
 ^^^^^^^^
 
-+-----------------+-------------------------------------+
-| ``time``        | Snapshot time                       |
-+-----------------+-------------------------------------+
-| ``tree``        | Snapshot tree root                  |
-+-----------------+-------------------------------------+
-| ``paths``       | List of paths included in snapshot  |
-+-----------------+-------------------------------------+
-| ``hostname``    | Hostname of snapshot                |
-+-----------------+-------------------------------------+
-| ``username``    | User snapshot was run as            |
-+-----------------+-------------------------------------+
-| ``uid``         | ID of owner                         |
-+-----------------+-------------------------------------+
-| ``gid``         | ID of group                         |
-+-----------------+-------------------------------------+
-| ``id``          | Snapshot ID, long form              |
-+-----------------+-------------------------------------+
-| ``short_id``    | Snapshot ID, short form             |
-+-----------------+-------------------------------------+
-| ``struct_type`` | Always "snapshot"                   |
-+-----------------+-------------------------------------+
++----------------+--------------------------------------------------+
+| ``struct_type``| Always "snapshot"                                |
++----------------+--------------------------------------------------+
+| ``time``       | Timestamp of when the backup was started         |
++----------------+--------------------------------------------------+
+| ``parent``     | ID of the parent snapshot                        |
++----------------+--------------------------------------------------+
+| ``tree``       | ID of the root tree blob                         |
++----------------+--------------------------------------------------+
+| ``paths``      | List of paths included in the backup             |
++----------------+--------------------------------------------------+
+| ``hostname``   | Hostname of the backed up machine                |
++----------------+--------------------------------------------------+
+| ``username``   | Username the backup command was run as           |
++----------------+--------------------------------------------------+
+| ``uid``        | ID of owner                                      |
++----------------+--------------------------------------------------+
+| ``gid``        | ID of group                                      |
++----------------+--------------------------------------------------+
+| ``excludes``   | List of paths and globs excluded from the backup |
++----------------+--------------------------------------------------+
+| ``tags``       | List of tags for the snapshot in question        |
++----------------+--------------------------------------------------+
+| ``id``         | Snapshot ID                                      |
++----------------+--------------------------------------------------+
+| ``short_id``   | Snapshot ID, short form                          |
++----------------+--------------------------------------------------+
 
 
 node
 ^^^^
 
++-----------------+--------------------------+
+| ``struct_type`` | Always "node"            |
 +-----------------+--------------------------+
 | ``name``        | Node name                |
 +-----------------+--------------------------+
@@ -310,16 +468,60 @@ node
 +-----------------+--------------------------+
 | ``ctime``       | Node creation time       |
 +-----------------+--------------------------+
-| ``struct_type`` | Always "node"            |
-+-----------------+--------------------------+
+
+
+snapshots
+---------
+
+The snapshots command returns a single JSON object, an array with objects of the structure outlined below.
+
++----------------+--------------------------------------------------+
+| ``time``       | Timestamp of when the backup was started         |
++----------------+--------------------------------------------------+
+| ``parent``     | ID of the parent snapshot                        |
++----------------+--------------------------------------------------+
+| ``tree``       | ID of the root tree blob                         |
++----------------+--------------------------------------------------+
+| ``paths``      | List of paths included in the backup             |
++----------------+--------------------------------------------------+
+| ``hostname``   | Hostname of the backed up machine                |
++----------------+--------------------------------------------------+
+| ``username``   | Username the backup command was run as           |
++----------------+--------------------------------------------------+
+| ``uid``        | ID of owner                                      |
++----------------+--------------------------------------------------+
+| ``gid``        | ID of group                                      |
++----------------+--------------------------------------------------+
+| ``excludes``   | List of paths and globs excluded from the backup |
++----------------+--------------------------------------------------+
+| ``tags``       | List of tags for the snapshot in question        |
++----------------+--------------------------------------------------+
+| ``id``         | Snapshot ID                                      |
++----------------+--------------------------------------------------+
+| ``short_id``   | Snapshot ID, short form                          |
++----------------+--------------------------------------------------+
+
 
 stats
 -----
 
-+----------------------+---------------------------------------------+
-| ``total_size``       | Repository size in bytes                    |
-+----------------------+---------------------------------------------+
-| ``total_file_count`` | Number of files backed up in the repository |
-+----------------------+---------------------------------------------+
-| ``total_blob_count`` | Number of blobs in the repository           |
-+----------------------+---------------------------------------------+
+The snapshots command returns a single JSON object.
+
++------------------------------+-----------------------------------------------------+
+| ``total_size``               | Repository size in bytes                            |
++------------------------------+-----------------------------------------------------+
+| ``total_file_count``         | Number of files backed up in the repository         |
++------------------------------+-----------------------------------------------------+
+| ``total_blob_count``         | Number of blobs in the repository                   |
++------------------------------+-----------------------------------------------------+
+| ``snapshots_count``          | Number of processed snapshots                       |
++------------------------------+-----------------------------------------------------+
+| ``total_uncompressed_size``  | Repository size in bytes if blobs were uncompressed |
++------------------------------+-----------------------------------------------------+
+| ``compression_ratio``        | Factor by which the already compressed data         |
+|                              | has shrunk due to compression                       |
++------------------------------+-----------------------------------------------------+
+| ``compression_progress``     | Percentage of already compressed data               |
++------------------------------+-----------------------------------------------------+
+| ``compression_space_saving`` | Overall space saving due to compression             |
++------------------------------+-----------------------------------------------------+
