@@ -43,7 +43,8 @@ type Progress struct {
 	progress.Updater
 	mu sync.Mutex
 
-	start time.Time
+	start     time.Time
+	estimator rateEstimator
 
 	scanStarted, scanFinished bool
 
@@ -60,6 +61,7 @@ func NewProgress(printer ProgressPrinter, interval time.Duration) *Progress {
 		start:        time.Now(),
 		currentFiles: make(map[string]struct{}),
 		printer:      printer,
+		estimator:    *newRateEstimator(time.Now()),
 	}
 	p.Updater = *progress.NewUpdater(interval, func(runtime time.Duration, final bool) {
 		if final {
@@ -73,9 +75,14 @@ func NewProgress(printer ProgressPrinter, interval time.Duration) *Progress {
 
 			var secondsRemaining uint64
 			if p.scanFinished {
-				secs := float64(runtime / time.Second)
-				todo := float64(p.total.Bytes - p.processed.Bytes)
-				secondsRemaining = uint64(secs / float64(p.processed.Bytes) * todo)
+				rate := p.estimator.rate(time.Now())
+				tooSlowCutoff := 1024.
+				if rate <= tooSlowCutoff {
+					secondsRemaining = 0
+				} else {
+					todo := float64(p.total.Bytes - p.processed.Bytes)
+					secondsRemaining = uint64(todo / rate)
+				}
 			}
 
 			p.printer.Update(p.total, p.processed, p.errors, p.currentFiles, p.start, secondsRemaining)
@@ -105,6 +112,7 @@ func (p *Progress) addProcessed(c Counter) {
 	p.processed.Files += c.Files
 	p.processed.Dirs += c.Dirs
 	p.processed.Bytes += c.Bytes
+	p.estimator.recordBytes(time.Now(), c.Bytes)
 	p.scanStarted = true
 }
 
