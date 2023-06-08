@@ -58,6 +58,13 @@ func (s *sniffingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 }
 
 func newClient(ctx context.Context, cfg Config, rt http.RoundTripper) (*b2.Client, error) {
+	if cfg.AccountID == "" {
+		return nil, errors.Fatalf("unable to open B2 backend: Account ID ($B2_ACCOUNT_ID) is empty")
+	}
+	if cfg.Key.String() == "" {
+		return nil, errors.Fatalf("unable to open B2 backend: Key ($B2_ACCOUNT_KEY) is empty")
+	}
+
 	sniffer := &sniffingRoundTripper{RoundTripper: rt}
 	opts := []b2.ClientOption{b2.Transport(sniffer)}
 

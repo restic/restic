@@ -35,11 +35,7 @@ func newAzureTestSuite(t testing.TB) *test.Suite[azure.Config] {
 				return nil, err
 			}
 
-			err = cfg.ApplyEnvironment("RESTIC_TEST_")
-			if err != nil {
-				return nil, err
-			}
-
+			cfg.ApplyEnvironment("RESTIC_TEST_")
 			cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
 			return cfg, nil
 		},

@@ -41,6 +41,12 @@ const defaultLayout = "default"
 func open(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, error) {
 	debug.Log("open, config %#v", cfg)
 
+	if cfg.KeyID == "" && cfg.Secret.String() != "" {
+		return nil, errors.Fatalf("unable to open S3 backend: Key ID ($AWS_ACCESS_KEY_ID) is empty")
+	} else if cfg.KeyID != "" && cfg.Secret.String() == "" {
+		return nil, errors.Fatalf("unable to open S3 backend: Secret ($AWS_SECRET_ACCESS_KEY) is empty")
+	}
+
 	if cfg.MaxRetries > 0 {
 		minio.MaxRetry = int(cfg.MaxRetries)
 	}

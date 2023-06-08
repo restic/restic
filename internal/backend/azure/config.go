@@ -59,7 +59,7 @@ func ParseConfig(s string) (*Config, error) {
 var _ restic.ApplyEnvironmenter = &Config{}
 
 // ApplyEnvironment saves values from the environment to the config.
-func (cfg *Config) ApplyEnvironment(prefix string) error {
+func (cfg *Config) ApplyEnvironment(prefix string) {
 	if cfg.AccountName == "" {
 		cfg.AccountName = os.Getenv(prefix + "AZURE_ACCOUNT_NAME")
 	}
@@ -71,5 +71,4 @@ func (cfg *Config) ApplyEnvironment(prefix string) error {
 	if cfg.AccountSAS.String() == "" {
 		cfg.AccountSAS = options.NewSecretString(os.Getenv(prefix + "AZURE_ACCOUNT_SAS"))
 	}
-	return nil
 }

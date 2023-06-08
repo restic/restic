@@ -550,9 +550,7 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 func parseConfig(loc location.Location, opts options.Options) (interface{}, error) {
 	cfg := loc.Config
 	if cfg, ok := cfg.(restic.ApplyEnvironmenter); ok {
-		if err := cfg.ApplyEnvironment(""); err != nil {
-			return nil, err
-		}
+		cfg.ApplyEnvironment("")
 	}
 
 	// only apply options for a particular backend here

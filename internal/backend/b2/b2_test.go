@@ -35,11 +35,7 @@ func newB2TestSuite(t testing.TB) *test.Suite[b2.Config] {
 				return nil, err
 			}
 
-			err = cfg.ApplyEnvironment("RESTIC_TEST_")
-			if err != nil {
-				return nil, err
-			}
-
+			cfg.ApplyEnvironment("RESTIC_TEST_")
 			cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
 			return cfg, nil
 		},
