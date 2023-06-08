@@ -117,7 +117,7 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 }
 
 // Open opens the gs backend at the specified bucket.
-func Open(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
+func Open(_ context.Context, cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 	return open(cfg, rt)
 }
 

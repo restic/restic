@@ -58,12 +58,12 @@ func newGSTestSuite(t testing.TB) *test.Suite[gs.Config] {
 
 		// OpenFn is a function that opens a previously created temporary repository.
 		Open: func(cfg gs.Config) (restic.Backend, error) {
-			return gs.Open(cfg, tr)
+			return gs.Open(context.TODO(), cfg, tr)
 		},
 
 		// CleanupFn removes data created during the tests.
 		Cleanup: func(cfg gs.Config) error {
-			be, err := gs.Open(cfg, tr)
+			be, err := gs.Open(context.TODO(), cfg, tr)
 			if err != nil {
 				return err
 			}

@@ -15,7 +15,7 @@ func TestRcloneExit(t *testing.T) {
 	dir := rtest.TempDir(t)
 	cfg := NewConfig()
 	cfg.Remote = dir
-	be, err := Open(cfg, nil)
+	be, err := Open(context.TODO(), cfg, nil)
 	var e *exec.Error
 	if errors.As(err, &e) && e.Err == exec.ErrNotFound {
 		t.Skipf("program %q not found", e.Name)
@@ -45,7 +45,7 @@ func TestRcloneFailedStart(t *testing.T) {
 	cfg := NewConfig()
 	// exits with exit code 1
 	cfg.Program = "false"
-	_, err := Open(cfg, nil)
+	_, err := Open(context.TODO(), cfg, nil)
 	var e *exec.ExitError
 	if !errors.As(err, &e) {
 		// unexpected error

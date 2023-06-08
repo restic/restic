@@ -39,7 +39,7 @@ func newTestSuite(t testing.TB) *test.Suite[rclone.Config] {
 		// OpenFn is a function that opens a previously created temporary repository.
 		Open: func(cfg rclone.Config) (restic.Backend, error) {
 			t.Logf("Open()")
-			return rclone.Open(cfg, nil)
+			return rclone.Open(context.TODO(), cfg, nil)
 		},
 	}
 }

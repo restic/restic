@@ -90,7 +90,7 @@ func newTestSuite(_ context.Context, t testing.TB, url *url.URL, minimalData boo
 
 		// OpenFn is a function that opens a previously created temporary repository.
 		Open: func(cfg rest.Config) (restic.Backend, error) {
-			return rest.Open(cfg, tr)
+			return rest.Open(context.TODO(), cfg, tr)
 		},
 
 		// CleanupFn removes data created during the tests.

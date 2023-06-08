@@ -36,7 +36,7 @@ const (
 )
 
 // Open opens the REST backend with the given config.
-func Open(cfg Config, rt http.RoundTripper) (*Backend, error) {
+func Open(_ context.Context, cfg Config, rt http.RoundTripper) (*Backend, error) {
 	// use url without trailing slash for layout
 	url := cfg.URL.String()
 	if url[len(url)-1] == '/' {
@@ -55,7 +55,7 @@ func Open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 
 // Create creates a new REST on server configured in config.
 func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, error) {
-	be, err := Open(cfg, rt)
+	be, err := Open(ctx, cfg, rt)
 	if err != nil {
 		return nil, err
 	}

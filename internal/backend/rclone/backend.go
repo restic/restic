@@ -134,7 +134,7 @@ func wrapConn(c *StdioConn, lim limiter.Limiter) *wrappedConn {
 }
 
 // New initializes a Backend and starts the process.
-func newBackend(cfg Config, lim limiter.Limiter) (*Backend, error) {
+func newBackend(ctx context.Context, cfg Config, lim limiter.Limiter) (*Backend, error) {
 	var (
 		args []string
 		err  error
@@ -197,7 +197,7 @@ func newBackend(cfg Config, lim limiter.Limiter) (*Backend, error) {
 		wg:     wg,
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	wg.Add(1)
@@ -256,8 +256,8 @@ func newBackend(cfg Config, lim limiter.Limiter) (*Backend, error) {
 }
 
 // Open starts an rclone process with the given config.
-func Open(cfg Config, lim limiter.Limiter) (*Backend, error) {
-	be, err := newBackend(cfg, lim)
+func Open(ctx context.Context, cfg Config, lim limiter.Limiter) (*Backend, error) {
+	be, err := newBackend(ctx, cfg, lim)
 	if err != nil {
 		return nil, err
 	}
@@ -272,7 +272,7 @@ func Open(cfg Config, lim limiter.Limiter) (*Backend, error) {
 		URL:         url,
 	}
 
-	restBackend, err := rest.Open(restConfig, debug.RoundTripper(be.tr))
+	restBackend, err := rest.Open(ctx, restConfig, debug.RoundTripper(be.tr))
 	if err != nil {
 		_ = be.Close()
 		return nil, err
@@ -284,7 +284,7 @@ func Open(cfg Config, lim limiter.Limiter) (*Backend, error) {
 
 // Create initializes a new restic repo with rclone.
 func Create(ctx context.Context, cfg Config) (*Backend, error) {
-	be, err := newBackend(cfg, nil)
+	be, err := newBackend(ctx, cfg, nil)
 	if err != nil {
 		return nil, err
 	}

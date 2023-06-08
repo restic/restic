@@ -584,7 +584,7 @@ func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Optio
 	case "s3":
 		be, err = s3.Open(ctx, *cfg.(*s3.Config), rt)
 	case "gs":
-		be, err = gs.Open(*cfg.(*gs.Config), rt)
+		be, err = gs.Open(ctx, *cfg.(*gs.Config), rt)
 	case "azure":
 		be, err = azure.Open(ctx, *cfg.(*azure.Config), rt)
 	case "swift":
@@ -592,9 +592,9 @@ func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Optio
 	case "b2":
 		be, err = b2.Open(ctx, *cfg.(*b2.Config), rt)
 	case "rest":
-		be, err = rest.Open(*cfg.(*rest.Config), rt)
+		be, err = rest.Open(ctx, *cfg.(*rest.Config), rt)
 	case "rclone":
-		be, err = rclone.Open(*cfg.(*rclone.Config), lim)
+		be, err = rclone.Open(ctx, *cfg.(*rclone.Config), lim)
 
 	default:
 		return nil, errors.Fatalf("invalid backend: %q", loc.Scheme)
