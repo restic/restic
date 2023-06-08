@@ -15,6 +15,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
+	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
 
@@ -46,6 +47,10 @@ type Backend struct {
 
 // Ensure that *Backend implements restic.Backend.
 var _ restic.Backend = &Backend{}
+
+func NewFactory() location.Factory {
+	return location.NewHTTPBackendFactory(ParseConfig, location.NoPassword, Create, Open)
+}
 
 func getStorageClient(rt http.RoundTripper) (*storage.Client, error) {
 	// create a new HTTP client

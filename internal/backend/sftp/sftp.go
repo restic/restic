@@ -15,6 +15,8 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
+	"github.com/restic/restic/internal/backend/limiter"
+	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -40,6 +42,14 @@ type SFTP struct {
 }
 
 var _ restic.Backend = &SFTP{}
+
+func NewFactory() location.Factory {
+	return location.NewLimitedBackendFactory(ParseConfig, location.NoPassword, func(ctx context.Context, cfg Config, _ limiter.Limiter) (*SFTP, error) {
+		return Create(ctx, cfg)
+	}, func(ctx context.Context, cfg Config, _ limiter.Limiter) (*SFTP, error) {
+		return Open(ctx, cfg)
+	})
+}
 
 const defaultLayout = "default"
 

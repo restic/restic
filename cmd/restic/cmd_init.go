@@ -87,9 +87,9 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 		return err
 	}
 
-	be, err := create(ctx, repo, gopts.extended)
+	be, err := create(ctx, repo, gopts, gopts.extended)
 	if err != nil {
-		return errors.Fatalf("create repository at %s failed: %v\n", location.StripPassword(gopts.Repo), err)
+		return errors.Fatalf("create repository at %s failed: %v\n", location.StripPassword(gopts.backends, gopts.Repo), err)
 	}
 
 	s, err := repository.New(be, repository.Options{
@@ -102,11 +102,11 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 
 	err = s.Init(ctx, version, gopts.password, chunkerPolynomial)
 	if err != nil {
-		return errors.Fatalf("create key in repository at %s failed: %v\n", location.StripPassword(gopts.Repo), err)
+		return errors.Fatalf("create key in repository at %s failed: %v\n", location.StripPassword(gopts.backends, gopts.Repo), err)
 	}
 
 	if !gopts.JSON {
-		Verbosef("created restic repository %v at %s", s.Config().ID[:10], location.StripPassword(gopts.Repo))
+		Verbosef("created restic repository %v at %s", s.Config().ID[:10], location.StripPassword(gopts.backends, gopts.Repo))
 		if opts.CopyChunkerParameters && chunkerPolynomial != nil {
 			Verbosef(" with chunker parameters copied from secondary repository\n")
 		} else {
@@ -121,7 +121,7 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 		status := initSuccess{
 			MessageType: "initialized",
 			ID:          s.Config().ID,
-			Repository:  location.StripPassword(gopts.Repo),
+			Repository:  location.StripPassword(gopts.backends, gopts.Repo),
 		}
 		return json.NewEncoder(globalOptions.stdout).Encode(status)
 	}

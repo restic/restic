@@ -19,6 +19,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/limiter"
+	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/backend/rest"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -34,6 +35,10 @@ type Backend struct {
 	waitResult error
 	wg         *sync.WaitGroup
 	conn       *StdioConn
+}
+
+func NewFactory() location.Factory {
+	return location.NewLimitedBackendFactory(ParseConfig, location.NoPassword, Create, Open)
 }
 
 // run starts command with args and initializes the StdioConn.
@@ -283,8 +288,8 @@ func Open(ctx context.Context, cfg Config, lim limiter.Limiter) (*Backend, error
 }
 
 // Create initializes a new restic repo with rclone.
-func Create(ctx context.Context, cfg Config) (*Backend, error) {
-	be, err := newBackend(ctx, cfg, nil)
+func Create(ctx context.Context, cfg Config, lim limiter.Limiter) (*Backend, error) {
+	be, err := newBackend(ctx, cfg, lim)
 	if err != nil {
 		return nil, err
 	}

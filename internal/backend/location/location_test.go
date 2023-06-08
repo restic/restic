@@ -1,4 +1,4 @@
-package location
+package location_test
 
 import (
 	"net/url"
@@ -7,6 +7,7 @@ import (
 
 	"github.com/restic/restic/internal/backend/b2"
 	"github.com/restic/restic/internal/backend/local"
+	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/backend/rest"
 	"github.com/restic/restic/internal/backend/s3"
 	"github.com/restic/restic/internal/backend/sftp"
@@ -24,11 +25,11 @@ func parseURL(s string) *url.URL {
 
 var parseTests = []struct {
 	s string
-	u Location
+	u location.Location
 }{
 	{
 		"local:/srv/repo",
-		Location{Scheme: "local",
+		location.Location{Scheme: "local",
 			Config: &local.Config{
 				Path:        "/srv/repo",
 				Connections: 2,
@@ -37,7 +38,7 @@ var parseTests = []struct {
 	},
 	{
 		"local:dir1/dir2",
-		Location{Scheme: "local",
+		location.Location{Scheme: "local",
 			Config: &local.Config{
 				Path:        "dir1/dir2",
 				Connections: 2,
@@ -46,7 +47,7 @@ var parseTests = []struct {
 	},
 	{
 		"local:dir1/dir2",
-		Location{Scheme: "local",
+		location.Location{Scheme: "local",
 			Config: &local.Config{
 				Path:        "dir1/dir2",
 				Connections: 2,
@@ -55,7 +56,7 @@ var parseTests = []struct {
 	},
 	{
 		"dir1/dir2",
-		Location{Scheme: "local",
+		location.Location{Scheme: "local",
 			Config: &local.Config{
 				Path:        "dir1/dir2",
 				Connections: 2,
@@ -64,7 +65,7 @@ var parseTests = []struct {
 	},
 	{
 		"/dir1/dir2",
-		Location{Scheme: "local",
+		location.Location{Scheme: "local",
 			Config: &local.Config{
 				Path:        "/dir1/dir2",
 				Connections: 2,
@@ -73,7 +74,7 @@ var parseTests = []struct {
 	},
 	{
 		"local:../dir1/dir2",
-		Location{Scheme: "local",
+		location.Location{Scheme: "local",
 			Config: &local.Config{
 				Path:        "../dir1/dir2",
 				Connections: 2,
@@ -82,7 +83,7 @@ var parseTests = []struct {
 	},
 	{
 		"/dir1/dir2",
-		Location{Scheme: "local",
+		location.Location{Scheme: "local",
 			Config: &local.Config{
 				Path:        "/dir1/dir2",
 				Connections: 2,
@@ -91,7 +92,7 @@ var parseTests = []struct {
 	},
 	{
 		"/dir1:foobar/dir2",
-		Location{Scheme: "local",
+		location.Location{Scheme: "local",
 			Config: &local.Config{
 				Path:        "/dir1:foobar/dir2",
 				Connections: 2,
@@ -100,7 +101,7 @@ var parseTests = []struct {
 	},
 	{
 		`\dir1\foobar\dir2`,
-		Location{Scheme: "local",
+		location.Location{Scheme: "local",
 			Config: &local.Config{
 				Path:        `\dir1\foobar\dir2`,
 				Connections: 2,
@@ -109,7 +110,7 @@ var parseTests = []struct {
 	},
 	{
 		`c:\dir1\foobar\dir2`,
-		Location{Scheme: "local",
+		location.Location{Scheme: "local",
 			Config: &local.Config{
 				Path:        `c:\dir1\foobar\dir2`,
 				Connections: 2,
@@ -118,7 +119,7 @@ var parseTests = []struct {
 	},
 	{
 		`C:\Users\appveyor\AppData\Local\Temp\1\restic-test-879453535\repo`,
-		Location{Scheme: "local",
+		location.Location{Scheme: "local",
 			Config: &local.Config{
 				Path:        `C:\Users\appveyor\AppData\Local\Temp\1\restic-test-879453535\repo`,
 				Connections: 2,
@@ -127,7 +128,7 @@ var parseTests = []struct {
 	},
 	{
 		`c:/dir1/foobar/dir2`,
-		Location{Scheme: "local",
+		location.Location{Scheme: "local",
 			Config: &local.Config{
 				Path:        `c:/dir1/foobar/dir2`,
 				Connections: 2,
@@ -136,7 +137,7 @@ var parseTests = []struct {
 	},
 	{
 		"sftp:user@host:/srv/repo",
-		Location{Scheme: "sftp",
+		location.Location{Scheme: "sftp",
 			Config: &sftp.Config{
 				User:        "user",
 				Host:        "host",
@@ -147,7 +148,7 @@ var parseTests = []struct {
 	},
 	{
 		"sftp:host:/srv/repo",
-		Location{Scheme: "sftp",
+		location.Location{Scheme: "sftp",
 			Config: &sftp.Config{
 				User:        "",
 				Host:        "host",
@@ -158,7 +159,7 @@ var parseTests = []struct {
 	},
 	{
 		"sftp://user@host/srv/repo",
-		Location{Scheme: "sftp",
+		location.Location{Scheme: "sftp",
 			Config: &sftp.Config{
 				User:        "user",
 				Host:        "host",
@@ -169,7 +170,7 @@ var parseTests = []struct {
 	},
 	{
 		"sftp://user@host//srv/repo",
-		Location{Scheme: "sftp",
+		location.Location{Scheme: "sftp",
 			Config: &sftp.Config{
 				User:        "user",
 				Host:        "host",
@@ -181,7 +182,7 @@ var parseTests = []struct {
 
 	{
 		"s3://eu-central-1/bucketname",
-		Location{Scheme: "s3",
+		location.Location{Scheme: "s3",
 			Config: &s3.Config{
 				Endpoint:    "eu-central-1",
 				Bucket:      "bucketname",
@@ -192,7 +193,7 @@ var parseTests = []struct {
 	},
 	{
 		"s3://hostname.foo/bucketname",
-		Location{Scheme: "s3",
+		location.Location{Scheme: "s3",
 			Config: &s3.Config{
 				Endpoint:    "hostname.foo",
 				Bucket:      "bucketname",
@@ -203,7 +204,7 @@ var parseTests = []struct {
 	},
 	{
 		"s3://hostname.foo/bucketname/prefix/directory",
-		Location{Scheme: "s3",
+		location.Location{Scheme: "s3",
 			Config: &s3.Config{
 				Endpoint:    "hostname.foo",
 				Bucket:      "bucketname",
@@ -214,7 +215,7 @@ var parseTests = []struct {
 	},
 	{
 		"s3:eu-central-1/repo",
-		Location{Scheme: "s3",
+		location.Location{Scheme: "s3",
 			Config: &s3.Config{
 				Endpoint:    "eu-central-1",
 				Bucket:      "repo",
@@ -225,7 +226,7 @@ var parseTests = []struct {
 	},
 	{
 		"s3:eu-central-1/repo/prefix/directory",
-		Location{Scheme: "s3",
+		location.Location{Scheme: "s3",
 			Config: &s3.Config{
 				Endpoint:    "eu-central-1",
 				Bucket:      "repo",
@@ -236,7 +237,7 @@ var parseTests = []struct {
 	},
 	{
 		"s3:https://hostname.foo/repo",
-		Location{Scheme: "s3",
+		location.Location{Scheme: "s3",
 			Config: &s3.Config{
 				Endpoint:    "hostname.foo",
 				Bucket:      "repo",
@@ -247,7 +248,7 @@ var parseTests = []struct {
 	},
 	{
 		"s3:https://hostname.foo/repo/prefix/directory",
-		Location{Scheme: "s3",
+		location.Location{Scheme: "s3",
 			Config: &s3.Config{
 				Endpoint:    "hostname.foo",
 				Bucket:      "repo",
@@ -258,7 +259,7 @@ var parseTests = []struct {
 	},
 	{
 		"s3:http://hostname.foo/repo",
-		Location{Scheme: "s3",
+		location.Location{Scheme: "s3",
 			Config: &s3.Config{
 				Endpoint:    "hostname.foo",
 				Bucket:      "repo",
@@ -270,7 +271,7 @@ var parseTests = []struct {
 	},
 	{
 		"swift:container17:/",
-		Location{Scheme: "swift",
+		location.Location{Scheme: "swift",
 			Config: &swift.Config{
 				Container:   "container17",
 				Prefix:      "",
@@ -280,7 +281,7 @@ var parseTests = []struct {
 	},
 	{
 		"swift:container17:/prefix97",
-		Location{Scheme: "swift",
+		location.Location{Scheme: "swift",
 			Config: &swift.Config{
 				Container:   "container17",
 				Prefix:      "prefix97",
@@ -290,7 +291,7 @@ var parseTests = []struct {
 	},
 	{
 		"rest:http://hostname.foo:1234/",
-		Location{Scheme: "rest",
+		location.Location{Scheme: "rest",
 			Config: &rest.Config{
 				URL:         parseURL("http://hostname.foo:1234/"),
 				Connections: 5,
@@ -298,7 +299,7 @@ var parseTests = []struct {
 		},
 	},
 	{
-		"b2:bucketname:/prefix", Location{Scheme: "b2",
+		"b2:bucketname:/prefix", location.Location{Scheme: "b2",
 			Config: &b2.Config{
 				Bucket:      "bucketname",
 				Prefix:      "prefix",
@@ -307,7 +308,7 @@ var parseTests = []struct {
 		},
 	},
 	{
-		"b2:bucketname", Location{Scheme: "b2",
+		"b2:bucketname", location.Location{Scheme: "b2",
 			Config: &b2.Config{
 				Bucket:      "bucketname",
 				Prefix:      "",
@@ -320,7 +321,7 @@ var parseTests = []struct {
 func TestParse(t *testing.T) {
 	for i, test := range parseTests {
 		t.Run(test.s, func(t *testing.T) {
-			u, err := Parse(test.s)
+			u, err := location.Parse(test.s)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -346,7 +347,7 @@ func TestInvalidScheme(t *testing.T) {
 
 	for _, s := range invalidSchemes {
 		t.Run(s, func(t *testing.T) {
-			_, err := Parse(s)
+			_, err := location.Parse(s)
 			if err == nil {
 				t.Fatalf("error for invalid location %q not found", s)
 			}

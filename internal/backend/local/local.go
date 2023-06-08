@@ -10,6 +10,8 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
+	"github.com/restic/restic/internal/backend/limiter"
+	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
@@ -27,6 +29,14 @@ type Local struct {
 
 // ensure statically that *Local implements restic.Backend.
 var _ restic.Backend = &Local{}
+
+func NewFactory() location.Factory {
+	return location.NewLimitedBackendFactory(ParseConfig, location.NoPassword, func(ctx context.Context, cfg Config, _ limiter.Limiter) (*Local, error) {
+		return Create(ctx, cfg)
+	}, func(ctx context.Context, cfg Config, _ limiter.Limiter) (*Local, error) {
+		return Open(ctx, cfg)
+	})
+}
 
 const defaultLayout = "default"
 

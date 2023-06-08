@@ -11,6 +11,7 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
+	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -35,6 +36,10 @@ const defaultListMaxItems = 10 * 1000
 
 // ensure statically that *b2Backend implements restic.Backend.
 var _ restic.Backend = &b2Backend{}
+
+func NewFactory() location.Factory {
+	return location.NewHTTPBackendFactory(ParseConfig, location.NoPassword, Create, Open)
+}
 
 type sniffingRoundTripper struct {
 	sync.Mutex

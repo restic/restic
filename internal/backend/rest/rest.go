@@ -13,6 +13,7 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
+	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -27,6 +28,10 @@ type Backend struct {
 	connections uint
 	client      http.Client
 	layout.Layout
+}
+
+func NewFactory() location.Factory {
+	return location.NewHTTPBackendFactory(ParseConfig, StripPassword, Create, Open)
 }
 
 // the REST API protocol version is decided by HTTP request headers, these are the constants.

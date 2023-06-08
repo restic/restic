@@ -27,7 +27,7 @@ func newTestSuite(t testing.TB) *test.Suite[rclone.Config] {
 		// CreateFn is a function that creates a temporary repository for the tests.
 		Create: func(cfg rclone.Config) (restic.Backend, error) {
 			t.Logf("Create()")
-			be, err := rclone.Create(context.TODO(), cfg)
+			be, err := rclone.Create(context.TODO(), cfg, nil)
 			var e *exec.Error
 			if errors.As(err, &e) && e.Err == exec.ErrNotFound {
 				t.Skipf("program %q not found", e.Name)
