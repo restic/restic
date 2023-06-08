@@ -29,18 +29,24 @@ type parser struct {
 	stripPassword func(string) string
 }
 
+func configToAny[C any](parser func(string) (*C, error)) func(string) (interface{}, error) {
+	return func(s string) (interface{}, error) {
+		return parser(s)
+	}
+}
+
 // parsers is a list of valid config parsers for the backends. The first parser
 // is the fallback and should always be set to the local backend.
 var parsers = []parser{
-	{"b2", b2.ParseConfig, noPassword},
-	{"local", local.ParseConfig, noPassword},
-	{"sftp", sftp.ParseConfig, noPassword},
-	{"s3", s3.ParseConfig, noPassword},
-	{"gs", gs.ParseConfig, noPassword},
-	{"azure", azure.ParseConfig, noPassword},
-	{"swift", swift.ParseConfig, noPassword},
-	{"rest", rest.ParseConfig, rest.StripPassword},
-	{"rclone", rclone.ParseConfig, noPassword},
+	{"b2", configToAny(b2.ParseConfig), noPassword},
+	{"local", configToAny(local.ParseConfig), noPassword},
+	{"sftp", configToAny(sftp.ParseConfig), noPassword},
+	{"s3", configToAny(s3.ParseConfig), noPassword},
+	{"gs", configToAny(gs.ParseConfig), noPassword},
+	{"azure", configToAny(azure.ParseConfig), noPassword},
+	{"swift", configToAny(swift.ParseConfig), noPassword},
+	{"rest", configToAny(rest.ParseConfig), rest.StripPassword},
+	{"rclone", configToAny(rclone.ParseConfig), noPassword},
 }
 
 // noPassword returns the repository location unchanged (there's no sensitive information there)

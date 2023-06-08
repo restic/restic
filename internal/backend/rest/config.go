@@ -26,7 +26,7 @@ func NewConfig() Config {
 }
 
 // ParseConfig parses the string s and extracts the REST server URL.
-func ParseConfig(s string) (interface{}, error) {
+func ParseConfig(s string) (*Config, error) {
 	if !strings.HasPrefix(s, "rest:") {
 		return nil, errors.New("invalid REST backend specification")
 	}
@@ -40,7 +40,7 @@ func ParseConfig(s string) (interface{}, error) {
 
 	cfg := NewConfig()
 	cfg.URL = u
-	return cfg, nil
+	return &cfg, nil
 }
 
 // StripPassword removes the password from the URL

@@ -535,147 +535,21 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 }
 
 func parseConfig(loc location.Location, opts options.Options) (interface{}, error) {
-	// only apply options for a particular backend here
-	opts = opts.Extract(loc.Scheme)
-
-	switch loc.Scheme {
-	case "local":
-		cfg := loc.Config.(local.Config)
-		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
+	cfg := loc.Config
+	if cfg, ok := cfg.(restic.ApplyEnvironmenter); ok {
+		if err := cfg.ApplyEnvironment(""); err != nil {
 			return nil, err
 		}
-
-		debug.Log("opening local repository at %#v", cfg)
-		return cfg, nil
-
-	case "sftp":
-		cfg := loc.Config.(sftp.Config)
-		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
-			return nil, err
-		}
-
-		debug.Log("opening sftp repository at %#v", cfg)
-		return cfg, nil
-
-	case "s3":
-		cfg := loc.Config.(s3.Config)
-		if cfg.KeyID == "" {
-			cfg.KeyID = os.Getenv("AWS_ACCESS_KEY_ID")
-		}
-
-		if cfg.Secret.String() == "" {
-			cfg.Secret = options.NewSecretString(os.Getenv("AWS_SECRET_ACCESS_KEY"))
-		}
-
-		if cfg.KeyID == "" && cfg.Secret.String() != "" {
-			return nil, errors.Fatalf("unable to open S3 backend: Key ID ($AWS_ACCESS_KEY_ID) is empty")
-		} else if cfg.KeyID != "" && cfg.Secret.String() == "" {
-			return nil, errors.Fatalf("unable to open S3 backend: Secret ($AWS_SECRET_ACCESS_KEY) is empty")
-		}
-
-		if cfg.Region == "" {
-			cfg.Region = os.Getenv("AWS_DEFAULT_REGION")
-		}
-
-		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
-			return nil, err
-		}
-
-		debug.Log("opening s3 repository at %#v", cfg)
-		return cfg, nil
-
-	case "gs":
-		cfg := loc.Config.(gs.Config)
-		if cfg.ProjectID == "" {
-			cfg.ProjectID = os.Getenv("GOOGLE_PROJECT_ID")
-		}
-
-		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
-			return nil, err
-		}
-
-		debug.Log("opening gs repository at %#v", cfg)
-		return cfg, nil
-
-	case "azure":
-		cfg := loc.Config.(azure.Config)
-		if cfg.AccountName == "" {
-			cfg.AccountName = os.Getenv("AZURE_ACCOUNT_NAME")
-		}
-
-		if cfg.AccountKey.String() == "" {
-			cfg.AccountKey = options.NewSecretString(os.Getenv("AZURE_ACCOUNT_KEY"))
-		}
-
-		if cfg.AccountSAS.String() == "" {
-			cfg.AccountSAS = options.NewSecretString(os.Getenv("AZURE_ACCOUNT_SAS"))
-		}
-
-		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
-			return nil, err
-		}
-
-		debug.Log("opening gs repository at %#v", cfg)
-		return cfg, nil
-
-	case "swift":
-		cfg := loc.Config.(swift.Config)
-
-		if err := swift.ApplyEnvironment("", &cfg); err != nil {
-			return nil, err
-		}
-
-		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
-			return nil, err
-		}
-
-		debug.Log("opening swift repository at %#v", cfg)
-		return cfg, nil
-
-	case "b2":
-		cfg := loc.Config.(b2.Config)
-
-		if cfg.AccountID == "" {
-			cfg.AccountID = os.Getenv("B2_ACCOUNT_ID")
-		}
-
-		if cfg.AccountID == "" {
-			return nil, errors.Fatalf("unable to open B2 backend: Account ID ($B2_ACCOUNT_ID) is empty")
-		}
-
-		if cfg.Key.String() == "" {
-			cfg.Key = options.NewSecretString(os.Getenv("B2_ACCOUNT_KEY"))
-		}
-
-		if cfg.Key.String() == "" {
-			return nil, errors.Fatalf("unable to open B2 backend: Key ($B2_ACCOUNT_KEY) is empty")
-		}
-
-		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
-			return nil, err
-		}
-
-		debug.Log("opening b2 repository at %#v", cfg)
-		return cfg, nil
-	case "rest":
-		cfg := loc.Config.(rest.Config)
-		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
-			return nil, err
-		}
-
-		debug.Log("opening rest repository at %#v", cfg)
-		return cfg, nil
-	case "rclone":
-		cfg := loc.Config.(rclone.Config)
-		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
-			return nil, err
-		}
-
-		debug.Log("opening rest repository at %#v", cfg)
-		return cfg, nil
 	}
 
-	return nil, errors.Fatalf("invalid backend: %q", loc.Scheme)
+	// only apply options for a particular backend here
+	opts = opts.Extract(loc.Scheme)
+	if err := opts.Apply(loc.Scheme, cfg); err != nil {
+		return nil, err
+	}
+
+	debug.Log("opening %v repository at %#v", loc.Scheme, cfg)
+	return cfg, nil
 }
 
 // Open the backend specified by a location config.
@@ -704,23 +578,23 @@ func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Optio
 
 	switch loc.Scheme {
 	case "local":
-		be, err = local.Open(ctx, cfg.(local.Config))
+		be, err = local.Open(ctx, *cfg.(*local.Config))
 	case "sftp":
-		be, err = sftp.Open(ctx, cfg.(sftp.Config))
+		be, err = sftp.Open(ctx, *cfg.(*sftp.Config))
 	case "s3":
-		be, err = s3.Open(ctx, cfg.(s3.Config), rt)
+		be, err = s3.Open(ctx, *cfg.(*s3.Config), rt)
 	case "gs":
-		be, err = gs.Open(cfg.(gs.Config), rt)
+		be, err = gs.Open(*cfg.(*gs.Config), rt)
 	case "azure":
-		be, err = azure.Open(ctx, cfg.(azure.Config), rt)
+		be, err = azure.Open(ctx, *cfg.(*azure.Config), rt)
 	case "swift":
-		be, err = swift.Open(ctx, cfg.(swift.Config), rt)
+		be, err = swift.Open(ctx, *cfg.(*swift.Config), rt)
 	case "b2":
-		be, err = b2.Open(ctx, cfg.(b2.Config), rt)
+		be, err = b2.Open(ctx, *cfg.(*b2.Config), rt)
 	case "rest":
-		be, err = rest.Open(cfg.(rest.Config), rt)
+		be, err = rest.Open(*cfg.(*rest.Config), rt)
 	case "rclone":
-		be, err = rclone.Open(cfg.(rclone.Config), lim)
+		be, err = rclone.Open(*cfg.(*rclone.Config), lim)
 
 	default:
 		return nil, errors.Fatalf("invalid backend: %q", loc.Scheme)
@@ -780,23 +654,23 @@ func create(ctx context.Context, s string, opts options.Options) (restic.Backend
 	var be restic.Backend
 	switch loc.Scheme {
 	case "local":
-		be, err = local.Create(ctx, cfg.(local.Config))
+		be, err = local.Create(ctx, *cfg.(*local.Config))
 	case "sftp":
-		be, err = sftp.Create(ctx, cfg.(sftp.Config))
+		be, err = sftp.Create(ctx, *cfg.(*sftp.Config))
 	case "s3":
-		be, err = s3.Create(ctx, cfg.(s3.Config), rt)
+		be, err = s3.Create(ctx, *cfg.(*s3.Config), rt)
 	case "gs":
-		be, err = gs.Create(ctx, cfg.(gs.Config), rt)
+		be, err = gs.Create(ctx, *cfg.(*gs.Config), rt)
 	case "azure":
-		be, err = azure.Create(ctx, cfg.(azure.Config), rt)
+		be, err = azure.Create(ctx, *cfg.(*azure.Config), rt)
 	case "swift":
-		be, err = swift.Open(ctx, cfg.(swift.Config), rt)
+		be, err = swift.Open(ctx, *cfg.(*swift.Config), rt)
 	case "b2":
-		be, err = b2.Create(ctx, cfg.(b2.Config), rt)
+		be, err = b2.Create(ctx, *cfg.(*b2.Config), rt)
 	case "rest":
-		be, err = rest.Create(ctx, cfg.(rest.Config), rt)
+		be, err = rest.Create(ctx, *cfg.(*rest.Config), rt)
 	case "rclone":
-		be, err = rclone.Create(ctx, cfg.(rclone.Config))
+		be, err = rclone.Create(ctx, *cfg.(*rclone.Config))
 	default:
 		debug.Log("invalid repository scheme: %v", s)
 		return nil, errors.Fatalf("invalid scheme %q", loc.Scheme)

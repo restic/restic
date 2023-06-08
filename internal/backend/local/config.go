@@ -27,12 +27,12 @@ func init() {
 }
 
 // ParseConfig parses a local backend config.
-func ParseConfig(s string) (interface{}, error) {
+func ParseConfig(s string) (*Config, error) {
 	if !strings.HasPrefix(s, "local:") {
 		return nil, errors.New(`invalid format, prefix "local" not found`)
 	}
 
 	cfg := NewConfig()
 	cfg.Path = s[6:]
-	return cfg, nil
+	return &cfg, nil
 }
