@@ -16,9 +16,11 @@ func formatNode(path string, n *restic.Node, long bool, human bool) string {
 	var mode os.FileMode
 	var target string
 
-	size := fmt.Sprintf("%6d", n.Size)
+	var size string
 	if human {
 		size = ui.FormatBytes(n.Size)
+	} else {
+		size = fmt.Sprintf("%6d", n.Size)
 	}
 
 	switch n.Type {
