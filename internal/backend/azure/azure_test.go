@@ -17,7 +17,7 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func newAzureTestSuite(t testing.TB) *test.Suite[azure.Config] {
+func newAzureTestSuite() *test.Suite[azure.Config] {
 	return &test.Suite[azure.Config]{
 		// do not use excessive data
 		MinimalData: true,
@@ -59,7 +59,7 @@ func TestBackendAzure(t *testing.T) {
 	}
 
 	t.Logf("run tests")
-	newAzureTestSuite(t).RunTests(t)
+	newAzureTestSuite().RunTests(t)
 }
 
 func BenchmarkBackendAzure(t *testing.B) {
@@ -77,7 +77,7 @@ func BenchmarkBackendAzure(t *testing.B) {
 	}
 
 	t.Logf("run tests")
-	newAzureTestSuite(t).RunBenchmarks(t)
+	newAzureTestSuite().RunBenchmarks(t)
 }
 
 func TestUploadLargeFile(t *testing.T) {

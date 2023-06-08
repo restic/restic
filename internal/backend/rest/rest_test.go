@@ -65,7 +65,7 @@ func runRESTServer(ctx context.Context, t testing.TB, dir string) (*url.URL, fun
 	return url, cleanup
 }
 
-func newTestSuite(_ context.Context, t testing.TB, url *url.URL, minimalData bool) *test.Suite[rest.Config] {
+func newTestSuite(url *url.URL, minimalData bool) *test.Suite[rest.Config] {
 	return &test.Suite[rest.Config]{
 		MinimalData: minimalData,
 
@@ -94,7 +94,7 @@ func TestBackendREST(t *testing.T) {
 	serverURL, cleanup := runRESTServer(ctx, t, dir)
 	defer cleanup()
 
-	newTestSuite(ctx, t, serverURL, false).RunTests(t)
+	newTestSuite(serverURL, false).RunTests(t)
 }
 
 func TestBackendRESTExternalServer(t *testing.T) {
@@ -108,10 +108,7 @@ func TestBackendRESTExternalServer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	newTestSuite(ctx, t, cfg.URL, true).RunTests(t)
+	newTestSuite(cfg.URL, true).RunTests(t)
 }
 
 func BenchmarkBackendREST(t *testing.B) {
@@ -122,5 +119,5 @@ func BenchmarkBackendREST(t *testing.B) {
 	serverURL, cleanup := runRESTServer(ctx, t, dir)
 	defer cleanup()
 
-	newTestSuite(ctx, t, serverURL, false).RunBenchmarks(t)
+	newTestSuite(serverURL, false).RunBenchmarks(t)
 }

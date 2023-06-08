@@ -94,35 +94,31 @@ func newRandomCredentials(t testing.TB) (key, secret string) {
 	return key, secret
 }
 
-func newMinioTestSuite(ctx context.Context, t testing.TB, key string, secret string) *test.Suite[s3.Config] {
-	return &test.Suite[s3.Config]{
-		// NewConfig returns a config for a new temporary backend that will be used in tests.
-		NewConfig: func() (*s3.Config, error) {
-			cfg := s3.NewConfig()
-			cfg.Endpoint = "localhost:9000"
-			cfg.Bucket = "restictestbucket"
-			cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
-			cfg.UseHTTP = true
-			cfg.KeyID = key
-			cfg.Secret = options.NewSecretString(secret)
-			return &cfg, nil
-		},
-
-		Factory: s3.NewFactory(),
-	}
-}
-
-func createMinioTestSuite(t testing.TB) (*test.Suite[s3.Config], func()) {
+func newMinioTestSuite(t testing.TB) (*test.Suite[s3.Config], func()) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	tempdir := rtest.TempDir(t)
 	key, secret := newRandomCredentials(t)
 	cleanup := runMinio(ctx, t, tempdir, key, secret)
 
-	return newMinioTestSuite(ctx, t, key, secret), func() {
-		defer cancel()
-		defer cleanup()
-	}
+	return &test.Suite[s3.Config]{
+			// NewConfig returns a config for a new temporary backend that will be used in tests.
+			NewConfig: func() (*s3.Config, error) {
+				cfg := s3.NewConfig()
+				cfg.Endpoint = "localhost:9000"
+				cfg.Bucket = "restictestbucket"
+				cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
+				cfg.UseHTTP = true
+				cfg.KeyID = key
+				cfg.Secret = options.NewSecretString(secret)
+				return &cfg, nil
+			},
+
+			Factory: s3.NewFactory(),
+		}, func() {
+			defer cancel()
+			defer cleanup()
+		}
 }
 
 func TestBackendMinio(t *testing.T) {
@@ -139,7 +135,7 @@ func TestBackendMinio(t *testing.T) {
 		return
 	}
 
-	suite, cleanup := createMinioTestSuite(t)
+	suite, cleanup := newMinioTestSuite(t)
 	defer cleanup()
 
 	suite.RunTests(t)
@@ -153,13 +149,13 @@ func BenchmarkBackendMinio(t *testing.B) {
 		return
 	}
 
-	suite, cleanup := createMinioTestSuite(t)
+	suite, cleanup := newMinioTestSuite(t)
 	defer cleanup()
 
 	suite.RunBenchmarks(t)
 }
 
-func newS3TestSuite(t testing.TB) *test.Suite[s3.Config] {
+func newS3TestSuite() *test.Suite[s3.Config] {
 	return &test.Suite[s3.Config]{
 		// do not use excessive data
 		MinimalData: true,
@@ -202,7 +198,7 @@ func TestBackendS3(t *testing.T) {
 	}
 
 	t.Logf("run tests")
-	newS3TestSuite(t).RunTests(t)
+	newS3TestSuite().RunTests(t)
 }
 
 func BenchmarkBackendS3(t *testing.B) {
@@ -220,5 +216,5 @@ func BenchmarkBackendS3(t *testing.B) {
 	}
 
 	t.Logf("run tests")
-	newS3TestSuite(t).RunBenchmarks(t)
+	newS3TestSuite().RunBenchmarks(t)
 }

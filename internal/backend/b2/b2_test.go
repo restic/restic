@@ -12,7 +12,7 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func newB2TestSuite(t testing.TB) *test.Suite[b2.Config] {
+func newB2TestSuite() *test.Suite[b2.Config] {
 	return &test.Suite[b2.Config]{
 		// do not use excessive data
 		MinimalData: true,
@@ -59,10 +59,10 @@ func TestBackendB2(t *testing.T) {
 	}()
 
 	testVars(t)
-	newB2TestSuite(t).RunTests(t)
+	newB2TestSuite().RunTests(t)
 }
 
 func BenchmarkBackendb2(t *testing.B) {
 	testVars(t)
-	newB2TestSuite(t).RunBenchmarks(t)
+	newB2TestSuite().RunBenchmarks(t)
 }

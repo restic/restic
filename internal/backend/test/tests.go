@@ -38,7 +38,7 @@ func beTest(ctx context.Context, be restic.Backend, h restic.Handle) (bool, erro
 
 // TestStripPasswordCall tests that the StripPassword method of a factory can be called without crashing.
 // It does not verify whether passwords are removed correctly
-func (s *Suite[C]) TestStripPasswordCall(t *testing.T) {
+func (s *Suite[C]) TestStripPasswordCall(_ *testing.T) {
 	s.Factory.StripPassword("some random string")
 }
 

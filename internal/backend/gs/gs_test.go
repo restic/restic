@@ -11,7 +11,7 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func newGSTestSuite(t testing.TB) *test.Suite[gs.Config] {
+func newGSTestSuite() *test.Suite[gs.Config] {
 	return &test.Suite[gs.Config]{
 		// do not use excessive data
 		MinimalData: true,
@@ -56,7 +56,7 @@ func TestBackendGS(t *testing.T) {
 	}
 
 	t.Logf("run tests")
-	newGSTestSuite(t).RunTests(t)
+	newGSTestSuite().RunTests(t)
 }
 
 func BenchmarkBackendGS(t *testing.B) {
@@ -77,5 +77,5 @@ func BenchmarkBackendGS(t *testing.B) {
 	}
 
 	t.Logf("run tests")
-	newGSTestSuite(t).RunBenchmarks(t)
+	newGSTestSuite().RunBenchmarks(t)
 }
