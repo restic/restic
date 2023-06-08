@@ -9,6 +9,16 @@ import (
 )
 
 func TestFormatNode(t *testing.T) {
+	testPath := "/test/path"
+	node := restic.Node{
+		Name:    "baz",
+		Type:    "file",
+		Size:    14680064,
+		UID:     1000,
+		GID:     2000,
+		ModTime: time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC),
+	}
+
 	for _, c := range []struct {
 		path string
 		restic.Node
@@ -17,46 +27,25 @@ func TestFormatNode(t *testing.T) {
 		expect string
 	}{
 		{
-			path: "/test/path",
-			Node: restic.Node{
-				Name:    "baz",
-				Type:    "file",
-				Size:    14680064,
-				UID:     1000,
-				GID:     2000,
-				ModTime: time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC),
-			},
+			path:   testPath,
+			Node:   node,
 			long:   false,
 			human:  false,
-			expect: "/test/path",
+			expect: testPath,
 		},
 		{
-			path: "/test/path",
-			Node: restic.Node{
-				Name:    "baz",
-				Type:    "file",
-				Size:    14680064,
-				UID:     1000,
-				GID:     2000,
-				ModTime: time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC),
-			},
+			path:   testPath,
+			Node:   node,
 			long:   true,
 			human:  false,
-			expect: "----------  1000  2000 14680064 2020-01-01 22:04:05 /test/path",
+			expect: "----------  1000  2000 14680064 2020-01-01 22:04:05 " + testPath,
 		},
 		{
-			path: "/test/path",
-			Node: restic.Node{
-				Name:    "baz",
-				Type:    "file",
-				Size:    14680064,
-				UID:     1000,
-				GID:     2000,
-				ModTime: time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC),
-			},
+			path:   testPath,
+			Node:   node,
 			long:   true,
 			human:  true,
-			expect: "----------  1000  2000 14.000 MiB 2020-01-01 22:04:05 /test/path",
+			expect: "----------  1000  2000 14.000 MiB 2020-01-01 22:04:05 " + testPath,
 		},
 	} {
 		r := formatNode(c.path, &c.Node, c.long, c.human)
