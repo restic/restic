@@ -1,26 +1,18 @@
 package swift_test
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/swift"
 	"github.com/restic/restic/internal/backend/test"
-	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
 func newSwiftTestSuite(t testing.TB) *test.Suite[swift.Config] {
-	tr, err := backend.Transport(backend.TransportOptions{})
-	if err != nil {
-		t.Fatalf("cannot create transport for tests: %v", err)
-	}
-
 	return &test.Suite[swift.Config]{
 		// do not use excessive data
 		MinimalData: true,
@@ -54,39 +46,7 @@ func newSwiftTestSuite(t testing.TB) *test.Suite[swift.Config] {
 			return cfg, nil
 		},
 
-		// CreateFn is a function that creates a temporary repository for the tests.
-		Create: func(cfg swift.Config) (restic.Backend, error) {
-			be, err := swift.Open(context.TODO(), cfg, tr)
-			if err != nil {
-				return nil, err
-			}
-
-			_, err = be.Stat(context.TODO(), restic.Handle{Type: restic.ConfigFile})
-			if err != nil && !be.IsNotExist(err) {
-				return nil, err
-			}
-
-			if err == nil {
-				return nil, errors.New("config already exists")
-			}
-
-			return be, nil
-		},
-
-		// OpenFn is a function that opens a previously created temporary repository.
-		Open: func(cfg swift.Config) (restic.Backend, error) {
-			return swift.Open(context.TODO(), cfg, tr)
-		},
-
-		// CleanupFn removes data created during the tests.
-		Cleanup: func(cfg swift.Config) error {
-			be, err := swift.Open(context.TODO(), cfg, tr)
-			if err != nil {
-				return err
-			}
-
-			return be.Delete(context.TODO())
-		},
+		Factory: swift.NewFactory(),
 	}
 }
 

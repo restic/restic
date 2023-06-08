@@ -4,22 +4,18 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io"
 	"net"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/s3"
 	"github.com/restic/restic/internal/backend/test"
 	"github.com/restic/restic/internal/options"
-	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -98,84 +94,34 @@ func newRandomCredentials(t testing.TB) (key, secret string) {
 	return key, secret
 }
 
-type MinioTestConfig struct {
-	s3.Config
-
-	tempdir    string
-	stopServer func()
-}
-
-func createS3(t testing.TB, cfg MinioTestConfig, tr http.RoundTripper) (be restic.Backend, err error) {
-	for i := 0; i < 10; i++ {
-		be, err = s3.Create(context.TODO(), cfg.Config, tr)
-		if err != nil {
-			t.Logf("s3 open: try %d: error %v", i, err)
-			time.Sleep(500 * time.Millisecond)
-			continue
-		}
-
-		break
-	}
-
-	return be, err
-}
-
-func newMinioTestSuite(ctx context.Context, t testing.TB) *test.Suite[MinioTestConfig] {
-	tr, err := backend.Transport(backend.TransportOptions{})
-	if err != nil {
-		t.Fatalf("cannot create transport for tests: %v", err)
-	}
-
-	return &test.Suite[MinioTestConfig]{
+func newMinioTestSuite(ctx context.Context, t testing.TB, key string, secret string) *test.Suite[s3.Config] {
+	return &test.Suite[s3.Config]{
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
-		NewConfig: func() (*MinioTestConfig, error) {
-			cfg := MinioTestConfig{}
-
-			cfg.tempdir = rtest.TempDir(t)
-			key, secret := newRandomCredentials(t)
-			cfg.stopServer = runMinio(ctx, t, cfg.tempdir, key, secret)
-
-			cfg.Config = s3.NewConfig()
-			cfg.Config.Endpoint = "localhost:9000"
-			cfg.Config.Bucket = "restictestbucket"
-			cfg.Config.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
-			cfg.Config.UseHTTP = true
-			cfg.Config.KeyID = key
-			cfg.Config.Secret = options.NewSecretString(secret)
+		NewConfig: func() (*s3.Config, error) {
+			cfg := s3.NewConfig()
+			cfg.Endpoint = "localhost:9000"
+			cfg.Bucket = "restictestbucket"
+			cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
+			cfg.UseHTTP = true
+			cfg.KeyID = key
+			cfg.Secret = options.NewSecretString(secret)
 			return &cfg, nil
 		},
 
-		// CreateFn is a function that creates a temporary repository for the tests.
-		Create: func(cfg MinioTestConfig) (restic.Backend, error) {
-			be, err := createS3(t, cfg, tr)
-			if err != nil {
-				return nil, err
-			}
+		Factory: s3.NewFactory(),
+	}
+}
 
-			_, err = be.Stat(context.TODO(), restic.Handle{Type: restic.ConfigFile})
-			if err != nil && !be.IsNotExist(err) {
-				return nil, err
-			}
+func createMinioTestSuite(t testing.TB) (*test.Suite[s3.Config], func()) {
+	ctx, cancel := context.WithCancel(context.Background())
 
-			if err == nil {
-				return nil, errors.New("config already exists")
-			}
+	tempdir := rtest.TempDir(t)
+	key, secret := newRandomCredentials(t)
+	cleanup := runMinio(ctx, t, tempdir, key, secret)
 
-			return be, nil
-		},
-
-		// OpenFn is a function that opens a previously created temporary repository.
-		Open: func(cfg MinioTestConfig) (restic.Backend, error) {
-			return s3.Open(ctx, cfg.Config, tr)
-		},
-
-		// CleanupFn removes data created during the tests.
-		Cleanup: func(cfg MinioTestConfig) error {
-			if cfg.stopServer != nil {
-				cfg.stopServer()
-			}
-			return nil
-		},
+	return newMinioTestSuite(ctx, t, key, secret), func() {
+		defer cancel()
+		defer cleanup()
 	}
 }
 
@@ -193,10 +139,10 @@ func TestBackendMinio(t *testing.T) {
 		return
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	suite, cleanup := createMinioTestSuite(t)
+	defer cleanup()
 
-	newMinioTestSuite(ctx, t).RunTests(t)
+	suite.RunTests(t)
 }
 
 func BenchmarkBackendMinio(t *testing.B) {
@@ -207,18 +153,13 @@ func BenchmarkBackendMinio(t *testing.B) {
 		return
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	suite, cleanup := createMinioTestSuite(t)
+	defer cleanup()
 
-	newMinioTestSuite(ctx, t).RunBenchmarks(t)
+	suite.RunBenchmarks(t)
 }
 
 func newS3TestSuite(t testing.TB) *test.Suite[s3.Config] {
-	tr, err := backend.Transport(backend.TransportOptions{})
-	if err != nil {
-		t.Fatalf("cannot create transport for tests: %v", err)
-	}
-
 	return &test.Suite[s3.Config]{
 		// do not use excessive data
 		MinimalData: true,
@@ -236,39 +177,7 @@ func newS3TestSuite(t testing.TB) *test.Suite[s3.Config] {
 			return cfg, nil
 		},
 
-		// CreateFn is a function that creates a temporary repository for the tests.
-		Create: func(cfg s3.Config) (restic.Backend, error) {
-			be, err := s3.Create(context.TODO(), cfg, tr)
-			if err != nil {
-				return nil, err
-			}
-
-			_, err = be.Stat(context.TODO(), restic.Handle{Type: restic.ConfigFile})
-			if err != nil && !be.IsNotExist(err) {
-				return nil, err
-			}
-
-			if err == nil {
-				return nil, errors.New("config already exists")
-			}
-
-			return be, nil
-		},
-
-		// OpenFn is a function that opens a previously created temporary repository.
-		Open: func(cfg s3.Config) (restic.Backend, error) {
-			return s3.Open(context.TODO(), cfg, tr)
-		},
-
-		// CleanupFn removes data created during the tests.
-		Cleanup: func(cfg s3.Config) error {
-			be, err := s3.Open(context.TODO(), cfg, tr)
-			if err != nil {
-				return err
-			}
-
-			return be.Delete(context.TODO())
-		},
+		Factory: s3.NewFactory(),
 	}
 }
 
