@@ -27,6 +27,7 @@ func NewFactory() location.Factory {
 	be := New()
 
 	return location.NewHTTPBackendFactory[struct{}, *MemoryBackend](
+		"mem",
 		func(s string) (*struct{}, error) {
 			return &struct{}{}, nil
 		},

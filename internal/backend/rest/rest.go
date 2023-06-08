@@ -31,7 +31,7 @@ type Backend struct {
 }
 
 func NewFactory() location.Factory {
-	return location.NewHTTPBackendFactory(ParseConfig, StripPassword, Create, Open)
+	return location.NewHTTPBackendFactory("rest", ParseConfig, StripPassword, Create, Open)
 }
 
 // the REST API protocol version is decided by HTTP request headers, these are the constants.

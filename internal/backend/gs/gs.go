@@ -49,7 +49,7 @@ type Backend struct {
 var _ restic.Backend = &Backend{}
 
 func NewFactory() location.Factory {
-	return location.NewHTTPBackendFactory(ParseConfig, location.NoPassword, Create, Open)
+	return location.NewHTTPBackendFactory("gs", ParseConfig, location.NoPassword, Create, Open)
 }
 
 func getStorageClient(rt http.RoundTripper) (*storage.Client, error) {

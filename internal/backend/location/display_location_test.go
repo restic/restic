@@ -10,8 +10,8 @@ import (
 
 func TestStripPassword(t *testing.T) {
 	registry := location.NewRegistry()
-	registry.Register("test",
-		location.NewHTTPBackendFactory[any, restic.Backend](nil,
+	registry.Register(
+		location.NewHTTPBackendFactory[any, restic.Backend]("test", nil,
 			func(s string) string {
 				return "cleaned"
 			}, nil, nil,

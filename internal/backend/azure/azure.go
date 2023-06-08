@@ -45,7 +45,7 @@ const defaultListMaxItems = 5000
 var _ restic.Backend = &Backend{}
 
 func NewFactory() location.Factory {
-	return location.NewHTTPBackendFactory(ParseConfig, location.NoPassword, Create, Open)
+	return location.NewHTTPBackendFactory("azure", ParseConfig, location.NoPassword, Create, Open)
 }
 
 func open(cfg Config, rt http.RoundTripper) (*Backend, error) {

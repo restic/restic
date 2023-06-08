@@ -31,7 +31,7 @@ type Local struct {
 var _ restic.Backend = &Local{}
 
 func NewFactory() location.Factory {
-	return location.NewLimitedBackendFactory(ParseConfig, location.NoPassword, limiter.WrapBackendConstructor(Create), limiter.WrapBackendConstructor(Open))
+	return location.NewLimitedBackendFactory("local", ParseConfig, location.NoPassword, limiter.WrapBackendConstructor(Create), limiter.WrapBackendConstructor(Open))
 }
 
 const defaultLayout = "default"

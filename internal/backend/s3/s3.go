@@ -33,7 +33,7 @@ type Backend struct {
 var _ restic.Backend = &Backend{}
 
 func NewFactory() location.Factory {
-	return location.NewHTTPBackendFactory(ParseConfig, location.NoPassword, Create, Open)
+	return location.NewHTTPBackendFactory("s3", ParseConfig, location.NoPassword, Create, Open)
 }
 
 const defaultLayout = "default"

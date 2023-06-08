@@ -18,11 +18,11 @@ func NewRegistry() *Registry {
 	}
 }
 
-func (r *Registry) Register(scheme string, factory Factory) {
-	if r.factories[scheme] != nil {
+func (r *Registry) Register(factory Factory) {
+	if r.factories[factory.Scheme()] != nil {
 		panic("duplicate backend")
 	}
-	r.factories[scheme] = factory
+	r.factories[factory.Scheme()] = factory
 }
 
 func (r *Registry) Lookup(scheme string) Factory {
@@ -30,6 +30,7 @@ func (r *Registry) Lookup(scheme string) Factory {
 }
 
 type Factory interface {
+	Scheme() string
 	ParseConfig(s string) (interface{}, error)
 	StripPassword(s string) string
 	Create(ctx context.Context, cfg interface{}, rt http.RoundTripper, lim limiter.Limiter) (restic.Backend, error)
@@ -37,10 +38,15 @@ type Factory interface {
 }
 
 type genericBackendFactory[C any, T restic.Backend] struct {
+	scheme          string
 	parseConfigFn   func(s string) (*C, error)
 	stripPasswordFn func(s string) string
 	createFn        func(ctx context.Context, cfg C, rt http.RoundTripper, lim limiter.Limiter) (T, error)
 	openFn          func(ctx context.Context, cfg C, rt http.RoundTripper, lim limiter.Limiter) (T, error)
+}
+
+func (f *genericBackendFactory[C, T]) Scheme() string {
+	return f.scheme
 }
 
 func (f *genericBackendFactory[C, T]) ParseConfig(s string) (interface{}, error) {
@@ -59,12 +65,15 @@ func (f *genericBackendFactory[C, T]) Open(ctx context.Context, cfg interface{},
 	return f.openFn(ctx, *cfg.(*C), rt, lim)
 }
 
-func NewHTTPBackendFactory[C any, T restic.Backend](parseConfigFn func(s string) (*C, error),
+func NewHTTPBackendFactory[C any, T restic.Backend](
+	scheme string,
+	parseConfigFn func(s string) (*C, error),
 	stripPasswordFn func(s string) string,
 	createFn func(ctx context.Context, cfg C, rt http.RoundTripper) (T, error),
 	openFn func(ctx context.Context, cfg C, rt http.RoundTripper) (T, error)) Factory {
 
 	return &genericBackendFactory[C, T]{
+		scheme:          scheme,
 		parseConfigFn:   parseConfigFn,
 		stripPasswordFn: stripPasswordFn,
 		createFn: func(ctx context.Context, cfg C, rt http.RoundTripper, _ limiter.Limiter) (T, error) {
@@ -76,12 +85,15 @@ func NewHTTPBackendFactory[C any, T restic.Backend](parseConfigFn func(s string)
 	}
 }
 
-func NewLimitedBackendFactory[C any, T restic.Backend](parseConfigFn func(s string) (*C, error),
+func NewLimitedBackendFactory[C any, T restic.Backend](
+	scheme string,
+	parseConfigFn func(s string) (*C, error),
 	stripPasswordFn func(s string) string,
 	createFn func(ctx context.Context, cfg C, lim limiter.Limiter) (T, error),
 	openFn func(ctx context.Context, cfg C, lim limiter.Limiter) (T, error)) Factory {
 
 	return &genericBackendFactory[C, T]{
+		scheme:          scheme,
 		parseConfigFn:   parseConfigFn,
 		stripPasswordFn: stripPasswordFn,
 		createFn: func(ctx context.Context, cfg C, _ http.RoundTripper, lim limiter.Limiter) (T, error) {

@@ -38,7 +38,7 @@ type Backend struct {
 }
 
 func NewFactory() location.Factory {
-	return location.NewLimitedBackendFactory(ParseConfig, location.NoPassword, Create, Open)
+	return location.NewLimitedBackendFactory("rclone", ParseConfig, location.NoPassword, Create, Open)
 }
 
 // run starts command with args and initializes the StdioConn.

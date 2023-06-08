@@ -14,6 +14,7 @@ type testConfig struct {
 
 func testFactory() location.Factory {
 	return location.NewHTTPBackendFactory[testConfig, restic.Backend](
+		"local",
 		func(s string) (*testConfig, error) {
 			return &testConfig{loc: s}, nil
 		}, nil, nil, nil,
@@ -22,12 +23,12 @@ func testFactory() location.Factory {
 
 func TestParse(t *testing.T) {
 	registry := location.NewRegistry()
-	registry.Register("test", testFactory())
+	registry.Register(testFactory())
 
-	path := "test:example"
+	path := "local:example"
 	u, err := location.Parse(registry, path)
 	test.OK(t, err)
-	test.Equals(t, "test", u.Scheme)
+	test.Equals(t, "local", u.Scheme)
 	test.Equals(t, &testConfig{loc: path}, u.Config)
 }
 
@@ -43,7 +44,7 @@ func TestParseFallback(t *testing.T) {
 	}
 
 	registry := location.NewRegistry()
-	registry.Register("local", testFactory())
+	registry.Register(testFactory())
 
 	for _, path := range fallbackTests {
 		t.Run(path, func(t *testing.T) {

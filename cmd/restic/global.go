@@ -100,15 +100,15 @@ var internalGlobalCtx context.Context
 
 func init() {
 	backends := location.NewRegistry()
-	backends.Register("b2", b2.NewFactory())
-	backends.Register("local", local.NewFactory())
-	backends.Register("sftp", sftp.NewFactory())
-	backends.Register("s3", s3.NewFactory())
-	backends.Register("gs", gs.NewFactory())
-	backends.Register("azure", azure.NewFactory())
-	backends.Register("swift", swift.NewFactory())
-	backends.Register("rest", rest.NewFactory())
-	backends.Register("rclone", rclone.NewFactory())
+	backends.Register(azure.NewFactory())
+	backends.Register(b2.NewFactory())
+	backends.Register(gs.NewFactory())
+	backends.Register(local.NewFactory())
+	backends.Register(rclone.NewFactory())
+	backends.Register(rest.NewFactory())
+	backends.Register(s3.NewFactory())
+	backends.Register(sftp.NewFactory())
+	backends.Register(swift.NewFactory())
 	globalOptions.backends = backends
 
 	var cancel context.CancelFunc
