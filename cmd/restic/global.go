@@ -610,11 +610,6 @@ func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Optio
 		}
 	}
 
-	if loc.Scheme == "local" || loc.Scheme == "sftp" {
-		// wrap the backend in a LimitBackend so that the throughput is limited
-		be = limiter.LimitBackend(be, lim)
-	}
-
 	// check if config is there
 	fi, err := be.Stat(ctx, restic.Handle{Type: restic.ConfigFile})
 	if err != nil {

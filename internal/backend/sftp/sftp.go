@@ -44,11 +44,7 @@ type SFTP struct {
 var _ restic.Backend = &SFTP{}
 
 func NewFactory() location.Factory {
-	return location.NewLimitedBackendFactory(ParseConfig, location.NoPassword, func(ctx context.Context, cfg Config, _ limiter.Limiter) (*SFTP, error) {
-		return Create(ctx, cfg)
-	}, func(ctx context.Context, cfg Config, _ limiter.Limiter) (*SFTP, error) {
-		return Open(ctx, cfg)
-	})
+	return location.NewLimitedBackendFactory(ParseConfig, location.NoPassword, limiter.WrapBackendConstructor(Create), limiter.WrapBackendConstructor(Open))
 }
 
 const defaultLayout = "default"
