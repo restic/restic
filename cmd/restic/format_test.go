@@ -9,6 +9,13 @@ import (
 )
 
 func TestFormatNode(t *testing.T) {
+	// overwrite time zone to ensure the data is formatted reproducibly
+	tz := time.Local
+	time.Local = time.UTC
+	defer func() {
+		time.Local = tz
+	}()
+
 	testPath := "/test/path"
 	node := restic.Node{
 		Name:    "baz",
@@ -38,17 +45,17 @@ func TestFormatNode(t *testing.T) {
 			Node:   node,
 			long:   true,
 			human:  false,
-			expect: "----------  1000  2000 14680064 2020-01-01 22:04:05 " + testPath,
+			expect: "----------  1000  2000 14680064 2020-01-02 03:04:05 " + testPath,
 		},
 		{
 			path:   testPath,
 			Node:   node,
 			long:   true,
 			human:  true,
-			expect: "----------  1000  2000 14.000 MiB 2020-01-01 22:04:05 " + testPath,
+			expect: "----------  1000  2000 14.000 MiB 2020-01-02 03:04:05 " + testPath,
 		},
 	} {
 		r := formatNode(c.path, &c.Node, c.long, c.human)
-		rtest.Equals(t, r, c.expect)
+		rtest.Equals(t, c.expect, r)
 	}
 }
