@@ -21,6 +21,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/streaming"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
@@ -101,7 +102,16 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 			return nil, errors.Wrap(err, "NewAccountSASClientFromEndpointToken")
 		}
 	} else {
-		return nil, errors.New("no azure authentication information found")
+		debug.Log(" - using DefaultAzureCredential")
+		cred, err := azidentity.NewDefaultAzureCredential(nil)
+		if err != nil {
+			return nil, errors.Wrap(err, "NewDefaultAzureCredential")
+		}
+
+		client, err = azContainer.NewClient(url, cred, opts)
+		if err != nil {
+			return nil, errors.Wrap(err, "NewClient")
+		}
 	}
 
 	be := &Backend{
