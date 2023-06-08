@@ -1,9 +1,12 @@
 package backup
 
 import (
+	"fmt"
 	"math"
 	"testing"
 	"time"
+
+	rtest "github.com/restic/restic/internal/test"
 )
 
 const float64EqualityThreshold = 1e-6
@@ -19,17 +22,13 @@ func TestEstimatorDefault(t *testing.T) {
 	var start time.Time
 	e := newRateEstimator(start)
 	r := e.rate(start)
-	if math.IsNaN(r) || r != 0 {
-		t.Fatalf("e.Rate == %v, want zero", r)
-	}
+	rtest.Assert(t, r == 0, "e.Rate == %v, want zero", r)
 	r = e.rate(start.Add(time.Hour))
-	if math.IsNaN(r) || r != 0 {
-		t.Fatalf("e.Rate == %v, want zero", r)
-	}
+	rtest.Assert(t, r == 0, "e.Rate == %v, want zero", r)
 }
 
 func TestEstimatorSimple(t *testing.T) {
-	var when time.Time
+	var start time.Time
 	type testcase struct {
 		bytes uint64
 		when  time.Duration
@@ -43,12 +42,13 @@ func TestEstimatorSimple(t *testing.T) {
 		{60, time.Minute, 1},
 	}
 	for _, c := range cases {
-		e := newRateEstimator(when)
-		e.recordBytes(when.Add(time.Second), c.bytes)
-		rate := e.rate(when.Add(c.when))
-		if !almostEqual(rate, c.rate) {
-			t.Fatalf("e.Rate == %v, want %v (testcase %+v)", rate, c.rate, c)
-		}
+		name := fmt.Sprintf("%+v", c)
+		t.Run(name, func(t *testing.T) {
+			e := newRateEstimator(start)
+			e.recordBytes(start.Add(time.Second), c.bytes)
+			rate := e.rate(start.Add(c.when))
+			rtest.Assert(t, almostEqual(rate, c.rate), "e.Rate == %v, want %v", rate, c.rate)
+		})
 	}
 }
 
@@ -60,42 +60,27 @@ func TestBucketWidth(t *testing.T) {
 	e := newRateEstimator(when)
 	e.recordBytes(when, 1)
 	e.recordBytes(when.Add(bucketWidth-time.Nanosecond), 1)
-	if e.buckets.Len() != 1 {
-		t.Fatalf("e.buckets.Len() is %d, want 1", e.buckets.Len())
-	}
+	rtest.Assert(t, e.buckets.Len() == 1, "e.buckets.Len() is %d, want 1", e.buckets.Len())
+
 	b := e.buckets.Back().Value.(*rateBucket)
-	if b.totalBytes != 2 {
-		t.Fatalf("b.totalBytes is %d, want 2", b.totalBytes)
-	}
-	if b.end != when.Add(bucketWidth) {
-		t.Fatalf("b.end is %v, want %v", b.end, when.Add(bucketWidth))
-	}
+	rtest.Assert(t, b.totalBytes == 2, "b.totalBytes is %d, want 2", b.totalBytes)
+	rtest.Assert(t, b.end == when.Add(bucketWidth), "b.end is %v, want %v", b.end, when.Add(bucketWidth))
 
 	// Recording a byte outside the bucket width causes another bucket.
 	e.recordBytes(when.Add(bucketWidth), 1)
-	if e.buckets.Len() != 2 {
-		t.Fatalf("e.buckets.Len() is %d, want 2", e.buckets.Len())
-	}
+	rtest.Assert(t, e.buckets.Len() == 2, "e.buckets.Len() is %d, want 2", e.buckets.Len())
+
 	b = e.buckets.Back().Value.(*rateBucket)
-	if b.totalBytes != 1 {
-		t.Fatalf("b.totalBytes is %d, want 1", b.totalBytes)
-	}
-	if b.end != when.Add(2*bucketWidth) {
-		t.Fatalf("b.end is %v, want %v", b.end, when.Add(bucketWidth))
-	}
+	rtest.Assert(t, b.totalBytes == 1, "b.totalBytes is %d, want 1", b.totalBytes)
+	rtest.Assert(t, b.end == when.Add(2*bucketWidth), "b.end is %v, want %v", b.end, when.Add(bucketWidth))
 
 	// Recording a byte after a longer delay creates a sparse bucket list.
 	e.recordBytes(when.Add(time.Hour+time.Millisecond), 7)
-	if e.buckets.Len() != 3 {
-		t.Fatalf("e.buckets.Len() is %d, want 3", e.buckets.Len())
-	}
+	rtest.Assert(t, e.buckets.Len() == 3, "e.buckets.Len() is %d, want 3", e.buckets.Len())
+
 	b = e.buckets.Back().Value.(*rateBucket)
-	if b.totalBytes != 7 {
-		t.Fatalf("b.totalBytes is %d, want 7", b.totalBytes)
-	}
-	if b.end != when.Add(time.Hour+time.Millisecond+time.Second) {
-		t.Fatalf("b.end is %v, want %v", b.end, when.Add(time.Hour+time.Millisecond+time.Second))
-	}
+	rtest.Assert(t, b.totalBytes == 7, "b.totalBytes is %d, want 7", b.totalBytes)
+	rtest.Equals(t, when.Add(time.Hour+time.Millisecond+time.Second), b.end)
 }
 
 type chunk struct {
@@ -103,17 +88,12 @@ type chunk struct {
 	bytes       uint64 // byte count (every second)
 }
 
-func applyChunk(c chunk, t time.Time, e *rateEstimator) time.Time {
-	for i := uint64(0); i < c.repetitions; i++ {
-		e.recordBytes(t, c.bytes)
-		t = t.Add(time.Second)
-	}
-	return t
-}
-
 func applyChunks(chunks []chunk, t time.Time, e *rateEstimator) time.Time {
 	for _, c := range chunks {
-		t = applyChunk(c, t, e)
+		for i := uint64(0); i < c.repetitions; i++ {
+			e.recordBytes(t, c.bytes)
+			t = t.Add(time.Second)
+		}
 	}
 	return t
 }
@@ -221,13 +201,13 @@ func TestEstimatorResponsiveness(t *testing.T) {
 		},
 	}
 
-	for i, c := range cases {
-		var w time.Time
-		e := newRateEstimator(w)
-		w = applyChunks(c.chunks, w, e)
-		r := e.rate(w)
-		if !almostEqual(r, c.rate) {
-			t.Fatalf("e.Rate == %f, want %f (testcase %d %+v)", r, c.rate, i, c)
-		}
+	for _, c := range cases {
+		t.Run(c.description, func(t *testing.T) {
+			var w time.Time
+			e := newRateEstimator(w)
+			w = applyChunks(c.chunks, w, e)
+			r := e.rate(w)
+			rtest.Assert(t, almostEqual(r, c.rate), "e.Rate == %f, want %f", r, c.rate)
+		})
 	}
 }

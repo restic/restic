@@ -18,7 +18,7 @@ type rateEstimator struct {
 	totalBytes uint64
 }
 
-// newRateEstimator returns an esimator initialized to a presumed start time.
+// newRateEstimator returns an estimator initialized to a presumed start time.
 func newRateEstimator(start time.Time) *rateEstimator {
 	return &rateEstimator{buckets: list.New(), start: start}
 }

@@ -76,7 +76,8 @@ func NewProgress(printer ProgressPrinter, interval time.Duration) *Progress {
 			var secondsRemaining uint64
 			if p.scanFinished {
 				rate := p.estimator.rate(time.Now())
-				if rate <= 0 {
+				tooSlowCutoff := 1024.
+				if rate <= tooSlowCutoff {
 					secondsRemaining = 0
 				} else {
 					todo := float64(p.total.Bytes - p.processed.Bytes)
