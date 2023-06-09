@@ -201,27 +201,19 @@ jobs:
   cross_compile:
     strategy:
 
-      # ATTENTION: the list of architectures must be in sync with helpers/build-release-binaries/main.go!
       matrix:
         # run cross-compile in three batches parallel so the overall tests run faster
-        targets:
-          - "linux/386 linux/amd64 linux/arm linux/arm64 linux/ppc64le linux/mips linux/mipsle linux/mips64 linux/mips64le linux/riscv64 linux/s390x"
-
-          - "openbsd/386 openbsd/amd64 \
-            freebsd/386 freebsd/amd64 freebsd/arm \
-            aix/ppc64 \
-            darwin/amd64 darwin/arm64"
-
-          - "netbsd/386 netbsd/amd64 \
-            windows/386 windows/amd64 \
-            solaris/amd64"
+        subset:
+          - "0/3"
+          - "1/3"
+          - "2/3"
 
     env:
       GOPROXY: https://proxy.golang.org
 
     runs-on: ubuntu-latest
 
-    name: Cross Compile for ${{ matrix.targets }}
+    name: Cross Compile for subset ${{ matrix.subset }}
 
     steps:
       - name: Set up Go ${{ env.latest_go }}
@@ -229,21 +221,14 @@ jobs:
         with:
           go-version: ${{ env.latest_go }}
 
-      - name: Install gox
-        run: |
-          go install github.com/mitchellh/gox@latest
-
       - name: Check out code
         uses: actions/checkout@v3
 
-      - name: Cross-compile with gox for ${{ matrix.targets }}
-        env:
-          GOFLAGS: "-trimpath"
-          GOX_ARCHS: "${{ matrix.targets }}"
+      - name: Cross-compile for subset ${{ matrix.subset }}
         run: |
-          mkdir build-output
-          gox -parallel 2 -verbose -osarch "$GOX_ARCHS" -output "build-output/{{.Dir}}_{{.OS}}_{{.Arch}}" ./cmd/restic
-          gox -parallel 2 -verbose -osarch "$GOX_ARCHS" -tags debug -output "build-output/{{.Dir}}_{{.OS}}_{{.Arch}}_debug" ./cmd/restic
+          mkdir build-output build-output-debug
+          go run ./helpers/build-release-binaries/main.go -o build-output -s . --platform-subset ${{ matrix.subset }}
+          go run ./helpers/build-release-binaries/main.go -o build-output-debug -s . --platform-subset ${{ matrix.subset }} --tags debug
 
   lint:
     name: lint

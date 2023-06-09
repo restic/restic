@@ -20,6 +20,7 @@ var opts = struct {
 	Verbose        bool
 	SourceDir      string
 	OutputDir      string
+	Tags           string
 	PlatformSubset string
 	Version        string
 }{}
@@ -28,6 +29,7 @@ func init() {
 	pflag.BoolVarP(&opts.Verbose, "verbose", "v", false, "be verbose")
 	pflag.StringVarP(&opts.SourceDir, "source", "s", "/restic", "path to the source code `directory`")
 	pflag.StringVarP(&opts.OutputDir, "output", "o", "/output", "path to the output `directory`")
+	pflag.StringVar(&opts.Tags, "tags", "", "additional build `tags`")
 	pflag.StringVar(&opts.PlatformSubset, "platform-subset", "", "specify `n/t` to only build this subset")
 	pflag.StringVar(&opts.Version, "version", "", "use `x.y.z` as the version for output files")
 	pflag.Parse()
@@ -100,10 +102,15 @@ func build(sourceDir, outputDir, goos, goarch string) (filename string) {
 	}
 	outputFile := filepath.Join(outputDir, filename)
 
+	tags := "selfupdate"
+	if opts.Tags != "" {
+		tags += "," + opts.Tags
+	}
+
 	c := exec.Command("go", "build",
 		"-o", outputFile,
 		"-ldflags", "-s -w",
-		"-tags", "selfupdate",
+		"-tags", tags,
 		"./cmd/restic",
 	)
 	c.Stdout = os.Stdout
@@ -225,7 +232,6 @@ func buildTargets(sourceDir, outputDir string, targets map[string][]string) {
 	msg("build finished in %.3fs", time.Since(start).Seconds())
 }
 
-// ATTENTION: the list of architectures must be in sync with .github/workflows/tests.yml!
 var defaultBuildTargets = map[string][]string{
 	"aix":     {"ppc64"},
 	"darwin":  {"amd64", "arm64"},
