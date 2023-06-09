@@ -1,4 +1,4 @@
-package restorer
+package fs
 
 import (
 	"os"
@@ -6,7 +6,7 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func preallocateFile(wr *os.File, size int64) error {
+func PreallocateFile(wr *os.File, size int64) error {
 	// try contiguous first
 	fst := unix.Fstore_t{
 		Flags:   unix.F_ALLOCATECONTIG | unix.F_ALLOCATEALL,

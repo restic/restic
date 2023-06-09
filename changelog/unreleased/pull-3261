@@ -1,0 +1,8 @@
+Enhancement: Reduce file fragmentation for local backend
+
+Before this change, local backend files could become fragmented.
+Now restic will try to preallocate space for pack files to avoid
+their fragmentation.
+
+https://github.com/restic/restic/issues/2679
+https://github.com/restic/restic/pull/3261
