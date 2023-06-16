@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -52,4 +54,13 @@ func FormatSeconds(sec uint64) string {
 		return fmt.Sprintf("%d:%02d:%02d", hours, min, sec)
 	}
 	return fmt.Sprintf("%d:%02d", min, sec)
+}
+
+func ToJSONString(status interface{}) string {
+	buf := new(bytes.Buffer)
+	err := json.NewEncoder(buf).Encode(status)
+	if err != nil {
+		panic(err)
+	}
+	return buf.String()
 }

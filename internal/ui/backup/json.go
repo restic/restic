@@ -1,8 +1,6 @@
 package backup
 
 import (
-	"bytes"
-	"encoding/json"
 	"sort"
 	"time"
 
@@ -32,21 +30,12 @@ func NewJSONProgress(term *termstatus.Terminal, verbosity uint) *JSONProgress {
 	}
 }
 
-func toJSONString(status interface{}) string {
-	buf := new(bytes.Buffer)
-	err := json.NewEncoder(buf).Encode(status)
-	if err != nil {
-		panic(err)
-	}
-	return buf.String()
-}
-
 func (b *JSONProgress) print(status interface{}) {
-	b.term.Print(toJSONString(status))
+	b.term.Print(ui.ToJSONString(status))
 }
 
 func (b *JSONProgress) error(status interface{}) {
-	b.term.Error(toJSONString(status))
+	b.term.Error(ui.ToJSONString(status))
 }
 
 // Update updates the status lines.
