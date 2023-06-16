@@ -1,11 +1,8 @@
-Enhancement: Keep oldest snapshot when there aren't enough snapshots
+Enhancement: Keep oldest snapshot when there are not enough snapshots
 
-The `forget` command does not preserve the oldest snapshot incase the 
-keep-* parameters are not satisfied, which led to users not being able to
-preserve old data. Now, restic will always preserve the oldest snapshot 
-whenever any of the keep-* options to the `forget` command are not 
-satisfied.
-
+The `forget` command now additionally preserves the oldest snapshot if fewer
+snapshots are kept than allowed by the `--keep-*` parameters. This maximizes
+amount of history kept while the specified limits are not yet reached.
 
 https://github.com/restic/restic/issues/3624
 https://github.com/restic/restic/pull/4366
