@@ -17,12 +17,12 @@ import (
 // needs to be resized when the table grows, preventing memory usage spikes.
 type indexMap struct {
 	// The number of buckets is always a power of two and never zero.
-	buckets    []*indexEntry
+	buckets    []uint
 	numentries uint
 
 	mh maphash.Hash
 
-	free *indexEntry // Free list.
+	blockList hashedArrayTree
 }
 
 const (
@@ -41,7 +41,7 @@ func (m *indexMap) add(id restic.ID, packIdx int, offset, length uint32, uncompr
 	}
 
 	h := m.hash(id)
-	e := m.newEntry()
+	e, idx := m.newEntry()
 	e.id = id
 	e.next = m.buckets[h] // Prepend to existing chain.
 	e.packIndex = packIdx
@@ -49,18 +49,16 @@ func (m *indexMap) add(id restic.ID, packIdx int, offset, length uint32, uncompr
 	e.length = length
 	e.uncompressedLength = uncompressedLength
 
-	m.buckets[h] = e
+	m.buckets[h] = idx
 	m.numentries++
 }
 
 // foreach calls fn for all entries in the map, until fn returns false.
 func (m *indexMap) foreach(fn func(*indexEntry) bool) {
-	for _, e := range m.buckets {
-		for e != nil {
-			if !fn(e) {
-				return
-			}
-			e = e.next
+	blockCount := m.blockList.Size()
+	for i := uint(1); i < blockCount; i++ {
+		if !fn(m.resolve(i)) {
+			return
 		}
 	}
 }
@@ -72,7 +70,10 @@ func (m *indexMap) foreachWithID(id restic.ID, fn func(*indexEntry)) {
 	}
 
 	h := m.hash(id)
-	for e := m.buckets[h]; e != nil; e = e.next {
+	ei := m.buckets[h]
+	for ei != 0 {
+		e := m.resolve(ei)
+		ei = e.next
 		if e.id != id {
 			continue
 		}
@@ -87,26 +88,27 @@ func (m *indexMap) get(id restic.ID) *indexEntry {
 	}
 
 	h := m.hash(id)
-	for e := m.buckets[h]; e != nil; e = e.next {
+	ei := m.buckets[h]
+	for ei != 0 {
+		e := m.resolve(ei)
 		if e.id == id {
 			return e
 		}
+		ei = e.next
 	}
 	return nil
 }
 
 func (m *indexMap) grow() {
-	old := m.buckets
-	m.buckets = make([]*indexEntry, growthFactor*len(m.buckets))
+	m.buckets = make([]uint, growthFactor*len(m.buckets))
 
-	for _, e := range old {
-		for e != nil {
-			h := m.hash(e.id)
-			next := e.next
-			e.next = m.buckets[h]
-			m.buckets[h] = e
-			e = next
-		}
+	blockCount := m.blockList.Size()
+	for i := uint(1); i < blockCount; i++ {
+		e := m.resolve(i)
+
+		h := m.hash(e.id)
+		e.next = m.buckets[h]
+		m.buckets[h] = i
 	}
 }
 
@@ -124,47 +126,106 @@ func (m *indexMap) hash(id restic.ID) uint {
 
 func (m *indexMap) init() {
 	const initialBuckets = 64
-	m.buckets = make([]*indexEntry, initialBuckets)
+	m.buckets = make([]uint, initialBuckets)
+	// first entry in blockList serves as null byte
+	m.blockList = *newHAT()
+	m.newEntry()
 }
 
 func (m *indexMap) len() uint { return m.numentries }
 
-func (m *indexMap) newEntry() *indexEntry {
-	// We keep a free list of objects to speed up allocation and GC.
-	// There's an obvious trade-off here: allocating in larger batches
-	// means we allocate faster and the GC has to keep fewer bits to track
-	// what we have in use, but it means we waste some space.
-	//
-	// Then again, allocating each indexEntry separately also wastes space
-	// on 32-bit platforms, because the Go malloc has no size class for
-	// exactly 52 bytes, so it puts the indexEntry in a 64-byte slot instead.
-	// See src/runtime/sizeclasses.go in the Go source repo.
-	//
-	// The batch size of 4 means we hit the size classes for 4×64=256 bytes
-	// (64-bit) and 4×52=208 bytes (32-bit), wasting nothing in malloc on
-	// 64-bit and relatively little on 32-bit.
-	const entryAllocBatch = 4
+func (m *indexMap) newEntry() (*indexEntry, uint) {
+	return m.blockList.Alloc()
+}
 
-	e := m.free
-	if e != nil {
-		m.free = e.next
-	} else {
-		free := new([entryAllocBatch]indexEntry)
-		e = &free[0]
-		for i := 1; i < len(free)-1; i++ {
-			free[i].next = &free[i+1]
-		}
-		m.free = &free[1]
-	}
-
-	return e
+func (m *indexMap) resolve(idx uint) *indexEntry {
+	return m.blockList.Ref(idx)
 }
 
 type indexEntry struct {
 	id                 restic.ID
-	next               *indexEntry
+	next               uint
 	packIndex          int // Position in containing Index's packs field.
 	offset             uint32
 	length             uint32
 	uncompressedLength uint32
+}
+
+type hashedArrayTree struct {
+	mask      uint
+	maskShift uint
+	blockSize uint
+
+	size      uint
+	blockList [][]indexEntry
+}
+
+func newHAT() *hashedArrayTree {
+	// start with a small block size
+	blockSizePower := uint(2)
+	blockSize := uint(1 << blockSizePower)
+
+	return &hashedArrayTree{
+		mask:      blockSize - 1,
+		maskShift: blockSizePower,
+		blockSize: blockSize,
+		size:      0,
+		blockList: make([][]indexEntry, blockSize),
+	}
+}
+
+func (h *hashedArrayTree) Alloc() (*indexEntry, uint) {
+	h.grow()
+	size := h.size
+	idx, subIdx := h.index(size)
+	h.size++
+	return &h.blockList[idx][subIdx], size
+}
+
+func (h *hashedArrayTree) index(pos uint) (idx uint, subIdx uint) {
+	subIdx = pos & h.mask
+	idx = pos >> h.maskShift
+	return
+}
+
+func (h *hashedArrayTree) Ref(pos uint) *indexEntry {
+	if pos >= h.size {
+		panic("array index out of bounds")
+	}
+
+	idx, subIdx := h.index(pos)
+	return &h.blockList[idx][subIdx]
+}
+
+func (h *hashedArrayTree) Size() uint {
+	return h.size
+}
+
+func (h *hashedArrayTree) grow() {
+	idx, subIdx := h.index(h.size)
+	if int(idx) == len(h.blockList) {
+		// blockList is too small -> double list and block size
+		h.blockSize *= 2
+		h.mask = h.mask*2 + 1
+		h.maskShift++
+		idx = idx / 2
+
+		oldBlocks := h.blockList
+		h.blockList = make([][]indexEntry, h.blockSize)
+
+		// pairwise merging of blocks
+		for i := 0; i < len(oldBlocks); i += 2 {
+			block := make([]indexEntry, 0, h.blockSize)
+			block = append(block, oldBlocks[i]...)
+			block = append(block, oldBlocks[i+1]...)
+			h.blockList[i/2] = block
+			// allow GC
+			oldBlocks[i] = nil
+			oldBlocks[i+1] = nil
+		}
+	}
+	if subIdx == 0 {
+		// new index entry batch
+		h.blockList[idx] = make([]indexEntry, h.blockSize)
+	}
 }

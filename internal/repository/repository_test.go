@@ -346,6 +346,7 @@ func benchmarkLoadIndex(b *testing.B, version uint) {
 			},
 		})
 	}
+	idx.Finalize()
 
 	id, err := index.SaveIndex(context.TODO(), repo, idx)
 	rtest.OK(b, err)

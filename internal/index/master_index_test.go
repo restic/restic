@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"runtime"
 	"testing"
 	"time"
 
@@ -321,6 +322,17 @@ func BenchmarkMasterIndexEach(b *testing.B) {
 			entries++
 		})
 	}
+}
+
+func BenchmarkMasterIndexGC(b *testing.B) {
+	mIdx, _ := createRandomMasterIndex(b, rand.New(rand.NewSource(0)), 100, 10000)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		runtime.GC()
+	}
+	runtime.KeepAlive(mIdx)
 }
 
 var (
