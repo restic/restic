@@ -183,6 +183,7 @@ type KeepReason struct {
 // according to the policy p. list is sorted in the process. reasons contains
 // the reasons to keep each snapshot, it is in the same order as keep.
 func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots, reasons []KeepReason) {
+	// sort newest snapshots first
 	sort.Stable(list)
 
 	if p.Empty() {
@@ -256,7 +257,9 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots, reason
 			// -1 means "keep all"
 			if b.Count > 0 || b.Count == -1 {
 				val := b.bucker(cur.Time, nr)
-				if val != b.Last {
+				// also keep the oldest snapshot if the bucket has some counts left. This maximizes the
+				// the history length kept while some counts are left.
+				if val != b.Last || nr == len(list)-1 {
 					debug.Log("keep %v %v, bucker %v, val %v\n", cur.Time, cur.id.Str(), i, val)
 					keepSnap = true
 					buckets[i].Last = val
@@ -275,7 +278,7 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots, reason
 
 				if cur.Time.After(t) {
 					val := b.bucker(cur.Time, nr)
-					if val != b.Last {
+					if val != b.Last || nr == len(list)-1 {
 						debug.Log("keep %v, time %v, ID %v, bucker %v, val %v %v\n", b.reason, cur.Time, cur.id.Str(), i, val, b.Last)
 						keepSnap = true
 						bucketsWithin[i].Last = val
