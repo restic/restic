@@ -108,11 +108,12 @@ retryLoop:
 	}
 	lockInfo.refreshWG.Add(2)
 	refreshChan := make(chan struct{})
+	forcedRefreshChan := make(chan struct{})
 
 	globalLocks.Lock()
 	globalLocks.locks[lock] = lockInfo
-	go refreshLocks(ctx, lock, lockInfo, refreshChan)
-	go monitorLockRefresh(ctx, lockInfo, refreshChan)
+	go refreshLocks(ctx, lock, lockInfo, refreshChan, forcedRefreshChan)
+	go monitorLockRefresh(ctx, lock, lockInfo, refreshChan, forcedRefreshChan)
 	globalLocks.Unlock()
 
 	return lock, ctx, err
@@ -124,7 +125,7 @@ var refreshInterval = 5 * time.Minute
 // the difference allows to compensate for a small time drift between clients.
 var refreshabilityTimeout = restic.StaleLockTimeout - refreshInterval*3/2
 
-func refreshLocks(ctx context.Context, lock *restic.Lock, lockInfo *lockContext, refreshed chan<- struct{}) {
+func refreshLocks(ctx context.Context, lock *restic.Lock, lockInfo *lockContext, refreshed chan<- struct{}, forcedRefresh <-chan struct{}) {
 	debug.Log("start")
 	ticker := time.NewTicker(refreshInterval)
 	lastRefresh := lock.Time
@@ -149,6 +150,11 @@ func refreshLocks(ctx context.Context, lock *restic.Lock, lockInfo *lockContext,
 		case <-ctx.Done():
 			debug.Log("terminate")
 			return
+
+		case <-forcedRefresh:
+			// update lock refresh time
+			lastRefresh = lock.Time
+
 		case <-ticker.C:
 			if time.Since(lastRefresh) > refreshabilityTimeout {
 				// the lock is too old, wait until the expiry monitor cancels the context
@@ -161,7 +167,7 @@ func refreshLocks(ctx context.Context, lock *restic.Lock, lockInfo *lockContext,
 				Warnf("unable to refresh lock: %v\n", err)
 			} else {
 				lastRefresh = lock.Time
-				// inform monitor gorountine about successful refresh
+				// inform monitor goroutine about successful refresh
 				select {
 				case <-ctx.Done():
 				case refreshed <- struct{}{}:
@@ -171,7 +177,7 @@ func refreshLocks(ctx context.Context, lock *restic.Lock, lockInfo *lockContext,
 	}
 }
 
-func monitorLockRefresh(ctx context.Context, lockInfo *lockContext, refreshed <-chan struct{}) {
+func monitorLockRefresh(ctx context.Context, lock *restic.Lock, lockInfo *lockContext, refreshed <-chan struct{}, forcedRefresh chan<- struct{}) {
 	// time.Now() might use a monotonic timer which is paused during standby
 	// convert to unix time to ensure we compare real time values
 	lastRefresh := time.Now().UnixNano()
@@ -183,9 +189,9 @@ func monitorLockRefresh(ctx context.Context, lockInfo *lockContext, refreshed <-
 	// timers are paused during standby, which is a problem as the refresh timeout
 	// _must_ expire if the host was too long in standby. Thus fall back to periodic checks
 	// https://github.com/golang/go/issues/35012
-	timer := time.NewTimer(pollDuration)
+	ticker := time.NewTicker(pollDuration)
 	defer func() {
-		timer.Stop()
+		ticker.Stop()
 		lockInfo.cancel()
 		lockInfo.refreshWG.Done()
 	}()
@@ -197,10 +203,20 @@ func monitorLockRefresh(ctx context.Context, lockInfo *lockContext, refreshed <-
 			return
 		case <-refreshed:
 			lastRefresh = time.Now().UnixNano()
-		case <-timer.C:
+		case <-ticker.C:
 			if time.Now().UnixNano()-lastRefresh < refreshabilityTimeout.Nanoseconds() {
-				// restart timer
-				timer.Reset(pollDuration)
+				continue
+			}
+
+			// keep on going if our current lock still exists
+			if tryRefreshStaleLock(ctx, lock) {
+				lastRefresh = time.Now().UnixNano()
+
+				// inform refresh gorountine about forced refresh
+				select {
+				case <-ctx.Done():
+				case forcedRefresh <- struct{}{}:
+				}
 				continue
 			}
 
@@ -208,6 +224,16 @@ func monitorLockRefresh(ctx context.Context, lockInfo *lockContext, refreshed <-
 			return
 		}
 	}
+}
+
+func tryRefreshStaleLock(ctx context.Context, lock *restic.Lock) bool {
+	err := lock.RefreshStaleLock(ctx)
+	if err != nil {
+		Warnf("failed to refresh stale lock: %v\n", err)
+		return false
+	}
+
+	return true
 }
 
 func unlockRepo(lock *restic.Lock) {
