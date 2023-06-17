@@ -232,6 +232,8 @@ modifying the repository. Instead restic will only print the actions it would
 perform.
 
 
+.. _checking-integrity:
+
 Checking integrity and consistency
 ==================================
 
@@ -283,6 +285,14 @@ If the repository structure is intact, restic will show that no errors were foun
     check all packs
     check snapshots, trees and blobs
     no errors were found
+
+By default, check creates a new temporary cache directory to verify that the
+data stored in the repository is intact. To reuse the existing cache, you can
+use the ``--with-cache`` flag.
+
+If the cache directory is not explicitly set, then ``check`` creates its
+temporary cache directory in the temporary directory, see :ref:`temporary_files`.
+Otherwise, the specified cache directory is used, as described in :ref:`caching`.
 
 By default, the ``check`` command does not verify that the actual pack files
 on disk in the repository are unmodified, because doing so requires reading
