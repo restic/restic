@@ -12,6 +12,7 @@ import (
 )
 
 type lockContext struct {
+	lock      *restic.Lock
 	cancel    context.CancelFunc
 	refreshWG sync.WaitGroup
 }
@@ -104,6 +105,7 @@ retryLoop:
 
 	ctx, cancel := context.WithCancel(ctx)
 	lockInfo := &lockContext{
+		lock:   lock,
 		cancel: cancel,
 	}
 	lockInfo.refreshWG.Add(2)
@@ -112,8 +114,8 @@ retryLoop:
 
 	globalLocks.Lock()
 	globalLocks.locks[lock] = lockInfo
-	go refreshLocks(ctx, lock, lockInfo, refreshChan, forcedRefreshChan)
-	go monitorLockRefresh(ctx, lock, lockInfo, refreshChan, forcedRefreshChan)
+	go refreshLocks(ctx, lockInfo, refreshChan, forcedRefreshChan)
+	go monitorLockRefresh(ctx, lockInfo, refreshChan, forcedRefreshChan)
 	globalLocks.Unlock()
 
 	return lock, ctx, err
@@ -125,8 +127,9 @@ var refreshInterval = 5 * time.Minute
 // the difference allows to compensate for a small time drift between clients.
 var refreshabilityTimeout = restic.StaleLockTimeout - refreshInterval*3/2
 
-func refreshLocks(ctx context.Context, lock *restic.Lock, lockInfo *lockContext, refreshed chan<- struct{}, forcedRefresh <-chan struct{}) {
+func refreshLocks(ctx context.Context, lockInfo *lockContext, refreshed chan<- struct{}, forcedRefresh <-chan struct{}) {
 	debug.Log("start")
+	lock := lockInfo.lock
 	ticker := time.NewTicker(refreshInterval)
 	lastRefresh := lock.Time
 
@@ -177,7 +180,7 @@ func refreshLocks(ctx context.Context, lock *restic.Lock, lockInfo *lockContext,
 	}
 }
 
-func monitorLockRefresh(ctx context.Context, lock *restic.Lock, lockInfo *lockContext, refreshed <-chan struct{}, forcedRefresh chan<- struct{}) {
+func monitorLockRefresh(ctx context.Context, lockInfo *lockContext, refreshed <-chan struct{}, forcedRefresh chan<- struct{}) {
 	// time.Now() might use a monotonic timer which is paused during standby
 	// convert to unix time to ensure we compare real time values
 	lastRefresh := time.Now().UnixNano()
@@ -209,7 +212,7 @@ func monitorLockRefresh(ctx context.Context, lock *restic.Lock, lockInfo *lockCo
 			}
 
 			// keep on going if our current lock still exists
-			if tryRefreshStaleLock(ctx, lock) {
+			if tryRefreshStaleLock(ctx, lockInfo.lock) {
 				lastRefresh = time.Now().UnixNano()
 
 				// inform refresh gorountine about forced refresh
