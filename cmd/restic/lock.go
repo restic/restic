@@ -115,7 +115,7 @@ retryLoop:
 	globalLocks.Lock()
 	globalLocks.locks[lock] = lockInfo
 	go refreshLocks(ctx, lockInfo, refreshChan, forcedRefreshChan)
-	go monitorLockRefresh(ctx, lockInfo, refreshChan, forcedRefreshChan)
+	go monitorLockRefresh(ctx, repo.Backend(), lockInfo, refreshChan, forcedRefreshChan)
 	globalLocks.Unlock()
 
 	return lock, ctx, err
@@ -180,7 +180,7 @@ func refreshLocks(ctx context.Context, lockInfo *lockContext, refreshed chan<- s
 	}
 }
 
-func monitorLockRefresh(ctx context.Context, lockInfo *lockContext, refreshed <-chan struct{}, forcedRefresh chan<- struct{}) {
+func monitorLockRefresh(ctx context.Context, backend restic.Backend, lockInfo *lockContext, refreshed <-chan struct{}, forcedRefresh chan<- struct{}) {
 	// time.Now() might use a monotonic timer which is paused during standby
 	// convert to unix time to ensure we compare real time values
 	lastRefresh := time.Now().UnixNano()
@@ -212,7 +212,7 @@ func monitorLockRefresh(ctx context.Context, lockInfo *lockContext, refreshed <-
 			}
 
 			// keep on going if our current lock still exists
-			if tryRefreshStaleLock(ctx, lockInfo.lock) {
+			if tryRefreshStaleLock(ctx, backend, lockInfo.lock, lockInfo.cancel) {
 				lastRefresh = time.Now().UnixNano()
 
 				// inform refresh gorountine about forced refresh
@@ -229,10 +229,19 @@ func monitorLockRefresh(ctx context.Context, lockInfo *lockContext, refreshed <-
 	}
 }
 
-func tryRefreshStaleLock(ctx context.Context, lock *restic.Lock) bool {
+func tryRefreshStaleLock(ctx context.Context, backend restic.Backend, lock *restic.Lock, cancel context.CancelFunc) bool {
+	freeze := restic.AsBackend[restic.FreezeBackend](backend)
+	if freeze != nil {
+		debug.Log("freezing backend")
+		freeze.Freeze()
+		defer freeze.Unfreeze()
+	}
+
 	err := lock.RefreshStaleLock(ctx)
 	if err != nil {
 		Warnf("failed to refresh stale lock: %v\n", err)
+		// cancel context while the backend is still frozen to prevent accidental modifications
+		cancel()
 		return false
 	}
 
