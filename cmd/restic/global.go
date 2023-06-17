@@ -623,7 +623,7 @@ func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Optio
 
 // Create the backend specified by URI.
 func create(ctx context.Context, s string, gopts GlobalOptions, opts options.Options) (restic.Backend, error) {
-	debug.Log("parsing location %v", s)
+	debug.Log("parsing location %v", location.StripPassword(gopts.backends, s))
 	loc, err := location.Parse(gopts.backends, s)
 	if err != nil {
 		return nil, err
