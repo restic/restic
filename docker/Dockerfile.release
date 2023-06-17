@@ -5,7 +5,7 @@ FROM --platform=linux/amd64 restic/builder:latest as helper
 ARG TARGETOS
 ARG TARGETARCH
 
-COPY . /restic
+COPY --chown=build . /restic
 RUN go run helpers/build-release-binaries/main.go --platform $TARGETOS/$TARGETARCH --skip-compress
 RUN mv /output/restic_${TARGETOS}_${TARGETARCH} /output/restic
 
