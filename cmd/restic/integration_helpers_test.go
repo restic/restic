@@ -206,6 +206,8 @@ func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
 
 		// replace this hook with "nil" if listing a filetype more than once is necessary
 		backendTestHook: func(r restic.Backend) (restic.Backend, error) { return newOrderedListOnceBackend(r), nil },
+		// start with default set of backends
+		backends: globalOptions.backends,
 	}
 
 	// always overwrite global options

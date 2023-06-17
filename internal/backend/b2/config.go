@@ -85,21 +85,11 @@ func ParseConfig(s string) (*Config, error) {
 var _ restic.ApplyEnvironmenter = &Config{}
 
 // ApplyEnvironment saves values from the environment to the config.
-func (cfg *Config) ApplyEnvironment(prefix string) error {
+func (cfg *Config) ApplyEnvironment(prefix string) {
 	if cfg.AccountID == "" {
 		cfg.AccountID = os.Getenv(prefix + "B2_ACCOUNT_ID")
 	}
-
-	if cfg.AccountID == "" {
-		return errors.Fatalf("unable to open B2 backend: Account ID ($B2_ACCOUNT_ID) is empty")
-	}
-
 	if cfg.Key.String() == "" {
 		cfg.Key = options.NewSecretString(os.Getenv(prefix + "B2_ACCOUNT_KEY"))
 	}
-
-	if cfg.Key.String() == "" {
-		return errors.Fatalf("unable to open B2 backend: Key ($B2_ACCOUNT_KEY) is empty")
-	}
-	return nil
 }

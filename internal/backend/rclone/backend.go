@@ -19,6 +19,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/limiter"
+	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/backend/rest"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -34,6 +35,10 @@ type Backend struct {
 	waitResult error
 	wg         *sync.WaitGroup
 	conn       *StdioConn
+}
+
+func NewFactory() location.Factory {
+	return location.NewLimitedBackendFactory("rclone", ParseConfig, location.NoPassword, Create, Open)
 }
 
 // run starts command with args and initializes the StdioConn.
@@ -134,7 +139,7 @@ func wrapConn(c *StdioConn, lim limiter.Limiter) *wrappedConn {
 }
 
 // New initializes a Backend and starts the process.
-func newBackend(cfg Config, lim limiter.Limiter) (*Backend, error) {
+func newBackend(ctx context.Context, cfg Config, lim limiter.Limiter) (*Backend, error) {
 	var (
 		args []string
 		err  error
@@ -197,7 +202,7 @@ func newBackend(cfg Config, lim limiter.Limiter) (*Backend, error) {
 		wg:     wg,
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	wg.Add(1)
@@ -256,8 +261,8 @@ func newBackend(cfg Config, lim limiter.Limiter) (*Backend, error) {
 }
 
 // Open starts an rclone process with the given config.
-func Open(cfg Config, lim limiter.Limiter) (*Backend, error) {
-	be, err := newBackend(cfg, lim)
+func Open(ctx context.Context, cfg Config, lim limiter.Limiter) (*Backend, error) {
+	be, err := newBackend(ctx, cfg, lim)
 	if err != nil {
 		return nil, err
 	}
@@ -272,7 +277,7 @@ func Open(cfg Config, lim limiter.Limiter) (*Backend, error) {
 		URL:         url,
 	}
 
-	restBackend, err := rest.Open(restConfig, debug.RoundTripper(be.tr))
+	restBackend, err := rest.Open(ctx, restConfig, debug.RoundTripper(be.tr))
 	if err != nil {
 		_ = be.Close()
 		return nil, err
@@ -283,8 +288,8 @@ func Open(cfg Config, lim limiter.Limiter) (*Backend, error) {
 }
 
 // Create initializes a new restic repo with rclone.
-func Create(ctx context.Context, cfg Config) (*Backend, error) {
-	be, err := newBackend(cfg, nil)
+func Create(ctx context.Context, cfg Config, lim limiter.Limiter) (*Backend, error) {
+	be, err := newBackend(ctx, cfg, lim)
 	if err != nil {
 		return nil, err
 	}

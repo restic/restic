@@ -75,6 +75,7 @@ type GlobalOptions struct {
 	stdout   io.Writer
 	stderr   io.Writer
 
+	backends                              *location.Registry
 	backendTestHook, backendInnerTestHook backendWrapper
 
 	// verbosity is set as follows:
@@ -98,6 +99,18 @@ var isReadingPassword bool
 var internalGlobalCtx context.Context
 
 func init() {
+	backends := location.NewRegistry()
+	backends.Register(azure.NewFactory())
+	backends.Register(b2.NewFactory())
+	backends.Register(gs.NewFactory())
+	backends.Register(local.NewFactory())
+	backends.Register(rclone.NewFactory())
+	backends.Register(rest.NewFactory())
+	backends.Register(s3.NewFactory())
+	backends.Register(sftp.NewFactory())
+	backends.Register(swift.NewFactory())
+	globalOptions.backends = backends
+
 	var cancel context.CancelFunc
 	internalGlobalCtx, cancel = context.WithCancel(context.Background())
 	AddCleanupHandler(func(code int) (int, error) {
@@ -537,9 +550,7 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 func parseConfig(loc location.Location, opts options.Options) (interface{}, error) {
 	cfg := loc.Config
 	if cfg, ok := cfg.(restic.ApplyEnvironmenter); ok {
-		if err := cfg.ApplyEnvironment(""); err != nil {
-			return nil, err
-		}
+		cfg.ApplyEnvironment("")
 	}
 
 	// only apply options for a particular backend here
@@ -554,8 +565,8 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 
 // Open the backend specified by a location config.
 func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Options) (restic.Backend, error) {
-	debug.Log("parsing location %v", location.StripPassword(s))
-	loc, err := location.Parse(s)
+	debug.Log("parsing location %v", location.StripPassword(gopts.backends, s))
+	loc, err := location.Parse(gopts.backends, s)
 	if err != nil {
 		return nil, errors.Fatalf("parsing repository location failed: %v", err)
 	}
@@ -576,32 +587,14 @@ func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Optio
 	lim := limiter.NewStaticLimiter(gopts.Limits)
 	rt = lim.Transport(rt)
 
-	switch loc.Scheme {
-	case "local":
-		be, err = local.Open(ctx, *cfg.(*local.Config))
-	case "sftp":
-		be, err = sftp.Open(ctx, *cfg.(*sftp.Config))
-	case "s3":
-		be, err = s3.Open(ctx, *cfg.(*s3.Config), rt)
-	case "gs":
-		be, err = gs.Open(*cfg.(*gs.Config), rt)
-	case "azure":
-		be, err = azure.Open(ctx, *cfg.(*azure.Config), rt)
-	case "swift":
-		be, err = swift.Open(ctx, *cfg.(*swift.Config), rt)
-	case "b2":
-		be, err = b2.Open(ctx, *cfg.(*b2.Config), rt)
-	case "rest":
-		be, err = rest.Open(*cfg.(*rest.Config), rt)
-	case "rclone":
-		be, err = rclone.Open(*cfg.(*rclone.Config), lim)
-
-	default:
+	factory := gopts.backends.Lookup(loc.Scheme)
+	if factory == nil {
 		return nil, errors.Fatalf("invalid backend: %q", loc.Scheme)
 	}
 
+	be, err = factory.Open(ctx, cfg, rt, lim)
 	if err != nil {
-		return nil, errors.Fatalf("unable to open repository at %v: %v", location.StripPassword(s), err)
+		return nil, errors.Fatalf("unable to open repository at %v: %v", location.StripPassword(gopts.backends, s), err)
 	}
 
 	// wrap with debug logging and connection limiting
@@ -615,15 +608,10 @@ func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Optio
 		}
 	}
 
-	if loc.Scheme == "local" || loc.Scheme == "sftp" {
-		// wrap the backend in a LimitBackend so that the throughput is limited
-		be = limiter.LimitBackend(be, lim)
-	}
-
 	// check if config is there
 	fi, err := be.Stat(ctx, restic.Handle{Type: restic.ConfigFile})
 	if err != nil {
-		return nil, errors.Fatalf("unable to open config file: %v\nIs there a repository at the following location?\n%v", err, location.StripPassword(s))
+		return nil, errors.Fatalf("unable to open config file: %v\nIs there a repository at the following location?\n%v", err, location.StripPassword(gopts.backends, s))
 	}
 
 	if fi.Size == 0 {
@@ -634,9 +622,9 @@ func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Optio
 }
 
 // Create the backend specified by URI.
-func create(ctx context.Context, s string, opts options.Options) (restic.Backend, error) {
-	debug.Log("parsing location %v", s)
-	loc, err := location.Parse(s)
+func create(ctx context.Context, s string, gopts GlobalOptions, opts options.Options) (restic.Backend, error) {
+	debug.Log("parsing location %v", location.StripPassword(gopts.backends, s))
+	loc, err := location.Parse(gopts.backends, s)
 	if err != nil {
 		return nil, err
 	}
@@ -651,31 +639,12 @@ func create(ctx context.Context, s string, opts options.Options) (restic.Backend
 		return nil, err
 	}
 
-	var be restic.Backend
-	switch loc.Scheme {
-	case "local":
-		be, err = local.Create(ctx, *cfg.(*local.Config))
-	case "sftp":
-		be, err = sftp.Create(ctx, *cfg.(*sftp.Config))
-	case "s3":
-		be, err = s3.Create(ctx, *cfg.(*s3.Config), rt)
-	case "gs":
-		be, err = gs.Create(ctx, *cfg.(*gs.Config), rt)
-	case "azure":
-		be, err = azure.Create(ctx, *cfg.(*azure.Config), rt)
-	case "swift":
-		be, err = swift.Open(ctx, *cfg.(*swift.Config), rt)
-	case "b2":
-		be, err = b2.Create(ctx, *cfg.(*b2.Config), rt)
-	case "rest":
-		be, err = rest.Create(ctx, *cfg.(*rest.Config), rt)
-	case "rclone":
-		be, err = rclone.Create(ctx, *cfg.(*rclone.Config))
-	default:
-		debug.Log("invalid repository scheme: %v", s)
-		return nil, errors.Fatalf("invalid scheme %q", loc.Scheme)
+	factory := gopts.backends.Lookup(loc.Scheme)
+	if factory == nil {
+		return nil, errors.Fatalf("invalid backend: %q", loc.Scheme)
 	}
 
+	be, err := factory.Create(ctx, cfg, rt, nil)
 	if err != nil {
 		return nil, err
 	}

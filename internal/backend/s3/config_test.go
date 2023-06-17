@@ -56,6 +56,24 @@ var configTests = []test.ConfigTestData[Config]{
 		Prefix:      "prefix/directory",
 		Connections: 5,
 	}},
+	{S: "s3:hostname.foo/foobar", Cfg: Config{
+		Endpoint:    "hostname.foo",
+		Bucket:      "foobar",
+		Prefix:      "",
+		Connections: 5,
+	}},
+	{S: "s3:hostname.foo/foobar/prefix/directory", Cfg: Config{
+		Endpoint:    "hostname.foo",
+		Bucket:      "foobar",
+		Prefix:      "prefix/directory",
+		Connections: 5,
+	}},
+	{S: "s3:https://hostname/foobar", Cfg: Config{
+		Endpoint:    "hostname",
+		Bucket:      "foobar",
+		Prefix:      "",
+		Connections: 5,
+	}},
 	{S: "s3:https://hostname:9999/foobar", Cfg: Config{
 		Endpoint:    "hostname:9999",
 		Bucket:      "foobar",

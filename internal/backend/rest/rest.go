@@ -13,6 +13,7 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
+	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -29,6 +30,10 @@ type Backend struct {
 	layout.Layout
 }
 
+func NewFactory() location.Factory {
+	return location.NewHTTPBackendFactory("rest", ParseConfig, StripPassword, Create, Open)
+}
+
 // the REST API protocol version is decided by HTTP request headers, these are the constants.
 const (
 	ContentTypeV1 = "application/vnd.x.restic.rest.v1"
@@ -36,7 +41,7 @@ const (
 )
 
 // Open opens the REST backend with the given config.
-func Open(cfg Config, rt http.RoundTripper) (*Backend, error) {
+func Open(_ context.Context, cfg Config, rt http.RoundTripper) (*Backend, error) {
 	// use url without trailing slash for layout
 	url := cfg.URL.String()
 	if url[len(url)-1] == '/' {
@@ -55,7 +60,7 @@ func Open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 
 // Create creates a new REST on server configured in config.
 func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, error) {
-	be, err := Open(cfg, rt)
+	be, err := Open(ctx, cfg, rt)
 	if err != nil {
 		return nil, err
 	}

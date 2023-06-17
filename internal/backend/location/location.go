@@ -4,15 +4,6 @@ package location
 import (
 	"strings"
 
-	"github.com/restic/restic/internal/backend/azure"
-	"github.com/restic/restic/internal/backend/b2"
-	"github.com/restic/restic/internal/backend/gs"
-	"github.com/restic/restic/internal/backend/local"
-	"github.com/restic/restic/internal/backend/rclone"
-	"github.com/restic/restic/internal/backend/rest"
-	"github.com/restic/restic/internal/backend/s3"
-	"github.com/restic/restic/internal/backend/sftp"
-	"github.com/restic/restic/internal/backend/swift"
 	"github.com/restic/restic/internal/errors"
 )
 
@@ -23,34 +14,8 @@ type Location struct {
 	Config interface{}
 }
 
-type parser struct {
-	scheme        string
-	parse         func(string) (interface{}, error)
-	stripPassword func(string) string
-}
-
-func configToAny[C any](parser func(string) (*C, error)) func(string) (interface{}, error) {
-	return func(s string) (interface{}, error) {
-		return parser(s)
-	}
-}
-
-// parsers is a list of valid config parsers for the backends. The first parser
-// is the fallback and should always be set to the local backend.
-var parsers = []parser{
-	{"b2", configToAny(b2.ParseConfig), noPassword},
-	{"local", configToAny(local.ParseConfig), noPassword},
-	{"sftp", configToAny(sftp.ParseConfig), noPassword},
-	{"s3", configToAny(s3.ParseConfig), noPassword},
-	{"gs", configToAny(gs.ParseConfig), noPassword},
-	{"azure", configToAny(azure.ParseConfig), noPassword},
-	{"swift", configToAny(swift.ParseConfig), noPassword},
-	{"rest", configToAny(rest.ParseConfig), rest.StripPassword},
-	{"rclone", configToAny(rclone.ParseConfig), noPassword},
-}
-
-// noPassword returns the repository location unchanged (there's no sensitive information there)
-func noPassword(s string) string {
+// NoPassword returns the repository location unchanged (there's no sensitive information there)
+func NoPassword(s string) string {
 	return s
 }
 
@@ -88,16 +53,13 @@ func isPath(s string) bool {
 // starts with a backend name followed by a colon, that backend's Parse()
 // function is called. Otherwise, the local backend is used which interprets s
 // as the name of a directory.
-func Parse(s string) (u Location, err error) {
+func Parse(registry *Registry, s string) (u Location, err error) {
 	scheme := extractScheme(s)
 	u.Scheme = scheme
 
-	for _, parser := range parsers {
-		if parser.scheme != scheme {
-			continue
-		}
-
-		u.Config, err = parser.parse(s)
+	factory := registry.Lookup(scheme)
+	if factory != nil {
+		u.Config, err = factory.ParseConfig(s)
 		if err != nil {
 			return Location{}, err
 		}
@@ -111,7 +73,12 @@ func Parse(s string) (u Location, err error) {
 	}
 
 	u.Scheme = "local"
-	u.Config, err = local.ParseConfig("local:" + s)
+	factory = registry.Lookup(u.Scheme)
+	if factory == nil {
+		return Location{}, errors.New("local backend not available")
+	}
+
+	u.Config, err = factory.ParseConfig("local:" + s)
 	if err != nil {
 		return Location{}, err
 	}
@@ -120,14 +87,12 @@ func Parse(s string) (u Location, err error) {
 }
 
 // StripPassword returns a displayable version of a repository location (with any sensitive information removed)
-func StripPassword(s string) string {
+func StripPassword(registry *Registry, s string) string {
 	scheme := extractScheme(s)
 
-	for _, parser := range parsers {
-		if parser.scheme != scheme {
-			continue
-		}
-		return parser.stripPassword(s)
+	factory := registry.Lookup(scheme)
+	if factory != nil {
+		return factory.StripPassword(s)
 	}
 	return s
 }

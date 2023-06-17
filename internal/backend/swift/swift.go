@@ -15,6 +15,7 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
+	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -33,6 +34,10 @@ type beSwift struct {
 
 // ensure statically that *beSwift implements restic.Backend.
 var _ restic.Backend = &beSwift{}
+
+func NewFactory() location.Factory {
+	return location.NewHTTPBackendFactory("swift", ParseConfig, location.NoPassword, Open, Open)
+}
 
 // Open opens the swift backend at a container in region. The container is
 // created if it does not exist yet.

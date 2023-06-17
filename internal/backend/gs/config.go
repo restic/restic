@@ -62,9 +62,8 @@ func ParseConfig(s string) (*Config, error) {
 var _ restic.ApplyEnvironmenter = &Config{}
 
 // ApplyEnvironment saves values from the environment to the config.
-func (cfg *Config) ApplyEnvironment(prefix string) error {
+func (cfg *Config) ApplyEnvironment(prefix string) {
 	if cfg.ProjectID == "" {
 		cfg.ProjectID = os.Getenv(prefix + "GOOGLE_PROJECT_ID")
 	}
-	return nil
 }

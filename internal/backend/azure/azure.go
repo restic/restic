@@ -14,6 +14,7 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
+	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -42,6 +43,10 @@ const defaultListMaxItems = 5000
 
 // make sure that *Backend implements backend.Backend
 var _ restic.Backend = &Backend{}
+
+func NewFactory() location.Factory {
+	return location.NewHTTPBackendFactory("azure", ParseConfig, location.NoPassword, Create, Open)
+}
 
 func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	debug.Log("open, config %#v", cfg)
