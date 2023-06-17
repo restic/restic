@@ -278,7 +278,7 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots, reason
 
 				if cur.Time.After(t) {
 					val := b.bucker(cur.Time, nr)
-					if val != b.Last {
+					if val != b.Last || nr == len(list)-1 {
 						debug.Log("keep %v, time %v, ID %v, bucker %v, val %v %v\n", b.reason, cur.Time, cur.id.Str(), i, val, b.Last)
 						keepSnap = true
 						bucketsWithin[i].Last = val

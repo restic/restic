@@ -44,6 +44,11 @@
       "time": "2014-11-22T10:20:30Z",
       "tree": null,
       "paths": null
+    },
+    {
+      "time": "2014-08-08T10:20:30Z",
+      "tree": null,
+      "paths": null
     }
   ],
   "reasons": [
@@ -145,6 +150,17 @@
     {
       "snapshot": {
         "time": "2014-11-22T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "yearly within 9999y"
+      ],
+      "counters": {}
+    },
+    {
+      "snapshot": {
+        "time": "2014-08-08T10:20:30Z",
         "tree": null,
         "paths": null
       },
