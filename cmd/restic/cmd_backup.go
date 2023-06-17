@@ -506,10 +506,13 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	if !gopts.JSON {
 		progressPrinter.V("lock repository")
 	}
-	lock, ctx, err := lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
-	defer unlockRepo(lock)
-	if err != nil {
-		return err
+	if !opts.DryRun {
+		var lock *restic.Lock
+		lock, ctx, err = lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
+		defer unlockRepo(lock)
+		if err != nil {
+			return err
+		}
 	}
 
 	// rejectByNameFuncs collect functions that can reject items from the backup based on path only
