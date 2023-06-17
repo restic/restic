@@ -68,6 +68,9 @@ it might be necessary to manually clean up stale lock files using
 On Windows, please set the environment variable `RESTIC_DEBUG_STACKTRACE_SIGINT`
 to `true` and press `Ctrl-C` to create a stacktrace.
 
+If you think restic uses too much memory or a too large cache directory, then
+please include the output of `restic stats --mode debug`.
+
 
 Development Environment
 =======================
