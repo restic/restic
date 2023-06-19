@@ -609,10 +609,6 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 }
 
 func (node *Node) fillExtendedAttributes(path string) error {
-	if node.Type == "symlink" {
-		return nil
-	}
-
 	xattrs, err := Listxattr(path)
 	debug.Log("fillExtendedAttributes(%v) %v %v", path, xattrs, err)
 	if err != nil {

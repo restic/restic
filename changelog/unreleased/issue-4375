@@ -1,0 +1,8 @@
+Enhancement: Add support for extended attributes on symlinks
+
+Restic now supports extended attributes on symlinks when backing up,
+restoring, or FUSE-mounting snapshots. This includes, for example, the
+`security.selinux` xattr on Linux distributions that use SELinux.
+
+https://github.com/restic/restic/issues/4375
+https://github.com/restic/restic/pull/4379
