@@ -1,0 +1,7 @@
+Enhancement: Include client version in snapshot metadata
+
+The client version number is now included in the `program_version` field of a snapshot.
+It can be inspected by using either `restic cat snapshot snapshotID` or `restic snapshots --json`.
+
+https://github.com/restic/restic/issues/4188
+https://github.com/restic/restic/pull/4378
