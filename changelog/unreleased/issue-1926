@@ -1,0 +1,5 @@
+Enhancemnet: Certificates can be passed through environment variables
+
+Certificates were passed by using the `--cacert` or `--tls-client-cerr` flags followed by the file paths. Restic will now grab the pathes to the certificates from the environment variables `RESTIC_CACERT` or `RESTIC_TLS_CERT` if `--cacert` or `--tls-client-cert` is not specified. 
+
+https://github.com/restic/restic/issues/1926  

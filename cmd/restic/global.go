@@ -139,6 +139,8 @@ func init() {
 	globalOptions.PasswordFile = os.Getenv("RESTIC_PASSWORD_FILE")
 	globalOptions.KeyHint = os.Getenv("RESTIC_KEY_HINT")
 	globalOptions.PasswordCommand = os.Getenv("RESTIC_PASSWORD_COMMAND")
+	globalOptions.RootCertFilenames = strings.Split(os.Getenv("RESTIC_CACERT"), ",")
+	globalOptions.TLSClientCertKeyFilename = os.Getenv("RESTIC_TLS_CERT")
 	comp := os.Getenv("RESTIC_COMPRESSION")
 	if comp != "" {
 		// ignore error as there's no good way to handle it
