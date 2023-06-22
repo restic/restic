@@ -135,7 +135,7 @@ func init() {
 	f.StringVar(&globalOptions.CacheDir, "cache-dir", "", "set the cache `directory`. (default: use system default cache directory)")
 	f.BoolVar(&globalOptions.NoCache, "no-cache", false, "do not use a local cache")
 	f.StringSliceVar(&globalOptions.RootCertFilenames, "cacert", nil, "`file` to load root certificates from (default: use system certificates)")
-	f.StringVar(&globalOptions.TLSClientCertKeyFilename, "tls-client-cert", "", "path to a `file` containing PEM encoded TLS client certificate and private key")
+	f.StringVar(&globalOptions.TLSClientCertKeyFilename, "tls-client-cert", "", "path to a `file` containing PEM encoded TLS client certificate and private key (default: $RESTIC_TLS_CLIENT_CERT)")
 	f.BoolVar(&globalOptions.InsecureTLS, "insecure-tls", false, "skip TLS certificate verification when connecting to the repository (insecure)")
 	f.BoolVar(&globalOptions.CleanupCache, "cleanup-cache", false, "auto remove old cache directories")
 	f.Var(&globalOptions.Compression, "compression", "compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION)")
@@ -151,6 +151,8 @@ func init() {
 	globalOptions.PasswordFile = os.Getenv("RESTIC_PASSWORD_FILE")
 	globalOptions.KeyHint = os.Getenv("RESTIC_KEY_HINT")
 	globalOptions.PasswordCommand = os.Getenv("RESTIC_PASSWORD_COMMAND")
+	globalOptions.RootCertFilenames = strings.Split(os.Getenv("RESTIC_CACERT"), ",")
+	globalOptions.TLSClientCertKeyFilename = os.Getenv("RESTIC_TLS_CLIENT_CERT")
 	comp := os.Getenv("RESTIC_COMPRESSION")
 	if comp != "" {
 		// ignore error as there's no good way to handle it
