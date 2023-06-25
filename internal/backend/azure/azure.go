@@ -53,7 +53,13 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	var client *azContainer.Client
 	var err error
 
-	url := fmt.Sprintf("https://%s.blob.core.windows.net/%s", cfg.AccountName, cfg.Container)
+	var endpointSuffix string
+	if cfg.EndpointSuffix != "" {
+		endpointSuffix = cfg.EndpointSuffix
+	} else {
+		endpointSuffix = "core.windows.net"
+	}
+	url := fmt.Sprintf("https://%s.blob.%s/%s", cfg.AccountName, endpointSuffix, cfg.Container)
 	opts := &azContainer.ClientOptions{
 		ClientOptions: azcore.ClientOptions{
 			Transport: &http.Client{Transport: rt},
