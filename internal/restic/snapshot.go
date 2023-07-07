@@ -25,6 +25,8 @@ type Snapshot struct {
 	Tags     []string  `json:"tags,omitempty"`
 	Original *ID       `json:"original,omitempty"`
 
+	ProgramVersion string `json:"program_version,omitempty"`
+
 	id *ID // plaintext ID, used during restore
 }
 

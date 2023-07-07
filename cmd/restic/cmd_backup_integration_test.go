@@ -440,6 +440,22 @@ func TestBackupTags(t *testing.T) {
 		"expected parent to be %v, got %v", parent.ID, newest.Parent)
 }
 
+func TestBackupProgramVersion(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	testRunBackup(t, "", []string{env.testdata}, BackupOptions{}, env.gopts)
+	newest, _ := testRunSnapshots(t, env.gopts)
+
+	if newest == nil {
+		t.Fatal("expected a backup, got nil")
+	}
+	resticVersion := "restic " + version
+	rtest.Assert(t, newest.ProgramVersion == resticVersion,
+		"expected %v, got %v", resticVersion, newest.ProgramVersion)
+}
+
 func TestQuietBackup(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()

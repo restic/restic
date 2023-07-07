@@ -680,6 +680,7 @@ type SnapshotOptions struct {
 	Excludes       []string
 	Time           time.Time
 	ParentSnapshot *restic.Snapshot
+	ProgramVersion string
 }
 
 // loadParentTree loads a tree referenced by snapshot id. If id is null, nil is returned.
@@ -796,6 +797,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		return nil, restic.ID{}, err
 	}
 
+	sn.ProgramVersion = opts.ProgramVersion
 	sn.Excludes = opts.Excludes
 	if opts.ParentSnapshot != nil {
 		sn.Parent = opts.ParentSnapshot.ID()
