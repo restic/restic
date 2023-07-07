@@ -81,7 +81,7 @@ func addPruneOptions(c *cobra.Command) {
 func verifyPruneOptions(opts *PruneOptions) error {
 	opts.MaxRepackBytes = math.MaxUint64
 	if len(opts.MaxRepackSize) > 0 {
-		size, err := parseSizeStr(opts.MaxRepackSize)
+		size, err := ui.ParseBytes(opts.MaxRepackSize)
 		if err != nil {
 			return err
 		}
@@ -124,7 +124,7 @@ func verifyPruneOptions(opts *PruneOptions) error {
 		}
 
 	default:
-		size, err := parseSizeStr(maxUnused)
+		size, err := ui.ParseBytes(maxUnused)
 		if err != nil {
 			return errors.Fatalf("invalid number of bytes %q for --max-unused: %v", opts.MaxUnused, err)
 		}

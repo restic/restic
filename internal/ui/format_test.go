@@ -1,6 +1,10 @@
 package ui
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/restic/restic/internal/test"
+)
 
 func TestFormatBytes(t *testing.T) {
 	for _, c := range []struct {
@@ -34,5 +38,49 @@ func TestFormatPercent(t *testing.T) {
 		if got := FormatPercent(c.num, c.denom); got != c.want {
 			t.Errorf("want %q, got %q", c.want, got)
 		}
+	}
+}
+
+func TestParseBytes(t *testing.T) {
+	for _, tt := range []struct {
+		in       string
+		expected int64
+	}{
+		{"1024", 1024},
+		{"1024b", 1024},
+		{"1024B", 1024},
+		{"1k", 1024},
+		{"100k", 102400},
+		{"100K", 102400},
+		{"10M", 10485760},
+		{"100m", 104857600},
+		{"20G", 21474836480},
+		{"10g", 10737418240},
+		{"2T", 2199023255552},
+		{"2t", 2199023255552},
+		{"9223372036854775807", 1<<63 - 1},
+	} {
+		actual, err := ParseBytes(tt.in)
+		test.OK(t, err)
+		test.Equals(t, tt.expected, actual)
+	}
+}
+
+func TestParseBytesInvalid(t *testing.T) {
+	for _, s := range []string{
+		"",
+		" ",
+		"foobar",
+		"zzz",
+		"18446744073709551615", // 1<<64-1.
+		"9223372036854775807k", // 1<<63-1 kiB.
+		"9999999999999M",
+		"99999999999999999999",
+	} {
+		v, err := ParseBytes(s)
+		if err == nil {
+			t.Errorf("wanted error for invalid value %q, got nil", s)
+		}
+		test.Equals(t, int64(0), v)
 	}
 }

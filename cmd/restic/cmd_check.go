@@ -16,6 +16,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui"
 )
 
 var cmdCheck = &cobra.Command{
@@ -97,7 +98,7 @@ func checkFlags(opts CheckOptions) error {
 			}
 
 		} else {
-			fileSize, err := parseSizeStr(opts.ReadDataSubset)
+			fileSize, err := ui.ParseBytes(opts.ReadDataSubset)
 			if err != nil {
 				return argumentError
 			}
@@ -363,7 +364,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 			if repoSize == 0 {
 				return errors.Fatal("Cannot read from a repository having size 0")
 			}
-			subsetSize, _ := parseSizeStr(opts.ReadDataSubset)
+			subsetSize, _ := ui.ParseBytes(opts.ReadDataSubset)
 			if subsetSize > repoSize {
 				subsetSize = repoSize
 			}
