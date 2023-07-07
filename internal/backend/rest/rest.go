@@ -327,6 +327,11 @@ func (b *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.Fi
 		return errors.Wrap(err, "List")
 	}
 
+	if resp.StatusCode == http.StatusNotFound {
+		// ignore missing directories
+		return nil
+	}
+
 	if resp.StatusCode != 200 {
 		return errors.Errorf("List failed, server response: %v (%v)", resp.Status, resp.StatusCode)
 	}
