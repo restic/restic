@@ -13,11 +13,12 @@ import (
 // Config contains all configuration necessary to connect to an azure compatible
 // server.
 type Config struct {
-	AccountName string
-	AccountSAS  options.SecretString
-	AccountKey  options.SecretString
-	Container   string
-	Prefix      string
+	AccountName    string
+	AccountSAS     options.SecretString
+	AccountKey     options.SecretString
+	EndpointSuffix string
+	Container      string
+	Prefix         string
 
 	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
 }
@@ -70,5 +71,9 @@ func (cfg *Config) ApplyEnvironment(prefix string) {
 
 	if cfg.AccountSAS.String() == "" {
 		cfg.AccountSAS = options.NewSecretString(os.Getenv(prefix + "AZURE_ACCOUNT_SAS"))
+	}
+
+	if cfg.EndpointSuffix == "" {
+		cfg.EndpointSuffix = os.Getenv(prefix + "AZURE_ENDPOINT_SUFFIX")
 	}
 }

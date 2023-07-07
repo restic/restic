@@ -537,6 +537,13 @@ or
     $ export AZURE_ACCOUNT_NAME=<ACCOUNT_NAME>
     $ export AZURE_ACCOUNT_SAS=<SAS_TOKEN>
 
+Restic will by default use Azure's global domain ``core.windows.net`` as endpoint suffix.
+You can specify other suffixes as follows:
+
+.. code-block:: console
+
+    $ export AZURE_ENDPOINT_SUFFIX=<ENDPOINT_SUFFIX>
+
 Afterwards you can initialize a repository in a container called ``foo`` in the
 root path like this:
 
