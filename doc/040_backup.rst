@@ -614,7 +614,7 @@ environment variables. The following lists these environment variables:
     AZURE_ACCOUNT_NAME                  Account name for Azure
     AZURE_ACCOUNT_KEY                   Account key for Azure
     AZURE_ACCOUNT_SAS                   Shared access signatures (SAS) for Azure
-    AZURE_ENDPOINT_SUFFIX               Domain of Azure Storage (default: core.windows.net)
+    AZURE_ENDPOINT_SUFFIX               Endpoint suffix for Azure Storage (default: core.windows.net)
 
     GOOGLE_PROJECT_ID                   Project ID for Google Cloud Storage
     GOOGLE_APPLICATION_CREDENTIALS      Application Credentials for Google Cloud Storage (e.g. $HOME/.config/gs-secret-restic-key.json)

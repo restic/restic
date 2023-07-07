@@ -72,7 +72,8 @@ func (cfg *Config) ApplyEnvironment(prefix string) {
 	if cfg.AccountSAS.String() == "" {
 		cfg.AccountSAS = options.NewSecretString(os.Getenv(prefix + "AZURE_ACCOUNT_SAS"))
 	}
+
 	if cfg.EndpointSuffix == "" {
-		cfg.EndpointSuffix = os.Getenv("AZURE_ENDPOINT_SUFFIX")
+		cfg.EndpointSuffix = os.Getenv(prefix + "AZURE_ENDPOINT_SUFFIX")
 	}
 }
