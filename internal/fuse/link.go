@@ -46,3 +46,12 @@ func (l *link) Attr(_ context.Context, a *fuse.Attr) error {
 
 	return nil
 }
+
+func (l *link) Listxattr(_ context.Context, req *fuse.ListxattrRequest, resp *fuse.ListxattrResponse) error {
+	nodeToXattrList(l.node, req, resp)
+	return nil
+}
+
+func (l *link) Getxattr(_ context.Context, req *fuse.GetxattrRequest, resp *fuse.GetxattrResponse) error {
+	return nodeGetXattr(l.node, req, resp)
+}

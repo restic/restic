@@ -13,20 +13,20 @@ import (
 
 // Getxattr retrieves extended attribute data associated with path.
 func Getxattr(path, name string) ([]byte, error) {
-	b, err := xattr.Get(path, name)
+	b, err := xattr.LGet(path, name)
 	return b, handleXattrErr(err)
 }
 
 // Listxattr retrieves a list of names of extended attributes associated with the
 // given path in the file system.
 func Listxattr(path string) ([]string, error) {
-	l, err := xattr.List(path)
+	l, err := xattr.LList(path)
 	return l, handleXattrErr(err)
 }
 
 // Setxattr associates name and data together as an attribute of path.
 func Setxattr(path, name string, data []byte) error {
-	return handleXattrErr(xattr.Set(path, name, data))
+	return handleXattrErr(xattr.LSet(path, name, data))
 }
 
 func handleXattrErr(err error) error {

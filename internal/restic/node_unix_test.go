@@ -5,10 +5,13 @@ package restic
 
 import (
 	"os"
+	"path/filepath"
 	"runtime"
 	"syscall"
 	"testing"
 	"time"
+
+	rtest "github.com/restic/restic/internal/test"
 )
 
 func stat(t testing.TB, filename string) (fi os.FileInfo, ok bool) {
@@ -25,6 +28,7 @@ func stat(t testing.TB, filename string) (fi os.FileInfo, ok bool) {
 }
 
 func checkFile(t testing.TB, stat *syscall.Stat_t, node *Node) {
+	t.Helper()
 	if uint32(node.Mode.Perm()) != uint32(stat.Mode&0777) {
 		t.Errorf("Mode does not match, want %v, got %v", stat.Mode&0777, node.Mode)
 	}
@@ -37,7 +41,7 @@ func checkFile(t testing.TB, stat *syscall.Stat_t, node *Node) {
 		t.Errorf("Dev does not match, want %v, got %v", stat.Dev, node.DeviceID)
 	}
 
-	if node.Size != uint64(stat.Size) {
+	if node.Size != uint64(stat.Size) && node.Type != "symlink" {
 		t.Errorf("Size does not match, want %v, got %v", stat.Size, node.Size)
 	}
 
@@ -83,6 +87,10 @@ func checkDevice(t testing.TB, stat *syscall.Stat_t, node *Node) {
 }
 
 func TestNodeFromFileInfo(t *testing.T) {
+	tmp := t.TempDir()
+	symlink := filepath.Join(tmp, "symlink")
+	rtest.OK(t, os.Symlink("target", symlink))
+
 	type Test struct {
 		filename string
 		canSkip  bool
@@ -90,6 +98,7 @@ func TestNodeFromFileInfo(t *testing.T) {
 	var tests = []Test{
 		{"node_test.go", false},
 		{"/dev/sda", true},
+		{symlink, false},
 	}
 
 	// on darwin, users are not permitted to list the extended attributes of
@@ -125,7 +134,7 @@ func TestNodeFromFileInfo(t *testing.T) {
 			}
 
 			switch node.Type {
-			case "file":
+			case "file", "symlink":
 				checkFile(t, s, node)
 			case "dev", "chardev":
 				checkFile(t, s, node)
