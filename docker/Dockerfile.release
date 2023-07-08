@@ -1,0 +1,18 @@
+# the official binaries are cross-built from Linux running on an AMD64 host
+# other architectures also seem to generate identical binaries but stay on the safe side
+FROM --platform=linux/amd64 restic/builder:latest as helper
+
+ARG TARGETOS
+ARG TARGETARCH
+
+COPY --chown=build . /restic
+RUN go run helpers/build-release-binaries/main.go --platform $TARGETOS/$TARGETARCH --skip-compress
+RUN mv /output/restic_${TARGETOS}_${TARGETARCH} /output/restic
+
+
+FROM alpine:latest
+
+COPY --from=helper /output/restic /usr/bin
+RUN apk add --update --no-cache ca-certificates fuse openssh-client tzdata jq
+
+ENTRYPOINT ["/usr/bin/restic"]

@@ -22,6 +22,8 @@ var opts = struct {
 	OutputDir      string
 	Tags           string
 	PlatformSubset string
+	Platform       string
+	SkipCompress   bool
 	Version        string
 }{}
 
@@ -31,6 +33,8 @@ func init() {
 	pflag.StringVarP(&opts.OutputDir, "output", "o", "/output", "path to the output `directory`")
 	pflag.StringVar(&opts.Tags, "tags", "", "additional build `tags`")
 	pflag.StringVar(&opts.PlatformSubset, "platform-subset", "", "specify `n/t` to only build this subset")
+	pflag.StringVarP(&opts.Platform, "platform", "p", "", "specify `os/arch` to only build this specific platform")
+	pflag.BoolVar(&opts.SkipCompress, "skip-compress", false, "skip binary compression step")
 	pflag.StringVar(&opts.Version, "version", "", "use `x.y.z` as the version for output files")
 	pflag.Parse()
 }
@@ -188,7 +192,9 @@ func buildForTarget(sourceDir, outputDir, goos, goarch string) (filename string)
 	filename = build(sourceDir, outputDir, goos, goarch)
 	touch(filepath.Join(outputDir, filename), mtime)
 	chmod(filepath.Join(outputDir, filename), 0755)
-	filename = compress(goos, outputDir, filename)
+	if !opts.SkipCompress {
+		filename = compress(goos, outputDir, filename)
+	}
 	return filename
 }
 
@@ -311,6 +317,8 @@ func main() {
 		if err != nil {
 			die("%s", err)
 		}
+	} else if opts.Platform != "" {
+		targets = buildPlatformList([]string{opts.Platform})
 	}
 
 	sourceDir := abs(opts.SourceDir)
