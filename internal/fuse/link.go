@@ -6,8 +6,6 @@ package fuse
 import (
 	"context"
 
-	"github.com/restic/restic/internal/debug"
-
 	"github.com/anacrolix/fuse"
 	"github.com/anacrolix/fuse/fs"
 	"github.com/restic/restic/internal/restic"
@@ -50,19 +48,10 @@ func (l *link) Attr(_ context.Context, a *fuse.Attr) error {
 }
 
 func (l *link) Listxattr(_ context.Context, req *fuse.ListxattrRequest, resp *fuse.ListxattrResponse) error {
-	debug.Log("Listxattr(%v, %v)", l.node.Name, req.Size)
-	for _, attr := range l.node.ExtendedAttributes {
-		resp.Append(attr.Name)
-	}
+	nodeToXattrList(l.node, req, resp)
 	return nil
 }
 
 func (l *link) Getxattr(_ context.Context, req *fuse.GetxattrRequest, resp *fuse.GetxattrResponse) error {
-	debug.Log("Getxattr(%v, %v, %v)", l.node.Name, req.Name, req.Size)
-	attrval := l.node.GetExtendedAttribute(req.Name)
-	if attrval != nil {
-		resp.Xattr = attrval
-		return nil
-	}
-	return fuse.ErrNoXattr
+	return nodeGetXattr(l.node, req, resp)
 }

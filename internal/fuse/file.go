@@ -167,19 +167,10 @@ func (f *openFile) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.R
 }
 
 func (f *file) Listxattr(_ context.Context, req *fuse.ListxattrRequest, resp *fuse.ListxattrResponse) error {
-	debug.Log("Listxattr(%v, %v)", f.node.Name, req.Size)
-	for _, attr := range f.node.ExtendedAttributes {
-		resp.Append(attr.Name)
-	}
+	nodeToXattrList(f.node, req, resp)
 	return nil
 }
 
 func (f *file) Getxattr(_ context.Context, req *fuse.GetxattrRequest, resp *fuse.GetxattrResponse) error {
-	debug.Log("Getxattr(%v, %v, %v)", f.node.Name, req.Name, req.Size)
-	attrval := f.node.GetExtendedAttribute(req.Name)
-	if attrval != nil {
-		resp.Xattr = attrval
-		return nil
-	}
-	return fuse.ErrNoXattr
+	return nodeGetXattr(f.node, req, resp)
 }
