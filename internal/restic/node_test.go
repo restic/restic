@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"testing"
 	"time"
@@ -163,22 +164,56 @@ var nodeTests = []restic.Node{
 		AccessTime: parseTime("2005-05-14 21:07:04.222"),
 		ChangeTime: parseTime("2005-05-14 21:07:05.333"),
 	},
+	{
+		Name:       "testXattrFile",
+		Type:       "file",
+		Content:    restic.IDs{},
+		UID:        uint32(os.Getuid()),
+		GID:        uint32(os.Getgid()),
+		Mode:       0604,
+		ModTime:    parseTime("2005-05-14 21:07:03.111"),
+		AccessTime: parseTime("2005-05-14 21:07:04.222"),
+		ChangeTime: parseTime("2005-05-14 21:07:05.333"),
+		ExtendedAttributes: []restic.ExtendedAttribute{
+			{"user.foo", []byte("bar")},
+		},
+	},
+	{
+		Name:       "testXattrDir",
+		Type:       "dir",
+		Subtree:    nil,
+		UID:        uint32(os.Getuid()),
+		GID:        uint32(os.Getgid()),
+		Mode:       0750 | os.ModeDir,
+		ModTime:    parseTime("2005-05-14 21:07:03.111"),
+		AccessTime: parseTime("2005-05-14 21:07:04.222"),
+		ChangeTime: parseTime("2005-05-14 21:07:05.333"),
+		ExtendedAttributes: []restic.ExtendedAttribute{
+			{"user.foo", []byte("bar")},
+		},
+	},
 }
 
 func TestNodeRestoreAt(t *testing.T) {
-	tempdir, err := os.MkdirTemp(rtest.TestTempDir, "restic-test-")
-	rtest.OK(t, err)
-
-	defer func() {
-		if rtest.TestCleanupTempDirs {
-			rtest.RemoveAll(t, tempdir)
-		} else {
-			t.Logf("leaving tempdir at %v", tempdir)
-		}
-	}()
+	tempdir := t.TempDir()
 
 	for _, test := range nodeTests {
-		nodePath := filepath.Join(tempdir, test.Name)
+		var nodePath string
+		if test.ExtendedAttributes != nil {
+			if runtime.GOOS == "windows" {
+				// restic does not support xattrs on windows
+				return
+			}
+
+			// tempdir might be backed by a filesystem that does not support
+			// extended attributes
+			nodePath = test.Name
+			defer func() {
+				_ = os.Remove(nodePath)
+			}()
+		} else {
+			nodePath = filepath.Join(tempdir, test.Name)
+		}
 		rtest.OK(t, test.CreateAt(context.TODO(), nodePath, nil))
 		rtest.OK(t, test.RestoreMetadata(nodePath))
 
@@ -215,6 +250,11 @@ func TestNodeRestoreAt(t *testing.T) {
 
 		AssertFsTimeEqual(t, "AccessTime", test.Type, test.AccessTime, n2.AccessTime)
 		AssertFsTimeEqual(t, "ModTime", test.Type, test.ModTime, n2.ModTime)
+		if len(n2.ExtendedAttributes) == 0 {
+			n2.ExtendedAttributes = nil
+		}
+		rtest.Assert(t, reflect.DeepEqual(test.ExtendedAttributes, n2.ExtendedAttributes),
+			"%v: xattrs don't match (%v != %v)", test.Name, test.ExtendedAttributes, n2.ExtendedAttributes)
 	}
 }
 
