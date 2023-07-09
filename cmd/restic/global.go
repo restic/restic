@@ -151,7 +151,9 @@ func init() {
 	globalOptions.PasswordFile = os.Getenv("RESTIC_PASSWORD_FILE")
 	globalOptions.KeyHint = os.Getenv("RESTIC_KEY_HINT")
 	globalOptions.PasswordCommand = os.Getenv("RESTIC_PASSWORD_COMMAND")
-	globalOptions.RootCertFilenames = strings.Split(os.Getenv("RESTIC_CACERT"), ",")
+	if os.Getenv("RESTIC_CACERT") != "" {
+		globalOptions.RootCertFilenames = strings.Split(os.Getenv("RESTIC_CACERT"), ",")
+	}
 	globalOptions.TLSClientCertKeyFilename = os.Getenv("RESTIC_TLS_CLIENT_CERT")
 	comp := os.Getenv("RESTIC_COMPRESSION")
 	if comp != "" {
