@@ -141,6 +141,14 @@ jobs:
         run: |
           go run build.go
 
+      - name: Minimal test
+        run: |
+          ./restic init
+          ./restic backup .
+        env:
+          RESTIC_REPOSITORY: ../testrepo
+          RESTIC_PASSWORD: password
+
       - name: Run local Tests
         env:
           RESTIC_TEST_FUSE: ${{ matrix.test_fuse }}
