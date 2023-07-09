@@ -13,7 +13,7 @@ import (
 	"github.com/restic/restic/internal/test"
 )
 
-func openTestRepo(t *testing.T, wrapper backendWrapper) (*repository.Repository, func(), *testEnvironment) {
+func openLockTestRepo(t *testing.T, wrapper backendWrapper) (*repository.Repository, func(), *testEnvironment) {
 	env, cleanup := withTestEnvironment(t)
 	if wrapper != nil {
 		env.gopts.backendTestHook = wrapper
@@ -36,7 +36,7 @@ func checkedLockRepo(ctx context.Context, t *testing.T, repo restic.Repository, 
 }
 
 func TestLock(t *testing.T) {
-	repo, cleanup, env := openTestRepo(t, nil)
+	repo, cleanup, env := openLockTestRepo(t, nil)
 	defer cleanup()
 
 	lock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, env)
@@ -47,7 +47,7 @@ func TestLock(t *testing.T) {
 }
 
 func TestLockCancel(t *testing.T) {
-	repo, cleanup, env := openTestRepo(t, nil)
+	repo, cleanup, env := openLockTestRepo(t, nil)
 	defer cleanup()
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -63,7 +63,7 @@ func TestLockCancel(t *testing.T) {
 }
 
 func TestLockUnlockAll(t *testing.T) {
-	repo, cleanup, env := openTestRepo(t, nil)
+	repo, cleanup, env := openLockTestRepo(t, nil)
 	defer cleanup()
 
 	lock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, env)
@@ -78,7 +78,7 @@ func TestLockUnlockAll(t *testing.T) {
 }
 
 func TestLockConflict(t *testing.T) {
-	repo, cleanup, env := openTestRepo(t, nil)
+	repo, cleanup, env := openLockTestRepo(t, nil)
 	defer cleanup()
 	repo2, err := OpenRepository(context.TODO(), env.gopts)
 	test.OK(t, err)
@@ -107,7 +107,7 @@ func (b *writeOnceBackend) Save(ctx context.Context, h restic.Handle, rd restic.
 }
 
 func TestLockFailedRefresh(t *testing.T) {
-	repo, cleanup, env := openTestRepo(t, func(r restic.Backend) (restic.Backend, error) {
+	repo, cleanup, env := openLockTestRepo(t, func(r restic.Backend) (restic.Backend, error) {
 		return &writeOnceBackend{Backend: r}, nil
 	})
 	defer cleanup()
@@ -145,7 +145,7 @@ func (b *loggingBackend) Save(ctx context.Context, h restic.Handle, rd restic.Re
 }
 
 func TestLockSuccessfulRefresh(t *testing.T) {
-	repo, cleanup, env := openTestRepo(t, func(r restic.Backend) (restic.Backend, error) {
+	repo, cleanup, env := openLockTestRepo(t, func(r restic.Backend) (restic.Backend, error) {
 		return &loggingBackend{
 			Backend: r,
 			t:       t,
@@ -183,7 +183,7 @@ func TestLockSuccessfulRefresh(t *testing.T) {
 }
 
 func TestLockWaitTimeout(t *testing.T) {
-	repo, cleanup, env := openTestRepo(t, nil)
+	repo, cleanup, env := openLockTestRepo(t, nil)
 	defer cleanup()
 
 	elock, _, err := lockRepoExclusive(context.TODO(), repo, env.gopts.RetryLock, env.gopts.JSON)
@@ -205,8 +205,9 @@ func TestLockWaitTimeout(t *testing.T) {
 	test.OK(t, lock.Unlock())
 	test.OK(t, elock.Unlock())
 }
+
 func TestLockWaitCancel(t *testing.T) {
-	repo, cleanup, env := openTestRepo(t, nil)
+	repo, cleanup, env := openLockTestRepo(t, nil)
 	defer cleanup()
 
 	elock, _, err := lockRepoExclusive(context.TODO(), repo, env.gopts.RetryLock, env.gopts.JSON)
@@ -234,7 +235,7 @@ func TestLockWaitCancel(t *testing.T) {
 }
 
 func TestLockWaitSuccess(t *testing.T) {
-	repo, cleanup, env := openTestRepo(t, nil)
+	repo, cleanup, env := openLockTestRepo(t, nil)
 	defer cleanup()
 
 	elock, _, err := lockRepoExclusive(context.TODO(), repo, env.gopts.RetryLock, env.gopts.JSON)
