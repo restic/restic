@@ -272,7 +272,7 @@ func checkSingleLock(t *testing.T, repo restic.Repository) restic.ID {
 	return *lockID
 }
 
-func TestLockRefresh(t *testing.T) {
+func testLockRefresh(t *testing.T, refresh func(lock *restic.Lock) error) {
 	repo := repository.TestRepository(t)
 	restic.TestSetLockTimeout(t, 5*time.Millisecond)
 
@@ -283,7 +283,7 @@ func TestLockRefresh(t *testing.T) {
 	lockID := checkSingleLock(t, repo)
 
 	time.Sleep(time.Millisecond)
-	rtest.OK(t, lock.Refresh(context.TODO()))
+	rtest.OK(t, refresh(lock))
 
 	lockID2 := checkSingleLock(t, repo)
 
@@ -294,4 +294,31 @@ func TestLockRefresh(t *testing.T) {
 	rtest.Assert(t, lock2.Time.After(time0),
 		"expected a later timestamp after lock refresh")
 	rtest.OK(t, lock.Unlock())
+}
+
+func TestLockRefresh(t *testing.T) {
+	testLockRefresh(t, func(lock *restic.Lock) error {
+		return lock.Refresh(context.TODO())
+	})
+}
+
+func TestLockRefreshStale(t *testing.T) {
+	testLockRefresh(t, func(lock *restic.Lock) error {
+		return lock.RefreshStaleLock(context.TODO())
+	})
+}
+
+func TestLockRefreshStaleMissing(t *testing.T) {
+	repo := repository.TestRepository(t)
+	restic.TestSetLockTimeout(t, 5*time.Millisecond)
+
+	lock, err := restic.NewLock(context.TODO(), repo)
+	rtest.OK(t, err)
+	lockID := checkSingleLock(t, repo)
+
+	// refresh must fail if lock was removed
+	rtest.OK(t, repo.Backend().Remove(context.TODO(), restic.Handle{Type: restic.LockFile, Name: lockID.String()}))
+	time.Sleep(time.Millisecond)
+	err = lock.RefreshStaleLock(context.TODO())
+	rtest.Assert(t, err == restic.ErrRemovedLock, "unexpected error, expected %v, got %v", restic.ErrRemovedLock, err)
 }
