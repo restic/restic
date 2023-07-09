@@ -16,6 +16,7 @@ import (
 
 func TestLock(t *testing.T) {
 	repo := repository.TestRepository(t)
+	restic.TestSetLockTimeout(t, 5*time.Millisecond)
 
 	lock, err := restic.NewLock(context.TODO(), repo)
 	rtest.OK(t, err)
@@ -25,6 +26,7 @@ func TestLock(t *testing.T) {
 
 func TestDoubleUnlock(t *testing.T) {
 	repo := repository.TestRepository(t)
+	restic.TestSetLockTimeout(t, 5*time.Millisecond)
 
 	lock, err := restic.NewLock(context.TODO(), repo)
 	rtest.OK(t, err)
@@ -38,6 +40,7 @@ func TestDoubleUnlock(t *testing.T) {
 
 func TestMultipleLock(t *testing.T) {
 	repo := repository.TestRepository(t)
+	restic.TestSetLockTimeout(t, 5*time.Millisecond)
 
 	lock1, err := restic.NewLock(context.TODO(), repo)
 	rtest.OK(t, err)
@@ -63,6 +66,7 @@ func (be *failLockLoadingBackend) Load(ctx context.Context, h restic.Handle, len
 func TestMultipleLockFailure(t *testing.T) {
 	be := &failLockLoadingBackend{Backend: mem.New()}
 	repo := repository.TestRepositoryWithBackend(t, be, 0)
+	restic.TestSetLockTimeout(t, 5*time.Millisecond)
 
 	lock1, err := restic.NewLock(context.TODO(), repo)
 	rtest.OK(t, err)
@@ -83,6 +87,7 @@ func TestLockExclusive(t *testing.T) {
 
 func TestLockOnExclusiveLockedRepo(t *testing.T) {
 	repo := repository.TestRepository(t)
+	restic.TestSetLockTimeout(t, 5*time.Millisecond)
 
 	elock, err := restic.NewExclusiveLock(context.TODO(), repo)
 	rtest.OK(t, err)
@@ -99,6 +104,7 @@ func TestLockOnExclusiveLockedRepo(t *testing.T) {
 
 func TestExclusiveLockOnLockedRepo(t *testing.T) {
 	repo := repository.TestRepository(t)
+	restic.TestSetLockTimeout(t, 5*time.Millisecond)
 
 	elock, err := restic.NewLock(context.TODO(), repo)
 	rtest.OK(t, err)
