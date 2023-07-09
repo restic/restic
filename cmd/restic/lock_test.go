@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/backend/location"
+	"github.com/restic/restic/internal/backend/mem"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
@@ -15,6 +17,12 @@ import (
 
 func openLockTestRepo(t *testing.T, wrapper backendWrapper) (*repository.Repository, func(), *testEnvironment) {
 	env, cleanup := withTestEnvironment(t)
+
+	reg := location.NewRegistry()
+	reg.Register(mem.NewFactory())
+	env.gopts.backends = reg
+	env.gopts.Repo = "mem:"
+
 	if wrapper != nil {
 		env.gopts.backendTestHook = wrapper
 	}
