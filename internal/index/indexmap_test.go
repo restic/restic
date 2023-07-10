@@ -108,6 +108,21 @@ func TestIndexMapForeachWithID(t *testing.T) {
 	}
 }
 
+func TestHashedArrayTree(t *testing.T) {
+	hat := newHAT()
+	const testSize = 1024
+	for i := uint(0); i < testSize; i++ {
+		rtest.Assert(t, hat.Size() == i, "expected hat size %v got %v", i, hat.Size())
+		e, idx := hat.Alloc()
+		rtest.Assert(t, idx == i, "expected entry at idx %v got %v", i, idx)
+		e.length = uint32(i)
+	}
+	for i := uint(0); i < testSize; i++ {
+		e := hat.Ref(i)
+		rtest.Assert(t, e.length == uint32(i), "expected entry to contain %v got %v", uint32(i), e.length)
+	}
+}
+
 func BenchmarkIndexMapHash(b *testing.B) {
 	var m indexMap
 	m.add(restic.ID{}, 0, 0, 0, 0) // Trigger lazy initialization.

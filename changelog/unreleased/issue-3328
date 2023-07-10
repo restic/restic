@@ -1,0 +1,5 @@
+Enhancement: Reduce memory usage by up to 25%
+
+https://github.com/restic/restic/issues/3328
+https://github.com/restic/restic/pull/4352
+https://github.com/restic/restic/pull/4353

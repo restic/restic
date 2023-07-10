@@ -83,5 +83,5 @@ type FileInfo struct {
 
 // ApplyEnvironmenter fills in a backend configuration from the environment
 type ApplyEnvironmenter interface {
-	ApplyEnvironment(prefix string) error
+	ApplyEnvironment(prefix string)
 }

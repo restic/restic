@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"testing"
 	"time"
@@ -163,58 +164,99 @@ var nodeTests = []restic.Node{
 		AccessTime: parseTime("2005-05-14 21:07:04.222"),
 		ChangeTime: parseTime("2005-05-14 21:07:05.333"),
 	},
+	{
+		Name:       "testXattrFile",
+		Type:       "file",
+		Content:    restic.IDs{},
+		UID:        uint32(os.Getuid()),
+		GID:        uint32(os.Getgid()),
+		Mode:       0604,
+		ModTime:    parseTime("2005-05-14 21:07:03.111"),
+		AccessTime: parseTime("2005-05-14 21:07:04.222"),
+		ChangeTime: parseTime("2005-05-14 21:07:05.333"),
+		ExtendedAttributes: []restic.ExtendedAttribute{
+			{"user.foo", []byte("bar")},
+		},
+	},
+	{
+		Name:       "testXattrDir",
+		Type:       "dir",
+		Subtree:    nil,
+		UID:        uint32(os.Getuid()),
+		GID:        uint32(os.Getgid()),
+		Mode:       0750 | os.ModeDir,
+		ModTime:    parseTime("2005-05-14 21:07:03.111"),
+		AccessTime: parseTime("2005-05-14 21:07:04.222"),
+		ChangeTime: parseTime("2005-05-14 21:07:05.333"),
+		ExtendedAttributes: []restic.ExtendedAttribute{
+			{"user.foo", []byte("bar")},
+		},
+	},
 }
 
 func TestNodeRestoreAt(t *testing.T) {
-	tempdir, err := os.MkdirTemp(rtest.TestTempDir, "restic-test-")
-	rtest.OK(t, err)
-
-	defer func() {
-		if rtest.TestCleanupTempDirs {
-			rtest.RemoveAll(t, tempdir)
-		} else {
-			t.Logf("leaving tempdir at %v", tempdir)
-		}
-	}()
+	tempdir := t.TempDir()
 
 	for _, test := range nodeTests {
-		nodePath := filepath.Join(tempdir, test.Name)
-		rtest.OK(t, test.CreateAt(context.TODO(), nodePath, nil))
-		rtest.OK(t, test.RestoreMetadata(nodePath))
+		t.Run("", func(t *testing.T) {
+			var nodePath string
+			if test.ExtendedAttributes != nil {
+				if runtime.GOOS == "windows" {
+					// restic does not support xattrs on windows
+					return
+				}
 
-		if test.Type == "dir" {
-			rtest.OK(t, test.RestoreTimestamps(nodePath))
-		}
+				// tempdir might be backed by a filesystem that does not support
+				// extended attributes
+				nodePath = test.Name
+				defer func() {
+					_ = os.Remove(nodePath)
+				}()
+			} else {
+				nodePath = filepath.Join(tempdir, test.Name)
+			}
+			rtest.OK(t, test.CreateAt(context.TODO(), nodePath, nil))
+			rtest.OK(t, test.RestoreMetadata(nodePath))
 
-		fi, err := os.Lstat(nodePath)
-		rtest.OK(t, err)
+			if test.Type == "dir" {
+				rtest.OK(t, test.RestoreTimestamps(nodePath))
+			}
 
-		n2, err := restic.NodeFromFileInfo(nodePath, fi)
-		rtest.OK(t, err)
+			fi, err := os.Lstat(nodePath)
+			rtest.OK(t, err)
 
-		rtest.Assert(t, test.Name == n2.Name,
-			"%v: name doesn't match (%v != %v)", test.Type, test.Name, n2.Name)
-		rtest.Assert(t, test.Type == n2.Type,
-			"%v: type doesn't match (%v != %v)", test.Type, test.Type, n2.Type)
-		rtest.Assert(t, test.Size == n2.Size,
-			"%v: size doesn't match (%v != %v)", test.Size, test.Size, n2.Size)
+			n2, err := restic.NodeFromFileInfo(nodePath, fi)
+			rtest.OK(t, err)
 
-		if runtime.GOOS != "windows" {
-			rtest.Assert(t, test.UID == n2.UID,
-				"%v: UID doesn't match (%v != %v)", test.Type, test.UID, n2.UID)
-			rtest.Assert(t, test.GID == n2.GID,
-				"%v: GID doesn't match (%v != %v)", test.Type, test.GID, n2.GID)
-			if test.Type != "symlink" {
-				// On OpenBSD only root can set sticky bit (see sticky(8)).
-				if runtime.GOOS != "openbsd" && runtime.GOOS != "netbsd" && runtime.GOOS != "solaris" && test.Name == "testSticky" {
-					rtest.Assert(t, test.Mode == n2.Mode,
-						"%v: mode doesn't match (0%o != 0%o)", test.Type, test.Mode, n2.Mode)
+			rtest.Assert(t, test.Name == n2.Name,
+				"%v: name doesn't match (%v != %v)", test.Type, test.Name, n2.Name)
+			rtest.Assert(t, test.Type == n2.Type,
+				"%v: type doesn't match (%v != %v)", test.Type, test.Type, n2.Type)
+			rtest.Assert(t, test.Size == n2.Size,
+				"%v: size doesn't match (%v != %v)", test.Size, test.Size, n2.Size)
+
+			if runtime.GOOS != "windows" {
+				rtest.Assert(t, test.UID == n2.UID,
+					"%v: UID doesn't match (%v != %v)", test.Type, test.UID, n2.UID)
+				rtest.Assert(t, test.GID == n2.GID,
+					"%v: GID doesn't match (%v != %v)", test.Type, test.GID, n2.GID)
+				if test.Type != "symlink" {
+					// On OpenBSD only root can set sticky bit (see sticky(8)).
+					if runtime.GOOS != "openbsd" && runtime.GOOS != "netbsd" && runtime.GOOS != "solaris" && test.Name == "testSticky" {
+						rtest.Assert(t, test.Mode == n2.Mode,
+							"%v: mode doesn't match (0%o != 0%o)", test.Type, test.Mode, n2.Mode)
+					}
 				}
 			}
-		}
 
-		AssertFsTimeEqual(t, "AccessTime", test.Type, test.AccessTime, n2.AccessTime)
-		AssertFsTimeEqual(t, "ModTime", test.Type, test.ModTime, n2.ModTime)
+			AssertFsTimeEqual(t, "AccessTime", test.Type, test.AccessTime, n2.AccessTime)
+			AssertFsTimeEqual(t, "ModTime", test.Type, test.ModTime, n2.ModTime)
+			if len(n2.ExtendedAttributes) == 0 {
+				n2.ExtendedAttributes = nil
+			}
+			rtest.Assert(t, reflect.DeepEqual(test.ExtendedAttributes, n2.ExtendedAttributes),
+				"%v: xattrs don't match (%v != %v)", test.Name, test.ExtendedAttributes, n2.ExtendedAttributes)
+		})
 	}
 }
 

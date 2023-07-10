@@ -17,6 +17,8 @@ import (
 	"github.com/hirochachacha/go-smb2"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
+	"github.com/restic/restic/internal/backend/limiter"
+	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -57,6 +59,10 @@ type Backend struct {
 
 // make sure that *Backend implements backend.Backend
 var _ restic.Backend = &Backend{}
+
+func NewFactory() location.Factory {
+	return location.NewLimitedBackendFactory("smb", ParseConfig, location.NoPassword, limiter.WrapBackendConstructor(Create), limiter.WrapBackendConstructor(Open))
+}
 
 const (
 	defaultLayout = "default"

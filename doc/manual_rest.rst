@@ -418,7 +418,6 @@ instead of the default, set the environment variable like this:
     $ restic -r /srv/restic-repo backup ~/work
 
 
-
 .. _caching:
 
 Caching
@@ -442,6 +441,10 @@ The command line parameter ``--cache-dir`` or the environment variable
 parameter ``--no-cache`` disables the cache entirely. In this case, all data
 is loaded from the repository.
 
+If a cache location is explicitly specified, then the ``check`` command will use
+that location to store its temporary cache. See :ref:`checking-integrity` for
+more details.
+
 The cache is ephemeral: When a file cannot be read from the cache, it is loaded
 from the repository.
 
@@ -451,4 +454,3 @@ time it is used, so by looking at the timestamps of the sub directories of the
 cache directory it can decide which sub directories are old and probably not
 needed any more. You can either remove these directories manually, or run a
 restic command with the ``--cleanup-cache`` flag.
-

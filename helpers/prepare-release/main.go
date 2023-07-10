@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -409,13 +410,19 @@ func signFiles(filenames ...string) {
 	}
 }
 
-func updateDocker(outputDir, version string) {
-	cmd := fmt.Sprintf("bzcat %s/restic_%s_linux_amd64.bz2 > restic", outputDir, version)
-	run("sh", "-c", cmd)
-	run("chmod", "+x", "restic")
-	run("docker", "pull", "alpine:latest")
-	run("docker", "build", "--rm", "--tag", "restic/restic:latest", "-f", "docker/Dockerfile", ".")
-	run("docker", "tag", "restic/restic:latest", "restic/restic:"+version)
+func updateDocker(sourceDir, version string) string {
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	builderName := fmt.Sprintf("restic-release-builder-%d", r.Int())
+	run("docker", "buildx", "create", "--name", builderName, "--driver", "docker-container", "--bootstrap")
+
+	buildCmd := fmt.Sprintf("docker buildx build --builder %s --platform linux/386,linux/amd64,linux/arm,linux/arm64 --pull -f docker/Dockerfile.release %q", builderName, sourceDir)
+	run("sh", "-c", buildCmd+" --no-cache")
+
+	publishCmds := ""
+	for _, tag := range []string{"restic/restic:latest", "restic/restic:" + version} {
+		publishCmds += buildCmd + fmt.Sprintf(" --tag %q --push\n", tag)
+	}
+	return publishCmds + "\ndocker buildx rm " + builderName
 }
 
 func tempdir(prefix string) string {
@@ -464,15 +471,14 @@ func main() {
 
 	extractTar(tarFilename, sourceDir)
 	runBuild(sourceDir, opts.OutputDir, opts.Version)
-	rmdir(sourceDir)
 
 	sha256sums(opts.OutputDir, filepath.Join(opts.OutputDir, "SHA256SUMS"))
 
 	signFiles(filepath.Join(opts.OutputDir, "SHA256SUMS"), tarFilename)
 
-	updateDocker(opts.OutputDir, opts.Version)
+	dockerCmds := updateDocker(sourceDir, opts.Version)
 
 	msg("done, output dir is %v", opts.OutputDir)
 
-	msg("now run:\n\ngit push --tags origin master\ndocker push restic/restic:latest\ndocker push restic/restic:%s\n", opts.Version)
+	msg("now run:\n\ngit push --tags origin master\n%s\n\nrm -rf %q", dockerCmds, sourceDir)
 }

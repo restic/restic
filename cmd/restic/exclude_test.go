@@ -187,54 +187,6 @@ func TestMultipleIsExcludedByFile(t *testing.T) {
 	}
 }
 
-func TestParseSizeStr(t *testing.T) {
-	sizeStrTests := []struct {
-		in       string
-		expected int64
-	}{
-		{"1024", 1024},
-		{"1024b", 1024},
-		{"1024B", 1024},
-		{"1k", 1024},
-		{"100k", 102400},
-		{"100K", 102400},
-		{"10M", 10485760},
-		{"100m", 104857600},
-		{"20G", 21474836480},
-		{"10g", 10737418240},
-		{"2T", 2199023255552},
-		{"2t", 2199023255552},
-	}
-
-	for _, tt := range sizeStrTests {
-		actual, err := parseSizeStr(tt.in)
-		test.OK(t, err)
-
-		if actual != tt.expected {
-			t.Errorf("parseSizeStr(%s) = %d; expected %d", tt.in, actual, tt.expected)
-		}
-	}
-}
-
-func TestParseInvalidSizeStr(t *testing.T) {
-	invalidSizes := []string{
-		"",
-		" ",
-		"foobar",
-		"zzz",
-	}
-
-	for _, s := range invalidSizes {
-		v, err := parseSizeStr(s)
-		if err == nil {
-			t.Errorf("wanted error for invalid value %q, got nil", s)
-		}
-		if v != 0 {
-			t.Errorf("wanted zero for invalid value %q, got: %v", s, v)
-		}
-	}
-}
-
 // TestIsExcludedByFileSize is for testing the instance of
 // --exclude-larger-than parameters
 func TestIsExcludedByFileSize(t *testing.T) {

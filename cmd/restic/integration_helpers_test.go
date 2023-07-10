@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync"
 	"testing"
 
 	"github.com/restic/restic/internal/backend/retry"
@@ -17,6 +18,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui/termstatus"
 )
 
 type dirEntry struct {
@@ -204,6 +206,8 @@ func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
 
 		// replace this hook with "nil" if listing a filetype more than once is necessary
 		backendTestHook: func(r restic.Backend) (restic.Backend, error) { return newOrderedListOnceBackend(r), nil },
+		// start with default set of backends
+		backends: globalOptions.backends,
 	}
 
 	// always overwrite global options
@@ -355,4 +359,21 @@ func withCaptureStdout(inner func() error) (*bytes.Buffer, error) {
 	})
 
 	return buf, err
+}
+
+func withTermStatus(gopts GlobalOptions, callback func(ctx context.Context, term *termstatus.Terminal) error) error {
+	ctx, cancel := context.WithCancel(context.TODO())
+	var wg sync.WaitGroup
+
+	term := termstatus.New(gopts.stdout, gopts.stderr, gopts.Quiet)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		term.Run(ctx)
+	}()
+
+	defer wg.Wait()
+	defer cancel()
+
+	return callback(ctx, term)
 }

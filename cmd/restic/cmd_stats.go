@@ -5,11 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"strings"
 
+	"github.com/restic/chunker"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/crypto"
+	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/table"
 	"github.com/restic/restic/internal/walker"
 
 	"github.com/minio/sha256-simd"
@@ -97,6 +101,10 @@ func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args 
 
 	if err = repo.LoadIndex(ctx); err != nil {
 		return err
+	}
+
+	if opts.countMode == countModeDebug {
+		return statsDebug(ctx, repo)
 	}
 
 	if !gopts.JSON {
@@ -291,6 +299,7 @@ func verifyStatsInput(opts StatsOptions) error {
 	case countModeUniqueFilesByContents:
 	case countModeBlobsPerFile:
 	case countModeRawData:
+	case countModeDebug:
 	default:
 		return fmt.Errorf("unknown counting mode: %s (use the -h flag to get a list of supported modes)", opts.countMode)
 	}
@@ -335,4 +344,149 @@ const (
 	countModeUniqueFilesByContents = "files-by-contents"
 	countModeBlobsPerFile          = "blobs-per-file"
 	countModeRawData               = "raw-data"
+	countModeDebug                 = "debug"
 )
+
+func statsDebug(ctx context.Context, repo restic.Repository) error {
+	Warnf("Collecting size statistics\n\n")
+	for _, t := range []restic.FileType{restic.KeyFile, restic.LockFile, restic.IndexFile, restic.PackFile} {
+		hist, err := statsDebugFileType(ctx, repo, t)
+		if err != nil {
+			return err
+		}
+		Warnf("File Type: %v\n%v\n", t, hist)
+	}
+
+	hist := statsDebugBlobs(ctx, repo)
+	for _, t := range []restic.BlobType{restic.DataBlob, restic.TreeBlob} {
+		Warnf("Blob Type: %v\n%v\n\n", t, hist[t])
+	}
+
+	return nil
+}
+
+func statsDebugFileType(ctx context.Context, repo restic.Repository, tpe restic.FileType) (*sizeHistogram, error) {
+	hist := newSizeHistogram(2 * repository.MaxPackSize)
+	err := repo.List(ctx, tpe, func(id restic.ID, size int64) error {
+		hist.Add(uint64(size))
+		return nil
+	})
+
+	return hist, err
+}
+
+func statsDebugBlobs(ctx context.Context, repo restic.Repository) [restic.NumBlobTypes]*sizeHistogram {
+	var hist [restic.NumBlobTypes]*sizeHistogram
+	for i := 0; i < len(hist); i++ {
+		hist[i] = newSizeHistogram(2 * chunker.MaxSize)
+	}
+
+	repo.Index().Each(ctx, func(pb restic.PackedBlob) {
+		hist[pb.Type].Add(uint64(pb.Length))
+	})
+
+	return hist
+}
+
+type sizeClass struct {
+	lower, upper uint64
+	count        int64
+}
+
+type sizeHistogram struct {
+	count     int64
+	totalSize uint64
+	buckets   []sizeClass
+	oversized []uint64
+}
+
+func newSizeHistogram(sizeLimit uint64) *sizeHistogram {
+	h := &sizeHistogram{}
+	h.buckets = append(h.buckets, sizeClass{0, 0, 0})
+
+	lowerBound := uint64(1)
+	growthFactor := uint64(10)
+
+	for lowerBound < sizeLimit {
+		upperBound := lowerBound*growthFactor - 1
+		if upperBound > sizeLimit {
+			upperBound = sizeLimit
+		}
+		h.buckets = append(h.buckets, sizeClass{lowerBound, upperBound, 0})
+		lowerBound *= growthFactor
+	}
+
+	return h
+}
+
+func (s *sizeHistogram) Add(size uint64) {
+	s.count++
+	s.totalSize += size
+
+	for i, bucket := range s.buckets {
+		if size >= bucket.lower && size <= bucket.upper {
+			s.buckets[i].count++
+			return
+		}
+	}
+
+	s.oversized = append(s.oversized, size)
+}
+
+func (s sizeHistogram) String() string {
+	var out strings.Builder
+
+	out.WriteString(fmt.Sprintf("Count: %d\n", s.count))
+	out.WriteString(fmt.Sprintf("Total Size: %s\n", ui.FormatBytes(s.totalSize)))
+
+	t := table.New()
+	t.AddColumn("Size", "{{.SizeRange}}")
+	t.AddColumn("Count", "{{.Count}}")
+	type line struct {
+		SizeRange string
+		Count     int64
+	}
+
+	// only print up to the highest used bucket size
+	lastFilledIdx := 0
+	for i := 0; i < len(s.buckets); i++ {
+		if s.buckets[i].count != 0 {
+			lastFilledIdx = i
+		}
+	}
+
+	var lines []line
+	hasStarted := false
+	for i, b := range s.buckets {
+		if i > lastFilledIdx {
+			break
+		}
+
+		if b.count > 0 {
+			hasStarted = true
+		}
+		if hasStarted {
+			lines = append(lines, line{
+				SizeRange: fmt.Sprintf("%d - %d Byte", b.lower, b.upper),
+				Count:     b.count,
+			})
+		}
+	}
+	longestRange := 0
+	for _, l := range lines {
+		if longestRange < len(l.SizeRange) {
+			longestRange = len(l.SizeRange)
+		}
+	}
+	for i := range lines {
+		lines[i].SizeRange = strings.Repeat(" ", longestRange-len(lines[i].SizeRange)) + lines[i].SizeRange
+		t.AddRow(lines[i])
+	}
+
+	_ = t.Write(&out)
+
+	if len(s.oversized) > 0 {
+		out.WriteString(fmt.Sprintf("Oversized: %v\n", s.oversized))
+	}
+	return out.String()
+}

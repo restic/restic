@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"sort"
 	"sync"
 
@@ -600,6 +601,9 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	// Trigger GC to reset garbage collection threshold
+	runtime.GC()
 
 	if r.cfg.Version < 2 {
 		// sanity check

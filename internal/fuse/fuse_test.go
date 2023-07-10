@@ -271,6 +271,31 @@ func TestInodeFromNode(t *testing.T) {
 	rtest.Assert(t, inoA != inoAbb, "inode(a/b/b) = inode(a)")
 }
 
+func TestLink(t *testing.T) {
+	node := &restic.Node{Name: "foo.txt", Type: "symlink", Links: 1, LinkTarget: "dst", ExtendedAttributes: []restic.ExtendedAttribute{
+		{Name: "foo", Value: []byte("bar")},
+	}}
+
+	lnk, err := newLink(&Root{}, 42, node)
+	rtest.OK(t, err)
+	target, err := lnk.Readlink(context.TODO(), nil)
+	rtest.OK(t, err)
+	rtest.Equals(t, node.LinkTarget, target)
+
+	exp := &fuse.ListxattrResponse{}
+	exp.Append("foo")
+	resp := &fuse.ListxattrResponse{}
+	rtest.OK(t, lnk.Listxattr(context.TODO(), &fuse.ListxattrRequest{}, resp))
+	rtest.Equals(t, exp.Xattr, resp.Xattr)
+
+	getResp := &fuse.GetxattrResponse{}
+	rtest.OK(t, lnk.Getxattr(context.TODO(), &fuse.GetxattrRequest{Name: "foo"}, getResp))
+	rtest.Equals(t, node.ExtendedAttributes[0].Value, getResp.Xattr)
+
+	err = lnk.Getxattr(context.TODO(), &fuse.GetxattrRequest{Name: "invalid"}, nil)
+	rtest.Assert(t, err != nil, "missing error on reading invalid xattr")
+}
+
 var sink uint64
 
 func BenchmarkInode(b *testing.B) {

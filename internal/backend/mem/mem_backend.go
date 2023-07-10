@@ -6,10 +6,12 @@ import (
 	"encoding/base64"
 	"hash"
 	"io"
+	"net/http"
 	"sync"
 
 	"github.com/cespare/xxhash/v2"
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -19,6 +21,25 @@ type memMap map[restic.Handle][]byte
 
 // make sure that MemoryBackend implements backend.Backend
 var _ restic.Backend = &MemoryBackend{}
+
+// NewFactory creates a persistent mem backend
+func NewFactory() location.Factory {
+	be := New()
+
+	return location.NewHTTPBackendFactory[struct{}, *MemoryBackend](
+		"mem",
+		func(s string) (*struct{}, error) {
+			return &struct{}{}, nil
+		},
+		location.NoPassword,
+		func(_ context.Context, _ struct{}, _ http.RoundTripper) (*MemoryBackend, error) {
+			return be, nil
+		},
+		func(_ context.Context, _ struct{}, _ http.RoundTripper) (*MemoryBackend, error) {
+			return be, nil
+		},
+	)
+}
 
 var errNotFound = errors.New("not found")
 

@@ -523,19 +523,30 @@ Microsoft Azure Blob Storage
 ****************************
 
 You can also store backups on Microsoft Azure Blob Storage. Export the Azure
-Blob Storage account name and key as follows:
+Blob Storage account name:
 
 .. code-block:: console
 
     $ export AZURE_ACCOUNT_NAME=<ACCOUNT_NAME>
+
+For authentication export one of the following variables:
+
+.. code-block:: console
+
+    # For storage account key
     $ export AZURE_ACCOUNT_KEY=<SECRET_KEY>
+    # For SAS
+    $ export AZURE_ACCOUNT_SAS=<SAS_TOKEN>
 
-or
+Alternatively, if run on Azure, restic will automatically uses service accounts configured
+via the standard environment variables or Workload / Managed Identities.
+
+Restic will by default use Azure's global domain ``core.windows.net`` as endpoint suffix.
+You can specify other suffixes as follows:
 
 .. code-block:: console
 
-    $ export AZURE_ACCOUNT_NAME=<ACCOUNT_NAME>
-    $ export AZURE_ACCOUNT_SAS=<SAS_TOKEN>
+    $ export AZURE_ENDPOINT_SUFFIX=<ENDPOINT_SUFFIX>
 
 Afterwards you can initialize a repository in a container called ``foo`` in the
 root path like this:

@@ -12,18 +12,12 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/azure"
 	"github.com/restic/restic/internal/backend/test"
-	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func newAzureTestSuite(t testing.TB) *test.Suite[azure.Config] {
-	tr, err := backend.Transport(backend.TransportOptions{})
-	if err != nil {
-		t.Fatalf("cannot create transport for tests: %v", err)
-	}
-
+func newAzureTestSuite() *test.Suite[azure.Config] {
 	return &test.Suite[azure.Config]{
 		// do not use excessive data
 		MinimalData: true,
@@ -35,51 +29,12 @@ func newAzureTestSuite(t testing.TB) *test.Suite[azure.Config] {
 				return nil, err
 			}
 
-			err = cfg.ApplyEnvironment("RESTIC_TEST_")
-			if err != nil {
-				return nil, err
-			}
-
+			cfg.ApplyEnvironment("RESTIC_TEST_")
 			cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
 			return cfg, nil
 		},
 
-		// CreateFn is a function that creates a temporary repository for the tests.
-		Create: func(cfg azure.Config) (restic.Backend, error) {
-			ctx := context.TODO()
-			be, err := azure.Create(ctx, cfg, tr)
-			if err != nil {
-				return nil, err
-			}
-
-			_, err = be.Stat(context.TODO(), restic.Handle{Type: restic.ConfigFile})
-			if err != nil && !be.IsNotExist(err) {
-				return nil, err
-			}
-
-			if err == nil {
-				return nil, errors.New("config already exists")
-			}
-
-			return be, nil
-		},
-
-		// OpenFn is a function that opens a previously created temporary repository.
-		Open: func(cfg azure.Config) (restic.Backend, error) {
-			ctx := context.TODO()
-			return azure.Open(ctx, cfg, tr)
-		},
-
-		// CleanupFn removes data created during the tests.
-		Cleanup: func(cfg azure.Config) error {
-			ctx := context.TODO()
-			be, err := azure.Open(ctx, cfg, tr)
-			if err != nil {
-				return err
-			}
-
-			return be.Delete(context.TODO())
-		},
+		Factory: azure.NewFactory(),
 	}
 }
 
@@ -104,7 +59,7 @@ func TestBackendAzure(t *testing.T) {
 	}
 
 	t.Logf("run tests")
-	newAzureTestSuite(t).RunTests(t)
+	newAzureTestSuite().RunTests(t)
 }
 
 func BenchmarkBackendAzure(t *testing.B) {
@@ -122,7 +77,7 @@ func BenchmarkBackendAzure(t *testing.B) {
 	}
 
 	t.Logf("run tests")
-	newAzureTestSuite(t).RunBenchmarks(t)
+	newAzureTestSuite().RunBenchmarks(t)
 }
 
 func TestUploadLargeFile(t *testing.T) {

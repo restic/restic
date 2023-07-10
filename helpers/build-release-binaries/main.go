@@ -1,11 +1,14 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,16 +17,24 @@ import (
 )
 
 var opts = struct {
-	Verbose   bool
-	SourceDir string
-	OutputDir string
-	Version   string
+	Verbose        bool
+	SourceDir      string
+	OutputDir      string
+	Tags           string
+	PlatformSubset string
+	Platform       string
+	SkipCompress   bool
+	Version        string
 }{}
 
 func init() {
 	pflag.BoolVarP(&opts.Verbose, "verbose", "v", false, "be verbose")
 	pflag.StringVarP(&opts.SourceDir, "source", "s", "/restic", "path to the source code `directory`")
 	pflag.StringVarP(&opts.OutputDir, "output", "o", "/output", "path to the output `directory`")
+	pflag.StringVar(&opts.Tags, "tags", "", "additional build `tags`")
+	pflag.StringVar(&opts.PlatformSubset, "platform-subset", "", "specify `n/t` to only build this subset")
+	pflag.StringVarP(&opts.Platform, "platform", "p", "", "specify `os/arch` to only build this specific platform")
+	pflag.BoolVar(&opts.SkipCompress, "skip-compress", false, "skip binary compression step")
 	pflag.StringVar(&opts.Version, "version", "", "use `x.y.z` as the version for output files")
 	pflag.Parse()
 }
@@ -95,10 +106,15 @@ func build(sourceDir, outputDir, goos, goarch string) (filename string) {
 	}
 	outputFile := filepath.Join(outputDir, filename)
 
+	tags := "selfupdate"
+	if opts.Tags != "" {
+		tags += "," + opts.Tags
+	}
+
 	c := exec.Command("go", "build",
 		"-o", outputFile,
 		"-ldflags", "-s -w",
-		"-tags", "selfupdate",
+		"-tags", tags,
 		"./cmd/restic",
 	)
 	c.Stdout = os.Stdout
@@ -176,7 +192,9 @@ func buildForTarget(sourceDir, outputDir, goos, goarch string) (filename string)
 	filename = build(sourceDir, outputDir, goos, goarch)
 	touch(filepath.Join(outputDir, filename), mtime)
 	chmod(filepath.Join(outputDir, filename), 0755)
-	filename = compress(goos, outputDir, filename)
+	if !opts.SkipCompress {
+		filename = compress(goos, outputDir, filename)
+	}
 	return filename
 }
 
@@ -220,9 +238,7 @@ func buildTargets(sourceDir, outputDir string, targets map[string][]string) {
 	msg("build finished in %.3fs", time.Since(start).Seconds())
 }
 
-// ATTENTION: the list of architectures must be in sync with .github/workflows/tests.yml!
 var defaultBuildTargets = map[string][]string{
-	"aix":     {"ppc64"},
 	"darwin":  {"amd64", "arm64"},
 	"freebsd": {"386", "amd64", "arm"},
 	"linux":   {"386", "amd64", "arm", "arm64", "ppc64le", "mips", "mipsle", "mips64", "mips64le", "riscv64", "s390x"},
@@ -244,9 +260,65 @@ func downloadModules(sourceDir string) {
 	}
 }
 
+func selectSubset(subset string, target map[string][]string) (map[string][]string, error) {
+	t, n, _ := strings.Cut(subset, "/")
+	part, err := strconv.ParseInt(t, 10, 8)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse platform subset %q", subset)
+	}
+	total, err := strconv.ParseInt(n, 10, 8)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse platform subset %q", subset)
+	}
+	if total < 0 || part < 0 {
+		return nil, errors.New("platform subset out of range")
+	}
+	if part >= total {
+		return nil, errors.New("t must be in 0 <= t < n")
+	}
+
+	// flatten platform list
+	platforms := []string{}
+	for os, archs := range target {
+		for _, arch := range archs {
+			platforms = append(platforms, os+"/"+arch)
+		}
+	}
+	sort.Strings(platforms)
+
+	// select subset
+	lower := len(platforms) * int(part) / int(total)
+	upper := len(platforms) * int(part+1) / int(total)
+	platforms = platforms[lower:upper]
+
+	return buildPlatformList(platforms), nil
+}
+
+func buildPlatformList(platforms []string) map[string][]string {
+	fmt.Printf("Building for %v\n", platforms)
+
+	targets := make(map[string][]string)
+	for _, platform := range platforms {
+		os, arch, _ := strings.Cut(platform, "/")
+		targets[os] = append(targets[os], arch)
+	}
+	return targets
+}
+
 func main() {
 	if len(pflag.Args()) != 0 {
 		die("USAGE: build-release-binaries [OPTIONS]")
+	}
+
+	targets := defaultBuildTargets
+	if opts.PlatformSubset != "" {
+		var err error
+		targets, err = selectSubset(opts.PlatformSubset, targets)
+		if err != nil {
+			die("%s", err)
+		}
+	} else if opts.Platform != "" {
+		targets = buildPlatformList([]string{opts.Platform})
 	}
 
 	sourceDir := abs(opts.SourceDir)
@@ -254,5 +326,5 @@ func main() {
 	mkdir(outputDir)
 
 	downloadModules(sourceDir)
-	buildTargets(sourceDir, outputDir, defaultBuildTargets)
+	buildTargets(sourceDir, outputDir, targets)
 }

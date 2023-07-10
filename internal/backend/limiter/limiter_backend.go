@@ -7,6 +7,21 @@ import (
 	"github.com/restic/restic/internal/restic"
 )
 
+func WrapBackendConstructor[B restic.Backend, C any](constructor func(ctx context.Context, cfg C) (B, error)) func(ctx context.Context, cfg C, lim Limiter) (restic.Backend, error) {
+	return func(ctx context.Context, cfg C, lim Limiter) (restic.Backend, error) {
+		var be restic.Backend
+		be, err := constructor(ctx, cfg)
+		if err != nil {
+			return nil, err
+		}
+
+		if lim != nil {
+			be = LimitBackend(be, lim)
+		}
+		return be, nil
+	}
+}
+
 // LimitBackend wraps a Backend and applies rate limiting to Load() and Save()
 // calls on the backend.
 func LimitBackend(be restic.Backend, l Limiter) restic.Backend {

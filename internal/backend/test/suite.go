@@ -1,11 +1,16 @@
 package test
 
 import (
+	"context"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/location"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
 )
@@ -18,14 +23,8 @@ type Suite[C any] struct {
 	// NewConfig returns a config for a new temporary backend that will be used in tests.
 	NewConfig func() (*C, error)
 
-	// CreateFn is a function that creates a temporary repository for the tests.
-	Create func(cfg C) (restic.Backend, error)
-
-	// OpenFn is a function that opens a previously created temporary repository.
-	Open func(cfg C) (restic.Backend, error)
-
-	// CleanupFn removes data created during the tests.
-	Cleanup func(cfg C) error
+	// Factory contains a factory that can be used to create or open a repository for the tests.
+	Factory location.Factory
 
 	// MinimalData instructs the tests to not use excessive data.
 	MinimalData bool
@@ -60,11 +59,7 @@ func (s *Suite[C]) RunTests(t *testing.T) {
 		return
 	}
 
-	if s.Cleanup != nil {
-		if err = s.Cleanup(*s.Config); err != nil {
-			t.Fatal(err)
-		}
-	}
+	s.cleanup(t)
 }
 
 type testFunction struct {
@@ -158,13 +153,34 @@ func (s *Suite[C]) RunBenchmarks(b *testing.B) {
 		return
 	}
 
-	if err = s.Cleanup(*s.Config); err != nil {
-		b.Fatal(err)
+	s.cleanup(b)
+}
+
+func (s *Suite[C]) createOrError() (restic.Backend, error) {
+	tr, err := backend.Transport(backend.TransportOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("cannot create transport for tests: %v", err)
 	}
+
+	be, err := s.Factory.Create(context.TODO(), s.Config, tr, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = be.Stat(context.TODO(), restic.Handle{Type: restic.ConfigFile})
+	if err != nil && !be.IsNotExist(err) {
+		return nil, err
+	}
+
+	if err == nil {
+		return nil, errors.New("config already exists")
+	}
+
+	return be, nil
 }
 
 func (s *Suite[C]) create(t testing.TB) restic.Backend {
-	be, err := s.Create(*s.Config)
+	be, err := s.createOrError()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -172,11 +188,24 @@ func (s *Suite[C]) create(t testing.TB) restic.Backend {
 }
 
 func (s *Suite[C]) open(t testing.TB) restic.Backend {
-	be, err := s.Open(*s.Config)
+	tr, err := backend.Transport(backend.TransportOptions{})
+	if err != nil {
+		t.Fatalf("cannot create transport for tests: %v", err)
+	}
+
+	be, err := s.Factory.Open(context.TODO(), s.Config, tr, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	return be
+}
+
+func (s *Suite[C]) cleanup(t testing.TB) {
+	be := s.open(t)
+	if err := be.Delete(context.TODO()); err != nil {
+		t.Fatal(err)
+	}
+	s.close(t, be)
 }
 
 func (s *Suite[C]) close(t testing.TB, be restic.Backend) {

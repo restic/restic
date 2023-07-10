@@ -76,6 +76,7 @@ type GlobalOptions struct {
 	stdout   io.Writer
 	stderr   io.Writer
 
+	backends                              *location.Registry
 	backendTestHook, backendInnerTestHook backendWrapper
 
 	// verbosity is set as follows:
@@ -99,6 +100,19 @@ var isReadingPassword bool
 var internalGlobalCtx context.Context
 
 func init() {
+	backends := location.NewRegistry()
+	backends.Register(azure.NewFactory())
+	backends.Register(b2.NewFactory())
+	backends.Register(gs.NewFactory())
+	backends.Register(local.NewFactory())
+	backends.Register(rclone.NewFactory())
+	backends.Register(rest.NewFactory())
+	backends.Register(s3.NewFactory())
+	backends.Register(sftp.NewFactory())
+	backends.Register(swift.NewFactory())
+	backends.Register(smb.NewFactory())
+	globalOptions.backends = backends
+
 	var cancel context.CancelFunc
 	internalGlobalCtx, cancel = context.WithCancel(context.Background())
 	AddCleanupHandler(func(code int) (int, error) {
@@ -122,8 +136,8 @@ func init() {
 	f.BoolVarP(&globalOptions.JSON, "json", "", false, "set output mode to JSON for commands that support it")
 	f.StringVar(&globalOptions.CacheDir, "cache-dir", "", "set the cache `directory`. (default: use system default cache directory)")
 	f.BoolVar(&globalOptions.NoCache, "no-cache", false, "do not use a local cache")
-	f.StringSliceVar(&globalOptions.RootCertFilenames, "cacert", nil, "`file` to load root certificates from (default: use system certificates)")
-	f.StringVar(&globalOptions.TLSClientCertKeyFilename, "tls-client-cert", "", "path to a `file` containing PEM encoded TLS client certificate and private key")
+	f.StringSliceVar(&globalOptions.RootCertFilenames, "cacert", nil, "`file` to load root certificates from (default: use system certificates or $RESTIC_CACERT)")
+	f.StringVar(&globalOptions.TLSClientCertKeyFilename, "tls-client-cert", "", "path to a `file` containing PEM encoded TLS client certificate and private key (default: $RESTIC_TLS_CLIENT_CERT)")
 	f.BoolVar(&globalOptions.InsecureTLS, "insecure-tls", false, "skip TLS certificate verification when connecting to the repository (insecure)")
 	f.BoolVar(&globalOptions.CleanupCache, "cleanup-cache", false, "auto remove old cache directories")
 	f.Var(&globalOptions.Compression, "compression", "compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION)")
@@ -139,6 +153,10 @@ func init() {
 	globalOptions.PasswordFile = os.Getenv("RESTIC_PASSWORD_FILE")
 	globalOptions.KeyHint = os.Getenv("RESTIC_KEY_HINT")
 	globalOptions.PasswordCommand = os.Getenv("RESTIC_PASSWORD_COMMAND")
+	if os.Getenv("RESTIC_CACERT") != "" {
+		globalOptions.RootCertFilenames = strings.Split(os.Getenv("RESTIC_CACERT"), ",")
+	}
+	globalOptions.TLSClientCertKeyFilename = os.Getenv("RESTIC_TLS_CLIENT_CERT")
 	comp := os.Getenv("RESTIC_COMPRESSION")
 	if comp != "" {
 		// ignore error as there's no good way to handle it
@@ -538,9 +556,7 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 func parseConfig(loc location.Location, opts options.Options) (interface{}, error) {
 	cfg := loc.Config
 	if cfg, ok := cfg.(restic.ApplyEnvironmenter); ok {
-		if err := cfg.ApplyEnvironment(""); err != nil {
-			return nil, err
-		}
+		cfg.ApplyEnvironment("")
 	}
 
 	// only apply options for a particular backend here
@@ -555,8 +571,8 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 
 // Open the backend specified by a location config.
 func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Options) (restic.Backend, error) {
-	debug.Log("parsing location %v", location.StripPassword(s))
-	loc, err := location.Parse(s)
+	debug.Log("parsing location %v", location.StripPassword(gopts.backends, s))
+	loc, err := location.Parse(gopts.backends, s)
 	if err != nil {
 		return nil, errors.Fatalf("parsing repository location failed: %v", err)
 	}
@@ -570,41 +586,21 @@ func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Optio
 
 	rt, err := backend.Transport(globalOptions.TransportOptions)
 	if err != nil {
-		return nil, err
+		return nil, errors.Fatal(err.Error())
 	}
 
 	// wrap the transport so that the throughput via HTTP is limited
 	lim := limiter.NewStaticLimiter(gopts.Limits)
 	rt = lim.Transport(rt)
 
-	switch loc.Scheme {
-	case "local":
-		be, err = local.Open(ctx, *cfg.(*local.Config))
-	case "sftp":
-		be, err = sftp.Open(ctx, *cfg.(*sftp.Config))
-	case "s3":
-		be, err = s3.Open(ctx, *cfg.(*s3.Config), rt)
-	case "gs":
-		be, err = gs.Open(*cfg.(*gs.Config), rt)
-	case "azure":
-		be, err = azure.Open(ctx, *cfg.(*azure.Config), rt)
-	case "swift":
-		be, err = swift.Open(ctx, *cfg.(*swift.Config), rt)
-	case "b2":
-		be, err = b2.Open(ctx, *cfg.(*b2.Config), rt)
-	case "rest":
-		be, err = rest.Open(*cfg.(*rest.Config), rt)
-	case "rclone":
-		be, err = rclone.Open(*cfg.(*rclone.Config), lim)
-	case "smb":
-		be, err = smb.Open(ctx, *cfg.(*smb.Config))
-
-	default:
+	factory := gopts.backends.Lookup(loc.Scheme)
+	if factory == nil {
 		return nil, errors.Fatalf("invalid backend: %q", loc.Scheme)
 	}
 
+	be, err = factory.Open(ctx, cfg, rt, lim)
 	if err != nil {
-		return nil, errors.Fatalf("unable to open repository at %v: %v", location.StripPassword(s), err)
+		return nil, errors.Fatalf("unable to open repository at %v: %v", location.StripPassword(gopts.backends, s), err)
 	}
 
 	// wrap with debug logging and connection limiting
@@ -618,15 +614,10 @@ func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Optio
 		}
 	}
 
-	if loc.Scheme == "local" || loc.Scheme == "sftp" || loc.Scheme == "smb" {
-		// wrap the backend in a LimitBackend so that the throughput is limited
-		be = limiter.LimitBackend(be, lim)
-	}
-
 	// check if config is there
 	fi, err := be.Stat(ctx, restic.Handle{Type: restic.ConfigFile})
 	if err != nil {
-		return nil, errors.Fatalf("unable to open config file: %v\nIs there a repository at the following location?\n%v", err, location.StripPassword(s))
+		return nil, errors.Fatalf("unable to open config file: %v\nIs there a repository at the following location?\n%v", err, location.StripPassword(gopts.backends, s))
 	}
 
 	if fi.Size == 0 {
@@ -637,9 +628,9 @@ func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Optio
 }
 
 // Create the backend specified by URI.
-func create(ctx context.Context, s string, opts options.Options) (restic.Backend, error) {
-	debug.Log("parsing location %v", s)
-	loc, err := location.Parse(s)
+func create(ctx context.Context, s string, gopts GlobalOptions, opts options.Options) (restic.Backend, error) {
+	debug.Log("parsing location %v", location.StripPassword(gopts.backends, s))
+	loc, err := location.Parse(gopts.backends, s)
 	if err != nil {
 		return nil, err
 	}
@@ -651,36 +642,15 @@ func create(ctx context.Context, s string, opts options.Options) (restic.Backend
 
 	rt, err := backend.Transport(globalOptions.TransportOptions)
 	if err != nil {
-		return nil, err
+		return nil, errors.Fatal(err.Error())
 	}
 
-	var be restic.Backend
-	switch loc.Scheme {
-	case "local":
-		be, err = local.Create(ctx, *cfg.(*local.Config))
-	case "sftp":
-		be, err = sftp.Create(ctx, *cfg.(*sftp.Config))
-	case "s3":
-		be, err = s3.Create(ctx, *cfg.(*s3.Config), rt)
-	case "gs":
-		be, err = gs.Create(ctx, *cfg.(*gs.Config), rt)
-	case "azure":
-		be, err = azure.Create(ctx, *cfg.(*azure.Config), rt)
-	case "swift":
-		be, err = swift.Open(ctx, *cfg.(*swift.Config), rt)
-	case "b2":
-		be, err = b2.Create(ctx, *cfg.(*b2.Config), rt)
-	case "rest":
-		be, err = rest.Create(ctx, *cfg.(*rest.Config), rt)
-	case "rclone":
-		be, err = rclone.Create(ctx, *cfg.(*rclone.Config))
-	case "smb":
-		be, err = smb.Create(ctx, *cfg.(*smb.Config))
-	default:
-		debug.Log("invalid repository scheme: %v", s)
-		return nil, errors.Fatalf("invalid scheme %q", loc.Scheme)
+	factory := gopts.backends.Lookup(loc.Scheme)
+	if factory == nil {
+		return nil, errors.Fatalf("invalid backend: %q", loc.Scheme)
 	}
 
+	be, err := factory.Create(ctx, cfg, rt, nil)
 	if err != nil {
 		return nil, err
 	}

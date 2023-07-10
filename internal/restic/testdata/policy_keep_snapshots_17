@@ -49,6 +49,11 @@
       "time": "2014-11-22T10:20:30Z",
       "tree": null,
       "paths": null
+    },
+    {
+      "time": "2014-08-08T10:20:30Z",
+      "tree": null,
+      "paths": null
     }
   ],
   "reasons": [
@@ -200,6 +205,19 @@
       ],
       "counters": {
         "yearly": 7
+      }
+    },
+    {
+      "snapshot": {
+        "time": "2014-08-08T10:20:30Z",
+        "tree": null,
+        "paths": null
+      },
+      "matches": [
+        "yearly snapshot"
+      ],
+      "counters": {
+        "yearly": 6
       }
     }
   ]

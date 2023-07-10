@@ -11,6 +11,7 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
+	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -36,6 +37,10 @@ const defaultListMaxItems = 10 * 1000
 // ensure statically that *b2Backend implements restic.Backend.
 var _ restic.Backend = &b2Backend{}
 
+func NewFactory() location.Factory {
+	return location.NewHTTPBackendFactory("b2", ParseConfig, location.NoPassword, Create, Open)
+}
+
 type sniffingRoundTripper struct {
 	sync.Mutex
 	lastErr error
@@ -53,6 +58,13 @@ func (s *sniffingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 }
 
 func newClient(ctx context.Context, cfg Config, rt http.RoundTripper) (*b2.Client, error) {
+	if cfg.AccountID == "" {
+		return nil, errors.Fatalf("unable to open B2 backend: Account ID ($B2_ACCOUNT_ID) is empty")
+	}
+	if cfg.Key.String() == "" {
+		return nil, errors.Fatalf("unable to open B2 backend: Key ($B2_ACCOUNT_KEY) is empty")
+	}
+
 	sniffer := &sniffingRoundTripper{RoundTripper: rt}
 	opts := []b2.ClientOption{b2.Transport(sniffer)}
 
@@ -135,16 +147,6 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backe
 		},
 		listMaxItems: defaultListMaxItems,
 	}
-
-	_, err = be.Stat(ctx, restic.Handle{Type: restic.ConfigFile})
-	if err != nil && !be.IsNotExist(err) {
-		return nil, err
-	}
-
-	if err == nil {
-		return nil, errors.New("config already exists")
-	}
-
 	return be, nil
 }
 

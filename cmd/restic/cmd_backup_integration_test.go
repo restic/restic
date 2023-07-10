@@ -13,34 +13,19 @@ import (
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui/termstatus"
-	"golang.org/x/sync/errgroup"
 )
 
 func testRunBackupAssumeFailure(t testing.TB, dir string, target []string, opts BackupOptions, gopts GlobalOptions) error {
-	ctx, cancel := context.WithCancel(context.TODO())
-	defer cancel()
+	return withTermStatus(gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+		t.Logf("backing up %v in %v", target, dir)
+		if dir != "" {
+			cleanup := rtest.Chdir(t, dir)
+			defer cleanup()
+		}
 
-	var wg errgroup.Group
-	term := termstatus.New(gopts.stdout, gopts.stderr, gopts.Quiet)
-	wg.Go(func() error { term.Run(ctx); return nil })
-
-	t.Logf("backing up %v in %v", target, dir)
-	if dir != "" {
-		cleanup := rtest.Chdir(t, dir)
-		defer cleanup()
-	}
-
-	opts.GroupBy = restic.SnapshotGroupByOptions{Host: true, Path: true}
-	backupErr := runBackup(ctx, opts, gopts, term, target)
-
-	cancel()
-
-	err := wg.Wait()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return backupErr
+		opts.GroupBy = restic.SnapshotGroupByOptions{Host: true, Path: true}
+		return runBackup(ctx, opts, gopts, term, target)
+	})
 }
 
 func testRunBackup(t testing.TB, dir string, target []string, opts BackupOptions, gopts GlobalOptions) {
@@ -453,6 +438,22 @@ func TestBackupTags(t *testing.T) {
 	// Tagged backup should have untagged backup as parent.
 	rtest.Assert(t, parent.ID.Equal(*newest.Parent),
 		"expected parent to be %v, got %v", parent.ID, newest.Parent)
+}
+
+func TestBackupProgramVersion(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	testRunBackup(t, "", []string{env.testdata}, BackupOptions{}, env.gopts)
+	newest, _ := testRunSnapshots(t, env.gopts)
+
+	if newest == nil {
+		t.Fatal("expected a backup, got nil")
+	}
+	resticVersion := "restic " + version
+	rtest.Assert(t, newest.ProgramVersion == resticVersion,
+		"expected %v, got %v", resticVersion, newest.ProgramVersion)
 }
 
 func TestQuietBackup(t *testing.T) {

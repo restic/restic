@@ -14,12 +14,14 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
+	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/streaming"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
@@ -43,12 +45,22 @@ const defaultListMaxItems = 5000
 // make sure that *Backend implements backend.Backend
 var _ restic.Backend = &Backend{}
 
+func NewFactory() location.Factory {
+	return location.NewHTTPBackendFactory("azure", ParseConfig, location.NoPassword, Create, Open)
+}
+
 func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	debug.Log("open, config %#v", cfg)
 	var client *azContainer.Client
 	var err error
 
-	url := fmt.Sprintf("https://%s.blob.core.windows.net/%s", cfg.AccountName, cfg.Container)
+	var endpointSuffix string
+	if cfg.EndpointSuffix != "" {
+		endpointSuffix = cfg.EndpointSuffix
+	} else {
+		endpointSuffix = "core.windows.net"
+	}
+	url := fmt.Sprintf("https://%s.blob.%s/%s", cfg.AccountName, endpointSuffix, cfg.Container)
 	opts := &azContainer.ClientOptions{
 		ClientOptions: azcore.ClientOptions{
 			Transport: &http.Client{Transport: rt},
@@ -90,7 +102,16 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 			return nil, errors.Wrap(err, "NewAccountSASClientFromEndpointToken")
 		}
 	} else {
-		return nil, errors.New("no azure authentication information found")
+		debug.Log(" - using DefaultAzureCredential")
+		cred, err := azidentity.NewDefaultAzureCredential(nil)
+		if err != nil {
+			return nil, errors.Wrap(err, "NewDefaultAzureCredential")
+		}
+
+		client, err = azContainer.NewClient(url, cred, opts)
+		if err != nil {
+			return nil, errors.Wrap(err, "NewClient")
+		}
 	}
 
 	be := &Backend{

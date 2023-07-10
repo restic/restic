@@ -77,7 +77,7 @@ func ParseConfig(s string) (*Config, error) {
 var _ restic.ApplyEnvironmenter = &Config{}
 
 // ApplyEnvironment saves values from the environment to the config.
-func (cfg *Config) ApplyEnvironment(prefix string) error {
+func (cfg *Config) ApplyEnvironment(prefix string) {
 	for _, val := range []struct {
 		s   *string
 		env string
@@ -130,5 +130,4 @@ func (cfg *Config) ApplyEnvironment(prefix string) error {
 			*val.s = options.NewSecretString(os.Getenv(val.env))
 		}
 	}
-	return nil
 }

@@ -36,6 +36,12 @@ func beTest(ctx context.Context, be restic.Backend, h restic.Handle) (bool, erro
 	return err == nil, err
 }
 
+// TestStripPasswordCall tests that the StripPassword method of a factory can be called without crashing.
+// It does not verify whether passwords are removed correctly
+func (s *Suite[C]) TestStripPasswordCall(_ *testing.T) {
+	s.Factory.StripPassword("some random string")
+}
+
 // TestCreateWithConfig tests that creating a backend in a location which already
 // has a config file fails.
 func (s *Suite[C]) TestCreateWithConfig(t *testing.T) {
@@ -57,7 +63,7 @@ func (s *Suite[C]) TestCreateWithConfig(t *testing.T) {
 	store(t, b, restic.ConfigFile, []byte("test config"))
 
 	// now create the backend again, this must fail
-	_, err = s.Create(*s.Config)
+	_, err = s.createOrError()
 	if err == nil {
 		t.Fatalf("expected error not found for creating a backend with an existing config file")
 	}

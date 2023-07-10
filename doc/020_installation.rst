@@ -265,6 +265,16 @@ binary, you can get it with `docker pull` like this:
 
     $ docker pull restic/restic
 
+The container is also available on the GitHub Container Registry:
+
+.. code-block:: console
+
+    $ docker pull ghcr.io/restic/restic
+
+Restic relies on the hostname for various operations. Make sure to set a static
+hostname using `--hostname` when creating a Docker container, otherwise Docker
+will assign a random hostname each time.
+
 From Source
 ***********
 

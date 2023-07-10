@@ -645,6 +645,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		Time:           timeStamp,
 		Hostname:       opts.Host,
 		ParentSnapshot: parentSnapshot,
+		ProgramVersion: "restic " + version,
 	}
 
 	if !gopts.JSON {

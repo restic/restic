@@ -127,3 +127,5 @@ required argument is the new version number (in `Semantic Versioning
     go run helpers/prepare-release/main.go 0.14.0
 
 Checks can be skipped on demand via flags, please see ``--help`` for details.
+
+The build process requires ``docker``, ``docker-buildx`` and ``qemu-user-static-binfmt``.
