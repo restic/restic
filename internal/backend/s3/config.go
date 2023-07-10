@@ -2,11 +2,13 @@ package s3
 
 import (
 	"net/url"
+	"os"
 	"path"
 	"strings"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/options"
+	"github.com/restic/restic/internal/restic"
 )
 
 // Config contains all configuration necessary to connect to an s3 compatible
@@ -44,7 +46,7 @@ func init() {
 // supported configuration formats are s3://host/bucketname/prefix and
 // s3:host/bucketname/prefix. The host can also be a valid s3 region
 // name. If no prefix is given the prefix "restic" will be used.
-func ParseConfig(s string) (interface{}, error) {
+func ParseConfig(s string) (*Config, error) {
 	switch {
 	case strings.HasPrefix(s, "s3:http"):
 		// assume that a URL has been specified, parse it and
@@ -75,7 +77,7 @@ func ParseConfig(s string) (interface{}, error) {
 	return createConfig(endpoint, bucket, prefix, false)
 }
 
-func createConfig(endpoint, bucket, prefix string, useHTTP bool) (interface{}, error) {
+func createConfig(endpoint, bucket, prefix string, useHTTP bool) (*Config, error) {
 	if endpoint == "" {
 		return nil, errors.New("s3: invalid format, host/region or bucket name not found")
 	}
@@ -89,5 +91,30 @@ func createConfig(endpoint, bucket, prefix string, useHTTP bool) (interface{}, e
 	cfg.UseHTTP = useHTTP
 	cfg.Bucket = bucket
 	cfg.Prefix = prefix
-	return cfg, nil
+	return &cfg, nil
+}
+
+var _ restic.ApplyEnvironmenter = &Config{}
+
+// ApplyEnvironment saves values from the environment to the config.
+func (cfg *Config) ApplyEnvironment(prefix string) error {
+	if cfg.KeyID == "" {
+		cfg.KeyID = os.Getenv(prefix + "AWS_ACCESS_KEY_ID")
+	}
+
+	if cfg.Secret.String() == "" {
+		cfg.Secret = options.NewSecretString(os.Getenv(prefix + "AWS_SECRET_ACCESS_KEY"))
+	}
+
+	if cfg.KeyID == "" && cfg.Secret.String() != "" {
+		return errors.Fatalf("unable to open S3 backend: Key ID ($AWS_ACCESS_KEY_ID) is empty")
+	} else if cfg.KeyID != "" && cfg.Secret.String() == "" {
+		return errors.Fatalf("unable to open S3 backend: Secret ($AWS_SECRET_ACCESS_KEY) is empty")
+	}
+
+	if cfg.Region == "" {
+		cfg.Region = os.Getenv(prefix + "AWS_DEFAULT_REGION")
+	}
+
+	return nil
 }

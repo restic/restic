@@ -6,6 +6,7 @@ import (
 
 	"github.com/cespare/xxhash/v2"
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/fs"
 )
 
 // writes blobs to target files.
@@ -72,7 +73,7 @@ func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create
 					return nil, err
 				}
 			} else {
-				err := preallocateFile(wr.File, createSize)
+				err := fs.PreallocateFile(wr.File, createSize)
 				if err != nil {
 					// Just log the preallocate error but don't let it cause the restore process to fail.
 					// Preallocate might return an error if the filesystem (implementation) does not

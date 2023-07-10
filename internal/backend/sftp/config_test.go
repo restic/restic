@@ -2,94 +2,81 @@ package sftp
 
 import (
 	"testing"
+
+	"github.com/restic/restic/internal/backend/test"
 )
 
-var configTests = []struct {
-	in  string
-	cfg Config
-}{
+var configTests = []test.ConfigTestData[Config]{
 	// first form, user specified sftp://user@host/dir
 	{
-		"sftp://user@host/dir/subdir",
-		Config{User: "user", Host: "host", Path: "dir/subdir", Connections: 5},
+		S:   "sftp://user@host/dir/subdir",
+		Cfg: Config{User: "user", Host: "host", Path: "dir/subdir", Connections: 5},
 	},
 	{
-		"sftp://host/dir/subdir",
-		Config{Host: "host", Path: "dir/subdir", Connections: 5},
+		S:   "sftp://host/dir/subdir",
+		Cfg: Config{Host: "host", Path: "dir/subdir", Connections: 5},
 	},
 	{
-		"sftp://host//dir/subdir",
-		Config{Host: "host", Path: "/dir/subdir", Connections: 5},
+		S:   "sftp://host//dir/subdir",
+		Cfg: Config{Host: "host", Path: "/dir/subdir", Connections: 5},
 	},
 	{
-		"sftp://host:10022//dir/subdir",
-		Config{Host: "host", Port: "10022", Path: "/dir/subdir", Connections: 5},
+		S:   "sftp://host:10022//dir/subdir",
+		Cfg: Config{Host: "host", Port: "10022", Path: "/dir/subdir", Connections: 5},
 	},
 	{
-		"sftp://user@host:10022//dir/subdir",
-		Config{User: "user", Host: "host", Port: "10022", Path: "/dir/subdir", Connections: 5},
+		S:   "sftp://user@host:10022//dir/subdir",
+		Cfg: Config{User: "user", Host: "host", Port: "10022", Path: "/dir/subdir", Connections: 5},
 	},
 	{
-		"sftp://user@host/dir/subdir/../other",
-		Config{User: "user", Host: "host", Path: "dir/other", Connections: 5},
+		S:   "sftp://user@host/dir/subdir/../other",
+		Cfg: Config{User: "user", Host: "host", Path: "dir/other", Connections: 5},
 	},
 	{
-		"sftp://user@host/dir///subdir",
-		Config{User: "user", Host: "host", Path: "dir/subdir", Connections: 5},
+		S:   "sftp://user@host/dir///subdir",
+		Cfg: Config{User: "user", Host: "host", Path: "dir/subdir", Connections: 5},
 	},
 
 	// IPv6 address.
 	{
-		"sftp://user@[::1]/dir",
-		Config{User: "user", Host: "::1", Path: "dir", Connections: 5},
+		S:   "sftp://user@[::1]/dir",
+		Cfg: Config{User: "user", Host: "::1", Path: "dir", Connections: 5},
 	},
 	// IPv6 address with port.
 	{
-		"sftp://user@[::1]:22/dir",
-		Config{User: "user", Host: "::1", Port: "22", Path: "dir", Connections: 5},
+		S:   "sftp://user@[::1]:22/dir",
+		Cfg: Config{User: "user", Host: "::1", Port: "22", Path: "dir", Connections: 5},
 	},
 
 	// second form, user specified sftp:user@host:/dir
 	{
-		"sftp:user@host:/dir/subdir",
-		Config{User: "user", Host: "host", Path: "/dir/subdir", Connections: 5},
+		S:   "sftp:user@host:/dir/subdir",
+		Cfg: Config{User: "user", Host: "host", Path: "/dir/subdir", Connections: 5},
 	},
 	{
-		"sftp:user@domain@host:/dir/subdir",
-		Config{User: "user@domain", Host: "host", Path: "/dir/subdir", Connections: 5},
+		S:   "sftp:user@domain@host:/dir/subdir",
+		Cfg: Config{User: "user@domain", Host: "host", Path: "/dir/subdir", Connections: 5},
 	},
 	{
-		"sftp:host:../dir/subdir",
-		Config{Host: "host", Path: "../dir/subdir", Connections: 5},
+		S:   "sftp:host:../dir/subdir",
+		Cfg: Config{Host: "host", Path: "../dir/subdir", Connections: 5},
 	},
 	{
-		"sftp:user@host:dir/subdir:suffix",
-		Config{User: "user", Host: "host", Path: "dir/subdir:suffix", Connections: 5},
+		S:   "sftp:user@host:dir/subdir:suffix",
+		Cfg: Config{User: "user", Host: "host", Path: "dir/subdir:suffix", Connections: 5},
 	},
 	{
-		"sftp:user@host:dir/subdir/../other",
-		Config{User: "user", Host: "host", Path: "dir/other", Connections: 5},
+		S:   "sftp:user@host:dir/subdir/../other",
+		Cfg: Config{User: "user", Host: "host", Path: "dir/other", Connections: 5},
 	},
 	{
-		"sftp:user@host:dir///subdir",
-		Config{User: "user", Host: "host", Path: "dir/subdir", Connections: 5},
+		S:   "sftp:user@host:dir///subdir",
+		Cfg: Config{User: "user", Host: "host", Path: "dir/subdir", Connections: 5},
 	},
 }
 
 func TestParseConfig(t *testing.T) {
-	for i, test := range configTests {
-		cfg, err := ParseConfig(test.in)
-		if err != nil {
-			t.Errorf("test %d:%s failed: %v", i, test.in, err)
-			continue
-		}
-
-		if cfg != test.cfg {
-			t.Errorf("test %d:\ninput:\n  %s\n wrong config, want:\n  %v\ngot:\n  %v",
-				i, test.in, test.cfg, cfg)
-			continue
-		}
-	}
+	test.ParseConfigTester(t, ParseConfig, configTests)
 }
 
 var configTestsInvalid = []string{

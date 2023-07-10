@@ -29,7 +29,7 @@ func remove(t testing.TB, be restic.Backend, h restic.Handle) {
 
 // BenchmarkLoadFile benchmarks the Load() method of a backend by
 // loading a complete file.
-func (s *Suite) BenchmarkLoadFile(t *testing.B) {
+func (s *Suite[C]) BenchmarkLoadFile(t *testing.B) {
 	be := s.open(t)
 	defer s.close(t, be)
 
@@ -64,7 +64,7 @@ func (s *Suite) BenchmarkLoadFile(t *testing.B) {
 
 // BenchmarkLoadPartialFile benchmarks the Load() method of a backend by
 // loading the remainder of a file starting at a given offset.
-func (s *Suite) BenchmarkLoadPartialFile(t *testing.B) {
+func (s *Suite[C]) BenchmarkLoadPartialFile(t *testing.B) {
 	be := s.open(t)
 	defer s.close(t, be)
 
@@ -101,7 +101,7 @@ func (s *Suite) BenchmarkLoadPartialFile(t *testing.B) {
 
 // BenchmarkLoadPartialFileOffset benchmarks the Load() method of a
 // backend by loading a number of bytes of a file starting at a given offset.
-func (s *Suite) BenchmarkLoadPartialFileOffset(t *testing.B) {
+func (s *Suite[C]) BenchmarkLoadPartialFileOffset(t *testing.B) {
 	be := s.open(t)
 	defer s.close(t, be)
 
@@ -139,7 +139,7 @@ func (s *Suite) BenchmarkLoadPartialFileOffset(t *testing.B) {
 }
 
 // BenchmarkSave benchmarks the Save() method of a backend.
-func (s *Suite) BenchmarkSave(t *testing.B) {
+func (s *Suite[C]) BenchmarkSave(t *testing.B) {
 	be := s.open(t)
 	defer s.close(t, be)
 

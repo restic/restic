@@ -2,8 +2,9 @@ package rest
 
 import (
 	"net/url"
-	"reflect"
 	"testing"
+
+	"github.com/restic/restic/internal/backend/test"
 )
 
 func parseURL(s string) *url.URL {
@@ -15,20 +16,17 @@ func parseURL(s string) *url.URL {
 	return u
 }
 
-var configTests = []struct {
-	s   string
-	cfg Config
-}{
+var configTests = []test.ConfigTestData[Config]{
 	{
-		s: "rest:http://localhost:1234",
-		cfg: Config{
+		S: "rest:http://localhost:1234",
+		Cfg: Config{
 			URL:         parseURL("http://localhost:1234/"),
 			Connections: 5,
 		},
 	},
 	{
-		s: "rest:http://localhost:1234/",
-		cfg: Config{
+		S: "rest:http://localhost:1234/",
+		Cfg: Config{
 			URL:         parseURL("http://localhost:1234/"),
 			Connections: 5,
 		},
@@ -36,17 +34,5 @@ var configTests = []struct {
 }
 
 func TestParseConfig(t *testing.T) {
-	for _, test := range configTests {
-		t.Run("", func(t *testing.T) {
-			cfg, err := ParseConfig(test.s)
-			if err != nil {
-				t.Fatalf("%s failed: %v", test.s, err)
-			}
-
-			if !reflect.DeepEqual(cfg, test.cfg) {
-				t.Fatalf("\ninput: %s\n wrong config, want:\n  %v\ngot:\n  %v",
-					test.s, test.cfg, cfg)
-			}
-		})
-	}
+	test.ParseConfigTester(t, ParseConfig, configTests)
 }

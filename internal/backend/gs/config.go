@@ -1,11 +1,13 @@
 package gs
 
 import (
+	"os"
 	"path"
 	"strings"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/options"
+	"github.com/restic/restic/internal/restic"
 )
 
 // Config contains all configuration necessary to connect to a Google Cloud Storage
@@ -34,7 +36,7 @@ func init() {
 
 // ParseConfig parses the string s and extracts the gcs config. The
 // supported configuration format is gs:bucketName:/[prefix].
-func ParseConfig(s string) (interface{}, error) {
+func ParseConfig(s string) (*Config, error) {
 	if !strings.HasPrefix(s, "gs:") {
 		return nil, errors.New("gs: invalid format")
 	}
@@ -54,5 +56,15 @@ func ParseConfig(s string) (interface{}, error) {
 	cfg := NewConfig()
 	cfg.Bucket = bucket
 	cfg.Prefix = prefix
-	return cfg, nil
+	return &cfg, nil
+}
+
+var _ restic.ApplyEnvironmenter = &Config{}
+
+// ApplyEnvironment saves values from the environment to the config.
+func (cfg *Config) ApplyEnvironment(prefix string) error {
+	if cfg.ProjectID == "" {
+		cfg.ProjectID = os.Getenv(prefix + "GOOGLE_PROJECT_ID")
+	}
+	return nil
 }

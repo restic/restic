@@ -1,12 +1,14 @@
 package b2
 
 import (
+	"os"
 	"path"
 	"regexp"
 	"strings"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/options"
+	"github.com/restic/restic/internal/restic"
 )
 
 // Config contains all configuration necessary to connect to an b2 compatible
@@ -58,7 +60,7 @@ func checkBucketName(name string) error {
 // ParseConfig parses the string s and extracts the b2 config. The supported
 // configuration format is b2:bucketname/prefix. If no prefix is given the
 // prefix "restic" will be used.
-func ParseConfig(s string) (interface{}, error) {
+func ParseConfig(s string) (*Config, error) {
 	if !strings.HasPrefix(s, "b2:") {
 		return nil, errors.New("invalid format, want: b2:bucket-name[:path]")
 	}
@@ -77,5 +79,27 @@ func ParseConfig(s string) (interface{}, error) {
 	cfg.Bucket = bucket
 	cfg.Prefix = prefix
 
-	return cfg, nil
+	return &cfg, nil
+}
+
+var _ restic.ApplyEnvironmenter = &Config{}
+
+// ApplyEnvironment saves values from the environment to the config.
+func (cfg *Config) ApplyEnvironment(prefix string) error {
+	if cfg.AccountID == "" {
+		cfg.AccountID = os.Getenv(prefix + "B2_ACCOUNT_ID")
+	}
+
+	if cfg.AccountID == "" {
+		return errors.Fatalf("unable to open B2 backend: Account ID ($B2_ACCOUNT_ID) is empty")
+	}
+
+	if cfg.Key.String() == "" {
+		cfg.Key = options.NewSecretString(os.Getenv(prefix + "B2_ACCOUNT_KEY"))
+	}
+
+	if cfg.Key.String() == "" {
+		return errors.Fatalf("unable to open B2 backend: Key ($B2_ACCOUNT_KEY) is empty")
+	}
+	return nil
 }

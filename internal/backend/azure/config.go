@@ -1,11 +1,13 @@
 package azure
 
 import (
+	"os"
 	"path"
 	"strings"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/options"
+	"github.com/restic/restic/internal/restic"
 )
 
 // Config contains all configuration necessary to connect to an azure compatible
@@ -33,7 +35,7 @@ func init() {
 
 // ParseConfig parses the string s and extracts the azure config. The
 // configuration format is azure:containerName:/[prefix].
-func ParseConfig(s string) (interface{}, error) {
+func ParseConfig(s string) (*Config, error) {
 	if !strings.HasPrefix(s, "azure:") {
 		return nil, errors.New("azure: invalid format")
 	}
@@ -51,5 +53,23 @@ func ParseConfig(s string) (interface{}, error) {
 	cfg := NewConfig()
 	cfg.Container = container
 	cfg.Prefix = prefix
-	return cfg, nil
+	return &cfg, nil
+}
+
+var _ restic.ApplyEnvironmenter = &Config{}
+
+// ApplyEnvironment saves values from the environment to the config.
+func (cfg *Config) ApplyEnvironment(prefix string) error {
+	if cfg.AccountName == "" {
+		cfg.AccountName = os.Getenv(prefix + "AZURE_ACCOUNT_NAME")
+	}
+
+	if cfg.AccountKey.String() == "" {
+		cfg.AccountKey = options.NewSecretString(os.Getenv(prefix + "AZURE_ACCOUNT_KEY"))
+	}
+
+	if cfg.AccountSAS.String() == "" {
+		cfg.AccountSAS = options.NewSecretString(os.Getenv(prefix + "AZURE_ACCOUNT_SAS"))
+	}
+	return nil
 }

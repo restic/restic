@@ -34,7 +34,7 @@ func NewConfig() Config {
 }
 
 // ParseConfig parses the string s and extracts the remote server URL.
-func ParseConfig(s string) (interface{}, error) {
+func ParseConfig(s string) (*Config, error) {
 	if !strings.HasPrefix(s, "rclone:") {
 		return nil, errors.New("invalid rclone backend specification")
 	}
@@ -42,5 +42,5 @@ func ParseConfig(s string) (interface{}, error) {
 	s = s[7:]
 	cfg := NewConfig()
 	cfg.Remote = s
-	return cfg, nil
+	return &cfg, nil
 }

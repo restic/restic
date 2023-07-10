@@ -1,29 +1,30 @@
 package swift
 
-import "testing"
+import (
+	"testing"
 
-var configTests = []struct {
-	s   string
-	cfg Config
-}{
+	"github.com/restic/restic/internal/backend/test"
+)
+
+var configTests = []test.ConfigTestData[Config]{
 	{
-		"swift:cnt1:/",
-		Config{
+		S: "swift:cnt1:/",
+		Cfg: Config{
 			Container:   "cnt1",
 			Prefix:      "",
 			Connections: 5,
 		},
 	},
 	{
-		"swift:cnt2:/prefix",
-		Config{Container: "cnt2",
+		S: "swift:cnt2:/prefix",
+		Cfg: Config{Container: "cnt2",
 			Prefix:      "prefix",
 			Connections: 5,
 		},
 	},
 	{
-		"swift:cnt3:/prefix/longer",
-		Config{Container: "cnt3",
+		S: "swift:cnt3:/prefix/longer",
+		Cfg: Config{Container: "cnt3",
 			Prefix:      "prefix/longer",
 			Connections: 5,
 		},
@@ -31,24 +32,7 @@ var configTests = []struct {
 }
 
 func TestParseConfig(t *testing.T) {
-	for _, test := range configTests {
-		t.Run("", func(t *testing.T) {
-			v, err := ParseConfig(test.s)
-			if err != nil {
-				t.Fatalf("parsing %q failed: %v", test.s, err)
-			}
-
-			cfg, ok := v.(Config)
-			if !ok {
-				t.Fatalf("wrong type returned, want Config, got %T", cfg)
-			}
-
-			if cfg != test.cfg {
-				t.Fatalf("wrong output for %q, want:\n  %#v\ngot:\n  %#v",
-					test.s, test.cfg, cfg)
-			}
-		})
-	}
+	test.ParseConfigTester(t, ParseConfig, configTests)
 }
 
 var configTestsInvalid = []string{

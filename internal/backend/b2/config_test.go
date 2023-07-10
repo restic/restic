@@ -1,37 +1,38 @@
 package b2
 
-import "testing"
+import (
+	"testing"
 
-var configTests = []struct {
-	s   string
-	cfg Config
-}{
-	{"b2:bucketname", Config{
+	"github.com/restic/restic/internal/backend/test"
+)
+
+var configTests = []test.ConfigTestData[Config]{
+	{S: "b2:bucketname", Cfg: Config{
 		Bucket:      "bucketname",
 		Prefix:      "",
 		Connections: 5,
 	}},
-	{"b2:bucketname:", Config{
+	{S: "b2:bucketname:", Cfg: Config{
 		Bucket:      "bucketname",
 		Prefix:      "",
 		Connections: 5,
 	}},
-	{"b2:bucketname:/prefix/directory", Config{
+	{S: "b2:bucketname:/prefix/directory", Cfg: Config{
 		Bucket:      "bucketname",
 		Prefix:      "prefix/directory",
 		Connections: 5,
 	}},
-	{"b2:foobar", Config{
+	{S: "b2:foobar", Cfg: Config{
 		Bucket:      "foobar",
 		Prefix:      "",
 		Connections: 5,
 	}},
-	{"b2:foobar:", Config{
+	{S: "b2:foobar:", Cfg: Config{
 		Bucket:      "foobar",
 		Prefix:      "",
 		Connections: 5,
 	}},
-	{"b2:foobar:/", Config{
+	{S: "b2:foobar:/", Cfg: Config{
 		Bucket:      "foobar",
 		Prefix:      "",
 		Connections: 5,
@@ -39,19 +40,7 @@ var configTests = []struct {
 }
 
 func TestParseConfig(t *testing.T) {
-	for _, test := range configTests {
-		t.Run("", func(t *testing.T) {
-			cfg, err := ParseConfig(test.s)
-			if err != nil {
-				t.Fatalf("%s failed: %v", test.s, err)
-			}
-
-			if cfg != test.cfg {
-				t.Fatalf("input: %s\n wrong config, want:\n  %#v\ngot:\n  %#v",
-					test.s, test.cfg, cfg)
-			}
-		})
-	}
+	test.ParseConfigTester(t, ParseConfig, configTests)
 }
 
 var invalidConfigTests = []struct {

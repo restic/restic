@@ -2,6 +2,7 @@ package smb
 
 import (
 	"net/url"
+	"os"
 	"path"
 	"strconv"
 	"strings"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/options"
+	"github.com/restic/restic/internal/restic"
 )
 
 // Config contains all configuration necessary to connect to an SMB server
@@ -54,7 +56,7 @@ func init() {
 // ParseConfig parses the string s and extracts the s3 config. The
 // supported configuration format is smb://[user@]host[:port]/sharename/directory.
 // User and port are optional. Default port is 445.
-func ParseConfig(s string) (interface{}, error) {
+func ParseConfig(s string) (*Config, error) {
 	var repo string
 	switch {
 	case strings.HasPrefix(s, "smb://"):
@@ -106,7 +108,7 @@ func ParseConfig(s string) (interface{}, error) {
 	return createConfig(user, host, portNum, sharename, directory)
 }
 
-func createConfig(user string, host string, port int, sharename, directory string) (interface{}, error) {
+func createConfig(user string, host string, port int, sharename, directory string) (*Config, error) {
 	if host == "" {
 		return nil, errors.New("smb: invalid format, Host not found")
 	}
@@ -121,5 +123,26 @@ func createConfig(user string, host string, port int, sharename, directory strin
 	cfg.Port = port
 	cfg.ShareName = sharename
 	cfg.Path = directory
-	return cfg, nil
+	return &cfg, nil
+}
+
+var _ restic.ApplyEnvironmenter = &Config{}
+
+// ApplyEnvironment saves values from the environment to the config.
+func (cfg *Config) ApplyEnvironment(prefix string) error {
+	if cfg.User == "" {
+		cfg.User = os.Getenv("RESTIC_SMB_USER")
+	}
+
+	if cfg.Password.String() == "" {
+		cfg.Password = options.NewSecretString(os.Getenv("RESTIC_SMB_PASSWORD"))
+	}
+
+	if cfg.Domain == "" {
+		cfg.Domain = os.Getenv("RESTIC_SMB_DOMAIN")
+	}
+	if cfg.Domain == "" {
+		cfg.Domain = DefaultDomain
+	}
+	return nil
 }

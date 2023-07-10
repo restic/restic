@@ -13,12 +13,12 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func newTestSuite(t testing.TB) *test.Suite {
-	return &test.Suite{
+func newTestSuite(t testing.TB) *test.Suite[smb.Config] {
+	return &test.Suite[smb.Config]{
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
-		NewConfig: func() (interface{}, error) {
+		NewConfig: func() (*smb.Config, error) {
 
-			cfg := smb.NewConfig()
+			cfg := &smb.Config{}
 			cfg.Host = "127.0.0.1"
 			cfg.User = "smbuser"
 			cfg.ShareName = cfg.User
@@ -38,20 +38,17 @@ func newTestSuite(t testing.TB) *test.Suite {
 		},
 
 		// CreateFn is a function that creates a temporary repository for the tests.
-		Create: func(config interface{}) (restic.Backend, error) {
-			cfg := config.(smb.Config)
+		Create: func(cfg smb.Config) (restic.Backend, error) {
 			return smb.Create(context.TODO(), cfg)
 		},
 
 		// OpenFn is a function that opens a previously created temporary repository.
-		Open: func(config interface{}) (restic.Backend, error) {
-			cfg := config.(smb.Config)
+		Open: func(cfg smb.Config) (restic.Backend, error) {
 			return smb.Open(context.TODO(), cfg)
 		},
 
 		// CleanupFn removes data created during the tests.
-		Cleanup: func(config interface{}) error {
-			cfg := config.(smb.Config)
+		Cleanup: func(cfg smb.Config) error {
 			if !rtest.TestCleanupTempDirs {
 				t.Logf("leaving test backend dir at %v", cfg.Path)
 			}
