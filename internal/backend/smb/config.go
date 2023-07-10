@@ -128,13 +128,13 @@ func createConfig(user string, host string, port int, sharename, directory strin
 // ApplyEnvironment saves values from the environment to the config.
 func (cfg *Config) ApplyEnvironment(prefix string) error {
 	if cfg.User == "" {
-		cfg.User = os.Getenv("RESTIC_SMB_USER")
+		cfg.User = os.Getenv(prefix + "RESTIC_SMB_USER")
 	}
 	if cfg.Password.String() == "" {
-		cfg.Password = options.NewSecretString(os.Getenv("RESTIC_SMB_PASSWORD"))
+		cfg.Password = options.NewSecretString(os.Getenv(prefix + "RESTIC_SMB_PASSWORD"))
 	}
 	if cfg.Domain == "" {
-		cfg.Domain = os.Getenv("RESTIC_SMB_DOMAIN")
+		cfg.Domain = os.Getenv(prefix + "RESTIC_SMB_DOMAIN")
 	}
 	if cfg.Domain == "" {
 		cfg.Domain = DefaultDomain
