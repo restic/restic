@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/backend/mem"
+	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
@@ -186,6 +188,69 @@ func TestLockSuccessfulRefresh(t *testing.T) {
 	case <-time.After(2 * refreshabilityTimeout):
 		// expected lock refresh to work
 	}
+	// unlockRepo should not crash
+	unlockRepo(lock)
+}
+
+type slowBackend struct {
+	restic.Backend
+	m     sync.Mutex
+	sleep time.Duration
+}
+
+func (b *slowBackend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+	b.m.Lock()
+	sleep := b.sleep
+	b.m.Unlock()
+	time.Sleep(sleep)
+	return b.Backend.Save(ctx, h, rd)
+}
+
+func TestLockSuccessfulStaleRefresh(t *testing.T) {
+	var sb *slowBackend
+	repo, cleanup, env := openLockTestRepo(t, func(r restic.Backend) (restic.Backend, error) {
+		sb = &slowBackend{Backend: r}
+		return sb, nil
+	})
+	defer cleanup()
+
+	t.Logf("test for successful lock refresh %v", time.Now())
+	// reduce locking intervals to be suitable for testing
+	ri, rt := refreshInterval, refreshabilityTimeout
+	refreshInterval = 10 * time.Millisecond
+	refreshabilityTimeout = 50 * time.Millisecond
+	defer func() {
+		refreshInterval, refreshabilityTimeout = ri, rt
+	}()
+
+	lock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, env)
+	// delay lock refreshing long enough that the lock would expire
+	sb.m.Lock()
+	sb.sleep = refreshabilityTimeout + refreshInterval
+	sb.m.Unlock()
+
+	select {
+	case <-wrappedCtx.Done():
+		// don't call t.Fatal to allow the lock to be properly cleaned up
+		t.Error("lock refresh failed", time.Now())
+
+	case <-time.After(refreshabilityTimeout):
+	}
+	// reset slow backend
+	sb.m.Lock()
+	sb.sleep = 0
+	sb.m.Unlock()
+	debug.Log("normal lock period has expired")
+
+	select {
+	case <-wrappedCtx.Done():
+		// don't call t.Fatal to allow the lock to be properly cleaned up
+		t.Error("lock refresh failed", time.Now())
+
+	case <-time.After(3 * refreshabilityTimeout):
+		// expected lock refresh to work
+	}
+
 	// unlockRepo should not crash
 	unlockRepo(lock)
 }

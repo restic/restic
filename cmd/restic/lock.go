@@ -159,6 +159,7 @@ func refreshLocks(ctx context.Context, backend restic.Backend, lockInfo *lockCon
 			return
 
 		case req := <-forceRefresh:
+			debug.Log("trying to refresh stale lock")
 			// keep on going if our current lock still exists
 			success := tryRefreshStaleLock(ctx, backend, lock, lockInfo.cancel)
 			// inform refresh goroutine about forced refresh
@@ -231,6 +232,7 @@ func monitorLockRefresh(ctx context.Context, lockInfo *lockContext, refreshed <-
 				continue
 			}
 
+			debug.Log("trying to refreshStaleLock")
 			// keep on going if our current lock still exists
 			refreshReq := refreshLockRequest{
 				result: make(chan bool),
