@@ -3,6 +3,7 @@ package sema_test
 import (
 	"context"
 	"io"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -196,4 +197,39 @@ func TestConcurrencyUnlimitedLockSave(t *testing.T) {
 			return be.Save(context.TODO(), h, nil)
 		}
 	}, unblock, true)
+}
+
+func TestFreeze(t *testing.T) {
+	var counter int64
+	m := mock.NewBackend()
+	m.SaveFn = func(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+		atomic.AddInt64(&counter, 1)
+		return nil
+	}
+	m.ConnectionsFn = func() uint { return 2 }
+	be := sema.NewBackend(m)
+	fb := be.(restic.FreezeBackend)
+
+	// Freeze backend
+	fb.Freeze()
+
+	// Start Save call that should block
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		h := restic.Handle{Type: restic.PackFile, Name: "foobar"}
+		test.OK(t, be.Save(context.TODO(), h, nil))
+	}()
+
+	// check
+	time.Sleep(1 * time.Millisecond)
+	val := atomic.LoadInt64(&counter)
+	test.Assert(t, val == 0, "save call worked despite frozen backend")
+
+	// unfreeze and check that save did complete
+	fb.Unfreeze()
+	wg.Wait()
+	val = atomic.LoadInt64(&counter)
+	test.Assert(t, val == 1, "save call should have completed")
 }
