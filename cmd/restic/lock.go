@@ -213,15 +213,21 @@ func monitorLockRefresh(ctx context.Context, lockInfo *lockContext, refreshed <-
 		lockInfo.refreshWG.Done()
 	}()
 
+	var refreshStaleLockResult chan bool
+
 	for {
 		select {
 		case <-ctx.Done():
 			debug.Log("terminate expiry monitoring")
 			return
 		case <-refreshed:
+			if refreshStaleLockResult != nil {
+				// ignore delayed refresh notifications while the stale lock is refreshed
+				continue
+			}
 			lastRefresh = time.Now().UnixNano()
 		case <-ticker.C:
-			if time.Now().UnixNano()-lastRefresh < refreshabilityTimeout.Nanoseconds() {
+			if time.Now().UnixNano()-lastRefresh < refreshabilityTimeout.Nanoseconds() || refreshStaleLockResult != nil {
 				continue
 			}
 
@@ -229,19 +235,17 @@ func monitorLockRefresh(ctx context.Context, lockInfo *lockContext, refreshed <-
 			refreshReq := refreshLockRequest{
 				result: make(chan bool),
 			}
+			refreshStaleLockResult = refreshReq.result
+
 			// inform refresh goroutine about forced refresh
 			select {
 			case <-ctx.Done():
 			case forceRefresh <- refreshReq:
 			}
-			var success bool
-			select {
-			case <-ctx.Done():
-			case success = <-refreshReq.result:
-			}
-
+		case success := <-refreshStaleLockResult:
 			if success {
 				lastRefresh = time.Now().UnixNano()
+				refreshStaleLockResult = nil
 				continue
 			}
 
