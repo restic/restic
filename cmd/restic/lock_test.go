@@ -301,7 +301,7 @@ func TestLockWaitCancel(t *testing.T) {
 	test.Assert(t, strings.Contains(err.Error(), "context canceled"),
 		"create normal lock with exclusively locked repo didn't return the correct error")
 	test.Assert(t, cancelAfter <= duration && duration < retryLock-10*time.Millisecond,
-		"create normal lock with exclusively locked repo didn't return in time")
+		"create normal lock with exclusively locked repo didn't return in time, duration %v", duration)
 
 	test.OK(t, lock.Unlock())
 	test.OK(t, elock.Unlock())
