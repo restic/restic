@@ -123,6 +123,8 @@ func (f *SnapshotFilter) FindLatest(ctx context.Context, be Lister, loader Loade
 
 type SnapshotFindCb func(string, *Snapshot, error) error
 
+var ErrInvalidSnapshotSyntax = errors.New("snapshot:path syntax not allowed")
+
 // FindAll yields Snapshots, either given explicitly by `snapshotIDs` or filtered from the list of all snapshots.
 func (f *SnapshotFilter) FindAll(ctx context.Context, be Lister, loader LoaderUnpacked, snapshotIDs []string, fn SnapshotFindCb) error {
 	if len(snapshotIDs) != 0 {
@@ -148,11 +150,13 @@ func (f *SnapshotFilter) FindAll(ctx context.Context, be Lister, loader LoaderUn
 				if sn != nil {
 					ids.Insert(*sn.ID())
 				}
+			} else if strings.HasPrefix(s, "latest:") {
+				err = ErrInvalidSnapshotSyntax
 			} else {
 				var subpath string
 				sn, subpath, err = FindSnapshot(ctx, be, loader, s)
 				if err == nil && subpath != "" {
-					err = errors.New("snapshot:path syntax not allowed")
+					err = ErrInvalidSnapshotSyntax
 				} else if err == nil {
 					if ids.Has(*sn.ID()) {
 						continue
