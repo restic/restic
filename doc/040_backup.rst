@@ -452,7 +452,7 @@ and displays a small statistic, just pass the command two snapshot IDs:
       Removed: 16.402 MiB
 
 To only compare files in specific subfolders, you can use the ``<snapshot>:<subfolder>``
-syntax, where ``snapshot`` is the ID of a snapshot or ``latest`` and ``subfolder``
+syntax, where ``snapshot`` is the ID of a snapshot (or the string ``latest``) and ``subfolder``
 is a path within the snapshot. For example, to only compare files in the ``/restic``
 folder, you could use the following command:
 

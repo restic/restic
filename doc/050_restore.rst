@@ -49,8 +49,8 @@ files in the snapshot. For example, to restore a single file:
 This will restore the file ``foo`` to ``/tmp/restore-work/work/foo``.
 
 To only restore a specific subfolder, you can use the ``<snapshot>:<subfolder>``
-syntax, where ``snapshot`` is the ID of a snapshot or ``latest`` and ``subfolder``
-is a path within the snapshot.
+syntax, where ``snapshot`` is the ID of a snapshot (or the string ``latest``)
+and ``subfolder`` is a path within the snapshot.
 
 .. code-block:: console
 
