@@ -213,7 +213,7 @@ func reloadIndex(t *testing.T, repo restic.Repository) {
 		t.Fatal(err)
 	}
 
-	if err := repo.LoadIndex(context.TODO()); err != nil {
+	if err := repo.LoadIndex(context.TODO(), nil); err != nil {
 		t.Fatalf("error loading new index: %v", err)
 	}
 }

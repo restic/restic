@@ -255,7 +255,7 @@ func TestRepositoryLoadIndex(t *testing.T) {
 	defer cleanup()
 
 	repo := repository.TestOpenLocal(t, repodir)
-	rtest.OK(t, repo.LoadIndex(context.TODO()))
+	rtest.OK(t, repo.LoadIndex(context.TODO(), nil))
 }
 
 // loadIndex loads the index id from backend and returns it.
@@ -324,7 +324,7 @@ func TestRepositoryLoadUnpackedRetryBroken(t *testing.T) {
 	err = repo.SearchKey(context.TODO(), rtest.TestPassword, 10, "")
 	rtest.OK(t, err)
 
-	rtest.OK(t, repo.LoadIndex(context.TODO()))
+	rtest.OK(t, repo.LoadIndex(context.TODO(), nil))
 }
 
 func BenchmarkLoadIndex(b *testing.B) {

@@ -258,7 +258,7 @@ func removePacksExcept(gopts GlobalOptions, t testing.TB, keep restic.IDSet, rem
 	rtest.OK(t, err)
 
 	// Get all tree packs
-	rtest.OK(t, r.LoadIndex(context.TODO()))
+	rtest.OK(t, r.LoadIndex(context.TODO(), nil))
 
 	treePacks := restic.NewIDSet()
 	r.Index().Each(context.TODO(), func(pb restic.PackedBlob) {

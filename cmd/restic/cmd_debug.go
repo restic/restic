@@ -469,7 +469,8 @@ func runDebugExamine(ctx context.Context, gopts GlobalOptions, args []string) er
 		}
 	}
 
-	err = repo.LoadIndex(ctx)
+	bar := newProgressMax(!gopts.Quiet, 0, "index files loaded")
+	err = repo.LoadIndex(ctx, bar)
 	if err != nil {
 		return err
 	}

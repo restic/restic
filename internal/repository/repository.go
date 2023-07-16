@@ -581,15 +581,30 @@ func (r *Repository) SetIndex(i restic.MasterIndex) error {
 }
 
 // LoadIndex loads all index files from the backend in parallel and stores them
-// in the master index. The first error that occurred is returned.
-func (r *Repository) LoadIndex(ctx context.Context) error {
+func (r *Repository) LoadIndex(ctx context.Context, p *progress.Counter) error {
 	debug.Log("Loading index")
+
+	if p != nil {
+		var numIndexFiles uint64
+		err := r.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
+			numIndexFiles++
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+		p.SetMax(numIndexFiles)
+		defer p.Done()
+	}
 
 	err := index.ForAllIndexes(ctx, r, func(id restic.ID, idx *index.Index, oldFormat bool, err error) error {
 		if err != nil {
 			return err
 		}
 		r.idx.Insert(idx)
+		if p != nil {
+			p.Add(1)
+		}
 		return nil
 	})
 
