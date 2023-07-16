@@ -11,9 +11,9 @@ import (
 
 func TestFindLatestSnapshot(t *testing.T) {
 	repo := repository.TestRepository(t)
-	restic.TestCreateSnapshot(t, repo, parseTimeUTC("2015-05-05 05:05:05"), 1, 0)
-	restic.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:07"), 1, 0)
-	latestSnapshot := restic.TestCreateSnapshot(t, repo, parseTimeUTC("2019-09-09 09:09:09"), 1, 0)
+	restic.TestCreateSnapshot(t, repo, parseTimeUTC("2015-05-05 05:05:05"), 1)
+	restic.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:07"), 1)
+	latestSnapshot := restic.TestCreateSnapshot(t, repo, parseTimeUTC("2019-09-09 09:09:09"), 1)
 
 	f := restic.SnapshotFilter{Hosts: []string{"foo"}}
 	sn, _, err := f.FindLatest(context.TODO(), repo.Backend(), repo, "latest")
@@ -28,9 +28,9 @@ func TestFindLatestSnapshot(t *testing.T) {
 
 func TestFindLatestSnapshotWithMaxTimestamp(t *testing.T) {
 	repo := repository.TestRepository(t)
-	restic.TestCreateSnapshot(t, repo, parseTimeUTC("2015-05-05 05:05:05"), 1, 0)
-	desiredSnapshot := restic.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:07"), 1, 0)
-	restic.TestCreateSnapshot(t, repo, parseTimeUTC("2019-09-09 09:09:09"), 1, 0)
+	restic.TestCreateSnapshot(t, repo, parseTimeUTC("2015-05-05 05:05:05"), 1)
+	desiredSnapshot := restic.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:07"), 1)
+	restic.TestCreateSnapshot(t, repo, parseTimeUTC("2019-09-09 09:09:09"), 1)
 
 	sn, _, err := (&restic.SnapshotFilter{
 		Hosts:          []string{"foo"},
@@ -47,8 +47,8 @@ func TestFindLatestSnapshotWithMaxTimestamp(t *testing.T) {
 
 func TestFindLatestWithSubpath(t *testing.T) {
 	repo := repository.TestRepository(t)
-	restic.TestCreateSnapshot(t, repo, parseTimeUTC("2015-05-05 05:05:05"), 1, 0)
-	desiredSnapshot := restic.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:07"), 1, 0)
+	restic.TestCreateSnapshot(t, repo, parseTimeUTC("2015-05-05 05:05:05"), 1)
+	desiredSnapshot := restic.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:07"), 1)
 
 	for _, exp := range []struct {
 		query   string
@@ -75,7 +75,7 @@ func TestFindLatestWithSubpath(t *testing.T) {
 
 func TestFindAllSubpathError(t *testing.T) {
 	repo := repository.TestRepository(t)
-	desiredSnapshot := restic.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:07"), 1, 0)
+	desiredSnapshot := restic.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:07"), 1)
 
 	count := 0
 	test.OK(t, (&restic.SnapshotFilter{}).FindAll(context.TODO(), repo.Backend(), repo,

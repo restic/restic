@@ -213,7 +213,7 @@ func benchmarkLoadTree(t *testing.B, version uint) {
 
 func TestFindTreeDirectory(t *testing.T) {
 	repo := repository.TestRepository(t)
-	sn := restic.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:08"), 3, 0)
+	sn := restic.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:08"), 3)
 
 	for _, exp := range []struct {
 		subpath string

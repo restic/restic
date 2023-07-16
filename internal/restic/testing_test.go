@@ -39,7 +39,7 @@ func loadAllSnapshots(ctx context.Context, repo restic.Repository, excludeIDs re
 func TestCreateSnapshot(t *testing.T) {
 	repo := repository.TestRepository(t)
 	for i := 0; i < testCreateSnapshots; i++ {
-		restic.TestCreateSnapshot(t, repo, testSnapshotTime.Add(time.Duration(i)*time.Second), testDepth, 0)
+		restic.TestCreateSnapshot(t, repo, testSnapshotTime.Add(time.Duration(i)*time.Second), testDepth)
 	}
 
 	snapshots, err := loadAllSnapshots(context.TODO(), repo, restic.NewIDSet())
@@ -73,6 +73,6 @@ func BenchmarkTestCreateSnapshot(t *testing.B) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		restic.TestCreateSnapshot(t, repo, testSnapshotTime.Add(time.Duration(i)*time.Second), testDepth, 0)
+		restic.TestCreateSnapshot(t, repo, testSnapshotTime.Add(time.Duration(i)*time.Second), testDepth)
 	}
 }
