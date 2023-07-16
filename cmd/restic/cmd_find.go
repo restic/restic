@@ -621,7 +621,16 @@ func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []
 		}
 	}
 
+	var filteredSnapshots []*restic.Snapshot
 	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, opts.Snapshots) {
+		filteredSnapshots = append(filteredSnapshots, sn)
+	}
+
+	sort.Slice(filteredSnapshots, func(i, j int) bool {
+		return filteredSnapshots[i].Time.Before(filteredSnapshots[j].Time)
+	})
+
+	for _, sn := range filteredSnapshots {
 		if f.blobIDs != nil || f.treeIDs != nil {
 			if err = f.findIDs(ctx, sn); err != nil && err.Error() != "OK" {
 				return err
