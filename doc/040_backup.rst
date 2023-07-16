@@ -451,6 +451,15 @@ and displays a small statistic, just pass the command two snapshot IDs:
       Added:   16.403 MiB
       Removed: 16.402 MiB
 
+To only compare files in specific subfolders, you can use the ``<snapshot>:<subfolder>``
+syntax, where ``snapshot`` is the ID of a snapshot or ``latest`` and ``subfolder``
+is a path within the snapshot. For example, to only compare files in the ``/restic``
+folder, you could use the following command:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo diff 5845b002:/restic 2ab627a6:/restic
+
 
 Backing up special items and metadata
 *************************************
