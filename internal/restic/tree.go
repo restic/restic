@@ -193,23 +193,23 @@ func FindTreeDirectory(ctx context.Context, repo BlobLoader, id *ID, dir string)
 	}
 
 	dirs := strings.Split(path.Clean(dir), "/")
-	subpath := ""
+	subfolder := ""
 
 	for _, name := range dirs {
 		if name == "" || name == "." {
 			continue
 		}
-		subpath = path.Join(subpath, name)
+		subfolder = path.Join(subfolder, name)
 		tree, err := LoadTree(ctx, repo, *id)
 		if err != nil {
-			return nil, fmt.Errorf("path %s: %w", subpath, err)
+			return nil, fmt.Errorf("path %s: %w", subfolder, err)
 		}
 		node := tree.Find(name)
 		if node == nil {
-			return nil, fmt.Errorf("path %s: not found", subpath)
+			return nil, fmt.Errorf("path %s: not found", subfolder)
 		}
 		if node.Type != "dir" || node.Subtree == nil {
-			return nil, fmt.Errorf("path %s: not a directory", subpath)
+			return nil, fmt.Errorf("path %s: not a directory", subfolder)
 		}
 		id = node.Subtree
 	}

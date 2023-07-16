@@ -212,7 +212,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		}
 	}
 
-	sn, subpath, err := (&restic.SnapshotFilter{
+	sn, subfolder, err := (&restic.SnapshotFilter{
 		Hosts: opts.Hosts,
 		Paths: opts.Paths,
 		Tags:  opts.Tags,
@@ -221,7 +221,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		return err
 	}
 
-	sn.Tree, err = restic.FindTreeDirectory(ctx, repo, sn.Tree, subpath)
+	sn.Tree, err = restic.FindTreeDirectory(ctx, repo, sn.Tree, subfolder)
 	if err != nil {
 		return err
 	}

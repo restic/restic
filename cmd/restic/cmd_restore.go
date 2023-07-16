@@ -161,7 +161,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		}
 	}
 
-	sn, subpath, err := (&restic.SnapshotFilter{
+	sn, subfolder, err := (&restic.SnapshotFilter{
 		Hosts: opts.Hosts,
 		Paths: opts.Paths,
 		Tags:  opts.Tags,
@@ -175,7 +175,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		return err
 	}
 
-	sn.Tree, err = restic.FindTreeDirectory(ctx, repo, sn.Tree, subpath)
+	sn.Tree, err = restic.FindTreeDirectory(ctx, repo, sn.Tree, subfolder)
 	if err != nil {
 		return err
 	}

@@ -139,7 +139,7 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 		}
 	}
 
-	sn, subpath, err := (&restic.SnapshotFilter{
+	sn, subfolder, err := (&restic.SnapshotFilter{
 		Hosts: opts.Hosts,
 		Paths: opts.Paths,
 		Tags:  opts.Tags,
@@ -153,7 +153,7 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 		return err
 	}
 
-	sn.Tree, err = restic.FindTreeDirectory(ctx, repo, sn.Tree, subpath)
+	sn.Tree, err = restic.FindTreeDirectory(ctx, repo, sn.Tree, subfolder)
 	if err != nil {
 		return err
 	}

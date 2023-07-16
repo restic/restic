@@ -51,24 +51,24 @@ func TestFindLatestWithSubpath(t *testing.T) {
 	desiredSnapshot := restic.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:07"), 1)
 
 	for _, exp := range []struct {
-		query   string
-		subpath string
+		query     string
+		subfolder string
 	}{
 		{"latest", ""},
-		{"latest:subpath", "subpath"},
+		{"latest:subfolder", "subfolder"},
 		{desiredSnapshot.ID().Str(), ""},
-		{desiredSnapshot.ID().Str() + ":subpath", "subpath"},
+		{desiredSnapshot.ID().Str() + ":subfolder", "subfolder"},
 		{desiredSnapshot.ID().String(), ""},
-		{desiredSnapshot.ID().String() + ":subpath", "subpath"},
+		{desiredSnapshot.ID().String() + ":subfolder", "subfolder"},
 	} {
 		t.Run("", func(t *testing.T) {
-			sn, subpath, err := (&restic.SnapshotFilter{}).FindLatest(context.TODO(), repo.Backend(), repo, exp.query)
+			sn, subfolder, err := (&restic.SnapshotFilter{}).FindLatest(context.TODO(), repo.Backend(), repo, exp.query)
 			if err != nil {
 				t.Fatalf("FindLatest returned error: %v", err)
 			}
 
 			test.Assert(t, *sn.ID() == *desiredSnapshot.ID(), "FindLatest returned wrong snapshot ID: %v", *sn.ID())
-			test.Assert(t, subpath == exp.subpath, "FindLatest returned wrong path in snapshot: %v", subpath)
+			test.Assert(t, subfolder == exp.subfolder, "FindLatest returned wrong path in snapshot: %v", subfolder)
 		})
 	}
 }
@@ -79,7 +79,7 @@ func TestFindAllSubpathError(t *testing.T) {
 
 	count := 0
 	test.OK(t, (&restic.SnapshotFilter{}).FindAll(context.TODO(), repo.Backend(), repo,
-		[]string{"latest:subpath", desiredSnapshot.ID().Str() + ":subpath"},
+		[]string{"latest:subfolder", desiredSnapshot.ID().Str() + ":subfolder"},
 		func(id string, sn *restic.Snapshot, err error) error {
 			if err == restic.ErrInvalidSnapshotSyntax {
 				count++
@@ -87,5 +87,5 @@ func TestFindAllSubpathError(t *testing.T) {
 			}
 			return err
 		}))
-	test.Assert(t, count == 2, "unexpected number of subpath errors: %v, wanted %v", count, 2)
+	test.Assert(t, count == 2, "unexpected number of subfolder errors: %v, wanted %v", count, 2)
 }

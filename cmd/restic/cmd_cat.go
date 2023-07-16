@@ -13,7 +13,7 @@ import (
 )
 
 var cmdCat = &cobra.Command{
-	Use:   "cat [flags] [masterkey|config|pack ID|blob ID|snapshot ID|index ID|key ID|lock ID|tree snapshot:path]",
+	Use:   "cat [flags] [masterkey|config|pack ID|blob ID|snapshot ID|index ID|key ID|lock ID|tree snapshot:subfolder]",
 	Short: "Print internal objects to stdout",
 	Long: `
 The "cat" command is used to print internal objects to stdout.
@@ -166,7 +166,7 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string) error {
 		return errors.Fatal("blob not found")
 
 	case "tree":
-		sn, subpath, err := restic.FindSnapshot(ctx, repo.Backend(), repo, args[1])
+		sn, subfolder, err := restic.FindSnapshot(ctx, repo.Backend(), repo, args[1])
 		if err != nil {
 			return errors.Fatalf("could not find snapshot: %v\n", err)
 		}
@@ -176,7 +176,7 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string) error {
 			return err
 		}
 
-		sn.Tree, err = restic.FindTreeDirectory(ctx, repo, sn.Tree, subpath)
+		sn.Tree, err = restic.FindTreeDirectory(ctx, repo, sn.Tree, subfolder)
 		if err != nil {
 			return err
 		}

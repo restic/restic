@@ -55,11 +55,11 @@ func init() {
 }
 
 func loadSnapshot(ctx context.Context, be restic.Lister, repo restic.Repository, desc string) (*restic.Snapshot, string, error) {
-	sn, subpath, err := restic.FindSnapshot(ctx, be, repo, desc)
+	sn, subfolder, err := restic.FindSnapshot(ctx, be, repo, desc)
 	if err != nil {
 		return nil, "", errors.Fatal(err.Error())
 	}
-	return sn, subpath, err
+	return sn, subfolder, err
 }
 
 // Comparer collects all things needed to compare two snapshots.
@@ -346,12 +346,12 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []
 	if err != nil {
 		return err
 	}
-	sn1, subpath1, err := loadSnapshot(ctx, be, repo, args[0])
+	sn1, subfolder1, err := loadSnapshot(ctx, be, repo, args[0])
 	if err != nil {
 		return err
 	}
 
-	sn2, subpath2, err := loadSnapshot(ctx, be, repo, args[1])
+	sn2, subfolder2, err := loadSnapshot(ctx, be, repo, args[1])
 	if err != nil {
 		return err
 	}
@@ -372,12 +372,12 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []
 		return errors.Errorf("snapshot %v has nil tree", sn2.ID().Str())
 	}
 
-	sn1.Tree, err = restic.FindTreeDirectory(ctx, repo, sn1.Tree, subpath1)
+	sn1.Tree, err = restic.FindTreeDirectory(ctx, repo, sn1.Tree, subfolder1)
 	if err != nil {
 		return err
 	}
 
-	sn2.Tree, err = restic.FindTreeDirectory(ctx, repo, sn2.Tree, subpath2)
+	sn2.Tree, err = restic.FindTreeDirectory(ctx, repo, sn2.Tree, subfolder2)
 	if err != nil {
 		return err
 	}
