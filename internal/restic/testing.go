@@ -73,6 +73,7 @@ const (
 )
 
 func (fs *fakeFileSystem) treeIsKnown(tree *Tree) (bool, []byte, ID) {
+	tree.Sort()
 	data, err := json.Marshal(tree)
 	if err != nil {
 		fs.t.Fatalf("json.Marshal(tree) returned error: %v", err)
