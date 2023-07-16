@@ -289,10 +289,10 @@ func TestLockWaitCancel(t *testing.T) {
 	retryLock := 200 * time.Millisecond
 	cancelAfter := 40 * time.Millisecond
 
+	start := time.Now()
 	ctx, cancel := context.WithCancel(context.TODO())
 	time.AfterFunc(cancelAfter, cancel)
 
-	start := time.Now()
 	lock, _, err := lockRepo(ctx, repo, retryLock, env.gopts.JSON)
 	duration := time.Since(start)
 
