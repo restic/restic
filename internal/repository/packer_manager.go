@@ -35,7 +35,7 @@ type packerManager struct {
 
 	pm       sync.Mutex
 	packer   *Packer
-	packSize uint
+	packSize int
 }
 
 // newPackerManager returns an new packer manager which writes temporary files
@@ -45,7 +45,7 @@ func newPackerManager(key *crypto.Key, tpe restic.BlobType, packSize uint, queue
 		tpe:      tpe,
 		key:      key,
 		queueFn:  queueFn,
-		packSize: packSize,
+		packSize: int(packSize),
 	}
 }
 
@@ -70,14 +70,37 @@ func (r *packerManager) SaveBlob(ctx context.Context, t restic.BlobType, id rest
 
 	var err error
 	packer := r.packer
+	flush := false
+
+	if packer != nil {
+		if packer.HeaderFull() {
+			debug.Log("pending pack (%d bytes) header is full", packer.Size())
+			flush = true
+		} else if packer.Size()+len(ciphertext) > r.packSize {
+			debug.Log("pending pack (%d bytes) is going to be oversized with the blob (%d bytes)", packer.Size(), len(ciphertext))
+			flush = true
+		}
+	}
+
+	if flush {
+		debug.Log("auto flushing pending pack")
+		// write the pack to the backend
+		err = r.queueFn(ctx, r.tpe, packer)
+		if err != nil {
+			return 0, err
+		}
+		// forget full packer
+		r.packer = nil
+	}
+
 	if r.packer == nil {
 		packer, err = r.newPacker()
 		if err != nil {
 			return 0, err
 		}
+		// remember packer
+		r.packer = packer
 	}
-	// remember packer
-	r.packer = packer
 
 	// save ciphertext
 	// Add only appends bytes in memory to avoid being a scaling bottleneck
@@ -86,26 +109,15 @@ func (r *packerManager) SaveBlob(ctx context.Context, t restic.BlobType, id rest
 		return 0, err
 	}
 
-	// if the pack and header is not full enough, put back to the list
-	if packer.Size() < r.packSize && !packer.HeaderFull() {
-		debug.Log("pack is not full enough (%d bytes)", packer.Size())
-		return size, nil
+	if flush {
+		// we count here header size of the previous pack actually
+		// but just for statistics (how it is used externally) it's ok
+		size += packer.HeaderOverhead()
 	}
-	// forget full packer
-	r.packer = nil
-
-	// call while holding lock to prevent findPacker from creating new packers if the uploaders are busy
-	// else write the pack to the backend
-	err = r.queueFn(ctx, t, packer)
-	if err != nil {
-		return 0, err
-	}
-
-	return size + packer.HeaderOverhead(), nil
+	return size, nil
 }
 
-// findPacker returns a packer for a new blob of size bytes. Either a new one is
-// created or one is returned that already has some blobs.
+// newPacker creates and returns a new packer for blobs
 func (r *packerManager) newPacker() (packer *Packer, err error) {
 	debug.Log("create new pack")
 	tmpfile, err := fs.TempFile("", "restic-temp-pack-")

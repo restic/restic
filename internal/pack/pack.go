@@ -18,7 +18,7 @@ import (
 type Packer struct {
 	blobs []restic.Blob
 
-	bytes uint
+	bytes int
 	k     *crypto.Key
 	wr    io.Writer
 
@@ -40,9 +40,9 @@ func (p *Packer) Add(t restic.BlobType, id restic.ID, data []byte, uncompressedL
 
 	n, err := p.wr.Write(data)
 	c.Length = uint(n)
-	c.Offset = p.bytes
+	c.Offset = uint(p.bytes)
 	c.UncompressedLength = uint(uncompressedLength)
-	p.bytes += uint(n)
+	p.bytes += n
 	p.blobs = append(p.blobs, c)
 	n += CalculateEntrySize(c)
 
@@ -100,7 +100,7 @@ func (p *Packer) Finalize() error {
 	if err != nil {
 		return errors.Wrap(err, "binary.Write")
 	}
-	p.bytes += uint(hdrBytes + binary.Size(uint32(0)))
+	p.bytes += hdrBytes + binary.Size(uint32(0))
 
 	return nil
 }
@@ -142,7 +142,7 @@ func (p *Packer) makeHeader() ([]byte, error) {
 }
 
 // Size returns the number of bytes written so far.
-func (p *Packer) Size() uint {
+func (p *Packer) Size() int {
 	p.m.Lock()
 	defer p.m.Unlock()
 

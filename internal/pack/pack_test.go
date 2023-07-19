@@ -24,7 +24,7 @@ type Buf struct {
 	id   restic.ID
 }
 
-func newPack(t testing.TB, k *crypto.Key, lengths []int) ([]Buf, []byte, uint) {
+func newPack(t testing.TB, k *crypto.Key, lengths []int) ([]Buf, []byte, int) {
 	bufs := []Buf{}
 
 	for _, l := range lengths {
@@ -49,7 +49,7 @@ func newPack(t testing.TB, k *crypto.Key, lengths []int) ([]Buf, []byte, uint) {
 	return bufs, buf.Bytes(), p.Size()
 }
 
-func verifyBlobs(t testing.TB, bufs []Buf, k *crypto.Key, rd io.ReaderAt, packSize uint) {
+func verifyBlobs(t testing.TB, bufs []Buf, k *crypto.Key, rd io.ReaderAt, packSize int) {
 	written := 0
 	for _, buf := range bufs {
 		written += len(buf.data)
@@ -65,7 +65,7 @@ func verifyBlobs(t testing.TB, bufs []Buf, k *crypto.Key, rd io.ReaderAt, packSi
 	written += headerSize
 
 	// check length
-	rtest.Equals(t, uint(written), packSize)
+	rtest.Equals(t, written, packSize)
 	rtest.Equals(t, headerSize, int(hdrSize))
 
 	var buf []byte
@@ -91,7 +91,7 @@ func TestCreatePack(t *testing.T) {
 	k := crypto.NewRandomKey()
 
 	bufs, packData, packSize := newPack(t, k, testLens)
-	rtest.Equals(t, uint(len(packData)), packSize)
+	rtest.Equals(t, len(packData), packSize)
 	verifyBlobs(t, bufs, k, bytes.NewReader(packData), packSize)
 }
 
