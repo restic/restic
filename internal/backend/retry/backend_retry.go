@@ -112,7 +112,7 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 			debug.Log("Save(%v) failed with error, removing file: %v", h, err)
 			rerr := be.Backend.Remove(ctx, h)
 			if rerr != nil {
-				debug.Log("Remove(%v) returned error: %v", h, err)
+				debug.Log("Remove(%v) returned error: %v", h, rerr)
 			}
 		}
 
