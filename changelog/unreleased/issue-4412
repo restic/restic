@@ -1,0 +1,9 @@
+Change: Keep packs size closer to target size
+
+Restic treated the target pack size value (--pack-size or the environment variable RESTIC_PACK_SIZE)
+as rather a minimum value for pack sizes. Sometimes a pack size was more than twice the target size.
+Restic now makes an effort to ensure that packs do not exceed the target size,
+although in some cases packs may still exceed it.
+
+https://github.com/restic/restic/issues/4412
+https://github.com/restic/restic/pull/4413
