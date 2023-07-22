@@ -1,0 +1,10 @@
+Bugfix: Improve lock refresh handling when using standby
+
+If the restic process was stopped or the host running restic entered standby
+during a long running operation such as a backup, this resulted in the
+operation failing with `Fatal: failed to refresh lock in time`. We've reworked
+the lock refresh such that restic first checks whether it is safe to continue
+the current operation and only throws an error if not.
+
+https://github.com/restic/restic/issues/4274
+https://github.com/restic/restic/pull/4374

@@ -75,6 +75,31 @@ type BackendUnwrapper interface {
 	Unwrap() Backend
 }
 
+func AsBackend[B Backend](b Backend) B {
+	for b != nil {
+		if be, ok := b.(B); ok {
+			return be
+		}
+
+		if be, ok := b.(BackendUnwrapper); ok {
+			b = be.Unwrap()
+		} else {
+			// not the backend we're looking for
+			break
+		}
+	}
+	var be B
+	return be
+}
+
+type FreezeBackend interface {
+	Backend
+	// Freeze blocks all backend operations except those on lock files
+	Freeze()
+	// Unfreeze allows all backend operations to continue
+	Unfreeze()
+}
+
 // FileInfo is contains information about a file in the backend.
 type FileInfo struct {
 	Size int64

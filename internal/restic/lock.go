@@ -81,6 +81,8 @@ func IsInvalidLock(err error) bool {
 	return errors.As(err, &e)
 }
 
+var ErrRemovedLock = errors.New("lock file was removed in the meantime")
+
 // NewLock returns a new, non-exclusive lock for the repository. If an
 // exclusive lock is already held by another process, it returns an error
 // that satisfies IsAlreadyLocked.
@@ -272,6 +274,68 @@ func (l *Lock) Refresh(ctx context.Context) error {
 	l.lockID = &id
 
 	return l.repo.Backend().Remove(context.TODO(), Handle{Type: LockFile, Name: oldLockID.String()})
+}
+
+// RefreshStaleLock is an extended variant of Refresh that can also refresh stale lock files.
+func (l *Lock) RefreshStaleLock(ctx context.Context) error {
+	debug.Log("refreshing stale lock %v", l.lockID)
+	// refreshing a stale lock is possible if it still exists and continues to do
+	// so until after creating a new lock. The initial check avoids creating a new
+	// lock file if this lock was already removed in the meantime.
+	exists, err := l.checkExistence(ctx)
+	if err != nil {
+		return err
+	} else if !exists {
+		return ErrRemovedLock
+	}
+
+	l.lock.Lock()
+	l.Time = time.Now()
+	l.lock.Unlock()
+	id, err := l.createLock(ctx)
+	if err != nil {
+		return err
+	}
+
+	time.Sleep(waitBeforeLockCheck)
+
+	exists, err = l.checkExistence(ctx)
+	if err != nil {
+		// cleanup replacement lock
+		_ = l.repo.Backend().Remove(context.TODO(), Handle{Type: LockFile, Name: id.String()})
+		return err
+	}
+
+	if !exists {
+		// cleanup replacement lock
+		_ = l.repo.Backend().Remove(context.TODO(), Handle{Type: LockFile, Name: id.String()})
+		return ErrRemovedLock
+	}
+
+	l.lock.Lock()
+	defer l.lock.Unlock()
+
+	debug.Log("new lock ID %v", id)
+	oldLockID := l.lockID
+	l.lockID = &id
+
+	return l.repo.Backend().Remove(context.TODO(), Handle{Type: LockFile, Name: oldLockID.String()})
+}
+
+func (l *Lock) checkExistence(ctx context.Context) (bool, error) {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+
+	exists := false
+
+	err := l.repo.Backend().List(ctx, LockFile, func(fi FileInfo) error {
+		if fi.Name == l.lockID.String() {
+			exists = true
+		}
+		return nil
+	})
+
+	return exists, err
 }
 
 func (l *Lock) String() string {

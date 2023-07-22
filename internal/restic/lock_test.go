@@ -16,6 +16,7 @@ import (
 
 func TestLock(t *testing.T) {
 	repo := repository.TestRepository(t)
+	restic.TestSetLockTimeout(t, 5*time.Millisecond)
 
 	lock, err := restic.NewLock(context.TODO(), repo)
 	rtest.OK(t, err)
@@ -25,6 +26,7 @@ func TestLock(t *testing.T) {
 
 func TestDoubleUnlock(t *testing.T) {
 	repo := repository.TestRepository(t)
+	restic.TestSetLockTimeout(t, 5*time.Millisecond)
 
 	lock, err := restic.NewLock(context.TODO(), repo)
 	rtest.OK(t, err)
@@ -38,6 +40,7 @@ func TestDoubleUnlock(t *testing.T) {
 
 func TestMultipleLock(t *testing.T) {
 	repo := repository.TestRepository(t)
+	restic.TestSetLockTimeout(t, 5*time.Millisecond)
 
 	lock1, err := restic.NewLock(context.TODO(), repo)
 	rtest.OK(t, err)
@@ -63,6 +66,7 @@ func (be *failLockLoadingBackend) Load(ctx context.Context, h restic.Handle, len
 func TestMultipleLockFailure(t *testing.T) {
 	be := &failLockLoadingBackend{Backend: mem.New()}
 	repo := repository.TestRepositoryWithBackend(t, be, 0)
+	restic.TestSetLockTimeout(t, 5*time.Millisecond)
 
 	lock1, err := restic.NewLock(context.TODO(), repo)
 	rtest.OK(t, err)
@@ -83,6 +87,7 @@ func TestLockExclusive(t *testing.T) {
 
 func TestLockOnExclusiveLockedRepo(t *testing.T) {
 	repo := repository.TestRepository(t)
+	restic.TestSetLockTimeout(t, 5*time.Millisecond)
 
 	elock, err := restic.NewExclusiveLock(context.TODO(), repo)
 	rtest.OK(t, err)
@@ -99,6 +104,7 @@ func TestLockOnExclusiveLockedRepo(t *testing.T) {
 
 func TestExclusiveLockOnLockedRepo(t *testing.T) {
 	repo := repository.TestRepository(t)
+	restic.TestSetLockTimeout(t, 5*time.Millisecond)
 
 	elock, err := restic.NewLock(context.TODO(), repo)
 	rtest.OK(t, err)
@@ -247,15 +253,10 @@ func TestRemoveAllLocks(t *testing.T) {
 		3, processed)
 }
 
-func TestLockRefresh(t *testing.T) {
-	repo := repository.TestRepository(t)
-
-	lock, err := restic.NewLock(context.TODO(), repo)
-	rtest.OK(t, err)
-	time0 := lock.Time
-
+func checkSingleLock(t *testing.T, repo restic.Repository) restic.ID {
+	t.Helper()
 	var lockID *restic.ID
-	err = repo.List(context.TODO(), restic.LockFile, func(id restic.ID, size int64) error {
+	err := repo.List(context.TODO(), restic.LockFile, func(id restic.ID, size int64) error {
 		if lockID != nil {
 			t.Error("more than one lock found")
 		}
@@ -265,27 +266,59 @@ func TestLockRefresh(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if lockID == nil {
+		t.Fatal("no lock found")
+	}
+	return *lockID
+}
+
+func testLockRefresh(t *testing.T, refresh func(lock *restic.Lock) error) {
+	repo := repository.TestRepository(t)
+	restic.TestSetLockTimeout(t, 5*time.Millisecond)
+
+	lock, err := restic.NewLock(context.TODO(), repo)
+	rtest.OK(t, err)
+	time0 := lock.Time
+
+	lockID := checkSingleLock(t, repo)
 
 	time.Sleep(time.Millisecond)
-	rtest.OK(t, lock.Refresh(context.TODO()))
+	rtest.OK(t, refresh(lock))
 
-	var lockID2 *restic.ID
-	err = repo.List(context.TODO(), restic.LockFile, func(id restic.ID, size int64) error {
-		if lockID2 != nil {
-			t.Error("more than one lock found")
-		}
-		lockID2 = &id
-		return nil
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	lockID2 := checkSingleLock(t, repo)
 
-	rtest.Assert(t, !lockID.Equal(*lockID2),
+	rtest.Assert(t, !lockID.Equal(lockID2),
 		"expected a new ID after lock refresh, got the same")
-	lock2, err := restic.LoadLock(context.TODO(), repo, *lockID2)
+	lock2, err := restic.LoadLock(context.TODO(), repo, lockID2)
 	rtest.OK(t, err)
 	rtest.Assert(t, lock2.Time.After(time0),
 		"expected a later timestamp after lock refresh")
 	rtest.OK(t, lock.Unlock())
+}
+
+func TestLockRefresh(t *testing.T) {
+	testLockRefresh(t, func(lock *restic.Lock) error {
+		return lock.Refresh(context.TODO())
+	})
+}
+
+func TestLockRefreshStale(t *testing.T) {
+	testLockRefresh(t, func(lock *restic.Lock) error {
+		return lock.RefreshStaleLock(context.TODO())
+	})
+}
+
+func TestLockRefreshStaleMissing(t *testing.T) {
+	repo := repository.TestRepository(t)
+	restic.TestSetLockTimeout(t, 5*time.Millisecond)
+
+	lock, err := restic.NewLock(context.TODO(), repo)
+	rtest.OK(t, err)
+	lockID := checkSingleLock(t, repo)
+
+	// refresh must fail if lock was removed
+	rtest.OK(t, repo.Backend().Remove(context.TODO(), restic.Handle{Type: restic.LockFile, Name: lockID.String()}))
+	time.Sleep(time.Millisecond)
+	err = lock.RefreshStaleLock(context.TODO())
+	rtest.Assert(t, err == restic.ErrRemovedLock, "unexpected error, expected %v, got %v", restic.ErrRemovedLock, err)
 }

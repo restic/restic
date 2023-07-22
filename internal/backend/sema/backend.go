@@ -3,6 +3,7 @@ package sema
 import (
 	"context"
 	"io"
+	"sync"
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/restic/restic/internal/errors"
@@ -15,7 +16,8 @@ var _ restic.Backend = &connectionLimitedBackend{}
 // connectionLimitedBackend limits the number of concurrent operations.
 type connectionLimitedBackend struct {
 	restic.Backend
-	sem semaphore
+	sem        semaphore
+	freezeLock sync.Mutex
 }
 
 // NewBackend creates a backend that limits the concurrent operations on the underlying backend
@@ -39,7 +41,21 @@ func (be *connectionLimitedBackend) typeDependentLimit(t restic.FileType) func()
 		return func() {}
 	}
 	be.sem.GetToken()
+	// prevent token usage while the backend is frozen
+	be.freezeLock.Lock()
+	defer be.freezeLock.Unlock()
+
 	return be.sem.ReleaseToken
+}
+
+// Freeze blocks all backend operations except those on lock files
+func (be *connectionLimitedBackend) Freeze() {
+	be.freezeLock.Lock()
+}
+
+// Unfreeze allows all backend operations to continue
+func (be *connectionLimitedBackend) Unfreeze() {
+	be.freezeLock.Unlock()
 }
 
 // Save adds new Data to the backend.
@@ -49,6 +65,10 @@ func (be *connectionLimitedBackend) Save(ctx context.Context, h restic.Handle, r
 	}
 
 	defer be.typeDependentLimit(h.Type)()
+
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 
 	return be.Backend.Save(ctx, h, rd)
 }
@@ -68,6 +88,10 @@ func (be *connectionLimitedBackend) Load(ctx context.Context, h restic.Handle, l
 
 	defer be.typeDependentLimit(h.Type)()
 
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
 	return be.Backend.Load(ctx, h, length, offset, fn)
 }
 
@@ -79,6 +103,10 @@ func (be *connectionLimitedBackend) Stat(ctx context.Context, h restic.Handle) (
 
 	defer be.typeDependentLimit(h.Type)()
 
+	if ctx.Err() != nil {
+		return restic.FileInfo{}, ctx.Err()
+	}
+
 	return be.Backend.Stat(ctx, h)
 }
 
@@ -89,6 +117,10 @@ func (be *connectionLimitedBackend) Remove(ctx context.Context, h restic.Handle)
 	}
 
 	defer be.typeDependentLimit(h.Type)()
+
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 
 	return be.Backend.Remove(ctx, h)
 }
