@@ -73,7 +73,7 @@ func TestFuseFile(t *testing.T) {
 
 	timestamp, err := time.Parse(time.RFC3339, "2017-01-24T10:42:56+01:00")
 	rtest.OK(t, err)
-	restic.TestCreateSnapshot(t, repo, timestamp, 2, 0.1)
+	restic.TestCreateSnapshot(t, repo, timestamp, 2)
 
 	sn := loadFirstSnapshot(t, repo)
 	tree := loadTree(t, repo, *sn.Tree)
@@ -180,7 +180,7 @@ func TestFuseDir(t *testing.T) {
 // Test top-level directories for their UID and GID.
 func TestTopUIDGID(t *testing.T) {
 	repo := repository.TestRepository(t)
-	restic.TestCreateSnapshot(t, repo, time.Unix(1460289341, 207401672), 0, 0)
+	restic.TestCreateSnapshot(t, repo, time.Unix(1460289341, 207401672), 0)
 
 	testTopUIDGID(t, Config{}, repo, uint32(os.Getuid()), uint32(os.Getgid()))
 	testTopUIDGID(t, Config{OwnerIsRoot: true}, repo, 0, 0)

@@ -88,7 +88,7 @@ func TestFindUsedBlobs(t *testing.T) {
 
 	var snapshots []*restic.Snapshot
 	for i := 0; i < findTestSnapshots; i++ {
-		sn := restic.TestCreateSnapshot(t, repo, findTestTime.Add(time.Duration(i)*time.Second), findTestDepth, 0)
+		sn := restic.TestCreateSnapshot(t, repo, findTestTime.Add(time.Duration(i)*time.Second), findTestDepth)
 		t.Logf("snapshot %v saved, tree %v", sn.ID().Str(), sn.Tree.Str())
 		snapshots = append(snapshots, sn)
 	}
@@ -131,7 +131,7 @@ func TestMultiFindUsedBlobs(t *testing.T) {
 
 	var snapshotTrees restic.IDs
 	for i := 0; i < findTestSnapshots; i++ {
-		sn := restic.TestCreateSnapshot(t, repo, findTestTime.Add(time.Duration(i)*time.Second), findTestDepth, 0)
+		sn := restic.TestCreateSnapshot(t, repo, findTestTime.Add(time.Duration(i)*time.Second), findTestDepth)
 		t.Logf("snapshot %v saved, tree %v", sn.ID().Str(), sn.Tree.Str())
 		snapshotTrees = append(snapshotTrees, *sn.Tree)
 	}
@@ -177,7 +177,7 @@ func (r ForbiddenRepo) Connections() uint {
 func TestFindUsedBlobsSkipsSeenBlobs(t *testing.T) {
 	repo := repository.TestRepository(t)
 
-	snapshot := restic.TestCreateSnapshot(t, repo, findTestTime, findTestDepth, 0)
+	snapshot := restic.TestCreateSnapshot(t, repo, findTestTime, findTestDepth)
 	t.Logf("snapshot %v saved, tree %v", snapshot.ID().Str(), snapshot.Tree.Str())
 
 	usedBlobs := restic.NewBlobSet()
@@ -195,7 +195,7 @@ func TestFindUsedBlobsSkipsSeenBlobs(t *testing.T) {
 func BenchmarkFindUsedBlobs(b *testing.B) {
 	repo := repository.TestRepository(b)
 
-	sn := restic.TestCreateSnapshot(b, repo, findTestTime, findTestDepth, 0)
+	sn := restic.TestCreateSnapshot(b, repo, findTestTime, findTestDepth)
 
 	b.ResetTimer()
 

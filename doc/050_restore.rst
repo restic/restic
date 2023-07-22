@@ -48,6 +48,18 @@ files in the snapshot. For example, to restore a single file:
 
 This will restore the file ``foo`` to ``/tmp/restore-work/work/foo``.
 
+To only restore a specific subfolder, you can use the ``<snapshot>:<subfolder>``
+syntax, where ``snapshot`` is the ID of a snapshot (or the string ``latest``)
+and ``subfolder`` is a path within the snapshot.
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo restore 79766175:/work --target /tmp/restore-work --include /foo
+    enter password for repository:
+    restoring <Snapshot of [/home/user/work] at 2015-05-08 21:40:19.884408621 +0200 CEST> to /tmp/restore-work
+
+This will restore the file ``foo`` to ``/tmp/restore-work/foo``.
+
 You can use the command ``restic ls latest`` or ``restic find foo`` to find the
 path to the file within the snapshot. This path you can then pass to
 ``--include`` in verbatim to only restore the single file or directory.
@@ -151,8 +163,14 @@ output the contents in the tar (default) or zip format:
 .. code-block:: console
 
     $ restic -r /srv/restic-repo dump latest /home/other/work > restore.tar
- 
+
 .. code-block:: console
 
     $ restic -r /srv/restic-repo dump -a zip latest /home/other/work > restore.zip
 
+The folder content is then contained at ``/home/other/work`` within the archive.
+To include the folder content at the root of the archive, you can use the ``<snapshot>:<subfolder>`` syntax:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo dump latest:/home/other/work / > restore.tar

@@ -13,7 +13,7 @@ import (
 )
 
 var cmdCat = &cobra.Command{
-	Use:   "cat [flags] [pack|blob|snapshot|index|key|masterkey|config|lock] ID",
+	Use:   "cat [flags] [masterkey|config|pack ID|blob ID|snapshot ID|index ID|key ID|lock ID|tree snapshot:subfolder]",
 	Short: "Print internal objects to stdout",
 	Long: `
 The "cat" command is used to print internal objects to stdout.
@@ -55,7 +55,7 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string) error {
 	tpe := args[0]
 
 	var id restic.ID
-	if tpe != "masterkey" && tpe != "config" && tpe != "snapshot" {
+	if tpe != "masterkey" && tpe != "config" && tpe != "snapshot" && tpe != "tree" {
 		id, err = restic.ParseID(args[1])
 		if err != nil {
 			return errors.Fatalf("unable to parse ID: %v\n", err)
@@ -80,7 +80,7 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string) error {
 		Println(string(buf))
 		return nil
 	case "snapshot":
-		sn, err := restic.FindSnapshot(ctx, repo.Backend(), repo, args[1])
+		sn, _, err := restic.FindSnapshot(ctx, repo.Backend(), repo, args[1])
 		if err != nil {
 			return errors.Fatalf("could not find snapshot: %v\n", err)
 		}
@@ -164,6 +164,29 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string) error {
 		}
 
 		return errors.Fatal("blob not found")
+
+	case "tree":
+		sn, subfolder, err := restic.FindSnapshot(ctx, repo.Backend(), repo, args[1])
+		if err != nil {
+			return errors.Fatalf("could not find snapshot: %v\n", err)
+		}
+
+		err = repo.LoadIndex(ctx)
+		if err != nil {
+			return err
+		}
+
+		sn.Tree, err = restic.FindTreeDirectory(ctx, repo, sn.Tree, subfolder)
+		if err != nil {
+			return err
+		}
+
+		buf, err := repo.LoadBlob(ctx, restic.TreeBlob, *sn.Tree, nil)
+		if err != nil {
+			return err
+		}
+		_, err = globalOptions.stdout.Write(buf)
+		return err
 
 	default:
 		return errors.Fatal("invalid type")

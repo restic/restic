@@ -2,7 +2,6 @@ package restic
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
@@ -19,12 +18,11 @@ func fakeFile(seed, size int64) io.Reader {
 }
 
 type fakeFileSystem struct {
-	t           testing.TB
-	repo        Repository
-	duplication float32
-	buf         []byte
-	chunker     *chunker.Chunker
-	rand        *rand.Rand
+	t       testing.TB
+	repo    Repository
+	buf     []byte
+	chunker *chunker.Chunker
+	rand    *rand.Rand
 }
 
 // saveFile reads from rd and saves the blobs in the repository. The list of
@@ -51,13 +49,9 @@ func (fs *fakeFileSystem) saveFile(ctx context.Context, rd io.Reader) (blobs IDs
 			fs.t.Fatalf("unable to save chunk in repo: %v", err)
 		}
 
-		id := Hash(chunk.Data)
-		if !fs.blobIsKnown(BlobHandle{ID: id, Type: DataBlob}) {
-			_, _, _, err := fs.repo.SaveBlob(ctx, DataBlob, chunk.Data, id, true)
-			if err != nil {
-				fs.t.Fatalf("error saving chunk: %v", err)
-			}
-
+		id, _, _, err := fs.repo.SaveBlob(ctx, DataBlob, chunk.Data, ID{}, false)
+		if err != nil {
+			fs.t.Fatalf("error saving chunk: %v", err)
 		}
 
 		blobs = append(blobs, id)
@@ -71,30 +65,6 @@ const (
 	maxSeed     = 32
 	maxNodes    = 15
 )
-
-func (fs *fakeFileSystem) treeIsKnown(tree *Tree) (bool, []byte, ID) {
-	data, err := json.Marshal(tree)
-	if err != nil {
-		fs.t.Fatalf("json.Marshal(tree) returned error: %v", err)
-		return false, nil, ID{}
-	}
-	data = append(data, '\n')
-
-	id := Hash(data)
-	return fs.blobIsKnown(BlobHandle{ID: id, Type: TreeBlob}), data, id
-}
-
-func (fs *fakeFileSystem) blobIsKnown(bh BlobHandle) bool {
-	if fs.rand.Float32() < fs.duplication {
-		return false
-	}
-
-	if fs.repo.Index().Has(bh) {
-		return true
-	}
-
-	return false
-}
 
 // saveTree saves a tree of fake files in the repo and returns the ID.
 func (fs *fakeFileSystem) saveTree(ctx context.Context, seed int64, depth int) ID {
@@ -134,16 +104,12 @@ func (fs *fakeFileSystem) saveTree(ctx context.Context, seed int64, depth int) I
 		tree.Nodes = append(tree.Nodes, node)
 	}
 
-	known, buf, id := fs.treeIsKnown(&tree)
-	if known {
-		return id
-	}
+	tree.Sort()
 
-	_, _, _, err := fs.repo.SaveBlob(ctx, TreeBlob, buf, id, false)
+	id, err := SaveTree(ctx, fs.repo, &tree)
 	if err != nil {
-		fs.t.Fatal(err)
+		fs.t.Fatalf("SaveTree returned error: %v", err)
 	}
-
 	return id
 }
 
@@ -152,22 +118,20 @@ func (fs *fakeFileSystem) saveTree(ctx context.Context, seed int64, depth int) I
 // also used as the snapshot's timestamp. The tree's depth can be specified
 // with the parameter depth. The parameter duplication is a probability that
 // the same blob will saved again.
-func TestCreateSnapshot(t testing.TB, repo Repository, at time.Time, depth int, duplication float32) *Snapshot {
+func TestCreateSnapshot(t testing.TB, repo Repository, at time.Time, depth int) *Snapshot {
 	seed := at.Unix()
 	t.Logf("create fake snapshot at %s with seed %d", at, seed)
 
 	fakedir := fmt.Sprintf("fakedir-at-%v", at.Format("2006-01-02 15:04:05"))
-	snapshot, err := NewSnapshot([]string{fakedir}, []string{"test"}, "foo", time.Now())
+	snapshot, err := NewSnapshot([]string{fakedir}, []string{"test"}, "foo", at)
 	if err != nil {
 		t.Fatal(err)
 	}
-	snapshot.Time = at
 
 	fs := fakeFileSystem{
-		t:           t,
-		repo:        repo,
-		duplication: duplication,
-		rand:        rand.New(rand.NewSource(seed)),
+		t:    t,
+		repo: repo,
+		rand: rand.New(rand.NewSource(seed)),
 	}
 
 	var wg errgroup.Group
