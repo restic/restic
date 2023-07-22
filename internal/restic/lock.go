@@ -306,14 +306,14 @@ func (l *Lock) RefreshStaleLock(ctx context.Context) error {
 		return err
 	}
 
-	l.lock.Lock()
-	defer l.lock.Unlock()
-
 	if !exists {
 		// cleanup replacement lock
 		_ = l.repo.Backend().Remove(context.TODO(), Handle{Type: LockFile, Name: id.String()})
 		return ErrRemovedLock
 	}
+
+	l.lock.Lock()
+	defer l.lock.Unlock()
 
 	debug.Log("new lock ID %v", id)
 	oldLockID := l.lockID
