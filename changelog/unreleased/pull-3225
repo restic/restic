@@ -1,6 +1,0 @@
-Enhancement: Extend cli help output
-
-Added a short overview of the most important commands to the commandline
-help output to help new users get started.
-
-https://github.com/restic/restic/pull/3225

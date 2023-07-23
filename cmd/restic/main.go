@@ -18,40 +18,16 @@ import (
 	"github.com/restic/restic/internal/errors"
 )
 
-// LongDescription is shown in the cli help output
-const LongDescription = `
+// cmdRoot is the base command when no other command has been specified.
+var cmdRoot = &cobra.Command{
+	Use:   "restic",
+	Short: "Backup and restore files",
+	Long: `
 restic is a backup program which allows saving multiple revisions of files and
 directories in an encrypted repository stored on different backends.
 
-To get started with a local test repository, first define some environment variables:
-    export RESTIC_REPOSITORY=/tmp/restic-example
-    export RESTIC_PASSWORD=some-strong-password
-
-Initialize the repository (first time only):
-    restic init
-
-Create your first backup:
-    restic backup /etc/hosts 
-
-You can list all the snapshots you created with:
-    restic snapshots
-
-You can restore a backup by noting the snapshot ID you want and running:
-    restic restore --target /tmp/some-target-dir your-snapshot-ID
-
-It is a good idea to periodically check your repository's metadata:
-    restic check
-    # or full data:
-    restic check --read-data
-
-The full documentation can be found at https://restic.readthedocs.io/
-`
-
-// cmdRoot is the base command when no other command has been specified.
-var cmdRoot = &cobra.Command{
-	Use:               "restic",
-	Short:             "Backup and restore files",
-	Long:              LongDescription,
+The full documentation can be found at https://restic.readthedocs.io/ .
+`,
 	SilenceErrors:     true,
 	SilenceUsage:      true,
 	DisableAutoGenTag: true,
