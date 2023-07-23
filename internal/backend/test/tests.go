@@ -428,6 +428,11 @@ func (s *Suite[C]) TestListCancel(t *testing.T) {
 
 			// wait until the context is cancelled
 			<-ctxTimeout.Done()
+			// The cancellation of a context first closes the done channel of the context and
+			// _afterwards_ propagates the cancellation to child contexts. If the List
+			// implementation uses a child context, then it may take a moment until that context
+			// is also cancelled. Thus give the context cancellation a moment to propagate.
+			time.Sleep(time.Millisecond)
 			return nil
 		})
 
