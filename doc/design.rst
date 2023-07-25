@@ -501,7 +501,7 @@ the JSON is indented):
     }
 
 A tree contains a list of entries (in the field ``nodes``) which contain
-meta data like a name and timestamps. Note that there are some specialities of how
+meta data like a name and timestamps. Note that there are some specialties of how
 this metadata is generated:
 
 - The name is quoted using `strconv.Quote <https://pkg.go.dev/strconv#Quote>`__
@@ -519,7 +519,7 @@ to print a tree. The tree referenced above can be dumped as follows:
 
 .. code-block:: console
 
-    $ restic -r /tmp/restic-repo cat blob b26e315b0988ddcd1cee64c351d13a100fedbc9fdbb144a67d1b765ab280b4dc
+    $ restic -r /tmp/restic-repo cat blob b26e315b0988ddcd1cee64c351d13a100fedbc9fdbb144a67d1b765ab280b4dc | jq .
     enter password for repository:
     {
       "nodes": [
