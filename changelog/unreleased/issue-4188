@@ -1,6 +1,6 @@
 Enhancement: `backup` includes restic version in snapshot metadata
 
-The restic version used backup the snapshot is now included in its metadata.
+The restic version used to backup a snapshot is now included in its metadata.
 The program version is shown when inspecting a snapshot using `restic cat
 snapshot <snapshotID>`  or `restic snapshots --json`.
 

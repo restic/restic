@@ -8,8 +8,8 @@ the snapshot, even if only some unimportant file was damaged.
 
 We've added a `repair snapshots` command, which can repair snapshots by removing
 damaged directories and missing files contents. Note that using this command
-can lead to data loss! Please see the "Troubleshooting" section in the documentation
-for more details.
+can lead to (limited) data loss! Please see the "Troubleshooting" section in the
+documentation for more details.
 
 https://github.com/restic/restic/issues/1759
 https://github.com/restic/restic/issues/1714

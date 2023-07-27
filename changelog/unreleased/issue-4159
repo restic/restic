@@ -1,6 +1,6 @@
-Enhancement: Add `--human-readable` flag to `ls` and `find` commands
+Enhancement: Add `--human-readable` option to `ls` and `find` commands
 
-Previously, when using the -l option with the ls and find commands,
+Previously, when using the `-l` option with the `ls` and `find` commands,
 the displayed size was always in bytes, without an option for a more
 human readable format such as MiB or GiB.
 

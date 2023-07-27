@@ -1,5 +1,6 @@
-Enhancement: Add jq to container image
+Enhancement: Add `jq` binary to container image
 
-The Docker container image now contains jq which can be useful when restic outputs json data.
+The Docker container image now contains `jq`, which can be useful to process
+JSON data output by restic.
 
 https://github.com/restic/restic/pull/4220

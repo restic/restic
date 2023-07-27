@@ -1,12 +1,12 @@
 Bugfix: Support non-UTF8 paths as symlink target
 
-Restic versions before 0.16.0 did not correctly backup and restore symlinks
+Restic versions before 0.16.0 did not correctly `backup` and `restore` symlinks
 that contain a non-UTF8 target. Note that this only affects system that still
 use a non-Unicode encoding for filesystem paths.
 
 We have extended the repository format to add support for such symlinks. Please
-note that at least restic version 0.16.0 must be used for both backup and
-restore to correctly handle non-UTF8 symlink targets.
+note that at least restic version 0.16.0 must be used for both `backup` and
+`restore` to correctly handle non-UTF8 symlink targets.
 
 https://github.com/restic/restic/issues/3311
 https://github.com/restic/restic/pull/3802
