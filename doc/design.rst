@@ -501,7 +501,7 @@ the JSON is indented):
     }
 
 A tree contains a list of entries (in the field ``nodes``) which contain
-meta data like a name and timestamps. Note that there are some specialities of how
+meta data like a name and timestamps. Note that there are some specialties of how
 this metadata is generated:
 
 - The name is quoted using `strconv.Quote <https://pkg.go.dev/strconv#Quote>`__
@@ -519,7 +519,7 @@ to print a tree. The tree referenced above can be dumped as follows:
 
 .. code-block:: console
 
-    $ restic -r /tmp/restic-repo cat blob b26e315b0988ddcd1cee64c351d13a100fedbc9fdbb144a67d1b765ab280b4dc
+    $ restic -r /tmp/restic-repo cat blob b26e315b0988ddcd1cee64c351d13a100fedbc9fdbb144a67d1b765ab280b4dc | jq .
     enter password for repository:
     {
       "nodes": [
@@ -547,6 +547,39 @@ to print a tree. The tree referenced above can be dumped as follows:
 This tree contains a file entry. This time, the ``subtree`` field is not
 present and the ``content`` field contains a list with one plain text
 SHA-256 hash.
+
+A symlink uses the following data structure:
+
+.. code-block:: console
+
+    $ restic -r /tmp/restic-repo cat blob 4c0a7d500bd1482ba01752e77c8d5a923304777d96b6522fae7c11e99b4e6fa6 | jq .
+    enter password for repository:
+    {
+      "nodes": [
+        {
+          "name": "testlink",
+          "type": "symlink",
+          "mode": 134218239,
+          "mtime": "2023-07-25T20:01:44.007465374+02:00",
+          "atime": "2023-07-25T20:01:44.007465374+02:00",
+          "ctime": "2023-07-25T20:01:44.007465374+02:00",
+          "uid": 1000,
+          "gid": 100,
+          "user": "fd0",
+          "inode": 33734827,
+          "links": 1,
+          "linktarget": "example_target",
+          "content": null
+        },
+        [...]
+      ]
+    }
+
+The symlink target is stored in the field `linktarget`. As JSON strings can
+only contain valid unicode, an exception applies if the `linktarget` is not a
+valid UTF-8 string. Since restic 0.16.0, in such a case the `linktarget_raw`
+field contains a base64 encoded version of the raw linktarget. The
+`linktarget_raw` field is only set if `linktarget` cannot be encoded correctly.
 
 The command ``restic cat blob`` can also be used to extract and decrypt
 data given a plaintext ID, e.g. for the data mentioned above:
