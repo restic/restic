@@ -1,8 +1,9 @@
-Bugfix: Restic forget --keep-* options now interpret "-1" as "forever"
+Bugfix: Support "unlimited" in `forget --keep-*` options
 
-Restic would forget snapshots that should have been kept when "-1" was
-used as a value for --keep-* options. It now interprets "-1" as forever,
-e.g. an option like --keep-monthly -1 will keep all monthly snapshots.
+Restic would forget snapshots that should have been kept when a negative value
+was passed to the `--keep-*` options. Negative values are now forbidden. To
+keep all snapshots, the special value `unlimited` is now supported. For
+example, `--keep-monthly unlimited` will keep all monthly snapshots.
 
 https://github.com/restic/restic/issues/2565
 https://github.com/restic/restic/pull/4234
