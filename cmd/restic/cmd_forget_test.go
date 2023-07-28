@@ -7,6 +7,36 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 )
 
+func TestForgetPolicyValues(t *testing.T) {
+	testCases := []struct {
+		input string
+		value ForgetPolicyCount
+		err   string
+	}{
+		{"0", ForgetPolicyCount(0), ""},
+		{"1", ForgetPolicyCount(1), ""},
+		{"unlimited", ForgetPolicyCount(-1), ""},
+		{"", ForgetPolicyCount(0), "strconv.ParseInt: parsing \"\": invalid syntax"},
+		{"-1", ForgetPolicyCount(0), ErrNegativePolicyCount.Error()},
+		{"abc", ForgetPolicyCount(0), "strconv.ParseInt: parsing \"abc\": invalid syntax"},
+	}
+	for _, testCase := range testCases {
+		t.Run("", func(t *testing.T) {
+			var count ForgetPolicyCount
+			err := count.Set(testCase.input)
+
+			if testCase.err != "" {
+				rtest.Assert(t, err != nil, "should have returned error for input %+v", testCase.input)
+				rtest.Equals(t, testCase.err, err.Error())
+			} else {
+				rtest.Assert(t, err == nil, "expected no error for input %+v, got %v", testCase.input, err)
+				rtest.Equals(t, testCase.value, count)
+				rtest.Equals(t, testCase.input, count.String())
+			}
+		})
+	}
+}
+
 func TestForgetOptionValues(t *testing.T) {
 	const negValErrorMsg = "Fatal: negative values other than -1 are not allowed for --keep-*"
 	const negDurationValErrorMsg = "Fatal: durations containing negative values are not allowed for --keep-within*"

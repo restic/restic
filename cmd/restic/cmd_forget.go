@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"strconv"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -36,14 +37,49 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 	},
 }
 
+type ForgetPolicyCount int
+
+var ErrNegativePolicyCount = errors.New("negative values not allowed, use 'unlimited' instead")
+
+func (c *ForgetPolicyCount) Set(s string) error {
+	switch s {
+	case "unlimited":
+		*c = -1
+	default:
+		val, err := strconv.ParseInt(s, 10, 0)
+		if err != nil {
+			return err
+		}
+		if val < 0 {
+			return ErrNegativePolicyCount
+		}
+		*c = ForgetPolicyCount(val)
+	}
+
+	return nil
+}
+
+func (c *ForgetPolicyCount) String() string {
+	switch *c {
+	case -1:
+		return "unlimited"
+	default:
+		return strconv.FormatInt(int64(*c), 10)
+	}
+}
+
+func (c *ForgetPolicyCount) Type() string {
+	return "n"
+}
+
 // ForgetOptions collects all options for the forget command.
 type ForgetOptions struct {
-	Last          int
-	Hourly        int
-	Daily         int
-	Weekly        int
-	Monthly       int
-	Yearly        int
+	Last          ForgetPolicyCount
+	Hourly        ForgetPolicyCount
+	Daily         ForgetPolicyCount
+	Weekly        ForgetPolicyCount
+	Monthly       ForgetPolicyCount
+	Yearly        ForgetPolicyCount
 	Within        restic.Duration
 	WithinHourly  restic.Duration
 	WithinDaily   restic.Duration
@@ -67,12 +103,12 @@ func init() {
 	cmdRoot.AddCommand(cmdForget)
 
 	f := cmdForget.Flags()
-	f.IntVarP(&forgetOptions.Last, "keep-last", "l", 0, "keep the last `n` snapshots (use '-1' to keep all snapshots)")
-	f.IntVarP(&forgetOptions.Hourly, "keep-hourly", "H", 0, "keep the last `n` hourly snapshots (use '-1' to keep all hourly snapshots)")
-	f.IntVarP(&forgetOptions.Daily, "keep-daily", "d", 0, "keep the last `n` daily snapshots (use '-1' to keep all daily snapshots)")
-	f.IntVarP(&forgetOptions.Weekly, "keep-weekly", "w", 0, "keep the last `n` weekly snapshots (use '-1' to keep all weekly snapshots)")
-	f.IntVarP(&forgetOptions.Monthly, "keep-monthly", "m", 0, "keep the last `n` monthly snapshots (use '-1' to keep all monthly snapshots)")
-	f.IntVarP(&forgetOptions.Yearly, "keep-yearly", "y", 0, "keep the last `n` yearly snapshots (use '-1' to keep all yearly snapshots)")
+	f.VarP(&forgetOptions.Last, "keep-last", "l", "keep the last `n` snapshots (use 'unlimited' to keep all snapshots)")
+	f.VarP(&forgetOptions.Hourly, "keep-hourly", "H", "keep the last `n` hourly snapshots (use 'unlimited' to keep all hourly snapshots)")
+	f.VarP(&forgetOptions.Daily, "keep-daily", "d", "keep the last `n` daily snapshots (use 'unlimited' to keep all daily snapshots)")
+	f.VarP(&forgetOptions.Weekly, "keep-weekly", "w", "keep the last `n` weekly snapshots (use 'unlimited' to keep all weekly snapshots)")
+	f.VarP(&forgetOptions.Monthly, "keep-monthly", "m", "keep the last `n` monthly snapshots (use 'unlimited' to keep all monthly snapshots)")
+	f.VarP(&forgetOptions.Yearly, "keep-yearly", "y", "keep the last `n` yearly snapshots (use 'unlimited' to keep all yearly snapshots)")
 	f.VarP(&forgetOptions.Within, "keep-within", "", "keep snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
 	f.VarP(&forgetOptions.WithinHourly, "keep-within-hourly", "", "keep hourly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
 	f.VarP(&forgetOptions.WithinDaily, "keep-within-daily", "", "keep daily snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
@@ -165,12 +201,12 @@ func runForget(ctx context.Context, opts ForgetOptions, gopts GlobalOptions, arg
 		}
 
 		policy := restic.ExpirePolicy{
-			Last:          opts.Last,
-			Hourly:        opts.Hourly,
-			Daily:         opts.Daily,
-			Weekly:        opts.Weekly,
-			Monthly:       opts.Monthly,
-			Yearly:        opts.Yearly,
+			Last:          int(opts.Last),
+			Hourly:        int(opts.Hourly),
+			Daily:         int(opts.Daily),
+			Weekly:        int(opts.Weekly),
+			Monthly:       int(opts.Monthly),
+			Yearly:        int(opts.Yearly),
 			Within:        opts.Within,
 			WithinHourly:  opts.WithinHourly,
 			WithinDaily:   opts.WithinDaily,
