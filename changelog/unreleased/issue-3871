@@ -9,7 +9,7 @@ The commands `diff`, `dump`, `ls` and `restore` now support the
 `<snapshot>:<subfolder>` syntax, where `snapshot` is the ID of a snapshot (or
 the string `latest`) and `subfolder` is a path within the snapshot. The
 commands will then only work with the specified path of the snapshot. The
-`subfolder` must be a path to a folder as returned by `ls`. 
+`subfolder` must be a path to a folder as returned by `ls`. Two examples:
 
 `restic restore -t target latest:/some/path`
 `restic diff 12345678:/some/path 90abcef:/some/path`

@@ -1,9 +1,9 @@
-Enhancement: Provide multi-platform Docker containers
+Enhancement: Provide multi-platform Docker images
 
-The official Docker containers are now built for the architectures linux/386,
+The official Docker images are now built for the architectures linux/386,
 linux/amd64, linux/arm and linux/arm64.
 
-As an alternative to the Docker Hub, the Docker containers are also
+As an alternative to the Docker Hub, the Docker images are also
 available on ghcr.io, the GitHub Container Registry.
 
 https://github.com/restic/restic/issues/2359
