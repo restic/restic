@@ -1,16 +1,17 @@
 # The first line must start with Bugfix:, Enhancement: or Change:,
-# including the colon. Use present tense. Remove lines starting with '#'
-# from this template.
+# including the colon. Use present tense and the imperative mood. Remove
+# lines starting with '#' from this template.
 Enhancement: Allow custom bar in the foo command
 
 # Describe the problem in the past tense, the new behavior in the present
 # tense. Mention the affected commands, backends, operating systems, etc.
 # Focus on user-facing behavior, not the implementation.
+# Use "Restic now ..." instead of "We have changed ...".
 
 Restic foo always used the system-wide bar when deciding how to frob an
-item in the baz backend. It now permits selecting the bar with --bar or
-the environment variable RESTIC_BAR. The system-wide bar is still the
-default.
+item in the `baz` backend. It now permits selecting the bar with `--bar`
+or the environment variable `RESTIC_BAR`. The system-wide bar is still
+the default.
 
 # The last section is a list of issue, PR and forum URLs.
 # The first issue ID determines the filename for the changelog entry:
