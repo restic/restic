@@ -1,0 +1,9 @@
+Bugfix: Avoid lock refresh issues on slow network connections
+
+On network connections with a low upload speed, backups and other operations
+could fail with the error message `Fatal: failed to refresh lock in time`.
+
+This has now been fixed by reworking the lock refresh handling.
+
+https://github.com/restic/restic/issues/4199
+https://github.com/restic/restic/pull/4304

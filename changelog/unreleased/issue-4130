@@ -1,0 +1,9 @@
+Enhancement: Cancel current command if cache becomes unusable
+
+If the cache directory was removed or ran out of space while restic was
+running, this would previously cause further caching attempts to fail and
+thereby drastically slow down the command execution. Now, the currently running
+command is instead canceled.
+
+https://github.com/restic/restic/issues/4130
+https://github.com/restic/restic/pull/4166
