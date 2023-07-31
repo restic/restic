@@ -3,18 +3,36 @@
 
 .SH NAME
 .PP
-restic-rebuild-index - Build a new index
+restic-repair-snapshots - Repair snapshots
 
 
 .SH SYNOPSIS
 .PP
-\fBrestic rebuild-index [flags]\fP
+\fBrestic repair snapshots [flags] [snapshot ID] [...]\fP
 
 
 .SH DESCRIPTION
 .PP
-The "rebuild-index" command creates a new index based on the pack files in the
-repository.
+The "repair snapshots" command repairs broken snapshots. It scans the given
+snapshots and generates new ones with damaged directories and file contents
+removed. If the broken snapshots are deleted, a prune run will be able to
+clean up the repository.
+
+.PP
+The command depends on a correct index, thus make sure to run "repair index"
+first!
+
+
+.SH WARNING
+.PP
+Repairing and deleting broken snapshots causes data loss! It will remove broken
+directories and modify broken files in the modified snapshots.
+
+.PP
+If the contents of directories and files are still available, the better option
+is to run "backup" which in that case is able to heal existing snapshots. Only
+use the "repair snapshots" command if you need to recover an old and broken
+snapshot!
 
 
 .SH EXIT STATUS
@@ -24,18 +42,34 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 .SH OPTIONS
 .PP
-\fB-h\fP, \fB--help\fP[=false]
-	help for rebuild-index
+\fB-n\fP, \fB--dry-run\fP[=false]
+	do not do anything, just print what would be done
 
 .PP
-\fB--read-all-packs\fP[=false]
-	read all pack files to generate new index from scratch
+\fB--forget\fP[=false]
+	remove original snapshots after creating new ones
+
+.PP
+\fB-h\fP, \fB--help\fP[=false]
+	help for snapshots
+
+.PP
+\fB-H\fP, \fB--host\fP=[]
+	only consider snapshots for this \fB\fChost\fR (can be specified multiple times)
+
+.PP
+\fB--path\fP=[]
+	only consider snapshots including this (absolute) \fB\fCpath\fR (can be specified multiple times)
+
+.PP
+\fB--tag\fP=[]
+	only consider snapshots including \fB\fCtag[,tag,...]\fR (can be specified multiple times)
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
 .PP
 \fB--cacert\fP=[]
-	\fB\fCfile\fR to load root certificates from (default: use system certificates)
+	\fB\fCfile\fR to load root certificates from (default: use system certificates or $RESTIC_CACERT)
 
 .PP
 \fB--cache-dir\fP=""
@@ -47,7 +81,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 .PP
 \fB--compression\fP=auto
-	compression mode (only available for repository format version 2), one of (auto|off|max)
+	compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION)
 
 .PP
 \fB--insecure-tls\fP[=false]
@@ -106,8 +140,12 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 	\fB\fCfile\fR to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
 
 .PP
+\fB--retry-lock\fP=0s
+	retry to lock the repository if it is already locked, takes a value like 5m or 2h (default: no retries)
+
+.PP
 \fB--tls-client-cert\fP=""
-	path to a \fB\fCfile\fR containing PEM encoded TLS client certificate and private key
+	path to a \fB\fCfile\fR containing PEM encoded TLS client certificate and private key (default: $RESTIC_TLS_CLIENT_CERT)
 
 .PP
 \fB-v\fP, \fB--verbose\fP[=0]
@@ -116,4 +154,4 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 .SH SEE ALSO
 .PP
-\fBrestic(1)\fP
+\fBrestic-repair(1)\fP

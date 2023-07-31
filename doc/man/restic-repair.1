@@ -3,28 +3,23 @@
 
 .SH NAME
 .PP
-restic-cat - Print internal objects to stdout
+restic-repair - Repair the repository
 
 
 .SH SYNOPSIS
 .PP
-\fBrestic cat [flags] [masterkey|config|pack ID|blob ID|snapshot ID|index ID|key ID|lock ID|tree snapshot:subfolder]\fP
+\fBrestic repair [flags]\fP
 
 
 .SH DESCRIPTION
 .PP
-The "cat" command is used to print internal objects to stdout.
-
-
-.SH EXIT STATUS
-.PP
-Exit status is 0 if the command was successful, and non-zero if there was any error.
+Repair the repository
 
 
 .SH OPTIONS
 .PP
 \fB-h\fP, \fB--help\fP[=false]
-	help for cat
+	help for repair
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
@@ -115,4 +110,4 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 .SH SEE ALSO
 .PP
-\fBrestic(1)\fP
+\fBrestic(1)\fP, \fBrestic-repair-index(1)\fP, \fBrestic-repair-snapshots(1)\fP

@@ -1,4 +1,5 @@
 #compdef restic
+compdef _restic restic
 
 # zsh completion for restic                               -*- shell-script -*-
 
@@ -17,8 +18,9 @@ _restic()
     local shellCompDirectiveNoFileComp=4
     local shellCompDirectiveFilterFileExt=8
     local shellCompDirectiveFilterDirs=16
+    local shellCompDirectiveKeepOrder=32
 
-    local lastParam lastChar flagPrefix requestComp out directive comp lastComp noSpace
+    local lastParam lastChar flagPrefix requestComp out directive comp lastComp noSpace keepOrder
     local -a completions
 
     __restic_debug "\n========= starting completion logic =========="
@@ -136,6 +138,11 @@ _restic()
         noSpace="-S ''"
     fi
 
+    if [ $((directive & shellCompDirectiveKeepOrder)) -ne 0 ]; then
+        __restic_debug "Activating keep order."
+        keepOrder="-V"
+    fi
+
     if [ $((directive & shellCompDirectiveFilterFileExt)) -ne 0 ]; then
         # File extension filtering
         local filteringCmd
@@ -171,7 +178,7 @@ _restic()
         return $result
     else
         __restic_debug "Calling _describe"
-        if eval _describe "completions" completions $flagPrefix $noSpace; then
+        if eval _describe $keepOrder "completions" completions $flagPrefix $noSpace; then
             __restic_debug "_describe found some completions"
 
             # Return the success of having called _describe

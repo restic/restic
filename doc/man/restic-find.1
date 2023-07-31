@@ -32,6 +32,10 @@ It can also be used to search for restic blobs or trees for troubleshooting.
 	only consider snapshots for this \fB\fChost\fR (can be specified multiple times)
 
 .PP
+\fB--human-readable\fP[=false]
+	print sizes in human readable format
+
+.PP
 \fB-i\fP, \fB--ignore-case\fP[=false]
 	ignore case for pattern
 
@@ -75,7 +79,7 @@ It can also be used to search for restic blobs or trees for troubleshooting.
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
 .PP
 \fB--cacert\fP=[]
-	\fB\fCfile\fR to load root certificates from (default: use system certificates)
+	\fB\fCfile\fR to load root certificates from (default: use system certificates or $RESTIC_CACERT)
 
 .PP
 \fB--cache-dir\fP=""
@@ -87,7 +91,7 @@ It can also be used to search for restic blobs or trees for troubleshooting.
 
 .PP
 \fB--compression\fP=auto
-	compression mode (only available for repository format version 2), one of (auto|off|max)
+	compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION)
 
 .PP
 \fB--insecure-tls\fP[=false]
@@ -146,8 +150,12 @@ It can also be used to search for restic blobs or trees for troubleshooting.
 	\fB\fCfile\fR to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
 
 .PP
+\fB--retry-lock\fP=0s
+	retry to lock the repository if it is already locked, takes a value like 5m or 2h (default: no retries)
+
+.PP
 \fB--tls-client-cert\fP=""
-	path to a \fB\fCfile\fR containing PEM encoded TLS client certificate and private key
+	path to a \fB\fCfile\fR containing PEM encoded TLS client certificate and private key (default: $RESTIC_TLS_CLIENT_CERT)
 
 .PP
 \fB-v\fP, \fB--verbose\fP[=0]

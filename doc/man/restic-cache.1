@@ -42,7 +42,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
 .PP
 \fB--cacert\fP=[]
-	\fB\fCfile\fR to load root certificates from (default: use system certificates)
+	\fB\fCfile\fR to load root certificates from (default: use system certificates or $RESTIC_CACERT)
 
 .PP
 \fB--cache-dir\fP=""
@@ -54,7 +54,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 .PP
 \fB--compression\fP=auto
-	compression mode (only available for repository format version 2), one of (auto|off|max)
+	compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION)
 
 .PP
 \fB--insecure-tls\fP[=false]
@@ -113,8 +113,12 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 	\fB\fCfile\fR to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
 
 .PP
+\fB--retry-lock\fP=0s
+	retry to lock the repository if it is already locked, takes a value like 5m or 2h (default: no retries)
+
+.PP
 \fB--tls-client-cert\fP=""
-	path to a \fB\fCfile\fR containing PEM encoded TLS client certificate and private key
+	path to a \fB\fCfile\fR containing PEM encoded TLS client certificate and private key (default: $RESTIC_TLS_CLIENT_CERT)
 
 .PP
 \fB-v\fP, \fB--verbose\fP[=0]

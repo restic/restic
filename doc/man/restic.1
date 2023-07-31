@@ -16,11 +16,14 @@ restic - Backup and restore files
 restic is a backup program which allows saving multiple revisions of files and
 directories in an encrypted repository stored on different backends.
 
+.PP
+The full documentation can be found at https://restic.readthedocs.io/ .
+
 
 .SH OPTIONS
 .PP
 \fB--cacert\fP=[]
-	\fB\fCfile\fR to load root certificates from (default: use system certificates)
+	\fB\fCfile\fR to load root certificates from (default: use system certificates or $RESTIC_CACERT)
 
 .PP
 \fB--cache-dir\fP=""
@@ -32,7 +35,7 @@ directories in an encrypted repository stored on different backends.
 
 .PP
 \fB--compression\fP=auto
-	compression mode (only available for repository format version 2), one of (auto|off|max)
+	compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION)
 
 .PP
 \fB-h\fP, \fB--help\fP[=false]
@@ -95,8 +98,12 @@ directories in an encrypted repository stored on different backends.
 	\fB\fCfile\fR to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
 
 .PP
+\fB--retry-lock\fP=0s
+	retry to lock the repository if it is already locked, takes a value like 5m or 2h (default: no retries)
+
+.PP
 \fB--tls-client-cert\fP=""
-	path to a \fB\fCfile\fR containing PEM encoded TLS client certificate and private key
+	path to a \fB\fCfile\fR containing PEM encoded TLS client certificate and private key (default: $RESTIC_TLS_CLIENT_CERT)
 
 .PP
 \fB-v\fP, \fB--verbose\fP[=0]
@@ -105,4 +112,4 @@ directories in an encrypted repository stored on different backends.
 
 .SH SEE ALSO
 .PP
-\fBrestic-backup(1)\fP, \fBrestic-cache(1)\fP, \fBrestic-cat(1)\fP, \fBrestic-check(1)\fP, \fBrestic-copy(1)\fP, \fBrestic-diff(1)\fP, \fBrestic-dump(1)\fP, \fBrestic-find(1)\fP, \fBrestic-forget(1)\fP, \fBrestic-generate(1)\fP, \fBrestic-init(1)\fP, \fBrestic-key(1)\fP, \fBrestic-list(1)\fP, \fBrestic-ls(1)\fP, \fBrestic-migrate(1)\fP, \fBrestic-mount(1)\fP, \fBrestic-prune(1)\fP, \fBrestic-rebuild-index(1)\fP, \fBrestic-recover(1)\fP, \fBrestic-restore(1)\fP, \fBrestic-rewrite(1)\fP, \fBrestic-self-update(1)\fP, \fBrestic-snapshots(1)\fP, \fBrestic-stats(1)\fP, \fBrestic-tag(1)\fP, \fBrestic-unlock(1)\fP, \fBrestic-version(1)\fP
+\fBrestic-backup(1)\fP, \fBrestic-cache(1)\fP, \fBrestic-cat(1)\fP, \fBrestic-check(1)\fP, \fBrestic-copy(1)\fP, \fBrestic-diff(1)\fP, \fBrestic-dump(1)\fP, \fBrestic-find(1)\fP, \fBrestic-forget(1)\fP, \fBrestic-generate(1)\fP, \fBrestic-init(1)\fP, \fBrestic-key(1)\fP, \fBrestic-list(1)\fP, \fBrestic-ls(1)\fP, \fBrestic-migrate(1)\fP, \fBrestic-mount(1)\fP, \fBrestic-prune(1)\fP, \fBrestic-recover(1)\fP, \fBrestic-repair(1)\fP, \fBrestic-restore(1)\fP, \fBrestic-rewrite(1)\fP, \fBrestic-self-update(1)\fP, \fBrestic-snapshots(1)\fP, \fBrestic-stats(1)\fP, \fBrestic-tag(1)\fP, \fBrestic-unlock(1)\fP, \fBrestic-version(1)\fP

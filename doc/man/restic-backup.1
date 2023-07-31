@@ -66,6 +66,10 @@ Exit status is 3 if some source data could not be read (incomplete snapshot crea
 	force re-reading the target files/directories (overrides the "parent" flag)
 
 .PP
+\fB-g\fP, \fB--group-by\fP=host,paths
+	\fB\fCgroup\fR snapshots by host, paths and/or tags, separated by comma (disable grouping with '')
+
+.PP
 \fB-h\fP, \fB--help\fP[=false]
 	help for backup
 
@@ -99,7 +103,7 @@ Exit status is 3 if some source data could not be read (incomplete snapshot crea
 
 .PP
 \fB--parent\fP=""
-	use this parent \fB\fCsnapshot\fR (default: last snapshot in the repository that has the same target files/directories, and is not newer than the snapshot time)
+	use this parent \fB\fCsnapshot\fR (default: latest snapshot in the group determined by --group-by and not newer than the timestamp determined by --time)
 
 .PP
 \fB--read-concurrency\fP=0
@@ -129,7 +133,7 @@ Exit status is 3 if some source data could not be read (incomplete snapshot crea
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
 .PP
 \fB--cacert\fP=[]
-	\fB\fCfile\fR to load root certificates from (default: use system certificates)
+	\fB\fCfile\fR to load root certificates from (default: use system certificates or $RESTIC_CACERT)
 
 .PP
 \fB--cache-dir\fP=""
@@ -141,7 +145,7 @@ Exit status is 3 if some source data could not be read (incomplete snapshot crea
 
 .PP
 \fB--compression\fP=auto
-	compression mode (only available for repository format version 2), one of (auto|off|max)
+	compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION)
 
 .PP
 \fB--insecure-tls\fP[=false]
@@ -200,8 +204,12 @@ Exit status is 3 if some source data could not be read (incomplete snapshot crea
 	\fB\fCfile\fR to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
 
 .PP
+\fB--retry-lock\fP=0s
+	retry to lock the repository if it is already locked, takes a value like 5m or 2h (default: no retries)
+
+.PP
 \fB--tls-client-cert\fP=""
-	path to a \fB\fCfile\fR containing PEM encoded TLS client certificate and private key
+	path to a \fB\fCfile\fR containing PEM encoded TLS client certificate and private key (default: $RESTIC_TLS_CLIENT_CERT)
 
 .PP
 \fB-v\fP, \fB--verbose\fP[=0]

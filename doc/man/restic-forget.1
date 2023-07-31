@@ -35,27 +35,27 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 .SH OPTIONS
 .PP
 \fB-l\fP, \fB--keep-last\fP=0
-	keep the last \fB\fCn\fR snapshots
+	keep the last \fB\fCn\fR snapshots (use 'unlimited' to keep all snapshots)
 
 .PP
 \fB-H\fP, \fB--keep-hourly\fP=0
-	keep the last \fB\fCn\fR hourly snapshots
+	keep the last \fB\fCn\fR hourly snapshots (use 'unlimited' to keep all hourly snapshots)
 
 .PP
 \fB-d\fP, \fB--keep-daily\fP=0
-	keep the last \fB\fCn\fR daily snapshots
+	keep the last \fB\fCn\fR daily snapshots (use 'unlimited' to keep all daily snapshots)
 
 .PP
 \fB-w\fP, \fB--keep-weekly\fP=0
-	keep the last \fB\fCn\fR weekly snapshots
+	keep the last \fB\fCn\fR weekly snapshots (use 'unlimited' to keep all weekly snapshots)
 
 .PP
 \fB-m\fP, \fB--keep-monthly\fP=0
-	keep the last \fB\fCn\fR monthly snapshots
+	keep the last \fB\fCn\fR monthly snapshots (use 'unlimited' to keep all monthly snapshots)
 
 .PP
 \fB-y\fP, \fB--keep-yearly\fP=0
-	keep the last \fB\fCn\fR yearly snapshots
+	keep the last \fB\fCn\fR yearly snapshots (use 'unlimited' to keep all yearly snapshots)
 
 .PP
 \fB--keep-within\fP=
@@ -102,7 +102,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 	use compact output format
 
 .PP
-\fB-g\fP, \fB--group-by\fP="host,paths"
+\fB-g\fP, \fB--group-by\fP=host,paths
 	\fB\fCgroup\fR snapshots by host, paths and/or tags, separated by comma (disable grouping with '')
 
 .PP
@@ -141,7 +141,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
 .PP
 \fB--cacert\fP=[]
-	\fB\fCfile\fR to load root certificates from (default: use system certificates)
+	\fB\fCfile\fR to load root certificates from (default: use system certificates or $RESTIC_CACERT)
 
 .PP
 \fB--cache-dir\fP=""
@@ -153,7 +153,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 .PP
 \fB--compression\fP=auto
-	compression mode (only available for repository format version 2), one of (auto|off|max)
+	compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION)
 
 .PP
 \fB--insecure-tls\fP[=false]
@@ -212,8 +212,12 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 	\fB\fCfile\fR to read the repository location from (default: $RESTIC_REPOSITORY_FILE)
 
 .PP
+\fB--retry-lock\fP=0s
+	retry to lock the repository if it is already locked, takes a value like 5m or 2h (default: no retries)
+
+.PP
 \fB--tls-client-cert\fP=""
-	path to a \fB\fCfile\fR containing PEM encoded TLS client certificate and private key
+	path to a \fB\fCfile\fR containing PEM encoded TLS client certificate and private key (default: $RESTIC_TLS_CLIENT_CERT)
 
 .PP
 \fB-v\fP, \fB--verbose\fP[=0]

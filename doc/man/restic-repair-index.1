@@ -3,17 +3,18 @@
 
 .SH NAME
 .PP
-restic-cat - Print internal objects to stdout
+restic-repair-index - Build a new index
 
 
 .SH SYNOPSIS
 .PP
-\fBrestic cat [flags] [masterkey|config|pack ID|blob ID|snapshot ID|index ID|key ID|lock ID|tree snapshot:subfolder]\fP
+\fBrestic repair index [flags]\fP
 
 
 .SH DESCRIPTION
 .PP
-The "cat" command is used to print internal objects to stdout.
+The "repair index" command creates a new index based on the pack files in the
+repository.
 
 
 .SH EXIT STATUS
@@ -24,7 +25,11 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 .SH OPTIONS
 .PP
 \fB-h\fP, \fB--help\fP[=false]
-	help for cat
+	help for index
+
+.PP
+\fB--read-all-packs\fP[=false]
+	read all pack files to generate new index from scratch
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
@@ -115,4 +120,4 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 .SH SEE ALSO
 .PP
-\fBrestic(1)\fP
+\fBrestic-repair(1)\fP
