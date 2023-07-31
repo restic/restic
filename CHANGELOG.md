@@ -1,3 +1,350 @@
+Changelog for restic 0.16.0 (2023-07-31)
+=======================================
+
+The following sections list the changes in restic 0.16.0 relevant to
+restic users. The changes are ordered by importance.
+
+Summary
+-------
+
+ * Fix #2565: Support "unlimited" in `forget --keep-*` options
+ * Fix #3311: Support non-UTF8 paths as symlink target
+ * Fix #4199: Avoid lock refresh issues on slow network connections
+ * Fix #4274: Improve lock refresh handling after standby
+ * Fix #4319: Correctly clean up status bar output of the `backup` command
+ * Fix #4333: `generate` and `init` no longer silently ignore unexpected arguments
+ * Fix #4400: Ignore missing folders in `rest` backend
+ * Chg #4176: Fix JSON message type of `scan_finished` for the `backup` command
+ * Chg #4201: Require Go 1.20 for Solaris builds
+ * Enh #426: Show progress bar during restore
+ * Enh #719: Add `--retry-lock` option
+ * Enh #1495: Sort snapshots by timestamp in `restic find`
+ * Enh #1759: Add `repair index` and `repair snapshots` commands
+ * Enh #1926: Allow certificate paths to be passed through environment variables
+ * Enh #2359: Provide multi-platform Docker images
+ * Enh #2468: Add support for non-global Azure clouds
+ * Enh #2679: Reduce file fragmentation for local backend
+ * Enh #3328: Reduce memory usage by up to 25%
+ * Enh #3397: Improve accuracy of ETA displayed during backup
+ * Enh #3624: Keep oldest snapshot when there are not enough snapshots
+ * Enh #3698: Add support for Managed / Workload Identity to `azure` backend
+ * Enh #3871: Support `<snapshot>:<subfolder>` syntax to select subfolders
+ * Enh #3941: Support `--group-by` for backup parent selection
+ * Enh #4130: Cancel current command if cache becomes unusable
+ * Enh #4159: Add `--human-readable` option to `ls` and `find` commands
+ * Enh #4188: Include restic version in snapshot metadata
+ * Enh #4220: Add `jq` binary to Docker image
+ * Enh #4226: Allow specifying region of new buckets in the `gs` backend
+ * Enh #4375: Add support for extended attributes on symlinks
+
+Details
+-------
+
+ * Bugfix #2565: Support "unlimited" in `forget --keep-*` options
+
+   Restic would previously forget snapshots that should have been kept when a negative value was
+   passed to the `--keep-*` options. Negative values are now forbidden. To keep all snapshots,
+   the special value `unlimited` is now supported. For example, `--keep-monthly unlimited`
+   will keep all monthly snapshots.
+
+   https://github.com/restic/restic/issues/2565
+   https://github.com/restic/restic/pull/4234
+
+ * Bugfix #3311: Support non-UTF8 paths as symlink target
+
+   Earlier restic versions did not correctly `backup` and `restore` symlinks that contain a
+   non-UTF8 target. Note that this only affected systems that still use a non-Unicode encoding
+   for filesystem paths.
+
+   The repository format is now extended to add support for such symlinks. Please note that
+   snapshots must have been created with at least restic version 0.16.0 for `restore` to
+   correctly handle non-UTF8 symlink targets when restoring them.
+
+   https://github.com/restic/restic/issues/3311
+   https://github.com/restic/restic/pull/3802
+
+ * Bugfix #4199: Avoid lock refresh issues on slow network connections
+
+   On network connections with a low upload speed, backups and other operations could fail with
+   the error message `Fatal: failed to refresh lock in time`.
+
+   This has now been fixed by reworking the lock refresh handling.
+
+   https://github.com/restic/restic/issues/4199
+   https://github.com/restic/restic/pull/4304
+
+ * Bugfix #4274: Improve lock refresh handling after standby
+
+   If the restic process was stopped or the host running restic entered standby during a long
+   running operation such as a backup, this previously resulted in the operation failing with
+   `Fatal: failed to refresh lock in time`.
+
+   This has now been fixed such that restic first checks whether it is safe to continue the current
+   operation and only throws an error if not.
+
+   https://github.com/restic/restic/issues/4274
+   https://github.com/restic/restic/pull/4374
+
+ * Bugfix #4319: Correctly clean up status bar output of the `backup` command
+
+   Due to a regression in restic 0.15.2, the status bar of the `backup` command could leave some
+   output behind. This happened if filenames were printed that are wider than the current
+   terminal width. This has now been fixed.
+
+   https://github.com/restic/restic/issues/4319
+   https://github.com/restic/restic/pull/4318
+
+ * Bugfix #4333: `generate` and `init` no longer silently ignore unexpected arguments
+
+   https://github.com/restic/restic/pull/4333
+
+ * Bugfix #4400: Ignore missing folders in `rest` backend
+
+   If a repository accessed via the REST backend was missing folders, then restic would fail with
+   an error while trying to list the data in the repository. This has been now fixed.
+
+   https://github.com/restic/rest-server/issues/235
+   https://github.com/restic/restic/pull/4400
+
+ * Change #4176: Fix JSON message type of `scan_finished` for the `backup` command
+
+   Restic incorrectly set the `message_type` of the `scan_finished` message to `status`
+   instead of `verbose_status`. This has now been corrected so that the messages report the
+   correct type.
+
+   https://github.com/restic/restic/pull/4176
+
+ * Change #4201: Require Go 1.20 for Solaris builds
+
+   Building restic on Solaris now requires Go 1.20, as the library used to access Azure uses the
+   mmap syscall, which is only available on Solaris starting from Go 1.20. All other platforms
+   however continue to build with Go 1.18.
+
+   https://github.com/restic/restic/pull/4201
+
+ * Enhancement #426: Show progress bar during restore
+
+   The `restore` command now shows a progress report while restoring files.
+
+   Example: `[0:42] 5.76% 23 files 12.98 MiB, total 3456 files 23.54 GiB`
+
+   JSON output is now also supported.
+
+   https://github.com/restic/restic/issues/426
+   https://github.com/restic/restic/issues/3413
+   https://github.com/restic/restic/issues/3627
+   https://github.com/restic/restic/pull/3991
+   https://github.com/restic/restic/pull/4314
+   https://forum.restic.net/t/progress-bar-for-restore/5210
+
+ * Enhancement #719: Add `--retry-lock` option
+
+   This option allows specifying a duration for which restic will wait if the repository is
+   already locked.
+
+   https://github.com/restic/restic/issues/719
+   https://github.com/restic/restic/pull/2214
+   https://github.com/restic/restic/pull/4107
+
+ * Enhancement #1495: Sort snapshots by timestamp in `restic find`
+
+   The `find` command used to print snapshots in an arbitrary order. Restic now prints snapshots
+   sorted by timestamp.
+
+   https://github.com/restic/restic/issues/1495
+   https://github.com/restic/restic/pull/4409
+
+ * Enhancement #1759: Add `repair index` and `repair snapshots` commands
+
+   The `rebuild-index` command has been renamed to `repair index`. The old name will still work,
+   but is deprecated.
+
+   When a snapshot was damaged, the only option up to now was to completely forget the snapshot,
+   even if only some unimportant files in it were damaged and other files were still fine.
+
+   Restic now has a `repair snapshots` command, which can salvage any non-damaged files and parts
+   of files in the snapshots by removing damaged directories and missing file contents. Please
+   note that the damaged data may still be lost and see the "Troubleshooting" section in the
+   documentation for more details.
+
+   https://github.com/restic/restic/issues/1759
+   https://github.com/restic/restic/issues/1714
+   https://github.com/restic/restic/issues/1798
+   https://github.com/restic/restic/issues/2334
+   https://github.com/restic/restic/pull/2876
+   https://forum.restic.net/t/corrupted-repo-how-to-repair/799
+   https://forum.restic.net/t/recovery-options-for-damaged-repositories/1571
+
+ * Enhancement #1926: Allow certificate paths to be passed through environment variables
+
+   Restic will now read paths to certificates from the environment variables `RESTIC_CACERT` or
+   `RESTIC_TLS_CLIENT_CERT` if `--cacert` or `--tls-client-cert` are not specified.
+
+   https://github.com/restic/restic/issues/1926
+   https://github.com/restic/restic/pull/4384
+
+ * Enhancement #2359: Provide multi-platform Docker images
+
+   The official Docker images are now built for the architectures linux/386, linux/amd64,
+   linux/arm and linux/arm64.
+
+   As an alternative to the Docker Hub, the Docker images are also available on ghcr.io, the GitHub
+   Container Registry.
+
+   https://github.com/restic/restic/issues/2359
+   https://github.com/restic/restic/issues/4269
+   https://github.com/restic/restic/pull/4364
+
+ * Enhancement #2468: Add support for non-global Azure clouds
+
+   The `azure` backend previously only supported storages using the global domain
+   `core.windows.net`. This meant that backups to other domains such as Azure China
+   (`core.chinacloudapi.cn`) or Azure Germany (`core.cloudapi.de`) were not supported.
+   Restic now allows overriding the global domain using the environment variable
+   `AZURE_ENDPOINT_SUFFIX`.
+
+   https://github.com/restic/restic/issues/2468
+   https://github.com/restic/restic/pull/4387
+
+ * Enhancement #2679: Reduce file fragmentation for local backend
+
+   Before this change, local backend files could become fragmented. Now restic will try to
+   preallocate space for pack files to avoid their fragmentation.
+
+   https://github.com/restic/restic/issues/2679
+   https://github.com/restic/restic/pull/3261
+
+ * Enhancement #3328: Reduce memory usage by up to 25%
+
+   The in-memory index has been optimized to be more garbage collection friendly. Restic now
+   defaults to `GOGC=50` to run the Go garbage collector more frequently.
+
+   https://github.com/restic/restic/issues/3328
+   https://github.com/restic/restic/pull/4352
+   https://github.com/restic/restic/pull/4353
+
+ * Enhancement #3397: Improve accuracy of ETA displayed during backup
+
+   Restic's `backup` command displayed an ETA that did not adapt when the rate of progress made
+   during the backup changed during the course of the backup.
+
+   Restic now uses recent progress when computing the ETA. It is important to realize that the
+   estimate may still be wrong, because restic cannot predict the future, but the hope is that the
+   ETA will be more accurate in most cases.
+
+   https://github.com/restic/restic/issues/3397
+   https://github.com/restic/restic/pull/3563
+
+ * Enhancement #3624: Keep oldest snapshot when there are not enough snapshots
+
+   The `forget` command now additionally preserves the oldest snapshot if fewer snapshots than
+   allowed by the `--keep-*` parameters would otherwise be kept. This maximizes the amount of
+   history kept within the specified limits.
+
+   https://github.com/restic/restic/issues/3624
+   https://github.com/restic/restic/pull/4366
+   https://forum.restic.net/t/keeping-yearly-snapshots-policy-when-backup-began-during-the-year/4670/2
+
+ * Enhancement #3698: Add support for Managed / Workload Identity to `azure` backend
+
+   Restic now additionally supports authenticating to Azure using Workload Identity or Managed
+   Identity credentials, which are automatically injected in several environments such as a
+   managed Kubernetes cluster.
+
+   https://github.com/restic/restic/issues/3698
+   https://github.com/restic/restic/pull/4029
+
+ * Enhancement #3871: Support `<snapshot>:<subfolder>` syntax to select subfolders
+
+   Commands like `diff` or `restore` always worked with the full snapshot. This did not allow
+   comparing only a specific subfolder or only restoring that folder (`restore --include
+   subfolder` filters the restored files, but still creates the directories included in
+   `subfolder`).
+
+   The commands `diff`, `dump`, `ls` and `restore` now support the `<snapshot>:<subfolder>`
+   syntax, where `snapshot` is the ID of a snapshot (or the string `latest`) and `subfolder` is a
+   path within the snapshot. The commands will then only work with the specified path of the
+   snapshot. The `subfolder` must be a path to a folder as returned by `ls`. Two examples:
+
+   `restic restore -t target latest:/some/path` `restic diff 12345678:/some/path
+   90abcef:/some/path`
+
+   For debugging purposes, the `cat` command now supports `cat tree <snapshot>:<subfolder>` to
+   return the directory metadata for the given subfolder.
+
+   https://github.com/restic/restic/issues/3871
+   https://github.com/restic/restic/pull/4334
+
+ * Enhancement #3941: Support `--group-by` for backup parent selection
+
+   Previously, the `backup` command by default selected the parent snapshot based on the
+   hostname and the backup targets. When the backup path list changed, the `backup` command was
+   unable to determine a suitable parent snapshot and had to read all files again.
+
+   The new `--group-by` option for the `backup` command allows filtering snapshots for the
+   parent selection by `host`, `paths` and `tags`. It defaults to `host,paths` which selects the
+   latest snapshot with hostname and paths matching those of the backup run. This matches the
+   behavior of prior restic versions.
+
+   The new `--group-by` option should be set to the same value as passed to `forget --group-by`.
+
+   https://github.com/restic/restic/issues/3941
+   https://github.com/restic/restic/pull/4081
+
+ * Enhancement #4130: Cancel current command if cache becomes unusable
+
+   If the cache directory was removed or ran out of space while restic was running, this would
+   previously cause further caching attempts to fail and thereby drastically slow down the
+   command execution. Now, the currently running command is instead canceled.
+
+   https://github.com/restic/restic/issues/4130
+   https://github.com/restic/restic/pull/4166
+
+ * Enhancement #4159: Add `--human-readable` option to `ls` and `find` commands
+
+   Previously, when using the `-l` option with the `ls` and `find` commands, the displayed size
+   was always in bytes, without an option for a more human readable format such as MiB or GiB.
+
+   The new `--human-readable` option will convert longer size values into more human friendly
+   values with an appropriate suffix depending on the output size. For example, a size of
+   `14680064` will be shown as `14.000 MiB`.
+
+   https://github.com/restic/restic/issues/4159
+   https://github.com/restic/restic/pull/4351
+
+ * Enhancement #4188: Include restic version in snapshot metadata
+
+   The restic version used to backup a snapshot is now included in its metadata and shown when
+   inspecting a snapshot using `restic cat snapshot <snapshotID>` or `restic snapshots
+   --json`.
+
+   https://github.com/restic/restic/issues/4188
+   https://github.com/restic/restic/pull/4378
+
+ * Enhancement #4220: Add `jq` binary to Docker image
+
+   The Docker image now contains `jq`, which can be useful to process JSON data output by restic.
+
+   https://github.com/restic/restic/pull/4220
+
+ * Enhancement #4226: Allow specifying region of new buckets in the `gs` backend
+
+   Previously, buckets used by the Google Cloud Storage backend would always get created in the
+   "us" region. It is now possible to specify the region where a bucket should be created by using
+   the `-o gs.region=us` option.
+
+   https://github.com/restic/restic/pull/4226
+
+ * Enhancement #4375: Add support for extended attributes on symlinks
+
+   Restic now supports extended attributes on symlinks when backing up, restoring, or
+   FUSE-mounting snapshots. This includes, for example, the `security.selinux` xattr on Linux
+   distributions that use SELinux.
+
+   https://github.com/restic/restic/issues/4375
+   https://github.com/restic/restic/pull/4379
+
+
 Changelog for restic 0.15.2 (2023-04-24)
 =======================================
 
