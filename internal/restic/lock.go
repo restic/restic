@@ -84,15 +84,15 @@ func IsInvalidLock(err error) bool {
 // NewLock returns a new, non-exclusive lock for the repository. If an
 // exclusive lock is already held by another process, it returns an error
 // that satisfies IsAlreadyLocked.
-func NewLock(ctx context.Context, repo Repository) (*Lock, error) {
-	return newLock(ctx, repo, false)
+func NewLock(ctx context.Context, repo Repository, noLock bool) (*Lock, error) {
+	return newLock(ctx, repo, false, noLock)
 }
 
 // NewExclusiveLock returns a new, exclusive lock for the repository. If
 // another lock (normal and exclusive) is already held by another process,
 // it returns an error that satisfies IsAlreadyLocked.
-func NewExclusiveLock(ctx context.Context, repo Repository) (*Lock, error) {
-	return newLock(ctx, repo, true)
+func NewExclusiveLock(ctx context.Context, repo Repository, noLock bool) (*Lock, error) {
+	return newLock(ctx, repo, true, noLock)
 }
 
 var waitBeforeLockCheck = 200 * time.Millisecond
@@ -103,7 +103,7 @@ func TestSetLockTimeout(t testing.TB, d time.Duration) {
 	waitBeforeLockCheck = d
 }
 
-func newLock(ctx context.Context, repo Repository, excl bool) (*Lock, error) {
+func newLock(ctx context.Context, repo Repository, excl bool, noLock bool) (*Lock, error) {
 	lock := &Lock{
 		Time:      time.Now(),
 		PID:       os.Getpid(),
@@ -123,13 +123,15 @@ func newLock(ctx context.Context, repo Repository, excl bool) (*Lock, error) {
 	if err = lock.checkForOtherLocks(ctx); err != nil {
 		return nil, err
 	}
-
-	lockID, err := lock.createLock(ctx)
-	if err != nil {
-		return nil, err
+	if noLock {
+		lock.lockID = nil
+	} else {
+		lockID, err := lock.createLock(ctx)
+		if err != nil {
+			return nil, err
+		}
+		lock.lockID = &lockID
 	}
-
-	lock.lockID = &lockID
 
 	time.Sleep(waitBeforeLockCheck)
 
