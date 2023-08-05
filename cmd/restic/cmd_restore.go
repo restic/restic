@@ -25,7 +25,7 @@ var cmdRestore = &cobra.Command{
 The "restore" command extracts the data from a snapshot from the repository to
 a directory.
 
-The special snapshot "latest" can be used to restore the latest snapshot in the
+The special snapshotID "latest" can be used to restore the latest snapshot in the
 repository.
 
 To only restore a specific subfolder, you can use the "<snapshotID>:<subfolder>"

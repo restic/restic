@@ -24,7 +24,7 @@ single file is selected, it prints its contents to stdout. Folders are output
 as a tar (default) or zip file containing the contents of the specified folder.
 Pass "/" as file name to dump the whole snapshot as an archive file.
 
-The special snapshot "latest" can be used to use the latest snapshot in the
+The special snapshotID "latest" can be used to use the latest snapshot in the
 repository.
 
 To include the folder content at the root of the archive, you can use the

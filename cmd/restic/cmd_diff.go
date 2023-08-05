@@ -16,7 +16,7 @@ import (
 )
 
 var cmdDiff = &cobra.Command{
-	Use:   "diff [flags] snapshot-ID snapshot-ID",
+	Use:   "diff [flags] snapshotID snapshotID",
 	Short: "Show differences between two snapshots",
 	Long: `
 The "diff" command shows differences from the first to the second snapshot. The
