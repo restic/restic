@@ -564,6 +564,9 @@ The number of concurrent connections to the Azure Blob Storage service can be se
 ``-o azure.connections=10`` switch. By default, at most five parallel connections are
 established.
 
+HTTP connections to Azure Blob Storage can be set with the ``-o azure.usehttp=true`` switch.
+By default, HTTPs connectiosn are established. 
+
 Google Cloud Storage
 ********************
 
