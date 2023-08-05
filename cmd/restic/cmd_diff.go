@@ -29,6 +29,10 @@ directory:
 * M  The file's content was modified
 * T  The type was changed, e.g. a file was made a symlink
 
+To only compare files in specific subfolders, you can use the
+"<snapshotID>:<subfolder>" syntax, where "subfolder" is a path within the
+snapshot.
+
 EXIT STATUS
 ===========
 
