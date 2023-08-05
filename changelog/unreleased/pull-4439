@@ -1,0 +1,10 @@
+Enhancement: Use http connections when explicitly specified for Azure Storage Services
+
+Restic only allowed HTTPs connections to Azure Storage Services when using
+the `azure` storage backend. It now permits users to provide an extended option
+`-o azure.usehttp=true` to explicitly specify to use HTTP connections. This will
+allow users who have disabled `Secure Transfer Required` on Azure Stoage accounts
+to backup and restore over HTTP connections. 
+
+https://github.com/restic/restic/issues/4438
+https://github.com/restic/restic/pull/4439
