@@ -19,6 +19,7 @@ type Config struct {
 	EndpointSuffix string
 	Container      string
 	Prefix         string
+	UseHTTP        bool `option:"usehttp" help:"explicitly specify to use a HTTP connection (default: false)"`
 
 	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
 }

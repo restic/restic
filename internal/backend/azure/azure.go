@@ -60,7 +60,14 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	} else {
 		endpointSuffix = "core.windows.net"
 	}
-	url := fmt.Sprintf("https://%s.blob.%s/%s", cfg.AccountName, endpointSuffix, cfg.Container)
+
+	var protocol string = "https"
+	if cfg.UseHTTP {
+		protocol = "http"
+		debug.Log("- using http")
+	}
+
+	url := fmt.Sprintf("%s://%s.blob.%s/%s", protocol, cfg.AccountName, endpointSuffix, cfg.Container)
 	opts := &azContainer.ClientOptions{
 		ClientOptions: azcore.ClientOptions{
 			Transport: &http.Client{Transport: rt},
