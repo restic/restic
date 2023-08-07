@@ -42,8 +42,11 @@ func lockRepository(ctx context.Context, repo restic.Repository, exclusive bool)
 	if exclusive {
 		lockFn = restic.NewExclusiveLock
 	}
-
-	lock, err := lockFn(ctx, repo)
+	noLock := false
+	if globalOptions.NoLock {
+		noLock = true
+	}
+	lock, err := lockFn(ctx, repo, noLock)
 	if restic.IsInvalidLock(err) {
 		return nil, ctx, errors.Fatalf("%v\n\nthe `unlock --remove-all` command can be used to remove invalid locks. Make sure that no other restic process is accessing the repository when running the command", err)
 	}

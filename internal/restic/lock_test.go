@@ -17,7 +17,7 @@ import (
 func TestLock(t *testing.T) {
 	repo := repository.TestRepository(t)
 
-	lock, err := restic.NewLock(context.TODO(), repo)
+	lock, err := restic.NewLock(context.TODO(), repo, false)
 	rtest.OK(t, err)
 
 	rtest.OK(t, lock.Unlock())
@@ -26,7 +26,7 @@ func TestLock(t *testing.T) {
 func TestDoubleUnlock(t *testing.T) {
 	repo := repository.TestRepository(t)
 
-	lock, err := restic.NewLock(context.TODO(), repo)
+	lock, err := restic.NewLock(context.TODO(), repo, false)
 	rtest.OK(t, err)
 
 	rtest.OK(t, lock.Unlock())
@@ -39,10 +39,10 @@ func TestDoubleUnlock(t *testing.T) {
 func TestMultipleLock(t *testing.T) {
 	repo := repository.TestRepository(t)
 
-	lock1, err := restic.NewLock(context.TODO(), repo)
+	lock1, err := restic.NewLock(context.TODO(), repo, false)
 	rtest.OK(t, err)
 
-	lock2, err := restic.NewLock(context.TODO(), repo)
+	lock2, err := restic.NewLock(context.TODO(), repo, false)
 	rtest.OK(t, err)
 
 	rtest.OK(t, lock1.Unlock())
@@ -64,10 +64,10 @@ func TestMultipleLockFailure(t *testing.T) {
 	be := &failLockLoadingBackend{Backend: mem.New()}
 	repo := repository.TestRepositoryWithBackend(t, be, 0)
 
-	lock1, err := restic.NewLock(context.TODO(), repo)
+	lock1, err := restic.NewLock(context.TODO(), repo, false)
 	rtest.OK(t, err)
 
-	_, err = restic.NewLock(context.TODO(), repo)
+	_, err = restic.NewLock(context.TODO(), repo, false)
 	rtest.Assert(t, err != nil, "unreadable lock file did not result in an error")
 
 	rtest.OK(t, lock1.Unlock())
@@ -76,7 +76,7 @@ func TestMultipleLockFailure(t *testing.T) {
 func TestLockExclusive(t *testing.T) {
 	repo := repository.TestRepository(t)
 
-	elock, err := restic.NewExclusiveLock(context.TODO(), repo)
+	elock, err := restic.NewExclusiveLock(context.TODO(), repo, false)
 	rtest.OK(t, err)
 	rtest.OK(t, elock.Unlock())
 }
@@ -84,10 +84,10 @@ func TestLockExclusive(t *testing.T) {
 func TestLockOnExclusiveLockedRepo(t *testing.T) {
 	repo := repository.TestRepository(t)
 
-	elock, err := restic.NewExclusiveLock(context.TODO(), repo)
+	elock, err := restic.NewExclusiveLock(context.TODO(), repo, false)
 	rtest.OK(t, err)
 
-	lock, err := restic.NewLock(context.TODO(), repo)
+	lock, err := restic.NewLock(context.TODO(), repo, false)
 	rtest.Assert(t, err != nil,
 		"create normal lock with exclusively locked repo didn't return an error")
 	rtest.Assert(t, restic.IsAlreadyLocked(err),
@@ -100,10 +100,10 @@ func TestLockOnExclusiveLockedRepo(t *testing.T) {
 func TestExclusiveLockOnLockedRepo(t *testing.T) {
 	repo := repository.TestRepository(t)
 
-	elock, err := restic.NewLock(context.TODO(), repo)
+	elock, err := restic.NewLock(context.TODO(), repo, false)
 	rtest.OK(t, err)
 
-	lock, err := restic.NewExclusiveLock(context.TODO(), repo)
+	lock, err := restic.NewExclusiveLock(context.TODO(), repo, false)
 	rtest.Assert(t, err != nil,
 		"create normal lock with exclusively locked repo didn't return an error")
 	rtest.Assert(t, restic.IsAlreadyLocked(err),
@@ -250,7 +250,7 @@ func TestRemoveAllLocks(t *testing.T) {
 func TestLockRefresh(t *testing.T) {
 	repo := repository.TestRepository(t)
 
-	lock, err := restic.NewLock(context.TODO(), repo)
+	lock, err := restic.NewLock(context.TODO(), repo, false)
 	rtest.OK(t, err)
 	time0 := lock.Time
 
