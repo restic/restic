@@ -156,6 +156,24 @@ e.g.:
 
     $ restic -r /srv/restic-repo dump --path /production.sql latest production.sql | mysql
 
+For a local repository, the "Directory" path can result in the error message ``cannot dump file: path "/home" not found in snapshot``
+In this case, you can query the absolute path within the repository using the ```ls`` command:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo ls latest /
+    enter password for repository:
+    snapshot 1541acae of [/home/other/work] filtered by [/] at 2023-08-09 04:00:03.533117139 +0200 CEST):
+    /work
+
+
+and use the latter absolute path for the ``dump`` command:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo dump latest /work/README.md
+
+
 It is also possible to ``dump`` the contents of a whole folder structure to
 stdout. To retain the information about the files and folders Restic will
 output the contents in the tar (default) or zip format:
