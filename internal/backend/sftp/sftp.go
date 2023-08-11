@@ -102,7 +102,10 @@ func startClient(cfg Config) (*SFTP, error) {
 	}()
 
 	// open the SFTP session
-	client, err := sftp.NewClientPipe(rd, wr)
+	client, err := sftp.NewClientPipe(rd, wr,
+		sftp.MaxConcurrentRequestsPerFile(cfg.MaxConcurrentRequestsPerFile),
+		sftp.MaxPacketUnchecked(cfg.MaxPacket),
+	)
 	if err != nil {
 		return nil, errors.Errorf("unable to start the sftp session, error: %v", err)
 	}
