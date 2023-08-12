@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -11,6 +12,8 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 )
+
+var allowedCmds = []string{"config", "index", "snapshot", "key", "masterkey", "lock", "pack", "blob", "tree"}
 
 var cmdCat = &cobra.Command{
 	Use:   "cat [flags] [masterkey|config|pack ID|blob ID|snapshot ID|index ID|key ID|lock ID|tree snapshot:subfolder]",
@@ -33,9 +36,26 @@ func init() {
 	cmdRoot.AddCommand(cmdCat)
 }
 
+func validateParam(param string) bool {
+	for _, v := range allowedCmds {
+		if v == param {
+			return true
+		}
+	}
+	return false
+}
+
 func runCat(ctx context.Context, gopts GlobalOptions, args []string) error {
-	if len(args) < 1 || (args[0] != "masterkey" && args[0] != "config" && len(args) != 2) {
-		return errors.Fatal("type or ID not specified")
+	if len(args) < 1 {
+		return errors.Fatal("type not specified")
+	}
+
+	if ok := validateParam(args[0]); !ok {
+		return errors.Fatalf("invalid type %q, must be one of [%s]", args[0], strings.Join(allowedCmds, "|"))
+	}
+
+	if args[0] != "masterkey" && args[0] != "config" && len(args) != 2 {
+		return errors.Fatal("ID not specified")
 	}
 
 	repo, err := OpenRepository(ctx, gopts)
