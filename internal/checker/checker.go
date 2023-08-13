@@ -117,7 +117,7 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 	debug.Log("Start")
 
 	packToIndex := make(map[restic.ID]restic.IDSet)
-	err := index.ForAllIndexes(ctx, c.repo, func(id restic.ID, index *index.Index, oldFormat bool, err error) error {
+	err := index.ForAllIndexes(ctx, c.repo.Backend(), c.repo, func(id restic.ID, index *index.Index, oldFormat bool, err error) error {
 		debug.Log("process index %v, err %v", id, err)
 
 		if oldFormat {
