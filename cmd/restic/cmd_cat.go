@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -33,9 +34,34 @@ func init() {
 	cmdRoot.AddCommand(cmdCat)
 }
 
+func validateCatArgs(args []string) error {
+	var allowedCmds = []string{"config", "index", "snapshot", "key", "masterkey", "lock", "pack", "blob", "tree"}
+
+	if len(args) < 1 {
+		return errors.Fatal("type not specified")
+	}
+
+	validType := false
+	for _, v := range allowedCmds {
+		if v == args[0] {
+			validType = true
+			break
+		}
+	}
+	if !validType {
+		return errors.Fatalf("invalid type %q, must be one of [%s]", args[0], strings.Join(allowedCmds, "|"))
+	}
+
+	if args[0] != "masterkey" && args[0] != "config" && len(args) != 2 {
+		return errors.Fatal("ID not specified")
+	}
+
+	return nil
+}
+
 func runCat(ctx context.Context, gopts GlobalOptions, args []string) error {
-	if len(args) < 1 || (args[0] != "masterkey" && args[0] != "config" && len(args) != 2) {
-		return errors.Fatal("type or ID not specified")
+	if err := validateCatArgs(args); err != nil {
+		return err
 	}
 
 	repo, err := OpenRepository(ctx, gopts)
