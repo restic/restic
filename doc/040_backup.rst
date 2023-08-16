@@ -45,6 +45,17 @@ size of the files and directories in ``~/work`` on the local file system. It
 also tells us that only 1.200 GiB was added to the repository. This means that
 some of the data was duplicate and restic was able to efficiently reduce it.
 
+We just attached the absolute path ``~/work`` to the backup, so the path
+within the repository is ``/home/user/work``, depending on your user name.
+
+If we attach a relative path ``work``, the path within the repository is ``/work``.
+
+For example ``restic backup work`` run from ``/home/user`` crates a snapshot
+with a attached path ``/home/user/work`` that contains the path ``/work``
+within the repository. This path-related discrepancy applies to each command
+that tries to access data within a snapshot. You can lookup the paths within
+a repository using the ``ls latest /`` command.
+
 If you don't pass the ``--verbose`` option, restic will print less data. You'll
 still get a nice live status display. Be aware that the live status shows the
 processed files and not the transferred data. Transferred volume might be lower
