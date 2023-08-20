@@ -46,13 +46,13 @@ also tells us that only 1.200 GiB was added to the repository. This means that
 some of the data was duplicate and restic was able to efficiently reduce it.
 
 We just attached the absolute path ``~/work`` to the backup, so the path
-within the repository is ``/home/user/work``, depending on your user name.
+within the snapshot is ``/home/user/work``.
 
-If we attach a relative path ``work``, the path within the repository is ``/work``.
+If we attach a relative path ``work``, the path within the snaphot is ``/work``.
 
-For example ``restic backup work`` run from ``/home/user`` crates a snapshot
-with a attached path ``/home/user/work`` that contains the path ``/work``
-within the repository. This path-related discrepancy applies to each command
+For example ``restic backup work`` run from ``/home/user`` creates a snapshot
+with a directory ``/home/user/work`` that contains the path ``/work``
+within the snapshot. This path-related discrepancy applies to each command
 that tries to access data within a snapshot. You can lookup the paths within
 a repository using the ``ls latest /`` command.
 

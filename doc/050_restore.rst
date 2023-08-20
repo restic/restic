@@ -156,12 +156,12 @@ e.g.:
 
     $ restic -r /srv/restic-repo dump --path /production.sql latest production.sql | mysql
 
-This example assumes you attached an absolute path, which means it coincides with the
-path within the repository.
+This example assumes you ran a backup using an absolute path, which coincides with the
+path within the snaphots.
 See https://restic.readthedocs.io/en/stable/040_backup.html#backing-up for the difference
-between attached path and path within the repository.
+between the path used to create the repository and the paths within the snaphots.
 
-If you attached a relative path, the ``dump`` command would look like:
+If you ran a backup using the relative path ``work/``, the ``dump`` command would look like:
 
 .. code-block:: console
 
@@ -169,7 +169,7 @@ If you attached a relative path, the ``dump`` command would look like:
 
 
 If dump results in the error message ``cannot dump file: path "/home" not found in snapshot``
-first double check you used the path within the repository, using the ``ls latest /`` command,
+first double check you used the path within the snaphot, using the ``ls latest /`` command,
 which for the repository above results in:
 
 .. code-block:: console
