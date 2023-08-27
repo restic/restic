@@ -489,35 +489,70 @@ particular note are::
   - file ownership and ACLs on Windows
   - the "hidden" flag on Windows
 
+
+Reading data from a command standard output
+***********************
+
+Sometimes, it can be nice to directly save the output of a program, e.g.,
+``mysqldump`` so that the SQL can later be restored. Restic supports this mode
+of operation; just supply the option ``--stdin-from-command`` when using the
+``backup`` action, and write the command in place of the files/directories:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo backup --stdin-from-command mysqldump [...]
+
+This command creates a new snapshot of the standard output of ``mysqldump``.
+You can then use, e.g., the fuse mounting option (see below) to mount the
+repository and read the file.
+
+By default, the command's standard output is saved in a file named ``stdin``.
+A different name can be specified with ``--stdin-filename``, e.g.:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo backup --stdin-filename production.sql --stdin-from-command mysqldump [...]
+
+Restic uses the command exit code to determine whether the backup succeeded. A
+non-zero exit code from the command makes Restic cancel the backup.
+
+
 Reading data from stdin
 ***********************
 
-Sometimes it can be nice to directly save the output of a program, e.g.
-``mysqldump`` so that the SQL can later be restored. Restic supports
-this mode of operation, just supply the option ``--stdin`` to the
+If the ``--stdin-from-command`` option is insufficient, Restic supports reading
+arbitrary data from the standard input. Use the option ``--stdin`` to the
 ``backup`` command like this:
 
 .. code-block:: console
 
-    $ set -o pipefail
-    $ mysqldump [...] | restic -r /srv/restic-repo backup --stdin
+    $ restic -r /srv/restic-repo backup --stdin < bigfile.dat
 
-This creates a new snapshot of the output of ``mysqldump``. You can then
-use e.g. the fuse mounting option (see below) to mount the repository
-and read the file.
+This creates a new snapshot of the content of ``bigfile.dat`` (note that, in
+this example, you can trivially use the standard ``backup`` command by
+specifying the file path).
 
-By default, the file name ``stdin`` is used, a different name can be
-specified with ``--stdin-filename``, e.g. like this:
+As for ``--stdin-from-command``, the default file name is ``stdin``; a
+different name can be specified with ``--stdin-filename``.
+
+**Important**: while it is possible to pipe a command output in Restic using
+``--stdin``, doing so is highly discouraged as it will mask errors from the
+command, leading to corrupted backups. For example, in the following code
+block, if ``mysqldump`` has an error connecting to the MySQL database, Restic
+backup will succeed in creating an empty backup:
 
 .. code-block:: console
 
-    $ mysqldump [...] | restic -r /srv/restic-repo backup --stdin --stdin-filename production.sql
+    $ # Don't do this, read the warning above
+    $ mysqldump [...] | restic -r /srv/restic-repo backup --stdin
 
-The option ``pipefail`` is highly recommended so that a non-zero exit code from
-one of the programs in the pipe (e.g. ``mysqldump`` here) makes the whole chain
-return a non-zero exit code. Refer to the `Use the Unofficial Bash Strict Mode
-<http://redsymbol.net/articles/unofficial-bash-strict-mode/>`__ for more
-details on this.
+A simple solution is to use ``--stdin-from-command`` (see above). Shall you
+still need to use the ``--stdin`` flag, you must use the option ``pipefail``
+(so that a non-zero exit code from one of the programs in the pipe makes the
+whole chain return a non-zero exit code) and you must check the exit code of
+the pipe and act accordingly (e.g., remove the last backup). Refer to the
+`Use the Unofficial Bash Strict Mode <http://redsymbol.net/articles/unofficial-bash-strict-mode/>`__
+for more details on this.
 
 
 Tags for backup
