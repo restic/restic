@@ -301,7 +301,7 @@ func (opts BackupOptions) Check(gopts GlobalOptions, args []string) error {
 			return errors.Fatal("--stdin and --files-from-raw cannot be used together")
 		}
 
-		if len(args) > 0 && opts.StdinCommand == false {
+		if len(args) > 0 && !opts.StdinCommand {
 			return errors.Fatal("--stdin was specified and files/dirs were listed as arguments")
 		}
 	}
@@ -596,30 +596,17 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		targetFS = localVss
 	}
 
-	var command *exec.Cmd
-	var stderr io.ReadCloser
 	if opts.Stdin || opts.StdinCommand {
 		if !gopts.JSON {
 			progressPrinter.V("read data from stdin")
 		}
 		filename := path.Join("/", opts.StdinFilename)
-		var closer io.ReadCloser
+		var closer io.ReadCloser = os.Stdin
 		if opts.StdinCommand {
-			command = exec.CommandContext(ctx, args[0], args[1:]...)
-			stdout, err := command.StdoutPipe()
+			closer, err = prepareStdinCommand(ctx, args)
 			if err != nil {
 				return err
 			}
-			stderr, err = command.StderrPipe()
-			if err != nil {
-				return err
-			}
-			if err := command.Start(); err != nil {
-				return err
-			}
-			closer = stdout
-		} else {
-			closer = os.Stdin
 		}
 		targetFS = &fs.Reader{
 			ModTime:    timeStamp,
@@ -676,8 +663,6 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		Hostname:       opts.Host,
 		ParentSnapshot: parentSnapshot,
 		ProgramVersion: "restic " + version,
-		Command:        command,
-		CommandStderr:  stderr,
 	}
 
 	if !gopts.JSON {
@@ -707,4 +692,33 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 
 	// Return error if any
 	return werr
+}
+
+func prepareStdinCommand(ctx context.Context, args []string) (io.ReadCloser, error) {
+	// Prepare command and stdout. These variables will be assigned to the
+	// io.ReadCloser that is used by the archiver to read data, so that the
+	// Close() function waits for the program to finish. See
+	// fs.ReadCloserCommand.
+	command := exec.CommandContext(ctx, args[0], args[1:]...)
+	stdout, err := command.StdoutPipe()
+	if err != nil {
+		return nil, errors.Wrap(err, "command.StdoutPipe")
+	}
+
+	// Use a Go routine to handle the stderr to avoid deadlocks
+	stderr, err := command.StderrPipe()
+	if err != nil {
+		return nil, errors.Wrap(err, "command.StderrPipe")
+	}
+	go func() {
+		sc := bufio.NewScanner(stderr)
+		for sc.Scan() {
+			_, _ = fmt.Fprintf(os.Stderr, "subprocess %v: %v\n", command.Args[0], sc.Text())
+		}
+	}()
+
+	if err := command.Start(); err != nil {
+		return nil, errors.Wrap(err, "command.Start")
+	}
+	return &fs.ReadCloserCommand{Cmd: command, Stdout: stdout}, nil
 }

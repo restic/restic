@@ -2,9 +2,7 @@ package archiver
 
 import (
 	"context"
-	"io"
 	"os"
-	"os/exec"
 	"path"
 	"runtime"
 	"sort"
@@ -683,8 +681,6 @@ type SnapshotOptions struct {
 	Time           time.Time
 	ParentSnapshot *restic.Snapshot
 	ProgramVersion string
-	Command        *exec.Cmd
-	CommandStderr  io.ReadCloser
 }
 
 // loadParentTree loads a tree referenced by snapshot id. If id is null, nil is returned.
@@ -794,15 +790,6 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 	err = wgUp.Wait()
 	if err != nil {
 		return nil, restic.ID{}, err
-	}
-
-	if opts.Command != nil {
-		errBytes, _ := io.ReadAll(opts.CommandStderr)
-		cmdErr := opts.Command.Wait()
-		if cmdErr != nil {
-			debug.Log("error while executing command: %v", cmdErr)
-			return nil, restic.ID{}, errors.New(string(errBytes))
-		}
 	}
 
 	sn, err := restic.NewSnapshot(targets, opts.Tags, opts.Hostname, opts.Time)
