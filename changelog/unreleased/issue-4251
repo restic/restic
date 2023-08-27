@@ -1,0 +1,10 @@
+Enhancement: Add flag to source the backup from a program's standard output
+
+The `backup` command now supports sourcing the backup content from the standard
+output of an arbitrary command, ensuring that the exit code is zero for a
+successful backup.
+
+Example: `restic backup --stdin-from-command mysqldump [...]`
+
+https://github.com/restic/restic/issues/4251
+https://github.com/restic/restic/pull/4410
