@@ -145,7 +145,7 @@ Verbose status provides details about the progress, including details about back
 Summary
 ^^^^^^^
 
-Summary is the last output line in a successful backup. 
+Summary is the last output line in a successful backup.
 
 +---------------------------+---------------------------------------------------------+
 | ``message_type``          | Always "summary"                                        |
