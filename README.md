@@ -95,7 +95,7 @@ release. Instructions on how to do that are contained in the
 News
 ----
 
-You can follow the restic project on Twitter [@resticbackup](https://twitter.com/resticbackup) or by subscribing to
+You can follow the restic project on Mastodon [@resticbackup](https://fosstodon.org/@restic) or by subscribing to
 the [project blog](https://restic.net/blog/).
 
 License
