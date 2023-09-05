@@ -11,7 +11,7 @@ require (
 	github.com/elithrar/simple-scrypt v1.3.0
 	github.com/go-ole/go-ole v1.2.6
 	github.com/google/go-cmp v0.5.9
-	github.com/hashicorp/golang-lru/v2 v2.0.4
+	github.com/hashicorp/golang-lru/v2 v2.0.6
 	github.com/juju/ratelimit v1.0.2
 	github.com/klauspost/compress v1.16.7
 	github.com/kurin/blazer v0.5.4-0.20230113224640-3887e1ec64b5
