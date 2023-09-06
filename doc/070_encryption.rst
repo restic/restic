@@ -49,3 +49,5 @@ per repository. In fact, you can use the ``list``, ``add``, ``remove``, and
     ----------------------------------------------------------------------
      5c657874    username    kasimir   2015-08-12 13:35:05
     *eb78040b    username    kasimir   2015-08-12 13:29:57
+
+Note that the currently used key is indicated by an asterisk (``*``).
