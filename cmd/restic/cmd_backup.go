@@ -88,28 +88,30 @@ Exit status is 3 if some source data could not be read (incomplete snapshot crea
 type BackupOptions struct {
 	excludePatternOptions
 
-	Parent            string
-	GroupBy           restic.SnapshotGroupByOptions
-	Force             bool
-	ExcludeOtherFS    bool
-	ExcludeIfPresent  []string
-	ExcludeCaches     bool
-	ExcludeLargerThan string
-	Stdin             bool
-	StdinFilename     string
-	Tags              restic.TagLists
-	Host              string
-	FilesFrom         []string
-	FilesFromVerbatim []string
-	FilesFromRaw      []string
-	TimeStamp         string
-	WithAtime         bool
-	IgnoreInode       bool
-	IgnoreCtime       bool
-	UseFsSnapshot     bool
-	DryRun            bool
-	ReadConcurrency   uint
-	NoScan            bool
+	Parent                   string
+	GroupBy                  restic.SnapshotGroupByOptions
+	Force                    bool
+	ExcludeOtherFS           bool
+	ExcludeIfPresent         []string
+	ExcludeCaches            bool
+	ExcludeLargerThan        string
+	Stdin                    bool
+	StdinFilename            string
+	Tags                     restic.TagLists
+	Host                     string
+	FilesFrom                []string
+	FilesFromVerbatim        []string
+	FilesFromRaw             []string
+	ChangedFilesFromVerbatim []string
+	ChangedFilesFromRaw      []string
+	TimeStamp                string
+	WithAtime                bool
+	IgnoreInode              bool
+	IgnoreCtime              bool
+	UseFsSnapshot            bool
+	DryRun                   bool
+	ReadConcurrency          uint
+	NoScan                   bool
 }
 
 var backupOptions BackupOptions
@@ -146,6 +148,8 @@ func init() {
 	f.StringArrayVar(&backupOptions.FilesFrom, "files-from", nil, "read the files to backup from `file` (can be combined with file args; can be specified multiple times)")
 	f.StringArrayVar(&backupOptions.FilesFromVerbatim, "files-from-verbatim", nil, "read the files to backup from `file` (can be combined with file args; can be specified multiple times)")
 	f.StringArrayVar(&backupOptions.FilesFromRaw, "files-from-raw", nil, "read the files to backup from `file` (can be combined with file args; can be specified multiple times)")
+	f.StringArrayVar(&backupOptions.ChangedFilesFromVerbatim, "changed-files-from-verbatim", nil, "read names of changed files/directories from `file` (can be combined with changed-file args; can be specified multiple times)")
+	f.StringArrayVar(&backupOptions.ChangedFilesFromRaw, "changed-files-from-raw", nil, "read names of changed files/directories from `file` (can be combined with changed-file args; can be specified multiple times)")
 	f.StringVar(&backupOptions.TimeStamp, "time", "", "`time` of the backup (ex. '2012-11-01 22:08:41') (default: now)")
 	f.BoolVar(&backupOptions.WithAtime, "with-atime", false, "store the atime for all files and directories")
 	f.BoolVar(&backupOptions.IgnoreInode, "ignore-inode", false, "ignore inode number changes when checking for modified files")
@@ -298,8 +302,24 @@ func (opts BackupOptions) Check(gopts GlobalOptions, args []string) error {
 			return errors.Fatal("--stdin and --files-from-raw cannot be used together")
 		}
 
+		if len(opts.ChangedFilesFromVerbatim) > 0 {
+			return errors.Fatal("--stdin and --changed-files-from-verbatim cannot be used together")
+		}
+		if len(opts.ChangedFilesFromRaw) > 0 {
+			return errors.Fatal("--stdin and --changed-files-from-raw cannot be used together")
+		}
+
 		if len(args) > 0 {
 			return errors.Fatal("--stdin was specified and files/dirs were listed as arguments")
+		}
+	}
+
+	if opts.Parent == "" {
+		if len(opts.ChangedFilesFromVerbatim) > 0 {
+			return errors.Fatal("using --changed-files-from-verbatim requires to also specify --parent")
+		}
+		if len(opts.ChangedFilesFromRaw) > 0 {
+			return errors.Fatal("using --changed-files-from-raw requires to also specify --parent")
 		}
 	}
 
@@ -431,6 +451,38 @@ func collectTargets(opts BackupOptions, args []string) (targets []string, err er
 	return targets, nil
 }
 
+// collectTargets returns a list of changed files/dirs from several sources.
+func collectChangedFiles(opts BackupOptions) (changedFiles *[]string, err error) {
+	if len(opts.ChangedFilesFromVerbatim) == 0 && len(opts.ChangedFilesFromRaw) == 0 {
+		return nil, nil
+	}
+
+	changedFiles = &[]string{}
+
+	for _, file := range opts.ChangedFilesFromVerbatim {
+		fromfile, err := readLines(file)
+		if err != nil {
+			return nil, err
+		}
+		for _, line := range fromfile {
+			if line == "" {
+				continue
+			}
+			*changedFiles = append(*changedFiles, line)
+		}
+	}
+
+	for _, file := range opts.ChangedFilesFromRaw {
+		fromfile, err := readFilenamesFromFileRaw(file)
+		if err != nil {
+			return nil, err
+		}
+		*changedFiles = append(*changedFiles, fromfile...)
+	}
+
+	return changedFiles, nil
+}
+
 // parent returns the ID of the parent snapshot. If there is none, nil is
 // returned.
 func findParentSnapshot(ctx context.Context, repo restic.Repository, opts BackupOptions, targets []string, timeStampLimit time.Time) (*restic.Snapshot, error) {
@@ -468,6 +520,11 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	}
 
 	targets, err := collectTargets(opts, args)
+	if err != nil {
+		return err
+	}
+
+	changedFiles, err := collectChangedFiles(opts)
 	if err != nil {
 		return err
 	}
@@ -654,7 +711,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	if !gopts.JSON {
 		progressPrinter.V("start backup on %v", targets)
 	}
-	_, id, err := arch.Snapshot(ctx, targets, snapshotOpts)
+	_, id, err := arch.Snapshot(ctx, targets, changedFiles, snapshotOpts)
 
 	// cleanly shutdown all running goroutines
 	cancel()
