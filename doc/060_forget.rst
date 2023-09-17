@@ -160,6 +160,11 @@ specifying a policy (one or more ``--keep-*`` options) for which snapshots to
 keep. You can for example define how many hourly, daily, weekly, monthly and
 yearly snapshots to keep, and any other snapshots will be removed.
 
+The keep options mark some snapshots to be kept. All snaptshots that are not marked by some keep-policy will be removed. At least one policy must be applied.
+In essence
+``keep-within-{time frame}`` keeps ALL snapshots within the timeframe, while
+``keep-{time frame} N`` keeps ONLY 1 snapshot within the time frame but does so for `N` days.
+
 .. warning:: If you use an append-only repository with policy-based snapshot
     removal, some security considerations are important. Please refer to the
     section below for more information.
@@ -167,6 +172,7 @@ yearly snapshots to keep, and any other snapshots will be removed.
 .. note:: You can always use the ``--dry-run`` option of the ``forget`` command,
     which instructs restic to not remove anything but instead just print what
     actions would be performed.
+
 
 The ``forget`` command accepts the following policy options:
 
