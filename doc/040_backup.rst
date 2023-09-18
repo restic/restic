@@ -628,6 +628,10 @@ environment variables. The following lists these environment variables:
     AWS_DEFAULT_REGION                  Amazon S3 default region
     AWS_PROFILE                         Amazon credentials profile (alternative to specifying key and region)
     AWS_SHARED_CREDENTIALS_FILE         Location of the AWS CLI shared credentials file (default: ~/.aws/credentials)
+    RESTIC_AWS_ASSUME_ROLE_ARN          Amazon IAM Role ARN to assume using discovered credentials
+    RESTIC_AWS_ASSUME_ROLE_SESSION_NAME Session Name to use with the role assumption
+    RESTIC_AWS_ASSUME_ROLE_EXTERNAL_ID  External ID to use with the role assumption
+    RESTIC_AWS_ASSUME_ROLE_REGION       Region to use for IAM calls for the role assumption
 
     AZURE_ACCOUNT_NAME                  Account name for Azure
     AZURE_ACCOUNT_KEY                   Account key for Azure
