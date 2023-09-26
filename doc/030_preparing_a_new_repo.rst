@@ -209,6 +209,14 @@ are some more examples:
     $ restic -r rest:https://user:pass@host:8000/ init
     $ restic -r rest:https://user:pass@host:8000/my_backup_repo/ init
 
+The server username and password can be specified using environment
+variables as well:
+
+.. code-block:: console
+
+    $ export RESTIC_REST_USERNAME=<MY_REST_SERVER_USERNAME>
+    $ export RESTIC_REST_PASSWORD=<MY_REST_SERVER_PASSWORD>
+
 If you use TLS, restic will use the system's CA certificates to verify the
 server certificate. When the verification fails, restic refuses to proceed and
 exits with an error. If you have your own self-signed certificate, or a custom
