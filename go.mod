@@ -9,7 +9,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/cespare/xxhash/v2 v2.2.0
 	github.com/elithrar/simple-scrypt v1.3.0
-	github.com/go-ole/go-ole v1.2.6
+	github.com/go-ole/go-ole v1.3.0
 	github.com/google/go-cmp v0.5.9
 	github.com/hashicorp/golang-lru/v2 v2.0.6
 	github.com/juju/ratelimit v1.0.2
