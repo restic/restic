@@ -70,14 +70,19 @@ func (r *packerManager) SaveBlob(ctx context.Context, t restic.BlobType, id rest
 
 	var err error
 	packer := r.packer
-	if r.packer == nil {
+	// use separate packer if compressed length is larger than the packsize
+	// this speeds up the garbage collection of oversized blobs and reduces the cache size
+	// as the oversize blobs are only downloaded if necessary
+	if len(ciphertext) >= int(r.packSize) || r.packer == nil {
 		packer, err = r.newPacker()
 		if err != nil {
 			return 0, err
 		}
+		// don't store packer for oversized blob
+		if r.packer == nil {
+			r.packer = packer
+		}
 	}
-	// remember packer
-	r.packer = packer
 
 	// save ciphertext
 	// Add only appends bytes in memory to avoid being a scaling bottleneck
@@ -91,8 +96,10 @@ func (r *packerManager) SaveBlob(ctx context.Context, t restic.BlobType, id rest
 		debug.Log("pack is not full enough (%d bytes)", packer.Size())
 		return size, nil
 	}
-	// forget full packer
-	r.packer = nil
+	if packer == r.packer {
+		// forget full packer
+		r.packer = nil
+	}
 
 	// call while holding lock to prevent findPacker from creating new packers if the uploaders are busy
 	// else write the pack to the backend
