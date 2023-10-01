@@ -363,7 +363,7 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []
 	if !gopts.JSON {
 		Verbosef("comparing snapshot %v to %v:\n\n", sn1.ID().Str(), sn2.ID().Str())
 	}
-	bar := newProgressMax(!gopts.Quiet && !gopts.JSON, 0, "index files loaded")
+	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
 	if err = repo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}

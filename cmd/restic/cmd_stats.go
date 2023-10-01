@@ -98,7 +98,7 @@ func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args 
 	if err != nil {
 		return err
 	}
-	bar := newProgressMax(!gopts.Quiet && !gopts.JSON, 0, "index files loaded")
+	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
 	if err = repo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}

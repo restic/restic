@@ -99,11 +99,11 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 	}
 
 	debug.Log("Loading source index")
-	bar := newProgressMax(!gopts.Quiet && !gopts.JSON, 0, "index files loaded")
+	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
 	if err := srcRepo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}
-	bar = newProgressMax(!gopts.Quiet && !gopts.JSON, 0, "index files loaded")
+	bar = newIndexProgress(gopts.Quiet, gopts.JSON)
 	debug.Log("Loading destination index")
 	if err := dstRepo.LoadIndex(ctx, bar); err != nil {
 		return err

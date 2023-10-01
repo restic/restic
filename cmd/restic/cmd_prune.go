@@ -187,7 +187,7 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOption
 
 	Verbosef("loading indexes...\n")
 	// loading the index before the snapshots is ok, as we use an exclusive lock here
-	bar := newProgressMax(!gopts.Quiet && !gopts.JSON, 0, "index files loaded")
+	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
 	err := repo.LoadIndex(ctx, bar)
 	if err != nil {
 		return err

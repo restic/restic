@@ -89,7 +89,7 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 		return err
 	}
 
-	bar := newProgressMax(!gopts.Quiet && !gopts.JSON, 0, "index files loaded")
+	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
 	if err := repo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}

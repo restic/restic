@@ -547,7 +547,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		progressPrinter.V("load index files")
 	}
 
-	bar := newTerminalProgressMax(!gopts.Quiet && !gopts.JSON, 0, "index files loaded", term)
+	bar := newIndexTerminalProgress(gopts.Quiet, gopts.JSON, term)
 
 	err = repo.LoadIndex(ctx, bar)
 	if err != nil {

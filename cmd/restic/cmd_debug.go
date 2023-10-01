@@ -469,7 +469,7 @@ func runDebugExamine(ctx context.Context, gopts GlobalOptions, args []string) er
 		}
 	}
 
-	bar := newProgressMax(!gopts.Quiet && !gopts.JSON, 0, "index files loaded")
+	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
 	err = repo.LoadIndex(ctx, bar)
 	if err != nil {
 		return err

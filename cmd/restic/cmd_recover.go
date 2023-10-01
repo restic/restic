@@ -58,7 +58,7 @@ func runRecover(ctx context.Context, gopts GlobalOptions) error {
 	}
 
 	Verbosef("load index files\n")
-	bar := newProgressMax(!gopts.Quiet && !gopts.JSON, 0, "index files loaded")
+	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
 	if err = repo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}
