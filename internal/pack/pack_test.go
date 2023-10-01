@@ -127,8 +127,8 @@ func TestUnpackReadSeeker(t *testing.T) {
 	b := mem.New()
 	id := restic.Hash(packData)
 
-	handle := restic.Handle{Type: restic.PackFile, Name: id.String()}
-	rtest.OK(t, b.Save(context.TODO(), handle, restic.NewByteReader(packData, b.Hasher())))
+	handle := backend.Handle{Type: backend.PackFile, Name: id.String()}
+	rtest.OK(t, b.Save(context.TODO(), handle, backend.NewByteReader(packData, b.Hasher())))
 	verifyBlobs(t, bufs, k, backend.ReaderAt(context.TODO(), b, handle), packSize)
 }
 
@@ -140,7 +140,7 @@ func TestShortPack(t *testing.T) {
 	b := mem.New()
 	id := restic.Hash(packData)
 
-	handle := restic.Handle{Type: restic.PackFile, Name: id.String()}
-	rtest.OK(t, b.Save(context.TODO(), handle, restic.NewByteReader(packData, b.Hasher())))
+	handle := backend.Handle{Type: backend.PackFile, Name: id.String()}
+	rtest.OK(t, b.Save(context.TODO(), handle, backend.NewByteReader(packData, b.Hasher())))
 	verifyBlobs(t, bufs, k, backend.ReaderAt(context.TODO(), b, handle), packSize)
 }

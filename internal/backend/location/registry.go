@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/limiter"
-	"github.com/restic/restic/internal/restic"
 )
 
 type Registry struct {
@@ -33,11 +33,11 @@ type Factory interface {
 	Scheme() string
 	ParseConfig(s string) (interface{}, error)
 	StripPassword(s string) string
-	Create(ctx context.Context, cfg interface{}, rt http.RoundTripper, lim limiter.Limiter) (restic.Backend, error)
-	Open(ctx context.Context, cfg interface{}, rt http.RoundTripper, lim limiter.Limiter) (restic.Backend, error)
+	Create(ctx context.Context, cfg interface{}, rt http.RoundTripper, lim limiter.Limiter) (backend.Backend, error)
+	Open(ctx context.Context, cfg interface{}, rt http.RoundTripper, lim limiter.Limiter) (backend.Backend, error)
 }
 
-type genericBackendFactory[C any, T restic.Backend] struct {
+type genericBackendFactory[C any, T backend.Backend] struct {
 	scheme          string
 	parseConfigFn   func(s string) (*C, error)
 	stripPasswordFn func(s string) string
@@ -58,14 +58,14 @@ func (f *genericBackendFactory[C, T]) StripPassword(s string) string {
 	}
 	return s
 }
-func (f *genericBackendFactory[C, T]) Create(ctx context.Context, cfg interface{}, rt http.RoundTripper, lim limiter.Limiter) (restic.Backend, error) {
+func (f *genericBackendFactory[C, T]) Create(ctx context.Context, cfg interface{}, rt http.RoundTripper, lim limiter.Limiter) (backend.Backend, error) {
 	return f.createFn(ctx, *cfg.(*C), rt, lim)
 }
-func (f *genericBackendFactory[C, T]) Open(ctx context.Context, cfg interface{}, rt http.RoundTripper, lim limiter.Limiter) (restic.Backend, error) {
+func (f *genericBackendFactory[C, T]) Open(ctx context.Context, cfg interface{}, rt http.RoundTripper, lim limiter.Limiter) (backend.Backend, error) {
 	return f.openFn(ctx, *cfg.(*C), rt, lim)
 }
 
-func NewHTTPBackendFactory[C any, T restic.Backend](
+func NewHTTPBackendFactory[C any, T backend.Backend](
 	scheme string,
 	parseConfigFn func(s string) (*C, error),
 	stripPasswordFn func(s string) string,
@@ -85,7 +85,7 @@ func NewHTTPBackendFactory[C any, T restic.Backend](
 	}
 }
 
-func NewLimitedBackendFactory[C any, T restic.Backend](
+func NewLimitedBackendFactory[C any, T backend.Backend](
 	scheme string,
 	parseConfigFn func(s string) (*C, error),
 	stripPasswordFn func(s string) string,

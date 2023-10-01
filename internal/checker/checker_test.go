@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/archiver"
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/hashing"
@@ -96,7 +97,7 @@ func TestMissingPack(t *testing.T) {
 
 	repo := repository.TestOpenLocal(t, repodir)
 
-	packHandle := restic.Handle{
+	packHandle := backend.Handle{
 		Type: restic.PackFile,
 		Name: "657f7fb64f6a854fff6fe9279998ee09034901eded4e6db9bcee0e59745bbce6",
 	}
@@ -129,7 +130,7 @@ func TestUnreferencedPack(t *testing.T) {
 
 	// index 3f1a only references pack 60e0
 	packID := "60e0438dcb978ec6860cc1f8c43da648170ee9129af8f650f876bad19f8f788e"
-	indexHandle := restic.Handle{
+	indexHandle := backend.Handle{
 		Type: restic.IndexFile,
 		Name: "3f1abfcb79c6f7d0a3be517d2c83c8562fba64ef2c8e9a3544b4edaf8b5e3b44",
 	}
@@ -160,7 +161,7 @@ func TestUnreferencedBlobs(t *testing.T) {
 
 	repo := repository.TestOpenLocal(t, repodir)
 
-	snapshotHandle := restic.Handle{
+	snapshotHandle := backend.Handle{
 		Type: restic.SnapshotFile,
 		Name: "51d249d28815200d59e4be7b3f21a157b864dc343353df9d8e498220c2499b02",
 	}
@@ -202,7 +203,7 @@ func TestModifiedIndex(t *testing.T) {
 	done := make(chan struct{})
 	defer close(done)
 
-	h := restic.Handle{
+	h := backend.Handle{
 		Type: restic.IndexFile,
 		Name: "90f838b4ac28735fda8644fe6a08dbc742e57aaf81b30977b4fefa357010eafd",
 	}
@@ -238,7 +239,7 @@ func TestModifiedIndex(t *testing.T) {
 
 	// save the index again with a modified name so that the hash doesn't match
 	// the content any more
-	h2 := restic.Handle{
+	h2 := backend.Handle{
 		Type: restic.IndexFile,
 		Name: "80f838b4ac28735fda8644fe6a08dbc742e57aaf81b30977b4fefa357010eafd",
 	}
@@ -247,7 +248,7 @@ func TestModifiedIndex(t *testing.T) {
 	if hw != nil {
 		hash = hw.Sum(nil)
 	}
-	rd, err := restic.NewFileReader(tmpfile, hash)
+	rd, err := backend.NewFileReader(tmpfile, hash)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -304,11 +305,11 @@ func TestDuplicatePacksInIndex(t *testing.T) {
 
 // errorBackend randomly modifies data after reading.
 type errorBackend struct {
-	restic.Backend
+	backend.Backend
 	ProduceErrors bool
 }
 
-func (b errorBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64, consumer func(rd io.Reader) error) error {
+func (b errorBackend) Load(ctx context.Context, h backend.Handle, length int, offset int64, consumer func(rd io.Reader) error) error {
 	return b.Backend.Load(ctx, h, length, offset, func(rd io.Reader) error {
 		if b.ProduceErrors {
 			return consumer(errorReadCloser{rd})

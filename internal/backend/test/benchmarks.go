@@ -6,22 +6,23 @@ import (
 	"io"
 	"testing"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
 )
 
-func saveRandomFile(t testing.TB, be restic.Backend, length int) ([]byte, restic.Handle) {
+func saveRandomFile(t testing.TB, be backend.Backend, length int) ([]byte, backend.Handle) {
 	data := test.Random(23, length)
 	id := restic.Hash(data)
-	handle := restic.Handle{Type: restic.PackFile, Name: id.String()}
-	err := be.Save(context.TODO(), handle, restic.NewByteReader(data, be.Hasher()))
+	handle := backend.Handle{Type: backend.PackFile, Name: id.String()}
+	err := be.Save(context.TODO(), handle, backend.NewByteReader(data, be.Hasher()))
 	if err != nil {
 		t.Fatalf("Save() error: %+v", err)
 	}
 	return data, handle
 }
 
-func remove(t testing.TB, be restic.Backend, h restic.Handle) {
+func remove(t testing.TB, be backend.Backend, h backend.Handle) {
 	if err := be.Remove(context.TODO(), h); err != nil {
 		t.Fatalf("Remove() returned error: %v", err)
 	}
@@ -146,9 +147,9 @@ func (s *Suite[C]) BenchmarkSave(t *testing.B) {
 	length := 1<<24 + 2123
 	data := test.Random(23, length)
 	id := restic.Hash(data)
-	handle := restic.Handle{Type: restic.PackFile, Name: id.String()}
+	handle := backend.Handle{Type: backend.PackFile, Name: id.String()}
 
-	rd := restic.NewByteReader(data, be.Hasher())
+	rd := backend.NewByteReader(data, be.Hasher())
 	t.SetBytes(int64(length))
 	t.ResetTimer()
 

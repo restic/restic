@@ -14,7 +14,7 @@ import (
 	"github.com/restic/restic/internal/restic"
 )
 
-func (c *Cache) filename(h restic.Handle) string {
+func (c *Cache) filename(h backend.Handle) string {
 	if len(h.Name) < 2 {
 		panic("Name is empty or too short")
 	}
@@ -22,7 +22,7 @@ func (c *Cache) filename(h restic.Handle) string {
 	return filepath.Join(c.path, cacheLayoutPaths[h.Type], subdir, h.Name)
 }
 
-func (c *Cache) canBeCached(t restic.FileType) bool {
+func (c *Cache) canBeCached(t backend.FileType) bool {
 	if c == nil {
 		return false
 	}
@@ -34,7 +34,7 @@ func (c *Cache) canBeCached(t restic.FileType) bool {
 // Load returns a reader that yields the contents of the file with the
 // given handle. rd must be closed after use. If an error is returned, the
 // ReadCloser is nil.
-func (c *Cache) load(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+func (c *Cache) load(h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
 	debug.Log("Load(%v, %v, %v) from cache", h, length, offset)
 	if !c.canBeCached(h.Type) {
 		return nil, errors.New("cannot be cached")
@@ -78,7 +78,7 @@ func (c *Cache) load(h restic.Handle, length int, offset int64) (io.ReadCloser, 
 }
 
 // Save saves a file in the cache.
-func (c *Cache) Save(h restic.Handle, rd io.Reader) error {
+func (c *Cache) Save(h backend.Handle, rd io.Reader) error {
 	debug.Log("Save to cache: %v", h)
 	if rd == nil {
 		return errors.New("Save() called with nil reader")
@@ -139,7 +139,7 @@ func (c *Cache) Save(h restic.Handle, rd io.Reader) error {
 }
 
 // Remove deletes a file. When the file is not cache, no error is returned.
-func (c *Cache) remove(h restic.Handle) error {
+func (c *Cache) remove(h backend.Handle) error {
 	if !c.Has(h) {
 		return nil
 	}
@@ -165,7 +165,7 @@ func (c *Cache) Clear(t restic.FileType, valid restic.IDSet) error {
 			continue
 		}
 
-		if err = fs.Remove(c.filename(restic.Handle{Type: t, Name: id.String()})); err != nil {
+		if err = fs.Remove(c.filename(backend.Handle{Type: t, Name: id.String()})); err != nil {
 			return err
 		}
 	}
@@ -207,7 +207,7 @@ func (c *Cache) list(t restic.FileType) (restic.IDSet, error) {
 }
 
 // Has returns true if the file is cached.
-func (c *Cache) Has(h restic.Handle) bool {
+func (c *Cache) Has(h backend.Handle) bool {
 	if !c.canBeCached(h.Type) {
 		return false
 	}

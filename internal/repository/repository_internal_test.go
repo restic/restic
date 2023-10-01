@@ -5,13 +5,14 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
-type mapcache map[restic.Handle]bool
+type mapcache map[backend.Handle]bool
 
-func (c mapcache) Has(h restic.Handle) bool { return c[h] }
+func (c mapcache) Has(h backend.Handle) bool { return c[h] }
 
 func TestSortCachedPacksFirst(t *testing.T) {
 	var (
@@ -27,15 +28,15 @@ func TestSortCachedPacksFirst(t *testing.T) {
 		blobs[i] = restic.PackedBlob{PackID: id}
 
 		if i%3 == 0 {
-			h := restic.Handle{Name: id.String(), Type: restic.PackFile}
+			h := backend.Handle{Name: id.String(), Type: backend.PackFile}
 			cache[h] = true
 		}
 	}
 
 	copy(sorted[:], blobs[:])
 	sort.SliceStable(sorted[:], func(i, j int) bool {
-		hi := restic.Handle{Type: restic.PackFile, Name: sorted[i].PackID.String()}
-		hj := restic.Handle{Type: restic.PackFile, Name: sorted[j].PackID.String()}
+		hi := backend.Handle{Type: backend.PackFile, Name: sorted[i].PackID.String()}
+		hj := backend.Handle{Type: backend.PackFile, Name: sorted[j].PackID.String()}
 		return cache.Has(hi) && !cache.Has(hj)
 	})
 
@@ -58,7 +59,7 @@ func BenchmarkSortCachedPacksFirst(b *testing.B) {
 		blobs[i] = restic.PackedBlob{PackID: id}
 
 		if i%3 == 0 {
-			h := restic.Handle{Name: id.String(), Type: restic.PackFile}
+			h := backend.Handle{Name: id.String(), Type: backend.PackFile}
 			cache[h] = true
 		}
 	}

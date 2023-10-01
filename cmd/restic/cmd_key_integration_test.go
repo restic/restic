@@ -6,8 +6,8 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/repository"
-	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -110,11 +110,11 @@ func TestKeyAddRemove(t *testing.T) {
 }
 
 type emptySaveBackend struct {
-	restic.Backend
+	backend.Backend
 }
 
-func (b *emptySaveBackend) Save(ctx context.Context, h restic.Handle, _ restic.RewindReader) error {
-	return b.Backend.Save(ctx, h, restic.NewByteReader([]byte{}, nil))
+func (b *emptySaveBackend) Save(ctx context.Context, h backend.Handle, _ backend.RewindReader) error {
+	return b.Backend.Save(ctx, h, backend.NewByteReader([]byte{}, nil))
 }
 
 func TestKeyProblems(t *testing.T) {
@@ -122,7 +122,7 @@ func TestKeyProblems(t *testing.T) {
 	defer cleanup()
 
 	testRunInit(t, env.gopts)
-	env.gopts.backendTestHook = func(r restic.Backend) (restic.Backend, error) {
+	env.gopts.backendTestHook = func(r backend.Backend) (backend.Backend, error) {
 		return &emptySaveBackend{r}, nil
 	}
 

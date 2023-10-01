@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/index"
@@ -369,7 +370,7 @@ func testIndexSave(t *testing.T, version uint) {
 
 	for id := range obsoletes {
 		t.Logf("remove index %v", id.Str())
-		h := restic.Handle{Type: restic.IndexFile, Name: id.String()}
+		h := backend.Handle{Type: restic.IndexFile, Name: id.String()}
 		err = repo.Backend().Remove(context.TODO(), h)
 		if err != nil {
 			t.Errorf("error removing index %v: %v", id, err)

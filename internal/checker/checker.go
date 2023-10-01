@@ -39,7 +39,7 @@ type Checker struct {
 	trackUnused bool
 
 	masterIndex *index.MasterIndex
-	snapshots   restic.Lister
+	snapshots   backend.Lister
 
 	repo restic.Repository
 }
@@ -134,7 +134,7 @@ func (c *Checker) LoadIndex(ctx context.Context, p *progress.Counter) (hints []e
 
 	if p != nil {
 		var numIndexFiles uint64
-		err := indexList.List(ctx, restic.IndexFile, func(fi restic.FileInfo) error {
+		err := indexList.List(ctx, restic.IndexFile, func(fi backend.FileInfo) error {
 			_, err := restic.ParseID(fi.Name)
 			if err != nil {
 				debug.Log("unable to parse %v as an ID", fi.Name)
@@ -245,7 +245,7 @@ func IsOrphanedPack(err error) bool {
 	return errors.As(err, &e) && e.Orphaned
 }
 
-func isS3Legacy(b restic.Backend) bool {
+func isS3Legacy(b backend.Backend) bool {
 	// unwrap cache
 	if be, ok := b.(*cache.Backend); ok {
 		b = be.Backend
@@ -367,7 +367,7 @@ func (c *Checker) checkTreeWorker(ctx context.Context, trees <-chan restic.TreeI
 	}
 }
 
-func loadSnapshotTreeIDs(ctx context.Context, lister restic.Lister, repo restic.Repository) (ids restic.IDs, errs []error) {
+func loadSnapshotTreeIDs(ctx context.Context, lister backend.Lister, repo restic.Repository) (ids restic.IDs, errs []error) {
 	err := restic.ForAllSnapshots(ctx, lister, repo, nil, func(id restic.ID, sn *restic.Snapshot, err error) error {
 		if err != nil {
 			errs = append(errs, err)
@@ -563,7 +563,7 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 	// calculate hash on-the-fly while reading the pack and capture pack header
 	var hash restic.ID
 	var hdrBuf []byte
-	hashingLoader := func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+	hashingLoader := func(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
 		return r.Backend().Load(ctx, h, int(size), 0, func(rd io.Reader) error {
 			hrd := hashing.NewReader(rd, sha256.New())
 			bufRd.Reset(hrd)

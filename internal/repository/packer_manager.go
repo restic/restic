@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"sync"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/hashing"
 	"github.com/restic/restic/internal/restic"
@@ -145,7 +146,7 @@ func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packe
 
 	// calculate sha256 hash in a second pass
 	var rd io.Reader
-	rd, err = restic.NewFileReader(p.tmpfile, nil)
+	rd, err = backend.NewFileReader(p.tmpfile, nil)
 	if err != nil {
 		return err
 	}
@@ -163,12 +164,12 @@ func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packe
 	}
 
 	id := restic.IDFromHash(hr.Sum(nil))
-	h := restic.Handle{Type: restic.PackFile, Name: id.String(), IsMetadata: t.IsMetadata()}
+	h := backend.Handle{Type: backend.PackFile, Name: id.String(), IsMetadata: t.IsMetadata()}
 	var beHash []byte
 	if beHr != nil {
 		beHash = beHr.Sum(nil)
 	}
-	rrd, err := restic.NewFileReader(p.tmpfile, beHash)
+	rrd, err := backend.NewFileReader(p.tmpfile, beHash)
 	if err != nil {
 		return err
 	}

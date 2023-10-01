@@ -12,6 +12,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/retry"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/options"
@@ -205,7 +206,7 @@ func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
 		extended: make(options.Options),
 
 		// replace this hook with "nil" if listing a filetype more than once is necessary
-		backendTestHook: func(r restic.Backend) (restic.Backend, error) { return newOrderedListOnceBackend(r), nil },
+		backendTestHook: func(r backend.Backend) (backend.Backend, error) { return newOrderedListOnceBackend(r), nil },
 		// start with default set of backends
 		backends: globalOptions.backends,
 	}
@@ -249,7 +250,7 @@ func removePacks(gopts GlobalOptions, t testing.TB, remove restic.IDSet) {
 	rtest.OK(t, err)
 
 	for id := range remove {
-		rtest.OK(t, r.Backend().Remove(context.TODO(), restic.Handle{Type: restic.PackFile, Name: id.String()}))
+		rtest.OK(t, r.Backend().Remove(context.TODO(), backend.Handle{Type: restic.PackFile, Name: id.String()}))
 	}
 }
 
@@ -272,7 +273,7 @@ func removePacksExcept(gopts GlobalOptions, t testing.TB, keep restic.IDSet, rem
 		if treePacks.Has(id) != removeTreePacks || keep.Has(id) {
 			return nil
 		}
-		return r.Backend().Remove(context.TODO(), restic.Handle{Type: restic.PackFile, Name: id.String()})
+		return r.Backend().Remove(context.TODO(), backend.Handle{Type: restic.PackFile, Name: id.String()})
 	}))
 }
 

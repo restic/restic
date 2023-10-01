@@ -12,12 +12,12 @@ import (
 	"path"
 	"strings"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
 	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/backend/util"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/restic"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/streaming"
@@ -43,7 +43,7 @@ const saveLargeSize = 256 * 1024 * 1024
 const defaultListMaxItems = 5000
 
 // make sure that *Backend implements backend.Backend
-var _ restic.Backend = &Backend{}
+var _ backend.Backend = &Backend{}
 
 func NewFactory() location.Factory {
 	return location.NewHTTPBackendFactory("azure", ParseConfig, location.NoPassword, Create, Open)
@@ -197,7 +197,7 @@ func (be *Backend) Path() string {
 }
 
 // Save stores data in the backend at the handle.
-func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+func (be *Backend) Save(ctx context.Context, h backend.Handle, rd backend.RewindReader) error {
 	objName := be.Filename(h)
 
 	debug.Log("InsertObject(%v, %v)", be.cfg.AccountName, objName)
@@ -214,7 +214,7 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 	return err
 }
 
-func (be *Backend) saveSmall(ctx context.Context, objName string, rd restic.RewindReader) error {
+func (be *Backend) saveSmall(ctx context.Context, objName string, rd backend.RewindReader) error {
 	blockBlobClient := be.container.NewBlockBlobClient(objName)
 
 	// upload it as a new "block", use the base64 hash for the ID
@@ -239,7 +239,7 @@ func (be *Backend) saveSmall(ctx context.Context, objName string, rd restic.Rewi
 	return errors.Wrap(err, "CommitBlockList")
 }
 
-func (be *Backend) saveLarge(ctx context.Context, objName string, rd restic.RewindReader) error {
+func (be *Backend) saveLarge(ctx context.Context, objName string, rd backend.RewindReader) error {
 	blockBlobClient := be.container.NewBlockBlobClient(objName)
 
 	buf := make([]byte, 100*1024*1024)
@@ -294,11 +294,11 @@ func (be *Backend) saveLarge(ctx context.Context, objName string, rd restic.Rewi
 
 // Load runs fn with a reader that yields the contents of the file at h at the
 // given offset.
-func (be *Backend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+func (be *Backend) Load(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
 	return util.DefaultLoad(ctx, h, length, offset, be.openReader, fn)
 }
 
-func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+func (be *Backend) openReader(ctx context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
 	objName := be.Filename(h)
 	blockBlobClient := be.container.NewBlobClient(objName)
 
@@ -317,17 +317,17 @@ func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, 
 }
 
 // Stat returns information about a blob.
-func (be *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, error) {
+func (be *Backend) Stat(ctx context.Context, h backend.Handle) (backend.FileInfo, error) {
 	objName := be.Filename(h)
 	blobClient := be.container.NewBlobClient(objName)
 
 	props, err := blobClient.GetProperties(ctx, nil)
 
 	if err != nil {
-		return restic.FileInfo{}, errors.Wrap(err, "blob.GetProperties")
+		return backend.FileInfo{}, errors.Wrap(err, "blob.GetProperties")
 	}
 
-	fi := restic.FileInfo{
+	fi := backend.FileInfo{
 		Size: *props.ContentLength,
 		Name: h.Name,
 	}
@@ -335,7 +335,7 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, 
 }
 
 // Remove removes the blob with the given name and type.
-func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
+func (be *Backend) Remove(ctx context.Context, h backend.Handle) error {
 	objName := be.Filename(h)
 	blob := be.container.NewBlobClient(objName)
 
@@ -350,7 +350,7 @@ func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 
 // List runs fn for each file in the backend which has the type t. When an
 // error occurs (or fn returns an error), List stops and returns it.
-func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
+func (be *Backend) List(ctx context.Context, t backend.FileType, fn func(backend.FileInfo) error) error {
 	prefix, _ := be.Basedir(t)
 
 	// make sure prefix ends with a slash
@@ -381,7 +381,7 @@ func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.F
 				continue
 			}
 
-			fi := restic.FileInfo{
+			fi := backend.FileInfo{
 				Name: path.Base(m),
 				Size: *item.Properties.ContentLength,
 			}

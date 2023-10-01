@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/mem"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -53,10 +54,10 @@ func TestMultipleLock(t *testing.T) {
 }
 
 type failLockLoadingBackend struct {
-	restic.Backend
+	backend.Backend
 }
 
-func (be *failLockLoadingBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+func (be *failLockLoadingBackend) Load(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
 	if h.Type == restic.LockFile {
 		return fmt.Errorf("error loading lock")
 	}
@@ -130,7 +131,7 @@ func createFakeLock(repo restic.Repository, t time.Time, pid int) (restic.ID, er
 }
 
 func removeLock(repo restic.Repository, id restic.ID) error {
-	h := restic.Handle{Type: restic.LockFile, Name: id.String()}
+	h := backend.Handle{Type: restic.LockFile, Name: id.String()}
 	return repo.Backend().Remove(context.TODO(), h)
 }
 
@@ -191,7 +192,7 @@ func TestLockStale(t *testing.T) {
 }
 
 func lockExists(repo restic.Repository, t testing.TB, id restic.ID) bool {
-	h := restic.Handle{Type: restic.LockFile, Name: id.String()}
+	h := backend.Handle{Type: restic.LockFile, Name: id.String()}
 	_, err := repo.Backend().Stat(context.TODO(), h)
 	if err != nil && !repo.Backend().IsNotExist(err) {
 		t.Fatal(err)
@@ -317,7 +318,7 @@ func TestLockRefreshStaleMissing(t *testing.T) {
 	lockID := checkSingleLock(t, repo)
 
 	// refresh must fail if lock was removed
-	rtest.OK(t, repo.Backend().Remove(context.TODO(), restic.Handle{Type: restic.LockFile, Name: lockID.String()}))
+	rtest.OK(t, repo.Backend().Remove(context.TODO(), backend.Handle{Type: restic.LockFile, Name: lockID.String()}))
 	time.Sleep(time.Millisecond)
 	err = lock.RefreshStaleLock(context.TODO())
 	rtest.Assert(t, err == restic.ErrRemovedLock, "unexpected error, expected %v, got %v", restic.ErrRemovedLock, err)

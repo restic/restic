@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -131,7 +132,7 @@ type refreshLockRequest struct {
 	result chan bool
 }
 
-func refreshLocks(ctx context.Context, backend restic.Backend, lockInfo *lockContext, refreshed chan<- struct{}, forceRefresh <-chan refreshLockRequest) {
+func refreshLocks(ctx context.Context, backend backend.Backend, lockInfo *lockContext, refreshed chan<- struct{}, forceRefresh <-chan refreshLockRequest) {
 	debug.Log("start")
 	lock := lockInfo.lock
 	ticker := time.NewTicker(refreshInterval)
@@ -257,8 +258,8 @@ func monitorLockRefresh(ctx context.Context, lockInfo *lockContext, refreshed <-
 	}
 }
 
-func tryRefreshStaleLock(ctx context.Context, backend restic.Backend, lock *restic.Lock, cancel context.CancelFunc) bool {
-	freeze := restic.AsBackend[restic.FreezeBackend](backend)
+func tryRefreshStaleLock(ctx context.Context, be backend.Backend, lock *restic.Lock, cancel context.CancelFunc) bool {
+	freeze := backend.AsBackend[backend.FreezeBackend](be)
 	if freeze != nil {
 		debug.Log("freezing backend")
 		freeze.Freeze()

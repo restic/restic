@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/local"
 	"github.com/restic/restic/internal/backend/mem"
 	"github.com/restic/restic/internal/backend/retry"
@@ -34,7 +35,7 @@ func TestUseLowSecurityKDFParameters(t logger) {
 }
 
 // TestBackend returns a fully configured in-memory backend.
-func TestBackend(_ testing.TB) restic.Backend {
+func TestBackend(_ testing.TB) backend.Backend {
 	return mem.New()
 }
 
@@ -43,7 +44,7 @@ const TestChunkerPol = chunker.Pol(0x3DA3358B4DC173)
 // TestRepositoryWithBackend returns a repository initialized with a test
 // password. If be is nil, an in-memory backend is used. A constant polynomial
 // is used for the chunker and low-security test parameters.
-func TestRepositoryWithBackend(t testing.TB, be restic.Backend, version uint) restic.Repository {
+func TestRepositoryWithBackend(t testing.TB, be backend.Backend, version uint) restic.Repository {
 	t.Helper()
 	TestUseLowSecurityKDFParameters(t)
 	restic.TestDisableCheckPolynomial(t)
@@ -98,7 +99,7 @@ func TestRepositoryWithVersion(t testing.TB, version uint) restic.Repository {
 
 // TestOpenLocal opens a local repository.
 func TestOpenLocal(t testing.TB, dir string) (r restic.Repository) {
-	var be restic.Backend
+	var be backend.Backend
 	be, err := local.Open(context.TODO(), local.Config{Path: dir, Connections: 2})
 	if err != nil {
 		t.Fatal(err)

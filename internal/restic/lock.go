@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
 
 	"github.com/restic/restic/internal/debug"
@@ -213,7 +214,7 @@ func (l *Lock) Unlock() error {
 		return nil
 	}
 
-	return l.repo.Backend().Remove(context.TODO(), Handle{Type: LockFile, Name: l.lockID.String()})
+	return l.repo.Backend().Remove(context.TODO(), backend.Handle{Type: LockFile, Name: l.lockID.String()})
 }
 
 var StaleLockTimeout = 30 * time.Minute
@@ -273,7 +274,7 @@ func (l *Lock) Refresh(ctx context.Context) error {
 	oldLockID := l.lockID
 	l.lockID = &id
 
-	return l.repo.Backend().Remove(context.TODO(), Handle{Type: LockFile, Name: oldLockID.String()})
+	return l.repo.Backend().Remove(context.TODO(), backend.Handle{Type: LockFile, Name: oldLockID.String()})
 }
 
 // RefreshStaleLock is an extended variant of Refresh that can also refresh stale lock files.
@@ -302,13 +303,13 @@ func (l *Lock) RefreshStaleLock(ctx context.Context) error {
 	exists, err = l.checkExistence(ctx)
 	if err != nil {
 		// cleanup replacement lock
-		_ = l.repo.Backend().Remove(context.TODO(), Handle{Type: LockFile, Name: id.String()})
+		_ = l.repo.Backend().Remove(context.TODO(), backend.Handle{Type: LockFile, Name: id.String()})
 		return err
 	}
 
 	if !exists {
 		// cleanup replacement lock
-		_ = l.repo.Backend().Remove(context.TODO(), Handle{Type: LockFile, Name: id.String()})
+		_ = l.repo.Backend().Remove(context.TODO(), backend.Handle{Type: LockFile, Name: id.String()})
 		return ErrRemovedLock
 	}
 
@@ -319,7 +320,7 @@ func (l *Lock) RefreshStaleLock(ctx context.Context) error {
 	oldLockID := l.lockID
 	l.lockID = &id
 
-	return l.repo.Backend().Remove(context.TODO(), Handle{Type: LockFile, Name: oldLockID.String()})
+	return l.repo.Backend().Remove(context.TODO(), backend.Handle{Type: LockFile, Name: oldLockID.String()})
 }
 
 func (l *Lock) checkExistence(ctx context.Context) (bool, error) {
@@ -328,7 +329,7 @@ func (l *Lock) checkExistence(ctx context.Context) (bool, error) {
 
 	exists := false
 
-	err := l.repo.Backend().List(ctx, LockFile, func(fi FileInfo) error {
+	err := l.repo.Backend().List(ctx, LockFile, func(fi backend.FileInfo) error {
 		if fi.Name == l.lockID.String() {
 			exists = true
 		}
@@ -387,7 +388,7 @@ func RemoveStaleLocks(ctx context.Context, repo Repository) (uint, error) {
 		}
 
 		if lock.Stale() {
-			err = repo.Backend().Remove(ctx, Handle{Type: LockFile, Name: id.String()})
+			err = repo.Backend().Remove(ctx, backend.Handle{Type: LockFile, Name: id.String()})
 			if err == nil {
 				processed++
 			}
@@ -403,7 +404,7 @@ func RemoveStaleLocks(ctx context.Context, repo Repository) (uint, error) {
 func RemoveAllLocks(ctx context.Context, repo Repository) (uint, error) {
 	var processed uint32
 	err := ParallelList(ctx, repo.Backend(), LockFile, repo.Connections(), func(ctx context.Context, id ID, size int64) error {
-		err := repo.Backend().Remove(ctx, Handle{Type: LockFile, Name: id.String()})
+		err := repo.Backend().Remove(ctx, backend.Handle{Type: LockFile, Name: id.String()})
 		if err == nil {
 			atomic.AddUint32(&processed, 1)
 		}

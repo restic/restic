@@ -5,9 +5,9 @@ import (
 	"io"
 	"testing"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/util"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/restic"
 
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -26,11 +26,11 @@ func (rd *mockReader) Close() error {
 
 func TestDefaultLoad(t *testing.T) {
 
-	h := restic.Handle{Name: "id", Type: restic.PackFile}
+	h := backend.Handle{Name: "id", Type: backend.PackFile}
 	rd := &mockReader{}
 
 	// happy case, assert correct parameters are passed around and content stream is closed
-	err := util.DefaultLoad(context.TODO(), h, 10, 11, func(ctx context.Context, ih restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+	err := util.DefaultLoad(context.TODO(), h, 10, 11, func(ctx context.Context, ih backend.Handle, length int, offset int64) (io.ReadCloser, error) {
 		rtest.Equals(t, h, ih)
 		rtest.Equals(t, int(10), length)
 		rtest.Equals(t, int64(11), offset)
@@ -44,7 +44,7 @@ func TestDefaultLoad(t *testing.T) {
 	rtest.Equals(t, true, rd.closed)
 
 	// unhappy case, assert producer errors are handled correctly
-	err = util.DefaultLoad(context.TODO(), h, 10, 11, func(ctx context.Context, ih restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+	err = util.DefaultLoad(context.TODO(), h, 10, 11, func(ctx context.Context, ih backend.Handle, length int, offset int64) (io.ReadCloser, error) {
 		return nil, errors.Errorf("producer error")
 	}, func(ird io.Reader) error {
 		t.Fatalf("unexpected consumer invocation")
@@ -54,7 +54,7 @@ func TestDefaultLoad(t *testing.T) {
 
 	// unhappy case, assert consumer errors are handled correctly
 	rd = &mockReader{}
-	err = util.DefaultLoad(context.TODO(), h, 10, 11, func(ctx context.Context, ih restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+	err = util.DefaultLoad(context.TODO(), h, 10, 11, func(ctx context.Context, ih backend.Handle, length int, offset int64) (io.ReadCloser, error) {
 		return rd, nil
 	}, func(ird io.Reader) error {
 		return errors.Errorf("consumer error")

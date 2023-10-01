@@ -26,11 +26,11 @@ func TestLoadAll(t *testing.T) {
 		data := rtest.Random(23+i, rand.Intn(MiB)+500*KiB)
 
 		id := restic.Hash(data)
-		h := restic.Handle{Name: id.String(), Type: restic.PackFile}
-		err := b.Save(context.TODO(), h, restic.NewByteReader(data, b.Hasher()))
+		h := backend.Handle{Name: id.String(), Type: backend.PackFile}
+		err := b.Save(context.TODO(), h, backend.NewByteReader(data, b.Hasher()))
 		rtest.OK(t, err)
 
-		buf, err := backend.LoadAll(context.TODO(), buf, b, restic.Handle{Type: restic.PackFile, Name: id.String()})
+		buf, err := backend.LoadAll(context.TODO(), buf, b, backend.Handle{Type: backend.PackFile, Name: id.String()})
 		rtest.OK(t, err)
 
 		if len(buf) != len(data) {
@@ -45,10 +45,10 @@ func TestLoadAll(t *testing.T) {
 	}
 }
 
-func save(t testing.TB, be restic.Backend, buf []byte) restic.Handle {
+func save(t testing.TB, be backend.Backend, buf []byte) backend.Handle {
 	id := restic.Hash(buf)
-	h := restic.Handle{Name: id.String(), Type: restic.PackFile}
-	err := be.Save(context.TODO(), h, restic.NewByteReader(buf, be.Hasher()))
+	h := backend.Handle{Name: id.String(), Type: backend.PackFile}
+	err := be.Save(context.TODO(), h, backend.NewByteReader(buf, be.Hasher()))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,10 +56,10 @@ func save(t testing.TB, be restic.Backend, buf []byte) restic.Handle {
 }
 
 type quickRetryBackend struct {
-	restic.Backend
+	backend.Backend
 }
 
-func (be *quickRetryBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+func (be *quickRetryBackend) Load(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
 	err := be.Backend.Load(ctx, h, length, offset, fn)
 	if err != nil {
 		// retry
@@ -76,19 +76,19 @@ func TestLoadAllBroken(t *testing.T) {
 	// damage buffer
 	data[0] ^= 0xff
 
-	b.OpenReaderFn = func(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+	b.OpenReaderFn = func(ctx context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
 		return io.NopCloser(bytes.NewReader(data)), nil
 	}
 
 	// must fail on first try
-	_, err := backend.LoadAll(context.TODO(), nil, b, restic.Handle{Type: restic.PackFile, Name: id.String()})
+	_, err := backend.LoadAll(context.TODO(), nil, b, backend.Handle{Type: backend.PackFile, Name: id.String()})
 	if err == nil {
 		t.Fatalf("missing expected error")
 	}
 
 	// must return the broken data after a retry
 	be := &quickRetryBackend{Backend: b}
-	buf, err := backend.LoadAll(context.TODO(), nil, be, restic.Handle{Type: restic.PackFile, Name: id.String()})
+	buf, err := backend.LoadAll(context.TODO(), nil, be, backend.Handle{Type: backend.PackFile, Name: id.String()})
 	rtest.OK(t, err)
 
 	if !bytes.Equal(buf, data) {
@@ -104,7 +104,7 @@ func TestLoadAllAppend(t *testing.T) {
 	h2 := save(t, b, randomData)
 
 	var tests = []struct {
-		handle restic.Handle
+		handle backend.Handle
 		buf    []byte
 		want   []byte
 	}{
@@ -152,11 +152,11 @@ func TestLoadAllAppend(t *testing.T) {
 func TestMemoizeList(t *testing.T) {
 	// setup backend to serve as data source for memoized list
 	be := mock.NewBackend()
-	files := []restic.FileInfo{
+	files := []backend.FileInfo{
 		{Size: 42, Name: restic.NewRandomID().String()},
 		{Size: 45, Name: restic.NewRandomID().String()},
 	}
-	be.ListFn = func(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
+	be.ListFn = func(ctx context.Context, t backend.FileType, fn func(backend.FileInfo) error) error {
 		for _, fi := range files {
 			if err := fn(fi); err != nil {
 				return err
@@ -165,17 +165,17 @@ func TestMemoizeList(t *testing.T) {
 		return nil
 	}
 
-	mem, err := backend.MemorizeList(context.TODO(), be, restic.SnapshotFile)
+	mem, err := backend.MemorizeList(context.TODO(), be, backend.SnapshotFile)
 	rtest.OK(t, err)
 
-	err = mem.List(context.TODO(), restic.IndexFile, func(fi restic.FileInfo) error {
+	err = mem.List(context.TODO(), backend.IndexFile, func(fi backend.FileInfo) error {
 		t.Fatal("file type mismatch")
 		return nil // the memoized lister must return an error by itself
 	})
 	rtest.Assert(t, err != nil, "missing error on file typ mismatch")
 
-	var memFiles []restic.FileInfo
-	err = mem.List(context.TODO(), restic.SnapshotFile, func(fi restic.FileInfo) error {
+	var memFiles []backend.FileInfo
+	err = mem.List(context.TODO(), backend.SnapshotFile, func(fi backend.FileInfo) error {
 		memFiles = append(memFiles, fi)
 		return nil
 	})
@@ -186,9 +186,9 @@ func TestMemoizeList(t *testing.T) {
 func TestMemoizeListError(t *testing.T) {
 	// setup backend to serve as data source for memoized list
 	be := mock.NewBackend()
-	be.ListFn = func(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
+	be.ListFn = func(ctx context.Context, t backend.FileType, fn func(backend.FileInfo) error) error {
 		return fmt.Errorf("list error")
 	}
-	_, err := backend.MemorizeList(context.TODO(), be, restic.SnapshotFile)
+	_, err := backend.MemorizeList(context.TODO(), be, backend.SnapshotFile)
 	rtest.Assert(t, err != nil, "missing error on list error")
 }

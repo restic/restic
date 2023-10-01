@@ -321,7 +321,7 @@ func loadBlobs(ctx context.Context, repo restic.Repository, packID restic.ID, li
 		panic(err)
 	}
 	be := repo.Backend()
-	h := restic.Handle{
+	h := backend.Handle{
 		Name: packID.String(),
 		Type: restic.PackFile,
 	}
@@ -490,7 +490,7 @@ func runDebugExamine(ctx context.Context, gopts GlobalOptions, args []string) er
 func examinePack(ctx context.Context, repo restic.Repository, id restic.ID) error {
 	Printf("examine %v\n", id)
 
-	h := restic.Handle{
+	h := backend.Handle{
 		Type: restic.PackFile,
 		Name: id.String(),
 	}

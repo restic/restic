@@ -7,9 +7,9 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
-	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
 )
 
@@ -37,14 +37,14 @@ func TestUpgradeRepoV2(t *testing.T) {
 }
 
 type failBackend struct {
-	restic.Backend
+	backend.Backend
 
 	mu                        sync.Mutex
 	ConfigFileSavesUntilError uint
 }
 
-func (be *failBackend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
-	if h.Type != restic.ConfigFile {
+func (be *failBackend) Save(ctx context.Context, h backend.Handle, rd backend.RewindReader) error {
+	if h.Type != backend.ConfigFile {
 		return be.Backend.Save(ctx, h, rd)
 	}
 

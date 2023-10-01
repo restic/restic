@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
 )
 
@@ -34,7 +35,7 @@ func (f *SnapshotFilter) matches(sn *Snapshot) bool {
 
 // findLatest finds the latest snapshot with optional target/directory,
 // tags, hostname, and timestamp filters.
-func (f *SnapshotFilter) findLatest(ctx context.Context, be Lister, loader LoaderUnpacked) (*Snapshot, error) {
+func (f *SnapshotFilter) findLatest(ctx context.Context, be backend.Lister, loader LoaderUnpacked) (*Snapshot, error) {
 
 	var err error
 	absTargets := make([]string, 0, len(f.Paths))
@@ -90,7 +91,7 @@ func splitSnapshotID(s string) (id, subfolder string) {
 
 // FindSnapshot takes a string and tries to find a snapshot whose ID matches
 // the string as closely as possible.
-func FindSnapshot(ctx context.Context, be Lister, loader LoaderUnpacked, s string) (*Snapshot, string, error) {
+func FindSnapshot(ctx context.Context, be backend.Lister, loader LoaderUnpacked, s string) (*Snapshot, string, error) {
 	s, subfolder := splitSnapshotID(s)
 
 	// no need to list snapshots if `s` is already a full id
@@ -108,7 +109,7 @@ func FindSnapshot(ctx context.Context, be Lister, loader LoaderUnpacked, s strin
 
 // FindLatest returns either the latest of a filtered list of all snapshots
 // or a snapshot specified by `snapshotID`.
-func (f *SnapshotFilter) FindLatest(ctx context.Context, be Lister, loader LoaderUnpacked, snapshotID string) (*Snapshot, string, error) {
+func (f *SnapshotFilter) FindLatest(ctx context.Context, be backend.Lister, loader LoaderUnpacked, snapshotID string) (*Snapshot, string, error) {
 	id, subfolder := splitSnapshotID(snapshotID)
 	if id == "latest" {
 		sn, err := f.findLatest(ctx, be, loader)
@@ -126,7 +127,7 @@ type SnapshotFindCb func(string, *Snapshot, error) error
 var ErrInvalidSnapshotSyntax = errors.New("<snapshot>:<subfolder> syntax not allowed")
 
 // FindAll yields Snapshots, either given explicitly by `snapshotIDs` or filtered from the list of all snapshots.
-func (f *SnapshotFilter) FindAll(ctx context.Context, be Lister, loader LoaderUnpacked, snapshotIDs []string, fn SnapshotFindCb) error {
+func (f *SnapshotFilter) FindAll(ctx context.Context, be backend.Lister, loader LoaderUnpacked, snapshotIDs []string, fn SnapshotFindCb) error {
 	if len(snapshotIDs) != 0 {
 		var err error
 		usedFilter := false

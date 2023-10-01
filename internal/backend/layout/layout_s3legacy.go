@@ -1,6 +1,8 @@
 package layout
 
-import "github.com/restic/restic/internal/restic"
+import (
+	"github.com/restic/restic/internal/backend"
+)
 
 // S3LegacyLayout implements the old layout used for s3 cloud storage backends, as
 // described in the Design document.
@@ -10,12 +12,12 @@ type S3LegacyLayout struct {
 	Join func(...string) string
 }
 
-var s3LayoutPaths = map[restic.FileType]string{
-	restic.PackFile:     "data",
-	restic.SnapshotFile: "snapshot",
-	restic.IndexFile:    "index",
-	restic.LockFile:     "lock",
-	restic.KeyFile:      "key",
+var s3LayoutPaths = map[backend.FileType]string{
+	backend.PackFile:     "data",
+	backend.SnapshotFile: "snapshot",
+	backend.IndexFile:    "index",
+	backend.LockFile:     "lock",
+	backend.KeyFile:      "key",
 }
 
 func (l *S3LegacyLayout) String() string {
@@ -44,8 +46,8 @@ func (l *S3LegacyLayout) join(url string, items ...string) string {
 }
 
 // Dirname returns the directory path for a given file type and name.
-func (l *S3LegacyLayout) Dirname(h restic.Handle) string {
-	if h.Type == restic.ConfigFile {
+func (l *S3LegacyLayout) Dirname(h backend.Handle) string {
+	if h.Type == backend.ConfigFile {
 		return l.URL + l.Join(l.Path, "/")
 	}
 
@@ -53,10 +55,10 @@ func (l *S3LegacyLayout) Dirname(h restic.Handle) string {
 }
 
 // Filename returns a path to a file, including its name.
-func (l *S3LegacyLayout) Filename(h restic.Handle) string {
+func (l *S3LegacyLayout) Filename(h backend.Handle) string {
 	name := h.Name
 
-	if h.Type == restic.ConfigFile {
+	if h.Type == backend.ConfigFile {
 		name = "config"
 	}
 
@@ -72,6 +74,6 @@ func (l *S3LegacyLayout) Paths() (dirs []string) {
 }
 
 // Basedir returns the base dir name for type t.
-func (l *S3LegacyLayout) Basedir(t restic.FileType) (dirname string, subdirs bool) {
+func (l *S3LegacyLayout) Basedir(t backend.FileType) (dirname string, subdirs bool) {
 	return l.Join(l.Path, s3LayoutPaths[t]), false
 }

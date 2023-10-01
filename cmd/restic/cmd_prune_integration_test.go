@@ -6,13 +6,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/backend"
 	rtest "github.com/restic/restic/internal/test"
 )
 
 func testRunPrune(t testing.TB, gopts GlobalOptions, opts PruneOptions) {
 	oldHook := gopts.backendTestHook
-	gopts.backendTestHook = func(r restic.Backend) (restic.Backend, error) { return newListOnceBackend(r), nil }
+	gopts.backendTestHook = func(r backend.Backend) (backend.Backend, error) { return newListOnceBackend(r), nil }
 	defer func() {
 		gopts.backendTestHook = oldHook
 	}()
@@ -130,7 +130,7 @@ func TestPruneWithDamagedRepository(t *testing.T) {
 	removePacksExcept(env.gopts, t, oldPacks, false)
 
 	oldHook := env.gopts.backendTestHook
-	env.gopts.backendTestHook = func(r restic.Backend) (restic.Backend, error) { return newListOnceBackend(r), nil }
+	env.gopts.backendTestHook = func(r backend.Backend) (backend.Backend, error) { return newListOnceBackend(r), nil }
 	defer func() {
 		env.gopts.backendTestHook = oldHook
 	}()

@@ -3,6 +3,7 @@ package restic
 import (
 	"context"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/ui/progress"
@@ -17,7 +18,7 @@ var ErrInvalidData = errors.New("invalid data returned")
 type Repository interface {
 
 	// Backend returns the backend used by the repository
-	Backend() Backend
+	Backend() backend.Backend
 	// Connections returns the maximum number of concurrent backend operations
 	Connections() uint
 
@@ -56,10 +57,17 @@ type Repository interface {
 	SaveUnpacked(context.Context, FileType, []byte) (ID, error)
 }
 
-// Lister allows listing files in a backend.
-type Lister interface {
-	List(context.Context, FileType, func(FileInfo) error) error
-}
+type FileType = backend.FileType
+
+// These are the different data types a backend can store.
+const (
+	PackFile     FileType = backend.PackFile
+	KeyFile      FileType = backend.KeyFile
+	LockFile     FileType = backend.LockFile
+	SnapshotFile FileType = backend.SnapshotFile
+	IndexFile    FileType = backend.IndexFile
+	ConfigFile   FileType = backend.ConfigFile
+)
 
 // LoaderUnpacked allows loading a blob not stored in a pack file
 type LoaderUnpacked interface {

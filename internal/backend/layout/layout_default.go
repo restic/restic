@@ -3,7 +3,7 @@ package layout
 import (
 	"encoding/hex"
 
-	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/backend"
 )
 
 // DefaultLayout implements the default layout for local and sftp backends, as
@@ -15,12 +15,12 @@ type DefaultLayout struct {
 	Join func(...string) string
 }
 
-var defaultLayoutPaths = map[restic.FileType]string{
-	restic.PackFile:     "data",
-	restic.SnapshotFile: "snapshots",
-	restic.IndexFile:    "index",
-	restic.LockFile:     "locks",
-	restic.KeyFile:      "keys",
+var defaultLayoutPaths = map[backend.FileType]string{
+	backend.PackFile:     "data",
+	backend.SnapshotFile: "snapshots",
+	backend.IndexFile:    "index",
+	backend.LockFile:     "locks",
+	backend.KeyFile:      "keys",
 }
 
 func (l *DefaultLayout) String() string {
@@ -33,10 +33,10 @@ func (l *DefaultLayout) Name() string {
 }
 
 // Dirname returns the directory path for a given file type and name.
-func (l *DefaultLayout) Dirname(h restic.Handle) string {
+func (l *DefaultLayout) Dirname(h backend.Handle) string {
 	p := defaultLayoutPaths[h.Type]
 
-	if h.Type == restic.PackFile && len(h.Name) > 2 {
+	if h.Type == backend.PackFile && len(h.Name) > 2 {
 		p = l.Join(p, h.Name[:2]) + "/"
 	}
 
@@ -44,9 +44,9 @@ func (l *DefaultLayout) Dirname(h restic.Handle) string {
 }
 
 // Filename returns a path to a file, including its name.
-func (l *DefaultLayout) Filename(h restic.Handle) string {
+func (l *DefaultLayout) Filename(h backend.Handle) string {
 	name := h.Name
-	if h.Type == restic.ConfigFile {
+	if h.Type == backend.ConfigFile {
 		return l.Join(l.Path, "config")
 	}
 
@@ -62,15 +62,15 @@ func (l *DefaultLayout) Paths() (dirs []string) {
 	// also add subdirs
 	for i := 0; i < 256; i++ {
 		subdir := hex.EncodeToString([]byte{byte(i)})
-		dirs = append(dirs, l.Join(l.Path, defaultLayoutPaths[restic.PackFile], subdir))
+		dirs = append(dirs, l.Join(l.Path, defaultLayoutPaths[backend.PackFile], subdir))
 	}
 
 	return dirs
 }
 
 // Basedir returns the base dir name for type t.
-func (l *DefaultLayout) Basedir(t restic.FileType) (dirname string, subdirs bool) {
-	if t == restic.PackFile {
+func (l *DefaultLayout) Basedir(t backend.FileType) (dirname string, subdirs bool) {
+	if t == backend.PackFile {
 		subdirs = true
 	}
 

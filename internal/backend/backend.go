@@ -1,4 +1,4 @@
-package restic
+package backend
 
 import (
 	"context"
@@ -70,7 +70,7 @@ type Backend interface {
 	Delete(ctx context.Context) error
 }
 
-type BackendUnwrapper interface {
+type Unwrapper interface {
 	// Unwrap returns the underlying backend or nil if there is none.
 	Unwrap() Backend
 }
@@ -81,7 +81,7 @@ func AsBackend[B Backend](b Backend) B {
 			return be
 		}
 
-		if be, ok := b.(BackendUnwrapper); ok {
+		if be, ok := b.(Unwrapper); ok {
 			b = be.Unwrap()
 		} else {
 			// not the backend we're looking for
@@ -109,4 +109,9 @@ type FileInfo struct {
 // ApplyEnvironmenter fills in a backend configuration from the environment
 type ApplyEnvironmenter interface {
 	ApplyEnvironment(prefix string)
+}
+
+// Lister allows listing files in a backend.
+type Lister interface {
+	List(context.Context, FileType, func(FileInfo) error) error
 }

@@ -122,11 +122,11 @@ func TestUploadLargeFile(t *testing.T) {
 
 	data := rtest.Random(23, 300*1024*1024)
 	id := restic.Hash(data)
-	h := restic.Handle{Name: id.String(), Type: restic.PackFile}
+	h := backend.Handle{Name: id.String(), Type: backend.PackFile}
 
 	t.Logf("hash of %d bytes: %v", len(data), id)
 
-	err = be.Save(ctx, h, restic.NewByteReader(data, be.Hasher()))
+	err = be.Save(ctx, h, backend.NewByteReader(data, be.Hasher()))
 	if err != nil {
 		t.Fatal(err)
 	}

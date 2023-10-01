@@ -8,8 +8,8 @@ import (
 	"io"
 	"testing"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/mock"
-	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -21,11 +21,11 @@ func randomBytes(t *testing.T, size int) []byte {
 }
 
 func TestLimitBackendSave(t *testing.T) {
-	testHandle := restic.Handle{Type: restic.PackFile, Name: "test"}
+	testHandle := backend.Handle{Type: backend.PackFile, Name: "test"}
 	data := randomBytes(t, 1234)
 
 	be := mock.NewBackend()
-	be.SaveFn = func(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+	be.SaveFn = func(ctx context.Context, h backend.Handle, rd backend.RewindReader) error {
 		buf := new(bytes.Buffer)
 		_, err := io.Copy(buf, rd)
 		if err != nil {
@@ -39,7 +39,7 @@ func TestLimitBackendSave(t *testing.T) {
 	limiter := NewStaticLimiter(Limits{42 * 1024, 42 * 1024})
 	limbe := LimitBackend(be, limiter)
 
-	rd := restic.NewByteReader(data, nil)
+	rd := backend.NewByteReader(data, nil)
 	err := limbe.Save(context.TODO(), testHandle, rd)
 	rtest.OK(t, err)
 }
@@ -64,7 +64,7 @@ func (r *tracedReadWriteToCloser) Close() error {
 }
 
 func TestLimitBackendLoad(t *testing.T) {
-	testHandle := restic.Handle{Type: restic.PackFile, Name: "test"}
+	testHandle := backend.Handle{Type: backend.PackFile, Name: "test"}
 	data := randomBytes(t, 1234)
 
 	for _, test := range []struct {
@@ -72,7 +72,7 @@ func TestLimitBackendLoad(t *testing.T) {
 	}{{false, false}, {false, true}, {true, false}, {true, true}} {
 		be := mock.NewBackend()
 		src := newTracedReadWriteToCloser(bytes.NewReader(data))
-		be.OpenReaderFn = func(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+		be.OpenReaderFn = func(ctx context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
 			if length != 0 || offset != 0 {
 				return nil, fmt.Errorf("Not supported")
 			}

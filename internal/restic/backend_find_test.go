@@ -4,13 +4,15 @@ import (
 	"context"
 	"strings"
 	"testing"
+
+	"github.com/restic/restic/internal/backend"
 )
 
 type mockBackend struct {
-	list func(context.Context, FileType, func(FileInfo) error) error
+	list func(context.Context, FileType, func(backend.FileInfo) error) error
 }
 
-func (m mockBackend) List(ctx context.Context, t FileType, fn func(FileInfo) error) error {
+func (m mockBackend) List(ctx context.Context, t FileType, fn func(backend.FileInfo) error) error {
 	return m.list(ctx, t, fn)
 }
 
@@ -29,9 +31,9 @@ func TestFind(t *testing.T) {
 	list := samples
 
 	m := mockBackend{}
-	m.list = func(ctx context.Context, t FileType, fn func(FileInfo) error) error {
+	m.list = func(ctx context.Context, t FileType, fn func(backend.FileInfo) error) error {
 		for _, id := range list {
-			err := fn(FileInfo{Name: id.String()})
+			err := fn(backend.FileInfo{Name: id.String()})
 			if err != nil {
 				return err
 			}

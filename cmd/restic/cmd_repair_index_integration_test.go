@@ -8,6 +8,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/restic"
@@ -70,12 +71,12 @@ func TestRebuildIndexAlwaysFull(t *testing.T) {
 
 // indexErrorBackend modifies the first index after reading.
 type indexErrorBackend struct {
-	restic.Backend
+	backend.Backend
 	lock     sync.Mutex
 	hasErred bool
 }
 
-func (b *indexErrorBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64, consumer func(rd io.Reader) error) error {
+func (b *indexErrorBackend) Load(ctx context.Context, h backend.Handle, length int, offset int64, consumer func(rd io.Reader) error) error {
 	return b.Backend.Load(ctx, h, length, offset, func(rd io.Reader) error {
 		// protect hasErred
 		b.lock.Lock()
@@ -101,7 +102,7 @@ func (erd errorReadCloser) Read(p []byte) (int, error) {
 }
 
 func TestRebuildIndexDamage(t *testing.T) {
-	testRebuildIndex(t, func(r restic.Backend) (restic.Backend, error) {
+	testRebuildIndex(t, func(r backend.Backend) (backend.Backend, error) {
 		return &indexErrorBackend{
 			Backend: r,
 		}, nil
@@ -109,11 +110,11 @@ func TestRebuildIndexDamage(t *testing.T) {
 }
 
 type appendOnlyBackend struct {
-	restic.Backend
+	backend.Backend
 }
 
 // called via repo.Backend().Remove()
-func (b *appendOnlyBackend) Remove(_ context.Context, h restic.Handle) error {
+func (b *appendOnlyBackend) Remove(_ context.Context, h backend.Handle) error {
 	return errors.Errorf("Failed to remove %v", h)
 }
 
@@ -127,7 +128,7 @@ func TestRebuildIndexFailsOnAppendOnly(t *testing.T) {
 	err := withRestoreGlobalOptions(func() error {
 		globalOptions.stdout = io.Discard
 
-		env.gopts.backendTestHook = func(r restic.Backend) (restic.Backend, error) {
+		env.gopts.backendTestHook = func(r backend.Backend) (backend.Backend, error) {
 			return &appendOnlyBackend{r}, nil
 		}
 		return runRebuildIndex(context.TODO(), RepairIndexOptions{}, env.gopts)
