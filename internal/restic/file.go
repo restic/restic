@@ -41,9 +41,9 @@ func (t FileType) String() string {
 
 // Handle is used to store and access data in a backend.
 type Handle struct {
-	Type              FileType
-	ContainedBlobType BlobType
-	Name              string
+	Type       FileType
+	IsMetadata bool
+	Name       string
 }
 
 func (h Handle) String() string {

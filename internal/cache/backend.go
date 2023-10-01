@@ -48,7 +48,7 @@ func autoCacheTypes(h restic.Handle) bool {
 	case restic.IndexFile, restic.SnapshotFile:
 		return true
 	case restic.PackFile:
-		return h.ContainedBlobType == restic.TreeBlob
+		return h.IsMetadata
 	}
 	return false
 }
