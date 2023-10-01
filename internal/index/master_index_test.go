@@ -357,7 +357,7 @@ func TestIndexSave(t *testing.T) {
 func testIndexSave(t *testing.T, version uint) {
 	repo := createFilledRepo(t, 3, version)
 
-	err := repo.LoadIndex(context.TODO())
+	err := repo.LoadIndex(context.TODO(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -382,7 +382,7 @@ func testIndexSave(t *testing.T, version uint) {
 		t.Error(err)
 	}
 
-	hints, errs := checker.LoadIndex(context.TODO())
+	hints, errs := checker.LoadIndex(context.TODO(), nil)
 	for _, h := range hints {
 		t.Logf("hint: %v\n", h)
 	}

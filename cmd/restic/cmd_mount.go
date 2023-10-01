@@ -130,7 +130,8 @@ func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args 
 		}
 	}
 
-	err = repo.LoadIndex(ctx)
+	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+	err = repo.LoadIndex(ctx, bar)
 	if err != nil {
 		return err
 	}

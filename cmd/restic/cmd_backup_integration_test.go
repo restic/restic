@@ -252,7 +252,7 @@ func TestBackupTreeLoadError(t *testing.T) {
 
 	r, err := OpenRepository(context.TODO(), env.gopts)
 	rtest.OK(t, err)
-	rtest.OK(t, r.LoadIndex(context.TODO()))
+	rtest.OK(t, r.LoadIndex(context.TODO(), nil))
 	treePacks := restic.NewIDSet()
 	r.Index().Each(context.TODO(), func(pb restic.PackedBlob) {
 		if pb.Type == restic.TreeBlob {

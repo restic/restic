@@ -169,7 +169,8 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string) error {
 		return err
 
 	case "blob":
-		err = repo.LoadIndex(ctx)
+		bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+		err = repo.LoadIndex(ctx, bar)
 		if err != nil {
 			return err
 		}
@@ -197,7 +198,8 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string) error {
 			return errors.Fatalf("could not find snapshot: %v\n", err)
 		}
 
-		err = repo.LoadIndex(ctx)
+		bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+		err = repo.LoadIndex(ctx, bar)
 		if err != nil {
 			return err
 		}

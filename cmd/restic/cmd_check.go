@@ -226,7 +226,8 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	}
 
 	Verbosef("load indexes\n")
-	hints, errs := chkr.LoadIndex(ctx)
+	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+	hints, errs := chkr.LoadIndex(ctx, bar)
 
 	errorsFound := false
 	suggestIndexRebuild := false
