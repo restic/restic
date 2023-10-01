@@ -1,10 +1,12 @@
 package azure
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"strings"
 
+	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/restic"
@@ -19,6 +21,9 @@ type Config struct {
 	EndpointSuffix string
 	Container      string
 	Prefix         string
+
+	CustomDomain string
+	UseHTTP      bool `option:"usehttp" help:"use HTTP when using a custom domain"`
 
 	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
 }
@@ -76,4 +81,33 @@ func (cfg *Config) ApplyEnvironment(prefix string) {
 	if cfg.EndpointSuffix == "" {
 		cfg.EndpointSuffix = os.Getenv(prefix + "AZURE_ENDPOINT_SUFFIX")
 	}
+
+	if cfg.CustomDomain == "" {
+		cfg.CustomDomain = os.Getenv(prefix + "AZURE_CUSTOM_DOMAIN")
+	}
+}
+
+func (cfg *Config) getURL() string {
+	var domain string
+
+	if cfg.CustomDomain != "" {
+		debug.Log(" - using custom domain")
+		domain = cfg.CustomDomain
+
+		var protocol string = "https"
+		if cfg.UseHTTP {
+			debug.Log(" - using HTTP")
+			protocol = "http"
+		}
+
+		return fmt.Sprintf("%s://%s/%s", protocol, domain, cfg.Container)
+	}
+
+	var endpointSuffix string
+	if cfg.EndpointSuffix != "" {
+		endpointSuffix = cfg.EndpointSuffix
+	} else {
+		endpointSuffix = "core.windows.net"
+	}
+	return fmt.Sprintf("https://%s.blob.%s/%s", cfg.AccountName, endpointSuffix, cfg.Container)
 }

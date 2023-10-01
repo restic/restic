@@ -62,6 +62,31 @@ func TestBackendAzure(t *testing.T) {
 	newAzureTestSuite().RunTests(t)
 }
 
+func TestBackenAzureCustomDomain(t *testing.T) {
+	defer func() {
+		if t.Skipped() {
+			rtest.SkipDisallowed(t, "restic/backend/azure.TestBackendAzure")
+		}
+	}()
+
+	vars := []string{
+		"RESTIC_TEST_AZURE_ACCOUNT_NAME",
+		"RESTIC_TEST_AZURE_ACCOUNT_KEY",
+		"RESTIC_TEST_AZURE_REPOSITORY",
+		"RESTIC_TEST_AZURE_CUSTOM_DOMAIN",
+	}
+
+	for _, v := range vars {
+		if os.Getenv(v) == "" {
+			t.Skipf("environment variable %v not set", v)
+			return
+		}
+	}
+
+	t.Logf("run tests")
+	newAzureTestSuite().RunTests(t)
+}
+
 func BenchmarkBackendAzure(t *testing.B) {
 	vars := []string{
 		"RESTIC_TEST_AZURE_ACCOUNT_NAME",

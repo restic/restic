@@ -54,19 +54,13 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	var client *azContainer.Client
 	var err error
 
-	var endpointSuffix string
-	if cfg.EndpointSuffix != "" {
-		endpointSuffix = cfg.EndpointSuffix
-	} else {
-		endpointSuffix = "core.windows.net"
-	}
-	url := fmt.Sprintf("https://%s.blob.%s/%s", cfg.AccountName, endpointSuffix, cfg.Container)
 	opts := &azContainer.ClientOptions{
 		ClientOptions: azcore.ClientOptions{
 			Transport: &http.Client{Transport: rt},
 		},
 	}
 
+	url := cfg.getURL()
 	if cfg.AccountKey.String() != "" {
 		// We have an account key value, find the BlobServiceClient
 		// from with a BasicClient
