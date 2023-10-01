@@ -152,7 +152,7 @@ func runPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions) error
 		return err
 	}
 
-	if repo.Backend().Connections() < 2 {
+	if repo.Connections() < 2 {
 		return errors.Fatal("prune requires a backend connection limit of at least two")
 	}
 
