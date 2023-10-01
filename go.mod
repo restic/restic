@@ -12,7 +12,6 @@ require (
 	github.com/go-ole/go-ole v1.3.0
 	github.com/google/go-cmp v0.5.9
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/juju/ratelimit v1.0.2
 	github.com/klauspost/compress v1.16.7
 	github.com/kurin/blazer v0.5.4-0.20230113224640-3887e1ec64b5
 	github.com/minio/minio-go/v7 v7.0.61
@@ -33,6 +32,7 @@ require (
 	golang.org/x/sys v0.12.0
 	golang.org/x/term v0.12.0
 	golang.org/x/text v0.13.0
+	golang.org/x/time v0.3.0
 	google.golang.org/api v0.138.0
 )
 
