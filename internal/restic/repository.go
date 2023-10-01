@@ -100,3 +100,8 @@ type MasterIndex interface {
 
 	Save(ctx context.Context, repo SaverUnpacked, packBlacklist IDSet, extraObsolete IDs, p *progress.Counter) (obsolete IDSet, err error)
 }
+
+// Lister allows listing files in a backend.
+type Lister interface {
+	List(ctx context.Context, t FileType, fn func(ID, int64) error) error
+}

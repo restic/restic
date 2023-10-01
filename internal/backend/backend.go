@@ -27,7 +27,7 @@ type Backend interface {
 	// HasAtomicReplace returns whether Save() can atomically replace files
 	HasAtomicReplace() bool
 
-	// Remove removes a File described  by h.
+	// Remove removes a File described by h.
 	Remove(ctx context.Context, h Handle) error
 
 	// Close the backend
@@ -109,9 +109,4 @@ type FileInfo struct {
 // ApplyEnvironmenter fills in a backend configuration from the environment
 type ApplyEnvironmenter interface {
 	ApplyEnvironment(prefix string)
-}
-
-// Lister allows listing files in a backend.
-type Lister interface {
-	List(context.Context, FileType, func(FileInfo) error) error
 }

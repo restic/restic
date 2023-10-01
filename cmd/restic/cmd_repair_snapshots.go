@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/walker"
@@ -84,7 +83,7 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 		repo.SetDryRun()
 	}
 
-	snapshotLister, err := backend.MemorizeList(ctx, repo.Backend(), restic.SnapshotFile)
+	snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
 	if err != nil {
 		return err
 	}

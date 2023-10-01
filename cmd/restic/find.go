@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/restic"
 	"github.com/spf13/pflag"
 )
@@ -29,11 +28,11 @@ func initSingleSnapshotFilter(flags *pflag.FlagSet, filt *restic.SnapshotFilter)
 }
 
 // FindFilteredSnapshots yields Snapshots, either given explicitly by `snapshotIDs` or filtered from the list of all snapshots.
-func FindFilteredSnapshots(ctx context.Context, be backend.Lister, loader restic.LoaderUnpacked, f *restic.SnapshotFilter, snapshotIDs []string) <-chan *restic.Snapshot {
+func FindFilteredSnapshots(ctx context.Context, be restic.Lister, loader restic.LoaderUnpacked, f *restic.SnapshotFilter, snapshotIDs []string) <-chan *restic.Snapshot {
 	out := make(chan *restic.Snapshot)
 	go func() {
 		defer close(out)
-		be, err := backend.MemorizeList(ctx, be, restic.SnapshotFile)
+		be, err := restic.MemorizeList(ctx, be, restic.SnapshotFile)
 		if err != nil {
 			Warnf("could not load snapshots: %v\n", err)
 			return

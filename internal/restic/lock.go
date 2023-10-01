@@ -403,7 +403,7 @@ func RemoveStaleLocks(ctx context.Context, repo Repository) (uint, error) {
 // RemoveAllLocks removes all locks forcefully.
 func RemoveAllLocks(ctx context.Context, repo Repository) (uint, error) {
 	var processed uint32
-	err := ParallelList(ctx, repo.Backend(), LockFile, repo.Connections(), func(ctx context.Context, id ID, size int64) error {
+	err := ParallelList(ctx, repo, LockFile, repo.Connections(), func(ctx context.Context, id ID, size int64) error {
 		err := repo.Backend().Remove(ctx, backend.Handle{Type: LockFile, Name: id.String()})
 		if err == nil {
 			atomic.AddUint32(&processed, 1)
@@ -421,7 +421,7 @@ func ForAllLocks(ctx context.Context, repo Repository, excludeID *ID, fn func(ID
 	var m sync.Mutex
 
 	// For locks decoding is nearly for free, thus just assume were only limited by IO
-	return ParallelList(ctx, repo.Backend(), LockFile, repo.Connections(), func(ctx context.Context, id ID, size int64) error {
+	return ParallelList(ctx, repo, LockFile, repo.Connections(), func(ctx context.Context, id ID, size int64) error {
 		if excludeID != nil && id.Equal(*excludeID) {
 			return nil
 		}

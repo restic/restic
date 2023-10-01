@@ -39,7 +39,7 @@ type Checker struct {
 	trackUnused bool
 
 	masterIndex *index.MasterIndex
-	snapshots   backend.Lister
+	snapshots   restic.Lister
 
 	repo restic.Repository
 }
@@ -102,7 +102,7 @@ func (e *ErrPackData) Error() string {
 
 func (c *Checker) LoadSnapshots(ctx context.Context) error {
 	var err error
-	c.snapshots, err = backend.MemorizeList(ctx, c.repo.Backend(), restic.SnapshotFile)
+	c.snapshots, err = restic.MemorizeList(ctx, c.repo, restic.SnapshotFile)
 	return err
 }
 
@@ -126,7 +126,7 @@ func computePackTypes(ctx context.Context, idx restic.MasterIndex) map[restic.ID
 func (c *Checker) LoadIndex(ctx context.Context, p *progress.Counter) (hints []error, errs []error) {
 	debug.Log("Start")
 
-	indexList, err := backend.MemorizeList(ctx, c.repo.Backend(), restic.IndexFile)
+	indexList, err := restic.MemorizeList(ctx, c.repo, restic.IndexFile)
 	if err != nil {
 		// abort if an error occurs while listing the indexes
 		return hints, append(errs, err)
@@ -134,13 +134,7 @@ func (c *Checker) LoadIndex(ctx context.Context, p *progress.Counter) (hints []e
 
 	if p != nil {
 		var numIndexFiles uint64
-		err := indexList.List(ctx, restic.IndexFile, func(fi backend.FileInfo) error {
-			_, err := restic.ParseID(fi.Name)
-			if err != nil {
-				debug.Log("unable to parse %v as an ID", fi.Name)
-				return nil
-			}
-
+		err := indexList.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
 			numIndexFiles++
 			return nil
 		})
@@ -367,7 +361,7 @@ func (c *Checker) checkTreeWorker(ctx context.Context, trees <-chan restic.TreeI
 	}
 }
 
-func loadSnapshotTreeIDs(ctx context.Context, lister backend.Lister, repo restic.Repository) (ids restic.IDs, errs []error) {
+func loadSnapshotTreeIDs(ctx context.Context, lister restic.Lister, repo restic.Repository) (ids restic.IDs, errs []error) {
 	err := restic.ForAllSnapshots(ctx, lister, repo, nil, func(id restic.ID, sn *restic.Snapshot, err error) error {
 		if err != nil {
 			errs = append(errs, err)

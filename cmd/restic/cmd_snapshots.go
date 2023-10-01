@@ -73,7 +73,7 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions
 	}
 
 	var snapshots restic.Snapshots
-	for sn := range FindFilteredSnapshots(ctx, repo.Backend(), repo, &opts.SnapshotFilter, args) {
+	for sn := range FindFilteredSnapshots(ctx, repo, repo, &opts.SnapshotFilter, args) {
 		snapshots = append(snapshots, sn)
 	}
 	snapshotGroups, grouped, err := restic.GroupSnapshots(snapshots, opts.GroupBy)

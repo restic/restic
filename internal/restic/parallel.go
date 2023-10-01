@@ -3,13 +3,11 @@ package restic
 import (
 	"context"
 
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 	"golang.org/x/sync/errgroup"
 )
 
-func ParallelList(ctx context.Context, r backend.Lister, t FileType, parallelism uint, fn func(context.Context, ID, int64) error) error {
-
+func ParallelList(ctx context.Context, r Lister, t FileType, parallelism uint, fn func(context.Context, ID, int64) error) error {
 	type FileIDInfo struct {
 		ID
 		Size int64
@@ -23,17 +21,11 @@ func ParallelList(ctx context.Context, r backend.Lister, t FileType, parallelism
 	// send list of index files through ch, which is closed afterwards
 	wg.Go(func() error {
 		defer close(ch)
-		return r.List(ctx, t, func(fi backend.FileInfo) error {
-			id, err := ParseID(fi.Name)
-			if err != nil {
-				debug.Log("unable to parse %v as an ID", fi.Name)
-				return nil
-			}
-
+		return r.List(ctx, t, func(id ID, size int64) error {
 			select {
 			case <-ctx.Done():
 				return nil
-			case ch <- FileIDInfo{id, fi.Size}:
+			case ch <- FileIDInfo{id, size}:
 			}
 			return nil
 		})

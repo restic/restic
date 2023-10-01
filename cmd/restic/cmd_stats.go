@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/restic/chunker"
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -94,7 +93,7 @@ func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args 
 		}
 	}
 
-	snapshotLister, err := backend.MemorizeList(ctx, repo.Backend(), restic.SnapshotFile)
+	snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
 	if err != nil {
 		return err
 	}

@@ -116,7 +116,7 @@ func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int,
 	checked := 0
 
 	if len(keyHint) > 0 {
-		id, err := restic.Find(ctx, s.Backend(), restic.KeyFile, keyHint)
+		id, err := restic.Find(ctx, s, restic.KeyFile, keyHint)
 
 		if err == nil {
 			key, err := OpenKey(ctx, s, id, password)

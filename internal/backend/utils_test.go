@@ -3,7 +3,6 @@ package backend_test
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 	"math/rand"
 	"testing"
@@ -147,48 +146,4 @@ func TestLoadAllAppend(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestMemoizeList(t *testing.T) {
-	// setup backend to serve as data source for memoized list
-	be := mock.NewBackend()
-	files := []backend.FileInfo{
-		{Size: 42, Name: restic.NewRandomID().String()},
-		{Size: 45, Name: restic.NewRandomID().String()},
-	}
-	be.ListFn = func(ctx context.Context, t backend.FileType, fn func(backend.FileInfo) error) error {
-		for _, fi := range files {
-			if err := fn(fi); err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-
-	mem, err := backend.MemorizeList(context.TODO(), be, backend.SnapshotFile)
-	rtest.OK(t, err)
-
-	err = mem.List(context.TODO(), backend.IndexFile, func(fi backend.FileInfo) error {
-		t.Fatal("file type mismatch")
-		return nil // the memoized lister must return an error by itself
-	})
-	rtest.Assert(t, err != nil, "missing error on file typ mismatch")
-
-	var memFiles []backend.FileInfo
-	err = mem.List(context.TODO(), backend.SnapshotFile, func(fi backend.FileInfo) error {
-		memFiles = append(memFiles, fi)
-		return nil
-	})
-	rtest.OK(t, err)
-	rtest.Equals(t, files, memFiles)
-}
-
-func TestMemoizeListError(t *testing.T) {
-	// setup backend to serve as data source for memoized list
-	be := mock.NewBackend()
-	be.ListFn = func(ctx context.Context, t backend.FileType, fn func(backend.FileInfo) error) error {
-		return fmt.Errorf("list error")
-	}
-	_, err := backend.MemorizeList(context.TODO(), be, backend.SnapshotFile)
-	rtest.Assert(t, err != nil, "missing error on list error")
 }

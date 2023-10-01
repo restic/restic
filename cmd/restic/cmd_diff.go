@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -58,7 +57,7 @@ func init() {
 	f.BoolVar(&diffOptions.ShowMetadata, "metadata", false, "print changes in metadata")
 }
 
-func loadSnapshot(ctx context.Context, be backend.Lister, repo restic.Repository, desc string) (*restic.Snapshot, string, error) {
+func loadSnapshot(ctx context.Context, be restic.Lister, repo restic.Repository, desc string) (*restic.Snapshot, string, error) {
 	sn, subfolder, err := restic.FindSnapshot(ctx, be, repo, desc)
 	if err != nil {
 		return nil, "", errors.Fatal(err.Error())
@@ -346,7 +345,7 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []
 	}
 
 	// cache snapshots listing
-	be, err := backend.MemorizeList(ctx, repo.Backend(), restic.SnapshotFile)
+	be, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
 	if err != nil {
 		return err
 	}

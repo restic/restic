@@ -207,7 +207,7 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 		repo.SetDryRun()
 	}
 
-	snapshotLister, err := backend.MemorizeList(ctx, repo.Backend(), restic.SnapshotFile)
+	snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
 	if err != nil {
 		return err
 	}

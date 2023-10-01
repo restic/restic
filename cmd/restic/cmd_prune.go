@@ -810,7 +810,7 @@ func rebuildIndexFiles(ctx context.Context, gopts GlobalOptions, repo restic.Rep
 func getUsedBlobs(ctx context.Context, repo restic.Repository, ignoreSnapshots restic.IDSet, quiet bool) (usedBlobs restic.CountedBlobSet, err error) {
 	var snapshotTrees restic.IDs
 	Verbosef("loading all snapshots...\n")
-	err = restic.ForAllSnapshots(ctx, repo.Backend(), repo, ignoreSnapshots,
+	err = restic.ForAllSnapshots(ctx, repo, repo, ignoreSnapshots,
 		func(id restic.ID, sn *restic.Snapshot, err error) error {
 			if err != nil {
 				debug.Log("failed to load snapshot %v (error %v)", id, err)

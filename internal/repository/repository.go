@@ -584,20 +584,14 @@ func (r *Repository) SetIndex(i restic.MasterIndex) error {
 func (r *Repository) LoadIndex(ctx context.Context, p *progress.Counter) error {
 	debug.Log("Loading index")
 
-	indexList, err := backend.MemorizeList(ctx, r.Backend(), restic.IndexFile)
+	indexList, err := restic.MemorizeList(ctx, r, restic.IndexFile)
 	if err != nil {
 		return err
 	}
 
 	if p != nil {
 		var numIndexFiles uint64
-		err := indexList.List(ctx, restic.IndexFile, func(fi backend.FileInfo) error {
-			_, err := restic.ParseID(fi.Name)
-			if err != nil {
-				debug.Log("unable to parse %v as an ID", fi.Name)
-				return nil
-			}
-
+		err := indexList.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
 			numIndexFiles++
 			return nil
 		})
