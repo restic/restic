@@ -490,10 +490,10 @@ particular note are::
   - the "hidden" flag on Windows
 
 
-Reading data from a command standard output
-***********************
+Reading data from a command
+***************************
 
-Sometimes, it can be nice to directly save the output of a program, e.g.,
+Sometimes, it can be useful to directly save the output of a program, for example,
 ``mysqldump`` so that the SQL can later be restored. Restic supports this mode
 of operation; just supply the option ``--stdin-from-command`` when using the
 ``backup`` action, and write the command in place of the files/directories:
@@ -502,52 +502,53 @@ of operation; just supply the option ``--stdin-from-command`` when using the
 
     $ restic -r /srv/restic-repo backup --stdin-from-command mysqldump [...]
 
-This command creates a new snapshot of the standard output of ``mysqldump``.
-You can then use, e.g., the fuse mounting option (see below) to mount the
-repository and read the file.
-
+This command creates a new snapshot based on the standard output of ``mysqldump``.
 By default, the command's standard output is saved in a file named ``stdin``.
-A different name can be specified with ``--stdin-filename``, e.g.:
+A different name can be specified with ``--stdin-filename``:
 
 .. code-block:: console
 
     $ restic -r /srv/restic-repo backup --stdin-filename production.sql --stdin-from-command mysqldump [...]
 
-Restic uses the command exit code to determine whether the backup succeeded. A
-non-zero exit code from the command makes Restic cancel the backup.
+Restic uses the command exit code to determine whether the command succeeded. A
+non-zero exit code from the command causes restic to cancel the backup. This causes
+restic to fail with exit code 1. No snapshot will be created in this case.
 
 
 Reading data from stdin
 ***********************
 
-If the ``--stdin-from-command`` option is insufficient, Restic supports reading
-arbitrary data from the standard input. Use the option ``--stdin`` to the
-``backup`` command like this:
+.. warning::
+
+    Restic cannot detect if data read from stdin is complete or not. As explained
+    below, this can cause incomplete backup unless additional checks (outside of
+    restic) are configured. If possible, use ``--stdin-from-command`` instead.
+
+Alternatively, restic supports reading arbitrary data directly from the standard
+input. Use the option ``--stdin`` of the ``backup`` command as  follows:
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo backup --stdin < bigfile.dat
+    # Will not notice failures, see the warning below
+    $ gzip bigfile.dat | restic -r /srv/restic-repo backup --stdin
 
-This creates a new snapshot of the content of ``bigfile.dat`` (note that, in
-this example, you can trivially use the standard ``backup`` command by
-specifying the file path).
-
+This creates a new snapshot of the content of ``bigfile.dat``.
 As for ``--stdin-from-command``, the default file name is ``stdin``; a
 different name can be specified with ``--stdin-filename``.
 
-**Important**: while it is possible to pipe a command output in Restic using
-``--stdin``, doing so is highly discouraged as it will mask errors from the
+**Important**: while it is possible to pipe a command output to restic using
+``--stdin``, doing so is discouraged as it will mask errors from the
 command, leading to corrupted backups. For example, in the following code
-block, if ``mysqldump`` has an error connecting to the MySQL database, Restic
-backup will succeed in creating an empty backup:
+block, if ``mysqldump`` fails to connect to the MySQL database, the restic
+backup will nevertheless succeed in creating an _empty_ backup:
 
 .. code-block:: console
 
-    $ # Don't do this, read the warning above
+    # Will not notice failures, read the warning above
     $ mysqldump [...] | restic -r /srv/restic-repo backup --stdin
 
-A simple solution is to use ``--stdin-from-command`` (see above). Shall you
-still need to use the ``--stdin`` flag, you must use the option ``pipefail``
+A simple solution is to use ``--stdin-from-command`` (see above). If you
+still need to use the ``--stdin`` flag, you must use the shell option ``set -o pipefail``
 (so that a non-zero exit code from one of the programs in the pipe makes the
 whole chain return a non-zero exit code) and you must check the exit code of
 the pipe and act accordingly (e.g., remove the last backup). Refer to the
