@@ -98,8 +98,8 @@ func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args 
 	if err != nil {
 		return err
 	}
-
-	if err = repo.LoadIndex(ctx); err != nil {
+	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+	if err = repo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}
 

@@ -88,7 +88,7 @@ func rebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOpti
 	} else {
 		Verbosef("loading indexes...\n")
 		mi := index.NewMasterIndex()
-		err := index.ForAllIndexes(ctx, repo, func(id restic.ID, idx *index.Index, oldFormat bool, err error) error {
+		err := index.ForAllIndexes(ctx, repo.Backend(), repo, func(id restic.ID, idx *index.Index, oldFormat bool, err error) error {
 			if err != nil {
 				Warnf("removing invalid index %v: %v\n", id, err)
 				obsoleteIndexes = append(obsoleteIndexes, id)

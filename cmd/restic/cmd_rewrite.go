@@ -212,7 +212,8 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 		return err
 	}
 
-	if err = repo.LoadIndex(ctx); err != nil {
+	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+	if err = repo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}
 

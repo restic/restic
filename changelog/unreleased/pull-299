@@ -1,0 +1,6 @@
+Enhancement: Show progress bar while loading the index
+
+Restic did not provide any feedback while loading index files. Now there is a progress bar for the index loading process. 
+
+https://github.com/restic/restic/issues/229
+https://github.com/restic/restic/pull/4419

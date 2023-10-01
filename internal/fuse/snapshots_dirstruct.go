@@ -328,7 +328,7 @@ func (d *SnapshotsDirStructure) updateSnapshots(ctx context.Context) error {
 		return nil
 	}
 
-	err = d.root.repo.LoadIndex(ctx)
+	err = d.root.repo.LoadIndex(ctx, nil)
 	if err != nil {
 		return err
 	}

@@ -24,7 +24,7 @@ type Repository interface {
 	Key() *crypto.Key
 
 	Index() MasterIndex
-	LoadIndex(context.Context) error
+	LoadIndex(context.Context, *progress.Counter) error
 	SetIndex(MasterIndex) error
 	LookupBlobSize(ID, BlobType) (uint, bool)
 
