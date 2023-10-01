@@ -728,5 +728,5 @@ func prepareStdinCommand(ctx context.Context, args []string) (io.ReadCloser, err
 	if err := command.Start(); err != nil {
 		return nil, errors.Wrap(err, "command.Start")
 	}
-	return &fs.ReadCloserCommand{Cmd: command, Stdout: stdout}, nil
+	return fs.NewCommandReader(command, stdout), nil
 }
