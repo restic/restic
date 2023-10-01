@@ -3,8 +3,6 @@ Enhancement: Add support for custom domains while uploading to Microsoft Blob St
 Restic did not support custom domains for Microsoft Storage Accounts when using
 the `azure` storage backend. It now allows users to specify the `AZURE_CUSTOM_DOMAIN`
 environment variable to specify the custom domain of their Microsoft Storage Account.
-If the custom domain doesn't have a certificate, the user can explicitly specify
-`-o azure.usehttp=true` to use HTTP connections instead of HTTPs.
 
 https://github.com/restic/restic/issues/4438
 https://github.com/restic/restic/pull/4501

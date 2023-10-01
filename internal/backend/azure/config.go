@@ -23,7 +23,6 @@ type Config struct {
 	Prefix         string
 
 	CustomDomain string
-	UseHTTP      bool `option:"usehttp" help:"using HTTP only allowed when using a custom domain (default: false)"`
 
 	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
 }
@@ -94,13 +93,7 @@ func (cfg *Config) getURL() string {
 		debug.Log(" - using custom domain")
 		domain = cfg.CustomDomain
 
-		var protocol string = "https"
-		if cfg.UseHTTP {
-			debug.Log(" - using HTTP")
-			protocol = "http"
-		}
-
-		return fmt.Sprintf("%s://%s/%s", protocol, domain, cfg.Container)
+		return fmt.Sprintf("https://%s/%s", domain, cfg.Container)
 	}
 
 	var endpointSuffix string

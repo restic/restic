@@ -17,7 +17,7 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func newAzureTestSuite(useHTTP bool) *test.Suite[azure.Config] {
+func newAzureTestSuite() *test.Suite[azure.Config] {
 	return &test.Suite[azure.Config]{
 		// do not use excessive data
 		MinimalData: true,
@@ -27,10 +27,6 @@ func newAzureTestSuite(useHTTP bool) *test.Suite[azure.Config] {
 			cfg, err := azure.ParseConfig(os.Getenv("RESTIC_TEST_AZURE_REPOSITORY"))
 			if err != nil {
 				return nil, err
-			}
-
-			if useHTTP {
-				cfg.UseHTTP = true
 			}
 
 			cfg.ApplyEnvironment("RESTIC_TEST_")
@@ -63,7 +59,7 @@ func TestBackendAzure(t *testing.T) {
 	}
 
 	t.Logf("run tests")
-	newAzureTestSuite(false).RunTests(t)
+	newAzureTestSuite().RunTests(t)
 }
 
 func TestBackenAzureCustomDomain(t *testing.T) {
@@ -88,7 +84,7 @@ func TestBackenAzureCustomDomain(t *testing.T) {
 	}
 
 	t.Logf("run tests")
-	newAzureTestSuite(true).RunTests(t)
+	newAzureTestSuite().RunTests(t)
 }
 
 func BenchmarkBackendAzure(t *testing.B) {
@@ -106,7 +102,7 @@ func BenchmarkBackendAzure(t *testing.B) {
 	}
 
 	t.Logf("run tests")
-	newAzureTestSuite(false).RunBenchmarks(t)
+	newAzureTestSuite().RunBenchmarks(t)
 }
 
 func TestUploadLargeFile(t *testing.T) {
