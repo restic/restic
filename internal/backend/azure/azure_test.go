@@ -17,7 +17,7 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func newAzureTestSuite() *test.Suite[azure.Config] {
+func newAzureTestSuite(useHTTP bool) *test.Suite[azure.Config] {
 	return &test.Suite[azure.Config]{
 		// do not use excessive data
 		MinimalData: true,
@@ -27,6 +27,10 @@ func newAzureTestSuite() *test.Suite[azure.Config] {
 			cfg, err := azure.ParseConfig(os.Getenv("RESTIC_TEST_AZURE_REPOSITORY"))
 			if err != nil {
 				return nil, err
+			}
+
+			if useHTTP {
+				cfg.UseHTTP = true
 			}
 
 			cfg.ApplyEnvironment("RESTIC_TEST_")
@@ -59,7 +63,7 @@ func TestBackendAzure(t *testing.T) {
 	}
 
 	t.Logf("run tests")
-	newAzureTestSuite().RunTests(t)
+	newAzureTestSuite(false).RunTests(t)
 }
 
 func TestBackenAzureCustomDomain(t *testing.T) {
@@ -70,9 +74,9 @@ func TestBackenAzureCustomDomain(t *testing.T) {
 	}()
 
 	vars := []string{
-		"RESTIC_TEST_AZURE_ACCOUNT_NAME",
-		"RESTIC_TEST_AZURE_ACCOUNT_KEY",
-		"RESTIC_TEST_AZURE_REPOSITORY",
+		"RESTIC_TEST_CUSTOM_DOMAIN_AZURE_ACCOUNT_NAME",
+		"RESTIC_TEST_CUSTOM_DOMAIN_AZURE_ACCOUNT_KEY",
+		"RESTIC_TEST_CUSTOM_AZURE_REPOSITORY",
 		"RESTIC_TEST_AZURE_CUSTOM_DOMAIN",
 	}
 
@@ -84,7 +88,7 @@ func TestBackenAzureCustomDomain(t *testing.T) {
 	}
 
 	t.Logf("run tests")
-	newAzureTestSuite().RunTests(t)
+	newAzureTestSuite(true).RunTests(t)
 }
 
 func BenchmarkBackendAzure(t *testing.B) {
@@ -102,7 +106,7 @@ func BenchmarkBackendAzure(t *testing.B) {
 	}
 
 	t.Logf("run tests")
-	newAzureTestSuite().RunBenchmarks(t)
+	newAzureTestSuite(false).RunBenchmarks(t)
 }
 
 func TestUploadLargeFile(t *testing.T) {

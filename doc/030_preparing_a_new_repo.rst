@@ -548,6 +548,15 @@ You can specify other suffixes as follows:
 
     $ export AZURE_ENDPOINT_SUFFIX=<ENDPOINT_SUFFIX>
 
+If you have configured a custom domain for your Microsoft Blob Storage you can specify as follows:
+.. code-block:: console
+
+    #for custom domain of microsoft blob storage
+    $ export AZURE_CUSTOM_DOMAIN=<CUSTOM_DOMAIN>
+
+If you don't have a certificate configured for your custom domain and want to backup to Microsoft Blob storage
+over HTTP, you can do so by explicitly specifying ``-o azure.usehttp=true``.
+
 Afterwards you can initialize a repository in a container called ``foo`` in the
 root path like this:
 

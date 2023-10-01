@@ -23,7 +23,7 @@ type Config struct {
 	Prefix         string
 
 	CustomDomain string
-	UseHTTP      bool `option:"usehttp" help:"use HTTP when using a custom domain"`
+	UseHTTP      bool `option:"usehttp" help:"using HTTP only allowed when using a custom domain (default: false)"`
 
 	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
 }
