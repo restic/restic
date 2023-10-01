@@ -633,8 +633,6 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		wg.Go(func() error { return sc.Scan(cancelCtx, targets) })
 	}
 
-	snapshotCtx, cancelSnapshot := context.WithCancel(ctx)
-
 	arch := archiver.New(repo, targetFS, archiver.Options{ReadConcurrency: backupOptions.ReadConcurrency})
 	arch.SelectByName = selectByNameFilter
 	arch.Select = selectFilter
@@ -642,12 +640,13 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	success := true
 	arch.Error = func(item string, err error) error {
 		success = false
+		reterr := progressReporter.Error(item, err)
 		// If we receive a fatal error during the execution of the snapshot,
 		// we abort the snapshot.
-		if errors.IsFatal(err) {
-			cancelSnapshot()
+		if reterr == nil && errors.IsFatal(err) {
+			reterr = err
 		}
-		return progressReporter.Error(item, err)
+		return reterr
 	}
 	arch.CompleteItem = progressReporter.CompleteItem
 	arch.StartFile = progressReporter.StartFile
@@ -674,8 +673,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	if !gopts.JSON {
 		progressPrinter.V("start backup on %v", targets)
 	}
-	_, id, err := arch.Snapshot(snapshotCtx, targets, snapshotOpts)
-	cancelSnapshot()
+	_, id, err := arch.Snapshot(ctx, targets, snapshotOpts)
 
 	// cleanly shutdown all running goroutines
 	cancel()
