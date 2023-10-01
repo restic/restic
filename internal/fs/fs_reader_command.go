@@ -1,22 +1,24 @@
 package fs
 
 import (
+	"bufio"
+	"context"
+	"fmt"
 	"io"
 	"os/exec"
 
 	"github.com/restic/restic/internal/errors"
 )
 
-// CommandReader wraps an exec.Cmd and its standard output to provide an
-// io.ReadCloser that waits for the command to terminate on Close(), reporting
-// any error in the command.Wait() function back to the Close() caller.
+// CommandReader wrap a command such that its standard output can be read using
+// a io.ReadCloser. Close() waits for the command to terminate, reporting
+// any error back to the caller.
 type CommandReader struct {
 	cmd    *exec.Cmd
 	stdout io.ReadCloser
 
-	// We should call exec.Wait() once. waitHandled is taking care of storing
-	// whether we already called that function in Read() to avoid calling it
-	// again in Close().
+	// cmd.Wait() must only be called once. Prevent duplicate executions in
+	// Read() and Close().
 	waitHandled bool
 
 	// alreadyClosedReadErr is the error that we should return if we try to
@@ -26,11 +28,34 @@ type CommandReader struct {
 	alreadyClosedReadErr error
 }
 
-func NewCommandReader(cmd *exec.Cmd, stdout io.ReadCloser) *CommandReader {
-	return &CommandReader{
-		cmd:    cmd,
-		stdout: stdout,
+func NewCommandReader(ctx context.Context, args []string, logOutput io.Writer) (*CommandReader, error) {
+	// Prepare command and stdout
+	command := exec.CommandContext(ctx, args[0], args[1:]...)
+	stdout, err := command.StdoutPipe()
+	if err != nil {
+		return nil, fmt.Errorf("failed to setup stdout pipe: %w", err)
 	}
+
+	// Use a Go routine to handle the stderr to avoid deadlocks
+	stderr, err := command.StderrPipe()
+	if err != nil {
+		return nil, fmt.Errorf("failed to setup stderr pipe: %w", err)
+	}
+	go func() {
+		sc := bufio.NewScanner(stderr)
+		for sc.Scan() {
+			_, _ = fmt.Fprintf(logOutput, "subprocess %v: %v\n", command.Args[0], sc.Text())
+		}
+	}()
+
+	if err := command.Start(); err != nil {
+		return nil, fmt.Errorf("failed to start command: %w", err)
+	}
+
+	return &CommandReader{
+		cmd:    command,
+		stdout: stdout,
+	}, nil
 }
 
 // Read populate the array with data from the process stdout.
@@ -57,13 +82,7 @@ func (fp *CommandReader) Read(p []byte) (int, error) {
 func (fp *CommandReader) wait() error {
 	err := fp.cmd.Wait()
 	if err != nil {
-		// If we have information about the exit code, let's use it in the
-		// error message. Otherwise, send the error message along.
-		// In any case, use a fatal error to abort the snapshot.
-		var err2 *exec.ExitError
-		if errors.As(err, &err2) {
-			return errors.Fatalf("command terminated with exit code %d", err2.ExitCode())
-		}
+		// Use a fatal error to abort the snapshot.
 		return errors.Fatal(err.Error())
 	}
 	return nil

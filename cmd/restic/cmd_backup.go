@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -601,9 +600,9 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 			progressPrinter.V("read data from stdin")
 		}
 		filename := path.Join("/", opts.StdinFilename)
-		var closer io.ReadCloser = os.Stdin
+		var source io.ReadCloser = os.Stdin
 		if opts.StdinCommand {
-			closer, err = prepareStdinCommand(ctx, args)
+			source, err = fs.NewCommandReader(ctx, args, globalOptions.stderr)
 			if err != nil {
 				return err
 			}
@@ -612,7 +611,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 			ModTime:    timeStamp,
 			Name:       filename,
 			Mode:       0644,
-			ReadCloser: closer,
+			ReadCloser: source,
 		}
 		targets = []string{filename}
 	}
@@ -700,33 +699,4 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 
 	// Return error if any
 	return werr
-}
-
-func prepareStdinCommand(ctx context.Context, args []string) (io.ReadCloser, error) {
-	// Prepare command and stdout. These variables will be assigned to the
-	// io.ReadCloser that is used by the archiver to read data, so that the
-	// Close() function waits for the program to finish. See
-	// fs.ReadCloserCommand.
-	command := exec.CommandContext(ctx, args[0], args[1:]...)
-	stdout, err := command.StdoutPipe()
-	if err != nil {
-		return nil, errors.Wrap(err, "command.StdoutPipe")
-	}
-
-	// Use a Go routine to handle the stderr to avoid deadlocks
-	stderr, err := command.StderrPipe()
-	if err != nil {
-		return nil, errors.Wrap(err, "command.StderrPipe")
-	}
-	go func() {
-		sc := bufio.NewScanner(stderr)
-		for sc.Scan() {
-			_, _ = fmt.Fprintf(os.Stderr, "subprocess %v: %v\n", command.Args[0], sc.Text())
-		}
-	}()
-
-	if err := command.Start(); err != nil {
-		return nil, errors.Wrap(err, "command.Start")
-	}
-	return fs.NewCommandReader(command, stdout), nil
 }
