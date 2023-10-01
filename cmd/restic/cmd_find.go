@@ -589,7 +589,7 @@ func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []
 	if err != nil {
 		return err
 	}
-	bar := newProgressMax(!gopts.Quiet, 0, "index files loaded")
+	bar := newProgressMax(!gopts.Quiet && !gopts.JSON, 0, "index files loaded")
 	if err = repo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}

@@ -212,7 +212,7 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 		return err
 	}
 
-	bar := newProgressMax(!gopts.Quiet, 0, "index files loaded")
+	bar := newProgressMax(!gopts.Quiet && !gopts.JSON, 0, "index files loaded")
 	if err = repo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}

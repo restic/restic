@@ -130,7 +130,7 @@ func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args 
 		}
 	}
 
-	bar := newProgressMax(!gopts.Quiet, 0, "index files loaded")
+	bar := newProgressMax(!gopts.Quiet && !gopts.JSON, 0, "index files loaded")
 	err = repo.LoadIndex(ctx, bar)
 	if err != nil {
 		return err
