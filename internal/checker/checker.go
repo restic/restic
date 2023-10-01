@@ -113,12 +113,41 @@ func computePackTypes(ctx context.Context, idx restic.MasterIndex) map[restic.ID
 }
 
 // LoadIndex loads all index files.
-func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
+func (c *Checker) LoadIndex(ctx context.Context, p *progress.Counter) (hints []error, errs []error) {
 	debug.Log("Start")
 
+	indexList, err := backend.MemorizeList(ctx, c.repo.Backend(), restic.IndexFile)
+	if err != nil {
+		// abort if an error occurs while listing the indexes
+		return hints, append(errs, err)
+	}
+
+	if p != nil {
+		var numIndexFiles uint64
+		err := indexList.List(ctx, restic.IndexFile, func(fi restic.FileInfo) error {
+			_, err := restic.ParseID(fi.Name)
+			if err != nil {
+				debug.Log("unable to parse %v as an ID", fi.Name)
+				return nil
+			}
+
+			numIndexFiles++
+			return nil
+		})
+		if err != nil {
+			return hints, append(errs, err)
+		}
+		p.SetMax(numIndexFiles)
+		defer p.Done()
+	}
+
 	packToIndex := make(map[restic.ID]restic.IDSet)
-	err := index.ForAllIndexes(ctx, c.repo.Backend(), c.repo, func(id restic.ID, index *index.Index, oldFormat bool, err error) error {
+	err = index.ForAllIndexes(ctx, indexList, c.repo, func(id restic.ID, index *index.Index, oldFormat bool, err error) error {
 		debug.Log("process index %v, err %v", id, err)
+
+		if p != nil {
+			p.Add(1)
+		}
 
 		if oldFormat {
 			debug.Log("index %v has old format", id)
