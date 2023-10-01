@@ -17,6 +17,7 @@ import (
 	"github.com/restic/restic/internal/backend/layout"
 	"github.com/restic/restic/internal/backend/limiter"
 	"github.com/restic/restic/internal/backend/location"
+	"github.com/restic/restic/internal/backend/util"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -38,7 +39,7 @@ type SFTP struct {
 
 	layout.Layout
 	Config
-	backend.Modes
+	util.Modes
 }
 
 var _ restic.Backend = &SFTP{}
@@ -83,9 +84,9 @@ func startClient(cfg Config) (*SFTP, error) {
 		return nil, errors.Wrap(err, "cmd.StdoutPipe")
 	}
 
-	bg, err := backend.StartForeground(cmd)
+	bg, err := util.StartForeground(cmd)
 	if err != nil {
-		if backend.IsErrDot(err) {
+		if util.IsErrDot(err) {
 			return nil, errors.Errorf("cannot implicitly run relative executable %v found in current directory, use -o sftp.command=./<command> to override", cmd.Path)
 		}
 		return nil, err
@@ -153,7 +154,7 @@ func open(ctx context.Context, sftp *SFTP, cfg Config) (*SFTP, error) {
 	debug.Log("layout: %v\n", sftp.Layout)
 
 	fi, err := sftp.c.Stat(sftp.Layout.Filename(restic.Handle{Type: restic.ConfigFile}))
-	m := backend.DeriveModesFromFileInfo(fi, err)
+	m := util.DeriveModesFromFileInfo(fi, err)
 	debug.Log("using (%03O file, %03O dir) permissions", m.File, m.Dir)
 
 	sftp.Config = cfg
@@ -259,7 +260,7 @@ func Create(ctx context.Context, cfg Config) (*SFTP, error) {
 		return nil, err
 	}
 
-	sftp.Modes = backend.DefaultModes
+	sftp.Modes = util.DefaultModes
 
 	// test if config file already exists
 	_, err = sftp.c.Lstat(sftp.Layout.Filename(restic.Handle{Type: restic.ConfigFile}))
@@ -414,7 +415,7 @@ func (r *SFTP) checkNoSpace(dir string, size int64, origErr error) error {
 // Load runs fn with a reader that yields the contents of the file at h at the
 // given offset.
 func (r *SFTP) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
-	return backend.DefaultLoad(ctx, h, length, offset, r.openReader, fn)
+	return util.DefaultLoad(ctx, h, length, offset, r.openReader, fn)
 }
 
 func (r *SFTP) openReader(_ context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {

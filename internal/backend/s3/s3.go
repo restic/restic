@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
 	"github.com/restic/restic/internal/backend/location"
+	"github.com/restic/restic/internal/backend/util"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -298,7 +298,7 @@ func (be *Backend) Load(ctx context.Context, h restic.Handle, length int, offset
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	return backend.DefaultLoad(ctx, h, length, offset, be.openReader, fn)
+	return util.DefaultLoad(ctx, h, length, offset, be.openReader, fn)
 }
 
 func (be *Backend) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
@@ -424,7 +424,7 @@ func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.F
 
 // Delete removes all restic keys in the bucket. It will not remove the bucket itself.
 func (be *Backend) Delete(ctx context.Context) error {
-	return backend.DefaultDelete(ctx, be)
+	return util.DefaultDelete(ctx, be)
 }
 
 // Close does nothing

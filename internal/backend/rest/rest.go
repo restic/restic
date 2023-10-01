@@ -11,9 +11,9 @@ import (
 	"path"
 	"strings"
 
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
 	"github.com/restic/restic/internal/backend/location"
+	"github.com/restic/restic/internal/backend/util"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -424,5 +424,5 @@ func (b *Backend) Close() error {
 
 // Delete removes all data in the backend.
 func (b *Backend) Delete(ctx context.Context) error {
-	return backend.DefaultDelete(ctx, b)
+	return util.DefaultDelete(ctx, b)
 }

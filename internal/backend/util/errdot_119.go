@@ -8,7 +8,7 @@
 // Once the minimum Go version restic supports is 1.19, remove this file and
 //  replace any calls to it with the corresponding code as per below.
 
-package backend
+package util
 
 import (
 	"errors"

@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
 	"github.com/restic/restic/internal/backend/location"
+	"github.com/restic/restic/internal/backend/util"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -135,7 +135,7 @@ func (be *beSwift) HasAtomicReplace() bool {
 // Load runs fn with a reader that yields the contents of the file at h at the
 // given offset.
 func (be *beSwift) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
-	return backend.DefaultLoad(ctx, h, length, offset, be.openReader, fn)
+	return util.DefaultLoad(ctx, h, length, offset, be.openReader, fn)
 }
 
 func (be *beSwift) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
@@ -245,7 +245,7 @@ func (be *beSwift) IsNotExist(err error) bool {
 // Delete removes all restic objects in the container.
 // It will not remove the container itself.
 func (be *beSwift) Delete(ctx context.Context) error {
-	return backend.DefaultDelete(ctx, be)
+	return util.DefaultDelete(ctx, be)
 }
 
 // Close does nothing

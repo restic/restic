@@ -43,7 +43,7 @@ type Backend interface {
 	// The function fn may be called multiple times during the same Load invocation
 	// and therefore must be idempotent.
 	//
-	// Implementations are encouraged to use backend.DefaultLoad
+	// Implementations are encouraged to use util.DefaultLoad
 	Load(ctx context.Context, h Handle, length int, offset int64, fn func(rd io.Reader) error) error
 
 	// Stat returns information about the File identified by h.

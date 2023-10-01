@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/backend/layout"
 	"github.com/restic/restic/internal/backend/limiter"
 	"github.com/restic/restic/internal/backend/location"
+	"github.com/restic/restic/internal/backend/util"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
@@ -24,7 +25,7 @@ import (
 type Local struct {
 	Config
 	layout.Layout
-	backend.Modes
+	util.Modes
 }
 
 // ensure statically that *Local implements restic.Backend.
@@ -43,7 +44,7 @@ func open(ctx context.Context, cfg Config) (*Local, error) {
 	}
 
 	fi, err := fs.Stat(l.Filename(restic.Handle{Type: restic.ConfigFile}))
-	m := backend.DeriveModesFromFileInfo(fi, err)
+	m := util.DeriveModesFromFileInfo(fi, err)
 	debug.Log("using (%03O file, %03O dir) permissions", m.File, m.Dir)
 
 	return &Local{
@@ -210,7 +211,7 @@ var tempFile = os.CreateTemp // Overridden by test.
 // Load runs fn with a reader that yields the contents of the file at h at the
 // given offset.
 func (b *Local) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
-	return backend.DefaultLoad(ctx, h, length, offset, b.openReader, fn)
+	return util.DefaultLoad(ctx, h, length, offset, b.openReader, fn)
 }
 
 func (b *Local) openReader(_ context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {

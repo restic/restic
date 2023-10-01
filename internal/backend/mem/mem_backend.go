@@ -10,8 +10,8 @@ import (
 	"sync"
 
 	"github.com/cespare/xxhash/v2"
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/location"
+	"github.com/restic/restic/internal/backend/util"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -113,7 +113,7 @@ func (be *MemoryBackend) Save(ctx context.Context, h restic.Handle, rd restic.Re
 // Load runs fn with a reader that yields the contents of the file at h at the
 // given offset.
 func (be *MemoryBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
-	return backend.DefaultLoad(ctx, h, length, offset, be.openReader, fn)
+	return util.DefaultLoad(ctx, h, length, offset, be.openReader, fn)
 }
 
 func (be *MemoryBackend) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
