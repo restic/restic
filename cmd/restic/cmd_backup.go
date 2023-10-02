@@ -95,6 +95,7 @@ type BackupOptions struct {
 	ExcludeIfPresent  []string
 	ExcludeCaches     bool
 	ExcludeLargerThan string
+	ScopeSymlinks     string
 	Stdin             bool
 	StdinFilename     string
 	Tags              restic.TagLists
@@ -132,6 +133,7 @@ func init() {
 	f.StringArrayVar(&backupOptions.ExcludeIfPresent, "exclude-if-present", nil, "takes `filename[:header]`, exclude contents of directories containing filename (except filename itself) if header of that file is as provided (can be specified multiple times)")
 	f.BoolVar(&backupOptions.ExcludeCaches, "exclude-caches", false, `excludes cache directories that are marked with a CACHEDIR.TAG file. See https://bford.info/cachedir/ for the Cache Directory Tagging Standard`)
 	f.StringVar(&backupOptions.ExcludeLargerThan, "exclude-larger-than", "", "max `size` of the files to be backed up (allowed suffixes: k/K, m/M, g/G, t/T)")
+	f.StringVar(&backupOptions.ScopeSymlinks, "scope-symlinks", "", "exclude symlinks that are targeting files outside this path")
 	f.BoolVar(&backupOptions.Stdin, "stdin", false, "read backup from stdin")
 	f.StringVar(&backupOptions.StdinFilename, "stdin-filename", "stdin", "`filename` to use when reading from stdin")
 	f.Var(&backupOptions.Tags, "tag", "add `tags` for the new snapshot in the format `tag[,tag,...]` (can be specified multiple times)")
@@ -355,6 +357,14 @@ func collectRejectFuncs(opts BackupOptions, targets []string) (fs []RejectFunc, 
 
 	if len(opts.ExcludeLargerThan) != 0 && !opts.Stdin {
 		f, err := rejectBySize(opts.ExcludeLargerThan)
+		if err != nil {
+			return nil, err
+		}
+		fs = append(fs, f)
+	}
+
+	if opts.ScopeSymlinks != "" {
+		f, err := rejectSymlinksOutsideScope(opts.ScopeSymlinks)
 		if err != nil {
 			return nil, err
 		}

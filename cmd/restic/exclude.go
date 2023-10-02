@@ -385,6 +385,38 @@ func rejectBySize(maxSizeStr string) (RejectFunc, error) {
 	}, nil
 }
 
+// rejectSymlinksOutsideScope rejects symlinks that target
+// files outside of the specified path.
+func rejectSymlinksOutsideScope(scopePath string) (RejectFunc, error) {
+	var err error
+	if !filepath.IsAbs(scopePath) {
+		scopePath, err = filepath.Abs(scopePath)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return func(item string, fi os.FileInfo) bool {
+		if fi.Mode()&os.ModeSymlink != os.ModeSymlink {
+			return false
+		}
+
+		target, err := filepath.EvalSymlinks(item)
+		if err != nil {
+			// reject symlink if we cannot determine the target
+			debug.Log("could not eval target of symlink: %s", item)
+			return true
+		}
+
+		if !strings.HasPrefix(target, scopePath) {
+			debug.Log("target of symlink %s is outside of path: %s", item, scopePath)
+			return true
+		}
+
+		return false
+	}, nil
+}
+
 // readExcludePatternsFromFiles reads all exclude files and returns the list of
 // exclude patterns. For each line, leading and trailing white space is removed
 // and comment lines are ignored. For each remaining pattern, environment

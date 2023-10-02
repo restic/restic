@@ -2,6 +2,14 @@
 [![Build Status](https://github.com/restic/restic/workflows/test/badge.svg)](https://github.com/restic/restic/actions?query=workflow%3Atest)
 [![Go Report Card](https://goreportcard.com/badge/github.com/restic/restic)](https://goreportcard.com/report/github.com/restic/restic)
 
+# Fork Information
+
+This fork adds a new flag to `backup` and `restore` actions - `--scope-symlinks` - which allows skipping symlinks that are targeting files outside of the specified path.
+Example usage:
+
+    $ restic --repo /tmp/backup backup /var/foo --scope-symlinks=/var/foo
+    $ restic --repo /tmp/backup restore 674eb8ba -t / --scope-symlinks=/var/foo
+
 # Introduction
 
 restic is a backup program that is fast, efficient and secure. It supports the three major operating systems (Linux, macOS, Windows) and a few smaller ones (FreeBSD, OpenBSD).

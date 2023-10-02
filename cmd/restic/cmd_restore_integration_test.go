@@ -30,6 +30,15 @@ func testRunRestoreExcludes(t testing.TB, gopts GlobalOptions, dir string, snaps
 	rtest.OK(t, testRunRestoreAssumeFailure(snapshotID.String(), opts, gopts))
 }
 
+func testRunRestoreSymlinkScope(t testing.TB, gopts GlobalOptions, dir string, snapshotID restic.ID, scope string) {
+	opts := RestoreOptions{
+		Target:        dir,
+		ScopeSymlinks: scope,
+	}
+
+	rtest.OK(t, testRunRestoreAssumeFailure(snapshotID.String(), opts, gopts))
+}
+
 func testRunRestoreAssumeFailure(snapshotID string, opts RestoreOptions, gopts GlobalOptions) error {
 	return withTermStatus(gopts, func(ctx context.Context, term *termstatus.Terminal) error {
 		return runRestore(ctx, opts, gopts, term, []string{snapshotID})
@@ -303,5 +312,71 @@ func TestRestoreLocalLayout(t *testing.T) {
 
 		rtest.RemoveAll(t, filepath.Join(env.base, "repo"))
 		rtest.RemoveAll(t, target)
+	}
+}
+
+func TestRestoreSymlinkScope(t *testing.T) {
+	testfiles := []struct {
+		name string
+		size uint
+	}{
+		{"testfile1.c", 100},
+		{"testfile2.exe", 101},
+		{"subdir1/subdir2/testfile3.docx", 102},
+		{"subdir1/subdir2/testfile4.c", 102},
+	}
+
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testRunInit(t, env.gopts)
+
+	for _, testFile := range testfiles {
+		p := filepath.Join(env.testdata, testFile.name)
+		rtest.OK(t, os.MkdirAll(filepath.Dir(p), 0755))
+		rtest.OK(t, appendRandomData(p, testFile.size))
+	}
+
+	symlinks := map[string]struct {
+		target  string
+		restore bool
+	}{
+		"symlink1":         {"./..", false},
+		"subdir1/symlink2": {env.testdata + string(filepath.Separator) + "subdir1/../..", false},
+		"subdir1/symlink3": {"/var", false},
+		"symlink4":         {filepath.Join(env.testdata, "testfile1.c"), false},
+		"subdir1/symlink5": {filepath.Join(env.testdata, "subdir1/subdir2/testfile3.docx"), true},
+		"symlink6":         {filepath.Join(env.testdata, "subdir1/subdir2"), true},
+	}
+
+	for name, symlink := range symlinks {
+		p := filepath.Join(env.testdata, name)
+		rtest.OK(t, os.Symlink(symlink.target, p))
+	}
+
+	opts := BackupOptions{}
+
+	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
+	testRunCheck(t, env.gopts)
+
+	snapshotID := testListSnapshots(t, env.gopts, 1)[0]
+
+	// no restore filter should restore all files
+	testRunRestore(t, env.gopts, filepath.Join(env.base, "restore0"), snapshotID)
+	for _, testFile := range testfiles {
+		rtest.OK(t, testFileSize(filepath.Join(env.base, "restore0", "testdata", testFile.name), int64(testFile.size)))
+	}
+
+	base := filepath.Join(env.base, "restore1")
+	scope, err := filepath.EvalSymlinks(filepath.Join(env.testdata, "subdir1/subdir2"))
+	rtest.OK(t, err)
+
+	testRunRestoreSymlinkScope(t, env.gopts, base, snapshotID, scope)
+	for filename, ts := range symlinks {
+		exists, err := testFileExists(filepath.Join(base, "testdata", filename))
+		if err != nil {
+			rtest.OK(t, err)
+		}
+		rtest.Assert(t, exists == ts.restore, "expected %v restoration status: %t, but got: %t", filename, ts.restore, exists)
 	}
 }

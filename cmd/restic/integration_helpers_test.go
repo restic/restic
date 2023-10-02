@@ -343,6 +343,16 @@ func testFileSize(filename string, size int64) error {
 	return nil
 }
 
+func testFileExists(filename string) (bool, error) {
+	if _, err := os.Stat(filename); err == nil {
+		return true, nil
+	} else if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	} else {
+		return false, err
+	}
+}
+
 func withRestoreGlobalOptions(inner func() error) error {
 	gopts := globalOptions
 	defer func() {
