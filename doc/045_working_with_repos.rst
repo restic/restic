@@ -136,10 +136,7 @@ or the environment variable ``$RESTIC_FROM_KEY_HINT``.
     repository. You can avoid this limitation by using the rclone backend
     along with remotes which are configured in rclone.
 
-.. note:: You may lose up to 10 minutes of progress if the ``copy`` command is
-    aborted, because the repository index is only updated from time to time.
-    If you don't want to lose 10 minutes, you can run ``rebuild-index`` after your
-    ``copy`` command has aborted.
+.. note:: If `copy` is aborted, `copy` will resume the interrupted copying when it is run again. It's possible that up to 10 minutes of progress can be lost because the repository index is only updated from time to time.
 
 .. _copy-filtering-snapshots:
 
