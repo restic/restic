@@ -1,0 +1,8 @@
+Bugfix: Make `key list` command honor `--no-lock`
+
+This allows to determine which keys a repo can be accessed by without the
+need for having write access (e.g., read-only sftp access, filesystem
+snapshot).
+
+https://github.com/restic/restic/issues/4513
+https://github.com/restic/restic/pull/4514

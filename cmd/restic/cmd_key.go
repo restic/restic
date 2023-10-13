@@ -212,10 +212,13 @@ func runKey(ctx context.Context, gopts GlobalOptions, args []string) error {
 
 	switch args[0] {
 	case "list":
-		lock, ctx, err := lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
-		defer unlockRepo(lock)
-		if err != nil {
-			return err
+		if !gopts.NoLock {
+			var lock *restic.Lock
+			lock, ctx, err = lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
+			defer unlockRepo(lock)
+			if err != nil {
+				return err
+			}
 		}
 
 		return listKeys(ctx, repo, gopts)
