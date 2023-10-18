@@ -213,6 +213,9 @@ func buildSSHCommand(cfg Config) (cmd string, args []string, err error) {
 		if err != nil {
 			return "", nil, err
 		}
+		if cfg.Args != "" {
+			return "", nil, errors.New("cannot specify both sftp.command and sftp.args options")
+		}
 
 		return args[0], args[1:], nil
 	}
@@ -226,11 +229,19 @@ func buildSSHCommand(cfg Config) (cmd string, args []string, err error) {
 		args = append(args, "-p", port)
 	}
 	if cfg.User != "" {
-		args = append(args, "-l")
-		args = append(args, cfg.User)
+		args = append(args, "-l", cfg.User)
 	}
-	args = append(args, "-s")
-	args = append(args, "sftp")
+
+	if cfg.Args != "" {
+		a, err := backend.SplitShellStrings(cfg.Args)
+		if err != nil {
+			return "", nil, err
+		}
+
+		args = append(args, a...)
+	}
+
+	args = append(args, "-s", "sftp")
 	return cmd, args, nil
 }
 

@@ -31,6 +31,11 @@ var sshcmdTests = []struct {
 		[]string{"host", "-p", "10022", "-l", "user", "-s", "sftp"},
 	},
 	{
+		Config{User: "user", Host: "host", Port: "10022", Path: "/dir/subdir", Args: "-i /path/to/id_rsa"},
+		"ssh",
+		[]string{"host", "-p", "10022", "-l", "user", "-i", "/path/to/id_rsa", "-s", "sftp"},
+	},
+	{
 		// IPv6 address.
 		Config{User: "user", Host: "::1", Path: "dir"},
 		"ssh",
