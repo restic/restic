@@ -128,7 +128,11 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 func (be *Backend) Load(ctx context.Context, h restic.Handle, length int, offset int64, consumer func(rd io.Reader) error) (err error) {
 	return be.retry(ctx, fmt.Sprintf("Load(%v, %v, %v)", h, length, offset),
 		func() error {
-			return be.Backend.Load(ctx, h, length, offset, consumer)
+			err := be.Backend.Load(ctx, h, length, offset, consumer)
+			if be.Backend.IsNotExist(err) {
+				return backoff.Permanent(err)
+			}
+			return err
 		})
 }
 
