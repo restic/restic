@@ -32,22 +32,29 @@ Output of `restic version`
 --------------------------
 
 
-How did you run restic exactly?
--------------------------------
+
+What backend/service did you use to store the repository?
+---------------------------------------------------------
+
+
+
+Problem description / Steps to reproduce
+----------------------------------------
 
 <!--
 This section should include at least:
+
+ * A description of the problem you are having with restic.
 
  * The complete command line and any environment variables you used to
    configure restic's backend access. Make sure to replace sensitive values!
 
  * The output of the commands, what restic prints gives may give us much
    information to diagnose the problem!
+
+ * The more time you spend describing an easy way to reproduce the behavior (if
+   this is possible), the easier it is for the project developers to fix it!
 -->
-
-What backend/server/service did you use to store the repository?
-----------------------------------------------------------------
-
 
 
 Expected behavior
@@ -65,22 +72,12 @@ In this section, please try to concentrate on observations, so only describe
 what you observed directly.
 -->
 
-Steps to reproduce the behavior
--------------------------------
-
-<!--
-The more time you spend describing an easy way to reproduce the behavior (if
-this is possible), the easier it is for the project developers to fix it!
--->
-
 Do you have any idea what may have caused this?
 -----------------------------------------------
 
-
-
-Do you have an idea how to solve the issue?
--------------------------------------------
-
+<!--
+Did something noteworthy happen on your system, Internet connection, backend services, etc?
+-->
 
 
 Did restic help you today? Did it make you happy in any way?
