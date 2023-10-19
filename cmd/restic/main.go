@@ -80,7 +80,7 @@ The full documentation can be found at https://restic.readthedocs.io/ .
 // user for authentication).
 func needsPassword(cmd string) bool {
 	switch cmd {
-	case "cache", "generate", "help", "options", "self-update", "version":
+	case "cache", "generate", "help", "options", "self-update", "version", "__complete":
 		return false
 	default:
 		return true
