@@ -201,7 +201,8 @@ change
 +------------------+--------------------------------------------------------------+
 | ``modifier``     | Type of change, a concatenation of the following characters: |
 |                  | "+" = added, "-" = removed, "T" = entry type changed,        |
-|                  | "M" = file content changed, "U" = metadata changed           |
+|                  | "M" = file content changed, "U" = metadata changed,          |
+|                  | "?" = bitrot detected                                        |
 +------------------+--------------------------------------------------------------+
 
 statistics

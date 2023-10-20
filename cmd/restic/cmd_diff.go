@@ -27,6 +27,7 @@ directory:
 * U  The metadata (access mode, timestamps, ...) for the item was updated
 * M  The file's content was modified
 * T  The type was changed, e.g. a file was made a symlink
+* ?  Bitrot detected: The file's content has changed but all metadata is the same
 
 To only compare files in specific subfolders, you can use the
 "<snapshotID>:<subfolder>" syntax, where "subfolder" is a path within the
@@ -272,6 +273,14 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 				!reflect.DeepEqual(node1.Content, node2.Content) {
 				mod += "M"
 				stats.ChangedFiles++
+
+				node1NilContent := node1
+				node2NilContent := node2
+				node1NilContent.Content = nil
+				node2NilContent.Content = nil
+				if node1NilContent.Equals(*node2NilContent) {
+					mod += "?"
+				}
 			} else if c.opts.ShowMetadata && !node1.Equals(*node2) {
 				mod += "U"
 			}
