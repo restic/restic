@@ -172,11 +172,9 @@ Then use it in the backend specification:
 
 Last, if you'd like to use an entirely different program to create the
 SFTP connection, you can specify the command to be run with the option
-``-o sftp.command="foobar"``.
-
-The SFTP backend has the following additional option:
-
- * ``-o sftp.args`` allows setting the arguments passed to the default SSH command (ignored when ``sftp.command`` is set)
+``-o sftp.command="foobar"``. Alternatively, ``-o sftp.args`` allows
+setting the arguments passed to the default SSH command (ignored when
+``sftp.command`` is set)
 
 .. note:: Please be aware that SFTP servers close connections when no data is
           received by the client. This can happen when restic is processing huge
