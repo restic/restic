@@ -290,7 +290,7 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 
 	changedCount := 0
 	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, args) {
-		Verbosef("\nsnapshot %s of %v at %s)\n", sn.ID().Str(), sn.Paths, sn.Time)
+		Verbosef("\nsnapshot %s of %v at %s by %s@%s)\n", sn.ID().Str(), sn.Paths, sn.Time, sn.Username, sn.Hostname)
 		changed, err := rewriteSnapshot(ctx, repo, sn, opts)
 		if err != nil {
 			return errors.Fatalf("unable to rewrite snapshot ID %q: %v", sn.ID().Str(), err)
