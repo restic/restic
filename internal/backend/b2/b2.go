@@ -16,8 +16,8 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
-	"github.com/kurin/blazer/b2"
-	"github.com/kurin/blazer/base"
+	"github.com/Backblaze/blazer/b2"
+	"github.com/Backblaze/blazer/base"
 )
 
 // b2Backend is a backend which stores its data on Backblaze B2.
