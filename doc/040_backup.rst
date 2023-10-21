@@ -593,9 +593,16 @@ environment variables. The following lists these environment variables:
     AWS_PROFILE                         Amazon credentials profile (alternative to specifying key and region)
     AWS_SHARED_CREDENTIALS_FILE         Location of the AWS CLI shared credentials file (default: ~/.aws/credentials)
 
-    ST_AUTH                             Auth URL for keystone v1 authentication
-    ST_USER                             Username for keystone v1 authentication
-    ST_KEY                              Password for keystone v1 authentication
+    AZURE_ACCOUNT_NAME                  Account name for Azure
+    AZURE_ACCOUNT_KEY                   Account key for Azure
+    AZURE_ACCOUNT_SAS                   Shared access signatures (SAS) for Azure
+    AZURE_ENDPOINT_SUFFIX               Endpoint suffix for Azure Storage (default: core.windows.net)
+
+    B2_ACCOUNT_ID                       Account ID or applicationKeyId for Backblaze B2
+    B2_ACCOUNT_KEY                      Account Key or applicationKey for Backblaze B2
+
+    GOOGLE_PROJECT_ID                   Project ID for Google Cloud Storage
+    GOOGLE_APPLICATION_CREDENTIALS      Application Credentials for Google Cloud Storage (e.g. $HOME/.config/gs-secret-restic-key.json)
 
     OS_AUTH_URL                         Auth URL for keystone authentication
     OS_REGION_NAME                      Region name for keystone authentication
@@ -619,18 +626,14 @@ environment variables. The following lists these environment variables:
     OS_STORAGE_URL                      Storage URL for token authentication
     OS_AUTH_TOKEN                       Auth token for token authentication
 
-    B2_ACCOUNT_ID                       Account ID or applicationKeyId for Backblaze B2
-    B2_ACCOUNT_KEY                      Account Key or applicationKey for Backblaze B2
-
-    AZURE_ACCOUNT_NAME                  Account name for Azure
-    AZURE_ACCOUNT_KEY                   Account key for Azure
-    AZURE_ACCOUNT_SAS                   Shared access signatures (SAS) for Azure
-    AZURE_ENDPOINT_SUFFIX               Endpoint suffix for Azure Storage (default: core.windows.net)
-
-    GOOGLE_PROJECT_ID                   Project ID for Google Cloud Storage
-    GOOGLE_APPLICATION_CREDENTIALS      Application Credentials for Google Cloud Storage (e.g. $HOME/.config/gs-secret-restic-key.json)
-
     RCLONE_BWLIMIT                      rclone bandwidth limit
+
+    RESTIC_REST_USERNAME                Restic REST Server username
+    RESTIC_REST_PASSWORD                Restic REST Server password
+
+    ST_AUTH                             Auth URL for keystone v1 authentication
+    ST_USER                             Username for keystone v1 authentication
+    ST_KEY                              Password for keystone v1 authentication
 
 See :ref:`caching` for the rules concerning cache locations when
 ``RESTIC_CACHE_DIR`` is not set.

@@ -2,10 +2,12 @@ package rest
 
 import (
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/options"
+	"github.com/restic/restic/internal/restic"
 )
 
 // Config contains all configuration necessary to connect to a REST server.
@@ -69,4 +71,20 @@ func prepareURL(s string) string {
 		s += "/"
 	}
 	return s
+}
+
+var _ restic.ApplyEnvironmenter = &Config{}
+
+// ApplyEnvironment saves values from the environment to the config.
+func (cfg *Config) ApplyEnvironment(prefix string) {
+	username := cfg.URL.User.Username()
+	_, pwdSet := cfg.URL.User.Password()
+
+	// Only apply env variable values if neither username nor password are provided.
+	if username == "" && !pwdSet {
+		envName := os.Getenv(prefix + "RESTIC_REST_USERNAME")
+		envPwd := os.Getenv(prefix + "RESTIC_REST_PASSWORD")
+
+		cfg.URL.User = url.UserPassword(envName, envPwd)
+	}
 }
