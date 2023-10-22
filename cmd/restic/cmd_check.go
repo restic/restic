@@ -330,11 +330,28 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 
 		go chkr.ReadPacks(ctx, packs, p, errChan)
 
+		var salvagePacks restic.IDs
+
 		for err := range errChan {
 			errorsFound = true
 			Warnf("%v\n", err)
+			if err, ok := err.(*checker.ErrPackData); ok {
+				if strings.Contains(err.Error(), "wrong data returned, hash is") {
+					salvagePacks = append(salvagePacks, err.PackID)
+				}
+			}
 		}
 		p.Done()
+
+		if len(salvagePacks) > 0 {
+			Warnf("\nThe repository contains pack files with damaged blobs. These blobs must be removed to repair the repository. This can be done using the following commands:\n\n")
+			var strIds []string
+			for _, id := range salvagePacks {
+				strIds = append(strIds, id.String())
+			}
+			Warnf("restic repair packs %v\nrestic repair snapshots --forget\n\n", strings.Join(strIds, " "))
+			Warnf("Corrupted blobs are either caused by hardware problems or bugs in restic. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting!\n")
+		}
 	}
 
 	switch {
