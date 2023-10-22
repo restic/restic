@@ -10,13 +10,18 @@ import (
 	godebug "runtime/debug"
 
 	"github.com/spf13/cobra"
-	_ "go.uber.org/automaxprocs"
+	"go.uber.org/automaxprocs/maxprocs"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/restic"
 )
+
+func init() {
+	// don't import `go.uber.org/automaxprocs` to disable the log output
+	_, _ = maxprocs.Set()
+}
 
 // cmdRoot is the base command when no other command has been specified.
 var cmdRoot = &cobra.Command{
