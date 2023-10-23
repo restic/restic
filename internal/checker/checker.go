@@ -90,6 +90,16 @@ func (err *ErrOldIndexFormat) Error() string {
 	return fmt.Sprintf("index %v has old format", err.ID)
 }
 
+// ErrPackData is returned if errors are discovered while verifying a packfile
+type ErrPackData struct {
+	PackID restic.ID
+	errs   []error
+}
+
+func (e *ErrPackData) Error() string {
+	return fmt.Sprintf("pack %v contains %v errors: %v", e.PackID, len(e.errs), e.errs)
+}
+
 func (c *Checker) LoadSnapshots(ctx context.Context) error {
 	var err error
 	c.snapshots, err = backend.MemorizeList(ctx, c.repo.Backend(), restic.SnapshotFile)
@@ -635,7 +645,7 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 	}
 
 	if len(errs) > 0 {
-		return errors.Errorf("pack %v contains %v errors: %v", id, len(errs), errs)
+		return &ErrPackData{PackID: id, errs: errs}
 	}
 
 	return nil
