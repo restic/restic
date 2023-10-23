@@ -98,9 +98,9 @@ func printProgress(status string) {
 }
 
 func newIndexProgress(quiet bool, json bool) *progress.Counter {
-	return newProgressMax(!quiet && !json, 0, "index files loaded")
+	return newProgressMax(!quiet && !json && stdoutIsTerminal(), 0, "index files loaded")
 }
 
 func newIndexTerminalProgress(quiet bool, json bool, term *termstatus.Terminal) *progress.Counter {
-	return newTerminalProgressMax(!quiet && !json, 0, "index files loaded", term)
+	return newTerminalProgressMax(!quiet && !json && stdoutIsTerminal(), 0, "index files loaded", term)
 }
