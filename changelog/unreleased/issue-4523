@@ -1,0 +1,17 @@
+Bugfix: Update zstd library to fix possible data corruption at max. compression
+
+In restic 0.16.0, backups using maximum compression could result in data
+corruption due to a bug in the library used for compressing data. Please note
+that the "auto" compression level (used by default) is not affected!
+
+To check a repository for data corruption, run `restic check --read-data`. This
+will download and verify the whole repository. If the `check` command detects
+data corruption, follow the suggested steps. To simplify the repository repair
+and minimize data loss, we've also added an experimental `repair packs` command
+that salvages all valid data from the affected pack files.
+
+Restic now uses the latest version of the library used to compress data, which
+includes a fix for the data corruption issue.
+
+https://github.com/restic/restic/issues/4523
+https://github.com/restic/restic/pull/4530
