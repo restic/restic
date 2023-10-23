@@ -279,7 +279,7 @@ From Source
 ***********
 
 restic is written in the Go programming language and you need at least
-Go version 1.18. Building for Solaris requires at least Go version 1.20.
+Go version 1.19. Building for Solaris requires at least Go version 1.20.
 Building restic may also work with older versions of Go,
 but that's not supported. See the `Getting
 started <https://go.dev/doc/install>`__ guide of the Go project for
