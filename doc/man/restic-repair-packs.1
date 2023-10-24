@@ -3,17 +3,21 @@
 
 .SH NAME
 .PP
-restic-unlock - Remove locks other processes created
+restic-repair-packs - Salvage damaged pack files
 
 
 .SH SYNOPSIS
 .PP
-\fBrestic unlock [flags]\fP
+\fBrestic repair packs [packIDs...] [flags]\fP
 
 
 .SH DESCRIPTION
 .PP
-The "unlock" command removes stale locks that have been created by other restic processes.
+WARNING: The CLI for this command is experimental and will likely change in the future!
+
+.PP
+The "repair packs" command extracts intact blobs from the specified pack files, rebuilds
+the index to remove the damaged pack files and removes the pack files from the repository.
 
 
 .SH EXIT STATUS
@@ -24,11 +28,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 .SH OPTIONS
 .PP
 \fB-h\fP, \fB--help\fP[=false]
-	help for unlock
-
-.PP
-\fB--remove-all\fP[=false]
-	remove all locks, even non-stale ones
+	help for packs
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
@@ -119,4 +119,4 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 .SH SEE ALSO
 .PP
-\fBrestic(1)\fP
+\fBrestic-repair(1)\fP
