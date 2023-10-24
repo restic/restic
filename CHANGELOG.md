@@ -1,3 +1,124 @@
+Changelog for restic 0.16.1 (2023-10-24)
+=======================================
+
+The following sections list the changes in restic 0.16.1 relevant to
+restic users. The changes are ordered by importance.
+
+Summary
+-------
+
+ * Fix #4513: Make `key list` command honor `--no-lock`
+ * Fix #4516: Do not try to load password on command line autocomplete
+ * Fix #4523: Update zstd library to fix possible data corruption at max. compression
+ * Chg #4532: Update dependencies and require Go 1.19 or newer
+ * Enh #229: Show progress bar while loading the index
+ * Enh #4128: Automatically set `GOMAXPROCS` in resource-constrained containers
+ * Enh #4480: Allow setting REST password and username via environment variables
+ * Enh #4511: Include inode numbers in JSON output for `find` and `ls` commands
+ * Enh #4519: Add config option to set SFTP command arguments
+
+Details
+-------
+
+ * Bugfix #4513: Make `key list` command honor `--no-lock`
+
+   The `key list` command now supports the `--no-lock` options. This allows determining which
+   keys a repo can be accessed by without the need for having write access (e.g., read-only sftp
+   access, filesystem snapshot).
+
+   https://github.com/restic/restic/issues/4513
+   https://github.com/restic/restic/pull/4514
+
+ * Bugfix #4516: Do not try to load password on command line autocomplete
+
+   The command line autocompletion previously tried to load the repository password. This could
+   cause the autocompletion not to work. Now, this step gets skipped.
+
+   https://github.com/restic/restic/issues/4516
+   https://github.com/restic/restic/pull/4526
+
+ * Bugfix #4523: Update zstd library to fix possible data corruption at max. compression
+
+   In restic 0.16.0, backups where the compression level was set to `max` (using `--compression
+   max`) could in rare and very specific circumstances result in data corruption due to a bug in the
+   library used for compressing data.
+
+   Restic now uses the latest version of the library used to compress data, which includes a fix for
+   this issue. Please note that the `auto` compression level (which restic uses by default) was
+   never affected, and even if you used `max` compression, chances of being affected by this issue
+   were very small.
+
+   To check a repository for any corruption, run `restic check --read-data`. This will download
+   and verify the whole repository and can be used at any time to completely verify the integrity of
+   a repository. If the `check` command detects anomalies, follow the suggested steps.
+
+   To simplify any needed repository repair and minimize data loss, there is also a new and
+   experimental `repair packs` command that salvages all valid data from the affected pack files
+   (see `restic help repair packs` for more information).
+
+   https://github.com/restic/restic/issues/4523
+   https://github.com/restic/restic/pull/4530
+
+ * Change #4532: Update dependencies and require Go 1.19 or newer
+
+   We have updated all dependencies. Since some libraries require newer Go standard library
+   features, support for Go 1.18 has been dropped, which means that restic now requires at least Go
+   1.19 to build.
+
+   https://github.com/restic/restic/pull/4532
+   https://github.com/restic/restic/pull/4533
+
+ * Enhancement #229: Show progress bar while loading the index
+
+   Restic did not provide any feedback while loading index files. Now, there is a progress bar that
+   shows the index loading progress.
+
+   https://github.com/restic/restic/issues/229
+   https://github.com/restic/restic/pull/4419
+
+ * Enhancement #4128: Automatically set `GOMAXPROCS` in resource-constrained containers
+
+   When running restic in a Linux container with CPU-usage limits, restic now automatically
+   adjusts `GOMAXPROCS`. This helps to reduce the memory consumption on hosts with many CPU
+   cores.
+
+   https://github.com/restic/restic/issues/4128
+   https://github.com/restic/restic/pull/4485
+   https://github.com/restic/restic/pull/4531
+
+ * Enhancement #4480: Allow setting REST password and username via environment variables
+
+   Previously, it was only possible to specify the REST-server username and password in the
+   repository URL, or by using the `--repository-file` option. This meant it was not possible to
+   use authentication in contexts where the repository URL is stored in publicly accessible way.
+
+   Restic now allows setting the username and password using the `RESTIC_REST_USERNAME` and
+   `RESTIC_REST_PASSWORD` variables.
+
+   https://github.com/restic/restic/pull/4480
+
+ * Enhancement #4511: Include inode numbers in JSON output for `find` and `ls` commands
+
+   Restic used to omit the inode numbers in the JSON messages emitted for nodes by the `ls` command
+   as well as for matches by the `find` command. It now includes those values whenever they are
+   available.
+
+   https://github.com/restic/restic/pull/4511
+
+ * Enhancement #4519: Add config option to set SFTP command arguments
+
+   When using the `sftp` backend, scenarios where a custom identity file was needed for the SSH
+   connection, required the full command to be specified: `-o sftp.command='ssh
+   user@host:port -i /ssh/my_private_key -s sftp'`
+
+   Now, the `-o sftp.args=...` option can be passed to restic to specify custom arguments for the
+   SSH command executed by the SFTP backend. This simplifies the above example to `-o
+   sftp.args='-i /ssh/my_private_key'`.
+
+   https://github.com/restic/restic/issues/4241
+   https://github.com/restic/restic/pull/4519
+
+
 Changelog for restic 0.16.0 (2023-07-31)
 =======================================
 
