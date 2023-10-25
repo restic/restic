@@ -214,10 +214,29 @@ func (arch *Archiver) wrapLoadTreeError(id restic.ID, err error) error {
 
 // SaveDir stores a directory in the repo and returns the node. snPath is the
 // path within the current snapshot.
-func (arch *Archiver) SaveDir(ctx context.Context, snPath string, dir string, fi os.FileInfo, previous *restic.Tree, complete CompleteFunc) (d FutureNode, err error) {
+func (arch *Archiver) SaveDir(ctx context.Context, snPath string, dir string, absdir string, cdtree *Tree, fi os.FileInfo, previous *restic.Node, complete CompleteFunc) (d FutureNode, err error) {
 	debug.Log("%v %v", snPath, dir)
 
 	treeNode, err := arch.nodeFromFileInfo(snPath, dir, fi)
+	if err != nil {
+		return FutureNode{}, err
+	}
+
+	if cdtree != nil && previous != nil && len(cdtree.Nodes) == 0 {
+		debug.Log("%v doesn't contain any changed files, using existing nodes", dir)
+		treeNode.Subtree = previous.Subtree
+		fn := newFutureNodeWithResult(futureNodeResult{
+			snPath: snPath,
+			target: dir,
+			node:   treeNode,
+		})
+		return fn, nil
+	}
+
+	oldSubtree, err := arch.loadSubtree(ctx, previous)
+	if err != nil {
+		err = arch.error(absdir, err)
+	}
 	if err != nil {
 		return FutureNode{}, err
 	}
@@ -237,10 +256,16 @@ func (arch *Archiver) SaveDir(ctx context.Context, snPath string, dir string, fi
 			return FutureNode{}, ctx.Err()
 		}
 
+		var subcdtree *Tree
+		if cdtree != nil {
+			tmp := cdtree.Nodes[name]
+			subcdtree = &tmp
+		}
+
 		pathname := arch.FS.Join(dir, name)
-		oldNode := previous.Find(name)
+		oldNode := oldSubtree.Find(name)
 		snItem := join(snPath, name)
-		fn, excluded, err := arch.Save(ctx, snItem, pathname, oldNode)
+		fn, excluded, err := arch.Save(ctx, snItem, pathname, subcdtree, oldNode)
 
 		// return error early if possible
 		if err != nil {
@@ -331,7 +356,7 @@ func (arch *Archiver) allBlobsPresent(previous *restic.Node) bool {
 // Errors and completion needs to be handled by the caller.
 //
 // snPath is the path within the current snapshot.
-func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous *restic.Node) (fn FutureNode, excluded bool, err error) {
+func (arch *Archiver) Save(ctx context.Context, snPath, target string, cdtree *Tree, previous *restic.Node) (fn FutureNode, excluded bool, err error) {
 	start := time.Now()
 
 	debug.Log("%v target %q, previous %v", snPath, target, previous)
@@ -444,15 +469,8 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 		debug.Log("  %v dir", target)
 
 		snItem := snPath + "/"
-		oldSubtree, err := arch.loadSubtree(ctx, previous)
-		if err != nil {
-			err = arch.error(abstarget, err)
-		}
-		if err != nil {
-			return FutureNode{}, false, err
-		}
 
-		fn, err = arch.SaveDir(ctx, snPath, target, fi, oldSubtree,
+		fn, err = arch.SaveDir(ctx, snPath, target, abstarget, cdtree, fi, previous,
 			func(node *restic.Node, stats ItemStats) {
 				arch.CompleteItem(snItem, previous, node, stats, time.Since(start))
 			})
@@ -537,7 +555,7 @@ func (arch *Archiver) statDir(dir string) (os.FileInfo, error) {
 
 // SaveTree stores a Tree in the repo, returned is the tree. snPath is the path
 // within the current snapshot.
-func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, previous *restic.Tree, complete CompleteFunc) (FutureNode, int, error) {
+func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, cdtree *Tree, previous *restic.Tree, complete CompleteFunc) (FutureNode, int, error) {
 
 	var node *restic.Node
 	if snPath != "/" {
@@ -575,7 +593,21 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 
 		// this is a leaf node
 		if subatree.Leaf() {
-			fn, excluded, err := arch.Save(ctx, join(snPath, name), subatree.Path, previous.Find(name))
+			relative_cdtree := cdtree
+			if relative_cdtree != nil {
+				abs_path, err := arch.FS.Abs(subatree.Path)
+				if err != nil {
+					return FutureNode{}, 0, err
+				}
+				pc, _ := pathComponents(arch.FS, abs_path, false)
+				for _, component := range pc {
+					tmp := relative_cdtree.Nodes[component]
+					relative_cdtree = &tmp
+				}
+				debug.Log("relative_cdtree for subtree path %v:\n%v", abs_path, relative_cdtree)
+			}
+
+			fn, excluded, err := arch.Save(ctx, join(snPath, name), subatree.Path, relative_cdtree, previous.Find(name))
 
 			if err != nil {
 				err = arch.error(subatree.Path, err)
@@ -609,7 +641,7 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 		}
 
 		// not a leaf node, archive subtree
-		fn, _, err := arch.SaveTree(ctx, join(snPath, name), &subatree, oldSubtree, func(n *restic.Node, is ItemStats) {
+		fn, _, err := arch.SaveTree(ctx, join(snPath, name), &subatree, cdtree, oldSubtree, func(n *restic.Node, is ItemStats) {
 			arch.CompleteItem(snItem, oldNode, n, is, time.Since(start))
 		})
 		if err != nil {
@@ -728,7 +760,7 @@ func (arch *Archiver) stopWorkers() {
 }
 
 // Snapshot saves several targets and returns a snapshot.
-func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts SnapshotOptions) (*restic.Snapshot, restic.ID, error) {
+func (arch *Archiver) Snapshot(ctx context.Context, targets []string, changedFiles *[]string, opts SnapshotOptions) (*restic.Snapshot, restic.ID, error) {
 	cleanTargets, err := resolveRelativeTargets(arch.FS, targets)
 	if err != nil {
 		return nil, restic.ID{}, err
@@ -737,6 +769,23 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 	atree, err := NewTree(arch.FS, cleanTargets)
 	if err != nil {
 		return nil, restic.ID{}, err
+	}
+
+	var cdtree *Tree
+	if changedFiles != nil {
+		// Make sure paths in changedFiles are absolute
+		for i := range *changedFiles {
+			(*changedFiles)[i], err = arch.FS.Abs((*changedFiles)[i])
+			if err != nil {
+				return nil, restic.ID{}, err
+			}
+		}
+
+		cdtree, err = NewTree(arch.FS, *changedFiles)
+		if err != nil {
+			return nil, restic.ID{}, err
+		}
+		debug.Log("cdtree:\n%v", cdtree)
 	}
 
 	var rootTreeID restic.ID
@@ -752,7 +801,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 			arch.runWorkers(wgCtx, wg)
 
 			debug.Log("starting snapshot")
-			fn, nodeCount, err := arch.SaveTree(wgCtx, "/", atree, arch.loadParentTree(wgCtx, opts.ParentSnapshot), func(n *restic.Node, is ItemStats) {
+			fn, nodeCount, err := arch.SaveTree(wgCtx, "/", atree, cdtree, arch.loadParentTree(wgCtx, opts.ParentSnapshot), func(n *restic.Node, is ItemStats) {
 				arch.CompleteItem("/", nil, nil, is, time.Since(start))
 			})
 			if err != nil {
