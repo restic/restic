@@ -111,7 +111,7 @@ func refreshLocks(ctx context.Context, lock *restic.Lock, lockInfo *lockContext,
 			debug.Log("refreshing locks")
 			var err error = nil
 			if !globalOptions.NoLock {
-				err := lock.Refresh(context.TODO())
+				err = lock.Refresh(context.TODO())
 				if err != nil {
 					Warnf("unable to refresh lock: %v\n", err)
 				}
