@@ -12,14 +12,16 @@
 #
 # All configuration values have a default; values that are commented out
 # serve to show the default.
-import os
 
 # -- General configuration ------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.extlinks']
+extensions = [
+    'sphinx.ext.extlinks',
+    'sphinx_rtd_theme',
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -35,7 +37,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'restic'
-copyright = '2018, restic authors'
+copyright = '2023, restic authors'
 author = 'fd0'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -54,7 +56,7 @@ release = version
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = "en"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -72,21 +74,11 @@ todo_include_todos = False
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-#
-if os.environ.get('READTHEDOCS') == 'True':
-    html_context = {
-        'css_files': [
-            'https://media.readthedocs.org/css/sphinx_rtd_theme.css',
-            'https://media.readthedocs.org/css/readthedocs-doc-embed.css',
-            '_static/css/restic.css',
-        ]
-    }
-else:
-    # we're not built by rtd => add rtd-theme
-    import sphinx_rtd_theme
-    html_theme = 'sphinx_rtd_theme'
-    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
-    html_style = 'css/restic.css'
+html_theme = 'sphinx_rtd_theme'
+
+html_css_files = [
+    'css/restic.css',
+]
 
 html_logo = 'logo/logo.png'
 
