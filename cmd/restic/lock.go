@@ -103,17 +103,26 @@ func refreshLocks(ctx context.Context, lock *restic.Lock, lockInfo *lockContext,
 			debug.Log("terminate")
 			return
 		case <-ticker.C:
-			if time.Since(lastRefresh) > refreshabilityTimeout || globalOptions.NoLock {
+			if time.Since(lastRefresh) > refreshabilityTimeout {
 				// the lock is too old, wait until the expiry monitor cancels the context
 				continue
 			}
 
 			debug.Log("refreshing locks")
-			err := lock.Refresh(context.TODO())
-			if err != nil {
-				Warnf("unable to refresh lock: %v\n", err)
-			} else {
-				lastRefresh = lock.Time
+			var err error = nil
+			if !globalOptions.NoLock {
+				err := lock.Refresh(context.TODO())
+				if err != nil {
+					Warnf("unable to refresh lock: %v\n", err)
+				}
+			}
+
+			if err == nil {
+				if globalOptions.NoLock {
+					lastRefresh = time.Now()
+				} else {
+					lastRefresh = lock.Time
+				}
 				// inform monitor gorountine about successful refresh
 				select {
 				case <-ctx.Done():
