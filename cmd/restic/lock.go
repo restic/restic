@@ -103,7 +103,7 @@ func refreshLocks(ctx context.Context, lock *restic.Lock, lockInfo *lockContext,
 			debug.Log("terminate")
 			return
 		case <-ticker.C:
-			if time.Since(lastRefresh) > refreshabilityTimeout {
+			if time.Since(lastRefresh) > refreshabilityTimeout || globalOptions.NoLock {
 				// the lock is too old, wait until the expiry monitor cancels the context
 				continue
 			}
