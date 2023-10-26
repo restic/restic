@@ -106,7 +106,7 @@ Restic supports storage and preservation of hard links. However, since
 hard links exist in the scope of a filesystem by definition, restoring
 hard links from a fuse mount should be done by a program that preserves
 hard links. A program that does so is ``rsync``, used with the option
---hard-links.
+``--hard-links``.
 
 .. note:: ``restic mount`` is mostly useful if you want to restore just a few
    files out of a snapshot, or to check which files are contained in a snapshot.
