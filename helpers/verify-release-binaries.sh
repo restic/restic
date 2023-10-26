@@ -12,6 +12,10 @@ go_version="$2"
 
 # invalid if zero
 is_valid=1
+set_invalid() {
+    echo $1
+    is_valid=0
+}
 
 tmpdir="$(mktemp -d -p .)"
 cd "${tmpdir}"
@@ -41,7 +45,7 @@ for i in $(cat SHA256SUMS | cut -d " "  -f 3 ) ; do
     echo "Downloading $i"
     curl -OLSs https://github.com/restic/restic/releases/download/v${restic_version}/"$i"
 done
-shasum -a256 -c SHA256SUMS || echo "WARNING: RELEASE BINARIES DO NOT MATCH SHA256SUMS!" && is_valid=0
+shasum -a256 -c SHA256SUMS || set_invalid "WARNING: RELEASE BINARIES DO NOT MATCH SHA256SUMS!"
 gpg --verify restic-${restic_version}.tar.gz.asc restic-${restic_version}.tar.gz
 # TODO verify that the release does not contain any unexpected files
 
@@ -74,9 +78,9 @@ cp "restic-${restic_version}.tar.gz" output
 cp SHA256SUMS output
 
 # check that all release binaries have been reproduced successfully
-(cd output && shasum -a256 -c SHA256SUMS) || echo "WARNING: REPRODUCED BINARIES DO NOT MATCH RELEASE BINARIES!" && is_valid=0
+(cd output && shasum -a256 -c SHA256SUMS) || set_invalid "WARNING: REPRODUCED BINARIES DO NOT MATCH RELEASE BINARIES!"
 # and that the SHA256SUMS files does not miss binaries
-for i in output/restic* ; do grep "$(basename "$i")" SHA256SUMS > /dev/null || echo "WARNING: $i MISSING FROM RELEASE SHA256SUMS FILE!" && is_valid=0 ; done
+for i in output/restic* ; do grep "$(basename "$i")" SHA256SUMS > /dev/null || set_invalid "WARNING: $i MISSING FROM RELEASE SHA256SUMS FILE!" ; done
 
 
 extract_docker() {
@@ -95,8 +99,7 @@ extract_docker() {
         tar -xvf "$i" -C img usr/bin/restic 2> /dev/null 1>&2 || true
         if [[ -f img/usr/bin/restic ]]; then
             if [[ -f restic-docker ]]; then
-                echo "WARNING: CONTAINER CONTAINS MULTIPLE RESTIC BINARIES"
-                is_valid=0
+                set_invalid "WARNING: CONTAINER CONTAINS MULTIPLE RESTIC BINARIES"
             fi
             mv img/usr/bin/restic restic-docker
         fi
@@ -118,7 +121,7 @@ for img in restic/restic ghcr.io/restic/restic; do
     extract_docker "$img" 386 386
     extract_docker "$img" amd64 amd64
 
-    (cd docker && shasum -a256 -c SHA256SUMS) || echo "WARNING: DOCKER CONTAINER DOES NOT CONTAIN RELEASE BINARIES!" && is_valid=0
+    (cd docker && shasum -a256 -c SHA256SUMS) || set_invalid "WARNING: DOCKER CONTAINER DOES NOT CONTAIN RELEASE BINARIES!"
 
     mv docker docker-$(( ctr++ ))
 done
