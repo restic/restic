@@ -13,6 +13,6 @@ sphinx:
   configuration: doc/conf.py
 
 # https://docs.readthedocs.io/en/stable/guides/reproducible-builds.html
-# python:
-#  install:
-#  - requirements: docs/requirements.txt
+python:
+  install:
+  - requirements: doc/requirements.txt
