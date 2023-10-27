@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/backend/mem"
 	"github.com/restic/restic/internal/debug"
@@ -104,11 +105,11 @@ func TestLockConflict(t *testing.T) {
 }
 
 type writeOnceBackend struct {
-	restic.Backend
+	backend.Backend
 	written bool
 }
 
-func (b *writeOnceBackend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+func (b *writeOnceBackend) Save(ctx context.Context, h backend.Handle, rd backend.RewindReader) error {
 	if b.written {
 		return fmt.Errorf("fail after first write")
 	}
@@ -117,7 +118,7 @@ func (b *writeOnceBackend) Save(ctx context.Context, h restic.Handle, rd restic.
 }
 
 func TestLockFailedRefresh(t *testing.T) {
-	repo, cleanup, env := openLockTestRepo(t, func(r restic.Backend) (restic.Backend, error) {
+	repo, cleanup, env := openLockTestRepo(t, func(r backend.Backend) (backend.Backend, error) {
 		return &writeOnceBackend{Backend: r}, nil
 	})
 	defer cleanup()
@@ -143,11 +144,11 @@ func TestLockFailedRefresh(t *testing.T) {
 }
 
 type loggingBackend struct {
-	restic.Backend
+	backend.Backend
 	t *testing.T
 }
 
-func (b *loggingBackend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+func (b *loggingBackend) Save(ctx context.Context, h backend.Handle, rd backend.RewindReader) error {
 	b.t.Logf("save %v @ %v", h, time.Now())
 	err := b.Backend.Save(ctx, h, rd)
 	b.t.Logf("save finished %v @ %v", h, time.Now())
@@ -155,7 +156,7 @@ func (b *loggingBackend) Save(ctx context.Context, h restic.Handle, rd restic.Re
 }
 
 func TestLockSuccessfulRefresh(t *testing.T) {
-	repo, cleanup, env := openLockTestRepo(t, func(r restic.Backend) (restic.Backend, error) {
+	repo, cleanup, env := openLockTestRepo(t, func(r backend.Backend) (backend.Backend, error) {
 		return &loggingBackend{
 			Backend: r,
 			t:       t,
@@ -193,12 +194,12 @@ func TestLockSuccessfulRefresh(t *testing.T) {
 }
 
 type slowBackend struct {
-	restic.Backend
+	backend.Backend
 	m     sync.Mutex
 	sleep time.Duration
 }
 
-func (b *slowBackend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+func (b *slowBackend) Save(ctx context.Context, h backend.Handle, rd backend.RewindReader) error {
 	b.m.Lock()
 	sleep := b.sleep
 	b.m.Unlock()
@@ -208,7 +209,7 @@ func (b *slowBackend) Save(ctx context.Context, h restic.Handle, rd restic.Rewin
 
 func TestLockSuccessfulStaleRefresh(t *testing.T) {
 	var sb *slowBackend
-	repo, cleanup, env := openLockTestRepo(t, func(r restic.Backend) (restic.Backend, error) {
+	repo, cleanup, env := openLockTestRepo(t, func(r backend.Backend) (backend.Backend, error) {
 		sb = &slowBackend{Backend: r}
 		return sb, nil
 	})

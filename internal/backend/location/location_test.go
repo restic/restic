@@ -3,8 +3,8 @@ package location_test
 import (
 	"testing"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/location"
-	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
 )
 
@@ -13,7 +13,7 @@ type testConfig struct {
 }
 
 func testFactory() location.Factory {
-	return location.NewHTTPBackendFactory[testConfig, restic.Backend](
+	return location.NewHTTPBackendFactory[testConfig, backend.Backend](
 		"local",
 		func(s string) (*testConfig, error) {
 			return &testConfig{loc: s}, nil

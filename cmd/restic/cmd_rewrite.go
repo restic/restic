@@ -128,7 +128,7 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 		if dryRun {
 			Verbosef("would delete empty snapshot\n")
 		} else {
-			h := restic.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
+			h := backend.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
 			if err = repo.Backend().Remove(ctx, h); err != nil {
 				return false, err
 			}
@@ -170,7 +170,7 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 	Verbosef("saved new snapshot %v\n", id.Str())
 
 	if forget {
-		h := restic.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
+		h := backend.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
 		if err = repo.Backend().Remove(ctx, h); err != nil {
 			return false, err
 		}
@@ -207,7 +207,7 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 		repo.SetDryRun()
 	}
 
-	snapshotLister, err := backend.MemorizeList(ctx, repo.Backend(), restic.SnapshotFile)
+	snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
 	if err != nil {
 		return err
 	}

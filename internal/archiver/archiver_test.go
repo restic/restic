@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/mem"
 	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/errors"
@@ -1842,26 +1843,26 @@ func TestArchiverErrorReporting(t *testing.T) {
 }
 
 type noCancelBackend struct {
-	restic.Backend
+	backend.Backend
 }
 
-func (c *noCancelBackend) Remove(_ context.Context, h restic.Handle) error {
+func (c *noCancelBackend) Remove(_ context.Context, h backend.Handle) error {
 	return c.Backend.Remove(context.Background(), h)
 }
 
-func (c *noCancelBackend) Save(_ context.Context, h restic.Handle, rd restic.RewindReader) error {
+func (c *noCancelBackend) Save(_ context.Context, h backend.Handle, rd backend.RewindReader) error {
 	return c.Backend.Save(context.Background(), h, rd)
 }
 
-func (c *noCancelBackend) Load(_ context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+func (c *noCancelBackend) Load(_ context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
 	return c.Backend.Load(context.Background(), h, length, offset, fn)
 }
 
-func (c *noCancelBackend) Stat(_ context.Context, h restic.Handle) (restic.FileInfo, error) {
+func (c *noCancelBackend) Stat(_ context.Context, h backend.Handle) (backend.FileInfo, error) {
 	return c.Backend.Stat(context.Background(), h)
 }
 
-func (c *noCancelBackend) List(_ context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
+func (c *noCancelBackend) List(_ context.Context, t backend.FileType, fn func(backend.FileInfo) error) error {
 	return c.Backend.List(context.Background(), t, fn)
 }
 

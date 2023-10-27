@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -84,7 +85,7 @@ func repairPacks(ctx context.Context, gopts GlobalOptions, repo *repository.Repo
 			return errors.Fatalf("%s", err)
 		}
 
-		err = repo.Backend().Load(ctx, restic.Handle{Type: restic.PackFile, Name: id.String()}, 0, 0, func(rd io.Reader) error {
+		err = repo.Backend().Load(ctx, backend.Handle{Type: restic.PackFile, Name: id.String()}, 0, 0, func(rd io.Reader) error {
 			_, err := f.Seek(0, 0)
 			if err != nil {
 				return err

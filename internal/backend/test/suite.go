@@ -11,7 +11,6 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
 )
 
@@ -35,7 +34,7 @@ type Suite[C any] struct {
 	WaitForDelayedRemoval time.Duration
 
 	// ErrorHandler allows ignoring certain errors.
-	ErrorHandler func(testing.TB, restic.Backend, error) error
+	ErrorHandler func(testing.TB, backend.Backend, error) error
 }
 
 // RunTests executes all defined tests as subtests of t.
@@ -156,7 +155,7 @@ func (s *Suite[C]) RunBenchmarks(b *testing.B) {
 	s.cleanup(b)
 }
 
-func (s *Suite[C]) createOrError() (restic.Backend, error) {
+func (s *Suite[C]) createOrError() (backend.Backend, error) {
 	tr, err := backend.Transport(backend.TransportOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("cannot create transport for tests: %v", err)
@@ -167,7 +166,7 @@ func (s *Suite[C]) createOrError() (restic.Backend, error) {
 		return nil, err
 	}
 
-	_, err = be.Stat(context.TODO(), restic.Handle{Type: restic.ConfigFile})
+	_, err = be.Stat(context.TODO(), backend.Handle{Type: backend.ConfigFile})
 	if err != nil && !be.IsNotExist(err) {
 		return nil, err
 	}
@@ -179,7 +178,7 @@ func (s *Suite[C]) createOrError() (restic.Backend, error) {
 	return be, nil
 }
 
-func (s *Suite[C]) create(t testing.TB) restic.Backend {
+func (s *Suite[C]) create(t testing.TB) backend.Backend {
 	be, err := s.createOrError()
 	if err != nil {
 		t.Fatal(err)
@@ -187,7 +186,7 @@ func (s *Suite[C]) create(t testing.TB) restic.Backend {
 	return be
 }
 
-func (s *Suite[C]) open(t testing.TB) restic.Backend {
+func (s *Suite[C]) open(t testing.TB) backend.Backend {
 	tr, err := backend.Transport(backend.TransportOptions{})
 	if err != nil {
 		t.Fatalf("cannot create transport for tests: %v", err)
@@ -208,7 +207,7 @@ func (s *Suite[C]) cleanup(t testing.TB) {
 	s.close(t, be)
 }
 
-func (s *Suite[C]) close(t testing.TB, be restic.Backend) {
+func (s *Suite[C]) close(t testing.TB, be backend.Backend) {
 	err := be.Close()
 	if err != nil {
 		t.Fatal(err)

@@ -75,6 +75,15 @@ func (t BlobType) String() string {
 	return fmt.Sprintf("<BlobType %d>", t)
 }
 
+func (t BlobType) IsMetadata() bool {
+	switch t {
+	case TreeBlob:
+		return true
+	default:
+		return false
+	}
+}
+
 // MarshalJSON encodes the BlobType into JSON.
 func (t BlobType) MarshalJSON() ([]byte, error) {
 	switch t {

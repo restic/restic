@@ -3,18 +3,36 @@ package backend
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"fmt"
 	"io"
 
+	"github.com/minio/sha256-simd"
+
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/restic"
 )
+
+func verifyContentMatchesName(s string, data []byte) (bool, error) {
+	if len(s) != hex.EncodedLen(sha256.Size) {
+		return false, fmt.Errorf("invalid length for ID: %q", s)
+	}
+
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		return false, fmt.Errorf("invalid ID: %s", err)
+	}
+	var id [sha256.Size]byte
+	copy(id[:], b)
+
+	hashed := sha256.Sum256(data)
+	return id == hashed, nil
+}
 
 // LoadAll reads all data stored in the backend for the handle into the given
 // buffer, which is truncated. If the buffer is not large enough or nil, a new
 // one is allocated.
-func LoadAll(ctx context.Context, buf []byte, be restic.Backend, h restic.Handle) ([]byte, error) {
+func LoadAll(ctx context.Context, buf []byte, be Backend, h Handle) ([]byte, error) {
 	retriedInvalidData := false
 	err := be.Load(ctx, h, 0, 0, func(rd io.Reader) error {
 		// make sure this is idempotent, in case an error occurs this function may be called multiple times!
@@ -28,9 +46,8 @@ func LoadAll(ctx context.Context, buf []byte, be restic.Backend, h restic.Handle
 		// retry loading damaged data only once. If a file fails to download correctly
 		// the second time, then it  is likely corrupted at the backend. Return the data
 		// to the caller in that case to let it decide what to do with the data.
-		if !retriedInvalidData && h.Type != restic.ConfigFile {
-			id, err := restic.ParseID(h.Name)
-			if err == nil && !restic.Hash(buf).Equal(id) {
+		if !retriedInvalidData && h.Type != ConfigFile {
+			if matches, err := verifyContentMatchesName(h.Name, buf); err == nil && !matches {
 				debug.Log("retry loading broken blob %v", h)
 				retriedInvalidData = true
 				return errors.Errorf("loadAll(%v): invalid data returned", h)
@@ -56,87 +73,4 @@ type LimitedReadCloser struct {
 // exposes the Close() method.
 func LimitReadCloser(r io.ReadCloser, n int64) *LimitedReadCloser {
 	return &LimitedReadCloser{Closer: r, LimitedReader: io.LimitedReader{R: r, N: n}}
-}
-
-// DefaultLoad implements Backend.Load using lower-level openReader func
-func DefaultLoad(ctx context.Context, h restic.Handle, length int, offset int64,
-	openReader func(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error),
-	fn func(rd io.Reader) error) error {
-
-	rd, err := openReader(ctx, h, length, offset)
-	if err != nil {
-		return err
-	}
-	err = fn(rd)
-	if err != nil {
-		_ = rd.Close() // ignore secondary errors closing the reader
-		return err
-	}
-	return rd.Close()
-}
-
-// DefaultDelete removes all restic keys in the bucket. It will not remove the bucket itself.
-func DefaultDelete(ctx context.Context, be restic.Backend) error {
-	alltypes := []restic.FileType{
-		restic.PackFile,
-		restic.KeyFile,
-		restic.LockFile,
-		restic.SnapshotFile,
-		restic.IndexFile}
-
-	for _, t := range alltypes {
-		err := be.List(ctx, t, func(fi restic.FileInfo) error {
-			return be.Remove(ctx, restic.Handle{Type: t, Name: fi.Name})
-		})
-		if err != nil {
-			return nil
-		}
-	}
-	err := be.Remove(ctx, restic.Handle{Type: restic.ConfigFile})
-	if err != nil && be.IsNotExist(err) {
-		err = nil
-	}
-
-	return err
-}
-
-type memorizedLister struct {
-	fileInfos []restic.FileInfo
-	tpe       restic.FileType
-}
-
-func (m *memorizedLister) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
-	if t != m.tpe {
-		return fmt.Errorf("filetype mismatch, expected %s got %s", m.tpe, t)
-	}
-	for _, fi := range m.fileInfos {
-		if ctx.Err() != nil {
-			break
-		}
-		err := fn(fi)
-		if err != nil {
-			return err
-		}
-	}
-	return ctx.Err()
-}
-
-func MemorizeList(ctx context.Context, be restic.Lister, t restic.FileType) (restic.Lister, error) {
-	if _, ok := be.(*memorizedLister); ok {
-		return be, nil
-	}
-
-	var fileInfos []restic.FileInfo
-	err := be.List(ctx, t, func(fi restic.FileInfo) error {
-		fileInfos = append(fileInfos, fi)
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &memorizedLister{
-		fileInfos: fileInfos,
-		tpe:       t,
-	}, nil
 }

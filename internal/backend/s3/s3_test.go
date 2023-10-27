@@ -14,11 +14,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/backend/s3"
 	"github.com/restic/restic/internal/backend/test"
 	"github.com/restic/restic/internal/options"
-	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -117,7 +117,7 @@ func newMinioTestSuite(t testing.TB) (*test.Suite[s3.Config], func()) {
 				return &cfg, nil
 			},
 
-			Factory: location.NewHTTPBackendFactory("s3", s3.ParseConfig, location.NoPassword, func(ctx context.Context, cfg s3.Config, rt http.RoundTripper) (be restic.Backend, err error) {
+			Factory: location.NewHTTPBackendFactory("s3", s3.ParseConfig, location.NoPassword, func(ctx context.Context, cfg s3.Config, rt http.RoundTripper) (be backend.Backend, err error) {
 				for i := 0; i < 10; i++ {
 					be, err = s3.Create(ctx, cfg, rt)
 					if err != nil {

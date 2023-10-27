@@ -16,7 +16,7 @@ func TestFindLatestSnapshot(t *testing.T) {
 	latestSnapshot := restic.TestCreateSnapshot(t, repo, parseTimeUTC("2019-09-09 09:09:09"), 1)
 
 	f := restic.SnapshotFilter{Hosts: []string{"foo"}}
-	sn, _, err := f.FindLatest(context.TODO(), repo.Backend(), repo, "latest")
+	sn, _, err := f.FindLatest(context.TODO(), repo, repo, "latest")
 	if err != nil {
 		t.Fatalf("FindLatest returned error: %v", err)
 	}
@@ -35,7 +35,7 @@ func TestFindLatestSnapshotWithMaxTimestamp(t *testing.T) {
 	sn, _, err := (&restic.SnapshotFilter{
 		Hosts:          []string{"foo"},
 		TimestampLimit: parseTimeUTC("2018-08-08 08:08:08"),
-	}).FindLatest(context.TODO(), repo.Backend(), repo, "latest")
+	}).FindLatest(context.TODO(), repo, repo, "latest")
 	if err != nil {
 		t.Fatalf("FindLatest returned error: %v", err)
 	}
@@ -62,7 +62,7 @@ func TestFindLatestWithSubpath(t *testing.T) {
 		{desiredSnapshot.ID().String() + ":subfolder", "subfolder"},
 	} {
 		t.Run("", func(t *testing.T) {
-			sn, subfolder, err := (&restic.SnapshotFilter{}).FindLatest(context.TODO(), repo.Backend(), repo, exp.query)
+			sn, subfolder, err := (&restic.SnapshotFilter{}).FindLatest(context.TODO(), repo, repo, exp.query)
 			if err != nil {
 				t.Fatalf("FindLatest returned error: %v", err)
 			}
@@ -78,7 +78,7 @@ func TestFindAllSubpathError(t *testing.T) {
 	desiredSnapshot := restic.TestCreateSnapshot(t, repo, parseTimeUTC("2017-07-07 07:07:07"), 1)
 
 	count := 0
-	test.OK(t, (&restic.SnapshotFilter{}).FindAll(context.TODO(), repo.Backend(), repo,
+	test.OK(t, (&restic.SnapshotFilter{}).FindAll(context.TODO(), repo, repo,
 		[]string{"latest:subfolder", desiredSnapshot.ID().Str() + ":subfolder"},
 		func(id string, sn *restic.Snapshot, err error) error {
 			if err == restic.ErrInvalidSnapshotSyntax {

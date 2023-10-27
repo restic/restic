@@ -116,7 +116,7 @@ func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int,
 	checked := 0
 
 	if len(keyHint) > 0 {
-		id, err := restic.Find(ctx, s.Backend(), restic.KeyFile, keyHint)
+		id, err := restic.Find(ctx, s, restic.KeyFile, keyHint)
 
 		if err == nil {
 			key, err := OpenKey(ctx, s, id, password)
@@ -178,7 +178,7 @@ func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int,
 
 // LoadKey loads a key from the backend.
 func LoadKey(ctx context.Context, s *Repository, id restic.ID) (k *Key, err error) {
-	h := restic.Handle{Type: restic.KeyFile, Name: id.String()}
+	h := backend.Handle{Type: restic.KeyFile, Name: id.String()}
 	data, err := backend.LoadAll(ctx, nil, s.be, h)
 	if err != nil {
 		return nil, err
@@ -270,12 +270,12 @@ func AddKey(ctx context.Context, s *Repository, password, username, hostname str
 
 	id := restic.Hash(buf)
 	// store in repository and return
-	h := restic.Handle{
+	h := backend.Handle{
 		Type: restic.KeyFile,
 		Name: id.String(),
 	}
 
-	err = s.be.Save(ctx, h, restic.NewByteReader(buf, s.be.Hasher()))
+	err = s.be.Save(ctx, h, backend.NewByteReader(buf, s.be.Hasher()))
 	if err != nil {
 		return nil, err
 	}

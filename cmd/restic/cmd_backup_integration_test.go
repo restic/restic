@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -265,7 +266,7 @@ func TestBackupTreeLoadError(t *testing.T) {
 
 	// delete the subdirectory pack first
 	for id := range treePacks {
-		rtest.OK(t, r.Backend().Remove(context.TODO(), restic.Handle{Type: restic.PackFile, Name: id.String()}))
+		rtest.OK(t, r.Backend().Remove(context.TODO(), backend.Handle{Type: restic.PackFile, Name: id.String()}))
 	}
 	testRunRebuildIndex(t, env.gopts)
 	// now the repo is missing the tree blob in the index; check should report this

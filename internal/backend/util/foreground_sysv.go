@@ -1,7 +1,7 @@
 //go:build aix || solaris
 // +build aix solaris
 
-package backend
+package util
 
 import (
 	"os/exec"

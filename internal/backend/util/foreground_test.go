@@ -1,7 +1,7 @@
 //go:build !windows
 // +build !windows
 
-package backend_test
+package util_test
 
 import (
 	"bufio"
@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/util"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -22,7 +22,7 @@ func TestForeground(t *testing.T) {
 	stdout, err := cmd.StdoutPipe()
 	rtest.OK(t, err)
 
-	bg, err := backend.StartForeground(cmd)
+	bg, err := util.StartForeground(cmd)
 	rtest.OK(t, err)
 	defer func() {
 		rtest.OK(t, cmd.Wait())

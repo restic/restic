@@ -5,8 +5,8 @@ import (
 	"os/exec"
 	"testing"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -32,9 +32,9 @@ func TestRcloneExit(t *testing.T) {
 	t.Log("killed rclone")
 
 	for i := 0; i < 10; i++ {
-		_, err = be.Stat(context.TODO(), restic.Handle{
+		_, err = be.Stat(context.TODO(), backend.Handle{
 			Name: "foo",
-			Type: restic.PackFile,
+			Type: backend.PackFile,
 		})
 		rtest.Assert(t, err != nil, "expected an error")
 	}

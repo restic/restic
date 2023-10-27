@@ -1,4 +1,4 @@
-package restic
+package backend
 
 import (
 	"context"
@@ -27,7 +27,7 @@ type Backend interface {
 	// HasAtomicReplace returns whether Save() can atomically replace files
 	HasAtomicReplace() bool
 
-	// Remove removes a File described  by h.
+	// Remove removes a File described by h.
 	Remove(ctx context.Context, h Handle) error
 
 	// Close the backend
@@ -43,7 +43,7 @@ type Backend interface {
 	// The function fn may be called multiple times during the same Load invocation
 	// and therefore must be idempotent.
 	//
-	// Implementations are encouraged to use backend.DefaultLoad
+	// Implementations are encouraged to use util.DefaultLoad
 	Load(ctx context.Context, h Handle, length int, offset int64, fn func(rd io.Reader) error) error
 
 	// Stat returns information about the File identified by h.
@@ -70,7 +70,7 @@ type Backend interface {
 	Delete(ctx context.Context) error
 }
 
-type BackendUnwrapper interface {
+type Unwrapper interface {
 	// Unwrap returns the underlying backend or nil if there is none.
 	Unwrap() Backend
 }
@@ -81,7 +81,7 @@ func AsBackend[B Backend](b Backend) B {
 			return be
 		}
 
-		if be, ok := b.(BackendUnwrapper); ok {
+		if be, ok := b.(Unwrapper); ok {
 			b = be.Unwrap()
 		} else {
 			// not the backend we're looking for

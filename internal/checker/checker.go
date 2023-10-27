@@ -102,7 +102,7 @@ func (e *ErrPackData) Error() string {
 
 func (c *Checker) LoadSnapshots(ctx context.Context) error {
 	var err error
-	c.snapshots, err = backend.MemorizeList(ctx, c.repo.Backend(), restic.SnapshotFile)
+	c.snapshots, err = restic.MemorizeList(ctx, c.repo, restic.SnapshotFile)
 	return err
 }
 
@@ -126,7 +126,7 @@ func computePackTypes(ctx context.Context, idx restic.MasterIndex) map[restic.ID
 func (c *Checker) LoadIndex(ctx context.Context, p *progress.Counter) (hints []error, errs []error) {
 	debug.Log("Start")
 
-	indexList, err := backend.MemorizeList(ctx, c.repo.Backend(), restic.IndexFile)
+	indexList, err := restic.MemorizeList(ctx, c.repo, restic.IndexFile)
 	if err != nil {
 		// abort if an error occurs while listing the indexes
 		return hints, append(errs, err)
@@ -134,13 +134,7 @@ func (c *Checker) LoadIndex(ctx context.Context, p *progress.Counter) (hints []e
 
 	if p != nil {
 		var numIndexFiles uint64
-		err := indexList.List(ctx, restic.IndexFile, func(fi restic.FileInfo) error {
-			_, err := restic.ParseID(fi.Name)
-			if err != nil {
-				debug.Log("unable to parse %v as an ID", fi.Name)
-				return nil
-			}
-
+		err := indexList.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
 			numIndexFiles++
 			return nil
 		})
@@ -245,7 +239,7 @@ func IsOrphanedPack(err error) bool {
 	return errors.As(err, &e) && e.Orphaned
 }
 
-func isS3Legacy(b restic.Backend) bool {
+func isS3Legacy(b backend.Backend) bool {
 	// unwrap cache
 	if be, ok := b.(*cache.Backend); ok {
 		b = be.Backend
@@ -563,7 +557,7 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 	// calculate hash on-the-fly while reading the pack and capture pack header
 	var hash restic.ID
 	var hdrBuf []byte
-	hashingLoader := func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+	hashingLoader := func(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
 		return r.Backend().Load(ctx, h, int(size), 0, func(rd io.Reader) error {
 			hrd := hashing.NewReader(rd, sha256.New())
 			bufRd.Reset(hrd)

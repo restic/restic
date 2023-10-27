@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -346,7 +345,7 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []
 	}
 
 	// cache snapshots listing
-	be, err := backend.MemorizeList(ctx, repo.Backend(), restic.SnapshotFile)
+	be, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
 	if err != nil {
 		return err
 	}

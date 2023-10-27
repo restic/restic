@@ -5,6 +5,7 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/restic"
 )
 
@@ -45,7 +46,7 @@ func deleteFiles(ctx context.Context, gopts GlobalOptions, ignoreError bool, rep
 	for i := 0; i < int(workerCount); i++ {
 		wg.Go(func() error {
 			for id := range fileChan {
-				h := restic.Handle{Type: fileType, Name: id.String()}
+				h := backend.Handle{Type: fileType, Name: id.String()}
 				err := repo.Backend().Remove(ctx, h)
 				if err != nil {
 					if !gopts.JSON {

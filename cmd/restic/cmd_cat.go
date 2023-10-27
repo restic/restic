@@ -106,7 +106,7 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string) error {
 		Println(string(buf))
 		return nil
 	case "snapshot":
-		sn, _, err := restic.FindSnapshot(ctx, repo.Backend(), repo, args[1])
+		sn, _, err := restic.FindSnapshot(ctx, repo, repo, args[1])
 		if err != nil {
 			return errors.Fatalf("could not find snapshot: %v\n", err)
 		}
@@ -154,7 +154,7 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string) error {
 		return nil
 
 	case "pack":
-		h := restic.Handle{Type: restic.PackFile, Name: id.String()}
+		h := backend.Handle{Type: restic.PackFile, Name: id.String()}
 		buf, err := backend.LoadAll(ctx, nil, repo.Backend(), h)
 		if err != nil {
 			return err
@@ -193,7 +193,7 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string) error {
 		return errors.Fatal("blob not found")
 
 	case "tree":
-		sn, subfolder, err := restic.FindSnapshot(ctx, repo.Backend(), repo, args[1])
+		sn, subfolder, err := restic.FindSnapshot(ctx, repo, repo, args[1])
 		if err != nil {
 			return errors.Fatalf("could not find snapshot: %v\n", err)
 		}

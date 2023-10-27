@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
@@ -15,9 +16,9 @@ import (
 
 // Layout computes paths for file name storage.
 type Layout interface {
-	Filename(restic.Handle) string
-	Dirname(restic.Handle) string
-	Basedir(restic.FileType) (dir string, subdirs bool)
+	Filename(backend.Handle) string
+	Dirname(backend.Handle) string
+	Basedir(backend.FileType) (dir string, subdirs bool)
 	Paths() []string
 	Name() string
 }
@@ -102,13 +103,13 @@ func DetectLayout(ctx context.Context, repo Filesystem, dir string) (Layout, err
 	}
 
 	// key file in the "keys" dir (DefaultLayout)
-	foundKeysFile, err := hasBackendFile(ctx, repo, repo.Join(dir, defaultLayoutPaths[restic.KeyFile]))
+	foundKeysFile, err := hasBackendFile(ctx, repo, repo.Join(dir, defaultLayoutPaths[backend.KeyFile]))
 	if err != nil {
 		return nil, err
 	}
 
 	// key file in the "key" dir (S3LegacyLayout)
-	foundKeyFile, err := hasBackendFile(ctx, repo, repo.Join(dir, s3LayoutPaths[restic.KeyFile]))
+	foundKeyFile, err := hasBackendFile(ctx, repo, repo.Join(dir, s3LayoutPaths[backend.KeyFile]))
 	if err != nil {
 		return nil, err
 	}

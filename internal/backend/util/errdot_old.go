@@ -6,7 +6,7 @@
 // Once the minimum Go version restic supports is 1.19, remove this file
 //  and perform the actions listed in errdot_119.go.
 
-package backend
+package util
 
 func IsErrDot(err error) bool {
 	return false
