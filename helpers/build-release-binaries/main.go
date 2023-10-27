@@ -125,6 +125,9 @@ func build(sourceDir, outputDir, goos, goarch string) (filename string) {
 		"GOOS="+goos,
 		"GOARCH="+goarch,
 	)
+	if goarch == "arm" {
+		c.Env = append(c.Env, "GOARM=5")
+	}
 	verbose("run %v %v in %v", "go", c.Args, c.Dir)
 
 	err := c.Run()
