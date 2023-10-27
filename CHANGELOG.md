@@ -1492,7 +1492,7 @@ Details
 
    Restic did not support limiting the IO concurrency / number of connections for accessing
    repositories stored using the local or SFTP backends. The number of connections is now limited
-   as for other backends, and can be configured via the the `-o local.connections=2` and `-o
+   as for other backends, and can be configured via the `-o local.connections=2` and `-o
    sftp.connections=5` options. This ensures that restic does not overwhelm the backend with
    concurrent IO operations.
 
