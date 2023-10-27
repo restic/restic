@@ -1,0 +1,14 @@
+Enhancement: Support reading backup from a program's standard output
+
+When reading data from stdin, the `backup` command could not verify whether the
+corresponding command completed successfully.
+
+The `backup` command now supports starting an arbitrary command and sourcing
+the backup content from its standard output. This enables restic to verify that
+the command completes with exit code zero. A non-zero exit code causes the
+backup to fail.
+
+Example: `restic backup --stdin-from-command mysqldump [...]`
+
+https://github.com/restic/restic/issues/4251
+https://github.com/restic/restic/pull/4410

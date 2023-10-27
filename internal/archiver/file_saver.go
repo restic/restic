@@ -2,6 +2,7 @@ package archiver
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"sync"
@@ -146,7 +147,7 @@ func (s *FileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 				panic("completed twice")
 			}
 			isCompleted = true
-			fnr.err = err
+			fnr.err = fmt.Errorf("failed to save %v: %w", target, err)
 			fnr.node = nil
 			fnr.stats = ItemStats{}
 			finish(fnr)

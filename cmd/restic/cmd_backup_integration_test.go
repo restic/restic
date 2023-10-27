@@ -568,3 +568,72 @@ func linkEqual(source, dest []string) bool {
 
 	return true
 }
+
+func TestStdinFromCommand(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	opts := BackupOptions{
+		StdinCommand:  true,
+		StdinFilename: "stdin",
+	}
+
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"python", "-c", "import sys; print('something'); sys.exit(0)"}, opts, env.gopts)
+	testListSnapshots(t, env.gopts, 1)
+
+	testRunCheck(t, env.gopts)
+}
+
+func TestStdinFromCommandNoOutput(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	opts := BackupOptions{
+		StdinCommand:  true,
+		StdinFilename: "stdin",
+	}
+
+	err := testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{"python", "-c", "import sys; sys.exit(0)"}, opts, env.gopts)
+	rtest.Assert(t, err != nil && err.Error() == "at least one source file could not be read", "No data error expected")
+	testListSnapshots(t, env.gopts, 1)
+
+	testRunCheck(t, env.gopts)
+}
+
+func TestStdinFromCommandFailExitCode(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	opts := BackupOptions{
+		StdinCommand:  true,
+		StdinFilename: "stdin",
+	}
+
+	err := testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{"python", "-c", "import sys; print('test'); sys.exit(1)"}, opts, env.gopts)
+	rtest.Assert(t, err != nil, "Expected error while backing up")
+
+	testListSnapshots(t, env.gopts, 0)
+
+	testRunCheck(t, env.gopts)
+}
+
+func TestStdinFromCommandFailNoOutputAndExitCode(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	opts := BackupOptions{
+		StdinCommand:  true,
+		StdinFilename: "stdin",
+	}
+
+	err := testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{"python", "-c", "import sys; sys.exit(1)"}, opts, env.gopts)
+	rtest.Assert(t, err != nil, "Expected error while backing up")
+
+	testListSnapshots(t, env.gopts, 0)
+
+	testRunCheck(t, env.gopts)
+}

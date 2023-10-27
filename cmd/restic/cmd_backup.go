@@ -97,6 +97,7 @@ type BackupOptions struct {
 	ExcludeLargerThan string
 	Stdin             bool
 	StdinFilename     string
+	StdinCommand      bool
 	Tags              restic.TagLists
 	Host              string
 	FilesFrom         []string
@@ -134,6 +135,7 @@ func init() {
 	f.StringVar(&backupOptions.ExcludeLargerThan, "exclude-larger-than", "", "max `size` of the files to be backed up (allowed suffixes: k/K, m/M, g/G, t/T)")
 	f.BoolVar(&backupOptions.Stdin, "stdin", false, "read backup from stdin")
 	f.StringVar(&backupOptions.StdinFilename, "stdin-filename", "stdin", "`filename` to use when reading from stdin")
+	f.BoolVar(&backupOptions.StdinCommand, "stdin-from-command", false, "execute command and store its stdout")
 	f.Var(&backupOptions.Tags, "tag", "add `tags` for the new snapshot in the format `tag[,tag,...]` (can be specified multiple times)")
 	f.UintVar(&backupOptions.ReadConcurrency, "read-concurrency", 0, "read `n` files concurrently (default: $RESTIC_READ_CONCURRENCY or 2)")
 	f.StringVarP(&backupOptions.Host, "host", "H", "", "set the `hostname` for the snapshot manually. To prevent an expensive rescan use the \"parent\" flag")
@@ -287,7 +289,7 @@ func (opts BackupOptions) Check(gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	if opts.Stdin {
+	if opts.Stdin || opts.StdinCommand {
 		if len(opts.FilesFrom) > 0 {
 			return errors.Fatal("--stdin and --files-from cannot be used together")
 		}
@@ -298,7 +300,7 @@ func (opts BackupOptions) Check(gopts GlobalOptions, args []string) error {
 			return errors.Fatal("--stdin and --files-from-raw cannot be used together")
 		}
 
-		if len(args) > 0 {
+		if len(args) > 0 && !opts.StdinCommand {
 			return errors.Fatal("--stdin was specified and files/dirs were listed as arguments")
 		}
 	}
@@ -366,7 +368,7 @@ func collectRejectFuncs(opts BackupOptions, targets []string) (fs []RejectFunc, 
 
 // collectTargets returns a list of target files/dirs from several sources.
 func collectTargets(opts BackupOptions, args []string) (targets []string, err error) {
-	if opts.Stdin {
+	if opts.Stdin || opts.StdinCommand {
 		return nil, nil
 	}
 
@@ -592,16 +594,24 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		defer localVss.DeleteSnapshots()
 		targetFS = localVss
 	}
-	if opts.Stdin {
+
+	if opts.Stdin || opts.StdinCommand {
 		if !gopts.JSON {
 			progressPrinter.V("read data from stdin")
 		}
 		filename := path.Join("/", opts.StdinFilename)
+		var source io.ReadCloser = os.Stdin
+		if opts.StdinCommand {
+			source, err = fs.NewCommandReader(ctx, args, globalOptions.stderr)
+			if err != nil {
+				return err
+			}
+		}
 		targetFS = &fs.Reader{
 			ModTime:    timeStamp,
 			Name:       filename,
 			Mode:       0644,
-			ReadCloser: os.Stdin,
+			ReadCloser: source,
 		}
 		targets = []string{filename}
 	}
@@ -630,7 +640,13 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	success := true
 	arch.Error = func(item string, err error) error {
 		success = false
-		return progressReporter.Error(item, err)
+		reterr := progressReporter.Error(item, err)
+		// If we receive a fatal error during the execution of the snapshot,
+		// we abort the snapshot.
+		if reterr == nil && errors.IsFatal(err) {
+			reterr = err
+		}
+		return reterr
 	}
 	arch.CompleteItem = progressReporter.CompleteItem
 	arch.StartFile = progressReporter.StartFile
