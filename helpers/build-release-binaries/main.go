@@ -125,6 +125,10 @@ func build(sourceDir, outputDir, goos, goarch string) (filename string) {
 		"GOOS="+goos,
 		"GOARCH="+goarch,
 	)
+	if goarch == "arm" {
+		// the raspberry pi 1 only supports the ARMv6 instruction set
+		c.Env = append(c.Env, "GOARM=6")
+	}
 	verbose("run %v %v in %v", "go", c.Args, c.Dir)
 
 	err := c.Run()
