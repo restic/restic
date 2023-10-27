@@ -39,7 +39,7 @@ type Repository interface {
 	List(ctx context.Context, t FileType, fn func(ID, int64) error) error
 
 	// ListPack returns the list of blobs saved in the pack id and the length of
-	// the the pack header.
+	// the pack header.
 	ListPack(context.Context, ID, int64) ([]Blob, uint32, error)
 
 	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
