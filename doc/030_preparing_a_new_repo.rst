@@ -331,7 +331,7 @@ Wasabi
 ************
 
 `Wasabi <https://wasabi.com>`__ is a low cost Amazon S3 conformant object storage provider.
-Due to it's S3 conformance, Wasabi can be used as a storage provider for a restic repository.
+Due to its S3 conformance, Wasabi can be used as a storage provider for a restic repository.
 
 -  Create a Wasabi bucket using the `Wasabi Console <https://console.wasabisys.com>`__.
 -  Determine the correct Wasabi service URL for your bucket `here <https://wasabi-support.zendesk.com/hc/en-us/articles/360015106031-What-are-the-service-URLs-for-Wasabi-s-different-regions->`__.
@@ -822,7 +822,7 @@ To make this work we can employ the help of the ``setgid`` permission bit
 available on Linux and most other Unix systems. This permission bit makes
 newly created directories inherit both the group owner (gid) and setgid bit
 from the parent directory. Setting this bit requires root but since it
-propagates down to any new directories we only have to do this priviledged
+propagates down to any new directories we only have to do this privileged
 setup once:
 
 .. code-block:: console

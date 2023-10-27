@@ -146,7 +146,7 @@ change detection rule based on file metadata to determine whether a file is
 likely unchanged since a previous backup. If it is, the file is not scanned
 again.
 
-The previous backup snapshot, called "parent" snaphot in restic terminology,
+The previous backup snapshot, called "parent" snapshot in restic terminology,
 is determined as follows. By default restic groups snapshots by hostname and
 backup paths, and then selects the latest snapshot in the group that matches
 the current backup. You can change the selection criteria using the

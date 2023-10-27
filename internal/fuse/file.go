@@ -143,7 +143,7 @@ func (f *openFile) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.R
 	// the methods being called are responsible for appropriate synchronization.
 	//
 	// However, no lock needed here as getBlobAt can be called conurrently
-	// (blobCache has it's own locking)
+	// (blobCache has its own locking)
 	for i := startContent; remainingBytes > 0 && i < len(f.cumsize)-1; i++ {
 		blob, err := f.getBlobAt(ctx, i)
 		if err != nil {
