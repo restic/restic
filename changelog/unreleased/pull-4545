@@ -1,0 +1,8 @@
+Bugfix: Repair documentation build on readthedocs
+
+For restic 0.16.1, no documentation was available at
+https://restic.readthedocs.io/ .
+
+We have updated the documentation build process to work again.
+
+https://github.com/restic/restic/pull/4545
