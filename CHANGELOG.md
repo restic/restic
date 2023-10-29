@@ -1,3 +1,36 @@
+Changelog for restic 0.16.2 (2023-10-29)
+=======================================
+
+The following sections list the changes in restic 0.16.2 relevant to
+restic users. The changes are ordered by importance.
+
+Summary
+-------
+
+ * Fix #4540: Restore ARMv5 support for ARM binaries
+ * Fix #4545: Repair documentation build on Read the Docs
+
+Details
+-------
+
+ * Bugfix #4540: Restore ARMv5 support for ARM binaries
+
+   The official release binaries for restic 0.16.1 were accidentally built to require ARMv7. The
+   build process is now updated to restore support for ARMv5.
+
+   Please note that restic 0.17.0 will drop support for ARMv5 and require at least ARMv6.
+
+   https://github.com/restic/restic/issues/4540
+
+ * Bugfix #4545: Repair documentation build on Read the Docs
+
+   For restic 0.16.1, no documentation was available at https://restic.readthedocs.io/ .
+
+   The documentation build process is now updated to work again.
+
+   https://github.com/restic/restic/pull/4545
+
+
 Changelog for restic 0.16.1 (2023-10-24)
 =======================================
 
