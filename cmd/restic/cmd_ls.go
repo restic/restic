@@ -3,7 +3,10 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -51,6 +54,7 @@ type LsOptions struct {
 	restic.SnapshotFilter
 	Recursive     bool
 	HumanReadable bool
+	Ncdu          bool
 }
 
 var lsOptions LsOptions
@@ -63,6 +67,7 @@ func init() {
 	flags.BoolVarP(&lsOptions.ListLong, "long", "l", false, "use a long listing format showing size and mode")
 	flags.BoolVar(&lsOptions.Recursive, "recursive", false, "include files in subfolders of the listed directories")
 	flags.BoolVar(&lsOptions.HumanReadable, "human-readable", false, "print sizes in human readable format")
+	flags.BoolVar(&lsOptions.Ncdu, "ncdu", false, "output NCDU save format (pipe into ncdu -f - ")
 }
 
 type lsSnapshot struct {
@@ -112,6 +117,81 @@ func lsNodeJSON(enc *json.Encoder, path string, node *restic.Node) error {
 	}
 
 	return enc.Encode(n)
+}
+
+// lsSnapshotNcdu prints a restic snapshot in Ncdu save format.
+// It opens the JSON list. Nodes are added with lsNodeNcdu and the list is closed by lsCloseNcdu.
+// Format documentation: https://dev.yorhel.nl/ncdu/jsonfmt
+func lsSnapshotNcdu(stdout io.Writer, depth *int, sn *restic.Snapshot) {
+	const NcduMajorVer = 1
+	const NcduMinorVer = 2
+
+	snapshotBytes, err := json.Marshal(sn)
+	if err != nil {
+		Warnf("JSON encode failed: %v\n", err)
+	}
+	*depth++
+	fmt.Fprintf(stdout, "[%d, %d, %s", NcduMajorVer, NcduMinorVer, string(snapshotBytes))
+}
+
+func lsNodeNcdu(stdout io.Writer, depth *int, currentPath *string, path string, node *restic.Node) {
+	type NcduNode struct {
+		Name   string `json:"name"`
+		Asize  uint64 `json:"asize"`
+		Dsize  uint64 `json:"dsize"`
+		Dev    uint64 `json:"dev"`
+		Ino    uint64 `json:"ino"`
+		NLink  uint64 `json:"nlink"`
+		NotReg bool   `json:"notreg"`
+		Uid    uint32 `json:"uid"`
+		Gid    uint32 `json:"gid"`
+		Mode   uint16 `json:"mode"`
+		Mtime  int64  `json:"mtime"`
+	}
+
+	outNode := NcduNode{
+		Name:   node.Name,
+		Asize:  node.Size,
+		Dsize:  node.Size,
+		Dev:    node.DeviceID,
+		Ino:    node.Inode,
+		NLink:  node.Links,
+		NotReg: node.Type != "dir" && node.Type != "file",
+		Uid:    node.UID,
+		Gid:    node.GID,
+		Mode:   uint16(node.Mode),
+		Mtime:  node.ModTime.Unix(),
+	}
+
+	outJson, err := json.Marshal(outNode)
+	if err != nil {
+		Warnf("JSON encode failed: %v\n", err)
+	}
+
+	thisPath := filepath.Dir(path)
+	for thisPath != *currentPath {
+		*depth--
+		if *depth < 0 {
+			panic("cannot find suitable parent directory")
+		}
+		fmt.Fprintf(stdout, "\n%s]", strings.Repeat("  ", *depth))
+		*currentPath = filepath.Dir(*currentPath)
+	}
+
+	if node.Type == "dir" {
+		*currentPath = path
+		*depth++
+		fmt.Fprintf(stdout, ", [\n%s%s", strings.Repeat("  ", *depth), string(outJson))
+	} else {
+		fmt.Fprintf(stdout, ",\n%s%s", strings.Repeat("  ", *depth), string(outJson))
+	}
+}
+
+func lsCloseNcdu(stdout io.Writer, depth *int) {
+	for *depth > 0 {
+		fmt.Fprintf(stdout, "%s]\n", strings.Repeat("  ", *depth))
+		*depth--
+	}
 }
 
 func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []string) error {
@@ -205,6 +285,14 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 				Warnf("JSON encode failed: %v\n", err)
 			}
 		}
+	} else if opts.Ncdu {
+		var depth int
+		var currentPath = "/"
+		printSnapshot = func(sn *restic.Snapshot) { lsSnapshotNcdu(globalOptions.stdout, &depth, sn) }
+		printNode = func(path string, node *restic.Node) {
+			lsNodeNcdu(globalOptions.stdout, &depth, &currentPath, path, node)
+		}
+		defer lsCloseNcdu(globalOptions.stdout, &depth)
 	} else {
 		printSnapshot = func(sn *restic.Snapshot) {
 			Verbosef("%v filtered by %v:\n", sn, dirs)
