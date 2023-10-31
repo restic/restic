@@ -1,0 +1,6 @@
+Enhancement: add --json option to version command.
+
+Restic now supports outputting restic version and used go version and platform
+target via json when using the version command
+
+https://github.com/restic/restic/issues/4547
