@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"runtime"
 
@@ -21,8 +22,31 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("restic %s compiled with %v on %v/%v\n",
-			version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
+		if globalOptions.JSON {
+			type jsonVersion struct {
+				Version   string `json:"version"`
+				GoVersion string `json:"go_version"`
+				GoTarget  string `json:"go_target"`
+			}
+
+			jsonS := jsonVersion{
+				Version:   version,
+				GoVersion: runtime.Version(),
+				GoTarget:  runtime.GOOS + "/" + runtime.GOARCH,
+			}
+
+			jsonB, err := json.Marshal(jsonS)
+			if err != nil {
+				Warnf("Marshall failed: %v\n", err)
+				return
+			}
+
+			fmt.Println(string(jsonB))
+		} else {
+			fmt.Printf("restic %s compiled with %v on %v/%v\n",
+				version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
+		}
+
 	},
 }
 
