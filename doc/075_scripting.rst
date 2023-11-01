@@ -588,5 +588,7 @@ The version command returns a single JSON object.
 +----------------+--------------------+
 | ``go_version`` | Go compile version |
 +----------------+--------------------+
-| ``go_target``  | Go target platform |
+| ``go_os``      | Go OS              |
++----------------+--------------------+
+| ``go_arch``    | Go architecture    |
 +----------------+--------------------+

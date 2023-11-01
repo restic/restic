@@ -26,18 +26,20 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 			type jsonVersion struct {
 				Version   string `json:"version"`
 				GoVersion string `json:"go_version"`
-				GoTarget  string `json:"go_target"`
+				GoOS      string `json:"go_os"`
+				GoArch    string `json:"go_arch"`
 			}
 
 			jsonS := jsonVersion{
 				Version:   version,
 				GoVersion: runtime.Version(),
-				GoTarget:  runtime.GOOS + "/" + runtime.GOARCH,
+				GoOS:      runtime.GOOS,
+				GoArch:    runtime.GOARCH,
 			}
 
 			err := json.NewEncoder(globalOptions.stdout).Encode(jsonS)
 			if err != nil {
-				Warnf("Encode failed: %v\n", err)
+				Warnf("JSON encode failed: %v\n", err)
 				return
 			}
 		} else {
