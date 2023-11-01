@@ -576,3 +576,19 @@ The snapshots command returns a single JSON object.
 +------------------------------+-----------------------------------------------------+
 | ``compression_space_saving`` | Overall space saving due to compression             |
 +------------------------------+-----------------------------------------------------+
+
+
+version
+-------
+
+The version command returns a single JSON object.
+
++----------------+--------------------+
+| ``version``    | restic version     |
++----------------+--------------------+
+| ``go_version`` | Go compile version |
++----------------+--------------------+
+| ``go_os``      | Go OS              |
++----------------+--------------------+
+| ``go_arch``    | Go architecture    |
++----------------+--------------------+
