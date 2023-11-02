@@ -8,6 +8,10 @@ build:
   tools:
     python: "3.11"
 
+# Build HTMLZip
+formats:
+  - htmlzip
+
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
   configuration: doc/conf.py
