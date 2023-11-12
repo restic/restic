@@ -1,0 +1,9 @@
+Bugfix: Restore ARMv5 support for ARM binaries
+
+The official release binaries for restic 0.16.1 were accidentally built to
+require ARMv7. The build process is now updated to restore support for ARMv5.
+
+Please note that restic 0.17.0 will drop support for ARMv5 and require at least
+ARMv6.
+
+https://github.com/restic/restic/issues/4540
