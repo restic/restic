@@ -99,6 +99,29 @@ func (m *indexMap) get(id restic.ID) *indexEntry {
 	return nil
 }
 
+// getMinIndex returns the FIXME
+func (m *indexMap) getMinIndex(id restic.ID) int {
+	if len(m.buckets) == 0 {
+		return -1
+	}
+
+	idx := -1
+	h := m.hash(id)
+	ei := m.buckets[h]
+	for ei != 0 {
+		e := m.resolve(ei)
+		cur := ei
+		ei = e.next
+		if e.id != id {
+			continue
+		}
+		if int(cur) < idx || idx == -1 {
+			idx = int(cur) // FIXME?
+		}
+	}
+	return idx
+}
+
 func (m *indexMap) grow() {
 	m.buckets = make([]uint, growthFactor*len(m.buckets))
 
@@ -118,9 +141,10 @@ func (m *indexMap) hash(id restic.ID) uint {
 	// While SHA-256 should be collision-resistant, for hash table indices
 	// we use only a few bits of it and finding collisions for those is
 	// much easier than breaking the whole algorithm.
-	m.mh.Reset()
-	_, _ = m.mh.Write(id[:])
-	h := uint(m.mh.Sum64())
+	mh := maphash.Hash{}
+	mh.SetSeed(m.mh.Seed())
+	_, _ = mh.Write(id[:])
+	h := uint(mh.Sum64())
 	return h & uint(len(m.buckets)-1)
 }
 
