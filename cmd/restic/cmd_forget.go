@@ -138,6 +138,7 @@ func init() {
 func verifyForgetOptions(opts *ForgetOptions) error {
 	if opts.Last < -1 || opts.Hourly < -1 || opts.Daily < -1 || opts.Weekly < -1 ||
 		opts.Monthly < -1 || opts.Yearly < -1 {
+		// This condition is already catched in ForgetPolicyCount's Set(s string)
 		return errors.Fatal("negative values other than -1 are not allowed for --keep-*")
 	}
 
