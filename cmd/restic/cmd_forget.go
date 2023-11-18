@@ -141,11 +141,22 @@ func verifyForgetOptions(opts *ForgetOptions) error {
 		return errors.Fatal("negative values other than -1 are not allowed for --keep-*")
 	}
 
+	var allKeepWithinXUndefined = true
 	for _, d := range []restic.Duration{opts.Within, opts.WithinHourly, opts.WithinDaily,
 		opts.WithinMonthly, opts.WithinWeekly, opts.WithinYearly} {
 		if d.Hours < 0 || d.Days < 0 || d.Months < 0 || d.Years < 0 {
 			return errors.Fatal("durations containing negative values are not allowed for --keep-within*")
 		}
+		if d.Hours != 0 || d.Days != 0 || d.Months != 0 || d.Years != 0 {
+			allKeepWithinXUndefined = false
+		}
+	}
+
+	allKeepXUndefined := opts.Last == 0 && opts.Hourly == 0 && opts.Daily == 0 && opts.Weekly == 0 &&
+		opts.Monthly == 0 && opts.Yearly == 0
+
+	if len(opts.KeepTags) > 0 && allKeepXUndefined && allKeepWithinXUndefined {
+		return errors.Fatal("--keep-tags can only be used together with other --keep-* options.")
 	}
 
 	return nil
