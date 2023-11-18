@@ -115,7 +115,7 @@ func init() {
 	f.VarP(&forgetOptions.WithinWeekly, "keep-within-weekly", "", "keep weekly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
 	f.VarP(&forgetOptions.WithinMonthly, "keep-within-monthly", "", "keep monthly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
 	f.VarP(&forgetOptions.WithinYearly, "keep-within-yearly", "", "keep yearly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
-	f.Var(&forgetOptions.KeepTags, "keep-tag", "keep snapshots with this `taglist` (can be specified multiple times)")
+	f.Var(&forgetOptions.KeepTags, "keep-tag", "keep snapshots with this `taglist` (can be specified multiple times, `taglist`s will be combined into one). this is a \"has all\" condition, i.e. a snapshot is only kept when it has all tags in `taglist`.")
 
 	initMultiSnapshotFilter(f, &forgetOptions.SnapshotFilter, false)
 	f.StringArrayVar(&forgetOptions.Hosts, "hostname", nil, "only consider snapshots with the given `hostname` (can be specified multiple times)")
