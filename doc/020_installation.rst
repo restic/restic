@@ -84,6 +84,12 @@ If you are using macOS, you can install restic using the
 
     $ brew install restic
 
+On Linux and macOS, you can also install it using `pkgx <https://pkgx.sh/>`__:
+
+.. code-block:: console
+
+    $ pkgx install restic
+
 You may also install it using `MacPorts <https://www.macports.org/>`__:
 
 .. code-block:: console
