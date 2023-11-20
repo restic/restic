@@ -75,7 +75,7 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 		return err
 	}
 
-	repo, err := ReadRepo(gopts)
+	gopts.Repo, err = ReadRepo(gopts)
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 		return err
 	}
 
-	be, err := create(ctx, repo, gopts, gopts.extended)
+	be, err := create(ctx, gopts.Repo, gopts, gopts.extended)
 	if err != nil {
 		return errors.Fatalf("create repository at %s failed: %v\n", location.StripPassword(gopts.backends, gopts.Repo), err)
 	}
