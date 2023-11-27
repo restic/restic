@@ -234,6 +234,27 @@ modifying the repository. Instead restic will only print the actions it would
 perform.
 
 
+Modifying metadata of snapshots
+===============================
+
+Sometimes it may be desirable to change the metadata of an existing snapshot.
+Currently, rewriting the hostname and the time of the backup is supported. 
+This is possible using the ``rewrite`` command with the option ``--new-host`` followed by the desired new hostname or the option ``--new-time`` followed by the desired new timestamp.
+
+.. code-block:: console
+    $ restic rewrite --new-host newhost --new-time "1999-01-01 11:11:11"
+
+    repository b7dbade3 opened (version 2, compression level auto)
+    [0:00] 100.00%  1 / 1 index files loaded
+
+    snapshot 8ed674f4 of [/path/to/abc.txt] at 2023-11-27 21:57:52.439139291 +0100 CET)
+    Setting time to 1999-01-01 11:11:11 +0100 CET
+    Setting host to newhost
+    saved new snapshot c05da643
+
+    modified 1 snapshots
+
+
 .. _checking-integrity:
 
 Checking integrity and consistency
