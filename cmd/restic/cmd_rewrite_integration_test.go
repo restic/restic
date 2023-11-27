@@ -9,12 +9,13 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func testRunRewriteExclude(t testing.TB, gopts GlobalOptions, excludes []string, forget bool) {
+func testRunRewriteExclude(t testing.TB, gopts GlobalOptions, excludes []string, forget bool, metadata *SnapshotMetadataArgs) {
 	opts := RewriteOptions{
 		excludePatternOptions: excludePatternOptions{
 			Excludes: excludes,
 		},
-		Forget: forget,
+		Forget:   forget,
+		Metadata: metadata,
 	}
 
 	rtest.OK(t, runRewrite(context.TODO(), opts, gopts, nil))
@@ -38,7 +39,7 @@ func TestRewrite(t *testing.T) {
 	createBasicRewriteRepo(t, env)
 
 	// exclude some data
-	testRunRewriteExclude(t, env.gopts, []string{"3"}, false)
+	testRunRewriteExclude(t, env.gopts, []string{"3"}, false, nil)
 	snapshotIDs := testRunList(t, "snapshots", env.gopts)
 	rtest.Assert(t, len(snapshotIDs) == 2, "expected two snapshots, got %v", snapshotIDs)
 	testRunCheck(t, env.gopts)
@@ -50,7 +51,7 @@ func TestRewriteUnchanged(t *testing.T) {
 	snapshotID := createBasicRewriteRepo(t, env)
 
 	// use an exclude that will not exclude anything
-	testRunRewriteExclude(t, env.gopts, []string{"3dflkhjgdflhkjetrlkhjgfdlhkj"}, false)
+	testRunRewriteExclude(t, env.gopts, []string{"3dflkhjgdflhkjetrlkhjgfdlhkj"}, false, nil)
 	newSnapshotIDs := testRunList(t, "snapshots", env.gopts)
 	rtest.Assert(t, len(newSnapshotIDs) == 1, "expected one snapshot, got %v", newSnapshotIDs)
 	rtest.Assert(t, snapshotID == newSnapshotIDs[0], "snapshot id changed unexpectedly")
@@ -63,7 +64,7 @@ func TestRewriteReplace(t *testing.T) {
 	snapshotID := createBasicRewriteRepo(t, env)
 
 	// exclude some data
-	testRunRewriteExclude(t, env.gopts, []string{"3"}, true)
+	testRunRewriteExclude(t, env.gopts, []string{"3"}, true, nil)
 	newSnapshotIDs := testRunList(t, "snapshots", env.gopts)
 	rtest.Assert(t, len(newSnapshotIDs) == 1, "expected one snapshot, got %v", newSnapshotIDs)
 	rtest.Assert(t, snapshotID != newSnapshotIDs[0], "snapshot id should have changed")
