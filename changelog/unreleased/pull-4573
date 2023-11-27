@@ -1,0 +1,5 @@
+Enhancement: Add `--new-host` and `--new-time` options to `rewrite` command
+
+`restic rewrite` now allows rewriting the host and / or time metadata of a snapshot.
+
+https://github.com/restic/restic/pull/4573
