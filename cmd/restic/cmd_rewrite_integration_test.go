@@ -72,3 +72,38 @@ func TestRewriteReplace(t *testing.T) {
 	testRunPrune(t, env.gopts, PruneOptions{MaxUnused: "0"})
 	testRunCheck(t, env.gopts)
 }
+
+func testRewriteMetadata(t *testing.T, metadata SnapshotMetadataArgs) {
+	env, cleanup := withTestEnvironment(t)
+	env.gopts.backendTestHook = nil
+	defer cleanup()
+	createBasicRewriteRepo(t, env)
+	repo, _ := OpenRepository(context.TODO(), env.gopts)
+
+	testRunRewriteExclude(t, env.gopts, []string{}, true, &metadata)
+
+	snapshots := FindFilteredSnapshots(context.TODO(), repo, repo, &restic.SnapshotFilter{}, []string{})
+
+	newSnapshot := <-snapshots
+
+	if metadata.Time != "" {
+		rtest.Assert(t, newSnapshot.Time.Format(TimeFormat) == metadata.Time, "New snapshot should have time %s", metadata.Time)
+	}
+
+	if metadata.Hostname != "" {
+		rtest.Assert(t, newSnapshot.Hostname == metadata.Hostname, "New snapshot should have host %s", metadata.Hostname)
+	}
+}
+
+func TestRewriteMetadata(t *testing.T) {
+	newHost := "new host"
+	newTime := "1999-01-01 11:11:11"
+
+	for _, metadata := range []SnapshotMetadataArgs{
+		{Hostname: "", Time: newTime},
+		{Hostname: newHost, Time: ""},
+		{Hostname: newHost, Time: newTime},
+	} {
+		testRewriteMetadata(t, metadata)
+	}
+}
