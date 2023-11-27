@@ -57,6 +57,25 @@ type SnapshotMetadataArgs struct {
 	Time     string
 }
 
+func (sma SnapshotMetadataArgs) convert() (*snapshotMetadata, error) {
+	if sma.Time == "" && sma.Hostname == "" {
+		return nil, nil
+	}
+
+	var timeStamp *time.Time
+	if sma.Time != "" {
+		t, err := time.ParseInLocation(TimeFormat, sma.Time, time.Local)
+		if err != nil {
+			return nil, errors.Fatalf("error in time option: %v\n", err)
+		}
+		timeStamp = &t
+	} else {
+		timeStamp = nil
+	}
+	return &snapshotMetadata{Hostname: sma.Hostname, Time: timeStamp}, nil
+
+}
+
 // RewriteOptions collects all options for the rewrite command.
 type RewriteOptions struct {
 	Forget   bool
@@ -76,6 +95,10 @@ func init() {
 	f := cmdRewrite.Flags()
 	f.BoolVarP(&rewriteOptions.Forget, "forget", "", false, "remove original snapshots after creating new ones")
 	f.BoolVarP(&rewriteOptions.DryRun, "dry-run", "n", false, "do not do anything, just print what would be done")
+	f.StringVar(&metadataOptions.Hostname, "new-host", "", "rewrite hostname")
+	f.StringVar(&metadataOptions.Time, "new-time", "", "rewrite time of the backup")
+
+	rewriteOptions.Metadata = &metadataOptions
 
 	initMultiSnapshotFilter(f, &rewriteOptions.SnapshotFilter, true)
 	initExcludePatternOptions(f, &rewriteOptions.excludePatternOptions)
@@ -87,6 +110,12 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 	}
 
 	rejectByNameFuncs, err := opts.excludePatternOptions.CollectPatterns()
+	if err != nil {
+		return false, err
+	}
+
+	metadata, err := opts.Metadata.convert()
+
 	if err != nil {
 		return false, err
 	}
@@ -114,10 +143,10 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 	return filterAndReplaceSnapshot(ctx, repo, sn,
 		func(ctx context.Context, sn *restic.Snapshot) (restic.ID, error) {
 			return rewriter.RewriteTree(ctx, repo, "/", *sn.Tree)
-		}, opts.DryRun, opts.Forget, "rewrite")
+		}, opts.DryRun, opts.Forget, metadata, "rewrite")
 }
 
-func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *restic.Snapshot, filter func(ctx context.Context, sn *restic.Snapshot) (restic.ID, error), dryRun bool, forget bool, addTag string) (bool, error) {
+func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *restic.Snapshot, filter func(ctx context.Context, sn *restic.Snapshot) (restic.ID, error), dryRun bool, forget bool, metadata *snapshotMetadata, addTag string) (bool, error) {
 
 	wg, wgCtx := errgroup.WithContext(ctx)
 	repo.StartPackUploader(wgCtx, wg)
@@ -151,7 +180,7 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 		return true, nil
 	}
 
-	if filteredTree == *sn.Tree {
+	if filteredTree == *sn.Tree && metadata == nil {
 		debug.Log("Snapshot %v not modified", sn)
 		return false, nil
 	}
@@ -164,6 +193,14 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 			Verbosef("would remove old snapshot\n")
 		}
 
+		if metadata != nil && metadata.Time != nil {
+			Verbosef("would set time to %s\n", metadata.Time)
+		}
+
+		if metadata != nil && metadata.Hostname != "" {
+			Verbosef("would set time to %s\n", metadata.Hostname)
+		}
+
 		return true, nil
 	}
 
@@ -173,6 +210,17 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 
 	if !forget {
 		sn.AddTags([]string{addTag})
+	}
+
+	if metadata != nil && metadata.Time != nil {
+		Verbosef("Setting time to %s\n", *metadata.Time)
+		sn.Time = *metadata.Time
+	}
+
+	if metadata != nil && metadata.Hostname != "" {
+		Verbosef("Setting host to %s\n", metadata.Hostname)
+		sn.Hostname = metadata.Hostname
+
 	}
 
 	// Save the new snapshot.
@@ -194,8 +242,8 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 }
 
 func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, args []string) error {
-	if opts.excludePatternOptions.Empty() {
-		return errors.Fatal("Nothing to do: no excludes provided")
+	if opts.excludePatternOptions.Empty() && opts.Metadata == nil {
+		return errors.Fatal("Nothing to do: no excludes provided and no new metadata provided")
 	}
 
 	repo, err := OpenRepository(ctx, gopts)
