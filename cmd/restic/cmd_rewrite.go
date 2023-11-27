@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
@@ -46,16 +47,28 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 	},
 }
 
+type snapshotMetadata struct {
+	Hostname string
+	Time     *time.Time
+}
+
+type SnapshotMetadataArgs struct {
+	Hostname string
+	Time     string
+}
+
 // RewriteOptions collects all options for the rewrite command.
 type RewriteOptions struct {
-	Forget bool
-	DryRun bool
+	Forget   bool
+	DryRun   bool
+	Metadata *SnapshotMetadataArgs
 
 	restic.SnapshotFilter
 	excludePatternOptions
 }
 
 var rewriteOptions RewriteOptions
+var metadataOptions SnapshotMetadataArgs
 
 func init() {
 	cmdRoot.AddCommand(cmdRewrite)
