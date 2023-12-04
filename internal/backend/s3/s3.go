@@ -325,12 +325,22 @@ func (be *Backend) Path() string {
 	return be.cfg.Prefix
 }
 
+// useStorageClass returns whether file should be saved in the provided Storage Class
+func (be *Backend) useStorageClass(h backend.Handle) bool {
+	var notArchiveClass bool = be.cfg.StorageClass != "GLACIER" && be.cfg.StorageClass != "DEEP_ARCHIVE"
+	isDataFile := h.Type == backend.PackFile && !h.IsMetadata
+	return isDataFile || notArchiveClass
+}
+
 // Save stores data in the backend at the handle.
 func (be *Backend) Save(ctx context.Context, h backend.Handle, rd backend.RewindReader) error {
 	objName := be.Filename(h)
 
-	opts := minio.PutObjectOptions{StorageClass: be.cfg.StorageClass}
-	opts.ContentType = "application/octet-stream"
+	opts := minio.PutObjectOptions{ContentType: "application/octet-stream"}
+
+	if be.useStorageClass(h) {
+		opts.StorageClass = be.cfg.StorageClass
+	}
 	// the only option with the high-level api is to let the library handle the checksum computation
 	opts.SendContentMd5 = true
 	// only use multipart uploads for very large files
