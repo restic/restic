@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"math/rand"
 	"os"
 	"strconv"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/errors"
@@ -181,7 +183,9 @@ func prepareCheckCache(opts CheckOptions, gopts *GlobalOptions) (cleanup func())
 	}
 
 	gopts.CacheDir = tempdir
-	Verbosef("using temporary cache in %v\n", tempdir)
+	if !gopts.JSON {
+		Verbosef("using temporary cache in %v\n", tempdir)
+	}
 
 	cleanup = func() {
 		err := fs.RemoveAll(tempdir)
@@ -210,7 +214,9 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	}
 
 	if !gopts.NoLock {
-		Verbosef("create exclusive lock for repository\n")
+		if !gopts.JSON {
+			Verbosef("create exclusive lock for repository\n")
+		}
 		var lock *restic.Lock
 		lock, ctx, err = lockRepoExclusive(ctx, repo, gopts.RetryLock, gopts.JSON)
 		defer unlockRepo(lock)
@@ -225,7 +231,9 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		return err
 	}
 
-	Verbosef("load indexes\n")
+	if !gopts.JSON {
+		Verbosef("load indexes\n")
+	}
 	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
 	hints, errs := chkr.LoadIndex(ctx, bar)
 
@@ -263,7 +271,9 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	orphanedPacks := 0
 	errChan := make(chan error)
 
-	Verbosef("check all packs\n")
+	if !gopts.JSON {
+		Verbosef("check all packs\n")
+	}
 	go chkr.Packs(ctx, errChan)
 
 	for err := range errChan {
@@ -282,15 +292,19 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		Verbosef("%d additional files were found in the repo, which likely contain duplicate data.\nThis is non-critical, you can run `restic prune` to correct this.\n", orphanedPacks)
 	}
 
-	Verbosef("check snapshots, trees and blobs\n")
+	if !gopts.JSON {
+		Verbosef("check snapshots, trees and blobs\n")
+	}
 	errChan = make(chan error)
 	var wg sync.WaitGroup
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		bar := newProgressMax(!gopts.Quiet, 0, "snapshots")
-		defer bar.Done()
+		if !gopts.JSON {
+			bar := newProgressMax(!gopts.Quiet, 0, "snapshots")
+			defer bar.Done()
+		}
 		chkr.Structure(ctx, bar, errChan)
 	}()
 
@@ -399,7 +413,17 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		return errors.Fatal("repository contains errors")
 	}
 
-	Verbosef("no errors were found\n")
+	if !gopts.JSON {
+		Verbosef("no errors were found\n")
+	} else {
+		status := checkSuccess{
+			MessageType: "checked",
+			Message:     "no errors were found",
+			ID:          repo.Config().ID,
+			Repository:  location.StripPassword(gopts.backends, gopts.Repo),
+		}
+		return json.NewEncoder(globalOptions.stdout).Encode(status)
+	}
 
 	return nil
 }
@@ -446,4 +470,11 @@ func selectRandomPacksByFileSize(allPacks map[restic.ID]int64, subsetSize int64,
 	subsetPercentage := (float64(subsetSize) / float64(repoSize)) * 100.0
 	packs := selectRandomPacksByPercentage(allPacks, subsetPercentage)
 	return packs
+}
+
+type checkSuccess struct {
+	MessageType string `json:"message_type"`
+	Message     string `json:"message"`
+	ID          string `json:"id"`
+	Repository  string `json:"repository"`
 }
