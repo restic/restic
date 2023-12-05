@@ -186,6 +186,22 @@ are stored in JSON form. Specifying ``--json``  or ``--quiet`` will suppress any
 non-JSON messages the command generates.
 
 
+check
+-----
+
+The ``check`` command uses the JSON lines format, but only outputs a single message.
+
++------------------+--------------------------------+
+| ``message_type`` | Always "checked"               |
++------------------+--------------------------------+
+| ``message``      | Always "no errors were found"  |
++------------------+--------------------------------+
+| ``id``           | ID of the checked repository   |
++------------------+--------------------------------+
+| ``repository``   | URL of the repository          |
++------------------+--------------------------------+
+
+
 diff
 ----
 
