@@ -267,7 +267,7 @@ func (arch *Archiver) SaveDir(ctx context.Context, snPath string, dir string, fi
 
 // FutureNode holds a reference to a channel that returns a FutureNodeResult
 // or a reference to an already existing result. If the result is available
-// immediatelly, then storing a reference directly requires less memory than
+// immediately, then storing a reference directly requires less memory than
 // using the indirection via a channel.
 type FutureNode struct {
 	ch  <-chan futureNodeResult

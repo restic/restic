@@ -1,6 +1,6 @@
 Enhancement: Make `check` print `no errors found` explicitly
 
-The `check` command now explicetly prints `No errors were found` when no errors
+The `check` command now explicitly prints `No errors were found` when no errors
 could be found.
 
 https://github.com/restic/restic/pull/1319

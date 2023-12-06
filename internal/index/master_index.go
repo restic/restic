@@ -25,7 +25,7 @@ type MasterIndex struct {
 func NewMasterIndex() *MasterIndex {
 	// Always add an empty final index, such that MergeFinalIndexes can merge into this.
 	// Note that removing this index could lead to a race condition in the rare
-	// sitation that only two indexes exist which are saved and merged concurrently.
+	// situation that only two indexes exist which are saved and merged concurrently.
 	idx := []*Index{NewIndex()}
 	idx[0].Finalize()
 	return &MasterIndex{idx: idx, pendingBlobs: restic.NewBlobSet()}

@@ -61,7 +61,7 @@ uploading it somewhere or post only the parts that are really relevant.
 If restic gets stuck, please also include a stacktrace in the description.
 On non-Windows systems, you can send a SIGQUIT signal to restic or press
 `Ctrl-\` to achieve the same result. This causes restic to print a stacktrace
-and then exit immediatelly. This will not damage your repository, however,
+and then exit immediately. This will not damage your repository, however,
 it might be necessary to manually clean up stale lock files using
 `restic unlock`.
 

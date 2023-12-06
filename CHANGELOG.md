@@ -2684,7 +2684,7 @@ Details
  * Enhancement #3106: Parallelize scan of snapshot content in `copy` and `prune`
 
    The `copy` and `prune` commands used to traverse the directories of snapshots one by one to find
-   used data. This snapshot traversal is now parallized which can speed up this step several
+   used data. This snapshot traversal is now parallelized which can speed up this step several
    times.
 
    In addition the `check` command now reports how many snapshots have already been processed.
@@ -2784,7 +2784,7 @@ Details
 
  * Bugfix #1756: Mark repository files as read-only when using the local backend
 
-   Files stored in a local repository were marked as writeable on the filesystem for non-Windows
+   Files stored in a local repository were marked as writable on the filesystem for non-Windows
    systems, which did not prevent accidental file modifications outside of restic. In addition,
    the local backend did not work with certain filesystems and network mounts which do not permit
    modifications of file permissions.
@@ -2874,7 +2874,7 @@ Details
    an exclusive lock through a filesystem snapshot. Restic was unable to backup those files
    before. This update enables backing up these files.
 
-   This needs to be enabled explicitely using the --use-fs-snapshot option of the backup
+   This needs to be enabled explicitly using the --use-fs-snapshot option of the backup
    command.
 
    https://github.com/restic/restic/issues/340
@@ -3079,7 +3079,7 @@ Details
 
  * Bugfix #2668: Don't abort the stats command when data blobs are missing
 
-   Runing the stats command in the blobs-per-file mode on a repository with missing data blobs
+   Running the stats command in the blobs-per-file mode on a repository with missing data blobs
    previously resulted in a crash.
 
    https://github.com/restic/restic/pull/2668
@@ -3454,7 +3454,7 @@ Details
    check will be disabled if the --ignore-inode flag was given.
 
    If this change causes problems for you, please open an issue, and we can look in to adding a
-   seperate flag to disable just the ctime check.
+   separate flag to disable just the ctime check.
 
    https://github.com/restic/restic/issues/2179
    https://github.com/restic/restic/pull/2212
@@ -3826,7 +3826,7 @@ Details
  * Enhancement #1876: Display reason why forget keeps snapshots
 
    We've added a column to the list of snapshots `forget` keeps which details the reasons to keep a
-   particuliar snapshot. This makes debugging policies for forget much easier. Please remember
+   particular snapshot. This makes debugging policies for forget much easier. Please remember
    to always try things out with `--dry-run`!
 
    https://github.com/restic/restic/pull/1876
@@ -4139,7 +4139,7 @@ Summary
  * Enh #1665: Improve cache handling for `restic check`
  * Enh #1709: Improve messages `restic check` prints
  * Enh #1721: Add `cache` command to list cache dirs
- * Enh #1735: Allow keeping a time range of snaphots
+ * Enh #1735: Allow keeping a time range of snapshots
  * Enh #1758: Allow saving OneDrive folders in Windows
  * Enh #1782: Use default AWS credentials chain for S3 backend
 
@@ -4339,7 +4339,7 @@ Details
    https://github.com/restic/restic/issues/1721
    https://github.com/restic/restic/pull/1749
 
- * Enhancement #1735: Allow keeping a time range of snaphots
+ * Enhancement #1735: Allow keeping a time range of snapshots
 
    We've added the `--keep-within` option to the `forget` command. It instructs restic to keep
    all snapshots within the given duration since the newest snapshot. For example, running
@@ -4440,7 +4440,7 @@ Details
    HTTP) and returning an error when the file already exists.
 
    This is not accurate, the file could have been created between the HTTP request testing for it,
-   and when writing starts, so we've relaxed this requeriment, which saves one additional HTTP
+   and when writing starts, so we've relaxed this requirement, which saves one additional HTTP
    request per newly added file.
 
    https://github.com/restic/restic/pull/1623
@@ -4463,7 +4463,7 @@ restic users. The changes are ordered by importance.
 Summary
 -------
 
- * Fix #1506: Limit bandwith at the http.RoundTripper for HTTP based backends
+ * Fix #1506: Limit bandwidth at the http.RoundTripper for HTTP based backends
  * Fix #1512: Restore directory permissions as the last step
  * Fix #1528: Correctly create missing subdirs in data/
  * Fix #1589: Complete intermediate index upload
@@ -4484,7 +4484,7 @@ Summary
 Details
 -------
 
- * Bugfix #1506: Limit bandwith at the http.RoundTripper for HTTP based backends
+ * Bugfix #1506: Limit bandwidth at the http.RoundTripper for HTTP based backends
 
    https://github.com/restic/restic/issues/1506
    https://github.com/restic/restic/pull/1511
@@ -4537,7 +4537,7 @@ Details
  * Bugfix #1595: Backup: Remove bandwidth display
 
    This commit removes the bandwidth displayed during backup process. It is misleading and
-   seldomly correct, because it's neither the "read bandwidth" (only for the very first backup)
+   seldom correct, because it's neither the "read bandwidth" (only for the very first backup)
    nor the "upload bandwidth". Many users are confused about (and rightly so), c.f. #1581, #1033,
    #1591
 
@@ -4807,7 +4807,7 @@ Details
 
    We've added a local cache for metadata so that restic doesn't need to load all metadata
    (snapshots, indexes, ...) from the repo each time it starts. By default the cache is active, but
-   there's a new global option `--no-cache` that can be used to disable the cache. By deafult, the
+   there's a new global option `--no-cache` that can be used to disable the cache. By default, the
    cache a standard cache folder for the OS, which can be overridden with `--cache-dir`. The cache
    will automatically populate, indexes and snapshots are saved as they are loaded. Cache
    directories for repos that haven't been used recently can automatically be removed by restic
@@ -4893,7 +4893,7 @@ Details
 
  * Enhancement #1319: Make `check` print `no errors found` explicitly
 
-   The `check` command now explicetly prints `No errors were found` when no errors could be found.
+   The `check` command now explicitly prints `No errors were found` when no errors could be found.
 
    https://github.com/restic/restic/issues/1303
    https://github.com/restic/restic/pull/1319

@@ -79,7 +79,7 @@ function __restic_clear_perform_completion_once_result
     __restic_debug ""
     __restic_debug "========= clearing previously set __restic_perform_completion_once_result variable =========="
     set --erase __restic_perform_completion_once_result
-    __restic_debug "Succesfully erased the variable __restic_perform_completion_once_result"
+    __restic_debug "Successfully erased the variable __restic_perform_completion_once_result"
 end
 
 function __restic_requires_order_preservation

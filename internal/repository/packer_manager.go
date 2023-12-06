@@ -39,7 +39,7 @@ type packerManager struct {
 	packSize uint
 }
 
-// newPackerManager returns an new packer manager which writes temporary files
+// newPackerManager returns a new packer manager which writes temporary files
 // to a temporary directory
 func newPackerManager(key *crypto.Key, tpe restic.BlobType, packSize uint, queueFn func(ctx context.Context, t restic.BlobType, p *Packer) error) *packerManager {
 	return &packerManager{

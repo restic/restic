@@ -38,7 +38,7 @@ func TestGroupByOptions(t *testing.T) {
 		var opts restic.SnapshotGroupByOptions
 		test.OK(t, opts.Set(exp.from))
 		if !cmp.Equal(opts, exp.opts) {
-			t.Errorf("unexpeted opts %s", cmp.Diff(opts, exp.opts))
+			t.Errorf("unexpected opts %s", cmp.Diff(opts, exp.opts))
 		}
 		test.Equals(t, opts.String(), exp.normalized)
 	}

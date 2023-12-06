@@ -1,4 +1,4 @@
-Bugfix: Limit bandwith at the http.RoundTripper for HTTP based backends
+Bugfix: Limit bandwidth at the http.RoundTripper for HTTP based backends
 
 https://github.com/restic/restic/issues/1506
 https://github.com/restic/restic/pull/1511

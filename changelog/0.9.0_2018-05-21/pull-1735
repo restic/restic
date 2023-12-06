@@ -1,4 +1,4 @@
-Enhancement: Allow keeping a time range of snaphots
+Enhancement: Allow keeping a time range of snapshots
 
 We've added the `--keep-within` option to the `forget` command. It instructs
 restic to keep all snapshots within the given duration since the newest

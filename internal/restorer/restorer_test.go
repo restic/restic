@@ -791,7 +791,7 @@ func TestRestorerConsistentTimestampsAndPermissions(t *testing.T) {
 	}
 }
 
-// VerifyFiles must not report cancelation of its context through res.Error.
+// VerifyFiles must not report cancellation of its context through res.Error.
 func TestVerifyCancel(t *testing.T) {
 	snapshot := Snapshot{
 		Nodes: map[string]Node{

@@ -18,7 +18,7 @@ type Backend interface {
 	// repository.
 	Location() string
 
-	// Connections returns the maxmimum number of concurrent backend operations.
+	// Connections returns the maximum number of concurrent backend operations.
 	Connections() uint
 
 	// Hasher may return a hash function for calculating a content hash for the backend

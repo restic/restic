@@ -302,7 +302,7 @@ func Join(parts ...string) string {
 }
 
 // tempSuffix generates a random string suffix that should be sufficiently long
-// to avoid accidential conflicts
+// to avoid accidental conflicts
 func tempSuffix() string {
 	var nonce [16]byte
 	_, err := rand.Read(nonce[:])

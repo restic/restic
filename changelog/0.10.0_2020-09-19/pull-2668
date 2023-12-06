@@ -1,6 +1,6 @@
 Bugfix: Don't abort the stats command when data blobs are missing
 
-Runing the stats command in the blobs-per-file mode on a repository with
+Running the stats command in the blobs-per-file mode on a repository with
 missing data blobs previously resulted in a crash.
 
 https://github.com/restic/restic/pull/2668

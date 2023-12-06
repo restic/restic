@@ -189,7 +189,7 @@ const (
 
 	// MaxHeaderSize is the max size of header including header-length field
 	MaxHeaderSize = 16*1024*1024 + headerLengthSize
-	// number of header enries to download as part of header-length request
+	// number of header entries to download as part of header-length request
 	eagerEntries = 15
 )
 

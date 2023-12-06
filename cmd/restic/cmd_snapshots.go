@@ -290,7 +290,7 @@ func PrintSnapshotGroupHeader(stdout io.Writer, groupKeyJSON string) error {
 	return nil
 }
 
-// Snapshot helps to print Snaphots as JSON with their ID included.
+// Snapshot helps to print Snapshots as JSON with their ID included.
 type Snapshot struct {
 	*restic.Snapshot
 
