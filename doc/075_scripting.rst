@@ -556,7 +556,7 @@ The snapshots command returns a single JSON object, an array with objects of the
 stats
 -----
 
-The snapshots command returns a single JSON object.
+The stats command returns a single JSON object.
 
 +------------------------------+-----------------------------------------------------+
 | ``total_size``               | Repository size in bytes                            |
