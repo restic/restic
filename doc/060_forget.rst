@@ -207,9 +207,12 @@ The ``forget`` command accepts the following policy options:
     They also only count hours/days/weeks/etc which have one or more snapshots.
     A value of ``-1`` will be interpreted as "forever", i.e. "keep all".
 
-.. note:: All duration related options (``--keep-{within,-*}``) ignore snapshots
+.. note:: All duration related options (``--keep-{within-,}*``) ignore snapshots
     with a timestamp in the future (relative to when the ``forget`` command is
     run) and these snapshots will hence not be removed.
+
+.. note:: If there are not enough snapshots to keep one for each duration related
+    ``--keep-{within-,}*`` option, the oldest snapshot is kept additionally.
 
 .. note:: Specifying ``--keep-tag ''`` will match untagged snapshots only.
 
