@@ -5,7 +5,7 @@ another process using an exclusive lock through a filesystem snapshot. Restic
 was unable to backup those files before. This update enables backing up these
 files.
 
-This needs to be enabled explicitely using the --use-fs-snapshot option of the
+This needs to be enabled explicitly using the --use-fs-snapshot option of the
 backup command.
 
 https://github.com/restic/restic/issues/340

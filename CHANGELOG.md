@@ -2874,8 +2874,7 @@ Details
    an exclusive lock through a filesystem snapshot. Restic was unable to backup those files
    before. This update enables backing up these files.
 
-   This needs to be enabled explicitly using the --use-fs-snapshot option of the backup
-   command.
+   This needs to be enabled explicitly using the --use-fs-snapshot option of the backup command.
 
    https://github.com/restic/restic/issues/340
    https://github.com/restic/restic/pull/2274
@@ -4537,8 +4536,8 @@ Details
  * Bugfix #1595: Backup: Remove bandwidth display
 
    This commit removes the bandwidth displayed during backup process. It is misleading and
-   seldom correct, because it's neither the "read bandwidth" (only for the very first backup)
-   nor the "upload bandwidth". Many users are confused about (and rightly so), c.f. #1581, #1033,
+   seldom correct, because it's neither the "read bandwidth" (only for the very first backup) nor
+   the "upload bandwidth". Many users are confused about (and rightly so), c.f. #1581, #1033,
    #1591
 
    We'll eventually replace this display with something more relevant when the new archiver code
