@@ -123,9 +123,8 @@ func directoriesContentsDiff(dir1, dir2 string) string {
 				fmt.Fprintf(&out, "+%v\n", b.path)
 				b = nil
 				continue
-			} else {
-				fmt.Fprintf(&out, "%%%v\n", a.path)
 			}
+			fmt.Fprintf(&out, "%%%v\n", a.path)
 		}
 
 		a, b = nil, nil
