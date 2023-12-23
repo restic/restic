@@ -83,7 +83,7 @@ func createRandomWrongBlob(t testing.TB, repo restic.Repository) {
 }
 
 // selectBlobs splits the list of all blobs randomly into two lists. A blob
-// will be contained in the firstone ith probability p.
+// will be contained in the firstone with probability p.
 func selectBlobs(t *testing.T, repo restic.Repository, p float32) (list1, list2 restic.BlobSet) {
 	list1 = restic.NewBlobSet()
 	list2 = restic.NewBlobSet()

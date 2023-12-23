@@ -9,7 +9,7 @@ file should be noticed, and the modified file will be backed up. The ctime check
 will be disabled if the --ignore-inode flag was given.
 
 If this change causes problems for you, please open an issue, and we can look in
-to adding a seperate flag to disable just the ctime check.
+to adding a separate flag to disable just the ctime check.
 
 https://github.com/restic/restic/issues/2179
 https://github.com/restic/restic/pull/2212

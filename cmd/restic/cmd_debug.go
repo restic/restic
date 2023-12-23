@@ -290,7 +290,7 @@ func tryRepairWithBitflip(ctx context.Context, key *crypto.Key, input []byte, by
 	})
 	err := wg.Wait()
 	if err != nil {
-		panic("all go rountines can only return nil")
+		panic("all go routines can only return nil")
 	}
 
 	if !found {

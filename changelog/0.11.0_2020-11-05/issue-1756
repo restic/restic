@@ -1,6 +1,6 @@
 Bugfix: Mark repository files as read-only when using the local backend
 
-Files stored in a local repository were marked as writeable on the
+Files stored in a local repository were marked as writable on the
 filesystem for non-Windows systems, which did not prevent accidental file
 modifications outside of restic. In addition, the local backend did not work
 with certain filesystems and network mounts which do not permit modifications

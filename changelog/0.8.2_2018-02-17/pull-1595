@@ -1,7 +1,7 @@
 Bugfix: backup: Remove bandwidth display
 
 This commit removes the bandwidth displayed during backup process. It is
-misleading and seldomly correct, because it's neither the "read
+misleading and seldom correct, because it's neither the "read
 bandwidth" (only for the very first backup) nor the "upload bandwidth".
 Many users are confused about (and rightly so), c.f. #1581, #1033, #1591
 

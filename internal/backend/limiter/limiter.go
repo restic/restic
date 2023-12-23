@@ -5,8 +5,8 @@ import (
 	"net/http"
 )
 
-// Limiter defines an interface that implementors can use to rate limit I/O
-// according to some policy defined and configured by the implementor.
+// Limiter defines an interface that implementers can use to rate limit I/O
+// according to some policy defined and configured by the implementer.
 type Limiter interface {
 	// Upstream returns a rate limited reader that is intended to be used in
 	// uploads.

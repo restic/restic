@@ -6,7 +6,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 )
 
-// shellSplitter splits a command string into separater arguments. It supports
+// shellSplitter splits a command string into separated arguments. It supports
 // single and double quoted strings.
 type shellSplitter struct {
 	quote    rune

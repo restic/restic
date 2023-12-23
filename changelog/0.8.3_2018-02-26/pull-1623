@@ -6,7 +6,7 @@ that means making a request (e.g. via HTTP) and returning an error when the
 file already exists.
 
 This is not accurate, the file could have been created between the HTTP request
-testing for it, and when writing starts, so we've relaxed this requeriment,
+testing for it, and when writing starts, so we've relaxed this requirement,
 which saves one additional HTTP request per newly added file.
 
 https://github.com/restic/restic/pull/1623

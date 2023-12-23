@@ -31,7 +31,7 @@ type b2Backend struct {
 	canDelete bool
 }
 
-// Billing happens in 1000 item granlarity, but we are more interested in reducing the number of network round trips
+// Billing happens in 1000 item granularity, but we are more interested in reducing the number of network round trips
 const defaultListMaxItems = 10 * 1000
 
 // ensure statically that *b2Backend implements backend.Backend.

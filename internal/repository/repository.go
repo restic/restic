@@ -932,7 +932,7 @@ func streamPackPart(ctx context.Context, beLoad BackendLoadFn, key *crypto.Key, 
 	ctx, cancel := context.WithCancel(ctx)
 	// stream blobs in pack
 	err = beLoad(ctx, h, int(dataEnd-dataStart), int64(dataStart), func(rd io.Reader) error {
-		// prevent callbacks after cancelation
+		// prevent callbacks after cancellation
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}

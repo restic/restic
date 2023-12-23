@@ -127,7 +127,7 @@ func init() {
 	f.StringVarP(&globalOptions.KeyHint, "key-hint", "", "", "`key` ID of key to try decrypting first (default: $RESTIC_KEY_HINT)")
 	f.StringVarP(&globalOptions.PasswordCommand, "password-command", "", "", "shell `command` to obtain the repository password from (default: $RESTIC_PASSWORD_COMMAND)")
 	f.BoolVarP(&globalOptions.Quiet, "quiet", "q", false, "do not output comprehensive progress report")
-	// use empty paremeter name as `-v, --verbose n` instead of the correct `--verbose=n` is confusing
+	// use empty parameter name as `-v, --verbose n` instead of the correct `--verbose=n` is confusing
 	f.CountVarP(&globalOptions.Verbose, "verbose", "v", "be verbose (specify multiple times or a level using --verbose=n``, max level/times is 2)")
 	f.BoolVar(&globalOptions.NoLock, "no-lock", false, "do not lock the repository, this allows some operations on read-only repositories")
 	f.DurationVar(&globalOptions.RetryLock, "retry-lock", 0, "retry to lock the repository if it is already locked, takes a value like 5m or 2h (default: no retries)")

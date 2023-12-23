@@ -22,7 +22,7 @@ func NewHardlinkIndex[T any]() *HardlinkIndex[T] {
 	}
 }
 
-// Has checks wether the link already exist in the index.
+// Has checks whether the link already exist in the index.
 func (idx *HardlinkIndex[T]) Has(inode uint64, device uint64) bool {
 	idx.m.Lock()
 	defer idx.m.Unlock()

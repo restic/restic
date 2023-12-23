@@ -13,7 +13,7 @@ func TestCountedBlobSet(t *testing.T) {
 	test.Equals(t, bs.List(), restic.BlobHandles{})
 
 	bh := restic.NewRandomBlobHandle()
-	// check non existant
+	// check non existent
 	test.Equals(t, bs.Has(bh), false)
 
 	// test insert

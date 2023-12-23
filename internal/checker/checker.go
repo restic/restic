@@ -442,7 +442,7 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 				}
 				// Note that we do not use the blob size. The "obvious" check
 				// whether the sum of the blob sizes matches the file size
-				// unfortunately fails in some cases that are not resolveable
+				// unfortunately fails in some cases that are not resolvable
 				// by users, so we omit this check, see #1887
 
 				_, found := c.repo.LookupBlobSize(blobID, restic.DataBlob)

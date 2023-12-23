@@ -523,7 +523,7 @@ func testStreamPack(t *testing.T, version uint) {
 	case 2:
 		compress = true
 	default:
-		t.Fatal("test does not suport repository version", version)
+		t.Fatal("test does not support repository version", version)
 	}
 
 	packfileBlobs, packfile := buildPackfileWithoutHeader(blobSizes, &key, compress)

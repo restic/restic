@@ -417,7 +417,7 @@ func selectPacksByBucket(allPacks map[restic.ID]int64, bucket, totalBuckets uint
 	return packs
 }
 
-// selectRandomPacksByPercentage selects the given percentage of packs which are randomly choosen.
+// selectRandomPacksByPercentage selects the given percentage of packs which are randomly chosen.
 func selectRandomPacksByPercentage(allPacks map[restic.ID]int64, percentage float64) map[restic.ID]int64 {
 	packCount := len(allPacks)
 	packsToCheck := int(float64(packCount) * (percentage / 100.0))

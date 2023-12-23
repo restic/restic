@@ -296,7 +296,7 @@ func testPartialDownloadError(t *testing.T, part int) {
 	// loader always returns an error
 	loader := repo.loader
 	repo.loader = func(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
-		// only load partial data to execise fault handling in different places
+		// only load partial data to exercise fault handling in different places
 		err := loader(ctx, h, length*part/100, offset, fn)
 		if err == nil {
 			return nil

@@ -11,7 +11,7 @@ import (
 )
 
 func startForeground(cmd *exec.Cmd) (bg func() error, err error) {
-	// run the command in it's own process group so that SIGINT
+	// run the command in its own process group so that SIGINT
 	// is not sent to it.
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true,

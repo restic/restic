@@ -2,7 +2,7 @@ Enhancement: Parallelize scan of snapshot content in `copy` and `prune`
 
 The `copy` and `prune` commands used to traverse the directories of
 snapshots one by one to find used data. This snapshot traversal is
-now parallized which can speed up this step several times.
+now parallelized which can speed up this step several times.
 
 In addition the `check` command now reports how many snapshots have
 already been processed.
