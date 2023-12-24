@@ -123,30 +123,40 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 		return false, err
 	}
 
-	selectByName := func(nodepath string) bool {
-		for _, reject := range rejectByNameFuncs {
-			if reject(nodepath) {
-				return false
+	var filter rewriteFilterFunc
+
+	if len(rejectByNameFuncs) > 0 {
+		selectByName := func(nodepath string) bool {
+			for _, reject := range rejectByNameFuncs {
+				if reject(nodepath) {
+					return false
+				}
 			}
+			return true
 		}
-		return true
+
+		rewriter := walker.NewTreeRewriter(walker.RewriteOpts{
+			RewriteNode: func(node *restic.Node, path string) *restic.Node {
+				if selectByName(path) {
+					return node
+				}
+				Verbosef(fmt.Sprintf("excluding %s\n", path))
+				return nil
+			},
+			DisableNodeCache: true,
+		})
+
+		filter = func(ctx context.Context, sn *restic.Snapshot) (restic.ID, error) {
+			return rewriter.RewriteTree(ctx, repo, "/", *sn.Tree)
+		}
+	} else {
+		filter = func(ctx context.Context, sn *restic.Snapshot) (restic.ID, error) {
+			return *sn.Tree, nil
+		}
 	}
 
-	rewriter := walker.NewTreeRewriter(walker.RewriteOpts{
-		RewriteNode: func(node *restic.Node, path string) *restic.Node {
-			if selectByName(path) {
-				return node
-			}
-			Verbosef(fmt.Sprintf("excluding %s\n", path))
-			return nil
-		},
-		DisableNodeCache: true,
-	})
-
 	return filterAndReplaceSnapshot(ctx, repo, sn,
-		func(ctx context.Context, sn *restic.Snapshot) (restic.ID, error) {
-			return rewriter.RewriteTree(ctx, repo, "/", *sn.Tree)
-		}, opts.DryRun, opts.Forget, metadata, "rewrite")
+		filter, opts.DryRun, opts.Forget, metadata, "rewrite")
 }
 
 func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *restic.Snapshot,
