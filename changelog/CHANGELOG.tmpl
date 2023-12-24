@@ -3,7 +3,8 @@
 {{ range . -}}
   * [Changelog for {{ .Version }}](#changelog-for-restic-{{ .Version | replace "." ""}}-{{ .Date | lower -}})
 {{ end -}}
-{{- range $changes := . }}{{ with $changes -}}
+
+{{- range $changes := . }}{{ with $changes }}
 
 # Changelog for restic {{ .Version }} ({{ .Date }})
 The following sections list the changes in restic {{ .Version }} relevant to
@@ -29,6 +30,5 @@ restic users. The changes are ordered by importance.
 {{ range $url := .OtherURLs }}
    {{ $url -}}
 {{ end }}
-{{ end }}{{ end }}
-
+{{ end }}{{ end -}}
 {{ end }}{{ end -}}
