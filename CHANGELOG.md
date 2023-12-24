@@ -1,17 +1,46 @@
-Changelog for restic 0.16.2 (2023-10-29)
-=======================================
+# Table of Contents
 
+* [Changelog for 0.16.2](#changelog-for-restic-0162-2023-10-29)
+* [Changelog for 0.16.1](#changelog-for-restic-0161-2023-10-24)
+* [Changelog for 0.16.0](#changelog-for-restic-0160-2023-07-31)
+* [Changelog for 0.15.2](#changelog-for-restic-0152-2023-04-24)
+* [Changelog for 0.15.1](#changelog-for-restic-0151-2023-01-30)
+* [Changelog for 0.15.0](#changelog-for-restic-0150-2023-01-12)
+* [Changelog for 0.14.0](#changelog-for-restic-0140-2022-08-25)
+* [Changelog for 0.13.0](#changelog-for-restic-0130-2022-03-26)
+* [Changelog for 0.12.1](#changelog-for-restic-0121-2021-08-03)
+* [Changelog for 0.12.0](#changelog-for-restic-0120-2021-02-14)
+* [Changelog for 0.11.0](#changelog-for-restic-0110-2020-11-05)
+* [Changelog for 0.10.0](#changelog-for-restic-0100-2020-09-19)
+* [Changelog for 0.9.6](#changelog-for-restic-096-2019-11-22)
+* [Changelog for 0.9.5](#changelog-for-restic-095-2019-04-23)
+* [Changelog for 0.9.4](#changelog-for-restic-094-2019-01-06)
+* [Changelog for 0.9.3](#changelog-for-restic-093-2018-10-13)
+* [Changelog for 0.9.2](#changelog-for-restic-092-2018-08-06)
+* [Changelog for 0.9.1](#changelog-for-restic-091-2018-06-10)
+* [Changelog for 0.9.0](#changelog-for-restic-090-2018-05-21)
+* [Changelog for 0.8.3](#changelog-for-restic-083-2018-02-26)
+* [Changelog for 0.8.2](#changelog-for-restic-082-2018-02-17)
+* [Changelog for 0.8.1](#changelog-for-restic-081-2017-12-27)
+* [Changelog for 0.8.0](#changelog-for-restic-080-2017-11-26)
+* [Changelog for 0.7.3](#changelog-for-restic-073-2017-09-20)
+* [Changelog for 0.7.2](#changelog-for-restic-072-2017-09-13)
+* [Changelog for 0.7.1](#changelog-for-restic-071-2017-07-22)
+* [Changelog for 0.7.0](#changelog-for-restic-070-2017-07-01)
+* [Changelog for 0.6.1](#changelog-for-restic-061-2017-06-01)
+* [Changelog for 0.6.0](#changelog-for-restic-060-2017-05-29)
+
+
+# Changelog for restic 0.16.2 (2023-10-29)
 The following sections list the changes in restic 0.16.2 relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 
  * Fix #4540: Restore ARMv5 support for ARM binaries
  * Fix #4545: Repair documentation build on Read the Docs
 
-Details
--------
+## Details
 
  * Bugfix #4540: Restore ARMv5 support for ARM binaries
 
@@ -31,14 +60,11 @@ Details
    https://github.com/restic/restic/pull/4545
 
 
-Changelog for restic 0.16.1 (2023-10-24)
-=======================================
-
+# Changelog for restic 0.16.1 (2023-10-24)
 The following sections list the changes in restic 0.16.1 relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 
  * Fix #4513: Make `key list` command honor `--no-lock`
  * Fix #4516: Do not try to load password on command line autocomplete
@@ -50,8 +76,7 @@ Summary
  * Enh #4511: Include inode numbers in JSON output for `find` and `ls` commands
  * Enh #4519: Add config option to set SFTP command arguments
 
-Details
--------
+## Details
 
  * Bugfix #4513: Make `key list` command honor `--no-lock`
 
@@ -152,14 +177,11 @@ Details
    https://github.com/restic/restic/pull/4519
 
 
-Changelog for restic 0.16.0 (2023-07-31)
-=======================================
-
+# Changelog for restic 0.16.0 (2023-07-31)
 The following sections list the changes in restic 0.16.0 relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 
  * Fix #2565: Support "unlimited" in `forget --keep-*` options
  * Fix #3311: Support non-UTF8 paths as symlink target
@@ -191,8 +213,7 @@ Summary
  * Enh #4226: Allow specifying region of new buckets in the `gs` backend
  * Enh #4375: Add support for extended attributes on symlinks
 
-Details
--------
+## Details
 
  * Bugfix #2565: Support "unlimited" in `forget --keep-*` options
 
@@ -499,14 +520,11 @@ Details
    https://github.com/restic/restic/pull/4379
 
 
-Changelog for restic 0.15.2 (2023-04-24)
-=======================================
-
+# Changelog for restic 0.15.2 (2023-04-24)
 The following sections list the changes in restic 0.15.2 relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 
  * Sec #4275: Update golang.org/x/net to address CVE-2022-41723
  * Fix #2260: Sanitize filenames printed by `backup` during processing
@@ -516,8 +534,7 @@ Summary
  * Enh #4180: Add release binaries for riscv64 architecture on Linux
  * Enh #4219: Upgrade Minio to version 7.0.49
 
-Details
--------
+## Details
 
  * Security #4275: Update golang.org/x/net to address CVE-2022-41723
 
@@ -588,14 +605,11 @@ Details
    https://github.com/restic/restic/pull/4219
 
 
-Changelog for restic 0.15.1 (2023-01-30)
-=======================================
-
+# Changelog for restic 0.15.1 (2023-01-30)
 The following sections list the changes in restic 0.15.1 relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 
  * Fix #3750: Remove `b2_download_file_by_name: 404` warning from B2 backend
  * Fix #4147: Make `prune --quiet` not print progress bar
@@ -603,8 +617,7 @@ Summary
  * Fix #4167: Add missing ETA in `backup` progress bar
  * Enh #4143: Ignore empty lock files
 
-Details
--------
+## Details
 
  * Bugfix #3750: Remove `b2_download_file_by_name: 404` warning from B2 backend
 
@@ -663,14 +676,11 @@ Details
    https://github.com/restic/restic/pull/4152
 
 
-Changelog for restic 0.15.0 (2023-01-12)
-=======================================
-
+# Changelog for restic 0.15.0 (2023-01-12)
 The following sections list the changes in restic 0.15.0 relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 
  * Fix #2015: Make `mount` return exit code 0 after receiving Ctrl-C / SIGINT
  * Fix #2578: Make `restore` replace existing symlinks
@@ -712,8 +722,7 @@ Summary
  * Enh #3943: Ignore additional/unknown files in repository
  * Enh #3955: Improve `backup` performance for small files
 
-Details
--------
+## Details
 
  * Bugfix #2015: Make `mount` return exit code 0 after receiving Ctrl-C / SIGINT
 
@@ -1144,14 +1153,11 @@ Details
    https://github.com/restic/restic/pull/3955
 
 
-Changelog for restic 0.14.0 (2022-08-25)
-=======================================
-
+# Changelog for restic 0.14.0 (2022-08-25)
 The following sections list the changes in restic 0.14.0 relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 
  * Fix #2248: Support `self-update` on Windows
  * Fix #3428: List snapshots in backend at most once to resolve snapshot IDs
@@ -1187,8 +1193,7 @@ Summary
  * Enh #3819: Validate include/exclude patterns before restoring
  * Enh #3837: Improve SFTP repository initialization over slow links
 
-Details
--------
+## Details
 
  * Bugfix #2248: Support `self-update` on Windows
 
@@ -1594,14 +1599,11 @@ Details
    https://github.com/restic/restic/pull/3840
 
 
-Changelog for restic 0.13.0 (2022-03-26)
-=======================================
-
+# Changelog for restic 0.13.0 (2022-03-26)
 The following sections list the changes in restic 0.13.0 relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 
  * Fix #1106: Never lock repository for `list locks`
  * Fix #2345: Make cache crash-resistant and usable by multiple concurrent processes
@@ -1638,8 +1640,7 @@ Summary
  * Enh #3542: Add file mode in symbolic notation to `ls --json`
  * Enh #3593: Improve `copy` performance by parallelizing IO
 
-Details
--------
+## Details
 
  * Bugfix #1106: Never lock repository for `list locks`
 
@@ -1999,14 +2000,11 @@ Details
    https://github.com/restic/restic/pull/3593
 
 
-Changelog for restic 0.12.1 (2021-08-03)
-=======================================
-
+# Changelog for restic 0.12.1 (2021-08-03)
 The following sections list the changes in restic 0.12.1 relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 
  * Fix #2742: Improve error handling for rclone and REST backend over HTTP2
  * Fix #3111: Fix terminal output redirection for PowerShell
@@ -2031,8 +2029,7 @@ Summary
  * Enh #3427: `find --pack` fallback to index if data file is missing
  * Enh #3456: Support filtering and specifying untagged snapshots
 
-Details
--------
+## Details
 
  * Bugfix #2742: Improve error handling for rclone and REST backend over HTTP2
 
@@ -2245,14 +2242,11 @@ Details
    https://github.com/restic/restic/pull/3457
 
 
-Changelog for restic 0.12.0 (2021-02-14)
-=======================================
-
+# Changelog for restic 0.12.0 (2021-02-14)
 The following sections list the changes in restic 0.12.0 relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 
  * Fix #1681: Make `mount` not create missing mount point directory
  * Fix #1800: Ignore `no data available` filesystem error during backup
@@ -2290,8 +2284,7 @@ Summary
  * Enh #3250: Add several more error checks
  * Enh #3254: Enable HTTP/2 for backend connections
 
-Details
--------
+## Details
 
  * Bugfix #1681: Make `mount` not create missing mount point directory
 
@@ -2742,14 +2735,11 @@ Details
    https://github.com/restic/restic/pull/3254
 
 
-Changelog for restic 0.11.0 (2020-11-05)
-=======================================
-
+# Changelog for restic 0.11.0 (2020-11-05)
 The following sections list the changes in restic 0.11.0 relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 
  * Fix #1212: Restore timestamps and permissions on intermediate directories
  * Fix #1756: Mark repository files as read-only when using the local backend
@@ -2767,8 +2757,7 @@ Summary
  * Enh #2969: Optimize check for unchanged files during backup
  * Enh #2978: Warn if parent snapshot cannot be loaded during backup
 
-Details
--------
+## Details
 
  * Bugfix #1212: Restore timestamps and permissions on intermediate directories
 
@@ -2917,14 +2906,11 @@ Details
    https://github.com/restic/restic/pull/2978
 
 
-Changelog for restic 0.10.0 (2020-09-19)
-=======================================
-
+# Changelog for restic 0.10.0 (2020-09-19)
 The following sections list the changes in restic 0.10.0 relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 
  * Fix #1863: Report correct number of directories processed by backup
  * Fix #2254: Fix tar issues when dumping `/`
@@ -2971,8 +2957,7 @@ Summary
  * Enh #2840: Speed-up file deletion in forget, prune and rebuild-index
  * Enh #2858: Support filtering snapshots by tag and path in the stats command
 
-Details
--------
+## Details
 
  * Bugfix #1863: Report correct number of directories processed by backup
 
@@ -3381,14 +3366,11 @@ Details
    https://forum.restic.net/t/stats-for-a-host-and-filtered-snapshots/3020
 
 
-Changelog for restic 0.9.6 (2019-11-22)
-=======================================
-
+# Changelog for restic 0.9.6 (2019-11-22)
 The following sections list the changes in restic 0.9.6 relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 
  * Fix #2063: Allow absolute path for filename when backing up from stdin
  * Fix #2174: Save files with invalid timestamps
@@ -3400,8 +3382,7 @@ Summary
  * Enh #2330: Make `--group-by` accept both singular and plural
  * Enh #2350: Add option to configure S3 region
 
-Details
--------
+## Details
 
  * Bugfix #2063: Allow absolute path for filename when backing up from stdin
 
@@ -3484,14 +3465,11 @@ Details
    https://github.com/restic/restic/pull/2350
 
 
-Changelog for restic 0.9.5 (2019-04-23)
-=======================================
-
+# Changelog for restic 0.9.5 (2019-04-23)
 The following sections list the changes in restic 0.9.5 relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 
  * Fix #2135: Return error when no bytes could be read from stdin
  * Fix #2181: Don't cancel timeout after 30 seconds for self-update
@@ -3507,8 +3485,7 @@ Summary
  * Enh #2205: Add --ignore-inode option to backup cmd
  * Enh #2220: Add config option to set S3 storage class
 
-Details
--------
+## Details
 
  * Bugfix #2135: Return error when no bytes could be read from stdin
 
@@ -3626,14 +3603,11 @@ Details
    https://github.com/restic/restic/pull/2220
 
 
-Changelog for restic 0.9.4 (2019-01-06)
-=======================================
-
+# Changelog for restic 0.9.4 (2019-01-06)
 The following sections list the changes in restic 0.9.4 relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 
  * Fix #1989: Google Cloud Storage: Respect bandwidth limit
  * Fix #2040: Add host name filter shorthand flag for `stats` command
@@ -3647,8 +3621,7 @@ Summary
  * Enh #2094: Run command to get password
  * Enh #2097: Add key hinting
 
-Details
--------
+## Details
 
  * Bugfix #1989: Google Cloud Storage: Respect bandwidth limit
 
@@ -3754,14 +3727,11 @@ Details
    https://github.com/restic/restic/issues/2097
 
 
-Changelog for restic 0.9.3 (2018-10-13)
-=======================================
-
+# Changelog for restic 0.9.3 (2018-10-13)
 The following sections list the changes in restic 0.9.3 relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 
  * Fix #1935: Remove truncated files from cache
  * Fix #1978: Do not return an error when the scanner is slower than backup
@@ -3778,8 +3748,7 @@ Summary
  * Enh #1967: Use `--host` everywhere
  * Enh #2028: Display size of cache directories
 
-Details
--------
+## Details
 
  * Bugfix #1935: Remove truncated files from cache
 
@@ -3925,14 +3894,11 @@ Details
    https://github.com/restic/restic/pull/2033
 
 
-Changelog for restic 0.9.2 (2018-08-06)
-=======================================
-
+# Changelog for restic 0.9.2 (2018-08-06)
 The following sections list the changes in restic 0.9.2 relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 
  * Fix #1854: Allow saving files/dirs on different fs with `--one-file-system`
  * Fix #1861: Fix case-insensitive search with restic find
@@ -3946,8 +3912,7 @@ Summary
  * Enh #1901: Update the Backblaze B2 library
  * Enh #1906: Add support for B2 application keys
 
-Details
--------
+## Details
 
  * Bugfix #1854: Allow saving files/dirs on different fs with `--one-file-system`
 
@@ -4047,14 +4012,11 @@ Details
    https://github.com/restic/restic/pull/1914
 
 
-Changelog for restic 0.9.1 (2018-06-10)
-=======================================
-
+# Changelog for restic 0.9.1 (2018-06-10)
 The following sections list the changes in restic 0.9.1 relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 
  * Fix #1801: Add limiting bandwidth to the rclone backend
  * Fix #1822: Allow uploading large files to MS Azure
@@ -4062,8 +4024,7 @@ Summary
  * Fix #1833: Fix caching files on error
  * Fix #1834: Resolve deadlock
 
-Details
--------
+## Details
 
  * Bugfix #1801: Add limiting bandwidth to the rclone backend
 
@@ -4114,14 +4075,11 @@ Details
    https://github.com/restic/restic/pull/1835
 
 
-Changelog for restic 0.9.0 (2018-05-21)
-=======================================
-
+# Changelog for restic 0.9.0 (2018-05-21)
 The following sections list the changes in restic 0.9.0 relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 
  * Fix #1608: Respect time stamp for new backup when reading from stdin
  * Fix #1652: Ignore/remove invalid lock files
@@ -4143,8 +4101,7 @@ Summary
  * Enh #1758: Allow saving OneDrive folders in Windows
  * Enh #1782: Use default AWS credentials chain for S3 backend
 
-Details
--------
+## Details
 
  * Bugfix #1608: Respect time stamp for new backup when reading from stdin
 
@@ -4366,14 +4323,11 @@ Details
    https://github.com/restic/restic/pull/1782
 
 
-Changelog for restic 0.8.3 (2018-02-26)
-=======================================
-
+# Changelog for restic 0.8.3 (2018-02-26)
 The following sections list the changes in restic 0.8.3 relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 
  * Fix #1633: Fixed unexpected 'pack file cannot be listed' error
  * Fix #1638: Handle errors listing files in the backend
@@ -4383,8 +4337,7 @@ Summary
  * Enh #1623: Don't check for presence of files in the backend before writing
  * Enh #1634: Upgrade B2 client library, reduce HTTP requests
 
-Details
--------
+## Details
 
  * Bugfix #1633: Fixed unexpected 'pack file cannot be listed' error
 
@@ -4454,14 +4407,11 @@ Details
    https://github.com/restic/restic/pull/1634
 
 
-Changelog for restic 0.8.2 (2018-02-17)
-=======================================
-
+# Changelog for restic 0.8.2 (2018-02-17)
 The following sections list the changes in restic 0.8.2 relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 
  * Fix #1506: Limit bandwith at the http.RoundTripper for HTTP based backends
  * Fix #1512: Restore directory permissions as the last step
@@ -4481,8 +4431,7 @@ Summary
  * Enh #1579: Retry Backend.List() in case of errors
  * Enh #1584: Limit index file size
 
-Details
--------
+## Details
 
  * Bugfix #1506: Limit bandwith at the http.RoundTripper for HTTP based backends
 
@@ -4627,14 +4576,11 @@ Details
    https://github.com/restic/restic/pull/1584
 
 
-Changelog for restic 0.8.1 (2017-12-27)
-=======================================
-
+# Changelog for restic 0.8.1 (2017-12-27)
 The following sections list the changes in restic 0.8.1 relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 
  * Fix #1454: Correct cache dir location for Windows and Darwin
  * Fix #1457: Improve s3 backend with DigitalOcean Spaces
@@ -4644,8 +4590,7 @@ Summary
  * Enh #1436: Add code to detect old cache directories
  * Enh #1439: Improve cancellation logic
 
-Details
--------
+## Details
 
  * Bugfix #1454: Correct cache dir location for Windows and Darwin
 
@@ -4703,14 +4648,11 @@ Details
    https://github.com/restic/restic/pull/1439
 
 
-Changelog for restic 0.8.0 (2017-11-26)
-=======================================
-
+# Changelog for restic 0.8.0 (2017-11-26)
 The following sections list the changes in restic 0.8.0 relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 
  * Sec #1445: Prevent writing outside the target directory during restore
  * Fix #1256: Re-enable workaround for S3 backend
@@ -4732,8 +4674,7 @@ Summary
  * Enh #1353: Retry failed backend requests
  * Enh #1367: Allow comments in files read from via `--file-from`
 
-Details
--------
+## Details
 
  * Security #1445: Prevent writing outside the target directory during restore
 
@@ -4911,19 +4852,15 @@ Details
    https://github.com/restic/restic/pull/1368
 
 
-Changelog for restic 0.7.3 (2017-09-20)
-=======================================
-
+# Changelog for restic 0.7.3 (2017-09-20)
 The following sections list the changes in restic 0.7.3 relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 
  * Fix #1246: List all files stored in Google Cloud Storage
 
-Details
--------
+## Details
 
  * Bugfix #1246: List all files stored in Google Cloud Storage
 
@@ -4935,14 +4872,11 @@ Details
    https://github.com/restic/restic/pull/1247
 
 
-Changelog for restic 0.7.2 (2017-09-13)
-=======================================
-
+# Changelog for restic 0.7.2 (2017-09-13)
 The following sections list the changes in restic 0.7.2 relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 
  * Fix #1164: Make the `key remove` command behave as documented
  * Fix #1167: Do not create a local repo unless `init` is used
@@ -4962,8 +4896,7 @@ Summary
  * Enh #1205: Allow specifying time/date for a backup with `--time`
  * Enh #1218: Add `--compact` to `snapshots` command
 
-Details
--------
+## Details
 
  * Bugfix #1164: Make the `key remove` command behave as documented
 
@@ -5071,14 +5004,11 @@ Details
    https://github.com/restic/restic/pull/1223
 
 
-Changelog for restic 0.7.1 (2017-07-22)
-=======================================
-
+# Changelog for restic 0.7.1 (2017-07-22)
 The following sections list the changes in restic 0.7.1 relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 
  * Fix #1115: Fix `prune`, only include existing files in indexes
  * Enh #1055: Create subdirs below `data/` for local/sftp backends
@@ -5088,8 +5018,7 @@ Summary
  * Enh #1081: Clarify semantic for `--tag` for the `forget` command
  * Enh #1082: Print stats on SIGINFO on Darwin and FreeBSD (ctrl+t)
 
-Details
--------
+## Details
 
  * Bugfix #1115: Fix `prune`, only include existing files in indexes
 
@@ -5143,14 +5072,11 @@ Details
    https://github.com/restic/restic/pull/1082
 
 
-Changelog for restic 0.7.0 (2017-07-01)
-=======================================
-
+# Changelog for restic 0.7.0 (2017-07-01)
 The following sections list the changes in restic 0.7.0 relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 
  * Fix #965: Switch to `default` repo layout for the s3 backend
  * Fix #1013: Switch back to using the high-level minio-go API for s3
@@ -5162,8 +5088,7 @@ Summary
  * Enh #1021: Detect invalid backend name and print error
  * Enh #1029: Remove invalid pack files when `prune` is run
 
-Details
--------
+## Details
 
  * Bugfix #965: Switch to `default` repo layout for the s3 backend
 
@@ -5234,21 +5159,17 @@ Details
    https://github.com/restic/restic/pull/1036
 
 
-Changelog for restic 0.6.1 (2017-06-01)
-=======================================
-
+# Changelog for restic 0.6.1 (2017-06-01)
 The following sections list the changes in restic 0.6.1 relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 
  * Enh #974: Remove regular status reports
  * Enh #981: Remove temporary path from binary in `build.go`
  * Enh #985: Allow multiple parallel idle HTTP connections
 
-Details
--------
+## Details
 
  * Enhancement #974: Remove regular status reports
 
@@ -5275,21 +5196,17 @@ Details
    https://github.com/restic/restic/pull/986
 
 
-Changelog for restic 0.6.0 (2017-05-29)
-=======================================
-
+# Changelog for restic 0.6.0 (2017-05-29)
 The following sections list the changes in restic 0.6.0 relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 
  * Enh #957: Make `forget` consistent
  * Enh #962: Improve memory and runtime for the s3 backend
  * Enh #966: Unify repository layout for all backends
 
-Details
--------
+## Details
 
  * Enhancement #957: Make `forget` consistent
 
@@ -5325,5 +5242,3 @@ Details
 
    https://github.com/restic/restic/issues/965
    https://github.com/restic/restic/pull/966
-
-
