@@ -248,8 +248,8 @@ This is possible using the ``rewrite`` command with the option ``--new-host`` fo
     [0:00] 100.00%  1 / 1 index files loaded
 
     snapshot 8ed674f4 of [/path/to/abc.txt] at 2023-11-27 21:57:52.439139291 +0100 CET)
-    Setting time to 1999-01-01 11:11:11 +0100 CET
-    Setting host to newhost
+    setting time to 1999-01-01 11:11:11 +0100 CET
+    setting host to newhost
     saved new snapshot c05da643
 
     modified 1 snapshots
