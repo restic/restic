@@ -15,7 +15,7 @@ func testRunRewriteExclude(t testing.TB, gopts GlobalOptions, excludes []string,
 			Excludes: excludes,
 		},
 		Forget:   forget,
-		metadata: metadata,
+		Metadata: metadata,
 	}
 
 	rtest.OK(t, runRewrite(context.TODO(), opts, gopts, nil))

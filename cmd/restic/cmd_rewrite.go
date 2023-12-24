@@ -62,7 +62,7 @@ func (sma snapshotMetadataArgs) empty() bool {
 }
 
 func (sma snapshotMetadataArgs) convert() (*snapshotMetadata, error) {
-	if sma.Time == "" && sma.Hostname == "" {
+	if sma.empty() {
 		return nil, nil
 	}
 
@@ -73,11 +73,8 @@ func (sma snapshotMetadataArgs) convert() (*snapshotMetadata, error) {
 			return nil, errors.Fatalf("error in time option: %v\n", err)
 		}
 		timeStamp = &t
-	} else {
-		timeStamp = nil
 	}
 	return &snapshotMetadata{Hostname: sma.Hostname, Time: timeStamp}, nil
-
 }
 
 // RewriteOptions collects all options for the rewrite command.
@@ -85,7 +82,7 @@ type RewriteOptions struct {
 	Forget bool
 	DryRun bool
 
-	metadata snapshotMetadataArgs
+	Metadata snapshotMetadataArgs
 	restic.SnapshotFilter
 	excludePatternOptions
 }
@@ -98,8 +95,8 @@ func init() {
 	f := cmdRewrite.Flags()
 	f.BoolVarP(&rewriteOptions.Forget, "forget", "", false, "remove original snapshots after creating new ones")
 	f.BoolVarP(&rewriteOptions.DryRun, "dry-run", "n", false, "do not do anything, just print what would be done")
-	f.StringVar(&rewriteOptions.metadata.Hostname, "new-host", "", "replace hostname")
-	f.StringVar(&rewriteOptions.metadata.Time, "new-time", "", "replace time of the backup")
+	f.StringVar(&rewriteOptions.Metadata.Hostname, "new-host", "", "replace hostname")
+	f.StringVar(&rewriteOptions.Metadata.Time, "new-time", "", "replace time of the backup")
 
 	initMultiSnapshotFilter(f, &rewriteOptions.SnapshotFilter, true)
 	initExcludePatternOptions(f, &rewriteOptions.excludePatternOptions)
@@ -117,7 +114,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 		return false, err
 	}
 
-	metadata, err := opts.metadata.convert()
+	metadata, err := opts.Metadata.convert()
 
 	if err != nil {
 		return false, err
@@ -255,7 +252,7 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 }
 
 func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, args []string) error {
-	if opts.excludePatternOptions.Empty() && opts.metadata.empty() {
+	if opts.excludePatternOptions.Empty() && opts.Metadata.empty() {
 		return errors.Fatal("Nothing to do: no excludes provided and no new metadata provided")
 	}
 
