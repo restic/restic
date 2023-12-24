@@ -120,7 +120,7 @@ be skipped by later copy runs.
 The source repository is specified with ``--from-repo`` or can be read
 from a file specified via ``--from-repository-file``. Both of these options
 can also be set as environment variables ``$RESTIC_FROM_REPOSITORY`` or
-``$RESTIC_FROM_REPOSITORY_FILE``, respectively. For the destination repository
+``$RESTIC_FROM_REPOSITORY_FILE``, respectively. For the source repository
 the password can be read from a file ``--from-password-file`` or from a command
 ``--from-password-command``.
 Alternatively the environment variables ``$RESTIC_FROM_PASSWORD_COMMAND`` and
