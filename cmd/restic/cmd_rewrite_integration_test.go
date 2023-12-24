@@ -65,8 +65,7 @@ func TestRewriteReplace(t *testing.T) {
 
 	// exclude some data
 	testRunRewriteExclude(t, env.gopts, []string{"3"}, true, snapshotMetadataArgs{Hostname: "", Time: ""})
-	newSnapshotIDs := testRunList(t, "snapshots", env.gopts)
-	rtest.Assert(t, len(newSnapshotIDs) == 1, "expected one snapshot, got %v", newSnapshotIDs)
+	newSnapshotIDs := testListSnapshots(t, env.gopts, 1)
 	rtest.Assert(t, snapshotID != newSnapshotIDs[0], "snapshot id should have changed")
 	// check forbids unused blobs, thus remove them first
 	testRunPrune(t, env.gopts, PruneOptions{MaxUnused: "0"})
@@ -75,16 +74,15 @@ func TestRewriteReplace(t *testing.T) {
 
 func testRewriteMetadata(t *testing.T, metadata snapshotMetadataArgs) {
 	env, cleanup := withTestEnvironment(t)
-	env.gopts.backendTestHook = nil
 	defer cleanup()
 	createBasicRewriteRepo(t, env)
-	repo, _ := OpenRepository(context.TODO(), env.gopts)
-
 	testRunRewriteExclude(t, env.gopts, []string{}, true, metadata)
 
-	snapshots := FindFilteredSnapshots(context.TODO(), repo, repo, &restic.SnapshotFilter{}, []string{})
-
-	newSnapshot := <-snapshots
+	repo, _ := OpenRepository(context.TODO(), env.gopts)
+	snapshots, err := restic.TestLoadAllSnapshots(context.TODO(), repo, nil)
+	rtest.OK(t, err)
+	rtest.Assert(t, len(snapshots) == 1, "expected one snapshot, got %v", len(snapshots))
+	newSnapshot := snapshots[0]
 
 	if metadata.Time != "" {
 		rtest.Assert(t, newSnapshot.Time.Format(TimeFormat) == metadata.Time, "New snapshot should have time %s", metadata.Time)
