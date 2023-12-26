@@ -1,0 +1,8 @@
+Change: Update dependencies and require Go 1.19 or newer
+
+We have updated all dependencies. Since some libraries require newer Go
+standard library features, support for Go 1.18 has been dropped, which means
+that restic now requires at least Go 1.19 to build.
+
+https://github.com/restic/restic/pull/4532
+https://github.com/restic/restic/pull/4533

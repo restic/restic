@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/swift"
 	"github.com/restic/restic/internal/backend/test"
-	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -20,7 +20,7 @@ func newSwiftTestSuite(t testing.TB) *test.Suite[swift.Config] {
 		// wait for removals for at least 5m
 		WaitForDelayedRemoval: 5 * time.Minute,
 
-		ErrorHandler: func(t testing.TB, be restic.Backend, err error) error {
+		ErrorHandler: func(t testing.TB, be backend.Backend, err error) error {
 			if err == nil {
 				return nil
 			}

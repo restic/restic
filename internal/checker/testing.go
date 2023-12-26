@@ -11,7 +11,7 @@ import (
 func TestCheckRepo(t testing.TB, repo restic.Repository) {
 	chkr := New(repo, true)
 
-	hints, errs := chkr.LoadIndex(context.TODO())
+	hints, errs := chkr.LoadIndex(context.TODO(), nil)
 	if len(errs) != 0 {
 		t.Fatalf("errors loading index: %v", errs)
 	}

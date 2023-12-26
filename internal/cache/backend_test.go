@@ -16,7 +16,7 @@ import (
 	"github.com/restic/restic/internal/test"
 )
 
-func loadAndCompare(t testing.TB, be restic.Backend, h restic.Handle, data []byte) {
+func loadAndCompare(t testing.TB, be backend.Backend, h backend.Handle, data []byte) {
 	buf, err := backend.LoadAll(context.TODO(), nil, be, h)
 	if err != nil {
 		t.Fatal(err)
@@ -31,25 +31,25 @@ func loadAndCompare(t testing.TB, be restic.Backend, h restic.Handle, data []byt
 	}
 }
 
-func save(t testing.TB, be restic.Backend, h restic.Handle, data []byte) {
-	err := be.Save(context.TODO(), h, restic.NewByteReader(data, be.Hasher()))
+func save(t testing.TB, be backend.Backend, h backend.Handle, data []byte) {
+	err := be.Save(context.TODO(), h, backend.NewByteReader(data, be.Hasher()))
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
-func remove(t testing.TB, be restic.Backend, h restic.Handle) {
+func remove(t testing.TB, be backend.Backend, h backend.Handle) {
 	err := be.Remove(context.TODO(), h)
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
-func randomData(n int) (restic.Handle, []byte) {
+func randomData(n int) (backend.Handle, []byte) {
 	data := test.Random(rand.Int(), n)
 	id := restic.Hash(data)
-	h := restic.Handle{
-		Type: restic.IndexFile,
+	h := backend.Handle{
+		Type: backend.IndexFile,
 		Name: id.String(),
 	}
 	return h, data
@@ -114,11 +114,11 @@ func TestBackend(t *testing.T) {
 }
 
 type loadErrorBackend struct {
-	restic.Backend
+	backend.Backend
 	loadError error
 }
 
-func (be loadErrorBackend) Load(_ context.Context, _ restic.Handle, _ int, _ int64, _ func(rd io.Reader) error) error {
+func (be loadErrorBackend) Load(_ context.Context, _ backend.Handle, _ int, _ int64, _ func(rd io.Reader) error) error {
 	time.Sleep(10 * time.Millisecond)
 	return be.loadError
 }
@@ -137,7 +137,7 @@ func TestErrorBackend(t *testing.T) {
 		loadError: testErr,
 	}
 
-	loadTest := func(wg *sync.WaitGroup, be restic.Backend) {
+	loadTest := func(wg *sync.WaitGroup, be backend.Backend) {
 		defer wg.Done()
 
 		buf, err := backend.LoadAll(context.TODO(), nil, be, h)

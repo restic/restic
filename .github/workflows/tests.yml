@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 env:
-  latest_go: "1.20.x"
+  latest_go: "1.21.x"
   GO111MODULE: on
 
 jobs:
@@ -23,18 +23,18 @@ jobs:
         # list of jobs to run:
         include:
           - job_name: Windows
-            go: 1.20.x
+            go: 1.21.x
             os: windows-latest
             test_smb: true
 
           - job_name: macOS
-            go: 1.20.x
+            go: 1.21.x
             os: macOS-latest
             test_fuse: false
             test_smb: true
 
           - job_name: Linux
-            go: 1.20.x
+            go: 1.21.x
             os: ubuntu-latest
             test_cloud_backends: true
             test_fuse: true
@@ -42,20 +42,20 @@ jobs:
             check_changelog: true
 
           - job_name: Linux (race)
-            go: 1.20.x
+            go: 1.21.x
             os: ubuntu-latest
             test_fuse: true
             test_smb: true
             test_opts: "-race"
 
           - job_name: Linux
-            go: 1.19.x
+            go: 1.20.x
             os: ubuntu-latest
             test_fuse: true
             test_smb: true
 
           - job_name: Linux
-            go: 1.18.x
+            go: 1.19.x
             os: ubuntu-latest
             test_fuse: true
             test_smb: true
@@ -252,7 +252,7 @@ jobs:
         if: matrix.os == 'windows-latest'
 
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Build with build.go
         run: |
@@ -349,7 +349,7 @@ jobs:
           go-version: ${{ env.latest_go }}
 
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Cross-compile for subset ${{ matrix.subset }}
         run: |
@@ -367,13 +367,13 @@ jobs:
           go-version: ${{ env.latest_go }}
 
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
           # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
-          version: v1.52.2
+          version: v1.55.2
           args: --verbose --timeout 5m
 
         # only run golangci-lint for pull requests, otherwise ALL hints get
@@ -387,12 +387,27 @@ jobs:
           go mod tidy
           git diff --exit-code go.mod go.sum
 
+  analyze:
+    name: Analyze results
+    needs: [test, cross_compile, lint]
+    if: always()
+
+    permissions: # no need to access code
+      contents: none
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Decide whether the needed jobs succeeded or failed
+        uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe
+        with:
+          jobs: ${{ toJSON(needs) }}
+
   docker:
     name: docker
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Docker meta
         id: meta
@@ -412,10 +427,10 @@ jobs:
             type=sha
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Build and push
         id: docker_build

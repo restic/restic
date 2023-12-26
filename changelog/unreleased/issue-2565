@@ -1,8 +1,0 @@
-Bugfix: Restic forget --keep-* options now interpret "-1" as "forever"
-
-Restic would forget snapshots that should have been kept when "-1" was
-used as a value for --keep-* options. It now interprets "-1" as forever,
-e.g. an option like --keep-monthly -1 will keep all monthly snapshots.
-
-https://github.com/restic/restic/issues/2565
-https://github.com/restic/restic/pull/4234

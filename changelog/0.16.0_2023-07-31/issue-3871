@@ -1,0 +1,22 @@
+Enhancement: Support `<snapshot>:<subfolder>` syntax to select subfolders
+
+Commands like `diff` or `restore` always worked with the full snapshot. This
+did not allow comparing only a specific subfolder or only restoring that folder
+(`restore --include subfolder` filters the restored files, but still creates the
+directories included in `subfolder`).
+
+The commands `diff`, `dump`, `ls` and `restore` now support the
+`<snapshot>:<subfolder>` syntax, where `snapshot` is the ID of a snapshot (or
+the string `latest`) and `subfolder` is a path within the snapshot. The
+commands will then only work with the specified path of the snapshot. The
+`subfolder` must be a path to a folder as returned by `ls`. Two examples:
+
+`restic restore -t target latest:/some/path`
+`restic diff 12345678:/some/path 90abcef:/some/path`
+
+For debugging purposes, the `cat` command now supports `cat tree
+<snapshot>:<subfolder>` to return the directory metadata for the given
+subfolder.
+
+https://github.com/restic/restic/issues/3871
+https://github.com/restic/restic/pull/4334

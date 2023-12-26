@@ -152,7 +152,7 @@ func runPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions) error
 		return err
 	}
 
-	if repo.Backend().Connections() < 2 {
+	if repo.Connections() < 2 {
 		return errors.Fatal("prune requires a backend connection limit of at least two")
 	}
 
@@ -187,7 +187,8 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOption
 
 	Verbosef("loading indexes...\n")
 	// loading the index before the snapshots is ok, as we use an exclusive lock here
-	err := repo.LoadIndex(ctx)
+	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+	err := repo.LoadIndex(ctx, bar)
 	if err != nil {
 		return err
 	}
@@ -405,7 +406,7 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 	})
 
 	// if duplicate blobs exist, those will be set to either "used" or "unused":
-	// - mark only one occurence of duplicate blobs as used
+	// - mark only one occurrence of duplicate blobs as used
 	// - if there are already some used blobs in a pack, possibly mark duplicates in this pack as "used"
 	// - if there are no used blobs in a pack, possibly mark duplicates as "unused"
 	if hasDuplicates {
@@ -414,7 +415,7 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 			bh := blob.BlobHandle
 			count, ok := usedBlobs[bh]
 			// skip non-duplicate, aka. normal blobs
-			// count == 0 is used to mark that this was a duplicate blob with only a single occurence remaining
+			// count == 0 is used to mark that this was a duplicate blob with only a single occurrence remaining
 			if !ok || count == 1 {
 				return
 			}
@@ -423,7 +424,7 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 			size := uint64(blob.Length)
 			switch {
 			case ip.usedBlobs > 0, count == 0:
-				// other used blobs in pack or "last" occurence ->  transition to used
+				// other used blobs in pack or "last" occurrence ->  transition to used
 				ip.usedSize += size
 				ip.usedBlobs++
 				ip.unusedSize -= size
@@ -433,7 +434,7 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 				stats.blobs.used++
 				stats.size.duplicate -= size
 				stats.blobs.duplicate--
-				// let other occurences remain marked as unused
+				// let other occurrences remain marked as unused
 				usedBlobs[bh] = 1
 			default:
 				// remain unused and decrease counter
@@ -809,7 +810,7 @@ func rebuildIndexFiles(ctx context.Context, gopts GlobalOptions, repo restic.Rep
 func getUsedBlobs(ctx context.Context, repo restic.Repository, ignoreSnapshots restic.IDSet, quiet bool) (usedBlobs restic.CountedBlobSet, err error) {
 	var snapshotTrees restic.IDs
 	Verbosef("loading all snapshots...\n")
-	err = restic.ForAllSnapshots(ctx, repo.Backend(), repo, ignoreSnapshots,
+	err = restic.ForAllSnapshots(ctx, repo, repo, ignoreSnapshots,
 		func(id restic.ID, sn *restic.Snapshot, err error) error {
 			if err != nil {
 				debug.Log("failed to load snapshot %v (error %v)", id, err)

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/walker"
@@ -84,12 +83,13 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 		repo.SetDryRun()
 	}
 
-	snapshotLister, err := backend.MemorizeList(ctx, repo.Backend(), restic.SnapshotFile)
+	snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
 	if err != nil {
 		return err
 	}
 
-	if err := repo.LoadIndex(ctx); err != nil {
+	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+	if err := repo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}
 
@@ -148,7 +148,7 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 		changed, err := filterAndReplaceSnapshot(ctx, repo, sn,
 			func(ctx context.Context, sn *restic.Snapshot) (restic.ID, error) {
 				return rewriter.RewriteTree(ctx, repo, "/", *sn.Tree)
-			}, opts.DryRun, opts.Forget, "repaired")
+			}, opts.DryRun, opts.Forget, nil, "repaired")
 		if err != nil {
 			return errors.Fatalf("unable to rewrite snapshot ID %q: %v", sn.ID().Str(), err)
 		}

@@ -9,7 +9,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/filter"
@@ -51,6 +50,7 @@ type FindOptions struct {
 	PackID, ShowPackID bool
 	CaseInsensitive    bool
 	ListLong           bool
+	HumanReadable      bool
 	restic.SnapshotFilter
 }
 
@@ -69,6 +69,7 @@ func init() {
 	f.BoolVar(&findOptions.ShowPackID, "show-pack-id", false, "display the pack-ID the blobs belong to (with --blob or --tree)")
 	f.BoolVarP(&findOptions.CaseInsensitive, "ignore-case", "i", false, "ignore case for pattern")
 	f.BoolVarP(&findOptions.ListLong, "long", "l", false, "use a long listing format showing size and mode")
+	f.BoolVar(&findOptions.HumanReadable, "human-readable", false, "print sizes in human readable format")
 
 	initMultiSnapshotFilter(f, &findOptions.SnapshotFilter, true)
 }
@@ -104,12 +105,13 @@ func parseTime(str string) (time.Time, error) {
 }
 
 type statefulOutput struct {
-	ListLong bool
-	JSON     bool
-	inuse    bool
-	newsn    *restic.Snapshot
-	oldsn    *restic.Snapshot
-	hits     int
+	ListLong      bool
+	HumanReadable bool
+	JSON          bool
+	inuse         bool
+	newsn         *restic.Snapshot
+	oldsn         *restic.Snapshot
+	hits          int
 }
 
 func (s *statefulOutput) PrintPatternJSON(path string, node *restic.Node) {
@@ -123,7 +125,6 @@ func (s *statefulOutput) PrintPatternJSON(path string, node *restic.Node) {
 
 		// Make the following attributes disappear
 		Name               byte `json:"name,omitempty"`
-		Inode              byte `json:"inode,omitempty"`
 		ExtendedAttributes byte `json:"extended_attributes,omitempty"`
 		Device             byte `json:"device,omitempty"`
 		Content            byte `json:"content,omitempty"`
@@ -164,7 +165,7 @@ func (s *statefulOutput) PrintPatternNormal(path string, node *restic.Node) {
 		s.oldsn = s.newsn
 		Verbosef("Found matching entries in snapshot %s from %s\n", s.oldsn.ID().Str(), s.oldsn.Time.Local().Format(TimeFormat))
 	}
-	Println(formatNode(path, node, s.ListLong))
+	Println(formatNode(path, node, s.ListLong, s.HumanReadable))
 }
 
 func (s *statefulOutput) PrintPattern(path string, node *restic.Node) {
@@ -582,19 +583,19 @@ func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []
 		}
 	}
 
-	snapshotLister, err := backend.MemorizeList(ctx, repo.Backend(), restic.SnapshotFile)
+	snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
 	if err != nil {
 		return err
 	}
-
-	if err = repo.LoadIndex(ctx); err != nil {
+	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+	if err = repo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}
 
 	f := &Finder{
 		repo:        repo,
 		pat:         pat,
-		out:         statefulOutput{ListLong: opts.ListLong, JSON: gopts.JSON},
+		out:         statefulOutput{ListLong: opts.ListLong, HumanReadable: opts.HumanReadable, JSON: gopts.JSON},
 		ignoreTrees: restic.NewIDSet(),
 	}
 
@@ -618,7 +619,16 @@ func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []
 		}
 	}
 
+	var filteredSnapshots []*restic.Snapshot
 	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, opts.Snapshots) {
+		filteredSnapshots = append(filteredSnapshots, sn)
+	}
+
+	sort.Slice(filteredSnapshots, func(i, j int) bool {
+		return filteredSnapshots[i].Time.Before(filteredSnapshots[j].Time)
+	})
+
+	for _, sn := range filteredSnapshots {
 		if f.blobIDs != nil || f.treeIDs != nil {
 			if err = f.findIDs(ctx, sn); err != nil && err.Error() != "OK" {
 				return err

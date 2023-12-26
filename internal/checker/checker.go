@@ -90,9 +90,19 @@ func (err *ErrOldIndexFormat) Error() string {
 	return fmt.Sprintf("index %v has old format", err.ID)
 }
 
+// ErrPackData is returned if errors are discovered while verifying a packfile
+type ErrPackData struct {
+	PackID restic.ID
+	errs   []error
+}
+
+func (e *ErrPackData) Error() string {
+	return fmt.Sprintf("pack %v contains %v errors: %v", e.PackID, len(e.errs), e.errs)
+}
+
 func (c *Checker) LoadSnapshots(ctx context.Context) error {
 	var err error
-	c.snapshots, err = backend.MemorizeList(ctx, c.repo.Backend(), restic.SnapshotFile)
+	c.snapshots, err = restic.MemorizeList(ctx, c.repo, restic.SnapshotFile)
 	return err
 }
 
@@ -113,12 +123,35 @@ func computePackTypes(ctx context.Context, idx restic.MasterIndex) map[restic.ID
 }
 
 // LoadIndex loads all index files.
-func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
+func (c *Checker) LoadIndex(ctx context.Context, p *progress.Counter) (hints []error, errs []error) {
 	debug.Log("Start")
 
+	indexList, err := restic.MemorizeList(ctx, c.repo, restic.IndexFile)
+	if err != nil {
+		// abort if an error occurs while listing the indexes
+		return hints, append(errs, err)
+	}
+
+	if p != nil {
+		var numIndexFiles uint64
+		err := indexList.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
+			numIndexFiles++
+			return nil
+		})
+		if err != nil {
+			return hints, append(errs, err)
+		}
+		p.SetMax(numIndexFiles)
+		defer p.Done()
+	}
+
 	packToIndex := make(map[restic.ID]restic.IDSet)
-	err := index.ForAllIndexes(ctx, c.repo, func(id restic.ID, index *index.Index, oldFormat bool, err error) error {
+	err = index.ForAllIndexes(ctx, indexList, c.repo, func(id restic.ID, index *index.Index, oldFormat bool, err error) error {
 		debug.Log("process index %v, err %v", id, err)
+
+		if p != nil {
+			p.Add(1)
+		}
 
 		if oldFormat {
 			debug.Log("index %v has old format", id)
@@ -206,7 +239,7 @@ func IsOrphanedPack(err error) bool {
 	return errors.As(err, &e) && e.Orphaned
 }
 
-func isS3Legacy(b restic.Backend) bool {
+func isS3Legacy(b backend.Backend) bool {
 	// unwrap cache
 	if be, ok := b.(*cache.Backend); ok {
 		b = be.Backend
@@ -409,7 +442,7 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 				}
 				// Note that we do not use the blob size. The "obvious" check
 				// whether the sum of the blob sizes matches the file size
-				// unfortunately fails in some cases that are not resolveable
+				// unfortunately fails in some cases that are not resolvable
 				// by users, so we omit this check, see #1887
 
 				_, found := c.repo.LookupBlobSize(blobID, restic.DataBlob)
@@ -524,7 +557,7 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 	// calculate hash on-the-fly while reading the pack and capture pack header
 	var hash restic.ID
 	var hdrBuf []byte
-	hashingLoader := func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+	hashingLoader := func(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
 		return r.Backend().Load(ctx, h, int(size), 0, func(rd io.Reader) error {
 			hrd := hashing.NewReader(rd, sha256.New())
 			bufRd.Reset(hrd)
@@ -606,7 +639,7 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 	}
 
 	if len(errs) > 0 {
-		return errors.Errorf("pack %v contains %v errors: %v", id, len(errs), errs)
+		return &ErrPackData{PackID: id, errs: errs}
 	}
 
 	return nil

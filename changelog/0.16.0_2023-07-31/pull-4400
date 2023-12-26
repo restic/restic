@@ -1,0 +1,8 @@
+Bugfix: Ignore missing folders in `rest` backend
+
+If a repository accessed via the REST backend was missing folders, then restic
+would fail with an error while trying to list the data in the repository. This
+has been now fixed.
+
+https://github.com/restic/restic/pull/4400
+https://github.com/restic/rest-server/issues/235

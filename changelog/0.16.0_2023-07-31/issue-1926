@@ -1,0 +1,8 @@
+Enhancement: Allow certificate paths to be passed through environment variables
+
+Restic will now read paths to certificates from the environment variables
+`RESTIC_CACERT` or `RESTIC_TLS_CLIENT_CERT` if `--cacert` or `--tls-client-cert`
+are not specified. 
+
+https://github.com/restic/restic/issues/1926  
+https://github.com/restic/restic/pull/4384

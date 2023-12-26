@@ -9,14 +9,19 @@ import (
 	"runtime"
 	godebug "runtime/debug"
 
+	"github.com/spf13/cobra"
+	"go.uber.org/automaxprocs/maxprocs"
+
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/restic"
-
-	"github.com/spf13/cobra"
-
-	"github.com/restic/restic/internal/errors"
 )
+
+func init() {
+	// don't import `go.uber.org/automaxprocs` to disable the log output
+	_, _ = maxprocs.Set()
+}
 
 // cmdRoot is the base command when no other command has been specified.
 var cmdRoot = &cobra.Command{
@@ -25,6 +30,8 @@ var cmdRoot = &cobra.Command{
 	Long: `
 restic is a backup program which allows saving multiple revisions of files and
 directories in an encrypted repository stored on different backends.
+
+The full documentation can be found at https://restic.readthedocs.io/ .
 `,
 	SilenceErrors:     true,
 	SilenceUsage:      true,
@@ -73,7 +80,7 @@ directories in an encrypted repository stored on different backends.
 // user for authentication).
 func needsPassword(cmd string) bool {
 	switch cmd {
-	case "cache", "generate", "help", "options", "self-update", "version":
+	case "cache", "generate", "help", "options", "self-update", "version", "__complete":
 		return false
 	default:
 		return true

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -13,7 +14,7 @@ import (
 )
 
 var cmdCat = &cobra.Command{
-	Use:   "cat [flags] [pack|blob|snapshot|index|key|masterkey|config|lock] ID",
+	Use:   "cat [flags] [masterkey|config|pack ID|blob ID|snapshot ID|index ID|key ID|lock ID|tree snapshot:subfolder]",
 	Short: "Print internal objects to stdout",
 	Long: `
 The "cat" command is used to print internal objects to stdout.
@@ -33,9 +34,34 @@ func init() {
 	cmdRoot.AddCommand(cmdCat)
 }
 
+func validateCatArgs(args []string) error {
+	var allowedCmds = []string{"config", "index", "snapshot", "key", "masterkey", "lock", "pack", "blob", "tree"}
+
+	if len(args) < 1 {
+		return errors.Fatal("type not specified")
+	}
+
+	validType := false
+	for _, v := range allowedCmds {
+		if v == args[0] {
+			validType = true
+			break
+		}
+	}
+	if !validType {
+		return errors.Fatalf("invalid type %q, must be one of [%s]", args[0], strings.Join(allowedCmds, "|"))
+	}
+
+	if args[0] != "masterkey" && args[0] != "config" && len(args) != 2 {
+		return errors.Fatal("ID not specified")
+	}
+
+	return nil
+}
+
 func runCat(ctx context.Context, gopts GlobalOptions, args []string) error {
-	if len(args) < 1 || (args[0] != "masterkey" && args[0] != "config" && len(args) != 2) {
-		return errors.Fatal("type or ID not specified")
+	if err := validateCatArgs(args); err != nil {
+		return err
 	}
 
 	repo, err := OpenRepository(ctx, gopts)
@@ -55,7 +81,7 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string) error {
 	tpe := args[0]
 
 	var id restic.ID
-	if tpe != "masterkey" && tpe != "config" && tpe != "snapshot" {
+	if tpe != "masterkey" && tpe != "config" && tpe != "snapshot" && tpe != "tree" {
 		id, err = restic.ParseID(args[1])
 		if err != nil {
 			return errors.Fatalf("unable to parse ID: %v\n", err)
@@ -80,7 +106,7 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string) error {
 		Println(string(buf))
 		return nil
 	case "snapshot":
-		sn, err := restic.FindSnapshot(ctx, repo.Backend(), repo, args[1])
+		sn, _, err := restic.FindSnapshot(ctx, repo, repo, args[1])
 		if err != nil {
 			return errors.Fatalf("could not find snapshot: %v\n", err)
 		}
@@ -128,7 +154,7 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string) error {
 		return nil
 
 	case "pack":
-		h := restic.Handle{Type: restic.PackFile, Name: id.String()}
+		h := backend.Handle{Type: restic.PackFile, Name: id.String()}
 		buf, err := backend.LoadAll(ctx, nil, repo.Backend(), h)
 		if err != nil {
 			return err
@@ -143,7 +169,8 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string) error {
 		return err
 
 	case "blob":
-		err = repo.LoadIndex(ctx)
+		bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+		err = repo.LoadIndex(ctx, bar)
 		if err != nil {
 			return err
 		}
@@ -164,6 +191,30 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string) error {
 		}
 
 		return errors.Fatal("blob not found")
+
+	case "tree":
+		sn, subfolder, err := restic.FindSnapshot(ctx, repo, repo, args[1])
+		if err != nil {
+			return errors.Fatalf("could not find snapshot: %v\n", err)
+		}
+
+		bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+		err = repo.LoadIndex(ctx, bar)
+		if err != nil {
+			return err
+		}
+
+		sn.Tree, err = restic.FindTreeDirectory(ctx, repo, sn.Tree, subfolder)
+		if err != nil {
+			return err
+		}
+
+		buf, err := repo.LoadBlob(ctx, restic.TreeBlob, *sn.Tree, nil)
+		if err != nil {
+			return err
+		}
+		_, err = globalOptions.stdout.Write(buf)
+		return err
 
 	default:
 		return errors.Fatal("invalid type")

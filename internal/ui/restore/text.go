@@ -22,7 +22,7 @@ func (t *textPrinter) Update(filesFinished, filesTotal, allBytesWritten, allByte
 	formattedAllBytesWritten := ui.FormatBytes(allBytesWritten)
 	formattedAllBytesTotal := ui.FormatBytes(allBytesTotal)
 	allPercent := ui.FormatPercent(allBytesWritten, allBytesTotal)
-	progress := fmt.Sprintf("[%s] %s  %v files %s, total %v files %v",
+	progress := fmt.Sprintf("[%s] %s  %v files/dirs %s, total %v files/dirs %v",
 		timeLeft, allPercent, filesFinished, formattedAllBytesWritten, filesTotal, formattedAllBytesTotal)
 
 	t.terminal.SetStatus([]string{progress})
@@ -36,10 +36,10 @@ func (t *textPrinter) Finish(filesFinished, filesTotal, allBytesWritten, allByte
 
 	var summary string
 	if filesFinished == filesTotal && allBytesWritten == allBytesTotal {
-		summary = fmt.Sprintf("Summary: Restored %d Files (%s) in %s", filesTotal, formattedAllBytesTotal, timeLeft)
+		summary = fmt.Sprintf("Summary: Restored %d files/dirs (%s) in %s", filesTotal, formattedAllBytesTotal, timeLeft)
 	} else {
 		formattedAllBytesWritten := ui.FormatBytes(allBytesWritten)
-		summary = fmt.Sprintf("Summary: Restored %d / %d Files (%s / %s) in %s",
+		summary = fmt.Sprintf("Summary: Restored %d / %d files/dirs (%s / %s) in %s",
 			filesFinished, filesTotal, formattedAllBytesWritten, formattedAllBytesTotal, timeLeft)
 	}
 

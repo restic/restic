@@ -3,6 +3,7 @@ package restic
 import (
 	"context"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/ui/progress"
@@ -17,14 +18,14 @@ var ErrInvalidData = errors.New("invalid data returned")
 type Repository interface {
 
 	// Backend returns the backend used by the repository
-	Backend() Backend
+	Backend() backend.Backend
 	// Connections returns the maximum number of concurrent backend operations
 	Connections() uint
 
 	Key() *crypto.Key
 
 	Index() MasterIndex
-	LoadIndex(context.Context) error
+	LoadIndex(context.Context, *progress.Counter) error
 	SetIndex(MasterIndex) error
 	LookupBlobSize(ID, BlobType) (uint, bool)
 
@@ -39,7 +40,7 @@ type Repository interface {
 	List(ctx context.Context, t FileType, fn func(ID, int64) error) error
 
 	// ListPack returns the list of blobs saved in the pack id and the length of
-	// the the pack header.
+	// the pack header.
 	ListPack(context.Context, ID, int64) ([]Blob, uint32, error)
 
 	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
@@ -56,10 +57,17 @@ type Repository interface {
 	SaveUnpacked(context.Context, FileType, []byte) (ID, error)
 }
 
-// Lister allows listing files in a backend.
-type Lister interface {
-	List(context.Context, FileType, func(FileInfo) error) error
-}
+type FileType = backend.FileType
+
+// These are the different data types a backend can store.
+const (
+	PackFile     FileType = backend.PackFile
+	KeyFile      FileType = backend.KeyFile
+	LockFile     FileType = backend.LockFile
+	SnapshotFile FileType = backend.SnapshotFile
+	IndexFile    FileType = backend.IndexFile
+	ConfigFile   FileType = backend.ConfigFile
+)
 
 // LoaderUnpacked allows loading a blob not stored in a pack file
 type LoaderUnpacked interface {
@@ -91,4 +99,9 @@ type MasterIndex interface {
 	ListPacks(ctx context.Context, packs IDSet) <-chan PackBlobs
 
 	Save(ctx context.Context, repo SaverUnpacked, packBlacklist IDSet, extraObsolete IDs, p *progress.Counter) (obsolete IDSet, err error)
+}
+
+// Lister allows listing files in a backend.
+type Lister interface {
+	List(ctx context.Context, t FileType, fn func(ID, int64) error) error
 }

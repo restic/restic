@@ -1,114 +1,46 @@
 package dump
 
 import (
-	"reflect"
 	"testing"
+
+	rtest "github.com/restic/restic/internal/test"
 )
 
-func Test_acl_decode(t *testing.T) {
-	type args struct {
-		xattr []byte
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
+func TestFormatLinuxACL(t *testing.T) {
+	for _, c := range []struct {
+		in, out, err string
 	}{
 		{
-			name: "decode string",
-			args: args{
-				xattr: []byte{2, 0, 0, 0, 1, 0, 6, 0, 255, 255, 255, 255, 2, 0, 7, 0, 0, 0, 0, 0, 2, 0, 7, 0, 254, 255, 0, 0, 4, 0, 7, 0, 255, 255, 255, 255, 16, 0, 7, 0, 255, 255, 255, 255, 32, 0, 4, 0, 255, 255, 255, 255},
-			},
-			want: "user::rw-\nuser:0:rwx\nuser:65534:rwx\ngroup::rwx\nmask::rwx\nother::r--\n",
+			in: "\x02\x00\x00\x00\x01\x00\x06\x00\xff\xff\xff\xff\x02\x00" +
+				"\x04\x00\x03\x00\x00\x00\x02\x00\x04\x00\xe9\x03\x00\x00" +
+				"\x04\x00\x02\x00\xff\xff\xff\xff\b\x00\x01\x00'\x00\x00\x00" +
+				"\x10\x00\a\x00\xff\xff\xff\xff \x00\x04\x00\xff\xff\xff\xff",
+			out: "user::rw-\nuser:3:r--\nuser:1001:r--\ngroup::-w-\n" +
+				"group:39:--x\nmask::rwx\nother::r--\n",
 		},
 		{
-			name: "decode group",
-			args: args{
-				xattr: []byte{2, 0, 0, 0, 8, 0, 1, 0, 254, 255, 0, 0},
-			},
-			want: "group:65534:--x\n",
+			in: "\x02\x00\x00\x00\x00\x00\x06\x00\xff\xff\xff\xff\x02\x00" +
+				"\x04\x00\x03\x00\x00\x00\x02\x00\x04\x00\xe9\x03\x00\x00" +
+				"\x04\x00\x06\x00\xff\xff\xff\xff\b\x00\x05\x00'\x00\x00\x00" +
+				"\x10\x00\a\x00\xff\xff\xff\xff \x00\x04\x00\xff\xff\xff\xff",
+			err: "unknown tag",
 		},
 		{
-			name: "decode fail",
-			args: args{
-				xattr: []byte("abctest"),
-			},
-			want: "",
+			in: "\x01\x00\x00\x00\x01\x00\x06\x00\xff\xff\xff\xff\x02\x00" +
+				"\x04\x00\x03\x00\x00\x00\x02\x00\x04\x00\xe9\x03\x00\x00" +
+				"\x04\x00\x06\x00\xff\xff\xff\xff\b\x00\x05\x00'\x00\x00\x00" +
+				"\x10\x00\a\x00\xff\xff\xff\xff \x00\x04\x00\xff\xff\xff\xff",
+			err: "unsupported ACL format version",
 		},
-		{
-			name: "decode empty fail",
-			args: args{
-				xattr: []byte(""),
-			},
-			want: "",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			a := &acl{}
-			a.decode(tt.args.xattr)
-			if tt.want != a.String() {
-				t.Errorf("acl.decode() = %v, want: %v", a.String(), tt.want)
-			}
-			a.decode(tt.args.xattr)
-			if tt.want != a.String() {
-				t.Errorf("second acl.decode() = %v, want: %v", a.String(), tt.want)
-			}
-		})
-	}
-}
-
-func Test_acl_encode(t *testing.T) {
-	tests := []struct {
-		name string
-		want []byte
-		args []aclElement
-	}{
-		{
-			name: "encode values",
-			want: []byte{2, 0, 0, 0, 1, 0, 6, 0, 255, 255, 255, 255, 2, 0, 7, 0, 0, 0, 0, 0, 2, 0, 7, 0, 254, 255, 0, 0, 4, 0, 7, 0, 255, 255, 255, 255, 16, 0, 7, 0, 255, 255, 255, 255, 32, 0, 4, 0, 255, 255, 255, 255},
-			args: []aclElement{
-				{
-					aclSID: 8589934591,
-					Perm:   6,
-				},
-				{
-					aclSID: 8589934592,
-					Perm:   7,
-				},
-				{
-					aclSID: 8590000126,
-					Perm:   7,
-				},
-				{
-					aclSID: 21474836479,
-					Perm:   7,
-				},
-				{
-					aclSID: 73014444031,
-					Perm:   7,
-				},
-				{
-					aclSID: 141733920767,
-					Perm:   4,
-				},
-			},
-		},
-		{
-			name: "encode fail",
-			want: []byte{2, 0, 0, 0},
-			args: []aclElement{},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			a := &acl{
-				Version: 2,
-				List:    tt.args,
-			}
-			if got := a.encode(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("acl.encode() = %v, want %v", got, tt.want)
-			}
-		})
+		{in: "\x02\x00", err: "wrong length"},
+		{in: "", err: "wrong length"},
+	} {
+		out, err := formatLinuxACL([]byte(c.in))
+		if c.err == "" {
+			rtest.Equals(t, c.out, out)
+		} else {
+			rtest.Assert(t, err != nil, "wanted %q but got nil", c.err)
+			rtest.Equals(t, c.err, err.Error())
+		}
 	}
 }

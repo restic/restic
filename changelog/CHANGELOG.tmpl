@@ -1,18 +1,21 @@
-{{- range $changes := . }}{{ with $changes -}}
-Changelog for restic {{ .Version }} ({{ .Date }})
-=======================================
+# Table of Contents
 
+{{ range . -}}
+  * [Changelog for {{ .Version }}](#changelog-for-restic-{{ .Version | replace "." ""}}-{{ .Date | lower -}})
+{{ end -}}
+
+{{- range $changes := . }}{{ with $changes }}
+
+# Changelog for restic {{ .Version }} ({{ .Date }})
 The following sections list the changes in restic {{ .Version }} relevant to
 restic users. The changes are ordered by importance.
 
-Summary
--------
+## Summary
 {{ range $entry := .Entries }}{{ with $entry }}
  * {{ .TypeShort }} #{{ .PrimaryID }}: {{ .Title }}
 {{- end }}{{ end }}
 
-Details
--------
+## Details
 {{ range $entry := .Entries }}{{ with $entry }}
  * {{ .Type }} #{{ .PrimaryID }}: {{ .Title }}
 {{ range $par := .Paragraphs }}
@@ -27,6 +30,5 @@ Details
 {{ range $url := .OtherURLs }}
    {{ $url -}}
 {{ end }}
-{{ end }}{{ end }}
-
+{{ end }}{{ end -}}
 {{ end }}{{ end -}}

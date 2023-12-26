@@ -1,0 +1,10 @@
+Bugfix: Support "unlimited" in `forget --keep-*` options
+
+Restic would previously forget snapshots that should have been kept when a
+negative value was passed to the `--keep-*` options. Negative values are now
+forbidden. To keep all snapshots, the special value `unlimited` is now
+supported. For example, `--keep-monthly unlimited` will keep all monthly
+snapshots.
+
+https://github.com/restic/restic/issues/2565
+https://github.com/restic/restic/pull/4234

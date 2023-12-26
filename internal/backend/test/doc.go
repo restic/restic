@@ -17,7 +17,7 @@
 //
 //	func newTestSuite(t testing.TB) *test.Suite {
 //		return &test.Suite{
-//			Create: func(cfg interface{}) (restic.Backend, error) {
+//			Create: func(cfg interface{}) (backend.Backend, error) {
 //				[...]
 //			},
 //			[...]

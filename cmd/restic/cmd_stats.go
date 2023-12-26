@@ -8,10 +8,10 @@ import (
 	"strings"
 
 	"github.com/restic/chunker"
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/restorer"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/table"
 	"github.com/restic/restic/internal/walker"
@@ -94,12 +94,12 @@ func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args 
 		}
 	}
 
-	snapshotLister, err := backend.MemorizeList(ctx, repo.Backend(), restic.SnapshotFile)
+	snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
 	if err != nil {
 		return err
 	}
-
-	if err = repo.LoadIndex(ctx); err != nil {
+	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+	if err = repo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}
 
@@ -202,8 +202,8 @@ func statsWalkSnapshot(ctx context.Context, snapshot *restic.Snapshot, repo rest
 		return restic.FindUsedBlobs(ctx, repo, restic.IDs{*snapshot.Tree}, stats.blobs, nil)
 	}
 
-	uniqueInodes := make(map[uint64]struct{})
-	err := walker.Walk(ctx, repo, *snapshot.Tree, restic.NewIDSet(), statsWalkTree(repo, opts, stats, uniqueInodes))
+	hardLinkIndex := restorer.NewHardlinkIndex[struct{}]()
+	err := walker.Walk(ctx, repo, *snapshot.Tree, restic.NewIDSet(), statsWalkTree(repo, opts, stats, hardLinkIndex))
 	if err != nil {
 		return fmt.Errorf("walking tree %s: %v", *snapshot.Tree, err)
 	}
@@ -211,7 +211,7 @@ func statsWalkSnapshot(ctx context.Context, snapshot *restic.Snapshot, repo rest
 	return nil
 }
 
-func statsWalkTree(repo restic.Repository, opts StatsOptions, stats *statsContainer, uniqueInodes map[uint64]struct{}) walker.WalkFunc {
+func statsWalkTree(repo restic.Repository, opts StatsOptions, stats *statsContainer, hardLinkIndex *restorer.HardlinkIndex[struct{}]) walker.WalkFunc {
 	return func(parentTreeID restic.ID, npath string, node *restic.Node, nodeErr error) (bool, error) {
 		if nodeErr != nil {
 			return true, nodeErr
@@ -270,8 +270,8 @@ func statsWalkTree(repo restic.Repository, opts StatsOptions, stats *statsContai
 
 			// if inodes are present, only count each inode once
 			// (hard links do not increase restore size)
-			if _, ok := uniqueInodes[node.Inode]; !ok || node.Inode == 0 {
-				uniqueInodes[node.Inode] = struct{}{}
+			if !hardLinkIndex.Has(node.Inode, node.DeviceID) || node.Inode == 0 {
+				hardLinkIndex.Add(node.Inode, node.DeviceID, struct{}{})
 				stats.TotalSize += node.Size
 			}
 

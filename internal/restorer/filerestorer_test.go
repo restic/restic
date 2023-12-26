@@ -8,6 +8,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
@@ -135,7 +136,7 @@ func newTestRepo(content []TestFile) *TestRepo {
 		files:              files,
 		filesPathToContent: filesPathToContent,
 	}
-	repo.loader = func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+	repo.loader = func(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
 		packID, err := restic.ParseID(h.Name)
 		if err != nil {
 			return err
@@ -261,7 +262,7 @@ func TestErrorRestoreFiles(t *testing.T) {
 
 	loadError := errors.New("load error")
 	// loader always returns an error
-	repo.loader = func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+	repo.loader = func(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
 		return loadError
 	}
 
@@ -294,8 +295,8 @@ func testPartialDownloadError(t *testing.T, part int) {
 
 	// loader always returns an error
 	loader := repo.loader
-	repo.loader = func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
-		// only load partial data to execise fault handling in different places
+	repo.loader = func(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+		// only load partial data to exercise fault handling in different places
 		err := loader(ctx, h, length*part/100, offset, fn)
 		if err == nil {
 			return nil

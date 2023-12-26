@@ -10,6 +10,7 @@ import (
 	"sync"
 	"syscall"
 	"time"
+	"unicode/utf8"
 
 	"github.com/restic/restic/internal/errors"
 
@@ -27,21 +28,26 @@ type ExtendedAttribute struct {
 
 // Node is a file, directory or other item in a backup.
 type Node struct {
-	Name               string              `json:"name"`
-	Type               string              `json:"type"`
-	Mode               os.FileMode         `json:"mode,omitempty"`
-	ModTime            time.Time           `json:"mtime,omitempty"`
-	AccessTime         time.Time           `json:"atime,omitempty"`
-	ChangeTime         time.Time           `json:"ctime,omitempty"`
-	UID                uint32              `json:"uid"`
-	GID                uint32              `json:"gid"`
-	User               string              `json:"user,omitempty"`
-	Group              string              `json:"group,omitempty"`
-	Inode              uint64              `json:"inode,omitempty"`
-	DeviceID           uint64              `json:"device_id,omitempty"` // device id of the file, stat.st_dev
-	Size               uint64              `json:"size,omitempty"`
-	Links              uint64              `json:"links,omitempty"`
-	LinkTarget         string              `json:"linktarget,omitempty"`
+	Name       string      `json:"name"`
+	Type       string      `json:"type"`
+	Mode       os.FileMode `json:"mode,omitempty"`
+	ModTime    time.Time   `json:"mtime,omitempty"`
+	AccessTime time.Time   `json:"atime,omitempty"`
+	ChangeTime time.Time   `json:"ctime,omitempty"`
+	UID        uint32      `json:"uid"`
+	GID        uint32      `json:"gid"`
+	User       string      `json:"user,omitempty"`
+	Group      string      `json:"group,omitempty"`
+	Inode      uint64      `json:"inode,omitempty"`
+	DeviceID   uint64      `json:"device_id,omitempty"` // device id of the file, stat.st_dev
+	Size       uint64      `json:"size,omitempty"`
+	Links      uint64      `json:"links,omitempty"`
+	LinkTarget string      `json:"linktarget,omitempty"`
+	// implicitly base64-encoded field. Only used while encoding, `linktarget_raw` will overwrite LinkTarget if present.
+	// This allows storing arbitrary byte-sequences, which are possible as symlink targets on unix systems,
+	// as LinkTarget without breaking backwards-compatibility.
+	// Must only be set of the linktarget cannot be encoded as valid utf8.
+	LinkTargetRaw      []byte              `json:"linktarget_raw,omitempty"`
 	ExtendedAttributes []ExtendedAttribute `json:"extended_attributes,omitempty"`
 	Device             uint64              `json:"device,omitempty"` // in case of Type == "dev", stat.st_rdev
 	Content            IDs                 `json:"content"`
@@ -344,6 +350,13 @@ func (node Node) MarshalJSON() ([]byte, error) {
 	nj := nodeJSON(node)
 	name := strconv.Quote(node.Name)
 	nj.Name = name[1 : len(name)-1]
+	if nj.LinkTargetRaw != nil {
+		panic("LinkTargetRaw must not be set manually")
+	}
+	if !utf8.ValidString(node.LinkTarget) {
+		// store raw bytes if invalid utf8
+		nj.LinkTargetRaw = []byte(node.LinkTarget)
+	}
 
 	return json.Marshal(nj)
 }
@@ -358,7 +371,14 @@ func (node *Node) UnmarshalJSON(data []byte) error {
 	}
 
 	nj.Name, err = strconv.Unquote(`"` + nj.Name + `"`)
-	return errors.Wrap(err, "Unquote")
+	if err != nil {
+		return errors.Wrap(err, "Unquote")
+	}
+	if nj.LinkTargetRaw != nil {
+		nj.LinkTarget = string(nj.LinkTargetRaw)
+		nj.LinkTargetRaw = nil
+	}
+	return nil
 }
 
 func (node Node) Equals(other Node) bool {

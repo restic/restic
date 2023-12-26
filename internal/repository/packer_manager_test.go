@@ -89,6 +89,24 @@ func testPackerManager(t testing.TB) int64 {
 	return int64(bytes)
 }
 
+func TestPackerManagerWithOversizeBlob(t *testing.T) {
+	packFiles := int(0)
+	sizeLimit := uint(512 * 1024)
+	pm := newPackerManager(crypto.NewRandomKey(), restic.DataBlob, sizeLimit, func(ctx context.Context, tp restic.BlobType, p *Packer) error {
+		packFiles++
+		return nil
+	})
+
+	for _, i := range []uint{sizeLimit / 2, sizeLimit, sizeLimit / 3} {
+		_, err := pm.SaveBlob(context.TODO(), restic.DataBlob, restic.ID{}, make([]byte, i), 0)
+		test.OK(t, err)
+	}
+	test.OK(t, pm.Flush(context.TODO()))
+
+	// oversized blob must be stored in a separate packfile
+	test.Equals(t, packFiles, 2)
+}
+
 func BenchmarkPackerManager(t *testing.B) {
 	// Run testPackerManager if it hasn't run already, to set totalSize.
 	once.Do(func() {

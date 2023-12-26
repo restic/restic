@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/restic"
 )
 
@@ -57,7 +58,7 @@ func (*UpgradeRepoV2) RepoCheck() bool {
 	return true
 }
 func (*UpgradeRepoV2) upgrade(ctx context.Context, repo restic.Repository) error {
-	h := restic.Handle{Type: restic.ConfigFile}
+	h := backend.Handle{Type: backend.ConfigFile}
 
 	if !repo.Backend().HasAtomicReplace() {
 		// remove the original file for backends which do not support atomic overwriting
@@ -85,7 +86,7 @@ func (m *UpgradeRepoV2) Apply(ctx context.Context, repo restic.Repository) error
 		return fmt.Errorf("create temp dir failed: %w", err)
 	}
 
-	h := restic.Handle{Type: restic.ConfigFile}
+	h := backend.Handle{Type: restic.ConfigFile}
 
 	// read raw config file and save it to a temp dir, just in case
 	var rawConfigFile []byte
@@ -115,7 +116,7 @@ func (m *UpgradeRepoV2) Apply(ctx context.Context, repo restic.Repository) error
 
 		// try contingency methods, reupload the original file
 		_ = repo.Backend().Remove(ctx, h)
-		err = repo.Backend().Save(ctx, h, restic.NewByteReader(rawConfigFile, nil))
+		err = repo.Backend().Save(ctx, h, backend.NewByteReader(rawConfigFile, nil))
 		if err != nil {
 			repoError.ReuploadOldConfigError = err
 		}

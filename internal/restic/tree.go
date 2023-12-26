@@ -5,7 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path"
 	"sort"
+	"strings"
 
 	"github.com/restic/restic/internal/errors"
 
@@ -183,4 +185,33 @@ func (builder *TreeJSONBuilder) Finalize() ([]byte, error) {
 	// drop reference to buffer
 	builder.buf = bytes.Buffer{}
 	return buf, nil
+}
+
+func FindTreeDirectory(ctx context.Context, repo BlobLoader, id *ID, dir string) (*ID, error) {
+	if id == nil {
+		return nil, errors.New("tree id is null")
+	}
+
+	dirs := strings.Split(path.Clean(dir), "/")
+	subfolder := ""
+
+	for _, name := range dirs {
+		if name == "" || name == "." {
+			continue
+		}
+		subfolder = path.Join(subfolder, name)
+		tree, err := LoadTree(ctx, repo, *id)
+		if err != nil {
+			return nil, fmt.Errorf("path %s: %w", subfolder, err)
+		}
+		node := tree.Find(name)
+		if node == nil {
+			return nil, fmt.Errorf("path %s: not found", subfolder)
+		}
+		if node.Type != "dir" || node.Subtree == nil {
+			return nil, fmt.Errorf("path %s: not a directory", subfolder)
+		}
+		id = node.Subtree
+	}
+	return id, nil
 }

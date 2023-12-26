@@ -1,0 +1,7 @@
+Enhancement: Include inode numbers in JSON output for `find` and `ls` commands
+
+Restic used to omit the inode numbers in the JSON messages emitted for nodes by
+the `ls` command as well as for matches by the `find` command. It now includes
+those values whenever they are available.
+
+https://github.com/restic/restic/pull/4511

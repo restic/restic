@@ -1,0 +1,9 @@
+Enhancement: Reduce memory usage by up to 25%
+
+The in-memory index has been optimized to be more garbage collection friendly.
+Restic now defaults to `GOGC=50` to run the Go garbage collector more
+frequently.
+
+https://github.com/restic/restic/issues/3328
+https://github.com/restic/restic/pull/4352
+https://github.com/restic/restic/pull/4353

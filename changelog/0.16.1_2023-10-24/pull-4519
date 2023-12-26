@@ -1,0 +1,12 @@
+Enhancement: Add config option to set SFTP command arguments
+
+When using the `sftp` backend, scenarios where a custom identity file was
+needed for the SSH connection, required the full command to be specified:
+`-o sftp.command='ssh user@host:port -i /ssh/my_private_key -s sftp'`
+
+Now, the `-o sftp.args=...` option can be passed to restic to specify
+custom arguments for the SSH command executed by the SFTP backend.
+This simplifies the above example to `-o sftp.args='-i /ssh/my_private_key'`.
+
+https://github.com/restic/restic/pull/4519
+https://github.com/restic/restic/issues/4241

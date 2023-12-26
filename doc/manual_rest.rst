@@ -148,11 +148,11 @@ command:
       -v, --verbose                    be verbose (specify multiple times or a level using --verbose=n, max level/times is 2)
 
 Subcommands that support showing progress information such as ``backup``,
-``check`` and ``prune`` will do so unless the quiet flag ``-q`` or
-``--quiet`` is set. When running from a non-interactive console progress
-reporting is disabled by default to not fill your logs. For interactive
-and non-interactive consoles the environment variable ``RESTIC_PROGRESS_FPS``
-can be used to control the frequency of progress reporting. Use for example
+``restore``, ``check`` and ``prune`` will do so unless the quiet flag ``-q``
+or ``--quiet`` is set. When running from a non-interactive console progress
+reporting is disabled by default to not fill your logs. For interactive and
+non-interactive consoles the environment variable ``RESTIC_PROGRESS_FPS`` can
+be used to control the frequency of progress reporting. Use for example
 ``0.016666`` to only update the progress once per minute.
 
 Additionally, on Unix systems if ``restic`` receives a SIGUSR1 signal the

@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
@@ -18,12 +19,12 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func generateRandomFiles(t testing.TB, tpe restic.FileType, c *Cache) restic.IDSet {
+func generateRandomFiles(t testing.TB, tpe backend.FileType, c *Cache) restic.IDSet {
 	ids := restic.NewIDSet()
 	for i := 0; i < rand.Intn(15)+10; i++ {
 		buf := test.Random(rand.Int(), 1<<19)
 		id := restic.Hash(buf)
-		h := restic.Handle{Type: tpe, Name: id.String()}
+		h := backend.Handle{Type: tpe, Name: id.String()}
 
 		if c.Has(h) {
 			t.Errorf("index %v present before save", id)
@@ -46,7 +47,7 @@ func randomID(s restic.IDSet) restic.ID {
 	panic("set is empty")
 }
 
-func load(t testing.TB, c *Cache, h restic.Handle) []byte {
+func load(t testing.TB, c *Cache, h backend.Handle) []byte {
 	rd, err := c.load(h, 0, 0)
 	if err != nil {
 		t.Fatal(err)
@@ -101,7 +102,7 @@ func TestFiles(t *testing.T) {
 			ids := generateRandomFiles(t, tpe, c)
 			id := randomID(ids)
 
-			h := restic.Handle{Type: tpe, Name: id.String()}
+			h := backend.Handle{Type: tpe, Name: id.String()}
 			id2 := restic.Hash(load(t, c, h))
 
 			if !id.Equal(id2) {
@@ -146,7 +147,7 @@ func TestFileLoad(t *testing.T) {
 	data := test.Random(rand.Int(), 5234142)
 	id := restic.ID{}
 	copy(id[:], data)
-	h := restic.Handle{
+	h := backend.Handle{
 		Type: restic.PackFile,
 		Name: id.String(),
 	}
@@ -230,7 +231,7 @@ func TestFileSaveConcurrent(t *testing.T) {
 	)
 	rand.Read(id[:])
 
-	h := restic.Handle{
+	h := backend.Handle{
 		Type: restic.PackFile,
 		Name: id.String(),
 	}
@@ -275,7 +276,7 @@ func TestFileSaveAfterDamage(t *testing.T) {
 	// save a few bytes of data in the cache
 	data := test.Random(123456789, 42)
 	id := restic.Hash(data)
-	h := restic.Handle{
+	h := backend.Handle{
 		Type: restic.PackFile,
 		Name: id.String(),
 	}

@@ -220,7 +220,7 @@ repository:
 
 .. code-block:: console
 
-   $ ./restic init
+   $ restic init
    created restic backend b5c661a86a at s3:https://s3.amazonaws.com/restic-demo
 
    Please note that knowledge of your password is required to access
@@ -236,14 +236,14 @@ restic is now ready to be used with Amazon S3. Try to create a backup:
    10+0 records out
    10485760 bytes (10 MB, 10 MiB) copied, 0,0891322 s, 118 MB/s
 
-   $ ./restic backup test.bin
+   $ restic backup test.bin
    scan [/home/philip/restic-demo/test.bin]
    scanned 0 directories, 1 files in 0:00
    [0:04] 100.00%  2.500 MiB/s  10.000 MiB / 10.000 MiB  1 / 1 items ... ETA 0:00 
    duration: 0:04, 2.47MiB/s
    snapshot 10fdbace saved
 
-   $ ./restic snapshots
+   $ restic snapshots
    ID        Date                 Host        Tags        Directory
    ----------------------------------------------------------------------
    10fdbace  2017-03-26 16:41:50  blackbox                /home/philip/restic-demo/test.bin
@@ -252,7 +252,7 @@ A snapshot was created and stored in the S3 bucket. By default backups to Amazon
 
 .. code-block:: console
 
-  $ ./restic backup -o s3.storage-class=REDUCED_REDUNDANCY test.bin
+  $ restic backup -o s3.storage-class=REDUCED_REDUNDANCY test.bin
 
 This snapshot may now be restored:
 
@@ -260,7 +260,7 @@ This snapshot may now be restored:
 
    $ mkdir restore
 
-   $ ./restic restore 10fdbace --target restore
+   $ restic restore 10fdbace --target restore
    restoring <Snapshot 10fdbace of [/home/philip/restic-demo/test.bin] at 2017-03-26 16:41:50.201418102 +0200 CEST by philip@blackbox> to restore
 
    $ ls restore/

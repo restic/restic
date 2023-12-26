@@ -1,0 +1,7 @@
+Enhancement: Sort snapshots by timestamp in `restic find`
+
+The `find` command used to print snapshots in an arbitrary order. Restic now
+prints snapshots sorted by timestamp.
+
+https://github.com/restic/restic/issues/1495
+https://github.com/restic/restic/pull/4409

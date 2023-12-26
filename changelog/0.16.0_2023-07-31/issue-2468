@@ -1,0 +1,10 @@
+Enhancement: Add support for non-global Azure clouds
+
+The `azure` backend previously only supported storages using the global domain
+`core.windows.net`. This meant that backups to other domains such as Azure
+China (`core.chinacloudapi.cn`) or Azure Germany (`core.cloudapi.de`) were
+not supported. Restic now allows overriding the global domain using the 
+environment variable `AZURE_ENDPOINT_SUFFIX`.
+
+https://github.com/restic/restic/issues/2468
+https://github.com/restic/restic/pull/4387

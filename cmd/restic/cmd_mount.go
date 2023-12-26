@@ -113,6 +113,15 @@ func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args 
 		return errors.Fatal("wrong number of parameters")
 	}
 
+	mountpoint := args[0]
+
+	// Check the existence of the mount point at the earliest stage to
+	// prevent unnecessary computations while opening the repository.
+	if _, err := resticfs.Stat(mountpoint); errors.Is(err, os.ErrNotExist) {
+		Verbosef("Mountpoint %s doesn't exist\n", mountpoint)
+		return err
+	}
+
 	debug.Log("start mount")
 	defer debug.Log("finish mount")
 
@@ -130,17 +139,12 @@ func runMount(ctx context.Context, opts MountOptions, gopts GlobalOptions, args 
 		}
 	}
 
-	err = repo.LoadIndex(ctx)
+	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+	err = repo.LoadIndex(ctx, bar)
 	if err != nil {
 		return err
 	}
 
-	mountpoint := args[0]
-
-	if _, err := resticfs.Stat(mountpoint); errors.Is(err, os.ErrNotExist) {
-		Verbosef("Mountpoint %s doesn't exist\n", mountpoint)
-		return err
-	}
 	mountOptions := []systemFuse.MountOption{
 		systemFuse.ReadOnly(),
 		systemFuse.FSName("restic"),

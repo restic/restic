@@ -1,0 +1,11 @@
+Enhancement: Allow setting REST password and username via environment variables
+
+Previously, it was only possible to specify the REST-server username and
+password in the repository URL, or by using the `--repository-file` option.
+This meant it was not possible to use authentication in contexts where the
+repository URL is stored in publicly accessible way.
+
+Restic now allows setting the username and password using the
+`RESTIC_REST_USERNAME` and `RESTIC_REST_PASSWORD` variables.
+
+https://github.com/restic/restic/pull/4480

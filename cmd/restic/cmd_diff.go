@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -16,7 +15,7 @@ import (
 )
 
 var cmdDiff = &cobra.Command{
-	Use:   "diff [flags] snapshot-ID snapshot-ID",
+	Use:   "diff [flags] snapshotID snapshotID",
 	Short: "Show differences between two snapshots",
 	Long: `
 The "diff" command shows differences from the first to the second snapshot. The
@@ -28,6 +27,10 @@ directory:
 * U  The metadata (access mode, timestamps, ...) for the item was updated
 * M  The file's content was modified
 * T  The type was changed, e.g. a file was made a symlink
+
+To only compare files in specific subfolders, you can use the
+"<snapshotID>:<subfolder>" syntax, where "subfolder" is a path within the
+snapshot.
 
 EXIT STATUS
 ===========
@@ -54,12 +57,12 @@ func init() {
 	f.BoolVar(&diffOptions.ShowMetadata, "metadata", false, "print changes in metadata")
 }
 
-func loadSnapshot(ctx context.Context, be restic.Lister, repo restic.Repository, desc string) (*restic.Snapshot, error) {
-	sn, err := restic.FindSnapshot(ctx, be, repo, desc)
+func loadSnapshot(ctx context.Context, be restic.Lister, repo restic.Repository, desc string) (*restic.Snapshot, string, error) {
+	sn, subfolder, err := restic.FindSnapshot(ctx, be, repo, desc)
 	if err != nil {
-		return nil, errors.Fatal(err.Error())
+		return nil, "", errors.Fatal(err.Error())
 	}
-	return sn, err
+	return sn, subfolder, err
 }
 
 // Comparer collects all things needed to compare two snapshots.
@@ -342,16 +345,16 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []
 	}
 
 	// cache snapshots listing
-	be, err := backend.MemorizeList(ctx, repo.Backend(), restic.SnapshotFile)
+	be, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
 	if err != nil {
 		return err
 	}
-	sn1, err := loadSnapshot(ctx, be, repo, args[0])
+	sn1, subfolder1, err := loadSnapshot(ctx, be, repo, args[0])
 	if err != nil {
 		return err
 	}
 
-	sn2, err := loadSnapshot(ctx, be, repo, args[1])
+	sn2, subfolder2, err := loadSnapshot(ctx, be, repo, args[1])
 	if err != nil {
 		return err
 	}
@@ -359,8 +362,8 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []
 	if !gopts.JSON {
 		Verbosef("comparing snapshot %v to %v:\n\n", sn1.ID().Str(), sn2.ID().Str())
 	}
-
-	if err = repo.LoadIndex(ctx); err != nil {
+	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+	if err = repo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}
 
@@ -370,6 +373,16 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []
 
 	if sn2.Tree == nil {
 		return errors.Errorf("snapshot %v has nil tree", sn2.ID().Str())
+	}
+
+	sn1.Tree, err = restic.FindTreeDirectory(ctx, repo, sn1.Tree, subfolder1)
+	if err != nil {
+		return err
+	}
+
+	sn2.Tree, err = restic.FindTreeDirectory(ctx, repo, sn2.Tree, subfolder2)
+	if err != nil {
+		return err
 	}
 
 	c := &Comparer{

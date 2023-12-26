@@ -1,0 +1,11 @@
+Enhancement: Improve accuracy of ETA displayed during backup
+
+Restic's `backup` command displayed an ETA that did not adapt when the rate of
+progress made during the backup changed during the course of the backup.
+
+Restic now uses recent progress when computing the ETA. It is important to
+realize that the estimate may still be wrong, because restic cannot predict
+the future, but the hope is that the ETA will be more accurate in most cases.
+
+https://github.com/restic/restic/issues/3397
+https://github.com/restic/restic/pull/3563

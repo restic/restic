@@ -110,9 +110,8 @@ func (d *SnapshotsDir) Lookup(ctx context.Context, name string) (fs.Node, error)
 			return newSnapshotLink(d.root, inode, entry.linkTarget, entry.snapshot)
 		} else if entry.snapshot != nil {
 			return newDirFromSnapshot(d.root, inode, entry.snapshot)
-		} else {
-			return NewSnapshotsDir(d.root, inode, d.inode, d.dirStruct, d.prefix+"/"+name), nil
 		}
+		return NewSnapshotsDir(d.root, inode, d.inode, d.dirStruct, d.prefix+"/"+name), nil
 	}
 
 	return nil, syscall.ENOENT

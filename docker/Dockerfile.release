@@ -13,6 +13,6 @@ RUN mv /output/restic_${TARGETOS}_${TARGETARCH} /output/restic
 FROM alpine:latest
 
 COPY --from=helper /output/restic /usr/bin
-RUN apk add --update --no-cache ca-certificates fuse openssh-client tzdata jq
+RUN apk add --no-cache ca-certificates fuse openssh-client tzdata jq
 
 ENTRYPOINT ["/usr/bin/restic"]

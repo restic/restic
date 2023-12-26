@@ -71,7 +71,7 @@ func TestSelectPacksByBucket(t *testing.T) {
 	var testPacks = make(map[restic.ID]int64)
 	for i := 1; i <= 10; i++ {
 		id := restic.NewRandomID()
-		// ensure relevant part of generated id is reproducable
+		// ensure relevant part of generated id is reproducible
 		id[0] = byte(i)
 		testPacks[id] = 0
 	}
@@ -124,7 +124,7 @@ func TestSelectRandomPacksByPercentage(t *testing.T) {
 }
 
 func TestSelectNoRandomPacksByPercentage(t *testing.T) {
-	// that the a repository without pack files works
+	// that the repository without pack files works
 	var testPacks = make(map[restic.ID]int64)
 	selectedPacks := selectRandomPacksByPercentage(testPacks, 10.0)
 	rtest.Assert(t, len(selectedPacks) == 0, "Expected 0 selected packs")
@@ -158,7 +158,7 @@ func TestSelectRandomPacksByFileSize(t *testing.T) {
 }
 
 func TestSelectNoRandomPacksByFileSize(t *testing.T) {
-	// that the a repository without pack files works
+	// that the repository without pack files works
 	var testPacks = make(map[restic.ID]int64)
 	selectedPacks := selectRandomPacksByFileSize(testPacks, 10, 500)
 	rtest.Assert(t, len(selectedPacks) == 0, "Expected 0 selected packs")

@@ -379,7 +379,7 @@ func readdir(dir string) []string {
 }
 
 func sha256sums(inputDir, outputFile string) {
-	msg("runnnig sha256sum in %v", inputDir)
+	msg("running sha256sum in %v", inputDir)
 
 	filenames := readdir(inputDir)
 

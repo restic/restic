@@ -146,7 +146,7 @@ change detection rule based on file metadata to determine whether a file is
 likely unchanged since a previous backup. If it is, the file is not scanned
 again.
 
-The previous backup snapshot, called "parent" snaphot in restic terminology,
+The previous backup snapshot, called "parent" snapshot in restic terminology,
 is determined as follows. By default restic groups snapshots by hostname and
 backup paths, and then selects the latest snapshot in the group that matches
 the current backup. You can change the selection criteria using the
@@ -451,6 +451,15 @@ and displays a small statistic, just pass the command two snapshot IDs:
       Added:   16.403 MiB
       Removed: 16.402 MiB
 
+To only compare files in specific subfolders, you can use the ``<snapshot>:<subfolder>``
+syntax, where ``snapshot`` is the ID of a snapshot (or the string ``latest``) and ``subfolder``
+is a path within the snapshot. For example, to only compare files in the ``/restic``
+folder, you could use the following command:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo diff 5845b002:/restic 2ab627a6:/restic
+
 
 Backing up special items and metadata
 *************************************
@@ -480,35 +489,71 @@ particular note are::
   - file ownership and ACLs on Windows
   - the "hidden" flag on Windows
 
+
+Reading data from a command
+***************************
+
+Sometimes, it can be useful to directly save the output of a program, for example,
+``mysqldump`` so that the SQL can later be restored. Restic supports this mode
+of operation; just supply the option ``--stdin-from-command`` when using the
+``backup`` action, and write the command in place of the files/directories:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo backup --stdin-from-command mysqldump [...]
+
+This command creates a new snapshot based on the standard output of ``mysqldump``.
+By default, the command's standard output is saved in a file named ``stdin``.
+A different name can be specified with ``--stdin-filename``:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo backup --stdin-filename production.sql --stdin-from-command mysqldump [...]
+
+Restic uses the command exit code to determine whether the command succeeded. A
+non-zero exit code from the command causes restic to cancel the backup. This causes
+restic to fail with exit code 1. No snapshot will be created in this case.
+
+
 Reading data from stdin
 ***********************
 
-Sometimes it can be nice to directly save the output of a program, e.g.
-``mysqldump`` so that the SQL can later be restored. Restic supports
-this mode of operation, just supply the option ``--stdin`` to the
-``backup`` command like this:
+.. warning::
+
+    Restic cannot detect if data read from stdin is complete or not. As explained
+    below, this can cause incomplete backup unless additional checks (outside of
+    restic) are configured. If possible, use ``--stdin-from-command`` instead.
+
+Alternatively, restic supports reading arbitrary data directly from the standard
+input. Use the option ``--stdin`` of the ``backup`` command as  follows:
 
 .. code-block:: console
 
-    $ set -o pipefail
+    # Will not notice failures, see the warning below
+    $ gzip bigfile.dat | restic -r /srv/restic-repo backup --stdin
+
+This creates a new snapshot of the content of ``bigfile.dat``.
+As for ``--stdin-from-command``, the default file name is ``stdin``; a
+different name can be specified with ``--stdin-filename``.
+
+**Important**: while it is possible to pipe a command output to restic using
+``--stdin``, doing so is discouraged as it will mask errors from the
+command, leading to corrupted backups. For example, in the following code
+block, if ``mysqldump`` fails to connect to the MySQL database, the restic
+backup will nevertheless succeed in creating an _empty_ backup:
+
+.. code-block:: console
+
+    # Will not notice failures, read the warning above
     $ mysqldump [...] | restic -r /srv/restic-repo backup --stdin
 
-This creates a new snapshot of the output of ``mysqldump``. You can then
-use e.g. the fuse mounting option (see below) to mount the repository
-and read the file.
-
-By default, the file name ``stdin`` is used, a different name can be
-specified with ``--stdin-filename``, e.g. like this:
-
-.. code-block:: console
-
-    $ mysqldump [...] | restic -r /srv/restic-repo backup --stdin --stdin-filename production.sql
-
-The option ``pipefail`` is highly recommended so that a non-zero exit code from
-one of the programs in the pipe (e.g. ``mysqldump`` here) makes the whole chain
-return a non-zero exit code. Refer to the `Use the Unofficial Bash Strict Mode
-<http://redsymbol.net/articles/unofficial-bash-strict-mode/>`__ for more
-details on this.
+A simple solution is to use ``--stdin-from-command`` (see above). If you
+still need to use the ``--stdin`` flag, you must use the shell option ``set -o pipefail``
+(so that a non-zero exit code from one of the programs in the pipe makes the
+whole chain return a non-zero exit code) and you must check the exit code of
+the pipe and act accordingly (e.g., remove the last backup). Refer to the
+`Use the Unofficial Bash Strict Mode <http://redsymbol.net/articles/unofficial-bash-strict-mode/>`__
+for more details on this.
 
 
 Tags for backup
@@ -584,9 +629,16 @@ environment variables. The following lists these environment variables:
     AWS_PROFILE                         Amazon credentials profile (alternative to specifying key and region)
     AWS_SHARED_CREDENTIALS_FILE         Location of the AWS CLI shared credentials file (default: ~/.aws/credentials)
 
-    ST_AUTH                             Auth URL for keystone v1 authentication
-    ST_USER                             Username for keystone v1 authentication
-    ST_KEY                              Password for keystone v1 authentication
+    AZURE_ACCOUNT_NAME                  Account name for Azure
+    AZURE_ACCOUNT_KEY                   Account key for Azure
+    AZURE_ACCOUNT_SAS                   Shared access signatures (SAS) for Azure
+    AZURE_ENDPOINT_SUFFIX               Endpoint suffix for Azure Storage (default: core.windows.net)
+
+    B2_ACCOUNT_ID                       Account ID or applicationKeyId for Backblaze B2
+    B2_ACCOUNT_KEY                      Account Key or applicationKey for Backblaze B2
+
+    GOOGLE_PROJECT_ID                   Project ID for Google Cloud Storage
+    GOOGLE_APPLICATION_CREDENTIALS      Application Credentials for Google Cloud Storage (e.g. $HOME/.config/gs-secret-restic-key.json)
 
     OS_AUTH_URL                         Auth URL for keystone authentication
     OS_REGION_NAME                      Region name for keystone authentication
@@ -610,22 +662,18 @@ environment variables. The following lists these environment variables:
     OS_STORAGE_URL                      Storage URL for token authentication
     OS_AUTH_TOKEN                       Auth token for token authentication
 
-    B2_ACCOUNT_ID                       Account ID or applicationKeyId for Backblaze B2
-    B2_ACCOUNT_KEY                      Account Key or applicationKey for Backblaze B2
-
-    AZURE_ACCOUNT_NAME                  Account name for Azure
-    AZURE_ACCOUNT_KEY                   Account key for Azure
-    AZURE_ACCOUNT_SAS                   Shared access signatures (SAS) for Azure
-    AZURE_ENDPOINT_SUFFIX               Endpoint suffix for Azure Storage (default: core.windows.net)
-
-    GOOGLE_PROJECT_ID                   Project ID for Google Cloud Storage
-    GOOGLE_APPLICATION_CREDENTIALS      Application Credentials for Google Cloud Storage (e.g. $HOME/.config/gs-secret-restic-key.json)
-
     RESTIC_SMB_USER                     SMB user for NTLM authentication
     RESTIC_SMB_PASSWORD                 SMB password for NTLM authentication
     RESTIC_SMB_DOMAIN                   DOMAIN for SMB authentication
 
     RCLONE_BWLIMIT                      rclone bandwidth limit
+
+    RESTIC_REST_USERNAME                Restic REST Server username
+    RESTIC_REST_PASSWORD                Restic REST Server password
+
+    ST_AUTH                             Auth URL for keystone v1 authentication
+    ST_USER                             Username for keystone v1 authentication
+    ST_KEY                              Password for keystone v1 authentication
 
 See :ref:`caching` for the rules concerning cache locations when
 ``RESTIC_CACHE_DIR`` is not set.

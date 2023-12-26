@@ -325,7 +325,7 @@ func Truncate(s string, w int) string {
 
 // Guess whether the first rune in s would occupy two terminal cells
 // instead of one. This cannot be determined exactly without knowing
-// the terminal font, so we treat all ambigous runes as full-width,
+// the terminal font, so we treat all ambiguous runes as full-width,
 // i.e., two cells.
 func wideRune(s string) (wide bool, utfsize uint) {
 	prop, size := width.LookupString(s)

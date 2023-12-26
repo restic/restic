@@ -1,0 +1,7 @@
+Change: Require Go 1.20 for Solaris builds
+
+Building restic on Solaris now requires Go 1.20, as the library used to access
+Azure uses the mmap syscall, which is only available on Solaris starting from
+Go 1.20. All other platforms however continue to build with Go 1.18.
+
+https://github.com/restic/restic/pull/4201

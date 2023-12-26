@@ -5,35 +5,35 @@ import (
 	"io"
 	"sync"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
-	"github.com/restic/restic/internal/restic"
 )
 
 // Backend wraps a restic.Backend and adds a cache.
 type Backend struct {
-	restic.Backend
+	backend.Backend
 	*Cache
 
 	// inProgress contains the handle for all files that are currently
 	// downloaded. The channel in the value is closed as soon as the download
 	// is finished.
 	inProgressMutex sync.Mutex
-	inProgress      map[restic.Handle]chan struct{}
+	inProgress      map[backend.Handle]chan struct{}
 }
 
-// ensure Backend implements restic.Backend
-var _ restic.Backend = &Backend{}
+// ensure Backend implements backend.Backend
+var _ backend.Backend = &Backend{}
 
-func newBackend(be restic.Backend, c *Cache) *Backend {
+func newBackend(be backend.Backend, c *Cache) *Backend {
 	return &Backend{
 		Backend:    be,
 		Cache:      c,
-		inProgress: make(map[restic.Handle]chan struct{}),
+		inProgress: make(map[backend.Handle]chan struct{}),
 	}
 }
 
 // Remove deletes a file from the backend and the cache if it has been cached.
-func (b *Backend) Remove(ctx context.Context, h restic.Handle) error {
+func (b *Backend) Remove(ctx context.Context, h backend.Handle) error {
 	debug.Log("cache Remove(%v)", h)
 	err := b.Backend.Remove(ctx, h)
 	if err != nil {
@@ -43,18 +43,18 @@ func (b *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	return b.Cache.remove(h)
 }
 
-func autoCacheTypes(h restic.Handle) bool {
+func autoCacheTypes(h backend.Handle) bool {
 	switch h.Type {
-	case restic.IndexFile, restic.SnapshotFile:
+	case backend.IndexFile, backend.SnapshotFile:
 		return true
-	case restic.PackFile:
-		return h.ContainedBlobType == restic.TreeBlob
+	case backend.PackFile:
+		return h.IsMetadata
 	}
 	return false
 }
 
 // Save stores a new file in the backend and the cache.
-func (b *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+func (b *Backend) Save(ctx context.Context, h backend.Handle, rd backend.RewindReader) error {
 	if !autoCacheTypes(h) {
 		return b.Backend.Save(ctx, h, rd)
 	}
@@ -89,7 +89,7 @@ func (b *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRea
 	return nil
 }
 
-func (b *Backend) cacheFile(ctx context.Context, h restic.Handle) error {
+func (b *Backend) cacheFile(ctx context.Context, h backend.Handle) error {
 	finish := make(chan struct{})
 
 	b.inProgressMutex.Lock()
@@ -133,7 +133,7 @@ func (b *Backend) cacheFile(ctx context.Context, h restic.Handle) error {
 }
 
 // loadFromCache will try to load the file from the cache.
-func (b *Backend) loadFromCache(h restic.Handle, length int, offset int64, consumer func(rd io.Reader) error) (bool, error) {
+func (b *Backend) loadFromCache(h backend.Handle, length int, offset int64, consumer func(rd io.Reader) error) (bool, error) {
 	rd, err := b.Cache.load(h, length, offset)
 	if err != nil {
 		return false, err
@@ -148,7 +148,7 @@ func (b *Backend) loadFromCache(h restic.Handle, length int, offset int64, consu
 }
 
 // Load loads a file from the cache or the backend.
-func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset int64, consumer func(rd io.Reader) error) error {
+func (b *Backend) Load(ctx context.Context, h backend.Handle, length int, offset int64, consumer func(rd io.Reader) error) error {
 	b.inProgressMutex.Lock()
 	waitForFinish, inProgress := b.inProgress[h]
 	b.inProgressMutex.Unlock()
@@ -194,7 +194,7 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 
 // Stat tests whether the backend has a file. If it does not exist but still
 // exists in the cache, it is removed from the cache.
-func (b *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, error) {
+func (b *Backend) Stat(ctx context.Context, h backend.Handle) (backend.FileInfo, error) {
 	debug.Log("cache Stat(%v)", h)
 
 	fi, err := b.Backend.Stat(ctx, h)
@@ -215,6 +215,6 @@ func (b *Backend) IsNotExist(err error) bool {
 	return b.Backend.IsNotExist(err)
 }
 
-func (b *Backend) Unwrap() restic.Backend {
+func (b *Backend) Unwrap() backend.Backend {
 	return b.Backend
 }

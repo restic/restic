@@ -1,0 +1,8 @@
+Enhancement: Include restic version in snapshot metadata
+
+The restic version used to backup a snapshot is now included in its metadata
+and shown when inspecting a snapshot using `restic cat snapshot <snapshotID>`
+or `restic snapshots --json`.
+
+https://github.com/restic/restic/issues/4188
+https://github.com/restic/restic/pull/4378

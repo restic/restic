@@ -230,7 +230,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 		}
 	}
 
-	idx := NewHardlinkIndex()
+	idx := NewHardlinkIndex[string]()
 	filerestorer := newFileRestorer(dst, res.repo.Backend().Load, res.repo.Key(), res.repo.Index().Lookup,
 		res.repo.Connections(), res.sparse, res.progress)
 	filerestorer.Error = res.Error
@@ -319,8 +319,8 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 				return res.restoreEmptyFileAt(node, target, location)
 			}
 
-			if idx.Has(node.Inode, node.DeviceID) && idx.GetFilename(node.Inode, node.DeviceID) != location {
-				return res.restoreHardlinkAt(node, filerestorer.targetPath(idx.GetFilename(node.Inode, node.DeviceID)), target, location)
+			if idx.Has(node.Inode, node.DeviceID) && idx.Value(node.Inode, node.DeviceID) != location {
+				return res.restoreHardlinkAt(node, filerestorer.targetPath(idx.Value(node.Inode, node.DeviceID)), target, location)
 			}
 
 			return res.restoreNodeMetadataTo(node, target, location)

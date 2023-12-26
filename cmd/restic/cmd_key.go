@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -59,7 +60,7 @@ func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions
 	var m sync.Mutex
 	var keys []keyInfo
 
-	err := restic.ParallelList(ctx, s.Backend(), restic.KeyFile, s.Connections(), func(ctx context.Context, id restic.ID, size int64) error {
+	err := restic.ParallelList(ctx, s, restic.KeyFile, s.Connections(), func(ctx context.Context, id restic.ID, size int64) error {
 		k, err := repository.LoadKey(ctx, s, id)
 		if err != nil {
 			Warnf("LoadKey() failed: %v\n", err)
@@ -149,7 +150,7 @@ func deleteKey(ctx context.Context, repo *repository.Repository, id restic.ID) e
 		return errors.Fatal("refusing to remove key currently used to access repository")
 	}
 
-	h := restic.Handle{Type: restic.KeyFile, Name: id.String()}
+	h := backend.Handle{Type: restic.KeyFile, Name: id.String()}
 	err := repo.Backend().Remove(ctx, h)
 	if err != nil {
 		return err
@@ -176,7 +177,7 @@ func changePassword(ctx context.Context, repo *repository.Repository, gopts Glob
 		return err
 	}
 
-	h := restic.Handle{Type: restic.KeyFile, Name: oldID.String()}
+	h := backend.Handle{Type: restic.KeyFile, Name: oldID.String()}
 	err = repo.Backend().Remove(ctx, h)
 	if err != nil {
 		return err
@@ -193,7 +194,7 @@ func switchToNewKeyAndRemoveIfBroken(ctx context.Context, repo *repository.Repos
 	err := repo.SearchKey(ctx, pw, 0, key.ID().String())
 	if err != nil {
 		// the key is invalid, try to remove it
-		h := restic.Handle{Type: restic.KeyFile, Name: key.ID().String()}
+		h := backend.Handle{Type: restic.KeyFile, Name: key.ID().String()}
 		_ = repo.Backend().Remove(ctx, h)
 		return errors.Fatalf("failed to access repository with new key: %v", err)
 	}
@@ -212,10 +213,13 @@ func runKey(ctx context.Context, gopts GlobalOptions, args []string) error {
 
 	switch args[0] {
 	case "list":
-		lock, ctx, err := lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
-		defer unlockRepo(lock)
-		if err != nil {
-			return err
+		if !gopts.NoLock {
+			var lock *restic.Lock
+			lock, ctx, err = lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
+			defer unlockRepo(lock)
+			if err != nil {
+				return err
+			}
 		}
 
 		return listKeys(ctx, repo, gopts)
@@ -234,7 +238,7 @@ func runKey(ctx context.Context, gopts GlobalOptions, args []string) error {
 			return err
 		}
 
-		id, err := restic.Find(ctx, repo.Backend(), restic.KeyFile, args[1])
+		id, err := restic.Find(ctx, repo, restic.KeyFile, args[1])
 		if err != nil {
 			return err
 		}

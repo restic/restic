@@ -78,7 +78,7 @@ func prettyPrintJSON(wr io.Writer, item interface{}) error {
 }
 
 func debugPrintSnapshots(ctx context.Context, repo *repository.Repository, wr io.Writer) error {
-	return restic.ForAllSnapshots(ctx, repo.Backend(), repo, nil, func(id restic.ID, snapshot *restic.Snapshot, err error) error {
+	return restic.ForAllSnapshots(ctx, repo, repo, nil, func(id restic.ID, snapshot *restic.Snapshot, err error) error {
 		if err != nil {
 			return err
 		}
@@ -107,7 +107,7 @@ type Blob struct {
 func printPacks(ctx context.Context, repo *repository.Repository, wr io.Writer) error {
 
 	var m sync.Mutex
-	return restic.ParallelList(ctx, repo.Backend(), restic.PackFile, repo.Connections(), func(ctx context.Context, id restic.ID, size int64) error {
+	return restic.ParallelList(ctx, repo, restic.PackFile, repo.Connections(), func(ctx context.Context, id restic.ID, size int64) error {
 		blobs, _, err := repo.ListPack(ctx, id, size)
 		if err != nil {
 			Warnf("error for pack %v: %v\n", id.Str(), err)
@@ -134,7 +134,7 @@ func printPacks(ctx context.Context, repo *repository.Repository, wr io.Writer) 
 }
 
 func dumpIndexes(ctx context.Context, repo restic.Repository, wr io.Writer) error {
-	return index.ForAllIndexes(ctx, repo, func(id restic.ID, idx *index.Index, oldFormat bool, err error) error {
+	return index.ForAllIndexes(ctx, repo, repo, func(id restic.ID, idx *index.Index, oldFormat bool, err error) error {
 		Printf("index_id: %v\n", id)
 		if err != nil {
 			return err
@@ -290,7 +290,7 @@ func tryRepairWithBitflip(ctx context.Context, key *crypto.Key, input []byte, by
 	})
 	err := wg.Wait()
 	if err != nil {
-		panic("all go rountines can only return nil")
+		panic("all go routines can only return nil")
 	}
 
 	if !found {
@@ -321,7 +321,7 @@ func loadBlobs(ctx context.Context, repo restic.Repository, packID restic.ID, li
 		panic(err)
 	}
 	be := repo.Backend()
-	h := restic.Handle{
+	h := backend.Handle{
 		Name: packID.String(),
 		Type: restic.PackFile,
 	}
@@ -447,7 +447,7 @@ func runDebugExamine(ctx context.Context, gopts GlobalOptions, args []string) er
 	for _, name := range args {
 		id, err := restic.ParseID(name)
 		if err != nil {
-			id, err = restic.Find(ctx, repo.Backend(), restic.PackFile, name)
+			id, err = restic.Find(ctx, repo, restic.PackFile, name)
 			if err != nil {
 				Warnf("error: %v\n", err)
 				continue
@@ -469,7 +469,8 @@ func runDebugExamine(ctx context.Context, gopts GlobalOptions, args []string) er
 		}
 	}
 
-	err = repo.LoadIndex(ctx)
+	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+	err = repo.LoadIndex(ctx, bar)
 	if err != nil {
 		return err
 	}
@@ -489,7 +490,7 @@ func runDebugExamine(ctx context.Context, gopts GlobalOptions, args []string) er
 func examinePack(ctx context.Context, repo restic.Repository, id restic.ID) error {
 	Printf("examine %v\n", id)
 
-	h := restic.Handle{
+	h := backend.Handle{
 		Type: restic.PackFile,
 		Name: id.String(),
 	}

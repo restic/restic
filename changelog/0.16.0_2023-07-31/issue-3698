@@ -1,0 +1,8 @@
+Enhancement: Add support for Managed / Workload Identity to `azure` backend
+
+Restic now additionally supports authenticating to Azure using Workload
+Identity or Managed Identity credentials, which are automatically injected in
+several environments such as a managed Kubernetes cluster.
+
+https://github.com/restic/restic/issues/3698
+https://github.com/restic/restic/pull/4029

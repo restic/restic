@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"sync"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/hashing"
 	"github.com/restic/restic/internal/restic"
@@ -38,7 +39,7 @@ type packerManager struct {
 	packSize uint
 }
 
-// newPackerManager returns an new packer manager which writes temporary files
+// newPackerManager returns a new packer manager which writes temporary files
 // to a temporary directory
 func newPackerManager(key *crypto.Key, tpe restic.BlobType, packSize uint, queueFn func(ctx context.Context, t restic.BlobType, p *Packer) error) *packerManager {
 	return &packerManager{
@@ -70,14 +71,19 @@ func (r *packerManager) SaveBlob(ctx context.Context, t restic.BlobType, id rest
 
 	var err error
 	packer := r.packer
-	if r.packer == nil {
+	// use separate packer if compressed length is larger than the packsize
+	// this speeds up the garbage collection of oversized blobs and reduces the cache size
+	// as the oversize blobs are only downloaded if necessary
+	if len(ciphertext) >= int(r.packSize) || r.packer == nil {
 		packer, err = r.newPacker()
 		if err != nil {
 			return 0, err
 		}
+		// don't store packer for oversized blob
+		if r.packer == nil {
+			r.packer = packer
+		}
 	}
-	// remember packer
-	r.packer = packer
 
 	// save ciphertext
 	// Add only appends bytes in memory to avoid being a scaling bottleneck
@@ -91,8 +97,10 @@ func (r *packerManager) SaveBlob(ctx context.Context, t restic.BlobType, id rest
 		debug.Log("pack is not full enough (%d bytes)", packer.Size())
 		return size, nil
 	}
-	// forget full packer
-	r.packer = nil
+	if packer == r.packer {
+		// forget full packer
+		r.packer = nil
+	}
 
 	// call while holding lock to prevent findPacker from creating new packers if the uploaders are busy
 	// else write the pack to the backend
@@ -138,7 +146,7 @@ func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packe
 
 	// calculate sha256 hash in a second pass
 	var rd io.Reader
-	rd, err = restic.NewFileReader(p.tmpfile, nil)
+	rd, err = backend.NewFileReader(p.tmpfile, nil)
 	if err != nil {
 		return err
 	}
@@ -156,12 +164,12 @@ func (r *Repository) savePacker(ctx context.Context, t restic.BlobType, p *Packe
 	}
 
 	id := restic.IDFromHash(hr.Sum(nil))
-	h := restic.Handle{Type: restic.PackFile, Name: id.String(), ContainedBlobType: t}
+	h := backend.Handle{Type: backend.PackFile, Name: id.String(), IsMetadata: t.IsMetadata()}
 	var beHash []byte
 	if beHr != nil {
 		beHash = beHr.Sum(nil)
 	}
-	rrd, err := restic.NewFileReader(p.tmpfile, beHash)
+	rrd, err := backend.NewFileReader(p.tmpfile, beHash)
 	if err != nil {
 		return err
 	}

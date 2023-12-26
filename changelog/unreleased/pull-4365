@@ -1,6 +1,0 @@
-Change: Building restic on AIX is temporarily unsupported
-
-As the current version of the library used for the Azure backend does not
-compile on AIX, there are currently no restic builds available for AIX.
-
-https://github.com/restic/restic/pull/4365

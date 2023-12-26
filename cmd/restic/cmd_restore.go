@@ -25,8 +25,11 @@ var cmdRestore = &cobra.Command{
 The "restore" command extracts the data from a snapshot from the repository to
 a directory.
 
-The special snapshot "latest" can be used to restore the latest snapshot in the
+The special snapshotID "latest" can be used to restore the latest snapshot in the
 repository.
+
+To only restore a specific subfolder, you can use the "<snapshotID>:<subfolder>"
+syntax, where "subfolder" is a path within the snapshot.
 
 EXIT STATUS
 ===========
@@ -82,9 +85,9 @@ func init() {
 
 	flags := cmdRestore.Flags()
 	flags.StringArrayVarP(&restoreOptions.Exclude, "exclude", "e", nil, "exclude a `pattern` (can be specified multiple times)")
-	flags.StringArrayVar(&restoreOptions.InsensitiveExclude, "iexclude", nil, "same as `--exclude` but ignores the casing of filenames")
+	flags.StringArrayVar(&restoreOptions.InsensitiveExclude, "iexclude", nil, "same as --exclude but ignores the casing of `pattern`")
 	flags.StringArrayVarP(&restoreOptions.Include, "include", "i", nil, "include a `pattern`, exclude everything else (can be specified multiple times)")
-	flags.StringArrayVar(&restoreOptions.InsensitiveInclude, "iinclude", nil, "same as `--include` but ignores the casing of filenames")
+	flags.StringArrayVar(&restoreOptions.InsensitiveInclude, "iinclude", nil, "same as --include but ignores the casing of `pattern`")
 	flags.StringVarP(&restoreOptions.Target, "target", "t", "", "directory to extract data to")
 
 	initSingleSnapshotFilter(flags, &restoreOptions.SnapshotFilter)
@@ -161,16 +164,22 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		}
 	}
 
-	sn, err := (&restic.SnapshotFilter{
+	sn, subfolder, err := (&restic.SnapshotFilter{
 		Hosts: opts.Hosts,
 		Paths: opts.Paths,
 		Tags:  opts.Tags,
-	}).FindLatest(ctx, repo.Backend(), repo, snapshotIDString)
+	}).FindLatest(ctx, repo, repo, snapshotIDString)
 	if err != nil {
 		return errors.Fatalf("failed to find snapshot: %v", err)
 	}
 
-	err = repo.LoadIndex(ctx)
+	bar := newIndexTerminalProgress(gopts.Quiet, gopts.JSON, term)
+	err = repo.LoadIndex(ctx, bar)
+	if err != nil {
+		return err
+	}
+
+	sn.Tree, err = restic.FindTreeDirectory(ctx, repo, sn.Tree, subfolder)
 	if err != nil {
 		return err
 	}

@@ -11,7 +11,7 @@ import (
 // ForAllIndexes loads all index files in parallel and calls the given callback.
 // It is guaranteed that the function is not run concurrently. If the callback
 // returns an error, this function is cancelled and also returns that error.
-func ForAllIndexes(ctx context.Context, repo restic.Repository,
+func ForAllIndexes(ctx context.Context, lister restic.Lister, repo restic.Repository,
 	fn func(id restic.ID, index *Index, oldFormat bool, err error) error) error {
 
 	// decoding an index can take quite some time such that this can be both CPU- or IO-bound
@@ -19,7 +19,7 @@ func ForAllIndexes(ctx context.Context, repo restic.Repository,
 	workerCount := repo.Connections() + uint(runtime.GOMAXPROCS(0))
 
 	var m sync.Mutex
-	return restic.ParallelList(ctx, repo.Backend(), restic.IndexFile, workerCount, func(ctx context.Context, id restic.ID, size int64) error {
+	return restic.ParallelList(ctx, lister, restic.IndexFile, workerCount, func(ctx context.Context, id restic.ID, size int64) error {
 		var err error
 		var idx *Index
 		oldFormat := false

@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -82,7 +83,7 @@ func createRandomWrongBlob(t testing.TB, repo restic.Repository) {
 }
 
 // selectBlobs splits the list of all blobs randomly into two lists. A blob
-// will be contained in the firstone ith probability p.
+// will be contained in the firstone with probability p.
 func selectBlobs(t *testing.T, repo restic.Repository, p float32) (list1, list2 restic.BlobSet) {
 	list1 = restic.NewBlobSet()
 	list2 = restic.NewBlobSet()
@@ -157,7 +158,7 @@ func repack(t *testing.T, repo restic.Repository, packs restic.IDSet, blobs rest
 	}
 
 	for id := range repackedBlobs {
-		err = repo.Backend().Remove(context.TODO(), restic.Handle{Type: restic.PackFile, Name: id.String()})
+		err = repo.Backend().Remove(context.TODO(), backend.Handle{Type: restic.PackFile, Name: id.String()})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -191,7 +192,7 @@ func rebuildIndex(t *testing.T, repo restic.Repository) {
 	}
 
 	err = repo.List(context.TODO(), restic.IndexFile, func(id restic.ID, size int64) error {
-		h := restic.Handle{
+		h := backend.Handle{
 			Type: restic.IndexFile,
 			Name: id.String(),
 		}
@@ -213,7 +214,7 @@ func reloadIndex(t *testing.T, repo restic.Repository) {
 		t.Fatal(err)
 	}
 
-	if err := repo.LoadIndex(context.TODO()); err != nil {
+	if err := repo.LoadIndex(context.TODO(), nil); err != nil {
 		t.Fatalf("error loading new index: %v", err)
 	}
 }

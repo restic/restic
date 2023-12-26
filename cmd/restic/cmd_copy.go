@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
@@ -88,23 +87,24 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 		return err
 	}
 
-	srcSnapshotLister, err := backend.MemorizeList(ctx, srcRepo.Backend(), restic.SnapshotFile)
+	srcSnapshotLister, err := restic.MemorizeList(ctx, srcRepo, restic.SnapshotFile)
 	if err != nil {
 		return err
 	}
 
-	dstSnapshotLister, err := backend.MemorizeList(ctx, dstRepo.Backend(), restic.SnapshotFile)
+	dstSnapshotLister, err := restic.MemorizeList(ctx, dstRepo, restic.SnapshotFile)
 	if err != nil {
 		return err
 	}
 
 	debug.Log("Loading source index")
-	if err := srcRepo.LoadIndex(ctx); err != nil {
+	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+	if err := srcRepo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}
-
+	bar = newIndexProgress(gopts.Quiet, gopts.JSON)
 	debug.Log("Loading destination index")
-	if err := dstRepo.LoadIndex(ctx); err != nil {
+	if err := dstRepo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}
 

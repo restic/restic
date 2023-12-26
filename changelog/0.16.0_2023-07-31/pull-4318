@@ -1,0 +1,8 @@
+Bugfix: Correctly clean up status bar output of the `backup` command
+
+Due to a regression in restic 0.15.2, the status bar of the `backup` command
+could leave some output behind. This happened if filenames were printed that
+are wider than the current terminal width. This has now been fixed.
+
+https://github.com/restic/restic/issues/4319
+https://github.com/restic/restic/pull/4318

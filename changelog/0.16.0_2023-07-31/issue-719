@@ -1,0 +1,8 @@
+Enhancement: Add `--retry-lock` option
+
+This option allows specifying a duration for which restic will wait if the
+repository is already locked.
+
+https://github.com/restic/restic/issues/719
+https://github.com/restic/restic/pull/2214
+https://github.com/restic/restic/pull/4107

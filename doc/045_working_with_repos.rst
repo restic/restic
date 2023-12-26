@@ -120,7 +120,7 @@ be skipped by later copy runs.
 The source repository is specified with ``--from-repo`` or can be read
 from a file specified via ``--from-repository-file``. Both of these options
 can also be set as environment variables ``$RESTIC_FROM_REPOSITORY`` or
-``$RESTIC_FROM_REPOSITORY_FILE``, respectively. For the destination repository
+``$RESTIC_FROM_REPOSITORY_FILE``, respectively. For the source repository
 the password can be read from a file ``--from-password-file`` or from a command
 ``--from-password-command``.
 Alternatively the environment variables ``$RESTIC_FROM_PASSWORD_COMMAND`` and
@@ -135,6 +135,8 @@ or the environment variable ``$RESTIC_FROM_KEY_HINT``.
     possible to specify different accounts for the source and destination
     repository. You can avoid this limitation by using the rclone backend
     along with remotes which are configured in rclone.
+
+.. note:: If `copy` is aborted, `copy` will resume the interrupted copying when it is run again. It's possible that up to 10 minutes of progress can be lost because the repository index is only updated from time to time.
 
 .. _copy-filtering-snapshots:
 
@@ -230,6 +232,27 @@ In order to preview the changes which ``rewrite`` would make, you can use the
 ``--dry-run`` option. This will simulate the rewriting process without actually
 modifying the repository. Instead restic will only print the actions it would
 perform.
+
+
+Modifying metadata of snapshots
+===============================
+
+Sometimes it may be desirable to change the metadata of an existing snapshot.
+Currently, rewriting the hostname and the time of the backup is supported. 
+This is possible using the ``rewrite`` command with the option ``--new-host`` followed by the desired new hostname or the option ``--new-time`` followed by the desired new timestamp.
+
+.. code-block:: console
+    $ restic rewrite --new-host newhost --new-time "1999-01-01 11:11:11"
+
+    repository b7dbade3 opened (version 2, compression level auto)
+    [0:00] 100.00%  1 / 1 index files loaded
+
+    snapshot 8ed674f4 of [/path/to/abc.txt] at 2023-11-27 21:57:52.439139291 +0100 CET)
+    setting time to 1999-01-01 11:11:11 +0100 CET
+    setting host to newhost
+    saved new snapshot c05da643
+
+    modified 1 snapshots
 
 
 .. _checking-integrity:
@@ -335,7 +358,7 @@ over 5 separate invocations:
     $ restic -r /srv/restic-repo check --read-data-subset=4/5
     $ restic -r /srv/restic-repo check --read-data-subset=5/5
 
-Use ``--read-data-subset=x%`` to check a randomly choosen subset of the
+Use ``--read-data-subset=x%`` to check a randomly chosen subset of the
 repository pack files. It takes one parameter, ``x``, the percentage of
 pack files to check as an integer or floating point number. This will not
 guarantee to cover all available pack files after sufficient runs, but it is

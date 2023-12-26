@@ -166,7 +166,7 @@ func (h HRESULT) Str() string {
 	return "UNKNOWN"
 }
 
-// VssError encapsulates errors retruned from calling VSS api.
+// VssError encapsulates errors returned from calling VSS api.
 type vssError struct {
 	text    string
 	hresult HRESULT
@@ -190,7 +190,7 @@ func (e *vssError) Error() string {
 	return fmt.Sprintf("VSS error: %s: %s (%#x)", e.text, e.hresult.Str(), e.hresult)
 }
 
-// VssError encapsulates errors retruned from calling VSS api.
+// VssError encapsulates errors returned from calling VSS api.
 type vssTextError struct {
 	text string
 }
@@ -615,7 +615,7 @@ func (vssAsync *IVSSAsync) QueryStatus() (HRESULT, uint32) {
 	return HRESULT(result), state
 }
 
-// WaitUntilAsyncFinished waits until either the async call is finshed or
+// WaitUntilAsyncFinished waits until either the async call is finished or
 // the given timeout is reached.
 func (vssAsync *IVSSAsync) WaitUntilAsyncFinished(millis uint32) error {
 	hresult := vssAsync.Wait(millis)
@@ -858,7 +858,7 @@ func NewVssSnapshot(
 	if err != nil {
 		// After calling PrepareForBackup one needs to call AbortBackup() before releasing the VSS
 		// instance for proper cleanup.
-		// It is not neccessary to call BackupComplete before releasing the VSS instance afterwards.
+		// It is not necessary to call BackupComplete before releasing the VSS instance afterwards.
 		iVssBackupComponents.AbortBackup()
 		iVssBackupComponents.Release()
 		return VssSnapshot{}, err

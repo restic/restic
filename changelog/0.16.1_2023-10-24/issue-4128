@@ -1,0 +1,9 @@
+Enhancement: Automatically set `GOMAXPROCS` in resource-constrained containers
+
+When running restic in a Linux container with CPU-usage limits, restic now
+automatically adjusts `GOMAXPROCS`. This helps to reduce the memory consumption
+on hosts with many CPU cores.
+
+https://github.com/restic/restic/issues/4128
+https://github.com/restic/restic/pull/4485
+https://github.com/restic/restic/pull/4531

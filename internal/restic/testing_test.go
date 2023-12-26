@@ -17,32 +17,13 @@ const (
 	testDepth           = 2
 )
 
-// LoadAllSnapshots returns a list of all snapshots in the repo.
-// If a snapshot ID is in excludeIDs, it will not be included in the result.
-func loadAllSnapshots(ctx context.Context, repo restic.Repository, excludeIDs restic.IDSet) (snapshots restic.Snapshots, err error) {
-	err = restic.ForAllSnapshots(ctx, repo.Backend(), repo, excludeIDs, func(id restic.ID, sn *restic.Snapshot, err error) error {
-		if err != nil {
-			return err
-		}
-
-		snapshots = append(snapshots, sn)
-		return nil
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return snapshots, nil
-}
-
 func TestCreateSnapshot(t *testing.T) {
 	repo := repository.TestRepository(t)
 	for i := 0; i < testCreateSnapshots; i++ {
-		restic.TestCreateSnapshot(t, repo, testSnapshotTime.Add(time.Duration(i)*time.Second), testDepth, 0)
+		restic.TestCreateSnapshot(t, repo, testSnapshotTime.Add(time.Duration(i)*time.Second), testDepth)
 	}
 
-	snapshots, err := loadAllSnapshots(context.TODO(), repo, restic.NewIDSet())
+	snapshots, err := restic.TestLoadAllSnapshots(context.TODO(), repo, restic.NewIDSet())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,6 +54,6 @@ func BenchmarkTestCreateSnapshot(t *testing.B) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		restic.TestCreateSnapshot(t, repo, testSnapshotTime.Add(time.Duration(i)*time.Second), testDepth, 0)
+		restic.TestCreateSnapshot(t, repo, testSnapshotTime.Add(time.Duration(i)*time.Second), testDepth)
 	}
 }

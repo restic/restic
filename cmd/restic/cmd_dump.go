@@ -24,8 +24,12 @@ single file is selected, it prints its contents to stdout. Folders are output
 as a tar (default) or zip file containing the contents of the specified folder.
 Pass "/" as file name to dump the whole snapshot as an archive file.
 
-The special snapshot "latest" can be used to use the latest snapshot in the
+The special snapshotID "latest" can be used to use the latest snapshot in the
 repository.
+
+To include the folder content at the root of the archive, you can use the
+"<snapshotID>:<subfolder>" syntax, where "subfolder" is a path within the
+snapshot.
 
 EXIT STATUS
 ===========
@@ -139,16 +143,22 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 		}
 	}
 
-	sn, err := (&restic.SnapshotFilter{
+	sn, subfolder, err := (&restic.SnapshotFilter{
 		Hosts: opts.Hosts,
 		Paths: opts.Paths,
 		Tags:  opts.Tags,
-	}).FindLatest(ctx, repo.Backend(), repo, snapshotIDString)
+	}).FindLatest(ctx, repo, repo, snapshotIDString)
 	if err != nil {
 		return errors.Fatalf("failed to find snapshot: %v", err)
 	}
 
-	err = repo.LoadIndex(ctx)
+	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+	err = repo.LoadIndex(ctx, bar)
+	if err != nil {
+		return err
+	}
+
+	sn.Tree, err = restic.FindTreeDirectory(ctx, repo, sn.Tree, subfolder)
 	if err != nil {
 		return err
 	}

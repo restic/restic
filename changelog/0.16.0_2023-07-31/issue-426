@@ -1,0 +1,14 @@
+Enhancement: Show progress bar during restore
+
+The `restore` command now shows a progress report while restoring files.
+
+Example: `[0:42]  5.76%  23 files 12.98 MiB, total 3456 files 23.54 GiB`
+
+JSON output is now also supported.
+
+https://github.com/restic/restic/issues/426
+https://github.com/restic/restic/issues/3413
+https://github.com/restic/restic/issues/3627
+https://github.com/restic/restic/pull/3991
+https://github.com/restic/restic/pull/4314
+https://forum.restic.net/t/progress-bar-for-restore/5210

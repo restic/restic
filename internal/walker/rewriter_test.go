@@ -69,7 +69,7 @@ func checkRewriteItemOrder(want []string) checkRewriteFunc {
 	}
 }
 
-// checkRewriteSkips excludes nodes if path is in skipFor, it checks that rewriting proceedes in the correct order.
+// checkRewriteSkips excludes nodes if path is in skipFor, it checks that rewriting proceeds in the correct order.
 func checkRewriteSkips(skipFor map[string]struct{}, want []string, disableCache bool) checkRewriteFunc {
 	var pos int
 

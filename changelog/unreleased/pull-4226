@@ -1,7 +1,0 @@
-Enhancement: Allow specifying the region of new buckets in the gcs backend
-
-Buckets used by the Google Cloud Storage backend would always get created in
-the "us" region. It is now possible to specify the region, where a bucket
-should get created.
-
-https://github.com/restic/restic/pull/4226

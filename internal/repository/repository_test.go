@@ -16,6 +16,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/klauspost/compress/zstd"
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/local"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/index"
@@ -255,7 +256,7 @@ func TestRepositoryLoadIndex(t *testing.T) {
 	defer cleanup()
 
 	repo := repository.TestOpenLocal(t, repodir)
-	rtest.OK(t, repo.LoadIndex(context.TODO()))
+	rtest.OK(t, repo.LoadIndex(context.TODO(), nil))
 }
 
 // loadIndex loads the index id from backend and returns it.
@@ -278,13 +279,13 @@ func TestRepositoryLoadUnpackedBroken(t *testing.T) {
 
 	data := rtest.Random(23, 12345)
 	id := restic.Hash(data)
-	h := restic.Handle{Type: restic.IndexFile, Name: id.String()}
+	h := backend.Handle{Type: restic.IndexFile, Name: id.String()}
 	// damage buffer
 	data[0] ^= 0xff
 
 	repo := repository.TestOpenLocal(t, repodir)
 	// store broken file
-	err := repo.Backend().Save(context.TODO(), h, restic.NewByteReader(data, nil))
+	err := repo.Backend().Save(context.TODO(), h, backend.NewByteReader(data, nil))
 	rtest.OK(t, err)
 
 	// without a retry backend this will just return an error that the file is broken
@@ -296,10 +297,10 @@ func TestRepositoryLoadUnpackedBroken(t *testing.T) {
 }
 
 type damageOnceBackend struct {
-	restic.Backend
+	backend.Backend
 }
 
-func (be *damageOnceBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+func (be *damageOnceBackend) Load(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
 	// don't break the config file as we can't retry it
 	if h.Type == restic.ConfigFile {
 		return be.Backend.Load(ctx, h, length, offset, fn)
@@ -324,7 +325,7 @@ func TestRepositoryLoadUnpackedRetryBroken(t *testing.T) {
 	err = repo.SearchKey(context.TODO(), rtest.TestPassword, 10, "")
 	rtest.OK(t, err)
 
-	rtest.OK(t, repo.LoadIndex(context.TODO()))
+	rtest.OK(t, repo.LoadIndex(context.TODO(), nil))
 }
 
 func BenchmarkLoadIndex(b *testing.B) {
@@ -352,7 +353,7 @@ func benchmarkLoadIndex(b *testing.B, version uint) {
 	rtest.OK(b, err)
 
 	b.Logf("index saved as %v", id.Str())
-	fi, err := repo.Backend().Stat(context.TODO(), restic.Handle{Type: restic.IndexFile, Name: id.String()})
+	fi, err := repo.Backend().Stat(context.TODO(), backend.Handle{Type: restic.IndexFile, Name: id.String()})
 	rtest.OK(b, err)
 	b.Logf("filesize is %v", fi.Size)
 
@@ -522,13 +523,13 @@ func testStreamPack(t *testing.T, version uint) {
 	case 2:
 		compress = true
 	default:
-		t.Fatal("test does not suport repository version", version)
+		t.Fatal("test does not support repository version", version)
 	}
 
 	packfileBlobs, packfile := buildPackfileWithoutHeader(blobSizes, &key, compress)
 
 	loadCalls := 0
-	load := func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+	load := func(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
 		data := packfile
 
 		if offset > int64(len(data)) {

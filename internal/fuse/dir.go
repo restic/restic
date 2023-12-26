@@ -46,7 +46,7 @@ func newDir(root *Root, inode, parentInode uint64, node *restic.Node) (*dir, err
 	}, nil
 }
 
-// returing a wrapped context.Canceled error will instead result in returing
+// returning a wrapped context.Canceled error will instead result in returning
 // an input / output error to the user. Thus unwrap the error to match the
 // expectations of bazil/fuse
 func unwrapCtxCanceled(err error) error {

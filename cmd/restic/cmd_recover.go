@@ -5,7 +5,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	"github.com/spf13/cobra"
@@ -52,13 +51,14 @@ func runRecover(ctx context.Context, gopts GlobalOptions) error {
 		return err
 	}
 
-	snapshotLister, err := backend.MemorizeList(ctx, repo.Backend(), restic.SnapshotFile)
+	snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
 	if err != nil {
 		return err
 	}
 
 	Verbosef("load index files\n")
-	if err = repo.LoadIndex(ctx); err != nil {
+	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+	if err = repo.LoadIndex(ctx, bar); err != nil {
 		return err
 	}
 
@@ -73,7 +73,7 @@ func runRecover(ctx context.Context, gopts GlobalOptions) error {
 	})
 
 	Verbosef("load %d trees\n", len(trees))
-	bar := newProgressMax(!gopts.Quiet, uint64(len(trees)), "trees loaded")
+	bar = newProgressMax(!gopts.Quiet, uint64(len(trees)), "trees loaded")
 	for id := range trees {
 		tree, err := restic.LoadTree(ctx, repo, id)
 		if err != nil {

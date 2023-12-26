@@ -16,9 +16,9 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
 	"github.com/restic/restic/internal/backend/location"
+	"github.com/restic/restic/internal/backend/util"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/restic"
 
 	"github.com/ncw/swift/v2"
 )
@@ -32,8 +32,8 @@ type beSwift struct {
 	layout.Layout
 }
 
-// ensure statically that *beSwift implements restic.Backend.
-var _ restic.Backend = &beSwift{}
+// ensure statically that *beSwift implements backend.Backend.
+var _ backend.Backend = &beSwift{}
 
 func NewFactory() location.Factory {
 	return location.NewHTTPBackendFactory("swift", ParseConfig, location.NoPassword, Open, Open)
@@ -41,7 +41,7 @@ func NewFactory() location.Factory {
 
 // Open opens the swift backend at a container in region. The container is
 // created if it does not exist yet.
-func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backend, error) {
+func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (backend.Backend, error) {
 	debug.Log("config %#v", cfg)
 
 	be := &beSwift{
@@ -134,11 +134,11 @@ func (be *beSwift) HasAtomicReplace() bool {
 
 // Load runs fn with a reader that yields the contents of the file at h at the
 // given offset.
-func (be *beSwift) Load(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
-	return backend.DefaultLoad(ctx, h, length, offset, be.openReader, fn)
+func (be *beSwift) Load(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+	return util.DefaultLoad(ctx, h, length, offset, be.openReader, fn)
 }
 
-func (be *beSwift) openReader(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+func (be *beSwift) openReader(ctx context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
 
 	objName := be.Filename(h)
 
@@ -160,7 +160,7 @@ func (be *beSwift) openReader(ctx context.Context, h restic.Handle, length int, 
 }
 
 // Save stores data in the backend at the handle.
-func (be *beSwift) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+func (be *beSwift) Save(ctx context.Context, h backend.Handle, rd backend.RewindReader) error {
 	objName := be.Filename(h)
 	encoding := "binary/octet-stream"
 
@@ -174,19 +174,19 @@ func (be *beSwift) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 }
 
 // Stat returns information about a blob.
-func (be *beSwift) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInfo, err error) {
+func (be *beSwift) Stat(ctx context.Context, h backend.Handle) (bi backend.FileInfo, err error) {
 	objName := be.Filename(h)
 
 	obj, _, err := be.conn.Object(ctx, be.container, objName)
 	if err != nil {
-		return restic.FileInfo{}, errors.Wrap(err, "conn.Object")
+		return backend.FileInfo{}, errors.Wrap(err, "conn.Object")
 	}
 
-	return restic.FileInfo{Size: obj.Bytes, Name: h.Name}, nil
+	return backend.FileInfo{Size: obj.Bytes, Name: h.Name}, nil
 }
 
 // Remove removes the blob with the given name and type.
-func (be *beSwift) Remove(ctx context.Context, h restic.Handle) error {
+func (be *beSwift) Remove(ctx context.Context, h backend.Handle) error {
 	objName := be.Filename(h)
 
 	err := be.conn.ObjectDelete(ctx, be.container, objName)
@@ -195,7 +195,7 @@ func (be *beSwift) Remove(ctx context.Context, h restic.Handle) error {
 
 // List runs fn for each file in the backend which has the type t. When an
 // error occurs (or fn returns an error), List stops and returns it.
-func (be *beSwift) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
+func (be *beSwift) List(ctx context.Context, t backend.FileType, fn func(backend.FileInfo) error) error {
 	prefix, _ := be.Basedir(t)
 	prefix += "/"
 
@@ -212,7 +212,7 @@ func (be *beSwift) List(ctx context.Context, t restic.FileType, fn func(restic.F
 					continue
 				}
 
-				fi := restic.FileInfo{
+				fi := backend.FileInfo{
 					Name: m,
 					Size: obj.Bytes,
 				}
@@ -245,7 +245,7 @@ func (be *beSwift) IsNotExist(err error) bool {
 // Delete removes all restic objects in the container.
 // It will not remove the container itself.
 func (be *beSwift) Delete(ctx context.Context) error {
-	return backend.DefaultDelete(ctx, be)
+	return util.DefaultDelete(ctx, be)
 }
 
 // Close does nothing

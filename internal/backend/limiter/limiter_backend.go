@@ -4,12 +4,12 @@ import (
 	"context"
 	"io"
 
-	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/backend"
 )
 
-func WrapBackendConstructor[B restic.Backend, C any](constructor func(ctx context.Context, cfg C) (B, error)) func(ctx context.Context, cfg C, lim Limiter) (restic.Backend, error) {
-	return func(ctx context.Context, cfg C, lim Limiter) (restic.Backend, error) {
-		var be restic.Backend
+func WrapBackendConstructor[B backend.Backend, C any](constructor func(ctx context.Context, cfg C) (B, error)) func(ctx context.Context, cfg C, lim Limiter) (backend.Backend, error) {
+	return func(ctx context.Context, cfg C, lim Limiter) (backend.Backend, error) {
+		var be backend.Backend
 		be, err := constructor(ctx, cfg)
 		if err != nil {
 			return nil, err
@@ -24,7 +24,7 @@ func WrapBackendConstructor[B restic.Backend, C any](constructor func(ctx contex
 
 // LimitBackend wraps a Backend and applies rate limiting to Load() and Save()
 // calls on the backend.
-func LimitBackend(be restic.Backend, l Limiter) restic.Backend {
+func LimitBackend(be backend.Backend, l Limiter) backend.Backend {
 	return rateLimitedBackend{
 		Backend: be,
 		limiter: l,
@@ -32,11 +32,11 @@ func LimitBackend(be restic.Backend, l Limiter) restic.Backend {
 }
 
 type rateLimitedBackend struct {
-	restic.Backend
+	backend.Backend
 	limiter Limiter
 }
 
-func (r rateLimitedBackend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+func (r rateLimitedBackend) Save(ctx context.Context, h backend.Handle, rd backend.RewindReader) error {
 	limited := limitedRewindReader{
 		RewindReader: rd,
 		limited:      r.limiter.Upstream(rd),
@@ -46,7 +46,7 @@ func (r rateLimitedBackend) Save(ctx context.Context, h restic.Handle, rd restic
 }
 
 type limitedRewindReader struct {
-	restic.RewindReader
+	backend.RewindReader
 
 	limited io.Reader
 }
@@ -55,13 +55,13 @@ func (l limitedRewindReader) Read(b []byte) (int, error) {
 	return l.limited.Read(b)
 }
 
-func (r rateLimitedBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64, consumer func(rd io.Reader) error) error {
+func (r rateLimitedBackend) Load(ctx context.Context, h backend.Handle, length int, offset int64, consumer func(rd io.Reader) error) error {
 	return r.Backend.Load(ctx, h, length, offset, func(rd io.Reader) error {
 		return consumer(newDownstreamLimitedReader(rd, r.limiter))
 	})
 }
 
-func (r rateLimitedBackend) Unwrap() restic.Backend { return r.Backend }
+func (r rateLimitedBackend) Unwrap() backend.Backend { return r.Backend }
 
 type limitedReader struct {
 	io.Reader
@@ -85,4 +85,4 @@ func (l *limitedReader) WriteTo(w io.Writer) (int64, error) {
 	return l.writerTo.WriteTo(l.limiter.DownstreamWriter(w))
 }
 
-var _ restic.Backend = (*rateLimitedBackend)(nil)
+var _ backend.Backend = (*rateLimitedBackend)(nil)

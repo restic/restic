@@ -7,27 +7,27 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
-	"github.com/restic/restic/internal/restic"
 )
 
 // Backend retries operations on the backend in case of an error with a
 // backoff.
 type Backend struct {
-	restic.Backend
+	backend.Backend
 	MaxTries int
 	Report   func(string, error, time.Duration)
 	Success  func(string, int)
 }
 
-// statically ensure that RetryBackend implements restic.Backend.
-var _ restic.Backend = &Backend{}
+// statically ensure that RetryBackend implements backend.Backend.
+var _ backend.Backend = &Backend{}
 
 // New wraps be with a backend that retries operations after a
 // backoff. report is called with a description and the error, if one occurred.
 // success is called with the number of retries before a successful operation
 // (it is not called if it succeeded on the first try)
-func New(be restic.Backend, maxTries int, report func(string, error, time.Duration), success func(string, int)) *Backend {
+func New(be backend.Backend, maxTries int, report func(string, error, time.Duration), success func(string, int)) *Backend {
 	return &Backend{
 		Backend:  be,
 		MaxTries: maxTries,
@@ -92,7 +92,7 @@ func (be *Backend) retry(ctx context.Context, msg string, f func() error) error 
 }
 
 // Save stores the data in the backend under the given handle.
-func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindReader) error {
+func (be *Backend) Save(ctx context.Context, h backend.Handle, rd backend.RewindReader) error {
 	return be.retry(ctx, fmt.Sprintf("Save(%v)", h), func() error {
 		err := rd.Rewind()
 		if err != nil {
@@ -125,15 +125,19 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd restic.RewindRe
 // given offset. If length is larger than zero, only a portion of the file
 // is returned. rd must be closed after use. If an error is returned, the
 // ReadCloser must be nil.
-func (be *Backend) Load(ctx context.Context, h restic.Handle, length int, offset int64, consumer func(rd io.Reader) error) (err error) {
+func (be *Backend) Load(ctx context.Context, h backend.Handle, length int, offset int64, consumer func(rd io.Reader) error) (err error) {
 	return be.retry(ctx, fmt.Sprintf("Load(%v, %v, %v)", h, length, offset),
 		func() error {
-			return be.Backend.Load(ctx, h, length, offset, consumer)
+			err := be.Backend.Load(ctx, h, length, offset, consumer)
+			if be.Backend.IsNotExist(err) {
+				return backoff.Permanent(err)
+			}
+			return err
 		})
 }
 
 // Stat returns information about the File identified by h.
-func (be *Backend) Stat(ctx context.Context, h restic.Handle) (fi restic.FileInfo, err error) {
+func (be *Backend) Stat(ctx context.Context, h backend.Handle) (fi backend.FileInfo, err error) {
 	err = be.retry(ctx, fmt.Sprintf("Stat(%v)", h),
 		func() error {
 			var innerError error
@@ -149,7 +153,7 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (fi restic.FileInf
 }
 
 // Remove removes a File with type t and name.
-func (be *Backend) Remove(ctx context.Context, h restic.Handle) (err error) {
+func (be *Backend) Remove(ctx context.Context, h backend.Handle) (err error) {
 	return be.retry(ctx, fmt.Sprintf("Remove(%v)", h), func() error {
 		return be.Backend.Remove(ctx, h)
 	})
@@ -159,7 +163,7 @@ func (be *Backend) Remove(ctx context.Context, h restic.Handle) (err error) {
 // error is returned by the underlying backend, the request is retried. When fn
 // returns an error, the operation is aborted and the error is returned to the
 // caller.
-func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
+func (be *Backend) List(ctx context.Context, t backend.FileType, fn func(backend.FileInfo) error) error {
 	// create a new context that we can cancel when fn returns an error, so
 	// that listing is aborted
 	listCtx, cancel := context.WithCancel(ctx)
@@ -169,7 +173,7 @@ func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.F
 	var innerErr error                  // remember when fn returned an error, so we can return that to the caller
 
 	err := be.retry(listCtx, fmt.Sprintf("List(%v)", t), func() error {
-		return be.Backend.List(ctx, t, func(fi restic.FileInfo) error {
+		return be.Backend.List(ctx, t, func(fi backend.FileInfo) error {
 			if _, ok := listed[fi.Name]; ok {
 				return nil
 			}
@@ -192,6 +196,6 @@ func (be *Backend) List(ctx context.Context, t restic.FileType, fn func(restic.F
 	return err
 }
 
-func (be *Backend) Unwrap() restic.Backend {
+func (be *Backend) Unwrap() backend.Backend {
 	return be.Backend
 }

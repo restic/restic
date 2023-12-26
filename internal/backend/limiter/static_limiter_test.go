@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/test"
+	"golang.org/x/time/rate"
 )
 
 func TestLimiterWrapping(t *testing.T) {
@@ -31,6 +32,38 @@ func TestLimiterWrapping(t *testing.T) {
 		test.Equals(t, limiter.Downstream(reader) != reader, mustWrapDownstream)
 		test.Equals(t, limiter.DownstreamWriter(writer) != writer, mustWrapDownstream)
 	}
+}
+
+func TestReadLimiter(t *testing.T) {
+	reader := bytes.NewReader(make([]byte, 300))
+	limiter := rate.NewLimiter(rate.Limit(10000), int(100))
+	limReader := rateLimitedReader{reader, limiter}
+
+	n, err := limReader.Read([]byte{})
+	test.OK(t, err)
+	test.Equals(t, n, 0)
+
+	n, err = limReader.Read(make([]byte, 300))
+	test.OK(t, err)
+	test.Equals(t, n, 300)
+
+	n, err = limReader.Read([]byte{})
+	test.Equals(t, err, io.EOF)
+	test.Equals(t, n, 0)
+}
+
+func TestWriteLimiter(t *testing.T) {
+	writer := &bytes.Buffer{}
+	limiter := rate.NewLimiter(rate.Limit(10000), int(100))
+	limReader := rateLimitedWriter{writer, limiter}
+
+	n, err := limReader.Write([]byte{})
+	test.OK(t, err)
+	test.Equals(t, n, 0)
+
+	n, err = limReader.Write(make([]byte, 300))
+	test.OK(t, err)
+	test.Equals(t, n, 300)
 }
 
 type tracedReadCloser struct {

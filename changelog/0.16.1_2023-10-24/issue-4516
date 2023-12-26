@@ -1,0 +1,8 @@
+Bugfix: Do not try to load password on command line autocomplete
+
+The command line autocompletion previously tried to load the repository
+password. This could cause the autocompletion not to work. Now, this step gets
+skipped.
+
+https://github.com/restic/restic/issues/4516
+https://github.com/restic/restic/pull/4526

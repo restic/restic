@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
@@ -12,7 +13,7 @@ import (
 )
 
 var cmdTag = &cobra.Command{
-	Use:   "tag [flags] [snapshot-ID ...]",
+	Use:   "tag [flags] [snapshotID ...]",
 	Short: "Modify tags on snapshots",
 	Long: `
 The "tag" command allows you to modify tags on exiting snapshots.
@@ -20,7 +21,7 @@ The "tag" command allows you to modify tags on exiting snapshots.
 You can either set/replace the entire set of tags on a snapshot, or
 add tags to/remove tags from the existing set.
 
-When no snapshot-ID is given, all snapshots matching the host, tag and path filter criteria are modified.
+When no snapshotID is given, all snapshots matching the host, tag and path filter criteria are modified.
 
 EXIT STATUS
 ===========
@@ -85,7 +86,7 @@ func changeTags(ctx context.Context, repo *repository.Repository, sn *restic.Sna
 		debug.Log("new snapshot saved as %v", id)
 
 		// Remove the old snapshot.
-		h := restic.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
+		h := backend.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
 		if err = repo.Backend().Remove(ctx, h); err != nil {
 			return false, err
 		}
@@ -119,7 +120,7 @@ func runTag(ctx context.Context, opts TagOptions, gopts GlobalOptions, args []st
 	}
 
 	changeCnt := 0
-	for sn := range FindFilteredSnapshots(ctx, repo.Backend(), repo, &opts.SnapshotFilter, args) {
+	for sn := range FindFilteredSnapshots(ctx, repo, repo, &opts.SnapshotFilter, args) {
 		changed, err := changeTags(ctx, repo, sn, opts.SetTags.Flatten(), opts.AddTags.Flatten(), opts.RemoveTags.Flatten())
 		if err != nil {
 			Warnf("unable to modify the tags for snapshot ID %q, ignoring: %v\n", sn.ID(), err)
