@@ -6,7 +6,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.4.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.2.0
 	github.com/Backblaze/blazer v0.6.1
-	github.com/anacrolix/fuse v0.2.0
+	github.com/anacrolix/fuse v0.3.0
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/cespare/xxhash/v2 v2.2.0
 	github.com/elithrar/simple-scrypt v1.3.0
