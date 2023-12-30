@@ -105,3 +105,17 @@ func TestRewriteMetadata(t *testing.T) {
 		testRewriteMetadata(t, metadata)
 	}
 }
+
+func TestRewriteChangePath(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	snapshotID := createBasicRewriteRepo(t, env)
+
+	// exclude some data
+	testRunRewriteExclude(t, env.gopts, []string{"3"}, true, snapshotMetadataArgs{PathRemove: "", PathAdd: ""})
+	newSnapshotIDs := testListSnapshots(t, env.gopts, 1)
+	rtest.Assert(t, snapshotID != newSnapshotIDs[0], "snapshot id should have changed")
+	// check forbids unused blobs, thus remove them first
+	testRunPrune(t, env.gopts, PruneOptions{MaxUnused: "0"})
+	testRunCheck(t, env.gopts)
+}
