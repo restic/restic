@@ -887,9 +887,9 @@ type BackendLoadFn func(ctx context.Context, h restic.Handle, length int, offset
 const maxUnusedRange = 4 * 1024 * 1024
 
 // StreamPack loads the listed blobs from the specified pack file. The plaintext blob is passed to
-// the handleBlobFn callback or an error if decryption failed or the blob hash does not match. In
-// case of download errors handleBlobFn might be called multiple times for the same blob. If the
-// callback returns an error, then StreamPack will abort and not retry it.
+// the handleBlobFn callback or an error if decryption failed or the blob hash does not match.
+// handleBlobFn is never called multiple times for the same blob. If the callback returns an error,
+// then StreamPack will abort and not retry it.
 func StreamPack(ctx context.Context, beLoad BackendLoadFn, key *crypto.Key, packID restic.ID, blobs []restic.Blob, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
 	if len(blobs) == 0 {
 		// nothing to do
@@ -951,7 +951,9 @@ func streamPackPart(ctx context.Context, beLoad BackendLoadFn, key *crypto.Key, 
 		currentBlobEnd := dataStart
 		var buf []byte
 		var decode []byte
-		for _, entry := range blobs {
+		for len(blobs) > 0 {
+			entry := blobs[0]
+
 			skipBytes := int(entry.Offset - currentBlobEnd)
 			if skipBytes < 0 {
 				return errors.Errorf("overlapping blobs in pack %v", packID)
@@ -1014,6 +1016,8 @@ func streamPackPart(ctx context.Context, beLoad BackendLoadFn, key *crypto.Key, 
 				cancel()
 				return backoff.Permanent(err)
 			}
+			// ensure that each blob is only passed once to handleBlobFn
+			blobs = blobs[1:]
 		}
 		return nil
 	})
