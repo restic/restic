@@ -2,4 +2,4 @@ Enhancement: Add `--new-path-add` and `--new-path-remove` options to `rewrite` c
 
 `restic rewrite` now allows rewriting the path metadata of a snapshot.
 
-https://github.com/restic/restic/pull/4603
+https://github.com/restic/restic/pull/4604
