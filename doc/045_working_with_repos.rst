@@ -241,6 +241,12 @@ Sometimes it may be desirable to change the metadata of an existing snapshot.
 Currently, rewriting the hostname and the time of the backup is supported. 
 This is possible using the ``rewrite`` command with the option ``--new-host`` followed by the desired new hostname or the option ``--new-time`` followed by the desired new timestamp.
 
+To change the paths, use ``--new-path-remove`` to specify the prefix to be
+removed and ``--new-path-added`` to specify the prefix to be added. For example,
+if paths are ``/local/path/1`` and ``/local/path/2``, using 
+``--new-path-remove /local --new-path-add /my`` will change them to 
+``/my/path/1`` and ``/my/path/2``.
+
 .. code-block:: console
     $ restic rewrite --new-host newhost --new-time "1999-01-01 11:11:11"
 

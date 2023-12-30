@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -48,17 +50,21 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 }
 
 type snapshotMetadata struct {
-	Hostname string
-	Time     *time.Time
+	Hostname   string
+	Time       *time.Time
+	PathRemove string
+	PathAdd    string
 }
 
 type snapshotMetadataArgs struct {
-	Hostname string
-	Time     string
+	Hostname   string
+	Time       string
+	PathRemove string
+	PathAdd    string
 }
 
 func (sma snapshotMetadataArgs) empty() bool {
-	return sma.Hostname == "" && sma.Time == ""
+	return sma.Hostname == "" && sma.Time == "" && sma.PathRemove == "" && sma.PathAdd == ""
 }
 
 func (sma snapshotMetadataArgs) convert() (*snapshotMetadata, error) {
@@ -74,7 +80,16 @@ func (sma snapshotMetadataArgs) convert() (*snapshotMetadata, error) {
 		}
 		timeStamp = &t
 	}
-	return &snapshotMetadata{Hostname: sma.Hostname, Time: timeStamp}, nil
+
+	pathFrom := filepath.Clean(sma.PathRemove)
+	pathTo := filepath.Clean(sma.PathAdd)
+
+	return &snapshotMetadata{
+		Hostname:   sma.Hostname,
+		Time:       timeStamp,
+		PathRemove: pathFrom,
+		PathAdd:    pathTo,
+	}, nil
 }
 
 // RewriteOptions collects all options for the rewrite command.
@@ -97,6 +112,8 @@ func init() {
 	f.BoolVarP(&rewriteOptions.DryRun, "dry-run", "n", false, "do not do anything, just print what would be done")
 	f.StringVar(&rewriteOptions.Metadata.Hostname, "new-host", "", "replace hostname")
 	f.StringVar(&rewriteOptions.Metadata.Time, "new-time", "", "replace time of the backup")
+	f.StringVar(&rewriteOptions.Metadata.PathRemove, "new-path-remove", "", "prefix of path to remove")
+	f.StringVar(&rewriteOptions.Metadata.PathAdd, "new-path-add", "", "prefix of path to add")
 
 	initMultiSnapshotFilter(f, &rewriteOptions.SnapshotFilter, true)
 	initExcludePatternOptions(f, &rewriteOptions.excludePatternOptions)
@@ -231,6 +248,17 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 	if newMetadata != nil && newMetadata.Hostname != "" {
 		Verbosef("setting host to %s\n", newMetadata.Hostname)
 		sn.Hostname = newMetadata.Hostname
+	}
+
+	if newMetadata != nil && (newMetadata.PathRemove != "" || newMetadata.PathAdd != "") {
+		for i := range sn.Paths {
+			p := filepath.Join(newMetadata.PathAdd, strings.TrimPrefix(sn.Paths[i], newMetadata.PathRemove))
+			if p == sn.Paths[i] {
+				continue
+			}
+			Verbosef("setting path from %s to %s\n", sn.Paths[i], p)
+			sn.Paths[i] = p
+		}
 	}
 
 	// Save the new snapshot.
