@@ -246,7 +246,10 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) error {
 		return err
 	}
 
+	// track already processed blobs for precise error reporting
+	processedBlobs := restic.NewBlobSet()
 	err := repository.StreamPack(ctx, r.packLoader, r.key, pack.id, blobList, func(h restic.BlobHandle, blobData []byte, err error) error {
+		processedBlobs.Insert(h)
 		blob := blobs[h.ID]
 		if err != nil {
 			for file := range blob.files {
@@ -292,7 +295,19 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) error {
 	})
 
 	if err != nil {
-		for file := range pack.files {
+		// only report error for not yet processed blobs
+		affectedFiles := make(map[*fileInfo]struct{})
+		for _, blob := range blobList {
+			if processedBlobs.Has(blob.BlobHandle) {
+				continue
+			}
+			blob := blobs[blob.ID]
+			for file := range blob.files {
+				affectedFiles[file] = struct{}{}
+			}
+		}
+
+		for file := range affectedFiles {
 			if errFile := sanitizeError(file, err); errFile != nil {
 				return errFile
 			}
