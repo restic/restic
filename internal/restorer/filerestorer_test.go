@@ -316,3 +316,47 @@ func testPartialDownloadError(t *testing.T, part int) {
 	rtest.OK(t, err)
 	verifyRestore(t, r, repo)
 }
+
+func TestFatalDownloadError(t *testing.T) {
+	tempdir := rtest.TempDir(t)
+	content := []TestFile{
+		{
+			name: "file1",
+			blobs: []TestBlob{
+				{"data1-1", "pack1"},
+				{"data1-2", "pack1"},
+			},
+		},
+		{
+			name: "file2",
+			blobs: []TestBlob{
+				{"data2-1", "pack1"},
+				{"data2-2", "pack1"},
+				{"data2-3", "pack1"},
+			},
+		}}
+
+	repo := newTestRepo(content)
+
+	loader := repo.loader
+	repo.loader = func(ctx context.Context, h restic.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+		// only return half the data to break file2
+		return loader(ctx, h, length/2, offset, fn)
+	}
+
+	r := newFileRestorer(tempdir, repo.loader, repo.key, repo.Lookup, 2, false, nil)
+	r.files = repo.files
+
+	var errors []string
+	r.Error = func(s string, e error) error {
+		// ignore errors as in the `restore` command
+		errors = append(errors, s)
+		return nil
+	}
+
+	err := r.restoreFiles(context.TODO())
+	rtest.OK(t, err)
+
+	rtest.Assert(t, len(errors) == 1, "unexpected number of restore errors, expected: 1, got: %v", len(errors))
+	rtest.Assert(t, errors[0] == "file2", "expected error for file2, got: %v", errors[0])
+}
