@@ -7,7 +7,6 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
@@ -45,11 +44,12 @@ type packInfo struct {
 	files map[*fileInfo]struct{} // set of files that use blobs from this pack
 }
 
+type blobsLoaderFn func(ctx context.Context, packID restic.ID, blobs []restic.Blob, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error
+
 // fileRestorer restores set of files
 type fileRestorer struct {
-	key        *crypto.Key
-	idx        func(restic.BlobHandle) []restic.PackedBlob
-	packLoader repository.BackendLoadFn
+	idx         func(restic.BlobHandle) []restic.PackedBlob
+	blobsLoader blobsLoaderFn
 
 	workerCount int
 	filesWriter *filesWriter
@@ -63,8 +63,7 @@ type fileRestorer struct {
 }
 
 func newFileRestorer(dst string,
-	packLoader repository.BackendLoadFn,
-	key *crypto.Key,
+	blobsLoader blobsLoaderFn,
 	idx func(restic.BlobHandle) []restic.PackedBlob,
 	connections uint,
 	sparse bool,
@@ -74,9 +73,8 @@ func newFileRestorer(dst string,
 	workerCount := int(connections)
 
 	return &fileRestorer{
-		key:         key,
 		idx:         idx,
-		packLoader:  packLoader,
+		blobsLoader: blobsLoader,
 		filesWriter: newFilesWriter(workerCount),
 		zeroChunk:   repository.ZeroChunk(),
 		sparse:      sparse,
@@ -310,7 +308,7 @@ func (r *fileRestorer) downloadBlobs(ctx context.Context, packID restic.ID,
 	for _, entry := range blobs {
 		blobList = append(blobList, entry.blob)
 	}
-	return repository.StreamPack(ctx, r.packLoader, r.key, packID, blobList,
+	return r.blobsLoader(ctx, packID, blobList,
 		func(h restic.BlobHandle, blobData []byte, err error) error {
 			processedBlobs.Insert(h)
 			blob := blobs[h.ID]

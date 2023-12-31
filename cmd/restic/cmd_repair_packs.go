@@ -116,7 +116,7 @@ func repairPacks(ctx context.Context, gopts GlobalOptions, repo *repository.Repo
 				continue
 			}
 
-			err = repository.StreamPack(wgCtx, repo.Backend().Load, repo.Key(), b.PackID, blobs, func(blob restic.BlobHandle, buf []byte, err error) error {
+			err = repo.LoadBlobsFromPack(wgCtx, b.PackID, blobs, func(blob restic.BlobHandle, buf []byte, err error) error {
 				if err != nil {
 					// Fallback path
 					buf, err = repo.LoadBlob(wgCtx, blob.Type, blob.ID, nil)

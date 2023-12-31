@@ -276,7 +276,7 @@ func testStreamPack(t *testing.T, version uint) {
 
 				loadCalls = 0
 				shortFirstLoad = test.shortFirstLoad
-				err = StreamPack(ctx, load, &key, restic.ID{}, test.blobs, handleBlob)
+				err = streamPack(ctx, load, &key, restic.ID{}, test.blobs, handleBlob)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -339,7 +339,7 @@ func testStreamPack(t *testing.T, version uint) {
 					return err
 				}
 
-				err = StreamPack(ctx, load, &key, restic.ID{}, test.blobs, handleBlob)
+				err = streamPack(ctx, load, &key, restic.ID{}, test.blobs, handleBlob)
 				if err == nil {
 					t.Fatalf("wanted error %v, got nil", test.err)
 				}
