@@ -943,6 +943,7 @@ func (r *Repository) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte
 }
 
 type backendLoadFn func(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error
+type loadBlobFn func(ctx context.Context, t restic.BlobType, id restic.ID, buf []byte) ([]byte, error)
 
 // Skip sections with more than 4MB unused blobs
 const maxUnusedRange = 4 * 1024 * 1024
@@ -952,10 +953,10 @@ const maxUnusedRange = 4 * 1024 * 1024
 // handleBlobFn is called at most once for each blob. If the callback returns an error,
 // then LoadBlobsFromPack will abort and not retry it.
 func (r *Repository) LoadBlobsFromPack(ctx context.Context, packID restic.ID, blobs []restic.Blob, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
-	return streamPack(ctx, r.Backend().Load, r.key, packID, blobs, handleBlobFn)
+	return streamPack(ctx, r.Backend().Load, r.LoadBlob, r.key, packID, blobs, handleBlobFn)
 }
 
-func streamPack(ctx context.Context, beLoad backendLoadFn, key *crypto.Key, packID restic.ID, blobs []restic.Blob, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
+func streamPack(ctx context.Context, beLoad backendLoadFn, loadBlobFn loadBlobFn, key *crypto.Key, packID restic.ID, blobs []restic.Blob, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
 	if len(blobs) == 0 {
 		// nothing to do
 		return nil
@@ -974,7 +975,7 @@ func streamPack(ctx context.Context, beLoad backendLoadFn, key *crypto.Key, pack
 		}
 		if blobs[i].Offset-lastPos > maxUnusedRange {
 			// load everything up to the skipped file section
-			err := streamPackPart(ctx, beLoad, key, packID, blobs[lowerIdx:i], handleBlobFn)
+			err := streamPackPart(ctx, beLoad, loadBlobFn, key, packID, blobs[lowerIdx:i], handleBlobFn)
 			if err != nil {
 				return err
 			}
@@ -983,10 +984,10 @@ func streamPack(ctx context.Context, beLoad backendLoadFn, key *crypto.Key, pack
 		lastPos = blobs[i].Offset + blobs[i].Length
 	}
 	// load remainder
-	return streamPackPart(ctx, beLoad, key, packID, blobs[lowerIdx:], handleBlobFn)
+	return streamPackPart(ctx, beLoad, loadBlobFn, key, packID, blobs[lowerIdx:], handleBlobFn)
 }
 
-func streamPackPart(ctx context.Context, beLoad backendLoadFn, key *crypto.Key, packID restic.ID, blobs []restic.Blob, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
+func streamPackPart(ctx context.Context, beLoad backendLoadFn, loadBlobFn loadBlobFn, key *crypto.Key, packID restic.ID, blobs []restic.Blob, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
 	h := backend.Handle{Type: restic.PackFile, Name: packID.String(), IsMetadata: false}
 
 	dataStart := blobs[0].Offset
@@ -1022,6 +1023,17 @@ func streamPackPart(ctx context.Context, beLoad backendLoadFn, key *crypto.Key, 
 				return err
 			}
 
+			if val.Err != nil && loadBlobFn != nil {
+				var ierr error
+				// check whether we can get a valid copy somewhere else
+				buf, ierr := loadBlobFn(ctx, val.Handle.Type, val.Handle.ID, nil)
+				if ierr == nil {
+					// success
+					val.Plaintext = buf
+					val.Err = nil
+				}
+			}
+
 			err = handleBlobFn(val.Handle, val.Plaintext, val.Err)
 			if err != nil {
 				cancel()
@@ -1032,6 +1044,19 @@ func streamPackPart(ctx context.Context, beLoad backendLoadFn, key *crypto.Key, 
 		}
 		return nil
 	})
+
+	// the context is only still valid if handleBlobFn never returned an error
+	if ctx.Err() == nil && loadBlobFn != nil {
+		// check whether we can get the remaining blobs somewhere else
+		for _, entry := range blobs {
+			buf, ierr := loadBlobFn(ctx, entry.Type, entry.ID, nil)
+			err = handleBlobFn(entry.BlobHandle, buf, ierr)
+			if err != nil {
+				break
+			}
+		}
+	}
+
 	return errors.Wrap(err, "StreamPack")
 }
 
