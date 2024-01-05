@@ -231,7 +231,6 @@ func (arch *Archiver) SaveDir(ctx context.Context, snPath string, dir string, fi
 	if err != nil {
 		return FutureNode{}, err
 	}
-
 	names, err := readdirnames(arch.FS, dir, fs.O_NOFOLLOW)
 	if err != nil {
 		return FutureNode{}, err
@@ -452,7 +451,6 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 
 	case fi.IsDir():
 		debug.Log("  %v dir", target)
-
 		snItem := snPath + "/"
 		oldSubtree, err := arch.loadSubtree(ctx, previous)
 		if err != nil {

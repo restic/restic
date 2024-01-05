@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -141,22 +140,25 @@ func init() {
 
 // filterExisting returns a slice of all existing items, or an error if no
 // items exist at all.
-func filterExisting(items []string) (result []string, err error) {
-	for _, item := range items {
-		_, err := fs.Lstat(item)
-		if errors.Is(err, os.ErrNotExist) {
-			Warnf("%v does not exist, skipping\n", item)
-			continue
+func filterExisting(targetFS fs.FS, items []string) (result []string, err error) {
+	return items, nil
+	/*
+		for _, item := range items {
+			_, err := targetFS.Lstat(item)
+			if errors.Is(err, os.ErrNotExist) {
+				Warnf("%v does not exist, skipping\n", item)
+				continue
+			}
+
+			result = append(result, item)
 		}
 
-		result = append(result, item)
-	}
+		if len(result) == 0 {
+			return nil, errors.Fatal("all target directories/files do not exist")
+		}
 
-	if len(result) == 0 {
-		return nil, errors.Fatal("all target directories/files do not exist")
-	}
-
-	return
+		return
+	*/
 }
 
 // readLines reads all lines from the named file and returns them as a
@@ -343,7 +345,7 @@ func collectRejectFuncs(opts BackupOptions, targets []string) (fs []RejectFunc, 
 }
 
 // collectTargets returns a list of target files/dirs from several sources.
-func collectTargets(opts BackupOptions, args []string) (targets []string, err error) {
+func collectTargets(targetFS fs.FS, opts BackupOptions, args []string) (targets []string, err error) {
 	if opts.Stdin || opts.StdinCommand {
 		return nil, nil
 	}
@@ -401,7 +403,7 @@ func collectTargets(opts BackupOptions, args []string) (targets []string, err er
 		return nil, errors.Fatal("nothing to backup, please specify target files/dirs")
 	}
 
-	targets, err = filterExisting(targets)
+	targets, err = filterExisting(targetFS, targets)
 	if err != nil {
 		return nil, err
 	}
@@ -445,10 +447,60 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		return err
 	}
 
-	targets, err := collectTargets(opts, args)
-	if err != nil {
-		return err
-	}
+	var targetFS fs.FS = fs.NewGoogleDrive()
+
+	//debug.Log("%v, %v", targets, err)
+
+	/*
+			if runtime.GOOS == "windows" && opts.UseFsSnapshot {
+				if err = fs.HasSufficientPrivilegesForVSS(); err != nil {
+					return err
+				}
+
+				errorHandler := func(item string, err error) error {
+					return progressReporter.Error(item, err)
+				}
+
+				messageHandler := func(msg string, args ...interface{}) {
+					if !gopts.JSON {
+						progressPrinter.P(msg, args...)
+					}
+				}
+
+				localVss := fs.NewLocalVss(errorHandler, messageHandler)
+				defer localVss.DeleteSnapshots()
+				targetFS = localVss
+			}
+
+		if opts.Stdin || opts.StdinCommand {
+			if !gopts.JSON {
+				progressPrinter.V("read data from stdin")
+			}
+			filename := path.Join("/", opts.StdinFilename)
+			var source io.ReadCloser = os.Stdin
+			if opts.StdinCommand {
+				source, err = fs.NewCommandReader(ctx, args, globalOptions.stderr)
+				if err != nil {
+					return err
+				}
+			}
+			targetFS = &fs.Reader{
+				ModTime:    timeStamp,
+				Name:       filename,
+				Mode:       0644,
+				ReadCloser: source,
+			}
+			targets = []string{filename}
+		}
+
+		targets, err := collectTargets(targetFS, opts, args)
+
+		if err != nil {
+			return err
+		}
+	*/
+
+	targets := []string{"root"}
 
 	timeStamp := time.Now()
 	if opts.TimeStamp != "" {
@@ -548,48 +600,6 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 			}
 		}
 		return true
-	}
-
-	var targetFS fs.FS = fs.Local{}
-	if runtime.GOOS == "windows" && opts.UseFsSnapshot {
-		if err = fs.HasSufficientPrivilegesForVSS(); err != nil {
-			return err
-		}
-
-		errorHandler := func(item string, err error) error {
-			return progressReporter.Error(item, err)
-		}
-
-		messageHandler := func(msg string, args ...interface{}) {
-			if !gopts.JSON {
-				progressPrinter.P(msg, args...)
-			}
-		}
-
-		localVss := fs.NewLocalVss(errorHandler, messageHandler)
-		defer localVss.DeleteSnapshots()
-		targetFS = localVss
-	}
-
-	if opts.Stdin || opts.StdinCommand {
-		if !gopts.JSON {
-			progressPrinter.V("read data from stdin")
-		}
-		filename := path.Join("/", opts.StdinFilename)
-		var source io.ReadCloser = os.Stdin
-		if opts.StdinCommand {
-			source, err = fs.NewCommandReader(ctx, args, globalOptions.stderr)
-			if err != nil {
-				return err
-			}
-		}
-		targetFS = &fs.Reader{
-			ModTime:    timeStamp,
-			Name:       filename,
-			Mode:       0644,
-			ReadCloser: source,
-		}
-		targets = []string{filename}
 	}
 
 	wg, wgCtx := errgroup.WithContext(ctx)
