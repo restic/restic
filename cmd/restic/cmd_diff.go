@@ -29,6 +29,9 @@ directory:
 * T  The type was changed, e.g. a file was made a symlink
 * ?  Bitrot detected: The file's content has changed but all metadata is the same
 
+Metadata comparison will likely not work if a backup was created using the
+'--ignore-inode' or '--ignore-ctime' option.
+
 To only compare files in specific subfolders, you can use the
 "<snapshotID>:<subfolder>" syntax, where "subfolder" is a path within the
 snapshot.
