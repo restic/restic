@@ -131,7 +131,7 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 			isCopy := false
 			for _, originalSn := range originalSns {
 				if similarSnapshots(originalSn, sn) {
-					Verboseff("\nsnapshot %s of %v at %s by %s@%s)\n", sn.ID().Str(), sn.Paths, sn.Time, sn.Username, sn.Hostname)
+					Verboseff("\n%v\n", sn)
 					Verboseff("skipping source snapshot %s, was already copied to snapshot %s\n", sn.ID().Str(), originalSn.ID().Str())
 					isCopy = true
 					break
@@ -141,7 +141,7 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 				continue
 			}
 		}
-		Verbosef("\nsnapshot %s of %v at %s by %s@%s)\n", sn.ID().Str(), sn.Paths, sn.Time, sn.Username, sn.Hostname)
+		Verbosef("\n%v\n", sn)
 		Verbosef("  copy started, this may take a while...\n")
 		if err := copyTree(ctx, srcRepo, dstRepo, visitedTrees, *sn.Tree, gopts.Quiet); err != nil {
 			return err
