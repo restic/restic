@@ -252,6 +252,7 @@ func newBackend(ctx context.Context, cfg Config, lim limiter.Limiter) (*Backend,
 		return nil, fmt.Errorf("error talking HTTP to rclone: %w", err)
 	}
 
+	_ = res.Body.Close()
 	debug.Log("HTTP status %q returned, moving instance to background", res.Status)
 	err = bg()
 	if err != nil {
