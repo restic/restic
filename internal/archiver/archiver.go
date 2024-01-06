@@ -2,6 +2,7 @@ package archiver
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path"
 	"runtime"
@@ -183,7 +184,10 @@ func (arch *Archiver) nodeFromFileInfo(snPath, filename string, fi os.FileInfo) 
 	}
 	// overwrite name to match that within the snapshot
 	node.Name = path.Base(snPath)
-	return node, errors.WithStack(err)
+	if err != nil {
+		return node, fmt.Errorf("nodeFromFileInfo %v: %w", filename, err)
+	}
+	return node, err
 }
 
 // loadSubtree tries to load the subtree referenced by node. In case of an error, nil is returned.
