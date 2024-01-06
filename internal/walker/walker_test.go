@@ -99,22 +99,22 @@ type checkFunc func(t testing.TB) (walker WalkFunc, final func(testing.TB))
 func checkItemOrder(want []string) checkFunc {
 	pos := 0
 	return func(t testing.TB) (walker WalkFunc, final func(testing.TB)) {
-		walker = func(treeID restic.ID, path string, node *restic.Node, err error) (bool, error) {
+		walker = func(treeID restic.ID, path string, node *restic.Node, err error) error {
 			if err != nil {
 				t.Errorf("error walking %v: %v", path, err)
-				return false, err
+				return err
 			}
 
 			if pos >= len(want) {
 				t.Errorf("additional unexpected path found: %v", path)
-				return false, nil
+				return nil
 			}
 
 			if path != want[pos] {
 				t.Errorf("wrong path found, want %q, got %q", want[pos], path)
 			}
 			pos++
-			return false, nil
+			return nil
 		}
 
 		final = func(t testing.TB) {
@@ -131,22 +131,22 @@ func checkItemOrder(want []string) checkFunc {
 func checkParentTreeOrder(want []string) checkFunc {
 	pos := 0
 	return func(t testing.TB) (walker WalkFunc, final func(testing.TB)) {
-		walker = func(treeID restic.ID, path string, node *restic.Node, err error) (bool, error) {
+		walker = func(treeID restic.ID, path string, node *restic.Node, err error) error {
 			if err != nil {
 				t.Errorf("error walking %v: %v", path, err)
-				return false, err
+				return err
 			}
 
 			if pos >= len(want) {
 				t.Errorf("additional unexpected parent tree ID found: %v", treeID)
-				return false, nil
+				return nil
 			}
 
 			if treeID.String() != want[pos] {
 				t.Errorf("wrong parent tree ID found, want %q, got %q", want[pos], treeID.String())
 			}
 			pos++
-			return false, nil
+			return nil
 		}
 
 		final = func(t testing.TB) {
@@ -165,15 +165,15 @@ func checkSkipFor(skipFor map[string]struct{}, wantPaths []string) checkFunc {
 	var pos int
 
 	return func(t testing.TB) (walker WalkFunc, final func(testing.TB)) {
-		walker = func(treeID restic.ID, path string, node *restic.Node, err error) (bool, error) {
+		walker = func(treeID restic.ID, path string, node *restic.Node, err error) error {
 			if err != nil {
 				t.Errorf("error walking %v: %v", path, err)
-				return false, err
+				return err
 			}
 
 			if pos >= len(wantPaths) {
 				t.Errorf("additional unexpected path found: %v", path)
-				return false, nil
+				return nil
 			}
 
 			if path != wantPaths[pos] {
@@ -182,50 +182,10 @@ func checkSkipFor(skipFor map[string]struct{}, wantPaths []string) checkFunc {
 			pos++
 
 			if _, ok := skipFor[path]; ok {
-				return false, ErrSkipNode
+				return ErrSkipNode
 			}
 
-			return false, nil
-		}
-
-		final = func(t testing.TB) {
-			if pos != len(wantPaths) {
-				t.Errorf("wrong number of paths returned, want %d, got %d", len(wantPaths), pos)
-			}
-		}
-
-		return walker, final
-	}
-}
-
-// checkIgnore returns ErrSkipNode if path is in skipFor and sets ignore according
-// to ignoreFor. It checks that the paths the walk func is called for are exactly
-// the ones in wantPaths.
-func checkIgnore(skipFor map[string]struct{}, ignoreFor map[string]bool, wantPaths []string) checkFunc {
-	var pos int
-
-	return func(t testing.TB) (walker WalkFunc, final func(testing.TB)) {
-		walker = func(treeID restic.ID, path string, node *restic.Node, err error) (bool, error) {
-			if err != nil {
-				t.Errorf("error walking %v: %v", path, err)
-				return false, err
-			}
-
-			if pos >= len(wantPaths) {
-				t.Errorf("additional unexpected path found: %v", path)
-				return ignoreFor[path], nil
-			}
-
-			if path != wantPaths[pos] {
-				t.Errorf("wrong path found, want %q, got %q", wantPaths[pos], path)
-			}
-			pos++
-
-			if _, ok := skipFor[path]; ok {
-				return ignoreFor[path], ErrSkipNode
-			}
-
-			return ignoreFor[path], nil
+			return nil
 		}
 
 		final = func(t testing.TB) {
@@ -270,16 +230,6 @@ func TestWalker(t *testing.T) {
 						"/",
 						"/foo",
 						"/subdir",
-					},
-				),
-				checkIgnore(
-					map[string]struct{}{}, map[string]bool{
-						"/subdir": true,
-					}, []string{
-						"/",
-						"/foo",
-						"/subdir",
-						"/subdir/subfile",
 					},
 				),
 			},
@@ -409,81 +359,6 @@ func TestWalker(t *testing.T) {
 					"57ee8960c7a86859b090a76e5d013f83d10c0ce11d5460076ca8468706f784ab", // tree /subdir3
 					"c2efeff7f217a4dfa12a16e8bb3cefedd37c00873605c29e5271c6061030672f", // tree /
 				}),
-				checkIgnore(
-					map[string]struct{}{
-						"/subdir1": {},
-					}, map[string]bool{
-						"/subdir1": true,
-					}, []string{
-						"/",
-						"/foo",
-						"/subdir1",
-						"/zzz other",
-					},
-				),
-				checkIgnore(
-					map[string]struct{}{}, map[string]bool{
-						"/subdir1": true,
-					}, []string{
-						"/",
-						"/foo",
-						"/subdir1",
-						"/subdir1/subfile1",
-						"/subdir1/subfile2",
-						"/subdir1/subfile3",
-						"/zzz other",
-					},
-				),
-				checkIgnore(
-					map[string]struct{}{
-						"/subdir2": {},
-					}, map[string]bool{
-						"/subdir2": true,
-					}, []string{
-						"/",
-						"/foo",
-						"/subdir1",
-						"/subdir1/subfile1",
-						"/subdir1/subfile2",
-						"/subdir1/subfile3",
-						"/subdir2",
-						"/zzz other",
-					},
-				),
-				checkIgnore(
-					map[string]struct{}{}, map[string]bool{
-						"/subdir1/subfile1": true,
-						"/subdir1/subfile2": true,
-						"/subdir1/subfile3": true,
-					}, []string{
-						"/",
-						"/foo",
-						"/subdir1",
-						"/subdir1/subfile1",
-						"/subdir1/subfile2",
-						"/subdir1/subfile3",
-						"/zzz other",
-					},
-				),
-				checkIgnore(
-					map[string]struct{}{}, map[string]bool{
-						"/subdir2/subfile1": true,
-						"/subdir2/subfile2": true,
-						"/subdir2/subfile3": true,
-					}, []string{
-						"/",
-						"/foo",
-						"/subdir1",
-						"/subdir1/subfile1",
-						"/subdir1/subfile2",
-						"/subdir1/subfile3",
-						"/subdir2",
-						"/subdir2/subfile1",
-						"/subdir2/subfile2",
-						"/subdir2/subfile3",
-						"/zzz other",
-					},
-				),
 			},
 		},
 		{
@@ -513,35 +388,6 @@ func TestWalker(t *testing.T) {
 				}),
 			},
 		},
-		{
-			tree: TestTree{
-				"subdir1": TestTree{},
-				"subdir2": TestTree{},
-				"subdir3": TestTree{
-					"file": TestFile{},
-				},
-				"subdir4": TestTree{},
-				"subdir5": TestTree{
-					"file": TestFile{},
-				},
-				"subdir6": TestTree{},
-			},
-			checks: []checkFunc{
-				checkIgnore(
-					map[string]struct{}{}, map[string]bool{
-						"/subdir2": true,
-					}, []string{
-						"/",
-						"/subdir1",
-						"/subdir2",
-						"/subdir3",
-						"/subdir3/file",
-						"/subdir5",
-						"/subdir5/file",
-					},
-				),
-			},
-		},
 	}
 
 	for _, test := range tests {
@@ -553,7 +399,7 @@ func TestWalker(t *testing.T) {
 					defer cancel()
 
 					fn, last := check(t)
-					err := Walk(ctx, repo, root, restic.NewIDSet(), fn)
+					err := Walk(ctx, repo, root, fn)
 					if err != nil {
 						t.Error(err)
 					}

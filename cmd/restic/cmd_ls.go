@@ -230,12 +230,12 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 
 	printSnapshot(sn)
 
-	err = walker.Walk(ctx, repo, *sn.Tree, nil, func(_ restic.ID, nodepath string, node *restic.Node, err error) (bool, error) {
+	err = walker.Walk(ctx, repo, *sn.Tree, func(_ restic.ID, nodepath string, node *restic.Node, err error) error {
 		if err != nil {
-			return false, err
+			return err
 		}
 		if node == nil {
-			return false, nil
+			return nil
 		}
 
 		if withinDir(nodepath) {
@@ -245,22 +245,22 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 			// if recursive listing is requested, signal the walker that it
 			// should continue walking recursively
 			if opts.Recursive {
-				return false, nil
+				return nil
 			}
 		}
 
 		// if there's an upcoming match deeper in the tree (but we're not
 		// there yet), signal the walker to descend into any subdirs
 		if approachingMatchingTree(nodepath) {
-			return false, nil
+			return nil
 		}
 
 		// otherwise, signal the walker to not walk recursively into any
 		// subdirs
 		if node.Type == "dir" {
-			return false, walker.ErrSkipNode
+			return walker.ErrSkipNode
 		}
-		return false, nil
+		return nil
 	})
 
 	if err != nil {
