@@ -138,7 +138,7 @@ func getCredentials(cfg Config) (*credentials.Credentials, error) {
 		// use the region provided by the configuration by default
 		awsRegion := cfg.Region
 		// allow the region to be overridden if for some reason it is required
-		if len(os.Getenv("RESTIC_AWS_ASSUME_ROLE_REGION")) > 0 {
+		if os.Getenv("RESTIC_AWS_ASSUME_ROLE_REGION") != "" {
 			awsRegion = os.Getenv("RESTIC_AWS_ASSUME_ROLE_REGION")
 		}
 
@@ -148,7 +148,7 @@ func getCredentials(cfg Config) (*credentials.Credentials, error) {
 		stsEndpoint := os.Getenv("RESTIC_AWS_ASSUME_ROLE_STS_ENDPOINT")
 
 		if stsEndpoint == "" {
-			if len(awsRegion) > 0 {
+			if awsRegion != "" {
 				if strings.HasPrefix(awsRegion, "cn-") {
 					stsEndpoint = "https://sts." + awsRegion + ".amazonaws.com.cn"
 				} else {
@@ -167,9 +167,7 @@ func getCredentials(cfg Config) (*credentials.Credentials, error) {
 			RoleSessionName: sessionName,
 			ExternalID:      externalID,
 			Policy:          policy,
-		}
-		if len(awsRegion) > 0 {
-			opts.Location = awsRegion
+			Location:        awsRegion,
 		}
 
 		creds, err = credentials.NewSTSAssumeRole(stsEndpoint, opts)
