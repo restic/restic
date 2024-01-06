@@ -1,0 +1,14 @@
+Bugfix: Improve errors for irregular files on Windows
+
+Since Go 1.21, most filesystem reparse points on Windows are considered to be
+irregular files. This caused restic to show an `error: invalid node type ""`
+error message for those files.
+
+We have improved the error message to include the file path for those files:
+`error: nodeFromFileInfo path/to/file: unsupported file type "irregular"`.
+As irregular files are not required to behave like regular files, it is not
+possible to provide a generic way to back up those files.
+
+https://github.com/restic/restic/issues/4560
+https://github.com/restic/restic/pull/4620
+https://forum.restic.net/t/windows-backup-error-invalid-node-type/6875
