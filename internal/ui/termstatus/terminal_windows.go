@@ -9,8 +9,8 @@ import (
 	"syscall"
 	"unsafe"
 
-	"golang.org/x/crypto/ssh/terminal"
 	"golang.org/x/sys/windows"
+	"golang.org/x/term"
 )
 
 // clearCurrentLine removes all characters from the current line and resets the
@@ -74,7 +74,7 @@ func windowsMoveCursorUp(_ io.Writer, fd uintptr, n int) {
 
 // isWindowsTerminal return true if the file descriptor is a windows terminal (cmd, psh).
 func isWindowsTerminal(fd uintptr) bool {
-	return terminal.IsTerminal(int(fd))
+	return term.IsTerminal(int(fd))
 }
 
 func isPipe(fd uintptr) bool {
