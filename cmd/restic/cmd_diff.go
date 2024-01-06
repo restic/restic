@@ -274,11 +274,13 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 				mod += "M"
 				stats.ChangedFiles++
 
-				node1NilContent := node1
-				node2NilContent := node2
+				node1NilContent := *node1
+				node2NilContent := *node2
 				node1NilContent.Content = nil
 				node2NilContent.Content = nil
-				if node1NilContent.Equals(*node2NilContent) {
+				// the bitrot detection may not work if `backup --ignore-inode` or `--ignore-ctime` were used
+				if node1NilContent.Equals(node2NilContent) {
+					// probable bitrot detected
 					mod += "?"
 				}
 			} else if c.opts.ShowMetadata && !node1.Equals(*node2) {
