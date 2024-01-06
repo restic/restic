@@ -153,7 +153,7 @@ command will automatically remove the original, damaged snapshots.
 
   $ restic repair snapshots --forget
 
-  snapshot 6979421e of [/home/user/restic/restic] at 2022-11-02 20:59:18.617503315 +0100 CET by user@host)
+  snapshot 6979421e of [/home/user/restic/restic] at 2022-11-02 20:59:18.617503315 +0100 CET by user@host
     file "/restic/internal/fuse/snapshots_dir.go": removed missing content
     file "/restic/internal/restorer/restorer_unix_test.go": removed missing content
     file "/restic/internal/walker/walker.go": removed missing content
