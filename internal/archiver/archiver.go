@@ -7,6 +7,7 @@ import (
 	"path"
 	"runtime"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/restic/restic/internal/debug"
@@ -167,6 +168,11 @@ func (arch *Archiver) error(item string, err error) error {
 
 	if err == context.Canceled {
 		return err
+	}
+
+	// not all errors include the filepath, thus add it if it is missing
+	if !strings.Contains(err.Error(), item) {
+		err = fmt.Errorf("%v: %w", item, err)
 	}
 
 	errf := arch.Error(item, err)
