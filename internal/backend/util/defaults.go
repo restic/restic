@@ -38,7 +38,7 @@ func DefaultDelete(ctx context.Context, be backend.Backend) error {
 			return be.Remove(ctx, backend.Handle{Type: t, Name: fi.Name})
 		})
 		if err != nil {
-			return nil
+			return err
 		}
 	}
 	err := be.Remove(ctx, backend.Handle{Type: backend.ConfigFile})

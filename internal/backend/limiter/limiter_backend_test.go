@@ -29,7 +29,7 @@ func TestLimitBackendSave(t *testing.T) {
 		buf := new(bytes.Buffer)
 		_, err := io.Copy(buf, rd)
 		if err != nil {
-			return nil
+			return err
 		}
 		if !bytes.Equal(data, buf.Bytes()) {
 			return fmt.Errorf("data mismatch")
