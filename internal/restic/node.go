@@ -109,7 +109,7 @@ func NodeFromFileInfo(path string, fi os.FileInfo) (*Node, error) {
 }
 
 func nodeTypeFromFileInfo(fi os.FileInfo) string {
-	switch fi.Mode() & (os.ModeType | os.ModeCharDevice) {
+	switch fi.Mode() & os.ModeType {
 	case 0:
 		return "file"
 	case os.ModeDir:
