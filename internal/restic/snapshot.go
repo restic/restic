@@ -96,7 +96,7 @@ func ForAllSnapshots(ctx context.Context, be Lister, loader LoaderUnpacked, excl
 }
 
 func (sn Snapshot) String() string {
-	return fmt.Sprintf("<Snapshot %s of %v at %s by %s@%s>",
+	return fmt.Sprintf("snapshot %s of %v at %s by %s@%s",
 		sn.id.Str(), sn.Paths, sn.Time, sn.Username, sn.Hostname)
 }
 
