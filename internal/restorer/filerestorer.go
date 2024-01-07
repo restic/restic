@@ -199,18 +199,18 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 
 type blobToFileOffsetsMapping map[restic.ID]struct {
 	files map[*fileInfo][]int64 // file -> offsets (plural!) of the blob in the file
+	blob  restic.Blob
 }
 
 func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) error {
 	// calculate blob->[]files->[]offsets mappings
 	blobs := make(blobToFileOffsetsMapping)
-	var blobList []restic.Blob
 	for file := range pack.files {
 		addBlob := func(blob restic.Blob, fileOffset int64) {
 			blobInfo, ok := blobs[blob.ID]
 			if !ok {
 				blobInfo.files = make(map[*fileInfo][]int64)
-				blobList = append(blobList, blob)
+				blobInfo.blob = blob
 				blobs[blob.ID] = blobInfo
 			}
 			blobInfo.files[file] = append(blobInfo.files[file], fileOffset)
@@ -242,17 +242,16 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) error {
 
 	// track already processed blobs for precise error reporting
 	processedBlobs := restic.NewBlobSet()
-	err := r.downloadBlobs(ctx, pack.id, blobList, blobs, processedBlobs)
+	err := r.downloadBlobs(ctx, pack.id, blobs, processedBlobs)
 
 	if err != nil {
 		// only report error for not yet processed blobs
 		affectedFiles := make(map[*fileInfo]struct{})
-		for _, blob := range blobList {
-			if processedBlobs.Has(blob.BlobHandle) {
+		for _, entry := range blobs {
+			if processedBlobs.Has(entry.blob.BlobHandle) {
 				continue
 			}
-			blob := blobs[blob.ID]
-			for file := range blob.files {
+			for file := range entry.files {
 				affectedFiles[file] = struct{}{}
 			}
 		}
@@ -274,9 +273,13 @@ func (r *fileRestorer) sanitizeError(file *fileInfo, err error) error {
 	return err
 }
 
-func (r *fileRestorer) downloadBlobs(ctx context.Context, packID restic.ID, blobList []restic.Blob,
+func (r *fileRestorer) downloadBlobs(ctx context.Context, packID restic.ID,
 	blobs blobToFileOffsetsMapping, processedBlobs restic.BlobSet) error {
 
+	blobList := make([]restic.Blob, 0, len(blobs))
+	for _, entry := range blobs {
+		blobList = append(blobList, entry.blob)
+	}
 	return repository.StreamPack(ctx, r.packLoader, r.key, packID, blobList,
 		func(h restic.BlobHandle, blobData []byte, err error) error {
 			processedBlobs.Insert(h)
