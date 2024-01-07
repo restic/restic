@@ -2,10 +2,12 @@ package archiver
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path"
 	"runtime"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/restic/restic/internal/debug"
@@ -168,6 +170,11 @@ func (arch *Archiver) error(item string, err error) error {
 		return err
 	}
 
+	// not all errors include the filepath, thus add it if it is missing
+	if !strings.Contains(err.Error(), item) {
+		err = fmt.Errorf("%v: %w", item, err)
+	}
+
 	errf := arch.Error(item, err)
 	if err != errf {
 		debug.Log("item %v: error was filtered by handler, before: %q, after: %v", item, err, errf)
@@ -183,7 +190,10 @@ func (arch *Archiver) nodeFromFileInfo(snPath, filename string, fi os.FileInfo) 
 	}
 	// overwrite name to match that within the snapshot
 	node.Name = path.Base(snPath)
-	return node, errors.WithStack(err)
+	if err != nil {
+		return node, fmt.Errorf("nodeFromFileInfo %v: %w", filename, err)
+	}
+	return node, err
 }
 
 // loadSubtree tries to load the subtree referenced by node. In case of an error, nil is returned.
