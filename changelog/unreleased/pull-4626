@@ -1,0 +1,11 @@
+Bugfix: Improve reliability of restoring large files
+
+In some cases restic failed to restore large files that frequently contain the
+same file chunk. In combination with certain backends, this could result in
+network connection timeouts that caused incomplete restores.
+
+Restic now includes special handling for such file chunks to ensure reliable
+restores.
+
+https://github.com/restic/restic/pull/4626
+https://forum.restic.net/t/errors-restoring-with-restic-on-windows-server-s3/6943
