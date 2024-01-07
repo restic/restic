@@ -244,26 +244,7 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) error {
 	processedBlobs := restic.NewBlobSet()
 	err := r.downloadBlobs(ctx, pack.id, blobs, processedBlobs)
 
-	if err != nil {
-		// only report error for not yet processed blobs
-		affectedFiles := make(map[*fileInfo]struct{})
-		for _, entry := range blobs {
-			if processedBlobs.Has(entry.blob.BlobHandle) {
-				continue
-			}
-			for file := range entry.files {
-				affectedFiles[file] = struct{}{}
-			}
-		}
-
-		for file := range affectedFiles {
-			if errFile := r.sanitizeError(file, err); errFile != nil {
-				return errFile
-			}
-		}
-	}
-
-	return nil
+	return r.reportError(blobs, processedBlobs, err)
 }
 
 func (r *fileRestorer) sanitizeError(file *fileInfo, err error) error {
@@ -271,6 +252,30 @@ func (r *fileRestorer) sanitizeError(file *fileInfo, err error) error {
 		err = r.Error(file.location, err)
 	}
 	return err
+}
+
+func (r *fileRestorer) reportError(blobs blobToFileOffsetsMapping, processedBlobs restic.BlobSet, err error) error {
+	if err == nil {
+		return nil
+	}
+
+	// only report error for not yet processed blobs
+	affectedFiles := make(map[*fileInfo]struct{})
+	for _, entry := range blobs {
+		if processedBlobs.Has(entry.blob.BlobHandle) {
+			continue
+		}
+		for file := range entry.files {
+			affectedFiles[file] = struct{}{}
+		}
+	}
+
+	for file := range affectedFiles {
+		if errFile := r.sanitizeError(file, err); errFile != nil {
+			return errFile
+		}
+	}
+	return nil
 }
 
 func (r *fileRestorer) downloadBlobs(ctx context.Context, packID restic.ID,
