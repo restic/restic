@@ -247,6 +247,27 @@ func TestFileRestorerPackSkip(t *testing.T) {
 	}
 }
 
+func TestFileRestorerFrequentBlob(t *testing.T) {
+	tempdir := rtest.TempDir(t)
+
+	for _, sparse := range []bool{false, true} {
+		blobs := []TestBlob{
+			{"data1-1", "pack1-1"},
+		}
+		for i := 0; i < 10000; i++ {
+			blobs = append(blobs, TestBlob{"a", "pack1-1"})
+		}
+		blobs = append(blobs, TestBlob{"end", "pack1-1"})
+
+		restoreAndVerify(t, tempdir, []TestFile{
+			{
+				name:  "file1",
+				blobs: blobs,
+			},
+		}, nil, sparse)
+	}
+}
+
 func TestErrorRestoreFiles(t *testing.T) {
 	tempdir := rtest.TempDir(t)
 	content := []TestFile{
