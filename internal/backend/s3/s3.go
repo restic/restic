@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -147,6 +148,14 @@ func getCredentials(cfg Config) (*credentials.Credentials, error) {
 		policy := os.Getenv("RESTIC_AWS_ASSUME_ROLE_POLICY")
 		stsEndpoint := os.Getenv("RESTIC_AWS_ASSUME_ROLE_STS_ENDPOINT")
 
+		var durationInSeconds int
+		if d := os.Getenv("RESTIC_AWS_ASSUME_ROLE_DURATION_IN_SECONDS"); d != "" {
+			durationInSeconds, err = strconv.Atoi(d)
+			if err != nil {
+				return nil, errors.Wrap(err, "RESTIC_AWS_ASSUME_ROLE_DURATION_IN_SECONDS")
+			}
+		}
+
 		if stsEndpoint == "" {
 			if awsRegion != "" {
 				if strings.HasPrefix(awsRegion, "cn-") {
@@ -168,6 +177,7 @@ func getCredentials(cfg Config) (*credentials.Credentials, error) {
 			ExternalID:      externalID,
 			Policy:          policy,
 			Location:        awsRegion,
+			DurationSeconds: durationInSeconds,
 		}
 
 		creds, err = credentials.NewSTSAssumeRole(stsEndpoint, opts)
