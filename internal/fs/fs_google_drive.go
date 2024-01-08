@@ -86,22 +86,30 @@ func (*GoogleDriveFile) Fd() uintptr {
 	panic("unimplemented")
 }
 
-func (gd *GoogleDriveFile) Name() string {
-	return gd.file.Name
+func (f *GoogleDriveFile) Name() string {
+	return f.file.Name
 }
 
-func (gd *GoogleDriveFile) Read(p []byte) (n int, err error) {
-	if gd.media == nil {
-		gd.media, err = gd.drive.Files.Get(gd.file.Id).Download()
+func (f *GoogleDriveFile) Read(p []byte) (n int, err error) {
+	if f.media == nil {
+		f.media, err = f.drive.Files.Get(f.file.Id).Download()
 		if err != nil {
 			return 0, err
 		}
 	}
-	return gd.media.Body.Read(p)
+	return f.media.Body.Read(p)
 }
 
-func (*GoogleDriveFile) Readdir(int) ([]fs.FileInfo, error) {
-	panic("unimplemented")
+func (f *GoogleDriveFile) Readdir(int) ([]fs.FileInfo, error) {
+	search, err := f.drive.Files.List().Q("'" + f.file.Id + "' in parents").Fields("files(id, name, mimeType, modifiedTime)").Do()
+	if err != nil {
+		return nil, err
+	}
+	result := make([]fs.FileInfo, len(search.Files))
+	for i, child := range search.Files {
+		result[i] = &GoogleDriveFileInfo{child}
+	}
+	return result, nil
 }
 
 func (f *GoogleDriveFile) Readdirnames(n int) ([]string, error) {
@@ -120,8 +128,8 @@ func (*GoogleDriveFile) Seek(int64, int) (int64, error) {
 	panic("unimplemented")
 }
 
-func (gd *GoogleDriveFile) Stat() (fs.FileInfo, error) {
-	return &GoogleDriveFileInfo{gd.file}, nil
+func (f *GoogleDriveFile) Stat() (fs.FileInfo, error) {
+	return &GoogleDriveFileInfo{f.file}, nil
 }
 
 var _ File = &GoogleDriveFile{}
@@ -258,8 +266,8 @@ func (*GoogleDrive) Separator() string {
 	return "/"
 }
 
-func (*GoogleDrive) Stat(name string) (fs.FileInfo, error) {
-	panic("unimplemented")
+func (*GoogleDrive) Stat(id string) (fs.FileInfo, error) {
+	return Lstat(id)
 }
 
 func (*GoogleDrive) VolumeName(path string) string {
