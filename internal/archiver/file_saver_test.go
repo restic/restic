@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/restic/chunker"
+	"github.com/restic/restic/internal/frontend"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
@@ -49,10 +50,6 @@ func startFileSaver(ctx context.Context, t testing.TB) (*FileSaver, context.Cont
 	}
 
 	s := NewFileSaver(ctx, wg, saveBlob, pol, workers, workers)
-	s.NodeFromFileInfo = func(snPath, filename string, fi os.FileInfo) (*restic.Node, error) {
-		return restic.NodeFromFileInfo(filename, fi)
-	}
-
 	return s, ctx, wg
 }
 
@@ -66,23 +63,24 @@ func TestFileSaver(t *testing.T) {
 	completeReadingFn := func() {}
 	completeFn := func(*restic.Node, ItemStats) {}
 
-	testFs := fs.Local{}
+	testFrontend := frontend.LocalFrontend{FS: fs.Local{}}
 	s, ctx, wg := startFileSaver(ctx, t)
 
 	var results []FutureNode
 
 	for _, filename := range files {
-		f, err := testFs.Open(filename)
+		fm := testFrontend.Prepare(filename)[0]
+		err := fm.Init()
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		fi, err := f.Stat()
+		fc, err := fm.OpenFile()
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		ff := s.Save(ctx, filename, filename, f, fi, startFn, completeReadingFn, completeFn)
+		ff := s.Save(ctx, filename, fm, fc, startFn, completeReadingFn, completeFn)
 		results = append(results, ff)
 	}
 

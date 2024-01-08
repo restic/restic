@@ -12,13 +12,14 @@ import (
 
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/frontend"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 )
 
 // TestSnapshot creates a new snapshot of path.
 func TestSnapshot(t testing.TB, repo restic.Repository, path string, parent *restic.ID) *restic.Snapshot {
-	arch := New(repo, fs.Local{}, Options{})
+	arch := New(repo, &frontend.LocalFrontend{FS: fs.Local{}}, Options{})
 	opts := SnapshotOptions{
 		Time:     time.Now(),
 		Hostname: "localhost",
@@ -31,7 +32,7 @@ func TestSnapshot(t testing.TB, repo restic.Repository, path string, parent *res
 		}
 		opts.ParentSnapshot = sn
 	}
-	sn, _, err := arch.Snapshot(context.TODO(), []string{path}, opts)
+	sn, _, err := arch.Snapshot(context.TODO(), []restic.LazyFileMetadata{frontend.CreateTestLazyFileMetadata(path)}, opts)
 	if err != nil {
 		t.Fatal(err)
 	}

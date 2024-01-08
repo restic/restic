@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/archiver"
+	"github.com/restic/restic/internal/frontend"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -73,12 +74,12 @@ func WriteTest(t *testing.T, format string, cd CheckDump) {
 			defer cancel()
 
 			tmpdir, repo := prepareTempdirRepoSrc(t, tt.args)
-			arch := archiver.New(repo, fs.Track{FS: fs.Local{}}, archiver.Options{})
+			arch := archiver.New(repo, &frontend.LocalFrontend{FS: fs.Track{FS: fs.Local{}}}, archiver.Options{})
 
 			back := rtest.Chdir(t, tmpdir)
 			defer back()
 
-			sn, _, err := arch.Snapshot(ctx, []string{"."}, archiver.SnapshotOptions{})
+			sn, _, err := arch.Snapshot(ctx, []restic.LazyFileMetadata{frontend.CreateTestLazyFileMetadata(".")}, archiver.SnapshotOptions{})
 			rtest.OK(t, err)
 
 			tree, err := restic.LoadTree(ctx, repo, *sn.Tree)

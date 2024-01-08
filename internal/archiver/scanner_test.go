@@ -8,7 +8,9 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/restic/restic/internal/frontend"
 	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/restic"
 	restictest "github.com/restic/restic/internal/test"
 )
 
@@ -56,12 +58,12 @@ func TestScanner(t *testing.T) {
 					},
 				},
 			},
-			selFn: func(item string, fi os.FileInfo) bool {
-				if fi.IsDir() {
+			selFn: func(fm restic.FileMetadata) bool {
+				if fm.Mode().IsDir() {
 					return true
 				}
 
-				if filepath.Ext(item) == ".txt" {
+				if filepath.Ext(fm.Path()) == ".txt" {
 					return true
 				}
 				return false
@@ -91,8 +93,8 @@ func TestScanner(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-
-			sc := NewScanner(fs.Track{FS: fs.Local{}})
+			f := &frontend.LocalFrontend{FS: fs.Track{FS: fs.Local{}}}
+			sc := NewScanner(f)
 			if test.selFn != nil {
 				sc.Select = test.selFn
 			}
@@ -112,7 +114,7 @@ func TestScanner(t *testing.T) {
 				results[p] = s
 			}
 
-			err = sc.Scan(ctx, []string{"."})
+			err = sc.Scan(ctx, f.Prepare("."))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -230,8 +232,8 @@ func TestScannerError(t *testing.T) {
 			if test.prepare != nil {
 				test.prepare(t)
 			}
-
-			sc := NewScanner(fs.Track{FS: fs.Local{}})
+			f := &frontend.LocalFrontend{FS: fs.Track{FS: fs.Local{}}}
+			sc := NewScanner(f)
 			if test.selFn != nil {
 				sc.Select = test.selFn
 			}
@@ -263,7 +265,7 @@ func TestScannerError(t *testing.T) {
 				}
 			}
 
-			err = sc.Scan(ctx, []string{"."})
+			err = sc.Scan(ctx, f.Prepare("."))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -298,8 +300,8 @@ func TestScannerCancel(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	sc := NewScanner(fs.Track{FS: fs.Local{}})
+	f := &frontend.LocalFrontend{FS: fs.Track{FS: fs.Local{}}}
+	sc := NewScanner(f)
 	var lastStats ScanStats
 	sc.Result = func(item string, s ScanStats) {
 		lastStats = s
@@ -310,7 +312,7 @@ func TestScannerCancel(t *testing.T) {
 		}
 	}
 
-	err = sc.Scan(ctx, []string{"."})
+	err = sc.Scan(ctx, f.Prepare("."))
 	if err != nil {
 		t.Errorf("unexpected error %v found", err)
 	}

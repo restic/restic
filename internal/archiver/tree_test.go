@@ -7,135 +7,20 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/frontend"
+	"github.com/restic/restic/internal/restic"
 	restictest "github.com/restic/restic/internal/test"
 )
 
 // debug.Log requires Tree.String.
 var _ fmt.Stringer = Tree{}
 
-func TestPathComponents(t *testing.T) {
-	var tests = []struct {
-		p       string
-		c       []string
-		virtual bool
-		rel     bool
-		win     bool
-	}{
-		{
-			p: "/foo/bar/baz",
-			c: []string{"foo", "bar", "baz"},
-		},
-		{
-			p:   "/foo/bar/baz",
-			c:   []string{"foo", "bar", "baz"},
-			rel: true,
-		},
-		{
-			p: "foo/bar/baz",
-			c: []string{"foo", "bar", "baz"},
-		},
-		{
-			p:   "foo/bar/baz",
-			c:   []string{"foo", "bar", "baz"},
-			rel: true,
-		},
-		{
-			p: "../foo/bar/baz",
-			c: []string{"foo", "bar", "baz"},
-		},
-		{
-			p:   "../foo/bar/baz",
-			c:   []string{"..", "foo", "bar", "baz"},
-			rel: true,
-		},
-		{
-			p:       "c:/foo/bar/baz",
-			c:       []string{"c", "foo", "bar", "baz"},
-			virtual: true,
-			rel:     true,
-			win:     true,
-		},
-		{
-			p:       "c:/foo/../bar/baz",
-			c:       []string{"c", "bar", "baz"},
-			virtual: true,
-			win:     true,
-		},
-		{
-			p:       `c:\foo\..\bar\baz`,
-			c:       []string{"c", "bar", "baz"},
-			virtual: true,
-			win:     true,
-		},
-		{
-			p:       "c:/foo/../bar/baz",
-			c:       []string{"c", "bar", "baz"},
-			virtual: true,
-			rel:     true,
-			win:     true,
-		},
-		{
-			p:       `c:\foo\..\bar\baz`,
-			c:       []string{"c", "bar", "baz"},
-			virtual: true,
-			rel:     true,
-			win:     true,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run("", func(t *testing.T) {
-			if test.win && runtime.GOOS != "windows" {
-				t.Skip("skip test on unix")
-			}
-
-			c, v := pathComponents(fs.Local{}, filepath.FromSlash(test.p), test.rel)
-			if !cmp.Equal(test.c, c) {
-				t.Error(test.c, c)
-			}
-
-			if v != test.virtual {
-				t.Errorf("unexpected virtual prefix count returned, want %v, got %v", test.virtual, v)
-			}
-		})
-	}
+func testLazyFileMetadataFromSlash(path string) restic.LazyFileMetadata {
+	return frontend.CreateTestLazyFileMetadata(filepath.FromSlash(path))
 }
 
-func TestRootDirectory(t *testing.T) {
-	var tests = []struct {
-		target string
-		root   string
-		unix   bool
-		win    bool
-	}{
-		{target: ".", root: "."},
-		{target: "foo/bar/baz", root: "."},
-		{target: "../foo/bar/baz", root: ".."},
-		{target: "..", root: ".."},
-		{target: "../../..", root: "../../.."},
-		{target: "/home/foo", root: "/", unix: true},
-		{target: "c:/home/foo", root: "c:/", win: true},
-		{target: `c:\home\foo`, root: `c:\`, win: true},
-		{target: "//host/share/foo", root: "//host/share/", win: true},
-	}
-
-	for _, test := range tests {
-		t.Run("", func(t *testing.T) {
-			if test.unix && runtime.GOOS == "windows" {
-				t.Skip("skip test on windows")
-			}
-			if test.win && runtime.GOOS != "windows" {
-				t.Skip("skip test on unix")
-			}
-
-			root := rootDirectory(fs.Local{}, filepath.FromSlash(test.target))
-			want := filepath.FromSlash(test.root)
-			if root != want {
-				t.Fatalf("wrong root directory, want %v, got %v", want, root)
-			}
-		})
-	}
+func createTestRootDirectoryFromSlash(path string) restic.RootDirectory {
+	return frontend.CreateTestRootDirectory(path)
 }
 
 func TestTree(t *testing.T) {
@@ -150,34 +35,34 @@ func TestTree(t *testing.T) {
 		{
 			targets: []string{"foo"},
 			want: Tree{Nodes: map[string]Tree{
-				"foo": {Path: "foo", Root: "."},
+				"foo": {FileMetadata: frontend.CreateTestLazyFileMetadata("foo"), Root: frontend.CreateTestRootDirectory(".")},
 			}},
 		},
 		{
 			targets: []string{"foo", "bar", "baz"},
 			want: Tree{Nodes: map[string]Tree{
-				"foo": {Path: "foo", Root: "."},
-				"bar": {Path: "bar", Root: "."},
-				"baz": {Path: "baz", Root: "."},
+				"foo": {FileMetadata: frontend.CreateTestLazyFileMetadata("foo"), Root: frontend.CreateTestRootDirectory(".")},
+				"bar": {FileMetadata: frontend.CreateTestLazyFileMetadata("bar"), Root: frontend.CreateTestRootDirectory(".")},
+				"baz": {FileMetadata: frontend.CreateTestLazyFileMetadata("baz"), Root: frontend.CreateTestRootDirectory(".")},
 			}},
 		},
 		{
 			targets: []string{"foo/user1", "foo/user2", "foo/other"},
 			want: Tree{Nodes: map[string]Tree{
-				"foo": {Root: ".", FileInfoPath: "foo", Nodes: map[string]Tree{
-					"user1": {Path: filepath.FromSlash("foo/user1")},
-					"user2": {Path: filepath.FromSlash("foo/user2")},
-					"other": {Path: filepath.FromSlash("foo/other")},
+				"foo": {Root: frontend.CreateTestRootDirectory("."), FileInfoPath: frontend.CreateTestRootDirectory("foo"), Nodes: map[string]Tree{
+					"user1": {FileMetadata: testLazyFileMetadataFromSlash("foo/user1")},
+					"user2": {FileMetadata: testLazyFileMetadataFromSlash("foo/user2")},
+					"other": {FileMetadata: testLazyFileMetadataFromSlash("foo/other")},
 				}},
 			}},
 		},
 		{
 			targets: []string{"foo/work/user1", "foo/work/user2"},
 			want: Tree{Nodes: map[string]Tree{
-				"foo": {Root: ".", FileInfoPath: "foo", Nodes: map[string]Tree{
-					"work": {FileInfoPath: filepath.FromSlash("foo/work"), Nodes: map[string]Tree{
-						"user1": {Path: filepath.FromSlash("foo/work/user1")},
-						"user2": {Path: filepath.FromSlash("foo/work/user2")},
+				"foo": {Root: frontend.CreateTestRootDirectory("."), FileInfoPath: frontend.CreateTestRootDirectory("foo"), Nodes: map[string]Tree{
+					"work": {FileInfoPath: createTestRootDirectoryFromSlash("foo/work"), Nodes: map[string]Tree{
+						"user1": {FileMetadata: testLazyFileMetadataFromSlash("foo/work/user1")},
+						"user2": {FileMetadata: testLazyFileMetadataFromSlash("foo/work/user2")},
 					}},
 				}},
 			}},
@@ -185,50 +70,50 @@ func TestTree(t *testing.T) {
 		{
 			targets: []string{"foo/user1", "bar/user1", "foo/other"},
 			want: Tree{Nodes: map[string]Tree{
-				"foo": {Root: ".", FileInfoPath: "foo", Nodes: map[string]Tree{
-					"user1": {Path: filepath.FromSlash("foo/user1")},
-					"other": {Path: filepath.FromSlash("foo/other")},
+				"foo": {Root: frontend.CreateTestRootDirectory("."), FileInfoPath: frontend.CreateTestRootDirectory("foo"), Nodes: map[string]Tree{
+					"user1": {FileMetadata: testLazyFileMetadataFromSlash("foo/user1")},
+					"other": {FileMetadata: testLazyFileMetadataFromSlash("foo/other")},
 				}},
-				"bar": {Root: ".", FileInfoPath: "bar", Nodes: map[string]Tree{
-					"user1": {Path: filepath.FromSlash("bar/user1")},
+				"bar": {Root: frontend.CreateTestRootDirectory("."), FileInfoPath: frontend.CreateTestRootDirectory("bar"), Nodes: map[string]Tree{
+					"user1": {FileMetadata: testLazyFileMetadataFromSlash("bar/user1")},
 				}},
 			}},
 		},
 		{
 			targets: []string{"../work"},
 			want: Tree{Nodes: map[string]Tree{
-				"work": {Root: "..", Path: filepath.FromSlash("../work")},
+				"work": {Root: frontend.CreateTestRootDirectory(".."), FileMetadata: testLazyFileMetadataFromSlash("../work")},
 			}},
 		},
 		{
 			targets: []string{"../work/other"},
 			want: Tree{Nodes: map[string]Tree{
-				"work": {Root: "..", FileInfoPath: filepath.FromSlash("../work"), Nodes: map[string]Tree{
-					"other": {Path: filepath.FromSlash("../work/other")},
+				"work": {Root: frontend.CreateTestRootDirectory(".."), FileInfoPath: frontend.CreateTestRootDirectory("../work"), Nodes: map[string]Tree{
+					"other": {FileMetadata: testLazyFileMetadataFromSlash("../work/other")},
 				}},
 			}},
 		},
 		{
 			targets: []string{"foo/user1", "../work/other", "foo/user2"},
 			want: Tree{Nodes: map[string]Tree{
-				"foo": {Root: ".", FileInfoPath: "foo", Nodes: map[string]Tree{
-					"user1": {Path: filepath.FromSlash("foo/user1")},
-					"user2": {Path: filepath.FromSlash("foo/user2")},
+				"foo": {Root: frontend.CreateTestRootDirectory("."), FileInfoPath: frontend.CreateTestRootDirectory("foo"), Nodes: map[string]Tree{
+					"user1": {FileMetadata: testLazyFileMetadataFromSlash("foo/user1")},
+					"user2": {FileMetadata: testLazyFileMetadataFromSlash("foo/user2")},
 				}},
-				"work": {Root: "..", FileInfoPath: filepath.FromSlash("../work"), Nodes: map[string]Tree{
-					"other": {Path: filepath.FromSlash("../work/other")},
+				"work": {Root: frontend.CreateTestRootDirectory(".."), FileInfoPath: createTestRootDirectoryFromSlash("../work"), Nodes: map[string]Tree{
+					"other": {FileMetadata: testLazyFileMetadataFromSlash("../work/other")},
 				}},
 			}},
 		},
 		{
 			targets: []string{"foo/user1", "../foo/other", "foo/user2"},
 			want: Tree{Nodes: map[string]Tree{
-				"foo": {Root: ".", FileInfoPath: "foo", Nodes: map[string]Tree{
-					"user1": {Path: filepath.FromSlash("foo/user1")},
-					"user2": {Path: filepath.FromSlash("foo/user2")},
+				"foo": {Root: frontend.CreateTestRootDirectory("."), FileInfoPath: frontend.CreateTestRootDirectory("foo"), Nodes: map[string]Tree{
+					"user1": {FileMetadata: testLazyFileMetadataFromSlash("foo/user1")},
+					"user2": {FileMetadata: testLazyFileMetadataFromSlash("foo/user2")},
 				}},
-				"foo-1": {Root: "..", FileInfoPath: filepath.FromSlash("../foo"), Nodes: map[string]Tree{
-					"other": {Path: filepath.FromSlash("../foo/other")},
+				"foo-1": {Root: frontend.CreateTestRootDirectory(".."), FileInfoPath: createTestRootDirectoryFromSlash("../foo"), Nodes: map[string]Tree{
+					"other": {FileMetadata: testLazyFileMetadataFromSlash("../foo/other")},
 				}},
 			}},
 		},
@@ -242,11 +127,11 @@ func TestTree(t *testing.T) {
 			targets: []string{"foo", "foo/work"},
 			want: Tree{Nodes: map[string]Tree{
 				"foo": {
-					Root:         ".",
-					FileInfoPath: "foo",
+					Root:         frontend.CreateTestRootDirectory("."),
+					FileInfoPath: frontend.CreateTestRootDirectory("foo"),
 					Nodes: map[string]Tree{
-						"file": {Path: filepath.FromSlash("foo/file")},
-						"work": {Path: filepath.FromSlash("foo/work")},
+						"file": {FileMetadata: testLazyFileMetadataFromSlash("foo/file")},
+						"work": {FileMetadata: testLazyFileMetadataFromSlash("foo/work")},
 					},
 				},
 			}},
@@ -263,11 +148,11 @@ func TestTree(t *testing.T) {
 			targets: []string{"foo/work", "foo"},
 			want: Tree{Nodes: map[string]Tree{
 				"foo": {
-					Root:         ".",
-					FileInfoPath: "foo",
+					Root:         frontend.CreateTestRootDirectory("."),
+					FileInfoPath: frontend.CreateTestRootDirectory("foo"),
 					Nodes: map[string]Tree{
-						"file": {Path: filepath.FromSlash("foo/file")},
-						"work": {Path: filepath.FromSlash("foo/work")},
+						"file": {FileMetadata: testLazyFileMetadataFromSlash("foo/file")},
+						"work": {FileMetadata: testLazyFileMetadataFromSlash("foo/work")},
 					},
 				},
 			}},
@@ -283,12 +168,12 @@ func TestTree(t *testing.T) {
 			},
 			targets: []string{"foo/work", "foo/work/user2"},
 			want: Tree{Nodes: map[string]Tree{
-				"foo": {Root: ".", FileInfoPath: "foo", Nodes: map[string]Tree{
+				"foo": {Root: frontend.CreateTestRootDirectory("."), FileInfoPath: frontend.CreateTestRootDirectory("foo"), Nodes: map[string]Tree{
 					"work": {
-						FileInfoPath: filepath.FromSlash("foo/work"),
+						FileInfoPath: createTestRootDirectoryFromSlash("foo/work"),
 						Nodes: map[string]Tree{
-							"user1": {Path: filepath.FromSlash("foo/work/user1")},
-							"user2": {Path: filepath.FromSlash("foo/work/user2")},
+							"user1": {FileMetadata: testLazyFileMetadataFromSlash("foo/work/user1")},
+							"user2": {FileMetadata: testLazyFileMetadataFromSlash("foo/work/user2")},
 						},
 					},
 				}},
@@ -305,11 +190,11 @@ func TestTree(t *testing.T) {
 			},
 			targets: []string{"foo/work/user2", "foo/work"},
 			want: Tree{Nodes: map[string]Tree{
-				"foo": {Root: ".", FileInfoPath: "foo", Nodes: map[string]Tree{
-					"work": {FileInfoPath: filepath.FromSlash("foo/work"),
+				"foo": {Root: frontend.CreateTestRootDirectory("."), FileInfoPath: frontend.CreateTestRootDirectory("foo"), Nodes: map[string]Tree{
+					"work": {FileInfoPath: createTestRootDirectoryFromSlash("foo/work"),
 						Nodes: map[string]Tree{
-							"user1": {Path: filepath.FromSlash("foo/work/user1")},
-							"user2": {Path: filepath.FromSlash("foo/work/user2")},
+							"user1": {FileMetadata: testLazyFileMetadataFromSlash("foo/work/user1")},
+							"user2": {FileMetadata: testLazyFileMetadataFromSlash("foo/work/user2")},
 						},
 					},
 				}},
@@ -333,17 +218,17 @@ func TestTree(t *testing.T) {
 			},
 			targets: []string{"foo/work/user2/data/secret", "foo"},
 			want: Tree{Nodes: map[string]Tree{
-				"foo": {Root: ".", FileInfoPath: "foo", Nodes: map[string]Tree{
-					"other": {Path: filepath.FromSlash("foo/other")},
-					"work": {FileInfoPath: filepath.FromSlash("foo/work"), Nodes: map[string]Tree{
-						"user2": {FileInfoPath: filepath.FromSlash("foo/work/user2"), Nodes: map[string]Tree{
-							"data": {FileInfoPath: filepath.FromSlash("foo/work/user2/data"), Nodes: map[string]Tree{
+				"foo": {Root: frontend.CreateTestRootDirectory("."), FileInfoPath: frontend.CreateTestRootDirectory("foo"), Nodes: map[string]Tree{
+					"other": {FileMetadata: testLazyFileMetadataFromSlash("foo/other")},
+					"work": {FileInfoPath: createTestRootDirectoryFromSlash("foo/work"), Nodes: map[string]Tree{
+						"user2": {FileInfoPath: createTestRootDirectoryFromSlash("foo/work/user2"), Nodes: map[string]Tree{
+							"data": {FileInfoPath: createTestRootDirectoryFromSlash("foo/work/user2/data"), Nodes: map[string]Tree{
 								"secret": {
-									Path: filepath.FromSlash("foo/work/user2/data/secret"),
+									FileMetadata: testLazyFileMetadataFromSlash("foo/work/user2/data/secret"),
 								},
 							}},
 						}},
-						"user3": {Path: filepath.FromSlash("foo/work/user3")},
+						"user3": {FileMetadata: testLazyFileMetadataFromSlash("foo/work/user3")},
 					}},
 				}},
 			}},
@@ -369,15 +254,15 @@ func TestTree(t *testing.T) {
 			unix:    true,
 			targets: []string{"mnt/driveA", "mnt/driveA/work/driveB"},
 			want: Tree{Nodes: map[string]Tree{
-				"mnt": {Root: ".", FileInfoPath: filepath.FromSlash("mnt"), Nodes: map[string]Tree{
-					"driveA": {FileInfoPath: filepath.FromSlash("mnt/driveA"), Nodes: map[string]Tree{
-						"work": {FileInfoPath: filepath.FromSlash("mnt/driveA/work"), Nodes: map[string]Tree{
+				"mnt": {Root: frontend.CreateTestRootDirectory("."), FileInfoPath: createTestRootDirectoryFromSlash("mnt"), Nodes: map[string]Tree{
+					"driveA": {FileInfoPath: createTestRootDirectoryFromSlash("mnt/driveA"), Nodes: map[string]Tree{
+						"work": {FileInfoPath: createTestRootDirectoryFromSlash("mnt/driveA/work"), Nodes: map[string]Tree{
 							"driveB": {
-								Path: filepath.FromSlash("mnt/driveA/work/driveB"),
+								FileMetadata: testLazyFileMetadataFromSlash("mnt/driveA/work/driveB"),
 							},
-							"test1": {Path: filepath.FromSlash("mnt/driveA/work/test1")},
+							"test1": {FileMetadata: testLazyFileMetadataFromSlash("mnt/driveA/work/test1")},
 						}},
-						"test2": {Path: filepath.FromSlash("mnt/driveA/test2")},
+						"test2": {FileMetadata: testLazyFileMetadataFromSlash("mnt/driveA/test2")},
 					}},
 				}},
 			}},
@@ -385,9 +270,9 @@ func TestTree(t *testing.T) {
 		{
 			targets: []string{"foo/work/user", "foo/work/user"},
 			want: Tree{Nodes: map[string]Tree{
-				"foo": {Root: ".", FileInfoPath: "foo", Nodes: map[string]Tree{
-					"work": {FileInfoPath: filepath.FromSlash("foo/work"), Nodes: map[string]Tree{
-						"user": {Path: filepath.FromSlash("foo/work/user")},
+				"foo": {Root: frontend.CreateTestRootDirectory("."), FileInfoPath: frontend.CreateTestRootDirectory("foo"), Nodes: map[string]Tree{
+					"work": {FileInfoPath: createTestRootDirectoryFromSlash("foo/work"), Nodes: map[string]Tree{
+						"user": {FileMetadata: testLazyFileMetadataFromSlash("foo/work/user")},
 					}},
 				}},
 			}},
@@ -395,9 +280,9 @@ func TestTree(t *testing.T) {
 		{
 			targets: []string{"./foo/work/user", "foo/work/user"},
 			want: Tree{Nodes: map[string]Tree{
-				"foo": {Root: ".", FileInfoPath: "foo", Nodes: map[string]Tree{
-					"work": {FileInfoPath: filepath.FromSlash("foo/work"), Nodes: map[string]Tree{
-						"user": {Path: filepath.FromSlash("foo/work/user")},
+				"foo": {Root: frontend.CreateTestRootDirectory("."), FileInfoPath: frontend.CreateTestRootDirectory("foo"), Nodes: map[string]Tree{
+					"work": {FileInfoPath: createTestRootDirectoryFromSlash("foo/work"), Nodes: map[string]Tree{
+						"user": {FileMetadata: testLazyFileMetadataFromSlash("foo/work/user")},
 					}},
 				}},
 			}},
@@ -406,10 +291,10 @@ func TestTree(t *testing.T) {
 			win:     true,
 			targets: []string{`c:\users\foobar\temp`},
 			want: Tree{Nodes: map[string]Tree{
-				"c": {Root: `c:\`, FileInfoPath: `c:\`, Nodes: map[string]Tree{
-					"users": {FileInfoPath: `c:\users`, Nodes: map[string]Tree{
-						"foobar": {FileInfoPath: `c:\users\foobar`, Nodes: map[string]Tree{
-							"temp": {Path: `c:\users\foobar\temp`},
+				"c": {Root: frontend.CreateTestRootDirectory(`c:\`), FileInfoPath: frontend.CreateTestRootDirectory(`c:\`), Nodes: map[string]Tree{
+					"users": {FileInfoPath: frontend.CreateTestRootDirectory(`c:\users`), Nodes: map[string]Tree{
+						"foobar": {FileInfoPath: frontend.CreateTestRootDirectory(`c:\users\foobar`), Nodes: map[string]Tree{
+							"temp": {FileMetadata: frontend.CreateTestLazyFileMetadata(`c:\users\foobar\temp`)},
 						}},
 					}},
 				}},
@@ -444,8 +329,11 @@ func TestTree(t *testing.T) {
 
 			back := restictest.Chdir(t, tempdir)
 			defer back()
-
-			tree, err := NewTree(fs.Local{}, test.targets)
+			pathTargets := make([]restic.LazyFileMetadata, len(test.targets))
+			for i, target := range test.targets {
+				pathTargets[i] = frontend.CreateTestLazyFileMetadata(target)
+			}
+			tree, err := newTree(pathTargets)
 			if test.mustError {
 				if err == nil {
 					t.Fatal("expected error, got nil")

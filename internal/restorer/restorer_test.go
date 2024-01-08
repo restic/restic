@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/archiver"
+	"github.com/restic/restic/internal/frontend"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -146,11 +147,10 @@ func saveSnapshot(t testing.TB, repo restic.Repository, snapshot Snapshot, getGe
 		t.Fatal(err)
 	}
 
-	sn, err := restic.NewSnapshot([]string{"test"}, nil, "", time.Now())
+	sn, err := restic.NewSnapshot([]restic.FilePath{frontend.CreateTestLazyFileMetadata("test")}, nil, "", time.Now())
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	sn.Tree = &treeID
 	id, err := restic.SaveSnapshot(ctx, repo, sn)
 	if err != nil {
@@ -848,17 +848,19 @@ func TestRestorerSparseFiles(t *testing.T) {
 
 	var zeros [1<<20 + 13]byte
 
-	target := &fs.Reader{
-		Mode:       0600,
-		Name:       "/zeros",
-		ReadCloser: io.NopCloser(bytes.NewReader(zeros[:])),
+	target := &frontend.LocalFrontend{
+		FS: &fs.Reader{
+			Mode:       0600,
+			Name:       "/zeros",
+			ReadCloser: io.NopCloser(bytes.NewReader(zeros[:])),
+		},
 	}
 	sc := archiver.NewScanner(target)
-	err := sc.Scan(context.TODO(), []string{"/zeros"})
+	err := sc.Scan(context.TODO(), target.Prepare("/zeros"))
 	rtest.OK(t, err)
 
 	arch := archiver.New(repo, target, archiver.Options{})
-	sn, _, err := arch.Snapshot(context.Background(), []string{"/zeros"},
+	sn, _, err := arch.Snapshot(context.Background(), target.Prepare("/zeros"),
 		archiver.SnapshotOptions{})
 	rtest.OK(t, err)
 

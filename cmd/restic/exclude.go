@@ -15,6 +15,7 @@ import (
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/textfile"
 	"github.com/restic/restic/internal/ui"
 	"github.com/spf13/pflag"
@@ -72,7 +73,7 @@ type RejectByNameFunc func(path string) bool
 // RejectFunc is a function that takes a filename and os.FileInfo of a
 // file that would be included in the backup. The function returns true if it
 // should be excluded (rejected) from the backup.
-type RejectFunc func(path string, fi os.FileInfo) bool
+type RejectFunc func(fm restic.FileMetadata) bool
 
 // rejectByPattern returns a RejectByNameFunc which rejects files that match
 // one of the patterns.
@@ -210,11 +211,12 @@ func isDirExcludedByFile(dir, tagFilename, header string) bool {
 type DeviceMap map[string]uint64
 
 // NewDeviceMap creates a new device map from the list of source paths.
-func NewDeviceMap(allowedSourcePaths []string) (DeviceMap, error) {
+func NewDeviceMap(allowedSourcePaths []restic.LazyFileMetadata) (DeviceMap, error) {
 	deviceMap := make(map[string]uint64)
 
 	for _, item := range allowedSourcePaths {
-		item, err := filepath.Abs(filepath.Clean(item))
+
+		item, err := item.Clean().AbsPath()
 		if err != nil {
 			return nil, err
 		}
@@ -272,25 +274,24 @@ func (m DeviceMap) IsAllowed(item string, deviceID uint64) (bool, error) {
 
 // rejectByDevice returns a RejectFunc that rejects files which are on a
 // different file systems than the files/dirs in samples.
-func rejectByDevice(samples []string) (RejectFunc, error) {
+func rejectByDevice(samples []restic.LazyFileMetadata) (RejectFunc, error) {
 	deviceMap, err := NewDeviceMap(samples)
 	if err != nil {
 		return nil, err
 	}
 	debug.Log("allowed devices: %v\n", deviceMap)
 
-	return func(item string, fi os.FileInfo) bool {
-		id, err := fs.DeviceID(fi)
+	return func(fm restic.FileMetadata) bool {
+		id, err := fm.DeviceID()
 		if err != nil {
 			// This should never happen because gatherDevices() would have
 			// errored out earlier. If it still does that's a reason to panic.
 			panic(err)
 		}
-
-		allowed, err := deviceMap.IsAllowed(filepath.Clean(item), id)
+		allowed, err := deviceMap.IsAllowed(filepath.Clean(fm.Path()), id)
 		if err != nil {
 			// this should not happen
-			panic(fmt.Sprintf("error checking device ID of %v: %v", item, err))
+			panic(fmt.Sprintf("error checking device ID of %v: %v", fm.Path(), err))
 		}
 
 		if allowed {
@@ -299,32 +300,32 @@ func rejectByDevice(samples []string) (RejectFunc, error) {
 		}
 
 		// reject everything except directories
-		if !fi.IsDir() {
+		if !fm.Mode().IsDir() {
 			return true
 		}
 
 		// special case: make sure we keep mountpoints (directories which
 		// contain a mounted file system). Test this by checking if the parent
 		// directory would be included.
-		parentDir := filepath.Dir(filepath.Clean(item))
+		parentDir := filepath.Dir(filepath.Clean(fm.Path()))
 
 		parentFI, err := fs.Lstat(parentDir)
 		if err != nil {
-			debug.Log("item %v: error running lstat() on parent directory: %v", item, err)
+			debug.Log("item %v: error running lstat() on parent directory: %v", fm.Path(), err)
 			// if in doubt, reject
 			return true
 		}
 
 		parentDeviceID, err := fs.DeviceID(parentFI)
 		if err != nil {
-			debug.Log("item %v: getting device ID of parent directory: %v", item, err)
+			debug.Log("item %v: getting device ID of parent directory: %v", fm.Path(), err)
 			// if in doubt, reject
 			return true
 		}
 
 		parentAllowed, err := deviceMap.IsAllowed(parentDir, parentDeviceID)
 		if err != nil {
-			debug.Log("item %v: error checking parent directory: %v", item, err)
+			debug.Log("item %v: error checking parent directory: %v", fm.Path(), err)
 			// if in doubt, reject
 			return true
 		}
@@ -369,15 +370,15 @@ func rejectBySize(maxSizeStr string) (RejectFunc, error) {
 		return nil, err
 	}
 
-	return func(item string, fi os.FileInfo) bool {
+	return func(fm restic.FileMetadata) bool {
 		// directory will be ignored
-		if fi.IsDir() {
+		if fm.Mode().IsDir() {
 			return false
 		}
 
-		filesize := fi.Size()
+		filesize := fm.Size()
 		if filesize > maxSize {
-			debug.Log("file %s is oversize: %d", item, filesize)
+			debug.Log("file %s is oversize: %d", fm.Path, filesize)
 			return true
 		}
 
