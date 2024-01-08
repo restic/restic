@@ -634,6 +634,7 @@ environment variables. The following lists these environment variables:
     RESTIC_AWS_ASSUME_ROLE_POLICY       Inline Amazion IAM session policy
     RESTIC_AWS_ASSUME_ROLE_REGION       Region to use for IAM calls for the role assumption (default: us-east-1)
     RESTIC_AWS_ASSUME_ROLE_STS_ENDPOINT URL to the STS endpoint (default is determined based on RESTIC_AWS_ASSUME_ROLE_REGION). You generally do not need to set this, advanced use only.
+    RESTIC_AWS_ASSUME_ROLE_DURATION_IN_SECONDS The duration, in seconds, of the role session. (default and minimum is 3600 seconds)
 
     AZURE_ACCOUNT_NAME                  Account name for Azure
     AZURE_ACCOUNT_KEY                   Account key for Azure
