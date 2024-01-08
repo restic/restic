@@ -1,0 +1,9 @@
+Enhancement: Feat AWS Assume Role add duration in seconds
+
+While using the AWS AssumeRole capability of the S3 storage backend, restic did not allow the duration in seconds to be configured for the STS token issued through the AssumeRole API.
+
+We have added the capability to specify the duration in seconds for the AssumeRole API using the RESTIC_AWS_ASSUME_ROLE_DURATION_IN_SECONDS environment variable.
+
+Note: `minio` currently considers only values above 3600 seconds to be configured.
+
+https://github.com/restic/restic/pull/4629
