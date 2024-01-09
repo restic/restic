@@ -1,0 +1,11 @@
+Bugfix: Improve error handling for `rclone` backend
+
+Since restic 0.16.0, if rclone encountered an error while listing files,
+this could in rare circumstances cause restic to assume that there are no
+files. Although unlikely, this situation could result in data loss if it
+were to happen right when the `prune` command is listing existing snapshots.
+
+Error handling has now been improved to detect and work around this case.
+
+https://github.com/restic/restic/issues/4612
+https://github.com/restic/restic/pull/4618
