@@ -109,7 +109,7 @@ func NodeFromFileInfo(path string, fi os.FileInfo) (*Node, error) {
 }
 
 func nodeTypeFromFileInfo(fi os.FileInfo) string {
-	switch fi.Mode() & (os.ModeType | os.ModeCharDevice) {
+	switch fi.Mode() & os.ModeType {
 	case 0:
 		return "file"
 	case os.ModeDir:
@@ -124,6 +124,8 @@ func nodeTypeFromFileInfo(fi os.FileInfo) string {
 		return "fifo"
 	case os.ModeSocket:
 		return "socket"
+	case os.ModeIrregular:
+		return "irregular"
 	}
 
 	return ""
@@ -622,7 +624,7 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 	case "fifo":
 	case "socket":
 	default:
-		return errors.Errorf("invalid node type %q", node.Type)
+		return errors.Errorf("unsupported file type %q", node.Type)
 	}
 
 	return node.fillExtendedAttributes(path)

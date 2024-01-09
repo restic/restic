@@ -94,11 +94,11 @@ example from a local to a remote repository, you can use the ``copy`` command:
     repository d6504c63 opened successfully, password is correct
     repository 3dd0878c opened successfully, password is correct
 
-    snapshot 410b18a2 of [/home/user/work] at 2020-06-09 23:15:57.305305 +0200 CEST)
+    snapshot 410b18a2 of [/home/user/work] at 2020-06-09 23:15:57.305305 +0200 CEST by user@kasimir
       copy started, this may take a while...
     snapshot 7a746a07 saved
 
-    snapshot 4e5d5487 of [/home/user/work] at 2020-05-01 22:44:07.012113 +0200 CEST)
+    snapshot 4e5d5487 of [/home/user/work] at 2020-05-01 22:44:07.012113 +0200 CEST by user@kasimir
     skipping snapshot 4e5d5487, was already copied to snapshot 50eb62b7
 
 The example command copies all snapshots from the source repository
@@ -193,18 +193,18 @@ the unwanted files from affected snapshots by rewriting them using the
     $ restic -r /srv/restic-repo rewrite --exclude secret-file
     repository c881945a opened (repository version 2) successfully, password is correct
 
-    snapshot 6160ddb2 of [/home/user/work] at 2022-06-12 16:01:28.406630608 +0200 CEST)
+    snapshot 6160ddb2 of [/home/user/work] at 2022-06-12 16:01:28.406630608 +0200 CEST by user@kasimir
     excluding /home/user/work/secret-file
     saved new snapshot b6aee1ff
 
-    snapshot 4fbaf325 of [/home/user/work] at 2022-05-01 11:22:26.500093107 +0200 CEST)
+    snapshot 4fbaf325 of [/home/user/work] at 2022-05-01 11:22:26.500093107 +0200 CEST by user@kasimir
 
     modified 1 snapshots
 
     $ restic -r /srv/restic-repo rewrite --exclude secret-file 6160ddb2
     repository c881945a opened (repository version 2) successfully, password is correct
 
-    snapshot 6160ddb2 of [/home/user/work] at 2022-06-12 16:01:28.406630608 +0200 CEST)
+    snapshot 6160ddb2 of [/home/user/work] at 2022-06-12 16:01:28.406630608 +0200 CEST by user@kasimir
     excluding /home/user/work/secret-file
     new snapshot saved as b6aee1ff
 
@@ -247,7 +247,7 @@ This is possible using the ``rewrite`` command with the option ``--new-host`` fo
     repository b7dbade3 opened (version 2, compression level auto)
     [0:00] 100.00%  1 / 1 index files loaded
 
-    snapshot 8ed674f4 of [/path/to/abc.txt] at 2023-11-27 21:57:52.439139291 +0100 CET)
+    snapshot 8ed674f4 of [/path/to/abc.txt] at 2023-11-27 21:57:52.439139291 +0100 CET by user@kasimir
     setting time to 1999-01-01 11:11:11 +0100 CET
     setting host to newhost
     saved new snapshot c05da643

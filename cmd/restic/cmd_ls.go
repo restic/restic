@@ -207,7 +207,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		}
 	} else {
 		printSnapshot = func(sn *restic.Snapshot) {
-			Verbosef("snapshot %s of %v filtered by %v at %s):\n", sn.ID().Str(), sn.Paths, dirs, sn.Time)
+			Verbosef("%v filtered by %v:\n", sn, dirs)
 		}
 		printNode = func(path string, node *restic.Node) {
 			Printf("%s\n", formatNode(path, node, lsOptions.ListLong, lsOptions.HumanReadable))

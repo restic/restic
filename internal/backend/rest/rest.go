@@ -328,8 +328,13 @@ func (b *Backend) List(ctx context.Context, t backend.FileType, fn func(backend.
 	}
 
 	if resp.StatusCode == http.StatusNotFound {
-		// ignore missing directories
-		return nil
+		if !strings.HasPrefix(resp.Header.Get("Server"), "rclone/") {
+			// ignore missing directories, unless the server is rclone. rclone
+			// already ignores missing directories, but misuses "not found" to
+			// report certain internal errors, see
+			// https://github.com/rclone/rclone/pull/7550 for details.
+			return nil
+		}
 	}
 
 	if resp.StatusCode != http.StatusOK {

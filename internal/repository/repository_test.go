@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand"
@@ -14,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/google/go-cmp/cmp"
 	"github.com/klauspost/compress/zstd"
 	"github.com/restic/restic/internal/backend"
@@ -529,7 +531,9 @@ func testStreamPack(t *testing.T, version uint) {
 	packfileBlobs, packfile := buildPackfileWithoutHeader(blobSizes, &key, compress)
 
 	loadCalls := 0
-	load := func(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+	shortFirstLoad := false
+
+	loadBytes := func(length int, offset int64) []byte {
 		data := packfile
 
 		if offset > int64(len(data)) {
@@ -541,32 +545,56 @@ func testStreamPack(t *testing.T, version uint) {
 		if length > len(data) {
 			length = len(data)
 		}
+		if shortFirstLoad {
+			length /= 2
+			shortFirstLoad = false
+		}
 
-		data = data[:length]
+		return data[:length]
+	}
+
+	load := func(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+		data := loadBytes(length, offset)
+		if shortFirstLoad {
+			data = data[:len(data)/2]
+			shortFirstLoad = false
+		}
+
 		loadCalls++
 
-		return fn(bytes.NewReader(data))
+		err := fn(bytes.NewReader(data))
+		if err == nil {
+			return nil
+		}
+		var permanent *backoff.PermanentError
+		if errors.As(err, &permanent) {
+			return err
+		}
 
+		// retry loading once
+		return fn(bytes.NewReader(loadBytes(length, offset)))
 	}
 
 	// first, test regular usage
 	t.Run("regular", func(t *testing.T) {
 		tests := []struct {
-			blobs []restic.Blob
-			calls int
+			blobs          []restic.Blob
+			calls          int
+			shortFirstLoad bool
 		}{
-			{packfileBlobs[1:2], 1},
-			{packfileBlobs[2:5], 1},
-			{packfileBlobs[2:8], 1},
+			{packfileBlobs[1:2], 1, false},
+			{packfileBlobs[2:5], 1, false},
+			{packfileBlobs[2:8], 1, false},
 			{[]restic.Blob{
 				packfileBlobs[0],
 				packfileBlobs[4],
 				packfileBlobs[2],
-			}, 1},
+			}, 1, false},
 			{[]restic.Blob{
 				packfileBlobs[0],
 				packfileBlobs[len(packfileBlobs)-1],
-			}, 2},
+			}, 2, false},
+			{packfileBlobs[:], 1, true},
 		}
 
 		for _, test := range tests {
@@ -593,6 +621,7 @@ func testStreamPack(t *testing.T, version uint) {
 				}
 
 				loadCalls = 0
+				shortFirstLoad = test.shortFirstLoad
 				err = repository.StreamPack(ctx, load, &key, restic.ID{}, test.blobs, handleBlob)
 				if err != nil {
 					t.Fatal(err)
@@ -605,6 +634,7 @@ func testStreamPack(t *testing.T, version uint) {
 			})
 		}
 	})
+	shortFirstLoad = false
 
 	// next, test invalid uses, which should return an error
 	t.Run("invalid", func(t *testing.T) {
