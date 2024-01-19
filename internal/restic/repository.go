@@ -44,6 +44,7 @@ type Repository interface {
 	ListPack(context.Context, ID, int64) ([]Blob, uint32, error)
 
 	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
+	LoadBlobsFromPack(ctx context.Context, packID ID, blobs []Blob, handleBlobFn func(blob BlobHandle, buf []byte, err error) error) error
 	SaveBlob(context.Context, BlobType, []byte, ID, bool) (ID, bool, int, error)
 
 	// StartPackUploader start goroutines to upload new pack files. The errgroup
