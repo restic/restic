@@ -35,6 +35,9 @@ linters:
     # parse and typecheck code
     - typecheck
 
+    # ensure that http response bodies are closed
+    - bodyclose
+
 issues:
   # don't use the default exclude rules, this hides (among others) ignored
   # errors from Close() calls
