@@ -341,8 +341,8 @@ func (l *Lock) checkExistence(ctx context.Context) (bool, error) {
 
 	exists := false
 
-	err := l.repo.Backend().List(ctx, LockFile, func(fi backend.FileInfo) error {
-		if fi.Name == l.lockID.String() {
+	err := l.repo.List(ctx, LockFile, func(id ID, size int64) error {
+		if id.Equal(*l.lockID) {
 			exists = true
 		}
 		return nil
