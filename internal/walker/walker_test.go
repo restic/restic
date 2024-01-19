@@ -232,6 +232,13 @@ func TestWalker(t *testing.T) {
 						"/subdir",
 					},
 				),
+				checkSkipFor(
+					map[string]struct{}{
+						"/": {},
+					}, []string{
+						"/",
+					},
+				),
 			},
 		},
 		{
