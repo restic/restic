@@ -113,6 +113,26 @@ The following steps are necessary to build the binaries:
         restic/builder \
         go run helpers/build-release-binaries/main.go --version 0.14.0 --verbose
 
+Verifying the Official Binaries
+*******************************
+
+To verify the official binaries, you can either build them yourself using the above
+instructions or use the ``helpers/verify-release-binaries.sh`` script from the restic
+repository. Run it as ``helpers/verify-release-binaries.sh restic_version go_version``.
+The specified go compiler version must match the one used to build the official
+binaries. For example, for restic 0.16.2 the command would be
+``helpers/verify-release-binaries.sh 0.16.2 1.21.3``.
+
+The script requires bash, curl, docker, git, gpg, shasum and tar.
+
+The script first downloads all release binaries, checks the SHASUM256 file and its
+signature. Afterwards it checks that the tarball matches the restic git repository
+contents, before first reproducing the builder docker container and finally the
+restic binaries. As final step, the restic binary in both the docker hub images
+and the GitHub container registry is verified. If any step fails, then the script
+will issue a warning.
+
+
 Prepare a New Release
 *********************
 
