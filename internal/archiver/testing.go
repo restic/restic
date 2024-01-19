@@ -209,7 +209,7 @@ func TestEnsureFiles(t testing.TB, target string, dir TestDir) {
 }
 
 // TestEnsureFileContent checks if the file in the repo is the same as file.
-func TestEnsureFileContent(ctx context.Context, t testing.TB, repo restic.Repository, filename string, node *restic.Node, file TestFile) {
+func TestEnsureFileContent(ctx context.Context, t testing.TB, repo restic.BlobLoader, filename string, node *restic.Node, file TestFile) {
 	if int(node.Size) != len(file.Content) {
 		t.Fatalf("%v: wrong node size: want %d, got %d", filename, node.Size, len(file.Content))
 		return
@@ -237,7 +237,7 @@ func TestEnsureFileContent(ctx context.Context, t testing.TB, repo restic.Reposi
 
 // TestEnsureTree checks that the tree ID in the repo matches dir. On Windows,
 // Symlinks are ignored.
-func TestEnsureTree(ctx context.Context, t testing.TB, prefix string, repo restic.Repository, treeID restic.ID, dir TestDir) {
+func TestEnsureTree(ctx context.Context, t testing.TB, prefix string, repo restic.BlobLoader, treeID restic.ID, dir TestDir) {
 	t.Helper()
 
 	tree, err := restic.LoadTree(ctx, repo, treeID)

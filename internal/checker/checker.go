@@ -362,7 +362,7 @@ func (c *Checker) checkTreeWorker(ctx context.Context, trees <-chan restic.TreeI
 	}
 }
 
-func loadSnapshotTreeIDs(ctx context.Context, lister restic.Lister, repo restic.Repository) (ids restic.IDs, errs []error) {
+func loadSnapshotTreeIDs(ctx context.Context, lister restic.Lister, repo restic.LoaderUnpacked) (ids restic.IDs, errs []error) {
 	err := restic.ForAllSnapshots(ctx, lister, repo, nil, func(id restic.ID, sn *restic.Snapshot, err error) error {
 		if err != nil {
 			errs = append(errs, err)

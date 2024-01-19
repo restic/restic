@@ -189,7 +189,7 @@ func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args 
 	return nil
 }
 
-func statsWalkSnapshot(ctx context.Context, snapshot *restic.Snapshot, repo restic.Repository, opts StatsOptions, stats *statsContainer) error {
+func statsWalkSnapshot(ctx context.Context, snapshot *restic.Snapshot, repo restic.Loader, opts StatsOptions, stats *statsContainer) error {
 	if snapshot.Tree == nil {
 		return fmt.Errorf("snapshot %s has nil tree", snapshot.ID().Str())
 	}
@@ -211,7 +211,7 @@ func statsWalkSnapshot(ctx context.Context, snapshot *restic.Snapshot, repo rest
 	return nil
 }
 
-func statsWalkTree(repo restic.Repository, opts StatsOptions, stats *statsContainer, hardLinkIndex *restorer.HardlinkIndex[struct{}]) walker.WalkFunc {
+func statsWalkTree(repo restic.Loader, opts StatsOptions, stats *statsContainer, hardLinkIndex *restorer.HardlinkIndex[struct{}]) walker.WalkFunc {
 	return func(parentTreeID restic.ID, npath string, node *restic.Node, nodeErr error) error {
 		if nodeErr != nil {
 			return nodeErr
@@ -363,7 +363,7 @@ func statsDebug(ctx context.Context, repo restic.Repository) error {
 	return nil
 }
 
-func statsDebugFileType(ctx context.Context, repo restic.Repository, tpe restic.FileType) (*sizeHistogram, error) {
+func statsDebugFileType(ctx context.Context, repo restic.Lister, tpe restic.FileType) (*sizeHistogram, error) {
 	hist := newSizeHistogram(2 * repository.MaxPackSize)
 	err := repo.List(ctx, tpe, func(id restic.ID, size int64) error {
 		hist.Add(uint64(size))

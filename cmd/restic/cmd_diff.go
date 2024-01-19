@@ -61,7 +61,7 @@ func init() {
 	f.BoolVar(&diffOptions.ShowMetadata, "metadata", false, "print changes in metadata")
 }
 
-func loadSnapshot(ctx context.Context, be restic.Lister, repo restic.Repository, desc string) (*restic.Snapshot, string, error) {
+func loadSnapshot(ctx context.Context, be restic.Lister, repo restic.LoaderUnpacked, desc string) (*restic.Snapshot, string, error) {
 	sn, subfolder, err := restic.FindSnapshot(ctx, be, repo, desc)
 	if err != nil {
 		return nil, "", errors.Fatal(err.Error())
@@ -71,7 +71,7 @@ func loadSnapshot(ctx context.Context, be restic.Lister, repo restic.Repository,
 
 // Comparer collects all things needed to compare two snapshots.
 type Comparer struct {
-	repo        restic.Repository
+	repo        restic.BlobLoader
 	opts        DiffOptions
 	printChange func(change *Change)
 }
@@ -147,7 +147,7 @@ type DiffStatsContainer struct {
 }
 
 // updateBlobs updates the blob counters in the stats struct.
-func updateBlobs(repo restic.Repository, blobs restic.BlobSet, stats *DiffStat) {
+func updateBlobs(repo restic.Loader, blobs restic.BlobSet, stats *DiffStat) {
 	for h := range blobs {
 		switch h.Type {
 		case restic.DataBlob:
