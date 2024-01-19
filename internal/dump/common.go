@@ -70,27 +70,27 @@ func sendNodes(ctx context.Context, repo restic.Repository, root *restic.Node, c
 		return nil
 	}
 
-	err := walker.Walk(ctx, repo, *root.Subtree, nil, func(_ restic.ID, nodepath string, node *restic.Node, err error) (bool, error) {
+	err := walker.Walk(ctx, repo, *root.Subtree, func(_ restic.ID, nodepath string, node *restic.Node, err error) error {
 		if err != nil {
-			return false, err
+			return err
 		}
 		if node == nil {
-			return false, nil
+			return nil
 		}
 
 		node.Path = path.Join(root.Path, nodepath)
 
 		if !IsFile(node) && !IsDir(node) && !IsLink(node) {
-			return false, nil
+			return nil
 		}
 
 		select {
 		case ch <- node:
 		case <-ctx.Done():
-			return false, ctx.Err()
+			return ctx.Err()
 		}
 
-		return false, nil
+		return nil
 	})
 
 	return err
