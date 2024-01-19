@@ -487,7 +487,8 @@ Backblaze B2
 
    Different from the B2 backend, restic's S3 backend will only hide no longer
    necessary files. Thus, make sure to setup lifecycle rules to eventually
-   delete hidden files.
+   delete hidden files. The lifecycle setting "Keep only the last version of the file" 
+   will keep only the most current version of a file. Read the [Backblaze documentation](https://www.backblaze.com/docs/cloud-storage-lifecycle-rules).
 
 Restic can backup data to any Backblaze B2 bucket. You need to first setup the
 following environment variables with the credentials you can find in the
