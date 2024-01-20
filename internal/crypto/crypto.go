@@ -45,28 +45,6 @@ type EncryptionKey [32]byte
 type MACKey struct {
 	K [16]byte // for AES-128
 	R [16]byte // for Poly1305
-
-	masked bool // remember if the MAC key has already been masked
-}
-
-// mask for key, (cf. http://cr.yp.to/mac/poly1305-20050329.pdf)
-var poly1305KeyMask = [16]byte{
-	0xff,
-	0xff,
-	0xff,
-	0x0f, // 3: top four bits zero
-	0xfc, // 4: bottom two bits zero
-	0xff,
-	0xff,
-	0x0f, // 7: top four bits zero
-	0xfc, // 8: bottom two bits zero
-	0xff,
-	0xff,
-	0x0f, // 11: top four bits zero
-	0xfc, // 12: bottom two bits zero
-	0xff,
-	0xff,
-	0x0f, // 15: top four bits zero
 }
 
 func poly1305MAC(msg []byte, nonce []byte, key *MACKey) []byte {
@@ -78,31 +56,15 @@ func poly1305MAC(msg []byte, nonce []byte, key *MACKey) []byte {
 	return out[:]
 }
 
-// mask poly1305 key
-func maskKey(k *MACKey) {
-	if k == nil || k.masked {
-		return
-	}
-
-	for i := 0; i < poly1305.TagSize; i++ {
-		k.R[i] = k.R[i] & poly1305KeyMask[i]
-	}
-
-	k.masked = true
-}
-
 // construct mac key from slice (k||r), with masking
 func macKeyFromSlice(mk *MACKey, data []byte) {
 	copy(mk.K[:], data[:16])
 	copy(mk.R[:], data[16:32])
-	maskKey(mk)
 }
 
 // prepare key for low-level poly1305.Sum(): r||n
 func poly1305PrepareKey(nonce []byte, key *MACKey) [32]byte {
 	var k [32]byte
-
-	maskKey(key)
 
 	cipher, err := aes.NewCipher(key.K[:])
 	if err != nil {
@@ -143,7 +105,6 @@ func NewRandomKey() *Key {
 		panic("unable to read enough random bytes for MAC key")
 	}
 
-	maskKey(&k.MACKey)
 	return k
 }
 
