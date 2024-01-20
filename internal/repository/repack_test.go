@@ -62,7 +62,7 @@ func createRandomBlobs(t testing.TB, repo restic.Repository, blobs int, pData fl
 	}
 }
 
-func createRandomWrongBlob(t testing.TB, repo restic.Repository) {
+func createRandomWrongBlob(t testing.TB, repo restic.Repository) restic.BlobHandle {
 	length := randomSize(10*1024, 1024*1024) // 10KiB to 1MiB of data
 	buf := make([]byte, length)
 	rand.Read(buf)
@@ -80,6 +80,7 @@ func createRandomWrongBlob(t testing.TB, repo restic.Repository) {
 	if err := repo.Flush(context.Background()); err != nil {
 		t.Fatalf("repo.Flush() returned error %v", err)
 	}
+	return restic.BlobHandle{ID: id, Type: restic.DataBlob}
 }
 
 // selectBlobs splits the list of all blobs randomly into two lists. A blob
