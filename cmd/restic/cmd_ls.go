@@ -318,7 +318,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 
 	printSnapshot(sn)
 
-	err = walker.Walk(ctx, repo, *sn.Tree, func(_ restic.ID, nodepath string, node *restic.Node, err error) error {
+	processNode := func(_ restic.ID, nodepath string, node *restic.Node, err error) error {
 		if err != nil {
 			return err
 		}
@@ -349,6 +349,10 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 			return walker.ErrSkipNode
 		}
 		return nil
+	}
+
+	err = walker.Walk(ctx, repo, *sn.Tree, walker.WalkVisitor{
+		ProcessNode: processNode,
 	})
 
 	if err != nil {

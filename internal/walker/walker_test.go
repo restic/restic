@@ -406,7 +406,7 @@ func TestWalker(t *testing.T) {
 					defer cancel()
 
 					fn, last := check(t)
-					err := Walk(ctx, repo, root, fn)
+					err := Walk(ctx, repo, root, WalkVisitor{ProcessNode: fn})
 					if err != nil {
 						t.Error(err)
 					}

@@ -203,7 +203,9 @@ func statsWalkSnapshot(ctx context.Context, snapshot *restic.Snapshot, repo rest
 	}
 
 	hardLinkIndex := restorer.NewHardlinkIndex[struct{}]()
-	err := walker.Walk(ctx, repo, *snapshot.Tree, statsWalkTree(repo, opts, stats, hardLinkIndex))
+	err := walker.Walk(ctx, repo, *snapshot.Tree, walker.WalkVisitor{
+		ProcessNode: statsWalkTree(repo, opts, stats, hardLinkIndex),
+	})
 	if err != nil {
 		return fmt.Errorf("walking tree %s: %v", *snapshot.Tree, err)
 	}
