@@ -109,3 +109,21 @@ func newIndexProgress(quiet bool, json bool) *progress.Counter {
 func newIndexTerminalProgress(quiet bool, json bool, term *termstatus.Terminal) *progress.Counter {
 	return newTerminalProgressMax(!quiet && !json && stdoutIsTerminal(), 0, "index files loaded", term)
 }
+
+type terminalProgressPrinter struct {
+	term *termstatus.Terminal
+	ui.Message
+	show bool
+}
+
+func (t *terminalProgressPrinter) NewCounter(description string) *progress.Counter {
+	return newTerminalProgressMax(t.show, 0, description, t.term)
+}
+
+func newTerminalProgressPrinter(verbosity uint, term *termstatus.Terminal) progress.Printer {
+	return &terminalProgressPrinter{
+		term:    term,
+		Message: *ui.NewMessage(term, verbosity),
+		show:    verbosity > 0,
+	}
+}
