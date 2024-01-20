@@ -69,14 +69,44 @@ func init() {
 	flags.BoolVar(&lsOptions.Ncdu, "ncdu", false, "output NCDU save format (pipe into 'ncdu -f -')")
 }
 
-type lsSnapshot struct {
-	*restic.Snapshot
-	ID         *restic.ID `json:"id"`
-	ShortID    string     `json:"short_id"`
-	StructType string     `json:"struct_type"` // "snapshot"
+type lsPrinter interface {
+	Snapshot(sn *restic.Snapshot)
+	Node(path string, node *restic.Node)
+	LeaveDir(path string)
+	Close()
+}
+
+type jsonLsPrinter struct {
+	enc *json.Encoder
+}
+
+func (p *jsonLsPrinter) Snapshot(sn *restic.Snapshot) {
+	type lsSnapshot struct {
+		*restic.Snapshot
+		ID         *restic.ID `json:"id"`
+		ShortID    string     `json:"short_id"`
+		StructType string     `json:"struct_type"` // "snapshot"
+	}
+
+	err := p.enc.Encode(lsSnapshot{
+		Snapshot:   sn,
+		ID:         sn.ID(),
+		ShortID:    sn.ID().Str(),
+		StructType: "snapshot",
+	})
+	if err != nil {
+		Warnf("JSON encode failed: %v\n", err)
+	}
 }
 
 // Print node in our custom JSON format, followed by a newline.
+func (p *jsonLsPrinter) Node(path string, node *restic.Node) {
+	err := lsNodeJSON(p.enc, path, node)
+	if err != nil {
+		Warnf("JSON encode failed: %v\n", err)
+	}
+}
+
 func lsNodeJSON(enc *json.Encoder, path string, node *restic.Node) error {
 	n := &struct {
 		Name        string      `json:"name"`
@@ -118,7 +148,10 @@ func lsNodeJSON(enc *json.Encoder, path string, node *restic.Node) error {
 	return enc.Encode(n)
 }
 
-type ncduPrinter struct {
+func (p *jsonLsPrinter) LeaveDir(path string) {}
+func (p *jsonLsPrinter) Close()               {}
+
+type ncduLsPrinter struct {
 	out   io.Writer
 	depth int
 }
@@ -126,7 +159,7 @@ type ncduPrinter struct {
 // lsSnapshotNcdu prints a restic snapshot in Ncdu save format.
 // It opens the JSON list. Nodes are added with lsNodeNcdu and the list is closed by lsCloseNcdu.
 // Format documentation: https://dev.yorhel.nl/ncdu/jsonfmt
-func (p *ncduPrinter) ProcessSnapshot(sn *restic.Snapshot) {
+func (p *ncduLsPrinter) Snapshot(sn *restic.Snapshot) {
 	const NcduMajorVer = 1
 	const NcduMinorVer = 2
 
@@ -138,7 +171,7 @@ func (p *ncduPrinter) ProcessSnapshot(sn *restic.Snapshot) {
 	fmt.Fprintf(p.out, "[%d, %d, %s", NcduMajorVer, NcduMinorVer, string(snapshotBytes))
 }
 
-func (p *ncduPrinter) ProcessNode(path string, node *restic.Node) {
+func (p *ncduLsPrinter) Node(path string, node *restic.Node) {
 	type NcduNode struct {
 		Name   string `json:"name"`
 		Asize  uint64 `json:"asize"`
@@ -180,14 +213,30 @@ func (p *ncduPrinter) ProcessNode(path string, node *restic.Node) {
 	}
 }
 
-func (p *ncduPrinter) LeaveDir(path string) {
+func (p *ncduLsPrinter) LeaveDir(path string) {
 	p.depth--
 	fmt.Fprintf(p.out, "\n%s]", strings.Repeat("  ", p.depth))
 }
 
-func (p *ncduPrinter) Close() {
+func (p *ncduLsPrinter) Close() {
 	fmt.Fprint(p.out, "\n]\n")
 }
+
+type textLsPrinter struct {
+	dirs          []string
+	ListLong      bool
+	HumanReadable bool
+}
+
+func (p *textLsPrinter) Snapshot(sn *restic.Snapshot) {
+	Verbosef("%v filtered by %v:\n", sn, p.dirs)
+}
+func (p *textLsPrinter) Node(path string, node *restic.Node) {
+	Printf("%s\n", formatNode(path, node, p.ListLong, p.HumanReadable))
+}
+
+func (p *textLsPrinter) LeaveDir(path string) {}
+func (p *textLsPrinter) Close()               {}
 
 func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []string) error {
 	if len(args) == 0 {
@@ -254,48 +303,21 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		return err
 	}
 
-	var (
-		printSnapshot  func(sn *restic.Snapshot)
-		printNode      func(path string, node *restic.Node)
-		printLeaveNode func(path string)
-		printClose     func()
-	)
+	var printer lsPrinter
 
 	if gopts.JSON {
-		enc := json.NewEncoder(globalOptions.stdout)
-
-		printSnapshot = func(sn *restic.Snapshot) {
-			err := enc.Encode(lsSnapshot{
-				Snapshot:   sn,
-				ID:         sn.ID(),
-				ShortID:    sn.ID().Str(),
-				StructType: "snapshot",
-			})
-			if err != nil {
-				Warnf("JSON encode failed: %v\n", err)
-			}
-		}
-
-		printNode = func(path string, node *restic.Node) {
-			err := lsNodeJSON(enc, path, node)
-			if err != nil {
-				Warnf("JSON encode failed: %v\n", err)
-			}
+		printer = &jsonLsPrinter{
+			enc: json.NewEncoder(globalOptions.stdout),
 		}
 	} else if opts.Ncdu {
-		ncdu := &ncduPrinter{
+		printer = &ncduLsPrinter{
 			out: globalOptions.stdout,
 		}
-		printSnapshot = ncdu.ProcessSnapshot
-		printNode = ncdu.ProcessNode
-		printLeaveNode = ncdu.LeaveDir
-		printClose = ncdu.Close
 	} else {
-		printSnapshot = func(sn *restic.Snapshot) {
-			Verbosef("%v filtered by %v:\n", sn, dirs)
-		}
-		printNode = func(path string, node *restic.Node) {
-			Printf("%s\n", formatNode(path, node, opts.ListLong, opts.HumanReadable))
+		printer = &textLsPrinter{
+			dirs:          dirs,
+			ListLong:      opts.ListLong,
+			HumanReadable: opts.HumanReadable,
 		}
 	}
 
@@ -313,7 +335,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		return err
 	}
 
-	printSnapshot(sn)
+	printer.Snapshot(sn)
 
 	processNode := func(_ restic.ID, nodepath string, node *restic.Node, err error) error {
 		if err != nil {
@@ -325,7 +347,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 
 		if withinDir(nodepath) {
 			// if we're within a dir, print the node
-			printNode(nodepath, node)
+			printer.Node(nodepath, node)
 
 			// if recursive listing is requested, signal the walker that it
 			// should continue walking recursively
@@ -351,8 +373,9 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 	err = walker.Walk(ctx, repo, *sn.Tree, walker.WalkVisitor{
 		ProcessNode: processNode,
 		LeaveDir: func(path string) {
-			if printLeaveNode != nil && withinDir(path) && path != "/" {
-				printLeaveNode(path)
+			// the root path `/` has no corresponding node and is thus also skipped by processNode
+			if withinDir(path) && path != "/" {
+				printer.LeaveDir(path)
 			}
 		},
 	})
@@ -361,9 +384,6 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		return err
 	}
 
-	if printClose != nil {
-		printClose()
-	}
-
+	printer.Close()
 	return nil
 }
