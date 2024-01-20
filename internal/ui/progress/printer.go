@@ -17,14 +17,14 @@ type NoopPrinter struct{}
 
 var _ Printer = (*NoopPrinter)(nil)
 
-func (*NoopPrinter) NewCounter(description string) *Counter {
+func (*NoopPrinter) NewCounter(_ string) *Counter {
 	return nil
 }
 
-func (*NoopPrinter) E(msg string, args ...interface{}) {}
+func (*NoopPrinter) E(_ string, _ ...interface{}) {}
 
-func (*NoopPrinter) P(msg string, args ...interface{}) {}
+func (*NoopPrinter) P(_ string, _ ...interface{}) {}
 
-func (*NoopPrinter) V(msg string, args ...interface{}) {}
+func (*NoopPrinter) V(_ string, _ ...interface{}) {}
 
-func (*NoopPrinter) VV(msg string, args ...interface{}) {}
+func (*NoopPrinter) VV(_ string, _ ...interface{}) {}

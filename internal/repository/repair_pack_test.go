@@ -117,7 +117,7 @@ func testRepairBrokenPack(t *testing.T, version uint) {
 			rtest.OK(t, repository.RepairPacks(context.TODO(), repo, toRepair, &progress.NoopPrinter{}))
 			// reload index
 			rtest.OK(t, repo.SetIndex(index.NewMasterIndex()))
-			repo.LoadIndex(context.TODO(), nil)
+			rtest.OK(t, repo.LoadIndex(context.TODO(), nil))
 
 			packsAfter := listPacks(t, repo)
 			blobsAfter := listBlobs(repo)
