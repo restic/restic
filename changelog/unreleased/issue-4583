@@ -1,9 +1,12 @@
-Bugfix: Ignoring the s3.storage-class option for metadata when archive tier is specified
+Enhancement: Ignore s3.storage-class for metadata if archive tier is specified
 
-Restic now will save snapshot metadata to non-archive storage tier whatsoever,
-this will help avoid issues when data is being saved to archive storage class.
-It is not providing any support for cold storages in restic, 
-only saving users from making backups unusable.
+There is no official cold storage support in restic, use this option at your
+own risk.
+
+Restic always stored all files on s3 using the specified `s3.storage-class`.
+Now, restic will store metadata using a non-archive storage tier to avoid
+problems when accessing a repository. To restore any data, it is still
+necessary to manually warm up the required data beforehand.
 
 https://github.com/restic/restic/issues/4583
-https://github.com/restic/restic/issues/3202
+https://github.com/restic/restic/pull/4584
