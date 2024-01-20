@@ -163,9 +163,16 @@ func (l *Lock) fillUserInfo() error {
 // exclusive lock is found.
 func (l *Lock) checkForOtherLocks(ctx context.Context) error {
 	var err error
+	checkedIDs := NewIDSet()
+	if l.lockID != nil {
+		checkedIDs.Insert(*l.lockID)
+	}
 	// retry locking a few times
 	for i := 0; i < 3; i++ {
-		err = ForAllLocks(ctx, l.repo, l.lockID, func(id ID, lock *Lock, err error) error {
+		// Store updates in new IDSet to prevent data races
+		var m sync.Mutex
+		newCheckedIDs := NewIDSet(checkedIDs.List()...)
+		err = ForAllLocks(ctx, l.repo, checkedIDs, func(id ID, lock *Lock, err error) error {
 			if err != nil {
 				// if we cannot load a lock then it is unclear whether it can be ignored
 				// it could either be invalid or just unreadable due to network/permission problems
@@ -181,8 +188,13 @@ func (l *Lock) checkForOtherLocks(ctx context.Context) error {
 				return &alreadyLockedError{otherLock: lock}
 			}
 
+			// valid locks will remain valid
+			m.Lock()
+			newCheckedIDs.Insert(id)
+			m.Unlock()
 			return nil
 		})
+		checkedIDs = newCheckedIDs
 		// no lock detected
 		if err == nil {
 			return nil
@@ -417,12 +429,12 @@ func RemoveAllLocks(ctx context.Context, repo Repository) (uint, error) {
 // It is guaranteed that the function is not run concurrently. If the
 // callback returns an error, this function is cancelled and also returns that error.
 // If a lock ID is passed via excludeID, it will be ignored.
-func ForAllLocks(ctx context.Context, repo Repository, excludeID *ID, fn func(ID, *Lock, error) error) error {
+func ForAllLocks(ctx context.Context, repo Repository, excludeIDs IDSet, fn func(ID, *Lock, error) error) error {
 	var m sync.Mutex
 
 	// For locks decoding is nearly for free, thus just assume were only limited by IO
 	return ParallelList(ctx, repo, LockFile, repo.Connections(), func(ctx context.Context, id ID, size int64) error {
-		if excludeID != nil && id.Equal(*excludeID) {
+		if excludeIDs.Has(id) {
 			return nil
 		}
 		if size == 0 {
