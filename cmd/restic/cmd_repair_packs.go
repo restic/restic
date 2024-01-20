@@ -145,7 +145,7 @@ func repairPacks(ctx context.Context, gopts GlobalOptions, repo *repository.Repo
 	bar.Done()
 
 	// remove salvaged packs from index
-	err = rebuildIndexFiles(ctx, gopts, repo, ids, nil)
+	err = rebuildIndexFiles(ctx, gopts, repo, ids, nil, false)
 	if err != nil {
 		return errors.Fatalf("%s", err)
 	}

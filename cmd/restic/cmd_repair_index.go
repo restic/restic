@@ -154,7 +154,7 @@ func rebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOpti
 		}
 	}
 
-	err = rebuildIndexFiles(ctx, gopts, repo, removePacks, obsoleteIndexes)
+	err = rebuildIndexFiles(ctx, gopts, repo, removePacks, obsoleteIndexes, false)
 	if err != nil {
 		return err
 	}

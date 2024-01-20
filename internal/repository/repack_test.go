@@ -173,39 +173,27 @@ func flush(t *testing.T, repo restic.Repository) {
 
 func rebuildIndex(t *testing.T, repo restic.Repository) {
 	err := repo.SetIndex(index.NewMasterIndex())
-	if err != nil {
-		t.Fatal(err)
-	}
+	rtest.OK(t, err)
 
 	packs := make(map[restic.ID]int64)
 	err = repo.List(context.TODO(), restic.PackFile, func(id restic.ID, size int64) error {
 		packs[id] = size
 		return nil
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	rtest.OK(t, err)
 
 	_, err = repo.(*repository.Repository).CreateIndexFromPacks(context.TODO(), packs, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	rtest.OK(t, err)
 
+	var obsoleteIndexes restic.IDs
 	err = repo.List(context.TODO(), restic.IndexFile, func(id restic.ID, size int64) error {
-		h := backend.Handle{
-			Type: restic.IndexFile,
-			Name: id.String(),
-		}
-		return repo.Backend().Remove(context.TODO(), h)
+		obsoleteIndexes = append(obsoleteIndexes, id)
+		return nil
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	rtest.OK(t, err)
 
-	_, err = repo.Index().Save(context.TODO(), repo, restic.NewIDSet(), nil, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	err = repo.Index().Save(context.TODO(), repo, restic.NewIDSet(), obsoleteIndexes, restic.MasterIndexSaveOpts{})
+	rtest.OK(t, err)
 }
 
 func reloadIndex(t *testing.T, repo restic.Repository) {
