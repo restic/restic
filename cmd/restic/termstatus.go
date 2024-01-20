@@ -13,13 +13,14 @@ import (
 //
 // Expected usage:
 // ```
-// term, cancel := setupTermstatus(ctx)
+// term, cancel := setupTermstatus()
 // defer cancel()
 // // do stuff
 // ```
-func setupTermstatus(ctx context.Context) (*termstatus.Terminal, func()) {
+func setupTermstatus() (*termstatus.Terminal, func()) {
 	var wg sync.WaitGroup
-	cancelCtx, cancel := context.WithCancel(ctx)
+	// only shutdown once cancel is called to ensure that no output is lost
+	cancelCtx, cancel := context.WithCancel(context.Background())
 
 	term := termstatus.New(globalOptions.stdout, globalOptions.stderr, globalOptions.Quiet)
 	wg.Add(1)

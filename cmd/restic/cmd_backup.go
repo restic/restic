@@ -54,7 +54,7 @@ Exit status is 3 if some source data could not be read (incomplete snapshot crea
 	},
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		term, cancel := setupTermstatus(cmd.Context())
+		term, cancel := setupTermstatus()
 		defer cancel()
 		return runBackup(cmd.Context(), backupOptions, globalOptions, term, args)
 	},
