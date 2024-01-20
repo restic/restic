@@ -28,10 +28,19 @@ var testSizes = []int{5, 23, 2<<18 + 23, 1 << 20}
 var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 func TestSave(t *testing.T) {
-	repository.TestAllVersions(t, testSave)
+	repository.TestAllVersions(t, testSavePassID)
+	repository.TestAllVersions(t, testSaveCalculateID)
 }
 
-func testSave(t *testing.T, version uint) {
+func testSavePassID(t *testing.T, version uint) {
+	testSave(t, version, false)
+}
+
+func testSaveCalculateID(t *testing.T, version uint) {
+	testSave(t, version, true)
+}
+
+func testSave(t *testing.T, version uint, calculateID bool) {
 	repo := repository.TestRepositoryWithVersion(t, version)
 
 	for _, size := range testSizes {
@@ -45,50 +54,13 @@ func testSave(t *testing.T, version uint) {
 		repo.StartPackUploader(context.TODO(), &wg)
 
 		// save
-		sid, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, data, restic.ID{}, false)
+		inputID := restic.ID{}
+		if !calculateID {
+			inputID = id
+		}
+		sid, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, data, inputID, false)
 		rtest.OK(t, err)
-
 		rtest.Equals(t, id, sid)
-
-		rtest.OK(t, repo.Flush(context.Background()))
-		// rtest.OK(t, repo.SaveIndex())
-
-		// read back
-		buf, err := repo.LoadBlob(context.TODO(), restic.DataBlob, id, nil)
-		rtest.OK(t, err)
-		rtest.Equals(t, size, len(buf))
-
-		rtest.Assert(t, len(buf) == len(data),
-			"number of bytes read back does not match: expected %d, got %d",
-			len(data), len(buf))
-
-		rtest.Assert(t, bytes.Equal(buf, data),
-			"data does not match: expected %02x, got %02x",
-			data, buf)
-	}
-}
-
-func TestSaveFrom(t *testing.T) {
-	repository.TestAllVersions(t, testSaveFrom)
-}
-
-func testSaveFrom(t *testing.T, version uint) {
-	repo := repository.TestRepositoryWithVersion(t, version)
-
-	for _, size := range testSizes {
-		data := make([]byte, size)
-		_, err := io.ReadFull(rnd, data)
-		rtest.OK(t, err)
-
-		id := restic.Hash(data)
-
-		var wg errgroup.Group
-		repo.StartPackUploader(context.TODO(), &wg)
-
-		// save
-		id2, _, _, err := repo.SaveBlob(context.TODO(), restic.DataBlob, data, id, false)
-		rtest.OK(t, err)
-		rtest.Equals(t, id, id2)
 
 		rtest.OK(t, repo.Flush(context.Background()))
 
