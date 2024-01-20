@@ -44,7 +44,8 @@ func RepairPacks(ctx context.Context, repo restic.Repository, ids restic.IDSet, 
 				}
 				return err
 			})
-			if err != nil {
+			// ignore truncated file parts
+			if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
 				return err
 			}
 			bar.Add(1)
