@@ -171,7 +171,7 @@ func (p *ncduLsPrinter) Snapshot(sn *restic.Snapshot) {
 	fmt.Fprintf(p.out, "[%d, %d, %s", NcduMajorVer, NcduMinorVer, string(snapshotBytes))
 }
 
-func (p *ncduLsPrinter) Node(path string, node *restic.Node) {
+func lsNcduNode(path string, node *restic.Node) ([]byte, error) {
 	type NcduNode struct {
 		Name   string `json:"name"`
 		Asize  uint64 `json:"asize"`
@@ -196,11 +196,25 @@ func (p *ncduLsPrinter) Node(path string, node *restic.Node) {
 		NotReg: node.Type != "dir" && node.Type != "file",
 		Uid:    node.UID,
 		Gid:    node.GID,
-		Mode:   uint16(node.Mode),
+		Mode:   uint16(node.Mode & os.ModePerm),
 		Mtime:  node.ModTime.Unix(),
 	}
+	//  bits according to inode(7) manpage
+	if node.Mode&os.ModeSetuid != 0 {
+		outNode.Mode |= 0o4000
+	}
+	if node.Mode&os.ModeSetgid != 0 {
+		outNode.Mode |= 0o2000
+	}
+	if node.Mode&os.ModeSticky != 0 {
+		outNode.Mode |= 0o1000
+	}
 
-	outJson, err := json.Marshal(outNode)
+	return json.Marshal(outNode)
+}
+
+func (p *ncduLsPrinter) Node(path string, node *restic.Node) {
+	outJson, err := lsNcduNode(path, node)
 	if err != nil {
 		Warnf("JSON encode failed: %v\n", err)
 	}
