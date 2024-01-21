@@ -285,6 +285,15 @@ func AddKey(ctx context.Context, s *Repository, password, username, hostname str
 	return newkey, nil
 }
 
+func RemoveKey(ctx context.Context, repo *Repository, id restic.ID) error {
+	if id == repo.KeyID() {
+		return errors.New("refusing to remove key currently used to access repository")
+	}
+
+	h := backend.Handle{Type: restic.KeyFile, Name: id.String()}
+	return repo.be.Remove(ctx, h)
+}
+
 func (k *Key) String() string {
 	if k == nil {
 		return "<Key nil>"

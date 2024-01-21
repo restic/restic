@@ -7,7 +7,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -150,8 +149,7 @@ func deleteKey(ctx context.Context, repo *repository.Repository, id restic.ID) e
 		return errors.Fatal("refusing to remove key currently used to access repository")
 	}
 
-	h := backend.Handle{Type: restic.KeyFile, Name: id.String()}
-	err := repo.Backend().Remove(ctx, h)
+	err := repository.RemoveKey(ctx, repo, id)
 	if err != nil {
 		return err
 	}
@@ -177,8 +175,7 @@ func changePassword(ctx context.Context, repo *repository.Repository, gopts Glob
 		return err
 	}
 
-	h := backend.Handle{Type: restic.KeyFile, Name: oldID.String()}
-	err = repo.Backend().Remove(ctx, h)
+	err = repository.RemoveKey(ctx, repo, oldID)
 	if err != nil {
 		return err
 	}
@@ -194,8 +191,7 @@ func switchToNewKeyAndRemoveIfBroken(ctx context.Context, repo *repository.Repos
 	err := repo.SearchKey(ctx, pw, 0, key.ID().String())
 	if err != nil {
 		// the key is invalid, try to remove it
-		h := backend.Handle{Type: restic.KeyFile, Name: key.ID().String()}
-		_ = repo.Backend().Remove(ctx, h)
+		_ = repository.RemoveKey(ctx, repo, key.ID())
 		return errors.Fatalf("failed to access repository with new key: %v", err)
 	}
 	return nil

@@ -743,12 +743,19 @@ func (r *Repository) SearchKey(ctx context.Context, password string, maxKeys int
 		return err
 	}
 
+	oldKey := r.key
+	oldKeyID := r.keyID
+
 	r.key = key.master
 	r.keyID = key.ID()
 	cfg, err := restic.LoadConfig(ctx, r)
-	if err == crypto.ErrUnauthenticated {
-		return fmt.Errorf("config or key %v is damaged: %w", key.ID(), err)
-	} else if err != nil {
+	if err != nil {
+		r.key = oldKey
+		r.keyID = oldKeyID
+
+		if err == crypto.ErrUnauthenticated {
+			return fmt.Errorf("config or key %v is damaged: %w", key.ID(), err)
+		}
 		return fmt.Errorf("config cannot be loaded: %w", err)
 	}
 
