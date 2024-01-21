@@ -409,6 +409,8 @@ The ``key list`` command returns an array of objects with the following structur
 +--------------+------------------------------------+
 
 
+.. _ls json:
+
 ls
 --
 
