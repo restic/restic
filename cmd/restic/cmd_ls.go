@@ -66,7 +66,7 @@ func init() {
 	flags.BoolVarP(&lsOptions.ListLong, "long", "l", false, "use a long listing format showing size and mode")
 	flags.BoolVar(&lsOptions.Recursive, "recursive", false, "include files in subfolders of the listed directories")
 	flags.BoolVar(&lsOptions.HumanReadable, "human-readable", false, "print sizes in human readable format")
-	flags.BoolVar(&lsOptions.Ncdu, "ncdu", false, "output NCDU save format (pipe into 'ncdu -f -')")
+	flags.BoolVar(&lsOptions.Ncdu, "ncdu", false, "output NCDU export format (pipe into 'ncdu -f -')")
 }
 
 type lsPrinter interface {
@@ -255,6 +255,9 @@ func (p *textLsPrinter) Close()            {}
 func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []string) error {
 	if len(args) == 0 {
 		return errors.Fatal("no snapshot ID specified, specify snapshot ID or use special ID 'latest'")
+	}
+	if opts.Ncdu && gopts.JSON {
+		return errors.Fatal("only either '--json' or '--ncdu' can be specified")
 	}
 
 	// extract any specific directories to walk
