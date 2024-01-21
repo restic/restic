@@ -24,7 +24,7 @@ func testRunLs(t testing.TB, gopts GlobalOptions, snapshotID string) []string {
 	return strings.Split(string(out), "\n")
 }
 
-func assertIsValidJson(t *testing.T, data []byte) {
+func assertIsValidJSON(t *testing.T, data []byte) {
 	// Sanity check: output must be valid JSON.
 	var v interface{}
 	err := json.Unmarshal(data, &v)
@@ -40,8 +40,8 @@ func TestRunLsNcdu(t *testing.T) {
 	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
 
 	ncdu := testRunLsWithOpts(t, env.gopts, LsOptions{Ncdu: true}, []string{"latest"})
-	assertIsValidJson(t, ncdu)
+	assertIsValidJSON(t, ncdu)
 
 	ncdu = testRunLsWithOpts(t, env.gopts, LsOptions{Ncdu: true}, []string{"latest", "/testdata"})
-	assertIsValidJson(t, ncdu)
+	assertIsValidJSON(t, ncdu)
 }

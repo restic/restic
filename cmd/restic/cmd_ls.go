@@ -148,8 +148,8 @@ func lsNodeJSON(enc *json.Encoder, path string, node *restic.Node) error {
 	return enc.Encode(n)
 }
 
-func (p *jsonLsPrinter) LeaveDir(path string) {}
-func (p *jsonLsPrinter) Close()               {}
+func (p *jsonLsPrinter) LeaveDir(_ string) {}
+func (p *jsonLsPrinter) Close()            {}
 
 type ncduLsPrinter struct {
 	out   io.Writer
@@ -171,7 +171,7 @@ func (p *ncduLsPrinter) Snapshot(sn *restic.Snapshot) {
 	fmt.Fprintf(p.out, "[%d, %d, %s", NcduMajorVer, NcduMinorVer, string(snapshotBytes))
 }
 
-func lsNcduNode(path string, node *restic.Node) ([]byte, error) {
+func lsNcduNode(_ string, node *restic.Node) ([]byte, error) {
 	type NcduNode struct {
 		Name   string `json:"name"`
 		Asize  uint64 `json:"asize"`
@@ -180,8 +180,8 @@ func lsNcduNode(path string, node *restic.Node) ([]byte, error) {
 		Ino    uint64 `json:"ino"`
 		NLink  uint64 `json:"nlink"`
 		NotReg bool   `json:"notreg"`
-		Uid    uint32 `json:"uid"`
-		Gid    uint32 `json:"gid"`
+		UID    uint32 `json:"uid"`
+		GID    uint32 `json:"gid"`
 		Mode   uint16 `json:"mode"`
 		Mtime  int64  `json:"mtime"`
 	}
@@ -194,8 +194,8 @@ func lsNcduNode(path string, node *restic.Node) ([]byte, error) {
 		Ino:    node.Inode,
 		NLink:  node.Links,
 		NotReg: node.Type != "dir" && node.Type != "file",
-		Uid:    node.UID,
-		Gid:    node.GID,
+		UID:    node.UID,
+		GID:    node.GID,
 		Mode:   uint16(node.Mode & os.ModePerm),
 		Mtime:  node.ModTime.Unix(),
 	}
@@ -214,20 +214,20 @@ func lsNcduNode(path string, node *restic.Node) ([]byte, error) {
 }
 
 func (p *ncduLsPrinter) Node(path string, node *restic.Node) {
-	outJson, err := lsNcduNode(path, node)
+	out, err := lsNcduNode(path, node)
 	if err != nil {
 		Warnf("JSON encode failed: %v\n", err)
 	}
 
 	if node.Type == "dir" {
-		fmt.Fprintf(p.out, ",\n%s[\n%s%s", strings.Repeat("  ", p.depth), strings.Repeat("  ", p.depth+1), string(outJson))
+		fmt.Fprintf(p.out, ",\n%s[\n%s%s", strings.Repeat("  ", p.depth), strings.Repeat("  ", p.depth+1), string(out))
 		p.depth++
 	} else {
-		fmt.Fprintf(p.out, ",\n%s%s", strings.Repeat("  ", p.depth), string(outJson))
+		fmt.Fprintf(p.out, ",\n%s%s", strings.Repeat("  ", p.depth), string(out))
 	}
 }
 
-func (p *ncduLsPrinter) LeaveDir(path string) {
+func (p *ncduLsPrinter) LeaveDir(_ string) {
 	p.depth--
 	fmt.Fprintf(p.out, "\n%s]", strings.Repeat("  ", p.depth))
 }
@@ -249,8 +249,8 @@ func (p *textLsPrinter) Node(path string, node *restic.Node) {
 	Printf("%s\n", formatNode(path, node, p.ListLong, p.HumanReadable))
 }
 
-func (p *textLsPrinter) LeaveDir(path string) {}
-func (p *textLsPrinter) Close()               {}
+func (p *textLsPrinter) LeaveDir(_ string) {}
+func (p *textLsPrinter) Close()            {}
 
 func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []string) error {
 	if len(args) == 0 {

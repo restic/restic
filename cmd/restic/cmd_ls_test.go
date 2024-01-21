@@ -16,7 +16,7 @@ type lsTestNode struct {
 	restic.Node
 }
 
-var lsTestNodes []lsTestNode = []lsTestNode{
+var lsTestNodes = []lsTestNode{
 	// Mode is omitted when zero.
 	// Permissions, by convention is "-" per mode bit
 	{
