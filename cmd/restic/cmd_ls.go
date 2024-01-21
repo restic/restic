@@ -220,8 +220,8 @@ func (p *ncduLsPrinter) Node(path string, node *restic.Node) {
 	}
 
 	if node.Type == "dir" {
+		fmt.Fprintf(p.out, ",\n%s[\n%s%s", strings.Repeat("  ", p.depth), strings.Repeat("  ", p.depth+1), string(outJson))
 		p.depth++
-		fmt.Fprintf(p.out, ", [\n%s%s", strings.Repeat("  ", p.depth), string(outJson))
 	} else {
 		fmt.Fprintf(p.out, ",\n%s%s", strings.Repeat("  ", p.depth), string(outJson))
 	}

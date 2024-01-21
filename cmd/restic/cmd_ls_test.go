@@ -126,3 +126,34 @@ func TestLsNcduNode(t *testing.T) {
 		rtest.OK(t, err)
 	}
 }
+
+func TestLsNcdu(t *testing.T) {
+	var buf bytes.Buffer
+	printer := &ncduLsPrinter{
+		out: &buf,
+	}
+
+	printer.Snapshot(&restic.Snapshot{
+		Hostname: "host",
+		Paths:    []string{"/example"},
+	})
+	printer.Node("/directory", &restic.Node{
+		Type: "dir",
+		Name: "directory",
+	})
+	printer.Node("/directory/data", &restic.Node{
+		Type: "file",
+		Name: "data",
+		Size: 42,
+	})
+	printer.LeaveDir("/directory")
+	printer.Close()
+
+	rtest.Equals(t, `[1, 2, {"time":"0001-01-01T00:00:00Z","tree":null,"paths":["/example"],"hostname":"host"},
+  [
+    {"name":"directory","asize":0,"dsize":0,"dev":0,"ino":0,"nlink":0,"notreg":false,"uid":0,"gid":0,"mode":0,"mtime":-62135596800},
+    {"name":"data","asize":42,"dsize":42,"dev":0,"ino":0,"nlink":0,"notreg":false,"uid":0,"gid":0,"mode":0,"mtime":-62135596800}
+  ]
+]
+`, buf.String())
+}
