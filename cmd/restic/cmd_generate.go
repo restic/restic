@@ -21,7 +21,9 @@ EXIT STATUS
 Exit status is 0 if the command was successful, and non-zero if there was any error.
 `,
 	DisableAutoGenTag: true,
-	RunE:              runGenerate,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runGenerate(genOpts, args)
+	},
 }
 
 type generateOptions struct {
@@ -90,48 +92,48 @@ func writePowerShellCompletion(file string) error {
 	return cmdRoot.GenPowerShellCompletionFile(file)
 }
 
-func runGenerate(_ *cobra.Command, args []string) error {
+func runGenerate(opts generateOptions, args []string) error {
 	if len(args) > 0 {
 		return errors.Fatal("the generate command expects no arguments, only options - please see `restic help generate` for usage and flags")
 	}
 
-	if genOpts.ManDir != "" {
-		err := writeManpages(genOpts.ManDir)
+	if opts.ManDir != "" {
+		err := writeManpages(opts.ManDir)
 		if err != nil {
 			return err
 		}
 	}
 
-	if genOpts.BashCompletionFile != "" {
-		err := writeBashCompletion(genOpts.BashCompletionFile)
+	if opts.BashCompletionFile != "" {
+		err := writeBashCompletion(opts.BashCompletionFile)
 		if err != nil {
 			return err
 		}
 	}
 
-	if genOpts.FishCompletionFile != "" {
-		err := writeFishCompletion(genOpts.FishCompletionFile)
+	if opts.FishCompletionFile != "" {
+		err := writeFishCompletion(opts.FishCompletionFile)
 		if err != nil {
 			return err
 		}
 	}
 
-	if genOpts.ZSHCompletionFile != "" {
-		err := writeZSHCompletion(genOpts.ZSHCompletionFile)
+	if opts.ZSHCompletionFile != "" {
+		err := writeZSHCompletion(opts.ZSHCompletionFile)
 		if err != nil {
 			return err
 		}
 	}
 
-	if genOpts.PowerShellCompletionFile != "" {
-		err := writePowerShellCompletion(genOpts.PowerShellCompletionFile)
+	if opts.PowerShellCompletionFile != "" {
+		err := writePowerShellCompletion(opts.PowerShellCompletionFile)
 		if err != nil {
 			return err
 		}
 	}
 
 	var empty generateOptions
-	if genOpts == empty {
+	if opts == empty {
 		return errors.Fatal("nothing to do, please specify at least one output file/dir")
 	}
 

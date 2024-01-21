@@ -210,7 +210,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 			Verbosef("%v filtered by %v:\n", sn, dirs)
 		}
 		printNode = func(path string, node *restic.Node) {
-			Printf("%s\n", formatNode(path, node, lsOptions.ListLong, lsOptions.HumanReadable))
+			Printf("%s\n", formatNode(path, node, opts.ListLong, opts.HumanReadable))
 		}
 	}
 

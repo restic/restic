@@ -13,7 +13,7 @@ import (
 
 func testRunKeyListOtherIDs(t testing.TB, gopts GlobalOptions) []string {
 	buf, err := withCaptureStdout(func() error {
-		return runKey(context.TODO(), gopts, []string{"list"})
+		return runKey(context.TODO(), gopts, KeyOptions{}, []string{"list"})
 	})
 	rtest.OK(t, err)
 
@@ -36,21 +36,20 @@ func testRunKeyAddNewKey(t testing.TB, newPassword string, gopts GlobalOptions) 
 		testKeyNewPassword = ""
 	}()
 
-	rtest.OK(t, runKey(context.TODO(), gopts, []string{"add"}))
+	rtest.OK(t, runKey(context.TODO(), gopts, KeyOptions{}, []string{"add"}))
 }
 
 func testRunKeyAddNewKeyUserHost(t testing.TB, gopts GlobalOptions) {
 	testKeyNewPassword = "john's geheimnis"
 	defer func() {
 		testKeyNewPassword = ""
-		keyUsername = ""
-		keyHostname = ""
 	}()
 
-	rtest.OK(t, cmdKey.Flags().Parse([]string{"--user=john", "--host=example.com"}))
-
 	t.Log("adding key for john@example.com")
-	rtest.OK(t, runKey(context.TODO(), gopts, []string{"add"}))
+	rtest.OK(t, runKey(context.TODO(), gopts, KeyOptions{
+		Username: "john",
+		Hostname: "example.com",
+	}, []string{"add"}))
 
 	repo, err := OpenRepository(context.TODO(), gopts)
 	rtest.OK(t, err)
@@ -67,13 +66,13 @@ func testRunKeyPasswd(t testing.TB, newPassword string, gopts GlobalOptions) {
 		testKeyNewPassword = ""
 	}()
 
-	rtest.OK(t, runKey(context.TODO(), gopts, []string{"passwd"}))
+	rtest.OK(t, runKey(context.TODO(), gopts, KeyOptions{}, []string{"passwd"}))
 }
 
 func testRunKeyRemove(t testing.TB, gopts GlobalOptions, IDs []string) {
 	t.Logf("remove %d keys: %q\n", len(IDs), IDs)
 	for _, id := range IDs {
-		rtest.OK(t, runKey(context.TODO(), gopts, []string{"remove", id}))
+		rtest.OK(t, runKey(context.TODO(), gopts, KeyOptions{}, []string{"remove", id}))
 	}
 }
 
@@ -103,7 +102,7 @@ func TestKeyAddRemove(t *testing.T) {
 
 	env.gopts.password = passwordList[len(passwordList)-1]
 	t.Logf("testing access with last password %q\n", env.gopts.password)
-	rtest.OK(t, runKey(context.TODO(), env.gopts, []string{"list"}))
+	rtest.OK(t, runKey(context.TODO(), env.gopts, KeyOptions{}, []string{"list"}))
 	testRunCheck(t, env.gopts)
 
 	testRunKeyAddNewKeyUserHost(t, env.gopts)
@@ -131,15 +130,15 @@ func TestKeyProblems(t *testing.T) {
 		testKeyNewPassword = ""
 	}()
 
-	err := runKey(context.TODO(), env.gopts, []string{"passwd"})
+	err := runKey(context.TODO(), env.gopts, KeyOptions{}, []string{"passwd"})
 	t.Log(err)
 	rtest.Assert(t, err != nil, "expected passwd change to fail")
 
-	err = runKey(context.TODO(), env.gopts, []string{"add"})
+	err = runKey(context.TODO(), env.gopts, KeyOptions{}, []string{"add"})
 	t.Log(err)
 	rtest.Assert(t, err != nil, "expected key adding to fail")
 
 	t.Logf("testing access with initial password %q\n", env.gopts.password)
-	rtest.OK(t, runKey(context.TODO(), env.gopts, []string{"list"}))
+	rtest.OK(t, runKey(context.TODO(), env.gopts, KeyOptions{}, []string{"list"}))
 	testRunCheck(t, env.gopts)
 }

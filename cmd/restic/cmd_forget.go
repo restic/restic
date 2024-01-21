@@ -33,7 +33,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runForget(cmd.Context(), forgetOptions, globalOptions, args)
+		return runForget(cmd.Context(), forgetOptions, forgetPruneOptions, globalOptions, args)
 	},
 }
 
@@ -98,6 +98,7 @@ type ForgetOptions struct {
 }
 
 var forgetOptions ForgetOptions
+var forgetPruneOptions PruneOptions
 
 func init() {
 	cmdRoot.AddCommand(cmdForget)
@@ -132,7 +133,7 @@ func init() {
 	f.BoolVar(&forgetOptions.Prune, "prune", false, "automatically run the 'prune' command if snapshots have been removed")
 
 	f.SortFlags = false
-	addPruneOptions(cmdForget)
+	addPruneOptions(cmdForget, &forgetPruneOptions)
 }
 
 func verifyForgetOptions(opts *ForgetOptions) error {
@@ -151,7 +152,7 @@ func verifyForgetOptions(opts *ForgetOptions) error {
 	return nil
 }
 
-func runForget(ctx context.Context, opts ForgetOptions, gopts GlobalOptions, args []string) error {
+func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOptions, gopts GlobalOptions, args []string) error {
 	err := verifyForgetOptions(&opts)
 	if err != nil {
 		return err
