@@ -93,12 +93,12 @@ func (t TreeMap) Connections() uint {
 
 // checkFunc returns a function suitable for walking the tree to check
 // something, and a function which will check the final result.
-type checkFunc func(t testing.TB) (walker WalkFunc, final func(testing.TB))
+type checkFunc func(t testing.TB) (walker WalkFunc, leaveDir func(path string), final func(testing.TB))
 
 // checkItemOrder ensures that the order of the 'path' arguments is the one passed in as 'want'.
 func checkItemOrder(want []string) checkFunc {
 	pos := 0
-	return func(t testing.TB) (walker WalkFunc, final func(testing.TB)) {
+	return func(t testing.TB) (walker WalkFunc, leaveDir func(path string), final func(testing.TB)) {
 		walker = func(treeID restic.ID, path string, node *restic.Node, err error) error {
 			if err != nil {
 				t.Errorf("error walking %v: %v", path, err)
@@ -117,20 +117,24 @@ func checkItemOrder(want []string) checkFunc {
 			return nil
 		}
 
+		leaveDir = func(path string) {
+			_ = walker(restic.ID{}, "leave: "+path, nil, nil)
+		}
+
 		final = func(t testing.TB) {
 			if pos != len(want) {
 				t.Errorf("not enough items returned, want %d, got %d", len(want), pos)
 			}
 		}
 
-		return walker, final
+		return walker, leaveDir, final
 	}
 }
 
 // checkParentTreeOrder ensures that the order of the 'parentID' arguments is the one passed in as 'want'.
 func checkParentTreeOrder(want []string) checkFunc {
 	pos := 0
-	return func(t testing.TB) (walker WalkFunc, final func(testing.TB)) {
+	return func(t testing.TB) (walker WalkFunc, leaveDir func(path string), final func(testing.TB)) {
 		walker = func(treeID restic.ID, path string, node *restic.Node, err error) error {
 			if err != nil {
 				t.Errorf("error walking %v: %v", path, err)
@@ -155,7 +159,7 @@ func checkParentTreeOrder(want []string) checkFunc {
 			}
 		}
 
-		return walker, final
+		return walker, nil, final
 	}
 }
 
@@ -164,7 +168,7 @@ func checkParentTreeOrder(want []string) checkFunc {
 func checkSkipFor(skipFor map[string]struct{}, wantPaths []string) checkFunc {
 	var pos int
 
-	return func(t testing.TB) (walker WalkFunc, final func(testing.TB)) {
+	return func(t testing.TB) (walker WalkFunc, leaveDir func(path string), final func(testing.TB)) {
 		walker = func(treeID restic.ID, path string, node *restic.Node, err error) error {
 			if err != nil {
 				t.Errorf("error walking %v: %v", path, err)
@@ -188,13 +192,17 @@ func checkSkipFor(skipFor map[string]struct{}, wantPaths []string) checkFunc {
 			return nil
 		}
 
+		leaveDir = func(path string) {
+			_ = walker(restic.ID{}, "leave: "+path, nil, nil)
+		}
+
 		final = func(t testing.TB) {
 			if pos != len(wantPaths) {
 				t.Errorf("wrong number of paths returned, want %d, got %d", len(wantPaths), pos)
 			}
 		}
 
-		return walker, final
+		return walker, leaveDir, final
 	}
 }
 
@@ -216,6 +224,8 @@ func TestWalker(t *testing.T) {
 					"/foo",
 					"/subdir",
 					"/subdir/subfile",
+					"leave: /subdir",
+					"leave: /",
 				}),
 				checkParentTreeOrder([]string{
 					"a760536a8fd64dd63f8dd95d85d788d71fd1bee6828619350daf6959dcb499a0", // tree /
@@ -230,6 +240,7 @@ func TestWalker(t *testing.T) {
 						"/",
 						"/foo",
 						"/subdir",
+						"leave: /",
 					},
 				),
 				checkSkipFor(
@@ -260,10 +271,14 @@ func TestWalker(t *testing.T) {
 					"/foo",
 					"/subdir1",
 					"/subdir1/subfile1",
+					"leave: /subdir1",
 					"/subdir2",
 					"/subdir2/subfile2",
 					"/subdir2/subsubdir2",
 					"/subdir2/subsubdir2/subsubfile3",
+					"leave: /subdir2/subsubdir2",
+					"leave: /subdir2",
+					"leave: /",
 				}),
 				checkParentTreeOrder([]string{
 					"7a0e59b986cc83167d9fbeeefc54e4629770124c5825d391f7ee0598667fcdf1", // tree /
@@ -286,6 +301,9 @@ func TestWalker(t *testing.T) {
 						"/subdir2/subfile2",
 						"/subdir2/subsubdir2",
 						"/subdir2/subsubdir2/subsubfile3",
+						"leave: /subdir2/subsubdir2",
+						"leave: /subdir2",
+						"leave: /",
 					},
 				),
 				checkSkipFor(
@@ -299,6 +317,8 @@ func TestWalker(t *testing.T) {
 						"/subdir2",
 						"/subdir2/subfile2",
 						"/subdir2/subsubdir2",
+						"leave: /subdir2",
+						"leave: /",
 					},
 				),
 				checkSkipFor(
@@ -307,6 +327,7 @@ func TestWalker(t *testing.T) {
 					}, []string{
 						"/",
 						"/foo",
+						"leave: /",
 					},
 				),
 			},
@@ -339,15 +360,19 @@ func TestWalker(t *testing.T) {
 					"/subdir1/subfile1",
 					"/subdir1/subfile2",
 					"/subdir1/subfile3",
+					"leave: /subdir1",
 					"/subdir2",
 					"/subdir2/subfile1",
 					"/subdir2/subfile2",
 					"/subdir2/subfile3",
+					"leave: /subdir2",
 					"/subdir3",
 					"/subdir3/subfile1",
 					"/subdir3/subfile2",
 					"/subdir3/subfile3",
+					"leave: /subdir3",
 					"/zzz other",
+					"leave: /",
 				}),
 				checkParentTreeOrder([]string{
 					"c2efeff7f217a4dfa12a16e8bb3cefedd37c00873605c29e5271c6061030672f", // tree /
@@ -385,13 +410,20 @@ func TestWalker(t *testing.T) {
 				checkItemOrder([]string{
 					"/",
 					"/subdir1",
+					"leave: /subdir1",
 					"/subdir2",
+					"leave: /subdir2",
 					"/subdir3",
 					"/subdir3/file",
+					"leave: /subdir3",
 					"/subdir4",
 					"/subdir4/file",
+					"leave: /subdir4",
 					"/subdir5",
+					"leave: /subdir5",
 					"/subdir6",
+					"leave: /subdir6",
+					"leave: /",
 				}),
 			},
 		},
@@ -405,8 +437,11 @@ func TestWalker(t *testing.T) {
 					ctx, cancel := context.WithCancel(context.TODO())
 					defer cancel()
 
-					fn, last := check(t)
-					err := Walk(ctx, repo, root, WalkVisitor{ProcessNode: fn})
+					fn, leaveDir, last := check(t)
+					err := Walk(ctx, repo, root, WalkVisitor{
+						ProcessNode: fn,
+						LeaveDir:    leaveDir,
+					})
 					if err != nil {
 						t.Error(err)
 					}
