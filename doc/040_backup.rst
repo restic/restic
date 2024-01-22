@@ -173,7 +173,7 @@ attributes have to match for its contents to be presumed unchanged:
  * Modification timestamp (mtime).
  * Metadata change timestamp (ctime).
  * File size.
- * Inode number (internal number used to reference a file in a filesystem).
+ * inode number (internal number used to reference a file in a filesystem).
 
 The reason for requiring both mtime and ctime to match is that Unix programs
 can freely change mtime (and some do). In such cases, a ctime change may be
@@ -482,13 +482,12 @@ want to save the access time for files and directories, you can pass the
 ``--with-atime`` option to the ``backup`` command.
 
 Note that ``restic`` does not back up some metadata associated with files. Of
-particular note are::
+particular note are:
 
-  - file creation date on Unix platforms
-  - inode flags on Unix platforms
-  - file ownership and ACLs on Windows
-  - the "hidden" flag on Windows
-
+ * File creation date on Unix platforms
+ * inode flags on Unix platforms
+ * File ownership and ACLs on Windows
+ * The "hidden" flag on Windows
 
 Reading data from a command
 ***************************
@@ -513,7 +512,6 @@ A different name can be specified with ``--stdin-filename``:
 Restic uses the command exit code to determine whether the command succeeded. A
 non-zero exit code from the command causes restic to cancel the backup. This causes
 restic to fail with exit code 1. No snapshot will be created in this case.
-
 
 Reading data from stdin
 ***********************
@@ -554,7 +552,6 @@ whole chain return a non-zero exit code) and you must check the exit code of
 the pipe and act accordingly (e.g., remove the last backup). Refer to the
 `Use the Unofficial Bash Strict Mode <http://redsymbol.net/articles/unofficial-bash-strict-mode/>`__
 for more details on this.
-
 
 Tags for backup
 ***************
@@ -683,7 +680,6 @@ See :ref:`caching` for the rules concerning cache locations when
 The external programs that restic may execute include ``rclone`` (for rclone
 backends) and ``ssh`` (for the SFTP backend). These may respond to further
 environment variables and configuration files; see their respective manuals.
-
 
 Exit status codes
 *****************
