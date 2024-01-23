@@ -170,10 +170,10 @@ On **Unix** (including Linux and Mac), given that a file lives at the same
 location as a file in a previous backup, the following file metadata
 attributes have to match for its contents to be presumed unchanged:
 
- * Modification timestamp (mtime).
- * Metadata change timestamp (ctime).
- * File size.
- * Inode number (internal number used to reference a file in a filesystem).
+* Modification timestamp (mtime).
+* Metadata change timestamp (ctime).
+* File size.
+* Inode number (internal number used to reference a file in a filesystem).
 
 The reason for requiring both mtime and ctime to match is that Unix programs
 can freely change mtime (and some do). In such cases, a ctime change may be
@@ -182,9 +182,9 @@ the only hint that a file did change.
 The following ``restic backup`` command line flags modify the change detection
 rules:
 
- * ``--force``: turn off change detection and rescan all files.
- * ``--ignore-ctime``: require mtime to match, but allow ctime to differ.
- * ``--ignore-inode``: require mtime to match, but allow inode number
+* ``--force``: turn off change detection and rescan all files.
+* ``--ignore-ctime``: require mtime to match, but allow ctime to differ.
+* ``--ignore-inode``: require mtime to match, but allow inode number
    and ctime to differ.
 
 The option ``--ignore-inode`` exists to support FUSE-based filesystems and
@@ -250,9 +250,9 @@ It can be used like this:
 
 This instructs restic to exclude files matching the following criteria:
 
- * All files matching ``*.c`` (parameter ``--exclude``)
- * All files matching ``*.go`` (second line in ``excludes.txt``)
- * All files and sub-directories named ``bar`` which reside somewhere below a directory called ``foo`` (fourth line in ``excludes.txt``)
+* All files matching ``*.c`` (parameter ``--exclude``)
+* All files matching ``*.go`` (second line in ``excludes.txt``)
+* All files and sub-directories named ``bar`` which reside somewhere below a directory called ``foo`` (fourth line in ``excludes.txt``)
 
 Patterns use the syntax of the Go function
 `filepath.Match <https://pkg.go.dev/path/filepath#Match>`__
@@ -270,8 +270,8 @@ environment variable (depending on your operating system).
 
 Patterns need to match on complete path components. For example, the pattern ``foo``:
 
- * matches ``/dir1/foo/dir2/file`` and ``/dir/foo``
- * does not match ``/dir/foobar`` or ``barfoo``
+* matches ``/dir1/foo/dir2/file`` and ``/dir/foo``
+* does not match ``/dir/foobar`` or ``barfoo``
 
 A trailing ``/`` is ignored, a leading ``/`` anchors the pattern at the root directory.
 This means, ``/bin`` matches ``/bin/bash`` but does not match ``/usr/bin/restic``.
@@ -281,9 +281,9 @@ e.g. ``b*ash`` matches ``/bin/bash`` but does not match ``/bin/ash``. For this,
 the special wildcard ``**`` can be used to match arbitrary sub-directories: The
 pattern ``foo/**/bar`` matches:
 
- * ``/dir1/foo/dir2/bar/file``
- * ``/foo/bar/file``
- * ``/tmp/foo/bar``
+* ``/dir1/foo/dir2/bar/file``
+* ``/foo/bar/file``
+* ``/tmp/foo/bar``
 
 Spaces in patterns listed in an exclude file can be specified verbatim. That is,
 in order to exclude a file named ``foo bar star.txt``, put that just as it reads
@@ -298,9 +298,9 @@ some escaping in order to pass the name/pattern as a single argument to restic.
 
 On most Unixy shells, you can either quote or use backslashes. For example:
 
- * ``--exclude='foo bar star/foo.txt'``
- * ``--exclude="foo bar star/foo.txt"``
- * ``--exclude=foo\ bar\ star/foo.txt``
+* ``--exclude='foo bar star/foo.txt'``
+* ``--exclude="foo bar star/foo.txt"``
+* ``--exclude=foo\ bar\ star/foo.txt``
 
 If a pattern starts with exclamation mark and matches a file that
 was previously matched by a regular pattern, the match is cancelled.
@@ -482,13 +482,12 @@ want to save the access time for files and directories, you can pass the
 ``--with-atime`` option to the ``backup`` command.
 
 Note that ``restic`` does not back up some metadata associated with files. Of
-particular note are::
+particular note are:
 
-  - file creation date on Unix platforms
-  - inode flags on Unix platforms
-  - file ownership and ACLs on Windows
-  - the "hidden" flag on Windows
-
+* File creation date on Unix platforms
+* Inode flags on Unix platforms
+* File ownership and ACLs on Windows
+* The "hidden" flag on Windows
 
 Reading data from a command
 ***************************
@@ -513,7 +512,6 @@ A different name can be specified with ``--stdin-filename``:
 Restic uses the command exit code to determine whether the command succeeded. A
 non-zero exit code from the command causes restic to cancel the backup. This causes
 restic to fail with exit code 1. No snapshot will be created in this case.
-
 
 Reading data from stdin
 ***********************
@@ -554,7 +552,6 @@ whole chain return a non-zero exit code) and you must check the exit code of
 the pipe and act accordingly (e.g., remove the last backup). Refer to the
 `Use the Unofficial Bash Strict Mode <http://redsymbol.net/articles/unofficial-bash-strict-mode/>`__
 for more details on this.
-
 
 Tags for backup
 ***************
@@ -684,15 +681,14 @@ The external programs that restic may execute include ``rclone`` (for rclone
 backends) and ``ssh`` (for the SFTP backend). These may respond to further
 environment variables and configuration files; see their respective manuals.
 
-
 Exit status codes
 *****************
 
 Restic returns one of the following exit status codes after the backup command is run:
 
- * 0 when the backup was successful (snapshot with all source files created)
- * 1 when there was a fatal error (no snapshot created)
- * 3 when some source files could not be read (incomplete snapshot with remaining files created)
+* 0 when the backup was successful (snapshot with all source files created)
+* 1 when there was a fatal error (no snapshot created)
+* 3 when some source files could not be read (incomplete snapshot with remaining files created)
 
 Fatal errors occur for example when restic is unable to write to the backup destination, when
 there are network connectivity issues preventing successful communication, or when an invalid

@@ -9,14 +9,14 @@ restic for version 0.10.0 and later. For restic versions down to 0.9.3 please
 refer to the documentation for the respective version. The binary produced
 depends on the following things:
 
- * The source code for the release
- * The exact version of the official `Go compiler <https://go.dev>`__ used to produce the binaries (running ``restic version`` will print this)
- * The architecture and operating system the Go compiler runs on (Linux, ``amd64``)
- * The build tags (for official binaries, it's the tag ``selfupdate``)
- * The path where the source code is extracted to (``/restic``)
- * The path to the Go compiler (``/usr/local/go``)
- * The path to the Go workspace (``GOPATH=/home/build/go``)
- * Other environment variables (mostly ``$GOOS``, ``$GOARCH``, ``$CGO_ENABLED``)
+* The source code for the release
+* The exact version of the official `Go compiler <https://go.dev>`__ used to produce the binaries (running ``restic version`` will print this)
+* The architecture and operating system the Go compiler runs on (Linux, ``amd64``)
+* The build tags (for official binaries, it's the tag ``selfupdate``)
+* The path where the source code is extracted to (``/restic``)
+* The path to the Go compiler (``/usr/local/go``)
+* The path to the Go workspace (``GOPATH=/home/build/go``)
+* Other environment variables (mostly ``$GOOS``, ``$GOARCH``, ``$CGO_ENABLED``)
 
 In addition, The compressed ZIP files for Windows depends on the modification
 timestamp and filename of the binary contained in it. In order to reproduce the
@@ -69,9 +69,9 @@ container can be found in the `GitHub repository
 <https://github.com/restic/builder>`__
 
 The container serves the following goals:
- * Have a very controlled environment which is independent from the local system
- * Make it easy to have the correct version of the Go compiler at the right path
- * Make it easy to pass in the source code to build at a well-defined path
+* Have a very controlled environment which is independent from the local system
+* Make it easy to have the correct version of the Go compiler at the right path
+* Make it easy to pass in the source code to build at a well-defined path
 
 The following steps are necessary to build the binaries:
 
