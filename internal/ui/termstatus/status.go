@@ -105,7 +105,7 @@ func (t *Terminal) run(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			if !IsProcessBackground(t.fd) {
-				t.undoStatus(len(status))
+				t.writeStatus([]string{})
 			}
 
 			return
@@ -232,30 +232,6 @@ func (t *Terminal) runWithoutStatus(ctx context.Context) {
 				fmt.Fprintf(os.Stderr, "flush failed: %v\n", err)
 			}
 		}
-	}
-}
-
-func (t *Terminal) undoStatus(lines int) {
-	for i := 0; i < lines; i++ {
-		t.clearCurrentLine(t.wr, t.fd)
-
-		_, err := t.wr.WriteRune('\n')
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "write failed: %v\n", err)
-		}
-
-		// flush is needed so that the current line is updated
-		err = t.wr.Flush()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "flush failed: %v\n", err)
-		}
-	}
-
-	t.moveCursorUp(t.wr, t.fd, lines)
-
-	err := t.wr.Flush()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "flush failed: %v\n", err)
 	}
 }
 
