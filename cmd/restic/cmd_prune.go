@@ -66,10 +66,10 @@ func init() {
 	f := cmdPrune.Flags()
 	f.BoolVarP(&pruneOptions.DryRun, "dry-run", "n", false, "do not modify the repository, just print what would be done")
 	f.StringVarP(&pruneOptions.UnsafeNoSpaceRecovery, "unsafe-recover-no-free-space", "", "", "UNSAFE, READ THE DOCUMENTATION BEFORE USING! Try to recover a repository stuck with no free space. Do not use without trying out 'prune --max-repack-size 0' first.")
-	addPruneOptions(cmdPrune)
+	addPruneOptions(cmdPrune, &pruneOptions)
 }
 
-func addPruneOptions(c *cobra.Command) {
+func addPruneOptions(c *cobra.Command, pruneOptions *PruneOptions) {
 	f := c.Flags()
 	f.StringVar(&pruneOptions.MaxUnused, "max-unused", "5%", "tolerate given `limit` of unused data (absolute value in bytes with suffixes k/K, m/M, g/G, t/T, a value in % or the word 'unlimited')")
 	f.StringVar(&pruneOptions.MaxRepackSize, "max-repack-size", "", "maximum `size` to repack (allowed suffixes: k/K, m/M, g/G, t/T)")

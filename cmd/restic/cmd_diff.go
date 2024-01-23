@@ -401,7 +401,7 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []
 
 	c := &Comparer{
 		repo: repo,
-		opts: diffOptions,
+		opts: opts,
 		printChange: func(change *Change) {
 			Printf("%-5s%v\n", change.Modifier, change.Path)
 		},

@@ -12,7 +12,7 @@ import (
 
 func testRunList(t testing.TB, tpe string, opts GlobalOptions) restic.IDs {
 	buf, err := withCaptureStdout(func() error {
-		return runList(context.TODO(), cmdList, opts, []string{tpe})
+		return runList(context.TODO(), opts, []string{tpe})
 	})
 	rtest.OK(t, err)
 	return parseIDsFromReader(t, buf)

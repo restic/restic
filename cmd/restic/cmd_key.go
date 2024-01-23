@@ -29,23 +29,25 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runKey(cmd.Context(), globalOptions, args)
+		return runKey(cmd.Context(), globalOptions, keyOpts, args)
 	},
 }
 
-var (
-	newPasswordFile string
-	keyUsername     string
-	keyHostname     string
-)
+type KeyOptions struct {
+	NewPasswordFile string
+	Username        string
+	Hostname        string
+}
+
+var keyOpts KeyOptions
 
 func init() {
 	cmdRoot.AddCommand(cmdKey)
 
 	flags := cmdKey.Flags()
-	flags.StringVarP(&newPasswordFile, "new-password-file", "", "", "`file` from which to read the new password")
-	flags.StringVarP(&keyUsername, "user", "", "", "the username for new keys")
-	flags.StringVarP(&keyHostname, "host", "", "", "the hostname for new keys")
+	flags.StringVarP(&keyOpts.NewPasswordFile, "new-password-file", "", "", "`file` from which to read the new password")
+	flags.StringVarP(&keyOpts.Username, "user", "", "", "the username for new keys")
+	flags.StringVarP(&keyOpts.Hostname, "host", "", "", "the hostname for new keys")
 }
 
 func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions) error {
@@ -105,7 +107,7 @@ func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions
 // testKeyNewPassword is used to set a new password during integration testing.
 var testKeyNewPassword string
 
-func getNewPassword(gopts GlobalOptions) (string, error) {
+func getNewPassword(gopts GlobalOptions, newPasswordFile string) (string, error) {
 	if testKeyNewPassword != "" {
 		return testKeyNewPassword, nil
 	}
@@ -124,13 +126,13 @@ func getNewPassword(gopts GlobalOptions) (string, error) {
 		"enter password again: ")
 }
 
-func addKey(ctx context.Context, repo *repository.Repository, gopts GlobalOptions) error {
-	pw, err := getNewPassword(gopts)
+func addKey(ctx context.Context, repo *repository.Repository, gopts GlobalOptions, opts KeyOptions) error {
+	pw, err := getNewPassword(gopts, opts.NewPasswordFile)
 	if err != nil {
 		return err
 	}
 
-	id, err := repository.AddKey(ctx, repo, pw, keyUsername, keyHostname, repo.Key())
+	id, err := repository.AddKey(ctx, repo, pw, opts.Username, opts.Hostname, repo.Key())
 	if err != nil {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
@@ -160,8 +162,8 @@ func deleteKey(ctx context.Context, repo *repository.Repository, id restic.ID) e
 	return nil
 }
 
-func changePassword(ctx context.Context, repo *repository.Repository, gopts GlobalOptions) error {
-	pw, err := getNewPassword(gopts)
+func changePassword(ctx context.Context, repo *repository.Repository, gopts GlobalOptions, newPasswordFile string) error {
+	pw, err := getNewPassword(gopts, newPasswordFile)
 	if err != nil {
 		return err
 	}
@@ -201,7 +203,7 @@ func switchToNewKeyAndRemoveIfBroken(ctx context.Context, repo *repository.Repos
 	return nil
 }
 
-func runKey(ctx context.Context, gopts GlobalOptions, args []string) error {
+func runKey(ctx context.Context, gopts GlobalOptions, opts KeyOptions, args []string) error {
 	if len(args) < 1 || (args[0] == "remove" && len(args) != 2) || (args[0] != "remove" && len(args) != 1) {
 		return errors.Fatal("wrong number of arguments")
 	}
@@ -230,7 +232,7 @@ func runKey(ctx context.Context, gopts GlobalOptions, args []string) error {
 			return err
 		}
 
-		return addKey(ctx, repo, gopts)
+		return addKey(ctx, repo, gopts, opts)
 	case "remove":
 		lock, ctx, err := lockRepoExclusive(ctx, repo, gopts.RetryLock, gopts.JSON)
 		defer unlockRepo(lock)
@@ -251,7 +253,7 @@ func runKey(ctx context.Context, gopts GlobalOptions, args []string) error {
 			return err
 		}
 
-		return changePassword(ctx, repo, gopts)
+		return changePassword(ctx, repo, gopts, opts.NewPasswordFile)
 	}
 
 	return nil

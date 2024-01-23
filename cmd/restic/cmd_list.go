@@ -23,7 +23,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runList(cmd.Context(), cmd, globalOptions, args)
+		return runList(cmd.Context(), globalOptions, args)
 	},
 }
 
@@ -31,9 +31,9 @@ func init() {
 	cmdRoot.AddCommand(cmdList)
 }
 
-func runList(ctx context.Context, cmd *cobra.Command, gopts GlobalOptions, args []string) error {
+func runList(ctx context.Context, gopts GlobalOptions, args []string) error {
 	if len(args) != 1 {
-		return errors.Fatal("type not specified, usage: " + cmd.Use)
+		return errors.Fatal("type not specified")
 	}
 
 	repo, err := OpenRepository(ctx, gopts)
