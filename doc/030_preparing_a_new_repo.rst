@@ -35,15 +35,15 @@ environment variable ``RESTIC_REPOSITORY_FILE``.
 For automating the supply of the repository password to restic, several options
 exist:
 
- * Setting the environment variable ``RESTIC_PASSWORD``
+* Setting the environment variable ``RESTIC_PASSWORD``
 
- * Specifying the path to a file with the password via the option
-   ``--password-file`` or the environment variable ``RESTIC_PASSWORD_FILE``
+* Specifying the path to a file with the password via the option
+  ``--password-file`` or the environment variable ``RESTIC_PASSWORD_FILE``
 
- * Configuring a program to be called when the password is needed via the
-   option ``--password-command`` or the environment variable
-   ``RESTIC_PASSWORD_COMMAND``
-   
+* Configuring a program to be called when the password is needed via the
+  option ``--password-command`` or the environment variable
+  ``RESTIC_PASSWORD_COMMAND``
+
 The ``init`` command has an option called ``--repository-version`` which can
 be used to explicitly set the version of the new repository. By default, the
 current stable version is used (see table below). The alias ``latest`` will
@@ -709,9 +709,9 @@ For debugging rclone, you can set the environment variable ``RCLONE_VERBOSE=2``.
 
 The rclone backend has three additional options:
 
- * ``-o rclone.program`` specifies the path to rclone, the default value is just ``rclone``
- * ``-o rclone.args`` allows setting the arguments passed to rclone, by default this is ``serve restic --stdio --b2-hard-delete``
- * ``-o rclone.timeout`` specifies timeout for waiting on repository opening, the default value is ``1m``
+* ``-o rclone.program`` specifies the path to rclone, the default value is just ``rclone``
+* ``-o rclone.args`` allows setting the arguments passed to rclone, by default this is ``serve restic --stdio --b2-hard-delete``
+* ``-o rclone.timeout`` specifies timeout for waiting on repository opening, the default value is ``1m``
 
 The reason for the ``--b2-hard-delete`` parameters can be found in the corresponding GitHub `issue #1657`_.
 
