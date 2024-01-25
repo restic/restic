@@ -142,7 +142,7 @@ func addKey(ctx context.Context, repo *repository.Repository, gopts GlobalOption
 		return err
 	}
 
-	Verbosef("saved new key as %s\n", id)
+	Verbosef("saved new key with ID %s\n", id.ID())
 
 	return nil
 }
