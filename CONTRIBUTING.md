@@ -6,7 +6,8 @@ Ways to Help Out
 Thank you for your contribution! Please **open an issue first** (or add a
 comment to an existing issue) if you plan to work on any code or add a new
 feature. This way, duplicate work is prevented and we can discuss your ideas
-and design first.
+and design first. Small bugfixes are an exception to this rule, just open a
+pull request in this case.
 
 There are several ways you can help us out. First of all code contributions and
 bug fixes are most welcome. However even "minor" details as fixing spelling
