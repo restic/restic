@@ -70,7 +70,7 @@ func sendNodes(ctx context.Context, repo restic.BlobLoader, root *restic.Node, c
 		return nil
 	}
 
-	err := walker.Walk(ctx, repo, *root.Subtree, func(_ restic.ID, nodepath string, node *restic.Node, err error) error {
+	err := walker.Walk(ctx, repo, *root.Subtree, walker.WalkVisitor{ProcessNode: func(_ restic.ID, nodepath string, node *restic.Node, err error) error {
 		if err != nil {
 			return err
 		}
@@ -91,7 +91,7 @@ func sendNodes(ctx context.Context, repo restic.BlobLoader, root *restic.Node, c
 		}
 
 		return nil
-	})
+	}})
 
 	return err
 }
