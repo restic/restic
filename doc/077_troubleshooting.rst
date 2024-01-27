@@ -76,6 +76,8 @@ Similarly, if a repository is repeatedly damaged, please open an `issue on Githu
 somewhere. Please include the check output and additional information that might
 help locate the problem.
 
+If ``check`` detects damaged pack files, it will show instructions on how to repair
+them. Please follow the steps from the next section first.
 
 2. Backup the repository
 ************************
