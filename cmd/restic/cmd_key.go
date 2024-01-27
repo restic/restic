@@ -250,9 +250,9 @@ func runKey(ctx context.Context, gopts GlobalOptions, opts KeyOptions, args []st
 		}
 
 		return changePassword(ctx, repo, gopts, opts.NewPasswordFile)
+	default:
+		return errors.Fatal("invalid operation")
 	}
-
-	return nil
 }
 
 func loadPasswordFromFile(pwdFile string) (string, error) {
