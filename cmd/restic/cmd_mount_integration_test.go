@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -158,11 +157,6 @@ func checkSnapshots(t testing.TB, global GlobalOptions, repo *repository.Reposit
 func TestMount(t *testing.T) {
 	if !rtest.RunFuseTest {
 		t.Skip("Skipping fuse tests")
-	}
-
-	debugEnabled := debug.TestLogToStderr(t)
-	if debugEnabled {
-		defer debug.TestDisableLog(t)
 	}
 
 	env, cleanup := withTestEnvironment(t)

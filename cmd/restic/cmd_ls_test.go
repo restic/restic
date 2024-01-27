@@ -87,11 +87,11 @@ var lsTestNodes = []lsTestNode{
 
 func TestLsNodeJSON(t *testing.T) {
 	for i, expect := range []string{
-		`{"name":"baz","type":"file","path":"/bar/baz","uid":10000000,"gid":20000000,"size":12345,"permissions":"----------","mtime":"0001-01-01T00:00:00Z","atime":"0001-01-01T00:00:00Z","ctime":"0001-01-01T00:00:00Z","struct_type":"node"}`,
-		`{"name":"empty","type":"file","path":"/foo/empty","uid":1001,"gid":1001,"size":0,"permissions":"----------","mtime":"0001-01-01T00:00:00Z","atime":"0001-01-01T00:00:00Z","ctime":"0001-01-01T00:00:00Z","struct_type":"node"}`,
-		`{"name":"link","type":"symlink","path":"/foo/link","uid":0,"gid":0,"mode":134218239,"permissions":"Lrwxrwxrwx","mtime":"0001-01-01T00:00:00Z","atime":"0001-01-01T00:00:00Z","ctime":"0001-01-01T00:00:00Z","struct_type":"node"}`,
-		`{"name":"directory","type":"dir","path":"/some/directory","uid":0,"gid":0,"mode":2147484141,"permissions":"drwxr-xr-x","mtime":"2020-01-02T03:04:05Z","atime":"2021-02-03T04:05:06.000000007Z","ctime":"2022-03-04T05:06:07.000000008Z","struct_type":"node"}`,
-		`{"name":"sticky","type":"dir","path":"/some/sticky","uid":0,"gid":0,"mode":2161115629,"permissions":"dugtrwxr-xr-x","mtime":"0001-01-01T00:00:00Z","atime":"0001-01-01T00:00:00Z","ctime":"0001-01-01T00:00:00Z","struct_type":"node"}`,
+		`{"name":"baz","type":"file","path":"/bar/baz","uid":10000000,"gid":20000000,"size":12345,"permissions":"----------","mtime":"0001-01-01T00:00:00Z","atime":"0001-01-01T00:00:00Z","ctime":"0001-01-01T00:00:00Z","message_type":"node","struct_type":"node"}`,
+		`{"name":"empty","type":"file","path":"/foo/empty","uid":1001,"gid":1001,"size":0,"permissions":"----------","mtime":"0001-01-01T00:00:00Z","atime":"0001-01-01T00:00:00Z","ctime":"0001-01-01T00:00:00Z","message_type":"node","struct_type":"node"}`,
+		`{"name":"link","type":"symlink","path":"/foo/link","uid":0,"gid":0,"mode":134218239,"permissions":"Lrwxrwxrwx","mtime":"0001-01-01T00:00:00Z","atime":"0001-01-01T00:00:00Z","ctime":"0001-01-01T00:00:00Z","message_type":"node","struct_type":"node"}`,
+		`{"name":"directory","type":"dir","path":"/some/directory","uid":0,"gid":0,"mode":2147484141,"permissions":"drwxr-xr-x","mtime":"2020-01-02T03:04:05Z","atime":"2021-02-03T04:05:06.000000007Z","ctime":"2022-03-04T05:06:07.000000008Z","message_type":"node","struct_type":"node"}`,
+		`{"name":"sticky","type":"dir","path":"/some/sticky","uid":0,"gid":0,"mode":2161115629,"permissions":"dugtrwxr-xr-x","mtime":"0001-01-01T00:00:00Z","atime":"0001-01-01T00:00:00Z","ctime":"0001-01-01T00:00:00Z","message_type":"node","struct_type":"node"}`,
 	} {
 		c := lsTestNodes[i]
 		buf := new(bytes.Buffer)
