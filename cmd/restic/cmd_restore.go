@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/restic/restic/internal/debug"
@@ -38,31 +37,9 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx := cmd.Context()
-		var wg sync.WaitGroup
-		cancelCtx, cancel := context.WithCancel(ctx)
-		defer func() {
-			// shutdown termstatus
-			cancel()
-			wg.Wait()
-		}()
-
-		term := termstatus.New(globalOptions.stdout, globalOptions.stderr, globalOptions.Quiet)
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			term.Run(cancelCtx)
-		}()
-
-		// allow usage of warnf / verbosef
-		prevStdout, prevStderr := globalOptions.stdout, globalOptions.stderr
-		defer func() {
-			globalOptions.stdout, globalOptions.stderr = prevStdout, prevStderr
-		}()
-		stdioWrapper := ui.NewStdioWrapper(term)
-		globalOptions.stdout, globalOptions.stderr = stdioWrapper.Stdout(), stdioWrapper.Stderr()
-
-		return runRestore(ctx, restoreOptions, globalOptions, term, args)
+		term, cancel := setupTermstatus()
+		defer cancel()
+		return runRestore(cmd.Context(), restoreOptions, globalOptions, term, args)
 	},
 }
 

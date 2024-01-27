@@ -15,6 +15,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
+	"github.com/restic/restic/internal/ui/progress"
 
 	"github.com/spf13/cobra"
 )
@@ -766,7 +767,7 @@ func doPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo r
 			return errors.Fatalf("%s", err)
 		}
 	} else if len(plan.ignorePacks) != 0 {
-		err = rebuildIndexFiles(ctx, gopts, repo, plan.ignorePacks, nil)
+		err = rebuildIndexFiles(ctx, gopts, repo, plan.ignorePacks, nil, false)
 		if err != nil {
 			return errors.Fatalf("%s", err)
 		}
@@ -778,7 +779,7 @@ func doPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo r
 	}
 
 	if opts.unsafeRecovery {
-		_, err = writeIndexFiles(ctx, gopts, repo, plan.ignorePacks, nil)
+		err = rebuildIndexFiles(ctx, gopts, repo, plan.ignorePacks, nil, true)
 		if err != nil {
 			return errors.Fatalf("%s", err)
 		}
@@ -788,23 +789,22 @@ func doPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo r
 	return nil
 }
 
-func writeIndexFiles(ctx context.Context, gopts GlobalOptions, repo restic.Repository, removePacks restic.IDSet, extraObsolete restic.IDs) (restic.IDSet, error) {
+func rebuildIndexFiles(ctx context.Context, gopts GlobalOptions, repo restic.Repository, removePacks restic.IDSet, extraObsolete restic.IDs, skipDeletion bool) error {
 	Verbosef("rebuilding index\n")
 
 	bar := newProgressMax(!gopts.Quiet, 0, "packs processed")
-	obsoleteIndexes, err := repo.Index().Save(ctx, repo, removePacks, extraObsolete, bar)
-	bar.Done()
-	return obsoleteIndexes, err
-}
-
-func rebuildIndexFiles(ctx context.Context, gopts GlobalOptions, repo restic.Repository, removePacks restic.IDSet, extraObsolete restic.IDs) error {
-	obsoleteIndexes, err := writeIndexFiles(ctx, gopts, repo, removePacks, extraObsolete)
-	if err != nil {
-		return err
-	}
-
-	Verbosef("deleting obsolete index files\n")
-	return DeleteFilesChecked(ctx, gopts, repo, obsoleteIndexes, restic.IndexFile)
+	return repo.Index().Save(ctx, repo, removePacks, extraObsolete, restic.MasterIndexSaveOpts{
+		SaveProgress: bar,
+		DeleteProgress: func() *progress.Counter {
+			return newProgressMax(!gopts.Quiet, 0, "old indexes deleted")
+		},
+		DeleteReport: func(id restic.ID, err error) {
+			if gopts.verbosity > 2 {
+				Verbosef("removed index %v\n", id.String())
+			}
+		},
+		SkipDeletion: skipDeletion,
+	})
 }
 
 func getUsedBlobs(ctx context.Context, repo restic.Repository, ignoreSnapshots restic.IDSet, quiet bool) (usedBlobs restic.CountedBlobSet, err error) {
