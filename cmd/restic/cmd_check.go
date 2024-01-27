@@ -349,7 +349,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 			for _, id := range salvagePacks {
 				strIDs = append(strIDs, id.String())
 			}
-			Warnf("RESTIC_FEATURES=repair-packs-v1 restic repair packs %v\nrestic repair snapshots --forget\n\n", strings.Join(strIDs, " "))
+			Warnf("restic repair packs %v\nrestic repair snapshots --forget\n\n", strings.Join(strIDs, " "))
 			Warnf("Corrupted blobs are either caused by hardware problems or bugs in restic. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting!\n")
 		}
 	}
