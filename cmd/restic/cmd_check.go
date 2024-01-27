@@ -336,9 +336,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 			errorsFound = true
 			Warnf("%v\n", err)
 			if err, ok := err.(*checker.ErrPackData); ok {
-				if strings.Contains(err.Error(), "wrong data returned, hash is") {
-					salvagePacks = append(salvagePacks, err.PackID)
-				}
+				salvagePacks = append(salvagePacks, err.PackID)
 			}
 		}
 		p.Done()
