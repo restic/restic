@@ -521,7 +521,7 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 	debug.Log("checking pack %v", id.String())
 
 	if len(blobs) == 0 {
-		return errors.Errorf("pack %v is empty or not indexed", id)
+		return &ErrPackData{PackID: id, errs: []error{errors.New("pack is empty or not indexed")}}
 	}
 
 	// sanity check blobs in index
@@ -542,7 +542,7 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 	var errs []error
 	if nonContinuousPack {
 		debug.Log("Index for pack contains gaps / overlaps, blobs: %v", blobs)
-		errs = append(errs, errors.New("Index for pack contains gaps / overlapping blobs"))
+		errs = append(errs, errors.New("index for pack contains gaps / overlapping blobs"))
 	}
 
 	// calculate hash on-the-fly while reading the pack and capture pack header
@@ -591,21 +591,21 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 	if err != nil {
 		// failed to load the pack file, return as further checks cannot succeed anyways
 		debug.Log("  error streaming pack: %v", err)
-		return errors.Errorf("pack %v failed to download: %v", id, err)
+		return &ErrPackData{PackID: id, errs: append(errs, errors.Errorf("download error: %w", err))}
 	}
 	if !hash.Equal(id) {
-		debug.Log("Pack ID does not match, want %v, got %v", id, hash)
-		return errors.Errorf("Pack ID does not match, want %v, got %v", id, hash)
+		debug.Log("pack ID does not match, want %v, got %v", id, hash)
+		return &ErrPackData{PackID: id, errs: append(errs, errors.Errorf("unexpected pack id %v", hash))}
 	}
 
 	blobs, hdrSize, err := pack.List(r.Key(), bytes.NewReader(hdrBuf), int64(len(hdrBuf)))
 	if err != nil {
-		return err
+		return &ErrPackData{PackID: id, errs: append(errs, err)}
 	}
 
 	if uint32(idxHdrSize) != hdrSize {
 		debug.Log("Pack header size does not match, want %v, got %v", idxHdrSize, hdrSize)
-		errs = append(errs, errors.Errorf("Pack header size does not match, want %v, got %v", idxHdrSize, hdrSize))
+		errs = append(errs, errors.Errorf("pack header size does not match, want %v, got %v", idxHdrSize, hdrSize))
 	}
 
 	idx := r.Index()
@@ -619,7 +619,7 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 			}
 		}
 		if !idxHas {
-			errs = append(errs, errors.Errorf("Blob %v is not contained in index or position is incorrect", blob.ID))
+			errs = append(errs, errors.Errorf("blob %v is not contained in index or position is incorrect", blob.ID))
 			continue
 		}
 	}
