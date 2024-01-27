@@ -112,7 +112,7 @@ command:
           --iexclude pattern                       same as --exclude pattern but ignores the casing of filenames
           --iexclude-file file                     same as --exclude-file but ignores casing of filenames in patterns
           --ignore-ctime                           ignore ctime changes when checking for modified files
-          --ignore-inode                           ignore inode number changes when checking for modified files
+          --ignore-inode                           ignore inode number and ctime changes when checking for modified files
           --no-scan                                do not run scanner to estimate size of backup
       -x, --one-file-system                        exclude other file systems, don't cross filesystem boundaries and subvolumes
           --parent snapshot                        use this parent snapshot (default: latest snapshot in the group determined by --group-by and not newer than the timestamp determined by --time)
