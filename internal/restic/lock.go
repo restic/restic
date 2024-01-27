@@ -341,8 +341,8 @@ func (l *Lock) checkExistence(ctx context.Context) (bool, error) {
 
 	exists := false
 
-	err := l.repo.Backend().List(ctx, LockFile, func(fi backend.FileInfo) error {
-		if fi.Name == l.lockID.String() {
+	err := l.repo.List(ctx, LockFile, func(id ID, size int64) error {
+		if id.Equal(*l.lockID) {
 			exists = true
 		}
 		return nil
@@ -379,7 +379,7 @@ func init() {
 }
 
 // LoadLock loads and unserializes a lock from a repository.
-func LoadLock(ctx context.Context, repo Repository, id ID) (*Lock, error) {
+func LoadLock(ctx context.Context, repo LoaderUnpacked, id ID) (*Lock, error) {
 	lock := &Lock{}
 	if err := LoadJSONUnpacked(ctx, repo, LockFile, id, lock); err != nil {
 		return nil, err
@@ -429,7 +429,7 @@ func RemoveAllLocks(ctx context.Context, repo Repository) (uint, error) {
 // It is guaranteed that the function is not run concurrently. If the
 // callback returns an error, this function is cancelled and also returns that error.
 // If a lock ID is passed via excludeID, it will be ignored.
-func ForAllLocks(ctx context.Context, repo Repository, excludeIDs IDSet, fn func(ID, *Lock, error) error) error {
+func ForAllLocks(ctx context.Context, repo ListerLoaderUnpacked, excludeIDs IDSet, fn func(ID, *Lock, error) error) error {
 	var m sync.Mutex
 
 	// For locks decoding is nearly for free, thus just assume were only limited by IO

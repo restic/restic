@@ -40,7 +40,7 @@ type Dir struct {
 	ModTime time.Time
 }
 
-func saveFile(t testing.TB, repo restic.Repository, node File) restic.ID {
+func saveFile(t testing.TB, repo restic.BlobSaver, node File) restic.ID {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -52,7 +52,7 @@ func saveFile(t testing.TB, repo restic.Repository, node File) restic.ID {
 	return id
 }
 
-func saveDir(t testing.TB, repo restic.Repository, nodes map[string]Node, inode uint64) restic.ID {
+func saveDir(t testing.TB, repo restic.BlobSaver, nodes map[string]Node, inode uint64) restic.ID {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

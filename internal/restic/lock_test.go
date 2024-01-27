@@ -120,7 +120,7 @@ func TestExclusiveLockOnLockedRepo(t *testing.T) {
 	rtest.OK(t, elock.Unlock())
 }
 
-func createFakeLock(repo restic.Repository, t time.Time, pid int) (restic.ID, error) {
+func createFakeLock(repo restic.SaverUnpacked, t time.Time, pid int) (restic.ID, error) {
 	hostname, err := os.Hostname()
 	if err != nil {
 		return restic.ID{}, err
@@ -254,7 +254,7 @@ func TestRemoveAllLocks(t *testing.T) {
 		3, processed)
 }
 
-func checkSingleLock(t *testing.T, repo restic.Repository) restic.ID {
+func checkSingleLock(t *testing.T, repo restic.Lister) restic.ID {
 	t.Helper()
 	var lockID *restic.ID
 	err := repo.List(context.TODO(), restic.LockFile, func(id restic.ID, size int64) error {

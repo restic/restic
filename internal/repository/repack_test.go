@@ -120,7 +120,7 @@ func selectBlobs(t *testing.T, repo restic.Repository, p float32) (list1, list2 
 	return list1, list2
 }
 
-func listPacks(t *testing.T, repo restic.Repository) restic.IDSet {
+func listPacks(t *testing.T, repo restic.Lister) restic.IDSet {
 	list := restic.NewIDSet()
 	err := repo.List(context.TODO(), restic.PackFile, func(id restic.ID, size int64) error {
 		list.Insert(id)

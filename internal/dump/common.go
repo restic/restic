@@ -16,11 +16,11 @@ import (
 type Dumper struct {
 	cache  *bloblru.Cache
 	format string
-	repo   restic.Repository
+	repo   restic.BlobLoader
 	w      io.Writer
 }
 
-func New(format string, repo restic.Repository, w io.Writer) *Dumper {
+func New(format string, repo restic.BlobLoader, w io.Writer) *Dumper {
 	return &Dumper{
 		cache:  bloblru.New(64 << 20),
 		format: format,
@@ -47,7 +47,7 @@ func (d *Dumper) DumpTree(ctx context.Context, tree *restic.Tree, rootPath strin
 	}
 }
 
-func sendTrees(ctx context.Context, repo restic.Repository, tree *restic.Tree, rootPath string, ch chan *restic.Node) {
+func sendTrees(ctx context.Context, repo restic.BlobLoader, tree *restic.Tree, rootPath string, ch chan *restic.Node) {
 	defer close(ch)
 
 	for _, root := range tree.Nodes {
@@ -58,7 +58,7 @@ func sendTrees(ctx context.Context, repo restic.Repository, tree *restic.Tree, r
 	}
 }
 
-func sendNodes(ctx context.Context, repo restic.Repository, root *restic.Node, ch chan *restic.Node) error {
+func sendNodes(ctx context.Context, repo restic.BlobLoader, root *restic.Node, ch chan *restic.Node) error {
 	select {
 	case ch <- root:
 	case <-ctx.Done():

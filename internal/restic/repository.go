@@ -113,3 +113,8 @@ type MasterIndex interface {
 type Lister interface {
 	List(ctx context.Context, t FileType, fn func(ID, int64) error) error
 }
+
+type ListerLoaderUnpacked interface {
+	Lister
+	LoaderUnpacked
+}

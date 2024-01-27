@@ -229,7 +229,7 @@ func TestRepositoryLoadIndex(t *testing.T) {
 }
 
 // loadIndex loads the index id from backend and returns it.
-func loadIndex(ctx context.Context, repo restic.Repository, id restic.ID) (*index.Index, error) {
+func loadIndex(ctx context.Context, repo restic.LoaderUnpacked, id restic.ID) (*index.Index, error) {
 	buf, err := repo.LoadUnpacked(ctx, restic.IndexFile, id)
 	if err != nil {
 		return nil, err

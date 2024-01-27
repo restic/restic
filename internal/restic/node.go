@@ -142,7 +142,7 @@ func (node Node) GetExtendedAttribute(a string) []byte {
 }
 
 // CreateAt creates the node at the given path but does NOT restore node meta data.
-func (node *Node) CreateAt(ctx context.Context, path string, repo Repository) error {
+func (node *Node) CreateAt(ctx context.Context, path string, repo BlobLoader) error {
 	debug.Log("create node %v at %v", node.Name, path)
 
 	switch node.Type {
@@ -264,7 +264,7 @@ func (node Node) createDirAt(path string) error {
 	return nil
 }
 
-func (node Node) createFileAt(ctx context.Context, path string, repo Repository) error {
+func (node Node) createFileAt(ctx context.Context, path string, repo BlobLoader) error {
 	f, err := fs.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		return errors.WithStack(err)
@@ -284,7 +284,7 @@ func (node Node) createFileAt(ctx context.Context, path string, repo Repository)
 	return nil
 }
 
-func (node Node) writeNodeContent(ctx context.Context, repo Repository, f *os.File) error {
+func (node Node) writeNodeContent(ctx context.Context, repo BlobLoader, f *os.File) error {
 	var buf []byte
 	for _, id := range node.Content {
 		buf, err := repo.LoadBlob(ctx, DataBlob, id, buf)

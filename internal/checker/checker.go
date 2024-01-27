@@ -14,7 +14,6 @@ import (
 	"github.com/minio/sha256-simd"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/s3"
-	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/hashing"
@@ -241,17 +240,8 @@ func IsOrphanedPack(err error) bool {
 }
 
 func isS3Legacy(b backend.Backend) bool {
-	// unwrap cache
-	if be, ok := b.(*cache.Backend); ok {
-		b = be.Backend
-	}
-
-	be, ok := b.(*s3.Backend)
-	if !ok {
-		return false
-	}
-
-	return be.Layout.Name() == "s3legacy"
+	be := backend.AsBackend[*s3.Backend](b)
+	return be != nil && be.Layout.Name() == "s3legacy"
 }
 
 // Packs checks that all packs referenced in the index are still available and
@@ -362,7 +352,7 @@ func (c *Checker) checkTreeWorker(ctx context.Context, trees <-chan restic.TreeI
 	}
 }
 
-func loadSnapshotTreeIDs(ctx context.Context, lister restic.Lister, repo restic.Repository) (ids restic.IDs, errs []error) {
+func loadSnapshotTreeIDs(ctx context.Context, lister restic.Lister, repo restic.LoaderUnpacked) (ids restic.IDs, errs []error) {
 	err := restic.ForAllSnapshots(ctx, lister, repo, nil, func(id restic.ID, sn *restic.Snapshot, err error) error {
 		if err != nil {
 			errs = append(errs, err)
