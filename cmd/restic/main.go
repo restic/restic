@@ -14,6 +14,7 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/restic"
 )
@@ -103,10 +104,16 @@ func main() {
 	// we can show the logs
 	log.SetOutput(logBuffer)
 
+	err := feature.Flag.Apply(os.Getenv("RESTIC_FEATURES"))
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		Exit(1)
+	}
+
 	debug.Log("main %#v", os.Args)
 	debug.Log("restic %s compiled with %v on %v/%v",
 		version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
-	err := cmdRoot.ExecuteContext(internalGlobalCtx)
+	err = cmdRoot.ExecuteContext(internalGlobalCtx)
 
 	switch {
 	case restic.IsAlreadyLocked(err):
