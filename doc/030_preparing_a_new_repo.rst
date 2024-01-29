@@ -201,15 +201,16 @@ scheme like this:
     $ restic -r rest:http://host:8000/ init
 
 Depending on your REST server setup, you can use HTTPS protocol,
-password protection, multiple repositories or any combination of
-those features. The TCP/IP port is also configurable. Here
-are some more examples:
+unix socket, password protection, multiple repositories or any
+combination of those features. The TCP/IP port is also configurable.
+Here are some more examples:
 
 .. code-block:: console
 
     $ restic -r rest:https://host:8000/ init
     $ restic -r rest:https://user:pass@host:8000/ init
     $ restic -r rest:https://user:pass@host:8000/my_backup_repo/ init
+    $ restic -r rest:http+unix:///tmp/rest.socket:/my_backup_repo/ init
 
 The server username and password can be specified using environment
 variables as well:
