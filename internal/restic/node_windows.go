@@ -78,6 +78,10 @@ func Listxattr(path string) ([]string, error) {
 	return nil, nil
 }
 
+func IsListxattrPermissionError(_ error) bool {
+	return false
+}
+
 // Setxattr associates name and data together as an attribute of path.
 func Setxattr(path, name string, data []byte) error {
 	return nil

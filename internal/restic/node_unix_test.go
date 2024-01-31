@@ -128,7 +128,7 @@ func TestNodeFromFileInfo(t *testing.T) {
 				return
 			}
 
-			node, err := NodeFromFileInfo(test.filename, fi)
+			node, err := NodeFromFileInfo(test.filename, fi, false)
 			if err != nil {
 				t.Fatal(err)
 			}
