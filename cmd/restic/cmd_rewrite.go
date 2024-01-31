@@ -209,7 +209,7 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 		}
 
 		if newMetadata != nil && newMetadata.Hostname != "" {
-			Verbosef("would set time to %s\n", newMetadata.Hostname)
+			Verbosef("would set hostname to %s\n", newMetadata.Hostname)
 		}
 
 		return true, nil
