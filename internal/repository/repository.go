@@ -423,6 +423,11 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 	// encrypt blob
 	ciphertext = r.key.Seal(ciphertext, nonce, data, nil)
 
+	if err := r.verifyCiphertext(ciphertext, uncompressedLength, id); err != nil {
+		// FIXME call to action
+		return 0, fmt.Errorf("detected data corruption in blob %v: %w", id, err)
+	}
+
 	// find suitable packer and add blob
 	var pm *packerManager
 
@@ -436,6 +441,27 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 	}
 
 	return pm.SaveBlob(ctx, t, id, ciphertext, uncompressedLength)
+}
+
+func (r *Repository) verifyCiphertext(ciphertext []byte, uncompressedLength int, id restic.ID) error {
+
+	plaintext, err := r.key.Open(nil, ciphertext[:r.key.NonceSize()], ciphertext[r.key.NonceSize():], nil)
+	if err != nil {
+		return fmt.Errorf("decryption failed: %w", err)
+	}
+	if uncompressedLength != 0 {
+		// DecodeAll will allocate a slice if it is not large enough since it
+		// knows the decompressed size (because we're using EncodeAll)
+		plaintext, err = r.getZstdDecoder().DecodeAll(plaintext, nil)
+		if err != nil {
+			return fmt.Errorf("decompression failed: %w", err)
+		}
+	}
+	if !restic.Hash(plaintext).Equal(id) {
+		return errors.New("hash mismatch")
+	}
+
+	return nil
 }
 
 func (r *Repository) compressUnpacked(p []byte) ([]byte, error) {
