@@ -1879,7 +1879,7 @@ func TestArchiverContextCanceled(t *testing.T) {
 	})
 
 	// Ensure that the archiver itself reports the canceled context and not just the backend
-	repo := repository.TestRepositoryWithBackend(t, &noCancelBackend{mem.New()}, 0)
+	repo := repository.TestRepositoryWithBackend(t, &noCancelBackend{mem.New()}, 0, repository.Options{})
 
 	back := restictest.Chdir(t, tempdir)
 	defer back()

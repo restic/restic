@@ -43,7 +43,7 @@ const TestChunkerPol = chunker.Pol(0x3DA3358B4DC173)
 // TestRepositoryWithBackend returns a repository initialized with a test
 // password. If be is nil, an in-memory backend is used. A constant polynomial
 // is used for the chunker and low-security test parameters.
-func TestRepositoryWithBackend(t testing.TB, be restic.Backend, version uint) restic.Repository {
+func TestRepositoryWithBackend(t testing.TB, be restic.Backend, version uint, opts Options) restic.Repository {
 	t.Helper()
 	TestUseLowSecurityKDFParameters(t)
 	restic.TestDisableCheckPolynomial(t)
@@ -52,7 +52,7 @@ func TestRepositoryWithBackend(t testing.TB, be restic.Backend, version uint) re
 		be = TestBackend(t)
 	}
 
-	repo, err := New(be, Options{})
+	repo, err := New(be, opts)
 	if err != nil {
 		t.Fatalf("TestRepository(): new repo failed: %v", err)
 	}
@@ -78,6 +78,7 @@ func TestRepository(t testing.TB) restic.Repository {
 func TestRepositoryWithVersion(t testing.TB, version uint) restic.Repository {
 	t.Helper()
 	dir := os.Getenv("RESTIC_TEST_REPO")
+	opts := Options{}
 	if dir != "" {
 		_, err := os.Stat(dir)
 		if err != nil {
@@ -85,7 +86,7 @@ func TestRepositoryWithVersion(t testing.TB, version uint) restic.Repository {
 			if err != nil {
 				t.Fatalf("error creating local backend at %v: %v", dir, err)
 			}
-			return TestRepositoryWithBackend(t, be, version)
+			return TestRepositoryWithBackend(t, be, version, opts)
 		}
 
 		if err == nil {
@@ -93,7 +94,7 @@ func TestRepositoryWithVersion(t testing.TB, version uint) restic.Repository {
 		}
 	}
 
-	return TestRepositoryWithBackend(t, nil, version)
+	return TestRepositoryWithBackend(t, nil, version, opts)
 }
 
 // TestOpenLocal opens a local repository.

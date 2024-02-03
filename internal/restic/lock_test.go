@@ -65,7 +65,7 @@ func (be *failLockLoadingBackend) Load(ctx context.Context, h restic.Handle, len
 
 func TestMultipleLockFailure(t *testing.T) {
 	be := &failLockLoadingBackend{Backend: mem.New()}
-	repo := repository.TestRepositoryWithBackend(t, be, 0)
+	repo := repository.TestRepositoryWithBackend(t, be, 0, repository.Options{})
 	restic.TestSetLockTimeout(t, 5*time.Millisecond)
 
 	lock1, err := restic.NewLock(context.TODO(), repo)
