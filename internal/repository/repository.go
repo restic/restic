@@ -425,8 +425,7 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 	ciphertext = r.key.Seal(ciphertext, nonce, data, nil)
 
 	if err := r.verifyCiphertext(ciphertext, uncompressedLength, id); err != nil {
-		// FIXME call to action
-		return 0, fmt.Errorf("detected data corruption while saving blob %v: %w", id, err)
+		return 0, fmt.Errorf("detected data corruption while saving blob %v: %w\nCorrupted blobs are either caused by hardware problems or bugs in restic. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting", id, err)
 	}
 
 	// find suitable packer and add blob
@@ -522,8 +521,7 @@ func (r *Repository) SaveUnpacked(ctx context.Context, t restic.FileType, buf []
 	ciphertext = r.key.Seal(ciphertext, nonce, p, nil)
 
 	if err := r.verifyUnpacked(ciphertext, t, buf); err != nil {
-		// FIXME call to action
-		return restic.ID{}, fmt.Errorf("detected data corruption while saving file of type %v: %w", t, err)
+		return restic.ID{}, fmt.Errorf("detected data corruption while saving file of type %v: %w\nCorrupted data is either caused by hardware problems or bugs in restic. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting", t, err)
 	}
 
 	if t == restic.ConfigFile {
