@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/restic/restic/internal/backend/mem"
 	"github.com/restic/restic/internal/restic"
 	"golang.org/x/sync/errgroup"
 )
@@ -19,7 +18,7 @@ func FuzzSaveLoadBlob(f *testing.F) {
 		}
 
 		id := restic.Hash(blob)
-		repo := TestRepositoryWithBackend(t, mem.New(), 2)
+		repo := TestRepositoryWithVersion(t, 2)
 
 		var wg errgroup.Group
 		repo.StartPackUploader(context.TODO(), &wg)
