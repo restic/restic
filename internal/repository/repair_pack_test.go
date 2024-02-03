@@ -102,7 +102,8 @@ func testRepairBrokenPack(t *testing.T, version uint) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			repo := repository.TestRepositoryWithVersion(t, version)
+			// disable verification to allow adding corrupted blobs to the repository
+			repo := repository.TestRepositoryWithBackend(t, nil, version, repository.Options{NoVerifyPack: true})
 
 			seed := time.Now().UnixNano()
 			rand.Seed(seed)
