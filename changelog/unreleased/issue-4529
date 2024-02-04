@@ -1,0 +1,14 @@
+Enhancement: Verify data integrity before upload
+
+Hardware issues or a bug in restic could cause restic to create corrupted files
+that were then uploaded to the repository. Detecting such corruption usually
+required explicitly running the `check --read-data` command.
+
+To prevent the upload of corrupted data to the repository, restic now
+additionally verifies that files can be decoded and contain the correct data
+beforehand. This increases the CPU usage during backups. If absolutely
+necessary, you can disable the verification using the option
+`--no-verify-pack`.
+
+https://github.com/restic/restic/issues/4529
+https://github.com/restic/restic/pull/4681
