@@ -563,8 +563,8 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 			}
 			debug.Log("  check blob %v: %v", val.Handle.ID, val.Handle)
 			if val.Err != nil {
-				debug.Log("  error verifying blob %v: %v", val.Handle.ID, err)
-				errs = append(errs, errors.Errorf("blob %v: %v", val.Handle.ID, err))
+				debug.Log("  error verifying blob %v: %v", val.Handle.ID, val.Err)
+				errs = append(errs, errors.Errorf("blob %v: %v", val.Handle.ID, val.Err))
 			}
 		}
 
