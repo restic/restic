@@ -60,6 +60,17 @@ only applied for the single run of restic. The option can also be set via the en
 variable ``RESTIC_COMPRESSION``.
 
 
+Data Verification
+=================
+
+To prevent the upload of corrupted data to the repository, restic verifies that files can
+be decoded and contain the correct data beforehand. This increases the CPU usage during
+backups. If necessary, you can disable this verification using the option ``--no-extra-verify``.
+However, in this case you should verify the repository integrity more actively using
+``restic check --read-data``. Otherwise, data corruption due to hardware issues or software
+bugs might go unnoticed.
+
+
 File Read Concurrency
 =====================
 
