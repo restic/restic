@@ -8,7 +8,7 @@ To prevent the upload of corrupted data to the repository, restic now
 additionally verifies that files can be decoded and contain the correct data
 beforehand. This increases the CPU usage during backups. If absolutely
 necessary, you can disable the verification using the option
-`--no-verify-pack`.
+`--no-extra-verify`.
 
 https://github.com/restic/restic/issues/4529
 https://github.com/restic/restic/pull/4681

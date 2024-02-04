@@ -59,9 +59,9 @@ type Repository struct {
 }
 
 type Options struct {
-	Compression  CompressionMode
-	PackSize     uint
-	NoVerifyPack bool
+	Compression   CompressionMode
+	PackSize      uint
+	NoExtraVerify bool
 }
 
 // CompressionMode configures if data should be compressed.
@@ -444,7 +444,7 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 }
 
 func (r *Repository) verifyCiphertext(buf []byte, uncompressedLength int, id restic.ID) error {
-	if r.opts.NoVerifyPack {
+	if r.opts.NoExtraVerify {
 		return nil
 	}
 
@@ -542,7 +542,7 @@ func (r *Repository) SaveUnpacked(ctx context.Context, t restic.FileType, buf []
 }
 
 func (r *Repository) verifyUnpacked(buf []byte, t restic.FileType, expected []byte) error {
-	if r.opts.NoVerifyPack {
+	if r.opts.NoExtraVerify {
 		return nil
 	}
 
