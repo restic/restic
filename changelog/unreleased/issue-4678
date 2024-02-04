@@ -1,0 +1,7 @@
+Enhancement: Add --target flag to the dump command
+
+Restic `dump` always printed to the standard output. It now permits to select a
+`--target` file to print the output. 
+
+https://github.com/restic/restic/issues/4678
+https://github.com/restic/restic/pull/4682
