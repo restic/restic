@@ -17,11 +17,11 @@ import (
 
 var cmdDump = &cobra.Command{
 	Use:   "dump [flags] snapshotID file",
-	Short: "Print a backed-up file to stdout",
+	Short: "Print a backed-up file to stdout or save it to a file",
 	Long: `
-The "dump" command extracts files from a snapshot from the repository. If a
-single file is selected, it prints its contents to stdout. Folders are output
-as a tar (default) or zip file containing the contents of the specified folder.
+The "dump" command extracts files from a snapshot in the repository.
+Use --target to specify the output file; defaults to stdout. 
+Single files are printed directly, while folders are archived as tar (default) or zip.
 Pass "/" as file name to dump the whole snapshot as an archive file.
 
 The special snapshotID "latest" can be used to use the latest snapshot in the
@@ -46,6 +46,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 type DumpOptions struct {
 	restic.SnapshotFilter
 	Archive string
+	Target  string
 }
 
 var dumpOptions DumpOptions
@@ -56,6 +57,7 @@ func init() {
 	flags := cmdDump.Flags()
 	initSingleSnapshotFilter(flags, &dumpOptions.SnapshotFilter)
 	flags.StringVarP(&dumpOptions.Archive, "archive", "a", "tar", "set archive `format` as \"tar\" or \"zip\"")
+	flags.StringVarP(&dumpOptions.Target, "target", "t", "", "file to write the backed-up file to")
 }
 
 func splitPath(p string) []string {
@@ -168,7 +170,15 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 		return errors.Fatalf("loading tree for snapshot %q failed: %v", snapshotIDString, err)
 	}
 
-	d := dump.New(opts.Archive, repo, os.Stdout)
+	w := os.Stdout
+	if opts.Target != "" {
+		w, err = os.Create(opts.Target)
+		if err != nil {
+			return err
+		}
+	}
+
+	d := dump.New(opts.Archive, repo, w)
 	err = printFromTree(ctx, tree, repo, "/", splittedPath, d)
 	if err != nil {
 		return errors.Fatalf("cannot dump file: %v", err)
