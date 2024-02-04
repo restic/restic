@@ -1,5 +1,6 @@
 # Table of Contents
 
+* [Changelog for 0.16.4](#changelog-for-restic-0164-2024-02-04)
 * [Changelog for 0.16.3](#changelog-for-restic-0163-2024-01-14)
 * [Changelog for 0.16.2](#changelog-for-restic-0162-2023-10-29)
 * [Changelog for 0.16.1](#changelog-for-restic-0161-2023-10-24)
@@ -30,6 +31,57 @@
 * [Changelog for 0.7.0](#changelog-for-restic-070-2017-07-01)
 * [Changelog for 0.6.1](#changelog-for-restic-061-2017-06-01)
 * [Changelog for 0.6.0](#changelog-for-restic-060-2017-05-29)
+
+
+# Changelog for restic 0.16.4 (2024-02-04)
+The following sections list the changes in restic 0.16.4 relevant to
+restic users. The changes are ordered by importance.
+
+## Summary
+
+ * Fix #4677: Downgrade zstd library to fix rare data corruption at max. compression
+ * Enh #4529: Add extra verification of data integrity before upload
+
+## Details
+
+ * Bugfix #4677: Downgrade zstd library to fix rare data corruption at max. compression
+
+   In restic 0.16.3, backups where the compression level was set to `max` (using
+   `--compression max`) could in rare and very specific circumstances result in
+   data corruption due to a bug in the library used for compressing data. Restic
+   0.16.1 and 0.16.2 were not affected.
+
+   Restic now uses the previous version of the library used to compress data, the
+   same version used by restic 0.16.2. Please note that the `auto` compression
+   level (which restic uses by default) was never affected, and even if you used
+   `max` compression, chances of being affected by this issue are small.
+
+   To check a repository for any corruption, run `restic check --read-data`. This
+   will download and verify the whole repository and can be used at any time to
+   completely verify the integrity of a repository. If the `check` command detects
+   anomalies, follow the suggested steps.
+
+   https://github.com/restic/restic/issues/4677
+   https://github.com/restic/restic/pull/4679
+
+ * Enhancement #4529: Add extra verification of data integrity before upload
+
+   Hardware issues, or a bug in restic or its dependencies, could previously cause
+   corruption in the files restic created and stored in the repository. Detecting
+   such corruption previously required explicitly running the `check --read-data`
+   or `check --read-data-subset` commands.
+
+   To further ensure data integrity, even in the case of hardware issues or
+   software bugs, restic now performs additional verification of the files about to
+   be uploaded to the repository.
+
+   These extra checks will increase CPU usage during backups. They can therefore,
+   if absolutely necessary, be disabled using the `--no-extra-verify` global
+   option. Please note that this should be combined with more active checking using
+   the previously mentioned check commands.
+
+   https://github.com/restic/restic/issues/4529
+   https://github.com/restic/restic/pull/4681
 
 
 # Changelog for restic 0.16.3 (2024-01-14)
