@@ -87,7 +87,8 @@ func (p *Packer) Finalize() error {
 	encryptedHeader = binary.LittleEndian.AppendUint32(encryptedHeader, uint32(len(encryptedHeader)))
 
 	if err := verifyHeader(p.k, encryptedHeader, p.blobs); err != nil {
-		return fmt.Errorf("detected data corruption while writing pack-file header: %w\nCorrupted data is either caused by hardware problems or bugs in restic. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting", err)
+		//nolint:revive // ignore linter warnings about error message spelling
+		return fmt.Errorf("Detected data corruption while writing pack-file header: %w\nCorrupted data is either caused by hardware issues or software bugs. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting.", err)
 	}
 
 	// append the header
