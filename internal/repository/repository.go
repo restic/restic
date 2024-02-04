@@ -59,8 +59,9 @@ type Repository struct {
 }
 
 type Options struct {
-	Compression CompressionMode
-	PackSize    uint
+	Compression   CompressionMode
+	PackSize      uint
+	NoExtraVerify bool
 }
 
 // CompressionMode configures if data should be compressed.
@@ -423,6 +424,11 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 	// encrypt blob
 	ciphertext = r.key.Seal(ciphertext, nonce, data, nil)
 
+	if err := r.verifyCiphertext(ciphertext, uncompressedLength, id); err != nil {
+		//nolint:revive // ignore linter warnings about error message spelling
+		return 0, fmt.Errorf("Detected data corruption while saving blob %v: %w\nCorrupted blobs are either caused by hardware issues or software bugs. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting.", id, err)
+	}
+
 	// find suitable packer and add blob
 	var pm *packerManager
 
@@ -436,6 +442,31 @@ func (r *Repository) saveAndEncrypt(ctx context.Context, t restic.BlobType, data
 	}
 
 	return pm.SaveBlob(ctx, t, id, ciphertext, uncompressedLength)
+}
+
+func (r *Repository) verifyCiphertext(buf []byte, uncompressedLength int, id restic.ID) error {
+	if r.opts.NoExtraVerify {
+		return nil
+	}
+
+	nonce, ciphertext := buf[:r.key.NonceSize()], buf[r.key.NonceSize():]
+	plaintext, err := r.key.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		return fmt.Errorf("decryption failed: %w", err)
+	}
+	if uncompressedLength != 0 {
+		// DecodeAll will allocate a slice if it is not large enough since it
+		// knows the decompressed size (because we're using EncodeAll)
+		plaintext, err = r.getZstdDecoder().DecodeAll(plaintext, nil)
+		if err != nil {
+			return fmt.Errorf("decompression failed: %w", err)
+		}
+	}
+	if !restic.Hash(plaintext).Equal(id) {
+		return errors.New("hash mismatch")
+	}
+
+	return nil
 }
 
 func (r *Repository) compressUnpacked(p []byte) ([]byte, error) {
@@ -474,7 +505,8 @@ func (r *Repository) decompressUnpacked(p []byte) ([]byte, error) {
 
 // SaveUnpacked encrypts data and stores it in the backend. Returned is the
 // storage hash.
-func (r *Repository) SaveUnpacked(ctx context.Context, t restic.FileType, p []byte) (id restic.ID, err error) {
+func (r *Repository) SaveUnpacked(ctx context.Context, t restic.FileType, buf []byte) (id restic.ID, err error) {
+	p := buf
 	if t != restic.ConfigFile {
 		p, err = r.compressUnpacked(p)
 		if err != nil {
@@ -488,6 +520,11 @@ func (r *Repository) SaveUnpacked(ctx context.Context, t restic.FileType, p []by
 	ciphertext = append(ciphertext, nonce...)
 
 	ciphertext = r.key.Seal(ciphertext, nonce, p, nil)
+
+	if err := r.verifyUnpacked(ciphertext, t, buf); err != nil {
+		//nolint:revive // ignore linter warnings about error message spelling
+		return restic.ID{}, fmt.Errorf("Detected data corruption while saving file of type %v: %w\nCorrupted data is either caused by hardware issues or software bugs. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting.", t, err)
+	}
 
 	if t == restic.ConfigFile {
 		id = restic.ID{}
@@ -504,6 +541,29 @@ func (r *Repository) SaveUnpacked(ctx context.Context, t restic.FileType, p []by
 
 	debug.Log("blob %v saved", h)
 	return id, nil
+}
+
+func (r *Repository) verifyUnpacked(buf []byte, t restic.FileType, expected []byte) error {
+	if r.opts.NoExtraVerify {
+		return nil
+	}
+
+	nonce, ciphertext := buf[:r.key.NonceSize()], buf[r.key.NonceSize():]
+	plaintext, err := r.key.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		return fmt.Errorf("decryption failed: %w", err)
+	}
+	if t != restic.ConfigFile {
+		plaintext, err = r.decompressUnpacked(plaintext)
+		if err != nil {
+			return fmt.Errorf("decompression failed: %w", err)
+		}
+	}
+
+	if !bytes.Equal(plaintext, expected) {
+		return errors.New("data mismatch")
+	}
+	return nil
 }
 
 // Flush saves all remaining packs and the index
