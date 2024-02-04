@@ -36,6 +36,8 @@ require (
 	google.golang.org/api v0.157.0
 )
 
+replace github.com/klauspost/compress => github.com/klauspost/compress v1.17.2
+
 require (
 	cloud.google.com/go v0.112.0 // indirect
 	cloud.google.com/go/compute v1.23.3 // indirect
