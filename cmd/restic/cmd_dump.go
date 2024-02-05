@@ -57,7 +57,7 @@ func init() {
 	flags := cmdDump.Flags()
 	initSingleSnapshotFilter(flags, &dumpOptions.SnapshotFilter)
 	flags.StringVarP(&dumpOptions.Archive, "archive", "a", "tar", "set archive `format` as \"tar\" or \"zip\"")
-	flags.StringVarP(&dumpOptions.Target, "target", "t", "", "set the target path to dump the archive file")
+	flags.StringVarP(&dumpOptions.Target, "target", "t", "", "write the output to target `path`")
 }
 
 func splitPath(p string) []string {
@@ -69,11 +69,11 @@ func splitPath(p string) []string {
 	return append(s, f)
 }
 
-func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.BlobLoader, prefix string, pathComponents []string, d *dump.Dumper, checkStdoutArchiveFunc func() error) error {
+func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.BlobLoader, prefix string, pathComponents []string, d *dump.Dumper, canWriteArchiveFunc func() error) error {
 	// If we print / we need to assume that there are multiple nodes at that
 	// level in the tree.
 	if pathComponents[0] == "" {
-		if err := checkStdoutArchiveFunc(); err != nil {
+		if err := canWriteArchiveFunc(); err != nil {
 			return err
 		}
 		return d.DumpTree(ctx, tree, "/")
@@ -93,9 +93,9 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.BlobLoade
 				if err != nil {
 					return errors.Wrapf(err, "cannot load subtree for %q", item)
 				}
-				return printFromTree(ctx, subtree, repo, item, pathComponents[1:], d, checkStdoutArchiveFunc)
+				return printFromTree(ctx, subtree, repo, item, pathComponents[1:], d, canWriteArchiveFunc)
 			case dump.IsDir(node):
-				if err := checkStdoutArchiveFunc(); err != nil {
+				if err := canWriteArchiveFunc(); err != nil {
 					return err
 				}
 				subtree, err := restic.LoadTree(ctx, repo, *node.Subtree)
@@ -170,8 +170,9 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 		return errors.Fatalf("loading tree for snapshot %q failed: %v", snapshotIDString, err)
 	}
 
-	var outputFileWriter = os.Stdout
-	checkStdoutArchiveFunc := checkStdoutArchive
+	outputFileWriter := os.Stdout
+	canWriteArchiveFunc := checkStdoutArchive
+
 	if opts.Target != "" {
 		file, err := os.OpenFile(opts.Target, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0o666)
 		if err != nil {
@@ -182,11 +183,11 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 		}()
 
 		outputFileWriter = file
-		checkStdoutArchiveFunc = func() error { return nil }
+		canWriteArchiveFunc = func() error { return nil }
 	}
 
 	d := dump.New(opts.Archive, repo, outputFileWriter)
-	err = printFromTree(ctx, tree, repo, "/", splittedPath, d, checkStdoutArchiveFunc)
+	err = printFromTree(ctx, tree, repo, "/", splittedPath, d, canWriteArchiveFunc)
 	if err != nil {
 		return errors.Fatalf("cannot dump file: %v", err)
 	}
