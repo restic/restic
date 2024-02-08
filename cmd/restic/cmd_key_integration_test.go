@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/restic/restic/internal/backend"
@@ -154,26 +155,21 @@ func TestKeyCommandInvalidArguments(t *testing.T) {
 
 	err := runKeyAdd(context.TODO(), env.gopts, KeyAddOptions{}, []string{"johndoe"})
 	t.Log(err)
-	rtest.Assert(t, err != nil, "expected key add to fail")
+	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "no arguments"), "unexpected error for key add: %v", err)
 
-	testKeyNewPassword = "johndoe"
-	defer func() {
-		testKeyNewPassword = ""
-	}()
 	err = runKeyPasswd(context.TODO(), env.gopts, KeyPasswdOptions{}, []string{"johndoe"})
 	t.Log(err)
-	rtest.Assert(t, err != nil, "expected key passwd to fail")
+	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "no arguments"), "unexpected error for key passwd: %v", err)
 
-	env.gopts.password = "johndoe"
-	err = runKeyList(context.TODO(), env.gopts, []string{})
+	err = runKeyList(context.TODO(), env.gopts, []string{"johndoe"})
 	t.Log(err)
-	rtest.Assert(t, err != nil, "expected key list to fail")
+	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "no arguments"), "unexpected error for key list: %v", err)
 
 	err = runKeyRemove(context.TODO(), env.gopts, []string{})
 	t.Log(err)
-	rtest.Assert(t, err != nil, "expected key remove to fail")
+	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "one argument"), "unexpected error for key remove: %v", err)
 
 	err = runKeyRemove(context.TODO(), env.gopts, []string{"john", "doe"})
 	t.Log(err)
-	rtest.Assert(t, err != nil, "expected key remove to fail")
+	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "one argument"), "unexpected error for key remove: %v", err)
 }
