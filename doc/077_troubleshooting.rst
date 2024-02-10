@@ -77,7 +77,9 @@ somewhere. Please include the check output and additional information that might
 help locate the problem.
 
 If ``check`` detects damaged pack files, it will show instructions on how to repair
-them. Please follow the steps from the next section first.
+them using the ``repair pack`` command. Use that command instead of the "Repair the
+index" section in this guide.
+
 
 2. Backup the repository
 ************************
@@ -105,6 +107,11 @@ whether your issue is already known and solved. Please take a look at the
 
 3. Repair the index
 *******************
+
+.. note::
+
+  If the `check` command tells you to run `restic repair pack`, then use that
+  command instead. It will repair the damaged pack files and also update the index.
 
 Restic relies on its index to contain correct information about what data is
 stored in the repository. Thus, the first step to repair a repository is to
