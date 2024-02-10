@@ -69,7 +69,7 @@ func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions
 	var m sync.Mutex
 	var keys []keyInfo
 
-	err := restic.ParallelList(ctx, s, restic.KeyFile, s.Connections(), func(ctx context.Context, id restic.ID, size int64) error {
+	err := restic.ParallelList(ctx, s, restic.KeyFile, s.Connections(), func(ctx context.Context, id restic.ID, _ int64) error {
 		k, err := repository.LoadKey(ctx, s, id)
 		if err != nil {
 			Warnf("LoadKey() failed: %v\n", err)

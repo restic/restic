@@ -136,7 +136,7 @@ func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int,
 	defer cancel()
 
 	// try at most maxKeys keys in repo
-	err = s.List(listCtx, restic.KeyFile, func(id restic.ID, size int64) error {
+	err = s.List(listCtx, restic.KeyFile, func(id restic.ID, _ int64) error {
 		checked++
 		if maxKeys > 0 && checked > maxKeys {
 			return ErrMaxKeysReached

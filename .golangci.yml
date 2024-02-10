@@ -54,3 +54,8 @@ issues:
     # staticcheck: there's no easy way to replace these packages
     - "SA1019: \"golang.org/x/crypto/poly1305\" is deprecated"
     - "SA1019: \"golang.org/x/crypto/openpgp\" is deprecated"
+
+  exclude-rules:
+    # revive: ignore unused parameters in tests
+    - path: (_test\.go|testing\.go|backend/.*/tests\.go)
+      text: "unused-parameter:"

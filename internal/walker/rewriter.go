@@ -39,13 +39,13 @@ func NewTreeRewriter(opts RewriteOpts) *TreeRewriter {
 	}
 	// setup default implementations
 	if rw.opts.RewriteNode == nil {
-		rw.opts.RewriteNode = func(node *restic.Node, path string) *restic.Node {
+		rw.opts.RewriteNode = func(node *restic.Node, _ string) *restic.Node {
 			return node
 		}
 	}
 	if rw.opts.RewriteFailedTree == nil {
 		// fail with error by default
-		rw.opts.RewriteFailedTree = func(nodeID restic.ID, path string, err error) (restic.ID, error) {
+		rw.opts.RewriteFailedTree = func(_ restic.ID, _ string, err error) (restic.ID, error) {
 			return restic.ID{}, err
 		}
 	}

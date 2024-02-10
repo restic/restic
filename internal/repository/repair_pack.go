@@ -68,7 +68,7 @@ func RepairPacks(ctx context.Context, repo restic.Repository, ids restic.IDSet, 
 		DeleteProgress: func() *progress.Counter {
 			return printer.NewCounter("old indexes deleted")
 		},
-		DeleteReport: func(id restic.ID, err error) {
+		DeleteReport: func(id restic.ID, _ error) {
 			printer.VV("removed index %v", id.String())
 		},
 	})

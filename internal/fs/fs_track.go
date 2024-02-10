@@ -41,7 +41,7 @@ type trackFile struct {
 
 func newTrackFile(stack []byte, filename string, file File) *trackFile {
 	f := &trackFile{file}
-	runtime.SetFinalizer(f, func(f *trackFile) {
+	runtime.SetFinalizer(f, func(_ *trackFile) {
 		fmt.Fprintf(os.Stderr, "file %s not closed\n\nStacktrack:\n%s\n", filename, stack)
 		panic("file " + filename + " not closed")
 	})

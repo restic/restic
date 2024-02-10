@@ -28,7 +28,7 @@ func NewFactory() location.Factory {
 
 	return location.NewHTTPBackendFactory[struct{}, *MemoryBackend](
 		"mem",
-		func(s string) (*struct{}, error) {
+		func(_ string) (*struct{}, error) {
 			return &struct{}{}, nil
 		},
 		location.NoPassword,

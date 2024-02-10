@@ -183,7 +183,7 @@ func newBackend(ctx context.Context, cfg Config, lim limiter.Limiter) (*Backend,
 	dialCount := 0
 	tr := &http2.Transport{
 		AllowHTTP: true, // this is not really HTTP, just stdin/stdout
-		DialTLS: func(network, address string, cfg *tls.Config) (net.Conn, error) {
+		DialTLS: func(network, address string, _ *tls.Config) (net.Conn, error) {
 			debug.Log("new connection requested, %v %v", network, address)
 			if dialCount > 0 {
 				// the connection to the child process is already closed

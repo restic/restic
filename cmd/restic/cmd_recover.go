@@ -25,7 +25,7 @@ EXIT STATUS
 Exit status is 0 if the command was successful, and non-zero if there was any error.
 `,
 	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		return runRecover(cmd.Context(), globalOptions)
 	},
 }
@@ -91,7 +91,7 @@ func runRecover(ctx context.Context, gopts GlobalOptions) error {
 	bar.Done()
 
 	Verbosef("load snapshots\n")
-	err = restic.ForAllSnapshots(ctx, snapshotLister, repo, nil, func(id restic.ID, sn *restic.Snapshot, err error) error {
+	err = restic.ForAllSnapshots(ctx, snapshotLister, repo, nil, func(_ restic.ID, sn *restic.Snapshot, _ error) error {
 		trees[*sn.Tree] = true
 		return nil
 	})

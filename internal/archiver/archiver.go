@@ -147,8 +147,8 @@ func (o Options) ApplyDefaults() Options {
 func New(repo restic.Repository, fs fs.FS, opts Options) *Archiver {
 	arch := &Archiver{
 		Repo:         repo,
-		SelectByName: func(item string) bool { return true },
-		Select:       func(item string, fi os.FileInfo) bool { return true },
+		SelectByName: func(_ string) bool { return true },
+		Select:       func(_ string, _ os.FileInfo) bool { return true },
 		FS:           fs,
 		Options:      opts.ApplyDefaults(),
 
@@ -762,7 +762,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 			arch.runWorkers(wgCtx, wg)
 
 			debug.Log("starting snapshot")
-			fn, nodeCount, err := arch.SaveTree(wgCtx, "/", atree, arch.loadParentTree(wgCtx, opts.ParentSnapshot), func(n *restic.Node, is ItemStats) {
+			fn, nodeCount, err := arch.SaveTree(wgCtx, "/", atree, arch.loadParentTree(wgCtx, opts.ParentSnapshot), func(_ *restic.Node, is ItemStats) {
 				arch.CompleteItem("/", nil, nil, is, time.Since(start))
 			})
 			if err != nil {

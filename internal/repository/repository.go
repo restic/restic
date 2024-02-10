@@ -651,7 +651,7 @@ func (r *Repository) LoadIndex(ctx context.Context, p *progress.Counter) error {
 
 	if p != nil {
 		var numIndexFiles uint64
-		err := indexList.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
+		err := indexList.List(ctx, restic.IndexFile, func(_ restic.ID, _ int64) error {
 			numIndexFiles++
 			return nil
 		})
@@ -662,7 +662,7 @@ func (r *Repository) LoadIndex(ctx context.Context, p *progress.Counter) error {
 		defer p.Done()
 	}
 
-	err = index.ForAllIndexes(ctx, indexList, r, func(id restic.ID, idx *index.Index, oldFormat bool, err error) error {
+	err = index.ForAllIndexes(ctx, indexList, r, func(_ restic.ID, idx *index.Index, _ bool, err error) error {
 		if err != nil {
 			return err
 		}

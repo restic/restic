@@ -63,7 +63,7 @@ func runList(ctx context.Context, gopts GlobalOptions, args []string) error {
 	case "locks":
 		t = restic.LockFile
 	case "blobs":
-		return index.ForAllIndexes(ctx, repo, repo, func(id restic.ID, idx *index.Index, oldFormat bool, err error) error {
+		return index.ForAllIndexes(ctx, repo, repo, func(_ restic.ID, idx *index.Index, _ bool, err error) error {
 			if err != nil {
 				return err
 			}
@@ -76,7 +76,7 @@ func runList(ctx context.Context, gopts GlobalOptions, args []string) error {
 		return errors.Fatal("invalid type")
 	}
 
-	return repo.List(ctx, t, func(id restic.ID, size int64) error {
+	return repo.List(ctx, t, func(id restic.ID, _ int64) error {
 		Printf("%s\n", id)
 		return nil
 	})

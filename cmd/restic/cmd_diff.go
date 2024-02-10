@@ -418,7 +418,7 @@ func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []
 	}
 
 	if gopts.Quiet {
-		c.printChange = func(change *Change) {}
+		c.printChange = func(_ *Change) {}
 	}
 
 	stats := &DiffStatsContainer{
