@@ -174,7 +174,7 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 	canWriteArchiveFunc := checkStdoutArchive
 
 	if opts.Target != "" {
-		file, err := os.OpenFile(opts.Target, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0o666)
+		file, err := os.Create(opts.Target)
 		if err != nil {
 			return fmt.Errorf("cannot dump to file: %w", err)
 		}
