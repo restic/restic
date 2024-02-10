@@ -342,7 +342,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		p.Done()
 
 		if len(salvagePacks) > 0 {
-			Warnf("\nThe repository contains pack files with damaged blobs. These blobs must be removed to repair the repository. This can be done using the following commands:\n\n")
+			Warnf("\nThe repository contains pack files with damaged blobs. These blobs must be removed to repair the repository. This can be done using the following commands. Please read the troubleshooting guide at https://restic.readthedocs.io/en/stable/077_troubleshooting.html first.\n\n")
 			var strIDs []string
 			for _, id := range salvagePacks {
 				strIDs = append(strIDs, id.String())
