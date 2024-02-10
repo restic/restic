@@ -5,8 +5,8 @@ import (
 	"io"
 	"os"
 
-	"bazil.org/fuse"
-	"bazil.org/fuse/fs"
+	"github.com/anacrolix/fuse"
+	"github.com/anacrolix/fuse/fs"
 	"github.com/restic/restic/internal/debug"
 	"golang.org/x/net/webdav"
 )

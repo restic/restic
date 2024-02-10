@@ -4,7 +4,7 @@ import (
 	"os"
 	"time"
 
-	"bazil.org/fuse"
+	"github.com/anacrolix/fuse"
 )
 
 // virtFileInfo is used to construct an os.FileInfo for a server.
