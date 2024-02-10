@@ -16,7 +16,7 @@ import (
 )
 
 // SaveBlobFn saves a blob to a repo.
-type SaveBlobFn func(context.Context, restic.BlobType, *Buffer, func(res SaveBlobResponse))
+type SaveBlobFn func(context.Context, restic.BlobType, *Buffer, string, func(res SaveBlobResponse))
 
 // FileSaver concurrently saves incoming files to the repo.
 type FileSaver struct {
@@ -205,7 +205,7 @@ func (s *FileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 		node.Content = append(node.Content, restic.ID{})
 		lock.Unlock()
 
-		s.saveBlob(ctx, restic.DataBlob, buf, func(sbr SaveBlobResponse) {
+		s.saveBlob(ctx, restic.DataBlob, buf, target, func(sbr SaveBlobResponse) {
 			lock.Lock()
 			if !sbr.known {
 				fnr.stats.DataBlobs++
