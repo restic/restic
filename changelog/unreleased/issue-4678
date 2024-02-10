@@ -5,3 +5,4 @@ Restic `dump` always printed to the standard output. It now permits to select a
 
 https://github.com/restic/restic/issues/4678
 https://github.com/restic/restic/pull/4682
+https://github.com/restic/restic/pull/4692
