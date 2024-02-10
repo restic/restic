@@ -516,6 +516,14 @@ func (c *Checker) GetPacks() map[restic.ID]int64 {
 	return c.packs
 }
 
+type partialReadError struct {
+	err error
+}
+
+func (e *partialReadError) Error() string {
+	return e.err.Error()
+}
+
 // checkPack reads a pack and checks the integrity of all blobs.
 func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []restic.Blob, size int64, bufRd *bufio.Reader, dec *zstd.Decoder) error {
 	debug.Log("checking pack %v", id.String())
@@ -559,7 +567,7 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 			if err == repository.ErrPackEOF {
 				break
 			} else if err != nil {
-				return err
+				return &partialReadError{err}
 			}
 			debug.Log("  check blob %v: %v", val.Handle.ID, val.Handle)
 			if val.Err != nil {
@@ -574,7 +582,7 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 		if minHdrStart > curPos {
 			_, err := bufRd.Discard(minHdrStart - curPos)
 			if err != nil {
-				return err
+				return &partialReadError{err}
 			}
 		}
 
@@ -582,16 +590,24 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 		var err error
 		hdrBuf, err = io.ReadAll(bufRd)
 		if err != nil {
-			return err
+			return &partialReadError{err}
 		}
 
 		hash = restic.IDFromHash(hrd.Sum(nil))
 		return nil
 	})
 	if err != nil {
+		var e *partialReadError
+		isPartialReadError := errors.As(err, &e)
 		// failed to load the pack file, return as further checks cannot succeed anyways
-		debug.Log("  error streaming pack: %v", err)
-		return &ErrPackData{PackID: id, errs: append(errs, errors.Errorf("download error: %w", err))}
+		debug.Log("  error streaming pack (partial %v): %v", isPartialReadError, err)
+		if isPartialReadError {
+			return &ErrPackData{PackID: id, errs: append(errs, errors.Errorf("partial download error: %w", err))}
+		}
+
+		// The check command suggests to repair files for which a `ErrPackData` is returned. However, this file
+		// completely failed to download such that there's no point in repairing anything.
+		return errors.Errorf("download error: %w", err)
 	}
 	if !hash.Equal(id) {
 		debug.Log("pack ID does not match, want %v, got %v", id, hash)
