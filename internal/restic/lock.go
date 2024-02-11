@@ -341,7 +341,7 @@ func (l *Lock) checkExistence(ctx context.Context) (bool, error) {
 
 	exists := false
 
-	err := l.repo.List(ctx, LockFile, func(id ID, size int64) error {
+	err := l.repo.List(ctx, LockFile, func(id ID, _ int64) error {
 		if id.Equal(*l.lockID) {
 			exists = true
 		}
@@ -415,7 +415,7 @@ func RemoveStaleLocks(ctx context.Context, repo Repository) (uint, error) {
 // RemoveAllLocks removes all locks forcefully.
 func RemoveAllLocks(ctx context.Context, repo Repository) (uint, error) {
 	var processed uint32
-	err := ParallelList(ctx, repo, LockFile, repo.Connections(), func(ctx context.Context, id ID, size int64) error {
+	err := ParallelList(ctx, repo, LockFile, repo.Connections(), func(ctx context.Context, id ID, _ int64) error {
 		err := repo.Backend().Remove(ctx, backend.Handle{Type: LockFile, Name: id.String()})
 		if err == nil {
 			atomic.AddUint32(&processed, 1)

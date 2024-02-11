@@ -63,7 +63,7 @@ func NewProgress(printer ProgressPrinter, interval time.Duration) *Progress {
 		printer:      printer,
 		estimator:    *newRateEstimator(time.Now()),
 	}
-	p.Updater = *progress.NewUpdater(interval, func(runtime time.Duration, final bool) {
+	p.Updater = *progress.NewUpdater(interval, func(_ time.Duration, final bool) {
 		if final {
 			p.printer.Reset()
 		} else {

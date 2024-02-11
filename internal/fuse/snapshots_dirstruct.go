@@ -295,7 +295,7 @@ func (d *SnapshotsDirStructure) updateSnapshots(ctx context.Context) error {
 	}
 
 	var snapshots restic.Snapshots
-	err := d.root.cfg.Filter.FindAll(ctx, d.root.repo, d.root.repo, nil, func(id string, sn *restic.Snapshot, err error) error {
+	err := d.root.cfg.Filter.FindAll(ctx, d.root.repo, d.root.repo, nil, func(_ string, sn *restic.Snapshot, _ error) error {
 		if sn != nil {
 			snapshots = append(snapshots, sn)
 		}

@@ -125,7 +125,7 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 			node.Size = newSize
 			return node
 		},
-		RewriteFailedTree: func(nodeID restic.ID, path string, _ error) (restic.ID, error) {
+		RewriteFailedTree: func(_ restic.ID, path string, _ error) (restic.ID, error) {
 			if path == "/" {
 				Verbosef("  dir %q: not readable\n", path)
 				// remove snapshots with invalid root node

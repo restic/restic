@@ -37,7 +37,7 @@ EXIT STATUS
 Exit status is 0 if the command was successful, and non-zero if there was any error.
 `,
 	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		return runPrune(cmd.Context(), pruneOptions, globalOptions)
 	},
 }
@@ -101,7 +101,7 @@ func verifyPruneOptions(opts *PruneOptions) error {
 	// parse MaxUnused either as unlimited, a percentage, or an absolute number of bytes
 	switch {
 	case maxUnused == "unlimited":
-		opts.maxUnusedBytes = func(used uint64) uint64 {
+		opts.maxUnusedBytes = func(_ uint64) uint64 {
 			return math.MaxUint64
 		}
 
@@ -130,7 +130,7 @@ func verifyPruneOptions(opts *PruneOptions) error {
 			return errors.Fatalf("invalid number of bytes %q for --max-unused: %v", opts.MaxUnused, err)
 		}
 
-		opts.maxUnusedBytes = func(used uint64) uint64 {
+		opts.maxUnusedBytes = func(_ uint64) uint64 {
 			return uint64(size)
 		}
 	}
@@ -798,7 +798,7 @@ func rebuildIndexFiles(ctx context.Context, gopts GlobalOptions, repo restic.Rep
 		DeleteProgress: func() *progress.Counter {
 			return newProgressMax(!gopts.Quiet, 0, "old indexes deleted")
 		},
-		DeleteReport: func(id restic.ID, err error) {
+		DeleteReport: func(id restic.ID, _ error) {
 			if gopts.verbosity > 2 {
 				Verbosef("removed index %v\n", id.String())
 			}

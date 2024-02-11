@@ -25,10 +25,10 @@ type Scanner struct {
 func NewScanner(fs fs.FS) *Scanner {
 	return &Scanner{
 		FS:           fs,
-		SelectByName: func(item string) bool { return true },
-		Select:       func(item string, fi os.FileInfo) bool { return true },
-		Error:        func(item string, err error) error { return err },
-		Result:       func(item string, s ScanStats) {},
+		SelectByName: func(_ string) bool { return true },
+		Select:       func(_ string, _ os.FileInfo) bool { return true },
+		Error:        func(_ string, err error) error { return err },
+		Result:       func(_ string, _ ScanStats) {},
 	}
 }
 

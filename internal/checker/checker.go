@@ -134,7 +134,7 @@ func (c *Checker) LoadIndex(ctx context.Context, p *progress.Counter) (hints []e
 
 	if p != nil {
 		var numIndexFiles uint64
-		err := indexList.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
+		err := indexList.List(ctx, restic.IndexFile, func(_ restic.ID, _ int64) error {
 			numIndexFiles++
 			return nil
 		})

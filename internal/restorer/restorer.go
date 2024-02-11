@@ -27,7 +27,7 @@ type Restorer struct {
 	SelectFilter func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool)
 }
 
-var restorerAbortOnAllErrors = func(location string, err error) error { return err }
+var restorerAbortOnAllErrors = func(_ string, err error) error { return err }
 
 // NewRestorer creates a restorer preloaded with the content from the snapshot id.
 func NewRestorer(repo restic.Repository, sn *restic.Snapshot, sparse bool,
@@ -239,7 +239,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 
 	// first tree pass: create directories and collect all files to restore
 	_, err = res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
-		enterDir: func(node *restic.Node, target, location string) error {
+		enterDir: func(_ *restic.Node, target, location string) error {
 			debug.Log("first pass, enterDir: mkdir %q, leaveDir should restore metadata", location)
 			if res.progress != nil {
 				res.progress.AddFile(0)
@@ -366,7 +366,7 @@ func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
 		defer close(work)
 
 		_, err := res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
-			visitNode: func(node *restic.Node, target, location string) error {
+			visitNode: func(node *restic.Node, target, _ string) error {
 				if node.Type != "file" {
 					return nil
 				}

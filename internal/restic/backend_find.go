@@ -30,7 +30,7 @@ func Find(ctx context.Context, be Lister, t FileType, prefix string) (ID, error)
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	err := be.List(ctx, t, func(id ID, size int64) error {
+	err := be.List(ctx, t, func(id ID, _ int64) error {
 		name := id.String()
 		if len(name) >= len(prefix) && prefix == name[:len(prefix)] {
 			if match.IsNull() {

@@ -83,7 +83,7 @@ func ForAllSnapshots(ctx context.Context, be Lister, loader LoaderUnpacked, excl
 	var m sync.Mutex
 
 	// For most snapshots decoding is nearly for free, thus just assume were only limited by IO
-	return ParallelList(ctx, be, SnapshotFile, loader.Connections(), func(ctx context.Context, id ID, size int64) error {
+	return ParallelList(ctx, be, SnapshotFile, loader.Connections(), func(ctx context.Context, id ID, _ int64) error {
 		if excludeIDs.Has(id) {
 			return nil
 		}

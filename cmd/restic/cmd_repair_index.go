@@ -24,7 +24,7 @@ EXIT STATUS
 Exit status is 0 if the command was successful, and non-zero if there was any error.
 `,
 	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		return runRebuildIndex(cmd.Context(), repairIndexOptions, globalOptions)
 	},
 }
@@ -78,7 +78,7 @@ func rebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOpti
 
 	if opts.ReadAllPacks {
 		// get list of old index files but start with empty index
-		err := repo.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
+		err := repo.List(ctx, restic.IndexFile, func(id restic.ID, _ int64) error {
 			obsoleteIndexes = append(obsoleteIndexes, id)
 			return nil
 		})
@@ -88,7 +88,7 @@ func rebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOpti
 	} else {
 		Verbosef("loading indexes...\n")
 		mi := index.NewMasterIndex()
-		err := index.ForAllIndexes(ctx, repo, repo, func(id restic.ID, idx *index.Index, oldFormat bool, err error) error {
+		err := index.ForAllIndexes(ctx, repo, repo, func(id restic.ID, idx *index.Index, _ bool, err error) error {
 			if err != nil {
 				Warnf("removing invalid index %v: %v\n", id, err)
 				obsoleteIndexes = append(obsoleteIndexes, id)

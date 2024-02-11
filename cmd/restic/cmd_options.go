@@ -21,7 +21,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	Hidden:            true,
 	DisableAutoGenTag: true,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		fmt.Printf("All Extended Options:\n")
 		var maxLen int
 		for _, opt := range options.List() {

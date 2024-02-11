@@ -367,7 +367,7 @@ func statsDebug(ctx context.Context, repo restic.Repository) error {
 
 func statsDebugFileType(ctx context.Context, repo restic.Lister, tpe restic.FileType) (*sizeHistogram, error) {
 	hist := newSizeHistogram(2 * repository.MaxPackSize)
-	err := repo.List(ctx, tpe, func(id restic.ID, size int64) error {
+	err := repo.List(ctx, tpe, func(_ restic.ID, size int64) error {
 		hist.Add(uint64(size))
 		return nil
 	})
