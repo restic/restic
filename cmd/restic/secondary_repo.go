@@ -109,7 +109,8 @@ func fillSecondaryGlobalOpts(opts secondaryRepoOptions, gopts GlobalOptions, rep
 			return GlobalOptions{}, false, err
 		}
 	}
-	dstGopts.password, err = ReadPassword(dstGopts, "enter password for "+repoPrefix+" repository: ")
+	//FIXME: constant true okay?
+	dstGopts.password, err = ReadPassword(dstGopts, "enter password for "+repoPrefix+" repository: ", true)
 	if err != nil {
 		return GlobalOptions{}, false, err
 	}

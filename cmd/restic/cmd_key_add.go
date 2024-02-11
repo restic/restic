@@ -29,9 +29,10 @@ Exit status is 0 if the command is successful, and non-zero if there was any err
 }
 
 type KeyAddOptions struct {
-	NewPasswordFile string
-	Username        string
-	Hostname        string
+	NewPasswordFile		string
+	InsecurePassword	bool
+	Username		string
+	Hostname		string
 }
 
 var keyAddOpts KeyAddOptions
@@ -41,6 +42,7 @@ func init() {
 
 	flags := cmdKeyAdd.Flags()
 	flags.StringVarP(&keyAddOpts.NewPasswordFile, "new-password-file", "", "", "`file` from which to read the new password")
+	flags.BoolVar(&keyAddOpts.InsecurePassword, "insecure-password", false, "allow an empty password (feel beeing warned)")
 	flags.StringVarP(&keyAddOpts.Username, "user", "", "", "the username for new key")
 	flags.StringVarP(&keyAddOpts.Hostname, "host", "", "", "the hostname for new key")
 }
@@ -65,7 +67,7 @@ func runKeyAdd(ctx context.Context, gopts GlobalOptions, opts KeyAddOptions, arg
 }
 
 func addKey(ctx context.Context, repo *repository.Repository, gopts GlobalOptions, opts KeyAddOptions) error {
-	pw, err := getNewPassword(gopts, opts.NewPasswordFile)
+	pw, err := getNewPassword(gopts, opts.NewPasswordFile, opts.InsecurePassword)
 	if err != nil {
 		return err
 	}
@@ -88,7 +90,7 @@ func addKey(ctx context.Context, repo *repository.Repository, gopts GlobalOption
 // testKeyNewPassword is used to set a new password during integration testing.
 var testKeyNewPassword string
 
-func getNewPassword(gopts GlobalOptions, newPasswordFile string) (string, error) {
+func getNewPassword(gopts GlobalOptions, newPasswordFile string, allowInsecurePassword bool) (string, error) {
 	if testKeyNewPassword != "" {
 		return testKeyNewPassword, nil
 	}
@@ -104,7 +106,8 @@ func getNewPassword(gopts GlobalOptions, newPasswordFile string) (string, error)
 
 	return ReadPasswordTwice(newopts,
 		"enter new password: ",
-		"enter password again: ")
+		"enter password again: ",
+		allowInsecurePassword)
 }
 
 func loadPasswordFromFile(pwdFile string) (string, error) {

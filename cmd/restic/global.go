@@ -313,7 +313,11 @@ func resolvePassword(opts GlobalOptions, envStr string) (string, error) {
 		if errors.Is(err, os.ErrNotExist) {
 			return "", errors.Fatalf("%s does not exist", opts.PasswordFile)
 		}
-		return strings.TrimSpace(string(s)), errors.Wrap(err, "Readfile")
+		pwd := strings.TrimSpace(string(s))
+		if pwd == "" {
+			pwd = emptyPassword
+		}
+		return pwd, errors.Wrap(err, "Readfile")
 	}
 
 	if pwd := os.Getenv(envStr); pwd != "" {
@@ -348,9 +352,11 @@ func readPasswordTerminal(in *os.File, out io.Writer, prompt string) (password s
 	return password, nil
 }
 
+const emptyPassword = "\xff"
+
 // ReadPassword reads the password from a password file, the environment
 // variable RESTIC_PASSWORD or prompts the user.
-func ReadPassword(opts GlobalOptions, prompt string) (string, error) {
+func ReadPassword(opts GlobalOptions, prompt string, allowInsecurePassword bool) (string, error) {
 	if opts.password != "" {
 		return opts.password, nil
 	}
@@ -372,7 +378,12 @@ func ReadPassword(opts GlobalOptions, prompt string) (string, error) {
 	}
 
 	if len(password) == 0 {
-		return "", errors.Fatal("an empty password is not a password")
+		if allowInsecurePassword {
+			Warnf("using an empty password is bad security practice\n")
+			return emptyPassword, nil
+		} else {
+			return "", errors.Fatal("an empty password is not a password")
+		}
 	}
 
 	return password, nil
@@ -380,13 +391,13 @@ func ReadPassword(opts GlobalOptions, prompt string) (string, error) {
 
 // ReadPasswordTwice calls ReadPassword two times and returns an error when the
 // passwords don't match.
-func ReadPasswordTwice(gopts GlobalOptions, prompt1, prompt2 string) (string, error) {
-	pw1, err := ReadPassword(gopts, prompt1)
+func ReadPasswordTwice(gopts GlobalOptions, prompt1, prompt2 string, allowInsecurePassword bool) (string, error) {
+	pw1, err := ReadPassword(gopts, prompt1, allowInsecurePassword)
 	if err != nil {
 		return "", err
 	}
 	if stdinIsTerminal() {
-		pw2, err := ReadPassword(gopts, prompt2)
+		pw2, err := ReadPassword(gopts, prompt2, allowInsecurePassword)
 		if err != nil {
 			return "", err
 		}
@@ -469,7 +480,7 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 	}
 
 	for ; passwordTriesLeft > 0; passwordTriesLeft-- {
-		opts.password, err = ReadPassword(opts, "enter password for repository: ")
+		opts.password, err = ReadPassword(opts, "enter password for repository: ", true)
 		if err != nil && passwordTriesLeft > 1 {
 			opts.password = ""
 			fmt.Printf("%s. Try again\n", err)
