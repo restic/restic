@@ -426,7 +426,7 @@ func readExcludePatternsFromFiles(excludeFiles []string) ([]string, error) {
 			return scanner.Err()
 		}()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read excludes from file %q: %w", filename, err)
 		}
 	}
 	return excludes, nil
