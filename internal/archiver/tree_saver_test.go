@@ -12,7 +12,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func treeSaveHelper(_ context.Context, _ restic.BlobType, buf *Buffer, cb func(res SaveBlobResponse)) {
+func treeSaveHelper(_ context.Context, _ restic.BlobType, buf *Buffer, _ string, cb func(res SaveBlobResponse)) {
 	cb(SaveBlobResponse{
 		id:         restic.NewRandomID(),
 		known:      false,

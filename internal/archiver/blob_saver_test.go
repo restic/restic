@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/restic"
+	rtest "github.com/restic/restic/internal/test"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -57,7 +59,7 @@ func TestBlobSaver(t *testing.T) {
 		lock.Lock()
 		results = append(results, SaveBlobResponse{})
 		lock.Unlock()
-		b.Save(ctx, restic.DataBlob, buf, func(res SaveBlobResponse) {
+		b.Save(ctx, restic.DataBlob, buf, "file", func(res SaveBlobResponse) {
 			lock.Lock()
 			results[idx] = res
 			lock.Unlock()
@@ -106,7 +108,7 @@ func TestBlobSaverError(t *testing.T) {
 
 			for i := 0; i < test.blobs; i++ {
 				buf := &Buffer{Data: []byte(fmt.Sprintf("foo%d", i))}
-				b.Save(ctx, restic.DataBlob, buf, func(res SaveBlobResponse) {})
+				b.Save(ctx, restic.DataBlob, buf, "errfile", func(res SaveBlobResponse) {})
 			}
 
 			b.TriggerShutdown()
@@ -116,9 +118,8 @@ func TestBlobSaverError(t *testing.T) {
 				t.Errorf("expected error not found")
 			}
 
-			if err != errTest {
-				t.Fatalf("unexpected error found: %v", err)
-			}
+			rtest.Assert(t, errors.Is(err, errTest), "unexpected error %v", err)
+			rtest.Assert(t, strings.Contains(err.Error(), "errfile"), "expected error to contain 'errfile' got: %v", err)
 		})
 	}
 }

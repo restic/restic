@@ -33,7 +33,7 @@ func createTestFiles(t testing.TB, num int) (files []string) {
 func startFileSaver(ctx context.Context, t testing.TB) (*FileSaver, context.Context, *errgroup.Group) {
 	wg, ctx := errgroup.WithContext(ctx)
 
-	saveBlob := func(ctx context.Context, tpe restic.BlobType, buf *Buffer, cb func(SaveBlobResponse)) {
+	saveBlob := func(ctx context.Context, tpe restic.BlobType, buf *Buffer, _ string, cb func(SaveBlobResponse)) {
 		cb(SaveBlobResponse{
 			id:         restic.Hash(buf.Data),
 			length:     len(buf.Data),
