@@ -1514,7 +1514,9 @@ _restic_key()
 
     commands=()
     commands+=("add")
+    commands+=("list")
     commands+=("passwd")
+    commands+=("remove")
 
     flags=()
     two_word_flags=()
@@ -1603,6 +1605,22 @@ _restic_key_add()
     noun_aliases=()
 }
 
+_restic_key_list()
+{
+    last_command="restic_key_list"
+
+    command_aliases=()
+
+    commands=()
+
+    flags_with_completion=()
+    flags_completion=()
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _restic_key_passwd()
 {
     last_command="restic_key_passwd"
@@ -1615,6 +1633,22 @@ _restic_key_passwd()
     flags_completion=()
 
     flags+=("--insecure-password")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_restic_key_remove()
+{
+    last_command="restic_key_remove"
+
+    command_aliases=()
+
+    commands=()
+
+    flags_with_completion=()
+    flags_completion=()
 
     must_have_one_flag=()
     must_have_one_noun=()
