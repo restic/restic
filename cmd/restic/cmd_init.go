@@ -36,7 +36,7 @@ type InitOptions struct {
 	secondaryRepoOptions
 	CopyChunkerParameters bool
 	RepositoryVersion     string
-	InsecurePassword      bool
+	AllowEmptyPassword    bool
 }
 
 var initOptions InitOptions
@@ -48,7 +48,7 @@ func init() {
 	initSecondaryRepoOptions(f, &initOptions.secondaryRepoOptions, "secondary", "to copy chunker parameters from")
 	f.BoolVar(&initOptions.CopyChunkerParameters, "copy-chunker-params", false, "copy chunker parameters from the secondary repository (useful with the copy command)")
 	f.StringVar(&initOptions.RepositoryVersion, "repository-version", "stable", "repository format version to use, allowed values are a format version, 'latest' and 'stable'")
-	f.BoolVar(&initOptions.InsecurePassword, "insecure-password", false, "allow an empty password (feel beeing warned)")
+	f.BoolVar(&initOptions.AllowEmptyPassword, "allow-empty-password", false, "allow an empty password (feel beeing warned)")
 }
 
 func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []string) error {
@@ -85,7 +85,7 @@ func runInit(ctx context.Context, opts InitOptions, gopts GlobalOptions, args []
 	gopts.password, err = ReadPasswordTwice(gopts,
 		"enter password for new repository: ",
 		"enter password again: ",
-		opts.InsecurePassword)
+		opts.AllowEmptyPassword)
 	if err != nil {
 		return err
 	}

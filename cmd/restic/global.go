@@ -356,7 +356,7 @@ const emptyPassword = "\xff"
 
 // ReadPassword reads the password from a password file, the environment
 // variable RESTIC_PASSWORD or prompts the user.
-func ReadPassword(opts GlobalOptions, prompt string, allowInsecurePassword bool) (string, error) {
+func ReadPassword(opts GlobalOptions, prompt string, allowAllowEmptyPassword bool) (string, error) {
 	if opts.password != "" {
 		return opts.password, nil
 	}
@@ -378,7 +378,7 @@ func ReadPassword(opts GlobalOptions, prompt string, allowInsecurePassword bool)
 	}
 
 	if len(password) == 0 {
-		if allowInsecurePassword {
+		if allowAllowEmptyPassword {
 			Warnf("using an empty password is bad security practice\n")
 			return emptyPassword, nil
 		} else {
@@ -391,13 +391,13 @@ func ReadPassword(opts GlobalOptions, prompt string, allowInsecurePassword bool)
 
 // ReadPasswordTwice calls ReadPassword two times and returns an error when the
 // passwords don't match.
-func ReadPasswordTwice(gopts GlobalOptions, prompt1, prompt2 string, allowInsecurePassword bool) (string, error) {
-	pw1, err := ReadPassword(gopts, prompt1, allowInsecurePassword)
+func ReadPasswordTwice(gopts GlobalOptions, prompt1, prompt2 string, allowAllowEmptyPassword bool) (string, error) {
+	pw1, err := ReadPassword(gopts, prompt1, allowAllowEmptyPassword)
 	if err != nil {
 		return "", err
 	}
 	if stdinIsTerminal() {
-		pw2, err := ReadPassword(gopts, prompt2, allowInsecurePassword)
+		pw2, err := ReadPassword(gopts, prompt2, allowAllowEmptyPassword)
 		if err != nil {
 			return "", err
 		}

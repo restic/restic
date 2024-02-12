@@ -38,7 +38,7 @@ func init() {
 
 	flags := cmdKeyPasswd.Flags()
 	flags.StringVarP(&keyPasswdOpts.NewPasswordFile, "new-password-file", "", "", "`file` from which to read the new password")
-	flags.BoolVar(&keyPasswdOpts.InsecurePassword, "insecure-password", false, "allow an empty password (feel beeing warned)")
+	flags.BoolVar(&keyPasswdOpts.AllowEmptyPassword, "allow-empty-password", false, "allow an empty password (feel beeing warned)")
 	flags.StringVarP(&keyPasswdOpts.Username, "user", "", "", "the username for new key")
 	flags.StringVarP(&keyPasswdOpts.Hostname, "host", "", "", "the hostname for new key")
 }
@@ -63,7 +63,7 @@ func runKeyPasswd(ctx context.Context, gopts GlobalOptions, opts KeyPasswdOption
 }
 
 func changePassword(ctx context.Context, repo *repository.Repository, gopts GlobalOptions, opts KeyPasswdOptions) error {
-	pw, err := getNewPassword(gopts, opts.NewPasswordFile, opts.InsecurePassword)
+	pw, err := getNewPassword(gopts, opts.NewPasswordFile, opts.AllowEmptyPassword)
 	if err != nil {
 		return err
 	}
