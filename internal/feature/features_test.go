@@ -56,9 +56,13 @@ func TestFeatureDefaults(t *testing.T) {
 	}
 }
 
+func panicIfCalled(msg string) {
+	panic(msg)
+}
+
 func TestEmptyApply(t *testing.T) {
 	flags := buildTestFlagSet()
-	rtest.OK(t, flags.Apply(""))
+	rtest.OK(t, flags.Apply("", panicIfCalled))
 
 	rtest.Assert(t, !flags.Enabled(alpha), "expected alpha feature to be disabled")
 	rtest.Assert(t, flags.Enabled(beta), "expected beta feature to be enabled")
@@ -66,29 +70,37 @@ func TestEmptyApply(t *testing.T) {
 
 func TestFeatureApply(t *testing.T) {
 	flags := buildTestFlagSet()
-	rtest.OK(t, flags.Apply(string(alpha)))
+	rtest.OK(t, flags.Apply(string(alpha), panicIfCalled))
 	rtest.Assert(t, flags.Enabled(alpha), "expected alpha feature to be enabled")
 
-	rtest.OK(t, flags.Apply(fmt.Sprintf("%s=false", alpha)))
+	rtest.OK(t, flags.Apply(fmt.Sprintf("%s=false", alpha), panicIfCalled))
 	rtest.Assert(t, !flags.Enabled(alpha), "expected alpha feature to be disabled")
 
-	rtest.OK(t, flags.Apply(fmt.Sprintf("%s=true", alpha)))
+	rtest.OK(t, flags.Apply(fmt.Sprintf("%s=true", alpha), panicIfCalled))
 	rtest.Assert(t, flags.Enabled(alpha), "expected alpha feature to be enabled again")
 
-	rtest.OK(t, flags.Apply(fmt.Sprintf("%s=false", beta)))
+	rtest.OK(t, flags.Apply(fmt.Sprintf("%s=false", beta), panicIfCalled))
 	rtest.Assert(t, !flags.Enabled(beta), "expected beta feature to be disabled")
 
-	rtest.OK(t, flags.Apply(fmt.Sprintf("%s=false", stable)))
-	rtest.Assert(t, flags.Enabled(stable), "expected stable feature to remain enabled")
+	logMsg := ""
+	log := func(msg string) {
+		logMsg = msg
+	}
 
-	rtest.OK(t, flags.Apply(fmt.Sprintf("%s=true", deprecated)))
+	rtest.OK(t, flags.Apply(fmt.Sprintf("%s=false", stable), log))
+	rtest.Assert(t, flags.Enabled(stable), "expected stable feature to remain enabled")
+	rtest.Assert(t, strings.Contains(logMsg, string(stable)), "unexpected log message for stable flag: %v", logMsg)
+
+	logMsg = ""
+	rtest.OK(t, flags.Apply(fmt.Sprintf("%s=true", deprecated), log))
 	rtest.Assert(t, !flags.Enabled(deprecated), "expected deprecated feature to remain disabled")
+	rtest.Assert(t, strings.Contains(logMsg, string(deprecated)), "unexpected log message for deprecated flag: %v", logMsg)
 }
 
 func TestFeatureMultipleApply(t *testing.T) {
 	flags := buildTestFlagSet()
 
-	rtest.OK(t, flags.Apply(fmt.Sprintf("%s=true,%s=false", alpha, beta)))
+	rtest.OK(t, flags.Apply(fmt.Sprintf("%s=true,%s=false", alpha, beta), panicIfCalled))
 	rtest.Assert(t, flags.Enabled(alpha), "expected alpha feature to be enabled")
 	rtest.Assert(t, !flags.Enabled(beta), "expected beta feature to be disabled")
 }
@@ -96,10 +108,10 @@ func TestFeatureMultipleApply(t *testing.T) {
 func TestFeatureApplyInvalid(t *testing.T) {
 	flags := buildTestFlagSet()
 
-	err := flags.Apply("invalid-flag")
+	err := flags.Apply("invalid-flag", panicIfCalled)
 	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "unknown feature flag"), "expected unknown feature flag error, got: %v", err)
 
-	err = flags.Apply(fmt.Sprintf("%v=invalid", alpha))
+	err = flags.Apply(fmt.Sprintf("%v=invalid", alpha), panicIfCalled)
 	rtest.Assert(t, err != nil && strings.Contains(err.Error(), "failed to parse value"), "expected parsing error, got: %v", err)
 }
 

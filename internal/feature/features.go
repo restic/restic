@@ -57,7 +57,7 @@ func (f *FlagSet) SetFlags(flags map[FlagName]FlagDesc) {
 	}
 }
 
-func (f *FlagSet) Apply(flags string) error {
+func (f *FlagSet) Apply(flags string, logWarning func(string)) error {
 	if flags == "" {
 		return nil
 	}
@@ -92,9 +92,9 @@ func (f *FlagSet) Apply(flags string) error {
 		case Alpha, Beta:
 			f.enabled[fname] = value
 		case Stable:
-			// FIXME print warning
+			logWarning(fmt.Sprintf("feature flag %q is always enabled and will be removed in a future release", fname))
 		case Deprecated:
-			// FIXME print warning
+			logWarning(fmt.Sprintf("feature flag %q is always disabled and will be removed in a future release", fname))
 		default:
 			panic("unknown feature phase")
 		}

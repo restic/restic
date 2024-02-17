@@ -104,7 +104,9 @@ func main() {
 	// we can show the logs
 	log.SetOutput(logBuffer)
 
-	err := feature.Flag.Apply(os.Getenv("RESTIC_FEATURES"))
+	err := feature.Flag.Apply(os.Getenv("RESTIC_FEATURES"), func(s string) {
+		fmt.Fprintln(os.Stderr, s)
+	})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		Exit(1)

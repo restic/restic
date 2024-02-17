@@ -15,13 +15,17 @@ import (
 func TestSetFlag(t *testing.T, f *FlagSet, flag FlagName, value bool) func() {
 	current := f.Enabled(flag)
 
-	if err := f.Apply(fmt.Sprintf("%s=%v", flag, value)); err != nil {
+	panicIfCalled := func(msg string) {
+		panic(msg)
+	}
+
+	if err := f.Apply(fmt.Sprintf("%s=%v", flag, value), panicIfCalled); err != nil {
 		// not reachable
 		panic(err)
 	}
 
 	return func() {
-		if err := f.Apply(fmt.Sprintf("%s=%v", flag, current)); err != nil {
+		if err := f.Apply(fmt.Sprintf("%s=%v", flag, current), panicIfCalled); err != nil {
 			// not reachable
 			panic(err)
 		}
