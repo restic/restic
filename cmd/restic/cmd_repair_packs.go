@@ -40,13 +40,6 @@ func init() {
 }
 
 func runRepairPacks(ctx context.Context, gopts GlobalOptions, term *termstatus.Terminal, args []string) error {
-	// FIXME discuss and add proper feature flag mechanism
-	flag, _ := os.LookupEnv("RESTIC_FEATURES")
-	if flag != "repair-packs-v1" {
-		return errors.Fatal("This command is experimental and may change/be removed without notice between restic versions. " +
-			"Set the environment variable 'RESTIC_FEATURES=repair-packs-v1' to enable it.")
-	}
-
 	ids := restic.NewIDSet()
 	for _, arg := range args {
 		id, err := restic.ParseID(arg)
