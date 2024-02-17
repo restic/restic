@@ -1116,13 +1116,16 @@ func (b *PackBlobIterator) Next() (PackBlobValue, error) {
 	// decryption errors are likely permanent, give the caller a chance to skip them
 	nonce, ciphertext := b.buf[:b.key.NonceSize()], b.buf[b.key.NonceSize():]
 	plaintext, err := b.key.Open(ciphertext[:0], nonce, ciphertext, nil)
+	if err != nil {
+		err = fmt.Errorf("decrypting blob %v from %v failed: %w", h, b.packID.Str(), err)
+	}
 	if err == nil && entry.IsCompressed() {
 		// DecodeAll will allocate a slice if it is not large enough since it
 		// knows the decompressed size (because we're using EncodeAll)
 		b.decode, err = b.dec.DecodeAll(plaintext, b.decode[:0])
 		plaintext = b.decode
 		if err != nil {
-			err = errors.Errorf("decompressing blob %v failed: %v", h, err)
+			err = fmt.Errorf("decompressing blob %v from %v failed: %w", h, b.packID.Str(), err)
 		}
 	}
 	if err == nil {
