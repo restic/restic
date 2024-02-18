@@ -1,0 +1,8 @@
+Enhancement: `ls` uses `message_type` field to distinguish JSON messages
+
+The `ls` command was the only command that used the `struct_type` field to determine
+the message type in the JSON output format. Now, the JSON output of the
+`ls` command also includes the `message_type`. The `struct_type` field is
+still included, but it deprecated.
+
+https://github.com/restic/restic/pull/4664

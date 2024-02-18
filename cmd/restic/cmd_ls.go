@@ -83,16 +83,18 @@ type jsonLsPrinter struct {
 func (p *jsonLsPrinter) Snapshot(sn *restic.Snapshot) {
 	type lsSnapshot struct {
 		*restic.Snapshot
-		ID         *restic.ID `json:"id"`
-		ShortID    string     `json:"short_id"`
-		StructType string     `json:"struct_type"` // "snapshot"
+		ID          *restic.ID `json:"id"`
+		ShortID     string     `json:"short_id"`
+		MessageType string     `json:"message_type"` // "snapshot"
+		StructType  string     `json:"struct_type"`  // "snapshot", deprecated
 	}
 
 	err := p.enc.Encode(lsSnapshot{
-		Snapshot:   sn,
-		ID:         sn.ID(),
-		ShortID:    sn.ID().Str(),
-		StructType: "snapshot",
+		Snapshot:    sn,
+		ID:          sn.ID(),
+		ShortID:     sn.ID().Str(),
+		MessageType: "snapshot",
+		StructType:  "snapshot",
 	})
 	if err != nil {
 		Warnf("JSON encode failed: %v\n", err)
@@ -121,7 +123,8 @@ func lsNodeJSON(enc *json.Encoder, path string, node *restic.Node) error {
 		AccessTime  time.Time   `json:"atime,omitempty"`
 		ChangeTime  time.Time   `json:"ctime,omitempty"`
 		Inode       uint64      `json:"inode,omitempty"`
-		StructType  string      `json:"struct_type"` // "node"
+		MessageType string      `json:"message_type"` // "node"
+		StructType  string      `json:"struct_type"`  // "node", deprecated
 
 		size uint64 // Target for Size pointer.
 	}{
@@ -137,6 +140,7 @@ func lsNodeJSON(enc *json.Encoder, path string, node *restic.Node) error {
 		AccessTime:  node.AccessTime,
 		ChangeTime:  node.ChangeTime,
 		Inode:       node.Inode,
+		MessageType: "node",
 		StructType:  "node",
 	}
 	// Always print size for regular files, even when empty,
