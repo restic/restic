@@ -739,6 +739,7 @@ type SnapshotOptions struct {
 	Tags           restic.TagList
 	Hostname       string
 	Excludes       []string
+	BackupStart    time.Time
 	Time           time.Time
 	ParentSnapshot *restic.Snapshot
 	ProgramVersion string
@@ -866,6 +867,23 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		sn.Parent = opts.ParentSnapshot.ID()
 	}
 	sn.Tree = &rootTreeID
+	sn.Summary = &restic.SnapshotSummary{
+		BackupStart: opts.BackupStart,
+		BackupEnd:   time.Now(),
+
+		FilesNew:            arch.summary.Files.New,
+		FilesChanged:        arch.summary.Files.Changed,
+		FilesUnmodified:     arch.summary.Files.Unchanged,
+		DirsNew:             arch.summary.Dirs.New,
+		DirsChanged:         arch.summary.Dirs.Changed,
+		DirsUnmodified:      arch.summary.Dirs.Unchanged,
+		DataBlobs:           arch.summary.ItemStats.DataBlobs,
+		TreeBlobs:           arch.summary.ItemStats.TreeBlobs,
+		DataAdded:           arch.summary.ItemStats.DataSize + arch.summary.ItemStats.TreeSize,
+		DataAddedInRepo:     arch.summary.ItemStats.DataSizeInRepo + arch.summary.ItemStats.TreeSizeInRepo,
+		TotalFilesProcessed: arch.summary.Files.New + arch.summary.Files.Changed + arch.summary.Files.Unchanged,
+		TotalBytesProcessed: arch.summary.ProcessedBytes,
+	}
 
 	id, err := restic.SaveSnapshot(ctx, arch.Repo, sn)
 	if err != nil {
