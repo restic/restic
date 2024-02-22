@@ -163,7 +163,7 @@ func (b *JSONProgress) ReportTotal(start time.Time, s archiver.ScanStats) {
 }
 
 // Finish prints the finishing messages.
-func (b *JSONProgress) Finish(snapshotID restic.ID, start time.Time, summary *Summary, dryRun bool) {
+func (b *JSONProgress) Finish(snapshotID restic.ID, start time.Time, summary *archiver.Summary, dryRun bool) {
 	b.print(summaryOutput{
 		MessageType:         "summary",
 		FilesNew:            summary.Files.New,

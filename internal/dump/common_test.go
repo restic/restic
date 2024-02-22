@@ -78,7 +78,7 @@ func WriteTest(t *testing.T, format string, cd CheckDump) {
 			back := rtest.Chdir(t, tmpdir)
 			defer back()
 
-			sn, _, err := arch.Snapshot(ctx, []string{"."}, archiver.SnapshotOptions{})
+			sn, _, _, err := arch.Snapshot(ctx, []string{"."}, archiver.SnapshotOptions{})
 			rtest.OK(t, err)
 
 			tree, err := restic.LoadTree(ctx, repo, *sn.Tree)
