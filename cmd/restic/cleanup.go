@@ -19,7 +19,7 @@ var cleanupHandlers struct {
 func init() {
 	cleanupHandlers.ch = make(chan os.Signal, 1)
 	go CleanupHandler(cleanupHandlers.ch)
-	signal.Notify(cleanupHandlers.ch, syscall.SIGINT)
+	signal.Notify(cleanupHandlers.ch, syscall.SIGINT, syscall.SIGTERM)
 }
 
 // AddCleanupHandler adds the function f to the list of cleanup handlers so
@@ -56,7 +56,7 @@ func RunCleanupHandlers(code int) int {
 	return code
 }
 
-// CleanupHandler handles the SIGINT signals.
+// CleanupHandler handles the SIGINT and SIGTERM signals.
 func CleanupHandler(c <-chan os.Signal) {
 	for s := range c {
 		debug.Log("signal %v received, cleaning up", s)
@@ -70,7 +70,7 @@ func CleanupHandler(c <-chan os.Signal) {
 
 		code := 0
 
-		if s == syscall.SIGINT {
+		if s == syscall.SIGINT || s == syscall.SIGTERM {
 			code = 130
 		} else {
 			code = 1
