@@ -56,7 +56,7 @@ func RunCleanupHandlers(code int) int {
 	return code
 }
 
-// CleanupHandler handles the SIGINT signals.
+// CleanupHandler handles the SIGINT and SIGTERM signals.
 func CleanupHandler(c <-chan os.Signal) {
 	for s := range c {
 		debug.Log("signal %v received, cleaning up", s)
