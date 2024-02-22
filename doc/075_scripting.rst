@@ -163,7 +163,9 @@ Summary is the last output line in a successful backup.
 +---------------------------+---------------------------------------------------------+
 | ``tree_blobs``            | Number of tree blobs                                    |
 +---------------------------+---------------------------------------------------------+
-| ``data_added``            | Amount of data added, in bytes                          |
+| ``data_added``            | Amount of (uncompressed) data added, in bytes           |
++---------------------------+---------------------------------------------------------+
+| ``data_added_in_repo``    | Amount of data added (after compression), in bytes      |
 +---------------------------+---------------------------------------------------------+
 | ``total_files_processed`` | Total number of files processed                         |
 +---------------------------+---------------------------------------------------------+
