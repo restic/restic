@@ -1637,6 +1637,21 @@ func (f MockFile) Read(p []byte) (int, error) {
 	return n, err
 }
 
+func checkSnapshotStats(t *testing.T, sn *restic.Snapshot, stat Summary) {
+	restictest.Equals(t, stat.Files.New, sn.Summary.FilesNew)
+	restictest.Equals(t, stat.Files.Changed, sn.Summary.FilesChanged)
+	restictest.Equals(t, stat.Files.Unchanged, sn.Summary.FilesUnmodified)
+	restictest.Equals(t, stat.Dirs.New, sn.Summary.DirsNew)
+	restictest.Equals(t, stat.Dirs.Changed, sn.Summary.DirsChanged)
+	restictest.Equals(t, stat.Dirs.Unchanged, sn.Summary.DirsUnmodified)
+	restictest.Equals(t, stat.ProcessedBytes, sn.Summary.TotalBytesProcessed)
+	restictest.Equals(t, stat.Files.New+stat.Files.Changed+stat.Files.Unchanged, sn.Summary.TotalFilesProcessed)
+	bothZeroOrNeither(t, uint64(stat.DataBlobs), uint64(sn.Summary.DataBlobs))
+	bothZeroOrNeither(t, uint64(stat.TreeBlobs), uint64(sn.Summary.TreeBlobs))
+	bothZeroOrNeither(t, uint64(stat.DataSize+stat.TreeSize), uint64(sn.Summary.DataAdded))
+	bothZeroOrNeither(t, uint64(stat.DataSizeInRepo+stat.TreeSizeInRepo), uint64(sn.Summary.DataAddedInRepo))
+}
+
 func TestArchiverParent(t *testing.T) {
 	var tests = []struct {
 		src         TestDir
@@ -1652,6 +1667,7 @@ func TestArchiverParent(t *testing.T) {
 				Files:          ChangeStats{1, 0, 0},
 				Dirs:           ChangeStats{0, 0, 0},
 				ProcessedBytes: 2102152,
+				ItemStats:      ItemStats{3, 0x201593, 0x201632, 1, 0, 0},
 			},
 			statSecond: Summary{
 				Files:          ChangeStats{0, 0, 1},
@@ -1670,6 +1686,7 @@ func TestArchiverParent(t *testing.T) {
 				Files:          ChangeStats{2, 0, 0},
 				Dirs:           ChangeStats{1, 0, 0},
 				ProcessedBytes: 2469,
+				ItemStats:      ItemStats{2, 0xe1c, 0xcd9, 2, 0, 0},
 			},
 			statSecond: Summary{
 				Files:          ChangeStats{0, 0, 2},
@@ -1692,11 +1709,13 @@ func TestArchiverParent(t *testing.T) {
 				Files:          ChangeStats{2, 0, 0},
 				Dirs:           ChangeStats{1, 0, 0},
 				ProcessedBytes: 2469,
+				ItemStats:      ItemStats{2, 0xe13, 0xcf8, 2, 0, 0},
 			},
 			statSecond: Summary{
 				Files:          ChangeStats{0, 1, 0},
 				Dirs:           ChangeStats{0, 1, 0},
 				ProcessedBytes: 6,
+				ItemStats:      ItemStats{1, 0x305, 0x233, 2, 0, 0},
 			},
 		},
 	}
@@ -1746,6 +1765,7 @@ func TestArchiverParent(t *testing.T) {
 			restictest.Equals(t, test.statInitial.Files, summary.Files)
 			restictest.Equals(t, test.statInitial.Dirs, summary.Dirs)
 			restictest.Equals(t, test.statInitial.ProcessedBytes, summary.ProcessedBytes)
+			checkSnapshotStats(t, firstSnapshot, test.statInitial)
 
 			if test.modify != nil {
 				test.modify(tempdir)
@@ -1756,7 +1776,7 @@ func TestArchiverParent(t *testing.T) {
 				ParentSnapshot: firstSnapshot,
 			}
 			testFS.bytesRead = map[string]int{}
-			_, secondSnapshotID, summary, err := arch.Snapshot(ctx, []string{"."}, opts)
+			secondSnapshot, secondSnapshotID, summary, err := arch.Snapshot(ctx, []string{"."}, opts)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1768,6 +1788,7 @@ func TestArchiverParent(t *testing.T) {
 			restictest.Equals(t, test.statSecond.Files, summary.Files)
 			restictest.Equals(t, test.statSecond.Dirs, summary.Dirs)
 			restictest.Equals(t, test.statSecond.ProcessedBytes, summary.ProcessedBytes)
+			checkSnapshotStats(t, secondSnapshot, test.statSecond)
 
 			t.Logf("second backup saved as %v", secondSnapshotID.Str())
 			t.Logf("testfs: %v", testFS)
