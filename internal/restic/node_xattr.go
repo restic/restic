@@ -50,8 +50,8 @@ func handleXattrErr(err error) error {
 }
 
 // restoreGenericAttributes is no-op.
-func (node *Node) restoreGenericAttributes(_ string) error {
-	return node.handleAllUnknownGenericAttributesFound()
+func (node *Node) restoreGenericAttributes(_ string, warn func(msg string)) error {
+	return node.handleAllUnknownGenericAttributesFound(warn)
 }
 
 // fillGenericAttributes is a no-op.

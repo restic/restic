@@ -24,6 +24,7 @@ type Restorer struct {
 	progress *restoreui.Progress
 
 	Error        func(location string, err error) error
+	Warn         func(message string)
 	SelectFilter func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool)
 }
 
@@ -178,7 +179,7 @@ func (res *Restorer) restoreNodeTo(ctx context.Context, node *restic.Node, targe
 
 func (res *Restorer) restoreNodeMetadataTo(node *restic.Node, target, location string) error {
 	debug.Log("restoreNodeMetadata %v %v %v", node.Name, target, location)
-	err := node.RestoreMetadata(target)
+	err := node.RestoreMetadata(target, res.Warn)
 	if err != nil {
 		debug.Log("node.RestoreMetadata(%s) error %v", target, err)
 	}

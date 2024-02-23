@@ -39,8 +39,8 @@ func Setxattr(path, name string, data []byte) error {
 }
 
 // restoreGenericAttributes is no-op on AIX.
-func (node *Node) restoreGenericAttributes(_ string) error {
-	return node.handleAllUnknownGenericAttributesFound()
+func (node *Node) restoreGenericAttributes(_ string, warn func(msg string)) error {
+	return node.handleAllUnknownGenericAttributesFound(warn)
 }
 
 // fillGenericAttributes is a no-op on AIX.

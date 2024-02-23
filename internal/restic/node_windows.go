@@ -118,7 +118,7 @@ func (s statT) ctim() syscall.Timespec {
 }
 
 // restoreGenericAttributes restores generic attributes for Windows
-func (node Node) restoreGenericAttributes(path string) (err error) {
+func (node Node) restoreGenericAttributes(path string, warn func(msg string)) (err error) {
 	if len(node.GenericAttributes) == 0 {
 		return nil
 	}
@@ -138,7 +138,7 @@ func (node Node) restoreGenericAttributes(path string) (err error) {
 		}
 	}
 
-	HandleUnknownGenericAttributesFound(unknownAttribs)
+	HandleUnknownGenericAttributesFound(unknownAttribs, warn)
 	return errors.CombineErrors(errs...)
 }
 

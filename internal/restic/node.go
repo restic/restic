@@ -224,8 +224,8 @@ func (node *Node) CreateAt(ctx context.Context, path string, repo BlobLoader) er
 }
 
 // RestoreMetadata restores node metadata
-func (node Node) RestoreMetadata(path string) error {
-	err := node.restoreMetadata(path)
+func (node Node) RestoreMetadata(path string, warn func(msg string)) error {
+	err := node.restoreMetadata(path, warn)
 	if err != nil {
 		debug.Log("restoreMetadata(%s) error %v", path, err)
 	}
@@ -233,7 +233,7 @@ func (node Node) RestoreMetadata(path string) error {
 	return err
 }
 
-func (node Node) restoreMetadata(path string) error {
+func (node Node) restoreMetadata(path string, warn func(msg string)) error {
 	var firsterr error
 
 	if err := lchown(path, int(node.UID), int(node.GID)); err != nil {
@@ -261,7 +261,7 @@ func (node Node) restoreMetadata(path string) error {
 		}
 	}
 
-	if err := node.restoreGenericAttributes(path); err != nil {
+	if err := node.restoreGenericAttributes(path, warn); err != nil {
 		debug.Log("error restoring generic attributes for %v: %v", path, err)
 		if firsterr != nil {
 			firsterr = err
@@ -766,14 +766,14 @@ func (node *Node) fillTimes(stat *statT) {
 }
 
 // HandleUnknownGenericAttributesFound is used for handling and distinguing between scenarios related to future versions and cross-OS repositories
-func HandleUnknownGenericAttributesFound(unknownAttribs []GenericAttributeType) {
+func HandleUnknownGenericAttributesFound(unknownAttribs []GenericAttributeType, warn func(msg string)) {
 	for _, unknownAttrib := range unknownAttribs {
-		handleUnknownGenericAttributeFound(unknownAttrib)
+		handleUnknownGenericAttributeFound(unknownAttrib, warn)
 	}
 }
 
 // handleUnknownGenericAttributeFound is used for handling and distinguing between scenarios related to future versions and cross-OS repositories
-func handleUnknownGenericAttributeFound(genericAttributeType GenericAttributeType) {
+func handleUnknownGenericAttributeFound(genericAttributeType GenericAttributeType, warn func(msg string)) {
 	if checkGenericAttributeNameNotHandledAndPut(genericAttributeType) {
 		// Print the unique error only once for a given execution
 		os, exists := genericAttributesForOS[genericAttributeType]
@@ -784,7 +784,7 @@ func handleUnknownGenericAttributeFound(genericAttributeType GenericAttributeTyp
 			debug.Log("Ignoring a generic attribute found in the repository: %s which may not be compatible with your OS. Compatible OS: %s", genericAttributeType, os)
 		} else {
 			// If genericAttributesForOS in node.go does not know about this attribute, then the repository may have been created by a newer version which has a newer GenericAttributeType.
-			debug.Log("Found an unrecognized generic attribute in the repository: %s. You may need to upgrade to latest version of restic.", genericAttributeType)
+			warn(fmt.Sprintf("Found an unrecognized generic attribute in the repository: %s. You may need to upgrade to latest version of restic.", genericAttributeType))
 		}
 	}
 }
@@ -792,9 +792,9 @@ func handleUnknownGenericAttributeFound(genericAttributeType GenericAttributeTyp
 // handleAllUnknownGenericAttributesFound performs validations for all generic attributes in the node.
 // This is not used on windows currently because windows has handling for generic attributes.
 // nolint:unused
-func (node Node) handleAllUnknownGenericAttributesFound() error {
+func (node Node) handleAllUnknownGenericAttributesFound(warn func(msg string)) error {
 	for name := range node.GenericAttributes {
-		handleUnknownGenericAttributeFound(name)
+		handleUnknownGenericAttributeFound(name, warn)
 	}
 	return nil
 }
