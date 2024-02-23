@@ -205,11 +205,19 @@ func (res *Restorer) restoreHardlinkAt(node *restic.Node, target, path, location
 
 func (res *Restorer) restoreEmptyFileAt(node *restic.Node, target, location string) error {
 	wr, err := os.OpenFile(target, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
-	if err != nil {
-		return err
+	if fs.IsAccessDenied(err) {
+		// If file is readonly, clear the readonly flag by resetting the
+		// permissions of the file and try again
+		// as the metadata will be set again in the second pass and the
+		// readonly flag will be applied again if needed.
+		if err = fs.ResetPermissions(target); err != nil {
+			return err
+		}
+		if wr, err = os.OpenFile(target, os.O_TRUNC|os.O_WRONLY, 0600); err != nil {
+			return err
+		}
 	}
-	err = wr.Close()
-	if err != nil {
+	if err = wr.Close(); err != nil {
 		return err
 	}
 
