@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/archiver"
+	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
 )
@@ -180,19 +181,25 @@ func (p *Progress) CompleteItem(item string, previous, current *restic.Node, s a
 		case previous == nil:
 			p.printer.CompleteItem("file new", item, s, d)
 			p.mu.Lock()
-			p.summary.Files.New++
+			if fs.IsMainFile(item) {
+				p.summary.Files.New++
+			}
 			p.mu.Unlock()
 
 		case previous.Equals(*current):
 			p.printer.CompleteItem("file unchanged", item, s, d)
 			p.mu.Lock()
-			p.summary.Files.Unchanged++
+			if fs.IsMainFile(item) {
+				p.summary.Files.Unchanged++
+			}
 			p.mu.Unlock()
 
 		default:
 			p.printer.CompleteItem("file modified", item, s, d)
 			p.mu.Lock()
-			p.summary.Files.Changed++
+			if fs.IsMainFile(item) {
+				p.summary.Files.Changed++
+			}
 			p.mu.Unlock()
 		}
 	}

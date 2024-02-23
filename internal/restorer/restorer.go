@@ -242,7 +242,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 		enterDir: func(_ *restic.Node, target, location string) error {
 			debug.Log("first pass, enterDir: mkdir %q, leaveDir should restore metadata", location)
 			if res.progress != nil {
-				res.progress.AddFile(0)
+				res.addFile(node, 0)
 			}
 			// create dir with default permissions
 			// #leaveDir restores dir metadata after visiting all children
@@ -260,14 +260,14 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 
 			if node.Type != "file" {
 				if res.progress != nil {
-					res.progress.AddFile(0)
+					res.addFile(node, 0)
 				}
 				return nil
 			}
 
 			if node.Size == 0 {
 				if res.progress != nil {
-					res.progress.AddFile(node.Size)
+					res.addFile(node, node.Size)
 				}
 				return nil // deal with empty files later
 			}
@@ -276,7 +276,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 				if idx.Has(node.Inode, node.DeviceID) {
 					if res.progress != nil {
 						// a hardlinked file does not increase the restore size
-						res.progress.AddFile(0)
+						res.addFile(node, 0)
 					}
 					return nil
 				}
@@ -284,7 +284,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 			}
 
 			if res.progress != nil {
-				res.progress.AddFile(node.Size)
+				res.addFile(node, node.Size)
 			}
 
 			filerestorer.addFile(location, node.Content, int64(node.Size))
@@ -334,6 +334,15 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 		},
 	})
 	return err
+}
+
+func (res *Restorer) addFile(node *restic.Node, size uint64) {
+	if fs.IsMainFile(node.Name) {
+		res.progress.AddFile(size)
+	} else {
+		// If this is not the main file, we just want to update the size and not the count.
+		res.progress.AddSize(size)
+	}
 }
 
 // Snapshot returns the snapshot this restorer is configured to use.

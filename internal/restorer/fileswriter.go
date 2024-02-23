@@ -51,14 +51,7 @@ func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create
 			return wr, nil
 		}
 
-		var flags int
-		if createSize >= 0 {
-			flags = os.O_CREATE | os.O_TRUNC | os.O_WRONLY
-		} else {
-			flags = os.O_WRONLY
-		}
-
-		f, err := os.OpenFile(path, flags, 0600)
+		f, err := w.OpenFile(createSize, path)
 		if err != nil {
 			return nil, err
 		}

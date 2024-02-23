@@ -68,11 +68,11 @@ func (s TestSymlink) String() string {
 func TestCreateFiles(t testing.TB, target string, dir TestDir) {
 	t.Helper()
 	for name, item := range dir {
-		targetPath := filepath.Join(target, name)
+		targetPath := getTargetPath(target, name)
 
 		switch it := item.(type) {
 		case TestFile:
-			err := os.WriteFile(targetPath, []byte(it.Content), 0644)
+			err := writeFile(t, targetPath, it.Content)
 			if err != nil {
 				t.Fatal(err)
 			}
