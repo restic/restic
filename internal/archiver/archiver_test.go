@@ -986,9 +986,9 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 
 // bothZeroOrNeither fails the test if only one of exp, act is zero.
 func bothZeroOrNeither(tb testing.TB, exp, act uint64) {
+	tb.Helper()
 	if (exp == 0 && act != 0) || (exp != 0 && act == 0) {
-		_, file, line, _ := runtime.Caller(1)
-		tb.Fatalf("\033[31m%s:%d:\n\n\texp: %#v\n\n\tgot: %#v\033[39m\n\n", filepath.Base(file), line, exp, act)
+		restictest.Equals(tb, exp, act)
 	}
 }
 
@@ -1008,7 +1008,7 @@ func TestArchiverSaveTree(t *testing.T) {
 		prepare func(t testing.TB)
 		targets []string
 		want    TestDir
-		stat    ItemStats
+		stat    Summary
 	}{
 		{
 			src: TestDir{
@@ -1018,7 +1018,12 @@ func TestArchiverSaveTree(t *testing.T) {
 			want: TestDir{
 				"targetfile": TestFile{Content: string("foobar")},
 			},
-			stat: ItemStats{1, 6, 32 + 6, 0, 0, 0},
+			stat: Summary{
+				ItemStats:      ItemStats{1, 6, 32 + 6, 0, 0, 0},
+				ProcessedBytes: 6,
+				Files:          ChangeStats{1, 0, 0},
+				Dirs:           ChangeStats{0, 0, 0},
+			},
 		},
 		{
 			src: TestDir{
@@ -1030,7 +1035,12 @@ func TestArchiverSaveTree(t *testing.T) {
 				"targetfile":  TestFile{Content: string("foobar")},
 				"filesymlink": TestSymlink{Target: "targetfile"},
 			},
-			stat: ItemStats{1, 6, 32 + 6, 0, 0, 0},
+			stat: Summary{
+				ItemStats:      ItemStats{1, 6, 32 + 6, 0, 0, 0},
+				ProcessedBytes: 6,
+				Files:          ChangeStats{1, 0, 0},
+				Dirs:           ChangeStats{0, 0, 0},
+			},
 		},
 		{
 			src: TestDir{
@@ -1050,7 +1060,12 @@ func TestArchiverSaveTree(t *testing.T) {
 					"symlink": TestSymlink{Target: "subdir"},
 				},
 			},
-			stat: ItemStats{0, 0, 0, 1, 0x154, 0x16a},
+			stat: Summary{
+				ItemStats:      ItemStats{0, 0, 0, 1, 0x154, 0x16a},
+				ProcessedBytes: 0,
+				Files:          ChangeStats{0, 0, 0},
+				Dirs:           ChangeStats{1, 0, 0},
+			},
 		},
 		{
 			src: TestDir{
@@ -1074,7 +1089,12 @@ func TestArchiverSaveTree(t *testing.T) {
 					},
 				},
 			},
-			stat: ItemStats{1, 6, 32 + 6, 3, 0x47f, 0x4c1},
+			stat: Summary{
+				ItemStats:      ItemStats{1, 6, 32 + 6, 3, 0x47f, 0x4c1},
+				ProcessedBytes: 6,
+				Files:          ChangeStats{1, 0, 0},
+				Dirs:           ChangeStats{3, 0, 0},
+			},
 		},
 	}
 
@@ -1085,14 +1105,6 @@ func TestArchiverSaveTree(t *testing.T) {
 			testFS := fs.Track{FS: fs.Local{}}
 
 			arch := New(repo, testFS, Options{})
-
-			var stat ItemStats
-			lock := &sync.Mutex{}
-			arch.CompleteItem = func(item string, previous, current *restic.Node, s ItemStats, d time.Duration) {
-				lock.Lock()
-				defer lock.Unlock()
-				stat.Add(s)
-			}
 
 			wg, ctx := errgroup.WithContext(context.TODO())
 			repo.StartPackUploader(ctx, wg)
@@ -1139,11 +1151,15 @@ func TestArchiverSaveTree(t *testing.T) {
 				want = test.src
 			}
 			TestEnsureTree(context.TODO(), t, "/", repo, treeID, want)
+			stat := arch.summary
 			bothZeroOrNeither(t, uint64(test.stat.DataBlobs), uint64(stat.DataBlobs))
 			bothZeroOrNeither(t, uint64(test.stat.TreeBlobs), uint64(stat.TreeBlobs))
 			bothZeroOrNeither(t, test.stat.DataSize, stat.DataSize)
 			bothZeroOrNeither(t, test.stat.DataSizeInRepo, stat.DataSizeInRepo)
 			bothZeroOrNeither(t, test.stat.TreeSizeInRepo, stat.TreeSizeInRepo)
+			restictest.Equals(t, test.stat.ProcessedBytes, stat.ProcessedBytes)
+			restictest.Equals(t, test.stat.Files, stat.Files)
+			restictest.Equals(t, test.stat.Dirs, stat.Dirs)
 		})
 	}
 }
@@ -1623,15 +1639,64 @@ func (f MockFile) Read(p []byte) (int, error) {
 
 func TestArchiverParent(t *testing.T) {
 	var tests = []struct {
-		src  TestDir
-		read map[string]int // tracks number of times a file must have been read
+		src         TestDir
+		modify      func(path string)
+		statInitial Summary
+		statSecond  Summary
 	}{
 		{
 			src: TestDir{
 				"targetfile": TestFile{Content: string(restictest.Random(888, 2*1024*1024+5000))},
 			},
-			read: map[string]int{
-				"targetfile": 1,
+			statInitial: Summary{
+				Files:          ChangeStats{1, 0, 0},
+				Dirs:           ChangeStats{0, 0, 0},
+				ProcessedBytes: 2102152,
+			},
+			statSecond: Summary{
+				Files:          ChangeStats{0, 0, 1},
+				Dirs:           ChangeStats{0, 0, 0},
+				ProcessedBytes: 2102152,
+			},
+		},
+		{
+			src: TestDir{
+				"targetDir": TestDir{
+					"targetfile":  TestFile{Content: string(restictest.Random(888, 1234))},
+					"targetfile2": TestFile{Content: string(restictest.Random(888, 1235))},
+				},
+			},
+			statInitial: Summary{
+				Files:          ChangeStats{2, 0, 0},
+				Dirs:           ChangeStats{1, 0, 0},
+				ProcessedBytes: 2469,
+			},
+			statSecond: Summary{
+				Files:          ChangeStats{0, 0, 2},
+				Dirs:           ChangeStats{0, 0, 1},
+				ProcessedBytes: 2469,
+			},
+		},
+		{
+			src: TestDir{
+				"targetDir": TestDir{
+					"targetfile": TestFile{Content: string(restictest.Random(888, 1234))},
+				},
+				"targetfile2": TestFile{Content: string(restictest.Random(888, 1235))},
+			},
+			modify: func(path string) {
+				remove(t, filepath.Join(path, "targetDir", "targetfile"))
+				save(t, filepath.Join(path, "targetfile2"), []byte("foobar"))
+			},
+			statInitial: Summary{
+				Files:          ChangeStats{2, 0, 0},
+				Dirs:           ChangeStats{1, 0, 0},
+				ProcessedBytes: 2469,
+			},
+			statSecond: Summary{
+				Files:          ChangeStats{0, 1, 0},
+				Dirs:           ChangeStats{0, 1, 0},
+				ProcessedBytes: 6,
 			},
 		},
 	}
@@ -1653,7 +1718,7 @@ func TestArchiverParent(t *testing.T) {
 			back := restictest.Chdir(t, tempdir)
 			defer back()
 
-			firstSnapshot, firstSnapshotID, _, err := arch.Snapshot(ctx, []string{"."}, SnapshotOptions{Time: time.Now()})
+			firstSnapshot, firstSnapshotID, summary, err := arch.Snapshot(ctx, []string{"."}, SnapshotOptions{Time: time.Now()})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1678,33 +1743,31 @@ func TestArchiverParent(t *testing.T) {
 				}
 				return nil
 			})
+			restictest.Equals(t, test.statInitial.Files, summary.Files)
+			restictest.Equals(t, test.statInitial.Dirs, summary.Dirs)
+			restictest.Equals(t, test.statInitial.ProcessedBytes, summary.ProcessedBytes)
+
+			if test.modify != nil {
+				test.modify(tempdir)
+			}
 
 			opts := SnapshotOptions{
 				Time:           time.Now(),
 				ParentSnapshot: firstSnapshot,
 			}
-			_, secondSnapshotID, _, err := arch.Snapshot(ctx, []string{"."}, opts)
+			testFS.bytesRead = map[string]int{}
+			_, secondSnapshotID, summary, err := arch.Snapshot(ctx, []string{"."}, opts)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			// check that all files still been read exactly once
-			TestWalkFiles(t, ".", test.src, func(filename string, item interface{}) error {
-				file, ok := item.(TestFile)
-				if !ok {
-					return nil
-				}
-
-				n, ok := testFS.bytesRead[filename]
-				if !ok {
-					t.Fatalf("file %v was not read at all", filename)
-				}
-
-				if n != len(file.Content) {
-					t.Fatalf("file %v: read %v bytes, wanted %v bytes", filename, n, len(file.Content))
-				}
-				return nil
-			})
+			if test.modify == nil {
+				// check that no files were read this time
+				restictest.Equals(t, map[string]int{}, testFS.bytesRead)
+			}
+			restictest.Equals(t, test.statSecond.Files, summary.Files)
+			restictest.Equals(t, test.statSecond.Dirs, summary.Dirs)
+			restictest.Equals(t, test.statSecond.ProcessedBytes, summary.ProcessedBytes)
 
 			t.Logf("second backup saved as %v", secondSnapshotID.Str())
 			t.Logf("testfs: %v", testFS)

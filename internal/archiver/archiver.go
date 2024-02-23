@@ -41,12 +41,14 @@ type ItemStats struct {
 	TreeSizeInRepo uint64 // sum of the bytes added to the repo (including compression and crypto overhead)
 }
 
+type ChangeStats struct {
+	New       uint
+	Changed   uint
+	Unchanged uint
+}
+
 type Summary struct {
-	Files, Dirs struct {
-		New       uint
-		Changed   uint
-		Unchanged uint
-	}
+	Files, Dirs    ChangeStats
 	ProcessedBytes uint64
 	ItemStats
 }
