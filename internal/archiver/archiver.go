@@ -222,9 +222,9 @@ func (arch *Archiver) wrapLoadTreeError(id restic.ID, err error) error {
 	return err
 }
 
-// SaveDir stores a directory in the repo and returns the node. snPath is the
+// saveDir stores a directory in the repo and returns the node. snPath is the
 // path within the current snapshot.
-func (arch *Archiver) SaveDir(ctx context.Context, snPath string, dir string, fi os.FileInfo, previous *restic.Tree, complete CompleteFunc) (d FutureNode, err error) {
+func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, fi os.FileInfo, previous *restic.Tree, complete CompleteFunc) (d FutureNode, err error) {
 	debug.Log("%v %v", snPath, dir)
 
 	treeNode, err := arch.nodeFromFileInfo(snPath, dir, fi)
@@ -250,7 +250,7 @@ func (arch *Archiver) SaveDir(ctx context.Context, snPath string, dir string, fi
 		pathname := arch.FS.Join(dir, name)
 		oldNode := previous.Find(name)
 		snItem := join(snPath, name)
-		fn, excluded, err := arch.Save(ctx, snItem, pathname, oldNode)
+		fn, excluded, err := arch.save(ctx, snItem, pathname, oldNode)
 
 		// return error early if possible
 		if err != nil {
@@ -334,14 +334,14 @@ func (arch *Archiver) allBlobsPresent(previous *restic.Node) bool {
 	return true
 }
 
-// Save saves a target (file or directory) to the repo. If the item is
+// save saves a target (file or directory) to the repo. If the item is
 // excluded, this function returns a nil node and error, with excluded set to
 // true.
 //
 // Errors and completion needs to be handled by the caller.
 //
 // snPath is the path within the current snapshot.
-func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous *restic.Node) (fn FutureNode, excluded bool, err error) {
+func (arch *Archiver) save(ctx context.Context, snPath, target string, previous *restic.Node) (fn FutureNode, excluded bool, err error) {
 	start := time.Now()
 
 	debug.Log("%v target %q, previous %v", snPath, target, previous)
@@ -462,7 +462,7 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 			return FutureNode{}, false, err
 		}
 
-		fn, err = arch.SaveDir(ctx, snPath, target, fi, oldSubtree,
+		fn, err = arch.saveDir(ctx, snPath, target, fi, oldSubtree,
 			func(node *restic.Node, stats ItemStats) {
 				arch.CompleteItem(snItem, previous, node, stats, time.Since(start))
 			})
@@ -545,9 +545,9 @@ func (arch *Archiver) statDir(dir string) (os.FileInfo, error) {
 	return fi, nil
 }
 
-// SaveTree stores a Tree in the repo, returned is the tree. snPath is the path
+// saveTree stores a Tree in the repo, returned is the tree. snPath is the path
 // within the current snapshot.
-func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, previous *restic.Tree, complete CompleteFunc) (FutureNode, int, error) {
+func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *Tree, previous *restic.Tree, complete CompleteFunc) (FutureNode, int, error) {
 
 	var node *restic.Node
 	if snPath != "/" {
@@ -585,7 +585,7 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 
 		// this is a leaf node
 		if subatree.Leaf() {
-			fn, excluded, err := arch.Save(ctx, join(snPath, name), subatree.Path, previous.Find(name))
+			fn, excluded, err := arch.save(ctx, join(snPath, name), subatree.Path, previous.Find(name))
 
 			if err != nil {
 				err = arch.error(subatree.Path, err)
@@ -619,7 +619,7 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 		}
 
 		// not a leaf node, archive subtree
-		fn, _, err := arch.SaveTree(ctx, join(snPath, name), &subatree, oldSubtree, func(n *restic.Node, is ItemStats) {
+		fn, _, err := arch.saveTree(ctx, join(snPath, name), &subatree, oldSubtree, func(n *restic.Node, is ItemStats) {
 			arch.CompleteItem(snItem, oldNode, n, is, time.Since(start))
 		})
 		if err != nil {
@@ -762,7 +762,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 			arch.runWorkers(wgCtx, wg)
 
 			debug.Log("starting snapshot")
-			fn, nodeCount, err := arch.SaveTree(wgCtx, "/", atree, arch.loadParentTree(wgCtx, opts.ParentSnapshot), func(_ *restic.Node, is ItemStats) {
+			fn, nodeCount, err := arch.saveTree(wgCtx, "/", atree, arch.loadParentTree(wgCtx, opts.ParentSnapshot), func(_ *restic.Node, is ItemStats) {
 				arch.CompleteItem("/", nil, nil, is, time.Since(start))
 			})
 			if err != nil {
