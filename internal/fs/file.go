@@ -124,3 +124,17 @@ func RemoveIfExists(filename string) error {
 func Chtimes(name string, atime time.Time, mtime time.Time) error {
 	return os.Chtimes(fixpath(name), atime, mtime)
 }
+
+// IsAccessDenied checks if the error is due to permission error.
+func IsAccessDenied(err error) bool {
+	return os.IsPermission(err)
+}
+
+// ResetPermissions resets the permissions of the file at the specified path
+func ResetPermissions(path string) error {
+	// Set the default file permissions
+	if err := os.Chmod(path, 0600); err != nil {
+		return err
+	}
+	return nil
+}

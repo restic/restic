@@ -126,6 +126,7 @@ func (s *statefulOutput) PrintPatternJSON(path string, node *restic.Node) {
 		// Make the following attributes disappear
 		Name               byte `json:"name,omitempty"`
 		ExtendedAttributes byte `json:"extended_attributes,omitempty"`
+		GenericAttributes  byte `json:"generic_attributes,omitempty"`
 		Device             byte `json:"device,omitempty"`
 		Content            byte `json:"content,omitempty"`
 		Subtree            byte `json:"subtree,omitempty"`
