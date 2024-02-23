@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/xattr"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
@@ -563,7 +564,12 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 		debug.Log("%v, dir node data loaded from %v", snPath, atree.FileInfoPath)
 		node, err = arch.nodeFromFileInfo(snPath, atree.FileInfoPath, fi)
 		if err != nil {
-			return FutureNode{}, 0, err
+			// on freebsd, reading xattrs will fail if we cannot read a directory.
+			// for directories above the backup source this can be ignored
+			var xerr *xattr.Error
+			if !errors.As(err, &xerr) || xerr.Op != "xattr.list" || !errors.Is(xerr.Err, os.ErrPermission) {
+				return FutureNode{}, 0, err
+			}
 		}
 	} else {
 		// fake root node

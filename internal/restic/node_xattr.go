@@ -4,6 +4,8 @@
 package restic
 
 import (
+	"fmt"
+	"os"
 	"syscall"
 
 	"github.com/restic/restic/internal/errors"
@@ -21,6 +23,15 @@ func Getxattr(path, name string) ([]byte, error) {
 // given path in the file system.
 func Listxattr(path string) ([]string, error) {
 	l, err := xattr.LList(path)
+	if err != nil {
+		var xerr *xattr.Error
+		fmt.Fprintln(os.Stderr, "\nis xattr.Error", errors.As(err, &xerr))
+		if xerr != nil {
+			fmt.Fprintf(os.Stderr, "%v; %#v; %T\n\n", xerr.Err, xerr.Err, xerr.Err)
+			fmt.Fprintln(os.Stderr, xerr.Op == "xattr.list", errors.Is(xerr.Err, syscall.EPERM), errors.Is(xerr.Err, os.ErrPermission))
+		}
+	}
+
 	return l, handleXattrErr(err)
 }
 
