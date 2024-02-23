@@ -29,7 +29,7 @@ func TestRestorerRestoreEmptyHardlinkedFileds(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, noopGetGenericAttributes)
 
 	res := NewRestorer(repo, sn, false, nil)
 
@@ -95,7 +95,7 @@ func TestRestorerProgressBar(t *testing.T) {
 			},
 			"file2": File{Links: 1, Inode: 2, Data: "example"},
 		},
-	})
+	}, noopGetGenericAttributes)
 
 	mock := &printerMock{}
 	progress := restoreui.NewProgress(mock, 0)

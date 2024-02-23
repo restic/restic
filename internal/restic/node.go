@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"os"
 	"os/user"
+	"reflect"
 	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -20,10 +22,51 @@ import (
 	"github.com/restic/restic/internal/fs"
 )
 
-// ExtendedAttribute is a tuple storing the xattr name and value.
+// ExtendedAttribute is a tuple storing the xattr name and value for various filesystems.
 type ExtendedAttribute struct {
 	Name  string `json:"name"`
 	Value []byte `json:"value"`
+}
+
+// GenericAttributeType can be used for OS specific functionalities by defining specific types
+// in node.go to be used by the specific node_xx files.
+// OS specific attribute types should follow the convention <OS>Attributes.
+// GenericAttributeTypes should follow the convention <OS specific attribute type>.<attribute name>
+// The attributes in OS specific attribute types must be pointers as we want to distinguish nil values
+// and not create GenericAttributes for them.
+type GenericAttributeType string
+
+// OSType is the type created to represent each specific OS
+type OSType string
+
+const (
+	// When new GenericAttributeType are defined, they must be added in the init function as well.
+
+	// Below are windows specific attributes.
+
+	// TypeCreationTime is the GenericAttributeType used for storing creation time for windows files within the generic attributes map.
+	TypeCreationTime GenericAttributeType = "windows.creation_time"
+	// TypeFileAttributes is the GenericAttributeType used for storing file attributes for windows files within the generic attributes map.
+	TypeFileAttributes GenericAttributeType = "windows.file_attributes"
+
+	// Generic Attributes for other OS types should be defined here.
+)
+
+// init is called when the package is initialized. Any new GenericAttributeTypes being created must be added here as well.
+func init() {
+	storeGenericAttributeType(TypeCreationTime, TypeFileAttributes)
+}
+
+// genericAttributesForOS maintains a map of known genericAttributesForOS to the OSType
+var genericAttributesForOS = map[GenericAttributeType]OSType{}
+
+// storeGenericAttributeType adds and entry in genericAttributesForOS map
+func storeGenericAttributeType(attributeTypes ...GenericAttributeType) {
+	for _, attributeType := range attributeTypes {
+		// Get the OS attribute type from the GenericAttributeType
+		osAttributeName := strings.Split(string(attributeType), ".")[0]
+		genericAttributesForOS[attributeType] = OSType(osAttributeName)
+	}
 }
 
 // Node is a file, directory or other item in a backup.
@@ -47,11 +90,12 @@ type Node struct {
 	// This allows storing arbitrary byte-sequences, which are possible as symlink targets on unix systems,
 	// as LinkTarget without breaking backwards-compatibility.
 	// Must only be set of the linktarget cannot be encoded as valid utf8.
-	LinkTargetRaw      []byte              `json:"linktarget_raw,omitempty"`
-	ExtendedAttributes []ExtendedAttribute `json:"extended_attributes,omitempty"`
-	Device             uint64              `json:"device,omitempty"` // in case of Type == "dev", stat.st_rdev
-	Content            IDs                 `json:"content"`
-	Subtree            *ID                 `json:"subtree,omitempty"`
+	LinkTargetRaw      []byte                                   `json:"linktarget_raw,omitempty"`
+	ExtendedAttributes []ExtendedAttribute                      `json:"extended_attributes,omitempty"`
+	GenericAttributes  map[GenericAttributeType]json.RawMessage `json:"generic_attributes,omitempty"`
+	Device             uint64                                   `json:"device,omitempty"` // in case of Type == "dev", stat.st_rdev
+	Content            IDs                                      `json:"content"`
+	Subtree            *ID                                      `json:"subtree,omitempty"`
 
 	Error string `json:"error,omitempty"`
 
@@ -180,8 +224,8 @@ func (node *Node) CreateAt(ctx context.Context, path string, repo BlobLoader) er
 }
 
 // RestoreMetadata restores node metadata
-func (node Node) RestoreMetadata(path string) error {
-	err := node.restoreMetadata(path)
+func (node Node) RestoreMetadata(path string, warn func(msg string)) error {
+	err := node.restoreMetadata(path, warn)
 	if err != nil {
 		debug.Log("restoreMetadata(%s) error %v", path, err)
 	}
@@ -189,7 +233,7 @@ func (node Node) RestoreMetadata(path string) error {
 	return err
 }
 
-func (node Node) restoreMetadata(path string) error {
+func (node Node) restoreMetadata(path string, warn func(msg string)) error {
 	var firsterr error
 
 	if err := lchown(path, int(node.UID), int(node.GID)); err != nil {
@@ -200,14 +244,6 @@ func (node Node) restoreMetadata(path string) error {
 				path, err)
 		} else {
 			firsterr = errors.WithStack(err)
-		}
-	}
-
-	if node.Type != "symlink" {
-		if err := fs.Chmod(path, node.Mode); err != nil {
-			if firsterr != nil {
-				firsterr = errors.WithStack(err)
-			}
 		}
 	}
 
@@ -222,6 +258,24 @@ func (node Node) restoreMetadata(path string) error {
 		debug.Log("error restoring extended attributes for %v: %v", path, err)
 		if firsterr != nil {
 			firsterr = err
+		}
+	}
+
+	if err := node.restoreGenericAttributes(path, warn); err != nil {
+		debug.Log("error restoring generic attributes for %v: %v", path, err)
+		if firsterr != nil {
+			firsterr = err
+		}
+	}
+
+	// Moving RestoreTimestamps and restoreExtendedAttributes calls above as for readonly files in windows
+	// calling Chmod below will no longer allow any modifications to be made on the file and the
+	// calls above would fail.
+	if node.Type != "symlink" {
+		if err := fs.Chmod(path, node.Mode); err != nil {
+			if firsterr != nil {
+				firsterr = errors.WithStack(err)
+			}
 		}
 	}
 
@@ -438,6 +492,9 @@ func (node Node) Equals(other Node) bool {
 	if !node.sameExtendedAttributes(other) {
 		return false
 	}
+	if !node.sameGenericAttributes(other) {
+		return false
+	}
 	if node.Subtree != nil {
 		if other.Subtree == nil {
 			return false
@@ -480,8 +537,13 @@ func (node Node) sameContent(other Node) bool {
 }
 
 func (node Node) sameExtendedAttributes(other Node) bool {
-	if len(node.ExtendedAttributes) != len(other.ExtendedAttributes) {
+	ln := len(node.ExtendedAttributes)
+	lo := len(other.ExtendedAttributes)
+	if ln != lo {
 		return false
+	} else if ln == 0 {
+		// This means lo is also of length 0
+		return true
 	}
 
 	// build a set of all attributes that node has
@@ -518,6 +580,33 @@ func (node Node) sameExtendedAttributes(other Node) bool {
 	for name, v := range attributes {
 		if !v.present {
 			debug.Log("attribute %v not present in other node", name)
+			return false
+		}
+	}
+
+	return true
+}
+
+func (node Node) sameGenericAttributes(other Node) bool {
+	return deepEqual(node.GenericAttributes, other.GenericAttributes)
+}
+
+func deepEqual(map1, map2 map[GenericAttributeType]json.RawMessage) bool {
+	// Check if the maps have the same number of keys
+	if len(map1) != len(map2) {
+		return false
+	}
+
+	// Iterate over each key-value pair in map1
+	for key, value1 := range map1 {
+		// Check if the key exists in map2
+		value2, ok := map2[key]
+		if !ok {
+			return false
+		}
+
+		// Check if the JSON.RawMessage values are equal byte by byte
+		if !bytes.Equal(value1, value2) {
 			return false
 		}
 	}
@@ -627,7 +716,17 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 		return errors.Errorf("unsupported file type %q", node.Type)
 	}
 
-	return node.fillExtendedAttributes(path)
+	allowExtended, err := node.fillGenericAttributes(path, fi, stat)
+	if allowExtended {
+		// Skip processing ExtendedAttributes if allowExtended is false.
+		errEx := node.fillExtendedAttributes(path)
+		if err == nil {
+			err = errEx
+		} else {
+			debug.Log("Error filling extended attributes for %v at %v : %v", node.Name, path, errEx)
+		}
+	}
+	return err
 }
 
 func (node *Node) fillExtendedAttributes(path string) error {
@@ -664,4 +763,120 @@ func (node *Node) fillTimes(stat *statT) {
 	atim := stat.atim()
 	node.ChangeTime = time.Unix(ctim.Unix())
 	node.AccessTime = time.Unix(atim.Unix())
+}
+
+// HandleUnknownGenericAttributesFound is used for handling and distinguing between scenarios related to future versions and cross-OS repositories
+func HandleUnknownGenericAttributesFound(unknownAttribs []GenericAttributeType, warn func(msg string)) {
+	for _, unknownAttrib := range unknownAttribs {
+		handleUnknownGenericAttributeFound(unknownAttrib, warn)
+	}
+}
+
+// handleUnknownGenericAttributeFound is used for handling and distinguing between scenarios related to future versions and cross-OS repositories
+func handleUnknownGenericAttributeFound(genericAttributeType GenericAttributeType, warn func(msg string)) {
+	if checkGenericAttributeNameNotHandledAndPut(genericAttributeType) {
+		// Print the unique error only once for a given execution
+		os, exists := genericAttributesForOS[genericAttributeType]
+
+		if exists {
+			// If genericAttributesForOS contains an entry but we still got here, it means the specific node_xx.go for the current OS did not handle it and the repository may have been originally created on a different OS.
+			// The fact that node.go knows about the attribute, means it is not a new attribute. This may be a common situation if a repo is used across OSs.
+			debug.Log("Ignoring a generic attribute found in the repository: %s which may not be compatible with your OS. Compatible OS: %s", genericAttributeType, os)
+		} else {
+			// If genericAttributesForOS in node.go does not know about this attribute, then the repository may have been created by a newer version which has a newer GenericAttributeType.
+			warn(fmt.Sprintf("Found an unrecognized generic attribute in the repository: %s. You may need to upgrade to latest version of restic.", genericAttributeType))
+		}
+	}
+}
+
+// handleAllUnknownGenericAttributesFound performs validations for all generic attributes in the node.
+// This is not used on windows currently because windows has handling for generic attributes.
+// nolint:unused
+func (node Node) handleAllUnknownGenericAttributesFound(warn func(msg string)) error {
+	for name := range node.GenericAttributes {
+		handleUnknownGenericAttributeFound(name, warn)
+	}
+	return nil
+}
+
+var unknownGenericAttributesHandlingHistory sync.Map
+
+// checkGenericAttributeNameNotHandledAndPut checks if the GenericAttributeType name entry
+// already exists and puts it in the map if not.
+func checkGenericAttributeNameNotHandledAndPut(value GenericAttributeType) bool {
+	// If Key doesn't exist, put the value and return true because it is not already handled
+	_, exists := unknownGenericAttributesHandlingHistory.LoadOrStore(value, "")
+	// Key exists, then it is already handled so return false
+	return !exists
+}
+
+// The functions below are common helper functions which can be used for generic attributes support
+// across different OS.
+
+// genericAttributesToOSAttrs gets the os specific attribute from the generic attribute using reflection
+// nolint:unused
+func genericAttributesToOSAttrs(attrs map[GenericAttributeType]json.RawMessage, attributeType reflect.Type, attributeValuePtr *reflect.Value, keyPrefix string) (unknownAttribs []GenericAttributeType, err error) {
+	attributeValue := *attributeValuePtr
+
+	for key, rawMsg := range attrs {
+		found := false
+		for i := 0; i < attributeType.NumField(); i++ {
+			if getFQKeyByIndex(attributeType, i, keyPrefix) == key {
+				found = true
+				fieldValue := attributeValue.Field(i)
+				// For directly supported types, use json.Unmarshal directly
+				if err := json.Unmarshal(rawMsg, fieldValue.Addr().Interface()); err != nil {
+					return unknownAttribs, errors.Wrap(err, "Unmarshal")
+				}
+				break
+			}
+		}
+		if !found {
+			unknownAttribs = append(unknownAttribs, key)
+		}
+	}
+	return unknownAttribs, nil
+}
+
+// getFQKey gets the fully qualified key for the field
+// nolint:unused
+func getFQKey(field reflect.StructField, keyPrefix string) GenericAttributeType {
+	return GenericAttributeType(fmt.Sprintf("%s.%s", keyPrefix, field.Tag.Get("generic")))
+}
+
+// getFQKeyByIndex gets the fully qualified key for the field index
+// nolint:unused
+func getFQKeyByIndex(attributeType reflect.Type, index int, keyPrefix string) GenericAttributeType {
+	return getFQKey(attributeType.Field(index), keyPrefix)
+}
+
+// osAttrsToGenericAttributes gets the generic attribute from the os specific attribute using reflection
+// nolint:unused
+func osAttrsToGenericAttributes(attributeType reflect.Type, attributeValuePtr *reflect.Value, keyPrefix string) (attrs map[GenericAttributeType]json.RawMessage, err error) {
+	attributeValue := *attributeValuePtr
+	attrs = make(map[GenericAttributeType]json.RawMessage)
+
+	// Iterate over the fields of the struct
+	for i := 0; i < attributeType.NumField(); i++ {
+		field := attributeType.Field(i)
+
+		// Get the field value using reflection
+		fieldValue := attributeValue.FieldByName(field.Name)
+
+		// Check if the field is nil
+		if fieldValue.IsNil() {
+			// If it's nil, skip this field
+			continue
+		}
+
+		// Marshal the field value into a json.RawMessage
+		var fieldBytes []byte
+		if fieldBytes, err = json.Marshal(fieldValue.Interface()); err != nil {
+			return attrs, errors.Wrap(err, "Marshal")
+		}
+
+		// Insert the field into the map
+		attrs[getFQKey(field, keyPrefix)] = json.RawMessage(fieldBytes)
+	}
+	return attrs, nil
 }

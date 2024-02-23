@@ -178,6 +178,9 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		totalErrors++
 		return nil
 	}
+	res.Warn = func(message string) {
+		msg.E("Warning: %s\n", message)
+	}
 
 	excludePatterns := filter.ParsePatterns(opts.Exclude)
 	insensitiveExcludePatterns := filter.ParsePatterns(opts.InsensitiveExclude)

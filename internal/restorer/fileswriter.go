@@ -50,16 +50,26 @@ func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create
 			bucket.files[path].users++
 			return wr, nil
 		}
-
-		var flags int
+		var f *os.File
+		var err error
 		if createSize >= 0 {
-			flags = os.O_CREATE | os.O_TRUNC | os.O_WRONLY
-		} else {
-			flags = os.O_WRONLY
-		}
-
-		f, err := os.OpenFile(path, flags, 0600)
-		if err != nil {
+			if f, err = os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600); err != nil {
+				if fs.IsAccessDenied(err) {
+					// If file is readonly, clear the readonly flag by resetting the
+					// permissions of the file and try again
+					// as the metadata will be set again in the second pass and the
+					// readonly flag will be applied again if needed.
+					if err = fs.ResetPermissions(path); err != nil {
+						return nil, err
+					}
+					if f, err = os.OpenFile(path, os.O_TRUNC|os.O_WRONLY, 0600); err != nil {
+						return nil, err
+					}
+				} else {
+					return nil, err
+				}
+			}
+		} else if f, err = os.OpenFile(path, os.O_WRONLY, 0600); err != nil {
 			return nil, err
 		}
 
