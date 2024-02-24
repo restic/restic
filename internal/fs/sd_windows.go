@@ -13,6 +13,33 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+var (
+	onceBackup  sync.Once
+	onceRestore sync.Once
+
+	// SeBackupPrivilege allows the application to bypass file and directory ACLs to back up files and directories.
+	SeBackupPrivilege = "SeBackupPrivilege"
+	// SeRestorePrivilege allows the application to bypass file and directory ACLs to restore files and directories.
+	SeRestorePrivilege = "SeRestorePrivilege"
+	// SeSecurityPrivilege allows read and write access to all SACLs.
+	SeSecurityPrivilege = "SeSecurityPrivilege"
+	// SeTakeOwnershipPrivilege allows the application to take ownership of files and directories, regardless of the permissions set on them.
+	SeTakeOwnershipPrivilege = "SeTakeOwnershipPrivilege"
+
+	backupPrivilegeError  error
+	restorePrivilegeError error
+	lowerPrivileges       bool
+)
+
+// Flags for backup and restore with admin permissions
+var highSecurityFlags windows.SECURITY_INFORMATION = windows.OWNER_SECURITY_INFORMATION | windows.GROUP_SECURITY_INFORMATION | windows.DACL_SECURITY_INFORMATION | windows.SACL_SECURITY_INFORMATION | windows.LABEL_SECURITY_INFORMATION | windows.ATTRIBUTE_SECURITY_INFORMATION | windows.SCOPE_SECURITY_INFORMATION | windows.BACKUP_SECURITY_INFORMATION | windows.PROTECTED_DACL_SECURITY_INFORMATION | windows.PROTECTED_SACL_SECURITY_INFORMATION
+
+// Flags for backup without admin permissions. If there are no admin permissions, only the current user's owner, group and DACL will be backed up.
+var lowBackupSecurityFlags windows.SECURITY_INFORMATION = windows.OWNER_SECURITY_INFORMATION | windows.GROUP_SECURITY_INFORMATION | windows.DACL_SECURITY_INFORMATION | windows.LABEL_SECURITY_INFORMATION | windows.ATTRIBUTE_SECURITY_INFORMATION | windows.SCOPE_SECURITY_INFORMATION | windows.PROTECTED_DACL_SECURITY_INFORMATION
+
+// Flags for restore without admin permissions. If there are no admin permissions, only the DACL from the SD can be restored and owner and group will be set based on the current user.
+var lowRestoreSecurityFlags windows.SECURITY_INFORMATION = windows.DACL_SECURITY_INFORMATION | windows.ATTRIBUTE_SECURITY_INFORMATION | windows.PROTECTED_DACL_SECURITY_INFORMATION
+
 // GetSecurityDescriptor takes the path of the file and returns the SecurityDescriptor for the file.
 // This needs admin permissions or SeBackupPrivilege for getting the full SD.
 // If there are no admin permissions, only the current user's owner, group and DACL will be got.
@@ -87,6 +114,7 @@ func SetSecurityDescriptor(filePath string, securityDescriptor *[]byte) error {
 
 	if err != nil {
 		if isHandlePrivilegeNotHeldError(err) {
+			// If ERROR_PRIVILEGE_NOT_HELD is encountered, fallback to backups/restores using lower non-admin privileges.
 			lowerPrivileges = true
 			err = setNamedSecurityInfoLow(filePath, dacl)
 			if err != nil {
@@ -98,33 +126,6 @@ func SetSecurityDescriptor(filePath string, securityDescriptor *[]byte) error {
 	}
 	return nil
 }
-
-var (
-	onceBackup  sync.Once
-	onceRestore sync.Once
-
-	// SeBackupPrivilege allows the application to bypass file and directory ACLs to back up files and directories.
-	SeBackupPrivilege = "SeBackupPrivilege"
-	// SeRestorePrivilege allows the application to bypass file and directory ACLs to restore files and directories.
-	SeRestorePrivilege = "SeRestorePrivilege"
-	// SeSecurityPrivilege allows read and write access to all SACLs.
-	SeSecurityPrivilege = "SeSecurityPrivilege"
-	// SeTakeOwnershipPrivilege allows the application to take ownership of files and directories, regardless of the permissions set on them.
-	SeTakeOwnershipPrivilege = "SeTakeOwnershipPrivilege"
-
-	backupPrivilegeError  error
-	restorePrivilegeError error
-	lowerPrivileges       bool
-)
-
-// Flags for backup and restore with admin permissions
-var highSecurityFlags windows.SECURITY_INFORMATION = windows.OWNER_SECURITY_INFORMATION | windows.GROUP_SECURITY_INFORMATION | windows.DACL_SECURITY_INFORMATION | windows.SACL_SECURITY_INFORMATION | windows.LABEL_SECURITY_INFORMATION | windows.ATTRIBUTE_SECURITY_INFORMATION | windows.SCOPE_SECURITY_INFORMATION | windows.BACKUP_SECURITY_INFORMATION | windows.PROTECTED_DACL_SECURITY_INFORMATION | windows.PROTECTED_SACL_SECURITY_INFORMATION
-
-// Flags for backup without admin permissions. If there are no admin permissions, only the current user's owner, group and DACL will be backed up.
-var lowBackupSecurityFlags windows.SECURITY_INFORMATION = windows.OWNER_SECURITY_INFORMATION | windows.GROUP_SECURITY_INFORMATION | windows.DACL_SECURITY_INFORMATION | windows.LABEL_SECURITY_INFORMATION | windows.ATTRIBUTE_SECURITY_INFORMATION | windows.SCOPE_SECURITY_INFORMATION | windows.PROTECTED_DACL_SECURITY_INFORMATION
-
-// Flags for restore without admin permissions. If there are no admin permissions, only the DACL from the SD can be restored and owner and group will be set based on the current user.
-var lowRestoreSecurityFlags windows.SECURITY_INFORMATION = windows.DACL_SECURITY_INFORMATION | windows.ATTRIBUTE_SECURITY_INFORMATION | windows.PROTECTED_DACL_SECURITY_INFORMATION
 
 // getNamedSecurityInfoHigh gets the higher level SecurityDescriptor which requires admin permissions.
 func getNamedSecurityInfoHigh(sd *windows.SECURITY_DESCRIPTOR, err error, filePath string) (*windows.SECURITY_DESCRIPTOR, error) {
@@ -464,8 +465,5 @@ func errnoErr(e syscall.Errno) error {
 	case errnoErrorIOPending:
 		return errErrorIOPending
 	}
-	// TODO: add more here, after collecting data on the common
-	// error values see on Windows. (perhaps when running
-	// all.bat?)
 	return e
 }
