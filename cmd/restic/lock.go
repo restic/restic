@@ -2,15 +2,9 @@ package main
 
 import (
 	"context"
-	"sync"
 
 	"github.com/restic/restic/internal/repository"
-	"github.com/restic/restic/internal/restic"
 )
-
-var globalLocks struct {
-	sync.Once
-}
 
 func internalOpenWithLocked(ctx context.Context, gopts GlobalOptions, dryRun bool, exclusive bool) (context.Context, *repository.Repository, func(), error) {
 	repo, err := OpenRepository(ctx, gopts)
@@ -20,22 +14,22 @@ func internalOpenWithLocked(ctx context.Context, gopts GlobalOptions, dryRun boo
 
 	unlock := func() {}
 	if !dryRun {
-		var lock *restic.Lock
-
-		// make sure that a repository is unlocked properly and after cancel() was
-		// called by the cleanup handler in global.go
-		globalLocks.Do(func() {
-			AddCleanupHandler(repository.UnlockAll)
-		})
+		var lock *repository.Unlocker
 
 		lock, ctx, err = repository.Lock(ctx, repo, exclusive, gopts.RetryLock, func(msg string) {
 			if !gopts.JSON {
 				Verbosef("%s", msg)
 			}
 		}, Warnf)
-		unlock = func() {
-			repository.Unlock(lock)
-		}
+
+		unlock = lock.Unlock
+		// make sure that a repository is unlocked properly and after cancel() was
+		// called by the cleanup handler in global.go
+		AddCleanupHandler(func(code int) (int, error) {
+			lock.Unlock()
+			return code, nil
+		})
+
 		if err != nil {
 			return nil, nil, nil, err
 		}

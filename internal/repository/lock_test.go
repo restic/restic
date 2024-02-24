@@ -37,11 +37,11 @@ func openLockTestRepo(t *testing.T, wrapper backendWrapper) restic.Repository {
 	return repo
 }
 
-func checkedLockRepo(ctx context.Context, t *testing.T, repo restic.Repository, retryLock time.Duration) (*restic.Lock, context.Context) {
+func checkedLockRepo(ctx context.Context, t *testing.T, repo restic.Repository, retryLock time.Duration) (*Unlocker, context.Context) {
 	lock, wrappedCtx, err := Lock(ctx, repo, false, retryLock, func(msg string) {}, func(format string, args ...interface{}) {})
 	test.OK(t, err)
 	test.OK(t, wrappedCtx.Err())
-	if lock.Stale() {
+	if lock.info.lock.Stale() {
 		t.Fatal("lock returned stale lock")
 	}
 	return lock, wrappedCtx
@@ -51,7 +51,7 @@ func TestLock(t *testing.T) {
 	repo := openLockTestRepo(t, nil)
 
 	lock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, 0)
-	Unlock(lock)
+	lock.Unlock()
 	if wrappedCtx.Err() == nil {
 		t.Fatal("unlock did not cancel context")
 	}
@@ -69,21 +69,7 @@ func TestLockCancel(t *testing.T) {
 	}
 
 	// Unlock should not crash
-	Unlock(lock)
-}
-
-func TestLockUnlockAll(t *testing.T) {
-	repo := openLockTestRepo(t, nil)
-
-	lock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, 0)
-	_, err := UnlockAll(0)
-	test.OK(t, err)
-	if wrappedCtx.Err() == nil {
-		t.Fatal("canceled parent context did not cancel context")
-	}
-
-	// Unlock should not crash
-	Unlock(lock)
+	lock.Unlock()
 }
 
 func TestLockConflict(t *testing.T) {
@@ -94,7 +80,7 @@ func TestLockConflict(t *testing.T) {
 
 	lock, _, err := Lock(context.Background(), repo, true, 0, func(msg string) {}, func(format string, args ...interface{}) {})
 	test.OK(t, err)
-	defer Unlock(lock)
+	defer lock.Unlock()
 	_, _, err = Lock(context.Background(), repo2, false, 0, func(msg string) {}, func(format string, args ...interface{}) {})
 	if err == nil {
 		t.Fatal("second lock should have failed")
@@ -137,7 +123,7 @@ func TestLockFailedRefresh(t *testing.T) {
 		t.Fatal("failed lock refresh did not cause context cancellation")
 	}
 	// Unlock should not crash
-	Unlock(lock)
+	lock.Unlock()
 }
 
 type loggingBackend struct {
@@ -186,7 +172,7 @@ func TestLockSuccessfulRefresh(t *testing.T) {
 		// expected lock refresh to work
 	}
 	// Unlock should not crash
-	Unlock(lock)
+	lock.Unlock()
 }
 
 type slowBackend struct {
@@ -248,19 +234,21 @@ func TestLockSuccessfulStaleRefresh(t *testing.T) {
 	}
 
 	// Unlock should not crash
-	Unlock(lock)
+	lock.Unlock()
 }
 
 func TestLockWaitTimeout(t *testing.T) {
+	t.Parallel()
 	repo := openLockTestRepo(t, nil)
 
 	elock, _, err := Lock(context.TODO(), repo, true, 0, func(msg string) {}, func(format string, args ...interface{}) {})
 	test.OK(t, err)
+	defer elock.Unlock()
 
 	retryLock := 200 * time.Millisecond
 
 	start := time.Now()
-	lock, _, err := Lock(context.TODO(), repo, false, retryLock, func(msg string) {}, func(format string, args ...interface{}) {})
+	_, _, err = Lock(context.TODO(), repo, false, retryLock, func(msg string) {}, func(format string, args ...interface{}) {})
 	duration := time.Since(start)
 
 	test.Assert(t, err != nil,
@@ -269,16 +257,15 @@ func TestLockWaitTimeout(t *testing.T) {
 		"create normal lock with exclusively locked repo didn't return the correct error")
 	test.Assert(t, retryLock <= duration && duration < retryLock*3/2,
 		"create normal lock with exclusively locked repo didn't wait for the specified timeout")
-
-	test.OK(t, lock.Unlock())
-	test.OK(t, elock.Unlock())
 }
 
 func TestLockWaitCancel(t *testing.T) {
+	t.Parallel()
 	repo := openLockTestRepo(t, nil)
 
 	elock, _, err := Lock(context.TODO(), repo, true, 0, func(msg string) {}, func(format string, args ...interface{}) {})
 	test.OK(t, err)
+	defer elock.Unlock()
 
 	retryLock := 200 * time.Millisecond
 	cancelAfter := 40 * time.Millisecond
@@ -287,7 +274,7 @@ func TestLockWaitCancel(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.TODO())
 	time.AfterFunc(cancelAfter, cancel)
 
-	lock, _, err := Lock(ctx, repo, false, retryLock, func(msg string) {}, func(format string, args ...interface{}) {})
+	_, _, err = Lock(ctx, repo, false, retryLock, func(msg string) {}, func(format string, args ...interface{}) {})
 	duration := time.Since(start)
 
 	test.Assert(t, err != nil,
@@ -296,12 +283,10 @@ func TestLockWaitCancel(t *testing.T) {
 		"create normal lock with exclusively locked repo didn't return the correct error")
 	test.Assert(t, cancelAfter <= duration && duration < retryLock-10*time.Millisecond,
 		"create normal lock with exclusively locked repo didn't return in time, duration %v", duration)
-
-	test.OK(t, lock.Unlock())
-	test.OK(t, elock.Unlock())
 }
 
 func TestLockWaitSuccess(t *testing.T) {
+	t.Parallel()
 	repo := openLockTestRepo(t, nil)
 
 	elock, _, err := Lock(context.TODO(), repo, true, 0, func(msg string) {}, func(format string, args ...interface{}) {})
@@ -311,11 +296,10 @@ func TestLockWaitSuccess(t *testing.T) {
 	unlockAfter := 40 * time.Millisecond
 
 	time.AfterFunc(unlockAfter, func() {
-		test.OK(t, elock.Unlock())
+		elock.Unlock()
 	})
 
 	lock, _, err := Lock(context.TODO(), repo, false, retryLock, func(msg string) {}, func(format string, args ...interface{}) {})
 	test.OK(t, err)
-
-	test.OK(t, lock.Unlock())
+	lock.Unlock()
 }
