@@ -148,10 +148,11 @@ func runPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions) error
 		return errors.Fatal("disabled compression and `--repack-uncompressed` are mutually exclusive")
 	}
 
-	repo, err := OpenRepository(ctx, gopts)
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false)
 	if err != nil {
 		return err
 	}
+	defer unlock()
 
 	if repo.Connections() < 2 {
 		return errors.Fatal("prune requires a backend connection limit of at least two")
@@ -167,12 +168,6 @@ func runPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions) error
 			return errors.Fatalf("must pass id '%s' to --unsafe-recover-no-free-space", repoID)
 		}
 		opts.unsafeRecovery = true
-	}
-
-	lock, ctx, err := lockRepoExclusive(ctx, repo, gopts.RetryLock, gopts.JSON)
-	defer unlockRepo(lock)
-	if err != nil {
-		return err
 	}
 
 	return runPruneWithRepo(ctx, opts, gopts, repo, restic.NewIDSet())

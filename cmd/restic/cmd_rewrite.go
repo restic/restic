@@ -256,27 +256,22 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 		return errors.Fatal("Nothing to do: no excludes provided and no new metadata provided")
 	}
 
-	repo, err := OpenRepository(ctx, gopts)
+	var (
+		repo   *repository.Repository
+		unlock func()
+		err    error
+	)
+
+	if opts.Forget {
+		Verbosef("create exclusive lock for repository\n")
+		ctx, repo, unlock, err = openWithExclusiveLock(ctx, gopts, opts.DryRun)
+	} else {
+		ctx, repo, unlock, err = openWithAppendLock(ctx, gopts, opts.DryRun)
+	}
 	if err != nil {
 		return err
 	}
-
-	if !opts.DryRun {
-		var lock *restic.Lock
-		var err error
-		if opts.Forget {
-			Verbosef("create exclusive lock for repository\n")
-			lock, ctx, err = lockRepoExclusive(ctx, repo, gopts.RetryLock, gopts.JSON)
-		} else {
-			lock, ctx, err = lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
-		}
-		defer unlockRepo(lock)
-		if err != nil {
-			return err
-		}
-	} else {
-		repo.SetDryRun()
-	}
+	defer unlock()
 
 	snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
 	if err != nil {

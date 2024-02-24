@@ -37,7 +37,7 @@ func openLockTestRepo(t *testing.T, wrapper backendWrapper) (*repository.Reposit
 }
 
 func checkedLockRepo(ctx context.Context, t *testing.T, repo restic.Repository, env *testEnvironment) (*restic.Lock, context.Context) {
-	lock, wrappedCtx, err := lockRepo(ctx, repo, env.gopts.RetryLock, env.gopts.JSON)
+	lock, wrappedCtx, err := lockRepository(ctx, repo, false, env.gopts.RetryLock, env.gopts.JSON)
 	test.OK(t, err)
 	test.OK(t, wrappedCtx.Err())
 	if lock.Stale() {
@@ -94,10 +94,10 @@ func TestLockConflict(t *testing.T) {
 	repo2, err := OpenRepository(context.TODO(), env.gopts)
 	test.OK(t, err)
 
-	lock, _, err := lockRepoExclusive(context.Background(), repo, env.gopts.RetryLock, env.gopts.JSON)
+	lock, _, err := lockRepository(context.Background(), repo, true, env.gopts.RetryLock, env.gopts.JSON)
 	test.OK(t, err)
 	defer unlockRepo(lock)
-	_, _, err = lockRepo(context.Background(), repo2, env.gopts.RetryLock, env.gopts.JSON)
+	_, _, err = lockRepository(context.Background(), repo2, false, env.gopts.RetryLock, env.gopts.JSON)
 	if err == nil {
 		t.Fatal("second lock should have failed")
 	}
@@ -260,13 +260,13 @@ func TestLockWaitTimeout(t *testing.T) {
 	repo, cleanup, env := openLockTestRepo(t, nil)
 	defer cleanup()
 
-	elock, _, err := lockRepoExclusive(context.TODO(), repo, env.gopts.RetryLock, env.gopts.JSON)
+	elock, _, err := lockRepository(context.TODO(), repo, true, env.gopts.RetryLock, env.gopts.JSON)
 	test.OK(t, err)
 
 	retryLock := 200 * time.Millisecond
 
 	start := time.Now()
-	lock, _, err := lockRepo(context.TODO(), repo, retryLock, env.gopts.JSON)
+	lock, _, err := lockRepository(context.TODO(), repo, false, retryLock, env.gopts.JSON)
 	duration := time.Since(start)
 
 	test.Assert(t, err != nil,
@@ -284,7 +284,7 @@ func TestLockWaitCancel(t *testing.T) {
 	repo, cleanup, env := openLockTestRepo(t, nil)
 	defer cleanup()
 
-	elock, _, err := lockRepoExclusive(context.TODO(), repo, env.gopts.RetryLock, env.gopts.JSON)
+	elock, _, err := lockRepository(context.TODO(), repo, true, env.gopts.RetryLock, env.gopts.JSON)
 	test.OK(t, err)
 
 	retryLock := 200 * time.Millisecond
@@ -294,7 +294,7 @@ func TestLockWaitCancel(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.TODO())
 	time.AfterFunc(cancelAfter, cancel)
 
-	lock, _, err := lockRepo(ctx, repo, retryLock, env.gopts.JSON)
+	lock, _, err := lockRepository(ctx, repo, false, retryLock, env.gopts.JSON)
 	duration := time.Since(start)
 
 	test.Assert(t, err != nil,
@@ -312,7 +312,7 @@ func TestLockWaitSuccess(t *testing.T) {
 	repo, cleanup, env := openLockTestRepo(t, nil)
 	defer cleanup()
 
-	elock, _, err := lockRepoExclusive(context.TODO(), repo, env.gopts.RetryLock, env.gopts.JSON)
+	elock, _, err := lockRepository(context.TODO(), repo, true, env.gopts.RetryLock, env.gopts.JSON)
 	test.OK(t, err)
 
 	retryLock := 200 * time.Millisecond
@@ -322,7 +322,7 @@ func TestLockWaitSuccess(t *testing.T) {
 		test.OK(t, elock.Unlock())
 	})
 
-	lock, _, err := lockRepo(context.TODO(), repo, retryLock, env.gopts.JSON)
+	lock, _, err := lockRepository(context.TODO(), repo, false, retryLock, env.gopts.JSON)
 	test.OK(t, err)
 
 	test.OK(t, lock.Unlock())

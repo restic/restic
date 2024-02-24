@@ -40,16 +40,11 @@ func runRecover(ctx context.Context, gopts GlobalOptions) error {
 		return err
 	}
 
-	repo, err := OpenRepository(ctx, gopts)
+	ctx, repo, unlock, err := openWithAppendLock(ctx, gopts, false)
 	if err != nil {
 		return err
 	}
-
-	lock, ctx, err := lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
-	defer unlockRepo(lock)
-	if err != nil {
-		return err
-	}
+	defer unlock()
 
 	snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
 	if err != nil {

@@ -36,19 +36,11 @@ func runList(ctx context.Context, gopts GlobalOptions, args []string) error {
 		return errors.Fatal("type not specified")
 	}
 
-	repo, err := OpenRepository(ctx, gopts)
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock || args[0] == "locks")
 	if err != nil {
 		return err
 	}
-
-	if !gopts.NoLock && args[0] != "locks" {
-		var lock *restic.Lock
-		lock, ctx, err = lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
-		defer unlockRepo(lock)
-		if err != nil {
-			return err
-		}
-	}
+	defer unlock()
 
 	var t restic.FileType
 	switch args[0] {

@@ -163,23 +163,15 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 		return err
 	}
 
-	repo, err := OpenRepository(ctx, gopts)
-	if err != nil {
-		return err
-	}
-
 	if gopts.NoLock && !opts.DryRun {
 		return errors.Fatal("--no-lock is only applicable in combination with --dry-run for forget command")
 	}
 
-	if !opts.DryRun || !gopts.NoLock {
-		var lock *restic.Lock
-		lock, ctx, err = lockRepoExclusive(ctx, repo, gopts.RetryLock, gopts.JSON)
-		defer unlockRepo(lock)
-		if err != nil {
-			return err
-		}
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun && gopts.NoLock)
+	if err != nil {
+		return err
 	}
+	defer unlock()
 
 	var snapshots restic.Snapshots
 	removeSnIDs := restic.NewIDSet()
