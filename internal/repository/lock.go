@@ -18,21 +18,31 @@ type lockContext struct {
 	refreshWG sync.WaitGroup
 }
 
-var (
-	retrySleepStart = 5 * time.Second
-	retrySleepMax   = 60 * time.Second
-)
+type locker struct {
+	retrySleepStart       time.Duration
+	retrySleepMax         time.Duration
+	refreshInterval       time.Duration
+	refreshabilityTimeout time.Duration
+}
 
-func minDuration(a, b time.Duration) time.Duration {
-	if a <= b {
-		return a
-	}
-	return b
+const defaultRefreshInterval = 5 * time.Minute
+
+var lockerInst = &locker{
+	retrySleepStart: 5 * time.Second,
+	retrySleepMax:   60 * time.Second,
+	refreshInterval: defaultRefreshInterval,
+	// consider a lock refresh failed a bit before the lock actually becomes stale
+	// the difference allows to compensate for a small time drift between clients.
+	refreshabilityTimeout: restic.StaleLockTimeout - defaultRefreshInterval*3/2,
+}
+
+func Lock(ctx context.Context, repo restic.Repository, exclusive bool, retryLock time.Duration, printRetry func(msg string), logger func(format string, args ...interface{})) (*Unlocker, context.Context, error) {
+	return lockerInst.Lock(ctx, repo, exclusive, retryLock, printRetry, logger)
 }
 
 // Lock wraps the ctx such that it is cancelled when the repository is unlocked
 // cancelling the original context also stops the lock refresh
-func Lock(ctx context.Context, repo restic.Repository, exclusive bool, retryLock time.Duration, printRetry func(msg string), logger func(format string, args ...interface{})) (*Unlocker, context.Context, error) {
+func (l *locker) Lock(ctx context.Context, repo restic.Repository, exclusive bool, retryLock time.Duration, printRetry func(msg string), logger func(format string, args ...interface{})) (*Unlocker, context.Context, error) {
 
 	lockFn := restic.NewLock
 	if exclusive {
@@ -42,7 +52,7 @@ func Lock(ctx context.Context, repo restic.Repository, exclusive bool, retryLock
 	var lock *restic.Lock
 	var err error
 
-	retrySleep := minDuration(retrySleepStart, retryLock)
+	retrySleep := minDuration(l.retrySleepStart, retryLock)
 	retryMessagePrinted := false
 	retryTimeout := time.After(retryLock)
 
@@ -68,7 +78,7 @@ retryLoop:
 				lock, err = lockFn(ctx, repo)
 				break retryLoop
 			case <-retrySleepCh:
-				retrySleep = minDuration(retrySleep*2, retrySleepMax)
+				retrySleep = minDuration(retrySleep*2, l.retrySleepMax)
 			}
 		} else {
 			// anything else, either a successful lock or another error
@@ -92,26 +102,27 @@ retryLoop:
 	refreshChan := make(chan struct{})
 	forceRefreshChan := make(chan refreshLockRequest)
 
-	go refreshLocks(ctx, repo.Backend(), lockInfo, refreshChan, forceRefreshChan, logger)
-	go monitorLockRefresh(ctx, lockInfo, refreshChan, forceRefreshChan, logger)
+	go l.refreshLocks(ctx, repo.Backend(), lockInfo, refreshChan, forceRefreshChan, logger)
+	go l.monitorLockRefresh(ctx, lockInfo, refreshChan, forceRefreshChan, logger)
 
 	return &Unlocker{lockInfo}, ctx, nil
 }
 
-var refreshInterval = 5 * time.Minute
-
-// consider a lock refresh failed a bit before the lock actually becomes stale
-// the difference allows to compensate for a small time drift between clients.
-var refreshabilityTimeout = restic.StaleLockTimeout - refreshInterval*3/2
+func minDuration(a, b time.Duration) time.Duration {
+	if a <= b {
+		return a
+	}
+	return b
+}
 
 type refreshLockRequest struct {
 	result chan bool
 }
 
-func refreshLocks(ctx context.Context, backend backend.Backend, lockInfo *lockContext, refreshed chan<- struct{}, forceRefresh <-chan refreshLockRequest, logger func(format string, args ...interface{})) {
+func (l *locker) refreshLocks(ctx context.Context, backend backend.Backend, lockInfo *lockContext, refreshed chan<- struct{}, forceRefresh <-chan refreshLockRequest, logger func(format string, args ...interface{})) {
 	debug.Log("start")
 	lock := lockInfo.lock
-	ticker := time.NewTicker(refreshInterval)
+	ticker := time.NewTicker(l.refreshInterval)
 	lastRefresh := lock.Time
 
 	defer func() {
@@ -151,7 +162,7 @@ func refreshLocks(ctx context.Context, backend backend.Backend, lockInfo *lockCo
 			}
 
 		case <-ticker.C:
-			if time.Since(lastRefresh) > refreshabilityTimeout {
+			if time.Since(lastRefresh) > l.refreshabilityTimeout {
 				// the lock is too old, wait until the expiry monitor cancels the context
 				continue
 			}
@@ -172,14 +183,14 @@ func refreshLocks(ctx context.Context, backend backend.Backend, lockInfo *lockCo
 	}
 }
 
-func monitorLockRefresh(ctx context.Context, lockInfo *lockContext, refreshed <-chan struct{}, forceRefresh chan<- refreshLockRequest, logger func(format string, args ...interface{})) {
+func (l *locker) monitorLockRefresh(ctx context.Context, lockInfo *lockContext, refreshed <-chan struct{}, forceRefresh chan<- refreshLockRequest, logger func(format string, args ...interface{})) {
 	// time.Now() might use a monotonic timer which is paused during standby
 	// convert to unix time to ensure we compare real time values
 	lastRefresh := time.Now().UnixNano()
 	pollDuration := 1 * time.Second
-	if refreshInterval < pollDuration {
+	if l.refreshInterval < pollDuration {
 		// required for TestLockFailedRefresh
-		pollDuration = refreshInterval / 5
+		pollDuration = l.refreshInterval / 5
 	}
 	// timers are paused during standby, which is a problem as the refresh timeout
 	// _must_ expire if the host was too long in standby. Thus fall back to periodic checks
@@ -205,7 +216,7 @@ func monitorLockRefresh(ctx context.Context, lockInfo *lockContext, refreshed <-
 			}
 			lastRefresh = time.Now().UnixNano()
 		case <-ticker.C:
-			if time.Now().UnixNano()-lastRefresh < refreshabilityTimeout.Nanoseconds() || refreshStaleLockResult != nil {
+			if time.Now().UnixNano()-lastRefresh < l.refreshabilityTimeout.Nanoseconds() || refreshStaleLockResult != nil {
 				continue
 			}
 
