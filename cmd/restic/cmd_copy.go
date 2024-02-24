@@ -62,30 +62,17 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 		gopts, secondaryGopts = secondaryGopts, gopts
 	}
 
-	srcRepo, err := OpenRepository(ctx, gopts)
+	ctx, srcRepo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
 	if err != nil {
 		return err
 	}
+	defer unlock()
 
-	dstRepo, err := OpenRepository(ctx, secondaryGopts)
+	ctx, dstRepo, unlock, err := openWithAppendLock(ctx, secondaryGopts, false)
 	if err != nil {
 		return err
 	}
-
-	if !gopts.NoLock {
-		var srcLock *restic.Lock
-		srcLock, ctx, err = lockRepo(ctx, srcRepo, gopts.RetryLock, gopts.JSON)
-		defer unlockRepo(srcLock)
-		if err != nil {
-			return err
-		}
-	}
-
-	dstLock, ctx, err := lockRepo(ctx, dstRepo, gopts.RetryLock, gopts.JSON)
-	defer unlockRepo(dstLock)
-	if err != nil {
-		return err
-	}
+	defer unlock()
 
 	srcSnapshotLister, err := restic.MemorizeList(ctx, srcRepo, restic.SnapshotFile)
 	if err != nil {

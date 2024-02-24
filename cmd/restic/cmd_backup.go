@@ -463,10 +463,11 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		Verbosef("open repository\n")
 	}
 
-	repo, err := OpenRepository(ctx, gopts)
+	ctx, repo, unlock, err := openWithAppendLock(ctx, gopts, opts.DryRun)
 	if err != nil {
 		return err
 	}
+	defer unlock()
 
 	var progressPrinter backup.ProgressPrinter
 	if gopts.JSON {
@@ -477,22 +478,6 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	progressReporter := backup.NewProgress(progressPrinter,
 		calculateProgressInterval(!gopts.Quiet, gopts.JSON))
 	defer progressReporter.Done()
-
-	if opts.DryRun {
-		repo.SetDryRun()
-	}
-
-	if !gopts.JSON {
-		progressPrinter.V("lock repository")
-	}
-	if !opts.DryRun {
-		var lock *restic.Lock
-		lock, ctx, err = lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
-		defer unlockRepo(lock)
-		if err != nil {
-			return err
-		}
-	}
 
 	// rejectByNameFuncs collect functions that can reject items from the backup based on path only
 	rejectByNameFuncs, err := collectRejectByNameFuncs(opts, repo)

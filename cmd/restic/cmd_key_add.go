@@ -50,16 +50,11 @@ func runKeyAdd(ctx context.Context, gopts GlobalOptions, opts KeyAddOptions, arg
 		return fmt.Errorf("the key add command expects no arguments, only options - please see `restic help key add` for usage and flags")
 	}
 
-	repo, err := OpenRepository(ctx, gopts)
+	ctx, repo, unlock, err := openWithAppendLock(ctx, gopts, false)
 	if err != nil {
 		return err
 	}
-
-	lock, ctx, err := lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
-	defer unlockRepo(lock)
-	if err != nil {
-		return err
-	}
+	defer unlock()
 
 	return addKey(ctx, repo, gopts, opts)
 }

@@ -204,20 +204,14 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		return code, nil
 	})
 
-	repo, err := OpenRepository(ctx, gopts)
+	if !gopts.NoLock {
+		Verbosef("create exclusive lock for repository\n")
+	}
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, gopts.NoLock)
 	if err != nil {
 		return err
 	}
-
-	if !gopts.NoLock {
-		Verbosef("create exclusive lock for repository\n")
-		var lock *restic.Lock
-		lock, ctx, err = lockRepoExclusive(ctx, repo, gopts.RetryLock, gopts.JSON)
-		defer unlockRepo(lock)
-		if err != nil {
-			return err
-		}
-	}
+	defer unlock()
 
 	chkr := checker.New(repo, opts.CheckUnused)
 	err = chkr.LoadSnapshots(ctx)

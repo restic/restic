@@ -127,19 +127,11 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 
 	debug.Log("restore %v to %v", snapshotIDString, opts.Target)
 
-	repo, err := OpenRepository(ctx, gopts)
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
 	if err != nil {
 		return err
 	}
-
-	if !gopts.NoLock {
-		var lock *restic.Lock
-		lock, ctx, err = lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
-		defer unlockRepo(lock)
-		if err != nil {
-			return err
-		}
-	}
+	defer unlock()
 
 	sn, subfolder, err := (&restic.SnapshotFilter{
 		Hosts: opts.Hosts,

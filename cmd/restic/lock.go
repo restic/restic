@@ -9,6 +9,7 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 )
 
@@ -24,12 +25,41 @@ var globalLocks struct {
 	sync.Once
 }
 
-func lockRepo(ctx context.Context, repo restic.Repository, retryLock time.Duration, json bool) (*restic.Lock, context.Context, error) {
-	return lockRepository(ctx, repo, false, retryLock, json)
+func internalOpenWithLocked(ctx context.Context, gopts GlobalOptions, dryRun bool, exclusive bool) (context.Context, *repository.Repository, func(), error) {
+	repo, err := OpenRepository(ctx, gopts)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	unlock := func() {}
+	if !dryRun {
+		var lock *restic.Lock
+		lock, ctx, err = lockRepository(ctx, repo, exclusive, gopts.RetryLock, gopts.JSON)
+		unlock = func() {
+			unlockRepo(lock)
+		}
+		if err != nil {
+			return nil, nil, nil, err
+		}
+	} else {
+		repo.SetDryRun()
+	}
+
+	return ctx, repo, unlock, nil
 }
 
-func lockRepoExclusive(ctx context.Context, repo restic.Repository, retryLock time.Duration, json bool) (*restic.Lock, context.Context, error) {
-	return lockRepository(ctx, repo, true, retryLock, json)
+func openWithReadLock(ctx context.Context, gopts GlobalOptions, noLock bool) (context.Context, *repository.Repository, func(), error) {
+	// TODO enfore read-only operations once the locking code has moved to the repository
+	return internalOpenWithLocked(ctx, gopts, noLock, false)
+}
+
+func openWithAppendLock(ctx context.Context, gopts GlobalOptions, dryRun bool) (context.Context, *repository.Repository, func(), error) {
+	// TODO enfore non-exclusive operations once the locking code has moved to the repository
+	return internalOpenWithLocked(ctx, gopts, dryRun, false)
+}
+
+func openWithExclusiveLock(ctx context.Context, gopts GlobalOptions, dryRun bool) (context.Context, *repository.Repository, func(), error) {
+	return internalOpenWithLocked(ctx, gopts, dryRun, true)
 }
 
 var (
