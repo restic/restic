@@ -221,10 +221,9 @@ func benchmarkLoadUnpacked(b *testing.B, version uint) {
 var repoFixture = filepath.Join("testdata", "test-repo.tar.gz")
 
 func TestRepositoryLoadIndex(t *testing.T) {
-	repodir, cleanup := rtest.Env(t, repoFixture)
+	repo, cleanup := repository.TestFromFixture(t, repoFixture)
 	defer cleanup()
 
-	repo := repository.TestOpenLocal(t, repodir)
 	rtest.OK(t, repo.LoadIndex(context.TODO(), nil))
 }
 
@@ -243,7 +242,7 @@ func loadIndex(ctx context.Context, repo restic.LoaderUnpacked, id restic.ID) (*
 }
 
 func TestRepositoryLoadUnpackedBroken(t *testing.T) {
-	repodir, cleanup := rtest.Env(t, repoFixture)
+	repo, cleanup := repository.TestFromFixture(t, repoFixture)
 	defer cleanup()
 
 	data := rtest.Random(23, 12345)
@@ -252,7 +251,6 @@ func TestRepositoryLoadUnpackedBroken(t *testing.T) {
 	// damage buffer
 	data[0] ^= 0xff
 
-	repo := repository.TestOpenLocal(t, repodir)
 	// store broken file
 	err := repo.Backend().Save(context.TODO(), h, backend.NewByteReader(data, nil))
 	rtest.OK(t, err)
@@ -289,10 +287,7 @@ func TestRepositoryLoadUnpackedRetryBroken(t *testing.T) {
 
 	be, err := local.Open(context.TODO(), local.Config{Path: repodir, Connections: 2})
 	rtest.OK(t, err)
-	repo, err := repository.New(&damageOnceBackend{Backend: be}, repository.Options{})
-	rtest.OK(t, err)
-	err = repo.SearchKey(context.TODO(), rtest.TestPassword, 10, "")
-	rtest.OK(t, err)
+	repo := repository.TestOpenBackend(t, &damageOnceBackend{Backend: be})
 
 	rtest.OK(t, repo.LoadIndex(context.TODO(), nil))
 }
