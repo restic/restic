@@ -154,12 +154,13 @@ func TestFindListOnce(t *testing.T) {
 	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "3")}, opts, env.gopts)
 	thirdSnapshot := restic.NewIDSet(testListSnapshots(t, env.gopts, 3)...)
 
-	repo, err := OpenRepository(context.TODO(), env.gopts)
+	ctx, repo, unlock, err := openWithReadLock(context.TODO(), env.gopts, false)
 	rtest.OK(t, err)
+	defer unlock()
 
 	snapshotIDs := restic.NewIDSet()
 	// specify the two oldest snapshots explicitly and use "latest" to reference the newest one
-	for sn := range FindFilteredSnapshots(context.TODO(), repo, repo, &restic.SnapshotFilter{}, []string{
+	for sn := range FindFilteredSnapshots(ctx, repo, repo, &restic.SnapshotFilter{}, []string{
 		secondSnapshot[0].String(),
 		secondSnapshot[1].String()[:8],
 		"latest",

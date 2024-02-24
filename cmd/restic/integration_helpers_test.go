@@ -232,47 +232,66 @@ func testSetupBackupData(t testing.TB, env *testEnvironment) string {
 }
 
 func listPacks(gopts GlobalOptions, t *testing.T) restic.IDSet {
-	r, err := OpenRepository(context.TODO(), gopts)
+	ctx, r, unlock, err := openWithReadLock(context.TODO(), gopts, false)
 	rtest.OK(t, err)
+	defer unlock()
 
 	packs := restic.NewIDSet()
 
-	rtest.OK(t, r.List(context.TODO(), restic.PackFile, func(id restic.ID, size int64) error {
+	rtest.OK(t, r.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
 		packs.Insert(id)
 		return nil
 	}))
 	return packs
 }
 
-func removePacks(gopts GlobalOptions, t testing.TB, remove restic.IDSet) {
-	r, err := OpenRepository(context.TODO(), gopts)
+func listTreePacks(gopts GlobalOptions, t *testing.T) restic.IDSet {
+	ctx, r, unlock, err := openWithReadLock(context.TODO(), gopts, false)
 	rtest.OK(t, err)
+	defer unlock()
+
+	rtest.OK(t, r.LoadIndex(ctx, nil))
+	treePacks := restic.NewIDSet()
+	r.Index().Each(ctx, func(pb restic.PackedBlob) {
+		if pb.Type == restic.TreeBlob {
+			treePacks.Insert(pb.PackID)
+		}
+	})
+
+	return treePacks
+}
+
+func removePacks(gopts GlobalOptions, t testing.TB, remove restic.IDSet) {
+	ctx, r, unlock, err := openWithExclusiveLock(context.TODO(), gopts, false)
+	rtest.OK(t, err)
+	defer unlock()
 
 	for id := range remove {
-		rtest.OK(t, r.Backend().Remove(context.TODO(), backend.Handle{Type: restic.PackFile, Name: id.String()}))
+		rtest.OK(t, r.Backend().Remove(ctx, backend.Handle{Type: restic.PackFile, Name: id.String()}))
 	}
 }
 
 func removePacksExcept(gopts GlobalOptions, t testing.TB, keep restic.IDSet, removeTreePacks bool) {
-	r, err := OpenRepository(context.TODO(), gopts)
+	ctx, r, unlock, err := openWithExclusiveLock(context.TODO(), gopts, false)
 	rtest.OK(t, err)
+	defer unlock()
 
 	// Get all tree packs
-	rtest.OK(t, r.LoadIndex(context.TODO(), nil))
+	rtest.OK(t, r.LoadIndex(ctx, nil))
 
 	treePacks := restic.NewIDSet()
-	r.Index().Each(context.TODO(), func(pb restic.PackedBlob) {
+	r.Index().Each(ctx, func(pb restic.PackedBlob) {
 		if pb.Type == restic.TreeBlob {
 			treePacks.Insert(pb.PackID)
 		}
 	})
 
 	// remove all packs containing data blobs
-	rtest.OK(t, r.List(context.TODO(), restic.PackFile, func(id restic.ID, size int64) error {
+	rtest.OK(t, r.List(ctx, restic.PackFile, func(id restic.ID, size int64) error {
 		if treePacks.Has(id) != removeTreePacks || keep.Has(id) {
 			return nil
 		}
-		return r.Backend().Remove(context.TODO(), backend.Handle{Type: restic.PackFile, Name: id.String()})
+		return r.Backend().Remove(ctx, backend.Handle{Type: restic.PackFile, Name: id.String()})
 	}))
 }
 
