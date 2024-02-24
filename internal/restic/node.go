@@ -719,12 +719,7 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 	allowExtended, err := node.fillGenericAttributes(path, fi, stat)
 	if allowExtended {
 		// Skip processing ExtendedAttributes if allowExtended is false.
-		errEx := node.fillExtendedAttributes(path)
-		if err == nil {
-			err = errEx
-		} else {
-			debug.Log("Error filling extended attributes for %v at %v : %v", node.Name, path, errEx)
-		}
+		err = errors.CombineErrors(err, node.fillExtendedAttributes(path))
 	}
 	return err
 }
