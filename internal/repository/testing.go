@@ -17,13 +17,6 @@ import (
 	"github.com/restic/chunker"
 )
 
-// testKDFParams are the parameters for the KDF to be used during testing.
-var testKDFParams = crypto.Params{
-	N: 128,
-	R: 1,
-	P: 1,
-}
-
 type logger interface {
 	Logf(format string, args ...interface{})
 }
@@ -31,7 +24,11 @@ type logger interface {
 // TestUseLowSecurityKDFParameters configures low-security KDF parameters for testing.
 func TestUseLowSecurityKDFParameters(t logger) {
 	t.Logf("using low-security KDF parameters for test")
-	Params = &testKDFParams
+	Params = &crypto.Params{
+		N: 128,
+		R: 1,
+		P: 1,
+	}
 }
 
 // TestBackend returns a fully configured in-memory backend.
