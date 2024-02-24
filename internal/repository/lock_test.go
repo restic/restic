@@ -31,10 +31,7 @@ func openLockTestRepo(t *testing.T, wrapper backendWrapper) restic.Repository {
 		rtest.OK(t, err)
 	}
 
-	repo, err := New(be, Options{})
-	rtest.OK(t, err)
-	rtest.OK(t, repo.SearchKey(context.TODO(), test.TestPassword, 1, ""))
-	return repo
+	return TestOpenBackend(t, be)
 }
 
 func checkedLockRepo(ctx context.Context, t *testing.T, repo restic.Repository, lockerInst *locker, retryLock time.Duration) (*Unlocker, context.Context) {
@@ -77,9 +74,7 @@ func TestLockCancel(t *testing.T) {
 func TestLockConflict(t *testing.T) {
 	t.Parallel()
 	repo := openLockTestRepo(t, nil)
-	repo2, err := New(repo.Backend(), Options{})
-	test.OK(t, err)
-	test.OK(t, repo2.SearchKey(context.TODO(), test.TestPassword, 1, ""))
+	repo2 := TestOpenBackend(t, repo.Backend())
 
 	lock, _, err := Lock(context.Background(), repo, true, 0, func(msg string) {}, func(format string, args ...interface{}) {})
 	test.OK(t, err)

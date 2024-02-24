@@ -95,8 +95,15 @@ func TestRepositoryWithVersion(t testing.TB, version uint) restic.Repository {
 	return TestRepositoryWithBackend(t, nil, version, opts)
 }
 
+func TestFromFixture(t testing.TB, repoFixture string) (restic.Repository, func()) {
+	repodir, cleanup := test.Env(t, repoFixture)
+	repo := TestOpenLocal(t, repodir)
+
+	return repo, cleanup
+}
+
 // TestOpenLocal opens a local repository.
-func TestOpenLocal(t testing.TB, dir string) (r restic.Repository) {
+func TestOpenLocal(t testing.TB, dir string) restic.Repository {
 	var be backend.Backend
 	be, err := local.Open(context.TODO(), local.Config{Path: dir, Connections: 2})
 	if err != nil {
@@ -105,6 +112,10 @@ func TestOpenLocal(t testing.TB, dir string) (r restic.Repository) {
 
 	be = retry.New(be, 3, nil, nil)
 
+	return TestOpenBackend(t, be)
+}
+
+func TestOpenBackend(t testing.TB, be backend.Backend) restic.Repository {
 	repo, err := New(be, Options{})
 	if err != nil {
 		t.Fatal(err)
