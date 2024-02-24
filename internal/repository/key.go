@@ -47,7 +47,7 @@ type Key struct {
 // calibrated on the first run of AddKey().
 var Params *crypto.Params
 
-var (
+const (
 	// KDFTimeout specifies the maximum runtime for the KDF.
 	KDFTimeout = 500 * time.Millisecond
 
