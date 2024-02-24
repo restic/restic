@@ -37,8 +37,8 @@ func openLockTestRepo(t *testing.T, wrapper backendWrapper) restic.Repository {
 	return repo
 }
 
-func checkedLockRepo(ctx context.Context, t *testing.T, repo restic.Repository, retryLock time.Duration) (*Unlocker, context.Context) {
-	lock, wrappedCtx, err := Lock(ctx, repo, false, retryLock, func(msg string) {}, func(format string, args ...interface{}) {})
+func checkedLockRepo(ctx context.Context, t *testing.T, repo restic.Repository, lockerInst *locker, retryLock time.Duration) (*Unlocker, context.Context) {
+	lock, wrappedCtx, err := lockerInst.Lock(ctx, repo, false, retryLock, func(msg string) {}, func(format string, args ...interface{}) {})
 	test.OK(t, err)
 	test.OK(t, wrappedCtx.Err())
 	if lock.info.lock.Stale() {
@@ -48,9 +48,10 @@ func checkedLockRepo(ctx context.Context, t *testing.T, repo restic.Repository, 
 }
 
 func TestLock(t *testing.T) {
+	t.Parallel()
 	repo := openLockTestRepo(t, nil)
 
-	lock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, 0)
+	lock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, lockerInst, 0)
 	lock.Unlock()
 	if wrappedCtx.Err() == nil {
 		t.Fatal("unlock did not cancel context")
@@ -58,11 +59,12 @@ func TestLock(t *testing.T) {
 }
 
 func TestLockCancel(t *testing.T) {
+	t.Parallel()
 	repo := openLockTestRepo(t, nil)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	lock, wrappedCtx := checkedLockRepo(ctx, t, repo, 0)
+	lock, wrappedCtx := checkedLockRepo(ctx, t, repo, lockerInst, 0)
 	cancel()
 	if wrappedCtx.Err() == nil {
 		t.Fatal("canceled parent context did not cancel context")
@@ -73,6 +75,7 @@ func TestLockCancel(t *testing.T) {
 }
 
 func TestLockConflict(t *testing.T) {
+	t.Parallel()
 	repo := openLockTestRepo(t, nil)
 	repo2, err := New(repo.Backend(), Options{})
 	test.OK(t, err)
@@ -102,19 +105,19 @@ func (b *writeOnceBackend) Save(ctx context.Context, h backend.Handle, rd backen
 }
 
 func TestLockFailedRefresh(t *testing.T) {
+	t.Parallel()
 	repo := openLockTestRepo(t, func(r backend.Backend) (backend.Backend, error) {
 		return &writeOnceBackend{Backend: r}, nil
 	})
 
 	// reduce locking intervals to be suitable for testing
-	ri, rt := refreshInterval, refreshabilityTimeout
-	refreshInterval = 20 * time.Millisecond
-	refreshabilityTimeout = 100 * time.Millisecond
-	defer func() {
-		refreshInterval, refreshabilityTimeout = ri, rt
-	}()
-
-	lock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, 0)
+	li := &locker{
+		retrySleepStart:       lockerInst.retrySleepStart,
+		retrySleepMax:         lockerInst.retrySleepMax,
+		refreshInterval:       20 * time.Millisecond,
+		refreshabilityTimeout: 100 * time.Millisecond,
+	}
+	lock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, li, 0)
 
 	select {
 	case <-wrappedCtx.Done():
@@ -139,6 +142,7 @@ func (b *loggingBackend) Save(ctx context.Context, h backend.Handle, rd backend.
 }
 
 func TestLockSuccessfulRefresh(t *testing.T) {
+	t.Parallel()
 	repo := openLockTestRepo(t, func(r backend.Backend) (backend.Backend, error) {
 		return &loggingBackend{
 			Backend: r,
@@ -148,14 +152,13 @@ func TestLockSuccessfulRefresh(t *testing.T) {
 
 	t.Logf("test for successful lock refresh %v", time.Now())
 	// reduce locking intervals to be suitable for testing
-	ri, rt := refreshInterval, refreshabilityTimeout
-	refreshInterval = 60 * time.Millisecond
-	refreshabilityTimeout = 500 * time.Millisecond
-	defer func() {
-		refreshInterval, refreshabilityTimeout = ri, rt
-	}()
-
-	lock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, 0)
+	li := &locker{
+		retrySleepStart:       lockerInst.retrySleepStart,
+		retrySleepMax:         lockerInst.retrySleepMax,
+		refreshInterval:       60 * time.Millisecond,
+		refreshabilityTimeout: 500 * time.Millisecond,
+	}
+	lock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, li, 0)
 
 	select {
 	case <-wrappedCtx.Done():
@@ -168,7 +171,7 @@ func TestLockSuccessfulRefresh(t *testing.T) {
 		buf = buf[:n]
 		t.Log(string(buf))
 
-	case <-time.After(2 * refreshabilityTimeout):
+	case <-time.After(2 * li.refreshabilityTimeout):
 		// expected lock refresh to work
 	}
 	// Unlock should not crash
@@ -190,6 +193,7 @@ func (b *slowBackend) Save(ctx context.Context, h backend.Handle, rd backend.Rew
 }
 
 func TestLockSuccessfulStaleRefresh(t *testing.T) {
+	t.Parallel()
 	var sb *slowBackend
 	repo := openLockTestRepo(t, func(r backend.Backend) (backend.Backend, error) {
 		sb = &slowBackend{Backend: r}
@@ -198,17 +202,17 @@ func TestLockSuccessfulStaleRefresh(t *testing.T) {
 
 	t.Logf("test for successful lock refresh %v", time.Now())
 	// reduce locking intervals to be suitable for testing
-	ri, rt := refreshInterval, refreshabilityTimeout
-	refreshInterval = 10 * time.Millisecond
-	refreshabilityTimeout = 50 * time.Millisecond
-	defer func() {
-		refreshInterval, refreshabilityTimeout = ri, rt
-	}()
+	li := &locker{
+		retrySleepStart:       lockerInst.retrySleepStart,
+		retrySleepMax:         lockerInst.retrySleepMax,
+		refreshInterval:       10 * time.Millisecond,
+		refreshabilityTimeout: 50 * time.Millisecond,
+	}
 
-	lock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, 0)
+	lock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, li, 0)
 	// delay lock refreshing long enough that the lock would expire
 	sb.m.Lock()
-	sb.sleep = refreshabilityTimeout + refreshInterval
+	sb.sleep = li.refreshabilityTimeout + li.refreshInterval
 	sb.m.Unlock()
 
 	select {
@@ -216,7 +220,7 @@ func TestLockSuccessfulStaleRefresh(t *testing.T) {
 		// don't call t.Fatal to allow the lock to be properly cleaned up
 		t.Error("lock refresh failed", time.Now())
 
-	case <-time.After(refreshabilityTimeout):
+	case <-time.After(li.refreshabilityTimeout):
 	}
 	// reset slow backend
 	sb.m.Lock()
@@ -229,7 +233,7 @@ func TestLockSuccessfulStaleRefresh(t *testing.T) {
 		// don't call t.Fatal to allow the lock to be properly cleaned up
 		t.Error("lock refresh failed", time.Now())
 
-	case <-time.After(3 * refreshabilityTimeout):
+	case <-time.After(3 * li.refreshabilityTimeout):
 		// expected lock refresh to work
 	}
 
