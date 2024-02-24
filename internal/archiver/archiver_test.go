@@ -38,12 +38,12 @@ func prepareTempdirRepoSrc(t testing.TB, src TestDir) (string, *repository.Repos
 	return tempdir, repo
 }
 
-func saveFile(t testing.TB, repo archiverRepo, filename string, filesystem fs.FS) (*data.Node, ItemStats) {
+func saveFile(t testing.TB, repo archiverRepo, filename string, filesystem fs.FS) (*data.Node, *ItemStats) {
 	var (
 		completeReadingCallback bool
 
 		completeCallbackNode  *data.Node
-		completeCallbackStats ItemStats
+		completeCallbackStats *ItemStats
 		completeCallback      bool
 
 		startCallback bool
@@ -67,7 +67,7 @@ func saveFile(t testing.TB, repo archiverRepo, filename string, filesystem fs.FS
 			}
 		}
 
-		complete := func(node *data.Node, stats ItemStats) {
+		complete := func(node *data.Node, stats *ItemStats) {
 			completeCallback = true
 			completeCallbackNode = node
 			completeCallbackStats = stats
@@ -117,7 +117,7 @@ func saveFile(t testing.TB, repo archiverRepo, filename string, filesystem fs.FS
 	}
 
 	if completeCallbackStats != fnr.stats {
-		t.Errorf("different stats return for complete callback, want:\n  %v\ngot:\n  %v", fnr.stats, completeCallbackStats)
+		t.Errorf("different stats returned for complete callback")
 	}
 
 	return fnr.node, fnr.stats
@@ -139,17 +139,17 @@ func TestArchiverSaveFile(t *testing.T) {
 			node, stats := saveFile(t, repo, filepath.Join(tempdir, "file"), fs.Track{FS: fs.Local{}})
 
 			TestEnsureFileContent(ctx, t, repo, "file", node, testfile)
-			if stats.DataSize != uint64(len(testfile.Content)) {
-				t.Errorf("wrong stats returned in DataSize, want %d, got %d", len(testfile.Content), stats.DataSize)
+			if stats.DataSize.Load() != uint64(len(testfile.Content)) {
+				t.Errorf("wrong stats returned in DataSize, want %d, got %d", len(testfile.Content), stats.DataSize.Load())
 			}
-			if stats.DataBlobs <= 0 && len(testfile.Content) > 0 {
-				t.Errorf("wrong stats returned in DataBlobs, want > 0, got %d", stats.DataBlobs)
+			if stats.DataBlobs.Load() <= 0 && len(testfile.Content) > 0 {
+				t.Errorf("wrong stats returned in DataBlobs, want > 0, got %d", stats.DataBlobs.Load())
 			}
-			if stats.TreeSize != 0 {
-				t.Errorf("wrong stats returned in TreeSize, want 0, got %d", stats.TreeSize)
+			if stats.TreeSize.Load() != 0 {
+				t.Errorf("wrong stats returned in TreeSize, want 0, got %d", stats.TreeSize.Load())
 			}
-			if stats.TreeBlobs != 0 {
-				t.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs)
+			if stats.TreeBlobs.Load() != 0 {
+				t.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs.Load())
 			}
 		})
 	}
@@ -181,17 +181,17 @@ func TestArchiverSaveFileReaderFS(t *testing.T) {
 			node, stats := saveFile(t, repo, filename, readerFs)
 
 			TestEnsureFileContent(ctx, t, repo, "file", node, TestFile{Content: test.Data})
-			if stats.DataSize != uint64(len(test.Data)) {
-				t.Errorf("wrong stats returned in DataSize, want %d, got %d", len(test.Data), stats.DataSize)
+			if stats.DataSize.Load() != uint64(len(test.Data)) {
+				t.Errorf("wrong stats returned in DataSize, want %d, got %d", len(test.Data), stats.DataSize.Load())
 			}
-			if stats.DataBlobs <= 0 && len(test.Data) > 0 {
-				t.Errorf("wrong stats returned in DataBlobs, want > 0, got %d", stats.DataBlobs)
+			if stats.DataBlobs.Load() <= 0 && len(test.Data) > 0 {
+				t.Errorf("wrong stats returned in DataBlobs, want > 0, got %d", stats.DataBlobs.Load())
 			}
-			if stats.TreeSize != 0 {
-				t.Errorf("wrong stats returned in TreeSize, want 0, got %d", stats.TreeSize)
+			if stats.TreeSize.Load() != 0 {
+				t.Errorf("wrong stats returned in TreeSize, want 0, got %d", stats.TreeSize.Load())
 			}
-			if stats.TreeBlobs != 0 {
-				t.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs)
+			if stats.TreeBlobs.Load() != 0 {
+				t.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs.Load())
 			}
 		})
 	}
@@ -250,17 +250,17 @@ func TestArchiverSave(t *testing.T) {
 
 			TestEnsureFileContent(ctx, t, repo, "file", fnr.node, testfile)
 			stats := fnr.stats
-			if stats.DataSize != uint64(len(testfile.Content)) {
-				t.Errorf("wrong stats returned in DataSize, want %d, got %d", len(testfile.Content), stats.DataSize)
+			if stats.DataSize.Load() != uint64(len(testfile.Content)) {
+				t.Errorf("wrong stats returned in DataSize, want %d, got %d", len(testfile.Content), stats.DataSize.Load())
 			}
-			if stats.DataBlobs <= 0 && len(testfile.Content) > 0 {
-				t.Errorf("wrong stats returned in DataBlobs, want > 0, got %d", stats.DataBlobs)
+			if stats.DataBlobs.Load() <= 0 && len(testfile.Content) > 0 {
+				t.Errorf("wrong stats returned in DataBlobs, want > 0, got %d", stats.DataBlobs.Load())
 			}
-			if stats.TreeSize != 0 {
-				t.Errorf("wrong stats returned in TreeSize, want 0, got %d", stats.TreeSize)
+			if stats.TreeSize.Load() != 0 {
+				t.Errorf("wrong stats returned in TreeSize, want 0, got %d", stats.TreeSize.Load())
 			}
-			if stats.TreeBlobs != 0 {
-				t.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs)
+			if stats.TreeBlobs.Load() != 0 {
+				t.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs.Load())
 			}
 		})
 	}
@@ -328,17 +328,17 @@ func TestArchiverSaveReaderFS(t *testing.T) {
 
 			TestEnsureFileContent(ctx, t, repo, "file", fnr.node, TestFile{Content: test.Data})
 			stats := fnr.stats
-			if stats.DataSize != uint64(len(test.Data)) {
-				t.Errorf("wrong stats returned in DataSize, want %d, got %d", len(test.Data), stats.DataSize)
+			if stats.DataSize.Load() != uint64(len(test.Data)) {
+				t.Errorf("wrong stats returned in DataSize, want %d, got %d", len(test.Data), stats.DataSize.Load())
 			}
-			if stats.DataBlobs <= 0 && len(test.Data) > 0 {
-				t.Errorf("wrong stats returned in DataBlobs, want > 0, got %d", stats.DataBlobs)
+			if stats.DataBlobs.Load() <= 0 && len(test.Data) > 0 {
+				t.Errorf("wrong stats returned in DataBlobs, want > 0, got %d", stats.DataBlobs.Load())
 			}
-			if stats.TreeSize != 0 {
-				t.Errorf("wrong stats returned in TreeSize, want 0, got %d", stats.TreeSize)
+			if stats.TreeSize.Load() != 0 {
+				t.Errorf("wrong stats returned in TreeSize, want 0, got %d", stats.TreeSize.Load())
 			}
-			if stats.TreeBlobs != 0 {
-				t.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs)
+			if stats.TreeBlobs.Load() != 0 {
+				t.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs.Load())
 			}
 		})
 	}
@@ -360,17 +360,17 @@ func BenchmarkArchiverSaveFileSmall(b *testing.B) {
 		_, stats := saveFile(b, repo, filepath.Join(tempdir, "file"), fs.Track{FS: fs.Local{}})
 
 		b.StopTimer()
-		if stats.DataSize != fileSize {
-			b.Errorf("wrong stats returned in DataSize, want %d, got %d", fileSize, stats.DataSize)
+		if stats.DataSize.Load() != fileSize {
+			b.Errorf("wrong stats returned in DataSize, want %d, got %d", fileSize, stats.DataSize.Load())
 		}
-		if stats.DataBlobs <= 0 {
-			b.Errorf("wrong stats returned in DataBlobs, want > 0, got %d", stats.DataBlobs)
+		if stats.DataBlobs.Load() <= 0 {
+			b.Errorf("wrong stats returned in DataBlobs, want > 0, got %d", stats.DataBlobs.Load())
 		}
-		if stats.TreeSize != 0 {
-			b.Errorf("wrong stats returned in TreeSize, want 0, got %d", stats.TreeSize)
+		if stats.TreeSize.Load() != 0 {
+			b.Errorf("wrong stats returned in TreeSize, want 0, got %d", stats.TreeSize.Load())
 		}
-		if stats.TreeBlobs != 0 {
-			b.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs)
+		if stats.TreeBlobs.Load() != 0 {
+			b.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs.Load())
 		}
 		b.StartTimer()
 	}
@@ -400,7 +400,7 @@ func BenchmarkArchiverSaveFileConcurrent(b *testing.B) {
 		}
 		b.StartTimer()
 
-		err := repo.WithBlobUploader(context.Background(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
+		err := repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 			wg, ctx := errgroup.WithContext(ctx)
 			arch.runWorkers(ctx, wg, uploader)
 
@@ -412,7 +412,7 @@ func BenchmarkArchiverSaveFileConcurrent(b *testing.B) {
 					b.Fatal(err)
 				}
 
-				fn := arch.fileSaver.Save(ctx, "/", filename, file, func() {}, func() {}, func(*data.Node, ItemStats) {})
+				fn := arch.fileSaver.Save(ctx, "/", filename, file, func() {}, func() {}, func(*data.Node, *ItemStats) {})
 				futures = append(futures, fn)
 			}
 
@@ -448,17 +448,17 @@ func BenchmarkArchiverSaveFileLarge(b *testing.B) {
 		_, stats := saveFile(b, repo, filepath.Join(tempdir, "file"), fs.Track{FS: fs.Local{}})
 
 		b.StopTimer()
-		if stats.DataSize != fileSize {
-			b.Errorf("wrong stats returned in DataSize, want %d, got %d", fileSize, stats.DataSize)
+		if stats.DataSize.Load() != fileSize {
+			b.Errorf("wrong stats returned in DataSize, want %d, got %d", fileSize, stats.DataSize.Load())
 		}
-		if stats.DataBlobs <= 0 {
-			b.Errorf("wrong stats returned in DataBlobs, want > 0, got %d", stats.DataBlobs)
+		if stats.DataBlobs.Load() <= 0 {
+			b.Errorf("wrong stats returned in DataBlobs, want > 0, got %d", stats.DataBlobs.Load())
 		}
-		if stats.TreeSize != 0 {
-			b.Errorf("wrong stats returned in TreeSize, want 0, got %d", stats.TreeSize)
+		if stats.TreeSize.Load() != 0 {
+			b.Errorf("wrong stats returned in TreeSize, want 0, got %d", stats.TreeSize.Load())
 		}
-		if stats.TreeBlobs != 0 {
-			b.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs)
+		if stats.TreeBlobs.Load() != 0 {
+			b.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs.Load())
 		}
 		b.StartTimer()
 	}
@@ -906,7 +906,7 @@ func TestArchiverSaveDir(t *testing.T) {
 			defer back()
 
 			var treeID restic.ID
-			err := repo.WithBlobUploader(context.TODO(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
+			err := repo.WithBlobUploader(context.Background(), func(ctx context.Context, uploader restic.BlobSaverWithAsync) error {
 				wg, ctx := errgroup.WithContext(ctx)
 				arch.runWorkers(ctx, wg, uploader)
 				meta, err := testFS.OpenFile(test.target, fs.O_NOFOLLOW, true)
@@ -919,17 +919,17 @@ func TestArchiverSaveDir(t *testing.T) {
 				node, stats := fnr.node, fnr.stats
 
 				t.Logf("stats: %v", stats)
-				if stats.DataSize != 0 {
-					t.Errorf("wrong stats returned in DataSize, want 0, got %d", stats.DataSize)
+				if stats.DataSize.Load() != 0 {
+					t.Errorf("wrong stats returned in DataSize, want 0, got %d", stats.DataSize.Load())
 				}
-				if stats.DataBlobs != 0 {
-					t.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs)
+				if stats.DataBlobs.Load() != 0 {
+					t.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs.Load())
 				}
-				if stats.TreeSize == 0 {
-					t.Errorf("wrong stats returned in TreeSize, want > 0, got %d", stats.TreeSize)
+				if stats.TreeSize.Load() == 0 {
+					t.Errorf("wrong stats returned in TreeSize, want > 0, got %d", stats.TreeSize.Load())
 				}
-				if stats.TreeBlobs <= 0 {
-					t.Errorf("wrong stats returned in TreeBlobs, want > 0, got %d", stats.TreeBlobs)
+				if stats.TreeBlobs.Load() <= 0 {
+					t.Errorf("wrong stats returned in TreeBlobs, want > 0, got %d", stats.TreeBlobs.Load())
 				}
 
 				node.Name = targetNodeName
@@ -989,31 +989,31 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 		node, stats := fnr.node, fnr.stats
 		if i == 0 {
 			// operation must have added new tree data
-			if stats.DataSize != 0 {
-				t.Errorf("wrong stats returned in DataSize, want 0, got %d", stats.DataSize)
+			if stats.DataSize.Load() != 0 {
+				t.Errorf("wrong stats returned in DataSize, want 0, got %d", stats.DataSize.Load())
 			}
-			if stats.DataBlobs != 0 {
-				t.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs)
+			if stats.DataBlobs.Load() != 0 {
+				t.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs.Load())
 			}
-			if stats.TreeSize == 0 {
-				t.Errorf("wrong stats returned in TreeSize, want > 0, got %d", stats.TreeSize)
+			if stats.TreeSize.Load() == 0 {
+				t.Errorf("wrong stats returned in TreeSize, want > 0, got %d", stats.TreeSize.Load())
 			}
-			if stats.TreeBlobs <= 0 {
-				t.Errorf("wrong stats returned in TreeBlobs, want > 0, got %d", stats.TreeBlobs)
+			if stats.TreeBlobs.Load() <= 0 {
+				t.Errorf("wrong stats returned in TreeBlobs, want > 0, got %d", stats.TreeBlobs.Load())
 			}
 		} else {
 			// operation must not have added any new data
-			if stats.DataSize != 0 {
-				t.Errorf("wrong stats returned in DataSize, want 0, got %d", stats.DataSize)
+			if stats.DataSize.Load() != 0 {
+				t.Errorf("wrong stats returned in DataSize, want 0, got %d", stats.DataSize.Load())
 			}
-			if stats.DataBlobs != 0 {
-				t.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs)
+			if stats.DataBlobs.Load() != 0 {
+				t.Errorf("wrong stats returned in DataBlobs, want 0, got %d", stats.DataBlobs.Load())
 			}
-			if stats.TreeSize != 0 {
-				t.Errorf("wrong stats returned in TreeSize, want 0, got %d", stats.TreeSize)
+			if stats.TreeSize.Load() != 0 {
+				t.Errorf("wrong stats returned in TreeSize, want 0, got %d", stats.TreeSize.Load())
 			}
-			if stats.TreeBlobs != 0 {
-				t.Errorf("wrong stats returned in TreeBlobs, want 0, got %d", stats.TreeBlobs)
+			if stats.TreeBlobs.Load() != 0 {
+				t.Errorf("wrong stats returned in TreeBlobs, want 0, got %d", stats.TreeBlobs.Load())
 			}
 		}
 
@@ -1025,6 +1025,18 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 			}
 		}
 	}
+}
+
+// newItemStats creates an ItemStats with the given values pre-loaded into the atomic fields.
+func newItemStats(dataBlobs int64, dataSize, dataSizeInRepo uint64, treeBlobs int64, treeSize, treeSizeInRepo uint64) ItemStats {
+	var s ItemStats
+	s.DataBlobs.Store(dataBlobs)
+	s.DataSize.Store(dataSize)
+	s.DataSizeInRepo.Store(dataSizeInRepo)
+	s.TreeBlobs.Store(treeBlobs)
+	s.TreeSize.Store(treeSize)
+	s.TreeSizeInRepo.Store(treeSizeInRepo)
+	return s
 }
 
 // bothZeroOrNeither fails the test if only one of exp, act is zero.
@@ -1062,7 +1074,7 @@ func TestArchiverSaveTree(t *testing.T) {
 				"targetfile": TestFile{Content: "foobar"},
 			},
 			stat: Summary{
-				ItemStats:      ItemStats{1, 6, 32 + 6, 0, 0, 0},
+				ItemStats:      newItemStats(1, 6, 32+6, 0, 0, 0),
 				ProcessedBytes: 6,
 				Files:          ChangeStats{1, 0, 0},
 				Dirs:           ChangeStats{0, 0, 0},
@@ -1079,7 +1091,7 @@ func TestArchiverSaveTree(t *testing.T) {
 				"filesymlink": TestSymlink{Target: "targetfile"},
 			},
 			stat: Summary{
-				ItemStats:      ItemStats{1, 6, 32 + 6, 0, 0, 0},
+				ItemStats:      newItemStats(1, 6, 32+6, 0, 0, 0),
 				ProcessedBytes: 6,
 				Files:          ChangeStats{1, 0, 0},
 				Dirs:           ChangeStats{0, 0, 0},
@@ -1104,7 +1116,7 @@ func TestArchiverSaveTree(t *testing.T) {
 				},
 			},
 			stat: Summary{
-				ItemStats:      ItemStats{0, 0, 0, 1, 0x154, 0x16a},
+				ItemStats:      newItemStats(0, 0, 0, 1, 0x154, 0x16a),
 				ProcessedBytes: 0,
 				Files:          ChangeStats{0, 0, 0},
 				Dirs:           ChangeStats{1, 0, 0},
@@ -1133,7 +1145,7 @@ func TestArchiverSaveTree(t *testing.T) {
 				},
 			},
 			stat: Summary{
-				ItemStats:      ItemStats{1, 6, 32 + 6, 3, 0x47f, 0x4c1},
+				ItemStats:      newItemStats(1, 6, 32+6, 3, 0x47f, 0x4c1),
 				ProcessedBytes: 6,
 				Files:          ChangeStats{1, 0, 0},
 				Dirs:           ChangeStats{3, 0, 0},
@@ -1192,11 +1204,11 @@ func TestArchiverSaveTree(t *testing.T) {
 			}
 			TestEnsureTree(context.TODO(), t, "/", repo, treeID, want)
 			stat := arch.summary
-			bothZeroOrNeither(t, uint64(test.stat.DataBlobs), uint64(stat.DataBlobs))
-			bothZeroOrNeither(t, uint64(test.stat.TreeBlobs), uint64(stat.TreeBlobs))
-			bothZeroOrNeither(t, test.stat.DataSize, stat.DataSize)
-			bothZeroOrNeither(t, test.stat.DataSizeInRepo, stat.DataSizeInRepo)
-			bothZeroOrNeither(t, test.stat.TreeSizeInRepo, stat.TreeSizeInRepo)
+			bothZeroOrNeither(t, uint64(test.stat.DataBlobs.Load()), uint64(stat.DataBlobs.Load()))
+			bothZeroOrNeither(t, uint64(test.stat.TreeBlobs.Load()), uint64(stat.TreeBlobs.Load()))
+			bothZeroOrNeither(t, test.stat.DataSize.Load(), stat.DataSize.Load())
+			bothZeroOrNeither(t, test.stat.DataSizeInRepo.Load(), stat.DataSizeInRepo.Load())
+			bothZeroOrNeither(t, test.stat.TreeSizeInRepo.Load(), stat.TreeSizeInRepo.Load())
 			rtest.Equals(t, test.stat.ProcessedBytes, stat.ProcessedBytes)
 			rtest.Equals(t, test.stat.Files, stat.Files)
 			rtest.Equals(t, test.stat.Dirs, stat.Dirs)
@@ -1740,10 +1752,10 @@ func checkSnapshotStats(t *testing.T, sn *data.Snapshot, stat Summary) {
 	rtest.Equals(t, stat.Dirs.Unchanged, sn.Summary.DirsUnmodified, "DirsUnmodified")
 	rtest.Equals(t, stat.ProcessedBytes, sn.Summary.TotalBytesProcessed, "TotalBytesProcessed")
 	rtest.Equals(t, stat.Files.New+stat.Files.Changed+stat.Files.Unchanged, sn.Summary.TotalFilesProcessed, "TotalFilesProcessed")
-	bothZeroOrNeither(t, uint64(stat.DataBlobs), uint64(sn.Summary.DataBlobs))
-	bothZeroOrNeither(t, uint64(stat.TreeBlobs), uint64(sn.Summary.TreeBlobs))
-	bothZeroOrNeither(t, stat.DataSize+stat.TreeSize, sn.Summary.DataAdded)
-	bothZeroOrNeither(t, stat.DataSizeInRepo+stat.TreeSizeInRepo, sn.Summary.DataAddedPacked)
+	bothZeroOrNeither(t, uint64(stat.DataBlobs.Load()), uint64(sn.Summary.DataBlobs))
+	bothZeroOrNeither(t, uint64(stat.TreeBlobs.Load()), uint64(sn.Summary.TreeBlobs))
+	bothZeroOrNeither(t, stat.DataSize.Load()+stat.TreeSize.Load(), sn.Summary.DataAdded)
+	bothZeroOrNeither(t, stat.DataSizeInRepo.Load()+stat.TreeSizeInRepo.Load(), sn.Summary.DataAddedPacked)
 }
 
 func TestArchiverParent(t *testing.T) {
@@ -1762,7 +1774,7 @@ func TestArchiverParent(t *testing.T) {
 				Files:          ChangeStats{1, 0, 0},
 				Dirs:           ChangeStats{0, 0, 0},
 				ProcessedBytes: 2102152,
-				ItemStats:      ItemStats{3, 0x201593, 0x201632, 1, 0, 0},
+				ItemStats:      newItemStats(3, 0x201593, 0x201632, 1, 0, 0),
 			},
 			statSecond: Summary{
 				Files:          ChangeStats{0, 0, 1},
@@ -1781,7 +1793,7 @@ func TestArchiverParent(t *testing.T) {
 				Files:          ChangeStats{1, 0, 0},
 				Dirs:           ChangeStats{0, 0, 0},
 				ProcessedBytes: 2102152,
-				ItemStats:      ItemStats{3, 0x201593, 0x201632, 1, 0, 0},
+				ItemStats:      newItemStats(3, 0x201593, 0x201632, 1, 0, 0),
 			},
 			statSecond: Summary{
 				Files:          ChangeStats{0, 0, 1},
@@ -1800,7 +1812,7 @@ func TestArchiverParent(t *testing.T) {
 				Files:          ChangeStats{2, 0, 0},
 				Dirs:           ChangeStats{1, 0, 0},
 				ProcessedBytes: 2469,
-				ItemStats:      ItemStats{2, 0xe1c, 0xcd9, 2, 0, 0},
+				ItemStats:      newItemStats(2, 0xe1c, 0xcd9, 2, 0, 0),
 			},
 			statSecond: Summary{
 				Files:          ChangeStats{0, 0, 2},
@@ -1823,13 +1835,13 @@ func TestArchiverParent(t *testing.T) {
 				Files:          ChangeStats{2, 0, 0},
 				Dirs:           ChangeStats{1, 0, 0},
 				ProcessedBytes: 2469,
-				ItemStats:      ItemStats{2, 0xe13, 0xcf8, 2, 0, 0},
+				ItemStats:      newItemStats(2, 0xe13, 0xcf8, 2, 0, 0),
 			},
 			statSecond: Summary{
 				Files:          ChangeStats{0, 1, 0},
 				Dirs:           ChangeStats{0, 1, 0},
 				ProcessedBytes: 6,
-				ItemStats:      ItemStats{1, 0x305, 0x233, 2, 0, 0},
+				ItemStats:      newItemStats(1, 0x305, 0x233, 2, 0, 0),
 			},
 		},
 	}

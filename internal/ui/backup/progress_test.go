@@ -18,12 +18,12 @@ type mockPrinter struct {
 	id                    restic.ID
 }
 
-func (p *mockPrinter) Update(_, _ Counter, _ uint, _ map[string]struct{}, _ time.Time, _ uint64) {
+func (p *mockPrinter) Update(_, _ Counter, _ uint32, _ map[string]struct{}, _ time.Time, _ uint64) {
 }
 func (p *mockPrinter) Error(_ string, err error) error        { return err }
 func (p *mockPrinter) ScannerError(_ string, err error) error { return err }
 
-func (p *mockPrinter) CompleteItem(messageType string, _ string, _ archiver.ItemStats, _ time.Duration) {
+func (p *mockPrinter) CompleteItem(messageType string, _ string, _ *archiver.ItemStats, _ time.Duration) {
 	p.Lock()
 	defer p.Unlock()
 
@@ -56,10 +56,10 @@ func TestProgress(t *testing.T) {
 
 	// "dir unchanged"
 	node := data.Node{Type: data.NodeTypeDir}
-	prog.CompleteItem("foo", &node, &node, archiver.ItemStats{}, 0)
+	prog.CompleteItem("foo", &node, &node, &archiver.ItemStats{}, 0)
 	// "file new"
 	node.Type = data.NodeTypeFile
-	prog.CompleteItem("foo", nil, &node, archiver.ItemStats{}, 0)
+	prog.CompleteItem("foo", nil, &node, &archiver.ItemStats{}, 0)
 
 	time.Sleep(10 * time.Millisecond)
 	id := restic.NewRandomID()

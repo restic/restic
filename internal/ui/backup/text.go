@@ -32,20 +32,20 @@ func NewTextProgress(term ui.Terminal, verbosity uint) *TextProgress {
 }
 
 // Update updates the status lines.
-func (b *TextProgress) Update(total, processed Counter, errors uint, currentFiles map[string]struct{}, start time.Time, secs uint64) {
+func (b *TextProgress) Update(total, processed Counter, errors uint32, currentFiles map[string]struct{}, start time.Time, secs uint64) {
 	var status string
-	if total.Files == 0 && total.Dirs == 0 {
+	if total.Files.Load() == 0 && total.Dirs.Load() == 0 {
 		// no total count available yet
 		status = fmt.Sprintf("[%s] %v files, %s, %d errors",
 			ui.FormatDuration(time.Since(start)),
-			processed.Files, ui.FormatBytes(processed.Bytes), errors,
+			processed.Files.Load(), ui.FormatBytes(processed.Bytes.Load()), errors,
 		)
 	} else {
 		var eta, percent string
 
-		if secs > 0 && processed.Bytes < total.Bytes {
+		if secs > 0 && processed.Bytes.Load() < total.Bytes.Load() {
 			eta = fmt.Sprintf(" ETA %s", ui.FormatSeconds(secs))
-			percent = ui.FormatPercent(processed.Bytes, total.Bytes)
+			percent = ui.FormatPercent(processed.Bytes.Load(), total.Bytes.Load())
 			percent += "  "
 		}
 
@@ -53,10 +53,10 @@ func (b *TextProgress) Update(total, processed Counter, errors uint, currentFile
 		status = fmt.Sprintf("[%s] %s%v files %s, total %v files %v, %d errors%s",
 			ui.FormatDuration(time.Since(start)),
 			percent,
-			processed.Files,
-			ui.FormatBytes(processed.Bytes),
-			total.Files,
-			ui.FormatBytes(total.Bytes),
+			processed.Files.Load(),
+			ui.FormatBytes(processed.Bytes.Load()),
+			total.Files.Load(),
+			ui.FormatBytes(total.Bytes.Load()),
 			errors,
 			eta,
 		)
@@ -89,28 +89,28 @@ func (b *TextProgress) Error(_ string, err error) error {
 
 // CompleteItem is the status callback function for the archiver when a
 // file/dir has been saved successfully.
-func (b *TextProgress) CompleteItem(messageType, item string, s archiver.ItemStats, d time.Duration) {
+func (b *TextProgress) CompleteItem(messageType, item string, s *archiver.ItemStats, d time.Duration) {
 	item = ui.Quote(item)
 
 	switch messageType {
 	case "dir new":
 		b.VV("new       %v, saved in %.3fs (%v added, %v stored, %v metadata)",
-			item, d.Seconds(), ui.FormatBytes(s.DataSize),
-			ui.FormatBytes(s.DataSizeInRepo), ui.FormatBytes(s.TreeSizeInRepo))
+			item, d.Seconds(), ui.FormatBytes(s.DataSize.Load()),
+			ui.FormatBytes(s.DataSizeInRepo.Load()), ui.FormatBytes(s.TreeSizeInRepo.Load()))
 	case "dir unchanged":
 		b.VV("unchanged %v", item)
 	case "dir modified":
 		b.VV("modified  %v, saved in %.3fs (%v added, %v stored, %v metadata)",
-			item, d.Seconds(), ui.FormatBytes(s.DataSize),
-			ui.FormatBytes(s.DataSizeInRepo), ui.FormatBytes(s.TreeSizeInRepo))
+			item, d.Seconds(), ui.FormatBytes(s.DataSize.Load()),
+			ui.FormatBytes(s.DataSizeInRepo.Load()), ui.FormatBytes(s.TreeSizeInRepo.Load()))
 	case "file new":
 		b.VV("new       %v, saved in %.3fs (%v added, %v stored)", item,
-			d.Seconds(), ui.FormatBytes(s.DataSize), ui.FormatBytes(s.DataSizeInRepo))
+			d.Seconds(), ui.FormatBytes(s.DataSize.Load()), ui.FormatBytes(s.DataSizeInRepo.Load()))
 	case "file unchanged":
 		b.VV("unchanged %v", item)
 	case "file modified":
 		b.VV("modified  %v, saved in %.3fs (%v added, %v stored)", item,
-			d.Seconds(), ui.FormatBytes(s.DataSize), ui.FormatBytes(s.DataSizeInRepo))
+			d.Seconds(), ui.FormatBytes(s.DataSize.Load()), ui.FormatBytes(s.DataSizeInRepo.Load()))
 	}
 }
 
@@ -134,15 +134,15 @@ func (b *TextProgress) Finish(id restic.ID, summary *archiver.Summary, dryRun bo
 	b.P("\n")
 	b.P("Files:       %5d new, %5d changed, %5d unmodified\n", summary.Files.New, summary.Files.Changed, summary.Files.Unchanged)
 	b.P("Dirs:        %5d new, %5d changed, %5d unmodified\n", summary.Dirs.New, summary.Dirs.Changed, summary.Dirs.Unchanged)
-	b.V("Data Blobs:  %5d new\n", summary.ItemStats.DataBlobs)
-	b.V("Tree Blobs:  %5d new\n", summary.ItemStats.TreeBlobs)
+	b.V("Data Blobs:  %5d new\n", summary.ItemStats.DataBlobs.Load())
+	b.V("Tree Blobs:  %5d new\n", summary.ItemStats.TreeBlobs.Load())
 	verb := "Added"
 	if dryRun {
 		verb = "Would add"
 	}
 	b.P("%s to the repository: %-5s (%-5s stored)\n", verb,
-		ui.FormatBytes(summary.ItemStats.DataSize+summary.ItemStats.TreeSize),
-		ui.FormatBytes(summary.ItemStats.DataSizeInRepo+summary.ItemStats.TreeSizeInRepo))
+		ui.FormatBytes(summary.ItemStats.DataSize.Load()+summary.ItemStats.TreeSize.Load()),
+		ui.FormatBytes(summary.ItemStats.DataSizeInRepo.Load()+summary.ItemStats.TreeSizeInRepo.Load()))
 	b.P("\n")
 	b.P("processed %v files, %v in %s",
 		summary.Files.New+summary.Files.Changed+summary.Files.Unchanged,

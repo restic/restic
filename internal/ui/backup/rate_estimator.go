@@ -2,6 +2,7 @@ package backup
 
 import (
 	"container/list"
+	"sync"
 	"time"
 )
 
@@ -12,7 +13,9 @@ type rateBucket struct {
 }
 
 // rateEstimator represents an estimate of the time to complete an operation.
+// It is safe for concurrent use.
 type rateEstimator struct {
+	mu         sync.Mutex
 	buckets    *list.List
 	start      time.Time
 	totalBytes uint64
@@ -71,6 +74,9 @@ func (r *rateEstimator) recordBytes(now time.Time, bytes uint64) {
 	if bytes == 0 {
 		return
 	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	var tail *rateBucket
 	if r.buckets.Len() > 0 {
 		tail = r.buckets.Back().Value.(*rateBucket)
@@ -88,6 +94,9 @@ func (r *rateEstimator) recordBytes(now time.Time, bytes uint64) {
 // rate returns an estimated bytes per second rate at a given time, or zero
 // if there is not enough data to compute a rate.
 func (r *rateEstimator) rate(now time.Time) float64 {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	r.trim(now)
 	if !r.start.Before(now) {
 		return 0
