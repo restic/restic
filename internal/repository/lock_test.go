@@ -1,4 +1,4 @@
-package main
+package repository
 
 import (
 	"context"
@@ -10,34 +10,35 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/backend"
-	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/backend/mem"
 	"github.com/restic/restic/internal/debug"
-	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 )
 
-func openLockTestRepo(t *testing.T, wrapper backendWrapper) (*repository.Repository, func(), *testEnvironment) {
-	env, cleanup := withTestEnvironment(t)
+type backendWrapper func(r backend.Backend) (backend.Backend, error)
 
-	reg := location.NewRegistry()
-	reg.Register(mem.NewFactory())
-	env.gopts.backends = reg
-	env.gopts.Repo = "mem:"
+func openLockTestRepo(t *testing.T, wrapper backendWrapper) restic.Repository {
+	be := backend.Backend(mem.New())
+	// initialize repo
+	TestRepositoryWithBackend(t, be, 0, Options{})
 
+	// reopen repository to allow injecting a backend wrapper
 	if wrapper != nil {
-		env.gopts.backendTestHook = wrapper
+		var err error
+		be, err = wrapper(be)
+		rtest.OK(t, err)
 	}
-	testRunInit(t, env.gopts)
 
-	repo, err := OpenRepository(context.TODO(), env.gopts)
-	test.OK(t, err)
-	return repo, cleanup, env
+	repo, err := New(be, Options{})
+	rtest.OK(t, err)
+	rtest.OK(t, repo.SearchKey(context.TODO(), test.TestPassword, 1, ""))
+	return repo
 }
 
-func checkedLockRepo(ctx context.Context, t *testing.T, repo restic.Repository, env *testEnvironment) (*restic.Lock, context.Context) {
-	lock, wrappedCtx, err := lockRepository(ctx, repo, false, env.gopts.RetryLock, env.gopts.JSON)
+func checkedLockRepo(ctx context.Context, t *testing.T, repo restic.Repository, retryLock time.Duration) (*restic.Lock, context.Context) {
+	lock, wrappedCtx, err := Lock(ctx, repo, false, retryLock, func(msg string) {}, func(format string, args ...interface{}) {})
 	test.OK(t, err)
 	test.OK(t, wrappedCtx.Err())
 	if lock.Stale() {
@@ -47,57 +48,54 @@ func checkedLockRepo(ctx context.Context, t *testing.T, repo restic.Repository, 
 }
 
 func TestLock(t *testing.T) {
-	repo, cleanup, env := openLockTestRepo(t, nil)
-	defer cleanup()
+	repo := openLockTestRepo(t, nil)
 
-	lock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, env)
-	unlockRepo(lock)
+	lock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, 0)
+	Unlock(lock)
 	if wrappedCtx.Err() == nil {
 		t.Fatal("unlock did not cancel context")
 	}
 }
 
 func TestLockCancel(t *testing.T) {
-	repo, cleanup, env := openLockTestRepo(t, nil)
-	defer cleanup()
+	repo := openLockTestRepo(t, nil)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	lock, wrappedCtx := checkedLockRepo(ctx, t, repo, env)
+	lock, wrappedCtx := checkedLockRepo(ctx, t, repo, 0)
 	cancel()
 	if wrappedCtx.Err() == nil {
 		t.Fatal("canceled parent context did not cancel context")
 	}
 
-	// unlockRepo should not crash
-	unlockRepo(lock)
+	// Unlock should not crash
+	Unlock(lock)
 }
 
 func TestLockUnlockAll(t *testing.T) {
-	repo, cleanup, env := openLockTestRepo(t, nil)
-	defer cleanup()
+	repo := openLockTestRepo(t, nil)
 
-	lock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, env)
-	_, err := unlockAll(0)
+	lock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, 0)
+	_, err := UnlockAll(0)
 	test.OK(t, err)
 	if wrappedCtx.Err() == nil {
 		t.Fatal("canceled parent context did not cancel context")
 	}
 
-	// unlockRepo should not crash
-	unlockRepo(lock)
+	// Unlock should not crash
+	Unlock(lock)
 }
 
 func TestLockConflict(t *testing.T) {
-	repo, cleanup, env := openLockTestRepo(t, nil)
-	defer cleanup()
-	repo2, err := OpenRepository(context.TODO(), env.gopts)
+	repo := openLockTestRepo(t, nil)
+	repo2, err := New(repo.Backend(), Options{})
 	test.OK(t, err)
+	test.OK(t, repo2.SearchKey(context.TODO(), test.TestPassword, 1, ""))
 
-	lock, _, err := lockRepository(context.Background(), repo, true, env.gopts.RetryLock, env.gopts.JSON)
+	lock, _, err := Lock(context.Background(), repo, true, 0, func(msg string) {}, func(format string, args ...interface{}) {})
 	test.OK(t, err)
-	defer unlockRepo(lock)
-	_, _, err = lockRepository(context.Background(), repo2, false, env.gopts.RetryLock, env.gopts.JSON)
+	defer Unlock(lock)
+	_, _, err = Lock(context.Background(), repo2, false, 0, func(msg string) {}, func(format string, args ...interface{}) {})
 	if err == nil {
 		t.Fatal("second lock should have failed")
 	}
@@ -118,10 +116,9 @@ func (b *writeOnceBackend) Save(ctx context.Context, h backend.Handle, rd backen
 }
 
 func TestLockFailedRefresh(t *testing.T) {
-	repo, cleanup, env := openLockTestRepo(t, func(r backend.Backend) (backend.Backend, error) {
+	repo := openLockTestRepo(t, func(r backend.Backend) (backend.Backend, error) {
 		return &writeOnceBackend{Backend: r}, nil
 	})
-	defer cleanup()
 
 	// reduce locking intervals to be suitable for testing
 	ri, rt := refreshInterval, refreshabilityTimeout
@@ -131,7 +128,7 @@ func TestLockFailedRefresh(t *testing.T) {
 		refreshInterval, refreshabilityTimeout = ri, rt
 	}()
 
-	lock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, env)
+	lock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, 0)
 
 	select {
 	case <-wrappedCtx.Done():
@@ -139,8 +136,8 @@ func TestLockFailedRefresh(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("failed lock refresh did not cause context cancellation")
 	}
-	// unlockRepo should not crash
-	unlockRepo(lock)
+	// Unlock should not crash
+	Unlock(lock)
 }
 
 type loggingBackend struct {
@@ -156,13 +153,12 @@ func (b *loggingBackend) Save(ctx context.Context, h backend.Handle, rd backend.
 }
 
 func TestLockSuccessfulRefresh(t *testing.T) {
-	repo, cleanup, env := openLockTestRepo(t, func(r backend.Backend) (backend.Backend, error) {
+	repo := openLockTestRepo(t, func(r backend.Backend) (backend.Backend, error) {
 		return &loggingBackend{
 			Backend: r,
 			t:       t,
 		}, nil
 	})
-	defer cleanup()
 
 	t.Logf("test for successful lock refresh %v", time.Now())
 	// reduce locking intervals to be suitable for testing
@@ -173,7 +169,7 @@ func TestLockSuccessfulRefresh(t *testing.T) {
 		refreshInterval, refreshabilityTimeout = ri, rt
 	}()
 
-	lock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, env)
+	lock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, 0)
 
 	select {
 	case <-wrappedCtx.Done():
@@ -189,8 +185,8 @@ func TestLockSuccessfulRefresh(t *testing.T) {
 	case <-time.After(2 * refreshabilityTimeout):
 		// expected lock refresh to work
 	}
-	// unlockRepo should not crash
-	unlockRepo(lock)
+	// Unlock should not crash
+	Unlock(lock)
 }
 
 type slowBackend struct {
@@ -209,11 +205,10 @@ func (b *slowBackend) Save(ctx context.Context, h backend.Handle, rd backend.Rew
 
 func TestLockSuccessfulStaleRefresh(t *testing.T) {
 	var sb *slowBackend
-	repo, cleanup, env := openLockTestRepo(t, func(r backend.Backend) (backend.Backend, error) {
+	repo := openLockTestRepo(t, func(r backend.Backend) (backend.Backend, error) {
 		sb = &slowBackend{Backend: r}
 		return sb, nil
 	})
-	defer cleanup()
 
 	t.Logf("test for successful lock refresh %v", time.Now())
 	// reduce locking intervals to be suitable for testing
@@ -224,7 +219,7 @@ func TestLockSuccessfulStaleRefresh(t *testing.T) {
 		refreshInterval, refreshabilityTimeout = ri, rt
 	}()
 
-	lock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, env)
+	lock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, 0)
 	// delay lock refreshing long enough that the lock would expire
 	sb.m.Lock()
 	sb.sleep = refreshabilityTimeout + refreshInterval
@@ -252,21 +247,20 @@ func TestLockSuccessfulStaleRefresh(t *testing.T) {
 		// expected lock refresh to work
 	}
 
-	// unlockRepo should not crash
-	unlockRepo(lock)
+	// Unlock should not crash
+	Unlock(lock)
 }
 
 func TestLockWaitTimeout(t *testing.T) {
-	repo, cleanup, env := openLockTestRepo(t, nil)
-	defer cleanup()
+	repo := openLockTestRepo(t, nil)
 
-	elock, _, err := lockRepository(context.TODO(), repo, true, env.gopts.RetryLock, env.gopts.JSON)
+	elock, _, err := Lock(context.TODO(), repo, true, 0, func(msg string) {}, func(format string, args ...interface{}) {})
 	test.OK(t, err)
 
 	retryLock := 200 * time.Millisecond
 
 	start := time.Now()
-	lock, _, err := lockRepository(context.TODO(), repo, false, retryLock, env.gopts.JSON)
+	lock, _, err := Lock(context.TODO(), repo, false, retryLock, func(msg string) {}, func(format string, args ...interface{}) {})
 	duration := time.Since(start)
 
 	test.Assert(t, err != nil,
@@ -281,10 +275,9 @@ func TestLockWaitTimeout(t *testing.T) {
 }
 
 func TestLockWaitCancel(t *testing.T) {
-	repo, cleanup, env := openLockTestRepo(t, nil)
-	defer cleanup()
+	repo := openLockTestRepo(t, nil)
 
-	elock, _, err := lockRepository(context.TODO(), repo, true, env.gopts.RetryLock, env.gopts.JSON)
+	elock, _, err := Lock(context.TODO(), repo, true, 0, func(msg string) {}, func(format string, args ...interface{}) {})
 	test.OK(t, err)
 
 	retryLock := 200 * time.Millisecond
@@ -294,7 +287,7 @@ func TestLockWaitCancel(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.TODO())
 	time.AfterFunc(cancelAfter, cancel)
 
-	lock, _, err := lockRepository(ctx, repo, false, retryLock, env.gopts.JSON)
+	lock, _, err := Lock(ctx, repo, false, retryLock, func(msg string) {}, func(format string, args ...interface{}) {})
 	duration := time.Since(start)
 
 	test.Assert(t, err != nil,
@@ -309,10 +302,9 @@ func TestLockWaitCancel(t *testing.T) {
 }
 
 func TestLockWaitSuccess(t *testing.T) {
-	repo, cleanup, env := openLockTestRepo(t, nil)
-	defer cleanup()
+	repo := openLockTestRepo(t, nil)
 
-	elock, _, err := lockRepository(context.TODO(), repo, true, env.gopts.RetryLock, env.gopts.JSON)
+	elock, _, err := Lock(context.TODO(), repo, true, 0, func(msg string) {}, func(format string, args ...interface{}) {})
 	test.OK(t, err)
 
 	retryLock := 200 * time.Millisecond
@@ -322,7 +314,7 @@ func TestLockWaitSuccess(t *testing.T) {
 		test.OK(t, elock.Unlock())
 	})
 
-	lock, _, err := lockRepository(context.TODO(), repo, false, retryLock, env.gopts.JSON)
+	lock, _, err := Lock(context.TODO(), repo, false, retryLock, func(msg string) {}, func(format string, args ...interface{}) {})
 	test.OK(t, err)
 
 	test.OK(t, lock.Unlock())
