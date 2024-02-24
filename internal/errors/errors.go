@@ -65,7 +65,6 @@ func CombineErrors(errors ...error) (err error) {
 		return nil // If no errors, return nil
 	} else if !multipleErrors {
 		return err // If only one error, return that first error
-	} else {
-		return fmt.Errorf("multiple errors occurred: [%s]", combinedErrorMsg)
 	}
+	return fmt.Errorf("multiple errors occurred: [%s]", combinedErrorMsg)
 }
