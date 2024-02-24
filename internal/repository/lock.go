@@ -18,11 +18,6 @@ type lockContext struct {
 	refreshWG sync.WaitGroup
 }
 
-var globalLocks struct {
-	locks map[*restic.Lock]*lockContext
-	sync.Mutex
-}
-
 var (
 	retrySleepStart = 5 * time.Second
 	retrySleepMax   = 60 * time.Second
@@ -37,7 +32,7 @@ func minDuration(a, b time.Duration) time.Duration {
 
 // Lock wraps the ctx such that it is cancelled when the repository is unlocked
 // cancelling the original context also stops the lock refresh
-func Lock(ctx context.Context, repo restic.Repository, exclusive bool, retryLock time.Duration, printRetry func(msg string), logger func(format string, args ...interface{})) (*restic.Lock, context.Context, error) {
+func Lock(ctx context.Context, repo restic.Repository, exclusive bool, retryLock time.Duration, printRetry func(msg string), logger func(format string, args ...interface{})) (*Unlocker, context.Context, error) {
 
 	lockFn := restic.NewLock
 	if exclusive {
@@ -97,13 +92,10 @@ retryLoop:
 	refreshChan := make(chan struct{})
 	forceRefreshChan := make(chan refreshLockRequest)
 
-	globalLocks.Lock()
-	globalLocks.locks[lock] = lockInfo
 	go refreshLocks(ctx, repo.Backend(), lockInfo, refreshChan, forceRefreshChan, logger)
 	go monitorLockRefresh(ctx, lockInfo, refreshChan, forceRefreshChan, logger)
-	globalLocks.Unlock()
 
-	return lock, ctx, err
+	return &Unlocker{lockInfo}, ctx, nil
 }
 
 var refreshInterval = 5 * time.Minute
@@ -261,41 +253,11 @@ func tryRefreshStaleLock(ctx context.Context, be backend.Backend, lock *restic.L
 	return true
 }
 
-func Unlock(lock *restic.Lock) {
-	if lock == nil {
-		return
-	}
-
-	globalLocks.Lock()
-	lockInfo, exists := globalLocks.locks[lock]
-	delete(globalLocks.locks, lock)
-	globalLocks.Unlock()
-
-	if !exists {
-		debug.Log("unable to find lock %v in the global list of locks, ignoring", lock)
-		return
-	}
-	lockInfo.cancel()
-	lockInfo.refreshWG.Wait()
+type Unlocker struct {
+	info *lockContext
 }
 
-func UnlockAll(code int) (int, error) {
-	globalLocks.Lock()
-	locks := globalLocks.locks
-	debug.Log("unlocking %d locks", len(globalLocks.locks))
-	for _, lockInfo := range globalLocks.locks {
-		lockInfo.cancel()
-	}
-	globalLocks.locks = make(map[*restic.Lock]*lockContext)
-	globalLocks.Unlock()
-
-	for _, lockInfo := range locks {
-		lockInfo.refreshWG.Wait()
-	}
-
-	return code, nil
-}
-
-func init() {
-	globalLocks.locks = make(map[*restic.Lock]*lockContext)
+func (l *Unlocker) Unlock() {
+	l.info.cancel()
+	l.info.refreshWG.Wait()
 }
