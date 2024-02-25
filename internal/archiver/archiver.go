@@ -882,7 +882,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		DataBlobs:           arch.summary.ItemStats.DataBlobs,
 		TreeBlobs:           arch.summary.ItemStats.TreeBlobs,
 		DataAdded:           arch.summary.ItemStats.DataSize + arch.summary.ItemStats.TreeSize,
-		DataAddedInRepo:     arch.summary.ItemStats.DataSizeInRepo + arch.summary.ItemStats.TreeSizeInRepo,
+		DataAddedPacked:     arch.summary.ItemStats.DataSizeInRepo + arch.summary.ItemStats.TreeSizeInRepo,
 		TotalFilesProcessed: arch.summary.Files.New + arch.summary.Files.Changed + arch.summary.Files.Unchanged,
 		TotalBytesProcessed: arch.summary.ProcessedBytes,
 	}

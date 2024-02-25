@@ -1649,7 +1649,7 @@ func checkSnapshotStats(t *testing.T, sn *restic.Snapshot, stat Summary) {
 	bothZeroOrNeither(t, uint64(stat.DataBlobs), uint64(sn.Summary.DataBlobs))
 	bothZeroOrNeither(t, uint64(stat.TreeBlobs), uint64(sn.Summary.TreeBlobs))
 	bothZeroOrNeither(t, uint64(stat.DataSize+stat.TreeSize), uint64(sn.Summary.DataAdded))
-	bothZeroOrNeither(t, uint64(stat.DataSizeInRepo+stat.TreeSizeInRepo), uint64(sn.Summary.DataAddedInRepo))
+	bothZeroOrNeither(t, uint64(stat.DataSizeInRepo+stat.TreeSizeInRepo), uint64(sn.Summary.DataAddedPacked))
 }
 
 func TestArchiverParent(t *testing.T) {

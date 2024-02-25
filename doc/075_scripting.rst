@@ -165,7 +165,7 @@ Summary is the last output line in a successful backup.
 +---------------------------+---------------------------------------------------------+
 | ``data_added``            | Amount of (uncompressed) data added, in bytes           |
 +---------------------------+---------------------------------------------------------+
-| ``data_added_in_repo``    | Amount of data added (after compression), in bytes      |
+| ``data_added_packed``     | Amount of data added (after compression), in bytes      |
 +---------------------------+---------------------------------------------------------+
 | ``total_files_processed`` | Total number of files processed                         |
 +---------------------------+---------------------------------------------------------+
@@ -588,7 +588,7 @@ was created.
 +---------------------------+---------------------------------------------------------+
 | ``data_added``            | Amount of (uncompressed) data added, in bytes           |
 +---------------------------+---------------------------------------------------------+
-| ``data_added_in_repo``    | Amount of data added (after compression), in bytes      |
+| ``data_added_packed``     | Amount of data added (after compression), in bytes      |
 +---------------------------+---------------------------------------------------------+
 | ``total_files_processed`` | Total number of files processed                         |
 +---------------------------+---------------------------------------------------------+
