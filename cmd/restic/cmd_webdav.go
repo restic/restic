@@ -10,9 +10,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/fuse"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/webdav"
+	"github.com/restic/restic/internal/server/rofs"
 )
 
 var cmdWebDAV = &cobra.Command{
@@ -74,23 +73,42 @@ func runWebDAV(ctx context.Context, opts WebDAVOptions, gopts GlobalOptions, arg
 
 	errorLogger := log.New(os.Stderr, "error log: ", log.Flags())
 
-	cfg := fuse.Config{
+	cfg := rofs.Config{
 		Filter:        opts.SnapshotFilter,
 		TimeTemplate:  opts.TimeTemplate,
 		PathTemplates: opts.PathTemplates,
 	}
-	root := fuse.NewRoot(repo, cfg)
 
-	h, err := webdav.NewWebDAV(ctx, root)
+	root, err := rofs.New(ctx, repo, cfg)
 	if err != nil {
 		return err
 	}
+
+	// root := os.DirFS(".")
+
+	// h, err := webdav.NewWebDAV(ctx, root)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// root := fstest.MapFS{
+	// 	"foobar": &fstest.MapFile{
+	// 		Data:    []byte("foobar test content"),
+	// 		Mode:    0644,
+	// 		ModTime: time.Now(),
+	// 	},
+	// 	"test.txt": &fstest.MapFile{
+	// 		Data:    []byte("other file"),
+	// 		Mode:    0640,
+	// 		ModTime: time.Now(),
+	// 	},
+	// }
 
 	srv := &http.Server{
 		ReadTimeout:  60 * time.Second,
 		WriteTimeout: 60 * time.Second,
 		Addr:         opts.Listen,
-		Handler:      h,
+		Handler:      http.FileServer(http.FS(root)),
 		ErrorLog:     errorLogger,
 	}
 
