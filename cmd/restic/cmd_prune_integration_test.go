@@ -81,7 +81,10 @@ func testRunForgetJSON(t testing.TB, gopts GlobalOptions, args ...string) {
 			DryRun: true,
 			Last:   1,
 		}
-		return runForget(context.TODO(), opts, gopts, args)
+		pruneOpts := PruneOptions{
+			MaxUnused: "5%",
+		}
+		return runForget(context.TODO(), opts, pruneOpts, gopts, args)
 	})
 	rtest.OK(t, err)
 

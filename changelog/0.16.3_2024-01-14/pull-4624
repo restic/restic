@@ -1,11 +1,11 @@
-Bugfix: Correct restore progress information if an error occurs
+Bugfix: Correct `restore` progress information if an error occurs
 
-If an error occurred while restoring a snapshot, this could cause the restore
+If an error occurred while restoring a snapshot, this could cause the `restore`
 progress bar to show incorrect information. In addition, if a data file could
 not be loaded completely, then errors would also be reported for some already
 restored files.
 
-We have improved the error reporting of the restore command to be more accurate.
+Error reporting of the `restore` command has now been made more accurate.
 
 https://github.com/restic/restic/pull/4624
 https://forum.restic.net/t/errors-restoring-with-restic-on-windows-server-s3/6943

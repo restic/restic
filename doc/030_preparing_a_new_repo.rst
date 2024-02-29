@@ -35,15 +35,15 @@ environment variable ``RESTIC_REPOSITORY_FILE``.
 For automating the supply of the repository password to restic, several options
 exist:
 
- * Setting the environment variable ``RESTIC_PASSWORD``
+* Setting the environment variable ``RESTIC_PASSWORD``
 
- * Specifying the path to a file with the password via the option
-   ``--password-file`` or the environment variable ``RESTIC_PASSWORD_FILE``
+* Specifying the path to a file with the password via the option
+  ``--password-file`` or the environment variable ``RESTIC_PASSWORD_FILE``
 
- * Configuring a program to be called when the password is needed via the
-   option ``--password-command`` or the environment variable
-   ``RESTIC_PASSWORD_COMMAND``
-   
+* Configuring a program to be called when the password is needed via the
+  option ``--password-command`` or the environment variable
+  ``RESTIC_PASSWORD_COMMAND``
+
 The ``init`` command has an option called ``--repository-version`` which can
 be used to explicitly set the version of the new repository. By default, the
 current stable version is used (see table below). The alias ``latest`` will
@@ -487,7 +487,8 @@ Backblaze B2
 
    Different from the B2 backend, restic's S3 backend will only hide no longer
    necessary files. Thus, make sure to setup lifecycle rules to eventually
-   delete hidden files.
+   delete hidden files. The lifecycle setting "Keep only the last version of the file" 
+   will keep only the most current version of a file. Read the [Backblaze documentation](https://www.backblaze.com/docs/cloud-storage-lifecycle-rules).
 
 Restic can backup data to any Backblaze B2 bucket. You need to first setup the
 following environment variables with the credentials you can find in the
@@ -547,6 +548,14 @@ For authentication export one of the following variables:
     $ export AZURE_ACCOUNT_KEY=<SECRET_KEY>
     # For SAS
     $ export AZURE_ACCOUNT_SAS=<SAS_TOKEN>
+
+For authentication using ``az login`` set the resource group name and ensure the user has
+the minimum permissions of the role assignment ``Storage Blob Data Contributor`` on Azure RBAC.
+
+.. code-block:: console
+
+    $ export AZURE_RESOURCE_GROUP=<RESOURCE_GROUP_NAME>
+    $ az login
 
 Alternatively, if run on Azure, restic will automatically uses service accounts configured
 via the standard environment variables or Workload / Managed Identities.
@@ -736,9 +745,9 @@ For debugging rclone, you can set the environment variable ``RCLONE_VERBOSE=2``.
 
 The rclone backend has three additional options:
 
- * ``-o rclone.program`` specifies the path to rclone, the default value is just ``rclone``
- * ``-o rclone.args`` allows setting the arguments passed to rclone, by default this is ``serve restic --stdio --b2-hard-delete``
- * ``-o rclone.timeout`` specifies timeout for waiting on repository opening, the default value is ``1m``
+* ``-o rclone.program`` specifies the path to rclone, the default value is just ``rclone``
+* ``-o rclone.args`` allows setting the arguments passed to rclone, by default this is ``serve restic --stdio --b2-hard-delete``
+* ``-o rclone.timeout`` specifies timeout for waiting on repository opening, the default value is ``1m``
 
 The reason for the ``--b2-hard-delete`` parameters can be found in the corresponding GitHub `issue #1657`_.
 

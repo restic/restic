@@ -4,6 +4,7 @@
 package restic
 
 import (
+	"os"
 	"syscall"
 
 	"github.com/restic/restic/internal/errors"
@@ -46,4 +47,14 @@ func handleXattrErr(err error) error {
 	default:
 		return errors.WithStack(e)
 	}
+}
+
+// restoreGenericAttributes is no-op.
+func (node *Node) restoreGenericAttributes(_ string, warn func(msg string)) error {
+	return node.handleAllUnknownGenericAttributesFound(warn)
+}
+
+// fillGenericAttributes is a no-op.
+func (node *Node) fillGenericAttributes(_ string, _ os.FileInfo, _ *statT) (allowExtended bool, err error) {
+	return true, nil
 }

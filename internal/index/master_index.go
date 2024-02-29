@@ -9,7 +9,6 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/ui/progress"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -267,23 +266,22 @@ func (mi *MasterIndex) MergeFinalIndexes() error {
 
 // Save saves all known indexes to index files, leaving out any
 // packs whose ID is contained in packBlacklist from finalized indexes.
-// The new index contains the IDs of all known indexes in the "supersedes"
-// field. The IDs are also returned in the IDSet obsolete.
-// After calling this function, you should remove the obsolete index files.
-func (mi *MasterIndex) Save(ctx context.Context, repo restic.SaverUnpacked, packBlacklist restic.IDSet, extraObsolete restic.IDs, p *progress.Counter) (obsolete restic.IDSet, err error) {
-	p.SetMax(uint64(len(mi.Packs(packBlacklist))))
+// It also removes the old index files and those listed in extraObsolete.
+func (mi *MasterIndex) Save(ctx context.Context, repo restic.Repository, excludePacks restic.IDSet, extraObsolete restic.IDs, opts restic.MasterIndexSaveOpts) error {
+	p := opts.SaveProgress
+	p.SetMax(uint64(len(mi.Packs(excludePacks))))
 
 	mi.idxMutex.Lock()
 	defer mi.idxMutex.Unlock()
 
-	debug.Log("start rebuilding index of %d indexes, pack blacklist: %v", len(mi.idx), packBlacklist)
+	debug.Log("start rebuilding index of %d indexes, excludePacks: %v", len(mi.idx), excludePacks)
 
 	newIndex := NewIndex()
-	obsolete = restic.NewIDSet()
+	obsolete := restic.NewIDSet()
 
 	// track spawned goroutines using wg, create a new context which is
 	// cancelled as soon as an error occurs.
-	wg, ctx := errgroup.WithContext(ctx)
+	wg, wgCtx := errgroup.WithContext(ctx)
 
 	ch := make(chan *Index)
 
@@ -310,21 +308,21 @@ func (mi *MasterIndex) Save(ctx context.Context, repo restic.SaverUnpacked, pack
 
 			debug.Log("adding index %d", i)
 
-			for pbs := range idx.EachByPack(ctx, packBlacklist) {
+			for pbs := range idx.EachByPack(wgCtx, excludePacks) {
 				newIndex.StorePack(pbs.PackID, pbs.Blobs)
 				p.Add(1)
 				if IndexFull(newIndex, mi.compress) {
 					select {
 					case ch <- newIndex:
-					case <-ctx.Done():
-						return ctx.Err()
+					case <-wgCtx.Done():
+						return wgCtx.Err()
 					}
 					newIndex = NewIndex()
 				}
 			}
 		}
 
-		err = newIndex.AddToSupersedes(extraObsolete...)
+		err := newIndex.AddToSupersedes(extraObsolete...)
 		if err != nil {
 			return err
 		}
@@ -332,7 +330,7 @@ func (mi *MasterIndex) Save(ctx context.Context, repo restic.SaverUnpacked, pack
 
 		select {
 		case ch <- newIndex:
-		case <-ctx.Done():
+		case <-wgCtx.Done():
 		}
 		return nil
 	})
@@ -341,7 +339,7 @@ func (mi *MasterIndex) Save(ctx context.Context, repo restic.SaverUnpacked, pack
 	worker := func() error {
 		for idx := range ch {
 			idx.Finalize()
-			if _, err := SaveIndex(ctx, repo, idx); err != nil {
+			if _, err := SaveIndex(wgCtx, repo, idx); err != nil {
 				return err
 			}
 		}
@@ -354,9 +352,27 @@ func (mi *MasterIndex) Save(ctx context.Context, repo restic.SaverUnpacked, pack
 	for i := 0; i < workerCount; i++ {
 		wg.Go(worker)
 	}
-	err = wg.Wait()
+	err := wg.Wait()
+	p.Done()
+	if err != nil {
+		return err
+	}
 
-	return obsolete, err
+	if opts.SkipDeletion {
+		return nil
+	}
+
+	p = nil
+	if opts.DeleteProgress != nil {
+		p = opts.DeleteProgress()
+	}
+	defer p.Done()
+	return restic.ParallelRemove(ctx, repo, obsolete, restic.IndexFile, func(id restic.ID, err error) error {
+		if opts.DeleteReport != nil {
+			opts.DeleteReport(id, err)
+		}
+		return err
+	}, p)
 }
 
 // SaveIndex saves an index in the repository.

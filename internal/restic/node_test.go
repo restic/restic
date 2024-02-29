@@ -1,4 +1,4 @@
-package restic_test
+package restic
 
 import (
 	"context"
@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -32,7 +31,7 @@ func BenchmarkNodeFillUser(t *testing.B) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		_, err := restic.NodeFromFileInfo(path, fi)
+		_, err := NodeFromFileInfo(path, fi)
 		rtest.OK(t, err)
 	}
 
@@ -56,7 +55,7 @@ func BenchmarkNodeFromFileInfo(t *testing.B) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		_, err := restic.NodeFromFileInfo(path, fi)
+		_, err := NodeFromFileInfo(path, fi)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -75,11 +74,11 @@ func parseTime(s string) time.Time {
 	return t.Local()
 }
 
-var nodeTests = []restic.Node{
+var nodeTests = []Node{
 	{
 		Name:       "testFile",
 		Type:       "file",
-		Content:    restic.IDs{},
+		Content:    IDs{},
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
 		Mode:       0604,
@@ -90,7 +89,7 @@ var nodeTests = []restic.Node{
 	{
 		Name:       "testSuidFile",
 		Type:       "file",
-		Content:    restic.IDs{},
+		Content:    IDs{},
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
 		Mode:       0755 | os.ModeSetuid,
@@ -101,7 +100,7 @@ var nodeTests = []restic.Node{
 	{
 		Name:       "testSuidFile2",
 		Type:       "file",
-		Content:    restic.IDs{},
+		Content:    IDs{},
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
 		Mode:       0755 | os.ModeSetgid,
@@ -112,7 +111,7 @@ var nodeTests = []restic.Node{
 	{
 		Name:       "testSticky",
 		Type:       "file",
-		Content:    restic.IDs{},
+		Content:    IDs{},
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
 		Mode:       0755 | os.ModeSticky,
@@ -148,7 +147,7 @@ var nodeTests = []restic.Node{
 	{
 		Name:       "testFile",
 		Type:       "file",
-		Content:    restic.IDs{},
+		Content:    IDs{},
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
 		Mode:       0604,
@@ -170,14 +169,14 @@ var nodeTests = []restic.Node{
 	{
 		Name:       "testXattrFile",
 		Type:       "file",
-		Content:    restic.IDs{},
+		Content:    IDs{},
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
 		Mode:       0604,
 		ModTime:    parseTime("2005-05-14 21:07:03.111"),
 		AccessTime: parseTime("2005-05-14 21:07:04.222"),
 		ChangeTime: parseTime("2005-05-14 21:07:05.333"),
-		ExtendedAttributes: []restic.ExtendedAttribute{
+		ExtendedAttributes: []ExtendedAttribute{
 			{"user.foo", []byte("bar")},
 		},
 	},
@@ -191,7 +190,7 @@ var nodeTests = []restic.Node{
 		ModTime:    parseTime("2005-05-14 21:07:03.111"),
 		AccessTime: parseTime("2005-05-14 21:07:04.222"),
 		ChangeTime: parseTime("2005-05-14 21:07:05.333"),
-		ExtendedAttributes: []restic.ExtendedAttribute{
+		ExtendedAttributes: []ExtendedAttribute{
 			{"user.foo", []byte("bar")},
 		},
 	},
@@ -219,7 +218,7 @@ func TestNodeRestoreAt(t *testing.T) {
 				nodePath = filepath.Join(tempdir, test.Name)
 			}
 			rtest.OK(t, test.CreateAt(context.TODO(), nodePath, nil))
-			rtest.OK(t, test.RestoreMetadata(nodePath))
+			rtest.OK(t, test.RestoreMetadata(nodePath, func(msg string) { rtest.OK(t, fmt.Errorf("Warning triggered for path: %s: %s", nodePath, msg)) }))
 
 			if test.Type == "dir" {
 				rtest.OK(t, test.RestoreTimestamps(nodePath))
@@ -228,7 +227,7 @@ func TestNodeRestoreAt(t *testing.T) {
 			fi, err := os.Lstat(nodePath)
 			rtest.OK(t, err)
 
-			n2, err := restic.NodeFromFileInfo(nodePath, fi)
+			n2, err := NodeFromFileInfo(nodePath, fi)
 			rtest.OK(t, err)
 
 			rtest.Assert(t, test.Name == n2.Name,
@@ -330,7 +329,7 @@ func TestFixTime(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			res := restic.FixTime(test.src)
+			res := FixTime(test.src)
 			if !res.Equal(test.want) {
 				t.Fatalf("wrong result for %v, want:\n  %v\ngot:\n  %v", test.src, test.want, res)
 			}
@@ -343,12 +342,12 @@ func TestSymlinkSerialization(t *testing.T) {
 		"válîd \t Üñi¢òde \n śẗŕinǵ",
 		string([]byte{0, 1, 2, 0xfa, 0xfb, 0xfc}),
 	} {
-		n := restic.Node{
+		n := Node{
 			LinkTarget: link,
 		}
 		ser, err := json.Marshal(n)
 		test.OK(t, err)
-		var n2 restic.Node
+		var n2 Node
 		err = json.Unmarshal(ser, &n2)
 		test.OK(t, err)
 		fmt.Println(string(ser))
@@ -365,7 +364,7 @@ func TestSymlinkSerializationFormat(t *testing.T) {
 		{`{"linktarget":"test"}`, "test"},
 		{`{"linktarget":"\u0000\u0001\u0002\ufffd\ufffd\ufffd","linktarget_raw":"AAEC+vv8"}`, string([]byte{0, 1, 2, 0xfa, 0xfb, 0xfc})},
 	} {
-		var n2 restic.Node
+		var n2 Node
 		err := json.Unmarshal([]byte(d.ser), &n2)
 		test.OK(t, err)
 		test.Equals(t, d.linkTarget, n2.LinkTarget)

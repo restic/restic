@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"io"
+	"strings"
 	"testing"
 
 	"github.com/restic/restic/internal/crypto"
@@ -174,6 +175,63 @@ func TestReadRecords(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		for j := 0; j < 2; j++ {
 			testReadRecords(dataSize, i, j)
+		}
+	}
+}
+
+func TestUnpackedVerification(t *testing.T) {
+	// create random keys
+	k := crypto.NewRandomKey()
+	blobs := []restic.Blob{
+		{
+			BlobHandle:         restic.NewRandomBlobHandle(),
+			Length:             42,
+			Offset:             0,
+			UncompressedLength: 2 * 42,
+		},
+	}
+
+	type DamageType string
+	const (
+		damageData       DamageType = "data"
+		damageCiphertext DamageType = "ciphertext"
+		damageLength     DamageType = "length"
+	)
+
+	for _, test := range []struct {
+		damage DamageType
+		msg    string
+	}{
+		{"", ""},
+		{damageData, "pack header entry mismatch"},
+		{damageCiphertext, "ciphertext verification failed"},
+		{damageLength, "header decoding failed"},
+	} {
+		header, err := makeHeader(blobs)
+		rtest.OK(t, err)
+
+		if test.damage == damageData {
+			header[8] ^= 0x42
+		}
+
+		encryptedHeader := make([]byte, 0, crypto.CiphertextLength(len(header)))
+		nonce := crypto.NewRandomNonce()
+		encryptedHeader = append(encryptedHeader, nonce...)
+		encryptedHeader = k.Seal(encryptedHeader, nonce, header, nil)
+		encryptedHeader = binary.LittleEndian.AppendUint32(encryptedHeader, uint32(len(encryptedHeader)))
+
+		if test.damage == damageCiphertext {
+			encryptedHeader[8] ^= 0x42
+		}
+		if test.damage == damageLength {
+			encryptedHeader[len(encryptedHeader)-1] ^= 0x42
+		}
+
+		err = verifyHeader(k, encryptedHeader, blobs)
+		if test.msg == "" {
+			rtest.Assert(t, err == nil, "expected no error, got %v", err)
+		} else {
+			rtest.Assert(t, strings.Contains(err.Error(), test.msg), "expected error to contain %q, got %q", test.msg, err)
 		}
 	}
 }

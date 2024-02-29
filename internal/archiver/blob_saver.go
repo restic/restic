@@ -2,6 +2,7 @@ package archiver
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
@@ -43,9 +44,9 @@ func (s *BlobSaver) TriggerShutdown() {
 
 // Save stores a blob in the repo. It checks the index and the known blobs
 // before saving anything. It takes ownership of the buffer passed in.
-func (s *BlobSaver) Save(ctx context.Context, t restic.BlobType, buf *Buffer, cb func(res SaveBlobResponse)) {
+func (s *BlobSaver) Save(ctx context.Context, t restic.BlobType, buf *Buffer, filename string, cb func(res SaveBlobResponse)) {
 	select {
-	case s.ch <- saveBlobJob{BlobType: t, buf: buf, cb: cb}:
+	case s.ch <- saveBlobJob{BlobType: t, buf: buf, fn: filename, cb: cb}:
 	case <-ctx.Done():
 		debug.Log("not sending job, context is cancelled")
 	}
@@ -54,6 +55,7 @@ func (s *BlobSaver) Save(ctx context.Context, t restic.BlobType, buf *Buffer, cb
 type saveBlobJob struct {
 	restic.BlobType
 	buf *Buffer
+	fn  string
 	cb  func(res SaveBlobResponse)
 }
 
@@ -95,7 +97,7 @@ func (s *BlobSaver) worker(ctx context.Context, jobs <-chan saveBlobJob) error {
 		res, err := s.saveBlob(ctx, job.BlobType, job.buf.Data)
 		if err != nil {
 			debug.Log("saveBlob returned error, exiting: %v", err)
-			return err
+			return fmt.Errorf("failed to save blob from file %q: %w", job.fn, err)
 		}
 		job.cb(res)
 		job.buf.Release()

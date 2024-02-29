@@ -37,7 +37,7 @@ The full documentation can be found at https://restic.readthedocs.io/ .
 	SilenceUsage:      true,
 	DisableAutoGenTag: true,
 
-	PersistentPreRunE: func(c *cobra.Command, args []string) error {
+	PersistentPreRunE: func(c *cobra.Command, _ []string) error {
 		// set verbosity, default is one
 		globalOptions.verbosity = 1
 		if globalOptions.Quiet && globalOptions.Verbose > 0 {

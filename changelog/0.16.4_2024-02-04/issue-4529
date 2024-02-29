@@ -1,0 +1,18 @@
+Enhancement: Add extra verification of data integrity before upload
+
+Hardware issues, or a bug in restic or its dependencies, could previously cause
+corruption in the files restic created and stored in the repository. Detecting
+such corruption previously required explicitly running the `check --read-data`
+or `check --read-data-subset` commands.
+
+To further ensure data integrity, even in the case of hardware issues or
+software bugs, restic now performs additional verification of the files about
+to be uploaded to the repository.
+
+These extra checks will increase CPU usage during backups. They can therefore,
+if absolutely necessary, be disabled using the `--no-extra-verify` global
+option. Please note that this should be combined with more active checking
+using the previously mentioned check commands.
+
+https://github.com/restic/restic/issues/4529
+https://github.com/restic/restic/pull/4681

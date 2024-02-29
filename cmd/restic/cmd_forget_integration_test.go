@@ -9,5 +9,8 @@ import (
 
 func testRunForget(t testing.TB, gopts GlobalOptions, args ...string) {
 	opts := ForgetOptions{}
-	rtest.OK(t, runForget(context.TODO(), opts, gopts, args))
+	pruneOpts := PruneOptions{
+		MaxUnused: "5%",
+	}
+	rtest.OK(t, runForget(context.TODO(), opts, pruneOpts, gopts, args))
 }

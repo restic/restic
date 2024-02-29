@@ -1,0 +1,11 @@
+Bugfix: Support backup of deduplicated files on Windows again
+
+With the official release builds of restic 0.16.1 and 0.16.2, it was not
+possible to back up files that were deduplicated by the corresponding
+Windows Server feature. This also applied to restic versions built using
+Go 1.21.0-1.21.4.
+
+The Go version used to build restic has now been updated to fix this.
+
+https://github.com/restic/restic/issues/4574
+https://github.com/restic/restic/pull/4621

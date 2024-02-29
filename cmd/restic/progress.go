@@ -30,7 +30,7 @@ func calculateProgressInterval(show bool, json bool) time.Duration {
 }
 
 // newTerminalProgressMax returns a progress.Counter that prints to stdout or terminal if provided.
-func newGenericProgressMax(show bool, max uint64, description string, print func(status string)) *progress.Counter {
+func newGenericProgressMax(show bool, max uint64, description string, print func(status string, final bool)) *progress.Counter {
 	if !show {
 		return nil
 	}
@@ -46,16 +46,18 @@ func newGenericProgressMax(show bool, max uint64, description string, print func
 				ui.FormatDuration(d), ui.FormatPercent(v, max), v, max, description)
 		}
 
-		print(status)
-		if final {
-			fmt.Print("\n")
-		}
+		print(status, final)
 	})
 }
 
 func newTerminalProgressMax(show bool, max uint64, description string, term *termstatus.Terminal) *progress.Counter {
-	return newGenericProgressMax(show, max, description, func(status string) {
-		term.SetStatus([]string{status})
+	return newGenericProgressMax(show, max, description, func(status string, final bool) {
+		if final {
+			term.SetStatus([]string{})
+			term.Print(status)
+		} else {
+			term.SetStatus([]string{status})
+		}
 	})
 }
 
@@ -64,7 +66,7 @@ func newProgressMax(show bool, max uint64, description string) *progress.Counter
 	return newGenericProgressMax(show, max, description, printProgress)
 }
 
-func printProgress(status string) {
+func printProgress(status string, final bool) {
 
 	canUpdateStatus := stdoutCanUpdateStatus()
 
@@ -95,6 +97,9 @@ func printProgress(status string) {
 	}
 
 	_, _ = os.Stdout.Write([]byte(clear + status + carriageControl))
+	if final {
+		_, _ = os.Stdout.Write([]byte("\n"))
+	}
 }
 
 func newIndexProgress(quiet bool, json bool) *progress.Counter {
@@ -103,4 +108,22 @@ func newIndexProgress(quiet bool, json bool) *progress.Counter {
 
 func newIndexTerminalProgress(quiet bool, json bool, term *termstatus.Terminal) *progress.Counter {
 	return newTerminalProgressMax(!quiet && !json && stdoutIsTerminal(), 0, "index files loaded", term)
+}
+
+type terminalProgressPrinter struct {
+	term *termstatus.Terminal
+	ui.Message
+	show bool
+}
+
+func (t *terminalProgressPrinter) NewCounter(description string) *progress.Counter {
+	return newTerminalProgressMax(t.show, 0, description, t.term)
+}
+
+func newTerminalProgressPrinter(verbosity uint, term *termstatus.Terminal) progress.Printer {
+	return &terminalProgressPrinter{
+		term:    term,
+		Message: *ui.NewMessage(term, verbosity),
+		show:    verbosity > 0,
+	}
 }

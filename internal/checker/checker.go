@@ -10,10 +10,10 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/klauspost/compress/zstd"
 	"github.com/minio/sha256-simd"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/s3"
-	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/hashing"
@@ -134,7 +134,7 @@ func (c *Checker) LoadIndex(ctx context.Context, p *progress.Counter) (hints []e
 
 	if p != nil {
 		var numIndexFiles uint64
-		err := indexList.List(ctx, restic.IndexFile, func(id restic.ID, size int64) error {
+		err := indexList.List(ctx, restic.IndexFile, func(_ restic.ID, _ int64) error {
 			numIndexFiles++
 			return nil
 		})
@@ -240,17 +240,8 @@ func IsOrphanedPack(err error) bool {
 }
 
 func isS3Legacy(b backend.Backend) bool {
-	// unwrap cache
-	if be, ok := b.(*cache.Backend); ok {
-		b = be.Backend
-	}
-
-	be, ok := b.(*s3.Backend)
-	if !ok {
-		return false
-	}
-
-	return be.Layout.Name() == "s3legacy"
+	be := backend.AsBackend[*s3.Backend](b)
+	return be != nil && be.Layout.Name() == "s3legacy"
 }
 
 // Packs checks that all packs referenced in the index are still available and
@@ -361,7 +352,7 @@ func (c *Checker) checkTreeWorker(ctx context.Context, trees <-chan restic.TreeI
 	}
 }
 
-func loadSnapshotTreeIDs(ctx context.Context, lister restic.Lister, repo restic.Repository) (ids restic.IDs, errs []error) {
+func loadSnapshotTreeIDs(ctx context.Context, lister restic.Lister, repo restic.LoaderUnpacked) (ids restic.IDs, errs []error) {
 	err := restic.ForAllSnapshots(ctx, lister, repo, nil, func(id restic.ID, sn *restic.Snapshot, err error) error {
 		if err != nil {
 			errs = append(errs, err)
@@ -525,12 +516,20 @@ func (c *Checker) GetPacks() map[restic.ID]int64 {
 	return c.packs
 }
 
+type partialReadError struct {
+	err error
+}
+
+func (e *partialReadError) Error() string {
+	return e.err.Error()
+}
+
 // checkPack reads a pack and checks the integrity of all blobs.
-func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []restic.Blob, size int64, bufRd *bufio.Reader) error {
+func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []restic.Blob, size int64, bufRd *bufio.Reader, dec *zstd.Decoder) error {
 	debug.Log("checking pack %v", id.String())
 
 	if len(blobs) == 0 {
-		return errors.Errorf("pack %v is empty or not indexed", id)
+		return &ErrPackData{PackID: id, errs: []error{errors.New("pack is empty or not indexed")}}
 	}
 
 	// sanity check blobs in index
@@ -551,75 +550,78 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 	var errs []error
 	if nonContinuousPack {
 		debug.Log("Index for pack contains gaps / overlaps, blobs: %v", blobs)
-		errs = append(errs, errors.New("Index for pack contains gaps / overlapping blobs"))
+		errs = append(errs, errors.New("index for pack contains gaps / overlapping blobs"))
 	}
 
 	// calculate hash on-the-fly while reading the pack and capture pack header
 	var hash restic.ID
 	var hdrBuf []byte
-	hashingLoader := func(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
-		return r.Backend().Load(ctx, h, int(size), 0, func(rd io.Reader) error {
-			hrd := hashing.NewReader(rd, sha256.New())
-			bufRd.Reset(hrd)
+	h := backend.Handle{Type: backend.PackFile, Name: id.String()}
+	err := r.Backend().Load(ctx, h, int(size), 0, func(rd io.Reader) error {
+		hrd := hashing.NewReader(rd, sha256.New())
+		bufRd.Reset(hrd)
 
-			// skip to start of first blob, offset == 0 for correct pack files
-			_, err := bufRd.Discard(int(offset))
-			if err != nil {
-				return err
+		it := repository.NewPackBlobIterator(id, bufRd, 0, blobs, r.Key(), dec)
+		for {
+			val, err := it.Next()
+			if err == repository.ErrPackEOF {
+				break
+			} else if err != nil {
+				return &partialReadError{err}
 			}
-
-			err = fn(bufRd)
-			if err != nil {
-				return err
+			debug.Log("  check blob %v: %v", val.Handle.ID, val.Handle)
+			if val.Err != nil {
+				debug.Log("  error verifying blob %v: %v", val.Handle.ID, val.Err)
+				errs = append(errs, errors.Errorf("blob %v: %v", val.Handle.ID, val.Err))
 			}
-
-			// skip enough bytes until we reach the possible header start
-			curPos := length + int(offset)
-			minHdrStart := int(size) - pack.MaxHeaderSize
-			if minHdrStart > curPos {
-				_, err := bufRd.Discard(minHdrStart - curPos)
-				if err != nil {
-					return err
-				}
-			}
-
-			// read remainder, which should be the pack header
-			hdrBuf, err = io.ReadAll(bufRd)
-			if err != nil {
-				return err
-			}
-
-			hash = restic.IDFromHash(hrd.Sum(nil))
-			return nil
-		})
-	}
-
-	err := repository.StreamPack(ctx, hashingLoader, r.Key(), id, blobs, func(blob restic.BlobHandle, buf []byte, err error) error {
-		debug.Log("  check blob %v: %v", blob.ID, blob)
-		if err != nil {
-			debug.Log("  error verifying blob %v: %v", blob.ID, err)
-			errs = append(errs, errors.Errorf("blob %v: %v", blob.ID, err))
 		}
+
+		// skip enough bytes until we reach the possible header start
+		curPos := lastBlobEnd
+		minHdrStart := int(size) - pack.MaxHeaderSize
+		if minHdrStart > curPos {
+			_, err := bufRd.Discard(minHdrStart - curPos)
+			if err != nil {
+				return &partialReadError{err}
+			}
+		}
+
+		// read remainder, which should be the pack header
+		var err error
+		hdrBuf, err = io.ReadAll(bufRd)
+		if err != nil {
+			return &partialReadError{err}
+		}
+
+		hash = restic.IDFromHash(hrd.Sum(nil))
 		return nil
 	})
 	if err != nil {
+		var e *partialReadError
+		isPartialReadError := errors.As(err, &e)
 		// failed to load the pack file, return as further checks cannot succeed anyways
-		debug.Log("  error streaming pack: %v", err)
-		return errors.Errorf("pack %v failed to download: %v", id, err)
+		debug.Log("  error streaming pack (partial %v): %v", isPartialReadError, err)
+		if isPartialReadError {
+			return &ErrPackData{PackID: id, errs: append(errs, errors.Errorf("partial download error: %w", err))}
+		}
+
+		// The check command suggests to repair files for which a `ErrPackData` is returned. However, this file
+		// completely failed to download such that there's no point in repairing anything.
+		return errors.Errorf("download error: %w", err)
 	}
 	if !hash.Equal(id) {
-		debug.Log("Pack ID does not match, want %v, got %v", id, hash)
-		return errors.Errorf("Pack ID does not match, want %v, got %v", id, hash)
+		debug.Log("pack ID does not match, want %v, got %v", id, hash)
+		return &ErrPackData{PackID: id, errs: append(errs, errors.Errorf("unexpected pack id %v", hash))}
 	}
 
 	blobs, hdrSize, err := pack.List(r.Key(), bytes.NewReader(hdrBuf), int64(len(hdrBuf)))
 	if err != nil {
-		return err
+		return &ErrPackData{PackID: id, errs: append(errs, err)}
 	}
 
 	if uint32(idxHdrSize) != hdrSize {
 		debug.Log("Pack header size does not match, want %v, got %v", idxHdrSize, hdrSize)
-		errs = append(errs, errors.Errorf("Pack header size does not match, want %v, got %v", idxHdrSize, hdrSize))
+		errs = append(errs, errors.Errorf("pack header size does not match, want %v, got %v", idxHdrSize, hdrSize))
 	}
 
 	idx := r.Index()
@@ -633,7 +635,7 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 			}
 		}
 		if !idxHas {
-			errs = append(errs, errors.Errorf("Blob %v is not contained in index or position is incorrect", blob.ID))
+			errs = append(errs, errors.Errorf("blob %v is not contained in index or position is incorrect", blob.ID))
 			continue
 		}
 	}
@@ -670,6 +672,11 @@ func (c *Checker) ReadPacks(ctx context.Context, packs map[restic.ID]int64, p *p
 			// create a buffer that is large enough to be reused by repository.StreamPack
 			// this ensures that we can read the pack header later on
 			bufRd := bufio.NewReaderSize(nil, repository.MaxStreamBufferSize)
+			dec, err := zstd.NewReader(nil)
+			if err != nil {
+				panic(dec)
+			}
+			defer dec.Close()
 			for {
 				var ps checkTask
 				var ok bool
@@ -683,7 +690,7 @@ func (c *Checker) ReadPacks(ctx context.Context, packs map[restic.ID]int64, p *p
 					}
 				}
 
-				err := checkPack(ctx, c.repo, ps.id, ps.blobs, ps.size, bufRd)
+				err := checkPack(ctx, c.repo, ps.id, ps.blobs, ps.size, bufRd, dec)
 				p.Add(1)
 				if err == nil {
 					continue

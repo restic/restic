@@ -24,10 +24,11 @@ type Restorer struct {
 	progress *restoreui.Progress
 
 	Error        func(location string, err error) error
+	Warn         func(message string)
 	SelectFilter func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool)
 }
 
-var restorerAbortOnAllErrors = func(location string, err error) error { return err }
+var restorerAbortOnAllErrors = func(_ string, err error) error { return err }
 
 // NewRestorer creates a restorer preloaded with the content from the snapshot id.
 func NewRestorer(repo restic.Repository, sn *restic.Snapshot, sparse bool,
@@ -178,7 +179,7 @@ func (res *Restorer) restoreNodeTo(ctx context.Context, node *restic.Node, targe
 
 func (res *Restorer) restoreNodeMetadataTo(node *restic.Node, target, location string) error {
 	debug.Log("restoreNodeMetadata %v %v %v", node.Name, target, location)
-	err := node.RestoreMetadata(target)
+	err := node.RestoreMetadata(target, res.Warn)
 	if err != nil {
 		debug.Log("node.RestoreMetadata(%s) error %v", target, err)
 	}
@@ -204,11 +205,19 @@ func (res *Restorer) restoreHardlinkAt(node *restic.Node, target, path, location
 
 func (res *Restorer) restoreEmptyFileAt(node *restic.Node, target, location string) error {
 	wr, err := os.OpenFile(target, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
-	if err != nil {
-		return err
+	if fs.IsAccessDenied(err) {
+		// If file is readonly, clear the readonly flag by resetting the
+		// permissions of the file and try again
+		// as the metadata will be set again in the second pass and the
+		// readonly flag will be applied again if needed.
+		if err = fs.ResetPermissions(target); err != nil {
+			return err
+		}
+		if wr, err = os.OpenFile(target, os.O_TRUNC|os.O_WRONLY, 0600); err != nil {
+			return err
+		}
 	}
-	err = wr.Close()
-	if err != nil {
+	if err = wr.Close(); err != nil {
 		return err
 	}
 
@@ -231,7 +240,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 	}
 
 	idx := NewHardlinkIndex[string]()
-	filerestorer := newFileRestorer(dst, res.repo.Backend().Load, res.repo.Key(), res.repo.Index().Lookup,
+	filerestorer := newFileRestorer(dst, res.repo.LoadBlobsFromPack, res.repo.Index().Lookup,
 		res.repo.Connections(), res.sparse, res.progress)
 	filerestorer.Error = res.Error
 
@@ -239,7 +248,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 
 	// first tree pass: create directories and collect all files to restore
 	_, err = res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
-		enterDir: func(node *restic.Node, target, location string) error {
+		enterDir: func(_ *restic.Node, target, location string) error {
 			debug.Log("first pass, enterDir: mkdir %q, leaveDir should restore metadata", location)
 			if res.progress != nil {
 				res.progress.AddFile(0)
@@ -366,7 +375,7 @@ func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
 		defer close(work)
 
 		_, err := res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
-			visitNode: func(node *restic.Node, target, location string) error {
+			visitNode: func(node *restic.Node, target, _ string) error {
 				if node.Type != "file" {
 					return nil
 				}

@@ -37,7 +37,7 @@ func testRead(t testing.TB, f fs.Handle, offset, length int, data []byte) {
 	rtest.OK(t, fr.Read(ctx, req, resp))
 }
 
-func firstSnapshotID(t testing.TB, repo restic.Repository) (first restic.ID) {
+func firstSnapshotID(t testing.TB, repo restic.Lister) (first restic.ID) {
 	err := repo.List(context.TODO(), restic.SnapshotFile, func(id restic.ID, size int64) error {
 		if first.IsNull() {
 			first = id
@@ -52,14 +52,14 @@ func firstSnapshotID(t testing.TB, repo restic.Repository) (first restic.ID) {
 	return first
 }
 
-func loadFirstSnapshot(t testing.TB, repo restic.Repository) *restic.Snapshot {
+func loadFirstSnapshot(t testing.TB, repo restic.ListerLoaderUnpacked) *restic.Snapshot {
 	id := firstSnapshotID(t, repo)
 	sn, err := restic.LoadSnapshot(context.TODO(), repo, id)
 	rtest.OK(t, err)
 	return sn
 }
 
-func loadTree(t testing.TB, repo restic.Repository, id restic.ID) *restic.Tree {
+func loadTree(t testing.TB, repo restic.Loader, id restic.ID) *restic.Tree {
 	tree, err := restic.LoadTree(context.TODO(), repo, id)
 	rtest.OK(t, err)
 	return tree

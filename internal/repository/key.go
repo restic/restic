@@ -136,7 +136,7 @@ func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int,
 	defer cancel()
 
 	// try at most maxKeys keys in repo
-	err = s.List(listCtx, restic.KeyFile, func(id restic.ID, size int64) error {
+	err = s.List(listCtx, restic.KeyFile, func(id restic.ID, _ int64) error {
 		checked++
 		if maxKeys > 0 && checked > maxKeys {
 			return ErrMaxKeysReached
@@ -283,6 +283,15 @@ func AddKey(ctx context.Context, s *Repository, password, username, hostname str
 	newkey.id = id
 
 	return newkey, nil
+}
+
+func RemoveKey(ctx context.Context, repo *Repository, id restic.ID) error {
+	if id == repo.KeyID() {
+		return errors.New("refusing to remove key currently used to access repository")
+	}
+
+	h := backend.Handle{Type: restic.KeyFile, Name: id.String()}
+	return repo.be.Remove(ctx, h)
 }
 
 func (k *Key) String() string {

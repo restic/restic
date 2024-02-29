@@ -58,6 +58,17 @@ func Open(_ context.Context, cfg Config, rt http.RoundTripper) (*Backend, error)
 	return be, nil
 }
 
+func drainAndClose(resp *http.Response) error {
+	_, err := io.Copy(io.Discard, resp.Body)
+	cerr := resp.Body.Close()
+
+	// return first error
+	if err != nil {
+		return errors.Errorf("drain: %w", err)
+	}
+	return cerr
+}
+
 // Create creates a new REST on server configured in config.
 func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, error) {
 	be, err := Open(ctx, cfg, rt)
@@ -80,18 +91,12 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, er
 		return nil, err
 	}
 
+	if err := drainAndClose(resp); err != nil {
+		return nil, err
+	}
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("server response unexpected: %v (%v)", resp.Status, resp.StatusCode)
-	}
-
-	_, err = io.Copy(io.Discard, resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	err = resp.Body.Close()
-	if err != nil {
-		return nil, err
 	}
 
 	return be, nil
@@ -136,22 +141,19 @@ func (b *Backend) Save(ctx context.Context, h backend.Handle, rd backend.RewindR
 	req.ContentLength = rd.Length()
 
 	resp, err := b.client.Do(req)
-
-	var cerr error
-	if resp != nil {
-		_, _ = io.Copy(io.Discard, resp.Body)
-		cerr = resp.Body.Close()
-	}
-
 	if err != nil {
 		return errors.WithStack(err)
+	}
+
+	if err := drainAndClose(resp); err != nil {
+		return err
 	}
 
 	if resp.StatusCode != http.StatusOK {
 		return errors.Errorf("server response unexpected: %v (%v)", resp.Status, resp.StatusCode)
 	}
 
-	return errors.Wrap(cerr, "Close")
+	return nil
 }
 
 // notExistError is returned whenever the requested file does not exist on the
@@ -215,22 +217,17 @@ func (b *Backend) openReader(ctx context.Context, h backend.Handle, length int, 
 	req.Header.Set("Accept", ContentTypeV2)
 
 	resp, err := b.client.Do(req)
-
 	if err != nil {
-		if resp != nil {
-			_, _ = io.Copy(io.Discard, resp.Body)
-			_ = resp.Body.Close()
-		}
 		return nil, errors.Wrap(err, "client.Do")
 	}
 
 	if resp.StatusCode == http.StatusNotFound {
-		_ = resp.Body.Close()
+		_ = drainAndClose(resp)
 		return nil, &notExistError{h}
 	}
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent {
-		_ = resp.Body.Close()
+		_ = drainAndClose(resp)
 		return nil, errors.Errorf("unexpected HTTP response (%v): %v", resp.StatusCode, resp.Status)
 	}
 
@@ -250,13 +247,11 @@ func (b *Backend) Stat(ctx context.Context, h backend.Handle) (backend.FileInfo,
 		return backend.FileInfo{}, errors.WithStack(err)
 	}
 
-	_, _ = io.Copy(io.Discard, resp.Body)
-	if err = resp.Body.Close(); err != nil {
-		return backend.FileInfo{}, errors.Wrap(err, "Close")
+	if err = drainAndClose(resp); err != nil {
+		return backend.FileInfo{}, err
 	}
 
 	if resp.StatusCode == http.StatusNotFound {
-		_ = resp.Body.Close()
 		return backend.FileInfo{}, &notExistError{h}
 	}
 
@@ -285,13 +280,15 @@ func (b *Backend) Remove(ctx context.Context, h backend.Handle) error {
 	req.Header.Set("Accept", ContentTypeV2)
 
 	resp, err := b.client.Do(req)
-
 	if err != nil {
 		return errors.Wrap(err, "client.Do")
 	}
 
+	if err = drainAndClose(resp); err != nil {
+		return err
+	}
+
 	if resp.StatusCode == http.StatusNotFound {
-		_ = resp.Body.Close()
 		return &notExistError{h}
 	}
 
@@ -299,12 +296,7 @@ func (b *Backend) Remove(ctx context.Context, h backend.Handle) error {
 		return errors.Errorf("blob not removed, server response: %v (%v)", resp.Status, resp.StatusCode)
 	}
 
-	_, err = io.Copy(io.Discard, resp.Body)
-	if err != nil {
-		return errors.Wrap(err, "Copy")
-	}
-
-	return errors.Wrap(resp.Body.Close(), "Close")
+	return nil
 }
 
 // List runs fn for each file in the backend which has the type t. When an
@@ -322,7 +314,6 @@ func (b *Backend) List(ctx context.Context, t backend.FileType, fn func(backend.
 	req.Header.Set("Accept", ContentTypeV2)
 
 	resp, err := b.client.Do(req)
-
 	if err != nil {
 		return errors.Wrap(err, "List")
 	}
@@ -333,19 +324,25 @@ func (b *Backend) List(ctx context.Context, t backend.FileType, fn func(backend.
 			// already ignores missing directories, but misuses "not found" to
 			// report certain internal errors, see
 			// https://github.com/rclone/rclone/pull/7550 for details.
-			return nil
+			return drainAndClose(resp)
 		}
 	}
 
 	if resp.StatusCode != http.StatusOK {
+		_ = drainAndClose(resp)
 		return errors.Errorf("List failed, server response: %v (%v)", resp.Status, resp.StatusCode)
 	}
 
 	if resp.Header.Get("Content-Type") == ContentTypeV2 {
-		return b.listv2(ctx, resp, fn)
+		err = b.listv2(ctx, resp, fn)
+	} else {
+		err = b.listv1(ctx, t, resp, fn)
 	}
 
-	return b.listv1(ctx, t, resp, fn)
+	if cerr := drainAndClose(resp); cerr != nil && err == nil {
+		err = cerr
+	}
+	return err
 }
 
 // listv1 uses the REST protocol v1, where a list HTTP request (e.g. `GET

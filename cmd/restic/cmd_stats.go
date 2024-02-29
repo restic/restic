@@ -189,7 +189,7 @@ func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args 
 	return nil
 }
 
-func statsWalkSnapshot(ctx context.Context, snapshot *restic.Snapshot, repo restic.Repository, opts StatsOptions, stats *statsContainer) error {
+func statsWalkSnapshot(ctx context.Context, snapshot *restic.Snapshot, repo restic.Loader, opts StatsOptions, stats *statsContainer) error {
 	if snapshot.Tree == nil {
 		return fmt.Errorf("snapshot %s has nil tree", snapshot.ID().Str())
 	}
@@ -203,7 +203,9 @@ func statsWalkSnapshot(ctx context.Context, snapshot *restic.Snapshot, repo rest
 	}
 
 	hardLinkIndex := restorer.NewHardlinkIndex[struct{}]()
-	err := walker.Walk(ctx, repo, *snapshot.Tree, restic.NewIDSet(), statsWalkTree(repo, opts, stats, hardLinkIndex))
+	err := walker.Walk(ctx, repo, *snapshot.Tree, walker.WalkVisitor{
+		ProcessNode: statsWalkTree(repo, opts, stats, hardLinkIndex),
+	})
 	if err != nil {
 		return fmt.Errorf("walking tree %s: %v", *snapshot.Tree, err)
 	}
@@ -211,13 +213,13 @@ func statsWalkSnapshot(ctx context.Context, snapshot *restic.Snapshot, repo rest
 	return nil
 }
 
-func statsWalkTree(repo restic.Repository, opts StatsOptions, stats *statsContainer, hardLinkIndex *restorer.HardlinkIndex[struct{}]) walker.WalkFunc {
-	return func(parentTreeID restic.ID, npath string, node *restic.Node, nodeErr error) (bool, error) {
+func statsWalkTree(repo restic.Loader, opts StatsOptions, stats *statsContainer, hardLinkIndex *restorer.HardlinkIndex[struct{}]) walker.WalkFunc {
+	return func(parentTreeID restic.ID, npath string, node *restic.Node, nodeErr error) error {
 		if nodeErr != nil {
-			return true, nodeErr
+			return nodeErr
 		}
 		if node == nil {
-			return true, nil
+			return nil
 		}
 
 		if opts.countMode == countModeUniqueFilesByContents || opts.countMode == countModeBlobsPerFile {
@@ -247,7 +249,7 @@ func statsWalkTree(repo restic.Repository, opts StatsOptions, stats *statsContai
 							// is always a data blob since we're accessing it via a file's Content array
 							blobSize, found := repo.LookupBlobSize(blobID, restic.DataBlob)
 							if !found {
-								return true, fmt.Errorf("blob %s not found for tree %s", blobID, parentTreeID)
+								return fmt.Errorf("blob %s not found for tree %s", blobID, parentTreeID)
 							}
 
 							// count the blob's size, then add this blob by this
@@ -274,11 +276,9 @@ func statsWalkTree(repo restic.Repository, opts StatsOptions, stats *statsContai
 				hardLinkIndex.Add(node.Inode, node.DeviceID, struct{}{})
 				stats.TotalSize += node.Size
 			}
-
-			return false, nil
 		}
 
-		return true, nil
+		return nil
 	}
 }
 
@@ -365,9 +365,9 @@ func statsDebug(ctx context.Context, repo restic.Repository) error {
 	return nil
 }
 
-func statsDebugFileType(ctx context.Context, repo restic.Repository, tpe restic.FileType) (*sizeHistogram, error) {
+func statsDebugFileType(ctx context.Context, repo restic.Lister, tpe restic.FileType) (*sizeHistogram, error) {
 	hist := newSizeHistogram(2 * repository.MaxPackSize)
-	err := repo.List(ctx, tpe, func(id restic.ID, size int64) error {
+	err := repo.List(ctx, tpe, func(_ restic.ID, size int64) error {
 		hist.Add(uint64(size))
 		return nil
 	})

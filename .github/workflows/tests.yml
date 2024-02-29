@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 env:
-  latest_go: "1.21.x"
+  latest_go: "1.22.x"
   GO111MODULE: on
 
 jobs:
@@ -23,18 +23,18 @@ jobs:
         # list of jobs to run:
         include:
           - job_name: Windows
-            go: 1.21.x
+            go: 1.22.x
             os: windows-latest
             test_smb: true
 
           - job_name: macOS
-            go: 1.21.x
+            go: 1.22.x
             os: macOS-latest
             test_fuse: false
             test_smb: true
 
           - job_name: Linux
-            go: 1.21.x
+            go: 1.22.x
             os: ubuntu-latest
             test_cloud_backends: true
             test_fuse: true
@@ -42,11 +42,16 @@ jobs:
             check_changelog: true
 
           - job_name: Linux (race)
-            go: 1.21.x
+            go: 1.22.x
             os: ubuntu-latest
             test_fuse: true
             test_smb: true
             test_opts: "-race"
+
+          - job_name: Linux
+            go: 1.21.x
+            os: ubuntu-latest
+            test_fuse: true
 
           - job_name: Linux
             go: 1.20.x
@@ -373,7 +378,7 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
-          version: v1.55.2
+          version: v1.56.1
           args: --verbose --timeout 5m
 
         # only run golangci-lint for pull requests, otherwise ALL hints get

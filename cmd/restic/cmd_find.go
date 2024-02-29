@@ -126,6 +126,7 @@ func (s *statefulOutput) PrintPatternJSON(path string, node *restic.Node) {
 		// Make the following attributes disappear
 		Name               byte `json:"name,omitempty"`
 		ExtendedAttributes byte `json:"extended_attributes,omitempty"`
+		GenericAttributes  byte `json:"generic_attributes,omitempty"`
 		Device             byte `json:"device,omitempty"`
 		Content            byte `json:"content,omitempty"`
 		Subtree            byte `json:"subtree,omitempty"`
@@ -244,13 +245,12 @@ func (s *statefulOutput) Finish() {
 
 // Finder bundles information needed to find a file or directory.
 type Finder struct {
-	repo        restic.Repository
-	pat         findPattern
-	out         statefulOutput
-	ignoreTrees restic.IDSet
-	blobIDs     map[string]struct{}
-	treeIDs     map[string]struct{}
-	itemsFound  int
+	repo       restic.Repository
+	pat        findPattern
+	out        statefulOutput
+	blobIDs    map[string]struct{}
+	treeIDs    map[string]struct{}
+	itemsFound int
 }
 
 func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error {
@@ -261,17 +261,17 @@ func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error 
 	}
 
 	f.out.newsn = sn
-	return walker.Walk(ctx, f.repo, *sn.Tree, f.ignoreTrees, func(parentTreeID restic.ID, nodepath string, node *restic.Node, err error) (bool, error) {
+	return walker.Walk(ctx, f.repo, *sn.Tree, walker.WalkVisitor{ProcessNode: func(parentTreeID restic.ID, nodepath string, node *restic.Node, err error) error {
 		if err != nil {
 			debug.Log("Error loading tree %v: %v", parentTreeID, err)
 
 			Printf("Unable to load tree %s\n ... which belongs to snapshot %s\n", parentTreeID, sn.ID())
 
-			return false, walker.ErrSkipNode
+			return walker.ErrSkipNode
 		}
 
 		if node == nil {
-			return false, nil
+			return nil
 		}
 
 		normalizedNodepath := nodepath
@@ -284,7 +284,7 @@ func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error 
 		for _, pat := range f.pat.pattern {
 			found, err := filter.Match(pat, normalizedNodepath)
 			if err != nil {
-				return false, err
+				return err
 			}
 			if found {
 				foundMatch = true
@@ -292,16 +292,13 @@ func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error 
 			}
 		}
 
-		var (
-			ignoreIfNoMatch = true
-			errIfNoMatch    error
-		)
+		var errIfNoMatch error
 		if node.Type == "dir" {
 			var childMayMatch bool
 			for _, pat := range f.pat.pattern {
 				mayMatch, err := filter.ChildMatch(pat, normalizedNodepath)
 				if err != nil {
-					return false, err
+					return err
 				}
 				if mayMatch {
 					childMayMatch = true
@@ -310,31 +307,28 @@ func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error 
 			}
 
 			if !childMayMatch {
-				ignoreIfNoMatch = true
 				errIfNoMatch = walker.ErrSkipNode
-			} else {
-				ignoreIfNoMatch = false
 			}
 		}
 
 		if !foundMatch {
-			return ignoreIfNoMatch, errIfNoMatch
+			return errIfNoMatch
 		}
 
 		if !f.pat.oldest.IsZero() && node.ModTime.Before(f.pat.oldest) {
 			debug.Log("    ModTime is older than %s\n", f.pat.oldest)
-			return ignoreIfNoMatch, errIfNoMatch
+			return errIfNoMatch
 		}
 
 		if !f.pat.newest.IsZero() && node.ModTime.After(f.pat.newest) {
 			debug.Log("    ModTime is newer than %s\n", f.pat.newest)
-			return ignoreIfNoMatch, errIfNoMatch
+			return errIfNoMatch
 		}
 
 		debug.Log("    found match\n")
 		f.out.PrintPattern(nodepath, node)
-		return false, nil
-	})
+		return nil
+	}})
 }
 
 func (f *Finder) findIDs(ctx context.Context, sn *restic.Snapshot) error {
@@ -345,17 +339,17 @@ func (f *Finder) findIDs(ctx context.Context, sn *restic.Snapshot) error {
 	}
 
 	f.out.newsn = sn
-	return walker.Walk(ctx, f.repo, *sn.Tree, f.ignoreTrees, func(parentTreeID restic.ID, nodepath string, node *restic.Node, err error) (bool, error) {
+	return walker.Walk(ctx, f.repo, *sn.Tree, walker.WalkVisitor{ProcessNode: func(parentTreeID restic.ID, nodepath string, node *restic.Node, err error) error {
 		if err != nil {
 			debug.Log("Error loading tree %v: %v", parentTreeID, err)
 
 			Printf("Unable to load tree %s\n ... which belongs to snapshot %s\n", parentTreeID, sn.ID())
 
-			return false, walker.ErrSkipNode
+			return walker.ErrSkipNode
 		}
 
 		if node == nil {
-			return false, nil
+			return nil
 		}
 
 		if node.Type == "dir" && f.treeIDs != nil {
@@ -373,7 +367,7 @@ func (f *Finder) findIDs(ctx context.Context, sn *restic.Snapshot) error {
 				// looking for blobs)
 				if f.itemsFound >= len(f.treeIDs) && f.blobIDs == nil {
 					// Return an error to terminate the Walk
-					return true, errors.New("OK")
+					return errors.New("OK")
 				}
 			}
 		}
@@ -394,8 +388,8 @@ func (f *Finder) findIDs(ctx context.Context, sn *restic.Snapshot) error {
 			}
 		}
 
-		return false, nil
-	})
+		return nil
+	}})
 }
 
 var errAllPacksFound = errors.New("all packs found")
@@ -593,10 +587,9 @@ func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []
 	}
 
 	f := &Finder{
-		repo:        repo,
-		pat:         pat,
-		out:         statefulOutput{ListLong: opts.ListLong, HumanReadable: opts.HumanReadable, JSON: gopts.JSON},
-		ignoreTrees: restic.NewIDSet(),
+		repo: repo,
+		pat:  pat,
+		out:  statefulOutput{ListLong: opts.ListLong, HumanReadable: opts.HumanReadable, JSON: gopts.JSON},
 	}
 
 	if opts.BlobID {

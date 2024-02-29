@@ -52,19 +52,23 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 	},
 }
 
-var tryRepair bool
-var repairByte bool
-var extractPack bool
-var reuploadBlobs bool
+type DebugExamineOptions struct {
+	TryRepair     bool
+	RepairByte    bool
+	ExtractPack   bool
+	ReuploadBlobs bool
+}
+
+var debugExamineOpts DebugExamineOptions
 
 func init() {
 	cmdRoot.AddCommand(cmdDebug)
 	cmdDebug.AddCommand(cmdDebugDump)
 	cmdDebug.AddCommand(cmdDebugExamine)
-	cmdDebugExamine.Flags().BoolVar(&extractPack, "extract-pack", false, "write blobs to the current directory")
-	cmdDebugExamine.Flags().BoolVar(&reuploadBlobs, "reupload-blobs", false, "reupload blobs to the repository")
-	cmdDebugExamine.Flags().BoolVar(&tryRepair, "try-repair", false, "try to repair broken blobs with single bit flips")
-	cmdDebugExamine.Flags().BoolVar(&repairByte, "repair-byte", false, "try to repair broken blobs by trying bytes")
+	cmdDebugExamine.Flags().BoolVar(&debugExamineOpts.ExtractPack, "extract-pack", false, "write blobs to the current directory")
+	cmdDebugExamine.Flags().BoolVar(&debugExamineOpts.ReuploadBlobs, "reupload-blobs", false, "reupload blobs to the repository")
+	cmdDebugExamine.Flags().BoolVar(&debugExamineOpts.TryRepair, "try-repair", false, "try to repair broken blobs with single bit flips")
+	cmdDebugExamine.Flags().BoolVar(&debugExamineOpts.RepairByte, "repair-byte", false, "try to repair broken blobs by trying bytes")
 }
 
 func prettyPrintJSON(wr io.Writer, item interface{}) error {
@@ -133,7 +137,7 @@ func printPacks(ctx context.Context, repo *repository.Repository, wr io.Writer) 
 	})
 }
 
-func dumpIndexes(ctx context.Context, repo restic.Repository, wr io.Writer) error {
+func dumpIndexes(ctx context.Context, repo restic.ListerLoaderUnpacked, wr io.Writer) error {
 	return index.ForAllIndexes(ctx, repo, repo, func(id restic.ID, idx *index.Index, oldFormat bool, err error) error {
 		Printf("index_id: %v\n", id)
 		if err != nil {
@@ -196,7 +200,7 @@ var cmdDebugExamine = &cobra.Command{
 	Short:             "Examine a pack file",
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runDebugExamine(cmd.Context(), globalOptions, args)
+		return runDebugExamine(cmd.Context(), globalOptions, debugExamineOpts, args)
 	},
 }
 
@@ -315,7 +319,7 @@ func decryptUnsigned(ctx context.Context, k *crypto.Key, buf []byte) []byte {
 	return out
 }
 
-func loadBlobs(ctx context.Context, repo restic.Repository, packID restic.ID, list []restic.Blob) error {
+func loadBlobs(ctx context.Context, opts DebugExamineOptions, repo restic.Repository, packID restic.ID, list []restic.Blob) error {
 	dec, err := zstd.NewReader(nil)
 	if err != nil {
 		panic(err)
@@ -328,7 +332,7 @@ func loadBlobs(ctx context.Context, repo restic.Repository, packID restic.ID, li
 
 	wg, ctx := errgroup.WithContext(ctx)
 
-	if reuploadBlobs {
+	if opts.ReuploadBlobs {
 		repo.StartPackUploader(ctx, wg)
 	}
 
@@ -356,8 +360,8 @@ func loadBlobs(ctx context.Context, repo restic.Repository, packID restic.ID, li
 			filePrefix := ""
 			if err != nil {
 				Warnf("error decrypting blob: %v\n", err)
-				if tryRepair || repairByte {
-					plaintext = tryRepairWithBitflip(ctx, key, buf, repairByte)
+				if opts.TryRepair || opts.RepairByte {
+					plaintext = tryRepairWithBitflip(ctx, key, buf, opts.RepairByte)
 				}
 				if plaintext != nil {
 					outputPrefix = "repaired "
@@ -391,13 +395,13 @@ func loadBlobs(ctx context.Context, repo restic.Repository, packID restic.ID, li
 				Printf("         successfully %vdecrypted blob (length %v), hash is %v, ID matches\n", outputPrefix, len(plaintext), id)
 				prefix = "correct-"
 			}
-			if extractPack {
+			if opts.ExtractPack {
 				err = storePlainBlob(id, filePrefix+prefix, plaintext)
 				if err != nil {
 					return err
 				}
 			}
-			if reuploadBlobs {
+			if opts.ReuploadBlobs {
 				_, _, _, err := repo.SaveBlob(ctx, blob.Type, plaintext, id, true)
 				if err != nil {
 					return err
@@ -406,7 +410,7 @@ func loadBlobs(ctx context.Context, repo restic.Repository, packID restic.ID, li
 			}
 		}
 
-		if reuploadBlobs {
+		if opts.ReuploadBlobs {
 			return repo.Flush(ctx)
 		}
 		return nil
@@ -437,7 +441,7 @@ func storePlainBlob(id restic.ID, prefix string, plain []byte) error {
 	return nil
 }
 
-func runDebugExamine(ctx context.Context, gopts GlobalOptions, args []string) error {
+func runDebugExamine(ctx context.Context, gopts GlobalOptions, opts DebugExamineOptions, args []string) error {
 	repo, err := OpenRepository(ctx, gopts)
 	if err != nil {
 		return err
@@ -476,7 +480,7 @@ func runDebugExamine(ctx context.Context, gopts GlobalOptions, args []string) er
 	}
 
 	for _, id := range ids {
-		err := examinePack(ctx, repo, id)
+		err := examinePack(ctx, opts, repo, id)
 		if err != nil {
 			Warnf("error: %v\n", err)
 		}
@@ -487,7 +491,7 @@ func runDebugExamine(ctx context.Context, gopts GlobalOptions, args []string) er
 	return nil
 }
 
-func examinePack(ctx context.Context, repo restic.Repository, id restic.ID) error {
+func examinePack(ctx context.Context, opts DebugExamineOptions, repo restic.Repository, id restic.ID) error {
 	Printf("examine %v\n", id)
 
 	h := backend.Handle{
@@ -524,7 +528,7 @@ func examinePack(ctx context.Context, repo restic.Repository, id restic.ID) erro
 
 		checkPackSize(blobs, fi.Size)
 
-		err = loadBlobs(ctx, repo, id, blobs)
+		err = loadBlobs(ctx, opts, repo, id, blobs)
 		if err != nil {
 			Warnf("error: %v\n", err)
 		} else {
@@ -542,7 +546,7 @@ func examinePack(ctx context.Context, repo restic.Repository, id restic.ID) erro
 	checkPackSize(blobs, fi.Size)
 
 	if !blobsLoaded {
-		return loadBlobs(ctx, repo, id, blobs)
+		return loadBlobs(ctx, opts, repo, id, blobs)
 	}
 	return nil
 }

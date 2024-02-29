@@ -147,7 +147,7 @@ func rewriteSnapshot(ctx context.Context, repo *repository.Repository, sn *resti
 			return rewriter.RewriteTree(ctx, repo, "/", *sn.Tree)
 		}
 	} else {
-		filter = func(ctx context.Context, sn *restic.Snapshot) (restic.ID, error) {
+		filter = func(_ context.Context, sn *restic.Snapshot) (restic.ID, error) {
 			return *sn.Tree, nil
 		}
 	}
@@ -209,7 +209,7 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 		}
 
 		if newMetadata != nil && newMetadata.Hostname != "" {
-			Verbosef("would set time to %s\n", newMetadata.Hostname)
+			Verbosef("would set hostname to %s\n", newMetadata.Hostname)
 		}
 
 		return true, nil
