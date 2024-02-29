@@ -14,7 +14,7 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.5.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-  	github.com/hirochachacha/go-smb2 v1.1.0
+	github.com/hirochachacha/go-smb2 v1.1.0
 	github.com/klauspost/compress v1.17.6
 	github.com/minio/minio-go/v7 v7.0.66
 	github.com/minio/sha256-simd v1.0.1
@@ -47,14 +47,12 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.3 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/geoffgarside/ber v1.1.0 h1:qTmFG4jJbwiSzSXoNJeHcOprVzZ8Ulde2Rrrifu5U9w=
-	github.com/geoffgarside/ber v1.1.0/go.mod h1:jVPKeCbj6MvQZhwLYsGwaGI52oUorHoHKNecGT85ZCc=
 	github.com/felixge/fgprof v0.9.3 // indirect
-  	github.com/geoffgarside/ber v1.1.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
+	github.com/geoffgarside/ber v1.1.0 // indirect
 	github.com/go-logr/logr v1.3.0 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-  	github.com/golang-jwt/jwt/v5 v5.0.0 // indirect
+	github.com/golang-jwt/jwt/v5 v5.0.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/pprof v0.0.0-20230926050212-f7f687d19a98 // indirect
