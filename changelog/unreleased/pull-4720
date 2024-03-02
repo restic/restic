@@ -1,0 +1,8 @@
+Enhancement: Adds options for backup of binary file on self-update.
+
+Restic overwrote (on windows only kept the last version of) the binary
+file on self update. It now permits to keep the old version, if the option
+'backup' is used. For the backup file the existing filename is extended
+by ".bak.<version>".
+
+https://github.com/restic/restic/pull/4720
