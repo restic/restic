@@ -39,7 +39,25 @@ func findHash(buf []byte, filename string) (hash []byte, err error) {
 	return nil, fmt.Errorf("hash for file %v not found", filename)
 }
 
-func extractToFile(buf []byte, filename, target string, printf func(string, ...interface{})) error {
+func backupBinary(dir string, target string, version string) error {
+	// nothing to do if the target does not exist
+	if _, err := os.Stat(target); errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+
+	backup := filepath.Join(dir, filepath.Base(target)+".bak."+version)
+	//backup file already existing
+	if _, err := os.Stat(backup); err != nil {
+		return fmt.Errorf("backup file %v already exists", backup)
+	}
+
+	if err := os.Rename(target, backup); err != nil {
+		return fmt.Errorf("unable to rename target file: %v", err)
+	}
+	return nil
+}
+
+func extractToFile(buf []byte, filename, target string, backup bool, oldVersion string, printf func(string, ...interface{})) error {
 	var rd io.Reader = bytes.NewReader(buf)
 	switch filepath.Ext(filename) {
 	case ".bz2":
@@ -92,9 +110,15 @@ func extractToFile(buf []byte, filename, target string, printf func(string, ...i
 		mode = fi.Mode()
 	}
 
-	// Remove the original binary.
-	if err := removeResticBinary(dir, target); err != nil {
-		return err
+	if backup {
+		if err := backupBinary(dir, target, oldVersion); err != nil {
+			return err
+		}
+	} else {
+		// Remove the original binary.
+		if err := removeResticBinary(dir, target); err != nil {
+			return err
+		}
 	}
 
 	// Rename the temp file to the final location atomically.
@@ -109,7 +133,7 @@ func extractToFile(buf []byte, filename, target string, printf func(string, ...i
 // DownloadLatestStableRelease downloads the latest stable released version of
 // restic and saves it to target. It returns the version string for the newest
 // version. The function printf is used to print progress information.
-func DownloadLatestStableRelease(ctx context.Context, target, currentVersion string, printf func(string, ...interface{})) (version string, err error) {
+func DownloadLatestStableRelease(ctx context.Context, target, currentVersion string, backup bool, printf func(string, ...interface{})) (version string, err error) {
 	if printf == nil {
 		printf = func(string, ...interface{}) {}
 	}
@@ -172,7 +196,7 @@ func DownloadLatestStableRelease(ctx context.Context, target, currentVersion str
 		return "", fmt.Errorf("SHA256 hash mismatch, want hash %02x, got %02x", wantHash, gotHash)
 	}
 
-	err = extractToFile(buf, downloadFilename, target, printf)
+	err = extractToFile(buf, downloadFilename, target, backup, currentVersion, printf)
 	if err != nil {
 		return "", err
 	}
