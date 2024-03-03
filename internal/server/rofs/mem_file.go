@@ -11,7 +11,7 @@ import (
 
 type MemFile struct {
 	Path     string
-	FileInfo FileInfo
+	FileInfo fileInfo
 	Data     []byte
 }
 
@@ -20,7 +20,7 @@ func NewMemFile(filename string, data []byte, modTime time.Time) MemFile {
 	return MemFile{
 		Path: filename,
 		Data: data,
-		FileInfo: FileInfo{
+		FileInfo: fileInfo{
 			name:    path.Base(filename),
 			size:    int64(len(data)),
 			mode:    0644,
@@ -47,7 +47,7 @@ func (f MemFile) DirEntry() fs.DirEntry {
 type openMemFile struct {
 	path string
 
-	fileInfo FileInfo
+	fileInfo fileInfo
 	data     []byte
 
 	offset int64

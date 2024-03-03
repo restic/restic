@@ -23,7 +23,7 @@ func (d dirEntry) Info() (fs.FileInfo, error) { return d.fileInfo, nil }
 // openDir represents a directory opened for reading.
 type openDir struct {
 	path     string
-	fileInfo FileInfo
+	fileInfo fileInfo
 	entries  []fs.DirEntry
 	offset   int
 }

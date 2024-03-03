@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/net/webdav"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
@@ -104,12 +105,21 @@ func runWebDAV(ctx context.Context, opts WebDAVOptions, gopts GlobalOptions, arg
 	// 	},
 	// }
 
+	logRequest := func(req *http.Request, err error) {
+		errorLogger.Printf("req %v %v -> %v\n", req.Method, req.URL.Path, err)
+	}
+
 	srv := &http.Server{
 		ReadTimeout:  60 * time.Second,
 		WriteTimeout: 60 * time.Second,
 		Addr:         opts.Listen,
-		Handler:      http.FileServer(http.FS(root)),
-		ErrorLog:     errorLogger,
+		// Handler:      http.FileServer(http.FS(root)),
+		Handler: &webdav.Handler{
+			FileSystem: rofs.WebDAVFS(root),
+			LockSystem: webdav.NewMemLS(),
+			Logger:     logRequest,
+		},
+		ErrorLog: errorLogger,
 	}
 
 	return srv.ListenAndServe()

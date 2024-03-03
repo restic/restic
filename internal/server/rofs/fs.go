@@ -16,7 +16,7 @@ type ROFS struct {
 	repo     restic.Repository
 	cfg      Config
 	entries  map[string]rofsEntry
-	fileInfo FileInfo
+	fileInfo fileInfo
 }
 
 type rofsEntry interface {
@@ -50,7 +50,7 @@ func New(ctx context.Context, repo restic.Repository, cfg Config) (*ROFS, error)
 		repo:    repo,
 		cfg:     cfg,
 		entries: make(map[string]rofsEntry),
-		fileInfo: FileInfo{
+		fileInfo: fileInfo{
 			name:    ".",
 			mode:    0755,
 			modtime: time.Now(),
@@ -63,6 +63,43 @@ func New(ctx context.Context, repo restic.Repository, cfg Config) (*ROFS, error)
 	}
 
 	return rofs, nil
+}
+
+func buildSnapshotEntries(ctx context.Context, repo restic.Repository, cfg Config) (map[string]rofsEntry, error) {
+	var snapshots restic.Snapshots
+	err := cfg.Filter.FindAll(ctx, repo, repo, nil, func(_ string, sn *restic.Snapshot, _ error) error {
+		if sn != nil {
+			snapshots = append(snapshots, sn)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("filter snapshots: %w", err)
+	}
+
+	debug.Log("found %d snapshots", len(snapshots))
+
+	list := make(map[string]rofsEntry)
+	list["foo"] = NewMemFile("foo", []byte("foobar content of file foo"), time.Now())
+	list["snapshots"] = NewMemFile("snapshots", []byte("here goes the snapshot list"), time.Now())
+
+	// list["snapshots"] = NewSnapshotsDir(cfg.PathTemplates, cfg.TimeTemplate)
+
+	return list, nil
+}
+
+func (rofs *ROFS) updateSnapshots(ctx context.Context) error {
+
+	entries, err := buildSnapshotEntries(ctx, rofs.repo, rofs.cfg)
+	if err != nil {
+		return err
+	}
+
+	rofs.entries = entries
+
+	return nil
 }
 
 // Open opens the named file.
@@ -90,7 +127,7 @@ func (rofs *ROFS) Open(name string) (fs.File, error) {
 
 		d := &openDir{
 			path: ".",
-			fileInfo: FileInfo{
+			fileInfo: fileInfo{
 				name:    ".",
 				mode:    fs.ModeDir | 0555,
 				modtime: time.Now(),
@@ -114,39 +151,4 @@ func (rofs *ROFS) Open(name string) (fs.File, error) {
 	debug.Log("Open(%v)", name)
 
 	return entry.Open()
-}
-
-func buildSnapshotEntries(ctx context.Context, repo restic.Repository, cfg Config) (map[string]rofsEntry, error) {
-	var snapshots restic.Snapshots
-	err := cfg.Filter.FindAll(ctx, repo, repo, nil, func(_ string, sn *restic.Snapshot, _ error) error {
-		if sn != nil {
-			snapshots = append(snapshots, sn)
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("filter snapshots: %w", err)
-	}
-
-	debug.Log("found %d snapshots", len(snapshots))
-
-	list := make(map[string]rofsEntry)
-	list["snapshots"] = dirEntry{}
-	//FIXME CONTINUE
-
-	return list, nil
-}
-
-func (rofs *ROFS) updateSnapshots(ctx context.Context) error {
-
-	entries, err := buildSnapshotEntries(ctx, rofs.repo, rofs.cfg)
-	if err != nil {
-		return err
-	}
-
-	rofs.entries = entries
-
-	return nil
 }
