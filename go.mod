@@ -1,5 +1,7 @@
 module github.com/restic/restic
 
+replace github.com/minio/minio-go/v7 => ../minio-go
+
 require (
 	cloud.google.com/go/storage v1.37.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.9.1
