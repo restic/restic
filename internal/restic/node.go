@@ -82,7 +82,7 @@ type Node struct {
 	User       string      `json:"user,omitempty"`
 	Group      string      `json:"group,omitempty"`
 	Inode      uint64      `json:"inode,omitempty"`
-	DeviceID   uint64      `json:"device_id,omitempty"` // device id of the file, stat.st_dev
+	DeviceID   uint64      `json:"device_id,omitempty"` // device id of the file, stat.st_dev, only stored for hardlinks
 	Size       uint64      `json:"size,omitempty"`
 	Links      uint64      `json:"links,omitempty"`
 	LinkTarget string      `json:"linktarget,omitempty"`

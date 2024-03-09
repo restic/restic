@@ -2153,6 +2153,7 @@ func TestMetadataChanged(t *testing.T) {
 	sn, node2 := snapshot(t, repo, fs, nil, "testfile")
 
 	// set some values so we can then compare the nodes
+	want.DeviceID = 0
 	want.Content = node2.Content
 	want.Path = ""
 	if len(want.ExtendedAttributes) == 0 {
