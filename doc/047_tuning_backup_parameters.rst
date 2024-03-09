@@ -26,7 +26,8 @@ When you start a backup, restic will concurrently count the number of files and
 their total size, which is used to estimate how long it will take. This will
 cause some extra I/O, which can slow down backups of network file systems or
 FUSE mounts. To avoid this overhead at the cost of not seeing a progress
-estimate, use the ``--no-scan`` option which disables this file scanning.
+estimate, use the ``--no-scan`` option of the ``backup`` command  which disables
+this file scanning.
 
 Backend Connections
 ===================
@@ -111,3 +112,28 @@ to disk. An operating system usually caches file write operations in memory and 
 them to disk after a short delay. As larger pack files take longer to upload, this
 increases the chance of these files being written to disk. This can increase disk wear
 for SSDs.
+
+
+Feature Flags
+=============
+
+Feature flags allow disabling or enabling certain experimental restic features. The flags
+can be specified via the ``RESTIC_FEATURES`` environment variable. The variable expects a
+comma-separated list of ``key[=value],key2[=value2]`` pairs. The key is the name of a feature
+flag. The value is optional and can contain either the value ``true`` (default if omitted)
+or ``false``. The list of currently available feautre flags is shown by the ``features``
+command.
+
+Restic will return an error if an invalid feature flag is specified. No longer relevant
+feature flags may be removed in a future restic release. Thus, make sure to no longer
+specify these flags.
+
+A feature can either be in alpha, beta, stable or deprecated state.
+
+- An _alpha_ feature is disabled by default and may change in arbitrary ways between restic
+  versions or be removed.
+- A _beta_ feature is enabled by default, but still can change in minor ways or be removed.
+- A _stable_ feature is always enabled and cannot be disabled. This allows for a transition
+  period after which the flag will be removed in a future restic version.
+- A _deprecated_ feature is always disabled and cannot be enabled. The flag will be removed
+  in a future restic version.
