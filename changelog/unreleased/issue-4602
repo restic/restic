@@ -1,0 +1,13 @@
+Change: Deprecate legacy index format
+
+Support for the legacy index format used by restic before version 0.2.0 has
+been depreacted and will be removed in the next minor restic version. You can
+use `restic repair index` to update the index to the current format.
+
+It is possible to temporarily reenable support for the legacy index format by
+setting the environment variable
+`RESTIC_FEATURES=deprecate-legacy-index=false`. Note that this feature flag
+will be removed in the next minor restic version.
+
+https://github.com/restic/restic/issues/4602
+https://github.com/restic/restic/pull/4724
