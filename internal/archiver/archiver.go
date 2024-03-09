@@ -12,6 +12,7 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 	"golang.org/x/sync/errgroup"
@@ -188,11 +189,13 @@ func (arch *Archiver) nodeFromFileInfo(snPath, filename string, fi os.FileInfo) 
 	if !arch.WithAtime {
 		node.AccessTime = node.ModTime
 	}
-	if node.Links == 1 || node.Type == "dir" {
-		// the DeviceID is only necessary for hardlinked files
-		// when using subvolumes or snapshots their deviceIDs tend to change which causes
-		// restic to upload new tree blobs
-		node.DeviceID = 0
+	if feature.Flag.Enabled(feature.DeviceIDForHardlinks) {
+		if node.Links == 1 || node.Type == "dir" {
+			// the DeviceID is only necessary for hardlinked files
+			// when using subvolumes or snapshots their deviceIDs tend to change which causes
+			// restic to upload new tree blobs
+			node.DeviceID = 0
+		}
 	}
 	// overwrite name to match that within the snapshot
 	node.Name = path.Base(snPath)

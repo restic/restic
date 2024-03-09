@@ -19,6 +19,7 @@ import (
 	"github.com/restic/restic/internal/backend/mem"
 	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -2125,6 +2126,8 @@ const (
 )
 
 func TestMetadataChanged(t *testing.T) {
+	defer feature.TestSetFlag(t, feature.Flag, feature.DeviceIDForHardlinks, true)()
+
 	files := TestDir{
 		"testfile": TestFile{
 			Content: "foo bar test file",
