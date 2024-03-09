@@ -8,6 +8,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -427,6 +428,8 @@ func BenchmarkEncodeIndex(b *testing.B) {
 }
 
 func TestIndexUnserializeOld(t *testing.T) {
+	defer feature.TestSetFlag(t, feature.Flag, feature.DeprecateLegacyIndex, false)()
+
 	idx, oldFormat, err := index.DecodeIndex(docOldExample, restic.NewRandomID())
 	rtest.OK(t, err)
 	rtest.Assert(t, oldFormat, "old index format recognized as new format")

@@ -3,12 +3,14 @@ package index
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"sync"
 	"time"
 
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/restic/restic/internal/debug"
@@ -515,6 +517,10 @@ func DecodeIndex(buf []byte, id restic.ID) (idx *Index, oldFormat bool, err erro
 		debug.Log("Error %v", err)
 
 		if isErrOldIndex(err) {
+			if feature.Flag.Enabled(feature.DeprecateLegacyIndex) {
+				return nil, false, fmt.Errorf("index seems to use the legacy format. update it using `restic repair index`")
+			}
+
 			debug.Log("index is probably old format, trying that")
 			idx, err = decodeOldIndex(buf)
 			return idx, err == nil, err
