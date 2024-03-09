@@ -523,6 +523,7 @@ func DecodeIndex(buf []byte, id restic.ID) (idx *Index, oldFormat bool, err erro
 
 			debug.Log("index is probably old format, trying that")
 			idx, err = decodeOldIndex(buf)
+			idx.ids = append(idx.ids, id)
 			return idx, err == nil, err
 		}
 
