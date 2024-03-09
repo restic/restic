@@ -231,12 +231,17 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 
 	errorsFound := false
 	suggestIndexRebuild := false
+	suggestLegacyIndexRebuild := false
 	mixedFound := false
 	for _, hint := range hints {
 		switch hint.(type) {
-		case *checker.ErrDuplicatePacks, *checker.ErrOldIndexFormat:
+		case *checker.ErrDuplicatePacks:
 			Printf("%v\n", hint)
 			suggestIndexRebuild = true
+		case *checker.ErrOldIndexFormat:
+			Warnf("error: %v\n", hint)
+			suggestLegacyIndexRebuild = true
+			errorsFound = true
 		case *checker.ErrMixedPack:
 			Printf("%v\n", hint)
 			mixedFound = true
@@ -247,7 +252,10 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	}
 
 	if suggestIndexRebuild {
-		Printf("Duplicate packs/old indexes are non-critical, you can run `restic repair index' to correct this.\n")
+		Printf("Duplicate packs are non-critical, you can run `restic repair index' to correct this.\n")
+	}
+	if suggestLegacyIndexRebuild {
+		Warnf("Found indexes using the legacy format, you must run `restic repair index' to correct this.\n")
 	}
 	if mixedFound {
 		Printf("Mixed packs with tree and data blobs are non-critical, you can run `restic prune` to correct this.\n")
