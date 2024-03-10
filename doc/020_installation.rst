@@ -77,8 +77,7 @@ avoid any conflicts:
 macOS
 =====
 
-If you are using macOS, you can install restic using the
-`homebrew <https://brew.sh/>`__ package manager:
+If you are using macOS, you can install restic using `Homebrew <https://brew.sh/>`__:
 
 .. code-block:: console
 
