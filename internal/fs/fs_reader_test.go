@@ -142,10 +142,6 @@ func verifyDirectoryContentsFI(t testing.TB, fs FS, dir string, want []os.FileIn
 			t.Errorf("entry %d: wrong value for ModTime: want %v, got %v", i, fi1.ModTime(), fi2.ModTime())
 		}
 
-		if fi1.Size() != fi2.Size() {
-			t.Errorf("entry %d: wrong value for Size: want %v, got %v", i, fi1.Size(), fi2.Size())
-		}
-
 		if fi1.Sys() != fi2.Sys() {
 			t.Errorf("entry %d: wrong value for Sys: want %v, got %v", i, fi1.Sys(), fi2.Sys())
 		}
@@ -202,7 +198,6 @@ func TestFSReader(t *testing.T) {
 					mode:    0644,
 					modtime: now,
 					name:    filename,
-					size:    int64(len(data)),
 				}
 				verifyDirectoryContentsFI(t, fs, "/", []os.FileInfo{fi})
 			},
@@ -214,7 +209,6 @@ func TestFSReader(t *testing.T) {
 					mode:    0644,
 					modtime: now,
 					name:    filename,
-					size:    int64(len(data)),
 				}
 				verifyDirectoryContentsFI(t, fs, ".", []os.FileInfo{fi})
 			},
@@ -324,7 +318,6 @@ func TestFSReader(t *testing.T) {
 			ReadCloser: io.NopCloser(bytes.NewReader(data)),
 
 			Mode:    0644,
-			Size:    int64(len(data)),
 			ModTime: now,
 		}
 
@@ -359,7 +352,6 @@ func TestFSReaderDir(t *testing.T) {
 				ReadCloser: io.NopCloser(bytes.NewReader(data)),
 
 				Mode:    0644,
-				Size:    int64(len(data)),
 				ModTime: now,
 			}
 
