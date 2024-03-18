@@ -163,7 +163,7 @@ func (b *JSONProgress) ReportTotal(start time.Time, s archiver.ScanStats) {
 }
 
 // Finish prints the finishing messages.
-func (b *JSONProgress) Finish(snapshotID restic.ID, start time.Time, summary *Summary, dryRun bool) {
+func (b *JSONProgress) Finish(snapshotID restic.ID, start time.Time, summary *archiver.Summary, dryRun bool) {
 	b.print(summaryOutput{
 		MessageType:         "summary",
 		FilesNew:            summary.Files.New,
@@ -175,6 +175,7 @@ func (b *JSONProgress) Finish(snapshotID restic.ID, start time.Time, summary *Su
 		DataBlobs:           summary.ItemStats.DataBlobs,
 		TreeBlobs:           summary.ItemStats.TreeBlobs,
 		DataAdded:           summary.ItemStats.DataSize + summary.ItemStats.TreeSize,
+		DataAddedPacked:     summary.ItemStats.DataSizeInRepo + summary.ItemStats.TreeSizeInRepo,
 		TotalFilesProcessed: summary.Files.New + summary.Files.Changed + summary.Files.Unchanged,
 		TotalBytesProcessed: summary.ProcessedBytes,
 		TotalDuration:       time.Since(start).Seconds(),
@@ -230,6 +231,7 @@ type summaryOutput struct {
 	DataBlobs           int     `json:"data_blobs"`
 	TreeBlobs           int     `json:"tree_blobs"`
 	DataAdded           uint64  `json:"data_added"`
+	DataAddedPacked     uint64  `json:"data_added_packed"`
 	TotalFilesProcessed uint    `json:"total_files_processed"`
 	TotalBytesProcessed uint64  `json:"total_bytes_processed"`
 	TotalDuration       float64 `json:"total_duration"` // in seconds

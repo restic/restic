@@ -858,7 +858,7 @@ func TestRestorerSparseFiles(t *testing.T) {
 	rtest.OK(t, err)
 
 	arch := archiver.New(repo, target, archiver.Options{})
-	sn, _, err := arch.Snapshot(context.Background(), []string{"/zeros"},
+	sn, _, _, err := arch.Snapshot(context.Background(), []string{"/zeros"},
 		archiver.SnapshotOptions{})
 	rtest.OK(t, err)
 

@@ -163,7 +163,9 @@ Summary is the last output line in a successful backup.
 +---------------------------+---------------------------------------------------------+
 | ``tree_blobs``            | Number of tree blobs                                    |
 +---------------------------+---------------------------------------------------------+
-| ``data_added``            | Amount of data added, in bytes                          |
+| ``data_added``            | Amount of (uncompressed) data added, in bytes           |
++---------------------------+---------------------------------------------------------+
+| ``data_added_packed``     | Amount of data added (after compression), in bytes      |
 +---------------------------+---------------------------------------------------------+
 | ``total_files_processed`` | Total number of files processed                         |
 +---------------------------+---------------------------------------------------------+
@@ -551,10 +553,47 @@ The snapshots command returns a single JSON object, an array with objects of the
 +---------------------+--------------------------------------------------+
 | ``program_version`` | restic version used to create snapshot           |
 +---------------------+--------------------------------------------------+
+| ``summary``         | Snapshot statistics, see "Summary object"        |
++---------------------+--------------------------------------------------+
 | ``id``              | Snapshot ID                                      |
 +---------------------+--------------------------------------------------+
 | ``short_id``        | Snapshot ID, short form                          |
 +---------------------+--------------------------------------------------+
+
+Summary object
+
+The contained statistics reflect the information at the point in time when the snapshot
+was created.
+
++---------------------------+---------------------------------------------------------+
+| ``backup_start``          | Time at which the backup was started                    |
++---------------------------+---------------------------------------------------------+
+| ``backup_end``            | Time at which the backup was completed                  |
++---------------------------+---------------------------------------------------------+
+| ``files_new``             | Number of new files                                     |
++---------------------------+---------------------------------------------------------+
+| ``files_changed``         | Number of files that changed                            |
++---------------------------+---------------------------------------------------------+
+| ``files_unmodified``      | Number of files that did not change                     |
++---------------------------+---------------------------------------------------------+
+| ``dirs_new``              | Number of new directories                               |
++---------------------------+---------------------------------------------------------+
+| ``dirs_changed``          | Number of directories that changed                      |
++---------------------------+---------------------------------------------------------+
+| ``dirs_unmodified``       | Number of directories that did not change               |
++---------------------------+---------------------------------------------------------+
+| ``data_blobs``            | Number of data blobs                                    |
++---------------------------+---------------------------------------------------------+
+| ``tree_blobs``            | Number of tree blobs                                    |
++---------------------------+---------------------------------------------------------+
+| ``data_added``            | Amount of (uncompressed) data added, in bytes           |
++---------------------------+---------------------------------------------------------+
+| ``data_added_packed``     | Amount of data added (after compression), in bytes      |
++---------------------------+---------------------------------------------------------+
+| ``total_files_processed`` | Total number of files processed                         |
++---------------------------+---------------------------------------------------------+
+| ``total_bytes_processed`` | Total number of bytes processed                         |
++---------------------------+---------------------------------------------------------+
 
 
 stats
