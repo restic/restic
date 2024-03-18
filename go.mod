@@ -13,8 +13,9 @@ require (
 	github.com/go-ole/go-ole v1.3.0
 	github.com/google/go-cmp v0.6.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
+  	github.com/hirochachacha/go-smb2 v1.1.0
 	github.com/klauspost/compress v1.17.7
-	github.com/minio/minio-go/v7 v7.0.66
+  	github.com/minio/minio-go/v7 v7.0.66
 	github.com/minio/sha256-simd v1.0.1
 	github.com/ncw/swift/v2 v2.0.2
 	github.com/pkg/errors v0.9.1
@@ -47,6 +48,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/felixge/fgprof v0.9.3 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
+	github.com/geoffgarside/ber v1.1.0 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.0 // indirect
