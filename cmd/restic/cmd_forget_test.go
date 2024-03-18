@@ -40,6 +40,7 @@ func TestForgetPolicyValues(t *testing.T) {
 func TestForgetOptionValues(t *testing.T) {
 	const negValErrorMsg = "Fatal: negative values other than -1 are not allowed for --keep-*"
 	const negDurationValErrorMsg = "Fatal: durations containing negative values are not allowed for --keep-within*"
+	const keepTagsAloneMsg = "Fatal: --keep-tags can only be used together with other --keep-* options."
 	testCases := []struct {
 		input    ForgetOptions
 		errorMsg string
@@ -80,6 +81,7 @@ func TestForgetOptionValues(t *testing.T) {
 		{ForgetOptions{WithinWeekly: restic.ParseDurationOrPanic("1y2m3d-3h")}, negDurationValErrorMsg},
 		{ForgetOptions{WithinMonthly: restic.ParseDurationOrPanic("-2y4m6d8h")}, negDurationValErrorMsg},
 		{ForgetOptions{WithinYearly: restic.ParseDurationOrPanic("2y-4m6d8h")}, negDurationValErrorMsg},
+		{ForgetOptions{KeepTags: []restic.TagList{[]string{"tag1"}}}, keepTagsAloneMsg},
 	}
 
 	for _, testCase := range testCases {

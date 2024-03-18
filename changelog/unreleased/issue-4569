@@ -1,0 +1,11 @@
+Bugfix: Prevent restic forget from deleting all snapshots accidentally
+
+The command `restic forget --keep-tag=SomeUnusedTag --dry-run`
+used to drop all snapshots. This would be very dangerous and probably
+unwanted.
+
+Restic now only allows --keep-tag together with other --keep-* options.
+
+https://github.com/restic/restic/issues/4569
+https://github.com/restic/restic/pull/4568
+https://forum.restic.net/t/delete-all-snapshots-in-one-command-is-this-feature-intentional/6923/3
