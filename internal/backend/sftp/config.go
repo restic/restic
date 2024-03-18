@@ -17,13 +17,17 @@ type Config struct {
 	Command string `option:"command" help:"specify command to create sftp connection"`
 	Args    string `option:"args"    help:"specify arguments for ssh"`
 
-	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
+	Connections                  uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
+	MaxConcurrentRequestsPerFile int  `option:"max_concurrent_requests_per_file" help:"sets the maximum concurrent requests allowed for a single file (default: 64)"`
+	MaxPacket                    int  `option:"max_packet" help:"sets the maximum size of the payload, measured in bytes (default: 32768)"`
 }
 
 // NewConfig returns a new config with default options applied.
 func NewConfig() Config {
 	return Config{
-		Connections: 5,
+		Connections:                  5,
+		MaxConcurrentRequestsPerFile: 64,
+		MaxPacket:                    32768,
 	}
 }
 

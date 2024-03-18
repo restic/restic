@@ -1,0 +1,9 @@
+Enhancement: allow customizing MaxConcurrentRequestsPerFile and MaxPacket parameters in the sftp backend
+
+SFTP over long fat links suffers from poor performance due to its by default
+overly small max payload size. But implementations such as OpenSSH tend to
+accept vastly bigger packets, which improves backup performance for this
+kind of situation. Restic now allows customizing the max packet size and
+max concurrent requests per file parameters in the sftp backend.
+
+https://github.com/restic/restic/pull/4445
