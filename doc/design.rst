@@ -217,7 +217,7 @@ All other types are invalid, more types may be added in the future. The
 compressed types are only valid for repository format version 2. Data and
 tree blobs may be compressed with the zstandard compression algorithm.
 
-In repository format version 1, data and tree blobs should be stored in
+In repository format version 1, data and tree blobs could be stored in
 separate pack files. In version 2, they must be stored in separate files.
 Compressed and non-compress blobs of the same type may be mixed in a pack
 file.
