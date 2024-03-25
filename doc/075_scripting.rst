@@ -367,13 +367,13 @@ Snapshot object
 
 Reason object
 
-+----------------+---------------------------------------------------------+
-| ``snapshot``   | Snapshot object, without ``id`` and ``short_id`` fields |
-+----------------+---------------------------------------------------------+
-| ``matches``    | Array containing descriptions of the matching criteria  |
-+----------------+---------------------------------------------------------+
-| ``counters``   | Object containing counters used by the policies         |
-+----------------+---------------------------------------------------------+
++----------------+-----------------------------------------------------------+
+| ``snapshot``   | Snapshot object, including ``id`` and ``short_id`` fields |
++----------------+-----------------------------------------------------------+
+| ``matches``    | Array containing descriptions of the matching criteria    |
++----------------+-----------------------------------------------------------+
+| ``counters``   | Object containing counters used by the policies           |
++----------------+-----------------------------------------------------------+
 
 
 init
