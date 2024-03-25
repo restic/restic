@@ -262,7 +262,7 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 				}
 				addJSONSnapshots(&fg.Remove, remove)
 
-				fg.Reasons = reasons
+				addJSONKeeps(&fg.Reasons, reasons)
 
 				jsonGroups = append(jsonGroups, &fg)
 
@@ -310,12 +310,12 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 
 // ForgetGroup helps to print what is forgotten in JSON.
 type ForgetGroup struct {
-	Tags    []string            `json:"tags"`
-	Host    string              `json:"host"`
-	Paths   []string            `json:"paths"`
-	Keep    []Snapshot          `json:"keep"`
-	Remove  []Snapshot          `json:"remove"`
-	Reasons []restic.KeepReason `json:"reasons"`
+	Tags    []string     `json:"tags"`
+	Host    string       `json:"host"`
+	Paths   []string     `json:"paths"`
+	Keep    []Snapshot   `json:"keep"`
+	Remove  []Snapshot   `json:"remove"`
+	Reasons []KeepReason `json:"reasons"`
 }
 
 func addJSONSnapshots(js *[]Snapshot, list restic.Snapshots) {
@@ -324,6 +324,26 @@ func addJSONSnapshots(js *[]Snapshot, list restic.Snapshots) {
 			Snapshot: sn,
 			ID:       sn.ID(),
 			ShortID:  sn.ID().Str(),
+		}
+		*js = append(*js, k)
+	}
+}
+
+// KeepReason helps to print KeepReasons as JSON with Snapshots with their ID included.
+type KeepReason struct {
+	Snapshot Snapshot `json:"snapshot"`
+	Matches  []string `json:"matches"`
+}
+
+func addJSONKeeps(js *[]KeepReason, list []restic.KeepReason) {
+	for _, keep := range list {
+		k := KeepReason{
+			Snapshot: Snapshot{
+				Snapshot: keep.Snapshot,
+				ID:       keep.Snapshot.ID(),
+				ShortID:  keep.Snapshot.ID().Str(),
+			},
+			Matches: keep.Matches,
 		}
 		*js = append(*js, k)
 	}
