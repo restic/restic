@@ -1,4 +1,0 @@
-Enhancement: json output for command forget extended
-
-Added id and short_id to snapshots within the reason object
-in json output of command forget.
