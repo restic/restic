@@ -247,6 +247,10 @@ jobs:
   lint:
     name: lint
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # allow annotating code in the PR
+      checks: write
     steps:
       - name: Set up Go ${{ env.latest_go }}
         uses: actions/setup-go@v5
