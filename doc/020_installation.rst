@@ -376,4 +376,4 @@ Example for setting up a powershell completion script for the local user's profi
     PS> restic generate --powershell-completion "$ProfileDir\restic-completion.ps1"
 
     # Append to the profile file the command to load Restic completions
-    PS> Add-Content -Path $Profile.CurrentUserAllHosts -Value "`r`nImport-Module $ProfileDir\restic-completion.ps1"
+    PS> Add-Content -Path $PROFILE.CurrentUserAllHosts -Value "`r`nImport-Module $ProfileDir\restic-completion.ps1"
