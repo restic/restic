@@ -253,16 +253,16 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 					PrintSnapshots(globalOptions.stdout, keep, reasons, opts.Compact)
 					Printf("\n")
 				}
-				addJSONSnapshots(&fg.Keep, keep)
+				fg.Keep = asJSONSnapshots(keep)
 
 				if len(remove) != 0 && !gopts.Quiet && !gopts.JSON {
 					Printf("remove %d snapshots:\n", len(remove))
 					PrintSnapshots(globalOptions.stdout, remove, nil, opts.Compact)
 					Printf("\n")
 				}
-				addJSONSnapshots(&fg.Remove, remove)
+				fg.Remove = asJSONSnapshots(remove)
 
-				addJSONKeeps(&fg.Reasons, reasons)
+				fg.Reasons = asJSONKeeps(reasons)
 
 				jsonGroups = append(jsonGroups, &fg)
 
@@ -318,15 +318,17 @@ type ForgetGroup struct {
 	Reasons []KeepReason `json:"reasons"`
 }
 
-func addJSONSnapshots(js *[]Snapshot, list restic.Snapshots) {
+func asJSONSnapshots(list restic.Snapshots) []Snapshot {
+	var resultList []Snapshot
 	for _, sn := range list {
 		k := Snapshot{
 			Snapshot: sn,
 			ID:       sn.ID(),
 			ShortID:  sn.ID().Str(),
 		}
-		*js = append(*js, k)
+		resultList = append(resultList, k)
 	}
+	return resultList
 }
 
 // KeepReason helps to print KeepReasons as JSON with Snapshots with their ID included.
@@ -335,7 +337,8 @@ type KeepReason struct {
 	Matches  []string `json:"matches"`
 }
 
-func addJSONKeeps(js *[]KeepReason, list []restic.KeepReason) {
+func asJSONKeeps(list []restic.KeepReason) []KeepReason {
+	var resultList []KeepReason
 	for _, keep := range list {
 		k := KeepReason{
 			Snapshot: Snapshot{
@@ -345,8 +348,9 @@ func addJSONKeeps(js *[]KeepReason, list []restic.KeepReason) {
 			},
 			Matches: keep.Matches,
 		}
-		*js = append(*js, k)
+		resultList = append(resultList, k)
 	}
+	return resultList
 }
 
 func printJSONForget(stdout io.Writer, forgets []*ForgetGroup) error {
