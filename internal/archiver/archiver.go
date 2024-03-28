@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/restic/restic/internal/debug"
@@ -41,6 +42,18 @@ type ItemStats struct {
 	TreeSizeInRepo uint64 // sum of the bytes added to the repo (including compression and crypto overhead)
 }
 
+type ChangeStats struct {
+	New       uint
+	Changed   uint
+	Unchanged uint
+}
+
+type Summary struct {
+	Files, Dirs    ChangeStats
+	ProcessedBytes uint64
+	ItemStats
+}
+
 // Add adds other to the current ItemStats.
 func (s *ItemStats) Add(other ItemStats) {
 	s.DataBlobs += other.DataBlobs
@@ -62,6 +75,8 @@ type Archiver struct {
 	blobSaver *BlobSaver
 	fileSaver *FileSaver
 	treeSaver *TreeSaver
+	mu        sync.Mutex
+	summary   *Summary
 
 	// Error is called for all errors that occur during backup.
 	Error ErrorFunc
@@ -183,6 +198,44 @@ func (arch *Archiver) error(item string, err error) error {
 	return errf
 }
 
+func (arch *Archiver) trackItem(item string, previous, current *restic.Node, s ItemStats, d time.Duration) {
+	arch.CompleteItem(item, previous, current, s, d)
+
+	arch.mu.Lock()
+	defer arch.mu.Unlock()
+
+	arch.summary.ItemStats.Add(s)
+
+	if current != nil {
+		arch.summary.ProcessedBytes += current.Size
+	} else {
+		// last item or an error occurred
+		return
+	}
+
+	switch current.Type {
+	case "dir":
+		switch {
+		case previous == nil:
+			arch.summary.Dirs.New++
+		case previous.Equals(*current):
+			arch.summary.Dirs.Unchanged++
+		default:
+			arch.summary.Dirs.Changed++
+		}
+
+	case "file":
+		switch {
+		case previous == nil:
+			arch.summary.Files.New++
+		case previous.Equals(*current):
+			arch.summary.Files.Unchanged++
+		default:
+			arch.summary.Files.Changed++
+		}
+	}
+}
+
 // nodeFromFileInfo returns the restic node from an os.FileInfo.
 func (arch *Archiver) nodeFromFileInfo(snPath, filename string, fi os.FileInfo) (*restic.Node, error) {
 	node, err := restic.NodeFromFileInfo(filename, fi)
@@ -231,9 +284,9 @@ func (arch *Archiver) wrapLoadTreeError(id restic.ID, err error) error {
 	return err
 }
 
-// SaveDir stores a directory in the repo and returns the node. snPath is the
+// saveDir stores a directory in the repo and returns the node. snPath is the
 // path within the current snapshot.
-func (arch *Archiver) SaveDir(ctx context.Context, snPath string, dir string, fi os.FileInfo, previous *restic.Tree, complete CompleteFunc) (d FutureNode, err error) {
+func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, fi os.FileInfo, previous *restic.Tree, complete CompleteFunc) (d FutureNode, err error) {
 	debug.Log("%v %v", snPath, dir)
 
 	treeNode, err := arch.nodeFromFileInfo(snPath, dir, fi)
@@ -259,7 +312,7 @@ func (arch *Archiver) SaveDir(ctx context.Context, snPath string, dir string, fi
 		pathname := arch.FS.Join(dir, name)
 		oldNode := previous.Find(name)
 		snItem := join(snPath, name)
-		fn, excluded, err := arch.Save(ctx, snItem, pathname, oldNode)
+		fn, excluded, err := arch.save(ctx, snItem, pathname, oldNode)
 
 		// return error early if possible
 		if err != nil {
@@ -343,14 +396,14 @@ func (arch *Archiver) allBlobsPresent(previous *restic.Node) bool {
 	return true
 }
 
-// Save saves a target (file or directory) to the repo. If the item is
+// save saves a target (file or directory) to the repo. If the item is
 // excluded, this function returns a nil node and error, with excluded set to
 // true.
 //
 // Errors and completion needs to be handled by the caller.
 //
 // snPath is the path within the current snapshot.
-func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous *restic.Node) (fn FutureNode, excluded bool, err error) {
+func (arch *Archiver) save(ctx context.Context, snPath, target string, previous *restic.Node) (fn FutureNode, excluded bool, err error) {
 	start := time.Now()
 
 	debug.Log("%v target %q, previous %v", snPath, target, previous)
@@ -389,7 +442,7 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 		if previous != nil && !fileChanged(fi, previous, arch.ChangeIgnoreFlags) {
 			if arch.allBlobsPresent(previous) {
 				debug.Log("%v hasn't changed, using old list of blobs", target)
-				arch.CompleteItem(snPath, previous, previous, ItemStats{}, time.Since(start))
+				arch.trackItem(snPath, previous, previous, ItemStats{}, time.Since(start))
 				arch.CompleteBlob(previous.Size)
 				node, err := arch.nodeFromFileInfo(snPath, target, fi)
 				if err != nil {
@@ -454,9 +507,9 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 		fn = arch.fileSaver.Save(ctx, snPath, target, file, fi, func() {
 			arch.StartFile(snPath)
 		}, func() {
-			arch.CompleteItem(snPath, nil, nil, ItemStats{}, 0)
+			arch.trackItem(snPath, nil, nil, ItemStats{}, 0)
 		}, func(node *restic.Node, stats ItemStats) {
-			arch.CompleteItem(snPath, previous, node, stats, time.Since(start))
+			arch.trackItem(snPath, previous, node, stats, time.Since(start))
 		})
 
 	case fi.IsDir():
@@ -471,9 +524,9 @@ func (arch *Archiver) Save(ctx context.Context, snPath, target string, previous 
 			return FutureNode{}, false, err
 		}
 
-		fn, err = arch.SaveDir(ctx, snPath, target, fi, oldSubtree,
+		fn, err = arch.saveDir(ctx, snPath, target, fi, oldSubtree,
 			func(node *restic.Node, stats ItemStats) {
-				arch.CompleteItem(snItem, previous, node, stats, time.Since(start))
+				arch.trackItem(snItem, previous, node, stats, time.Since(start))
 			})
 		if err != nil {
 			debug.Log("SaveDir for %v returned error: %v", snPath, err)
@@ -554,9 +607,9 @@ func (arch *Archiver) statDir(dir string) (os.FileInfo, error) {
 	return fi, nil
 }
 
-// SaveTree stores a Tree in the repo, returned is the tree. snPath is the path
+// saveTree stores a Tree in the repo, returned is the tree. snPath is the path
 // within the current snapshot.
-func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, previous *restic.Tree, complete CompleteFunc) (FutureNode, int, error) {
+func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *Tree, previous *restic.Tree, complete CompleteFunc) (FutureNode, int, error) {
 
 	var node *restic.Node
 	if snPath != "/" {
@@ -594,7 +647,7 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 
 		// this is a leaf node
 		if subatree.Leaf() {
-			fn, excluded, err := arch.Save(ctx, join(snPath, name), subatree.Path, previous.Find(name))
+			fn, excluded, err := arch.save(ctx, join(snPath, name), subatree.Path, previous.Find(name))
 
 			if err != nil {
 				err = arch.error(subatree.Path, err)
@@ -628,8 +681,8 @@ func (arch *Archiver) SaveTree(ctx context.Context, snPath string, atree *Tree, 
 		}
 
 		// not a leaf node, archive subtree
-		fn, _, err := arch.SaveTree(ctx, join(snPath, name), &subatree, oldSubtree, func(n *restic.Node, is ItemStats) {
-			arch.CompleteItem(snItem, oldNode, n, is, time.Since(start))
+		fn, _, err := arch.saveTree(ctx, join(snPath, name), &subatree, oldSubtree, func(n *restic.Node, is ItemStats) {
+			arch.trackItem(snItem, oldNode, n, is, time.Since(start))
 		})
 		if err != nil {
 			return FutureNode{}, 0, err
@@ -697,6 +750,7 @@ type SnapshotOptions struct {
 	Tags           restic.TagList
 	Hostname       string
 	Excludes       []string
+	BackupStart    time.Time
 	Time           time.Time
 	ParentSnapshot *restic.Snapshot
 	ProgramVersion string
@@ -747,15 +801,17 @@ func (arch *Archiver) stopWorkers() {
 }
 
 // Snapshot saves several targets and returns a snapshot.
-func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts SnapshotOptions) (*restic.Snapshot, restic.ID, error) {
+func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts SnapshotOptions) (*restic.Snapshot, restic.ID, *Summary, error) {
+	arch.summary = &Summary{}
+
 	cleanTargets, err := resolveRelativeTargets(arch.FS, targets)
 	if err != nil {
-		return nil, restic.ID{}, err
+		return nil, restic.ID{}, nil, err
 	}
 
 	atree, err := NewTree(arch.FS, cleanTargets)
 	if err != nil {
-		return nil, restic.ID{}, err
+		return nil, restic.ID{}, nil, err
 	}
 
 	var rootTreeID restic.ID
@@ -771,8 +827,8 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 			arch.runWorkers(wgCtx, wg)
 
 			debug.Log("starting snapshot")
-			fn, nodeCount, err := arch.SaveTree(wgCtx, "/", atree, arch.loadParentTree(wgCtx, opts.ParentSnapshot), func(_ *restic.Node, is ItemStats) {
-				arch.CompleteItem("/", nil, nil, is, time.Since(start))
+			fn, nodeCount, err := arch.saveTree(wgCtx, "/", atree, arch.loadParentTree(wgCtx, opts.ParentSnapshot), func(_ *restic.Node, is ItemStats) {
+				arch.trackItem("/", nil, nil, is, time.Since(start))
 			})
 			if err != nil {
 				return err
@@ -808,12 +864,12 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 	})
 	err = wgUp.Wait()
 	if err != nil {
-		return nil, restic.ID{}, err
+		return nil, restic.ID{}, nil, err
 	}
 
 	sn, err := restic.NewSnapshot(targets, opts.Tags, opts.Hostname, opts.Time)
 	if err != nil {
-		return nil, restic.ID{}, err
+		return nil, restic.ID{}, nil, err
 	}
 
 	sn.ProgramVersion = opts.ProgramVersion
@@ -822,11 +878,28 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 		sn.Parent = opts.ParentSnapshot.ID()
 	}
 	sn.Tree = &rootTreeID
+	sn.Summary = &restic.SnapshotSummary{
+		BackupStart: opts.BackupStart,
+		BackupEnd:   time.Now(),
+
+		FilesNew:            arch.summary.Files.New,
+		FilesChanged:        arch.summary.Files.Changed,
+		FilesUnmodified:     arch.summary.Files.Unchanged,
+		DirsNew:             arch.summary.Dirs.New,
+		DirsChanged:         arch.summary.Dirs.Changed,
+		DirsUnmodified:      arch.summary.Dirs.Unchanged,
+		DataBlobs:           arch.summary.ItemStats.DataBlobs,
+		TreeBlobs:           arch.summary.ItemStats.TreeBlobs,
+		DataAdded:           arch.summary.ItemStats.DataSize + arch.summary.ItemStats.TreeSize,
+		DataAddedPacked:     arch.summary.ItemStats.DataSizeInRepo + arch.summary.ItemStats.TreeSizeInRepo,
+		TotalFilesProcessed: arch.summary.Files.New + arch.summary.Files.Changed + arch.summary.Files.Unchanged,
+		TotalBytesProcessed: arch.summary.ProcessedBytes,
+	}
 
 	id, err := restic.SaveSnapshot(ctx, arch.Repo, sn)
 	if err != nil {
-		return nil, restic.ID{}, err
+		return nil, restic.ID{}, nil, err
 	}
 
-	return sn, id, nil
+	return sn, id, arch.summary, nil
 }

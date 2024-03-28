@@ -18,19 +18,21 @@ Working with repositories
 Listing all snapshots
 =====================
 
-Now, you can list all the snapshots stored in the repository:
+Now, you can list all the snapshots stored in the repository. The size column
+only exists for snapshots created using restic 0.17.0 or later. It reflects the
+size of the contained files at the time when the snapshot was created.
 
 .. code-block:: console
 
     $ restic -r /srv/restic-repo snapshots
     enter password for repository:
-    ID        Date                 Host    Tags   Directory
-    ----------------------------------------------------------------------
-    40dc1520  2015-05-08 21:38:30  kasimir        /home/user/work
-    79766175  2015-05-08 21:40:19  kasimir        /home/user/work
-    bdbd3439  2015-05-08 21:45:17  luigi          /home/art
-    590c8fc8  2015-05-08 21:47:38  kazik          /srv
-    9f0bc19e  2015-05-08 21:46:11  luigi          /srv
+    ID        Date                 Host    Tags   Directory        Size
+    -------------------------------------------------------------------------
+    40dc1520  2015-05-08 21:38:30  kasimir        /home/user/work  20.643GiB
+    79766175  2015-05-08 21:40:19  kasimir        /home/user/work  20.645GiB
+    bdbd3439  2015-05-08 21:45:17  luigi          /home/art        3.141GiB
+    590c8fc8  2015-05-08 21:47:38  kazik          /srv             580.200MiB
+    9f0bc19e  2015-05-08 21:46:11  luigi          /srv             572.180MiB
 
 You can filter the listing by directory path:
 
@@ -38,10 +40,10 @@ You can filter the listing by directory path:
 
     $ restic -r /srv/restic-repo snapshots --path="/srv"
     enter password for repository:
-    ID        Date                 Host    Tags   Directory
-    ----------------------------------------------------------------------
-    590c8fc8  2015-05-08 21:47:38  kazik          /srv
-    9f0bc19e  2015-05-08 21:46:11  luigi          /srv
+    ID        Date                 Host    Tags   Directory  Size
+    -------------------------------------------------------------------
+    590c8fc8  2015-05-08 21:47:38  kazik          /srv       580.200MiB
+    9f0bc19e  2015-05-08 21:46:11  luigi          /srv       572.180MiB
 
 Or filter by host:
 
@@ -49,10 +51,10 @@ Or filter by host:
 
     $ restic -r /srv/restic-repo snapshots --host luigi
     enter password for repository:
-    ID        Date                 Host    Tags   Directory
-    ----------------------------------------------------------------------
-    bdbd3439  2015-05-08 21:45:17  luigi          /home/art
-    9f0bc19e  2015-05-08 21:46:11  luigi          /srv
+    ID        Date                 Host    Tags   Directory  Size
+    -------------------------------------------------------------------
+    bdbd3439  2015-05-08 21:45:17  luigi          /home/art  3.141GiB
+    9f0bc19e  2015-05-08 21:46:11  luigi          /srv       572.180MiB
 
 Combining filters is also possible.
 
@@ -64,21 +66,21 @@ Furthermore you can group the output by the same filters (host, paths, tags):
 
     enter password for repository:
     snapshots for (host [kasimir])
-    ID        Date                 Host    Tags   Directory
-    ----------------------------------------------------------------------
-    40dc1520  2015-05-08 21:38:30  kasimir        /home/user/work
-    79766175  2015-05-08 21:40:19  kasimir        /home/user/work
+    ID        Date                 Host    Tags   Directory        Size
+    ------------------------------------------------------------------------
+    40dc1520  2015-05-08 21:38:30  kasimir        /home/user/work  20.643GiB
+    79766175  2015-05-08 21:40:19  kasimir        /home/user/work  20.645GiB
     2 snapshots
     snapshots for (host [luigi])
-    ID        Date                 Host    Tags   Directory
-    ----------------------------------------------------------------------
-    bdbd3439  2015-05-08 21:45:17  luigi          /home/art
-    9f0bc19e  2015-05-08 21:46:11  luigi          /srv
+    ID        Date                 Host    Tags   Directory  Size
+    -------------------------------------------------------------------
+    bdbd3439  2015-05-08 21:45:17  luigi          /home/art  3.141GiB
+    9f0bc19e  2015-05-08 21:46:11  luigi          /srv       572.180MiB
     2 snapshots
     snapshots for (host [kazik])
-    ID        Date                 Host    Tags   Directory
-    ----------------------------------------------------------------------
-    590c8fc8  2015-05-08 21:47:38  kazik          /srv
+    ID        Date                 Host    Tags   Directory  Size
+    -------------------------------------------------------------------
+    590c8fc8  2015-05-08 21:47:38  kazik          /srv       580.200MiB
     1 snapshots
 
 
