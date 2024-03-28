@@ -270,11 +270,14 @@ func statsWalkTree(repo restic.Loader, opts StatsOptions, stats *statsContainer,
 			// will still be restored
 			stats.TotalFileCount++
 
-			// if inodes are present, only count each inode once
-			// (hard links do not increase restore size)
-			if !hardLinkIndex.Has(node.Inode, node.DeviceID) || node.Inode == 0 {
-				hardLinkIndex.Add(node.Inode, node.DeviceID, struct{}{})
+			if node.Links == 1 || node.Type == "dir" {
 				stats.TotalSize += node.Size
+			} else {
+				// if hardlinks are present only count each deviceID+inode once
+				if !hardLinkIndex.Has(node.Inode, node.DeviceID) || node.Inode == 0 {
+					hardLinkIndex.Add(node.Inode, node.DeviceID, struct{}{})
+					stats.TotalSize += node.Size
+				}
 			}
 		}
 
