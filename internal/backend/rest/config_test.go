@@ -31,6 +31,13 @@ var configTests = []test.ConfigTestData[Config]{
 			Connections: 5,
 		},
 	},
+	{
+		S: "rest:http+unix:///tmp/rest.socket:/my_backup_repo/",
+		Cfg: Config{
+			URL:         parseURL("http+unix:///tmp/rest.socket:/my_backup_repo/"),
+			Connections: 5,
+		},
+	},
 }
 
 func TestParseConfig(t *testing.T) {

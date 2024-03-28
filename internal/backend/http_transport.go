@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/peterbourgon/unixtransport"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 )
@@ -81,6 +82,8 @@ func Transport(opts TransportOptions) (http.RoundTripper, error) {
 		ExpectContinueTimeout: 1 * time.Second,
 		TLSClientConfig:       &tls.Config{},
 	}
+
+	unixtransport.Register(tr)
 
 	if opts.InsecureTLS {
 		tr.TLSClientConfig.InsecureSkipVerify = true
