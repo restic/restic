@@ -23,12 +23,12 @@ import (
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
-	restictest "github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 	"golang.org/x/sync/errgroup"
 )
 
 func prepareTempdirRepoSrc(t testing.TB, src TestDir) (string, restic.Repository) {
-	tempdir := restictest.TempDir(t)
+	tempdir := rtest.TempDir(t)
 	repo := repository.TestRepository(t)
 
 	TestCreateFiles(t, tempdir, src)
@@ -133,7 +133,7 @@ func TestArchiverSaveFile(t *testing.T) {
 	var tests = []TestFile{
 		{Content: ""},
 		{Content: "foo"},
-		{Content: string(restictest.Random(23, 12*1024*1024+1287898))},
+		{Content: string(rtest.Random(23, 12*1024*1024+1287898))},
 	}
 
 	for _, testfile := range tests {
@@ -166,7 +166,7 @@ func TestArchiverSaveFileReaderFS(t *testing.T) {
 		Data string
 	}{
 		{Data: "foo"},
-		{Data: string(restictest.Random(23, 12*1024*1024+1287898))},
+		{Data: string(rtest.Random(23, 12*1024*1024+1287898))},
 	}
 
 	for _, test := range tests {
@@ -208,7 +208,7 @@ func TestArchiverSave(t *testing.T) {
 	var tests = []TestFile{
 		{Content: ""},
 		{Content: "foo"},
-		{Content: string(restictest.Random(23, 12*1024*1024+1287898))},
+		{Content: string(rtest.Random(23, 12*1024*1024+1287898))},
 	}
 
 	for _, testfile := range tests {
@@ -277,7 +277,7 @@ func TestArchiverSaveReaderFS(t *testing.T) {
 		Data string
 	}{
 		{Data: "foo"},
-		{Data: string(restictest.Random(23, 12*1024*1024+1287898))},
+		{Data: string(rtest.Random(23, 12*1024*1024+1287898))},
 	}
 
 	for _, test := range tests {
@@ -354,7 +354,7 @@ func TestArchiverSaveReaderFS(t *testing.T) {
 func BenchmarkArchiverSaveFileSmall(b *testing.B) {
 	const fileSize = 4 * 1024
 	d := TestDir{"file": TestFile{
-		Content: string(restictest.Random(23, fileSize)),
+		Content: string(rtest.Random(23, fileSize)),
 	}}
 
 	b.SetBytes(fileSize)
@@ -386,7 +386,7 @@ func BenchmarkArchiverSaveFileSmall(b *testing.B) {
 func BenchmarkArchiverSaveFileLarge(b *testing.B) {
 	const fileSize = 40*1024*1024 + 1287898
 	d := TestDir{"file": TestFile{
-		Content: string(restictest.Random(23, fileSize)),
+		Content: string(rtest.Random(23, fileSize)),
 	}}
 
 	b.SetBytes(fileSize)
@@ -462,14 +462,14 @@ func appendToFile(t testing.TB, filename string, data []byte) {
 }
 
 func TestArchiverSaveFileIncremental(t *testing.T) {
-	tempdir := restictest.TempDir(t)
+	tempdir := rtest.TempDir(t)
 
 	repo := &blobCountingRepo{
 		Repository: repository.TestRepository(t),
 		saved:      make(map[restic.BlobHandle]uint),
 	}
 
-	data := restictest.Random(23, 512*1024+887898)
+	data := rtest.Random(23, 512*1024+887898)
 	testfile := filepath.Join(tempdir, "testfile")
 
 	for i := 0; i < 3; i++ {
@@ -512,12 +512,12 @@ func chmodTwice(t testing.TB, name string) {
 	// POSIX says that ctime is updated "even if the file status does not
 	// change", but let's make sure it does change, just in case.
 	err := os.Chmod(name, 0700)
-	restictest.OK(t, err)
+	rtest.OK(t, err)
 
 	sleep()
 
 	err = os.Chmod(name, 0600)
-	restictest.OK(t, err)
+	rtest.OK(t, err)
 }
 
 func lstat(t testing.TB, name string) os.FileInfo {
@@ -676,7 +676,7 @@ func TestFileChanged(t *testing.T) {
 				t.Skip("don't run test on Windows")
 			}
 
-			tempdir := restictest.TempDir(t)
+			tempdir := rtest.TempDir(t)
 
 			filename := filepath.Join(tempdir, "file")
 			content := defaultContent
@@ -712,7 +712,7 @@ func TestFileChanged(t *testing.T) {
 }
 
 func TestFilChangedSpecialCases(t *testing.T) {
-	tempdir := restictest.TempDir(t)
+	tempdir := rtest.TempDir(t)
 
 	filename := filepath.Join(tempdir, "file")
 	content := []byte("foobar")
@@ -746,12 +746,12 @@ func TestArchiverSaveDir(t *testing.T) {
 	}{
 		{
 			src: TestDir{
-				"targetfile": TestFile{Content: string(restictest.Random(888, 2*1024*1024+5000))},
+				"targetfile": TestFile{Content: string(rtest.Random(888, 2*1024*1024+5000))},
 			},
 			target: ".",
 			want: TestDir{
 				"targetdir": TestDir{
-					"targetfile": TestFile{Content: string(restictest.Random(888, 2*1024*1024+5000))},
+					"targetfile": TestFile{Content: string(rtest.Random(888, 2*1024*1024+5000))},
 				},
 			},
 		},
@@ -761,8 +761,8 @@ func TestArchiverSaveDir(t *testing.T) {
 					"foo":        TestFile{Content: "foo"},
 					"emptyfile":  TestFile{Content: ""},
 					"bar":        TestFile{Content: "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"},
-					"largefile":  TestFile{Content: string(restictest.Random(888, 2*1024*1024+5000))},
-					"largerfile": TestFile{Content: string(restictest.Random(234, 5*1024*1024+5000))},
+					"largefile":  TestFile{Content: string(rtest.Random(888, 2*1024*1024+5000))},
+					"largerfile": TestFile{Content: string(rtest.Random(234, 5*1024*1024+5000))},
 				},
 			},
 			target: "targetdir",
@@ -841,7 +841,7 @@ func TestArchiverSaveDir(t *testing.T) {
 				chdir = filepath.Join(chdir, test.chdir)
 			}
 
-			back := restictest.Chdir(t, chdir)
+			back := rtest.Chdir(t, chdir)
 			defer back()
 
 			fi, err := fs.Lstat(test.target)
@@ -899,7 +899,7 @@ func TestArchiverSaveDir(t *testing.T) {
 }
 
 func TestArchiverSaveDirIncremental(t *testing.T) {
-	tempdir := restictest.TempDir(t)
+	tempdir := rtest.TempDir(t)
 
 	repo := &blobCountingRepo{
 		Repository: repository.TestRepository(t),
@@ -989,7 +989,7 @@ func TestArchiverSaveDirIncremental(t *testing.T) {
 func bothZeroOrNeither(tb testing.TB, exp, act uint64) {
 	tb.Helper()
 	if (exp == 0 && act != 0) || (exp != 0 && act == 0) {
-		restictest.Equals(tb, exp, act)
+		rtest.Equals(tb, exp, act)
 	}
 }
 
@@ -1113,7 +1113,7 @@ func TestArchiverSaveTree(t *testing.T) {
 			arch.runWorkers(ctx, wg)
 			arch.summary = &Summary{}
 
-			back := restictest.Chdir(t, tempdir)
+			back := rtest.Chdir(t, tempdir)
 			defer back()
 
 			if test.prepare != nil {
@@ -1158,9 +1158,9 @@ func TestArchiverSaveTree(t *testing.T) {
 			bothZeroOrNeither(t, test.stat.DataSize, stat.DataSize)
 			bothZeroOrNeither(t, test.stat.DataSizeInRepo, stat.DataSizeInRepo)
 			bothZeroOrNeither(t, test.stat.TreeSizeInRepo, stat.TreeSizeInRepo)
-			restictest.Equals(t, test.stat.ProcessedBytes, stat.ProcessedBytes)
-			restictest.Equals(t, test.stat.Files, stat.Files)
-			restictest.Equals(t, test.stat.Dirs, stat.Dirs)
+			rtest.Equals(t, test.stat.ProcessedBytes, stat.ProcessedBytes)
+			rtest.Equals(t, test.stat.Files, stat.Files)
+			rtest.Equals(t, test.stat.Dirs, stat.Dirs)
 		})
 	}
 }
@@ -1408,7 +1408,7 @@ func TestArchiverSnapshot(t *testing.T) {
 				chdir = filepath.Join(chdir, filepath.FromSlash(test.chdir))
 			}
 
-			back := restictest.Chdir(t, chdir)
+			back := rtest.Chdir(t, chdir)
 			defer back()
 
 			var targets []string
@@ -1561,7 +1561,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 			arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
 			arch.Select = test.selFn
 
-			back := restictest.Chdir(t, tempdir)
+			back := rtest.Chdir(t, tempdir)
 			defer back()
 
 			targets := []string{"."}
@@ -1639,14 +1639,14 @@ func (f MockFile) Read(p []byte) (int, error) {
 }
 
 func checkSnapshotStats(t *testing.T, sn *restic.Snapshot, stat Summary) {
-	restictest.Equals(t, stat.Files.New, sn.Summary.FilesNew)
-	restictest.Equals(t, stat.Files.Changed, sn.Summary.FilesChanged)
-	restictest.Equals(t, stat.Files.Unchanged, sn.Summary.FilesUnmodified)
-	restictest.Equals(t, stat.Dirs.New, sn.Summary.DirsNew)
-	restictest.Equals(t, stat.Dirs.Changed, sn.Summary.DirsChanged)
-	restictest.Equals(t, stat.Dirs.Unchanged, sn.Summary.DirsUnmodified)
-	restictest.Equals(t, stat.ProcessedBytes, sn.Summary.TotalBytesProcessed)
-	restictest.Equals(t, stat.Files.New+stat.Files.Changed+stat.Files.Unchanged, sn.Summary.TotalFilesProcessed)
+	rtest.Equals(t, stat.Files.New, sn.Summary.FilesNew)
+	rtest.Equals(t, stat.Files.Changed, sn.Summary.FilesChanged)
+	rtest.Equals(t, stat.Files.Unchanged, sn.Summary.FilesUnmodified)
+	rtest.Equals(t, stat.Dirs.New, sn.Summary.DirsNew)
+	rtest.Equals(t, stat.Dirs.Changed, sn.Summary.DirsChanged)
+	rtest.Equals(t, stat.Dirs.Unchanged, sn.Summary.DirsUnmodified)
+	rtest.Equals(t, stat.ProcessedBytes, sn.Summary.TotalBytesProcessed)
+	rtest.Equals(t, stat.Files.New+stat.Files.Changed+stat.Files.Unchanged, sn.Summary.TotalFilesProcessed)
 	bothZeroOrNeither(t, uint64(stat.DataBlobs), uint64(sn.Summary.DataBlobs))
 	bothZeroOrNeither(t, uint64(stat.TreeBlobs), uint64(sn.Summary.TreeBlobs))
 	bothZeroOrNeither(t, uint64(stat.DataSize+stat.TreeSize), uint64(sn.Summary.DataAdded))
@@ -1662,7 +1662,7 @@ func TestArchiverParent(t *testing.T) {
 	}{
 		{
 			src: TestDir{
-				"targetfile": TestFile{Content: string(restictest.Random(888, 2*1024*1024+5000))},
+				"targetfile": TestFile{Content: string(rtest.Random(888, 2*1024*1024+5000))},
 			},
 			statInitial: Summary{
 				Files:          ChangeStats{1, 0, 0},
@@ -1679,8 +1679,8 @@ func TestArchiverParent(t *testing.T) {
 		{
 			src: TestDir{
 				"targetDir": TestDir{
-					"targetfile":  TestFile{Content: string(restictest.Random(888, 1234))},
-					"targetfile2": TestFile{Content: string(restictest.Random(888, 1235))},
+					"targetfile":  TestFile{Content: string(rtest.Random(888, 1234))},
+					"targetfile2": TestFile{Content: string(rtest.Random(888, 1235))},
 				},
 			},
 			statInitial: Summary{
@@ -1698,9 +1698,9 @@ func TestArchiverParent(t *testing.T) {
 		{
 			src: TestDir{
 				"targetDir": TestDir{
-					"targetfile": TestFile{Content: string(restictest.Random(888, 1234))},
+					"targetfile": TestFile{Content: string(rtest.Random(888, 1234))},
 				},
-				"targetfile2": TestFile{Content: string(restictest.Random(888, 1235))},
+				"targetfile2": TestFile{Content: string(rtest.Random(888, 1235))},
 			},
 			modify: func(path string) {
 				remove(t, filepath.Join(path, "targetDir", "targetfile"))
@@ -1735,7 +1735,7 @@ func TestArchiverParent(t *testing.T) {
 
 			arch := New(repo, testFS, Options{})
 
-			back := restictest.Chdir(t, tempdir)
+			back := rtest.Chdir(t, tempdir)
 			defer back()
 
 			firstSnapshot, firstSnapshotID, summary, err := arch.Snapshot(ctx, []string{"."}, SnapshotOptions{Time: time.Now()})
@@ -1763,9 +1763,9 @@ func TestArchiverParent(t *testing.T) {
 				}
 				return nil
 			})
-			restictest.Equals(t, test.statInitial.Files, summary.Files)
-			restictest.Equals(t, test.statInitial.Dirs, summary.Dirs)
-			restictest.Equals(t, test.statInitial.ProcessedBytes, summary.ProcessedBytes)
+			rtest.Equals(t, test.statInitial.Files, summary.Files)
+			rtest.Equals(t, test.statInitial.Dirs, summary.Dirs)
+			rtest.Equals(t, test.statInitial.ProcessedBytes, summary.ProcessedBytes)
 			checkSnapshotStats(t, firstSnapshot, test.statInitial)
 
 			if test.modify != nil {
@@ -1784,11 +1784,11 @@ func TestArchiverParent(t *testing.T) {
 
 			if test.modify == nil {
 				// check that no files were read this time
-				restictest.Equals(t, map[string]int{}, testFS.bytesRead)
+				rtest.Equals(t, map[string]int{}, testFS.bytesRead)
 			}
-			restictest.Equals(t, test.statSecond.Files, summary.Files)
-			restictest.Equals(t, test.statSecond.Dirs, summary.Dirs)
-			restictest.Equals(t, test.statSecond.ProcessedBytes, summary.ProcessedBytes)
+			rtest.Equals(t, test.statSecond.Files, summary.Files)
+			rtest.Equals(t, test.statSecond.Dirs, summary.Dirs)
+			rtest.Equals(t, test.statSecond.ProcessedBytes, summary.ProcessedBytes)
 			checkSnapshotStats(t, secondSnapshot, test.statSecond)
 
 			t.Logf("second backup saved as %v", secondSnapshotID.Str())
@@ -1894,7 +1894,7 @@ func TestArchiverErrorReporting(t *testing.T) {
 
 			tempdir, repo := prepareTempdirRepoSrc(t, test.src)
 
-			back := restictest.Chdir(t, tempdir)
+			back := rtest.Chdir(t, tempdir)
 			defer back()
 
 			if test.prepare != nil {
@@ -1964,7 +1964,7 @@ func TestArchiverContextCanceled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	tempdir := restictest.TempDir(t)
+	tempdir := rtest.TempDir(t)
 	TestCreateFiles(t, tempdir, TestDir{
 		"targetfile": TestFile{Content: "foobar"},
 	})
@@ -1972,7 +1972,7 @@ func TestArchiverContextCanceled(t *testing.T) {
 	// Ensure that the archiver itself reports the canceled context and not just the backend
 	repo := repository.TestRepositoryWithBackend(t, &noCancelBackend{mem.New()}, 0, repository.Options{})
 
-	back := restictest.Chdir(t, tempdir)
+	back := rtest.Chdir(t, tempdir)
 	defer back()
 
 	arch := New(repo, fs.Track{FS: fs.Local{}}, Options{})
@@ -2058,16 +2058,16 @@ func TestArchiverAbortEarlyOnError(t *testing.T) {
 		{
 			src: TestDir{
 				"dir": TestDir{
-					"file0": TestFile{Content: string(restictest.Random(0, 1024))},
-					"file1": TestFile{Content: string(restictest.Random(1, 1024))},
-					"file2": TestFile{Content: string(restictest.Random(2, 1024))},
-					"file3": TestFile{Content: string(restictest.Random(3, 1024))},
-					"file4": TestFile{Content: string(restictest.Random(4, 1024))},
-					"file5": TestFile{Content: string(restictest.Random(5, 1024))},
-					"file6": TestFile{Content: string(restictest.Random(6, 1024))},
-					"file7": TestFile{Content: string(restictest.Random(7, 1024))},
-					"file8": TestFile{Content: string(restictest.Random(8, 1024))},
-					"file9": TestFile{Content: string(restictest.Random(9, 1024))},
+					"file0": TestFile{Content: string(rtest.Random(0, 1024))},
+					"file1": TestFile{Content: string(rtest.Random(1, 1024))},
+					"file2": TestFile{Content: string(rtest.Random(2, 1024))},
+					"file3": TestFile{Content: string(rtest.Random(3, 1024))},
+					"file4": TestFile{Content: string(rtest.Random(4, 1024))},
+					"file5": TestFile{Content: string(rtest.Random(5, 1024))},
+					"file6": TestFile{Content: string(rtest.Random(6, 1024))},
+					"file7": TestFile{Content: string(rtest.Random(7, 1024))},
+					"file8": TestFile{Content: string(rtest.Random(8, 1024))},
+					"file9": TestFile{Content: string(rtest.Random(9, 1024))},
 				},
 			},
 			wantOpen: map[string]uint{
@@ -2092,7 +2092,7 @@ func TestArchiverAbortEarlyOnError(t *testing.T) {
 
 			tempdir, repo := prepareTempdirRepoSrc(t, test.src)
 
-			back := restictest.Chdir(t, tempdir)
+			back := rtest.Chdir(t, tempdir)
 			defer back()
 
 			testFS := &TrackFS{
@@ -2225,7 +2225,7 @@ func TestMetadataChanged(t *testing.T) {
 
 	tempdir, repo := prepareTempdirRepoSrc(t, files)
 
-	back := restictest.Chdir(t, tempdir)
+	back := rtest.Chdir(t, tempdir)
 	defer back()
 
 	// get metadata
@@ -2300,7 +2300,7 @@ func TestRacyFileSwap(t *testing.T) {
 
 	tempdir, repo := prepareTempdirRepoSrc(t, files)
 
-	back := restictest.Chdir(t, tempdir)
+	back := rtest.Chdir(t, tempdir)
 	defer back()
 
 	// get metadata of current folder

@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -12,8 +13,6 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/errors"
-
-	mrand "math/rand"
 )
 
 // Assert fails the test if the condition is false.
@@ -71,7 +70,7 @@ func Equals(tb testing.TB, exp, act interface{}, msgs ...string) {
 func Random(seed, count int) []byte {
 	p := make([]byte, count)
 
-	rnd := mrand.New(mrand.NewSource(int64(seed)))
+	rnd := rand.New(rand.NewSource(int64(seed)))
 
 	for i := 0; i < len(p); i += 8 {
 		val := rnd.Int63()
