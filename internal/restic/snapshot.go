@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os/user"
-	"path/filepath"
 	"sync"
 	"time"
 
@@ -32,14 +31,14 @@ type Snapshot struct {
 
 // NewSnapshot returns an initialized snapshot struct for the current user and
 // time.
-func NewSnapshot(paths []string, tags []string, hostname string, time time.Time) (*Snapshot, error) {
+func NewSnapshot(paths []FilePath, tags []string, hostname string, time time.Time) (*Snapshot, error) {
 	absPaths := make([]string, 0, len(paths))
 	for _, path := range paths {
-		p, err := filepath.Abs(path)
+		p, err := path.AbsPath()
 		if err == nil {
 			absPaths = append(absPaths, p)
 		} else {
-			absPaths = append(absPaths, path)
+			absPaths = append(absPaths, path.Path())
 		}
 	}
 

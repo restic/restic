@@ -4,13 +4,36 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/fs"
 	"math/rand"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/restic/chunker"
 	"golang.org/x/sync/errgroup"
 )
+
+type TestFilePath struct {
+	path string
+}
+
+func (fp *TestFilePath) AbsPath() (string, error) {
+	return filepath.Abs(fp.path)
+}
+
+func (fp *TestFilePath) Path() string {
+	return fp.path
+}
+
+func NewTestFilePath(path string) FilePath {
+	return &TestFilePath{
+		path,
+	}
+}
+
+// statically ensure that LocalFileContent implements FileContent.
+var _ FilePath = &TestFilePath{}
 
 // fakeFile returns a reader which yields deterministic pseudo-random data.
 func fakeFile(seed, size int64) io.Reader {
@@ -123,7 +146,7 @@ func TestCreateSnapshot(t testing.TB, repo Repository, at time.Time, depth int) 
 	t.Logf("create fake snapshot at %s with seed %d", at, seed)
 
 	fakedir := fmt.Sprintf("fakedir-at-%v", at.Format("2006-01-02 15:04:05"))
-	snapshot, err := NewSnapshot([]string{fakedir}, []string{"test"}, "foo", at)
+	snapshot, err := NewSnapshot([]FilePath{NewTestFilePath(fakedir)}, []string{"test"}, "foo", at)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -188,21 +211,55 @@ func ParseDurationOrPanic(s string) Duration {
 	return d
 }
 
-// TestLoadAllSnapshots returns a list of all snapshots in the repo.
-// If a snapshot ID is in excludeIDs, it will not be included in the result.
-func TestLoadAllSnapshots(ctx context.Context, repo Repository, excludeIDs IDSet) (snapshots Snapshots, err error) {
-	err = ForAllSnapshots(ctx, repo, repo, excludeIDs, func(id ID, sn *Snapshot, err error) error {
-		if err != nil {
-			return err
-		}
+type WalkFunc func(info FileMetadata, err error) error
 
-		snapshots = append(snapshots, sn)
-		return nil
-	})
-
+func Walk(info LazyFileMetadata, fn WalkFunc) error {
+	err := info.Init()
 	if err != nil {
-		return nil, err
+		err = fn(nil, err)
+	} else {
+		err = walk(info, fn)
+	}
+	if err == fs.SkipDir || err == fs.SkipAll {
+		return nil
+	}
+	return err
+}
+
+// walk recursively descends path, calling walkFn.
+func walk(info FileMetadata, walkFn WalkFunc) error {
+	if !info.Mode().IsDir() {
+		return walkFn(info, nil)
 	}
 
-	return snapshots, nil
+	children, err := info.Children()
+	err1 := walkFn(info, err)
+	// If err != nil, walk can't walk into this directory.
+	// err1 != nil means walkFn want walk to skip this directory or stop walking.
+	// Therefore, if one of err and err1 isn't nil, walk will return.
+	if err != nil || err1 != nil {
+		// The caller's behavior is controlled by the return value, which is decided
+		// by walkFn. walkFn may ignore err and return nil.
+		// If walkFn returns SkipDir or SkipAll, it will be handled by the caller.
+		// So walk should return whatever walkFn returns.
+		return err1
+	}
+
+	for _, child := range children {
+		err := child.Init()
+		if err != nil {
+			if err := walkFn(child, err); err != nil && err != fs.SkipDir {
+				return err
+			}
+		} else {
+			err = walk(child, walkFn)
+			if err != nil {
+				if !child.Mode().IsDir() || err != fs.SkipDir {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+
 }

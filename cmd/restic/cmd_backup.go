@@ -20,6 +20,7 @@ import (
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/frontend"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -141,10 +142,10 @@ func init() {
 
 // filterExisting returns a slice of all existing items, or an error if no
 // items exist at all.
-func filterExisting(items []string) (result []string, err error) {
+func filterExisting(items []restic.LazyFileMetadata) (result []restic.LazyFileMetadata, err error) {
 	for _, item := range items {
-		_, err := fs.Lstat(item)
-		if errors.Is(err, os.ErrNotExist) {
+
+		if !item.Exist() {
 			Warnf("%v does not exist, skipping\n", item)
 			continue
 		}
@@ -321,7 +322,7 @@ func collectRejectByNameFuncs(opts BackupOptions, repo *repository.Repository) (
 
 // collectRejectFuncs returns a list of all functions which may reject data
 // from being saved in a snapshot based on path and file info
-func collectRejectFuncs(opts BackupOptions, targets []string) (fs []RejectFunc, err error) {
+func collectRejectFuncs(opts BackupOptions, targets []restic.LazyFileMetadata) (fs []RejectFunc, err error) {
 	// allowed devices
 	if opts.ExcludeOtherFS && !opts.Stdin {
 		f, err := rejectByDevice(targets)
@@ -343,7 +344,7 @@ func collectRejectFuncs(opts BackupOptions, targets []string) (fs []RejectFunc, 
 }
 
 // collectTargets returns a list of target files/dirs from several sources.
-func collectTargets(opts BackupOptions, args []string) (targets []string, err error) {
+func collectTargets(f frontend.Frontend, opts BackupOptions, args []string) (targets []restic.LazyFileMetadata, err error) {
 	if opts.Stdin || opts.StdinCommand {
 		return nil, nil
 	}
@@ -369,7 +370,7 @@ func collectTargets(opts BackupOptions, args []string) (targets []string, err er
 			if len(expanded) == 0 {
 				Warnf("pattern %q does not match any files, skipping\n", line)
 			}
-			targets = append(targets, expanded...)
+			targets = append(targets, f.Prepare(expanded...)...)
 		}
 	}
 
@@ -382,7 +383,7 @@ func collectTargets(opts BackupOptions, args []string) (targets []string, err er
 			if line == "" {
 				continue
 			}
-			targets = append(targets, line)
+			targets = append(targets, f.Prepare(line)...)
 		}
 	}
 
@@ -391,12 +392,12 @@ func collectTargets(opts BackupOptions, args []string) (targets []string, err er
 		if err != nil {
 			return nil, err
 		}
-		targets = append(targets, fromfile...)
+		targets = append(targets, f.Prepare(fromfile...)...)
 	}
 
 	// Merge args into files-from so we can reuse the normal args checks
 	// and have the ability to use both files-from and args at the same time.
-	targets = append(targets, args...)
+	targets = append(targets, f.Prepare(args...)...)
 	if len(targets) == 0 && !opts.Stdin {
 		return nil, errors.Fatal("nothing to backup, please specify target files/dirs")
 	}
@@ -411,7 +412,7 @@ func collectTargets(opts BackupOptions, args []string) (targets []string, err er
 
 // parent returns the ID of the parent snapshot. If there is none, nil is
 // returned.
-func findParentSnapshot(ctx context.Context, repo restic.ListerLoaderUnpacked, opts BackupOptions, targets []string, timeStampLimit time.Time) (*restic.Snapshot, error) {
+func findParentSnapshot(ctx context.Context, repo restic.ListerLoaderUnpacked, opts BackupOptions, targets []restic.LazyFileMetadata, timeStampLimit time.Time) (*restic.Snapshot, error) {
 	if opts.Force {
 		return nil, nil
 	}
@@ -425,7 +426,11 @@ func findParentSnapshot(ctx context.Context, repo restic.ListerLoaderUnpacked, o
 		f.Hosts = []string{opts.Host}
 	}
 	if opts.GroupBy.Path {
-		f.Paths = targets
+		paths := make([]string, len(targets))
+		for i, target := range targets {
+			paths[i] = target.Path()
+		}
+		f.Paths = paths
 	}
 	if opts.GroupBy.Tag {
 		f.Tags = []restic.TagList{opts.Tags.Flatten()}
@@ -439,13 +444,74 @@ func findParentSnapshot(ctx context.Context, repo restic.ListerLoaderUnpacked, o
 	return sn, err
 }
 
-func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, term *termstatus.Terminal, args []string) error {
-	err := opts.Check(gopts, args)
-	if err != nil {
-		return err
+func newLocalFrontend(ctx context.Context, opts BackupOptions, gopts GlobalOptions, timeStamp time.Time, progressPrinter backup.ProgressPrinter, progressReporter *backup.Progress, args []string) (frontend.Frontend, []restic.LazyFileMetadata, error) {
+	var err error = nil
+	var targetFS fs.FS = fs.Local{}
+	var targets []string
+
+	if runtime.GOOS == "windows" && opts.UseFsSnapshot {
+		if err := fs.HasSufficientPrivilegesForVSS(); err != nil {
+			return nil, nil, err
+		}
+
+		errorHandler := func(item string, err error) error {
+			return progressReporter.Error(item, err)
+		}
+
+		messageHandler := func(msg string, args ...interface{}) {
+			if !gopts.JSON {
+				progressPrinter.P(msg, args...)
+			}
+		}
+
+		localVss := fs.NewLocalVss(errorHandler, messageHandler)
+		defer localVss.DeleteSnapshots()
+		targetFS = localVss
 	}
 
-	targets, err := collectTargets(opts, args)
+	if opts.Stdin || opts.StdinCommand {
+		if !gopts.JSON {
+			progressPrinter.V("read data from stdin")
+		}
+		filename := path.Join("/", opts.StdinFilename)
+		var source io.ReadCloser = os.Stdin
+		if opts.StdinCommand {
+			source, err = fs.NewCommandReader(ctx, args, globalOptions.stderr)
+			if err != nil {
+				return nil, nil, err
+			}
+		}
+		targetFS = &fs.Reader{
+			ModTime:    timeStamp,
+			Name:       filename,
+			Mode:       0644,
+			ReadCloser: source,
+		}
+		targets = []string{filename}
+	}
+
+	f := &frontend.LocalFrontend{
+		FS: targetFS,
+	}
+
+	if opts.IgnoreInode {
+		// --ignore-inode implies --ignore-ctime: on FUSE, the ctime is not
+		// reliable either.
+		f.ChangeIgnoreFlags |= frontend.ChangeIgnoreCtime | frontend.ChangeIgnoreInode
+	}
+	if opts.IgnoreCtime {
+		f.ChangeIgnoreFlags |= frontend.ChangeIgnoreCtime
+	}
+
+	if targets == nil {
+		t, err := collectTargets(f, opts, args)
+		return f, t, err
+	}
+	return f, f.Prepare(targets...), nil
+}
+
+func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, term *termstatus.Terminal, args []string) error {
+	err := opts.Check(gopts, args)
 	if err != nil {
 		return err
 	}
@@ -491,6 +557,12 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		if err != nil {
 			return err
 		}
+	}
+
+	f, targets, err := newLocalFrontend(ctx, opts, gopts, timeStamp, progressPrinter, progressReporter, args)
+
+	if err != nil {
+		return err
 	}
 
 	// rejectByNameFuncs collect functions that can reject items from the backup based on path only
@@ -541,55 +613,13 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		return true
 	}
 
-	selectFilter := func(item string, fi os.FileInfo) bool {
+	selectFilter := func(fm restic.FileMetadata) bool {
 		for _, reject := range rejectFuncs {
-			if reject(item, fi) {
+			if reject(fm) {
 				return false
 			}
 		}
 		return true
-	}
-
-	var targetFS fs.FS = fs.Local{}
-	if runtime.GOOS == "windows" && opts.UseFsSnapshot {
-		if err = fs.HasSufficientPrivilegesForVSS(); err != nil {
-			return err
-		}
-
-		errorHandler := func(item string, err error) error {
-			return progressReporter.Error(item, err)
-		}
-
-		messageHandler := func(msg string, args ...interface{}) {
-			if !gopts.JSON {
-				progressPrinter.P(msg, args...)
-			}
-		}
-
-		localVss := fs.NewLocalVss(errorHandler, messageHandler)
-		defer localVss.DeleteSnapshots()
-		targetFS = localVss
-	}
-
-	if opts.Stdin || opts.StdinCommand {
-		if !gopts.JSON {
-			progressPrinter.V("read data from stdin")
-		}
-		filename := path.Join("/", opts.StdinFilename)
-		var source io.ReadCloser = os.Stdin
-		if opts.StdinCommand {
-			source, err = fs.NewCommandReader(ctx, args, globalOptions.stderr)
-			if err != nil {
-				return err
-			}
-		}
-		targetFS = &fs.Reader{
-			ModTime:    timeStamp,
-			Name:       filename,
-			Mode:       0644,
-			ReadCloser: source,
-		}
-		targets = []string{filename}
 	}
 
 	wg, wgCtx := errgroup.WithContext(ctx)
@@ -597,7 +627,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	defer cancel()
 
 	if !opts.NoScan {
-		sc := archiver.NewScanner(targetFS)
+		sc := archiver.NewScanner(f)
 		sc.SelectByName = selectByNameFilter
 		sc.Select = selectFilter
 		sc.Error = progressPrinter.ScannerError
@@ -609,7 +639,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		wg.Go(func() error { return sc.Scan(cancelCtx, targets) })
 	}
 
-	arch := archiver.New(repo, targetFS, archiver.Options{ReadConcurrency: opts.ReadConcurrency})
+	arch := archiver.New(repo, f, archiver.Options{ReadConcurrency: opts.ReadConcurrency})
 	arch.SelectByName = selectByNameFilter
 	arch.Select = selectFilter
 	arch.WithAtime = opts.WithAtime
@@ -627,15 +657,6 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	arch.CompleteItem = progressReporter.CompleteItem
 	arch.StartFile = progressReporter.StartFile
 	arch.CompleteBlob = progressReporter.CompleteBlob
-
-	if opts.IgnoreInode {
-		// --ignore-inode implies --ignore-ctime: on FUSE, the ctime is not
-		// reliable either.
-		arch.ChangeIgnoreFlags |= archiver.ChangeIgnoreCtime | archiver.ChangeIgnoreInode
-	}
-	if opts.IgnoreCtime {
-		arch.ChangeIgnoreFlags |= archiver.ChangeIgnoreCtime
-	}
 
 	snapshotOpts := archiver.SnapshotOptions{
 		Excludes:       opts.Excludes,

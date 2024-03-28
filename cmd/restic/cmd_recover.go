@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/frontend"
 	"github.com/restic/restic/internal/restic"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
@@ -159,7 +160,8 @@ func runRecover(ctx context.Context, gopts GlobalOptions) error {
 }
 
 func createSnapshot(ctx context.Context, name, hostname string, tags []string, repo restic.SaverUnpacked, tree *restic.ID) error {
-	sn, err := restic.NewSnapshot([]string{name}, tags, hostname, time.Now())
+	f := frontend.LocalFrontend{}
+	sn, err := restic.NewSnapshot([]restic.FilePath{restic.FilePath(f.Prepare(name)[0])}, tags, hostname, time.Now())
 	if err != nil {
 		return errors.Fatalf("unable to save snapshot: %v", err)
 	}

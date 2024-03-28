@@ -2,19 +2,18 @@ package archiver
 
 import (
 	"context"
-	"os"
-	"path/filepath"
 	"sort"
 
 	"github.com/restic/restic/internal/debug"
-	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/frontend"
+	"github.com/restic/restic/internal/restic"
 )
 
 // Scanner  traverses the targets and calls the function Result with cumulated
 // stats concerning the files and folders found. Select is used to decide which
 // items should be included. Error is called when an error occurs.
 type Scanner struct {
-	FS           fs.FS
+	Frontend     frontend.Frontend
 	SelectByName SelectByNameFunc
 	Select       SelectFunc
 	Error        ErrorFunc
@@ -22,13 +21,13 @@ type Scanner struct {
 }
 
 // NewScanner initializes a new Scanner.
-func NewScanner(fs fs.FS) *Scanner {
+func NewScanner(Frontend frontend.Frontend) *Scanner {
 	return &Scanner{
-		FS:           fs,
+		Frontend:     Frontend,
 		SelectByName: func(_ string) bool { return true },
-		Select:       func(_ string, _ os.FileInfo) bool { return true },
+		Select:       func(_ restic.FileMetadata) bool { return true },
 		Error:        func(_ string, err error) error { return err },
-		Result:       func(_ string, _ ScanStats) {},
+		Result:       func(_ string, s ScanStats) {},
 	}
 }
 
@@ -41,7 +40,7 @@ type ScanStats struct {
 func (s *Scanner) scanTree(ctx context.Context, stats ScanStats, tree Tree) (ScanStats, error) {
 	// traverse the path in the file system for all leaf nodes
 	if tree.Leaf() {
-		abstarget, err := s.FS.Abs(tree.Path)
+		abstarget, err := tree.FileMetadata.Abs()
 		if err != nil {
 			return ScanStats{}, err
 		}
@@ -72,18 +71,16 @@ func (s *Scanner) scanTree(ctx context.Context, stats ScanStats, tree Tree) (Sca
 
 // Scan traverses the targets. The function Result is called for each new item
 // found, the complete result is also returned by Scan.
-func (s *Scanner) Scan(ctx context.Context, targets []string) error {
+func (s *Scanner) Scan(ctx context.Context, targets []restic.LazyFileMetadata) error {
 	debug.Log("start scan for %v", targets)
 
-	cleanTargets, err := resolveRelativeTargets(s.FS, targets)
+	// we're using the same tree representation as the archiver does
+	cleanTargets, err := resolveRelativeTargets(targets)
 	if err != nil {
 		return err
 	}
-
 	debug.Log("clean targets %v", cleanTargets)
-
-	// we're using the same tree representation as the archiver does
-	tree, err := NewTree(s.FS, cleanTargets)
+	tree, err := newTree(cleanTargets)
 	if err != nil {
 		return err
 	}
@@ -98,40 +95,43 @@ func (s *Scanner) Scan(ctx context.Context, targets []string) error {
 	return nil
 }
 
-func (s *Scanner) scan(ctx context.Context, stats ScanStats, target string) (ScanStats, error) {
+func (s *Scanner) scan(ctx context.Context, stats ScanStats, target restic.LazyFileMetadata) (ScanStats, error) {
 	if ctx.Err() != nil {
 		return stats, nil
 	}
 
 	// exclude files by path before running stat to reduce number of lstat calls
-	if !s.SelectByName(target) {
+	if !s.SelectByName(target.Name()) {
 		return stats, nil
 	}
 
 	// get file information
-	fi, err := s.FS.Lstat(target)
+	err := target.Init()
 	if err != nil {
-		return stats, s.Error(target, err)
+		return stats, s.Error(target.Path(), err)
 	}
 
 	// run remaining select functions that require file information
-	if !s.Select(target, fi) {
+	if !s.Select(target) {
 		return stats, nil
 	}
 
 	switch {
-	case fi.Mode().IsRegular():
+	case target.Mode().IsRegular():
 		stats.Files++
-		stats.Bytes += uint64(fi.Size())
-	case fi.Mode().IsDir():
-		names, err := readdirnames(s.FS, target, fs.O_NOFOLLOW)
+		stats.Bytes += uint64(target.Size())
+	case target.Mode().IsDir():
+		children, err := target.Children()
 		if err != nil {
-			return stats, s.Error(target, err)
+			return stats, s.Error(target.Path(), err)
 		}
-		sort.Strings(names)
 
-		for _, name := range names {
-			stats, err = s.scan(ctx, stats, filepath.Join(target, name))
+		sort.Slice(children, func(a, b int) bool {
+			return children[a].Name() < children[b].Name()
+		})
+
+		for _, child := range children {
+			stats, err = s.scan(ctx, stats, child)
 			if err != nil {
 				return stats, err
 			}
@@ -141,6 +141,6 @@ func (s *Scanner) scan(ctx context.Context, stats ScanStats, target string) (Sca
 		stats.Others++
 	}
 
-	s.Result(target, stats)
+	s.Result(target.Path(), stats)
 	return stats, nil
 }

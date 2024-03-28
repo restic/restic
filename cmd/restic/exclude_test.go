@@ -5,6 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/restic/restic/internal/frontend"
+	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
 )
 
@@ -244,19 +247,22 @@ func TestIsExcludedByFileSize(t *testing.T) {
 	// that tests against the two rejection functions and stores
 	// the result in a map against we can test later.
 	m := make(map[string]bool)
-	walk := func(p string, fi os.FileInfo, err error) error {
+	walk := func(fm restic.FileMetadata, err error) error {
 		if err != nil {
 			return err
 		}
 
-		excluded := sizeExclude(p, fi)
+		excluded := sizeExclude(fm)
 		// the log message helps debugging in case the test fails
-		t.Logf("%q: dir:%t; size:%d; excluded:%v", p, fi.IsDir(), fi.Size(), excluded)
-		m[p] = !excluded
+		t.Logf("%q: dir:%t; size:%d; excluded:%v", fm.Path(), fm.Mode().IsDir(), fm.Size(), excluded)
+		m[fm.Path()] = !excluded
 		return nil
 	}
+	f := frontend.LocalFrontend{
+		FS: fs.Local{},
+	}
 	// walk through the temporary file and check the error
-	test.OK(t, filepath.Walk(tempDir, walk))
+	test.OK(t, restic.Walk(f.Prepare(tempDir)[0], walk))
 
 	// compare whether the walk gave the expected values for the test cases
 	for _, f := range files {

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/restic/restic/internal/frontend"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	restictest "github.com/restic/restic/internal/test"
@@ -466,14 +467,14 @@ func TestTestEnsureSnapshot(t *testing.T) {
 			defer back()
 
 			repo := repository.TestRepository(t)
-
-			arch := New(repo, fs.Local{}, Options{})
+			f := &frontend.LocalFrontend{FS: fs.Local{}}
+			arch := New(repo, f, Options{})
 			opts := SnapshotOptions{
 				Time:     time.Now(),
 				Hostname: "localhost",
 				Tags:     []string{"test"},
 			}
-			_, id, err := arch.Snapshot(ctx, []string{"."}, opts)
+			_, id, err := arch.Snapshot(ctx, f.Prepare("."), opts)
 			if err != nil {
 				t.Fatal(err)
 			}
