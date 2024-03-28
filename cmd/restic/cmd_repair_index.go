@@ -56,16 +56,11 @@ func init() {
 }
 
 func runRebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOptions) error {
-	repo, err := OpenRepository(ctx, gopts)
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false)
 	if err != nil {
 		return err
 	}
-
-	lock, ctx, err := lockRepoExclusive(ctx, repo, gopts.RetryLock, gopts.JSON)
-	defer unlockRepo(lock)
-	if err != nil {
-		return err
-	}
+	defer unlock()
 
 	return rebuildIndex(ctx, opts, gopts, repo)
 }

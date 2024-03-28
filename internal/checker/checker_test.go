@@ -72,10 +72,8 @@ func assertOnlyMixedPackHints(t *testing.T, hints []error) {
 }
 
 func TestCheckRepo(t *testing.T) {
-	repodir, cleanup := test.Env(t, checkerTestData)
+	repo, cleanup := repository.TestFromFixture(t, checkerTestData)
 	defer cleanup()
-
-	repo := repository.TestOpenLocal(t, repodir)
 
 	chkr := checker.New(repo, false)
 	hints, errs := chkr.LoadIndex(context.TODO(), nil)
@@ -92,10 +90,8 @@ func TestCheckRepo(t *testing.T) {
 }
 
 func TestMissingPack(t *testing.T) {
-	repodir, cleanup := test.Env(t, checkerTestData)
+	repo, cleanup := repository.TestFromFixture(t, checkerTestData)
 	defer cleanup()
-
-	repo := repository.TestOpenLocal(t, repodir)
 
 	packHandle := backend.Handle{
 		Type: restic.PackFile,
@@ -123,10 +119,8 @@ func TestMissingPack(t *testing.T) {
 }
 
 func TestUnreferencedPack(t *testing.T) {
-	repodir, cleanup := test.Env(t, checkerTestData)
+	repo, cleanup := repository.TestFromFixture(t, checkerTestData)
 	defer cleanup()
-
-	repo := repository.TestOpenLocal(t, repodir)
 
 	// index 3f1a only references pack 60e0
 	packID := "60e0438dcb978ec6860cc1f8c43da648170ee9129af8f650f876bad19f8f788e"
@@ -156,10 +150,8 @@ func TestUnreferencedPack(t *testing.T) {
 }
 
 func TestUnreferencedBlobs(t *testing.T) {
-	repodir, cleanup := test.Env(t, checkerTestData)
+	repo, cleanup := repository.TestFromFixture(t, checkerTestData)
 	defer cleanup()
-
-	repo := repository.TestOpenLocal(t, repodir)
 
 	snapshotHandle := backend.Handle{
 		Type: restic.SnapshotFile,
@@ -195,10 +187,8 @@ func TestUnreferencedBlobs(t *testing.T) {
 }
 
 func TestModifiedIndex(t *testing.T) {
-	repodir, cleanup := test.Env(t, checkerTestData)
+	repo, cleanup := repository.TestFromFixture(t, checkerTestData)
 	defer cleanup()
-
-	repo := repository.TestOpenLocal(t, repodir)
 
 	done := make(chan struct{})
 	defer close(done)
@@ -274,10 +264,8 @@ func TestModifiedIndex(t *testing.T) {
 var checkerDuplicateIndexTestData = filepath.Join("testdata", "duplicate-packs-in-index-test-repo.tar.gz")
 
 func TestDuplicatePacksInIndex(t *testing.T) {
-	repodir, cleanup := test.Env(t, checkerDuplicateIndexTestData)
+	repo, cleanup := repository.TestFromFixture(t, checkerDuplicateIndexTestData)
 	defer cleanup()
-
-	repo := repository.TestOpenLocal(t, repodir)
 
 	chkr := checker.New(repo, false)
 	hints, errs := chkr.LoadIndex(context.TODO(), nil)
@@ -342,9 +330,7 @@ func TestCheckerModifiedData(t *testing.T) {
 	t.Logf("archived as %v", sn.ID().Str())
 
 	beError := &errorBackend{Backend: repo.Backend()}
-	checkRepo, err := repository.New(beError, repository.Options{})
-	test.OK(t, err)
-	test.OK(t, checkRepo.SearchKey(context.TODO(), test.TestPassword, 5, ""))
+	checkRepo := repository.TestOpenBackend(t, beError)
 
 	chkr := checker.New(checkRepo, false)
 
@@ -399,10 +385,8 @@ func (r *loadTreesOnceRepository) LoadTree(ctx context.Context, id restic.ID) (*
 }
 
 func TestCheckerNoDuplicateTreeDecodes(t *testing.T) {
-	repodir, cleanup := test.Env(t, checkerTestData)
+	repo, cleanup := repository.TestFromFixture(t, checkerTestData)
 	defer cleanup()
-
-	repo := repository.TestOpenLocal(t, repodir)
 	checkRepo := &loadTreesOnceRepository{
 		Repository:  repo,
 		loadedTrees: restic.NewIDSet(),
@@ -549,9 +533,7 @@ func TestCheckerBlobTypeConfusion(t *testing.T) {
 }
 
 func loadBenchRepository(t *testing.B) (*checker.Checker, restic.Repository, func()) {
-	repodir, cleanup := test.Env(t, checkerTestData)
-
-	repo := repository.TestOpenLocal(t, repodir)
+	repo, cleanup := repository.TestFromFixture(t, checkerTestData)
 
 	chkr := checker.New(repo, false)
 	hints, errs := chkr.LoadIndex(context.TODO(), nil)

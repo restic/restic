@@ -153,19 +153,11 @@ func runDebugDump(ctx context.Context, gopts GlobalOptions, args []string) error
 		return errors.Fatal("type not specified")
 	}
 
-	repo, err := OpenRepository(ctx, gopts)
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
 	if err != nil {
 		return err
 	}
-
-	if !gopts.NoLock {
-		var lock *restic.Lock
-		lock, ctx, err = lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
-		defer unlockRepo(lock)
-		if err != nil {
-			return err
-		}
-	}
+	defer unlock()
 
 	tpe := args[0]
 
@@ -442,10 +434,15 @@ func storePlainBlob(id restic.ID, prefix string, plain []byte) error {
 }
 
 func runDebugExamine(ctx context.Context, gopts GlobalOptions, opts DebugExamineOptions, args []string) error {
-	repo, err := OpenRepository(ctx, gopts)
+	if opts.ExtractPack && gopts.NoLock {
+		return fmt.Errorf("--extract-pack and --no-lock are mutually exclusive")
+	}
+
+	ctx, repo, unlock, err := openWithAppendLock(ctx, gopts, gopts.NoLock)
 	if err != nil {
 		return err
 	}
+	defer unlock()
 
 	ids := make([]restic.ID, 0)
 	for _, name := range args {
@@ -462,15 +459,6 @@ func runDebugExamine(ctx context.Context, gopts GlobalOptions, opts DebugExamine
 
 	if len(ids) == 0 {
 		return errors.Fatal("no pack files to examine")
-	}
-
-	if !gopts.NoLock {
-		var lock *restic.Lock
-		lock, ctx, err = lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
-		defer unlockRepo(lock)
-		if err != nil {
-			return err
-		}
 	}
 
 	bar := newIndexProgress(gopts.Quiet, gopts.JSON)

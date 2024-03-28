@@ -117,16 +117,11 @@ func applyMigrations(ctx context.Context, opts MigrateOptions, gopts GlobalOptio
 }
 
 func runMigrate(ctx context.Context, opts MigrateOptions, gopts GlobalOptions, args []string) error {
-	repo, err := OpenRepository(ctx, gopts)
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false)
 	if err != nil {
 		return err
 	}
-
-	lock, ctx, err := lockRepoExclusive(ctx, repo, gopts.RetryLock, gopts.JSON)
-	defer unlockRepo(lock)
-	if err != nil {
-		return err
-	}
+	defer unlock()
 
 	if len(args) == 0 {
 		return checkMigrations(ctx, repo)
