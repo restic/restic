@@ -1442,6 +1442,7 @@ _restic_init()
     two_word_flags+=("--from-password-file")
     local_nonpersistent_flags+=("--from-password-file")
     local_nonpersistent_flags+=("--from-password-file=")
+    flags+=("--allow-empty-password")
     flags+=("--from-repo=")
     two_word_flags+=("--from-repo")
     local_nonpersistent_flags+=("--from-repo")
@@ -1512,6 +1513,10 @@ _restic_key()
     command_aliases=()
 
     commands=()
+    commands+=("add")
+    commands+=("list")
+    commands+=("passwd")
+    commands+=("remove")
 
     flags=()
     two_word_flags=()
@@ -1576,6 +1581,74 @@ _restic_key()
     two_word_flags+=("--tls-client-cert")
     flags+=("--verbose")
     flags+=("-v")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_restic_key_add()
+{
+    last_command="restic_key_add"
+
+    command_aliases=()
+
+    commands=()
+
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--allow-empty-password")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_restic_key_list()
+{
+    last_command="restic_key_list"
+
+    command_aliases=()
+
+    commands=()
+
+    flags_with_completion=()
+    flags_completion=()
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_restic_key_passwd()
+{
+    last_command="restic_key_passwd"
+
+    command_aliases=()
+
+    commands=()
+
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--allow-empty-password")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_restic_key_remove()
+{
+    last_command="restic_key_remove"
+
+    command_aliases=()
+
+    commands=()
+
+    flags_with_completion=()
+    flags_completion=()
 
     must_have_one_flag=()
     must_have_one_noun=()
