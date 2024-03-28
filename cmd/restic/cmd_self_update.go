@@ -35,6 +35,7 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 // SelfUpdateOptions collects all options for the update-restic command.
 type SelfUpdateOptions struct {
 	Output string
+	Backup bool
 }
 
 var selfUpdateOptions SelfUpdateOptions
@@ -44,6 +45,7 @@ func init() {
 
 	flags := cmdSelfUpdate.Flags()
 	flags.StringVar(&selfUpdateOptions.Output, "output", "", "Save the downloaded file as `filename` (default: running binary itself)")
+	flags.BoolVar(&selfUpdateOptions.Backup, "backup", false, "The old binary file is kept or renamed to <filename>.bak.<version> (default: false)")
 }
 
 func runSelfUpdate(ctx context.Context, opts SelfUpdateOptions, gopts GlobalOptions, args []string) error {
@@ -74,7 +76,7 @@ func runSelfUpdate(ctx context.Context, opts SelfUpdateOptions, gopts GlobalOpti
 
 	Verbosef("writing restic to %v\n", opts.Output)
 
-	v, err := selfupdate.DownloadLatestStableRelease(ctx, opts.Output, version, Verbosef)
+	v, err := selfupdate.DownloadLatestStableRelease(ctx, opts.Output, version, opts.Backup, Verbosef)
 	if err != nil {
 		return errors.Fatalf("unable to update restic: %v", err)
 	}
