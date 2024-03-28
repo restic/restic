@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 	"testing"
 
 	"github.com/restic/restic/internal/backend"
@@ -21,14 +22,18 @@ type logger interface {
 	Logf(format string, args ...interface{})
 }
 
+var paramsOnce sync.Once
+
 // TestUseLowSecurityKDFParameters configures low-security KDF parameters for testing.
 func TestUseLowSecurityKDFParameters(t logger) {
 	t.Logf("using low-security KDF parameters for test")
-	Params = &crypto.Params{
-		N: 128,
-		R: 1,
-		P: 1,
-	}
+	paramsOnce.Do(func() {
+		params = &crypto.Params{
+			N: 128,
+			R: 1,
+			P: 1,
+		}
+	})
 }
 
 // TestBackend returns a fully configured in-memory backend.
@@ -36,7 +41,7 @@ func TestBackend(_ testing.TB) backend.Backend {
 	return mem.New()
 }
 
-const TestChunkerPol = chunker.Pol(0x3DA3358B4DC173)
+const testChunkerPol = chunker.Pol(0x3DA3358B4DC173)
 
 // TestRepositoryWithBackend returns a repository initialized with a test
 // password. If be is nil, an in-memory backend is used. A constant polynomial
@@ -55,7 +60,7 @@ func TestRepositoryWithBackend(t testing.TB, be backend.Backend, version uint, o
 		t.Fatalf("TestRepository(): new repo failed: %v", err)
 	}
 
-	cfg := restic.TestCreateConfig(t, TestChunkerPol, version)
+	cfg := restic.TestCreateConfig(t, testChunkerPol, version)
 	err = repo.init(context.TODO(), test.TestPassword, cfg)
 	if err != nil {
 		t.Fatalf("TestRepository(): initialize repo failed: %v", err)
