@@ -2,6 +2,7 @@ package restic
 
 import (
 	"context"
+	"sync"
 	"testing"
 
 	"github.com/restic/restic/internal/errors"
@@ -67,12 +68,15 @@ func TestCreateConfig(t testing.TB, pol chunker.Pol, version uint) (cfg Config) 
 }
 
 var checkPolynomial = true
+var checkPolynomialOnce sync.Once
 
 // TestDisableCheckPolynomial disables the check that the polynomial used for
 // the chunker.
 func TestDisableCheckPolynomial(t testing.TB) {
 	t.Logf("disabling check of the chunker polynomial")
-	checkPolynomial = false
+	checkPolynomialOnce.Do(func() {
+		checkPolynomial = false
+	})
 }
 
 // LoadConfig returns loads, checks and returns the config for a repository.

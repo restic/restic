@@ -52,16 +52,11 @@ func runRepairPacks(ctx context.Context, gopts GlobalOptions, term *termstatus.T
 		return errors.Fatal("no ids specified")
 	}
 
-	repo, err := OpenRepository(ctx, gopts)
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false)
 	if err != nil {
 		return err
 	}
-
-	lock, ctx, err := lockRepoExclusive(ctx, repo, gopts.RetryLock, gopts.JSON)
-	defer unlockRepo(lock)
-	if err != nil {
-		return err
-	}
+	defer unlock()
 
 	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
 	err = repo.LoadIndex(ctx, bar)

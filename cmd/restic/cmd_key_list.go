@@ -40,19 +40,11 @@ func runKeyList(ctx context.Context, gopts GlobalOptions, args []string) error {
 		return fmt.Errorf("the key list command expects no arguments, only options - please see `restic help key list` for usage and flags")
 	}
 
-	repo, err := OpenRepository(ctx, gopts)
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
 	if err != nil {
 		return err
 	}
-
-	if !gopts.NoLock {
-		var lock *restic.Lock
-		lock, ctx, err = lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
-		defer unlockRepo(lock)
-		if err != nil {
-			return err
-		}
-	}
+	defer unlock()
 
 	return listKeys(ctx, repo, gopts)
 }
