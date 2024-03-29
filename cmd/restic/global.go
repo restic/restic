@@ -96,7 +96,6 @@ var globalOptions = GlobalOptions{
 	stderr: os.Stderr,
 }
 
-var isReadingPassword bool
 var internalGlobalCtx context.Context
 
 func init() {
@@ -165,8 +164,6 @@ func init() {
 	// parse target pack size from env, on error the default value will be used
 	targetPackSize, _ := strconv.ParseUint(os.Getenv("RESTIC_PACK_SIZE"), 10, 32)
 	globalOptions.PackSize = uint(targetPackSize)
-
-	restoreTerminal()
 }
 
 func stdinIsTerminal() bool {
@@ -189,40 +186,6 @@ func stdoutTerminalWidth() int {
 		return 0
 	}
 	return w
-}
-
-// restoreTerminal installs a cleanup handler that restores the previous
-// terminal state on exit. This handler is only intended to restore the
-// terminal configuration if restic exits after receiving a signal. A regular
-// program execution must revert changes to the terminal configuration itself.
-// The terminal configuration is only restored while reading a password.
-func restoreTerminal() {
-	if !term.IsTerminal(int(os.Stdout.Fd())) {
-		return
-	}
-
-	fd := int(os.Stdout.Fd())
-	state, err := term.GetState(fd)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "unable to get terminal state: %v\n", err)
-		return
-	}
-
-	AddCleanupHandler(func(code int) (int, error) {
-		// Restoring the terminal configuration while restic runs in the
-		// background, causes restic to get stopped on unix systems with
-		// a SIGTTOU signal. Thus only restore the terminal settings if
-		// they might have been modified, which is the case while reading
-		// a password.
-		if !isReadingPassword {
-			return code, nil
-		}
-		err := term.Restore(fd, state)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "unable to restore terminal state: %v\n", err)
-		}
-		return code, err
-	})
 }
 
 // ClearLine creates a platform dependent string to clear the current
@@ -333,24 +296,48 @@ func readPassword(in io.Reader) (password string, err error) {
 
 // readPasswordTerminal reads the password from the given reader which must be a
 // tty. Prompt is printed on the writer out before attempting to read the
-// password.
-func readPasswordTerminal(in *os.File, out io.Writer, prompt string) (password string, err error) {
-	fmt.Fprint(out, prompt)
-	isReadingPassword = true
-	buf, err := term.ReadPassword(int(in.Fd()))
-	isReadingPassword = false
-	fmt.Fprintln(out)
+// password. If the context is canceled, the function leaks the password reading
+// goroutine.
+func readPasswordTerminal(ctx context.Context, in *os.File, out *os.File, prompt string) (password string, err error) {
+	fd := int(out.Fd())
+	state, err := term.GetState(fd)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "unable to get terminal state: %v\n", err)
+		return "", err
+	}
+
+	done := make(chan struct{})
+	var buf []byte
+
+	go func() {
+		defer close(done)
+		fmt.Fprint(out, prompt)
+		buf, err = term.ReadPassword(int(in.Fd()))
+		fmt.Fprintln(out)
+	}()
+
+	select {
+	case <-ctx.Done():
+		err := term.Restore(fd, state)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "unable to restore terminal state: %v\n", err)
+		}
+		return "", ctx.Err()
+	case <-done:
+		// clean shutdown, nothing to do
+	}
+
 	if err != nil {
 		return "", errors.Wrap(err, "ReadPassword")
 	}
 
-	password = string(buf)
-	return password, nil
+	return string(buf), nil
 }
 
 // ReadPassword reads the password from a password file, the environment
-// variable RESTIC_PASSWORD or prompts the user.
-func ReadPassword(opts GlobalOptions, prompt string) (string, error) {
+// variable RESTIC_PASSWORD or prompts the user. If the context is canceled,
+// the function leaks the password reading goroutine.
+func ReadPassword(ctx context.Context, opts GlobalOptions, prompt string) (string, error) {
 	if opts.password != "" {
 		return opts.password, nil
 	}
@@ -361,7 +348,7 @@ func ReadPassword(opts GlobalOptions, prompt string) (string, error) {
 	)
 
 	if stdinIsTerminal() {
-		password, err = readPasswordTerminal(os.Stdin, os.Stderr, prompt)
+		password, err = readPasswordTerminal(ctx, os.Stdin, os.Stderr, prompt)
 	} else {
 		password, err = readPassword(os.Stdin)
 		Verbosef("reading repository password from stdin\n")
@@ -379,14 +366,15 @@ func ReadPassword(opts GlobalOptions, prompt string) (string, error) {
 }
 
 // ReadPasswordTwice calls ReadPassword two times and returns an error when the
-// passwords don't match.
-func ReadPasswordTwice(gopts GlobalOptions, prompt1, prompt2 string) (string, error) {
-	pw1, err := ReadPassword(gopts, prompt1)
+// passwords don't match. If the context is canceled, the function leaks the
+// password reading goroutine.
+func ReadPasswordTwice(ctx context.Context, gopts GlobalOptions, prompt1, prompt2 string) (string, error) {
+	pw1, err := ReadPassword(ctx, gopts, prompt1)
 	if err != nil {
 		return "", err
 	}
 	if stdinIsTerminal() {
-		pw2, err := ReadPassword(gopts, prompt2)
+		pw2, err := ReadPassword(ctx, gopts, prompt2)
 		if err != nil {
 			return "", err
 		}
@@ -469,7 +457,10 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 	}
 
 	for ; passwordTriesLeft > 0; passwordTriesLeft-- {
-		opts.password, err = ReadPassword(opts, "enter password for repository: ")
+		opts.password, err = ReadPassword(ctx, opts, "enter password for repository: ")
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
 		if err != nil && passwordTriesLeft > 1 {
 			opts.password = ""
 			fmt.Printf("%s. Try again\n", err)

@@ -53,7 +53,7 @@ func init() {
 }
 
 func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []string) error {
-	secondaryGopts, isFromRepo, err := fillSecondaryGlobalOpts(opts.secondaryRepoOptions, gopts, "destination")
+	secondaryGopts, isFromRepo, err := fillSecondaryGlobalOpts(ctx, opts.secondaryRepoOptions, gopts, "destination")
 	if err != nil {
 		return err
 	}
