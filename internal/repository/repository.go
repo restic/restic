@@ -713,6 +713,9 @@ func (r *Repository) LoadIndex(ctx context.Context, p *progress.Counter) error {
 			return errors.New("index uses feature not supported by repository version 1")
 		}
 	}
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 
 	// remove index files from the cache which have been removed in the repo
 	return r.prepareCache()

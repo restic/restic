@@ -130,6 +130,9 @@ func PlanPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, g
 			}
 			keepBlobs.Delete(blob.BlobHandle)
 		})
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
 
 		if keepBlobs.Len() < blobCount/2 {
 			// replace with copy to shrink map to necessary size if there's a chance to benefit
@@ -166,6 +169,9 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 			usedBlobs[bh] = count
 		}
 	})
+	if ctx.Err() != nil {
+		return nil, nil, ctx.Err()
+	}
 
 	// Check if all used blobs have been found in index
 	missingBlobs := restic.NewBlobSet()
@@ -240,6 +246,9 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 		// update indexPack
 		indexPack[blob.PackID] = ip
 	})
+	if ctx.Err() != nil {
+		return nil, nil, ctx.Err()
+	}
 
 	// if duplicate blobs exist, those will be set to either "used" or "unused":
 	// - mark only one occurrence of duplicate blobs as used
@@ -285,6 +294,9 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 			// update indexPack
 			indexPack[blob.PackID] = ip
 		})
+	}
+	if ctx.Err() != nil {
+		return nil, nil, ctx.Err()
 	}
 
 	// Sanity check. If no duplicates exist, all blobs have value 1. After handling
@@ -528,6 +540,9 @@ func (plan *PrunePlan) Execute(ctx context.Context, printer progress.Printer) (e
 		printer.P("deleting unreferenced packs\n")
 		_ = deleteFiles(ctx, true, repo, plan.removePacksFirst, restic.PackFile, printer)
 	}
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 
 	if len(plan.repackPacks) != 0 {
 		printer.P("repacking packs\n")
@@ -577,6 +592,9 @@ func (plan *PrunePlan) Execute(ctx context.Context, printer progress.Printer) (e
 	if len(plan.removePacks) != 0 {
 		printer.P("removing %d old packs\n", len(plan.removePacks))
 		_ = deleteFiles(ctx, true, repo, plan.removePacks, restic.PackFile, printer)
+	}
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 
 	if plan.opts.UnsafeRecovery {

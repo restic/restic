@@ -122,6 +122,9 @@ func runTag(ctx context.Context, opts TagOptions, gopts GlobalOptions, args []st
 			changeCnt++
 		}
 	}
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 	if changeCnt == 0 {
 		Verbosef("no snapshots were modified\n")
 	} else {

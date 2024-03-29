@@ -608,6 +608,9 @@ func runFind(ctx context.Context, opts FindOptions, gopts GlobalOptions, args []
 	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &opts.SnapshotFilter, opts.Snapshots) {
 		filteredSnapshots = append(filteredSnapshots, sn)
 	}
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 
 	sort.Slice(filteredSnapshots, func(i, j int) bool {
 		return filteredSnapshots[i].Time.Before(filteredSnapshots[j].Time)

@@ -103,6 +103,9 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 		// also consider identical snapshot copies
 		dstSnapshotByOriginal[*sn.ID()] = append(dstSnapshotByOriginal[*sn.ID()], sn)
 	}
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 
 	// remember already processed trees across all snapshots
 	visitedTrees := restic.NewIDSet()
@@ -147,7 +150,7 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 		}
 		Verbosef("snapshot %s saved\n", newID.Str())
 	}
-	return nil
+	return ctx.Err()
 }
 
 func similarSnapshots(sna *restic.Snapshot, snb *restic.Snapshot) bool {

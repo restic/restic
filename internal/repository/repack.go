@@ -72,7 +72,7 @@ func repack(ctx context.Context, repo restic.Repository, dstRepo restic.Reposito
 				return wgCtx.Err()
 			}
 		}
-		return nil
+		return wgCtx.Err()
 	})
 
 	worker := func() error {

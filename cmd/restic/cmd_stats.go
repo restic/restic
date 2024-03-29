@@ -117,9 +117,8 @@ func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args 
 			return fmt.Errorf("error walking snapshot: %v", err)
 		}
 	}
-
-	if err != nil {
-		return err
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 
 	if opts.countMode == countModeRawData {

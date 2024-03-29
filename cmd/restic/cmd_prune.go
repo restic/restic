@@ -197,6 +197,9 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOption
 	if err != nil {
 		return err
 	}
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 
 	if popts.DryRun {
 		printer.P("\nWould have made the following changes:")

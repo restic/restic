@@ -320,6 +320,9 @@ func (mi *MasterIndex) Save(ctx context.Context, repo restic.Repository, exclude
 					newIndex = NewIndex()
 				}
 			}
+			if wgCtx.Err() != nil {
+				return wgCtx.Err()
+			}
 		}
 
 		err := newIndex.AddToSupersedes(extraObsolete...)

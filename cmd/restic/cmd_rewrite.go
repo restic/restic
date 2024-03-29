@@ -294,6 +294,9 @@ func runRewrite(ctx context.Context, opts RewriteOptions, gopts GlobalOptions, a
 			changedCount++
 		}
 	}
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 
 	Verbosef("\n")
 	if changedCount == 0 {
