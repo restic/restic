@@ -199,10 +199,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	}
 
 	cleanup := prepareCheckCache(opts, &gopts)
-	AddCleanupHandler(func(code int) (int, error) {
-		cleanup()
-		return code, nil
-	})
+	defer cleanup()
 
 	if !gopts.NoLock {
 		Verbosef("create exclusive lock for repository\n")
