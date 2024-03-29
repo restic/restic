@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -118,7 +119,13 @@ func main() {
 	debug.Log("main %#v", os.Args)
 	debug.Log("restic %s compiled with %v on %v/%v",
 		version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
-	err = cmdRoot.ExecuteContext(internalGlobalCtx)
+
+	ctx := createGlobalContext()
+	err = cmdRoot.ExecuteContext(ctx)
+
+	if err == nil {
+		err = ctx.Err()
+	}
 
 	switch {
 	case restic.IsAlreadyLocked(err):
@@ -140,11 +147,13 @@ func main() {
 	}
 
 	var exitCode int
-	switch err {
-	case nil:
+	switch {
+	case err == nil:
 		exitCode = 0
-	case ErrInvalidSourceData:
+	case err == ErrInvalidSourceData:
 		exitCode = 3
+	case errors.Is(err, context.Canceled):
+		exitCode = 130
 	default:
 		exitCode = 1
 	}

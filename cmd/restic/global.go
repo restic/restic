@@ -96,8 +96,6 @@ var globalOptions = GlobalOptions{
 	stderr: os.Stderr,
 }
 
-var internalGlobalCtx context.Context
-
 func init() {
 	backends := location.NewRegistry()
 	backends.Register(azure.NewFactory())
@@ -110,15 +108,6 @@ func init() {
 	backends.Register(sftp.NewFactory())
 	backends.Register(swift.NewFactory())
 	globalOptions.backends = backends
-
-	var cancel context.CancelFunc
-	internalGlobalCtx, cancel = context.WithCancel(context.Background())
-	AddCleanupHandler(func(code int) (int, error) {
-		// Must be called before the unlock cleanup handler to ensure that the latter is
-		// not blocked due to limited number of backend connections, see #1434
-		cancel()
-		return code, nil
-	})
 
 	f := cmdRoot.PersistentFlags()
 	f.StringVarP(&globalOptions.Repo, "repo", "r", "", "`repository` to backup to or restore from (default: $RESTIC_REPOSITORY)")
