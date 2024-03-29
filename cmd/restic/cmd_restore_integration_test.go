@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -274,6 +275,7 @@ func TestRestoreNoMetadataOnIgnoredIntermediateDirs(t *testing.T) {
 }
 
 func TestRestoreLocalLayout(t *testing.T) {
+	defer feature.TestSetFlag(t, feature.Flag, feature.DeprecateS3LegacyLayout, false)()
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
