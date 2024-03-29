@@ -21,18 +21,11 @@ func internalOpenWithLocked(ctx context.Context, gopts GlobalOptions, dryRun boo
 				Verbosef("%s", msg)
 			}
 		}, Warnf)
-
-		unlock = lock.Unlock
-		// make sure that a repository is unlocked properly and after cancel() was
-		// called by the cleanup handler in global.go
-		AddCleanupHandler(func(code int) (int, error) {
-			lock.Unlock()
-			return code, nil
-		})
-
 		if err != nil {
 			return nil, nil, nil, err
 		}
+
+		unlock = lock.Unlock
 	} else {
 		repo.SetDryRun()
 	}
