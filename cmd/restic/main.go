@@ -94,8 +94,6 @@ func needsPassword(cmd string) bool {
 	}
 }
 
-var logBuffer = bytes.NewBuffer(nil)
-
 func tweakGoGC() {
 	// lower GOGC from 100 to 50, unless it was manually overwritten by the user
 	oldValue := godebug.SetGCPercent(50)
@@ -108,6 +106,7 @@ func main() {
 	tweakGoGC()
 	// install custom global logger into a buffer, if an error occurs
 	// we can show the logs
+	logBuffer := bytes.NewBuffer(nil)
 	log.SetOutput(logBuffer)
 
 	err := feature.Flag.Apply(os.Getenv("RESTIC_FEATURES"), func(s string) {
