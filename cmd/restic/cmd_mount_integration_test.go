@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	systemFuse "github.com/anacrolix/fuse"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -65,7 +66,7 @@ func testRunMount(t testing.TB, gopts GlobalOptions, dir string, wg *sync.WaitGr
 func testRunUmount(t testing.TB, dir string) {
 	var err error
 	for i := 0; i < mountWait; i++ {
-		if err = umount(dir); err == nil {
+		if err = systemFuse.Unmount(dir); err == nil {
 			t.Logf("directory %v umounted", dir)
 			return
 		}
