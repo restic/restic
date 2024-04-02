@@ -48,17 +48,19 @@ type fileNode struct {
 
 func listNodes(ctx context.Context, repo restic.Repository, tree restic.ID, path string) ([]fileNode, error) {
 	var files []fileNode
-	err := walker.Walk(ctx, repo, tree, nil, func(_ restic.ID, nodepath string, node *restic.Node, err error) (bool, error) {
-		if err != nil || node == nil {
-			return false, err
-		}
-		if fs.HasPathPrefix(path, nodepath) {
-			files = append(files, fileNode{nodepath, node})
-		}
-		if node.Type == "dir" && !fs.HasPathPrefix(nodepath, path) {
-			return false, walker.ErrSkipNode
-		}
-		return false, nil
+	err := walker.Walk(ctx, repo, tree, walker.WalkVisitor{
+		ProcessNode: func(parentTreeID restic.ID, nodepath string, node *restic.Node, err error) error {
+			if err != nil || node == nil {
+				return err
+			}
+			if fs.HasPathPrefix(path, nodepath) {
+				files = append(files, fileNode{nodepath, node})
+			}
+			if node.Type == "dir" && !fs.HasPathPrefix(nodepath, path) {
+				return walker.ErrSkipNode
+			}
+			return nil
+		},
 	})
 	return files, err
 }
@@ -68,21 +70,18 @@ func runWebServer(ctx context.Context, opts ServeOptions, gopts GlobalOptions, a
 		return errors.Fatal("this command does not accept additional arguments")
 	}
 
-	repo, err := OpenRepository(ctx, gopts)
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, gopts.NoLock)
 	if err != nil {
 		return err
 	}
+	defer unlock()
 
-	if !gopts.NoLock {
-		var lock *restic.Lock
-		lock, ctx, err = lockRepo(ctx, repo)
-		defer unlockRepo(lock)
-		if err != nil {
-			return err
-		}
+	snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
+	if err != nil {
+		return err
 	}
-
-	err = repo.LoadIndex(ctx)
+	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+	err = repo.LoadIndex(ctx, bar)
 	if err != nil {
 		return err
 	}
@@ -98,7 +97,7 @@ func runWebServer(ctx context.Context, opts ServeOptions, gopts GlobalOptions, a
 		curPath = "/" + strings.Trim(curPath, "/")
 		_ = r.ParseForm()
 
-		sn, err := restic.FindSnapshot(ctx, repo.Backend(), repo, snapshotID)
+		sn, _, err := restic.FindSnapshot(ctx, snapshotLister, repo, snapshotID)
 		if err != nil {
 			http.Error(w, "Snapshot not found: "+err.Error(), http.StatusNotFound)
 			return
@@ -164,7 +163,7 @@ func runWebServer(ctx context.Context, opts ServeOptions, gopts GlobalOptions, a
 			return
 		}
 		var rows []indexPageRow
-		for sn := range FindFilteredSnapshots(ctx, repo.Backend(), repo, &restic.SnapshotFilter{}, nil) {
+		for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &restic.SnapshotFilter{}, nil) {
 			rows = append(rows, indexPageRow{"/tree/" + sn.ID().Str() + "/", sn.ID().Str(), sn.Time, sn.Hostname, sn.Tags, sn.Paths})
 		}
 		sort.Slice(rows, func(i, j int) bool {
@@ -255,7 +254,7 @@ const treePageTpl = `<html>
 </form>
 </body>
 </html>`
- 
+
 const stylesheetTxt = `
 h1,h2,h3 {text-align:center; margin: 0.5em;}
 table {margin: 0 auto;border-collapse: collapse; }
