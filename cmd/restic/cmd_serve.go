@@ -80,6 +80,7 @@ func runWebServer(ctx context.Context, opts ServeOptions, gopts GlobalOptions, a
 	if err != nil {
 		return err
 	}
+
 	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
 	err = repo.LoadIndex(ctx, bar)
 	if err != nil {
@@ -139,7 +140,13 @@ func runWebServer(ctx context.Context, opts ServeOptions, gopts GlobalOptions, a
 		var rows []treePageRow
 		for _, item := range files {
 			if item.Path != curPath {
-				rows = append(rows, treePageRow{"/tree/" + snapshotID + item.Path, item.Node.Name, item.Node.Type, item.Node.Size, item.Node.ModTime})
+				rows = append(rows, treePageRow{
+					Link: "/tree/" + snapshotID + item.Path,
+					Name: item.Node.Name,
+					Type: item.Node.Type,
+					Size: item.Node.Size,
+					Time: item.Node.ModTime,
+				})
 			}
 		}
 		sort.SliceStable(rows, func(i, j int) bool {
@@ -164,7 +171,14 @@ func runWebServer(ctx context.Context, opts ServeOptions, gopts GlobalOptions, a
 		}
 		var rows []indexPageRow
 		for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &restic.SnapshotFilter{}, nil) {
-			rows = append(rows, indexPageRow{"/tree/" + sn.ID().Str() + "/", sn.ID().Str(), sn.Time, sn.Hostname, sn.Tags, sn.Paths})
+			rows = append(rows, indexPageRow{
+				Link:  "/tree/" + sn.ID().Str() + "/",
+				ID:    sn.ID().Str(),
+				Time:  sn.Time,
+				Host:  sn.Hostname,
+				Tags:  sn.Tags,
+				Paths: sn.Paths,
+			})
 		}
 		sort.Slice(rows, func(i, j int) bool {
 			return rows[i].Time.After(rows[j].Time)
