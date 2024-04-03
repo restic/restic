@@ -53,6 +53,7 @@ func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions
 	type keyInfo struct {
 		Current  bool   `json:"current"`
 		ID       string `json:"id"`
+		ShortID  string `json:"-"`
 		UserName string `json:"userName"`
 		HostName string `json:"hostName"`
 		Created  string `json:"created"`
@@ -70,7 +71,8 @@ func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions
 
 		key := keyInfo{
 			Current:  id == s.KeyID(),
-			ID:       id.Str(),
+			ID:       id.String(),
+			ShortID:  id.Str(),
 			UserName: k.Username,
 			HostName: k.Hostname,
 			Created:  k.Created.Local().Format(TimeFormat),
@@ -91,7 +93,7 @@ func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions
 	}
 
 	tab := table.New()
-	tab.AddColumn(" ID", "{{if .Current}}*{{else}} {{end}}{{ .ID }}")
+	tab.AddColumn(" ID", "{{if .Current}}*{{else}} {{end}}{{ .ShortID }}")
 	tab.AddColumn("User", "{{ .UserName }}")
 	tab.AddColumn("Host", "{{ .HostName }}")
 	tab.AddColumn("Created", "{{ .Created }}")
