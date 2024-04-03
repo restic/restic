@@ -38,6 +38,8 @@ linters:
     # ensure that http response bodies are closed
     - bodyclose
 
+    - importas
+
 issues:
   # don't use the default exclude rules, this hides (among others) ignored
   # errors from Close() calls
@@ -59,3 +61,9 @@ issues:
     # revive: ignore unused parameters in tests
     - path: (_test\.go|testing\.go|backend/.*/tests\.go)
       text: "unused-parameter:"
+
+linters-settings:
+  importas:
+    alias:
+      - pkg: github.com/restic/restic/internal/test
+        alias: rtest
