@@ -74,7 +74,7 @@ jobs:
       - name: Get programs (Linux/macOS)
         run: |
           echo "build Go tools"
-          go install github.com/restic/rest-server/cmd/rest-server@latest
+          go install github.com/restic/rest-server/cmd/rest-server@master
 
           echo "install minio server"
           mkdir $HOME/bin
@@ -106,7 +106,7 @@ jobs:
           $ProgressPreference = 'SilentlyContinue'
 
           echo "build Go tools"
-          go install github.com/restic/rest-server/...
+          go install github.com/restic/rest-server/cmd/rest-server@master
 
           echo "install minio server"
           mkdir $Env:USERPROFILE/bin
