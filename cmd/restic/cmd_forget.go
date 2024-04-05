@@ -267,7 +267,17 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 
 	if len(removeSnIDs) > 0 {
 		if !opts.DryRun {
-			err := DeleteFilesChecked(ctx, gopts, repo, removeSnIDs, restic.SnapshotFile)
+			bar := newProgressMax(!gopts.JSON && !gopts.Quiet, 0, "files deleted")
+			err := restic.ParallelRemove(ctx, repo, removeSnIDs, restic.SnapshotFile, func(id restic.ID, err error) error {
+				if err != nil {
+					Warnf("unable to remove %v/%v from the repository\n", restic.SnapshotFile, id)
+				}
+				if !gopts.JSON && gopts.verbosity > 2 {
+					Verbosef("removed %v/%v\n", restic.SnapshotFile, id)
+				}
+				return nil
+			}, bar)
+			bar.Done()
 			if err != nil {
 				return err
 			}
