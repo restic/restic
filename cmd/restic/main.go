@@ -74,6 +74,9 @@ The full documentation can be found at https://restic.readthedocs.io/ .
 		// enabled)
 		return runDebug()
 	},
+	PersistentPostRun: func(_ *cobra.Command, _ []string) {
+		stopDebug()
+	},
 }
 
 // Distinguish commands that need the password from those that work without,
