@@ -324,7 +324,11 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	}
 
 	if opts.CheckUnused {
-		for _, id := range chkr.UnusedBlobs(ctx) {
+		unused, err := chkr.UnusedBlobs(ctx)
+		if err != nil {
+			return err
+		}
+		for _, id := range unused {
 			Verbosef("unused blob %v\n", id)
 			errorsFound = true
 		}

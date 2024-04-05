@@ -218,7 +218,7 @@ func (idx *Index) AddToSupersedes(ids ...restic.ID) error {
 
 // Each passes all blobs known to the index to the callback fn. This blocks any
 // modification of the index.
-func (idx *Index) Each(ctx context.Context, fn func(restic.PackedBlob)) {
+func (idx *Index) Each(ctx context.Context, fn func(restic.PackedBlob)) error {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
@@ -232,6 +232,7 @@ func (idx *Index) Each(ctx context.Context, fn func(restic.PackedBlob)) {
 			return true
 		})
 	}
+	return ctx.Err()
 }
 
 type EachByPackResult struct {

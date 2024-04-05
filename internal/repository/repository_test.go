@@ -370,13 +370,13 @@ func testRepositoryIncrementalIndex(t *testing.T, version uint) {
 		idx, err := loadIndex(context.TODO(), repo, id)
 		rtest.OK(t, err)
 
-		idx.Each(context.TODO(), func(pb restic.PackedBlob) {
+		rtest.OK(t, idx.Each(context.TODO(), func(pb restic.PackedBlob) {
 			if _, ok := packEntries[pb.PackID]; !ok {
 				packEntries[pb.PackID] = make(map[restic.ID]struct{})
 			}
 
 			packEntries[pb.PackID][id] = struct{}{}
-		})
+		}))
 		return nil
 	})
 	if err != nil {

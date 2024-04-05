@@ -54,7 +54,10 @@ func RepairIndex(ctx context.Context, repo *Repository, opts RepairIndexOptions,
 		if err != nil {
 			return err
 		}
-		packSizeFromIndex = pack.Size(ctx, repo.Index(), false)
+		packSizeFromIndex, err = pack.Size(ctx, repo.Index(), false)
+		if err != nil {
+			return err
+		}
 	}
 
 	printer.P("getting pack files to read...\n")

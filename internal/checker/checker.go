@@ -106,9 +106,9 @@ func (c *Checker) LoadSnapshots(ctx context.Context) error {
 	return err
 }
 
-func computePackTypes(ctx context.Context, idx restic.MasterIndex) map[restic.ID]restic.BlobType {
+func computePackTypes(ctx context.Context, idx restic.MasterIndex) (map[restic.ID]restic.BlobType, error) {
 	packs := make(map[restic.ID]restic.BlobType)
-	idx.Each(ctx, func(pb restic.PackedBlob) {
+	err := idx.Each(ctx, func(pb restic.PackedBlob) {
 		tpe, exists := packs[pb.PackID]
 		if exists {
 			if pb.Type != tpe {
@@ -119,7 +119,7 @@ func computePackTypes(ctx context.Context, idx restic.MasterIndex) map[restic.ID
 		}
 		packs[pb.PackID] = tpe
 	})
-	return packs
+	return packs, err
 }
 
 // LoadIndex loads all index files.
@@ -169,7 +169,7 @@ func (c *Checker) LoadIndex(ctx context.Context, p *progress.Counter) (hints []e
 
 		debug.Log("process blobs")
 		cnt := 0
-		index.Each(ctx, func(blob restic.PackedBlob) {
+		err = index.Each(ctx, func(blob restic.PackedBlob) {
 			cnt++
 
 			if _, ok := packToIndex[blob.PackID]; !ok {
@@ -179,7 +179,7 @@ func (c *Checker) LoadIndex(ctx context.Context, p *progress.Counter) (hints []e
 		})
 
 		debug.Log("%d blobs processed", cnt)
-		return nil
+		return err
 	})
 	if err != nil {
 		errs = append(errs, err)
@@ -193,8 +193,14 @@ func (c *Checker) LoadIndex(ctx context.Context, p *progress.Counter) (hints []e
 	}
 
 	// compute pack size using index entries
-	c.packs = pack.Size(ctx, c.masterIndex, false)
-	packTypes := computePackTypes(ctx, c.masterIndex)
+	c.packs, err = pack.Size(ctx, c.masterIndex, false)
+	if err != nil {
+		return hints, append(errs, err)
+	}
+	packTypes, err := computePackTypes(ctx, c.masterIndex)
+	if err != nil {
+		return hints, append(errs, err)
+	}
 
 	debug.Log("checking for duplicate packs")
 	for packID := range c.packs {
@@ -484,7 +490,7 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 }
 
 // UnusedBlobs returns all blobs that have never been referenced.
-func (c *Checker) UnusedBlobs(ctx context.Context) (blobs restic.BlobHandles) {
+func (c *Checker) UnusedBlobs(ctx context.Context) (blobs restic.BlobHandles, err error) {
 	if !c.trackUnused {
 		panic("only works when tracking blob references")
 	}
@@ -495,7 +501,7 @@ func (c *Checker) UnusedBlobs(ctx context.Context) (blobs restic.BlobHandles) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	c.repo.Index().Each(ctx, func(blob restic.PackedBlob) {
+	err = c.repo.Index().Each(ctx, func(blob restic.PackedBlob) {
 		h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
 		if !c.blobRefs.M.Has(h) {
 			debug.Log("blob %v not referenced", h)
@@ -503,7 +509,7 @@ func (c *Checker) UnusedBlobs(ctx context.Context) (blobs restic.BlobHandles) {
 		}
 	})
 
-	return blobs
+	return blobs, err
 }
 
 // CountPacks returns the number of packs in the repository.
