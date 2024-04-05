@@ -25,6 +25,8 @@ func init() {
 	_, _ = maxprocs.Set()
 }
 
+var ErrOK = errors.New("ok")
+
 // cmdRoot is the base command when no other command has been specified.
 var cmdRoot = &cobra.Command{
 	Use:   "restic",
@@ -125,6 +127,9 @@ func main() {
 
 	if err == nil {
 		err = ctx.Err()
+	} else if err == ErrOK {
+		// ErrOK overwrites context cancelation errors
+		err = nil
 	}
 
 	switch {
