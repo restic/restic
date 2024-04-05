@@ -16,6 +16,7 @@ import (
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/progress"
+	"github.com/restic/restic/internal/ui/termstatus"
 
 	"github.com/spf13/cobra"
 )
@@ -38,7 +39,9 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		return runPrune(cmd.Context(), pruneOptions, globalOptions)
+		term, cancel := setupTermstatus()
+		defer cancel()
+		return runPrune(cmd.Context(), pruneOptions, globalOptions, term)
 	},
 }
 
@@ -138,7 +141,7 @@ func verifyPruneOptions(opts *PruneOptions) error {
 	return nil
 }
 
-func runPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions) error {
+func runPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, term *termstatus.Terminal) error {
 	err := verifyPruneOptions(&opts)
 	if err != nil {
 		return err
@@ -170,10 +173,10 @@ func runPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions) error
 		opts.unsafeRecovery = true
 	}
 
-	return runPruneWithRepo(ctx, opts, gopts, repo, restic.NewIDSet())
+	return runPruneWithRepo(ctx, opts, gopts, repo, restic.NewIDSet(), term)
 }
 
-func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo *repository.Repository, ignoreSnapshots restic.IDSet) error {
+func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo *repository.Repository, ignoreSnapshots restic.IDSet, term *termstatus.Terminal) error {
 	// we do not need index updates while pruning!
 	repo.DisableAutoIndexUpdate()
 
@@ -181,24 +184,26 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOption
 		Print("warning: running prune without a cache, this may be very slow!\n")
 	}
 
-	Verbosef("loading indexes...\n")
+	printer := newTerminalProgressPrinter(gopts.verbosity, term)
+
+	printer.P("loading indexes...\n")
 	// loading the index before the snapshots is ok, as we use an exclusive lock here
-	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+	bar := newIndexTerminalProgress(gopts.Quiet, gopts.JSON, term)
 	err := repo.LoadIndex(ctx, bar)
 	if err != nil {
 		return err
 	}
 
-	plan, stats, err := planPrune(ctx, opts, repo, ignoreSnapshots, gopts.Quiet)
+	plan, stats, err := planPrune(ctx, opts, repo, ignoreSnapshots, printer)
 	if err != nil {
 		return err
 	}
 
 	if opts.DryRun {
-		Verbosef("\nWould have made the following changes:")
+		printer.P("\nWould have made the following changes:")
 	}
 
-	err = printPruneStats(stats)
+	err = printPruneStats(printer, stats)
 	if err != nil {
 		return err
 	}
@@ -206,7 +211,7 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOption
 	// Trigger GC to reset garbage collection threshold
 	runtime.GC()
 
-	return doPrune(ctx, opts, gopts, repo, plan)
+	return doPrune(ctx, opts, repo, plan, printer)
 }
 
 type pruneStats struct {
@@ -264,22 +269,22 @@ type packInfoWithID struct {
 
 // planPrune selects which files to rewrite and which to delete and which blobs to keep.
 // Also some summary statistics are returned.
-func planPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, ignoreSnapshots restic.IDSet, quiet bool) (prunePlan, pruneStats, error) {
+func planPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, ignoreSnapshots restic.IDSet, printer progress.Printer) (prunePlan, pruneStats, error) {
 	var stats pruneStats
 
-	usedBlobs, err := getUsedBlobs(ctx, repo, ignoreSnapshots, quiet)
+	usedBlobs, err := getUsedBlobs(ctx, repo, ignoreSnapshots, printer)
 	if err != nil {
 		return prunePlan{}, stats, err
 	}
 
-	Verbosef("searching used packs...\n")
-	keepBlobs, indexPack, err := packInfoFromIndex(ctx, repo.Index(), usedBlobs, &stats)
+	printer.P("searching used packs...\n")
+	keepBlobs, indexPack, err := packInfoFromIndex(ctx, repo.Index(), usedBlobs, &stats, printer)
 	if err != nil {
 		return prunePlan{}, stats, err
 	}
 
-	Verbosef("collecting packs for deletion and repacking\n")
-	plan, err := decidePackAction(ctx, opts, repo, indexPack, &stats, quiet)
+	printer.P("collecting packs for deletion and repacking\n")
+	plan, err := decidePackAction(ctx, opts, repo, indexPack, &stats, printer)
 	if err != nil {
 		return prunePlan{}, stats, err
 	}
@@ -308,7 +313,7 @@ func planPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, i
 	return plan, stats, nil
 }
 
-func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs restic.CountedBlobSet, stats *pruneStats) (restic.CountedBlobSet, map[restic.ID]packInfo, error) {
+func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs restic.CountedBlobSet, stats *pruneStats, printer progress.Printer) (restic.CountedBlobSet, map[restic.ID]packInfo, error) {
 	// iterate over all blobs in index to find out which blobs are duplicates
 	// The counter in usedBlobs describes how many instances of the blob exist in the repository index
 	// Thus 0 == blob is missing, 1 == blob exists once, >= 2 == duplicates exist
@@ -337,7 +342,7 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 	}
 
 	if len(missingBlobs) != 0 {
-		Warnf("%v not found in the index\n\n"+
+		printer.E("%v not found in the index\n\n"+
 			"Integrity check failed: Data seems to be missing.\n"+
 			"Will not start prune to prevent (additional) data loss!\n"+
 			"Please report this error (along with the output of the 'prune' run) at\n"+
@@ -458,7 +463,7 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 	return usedBlobs, indexPack, nil
 }
 
-func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Repository, indexPack map[restic.ID]packInfo, stats *pruneStats, quiet bool) (prunePlan, error) {
+func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Repository, indexPack map[restic.ID]packInfo, stats *pruneStats, printer progress.Printer) (prunePlan, error) {
 	removePacksFirst := restic.NewIDSet()
 	removePacks := restic.NewIDSet()
 	repackPacks := restic.NewIDSet()
@@ -474,12 +479,13 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Reposi
 	}
 
 	// loop over all packs and decide what to do
-	bar := newProgressMax(!quiet, uint64(len(indexPack)), "packs processed")
+	bar := printer.NewCounter("packs processed")
+	bar.SetMax(uint64(len(indexPack)))
 	err := repo.List(ctx, restic.PackFile, func(id restic.ID, packSize int64) error {
 		p, ok := indexPack[id]
 		if !ok {
 			// Pack was not referenced in index and is not used  => immediately remove!
-			Verboseff("will remove pack %v as it is unused and not indexed\n", id.Str())
+			printer.V("will remove pack %v as it is unused and not indexed\n", id.Str())
 			removePacksFirst.Insert(id)
 			stats.size.unref += uint64(packSize)
 			return nil
@@ -489,7 +495,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Reposi
 			// Pack size does not fit and pack is needed => error
 			// If the pack is not needed, this is no error, the pack can
 			// and will be simply removed, see below.
-			Warnf("pack %s: calculated size %d does not match real size %d\nRun 'restic repair index'.\n",
+			printer.E("pack %s: calculated size %d does not match real size %d\nRun 'restic repair index'.\n",
 				id.Str(), p.unusedSize+p.usedSize, packSize)
 			return errorSizeNotMatching
 		}
@@ -562,16 +568,16 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Reposi
 	}
 
 	if len(indexPack) != 0 {
-		Warnf("The index references %d needed pack files which are missing from the repository:\n", len(indexPack))
+		printer.E("The index references %d needed pack files which are missing from the repository:\n", len(indexPack))
 		for id := range indexPack {
-			Warnf("  %v\n", id)
+			printer.E("  %v\n", id)
 		}
 		return prunePlan{}, errorPacksMissing
 	}
 	if len(ignorePacks) != 0 {
-		Warnf("Missing but unneeded pack files are referenced in the index, will be repaired\n")
+		printer.E("Missing but unneeded pack files are referenced in the index, will be repaired\n")
 		for id := range ignorePacks {
-			Warnf("will forget missing pack file %v\n", id)
+			printer.E("will forget missing pack file %v\n", id)
 		}
 	}
 
@@ -657,43 +663,43 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Reposi
 }
 
 // printPruneStats prints out the statistics
-func printPruneStats(stats pruneStats) error {
-	Verboseff("\nused:         %10d blobs / %s\n", stats.blobs.used, ui.FormatBytes(stats.size.used))
+func printPruneStats(printer progress.Printer, stats pruneStats) error {
+	printer.V("\nused:         %10d blobs / %s\n", stats.blobs.used, ui.FormatBytes(stats.size.used))
 	if stats.blobs.duplicate > 0 {
-		Verboseff("duplicates:   %10d blobs / %s\n", stats.blobs.duplicate, ui.FormatBytes(stats.size.duplicate))
+		printer.V("duplicates:   %10d blobs / %s\n", stats.blobs.duplicate, ui.FormatBytes(stats.size.duplicate))
 	}
-	Verboseff("unused:       %10d blobs / %s\n", stats.blobs.unused, ui.FormatBytes(stats.size.unused))
+	printer.V("unused:       %10d blobs / %s\n", stats.blobs.unused, ui.FormatBytes(stats.size.unused))
 	if stats.size.unref > 0 {
-		Verboseff("unreferenced:                    %s\n", ui.FormatBytes(stats.size.unref))
+		printer.V("unreferenced:                    %s\n", ui.FormatBytes(stats.size.unref))
 	}
 	totalBlobs := stats.blobs.used + stats.blobs.unused + stats.blobs.duplicate
 	totalSize := stats.size.used + stats.size.duplicate + stats.size.unused + stats.size.unref
 	unusedSize := stats.size.duplicate + stats.size.unused
-	Verboseff("total:        %10d blobs / %s\n", totalBlobs, ui.FormatBytes(totalSize))
-	Verboseff("unused size: %s of total size\n", ui.FormatPercent(unusedSize, totalSize))
+	printer.V("total:        %10d blobs / %s\n", totalBlobs, ui.FormatBytes(totalSize))
+	printer.V("unused size: %s of total size\n", ui.FormatPercent(unusedSize, totalSize))
 
-	Verbosef("\nto repack:    %10d blobs / %s\n", stats.blobs.repack, ui.FormatBytes(stats.size.repack))
-	Verbosef("this removes: %10d blobs / %s\n", stats.blobs.repackrm, ui.FormatBytes(stats.size.repackrm))
-	Verbosef("to delete:    %10d blobs / %s\n", stats.blobs.remove, ui.FormatBytes(stats.size.remove+stats.size.unref))
+	printer.P("\nto repack:    %10d blobs / %s\n", stats.blobs.repack, ui.FormatBytes(stats.size.repack))
+	printer.P("this removes: %10d blobs / %s\n", stats.blobs.repackrm, ui.FormatBytes(stats.size.repackrm))
+	printer.P("to delete:    %10d blobs / %s\n", stats.blobs.remove, ui.FormatBytes(stats.size.remove+stats.size.unref))
 	totalPruneSize := stats.size.remove + stats.size.repackrm + stats.size.unref
-	Verbosef("total prune:  %10d blobs / %s\n", stats.blobs.remove+stats.blobs.repackrm, ui.FormatBytes(totalPruneSize))
+	printer.P("total prune:  %10d blobs / %s\n", stats.blobs.remove+stats.blobs.repackrm, ui.FormatBytes(totalPruneSize))
 	if stats.size.uncompressed > 0 {
-		Verbosef("not yet compressed:              %s\n", ui.FormatBytes(stats.size.uncompressed))
+		printer.P("not yet compressed:              %s\n", ui.FormatBytes(stats.size.uncompressed))
 	}
-	Verbosef("remaining:    %10d blobs / %s\n", totalBlobs-(stats.blobs.remove+stats.blobs.repackrm), ui.FormatBytes(totalSize-totalPruneSize))
+	printer.P("remaining:    %10d blobs / %s\n", totalBlobs-(stats.blobs.remove+stats.blobs.repackrm), ui.FormatBytes(totalSize-totalPruneSize))
 	unusedAfter := unusedSize - stats.size.remove - stats.size.repackrm
-	Verbosef("unused size after prune: %s (%s of remaining size)\n",
+	printer.P("unused size after prune: %s (%s of remaining size)\n",
 		ui.FormatBytes(unusedAfter), ui.FormatPercent(unusedAfter, totalSize-totalPruneSize))
-	Verbosef("\n")
-	Verboseff("totally used packs: %10d\n", stats.packs.used)
-	Verboseff("partly used packs:  %10d\n", stats.packs.partlyUsed)
-	Verboseff("unused packs:       %10d\n\n", stats.packs.unused)
+	printer.P("\n")
+	printer.V("totally used packs: %10d\n", stats.packs.used)
+	printer.V("partly used packs:  %10d\n", stats.packs.partlyUsed)
+	printer.V("unused packs:       %10d\n\n", stats.packs.unused)
 
-	Verboseff("to keep:      %10d packs\n", stats.packs.keep)
-	Verboseff("to repack:    %10d packs\n", stats.packs.repack)
-	Verboseff("to delete:    %10d packs\n", stats.packs.remove)
+	printer.V("to keep:      %10d packs\n", stats.packs.keep)
+	printer.V("to repack:    %10d packs\n", stats.packs.repack)
+	printer.V("to delete:    %10d packs\n", stats.packs.remove)
 	if stats.packs.unref > 0 {
-		Verboseff("to delete:    %10d unreferenced packs\n\n", stats.packs.unref)
+		printer.V("to delete:    %10d unreferenced packs\n\n", stats.packs.unref)
 	}
 	return nil
 }
@@ -704,29 +710,28 @@ func printPruneStats(stats pruneStats) error {
 // - rebuild the index while ignoring all files that will be deleted
 // - delete the files
 // plan.removePacks and plan.ignorePacks are modified in this function.
-func doPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo restic.Repository, plan prunePlan) (err error) {
+func doPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, plan prunePlan, printer progress.Printer) (err error) {
 	if opts.DryRun {
-		if !gopts.JSON && gopts.verbosity >= 2 {
-			Printf("Repeated prune dry-runs can report slightly different amounts of data to keep or repack. This is expected behavior.\n\n")
-			if len(plan.removePacksFirst) > 0 {
-				Printf("Would have removed the following unreferenced packs:\n%v\n\n", plan.removePacksFirst)
-			}
-			Printf("Would have repacked and removed the following packs:\n%v\n\n", plan.repackPacks)
-			Printf("Would have removed the following no longer used packs:\n%v\n\n", plan.removePacks)
+		printer.V("Repeated prune dry-runs can report slightly different amounts of data to keep or repack. This is expected behavior.\n\n")
+		if len(plan.removePacksFirst) > 0 {
+			printer.V("Would have removed the following unreferenced packs:\n%v\n\n", plan.removePacksFirst)
 		}
+		printer.V("Would have repacked and removed the following packs:\n%v\n\n", plan.repackPacks)
+		printer.V("Would have removed the following no longer used packs:\n%v\n\n", plan.removePacks)
 		// Always quit here if DryRun was set!
 		return nil
 	}
 
 	// unreferenced packs can be safely deleted first
 	if len(plan.removePacksFirst) != 0 {
-		Verbosef("deleting unreferenced packs\n")
-		DeleteFiles(ctx, gopts, repo, plan.removePacksFirst, restic.PackFile)
+		printer.P("deleting unreferenced packs\n")
+		DeleteFiles(ctx, repo, plan.removePacksFirst, restic.PackFile, printer)
 	}
 
 	if len(plan.repackPacks) != 0 {
-		Verbosef("repacking packs\n")
-		bar := newProgressMax(!gopts.Quiet, uint64(len(plan.repackPacks)), "packs repacked")
+		printer.P("repacking packs\n")
+		bar := printer.NewCounter("packs repacked")
+		bar.SetMax(uint64(len(plan.repackPacks)))
 		_, err := repository.Repack(ctx, repo, repo, plan.repackPacks, plan.keepBlobs, bar)
 		bar.Done()
 		if err != nil {
@@ -737,7 +742,7 @@ func doPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo r
 		plan.removePacks.Merge(plan.repackPacks)
 
 		if len(plan.keepBlobs) != 0 {
-			Warnf("%v was not repacked\n\n"+
+			printer.E("%v was not repacked\n\n"+
 				"Integrity check failed.\n"+
 				"Please report this error (along with the output of the 'prune' run) at\n"+
 				"https://github.com/restic/restic/issues/new/choose\n", plan.keepBlobs)
@@ -755,56 +760,54 @@ func doPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, repo r
 	}
 
 	if opts.unsafeRecovery {
-		Verbosef("deleting index files\n")
+		printer.P("deleting index files\n")
 		indexFiles := repo.Index().(*index.MasterIndex).IDs()
-		err = DeleteFilesChecked(ctx, gopts, repo, indexFiles, restic.IndexFile)
+		err = DeleteFilesChecked(ctx, repo, indexFiles, restic.IndexFile, printer)
 		if err != nil {
 			return errors.Fatalf("%s", err)
 		}
 	} else if len(plan.ignorePacks) != 0 {
-		err = rebuildIndexFiles(ctx, gopts, repo, plan.ignorePacks, nil, false)
+		err = rebuildIndexFiles(ctx, repo, plan.ignorePacks, nil, false, printer)
 		if err != nil {
 			return errors.Fatalf("%s", err)
 		}
 	}
 
 	if len(plan.removePacks) != 0 {
-		Verbosef("removing %d old packs\n", len(plan.removePacks))
-		DeleteFiles(ctx, gopts, repo, plan.removePacks, restic.PackFile)
+		printer.P("removing %d old packs\n", len(plan.removePacks))
+		DeleteFiles(ctx, repo, plan.removePacks, restic.PackFile, printer)
 	}
 
 	if opts.unsafeRecovery {
-		err = rebuildIndexFiles(ctx, gopts, repo, plan.ignorePacks, nil, true)
+		err = rebuildIndexFiles(ctx, repo, plan.ignorePacks, nil, true, printer)
 		if err != nil {
 			return errors.Fatalf("%s", err)
 		}
 	}
 
-	Verbosef("done\n")
+	printer.P("done\n")
 	return nil
 }
 
-func rebuildIndexFiles(ctx context.Context, gopts GlobalOptions, repo restic.Repository, removePacks restic.IDSet, extraObsolete restic.IDs, skipDeletion bool) error {
-	Verbosef("rebuilding index\n")
+func rebuildIndexFiles(ctx context.Context, repo restic.Repository, removePacks restic.IDSet, extraObsolete restic.IDs, skipDeletion bool, printer progress.Printer) error {
+	printer.P("rebuilding index\n")
 
-	bar := newProgressMax(!gopts.Quiet, 0, "packs processed")
+	bar := printer.NewCounter("packs processed")
 	return repo.Index().Save(ctx, repo, removePacks, extraObsolete, restic.MasterIndexSaveOpts{
 		SaveProgress: bar,
 		DeleteProgress: func() *progress.Counter {
-			return newProgressMax(!gopts.Quiet, 0, "old indexes deleted")
+			return printer.NewCounter("old indexes deleted")
 		},
 		DeleteReport: func(id restic.ID, _ error) {
-			if gopts.verbosity > 2 {
-				Verbosef("removed index %v\n", id.String())
-			}
+			printer.VV("removed index %v\n", id.String())
 		},
 		SkipDeletion: skipDeletion,
 	})
 }
 
-func getUsedBlobs(ctx context.Context, repo restic.Repository, ignoreSnapshots restic.IDSet, quiet bool) (usedBlobs restic.CountedBlobSet, err error) {
+func getUsedBlobs(ctx context.Context, repo restic.Repository, ignoreSnapshots restic.IDSet, printer progress.Printer) (usedBlobs restic.CountedBlobSet, err error) {
 	var snapshotTrees restic.IDs
-	Verbosef("loading all snapshots...\n")
+	printer.P("loading all snapshots...\n")
 	err = restic.ForAllSnapshots(ctx, repo, repo, ignoreSnapshots,
 		func(id restic.ID, sn *restic.Snapshot, err error) error {
 			if err != nil {
@@ -819,11 +822,12 @@ func getUsedBlobs(ctx context.Context, repo restic.Repository, ignoreSnapshots r
 		return nil, errors.Fatalf("failed loading snapshot: %v", err)
 	}
 
-	Verbosef("finding data that is still in use for %d snapshots\n", len(snapshotTrees))
+	printer.P("finding data that is still in use for %d snapshots\n", len(snapshotTrees))
 
 	usedBlobs = restic.NewCountedBlobSet()
 
-	bar := newProgressMax(!quiet, uint64(len(snapshotTrees)), "snapshots")
+	bar := printer.NewCounter("snapshots")
+	bar.SetMax(uint64(len(snapshotTrees)))
 	defer bar.Done()
 
 	err = restic.FindUsedBlobs(ctx, repo, snapshotTrees, usedBlobs, bar)

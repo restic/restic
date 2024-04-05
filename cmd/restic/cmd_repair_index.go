@@ -7,6 +7,8 @@ import (
 	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui/progress"
+	"github.com/restic/restic/internal/ui/termstatus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -25,7 +27,9 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		return runRebuildIndex(cmd.Context(), repairIndexOptions, globalOptions)
+		term, cancel := setupTermstatus()
+		defer cancel()
+		return runRebuildIndex(cmd.Context(), repairIndexOptions, globalOptions, term)
 	},
 }
 
@@ -55,17 +59,19 @@ func init() {
 	}
 }
 
-func runRebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOptions) error {
+func runRebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOptions, term *termstatus.Terminal) error {
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false)
 	if err != nil {
 		return err
 	}
 	defer unlock()
 
-	return rebuildIndex(ctx, opts, gopts, repo)
+	printer := newTerminalProgressPrinter(gopts.verbosity, term)
+
+	return rebuildIndex(ctx, opts, repo, printer)
 }
 
-func rebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOptions, repo *repository.Repository) error {
+func rebuildIndex(ctx context.Context, opts RepairIndexOptions, repo *repository.Repository, printer progress.Printer) error {
 	var obsoleteIndexes restic.IDs
 	packSizeFromList := make(map[restic.ID]int64)
 	packSizeFromIndex := make(map[restic.ID]int64)
@@ -81,11 +87,11 @@ func rebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOpti
 			return err
 		}
 	} else {
-		Verbosef("loading indexes...\n")
+		printer.P("loading indexes...\n")
 		mi := index.NewMasterIndex()
 		err := index.ForAllIndexes(ctx, repo, repo, func(id restic.ID, idx *index.Index, _ bool, err error) error {
 			if err != nil {
-				Warnf("removing invalid index %v: %v\n", id, err)
+				printer.E("removing invalid index %v: %v\n", id, err)
 				obsoleteIndexes = append(obsoleteIndexes, id)
 				return nil
 			}
@@ -109,7 +115,7 @@ func rebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOpti
 		packSizeFromIndex = pack.Size(ctx, repo.Index(), false)
 	}
 
-	Verbosef("getting pack files to read...\n")
+	printer.P("getting pack files to read...\n")
 	err := repo.List(ctx, restic.PackFile, func(id restic.ID, packSize int64) error {
 		size, ok := packSizeFromIndex[id]
 		if !ok || size != packSize {
@@ -118,9 +124,9 @@ func rebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOpti
 			removePacks.Insert(id)
 		}
 		if !ok {
-			Warnf("adding pack file to index %v\n", id)
+			printer.E("adding pack file to index %v\n", id)
 		} else if size != packSize {
-			Warnf("reindexing pack file %v with unexpected size %v instead of %v\n", id, packSize, size)
+			printer.E("reindexing pack file %v with unexpected size %v instead of %v\n", id, packSize, size)
 		}
 		delete(packSizeFromIndex, id)
 		return nil
@@ -132,12 +138,13 @@ func rebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOpti
 		// forget pack files that are referenced in the index but do not exist
 		// when rebuilding the index
 		removePacks.Insert(id)
-		Warnf("removing not found pack file %v\n", id)
+		printer.E("removing not found pack file %v\n", id)
 	}
 
 	if len(packSizeFromList) > 0 {
-		Verbosef("reading pack files\n")
-		bar := newProgressMax(!gopts.Quiet, uint64(len(packSizeFromList)), "packs")
+		printer.P("reading pack files\n")
+		bar := printer.NewCounter("packs")
+		bar.SetMax(uint64(len(packSizeFromList)))
 		invalidFiles, err := repo.CreateIndexFromPacks(ctx, packSizeFromList, bar)
 		bar.Done()
 		if err != nil {
@@ -145,15 +152,15 @@ func rebuildIndex(ctx context.Context, opts RepairIndexOptions, gopts GlobalOpti
 		}
 
 		for _, id := range invalidFiles {
-			Verboseff("skipped incomplete pack file: %v\n", id)
+			printer.V("skipped incomplete pack file: %v\n", id)
 		}
 	}
 
-	err = rebuildIndexFiles(ctx, gopts, repo, removePacks, obsoleteIndexes, false)
+	err = rebuildIndexFiles(ctx, repo, removePacks, obsoleteIndexes, false, printer)
 	if err != nil {
 		return err
 	}
-	Verbosef("done\n")
+	printer.P("done\n")
 
 	return nil
 }

@@ -58,13 +58,13 @@ func runRepairPacks(ctx context.Context, gopts GlobalOptions, term *termstatus.T
 	}
 	defer unlock()
 
-	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+	printer := newTerminalProgressPrinter(gopts.verbosity, term)
+
+	bar := newIndexTerminalProgress(gopts.Quiet, gopts.JSON, term)
 	err = repo.LoadIndex(ctx, bar)
 	if err != nil {
 		return errors.Fatalf("%s", err)
 	}
-
-	printer := newTerminalProgressPrinter(gopts.verbosity, term)
 
 	printer.P("saving backup copies of pack files to current folder")
 	for id := range ids {
