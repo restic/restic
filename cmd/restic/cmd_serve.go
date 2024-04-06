@@ -49,7 +49,7 @@ type fileNode struct {
 func listNodes(ctx context.Context, repo restic.Repository, tree restic.ID, path string) ([]fileNode, error) {
 	var files []fileNode
 	err := walker.Walk(ctx, repo, tree, walker.WalkVisitor{
-		ProcessNode: func(parentTreeID restic.ID, nodepath string, node *restic.Node, err error) error {
+		ProcessNode: func(_ restic.ID, nodepath string, node *restic.Node, err error) error {
 			if err != nil || node == nil {
 				return err
 			}
@@ -188,7 +188,7 @@ func runWebServer(ctx context.Context, opts ServeOptions, gopts GlobalOptions, a
 		}
 	})
 
-	http.HandleFunc("/style.css", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/style.css", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Cache-Control", "max-age=300")
 		_, _ = w.Write([]byte(stylesheetTxt))
 	})
