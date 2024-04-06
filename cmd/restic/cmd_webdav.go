@@ -5,7 +5,9 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -87,19 +89,20 @@ func init() {
 
 func runWebServer(ctx context.Context, opts WebdavOptions, gopts GlobalOptions, args []string) error {
 
+	// PathTemplates and TimeTemplate are ignored for now because `fuse.snapshots_dir(struct)`
+	// is not accessible when building on Windows and it would be ridiculous to duplicate the
+	// code. It should be shared, somehow.
+
 	if len(args) == 0 {
 		return errors.Fatal("wrong number of parameters")
 	}
 
 	bindAddress := args[0]
 
+	// FIXME: Proper validation, also check for IPv6
 	if strings.Index(bindAddress, "http://") == 0 {
 		bindAddress = bindAddress[7:]
 	}
-
-	// PathTemplates and TimeTemplate are ignored for now because `fuse.snapshots_dir(struct)`
-	// is not accessible when building on Windows and it would be ridiculous to duplicate the
-	// code. It should be shared, somehow.
 
 	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
 	if err != nil {
@@ -149,6 +152,12 @@ func runWebServer(ctx context.Context, opts WebdavOptions, gopts GlobalOptions, 
 	Printf("Now serving the repository at http://%s\n", bindAddress)
 	Printf("Tree contains %d snapshots\n", len(davFS.root.children))
 	Printf("When finished, quit with Ctrl-c here.\n")
+
+	// FIXME: Remove before PR, this is handy for testing but likely undesirable :)
+	if runtime.GOOS == "windows" {
+		browseURL := "\\\\" + strings.Replace(bindAddress, ":", "@", 1) + "\\DavWWWRoot"
+		exec.Command("explorer", browseURL).Start()
+	}
 
 	return http.ListenAndServe(bindAddress, wd)
 }
