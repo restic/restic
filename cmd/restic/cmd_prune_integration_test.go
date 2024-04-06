@@ -35,7 +35,7 @@ func testPruneVariants(t *testing.T, unsafeNoSpaceRecovery bool) {
 	}
 	t.Run("0"+suffix, func(t *testing.T) {
 		opts := PruneOptions{MaxUnused: "0%", unsafeRecovery: unsafeNoSpaceRecovery}
-		checkOpts := CheckOptions{ReadData: true, CheckUnused: true}
+		checkOpts := CheckOptions{ReadData: true, CheckUnused: !unsafeNoSpaceRecovery}
 		testPrune(t, opts, checkOpts)
 	})
 

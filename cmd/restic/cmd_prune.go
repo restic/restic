@@ -150,14 +150,6 @@ func runPrune(ctx context.Context, opts PruneOptions, gopts GlobalOptions, term 
 	}
 	defer unlock()
 
-	if repo.Connections() < 2 {
-		return errors.Fatal("prune requires a backend connection limit of at least two")
-	}
-
-	if repo.Config().Version < 2 && opts.RepackUncompressed {
-		return errors.Fatal("compression requires at least repository format version 2")
-	}
-
 	if opts.UnsafeNoSpaceRecovery != "" {
 		repoID := repo.Config().ID
 		if opts.UnsafeNoSpaceRecovery != repoID {

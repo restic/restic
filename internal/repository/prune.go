@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"sort"
 
@@ -86,6 +87,17 @@ type packInfoWithID struct {
 // Also some summary statistics are returned.
 func PlanPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, getUsedBlobs func(ctx context.Context, repo restic.Repository) (usedBlobs restic.CountedBlobSet, err error), printer progress.Printer) (PrunePlan, PruneStats, error) {
 	var stats PruneStats
+
+	if opts.UnsafeRecovery {
+		// prevent repacking data to make sure users cannot get stuck.
+		opts.MaxRepackBytes = 0
+	}
+	if repo.Connections() < 2 {
+		return PrunePlan{}, stats, fmt.Errorf("prune requires a backend connection limit of at least two")
+	}
+	if repo.Config().Version < 2 && opts.RepackUncompressed {
+		return PrunePlan{}, stats, fmt.Errorf("compression requires at least repository format version 2")
+	}
 
 	usedBlobs, err := getUsedBlobs(ctx, repo)
 	if err != nil {
