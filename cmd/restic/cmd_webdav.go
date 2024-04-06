@@ -22,7 +22,7 @@ import (
 )
 
 var cmdWebdav = &cobra.Command{
-	Use:   "webdav [flags] address:port",
+	Use:   "webdav [flags] [ip:port]",
 	Short: "Serve the repository via WebDAV",
 	Long: `
 The "webdav" command serves the repository via WebDAV. This is a
@@ -84,7 +84,7 @@ func init() {
 	cmdFlags := cmdWebdav.Flags()
 	initMultiSnapshotFilter(cmdFlags, &webdavOptions.SnapshotFilter, true)
 	cmdFlags.StringArrayVar(&webdavOptions.PathTemplates, "path-template", nil, "set `template` for path names (can be specified multiple times)")
-	cmdFlags.StringVar(&webdavOptions.TimeTemplate, "snapshot-template", time.RFC3339, "set `template` to use for snapshot dirs")
+	cmdFlags.StringVar(&webdavOptions.TimeTemplate, "snapshot-template", "2006-01-02_15-04-05", "set `template` to use for snapshot dirs")
 }
 
 func runWebServer(ctx context.Context, opts WebdavOptions, gopts GlobalOptions, args []string) error {
@@ -93,13 +93,16 @@ func runWebServer(ctx context.Context, opts WebdavOptions, gopts GlobalOptions, 
 	// is not accessible when building on Windows and it would be ridiculous to duplicate the
 	// code. It should be shared, somehow.
 
-	if len(args) == 0 {
+	if len(args) > 1 {
 		return errors.Fatal("wrong number of parameters")
 	}
 
-	bindAddress := args[0]
+	// FIXME: Proper validation, also add support for IPv6
+	bindAddress := "127.0.0.1:3080"
+	if len(args) == 1 {
+		bindAddress = strings.ToLower(args[0])
+	}
 
-	// FIXME: Proper validation, also check for IPv6
 	if strings.Index(bindAddress, "http://") == 0 {
 		bindAddress = bindAddress[7:]
 	}
@@ -129,24 +132,28 @@ func runWebServer(ctx context.Context, opts WebdavOptions, gopts GlobalOptions, 
 			modTime:  time.Now(),
 			children: make(map[string]*webdavFSNode),
 		},
-		snapshots: make(map[string]*restic.Snapshot),
 		blobCache: bloblru.New(64 << 20),
-	}
-
-	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &webdavOptions.SnapshotFilter, args[1:]) {
-		snID := sn.ID().Str()
-		davFS.root.children[snID] = &webdavFSNode{
-			name:     snID,
-			mode:     0555 | os.ModeDir,
-			modTime:  sn.Time,
-			children: make(map[string]*webdavFSNode),
-		}
-		davFS.snapshots[snID] = sn
 	}
 
 	wd := &webdav.Handler{
 		FileSystem: davFS,
 		LockSystem: webdav.NewMemLS(),
+	}
+
+	for sn := range FindFilteredSnapshots(ctx, snapshotLister, repo, &webdavOptions.SnapshotFilter, nil) {
+		node := &webdavFSNode{
+			name:     sn.ID().Str(),
+			mode:     0555 | os.ModeDir,
+			modTime:  sn.Time,
+			children: nil,
+			snapshot: sn,
+		}
+		davFS.addNode("/ids/"+node.name, node)
+		davFS.addNode("/hosts/"+sn.Hostname+"/"+node.name, node)
+		davFS.addNode("/snapshots/"+sn.Time.Format(opts.TimeTemplate)+"/"+node.name, node)
+		for _, tag := range sn.Tags {
+			davFS.addNode("/tags/"+tag+"/"+node.name, node)
+		}
 	}
 
 	Printf("Now serving the repository at http://%s\n", bindAddress)
@@ -163,21 +170,23 @@ func runWebServer(ctx context.Context, opts WebdavOptions, gopts GlobalOptions, 
 }
 
 type webdavFS struct {
-	repo      restic.Repository
-	root      webdavFSNode
-	snapshots map[string]*restic.Snapshot
+	repo restic.Repository
+	root webdavFSNode
+	// snapshots *restic.Snapshot
 	blobCache *bloblru.Cache
 }
 
 // Implements os.FileInfo
 type webdavFSNode struct {
-	name    string
-	mode    os.FileMode
-	modTime time.Time
-	size    int64
-
-	node     *restic.Node
+	name     string
+	mode     os.FileMode
+	modTime  time.Time
+	size     int64
 	children map[string]*webdavFSNode
+
+	// Should be an interface to save on memory?
+	node     *restic.Node
+	snapshot *restic.Snapshot
 }
 
 func (f *webdavFSNode) Name() string       { return f.name }
@@ -187,8 +196,8 @@ func (f *webdavFSNode) ModTime() time.Time { return f.modTime }
 func (f *webdavFSNode) IsDir() bool        { return f.mode.IsDir() }
 func (f *webdavFSNode) Sys() interface{}   { return nil }
 
-func mountSnapshot(ctx context.Context, fs *webdavFS, mountPoint string, sn *restic.Snapshot) {
-	Printf("Mounting snapshot %s at %s\n", sn.ID().Str(), mountPoint)
+func (fs *webdavFS) loadSnapshot(ctx context.Context, mountPoint string, sn *restic.Snapshot) {
+	Printf("Loading snapshot %s at %s\n", sn.ID().Str(), mountPoint)
 	// FIXME: Need a mutex here...
 	// FIXME: All this walking should be done dynamically when the client asks for a folder...
 	walker.Walk(ctx, fs.repo, *sn.Tree, walker.WalkVisitor{
@@ -196,50 +205,75 @@ func mountSnapshot(ctx context.Context, fs *webdavFS, mountPoint string, sn *res
 			if err != nil || node == nil {
 				return err
 			}
-			dir, wdNode, err := fs.find(mountPoint + "/" + nodepath)
-			if err != nil || dir == nil {
-				Printf("Found a leaf before the branch was created (parent not found %s)!\n", nodepath)
-				return walker.ErrSkipNode
-			}
-			if wdNode != nil {
-				Printf("Walked through a file that already exists in the tree!!! (%s: %s)\n", node.Type, nodepath)
-				return walker.ErrSkipNode
-			}
-			if dir.children == nil {
-				dir.children = make(map[string]*webdavFSNode)
-			}
-			dir.children[node.Name] = &webdavFSNode{
+			fs.addNode(mountPoint+"/"+nodepath, &webdavFSNode{
 				name:    node.Name,
 				mode:    node.Mode,
 				modTime: node.ModTime,
 				size:    int64(node.Size),
 				node:    node,
-			}
-			dir.size = int64(len(dir.children))
+				// snapshot: sn,
+			})
 			return nil
 		},
 	})
 }
 
-func (fs *webdavFS) find(fullname string) (*webdavFSNode, *webdavFSNode, error) {
+func (fs *webdavFS) addNode(fullpath string, node *webdavFSNode) error {
+	fullpath = strings.Trim(path.Clean("/"+fullpath), "/")
+	if fullpath == "" {
+		return os.ErrInvalid
+	}
+
+	parts := strings.Split(fullpath, "/")
+	dir := &fs.root
+
+	for len(parts) > 0 {
+		part := parts[0]
+		parts = parts[1:]
+		if !dir.IsDir() {
+			return os.ErrInvalid
+		}
+		if dir.children == nil {
+			dir.children = make(map[string]*webdavFSNode)
+		}
+		if len(parts) == 0 {
+			dir.children[part] = node
+			dir.size = int64(len(dir.children))
+			return nil
+		}
+		if dir.children[part] == nil {
+			dir.children[part] = &webdavFSNode{
+				name:     part,
+				mode:     0555 | os.ModeDir,
+				modTime:  dir.modTime,
+				children: nil,
+			}
+		}
+		dir = dir.children[part]
+	}
+
+	return os.ErrInvalid
+}
+
+func (fs *webdavFS) findNode(fullname string) (*webdavFSNode, error) {
 	fullname = strings.Trim(path.Clean("/"+fullname), "/")
 	if fullname == "" {
-		return nil, &fs.root, nil
+		return &fs.root, nil
 	}
 
 	parts := strings.Split(fullname, "/")
 	dir := &fs.root
 
 	for dir != nil {
-		part := parts[0]
+		node := dir.children[parts[0]]
 		parts = parts[1:]
 		if len(parts) == 0 {
-			return dir, dir.children[part], nil
+			return node, nil
 		}
-		dir = dir.children[part]
+		dir = node
 	}
 
-	return nil, nil, os.ErrNotExist
+	return nil, os.ErrNotExist
 }
 
 func (fs *webdavFS) OpenFile(ctx context.Context, name string, flag int, perm os.FileMode) (webdav.File, error) {
@@ -250,18 +284,21 @@ func (fs *webdavFS) OpenFile(ctx context.Context, name string, flag int, perm os
 		return nil, os.ErrPermission
 	}
 
-	_, node, err := fs.find(name)
+	node, err := fs.findNode(name)
+	if err == os.ErrNotExist {
+		// FIXME: Walk up the tree to make sure the snapshot (if any) is loaded
+	}
 	if err != nil {
 		return nil, err
 	}
 	if node == nil {
 		return nil, os.ErrNotExist
 	}
-	return &openFile{node: node, fs: fs}, nil
+	return &openFile{fullpath: path.Clean("/" + name), node: node, fs: fs}, nil
 }
 
 func (fs *webdavFS) Stat(ctx context.Context, name string) (os.FileInfo, error) {
-	_, node, err := fs.find(name)
+	node, err := fs.findNode(name)
 	if err != nil {
 		return nil, err
 	}
@@ -284,9 +321,10 @@ func (fs *webdavFS) Rename(ctx context.Context, oldName, newName string) error {
 }
 
 type openFile struct {
-	node   *webdavFSNode
-	fs     *webdavFS
-	cursor int64
+	fullpath string
+	node     *webdavFSNode
+	fs       *webdavFS
+	cursor   int64
 
 	initialized bool
 	// cumsize[i] holds the cumulative size of blobs[:i].
@@ -311,7 +349,7 @@ func (f *openFile) getBlobAt(ctx context.Context, i int) (blob []byte, err error
 }
 
 func (f *openFile) Read(p []byte) (int, error) {
-	Printf("Read %s %d %d\n", f.node.name, f.cursor, len(p))
+	Printf("Read %s %d %d\n", f.fullpath, f.cursor, len(p))
 	if f.node.IsDir() || f.cursor < 0 {
 		return 0, os.ErrInvalid
 	}
@@ -376,7 +414,7 @@ func (f *openFile) Read(p []byte) (int, error) {
 }
 
 func (f *openFile) Readdir(count int) ([]os.FileInfo, error) {
-	Printf("Readdir %s %d %d\n", f.node.name, f.cursor, count)
+	Printf("Readdir %s %d %d\n", f.fullpath, f.cursor, count)
 	if !f.node.IsDir() || f.cursor < 0 {
 		return nil, os.ErrInvalid
 	}
@@ -385,8 +423,8 @@ func (f *openFile) Readdir(count int) ([]os.FileInfo, error) {
 	// everything and do nothing...
 	if !f.initialized {
 		// It's a snapshot, mount it
-		if f.node != &f.fs.root && f.node.node == nil && len(f.children) == 0 {
-			mountSnapshot(context.TODO(), f.fs, "/"+f.node.name, f.fs.snapshots[f.node.name])
+		if f.node.snapshot != nil && f.node.children == nil {
+			f.fs.loadSnapshot(context.TODO(), f.fullpath, f.node.snapshot)
 		}
 		children := make([]os.FileInfo, 0, len(f.node.children))
 		for _, c := range f.node.children {
@@ -411,7 +449,7 @@ func (f *openFile) Readdir(count int) ([]os.FileInfo, error) {
 }
 
 func (f *openFile) Seek(offset int64, whence int) (int64, error) {
-	Printf("Seek %s %d %d\n", f.node.name, offset, whence)
+	Printf("Seek %s %d %d\n", f.fullpath, offset, whence)
 	switch whence {
 	case io.SeekStart:
 		f.cursor = offset
