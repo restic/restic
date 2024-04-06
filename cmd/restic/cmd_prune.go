@@ -194,7 +194,9 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOption
 		return err
 	}
 
-	plan, stats, err := planPrune(ctx, opts, repo, ignoreSnapshots, printer)
+	plan, stats, err := PlanPrune(ctx, opts, repo, func(ctx context.Context, repo restic.Repository) (usedBlobs restic.CountedBlobSet, err error) {
+		return getUsedBlobs(ctx, repo, ignoreSnapshots, printer)
+	}, printer)
 	if err != nil {
 		return err
 	}
@@ -211,40 +213,40 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOption
 	// Trigger GC to reset garbage collection threshold
 	runtime.GC()
 
-	return doPrune(ctx, opts, repo, plan, printer)
+	return DoPrune(ctx, opts, repo, plan, printer)
 }
 
-type pruneStats struct {
-	blobs struct {
-		used      uint
-		duplicate uint
-		unused    uint
-		remove    uint
-		repack    uint
-		repackrm  uint
+type PruneStats struct {
+	Blobs struct {
+		Used      uint
+		Duplicate uint
+		Unused    uint
+		Remove    uint
+		Repack    uint
+		Repackrm  uint
 	}
-	size struct {
-		used         uint64
-		duplicate    uint64
-		unused       uint64
-		remove       uint64
-		repack       uint64
-		repackrm     uint64
-		unref        uint64
-		uncompressed uint64
+	Size struct {
+		Used         uint64
+		Duplicate    uint64
+		Unused       uint64
+		Remove       uint64
+		Repack       uint64
+		Repackrm     uint64
+		Unref        uint64
+		Uncompressed uint64
 	}
-	packs struct {
-		used       uint
-		unused     uint
-		partlyUsed uint
-		unref      uint
-		keep       uint
-		repack     uint
-		remove     uint
+	Packs struct {
+		Used       uint
+		Unused     uint
+		PartlyUsed uint
+		Unref      uint
+		Keep       uint
+		Repack     uint
+		Remove     uint
 	}
 }
 
-type prunePlan struct {
+type PrunePlan struct {
 	removePacksFirst restic.IDSet          // packs to remove first (unreferenced packs)
 	repackPacks      restic.IDSet          // packs to repack
 	keepBlobs        restic.CountedBlobSet // blobs to keep during repacking
@@ -267,26 +269,26 @@ type packInfoWithID struct {
 	mustCompress bool
 }
 
-// planPrune selects which files to rewrite and which to delete and which blobs to keep.
+// PlanPrune selects which files to rewrite and which to delete and which blobs to keep.
 // Also some summary statistics are returned.
-func planPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, ignoreSnapshots restic.IDSet, printer progress.Printer) (prunePlan, pruneStats, error) {
-	var stats pruneStats
+func PlanPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, getUsedBlobs func(ctx context.Context, repo restic.Repository) (usedBlobs restic.CountedBlobSet, err error), printer progress.Printer) (PrunePlan, PruneStats, error) {
+	var stats PruneStats
 
-	usedBlobs, err := getUsedBlobs(ctx, repo, ignoreSnapshots, printer)
+	usedBlobs, err := getUsedBlobs(ctx, repo)
 	if err != nil {
-		return prunePlan{}, stats, err
+		return PrunePlan{}, stats, err
 	}
 
 	printer.P("searching used packs...\n")
 	keepBlobs, indexPack, err := packInfoFromIndex(ctx, repo.Index(), usedBlobs, &stats, printer)
 	if err != nil {
-		return prunePlan{}, stats, err
+		return PrunePlan{}, stats, err
 	}
 
 	printer.P("collecting packs for deletion and repacking\n")
 	plan, err := decidePackAction(ctx, opts, repo, indexPack, &stats, printer)
 	if err != nil {
-		return prunePlan{}, stats, err
+		return PrunePlan{}, stats, err
 	}
 
 	if len(plan.repackPacks) != 0 {
@@ -313,7 +315,7 @@ func planPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, i
 	return plan, stats, nil
 }
 
-func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs restic.CountedBlobSet, stats *pruneStats, printer progress.Printer) (restic.CountedBlobSet, map[restic.ID]packInfo, error) {
+func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs restic.CountedBlobSet, stats *PruneStats, printer progress.Printer) (restic.CountedBlobSet, map[restic.ID]packInfo, error) {
 	// iterate over all blobs in index to find out which blobs are duplicates
 	// The counter in usedBlobs describes how many instances of the blob exist in the repository index
 	// Thus 0 == blob is missing, 1 == blob exists once, >= 2 == duplicates exist
@@ -384,20 +386,20 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 			ip.unusedBlobs++
 
 			// count as duplicate, will later on change one copy to be counted as used
-			stats.size.duplicate += size
-			stats.blobs.duplicate++
+			stats.Size.Duplicate += size
+			stats.Blobs.Duplicate++
 		case dupCount == 1: // used blob, not duplicate
 			ip.usedSize += size
 			ip.usedBlobs++
 
-			stats.size.used += size
-			stats.blobs.used++
+			stats.Size.Used += size
+			stats.Blobs.Used++
 		default: // unused blob
 			ip.unusedSize += size
 			ip.unusedBlobs++
 
-			stats.size.unused += size
-			stats.blobs.unused++
+			stats.Size.Unused += size
+			stats.Blobs.Unused++
 		}
 		if !blob.IsCompressed() {
 			ip.uncompressed = true
@@ -431,10 +433,10 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 				ip.unusedSize -= size
 				ip.unusedBlobs--
 				// same for the global statistics
-				stats.size.used += size
-				stats.blobs.used++
-				stats.size.duplicate -= size
-				stats.blobs.duplicate--
+				stats.Size.Used += size
+				stats.Blobs.Used++
+				stats.Size.Duplicate -= size
+				stats.Blobs.Duplicate--
 				// let other occurrences remain marked as unused
 				usedBlobs[bh] = 1
 			default:
@@ -463,7 +465,7 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 	return usedBlobs, indexPack, nil
 }
 
-func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Repository, indexPack map[restic.ID]packInfo, stats *pruneStats, printer progress.Printer) (prunePlan, error) {
+func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Repository, indexPack map[restic.ID]packInfo, stats *PruneStats, printer progress.Printer) (PrunePlan, error) {
 	removePacksFirst := restic.NewIDSet()
 	removePacks := restic.NewIDSet()
 	repackPacks := restic.NewIDSet()
@@ -487,7 +489,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Reposi
 			// Pack was not referenced in index and is not used  => immediately remove!
 			printer.V("will remove pack %v as it is unused and not indexed\n", id.Str())
 			removePacksFirst.Insert(id)
-			stats.size.unref += uint64(packSize)
+			stats.Size.Unref += uint64(packSize)
 			return nil
 		}
 
@@ -503,15 +505,15 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Reposi
 		// statistics
 		switch {
 		case p.usedBlobs == 0:
-			stats.packs.unused++
+			stats.Packs.Unused++
 		case p.unusedBlobs == 0:
-			stats.packs.used++
+			stats.Packs.Used++
 		default:
-			stats.packs.partlyUsed++
+			stats.Packs.PartlyUsed++
 		}
 
 		if p.uncompressed {
-			stats.size.uncompressed += p.unusedSize + p.usedSize
+			stats.Size.Uncompressed += p.unusedSize + p.usedSize
 		}
 		mustCompress := false
 		if repoVersion >= 2 {
@@ -525,17 +527,17 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Reposi
 		case p.usedBlobs == 0:
 			// All blobs in pack are no longer used => remove pack!
 			removePacks.Insert(id)
-			stats.blobs.remove += p.unusedBlobs
-			stats.size.remove += p.unusedSize
+			stats.Blobs.Remove += p.unusedBlobs
+			stats.Size.Remove += p.unusedSize
 
 		case opts.RepackCachableOnly && p.tpe == restic.DataBlob:
 			// if this is a data pack and --repack-cacheable-only is set => keep pack!
-			stats.packs.keep++
+			stats.Packs.Keep++
 
 		case p.unusedBlobs == 0 && p.tpe != restic.InvalidBlob && !mustCompress:
 			if packSize >= int64(targetPackSize) {
 				// All blobs in pack are used and not mixed => keep pack!
-				stats.packs.keep++
+				stats.Packs.Keep++
 			} else {
 				repackSmallCandidates = append(repackSmallCandidates, packInfoWithID{ID: id, packInfo: p, mustCompress: mustCompress})
 			}
@@ -551,7 +553,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Reposi
 	})
 	bar.Done()
 	if err != nil {
-		return prunePlan{}, err
+		return PrunePlan{}, err
 	}
 
 	// At this point indexPacks contains only missing packs!
@@ -561,8 +563,8 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Reposi
 	for id, p := range indexPack {
 		if p.usedBlobs == 0 {
 			ignorePacks.Insert(id)
-			stats.blobs.remove += p.unusedBlobs
-			stats.size.remove += p.unusedSize
+			stats.Blobs.Remove += p.unusedBlobs
+			stats.Size.Remove += p.unusedSize
 			delete(indexPack, id)
 		}
 	}
@@ -572,7 +574,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Reposi
 		for id := range indexPack {
 			printer.E("  %v\n", id)
 		}
-		return prunePlan{}, errorPacksMissing
+		return PrunePlan{}, errorPacksMissing
 	}
 	if len(ignorePacks) != 0 {
 		printer.E("Missing but unneeded pack files are referenced in the index, will be repaired\n")
@@ -584,7 +586,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Reposi
 	if len(repackSmallCandidates) < 10 {
 		// too few small files to be worth the trouble, this also prevents endlessly repacking
 		// if there is just a single pack file below the target size
-		stats.packs.keep += uint(len(repackSmallCandidates))
+		stats.Packs.Keep += uint(len(repackSmallCandidates))
 	} else {
 		repackCandidates = append(repackCandidates, repackSmallCandidates...)
 	}
@@ -612,26 +614,26 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Reposi
 
 	repack := func(id restic.ID, p packInfo) {
 		repackPacks.Insert(id)
-		stats.blobs.repack += p.unusedBlobs + p.usedBlobs
-		stats.size.repack += p.unusedSize + p.usedSize
-		stats.blobs.repackrm += p.unusedBlobs
-		stats.size.repackrm += p.unusedSize
+		stats.Blobs.Repack += p.unusedBlobs + p.usedBlobs
+		stats.Size.Repack += p.unusedSize + p.usedSize
+		stats.Blobs.Repackrm += p.unusedBlobs
+		stats.Size.Repackrm += p.unusedSize
 		if p.uncompressed {
-			stats.size.uncompressed -= p.unusedSize + p.usedSize
+			stats.Size.Uncompressed -= p.unusedSize + p.usedSize
 		}
 	}
 
 	// calculate limit for number of unused bytes in the repo after repacking
-	maxUnusedSizeAfter := opts.maxUnusedBytes(stats.size.used)
+	maxUnusedSizeAfter := opts.maxUnusedBytes(stats.Size.Used)
 
 	for _, p := range repackCandidates {
-		reachedUnusedSizeAfter := (stats.size.unused-stats.size.remove-stats.size.repackrm < maxUnusedSizeAfter)
-		reachedRepackSize := stats.size.repack+p.unusedSize+p.usedSize >= opts.MaxRepackBytes
+		reachedUnusedSizeAfter := (stats.Size.Unused-stats.Size.Remove-stats.Size.Repackrm < maxUnusedSizeAfter)
+		reachedRepackSize := stats.Size.Repack+p.unusedSize+p.usedSize >= opts.MaxRepackBytes
 		packIsLargeEnough := p.unusedSize+p.usedSize >= uint64(targetPackSize)
 
 		switch {
 		case reachedRepackSize:
-			stats.packs.keep++
+			stats.Packs.Keep++
 
 		case p.tpe != restic.DataBlob, p.mustCompress:
 			// repacking non-data packs / uncompressed-trees is only limited by repackSize
@@ -639,23 +641,23 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Reposi
 
 		case reachedUnusedSizeAfter && packIsLargeEnough:
 			// for all other packs stop repacking if tolerated unused size is reached.
-			stats.packs.keep++
+			stats.Packs.Keep++
 
 		default:
 			repack(p.ID, p.packInfo)
 		}
 	}
 
-	stats.packs.unref = uint(len(removePacksFirst))
-	stats.packs.repack = uint(len(repackPacks))
-	stats.packs.remove = uint(len(removePacks))
+	stats.Packs.Unref = uint(len(removePacksFirst))
+	stats.Packs.Repack = uint(len(repackPacks))
+	stats.Packs.Remove = uint(len(removePacks))
 
 	if repo.Config().Version < 2 {
 		// compression not supported for repository format version 1
-		stats.size.uncompressed = 0
+		stats.Size.Uncompressed = 0
 	}
 
-	return prunePlan{removePacksFirst: removePacksFirst,
+	return PrunePlan{removePacksFirst: removePacksFirst,
 		removePacks: removePacks,
 		repackPacks: repackPacks,
 		ignorePacks: ignorePacks,
@@ -663,54 +665,54 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Reposi
 }
 
 // printPruneStats prints out the statistics
-func printPruneStats(printer progress.Printer, stats pruneStats) error {
-	printer.V("\nused:         %10d blobs / %s\n", stats.blobs.used, ui.FormatBytes(stats.size.used))
-	if stats.blobs.duplicate > 0 {
-		printer.V("duplicates:   %10d blobs / %s\n", stats.blobs.duplicate, ui.FormatBytes(stats.size.duplicate))
+func printPruneStats(printer progress.Printer, stats PruneStats) error {
+	printer.V("\nused:         %10d blobs / %s\n", stats.Blobs.Used, ui.FormatBytes(stats.Size.Used))
+	if stats.Blobs.Duplicate > 0 {
+		printer.V("duplicates:   %10d blobs / %s\n", stats.Blobs.Duplicate, ui.FormatBytes(stats.Size.Duplicate))
 	}
-	printer.V("unused:       %10d blobs / %s\n", stats.blobs.unused, ui.FormatBytes(stats.size.unused))
-	if stats.size.unref > 0 {
-		printer.V("unreferenced:                    %s\n", ui.FormatBytes(stats.size.unref))
+	printer.V("unused:       %10d blobs / %s\n", stats.Blobs.Unused, ui.FormatBytes(stats.Size.Unused))
+	if stats.Size.Unref > 0 {
+		printer.V("unreferenced:                    %s\n", ui.FormatBytes(stats.Size.Unref))
 	}
-	totalBlobs := stats.blobs.used + stats.blobs.unused + stats.blobs.duplicate
-	totalSize := stats.size.used + stats.size.duplicate + stats.size.unused + stats.size.unref
-	unusedSize := stats.size.duplicate + stats.size.unused
+	totalBlobs := stats.Blobs.Used + stats.Blobs.Unused + stats.Blobs.Duplicate
+	totalSize := stats.Size.Used + stats.Size.Duplicate + stats.Size.Unused + stats.Size.Unref
+	unusedSize := stats.Size.Duplicate + stats.Size.Unused
 	printer.V("total:        %10d blobs / %s\n", totalBlobs, ui.FormatBytes(totalSize))
 	printer.V("unused size: %s of total size\n", ui.FormatPercent(unusedSize, totalSize))
 
-	printer.P("\nto repack:    %10d blobs / %s\n", stats.blobs.repack, ui.FormatBytes(stats.size.repack))
-	printer.P("this removes: %10d blobs / %s\n", stats.blobs.repackrm, ui.FormatBytes(stats.size.repackrm))
-	printer.P("to delete:    %10d blobs / %s\n", stats.blobs.remove, ui.FormatBytes(stats.size.remove+stats.size.unref))
-	totalPruneSize := stats.size.remove + stats.size.repackrm + stats.size.unref
-	printer.P("total prune:  %10d blobs / %s\n", stats.blobs.remove+stats.blobs.repackrm, ui.FormatBytes(totalPruneSize))
-	if stats.size.uncompressed > 0 {
-		printer.P("not yet compressed:              %s\n", ui.FormatBytes(stats.size.uncompressed))
+	printer.P("\nto repack:    %10d blobs / %s\n", stats.Blobs.Repack, ui.FormatBytes(stats.Size.Repack))
+	printer.P("this removes: %10d blobs / %s\n", stats.Blobs.Repackrm, ui.FormatBytes(stats.Size.Repackrm))
+	printer.P("to delete:    %10d blobs / %s\n", stats.Blobs.Remove, ui.FormatBytes(stats.Size.Remove+stats.Size.Unref))
+	totalPruneSize := stats.Size.Remove + stats.Size.Repackrm + stats.Size.Unref
+	printer.P("total prune:  %10d blobs / %s\n", stats.Blobs.Remove+stats.Blobs.Repackrm, ui.FormatBytes(totalPruneSize))
+	if stats.Size.Uncompressed > 0 {
+		printer.P("not yet compressed:              %s\n", ui.FormatBytes(stats.Size.Uncompressed))
 	}
-	printer.P("remaining:    %10d blobs / %s\n", totalBlobs-(stats.blobs.remove+stats.blobs.repackrm), ui.FormatBytes(totalSize-totalPruneSize))
-	unusedAfter := unusedSize - stats.size.remove - stats.size.repackrm
+	printer.P("remaining:    %10d blobs / %s\n", totalBlobs-(stats.Blobs.Remove+stats.Blobs.Repackrm), ui.FormatBytes(totalSize-totalPruneSize))
+	unusedAfter := unusedSize - stats.Size.Remove - stats.Size.Repackrm
 	printer.P("unused size after prune: %s (%s of remaining size)\n",
 		ui.FormatBytes(unusedAfter), ui.FormatPercent(unusedAfter, totalSize-totalPruneSize))
 	printer.P("\n")
-	printer.V("totally used packs: %10d\n", stats.packs.used)
-	printer.V("partly used packs:  %10d\n", stats.packs.partlyUsed)
-	printer.V("unused packs:       %10d\n\n", stats.packs.unused)
+	printer.V("totally used packs: %10d\n", stats.Packs.Used)
+	printer.V("partly used packs:  %10d\n", stats.Packs.PartlyUsed)
+	printer.V("unused packs:       %10d\n\n", stats.Packs.Unused)
 
-	printer.V("to keep:      %10d packs\n", stats.packs.keep)
-	printer.V("to repack:    %10d packs\n", stats.packs.repack)
-	printer.V("to delete:    %10d packs\n", stats.packs.remove)
-	if stats.packs.unref > 0 {
-		printer.V("to delete:    %10d unreferenced packs\n\n", stats.packs.unref)
+	printer.V("to keep:      %10d packs\n", stats.Packs.Keep)
+	printer.V("to repack:    %10d packs\n", stats.Packs.Repack)
+	printer.V("to delete:    %10d packs\n", stats.Packs.Remove)
+	if stats.Packs.Unref > 0 {
+		printer.V("to delete:    %10d unreferenced packs\n\n", stats.Packs.Unref)
 	}
 	return nil
 }
 
-// doPrune does the actual pruning:
+// DoPrune does the actual pruning:
 // - remove unreferenced packs first
 // - repack given pack files while keeping the given blobs
 // - rebuild the index while ignoring all files that will be deleted
 // - delete the files
 // plan.removePacks and plan.ignorePacks are modified in this function.
-func doPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, plan prunePlan, printer progress.Printer) (err error) {
+func DoPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, plan PrunePlan, printer progress.Printer) (err error) {
 	if opts.DryRun {
 		printer.V("Repeated prune dry-runs can report slightly different amounts of data to keep or repack. This is expected behavior.\n\n")
 		if len(plan.removePacksFirst) > 0 {
