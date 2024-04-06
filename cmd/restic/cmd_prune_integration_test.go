@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/repository"
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
@@ -145,7 +146,7 @@ func TestPruneWithDamagedRepository(t *testing.T) {
 	// prune should fail
 	rtest.Assert(t, withTermStatus(env.gopts, func(ctx context.Context, term *termstatus.Terminal) error {
 		return runPrune(context.TODO(), pruneDefaultOptions, env.gopts, term)
-	}) == errorPacksMissing,
+	}) == repository.ErrPacksMissing,
 		"prune should have reported index not complete error")
 }
 
