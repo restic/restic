@@ -1,134 +1,148 @@
 package rofs
 
-// // SnapshotsDir implements a tree of snapshots in repo as a file system in various sub-directories.
-// type SnapshotsDir struct {
-// 	lastUpdate time.Time
+import (
+	"context"
+	"io"
+	"io/fs"
+	"time"
 
-// 	pathTemplates []string
-// 	timeTemplate  string
+	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/restic"
+)
 
-// 	// list of top-level directories
-// 	entries []rofsEntry
-// }
+// SnapshotsDir implements a tree of snapshots in repo as a file system in various sub-directories.
+type SnapshotsDir struct {
+	lastUpdate time.Time
 
-// // ensure that the interface is implemented
-// var _ rofsEntry = &SnapshotsDir{}
+	pathTemplates []string
+	timeTemplate  string
 
-// // NewSnapshotsDir initializes a new top-level snapshots directory.
-// func NewSnapshotsDir(pathTemplates []string, timeTemplate string) *SnapshotsDir {
-// 	dir := &SnapshotsDir{
-// 		pathTemplates: pathTemplates,
-// 		timeTemplate:  timeTemplate,
-// 		lastUpdate:    time.Now(),
-// 	}
+	// list of top-level directories
+	entries []rofsEntry
 
-// 	// testnames := []string{"foo", "bar", "baz", "snapshots"}
-// 	// for _, name := range testnames {
-// 	// 	dir.entries = append(dir.entries,
-// 	// 		fs.FileInfoToDirEntry(FileInfo{
-// 	// 			name:    name,
-// 	// 			mode:    0644,
-// 	// 			modtime: time.Now(),
-// 	// 		}))
-// 	// }
+	repo restic.Repository
+}
 
-// 	// slices.SortFunc(dir.entries, func(a, b fs.DirEntry) int {
-// 	// 	if a.Name() == b.Name() {
-// 	// 		return 0
-// 	// 	}
+// ensure that the interface is implemented
+var _ rofsEntry = &SnapshotsDir{}
 
-// 	// 	if a.Name() < b.Name() {
-// 	// 		return 1
-// 	// 	}
+// NewSnapshotsDir initializes a new top-level snapshots directory.
+func NewSnapshotsDir(ctx context.Context, repo restic.Repository, pathTemplates []string, timeTemplate string) *SnapshotsDir {
+	dir := &SnapshotsDir{
+		pathTemplates: pathTemplates,
+		timeTemplate:  timeTemplate,
+		lastUpdate:    time.Now(),
 
-// 	// 	return -1
-// 	// })
+		repo: repo,
+	}
 
-// 	// // prepare for readdir with positive n
-// 	// dir.entriesRemaining = dir.entries
+	// testnames := []string{"foo", "bar", "baz", "snapshots"}
+	// for _, name := range testnames {
+	// 	dir.entries = append(dir.entries,
+	// 		fs.FileInfoToDirEntry(FileInfo{
+	// 			name:    name,
+	// 			mode:    0644,
+	// 			modtime: time.Now(),
+	// 		}))
+	// }
 
-// 	return dir
-// }
+	// slices.SortFunc(dir.entries, func(a, b fs.DirEntry) int {
+	// 	if a.Name() == b.Name() {
+	// 		return 0
+	// 	}
 
-// // ensure that it implements all necessary interfaces.
-// var _ fs.ReadDirFile = &SnapshotsDir{}
+	// 	if a.Name() < b.Name() {
+	// 		return 1
+	// 	}
 
-// // Close closes the snapshots dir.
-// func (dir *SnapshotsDir) Close() error {
-// 	debug.Log("Close()")
+	// 	return -1
+	// })
 
-// 	// reset readdir list
-// 	// dir.entriesRemaining = dir.entries
+	// // prepare for readdir with positive n
+	// dir.entriesRemaining = dir.entries
 
-// 	return nil
-// }
+	return dir
+}
 
-// // Read is not implemented for a dir.
-// func (dir *SnapshotsDir) Read([]byte) (int, error) {
-// 	return 0, &fs.PathError{
-// 		Op:  "read",
-// 		Err: fs.ErrInvalid,
-// 	}
-// }
+// ensure that it implements all necessary interfaces.
+var _ fs.ReadDirFile = &SnapshotsDir{}
 
-// // Stat returns information about the dir.
-// func (dir *SnapshotsDir) Stat() (fs.FileInfo, error) {
-// 	debug.Log("Stat(root)")
+// Close closes the snapshots dir.
+func (dir *SnapshotsDir) Close() error {
+	debug.Log("Close()")
 
-// 	fi := FileInfo{
-// 		name:    "root", // use special name, this is the root node
-// 		size:    0,
-// 		modtime: dir.lastUpdate,
-// 		mode:    0755,
-// 	}
+	// reset readdir list
+	// dir.entriesRemaining = dir.entries
 
-// 	return fi, nil
-// }
+	return nil
+}
 
-// // ReadDir returns a list of entries.
-// func (dir *SnapshotsDir) ReadDir(n int) ([]fs.DirEntry, error) {
-// 	if n < 0 {
-// 		debug.Log("Readdir(root, %v), return %v entries", n, len(dir.entries))
-// 		return dir.entries, nil
-// 	}
+// Read is not implemented for a dir.
+func (dir *SnapshotsDir) Read([]byte) (int, error) {
+	return 0, &fs.PathError{
+		Op:  "read",
+		Err: fs.ErrInvalid,
+	}
+}
 
-// 	// complicated pointer handling
-// 	if n > len(dir.entriesRemaining) {
-// 		n = len(dir.entriesRemaining)
-// 	}
+// Stat returns information about the dir.
+func (dir *SnapshotsDir) Stat() (fs.FileInfo, error) {
+	debug.Log("Stat(root)")
 
-// 	if n == 0 {
-// 		return nil, io.EOF
-// 	}
+	fi := FileInfo{
+		name:    "root", // use special name, this is the root node
+		size:    0,
+		modtime: dir.lastUpdate,
+		mode:    0755,
+	}
 
-// 	list := dir.entriesRemaining[:n]
-// 	dir.entriesRemaining = dir.entriesRemaining[n:]
+	return fi, nil
+}
 
-// 	return list, nil
-// }
+// ReadDir returns a list of entries.
+func (dir *SnapshotsDir) ReadDir(n int) ([]fs.DirEntry, error) {
+	if n < 0 {
+		debug.Log("Readdir(root, %v), return %v entries", n, len(dir.entries))
+		return dir.entries, nil
+	}
 
-// // DirEntry returns meta data about the dir snapshots dir itself.
-// func (dir *SnapshotsDir) DirEntry() fs.DirEntry {
-// 	return dirEntry{
-// 		fileInfo: FileInfo{
-// 			name:    "snapshots",
-// 			mode:    fs.ModeDir | 0755,
-// 			modtime: dir.lastUpdate,
-// 		},
-// 	}
-// }
+	// complicated pointer handling
+	if n > len(dir.entriesRemaining) {
+		n = len(dir.entriesRemaining)
+	}
 
-// // Open opens the dir for reading.
-// func (dir *SnapshotsDir) Open() (fs.File, error) {
-// 	d := &openDir{
-// 		path: "snapshots",
-// 		fileInfo: FileInfo{
-// 			name:    "snapshots",
-// 			mode:    fs.ModeDir | 0555,
-// 			modtime: dir.lastUpdate,
-// 		},
-// 		entries: dirMap2DirEntry(dir.entries),
-// 	}
+	if n == 0 {
+		return nil, io.EOF
+	}
 
-// 	return d
-// }
+	list := dir.entriesRemaining[:n]
+	dir.entriesRemaining = dir.entriesRemaining[n:]
+
+	return list, nil
+}
+
+// DirEntry returns meta data about the dir snapshots dir itself.
+func (dir *SnapshotsDir) DirEntry() fs.DirEntry {
+	return dirEntry{
+		fileInfo: FileInfo{
+			name:    "snapshots",
+			mode:    fs.ModeDir | 0755,
+			modtime: dir.lastUpdate,
+		},
+	}
+}
+
+// Open opens the dir for reading.
+func (dir *SnapshotsDir) Open() (fs.File, error) {
+	d := &openDir{
+		path: "snapshots",
+		fileInfo: FileInfo{
+			name:    "snapshots",
+			mode:    fs.ModeDir | 0555,
+			modtime: dir.lastUpdate,
+		},
+		entries: dirMap2DirEntry(dir.entries),
+	}
+
+	return d
+}

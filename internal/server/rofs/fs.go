@@ -65,6 +65,18 @@ func New(ctx context.Context, repo restic.Repository, cfg Config) (*ROFS, error)
 	return rofs, nil
 }
 
+func (rofs *ROFS) updateSnapshots(ctx context.Context) error {
+
+	entries, err := buildSnapshotEntries(ctx, rofs.repo, rofs.cfg)
+	if err != nil {
+		return err
+	}
+
+	rofs.entries = entries
+
+	return nil
+}
+
 func buildSnapshotEntries(ctx context.Context, repo restic.Repository, cfg Config) (map[string]rofsEntry, error) {
 	var snapshots restic.Snapshots
 	err := cfg.Filter.FindAll(ctx, repo, repo, nil, func(_ string, sn *restic.Snapshot, _ error) error {
@@ -83,23 +95,10 @@ func buildSnapshotEntries(ctx context.Context, repo restic.Repository, cfg Confi
 
 	list := make(map[string]rofsEntry)
 	list["foo"] = NewMemFile("foo", []byte("foobar content of file foo"), time.Now())
-	list["snapshots"] = NewMemFile("snapshots", []byte("here goes the snapshot list"), time.Now())
 
-	// list["snapshots"] = NewSnapshotsDir(cfg.PathTemplates, cfg.TimeTemplate)
+	list["snapshots"] = NewSnapshotsDir(ctx, repo, cfg.PathTemplates, cfg.TimeTemplate)
 
 	return list, nil
-}
-
-func (rofs *ROFS) updateSnapshots(ctx context.Context) error {
-
-	entries, err := buildSnapshotEntries(ctx, rofs.repo, rofs.cfg)
-	if err != nil {
-		return err
-	}
-
-	rofs.entries = entries
-
-	return nil
 }
 
 // Open opens the named file.
