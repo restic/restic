@@ -16,6 +16,7 @@ import (
 	"golang.org/x/net/webdav"
 
 	"github.com/restic/restic/internal/bloblru"
+	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/walker"
@@ -88,11 +89,6 @@ func init() {
 }
 
 func runWebServer(ctx context.Context, opts WebdavOptions, gopts GlobalOptions, args []string) error {
-
-	// PathTemplates and TimeTemplate are ignored for now because `fuse.snapshots_dir(struct)`
-	// is not accessible when building on Windows and it would be ridiculous to duplicate the
-	// code. It should be shared, somehow.
-
 	if len(args) > 1 {
 		return errors.Fatal("wrong number of parameters")
 	}
@@ -148,6 +144,8 @@ func runWebServer(ctx context.Context, opts WebdavOptions, gopts GlobalOptions, 
 			children: nil,
 			snapshot: sn,
 		}
+		// Ignore PathTemplates for now because `fuse.snapshots_dir(struct)` is not accessible when building
+		// on Windows and it would be ridiculous to duplicate the code. It should be shared, somehow!
 		davFS.addNode("/ids/"+node.name, node)
 		davFS.addNode("/hosts/"+sn.Hostname+"/"+node.name, node)
 		davFS.addNode("/snapshots/"+sn.Time.Format(opts.TimeTemplate)+"/"+node.name, node)
@@ -169,6 +167,7 @@ func runWebServer(ctx context.Context, opts WebdavOptions, gopts GlobalOptions, 
 	return http.ListenAndServe(bindAddress, wd)
 }
 
+// Implements webdav.FileSystem
 type webdavFS struct {
 	repo restic.Repository
 	root webdavFSNode
@@ -277,7 +276,7 @@ func (fs *webdavFS) findNode(fullname string) (*webdavFSNode, error) {
 }
 
 func (fs *webdavFS) OpenFile(ctx context.Context, name string, flag int, perm os.FileMode) (webdav.File, error) {
-	Printf("OpenFile %s\n", name)
+	debug.Log("OpenFile %s", name)
 
 	// Client can only read
 	if flag&(os.O_WRONLY|os.O_RDWR) != 0 {
@@ -291,9 +290,6 @@ func (fs *webdavFS) OpenFile(ctx context.Context, name string, flag int, perm os
 	if err != nil {
 		return nil, err
 	}
-	if node == nil {
-		return nil, os.ErrNotExist
-	}
 	return &openFile{fullpath: path.Clean("/" + name), node: node, fs: fs}, nil
 }
 
@@ -301,9 +297,6 @@ func (fs *webdavFS) Stat(ctx context.Context, name string) (os.FileInfo, error) 
 	node, err := fs.findNode(name)
 	if err != nil {
 		return nil, err
-	}
-	if node == nil {
-		return nil, os.ErrNotExist
 	}
 	return node, nil
 }
@@ -325,11 +318,11 @@ type openFile struct {
 	node     *webdavFSNode
 	fs       *webdavFS
 	cursor   int64
+	children []os.FileInfo
+	// cumsize[i] holds the cumulative size of blobs[:i].
+	cumsize []uint64
 
 	initialized bool
-	// cumsize[i] holds the cumulative size of blobs[:i].
-	children []os.FileInfo
-	cumsize  []uint64
 }
 
 func (f *openFile) getBlobAt(ctx context.Context, i int) (blob []byte, err error) {
@@ -349,7 +342,7 @@ func (f *openFile) getBlobAt(ctx context.Context, i int) (blob []byte, err error
 }
 
 func (f *openFile) Read(p []byte) (int, error) {
-	Printf("Read %s %d %d\n", f.fullpath, f.cursor, len(p))
+	debug.Log("Read %s %d %d", f.fullpath, f.cursor, len(p))
 	if f.node.IsDir() || f.cursor < 0 {
 		return 0, os.ErrInvalid
 	}
@@ -414,7 +407,7 @@ func (f *openFile) Read(p []byte) (int, error) {
 }
 
 func (f *openFile) Readdir(count int) ([]os.FileInfo, error) {
-	Printf("Readdir %s %d %d\n", f.fullpath, f.cursor, count)
+	debug.Log("Readdir %s %d %d", f.fullpath, f.cursor, count)
 	if !f.node.IsDir() || f.cursor < 0 {
 		return nil, os.ErrInvalid
 	}
@@ -449,7 +442,7 @@ func (f *openFile) Readdir(count int) ([]os.FileInfo, error) {
 }
 
 func (f *openFile) Seek(offset int64, whence int) (int64, error) {
-	Printf("Seek %s %d %d\n", f.fullpath, offset, whence)
+	debug.Log("Seek %s %d %d", f.fullpath, offset, whence)
 	switch whence {
 	case io.SeekStart:
 		f.cursor = offset
