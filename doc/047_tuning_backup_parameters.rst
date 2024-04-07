@@ -121,7 +121,7 @@ Feature flags allow disabling or enabling certain experimental restic features. 
 can be specified via the ``RESTIC_FEATURES`` environment variable. The variable expects a
 comma-separated list of ``key[=value],key2[=value2]`` pairs. The key is the name of a feature
 flag. The value is optional and can contain either the value ``true`` (default if omitted)
-or ``false``. The list of currently available feautre flags is shown by the ``features``
+or ``false``. The list of currently available feature flags is shown by the ``features``
 command.
 
 Restic will return an error if an invalid feature flag is specified. No longer relevant
