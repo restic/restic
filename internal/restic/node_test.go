@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/restic/restic/internal/test"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -31,7 +32,7 @@ func BenchmarkNodeFillUser(t *testing.B) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		_, err := NodeFromFileInfo(path, fi)
+		_, err := NodeFromFileInfo(path, fi, false)
 		rtest.OK(t, err)
 	}
 
@@ -55,7 +56,7 @@ func BenchmarkNodeFromFileInfo(t *testing.B) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		_, err := NodeFromFileInfo(path, fi)
+		_, err := NodeFromFileInfo(path, fi, false)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -227,8 +228,11 @@ func TestNodeRestoreAt(t *testing.T) {
 			fi, err := os.Lstat(nodePath)
 			rtest.OK(t, err)
 
-			n2, err := NodeFromFileInfo(nodePath, fi)
+			n2, err := NodeFromFileInfo(nodePath, fi, false)
 			rtest.OK(t, err)
+			n3, err := NodeFromFileInfo(nodePath, fi, true)
+			rtest.OK(t, err)
+			rtest.Assert(t, n2.Equals(*n3), "unexpected node info mismatch %v", cmp.Diff(n2, n3))
 
 			rtest.Assert(t, test.Name == n2.Name,
 				"%v: name doesn't match (%v != %v)", test.Type, test.Name, n2.Name)

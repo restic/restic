@@ -165,7 +165,7 @@ func restoreAndGetNode(t *testing.T, tempDir string, testNode Node, warningExpec
 	fi, err := os.Lstat(testPath)
 	test.OK(t, errors.Wrapf(err, "Could not Lstat for path: %s", testPath))
 
-	nodeFromFileInfo, err := NodeFromFileInfo(testPath, fi)
+	nodeFromFileInfo, err := NodeFromFileInfo(testPath, fi, false)
 	test.OK(t, errors.Wrapf(err, "Could not get NodeFromFileInfo for path: %s", testPath))
 
 	return testPath, nodeFromFileInfo

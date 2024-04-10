@@ -237,8 +237,8 @@ func (arch *Archiver) trackItem(item string, previous, current *restic.Node, s I
 }
 
 // nodeFromFileInfo returns the restic node from an os.FileInfo.
-func (arch *Archiver) nodeFromFileInfo(snPath, filename string, fi os.FileInfo) (*restic.Node, error) {
-	node, err := restic.NodeFromFileInfo(filename, fi)
+func (arch *Archiver) nodeFromFileInfo(snPath, filename string, fi os.FileInfo, ignoreXattrListError bool) (*restic.Node, error) {
+	node, err := restic.NodeFromFileInfo(filename, fi, ignoreXattrListError)
 	if !arch.WithAtime {
 		node.AccessTime = node.ModTime
 	}
@@ -289,7 +289,7 @@ func (arch *Archiver) wrapLoadTreeError(id restic.ID, err error) error {
 func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, fi os.FileInfo, previous *restic.Tree, complete CompleteFunc) (d FutureNode, err error) {
 	debug.Log("%v %v", snPath, dir)
 
-	treeNode, err := arch.nodeFromFileInfo(snPath, dir, fi)
+	treeNode, err := arch.nodeFromFileInfo(snPath, dir, fi, false)
 	if err != nil {
 		return FutureNode{}, err
 	}
@@ -444,7 +444,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 				debug.Log("%v hasn't changed, using old list of blobs", target)
 				arch.trackItem(snPath, previous, previous, ItemStats{}, time.Since(start))
 				arch.CompleteBlob(previous.Size)
-				node, err := arch.nodeFromFileInfo(snPath, target, fi)
+				node, err := arch.nodeFromFileInfo(snPath, target, fi, false)
 				if err != nil {
 					return FutureNode{}, false, err
 				}
@@ -540,7 +540,7 @@ func (arch *Archiver) save(ctx context.Context, snPath, target string, previous 
 	default:
 		debug.Log("  %v other", target)
 
-		node, err := arch.nodeFromFileInfo(snPath, target, fi)
+		node, err := arch.nodeFromFileInfo(snPath, target, fi, false)
 		if err != nil {
 			return FutureNode{}, false, err
 		}
@@ -623,7 +623,9 @@ func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *Tree, 
 		}
 
 		debug.Log("%v, dir node data loaded from %v", snPath, atree.FileInfoPath)
-		node, err = arch.nodeFromFileInfo(snPath, atree.FileInfoPath, fi)
+		// in some cases reading xattrs for directories above the backup target is not allowed
+		// thus ignore errors for such folders.
+		node, err = arch.nodeFromFileInfo(snPath, atree.FileInfoPath, fi, true)
 		if err != nil {
 			return FutureNode{}, 0, err
 		}

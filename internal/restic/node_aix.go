@@ -33,6 +33,10 @@ func Listxattr(path string) ([]string, error) {
 	return nil, nil
 }
 
+func IsListxattrPermissionError(_ error) bool {
+	return false
+}
+
 // Setxattr is a no-op on AIX.
 func Setxattr(path, name string, data []byte) error {
 	return nil
