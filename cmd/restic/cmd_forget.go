@@ -276,8 +276,9 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 			err := restic.ParallelRemove(ctx, repo, removeSnIDs, restic.SnapshotFile, func(id restic.ID, err error) error {
 				if err != nil {
 					printer.E("unable to remove %v/%v from the repository\n", restic.SnapshotFile, id)
+				} else {
+					printer.VV("removed %v/%v\n", restic.SnapshotFile, id)
 				}
-				printer.VV("removed %v/%v\n", restic.SnapshotFile, id)
 				return nil
 			}, bar)
 			bar.Done()
