@@ -222,58 +222,55 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 			Tags:          opts.KeepTags,
 		}
 
-		if policy.Empty() && len(args) == 0 {
-			printer.P("no policy was specified, no snapshots will be removed\n")
+		if policy.Empty() {
+			return errors.Fatal("no policy was specified, no snapshots will be removed")
 		}
 
-		if !policy.Empty() {
-			printer.P("Applying Policy: %v\n", policy)
+		printer.P("Applying Policy: %v\n", policy)
 
-			for k, snapshotGroup := range snapshotGroups {
-				if gopts.Verbose >= 1 && !gopts.JSON {
-					err = PrintSnapshotGroupHeader(globalOptions.stdout, k)
-					if err != nil {
-						return err
-					}
-				}
-
-				var key restic.SnapshotGroupKey
-				if json.Unmarshal([]byte(k), &key) != nil {
+		for k, snapshotGroup := range snapshotGroups {
+			if gopts.Verbose >= 1 && !gopts.JSON {
+				err = PrintSnapshotGroupHeader(globalOptions.stdout, k)
+				if err != nil {
 					return err
 				}
+			}
 
-				var fg ForgetGroup
-				fg.Tags = key.Tags
-				fg.Host = key.Hostname
-				fg.Paths = key.Paths
+			var key restic.SnapshotGroupKey
+			if json.Unmarshal([]byte(k), &key) != nil {
+				return err
+			}
 
-				keep, remove, reasons := restic.ApplyPolicy(snapshotGroup, policy)
+			var fg ForgetGroup
+			fg.Tags = key.Tags
+			fg.Host = key.Hostname
+			fg.Paths = key.Paths
 
-				if !policy.Empty() && len(keep) == 0 {
-					return fmt.Errorf("refusing to delete last snapshot of snapshot group %v", key)
-				}
+			keep, remove, reasons := restic.ApplyPolicy(snapshotGroup, policy)
 
-				if len(keep) != 0 && !gopts.Quiet && !gopts.JSON {
-					printer.P("keep %d snapshots:\n", len(keep))
-					PrintSnapshots(globalOptions.stdout, keep, reasons, opts.Compact)
-					printer.P("\n")
-				}
-				fg.Keep = asJSONSnapshots(keep)
+			if !policy.Empty() && len(keep) == 0 {
+				return fmt.Errorf("refusing to delete last snapshot of snapshot group \"%v\"", key.String())
+			}
+			if len(keep) != 0 && !gopts.Quiet && !gopts.JSON {
+				printer.P("keep %d snapshots:\n", len(keep))
+				PrintSnapshots(globalOptions.stdout, keep, reasons, opts.Compact)
+				printer.P("\n")
+			}
+			fg.Keep = asJSONSnapshots(keep)
 
-				if len(remove) != 0 && !gopts.Quiet && !gopts.JSON {
-					printer.P("remove %d snapshots:\n", len(remove))
-					PrintSnapshots(globalOptions.stdout, remove, nil, opts.Compact)
-					printer.P("\n")
-				}
-				fg.Remove = asJSONSnapshots(remove)
+			if len(remove) != 0 && !gopts.Quiet && !gopts.JSON {
+				printer.P("remove %d snapshots:\n", len(remove))
+				PrintSnapshots(globalOptions.stdout, remove, nil, opts.Compact)
+				printer.P("\n")
+			}
+			fg.Remove = asJSONSnapshots(remove)
 
-				fg.Reasons = asJSONKeeps(reasons)
+			fg.Reasons = asJSONKeeps(reasons)
 
-				jsonGroups = append(jsonGroups, &fg)
+			jsonGroups = append(jsonGroups, &fg)
 
-				for _, sn := range remove {
-					removeSnIDs.Insert(*sn.ID())
-				}
+			for _, sn := range remove {
+				removeSnIDs.Insert(*sn.ID())
 			}
 		}
 	}
