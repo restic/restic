@@ -24,7 +24,7 @@ type SnapshotFilter struct {
 	TimestampLimit time.Time
 }
 
-func (f *SnapshotFilter) empty() bool {
+func (f *SnapshotFilter) Empty() bool {
 	return len(f.Hosts)+len(f.Tags)+len(f.Paths) == 0
 }
 
@@ -173,7 +173,7 @@ func (f *SnapshotFilter) FindAll(ctx context.Context, be Lister, loader LoaderUn
 		}
 
 		// Give the user some indication their filters are not used.
-		if !usedFilter && !f.empty() {
+		if !usedFilter && !f.Empty() {
 			return fn("filters", nil, errors.Errorf("explicit snapshot ids are given"))
 		}
 		return nil

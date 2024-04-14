@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"strconv"
 
@@ -247,6 +248,10 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 				fg.Paths = key.Paths
 
 				keep, remove, reasons := restic.ApplyPolicy(snapshotGroup, policy)
+
+				if !policy.Empty() && len(keep) == 0 {
+					return fmt.Errorf("refusing to delete last snapshot of snapshot group %v", key)
+				}
 
 				if len(keep) != 0 && !gopts.Quiet && !gopts.JSON {
 					printer.P("keep %d snapshots:\n", len(keep))
