@@ -110,8 +110,12 @@ func rebuildIndexFiles(ctx context.Context, repo restic.Repository, removePacks 
 		DeleteProgress: func() *progress.Counter {
 			return printer.NewCounter("old indexes deleted")
 		},
-		DeleteReport: func(id restic.ID, _ error) {
-			printer.VV("removed index %v\n", id.String())
+		DeleteReport: func(id restic.ID, err error) {
+			if err != nil {
+				printer.VV("failed to remove index %v: %v\n", id.String(), err)
+			} else {
+				printer.VV("removed index %v\n", id.String())
+			}
 		},
 		SkipDeletion: skipDeletion,
 	})
