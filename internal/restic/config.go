@@ -51,22 +51,6 @@ func CreateConfig(version uint) (Config, error) {
 	return cfg, nil
 }
 
-// TestCreateConfig creates a config for use within tests.
-func TestCreateConfig(t testing.TB, pol chunker.Pol, version uint) (cfg Config) {
-	cfg.ChunkerPolynomial = pol
-
-	cfg.ID = NewRandomID().String()
-	if version == 0 {
-		version = StableRepoVersion
-	}
-	if version < MinRepoVersion || version > MaxRepoVersion {
-		t.Fatalf("version %d is out of range", version)
-	}
-	cfg.Version = version
-
-	return cfg
-}
-
 var checkPolynomial = true
 var checkPolynomialOnce sync.Once
 
