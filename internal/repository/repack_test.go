@@ -170,12 +170,6 @@ func repack(t *testing.T, repo restic.Repository, packs restic.IDSet, blobs rest
 	}
 }
 
-func flush(t *testing.T, repo restic.Repository) {
-	if err := repo.Flush(context.TODO()); err != nil {
-		t.Fatalf("repo.SaveIndex() %v", err)
-	}
-}
-
 func rebuildIndex(t *testing.T, repo restic.Repository) {
 	err := repo.SetIndex(index.NewMasterIndex())
 	rtest.OK(t, err)
@@ -238,8 +232,6 @@ func testRepack(t *testing.T, version uint) {
 		t.Fatalf("packs are not equal, Repack modified something. Before:\n  %v\nAfter:\n  %v",
 			packsBefore, packsAfter)
 	}
-
-	flush(t, repo)
 
 	removeBlobs, keepBlobs := selectBlobs(t, repo, 0.2)
 
@@ -311,7 +303,6 @@ func testRepackCopy(t *testing.T, version uint) {
 	// add a small amount of blobs twice to create multiple pack files
 	createRandomBlobs(t, repo, 10, 0.7, false)
 	createRandomBlobs(t, repo, 10, 0.7, false)
-	flush(t, repo)
 
 	_, keepBlobs := selectBlobs(t, repo, 0.2)
 	copyPacks := findPacksForBlobs(t, repo, keepBlobs)
