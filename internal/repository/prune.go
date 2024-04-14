@@ -586,6 +586,13 @@ func (plan *PrunePlan) Execute(ctx context.Context, printer progress.Printer) (e
 		}
 	}
 
+	if err != nil {
+		return err
+	}
+
+	// drop outdated in-memory index
+	repo.ClearIndex()
+
 	printer.P("done\n")
 	return nil
 }

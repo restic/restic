@@ -98,7 +98,14 @@ func RepairIndex(ctx context.Context, repo *Repository, opts RepairIndexOptions,
 		}
 	}
 
-	return rebuildIndexFiles(ctx, repo, removePacks, obsoleteIndexes, false, printer)
+	err = rebuildIndexFiles(ctx, repo, removePacks, obsoleteIndexes, false, printer)
+	if err != nil {
+		return err
+	}
+
+	// drop outdated in-memory index
+	repo.ClearIndex()
+	return nil
 }
 
 func rebuildIndexFiles(ctx context.Context, repo restic.Repository, removePacks restic.IDSet, extraObsolete restic.IDs, skipDeletion bool, printer progress.Printer) error {

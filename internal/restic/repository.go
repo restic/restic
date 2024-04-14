@@ -26,6 +26,7 @@ type Repository interface {
 
 	Index() MasterIndex
 	LoadIndex(context.Context, *progress.Counter) error
+	ClearIndex()
 	SetIndex(MasterIndex) error
 	LookupBlobSize(ID, BlobType) (uint, bool)
 
