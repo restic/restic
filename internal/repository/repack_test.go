@@ -18,7 +18,7 @@ func randomSize(min, max int) int {
 	return rand.Intn(max-min) + min
 }
 
-func createRandomBlobs(t testing.TB, repo restic.Repository, blobs int, pData float32) {
+func createRandomBlobs(t testing.TB, repo restic.Repository, blobs int, pData float32, smallBlobs bool) {
 	var wg errgroup.Group
 	repo.StartPackUploader(context.TODO(), &wg)
 
@@ -30,7 +30,11 @@ func createRandomBlobs(t testing.TB, repo restic.Repository, blobs int, pData fl
 
 		if rand.Float32() < pData {
 			tpe = restic.DataBlob
-			length = randomSize(10*1024, 1024*1024) // 10KiB to 1MiB of data
+			if smallBlobs {
+				length = randomSize(1*1024, 20*1024) // 1KiB to 20KiB of data
+			} else {
+				length = randomSize(10*1024, 1024*1024) // 10KiB to 1MiB of data
+			}
 		} else {
 			tpe = restic.TreeBlob
 			length = randomSize(1*1024, 20*1024) // 1KiB to 20KiB
@@ -219,7 +223,9 @@ func testRepack(t *testing.T, version uint) {
 	rand.Seed(seed)
 	t.Logf("rand seed is %v", seed)
 
-	createRandomBlobs(t, repo, 100, 0.7)
+	// add a small amount of blobs twice to create multiple pack files
+	createRandomBlobs(t, repo, 10, 0.7, false)
+	createRandomBlobs(t, repo, 10, 0.7, false)
 
 	packsBefore := listPacks(t, repo)
 
@@ -302,7 +308,9 @@ func testRepackCopy(t *testing.T, version uint) {
 	rand.Seed(seed)
 	t.Logf("rand seed is %v", seed)
 
-	createRandomBlobs(t, repo, 100, 0.7)
+	// add a small amount of blobs twice to create multiple pack files
+	createRandomBlobs(t, repo, 10, 0.7, false)
+	createRandomBlobs(t, repo, 10, 0.7, false)
 	flush(t, repo)
 
 	_, keepBlobs := selectBlobs(t, repo, 0.2)
@@ -343,7 +351,7 @@ func testRepackWrongBlob(t *testing.T, version uint) {
 	rand.Seed(seed)
 	t.Logf("rand seed is %v", seed)
 
-	createRandomBlobs(t, repo, 5, 0.7)
+	createRandomBlobs(t, repo, 5, 0.7, false)
 	createRandomWrongBlob(t, repo)
 
 	// just keep all blobs, but also rewrite every pack

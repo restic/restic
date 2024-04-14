@@ -242,8 +242,7 @@ func loadIndex(ctx context.Context, repo restic.LoaderUnpacked, id restic.ID) (*
 }
 
 func TestRepositoryLoadUnpackedBroken(t *testing.T) {
-	repo, cleanup := repository.TestFromFixture(t, repoFixture)
-	defer cleanup()
+	repo := repository.TestRepository(t)
 
 	data := rtest.Random(23, 12345)
 	id := restic.Hash(data)
@@ -252,7 +251,7 @@ func TestRepositoryLoadUnpackedBroken(t *testing.T) {
 	data[0] ^= 0xff
 
 	// store broken file
-	err := repo.Backend().Save(context.TODO(), h, backend.NewByteReader(data, nil))
+	err := repo.Backend().Save(context.TODO(), h, backend.NewByteReader(data, repo.Backend().Hasher()))
 	rtest.OK(t, err)
 
 	// without a retry backend this will just return an error that the file is broken
