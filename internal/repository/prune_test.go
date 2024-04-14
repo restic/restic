@@ -10,6 +10,7 @@ import (
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui/progress"
+	"golang.org/x/sync/errgroup"
 )
 
 func testPrune(t *testing.T, opts repository.PruneOptions, errOnUnused bool) {
@@ -17,6 +18,17 @@ func testPrune(t *testing.T, opts repository.PruneOptions, errOnUnused bool) {
 	createRandomBlobs(t, repo, 4, 0.5, true)
 	createRandomBlobs(t, repo, 5, 0.5, true)
 	keep, _ := selectBlobs(t, repo, 0.5)
+
+	var wg errgroup.Group
+	repo.StartPackUploader(context.TODO(), &wg)
+	// duplicate a few blobs to exercise those code paths
+	for blob := range keep {
+		buf, err := repo.LoadBlob(context.TODO(), blob.Type, blob.ID, nil)
+		rtest.OK(t, err)
+		_, _, _, err = repo.SaveBlob(context.TODO(), blob.Type, buf, blob.ID, true)
+		rtest.OK(t, err)
+	}
+	rtest.OK(t, repo.Flush(context.TODO()))
 
 	plan, err := repository.PlanPrune(context.TODO(), opts, repo, func(ctx context.Context, repo restic.Repository) (usedBlobs restic.CountedBlobSet, err error) {
 		return restic.NewCountedBlobSet(keep.List()...), nil
