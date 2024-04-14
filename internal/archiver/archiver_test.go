@@ -1430,7 +1430,7 @@ func TestArchiverSnapshot(t *testing.T) {
 			}
 			TestEnsureSnapshot(t, repo, snapshotID, want)
 
-			checker.TestCheckRepo(t, repo)
+			checker.TestCheckRepo(t, repo, false)
 
 			// check that the snapshot contains the targets with absolute paths
 			for i, target := range sn.Paths {
@@ -1590,7 +1590,7 @@ func TestArchiverSnapshotSelect(t *testing.T) {
 			}
 			TestEnsureSnapshot(t, repo, snapshotID, want)
 
-			checker.TestCheckRepo(t, repo)
+			checker.TestCheckRepo(t, repo, false)
 		})
 	}
 }
@@ -1794,7 +1794,7 @@ func TestArchiverParent(t *testing.T) {
 			t.Logf("second backup saved as %v", secondSnapshotID.Str())
 			t.Logf("testfs: %v", testFS)
 
-			checker.TestCheckRepo(t, repo)
+			checker.TestCheckRepo(t, repo, false)
 		})
 	}
 }
@@ -1927,7 +1927,7 @@ func TestArchiverErrorReporting(t *testing.T) {
 			}
 			TestEnsureSnapshot(t, repo, snapshotID, want)
 
-			checker.TestCheckRepo(t, repo)
+			checker.TestCheckRepo(t, repo, false)
 		})
 	}
 }
@@ -2288,7 +2288,7 @@ func TestMetadataChanged(t *testing.T) {
 	// make sure the content matches
 	TestEnsureFileContent(context.Background(), t, repo, "testfile", node3, files["testfile"].(TestFile))
 
-	checker.TestCheckRepo(t, repo)
+	checker.TestCheckRepo(t, repo, false)
 }
 
 func TestRacyFileSwap(t *testing.T) {
