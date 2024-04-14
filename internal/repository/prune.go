@@ -66,6 +66,10 @@ type PrunePlan struct {
 	keepBlobs        restic.CountedBlobSet // blobs to keep during repacking
 	removePacks      restic.IDSet          // packs to remove
 	ignorePacks      restic.IDSet          // packs to ignore when rebuilding the index
+
+	repo  restic.Repository
+	stats PruneStats
+	opts  PruneOptions
 }
 
 type packInfo struct {
@@ -85,7 +89,7 @@ type packInfoWithID struct {
 
 // PlanPrune selects which files to rewrite and which to delete and which blobs to keep.
 // Also some summary statistics are returned.
-func PlanPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, getUsedBlobs func(ctx context.Context, repo restic.Repository) (usedBlobs restic.CountedBlobSet, err error), printer progress.Printer) (PrunePlan, PruneStats, error) {
+func PlanPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, getUsedBlobs func(ctx context.Context, repo restic.Repository) (usedBlobs restic.CountedBlobSet, err error), printer progress.Printer) (*PrunePlan, error) {
 	var stats PruneStats
 
 	if opts.UnsafeRecovery {
@@ -93,27 +97,27 @@ func PlanPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, g
 		opts.MaxRepackBytes = 0
 	}
 	if repo.Connections() < 2 {
-		return PrunePlan{}, stats, fmt.Errorf("prune requires a backend connection limit of at least two")
+		return nil, fmt.Errorf("prune requires a backend connection limit of at least two")
 	}
 	if repo.Config().Version < 2 && opts.RepackUncompressed {
-		return PrunePlan{}, stats, fmt.Errorf("compression requires at least repository format version 2")
+		return nil, fmt.Errorf("compression requires at least repository format version 2")
 	}
 
 	usedBlobs, err := getUsedBlobs(ctx, repo)
 	if err != nil {
-		return PrunePlan{}, stats, err
+		return nil, err
 	}
 
 	printer.P("searching used packs...\n")
 	keepBlobs, indexPack, err := packInfoFromIndex(ctx, repo.Index(), usedBlobs, &stats, printer)
 	if err != nil {
-		return PrunePlan{}, stats, err
+		return nil, err
 	}
 
 	printer.P("collecting packs for deletion and repacking\n")
 	plan, err := decidePackAction(ctx, opts, repo, indexPack, &stats, printer)
 	if err != nil {
-		return PrunePlan{}, stats, err
+		return nil, err
 	}
 
 	if len(plan.repackPacks) != 0 {
@@ -137,7 +141,11 @@ func PlanPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, g
 	}
 	plan.keepBlobs = keepBlobs
 
-	return plan, stats, nil
+	plan.repo = repo
+	plan.stats = stats
+	plan.opts = opts
+
+	return &plan, nil
 }
 
 func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs restic.CountedBlobSet, stats *PruneStats, printer progress.Printer) (restic.CountedBlobSet, map[restic.ID]packInfo, error) {
@@ -489,14 +497,18 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Reposi
 	}, nil
 }
 
-// DoPrune does the actual pruning:
+func (plan *PrunePlan) Stats() PruneStats {
+	return plan.stats
+}
+
+// Execute does the actual pruning:
 // - remove unreferenced packs first
 // - repack given pack files while keeping the given blobs
 // - rebuild the index while ignoring all files that will be deleted
 // - delete the files
 // plan.removePacks and plan.ignorePacks are modified in this function.
-func DoPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, plan PrunePlan, printer progress.Printer) (err error) {
-	if opts.DryRun {
+func (plan *PrunePlan) Execute(ctx context.Context, printer progress.Printer) (err error) {
+	if plan.opts.DryRun {
 		printer.V("Repeated prune dry-runs can report slightly different amounts of data to keep or repack. This is expected behavior.\n\n")
 		if len(plan.removePacksFirst) > 0 {
 			printer.V("Would have removed the following unreferenced packs:\n%v\n\n", plan.removePacksFirst)
@@ -506,6 +518,10 @@ func DoPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, pla
 		// Always quit here if DryRun was set!
 		return nil
 	}
+
+	repo := plan.repo
+	// make sure the plan can only be used once
+	plan.repo = nil
 
 	// unreferenced packs can be safely deleted first
 	if len(plan.removePacksFirst) != 0 {
@@ -544,7 +560,7 @@ func DoPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, pla
 		plan.ignorePacks.Merge(plan.removePacks)
 	}
 
-	if opts.UnsafeRecovery {
+	if plan.opts.UnsafeRecovery {
 		printer.P("deleting index files\n")
 		indexFiles := repo.Index().(*index.MasterIndex).IDs()
 		err = deleteFiles(ctx, false, repo, indexFiles, restic.IndexFile, printer)
@@ -563,7 +579,7 @@ func DoPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, pla
 		_ = deleteFiles(ctx, true, repo, plan.removePacks, restic.PackFile, printer)
 	}
 
-	if opts.UnsafeRecovery {
+	if plan.opts.UnsafeRecovery {
 		err = rebuildIndexFiles(ctx, repo, plan.ignorePacks, nil, true, printer)
 		if err != nil {
 			return errors.Fatalf("%s", err)

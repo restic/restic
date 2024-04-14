@@ -191,7 +191,7 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOption
 		RepackUncompressed: opts.RepackUncompressed,
 	}
 
-	plan, stats, err := repository.PlanPrune(ctx, popts, repo, func(ctx context.Context, repo restic.Repository) (usedBlobs restic.CountedBlobSet, err error) {
+	plan, err := repository.PlanPrune(ctx, popts, repo, func(ctx context.Context, repo restic.Repository) (usedBlobs restic.CountedBlobSet, err error) {
 		return getUsedBlobs(ctx, repo, ignoreSnapshots, printer)
 	}, printer)
 	if err != nil {
@@ -202,7 +202,7 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOption
 		printer.P("\nWould have made the following changes:")
 	}
 
-	err = printPruneStats(printer, stats)
+	err = printPruneStats(printer, plan.Stats())
 	if err != nil {
 		return err
 	}
@@ -210,7 +210,7 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOption
 	// Trigger GC to reset garbage collection threshold
 	runtime.GC()
 
-	return repository.DoPrune(ctx, popts, repo, plan, printer)
+	return plan.Execute(ctx, printer)
 }
 
 // printPruneStats prints out the statistics
