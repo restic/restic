@@ -92,6 +92,8 @@ type ForgetOptions struct {
 	WithinYearly  restic.Duration
 	KeepTags      restic.TagLists
 
+	UnsafeAllowRemoveAll bool
+
 	restic.SnapshotFilter
 	Compact bool
 
@@ -121,6 +123,7 @@ func init() {
 	f.VarP(&forgetOptions.WithinMonthly, "keep-within-monthly", "", "keep monthly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
 	f.VarP(&forgetOptions.WithinYearly, "keep-within-yearly", "", "keep yearly snapshots that are newer than `duration` (eg. 1y5m7d2h) relative to the latest snapshot")
 	f.Var(&forgetOptions.KeepTags, "keep-tag", "keep snapshots with this `taglist` (can be specified multiple times)")
+	f.BoolVar(&forgetOptions.UnsafeAllowRemoveAll, "unsafe-allow-remove-all", false, "allow deleting all snapshots of a snapshot group")
 
 	initMultiSnapshotFilter(f, &forgetOptions.SnapshotFilter, false)
 	f.StringArrayVar(&forgetOptions.Hosts, "hostname", nil, "only consider snapshots with the given `hostname` (can be specified multiple times)")
@@ -223,7 +226,14 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 		}
 
 		if policy.Empty() {
-			return errors.Fatal("no policy was specified, no snapshots will be removed")
+			if opts.UnsafeAllowRemoveAll {
+				if opts.SnapshotFilter.Empty() {
+					return errors.Fatal("--unsafe-allow-remove-all is not allowed unless a snapshot filter option is specified")
+				}
+				// UnsafeAllowRemoveAll together with snapshot filter is fine
+			} else {
+				return errors.Fatal("no policy was specified, no snapshots will be removed")
+			}
 		}
 
 		printer.P("Applying Policy: %v\n", policy)
