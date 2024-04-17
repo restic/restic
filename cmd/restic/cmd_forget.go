@@ -248,7 +248,29 @@ func runForget(ctx context.Context, opts ForgetOptions, gopts GlobalOptions, arg
 			}
 		}
 		pruneOptions.DryRun = opts.DryRun
-		return runPruneWithRepo(ctx, pruneOptions, gopts, repo, removeSnIDs)
+		err = runPruneWithRepo(ctx, pruneOptions, gopts, repo, removeSnIDs)
+		if err != nil {
+			return err
+		}
+	}
+
+	if opts.deleteEmptyRepo {
+		snapshotCount := 0
+		for range FindFilteredSnapshots(ctx, repo.Backend(), repo, opts.Hosts, opts.Tags, opts.Paths, []string{}) {
+			snapshotCount++
+		}
+
+		if opts.DryRun && snapshotCount == 1 {
+			if !gopts.JSON {
+				Printf("Would have removed the repo\n")
+			}
+		} else if snapshotCount == 0 {
+			Printf("No more snapshots left, removing the repo\n")
+			err = repo.Delete(ctx)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil
