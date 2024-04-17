@@ -82,6 +82,10 @@ func runRepairPacks(ctx context.Context, gopts GlobalOptions, term *termstatus.T
 			return err
 		})
 		if err != nil {
+			_ = f.Close()
+			return err
+		}
+		if err := f.Close(); err != nil {
 			return err
 		}
 	}
