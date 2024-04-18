@@ -38,7 +38,7 @@ depending on what you are trying to calculate.
 The modes are:
 
 * restore-size: (default) Counts the size of the restored files.
-* files-by-contents: Counts total size of files, where a file is
+* files-by-contents: Counts total size of unique files, where a file is
    considered unique if it has unique contents.
 * raw-data: Counts the size of blobs in the repository, regardless of
   how many files reference them.
