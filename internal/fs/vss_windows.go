@@ -190,7 +190,7 @@ func (e *vssError) Error() string {
 	return fmt.Sprintf("VSS error: %s: %s (%#x)", e.text, e.hresult.Str(), e.hresult)
 }
 
-// VssError encapsulates errors returned from calling VSS api.
+// vssTextError encapsulates errors returned from calling VSS api.
 type vssTextError struct {
 	text string
 }
