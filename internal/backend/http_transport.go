@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
@@ -66,14 +67,24 @@ func readPEMCertKey(filename string) (certs []byte, key []byte, err error) {
 // a custom rootCertFilename is non-empty, it must point to a valid PEM file,
 // otherwise the function will return an error.
 func Transport(opts TransportOptions) (http.RoundTripper, error) {
+	dial := (&net.Dialer{
+		Timeout:   30 * time.Second,
+		KeepAlive: 30 * time.Second,
+		DualStack: true,
+	}).DialContext
+	// inject timeoutConn to enforce progress
+	dialTimeout := func(ctx context.Context, network, addr string) (net.Conn, error) {
+		conn, err := dial(ctx, network, addr)
+		if err != nil {
+			return conn, err
+		}
+		return newTimeoutConn(conn, 5*time.Minute)
+	}
+
 	// copied from net/http
 	tr := &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
-			DualStack: true,
-		}).DialContext,
+		Proxy:                 http.ProxyFromEnvironment,
+		DialContext:           dialTimeout,
 		ForceAttemptHTTP2:     true,
 		MaxIdleConns:          100,
 		MaxIdleConnsPerHost:   100,
