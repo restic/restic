@@ -146,6 +146,12 @@ func TestStreamPack(t *testing.T) {
 }
 
 func testStreamPack(t *testing.T, version uint) {
+	dec, err := zstd.NewReader(nil)
+	if err != nil {
+		panic(dec)
+	}
+	defer dec.Close()
+
 	// always use the same key for deterministic output
 	key := testKey(t)
 
@@ -270,7 +276,7 @@ func testStreamPack(t *testing.T, version uint) {
 
 				loadCalls = 0
 				shortFirstLoad = test.shortFirstLoad
-				err := streamPack(ctx, load, nil, &key, restic.ID{}, test.blobs, handleBlob)
+				err := streamPack(ctx, load, nil, dec, &key, restic.ID{}, test.blobs, handleBlob)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -333,7 +339,7 @@ func testStreamPack(t *testing.T, version uint) {
 					return err
 				}
 
-				err := streamPack(ctx, load, nil, &key, restic.ID{}, test.blobs, handleBlob)
+				err := streamPack(ctx, load, nil, dec, &key, restic.ID{}, test.blobs, handleBlob)
 				if err == nil {
 					t.Fatalf("wanted error %v, got nil", test.err)
 				}
@@ -456,6 +462,12 @@ func testKey(t *testing.T) crypto.Key {
 }
 
 func TestStreamPackFallback(t *testing.T) {
+	dec, err := zstd.NewReader(nil)
+	if err != nil {
+		panic(dec)
+	}
+	defer dec.Close()
+
 	test := func(t *testing.T, failLoad bool) {
 		key := testKey(t)
 		ctx, cancel := context.WithCancel(context.Background())
@@ -503,7 +515,7 @@ func TestStreamPackFallback(t *testing.T) {
 			return err
 		}
 
-		err := streamPack(ctx, loadPack, loadBlob, &key, restic.ID{}, blobs, handleBlob)
+		err := streamPack(ctx, loadPack, loadBlob, dec, &key, restic.ID{}, blobs, handleBlob)
 		rtest.OK(t, err)
 		rtest.Assert(t, blobOK, "blob failed to load")
 	}
