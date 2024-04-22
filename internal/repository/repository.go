@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"runtime"
 	"sort"
@@ -916,6 +917,10 @@ func (r *Repository) Close() error {
 // If the blob was not known before, it returns the number of bytes the blob
 // occupies in the repo (compressed or not, including encryption overhead).
 func (r *Repository) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, size int, err error) {
+
+	if int64(len(buf)) > math.MaxUint32 {
+		return restic.ID{}, false, 0, fmt.Errorf("blob is larger than 4GB")
+	}
 
 	// compute plaintext hash if not already set
 	if id.IsNull() {

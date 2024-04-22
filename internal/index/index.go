@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"sync"
 	"time"
 
@@ -69,11 +70,9 @@ func (idx *Index) addToPacks(id restic.ID) int {
 	return len(idx.packs) - 1
 }
 
-const maxuint32 = 1<<32 - 1
-
 func (idx *Index) store(packIndex int, blob restic.Blob) {
 	// assert that offset and length fit into uint32!
-	if blob.Offset > maxuint32 || blob.Length > maxuint32 || blob.UncompressedLength > maxuint32 {
+	if blob.Offset > math.MaxUint32 || blob.Length > math.MaxUint32 || blob.UncompressedLength > math.MaxUint32 {
 		panic("offset or length does not fit in uint32. You have packs > 4GB!")
 	}
 
