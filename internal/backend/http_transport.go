@@ -14,6 +14,7 @@ import (
 	"github.com/peterbourgon/unixtransport"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/feature"
 )
 
 // TransportOptions collects various options which can be set for an HTTP based
@@ -72,13 +73,17 @@ func Transport(opts TransportOptions) (http.RoundTripper, error) {
 		KeepAlive: 30 * time.Second,
 		DualStack: true,
 	}).DialContext
-	// inject timeoutConn to enforce progress
-	dialTimeout := func(ctx context.Context, network, addr string) (net.Conn, error) {
-		conn, err := dial(ctx, network, addr)
-		if err != nil {
-			return conn, err
+	dialTimeout := dial
+
+	if feature.Flag.Enabled(feature.HTTPTimeouts) {
+		// inject timeoutConn to enforce progress
+		dialTimeout = func(ctx context.Context, network, addr string) (net.Conn, error) {
+			conn, err := dial(ctx, network, addr)
+			if err != nil {
+				return conn, err
+			}
+			return newTimeoutConn(conn, 5*time.Minute)
 		}
-		return newTimeoutConn(conn, 5*time.Minute)
 	}
 
 	// copied from net/http
