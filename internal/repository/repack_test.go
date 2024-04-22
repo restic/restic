@@ -18,7 +18,7 @@ func randomSize(min, max int) int {
 	return rand.Intn(max-min) + min
 }
 
-func createRandomBlobs(t testing.TB, repo restic.Repository, blobs int, pData float32) {
+func createRandomBlobs(t testing.TB, repo restic.Repository, blobs int, pData float32, smallBlobs bool) {
 	var wg errgroup.Group
 	repo.StartPackUploader(context.TODO(), &wg)
 
@@ -30,7 +30,11 @@ func createRandomBlobs(t testing.TB, repo restic.Repository, blobs int, pData fl
 
 		if rand.Float32() < pData {
 			tpe = restic.DataBlob
-			length = randomSize(10*1024, 1024*1024) // 10KiB to 1MiB of data
+			if smallBlobs {
+				length = randomSize(1*1024, 20*1024) // 1KiB to 20KiB of data
+			} else {
+				length = randomSize(10*1024, 1024*1024) // 10KiB to 1MiB of data
+			}
 		} else {
 			tpe = restic.TreeBlob
 			length = randomSize(1*1024, 20*1024) // 1KiB to 20KiB
@@ -121,8 +125,12 @@ func selectBlobs(t *testing.T, repo restic.Repository, p float32) (list1, list2 
 }
 
 func listPacks(t *testing.T, repo restic.Lister) restic.IDSet {
+	return listFiles(t, repo, restic.PackFile)
+}
+
+func listFiles(t *testing.T, repo restic.Lister, tpe backend.FileType) restic.IDSet {
 	list := restic.NewIDSet()
-	err := repo.List(context.TODO(), restic.PackFile, func(id restic.ID, size int64) error {
+	err := repo.List(context.TODO(), tpe, func(id restic.ID, size int64) error {
 		list.Insert(id)
 		return nil
 	})
@@ -163,12 +171,6 @@ func repack(t *testing.T, repo restic.Repository, packs restic.IDSet, blobs rest
 		if err != nil {
 			t.Fatal(err)
 		}
-	}
-}
-
-func flush(t *testing.T, repo restic.Repository) {
-	if err := repo.Flush(context.TODO()); err != nil {
-		t.Fatalf("repo.SaveIndex() %v", err)
 	}
 }
 
@@ -219,7 +221,9 @@ func testRepack(t *testing.T, version uint) {
 	rand.Seed(seed)
 	t.Logf("rand seed is %v", seed)
 
-	createRandomBlobs(t, repo, 100, 0.7)
+	// add a small amount of blobs twice to create multiple pack files
+	createRandomBlobs(t, repo, 10, 0.7, false)
+	createRandomBlobs(t, repo, 10, 0.7, false)
 
 	packsBefore := listPacks(t, repo)
 
@@ -232,8 +236,6 @@ func testRepack(t *testing.T, version uint) {
 		t.Fatalf("packs are not equal, Repack modified something. Before:\n  %v\nAfter:\n  %v",
 			packsBefore, packsAfter)
 	}
-
-	flush(t, repo)
 
 	removeBlobs, keepBlobs := selectBlobs(t, repo, 0.2)
 
@@ -302,8 +304,9 @@ func testRepackCopy(t *testing.T, version uint) {
 	rand.Seed(seed)
 	t.Logf("rand seed is %v", seed)
 
-	createRandomBlobs(t, repo, 100, 0.7)
-	flush(t, repo)
+	// add a small amount of blobs twice to create multiple pack files
+	createRandomBlobs(t, repo, 10, 0.7, false)
+	createRandomBlobs(t, repo, 10, 0.7, false)
 
 	_, keepBlobs := selectBlobs(t, repo, 0.2)
 	copyPacks := findPacksForBlobs(t, repo, keepBlobs)
@@ -343,7 +346,7 @@ func testRepackWrongBlob(t *testing.T, version uint) {
 	rand.Seed(seed)
 	t.Logf("rand seed is %v", seed)
 
-	createRandomBlobs(t, repo, 5, 0.7)
+	createRandomBlobs(t, repo, 5, 0.7, false)
 	createRandomWrongBlob(t, repo)
 
 	// just keep all blobs, but also rewrite every pack

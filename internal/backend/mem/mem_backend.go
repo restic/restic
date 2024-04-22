@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"fmt"
 	"hash"
 	"io"
 	"net/http"
@@ -41,7 +42,7 @@ func NewFactory() location.Factory {
 	)
 }
 
-var errNotFound = errors.New("not found")
+var errNotFound = fmt.Errorf("not found")
 
 const connectionCount = 2
 

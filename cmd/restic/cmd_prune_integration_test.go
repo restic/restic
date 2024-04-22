@@ -7,7 +7,9 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/repository"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui/termstatus"
 )
 
 func testRunPrune(t testing.TB, gopts GlobalOptions, opts PruneOptions) {
@@ -16,7 +18,9 @@ func testRunPrune(t testing.TB, gopts GlobalOptions, opts PruneOptions) {
 	defer func() {
 		gopts.backendTestHook = oldHook
 	}()
-	rtest.OK(t, runPrune(context.TODO(), opts, gopts))
+	rtest.OK(t, withTermStatus(gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+		return runPrune(context.TODO(), opts, gopts, term)
+	}))
 }
 
 func TestPrune(t *testing.T) {
@@ -31,7 +35,7 @@ func testPruneVariants(t *testing.T, unsafeNoSpaceRecovery bool) {
 	}
 	t.Run("0"+suffix, func(t *testing.T) {
 		opts := PruneOptions{MaxUnused: "0%", unsafeRecovery: unsafeNoSpaceRecovery}
-		checkOpts := CheckOptions{ReadData: true, CheckUnused: true}
+		checkOpts := CheckOptions{ReadData: true, CheckUnused: !unsafeNoSpaceRecovery}
 		testPrune(t, opts, checkOpts)
 	})
 
@@ -84,7 +88,9 @@ func testRunForgetJSON(t testing.TB, gopts GlobalOptions, args ...string) {
 		pruneOpts := PruneOptions{
 			MaxUnused: "5%",
 		}
-		return runForget(context.TODO(), opts, pruneOpts, gopts, args)
+		return withTermStatus(gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+			return runForget(context.TODO(), opts, pruneOpts, gopts, term, args)
+		})
 	})
 	rtest.OK(t, err)
 
@@ -138,7 +144,9 @@ func TestPruneWithDamagedRepository(t *testing.T) {
 		env.gopts.backendTestHook = oldHook
 	}()
 	// prune should fail
-	rtest.Assert(t, runPrune(context.TODO(), pruneDefaultOptions, env.gopts) == errorPacksMissing,
+	rtest.Assert(t, withTermStatus(env.gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+		return runPrune(context.TODO(), pruneDefaultOptions, env.gopts, term)
+	}) == repository.ErrPacksMissing,
 		"prune should have reported index not complete error")
 }
 
@@ -218,7 +226,9 @@ func testEdgeCaseRepo(t *testing.T, tarfile string, optionsCheck CheckOptions, o
 		testRunPrune(t, env.gopts, optionsPrune)
 		testRunCheck(t, env.gopts)
 	} else {
-		rtest.Assert(t, runPrune(context.TODO(), optionsPrune, env.gopts) != nil,
+		rtest.Assert(t, withTermStatus(env.gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+			return runPrune(context.TODO(), optionsPrune, env.gopts, term)
+		}) != nil,
 			"prune should have reported an error")
 	}
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui/termstatus"
 	"github.com/spf13/cobra"
 )
 
@@ -33,7 +34,9 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runForget(cmd.Context(), forgetOptions, forgetPruneOptions, globalOptions, args)
+		term, cancel := setupTermstatus()
+		defer cancel()
+		return runForget(cmd.Context(), forgetOptions, forgetPruneOptions, globalOptions, term, args)
 	},
 }
 
@@ -152,7 +155,7 @@ func verifyForgetOptions(opts *ForgetOptions) error {
 	return nil
 }
 
-func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOptions, gopts GlobalOptions, args []string) error {
+func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOptions, gopts GlobalOptions, term *termstatus.Terminal, args []string) error {
 	err := verifyForgetOptions(&opts)
 	if err != nil {
 		return err
@@ -172,6 +175,12 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 		return err
 	}
 	defer unlock()
+
+	verbosity := gopts.verbosity
+	if gopts.JSON {
+		verbosity = 0
+	}
+	printer := newTerminalProgressPrinter(verbosity, term)
 
 	var snapshots restic.Snapshots
 	removeSnIDs := restic.NewIDSet()
@@ -210,15 +219,11 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 		}
 
 		if policy.Empty() && len(args) == 0 {
-			if !gopts.JSON {
-				Verbosef("no policy was specified, no snapshots will be removed\n")
-			}
+			printer.P("no policy was specified, no snapshots will be removed\n")
 		}
 
 		if !policy.Empty() {
-			if !gopts.JSON {
-				Verbosef("Applying Policy: %v\n", policy)
-			}
+			printer.P("Applying Policy: %v\n", policy)
 
 			for k, snapshotGroup := range snapshotGroups {
 				if gopts.Verbose >= 1 && !gopts.JSON {
@@ -241,16 +246,16 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 				keep, remove, reasons := restic.ApplyPolicy(snapshotGroup, policy)
 
 				if len(keep) != 0 && !gopts.Quiet && !gopts.JSON {
-					Printf("keep %d snapshots:\n", len(keep))
+					printer.P("keep %d snapshots:\n", len(keep))
 					PrintSnapshots(globalOptions.stdout, keep, reasons, opts.Compact)
-					Printf("\n")
+					printer.P("\n")
 				}
 				fg.Keep = asJSONSnapshots(keep)
 
 				if len(remove) != 0 && !gopts.Quiet && !gopts.JSON {
-					Printf("remove %d snapshots:\n", len(remove))
+					printer.P("remove %d snapshots:\n", len(remove))
 					PrintSnapshots(globalOptions.stdout, remove, nil, opts.Compact)
-					Printf("\n")
+					printer.P("\n")
 				}
 				fg.Remove = asJSONSnapshots(remove)
 
@@ -267,14 +272,21 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 
 	if len(removeSnIDs) > 0 {
 		if !opts.DryRun {
-			err := DeleteFilesChecked(ctx, gopts, repo, removeSnIDs, restic.SnapshotFile)
+			bar := printer.NewCounter("files deleted")
+			err := restic.ParallelRemove(ctx, repo, removeSnIDs, restic.SnapshotFile, func(id restic.ID, err error) error {
+				if err != nil {
+					printer.E("unable to remove %v/%v from the repository\n", restic.SnapshotFile, id)
+				} else {
+					printer.VV("removed %v/%v\n", restic.SnapshotFile, id)
+				}
+				return nil
+			}, bar)
+			bar.Done()
 			if err != nil {
 				return err
 			}
 		} else {
-			if !gopts.JSON {
-				Printf("Would have removed the following snapshots:\n%v\n\n", removeSnIDs)
-			}
+			printer.P("Would have removed the following snapshots:\n%v\n\n", removeSnIDs)
 		}
 	}
 
@@ -286,15 +298,13 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 	}
 
 	if len(removeSnIDs) > 0 && opts.Prune {
-		if !gopts.JSON {
-			if opts.DryRun {
-				Verbosef("%d snapshots would be removed, running prune dry run\n", len(removeSnIDs))
-			} else {
-				Verbosef("%d snapshots have been removed, running prune\n", len(removeSnIDs))
-			}
+		if opts.DryRun {
+			printer.P("%d snapshots would be removed, running prune dry run\n", len(removeSnIDs))
+		} else {
+			printer.P("%d snapshots have been removed, running prune\n", len(removeSnIDs))
 		}
 		pruneOptions.DryRun = opts.DryRun
-		return runPruneWithRepo(ctx, pruneOptions, gopts, repo, removeSnIDs)
+		return runPruneWithRepo(ctx, pruneOptions, gopts, repo, removeSnIDs, term)
 	}
 
 	return nil
