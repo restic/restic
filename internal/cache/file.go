@@ -165,7 +165,8 @@ func (c *Cache) Clear(t restic.FileType, valid restic.IDSet) error {
 			continue
 		}
 
-		if err = fs.Remove(c.filename(backend.Handle{Type: t, Name: id.String()})); err != nil {
+		// ignore ErrNotExist to gracefully handle multiple processes running Clear() concurrently
+		if err = fs.Remove(c.filename(backend.Handle{Type: t, Name: id.String()})); err != nil && !errors.Is(err, os.ErrNotExist) {
 			return err
 		}
 	}
