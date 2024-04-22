@@ -941,8 +941,8 @@ func (r *Repository) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte
 type backendLoadFn func(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error
 type loadBlobFn func(ctx context.Context, t restic.BlobType, id restic.ID, buf []byte) ([]byte, error)
 
-// Skip sections with more than 4MB unused blobs
-const maxUnusedRange = 4 * 1024 * 1024
+// Skip sections with more than 1MB unused blobs
+const maxUnusedRange = 1 * 1024 * 1024
 
 // LoadBlobsFromPack loads the listed blobs from the specified pack file. The plaintext blob is passed to
 // the handleBlobFn callback or an error if decryption failed or the blob hash does not match.
