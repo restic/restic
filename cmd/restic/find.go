@@ -19,11 +19,9 @@ func initMultiSnapshotFilter(flags *pflag.FlagSet, filt *restic.SnapshotFilter, 
 	flags.Var(&filt.Tags, "tag", "only consider snapshots including `tag[,tag,...]` (can be specified multiple times)")
 	flags.StringArrayVar(&filt.Paths, "path", nil, "only consider snapshots including this (absolute) `path` (can be specified multiple times)")
 
-	if len(filt.Hosts) == 0 {
-		// parse host from env, if not exists or empty the default value will be used
-		if host := os.Getenv("RESTIC_HOST"); host != "" {
-			filt.Hosts = []string{host}
-		}
+	// set default based on env if set
+	if host := os.Getenv("RESTIC_HOST"); host != "" {
+		filt.Hosts = []string{host}
 	}
 }
 
@@ -34,11 +32,9 @@ func initSingleSnapshotFilter(flags *pflag.FlagSet, filt *restic.SnapshotFilter)
 	flags.Var(&filt.Tags, "tag", "only consider snapshots including `tag[,tag,...]`, when snapshot ID \"latest\" is given (can be specified multiple times)")
 	flags.StringArrayVar(&filt.Paths, "path", nil, "only consider snapshots including this (absolute) `path`, when snapshot ID \"latest\" is given (can be specified multiple times)")
 
-	if len(filt.Hosts) == 0 {
-		// parse host from env, if not exists or empty the default value will be used
-		if host := os.Getenv("RESTIC_HOST"); host != "" {
-			filt.Hosts = []string{host}
-		}
+	// set default based on env if set
+	if host := os.Getenv("RESTIC_HOST"); host != "" {
+		filt.Hosts = []string{host}
 	}
 }
 

@@ -7,3 +7,4 @@ environment variable `RESTIC_HOST`. `--host` still takes precedence over the
 environment variable.
 
 https://github.com/restic/restic/issues/4733
+https://github.com/restic/restic/pull/4734
