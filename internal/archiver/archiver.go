@@ -380,6 +380,7 @@ func (fn *FutureNode) take(ctx context.Context) futureNodeResult {
 			return res
 		}
 	case <-ctx.Done():
+		return futureNodeResult{err: ctx.Err()}
 	}
 	return futureNodeResult{err: errors.Errorf("no result")}
 }

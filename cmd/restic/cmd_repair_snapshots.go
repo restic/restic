@@ -145,6 +145,9 @@ func runRepairSnapshots(ctx context.Context, gopts GlobalOptions, opts RepairOpt
 			changedCount++
 		}
 	}
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 
 	Verbosef("\n")
 	if changedCount == 0 {

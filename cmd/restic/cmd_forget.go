@@ -188,6 +188,9 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 	for sn := range FindFilteredSnapshots(ctx, repo, repo, &opts.SnapshotFilter, args) {
 		snapshots = append(snapshots, sn)
 	}
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 
 	var jsonGroups []*ForgetGroup
 
@@ -268,6 +271,10 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 				}
 			}
 		}
+	}
+
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 
 	if len(removeSnIDs) > 0 {

@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -23,6 +24,8 @@ func init() {
 	// don't import `go.uber.org/automaxprocs` to disable the log output
 	_, _ = maxprocs.Set()
 }
+
+var ErrOK = errors.New("ok")
 
 // cmdRoot is the base command when no other command has been specified.
 var cmdRoot = &cobra.Command{
@@ -74,6 +77,9 @@ The full documentation can be found at https://restic.readthedocs.io/ .
 		// enabled)
 		return runDebug()
 	},
+	PersistentPostRun: func(_ *cobra.Command, _ []string) {
+		stopDebug()
+	},
 }
 
 // Distinguish commands that need the password from those that work without,
@@ -88,8 +94,6 @@ func needsPassword(cmd string) bool {
 	}
 }
 
-var logBuffer = bytes.NewBuffer(nil)
-
 func tweakGoGC() {
 	// lower GOGC from 100 to 50, unless it was manually overwritten by the user
 	oldValue := godebug.SetGCPercent(50)
@@ -102,6 +106,7 @@ func main() {
 	tweakGoGC()
 	// install custom global logger into a buffer, if an error occurs
 	// we can show the logs
+	logBuffer := bytes.NewBuffer(nil)
 	log.SetOutput(logBuffer)
 
 	err := feature.Flag.Apply(os.Getenv("RESTIC_FEATURES"), func(s string) {
@@ -115,7 +120,16 @@ func main() {
 	debug.Log("main %#v", os.Args)
 	debug.Log("restic %s compiled with %v on %v/%v",
 		version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
-	err = cmdRoot.ExecuteContext(internalGlobalCtx)
+
+	ctx := createGlobalContext()
+	err = cmdRoot.ExecuteContext(ctx)
+
+	if err == nil {
+		err = ctx.Err()
+	} else if err == ErrOK {
+		// ErrOK overwrites context cancelation errors
+		err = nil
+	}
 
 	switch {
 	case restic.IsAlreadyLocked(err):
@@ -137,11 +151,13 @@ func main() {
 	}
 
 	var exitCode int
-	switch err {
-	case nil:
+	switch {
+	case err == nil:
 		exitCode = 0
-	case ErrInvalidSourceData:
+	case err == ErrInvalidSourceData:
 		exitCode = 3
+	case errors.Is(err, context.Canceled):
+		exitCode = 130
 	default:
 		exitCode = 1
 	}

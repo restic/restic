@@ -117,9 +117,8 @@ func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args 
 			return fmt.Errorf("error walking snapshot: %v", err)
 		}
 	}
-
-	if err != nil {
-		return err
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 
 	if opts.countMode == countModeRawData {
@@ -352,7 +351,10 @@ func statsDebug(ctx context.Context, repo restic.Repository) error {
 		Warnf("File Type: %v\n%v\n", t, hist)
 	}
 
-	hist := statsDebugBlobs(ctx, repo)
+	hist, err := statsDebugBlobs(ctx, repo)
+	if err != nil {
+		return err
+	}
 	for _, t := range []restic.BlobType{restic.DataBlob, restic.TreeBlob} {
 		Warnf("Blob Type: %v\n%v\n\n", t, hist[t])
 	}
@@ -370,17 +372,17 @@ func statsDebugFileType(ctx context.Context, repo restic.Lister, tpe restic.File
 	return hist, err
 }
 
-func statsDebugBlobs(ctx context.Context, repo restic.Repository) [restic.NumBlobTypes]*sizeHistogram {
+func statsDebugBlobs(ctx context.Context, repo restic.Repository) ([restic.NumBlobTypes]*sizeHistogram, error) {
 	var hist [restic.NumBlobTypes]*sizeHistogram
 	for i := 0; i < len(hist); i++ {
 		hist[i] = newSizeHistogram(2 * chunker.MaxSize)
 	}
 
-	repo.Index().Each(ctx, func(pb restic.PackedBlob) {
+	err := repo.Index().Each(ctx, func(pb restic.PackedBlob) {
 		hist[pb.Type].Add(uint64(pb.Length))
 	})
 
-	return hist
+	return hist, err
 }
 
 type sizeClass struct {

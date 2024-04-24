@@ -61,16 +61,22 @@ func runRecover(ctx context.Context, gopts GlobalOptions) error {
 	// tree. If it is not referenced, we have a root tree.
 	trees := make(map[restic.ID]bool)
 
-	repo.Index().Each(ctx, func(blob restic.PackedBlob) {
+	err = repo.Index().Each(ctx, func(blob restic.PackedBlob) {
 		if blob.Type == restic.TreeBlob {
 			trees[blob.Blob.ID] = false
 		}
 	})
+	if err != nil {
+		return err
+	}
 
 	Verbosef("load %d trees\n", len(trees))
 	bar = newProgressMax(!gopts.Quiet, uint64(len(trees)), "trees loaded")
 	for id := range trees {
 		tree, err := restic.LoadTree(ctx, repo, id)
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		if err != nil {
 			Warnf("unable to load tree %v: %v\n", id.Str(), err)
 			continue

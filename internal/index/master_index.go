@@ -223,13 +223,16 @@ func (mi *MasterIndex) finalizeFullIndexes() []*Index {
 
 // Each runs fn on all blobs known to the index. When the context is cancelled,
 // the index iteration return immediately. This blocks any modification of the index.
-func (mi *MasterIndex) Each(ctx context.Context, fn func(restic.PackedBlob)) {
+func (mi *MasterIndex) Each(ctx context.Context, fn func(restic.PackedBlob)) error {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 
 	for _, idx := range mi.idx {
-		idx.Each(ctx, fn)
+		if err := idx.Each(ctx, fn); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // MergeFinalIndexes merges all final indexes together.
@@ -319,6 +322,9 @@ func (mi *MasterIndex) Save(ctx context.Context, repo restic.Repository, exclude
 					}
 					newIndex = NewIndex()
 				}
+			}
+			if wgCtx.Err() != nil {
+				return wgCtx.Err()
 			}
 		}
 
@@ -426,10 +432,6 @@ func (mi *MasterIndex) ListPacks(ctx context.Context, packs restic.IDSet) <-chan
 		defer close(out)
 		// only resort a part of the index to keep the memory overhead bounded
 		for i := byte(0); i < 16; i++ {
-			if ctx.Err() != nil {
-				return
-			}
-
 			packBlob := make(map[restic.ID][]restic.Blob)
 			for pack := range packs {
 				if pack[0]&0xf == i {
@@ -439,11 +441,14 @@ func (mi *MasterIndex) ListPacks(ctx context.Context, packs restic.IDSet) <-chan
 			if len(packBlob) == 0 {
 				continue
 			}
-			mi.Each(ctx, func(pb restic.PackedBlob) {
+			err := mi.Each(ctx, func(pb restic.PackedBlob) {
 				if packs.Has(pb.PackID) && pb.PackID[0]&0xf == i {
 					packBlob[pb.PackID] = append(packBlob[pb.PackID], pb.Blob)
 				}
 			})
+			if err != nil {
+				return
+			}
 
 			// pass on packs
 			for packID, pbs := range packBlob {

@@ -180,7 +180,8 @@ func TestUnreferencedBlobs(t *testing.T) {
 	test.OKs(t, checkPacks(chkr))
 	test.OKs(t, checkStruct(chkr))
 
-	blobs := chkr.UnusedBlobs(context.TODO())
+	blobs, err := chkr.UnusedBlobs(context.TODO())
+	test.OK(t, err)
 	sort.Sort(blobs)
 
 	test.Equals(t, unusedBlobsBySnapshot, blobs)

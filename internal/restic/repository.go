@@ -103,8 +103,8 @@ type MasterIndex interface {
 	Lookup(BlobHandle) []PackedBlob
 
 	// Each runs fn on all blobs known to the index. When the context is cancelled,
-	// the index iteration return immediately. This blocks any modification of the index.
-	Each(ctx context.Context, fn func(PackedBlob))
+	// the index iteration returns immediately with ctx.Err(). This blocks any modification of the index.
+	Each(ctx context.Context, fn func(PackedBlob)) error
 	ListPacks(ctx context.Context, packs IDSet) <-chan PackBlobs
 
 	Save(ctx context.Context, repo Repository, excludePacks IDSet, extraObsolete IDs, opts MasterIndexSaveOpts) error

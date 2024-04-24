@@ -60,7 +60,7 @@ func runKeyAdd(ctx context.Context, gopts GlobalOptions, opts KeyAddOptions, arg
 }
 
 func addKey(ctx context.Context, repo *repository.Repository, gopts GlobalOptions, opts KeyAddOptions) error {
-	pw, err := getNewPassword(gopts, opts.NewPasswordFile)
+	pw, err := getNewPassword(ctx, gopts, opts.NewPasswordFile)
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func addKey(ctx context.Context, repo *repository.Repository, gopts GlobalOption
 // testKeyNewPassword is used to set a new password during integration testing.
 var testKeyNewPassword string
 
-func getNewPassword(gopts GlobalOptions, newPasswordFile string) (string, error) {
+func getNewPassword(ctx context.Context, gopts GlobalOptions, newPasswordFile string) (string, error) {
 	if testKeyNewPassword != "" {
 		return testKeyNewPassword, nil
 	}
@@ -97,7 +97,7 @@ func getNewPassword(gopts GlobalOptions, newPasswordFile string) (string, error)
 	newopts := gopts
 	newopts.password = ""
 
-	return ReadPasswordTwice(newopts,
+	return ReadPasswordTwice(ctx, newopts,
 		"enter new password: ",
 		"enter password again: ")
 }

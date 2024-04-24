@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -170,7 +171,7 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 
 	// Test all valid cases
 	for _, testCase := range validSecondaryRepoTestCases {
-		DstGOpts, isFromRepo, err := fillSecondaryGlobalOpts(testCase.Opts, gOpts, "destination")
+		DstGOpts, isFromRepo, err := fillSecondaryGlobalOpts(context.TODO(), testCase.Opts, gOpts, "destination")
 		rtest.OK(t, err)
 		rtest.Equals(t, DstGOpts, testCase.DstGOpts)
 		rtest.Equals(t, isFromRepo, testCase.FromRepo)
@@ -178,7 +179,7 @@ func TestFillSecondaryGlobalOpts(t *testing.T) {
 
 	// Test all invalid cases
 	for _, testCase := range invalidSecondaryRepoTestCases {
-		_, _, err := fillSecondaryGlobalOpts(testCase.Opts, gOpts, "destination")
+		_, _, err := fillSecondaryGlobalOpts(context.TODO(), testCase.Opts, gOpts, "destination")
 		rtest.Assert(t, err != nil, "Expected error, but function did not return an error")
 	}
 }

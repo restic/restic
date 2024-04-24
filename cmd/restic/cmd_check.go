@@ -199,10 +199,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	}
 
 	cleanup := prepareCheckCache(opts, &gopts)
-	AddCleanupHandler(func(code int) (int, error) {
-		cleanup()
-		return code, nil
-	})
+	defer cleanup()
 
 	if !gopts.NoLock {
 		Verbosef("create exclusive lock for repository\n")
@@ -222,6 +219,9 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	Verbosef("load indexes\n")
 	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
 	hints, errs := chkr.LoadIndex(ctx, bar)
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 
 	errorsFound := false
 	suggestIndexRebuild := false
@@ -283,6 +283,9 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	if orphanedPacks > 0 {
 		Verbosef("%d additional files were found in the repo, which likely contain duplicate data.\nThis is non-critical, you can run `restic prune` to correct this.\n", orphanedPacks)
 	}
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 
 	Verbosef("check snapshots, trees and blobs\n")
 	errChan = make(chan error)
@@ -316,9 +319,16 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	// Must happen after `errChan` is read from in the above loop to avoid
 	// deadlocking in the case of errors.
 	wg.Wait()
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 
 	if opts.CheckUnused {
-		for _, id := range chkr.UnusedBlobs(ctx) {
+		unused, err := chkr.UnusedBlobs(ctx)
+		if err != nil {
+			return err
+		}
+		for _, id := range unused {
 			Verbosef("unused blob %v\n", id)
 			errorsFound = true
 		}
@@ -395,10 +405,13 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		doReadData(packs)
 	}
 
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
 	if errorsFound {
 		return errors.Fatal("repository contains errors")
 	}
-
 	Verbosef("no errors were found\n")
 
 	return nil

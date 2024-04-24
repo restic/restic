@@ -57,7 +57,7 @@ func runKeyPasswd(ctx context.Context, gopts GlobalOptions, opts KeyPasswdOption
 }
 
 func changePassword(ctx context.Context, repo *repository.Repository, gopts GlobalOptions, opts KeyPasswdOptions) error {
-	pw, err := getNewPassword(gopts, opts.NewPasswordFile)
+	pw, err := getNewPassword(ctx, gopts, opts.NewPasswordFile)
 	if err != nil {
 		return err
 	}

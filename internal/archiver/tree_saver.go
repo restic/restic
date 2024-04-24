@@ -90,6 +90,10 @@ func (s *TreeSaver) save(ctx context.Context, job *saveTreeJob) (*restic.Node, I
 		// return the error if it wasn't ignored
 		if fnr.err != nil {
 			debug.Log("err for %v: %v", fnr.snPath, fnr.err)
+			if fnr.err == context.Canceled {
+				return nil, stats, fnr.err
+			}
+
 			fnr.err = s.errFn(fnr.target, fnr.err)
 			if fnr.err == nil {
 				// ignore error

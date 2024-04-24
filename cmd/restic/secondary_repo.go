@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 
 	"github.com/restic/restic/internal/errors"
@@ -56,7 +57,7 @@ func initSecondaryRepoOptions(f *pflag.FlagSet, opts *secondaryRepoOptions, repo
 	opts.PasswordCommand = os.Getenv("RESTIC_FROM_PASSWORD_COMMAND")
 }
 
-func fillSecondaryGlobalOpts(opts secondaryRepoOptions, gopts GlobalOptions, repoPrefix string) (GlobalOptions, bool, error) {
+func fillSecondaryGlobalOpts(ctx context.Context, opts secondaryRepoOptions, gopts GlobalOptions, repoPrefix string) (GlobalOptions, bool, error) {
 	if opts.Repo == "" && opts.RepositoryFile == "" && opts.LegacyRepo == "" && opts.LegacyRepositoryFile == "" {
 		return GlobalOptions{}, false, errors.Fatal("Please specify a source repository location (--from-repo or --from-repository-file)")
 	}
@@ -109,7 +110,7 @@ func fillSecondaryGlobalOpts(opts secondaryRepoOptions, gopts GlobalOptions, rep
 			return GlobalOptions{}, false, err
 		}
 	}
-	dstGopts.password, err = ReadPassword(dstGopts, "enter password for "+repoPrefix+" repository: ")
+	dstGopts.password, err = ReadPassword(ctx, dstGopts, "enter password for "+repoPrefix+" repository: ")
 	if err != nil {
 		return GlobalOptions{}, false, err
 	}

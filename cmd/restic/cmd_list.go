@@ -59,10 +59,9 @@ func runList(ctx context.Context, gopts GlobalOptions, args []string) error {
 			if err != nil {
 				return err
 			}
-			idx.Each(ctx, func(blobs restic.PackedBlob) {
+			return idx.Each(ctx, func(blobs restic.PackedBlob) {
 				Printf("%v %v\n", blobs.Type, blobs.ID)
 			})
-			return nil
 		})
 	default:
 		return errors.Fatal("invalid type")

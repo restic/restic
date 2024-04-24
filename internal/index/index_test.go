@@ -339,7 +339,7 @@ func TestIndexUnserialize(t *testing.T) {
 
 		rtest.Equals(t, oldIdx, idx.Supersedes())
 
-		blobs := listPack(idx, exampleLookupTest.packID)
+		blobs := listPack(t, idx, exampleLookupTest.packID)
 		if len(blobs) != len(exampleLookupTest.blobs) {
 			t.Fatalf("expected %d blobs in pack, got %d", len(exampleLookupTest.blobs), len(blobs))
 		}
@@ -356,12 +356,12 @@ func TestIndexUnserialize(t *testing.T) {
 	}
 }
 
-func listPack(idx *index.Index, id restic.ID) (pbs []restic.PackedBlob) {
-	idx.Each(context.TODO(), func(pb restic.PackedBlob) {
+func listPack(t testing.TB, idx *index.Index, id restic.ID) (pbs []restic.PackedBlob) {
+	rtest.OK(t, idx.Each(context.TODO(), func(pb restic.PackedBlob) {
 		if pb.PackID.Equal(id) {
 			pbs = append(pbs, pb)
 		}
-	})
+	}))
 	return pbs
 }
 

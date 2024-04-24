@@ -389,10 +389,10 @@ func CalculateHeaderSize(blobs []restic.Blob) int {
 // If onlyHdr is set to true, only the size of the header is returned
 // Note that this function only gives correct sizes, if there are no
 // duplicates in the index.
-func Size(ctx context.Context, mi restic.MasterIndex, onlyHdr bool) map[restic.ID]int64 {
+func Size(ctx context.Context, mi restic.MasterIndex, onlyHdr bool) (map[restic.ID]int64, error) {
 	packSize := make(map[restic.ID]int64)
 
-	mi.Each(ctx, func(blob restic.PackedBlob) {
+	err := mi.Each(ctx, func(blob restic.PackedBlob) {
 		size, ok := packSize[blob.PackID]
 		if !ok {
 			size = headerSize
@@ -403,5 +403,5 @@ func Size(ctx context.Context, mi restic.MasterIndex, onlyHdr bool) map[restic.I
 		packSize[blob.PackID] = size + int64(CalculateEntrySize(blob.Blob))
 	})
 
-	return packSize
+	return packSize, err
 }
