@@ -598,7 +598,7 @@ func innerOpen(ctx context.Context, s string, gopts GlobalOptions, opts options.
 
 	var be backend.Backend
 	if create {
-		be, err = factory.Create(ctx, cfg, rt, nil)
+		be, err = factory.Create(ctx, cfg, rt, lim)
 	} else {
 		be, err = factory.Open(ctx, cfg, rt, lim)
 	}
