@@ -570,15 +570,12 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 	return cfg, nil
 }
 
-// Open the backend specified by a location config.
-func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Options) (backend.Backend, error) {
+func innerOpen(ctx context.Context, s string, gopts GlobalOptions, opts options.Options, create bool) (backend.Backend, error) {
 	debug.Log("parsing location %v", location.StripPassword(gopts.backends, s))
 	loc, err := location.Parse(gopts.backends, s)
 	if err != nil {
 		return nil, errors.Fatalf("parsing repository location failed: %v", err)
 	}
-
-	var be backend.Backend
 
 	cfg, err := parseConfig(loc, opts)
 	if err != nil {
@@ -599,7 +596,13 @@ func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Optio
 		return nil, errors.Fatalf("invalid backend: %q", loc.Scheme)
 	}
 
-	be, err = factory.Open(ctx, cfg, rt, lim)
+	var be backend.Backend
+	if create {
+		be, err = factory.Create(ctx, cfg, rt, lim)
+	} else {
+		be, err = factory.Open(ctx, cfg, rt, lim)
+	}
+
 	if err != nil {
 		return nil, errors.Fatalf("unable to open repository at %v: %v", location.StripPassword(gopts.backends, s), err)
 	}
@@ -613,6 +616,17 @@ func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Optio
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	return be, nil
+}
+
+// Open the backend specified by a location config.
+func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Options) (backend.Backend, error) {
+
+	be, err := innerOpen(ctx, s, gopts, opts, false)
+	if err != nil {
+		return nil, err
 	}
 
 	// check if config is there
@@ -630,31 +644,5 @@ func open(ctx context.Context, s string, gopts GlobalOptions, opts options.Optio
 
 // Create the backend specified by URI.
 func create(ctx context.Context, s string, gopts GlobalOptions, opts options.Options) (backend.Backend, error) {
-	debug.Log("parsing location %v", location.StripPassword(gopts.backends, s))
-	loc, err := location.Parse(gopts.backends, s)
-	if err != nil {
-		return nil, err
-	}
-
-	cfg, err := parseConfig(loc, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	rt, err := backend.Transport(globalOptions.TransportOptions)
-	if err != nil {
-		return nil, errors.Fatal(err.Error())
-	}
-
-	factory := gopts.backends.Lookup(loc.Scheme)
-	if factory == nil {
-		return nil, errors.Fatalf("invalid backend: %q", loc.Scheme)
-	}
-
-	be, err := factory.Create(ctx, cfg, rt, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return logger.New(sema.NewBackend(be)), nil
+	return innerOpen(ctx, s, gopts, opts, true)
 }
