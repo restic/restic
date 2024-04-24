@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"os"
 
 	"github.com/restic/restic/internal/restic"
 	"github.com/spf13/pflag"
@@ -14,17 +15,27 @@ func initMultiSnapshotFilter(flags *pflag.FlagSet, filt *restic.SnapshotFilter, 
 	if !addHostShorthand {
 		hostShorthand = ""
 	}
-	flags.StringArrayVarP(&filt.Hosts, "host", hostShorthand, nil, "only consider snapshots for this `host` (can be specified multiple times)")
+	flags.StringArrayVarP(&filt.Hosts, "host", hostShorthand, nil, "only consider snapshots for this `host` (can be specified multiple times) (default: $RESTIC_HOST)")
 	flags.Var(&filt.Tags, "tag", "only consider snapshots including `tag[,tag,...]` (can be specified multiple times)")
 	flags.StringArrayVar(&filt.Paths, "path", nil, "only consider snapshots including this (absolute) `path` (can be specified multiple times)")
+
+	// set default based on env if set
+	if host := os.Getenv("RESTIC_HOST"); host != "" {
+		filt.Hosts = []string{host}
+	}
 }
 
 // initSingleSnapshotFilter is used for commands that work on a single snapshot
 // MUST be combined with restic.FindFilteredSnapshot
 func initSingleSnapshotFilter(flags *pflag.FlagSet, filt *restic.SnapshotFilter) {
-	flags.StringArrayVarP(&filt.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when snapshot ID \"latest\" is given (can be specified multiple times)")
+	flags.StringArrayVarP(&filt.Hosts, "host", "H", nil, "only consider snapshots for this `host`, when snapshot ID \"latest\" is given (can be specified multiple times) (default: $RESTIC_HOST)")
 	flags.Var(&filt.Tags, "tag", "only consider snapshots including `tag[,tag,...]`, when snapshot ID \"latest\" is given (can be specified multiple times)")
 	flags.StringArrayVar(&filt.Paths, "path", nil, "only consider snapshots including this (absolute) `path`, when snapshot ID \"latest\" is given (can be specified multiple times)")
+
+	// set default based on env if set
+	if host := os.Getenv("RESTIC_HOST"); host != "" {
+		filt.Hosts = []string{host}
+	}
 }
 
 // FindFilteredSnapshots yields Snapshots, either given explicitly by `snapshotIDs` or filtered from the list of all snapshots.
