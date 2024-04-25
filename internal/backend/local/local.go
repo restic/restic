@@ -247,7 +247,7 @@ func (b *Local) openReader(_ context.Context, h backend.Handle, length int, offs
 	}
 
 	if length > 0 {
-		return backend.LimitReadCloser(f, int64(length)), nil
+		return util.LimitReadCloser(f, int64(length)), nil
 	}
 
 	return f, nil

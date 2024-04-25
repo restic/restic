@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/util"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
@@ -74,7 +75,7 @@ func (c *Cache) load(h backend.Handle, length int, offset int64) (io.ReadCloser,
 	if length <= 0 {
 		return f, nil
 	}
-	return backend.LimitReadCloser(f, int64(length)), nil
+	return util.LimitReadCloser(f, int64(length)), nil
 }
 
 // Save saves a file in the cache.
