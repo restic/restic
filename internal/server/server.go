@@ -4,7 +4,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"io/fs"
 	"net/http"
 	"sort"
 	"strings"
@@ -109,11 +108,12 @@ func New(repo restic.Repository, snapshotLister restic.Lister, timeFormat string
 		}
 	})
 
-	http.HandleFunc("/", func(rw http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc("/", func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.Path != "/" {
 			http.NotFound(rw, req)
 			return
 		}
+
 		var rows []indexPageRow
 		for sn := range findFilteredSnapshots(req.Context(), snapshotLister, repo, &restic.SnapshotFilter{}, nil) {
 			rows = append(rows, indexPageRow{
@@ -125,22 +125,28 @@ func New(repo restic.Repository, snapshotLister restic.Lister, timeFormat string
 				Paths: sn.Paths,
 			})
 		}
+
 		sort.Slice(rows, func(i, j int) bool {
 			return rows[i].Time.After(rows[j].Time)
 		})
+
 		if err := indexPage.Execute(rw, indexPageData{"Snapshots", rows}); err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 		}
 	})
 
-	http.HandleFunc("/style.css", func(rw http.ResponseWriter, _ *http.Request) {
-		rw.Header().Set("Cache-Control", "max-age=300")
-		buf, err := fs.ReadFile(assets.FS, "style.css")
-		if err == nil {
+	mux.HandleFunc("/style.css", func(rw http.ResponseWriter, req *http.Request) {
+		buf, err := assets.FS.ReadFile("style.css")
+		if err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(rw, "error: %v", err)
+
+			fmt.Fprintf(rw, "error reading embedded style.css: %v\n", err)
+
 			return
 		}
+
+		rw.Header().Set("Cache-Control", "max-age=300")
+		rw.Header().Set("Content-Type", "text/css")
 
 		_, _ = rw.Write(buf)
 	})
