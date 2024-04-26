@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"net"
 	"net/http"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -35,6 +38,8 @@ func init() {
 	cmdFlags.StringVarP(&serveOptions.Listen, "listen", "l", "localhost:3080", "set the listen host name and `address`")
 }
 
+const serverShutdownTimeout = 30 * time.Second
+
 func runWebServer(ctx context.Context, opts ServeOptions, gopts GlobalOptions, args []string) error {
 	if len(args) > 0 {
 		return errors.Fatal("this command does not accept additional arguments")
@@ -57,10 +62,42 @@ func runWebServer(ctx context.Context, opts ServeOptions, gopts GlobalOptions, a
 		return err
 	}
 
-	srv := server.New(repo, snapshotLister, TimeFormat)
+	srv := http.Server{
+		BaseContext: func(l net.Listener) context.Context {
+			// just return the global context
+			return ctx
+		},
+		Handler: server.New(repo, snapshotLister, TimeFormat),
+	}
+
+	listener, err := net.Listen("tcp", opts.Listen)
+	if err != nil {
+		return fmt.Errorf("start listener: %v", err)
+	}
+
+	// wait until context is cancelled, then close listener
+	go func() {
+		<-ctx.Done()
+		Printf("gracefully shutting down server\n")
+
+		ctxTimeout, cancel := context.WithTimeout(context.Background(), serverShutdownTimeout)
+		defer cancel()
+
+		_ = srv.Shutdown(ctxTimeout)
+	}()
 
 	Printf("Now serving the repository at http://%s\n", opts.Listen)
 	Printf("When finished, quit with Ctrl-c here.\n")
 
-	return http.ListenAndServe(opts.Listen, srv)
+	err = srv.Serve(listener)
+
+	if errors.Is(err, http.ErrServerClosed) {
+		err = nil
+	}
+
+	if err != nil {
+		return fmt.Errorf("serve: %v", err)
+	}
+
+	return nil
 }
