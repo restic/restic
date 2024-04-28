@@ -62,12 +62,17 @@ func runWebServer(ctx context.Context, opts ServeOptions, gopts GlobalOptions, a
 		return err
 	}
 
+	handler, err := server.New(repo, snapshotLister, TimeFormat)
+	if err != nil {
+		return err
+	}
+
 	srv := http.Server{
 		BaseContext: func(l net.Listener) context.Context {
 			// just return the global context
 			return ctx
 		},
-		Handler: server.New(repo, snapshotLister, TimeFormat),
+		Handler: handler,
 	}
 
 	listener, err := net.Listen("tcp", opts.Listen)

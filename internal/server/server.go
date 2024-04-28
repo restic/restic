@@ -3,7 +3,9 @@ package server
 
 import (
 	"context"
+	"embed"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"sort"
 	"strings"
@@ -13,17 +15,24 @@ import (
 	"github.com/restic/restic/internal/dump"
 	rfs "github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/server/assets"
 	"github.com/restic/restic/internal/walker"
 )
 
+//go:embed assets/*.html assets/*.css
+var assets embed.FS
+
 // New returns a new HTTP server.
-func New(repo restic.Repository, snapshotLister restic.Lister, timeFormat string) http.Handler {
+func New(repo restic.Repository, snapshotLister restic.Lister, timeFormat string) (http.Handler, error) {
+	assetsFS, err := fs.Sub(assets, "assets")
+	if err != nil {
+		return nil, fmt.Errorf("derive subdir fs for assets: %w", err)
+	}
+
 	funcs := template.FuncMap{
 		"FormatTime": func(time time.Time) string { return time.Format(timeFormat) },
 	}
 
-	templates := template.Must(template.New("").Funcs(funcs).ParseFS(assets.FS, "*.html"))
+	templates := template.Must(template.New("").Funcs(funcs).ParseFS(assetsFS, "*.html"))
 
 	mux := http.NewServeMux()
 
@@ -136,7 +145,7 @@ func New(repo restic.Repository, snapshotLister restic.Lister, timeFormat string
 	})
 
 	mux.HandleFunc("/style.css", func(rw http.ResponseWriter, req *http.Request) {
-		buf, err := assets.FS.ReadFile("style.css")
+		buf, err := fs.ReadFile(assetsFS, "style.css")
 		if err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
 
@@ -151,7 +160,7 @@ func New(repo restic.Repository, snapshotLister restic.Lister, timeFormat string
 		_, _ = rw.Write(buf)
 	})
 
-	return mux
+	return mux, nil
 }
 
 type fileNode struct {
