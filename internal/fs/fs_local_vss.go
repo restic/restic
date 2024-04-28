@@ -145,22 +145,20 @@ func (fs *LocalVss) Lstat(name string) (os.FileInfo, error) {
 	return os.Lstat(fs.snapshotPath(name))
 }
 
-// isMountPointExcluded is true if given mountpoint excluded by user.
-func (fs *LocalVss) isMountPointExcluded(mountPoint string) bool {
+// isMountPointIncluded  is true if given mountpoint included by user.
+func (fs *LocalVss) isMountPointIncluded(mountPoint string) bool {
 	if fs.excludeVolumes == nil {
-		return false
+		return true
 	}
 
 	volume, err := GetVolumeNameForVolumeMountPoint(mountPoint)
 	if err != nil {
 		fs.msgError(mountPoint, errors.Errorf("failed to get volume from mount point [%s]: %s", mountPoint, err))
-
-		return false
+		return true
 	}
 
 	_, ok := fs.excludeVolumes[strings.ToLower(volume)]
-
-	return ok
+	return !ok
 }
 
 // snapshotPath returns the path inside a VSS snapshots if it already exists.
@@ -199,20 +197,20 @@ func (fs *LocalVss) snapshotPath(path string) string {
 		if !snapshotExists && !snapshotFailed {
 			vssVolume := volumeNameLower + string(filepath.Separator)
 
-			if fs.isMountPointExcluded(vssVolume) {
+			if !fs.isMountPointIncluded(vssVolume) {
 				fs.msgMessage("snapshots for [%s] excluded by user\n", vssVolume)
 				fs.failedSnapshots[volumeNameLower] = struct{}{}
 			} else {
 				fs.msgMessage("creating VSS snapshot for [%s]\n", vssVolume)
 
-				var filter VolumeFilter
+				var includeVolume VolumeFilter
 				if !fs.excludeAllMountPoints {
-					filter = func(volume string) bool {
-						return !fs.isMountPointExcluded(volume)
+					includeVolume = func(volume string) bool {
+						return fs.isMountPointIncluded(volume)
 					}
 				}
 
-				if snapshot, err := NewVssSnapshot(fs.provider, vssVolume, fs.timeout, filter, fs.msgError); err != nil {
+				if snapshot, err := NewVssSnapshot(fs.provider, vssVolume, fs.timeout, includeVolume, fs.msgError); err != nil {
 					fs.msgError(vssVolume, errors.Errorf("failed to create snapshot for [%s]: %s",
 						vssVolume, err))
 					fs.failedSnapshots[volumeNameLower] = struct{}{}

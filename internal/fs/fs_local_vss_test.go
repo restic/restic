@@ -154,10 +154,10 @@ func TestParseMountPoints(t *testing.T) {
 				sysVolumeMatch,
 			},
 			[]check{
-				{`c:\`, true},
-				{`c:`, true},
-				{sysVolume, true},
-				{sysVolumeMutated, true},
+				{`c:\`, false},
+				{`c:`, false},
+				{sysVolume, false},
+				{sysVolumeMutated, false},
 			},
 			[]string{},
 		},
@@ -169,10 +169,10 @@ func TestParseMountPoints(t *testing.T) {
 				sysVolumeMatch,
 			},
 			[]check{
-				{`c:\windows\`, false},
-				{`\\?\Volume{39b9cac2-bcdb-4d51-97c8-0d0677d607fb}\`, false},
-				{`c:`, true},
-				{``, false},
+				{`c:\windows\`, true},
+				{`\\?\Volume{39b9cac2-bcdb-4d51-97c8-0d0677d607fb}\`, true},
+				{`c:`, false},
+				{``, true},
 			},
 			[]string{
 				`failed to parse vss\.exclude-volumes \[z:\\nonexistent\]:.*`,
@@ -208,8 +208,8 @@ func TestParseMountPoints(t *testing.T) {
 			}
 
 			for _, c := range test.checks {
-				if dst.isMountPointExcluded(c.volume) != c.result {
-					t.Fatalf(`wrong check: isMountPointExcluded("%s") != %v`, c.volume, c.result)
+				if dst.isMountPointIncluded(c.volume) != c.result {
+					t.Fatalf(`wrong check: isMountPointIncluded("%s") != %v`, c.volume, c.result)
 				}
 			}
 
