@@ -1,6 +1,6 @@
 Enhancement: Add options to configure Windows Shadow Copy Service
 
-Restic always used 120 sec. timeout and unconditionally created VSS snapshots
+Restic always used 120 seconds timeout and unconditionally created VSS snapshots
 for all volume mount points on disk. Now this behavior can be fine-tuned by
 new options, like exclude specific volumes and mount points or completely
 disable auto snapshotting of volume mount points.
