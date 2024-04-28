@@ -14,8 +14,8 @@ import (
 
 // VSSConfig holds extended options of windows volume shadow copy service.
 type VSSConfig struct {
-	ExcludeAllMountPoints bool          `option:"excludeallmountpoints" help:"exclude mountpoints from snapshotting on all volumes"`
-	ExcludeVolumes        string        `option:"excludevolumes" help:"semicolon separated list of volumes to exclude from snapshotting (ex. 'c:\\;e:\\mnt;\\\\?\\Volume{...}')"`
+	ExcludeAllMountPoints bool          `option:"exclude-all-mount-points" help:"exclude mountpoints from snapshotting on all volumes"`
+	ExcludeVolumes        string        `option:"exclude-volumes" help:"semicolon separated list of volumes to exclude from snapshotting (ex. 'c:\\;e:\\mnt;\\\\?\\Volume{...}')"`
 	Timeout               time.Duration `option:"timeout" help:"time that the VSS can spend creating snapshot before timing out"`
 	Provider              string        `option:"provider" help:"VSS provider identifier which will be used for snapshotting"`
 }
@@ -80,7 +80,7 @@ func parseMountPoints(list string, msgError ErrorHandler) (volumes map[string]st
 	}
 	for _, s := range strings.Split(list, ";") {
 		if v, err := GetVolumeNameForVolumeMountPoint(s); err != nil {
-			msgError(s, errors.Errorf("failed to parse vss.excludevolumes [%s]: %s", s, err))
+			msgError(s, errors.Errorf("failed to parse vss.exclude-volumes [%s]: %s", s, err))
 		} else {
 			if volumes == nil {
 				volumes = make(map[string]struct{})

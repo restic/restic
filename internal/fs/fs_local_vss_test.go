@@ -70,8 +70,8 @@ func TestVSSConfig(t *testing.T) {
 		},
 		{
 			options.Options{
-				"vss.excludeallmountpoints": "t",
-				"vss.provider":              "{b5946137-7b9f-4925-af80-51abd60b20d5}",
+				"vss.exclude-all-mount-points": "t",
+				"vss.provider":                 "{b5946137-7b9f-4925-af80-51abd60b20d5}",
 			},
 			config{
 				excludeAllMountPoints: true,
@@ -81,10 +81,10 @@ func TestVSSConfig(t *testing.T) {
 		},
 		{
 			options.Options{
-				"vss.excludeallmountpoints": "0",
-				"vss.excludevolumes":        "",
-				"vss.timeout":               "120s",
-				"vss.provider":              "Microsoft Software Shadow Copy provider 1.0",
+				"vss.exclude-all-mount-points": "0",
+				"vss.exclude-volumes":          "",
+				"vss.timeout":                  "120s",
+				"vss.provider":                 "Microsoft Software Shadow Copy provider 1.0",
 			},
 			config{
 				timeout:  120000000000,
@@ -148,7 +148,7 @@ func TestParseMountPoints(t *testing.T) {
 	}{
 		{
 			options.Options{
-				"vss.excludevolumes": `c:;c:\;` + sysVolume + `;` + sysVolumeMutated,
+				"vss.exclude-volumes": `c:;c:\;` + sysVolume + `;` + sysVolumeMutated,
 			},
 			[]string{
 				sysVolumeMatch,
@@ -163,7 +163,7 @@ func TestParseMountPoints(t *testing.T) {
 		},
 		{
 			options.Options{
-				"vss.excludevolumes": `z:\nonexistent;c:;c:\windows\;\\?\Volume{39b9cac2-bcdb-4d51-97c8-0d0677d607fb}\`,
+				"vss.exclude-volumes": `z:\nonexistent;c:;c:\windows\;\\?\Volume{39b9cac2-bcdb-4d51-97c8-0d0677d607fb}\`,
 			},
 			[]string{
 				sysVolumeMatch,
@@ -175,9 +175,9 @@ func TestParseMountPoints(t *testing.T) {
 				{``, false},
 			},
 			[]string{
-				`failed to parse vss\.excludevolumes \[z:\\nonexistent\]:.*`,
-				`failed to parse vss\.excludevolumes \[c:\\windows\\\]:.*`,
-				`failed to parse vss\.excludevolumes \[\\\\\?\\Volume\{39b9cac2-bcdb-4d51-97c8-0d0677d607fb\}\\\]:.*`,
+				`failed to parse vss\.exclude-volumes \[z:\\nonexistent\]:.*`,
+				`failed to parse vss\.exclude-volumes \[c:\\windows\\\]:.*`,
+				`failed to parse vss\.exclude-volumes \[\\\\\?\\Volume\{39b9cac2-bcdb-4d51-97c8-0d0677d607fb\}\\\]:.*`,
 				`failed to get volume from mount point \[c:\\windows\\\]:.*`,
 				`failed to get volume from mount point \[\\\\\?\\Volume\{39b9cac2-bcdb-4d51-97c8-0d0677d607fb\}\\\]:.*`,
 				`failed to get volume from mount point \[\]:.*`,
