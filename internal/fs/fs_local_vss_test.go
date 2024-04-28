@@ -274,11 +274,7 @@ func TestParseProvider(t *testing.T) {
 				if err != nil {
 					result = err.Error()
 				}
-				matched, err := regexp.MatchString(test.result, result)
-				if err != nil {
-					panic(err)
-				}
-				if !matched || test.result == "" {
+				if test.result != result || test.result == "" {
 					t.Fatalf("wrong result, want:\n  %#v\ngot:\n  %#v", test.result, result)
 				}
 			} else if !ole.IsEqualGUID(id, test.id) {

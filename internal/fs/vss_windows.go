@@ -537,13 +537,6 @@ func vssFreeSnapshotProperties(properties *VssSnapshotProperties) error {
 	return nil
 }
 
-func vssFreeProviderProperties(p *VssProviderProperties) {
-	ole.CoTaskMemFree(uintptr(unsafe.Pointer(p.providerName)))
-	p.providerName = nil
-	ole.CoTaskMemFree(uintptr(unsafe.Pointer(p.providerVersion)))
-	p.providerName = nil
-}
-
 // BackupComplete calls the equivalent VSS api.
 func (vss *IVssBackupComponents) BackupComplete() (*IVSSAsync, error) {
 	var oleIUnknown *ole.IUnknown
@@ -581,6 +574,13 @@ type VssProviderProperties struct {
 	providerVersion   *uint16
 	providerVersionID ole.GUID
 	classID           ole.GUID
+}
+
+func vssFreeProviderProperties(p *VssProviderProperties) {
+	ole.CoTaskMemFree(uintptr(unsafe.Pointer(p.providerName)))
+	p.providerName = nil
+	ole.CoTaskMemFree(uintptr(unsafe.Pointer(p.providerVersion)))
+	p.providerVersion = nil
 }
 
 // GetSnapshotDeviceObject returns root path to access the snapshot files
@@ -1084,14 +1084,6 @@ func (p *VssSnapshot) Delete() error {
 }
 
 func getProviderID(provider string) (*ole.GUID, error) {
-	comInterface, err := ole.CreateInstance(CLSID_VSS_COORDINATOR, UIID_IVSS_ADMIN)
-	if err != nil {
-		return nil, err
-	}
-	defer comInterface.Release()
-
-	vssAdmin := (*IVSSAdmin)(unsafe.Pointer(comInterface))
-
 	providerLower := strings.ToLower(provider)
 	switch providerLower {
 	case "":
@@ -1099,6 +1091,14 @@ func getProviderID(provider string) (*ole.GUID, error) {
 	case "ms":
 		return ole.NewGUID("{b5946137-7b9f-4925-af80-51abd60b20d5}"), nil
 	}
+
+	comInterface, err := ole.CreateInstance(CLSID_VSS_COORDINATOR, UIID_IVSS_ADMIN)
+	if err != nil {
+		return nil, err
+	}
+	defer comInterface.Release()
+
+	vssAdmin := (*IVSSAdmin)(unsafe.Pointer(comInterface))
 
 	enum, err := vssAdmin.QueryProviders()
 	if err != nil {
