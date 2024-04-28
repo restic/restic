@@ -5,6 +5,7 @@ package fs
 
 import (
 	"fmt"
+	"math"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -24,6 +25,7 @@ type HRESULT uint
 //nolint:golint
 const (
 	S_OK                                            HRESULT = 0x00000000
+	S_FALSE                                         HRESULT = 0x00000001
 	E_ACCESSDENIED                                  HRESULT = 0x80070005
 	E_OUTOFMEMORY                                   HRESULT = 0x8007000E
 	E_INVALIDARG                                    HRESULT = 0x80070057
@@ -640,7 +642,7 @@ func (vssAsync *IVSSAsync) QueryStatus() (HRESULT, uint32) {
 // WaitUntilAsyncFinished waits until either the async call is finished or
 // the given timeout is reached.
 func (vssAsync *IVSSAsync) WaitUntilAsyncFinished(timeout time.Duration) error {
-	const maxTimeout = 2147483647 * time.Millisecond
+	const maxTimeout = math.MaxInt32 * time.Millisecond
 	if timeout > maxTimeout {
 		timeout = maxTimeout
 	}
@@ -740,7 +742,7 @@ func (vssEnum *IVssEnumObject) Next(count uint, props unsafe.Pointer) (uint, err
 	result, _, _ := syscall.Syscall6(vssEnum.getVTable().next, 4,
 		uintptr(unsafe.Pointer(vssEnum)), uintptr(count), uintptr(props),
 		uintptr(unsafe.Pointer(&fetched)), 0, 0)
-	if result == 1 {
+	if HRESULT(result) == S_FALSE {
 		return uint(fetched), nil
 	}
 
@@ -791,8 +793,8 @@ func initializeVssCOMInterface() (*ole.IUnknown, error) {
 
 	// ensure COM is initialized before use
 	if err = ole.CoInitializeEx(0, ole.COINIT_MULTITHREADED); err != nil {
-		// CoInitializeEx returns 1 if COM is already initialized
-		if oleErr, ok := err.(*ole.OleError); !ok || oleErr.Code() != 1 {
+		// CoInitializeEx returns S_FALSE if COM is already initialized
+		if oleErr, ok := err.(*ole.OleError); !ok || HRESULT(oleErr.Code()) != S_FALSE {
 			return nil, err
 		}
 	}
