@@ -828,7 +828,7 @@ func HasSufficientPrivilegesForVSS() error {
 	return err
 }
 
-// GetVolumeNameForVolumeMountPoint clear input parameter
+// GetVolumeNameForVolumeMountPoint add trailing backslash to input parameter
 // and calls the equivalent windows api.
 func GetVolumeNameForVolumeMountPoint(mountPoint string) (string, error) {
 	if mountPoint != "" && mountPoint[len(mountPoint)-1] != filepath.Separator {

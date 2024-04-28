@@ -127,10 +127,12 @@ func TestParseMountPoints(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// We don't know a valid volume GUID path for C:\, but we'll at least check its format
+	// We don't know a valid volume GUID path for c:\, but we'll at least check its format
 	if !volumeMatch.MatchString(sysVolume) {
 		t.Fatalf("invalid volume GUID path: %s", sysVolume)
 	}
+	// Changing the case and removing trailing backslash allows tests
+	// the equality of different ways of writing a volume name
 	sysVolumeMutated := strings.ToUpper(sysVolume[:len(sysVolume)-1])
 	sysVolumeMatch := strings.ToLower(sysVolume)
 

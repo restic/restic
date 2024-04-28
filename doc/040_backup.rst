@@ -59,21 +59,21 @@ exclusively locked by another process during the backup.
 You can use additional options to change VSS behaviour:
 
  * ``-o vss.timeout`` specifies timeout for VSS snapshot creation, the default value is 120 seconds
- * ``-o vss.excludeallmountpoints`` disable auto snapshotting of all volume mount points
- * ``-o vss.excludevolumes`` allows excluding specific volumes or volume mount points from snapshotting
+ * ``-o vss.exclude-all-mount-points`` disable auto snapshotting of all volume mount points
+ * ``-o vss.exclude-volumes`` allows excluding specific volumes or volume mount points from snapshotting
  * ``-o vss.provider`` specifies VSS provider used for snapshotting
 
-E.g., 2.5 minutes timeout with mount points snapshotting disabled can be specified as
+For example a 2.5 minutes timeout with snapshotting of mount points disabled can be specified as
 
 .. code-block:: console
 
-    -o vss.timeout=2m30s -o vss.excludeallmountpoints=true
+    -o vss.timeout=2m30s -o vss.exclude-all-mount-points=true
 
-and excluding drive ``D:\``, mount point ``C:\mnt`` and volume ``\\?\Volume{04ce0545-3391-11e0-ba2f-806e6f6e6963}\`` as
+and excluding drive ``d:\``, mount point ``c:\mnt`` and volume ``\\?\Volume{04ce0545-3391-11e0-ba2f-806e6f6e6963}\`` as
 
 .. code-block:: console
 
-    -o vss.excludevolumes="d:;c:\MNT\;\\?\volume{04ce0545-3391-11e0-ba2f-806e6f6e6963}"
+    -o vss.exclude-volumes="d:;c:\mnt\;\\?\volume{04ce0545-3391-11e0-ba2f-806e6f6e6963}"
 
 VSS provider can be specified by GUID
 
