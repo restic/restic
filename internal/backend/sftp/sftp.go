@@ -105,7 +105,9 @@ func startClient(cfg Config) (*SFTP, error) {
 	client, err := sftp.NewClientPipe(rd, wr,
 		// write multiple packets (32kb) in parallel per file
 		// not strictly necessary as we use ReadFromWithConcurrency
-		sftp.UseConcurrentWrites(true))
+		sftp.UseConcurrentWrites(true),
+		// increase send buffer per file to 4MB
+		sftp.MaxConcurrentRequestsPerFile(128))
 	if err != nil {
 		return nil, errors.Errorf("unable to start the sftp session, error: %v", err)
 	}
