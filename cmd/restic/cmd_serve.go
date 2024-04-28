@@ -45,7 +45,7 @@ func runWebServer(ctx context.Context, opts ServeOptions, gopts GlobalOptions, a
 		return errors.Fatal("this command does not accept additional arguments")
 	}
 
-	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, gopts.NoLock)
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
 	if err != nil {
 		return err
 	}
