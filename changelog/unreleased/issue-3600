@@ -1,0 +1,11 @@
+Bugfix: `backup` works if xattrs above the backup target cannot be read
+
+When backup targets are specified using absolute paths, then `backup` also
+includes information about the parent folders of the backup targets in the
+snapshot. If the extended attributes for some of these folders could not be
+read due to missing permissions, this caused the backup to fail. This has been
+fixed.
+
+https://github.com/restic/restic/issues/3600
+https://github.com/restic/restic/pull/4668
+https://forum.restic.net/t/parent-directories-above-the-snapshot-source-path-fatal-error-permission-denied/7216

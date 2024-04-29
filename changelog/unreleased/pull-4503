@@ -4,4 +4,5 @@ If files on different devices had the same inode id, then the `stats` command
 did not correctly calculate the snapshot size. This has been fixed.
 
 https://github.com/restic/restic/pull/4503
+https://github.com/restic/restic/pull/4006
 https://forum.restic.net/t/possible-bug-in-stats/6461/8

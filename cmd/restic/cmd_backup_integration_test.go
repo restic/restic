@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -250,29 +249,18 @@ func TestBackupTreeLoadError(t *testing.T) {
 	opts := BackupOptions{}
 	// Backup a subdirectory first, such that we can remove the tree pack for the subdirectory
 	testRunBackup(t, env.testdata, []string{"test"}, opts, env.gopts)
-
-	r, err := OpenRepository(context.TODO(), env.gopts)
-	rtest.OK(t, err)
-	rtest.OK(t, r.LoadIndex(context.TODO(), nil))
-	treePacks := restic.NewIDSet()
-	r.Index().Each(context.TODO(), func(pb restic.PackedBlob) {
-		if pb.Type == restic.TreeBlob {
-			treePacks.Insert(pb.PackID)
-		}
-	})
+	treePacks := listTreePacks(env.gopts, t)
 
 	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 
 	// delete the subdirectory pack first
-	for id := range treePacks {
-		rtest.OK(t, r.Backend().Remove(context.TODO(), backend.Handle{Type: restic.PackFile, Name: id.String()}))
-	}
+	removePacks(env.gopts, t, treePacks)
 	testRunRebuildIndex(t, env.gopts)
 	// now the repo is missing the tree blob in the index; check should report this
 	testRunCheckMustFail(t, env.gopts)
 	// second backup should report an error but "heal" this situation
-	err = testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
+	err := testRunBackupAssumeFailure(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
 	rtest.Assert(t, err != nil, "backup should have reported an error for the subdirectory")
 	testRunCheck(t, env.gopts)
 
@@ -406,6 +394,7 @@ func TestIncrementalBackup(t *testing.T) {
 	t.Logf("repository grown by %d bytes", stat3.size-stat2.size)
 }
 
+// nolint: staticcheck // false positive nil pointer dereference check
 func TestBackupTags(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
@@ -441,6 +430,7 @@ func TestBackupTags(t *testing.T) {
 		"expected parent to be %v, got %v", parent.ID, newest.Parent)
 }
 
+// nolint: staticcheck // false positive nil pointer dereference check
 func TestBackupProgramVersion(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()

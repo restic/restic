@@ -10,8 +10,7 @@ For detailed usage and installation instructions check out the [documentation](h
 
 You can ask questions in our [Discourse forum](https://forum.restic.net).
 
-Quick start
------------
+## Quick start
 
 Once you've [installed](https://restic.readthedocs.io/en/latest/020_installation.html) restic, start
 off with creating a repository for your backups:
@@ -59,7 +58,7 @@ Therefore, restic supports the following backends for storing backups natively:
 Restic is a program that does backups right and was designed with the
 following principles in mind:
 
--  **Easy:** Doing backups should be a frictionless process, otherwise
+-  **Easy**: Doing backups should be a frictionless process, otherwise
    you might be tempted to skip it. Restic should be easy to configure
    and use, so that, in the event of a data loss, you can just restore
    it. Likewise, restoring data should not be complicated.
@@ -92,20 +91,17 @@ reproduce a byte identical version from the source code for that
 release. Instructions on how to do that are contained in the
 [builder repository](https://github.com/restic/builder).
 
-News
-----
+## News
 
-You can follow the restic project on Mastodon [@resticbackup](https://fosstodon.org/@restic) or by subscribing to
+You can follow the restic project on Mastodon [@resticbackup](https://fosstodon.org/@restic) or subscribe to
 the [project blog](https://restic.net/blog/).
 
-License
--------
+## License
 
 Restic is licensed under [BSD 2-Clause License](https://opensource.org/licenses/BSD-2-Clause). You can find the
-complete text in [``LICENSE``](LICENSE).
+complete text in [`LICENSE`](LICENSE).
 
-Sponsorship
------------
+## Sponsorship
 
 Backend integration tests for Google Cloud Storage and Microsoft Azure Blob
 Storage are sponsored by [AppsCode](https://appscode.com)!

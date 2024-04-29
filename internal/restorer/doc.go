@@ -18,7 +18,7 @@
 //
 // Implementation does not guarantee order in which blobs are written to the
 // target files and, for example, the last blob of a file can be written to the
-// file before any of the preceeding file blobs. It is therefore possible to
+// file before any of the preceding file blobs. It is therefore possible to
 // have gaps in the data written to the target files if restore fails or
 // interrupted by the user.
 package restorer

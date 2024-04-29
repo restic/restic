@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 	"io"
-	mrand "math/rand"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"syscall"
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -116,7 +117,7 @@ func TestRestore(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		p := filepath.Join(env.testdata, fmt.Sprintf("foo/bar/testfile%v", i))
 		rtest.OK(t, os.MkdirAll(filepath.Dir(p), 0755))
-		rtest.OK(t, appendRandomData(p, uint(mrand.Intn(2<<21))))
+		rtest.OK(t, appendRandomData(p, uint(rand.Intn(2<<21))))
 	}
 
 	opts := BackupOptions{}
@@ -274,6 +275,7 @@ func TestRestoreNoMetadataOnIgnoredIntermediateDirs(t *testing.T) {
 }
 
 func TestRestoreLocalLayout(t *testing.T) {
+	defer feature.TestSetFlag(t, feature.Flag, feature.DeprecateS3LegacyLayout, false)()
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 

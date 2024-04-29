@@ -8,6 +8,7 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui/termstatus"
 	"github.com/spf13/cobra"
 )
 
@@ -33,7 +34,9 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runForget(cmd.Context(), forgetOptions, forgetPruneOptions, globalOptions, args)
+		term, cancel := setupTermstatus()
+		defer cancel()
+		return runForget(cmd.Context(), forgetOptions, forgetPruneOptions, globalOptions, term, args)
 	},
 }
 
@@ -152,7 +155,7 @@ func verifyForgetOptions(opts *ForgetOptions) error {
 	return nil
 }
 
-func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOptions, gopts GlobalOptions, args []string) error {
+func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOptions, gopts GlobalOptions, term *termstatus.Terminal, args []string) error {
 	err := verifyForgetOptions(&opts)
 	if err != nil {
 		return err
@@ -163,29 +166,30 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 		return err
 	}
 
-	repo, err := OpenRepository(ctx, gopts)
-	if err != nil {
-		return err
-	}
-
 	if gopts.NoLock && !opts.DryRun {
 		return errors.Fatal("--no-lock is only applicable in combination with --dry-run for forget command")
 	}
 
-	if !opts.DryRun || !gopts.NoLock {
-		var lock *restic.Lock
-		lock, ctx, err = lockRepoExclusive(ctx, repo, gopts.RetryLock, gopts.JSON)
-		defer unlockRepo(lock)
-		if err != nil {
-			return err
-		}
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, opts.DryRun && gopts.NoLock)
+	if err != nil {
+		return err
 	}
+	defer unlock()
+
+	verbosity := gopts.verbosity
+	if gopts.JSON {
+		verbosity = 0
+	}
+	printer := newTerminalProgressPrinter(verbosity, term)
 
 	var snapshots restic.Snapshots
 	removeSnIDs := restic.NewIDSet()
 
 	for sn := range FindFilteredSnapshots(ctx, repo, repo, &opts.SnapshotFilter, args) {
 		snapshots = append(snapshots, sn)
+	}
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 
 	var jsonGroups []*ForgetGroup
@@ -218,15 +222,11 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 		}
 
 		if policy.Empty() && len(args) == 0 {
-			if !gopts.JSON {
-				Verbosef("no policy was specified, no snapshots will be removed\n")
-			}
+			printer.P("no policy was specified, no snapshots will be removed\n")
 		}
 
 		if !policy.Empty() {
-			if !gopts.JSON {
-				Verbosef("Applying Policy: %v\n", policy)
-			}
+			printer.P("Applying Policy: %v\n", policy)
 
 			for k, snapshotGroup := range snapshotGroups {
 				if gopts.Verbose >= 1 && !gopts.JSON {
@@ -249,20 +249,20 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 				keep, remove, reasons := restic.ApplyPolicy(snapshotGroup, policy)
 
 				if len(keep) != 0 && !gopts.Quiet && !gopts.JSON {
-					Printf("keep %d snapshots:\n", len(keep))
+					printer.P("keep %d snapshots:\n", len(keep))
 					PrintSnapshots(globalOptions.stdout, keep, reasons, opts.Compact)
-					Printf("\n")
+					printer.P("\n")
 				}
-				addJSONSnapshots(&fg.Keep, keep)
+				fg.Keep = asJSONSnapshots(keep)
 
 				if len(remove) != 0 && !gopts.Quiet && !gopts.JSON {
-					Printf("remove %d snapshots:\n", len(remove))
+					printer.P("remove %d snapshots:\n", len(remove))
 					PrintSnapshots(globalOptions.stdout, remove, nil, opts.Compact)
-					Printf("\n")
+					printer.P("\n")
 				}
-				addJSONSnapshots(&fg.Remove, remove)
+				fg.Remove = asJSONSnapshots(remove)
 
-				fg.Reasons = reasons
+				fg.Reasons = asJSONKeeps(reasons)
 
 				jsonGroups = append(jsonGroups, &fg)
 
@@ -273,16 +273,27 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 		}
 	}
 
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
 	if len(removeSnIDs) > 0 {
 		if !opts.DryRun {
-			err := DeleteFilesChecked(ctx, gopts, repo, removeSnIDs, restic.SnapshotFile)
+			bar := printer.NewCounter("files deleted")
+			err := restic.ParallelRemove(ctx, repo, removeSnIDs, restic.SnapshotFile, func(id restic.ID, err error) error {
+				if err != nil {
+					printer.E("unable to remove %v/%v from the repository\n", restic.SnapshotFile, id)
+				} else {
+					printer.VV("removed %v/%v\n", restic.SnapshotFile, id)
+				}
+				return nil
+			}, bar)
+			bar.Done()
 			if err != nil {
 				return err
 			}
 		} else {
-			if !gopts.JSON {
-				Printf("Would have removed the following snapshots:\n%v\n\n", removeSnIDs)
-			}
+			printer.P("Would have removed the following snapshots:\n%v\n\n", removeSnIDs)
 		}
 	}
 
@@ -294,15 +305,13 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 	}
 
 	if len(removeSnIDs) > 0 && opts.Prune {
-		if !gopts.JSON {
-			if opts.DryRun {
-				Verbosef("%d snapshots would be removed, running prune dry run\n", len(removeSnIDs))
-			} else {
-				Verbosef("%d snapshots have been removed, running prune\n", len(removeSnIDs))
-			}
+		if opts.DryRun {
+			printer.P("%d snapshots would be removed, running prune dry run\n", len(removeSnIDs))
+		} else {
+			printer.P("%d snapshots have been removed, running prune\n", len(removeSnIDs))
 		}
 		pruneOptions.DryRun = opts.DryRun
-		return runPruneWithRepo(ctx, pruneOptions, gopts, repo, removeSnIDs)
+		return runPruneWithRepo(ctx, pruneOptions, gopts, repo, removeSnIDs, term)
 	}
 
 	return nil
@@ -310,23 +319,47 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 
 // ForgetGroup helps to print what is forgotten in JSON.
 type ForgetGroup struct {
-	Tags    []string            `json:"tags"`
-	Host    string              `json:"host"`
-	Paths   []string            `json:"paths"`
-	Keep    []Snapshot          `json:"keep"`
-	Remove  []Snapshot          `json:"remove"`
-	Reasons []restic.KeepReason `json:"reasons"`
+	Tags    []string     `json:"tags"`
+	Host    string       `json:"host"`
+	Paths   []string     `json:"paths"`
+	Keep    []Snapshot   `json:"keep"`
+	Remove  []Snapshot   `json:"remove"`
+	Reasons []KeepReason `json:"reasons"`
 }
 
-func addJSONSnapshots(js *[]Snapshot, list restic.Snapshots) {
+func asJSONSnapshots(list restic.Snapshots) []Snapshot {
+	var resultList []Snapshot
 	for _, sn := range list {
 		k := Snapshot{
 			Snapshot: sn,
 			ID:       sn.ID(),
 			ShortID:  sn.ID().Str(),
 		}
-		*js = append(*js, k)
+		resultList = append(resultList, k)
 	}
+	return resultList
+}
+
+// KeepReason helps to print KeepReasons as JSON with Snapshots with their ID included.
+type KeepReason struct {
+	Snapshot Snapshot `json:"snapshot"`
+	Matches  []string `json:"matches"`
+}
+
+func asJSONKeeps(list []restic.KeepReason) []KeepReason {
+	var resultList []KeepReason
+	for _, keep := range list {
+		k := KeepReason{
+			Snapshot: Snapshot{
+				Snapshot: keep.Snapshot,
+				ID:       keep.Snapshot.ID(),
+				ShortID:  keep.Snapshot.ID().Str(),
+			},
+			Matches: keep.Matches,
+		}
+		resultList = append(resultList, k)
+	}
+	return resultList
 }
 
 func printJSONForget(stdout io.Writer, forgets []*ForgetGroup) error {

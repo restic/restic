@@ -23,6 +23,10 @@ func Listxattr(path string) ([]string, error) {
 	return nil, nil
 }
 
+func IsListxattrPermissionError(_ error) bool {
+	return false
+}
+
 // Setxattr is a no-op on netbsd.
 func Setxattr(path, name string, data []byte) error {
 	return nil

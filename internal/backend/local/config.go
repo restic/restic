@@ -10,7 +10,7 @@ import (
 // Config holds all information needed to open a local repository.
 type Config struct {
 	Path   string
-	Layout string `option:"layout" help:"use this backend directory layout (default: auto-detect)"`
+	Layout string `option:"layout" help:"use this backend directory layout (default: auto-detect) (deprecated)"`
 
 	Connections uint `option:"connections" help:"set a limit for the number of concurrent operations (default: 2)"`
 }

@@ -84,7 +84,7 @@ type Node struct {
 	User       string      `json:"user,omitempty"`
 	Group      string      `json:"group,omitempty"`
 	Inode      uint64      `json:"inode,omitempty"`
-	DeviceID   uint64      `json:"device_id,omitempty"` // device id of the file, stat.st_dev
+	DeviceID   uint64      `json:"device_id,omitempty"` // device id of the file, stat.st_dev, only stored for hardlinks
 	Size       uint64      `json:"size,omitempty"`
 	Links      uint64      `json:"links,omitempty"`
 	LinkTarget string      `json:"linktarget,omitempty"`
@@ -136,7 +136,7 @@ func (node Node) String() string {
 
 // NodeFromFileInfo returns a new node from the given path and FileInfo. It
 // returns the first error that is encountered, together with a node.
-func NodeFromFileInfo(path string, fi os.FileInfo) (*Node, error) {
+func NodeFromFileInfo(path string, fi os.FileInfo, ignoreXattrListError bool) (*Node, error) {
 	mask := os.ModePerm | os.ModeType | os.ModeSetuid | os.ModeSetgid | os.ModeSticky
 	node := &Node{
 		Path:    path,
@@ -150,7 +150,7 @@ func NodeFromFileInfo(path string, fi os.FileInfo) (*Node, error) {
 		node.Size = uint64(fi.Size())
 	}
 
-	err := node.fillExtra(path, fi)
+	err := node.fillExtra(path, fi, ignoreXattrListError)
 	return node, err
 }
 
@@ -677,7 +677,7 @@ func lookupGroup(gid uint32) string {
 	return group
 }
 
-func (node *Node) fillExtra(path string, fi os.FileInfo) error {
+func (node *Node) fillExtra(path string, fi os.FileInfo, ignoreXattrListError bool) error {
 	stat, ok := toStatT(fi.Sys())
 	if !ok {
 		// fill minimal info with current values for uid, gid
@@ -726,10 +726,13 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 	return err
 }
 
-func (node *Node) fillExtendedAttributes(path string) error {
+func (node *Node) fillExtendedAttributes(path string, ignoreListError bool) error {
 	xattrs, err := Listxattr(path)
 	debug.Log("fillExtendedAttributes(%v) %v %v", path, xattrs, err)
 	if err != nil {
+		if ignoreListError && IsListxattrPermissionError(err) {
+			return nil
+		}
 		return err
 	}
 

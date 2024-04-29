@@ -8,6 +8,7 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/sftp"
+	"github.com/restic/restic/internal/feature"
 	rtest "github.com/restic/restic/internal/test"
 )
 
@@ -16,6 +17,7 @@ func TestLayout(t *testing.T) {
 		t.Skip("sftp server binary not available")
 	}
 
+	defer feature.TestSetFlag(t, feature.Flag, feature.DeprecateS3LegacyLayout, false)()
 	path := rtest.TempDir(t)
 
 	var tests = []struct {

@@ -199,25 +199,16 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	}
 
 	cleanup := prepareCheckCache(opts, &gopts)
-	AddCleanupHandler(func(code int) (int, error) {
-		cleanup()
-		return code, nil
-	})
-
-	repo, err := OpenRepository(ctx, gopts)
-	if err != nil {
-		return err
-	}
+	defer cleanup()
 
 	if !gopts.NoLock {
 		Verbosef("create exclusive lock for repository\n")
-		var lock *restic.Lock
-		lock, ctx, err = lockRepoExclusive(ctx, repo, gopts.RetryLock, gopts.JSON)
-		defer unlockRepo(lock)
-		if err != nil {
-			return err
-		}
 	}
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, gopts.NoLock)
+	if err != nil {
+		return err
+	}
+	defer unlock()
 
 	chkr := checker.New(repo, opts.CheckUnused)
 	err = chkr.LoadSnapshots(ctx)
@@ -228,15 +219,23 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	Verbosef("load indexes\n")
 	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
 	hints, errs := chkr.LoadIndex(ctx, bar)
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 
 	errorsFound := false
 	suggestIndexRebuild := false
+	suggestLegacyIndexRebuild := false
 	mixedFound := false
 	for _, hint := range hints {
 		switch hint.(type) {
-		case *checker.ErrDuplicatePacks, *checker.ErrOldIndexFormat:
+		case *checker.ErrDuplicatePacks:
 			Printf("%v\n", hint)
 			suggestIndexRebuild = true
+		case *checker.ErrOldIndexFormat:
+			Warnf("error: %v\n", hint)
+			suggestLegacyIndexRebuild = true
+			errorsFound = true
 		case *checker.ErrMixedPack:
 			Printf("%v\n", hint)
 			mixedFound = true
@@ -247,7 +246,10 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	}
 
 	if suggestIndexRebuild {
-		Printf("Duplicate packs/old indexes are non-critical, you can run `restic repair index' to correct this.\n")
+		Printf("Duplicate packs are non-critical, you can run `restic repair index' to correct this.\n")
+	}
+	if suggestLegacyIndexRebuild {
+		Warnf("Found indexes using the legacy format, you must run `restic repair index' to correct this.\n")
 	}
 	if mixedFound {
 		Printf("Mixed packs with tree and data blobs are non-critical, you can run `restic prune` to correct this.\n")
@@ -280,6 +282,9 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 
 	if orphanedPacks > 0 {
 		Verbosef("%d additional files were found in the repo, which likely contain duplicate data.\nThis is non-critical, you can run `restic prune` to correct this.\n", orphanedPacks)
+	}
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 
 	Verbosef("check snapshots, trees and blobs\n")
@@ -314,9 +319,16 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	// Must happen after `errChan` is read from in the above loop to avoid
 	// deadlocking in the case of errors.
 	wg.Wait()
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 
 	if opts.CheckUnused {
-		for _, id := range chkr.UnusedBlobs(ctx) {
+		unused, err := chkr.UnusedBlobs(ctx)
+		if err != nil {
+			return err
+		}
+		for _, id := range unused {
 			Verbosef("unused blob %v\n", id)
 			errorsFound = true
 		}
@@ -393,10 +405,13 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		doReadData(packs)
 	}
 
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
 	if errorsFound {
 		return errors.Fatal("repository contains errors")
 	}
-
 	Verbosef("no errors were found\n")
 
 	return nil

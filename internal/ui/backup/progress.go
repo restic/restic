@@ -17,7 +17,7 @@ type ProgressPrinter interface {
 	ScannerError(item string, err error) error
 	CompleteItem(messageType string, item string, s archiver.ItemStats, d time.Duration)
 	ReportTotal(start time.Time, s archiver.ScanStats)
-	Finish(snapshotID restic.ID, start time.Time, summary *Summary, dryRun bool)
+	Finish(snapshotID restic.ID, start time.Time, summary *archiver.Summary, dryRun bool)
 	Reset()
 
 	P(msg string, args ...interface{})
@@ -26,16 +26,6 @@ type ProgressPrinter interface {
 
 type Counter struct {
 	Files, Dirs, Bytes uint64
-}
-
-type Summary struct {
-	Files, Dirs struct {
-		New       uint
-		Changed   uint
-		Unchanged uint
-	}
-	ProcessedBytes uint64
-	archiver.ItemStats
 }
 
 // Progress reports progress for the `backup` command.
@@ -52,7 +42,6 @@ type Progress struct {
 	processed, total Counter
 	errors           uint
 
-	summary Summary
 	printer ProgressPrinter
 }
 
@@ -126,16 +115,6 @@ func (p *Progress) CompleteBlob(bytes uint64) {
 // CompleteItem is the status callback function for the archiver when a
 // file/dir has been saved successfully.
 func (p *Progress) CompleteItem(item string, previous, current *restic.Node, s archiver.ItemStats, d time.Duration) {
-	p.mu.Lock()
-	p.summary.ItemStats.Add(s)
-
-	// for the last item "/", current is nil
-	if current != nil {
-		p.summary.ProcessedBytes += current.Size
-	}
-
-	p.mu.Unlock()
-
 	if current == nil {
 		// error occurred, tell the status display to remove the line
 		p.mu.Lock()
@@ -153,21 +132,10 @@ func (p *Progress) CompleteItem(item string, previous, current *restic.Node, s a
 		switch {
 		case previous == nil:
 			p.printer.CompleteItem("dir new", item, s, d)
-			p.mu.Lock()
-			p.summary.Dirs.New++
-			p.mu.Unlock()
-
 		case previous.Equals(*current):
 			p.printer.CompleteItem("dir unchanged", item, s, d)
-			p.mu.Lock()
-			p.summary.Dirs.Unchanged++
-			p.mu.Unlock()
-
 		default:
 			p.printer.CompleteItem("dir modified", item, s, d)
-			p.mu.Lock()
-			p.summary.Dirs.Changed++
-			p.mu.Unlock()
 		}
 
 	case "file":
@@ -179,21 +147,10 @@ func (p *Progress) CompleteItem(item string, previous, current *restic.Node, s a
 		switch {
 		case previous == nil:
 			p.printer.CompleteItem("file new", item, s, d)
-			p.mu.Lock()
-			p.summary.Files.New++
-			p.mu.Unlock()
-
 		case previous.Equals(*current):
 			p.printer.CompleteItem("file unchanged", item, s, d)
-			p.mu.Lock()
-			p.summary.Files.Unchanged++
-			p.mu.Unlock()
-
 		default:
 			p.printer.CompleteItem("file modified", item, s, d)
-			p.mu.Lock()
-			p.summary.Files.Changed++
-			p.mu.Unlock()
 		}
 	}
 }
@@ -213,8 +170,8 @@ func (p *Progress) ReportTotal(item string, s archiver.ScanStats) {
 }
 
 // Finish prints the finishing messages.
-func (p *Progress) Finish(snapshotID restic.ID, dryrun bool) {
+func (p *Progress) Finish(snapshotID restic.ID, summary *archiver.Summary, dryrun bool) {
 	// wait for the status update goroutine to shut down
 	p.Updater.Done()
-	p.printer.Finish(snapshotID, p.start, &p.summary, dryrun)
+	p.printer.Finish(snapshotID, p.start, summary, dryrun)
 }

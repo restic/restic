@@ -114,7 +114,7 @@ func init() {
 	f.BoolVar(&backupOptions.StdinCommand, "stdin-from-command", false, "interpret arguments as command to execute and store its stdout")
 	f.Var(&backupOptions.Tags, "tag", "add `tags` for the new snapshot in the format `tag[,tag,...]` (can be specified multiple times)")
 	f.UintVar(&backupOptions.ReadConcurrency, "read-concurrency", 0, "read `n` files concurrently (default: $RESTIC_READ_CONCURRENCY or 2)")
-	f.StringVarP(&backupOptions.Host, "host", "H", "", "set the `hostname` for the snapshot manually. To prevent an expensive rescan use the \"parent\" flag")
+	f.StringVarP(&backupOptions.Host, "host", "H", "", "set the `hostname` for the snapshot manually (default: $RESTIC_HOST). To prevent an expensive rescan use the \"parent\" flag")
 	f.StringVar(&backupOptions.Host, "hostname", "", "set the `hostname` for the snapshot manually")
 	err := f.MarkDeprecated("hostname", "use --host")
 	if err != nil {
@@ -137,6 +137,11 @@ func init() {
 	// parse read concurrency from env, on error the default value will be used
 	readConcurrency, _ := strconv.ParseUint(os.Getenv("RESTIC_READ_CONCURRENCY"), 10, 32)
 	backupOptions.ReadConcurrency = uint(readConcurrency)
+
+	// parse host from env, if not exists or empty the default value will be used
+	if host := os.Getenv("RESTIC_HOST"); host != "" {
+		backupOptions.Host = host
+	}
 }
 
 // filterExisting returns a slice of all existing items, or an error if no
@@ -440,7 +445,16 @@ func findParentSnapshot(ctx context.Context, repo restic.ListerLoaderUnpacked, o
 }
 
 func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, term *termstatus.Terminal, args []string) error {
-	err := opts.Check(gopts, args)
+	var vsscfg fs.VSSConfig
+	var err error
+
+	if runtime.GOOS == "windows" {
+		if vsscfg, err = fs.ParseVSSConfig(gopts.extended); err != nil {
+			return err
+		}
+	}
+
+	err = opts.Check(gopts, args)
 	if err != nil {
 		return err
 	}
@@ -451,6 +465,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	}
 
 	timeStamp := time.Now()
+	backupStart := timeStamp
 	if opts.TimeStamp != "" {
 		timeStamp, err = time.ParseInLocation(TimeFormat, opts.TimeStamp, time.Local)
 		if err != nil {
@@ -462,10 +477,11 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 		Verbosef("open repository\n")
 	}
 
-	repo, err := OpenRepository(ctx, gopts)
+	ctx, repo, unlock, err := openWithAppendLock(ctx, gopts, opts.DryRun)
 	if err != nil {
 		return err
 	}
+	defer unlock()
 
 	var progressPrinter backup.ProgressPrinter
 	if gopts.JSON {
@@ -476,22 +492,6 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	progressReporter := backup.NewProgress(progressPrinter,
 		calculateProgressInterval(!gopts.Quiet, gopts.JSON))
 	defer progressReporter.Done()
-
-	if opts.DryRun {
-		repo.SetDryRun()
-	}
-
-	if !gopts.JSON {
-		progressPrinter.V("lock repository")
-	}
-	if !opts.DryRun {
-		var lock *restic.Lock
-		lock, ctx, err = lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
-		defer unlockRepo(lock)
-		if err != nil {
-			return err
-		}
-	}
 
 	// rejectByNameFuncs collect functions that can reject items from the backup based on path only
 	rejectByNameFuncs, err := collectRejectByNameFuncs(opts, repo)
@@ -556,8 +556,8 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 			return err
 		}
 
-		errorHandler := func(item string, err error) error {
-			return progressReporter.Error(item, err)
+		errorHandler := func(item string, err error) {
+			_ = progressReporter.Error(item, err)
 		}
 
 		messageHandler := func(msg string, args ...interface{}) {
@@ -566,7 +566,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 			}
 		}
 
-		localVss := fs.NewLocalVss(errorHandler, messageHandler)
+		localVss := fs.NewLocalVss(errorHandler, messageHandler, vsscfg)
 		defer localVss.DeleteSnapshots()
 		targetFS = localVss
 	}
@@ -640,6 +640,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	snapshotOpts := archiver.SnapshotOptions{
 		Excludes:       opts.Excludes,
 		Tags:           opts.Tags.Flatten(),
+		BackupStart:    backupStart,
 		Time:           timeStamp,
 		Hostname:       opts.Host,
 		ParentSnapshot: parentSnapshot,
@@ -649,7 +650,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	if !gopts.JSON {
 		progressPrinter.V("start backup on %v", targets)
 	}
-	_, id, err := arch.Snapshot(ctx, targets, snapshotOpts)
+	_, id, summary, err := arch.Snapshot(ctx, targets, snapshotOpts)
 
 	// cleanly shutdown all running goroutines
 	cancel()
@@ -663,7 +664,7 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	}
 
 	// Report finished execution
-	progressReporter.Finish(id, opts.DryRun)
+	progressReporter.Finish(id, summary, opts.DryRun)
 	if !gopts.JSON && !opts.DryRun {
 		progressPrinter.P("snapshot %s saved\n", id.Str())
 	}

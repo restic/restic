@@ -78,8 +78,11 @@ func testRewriteMetadata(t *testing.T, metadata snapshotMetadataArgs) {
 	createBasicRewriteRepo(t, env)
 	testRunRewriteExclude(t, env.gopts, []string{}, true, metadata)
 
-	repo, _ := OpenRepository(context.TODO(), env.gopts)
-	snapshots, err := restic.TestLoadAllSnapshots(context.TODO(), repo, nil)
+	ctx, repo, unlock, err := openWithReadLock(context.TODO(), env.gopts, false)
+	rtest.OK(t, err)
+	defer unlock()
+
+	snapshots, err := restic.TestLoadAllSnapshots(ctx, repo, nil)
 	rtest.OK(t, err)
 	rtest.Assert(t, len(snapshots) == 1, "expected one snapshot, got %v", len(snapshots))
 	newSnapshot := snapshots[0]

@@ -3,12 +3,15 @@ package index
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
+	"math"
 	"sync"
 	"time"
 
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/restic/restic/internal/debug"
@@ -67,11 +70,9 @@ func (idx *Index) addToPacks(id restic.ID) int {
 	return len(idx.packs) - 1
 }
 
-const maxuint32 = 1<<32 - 1
-
 func (idx *Index) store(packIndex int, blob restic.Blob) {
 	// assert that offset and length fit into uint32!
-	if blob.Offset > maxuint32 || blob.Length > maxuint32 || blob.UncompressedLength > maxuint32 {
+	if blob.Offset > math.MaxUint32 || blob.Length > math.MaxUint32 || blob.UncompressedLength > math.MaxUint32 {
 		panic("offset or length does not fit in uint32. You have packs > 4GB!")
 	}
 
@@ -217,7 +218,7 @@ func (idx *Index) AddToSupersedes(ids ...restic.ID) error {
 
 // Each passes all blobs known to the index to the callback fn. This blocks any
 // modification of the index.
-func (idx *Index) Each(ctx context.Context, fn func(restic.PackedBlob)) {
+func (idx *Index) Each(ctx context.Context, fn func(restic.PackedBlob)) error {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
@@ -231,6 +232,7 @@ func (idx *Index) Each(ctx context.Context, fn func(restic.PackedBlob)) {
 			return true
 		})
 	}
+	return ctx.Err()
 }
 
 type EachByPackResult struct {
@@ -515,8 +517,13 @@ func DecodeIndex(buf []byte, id restic.ID) (idx *Index, oldFormat bool, err erro
 		debug.Log("Error %v", err)
 
 		if isErrOldIndex(err) {
+			if feature.Flag.Enabled(feature.DeprecateLegacyIndex) {
+				return nil, false, fmt.Errorf("index seems to use the legacy format. update it using `restic repair index`")
+			}
+
 			debug.Log("index is probably old format, trying that")
 			idx, err = decodeOldIndex(buf)
+			idx.ids = append(idx.ids, id)
 			return idx, err == nil, err
 		}
 

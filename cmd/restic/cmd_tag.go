@@ -104,20 +104,12 @@ func runTag(ctx context.Context, opts TagOptions, gopts GlobalOptions, args []st
 		return errors.Fatal("--set and --add/--remove cannot be given at the same time")
 	}
 
-	repo, err := OpenRepository(ctx, gopts)
+	Verbosef("create exclusive lock for repository\n")
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false)
 	if err != nil {
-		return err
+		return nil
 	}
-
-	if !gopts.NoLock {
-		Verbosef("create exclusive lock for repository\n")
-		var lock *restic.Lock
-		lock, ctx, err = lockRepoExclusive(ctx, repo, gopts.RetryLock, gopts.JSON)
-		defer unlockRepo(lock)
-		if err != nil {
-			return err
-		}
-	}
+	defer unlock()
 
 	changeCnt := 0
 	for sn := range FindFilteredSnapshots(ctx, repo, repo, &opts.SnapshotFilter, args) {
@@ -129,6 +121,9 @@ func runTag(ctx context.Context, opts TagOptions, gopts GlobalOptions, args []st
 		if changed {
 			changeCnt++
 		}
+	}
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 	if changeCnt == 0 {
 		Verbosef("no snapshots were modified\n")

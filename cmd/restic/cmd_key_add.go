@@ -50,22 +50,17 @@ func runKeyAdd(ctx context.Context, gopts GlobalOptions, opts KeyAddOptions, arg
 		return fmt.Errorf("the key add command expects no arguments, only options - please see `restic help key add` for usage and flags")
 	}
 
-	repo, err := OpenRepository(ctx, gopts)
+	ctx, repo, unlock, err := openWithAppendLock(ctx, gopts, false)
 	if err != nil {
 		return err
 	}
-
-	lock, ctx, err := lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
-	defer unlockRepo(lock)
-	if err != nil {
-		return err
-	}
+	defer unlock()
 
 	return addKey(ctx, repo, gopts, opts)
 }
 
 func addKey(ctx context.Context, repo *repository.Repository, gopts GlobalOptions, opts KeyAddOptions) error {
-	pw, err := getNewPassword(gopts, opts.NewPasswordFile)
+	pw, err := getNewPassword(ctx, gopts, opts.NewPasswordFile)
 	if err != nil {
 		return err
 	}
@@ -88,7 +83,7 @@ func addKey(ctx context.Context, repo *repository.Repository, gopts GlobalOption
 // testKeyNewPassword is used to set a new password during integration testing.
 var testKeyNewPassword string
 
-func getNewPassword(gopts GlobalOptions, newPasswordFile string) (string, error) {
+func getNewPassword(ctx context.Context, gopts GlobalOptions, newPasswordFile string) (string, error) {
 	if testKeyNewPassword != "" {
 		return testKeyNewPassword, nil
 	}
@@ -102,7 +97,7 @@ func getNewPassword(gopts GlobalOptions, newPasswordFile string) (string, error)
 	newopts := gopts
 	newopts.password = ""
 
-	return ReadPasswordTwice(newopts,
+	return ReadPasswordTwice(ctx, newopts,
 		"enter new password: ",
 		"enter password again: ")
 }

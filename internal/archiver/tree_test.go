@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/restic/restic/internal/fs"
-	restictest "github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 // debug.Log requires Tree.String.
@@ -439,10 +439,10 @@ func TestTree(t *testing.T) {
 				t.Skip("skip test on unix")
 			}
 
-			tempdir := restictest.TempDir(t)
+			tempdir := rtest.TempDir(t)
 			TestCreateFiles(t, tempdir, test.src)
 
-			back := restictest.Chdir(t, tempdir)
+			back := rtest.Chdir(t, tempdir)
 			defer back()
 
 			tree, err := NewTree(fs.Local{}, test.targets)

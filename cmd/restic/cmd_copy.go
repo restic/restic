@@ -53,7 +53,7 @@ func init() {
 }
 
 func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []string) error {
-	secondaryGopts, isFromRepo, err := fillSecondaryGlobalOpts(opts.secondaryRepoOptions, gopts, "destination")
+	secondaryGopts, isFromRepo, err := fillSecondaryGlobalOpts(ctx, opts.secondaryRepoOptions, gopts, "destination")
 	if err != nil {
 		return err
 	}
@@ -62,30 +62,17 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 		gopts, secondaryGopts = secondaryGopts, gopts
 	}
 
-	srcRepo, err := OpenRepository(ctx, gopts)
+	ctx, srcRepo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
 	if err != nil {
 		return err
 	}
+	defer unlock()
 
-	dstRepo, err := OpenRepository(ctx, secondaryGopts)
+	ctx, dstRepo, unlock, err := openWithAppendLock(ctx, secondaryGopts, false)
 	if err != nil {
 		return err
 	}
-
-	if !gopts.NoLock {
-		var srcLock *restic.Lock
-		srcLock, ctx, err = lockRepo(ctx, srcRepo, gopts.RetryLock, gopts.JSON)
-		defer unlockRepo(srcLock)
-		if err != nil {
-			return err
-		}
-	}
-
-	dstLock, ctx, err := lockRepo(ctx, dstRepo, gopts.RetryLock, gopts.JSON)
-	defer unlockRepo(dstLock)
-	if err != nil {
-		return err
-	}
+	defer unlock()
 
 	srcSnapshotLister, err := restic.MemorizeList(ctx, srcRepo, restic.SnapshotFile)
 	if err != nil {
@@ -115,6 +102,9 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 		}
 		// also consider identical snapshot copies
 		dstSnapshotByOriginal[*sn.ID()] = append(dstSnapshotByOriginal[*sn.ID()], sn)
+	}
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 
 	// remember already processed trees across all snapshots
@@ -160,7 +150,7 @@ func runCopy(ctx context.Context, opts CopyOptions, gopts GlobalOptions, args []
 		}
 		Verbosef("snapshot %s saved\n", newID.Str())
 	}
-	return nil
+	return ctx.Err()
 }
 
 func similarSnapshots(sna *restic.Snapshot, snb *restic.Snapshot) bool {

@@ -10,6 +10,7 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 )
@@ -93,6 +94,8 @@ func hasBackendFile(ctx context.Context, fs Filesystem, dir string) (bool, error
 // cannot be detected automatically.
 var ErrLayoutDetectionFailed = errors.New("auto-detecting the filesystem layout failed")
 
+var ErrLegacyLayoutFound = errors.New("detected legacy S3 layout. Use `RESTIC_FEATURES=deprecate-s3-legacy-layout=false restic migrate s3_layout` to migrate your repository")
+
 // DetectLayout tries to find out which layout is used in a local (or sftp)
 // filesystem at the given path. If repo is nil, an instance of LocalFilesystem
 // is used.
@@ -123,6 +126,10 @@ func DetectLayout(ctx context.Context, repo Filesystem, dir string) (Layout, err
 	}
 
 	if foundKeyFile && !foundKeysFile {
+		if feature.Flag.Enabled(feature.DeprecateS3LegacyLayout) {
+			return nil, ErrLegacyLayoutFound
+		}
+
 		debug.Log("found s3 layout at %v", dir)
 		return &S3LegacyLayout{
 			Path: dir,
@@ -145,6 +152,10 @@ func ParseLayout(ctx context.Context, repo Filesystem, layout, defaultLayout, pa
 			Join: repo.Join,
 		}
 	case "s3legacy":
+		if feature.Flag.Enabled(feature.DeprecateS3LegacyLayout) {
+			return nil, ErrLegacyLayoutFound
+		}
+
 		l = &S3LegacyLayout{
 			Path: path,
 			Join: repo.Join,

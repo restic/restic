@@ -1,0 +1,10 @@
+Enhancement: Allow specifying `--host` via environment variable
+
+Restic commands that operate on snapshots, such as `restic backup` and
+`restic snapshots`, support the `--host` flag to specify the hostname for
+grouoping snapshots. They now permit selecting the hostname via the
+environment variable `RESTIC_HOST`. `--host` still takes precedence over the
+environment variable.
+
+https://github.com/restic/restic/issues/4733
+https://github.com/restic/restic/pull/4734

@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"runtime"
 	"sort"
@@ -142,9 +143,6 @@ func (r *Repository) DisableAutoIndexUpdate() {
 // setConfig assigns the given config and updates the repository parameters accordingly
 func (r *Repository) setConfig(cfg restic.Config) {
 	r.cfg = cfg
-	if r.cfg.Version >= 2 {
-		r.idx.MarkCompressed()
-	}
 }
 
 // Config returns the repository configuration.
@@ -637,7 +635,19 @@ func (r *Repository) Index() restic.MasterIndex {
 // SetIndex instructs the repository to use the given index.
 func (r *Repository) SetIndex(i restic.MasterIndex) error {
 	r.idx = i.(*index.MasterIndex)
+	r.configureIndex()
 	return r.prepareCache()
+}
+
+func (r *Repository) ClearIndex() {
+	r.idx = index.NewMasterIndex()
+	r.configureIndex()
+}
+
+func (r *Repository) configureIndex() {
+	if r.cfg.Version >= 2 {
+		r.idx.MarkCompressed()
+	}
 }
 
 // LoadIndex loads all index files from the backend in parallel and stores them
@@ -661,6 +671,9 @@ func (r *Repository) LoadIndex(ctx context.Context, p *progress.Counter) error {
 		p.SetMax(numIndexFiles)
 		defer p.Done()
 	}
+
+	// reset in-memory index before loading it from the repository
+	r.ClearIndex()
 
 	err = index.ForAllIndexes(ctx, indexList, r, func(_ restic.ID, idx *index.Index, _ bool, err error) error {
 		if err != nil {
@@ -691,14 +704,20 @@ func (r *Repository) LoadIndex(ctx context.Context, p *progress.Counter) error {
 		defer cancel()
 
 		invalidIndex := false
-		r.idx.Each(ctx, func(blob restic.PackedBlob) {
+		err := r.idx.Each(ctx, func(blob restic.PackedBlob) {
 			if blob.IsCompressed() {
 				invalidIndex = true
 			}
 		})
+		if err != nil {
+			return err
+		}
 		if invalidIndex {
 			return errors.New("index uses feature not supported by repository version 1")
 		}
+	}
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 
 	// remove index files from the cache which have been removed in the repo
@@ -916,6 +935,10 @@ func (r *Repository) Close() error {
 // If the blob was not known before, it returns the number of bytes the blob
 // occupies in the repo (compressed or not, including encryption overhead).
 func (r *Repository) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID, storeDuplicate bool) (newID restic.ID, known bool, size int, err error) {
+
+	if int64(len(buf)) > math.MaxUint32 {
+		return restic.ID{}, false, 0, fmt.Errorf("blob is larger than 4GB")
+	}
 
 	// compute plaintext hash if not already set
 	if id.IsNull() {

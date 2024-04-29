@@ -17,7 +17,7 @@ import (
 
 func listBlobs(repo restic.Repository) restic.BlobSet {
 	blobs := restic.NewBlobSet()
-	repo.Index().Each(context.TODO(), func(pb restic.PackedBlob) {
+	_ = repo.Index().Each(context.TODO(), func(pb restic.PackedBlob) {
 		blobs.Insert(pb.BlobHandle)
 	})
 	return blobs
@@ -109,7 +109,7 @@ func testRepairBrokenPack(t *testing.T, version uint) {
 			rand.Seed(seed)
 			t.Logf("rand seed is %v", seed)
 
-			createRandomBlobs(t, repo, 5, 0.7)
+			createRandomBlobs(t, repo, 5, 0.7, true)
 			packsBefore := listPacks(t, repo)
 			blobsBefore := listBlobs(repo)
 

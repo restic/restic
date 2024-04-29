@@ -1,0 +1,22 @@
+Enhancement: Add options to configure Windows Shadow Copy Service
+
+Restic always used 120 seconds timeout and unconditionally created VSS snapshots
+for all volume mount points on disk. Now this behavior can be fine-tuned by
+new options, like exclude specific volumes and mount points or completely
+disable auto snapshotting of volume mount points.
+
+For example:
+
+    restic backup --use-fs-snapshot -o vss.timeout=5m -o vss.exclude-all-mount-points=true
+
+changes timeout to five minutes and disable snapshotting of mount points on all volumes, and
+
+    restic backup --use-fs-snapshot -o vss.exclude-volumes="d:\;c:\mnt\;\\?\Volume{e2e0315d-9066-4f97-8343-eb5659b35762}"
+
+excludes drive `d:`, mount point `c:\mnt` and specific volume from VSS snapshotting.
+
+    restic backup --use-fs-snapshot -o vss.provider={b5946137-7b9f-4925-af80-51abd60b20d5}
+
+uses 'Microsoft Software Shadow Copy provider 1.0' instead of the default provider.
+
+https://github.com/restic/restic/pull/3067

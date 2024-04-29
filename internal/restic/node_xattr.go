@@ -25,6 +25,14 @@ func Listxattr(path string) ([]string, error) {
 	return l, handleXattrErr(err)
 }
 
+func IsListxattrPermissionError(err error) bool {
+	var xerr *xattr.Error
+	if errors.As(err, &xerr) {
+		return xerr.Op == "xattr.list" && errors.Is(xerr.Err, os.ErrPermission)
+	}
+	return false
+}
+
 // Setxattr associates name and data together as an attribute of path.
 func Setxattr(path, name string, data []byte) error {
 	return handleXattrErr(xattr.LSet(path, name, data))

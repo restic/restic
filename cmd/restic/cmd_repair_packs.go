@@ -52,24 +52,19 @@ func runRepairPacks(ctx context.Context, gopts GlobalOptions, term *termstatus.T
 		return errors.Fatal("no ids specified")
 	}
 
-	repo, err := OpenRepository(ctx, gopts)
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false)
 	if err != nil {
 		return err
 	}
+	defer unlock()
 
-	lock, ctx, err := lockRepoExclusive(ctx, repo, gopts.RetryLock, gopts.JSON)
-	defer unlockRepo(lock)
-	if err != nil {
-		return err
-	}
+	printer := newTerminalProgressPrinter(gopts.verbosity, term)
 
-	bar := newIndexProgress(gopts.Quiet, gopts.JSON)
+	bar := newIndexTerminalProgress(gopts.Quiet, gopts.JSON, term)
 	err = repo.LoadIndex(ctx, bar)
 	if err != nil {
 		return errors.Fatalf("%s", err)
 	}
-
-	printer := newTerminalProgressPrinter(gopts.verbosity, term)
 
 	printer.P("saving backup copies of pack files to current folder")
 	for id := range ids {
@@ -87,6 +82,10 @@ func runRepairPacks(ctx context.Context, gopts GlobalOptions, term *termstatus.T
 			return err
 		})
 		if err != nil {
+			_ = f.Close()
+			return err
+		}
+		if err := f.Close(); err != nil {
 			return err
 		}
 	}

@@ -40,19 +40,11 @@ func runKeyList(ctx context.Context, gopts GlobalOptions, args []string) error {
 		return fmt.Errorf("the key list command expects no arguments, only options - please see `restic help key list` for usage and flags")
 	}
 
-	repo, err := OpenRepository(ctx, gopts)
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
 	if err != nil {
 		return err
 	}
-
-	if !gopts.NoLock {
-		var lock *restic.Lock
-		lock, ctx, err = lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
-		defer unlockRepo(lock)
-		if err != nil {
-			return err
-		}
-	}
+	defer unlock()
 
 	return listKeys(ctx, repo, gopts)
 }
@@ -61,6 +53,7 @@ func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions
 	type keyInfo struct {
 		Current  bool   `json:"current"`
 		ID       string `json:"id"`
+		ShortID  string `json:"-"`
 		UserName string `json:"userName"`
 		HostName string `json:"hostName"`
 		Created  string `json:"created"`
@@ -78,7 +71,8 @@ func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions
 
 		key := keyInfo{
 			Current:  id == s.KeyID(),
-			ID:       id.Str(),
+			ID:       id.String(),
+			ShortID:  id.Str(),
 			UserName: k.Username,
 			HostName: k.Hostname,
 			Created:  k.Created.Local().Format(TimeFormat),
@@ -99,7 +93,7 @@ func listKeys(ctx context.Context, s *repository.Repository, gopts GlobalOptions
 	}
 
 	tab := table.New()
-	tab.AddColumn(" ID", "{{if .Current}}*{{else}} {{end}}{{ .ID }}")
+	tab.AddColumn(" ID", "{{if .Current}}*{{else}} {{end}}{{ .ShortID }}")
 	tab.AddColumn("User", "{{ .UserName }}")
 	tab.AddColumn("Host", "{{ .HostName }}")
 	tab.AddColumn("Created", "{{ .Created }}")

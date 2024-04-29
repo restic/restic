@@ -74,7 +74,7 @@ jobs:
       - name: Get programs (Linux/macOS)
         run: |
           echo "build Go tools"
-          go install github.com/restic/rest-server/cmd/rest-server@latest
+          go install github.com/restic/rest-server/cmd/rest-server@master
 
           echo "install minio server"
           mkdir $HOME/bin
@@ -106,7 +106,7 @@ jobs:
           $ProgressPreference = 'SilentlyContinue'
 
           echo "build Go tools"
-          go install github.com/restic/rest-server/...
+          go install github.com/restic/rest-server/cmd/rest-server@master
 
           echo "install minio server"
           mkdir $Env:USERPROFILE/bin
@@ -247,6 +247,10 @@ jobs:
   lint:
     name: lint
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # allow annotating code in the PR
+      checks: write
     steps:
       - name: Set up Go ${{ env.latest_go }}
         uses: actions/setup-go@v5
@@ -257,10 +261,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v4
         with:
           # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
-          version: v1.56.1
+          version: v1.57.1
           args: --verbose --timeout 5m
 
         # only run golangci-lint for pull requests, otherwise ALL hints get
@@ -298,7 +302,7 @@ jobs:
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         with:
           # list of Docker images to use as base name for tags
           images: |
@@ -321,7 +325,7 @@ jobs:
 
       - name: Build and push
         id: docker_build
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           push: false
           context: .

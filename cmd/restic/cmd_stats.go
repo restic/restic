@@ -38,7 +38,7 @@ depending on what you are trying to calculate.
 The modes are:
 
 * restore-size: (default) Counts the size of the restored files.
-* files-by-contents: Counts total size of files, where a file is
+* files-by-contents: Counts total size of unique files, where a file is
    considered unique if it has unique contents.
 * raw-data: Counts the size of blobs in the repository, regardless of
   how many files reference them.
@@ -80,19 +80,11 @@ func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args 
 		return err
 	}
 
-	repo, err := OpenRepository(ctx, gopts)
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
 	if err != nil {
 		return err
 	}
-
-	if !gopts.NoLock {
-		var lock *restic.Lock
-		lock, ctx, err = lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
-		defer unlockRepo(lock)
-		if err != nil {
-			return err
-		}
-	}
+	defer unlock()
 
 	snapshotLister, err := restic.MemorizeList(ctx, repo, restic.SnapshotFile)
 	if err != nil {
@@ -125,9 +117,8 @@ func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args 
 			return fmt.Errorf("error walking snapshot: %v", err)
 		}
 	}
-
-	if err != nil {
-		return err
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 
 	if opts.countMode == countModeRawData {
@@ -270,11 +261,14 @@ func statsWalkTree(repo restic.Loader, opts StatsOptions, stats *statsContainer,
 			// will still be restored
 			stats.TotalFileCount++
 
-			// if inodes are present, only count each inode once
-			// (hard links do not increase restore size)
-			if !hardLinkIndex.Has(node.Inode, node.DeviceID) || node.Inode == 0 {
-				hardLinkIndex.Add(node.Inode, node.DeviceID, struct{}{})
+			if node.Links == 1 || node.Type == "dir" {
 				stats.TotalSize += node.Size
+			} else {
+				// if hardlinks are present only count each deviceID+inode once
+				if !hardLinkIndex.Has(node.Inode, node.DeviceID) || node.Inode == 0 {
+					hardLinkIndex.Add(node.Inode, node.DeviceID, struct{}{})
+					stats.TotalSize += node.Size
+				}
 			}
 		}
 
@@ -357,7 +351,10 @@ func statsDebug(ctx context.Context, repo restic.Repository) error {
 		Warnf("File Type: %v\n%v\n", t, hist)
 	}
 
-	hist := statsDebugBlobs(ctx, repo)
+	hist, err := statsDebugBlobs(ctx, repo)
+	if err != nil {
+		return err
+	}
 	for _, t := range []restic.BlobType{restic.DataBlob, restic.TreeBlob} {
 		Warnf("Blob Type: %v\n%v\n\n", t, hist[t])
 	}
@@ -375,17 +372,17 @@ func statsDebugFileType(ctx context.Context, repo restic.Lister, tpe restic.File
 	return hist, err
 }
 
-func statsDebugBlobs(ctx context.Context, repo restic.Repository) [restic.NumBlobTypes]*sizeHistogram {
+func statsDebugBlobs(ctx context.Context, repo restic.Repository) ([restic.NumBlobTypes]*sizeHistogram, error) {
 	var hist [restic.NumBlobTypes]*sizeHistogram
 	for i := 0; i < len(hist); i++ {
 		hist[i] = newSizeHistogram(2 * chunker.MaxSize)
 	}
 
-	repo.Index().Each(ctx, func(pb restic.PackedBlob) {
+	err := repo.Index().Each(ctx, func(pb restic.PackedBlob) {
 		hist[pb.Type].Add(uint64(pb.Length))
 	})
 
-	return hist
+	return hist, err
 }
 
 type sizeClass struct {

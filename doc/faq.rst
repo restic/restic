@@ -74,7 +74,7 @@ $ restic backup --exclude "~/documents" ~
 This command will result in a complete backup of the current logged in user's home directory and it won't exclude the folder ``~/documents/`` - which is not what the user wanted to achieve.
 The problem is how the path to ``~/documents`` is passed to restic.
 
-In order to spot an issue like this, you can make use of the following ruby command preceeding your restic command.
+In order to spot an issue like this, you can make use of the following ruby command preceding your restic command.
 
 ::
 

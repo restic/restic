@@ -60,19 +60,7 @@ func RepairPacks(ctx context.Context, repo restic.Repository, ids restic.IDSet, 
 	}
 
 	// remove salvaged packs from index
-	printer.P("rebuilding index")
-
-	bar = printer.NewCounter("packs processed")
-	err = repo.Index().Save(ctx, repo, ids, nil, restic.MasterIndexSaveOpts{
-		SaveProgress: bar,
-		DeleteProgress: func() *progress.Counter {
-			return printer.NewCounter("old indexes deleted")
-		},
-		DeleteReport: func(id restic.ID, _ error) {
-			printer.VV("removed index %v", id.String())
-		},
-	})
-
+	err = rebuildIndexFiles(ctx, repo, ids, nil, false, printer)
 	if err != nil {
 		return err
 	}

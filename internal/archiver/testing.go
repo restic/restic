@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -31,7 +32,7 @@ func TestSnapshot(t testing.TB, repo restic.Repository, path string, parent *res
 		}
 		opts.ParentSnapshot = sn
 	}
-	sn, _, err := arch.Snapshot(context.TODO(), []string{path}, opts)
+	sn, _, _, err := arch.Snapshot(context.TODO(), []string{path}, opts)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,11 +64,29 @@ func (s TestSymlink) String() string {
 	return "<Symlink>"
 }
 
+// TestHardlink describes a hardlink created for a test.
+type TestHardlink struct {
+	Target string
+}
+
+func (s TestHardlink) String() string {
+	return "<Hardlink>"
+}
+
 // TestCreateFiles creates a directory structure described by dir at target,
 // which must already exist. On Windows, symlinks aren't created.
 func TestCreateFiles(t testing.TB, target string, dir TestDir) {
 	t.Helper()
-	for name, item := range dir {
+
+	// ensure a stable order such that it can be guaranteed that a hardlink target already exists
+	var names []string
+	for name := range dir {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	for _, name := range names {
+		item := dir[name]
 		targetPath := filepath.Join(target, name)
 
 		switch it := item.(type) {
@@ -78,6 +97,11 @@ func TestCreateFiles(t testing.TB, target string, dir TestDir) {
 			}
 		case TestSymlink:
 			err := fs.Symlink(filepath.FromSlash(it.Target), targetPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+		case TestHardlink:
+			err := fs.Link(filepath.Join(target, filepath.FromSlash(it.Target)), targetPath)
 			if err != nil {
 				t.Fatal(err)
 			}

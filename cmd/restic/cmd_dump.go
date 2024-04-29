@@ -131,19 +131,11 @@ func runDump(ctx context.Context, opts DumpOptions, gopts GlobalOptions, args []
 
 	splittedPath := splitPath(path.Clean(pathToPrint))
 
-	repo, err := OpenRepository(ctx, gopts)
+	ctx, repo, unlock, err := openWithReadLock(ctx, gopts, gopts.NoLock)
 	if err != nil {
 		return err
 	}
-
-	if !gopts.NoLock {
-		var lock *restic.Lock
-		lock, ctx, err = lockRepo(ctx, repo, gopts.RetryLock, gopts.JSON)
-		defer unlockRepo(lock)
-		if err != nil {
-			return err
-		}
-	}
+	defer unlock()
 
 	sn, subfolder, err := (&restic.SnapshotFilter{
 		Hosts: opts.Hosts,

@@ -37,20 +37,13 @@ func runKeyRemove(ctx context.Context, gopts GlobalOptions, args []string) error
 		return fmt.Errorf("key remove expects one argument as the key id")
 	}
 
-	repo, err := OpenRepository(ctx, gopts)
+	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false)
 	if err != nil {
 		return err
 	}
+	defer unlock()
 
-	lock, ctx, err := lockRepoExclusive(ctx, repo, gopts.RetryLock, gopts.JSON)
-	defer unlockRepo(lock)
-	if err != nil {
-		return err
-	}
-
-	idPrefix := args[0]
-
-	return deleteKey(ctx, repo, idPrefix)
+	return deleteKey(ctx, repo, args[0])
 }
 
 func deleteKey(ctx context.Context, repo *repository.Repository, idPrefix string) error {
