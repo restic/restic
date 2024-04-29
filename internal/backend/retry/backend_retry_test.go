@@ -497,3 +497,24 @@ func TestNotifyWithSuccessIsCalled(t *testing.T) {
 		t.Fatalf("Success should have been called only once, but was called %d times instead", successCalled)
 	}
 }
+
+func TestNotifyWithSuccessFinalError(t *testing.T) {
+	operation := func() error {
+		return errors.New("expected error in test")
+	}
+
+	notifyCalled := 0
+	notify := func(error, time.Duration) {
+		notifyCalled++
+	}
+
+	successCalled := 0
+	success := func(retries int) {
+		successCalled++
+	}
+
+	err := retryNotifyErrorWithSuccess(operation, backoff.WithMaxRetries(&backoff.ZeroBackOff{}, 5), notify, success)
+	test.Assert(t, err.Error() == "expected error in test", "wrong error message %v", err)
+	test.Equals(t, 6, notifyCalled, "notify should have been called 6 times")
+	test.Equals(t, 0, successCalled, "success should not have been called")
+}

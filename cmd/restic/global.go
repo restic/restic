@@ -416,7 +416,11 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 	}
 
 	report := func(msg string, err error, d time.Duration) {
-		Warnf("%v returned error, retrying after %v: %v\n", msg, d, err)
+		if d >= 0 {
+			Warnf("%v returned error, retrying after %v: %v\n", msg, d, err)
+		} else {
+			Warnf("%v failed: %v\n", msg, err)
+		}
 	}
 	success := func(msg string, retries int) {
 		Warnf("%v operation successful after %d retries\n", msg, retries)
