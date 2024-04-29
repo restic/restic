@@ -108,6 +108,9 @@ func (be *Backend) retry(ctx context.Context, msg string, f func() error) error 
 	bo := backoff.NewExponentialBackOff()
 	bo.MaxElapsedTime = be.MaxElapsedTime
 
+	bo.InitialInterval = 1 * time.Second
+	bo.Multiplier = 2
+
 	if fastRetries {
 		// speed up integration tests
 		bo.InitialInterval = 1 * time.Millisecond
