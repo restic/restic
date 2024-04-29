@@ -22,7 +22,7 @@ func TestLock(t *testing.T) {
 	lock, err := restic.NewLock(context.TODO(), repo)
 	rtest.OK(t, err)
 
-	rtest.OK(t, lock.Unlock())
+	rtest.OK(t, lock.Unlock(context.TODO()))
 }
 
 func TestDoubleUnlock(t *testing.T) {
@@ -32,9 +32,9 @@ func TestDoubleUnlock(t *testing.T) {
 	lock, err := restic.NewLock(context.TODO(), repo)
 	rtest.OK(t, err)
 
-	rtest.OK(t, lock.Unlock())
+	rtest.OK(t, lock.Unlock(context.TODO()))
 
-	err = lock.Unlock()
+	err = lock.Unlock(context.TODO())
 	rtest.Assert(t, err != nil,
 		"double unlock didn't return an error, got %v", err)
 }
@@ -49,8 +49,8 @@ func TestMultipleLock(t *testing.T) {
 	lock2, err := restic.NewLock(context.TODO(), repo)
 	rtest.OK(t, err)
 
-	rtest.OK(t, lock1.Unlock())
-	rtest.OK(t, lock2.Unlock())
+	rtest.OK(t, lock1.Unlock(context.TODO()))
+	rtest.OK(t, lock2.Unlock(context.TODO()))
 }
 
 type failLockLoadingBackend struct {
@@ -75,7 +75,7 @@ func TestMultipleLockFailure(t *testing.T) {
 	_, err = restic.NewLock(context.TODO(), repo)
 	rtest.Assert(t, err != nil, "unreadable lock file did not result in an error")
 
-	rtest.OK(t, lock1.Unlock())
+	rtest.OK(t, lock1.Unlock(context.TODO()))
 }
 
 func TestLockExclusive(t *testing.T) {
@@ -83,7 +83,7 @@ func TestLockExclusive(t *testing.T) {
 
 	elock, err := restic.NewExclusiveLock(context.TODO(), repo)
 	rtest.OK(t, err)
-	rtest.OK(t, elock.Unlock())
+	rtest.OK(t, elock.Unlock(context.TODO()))
 }
 
 func TestLockOnExclusiveLockedRepo(t *testing.T) {
@@ -99,8 +99,8 @@ func TestLockOnExclusiveLockedRepo(t *testing.T) {
 	rtest.Assert(t, restic.IsAlreadyLocked(err),
 		"create normal lock with exclusively locked repo didn't return the correct error")
 
-	rtest.OK(t, lock.Unlock())
-	rtest.OK(t, elock.Unlock())
+	rtest.OK(t, lock.Unlock(context.TODO()))
+	rtest.OK(t, elock.Unlock(context.TODO()))
 }
 
 func TestExclusiveLockOnLockedRepo(t *testing.T) {
@@ -116,8 +116,8 @@ func TestExclusiveLockOnLockedRepo(t *testing.T) {
 	rtest.Assert(t, restic.IsAlreadyLocked(err),
 		"create normal lock with exclusively locked repo didn't return the correct error")
 
-	rtest.OK(t, lock.Unlock())
-	rtest.OK(t, elock.Unlock())
+	rtest.OK(t, lock.Unlock(context.TODO()))
+	rtest.OK(t, elock.Unlock(context.TODO()))
 }
 
 func createFakeLock(repo restic.SaverUnpacked, t time.Time, pid int) (restic.ID, error) {
@@ -296,7 +296,7 @@ func testLockRefresh(t *testing.T, refresh func(lock *restic.Lock) error) {
 	rtest.OK(t, err)
 	rtest.Assert(t, lock2.Time.After(time0),
 		"expected a later timestamp after lock refresh")
-	rtest.OK(t, lock.Unlock())
+	rtest.OK(t, lock.Unlock(context.TODO()))
 }
 
 func TestLockRefresh(t *testing.T) {
