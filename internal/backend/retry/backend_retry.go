@@ -18,9 +18,9 @@ import (
 // backoff.
 type Backend struct {
 	backend.Backend
-	MaxTries int
-	Report   func(string, error, time.Duration)
-	Success  func(string, int)
+	MaxElapsedTime time.Duration
+	Report         func(string, error, time.Duration)
+	Success        func(string, int)
 
 	failedLoads sync.Map
 }
@@ -32,12 +32,12 @@ var _ backend.Backend = &Backend{}
 // backoff. report is called with a description and the error, if one occurred.
 // success is called with the number of retries before a successful operation
 // (it is not called if it succeeded on the first try)
-func New(be backend.Backend, maxTries int, report func(string, error, time.Duration), success func(string, int)) *Backend {
+func New(be backend.Backend, maxElapsedTime time.Duration, report func(string, error, time.Duration), success func(string, int)) *Backend {
 	return &Backend{
-		Backend:  be,
-		MaxTries: maxTries,
-		Report:   report,
-		Success:  success,
+		Backend:        be,
+		MaxElapsedTime: maxElapsedTime,
+		Report:         report,
+		Success:        success,
 	}
 }
 
@@ -82,9 +82,15 @@ func (be *Backend) retry(ctx context.Context, msg string, f func() error) error 
 	}
 
 	bo := backoff.NewExponentialBackOff()
+	bo.MaxElapsedTime = be.MaxElapsedTime
+
 	if fastRetries {
 		// speed up integration tests
 		bo.InitialInterval = 1 * time.Millisecond
+		maxElapsedTime := 200 * time.Millisecond
+		if bo.MaxElapsedTime > maxElapsedTime {
+			bo.MaxElapsedTime = maxElapsedTime
+		}
 	}
 
 	err := retryNotifyErrorWithSuccess(
@@ -97,7 +103,7 @@ func (be *Backend) retry(ctx context.Context, msg string, f func() error) error 
 			}
 			return err
 		},
-		backoff.WithContext(backoff.WithMaxRetries(bo, uint64(be.MaxTries)), ctx),
+		backoff.WithContext(bo, ctx),
 		func(err error, d time.Duration) {
 			if be.Report != nil {
 				be.Report(msg, err, d)

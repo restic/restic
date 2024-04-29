@@ -193,8 +193,9 @@ func TestBackendListRetryErrorBackend(t *testing.T) {
 	}
 
 	TestFastRetries(t)
-	const maxRetries = 2
-	retryBackend := New(be, maxRetries, nil, nil)
+	const maxElapsedTime = 10 * time.Millisecond
+	now := time.Now()
+	retryBackend := New(be, maxElapsedTime, nil, nil)
 
 	var listed []string
 	err := retryBackend.List(context.TODO(), backend.PackFile, func(fi backend.FileInfo) error {
@@ -207,8 +208,9 @@ func TestBackendListRetryErrorBackend(t *testing.T) {
 		t.Fatalf("wrong error returned, want %v, got %v", ErrBackendTest, err)
 	}
 
-	if retries != maxRetries+1 {
-		t.Fatalf("List was called %d times, wanted %v", retries, maxRetries+1)
+	duration := time.Since(now)
+	if duration > 100*time.Millisecond {
+		t.Fatalf("list retries took %v, expected at most 10ms", duration)
 	}
 
 	test.Equals(t, names[:2], listed)
@@ -327,7 +329,7 @@ func TestBackendLoadCircuitBreaker(t *testing.T) {
 	// trip the circuit breaker for file "other"
 	err := retryBackend.Load(context.TODO(), backend.Handle{Name: "other"}, 0, 0, nilRd)
 	test.Equals(t, otherError, err, "unexpected error")
-	test.Equals(t, 3, attempt)
+	test.Equals(t, 2, attempt)
 
 	attempt = 0
 	err = retryBackend.Load(context.TODO(), backend.Handle{Name: "other"}, 0, 0, nilRd)
@@ -407,7 +409,7 @@ func TestBackendRetryPermanent(t *testing.T) {
 		return errors.New("something")
 	})
 	test.Assert(t, !be.IsPermanentErrorFn(err), "error unexpectedly considered permanent %v", err)
-	test.Equals(t, 3, attempt)
+	test.Equals(t, 2, attempt)
 
 }
 
