@@ -68,6 +68,30 @@ func retryNotifyErrorWithSuccess(operation backoff.Operation, b backoff.BackOff,
 	return err
 }
 
+func withRetryAtLeastOnce(delegate *backoff.ExponentialBackOff) *retryAtLeastOnce {
+	return &retryAtLeastOnce{delegate: delegate}
+}
+
+type retryAtLeastOnce struct {
+	delegate *backoff.ExponentialBackOff
+	numTries uint64
+}
+
+func (b *retryAtLeastOnce) NextBackOff() time.Duration {
+	delay := b.delegate.NextBackOff()
+
+	b.numTries++
+	if b.numTries == 1 && b.delegate.Stop == delay {
+		return b.delegate.InitialInterval
+	}
+	return delay
+}
+
+func (b *retryAtLeastOnce) Reset() {
+	b.numTries = 0
+	b.delegate.Reset()
+}
+
 var fastRetries = false
 
 func (be *Backend) retry(ctx context.Context, msg string, f func() error) error {
@@ -103,7 +127,7 @@ func (be *Backend) retry(ctx context.Context, msg string, f func() error) error 
 			}
 			return err
 		},
-		backoff.WithContext(bo, ctx),
+		backoff.WithContext(withRetryAtLeastOnce(bo), ctx),
 		func(err error, d time.Duration) {
 			if be.Report != nil {
 				be.Report(msg, err, d)

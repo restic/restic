@@ -520,3 +520,43 @@ func TestNotifyWithSuccessFinalError(t *testing.T) {
 	test.Equals(t, 6, notifyCalled, "notify should have been called 6 times")
 	test.Equals(t, 0, successCalled, "success should not have been called")
 }
+
+type testClock struct {
+	Time time.Time
+}
+
+func (c *testClock) Now() time.Time {
+	return c.Time
+}
+
+func TestRetryAtLeastOnce(t *testing.T) {
+	expBackOff := backoff.NewExponentialBackOff()
+	expBackOff.InitialInterval = 500 * time.Millisecond
+	expBackOff.RandomizationFactor = 0
+	expBackOff.MaxElapsedTime = 5 * time.Second
+	expBackOff.Multiplier = 2 // guarantee numerical stability
+	clock := &testClock{Time: time.Now()}
+	expBackOff.Clock = clock
+	expBackOff.Reset()
+
+	retry := withRetryAtLeastOnce(expBackOff)
+
+	// expire backoff
+	clock.Time = clock.Time.Add(10 * time.Second)
+	delay := retry.NextBackOff()
+	test.Equals(t, expBackOff.InitialInterval, delay, "must retry at least once")
+
+	delay = retry.NextBackOff()
+	test.Equals(t, expBackOff.Stop, delay, "must not retry more than once")
+
+	// test reset behavior
+	retry.Reset()
+	test.Equals(t, uint64(0), retry.numTries, "numTries should be reset to 0")
+
+	// Verify that after reset, NextBackOff returns the initial interval again
+	delay = retry.NextBackOff()
+	test.Equals(t, expBackOff.InitialInterval, delay, "retries must work after reset")
+
+	delay = retry.NextBackOff()
+	test.Equals(t, expBackOff.InitialInterval*time.Duration(expBackOff.Multiplier), delay, "retries must work after reset")
+}
