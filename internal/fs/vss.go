@@ -4,6 +4,8 @@
 package fs
 
 import (
+	"time"
+
 	"github.com/restic/restic/internal/errors"
 )
 
@@ -31,10 +33,16 @@ func HasSufficientPrivilegesForVSS() error {
 	return errors.New("VSS snapshots are only supported on windows")
 }
 
+// GetVolumeNameForVolumeMountPoint add trailing backslash to input parameter
+// and calls the equivalent windows api.
+func GetVolumeNameForVolumeMountPoint(mountPoint string) (string, error) {
+	return mountPoint, nil
+}
+
 // NewVssSnapshot creates a new vss snapshot. If creating the snapshots doesn't
 // finish within the timeout an error is returned.
-func NewVssSnapshot(
-	_ string, _ uint, _ ErrorHandler) (VssSnapshot, error) {
+func NewVssSnapshot(_ string,
+	_ string, _ time.Duration, _ VolumeFilter, _ ErrorHandler) (VssSnapshot, error) {
 	return VssSnapshot{}, errors.New("VSS snapshots are only supported on windows")
 }
 
