@@ -514,9 +514,9 @@ written, and the next backup needs to write new metadata again. If you really
 want to save the access time for files and directories, you can pass the
 ``--with-atime`` option to the ``backup`` command.
 
-Backing up full security descriptors on windows is only possible when the user 
+Backing up full security descriptors on Windows is only possible when the user 
 has ``SeBackupPrivilege``privilege or is running as admin. This is a restriction 
-of windows not restic.
+of Windows not restic.
 If either of these conditions are not met, only the owner, group and DACL will 
 be backed up.
 

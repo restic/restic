@@ -23,6 +23,23 @@ var (
 	}
 )
 
+// IsAdmin checks if current user is an administrator.
+func IsAdmin() (isAdmin bool, err error) {
+	var sid *windows.SID
+	err = windows.AllocateAndInitializeSid(&windows.SECURITY_NT_AUTHORITY, 2, windows.SECURITY_BUILTIN_DOMAIN_RID, windows.DOMAIN_ALIAS_RID_ADMINS,
+		0, 0, 0, 0, 0, 0, &sid)
+	if err != nil {
+		return false, errors.Errorf("sid error: %s", err)
+	}
+	windows.GetCurrentProcessToken()
+	token := windows.Token(0)
+	member, err := token.IsMember(sid)
+	if err != nil {
+		return false, errors.Errorf("token membership error: %s", err)
+	}
+	return member, nil
+}
+
 // CompareSecurityDescriptors runs tests for comparing 2 security descriptors in []byte format.
 func CompareSecurityDescriptors(t *testing.T, testPath string, sdInputBytes, sdOutputBytes []byte) {
 	sdInput, err := SecurityDescriptorBytesToStruct(sdInputBytes)

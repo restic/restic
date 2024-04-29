@@ -9,7 +9,7 @@ import (
 	"unicode/utf16"
 	"unsafe"
 
-	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/debug"
 	"golang.org/x/sys/windows"
 )
 
@@ -26,9 +26,7 @@ var (
 	// SeTakeOwnershipPrivilege allows the application to take ownership of files and directories, regardless of the permissions set on them.
 	SeTakeOwnershipPrivilege = "SeTakeOwnershipPrivilege"
 
-	backupPrivilegeError  error
-	restorePrivilegeError error
-	lowerPrivileges       bool
+	lowerPrivileges bool
 )
 
 // Flags for backup and restore with admin permissions
@@ -49,14 +47,14 @@ func GetSecurityDescriptor(filePath string) (securityDescriptor *[]byte, err err
 	var sd *windows.SECURITY_DESCRIPTOR
 
 	if lowerPrivileges {
-		sd, err = getNamedSecurityInfoLow(sd, err, filePath)
+		sd, err = getNamedSecurityInfoLow(filePath)
 	} else {
-		sd, err = getNamedSecurityInfoHigh(sd, err, filePath)
+		sd, err = getNamedSecurityInfoHigh(filePath)
 	}
 	if err != nil {
 		if isHandlePrivilegeNotHeldError(err) {
 			lowerPrivileges = true
-			sd, err = getNamedSecurityInfoLow(sd, err, filePath)
+			sd, err = getNamedSecurityInfoLow(filePath)
 			if err != nil {
 				return nil, fmt.Errorf("get low-level named security info failed with: %w", err)
 			}
@@ -128,12 +126,12 @@ func SetSecurityDescriptor(filePath string, securityDescriptor *[]byte) error {
 }
 
 // getNamedSecurityInfoHigh gets the higher level SecurityDescriptor which requires admin permissions.
-func getNamedSecurityInfoHigh(sd *windows.SECURITY_DESCRIPTOR, err error, filePath string) (*windows.SECURITY_DESCRIPTOR, error) {
+func getNamedSecurityInfoHigh(filePath string) (*windows.SECURITY_DESCRIPTOR, error) {
 	return windows.GetNamedSecurityInfo(filePath, windows.SE_FILE_OBJECT, highSecurityFlags)
 }
 
 // getNamedSecurityInfoLow gets the lower level SecurityDescriptor which requires no admin permissions.
-func getNamedSecurityInfoLow(sd *windows.SECURITY_DESCRIPTOR, err error, filePath string) (*windows.SECURITY_DESCRIPTOR, error) {
+func getNamedSecurityInfoLow(filePath string) (*windows.SECURITY_DESCRIPTOR, error) {
 	return windows.GetNamedSecurityInfo(filePath, windows.SE_FILE_OBJECT, lowBackupSecurityFlags)
 }
 
@@ -151,7 +149,7 @@ func setNamedSecurityInfoLow(filePath string, dacl *windows.ACL) error {
 func enableBackupPrivilege() {
 	err := enableProcessPrivileges([]string{SeBackupPrivilege})
 	if err != nil {
-		backupPrivilegeError = fmt.Errorf("error enabling backup privilege: %w", err)
+		debug.Log("error enabling backup privilege: %v", err)
 	}
 }
 
@@ -159,24 +157,8 @@ func enableBackupPrivilege() {
 func enableRestorePrivilege() {
 	err := enableProcessPrivileges([]string{SeRestorePrivilege, SeSecurityPrivilege, SeTakeOwnershipPrivilege})
 	if err != nil {
-		restorePrivilegeError = fmt.Errorf("error enabling restore/security privilege: %w", err)
+		debug.Log("error enabling restore/security privilege: %v", err)
 	}
-}
-
-// DisableBackupPrivileges disables privileges that are needed for backup operations.
-// They may be reenabled if GetSecurityDescriptor is called again.
-func DisableBackupPrivileges() error {
-	//Reset the once so that backup privileges can be enabled again if needed.
-	onceBackup = sync.Once{}
-	return enableDisableProcessPrivilege([]string{SeBackupPrivilege}, 0)
-}
-
-// DisableRestorePrivileges disables privileges that are needed for restore operations.
-// They may be reenabled if SetSecurityDescriptor is called again.
-func DisableRestorePrivileges() error {
-	//Reset the once so that restore privileges can be enabled again if needed.
-	onceRestore = sync.Once{}
-	return enableDisableProcessPrivilege([]string{SeRestorePrivilege, SeSecurityPrivilege}, 0)
 }
 
 // isHandlePrivilegeNotHeldError checks if the error is ERROR_PRIVILEGE_NOT_HELD
@@ -189,23 +171,26 @@ func isHandlePrivilegeNotHeldError(err error) bool {
 	return false
 }
 
-// IsAdmin checks if current user is an administrator.
-func IsAdmin() (isAdmin bool, err error) {
-	var sid *windows.SID
-	err = windows.AllocateAndInitializeSid(&windows.SECURITY_NT_AUTHORITY, 2, windows.SECURITY_BUILTIN_DOMAIN_RID, windows.DOMAIN_ALIAS_RID_ADMINS,
-		0, 0, 0, 0, 0, 0, &sid)
-	if err != nil {
-		return false, errors.Errorf("sid error: %s", err)
+// SecurityDescriptorBytesToStruct converts the security descriptor bytes representation
+// into a pointer to windows SECURITY_DESCRIPTOR.
+func SecurityDescriptorBytesToStruct(sd []byte) (*windows.SECURITY_DESCRIPTOR, error) {
+	if l := int(unsafe.Sizeof(windows.SECURITY_DESCRIPTOR{})); len(sd) < l {
+		return nil, fmt.Errorf("securityDescriptor (%d) smaller than expected (%d): %w", len(sd), l, windows.ERROR_INCORRECT_SIZE)
 	}
-	token := windows.Token(0)
-	member, err := token.IsMember(sid)
-	if err != nil {
-		return false, errors.Errorf("token membership error: %s", err)
-	}
-	return member, nil
+	s := (*windows.SECURITY_DESCRIPTOR)(unsafe.Pointer(&sd[0]))
+	return s, nil
 }
 
-// The code below was adapted from github.com/Microsoft/go-winio under MIT license.
+// securityDescriptorStructToBytes converts the pointer to windows SECURITY_DESCRIPTOR
+// into a security descriptor bytes representation.
+func securityDescriptorStructToBytes(sd *windows.SECURITY_DESCRIPTOR) ([]byte, error) {
+	b := unsafe.Slice((*byte)(unsafe.Pointer(sd)), sd.Length())
+	return b, nil
+}
+
+// The code below was adapted from
+// https://github.com/microsoft/go-winio/blob/3c9576c9346a1892dee136329e7e15309e82fb4f/privilege.go
+// under MIT license.
 
 // The MIT License (MIT)
 
@@ -262,23 +247,6 @@ type PrivilegeError struct {
 	privileges []uint64
 }
 
-// SecurityDescriptorBytesToStruct converts the security descriptor bytes representation
-// into a pointer to windows SECURITY_DESCRIPTOR.
-func SecurityDescriptorBytesToStruct(sd []byte) (*windows.SECURITY_DESCRIPTOR, error) {
-	if l := int(unsafe.Sizeof(windows.SECURITY_DESCRIPTOR{})); len(sd) < l {
-		return nil, fmt.Errorf("securityDescriptor (%d) smaller than expected (%d): %w", len(sd), l, windows.ERROR_INCORRECT_SIZE)
-	}
-	s := (*windows.SECURITY_DESCRIPTOR)(unsafe.Pointer(&sd[0]))
-	return s, nil
-}
-
-// securityDescriptorStructToBytes converts the pointer to windows SECURITY_DESCRIPTOR
-// into a security descriptor bytes representation.
-func securityDescriptorStructToBytes(sd *windows.SECURITY_DESCRIPTOR) ([]byte, error) {
-	b := unsafe.Slice((*byte)(unsafe.Pointer(sd)), sd.Length())
-	return b, nil
-}
-
 // Error returns the string message for the error.
 func (e *PrivilegeError) Error() string {
 	s := "Could not enable privilege "
@@ -292,12 +260,6 @@ func (e *PrivilegeError) Error() string {
 		s += `"`
 		s += getPrivilegeName(p)
 		s += `"`
-	}
-	if backupPrivilegeError != nil {
-		s += " backupPrivilegeError:" + backupPrivilegeError.Error()
-	}
-	if restorePrivilegeError != nil {
-		s += " restorePrivilegeError:" + restorePrivilegeError.Error()
 	}
 	return s
 }

@@ -13,7 +13,7 @@ import (
 	"github.com/restic/restic/internal/test"
 )
 
-func Test_SetGetFileSecurityDescriptors(t *testing.T) {
+func TestSetGetFileSecurityDescriptors(t *testing.T) {
 	tempDir := t.TempDir()
 	testfilePath := filepath.Join(tempDir, "testfile.txt")
 	// create temp file
@@ -31,7 +31,7 @@ func Test_SetGetFileSecurityDescriptors(t *testing.T) {
 	testSecurityDescriptors(t, TestFileSDs, testfilePath)
 }
 
-func Test_SetGetFolderSecurityDescriptors(t *testing.T) {
+func TestSetGetFolderSecurityDescriptors(t *testing.T) {
 	tempDir := t.TempDir()
 	testfolderPath := filepath.Join(tempDir, "testfolder")
 	// create temp folder

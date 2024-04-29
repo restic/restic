@@ -72,9 +72,9 @@ Restoring symbolic links on windows is only possible when the user has
 ``SeCreateSymbolicLinkPrivilege`` privilege or is running as admin. This is a
 restriction of windows not restic.
 
-Restoring full security descriptors on windows is only possible when the user has
+Restoring full security descriptors on Windows is only possible when the user has
 ``SeRestorePrivilege``, ``SeSecurityPrivilege`` and ``SeTakeOwnershipPrivilege`` 
-privilege or is running as admin. This is a restriction of windows not restic.
+privilege or is running as admin. This is a restriction of Windows not restic.
 If either of these conditions are not met, only the DACL will be restored.
 
 By default, restic does not restore files as sparse. Use ``restore --sparse`` to

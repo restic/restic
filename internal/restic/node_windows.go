@@ -24,7 +24,7 @@ type WindowsAttributes struct {
 	// FileAttributes is used for storing file attributes for windows files.
 	FileAttributes *uint32 `generic:"file_attributes"`
 	// SecurityDescriptor is used for storing security descriptors which includes
-	// owner, group, discretionary access control list (DACL), system access control list (SACL))
+	// owner, group, discretionary access control list (DACL), system access control list (SACL)
 	SecurityDescriptor *[]byte `generic:"security_descriptor"`
 }
 

@@ -721,7 +721,7 @@ func (node *Node) fillExtra(path string, fi os.FileInfo, ignoreXattrListError bo
 	allowExtended, err := node.fillGenericAttributes(path, fi, stat)
 	if allowExtended {
 		// Skip processing ExtendedAttributes if allowExtended is false.
-		err = errors.CombineErrors(err, node.fillExtendedAttributes(path))
+		err = errors.CombineErrors(err, node.fillExtendedAttributes(path, ignoreXattrListError))
 	}
 	return err
 }
