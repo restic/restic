@@ -567,7 +567,7 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 		hrd := hashing.NewReader(rd, sha256.New())
 		bufRd.Reset(hrd)
 
-		it := repository.NewPackBlobIterator(id, bufRd, 0, blobs, r.Key(), dec)
+		it := repository.NewPackBlobIterator(id, newBufReader(bufRd), 0, blobs, r.Key(), dec)
 		for {
 			val, err := it.Next()
 			if err == repository.ErrPackEOF {
@@ -653,10 +653,40 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 	return nil
 }
 
+type bufReader struct {
+	rd  *bufio.Reader
+	buf []byte
+}
+
+func newBufReader(rd *bufio.Reader) *bufReader {
+	return &bufReader{
+		rd: rd,
+	}
+}
+
+func (b *bufReader) Discard(n int) (discarded int, err error) {
+	return b.rd.Discard(n)
+}
+
+func (b *bufReader) ReadFull(n int) (buf []byte, err error) {
+	if cap(b.buf) < n {
+		b.buf = make([]byte, n)
+	}
+	b.buf = b.buf[:n]
+
+	_, err = io.ReadFull(b.rd, b.buf)
+	if err != nil {
+		return nil, err
+	}
+	return b.buf, nil
+}
+
 // ReadData loads all data from the repository and checks the integrity.
 func (c *Checker) ReadData(ctx context.Context, errChan chan<- error) {
 	c.ReadPacks(ctx, c.packs, nil, errChan)
 }
+
+const maxStreamBufferSize = 4 * 1024 * 1024
 
 // ReadPacks loads data from specified packs and checks the integrity.
 func (c *Checker) ReadPacks(ctx context.Context, packs map[restic.ID]int64, p *progress.Counter, errChan chan<- error) {
@@ -675,9 +705,7 @@ func (c *Checker) ReadPacks(ctx context.Context, packs map[restic.ID]int64, p *p
 	// run workers
 	for i := 0; i < workerCount; i++ {
 		g.Go(func() error {
-			// create a buffer that is large enough to be reused by repository.StreamPack
-			// this ensures that we can read the pack header later on
-			bufRd := bufio.NewReaderSize(nil, repository.MaxStreamBufferSize)
+			bufRd := bufio.NewReaderSize(nil, maxStreamBufferSize)
 			dec, err := zstd.NewReader(nil)
 			if err != nil {
 				panic(dec)
