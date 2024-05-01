@@ -13,6 +13,7 @@ import (
 	"github.com/peterbourgon/unixtransport"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/feature"
 	"golang.org/x/net/http2"
 )
 
@@ -130,6 +131,11 @@ func Transport(opts TransportOptions) (http.RoundTripper, error) {
 		tr.TLSClientConfig.RootCAs = pool
 	}
 
+	rt := http.RoundTripper(tr)
+	if feature.Flag.Enabled(feature.HTTPTimeouts) {
+		rt = newWatchdogRoundtripper(rt, 120*time.Second, 128*1024)
+	}
+
 	// wrap in the debug round tripper (if active)
-	return debug.RoundTripper(tr), nil
+	return debug.RoundTripper(rt), nil
 }
