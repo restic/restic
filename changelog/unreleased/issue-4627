@@ -1,0 +1,8 @@
+Enhancement: Improve reliability of backend operations
+
+Restic now downloads pack files in large chunks instead of using a streaming
+download. This prevents failures due to interrupted streams. The `restore`
+command now also retries downloading individual blobs that cannot be retrieved.
+
+https://github.com/restic/restic/issues/4627
+https://github.com/restic/restic/pull/4605
