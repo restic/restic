@@ -2,7 +2,9 @@ package dump
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"os"
 	"path"
 	"sync"
 
@@ -21,6 +23,7 @@ type Dumper struct {
 	format string
 	repo   restic.Repository
 	w      io.Writer
+	bufferPool sync.Pool
 }
 
 func New(format string, repo restic.Repository, w io.Writer) *Dumper {
@@ -29,6 +32,11 @@ func New(format string, repo restic.Repository, w io.Writer) *Dumper {
 		format: format,
 		repo:   repo,
 		w:      w,
+		bufferPool: sync.Pool{
+			New: func() interface{} {
+				return make([]byte, 1024 * 1024)  // 1MB buffer
+			},
+		},
 	}
 }
 
@@ -130,77 +138,109 @@ func (d *Dumper) writeNode(ctx context.Context, w io.Writer, node *restic.Node) 
 
 	return nil
 }
-
-// WriteNode writes a file node's contents directly to d's Writer,
-// maintaining order while loading blobs in parallel.
 func (d *Dumper) WriteNode(ctx context.Context, node *restic.Node) error {
-	// Using a semaphore to limit concurrent blob loads
-	maxWorkers := 20 // Adjust the number of workers based on your environment
-	sem := semaphore.NewWeighted(int64(maxWorkers))
+	batchSize := 20 // Suitable batch size
+	batchChan := make(chan []restic.ID, 20) // Buffered channel for batches
 
+	fmt.Fprintf(os.Stderr, "Writing node %v\n", node.Path)
+
+	go d.enqueueBatches(ctx, []*restic.Node{node}, batchChan, batchSize)
+
+	sem := semaphore.NewWeighted(100) // Semaphore to control the number of concurrent goroutines
 	var wg sync.WaitGroup
-	orderedBlobs := make([][]byte, len(node.Content))
 	var firstError error
-	var mu sync.Mutex // To synchronize error handling
+	var mu sync.Mutex // Mutex to protect firstError
 
-	for i, id := range node.Content {
-		wg.Add(1)
-		go func(index int, blobID restic.ID) {
-			defer wg.Done()
-
-			// Acquire semaphore to limit concurrency
+	worker := func() {
+		defer wg.Done()
+		for batch := range batchChan {
+//			fmt.Fprintf(os.Stderr, "Processing batch %v\n", batch)
 			if err := sem.Acquire(ctx, 1); err != nil {
+				fmt.Fprintf(os.Stderr," acquire sem %v \n", batch[0].Str())
 				mu.Lock()
 				if firstError == nil {
 					firstError = err
 				}
 				mu.Unlock()
+				sem.Release(1)
 				return
 			}
-			defer sem.Release(1)
+			fmt.Fprintf(os.Stderr," acquire sem %v \n", batch[0].Str())
 
-			blob, err := d.loadBlob(ctx, blobID)
-			if err != nil {
-				mu.Lock()
-				if firstError == nil {
-					firstError = err
+			for _, id := range batch {
+				buf := d.bufferPool.Get().([]byte)
+				blob, err := d.repo.LoadBlob(ctx, restic.DataBlob, id, buf)
+			//	fmt.Fprintf(os.Stderr," Loaded blob %v\n", id)
+				d.bufferPool.Put(buf)
+				if err != nil {
+					mu.Lock()
+					if firstError == nil {
+						firstError = err
+					}
+					mu.Unlock()
+					sem.Release(1)
+					return
 				}
-				mu.Unlock()
-				return
+
+				_, writeErr := d.w.Write(blob)
+				if writeErr != nil {
+					mu.Lock()
+					if firstError == nil {
+						firstError = writeErr
+					}
+					mu.Unlock()
+					sem.Release(1)
+					return
+				}
 			}
-			orderedBlobs[index] = blob
-		}(i, id)
+
+			fmt.Fprintf(os.Stderr," release sem %v \n", batch[0].Str())
+			sem.Release(1) // Ensure semaphore is released right after processing the batch
+		}
 	}
 
-	wg.Wait()
+	// Start workers
+	for i := 0; i < 20; i++ {
+		fmt.Fprintf(os.Stderr," Starting worker %d\n", i)
+		wg.Add(1)
+		go worker()
+	}
+
+	// Ensure batches are all sent before closing channel
+
+	go func() {
+
+		fmt.Fprintf(os.Stderr,  "Waiting for workers to finish\n")
+		wg.Wait()
+		fmt.Fprintf(os.Stderr,  "Closing batchChan\n")
+		close(batchChan)
+	}()
+
+	wg.Wait() // Wait for all workers to finish
 
 	if firstError != nil {
 		return firstError
 	}
 
-	// Write blobs in the original order
-	for _, blob := range orderedBlobs {
-		if _, err := d.w.Write(blob); err != nil {
-			return errors.Wrap(err, "Write")
-		}
-	}
-
 	return nil
 }
 
-// Load blob handling cache and repo
-func (d *Dumper) loadBlob(ctx context.Context, id restic.ID) ([]byte, error) {
-	buf, ok := d.cache.Get(id)
-	if !ok {
-		var err error
-		buf, err = d.repo.LoadBlob(ctx, restic.DataBlob, id, nil)
-		if err != nil {
-			return nil, err
+func (d *Dumper) enqueueBatches(ctx context.Context, nodes []*restic.Node, batchChan chan<- []restic.ID, batchSize int) {
+	var batch []restic.ID
+	for _, node := range nodes {
+		for _, id := range node.Content {
+			batch = append(batch, id)
+			if len(batch) == batchSize {
+				batchChan <- batch
+				batch = nil // Start a new batch
+			}
 		}
-		buf = d.cache.Add(id, buf)
 	}
-	return buf, nil
+	if len(batch) > 0 { // Send any remaining blobs in the last batch
+		batchChan <- batch
+	}
 }
+
 
 // IsDir checks if the given node is a directory.
 func IsDir(node *restic.Node) bool {
