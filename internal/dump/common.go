@@ -2,9 +2,7 @@ package dump
 
 import (
 	"context"
-	"fmt"
 	"io"
-	"os"
 	"path"
 	"sync"
 
@@ -138,88 +136,71 @@ func (d *Dumper) writeNode(ctx context.Context, w io.Writer, node *restic.Node) 
 
 	return nil
 }
+
 func (d *Dumper) WriteNode(ctx context.Context, node *restic.Node) error {
-	batchSize := 20 // Suitable batch size
+	batchSize := 20 // Define a suitable batch size
 	batchChan := make(chan []restic.ID, 20) // Buffered channel for batches
 
-	fmt.Fprintf(os.Stderr, "Writing node %v\n", node.Path)
-
-	go d.enqueueBatches(ctx, []*restic.Node{node}, batchChan, batchSize)
+	// Start a goroutine to enqueue batches and close the channel once done
+	go func() {
+		d.enqueueBatches(ctx, []*restic.Node{node}, batchChan, batchSize)
+		close(batchChan) // Close the batch channel after all batches are sent
+	}()
 
 	sem := semaphore.NewWeighted(100) // Semaphore to control the number of concurrent goroutines
 	var wg sync.WaitGroup
-	var firstError error
-	var mu sync.Mutex // Mutex to protect firstError
+	errChan := make(chan error, 1) // Channel for error reporting
 
 	worker := func() {
 		defer wg.Done()
 		for batch := range batchChan {
-//			fmt.Fprintf(os.Stderr, "Processing batch %v\n", batch)
 			if err := sem.Acquire(ctx, 1); err != nil {
-				fmt.Fprintf(os.Stderr," acquire sem %v \n", batch[0].Str())
-				mu.Lock()
-				if firstError == nil {
-					firstError = err
+				select {
+				case errChan <- err:
+				default:
 				}
-				mu.Unlock()
-				sem.Release(1)
 				return
 			}
-			fmt.Fprintf(os.Stderr," acquire sem %v \n", batch[0].Str())
 
+			// Process each ID in the batch
 			for _, id := range batch {
 				buf := d.bufferPool.Get().([]byte)
 				blob, err := d.repo.LoadBlob(ctx, restic.DataBlob, id, buf)
-			//	fmt.Fprintf(os.Stderr," Loaded blob %v\n", id)
 				d.bufferPool.Put(buf)
 				if err != nil {
-					mu.Lock()
-					if firstError == nil {
-						firstError = err
-					}
-					mu.Unlock()
 					sem.Release(1)
+					select {
+					case errChan <- err:
+					default:
+					}
 					return
 				}
 
-				_, writeErr := d.w.Write(blob)
-				if writeErr != nil {
-					mu.Lock()
-					if firstError == nil {
-						firstError = writeErr
-					}
-					mu.Unlock()
+				if _, err := d.w.Write(blob); err != nil {
 					sem.Release(1)
+					select {
+					case errChan <- err:
+					default:
+					}
 					return
 				}
 			}
-
-			fmt.Fprintf(os.Stderr," release sem %v \n", batch[0].Str())
-			sem.Release(1) // Ensure semaphore is released right after processing the batch
+			sem.Release(1)
 		}
 	}
 
 	// Start workers
 	for i := 0; i < 20; i++ {
-		fmt.Fprintf(os.Stderr," Starting worker %d\n", i)
 		wg.Add(1)
 		go worker()
 	}
 
-	// Ensure batches are all sent before closing channel
-
-	go func() {
-
-		fmt.Fprintf(os.Stderr,  "Waiting for workers to finish\n")
-		wg.Wait()
-		fmt.Fprintf(os.Stderr,  "Closing batchChan\n")
-		close(batchChan)
-	}()
-
 	wg.Wait() // Wait for all workers to finish
+	close(errChan) // Close the error channel after all workers are done
 
-	if firstError != nil {
-		return firstError
+	// Check for errors
+	if err, ok := <-errChan; ok {
+		return err
 	}
 
 	return nil
