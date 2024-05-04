@@ -205,7 +205,7 @@ The ``forget`` command accepts the following policy options:
     natural time boundaries and *not* relative to when you run ``forget``. Weeks
     are Monday 00:00 to Sunday 23:59, days 00:00 to 23:59, hours :00 to :59, etc.
     They also only count hours/days/weeks/etc which have one or more snapshots.
-    A value of ``-1`` will be interpreted as "forever", i.e. "keep all".
+    A value of ``unlimited`` will be interpreted as "forever", i.e. "keep all".
 
 .. note:: All duration related options (``--keep-{within-,}*``) ignore snapshots
     with a timestamp in the future (relative to when the ``forget`` command is
