@@ -143,15 +143,11 @@ func (d *Dumper) writeNode(ctx context.Context, w io.Writer, node *restic.Node) 
 	for i := uint(0); i < d.repo.Connections(); i++ {
 		wg.Go(func() error {
 			for task := range loaderCh {
-				var err error
-				blob, ok := d.cache.Get(task.id)
-				if !ok {
-					blob, err = d.repo.LoadBlob(ctx, restic.DataBlob, task.id, nil)
-					if err != nil {
-						return err
-					}
-
-					d.cache.Add(task.id, blob)
+				blob, err := d.cache.GetOrCompute(task.id, func() ([]byte, error) {
+					return d.repo.LoadBlob(ctx, restic.DataBlob, task.id, nil)
+				})
+				if err != nil {
+					return err
 				}
 
 				select {
