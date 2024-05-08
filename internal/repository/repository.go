@@ -174,46 +174,11 @@ func (r *Repository) LoadUnpacked(ctx context.Context, t restic.FileType, id res
 		id = restic.ID{}
 	}
 
-	ctx, cancel := context.WithCancel(ctx)
-
-	h := backend.Handle{Type: t, Name: id.String()}
-	retriedInvalidData := false
-	var dataErr error
-	wr := new(bytes.Buffer)
-
-	err := r.be.Load(ctx, h, 0, 0, func(rd io.Reader) error {
-		// make sure this call is idempotent, in case an error occurs
-		wr.Reset()
-		_, cerr := io.Copy(wr, rd)
-		if cerr != nil {
-			return cerr
-		}
-
-		buf := wr.Bytes()
-		if t != restic.ConfigFile && !restic.Hash(buf).Equal(id) {
-			debug.Log("retry loading broken blob %v", h)
-			if !retriedInvalidData {
-				retriedInvalidData = true
-			} else {
-				// with a canceled context there is not guarantee which error will
-				// be returned by `be.Load`.
-				dataErr = fmt.Errorf("load(%v): %w", h, restic.ErrInvalidData)
-				cancel()
-			}
-			return restic.ErrInvalidData
-
-		}
-		return nil
-	})
-
-	if dataErr != nil {
-		return nil, dataErr
-	}
+	buf, err := r.LoadRaw(ctx, t, id)
 	if err != nil {
 		return nil, err
 	}
 
-	buf := wr.Bytes()
 	nonce, ciphertext := buf[:r.key.NonceSize()], buf[r.key.NonceSize():]
 	plaintext, err := r.key.Open(ciphertext[:0], nonce, ciphertext, nil)
 	if err != nil {
