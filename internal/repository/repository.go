@@ -238,11 +238,6 @@ func (r *Repository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.
 	var lastError error
 	for _, blob := range blobs {
 		debug.Log("blob %v/%v found: %v", t, id, blob)
-
-		if blob.Type != t {
-			debug.Log("blob %v has wrong block type, want %v", blob, t)
-		}
-
 		// load blob from pack
 		h := backend.Handle{Type: restic.PackFile, Name: blob.PackID.String(), IsMetadata: t.IsMetadata()}
 
