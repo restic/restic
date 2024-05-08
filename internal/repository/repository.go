@@ -248,42 +248,26 @@ func (r *Repository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.
 			buf = buf[:blob.Length]
 		}
 
-		n, err := backend.ReadAt(ctx, r.be, h, int64(blob.Offset), buf)
+		_, err := backend.ReadAt(ctx, r.be, h, int64(blob.Offset), buf)
 		if err != nil {
 			debug.Log("error loading blob %v: %v", blob, err)
 			lastError = err
 			continue
 		}
 
-		if uint(n) != blob.Length {
-			lastError = errors.Errorf("error loading blob %v: wrong length returned, want %d, got %d",
-				id.Str(), blob.Length, uint(n))
-			debug.Log("lastError: %v", lastError)
-			continue
-		}
+		it := NewPackBlobIterator(blob.PackID, newByteReader(buf), uint(blob.Offset), []restic.Blob{blob.Blob}, r.key, r.getZstdDecoder())
+		pbv, err := it.Next()
 
-		// decrypt
-		nonce, ciphertext := buf[:r.key.NonceSize()], buf[r.key.NonceSize():]
-		plaintext, err := r.key.Open(ciphertext[:0], nonce, ciphertext, nil)
+		if err == nil {
+			err = pbv.Err
+		}
 		if err != nil {
-			lastError = errors.Errorf("decrypting blob %v failed: %v", id, err)
+			debug.Log("error decoding blob %v: %v", blob, err)
+			lastError = err
 			continue
 		}
 
-		if blob.IsCompressed() {
-			plaintext, err = r.getZstdDecoder().DecodeAll(plaintext, make([]byte, 0, blob.DataLength()))
-			if err != nil {
-				lastError = errors.Errorf("decompressing blob %v failed: %v", id, err)
-				continue
-			}
-		}
-
-		// check hash
-		if !restic.Hash(plaintext).Equal(id) {
-			lastError = errors.Errorf("blob %v returned invalid hash", id)
-			continue
-		}
-
+		plaintext := pbv.Plaintext
 		if len(plaintext) > cap(buf) {
 			return plaintext, nil
 		}
