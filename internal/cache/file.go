@@ -34,46 +34,48 @@ func (c *Cache) canBeCached(t backend.FileType) bool {
 
 // load returns a reader that yields the contents of the file with the
 // given handle. rd must be closed after use. If an error is returned, the
-// ReadCloser is nil.
-func (c *Cache) load(h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
+// ReadCloser is nil. The bool return value indicates whether the requested
+// file exists in the cache. It can be true even when no reader is returned
+// because length or offset are out of bounds
+func (c *Cache) load(h backend.Handle, length int, offset int64) (io.ReadCloser, bool, error) {
 	debug.Log("Load(%v, %v, %v) from cache", h, length, offset)
 	if !c.canBeCached(h.Type) {
-		return nil, errors.New("cannot be cached")
+		return nil, false, errors.New("cannot be cached")
 	}
 
 	f, err := fs.Open(c.filename(h))
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, false, errors.WithStack(err)
 	}
 
 	fi, err := f.Stat()
 	if err != nil {
 		_ = f.Close()
-		return nil, errors.WithStack(err)
+		return nil, true, errors.WithStack(err)
 	}
 
 	size := fi.Size()
 	if size <= int64(crypto.CiphertextLength(0)) {
 		_ = f.Close()
-		return nil, errors.Errorf("cached file %v is truncated", h)
+		return nil, true, errors.Errorf("cached file %v is truncated", h)
 	}
 
 	if size < offset+int64(length) {
 		_ = f.Close()
-		return nil, errors.Errorf("cached file %v is too short", h)
+		return nil, true, errors.Errorf("cached file %v is too short", h)
 	}
 
 	if offset > 0 {
 		if _, err = f.Seek(offset, io.SeekStart); err != nil {
 			_ = f.Close()
-			return nil, err
+			return nil, true, err
 		}
 	}
 
 	if length <= 0 {
-		return f, nil
+		return f, true, nil
 	}
-	return util.LimitReadCloser(f, int64(length)), nil
+	return util.LimitReadCloser(f, int64(length)), true, nil
 }
 
 // save saves a file in the cache.

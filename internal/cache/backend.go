@@ -40,7 +40,8 @@ func (b *Backend) Remove(ctx context.Context, h backend.Handle) error {
 		return err
 	}
 
-	return b.Cache.remove(h)
+	err = b.Cache.remove(h)
+	return err
 }
 
 func autoCacheTypes(h backend.Handle) bool {
@@ -133,9 +134,9 @@ func (b *Backend) cacheFile(ctx context.Context, h backend.Handle) error {
 
 // loadFromCache will try to load the file from the cache.
 func (b *Backend) loadFromCache(h backend.Handle, length int, offset int64, consumer func(rd io.Reader) error) (bool, error) {
-	rd, err := b.Cache.load(h, length, offset)
+	rd, inCache, err := b.Cache.load(h, length, offset)
 	if err != nil {
-		return false, err
+		return inCache, err
 	}
 
 	err = consumer(rd)
