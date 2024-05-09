@@ -15,11 +15,14 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/local"
+	"github.com/restic/restic/internal/backend/mem"
+	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/test"
 	rtest "github.com/restic/restic/internal/test"
 	"golang.org/x/sync/errgroup"
 )
@@ -140,6 +143,28 @@ func testLoadBlob(t *testing.T, version uint) {
 	}
 }
 
+func TestLoadBlobBroken(t *testing.T) {
+	be := mem.New()
+	repo := repository.TestRepositoryWithBackend(t, &damageOnceBackend{Backend: be}, restic.StableRepoVersion, repository.Options{}).(*repository.Repository)
+	buf := test.Random(42, 1000)
+
+	var wg errgroup.Group
+	repo.StartPackUploader(context.TODO(), &wg)
+	id, _, _, err := repo.SaveBlob(context.TODO(), restic.TreeBlob, buf, restic.ID{}, false)
+	rtest.OK(t, err)
+	rtest.OK(t, repo.Flush(context.Background()))
+
+	// setup cache after saving the blob to make sure that the damageOnceBackend damages the cached data
+	c := cache.TestNewCache(t)
+	repo.UseCache(c)
+
+	data, err := repo.LoadBlob(context.TODO(), restic.TreeBlob, id, nil)
+	rtest.OK(t, err)
+	rtest.Assert(t, bytes.Equal(buf, data), "data mismatch")
+	pack := repo.Index().Lookup(restic.BlobHandle{Type: restic.TreeBlob, ID: id})[0].PackID
+	rtest.Assert(t, c.Has(backend.Handle{Type: restic.PackFile, Name: pack.String()}), "expected tree pack to be cached")
+}
+
 func BenchmarkLoadBlob(b *testing.B) {
 	repository.BenchmarkAllVersions(b, benchmarkLoadBlob)
 }
@@ -255,11 +280,7 @@ func TestRepositoryLoadUnpackedBroken(t *testing.T) {
 	err := repo.Backend().Save(context.TODO(), h, backend.NewByteReader(data, repo.Backend().Hasher()))
 	rtest.OK(t, err)
 
-	// without a retry backend this will just return an error that the file is broken
 	_, err = repo.LoadUnpacked(context.TODO(), restic.IndexFile, id)
-	if err == nil {
-		t.Fatal("missing expected error")
-	}
 	rtest.Assert(t, errors.Is(err, restic.ErrInvalidData), "unexpected error: %v", err)
 }
 
@@ -277,7 +298,7 @@ func (be *damageOnceBackend) Load(ctx context.Context, h backend.Handle, length 
 	_, retry := be.m.Swap(h, true)
 	if !retry {
 		// return broken data on the first try
-		length++
+		offset++
 	}
 	return be.Backend.Load(ctx, h, length, offset, fn)
 }
