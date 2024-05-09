@@ -17,8 +17,6 @@ var cmdRepairPacks = &cobra.Command{
 	Use:   "packs [packIDs...]",
 	Short: "Salvage damaged pack files",
 	Long: `
-WARNING: The CLI for this command is experimental and will likely change in the future!
-
 The "repair packs" command extracts intact blobs from the specified pack files, rebuilds
 the index to remove the damaged pack files and removes the pack files from the repository.
 
