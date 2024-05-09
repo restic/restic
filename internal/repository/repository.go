@@ -235,11 +235,27 @@ func (r *Repository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.
 	// try cached pack files first
 	sortCachedPacksFirst(r.Cache, blobs)
 
+	buf, err := r.loadBlob(ctx, blobs, buf)
+	if err != nil {
+		if r.Cache != nil {
+			for _, blob := range blobs {
+				h := backend.Handle{Type: restic.PackFile, Name: blob.PackID.String(), IsMetadata: blob.Type.IsMetadata()}
+				// ignore errors as there's not much we can do here
+				_ = r.Cache.Forget(h)
+			}
+		}
+
+		buf, err = r.loadBlob(ctx, blobs, buf)
+	}
+	return buf, err
+}
+
+func (r *Repository) loadBlob(ctx context.Context, blobs []restic.PackedBlob, buf []byte) ([]byte, error) {
 	var lastError error
 	for _, blob := range blobs {
-		debug.Log("blob %v/%v found: %v", t, id, blob)
+		debug.Log("blob %v found: %v", blob.BlobHandle, blob)
 		// load blob from pack
-		h := backend.Handle{Type: restic.PackFile, Name: blob.PackID.String(), IsMetadata: t.IsMetadata()}
+		h := backend.Handle{Type: restic.PackFile, Name: blob.PackID.String(), IsMetadata: blob.Type.IsMetadata()}
 
 		switch {
 		case cap(buf) < int(blob.Length):
@@ -281,7 +297,7 @@ func (r *Repository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.
 		return nil, lastError
 	}
 
-	return nil, errors.Errorf("loading blob %v from %v packs failed", id.Str(), len(blobs))
+	return nil, errors.Errorf("loading %v from %v packs failed", blobs[0].BlobHandle, len(blobs))
 }
 
 // LookupBlobSize returns the size of blob id.
