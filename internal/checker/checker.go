@@ -532,6 +532,21 @@ func (e *partialReadError) Error() string {
 
 // checkPack reads a pack and checks the integrity of all blobs.
 func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []restic.Blob, size int64, bufRd *bufio.Reader, dec *zstd.Decoder) error {
+	err := checkPackInner(ctx, r, id, blobs, size, bufRd, dec)
+	if err != nil {
+		// retry pack verification to detect transient errors
+		err2 := checkPackInner(ctx, r, id, blobs, size, bufRd, dec)
+		if err2 != nil {
+			err = err2
+		} else {
+			err = fmt.Errorf("check successful on second attempt, original error %w", err)
+		}
+	}
+	return err
+}
+
+func checkPackInner(ctx context.Context, r restic.Repository, id restic.ID, blobs []restic.Blob, size int64, bufRd *bufio.Reader, dec *zstd.Decoder) error {
+
 	debug.Log("checking pack %v", id.String())
 
 	if len(blobs) == 0 {
@@ -725,15 +740,6 @@ func (c *Checker) ReadPacks(ctx context.Context, packs map[restic.ID]int64, p *p
 				}
 
 				err := checkPack(ctx, c.repo, ps.id, ps.blobs, ps.size, bufRd, dec)
-				if err != nil {
-					// retry pack verification to detect transient errors
-					err2 := checkPack(ctx, c.repo, ps.id, ps.blobs, ps.size, bufRd, dec)
-					if err2 != nil {
-						err = err2
-					} else {
-						err = fmt.Errorf("second check successful, original error %w", err)
-					}
-				}
 
 				p.Add(1)
 				if err == nil {
