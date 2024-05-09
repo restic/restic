@@ -5,6 +5,7 @@ import (
 	"context"
 	"io"
 	"math/rand"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -91,7 +92,7 @@ func TestBackend(t *testing.T) {
 	loadAndCompare(t, be, h, data)
 
 	// load data via cache
-	loadAndCompare(t, be, h, data)
+	loadAndCompare(t, wbe, h, data)
 
 	// remove directly
 	remove(t, be, h)
@@ -112,6 +113,77 @@ func TestBackend(t *testing.T) {
 	if c.Has(h) {
 		t.Errorf("removed file still in cache after stat")
 	}
+}
+
+type loadCountingBackend struct {
+	backend.Backend
+	ctr int
+}
+
+func (l *loadCountingBackend) Load(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
+	l.ctr++
+	return l.Backend.Load(ctx, h, length, offset, fn)
+}
+
+func TestOutOfBoundsAccess(t *testing.T) {
+	be := &loadCountingBackend{Backend: mem.New()}
+	c := TestNewCache(t)
+	wbe := c.Wrap(be)
+
+	h, data := randomData(50)
+	save(t, be, h, data)
+
+	// load out of bounds
+	err := wbe.Load(context.TODO(), h, 100, 100, func(rd io.Reader) error {
+		t.Error("cache returned non-existant file section")
+		return errors.New("broken")
+	})
+	test.Assert(t, strings.Contains(err.Error(), " is too short"), "expected too short error, got %v", err)
+	test.Equals(t, 1, be.ctr, "expected file to be loaded only once")
+	// file must nevertheless get cached
+	if !c.Has(h) {
+		t.Errorf("cache doesn't have file after load")
+	}
+
+	// start within bounds, but request too large chunk
+	err = wbe.Load(context.TODO(), h, 100, 0, func(rd io.Reader) error {
+		t.Error("cache returned non-existant file section")
+		return errors.New("broken")
+	})
+	test.Assert(t, strings.Contains(err.Error(), " is too short"), "expected too short error, got %v", err)
+	test.Equals(t, 1, be.ctr, "expected file to be loaded only once")
+}
+
+func TestForget(t *testing.T) {
+	be := &loadCountingBackend{Backend: mem.New()}
+	c := TestNewCache(t)
+	wbe := c.Wrap(be)
+
+	h, data := randomData(50)
+	save(t, be, h, data)
+
+	loadAndCompare(t, wbe, h, data)
+	test.Equals(t, 1, be.ctr, "expected file to be loaded once")
+
+	// must still exist even if load returns an error
+	exp := errors.New("error")
+	err := wbe.Load(context.TODO(), h, 0, 0, func(rd io.Reader) error {
+		return exp
+	})
+	test.Equals(t, exp, err, "wrong error")
+	test.Assert(t, c.Has(h), "missing cache entry")
+
+	test.OK(t, c.Forget(h))
+	test.Assert(t, !c.Has(h), "cache entry should have been removed")
+
+	// cache it again
+	loadAndCompare(t, wbe, h, data)
+	test.Assert(t, c.Has(h), "missing cache entry")
+
+	// forget must delete file only once
+	err = c.Forget(h)
+	test.Assert(t, strings.Contains(err.Error(), "circuit breaker prevents repeated deletion of cached file"), "wrong error message %q", err)
+	test.Assert(t, c.Has(h), "cache entry should still exist")
 }
 
 type loadErrorBackend struct {
