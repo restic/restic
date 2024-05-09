@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"math/rand"
 	"testing"
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/mem"
 	"github.com/restic/restic/internal/backend/mock"
+	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -19,13 +19,13 @@ import (
 const KiB = 1 << 10
 const MiB = 1 << 20
 
-func TestLoadAll(t *testing.T) {
+func TestLoadRaw(t *testing.T) {
 	b := mem.New()
 	repo, err := repository.New(b, repository.Options{})
 	rtest.OK(t, err)
 
 	for i := 0; i < 5; i++ {
-		data := rtest.Random(23+i, rand.Intn(MiB)+500*KiB)
+		data := rtest.Random(23+i, 500*KiB)
 
 		id := restic.Hash(data)
 		h := backend.Handle{Name: id.String(), Type: backend.PackFile}
@@ -47,25 +47,12 @@ func TestLoadAll(t *testing.T) {
 	}
 }
 
-type quickRetryBackend struct {
-	backend.Backend
-}
-
-func (be *quickRetryBackend) Load(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
-	err := be.Backend.Load(ctx, h, length, offset, fn)
-	if err != nil {
-		// retry
-		err = be.Backend.Load(ctx, h, length, offset, fn)
-	}
-	return err
-}
-
-func TestLoadAllBroken(t *testing.T) {
+func TestLoadRawBroken(t *testing.T) {
 	b := mock.NewBackend()
 	repo, err := repository.New(b, repository.Options{})
 	rtest.OK(t, err)
 
-	data := rtest.Random(23, rand.Intn(MiB)+500*KiB)
+	data := rtest.Random(23, 10*KiB)
 	id := restic.Hash(data)
 	// damage buffer
 	data[0] ^= 0xff
@@ -74,18 +61,48 @@ func TestLoadAllBroken(t *testing.T) {
 		return io.NopCloser(bytes.NewReader(data)), nil
 	}
 
-	// must fail on first try
-	_, err = repo.LoadRaw(context.TODO(), backend.PackFile, id)
-	rtest.Assert(t, errors.Is(err, restic.ErrInvalidData), "missing expected ErrInvalidData error, got %v", err)
-
-	// must return the broken data after a retry
-	be := &quickRetryBackend{Backend: b}
-	repo, err = repository.New(be, repository.Options{})
-	rtest.OK(t, err)
+	// must detect but still return corrupt data
 	buf, err := repo.LoadRaw(context.TODO(), backend.PackFile, id)
+	rtest.Assert(t, bytes.Equal(buf, data), "wrong data returned")
 	rtest.Assert(t, errors.Is(err, restic.ErrInvalidData), "missing expected ErrInvalidData error, got %v", err)
 
-	if !bytes.Equal(buf, data) {
-		t.Fatalf("wrong data returned")
+	// cause the first access to fail, but repair the data for the second access
+	data[0] ^= 0xff
+	loadCtr := 0
+	b.OpenReaderFn = func(ctx context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
+		data[0] ^= 0xff
+		loadCtr++
+		return io.NopCloser(bytes.NewReader(data)), nil
 	}
+
+	// must retry load of corrupted data
+	buf, err = repo.LoadRaw(context.TODO(), backend.PackFile, id)
+	rtest.OK(t, err)
+	rtest.Assert(t, bytes.Equal(buf, data), "wrong data returned")
+	rtest.Equals(t, 2, loadCtr, "missing retry on broken data")
+}
+
+func TestLoadRawBrokenWithCache(t *testing.T) {
+	b := mock.NewBackend()
+	c := cache.TestNewCache(t)
+	repo, err := repository.New(b, repository.Options{})
+	rtest.OK(t, err)
+	repo.UseCache(c)
+
+	data := rtest.Random(23, 10*KiB)
+	id := restic.Hash(data)
+
+	loadCtr := 0
+	// cause the first access to fail, but repair the data for the second access
+	b.OpenReaderFn = func(ctx context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
+		data[0] ^= 0xff
+		loadCtr++
+		return io.NopCloser(bytes.NewReader(data)), nil
+	}
+
+	// must retry load of corrupted data
+	buf, err := repo.LoadRaw(context.TODO(), backend.SnapshotFile, id)
+	rtest.OK(t, err)
+	rtest.Assert(t, bytes.Equal(buf, data), "wrong data returned")
+	rtest.Equals(t, 2, loadCtr, "missing retry on broken data")
 }
