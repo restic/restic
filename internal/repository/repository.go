@@ -869,7 +869,17 @@ func (r *Repository) List(ctx context.Context, t restic.FileType, fn func(restic
 func (r *Repository) ListPack(ctx context.Context, id restic.ID, size int64) ([]restic.Blob, uint32, error) {
 	h := backend.Handle{Type: restic.PackFile, Name: id.String()}
 
-	return pack.List(r.Key(), backend.ReaderAt(ctx, r.Backend(), h), size)
+	entries, hdrSize, err := pack.List(r.Key(), backend.ReaderAt(ctx, r.Backend(), h), size)
+	if err != nil {
+		if r.Cache != nil {
+			// ignore error as there is not much we can do here
+			_ = r.Cache.Forget(h)
+		}
+
+		// retry on error
+		entries, hdrSize, err = pack.List(r.Key(), backend.ReaderAt(ctx, r.Backend(), h), size)
+	}
+	return entries, hdrSize, err
 }
 
 // Delete calls backend.Delete() if implemented, and returns an error
