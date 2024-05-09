@@ -161,14 +161,10 @@ func (b *Backend) Load(ctx context.Context, h backend.Handle, length int, offset
 	// try loading from cache without checking that the handle is actually cached
 	inCache, err := b.loadFromCache(h, length, offset, consumer)
 	if inCache {
-		if err == nil {
-			return nil
-		}
-
-		// drop from cache and retry once
-		_ = b.Cache.remove(h)
+		debug.Log("error loading %v from cache: %v", h, err)
+		// the caller must explicitly use cache.Forget() to remove the cache entry
+		return err
 	}
-	debug.Log("error loading %v from cache: %v", h, err)
 
 	// if we don't automatically cache this file type, fall back to the backend
 	if !autoCacheTypes(h) {
@@ -184,6 +180,7 @@ func (b *Backend) Load(ctx context.Context, h backend.Handle, length int, offset
 
 	inCache, err = b.loadFromCache(h, length, offset, consumer)
 	if inCache {
+		debug.Log("error loading %v from cache: %v", h, err)
 		return err
 	}
 

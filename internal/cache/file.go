@@ -55,14 +55,12 @@ func (c *Cache) load(h backend.Handle, length int, offset int64) (io.ReadCloser,
 	size := fi.Size()
 	if size <= int64(crypto.CiphertextLength(0)) {
 		_ = f.Close()
-		_ = c.remove(h)
-		return nil, errors.Errorf("cached file %v is truncated, removing", h)
+		return nil, errors.Errorf("cached file %v is truncated", h)
 	}
 
 	if size < offset+int64(length) {
 		_ = f.Close()
-		_ = c.remove(h)
-		return nil, errors.Errorf("cached file %v is too short, removing", h)
+		return nil, errors.Errorf("cached file %v is too short", h)
 	}
 
 	if offset > 0 {
@@ -137,6 +135,10 @@ func (c *Cache) save(h backend.Handle, rd io.Reader) error {
 	}
 
 	return errors.WithStack(err)
+}
+
+func (c *Cache) Forget(h backend.Handle) error {
+	return c.remove(h)
 }
 
 // remove deletes a file. When the file is not cached, no error is returned.

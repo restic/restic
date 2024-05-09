@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -264,6 +265,7 @@ func TestRepositoryLoadUnpackedBroken(t *testing.T) {
 
 type damageOnceBackend struct {
 	backend.Backend
+	m sync.Map
 }
 
 func (be *damageOnceBackend) Load(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
@@ -271,13 +273,13 @@ func (be *damageOnceBackend) Load(ctx context.Context, h backend.Handle, length 
 	if h.Type == restic.ConfigFile {
 		return be.Backend.Load(ctx, h, length, offset, fn)
 	}
-	// return broken data on the first try
-	err := be.Backend.Load(ctx, h, length+1, offset, fn)
-	if err != nil {
-		// retry
-		err = be.Backend.Load(ctx, h, length, offset, fn)
+
+	_, retry := be.m.Swap(h, true)
+	if !retry {
+		// return broken data on the first try
+		length++
 	}
-	return err
+	return be.Backend.Load(ctx, h, length, offset, fn)
 }
 
 func TestRepositoryLoadUnpackedRetryBroken(t *testing.T) {
