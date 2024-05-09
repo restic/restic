@@ -8,7 +8,6 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
@@ -181,8 +180,7 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 		if dryRun {
 			Verbosef("would delete empty snapshot\n")
 		} else {
-			h := backend.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
-			if err = repo.Backend().Remove(ctx, h); err != nil {
+			if err = repo.RemoveUnpacked(ctx, restic.SnapshotFile, *sn.ID()); err != nil {
 				return false, err
 			}
 			debug.Log("removed empty snapshot %v", sn.ID())
@@ -241,8 +239,7 @@ func filterAndReplaceSnapshot(ctx context.Context, repo restic.Repository, sn *r
 	Verbosef("saved new snapshot %v\n", id.Str())
 
 	if forget {
-		h := backend.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
-		if err = repo.Backend().Remove(ctx, h); err != nil {
+		if err = repo.RemoveUnpacked(ctx, restic.SnapshotFile, *sn.ID()); err != nil {
 			return false, err
 		}
 		debug.Log("removed old snapshot %v", sn.ID())

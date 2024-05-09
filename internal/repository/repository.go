@@ -520,6 +520,11 @@ func (r *Repository) verifyUnpacked(buf []byte, t restic.FileType, expected []by
 	return nil
 }
 
+func (r *Repository) RemoveUnpacked(ctx context.Context, t restic.FileType, id restic.ID) error {
+	// TODO prevent everything except removing snapshots for non-repository code
+	return r.be.Remove(ctx, backend.Handle{Type: t, Name: id.String()})
+}
+
 // Flush saves all remaining packs and the index
 func (r *Repository) Flush(ctx context.Context) error {
 	if err := r.flushPacks(ctx); err != nil {

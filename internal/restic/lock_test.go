@@ -131,8 +131,7 @@ func createFakeLock(repo restic.SaverUnpacked, t time.Time, pid int) (restic.ID,
 }
 
 func removeLock(repo restic.Repository, id restic.ID) error {
-	h := backend.Handle{Type: restic.LockFile, Name: id.String()}
-	return repo.Backend().Remove(context.TODO(), h)
+	return repo.RemoveUnpacked(context.TODO(), restic.LockFile, id)
 }
 
 var staleLockTests = []struct {
@@ -318,7 +317,7 @@ func TestLockRefreshStaleMissing(t *testing.T) {
 	lockID := checkSingleLock(t, repo)
 
 	// refresh must fail if lock was removed
-	rtest.OK(t, repo.Backend().Remove(context.TODO(), backend.Handle{Type: restic.LockFile, Name: lockID.String()}))
+	rtest.OK(t, repo.RemoveUnpacked(context.TODO(), restic.LockFile, lockID))
 	time.Sleep(time.Millisecond)
 	err = lock.RefreshStaleLock(context.TODO())
 	rtest.Assert(t, err == restic.ErrRemovedLock, "unexpected error, expected %v, got %v", restic.ErrRemovedLock, err)

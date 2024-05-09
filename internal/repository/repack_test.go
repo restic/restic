@@ -167,7 +167,7 @@ func repack(t *testing.T, repo restic.Repository, packs restic.IDSet, blobs rest
 	}
 
 	for id := range repackedBlobs {
-		err = repo.Backend().Remove(context.TODO(), backend.Handle{Type: restic.PackFile, Name: id.String()})
+		err = repo.RemoveUnpacked(context.TODO(), restic.PackFile, id)
 		if err != nil {
 			t.Fatal(err)
 		}
