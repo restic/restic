@@ -181,7 +181,9 @@ func (b *Backend) Load(ctx context.Context, h backend.Handle, length int, offset
 
 	inCache, err = b.loadFromCache(h, length, offset, consumer)
 	if inCache {
-		debug.Log("error loading %v from cache: %v", h, err)
+		if err != nil {
+			debug.Log("error loading %v from cache: %v", h, err)
+		}
 		return err
 	}
 
