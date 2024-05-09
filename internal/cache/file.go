@@ -32,7 +32,7 @@ func (c *Cache) canBeCached(t backend.FileType) bool {
 	return ok
 }
 
-// Load returns a reader that yields the contents of the file with the
+// load returns a reader that yields the contents of the file with the
 // given handle. rd must be closed after use. If an error is returned, the
 // ReadCloser is nil.
 func (c *Cache) load(h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
@@ -78,8 +78,8 @@ func (c *Cache) load(h backend.Handle, length int, offset int64) (io.ReadCloser,
 	return util.LimitReadCloser(f, int64(length)), nil
 }
 
-// Save saves a file in the cache.
-func (c *Cache) Save(h backend.Handle, rd io.Reader) error {
+// save saves a file in the cache.
+func (c *Cache) save(h backend.Handle, rd io.Reader) error {
 	debug.Log("Save to cache: %v", h)
 	if rd == nil {
 		return errors.New("Save() called with nil reader")
@@ -139,13 +139,17 @@ func (c *Cache) Save(h backend.Handle, rd io.Reader) error {
 	return errors.WithStack(err)
 }
 
-// Remove deletes a file. When the file is not cache, no error is returned.
+// remove deletes a file. When the file is not cached, no error is returned.
 func (c *Cache) remove(h backend.Handle) error {
-	if !c.Has(h) {
+	if !c.canBeCached(h.Type) {
 		return nil
 	}
 
-	return fs.Remove(c.filename(h))
+	err := fs.Remove(c.filename(h))
+	if errors.Is(err, os.ErrNotExist) {
+		err = nil
+	}
+	return err
 }
 
 // Clear removes all files of type t from the cache that are not contained in

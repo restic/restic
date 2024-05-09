@@ -79,10 +79,9 @@ func (b *Backend) Save(ctx context.Context, h backend.Handle, rd backend.RewindR
 		return err
 	}
 
-	err = b.Cache.Save(h, rd)
+	err = b.Cache.save(h, rd)
 	if err != nil {
 		debug.Log("unable to save %v to cache: %v", h, err)
-		_ = b.Cache.remove(h)
 		return err
 	}
 
@@ -120,7 +119,7 @@ func (b *Backend) cacheFile(ctx context.Context, h backend.Handle) error {
 	if !b.Cache.Has(h) {
 		// nope, it's still not in the cache, pull it from the repo and save it
 		err := b.Backend.Load(ctx, h, 0, 0, func(rd io.Reader) error {
-			return b.Cache.Save(h, rd)
+			return b.Cache.save(h, rd)
 		})
 		if err != nil {
 			// try to remove from the cache, ignore errors
@@ -198,13 +197,9 @@ func (b *Backend) Stat(ctx context.Context, h backend.Handle) (backend.FileInfo,
 	debug.Log("cache Stat(%v)", h)
 
 	fi, err := b.Backend.Stat(ctx, h)
-	if err != nil {
-		if b.Backend.IsNotExist(err) {
-			// try to remove from the cache, ignore errors
-			_ = b.Cache.remove(h)
-		}
-
-		return fi, err
+	if err != nil && b.Backend.IsNotExist(err) {
+		// try to remove from the cache, ignore errors
+		_ = b.Cache.remove(h)
 	}
 
 	return fi, err

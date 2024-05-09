@@ -30,7 +30,7 @@ func generateRandomFiles(t testing.TB, tpe backend.FileType, c *Cache) restic.ID
 			t.Errorf("index %v present before save", id)
 		}
 
-		err := c.Save(h, bytes.NewReader(buf))
+		err := c.save(h, bytes.NewReader(buf))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -151,7 +151,7 @@ func TestFileLoad(t *testing.T) {
 		Type: restic.PackFile,
 		Name: id.String(),
 	}
-	if err := c.Save(h, bytes.NewReader(data)); err != nil {
+	if err := c.save(h, bytes.NewReader(data)); err != nil {
 		t.Fatalf("Save() returned error: %v", err)
 	}
 
@@ -237,7 +237,7 @@ func TestFileSaveConcurrent(t *testing.T) {
 	}
 
 	for i := 0; i < nproc/2; i++ {
-		g.Go(func() error { return c.Save(h, bytes.NewReader(data)) })
+		g.Go(func() error { return c.save(h, bytes.NewReader(data)) })
 
 		// Can't use load because only the main goroutine may call t.Fatal.
 		g.Go(func() error {
@@ -280,7 +280,7 @@ func TestFileSaveAfterDamage(t *testing.T) {
 		Type: restic.PackFile,
 		Name: id.String(),
 	}
-	if err := c.Save(h, bytes.NewReader(data)); err == nil {
+	if err := c.save(h, bytes.NewReader(data)); err == nil {
 		t.Fatal("Missing error when saving to deleted cache directory")
 	}
 }
