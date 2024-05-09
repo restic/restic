@@ -57,6 +57,11 @@ type Repository interface {
 	// LoadUnpacked loads and decrypts the file with the given type and ID.
 	LoadUnpacked(ctx context.Context, t FileType, id ID) (data []byte, err error)
 	SaveUnpacked(context.Context, FileType, []byte) (ID, error)
+
+	// LoadRaw reads all data stored in the backend for the file with id and filetype t.
+	// If the backend returns data that does not match the id, then the buffer is returned
+	// along with an error that is a restic.ErrInvalidData error.
+	LoadRaw(ctx context.Context, t FileType, id ID) (data []byte, err error)
 }
 
 type FileType = backend.FileType

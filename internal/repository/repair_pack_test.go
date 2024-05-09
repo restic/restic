@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/backend"
+	backendtest "github.com/restic/restic/internal/backend/test"
 	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -24,7 +25,7 @@ func listBlobs(repo restic.Repository) restic.BlobSet {
 }
 
 func replaceFile(t *testing.T, repo restic.Repository, h backend.Handle, damage func([]byte) []byte) {
-	buf, err := backend.LoadAll(context.TODO(), nil, repo.Backend(), h)
+	buf, err := backendtest.LoadAll(context.TODO(), repo.Backend(), h)
 	test.OK(t, err)
 	buf = damage(buf)
 	test.OK(t, repo.Backend().Remove(context.TODO(), h))

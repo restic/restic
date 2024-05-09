@@ -492,8 +492,9 @@ func examinePack(ctx context.Context, opts DebugExamineOptions, repo restic.Repo
 	}
 	Printf("  file size is %v\n", fi.Size)
 
-	buf, err := backend.LoadAll(ctx, nil, repo.Backend(), h)
-	if err != nil {
+	buf, err := repo.LoadRaw(ctx, restic.PackFile, id)
+	// also process damaged pack files
+	if buf == nil {
 		return err
 	}
 	gotID := restic.Hash(buf)

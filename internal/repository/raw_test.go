@@ -1,4 +1,4 @@
-package backend_test
+package repository_test
 
 import (
 	"bytes"
@@ -10,6 +10,8 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/mem"
 	"github.com/restic/restic/internal/backend/mock"
+	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -19,9 +21,10 @@ const MiB = 1 << 20
 
 func TestLoadAll(t *testing.T) {
 	b := mem.New()
-	var buf []byte
+	repo, err := repository.New(b, repository.Options{})
+	rtest.OK(t, err)
 
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 5; i++ {
 		data := rtest.Random(23+i, rand.Intn(MiB)+500*KiB)
 
 		id := restic.Hash(data)
@@ -29,7 +32,7 @@ func TestLoadAll(t *testing.T) {
 		err := b.Save(context.TODO(), h, backend.NewByteReader(data, b.Hasher()))
 		rtest.OK(t, err)
 
-		buf, err := backend.LoadAll(context.TODO(), buf, b, backend.Handle{Type: backend.PackFile, Name: id.String()})
+		buf, err := repo.LoadRaw(context.TODO(), backend.PackFile, id)
 		rtest.OK(t, err)
 
 		if len(buf) != len(data) {
@@ -42,16 +45,6 @@ func TestLoadAll(t *testing.T) {
 			continue
 		}
 	}
-}
-
-func save(t testing.TB, be backend.Backend, buf []byte) backend.Handle {
-	id := restic.Hash(buf)
-	h := backend.Handle{Name: id.String(), Type: backend.PackFile}
-	err := be.Save(context.TODO(), h, backend.NewByteReader(buf, be.Hasher()))
-	if err != nil {
-		t.Fatal(err)
-	}
-	return h
 }
 
 type quickRetryBackend struct {
@@ -69,6 +62,8 @@ func (be *quickRetryBackend) Load(ctx context.Context, h backend.Handle, length 
 
 func TestLoadAllBroken(t *testing.T) {
 	b := mock.NewBackend()
+	repo, err := repository.New(b, repository.Options{})
+	rtest.OK(t, err)
 
 	data := rtest.Random(23, rand.Intn(MiB)+500*KiB)
 	id := restic.Hash(data)
@@ -80,70 +75,17 @@ func TestLoadAllBroken(t *testing.T) {
 	}
 
 	// must fail on first try
-	_, err := backend.LoadAll(context.TODO(), nil, b, backend.Handle{Type: backend.PackFile, Name: id.String()})
-	if err == nil {
-		t.Fatalf("missing expected error")
-	}
+	_, err = repo.LoadRaw(context.TODO(), backend.PackFile, id)
+	rtest.Assert(t, errors.Is(err, restic.ErrInvalidData), "missing expected ErrInvalidData error, got %v", err)
 
 	// must return the broken data after a retry
 	be := &quickRetryBackend{Backend: b}
-	buf, err := backend.LoadAll(context.TODO(), nil, be, backend.Handle{Type: backend.PackFile, Name: id.String()})
+	repo, err = repository.New(be, repository.Options{})
 	rtest.OK(t, err)
+	buf, err := repo.LoadRaw(context.TODO(), backend.PackFile, id)
+	rtest.Assert(t, errors.Is(err, restic.ErrInvalidData), "missing expected ErrInvalidData error, got %v", err)
 
 	if !bytes.Equal(buf, data) {
 		t.Fatalf("wrong data returned")
-	}
-}
-
-func TestLoadAllAppend(t *testing.T) {
-	b := mem.New()
-
-	h1 := save(t, b, []byte("foobar test string"))
-	randomData := rtest.Random(23, rand.Intn(MiB)+500*KiB)
-	h2 := save(t, b, randomData)
-
-	var tests = []struct {
-		handle backend.Handle
-		buf    []byte
-		want   []byte
-	}{
-		{
-			handle: h1,
-			buf:    nil,
-			want:   []byte("foobar test string"),
-		},
-		{
-			handle: h1,
-			buf:    []byte("xxx"),
-			want:   []byte("foobar test string"),
-		},
-		{
-			handle: h2,
-			buf:    nil,
-			want:   randomData,
-		},
-		{
-			handle: h2,
-			buf:    make([]byte, 0, 200),
-			want:   randomData,
-		},
-		{
-			handle: h2,
-			buf:    []byte("foobarbaz"),
-			want:   randomData,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run("", func(t *testing.T) {
-			buf, err := backend.LoadAll(context.TODO(), test.buf, b, test.handle)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			if !bytes.Equal(buf, test.want) {
-				t.Errorf("wrong data returned, want %q, got %q", test.want, buf)
-			}
-		})
 	}
 }

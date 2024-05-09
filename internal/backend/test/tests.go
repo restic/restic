@@ -36,6 +36,19 @@ func beTest(ctx context.Context, be backend.Backend, h backend.Handle) (bool, er
 	return err == nil, err
 }
 
+func LoadAll(ctx context.Context, be backend.Backend, h backend.Handle) ([]byte, error) {
+	var buf []byte
+	err := be.Load(ctx, h, 0, 0, func(rd io.Reader) error {
+		var err error
+		buf, err = io.ReadAll(rd)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return buf, nil
+}
+
 // TestStripPasswordCall tests that the StripPassword method of a factory can be called without crashing.
 // It does not verify whether passwords are removed correctly
 func (s *Suite[C]) TestStripPasswordCall(_ *testing.T) {
@@ -94,7 +107,7 @@ func (s *Suite[C]) TestConfig(t *testing.T) {
 	var testString = "Config"
 
 	// create config and read it back
-	_, err := backend.LoadAll(context.TODO(), nil, b, backend.Handle{Type: backend.ConfigFile})
+	_, err := LoadAll(context.TODO(), b, backend.Handle{Type: backend.ConfigFile})
 	if err == nil {
 		t.Fatalf("did not get expected error for non-existing config")
 	}
@@ -110,7 +123,7 @@ func (s *Suite[C]) TestConfig(t *testing.T) {
 	// same config
 	for _, name := range []string{"", "foo", "bar", "0000000000000000000000000000000000000000000000000000000000000000"} {
 		h := backend.Handle{Type: backend.ConfigFile, Name: name}
-		buf, err := backend.LoadAll(context.TODO(), nil, b, h)
+		buf, err := LoadAll(context.TODO(), b, h)
 		if err != nil {
 			t.Fatalf("unable to read config with name %q: %+v", name, err)
 		}
@@ -519,7 +532,7 @@ func (s *Suite[C]) TestSave(t *testing.T) {
 		err := b.Save(context.TODO(), h, backend.NewByteReader(data, b.Hasher()))
 		test.OK(t, err)
 
-		buf, err := backend.LoadAll(context.TODO(), nil, b, h)
+		buf, err := LoadAll(context.TODO(), b, h)
 		test.OK(t, err)
 		if len(buf) != len(data) {
 			t.Fatalf("number of bytes does not match, want %v, got %v", len(data), len(buf))
@@ -821,7 +834,7 @@ func (s *Suite[C]) TestBackend(t *testing.T) {
 
 			// test Load()
 			h := backend.Handle{Type: tpe, Name: ts.id}
-			buf, err := backend.LoadAll(context.TODO(), nil, b, h)
+			buf, err := LoadAll(context.TODO(), b, h)
 			test.OK(t, err)
 			test.Equals(t, ts.data, string(buf))
 

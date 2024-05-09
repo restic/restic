@@ -12,12 +12,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/mem"
+	backendtest "github.com/restic/restic/internal/backend/test"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
 )
 
 func loadAndCompare(t testing.TB, be backend.Backend, h backend.Handle, data []byte) {
-	buf, err := backend.LoadAll(context.TODO(), nil, be, h)
+	buf, err := backendtest.LoadAll(context.TODO(), be, h)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -140,7 +141,7 @@ func TestErrorBackend(t *testing.T) {
 	loadTest := func(wg *sync.WaitGroup, be backend.Backend) {
 		defer wg.Done()
 
-		buf, err := backend.LoadAll(context.TODO(), nil, be, h)
+		buf, err := backendtest.LoadAll(context.TODO(), be, h)
 		if err == testErr {
 			return
 		}
@@ -164,39 +165,4 @@ func TestErrorBackend(t *testing.T) {
 	}
 
 	wg.Wait()
-}
-
-func TestBackendRemoveBroken(t *testing.T) {
-	be := mem.New()
-	c := TestNewCache(t)
-
-	h, data := randomData(5234142)
-	// save directly in backend
-	save(t, be, h, data)
-
-	// prime cache with broken copy
-	broken := append([]byte{}, data...)
-	broken[0] ^= 0xff
-	err := c.Save(h, bytes.NewReader(broken))
-	test.OK(t, err)
-
-	// loadall retries if broken data was returned
-	buf, err := backend.LoadAll(context.TODO(), nil, c.Wrap(be), h)
-	test.OK(t, err)
-
-	if !bytes.Equal(buf, data) {
-		t.Fatalf("wrong data returned")
-	}
-
-	// check that the cache now contains the correct data
-	rd, err := c.load(h, 0, 0)
-	defer func() {
-		_ = rd.Close()
-	}()
-	test.OK(t, err)
-	cached, err := io.ReadAll(rd)
-	test.OK(t, err)
-	if !bytes.Equal(cached, data) {
-		t.Fatalf("wrong data cache")
-	}
 }

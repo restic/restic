@@ -9,13 +9,13 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/local"
 	"github.com/restic/restic/internal/crypto"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -259,7 +259,7 @@ func TestRepositoryLoadUnpackedBroken(t *testing.T) {
 	if err == nil {
 		t.Fatal("missing expected error")
 	}
-	rtest.Assert(t, strings.Contains(err.Error(), "invalid data returned"), "unexpected error: %v", err)
+	rtest.Assert(t, errors.Is(err, restic.ErrInvalidData), "unexpected error: %v", err)
 }
 
 type damageOnceBackend struct {
