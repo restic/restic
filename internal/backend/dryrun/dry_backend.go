@@ -46,11 +46,6 @@ func (be *Backend) Connections() uint {
 	return be.b.Connections()
 }
 
-// Location returns the location of the backend.
-func (be *Backend) Location() string {
-	return "DRY:" + be.b.Location()
-}
-
 // Delete removes all data in the backend.
 func (be *Backend) Delete(_ context.Context) error {
 	return nil

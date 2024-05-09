@@ -197,11 +197,6 @@ func (be *Backend) Connections() uint {
 	return be.connections
 }
 
-// Location returns this backend's location (the bucket name).
-func (be *Backend) Location() string {
-	return be.Join(be.bucketName, be.prefix)
-}
-
 // Hasher may return a hash function for calculating a content hash for the backend
 func (be *Backend) Hasher() hash.Hash {
 	return md5.New()

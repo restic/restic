@@ -14,10 +14,6 @@ import (
 // the context package need not be wrapped, as context cancellation is checked
 // separately by the retrying logic.
 type Backend interface {
-	// Location returns a string that describes the type and location of the
-	// repository.
-	Location() string
-
 	// Connections returns the maximum number of concurrent backend operations.
 	Connections() uint
 

@@ -222,11 +222,6 @@ func (be *MemoryBackend) Connections() uint {
 	return connectionCount
 }
 
-// Location returns the location of the backend (RAM).
-func (be *MemoryBackend) Location() string {
-	return "RAM"
-}
-
 // Hasher may return a hash function for calculating a content hash for the backend
 func (be *MemoryBackend) Hasher() hash.Hash {
 	return xxhash.New()

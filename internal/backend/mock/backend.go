@@ -21,7 +21,6 @@ type Backend struct {
 	RemoveFn           func(ctx context.Context, h backend.Handle) error
 	DeleteFn           func(ctx context.Context) error
 	ConnectionsFn      func() uint
-	LocationFn         func() string
 	HasherFn           func() hash.Hash
 	HasAtomicReplaceFn func() bool
 }
@@ -47,15 +46,6 @@ func (m *Backend) Connections() uint {
 	}
 
 	return m.ConnectionsFn()
-}
-
-// Location returns a location string.
-func (m *Backend) Location() string {
-	if m.LocationFn == nil {
-		return ""
-	}
-
-	return m.LocationFn()
 }
 
 // Hasher may return a hash function for calculating a content hash for the backend

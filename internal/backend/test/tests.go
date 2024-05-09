@@ -88,17 +88,6 @@ func (s *Suite[C]) TestCreateWithConfig(t *testing.T) {
 	}
 }
 
-// TestLocation tests that a location string is returned.
-func (s *Suite[C]) TestLocation(t *testing.T) {
-	b := s.open(t)
-	defer s.close(t, b)
-
-	l := b.Location()
-	if l == "" {
-		t.Fatalf("invalid location string %q", l)
-	}
-}
-
 // TestConfig saves and loads a config from the backend.
 func (s *Suite[C]) TestConfig(t *testing.T) {
 	b := s.open(t)
