@@ -3,7 +3,6 @@ package migrations
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 
@@ -89,11 +88,7 @@ func (m *UpgradeRepoV2) Apply(ctx context.Context, repo restic.Repository) error
 	h := backend.Handle{Type: restic.ConfigFile}
 
 	// read raw config file and save it to a temp dir, just in case
-	var rawConfigFile []byte
-	err = repo.Backend().Load(ctx, h, 0, 0, func(rd io.Reader) (err error) {
-		rawConfigFile, err = io.ReadAll(rd)
-		return err
-	})
+	rawConfigFile, err := repo.LoadRaw(ctx, restic.ConfigFile, restic.ID{})
 	if err != nil {
 		return fmt.Errorf("load config file failed: %w", err)
 	}

@@ -316,10 +316,11 @@ func loadBlobs(ctx context.Context, opts DebugExamineOptions, repo restic.Reposi
 	if err != nil {
 		panic(err)
 	}
-	be := repo.Backend()
-	h := backend.Handle{
-		Name: packID.String(),
-		Type: restic.PackFile,
+
+	pack, err := repo.LoadRaw(ctx, restic.PackFile, packID)
+	// allow processing broken pack files
+	if pack == nil {
+		return err
 	}
 
 	wg, ctx := errgroup.WithContext(ctx)
@@ -331,19 +332,11 @@ func loadBlobs(ctx context.Context, opts DebugExamineOptions, repo restic.Reposi
 	wg.Go(func() error {
 		for _, blob := range list {
 			Printf("      loading blob %v at %v (length %v)\n", blob.ID, blob.Offset, blob.Length)
-			buf := make([]byte, blob.Length)
-			err := be.Load(ctx, h, int(blob.Length), int64(blob.Offset), func(rd io.Reader) error {
-				n, err := io.ReadFull(rd, buf)
-				if err != nil {
-					return fmt.Errorf("read error after %d bytes: %v", n, err)
-				}
-				return nil
-			})
-			if err != nil {
-				Warnf("error read: %v\n", err)
+			if int(blob.Offset+blob.Length) > len(pack) {
+				Warnf("skipping truncated blob\n")
 				continue
 			}
-
+			buf := pack[blob.Offset : blob.Offset+blob.Length]
 			key := repo.Key()
 
 			nonce, plaintext := buf[:key.NonceSize()], buf[key.NonceSize():]
