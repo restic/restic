@@ -608,12 +608,12 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 		// failed to load the pack file, return as further checks cannot succeed anyways
 		debug.Log("  error streaming pack (partial %v): %v", isPartialReadError, err)
 		if isPartialReadError {
-			return &ErrPackData{PackID: id, errs: append(errs, errors.Errorf("partial download error: %w", err))}
+			return &ErrPackData{PackID: id, errs: append(errs, fmt.Errorf("partial download error: %w", err))}
 		}
 
 		// The check command suggests to repair files for which a `ErrPackData` is returned. However, this file
 		// completely failed to download such that there's no point in repairing anything.
-		return errors.Errorf("download error: %w", err)
+		return fmt.Errorf("download error: %w", err)
 	}
 	if !hash.Equal(id) {
 		debug.Log("pack ID does not match, want %v, got %v", id, hash)
