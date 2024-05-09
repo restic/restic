@@ -295,6 +295,7 @@ func (be *damageOnceBackend) Load(ctx context.Context, h backend.Handle, length 
 		return be.Backend.Load(ctx, h, length, offset, fn)
 	}
 
+	h.IsMetadata = false
 	_, retry := be.m.Swap(h, true)
 	if !retry {
 		// return broken data on the first try
@@ -420,4 +421,39 @@ func TestInvalidCompression(t *testing.T) {
 	rtest.Assert(t, err != nil, "missing error")
 	_, err = repository.New(nil, repository.Options{Compression: comp})
 	rtest.Assert(t, err != nil, "missing error")
+}
+
+func TestListPack(t *testing.T) {
+	be := mem.New()
+	repo := repository.TestRepositoryWithBackend(t, &damageOnceBackend{Backend: be}, restic.StableRepoVersion, repository.Options{}).(*repository.Repository)
+	buf := test.Random(42, 1000)
+
+	var wg errgroup.Group
+	repo.StartPackUploader(context.TODO(), &wg)
+	id, _, _, err := repo.SaveBlob(context.TODO(), restic.TreeBlob, buf, restic.ID{}, false)
+	rtest.OK(t, err)
+	rtest.OK(t, repo.Flush(context.Background()))
+
+	// setup cache after saving the blob to make sure that the damageOnceBackend damages the cached data
+	c := cache.TestNewCache(t)
+	repo.UseCache(c)
+
+	// Forcibly cache pack file
+	packID := repo.Index().Lookup(restic.BlobHandle{Type: restic.TreeBlob, ID: id})[0].PackID
+	rtest.OK(t, repo.Backend().Load(context.TODO(), backend.Handle{Type: restic.PackFile, IsMetadata: true, Name: packID.String()}, 0, 0, func(rd io.Reader) error { return nil }))
+
+	// Get size to list pack
+	var size int64
+	rtest.OK(t, repo.List(context.TODO(), restic.PackFile, func(id restic.ID, sz int64) error {
+		if id == packID {
+			size = sz
+		}
+		return nil
+	}))
+
+	blobs, _, err := repo.ListPack(context.TODO(), packID, size)
+	rtest.OK(t, err)
+	rtest.Assert(t, len(blobs) == 1 && blobs[0].ID == id, "unexpected blobs in pack: %v", blobs)
+
+	rtest.Assert(t, !c.Has(backend.Handle{Type: restic.PackFile, Name: packID.String()}), "tree pack should no longer be cached as ListPack does not set IsMetadata in the backend.Handle")
 }
