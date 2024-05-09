@@ -40,7 +40,7 @@ func (b *Backend) Remove(ctx context.Context, h backend.Handle) error {
 		return err
 	}
 
-	err = b.Cache.remove(h)
+	_, err = b.Cache.remove(h)
 	return err
 }
 
@@ -124,7 +124,7 @@ func (b *Backend) cacheFile(ctx context.Context, h backend.Handle) error {
 		})
 		if err != nil {
 			// try to remove from the cache, ignore errors
-			_ = b.Cache.remove(h)
+			_, _ = b.Cache.remove(h)
 		}
 		return err
 	}
@@ -197,7 +197,7 @@ func (b *Backend) Stat(ctx context.Context, h backend.Handle) (backend.FileInfo,
 	fi, err := b.Backend.Stat(ctx, h)
 	if err != nil && b.Backend.IsNotExist(err) {
 		// try to remove from the cache, ignore errors
-		_ = b.Cache.remove(h)
+		_, _ = b.Cache.remove(h)
 	}
 
 	return fi, err

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -20,6 +21,8 @@ type Cache struct {
 	path    string
 	Base    string
 	Created bool
+
+	forgotten sync.Map
 }
 
 const dirMode = 0700

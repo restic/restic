@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -140,20 +141,33 @@ func (c *Cache) save(h backend.Handle, rd io.Reader) error {
 }
 
 func (c *Cache) Forget(h backend.Handle) error {
-	return c.remove(h)
+	h.IsMetadata = false
+
+	if _, ok := c.forgotten.Load(h); ok {
+		// Delete a file at most once while restic runs.
+		// This prevents repeatedly caching and forgetting broken files
+		return fmt.Errorf("circuit breaker prevents repeated deletion of cached file %v", h)
+	}
+
+	removed, err := c.remove(h)
+	if removed {
+		c.forgotten.Store(h, struct{}{})
+	}
+	return err
 }
 
 // remove deletes a file. When the file is not cached, no error is returned.
-func (c *Cache) remove(h backend.Handle) error {
+func (c *Cache) remove(h backend.Handle) (bool, error) {
 	if !c.canBeCached(h.Type) {
-		return nil
+		return false, nil
 	}
 
 	err := fs.Remove(c.filename(h))
+	removed := err == nil
 	if errors.Is(err, os.ErrNotExist) {
 		err = nil
 	}
-	return err
+	return removed, err
 }
 
 // Clear removes all files of type t from the cache that are not contained in
