@@ -285,10 +285,6 @@ func getUsedBlobs(ctx context.Context, repo restic.Repository, ignoreSnapshots r
 
 	err = restic.FindUsedBlobs(ctx, repo, snapshotTrees, usedBlobs, bar)
 	if err != nil {
-		if repo.Backend().IsNotExist(err) {
-			return nil, errors.Fatal("unable to load a tree from the repository: " + err.Error())
-		}
-
 		return nil, err
 	}
 	return usedBlobs, nil
