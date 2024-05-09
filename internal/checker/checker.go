@@ -725,6 +725,16 @@ func (c *Checker) ReadPacks(ctx context.Context, packs map[restic.ID]int64, p *p
 				}
 
 				err := checkPack(ctx, c.repo, ps.id, ps.blobs, ps.size, bufRd, dec)
+				if err != nil {
+					// retry pack verification to detect transient errors
+					err2 := checkPack(ctx, c.repo, ps.id, ps.blobs, ps.size, bufRd, dec)
+					if err2 != nil {
+						err = err2
+					} else {
+						err = fmt.Errorf("second check successful, original error %w", err)
+					}
+				}
+
 				p.Add(1)
 				if err == nil {
 					continue
