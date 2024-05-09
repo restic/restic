@@ -296,8 +296,8 @@ func (be *damageOnceBackend) Load(ctx context.Context, h backend.Handle, length 
 	}
 
 	h.IsMetadata = false
-	_, retry := be.m.Swap(h, true)
-	if !retry {
+	_, isRetry := be.m.LoadOrStore(h, true)
+	if !isRetry {
 		// return broken data on the first try
 		offset++
 	}

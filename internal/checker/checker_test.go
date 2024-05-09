@@ -333,7 +333,7 @@ type errorOnceBackend struct {
 }
 
 func (b *errorOnceBackend) Load(ctx context.Context, h backend.Handle, length int, offset int64, consumer func(rd io.Reader) error) error {
-	_, isRetry := b.m.Swap(h, struct{}{})
+	_, isRetry := b.m.LoadOrStore(h, struct{}{})
 	return b.Backend.Load(ctx, h, length, offset, func(rd io.Reader) error {
 		if !isRetry && h.Type != restic.ConfigFile {
 			return consumer(errorReadCloser{rd})
