@@ -99,6 +99,7 @@ func (s *Suite[C]) TestConfig(t *testing.T) {
 		t.Fatalf("did not get expected error for non-existing config")
 	}
 	test.Assert(t, b.IsNotExist(err), "IsNotExist() did not recognize error from LoadAll(): %v", err)
+	test.Assert(t, b.IsPermanentError(err), "IsPermanentError() did not recognize error from LoadAll(): %v", err)
 
 	err = b.Save(context.TODO(), backend.Handle{Type: backend.ConfigFile}, backend.NewByteReader([]byte(testString), b.Hasher()))
 	if err != nil {
@@ -135,6 +136,7 @@ func (s *Suite[C]) TestLoad(t *testing.T) {
 		t.Fatalf("Load() did not return an error for non-existing blob")
 	}
 	test.Assert(t, b.IsNotExist(err), "IsNotExist() did not recognize non-existing blob: %v", err)
+	test.Assert(t, b.IsPermanentError(err), "IsPermanentError() did not recognize non-existing blob: %v", err)
 
 	length := rand.Intn(1<<24) + 2000
 
@@ -181,8 +183,12 @@ func (s *Suite[C]) TestLoad(t *testing.T) {
 		}
 
 		getlen := l
-		if l >= len(d) && rand.Float32() >= 0.5 {
-			getlen = 0
+		if l >= len(d) {
+			if rand.Float32() >= 0.5 {
+				getlen = 0
+			} else {
+				getlen = len(d)
+			}
 		}
 
 		if l > 0 && l < len(d) {
@@ -223,6 +229,18 @@ func (s *Suite[C]) TestLoad(t *testing.T) {
 			t.Errorf("Load(%d, %d) returned wrong bytes", l, o)
 			continue
 		}
+	}
+
+	// test error checking for partial and fully out of bounds read
+	// only test for length > 0 as we currently do not need strict out of bounds handling for length==0
+	for _, offset := range []int{length - 99, length - 50, length, length + 100} {
+		err = b.Load(context.TODO(), handle, 100, int64(offset), func(rd io.Reader) (ierr error) {
+			_, ierr = io.ReadAll(rd)
+			return ierr
+		})
+		test.Assert(t, err != nil, "Load() did not return error on out of bounds read! o %v, l %v, filelength %v", offset, 100, length)
+		test.Assert(t, b.IsPermanentError(err), "IsPermanentError() did not recognize out of range read: %v", err)
+		test.Assert(t, !b.IsNotExist(err), "IsNotExist() must not recognize out of range read: %v", err)
 	}
 
 	test.OK(t, b.Remove(context.TODO(), handle))
@@ -762,6 +780,7 @@ func (s *Suite[C]) TestBackend(t *testing.T) {
 	defer s.close(t, b)
 
 	test.Assert(t, !b.IsNotExist(nil), "IsNotExist() recognized nil error")
+	test.Assert(t, !b.IsPermanentError(nil), "IsPermanentError() recognized nil error")
 
 	for _, tpe := range []backend.FileType{
 		backend.PackFile, backend.KeyFile, backend.LockFile,
@@ -782,11 +801,13 @@ func (s *Suite[C]) TestBackend(t *testing.T) {
 			_, err = b.Stat(context.TODO(), h)
 			test.Assert(t, err != nil, "blob data could be extracted before creation")
 			test.Assert(t, b.IsNotExist(err), "IsNotExist() did not recognize Stat() error: %v", err)
+			test.Assert(t, b.IsPermanentError(err), "IsPermanentError() did not recognize Stat() error: %v", err)
 
 			// try to read not existing blob
 			err = testLoad(b, h)
 			test.Assert(t, err != nil, "blob could be read before creation")
 			test.Assert(t, b.IsNotExist(err), "IsNotExist() did not recognize Load() error: %v", err)
+			test.Assert(t, b.IsPermanentError(err), "IsPermanentError() did not recognize Load() error: %v", err)
 
 			// try to get string out, should fail
 			ret, err = beTest(context.TODO(), b, h)
