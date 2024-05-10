@@ -605,11 +605,13 @@ func checkPackInner(ctx context.Context, r restic.Repository, id restic.ID, blob
 			if err != nil {
 				return &partialReadError{err}
 			}
+			curPos += minHdrStart - curPos
 		}
 
 		// read remainder, which should be the pack header
 		var err error
-		hdrBuf, err = io.ReadAll(bufRd)
+		hdrBuf = make([]byte, int(size-int64(curPos)))
+		_, err = io.ReadFull(bufRd, hdrBuf)
 		if err != nil {
 			return &partialReadError{err}
 		}
