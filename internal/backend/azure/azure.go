@@ -167,6 +167,20 @@ func (be *Backend) IsNotExist(err error) bool {
 	return bloberror.HasCode(err, bloberror.BlobNotFound)
 }
 
+func (be *Backend) IsPermanentError(err error) bool {
+	if be.IsNotExist(err) {
+		return true
+	}
+
+	var aerr *azcore.ResponseError
+	if errors.As(err, &aerr) {
+		if aerr.StatusCode == http.StatusRequestedRangeNotSatisfiable || aerr.StatusCode == http.StatusUnauthorized || aerr.StatusCode == http.StatusForbidden {
+			return true
+		}
+	}
+	return false
+}
+
 // Join combines path components with slashes.
 func (be *Backend) Join(p ...string) string {
 	return path.Join(p...)
@@ -311,6 +325,11 @@ func (be *Backend) openReader(ctx context.Context, h backend.Handle, length int,
 
 	if err != nil {
 		return nil, err
+	}
+
+	if length > 0 && (resp.ContentLength == nil || *resp.ContentLength != int64(length)) {
+		_ = resp.Body.Close()
+		return nil, &azcore.ResponseError{ErrorCode: "restic-file-too-short", StatusCode: http.StatusRequestedRangeNotSatisfiable}
 	}
 
 	return resp.Body, err

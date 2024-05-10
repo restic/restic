@@ -229,6 +229,21 @@ func (be *Backend) IsNotExist(err error) bool {
 	return errors.As(err, &e) && e.Code == "NoSuchKey"
 }
 
+func (be *Backend) IsPermanentError(err error) bool {
+	if be.IsNotExist(err) {
+		return true
+	}
+
+	var merr minio.ErrorResponse
+	if errors.As(err, &merr) {
+		if merr.Code == "InvalidRange" || merr.Code == "AccessDenied" {
+			return true
+		}
+	}
+
+	return false
+}
+
 // Join combines path components with slashes.
 func (be *Backend) Join(p ...string) string {
 	return path.Join(p...)
@@ -384,9 +399,16 @@ func (be *Backend) openReader(ctx context.Context, h backend.Handle, length int,
 	}
 
 	coreClient := minio.Core{Client: be.client}
-	rd, _, _, err := coreClient.GetObject(ctx, be.cfg.Bucket, objName, opts)
+	rd, info, _, err := coreClient.GetObject(ctx, be.cfg.Bucket, objName, opts)
 	if err != nil {
 		return nil, err
+	}
+
+	if length > 0 {
+		if info.Size > 0 && info.Size != int64(length) {
+			_ = rd.Close()
+			return nil, minio.ErrorResponse{Code: "InvalidRange", Message: "restic-file-too-short"}
+		}
 	}
 
 	return rd, err
