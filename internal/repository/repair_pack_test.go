@@ -24,12 +24,12 @@ func listBlobs(repo restic.Repository) restic.BlobSet {
 	return blobs
 }
 
-func replaceFile(t *testing.T, repo *repository.Repository, h backend.Handle, damage func([]byte) []byte) {
-	buf, err := backendtest.LoadAll(context.TODO(), repo.Backend(), h)
+func replaceFile(t *testing.T, be backend.Backend, h backend.Handle, damage func([]byte) []byte) {
+	buf, err := backendtest.LoadAll(context.TODO(), be, h)
 	test.OK(t, err)
 	buf = damage(buf)
-	test.OK(t, repo.Backend().Remove(context.TODO(), h))
-	test.OK(t, repo.Backend().Save(context.TODO(), h, backend.NewByteReader(buf, repo.Backend().Hasher())))
+	test.OK(t, be.Remove(context.TODO(), h))
+	test.OK(t, be.Save(context.TODO(), h, backend.NewByteReader(buf, be.Hasher())))
 }
 
 func TestRepairBrokenPack(t *testing.T) {
@@ -39,17 +39,17 @@ func TestRepairBrokenPack(t *testing.T) {
 func testRepairBrokenPack(t *testing.T, version uint) {
 	tests := []struct {
 		name   string
-		damage func(t *testing.T, repo *repository.Repository, packsBefore restic.IDSet) (restic.IDSet, restic.BlobSet)
+		damage func(t *testing.T, repo *repository.Repository, be backend.Backend, packsBefore restic.IDSet) (restic.IDSet, restic.BlobSet)
 	}{
 		{
 			"valid pack",
-			func(t *testing.T, repo *repository.Repository, packsBefore restic.IDSet) (restic.IDSet, restic.BlobSet) {
+			func(t *testing.T, repo *repository.Repository, be backend.Backend, packsBefore restic.IDSet) (restic.IDSet, restic.BlobSet) {
 				return packsBefore, restic.NewBlobSet()
 			},
 		},
 		{
 			"broken pack",
-			func(t *testing.T, repo *repository.Repository, packsBefore restic.IDSet) (restic.IDSet, restic.BlobSet) {
+			func(t *testing.T, repo *repository.Repository, be backend.Backend, packsBefore restic.IDSet) (restic.IDSet, restic.BlobSet) {
 				wrongBlob := createRandomWrongBlob(t, repo)
 				damagedPacks := findPacksForBlobs(t, repo, restic.NewBlobSet(wrongBlob))
 				return damagedPacks, restic.NewBlobSet(wrongBlob)
@@ -57,10 +57,10 @@ func testRepairBrokenPack(t *testing.T, version uint) {
 		},
 		{
 			"partially broken pack",
-			func(t *testing.T, repo *repository.Repository, packsBefore restic.IDSet) (restic.IDSet, restic.BlobSet) {
+			func(t *testing.T, repo *repository.Repository, be backend.Backend, packsBefore restic.IDSet) (restic.IDSet, restic.BlobSet) {
 				// damage one of the pack files
 				damagedID := packsBefore.List()[0]
-				replaceFile(t, repo, backend.Handle{Type: backend.PackFile, Name: damagedID.String()},
+				replaceFile(t, be, backend.Handle{Type: backend.PackFile, Name: damagedID.String()},
 					func(buf []byte) []byte {
 						buf[0] ^= 0xff
 						return buf
@@ -80,10 +80,10 @@ func testRepairBrokenPack(t *testing.T, version uint) {
 			},
 		}, {
 			"truncated pack",
-			func(t *testing.T, repo *repository.Repository, packsBefore restic.IDSet) (restic.IDSet, restic.BlobSet) {
+			func(t *testing.T, repo *repository.Repository, be backend.Backend, packsBefore restic.IDSet) (restic.IDSet, restic.BlobSet) {
 				// damage one of the pack files
 				damagedID := packsBefore.List()[0]
-				replaceFile(t, repo, backend.Handle{Type: backend.PackFile, Name: damagedID.String()},
+				replaceFile(t, be, backend.Handle{Type: backend.PackFile, Name: damagedID.String()},
 					func(buf []byte) []byte {
 						buf = buf[0:10]
 						return buf
@@ -104,7 +104,7 @@ func testRepairBrokenPack(t *testing.T, version uint) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// disable verification to allow adding corrupted blobs to the repository
-			repo := repository.TestRepositoryWithBackend(t, nil, version, repository.Options{NoExtraVerify: true})
+			repo, be := repository.TestRepositoryWithBackend(t, nil, version, repository.Options{NoExtraVerify: true})
 
 			seed := time.Now().UnixNano()
 			rand.Seed(seed)
@@ -114,7 +114,7 @@ func testRepairBrokenPack(t *testing.T, version uint) {
 			packsBefore := listPacks(t, repo)
 			blobsBefore := listBlobs(repo)
 
-			toRepair, damagedBlobs := test.damage(t, repo, packsBefore)
+			toRepair, damagedBlobs := test.damage(t, repo, be, packsBefore)
 
 			rtest.OK(t, repository.RepairPacks(context.TODO(), repo, toRepair, &progress.NoopPrinter{}))
 			// reload index

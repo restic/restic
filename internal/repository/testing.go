@@ -46,7 +46,7 @@ const testChunkerPol = chunker.Pol(0x3DA3358B4DC173)
 // TestRepositoryWithBackend returns a repository initialized with a test
 // password. If be is nil, an in-memory backend is used. A constant polynomial
 // is used for the chunker and low-security test parameters.
-func TestRepositoryWithBackend(t testing.TB, be backend.Backend, version uint, opts Options) *Repository {
+func TestRepositoryWithBackend(t testing.TB, be backend.Backend, version uint, opts Options) (*Repository, backend.Backend) {
 	t.Helper()
 	TestUseLowSecurityKDFParameters(t)
 	restic.TestDisableCheckPolynomial(t)
@@ -69,7 +69,7 @@ func TestRepositoryWithBackend(t testing.TB, be backend.Backend, version uint, o
 		t.Fatalf("TestRepository(): initialize repo failed: %v", err)
 	}
 
-	return repo
+	return repo, be
 }
 
 // TestRepository returns a repository initialized with a test password on an
@@ -78,10 +78,11 @@ func TestRepositoryWithBackend(t testing.TB, be backend.Backend, version uint, o
 // instead. The directory is not removed, but left there for inspection.
 func TestRepository(t testing.TB) *Repository {
 	t.Helper()
-	return TestRepositoryWithVersion(t, 0)
+	repo, _ := TestRepositoryWithVersion(t, 0)
+	return repo
 }
 
-func TestRepositoryWithVersion(t testing.TB, version uint) *Repository {
+func TestRepositoryWithVersion(t testing.TB, version uint) (*Repository, backend.Backend) {
 	t.Helper()
 	dir := os.Getenv("RESTIC_TEST_REPO")
 	opts := Options{}
@@ -103,15 +104,15 @@ func TestRepositoryWithVersion(t testing.TB, version uint) *Repository {
 	return TestRepositoryWithBackend(t, nil, version, opts)
 }
 
-func TestFromFixture(t testing.TB, repoFixture string) (*Repository, func()) {
+func TestFromFixture(t testing.TB, repoFixture string) (*Repository, backend.Backend, func()) {
 	repodir, cleanup := test.Env(t, repoFixture)
-	repo := TestOpenLocal(t, repodir)
+	repo, be := TestOpenLocal(t, repodir)
 
-	return repo, cleanup
+	return repo, be, cleanup
 }
 
 // TestOpenLocal opens a local repository.
-func TestOpenLocal(t testing.TB, dir string) *Repository {
+func TestOpenLocal(t testing.TB, dir string) (*Repository, backend.Backend) {
 	var be backend.Backend
 	be, err := local.Open(context.TODO(), local.Config{Path: dir, Connections: 2})
 	if err != nil {
@@ -120,7 +121,7 @@ func TestOpenLocal(t testing.TB, dir string) *Repository {
 
 	be = retry.New(be, 3, nil, nil)
 
-	return TestOpenBackend(t, be)
+	return TestOpenBackend(t, be), be
 }
 
 func TestOpenBackend(t testing.TB, be backend.Backend) *Repository {

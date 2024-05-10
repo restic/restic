@@ -13,7 +13,7 @@ import (
 )
 
 func TestUpgradeRepoV2(t *testing.T) {
-	repo := TestRepositoryWithVersion(t, 1)
+	repo, _ := TestRepositoryWithVersion(t, 1)
 	if repo.Config().Version != 1 {
 		t.Fatal("test repo has wrong version")
 	}
@@ -55,7 +55,7 @@ func TestUpgradeRepoV2Failure(t *testing.T) {
 		Backend:                   be,
 	}
 
-	repo := TestRepositoryWithBackend(t, be, 1, Options{})
+	repo, _ := TestRepositoryWithBackend(t, be, 1, Options{})
 	if repo.Config().Version != 1 {
 		t.Fatal("test repo has wrong version")
 	}
