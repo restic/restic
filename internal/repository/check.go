@@ -51,7 +51,7 @@ func CheckPack(ctx context.Context, r *Repository, id restic.ID, blobs []restic.
 	return err
 }
 
-func checkPackInner(ctx context.Context, r restic.Repository, id restic.ID, blobs []restic.Blob, size int64, bufRd *bufio.Reader, dec *zstd.Decoder) error {
+func checkPackInner(ctx context.Context, r *Repository, id restic.ID, blobs []restic.Blob, size int64, bufRd *bufio.Reader, dec *zstd.Decoder) error {
 
 	debug.Log("checking pack %v", id.String())
 
@@ -84,7 +84,7 @@ func checkPackInner(ctx context.Context, r restic.Repository, id restic.ID, blob
 	var hash restic.ID
 	var hdrBuf []byte
 	h := backend.Handle{Type: backend.PackFile, Name: id.String()}
-	err := r.Backend().Load(ctx, h, int(size), 0, func(rd io.Reader) error {
+	err := r.be.Load(ctx, h, int(size), 0, func(rd io.Reader) error {
 		hrd := hashing.NewReader(rd, sha256.New())
 		bufRd.Reset(hrd)
 
