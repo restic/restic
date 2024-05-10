@@ -91,11 +91,11 @@ func TestCheckRepo(t *testing.T) {
 }
 
 func TestMissingPack(t *testing.T) {
-	repo, _, cleanup := repository.TestFromFixture(t, checkerTestData)
+	repo, be, cleanup := repository.TestFromFixture(t, checkerTestData)
 	defer cleanup()
 
 	packID := restic.TestParseID("657f7fb64f6a854fff6fe9279998ee09034901eded4e6db9bcee0e59745bbce6")
-	test.OK(t, repo.RemoveUnpacked(context.TODO(), restic.PackFile, packID))
+	test.OK(t, be.Remove(context.TODO(), backend.Handle{Type: restic.PackFile, Name: packID.String()}))
 
 	chkr := checker.New(repo, false)
 	hints, errs := chkr.LoadIndex(context.TODO(), nil)
@@ -117,13 +117,13 @@ func TestMissingPack(t *testing.T) {
 }
 
 func TestUnreferencedPack(t *testing.T) {
-	repo, _, cleanup := repository.TestFromFixture(t, checkerTestData)
+	repo, be, cleanup := repository.TestFromFixture(t, checkerTestData)
 	defer cleanup()
 
 	// index 3f1a only references pack 60e0
 	packID := "60e0438dcb978ec6860cc1f8c43da648170ee9129af8f650f876bad19f8f788e"
 	indexID := restic.TestParseID("3f1abfcb79c6f7d0a3be517d2c83c8562fba64ef2c8e9a3544b4edaf8b5e3b44")
-	test.OK(t, repo.RemoveUnpacked(context.TODO(), restic.IndexFile, indexID))
+	test.OK(t, be.Remove(context.TODO(), backend.Handle{Type: restic.IndexFile, Name: indexID.String()}))
 
 	chkr := checker.New(repo, false)
 	hints, errs := chkr.LoadIndex(context.TODO(), nil)

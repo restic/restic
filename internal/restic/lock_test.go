@@ -312,7 +312,7 @@ func TestLockRefreshStale(t *testing.T) {
 }
 
 func TestLockRefreshStaleMissing(t *testing.T) {
-	repo := repository.TestRepository(t)
+	repo, be := repository.TestRepositoryWithVersion(t, 0)
 	restic.TestSetLockTimeout(t, 5*time.Millisecond)
 
 	lock, err := restic.NewLock(context.TODO(), repo)
@@ -320,7 +320,7 @@ func TestLockRefreshStaleMissing(t *testing.T) {
 	lockID := checkSingleLock(t, repo)
 
 	// refresh must fail if lock was removed
-	rtest.OK(t, repo.RemoveUnpacked(context.TODO(), restic.LockFile, lockID))
+	rtest.OK(t, be.Remove(context.TODO(), backend.Handle{Type: restic.LockFile, Name: lockID.String()}))
 	time.Sleep(time.Millisecond)
 	err = lock.RefreshStaleLock(context.TODO())
 	rtest.Assert(t, err == restic.ErrRemovedLock, "unexpected error, expected %v, got %v", restic.ErrRemovedLock, err)
