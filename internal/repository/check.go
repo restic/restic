@@ -88,10 +88,10 @@ func checkPackInner(ctx context.Context, r restic.Repository, id restic.ID, blob
 		hrd := hashing.NewReader(rd, sha256.New())
 		bufRd.Reset(hrd)
 
-		it := NewPackBlobIterator(id, newBufReader(bufRd), 0, blobs, r.Key(), dec)
+		it := newPackBlobIterator(id, newBufReader(bufRd), 0, blobs, r.Key(), dec)
 		for {
 			val, err := it.Next()
-			if err == ErrPackEOF {
+			if err == errPackEOF {
 				break
 			} else if err != nil {
 				return &partialReadError{err}
