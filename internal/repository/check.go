@@ -40,6 +40,11 @@ func (e *partialReadError) Error() string {
 func CheckPack(ctx context.Context, r *Repository, id restic.ID, blobs []restic.Blob, size int64, bufRd *bufio.Reader, dec *zstd.Decoder) error {
 	err := checkPackInner(ctx, r, id, blobs, size, bufRd, dec)
 	if err != nil {
+		if r.Cache != nil {
+			// ignore error as there's not much we can do here
+			_ = r.Cache.Forget(backend.Handle{Type: restic.PackFile, Name: id.String()})
+		}
+
 		// retry pack verification to detect transient errors
 		err2 := checkPackInner(ctx, r, id, blobs, size, bufRd, dec)
 		if err2 != nil {
