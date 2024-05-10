@@ -579,11 +579,6 @@ func (r *Repository) flushPacks(ctx context.Context) error {
 	return err
 }
 
-// Backend returns the backend for the repository.
-func (r *Repository) Backend() backend.Backend {
-	return r.be
-}
-
 func (r *Repository) Connections() uint {
 	return r.be.Connections()
 }

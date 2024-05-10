@@ -16,9 +16,6 @@ var ErrInvalidData = errors.New("invalid data returned")
 // Repository stores data in a backend. It provides high-level functions and
 // transparently encrypts/decrypts data.
 type Repository interface {
-
-	// Backend returns the backend used by the repository
-	Backend() backend.Backend
 	// Connections returns the maximum number of concurrent backend operations
 	Connections() uint
 
