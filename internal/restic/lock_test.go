@@ -190,13 +190,16 @@ func TestLockStale(t *testing.T) {
 	}
 }
 
-func lockExists(repo restic.Repository, t testing.TB, id restic.ID) bool {
-	h := backend.Handle{Type: restic.LockFile, Name: id.String()}
-	_, err := repo.Backend().Stat(context.TODO(), h)
-	if err != nil && !repo.Backend().IsNotExist(err) {
-		t.Fatal(err)
-	}
-	return err == nil
+func lockExists(repo restic.Repository, t testing.TB, lockID restic.ID) bool {
+	var exists bool
+	rtest.OK(t, repo.List(context.TODO(), restic.LockFile, func(id restic.ID, size int64) error {
+		if id == lockID {
+			exists = true
+		}
+		return nil
+	}))
+
+	return exists
 }
 
 func TestLockWithStaleLock(t *testing.T) {
