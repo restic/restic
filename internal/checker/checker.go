@@ -256,8 +256,10 @@ func isS3Legacy(b backend.Backend) bool {
 func (c *Checker) Packs(ctx context.Context, errChan chan<- error) {
 	defer close(errChan)
 
-	if isS3Legacy(c.repo.Backend()) {
-		errChan <- ErrLegacyLayout
+	if r, ok := c.repo.(*repository.Repository); ok {
+		if isS3Legacy(repository.AsS3Backend(r)) {
+			errChan <- ErrLegacyLayout
+		}
 	}
 
 	debug.Log("checking for %d packs", len(c.packs))
