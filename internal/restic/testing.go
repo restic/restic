@@ -190,7 +190,7 @@ func ParseDurationOrPanic(s string) Duration {
 
 // TestLoadAllSnapshots returns a list of all snapshots in the repo.
 // If a snapshot ID is in excludeIDs, it will not be included in the result.
-func TestLoadAllSnapshots(ctx context.Context, repo Repository, excludeIDs IDSet) (snapshots Snapshots, err error) {
+func TestLoadAllSnapshots(ctx context.Context, repo ListerLoaderUnpacked, excludeIDs IDSet) (snapshots Snapshots, err error) {
 	err = ForAllSnapshots(ctx, repo, repo, excludeIDs, func(id ID, sn *Snapshot, err error) error {
 		if err != nil {
 			return err

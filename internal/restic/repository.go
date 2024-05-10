@@ -89,6 +89,18 @@ type SaverUnpacked interface {
 	SaveUnpacked(context.Context, FileType, []byte) (ID, error)
 }
 
+// RemoverUnpacked allows removing an unpacked blob
+type RemoverUnpacked interface {
+	// Connections returns the maximum number of concurrent backend operations
+	Connections() uint
+	RemoveUnpacked(ctx context.Context, t FileType, id ID) error
+}
+
+type SaverRemoverUnpacked interface {
+	SaverUnpacked
+	RemoverUnpacked
+}
+
 type PackBlobs struct {
 	PackID ID
 	Blobs  []Blob
@@ -111,7 +123,7 @@ type MasterIndex interface {
 	Each(ctx context.Context, fn func(PackedBlob)) error
 	ListPacks(ctx context.Context, packs IDSet) <-chan PackBlobs
 
-	Save(ctx context.Context, repo Repository, excludePacks IDSet, extraObsolete IDs, opts MasterIndexSaveOpts) error
+	Save(ctx context.Context, repo SaverRemoverUnpacked, excludePacks IDSet, extraObsolete IDs, opts MasterIndexSaveOpts) error
 }
 
 // Lister allows listing files in a backend.
@@ -122,4 +134,10 @@ type Lister interface {
 type ListerLoaderUnpacked interface {
 	Lister
 	LoaderUnpacked
+}
+
+type Unpacked interface {
+	ListerLoaderUnpacked
+	SaverUnpacked
+	RemoverUnpacked
 }

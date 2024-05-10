@@ -35,7 +35,7 @@ type Lock struct {
 	UID       uint32    `json:"uid,omitempty"`
 	GID       uint32    `json:"gid,omitempty"`
 
-	repo   Repository
+	repo   Unpacked
 	lockID *ID
 }
 
@@ -86,14 +86,14 @@ var ErrRemovedLock = errors.New("lock file was removed in the meantime")
 // NewLock returns a new, non-exclusive lock for the repository. If an
 // exclusive lock is already held by another process, it returns an error
 // that satisfies IsAlreadyLocked.
-func NewLock(ctx context.Context, repo Repository) (*Lock, error) {
+func NewLock(ctx context.Context, repo Unpacked) (*Lock, error) {
 	return newLock(ctx, repo, false)
 }
 
 // NewExclusiveLock returns a new, exclusive lock for the repository. If
 // another lock (normal and exclusive) is already held by another process,
 // it returns an error that satisfies IsAlreadyLocked.
-func NewExclusiveLock(ctx context.Context, repo Repository) (*Lock, error) {
+func NewExclusiveLock(ctx context.Context, repo Unpacked) (*Lock, error) {
 	return newLock(ctx, repo, true)
 }
 
@@ -105,7 +105,7 @@ func TestSetLockTimeout(t testing.TB, d time.Duration) {
 	waitBeforeLockCheck = d
 }
 
-func newLock(ctx context.Context, repo Repository, excl bool) (*Lock, error) {
+func newLock(ctx context.Context, repo Unpacked, excl bool) (*Lock, error) {
 	lock := &Lock{
 		Time:      time.Now(),
 		PID:       os.Getpid(),
@@ -389,7 +389,7 @@ func LoadLock(ctx context.Context, repo LoaderUnpacked, id ID) (*Lock, error) {
 }
 
 // RemoveStaleLocks deletes all locks detected as stale from the repository.
-func RemoveStaleLocks(ctx context.Context, repo Repository) (uint, error) {
+func RemoveStaleLocks(ctx context.Context, repo Unpacked) (uint, error) {
 	var processed uint
 	err := ForAllLocks(ctx, repo, nil, func(id ID, lock *Lock, err error) error {
 		if err != nil {
@@ -412,7 +412,7 @@ func RemoveStaleLocks(ctx context.Context, repo Repository) (uint, error) {
 }
 
 // RemoveAllLocks removes all locks forcefully.
-func RemoveAllLocks(ctx context.Context, repo Repository) (uint, error) {
+func RemoveAllLocks(ctx context.Context, repo Unpacked) (uint, error) {
 	var processed uint32
 	err := ParallelList(ctx, repo, LockFile, repo.Connections(), func(ctx context.Context, id ID, _ int64) error {
 		err := repo.RemoveUnpacked(ctx, LockFile, id)

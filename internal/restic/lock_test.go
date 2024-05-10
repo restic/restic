@@ -130,7 +130,7 @@ func createFakeLock(repo restic.SaverUnpacked, t time.Time, pid int) (restic.ID,
 	return restic.SaveJSONUnpacked(context.TODO(), repo, restic.LockFile, &newLock)
 }
 
-func removeLock(repo restic.Repository, id restic.ID) error {
+func removeLock(repo restic.RemoverUnpacked, id restic.ID) error {
 	return repo.RemoveUnpacked(context.TODO(), restic.LockFile, id)
 }
 
@@ -190,7 +190,7 @@ func TestLockStale(t *testing.T) {
 	}
 }
 
-func lockExists(repo restic.Repository, t testing.TB, lockID restic.ID) bool {
+func lockExists(repo restic.Lister, t testing.TB, lockID restic.ID) bool {
 	var exists bool
 	rtest.OK(t, repo.List(context.TODO(), restic.LockFile, func(id restic.ID, size int64) error {
 		if id == lockID {
