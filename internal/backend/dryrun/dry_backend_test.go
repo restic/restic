@@ -96,7 +96,7 @@ func TestDry(t *testing.T) {
 			}
 		case "load":
 			data := ""
-			err = step.be.Load(ctx, handle, 100, 0, func(rd io.Reader) error {
+			err = step.be.Load(ctx, handle, 0, 0, func(rd io.Reader) error {
 				buf, err := io.ReadAll(rd)
 				data = string(buf)
 				return err
