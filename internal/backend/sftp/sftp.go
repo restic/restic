@@ -43,6 +43,8 @@ type SFTP struct {
 
 var _ backend.Backend = &SFTP{}
 
+var errTooShort = fmt.Errorf("file is too short")
+
 func NewFactory() location.Factory {
 	return location.NewLimitedBackendFactory("sftp", ParseConfig, location.NoPassword, limiter.WrapBackendConstructor(Create), limiter.WrapBackendConstructor(Open))
 }
@@ -210,6 +212,10 @@ func (r *SFTP) ReadDir(_ context.Context, dir string) ([]os.FileInfo, error) {
 // IsNotExist returns true if the error is caused by a not existing file.
 func (r *SFTP) IsNotExist(err error) bool {
 	return errors.Is(err, os.ErrNotExist)
+}
+
+func (r *SFTP) IsPermanentError(err error) bool {
+	return r.IsNotExist(err) || errors.Is(err, errTooShort) || errors.Is(err, os.ErrPermission)
 }
 
 func buildSSHCommand(cfg Config) (cmd string, args []string, err error) {
@@ -426,6 +432,18 @@ func (r *SFTP) openReader(_ context.Context, h backend.Handle, length int, offse
 	f, err := r.c.Open(r.Filename(h))
 	if err != nil {
 		return nil, err
+	}
+
+	fi, err := f.Stat()
+	if err != nil {
+		_ = f.Close()
+		return nil, err
+	}
+
+	size := fi.Size()
+	if size < offset+int64(length) {
+		_ = f.Close()
+		return nil, errTooShort
 	}
 
 	if offset > 0 {
