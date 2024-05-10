@@ -145,7 +145,7 @@ func testLoadBlob(t *testing.T, version uint) {
 
 func TestLoadBlobBroken(t *testing.T) {
 	be := mem.New()
-	repo := repository.TestRepositoryWithBackend(t, &damageOnceBackend{Backend: be}, restic.StableRepoVersion, repository.Options{}).(*repository.Repository)
+	repo := repository.TestRepositoryWithBackend(t, &damageOnceBackend{Backend: be}, restic.StableRepoVersion, repository.Options{})
 	buf := test.Random(42, 1000)
 
 	var wg errgroup.Group
@@ -374,7 +374,7 @@ func TestRepositoryIncrementalIndex(t *testing.T) {
 }
 
 func testRepositoryIncrementalIndex(t *testing.T, version uint) {
-	repo := repository.TestRepositoryWithVersion(t, version).(*repository.Repository)
+	repo := repository.TestRepositoryWithVersion(t, version)
 
 	index.IndexFull = func(*index.Index, bool) bool { return true }
 
@@ -425,7 +425,7 @@ func TestInvalidCompression(t *testing.T) {
 
 func TestListPack(t *testing.T) {
 	be := mem.New()
-	repo := repository.TestRepositoryWithBackend(t, &damageOnceBackend{Backend: be}, restic.StableRepoVersion, repository.Options{}).(*repository.Repository)
+	repo := repository.TestRepositoryWithBackend(t, &damageOnceBackend{Backend: be}, restic.StableRepoVersion, repository.Options{})
 	buf := test.Random(42, 1000)
 
 	var wg errgroup.Group

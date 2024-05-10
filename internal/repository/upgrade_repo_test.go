@@ -18,7 +18,7 @@ func TestUpgradeRepoV2(t *testing.T) {
 		t.Fatal("test repo has wrong version")
 	}
 
-	err := UpgradeRepo(context.Background(), repo.(*Repository))
+	err := UpgradeRepo(context.Background(), repo)
 	rtest.OK(t, err)
 }
 
@@ -60,7 +60,7 @@ func TestUpgradeRepoV2Failure(t *testing.T) {
 		t.Fatal("test repo has wrong version")
 	}
 
-	err := UpgradeRepo(context.Background(), repo.(*Repository))
+	err := UpgradeRepo(context.Background(), repo)
 	if err == nil {
 		t.Fatal("expected error returned from Apply(), got nil")
 	}

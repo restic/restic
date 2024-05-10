@@ -17,7 +17,7 @@ func listIndex(t *testing.T, repo restic.Lister) restic.IDSet {
 }
 
 func testRebuildIndex(t *testing.T, readAllPacks bool, damage func(t *testing.T, repo *repository.Repository)) {
-	repo := repository.TestRepository(t).(*repository.Repository)
+	repo := repository.TestRepository(t)
 	createRandomBlobs(t, repo, 4, 0.5, true)
 	createRandomBlobs(t, repo, 5, 0.5, true)
 	indexes := listIndex(t, repo)
@@ -25,7 +25,7 @@ func testRebuildIndex(t *testing.T, readAllPacks bool, damage func(t *testing.T,
 
 	damage(t, repo)
 
-	repo = repository.TestOpenBackend(t, repo.Backend()).(*repository.Repository)
+	repo = repository.TestOpenBackend(t, repo.Backend())
 	rtest.OK(t, repository.RepairIndex(context.TODO(), repo, repository.RepairIndexOptions{
 		ReadAllPacks: readAllPacks,
 	}, &progress.NoopPrinter{}))

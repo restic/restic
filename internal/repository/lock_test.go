@@ -19,7 +19,7 @@ import (
 
 type backendWrapper func(r backend.Backend) (backend.Backend, error)
 
-func openLockTestRepo(t *testing.T, wrapper backendWrapper) restic.Repository {
+func openLockTestRepo(t *testing.T, wrapper backendWrapper) *Repository {
 	be := backend.Backend(mem.New())
 	// initialize repo
 	TestRepositoryWithBackend(t, be, 0, Options{})
@@ -34,7 +34,7 @@ func openLockTestRepo(t *testing.T, wrapper backendWrapper) restic.Repository {
 	return TestOpenBackend(t, be)
 }
 
-func checkedLockRepo(ctx context.Context, t *testing.T, repo restic.Repository, lockerInst *locker, retryLock time.Duration) (*Unlocker, context.Context) {
+func checkedLockRepo(ctx context.Context, t *testing.T, repo *Repository, lockerInst *locker, retryLock time.Duration) (*Unlocker, context.Context) {
 	lock, wrappedCtx, err := lockerInst.Lock(ctx, repo, false, retryLock, func(msg string) {}, func(format string, args ...interface{}) {})
 	test.OK(t, err)
 	test.OK(t, wrappedCtx.Err())

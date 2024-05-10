@@ -24,7 +24,7 @@ func listBlobs(repo restic.Repository) restic.BlobSet {
 	return blobs
 }
 
-func replaceFile(t *testing.T, repo restic.Repository, h backend.Handle, damage func([]byte) []byte) {
+func replaceFile(t *testing.T, repo *repository.Repository, h backend.Handle, damage func([]byte) []byte) {
 	buf, err := backendtest.LoadAll(context.TODO(), repo.Backend(), h)
 	test.OK(t, err)
 	buf = damage(buf)
@@ -39,17 +39,17 @@ func TestRepairBrokenPack(t *testing.T) {
 func testRepairBrokenPack(t *testing.T, version uint) {
 	tests := []struct {
 		name   string
-		damage func(t *testing.T, repo restic.Repository, packsBefore restic.IDSet) (restic.IDSet, restic.BlobSet)
+		damage func(t *testing.T, repo *repository.Repository, packsBefore restic.IDSet) (restic.IDSet, restic.BlobSet)
 	}{
 		{
 			"valid pack",
-			func(t *testing.T, repo restic.Repository, packsBefore restic.IDSet) (restic.IDSet, restic.BlobSet) {
+			func(t *testing.T, repo *repository.Repository, packsBefore restic.IDSet) (restic.IDSet, restic.BlobSet) {
 				return packsBefore, restic.NewBlobSet()
 			},
 		},
 		{
 			"broken pack",
-			func(t *testing.T, repo restic.Repository, packsBefore restic.IDSet) (restic.IDSet, restic.BlobSet) {
+			func(t *testing.T, repo *repository.Repository, packsBefore restic.IDSet) (restic.IDSet, restic.BlobSet) {
 				wrongBlob := createRandomWrongBlob(t, repo)
 				damagedPacks := findPacksForBlobs(t, repo, restic.NewBlobSet(wrongBlob))
 				return damagedPacks, restic.NewBlobSet(wrongBlob)
@@ -57,7 +57,7 @@ func testRepairBrokenPack(t *testing.T, version uint) {
 		},
 		{
 			"partially broken pack",
-			func(t *testing.T, repo restic.Repository, packsBefore restic.IDSet) (restic.IDSet, restic.BlobSet) {
+			func(t *testing.T, repo *repository.Repository, packsBefore restic.IDSet) (restic.IDSet, restic.BlobSet) {
 				// damage one of the pack files
 				damagedID := packsBefore.List()[0]
 				replaceFile(t, repo, backend.Handle{Type: backend.PackFile, Name: damagedID.String()},
@@ -80,7 +80,7 @@ func testRepairBrokenPack(t *testing.T, version uint) {
 			},
 		}, {
 			"truncated pack",
-			func(t *testing.T, repo restic.Repository, packsBefore restic.IDSet) (restic.IDSet, restic.BlobSet) {
+			func(t *testing.T, repo *repository.Repository, packsBefore restic.IDSet) (restic.IDSet, restic.BlobSet) {
 				// damage one of the pack files
 				damagedID := packsBefore.List()[0]
 				replaceFile(t, repo, backend.Handle{Type: backend.PackFile, Name: damagedID.String()},
