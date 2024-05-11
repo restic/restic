@@ -425,25 +425,30 @@ func (r *SFTP) checkNoSpace(dir string, size int64, origErr error) error {
 // Load runs fn with a reader that yields the contents of the file at h at the
 // given offset.
 func (r *SFTP) Load(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
-	return util.DefaultLoad(ctx, h, length, offset, r.openReader, fn)
+	return util.DefaultLoad(ctx, h, length, offset, r.openReader, func(rd io.Reader) error {
+		if length == 0 {
+			return fn(rd)
+		}
+
+		// there is no direct way to efficiently check whether the file is too short
+		// rd is already a LimitedReader which can be used to track the number of bytes read
+		err := fn(rd)
+
+		// check the underlying reader to be agnostic to however fn() handles the returned error
+		_, rderr := rd.Read([]byte{0})
+		if rderr == io.EOF && rd.(*backend.LimitedReadCloser).N != 0 {
+			// file is too short
+			return fmt.Errorf("%w: %v", errTooShort, err)
+		}
+
+		return err
+	})
 }
 
 func (r *SFTP) openReader(_ context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
 	f, err := r.c.Open(r.Filename(h))
 	if err != nil {
 		return nil, err
-	}
-
-	fi, err := f.Stat()
-	if err != nil {
-		_ = f.Close()
-		return nil, err
-	}
-
-	size := fi.Size()
-	if size < offset+int64(length) {
-		_ = f.Close()
-		return nil, errTooShort
 	}
 
 	if offset > 0 {
