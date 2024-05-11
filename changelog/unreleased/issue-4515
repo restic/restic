@@ -1,8 +1,0 @@
-Change: Don't retry to load files that don't exist
-
-Restic used to always retry to load files. It now only retries to load
-files if they exist.
-
-https://github.com/restic/restic/issues/4515
-https://github.com/restic/restic/issues/1523
-https://github.com/restic/restic/pull/4520
