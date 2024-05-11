@@ -61,7 +61,7 @@ func (c *Cache) load(h backend.Handle, length int, offset int64) (io.ReadCloser,
 	if size < offset+int64(length) {
 		_ = f.Close()
 		_ = c.remove(h)
-		return nil, errors.Errorf("cached file %v is too small, removing", h)
+		return nil, errors.Errorf("cached file %v is too short, removing", h)
 	}
 
 	if offset > 0 {

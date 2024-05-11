@@ -204,7 +204,7 @@ func (h *hashedArrayTree) Size() uint {
 func (h *hashedArrayTree) grow() {
 	idx, subIdx := h.index(h.size)
 	if int(idx) == len(h.blockList) {
-		// blockList is too small -> double list and block size
+		// blockList is too short -> double list and block size
 		h.blockSize *= 2
 		h.mask = h.mask*2 + 1
 		h.maskShift++

@@ -444,7 +444,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Reposi
 	// This is equivalent to sorting by unused / total space.
 	// Instead of unused[i] / used[i] > unused[j] / used[j] we use
 	// unused[i] * used[j] > unused[j] * used[i] as uint32*uint32 < uint64
-	// Moreover packs containing trees and too small packs are sorted to the beginning
+	// Moreover packs containing trees and too short packs are sorted to the beginning
 	sort.Slice(repackCandidates, func(i, j int) bool {
 		pi := repackCandidates[i].packInfo
 		pj := repackCandidates[j].packInfo

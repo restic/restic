@@ -239,7 +239,7 @@ func readRecords(rd io.ReaderAt, size int64, bufsize int) ([]byte, int, error) {
 	case hlen == 0:
 		err = InvalidFileError{Message: "header length is zero"}
 	case hlen < crypto.Extension:
-		err = InvalidFileError{Message: "header length is too small"}
+		err = InvalidFileError{Message: "header length is too short"}
 	case int64(hlen) > size-int64(headerLengthSize):
 		err = InvalidFileError{Message: "header is larger than file"}
 	case int64(hlen) > MaxHeaderSize-int64(headerLengthSize):
@@ -263,7 +263,7 @@ func readRecords(rd io.ReaderAt, size int64, bufsize int) ([]byte, int, error) {
 func readHeader(rd io.ReaderAt, size int64) ([]byte, error) {
 	debug.Log("size: %v", size)
 	if size < int64(minFileSize) {
-		err := InvalidFileError{Message: "file is too small"}
+		err := InvalidFileError{Message: "file is too short"}
 		return nil, errors.Wrap(err, "readHeader")
 	}
 
@@ -305,7 +305,7 @@ func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []restic.Blob, hdr
 	}
 
 	if len(buf) < crypto.CiphertextLength(0) {
-		return nil, 0, errors.New("invalid header, too small")
+		return nil, 0, errors.New("invalid header, too short")
 	}
 
 	hdrSize = headerLengthSize + uint32(len(buf))

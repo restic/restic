@@ -299,7 +299,7 @@ func (k *Key) Open(dst, nonce, ciphertext, _ []byte) ([]byte, error) {
 
 	// check for plausible length
 	if len(ciphertext) < k.Overhead() {
-		return nil, errors.Errorf("trying to decrypt invalid data: ciphertext too small")
+		return nil, errors.Errorf("trying to decrypt invalid data: ciphertext too short")
 	}
 
 	l := len(ciphertext) - macSize
