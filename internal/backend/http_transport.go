@@ -89,7 +89,7 @@ func Transport(opts TransportOptions) (http.RoundTripper, error) {
 	if err != nil {
 		panic(err)
 	}
-	if feature.Flag.Enabled(feature.HTTPTimeouts) {
+	if feature.Flag.Enabled(feature.BackendErrorRedesign) {
 		h2.WriteByteTimeout = 120 * time.Second
 		h2.ReadIdleTimeout = 60 * time.Second
 		h2.PingTimeout = 60 * time.Second
@@ -132,7 +132,7 @@ func Transport(opts TransportOptions) (http.RoundTripper, error) {
 	}
 
 	rt := http.RoundTripper(tr)
-	if feature.Flag.Enabled(feature.HTTPTimeouts) {
+	if feature.Flag.Enabled(feature.BackendErrorRedesign) {
 		rt = newWatchdogRoundtripper(rt, 120*time.Second, 128*1024)
 	}
 
