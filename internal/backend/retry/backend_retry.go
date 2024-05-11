@@ -2,6 +2,7 @@ package retry
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/feature"
 )
 
 // Backend retries operations on the backend in case of an error with a
@@ -74,7 +76,16 @@ func (be *Backend) retry(ctx context.Context, msg string, f func() error) error 
 		bo.InitialInterval = 1 * time.Millisecond
 	}
 
-	err := retryNotifyErrorWithSuccess(f,
+	err := retryNotifyErrorWithSuccess(
+		func() error {
+			err := f()
+			// don't retry permanent errors as those very likely cannot be fixed by retrying
+			// TODO remove IsNotExist(err) special cases when removing the feature flag
+			if feature.Flag.Enabled(feature.BackendErrorRedesign) && !errors.Is(err, &backoff.PermanentError{}) && be.Backend.IsPermanentError(err) {
+				return backoff.Permanent(err)
+			}
+			return err
+		},
 		backoff.WithContext(backoff.WithMaxRetries(bo, uint64(be.MaxTries)), ctx),
 		func(err error, d time.Duration) {
 			if be.Report != nil {
@@ -128,11 +139,7 @@ func (be *Backend) Save(ctx context.Context, h backend.Handle, rd backend.Rewind
 func (be *Backend) Load(ctx context.Context, h backend.Handle, length int, offset int64, consumer func(rd io.Reader) error) (err error) {
 	return be.retry(ctx, fmt.Sprintf("Load(%v, %v, %v)", h, length, offset),
 		func() error {
-			err := be.Backend.Load(ctx, h, length, offset, consumer)
-			if be.Backend.IsNotExist(err) {
-				return backoff.Permanent(err)
-			}
-			return err
+			return be.Backend.Load(ctx, h, length, offset, consumer)
 		})
 }
 

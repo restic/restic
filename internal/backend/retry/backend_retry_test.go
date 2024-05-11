@@ -289,7 +289,7 @@ func TestBackendLoadNotExists(t *testing.T) {
 		}
 		return nil, notFound
 	}
-	be.IsNotExistFn = func(err error) bool {
+	be.IsPermanentErrorFn = func(err error) bool {
 		return errors.Is(err, notFound)
 	}
 
@@ -299,7 +299,7 @@ func TestBackendLoadNotExists(t *testing.T) {
 	err := retryBackend.Load(context.TODO(), backend.Handle{}, 0, 0, func(rd io.Reader) (err error) {
 		return nil
 	})
-	test.Assert(t, be.IsNotExistFn(err), "unexpected error %v", err)
+	test.Assert(t, be.IsPermanentErrorFn(err), "unexpected error %v", err)
 	test.Equals(t, 1, attempt)
 }
 
@@ -327,6 +327,36 @@ func TestBackendStatNotExists(t *testing.T) {
 	_, err := retryBackend.Stat(context.TODO(), backend.Handle{})
 	test.Assert(t, be.IsNotExistFn(err), "unexpected error %v", err)
 	test.Equals(t, 1, attempt)
+}
+
+func TestBackendRetryPermanent(t *testing.T) {
+	// retry should not retry if the error matches IsPermanentError
+	notFound := errors.New("not found")
+	attempt := 0
+
+	be := mock.NewBackend()
+	be.IsPermanentErrorFn = func(err error) bool {
+		return errors.Is(err, notFound)
+	}
+
+	TestFastRetries(t)
+	retryBackend := New(be, 2, nil, nil)
+	err := retryBackend.retry(context.TODO(), "test", func() error {
+		attempt++
+		return notFound
+	})
+
+	test.Assert(t, be.IsPermanentErrorFn(err), "unexpected error %v", err)
+	test.Equals(t, 1, attempt)
+
+	attempt = 0
+	err = retryBackend.retry(context.TODO(), "test", func() error {
+		attempt++
+		return errors.New("something")
+	})
+	test.Assert(t, !be.IsPermanentErrorFn(err), "error unexpectedly considered permanent %v", err)
+	test.Equals(t, 3, attempt)
+
 }
 
 func assertIsCanceled(t *testing.T, err error) {
