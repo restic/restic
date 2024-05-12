@@ -4,6 +4,7 @@
 package restic
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -12,9 +13,65 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/test"
 	"golang.org/x/sys/windows"
 )
+
+func TestRestoreSecurityDescriptors(t *testing.T) {
+	t.Parallel()
+	tempDir := t.TempDir()
+	for i, sd := range fs.TestFileSDs {
+		testRestoreSecurityDescriptor(t, sd, tempDir, "file", fmt.Sprintf("testfile%d", i))
+	}
+	for i, sd := range fs.TestDirSDs {
+		testRestoreSecurityDescriptor(t, sd, tempDir, "dir", fmt.Sprintf("testdir%d", i))
+	}
+}
+
+func testRestoreSecurityDescriptor(t *testing.T, sd string, tempDir, fileType, fileName string) {
+	// Decode the encoded string SD to get the security descriptor input in bytes.
+	sdInputBytes, err := base64.StdEncoding.DecodeString(sd)
+	test.OK(t, errors.Wrapf(err, "Error decoding SD for: %s", fileName))
+	// Wrap the security descriptor bytes in windows attributes and convert to generic attributes.
+	genericAttributes, err := WindowsAttrsToGenericAttributes(WindowsAttributes{CreationTime: nil, FileAttributes: nil, SecurityDescriptor: &sdInputBytes})
+	test.OK(t, errors.Wrapf(err, "Error constructing windows attributes for: %s", fileName))
+	// Construct a Node with the generic attributes.
+	expectedNode := getNode(fileName, fileType, genericAttributes)
+
+	// Restore the file/dir and restore the meta data including the security descriptors.
+	testPath, node := restoreAndGetNode(t, tempDir, expectedNode, false)
+	// Get the security descriptor from the node constructed from the file info of the restored path.
+	sdByteFromRestoredNode := getWindowsAttr(t, testPath, node).SecurityDescriptor
+
+	// Get the security descriptor for the test path after the restore.
+	sdBytesFromRestoredPath, err := fs.GetSecurityDescriptor(testPath)
+	test.OK(t, errors.Wrapf(err, "Error while getting the security descriptor for: %s", testPath))
+
+	// Compare the input SD and the SD got from the restored file.
+	fs.CompareSecurityDescriptors(t, testPath, sdInputBytes, *sdBytesFromRestoredPath)
+	// Compare the SD got from node constructed from the restored file info and the SD got directly from the restored file.
+	fs.CompareSecurityDescriptors(t, testPath, *sdByteFromRestoredNode, *sdBytesFromRestoredPath)
+}
+
+func getNode(name string, fileType string, genericAttributes map[GenericAttributeType]json.RawMessage) Node {
+	return Node{
+		Name:              name,
+		Type:              fileType,
+		Mode:              0644,
+		ModTime:           parseTime("2024-02-21 6:30:01.111"),
+		AccessTime:        parseTime("2024-02-22 7:31:02.222"),
+		ChangeTime:        parseTime("2024-02-23 8:32:03.333"),
+		GenericAttributes: genericAttributes,
+	}
+}
+
+func getWindowsAttr(t *testing.T, testPath string, node *Node) WindowsAttributes {
+	windowsAttributes, unknownAttribs, err := genericAttributesToWindowsAttrs(node.GenericAttributes)
+	test.OK(t, errors.Wrapf(err, "Error getting windows attr from generic attr: %s", testPath))
+	test.Assert(t, len(unknownAttribs) == 0, "Unkown attribs found: %s for: %s", unknownAttribs, testPath)
+	return windowsAttributes
+}
 
 func TestRestoreCreationTime(t *testing.T) {
 	t.Parallel()

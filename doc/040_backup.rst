@@ -514,12 +514,17 @@ written, and the next backup needs to write new metadata again. If you really
 want to save the access time for files and directories, you can pass the
 ``--with-atime`` option to the ``backup`` command.
 
+Backing up full security descriptors on Windows is only possible when the user 
+has ``SeBackupPrivilege``privilege or is running as admin. This is a restriction 
+of Windows not restic.
+If either of these conditions are not met, only the owner, group and DACL will 
+be backed up.
+
 Note that ``restic`` does not back up some metadata associated with files. Of
 particular note are:
 
 * File creation date on Unix platforms
 * Inode flags on Unix platforms
-* File ownership and ACLs on Windows
 
 Reading data from a command
 ***************************

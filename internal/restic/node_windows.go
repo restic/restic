@@ -23,6 +23,9 @@ type WindowsAttributes struct {
 	CreationTime *syscall.Filetime `generic:"creation_time"`
 	// FileAttributes is used for storing file attributes for windows files.
 	FileAttributes *uint32 `generic:"file_attributes"`
+	// SecurityDescriptor is used for storing security descriptors which includes
+	// owner, group, discretionary access control list (DACL), system access control list (SACL)
+	SecurityDescriptor *[]byte `generic:"security_descriptor"`
 }
 
 var (
@@ -118,7 +121,7 @@ func (s statT) mtim() syscall.Timespec {
 
 func (s statT) ctim() syscall.Timespec {
 	// Windows does not have the concept of a "change time" in the sense Unix uses it, so we're using the LastWriteTime here.
-	return syscall.NsecToTimespec(s.LastWriteTime.Nanoseconds())
+	return s.mtim()
 }
 
 // restoreGenericAttributes restores generic attributes for Windows
@@ -139,6 +142,11 @@ func (node Node) restoreGenericAttributes(path string, warn func(msg string)) (e
 	if windowsAttributes.FileAttributes != nil {
 		if err := restoreFileAttributes(path, windowsAttributes.FileAttributes); err != nil {
 			errs = append(errs, fmt.Errorf("error restoring file attributes for: %s : %v", path, err))
+		}
+	}
+	if windowsAttributes.SecurityDescriptor != nil {
+		if err := fs.SetSecurityDescriptor(path, windowsAttributes.SecurityDescriptor); err != nil {
+			errs = append(errs, fmt.Errorf("error restoring security descriptor for: %s : %v", path, err))
 		}
 	}
 
@@ -274,11 +282,18 @@ func (node *Node) fillGenericAttributes(path string, fi os.FileInfo, stat *statT
 		// Do not process file attributes and created time for windows directories like
 		// C:, D:
 		// Filepath.Clean(path) ends with '\' for Windows root drives only.
+		var sd *[]byte
+		if node.Type == "file" || node.Type == "dir" {
+			if sd, err = fs.GetSecurityDescriptor(path); err != nil {
+				return true, err
+			}
+		}
 
 		// Add Windows attributes
 		node.GenericAttributes, err = WindowsAttrsToGenericAttributes(WindowsAttributes{
-			CreationTime:   getCreationTime(fi, path),
-			FileAttributes: &stat.FileAttributes,
+			CreationTime:       getCreationTime(fi, path),
+			FileAttributes:     &stat.FileAttributes,
+			SecurityDescriptor: sd,
 		})
 	}
 	return true, err

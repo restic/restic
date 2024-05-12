@@ -48,13 +48,15 @@ const (
 	TypeCreationTime GenericAttributeType = "windows.creation_time"
 	// TypeFileAttributes is the GenericAttributeType used for storing file attributes for windows files within the generic attributes map.
 	TypeFileAttributes GenericAttributeType = "windows.file_attributes"
+	// TypeSecurityDescriptor is the GenericAttributeType used for storing security descriptors including owner, group, discretionary access control list (DACL), system access control list (SACL)) for windows files within the generic attributes map.
+	TypeSecurityDescriptor GenericAttributeType = "windows.security_descriptor"
 
 	// Generic Attributes for other OS types should be defined here.
 )
 
 // init is called when the package is initialized. Any new GenericAttributeTypes being created must be added here as well.
 func init() {
-	storeGenericAttributeType(TypeCreationTime, TypeFileAttributes)
+	storeGenericAttributeType(TypeCreationTime, TypeFileAttributes, TypeSecurityDescriptor)
 }
 
 // genericAttributesForOS maintains a map of known genericAttributesForOS to the OSType
@@ -719,12 +721,7 @@ func (node *Node) fillExtra(path string, fi os.FileInfo, ignoreXattrListError bo
 	allowExtended, err := node.fillGenericAttributes(path, fi, stat)
 	if allowExtended {
 		// Skip processing ExtendedAttributes if allowExtended is false.
-		errEx := node.fillExtendedAttributes(path, ignoreXattrListError)
-		if err == nil {
-			err = errEx
-		} else {
-			debug.Log("Error filling extended attributes for %v at %v : %v", node.Name, path, errEx)
-		}
+		err = errors.CombineErrors(err, node.fillExtendedAttributes(path, ignoreXattrListError))
 	}
 	return err
 }
