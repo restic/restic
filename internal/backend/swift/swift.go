@@ -19,6 +19,7 @@ import (
 	"github.com/restic/restic/internal/backend/util"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/feature"
 
 	"github.com/ncw/swift/v2"
 )
@@ -156,7 +157,7 @@ func (be *beSwift) openReader(ctx context.Context, h backend.Handle, length int,
 		return nil, fmt.Errorf("conn.ObjectOpen: %w", err)
 	}
 
-	if length > 0 {
+	if feature.Flag.Enabled(feature.BackendErrorRedesign) && length > 0 {
 		// get response length, but don't cause backend calls
 		cctx, cancel := context.WithCancel(context.Background())
 		cancel()

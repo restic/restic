@@ -17,6 +17,7 @@ import (
 	"github.com/restic/restic/internal/backend/util"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/feature"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -404,7 +405,7 @@ func (be *Backend) openReader(ctx context.Context, h backend.Handle, length int,
 		return nil, err
 	}
 
-	if length > 0 {
+	if feature.Flag.Enabled(feature.BackendErrorRedesign) && length > 0 {
 		if info.Size > 0 && info.Size != int64(length) {
 			_ = rd.Close()
 			return nil, minio.ErrorResponse{Code: "InvalidRange", Message: "restic-file-too-short"}

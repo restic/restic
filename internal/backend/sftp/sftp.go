@@ -20,6 +20,7 @@ import (
 	"github.com/restic/restic/internal/backend/util"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/feature"
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/pkg/sftp"
@@ -426,7 +427,7 @@ func (r *SFTP) checkNoSpace(dir string, size int64, origErr error) error {
 // given offset.
 func (r *SFTP) Load(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
 	return util.DefaultLoad(ctx, h, length, offset, r.openReader, func(rd io.Reader) error {
-		if length == 0 {
+		if length == 0 || !feature.Flag.Enabled(feature.BackendErrorRedesign) {
 			return fn(rd)
 		}
 

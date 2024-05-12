@@ -17,6 +17,7 @@ import (
 	"github.com/restic/restic/internal/backend/util"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/feature"
 )
 
 // make sure the rest backend implements backend.Backend
@@ -245,7 +246,7 @@ func (b *Backend) openReader(ctx context.Context, h backend.Handle, length int, 
 		return nil, &restError{h, resp.StatusCode, resp.Status}
 	}
 
-	if length > 0 && resp.ContentLength != int64(length) {
+	if feature.Flag.Enabled(feature.BackendErrorRedesign) && length > 0 && resp.ContentLength != int64(length) {
 		return nil, &restError{h, http.StatusRequestedRangeNotSatisfiable, "partial out of bounds read"}
 	}
 
