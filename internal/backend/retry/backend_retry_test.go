@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"strings"
 	"testing"
 	"time"
 
@@ -301,6 +302,57 @@ func TestBackendLoadNotExists(t *testing.T) {
 	})
 	test.Assert(t, be.IsPermanentErrorFn(err), "unexpected error %v", err)
 	test.Equals(t, 1, attempt)
+}
+
+func TestBackendLoadCircuitBreaker(t *testing.T) {
+	// retry should not retry if the error matches IsPermanentError
+	notFound := errors.New("not found")
+	otherError := errors.New("something")
+	attempt := 0
+
+	be := mock.NewBackend()
+	be.IsPermanentErrorFn = func(err error) bool {
+		return errors.Is(err, notFound)
+	}
+	be.OpenReaderFn = func(ctx context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
+		attempt++
+		return nil, otherError
+	}
+	nilRd := func(rd io.Reader) (err error) {
+		return nil
+	}
+
+	TestFastRetries(t)
+	retryBackend := New(be, 2, nil, nil)
+	// trip the circuit breaker for file "other"
+	err := retryBackend.Load(context.TODO(), backend.Handle{Name: "other"}, 0, 0, nilRd)
+	test.Equals(t, otherError, err, "unexpected error")
+	test.Equals(t, 3, attempt)
+
+	attempt = 0
+	err = retryBackend.Load(context.TODO(), backend.Handle{Name: "other"}, 0, 0, nilRd)
+	test.Assert(t, strings.Contains(err.Error(), "circuit breaker open for file"), "expected circuit breaker error, got %v")
+	test.Equals(t, 0, attempt)
+
+	// don't trip for permanent errors
+	be.OpenReaderFn = func(ctx context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
+		attempt++
+		return nil, notFound
+	}
+	err = retryBackend.Load(context.TODO(), backend.Handle{Name: "notfound"}, 0, 0, nilRd)
+	test.Equals(t, notFound, err, "expected circuit breaker to only affect other file, got %v")
+	err = retryBackend.Load(context.TODO(), backend.Handle{Name: "notfound"}, 0, 0, nilRd)
+	test.Equals(t, notFound, err, "persistent error must not trigger circuit breaker, got %v")
+
+	// wait for circuit breaker to expire
+	time.Sleep(5 * time.Millisecond)
+	old := failedLoadExpiry
+	defer func() {
+		failedLoadExpiry = old
+	}()
+	failedLoadExpiry = 3 * time.Millisecond
+	err = retryBackend.Load(context.TODO(), backend.Handle{Name: "other"}, 0, 0, nilRd)
+	test.Equals(t, notFound, err, "expected circuit breaker to reset, got %v")
 }
 
 func TestBackendStatNotExists(t *testing.T) {
