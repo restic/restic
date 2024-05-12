@@ -102,7 +102,12 @@ func startClient(cfg Config) (*SFTP, error) {
 	}()
 
 	// open the SFTP session
-	client, err := sftp.NewClientPipe(rd, wr)
+	client, err := sftp.NewClientPipe(rd, wr,
+		// write multiple packets (32kb) in parallel per file
+		// not strictly necessary as we use ReadFromWithConcurrency
+		sftp.UseConcurrentWrites(true),
+		// increase send buffer per file to 4MB
+		sftp.MaxConcurrentRequestsPerFile(128))
 	if err != nil {
 		return nil, errors.Errorf("unable to start the sftp session, error: %v", err)
 	}
@@ -359,7 +364,7 @@ func (r *SFTP) Save(_ context.Context, h backend.Handle, rd backend.RewindReader
 	}()
 
 	// save data, make sure to use the optimized sftp upload method
-	wbytes, err := f.ReadFrom(rd)
+	wbytes, err := f.ReadFromWithConcurrency(rd, 0)
 	if err != nil {
 		_ = f.Close()
 		err = r.checkNoSpace(dirname, rd.Length(), err)
