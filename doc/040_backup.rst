@@ -673,6 +673,7 @@ environment variables. The following lists these environment variables:
     AZURE_ACCOUNT_KEY                   Account key for Azure
     AZURE_ACCOUNT_SAS                   Shared access signatures (SAS) for Azure
     AZURE_ENDPOINT_SUFFIX               Endpoint suffix for Azure Storage (default: core.windows.net)
+    AZURE_FORCE_CLI_CREDENTIAL          Force the use of Azure CLI credentials for authentication
 
     B2_ACCOUNT_ID                       Account ID or applicationKeyId for Backblaze B2
     B2_ACCOUNT_KEY                      Account Key or applicationKey for Backblaze B2

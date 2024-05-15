@@ -550,16 +550,22 @@ For authentication export one of the following variables:
     # For SAS
     $ export AZURE_ACCOUNT_SAS=<SAS_TOKEN>
 
-For authentication using ``az login`` set the resource group name and ensure the user has
-the minimum permissions of the role assignment ``Storage Blob Data Contributor`` on Azure RBAC.
+For authentication using ``az login`` ensure the user has
+the minimum permissions of the role assignment ``Storage Blob Data Contributor`` on Azure RBAC
+for the storage account.
 
 .. code-block:: console
 
-    $ export AZURE_RESOURCE_GROUP=<RESOURCE_GROUP_NAME>
     $ az login
 
-Alternatively, if run on Azure, restic will automatically uses service accounts configured
+Alternatively, if run on Azure, restic will automatically use service accounts configured
 via the standard environment variables or Workload / Managed Identities.
+
+To enforce the use of the Azure CLI credential when other credentials are present, set the following environment variable:
+
+.. code-block:: console
+
+    $ export AZURE_FORCE_CLI_CREDENTIAL=true
 
 Restic will by default use Azure's global domain ``core.windows.net`` as endpoint suffix.
 You can specify other suffixes as follows:
