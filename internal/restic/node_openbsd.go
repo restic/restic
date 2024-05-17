@@ -13,23 +13,19 @@ func (s statT) atim() syscall.Timespec { return s.Atim }
 func (s statT) mtim() syscall.Timespec { return s.Mtim }
 func (s statT) ctim() syscall.Timespec { return s.Ctim }
 
-// Getxattr is a no-op on openbsd.
-func Getxattr(path, name string) ([]byte, error) {
-	return nil, nil
+// restoreExtendedAttributes is a no-op on openbsd.
+func (node Node) restoreExtendedAttributes(_ string) error {
+	return nil
 }
 
-// Listxattr is a no-op on openbsd.
-func Listxattr(path string) ([]string, error) {
-	return nil, nil
+// fillExtendedAttributes is a no-op on openbsd.
+func (node *Node) fillExtendedAttributes(_ string, _ bool) error {
+	return nil
 }
 
+// IsListxattrPermissionError is a no-op on openbsd.
 func IsListxattrPermissionError(_ error) bool {
 	return false
-}
-
-// Setxattr is a no-op on openbsd.
-func Setxattr(path, name string, data []byte) error {
-	return nil
 }
 
 // restoreGenericAttributes is no-op on openbsd.

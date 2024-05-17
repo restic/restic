@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -205,8 +206,18 @@ func TestNodeRestoreAt(t *testing.T) {
 			var nodePath string
 			if test.ExtendedAttributes != nil {
 				if runtime.GOOS == "windows" {
-					// restic does not support xattrs on windows
-					return
+					// In windows extended attributes are case insensitive and windows returns
+					// the extended attributes in UPPER case.
+					// Update the tests to use UPPER case xattr names for windows.
+					extAttrArr := test.ExtendedAttributes
+					// Iterate through the array using pointers
+					for i := 0; i < len(extAttrArr); i++ {
+						// Get the pointer to the current element
+						namePtr := &extAttrArr[i].Name
+
+						// Modify the value through the pointer
+						*namePtr = strings.ToUpper(*namePtr)
+					}
 				}
 
 				// tempdir might be backed by a filesystem that does not support
