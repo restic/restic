@@ -14,7 +14,7 @@ import (
 )
 
 func testPrune(t *testing.T, opts repository.PruneOptions, errOnUnused bool) {
-	repo := repository.TestRepository(t).(*repository.Repository)
+	repo, be := repository.TestRepositoryWithVersion(t, 0)
 	createRandomBlobs(t, repo, 4, 0.5, true)
 	createRandomBlobs(t, repo, 5, 0.5, true)
 	keep, _ := selectBlobs(t, repo, 0.5)
@@ -37,7 +37,7 @@ func testPrune(t *testing.T, opts repository.PruneOptions, errOnUnused bool) {
 
 	rtest.OK(t, plan.Execute(context.TODO(), &progress.NoopPrinter{}))
 
-	repo = repository.TestOpenBackend(t, repo.Backend()).(*repository.Repository)
+	repo = repository.TestOpenBackend(t, be)
 	checker.TestCheckRepo(t, repo, true)
 
 	if errOnUnused {

@@ -93,11 +93,6 @@ func (b *Local) Connections() uint {
 	return b.Config.Connections
 }
 
-// Location returns this backend's location (the directory name).
-func (b *Local) Location() string {
-	return b.Path
-}
-
 // Hasher may return a hash function for calculating a content hash for the backend
 func (b *Local) Hasher() hash.Hash {
 	return nil

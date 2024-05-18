@@ -121,11 +121,6 @@ func (b *Backend) Connections() uint {
 	return b.connections
 }
 
-// Location returns this backend's location (the server's URL).
-func (b *Backend) Location() string {
-	return b.url.String()
-}
-
 // Hasher may return a hash function for calculating a content hash for the backend
 func (b *Backend) Hasher() hash.Hash {
 	return nil

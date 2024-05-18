@@ -167,7 +167,7 @@ func repack(t *testing.T, repo restic.Repository, packs restic.IDSet, blobs rest
 	}
 
 	for id := range repackedBlobs {
-		err = repo.Backend().Remove(context.TODO(), backend.Handle{Type: restic.PackFile, Name: id.String()})
+		err = repo.RemoveUnpacked(context.TODO(), restic.PackFile, id)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -215,7 +215,7 @@ func TestRepack(t *testing.T) {
 }
 
 func testRepack(t *testing.T, version uint) {
-	repo := repository.TestRepositoryWithVersion(t, version)
+	repo, _ := repository.TestRepositoryWithVersion(t, version)
 
 	seed := time.Now().UnixNano()
 	rand.Seed(seed)
@@ -293,8 +293,8 @@ func (r oneConnectionRepo) Connections() uint {
 }
 
 func testRepackCopy(t *testing.T, version uint) {
-	repo := repository.TestRepositoryWithVersion(t, version)
-	dstRepo := repository.TestRepositoryWithVersion(t, version)
+	repo, _ := repository.TestRepositoryWithVersion(t, version)
+	dstRepo, _ := repository.TestRepositoryWithVersion(t, version)
 
 	// test with minimal possible connection count
 	repoWrapped := &oneConnectionRepo{repo}
@@ -340,7 +340,7 @@ func TestRepackWrongBlob(t *testing.T) {
 
 func testRepackWrongBlob(t *testing.T, version uint) {
 	// disable verification to allow adding corrupted blobs to the repository
-	repo := repository.TestRepositoryWithBackend(t, nil, version, repository.Options{NoExtraVerify: true})
+	repo, _ := repository.TestRepositoryWithBackend(t, nil, version, repository.Options{NoExtraVerify: true})
 
 	seed := time.Now().UnixNano()
 	rand.Seed(seed)
@@ -366,7 +366,7 @@ func TestRepackBlobFallback(t *testing.T) {
 
 func testRepackBlobFallback(t *testing.T, version uint) {
 	// disable verification to allow adding corrupted blobs to the repository
-	repo := repository.TestRepositoryWithBackend(t, nil, version, repository.Options{NoExtraVerify: true})
+	repo, _ := repository.TestRepositoryWithBackend(t, nil, version, repository.Options{NoExtraVerify: true})
 
 	seed := time.Now().UnixNano()
 	rand.Seed(seed)

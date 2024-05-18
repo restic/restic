@@ -15,6 +15,7 @@ import (
 	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
 )
@@ -347,7 +348,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		for err := range errChan {
 			errorsFound = true
 			Warnf("%v\n", err)
-			if err, ok := err.(*checker.ErrPackData); ok {
+			if err, ok := err.(*repository.ErrPackData); ok {
 				salvagePacks = append(salvagePacks, err.PackID)
 			}
 		}

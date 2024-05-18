@@ -20,7 +20,6 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/index"
@@ -475,21 +474,12 @@ func runDebugExamine(ctx context.Context, gopts GlobalOptions, opts DebugExamine
 func examinePack(ctx context.Context, opts DebugExamineOptions, repo restic.Repository, id restic.ID) error {
 	Printf("examine %v\n", id)
 
-	h := backend.Handle{
-		Type: restic.PackFile,
-		Name: id.String(),
-	}
-	fi, err := repo.Backend().Stat(ctx, h)
-	if err != nil {
-		return err
-	}
-	Printf("  file size is %v\n", fi.Size)
-
 	buf, err := repo.LoadRaw(ctx, restic.PackFile, id)
 	// also process damaged pack files
 	if buf == nil {
 		return err
 	}
+	Printf("  file size is %v\n", len(buf))
 	gotID := restic.Hash(buf)
 	if !id.Equal(gotID) {
 		Printf("  wanted hash %v, got %v\n", id, gotID)
@@ -508,7 +498,7 @@ func examinePack(ctx context.Context, opts DebugExamineOptions, repo restic.Repo
 			continue
 		}
 
-		checkPackSize(blobs, fi.Size)
+		checkPackSize(blobs, len(buf))
 
 		err = loadBlobs(ctx, opts, repo, id, blobs)
 		if err != nil {
@@ -521,11 +511,11 @@ func examinePack(ctx context.Context, opts DebugExamineOptions, repo restic.Repo
 	Printf("  ========================================\n")
 	Printf("  inspect the pack itself\n")
 
-	blobs, _, err := repo.ListPack(ctx, id, fi.Size)
+	blobs, _, err := repo.ListPack(ctx, id, int64(len(buf)))
 	if err != nil {
 		return fmt.Errorf("pack %v: %v", id.Str(), err)
 	}
-	checkPackSize(blobs, fi.Size)
+	checkPackSize(blobs, len(buf))
 
 	if !blobsLoaded {
 		return loadBlobs(ctx, opts, repo, id, blobs)
@@ -533,7 +523,7 @@ func examinePack(ctx context.Context, opts DebugExamineOptions, repo restic.Repo
 	return nil
 }
 
-func checkPackSize(blobs []restic.Blob, fileSize int64) {
+func checkPackSize(blobs []restic.Blob, fileSize int) {
 	// track current size and offset
 	var size, offset uint64
 

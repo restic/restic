@@ -36,13 +36,13 @@ var lockerInst = &locker{
 	refreshabilityTimeout: restic.StaleLockTimeout - defaultRefreshInterval*3/2,
 }
 
-func Lock(ctx context.Context, repo restic.Repository, exclusive bool, retryLock time.Duration, printRetry func(msg string), logger func(format string, args ...interface{})) (*Unlocker, context.Context, error) {
+func Lock(ctx context.Context, repo *Repository, exclusive bool, retryLock time.Duration, printRetry func(msg string), logger func(format string, args ...interface{})) (*Unlocker, context.Context, error) {
 	return lockerInst.Lock(ctx, repo, exclusive, retryLock, printRetry, logger)
 }
 
 // Lock wraps the ctx such that it is cancelled when the repository is unlocked
 // cancelling the original context also stops the lock refresh
-func (l *locker) Lock(ctx context.Context, repo restic.Repository, exclusive bool, retryLock time.Duration, printRetry func(msg string), logger func(format string, args ...interface{})) (*Unlocker, context.Context, error) {
+func (l *locker) Lock(ctx context.Context, repo *Repository, exclusive bool, retryLock time.Duration, printRetry func(msg string), logger func(format string, args ...interface{})) (*Unlocker, context.Context, error) {
 
 	lockFn := restic.NewLock
 	if exclusive {
@@ -102,7 +102,7 @@ retryLoop:
 	refreshChan := make(chan struct{})
 	forceRefreshChan := make(chan refreshLockRequest)
 
-	go l.refreshLocks(ctx, repo.Backend(), lockInfo, refreshChan, forceRefreshChan, logger)
+	go l.refreshLocks(ctx, repo.be, lockInfo, refreshChan, forceRefreshChan, logger)
 	go l.monitorLockRefresh(ctx, lockInfo, refreshChan, forceRefreshChan, logger)
 
 	return &Unlocker{lockInfo}, ctx, nil

@@ -621,7 +621,7 @@ func (plan *PrunePlan) Execute(ctx context.Context, printer progress.Printer) (e
 
 // deleteFiles deletes the given fileList of fileType in parallel
 // if ignoreError=true, it will print a warning if there was an error, else it will abort.
-func deleteFiles(ctx context.Context, ignoreError bool, repo restic.Repository, fileList restic.IDSet, fileType restic.FileType, printer progress.Printer) error {
+func deleteFiles(ctx context.Context, ignoreError bool, repo restic.RemoverUnpacked, fileList restic.IDSet, fileType restic.FileType, printer progress.Printer) error {
 	bar := printer.NewCounter("files deleted")
 	defer bar.Done()
 

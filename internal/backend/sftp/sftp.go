@@ -292,11 +292,6 @@ func (r *SFTP) Connections() uint {
 	return r.Config.Connections
 }
 
-// Location returns this backend's location (the directory name).
-func (r *SFTP) Location() string {
-	return r.p
-}
-
 // Hasher may return a hash function for calculating a content hash for the backend
 func (r *SFTP) Hasher() hash.Hash {
 	return nil

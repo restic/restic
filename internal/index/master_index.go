@@ -270,7 +270,7 @@ func (mi *MasterIndex) MergeFinalIndexes() error {
 // Save saves all known indexes to index files, leaving out any
 // packs whose ID is contained in packBlacklist from finalized indexes.
 // It also removes the old index files and those listed in extraObsolete.
-func (mi *MasterIndex) Save(ctx context.Context, repo restic.Repository, excludePacks restic.IDSet, extraObsolete restic.IDs, opts restic.MasterIndexSaveOpts) error {
+func (mi *MasterIndex) Save(ctx context.Context, repo restic.SaverRemoverUnpacked, excludePacks restic.IDSet, extraObsolete restic.IDs, opts restic.MasterIndexSaveOpts) error {
 	p := opts.SaveProgress
 	p.SetMax(uint64(len(mi.Packs(excludePacks))))
 

@@ -353,7 +353,7 @@ func testStreamPack(t *testing.T, version uint) {
 }
 
 func TestBlobVerification(t *testing.T) {
-	repo := TestRepository(t).(*Repository)
+	repo := TestRepository(t)
 
 	type DamageType string
 	const (
@@ -402,7 +402,7 @@ func TestBlobVerification(t *testing.T) {
 }
 
 func TestUnpackedVerification(t *testing.T) {
-	repo := TestRepository(t).(*Repository)
+	repo := TestRepository(t)
 
 	type DamageType string
 	const (

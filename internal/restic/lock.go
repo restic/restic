@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
 
 	"github.com/restic/restic/internal/debug"
@@ -36,7 +35,7 @@ type Lock struct {
 	UID       uint32    `json:"uid,omitempty"`
 	GID       uint32    `json:"gid,omitempty"`
 
-	repo   Repository
+	repo   Unpacked
 	lockID *ID
 }
 
@@ -87,14 +86,14 @@ var ErrRemovedLock = errors.New("lock file was removed in the meantime")
 // NewLock returns a new, non-exclusive lock for the repository. If an
 // exclusive lock is already held by another process, it returns an error
 // that satisfies IsAlreadyLocked.
-func NewLock(ctx context.Context, repo Repository) (*Lock, error) {
+func NewLock(ctx context.Context, repo Unpacked) (*Lock, error) {
 	return newLock(ctx, repo, false)
 }
 
 // NewExclusiveLock returns a new, exclusive lock for the repository. If
 // another lock (normal and exclusive) is already held by another process,
 // it returns an error that satisfies IsAlreadyLocked.
-func NewExclusiveLock(ctx context.Context, repo Repository) (*Lock, error) {
+func NewExclusiveLock(ctx context.Context, repo Unpacked) (*Lock, error) {
 	return newLock(ctx, repo, true)
 }
 
@@ -106,7 +105,7 @@ func TestSetLockTimeout(t testing.TB, d time.Duration) {
 	waitBeforeLockCheck = d
 }
 
-func newLock(ctx context.Context, repo Repository, excl bool) (*Lock, error) {
+func newLock(ctx context.Context, repo Unpacked, excl bool) (*Lock, error) {
 	lock := &Lock{
 		Time:      time.Now(),
 		PID:       os.Getpid(),
@@ -226,7 +225,7 @@ func (l *Lock) Unlock() error {
 		return nil
 	}
 
-	return l.repo.Backend().Remove(context.TODO(), backend.Handle{Type: LockFile, Name: l.lockID.String()})
+	return l.repo.RemoveUnpacked(context.TODO(), LockFile, *l.lockID)
 }
 
 var StaleLockTimeout = 30 * time.Minute
@@ -286,7 +285,7 @@ func (l *Lock) Refresh(ctx context.Context) error {
 	oldLockID := l.lockID
 	l.lockID = &id
 
-	return l.repo.Backend().Remove(context.TODO(), backend.Handle{Type: LockFile, Name: oldLockID.String()})
+	return l.repo.RemoveUnpacked(context.TODO(), LockFile, *oldLockID)
 }
 
 // RefreshStaleLock is an extended variant of Refresh that can also refresh stale lock files.
@@ -315,13 +314,13 @@ func (l *Lock) RefreshStaleLock(ctx context.Context) error {
 	exists, err = l.checkExistence(ctx)
 	if err != nil {
 		// cleanup replacement lock
-		_ = l.repo.Backend().Remove(context.TODO(), backend.Handle{Type: LockFile, Name: id.String()})
+		_ = l.repo.RemoveUnpacked(context.TODO(), LockFile, id)
 		return err
 	}
 
 	if !exists {
 		// cleanup replacement lock
-		_ = l.repo.Backend().Remove(context.TODO(), backend.Handle{Type: LockFile, Name: id.String()})
+		_ = l.repo.RemoveUnpacked(context.TODO(), LockFile, id)
 		return ErrRemovedLock
 	}
 
@@ -332,7 +331,7 @@ func (l *Lock) RefreshStaleLock(ctx context.Context) error {
 	oldLockID := l.lockID
 	l.lockID = &id
 
-	return l.repo.Backend().Remove(context.TODO(), backend.Handle{Type: LockFile, Name: oldLockID.String()})
+	return l.repo.RemoveUnpacked(context.TODO(), LockFile, *oldLockID)
 }
 
 func (l *Lock) checkExistence(ctx context.Context) (bool, error) {
@@ -390,7 +389,7 @@ func LoadLock(ctx context.Context, repo LoaderUnpacked, id ID) (*Lock, error) {
 }
 
 // RemoveStaleLocks deletes all locks detected as stale from the repository.
-func RemoveStaleLocks(ctx context.Context, repo Repository) (uint, error) {
+func RemoveStaleLocks(ctx context.Context, repo Unpacked) (uint, error) {
 	var processed uint
 	err := ForAllLocks(ctx, repo, nil, func(id ID, lock *Lock, err error) error {
 		if err != nil {
@@ -400,7 +399,7 @@ func RemoveStaleLocks(ctx context.Context, repo Repository) (uint, error) {
 		}
 
 		if lock.Stale() {
-			err = repo.Backend().Remove(ctx, backend.Handle{Type: LockFile, Name: id.String()})
+			err = repo.RemoveUnpacked(ctx, LockFile, id)
 			if err == nil {
 				processed++
 			}
@@ -413,10 +412,10 @@ func RemoveStaleLocks(ctx context.Context, repo Repository) (uint, error) {
 }
 
 // RemoveAllLocks removes all locks forcefully.
-func RemoveAllLocks(ctx context.Context, repo Repository) (uint, error) {
+func RemoveAllLocks(ctx context.Context, repo Unpacked) (uint, error) {
 	var processed uint32
 	err := ParallelList(ctx, repo, LockFile, repo.Connections(), func(ctx context.Context, id ID, _ int64) error {
-		err := repo.Backend().Remove(ctx, backend.Handle{Type: LockFile, Name: id.String()})
+		err := repo.RemoveUnpacked(ctx, LockFile, id)
 		if err == nil {
 			atomic.AddUint32(&processed, 1)
 		}

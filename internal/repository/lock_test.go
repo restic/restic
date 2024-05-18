@@ -19,7 +19,7 @@ import (
 
 type backendWrapper func(r backend.Backend) (backend.Backend, error)
 
-func openLockTestRepo(t *testing.T, wrapper backendWrapper) restic.Repository {
+func openLockTestRepo(t *testing.T, wrapper backendWrapper) (*Repository, backend.Backend) {
 	be := backend.Backend(mem.New())
 	// initialize repo
 	TestRepositoryWithBackend(t, be, 0, Options{})
@@ -31,10 +31,10 @@ func openLockTestRepo(t *testing.T, wrapper backendWrapper) restic.Repository {
 		rtest.OK(t, err)
 	}
 
-	return TestOpenBackend(t, be)
+	return TestOpenBackend(t, be), be
 }
 
-func checkedLockRepo(ctx context.Context, t *testing.T, repo restic.Repository, lockerInst *locker, retryLock time.Duration) (*Unlocker, context.Context) {
+func checkedLockRepo(ctx context.Context, t *testing.T, repo *Repository, lockerInst *locker, retryLock time.Duration) (*Unlocker, context.Context) {
 	lock, wrappedCtx, err := lockerInst.Lock(ctx, repo, false, retryLock, func(msg string) {}, func(format string, args ...interface{}) {})
 	test.OK(t, err)
 	test.OK(t, wrappedCtx.Err())
@@ -46,7 +46,7 @@ func checkedLockRepo(ctx context.Context, t *testing.T, repo restic.Repository, 
 
 func TestLock(t *testing.T) {
 	t.Parallel()
-	repo := openLockTestRepo(t, nil)
+	repo, _ := openLockTestRepo(t, nil)
 
 	lock, wrappedCtx := checkedLockRepo(context.Background(), t, repo, lockerInst, 0)
 	lock.Unlock()
@@ -57,7 +57,7 @@ func TestLock(t *testing.T) {
 
 func TestLockCancel(t *testing.T) {
 	t.Parallel()
-	repo := openLockTestRepo(t, nil)
+	repo, _ := openLockTestRepo(t, nil)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -73,8 +73,8 @@ func TestLockCancel(t *testing.T) {
 
 func TestLockConflict(t *testing.T) {
 	t.Parallel()
-	repo := openLockTestRepo(t, nil)
-	repo2 := TestOpenBackend(t, repo.Backend())
+	repo, be := openLockTestRepo(t, nil)
+	repo2 := TestOpenBackend(t, be)
 
 	lock, _, err := Lock(context.Background(), repo, true, 0, func(msg string) {}, func(format string, args ...interface{}) {})
 	test.OK(t, err)
@@ -101,7 +101,7 @@ func (b *writeOnceBackend) Save(ctx context.Context, h backend.Handle, rd backen
 
 func TestLockFailedRefresh(t *testing.T) {
 	t.Parallel()
-	repo := openLockTestRepo(t, func(r backend.Backend) (backend.Backend, error) {
+	repo, _ := openLockTestRepo(t, func(r backend.Backend) (backend.Backend, error) {
 		return &writeOnceBackend{Backend: r}, nil
 	})
 
@@ -138,7 +138,7 @@ func (b *loggingBackend) Save(ctx context.Context, h backend.Handle, rd backend.
 
 func TestLockSuccessfulRefresh(t *testing.T) {
 	t.Parallel()
-	repo := openLockTestRepo(t, func(r backend.Backend) (backend.Backend, error) {
+	repo, _ := openLockTestRepo(t, func(r backend.Backend) (backend.Backend, error) {
 		return &loggingBackend{
 			Backend: r,
 			t:       t,
@@ -190,7 +190,7 @@ func (b *slowBackend) Save(ctx context.Context, h backend.Handle, rd backend.Rew
 func TestLockSuccessfulStaleRefresh(t *testing.T) {
 	t.Parallel()
 	var sb *slowBackend
-	repo := openLockTestRepo(t, func(r backend.Backend) (backend.Backend, error) {
+	repo, _ := openLockTestRepo(t, func(r backend.Backend) (backend.Backend, error) {
 		sb = &slowBackend{Backend: r}
 		return sb, nil
 	})
@@ -238,7 +238,7 @@ func TestLockSuccessfulStaleRefresh(t *testing.T) {
 
 func TestLockWaitTimeout(t *testing.T) {
 	t.Parallel()
-	repo := openLockTestRepo(t, nil)
+	repo, _ := openLockTestRepo(t, nil)
 
 	elock, _, err := Lock(context.TODO(), repo, true, 0, func(msg string) {}, func(format string, args ...interface{}) {})
 	test.OK(t, err)
@@ -260,7 +260,7 @@ func TestLockWaitTimeout(t *testing.T) {
 
 func TestLockWaitCancel(t *testing.T) {
 	t.Parallel()
-	repo := openLockTestRepo(t, nil)
+	repo, _ := openLockTestRepo(t, nil)
 
 	elock, _, err := Lock(context.TODO(), repo, true, 0, func(msg string) {}, func(format string, args ...interface{}) {})
 	test.OK(t, err)
@@ -286,7 +286,7 @@ func TestLockWaitCancel(t *testing.T) {
 
 func TestLockWaitSuccess(t *testing.T) {
 	t.Parallel()
-	repo := openLockTestRepo(t, nil)
+	repo, _ := openLockTestRepo(t, nil)
 
 	elock, _, err := Lock(context.TODO(), repo, true, 0, func(msg string) {}, func(format string, args ...interface{}) {})
 	test.OK(t, err)

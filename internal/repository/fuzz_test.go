@@ -18,7 +18,7 @@ func FuzzSaveLoadBlob(f *testing.F) {
 		}
 
 		id := restic.Hash(blob)
-		repo := TestRepositoryWithVersion(t, 2)
+		repo, _ := TestRepositoryWithVersion(t, 2)
 
 		var wg errgroup.Group
 		repo.StartPackUploader(context.TODO(), &wg)

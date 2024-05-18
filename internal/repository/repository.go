@@ -271,7 +271,7 @@ func (r *Repository) loadBlob(ctx context.Context, blobs []restic.PackedBlob, bu
 			continue
 		}
 
-		it := NewPackBlobIterator(blob.PackID, newByteReader(buf), uint(blob.Offset), []restic.Blob{blob.Blob}, r.key, r.getZstdDecoder())
+		it := newPackBlobIterator(blob.PackID, newByteReader(buf), uint(blob.Offset), []restic.Blob{blob.Blob}, r.key, r.getZstdDecoder())
 		pbv, err := it.Next()
 
 		if err == nil {
@@ -520,6 +520,11 @@ func (r *Repository) verifyUnpacked(buf []byte, t restic.FileType, expected []by
 	return nil
 }
 
+func (r *Repository) RemoveUnpacked(ctx context.Context, t restic.FileType, id restic.ID) error {
+	// TODO prevent everything except removing snapshots for non-repository code
+	return r.be.Remove(ctx, backend.Handle{Type: t, Name: id.String()})
+}
+
 // Flush saves all remaining packs and the index
 func (r *Repository) Flush(ctx context.Context) error {
 	if err := r.flushPacks(ctx); err != nil {
@@ -572,11 +577,6 @@ func (r *Repository) flushPacks(ctx context.Context) error {
 	r.packerWg = nil
 
 	return err
-}
-
-// Backend returns the backend for the repository.
-func (r *Repository) Backend() backend.Backend {
-	return r.be
 }
 
 func (r *Repository) Connections() uint {
@@ -869,7 +869,7 @@ func (r *Repository) List(ctx context.Context, t restic.FileType, fn func(restic
 func (r *Repository) ListPack(ctx context.Context, id restic.ID, size int64) ([]restic.Blob, uint32, error) {
 	h := backend.Handle{Type: restic.PackFile, Name: id.String()}
 
-	entries, hdrSize, err := pack.List(r.Key(), backend.ReaderAt(ctx, r.Backend(), h), size)
+	entries, hdrSize, err := pack.List(r.Key(), backend.ReaderAt(ctx, r.be, h), size)
 	if err != nil {
 		if r.Cache != nil {
 			// ignore error as there is not much we can do here
@@ -877,7 +877,7 @@ func (r *Repository) ListPack(ctx context.Context, id restic.ID, size int64) ([]
 		}
 
 		// retry on error
-		entries, hdrSize, err = pack.List(r.Key(), backend.ReaderAt(ctx, r.Backend(), h), size)
+		entries, hdrSize, err = pack.List(r.Key(), backend.ReaderAt(ctx, r.be, h), size)
 	}
 	return entries, hdrSize, err
 }
@@ -943,7 +943,7 @@ const maxUnusedRange = 1 * 1024 * 1024
 // then LoadBlobsFromPack will abort and not retry it. The buf passed to the callback is only valid within
 // this specific call. The callback must not keep a reference to buf.
 func (r *Repository) LoadBlobsFromPack(ctx context.Context, packID restic.ID, blobs []restic.Blob, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
-	return streamPack(ctx, r.Backend().Load, r.LoadBlob, r.getZstdDecoder(), r.key, packID, blobs, handleBlobFn)
+	return streamPack(ctx, r.be.Load, r.LoadBlob, r.getZstdDecoder(), r.key, packID, blobs, handleBlobFn)
 }
 
 func streamPack(ctx context.Context, beLoad backendLoadFn, loadBlobFn loadBlobFn, dec *zstd.Decoder, key *crypto.Key, packID restic.ID, blobs []restic.Blob, handleBlobFn func(blob restic.BlobHandle, buf []byte, err error) error) error {
@@ -1024,11 +1024,11 @@ func streamPackPart(ctx context.Context, beLoad backendLoadFn, loadBlobFn loadBl
 		return errors.Wrap(err, "StreamPack")
 	}
 
-	it := NewPackBlobIterator(packID, newByteReader(data), dataStart, blobs, key, dec)
+	it := newPackBlobIterator(packID, newByteReader(data), dataStart, blobs, key, dec)
 
 	for {
 		val, err := it.Next()
-		if err == ErrPackEOF {
+		if err == errPackEOF {
 			break
 		} else if err != nil {
 			return err
@@ -1093,7 +1093,7 @@ func (b *byteReader) ReadFull(n int) (buf []byte, err error) {
 	return buf, nil
 }
 
-type PackBlobIterator struct {
+type packBlobIterator struct {
 	packID        restic.ID
 	rd            discardReader
 	currentOffset uint
@@ -1105,17 +1105,17 @@ type PackBlobIterator struct {
 	decode []byte
 }
 
-type PackBlobValue struct {
+type packBlobValue struct {
 	Handle    restic.BlobHandle
 	Plaintext []byte
 	Err       error
 }
 
-var ErrPackEOF = errors.New("reached EOF of pack file")
+var errPackEOF = errors.New("reached EOF of pack file")
 
-func NewPackBlobIterator(packID restic.ID, rd discardReader, currentOffset uint,
-	blobs []restic.Blob, key *crypto.Key, dec *zstd.Decoder) *PackBlobIterator {
-	return &PackBlobIterator{
+func newPackBlobIterator(packID restic.ID, rd discardReader, currentOffset uint,
+	blobs []restic.Blob, key *crypto.Key, dec *zstd.Decoder) *packBlobIterator {
+	return &packBlobIterator{
 		packID:        packID,
 		rd:            rd,
 		currentOffset: currentOffset,
@@ -1126,9 +1126,9 @@ func NewPackBlobIterator(packID restic.ID, rd discardReader, currentOffset uint,
 }
 
 // Next returns the next blob, an error or ErrPackEOF if all blobs were read
-func (b *PackBlobIterator) Next() (PackBlobValue, error) {
+func (b *packBlobIterator) Next() (packBlobValue, error) {
 	if len(b.blobs) == 0 {
-		return PackBlobValue{}, ErrPackEOF
+		return packBlobValue{}, errPackEOF
 	}
 
 	entry := b.blobs[0]
@@ -1136,12 +1136,12 @@ func (b *PackBlobIterator) Next() (PackBlobValue, error) {
 
 	skipBytes := int(entry.Offset - b.currentOffset)
 	if skipBytes < 0 {
-		return PackBlobValue{}, fmt.Errorf("overlapping blobs in pack %v", b.packID)
+		return packBlobValue{}, fmt.Errorf("overlapping blobs in pack %v", b.packID)
 	}
 
 	_, err := b.rd.Discard(skipBytes)
 	if err != nil {
-		return PackBlobValue{}, err
+		return packBlobValue{}, err
 	}
 	b.currentOffset = entry.Offset
 
@@ -1151,14 +1151,14 @@ func (b *PackBlobIterator) Next() (PackBlobValue, error) {
 	buf, err := b.rd.ReadFull(int(entry.Length))
 	if err != nil {
 		debug.Log("    read error %v", err)
-		return PackBlobValue{}, fmt.Errorf("readFull: %w", err)
+		return packBlobValue{}, fmt.Errorf("readFull: %w", err)
 	}
 
 	b.currentOffset = entry.Offset + entry.Length
 
 	if int(entry.Length) <= b.key.NonceSize() {
 		debug.Log("%v", b.blobs)
-		return PackBlobValue{}, fmt.Errorf("invalid blob length %v", entry)
+		return packBlobValue{}, fmt.Errorf("invalid blob length %v", entry)
 	}
 
 	// decryption errors are likely permanent, give the caller a chance to skip them
@@ -1186,7 +1186,7 @@ func (b *PackBlobIterator) Next() (PackBlobValue, error) {
 		}
 	}
 
-	return PackBlobValue{entry.BlobHandle, plaintext, err}, nil
+	return packBlobValue{entry.BlobHandle, plaintext, err}, nil
 }
 
 var zeroChunkOnce sync.Once
