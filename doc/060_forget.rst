@@ -182,7 +182,9 @@ The ``forget`` command accepts the following policy options:
 -  ``--keep-yearly n`` for the last ``n`` years which have one or more
    snapshots, keep only the most recent one for each year.
 -  ``--keep-tag`` keep all snapshots which have all tags specified by
-   this option (can be specified multiple times).
+   this option (can be specified multiple times). The ``forget`` command will
+   exit with an error if all snapshots in a snapshot group would be removed
+   as none of them have the specified tags.
 -  ``--keep-within duration`` keep all snapshots having a timestamp within
    the specified duration of the latest snapshot, where ``duration`` is a
    number of years, months, days, and hours. E.g. ``2y5m7d3h`` will keep all
@@ -336,11 +338,22 @@ year and yearly for the last 75 years, you can instead specify ``forget
 --keep-within-yearly 75y`` (note that `1w` is not a recognized duration, so
 you will have to specify `7d` instead).
 
+
+Removing all snapshots
+======================
+
 For safety reasons, restic refuses to act on an "empty" policy. For example,
 if one were to specify ``--keep-last 0`` to forget *all* snapshots in the
 repository, restic will respond that no snapshots will be removed. To delete
 all snapshots, use ``--keep-last 1`` and then finally remove the last snapshot
 manually (by passing the ID to ``forget``).
+
+Since restic 0.17.0, it is possible to delete all snapshots for a specific
+host, tag or path using the ``--unsafe-allow-remove-all`` option. The option
+must always be combined with a snapshot filter (by host, path or tag).
+For example the command ``forget --tag example --unsafe-allow-remove-all``
+removes all snapshots with tag ``example``.
+
 
 Security considerations in append-only mode
 ===========================================
