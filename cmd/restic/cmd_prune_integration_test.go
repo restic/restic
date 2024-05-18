@@ -75,7 +75,7 @@ func createPrunableRepo(t *testing.T, env *testEnvironment) {
 	testListSnapshots(t, env.gopts, 3)
 
 	testRunForgetJSON(t, env.gopts)
-	testRunForget(t, env.gopts, firstSnapshot.String())
+	testRunForget(t, env.gopts, ForgetOptions{}, firstSnapshot.String())
 }
 
 func testRunForgetJSON(t testing.TB, gopts GlobalOptions, args ...string) {
@@ -129,7 +129,7 @@ func TestPruneWithDamagedRepository(t *testing.T) {
 	// create and delete snapshot to create unused blobs
 	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9", "2")}, opts, env.gopts)
 	firstSnapshot := testListSnapshots(t, env.gopts, 1)[0]
-	testRunForget(t, env.gopts, firstSnapshot.String())
+	testRunForget(t, env.gopts, ForgetOptions{}, firstSnapshot.String())
 
 	oldPacks := listPacks(env.gopts, t)
 
