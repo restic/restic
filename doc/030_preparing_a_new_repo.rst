@@ -852,3 +852,26 @@ and then grants read/write permissions for group access.
 .. note:: To manage who has access to the repository you can use
           ``usermod`` on Linux systems, to change which group controls
           repository access ``chgrp -R`` is your friend.
+
+
+Repositories with empty password
+********************************
+
+Restic by default refuses to create or operate on repositories that use an
+empty password. Since restic 0.17.0, the option ``--insecure-no-password`` allows
+disabling this check. Restic will not prompt for a password when using this option.
+Specifying ``--insecure-no-password`` while also passing a password to restic
+via a CLI option or via environment variable results in an error.
+
+For security reasons, the option must always be specified when operating on
+repositories with an empty password. For example to create a new repository
+with an empty password, use the following command.
+
+.. code-block:: console
+
+    restic init --insecure-no-password
+
+
+The ``init`` and ``copy`` command also support the option ``--from-insecure-no-password``
+which applies to the source repository. The ``key add`` and ``key passwd`` comands
+include the ``--new-insecure-no-password`` option to add or set and emtpy password.
