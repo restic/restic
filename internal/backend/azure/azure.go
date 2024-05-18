@@ -102,10 +102,20 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 			return nil, errors.Wrap(err, "NewAccountSASClientFromEndpointToken")
 		}
 	} else {
-		debug.Log(" - using DefaultAzureCredential")
-		cred, err := azidentity.NewDefaultAzureCredential(nil)
-		if err != nil {
-			return nil, errors.Wrap(err, "NewDefaultAzureCredential")
+		var cred azcore.TokenCredential
+
+		if cfg.ForceCliCredential {
+			debug.Log(" - using AzureCLICredential")
+			cred, err = azidentity.NewAzureCLICredential(nil)
+			if err != nil {
+				return nil, errors.Wrap(err, "NewAzureCLICredential")
+			}
+		} else {
+			debug.Log(" - using DefaultAzureCredential")
+			cred, err = azidentity.NewDefaultAzureCredential(nil)
+			if err != nil {
+				return nil, errors.Wrap(err, "NewDefaultAzureCredential")
+			}
 		}
 
 		client, err = azContainer.NewClient(url, cred, opts)
