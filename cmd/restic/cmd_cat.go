@@ -7,7 +7,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -146,9 +145,9 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string) error {
 		return nil
 
 	case "pack":
-		h := backend.Handle{Type: restic.PackFile, Name: id.String()}
-		buf, err := backend.LoadAll(ctx, nil, repo.Backend(), h)
-		if err != nil {
+		buf, err := repo.LoadRaw(ctx, restic.PackFile, id)
+		// allow returning broken pack files
+		if buf == nil {
 			return err
 		}
 

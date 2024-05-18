@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -325,42 +326,91 @@ func induceError(data []byte) {
 	data[pos] ^= 1
 }
 
+// errorOnceBackend randomly modifies data when reading a file for the first time.
+type errorOnceBackend struct {
+	backend.Backend
+	m sync.Map
+}
+
+func (b *errorOnceBackend) Load(ctx context.Context, h backend.Handle, length int, offset int64, consumer func(rd io.Reader) error) error {
+	_, isRetry := b.m.LoadOrStore(h, struct{}{})
+	return b.Backend.Load(ctx, h, length, offset, func(rd io.Reader) error {
+		if !isRetry && h.Type != restic.ConfigFile {
+			return consumer(errorReadCloser{rd})
+		}
+		return consumer(rd)
+	})
+}
+
 func TestCheckerModifiedData(t *testing.T) {
 	repo := repository.TestRepository(t)
 	sn := archiver.TestSnapshot(t, repo, ".", nil)
 	t.Logf("archived as %v", sn.ID().Str())
 
-	beError := &errorBackend{Backend: repo.Backend()}
-	checkRepo := repository.TestOpenBackend(t, beError)
+	errBe := &errorBackend{Backend: repo.Backend()}
 
-	chkr := checker.New(checkRepo, false)
+	for _, test := range []struct {
+		name   string
+		be     backend.Backend
+		damage func()
+		check  func(t *testing.T, err error)
+	}{
+		{
+			"errorBackend",
+			errBe,
+			func() {
+				errBe.ProduceErrors = true
+			},
+			func(t *testing.T, err error) {
+				if err == nil {
+					t.Fatal("no error found, checker is broken")
+				}
+			},
+		},
+		{
+			"errorOnceBackend",
+			&errorOnceBackend{Backend: repo.Backend()},
+			func() {},
+			func(t *testing.T, err error) {
+				if !strings.Contains(err.Error(), "check successful on second attempt, original error pack") {
+					t.Fatalf("wrong error found, got %v", err)
+				}
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			checkRepo := repository.TestOpenBackend(t, test.be)
 
-	hints, errs := chkr.LoadIndex(context.TODO(), nil)
-	if len(errs) > 0 {
-		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
-	}
+			chkr := checker.New(checkRepo, false)
 
-	if len(hints) > 0 {
-		t.Errorf("expected no hints, got %v: %v", len(hints), hints)
-	}
+			hints, errs := chkr.LoadIndex(context.TODO(), nil)
+			if len(errs) > 0 {
+				t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
+			}
 
-	beError.ProduceErrors = true
-	errFound := false
-	for _, err := range checkPacks(chkr) {
-		t.Logf("pack error: %v", err)
-	}
+			if len(hints) > 0 {
+				t.Errorf("expected no hints, got %v: %v", len(hints), hints)
+			}
 
-	for _, err := range checkStruct(chkr) {
-		t.Logf("struct error: %v", err)
-	}
+			test.damage()
+			var err error
+			for _, err := range checkPacks(chkr) {
+				t.Logf("pack error: %v", err)
+			}
 
-	for _, err := range checkData(chkr) {
-		t.Logf("data error: %v", err)
-		errFound = true
-	}
+			for _, err := range checkStruct(chkr) {
+				t.Logf("struct error: %v", err)
+			}
 
-	if !errFound {
-		t.Fatal("no error found, checker is broken")
+			for _, cerr := range checkData(chkr) {
+				t.Logf("data error: %v", cerr)
+				if err == nil {
+					err = cerr
+				}
+			}
+
+			test.check(t, err)
+		})
 	}
 }
 

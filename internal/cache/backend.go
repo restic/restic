@@ -40,7 +40,8 @@ func (b *Backend) Remove(ctx context.Context, h backend.Handle) error {
 		return err
 	}
 
-	return b.Cache.remove(h)
+	_, err = b.Cache.remove(h)
+	return err
 }
 
 func autoCacheTypes(h backend.Handle) bool {
@@ -79,10 +80,9 @@ func (b *Backend) Save(ctx context.Context, h backend.Handle, rd backend.RewindR
 		return err
 	}
 
-	err = b.Cache.Save(h, rd)
+	err = b.Cache.save(h, rd)
 	if err != nil {
 		debug.Log("unable to save %v to cache: %v", h, err)
-		_ = b.Cache.remove(h)
 		return err
 	}
 
@@ -120,11 +120,11 @@ func (b *Backend) cacheFile(ctx context.Context, h backend.Handle) error {
 	if !b.Cache.Has(h) {
 		// nope, it's still not in the cache, pull it from the repo and save it
 		err := b.Backend.Load(ctx, h, 0, 0, func(rd io.Reader) error {
-			return b.Cache.Save(h, rd)
+			return b.Cache.save(h, rd)
 		})
 		if err != nil {
 			// try to remove from the cache, ignore errors
-			_ = b.Cache.remove(h)
+			_, _ = b.Cache.remove(h)
 		}
 		return err
 	}
@@ -134,9 +134,9 @@ func (b *Backend) cacheFile(ctx context.Context, h backend.Handle) error {
 
 // loadFromCache will try to load the file from the cache.
 func (b *Backend) loadFromCache(h backend.Handle, length int, offset int64, consumer func(rd io.Reader) error) (bool, error) {
-	rd, err := b.Cache.load(h, length, offset)
+	rd, inCache, err := b.Cache.load(h, length, offset)
 	if err != nil {
-		return false, err
+		return inCache, err
 	}
 
 	err = consumer(rd)
@@ -162,14 +162,10 @@ func (b *Backend) Load(ctx context.Context, h backend.Handle, length int, offset
 	// try loading from cache without checking that the handle is actually cached
 	inCache, err := b.loadFromCache(h, length, offset, consumer)
 	if inCache {
-		if err == nil {
-			return nil
-		}
-
-		// drop from cache and retry once
-		_ = b.Cache.remove(h)
+		debug.Log("error loading %v from cache: %v", h, err)
+		// the caller must explicitly use cache.Forget() to remove the cache entry
+		return err
 	}
-	debug.Log("error loading %v from cache: %v", h, err)
 
 	// if we don't automatically cache this file type, fall back to the backend
 	if !autoCacheTypes(h) {
@@ -185,6 +181,9 @@ func (b *Backend) Load(ctx context.Context, h backend.Handle, length int, offset
 
 	inCache, err = b.loadFromCache(h, length, offset, consumer)
 	if inCache {
+		if err != nil {
+			debug.Log("error loading %v from cache: %v", h, err)
+		}
 		return err
 	}
 
@@ -198,13 +197,9 @@ func (b *Backend) Stat(ctx context.Context, h backend.Handle) (backend.FileInfo,
 	debug.Log("cache Stat(%v)", h)
 
 	fi, err := b.Backend.Stat(ctx, h)
-	if err != nil {
-		if b.Backend.IsNotExist(err) {
-			// try to remove from the cache, ignore errors
-			_ = b.Cache.remove(h)
-		}
-
-		return fi, err
+	if err != nil && b.Backend.IsNotExist(err) {
+		// try to remove from the cache, ignore errors
+		_, _ = b.Cache.remove(h)
 	}
 
 	return fi, err

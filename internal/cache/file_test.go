@@ -14,7 +14,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -22,7 +22,7 @@ import (
 func generateRandomFiles(t testing.TB, tpe backend.FileType, c *Cache) restic.IDSet {
 	ids := restic.NewIDSet()
 	for i := 0; i < rand.Intn(15)+10; i++ {
-		buf := test.Random(rand.Int(), 1<<19)
+		buf := rtest.Random(rand.Int(), 1<<19)
 		id := restic.Hash(buf)
 		h := backend.Handle{Type: tpe, Name: id.String()}
 
@@ -30,7 +30,7 @@ func generateRandomFiles(t testing.TB, tpe backend.FileType, c *Cache) restic.ID
 			t.Errorf("index %v present before save", id)
 		}
 
-		err := c.Save(h, bytes.NewReader(buf))
+		err := c.save(h, bytes.NewReader(buf))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -48,10 +48,11 @@ func randomID(s restic.IDSet) restic.ID {
 }
 
 func load(t testing.TB, c *Cache, h backend.Handle) []byte {
-	rd, err := c.load(h, 0, 0)
+	rd, inCache, err := c.load(h, 0, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
+	rtest.Equals(t, true, inCache, "expected inCache flag to be true")
 
 	if rd == nil {
 		t.Fatalf("load() returned nil reader")
@@ -144,14 +145,14 @@ func TestFileLoad(t *testing.T) {
 	c := TestNewCache(t)
 
 	// save about 5 MiB of data in the cache
-	data := test.Random(rand.Int(), 5234142)
+	data := rtest.Random(rand.Int(), 5234142)
 	id := restic.ID{}
 	copy(id[:], data)
 	h := backend.Handle{
 		Type: restic.PackFile,
 		Name: id.String(),
 	}
-	if err := c.Save(h, bytes.NewReader(data)); err != nil {
+	if err := c.save(h, bytes.NewReader(data)); err != nil {
 		t.Fatalf("Save() returned error: %v", err)
 	}
 
@@ -169,10 +170,11 @@ func TestFileLoad(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%v/%v", test.length, test.offset), func(t *testing.T) {
-			rd, err := c.load(h, test.length, test.offset)
+			rd, inCache, err := c.load(h, test.length, test.offset)
 			if err != nil {
 				t.Fatal(err)
 			}
+			rtest.Equals(t, true, inCache, "expected inCache flag to be true")
 
 			buf, err := io.ReadAll(rd)
 			if err != nil {
@@ -225,7 +227,7 @@ func TestFileSaveConcurrent(t *testing.T) {
 
 	var (
 		c    = TestNewCache(t)
-		data = test.Random(1, 10000)
+		data = rtest.Random(1, 10000)
 		g    errgroup.Group
 		id   restic.ID
 	)
@@ -237,7 +239,7 @@ func TestFileSaveConcurrent(t *testing.T) {
 	}
 
 	for i := 0; i < nproc/2; i++ {
-		g.Go(func() error { return c.Save(h, bytes.NewReader(data)) })
+		g.Go(func() error { return c.save(h, bytes.NewReader(data)) })
 
 		// Can't use load because only the main goroutine may call t.Fatal.
 		g.Go(func() error {
@@ -245,7 +247,7 @@ func TestFileSaveConcurrent(t *testing.T) {
 			// ensure is ENOENT or nil error.
 			time.Sleep(time.Duration(100+rand.Intn(200)) * time.Millisecond)
 
-			f, err := c.load(h, 0, 0)
+			f, _, err := c.load(h, 0, 0)
 			t.Logf("Load error: %v", err)
 			switch {
 			case err == nil:
@@ -264,23 +266,23 @@ func TestFileSaveConcurrent(t *testing.T) {
 		})
 	}
 
-	test.OK(t, g.Wait())
+	rtest.OK(t, g.Wait())
 	saved := load(t, c, h)
-	test.Equals(t, data, saved)
+	rtest.Equals(t, data, saved)
 }
 
 func TestFileSaveAfterDamage(t *testing.T) {
 	c := TestNewCache(t)
-	test.OK(t, fs.RemoveAll(c.path))
+	rtest.OK(t, fs.RemoveAll(c.path))
 
 	// save a few bytes of data in the cache
-	data := test.Random(123456789, 42)
+	data := rtest.Random(123456789, 42)
 	id := restic.Hash(data)
 	h := backend.Handle{
 		Type: restic.PackFile,
 		Name: id.String(),
 	}
-	if err := c.Save(h, bytes.NewReader(data)); err == nil {
+	if err := c.save(h, bytes.NewReader(data)); err == nil {
 		t.Fatal("Missing error when saving to deleted cache directory")
 	}
 }

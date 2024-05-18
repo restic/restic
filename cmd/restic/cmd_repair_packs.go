@@ -1,11 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"os"
 
-	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -17,8 +17,6 @@ var cmdRepairPacks = &cobra.Command{
 	Use:   "packs [packIDs...]",
 	Short: "Salvage damaged pack files",
 	Long: `
-WARNING: The CLI for this command is experimental and will likely change in the future!
-
 The "repair packs" command extracts intact blobs from the specified pack files, rebuilds
 the index to remove the damaged pack files and removes the pack files from the repository.
 
@@ -68,20 +66,17 @@ func runRepairPacks(ctx context.Context, gopts GlobalOptions, term *termstatus.T
 
 	printer.P("saving backup copies of pack files to current folder")
 	for id := range ids {
+		buf, err := repo.LoadRaw(ctx, restic.PackFile, id)
+		// corrupted data is fine
+		if buf == nil {
+			return err
+		}
+
 		f, err := os.OpenFile("pack-"+id.String(), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o666)
 		if err != nil {
 			return err
 		}
-
-		err = repo.Backend().Load(ctx, backend.Handle{Type: restic.PackFile, Name: id.String()}, 0, 0, func(rd io.Reader) error {
-			_, err := f.Seek(0, 0)
-			if err != nil {
-				return err
-			}
-			_, err = io.Copy(f, rd)
-			return err
-		})
-		if err != nil {
+		if _, err := io.Copy(f, bytes.NewReader(buf)); err != nil {
 			_ = f.Close()
 			return err
 		}

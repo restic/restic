@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/util"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
@@ -31,54 +33,54 @@ func (c *Cache) canBeCached(t backend.FileType) bool {
 	return ok
 }
 
-// Load returns a reader that yields the contents of the file with the
+// load returns a reader that yields the contents of the file with the
 // given handle. rd must be closed after use. If an error is returned, the
-// ReadCloser is nil.
-func (c *Cache) load(h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
+// ReadCloser is nil. The bool return value indicates whether the requested
+// file exists in the cache. It can be true even when no reader is returned
+// because length or offset are out of bounds
+func (c *Cache) load(h backend.Handle, length int, offset int64) (io.ReadCloser, bool, error) {
 	debug.Log("Load(%v, %v, %v) from cache", h, length, offset)
 	if !c.canBeCached(h.Type) {
-		return nil, errors.New("cannot be cached")
+		return nil, false, errors.New("cannot be cached")
 	}
 
 	f, err := fs.Open(c.filename(h))
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, false, errors.WithStack(err)
 	}
 
 	fi, err := f.Stat()
 	if err != nil {
 		_ = f.Close()
-		return nil, errors.WithStack(err)
+		return nil, true, errors.WithStack(err)
 	}
 
 	size := fi.Size()
 	if size <= int64(crypto.CiphertextLength(0)) {
 		_ = f.Close()
-		_ = c.remove(h)
-		return nil, errors.Errorf("cached file %v is truncated, removing", h)
+		return nil, true, errors.Errorf("cached file %v is truncated", h)
 	}
 
 	if size < offset+int64(length) {
 		_ = f.Close()
-		_ = c.remove(h)
-		return nil, errors.Errorf("cached file %v is too short, removing", h)
+		return nil, true, errors.Errorf("cached file %v is too short", h)
 	}
 
 	if offset > 0 {
 		if _, err = f.Seek(offset, io.SeekStart); err != nil {
 			_ = f.Close()
-			return nil, err
+			return nil, true, err
 		}
 	}
 
 	if length <= 0 {
-		return f, nil
+		return f, true, nil
 	}
-	return backend.LimitReadCloser(f, int64(length)), nil
+	return util.LimitReadCloser(f, int64(length)), true, nil
 }
 
-// Save saves a file in the cache.
-func (c *Cache) Save(h backend.Handle, rd io.Reader) error {
+// save saves a file in the cache.
+func (c *Cache) save(h backend.Handle, rd io.Reader) error {
 	debug.Log("Save to cache: %v", h)
 	if rd == nil {
 		return errors.New("Save() called with nil reader")
@@ -138,13 +140,34 @@ func (c *Cache) Save(h backend.Handle, rd io.Reader) error {
 	return errors.WithStack(err)
 }
 
-// Remove deletes a file. When the file is not cache, no error is returned.
-func (c *Cache) remove(h backend.Handle) error {
-	if !c.Has(h) {
-		return nil
+func (c *Cache) Forget(h backend.Handle) error {
+	h.IsMetadata = false
+
+	if _, ok := c.forgotten.Load(h); ok {
+		// Delete a file at most once while restic runs.
+		// This prevents repeatedly caching and forgetting broken files
+		return fmt.Errorf("circuit breaker prevents repeated deletion of cached file %v", h)
 	}
 
-	return fs.Remove(c.filename(h))
+	removed, err := c.remove(h)
+	if removed {
+		c.forgotten.Store(h, struct{}{})
+	}
+	return err
+}
+
+// remove deletes a file. When the file is not cached, no error is returned.
+func (c *Cache) remove(h backend.Handle) (bool, error) {
+	if !c.canBeCached(h.Type) {
+		return false, nil
+	}
+
+	err := fs.Remove(c.filename(h))
+	removed := err == nil
+	if errors.Is(err, os.ErrNotExist) {
+		err = nil
+	}
+	return removed, err
 }
 
 // Clear removes all files of type t from the cache that are not contained in

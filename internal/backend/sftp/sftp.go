@@ -437,7 +437,7 @@ func (r *SFTP) Load(ctx context.Context, h backend.Handle, length int, offset in
 
 		// check the underlying reader to be agnostic to however fn() handles the returned error
 		_, rderr := rd.Read([]byte{0})
-		if rderr == io.EOF && rd.(*backend.LimitedReadCloser).N != 0 {
+		if rderr == io.EOF && rd.(*util.LimitedReadCloser).N != 0 {
 			// file is too short
 			return fmt.Errorf("%w: %v", errTooShort, err)
 		}
@@ -463,7 +463,7 @@ func (r *SFTP) openReader(_ context.Context, h backend.Handle, length int, offse
 	if length > 0 {
 		// unlimited reads usually use io.Copy which needs WriteTo support at the underlying reader
 		// limited reads are usually combined with io.ReadFull which reads all required bytes into a buffer in one go
-		return backend.LimitReadCloser(f, int64(length)), nil
+		return util.LimitReadCloser(f, int64(length)), nil
 	}
 
 	return f, nil

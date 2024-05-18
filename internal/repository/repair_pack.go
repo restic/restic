@@ -31,12 +31,8 @@ func RepairPacks(ctx context.Context, repo restic.Repository, ids restic.IDSet, 
 
 			err := repo.LoadBlobsFromPack(wgCtx, b.PackID, blobs, func(blob restic.BlobHandle, buf []byte, err error) error {
 				if err != nil {
-					// Fallback path
-					buf, err = repo.LoadBlob(wgCtx, blob.Type, blob.ID, nil)
-					if err != nil {
-						printer.E("failed to load blob %v: %v", blob.ID, err)
-						return nil
-					}
+					printer.E("failed to load blob %v: %v", blob.ID, err)
+					return nil
 				}
 				id, _, _, err := repo.SaveBlob(wgCtx, blob.Type, buf, restic.ID{}, true)
 				if !id.Equal(blob.ID) {

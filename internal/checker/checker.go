@@ -532,6 +532,21 @@ func (e *partialReadError) Error() string {
 
 // checkPack reads a pack and checks the integrity of all blobs.
 func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []restic.Blob, size int64, bufRd *bufio.Reader, dec *zstd.Decoder) error {
+	err := checkPackInner(ctx, r, id, blobs, size, bufRd, dec)
+	if err != nil {
+		// retry pack verification to detect transient errors
+		err2 := checkPackInner(ctx, r, id, blobs, size, bufRd, dec)
+		if err2 != nil {
+			err = err2
+		} else {
+			err = fmt.Errorf("check successful on second attempt, original error %w", err)
+		}
+	}
+	return err
+}
+
+func checkPackInner(ctx context.Context, r restic.Repository, id restic.ID, blobs []restic.Blob, size int64, bufRd *bufio.Reader, dec *zstd.Decoder) error {
+
 	debug.Log("checking pack %v", id.String())
 
 	if len(blobs) == 0 {
@@ -590,11 +605,13 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 			if err != nil {
 				return &partialReadError{err}
 			}
+			curPos += minHdrStart - curPos
 		}
 
 		// read remainder, which should be the pack header
 		var err error
-		hdrBuf, err = io.ReadAll(bufRd)
+		hdrBuf = make([]byte, int(size-int64(curPos)))
+		_, err = io.ReadFull(bufRd, hdrBuf)
 		if err != nil {
 			return &partialReadError{err}
 		}
@@ -608,12 +625,12 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID, blobs []r
 		// failed to load the pack file, return as further checks cannot succeed anyways
 		debug.Log("  error streaming pack (partial %v): %v", isPartialReadError, err)
 		if isPartialReadError {
-			return &ErrPackData{PackID: id, errs: append(errs, errors.Errorf("partial download error: %w", err))}
+			return &ErrPackData{PackID: id, errs: append(errs, fmt.Errorf("partial download error: %w", err))}
 		}
 
 		// The check command suggests to repair files for which a `ErrPackData` is returned. However, this file
 		// completely failed to download such that there's no point in repairing anything.
-		return errors.Errorf("download error: %w", err)
+		return fmt.Errorf("download error: %w", err)
 	}
 	if !hash.Equal(id) {
 		debug.Log("pack ID does not match, want %v, got %v", id, hash)
@@ -725,6 +742,7 @@ func (c *Checker) ReadPacks(ctx context.Context, packs map[restic.ID]int64, p *p
 				}
 
 				err := checkPack(ctx, c.repo, ps.id, ps.blobs, ps.size, bufRd, dec)
+
 				p.Add(1)
 				if err == nil {
 					continue
