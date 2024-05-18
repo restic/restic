@@ -3,6 +3,8 @@ package main
 import (
 	"bufio"
 	"context"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -107,6 +109,43 @@ func TestKeyAddRemove(t *testing.T) {
 	testRunCheck(t, env.gopts)
 
 	testRunKeyAddNewKeyUserHost(t, env.gopts)
+}
+
+func TestKeyAddInvalid(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	testRunInit(t, env.gopts)
+
+	err := runKeyAdd(context.TODO(), env.gopts, KeyAddOptions{
+		NewPasswordFile:    "some-file",
+		InsecureNoPassword: true,
+	}, []string{})
+	rtest.Assert(t, strings.Contains(err.Error(), "only either"), "unexpected error message, got %q", err)
+
+	pwfile := filepath.Join(t.TempDir(), "pwfile")
+	rtest.OK(t, os.WriteFile(pwfile, []byte{}, 0o666))
+
+	err = runKeyAdd(context.TODO(), env.gopts, KeyAddOptions{
+		NewPasswordFile: pwfile,
+	}, []string{})
+	rtest.Assert(t, strings.Contains(err.Error(), "an empty password is not allowed by default"), "unexpected error message, got %q", err)
+}
+
+func TestKeyAddEmpty(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	// must list keys more than once
+	env.gopts.backendTestHook = nil
+	defer cleanup()
+	testRunInit(t, env.gopts)
+
+	rtest.OK(t, runKeyAdd(context.TODO(), env.gopts, KeyAddOptions{
+		InsecureNoPassword: true,
+	}, []string{}))
+
+	env.gopts.password = ""
+	env.gopts.InsecureNoPassword = true
+
+	testRunCheck(t, env.gopts)
 }
 
 type emptySaveBackend struct {

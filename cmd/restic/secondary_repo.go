@@ -11,11 +11,12 @@ import (
 type secondaryRepoOptions struct {
 	password string
 	// from-repo options
-	Repo            string
-	RepositoryFile  string
-	PasswordFile    string
-	PasswordCommand string
-	KeyHint         string
+	Repo               string
+	RepositoryFile     string
+	PasswordFile       string
+	PasswordCommand    string
+	KeyHint            string
+	InsecureNoPassword bool
 	// repo2 options
 	LegacyRepo            string
 	LegacyRepositoryFile  string
@@ -49,6 +50,7 @@ func initSecondaryRepoOptions(f *pflag.FlagSet, opts *secondaryRepoOptions, repo
 	f.StringVarP(&opts.PasswordFile, "from-password-file", "", "", "`file` to read the source repository password from (default: $RESTIC_FROM_PASSWORD_FILE)")
 	f.StringVarP(&opts.KeyHint, "from-key-hint", "", "", "key ID of key to try decrypting the source repository first (default: $RESTIC_FROM_KEY_HINT)")
 	f.StringVarP(&opts.PasswordCommand, "from-password-command", "", "", "shell `command` to obtain the source repository password from (default: $RESTIC_FROM_PASSWORD_COMMAND)")
+	f.BoolVar(&opts.InsecureNoPassword, "from-insecure-no-password", false, "use an empty password for the source repository, must be passed to every restic command (insecure)")
 
 	opts.Repo = os.Getenv("RESTIC_FROM_REPOSITORY")
 	opts.RepositoryFile = os.Getenv("RESTIC_FROM_REPOSITORY_FILE")
@@ -63,7 +65,7 @@ func fillSecondaryGlobalOpts(ctx context.Context, opts secondaryRepoOptions, gop
 	}
 
 	hasFromRepo := opts.Repo != "" || opts.RepositoryFile != "" || opts.PasswordFile != "" ||
-		opts.KeyHint != "" || opts.PasswordCommand != ""
+		opts.KeyHint != "" || opts.PasswordCommand != "" || opts.InsecureNoPassword
 	hasRepo2 := opts.LegacyRepo != "" || opts.LegacyRepositoryFile != "" || opts.LegacyPasswordFile != "" ||
 		opts.LegacyKeyHint != "" || opts.LegacyPasswordCommand != ""
 
@@ -85,6 +87,7 @@ func fillSecondaryGlobalOpts(ctx context.Context, opts secondaryRepoOptions, gop
 		dstGopts.PasswordFile = opts.PasswordFile
 		dstGopts.PasswordCommand = opts.PasswordCommand
 		dstGopts.KeyHint = opts.KeyHint
+		dstGopts.InsecureNoPassword = opts.InsecureNoPassword
 
 		pwdEnv = "RESTIC_FROM_PASSWORD"
 		repoPrefix = "source"
@@ -98,6 +101,8 @@ func fillSecondaryGlobalOpts(ctx context.Context, opts secondaryRepoOptions, gop
 		dstGopts.PasswordFile = opts.LegacyPasswordFile
 		dstGopts.PasswordCommand = opts.LegacyPasswordCommand
 		dstGopts.KeyHint = opts.LegacyKeyHint
+		// keep existing bevhaior for legacy options
+		dstGopts.InsecureNoPassword = false
 
 		pwdEnv = "RESTIC_PASSWORD2"
 	}

@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	rtest "github.com/restic/restic/internal/test"
@@ -49,4 +51,15 @@ func TestReadRepo(t *testing.T) {
 	if err == nil {
 		t.Fatal("must not read repository path from invalid file path")
 	}
+}
+
+func TestReadEmptyPassword(t *testing.T) {
+	opts := GlobalOptions{InsecureNoPassword: true}
+	password, err := ReadPassword(context.TODO(), opts, "test")
+	rtest.OK(t, err)
+	rtest.Equals(t, "", password, "got unexpected password")
+
+	opts.password = "invalid"
+	_, err = ReadPassword(context.TODO(), opts, "test")
+	rtest.Assert(t, strings.Contains(err.Error(), "must not be specified together with providing a password via a cli option or environment variable"), "unexpected error message, got %v", err)
 }
