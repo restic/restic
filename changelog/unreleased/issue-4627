@@ -11,6 +11,8 @@ retried after a short timeout.
 Attempts to access a missing file or a truncated file will no longer be retried.
 This avoids unnecessary retries in those cases.
 
+If a download yields a corrupt file or blob, then the download will be retried once.
+
 Most parts of the new backend error handling can temporarily be disabled by
 setting the environment variable
 `RESTIC_FEATURES=backend-error-redesign=false`. Note that this feature flag will
@@ -23,3 +25,4 @@ https://github.com/restic/restic/pull/4792
 https://github.com/restic/restic/issues/4515
 https://github.com/restic/restic/issues/1523
 https://github.com/restic/restic/pull/4520
+https://github.com/restic/restic/pull/4800
