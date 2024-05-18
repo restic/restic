@@ -9,6 +9,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var cmdKeyAdd = &cobra.Command{
@@ -23,26 +24,28 @@ EXIT STATUS
 Exit status is 0 if the command is successful, and non-zero if there was any error.
 	`,
 	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runKeyAdd(cmd.Context(), globalOptions, keyAddOpts, args)
-	},
 }
 
 type KeyAddOptions struct {
-	NewPasswordFile string
-	Username        string
-	Hostname        string
+	NewPasswordFile    string
+	Username           string
+	Hostname           string
 }
 
-var keyAddOpts KeyAddOptions
+func (opts *KeyAddOptions) Add(flags *pflag.FlagSet) {
+	flags.StringVarP(&opts.NewPasswordFile, "new-password-file", "", "", "`file` from which to read the new password")
+	flags.StringVarP(&opts.Username, "user", "", "", "the username for new key")
+	flags.StringVarP(&opts.Hostname, "host", "", "", "the hostname for new key")
+}
 
 func init() {
 	cmdKey.AddCommand(cmdKeyAdd)
 
-	flags := cmdKeyAdd.Flags()
-	flags.StringVarP(&keyAddOpts.NewPasswordFile, "new-password-file", "", "", "`file` from which to read the new password")
-	flags.StringVarP(&keyAddOpts.Username, "user", "", "", "the username for new key")
-	flags.StringVarP(&keyAddOpts.Hostname, "host", "", "", "the hostname for new key")
+	var keyAddOpts KeyAddOptions
+	keyAddOpts.Add(cmdKeyAdd.Flags())
+	cmdKeyAdd.RunE = func(cmd *cobra.Command, args []string) error {
+		return runKeyAdd(cmd.Context(), globalOptions, keyAddOpts, args)
+	}
 }
 
 func runKeyAdd(ctx context.Context, gopts GlobalOptions, opts KeyAddOptions, args []string) error {
