@@ -72,6 +72,10 @@ func (be *Backend) IsNotExist(err error) bool {
 	return be.b.IsNotExist(err)
 }
 
+func (be *Backend) IsPermanentError(err error) bool {
+	return be.b.IsPermanentError(err)
+}
+
 func (be *Backend) List(ctx context.Context, t backend.FileType, fn func(backend.FileInfo) error) error {
 	return be.b.List(ctx, t, fn)
 }

@@ -19,6 +19,7 @@ import (
 	"github.com/restic/restic/internal/backend/util"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/feature"
 
 	"github.com/ncw/swift/v2"
 )
@@ -153,7 +154,18 @@ func (be *beSwift) openReader(ctx context.Context, h backend.Handle, length int,
 
 	obj, _, err := be.conn.ObjectOpen(ctx, be.container, objName, false, headers)
 	if err != nil {
-		return nil, errors.Wrap(err, "conn.ObjectOpen")
+		return nil, fmt.Errorf("conn.ObjectOpen: %w", err)
+	}
+
+	if feature.Flag.Enabled(feature.BackendErrorRedesign) && length > 0 {
+		// get response length, but don't cause backend calls
+		cctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		objLength, e := obj.Length(cctx)
+		if e == nil && objLength != int64(length) {
+			_ = obj.Close()
+			return nil, &swift.Error{StatusCode: http.StatusRequestedRangeNotSatisfiable, Text: "restic-file-too-short"}
+		}
 	}
 
 	return obj, nil
@@ -240,6 +252,21 @@ func (be *beSwift) List(ctx context.Context, t backend.FileType, fn func(backend
 func (be *beSwift) IsNotExist(err error) bool {
 	var e *swift.Error
 	return errors.As(err, &e) && e.StatusCode == http.StatusNotFound
+}
+
+func (be *beSwift) IsPermanentError(err error) bool {
+	if be.IsNotExist(err) {
+		return true
+	}
+
+	var serr *swift.Error
+	if errors.As(err, &serr) {
+		if serr.StatusCode == http.StatusRequestedRangeNotSatisfiable || serr.StatusCode == http.StatusUnauthorized || serr.StatusCode == http.StatusForbidden {
+			return true
+		}
+	}
+
+	return false
 }
 
 // Delete removes all restic objects in the container.

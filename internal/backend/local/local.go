@@ -2,6 +2,7 @@ package local
 
 import (
 	"context"
+	"fmt"
 	"hash"
 	"io"
 	"os"
@@ -29,6 +30,8 @@ type Local struct {
 
 // ensure statically that *Local implements backend.Backend.
 var _ backend.Backend = &Local{}
+
+var errTooShort = fmt.Errorf("file is too short")
 
 func NewFactory() location.Factory {
 	return location.NewLimitedBackendFactory("local", ParseConfig, location.NoPassword, limiter.WrapBackendConstructor(Create), limiter.WrapBackendConstructor(Open))
@@ -108,6 +111,10 @@ func (b *Local) HasAtomicReplace() bool {
 // IsNotExist returns true if the error is caused by a non existing file.
 func (b *Local) IsNotExist(err error) bool {
 	return errors.Is(err, os.ErrNotExist)
+}
+
+func (b *Local) IsPermanentError(err error) bool {
+	return b.IsNotExist(err) || errors.Is(err, errTooShort) || errors.Is(err, os.ErrPermission)
 }
 
 // Save stores data in the backend at the handle.
@@ -217,6 +224,18 @@ func (b *Local) openReader(_ context.Context, h backend.Handle, length int, offs
 	f, err := fs.Open(b.Filename(h))
 	if err != nil {
 		return nil, err
+	}
+
+	fi, err := f.Stat()
+	if err != nil {
+		_ = f.Close()
+		return nil, err
+	}
+
+	size := fi.Size()
+	if size < offset+int64(length) {
+		_ = f.Close()
+		return nil, errTooShort
 	}
 
 	if offset > 0 {

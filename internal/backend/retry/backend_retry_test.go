@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"strings"
 	"testing"
 	"time"
 
@@ -289,7 +290,7 @@ func TestBackendLoadNotExists(t *testing.T) {
 		}
 		return nil, notFound
 	}
-	be.IsNotExistFn = func(err error) bool {
+	be.IsPermanentErrorFn = func(err error) bool {
 		return errors.Is(err, notFound)
 	}
 
@@ -299,8 +300,59 @@ func TestBackendLoadNotExists(t *testing.T) {
 	err := retryBackend.Load(context.TODO(), backend.Handle{}, 0, 0, func(rd io.Reader) (err error) {
 		return nil
 	})
-	test.Assert(t, be.IsNotExistFn(err), "unexpected error %v", err)
+	test.Assert(t, be.IsPermanentErrorFn(err), "unexpected error %v", err)
 	test.Equals(t, 1, attempt)
+}
+
+func TestBackendLoadCircuitBreaker(t *testing.T) {
+	// retry should not retry if the error matches IsPermanentError
+	notFound := errors.New("not found")
+	otherError := errors.New("something")
+	attempt := 0
+
+	be := mock.NewBackend()
+	be.IsPermanentErrorFn = func(err error) bool {
+		return errors.Is(err, notFound)
+	}
+	be.OpenReaderFn = func(ctx context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
+		attempt++
+		return nil, otherError
+	}
+	nilRd := func(rd io.Reader) (err error) {
+		return nil
+	}
+
+	TestFastRetries(t)
+	retryBackend := New(be, 2, nil, nil)
+	// trip the circuit breaker for file "other"
+	err := retryBackend.Load(context.TODO(), backend.Handle{Name: "other"}, 0, 0, nilRd)
+	test.Equals(t, otherError, err, "unexpected error")
+	test.Equals(t, 3, attempt)
+
+	attempt = 0
+	err = retryBackend.Load(context.TODO(), backend.Handle{Name: "other"}, 0, 0, nilRd)
+	test.Assert(t, strings.Contains(err.Error(), "circuit breaker open for file"), "expected circuit breaker error, got %v")
+	test.Equals(t, 0, attempt)
+
+	// don't trip for permanent errors
+	be.OpenReaderFn = func(ctx context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
+		attempt++
+		return nil, notFound
+	}
+	err = retryBackend.Load(context.TODO(), backend.Handle{Name: "notfound"}, 0, 0, nilRd)
+	test.Equals(t, notFound, err, "expected circuit breaker to only affect other file, got %v")
+	err = retryBackend.Load(context.TODO(), backend.Handle{Name: "notfound"}, 0, 0, nilRd)
+	test.Equals(t, notFound, err, "persistent error must not trigger circuit breaker, got %v")
+
+	// wait for circuit breaker to expire
+	time.Sleep(5 * time.Millisecond)
+	old := failedLoadExpiry
+	defer func() {
+		failedLoadExpiry = old
+	}()
+	failedLoadExpiry = 3 * time.Millisecond
+	err = retryBackend.Load(context.TODO(), backend.Handle{Name: "other"}, 0, 0, nilRd)
+	test.Equals(t, notFound, err, "expected circuit breaker to reset, got %v")
 }
 
 func TestBackendStatNotExists(t *testing.T) {
@@ -327,6 +379,36 @@ func TestBackendStatNotExists(t *testing.T) {
 	_, err := retryBackend.Stat(context.TODO(), backend.Handle{})
 	test.Assert(t, be.IsNotExistFn(err), "unexpected error %v", err)
 	test.Equals(t, 1, attempt)
+}
+
+func TestBackendRetryPermanent(t *testing.T) {
+	// retry should not retry if the error matches IsPermanentError
+	notFound := errors.New("not found")
+	attempt := 0
+
+	be := mock.NewBackend()
+	be.IsPermanentErrorFn = func(err error) bool {
+		return errors.Is(err, notFound)
+	}
+
+	TestFastRetries(t)
+	retryBackend := New(be, 2, nil, nil)
+	err := retryBackend.retry(context.TODO(), "test", func() error {
+		attempt++
+		return notFound
+	})
+
+	test.Assert(t, be.IsPermanentErrorFn(err), "unexpected error %v", err)
+	test.Equals(t, 1, attempt)
+
+	attempt = 0
+	err = retryBackend.retry(context.TODO(), "test", func() error {
+		attempt++
+		return errors.New("something")
+	})
+	test.Assert(t, !be.IsPermanentErrorFn(err), "error unexpectedly considered permanent %v", err)
+	test.Equals(t, 3, attempt)
+
 }
 
 func assertIsCanceled(t *testing.T, err error) {

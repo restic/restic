@@ -2,13 +2,16 @@ package retry
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"sync"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/feature"
 )
 
 // Backend retries operations on the backend in case of an error with a
@@ -18,6 +21,8 @@ type Backend struct {
 	MaxTries int
 	Report   func(string, error, time.Duration)
 	Success  func(string, int)
+
+	failedLoads sync.Map
 }
 
 // statically ensure that RetryBackend implements backend.Backend.
@@ -74,7 +79,16 @@ func (be *Backend) retry(ctx context.Context, msg string, f func() error) error 
 		bo.InitialInterval = 1 * time.Millisecond
 	}
 
-	err := retryNotifyErrorWithSuccess(f,
+	err := retryNotifyErrorWithSuccess(
+		func() error {
+			err := f()
+			// don't retry permanent errors as those very likely cannot be fixed by retrying
+			// TODO remove IsNotExist(err) special cases when removing the feature flag
+			if feature.Flag.Enabled(feature.BackendErrorRedesign) && !errors.Is(err, &backoff.PermanentError{}) && be.Backend.IsPermanentError(err) {
+				return backoff.Permanent(err)
+			}
+			return err
+		},
 		backoff.WithContext(backoff.WithMaxRetries(bo, uint64(be.MaxTries)), ctx),
 		func(err error, d time.Duration) {
 			if be.Report != nil {
@@ -121,19 +135,39 @@ func (be *Backend) Save(ctx context.Context, h backend.Handle, rd backend.Rewind
 	})
 }
 
+// Failed loads expire after an hour
+var failedLoadExpiry = time.Hour
+
 // Load returns a reader that yields the contents of the file at h at the
 // given offset. If length is larger than zero, only a portion of the file
 // is returned. rd must be closed after use. If an error is returned, the
 // ReadCloser must be nil.
 func (be *Backend) Load(ctx context.Context, h backend.Handle, length int, offset int64, consumer func(rd io.Reader) error) (err error) {
-	return be.retry(ctx, fmt.Sprintf("Load(%v, %v, %v)", h, length, offset),
+	key := h
+	key.IsMetadata = false
+
+	// Implement the circuit breaker pattern for files that exhausted all retries due to a non-permanent error
+	if v, ok := be.failedLoads.Load(key); ok {
+		if time.Since(v.(time.Time)) > failedLoadExpiry {
+			be.failedLoads.Delete(key)
+		} else {
+			// fail immediately if the file was already problematic during the last hour
+			return fmt.Errorf("circuit breaker open for file %v", h)
+		}
+	}
+
+	err = be.retry(ctx, fmt.Sprintf("Load(%v, %v, %v)", h, length, offset),
 		func() error {
-			err := be.Backend.Load(ctx, h, length, offset, consumer)
-			if be.Backend.IsNotExist(err) {
-				return backoff.Permanent(err)
-			}
-			return err
+			return be.Backend.Load(ctx, h, length, offset, consumer)
 		})
+
+	if feature.Flag.Enabled(feature.BackendErrorRedesign) && err != nil && !be.IsPermanentError(err) {
+		// We've exhausted the retries, the file is likely inaccessible. By excluding permanent
+		// errors, not found or truncated files are not recorded.
+		be.failedLoads.LoadOrStore(key, time.Now())
+	}
+
+	return err
 }
 
 // Stat returns information about the File identified by h.

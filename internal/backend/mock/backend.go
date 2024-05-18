@@ -13,6 +13,7 @@ import (
 type Backend struct {
 	CloseFn            func() error
 	IsNotExistFn       func(err error) bool
+	IsPermanentErrorFn func(err error) bool
 	SaveFn             func(ctx context.Context, h backend.Handle, rd backend.RewindReader) error
 	OpenReaderFn       func(ctx context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error)
 	StatFn             func(ctx context.Context, h backend.Handle) (backend.FileInfo, error)
@@ -81,6 +82,14 @@ func (m *Backend) IsNotExist(err error) bool {
 	}
 
 	return m.IsNotExistFn(err)
+}
+
+func (m *Backend) IsPermanentError(err error) bool {
+	if m.IsPermanentErrorFn == nil {
+		return false
+	}
+
+	return m.IsPermanentErrorFn(err)
 }
 
 // Save data in the backend.

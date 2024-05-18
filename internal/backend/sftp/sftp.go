@@ -20,6 +20,7 @@ import (
 	"github.com/restic/restic/internal/backend/util"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/feature"
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/pkg/sftp"
@@ -42,6 +43,8 @@ type SFTP struct {
 }
 
 var _ backend.Backend = &SFTP{}
+
+var errTooShort = fmt.Errorf("file is too short")
 
 func NewFactory() location.Factory {
 	return location.NewLimitedBackendFactory("sftp", ParseConfig, location.NoPassword, limiter.WrapBackendConstructor(Create), limiter.WrapBackendConstructor(Open))
@@ -210,6 +213,10 @@ func (r *SFTP) ReadDir(_ context.Context, dir string) ([]os.FileInfo, error) {
 // IsNotExist returns true if the error is caused by a not existing file.
 func (r *SFTP) IsNotExist(err error) bool {
 	return errors.Is(err, os.ErrNotExist)
+}
+
+func (r *SFTP) IsPermanentError(err error) bool {
+	return r.IsNotExist(err) || errors.Is(err, errTooShort) || errors.Is(err, os.ErrPermission)
 }
 
 func buildSSHCommand(cfg Config) (cmd string, args []string, err error) {
@@ -419,7 +426,24 @@ func (r *SFTP) checkNoSpace(dir string, size int64, origErr error) error {
 // Load runs fn with a reader that yields the contents of the file at h at the
 // given offset.
 func (r *SFTP) Load(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
-	return util.DefaultLoad(ctx, h, length, offset, r.openReader, fn)
+	return util.DefaultLoad(ctx, h, length, offset, r.openReader, func(rd io.Reader) error {
+		if length == 0 || !feature.Flag.Enabled(feature.BackendErrorRedesign) {
+			return fn(rd)
+		}
+
+		// there is no direct way to efficiently check whether the file is too short
+		// rd is already a LimitedReader which can be used to track the number of bytes read
+		err := fn(rd)
+
+		// check the underlying reader to be agnostic to however fn() handles the returned error
+		_, rderr := rd.Read([]byte{0})
+		if rderr == io.EOF && rd.(*backend.LimitedReadCloser).N != 0 {
+			// file is too short
+			return fmt.Errorf("%w: %v", errTooShort, err)
+		}
+
+		return err
+	})
 }
 
 func (r *SFTP) openReader(_ context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {

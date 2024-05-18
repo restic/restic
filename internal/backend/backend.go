@@ -38,7 +38,9 @@ type Backend interface {
 
 	// Load runs fn with a reader that yields the contents of the file at h at the
 	// given offset. If length is larger than zero, only a portion of the file
-	// is read.
+	// is read. If the length is larger than zero and the file is too short to return
+	// the requested length bytes, then an error MUST be returned that is recognized
+	// by IsPermanentError().
 	//
 	// The function fn may be called multiple times during the same Load invocation
 	// and therefore must be idempotent.
@@ -65,6 +67,12 @@ type Backend interface {
 	// The argument may be a wrapped error. The implementation is responsible
 	// for unwrapping it.
 	IsNotExist(err error) bool
+
+	// IsPermanentError returns true if the error can very likely not be resolved
+	// by retrying the operation. Backends should return true if the file is missing,
+	// the requested range does not (completely) exist in the file or the user is
+	// not authorized to perform the requested operation.
+	IsPermanentError(err error) bool
 
 	// Delete removes all data in the backend.
 	Delete(ctx context.Context) error

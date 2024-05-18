@@ -173,6 +173,21 @@ func (be *Backend) IsNotExist(err error) bool {
 	return errors.Is(err, storage.ErrObjectNotExist)
 }
 
+func (be *Backend) IsPermanentError(err error) bool {
+	if be.IsNotExist(err) {
+		return true
+	}
+
+	var gerr *googleapi.Error
+	if errors.As(err, &gerr) {
+		if gerr.Code == http.StatusRequestedRangeNotSatisfiable || gerr.Code == http.StatusUnauthorized || gerr.Code == http.StatusForbidden {
+			return true
+		}
+	}
+
+	return false
+}
+
 // Join combines path components with slashes.
 func (be *Backend) Join(p ...string) string {
 	return path.Join(p...)
@@ -271,6 +286,11 @@ func (be *Backend) openReader(ctx context.Context, h backend.Handle, length int,
 	r, err := be.bucket.Object(objName).NewRangeReader(ctx, offset, int64(length))
 	if err != nil {
 		return nil, err
+	}
+
+	if length > 0 && r.Attrs.Size < offset+int64(length) {
+		_ = r.Close()
+		return nil, &googleapi.Error{Code: http.StatusRequestedRangeNotSatisfiable, Message: "restic-file-too-short"}
 	}
 
 	return r, err

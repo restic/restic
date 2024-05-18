@@ -2,6 +2,7 @@ package b2
 
 import (
 	"context"
+	"fmt"
 	"hash"
 	"io"
 	"net/http"
@@ -30,6 +31,8 @@ type b2Backend struct {
 
 	canDelete bool
 }
+
+var errTooShort = fmt.Errorf("file is too short")
 
 // Billing happens in 1000 item granularity, but we are more interested in reducing the number of network round trips
 const defaultListMaxItems = 10 * 1000
@@ -186,13 +189,36 @@ func (be *b2Backend) IsNotExist(err error) bool {
 	return false
 }
 
+func (be *b2Backend) IsPermanentError(err error) bool {
+	// the library unfortunately endlessly retries authentication errors
+	return be.IsNotExist(err) || errors.Is(err, errTooShort)
+}
+
 // Load runs fn with a reader that yields the contents of the file at h at the
 // given offset.
 func (be *b2Backend) Load(ctx context.Context, h backend.Handle, length int, offset int64, fn func(rd io.Reader) error) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	return util.DefaultLoad(ctx, h, length, offset, be.openReader, fn)
+	return util.DefaultLoad(ctx, h, length, offset, be.openReader, func(rd io.Reader) error {
+		if length == 0 {
+			return fn(rd)
+		}
+
+		// there is no direct way to efficiently check whether the file is too short
+		// use a LimitedReader to track the number of bytes read
+		limrd := &io.LimitedReader{R: rd, N: int64(length)}
+		err := fn(limrd)
+
+		// check the underlying reader to be agnostic to however fn() handles the returned error
+		_, rderr := rd.Read([]byte{0})
+		if rderr == io.EOF && limrd.N != 0 {
+			// file is too short
+			return fmt.Errorf("%w: %v", errTooShort, err)
+		}
+
+		return err
+	})
 }
 
 func (be *b2Backend) openReader(ctx context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
