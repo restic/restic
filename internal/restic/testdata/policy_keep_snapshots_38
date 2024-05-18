@@ -507,7 +507,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -518,7 +520,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -529,7 +533,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -540,7 +546,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -551,7 +559,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -562,7 +572,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -573,7 +585,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -584,7 +598,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -595,7 +611,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -606,7 +624,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -617,7 +637,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -628,7 +650,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -639,7 +663,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -650,7 +676,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -661,7 +689,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -672,7 +702,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -683,7 +715,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -694,7 +728,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -705,7 +741,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -716,7 +754,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -727,7 +767,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -738,7 +780,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -749,7 +793,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -760,7 +806,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -771,7 +819,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -782,7 +832,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -793,7 +845,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -804,7 +858,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -815,7 +871,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -826,7 +884,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -837,7 +897,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -848,7 +910,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -859,7 +923,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -870,7 +936,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -881,7 +949,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -892,7 +962,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -903,7 +975,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -914,7 +988,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -925,7 +1001,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -936,7 +1014,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -947,7 +1027,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -958,7 +1040,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -969,7 +1053,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -980,7 +1066,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -991,7 +1079,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1002,7 +1092,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1013,7 +1105,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1024,7 +1118,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1035,7 +1131,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1046,7 +1144,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1057,7 +1157,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1068,7 +1170,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1079,7 +1183,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1090,7 +1196,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1101,7 +1209,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1112,7 +1222,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1127,7 +1239,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1141,7 +1255,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1155,7 +1271,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1169,7 +1287,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1183,7 +1303,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1197,7 +1319,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1211,7 +1335,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1225,7 +1351,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1239,7 +1367,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1253,7 +1383,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1267,7 +1399,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1281,7 +1415,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1295,7 +1431,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1309,7 +1447,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1323,7 +1463,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1334,7 +1476,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1345,7 +1489,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1356,7 +1502,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1367,7 +1515,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1378,7 +1528,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1389,7 +1541,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1400,7 +1554,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1411,7 +1567,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1422,7 +1580,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1433,7 +1593,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1444,7 +1606,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1455,7 +1619,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1466,7 +1632,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1477,7 +1645,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1488,7 +1658,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1499,7 +1671,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1510,7 +1684,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1521,7 +1697,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     },
     {
       "snapshot": {
@@ -1532,7 +1710,9 @@
       "matches": [
         "hourly snapshot"
       ],
-      "counters": {"Hourly": -1}
+      "counters": {
+        "hourly": -1
+      }
     }
   ]
 }
