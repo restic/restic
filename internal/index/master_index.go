@@ -332,7 +332,7 @@ func (mi *MasterIndex) Save(ctx context.Context, repo restic.SaverRemoverUnpacke
 	debug.Log("start rebuilding index of %d indexes, excludePacks: %v", len(mi.idx), excludePacks)
 
 	newIndex := NewIndex()
-	obsolete := restic.NewIDSet()
+	obsolete := restic.NewIDSet(extraObsolete...)
 
 	// track spawned goroutines using wg, create a new context which is
 	// cancelled as soon as an error occurs.
@@ -351,11 +351,6 @@ func (mi *MasterIndex) Save(ctx context.Context, repo restic.SaverRemoverUnpacke
 				}
 
 				debug.Log("adding index ids %v to supersedes field", ids)
-
-				err = newIndex.AddToSupersedes(ids...)
-				if err != nil {
-					return err
-				}
 				obsolete.Merge(restic.NewIDSet(ids...))
 			} else {
 				debug.Log("index %d isn't final, don't add to supersedes field", i)
@@ -379,12 +374,6 @@ func (mi *MasterIndex) Save(ctx context.Context, repo restic.SaverRemoverUnpacke
 				return wgCtx.Err()
 			}
 		}
-
-		err := newIndex.AddToSupersedes(extraObsolete...)
-		if err != nil {
-			return err
-		}
-		obsolete.Merge(restic.NewIDSet(extraObsolete...))
 
 		select {
 		case ch <- newIndex:

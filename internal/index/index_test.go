@@ -309,8 +309,6 @@ func TestIndexUnserialize(t *testing.T) {
 		{docExampleV1, 1},
 		{docExampleV2, 2},
 	} {
-		oldIdx := restic.IDs{restic.TestParseID("ed54ae36197f4745ebc4b54d10e0f623eaaaedd03013eb7ae90df881b7781452")}
-
 		idx, oldFormat, err := index.DecodeIndex(task.idxBytes, restic.NewRandomID())
 		rtest.OK(t, err)
 		rtest.Assert(t, !oldFormat, "new index format recognized as old format")
@@ -336,8 +334,6 @@ func TestIndexUnserialize(t *testing.T) {
 				t.Fatal("Invalid index version")
 			}
 		}
-
-		rtest.Equals(t, oldIdx, idx.Supersedes())
 
 		blobs := listPack(t, idx, exampleLookupTest.packID)
 		if len(blobs) != len(exampleLookupTest.blobs) {
@@ -446,8 +442,6 @@ func TestIndexUnserializeOld(t *testing.T) {
 		rtest.Equals(t, test.offset, blob.Offset)
 		rtest.Equals(t, test.length, blob.Length)
 	}
-
-	rtest.Equals(t, 0, len(idx.Supersedes()))
 }
 
 func TestIndexPacks(t *testing.T) {
