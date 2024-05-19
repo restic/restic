@@ -35,4 +35,7 @@ func TestIDSet(t *testing.T) {
 	}
 
 	rtest.Equals(t, "{1285b303 7bb086db f658198b}", set.String())
+
+	copied := set.Clone()
+	rtest.Equals(t, "{1285b303 7bb086db f658198b}", copied.String())
 }
