@@ -357,44 +357,25 @@ func TestIndexSave(t *testing.T) {
 func testIndexSave(t *testing.T, version uint) {
 	repo := createFilledRepo(t, 3, version)
 
-	err := repo.LoadIndex(context.TODO(), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	idx := index.NewMasterIndex()
+	rtest.OK(t, idx.Load(context.TODO(), repo, nil, nil))
+	blobs := make(map[restic.PackedBlob]struct{})
+	rtest.OK(t, idx.Each(context.TODO(), func(pb restic.PackedBlob) {
+		blobs[pb] = struct{}{}
+	}))
 
-	err = repo.SaveIndex(context.TODO(), nil, nil, restic.MasterIndexSaveOpts{})
-	if err != nil {
-		t.Fatalf("unable to save new index: %v", err)
-	}
+	rtest.OK(t, idx.Save(context.TODO(), repo, nil, nil, restic.MasterIndexSaveOpts{}))
+	idx = index.NewMasterIndex()
+	rtest.OK(t, idx.Load(context.TODO(), repo, nil, nil))
 
-	checker := checker.New(repo, false)
-	err = checker.LoadSnapshots(context.TODO())
-	if err != nil {
-		t.Error(err)
-	}
-
-	hints, errs := checker.LoadIndex(context.TODO(), nil)
-	for _, h := range hints {
-		t.Logf("hint: %v\n", h)
-	}
-
-	for _, err := range errs {
-		t.Errorf("checker found error: %v", err)
-	}
-
-	ctx, cancel := context.WithCancel(context.TODO())
-	defer cancel()
-
-	errCh := make(chan error)
-	go checker.Structure(ctx, nil, errCh)
-	i := 0
-	for err := range errCh {
-		t.Errorf("checker returned error: %v", err)
-		i++
-		if i == 10 {
-			t.Errorf("more than 10 errors returned, skipping the rest")
-			cancel()
-			break
+	rtest.OK(t, idx.Each(context.TODO(), func(pb restic.PackedBlob) {
+		if _, ok := blobs[pb]; ok {
+			delete(blobs, pb)
+		} else {
+			t.Fatalf("unexpected blobs %v", pb)
 		}
-	}
+	}))
+	rtest.Equals(t, 0, len(blobs), "saved index is missing blobs")
+
+	checker.TestCheckRepo(t, repo, false)
 }
