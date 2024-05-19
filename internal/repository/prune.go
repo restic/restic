@@ -313,7 +313,7 @@ func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs re
 	return usedBlobs, indexPack, nil
 }
 
-func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Repository, indexPack map[restic.ID]packInfo, stats *PruneStats, printer progress.Printer) (PrunePlan, error) {
+func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, indexPack map[restic.ID]packInfo, stats *PruneStats, printer progress.Printer) (PrunePlan, error) {
 	removePacksFirst := restic.NewIDSet()
 	removePacks := restic.NewIDSet()
 	repackPacks := restic.NewIDSet()
@@ -322,10 +322,10 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo restic.Reposi
 	var repackSmallCandidates []packInfoWithID
 	repoVersion := repo.Config().Version
 	// only repack very small files by default
-	targetPackSize := repo.PackSize() / 25
+	targetPackSize := repo.packSize() / 25
 	if opts.RepackSmall {
 		// consider files with at least 80% of the target size as large enough
-		targetPackSize = repo.PackSize() / 5 * 4
+		targetPackSize = repo.packSize() / 5 * 4
 	}
 
 	// loop over all packs and decide what to do
@@ -612,7 +612,7 @@ func (plan *PrunePlan) Execute(ctx context.Context, printer progress.Printer) (e
 	}
 
 	// drop outdated in-memory index
-	repo.ClearIndex()
+	repo.clearIndex()
 
 	printer.P("done\n")
 	return nil

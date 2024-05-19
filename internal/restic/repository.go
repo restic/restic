@@ -19,11 +19,9 @@ type Repository interface {
 	// Connections returns the maximum number of concurrent backend operations
 	Connections() uint
 	Config() Config
-	PackSize() uint
 	Key() *crypto.Key
 
 	LoadIndex(context.Context, *progress.Counter) error
-	ClearIndex()
 	SetIndex(MasterIndex) error
 	SaveIndex(ctx context.Context, excludePacks IDSet, extraObsolete IDs, opts MasterIndexSaveOpts) error
 

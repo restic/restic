@@ -146,8 +146,8 @@ func (r *Repository) Config() restic.Config {
 	return r.cfg
 }
 
-// PackSize return the target size of a pack file when uploading
-func (r *Repository) PackSize() uint {
+// packSize return the target size of a pack file when uploading
+func (r *Repository) packSize() uint {
 	return r.opts.PackSize
 }
 
@@ -541,8 +541,8 @@ func (r *Repository) StartPackUploader(ctx context.Context, wg *errgroup.Group) 
 	innerWg, ctx := errgroup.WithContext(ctx)
 	r.packerWg = innerWg
 	r.uploader = newPackerUploader(ctx, innerWg, r, r.be.Connections())
-	r.treePM = newPackerManager(r.key, restic.TreeBlob, r.PackSize(), r.uploader.QueuePacker)
-	r.dataPM = newPackerManager(r.key, restic.DataBlob, r.PackSize(), r.uploader.QueuePacker)
+	r.treePM = newPackerManager(r.key, restic.TreeBlob, r.packSize(), r.uploader.QueuePacker)
+	r.dataPM = newPackerManager(r.key, restic.DataBlob, r.packSize(), r.uploader.QueuePacker)
 
 	wg.Go(func() error {
 		return innerWg.Wait()
@@ -612,7 +612,7 @@ func (r *Repository) SetIndex(i restic.MasterIndex) error {
 	return r.prepareCache()
 }
 
-func (r *Repository) ClearIndex() {
+func (r *Repository) clearIndex() {
 	r.idx = index.NewMasterIndex()
 	r.configureIndex()
 }
@@ -646,7 +646,7 @@ func (r *Repository) LoadIndex(ctx context.Context, p *progress.Counter) error {
 	}
 
 	// reset in-memory index before loading it from the repository
-	r.ClearIndex()
+	r.clearIndex()
 
 	err = index.ForAllIndexes(ctx, indexList, r, func(_ restic.ID, idx *index.Index, _ bool, err error) error {
 		if err != nil {

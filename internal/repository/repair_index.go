@@ -107,7 +107,7 @@ func RepairIndex(ctx context.Context, repo *Repository, opts RepairIndexOptions,
 	}
 
 	// drop outdated in-memory index
-	repo.ClearIndex()
+	repo.clearIndex()
 	return nil
 }
 
