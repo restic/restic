@@ -21,12 +21,12 @@ type Repository interface {
 	Config() Config
 	Key() *crypto.Key
 
-	LoadIndex(context.Context, *progress.Counter) error
-	SetIndex(MasterIndex) error
+	LoadIndex(ctx context.Context, p *progress.Counter) error
+	SetIndex(mi MasterIndex) error
 	SaveIndex(ctx context.Context, excludePacks IDSet, extraObsolete IDs, opts MasterIndexSaveOpts) error
 
-	LookupBlob(BlobHandle) []PackedBlob
-	LookupBlobSize(ID, BlobType) (uint, bool)
+	LookupBlob(bh BlobHandle) []PackedBlob
+	LookupBlobSize(id ID, t BlobType) (size uint, exists bool)
 
 	// ListBlobs runs fn on all blobs known to the index. When the context is cancelled,
 	// the index iteration returns immediately with ctx.Err(). This blocks any modification of the index.
@@ -34,17 +34,17 @@ type Repository interface {
 	ListPacksFromIndex(ctx context.Context, packs IDSet) <-chan PackBlobs
 	// ListPack returns the list of blobs saved in the pack id and the length of
 	// the pack header.
-	ListPack(context.Context, ID, int64) ([]Blob, uint32, error)
+	ListPack(ctx context.Context, id ID, packSize int64) (entries []Blob, hdrSize uint32, err error)
 
-	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
+	LoadBlob(ctx context.Context, t BlobType, id ID, buf []byte) ([]byte, error)
 	LoadBlobsFromPack(ctx context.Context, packID ID, blobs []Blob, handleBlobFn func(blob BlobHandle, buf []byte, err error) error) error
 
 	// StartPackUploader start goroutines to upload new pack files. The errgroup
 	// is used to immediately notify about an upload error. Flush() will also return
 	// that error.
 	StartPackUploader(ctx context.Context, wg *errgroup.Group)
-	SaveBlob(context.Context, BlobType, []byte, ID, bool) (ID, bool, int, error)
-	Flush(context.Context) error
+	SaveBlob(ctx context.Context, t BlobType, buf []byte, id ID, storeDuplicate bool) (newID ID, known bool, size int, err error)
+	Flush(ctx context.Context) error
 
 	// List calls the function fn for each file of type t in the repository.
 	// When an error is returned by fn, processing stops and List() returns the
@@ -58,7 +58,7 @@ type Repository interface {
 	LoadRaw(ctx context.Context, t FileType, id ID) (data []byte, err error)
 	// LoadUnpacked loads and decrypts the file with the given type and ID.
 	LoadUnpacked(ctx context.Context, t FileType, id ID) (data []byte, err error)
-	SaveUnpacked(context.Context, FileType, []byte) (ID, error)
+	SaveUnpacked(ctx context.Context, t FileType, buf []byte) (ID, error)
 	// RemoveUnpacked removes a file from the repository. This will eventually be restricted to deleting only snapshots.
 	RemoveUnpacked(ctx context.Context, t FileType, id ID) error
 }
@@ -86,7 +86,7 @@ type LoaderUnpacked interface {
 type SaverUnpacked interface {
 	// Connections returns the maximum number of concurrent backend operations
 	Connections() uint
-	SaveUnpacked(context.Context, FileType, []byte) (ID, error)
+	SaveUnpacked(ctx context.Context, t FileType, buf []byte) (ID, error)
 }
 
 // RemoverUnpacked allows removing an unpacked blob
@@ -115,8 +115,8 @@ type MasterIndexSaveOpts struct {
 
 // MasterIndex keeps track of the blobs are stored within files.
 type MasterIndex interface {
-	Has(BlobHandle) bool
-	Lookup(BlobHandle) []PackedBlob
+	Has(bh BlobHandle) bool
+	Lookup(bh BlobHandle) []PackedBlob
 
 	// Each runs fn on all blobs known to the index. When the context is cancelled,
 	// the index iteration returns immediately with ctx.Err(). This blocks any modification of the index.
