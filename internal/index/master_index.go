@@ -395,8 +395,9 @@ func (mi *MasterIndex) Rewrite(ctx context.Context, repo restic.Unpacked, exclud
 		}
 		return nil
 	}
-	// loading an index can take quite some time such that this can be both CPU- or IO-bound
-	loaderCount := int(repo.Connections()) + runtime.GOMAXPROCS(0)
+	// loading an index can take quite some time such that this is probably CPU-bound
+	// the index files are probably already cached at this point
+	loaderCount := runtime.GOMAXPROCS(0)
 	// run workers on ch
 	for i := 0; i < loaderCount; i++ {
 		rewriteWg.Add(1)
@@ -467,8 +468,9 @@ func (mi *MasterIndex) Rewrite(ctx context.Context, repo restic.Unpacked, exclud
 		return nil
 	}
 
-	// encoding an index can take quite some time such that this can be both CPU- or IO-bound
-	workerCount := int(repo.Connections()) + runtime.GOMAXPROCS(0)
+	// encoding an index can take quite some time such that this can be CPU- or IO-bound
+	// do not add repo.Connections() here as there are already the loader goroutines.
+	workerCount := runtime.GOMAXPROCS(0)
 	// run workers on ch
 	for i := 0; i < workerCount; i++ {
 		wg.Go(worker)
