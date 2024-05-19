@@ -23,12 +23,15 @@ type MasterIndex struct {
 
 // NewMasterIndex creates a new master index.
 func NewMasterIndex() *MasterIndex {
+	mi := &MasterIndex{pendingBlobs: restic.NewBlobSet()}
+	mi.clear()
+	return mi
+}
+
+func (mi *MasterIndex) clear() {
 	// Always add an empty final index, such that MergeFinalIndexes can merge into this.
-	// Note that removing this index could lead to a race condition in the rare
-	// situation that only two indexes exist which are saved and merged concurrently.
-	idx := []*Index{NewIndex()}
-	idx[0].Finalize()
-	return &MasterIndex{idx: idx, pendingBlobs: restic.NewBlobSet()}
+	mi.idx = []*Index{NewIndex()}
+	mi.idx[0].Finalize()
 }
 
 func (mi *MasterIndex) MarkCompressed() {
