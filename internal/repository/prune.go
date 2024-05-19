@@ -72,10 +72,12 @@ type PrunePlan struct {
 }
 
 type packInfo struct {
-	usedBlobs    uint
-	unusedBlobs  uint
-	usedSize     uint64
-	unusedSize   uint64
+	usedBlobs      uint
+	unusedBlobs    uint
+	duplicateBlobs uint
+	usedSize       uint64
+	unusedSize     uint64
+
 	tpe          restic.BlobType
 	uncompressed bool
 }
@@ -226,6 +228,7 @@ func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs re
 			// mark as unused for now, we will later on select one copy
 			ip.unusedSize += size
 			ip.unusedBlobs++
+			ip.duplicateBlobs++
 
 			// count as duplicate, will later on change one copy to be counted as used
 			stats.Size.Duplicate += size
@@ -256,6 +259,8 @@ func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs re
 	// if duplicate blobs exist, those will be set to either "used" or "unused":
 	// - mark only one occurrence of duplicate blobs as used
 	// - if there are already some used blobs in a pack, possibly mark duplicates in this pack as "used"
+	// - if a pack only consists of duplicates (which by definition are used blobs), mark it as "used". This
+	//   ensures that already rewritten packs are kept.
 	// - if there are no used blobs in a pack, possibly mark duplicates as "unused"
 	if hasDuplicates {
 		// iterate again over all blobs in index (this is pretty cheap, all in-mem)
@@ -271,8 +276,10 @@ func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs re
 			ip := indexPack[blob.PackID]
 			size := uint64(blob.Length)
 			switch {
-			case ip.usedBlobs > 0, count == 0:
-				// other used blobs in pack or "last" occurrence ->  transition to used
+			case ip.usedBlobs > 0, (ip.duplicateBlobs == ip.unusedBlobs), count == 0:
+				// other used blobs in pack, only duplicate blobs or "last" occurrence ->  transition to used
+				// a pack file created by an interrupted prune run will consist of only duplicate blobs
+				// thus select such already repacked pack files
 				ip.usedSize += size
 				ip.usedBlobs++
 				ip.unusedSize -= size
