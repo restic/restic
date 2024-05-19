@@ -312,10 +312,17 @@ func (mi *MasterIndex) Load(ctx context.Context, r restic.ListerLoaderUnpacked, 
 	return mi.MergeFinalIndexes()
 }
 
+type MasterIndexSaveOpts struct {
+	SaveProgress   *progress.Counter
+	DeleteProgress func() *progress.Counter
+	DeleteReport   func(id restic.ID, err error)
+	SkipDeletion   bool
+}
+
 // Save saves all known indexes to index files, leaving out any
 // packs whose ID is contained in packBlacklist from finalized indexes.
 // It also removes the old index files and those listed in extraObsolete.
-func (mi *MasterIndex) Save(ctx context.Context, repo restic.SaverRemoverUnpacked, excludePacks restic.IDSet, extraObsolete restic.IDs, opts restic.MasterIndexSaveOpts) error {
+func (mi *MasterIndex) Save(ctx context.Context, repo restic.SaverRemoverUnpacked, excludePacks restic.IDSet, extraObsolete restic.IDs, opts MasterIndexSaveOpts) error {
 	p := opts.SaveProgress
 	p.SetMax(uint64(len(mi.Packs(excludePacks))))
 

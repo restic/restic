@@ -28,6 +28,8 @@ func RepairIndex(ctx context.Context, repo *Repository, opts RepairIndexOptions,
 		if err != nil {
 			return err
 		}
+		repo.clearIndex()
+
 	} else {
 		printer.P("loading indexes...\n")
 		mi := index.NewMasterIndex()
@@ -111,11 +113,11 @@ func RepairIndex(ctx context.Context, repo *Repository, opts RepairIndexOptions,
 	return nil
 }
 
-func rebuildIndexFiles(ctx context.Context, repo restic.Repository, removePacks restic.IDSet, extraObsolete restic.IDs, skipDeletion bool, printer progress.Printer) error {
+func rebuildIndexFiles(ctx context.Context, repo *Repository, removePacks restic.IDSet, extraObsolete restic.IDs, skipDeletion bool, printer progress.Printer) error {
 	printer.P("rebuilding index\n")
 
 	bar := printer.NewCounter("packs processed")
-	return repo.SaveIndex(ctx, removePacks, extraObsolete, restic.MasterIndexSaveOpts{
+	return repo.idx.Save(ctx, repo, removePacks, extraObsolete, index.MasterIndexSaveOpts{
 		SaveProgress: bar,
 		DeleteProgress: func() *progress.Counter {
 			return printer.NewCounter("old indexes deleted")

@@ -23,7 +23,6 @@ type Repository interface {
 
 	LoadIndex(ctx context.Context, p *progress.Counter) error
 	SetIndex(mi MasterIndex) error
-	SaveIndex(ctx context.Context, excludePacks IDSet, extraObsolete IDs, opts MasterIndexSaveOpts) error
 
 	LookupBlob(t BlobType, id ID) []PackedBlob
 	LookupBlobSize(t BlobType, id ID) (size uint, exists bool)
@@ -106,13 +105,6 @@ type PackBlobs struct {
 	Blobs  []Blob
 }
 
-type MasterIndexSaveOpts struct {
-	SaveProgress   *progress.Counter
-	DeleteProgress func() *progress.Counter
-	DeleteReport   func(id ID, err error)
-	SkipDeletion   bool
-}
-
 // MasterIndex keeps track of the blobs are stored within files.
 type MasterIndex interface {
 	Has(bh BlobHandle) bool
@@ -122,8 +114,6 @@ type MasterIndex interface {
 	// the index iteration returns immediately with ctx.Err(). This blocks any modification of the index.
 	Each(ctx context.Context, fn func(PackedBlob)) error
 	ListPacks(ctx context.Context, packs IDSet) <-chan PackBlobs
-
-	Save(ctx context.Context, repo SaverRemoverUnpacked, excludePacks IDSet, extraObsolete IDs, opts MasterIndexSaveOpts) error
 }
 
 // Lister allows listing files in a backend.

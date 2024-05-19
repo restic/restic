@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/backend"
-	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui/progress"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -173,35 +173,12 @@ func repack(t *testing.T, repo restic.Repository, packs restic.IDSet, blobs rest
 	}
 }
 
-func rebuildIndex(t *testing.T, repo restic.Repository) {
-	err := repo.SetIndex(index.NewMasterIndex())
-	rtest.OK(t, err)
+func rebuildAndReloadIndex(t *testing.T, repo *repository.Repository) {
+	rtest.OK(t, repository.RepairIndex(context.TODO(), repo, repository.RepairIndexOptions{
+		ReadAllPacks: true,
+	}, &progress.NoopPrinter{}))
 
-	packs := make(map[restic.ID]int64)
-	err = repo.List(context.TODO(), restic.PackFile, func(id restic.ID, size int64) error {
-		packs[id] = size
-		return nil
-	})
-	rtest.OK(t, err)
-
-	_, err = repo.(*repository.Repository).CreateIndexFromPacks(context.TODO(), packs, nil)
-	rtest.OK(t, err)
-
-	var obsoleteIndexes restic.IDs
-	err = repo.List(context.TODO(), restic.IndexFile, func(id restic.ID, size int64) error {
-		obsoleteIndexes = append(obsoleteIndexes, id)
-		return nil
-	})
-	rtest.OK(t, err)
-
-	err = repo.SaveIndex(context.TODO(), restic.NewIDSet(), obsoleteIndexes, restic.MasterIndexSaveOpts{})
-	rtest.OK(t, err)
-}
-
-func reloadIndex(t *testing.T, repo restic.Repository) {
-	if err := repo.LoadIndex(context.TODO(), nil); err != nil {
-		t.Fatalf("error loading new index: %v", err)
-	}
+	rtest.OK(t, repo.LoadIndex(context.TODO(), nil))
 }
 
 func TestRepack(t *testing.T) {
@@ -236,8 +213,7 @@ func testRepack(t *testing.T, version uint) {
 	removePacks := findPacksForBlobs(t, repo, removeBlobs)
 
 	repack(t, repo, removePacks, keepBlobs)
-	rebuildIndex(t, repo)
-	reloadIndex(t, repo)
+	rebuildAndReloadIndex(t, repo)
 
 	packsAfter = listPacks(t, repo)
 	for id := range removePacks {
@@ -307,8 +283,7 @@ func testRepackCopy(t *testing.T, version uint) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rebuildIndex(t, dstRepo)
-	reloadIndex(t, dstRepo)
+	rebuildAndReloadIndex(t, dstRepo)
 
 	for h := range keepBlobs {
 		list := dstRepo.LookupBlob(h.Type, h.ID)

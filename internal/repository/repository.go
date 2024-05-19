@@ -587,10 +587,6 @@ func (r *Repository) LookupBlobSize(tpe restic.BlobType, id restic.ID) (uint, bo
 	return r.idx.LookupSize(restic.BlobHandle{Type: tpe, ID: id})
 }
 
-func (r *Repository) SaveIndex(ctx context.Context, excludePacks restic.IDSet, extraObsolete restic.IDs, opts restic.MasterIndexSaveOpts) error {
-	return r.idx.Save(ctx, r, excludePacks, extraObsolete, opts)
-}
-
 // ListBlobs runs fn on all blobs known to the index. When the context is cancelled,
 // the index iteration returns immediately with ctx.Err(). This blocks any modification of the index.
 func (r *Repository) ListBlobs(ctx context.Context, fn func(restic.PackedBlob)) error {
