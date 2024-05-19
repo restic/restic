@@ -199,11 +199,6 @@ func rebuildIndex(t *testing.T, repo restic.Repository) {
 }
 
 func reloadIndex(t *testing.T, repo restic.Repository) {
-	err := repo.SetIndex(index.NewMasterIndex())
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	if err := repo.LoadIndex(context.TODO(), nil); err != nil {
 		t.Fatalf("error loading new index: %v", err)
 	}

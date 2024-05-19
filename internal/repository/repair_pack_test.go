@@ -8,7 +8,6 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	backendtest "github.com/restic/restic/internal/backend/test"
-	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
@@ -118,7 +117,6 @@ func testRepairBrokenPack(t *testing.T, version uint) {
 
 			rtest.OK(t, repository.RepairPacks(context.TODO(), repo, toRepair, &progress.NoopPrinter{}))
 			// reload index
-			rtest.OK(t, repo.SetIndex(index.NewMasterIndex()))
 			rtest.OK(t, repo.LoadIndex(context.TODO(), nil))
 
 			packsAfter := listPacks(t, repo)
