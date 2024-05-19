@@ -21,7 +21,7 @@ func RepairPacks(ctx context.Context, repo restic.Repository, ids restic.IDSet, 
 
 	wg.Go(func() error {
 		// examine all data the indexes have for the pack file
-		for b := range repo.Index().ListPacks(wgCtx, ids) {
+		for b := range repo.ListPacksFromIndex(wgCtx, ids) {
 			blobs := b.Blobs
 			if len(blobs) == 0 {
 				printer.E("no blobs found for pack %v", b.PackID)

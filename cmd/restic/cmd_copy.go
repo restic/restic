@@ -187,7 +187,7 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 	packList := restic.NewIDSet()
 
 	enqueue := func(h restic.BlobHandle) {
-		pb := srcRepo.Index().Lookup(h)
+		pb := srcRepo.LookupBlob(h)
 		copyBlobs.Insert(h)
 		for _, p := range pb {
 			packList.Insert(p.PackID)
@@ -202,7 +202,7 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 
 			// Do we already have this tree blob?
 			treeHandle := restic.BlobHandle{ID: tree.ID, Type: restic.TreeBlob}
-			if !dstRepo.Index().Has(treeHandle) {
+			if !dstRepo.HasBlob(treeHandle) {
 				// copy raw tree bytes to avoid problems if the serialization changes
 				enqueue(treeHandle)
 			}
@@ -212,7 +212,7 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 				// Copy the blobs for this file.
 				for _, blobID := range entry.Content {
 					h := restic.BlobHandle{Type: restic.DataBlob, ID: blobID}
-					if !dstRepo.Index().Has(h) {
+					if !dstRepo.HasBlob(h) {
 						enqueue(h)
 					}
 				}

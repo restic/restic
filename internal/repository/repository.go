@@ -300,11 +300,6 @@ func (r *Repository) loadBlob(ctx context.Context, blobs []restic.PackedBlob, bu
 	return nil, errors.Errorf("loading %v from %v packs failed", blobs[0].BlobHandle, len(blobs))
 }
 
-// LookupBlobSize returns the size of blob id.
-func (r *Repository) LookupBlobSize(id restic.ID, tpe restic.BlobType) (uint, bool) {
-	return r.idx.LookupSize(restic.BlobHandle{ID: id, Type: tpe})
-}
-
 func (r *Repository) getZstdEncoder() *zstd.Encoder {
 	r.allocEnc.Do(func() {
 		level := zstd.SpeedDefault
@@ -583,9 +578,31 @@ func (r *Repository) Connections() uint {
 	return r.be.Connections()
 }
 
-// Index returns the currently used MasterIndex.
-func (r *Repository) Index() restic.MasterIndex {
-	return r.idx
+func (r *Repository) HasBlob(bh restic.BlobHandle) bool {
+	return r.idx.Has(bh)
+}
+
+func (r *Repository) LookupBlob(bh restic.BlobHandle) []restic.PackedBlob {
+	return r.idx.Lookup(bh)
+}
+
+// LookupBlobSize returns the size of blob id.
+func (r *Repository) LookupBlobSize(id restic.ID, tpe restic.BlobType) (uint, bool) {
+	return r.idx.LookupSize(restic.BlobHandle{ID: id, Type: tpe})
+}
+
+func (r *Repository) SaveIndex(ctx context.Context, excludePacks restic.IDSet, extraObsolete restic.IDs, opts restic.MasterIndexSaveOpts) error {
+	return r.idx.Save(ctx, r, excludePacks, extraObsolete, opts)
+}
+
+// ListBlobs runs fn on all blobs known to the index. When the context is cancelled,
+// the index iteration returns immediately with ctx.Err(). This blocks any modification of the index.
+func (r *Repository) ListBlobs(ctx context.Context, fn func(restic.PackedBlob)) error {
+	return r.idx.Each(ctx, fn)
+}
+
+func (r *Repository) ListPacksFromIndex(ctx context.Context, packs restic.IDSet) <-chan restic.PackBlobs {
+	return r.idx.ListPacks(ctx, packs)
 }
 
 // SetIndex instructs the repository to use the given index.

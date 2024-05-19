@@ -145,9 +145,8 @@ func listFiles(t *testing.T, repo restic.Lister, tpe backend.FileType) restic.ID
 func findPacksForBlobs(t *testing.T, repo restic.Repository, blobs restic.BlobSet) restic.IDSet {
 	packs := restic.NewIDSet()
 
-	idx := repo.Index()
 	for h := range blobs {
-		list := idx.Lookup(h)
+		list := repo.LookupBlob(h)
 		if len(list) == 0 {
 			t.Fatal("Failed to find blob", h.ID.Str(), "with type", h.Type)
 		}
@@ -195,7 +194,7 @@ func rebuildIndex(t *testing.T, repo restic.Repository) {
 	})
 	rtest.OK(t, err)
 
-	err = repo.Index().Save(context.TODO(), repo, restic.NewIDSet(), obsoleteIndexes, restic.MasterIndexSaveOpts{})
+	err = repo.SaveIndex(context.TODO(), restic.NewIDSet(), obsoleteIndexes, restic.MasterIndexSaveOpts{})
 	rtest.OK(t, err)
 }
 
@@ -252,10 +251,8 @@ func testRepack(t *testing.T, version uint) {
 		}
 	}
 
-	idx := repo.Index()
-
 	for h := range keepBlobs {
-		list := idx.Lookup(h)
+		list := repo.LookupBlob(h)
 		if len(list) == 0 {
 			t.Errorf("unable to find blob %v in repo", h.ID.Str())
 			continue
@@ -318,10 +315,8 @@ func testRepackCopy(t *testing.T, version uint) {
 	rebuildIndex(t, dstRepo)
 	reloadIndex(t, dstRepo)
 
-	idx := dstRepo.Index()
-
 	for h := range keepBlobs {
-		list := idx.Lookup(h)
+		list := dstRepo.LookupBlob(h)
 		if len(list) == 0 {
 			t.Errorf("unable to find blob %v in repo", h.ID.Str())
 			continue

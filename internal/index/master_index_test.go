@@ -362,7 +362,7 @@ func testIndexSave(t *testing.T, version uint) {
 		t.Fatal(err)
 	}
 
-	err = repo.Index().Save(context.TODO(), repo, nil, nil, restic.MasterIndexSaveOpts{})
+	err = repo.SaveIndex(context.TODO(), nil, nil, restic.MasterIndexSaveOpts{})
 	if err != nil {
 		t.Fatalf("unable to save new index: %v", err)
 	}

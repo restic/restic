@@ -492,7 +492,7 @@ func examinePack(ctx context.Context, opts DebugExamineOptions, repo restic.Repo
 
 	blobsLoaded := false
 	// examine all data the indexes have for the pack file
-	for b := range repo.Index().ListPacks(ctx, restic.NewIDSet(id)) {
+	for b := range repo.ListPacksFromIndex(ctx, restic.NewIDSet(id)) {
 		blobs := b.Blobs
 		if len(blobs) == 0 {
 			continue

@@ -124,7 +124,7 @@ func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args 
 	if opts.countMode == countModeRawData {
 		// the blob handles have been collected, but not yet counted
 		for blobHandle := range stats.blobs {
-			pbs := repo.Index().Lookup(blobHandle)
+			pbs := repo.LookupBlob(blobHandle)
 			if len(pbs) == 0 {
 				return fmt.Errorf("blob %v not found", blobHandle)
 			}
@@ -378,7 +378,7 @@ func statsDebugBlobs(ctx context.Context, repo restic.Repository) ([restic.NumBl
 		hist[i] = newSizeHistogram(2 * chunker.MaxSize)
 	}
 
-	err := repo.Index().Each(ctx, func(pb restic.PackedBlob) {
+	err := repo.ListBlobs(ctx, func(pb restic.PackedBlob) {
 		hist[pb.Type].Add(uint64(pb.Length))
 	})
 

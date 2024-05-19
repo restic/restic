@@ -7,7 +7,6 @@ import (
 	"sort"
 
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/pack"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/progress"
@@ -67,7 +66,7 @@ type PrunePlan struct {
 	removePacks      restic.IDSet          // packs to remove
 	ignorePacks      restic.IDSet          // packs to ignore when rebuilding the index
 
-	repo  restic.Repository
+	repo  *Repository
 	stats PruneStats
 	opts  PruneOptions
 }
@@ -89,7 +88,7 @@ type packInfoWithID struct {
 
 // PlanPrune selects which files to rewrite and which to delete and which blobs to keep.
 // Also some summary statistics are returned.
-func PlanPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, getUsedBlobs func(ctx context.Context, repo restic.Repository) (usedBlobs restic.CountedBlobSet, err error), printer progress.Printer) (*PrunePlan, error) {
+func PlanPrune(ctx context.Context, opts PruneOptions, repo *Repository, getUsedBlobs func(ctx context.Context, repo restic.Repository) (usedBlobs restic.CountedBlobSet, err error), printer progress.Printer) (*PrunePlan, error) {
 	var stats PruneStats
 
 	if opts.UnsafeRecovery {
@@ -109,7 +108,7 @@ func PlanPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, g
 	}
 
 	printer.P("searching used packs...\n")
-	keepBlobs, indexPack, err := packInfoFromIndex(ctx, repo.Index(), usedBlobs, &stats, printer)
+	keepBlobs, indexPack, err := packInfoFromIndex(ctx, repo, usedBlobs, &stats, printer)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +123,7 @@ func PlanPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, g
 		blobCount := keepBlobs.Len()
 		// when repacking, we do not want to keep blobs which are
 		// already contained in kept packs, so delete them from keepBlobs
-		err := repo.Index().Each(ctx, func(blob restic.PackedBlob) {
+		err := repo.ListBlobs(ctx, func(blob restic.PackedBlob) {
 			if plan.removePacks.Has(blob.PackID) || plan.repackPacks.Has(blob.PackID) {
 				return
 			}
@@ -151,11 +150,11 @@ func PlanPrune(ctx context.Context, opts PruneOptions, repo restic.Repository, g
 	return &plan, nil
 }
 
-func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs restic.CountedBlobSet, stats *PruneStats, printer progress.Printer) (restic.CountedBlobSet, map[restic.ID]packInfo, error) {
+func packInfoFromIndex(ctx context.Context, idx restic.ListBlobser, usedBlobs restic.CountedBlobSet, stats *PruneStats, printer progress.Printer) (restic.CountedBlobSet, map[restic.ID]packInfo, error) {
 	// iterate over all blobs in index to find out which blobs are duplicates
 	// The counter in usedBlobs describes how many instances of the blob exist in the repository index
 	// Thus 0 == blob is missing, 1 == blob exists once, >= 2 == duplicates exist
-	err := idx.Each(ctx, func(blob restic.PackedBlob) {
+	err := idx.ListBlobs(ctx, func(blob restic.PackedBlob) {
 		bh := blob.BlobHandle
 		count, ok := usedBlobs[bh]
 		if ok {
@@ -205,7 +204,7 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 
 	hasDuplicates := false
 	// iterate over all blobs in index to generate packInfo
-	err = idx.Each(ctx, func(blob restic.PackedBlob) {
+	err = idx.ListBlobs(ctx, func(blob restic.PackedBlob) {
 		ip := indexPack[blob.PackID]
 
 		// Set blob type if not yet set
@@ -260,7 +259,7 @@ func packInfoFromIndex(ctx context.Context, idx restic.MasterIndex, usedBlobs re
 	// - if there are no used blobs in a pack, possibly mark duplicates as "unused"
 	if hasDuplicates {
 		// iterate again over all blobs in index (this is pretty cheap, all in-mem)
-		err = idx.Each(ctx, func(blob restic.PackedBlob) {
+		err = idx.ListBlobs(ctx, func(blob restic.PackedBlob) {
 			bh := blob.BlobHandle
 			count, ok := usedBlobs[bh]
 			// skip non-duplicate, aka. normal blobs
@@ -581,7 +580,7 @@ func (plan *PrunePlan) Execute(ctx context.Context, printer progress.Printer) (e
 
 	if plan.opts.UnsafeRecovery {
 		printer.P("deleting index files\n")
-		indexFiles := repo.Index().(*index.MasterIndex).IDs()
+		indexFiles := repo.idx.IDs()
 		err = deleteFiles(ctx, false, repo, indexFiles, restic.IndexFile, printer)
 		if err != nil {
 			return errors.Fatalf("%s", err)

@@ -54,7 +54,7 @@ func RepairIndex(ctx context.Context, repo *Repository, opts RepairIndexOptions,
 		if err != nil {
 			return err
 		}
-		packSizeFromIndex, err = pack.Size(ctx, repo.Index(), false)
+		packSizeFromIndex, err = pack.Size(ctx, repo, false)
 		if err != nil {
 			return err
 		}
@@ -115,7 +115,7 @@ func rebuildIndexFiles(ctx context.Context, repo restic.Repository, removePacks 
 	printer.P("rebuilding index\n")
 
 	bar := printer.NewCounter("packs processed")
-	return repo.Index().Save(ctx, repo, removePacks, extraObsolete, restic.MasterIndexSaveOpts{
+	return repo.SaveIndex(ctx, removePacks, extraObsolete, restic.MasterIndexSaveOpts{
 		SaveProgress: bar,
 		DeleteProgress: func() *progress.Counter {
 			return printer.NewCounter("old indexes deleted")

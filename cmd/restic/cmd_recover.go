@@ -61,7 +61,7 @@ func runRecover(ctx context.Context, gopts GlobalOptions) error {
 	// tree. If it is not referenced, we have a root tree.
 	trees := make(map[restic.ID]bool)
 
-	err = repo.Index().Each(ctx, func(blob restic.PackedBlob) {
+	err = repo.ListBlobs(ctx, func(blob restic.PackedBlob) {
 		if blob.Type == restic.TreeBlob {
 			trees[blob.Blob.ID] = false
 		}

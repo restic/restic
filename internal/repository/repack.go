@@ -54,7 +54,7 @@ func repack(ctx context.Context, repo restic.Repository, dstRepo restic.Reposito
 	downloadQueue := make(chan restic.PackBlobs)
 	wg.Go(func() error {
 		defer close(downloadQueue)
-		for pbs := range repo.Index().ListPacks(wgCtx, packs) {
+		for pbs := range repo.ListPacksFromIndex(wgCtx, packs) {
 			var packBlobs []restic.Blob
 			keepMutex.Lock()
 			// filter out unnecessary blobs

@@ -18,17 +18,36 @@ var ErrInvalidData = errors.New("invalid data returned")
 type Repository interface {
 	// Connections returns the maximum number of concurrent backend operations
 	Connections() uint
-
+	Config() Config
+	PackSize() uint
 	Key() *crypto.Key
 
-	Index() MasterIndex
 	LoadIndex(context.Context, *progress.Counter) error
 	ClearIndex()
 	SetIndex(MasterIndex) error
+	SaveIndex(ctx context.Context, excludePacks IDSet, extraObsolete IDs, opts MasterIndexSaveOpts) error
+
+	HasBlob(BlobHandle) bool
+	LookupBlob(BlobHandle) []PackedBlob
 	LookupBlobSize(ID, BlobType) (uint, bool)
 
-	Config() Config
-	PackSize() uint
+	// ListBlobs runs fn on all blobs known to the index. When the context is cancelled,
+	// the index iteration returns immediately with ctx.Err(). This blocks any modification of the index.
+	ListBlobs(ctx context.Context, fn func(PackedBlob)) error
+	ListPacksFromIndex(ctx context.Context, packs IDSet) <-chan PackBlobs
+	// ListPack returns the list of blobs saved in the pack id and the length of
+	// the pack header.
+	ListPack(context.Context, ID, int64) ([]Blob, uint32, error)
+
+	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
+	LoadBlobsFromPack(ctx context.Context, packID ID, blobs []Blob, handleBlobFn func(blob BlobHandle, buf []byte, err error) error) error
+
+	// StartPackUploader start goroutines to upload new pack files. The errgroup
+	// is used to immediately notify about an upload error. Flush() will also return
+	// that error.
+	StartPackUploader(ctx context.Context, wg *errgroup.Group)
+	SaveBlob(context.Context, BlobType, []byte, ID, bool) (ID, bool, int, error)
+	Flush(context.Context) error
 
 	// List calls the function fn for each file of type t in the repository.
 	// When an error is returned by fn, processing stops and List() returns the
@@ -36,31 +55,15 @@ type Repository interface {
 	//
 	// The function fn is called in the same Goroutine List() was called from.
 	List(ctx context.Context, t FileType, fn func(ID, int64) error) error
-
-	// ListPack returns the list of blobs saved in the pack id and the length of
-	// the pack header.
-	ListPack(context.Context, ID, int64) ([]Blob, uint32, error)
-
-	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
-	LoadBlobsFromPack(ctx context.Context, packID ID, blobs []Blob, handleBlobFn func(blob BlobHandle, buf []byte, err error) error) error
-	SaveBlob(context.Context, BlobType, []byte, ID, bool) (ID, bool, int, error)
-
-	// StartPackUploader start goroutines to upload new pack files. The errgroup
-	// is used to immediately notify about an upload error. Flush() will also return
-	// that error.
-	StartPackUploader(ctx context.Context, wg *errgroup.Group)
-	Flush(context.Context) error
-
+	// LoadRaw reads all data stored in the backend for the file with id and filetype t.
+	// If the backend returns data that does not match the id, then the buffer is returned
+	// along with an error that is a restic.ErrInvalidData error.
+	LoadRaw(ctx context.Context, t FileType, id ID) (data []byte, err error)
 	// LoadUnpacked loads and decrypts the file with the given type and ID.
 	LoadUnpacked(ctx context.Context, t FileType, id ID) (data []byte, err error)
 	SaveUnpacked(context.Context, FileType, []byte) (ID, error)
 	// RemoveUnpacked removes a file from the repository. This will eventually be restricted to deleting only snapshots.
 	RemoveUnpacked(ctx context.Context, t FileType, id ID) error
-
-	// LoadRaw reads all data stored in the backend for the file with id and filetype t.
-	// If the backend returns data that does not match the id, then the buffer is returned
-	// along with an error that is a restic.ErrInvalidData error.
-	LoadRaw(ctx context.Context, t FileType, id ID) (data []byte, err error)
 }
 
 type FileType = backend.FileType
@@ -140,4 +143,8 @@ type Unpacked interface {
 	ListerLoaderUnpacked
 	SaverUnpacked
 	RemoverUnpacked
+}
+
+type ListBlobser interface {
+	ListBlobs(ctx context.Context, fn func(PackedBlob)) error
 }
