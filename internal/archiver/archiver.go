@@ -64,9 +64,19 @@ func (s *ItemStats) Add(other ItemStats) {
 	s.TreeSizeInRepo += other.TreeSizeInRepo
 }
 
+type archiverRepo interface {
+	restic.Loader
+	restic.BlobSaver
+	restic.SaverUnpacked
+
+	Config() restic.Config
+	StartPackUploader(ctx context.Context, wg *errgroup.Group)
+	Flush(ctx context.Context) error
+}
+
 // Archiver saves a directory structure to the repo.
 type Archiver struct {
-	Repo         restic.Repository
+	Repo         archiverRepo
 	SelectByName SelectByNameFunc
 	Select       SelectFunc
 	FS           fs.FS
@@ -160,7 +170,7 @@ func (o Options) ApplyDefaults() Options {
 }
 
 // New initializes a new archiver.
-func New(repo restic.Repository, fs fs.FS, opts Options) *Archiver {
+func New(repo archiverRepo, fs fs.FS, opts Options) *Archiver {
 	arch := &Archiver{
 		Repo:         repo,
 		SelectByName: func(_ string) bool { return true },
