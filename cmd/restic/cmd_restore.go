@@ -45,11 +45,15 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 // RestoreOptions collects all options for the restore command.
 type RestoreOptions struct {
-	Exclude            []string
-	InsensitiveExclude []string
-	Include            []string
-	InsensitiveInclude []string
-	Target             string
+	Exclude                 []string
+	ExcludeFiles            []string
+	InsensitiveExclude      []string
+	InsensitiveExcludeFiles []string
+	Include                 []string
+	IncludeFiles            []string
+	InsensitiveInclude      []string
+	InsensitiveIncludeFiles []string
+	Target                  string
 	restic.SnapshotFilter
 	Sparse bool
 	Verify bool
@@ -66,6 +70,10 @@ func init() {
 	flags.StringArrayVarP(&restoreOptions.Include, "include", "i", nil, "include a `pattern`, exclude everything else (can be specified multiple times)")
 	flags.StringArrayVar(&restoreOptions.InsensitiveInclude, "iinclude", nil, "same as --include but ignores the casing of `pattern`")
 	flags.StringVarP(&restoreOptions.Target, "target", "t", "", "directory to extract data to")
+	flags.StringArrayVar(&restoreOptions.ExcludeFiles, "exclude-file", nil, "read exclude patterns from a `file` (can be specified multiple times)")
+	flags.StringArrayVar(&restoreOptions.InsensitiveExcludeFiles, "iexclude-file", nil, "same as --exclude-file but ignores casing of `file`names in patterns")
+	flags.StringArrayVar(&restoreOptions.IncludeFiles, "include-file", nil, "read include patterns from a `file` (can be specified multiple times)")
+	flags.StringArrayVar(&restoreOptions.InsensitiveIncludeFiles, "iinclude-file", nil, "same as --include-file but ignores casing of `file`names in patterns")
 
 	initSingleSnapshotFilter(flags, &restoreOptions.SnapshotFilter)
 	flags.BoolVar(&restoreOptions.Sparse, "sparse", false, "restore files as sparse")
@@ -176,6 +184,27 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 
 	excludePatterns := filter.ParsePatterns(opts.Exclude)
 	insensitiveExcludePatterns := filter.ParsePatterns(opts.InsensitiveExclude)
+
+	if len(opts.ExcludeFiles) > 0 {
+		patternsFromFile, err := readPatternsFromFiles(opts.ExcludeFiles)
+		if err != nil {
+			return err
+		}
+
+		excludePatternsFromFile := filter.ParsePatterns(patternsFromFile)
+		excludePatterns = append(excludePatterns, excludePatternsFromFile...)
+	}
+
+	if len(opts.InsensitiveExcludeFiles) > 0 {
+		patternsFromFile, err := readPatternsFromFiles(opts.ExcludeFiles)
+		if err != nil {
+			return err
+		}
+
+		iexcludePatternsFromFile := filter.ParsePatterns(patternsFromFile)
+		insensitiveExcludePatterns = append(insensitiveExcludePatterns, iexcludePatternsFromFile...)
+	}
+
 	selectExcludeFilter := func(item string, _ string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
 		matched, err := filter.List(excludePatterns, item)
 		if err != nil {
@@ -199,6 +228,27 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 
 	includePatterns := filter.ParsePatterns(opts.Include)
 	insensitiveIncludePatterns := filter.ParsePatterns(opts.InsensitiveInclude)
+
+	if len(opts.IncludeFiles) > 0 {
+		patternsFromFile, err := readPatternsFromFiles(opts.IncludeFiles)
+		if err != nil {
+			return err
+		}
+
+		includePatternsFromFile := filter.ParsePatterns(patternsFromFile)
+		includePatterns = append(includePatterns, includePatternsFromFile...)
+	}
+
+	if len(opts.InsensitiveIncludeFiles) > 0 {
+		patternsFromFile, err := readPatternsFromFiles(opts.InsensitiveIncludeFiles)
+		if err != nil {
+			return err
+		}
+
+		iincludePatternsFromFile := filter.ParsePatterns(patternsFromFile)
+		insensitiveIncludePatterns = append(insensitiveIncludePatterns, iincludePatternsFromFile...)
+	}
+
 	selectIncludeFilter := func(item string, _ string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
 		matched, childMayMatch, err := filter.ListWithChild(includePatterns, item)
 		if err != nil {

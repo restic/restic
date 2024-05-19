@@ -385,12 +385,12 @@ func rejectBySize(maxSizeStr string) (RejectFunc, error) {
 	}, nil
 }
 
-// readExcludePatternsFromFiles reads all exclude files and returns the list of
-// exclude patterns. For each line, leading and trailing white space is removed
+// readPatternsFromFiles reads all files and returns the list of
+// patterns. For each line, leading and trailing white space is removed
 // and comment lines are ignored. For each remaining pattern, environment
 // variables are resolved. For adding a literal dollar sign ($), write $$ to
 // the file.
-func readExcludePatternsFromFiles(excludeFiles []string) ([]string, error) {
+func readPatternsFromFiles(files []string) ([]string, error) {
 	getenvOrDollar := func(s string) string {
 		if s == "$" {
 			return "$"
@@ -398,8 +398,8 @@ func readExcludePatternsFromFiles(excludeFiles []string) ([]string, error) {
 		return os.Getenv(s)
 	}
 
-	var excludes []string
-	for _, filename := range excludeFiles {
+	var patterns []string
+	for _, filename := range files {
 		err := func() (err error) {
 			data, err := textfile.Read(filename)
 			if err != nil {
@@ -421,15 +421,15 @@ func readExcludePatternsFromFiles(excludeFiles []string) ([]string, error) {
 				}
 
 				line = os.Expand(line, getenvOrDollar)
-				excludes = append(excludes, line)
+				patterns = append(patterns, line)
 			}
 			return scanner.Err()
 		}()
 		if err != nil {
-			return nil, fmt.Errorf("failed to read excludes from file %q: %w", filename, err)
+			return nil, fmt.Errorf("failed to read patterns from file %q: %w", filename, err)
 		}
 	}
-	return excludes, nil
+	return patterns, nil
 }
 
 type excludePatternOptions struct {
@@ -454,7 +454,7 @@ func (opts excludePatternOptions) CollectPatterns() ([]RejectByNameFunc, error) 
 	var fs []RejectByNameFunc
 	// add patterns from file
 	if len(opts.ExcludeFiles) > 0 {
-		excludePatterns, err := readExcludePatternsFromFiles(opts.ExcludeFiles)
+		excludePatterns, err := readPatternsFromFiles(opts.ExcludeFiles)
 		if err != nil {
 			return nil, err
 		}
@@ -467,7 +467,7 @@ func (opts excludePatternOptions) CollectPatterns() ([]RejectByNameFunc, error) 
 	}
 
 	if len(opts.InsensitiveExcludeFiles) > 0 {
-		excludes, err := readExcludePatternsFromFiles(opts.InsensitiveExcludeFiles)
+		excludes, err := readPatternsFromFiles(opts.InsensitiveExcludeFiles)
 		if err != nil {
 			return nil, err
 		}
