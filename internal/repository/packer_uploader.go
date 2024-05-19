@@ -7,13 +7,13 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// SavePacker implements saving a pack in the repository.
-type SavePacker interface {
-	savePacker(ctx context.Context, t restic.BlobType, p *Packer) error
+// savePacker implements saving a pack in the repository.
+type savePacker interface {
+	savePacker(ctx context.Context, t restic.BlobType, p *packer) error
 }
 
 type uploadTask struct {
-	packer *Packer
+	packer *packer
 	tpe    restic.BlobType
 }
 
@@ -21,7 +21,7 @@ type packerUploader struct {
 	uploadQueue chan uploadTask
 }
 
-func newPackerUploader(ctx context.Context, wg *errgroup.Group, repo SavePacker, connections uint) *packerUploader {
+func newPackerUploader(ctx context.Context, wg *errgroup.Group, repo savePacker, connections uint) *packerUploader {
 	pu := &packerUploader{
 		uploadQueue: make(chan uploadTask),
 	}
@@ -48,7 +48,7 @@ func newPackerUploader(ctx context.Context, wg *errgroup.Group, repo SavePacker,
 	return pu
 }
 
-func (pu *packerUploader) QueuePacker(ctx context.Context, t restic.BlobType, p *Packer) (err error) {
+func (pu *packerUploader) QueuePacker(ctx context.Context, t restic.BlobType, p *packer) (err error) {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
