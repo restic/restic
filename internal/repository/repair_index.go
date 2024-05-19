@@ -92,7 +92,7 @@ func RepairIndex(ctx context.Context, repo *Repository, opts RepairIndexOptions,
 		printer.P("reading pack files\n")
 		bar := printer.NewCounter("packs")
 		bar.SetMax(uint64(len(packSizeFromList)))
-		invalidFiles, err := repo.CreateIndexFromPacks(ctx, packSizeFromList, bar)
+		invalidFiles, err := repo.createIndexFromPacks(ctx, packSizeFromList, bar)
 		bar.Done()
 		if err != nil {
 			return err

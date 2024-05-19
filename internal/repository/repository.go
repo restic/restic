@@ -656,10 +656,10 @@ func (r *Repository) LoadIndex(ctx context.Context, p *progress.Counter) error {
 	return r.prepareCache()
 }
 
-// CreateIndexFromPacks creates a new index by reading all given pack files (with sizes).
+// createIndexFromPacks creates a new index by reading all given pack files (with sizes).
 // The index is added to the MasterIndex but not marked as finalized.
 // Returned is the list of pack files which could not be read.
-func (r *Repository) CreateIndexFromPacks(ctx context.Context, packsize map[restic.ID]int64, p *progress.Counter) (invalid restic.IDs, err error) {
+func (r *Repository) createIndexFromPacks(ctx context.Context, packsize map[restic.ID]int64, p *progress.Counter) (invalid restic.IDs, err error) {
 	var m sync.Mutex
 
 	debug.Log("Loading index from pack files")
