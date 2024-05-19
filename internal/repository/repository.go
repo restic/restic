@@ -42,8 +42,6 @@ type Repository struct {
 
 	opts Options
 
-	noAutoIndexUpdate bool
-
 	packerWg *errgroup.Group
 	uploader *packerUploader
 	treePM   *packerManager
@@ -128,12 +126,6 @@ func New(be backend.Backend, opts Options) (*Repository, error) {
 	}
 
 	return repo, nil
-}
-
-// DisableAutoIndexUpdate deactives the automatic finalization and upload of new
-// indexes once these are full
-func (r *Repository) DisableAutoIndexUpdate() {
-	r.noAutoIndexUpdate = true
 }
 
 // setConfig assigns the given config and updates the repository parameters accordingly
@@ -526,10 +518,6 @@ func (r *Repository) Flush(ctx context.Context) error {
 		return err
 	}
 
-	// Save index after flushing only if noAutoIndexUpdate is not set
-	if r.noAutoIndexUpdate {
-		return nil
-	}
 	return r.idx.SaveIndex(ctx, r)
 }
 
