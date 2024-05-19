@@ -201,6 +201,10 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 			return err
 		}
 
+		for i, str := range patternsFromFile {
+			patternsFromFile[i] = strings.ToLower(str)
+		}
+
 		iexcludePatternsFromFile := filter.ParsePatterns(patternsFromFile)
 		insensitiveExcludePatterns = append(insensitiveExcludePatterns, iexcludePatternsFromFile...)
 	}
@@ -233,6 +237,10 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		patternsFromFile, err := readPatternsFromFiles(opts.IncludeFiles)
 		if err != nil {
 			return err
+		}
+
+		for i, str := range patternsFromFile {
+			patternsFromFile[i] = strings.ToLower(str)
 		}
 
 		includePatternsFromFile := filter.ParsePatterns(patternsFromFile)
