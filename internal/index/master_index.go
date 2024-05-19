@@ -1,7 +1,6 @@
 package index
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"runtime"
@@ -461,7 +460,7 @@ func (mi *MasterIndex) Rewrite(ctx context.Context, repo restic.Unpacked, exclud
 	worker := func() error {
 		for idx := range saveCh {
 			idx.Finalize()
-			if _, err := SaveIndex(wgCtx, repo, idx); err != nil {
+			if _, err := idx.SaveIndex(wgCtx, repo); err != nil {
 				return err
 			}
 		}
@@ -551,7 +550,7 @@ func (mi *MasterIndex) SaveFallback(ctx context.Context, repo restic.SaverRemove
 	worker := func() error {
 		for idx := range ch {
 			idx.Finalize()
-			if _, err := SaveIndex(wgCtx, repo, idx); err != nil {
+			if _, err := idx.SaveIndex(wgCtx, repo); err != nil {
 				return err
 			}
 		}
@@ -572,30 +571,12 @@ func (mi *MasterIndex) SaveFallback(ctx context.Context, repo restic.SaverRemove
 	return err
 }
 
-// SaveIndex saves an index in the repository.
-func SaveIndex(ctx context.Context, repo restic.SaverUnpacked, index *Index) (restic.ID, error) {
-	buf := bytes.NewBuffer(nil)
-
-	err := index.Encode(buf)
-	if err != nil {
-		return restic.ID{}, err
-	}
-
-	id, err := repo.SaveUnpacked(ctx, restic.IndexFile, buf.Bytes())
-	ierr := index.SetID(id)
-	if ierr != nil {
-		// logic bug
-		panic(ierr)
-	}
-	return id, err
-}
-
 // saveIndex saves all indexes in the backend.
 func (mi *MasterIndex) saveIndex(ctx context.Context, r restic.SaverUnpacked, indexes ...*Index) error {
 	for i, idx := range indexes {
 		debug.Log("Saving index %d", i)
 
-		sid, err := SaveIndex(ctx, r, idx)
+		sid, err := idx.SaveIndex(ctx, r)
 		if err != nil {
 			return err
 		}

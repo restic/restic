@@ -1,6 +1,7 @@
 package index
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -356,6 +357,24 @@ func (idx *Index) Encode(w io.Writer) error {
 		Packs: list,
 	}
 	return enc.Encode(idxJSON)
+}
+
+// SaveIndex saves an index in the repository.
+func (idx *Index) SaveIndex(ctx context.Context, repo restic.SaverUnpacked) (restic.ID, error) {
+	buf := bytes.NewBuffer(nil)
+
+	err := idx.Encode(buf)
+	if err != nil {
+		return restic.ID{}, err
+	}
+
+	id, err := repo.SaveUnpacked(ctx, restic.IndexFile, buf.Bytes())
+	ierr := idx.SetID(id)
+	if ierr != nil {
+		// logic bug
+		panic(ierr)
+	}
+	return id, err
 }
 
 // Finalize sets the index to final.
