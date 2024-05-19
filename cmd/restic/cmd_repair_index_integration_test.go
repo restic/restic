@@ -68,7 +68,7 @@ func TestRebuildIndexAlwaysFull(t *testing.T) {
 	defer func() {
 		index.IndexFull = indexFull
 	}()
-	index.IndexFull = func(*index.Index, bool) bool { return true }
+	index.IndexFull = func(*index.Index) bool { return true }
 	testRebuildIndex(t, nil)
 }
 

@@ -17,7 +17,6 @@ type MasterIndex struct {
 	idx          []*Index
 	pendingBlobs restic.BlobSet
 	idxMutex     sync.RWMutex
-	compress     bool
 }
 
 // NewMasterIndex creates a new master index.
@@ -31,10 +30,6 @@ func (mi *MasterIndex) clear() {
 	// Always add an empty final index, such that MergeFinalIndexes can merge into this.
 	mi.idx = []*Index{NewIndex()}
 	mi.idx[0].Finalize()
-}
-
-func (mi *MasterIndex) MarkCompressed() {
-	mi.compress = true
 }
 
 // Lookup queries all known Indexes for the ID and returns all matches.
@@ -211,7 +206,7 @@ func (mi *MasterIndex) finalizeFullIndexes() []*Index {
 			continue
 		}
 
-		if IndexFull(idx, mi.compress) {
+		if IndexFull(idx) {
 			debug.Log("index %p is full", idx)
 			idx.Finalize()
 			list = append(list, idx)
@@ -417,7 +412,7 @@ func (mi *MasterIndex) Rewrite(ctx context.Context, repo restic.Unpacked, exclud
 		newIndex := NewIndex()
 		for task := range rewriteCh {
 			// always rewrite indexes using the old format, that include a pack that must be removed or that are not full
-			if !task.oldFormat && len(task.idx.Packs().Intersect(excludePacks)) == 0 && IndexFull(task.idx, mi.compress) {
+			if !task.oldFormat && len(task.idx.Packs().Intersect(excludePacks)) == 0 && IndexFull(task.idx) {
 				// make sure that each pack is only stored exactly once in the index
 				excludePacks.Merge(task.idx.Packs())
 				// index is already up to date
@@ -433,7 +428,7 @@ func (mi *MasterIndex) Rewrite(ctx context.Context, repo restic.Unpacked, exclud
 
 			for pbs := range task.idx.EachByPack(wgCtx, excludePacks) {
 				newIndex.StorePack(pbs.PackID, pbs.Blobs)
-				if IndexFull(newIndex, mi.compress) {
+				if IndexFull(newIndex) {
 					select {
 					case saveCh <- newIndex:
 					case <-wgCtx.Done():
@@ -527,7 +522,7 @@ func (mi *MasterIndex) SaveFallback(ctx context.Context, repo restic.SaverRemove
 			for pbs := range idx.EachByPack(wgCtx, excludePacks) {
 				newIndex.StorePack(pbs.PackID, pbs.Blobs)
 				p.Add(1)
-				if IndexFull(newIndex, mi.compress) {
+				if IndexFull(newIndex) {
 					select {
 					case ch <- newIndex:
 					case <-wgCtx.Done():
