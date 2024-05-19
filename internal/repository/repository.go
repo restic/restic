@@ -578,10 +578,6 @@ func (r *Repository) Connections() uint {
 	return r.be.Connections()
 }
 
-func (r *Repository) HasBlob(bh restic.BlobHandle) bool {
-	return r.idx.Has(bh)
-}
-
 func (r *Repository) LookupBlob(bh restic.BlobHandle) []restic.PackedBlob {
 	return r.idx.Lookup(bh)
 }

@@ -167,8 +167,7 @@ func runCat(ctx context.Context, gopts GlobalOptions, args []string) error {
 		}
 
 		for _, t := range []restic.BlobType{restic.DataBlob, restic.TreeBlob} {
-			bh := restic.BlobHandle{ID: id, Type: t}
-			if !repo.HasBlob(bh) {
+			if _, ok := repo.LookupBlobSize(id, t); !ok {
 				continue
 			}
 

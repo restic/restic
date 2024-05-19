@@ -25,7 +25,6 @@ type Repository interface {
 	SetIndex(MasterIndex) error
 	SaveIndex(ctx context.Context, excludePacks IDSet, extraObsolete IDs, opts MasterIndexSaveOpts) error
 
-	HasBlob(BlobHandle) bool
 	LookupBlob(BlobHandle) []PackedBlob
 	LookupBlobSize(ID, BlobType) (uint, bool)
 
