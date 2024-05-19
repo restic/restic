@@ -522,7 +522,7 @@ func (plan *PrunePlan) Stats() PruneStats {
 // - rebuild the index while ignoring all files that will be deleted
 // - delete the files
 // plan.removePacks and plan.ignorePacks are modified in this function.
-func (plan *PrunePlan) Execute(ctx context.Context, printer progress.Printer) (err error) {
+func (plan *PrunePlan) Execute(ctx context.Context, printer progress.Printer) error {
 	if plan.opts.DryRun {
 		printer.V("Repeated prune dry-runs can report slightly different amounts of data to keep or repack. This is expected behavior.\n\n")
 		if len(plan.removePacksFirst) > 0 {
@@ -581,12 +581,12 @@ func (plan *PrunePlan) Execute(ctx context.Context, printer progress.Printer) (e
 	if plan.opts.UnsafeRecovery {
 		printer.P("deleting index files\n")
 		indexFiles := repo.idx.IDs()
-		err = deleteFiles(ctx, false, repo, indexFiles, restic.IndexFile, printer)
+		err := deleteFiles(ctx, false, repo, indexFiles, restic.IndexFile, printer)
 		if err != nil {
 			return errors.Fatalf("%s", err)
 		}
 	} else if len(plan.ignorePacks) != 0 {
-		err = rebuildIndexFiles(ctx, repo, plan.ignorePacks, nil, false, printer)
+		err := rewriteIndexFiles(ctx, repo, plan.ignorePacks, nil, nil, printer)
 		if err != nil {
 			return errors.Fatalf("%s", err)
 		}
@@ -601,14 +601,10 @@ func (plan *PrunePlan) Execute(ctx context.Context, printer progress.Printer) (e
 	}
 
 	if plan.opts.UnsafeRecovery {
-		err = rebuildIndexFiles(ctx, repo, plan.ignorePacks, nil, true, printer)
+		err := repo.idx.SaveFallback(ctx, repo, plan.ignorePacks, printer.NewCounter("packs processed"))
 		if err != nil {
 			return errors.Fatalf("%s", err)
 		}
-	}
-
-	if err != nil {
-		return err
 	}
 
 	// drop outdated in-memory index

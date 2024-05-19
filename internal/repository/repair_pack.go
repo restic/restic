@@ -56,7 +56,7 @@ func RepairPacks(ctx context.Context, repo *Repository, ids restic.IDSet, printe
 	}
 
 	// remove salvaged packs from index
-	err = rebuildIndexFiles(ctx, repo, ids, nil, false, printer)
+	err = rewriteIndexFiles(ctx, repo, ids, nil, nil, printer)
 	if err != nil {
 		return err
 	}

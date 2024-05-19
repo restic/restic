@@ -62,6 +62,8 @@ func RepairIndex(ctx context.Context, repo *Repository, opts RepairIndexOptions,
 		}
 	}
 
+	oldIndexes := repo.idx.IDs()
+
 	printer.P("getting pack files to read...\n")
 	err := repo.List(ctx, restic.PackFile, func(id restic.ID, packSize int64) error {
 		size, ok := packSizeFromIndex[id]
@@ -103,7 +105,11 @@ func RepairIndex(ctx context.Context, repo *Repository, opts RepairIndexOptions,
 		}
 	}
 
-	err = rebuildIndexFiles(ctx, repo, removePacks, obsoleteIndexes, false, printer)
+	if err := repo.Flush(ctx); err != nil {
+		return err
+	}
+
+	err = rewriteIndexFiles(ctx, repo, removePacks, oldIndexes, obsoleteIndexes, printer)
 	if err != nil {
 		return err
 	}
@@ -113,11 +119,11 @@ func RepairIndex(ctx context.Context, repo *Repository, opts RepairIndexOptions,
 	return nil
 }
 
-func rebuildIndexFiles(ctx context.Context, repo *Repository, removePacks restic.IDSet, extraObsolete restic.IDs, skipDeletion bool, printer progress.Printer) error {
+func rewriteIndexFiles(ctx context.Context, repo *Repository, removePacks restic.IDSet, oldIndexes restic.IDSet, extraObsolete restic.IDs, printer progress.Printer) error {
 	printer.P("rebuilding index\n")
 
-	bar := printer.NewCounter("packs processed")
-	return repo.idx.Save(ctx, repo, removePacks, extraObsolete, index.MasterIndexSaveOpts{
+	bar := printer.NewCounter("indexes processed")
+	return repo.idx.Rewrite(ctx, repo, removePacks, oldIndexes, extraObsolete, index.MasterIndexRewriteOpts{
 		SaveProgress: bar,
 		DeleteProgress: func() *progress.Counter {
 			return printer.NewCounter("old indexes deleted")
@@ -129,6 +135,5 @@ func rebuildIndexFiles(ctx context.Context, repo *Repository, removePacks restic
 				printer.VV("removed index %v\n", id.String())
 			}
 		},
-		SkipDeletion: skipDeletion,
 	})
 }

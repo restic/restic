@@ -364,7 +364,7 @@ func testIndexSave(t *testing.T, version uint) {
 		blobs[pb] = struct{}{}
 	}))
 
-	rtest.OK(t, idx.Save(context.TODO(), repo, nil, nil, index.MasterIndexSaveOpts{}))
+	rtest.OK(t, idx.Rewrite(context.TODO(), repo, nil, nil, nil, index.MasterIndexRewriteOpts{}))
 	idx = index.NewMasterIndex()
 	rtest.OK(t, idx.Load(context.TODO(), repo, nil, nil))
 

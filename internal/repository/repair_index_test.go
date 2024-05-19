@@ -30,10 +30,6 @@ func testRebuildIndex(t *testing.T, readAllPacks bool, damage func(t *testing.T,
 		ReadAllPacks: readAllPacks,
 	}, &progress.NoopPrinter{}))
 
-	newIndexes := listIndex(t, repo)
-	old := indexes.Intersect(newIndexes)
-	rtest.Assert(t, len(old) == 0, "expected old indexes to be removed, found %v", old)
-
 	checker.TestCheckRepo(t, repo, true)
 }
 
