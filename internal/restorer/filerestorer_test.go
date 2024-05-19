@@ -35,8 +35,8 @@ type TestRepo struct {
 	loader blobsLoaderFn
 }
 
-func (i *TestRepo) Lookup(bh restic.BlobHandle) []restic.PackedBlob {
-	packs := i.blobs[bh.ID]
+func (i *TestRepo) Lookup(tpe restic.BlobType, id restic.ID) []restic.PackedBlob {
+	packs := i.blobs[id]
 	return packs
 }
 

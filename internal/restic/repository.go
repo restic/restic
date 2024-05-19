@@ -25,7 +25,7 @@ type Repository interface {
 	SetIndex(mi MasterIndex) error
 	SaveIndex(ctx context.Context, excludePacks IDSet, extraObsolete IDs, opts MasterIndexSaveOpts) error
 
-	LookupBlob(bh BlobHandle) []PackedBlob
+	LookupBlob(t BlobType, id ID) []PackedBlob
 	LookupBlobSize(t BlobType, id ID) (size uint, exists bool)
 
 	// ListBlobs runs fn on all blobs known to the index. When the context is cancelled,

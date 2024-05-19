@@ -161,7 +161,7 @@ func checkPackInner(ctx context.Context, r *Repository, id restic.ID, blobs []re
 	for _, blob := range blobs {
 		// Check if blob is contained in index and position is correct
 		idxHas := false
-		for _, pb := range r.LookupBlob(blob.BlobHandle) {
+		for _, pb := range r.LookupBlob(blob.BlobHandle.Type, blob.BlobHandle.ID) {
 			if pb.PackID == id && pb.Blob == blob {
 				idxHas = true
 				break

@@ -146,7 +146,7 @@ func findPacksForBlobs(t *testing.T, repo restic.Repository, blobs restic.BlobSe
 	packs := restic.NewIDSet()
 
 	for h := range blobs {
-		list := repo.LookupBlob(h)
+		list := repo.LookupBlob(h.Type, h.ID)
 		if len(list) == 0 {
 			t.Fatal("Failed to find blob", h.ID.Str(), "with type", h.Type)
 		}
@@ -247,7 +247,7 @@ func testRepack(t *testing.T, version uint) {
 	}
 
 	for h := range keepBlobs {
-		list := repo.LookupBlob(h)
+		list := repo.LookupBlob(h.Type, h.ID)
 		if len(list) == 0 {
 			t.Errorf("unable to find blob %v in repo", h.ID.Str())
 			continue
@@ -311,7 +311,7 @@ func testRepackCopy(t *testing.T, version uint) {
 	reloadIndex(t, dstRepo)
 
 	for h := range keepBlobs {
-		list := dstRepo.LookupBlob(h)
+		list := dstRepo.LookupBlob(h.Type, h.ID)
 		if len(list) == 0 {
 			t.Errorf("unable to find blob %v in repo", h.ID.Str())
 			continue

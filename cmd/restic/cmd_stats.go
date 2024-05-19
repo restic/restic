@@ -124,7 +124,7 @@ func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args 
 	if opts.countMode == countModeRawData {
 		// the blob handles have been collected, but not yet counted
 		for blobHandle := range stats.blobs {
-			pbs := repo.LookupBlob(blobHandle)
+			pbs := repo.LookupBlob(blobHandle.Type, blobHandle.ID)
 			if len(pbs) == 0 {
 				return fmt.Errorf("blob %v not found", blobHandle)
 			}

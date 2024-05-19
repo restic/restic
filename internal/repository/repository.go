@@ -578,8 +578,8 @@ func (r *Repository) Connections() uint {
 	return r.be.Connections()
 }
 
-func (r *Repository) LookupBlob(bh restic.BlobHandle) []restic.PackedBlob {
-	return r.idx.Lookup(bh)
+func (r *Repository) LookupBlob(tpe restic.BlobType, id restic.ID) []restic.PackedBlob {
+	return r.idx.Lookup(restic.BlobHandle{Type: tpe, ID: id})
 }
 
 // LookupBlobSize returns the size of blob id.

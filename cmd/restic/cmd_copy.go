@@ -187,7 +187,7 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 	packList := restic.NewIDSet()
 
 	enqueue := func(h restic.BlobHandle) {
-		pb := srcRepo.LookupBlob(h)
+		pb := srcRepo.LookupBlob(h.Type, h.ID)
 		copyBlobs.Insert(h)
 		for _, p := range pb {
 			packList.Insert(p.PackID)
