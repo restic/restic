@@ -623,43 +623,10 @@ func (r *Repository) configureIndex() {
 func (r *Repository) LoadIndex(ctx context.Context, p *progress.Counter) error {
 	debug.Log("Loading index")
 
-	indexList, err := restic.MemorizeList(ctx, r, restic.IndexFile)
-	if err != nil {
-		return err
-	}
-
-	if p != nil {
-		var numIndexFiles uint64
-		err := indexList.List(ctx, restic.IndexFile, func(_ restic.ID, _ int64) error {
-			numIndexFiles++
-			return nil
-		})
-		if err != nil {
-			return err
-		}
-		p.SetMax(numIndexFiles)
-		defer p.Done()
-	}
-
 	// reset in-memory index before loading it from the repository
 	r.clearIndex()
 
-	err = index.ForAllIndexes(ctx, indexList, r, func(_ restic.ID, idx *index.Index, _ bool, err error) error {
-		if err != nil {
-			return err
-		}
-		r.idx.Insert(idx)
-		if p != nil {
-			p.Add(1)
-		}
-		return nil
-	})
-
-	if err != nil {
-		return err
-	}
-
-	err = r.idx.MergeFinalIndexes()
+	err := r.idx.Load(ctx, r, p, nil)
 	if err != nil {
 		return err
 	}

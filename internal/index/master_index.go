@@ -9,6 +9,7 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui/progress"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -265,6 +266,50 @@ func (mi *MasterIndex) MergeFinalIndexes() error {
 	mi.idx = newIdx
 
 	return nil
+}
+
+func (mi *MasterIndex) Load(ctx context.Context, r restic.ListerLoaderUnpacked, p *progress.Counter, cb func(id restic.ID, idx *Index, oldFormat bool, err error) error) error {
+	indexList, err := restic.MemorizeList(ctx, r, restic.IndexFile)
+	if err != nil {
+		return err
+	}
+
+	if p != nil {
+		var numIndexFiles uint64
+		err := indexList.List(ctx, restic.IndexFile, func(_ restic.ID, _ int64) error {
+			numIndexFiles++
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+		p.SetMax(numIndexFiles)
+		defer p.Done()
+	}
+
+	err = ForAllIndexes(ctx, indexList, r, func(id restic.ID, idx *Index, oldFormat bool, err error) error {
+		if p != nil {
+			p.Add(1)
+		}
+		if cb != nil {
+			err = cb(id, idx, oldFormat, err)
+		}
+		if err != nil {
+			return err
+		}
+		// special case to allow check to ignore index loading errors
+		if idx == nil {
+			return nil
+		}
+		mi.Insert(idx)
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return mi.MergeFinalIndexes()
 }
 
 // Save saves all known indexes to index files, leaving out any

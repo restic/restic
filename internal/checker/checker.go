@@ -111,32 +111,9 @@ func computePackTypes(ctx context.Context, idx restic.ListBlobser) (map[restic.I
 func (c *Checker) LoadIndex(ctx context.Context, p *progress.Counter) (hints []error, errs []error) {
 	debug.Log("Start")
 
-	indexList, err := restic.MemorizeList(ctx, c.repo, restic.IndexFile)
-	if err != nil {
-		// abort if an error occurs while listing the indexes
-		return hints, append(errs, err)
-	}
-
-	if p != nil {
-		var numIndexFiles uint64
-		err := indexList.List(ctx, restic.IndexFile, func(_ restic.ID, _ int64) error {
-			numIndexFiles++
-			return nil
-		})
-		if err != nil {
-			return hints, append(errs, err)
-		}
-		p.SetMax(numIndexFiles)
-		defer p.Done()
-	}
-
 	packToIndex := make(map[restic.ID]restic.IDSet)
-	err = index.ForAllIndexes(ctx, indexList, c.repo, func(id restic.ID, index *index.Index, oldFormat bool, err error) error {
+	err := c.masterIndex.Load(ctx, c.repo, p, func(id restic.ID, idx *index.Index, oldFormat bool, err error) error {
 		debug.Log("process index %v, err %v", id, err)
-
-		if p != nil {
-			p.Add(1)
-		}
 
 		if oldFormat {
 			debug.Log("index %v has old format", id)
@@ -150,11 +127,9 @@ func (c *Checker) LoadIndex(ctx context.Context, p *progress.Counter) (hints []e
 			return nil
 		}
 
-		c.masterIndex.Insert(index)
-
 		debug.Log("process blobs")
 		cnt := 0
-		err = index.Each(ctx, func(blob restic.PackedBlob) {
+		err = idx.Each(ctx, func(blob restic.PackedBlob) {
 			cnt++
 
 			if _, ok := packToIndex[blob.PackID]; !ok {
@@ -167,13 +142,7 @@ func (c *Checker) LoadIndex(ctx context.Context, p *progress.Counter) (hints []e
 		return err
 	})
 	if err != nil {
-		errs = append(errs, err)
-	}
-
-	// Merge index before computing pack sizes, as this needs removed duplicates
-	err = c.masterIndex.MergeFinalIndexes()
-	if err != nil {
-		// abort if an error occurs merging the indexes
+		// failed to load the index
 		return hints, append(errs, err)
 	}
 
