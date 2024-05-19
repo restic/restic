@@ -435,7 +435,7 @@ func (res *Restorer) verifyFile(target string, node *restic.Node, buf []byte) ([
 
 	var offset int64
 	for _, blobID := range node.Content {
-		length, found := res.repo.LookupBlobSize(blobID, restic.DataBlob)
+		length, found := res.repo.LookupBlobSize(restic.DataBlob, blobID)
 		if !found {
 			return buf, errors.Errorf("Unable to fetch blob %s", blobID)
 		}

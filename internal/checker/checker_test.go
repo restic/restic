@@ -461,11 +461,11 @@ func (r *delayRepository) LoadTree(ctx context.Context, id restic.ID) (*restic.T
 	return restic.LoadTree(ctx, r.Repository, id)
 }
 
-func (r *delayRepository) LookupBlobSize(id restic.ID, t restic.BlobType) (uint, bool) {
+func (r *delayRepository) LookupBlobSize(t restic.BlobType, id restic.ID) (uint, bool) {
 	if id == r.DelayTree && t == restic.DataBlob {
 		r.Unblock()
 	}
-	return r.Repository.LookupBlobSize(id, t)
+	return r.Repository.LookupBlobSize(t, id)
 }
 
 func (r *delayRepository) Unblock() {

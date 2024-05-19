@@ -238,7 +238,7 @@ func statsWalkTree(repo restic.Loader, opts StatsOptions, stats *statsContainer,
 						}
 						if _, ok := stats.fileBlobs[nodePath][blobID]; !ok {
 							// is always a data blob since we're accessing it via a file's Content array
-							blobSize, found := repo.LookupBlobSize(blobID, restic.DataBlob)
+							blobSize, found := repo.LookupBlobSize(restic.DataBlob, blobID)
 							if !found {
 								return fmt.Errorf("blob %s not found for tree %s", blobID, parentTreeID)
 							}

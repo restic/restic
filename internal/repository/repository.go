@@ -583,8 +583,8 @@ func (r *Repository) LookupBlob(bh restic.BlobHandle) []restic.PackedBlob {
 }
 
 // LookupBlobSize returns the size of blob id.
-func (r *Repository) LookupBlobSize(id restic.ID, tpe restic.BlobType) (uint, bool) {
-	return r.idx.LookupSize(restic.BlobHandle{ID: id, Type: tpe})
+func (r *Repository) LookupBlobSize(tpe restic.BlobType, id restic.ID) (uint, bool) {
+	return r.idx.LookupSize(restic.BlobHandle{Type: tpe, ID: id})
 }
 
 func (r *Repository) SaveIndex(ctx context.Context, excludePacks restic.IDSet, extraObsolete restic.IDs, opts restic.MasterIndexSaveOpts) error {

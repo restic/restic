@@ -429,7 +429,7 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 				// unfortunately fails in some cases that are not resolvable
 				// by users, so we omit this check, see #1887
 
-				_, found := c.repo.LookupBlobSize(blobID, restic.DataBlob)
+				_, found := c.repo.LookupBlobSize(restic.DataBlob, blobID)
 				if !found {
 					debug.Log("tree %v references blob %v which isn't contained in index", id, blobID)
 					errs = append(errs, &Error{TreeID: id, Err: errors.Errorf("file %q blob %v not found in index", node.Name, blobID)})

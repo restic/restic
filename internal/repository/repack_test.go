@@ -266,7 +266,7 @@ func testRepack(t *testing.T, version uint) {
 	}
 
 	for h := range removeBlobs {
-		if _, found := repo.LookupBlobSize(h.ID, h.Type); found {
+		if _, found := repo.LookupBlobSize(h.Type, h.ID); found {
 			t.Errorf("blob %v still contained in the repo", h)
 		}
 	}

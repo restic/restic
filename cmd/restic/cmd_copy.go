@@ -202,7 +202,7 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 
 			// Do we already have this tree blob?
 			treeHandle := restic.BlobHandle{ID: tree.ID, Type: restic.TreeBlob}
-			if _, ok := dstRepo.LookupBlobSize(treeHandle.ID, treeHandle.Type); !ok {
+			if _, ok := dstRepo.LookupBlobSize(treeHandle.Type, treeHandle.ID); !ok {
 				// copy raw tree bytes to avoid problems if the serialization changes
 				enqueue(treeHandle)
 			}
@@ -212,7 +212,7 @@ func copyTree(ctx context.Context, srcRepo restic.Repository, dstRepo restic.Rep
 				// Copy the blobs for this file.
 				for _, blobID := range entry.Content {
 					h := restic.BlobHandle{Type: restic.DataBlob, ID: blobID}
-					if _, ok := dstRepo.LookupBlobSize(h.ID, h.Type); !ok {
+					if _, ok := dstRepo.LookupBlobSize(h.Type, h.ID); !ok {
 						enqueue(h)
 					}
 				}
