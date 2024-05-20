@@ -545,6 +545,8 @@ func (plan *PrunePlan) Execute(ctx context.Context, printer progress.Printer) er
 	if len(plan.removePacksFirst) != 0 {
 		printer.P("deleting unreferenced packs\n")
 		_ = deleteFiles(ctx, true, repo, plan.removePacksFirst, restic.PackFile, printer)
+		// forget unused data
+		plan.removePacksFirst = nil
 	}
 	if ctx.Err() != nil {
 		return ctx.Err()
@@ -562,6 +564,8 @@ func (plan *PrunePlan) Execute(ctx context.Context, printer progress.Printer) er
 
 		// Also remove repacked packs
 		plan.removePacks.Merge(plan.repackPacks)
+		// forget unused data
+		plan.repackPacks = nil
 
 		if plan.keepBlobs.Len() != 0 {
 			printer.E("%v was not repacked\n\n"+
