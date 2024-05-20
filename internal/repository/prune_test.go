@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/checker"
-	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -31,12 +30,11 @@ func testPrune(t *testing.T, opts repository.PruneOptions, errOnUnused bool) {
 	}
 	rtest.OK(t, repo.Flush(context.TODO()))
 
-	plan, err := repository.PlanPrune(context.TODO(), opts, repo, func(ctx context.Context, repo restic.Repository) (usedBlobs *index.AssociatedSet[uint8], err error) {
-		idx := index.NewAssociatedSet[uint8](repo.Index().(*index.MasterIndex))
+	plan, err := repository.PlanPrune(context.TODO(), opts, repo, func(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet) error {
 		for blob := range keep {
-			idx.Insert(blob)
+			usedBlobs.Insert(blob)
 		}
-		return idx, nil
+		return nil
 	}, &progress.NoopPrinter{})
 	rtest.OK(t, err)
 

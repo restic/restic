@@ -91,7 +91,7 @@ type packInfoWithID struct {
 
 // PlanPrune selects which files to rewrite and which to delete and which blobs to keep.
 // Also some summary statistics are returned.
-func PlanPrune(ctx context.Context, opts PruneOptions, repo *Repository, getUsedBlobs func(ctx context.Context, repo restic.Repository) (usedBlobs *index.AssociatedSet[uint8], err error), printer progress.Printer) (*PrunePlan, error) {
+func PlanPrune(ctx context.Context, opts PruneOptions, repo *Repository, getUsedBlobs func(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet) error, printer progress.Printer) (*PrunePlan, error) {
 	var stats PruneStats
 
 	if opts.UnsafeRecovery {
@@ -105,7 +105,8 @@ func PlanPrune(ctx context.Context, opts PruneOptions, repo *Repository, getUsed
 		return nil, fmt.Errorf("compression requires at least repository format version 2")
 	}
 
-	usedBlobs, err := getUsedBlobs(ctx, repo)
+	usedBlobs := index.NewAssociatedSet[uint8](repo.idx)
+	err := getUsedBlobs(ctx, repo, usedBlobs)
 	if err != nil {
 		return nil, err
 	}
