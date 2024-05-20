@@ -408,9 +408,12 @@ Temporary files
 During some operations (e.g. ``backup`` and ``prune``) restic uses
 temporary files to store data. These files will, by default, be saved to
 the system's temporary directory, on Linux this is usually located in
-``/tmp/``. The environment variable ``TMPDIR`` can be used to specify a
-different directory, e.g. to use the directory ``/var/tmp/restic-tmp``
-instead of the default, set the environment variable like this:
+``/tmp/``. To specify a different directory for temporary files, set
+the appropriate environment variable. On non-Windows operating systems,
+use the ``TMPDIR`` environment variable. On Windows, use either the
+``TMP`` or ``TEMP`` environment variable. For example, to use the
+directory ``/var/tmp/restic-tmp`` instead of the default, set the
+environment variable as follows:
 
 .. code-block:: console
 
