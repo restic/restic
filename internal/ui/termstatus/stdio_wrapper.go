@@ -1,15 +1,13 @@
-package ui
+package termstatus
 
 import (
 	"bytes"
 	"io"
-
-	"github.com/restic/restic/internal/ui/termstatus"
 )
 
 // WrapStdio returns line-buffering replacements for os.Stdout and os.Stderr.
 // On Close, the remaining bytes are written, followed by a line break.
-func WrapStdio(term *termstatus.Terminal) (stdout, stderr io.WriteCloser) {
+func WrapStdio(term *Terminal) (stdout, stderr io.WriteCloser) {
 	return newLineWriter(term.Print), newLineWriter(term.Error)
 }
 

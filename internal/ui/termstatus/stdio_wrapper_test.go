@@ -1,4 +1,4 @@
-package ui
+package termstatus
 
 import (
 	"strings"
