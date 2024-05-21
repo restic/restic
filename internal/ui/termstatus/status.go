@@ -252,21 +252,9 @@ func (t *Terminal) Print(line string) {
 	t.print(line, false)
 }
 
-// Printf uses fmt.Sprintf to write a line to the terminal.
-func (t *Terminal) Printf(msg string, args ...interface{}) {
-	s := fmt.Sprintf(msg, args...)
-	t.Print(s)
-}
-
 // Error writes an error to the terminal.
 func (t *Terminal) Error(line string) {
 	t.print(line, true)
-}
-
-// Errorf uses fmt.Sprintf to write an error line to the terminal.
-func (t *Terminal) Errorf(msg string, args ...interface{}) {
-	s := fmt.Sprintf(msg, args...)
-	t.Error(s)
 }
 
 // Truncate s to fit in width (number of terminal cells) w.
