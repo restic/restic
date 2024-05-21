@@ -7,33 +7,10 @@ import (
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
-// StdioWrapper provides stdout and stderr integration with termstatus.
-type StdioWrapper struct {
-	stdout *lineWriter
-	stderr *lineWriter
-}
-
-// NewStdioWrapper initializes a new stdio wrapper that can be used in place of
-// os.Stdout or os.Stderr.
-func NewStdioWrapper(term *termstatus.Terminal) *StdioWrapper {
-	return &StdioWrapper{
-		stdout: newLineWriter(term.Print),
-		stderr: newLineWriter(term.Error),
-	}
-}
-
-// Stdout returns a writer that is line buffered and can be used in place of
-// os.Stdout. On Close(), the remaining bytes are written, followed by a line
-// break.
-func (w *StdioWrapper) Stdout() io.WriteCloser {
-	return w.stdout
-}
-
-// Stderr returns a writer that is line buffered and can be used in place of
-// os.Stderr. On Close(), the remaining bytes are written, followed by a line
-// break.
-func (w *StdioWrapper) Stderr() io.WriteCloser {
-	return w.stderr
+// WrapStdio returns line-buffering replacements for os.Stdout and os.Stderr.
+// On Close, the remaining bytes are written, followed by a line break.
+func WrapStdio(term *termstatus.Terminal) (stdout, stderr io.WriteCloser) {
+	return newLineWriter(term.Print), newLineWriter(term.Error)
 }
 
 type lineWriter struct {
