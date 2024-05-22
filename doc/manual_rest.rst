@@ -329,7 +329,6 @@ required to restore the latest snapshot (from any host that made it):
 .. code-block:: console
 
     $ restic stats latest
-    password is correct
     Total File Count:   10538
           Total Size:   37.824 GiB
 
@@ -340,7 +339,6 @@ host by using the ``--host`` flag:
 .. code-block:: console
 
     $ restic stats --host myserver latest
-    password is correct
     Total File Count:   21766
           Total Size:   481.783 GiB
 
@@ -357,7 +355,6 @@ has restic's deduplication helped? We can check:
 .. code-block:: console
 
     $ restic stats --host myserver --mode raw-data latest
-    password is correct
     Total Blob Count:   340847
           Total Size:   458.663 GiB
 
