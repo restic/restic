@@ -173,7 +173,8 @@ Summary is the last output line in a successful backup.
 +---------------------------+---------------------------------------------------------+
 | ``total_duration``        | Total time it took for the operation to complete        |
 +---------------------------+---------------------------------------------------------+
-| ``snapshot_id``           | ID of the new snapshot                                  |
+| ``snapshot_id``           | ID of the new snapshot. Field is omitted if snapshot    |
+|                           | creation was skipped                                    |
 +---------------------------+---------------------------------------------------------+
 
 

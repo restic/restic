@@ -126,7 +126,7 @@ func (b *TextProgress) Reset() {
 }
 
 // Finish prints the finishing messages.
-func (b *TextProgress) Finish(_ restic.ID, start time.Time, summary *archiver.Summary, dryRun bool) {
+func (b *TextProgress) Finish(id restic.ID, start time.Time, summary *archiver.Summary, dryRun bool) {
 	b.P("\n")
 	b.P("Files:       %5d new, %5d changed, %5d unmodified\n", summary.Files.New, summary.Files.Changed, summary.Files.Unchanged)
 	b.P("Dirs:        %5d new, %5d changed, %5d unmodified\n", summary.Dirs.New, summary.Dirs.Changed, summary.Dirs.Unchanged)
@@ -145,4 +145,12 @@ func (b *TextProgress) Finish(_ restic.ID, start time.Time, summary *archiver.Su
 		ui.FormatBytes(summary.ProcessedBytes),
 		ui.FormatDuration(time.Since(start)),
 	)
+
+	if !dryRun {
+		if id.IsNull() {
+			b.P("skipped creating snapshot\n")
+		} else {
+			b.P("snapshot %s saved\n", id.Str())
+		}
+	}
 }

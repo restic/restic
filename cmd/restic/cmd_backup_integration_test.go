@@ -641,3 +641,18 @@ func TestBackupEmptyPassword(t *testing.T) {
 	testListSnapshots(t, env.gopts, 1)
 	testRunCheck(t, env.gopts)
 }
+
+func TestBackupSkipIfUnchanged(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testSetupBackupData(t, env)
+	opts := BackupOptions{SkipIfUnchanged: true}
+
+	for i := 0; i < 3; i++ {
+		testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
+		testListSnapshots(t, env.gopts, 1)
+	}
+
+	testRunCheck(t, env.gopts)
+}
