@@ -473,7 +473,7 @@ func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
 // Reusing buffers prevents the verifier goroutines allocating all of RAM and
 // flushing the filesystem cache (at least on Linux).
 func (res *Restorer) verifyFile(target string, node *restic.Node, buf []byte) ([]byte, error) {
-	f, err := os.Open(target)
+	f, err := os.OpenFile(target, fs.O_RDONLY|fs.O_NOFOLLOW, 0)
 	if err != nil {
 		return buf, err
 	}
@@ -485,6 +485,8 @@ func (res *Restorer) verifyFile(target string, node *restic.Node, buf []byte) ([
 	switch {
 	case err != nil:
 		return buf, err
+	case !fi.Mode().IsRegular():
+		return buf, errors.Errorf("Expected %s to be a regular file", target)
 	case int64(node.Size) != fi.Size():
 		return buf, errors.Errorf("Invalid file size for %s: expected %d, got %d",
 			target, node.Size, fi.Size())
