@@ -231,6 +231,40 @@ On **Windows**, a file is considered unchanged when its path, size
 and modification time match, and only ``--force`` has any effect.
 The other options are recognized but ignored.
 
+Skip creating snapshots if unchanged
+************************************
+
+By default, restic always creates a new snapshot even if nothing has changed
+compared to the parent snapshot. To omit the creation of a new snapshot in this
+case, specify the ``--skip-if-unchanged`` option.
+
+Note that when using absolute paths to specify the backup target, then also
+changes to the parent folders result in a changed snapshot. For example, a backup
+of ``/home/user/work`` will create a new snapshot if the metadata of either
+ ``/``, ``/home`` or ``/home/user`` change. To avoid this problem run restic from
+the corresponding folder and use relative paths.
+
+.. code-block:: console
+
+    $ cd /home/user/work && restic -r /srv/restic-repo backup . --skip-if-unchanged
+
+    open repository
+    enter password for repository:
+    repository a14e5863 opened (version 2, compression level auto)
+    load index files
+    using parent snapshot 40dc1520
+    start scan on [.]
+    start backup on [.]
+    scan finished in 1.814s: 5307 files, 1.200GiB
+    
+    Files:           0 new,     0 changed,  5307 unmodified
+    Dirs:            0 new,     0 changed,  1867 unmodified
+    Added to the repository: 0 B   (0 B   stored)
+
+    processed 5307 files, 1.720 GiB in 0:03
+    skipped creating snapshot
+
+
 Dry Runs
 ********
 
