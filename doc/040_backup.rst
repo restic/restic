@@ -654,7 +654,8 @@ environment variables. The following lists these environment variables:
     RESTIC_PACK_SIZE                    Target size for pack files
     RESTIC_READ_CONCURRENCY             Concurrency for file reads
 
-    TMPDIR                              Location for temporary files
+    TMPDIR                              Location for temporary files (except Windows)
+    TMP                                 Location for temporary files (only Windows)
 
     AWS_ACCESS_KEY_ID                   Amazon S3 access key ID
     AWS_SECRET_ACCESS_KEY               Amazon S3 secret access key
