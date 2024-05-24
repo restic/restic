@@ -257,7 +257,7 @@ func readFilenamesRaw(r io.Reader) (names []string, err error) {
 
 // Check returns an error when an invalid combination of options was set.
 func (opts BackupOptions) Check(gopts GlobalOptions, args []string) error {
-	if gopts.password == "" {
+	if gopts.password == "" && !gopts.InsecureNoPassword {
 		if opts.Stdin {
 			return errors.Fatal("cannot read both password and data from stdin")
 		}

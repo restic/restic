@@ -22,24 +22,20 @@ EXIT STATUS
 Exit status is 0 if the command is successful, and non-zero if there was any error.
 	`,
 	DisableAutoGenTag: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return runKeyPasswd(cmd.Context(), globalOptions, keyPasswdOpts, args)
-	},
 }
 
 type KeyPasswdOptions struct {
 	KeyAddOptions
 }
 
-var keyPasswdOpts KeyPasswdOptions
-
 func init() {
 	cmdKey.AddCommand(cmdKeyPasswd)
 
-	flags := cmdKeyPasswd.Flags()
-	flags.StringVarP(&keyPasswdOpts.NewPasswordFile, "new-password-file", "", "", "`file` from which to read the new password")
-	flags.StringVarP(&keyPasswdOpts.Username, "user", "", "", "the username for new key")
-	flags.StringVarP(&keyPasswdOpts.Hostname, "host", "", "", "the hostname for new key")
+	var keyPasswdOpts KeyPasswdOptions
+	keyPasswdOpts.KeyAddOptions.Add(cmdKeyPasswd.Flags())
+	cmdKeyPasswd.RunE = func(cmd *cobra.Command, args []string) error {
+		return runKeyPasswd(cmd.Context(), globalOptions, keyPasswdOpts, args)
+	}
 }
 
 func runKeyPasswd(ctx context.Context, gopts GlobalOptions, opts KeyPasswdOptions, args []string) error {
@@ -57,7 +53,7 @@ func runKeyPasswd(ctx context.Context, gopts GlobalOptions, opts KeyPasswdOption
 }
 
 func changePassword(ctx context.Context, repo *repository.Repository, gopts GlobalOptions, opts KeyPasswdOptions) error {
-	pw, err := getNewPassword(ctx, gopts, opts.NewPasswordFile)
+	pw, err := getNewPassword(ctx, gopts, opts.NewPasswordFile, opts.InsecureNoPassword)
 	if err != nil {
 		return err
 	}

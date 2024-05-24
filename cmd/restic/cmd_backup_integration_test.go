@@ -627,3 +627,17 @@ func TestStdinFromCommandFailNoOutputAndExitCode(t *testing.T) {
 
 	testRunCheck(t, env.gopts)
 }
+
+func TestBackupEmptyPassword(t *testing.T) {
+	// basic sanity test that empty passwords work
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	env.gopts.password = ""
+	env.gopts.InsecureNoPassword = true
+
+	testSetupBackupData(t, env)
+	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, BackupOptions{}, env.gopts)
+	testListSnapshots(t, env.gopts, 1)
+	testRunCheck(t, env.gopts)
+}

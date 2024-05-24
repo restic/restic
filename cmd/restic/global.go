@@ -52,22 +52,23 @@ type backendWrapper func(r backend.Backend) (backend.Backend, error)
 
 // GlobalOptions hold all global options for restic.
 type GlobalOptions struct {
-	Repo            string
-	RepositoryFile  string
-	PasswordFile    string
-	PasswordCommand string
-	KeyHint         string
-	Quiet           bool
-	Verbose         int
-	NoLock          bool
-	RetryLock       time.Duration
-	JSON            bool
-	CacheDir        string
-	NoCache         bool
-	CleanupCache    bool
-	Compression     repository.CompressionMode
-	PackSize        uint
-	NoExtraVerify   bool
+	Repo               string
+	RepositoryFile     string
+	PasswordFile       string
+	PasswordCommand    string
+	KeyHint            string
+	Quiet              bool
+	Verbose            int
+	NoLock             bool
+	RetryLock          time.Duration
+	JSON               bool
+	CacheDir           string
+	NoCache            bool
+	CleanupCache       bool
+	Compression        repository.CompressionMode
+	PackSize           uint
+	NoExtraVerify      bool
+	InsecureNoPassword bool
 
 	backend.TransportOptions
 	limiter.Limits
@@ -125,6 +126,7 @@ func init() {
 	f.BoolVar(&globalOptions.NoCache, "no-cache", false, "do not use a local cache")
 	f.StringSliceVar(&globalOptions.RootCertFilenames, "cacert", nil, "`file` to load root certificates from (default: use system certificates or $RESTIC_CACERT)")
 	f.StringVar(&globalOptions.TLSClientCertKeyFilename, "tls-client-cert", "", "path to a `file` containing PEM encoded TLS client certificate and private key (default: $RESTIC_TLS_CLIENT_CERT)")
+	f.BoolVar(&globalOptions.InsecureNoPassword, "insecure-no-password", false, "use an empty password for the repository, must be passed to every restic command (insecure)")
 	f.BoolVar(&globalOptions.InsecureTLS, "insecure-tls", false, "skip TLS certificate verification when connecting to the repository (insecure)")
 	f.BoolVar(&globalOptions.CleanupCache, "cleanup-cache", false, "auto remove old cache directories")
 	f.Var(&globalOptions.Compression, "compression", "compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION)")
@@ -327,6 +329,13 @@ func readPasswordTerminal(ctx context.Context, in *os.File, out *os.File, prompt
 // variable RESTIC_PASSWORD or prompts the user. If the context is canceled,
 // the function leaks the password reading goroutine.
 func ReadPassword(ctx context.Context, opts GlobalOptions, prompt string) (string, error) {
+	if opts.InsecureNoPassword {
+		if opts.password != "" {
+			return "", errors.Fatal("--insecure-no-password must not be specified together with providing a password via a cli option or environment variable")
+		}
+		return "", nil
+	}
+
 	if opts.password != "" {
 		return opts.password, nil
 	}
@@ -348,7 +357,7 @@ func ReadPassword(ctx context.Context, opts GlobalOptions, prompt string) (strin
 	}
 
 	if len(password) == 0 {
-		return "", errors.Fatal("an empty password is not a password")
+		return "", errors.Fatal("an empty password is not allowed by default. Pass the flag `--insecure-no-password` to restic to disable this check")
 	}
 
 	return password, nil
@@ -445,7 +454,7 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 	}
 
 	passwordTriesLeft := 1
-	if stdinIsTerminal() && opts.password == "" {
+	if stdinIsTerminal() && opts.password == "" && !opts.InsecureNoPassword {
 		passwordTriesLeft = 3
 	}
 

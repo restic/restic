@@ -13,10 +13,12 @@ func testRunCopy(t testing.TB, srcGopts GlobalOptions, dstGopts GlobalOptions) {
 	gopts := srcGopts
 	gopts.Repo = dstGopts.Repo
 	gopts.password = dstGopts.password
+	gopts.InsecureNoPassword = dstGopts.InsecureNoPassword
 	copyOpts := CopyOptions{
 		secondaryRepoOptions: secondaryRepoOptions{
-			Repo:     srcGopts.Repo,
-			password: srcGopts.password,
+			Repo:               srcGopts.Repo,
+			password:           srcGopts.password,
+			InsecureNoPassword: srcGopts.InsecureNoPassword,
 		},
 	}
 
@@ -133,4 +135,23 @@ func TestCopyUnstableJSON(t *testing.T) {
 	testRunCopy(t, env.gopts, env2.gopts)
 	testRunCheck(t, env2.gopts)
 	testListSnapshots(t, env2.gopts, 1)
+}
+
+func TestCopyToEmptyPassword(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+	env2, cleanup2 := withTestEnvironment(t)
+	defer cleanup2()
+	env2.gopts.password = ""
+	env2.gopts.InsecureNoPassword = true
+
+	testSetupBackupData(t, env)
+	testRunBackup(t, "", []string{filepath.Join(env.testdata, "0", "0", "9")}, BackupOptions{}, env.gopts)
+
+	testRunInit(t, env2.gopts)
+	testRunCopy(t, env.gopts, env2.gopts)
+
+	testListSnapshots(t, env.gopts, 1)
+	testListSnapshots(t, env2.gopts, 1)
+	testRunCheck(t, env2.gopts)
 }
