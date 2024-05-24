@@ -108,9 +108,10 @@ func (be *Backend) retry(ctx context.Context, msg string, f func() error) error 
 	bo := backoff.NewExponentialBackOff()
 	bo.MaxElapsedTime = be.MaxElapsedTime
 
-	bo.InitialInterval = 1 * time.Second
-	bo.Multiplier = 2
-
+	if feature.Flag.Enabled(feature.BackendErrorRedesign) {
+		bo.InitialInterval = 1 * time.Second
+		bo.Multiplier = 2
+	}
 	if fastRetries {
 		// speed up integration tests
 		bo.InitialInterval = 1 * time.Millisecond
@@ -118,6 +119,12 @@ func (be *Backend) retry(ctx context.Context, msg string, f func() error) error 
 		if bo.MaxElapsedTime > maxElapsedTime {
 			bo.MaxElapsedTime = maxElapsedTime
 		}
+	}
+
+	var b backoff.BackOff = withRetryAtLeastOnce(bo)
+	if !feature.Flag.Enabled(feature.BackendErrorRedesign) {
+		// deprecated behavior
+		b = backoff.WithMaxRetries(b, 10)
 	}
 
 	err := retryNotifyErrorWithSuccess(
@@ -130,7 +137,7 @@ func (be *Backend) retry(ctx context.Context, msg string, f func() error) error 
 			}
 			return err
 		},
-		backoff.WithContext(withRetryAtLeastOnce(bo), ctx),
+		backoff.WithContext(b, ctx),
 		func(err error, d time.Duration) {
 			if be.Report != nil {
 				be.Report(msg, err, d)
