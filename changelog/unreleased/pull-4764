@@ -1,0 +1,8 @@
+Enhancement: Remove all snapshots using `forget --unsafe-allow-remove-all`
+
+The forget command now supports the `--unsafe-allow-remove-all` option. It must
+always be combined with a snapshot filter (by host, path or tag).
+For example the command `forget --tag example --unsafe-allow-remove-all`,
+removes all snapshots with tag `example`.
+
+https://github.com/restic/restic/pull/4764

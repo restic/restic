@@ -62,7 +62,7 @@ func TestRepairSnapshotsWithLostData(t *testing.T) {
 	testRunCheckMustFail(t, env.gopts)
 
 	// repository must be ok after removing the broken snapshots
-	testRunForget(t, env.gopts, snapshotIDs[0].String(), snapshotIDs[1].String())
+	testRunForget(t, env.gopts, ForgetOptions{}, snapshotIDs[0].String(), snapshotIDs[1].String())
 	testListSnapshots(t, env.gopts, 2)
 	_, err := testRunCheckOutput(env.gopts, false)
 	rtest.OK(t, err)
@@ -86,7 +86,7 @@ func TestRepairSnapshotsWithLostTree(t *testing.T) {
 
 	// remove tree for foo/bar and the now completely broken first snapshot
 	removePacks(env.gopts, t, restic.NewIDSet(oldPacks...))
-	testRunForget(t, env.gopts, oldSnapshot[0].String())
+	testRunForget(t, env.gopts, ForgetOptions{}, oldSnapshot[0].String())
 	testRunCheckMustFail(t, env.gopts)
 
 	// repair

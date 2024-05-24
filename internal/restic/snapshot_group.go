@@ -66,6 +66,20 @@ type SnapshotGroupKey struct {
 	Tags     []string `json:"tags"`
 }
 
+func (s *SnapshotGroupKey) String() string {
+	var parts []string
+	if s.Hostname != "" {
+		parts = append(parts, fmt.Sprintf("host %v", s.Hostname))
+	}
+	if len(s.Paths) != 0 {
+		parts = append(parts, fmt.Sprintf("path %v", s.Paths))
+	}
+	if len(s.Tags) != 0 {
+		parts = append(parts, fmt.Sprintf("tags %v", s.Tags))
+	}
+	return strings.Join(parts, ", ")
+}
+
 // GroupSnapshots takes a list of snapshots and a grouping criteria and creates
 // a grouped list of snapshots.
 func GroupSnapshots(snapshots Snapshots, groupBy SnapshotGroupByOptions) (map[string]Snapshots, bool, error) {
