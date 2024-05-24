@@ -17,6 +17,10 @@ import (
 	"github.com/restic/restic/internal/debug"
 )
 
+// UnlockCancelDelay bounds the duration how long lock cleanup operations will wait
+// if the passed in context was canceled.
+const UnlockCancelDelay time.Duration = 1 * time.Minute
+
 // Lock represents a process locking the repository for an operation.
 //
 // There are two types of locks: exclusive and non-exclusive. There may be many
@@ -136,7 +140,7 @@ func newLock(ctx context.Context, repo Unpacked, excl bool) (*Lock, error) {
 	time.Sleep(waitBeforeLockCheck)
 
 	if err = lock.checkForOtherLocks(ctx); err != nil {
-		_ = lock.Unlock()
+		_ = lock.Unlock(ctx)
 		return nil, err
 	}
 
@@ -220,12 +224,15 @@ func (l *Lock) createLock(ctx context.Context) (ID, error) {
 }
 
 // Unlock removes the lock from the repository.
-func (l *Lock) Unlock() error {
+func (l *Lock) Unlock(ctx context.Context) error {
 	if l == nil || l.lockID == nil {
 		return nil
 	}
 
-	return l.repo.RemoveUnpacked(context.TODO(), LockFile, *l.lockID)
+	ctx, cancel := delayedCancelContext(ctx, UnlockCancelDelay)
+	defer cancel()
+
+	return l.repo.RemoveUnpacked(ctx, LockFile, *l.lockID)
 }
 
 var StaleLockTimeout = 30 * time.Minute
@@ -266,6 +273,23 @@ func (l *Lock) Stale() bool {
 	return false
 }
 
+func delayedCancelContext(parentCtx context.Context, delay time.Duration) (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	go func() {
+		select {
+		case <-parentCtx.Done():
+		case <-ctx.Done():
+			return
+		}
+
+		time.Sleep(delay)
+		cancel()
+	}()
+
+	return ctx, cancel
+}
+
 // Refresh refreshes the lock by creating a new file in the backend with a new
 // timestamp. Afterwards the old lock is removed.
 func (l *Lock) Refresh(ctx context.Context) error {
@@ -285,7 +309,10 @@ func (l *Lock) Refresh(ctx context.Context) error {
 	oldLockID := l.lockID
 	l.lockID = &id
 
-	return l.repo.RemoveUnpacked(context.TODO(), LockFile, *oldLockID)
+	ctx, cancel := delayedCancelContext(ctx, UnlockCancelDelay)
+	defer cancel()
+
+	return l.repo.RemoveUnpacked(ctx, LockFile, *oldLockID)
 }
 
 // RefreshStaleLock is an extended variant of Refresh that can also refresh stale lock files.
@@ -312,15 +339,19 @@ func (l *Lock) RefreshStaleLock(ctx context.Context) error {
 	time.Sleep(waitBeforeLockCheck)
 
 	exists, err = l.checkExistence(ctx)
+
+	ctx, cancel := delayedCancelContext(ctx, UnlockCancelDelay)
+	defer cancel()
+
 	if err != nil {
 		// cleanup replacement lock
-		_ = l.repo.RemoveUnpacked(context.TODO(), LockFile, id)
+		_ = l.repo.RemoveUnpacked(ctx, LockFile, id)
 		return err
 	}
 
 	if !exists {
 		// cleanup replacement lock
-		_ = l.repo.RemoveUnpacked(context.TODO(), LockFile, id)
+		_ = l.repo.RemoveUnpacked(ctx, LockFile, id)
 		return ErrRemovedLock
 	}
 
@@ -331,7 +362,7 @@ func (l *Lock) RefreshStaleLock(ctx context.Context) error {
 	oldLockID := l.lockID
 	l.lockID = &id
 
-	return l.repo.RemoveUnpacked(context.TODO(), LockFile, *oldLockID)
+	return l.repo.RemoveUnpacked(ctx, LockFile, *oldLockID)
 }
 
 func (l *Lock) checkExistence(ctx context.Context) (bool, error) {

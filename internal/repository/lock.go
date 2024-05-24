@@ -132,7 +132,7 @@ func (l *locker) refreshLocks(ctx context.Context, backend backend.Backend, lock
 
 		// remove the lock from the repo
 		debug.Log("unlocking repository with lock %v", lock)
-		if err := lock.Unlock(); err != nil {
+		if err := lock.Unlock(ctx); err != nil {
 			debug.Log("error while unlocking: %v", err)
 			logger("error while unlocking: %v", err)
 		}

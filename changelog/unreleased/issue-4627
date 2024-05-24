@@ -9,7 +9,9 @@ downloading are now forcibly interrupted. This ensures that stuck requests are
 retried after a short timeout.
 
 Attempts to access a missing file or a truncated file will no longer be retried.
-This avoids unnecessary retries in those cases.
+This avoids unnecessary retries in those cases. All other backend requests are
+retried for up to 15 minutes. This ensures that a temporarily interrupted network
+connections can be tolerated.
 
 If a download yields a corrupt file or blob, then the download will be retried once.
 
@@ -26,3 +28,4 @@ https://github.com/restic/restic/issues/4515
 https://github.com/restic/restic/issues/1523
 https://github.com/restic/restic/pull/4520
 https://github.com/restic/restic/pull/4800
+https://github.com/restic/restic/pull/4784

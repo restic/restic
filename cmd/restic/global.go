@@ -416,12 +416,16 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 	}
 
 	report := func(msg string, err error, d time.Duration) {
-		Warnf("%v returned error, retrying after %v: %v\n", msg, d, err)
+		if d >= 0 {
+			Warnf("%v returned error, retrying after %v: %v\n", msg, d, err)
+		} else {
+			Warnf("%v failed: %v\n", msg, err)
+		}
 	}
 	success := func(msg string, retries int) {
 		Warnf("%v operation successful after %d retries\n", msg, retries)
 	}
-	be = retry.New(be, 10, report, success)
+	be = retry.New(be, 15*time.Minute, report, success)
 
 	// wrap backend if a test specified a hook
 	if opts.backendTestHook != nil {
