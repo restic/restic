@@ -14,9 +14,9 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/cache"
 	"github.com/restic/restic/internal/backend/local"
 	"github.com/restic/restic/internal/backend/mem"
-	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/index"

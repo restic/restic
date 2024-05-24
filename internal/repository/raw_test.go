@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/cache"
 	"github.com/restic/restic/internal/backend/mem"
 	"github.com/restic/restic/internal/backend/mock"
-	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
