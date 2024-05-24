@@ -11,7 +11,7 @@ import (
 // ForAllIndexes loads all index files in parallel and calls the given callback.
 // It is guaranteed that the function is not run concurrently. If the callback
 // returns an error, this function is cancelled and also returns that error.
-func ForAllIndexes(ctx context.Context, lister restic.Lister, repo restic.ListerLoaderUnpacked,
+func ForAllIndexes(ctx context.Context, lister restic.Lister, repo restic.LoaderUnpacked,
 	fn func(id restic.ID, index *Index, oldFormat bool, err error) error) error {
 
 	// decoding an index can take quite some time such that this can be both CPU- or IO-bound

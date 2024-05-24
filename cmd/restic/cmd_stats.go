@@ -124,7 +124,7 @@ func runStats(ctx context.Context, opts StatsOptions, gopts GlobalOptions, args 
 	if opts.countMode == countModeRawData {
 		// the blob handles have been collected, but not yet counted
 		for blobHandle := range stats.blobs {
-			pbs := repo.Index().Lookup(blobHandle)
+			pbs := repo.LookupBlob(blobHandle.Type, blobHandle.ID)
 			if len(pbs) == 0 {
 				return fmt.Errorf("blob %v not found", blobHandle)
 			}
@@ -238,7 +238,7 @@ func statsWalkTree(repo restic.Loader, opts StatsOptions, stats *statsContainer,
 						}
 						if _, ok := stats.fileBlobs[nodePath][blobID]; !ok {
 							// is always a data blob since we're accessing it via a file's Content array
-							blobSize, found := repo.LookupBlobSize(blobID, restic.DataBlob)
+							blobSize, found := repo.LookupBlobSize(restic.DataBlob, blobID)
 							if !found {
 								return fmt.Errorf("blob %s not found for tree %s", blobID, parentTreeID)
 							}
@@ -378,7 +378,7 @@ func statsDebugBlobs(ctx context.Context, repo restic.Repository) ([restic.NumBl
 		hist[i] = newSizeHistogram(2 * chunker.MaxSize)
 	}
 
-	err := repo.Index().Each(ctx, func(pb restic.PackedBlob) {
+	err := repo.ListBlobs(ctx, func(pb restic.PackedBlob) {
 		hist[pb.Type].Add(uint64(pb.Length))
 	})
 

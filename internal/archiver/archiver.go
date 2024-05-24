@@ -64,9 +64,19 @@ func (s *ItemStats) Add(other ItemStats) {
 	s.TreeSizeInRepo += other.TreeSizeInRepo
 }
 
+type archiverRepo interface {
+	restic.Loader
+	restic.BlobSaver
+	restic.SaverUnpacked
+
+	Config() restic.Config
+	StartPackUploader(ctx context.Context, wg *errgroup.Group)
+	Flush(ctx context.Context) error
+}
+
 // Archiver saves a directory structure to the repo.
 type Archiver struct {
-	Repo         restic.Repository
+	Repo         archiverRepo
 	SelectByName SelectByNameFunc
 	Select       SelectFunc
 	FS           fs.FS
@@ -160,7 +170,7 @@ func (o Options) ApplyDefaults() Options {
 }
 
 // New initializes a new archiver.
-func New(repo restic.Repository, fs fs.FS, opts Options) *Archiver {
+func New(repo archiverRepo, fs fs.FS, opts Options) *Archiver {
 	arch := &Archiver{
 		Repo:         repo,
 		SelectByName: func(_ string) bool { return true },
@@ -276,7 +286,7 @@ func (arch *Archiver) loadSubtree(ctx context.Context, node *restic.Node) (*rest
 }
 
 func (arch *Archiver) wrapLoadTreeError(id restic.ID, err error) error {
-	if arch.Repo.Index().Has(restic.BlobHandle{ID: id, Type: restic.TreeBlob}) {
+	if _, ok := arch.Repo.LookupBlobSize(restic.TreeBlob, id); ok {
 		err = errors.Errorf("tree %v could not be loaded; the repository could be damaged: %v", id, err)
 	} else {
 		err = errors.Errorf("tree %v is not known; the repository could be damaged, run `repair index` to try to repair it", id)
@@ -390,7 +400,7 @@ func (fn *FutureNode) take(ctx context.Context) futureNodeResult {
 func (arch *Archiver) allBlobsPresent(previous *restic.Node) bool {
 	// check if all blobs are contained in index
 	for _, id := range previous.Content {
-		if !arch.Repo.Index().Has(restic.BlobHandle{ID: id, Type: restic.DataBlob}) {
+		if _, ok := arch.Repo.LookupBlobSize(restic.DataBlob, id); !ok {
 			return false
 		}
 	}

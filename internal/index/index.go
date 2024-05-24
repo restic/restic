@@ -1,6 +1,7 @@
 package index
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -50,10 +51,9 @@ type Index struct {
 	byType [restic.NumBlobTypes]indexMap
 	packs  restic.IDs
 
-	final      bool       // set to true for all indexes read from the backend ("finalized")
-	ids        restic.IDs // set to the IDs of the contained finalized indexes
-	supersedes restic.IDs
-	created    time.Time
+	final   bool       // set to true for all indexes read from the backend ("finalized")
+	ids     restic.IDs // set to the IDs of the contained finalized indexes
+	created time.Time
 }
 
 // NewIndex returns a new index.
@@ -197,25 +197,6 @@ func (idx *Index) LookupSize(bh restic.BlobHandle) (plaintextLength uint, found 
 	return uint(crypto.PlaintextLength(int(e.length))), true
 }
 
-// Supersedes returns the list of indexes this index supersedes, if any.
-func (idx *Index) Supersedes() restic.IDs {
-	return idx.supersedes
-}
-
-// AddToSupersedes adds the ids to the list of indexes superseded by this
-// index. If the index has already been finalized, an error is returned.
-func (idx *Index) AddToSupersedes(ids ...restic.ID) error {
-	idx.m.Lock()
-	defer idx.m.Unlock()
-
-	if idx.final {
-		return errors.New("index already finalized")
-	}
-
-	idx.supersedes = append(idx.supersedes, ids...)
-	return nil
-}
-
 // Each passes all blobs known to the index to the callback fn. This blocks any
 // modification of the index.
 func (idx *Index) Each(ctx context.Context, fn func(restic.PackedBlob)) error {
@@ -356,8 +337,8 @@ func (idx *Index) generatePackList() ([]packJSON, error) {
 }
 
 type jsonIndex struct {
-	Supersedes restic.IDs `json:"supersedes,omitempty"`
-	Packs      []packJSON `json:"packs"`
+	// removed: Supersedes restic.IDs `json:"supersedes,omitempty"`
+	Packs []packJSON `json:"packs"`
 }
 
 // Encode writes the JSON serialization of the index to the writer w.
@@ -373,10 +354,27 @@ func (idx *Index) Encode(w io.Writer) error {
 
 	enc := json.NewEncoder(w)
 	idxJSON := jsonIndex{
-		Supersedes: idx.supersedes,
-		Packs:      list,
+		Packs: list,
 	}
 	return enc.Encode(idxJSON)
+}
+
+// SaveIndex saves an index in the repository.
+func (idx *Index) SaveIndex(ctx context.Context, repo restic.SaverUnpacked) (restic.ID, error) {
+	buf := bytes.NewBuffer(nil)
+
+	err := idx.Encode(buf)
+	if err != nil {
+		return restic.ID{}, err
+	}
+
+	id, err := repo.SaveUnpacked(ctx, restic.IndexFile, buf.Bytes())
+	ierr := idx.SetID(id)
+	if ierr != nil {
+		// logic bug
+		panic(ierr)
+	}
+	return id, err
 }
 
 // Finalize sets the index to final.
@@ -433,8 +431,7 @@ func (idx *Index) Dump(w io.Writer) error {
 	}
 
 	outer := jsonIndex{
-		Supersedes: idx.Supersedes(),
-		Packs:      list,
+		Packs: list,
 	}
 
 	buf, err := json.MarshalIndent(outer, "", "  ")
@@ -495,7 +492,6 @@ func (idx *Index) merge(idx2 *Index) error {
 	}
 
 	idx.ids = append(idx.ids, idx2.ids...)
-	idx.supersedes = append(idx.supersedes, idx2.supersedes...)
 
 	return nil
 }
@@ -545,7 +541,6 @@ func DecodeIndex(buf []byte, id restic.ID) (idx *Index, oldFormat bool, err erro
 			})
 		}
 	}
-	idx.supersedes = idxJSON.Supersedes
 	idx.ids = append(idx.ids, id)
 	idx.final = true
 

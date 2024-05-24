@@ -72,7 +72,7 @@ func (f *file) Open(_ context.Context, _ *fuse.OpenRequest, _ *fuse.OpenResponse
 	var bytes uint64
 	cumsize := make([]uint64, 1+len(f.node.Content))
 	for i, id := range f.node.Content {
-		size, found := f.root.repo.LookupBlobSize(id, restic.DataBlob)
+		size, found := f.root.repo.LookupBlobSize(restic.DataBlob, id)
 		if !found {
 			return nil, errors.Errorf("id %v not found in repository", id)
 		}

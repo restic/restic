@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
@@ -26,7 +25,7 @@ func TestSnapshot(t testing.TB, repo restic.Repository, path string, parent *res
 		Tags:     []string{"test"},
 	}
 	if parent != nil {
-		sn, err := restic.LoadSnapshot(context.TODO(), arch.Repo, *parent)
+		sn, err := restic.LoadSnapshot(context.TODO(), repo, *parent)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -239,7 +238,7 @@ func TestEnsureFileContent(ctx context.Context, t testing.TB, repo restic.BlobLo
 		return
 	}
 
-	content := make([]byte, crypto.CiphertextLength(len(file.Content)))
+	content := make([]byte, len(file.Content))
 	pos := 0
 	for _, id := range node.Content {
 		part, err := repo.LoadBlob(ctx, restic.DataBlob, id, content[pos:])

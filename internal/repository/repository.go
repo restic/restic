@@ -42,8 +42,6 @@ type Repository struct {
 
 	opts Options
 
-	noAutoIndexUpdate bool
-
 	packerWg *errgroup.Group
 	uploader *packerUploader
 	treePM   *packerManager
@@ -130,12 +128,6 @@ func New(be backend.Backend, opts Options) (*Repository, error) {
 	return repo, nil
 }
 
-// DisableAutoIndexUpdate deactives the automatic finalization and upload of new
-// indexes once these are full
-func (r *Repository) DisableAutoIndexUpdate() {
-	r.noAutoIndexUpdate = true
-}
-
 // setConfig assigns the given config and updates the repository parameters accordingly
 func (r *Repository) setConfig(cfg restic.Config) {
 	r.cfg = cfg
@@ -146,8 +138,8 @@ func (r *Repository) Config() restic.Config {
 	return r.cfg
 }
 
-// PackSize return the target size of a pack file when uploading
-func (r *Repository) PackSize() uint {
+// packSize return the target size of a pack file when uploading
+func (r *Repository) packSize() uint {
 	return r.opts.PackSize
 }
 
@@ -298,11 +290,6 @@ func (r *Repository) loadBlob(ctx context.Context, blobs []restic.PackedBlob, bu
 	}
 
 	return nil, errors.Errorf("loading %v from %v packs failed", blobs[0].BlobHandle, len(blobs))
-}
-
-// LookupBlobSize returns the size of blob id.
-func (r *Repository) LookupBlobSize(id restic.ID, tpe restic.BlobType) (uint, bool) {
-	return r.idx.LookupSize(restic.BlobHandle{ID: id, Type: tpe})
 }
 
 func (r *Repository) getZstdEncoder() *zstd.Encoder {
@@ -531,10 +518,6 @@ func (r *Repository) Flush(ctx context.Context) error {
 		return err
 	}
 
-	// Save index after flushing only if noAutoIndexUpdate is not set
-	if r.noAutoIndexUpdate {
-		return nil
-	}
 	return r.idx.SaveIndex(ctx, r)
 }
 
@@ -546,8 +529,8 @@ func (r *Repository) StartPackUploader(ctx context.Context, wg *errgroup.Group) 
 	innerWg, ctx := errgroup.WithContext(ctx)
 	r.packerWg = innerWg
 	r.uploader = newPackerUploader(ctx, innerWg, r, r.be.Connections())
-	r.treePM = newPackerManager(r.key, restic.TreeBlob, r.PackSize(), r.uploader.QueuePacker)
-	r.dataPM = newPackerManager(r.key, restic.DataBlob, r.PackSize(), r.uploader.QueuePacker)
+	r.treePM = newPackerManager(r.key, restic.TreeBlob, r.packSize(), r.uploader.QueuePacker)
+	r.dataPM = newPackerManager(r.key, restic.DataBlob, r.packSize(), r.uploader.QueuePacker)
 
 	wg.Go(func() error {
 		return innerWg.Wait()
@@ -583,9 +566,23 @@ func (r *Repository) Connections() uint {
 	return r.be.Connections()
 }
 
-// Index returns the currently used MasterIndex.
-func (r *Repository) Index() restic.MasterIndex {
-	return r.idx
+func (r *Repository) LookupBlob(tpe restic.BlobType, id restic.ID) []restic.PackedBlob {
+	return r.idx.Lookup(restic.BlobHandle{Type: tpe, ID: id})
+}
+
+// LookupBlobSize returns the size of blob id.
+func (r *Repository) LookupBlobSize(tpe restic.BlobType, id restic.ID) (uint, bool) {
+	return r.idx.LookupSize(restic.BlobHandle{Type: tpe, ID: id})
+}
+
+// ListBlobs runs fn on all blobs known to the index. When the context is cancelled,
+// the index iteration returns immediately with ctx.Err(). This blocks any modification of the index.
+func (r *Repository) ListBlobs(ctx context.Context, fn func(restic.PackedBlob)) error {
+	return r.idx.Each(ctx, fn)
+}
+
+func (r *Repository) ListPacksFromIndex(ctx context.Context, packs restic.IDSet) <-chan restic.PackBlobs {
+	return r.idx.ListPacks(ctx, packs)
 }
 
 // SetIndex instructs the repository to use the given index.
@@ -595,7 +592,7 @@ func (r *Repository) SetIndex(i restic.MasterIndex) error {
 	return r.prepareCache()
 }
 
-func (r *Repository) ClearIndex() {
+func (r *Repository) clearIndex() {
 	r.idx = index.NewMasterIndex()
 	r.configureIndex()
 }
@@ -610,43 +607,10 @@ func (r *Repository) configureIndex() {
 func (r *Repository) LoadIndex(ctx context.Context, p *progress.Counter) error {
 	debug.Log("Loading index")
 
-	indexList, err := restic.MemorizeList(ctx, r, restic.IndexFile)
-	if err != nil {
-		return err
-	}
-
-	if p != nil {
-		var numIndexFiles uint64
-		err := indexList.List(ctx, restic.IndexFile, func(_ restic.ID, _ int64) error {
-			numIndexFiles++
-			return nil
-		})
-		if err != nil {
-			return err
-		}
-		p.SetMax(numIndexFiles)
-		defer p.Done()
-	}
-
 	// reset in-memory index before loading it from the repository
-	r.ClearIndex()
+	r.clearIndex()
 
-	err = index.ForAllIndexes(ctx, indexList, r, func(_ restic.ID, idx *index.Index, _ bool, err error) error {
-		if err != nil {
-			return err
-		}
-		r.idx.Insert(idx)
-		if p != nil {
-			p.Add(1)
-		}
-		return nil
-	})
-
-	if err != nil {
-		return err
-	}
-
-	err = r.idx.MergeFinalIndexes()
+	err := r.idx.Load(ctx, r, p, nil)
 	if err != nil {
 		return err
 	}
@@ -680,10 +644,10 @@ func (r *Repository) LoadIndex(ctx context.Context, p *progress.Counter) error {
 	return r.prepareCache()
 }
 
-// CreateIndexFromPacks creates a new index by reading all given pack files (with sizes).
+// createIndexFromPacks creates a new index by reading all given pack files (with sizes).
 // The index is added to the MasterIndex but not marked as finalized.
 // Returned is the list of pack files which could not be read.
-func (r *Repository) CreateIndexFromPacks(ctx context.Context, packsize map[restic.ID]int64, p *progress.Counter) (invalid restic.IDs, err error) {
+func (r *Repository) createIndexFromPacks(ctx context.Context, packsize map[restic.ID]int64, p *progress.Counter) (invalid restic.IDs, err error) {
 	var m sync.Mutex
 
 	debug.Log("Loading index from pack files")

@@ -240,7 +240,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 	}
 
 	idx := NewHardlinkIndex[string]()
-	filerestorer := newFileRestorer(dst, res.repo.LoadBlobsFromPack, res.repo.Index().Lookup,
+	filerestorer := newFileRestorer(dst, res.repo.LoadBlobsFromPack, res.repo.LookupBlob,
 		res.repo.Connections(), res.sparse, res.progress)
 	filerestorer.Error = res.Error
 
@@ -435,7 +435,7 @@ func (res *Restorer) verifyFile(target string, node *restic.Node, buf []byte) ([
 
 	var offset int64
 	for _, blobID := range node.Content {
-		length, found := res.repo.LookupBlobSize(blobID, restic.DataBlob)
+		length, found := res.repo.LookupBlobSize(restic.DataBlob, blobID)
 		if !found {
 			return buf, errors.Errorf("Unable to fetch blob %s", blobID)
 		}

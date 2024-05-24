@@ -158,11 +158,10 @@ func checkPackInner(ctx context.Context, r *Repository, id restic.ID, blobs []re
 		errs = append(errs, errors.Errorf("pack header size does not match, want %v, got %v", idxHdrSize, hdrSize))
 	}
 
-	idx := r.Index()
 	for _, blob := range blobs {
 		// Check if blob is contained in index and position is correct
 		idxHas := false
-		for _, pb := range idx.Lookup(blob.BlobHandle) {
+		for _, pb := range r.LookupBlob(blob.BlobHandle.Type, blob.BlobHandle.ID) {
 			if pb.PackID == id && pb.Blob == blob {
 				idxHas = true
 				break

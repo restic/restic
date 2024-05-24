@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/backend"
-	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui/progress"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -145,9 +145,8 @@ func listFiles(t *testing.T, repo restic.Lister, tpe backend.FileType) restic.ID
 func findPacksForBlobs(t *testing.T, repo restic.Repository, blobs restic.BlobSet) restic.IDSet {
 	packs := restic.NewIDSet()
 
-	idx := repo.Index()
 	for h := range blobs {
-		list := idx.Lookup(h)
+		list := repo.LookupBlob(h.Type, h.ID)
 		if len(list) == 0 {
 			t.Fatal("Failed to find blob", h.ID.Str(), "with type", h.Type)
 		}
@@ -174,40 +173,12 @@ func repack(t *testing.T, repo restic.Repository, packs restic.IDSet, blobs rest
 	}
 }
 
-func rebuildIndex(t *testing.T, repo restic.Repository) {
-	err := repo.SetIndex(index.NewMasterIndex())
-	rtest.OK(t, err)
+func rebuildAndReloadIndex(t *testing.T, repo *repository.Repository) {
+	rtest.OK(t, repository.RepairIndex(context.TODO(), repo, repository.RepairIndexOptions{
+		ReadAllPacks: true,
+	}, &progress.NoopPrinter{}))
 
-	packs := make(map[restic.ID]int64)
-	err = repo.List(context.TODO(), restic.PackFile, func(id restic.ID, size int64) error {
-		packs[id] = size
-		return nil
-	})
-	rtest.OK(t, err)
-
-	_, err = repo.(*repository.Repository).CreateIndexFromPacks(context.TODO(), packs, nil)
-	rtest.OK(t, err)
-
-	var obsoleteIndexes restic.IDs
-	err = repo.List(context.TODO(), restic.IndexFile, func(id restic.ID, size int64) error {
-		obsoleteIndexes = append(obsoleteIndexes, id)
-		return nil
-	})
-	rtest.OK(t, err)
-
-	err = repo.Index().Save(context.TODO(), repo, restic.NewIDSet(), obsoleteIndexes, restic.MasterIndexSaveOpts{})
-	rtest.OK(t, err)
-}
-
-func reloadIndex(t *testing.T, repo restic.Repository) {
-	err := repo.SetIndex(index.NewMasterIndex())
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if err := repo.LoadIndex(context.TODO(), nil); err != nil {
-		t.Fatalf("error loading new index: %v", err)
-	}
+	rtest.OK(t, repo.LoadIndex(context.TODO(), nil))
 }
 
 func TestRepack(t *testing.T) {
@@ -242,8 +213,7 @@ func testRepack(t *testing.T, version uint) {
 	removePacks := findPacksForBlobs(t, repo, removeBlobs)
 
 	repack(t, repo, removePacks, keepBlobs)
-	rebuildIndex(t, repo)
-	reloadIndex(t, repo)
+	rebuildAndReloadIndex(t, repo)
 
 	packsAfter = listPacks(t, repo)
 	for id := range removePacks {
@@ -252,10 +222,8 @@ func testRepack(t *testing.T, version uint) {
 		}
 	}
 
-	idx := repo.Index()
-
 	for h := range keepBlobs {
-		list := idx.Lookup(h)
+		list := repo.LookupBlob(h.Type, h.ID)
 		if len(list) == 0 {
 			t.Errorf("unable to find blob %v in repo", h.ID.Str())
 			continue
@@ -274,7 +242,7 @@ func testRepack(t *testing.T, version uint) {
 	}
 
 	for h := range removeBlobs {
-		if _, found := repo.LookupBlobSize(h.ID, h.Type); found {
+		if _, found := repo.LookupBlobSize(h.Type, h.ID); found {
 			t.Errorf("blob %v still contained in the repo", h)
 		}
 	}
@@ -315,13 +283,10 @@ func testRepackCopy(t *testing.T, version uint) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rebuildIndex(t, dstRepo)
-	reloadIndex(t, dstRepo)
-
-	idx := dstRepo.Index()
+	rebuildAndReloadIndex(t, dstRepo)
 
 	for h := range keepBlobs {
-		list := idx.Lookup(h)
+		list := dstRepo.LookupBlob(h.Type, h.ID)
 		if len(list) == 0 {
 			t.Errorf("unable to find blob %v in repo", h.ID.Str())
 			continue

@@ -11,7 +11,7 @@ import (
 // Loader loads a blob from a repository.
 type Loader interface {
 	LoadBlob(context.Context, BlobType, ID, []byte) ([]byte, error)
-	LookupBlobSize(id ID, tpe BlobType) (uint, bool)
+	LookupBlobSize(tpe BlobType, id ID) (uint, bool)
 	Connections() uint
 }
 

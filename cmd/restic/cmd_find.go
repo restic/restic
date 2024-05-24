@@ -465,7 +465,7 @@ func (f *Finder) indexPacksToBlobs(ctx context.Context, packIDs map[string]struc
 
 	// remember which packs were found in the index
 	indexPackIDs := make(map[string]struct{})
-	err := f.repo.Index().Each(wctx, func(pb restic.PackedBlob) {
+	err := f.repo.ListBlobs(wctx, func(pb restic.PackedBlob) {
 		idStr := pb.PackID.String()
 		// keep entry in packIDs as Each() returns individual index entries
 		matchingID := false
@@ -503,15 +503,13 @@ func (f *Finder) indexPacksToBlobs(ctx context.Context, packIDs map[string]struc
 }
 
 func (f *Finder) findObjectPack(id string, t restic.BlobType) {
-	idx := f.repo.Index()
-
 	rid, err := restic.ParseID(id)
 	if err != nil {
 		Printf("Note: cannot find pack for object '%s', unable to parse ID: %v\n", id, err)
 		return
 	}
 
-	blobs := idx.Lookup(restic.BlobHandle{ID: rid, Type: t})
+	blobs := f.repo.LookupBlob(t, rid)
 	if len(blobs) == 0 {
 		Printf("Object %s not found in the index\n", rid.Str())
 		return

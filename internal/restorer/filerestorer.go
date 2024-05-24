@@ -48,7 +48,7 @@ type blobsLoaderFn func(ctx context.Context, packID restic.ID, blobs []restic.Bl
 
 // fileRestorer restores set of files
 type fileRestorer struct {
-	idx         func(restic.BlobHandle) []restic.PackedBlob
+	idx         func(restic.BlobType, restic.ID) []restic.PackedBlob
 	blobsLoader blobsLoaderFn
 
 	workerCount int
@@ -64,7 +64,7 @@ type fileRestorer struct {
 
 func newFileRestorer(dst string,
 	blobsLoader blobsLoaderFn,
-	idx func(restic.BlobHandle) []restic.PackedBlob,
+	idx func(restic.BlobType, restic.ID) []restic.PackedBlob,
 	connections uint,
 	sparse bool,
 	progress *restore.Progress) *fileRestorer {
@@ -99,7 +99,7 @@ func (r *fileRestorer) forEachBlob(blobIDs []restic.ID, fn func(packID restic.ID
 	}
 
 	for _, blobID := range blobIDs {
-		packs := r.idx(restic.BlobHandle{ID: blobID, Type: restic.DataBlob})
+		packs := r.idx(restic.DataBlob, blobID)
 		if len(packs) == 0 {
 			return errors.Errorf("Unknown blob %s", blobID.String())
 		}
@@ -227,7 +227,7 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) error {
 			}
 		} else if packsMap, ok := file.blobs.(map[restic.ID][]fileBlobInfo); ok {
 			for _, blob := range packsMap[pack.id] {
-				idxPacks := r.idx(restic.BlobHandle{ID: blob.id, Type: restic.DataBlob})
+				idxPacks := r.idx(restic.DataBlob, blob.id)
 				for _, idxPack := range idxPacks {
 					if idxPack.PackID.Equal(pack.id) {
 						addBlob(idxPack.Blob, blob.offset)

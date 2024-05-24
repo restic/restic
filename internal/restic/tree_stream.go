@@ -77,7 +77,7 @@ func filterTrees(ctx context.Context, repo Loader, trees IDs, loaderChan chan<- 
 				continue
 			}
 
-			treeSize, found := repo.LookupBlobSize(nextTreeID.ID, TreeBlob)
+			treeSize, found := repo.LookupBlobSize(TreeBlob, nextTreeID.ID)
 			if found && treeSize > 50*1024*1024 {
 				loadCh = hugeTreeLoaderChan
 			} else {

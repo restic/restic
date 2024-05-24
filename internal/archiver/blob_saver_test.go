@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 	"golang.org/x/sync/errgroup"
@@ -19,7 +18,6 @@ import (
 var errTest = errors.New("test error")
 
 type saveFail struct {
-	idx    restic.MasterIndex
 	cnt    int32
 	failAt int32
 }
@@ -33,18 +31,12 @@ func (b *saveFail) SaveBlob(_ context.Context, _ restic.BlobType, _ []byte, id r
 	return id, false, 0, nil
 }
 
-func (b *saveFail) Index() restic.MasterIndex {
-	return b.idx
-}
-
 func TestBlobSaver(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	wg, ctx := errgroup.WithContext(ctx)
-	saver := &saveFail{
-		idx: index.NewMasterIndex(),
-	}
+	saver := &saveFail{}
 
 	b := NewBlobSaver(ctx, wg, saver, uint(runtime.NumCPU()))
 
@@ -100,7 +92,6 @@ func TestBlobSaverError(t *testing.T) {
 
 			wg, ctx := errgroup.WithContext(ctx)
 			saver := &saveFail{
-				idx:    index.NewMasterIndex(),
 				failAt: int32(test.failAt),
 			}
 

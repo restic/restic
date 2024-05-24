@@ -10,7 +10,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func RepairPacks(ctx context.Context, repo restic.Repository, ids restic.IDSet, printer progress.Printer) error {
+func RepairPacks(ctx context.Context, repo *Repository, ids restic.IDSet, printer progress.Printer) error {
 	wg, wgCtx := errgroup.WithContext(ctx)
 	repo.StartPackUploader(wgCtx, wg)
 
@@ -21,7 +21,7 @@ func RepairPacks(ctx context.Context, repo restic.Repository, ids restic.IDSet, 
 
 	wg.Go(func() error {
 		// examine all data the indexes have for the pack file
-		for b := range repo.Index().ListPacks(wgCtx, ids) {
+		for b := range repo.ListPacksFromIndex(wgCtx, ids) {
 			blobs := b.Blobs
 			if len(blobs) == 0 {
 				printer.E("no blobs found for pack %v", b.PackID)
@@ -56,7 +56,7 @@ func RepairPacks(ctx context.Context, repo restic.Repository, ids restic.IDSet, 
 	}
 
 	// remove salvaged packs from index
-	err = rebuildIndexFiles(ctx, repo, ids, nil, false, printer)
+	err = rewriteIndexFiles(ctx, repo, ids, nil, nil, printer)
 	if err != nil {
 		return err
 	}

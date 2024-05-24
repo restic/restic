@@ -64,7 +64,7 @@ func TestRoundtrip(t *testing.T) {
 			}))
 			defer srv.Close()
 
-			rt := newWatchdogRoundtripper(http.DefaultTransport, 50*time.Millisecond, 2)
+			rt := newWatchdogRoundtripper(http.DefaultTransport, 100*time.Millisecond, 2)
 			req, err := http.NewRequestWithContext(context.TODO(), "GET", srv.URL, io.NopCloser(newSlowReader(bytes.NewReader(msg), time.Duration(delay)*time.Millisecond)))
 			rtest.OK(t, err)
 

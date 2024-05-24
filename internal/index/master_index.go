@@ -1,7 +1,6 @@
 package index
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"runtime"
@@ -9,6 +8,7 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui/progress"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -22,12 +22,15 @@ type MasterIndex struct {
 
 // NewMasterIndex creates a new master index.
 func NewMasterIndex() *MasterIndex {
+	mi := &MasterIndex{pendingBlobs: restic.NewBlobSet()}
+	mi.clear()
+	return mi
+}
+
+func (mi *MasterIndex) clear() {
 	// Always add an empty final index, such that MergeFinalIndexes can merge into this.
-	// Note that removing this index could lead to a race condition in the rare
-	// situation that only two indexes exist which are saved and merged concurrently.
-	idx := []*Index{NewIndex()}
-	idx[0].Finalize()
-	return &MasterIndex{idx: idx, pendingBlobs: restic.NewBlobSet()}
+	mi.idx = []*Index{NewIndex()}
+	mi.idx[0].Finalize()
 }
 
 func (mi *MasterIndex) MarkCompressed() {
@@ -267,11 +270,236 @@ func (mi *MasterIndex) MergeFinalIndexes() error {
 	return nil
 }
 
-// Save saves all known indexes to index files, leaving out any
-// packs whose ID is contained in packBlacklist from finalized indexes.
-// It also removes the old index files and those listed in extraObsolete.
-func (mi *MasterIndex) Save(ctx context.Context, repo restic.SaverRemoverUnpacked, excludePacks restic.IDSet, extraObsolete restic.IDs, opts restic.MasterIndexSaveOpts) error {
+func (mi *MasterIndex) Load(ctx context.Context, r restic.ListerLoaderUnpacked, p *progress.Counter, cb func(id restic.ID, idx *Index, oldFormat bool, err error) error) error {
+	indexList, err := restic.MemorizeList(ctx, r, restic.IndexFile)
+	if err != nil {
+		return err
+	}
+
+	if p != nil {
+		var numIndexFiles uint64
+		err := indexList.List(ctx, restic.IndexFile, func(_ restic.ID, _ int64) error {
+			numIndexFiles++
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+		p.SetMax(numIndexFiles)
+		defer p.Done()
+	}
+
+	err = ForAllIndexes(ctx, indexList, r, func(id restic.ID, idx *Index, oldFormat bool, err error) error {
+		if p != nil {
+			p.Add(1)
+		}
+		if cb != nil {
+			err = cb(id, idx, oldFormat, err)
+		}
+		if err != nil {
+			return err
+		}
+		// special case to allow check to ignore index loading errors
+		if idx == nil {
+			return nil
+		}
+		mi.Insert(idx)
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return mi.MergeFinalIndexes()
+}
+
+type MasterIndexRewriteOpts struct {
+	SaveProgress   *progress.Counter
+	DeleteProgress func() *progress.Counter
+	DeleteReport   func(id restic.ID, err error)
+}
+
+// Rewrite removes packs whose ID is in excludePacks from all known indexes.
+// It also removes the rewritten index files and those listed in extraObsolete.
+// If oldIndexes is not nil, then only the indexes in this set are processed.
+// This is used by repair index to only rewrite and delete the old indexes.
+//
+// Must not be called concurrently to any other MasterIndex operation.
+func (mi *MasterIndex) Rewrite(ctx context.Context, repo restic.Unpacked, excludePacks restic.IDSet, oldIndexes restic.IDSet, extraObsolete restic.IDs, opts MasterIndexRewriteOpts) error {
+	for _, idx := range mi.idx {
+		if !idx.Final() {
+			panic("internal error - index must be saved before calling MasterIndex.Rewrite")
+		}
+	}
+
+	var indexes restic.IDSet
+	if oldIndexes != nil {
+		// repair index adds new index entries for already existing pack files
+		// only remove the old (possibly broken) entries by only processing old indexes
+		indexes = oldIndexes
+	} else {
+		indexes = mi.IDs()
+	}
+
 	p := opts.SaveProgress
+	p.SetMax(uint64(len(indexes)))
+
+	// reset state which is not necessary for Rewrite and just consumes a lot of memory
+	// the index state would be invalid after Rewrite completes anyways
+	mi.clear()
+	runtime.GC()
+
+	// copy excludePacks to prevent unintended sideeffects
+	excludePacks = excludePacks.Clone()
+	debug.Log("start rebuilding index of %d indexes, excludePacks: %v", len(indexes), excludePacks)
+	wg, wgCtx := errgroup.WithContext(ctx)
+
+	idxCh := make(chan restic.ID)
+	wg.Go(func() error {
+		defer close(idxCh)
+		for id := range indexes {
+			select {
+			case idxCh <- id:
+			case <-wgCtx.Done():
+				return wgCtx.Err()
+			}
+		}
+		return nil
+	})
+
+	var rewriteWg sync.WaitGroup
+	type rewriteTask struct {
+		idx       *Index
+		oldFormat bool
+	}
+	rewriteCh := make(chan rewriteTask)
+	loader := func() error {
+		defer rewriteWg.Done()
+		for id := range idxCh {
+			buf, err := repo.LoadUnpacked(wgCtx, restic.IndexFile, id)
+			if err != nil {
+				return fmt.Errorf("LoadUnpacked(%v): %w", id.Str(), err)
+			}
+			idx, oldFormat, err := DecodeIndex(buf, id)
+			if err != nil {
+				return err
+			}
+
+			select {
+			case rewriteCh <- rewriteTask{idx, oldFormat}:
+			case <-wgCtx.Done():
+				return wgCtx.Err()
+			}
+
+		}
+		return nil
+	}
+	// loading an index can take quite some time such that this is probably CPU-bound
+	// the index files are probably already cached at this point
+	loaderCount := runtime.GOMAXPROCS(0)
+	// run workers on ch
+	for i := 0; i < loaderCount; i++ {
+		rewriteWg.Add(1)
+		wg.Go(loader)
+	}
+	wg.Go(func() error {
+		rewriteWg.Wait()
+		close(rewriteCh)
+		return nil
+	})
+
+	obsolete := restic.NewIDSet(extraObsolete...)
+	saveCh := make(chan *Index)
+
+	wg.Go(func() error {
+		defer close(saveCh)
+		newIndex := NewIndex()
+		for task := range rewriteCh {
+			// always rewrite indexes using the old format, that include a pack that must be removed or that are not full
+			if !task.oldFormat && len(task.idx.Packs().Intersect(excludePacks)) == 0 && IndexFull(task.idx, mi.compress) {
+				// make sure that each pack is only stored exactly once in the index
+				excludePacks.Merge(task.idx.Packs())
+				// index is already up to date
+				p.Add(1)
+				continue
+			}
+
+			ids, err := task.idx.IDs()
+			if err != nil || len(ids) != 1 {
+				panic("internal error, index has no ID")
+			}
+			obsolete.Merge(restic.NewIDSet(ids...))
+
+			for pbs := range task.idx.EachByPack(wgCtx, excludePacks) {
+				newIndex.StorePack(pbs.PackID, pbs.Blobs)
+				if IndexFull(newIndex, mi.compress) {
+					select {
+					case saveCh <- newIndex:
+					case <-wgCtx.Done():
+						return wgCtx.Err()
+					}
+					newIndex = NewIndex()
+				}
+			}
+			if wgCtx.Err() != nil {
+				return wgCtx.Err()
+			}
+			// make sure that each pack is only stored exactly once in the index
+			excludePacks.Merge(task.idx.Packs())
+			p.Add(1)
+		}
+
+		select {
+		case saveCh <- newIndex:
+		case <-wgCtx.Done():
+		}
+		return nil
+	})
+
+	// a worker receives an index from ch, and saves the index
+	worker := func() error {
+		for idx := range saveCh {
+			idx.Finalize()
+			if _, err := idx.SaveIndex(wgCtx, repo); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	// encoding an index can take quite some time such that this can be CPU- or IO-bound
+	// do not add repo.Connections() here as there are already the loader goroutines.
+	workerCount := runtime.GOMAXPROCS(0)
+	// run workers on ch
+	for i := 0; i < workerCount; i++ {
+		wg.Go(worker)
+	}
+	err := wg.Wait()
+	p.Done()
+	if err != nil {
+		return fmt.Errorf("failed to rewrite indexes: %w", err)
+	}
+
+	p = nil
+	if opts.DeleteProgress != nil {
+		p = opts.DeleteProgress()
+	}
+	defer p.Done()
+	return restic.ParallelRemove(ctx, repo, obsolete, restic.IndexFile, func(id restic.ID, err error) error {
+		if opts.DeleteReport != nil {
+			opts.DeleteReport(id, err)
+		}
+		return err
+	}, p)
+}
+
+// SaveFallback saves all known indexes to index files, leaving out any
+// packs whose ID is contained in packBlacklist from finalized indexes.
+// It is only intended for use by prune with the UnsafeRecovery option.
+//
+// Must not be called concurrently to any other MasterIndex operation.
+func (mi *MasterIndex) SaveFallback(ctx context.Context, repo restic.SaverRemoverUnpacked, excludePacks restic.IDSet, p *progress.Counter) error {
 	p.SetMax(uint64(len(mi.Packs(excludePacks))))
 
 	mi.idxMutex.Lock()
@@ -279,37 +507,22 @@ func (mi *MasterIndex) Save(ctx context.Context, repo restic.SaverRemoverUnpacke
 
 	debug.Log("start rebuilding index of %d indexes, excludePacks: %v", len(mi.idx), excludePacks)
 
-	newIndex := NewIndex()
 	obsolete := restic.NewIDSet()
-
-	// track spawned goroutines using wg, create a new context which is
-	// cancelled as soon as an error occurs.
 	wg, wgCtx := errgroup.WithContext(ctx)
 
 	ch := make(chan *Index)
-
 	wg.Go(func() error {
 		defer close(ch)
-		for i, idx := range mi.idx {
+		newIndex := NewIndex()
+		for _, idx := range mi.idx {
 			if idx.Final() {
 				ids, err := idx.IDs()
 				if err != nil {
-					debug.Log("index %d does not have an ID: %v", err)
-					return err
+					panic("internal error - finalized index without ID")
 				}
-
 				debug.Log("adding index ids %v to supersedes field", ids)
-
-				err = newIndex.AddToSupersedes(ids...)
-				if err != nil {
-					return err
-				}
 				obsolete.Merge(restic.NewIDSet(ids...))
-			} else {
-				debug.Log("index %d isn't final, don't add to supersedes field", i)
 			}
-
-			debug.Log("adding index %d", i)
 
 			for pbs := range idx.EachByPack(wgCtx, excludePacks) {
 				newIndex.StorePack(pbs.PackID, pbs.Blobs)
@@ -328,12 +541,6 @@ func (mi *MasterIndex) Save(ctx context.Context, repo restic.SaverRemoverUnpacke
 			}
 		}
 
-		err := newIndex.AddToSupersedes(extraObsolete...)
-		if err != nil {
-			return err
-		}
-		obsolete.Merge(restic.NewIDSet(extraObsolete...))
-
 		select {
 		case ch <- newIndex:
 		case <-wgCtx.Done():
@@ -345,58 +552,25 @@ func (mi *MasterIndex) Save(ctx context.Context, repo restic.SaverRemoverUnpacke
 	worker := func() error {
 		for idx := range ch {
 			idx.Finalize()
-			if _, err := SaveIndex(wgCtx, repo, idx); err != nil {
+			if _, err := idx.SaveIndex(wgCtx, repo); err != nil {
 				return err
 			}
 		}
 		return nil
 	}
 
-	// encoding an index can take quite some time such that this can be both CPU- or IO-bound
-	workerCount := int(repo.Connections()) + runtime.GOMAXPROCS(0)
+	// keep concurrency bounded as we're on a fallback path
+	workerCount := int(repo.Connections())
 	// run workers on ch
 	for i := 0; i < workerCount; i++ {
 		wg.Go(worker)
 	}
 	err := wg.Wait()
 	p.Done()
-	if err != nil {
-		return err
-	}
+	// the index no longer matches to stored state
+	mi.clear()
 
-	if opts.SkipDeletion {
-		return nil
-	}
-
-	p = nil
-	if opts.DeleteProgress != nil {
-		p = opts.DeleteProgress()
-	}
-	defer p.Done()
-	return restic.ParallelRemove(ctx, repo, obsolete, restic.IndexFile, func(id restic.ID, err error) error {
-		if opts.DeleteReport != nil {
-			opts.DeleteReport(id, err)
-		}
-		return err
-	}, p)
-}
-
-// SaveIndex saves an index in the repository.
-func SaveIndex(ctx context.Context, repo restic.SaverUnpacked, index *Index) (restic.ID, error) {
-	buf := bytes.NewBuffer(nil)
-
-	err := index.Encode(buf)
-	if err != nil {
-		return restic.ID{}, err
-	}
-
-	id, err := repo.SaveUnpacked(ctx, restic.IndexFile, buf.Bytes())
-	ierr := index.SetID(id)
-	if ierr != nil {
-		// logic bug
-		panic(ierr)
-	}
-	return id, err
+	return err
 }
 
 // saveIndex saves all indexes in the backend.
@@ -404,7 +578,7 @@ func (mi *MasterIndex) saveIndex(ctx context.Context, r restic.SaverUnpacked, in
 	for i, idx := range indexes {
 		debug.Log("Saving index %d", i)
 
-		sid, err := SaveIndex(ctx, r, idx)
+		sid, err := idx.SaveIndex(ctx, r)
 		if err != nil {
 			return err
 		}
