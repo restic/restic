@@ -188,8 +188,8 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOption
 		RepackUncompressed: opts.RepackUncompressed,
 	}
 
-	plan, err := repository.PlanPrune(ctx, popts, repo, func(ctx context.Context, repo restic.Repository) (usedBlobs restic.CountedBlobSet, err error) {
-		return getUsedBlobs(ctx, repo, ignoreSnapshots, printer)
+	plan, err := repository.PlanPrune(ctx, popts, repo, func(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet) error {
+		return getUsedBlobs(ctx, repo, usedBlobs, ignoreSnapshots, printer)
 	}, printer)
 	if err != nil {
 		return err
@@ -255,10 +255,10 @@ func printPruneStats(printer progress.Printer, stats repository.PruneStats) erro
 	return nil
 }
 
-func getUsedBlobs(ctx context.Context, repo restic.Repository, ignoreSnapshots restic.IDSet, printer progress.Printer) (usedBlobs restic.CountedBlobSet, err error) {
+func getUsedBlobs(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet, ignoreSnapshots restic.IDSet, printer progress.Printer) error {
 	var snapshotTrees restic.IDs
 	printer.P("loading all snapshots...\n")
-	err = restic.ForAllSnapshots(ctx, repo, repo, ignoreSnapshots,
+	err := restic.ForAllSnapshots(ctx, repo, repo, ignoreSnapshots,
 		func(id restic.ID, sn *restic.Snapshot, err error) error {
 			if err != nil {
 				debug.Log("failed to load snapshot %v (error %v)", id, err)
@@ -269,20 +269,14 @@ func getUsedBlobs(ctx context.Context, repo restic.Repository, ignoreSnapshots r
 			return nil
 		})
 	if err != nil {
-		return nil, errors.Fatalf("failed loading snapshot: %v", err)
+		return errors.Fatalf("failed loading snapshot: %v", err)
 	}
 
 	printer.P("finding data that is still in use for %d snapshots\n", len(snapshotTrees))
-
-	usedBlobs = restic.NewCountedBlobSet()
 
 	bar := printer.NewCounter("snapshots")
 	bar.SetMax(uint64(len(snapshotTrees)))
 	defer bar.Done()
 
-	err = restic.FindUsedBlobs(ctx, repo, snapshotTrees, usedBlobs, bar)
-	if err != nil {
-		return nil, err
-	}
-	return usedBlobs, nil
+	return restic.FindUsedBlobs(ctx, repo, snapshotTrees, usedBlobs, bar)
 }

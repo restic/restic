@@ -99,6 +99,32 @@ func (m *indexMap) get(id restic.ID) *indexEntry {
 	return nil
 }
 
+// firstIndex returns the index of the first entry for ID id.
+// This index is guaranteed to never change.
+func (m *indexMap) firstIndex(id restic.ID) int {
+	if len(m.buckets) == 0 {
+		return -1
+	}
+
+	idx := -1
+	h := m.hash(id)
+	ei := m.buckets[h]
+	for ei != 0 {
+		e := m.resolve(ei)
+		cur := ei
+		ei = e.next
+		if e.id != id {
+			continue
+		}
+		if int(cur) < idx || idx == -1 {
+			// casting from uint to int is unproblematic as we'd run out of memory
+			// before this can result in an overflow.
+			idx = int(cur)
+		}
+	}
+	return idx
+}
+
 func (m *indexMap) grow() {
 	m.buckets = make([]uint, growthFactor*len(m.buckets))
 
@@ -118,9 +144,10 @@ func (m *indexMap) hash(id restic.ID) uint {
 	// While SHA-256 should be collision-resistant, for hash table indices
 	// we use only a few bits of it and finding collisions for those is
 	// much easier than breaking the whole algorithm.
-	m.mh.Reset()
-	_, _ = m.mh.Write(id[:])
-	h := uint(m.mh.Sum64())
+	mh := maphash.Hash{}
+	mh.SetSeed(m.mh.Seed())
+	_, _ = mh.Write(id[:])
+	h := uint(mh.Sum64())
 	return h & uint(len(m.buckets)-1)
 }
 

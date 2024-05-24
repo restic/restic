@@ -30,8 +30,11 @@ func testPrune(t *testing.T, opts repository.PruneOptions, errOnUnused bool) {
 	}
 	rtest.OK(t, repo.Flush(context.TODO()))
 
-	plan, err := repository.PlanPrune(context.TODO(), opts, repo, func(ctx context.Context, repo restic.Repository) (usedBlobs restic.CountedBlobSet, err error) {
-		return restic.NewCountedBlobSet(keep.List()...), nil
+	plan, err := repository.PlanPrune(context.TODO(), opts, repo, func(ctx context.Context, repo restic.Repository, usedBlobs restic.FindBlobSet) error {
+		for blob := range keep {
+			usedBlobs.Insert(blob)
+		}
+		return nil
 	}, &progress.NoopPrinter{})
 	rtest.OK(t, err)
 

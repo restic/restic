@@ -588,19 +588,11 @@ func (r *Repository) ListPacksFromIndex(ctx context.Context, packs restic.IDSet)
 // SetIndex instructs the repository to use the given index.
 func (r *Repository) SetIndex(i restic.MasterIndex) error {
 	r.idx = i.(*index.MasterIndex)
-	r.configureIndex()
 	return r.prepareCache()
 }
 
 func (r *Repository) clearIndex() {
 	r.idx = index.NewMasterIndex()
-	r.configureIndex()
-}
-
-func (r *Repository) configureIndex() {
-	if r.cfg.Version >= 2 {
-		r.idx.MarkCompressed()
-	}
 }
 
 // LoadIndex loads all index files from the backend in parallel and stores them

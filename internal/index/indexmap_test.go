@@ -143,3 +143,45 @@ func BenchmarkIndexMapHash(b *testing.B) {
 		}
 	}
 }
+
+func TestIndexMapFirstIndex(t *testing.T) {
+	t.Parallel()
+
+	var (
+		id restic.ID
+		m  indexMap
+		r  = rand.New(rand.NewSource(98765))
+		fi = make(map[restic.ID]int)
+	)
+
+	for i := 1; i <= 400; i++ {
+		r.Read(id[:])
+		rtest.Equals(t, -1, m.firstIndex(id), "wrong firstIndex for nonexistant id")
+
+		m.add(id, 0, 0, 0, 0)
+		idx := m.firstIndex(id)
+		rtest.Equals(t, i, idx, "unexpected index for id")
+		fi[id] = idx
+	}
+	// iterate over blobs, as this is a hashmap the order is effectively random
+	for id, idx := range fi {
+		rtest.Equals(t, idx, m.firstIndex(id), "wrong index returned")
+	}
+}
+
+func TestIndexMapFirstIndexDuplicates(t *testing.T) {
+	t.Parallel()
+
+	var (
+		id restic.ID
+		m  indexMap
+		r  = rand.New(rand.NewSource(98765))
+	)
+
+	r.Read(id[:])
+	for i := 1; i <= 10; i++ {
+		m.add(id, 0, 0, 0, 0)
+	}
+	idx := m.firstIndex(id)
+	rtest.Equals(t, 1, idx, "unexpected index for id")
+}

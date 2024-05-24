@@ -47,7 +47,7 @@ import (
 
 // Index holds lookup tables for id -> pack.
 type Index struct {
-	m      sync.Mutex
+	m      sync.RWMutex
 	byType [restic.NumBlobTypes]indexMap
 	packs  restic.IDs
 
@@ -83,22 +83,21 @@ func (idx *Index) store(packIndex int, blob restic.Blob) {
 // Final returns true iff the index is already written to the repository, it is
 // finalized.
 func (idx *Index) Final() bool {
-	idx.m.Lock()
-	defer idx.m.Unlock()
+	idx.m.RLock()
+	defer idx.m.RUnlock()
 
 	return idx.final
 }
 
 const (
-	indexMaxBlobs           = 50000
-	indexMaxBlobsCompressed = 3 * indexMaxBlobs
-	indexMaxAge             = 10 * time.Minute
+	indexMaxBlobs = 50000
+	indexMaxAge   = 10 * time.Minute
 )
 
 // IndexFull returns true iff the index is "full enough" to be saved as a preliminary index.
-var IndexFull = func(idx *Index, compress bool) bool {
-	idx.m.Lock()
-	defer idx.m.Unlock()
+var IndexFull = func(idx *Index) bool {
+	idx.m.RLock()
+	defer idx.m.RUnlock()
 
 	debug.Log("checking whether index %p is full", idx)
 
@@ -107,18 +106,12 @@ var IndexFull = func(idx *Index, compress bool) bool {
 		blobs += idx.byType[typ].len()
 	}
 	age := time.Since(idx.created)
-	var maxBlobs uint
-	if compress {
-		maxBlobs = indexMaxBlobsCompressed
-	} else {
-		maxBlobs = indexMaxBlobs
-	}
 
 	switch {
 	case age >= indexMaxAge:
 		debug.Log("index %p is old enough", idx, age)
 		return true
-	case blobs >= maxBlobs:
+	case blobs >= indexMaxBlobs:
 		debug.Log("index %p has %d blobs", idx, blobs)
 		return true
 	}
@@ -163,8 +156,8 @@ func (idx *Index) toPackedBlob(e *indexEntry, t restic.BlobType) restic.PackedBl
 // Lookup queries the index for the blob ID and returns all entries including
 // duplicates. Adds found entries to blobs and returns the result.
 func (idx *Index) Lookup(bh restic.BlobHandle, pbs []restic.PackedBlob) []restic.PackedBlob {
-	idx.m.Lock()
-	defer idx.m.Unlock()
+	idx.m.RLock()
+	defer idx.m.RUnlock()
 
 	idx.byType[bh.Type].foreachWithID(bh.ID, func(e *indexEntry) {
 		pbs = append(pbs, idx.toPackedBlob(e, bh.Type))
@@ -175,8 +168,8 @@ func (idx *Index) Lookup(bh restic.BlobHandle, pbs []restic.PackedBlob) []restic
 
 // Has returns true iff the id is listed in the index.
 func (idx *Index) Has(bh restic.BlobHandle) bool {
-	idx.m.Lock()
-	defer idx.m.Unlock()
+	idx.m.RLock()
+	defer idx.m.RUnlock()
 
 	return idx.byType[bh.Type].get(bh.ID) != nil
 }
@@ -184,8 +177,8 @@ func (idx *Index) Has(bh restic.BlobHandle) bool {
 // LookupSize returns the length of the plaintext content of the blob with the
 // given id.
 func (idx *Index) LookupSize(bh restic.BlobHandle) (plaintextLength uint, found bool) {
-	idx.m.Lock()
-	defer idx.m.Unlock()
+	idx.m.RLock()
+	defer idx.m.RUnlock()
 
 	e := idx.byType[bh.Type].get(bh.ID)
 	if e == nil {
@@ -200,8 +193,8 @@ func (idx *Index) LookupSize(bh restic.BlobHandle) (plaintextLength uint, found 
 // Each passes all blobs known to the index to the callback fn. This blocks any
 // modification of the index.
 func (idx *Index) Each(ctx context.Context, fn func(restic.PackedBlob)) error {
-	idx.m.Lock()
-	defer idx.m.Unlock()
+	idx.m.RLock()
+	defer idx.m.RUnlock()
 
 	for typ := range idx.byType {
 		m := &idx.byType[typ]
@@ -229,12 +222,12 @@ type EachByPackResult struct {
 // When the  context is cancelled, the background goroutine
 // terminates. This blocks any modification of the index.
 func (idx *Index) EachByPack(ctx context.Context, packBlacklist restic.IDSet) <-chan EachByPackResult {
-	idx.m.Lock()
+	idx.m.RLock()
 
 	ch := make(chan EachByPackResult)
 
 	go func() {
-		defer idx.m.Unlock()
+		defer idx.m.RUnlock()
 		defer close(ch)
 
 		byPack := make(map[restic.ID][restic.NumBlobTypes][]*indexEntry)
@@ -275,8 +268,8 @@ func (idx *Index) EachByPack(ctx context.Context, packBlacklist restic.IDSet) <-
 
 // Packs returns all packs in this index
 func (idx *Index) Packs() restic.IDSet {
-	idx.m.Lock()
-	defer idx.m.Unlock()
+	idx.m.RLock()
+	defer idx.m.RUnlock()
 
 	packs := restic.NewIDSet()
 	for _, packID := range idx.packs {
@@ -344,8 +337,8 @@ type jsonIndex struct {
 // Encode writes the JSON serialization of the index to the writer w.
 func (idx *Index) Encode(w io.Writer) error {
 	debug.Log("encoding index")
-	idx.m.Lock()
-	defer idx.m.Unlock()
+	idx.m.RLock()
+	defer idx.m.RUnlock()
 
 	list, err := idx.generatePackList()
 	if err != nil {
@@ -389,8 +382,8 @@ func (idx *Index) Finalize() {
 // IDs returns the IDs of the index, if available. If the index is not yet
 // finalized, an error is returned.
 func (idx *Index) IDs() (restic.IDs, error) {
-	idx.m.Lock()
-	defer idx.m.Unlock()
+	idx.m.RLock()
+	defer idx.m.RUnlock()
 
 	if !idx.final {
 		return nil, errors.New("index not finalized")
@@ -422,8 +415,8 @@ func (idx *Index) SetID(id restic.ID) error {
 // Dump writes the pretty-printed JSON representation of the index to w.
 func (idx *Index) Dump(w io.Writer) error {
 	debug.Log("dumping index")
-	idx.m.Lock()
-	defer idx.m.Unlock()
+	idx.m.RLock()
+	defer idx.m.RUnlock()
 
 	list, err := idx.generatePackList()
 	if err != nil {
@@ -578,4 +571,18 @@ func decodeOldIndex(buf []byte) (idx *Index, err error) {
 
 	debug.Log("done")
 	return idx, nil
+}
+
+func (idx *Index) BlobIndex(bh restic.BlobHandle) int {
+	idx.m.RLock()
+	defer idx.m.RUnlock()
+
+	return idx.byType[bh.Type].firstIndex(bh.ID)
+}
+
+func (idx *Index) Len(t restic.BlobType) uint {
+	idx.m.RLock()
+	defer idx.m.RUnlock()
+
+	return idx.byType[t].len()
 }
