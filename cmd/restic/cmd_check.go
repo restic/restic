@@ -173,6 +173,12 @@ func prepareCheckCache(opts CheckOptions, gopts *GlobalOptions) (cleanup func())
 	}
 
 	// use a cache in a temporary directory
+	err := os.MkdirAll(cachedir, 0755)
+	if err != nil {
+		Warnf("unable to create cache directory %s, disabling cache: %v\n", cachedir, err)
+		gopts.NoCache = true
+		return cleanup
+	}
 	tempdir, err := os.MkdirTemp(cachedir, "restic-check-cache-")
 	if err != nil {
 		// if an error occurs, don't use any cache
