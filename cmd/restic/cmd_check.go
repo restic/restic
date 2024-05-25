@@ -315,11 +315,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	for err := range errChan {
 		errorsFound = true
 		if e, ok := err.(*checker.TreeError); ok {
-			var clean string
-			if stdoutCanUpdateStatus() {
-				clean = clearLine(0)
-			}
-			printer.E(clean+"error for tree %v:\n", e.ID.Str())
+			printer.E("error for tree %v:\n", e.ID.Str())
 			for _, treeErr := range e.Errors {
 				printer.E("  %v\n", treeErr)
 			}
