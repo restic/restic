@@ -7,8 +7,8 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.3.2
 	github.com/Backblaze/blazer v0.6.1
 	github.com/anacrolix/fuse v0.2.0
-	github.com/cenkalti/backoff/v4 v4.2.1
-	github.com/cespare/xxhash/v2 v2.2.0
+	github.com/cenkalti/backoff/v4 v4.3.0
+	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/elithrar/simple-scrypt v1.3.0
 	github.com/go-ole/go-ole v1.3.0
 	github.com/google/go-cmp v0.6.0
