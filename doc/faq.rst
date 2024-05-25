@@ -100,7 +100,7 @@ Restic handles globbing and expansion in the following ways:
 -  Globbing is only expanded for lines read via ``--files-from``
 -  Environment variables are not expanded in the file read via ``--files-from``
 -  ``*`` is expanded for paths read via ``--files-from``
--  e.g. For backup targets given to restic as arguments on the shell, neither glob expansion nor shell variable replacement is done. If restic is called as ``restic backup '*' '$HOME'``, it will try to backup the literal file(s)/dir(s) ``*`` and ``$HOME``
+-  e.g. For backup sources given to restic as arguments on the shell, neither glob expansion nor shell variable replacement is done. If restic is called as ``restic backup '*' '$HOME'``, it will try to backup the literal file(s)/dir(s) ``*`` and ``$HOME``
 -  Double-asterisk ``**`` only works in exclude patterns as this is a custom extension built into restic; the shell must not expand it
 
 
