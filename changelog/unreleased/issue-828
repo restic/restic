@@ -6,5 +6,6 @@ on using the command if necessary to repair a repository. See the guide at
 https://restic.readthedocs.io/en/stable/077_troubleshooting.html for further
 instructions.
 
+https://github.com/restic/restic/issues/828
 https://github.com/restic/restic/pull/4644
 https://github.com/restic/restic/pull/4655
