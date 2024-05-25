@@ -4,7 +4,6 @@ import (
 	"context"
 	"sync"
 
-	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/termstatus"
 )
 
@@ -31,8 +30,7 @@ func setupTermstatus() (*termstatus.Terminal, func()) {
 
 	// use the termstatus for stdout/stderr
 	prevStdout, prevStderr := globalOptions.stdout, globalOptions.stderr
-	stdioWrapper := ui.NewStdioWrapper(term)
-	globalOptions.stdout, globalOptions.stderr = stdioWrapper.Stdout(), stdioWrapper.Stderr()
+	globalOptions.stdout, globalOptions.stderr = termstatus.WrapStdio(term)
 
 	return term, func() {
 		// shutdown termstatus
