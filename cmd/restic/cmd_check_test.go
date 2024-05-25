@@ -1,8 +1,11 @@
 package main
 
 import (
+	"io/fs"
 	"math"
+	"os"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/restic/restic/internal/restic"
@@ -162,4 +165,66 @@ func TestSelectNoRandomPacksByFileSize(t *testing.T) {
 	var testPacks = make(map[restic.ID]int64)
 	selectedPacks := selectRandomPacksByFileSize(testPacks, 10, 500)
 	rtest.Assert(t, len(selectedPacks) == 0, "Expected 0 selected packs")
+}
+
+func checkIfFileWithSimilarNameExists(files []fs.DirEntry, fileName string) bool {
+	found := false
+	for _, file := range files {
+		if file.IsDir() {
+			dirName := file.Name()
+			if strings.Contains(dirName, fileName) {
+				found = true
+			}
+		}
+	}
+	return found
+}
+
+func TestPrepareCheckCache(t *testing.T) {
+	// Create a temporary directory for the cache
+	tmpDirBase := t.TempDir()
+
+	testCases := []struct {
+		opts           CheckOptions
+		withValidCache bool
+	}{
+		{CheckOptions{WithCache: true}, true},   // Shouldn't create temp directory
+		{CheckOptions{WithCache: false}, true},  // Should create temp directory
+		{CheckOptions{WithCache: false}, false}, // Should create cache directory first, then temp directory
+	}
+
+	for _, testCase := range testCases {
+		t.Run("", func(t *testing.T) {
+			if !testCase.withValidCache {
+				// remove tmpDirBase to simulate non-existing cache directory
+				err := os.Remove(tmpDirBase)
+				rtest.OK(t, err)
+			}
+			gopts := GlobalOptions{CacheDir: tmpDirBase}
+			cleanup := prepareCheckCache(testCase.opts, &gopts)
+			files, err := os.ReadDir(tmpDirBase)
+			rtest.OK(t, err)
+
+			if !testCase.opts.WithCache {
+				// If using a temporary cache directory, the cache directory should exist
+				// listing all directories inside tmpDirBase (cacheDir)
+				// one directory should be tmpDir created by prepareCheckCache with 'restic-check-cache-' in path
+				found := checkIfFileWithSimilarNameExists(files, "restic-check-cache-")
+				if !found {
+					t.Errorf("Expected temporary directory to exist, but it does not")
+				}
+			} else {
+				// If not using the cache, the temp directory should not exist
+				rtest.Assert(t, len(files) == 0, "expected cache directory not to exist, but it does: %v", files)
+			}
+
+			// Call the cleanup function to remove the temporary cache directory
+			cleanup()
+
+			// Verify that the cache directory has been removed
+			files, err = os.ReadDir(tmpDirBase)
+			rtest.OK(t, err)
+			rtest.Assert(t, len(files) == 0, "Expected cache directory to be removed, but it still exists: %v", files)
+		})
+	}
 }
