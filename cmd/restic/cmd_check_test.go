@@ -10,6 +10,7 @@ import (
 
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui/progress"
 )
 
 func TestParsePercentage(t *testing.T) {
@@ -201,7 +202,7 @@ func TestPrepareCheckCache(t *testing.T) {
 				rtest.OK(t, err)
 			}
 			gopts := GlobalOptions{CacheDir: tmpDirBase}
-			cleanup := prepareCheckCache(testCase.opts, &gopts)
+			cleanup := prepareCheckCache(testCase.opts, &gopts, &progress.NoopPrinter{})
 			files, err := os.ReadDir(tmpDirBase)
 			rtest.OK(t, err)
 
