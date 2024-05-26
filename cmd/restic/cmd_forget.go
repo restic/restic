@@ -21,6 +21,9 @@ var cmdForget = &cobra.Command{
 The "forget" command removes snapshots according to a policy. All snapshots are
 first divided into groups according to "--group-by", and after that the policy
 specified by the "--keep-*" options is applied to each group individually.
+If there are not enough snapshots to keep one for each duration related
+"--keep-{within-,}*" option, the oldest snapshot in the group is kept
+additionally.
 
 Please note that this command really only deletes the snapshot object in the
 repository, which is a reference to data stored there. In order to remove the
