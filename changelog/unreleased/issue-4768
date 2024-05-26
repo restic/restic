@@ -1,0 +1,8 @@
+Enhancement: Allow custom User-Agent to be specified for outgoing requests
+
+Restic now permits setting a custom `User-Agent` for outgoing HTTP requests 
+using the global flag `--http-user-agent` or the `RESTIC_HTTP_USER_AGENT` 
+environment variable.
+
+https://github.com/restic/restic/issues/4768
+https://github.com/restic/restic/pull/4810

@@ -54,6 +54,7 @@ Usage help is available:
           --cleanup-cache              auto remove old cache directories
           --compression mode           compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION) (default auto)
       -h, --help                       help for restic
+          --http-user-agent value      set a custom user agent for outgoing http requests
           --insecure-no-password       use an empty password for the repository, must be passed to every restic command (insecure)
           --insecure-tls               skip TLS certificate verification when connecting to the repository (insecure)
           --json                       set output mode to JSON for commands that support it
@@ -134,6 +135,7 @@ command:
           --cache-dir directory        set the cache directory. (default: use system default cache directory)
           --cleanup-cache              auto remove old cache directories
           --compression mode           compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION) (default auto)
+          --http-user-agent value      set a custom user agent for outgoing http requests
           --insecure-no-password       use an empty password for the repository, must be passed to every restic command (insecure)
           --insecure-tls               skip TLS certificate verification when connecting to the repository (insecure)
           --json                       set output mode to JSON for commands that support it
