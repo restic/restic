@@ -97,13 +97,13 @@ func (c *Cache) GetOrCompute(id restic.ID, compute func() ([]byte, error)) ([]by
 	// check for parallel download or start our own
 	finish := make(chan struct{})
 	c.mu.Lock()
-	waitForResult, isDownloading := c.inProgress[id]
-	if !isDownloading {
+	waitForResult, isComputing := c.inProgress[id]
+	if !isComputing {
 		c.inProgress[id] = finish
 	}
 	c.mu.Unlock()
 
-	if isDownloading {
+	if isComputing {
 		// wait for result of parallel download
 		<-waitForResult
 	} else {
@@ -116,7 +116,7 @@ func (c *Cache) GetOrCompute(id restic.ID, compute func() ([]byte, error)) ([]by
 		}()
 	}
 
-	// try again. This is necessary independent of whether isDownloading is true or not.
+	// try again. This is necessary independent of whether isComputing is true or not.
 	// The calls to `c.Get()` and checking/adding the entry in `c.inProgress` are not atomic,
 	// thus the item might have been computed in the meantime.
 	// The following scenario would compute() the value multiple times otherwise:
