@@ -100,7 +100,13 @@ func (c *Cache) GetOrCompute(id restic.ID, compute func() ([]byte, error)) ([]by
 	waitForResult, isDownloading := c.inProgress[id]
 	if !isDownloading {
 		c.inProgress[id] = finish
+	}
+	c.mu.Unlock()
 
+	if isDownloading {
+		// wait for result of parallel download
+		<-waitForResult
+	} else {
 		// remove progress channel once finished here
 		defer func() {
 			c.mu.Lock()
@@ -108,12 +114,6 @@ func (c *Cache) GetOrCompute(id restic.ID, compute func() ([]byte, error)) ([]by
 			c.mu.Unlock()
 			close(finish)
 		}()
-	}
-	c.mu.Unlock()
-
-	if isDownloading {
-		// wait for result of parallel download
-		<-waitForResult
 	}
 
 	// try again. This is necessary independent of whether isDownloading is true or not.
