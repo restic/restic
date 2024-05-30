@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/index"
+	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/spf13/cobra"

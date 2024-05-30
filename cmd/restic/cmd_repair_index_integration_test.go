@@ -10,7 +10,7 @@ import (
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/index"
+	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui/termstatus"

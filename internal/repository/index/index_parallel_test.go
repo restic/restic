@@ -6,13 +6,13 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
 
-var repoFixture = filepath.Join("..", "repository", "testdata", "test-repo.tar.gz")
+var repoFixture = filepath.Join("..", "testdata", "test-repo.tar.gz")
 
 func TestRepositoryForAllIndexes(t *testing.T) {
 	repo, _, cleanup := repository.TestFromFixture(t, repoFixture)

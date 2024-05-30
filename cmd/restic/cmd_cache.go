@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/restic/restic/internal/cache"
+	"github.com/restic/restic/internal/backend/cache"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/ui"

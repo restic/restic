@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/feature"
-	"github.com/restic/restic/internal/index"
+	"github.com/restic/restic/internal/repository/index"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
