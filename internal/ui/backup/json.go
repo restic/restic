@@ -164,6 +164,11 @@ func (b *JSONProgress) ReportTotal(start time.Time, s archiver.ScanStats) {
 
 // Finish prints the finishing messages.
 func (b *JSONProgress) Finish(snapshotID restic.ID, start time.Time, summary *archiver.Summary, dryRun bool) {
+	id := ""
+	// empty if snapshot creation was skipped
+	if !snapshotID.IsNull() {
+		id = snapshotID.String()
+	}
 	b.print(summaryOutput{
 		MessageType:         "summary",
 		FilesNew:            summary.Files.New,
@@ -179,7 +184,7 @@ func (b *JSONProgress) Finish(snapshotID restic.ID, start time.Time, summary *ar
 		TotalFilesProcessed: summary.Files.New + summary.Files.Changed + summary.Files.Unchanged,
 		TotalBytesProcessed: summary.ProcessedBytes,
 		TotalDuration:       time.Since(start).Seconds(),
-		SnapshotID:          snapshotID.String(),
+		SnapshotID:          id,
 		DryRun:              dryRun,
 	})
 }
@@ -235,6 +240,6 @@ type summaryOutput struct {
 	TotalFilesProcessed uint    `json:"total_files_processed"`
 	TotalBytesProcessed uint64  `json:"total_bytes_processed"`
 	TotalDuration       float64 `json:"total_duration"` // in seconds
-	SnapshotID          string  `json:"snapshot_id"`
+	SnapshotID          string  `json:"snapshot_id,omitempty"`
 	DryRun              bool    `json:"dry_run,omitempty"`
 }

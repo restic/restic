@@ -163,8 +163,8 @@ example from a local to a remote repository, you can use the ``copy`` command:
 .. code-block:: console
 
     $ restic -r /srv/restic-repo-copy copy --from-repo /srv/restic-repo
-    repository d6504c63 opened successfully, password is correct
-    repository 3dd0878c opened successfully, password is correct
+    repository d6504c63 opened successfully
+    repository 3dd0878c opened successfully
 
     snapshot 410b18a2 of [/home/user/work] at 2020-06-09 23:15:57.305305 +0200 CEST by user@kasimir
       copy started, this may take a while...
@@ -263,7 +263,7 @@ the unwanted files from affected snapshots by rewriting them using the
 .. code-block:: console
 
     $ restic -r /srv/restic-repo rewrite --exclude secret-file
-    repository c881945a opened (repository version 2) successfully, password is correct
+    repository c881945a opened (repository version 2) successfully
 
     snapshot 6160ddb2 of [/home/user/work] at 2022-06-12 16:01:28.406630608 +0200 CEST by user@kasimir
     excluding /home/user/work/secret-file
@@ -274,7 +274,7 @@ the unwanted files from affected snapshots by rewriting them using the
     modified 1 snapshots
 
     $ restic -r /srv/restic-repo rewrite --exclude secret-file 6160ddb2
-    repository c881945a opened (repository version 2) successfully, password is correct
+    repository c881945a opened (repository version 2) successfully
 
     snapshot 6160ddb2 of [/home/user/work] at 2022-06-12 16:01:28.406630608 +0200 CEST by user@kasimir
     excluding /home/user/work/secret-file

@@ -767,6 +767,8 @@ type SnapshotOptions struct {
 	Time           time.Time
 	ParentSnapshot *restic.Snapshot
 	ProgramVersion string
+	// SkipIfUnchanged omits the snapshot creation if it is identical to the parent snapshot.
+	SkipIfUnchanged bool
 }
 
 // loadParentTree loads a tree referenced by snapshot id. If id is null, nil is returned.
@@ -878,6 +880,13 @@ func (arch *Archiver) Snapshot(ctx context.Context, targets []string, opts Snaps
 	err = wgUp.Wait()
 	if err != nil {
 		return nil, restic.ID{}, nil, err
+	}
+
+	if opts.ParentSnapshot != nil && opts.SkipIfUnchanged {
+		ps := opts.ParentSnapshot
+		if ps.Tree != nil && rootTreeID.Equal(*ps.Tree) {
+			return nil, restic.ID{}, arch.summary, nil
+		}
 	}
 
 	sn, err := restic.NewSnapshot(targets, opts.Tags, opts.Hostname, opts.Time)

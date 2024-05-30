@@ -80,7 +80,7 @@ command must be run:
 
     $ restic -r /srv/restic-repo prune
     enter password for repository:
-    repository 33002c5e opened successfully, password is correct
+    repository 33002c5e opened successfully
     loading all snapshots...
     loading indexes...
     finding data that is still in use for 4 snapshots
@@ -265,7 +265,7 @@ Sunday for 12 weeks:
 .. code-block:: console
 
    $ restic snapshots
-   repository f00c6e2a opened successfully, password is correct
+   repository f00c6e2a opened successfully
    ID        Time                 Host        Tags        Paths
    ---------------------------------------------------------------
    0a1f9759  2019-09-01 11:00:00  mopped                  /home/user/work
@@ -289,7 +289,7 @@ four Sundays, and remove the other snapshots:
 .. code-block:: console
 
    $ restic forget --keep-daily 4 --dry-run
-   repository f00c6e2a opened successfully, password is correct
+   repository f00c6e2a opened successfully
    Applying Policy: keep the last 4 daily snapshots
    keep 4 snapshots:
    ID        Time                 Host        Tags        Reasons         Paths

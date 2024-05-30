@@ -87,6 +87,7 @@ type BackupOptions struct {
 	DryRun            bool
 	ReadConcurrency   uint
 	NoScan            bool
+	SkipIfUnchanged   bool
 }
 
 var backupOptions BackupOptions
@@ -133,6 +134,7 @@ func init() {
 	if runtime.GOOS == "windows" {
 		f.BoolVar(&backupOptions.UseFsSnapshot, "use-fs-snapshot", false, "use filesystem snapshot where possible (currently only Windows VSS)")
 	}
+	f.BoolVar(&backupOptions.SkipIfUnchanged, "skip-if-unchanged", false, "skip snapshot creation if identical to parent snapshot")
 
 	// parse read concurrency from env, on error the default value will be used
 	readConcurrency, _ := strconv.ParseUint(os.Getenv("RESTIC_READ_CONCURRENCY"), 10, 32)
@@ -638,13 +640,14 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 	}
 
 	snapshotOpts := archiver.SnapshotOptions{
-		Excludes:       opts.Excludes,
-		Tags:           opts.Tags.Flatten(),
-		BackupStart:    backupStart,
-		Time:           timeStamp,
-		Hostname:       opts.Host,
-		ParentSnapshot: parentSnapshot,
-		ProgramVersion: "restic " + version,
+		Excludes:        opts.Excludes,
+		Tags:            opts.Tags.Flatten(),
+		BackupStart:     backupStart,
+		Time:            timeStamp,
+		Hostname:        opts.Host,
+		ParentSnapshot:  parentSnapshot,
+		ProgramVersion:  "restic " + version,
+		SkipIfUnchanged: opts.SkipIfUnchanged,
 	}
 
 	if !gopts.JSON {
@@ -665,9 +668,6 @@ func runBackup(ctx context.Context, opts BackupOptions, gopts GlobalOptions, ter
 
 	// Report finished execution
 	progressReporter.Finish(id, summary, opts.DryRun)
-	if !gopts.JSON && !opts.DryRun {
-		progressPrinter.P("snapshot %s saved\n", id.Str())
-	}
 	if !success {
 		return ErrInvalidSourceData
 	}
