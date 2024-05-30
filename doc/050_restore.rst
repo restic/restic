@@ -184,4 +184,5 @@ It is also possible to ``dump`` the contents of a selected snapshot and folder
 structure to a file using the ``--target`` flag.
 
 .. code-block:: console
+
     $ restic -r /srv/restic-repo dump latest / --target /home/linux.user/output.tar -a tar
