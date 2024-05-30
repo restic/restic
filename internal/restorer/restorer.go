@@ -203,31 +203,6 @@ func (res *Restorer) restoreHardlinkAt(node *restic.Node, target, path, location
 	return res.restoreNodeMetadataTo(node, path, location)
 }
 
-func (res *Restorer) restoreEmptyFileAt(node *restic.Node, target, location string) error {
-	wr, err := os.OpenFile(target, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
-	if fs.IsAccessDenied(err) {
-		// If file is readonly, clear the readonly flag by resetting the
-		// permissions of the file and try again
-		// as the metadata will be set again in the second pass and the
-		// readonly flag will be applied again if needed.
-		if err = fs.ResetPermissions(target); err != nil {
-			return err
-		}
-		if wr, err = os.OpenFile(target, os.O_TRUNC|os.O_WRONLY, 0600); err != nil {
-			return err
-		}
-	}
-	if err = wr.Close(); err != nil {
-		return err
-	}
-
-	if res.progress != nil {
-		res.progress.AddProgress(location, 0, 0)
-	}
-
-	return res.restoreNodeMetadataTo(node, target, location)
-}
-
 // RestoreTo creates the directories and files in the snapshot below dst.
 // Before an item is created, res.Filter is called.
 func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
@@ -274,13 +249,6 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 				return nil
 			}
 
-			if node.Size == 0 {
-				if res.progress != nil {
-					res.progress.AddFile(node.Size)
-				}
-				return nil // deal with empty files later
-			}
-
 			if node.Links > 1 {
 				if idx.Has(node.Inode, node.DeviceID) {
 					if res.progress != nil {
@@ -318,14 +286,6 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 			debug.Log("second pass, visitNode: restore node %q", location)
 			if node.Type != "file" {
 				return res.restoreNodeTo(ctx, node, target, location)
-			}
-
-			// create empty files, but not hardlinks to empty files
-			if node.Size == 0 && (node.Links < 2 || !idx.Has(node.Inode, node.DeviceID)) {
-				if node.Links > 1 {
-					idx.Add(node.Inode, node.DeviceID, location)
-				}
-				return res.restoreEmptyFileAt(node, target, location)
 			}
 
 			if idx.Has(node.Inode, node.DeviceID) && idx.Value(node.Inode, node.DeviceID) != location {

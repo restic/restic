@@ -206,6 +206,10 @@ func TestFileRestorerBasic(t *testing.T) {
 					{"data3-1", "pack3-1"},
 				},
 			},
+			{
+				name:  "empty",
+				blobs: []TestBlob{},
+			},
 		}, nil, sparse)
 	}
 }

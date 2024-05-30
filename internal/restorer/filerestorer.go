@@ -120,6 +120,13 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 	// create packInfo from fileInfo
 	for _, file := range r.files {
 		fileBlobs := file.blobs.(restic.IDs)
+		if len(fileBlobs) == 0 {
+			err := r.restoreEmptyFileAt(file.location)
+			if errFile := r.sanitizeError(file, err); errFile != nil {
+				return errFile
+			}
+		}
+
 		largeFile := len(fileBlobs) > largeFileBlobCount
 		var packsMap map[restic.ID][]fileBlobInfo
 		if largeFile {
@@ -193,6 +200,21 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 	})
 
 	return wg.Wait()
+}
+
+func (r *fileRestorer) restoreEmptyFileAt(location string) error {
+	f, err := createFile(r.targetPath(location), 0, false)
+	if err != nil {
+		return err
+	}
+	if err = f.Close(); err != nil {
+		return err
+	}
+
+	if r.progress != nil {
+		r.progress.AddProgress(location, 0, 0)
+	}
+	return nil
 }
 
 type blobToFileOffsetsMapping map[restic.ID]struct {
