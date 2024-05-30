@@ -28,6 +28,9 @@ type TransportOptions struct {
 
 	// Skip TLS certificate verification
 	InsecureTLS bool
+
+	// Specify Custom User-Agent for the http Client
+	HTTPUserAgent string
 }
 
 // readPEMCertKey reads a file and returns the PEM encoded certificate and key
@@ -132,6 +135,13 @@ func Transport(opts TransportOptions) (http.RoundTripper, error) {
 	}
 
 	rt := http.RoundTripper(tr)
+
+	// if the userAgent is set in the Transport Options, wrap the
+	// http.RoundTripper
+	if opts.HTTPUserAgent != "" {
+		rt = newCustomUserAgentRoundTripper(rt, opts.HTTPUserAgent)
+	}
+
 	if feature.Flag.Enabled(feature.BackendErrorRedesign) {
 		rt = newWatchdogRoundtripper(rt, 120*time.Second, 128*1024)
 	}

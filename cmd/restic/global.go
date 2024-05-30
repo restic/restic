@@ -135,6 +135,7 @@ func init() {
 	f.IntVar(&globalOptions.Limits.DownloadKb, "limit-download", 0, "limits downloads to a maximum `rate` in KiB/s. (default: unlimited)")
 	f.UintVar(&globalOptions.PackSize, "pack-size", 0, "set target pack `size` in MiB, created pack files may be larger (default: $RESTIC_PACK_SIZE)")
 	f.StringSliceVarP(&globalOptions.Options, "option", "o", []string{}, "set extended option (`key=value`, can be specified multiple times)")
+	f.StringVar(&globalOptions.HTTPUserAgent, "http-user-agent", "", "set a http user agent for outgoing http requests")
 	// Use our "generate" command instead of the cobra provided "completion" command
 	cmdRoot.CompletionOptions.DisableDefaultCmd = true
 
@@ -155,6 +156,10 @@ func init() {
 	// parse target pack size from env, on error the default value will be used
 	targetPackSize, _ := strconv.ParseUint(os.Getenv("RESTIC_PACK_SIZE"), 10, 32)
 	globalOptions.PackSize = uint(targetPackSize)
+
+	if os.Getenv("RESTIC_HTTP_USER_AGENT") != "" {
+		globalOptions.HTTPUserAgent = os.Getenv("RESTIC_HTTP_USER_AGENT")
+	}
 }
 
 func stdinIsTerminal() bool {
