@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"testing"
 
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui/termstatus"
 )
 
 func testRunCheck(t testing.TB, gopts GlobalOptions) {
@@ -23,12 +25,14 @@ func testRunCheckMustFail(t testing.TB, gopts GlobalOptions) {
 }
 
 func testRunCheckOutput(gopts GlobalOptions, checkUnused bool) (string, error) {
-	buf, err := withCaptureStdout(func() error {
+	buf := bytes.NewBuffer(nil)
+	gopts.stdout = buf
+	err := withTermStatus(gopts, func(ctx context.Context, term *termstatus.Terminal) error {
 		opts := CheckOptions{
 			ReadData:    true,
 			CheckUnused: checkUnused,
 		}
-		return runCheck(context.TODO(), opts, gopts, nil)
+		return runCheck(context.TODO(), opts, gopts, nil, term)
 	})
 	return buf.String(), err
 }

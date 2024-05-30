@@ -5,6 +5,8 @@ import (
 
 	"github.com/restic/restic/internal/migrations"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui/progress"
+	"github.com/restic/restic/internal/ui/termstatus"
 
 	"github.com/spf13/cobra"
 )
@@ -24,7 +26,9 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runMigrate(cmd.Context(), migrateOptions, globalOptions, args)
+		term, cancel := setupTermstatus()
+		defer cancel()
+		return runMigrate(cmd.Context(), migrateOptions, globalOptions, args, term)
 	},
 }
 
@@ -41,8 +45,8 @@ func init() {
 	f.BoolVarP(&migrateOptions.Force, "force", "f", false, `apply a migration a second time`)
 }
 
-func checkMigrations(ctx context.Context, repo restic.Repository) error {
-	Printf("available migrations:\n")
+func checkMigrations(ctx context.Context, repo restic.Repository, printer progress.Printer) error {
+	printer.P("available migrations:\n")
 	found := false
 
 	for _, m := range migrations.All {
@@ -52,19 +56,19 @@ func checkMigrations(ctx context.Context, repo restic.Repository) error {
 		}
 
 		if ok {
-			Printf("  %v\t%v\n", m.Name(), m.Desc())
+			printer.P("  %v\t%v\n", m.Name(), m.Desc())
 			found = true
 		}
 	}
 
 	if !found {
-		Printf("no migrations found\n")
+		printer.P("no migrations found\n")
 	}
 
 	return nil
 }
 
-func applyMigrations(ctx context.Context, opts MigrateOptions, gopts GlobalOptions, repo restic.Repository, args []string) error {
+func applyMigrations(ctx context.Context, opts MigrateOptions, gopts GlobalOptions, repo restic.Repository, args []string, term *termstatus.Terminal, printer progress.Printer) error {
 	var firsterr error
 	for _, name := range args {
 		for _, m := range migrations.All {
@@ -79,36 +83,37 @@ func applyMigrations(ctx context.Context, opts MigrateOptions, gopts GlobalOptio
 						if reason == "" {
 							reason = "check failed"
 						}
-						Warnf("migration %v cannot be applied: %v\nIf you want to apply this migration anyway, re-run with option --force\n", m.Name(), reason)
+						printer.E("migration %v cannot be applied: %v\nIf you want to apply this migration anyway, re-run with option --force\n", m.Name(), reason)
 						continue
 					}
 
-					Warnf("check for migration %v failed, continuing anyway\n", m.Name())
+					printer.E("check for migration %v failed, continuing anyway\n", m.Name())
 				}
 
 				if m.RepoCheck() {
-					Printf("checking repository integrity...\n")
+					printer.P("checking repository integrity...\n")
 
 					checkOptions := CheckOptions{}
 					checkGopts := gopts
 					// the repository is already locked
 					checkGopts.NoLock = true
-					err = runCheck(ctx, checkOptions, checkGopts, []string{})
+
+					err = runCheck(ctx, checkOptions, checkGopts, []string{}, term)
 					if err != nil {
 						return err
 					}
 				}
 
-				Printf("applying migration %v...\n", m.Name())
+				printer.P("applying migration %v...\n", m.Name())
 				if err = m.Apply(ctx, repo); err != nil {
-					Warnf("migration %v failed: %v\n", m.Name(), err)
+					printer.E("migration %v failed: %v\n", m.Name(), err)
 					if firsterr == nil {
 						firsterr = err
 					}
 					continue
 				}
 
-				Printf("migration %v: success\n", m.Name())
+				printer.P("migration %v: success\n", m.Name())
 			}
 		}
 	}
@@ -116,7 +121,9 @@ func applyMigrations(ctx context.Context, opts MigrateOptions, gopts GlobalOptio
 	return firsterr
 }
 
-func runMigrate(ctx context.Context, opts MigrateOptions, gopts GlobalOptions, args []string) error {
+func runMigrate(ctx context.Context, opts MigrateOptions, gopts GlobalOptions, args []string, term *termstatus.Terminal) error {
+	printer := newTerminalProgressPrinter(gopts.verbosity, term)
+
 	ctx, repo, unlock, err := openWithExclusiveLock(ctx, gopts, false)
 	if err != nil {
 		return err
@@ -124,8 +131,8 @@ func runMigrate(ctx context.Context, opts MigrateOptions, gopts GlobalOptions, a
 	defer unlock()
 
 	if len(args) == 0 {
-		return checkMigrations(ctx, repo)
+		return checkMigrations(ctx, repo, printer)
 	}
 
-	return applyMigrations(ctx, opts, gopts, repo, args)
+	return applyMigrations(ctx, opts, gopts, repo, args, term, printer)
 }

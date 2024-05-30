@@ -111,7 +111,9 @@ func testPrune(t *testing.T, pruneOpts PruneOptions, checkOpts CheckOptions) {
 
 	createPrunableRepo(t, env)
 	testRunPrune(t, env.gopts, pruneOpts)
-	rtest.OK(t, runCheck(context.TODO(), checkOpts, env.gopts, nil))
+	rtest.OK(t, withTermStatus(env.gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+		return runCheck(context.TODO(), checkOpts, env.gopts, nil, term)
+	}))
 }
 
 var pruneDefaultOptions = PruneOptions{MaxUnused: "5%"}
@@ -218,7 +220,9 @@ func testEdgeCaseRepo(t *testing.T, tarfile string, optionsCheck CheckOptions, o
 	if checkOK {
 		testRunCheck(t, env.gopts)
 	} else {
-		rtest.Assert(t, runCheck(context.TODO(), optionsCheck, env.gopts, nil) != nil,
+		rtest.Assert(t, withTermStatus(env.gopts, func(ctx context.Context, term *termstatus.Terminal) error {
+			return runCheck(context.TODO(), optionsCheck, env.gopts, nil, term)
+		}) != nil,
 			"check should have reported an error")
 	}
 
