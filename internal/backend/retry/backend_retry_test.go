@@ -460,7 +460,7 @@ func TestNotifyWithSuccessIsNotCalled(t *testing.T) {
 		t.Fatal("Success should not have been called")
 	}
 
-	err := retryNotifyErrorWithSuccess(operation, &backoff.ZeroBackOff{}, notify, success)
+	err := retryNotifyErrorWithSuccess(operation, backoff.WithContext(&backoff.ZeroBackOff{}, context.Background()), notify, success)
 	if err != nil {
 		t.Fatal("retry should not have returned an error")
 	}
@@ -486,7 +486,7 @@ func TestNotifyWithSuccessIsCalled(t *testing.T) {
 		successCalled++
 	}
 
-	err := retryNotifyErrorWithSuccess(operation, &backoff.ZeroBackOff{}, notify, success)
+	err := retryNotifyErrorWithSuccess(operation, backoff.WithContext(&backoff.ZeroBackOff{}, context.Background()), notify, success)
 	if err != nil {
 		t.Fatal("retry should not have returned an error")
 	}
@@ -515,10 +515,29 @@ func TestNotifyWithSuccessFinalError(t *testing.T) {
 		successCalled++
 	}
 
-	err := retryNotifyErrorWithSuccess(operation, backoff.WithMaxRetries(&backoff.ZeroBackOff{}, 5), notify, success)
+	err := retryNotifyErrorWithSuccess(operation, backoff.WithContext(backoff.WithMaxRetries(&backoff.ZeroBackOff{}, 5), context.Background()), notify, success)
 	test.Assert(t, err.Error() == "expected error in test", "wrong error message %v", err)
 	test.Equals(t, 6, notifyCalled, "notify should have been called 6 times")
 	test.Equals(t, 0, successCalled, "success should not have been called")
+}
+
+func TestNotifyWithCancelError(t *testing.T) {
+	operation := func() error {
+		return errors.New("expected error in test")
+	}
+
+	notify := func(error, time.Duration) {
+		t.Error("unexpected call to notify")
+	}
+
+	success := func(retries int) {
+		t.Error("unexpected call to success")
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err := retryNotifyErrorWithSuccess(operation, backoff.WithContext(&backoff.ZeroBackOff{}, ctx), notify, success)
+	test.Assert(t, err == context.Canceled, "wrong error message %v", err)
 }
 
 type testClock struct {
