@@ -97,10 +97,16 @@ func (c *Cache) GetOrCompute(id restic.ID, compute func() ([]byte, error)) ([]by
 	// check for parallel download or start our own
 	finish := make(chan struct{})
 	c.mu.Lock()
-	waitForResult, isDownloading := c.inProgress[id]
-	if !isDownloading {
+	waitForResult, isComputing := c.inProgress[id]
+	if !isComputing {
 		c.inProgress[id] = finish
+	}
+	c.mu.Unlock()
 
+	if isComputing {
+		// wait for result of parallel download
+		<-waitForResult
+	} else {
 		// remove progress channel once finished here
 		defer func() {
 			c.mu.Lock()
@@ -109,15 +115,18 @@ func (c *Cache) GetOrCompute(id restic.ID, compute func() ([]byte, error)) ([]by
 			close(finish)
 		}()
 	}
-	c.mu.Unlock()
 
-	if isDownloading {
-		// wait for result of parallel download
-		<-waitForResult
-		blob, ok := c.Get(id)
-		if ok {
-			return blob, nil
-		}
+	// try again. This is necessary independent of whether isComputing is true or not.
+	// The calls to `c.Get()` and checking/adding the entry in `c.inProgress` are not atomic,
+	// thus the item might have been computed in the meantime.
+	// The following scenario would compute() the value multiple times otherwise:
+	// Goroutine A does not find a value in the initial call to `c.Get`, then goroutine B
+	// takes over, caches the computed value and cleans up its channel in c.inProgress.
+	// Then goroutine A continues, does not detect a parallel computation and would try
+	// to call compute() again.
+	blob, ok = c.Get(id)
+	if ok {
+		return blob, nil
 	}
 
 	// download it
