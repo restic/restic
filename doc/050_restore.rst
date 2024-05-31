@@ -111,6 +111,28 @@ values are supported:
   newer modification time (mtime).
 * ``--overwrite never``: never overwrite existing files.
 
+Dry run
+-------
+
+As restore operations can take a long time, it can be useful to perform a dry-run to
+see what would be restored without having to run the full restore operation. The
+restore command supports the ``--dry-run`` option and prints information about the
+restored files when specifying ``--verbose=2``.
+
+.. code-block:: console
+
+    $ restic restore --target /tmp/restore-work --dry-run --verbose=2 latest
+
+    unchanged /restic/internal/walker/walker.go with size 2.812 KiB
+    updated   /restic/internal/walker/walker_test.go with size 11.143 KiB
+    restored  /restic/restic with size 35.318 MiB
+    restored  /restic
+    [...]
+    Summary: Restored 9072 files/dirs (153.597 MiB) in 0:00
+
+Files with already up to date content are reported as ``unchanged``. Files whose content
+was modified are ``updated`` and files that are new are shown as ``restored``. Directories
+and other file types like symlinks are always reported as ``restored``.
 
 Restore using mount
 ===================
