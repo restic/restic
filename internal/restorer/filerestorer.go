@@ -14,11 +14,6 @@ import (
 	"github.com/restic/restic/internal/ui/restore"
 )
 
-// TODO if a blob is corrupt, there may be good blob copies in other packs
-// TODO evaluate if it makes sense to split download and processing workers
-//      pro: can (slowly) read network and decrypt/write files concurrently
-//      con: each worker needs to keep one pack in memory
-
 const (
 	largeFileBlobCount = 25
 )
