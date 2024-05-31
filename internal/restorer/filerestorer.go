@@ -161,6 +161,8 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 			file.blobs = packsMap
 		}
 	}
+	// drop no longer necessary file list
+	r.files = nil
 
 	wg, ctx := errgroup.WithContext(ctx)
 	downloadCh := make(chan *packInfo)
