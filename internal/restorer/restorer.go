@@ -17,10 +17,9 @@ import (
 
 // Restorer is used to restore a snapshot to a directory.
 type Restorer struct {
-	repo   restic.Repository
-	sn     *restic.Snapshot
-	sparse bool
-
+	repo     restic.Repository
+	sn       *restic.Snapshot
+	sparse   bool
 	progress *restoreui.Progress
 
 	Error        func(location string, err error) error
@@ -30,15 +29,19 @@ type Restorer struct {
 
 var restorerAbortOnAllErrors = func(_ string, err error) error { return err }
 
+type Options struct {
+	Sparse   bool
+	Progress *restoreui.Progress
+}
+
 // NewRestorer creates a restorer preloaded with the content from the snapshot id.
-func NewRestorer(repo restic.Repository, sn *restic.Snapshot, sparse bool,
-	progress *restoreui.Progress) *Restorer {
+func NewRestorer(repo restic.Repository, sn *restic.Snapshot, opts Options) *Restorer {
 	r := &Restorer{
 		repo:         repo,
-		sparse:       sparse,
+		sparse:       opts.Sparse,
+		progress:     opts.Progress,
 		Error:        restorerAbortOnAllErrors,
 		SelectFilter: func(string, string, *restic.Node) (bool, bool) { return true, true },
-		progress:     progress,
 		sn:           sn,
 	}
 
