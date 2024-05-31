@@ -18,11 +18,9 @@ import (
 
 // Restorer is used to restore a snapshot to a directory.
 type Restorer struct {
-	repo      restic.Repository
-	sn        *restic.Snapshot
-	sparse    bool
-	progress  *restoreui.Progress
-	overwrite OverwriteBehavior
+	repo restic.Repository
+	sn   *restic.Snapshot
+	opts Options
 
 	fileList map[string]struct{}
 
@@ -87,9 +85,7 @@ func (c *OverwriteBehavior) Type() string {
 func NewRestorer(repo restic.Repository, sn *restic.Snapshot, opts Options) *Restorer {
 	r := &Restorer{
 		repo:         repo,
-		sparse:       opts.Sparse,
-		progress:     opts.Progress,
-		overwrite:    opts.Overwrite,
+		opts:         opts,
 		fileList:     make(map[string]struct{}),
 		Error:        restorerAbortOnAllErrors,
 		SelectFilter: func(string, string, *restic.Node) (bool, bool) { return true, true },
@@ -224,7 +220,7 @@ func (res *Restorer) restoreNodeTo(ctx context.Context, node *restic.Node, targe
 		return err
 	}
 
-	res.progress.AddProgress(location, 0, 0)
+	res.opts.Progress.AddProgress(location, 0, 0)
 	return res.restoreNodeMetadataTo(node, target, location)
 }
 
@@ -246,7 +242,7 @@ func (res *Restorer) restoreHardlinkAt(node *restic.Node, target, path, location
 		return errors.WithStack(err)
 	}
 
-	res.progress.AddProgress(location, 0, 0)
+	res.opts.Progress.AddProgress(location, 0, 0)
 
 	// TODO investigate if hardlinks have separate metadata on any supported system
 	return res.restoreNodeMetadataTo(node, path, location)
@@ -265,7 +261,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 
 	idx := NewHardlinkIndex[string]()
 	filerestorer := newFileRestorer(dst, res.repo.LoadBlobsFromPack, res.repo.LookupBlob,
-		res.repo.Connections(), res.sparse, res.progress)
+		res.repo.Connections(), res.opts.Sparse, res.opts.Progress)
 	filerestorer.Error = res.Error
 
 	debug.Log("first pass for %q", dst)
@@ -274,7 +270,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 	_, err = res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
 		enterDir: func(_ *restic.Node, target, location string) error {
 			debug.Log("first pass, enterDir: mkdir %q, leaveDir should restore metadata", location)
-			res.progress.AddFile(0)
+			res.opts.Progress.AddFile(0)
 			// create dir with default permissions
 			// #leaveDir restores dir metadata after visiting all children
 			return fs.MkdirAll(target, 0700)
@@ -290,21 +286,21 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 			}
 
 			if node.Type != "file" {
-				res.progress.AddFile(0)
+				res.opts.Progress.AddFile(0)
 				return nil
 			}
 
 			if node.Links > 1 {
 				if idx.Has(node.Inode, node.DeviceID) {
 					// a hardlinked file does not increase the restore size
-					res.progress.AddFile(0)
+					res.opts.Progress.AddFile(0)
 					return nil
 				}
 				idx.Add(node.Inode, node.DeviceID, location)
 			}
 
 			return res.withOverwriteCheck(node, target, false, func() error {
-				res.progress.AddFile(node.Size)
+				res.opts.Progress.AddFile(node.Size)
 				filerestorer.addFile(location, node.Content, int64(node.Size))
 				res.trackFile(location)
 				return nil
@@ -347,7 +343,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 		leaveDir: func(node *restic.Node, target, location string) error {
 			err := res.restoreNodeMetadataTo(node, target, location)
 			if err == nil {
-				res.progress.AddProgress(location, 0, 0)
+				res.opts.Progress.AddProgress(location, 0, 0)
 			}
 			return err
 		},
@@ -365,7 +361,7 @@ func (res *Restorer) hasRestoredFile(location string) bool {
 }
 
 func (res *Restorer) withOverwriteCheck(node *restic.Node, target string, isHardlink bool, cb func() error) error {
-	overwrite, err := shouldOverwrite(res.overwrite, node, target)
+	overwrite, err := shouldOverwrite(res.opts.Overwrite, node, target)
 	if err != nil {
 		return err
 	} else if !overwrite {
@@ -373,7 +369,7 @@ func (res *Restorer) withOverwriteCheck(node *restic.Node, target string, isHard
 		if isHardlink {
 			size = 0
 		}
-		res.progress.AddSkippedFile(size)
+		res.opts.Progress.AddSkippedFile(size)
 		return nil
 	}
 	return cb()
