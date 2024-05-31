@@ -42,10 +42,13 @@ type OverwriteBehavior int
 
 // Constants for different overwrite behavior
 const (
-	OverwriteAlways  OverwriteBehavior = 0
-	OverwriteIfNewer OverwriteBehavior = 1
-	OverwriteNever   OverwriteBehavior = 2
-	OverwriteInvalid OverwriteBehavior = 3
+	OverwriteAlways OverwriteBehavior = iota
+	// OverwriteIfChanged is like OverwriteAlways except that it skips restoring the content
+	// of files with matching size&mtime. Metatdata is always restored.
+	OverwriteIfChanged
+	OverwriteIfNewer
+	OverwriteNever
+	OverwriteInvalid
 )
 
 // Set implements the method needed for pflag command flag parsing.
@@ -53,6 +56,8 @@ func (c *OverwriteBehavior) Set(s string) error {
 	switch s {
 	case "always":
 		*c = OverwriteAlways
+	case "if-changed":
+		*c = OverwriteIfChanged
 	case "if-newer":
 		*c = OverwriteIfNewer
 	case "never":
@@ -69,6 +74,8 @@ func (c *OverwriteBehavior) String() string {
 	switch *c {
 	case OverwriteAlways:
 		return "always"
+	case OverwriteIfChanged:
+		return "if-changed"
 	case OverwriteIfNewer:
 		return "if-newer"
 	case OverwriteNever:
@@ -387,7 +394,7 @@ func (res *Restorer) withOverwriteCheck(node *restic.Node, target string, isHard
 	updateMetadataOnly := false
 	if node.Type == "file" && !isHardlink {
 		// if a file fails to verify, then matches is nil which results in restoring from scratch
-		matches, buf, _ = res.verifyFile(target, node, false, buf)
+		matches, buf, _ = res.verifyFile(target, node, false, res.opts.Overwrite == OverwriteIfChanged, buf)
 		// skip files that are already correct completely
 		updateMetadataOnly = !matches.NeedsRestore()
 	}
@@ -396,7 +403,7 @@ func (res *Restorer) withOverwriteCheck(node *restic.Node, target string, isHard
 }
 
 func shouldOverwrite(overwrite OverwriteBehavior, node *restic.Node, destination string) (bool, error) {
-	if overwrite == OverwriteAlways {
+	if overwrite == OverwriteAlways || overwrite == OverwriteIfChanged {
 		return true, nil
 	}
 
@@ -470,7 +477,7 @@ func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
 		g.Go(func() (err error) {
 			var buf []byte
 			for job := range work {
-				_, buf, err = res.verifyFile(job.path, job.node, true, buf)
+				_, buf, err = res.verifyFile(job.path, job.node, true, false, buf)
 				if err != nil {
 					err = res.Error(job.path, err)
 				}
@@ -518,7 +525,7 @@ func (s *fileState) HasMatchingBlob(i int) bool {
 // buf and the first return value are scratch space, passed around for reuse.
 // Reusing buffers prevents the verifier goroutines allocating all of RAM and
 // flushing the filesystem cache (at least on Linux).
-func (res *Restorer) verifyFile(target string, node *restic.Node, failFast bool, buf []byte) (*fileState, []byte, error) {
+func (res *Restorer) verifyFile(target string, node *restic.Node, failFast bool, trustMtime bool, buf []byte) (*fileState, []byte, error) {
 	f, err := os.OpenFile(target, fs.O_RDONLY|fs.O_NOFOLLOW, 0)
 	if err != nil {
 		return nil, buf, err
@@ -540,6 +547,10 @@ func (res *Restorer) verifyFile(target string, node *restic.Node, failFast bool,
 				target, node.Size, fi.Size())
 		}
 		sizeMatches = false
+	}
+
+	if trustMtime && fi.ModTime().Equal(node.ModTime) && sizeMatches {
+		return &fileState{nil, sizeMatches}, buf, nil
 	}
 
 	matches := make([]bool, len(node.Content))

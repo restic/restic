@@ -66,7 +66,7 @@ func init() {
 	initSingleSnapshotFilter(flags, &restoreOptions.SnapshotFilter)
 	flags.BoolVar(&restoreOptions.Sparse, "sparse", false, "restore files as sparse")
 	flags.BoolVar(&restoreOptions.Verify, "verify", false, "verify restored files content")
-	flags.Var(&restoreOptions.Overwrite, "overwrite", "overwrite behavior, one of (always|if-newer|never) (default: always)")
+	flags.Var(&restoreOptions.Overwrite, "overwrite", "overwrite behavior, one of (always|if-changed|if-newer|never) (default: always)")
 }
 
 func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
