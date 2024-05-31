@@ -40,9 +40,8 @@ func newFilesWriter(count int) *filesWriter {
 }
 
 func createFile(path string, createSize int64, sparse bool) (*os.File, error) {
-	var f *os.File
-	var err error
-	if f, err = os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600); err != nil {
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0600)
+	if err != nil {
 		if !fs.IsAccessDenied(err) {
 			return nil, err
 		}
@@ -54,19 +53,31 @@ func createFile(path string, createSize int64, sparse bool) (*os.File, error) {
 		if err = fs.ResetPermissions(path); err != nil {
 			return nil, err
 		}
-		if f, err = os.OpenFile(path, os.O_TRUNC|os.O_WRONLY, 0600); err != nil {
+		if f, err = os.OpenFile(path, os.O_WRONLY, 0600); err != nil {
 			return nil, err
 		}
 	}
 
-	if createSize > 0 {
-		if sparse {
-			err = truncateSparse(f, createSize)
+	if sparse {
+		err = truncateSparse(f, createSize)
+		if err != nil {
+			_ = f.Close()
+			return nil, err
+		}
+	} else {
+		info, err := f.Stat()
+		if err != nil {
+			_ = f.Close()
+			return nil, err
+		}
+		if info.Size() > createSize {
+			// file is too long must shorten it
+			err = f.Truncate(createSize)
 			if err != nil {
 				_ = f.Close()
 				return nil, err
 			}
-		} else {
+		} else if createSize > 0 {
 			err := fs.PreallocateFile(f, createSize)
 			if err != nil {
 				// Just log the preallocate error but don't let it cause the restore process to fail.
@@ -78,7 +89,7 @@ func createFile(path string, createSize int64, sparse bool) (*os.File, error) {
 			}
 		}
 	}
-	return f, err
+	return f, nil
 }
 
 func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, createSize int64, sparse bool) error {
