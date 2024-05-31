@@ -231,7 +231,7 @@ func (res *Restorer) restoreNodeTo(ctx context.Context, node *restic.Node, targe
 		return err
 	}
 
-	res.opts.Progress.AddProgress(location, 0, 0)
+	res.opts.Progress.AddProgress(location, false, true, 0, 0)
 	return res.restoreNodeMetadataTo(node, target, location)
 }
 
@@ -253,8 +253,7 @@ func (res *Restorer) restoreHardlinkAt(node *restic.Node, target, path, location
 		return errors.WithStack(err)
 	}
 
-	res.opts.Progress.AddProgress(location, 0, 0)
-
+	res.opts.Progress.AddProgress(location, false, true, 0, 0)
 	// TODO investigate if hardlinks have separate metadata on any supported system
 	return res.restoreNodeMetadataTo(node, path, location)
 }
@@ -324,9 +323,9 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 				idx.Add(node.Inode, node.DeviceID, location)
 			}
 
-			buf, err = res.withOverwriteCheck(node, target, false, buf, func(updateMetadataOnly bool, matches *fileState) error {
+			buf, err = res.withOverwriteCheck(node, target, location, false, buf, func(updateMetadataOnly bool, matches *fileState) error {
 				if updateMetadataOnly {
-					res.opts.Progress.AddSkippedFile(node.Size)
+					res.opts.Progress.AddSkippedFile(location, node.Size)
 				} else {
 					res.opts.Progress.AddFile(node.Size)
 					filerestorer.addFile(location, node.Content, int64(node.Size), matches)
@@ -353,14 +352,14 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 		visitNode: func(node *restic.Node, target, location string) error {
 			debug.Log("second pass, visitNode: restore node %q", location)
 			if node.Type != "file" {
-				_, err := res.withOverwriteCheck(node, target, false, nil, func(_ bool, _ *fileState) error {
+				_, err := res.withOverwriteCheck(node, target, location, false, nil, func(_ bool, _ *fileState) error {
 					return res.restoreNodeTo(ctx, node, target, location)
 				})
 				return err
 			}
 
 			if idx.Has(node.Inode, node.DeviceID) && idx.Value(node.Inode, node.DeviceID) != location {
-				_, err := res.withOverwriteCheck(node, target, true, nil, func(_ bool, _ *fileState) error {
+				_, err := res.withOverwriteCheck(node, target, location, true, nil, func(_ bool, _ *fileState) error {
 					return res.restoreHardlinkAt(node, filerestorer.targetPath(idx.Value(node.Inode, node.DeviceID)), target, location)
 				})
 				return err
@@ -375,7 +374,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 		leaveDir: func(node *restic.Node, target, location string) error {
 			err := res.restoreNodeMetadataTo(node, target, location)
 			if err == nil {
-				res.opts.Progress.AddProgress(location, 0, 0)
+				res.opts.Progress.AddProgress(location, false, true, 0, 0)
 			}
 			return err
 		},
@@ -392,7 +391,7 @@ func (res *Restorer) hasRestoredFile(location string) (metadataOnly bool, ok boo
 	return metadataOnly, ok
 }
 
-func (res *Restorer) withOverwriteCheck(node *restic.Node, target string, isHardlink bool, buf []byte, cb func(updateMetadataOnly bool, matches *fileState) error) ([]byte, error) {
+func (res *Restorer) withOverwriteCheck(node *restic.Node, target, location string, isHardlink bool, buf []byte, cb func(updateMetadataOnly bool, matches *fileState) error) ([]byte, error) {
 	overwrite, err := shouldOverwrite(res.opts.Overwrite, node, target)
 	if err != nil {
 		return buf, err
@@ -401,7 +400,7 @@ func (res *Restorer) withOverwriteCheck(node *restic.Node, target string, isHard
 		if isHardlink {
 			size = 0
 		}
-		res.opts.Progress.AddSkippedFile(size)
+		res.opts.Progress.AddSkippedFile(location, size)
 		return buf, nil
 	}
 
