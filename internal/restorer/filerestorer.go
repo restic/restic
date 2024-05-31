@@ -211,9 +211,7 @@ func (r *fileRestorer) restoreEmptyFileAt(location string) error {
 		return err
 	}
 
-	if r.progress != nil {
-		r.progress.AddProgress(location, 0, 0)
-	}
+	r.progress.AddProgress(location, 0, 0)
 	return nil
 }
 
@@ -361,11 +359,7 @@ func (r *fileRestorer) downloadBlobs(ctx context.Context, packID restic.ID,
 							createSize = file.size
 						}
 						writeErr := r.filesWriter.writeToFile(r.targetPath(file.location), blobData, offset, createSize, file.sparse)
-
-						if r.progress != nil {
-							r.progress.AddProgress(file.location, uint64(len(blobData)), uint64(file.size))
-						}
-
+						r.progress.AddProgress(file.location, uint64(len(blobData)), uint64(file.size))
 						return writeErr
 					}
 					err := r.sanitizeError(file, writeToFile())

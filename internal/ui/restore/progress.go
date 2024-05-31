@@ -59,6 +59,10 @@ func (p *Progress) update(runtime time.Duration, final bool) {
 
 // AddFile starts tracking a new file with the given size
 func (p *Progress) AddFile(size uint64) {
+	if p == nil {
+		return
+	}
+
 	p.m.Lock()
 	defer p.m.Unlock()
 
@@ -68,6 +72,10 @@ func (p *Progress) AddFile(size uint64) {
 
 // AddProgress accumulates the number of bytes written for a file
 func (p *Progress) AddProgress(name string, bytesWrittenPortion uint64, bytesTotal uint64) {
+	if p == nil {
+		return
+	}
+
 	p.m.Lock()
 	defer p.m.Unlock()
 
