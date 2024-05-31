@@ -7,15 +7,19 @@ import (
 	"github.com/restic/restic/internal/ui/progress"
 )
 
+type State struct {
+	FilesFinished   uint64
+	FilesTotal      uint64
+	AllBytesWritten uint64
+	AllBytesTotal   uint64
+}
+
 type Progress struct {
 	updater progress.Updater
 	m       sync.Mutex
 
 	progressInfoMap map[string]progressInfoEntry
-	filesFinished   uint64
-	filesTotal      uint64
-	allBytesWritten uint64
-	allBytesTotal   uint64
+	s               State
 	started         time.Time
 
 	printer ProgressPrinter
@@ -32,8 +36,8 @@ type term interface {
 }
 
 type ProgressPrinter interface {
-	Update(filesFinished, filesTotal, allBytesWritten, allBytesTotal uint64, duration time.Duration)
-	Finish(filesFinished, filesTotal, allBytesWritten, allBytesTotal uint64, duration time.Duration)
+	Update(progress State, duration time.Duration)
+	Finish(progress State, duration time.Duration)
 }
 
 func NewProgress(printer ProgressPrinter, interval time.Duration) *Progress {
@@ -51,9 +55,9 @@ func (p *Progress) update(runtime time.Duration, final bool) {
 	defer p.m.Unlock()
 
 	if !final {
-		p.printer.Update(p.filesFinished, p.filesTotal, p.allBytesWritten, p.allBytesTotal, runtime)
+		p.printer.Update(p.s, runtime)
 	} else {
-		p.printer.Finish(p.filesFinished, p.filesTotal, p.allBytesWritten, p.allBytesTotal, runtime)
+		p.printer.Finish(p.s, runtime)
 	}
 }
 
@@ -66,8 +70,8 @@ func (p *Progress) AddFile(size uint64) {
 	p.m.Lock()
 	defer p.m.Unlock()
 
-	p.filesTotal++
-	p.allBytesTotal += size
+	p.s.FilesTotal++
+	p.s.AllBytesTotal += size
 }
 
 // AddProgress accumulates the number of bytes written for a file
@@ -86,10 +90,10 @@ func (p *Progress) AddProgress(name string, bytesWrittenPortion uint64, bytesTot
 	entry.bytesWritten += bytesWrittenPortion
 	p.progressInfoMap[name] = entry
 
-	p.allBytesWritten += bytesWrittenPortion
+	p.s.AllBytesWritten += bytesWrittenPortion
 	if entry.bytesWritten == entry.bytesTotal {
 		delete(p.progressInfoMap, name)
-		p.filesFinished++
+		p.s.FilesFinished++
 	}
 }
 

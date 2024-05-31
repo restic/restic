@@ -20,31 +20,31 @@ func (t *jsonPrinter) print(status interface{}) {
 	t.terminal.Print(ui.ToJSONString(status))
 }
 
-func (t *jsonPrinter) Update(filesFinished, filesTotal, allBytesWritten, allBytesTotal uint64, duration time.Duration) {
+func (t *jsonPrinter) Update(p State, duration time.Duration) {
 	status := statusUpdate{
 		MessageType:    "status",
 		SecondsElapsed: uint64(duration / time.Second),
-		TotalFiles:     filesTotal,
-		FilesRestored:  filesFinished,
-		TotalBytes:     allBytesTotal,
-		BytesRestored:  allBytesWritten,
+		TotalFiles:     p.FilesTotal,
+		FilesRestored:  p.FilesFinished,
+		TotalBytes:     p.AllBytesTotal,
+		BytesRestored:  p.AllBytesWritten,
 	}
 
-	if allBytesTotal > 0 {
-		status.PercentDone = float64(allBytesWritten) / float64(allBytesTotal)
+	if p.AllBytesTotal > 0 {
+		status.PercentDone = float64(p.AllBytesWritten) / float64(p.AllBytesTotal)
 	}
 
 	t.print(status)
 }
 
-func (t *jsonPrinter) Finish(filesFinished, filesTotal, allBytesWritten, allBytesTotal uint64, duration time.Duration) {
+func (t *jsonPrinter) Finish(p State, duration time.Duration) {
 	status := summaryOutput{
 		MessageType:    "summary",
 		SecondsElapsed: uint64(duration / time.Second),
-		TotalFiles:     filesTotal,
-		FilesRestored:  filesFinished,
-		TotalBytes:     allBytesTotal,
-		BytesRestored:  allBytesWritten,
+		TotalFiles:     p.FilesTotal,
+		FilesRestored:  p.FilesFinished,
+		TotalBytes:     p.AllBytesTotal,
+		BytesRestored:  p.AllBytesWritten,
 	}
 	t.print(status)
 }
