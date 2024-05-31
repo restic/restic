@@ -1,0 +1,11 @@
+Enhancement: Make overwrite behavior of `restore` customizable
+
+The `restore` command now supports an `--overwrite` option to configure whether
+already existing files are overwritten. The default is `--overwrite always`,
+which overwrites existing files. `--overwrite if-newer` only restores files
+from the snapshot that are newer than the local state. And `--overwrite never`
+does not modify existing files.
+
+https://github.com/restic/restic/issues/4817
+https://github.com/restic/restic/issues/200
+https://github.com/restic/restic/pull/4837
