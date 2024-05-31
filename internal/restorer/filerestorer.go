@@ -255,32 +255,6 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) error {
 
 	// track already processed blobs for precise error reporting
 	processedBlobs := restic.NewBlobSet()
-	for _, entry := range blobs {
-		occurrences := 0
-		for _, offsets := range entry.files {
-			occurrences += len(offsets)
-		}
-		// With a maximum blob size of 8MB, the normal blob streaming has to write
-		// at most 800MB for a single blob. This should be short enough to avoid
-		// network connection timeouts. Based on a quick test, a limit of 100 only
-		// selects a very small number of blobs (the number of references per blob
-		// - aka. `count` - seem to follow a expontential distribution)
-		if occurrences > 100 {
-			// process frequently referenced blobs first as these can take a long time to write
-			// which can cause backend connections to time out
-			delete(blobs, entry.blob.ID)
-			partialBlobs := blobToFileOffsetsMapping{entry.blob.ID: entry}
-			err := r.downloadBlobs(ctx, pack.id, partialBlobs, processedBlobs)
-			if err := r.reportError(blobs, processedBlobs, err); err != nil {
-				return err
-			}
-		}
-	}
-
-	if len(blobs) == 0 {
-		return nil
-	}
-
 	err := r.downloadBlobs(ctx, pack.id, blobs, processedBlobs)
 	return r.reportError(blobs, processedBlobs, err)
 }
