@@ -26,8 +26,10 @@ func (t *jsonPrinter) Update(p State, duration time.Duration) {
 		SecondsElapsed: uint64(duration / time.Second),
 		TotalFiles:     p.FilesTotal,
 		FilesRestored:  p.FilesFinished,
+		FilesSkipped:   p.FilesSkipped,
 		TotalBytes:     p.AllBytesTotal,
 		BytesRestored:  p.AllBytesWritten,
+		BytesSkipped:   p.AllBytesSkipped,
 	}
 
 	if p.AllBytesTotal > 0 {
@@ -43,8 +45,10 @@ func (t *jsonPrinter) Finish(p State, duration time.Duration) {
 		SecondsElapsed: uint64(duration / time.Second),
 		TotalFiles:     p.FilesTotal,
 		FilesRestored:  p.FilesFinished,
+		FilesSkipped:   p.FilesSkipped,
 		TotalBytes:     p.AllBytesTotal,
 		BytesRestored:  p.AllBytesWritten,
+		BytesSkipped:   p.AllBytesSkipped,
 	}
 	t.print(status)
 }
@@ -55,8 +59,10 @@ type statusUpdate struct {
 	PercentDone    float64 `json:"percent_done"`
 	TotalFiles     uint64  `json:"total_files,omitempty"`
 	FilesRestored  uint64  `json:"files_restored,omitempty"`
+	FilesSkipped   uint64  `json:"files_skipped,omitempty"`
 	TotalBytes     uint64  `json:"total_bytes,omitempty"`
 	BytesRestored  uint64  `json:"bytes_restored,omitempty"`
+	BytesSkipped   uint64  `json:"bytes_skipped,omitempty"`
 }
 
 type summaryOutput struct {
@@ -64,6 +70,8 @@ type summaryOutput struct {
 	SecondsElapsed uint64 `json:"seconds_elapsed,omitempty"`
 	TotalFiles     uint64 `json:"total_files,omitempty"`
 	FilesRestored  uint64 `json:"files_restored,omitempty"`
+	FilesSkipped   uint64 `json:"files_skipped,omitempty"`
 	TotalBytes     uint64 `json:"total_bytes,omitempty"`
 	BytesRestored  uint64 `json:"bytes_restored,omitempty"`
+	BytesSkipped   uint64 `json:"bytes_skipped,omitempty"`
 }

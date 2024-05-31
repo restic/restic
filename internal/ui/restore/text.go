@@ -24,6 +24,9 @@ func (t *textPrinter) Update(p State, duration time.Duration) {
 	allPercent := ui.FormatPercent(p.AllBytesWritten, p.AllBytesTotal)
 	progress := fmt.Sprintf("[%s] %s  %v files/dirs %s, total %v files/dirs %v",
 		timeLeft, allPercent, p.FilesFinished, formattedAllBytesWritten, p.FilesTotal, formattedAllBytesTotal)
+	if p.FilesSkipped > 0 {
+		progress += fmt.Sprintf(", skipped %v files/dirs %v", p.FilesSkipped, ui.FormatBytes(p.AllBytesSkipped))
+	}
 
 	t.terminal.SetStatus([]string{progress})
 }
@@ -41,6 +44,9 @@ func (t *textPrinter) Finish(p State, duration time.Duration) {
 		formattedAllBytesWritten := ui.FormatBytes(p.AllBytesWritten)
 		summary = fmt.Sprintf("Summary: Restored %d / %d files/dirs (%s / %s) in %s",
 			p.FilesFinished, p.FilesTotal, formattedAllBytesWritten, formattedAllBytesTotal, timeLeft)
+	}
+	if p.FilesSkipped > 0 {
+		summary += fmt.Sprintf(", skipped %v files/dirs %v", p.FilesSkipped, ui.FormatBytes(p.AllBytesSkipped))
 	}
 
 	t.terminal.Print(summary)

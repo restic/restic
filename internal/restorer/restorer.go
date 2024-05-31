@@ -373,8 +373,7 @@ func (res *Restorer) withOverwriteCheck(node *restic.Node, target, location stri
 		if isHardlink {
 			size = 0
 		}
-		res.progress.AddFile(size)
-		res.progress.AddProgress(location, size, size)
+		res.progress.AddSkippedFile(size)
 		return nil
 	}
 	return cb()

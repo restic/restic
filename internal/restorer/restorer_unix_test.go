@@ -70,16 +70,13 @@ func getBlockCount(t *testing.T, filename string) int64 {
 }
 
 type printerMock struct {
-	filesFinished, filesTotal, allBytesWritten, allBytesTotal uint64
+	s restoreui.State
 }
 
-func (p *printerMock) Update(_, _, _, _ uint64, _ time.Duration) {
+func (p *printerMock) Update(_ restoreui.State, _ time.Duration) {
 }
-func (p *printerMock) Finish(filesFinished, filesTotal, allBytesWritten, allBytesTotal uint64, _ time.Duration) {
-	p.filesFinished = filesFinished
-	p.filesTotal = filesTotal
-	p.allBytesWritten = allBytesWritten
-	p.allBytesTotal = allBytesTotal
+func (p *printerMock) Finish(s restoreui.State, _ time.Duration) {
+	p.s = s
 }
 
 func TestRestorerProgressBar(t *testing.T) {
@@ -112,12 +109,12 @@ func TestRestorerProgressBar(t *testing.T) {
 	rtest.OK(t, err)
 	progress.Finish()
 
-	const filesFinished = 4
-	const filesTotal = filesFinished
-	const allBytesWritten = 10
-	const allBytesTotal = allBytesWritten
-	rtest.Assert(t, mock.filesFinished == filesFinished, "filesFinished: expected %v, got %v", filesFinished, mock.filesFinished)
-	rtest.Assert(t, mock.filesTotal == filesTotal, "filesTotal: expected %v, got %v", filesTotal, mock.filesTotal)
-	rtest.Assert(t, mock.allBytesWritten == allBytesWritten, "allBytesWritten: expected %v, got %v", allBytesWritten, mock.allBytesWritten)
-	rtest.Assert(t, mock.allBytesTotal == allBytesTotal, "allBytesTotal: expected %v, got %v", allBytesTotal, mock.allBytesTotal)
+	rtest.Equals(t, restoreui.State{
+		FilesFinished:   4,
+		FilesTotal:      4,
+		FilesSkipped:    0,
+		AllBytesWritten: 10,
+		AllBytesTotal:   10,
+		AllBytesSkipped: 0,
+	}, mock.s)
 }

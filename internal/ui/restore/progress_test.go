@@ -45,7 +45,7 @@ func TestNew(t *testing.T) {
 		return false
 	})
 	test.Equals(t, printerTrace{
-		printerTraceEntry{State{0, 0, 0, 0}, 0, false},
+		printerTraceEntry{State{0, 0, 0, 0, 0, 0}, 0, false},
 	}, result)
 }
 
@@ -57,7 +57,7 @@ func TestAddFile(t *testing.T) {
 		return false
 	})
 	test.Equals(t, printerTrace{
-		printerTraceEntry{State{0, 1, 0, fileSize}, 0, false},
+		printerTraceEntry{State{0, 1, 0, 0, fileSize, 0}, 0, false},
 	}, result)
 }
 
@@ -71,7 +71,7 @@ func TestFirstProgressOnAFile(t *testing.T) {
 		return false
 	})
 	test.Equals(t, printerTrace{
-		printerTraceEntry{State{0, 1, expectedBytesWritten, expectedBytesTotal}, 0, false},
+		printerTraceEntry{State{0, 1, 0, expectedBytesWritten, expectedBytesTotal, 0}, 0, false},
 	}, result)
 }
 
@@ -86,7 +86,7 @@ func TestLastProgressOnAFile(t *testing.T) {
 		return false
 	})
 	test.Equals(t, printerTrace{
-		printerTraceEntry{State{1, 1, fileSize, fileSize}, 0, false},
+		printerTraceEntry{State{1, 1, 0, fileSize, fileSize, 0}, 0, false},
 	}, result)
 }
 
@@ -102,7 +102,7 @@ func TestLastProgressOnLastFile(t *testing.T) {
 		return false
 	})
 	test.Equals(t, printerTrace{
-		printerTraceEntry{State{2, 2, 50 + fileSize, 50 + fileSize}, 0, false},
+		printerTraceEntry{State{2, 2, 0, 50 + fileSize, 50 + fileSize, 0}, 0, false},
 	}, result)
 }
 
@@ -117,7 +117,7 @@ func TestSummaryOnSuccess(t *testing.T) {
 		return true
 	})
 	test.Equals(t, printerTrace{
-		printerTraceEntry{State{2, 2, 50 + fileSize, 50 + fileSize}, mockFinishDuration, true},
+		printerTraceEntry{State{2, 2, 0, 50 + fileSize, 50 + fileSize, 0}, mockFinishDuration, true},
 	}, result)
 }
 
@@ -132,6 +132,18 @@ func TestSummaryOnErrors(t *testing.T) {
 		return true
 	})
 	test.Equals(t, printerTrace{
-		printerTraceEntry{State{1, 2, 50 + fileSize/2, 50 + fileSize}, mockFinishDuration, true},
+		printerTraceEntry{State{1, 2, 0, 50 + fileSize/2, 50 + fileSize, 0}, mockFinishDuration, true},
+	}, result)
+}
+
+func TestSkipFile(t *testing.T) {
+	fileSize := uint64(100)
+
+	result := testProgress(func(progress *Progress) bool {
+		progress.AddSkippedFile(fileSize)
+		return true
+	})
+	test.Equals(t, printerTrace{
+		printerTraceEntry{State{0, 0, 1, 0, 0, fileSize}, mockFinishDuration, true},
 	}, result)
 }

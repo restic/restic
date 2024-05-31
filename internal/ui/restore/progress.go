@@ -10,8 +10,10 @@ import (
 type State struct {
 	FilesFinished   uint64
 	FilesTotal      uint64
+	FilesSkipped    uint64
 	AllBytesWritten uint64
 	AllBytesTotal   uint64
+	AllBytesSkipped uint64
 }
 
 type Progress struct {
@@ -95,6 +97,18 @@ func (p *Progress) AddProgress(name string, bytesWrittenPortion uint64, bytesTot
 		delete(p.progressInfoMap, name)
 		p.s.FilesFinished++
 	}
+}
+
+func (p *Progress) AddSkippedFile(size uint64) {
+	if p == nil {
+		return
+	}
+
+	p.m.Lock()
+	defer p.m.Unlock()
+
+	p.s.FilesSkipped++
+	p.s.AllBytesSkipped += size
 }
 
 func (p *Progress) Finish() {
