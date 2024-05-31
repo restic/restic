@@ -76,6 +76,8 @@ type printerMock struct {
 
 func (p *printerMock) Update(_ restoreui.State, _ time.Duration) {
 }
+func (p *printerMock) CompleteItem(action restoreui.ItemAction, item string, size uint64) {
+}
 func (p *printerMock) Finish(s restoreui.State, _ time.Duration) {
 	p.s = s
 }

@@ -133,9 +133,9 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	msg := ui.NewMessage(term, gopts.verbosity)
 	var printer restoreui.ProgressPrinter
 	if gopts.JSON {
-		printer = restoreui.NewJSONProgress(term)
+		printer = restoreui.NewJSONProgress(term, gopts.verbosity)
 	} else {
-		printer = restoreui.NewTextProgress(term)
+		printer = restoreui.NewTextProgress(term, gopts.verbosity)
 	}
 
 	progress := restoreui.NewProgress(printer, calculateProgressInterval(!gopts.Quiet, gopts.JSON))
