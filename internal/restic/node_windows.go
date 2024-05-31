@@ -275,17 +275,20 @@ func fixEncryptionAttribute(path string, attrs *uint32, pathPointer *uint16) (er
 		// File should be encrypted.
 		err = encryptFile(pathPointer)
 		if err != nil {
-			if fs.IsAccessDenied(err) {
+			if fs.IsAccessDenied(err) || errors.Is(err, windows.ERROR_FILE_READ_ONLY) {
 				// If existing file already has readonly or system flag, encrypt file call fails.
-				// We have already cleared readonly flag, clearing system flag if needed.
 				// The readonly and system flags will be set again at the end of this func if they are needed.
+				err = fs.ResetPermissions(path)
+				if err != nil {
+					return fmt.Errorf("failed to encrypt file: failed to reset permissions: %s : %v", path, err)
+				}
 				err = fs.ClearSystem(path)
 				if err != nil {
 					return fmt.Errorf("failed to encrypt file: failed to clear system flag: %s : %v", path, err)
 				}
 				err = encryptFile(pathPointer)
 				if err != nil {
-					return fmt.Errorf("failed to encrypt file: %s : %v", path, err)
+					return fmt.Errorf("failed retry to encrypt file: %s : %v", path, err)
 				}
 			} else {
 				return fmt.Errorf("failed to encrypt file: %s : %v", path, err)
@@ -300,17 +303,20 @@ func fixEncryptionAttribute(path string, attrs *uint32, pathPointer *uint16) (er
 			// File should not be encrypted, but its already encrypted. Decrypt it.
 			err = decryptFile(pathPointer)
 			if err != nil {
-				if fs.IsAccessDenied(err) {
+				if fs.IsAccessDenied(err) || errors.Is(err, windows.ERROR_FILE_READ_ONLY) {
 					// If existing file already has readonly or system flag, decrypt file call fails.
-					// We have already cleared readonly flag, clearing system flag if needed.
 					// The readonly and system flags will be set again after this func if they are needed.
+					err = fs.ResetPermissions(path)
+					if err != nil {
+						return fmt.Errorf("failed to encrypt file: failed to reset permissions: %s : %v", path, err)
+					}
 					err = fs.ClearSystem(path)
 					if err != nil {
 						return fmt.Errorf("failed to decrypt file: failed to clear system flag: %s : %v", path, err)
 					}
 					err = decryptFile(pathPointer)
 					if err != nil {
-						return fmt.Errorf("failed to decrypt file: %s : %v", path, err)
+						return fmt.Errorf("failed retry to decrypt file: %s : %v", path, err)
 					}
 				} else {
 					return fmt.Errorf("failed to decrypt file: %s : %v", path, err)
