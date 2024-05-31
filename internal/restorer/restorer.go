@@ -33,6 +33,7 @@ type Restorer struct {
 var restorerAbortOnAllErrors = func(_ string, err error) error { return err }
 
 type Options struct {
+	DryRun    bool
 	Sparse    bool
 	Progress  *restoreui.Progress
 	Overwrite OverwriteBehavior
@@ -220,15 +221,17 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 }
 
 func (res *Restorer) restoreNodeTo(ctx context.Context, node *restic.Node, target, location string) error {
-	debug.Log("restoreNode %v %v %v", node.Name, target, location)
-	if err := fs.Remove(target); err != nil && !errors.Is(err, os.ErrNotExist) {
-		return errors.Wrap(err, "RemoveNode")
-	}
+	if !res.opts.DryRun {
+		debug.Log("restoreNode %v %v %v", node.Name, target, location)
+		if err := fs.Remove(target); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return errors.Wrap(err, "RemoveNode")
+		}
 
-	err := node.CreateAt(ctx, target, res.repo)
-	if err != nil {
-		debug.Log("node.CreateAt(%s) error %v", target, err)
-		return err
+		err := node.CreateAt(ctx, target, res.repo)
+		if err != nil {
+			debug.Log("node.CreateAt(%s) error %v", target, err)
+			return err
+		}
 	}
 
 	res.opts.Progress.AddProgress(location, false, true, 0, 0)
@@ -236,6 +239,9 @@ func (res *Restorer) restoreNodeTo(ctx context.Context, node *restic.Node, targe
 }
 
 func (res *Restorer) restoreNodeMetadataTo(node *restic.Node, target, location string) error {
+	if res.opts.DryRun {
+		return nil
+	}
 	debug.Log("restoreNodeMetadata %v %v %v", node.Name, target, location)
 	err := node.RestoreMetadata(target, res.Warn)
 	if err != nil {
@@ -245,12 +251,14 @@ func (res *Restorer) restoreNodeMetadataTo(node *restic.Node, target, location s
 }
 
 func (res *Restorer) restoreHardlinkAt(node *restic.Node, target, path, location string) error {
-	if err := fs.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
-		return errors.Wrap(err, "RemoveCreateHardlink")
-	}
-	err := fs.Link(target, path)
-	if err != nil {
-		return errors.WithStack(err)
+	if !res.opts.DryRun {
+		if err := fs.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return errors.Wrap(err, "RemoveCreateHardlink")
+		}
+		err := fs.Link(target, path)
+		if err != nil {
+			return errors.WithStack(err)
+		}
 	}
 
 	res.opts.Progress.AddProgress(location, false, true, 0, 0)
@@ -259,6 +267,10 @@ func (res *Restorer) restoreHardlinkAt(node *restic.Node, target, path, location
 }
 
 func (res *Restorer) ensureDir(target string) error {
+	if res.opts.DryRun {
+		return nil
+	}
+
 	fi, err := fs.Lstat(target)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("failed to check for directory: %w", err)
@@ -328,7 +340,12 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 					res.opts.Progress.AddSkippedFile(location, node.Size)
 				} else {
 					res.opts.Progress.AddFile(node.Size)
-					filerestorer.addFile(location, node.Content, int64(node.Size), matches)
+					if !res.opts.DryRun {
+						filerestorer.addFile(location, node.Content, int64(node.Size), matches)
+					} else {
+						// immediately mark as completed
+						res.opts.Progress.AddProgress(location, false, matches == nil, node.Size, node.Size)
+					}
 				}
 				res.trackFile(location, updateMetadataOnly)
 				return nil
@@ -340,9 +357,11 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 		return err
 	}
 
-	err = filerestorer.restoreFiles(ctx)
-	if err != nil {
-		return err
+	if !res.opts.DryRun {
+		err = filerestorer.restoreFiles(ctx)
+		if err != nil {
+			return err
+		}
 	}
 
 	debug.Log("second pass for %q", dst)
