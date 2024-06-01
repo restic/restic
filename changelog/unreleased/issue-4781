@@ -1,0 +1,8 @@
+Enhancement: Add restore flags to read include and exclude patterns from files
+
+Restic now supports reading include and exclude patterns from files using the 
+`--include-file`, `--exclude-file`, `--iinclude-file` and `--iexclude-file` 
+flags.
+
+https://github.com/restic/restic/issues/4781
+https://github.com/restic/restic/pull/4811
