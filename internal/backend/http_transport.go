@@ -143,7 +143,7 @@ func Transport(opts TransportOptions) (http.RoundTripper, error) {
 	}
 
 	if feature.Flag.Enabled(feature.BackendErrorRedesign) {
-		rt = newWatchdogRoundtripper(rt, 120*time.Second, 128*1024)
+		rt = newWatchdogRoundtripper(rt, 5*time.Minute, 128*1024)
 	}
 
 	// wrap in the debug round tripper (if active)
