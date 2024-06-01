@@ -97,3 +97,58 @@ func TestRestoreFailsWhenUsingInvalidPatterns(t *testing.T) {
 *[._]log[.-][0-9]
 !*[._]log[.-][0-9]`, err.Error())
 }
+
+func TestRestoreFailsWhenUsingInvalidPatternsFromFile(t *testing.T) {
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testRunInit(t, env.gopts)
+
+	// Create an include file with some invalid patterns
+	includeFile := env.base + "/includefile"
+	fileErr := os.WriteFile(includeFile, []byte("*.go\n*[._]log[.-][0-9]\n!*[._]log[.-][0-9]"), 0644)
+	if fileErr != nil {
+		t.Fatalf("Could not write include file: %v", fileErr)
+	}
+
+	err := testRunRestoreAssumeFailure("latest", RestoreOptions{includePatternOptions: includePatternOptions{IncludeFiles: []string{includeFile}}}, env.gopts)
+	rtest.Equals(t, `Fatal: --include-file: invalid pattern(s) provided:
+*[._]log[.-][0-9]
+!*[._]log[.-][0-9]`, err.Error())
+
+	// Create an exclude file with some invalid patterns
+	excludeFile := env.base + "/excludefile"
+	fileErr = os.WriteFile(excludeFile, []byte("*.go\n*[._]log[.-][0-9]\n!*[._]log[.-][0-9]"), 0644)
+	if fileErr != nil {
+		t.Fatalf("Could not write exclude file: %v", fileErr)
+	}
+
+	err = testRunRestoreAssumeFailure("latest", RestoreOptions{excludePatternOptions: excludePatternOptions{ExcludeFiles: []string{excludeFile}}}, env.gopts)
+	rtest.Equals(t, `Fatal: --exclude-file: invalid pattern(s) provided:
+*[._]log[.-][0-9]
+!*[._]log[.-][0-9]`, err.Error())
+
+	// Create an insentive include file with some invalid patterns
+	insensitiveIncludeFile := env.base + "/insensitiveincludefile"
+	fileErr = os.WriteFile(insensitiveIncludeFile, []byte("*.go\n*[._]log[.-][0-9]\n!*[._]log[.-][0-9]"), 0644)
+	if fileErr != nil {
+		t.Fatalf("Could not write insensitive include file: %v", fileErr)
+	}
+
+	err = testRunRestoreAssumeFailure("latest", RestoreOptions{includePatternOptions: includePatternOptions{InsensitiveIncludeFiles: []string{insensitiveIncludeFile}}}, env.gopts)
+	rtest.Equals(t, `Fatal: --iinclude-file: invalid pattern(s) provided:
+*[._]log[.-][0-9]
+!*[._]log[.-][0-9]`, err.Error())
+
+	// Create an insensitive exclude file with some invalid patterns
+	insensitiveExcludeFile := env.base + "/insensitiveexcludefile"
+	fileErr = os.WriteFile(insensitiveExcludeFile, []byte("*.go\n*[._]log[.-][0-9]\n!*[._]log[.-][0-9]"), 0644)
+	if fileErr != nil {
+		t.Fatalf("Could not write insensitive exclude file: %v", fileErr)
+	}
+
+	err = testRunRestoreAssumeFailure("latest", RestoreOptions{excludePatternOptions: excludePatternOptions{InsensitiveExcludeFiles: []string{insensitiveExcludeFile}}}, env.gopts)
+	rtest.Equals(t, `Fatal: --iexclude-file: invalid pattern(s) provided:
+*[._]log[.-][0-9]
+!*[._]log[.-][0-9]`, err.Error())
+}

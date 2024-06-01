@@ -73,12 +73,12 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	hasExcludes := len(opts.Excludes) > 0 || len(opts.InsensitiveExcludes) > 0
 	hasIncludes := len(opts.Includes) > 0 || len(opts.InsensitiveIncludes) > 0
 
-	excludePatterns, err := opts.excludePatternOptions.CollectPatterns()
+	excludePatternFns, err := opts.excludePatternOptions.CollectPatterns()
 	if err != nil {
 		return err
 	}
 
-	includePatterns, err := opts.includePatternOptions.CollectPatterns()
+	includePatternFns, err := opts.includePatternOptions.CollectPatterns()
 	if err != nil {
 		return err
 	}
@@ -150,7 +150,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	}
 
 	selectExcludeFilter := func(item string, _ string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
-		for _, rejectFn := range excludePatterns {
+		for _, rejectFn := range excludePatternFns {
 			matched := rejectFn(item)
 
 			// An exclude filter is basically a 'wildcard but foo',
@@ -166,7 +166,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	}
 
 	selectIncludeFilter := func(item string, _ string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
-		for _, includeFn := range includePatterns {
+		for _, includeFn := range includePatternFns {
 			selectedForRestore, childMayBeSelected = includeFn(item)
 		}
 
