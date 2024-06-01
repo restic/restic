@@ -89,7 +89,18 @@ func createFile(path string, createSize int64, sparse bool) (*os.File, error) {
 			return nil, err
 		}
 	}
-	if f == nil || !fi.Mode().IsRegular() {
+
+	mustReplace := f == nil || !fi.Mode().IsRegular()
+	if !mustReplace {
+		ex := fs.ExtendedStat(fi)
+		if ex.Links > 1 {
+			// there is no efficient way to find out which other files might be linked to this file
+			// thus nuke the existing file and start with a fresh one
+			mustReplace = true
+		}
+	}
+
+	if mustReplace {
 		// close handle if we still have it
 		if f != nil {
 			if err := f.Close(); err != nil {

@@ -45,36 +45,46 @@ func TestCreateFile(t *testing.T) {
 	scenarios := []struct {
 		name   string
 		create func(t testing.TB, path string)
+		check  func(t testing.TB, path string)
 		err    error
 	}{
 		{
-			"file",
-			func(t testing.TB, path string) {
+			name: "file",
+			create: func(t testing.TB, path string) {
 				rtest.OK(t, os.WriteFile(path, []byte("test-test-test-data"), 0o400))
 			},
-			nil,
 		},
 		{
-			"empty dir",
-			func(t testing.TB, path string) {
+			name: "empty dir",
+			create: func(t testing.TB, path string) {
 				rtest.OK(t, os.Mkdir(path, 0o400))
 			},
-			nil,
 		},
 		{
-			"symlink",
-			func(t testing.TB, path string) {
+			name: "symlink",
+			create: func(t testing.TB, path string) {
 				rtest.OK(t, os.Symlink("./something", path))
 			},
-			nil,
 		},
 		{
-			"filled dir",
-			func(t testing.TB, path string) {
+			name: "filled dir",
+			create: func(t testing.TB, path string) {
 				rtest.OK(t, os.Mkdir(path, 0o700))
 				rtest.OK(t, os.WriteFile(filepath.Join(path, "file"), []byte("data"), 0o400))
 			},
-			syscall.ENOTEMPTY,
+			err: syscall.ENOTEMPTY,
+		},
+		{
+			name: "hardlinks",
+			create: func(t testing.TB, path string) {
+				rtest.OK(t, os.WriteFile(path, []byte("test-test-test-data"), 0o400))
+				rtest.OK(t, os.Link(path, path+"h"))
+			},
+			check: func(t testing.TB, path string) {
+				data, err := os.ReadFile(path + "h")
+				rtest.OK(t, err)
+				rtest.Equals(t, "test-test-test-data", string(data), "unexpected content change")
+			},
 		},
 	}
 
@@ -92,8 +102,8 @@ func TestCreateFile(t *testing.T) {
 
 	for i, sc := range scenarios {
 		t.Run(sc.name, func(t *testing.T) {
-			for _, test := range tests {
-				path := basepath + fmt.Sprintf("%v", i)
+			for j, test := range tests {
+				path := basepath + fmt.Sprintf("%v%v", i, j)
 				sc.create(t, path)
 				f, err := createFile(path, test.size, test.isSparse)
 				if sc.err == nil {
@@ -103,6 +113,9 @@ func TestCreateFile(t *testing.T) {
 					rtest.Assert(t, fi.Mode().IsRegular(), "wrong filetype %v", fi.Mode())
 					rtest.Assert(t, fi.Size() <= test.size, "unexpected file size expected %v, got %v", test.size, fi.Size())
 					rtest.OK(t, f.Close())
+					if sc.check != nil {
+						sc.check(t, path)
+					}
 				} else {
 					rtest.Assert(t, errors.Is(err, sc.err), "unexpected error got %v expected %v", err, sc.err)
 				}
