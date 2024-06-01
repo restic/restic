@@ -43,7 +43,7 @@ func New(be backend.Backend, maxElapsedTime time.Duration, report func(string, e
 
 // retryNotifyErrorWithSuccess is an extension of backoff.RetryNotify with notification of success after an error.
 // success is NOT notified on the first run of operation (only after an error).
-func retryNotifyErrorWithSuccess(operation backoff.Operation, b backoff.BackOff, notify backoff.Notify, success func(retries int)) error {
+func retryNotifyErrorWithSuccess(operation backoff.Operation, b backoff.BackOffContext, notify backoff.Notify, success func(retries int)) error {
 	var operationWrapper backoff.Operation
 	if success == nil {
 		operationWrapper = operation
@@ -61,8 +61,8 @@ func retryNotifyErrorWithSuccess(operation backoff.Operation, b backoff.BackOff,
 	}
 	err := backoff.RetryNotify(operationWrapper, b, notify)
 
-	if err != nil && notify != nil {
-		// log final error
+	if err != nil && notify != nil && b.Context().Err() == nil {
+		// log final error, unless the context was canceled
 		notify(err, -1)
 	}
 	return err
