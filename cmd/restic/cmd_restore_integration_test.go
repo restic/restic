@@ -24,9 +24,9 @@ func testRunRestore(t testing.TB, opts GlobalOptions, dir string, snapshotID res
 
 func testRunRestoreExcludes(t testing.TB, gopts GlobalOptions, dir string, snapshotID restic.ID, excludes []string) {
 	opts := RestoreOptions{
-		Target:  dir,
-		Exclude: excludes,
+		Target: dir,
 	}
+	opts.Excludes = excludes
 
 	rtest.OK(t, testRunRestoreAssumeFailure(snapshotID.String(), opts, gopts))
 }
@@ -51,11 +51,62 @@ func testRunRestoreLatest(t testing.TB, gopts GlobalOptions, dir string, paths [
 
 func testRunRestoreIncludes(t testing.TB, gopts GlobalOptions, dir string, snapshotID restic.ID, includes []string) {
 	opts := RestoreOptions{
-		Target:  dir,
-		Include: includes,
+		Target: dir,
 	}
+	opts.Includes = includes
 
 	rtest.OK(t, testRunRestoreAssumeFailure(snapshotID.String(), opts, gopts))
+}
+
+func TestRestoreIncludesComplex(t *testing.T) {
+	testfiles := []struct {
+		path    string
+		size    uint
+		include bool // Whether this file should be included in the restore
+	}{
+		{"dir1/include_me.txt", 100, true},
+		{"dir1/something_else.txt", 200, false},
+		{"dir2/also_include_me.txt", 150, true},
+		{"dir2/important_file.txt", 150, true},
+		{"dir3/not_included.txt", 180, false},
+		{"dir4/subdir/should_include_me.txt", 120, true},
+	}
+
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testRunInit(t, env.gopts)
+
+	// Create test files and directories
+	for _, testFile := range testfiles {
+		fullPath := filepath.Join(env.testdata, testFile.path)
+		rtest.OK(t, os.MkdirAll(filepath.Dir(fullPath), 0755))
+		rtest.OK(t, appendRandomData(fullPath, testFile.size))
+	}
+
+	opts := BackupOptions{}
+
+	// Perform backup
+	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
+	testRunCheck(t, env.gopts)
+
+	snapshotID := testListSnapshots(t, env.gopts, 1)[0]
+
+	// Restore using includes
+	includePatterns := []string{"dir1/*include_me.txt", "dir2/**", "dir4/**/*_me.txt"}
+	restoredir := filepath.Join(env.base, "restore")
+	testRunRestoreIncludes(t, env.gopts, restoredir, snapshotID, includePatterns)
+
+	// Check that only the included files are restored
+	for _, testFile := range testfiles {
+		restoredFilePath := filepath.Join(restoredir, "testdata", testFile.path)
+		_, err := os.Stat(restoredFilePath)
+		if testFile.include {
+			rtest.OK(t, err)
+		} else {
+			rtest.Assert(t, os.IsNotExist(err), "File %s should not have been restored", testFile.path)
+		}
+	}
 }
 
 func TestRestoreFilter(t *testing.T) {

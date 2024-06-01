@@ -2,12 +2,10 @@ package main
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/restorer"
 	"github.com/restic/restic/internal/ui"
@@ -45,15 +43,9 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 // RestoreOptions collects all options for the restore command.
 type RestoreOptions struct {
-	Exclude                 []string
-	ExcludeFiles            []string
-	InsensitiveExclude      []string
-	InsensitiveExcludeFiles []string
-	Include                 []string
-	IncludeFiles            []string
-	InsensitiveInclude      []string
-	InsensitiveIncludeFiles []string
-	Target                  string
+	excludePatternOptions
+	includePatternOptions
+	Target string
 	restic.SnapshotFilter
 	Sparse bool
 	Verify bool
@@ -65,15 +57,10 @@ func init() {
 	cmdRoot.AddCommand(cmdRestore)
 
 	flags := cmdRestore.Flags()
-	flags.StringArrayVarP(&restoreOptions.Exclude, "exclude", "e", nil, "exclude a `pattern` (can be specified multiple times)")
-	flags.StringArrayVar(&restoreOptions.InsensitiveExclude, "iexclude", nil, "same as --exclude but ignores the casing of `pattern`")
-	flags.StringArrayVarP(&restoreOptions.Include, "include", "i", nil, "include a `pattern`, exclude everything else (can be specified multiple times)")
-	flags.StringArrayVar(&restoreOptions.InsensitiveInclude, "iinclude", nil, "same as --include but ignores the casing of `pattern`")
 	flags.StringVarP(&restoreOptions.Target, "target", "t", "", "directory to extract data to")
-	flags.StringArrayVar(&restoreOptions.ExcludeFiles, "exclude-file", nil, "read exclude patterns from a `file` (can be specified multiple times)")
-	flags.StringArrayVar(&restoreOptions.InsensitiveExcludeFiles, "iexclude-file", nil, "same as --exclude-file but ignores casing of `file`names in patterns")
-	flags.StringArrayVar(&restoreOptions.IncludeFiles, "include-file", nil, "read include patterns from a `file` (can be specified multiple times)")
-	flags.StringArrayVar(&restoreOptions.InsensitiveIncludeFiles, "iinclude-file", nil, "same as --include-file but ignores casing of `file`names in patterns")
+
+	initExcludePatternOptions(flags, &restoreOptions.excludePatternOptions)
+	initIncludePatternOptions(flags, &restoreOptions.includePatternOptions)
 
 	initSingleSnapshotFilter(flags, &restoreOptions.SnapshotFilter)
 	flags.BoolVar(&restoreOptions.Sparse, "sparse", false, "restore files as sparse")
@@ -83,38 +70,8 @@ func init() {
 func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	term *termstatus.Terminal, args []string) error {
 
-	hasExcludes := len(opts.Exclude) > 0 || len(opts.InsensitiveExclude) > 0
-	hasIncludes := len(opts.Include) > 0 || len(opts.InsensitiveInclude) > 0
-
-	// Validate provided patterns
-	if len(opts.Exclude) > 0 {
-		if err := filter.ValidatePatterns(opts.Exclude); err != nil {
-			return errors.Fatalf("--exclude: %s", err)
-		}
-	}
-	if len(opts.InsensitiveExclude) > 0 {
-		if err := filter.ValidatePatterns(opts.InsensitiveExclude); err != nil {
-			return errors.Fatalf("--iexclude: %s", err)
-		}
-	}
-	if len(opts.Include) > 0 {
-		if err := filter.ValidatePatterns(opts.Include); err != nil {
-			return errors.Fatalf("--include: %s", err)
-		}
-	}
-	if len(opts.InsensitiveInclude) > 0 {
-		if err := filter.ValidatePatterns(opts.InsensitiveInclude); err != nil {
-			return errors.Fatalf("--iinclude: %s", err)
-		}
-	}
-
-	for i, str := range opts.InsensitiveExclude {
-		opts.InsensitiveExclude[i] = strings.ToLower(str)
-	}
-
-	for i, str := range opts.InsensitiveInclude {
-		opts.InsensitiveInclude[i] = strings.ToLower(str)
-	}
+	hasExcludes := len(opts.Excludes) > 0 || len(opts.InsensitiveExcludes) > 0
+	hasIncludes := len(opts.Includes) > 0 || len(opts.InsensitiveIncludes) > 0
 
 	switch {
 	case len(args) == 0:
@@ -182,94 +139,38 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		msg.E("Warning: %s\n", message)
 	}
 
-	excludePatterns := filter.ParsePatterns(opts.Exclude)
-	insensitiveExcludePatterns := filter.ParsePatterns(opts.InsensitiveExclude)
-
-	if len(opts.ExcludeFiles) > 0 {
-		patternsFromFile, err := readPatternsFromFiles(opts.ExcludeFiles)
-		if err != nil {
-			return err
-		}
-
-		excludePatternsFromFile := filter.ParsePatterns(patternsFromFile)
-		excludePatterns = append(excludePatterns, excludePatternsFromFile...)
-	}
-
-	if len(opts.InsensitiveExcludeFiles) > 0 {
-		patternsFromFile, err := readPatternsFromFiles(opts.ExcludeFiles)
-		if err != nil {
-			return err
-		}
-
-		for i, str := range patternsFromFile {
-			patternsFromFile[i] = strings.ToLower(str)
-		}
-
-		iexcludePatternsFromFile := filter.ParsePatterns(patternsFromFile)
-		insensitiveExcludePatterns = append(insensitiveExcludePatterns, iexcludePatternsFromFile...)
+	excludePatterns, err := opts.excludePatternOptions.CollectPatterns()
+	if err != nil {
+		return err
 	}
 
 	selectExcludeFilter := func(item string, _ string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
-		matched, err := filter.List(excludePatterns, item)
-		if err != nil {
-			msg.E("error for exclude pattern: %v", err)
+		for _, rejectFn := range excludePatterns {
+			matched := rejectFn(item)
+
+			// An exclude filter is basically a 'wildcard but foo',
+			// so even if a childMayMatch, other children of a dir may not,
+			// therefore childMayMatch does not matter, but we should not go down
+			// unless the dir is selected for restore
+			selectedForRestore = !matched
+			childMayBeSelected = selectedForRestore && node.Type == "dir"
+
+			return selectedForRestore, childMayBeSelected
 		}
-
-		matchedInsensitive, err := filter.List(insensitiveExcludePatterns, strings.ToLower(item))
-		if err != nil {
-			msg.E("error for iexclude pattern: %v", err)
-		}
-
-		// An exclude filter is basically a 'wildcard but foo',
-		// so even if a childMayMatch, other children of a dir may not,
-		// therefore childMayMatch does not matter, but we should not go down
-		// unless the dir is selected for restore
-		selectedForRestore = !matched && !matchedInsensitive
-		childMayBeSelected = selectedForRestore && node.Type == "dir"
-
 		return selectedForRestore, childMayBeSelected
 	}
 
-	includePatterns := filter.ParsePatterns(opts.Include)
-	insensitiveIncludePatterns := filter.ParsePatterns(opts.InsensitiveInclude)
-
-	if len(opts.IncludeFiles) > 0 {
-		patternsFromFile, err := readPatternsFromFiles(opts.IncludeFiles)
-		if err != nil {
-			return err
-		}
-
-		for i, str := range patternsFromFile {
-			patternsFromFile[i] = strings.ToLower(str)
-		}
-
-		includePatternsFromFile := filter.ParsePatterns(patternsFromFile)
-		includePatterns = append(includePatterns, includePatternsFromFile...)
-	}
-
-	if len(opts.InsensitiveIncludeFiles) > 0 {
-		patternsFromFile, err := readPatternsFromFiles(opts.InsensitiveIncludeFiles)
-		if err != nil {
-			return err
-		}
-
-		iincludePatternsFromFile := filter.ParsePatterns(patternsFromFile)
-		insensitiveIncludePatterns = append(insensitiveIncludePatterns, iincludePatternsFromFile...)
+	includePatterns, err := opts.includePatternOptions.CollectPatterns()
+	if err != nil {
+		return err
 	}
 
 	selectIncludeFilter := func(item string, _ string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
-		matched, childMayMatch, err := filter.ListWithChild(includePatterns, item)
-		if err != nil {
-			msg.E("error for include pattern: %v", err)
+		for _, includeFn := range includePatterns {
+			selectedForRestore, childMayBeSelected = includeFn(item)
 		}
 
-		matchedInsensitive, childMayMatchInsensitive, err := filter.ListWithChild(insensitiveIncludePatterns, strings.ToLower(item))
-		if err != nil {
-			msg.E("error for iexclude pattern: %v", err)
-		}
-
-		selectedForRestore = matched || matchedInsensitive
-		childMayBeSelected = (childMayMatch || childMayMatchInsensitive) && node.Type == "dir"
+		childMayBeSelected = childMayBeSelected && node.Type == "dir"
 
 		return selectedForRestore, childMayBeSelected
 	}
