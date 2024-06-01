@@ -73,6 +73,16 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	hasExcludes := len(opts.Excludes) > 0 || len(opts.InsensitiveExcludes) > 0
 	hasIncludes := len(opts.Includes) > 0 || len(opts.InsensitiveIncludes) > 0
 
+	excludePatterns, err := opts.excludePatternOptions.CollectPatterns()
+	if err != nil {
+		return err
+	}
+
+	includePatterns, err := opts.includePatternOptions.CollectPatterns()
+	if err != nil {
+		return err
+	}
+
 	switch {
 	case len(args) == 0:
 		return errors.Fatal("no snapshot ID specified")
@@ -139,11 +149,6 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		msg.E("Warning: %s\n", message)
 	}
 
-	excludePatterns, err := opts.excludePatternOptions.CollectPatterns()
-	if err != nil {
-		return err
-	}
-
 	selectExcludeFilter := func(item string, _ string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
 		for _, rejectFn := range excludePatterns {
 			matched := rejectFn(item)
@@ -158,11 +163,6 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 			return selectedForRestore, childMayBeSelected
 		}
 		return selectedForRestore, childMayBeSelected
-	}
-
-	includePatterns, err := opts.includePatternOptions.CollectPatterns()
-	if err != nil {
-		return err
 	}
 
 	selectIncludeFilter := func(item string, _ string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
