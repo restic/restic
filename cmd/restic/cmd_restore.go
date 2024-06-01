@@ -150,24 +150,27 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	}
 
 	selectExcludeFilter := func(item string, _ string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
+		matched := false
 		for _, rejectFn := range excludePatternFns {
-			matched := rejectFn(item)
-
-			// An exclude filter is basically a 'wildcard but foo',
-			// so even if a childMayMatch, other children of a dir may not,
-			// therefore childMayMatch does not matter, but we should not go down
-			// unless the dir is selected for restore
-			selectedForRestore = !matched
-			childMayBeSelected = selectedForRestore && node.Type == "dir"
-
-			return selectedForRestore, childMayBeSelected
+			matched = matched || rejectFn(item)
 		}
+		// An exclude filter is basically a 'wildcard but foo',
+		// so even if a childMayMatch, other children of a dir may not,
+		// therefore childMayMatch does not matter, but we should not go down
+		// unless the dir is selected for restore
+		selectedForRestore = !matched
+		childMayBeSelected = selectedForRestore && node.Type == "dir"
+
 		return selectedForRestore, childMayBeSelected
 	}
 
 	selectIncludeFilter := func(item string, _ string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
+		selectedForRestore = false
+		childMayBeSelected = false
 		for _, includeFn := range includePatternFns {
-			selectedForRestore, childMayBeSelected = includeFn(item)
+			matched, childMayMatch := includeFn(item)
+			selectedForRestore = selectedForRestore || matched
+			childMayBeSelected = childMayBeSelected || childMayMatch
 		}
 
 		childMayBeSelected = childMayBeSelected && node.Type == "dir"
