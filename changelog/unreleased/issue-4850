@@ -1,0 +1,8 @@
+Bugfix: correctly handle UTF-16 password files in `key add/passwd`
+
+`key add` and `key passwd` did not properly decode UTF-16 encoded password read
+from a password file. This has been fix to match the decoding when opening a
+repository.
+
+https://github.com/restic/restic/issues/4850
+https://github.com/restic/restic/pull/4851
