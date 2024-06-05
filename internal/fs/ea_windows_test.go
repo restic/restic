@@ -135,114 +135,103 @@ func TestSetFileEa(t *testing.T) {
 	}
 }
 
+// The code below was refactored from github.com/Microsoft/go-winio/blob/a7564fd482feb903f9562a135f1317fd3b480739/ea_test.go
+// under MIT license.
 func TestSetGetFileEA(t *testing.T) {
+	testfilePath := setupTestFile(t)
+	defer cleanupTestFile(t, testfilePath)
+
+	testEAs := generateTestEAs(t, 3, testfilePath)
+	fileHandle := openFile(t, testfilePath, windows.FILE_ATTRIBUTE_NORMAL)
+	defer closeFileHandle(t, fileHandle, testfilePath)
+
+	testSetGetEA(t, fileHandle, testEAs, testfilePath)
+}
+
+// The code is new code and reuses code refactored from github.com/Microsoft/go-winio/blob/a7564fd482feb903f9562a135f1317fd3b480739/ea_test.go
+// under MIT license.
+func TestSetGetFolderEA(t *testing.T) {
+	testfolderPath := setupTestFolder(t)
+	defer cleanupTestFolder(t, testfolderPath)
+
+	testEAs := generateTestEAs(t, 3, testfolderPath)
+	fileHandle := openFile(t, testfolderPath, windows.FILE_ATTRIBUTE_NORMAL|windows.FILE_FLAG_BACKUP_SEMANTICS)
+	defer closeFileHandle(t, fileHandle, testfolderPath)
+
+	testSetGetEA(t, fileHandle, testEAs, testfolderPath)
+}
+
+func setupTestFile(t *testing.T) string {
 	tempDir := t.TempDir()
 	testfilePath := filepath.Join(tempDir, "testfile.txt")
-	// create temp file
-	testfile, err := os.Create(testfilePath)
-	if err != nil {
+	if _, err := os.Create(testfilePath); err != nil {
 		t.Fatalf("failed to create temporary file: %s", err)
 	}
-	defer func() {
-		err := testfile.Close()
-		if err != nil {
-			t.Logf("Error closing file %s: %v\n", testfile.Name(), err)
-		}
-	}()
+	return testfilePath
+}
 
-	nAttrs := 3
-	testEAs := make([]ExtendedAttribute, 3)
-	// generate random extended attributes for test
+func setupTestFolder(t *testing.T) string {
+	tempDir := t.TempDir()
+	testfolderPath := filepath.Join(tempDir, "testfolder")
+	if err := os.Mkdir(testfolderPath, os.ModeDir); err != nil {
+		t.Fatalf("failed to create temporary folder: %s", err)
+	}
+	return testfolderPath
+}
+
+func generateTestEAs(t *testing.T, nAttrs int, path string) []ExtendedAttribute {
+	testEAs := make([]ExtendedAttribute, nAttrs)
 	for i := 0; i < nAttrs; i++ {
-		// EA name is automatically converted to upper case before storing, so
-		// when reading it back it returns the upper case name. To avoid test
-		// failures because of that keep the name upper cased.
 		testEAs[i].Name = fmt.Sprintf("TESTEA%d", i+1)
 		testEAs[i].Value = make([]byte, getRandomInt())
-		_, err := rand.Read(testEAs[i].Value)
-		if err != nil {
-			t.Logf("Error reading rand for file %s: %v\n", testfilePath, err)
+		if _, err := rand.Read(testEAs[i].Value); err != nil {
+			t.Logf("Error reading rand for path %s: %v\n", path, err)
 		}
 	}
+	return testEAs
+}
 
-	utf16Path := windows.StringToUTF16Ptr(testfilePath)
-	fileAccessRightReadWriteEA := (0x8 | 0x10)
-	fileHandle, err := windows.CreateFile(utf16Path, uint32(fileAccessRightReadWriteEA), 0, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL, 0)
+func openFile(t *testing.T, path string, attributes uint32) windows.Handle {
+	utf16Path := windows.StringToUTF16Ptr(path)
+	fileAccessRightReadWriteEA := uint32(0x8 | 0x10)
+	fileHandle, err := windows.CreateFile(utf16Path, fileAccessRightReadWriteEA, 0, nil, windows.OPEN_EXISTING, attributes, 0)
 	if err != nil {
 		t.Fatalf("open file failed with: %s", err)
 	}
-	defer func() {
-		err := windows.Close(fileHandle)
-		if err != nil {
-			t.Logf("Error closing file handle %s: %v\n", testfilePath, err)
-		}
-	}()
+	return fileHandle
+}
 
-	if err := SetFileEA(fileHandle, testEAs); err != nil {
-		t.Fatalf("set EA for file failed: %s", err)
-	}
-
-	var readEAs []ExtendedAttribute
-	if readEAs, err = GetFileEA(fileHandle); err != nil {
-		t.Fatalf("get EA for file failed: %s", err)
-	}
-
-	if !reflect.DeepEqual(readEAs, testEAs) {
-		t.Logf("expected: %+v, found: %+v\n", testEAs, readEAs)
-		t.Fatalf("EAs read from testfile don't match")
+func closeFileHandle(t *testing.T, handle windows.Handle, path string) {
+	if err := windows.Close(handle); err != nil {
+		t.Logf("Error closing file handle %s: %v\n", path, err)
 	}
 }
 
-func TestSetGetFolderEA(t *testing.T) {
-	tempDir := t.TempDir()
-	testfolderPath := filepath.Join(tempDir, "testfolder")
-	// create temp folder
-	err := os.Mkdir(testfolderPath, os.ModeDir)
+func testSetGetEA(t *testing.T, handle windows.Handle, testEAs []ExtendedAttribute, path string) {
+	if err := SetFileEA(handle, testEAs); err != nil {
+		t.Fatalf("set EA for path %s failed: %s", path, err)
+	}
+
+	readEAs, err := GetFileEA(handle)
 	if err != nil {
-		t.Fatalf("failed to create temporary file: %s", err)
-	}
-
-	nAttrs := 3
-	testEAs := make([]ExtendedAttribute, 3)
-	// generate random extended attributes for test
-	for i := 0; i < nAttrs; i++ {
-		// EA name is automatically converted to upper case before storing, so
-		// when reading it back it returns the upper case name. To avoid test
-		// failures because of that keep the name upper cased.
-		testEAs[i].Name = fmt.Sprintf("TESTEA%d", i+1)
-		testEAs[i].Value = make([]byte, getRandomInt())
-		_, err := rand.Read(testEAs[i].Value)
-		if err != nil {
-			t.Logf("Error reading rand for file %s: %v\n", testfolderPath, err)
-		}
-	}
-
-	utf16Path := windows.StringToUTF16Ptr(testfolderPath)
-	fileAccessRightReadWriteEA := (0x8 | 0x10)
-	fileHandle, err := windows.CreateFile(utf16Path, uint32(fileAccessRightReadWriteEA), 0, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL|windows.FILE_FLAG_BACKUP_SEMANTICS, 0)
-
-	if err != nil {
-		t.Fatalf("open folder failed with: %s", err)
-	}
-	defer func() {
-		err := windows.Close(fileHandle)
-		if err != nil {
-			t.Logf("Error closing file handle %s: %v\n", testfolderPath, err)
-		}
-	}()
-
-	if err := SetFileEA(fileHandle, testEAs); err != nil {
-		t.Fatalf("set EA for folder failed: %s", err)
-	}
-
-	var readEAs []ExtendedAttribute
-	if readEAs, err = GetFileEA(fileHandle); err != nil {
-		t.Fatalf("get EA for folder failed: %s", err)
+		t.Fatalf("get EA for path %s failed: %s", path, err)
 	}
 
 	if !reflect.DeepEqual(readEAs, testEAs) {
 		t.Logf("expected: %+v, found: %+v\n", testEAs, readEAs)
-		t.Fatalf("EAs read from test folder don't match")
+		t.Fatalf("EAs read from path %s don't match", path)
+	}
+}
+
+func cleanupTestFile(t *testing.T, path string) {
+	if err := os.Remove(path); err != nil {
+		t.Logf("Error removing file %s: %v\n", path, err)
+	}
+}
+
+func cleanupTestFolder(t *testing.T, path string) {
+	if err := os.Remove(path); err != nil {
+		t.Logf("Error removing folder %s: %v\n", path, err)
 	}
 }
 

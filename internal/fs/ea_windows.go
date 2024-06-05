@@ -211,8 +211,9 @@ var (
 )
 
 const (
-	// noExtendedAttribsStatus is a constant value which indicates no extended attributes were found
-	noExtendedAttribsStatus = -1073741742
+	// STATUS_NO_EAS_ON_FILE is a constant value which indicates EAs were requested for the file but it has no EAs.
+	// Windows NTSTATUS value: STATUS_NO_EAS_ON_FILE=0xC0000052
+	STATUS_NO_EAS_ON_FILE = -1073741742
 )
 
 // GetFileEA retrieves the extended attributes for the file represented by `handle`. The
@@ -228,7 +229,7 @@ func GetFileEA(handle windows.Handle) ([]ExtendedAttribute, error) {
 	for {
 		status := getFileEA(handle, &iosb, &buf[0], uint32(bufLen), false, 0, 0, nil, true)
 
-		if status == noExtendedAttribsStatus {
+		if status == STATUS_NO_EAS_ON_FILE {
 			//If status is -1073741742, no extended attributes were found
 			return nil, nil
 		}

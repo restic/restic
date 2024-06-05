@@ -311,23 +311,21 @@ func TestRestoreExtendedAttributes(t *testing.T) {
 			test.OK(t, errors.Wrapf(err, "Error closing file for: %s", testPath))
 		}()
 
-		if len(node.ExtendedAttributes) > 0 {
-			extAttr, err := fs.GetFileEA(handle)
-			test.OK(t, errors.Wrapf(err, "Error getting extended attributes for: %s", testPath))
-			test.Equals(t, len(node.ExtendedAttributes), len(extAttr))
+		extAttr, err := fs.GetFileEA(handle)
+		test.OK(t, errors.Wrapf(err, "Error getting extended attributes for: %s", testPath))
+		test.Equals(t, len(node.ExtendedAttributes), len(extAttr))
 
-			for _, expectedExtAttr := range node.ExtendedAttributes {
-				var foundExtAttr *fs.ExtendedAttribute
-				for _, ea := range extAttr {
-					if strings.EqualFold(ea.Name, expectedExtAttr.Name) {
-						foundExtAttr = &ea
-						break
+		for _, expectedExtAttr := range node.ExtendedAttributes {
+			var foundExtAttr *fs.ExtendedAttribute
+			for _, ea := range extAttr {
+				if strings.EqualFold(ea.Name, expectedExtAttr.Name) {
+					foundExtAttr = &ea
+					break
 
-					}
 				}
-				test.Assert(t, foundExtAttr != nil, "Expected extended attribute not found")
-				test.Equals(t, expectedExtAttr.Value, foundExtAttr.Value)
 			}
+			test.Assert(t, foundExtAttr != nil, "Expected extended attribute not found")
+			test.Equals(t, expectedExtAttr.Value, foundExtAttr.Value)
 		}
 	}
 }

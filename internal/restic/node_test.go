@@ -212,11 +212,7 @@ func TestNodeRestoreAt(t *testing.T) {
 					extAttrArr := test.ExtendedAttributes
 					// Iterate through the array using pointers
 					for i := 0; i < len(extAttrArr); i++ {
-						// Get the pointer to the current element
-						namePtr := &extAttrArr[i].Name
-
-						// Modify the value through the pointer
-						*namePtr = strings.ToUpper(*namePtr)
+						extAttrArr[i].Name = strings.ToUpper(extAttrArr[i].Name)
 					}
 				}
 
