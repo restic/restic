@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"text/template"
+
+	"github.com/restic/restic/internal/ui"
 )
 
 // Table contains data for a table to be printed.
@@ -89,7 +91,7 @@ func printLine(w io.Writer, print func(io.Writer, string) error, sep string, dat
 			}
 
 			// apply padding
-			pad := widths[fieldNum] - len(v)
+			pad := widths[fieldNum] - ui.TerminalDisplayWidth(v)
 			if pad > 0 {
 				v += strings.Repeat(" ", pad)
 			}
@@ -139,16 +141,16 @@ func (t *Table) Write(w io.Writer) error {
 	columnWidths := make([]int, columns)
 	for i, desc := range t.columns {
 		for _, line := range strings.Split(desc, "\n") {
-			if columnWidths[i] < len(line) {
-				columnWidths[i] = len(desc)
+			if columnWidths[i] < ui.TerminalDisplayWidth(line) {
+				columnWidths[i] = ui.TerminalDisplayWidth(desc)
 			}
 		}
 	}
 	for _, line := range lines {
 		for i, content := range line {
 			for _, l := range strings.Split(content, "\n") {
-				if columnWidths[i] < len(l) {
-					columnWidths[i] = len(l)
+				if columnWidths[i] < ui.TerminalDisplayWidth(l) {
+					columnWidths[i] = ui.TerminalDisplayWidth(l)
 				}
 			}
 		}
@@ -159,7 +161,7 @@ func (t *Table) Write(w io.Writer) error {
 	for _, width := range columnWidths {
 		totalWidth += width
 	}
-	totalWidth += (columns - 1) * len(t.CellSeparator)
+	totalWidth += (columns - 1) * ui.TerminalDisplayWidth(t.CellSeparator)
 
 	// write header
 	if len(t.columns) > 0 {

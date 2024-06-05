@@ -8,6 +8,8 @@ import (
 	"math/bits"
 	"strconv"
 	"time"
+
+	"golang.org/x/text/width"
 )
 
 func FormatBytes(c uint64) string {
@@ -104,4 +106,25 @@ func ToJSONString(status interface{}) string {
 		panic(err)
 	}
 	return buf.String()
+}
+
+// TerminalDisplayWidth returns the number of terminal cells needed to display s
+func TerminalDisplayWidth(s string) int {
+	width := 0
+	for _, r := range s {
+		width += terminalDisplayRuneWidth(r)
+	}
+
+	return width
+}
+
+func terminalDisplayRuneWidth(r rune) int {
+	switch width.LookupRune(r).Kind() {
+	case width.EastAsianWide, width.EastAsianFullwidth:
+		return 2
+	case width.EastAsianNarrow, width.EastAsianHalfwidth, width.EastAsianAmbiguous, width.Neutral:
+		return 1
+	default:
+		return 0
+	}
 }
