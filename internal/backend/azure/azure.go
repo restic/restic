@@ -161,7 +161,7 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, er
 			return nil, errors.Wrap(err, "container.Create")
 		}
 	} else if err != nil {
-		return be, err
+		return be, errors.Wrap(err, "container.GetProperties")
 	}
 
 	return be, nil
