@@ -895,6 +895,44 @@ func TestRestorerSparseFiles(t *testing.T) {
 		len(zeros), blocks, 100*sparsity)
 }
 
+func TestRestorerSparseOverwrite(t *testing.T) {
+	baseSnapshot := Snapshot{
+		Nodes: map[string]Node{
+			"foo": File{Data: "content: new\n"},
+		},
+	}
+	var zero [14]byte
+	sparseSnapshot := Snapshot{
+		Nodes: map[string]Node{
+			"foo": File{Data: string(zero[:])},
+		},
+	}
+
+	repo := repository.TestRepository(t)
+	tempdir := filepath.Join(rtest.TempDir(t), "target")
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// base snapshot
+	sn, id := saveSnapshot(t, repo, baseSnapshot, noopGetGenericAttributes)
+	t.Logf("base snapshot saved as %v", id.Str())
+
+	res := NewRestorer(repo, sn, Options{Sparse: true})
+	err := res.RestoreTo(ctx, tempdir)
+	rtest.OK(t, err)
+
+	// sparse snapshot
+	sn, id = saveSnapshot(t, repo, sparseSnapshot, noopGetGenericAttributes)
+	t.Logf("base snapshot saved as %v", id.Str())
+
+	res = NewRestorer(repo, sn, Options{Sparse: true, Overwrite: OverwriteAlways})
+	err = res.RestoreTo(ctx, tempdir)
+	rtest.OK(t, err)
+	files, err := res.VerifyFiles(ctx, tempdir)
+	rtest.OK(t, err)
+	rtest.Equals(t, 1, files, "unexpected number of verified files")
+}
+
 func TestRestorerOverwriteBehavior(t *testing.T) {
 	baseTime := time.Now()
 	baseSnapshot := Snapshot{

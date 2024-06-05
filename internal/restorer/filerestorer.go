@@ -153,6 +153,12 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 			// in addition, a short chunk will never match r.zeroChunk which would prevent sparseness for short files
 			file.sparse = r.sparse
 		}
+		if file.state != nil {
+			// The restorer currently cannot punch new holes into an existing files.
+			// Thus sections that contained data but should be sparse after restoring
+			// the snapshot would still contain the old data resulting in a corrupt restore.
+			file.sparse = false
+		}
 
 		if err != nil {
 			// repository index is messed up, can't do anything
