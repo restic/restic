@@ -88,16 +88,13 @@ func (node Node) restoreExtendedAttributes(path string) (err error) {
 // fill extended attributes in the node. This also includes the Generic attributes for windows.
 func (node *Node) fillExtendedAttributes(path string, _ bool) (err error) {
 	var fileHandle windows.Handle
-	fileHandle, err = getFileHandleForEA(node.Type, path)
+	if fileHandle, err = getFileHandleForEA(node.Type, path); fileHandle == 0 {
+		return nil
+	}
 	if err != nil {
 		return errors.Errorf("get EA failed while opening file handle for path %v, with: %v", path, err)
 	}
-	defer func() {
-		err := windows.CloseHandle(fileHandle)
-		if err != nil {
-			debug.Log("Error closing file handle for %s: %v\n", path, err)
-		}
-	}()
+	defer closeFileHandle(fileHandle, path) // Replaced inline defer with named function call
 	//Get the windows Extended Attributes using the file handle
 	var extAtts []fs.ExtendedAttribute
 	extAtts, err = fs.GetFileEA(fileHandle)
@@ -138,20 +135,26 @@ func getFileHandleForEA(nodeType, path string) (handle windows.Handle, err error
 	return handle, err
 }
 
+// closeFileHandle safely closes a file handle and logs any errors.
+func closeFileHandle(fileHandle windows.Handle, path string) {
+	err := windows.CloseHandle(fileHandle)
+	if err != nil {
+		debug.Log("Error closing file handle for %s: %v\n", path, err)
+	}
+}
+
 // restoreExtendedAttributes handles restore of the Windows Extended Attributes to the specified path.
 // The Windows API requires setting of all the Extended Attributes in one call.
 func restoreExtendedAttributes(nodeType, path string, eas []fs.ExtendedAttribute) (err error) {
 	var fileHandle windows.Handle
-	fileHandle, err = getFileHandleForEA(nodeType, path)
+	if fileHandle, err = getFileHandleForEA(nodeType, path); fileHandle == 0 {
+		return nil
+	}
 	if err != nil {
 		return errors.Errorf("set EA failed while opening file handle for path %v, with: %v", path, err)
 	}
-	defer func() {
-		err := windows.CloseHandle(fileHandle)
-		if err != nil {
-			debug.Log("Error closing file handle for %s: %v\n", path, err)
-		}
-	}()
+	defer closeFileHandle(fileHandle, path) // Replaced inline defer with named function call
+
 	if err = fs.SetFileEA(fileHandle, eas); err != nil {
 		return errors.Errorf("set EA failed for path %v, with: %v", path, err)
 	}
