@@ -138,36 +138,34 @@ func TestSetFileEa(t *testing.T) {
 // The code below was refactored from github.com/Microsoft/go-winio/blob/a7564fd482feb903f9562a135f1317fd3b480739/ea_test.go
 // under MIT license.
 func TestSetGetFileEA(t *testing.T) {
-	testfilePath := setupTestFile(t)
-	defer cleanupTestFile(t, testfilePath)
+	testFilePath, testFile := setupTestFile(t)
+	testEAs := generateTestEAs(t, 3, testFilePath)
+	fileHandle := openFile(t, testFilePath, windows.FILE_ATTRIBUTE_NORMAL)
+	defer closeFileHandle(t, testFilePath, testFile, fileHandle)
 
-	testEAs := generateTestEAs(t, 3, testfilePath)
-	fileHandle := openFile(t, testfilePath, windows.FILE_ATTRIBUTE_NORMAL)
-	defer closeFileHandle(t, fileHandle, testfilePath)
-
-	testSetGetEA(t, fileHandle, testEAs, testfilePath)
+	testSetGetEA(t, testFilePath, fileHandle, testEAs)
 }
 
 // The code is new code and reuses code refactored from github.com/Microsoft/go-winio/blob/a7564fd482feb903f9562a135f1317fd3b480739/ea_test.go
 // under MIT license.
 func TestSetGetFolderEA(t *testing.T) {
-	testfolderPath := setupTestFolder(t)
-	defer cleanupTestFolder(t, testfolderPath)
+	testFolderPath := setupTestFolder(t)
 
-	testEAs := generateTestEAs(t, 3, testfolderPath)
-	fileHandle := openFile(t, testfolderPath, windows.FILE_ATTRIBUTE_NORMAL|windows.FILE_FLAG_BACKUP_SEMANTICS)
-	defer closeFileHandle(t, fileHandle, testfolderPath)
+	testEAs := generateTestEAs(t, 3, testFolderPath)
+	fileHandle := openFile(t, testFolderPath, windows.FILE_ATTRIBUTE_NORMAL|windows.FILE_FLAG_BACKUP_SEMANTICS)
+	defer closeFileHandle(t, testFolderPath, nil, fileHandle)
 
-	testSetGetEA(t, fileHandle, testEAs, testfolderPath)
+	testSetGetEA(t, testFolderPath, fileHandle, testEAs)
 }
 
-func setupTestFile(t *testing.T) string {
+func setupTestFile(t *testing.T) (testFilePath string, testFile *os.File) {
 	tempDir := t.TempDir()
-	testfilePath := filepath.Join(tempDir, "testfile.txt")
-	if _, err := os.Create(testfilePath); err != nil {
+	testFilePath = filepath.Join(tempDir, "testfile.txt")
+	var err error
+	if testFile, err = os.Create(testFilePath); err != nil {
 		t.Fatalf("failed to create temporary file: %s", err)
 	}
-	return testfilePath
+	return testFilePath, testFile
 }
 
 func setupTestFolder(t *testing.T) string {
@@ -191,6 +189,18 @@ func generateTestEAs(t *testing.T, nAttrs int, path string) []ExtendedAttribute 
 	return testEAs
 }
 
+func getRandomInt() int64 {
+	nBig, err := rand.Int(rand.Reader, big.NewInt(27))
+	if err != nil {
+		panic(err)
+	}
+	n := nBig.Int64()
+	if n == 0 {
+		n = getRandomInt()
+	}
+	return n
+}
+
 func openFile(t *testing.T, path string, attributes uint32) windows.Handle {
 	utf16Path := windows.StringToUTF16Ptr(path)
 	fileAccessRightReadWriteEA := uint32(0x8 | 0x10)
@@ -201,13 +211,26 @@ func openFile(t *testing.T, path string, attributes uint32) windows.Handle {
 	return fileHandle
 }
 
-func closeFileHandle(t *testing.T, handle windows.Handle, path string) {
+func closeFileHandle(t *testing.T, testfilePath string, testFile *os.File, handle windows.Handle) {
+	if testFile != nil {
+		err := testFile.Close()
+		if err != nil {
+			t.Logf("Error closing file %s: %v\n", testFile.Name(), err)
+		}
+	}
 	if err := windows.Close(handle); err != nil {
-		t.Logf("Error closing file handle %s: %v\n", path, err)
+		t.Logf("Error closing file handle %s: %v\n", testfilePath, err)
+	}
+	cleanupTestFile(t, testfilePath)
+}
+
+func cleanupTestFile(t *testing.T, path string) {
+	if err := os.Remove(path); err != nil {
+		t.Logf("Error removing file/folder %s: %v\n", path, err)
 	}
 }
 
-func testSetGetEA(t *testing.T, handle windows.Handle, testEAs []ExtendedAttribute, path string) {
+func testSetGetEA(t *testing.T, path string, handle windows.Handle, testEAs []ExtendedAttribute) {
 	if err := SetFileEA(handle, testEAs); err != nil {
 		t.Fatalf("set EA for path %s failed: %s", path, err)
 	}
@@ -221,28 +244,4 @@ func testSetGetEA(t *testing.T, handle windows.Handle, testEAs []ExtendedAttribu
 		t.Logf("expected: %+v, found: %+v\n", testEAs, readEAs)
 		t.Fatalf("EAs read from path %s don't match", path)
 	}
-}
-
-func cleanupTestFile(t *testing.T, path string) {
-	if err := os.Remove(path); err != nil {
-		t.Logf("Error removing file %s: %v\n", path, err)
-	}
-}
-
-func cleanupTestFolder(t *testing.T, path string) {
-	if err := os.Remove(path); err != nil {
-		t.Logf("Error removing folder %s: %v\n", path, err)
-	}
-}
-
-func getRandomInt() int64 {
-	nBig, err := rand.Int(rand.Reader, big.NewInt(27))
-	if err != nil {
-		panic(err)
-	}
-	n := nBig.Int64()
-	if n == 0 {
-		n = getRandomInt()
-	}
-	return n
 }
