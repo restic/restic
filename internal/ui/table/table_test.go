@@ -34,6 +34,21 @@ data: first data field
 		{
 			func(t testing.TB) *Table {
 				table := New()
+				table.AddColumn("first\ncolumn", "{{.First}}")
+				table.AddRow(struct{ First string }{"data"})
+				return table
+			},
+			`
+first
+column
+------
+data
+------
+`,
+		},
+		{
+			func(t testing.TB) *Table {
+				table := New()
 				table.AddColumn("  first column  ", "data: {{.First}}")
 				table.AddRow(struct{ First string }{"d"})
 				return table

@@ -142,7 +142,7 @@ func (t *Table) Write(w io.Writer) error {
 	for i, desc := range t.columns {
 		for _, line := range strings.Split(desc, "\n") {
 			if columnWidths[i] < ui.TerminalDisplayWidth(line) {
-				columnWidths[i] = ui.TerminalDisplayWidth(desc)
+				columnWidths[i] = ui.TerminalDisplayWidth(line)
 			}
 		}
 	}
