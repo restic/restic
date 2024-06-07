@@ -89,13 +89,14 @@ extract_docker() {
     restic_platform=$3
     out=restic_${restic_version}_linux_${restic_platform}.bz2
 
+    # requires at least docker 25.0
     docker image pull --platform "linux/${docker_platform}" ${image}:${restic_version} > /dev/null
     docker image save ${image}:${restic_version} -o docker.tar
 
     mkdir img
-    tar xvf docker.tar -C img --wildcards \*/layer.tar > /dev/null
+    tar xvf docker.tar -C img --wildcards blobs/sha256/\* > /dev/null
     rm docker.tar
-    for i in img/*/layer.tar; do
+    for i in img/blobs/sha256/*; do
         tar -xvf "$i" -C img usr/bin/restic 2> /dev/null 1>&2 || true
         if [[ -f img/usr/bin/restic ]]; then
             if [[ -f restic-docker ]]; then
