@@ -12,12 +12,13 @@ import (
 	"strings"
 
 	"cloud.google.com/go/storage"
-	"github.com/pkg/errors"
+
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/layout"
 	"github.com/restic/restic/internal/backend/location"
 	"github.com/restic/restic/internal/backend/util"
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -134,7 +135,7 @@ func Open(_ context.Context, cfg Config, rt http.RoundTripper) (backend.Backend,
 func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (backend.Backend, error) {
 	be, err := open(cfg, rt)
 	if err != nil {
-		return nil, errors.Wrap(err, "open")
+		return nil, err
 	}
 
 	// Try to determine if the bucket exists. If it does not, try to create it.
@@ -145,7 +146,7 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (backend.Back
 			// however, the client doesn't have storage.bucket.get permission
 			return be, nil
 		}
-		return nil, errors.Wrap(err, "service.Buckets.Get")
+		return nil, errors.WithStack(err)
 	}
 
 	if !exists {
@@ -155,7 +156,7 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (backend.Back
 		// Bucket doesn't exist, try to create it.
 		if err := be.bucket.Create(ctx, be.projectID, bucketAttrs); err != nil {
 			// Always an error, as the bucket definitely doesn't exist.
-			return nil, errors.Wrap(err, "service.Buckets.Insert")
+			return nil, errors.WithStack(err)
 		}
 
 	}
@@ -251,7 +252,7 @@ func (be *Backend) Save(ctx context.Context, h backend.Handle, rd backend.Rewind
 	}
 
 	if err != nil {
-		return errors.Wrap(err, "service.Objects.Insert")
+		return errors.WithStack(err)
 	}
 
 	// sanity check
@@ -298,7 +299,7 @@ func (be *Backend) Stat(ctx context.Context, h backend.Handle) (bi backend.FileI
 	attr, err := be.bucket.Object(objName).Attrs(ctx)
 
 	if err != nil {
-		return backend.FileInfo{}, errors.Wrap(err, "service.Objects.Get")
+		return backend.FileInfo{}, errors.WithStack(err)
 	}
 
 	return backend.FileInfo{Size: attr.Size, Name: h.Name}, nil
@@ -314,7 +315,7 @@ func (be *Backend) Remove(ctx context.Context, h backend.Handle) error {
 		err = nil
 	}
 
-	return errors.Wrap(err, "client.RemoveObject")
+	return errors.WithStack(err)
 }
 
 // List runs fn for each file in the backend which has the type t. When an

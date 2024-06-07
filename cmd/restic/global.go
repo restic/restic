@@ -287,7 +287,7 @@ func readPassword(in io.Reader) (password string, err error) {
 	sc := bufio.NewScanner(in)
 	sc.Scan()
 
-	return sc.Text(), errors.Wrap(err, "Scan")
+	return sc.Text(), errors.WithStack(sc.Err())
 }
 
 // readPasswordTerminal reads the password from the given reader which must be a
