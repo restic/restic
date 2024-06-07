@@ -141,16 +141,18 @@ func (t *Table) Write(w io.Writer) error {
 	columnWidths := make([]int, columns)
 	for i, desc := range t.columns {
 		for _, line := range strings.Split(desc, "\n") {
-			if columnWidths[i] < ui.TerminalDisplayWidth(line) {
-				columnWidths[i] = ui.TerminalDisplayWidth(line)
+			width := ui.TerminalDisplayWidth(line)
+			if columnWidths[i] < width {
+				columnWidths[i] = width
 			}
 		}
 	}
 	for _, line := range lines {
 		for i, content := range line {
 			for _, l := range strings.Split(content, "\n") {
-				if columnWidths[i] < ui.TerminalDisplayWidth(l) {
-					columnWidths[i] = ui.TerminalDisplayWidth(l)
+				width := ui.TerminalDisplayWidth(l)
+				if columnWidths[i] < width {
+					columnWidths[i] = width
 				}
 			}
 		}
