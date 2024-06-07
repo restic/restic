@@ -91,6 +91,12 @@ stored explicitly.
 Restoring in-place
 ------------------
 
+.. note::
+
+    Restoring data in-place can leave files in a partially restored state if the ``restore``
+    operation is interrupted. To ensure you can revert back to the previous state, create
+    a current ``backup`` before restoring a different snapshot.
+
 By default, the ``restore`` command overwrites already existing files at the target
 directory. This behavior can be configured via the ``--overwrite`` option. The following
 values are supported:
