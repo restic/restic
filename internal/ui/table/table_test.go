@@ -34,6 +34,21 @@ data: first data field
 		{
 			func(t testing.TB) *Table {
 				table := New()
+				table.AddColumn("first\ncolumn", "{{.First}}")
+				table.AddRow(struct{ First string }{"data"})
+				return table
+			},
+			`
+first
+column
+------
+data
+------
+`,
+		},
+		{
+			func(t testing.TB) *Table {
+				table := New()
 				table.AddColumn("  first column  ", "data: {{.First}}")
 				table.AddRow(struct{ First string }{"d"})
 				return table
@@ -126,7 +141,7 @@ foo        2018-08-19 22:22:22  xxx  other  /home/user/other
 					Time       string
 					Tags, Dirs []string
 				}
-				table.AddRow(data{"foo", "2018-08-19 22:22:22", []string{"work", "go"}, []string{"/home/user/work", "/home/user/go"}})
+				table.AddRow(data{"foo", "2018-08-19 22:22:22", []string{"work", "go’s"}, []string{"/home/user/work", "/home/user/go"}})
 				table.AddRow(data{"foo", "2018-08-19 22:22:22", []string{"other"}, []string{"/home/user/other"}})
 				table.AddRow(data{"foo", "2018-08-19 22:22:22", []string{"other", "bar"}, []string{"/home/user/other"}})
 				return table
@@ -135,7 +150,7 @@ foo        2018-08-19 22:22:22  xxx  other  /home/user/other
 host name  time                 zz   tags   dirs
 ------------------------------------------------------------
 foo        2018-08-19 22:22:22  xxx  work   /home/user/work
-                                     go     /home/user/go
+                                     go’s   /home/user/go
 foo        2018-08-19 22:22:22  xxx  other  /home/user/other
 foo        2018-08-19 22:22:22  xxx  other  /home/user/other
                                      bar
