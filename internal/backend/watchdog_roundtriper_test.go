@@ -23,8 +23,11 @@ func TestRead(t *testing.T) {
 	onClose := func() {
 		closed = true
 	}
+	isTimeout := func(err error) bool {
+		return false
+	}
 
-	wd := newWatchdogReadCloser(io.NopCloser(bytes.NewReader(data)), 1, kick, onClose)
+	wd := newWatchdogReadCloser(io.NopCloser(bytes.NewReader(data)), 1, kick, onClose, isTimeout)
 
 	out, err := io.ReadAll(wd)
 	rtest.OK(t, err)
@@ -196,6 +199,6 @@ func TestDownloadTimeout(t *testing.T) {
 	rtest.Equals(t, 200, resp.StatusCode, "unexpected status code")
 
 	_, err = io.ReadAll(resp.Body)
-	rtest.Equals(t, context.Canceled, err, "response download not canceled")
+	rtest.Equals(t, errRequestTimeout, err, "response download not canceled")
 	rtest.OK(t, resp.Body.Close())
 }
