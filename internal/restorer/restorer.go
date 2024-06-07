@@ -221,6 +221,9 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 
 func (res *Restorer) restoreNodeTo(ctx context.Context, node *restic.Node, target, location string) error {
 	debug.Log("restoreNode %v %v %v", node.Name, target, location)
+	if err := fs.Remove(target); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return errors.Wrap(err, "RemoveNode")
+	}
 
 	err := node.CreateAt(ctx, target, res.repo)
 	if err != nil {
@@ -242,7 +245,7 @@ func (res *Restorer) restoreNodeMetadataTo(node *restic.Node, target, location s
 }
 
 func (res *Restorer) restoreHardlinkAt(node *restic.Node, target, path, location string) error {
-	if err := fs.Remove(path); !os.IsNotExist(err) {
+	if err := fs.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return errors.Wrap(err, "RemoveCreateHardlink")
 	}
 	err := fs.Link(target, path)

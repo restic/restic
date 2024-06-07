@@ -348,11 +348,6 @@ func (node Node) writeNodeContent(ctx context.Context, repo BlobLoader, f *os.Fi
 }
 
 func (node Node) createSymlinkAt(path string) error {
-
-	if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
-		return errors.Wrap(err, "Symlink")
-	}
-
 	if err := fs.Symlink(node.LinkTarget, path); err != nil {
 		return errors.WithStack(err)
 	}

@@ -37,6 +37,11 @@ type File struct {
 	attributes *FileAttributes
 }
 
+type Symlink struct {
+	Target  string
+	ModTime time.Time
+}
+
 type Dir struct {
 	Nodes      map[string]Node
 	Mode       os.FileMode
@@ -101,6 +106,20 @@ func saveDir(t testing.TB, repo restic.BlobSaver, nodes map[string]Node, inode u
 				Inode:             fi,
 				Links:             lc,
 				GenericAttributes: getGenericAttributes(node.attributes, false),
+			})
+			rtest.OK(t, err)
+		case Symlink:
+			symlink := n.(Symlink)
+			err := tree.Insert(&restic.Node{
+				Type:       "symlink",
+				Mode:       os.ModeSymlink | 0o777,
+				ModTime:    symlink.ModTime,
+				Name:       name,
+				UID:        uint32(os.Getuid()),
+				GID:        uint32(os.Getgid()),
+				LinkTarget: symlink.Target,
+				Inode:      inode,
+				Links:      1,
 			})
 			rtest.OK(t, err)
 		case Dir:
@@ -1010,6 +1029,54 @@ func TestRestorerOverwriteBehavior(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestRestorerOverwriteSpecial(t *testing.T) {
+	baseTime := time.Now()
+	baseSnapshot := Snapshot{
+		Nodes: map[string]Node{
+			"dirtest":  Dir{ModTime: baseTime},
+			"link":     Symlink{Target: "foo", ModTime: baseTime},
+			"file":     File{Data: "content: file\n", Inode: 42, Links: 2, ModTime: baseTime},
+			"hardlink": File{Data: "content: file\n", Inode: 42, Links: 2, ModTime: baseTime},
+		},
+	}
+	overwriteSnapshot := Snapshot{
+		Nodes: map[string]Node{
+			"dirtest":  Symlink{Target: "foo", ModTime: baseTime},
+			"link":     File{Data: "content: link\n", Inode: 42, Links: 2, ModTime: baseTime.Add(time.Second)},
+			"file":     Symlink{Target: "foo2", ModTime: baseTime},
+			"hardlink": File{Data: "content: link\n", Inode: 42, Links: 2, ModTime: baseTime.Add(time.Second)},
+		},
+	}
+
+	files := map[string]string{
+		"link":     "content: link\n",
+		"hardlink": "content: link\n",
+	}
+	links := map[string]string{
+		"dirtest": "foo",
+		"file":    "foo2",
+	}
+
+	tempdir := saveSnapshotsAndOverwrite(t, baseSnapshot, overwriteSnapshot, Options{Overwrite: OverwriteAlways})
+
+	for filename, content := range files {
+		data, err := os.ReadFile(filepath.Join(tempdir, filepath.FromSlash(filename)))
+		if err != nil {
+			t.Errorf("unable to read file %v: %v", filename, err)
+			continue
+		}
+
+		if !bytes.Equal(data, []byte(content)) {
+			t.Errorf("file %v has wrong content: want %q, got %q", filename, content, data)
+		}
+	}
+	for filename, target := range links {
+		link, err := fs.Readlink(filepath.Join(tempdir, filepath.FromSlash(filename)))
+		rtest.OK(t, err)
+		rtest.Equals(t, link, target, "wrong symlink target")
 	}
 }
 
