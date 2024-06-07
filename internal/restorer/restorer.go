@@ -259,6 +259,23 @@ func (res *Restorer) restoreHardlinkAt(node *restic.Node, target, path, location
 	return res.restoreNodeMetadataTo(node, path, location)
 }
 
+func (res *Restorer) ensureDir(target string) error {
+	fi, err := fs.Lstat(target)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("failed to check for directory: %w", err)
+	}
+	if err == nil && !fi.IsDir() {
+		// try to cleanup unexpected file
+		if err := fs.Remove(target); err != nil {
+			return fmt.Errorf("failed to remove stale item: %w", err)
+		}
+	}
+
+	// create parent dir with default permissions
+	// second pass #leaveDir restores dir metadata after visiting/restoring all children
+	return fs.MkdirAll(target, 0700)
+}
+
 // RestoreTo creates the directories and files in the snapshot below dst.
 // Before an item is created, res.Filter is called.
 func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
@@ -284,17 +301,12 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 		enterDir: func(_ *restic.Node, target, location string) error {
 			debug.Log("first pass, enterDir: mkdir %q, leaveDir should restore metadata", location)
 			res.opts.Progress.AddFile(0)
-			// create dir with default permissions
-			// #leaveDir restores dir metadata after visiting all children
-			return fs.MkdirAll(target, 0700)
+			return res.ensureDir(target)
 		},
 
 		visitNode: func(node *restic.Node, target, location string) error {
 			debug.Log("first pass, visitNode: mkdir %q, leaveDir on second pass should restore metadata", location)
-			// create parent dir with default permissions
-			// second pass #leaveDir restores dir metadata after visiting/restoring all children
-			err := fs.MkdirAll(filepath.Dir(target), 0700)
-			if err != nil {
+			if err := res.ensureDir(filepath.Dir(target)); err != nil {
 				return err
 			}
 

@@ -1040,6 +1040,7 @@ func TestRestorerOverwriteSpecial(t *testing.T) {
 			"link":     Symlink{Target: "foo", ModTime: baseTime},
 			"file":     File{Data: "content: file\n", Inode: 42, Links: 2, ModTime: baseTime},
 			"hardlink": File{Data: "content: file\n", Inode: 42, Links: 2, ModTime: baseTime},
+			"newdir":   File{Data: "content: dir\n", ModTime: baseTime},
 		},
 	}
 	overwriteSnapshot := Snapshot{
@@ -1048,6 +1049,7 @@ func TestRestorerOverwriteSpecial(t *testing.T) {
 			"link":     File{Data: "content: link\n", Inode: 42, Links: 2, ModTime: baseTime.Add(time.Second)},
 			"file":     Symlink{Target: "foo2", ModTime: baseTime},
 			"hardlink": File{Data: "content: link\n", Inode: 42, Links: 2, ModTime: baseTime.Add(time.Second)},
+			"newdir":   Dir{ModTime: baseTime},
 		},
 	}
 
