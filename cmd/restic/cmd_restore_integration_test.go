@@ -58,7 +58,7 @@ func testRunRestoreIncludes(t testing.TB, gopts GlobalOptions, dir string, snaps
 	rtest.OK(t, testRunRestoreAssumeFailure(snapshotID.String(), opts, gopts))
 }
 
-func TestRestoreIncludesComplex(t *testing.T) {
+func TestRestoreIncludes(t *testing.T) {
 	testfiles := []struct {
 		path    string
 		size    uint
