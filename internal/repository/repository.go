@@ -772,6 +772,14 @@ func (r *Repository) Init(ctx context.Context, version uint, password string, ch
 	if err == nil {
 		return errors.New("repository master key and config already initialized")
 	}
+	// double check to make sure that a repository is not accidentally reinitialized
+	// if the backend somehow fails to stat the config file. An initialized repository
+	// must always contain at least one key file.
+	if err := r.List(ctx, restic.KeyFile, func(_ restic.ID, _ int64) error {
+		return errors.New("repository already contains keys")
+	}); err != nil {
+		return err
+	}
 
 	cfg, err := restic.CreateConfig(version)
 	if err != nil {

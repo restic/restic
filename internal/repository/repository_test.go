@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -456,4 +457,20 @@ func TestListPack(t *testing.T) {
 	rtest.Assert(t, len(blobs) == 1 && blobs[0].ID == id, "unexpected blobs in pack: %v", blobs)
 
 	rtest.Assert(t, !c.Has(backend.Handle{Type: restic.PackFile, Name: packID.String()}), "tree pack should no longer be cached as ListPack does not set IsMetadata in the backend.Handle")
+}
+
+func TestNoDoubleInit(t *testing.T) {
+	r, be := repository.TestRepositoryWithVersion(t, restic.StableRepoVersion)
+
+	repo, err := repository.New(be, repository.Options{})
+	rtest.OK(t, err)
+
+	pol := r.Config().ChunkerPolynomial
+	err = repo.Init(context.TODO(), r.Config().Version, test.TestPassword, &pol)
+	rtest.Assert(t, strings.Contains(err.Error(), "repository master key and config already initialized"), "expected config exist error, got %q", err)
+
+	// must also prevent init if only keys exist
+	rtest.OK(t, be.Remove(context.TODO(), backend.Handle{Type: backend.ConfigFile}))
+	err = repo.Init(context.TODO(), r.Config().Version, test.TestPassword, &pol)
+	rtest.Assert(t, strings.Contains(err.Error(), "repository already contains keys"), "expected already contains keys error, got %q", err)
 }
