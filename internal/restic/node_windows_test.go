@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"testing"
 
@@ -263,5 +264,68 @@ func TestNewGenericAttributeType(t *testing.T) {
 		test.OK(t, err)
 		// Since this GenericAttribute is unknown to this version of the software, it will not get set on the file.
 		test.Assert(t, len(ua) == 0, "Unkown attributes: %s found for path: %s", ua, testPath)
+	}
+}
+
+func TestRestoreExtendedAttributes(t *testing.T) {
+	t.Parallel()
+	tempDir := t.TempDir()
+	expectedNodes := []Node{
+		{
+			Name:       "testfile",
+			Type:       "file",
+			Mode:       0644,
+			ModTime:    parseTime("2005-05-14 21:07:03.111"),
+			AccessTime: parseTime("2005-05-14 21:07:04.222"),
+			ChangeTime: parseTime("2005-05-14 21:07:05.333"),
+			ExtendedAttributes: []ExtendedAttribute{
+				{"user.foo", []byte("bar")},
+			},
+		},
+		{
+			Name:       "testdirectory",
+			Type:       "dir",
+			Mode:       0755,
+			ModTime:    parseTime("2005-05-14 21:07:03.111"),
+			AccessTime: parseTime("2005-05-14 21:07:04.222"),
+			ChangeTime: parseTime("2005-05-14 21:07:05.333"),
+			ExtendedAttributes: []ExtendedAttribute{
+				{"user.foo", []byte("bar")},
+			},
+		},
+	}
+	for _, testNode := range expectedNodes {
+		testPath, node := restoreAndGetNode(t, tempDir, testNode, false)
+
+		var handle windows.Handle
+		var err error
+		utf16Path := windows.StringToUTF16Ptr(testPath)
+		if node.Type == "file" {
+			handle, err = windows.CreateFile(utf16Path, windows.FILE_READ_EA, 0, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL, 0)
+		} else if node.Type == "dir" {
+			handle, err = windows.CreateFile(utf16Path, windows.FILE_READ_EA, 0, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL|windows.FILE_FLAG_BACKUP_SEMANTICS, 0)
+		}
+		test.OK(t, errors.Wrapf(err, "Error opening file/directory for: %s", testPath))
+		defer func() {
+			err := windows.Close(handle)
+			test.OK(t, errors.Wrapf(err, "Error closing file for: %s", testPath))
+		}()
+
+		extAttr, err := fs.GetFileEA(handle)
+		test.OK(t, errors.Wrapf(err, "Error getting extended attributes for: %s", testPath))
+		test.Equals(t, len(node.ExtendedAttributes), len(extAttr))
+
+		for _, expectedExtAttr := range node.ExtendedAttributes {
+			var foundExtAttr *fs.ExtendedAttribute
+			for _, ea := range extAttr {
+				if strings.EqualFold(ea.Name, expectedExtAttr.Name) {
+					foundExtAttr = &ea
+					break
+
+				}
+			}
+			test.Assert(t, foundExtAttr != nil, "Expected extended attribute not found")
+			test.Equals(t, expectedExtAttr.Value, foundExtAttr.Value)
+		}
 	}
 }

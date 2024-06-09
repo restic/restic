@@ -1,0 +1,5 @@
+Enhancement: Back up and restore Extended Attributes on Windows NTFS
+
+Restic now backs up and restores Extended Attributes on Windows NTFS when backing up files and folders.
+
+https://github.com/restic/restic/pull/4807

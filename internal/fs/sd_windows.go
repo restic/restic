@@ -346,7 +346,7 @@ func getPrivilegeName(luid uint64) string {
 	return string(utf16.Decode(displayNameBuffer[:displayBufSize]))
 }
 
-// The functions below are copied over from https://github.com/microsoft/go-winio/blob/main/zsyscall_windows.go
+// The functions below are copied over from https://github.com/microsoft/go-winio/blob/main/zsyscall_windows.go under MIT license.
 
 // This windows api always returns an error even in case of success, warnings (partial success) and error cases.
 //
@@ -424,7 +424,7 @@ func _lookupPrivilegeValue(systemName *uint16, name *uint16, luid *uint64) (err 
 	return
 }
 
-// The code below was copied from https://github.com/microsoft/go-winio/blob/main/tools/mkwinsyscall/mkwinsyscall.go
+// The code below was copied from https://github.com/microsoft/go-winio/blob/main/tools/mkwinsyscall/mkwinsyscall.go under MIT license.
 
 // errnoErr returns common boxed Errno values, to prevent
 // allocations at runtime.
