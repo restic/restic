@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"testing"
 	"time"
@@ -58,6 +59,67 @@ func testRunRestoreIncludes(t testing.TB, gopts GlobalOptions, dir string, snaps
 	rtest.OK(t, testRunRestoreAssumeFailure(snapshotID.String(), opts, gopts))
 }
 
+func testRunRestoreIncludesFromFile(t testing.TB, gopts GlobalOptions, dir string, snapshotID restic.ID, includesFile string) {
+	opts := RestoreOptions{
+		Target: dir,
+	}
+	opts.IncludeFiles = []string{includesFile}
+
+	rtest.OK(t, testRunRestoreAssumeFailure(snapshotID.String(), opts, gopts))
+}
+
+func testRunRestoreExcludesFromFile(t testing.TB, gopts GlobalOptions, dir string, snapshotID restic.ID, excludesFile string) {
+	opts := RestoreOptions{
+		Target: dir,
+	}
+	opts.ExcludeFiles = []string{excludesFile}
+
+	rtest.OK(t, testRunRestoreAssumeFailure(snapshotID.String(), opts, gopts))
+}
+
+func TestRestoreMustFailWhenUsingBothIncludesAndExcludes(t *testing.T) {
+	testfiles := []struct {
+		path string
+		size uint
+	}{
+		{"dir1/include_me.txt", 100},
+	}
+
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
+
+	testRunInit(t, env.gopts)
+
+	// Create test files and directories
+	for _, testFile := range testfiles {
+		fullPath := filepath.Join(env.testdata, testFile.path)
+		rtest.OK(t, os.MkdirAll(filepath.Dir(fullPath), 0755))
+		rtest.OK(t, appendRandomData(fullPath, testFile.size))
+	}
+
+	opts := BackupOptions{}
+	// Perform backup
+	testRunBackup(t, filepath.Dir(env.testdata), []string{filepath.Base(env.testdata)}, opts, env.gopts)
+	testRunCheck(t, env.gopts)
+
+	snapshotID := testListSnapshots(t, env.gopts, 1)[0]
+
+	// Add both include and exclude patterns
+	includePatterns := []string{"dir1/*include_me.txt", "dir2/**", "dir4/**/*_me.txt"}
+	excludePatterns := []string{"dir1/*include_me.txt", "dir2/**", "dir4/**/*_me.txt"}
+
+	restoredir := filepath.Join(env.base, "restore")
+
+	restoreOpts := RestoreOptions{
+		Target: restoredir,
+	}
+	restoreOpts.Includes = includePatterns
+	restoreOpts.Excludes = excludePatterns
+
+	err := testRunRestoreAssumeFailure(snapshotID.String(), restoreOpts, env.gopts)
+	rtest.Assert(t, err != nil, "restore must fail if include and exclude patterns are provided")
+}
+
 func TestRestoreIncludes(t *testing.T) {
 	testfiles := []struct {
 		path    string
@@ -97,16 +159,33 @@ func TestRestoreIncludes(t *testing.T) {
 	restoredir := filepath.Join(env.base, "restore")
 	testRunRestoreIncludes(t, env.gopts, restoredir, snapshotID, includePatterns)
 
-	// Check that only the included files are restored
-	for _, testFile := range testfiles {
-		restoredFilePath := filepath.Join(restoredir, "testdata", testFile.path)
-		_, err := os.Stat(restoredFilePath)
-		if testFile.include {
-			rtest.OK(t, err)
-		} else {
-			rtest.Assert(t, os.IsNotExist(err), "File %s should not have been restored", testFile.path)
+	testRestoreFileInclusions := func(t *testing.T, env *testEnvironment, includePatterns []string) {
+		// Check that only the included files are restored
+		for _, testFile := range testfiles {
+			restoredFilePath := filepath.Join(restoredir, "testdata", testFile.path)
+			_, err := os.Stat(restoredFilePath)
+			if testFile.include {
+				rtest.OK(t, err)
+			} else {
+				rtest.Assert(t, os.IsNotExist(err), "File %s should not have been restored", testFile.path)
+			}
 		}
 	}
+
+	testRestoreFileInclusions(t, env, includePatterns)
+
+	// Create an include file with some patterns
+	patternsFile := env.base + "/patternsFile"
+	fileErr := os.WriteFile(patternsFile, []byte(strings.Join(includePatterns, "\n")), 0644)
+	if fileErr != nil {
+		t.Fatalf("Could not write include file: %v", fileErr)
+	}
+
+	restoredir = filepath.Join(env.base, "restore-include-from-file")
+
+	testRunRestoreIncludesFromFile(t, env.gopts, restoredir, snapshotID, patternsFile)
+
+	testRestoreFileInclusions(t, env, includePatterns)
 }
 
 func TestRestoreFilter(t *testing.T) {
@@ -144,19 +223,38 @@ func TestRestoreFilter(t *testing.T) {
 		rtest.OK(t, testFileSize(filepath.Join(env.base, "restore0", "testdata", testFile.name), int64(testFile.size)))
 	}
 
-	for i, pat := range []string{"*.c", "*.exe", "*", "*file3*"} {
-		base := filepath.Join(env.base, fmt.Sprintf("restore%d", i+1))
-		testRunRestoreExcludes(t, env.gopts, base, snapshotID, []string{pat})
-		for _, testFile := range testfiles {
-			err := testFileSize(filepath.Join(base, "testdata", testFile.name), int64(testFile.size))
-			if ok, _ := filter.Match(pat, filepath.Base(testFile.name)); !ok {
-				rtest.OK(t, err)
-			} else {
-				rtest.Assert(t, os.IsNotExist(err),
-					"expected %v to not exist in restore step %v, but it exists, err %v", testFile.name, i+1, err)
+	excludePatterns := []string{"*.c", "*.exe", "*", "*file3*"}
+
+	testRestoreFileExclusions := func(t *testing.T, env *testEnvironment, excludePatterns []string) {
+		for i, pat := range excludePatterns {
+			base := filepath.Join(env.base, fmt.Sprintf("restore%d", i+1))
+			testRunRestoreExcludes(t, env.gopts, base, snapshotID, []string{pat})
+			for _, testFile := range testfiles {
+				err := testFileSize(filepath.Join(base, "testdata", testFile.name), int64(testFile.size))
+				if ok, _ := filter.Match(pat, filepath.Base(testFile.name)); !ok {
+					rtest.OK(t, err)
+				} else {
+					rtest.Assert(t, os.IsNotExist(err),
+						"expected %v to not exist in restore step %v, but it exists, err %v", testFile.name, i+1, err)
+				}
 			}
 		}
 	}
+
+	testRestoreFileExclusions(t, env, excludePatterns)
+
+	// Create an include file with some patterns
+	patternsFile := env.base + "/patternsFile"
+	fileErr := os.WriteFile(patternsFile, []byte(strings.Join(excludePatterns, "\n")), 0644)
+	if fileErr != nil {
+		t.Fatalf("Could not write include file: %v", fileErr)
+	}
+
+	restoredir := filepath.Join(env.base, "restore-exclude-from-file")
+
+	testRunRestoreExcludesFromFile(t, env.gopts, restoredir, snapshotID, patternsFile)
+
+	testRestoreFileExclusions(t, env, excludePatterns)
 }
 
 func TestRestore(t *testing.T) {

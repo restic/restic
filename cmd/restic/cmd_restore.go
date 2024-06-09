@@ -70,9 +70,6 @@ func init() {
 func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	term *termstatus.Terminal, args []string) error {
 
-	hasExcludes := len(opts.Excludes) > 0 || len(opts.InsensitiveExcludes) > 0
-	hasIncludes := len(opts.Includes) > 0 || len(opts.InsensitiveIncludes) > 0
-
 	excludePatternFns, err := opts.excludePatternOptions.CollectPatterns()
 	if err != nil {
 		return err
@@ -82,6 +79,9 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	if err != nil {
 		return err
 	}
+
+	hasExcludes := len(excludePatternFns) > 0
+	hasIncludes := len(includePatternFns) > 0
 
 	switch {
 	case len(args) == 0:
@@ -153,6 +153,13 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		matched := false
 		for _, rejectFn := range excludePatternFns {
 			matched = matched || rejectFn(item)
+
+			// implementing a short-circuit here to improve the performance
+			// to prevent additional pattern matching once the first pattern
+			// matches.
+			if matched {
+				break
+			}
 		}
 		// An exclude filter is basically a 'wildcard but foo',
 		// so even if a childMayMatch, other children of a dir may not,
@@ -171,9 +178,12 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 			matched, childMayMatch := includeFn(item)
 			selectedForRestore = selectedForRestore || matched
 			childMayBeSelected = childMayBeSelected || childMayMatch
-		}
+			childMayBeSelected = childMayBeSelected && node.Type == "dir"
 
-		childMayBeSelected = childMayBeSelected && node.Type == "dir"
+			if selectedForRestore || childMayBeSelected {
+				break
+			}
+		}
 
 		return selectedForRestore, childMayBeSelected
 	}
