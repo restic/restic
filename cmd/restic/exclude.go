@@ -443,7 +443,7 @@ func initExcludePatternOptions(f *pflag.FlagSet, opts *excludePatternOptions) {
 	f.StringArrayVarP(&opts.Excludes, "exclude", "e", nil, "exclude a `pattern` (can be specified multiple times)")
 	f.StringArrayVar(&opts.InsensitiveExcludes, "iexclude", nil, "same as --exclude `pattern` but ignores the casing of filenames")
 	f.StringArrayVar(&opts.ExcludeFiles, "exclude-file", nil, "read exclude patterns from a `file` (can be specified multiple times)")
-	f.StringArrayVar(&opts.InsensitiveExcludeFiles, "iexclude-file", nil, "same as --exclude-file but ignores casing of filenames in patterns")
+	f.StringArrayVar(&opts.InsensitiveExcludeFiles, "iexclude-file", nil, "same as --exclude-file but ignores casing of `file`names in patterns")
 }
 
 func (opts *excludePatternOptions) Empty() bool {

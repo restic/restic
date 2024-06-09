@@ -178,12 +178,12 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 			matched, childMayMatch := includeFn(item)
 			selectedForRestore = selectedForRestore || matched
 			childMayBeSelected = childMayBeSelected || childMayMatch
-			childMayBeSelected = childMayBeSelected && node.Type == "dir"
 
-			if selectedForRestore || childMayBeSelected {
+			if selectedForRestore && childMayBeSelected {
 				break
 			}
 		}
+		childMayBeSelected = childMayBeSelected && node.Type == "dir"
 
 		return selectedForRestore, childMayBeSelected
 	}
