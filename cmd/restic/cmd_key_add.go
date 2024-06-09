@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
-	"strings"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
@@ -121,14 +119,6 @@ func getNewPassword(ctx context.Context, gopts GlobalOptions, newPasswordFile st
 	return ReadPasswordTwice(ctx, newopts,
 		"enter new password: ",
 		"enter password again: ")
-}
-
-func loadPasswordFromFile(pwdFile string) (string, error) {
-	s, err := os.ReadFile(pwdFile)
-	if os.IsNotExist(err) {
-		return "", errors.Fatalf("%s does not exist", pwdFile)
-	}
-	return strings.TrimSpace(string(s)), errors.Wrap(err, "Readfile")
 }
 
 func switchToNewKeyAndRemoveIfBroken(ctx context.Context, repo *repository.Repository, key *repository.Key, pw string) error {

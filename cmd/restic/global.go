@@ -268,11 +268,7 @@ func resolvePassword(opts GlobalOptions, envStr string) (string, error) {
 		return (strings.TrimSpace(string(output))), nil
 	}
 	if opts.PasswordFile != "" {
-		s, err := textfile.Read(opts.PasswordFile)
-		if errors.Is(err, os.ErrNotExist) {
-			return "", errors.Fatalf("%s does not exist", opts.PasswordFile)
-		}
-		return strings.TrimSpace(string(s)), errors.Wrap(err, "Readfile")
+		return loadPasswordFromFile(opts.PasswordFile)
 	}
 
 	if pwd := os.Getenv(envStr); pwd != "" {
@@ -280,6 +276,16 @@ func resolvePassword(opts GlobalOptions, envStr string) (string, error) {
 	}
 
 	return "", nil
+}
+
+// loadPasswordFromFile loads a password from a file while stripping a BOM and
+// converting the password to UTF-8.
+func loadPasswordFromFile(pwdFile string) (string, error) {
+	s, err := textfile.Read(pwdFile)
+	if errors.Is(err, os.ErrNotExist) {
+		return "", errors.Fatalf("%s does not exist", pwdFile)
+	}
+	return strings.TrimSpace(string(s)), errors.Wrap(err, "Readfile")
 }
 
 // readPassword reads the password from the given reader directly.
