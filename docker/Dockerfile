@@ -11,7 +11,7 @@ RUN go run build.go
 
 FROM alpine:latest AS restic
 
-RUN apk add --no-cache ca-certificates fuse openssh-client tzdata jq
+RUN apk add --no-cache ca-certificates fuse openssh-client tzdata jq rclone
 
 COPY --from=builder /go/src/github.com/restic/restic/restic /usr/bin
 
