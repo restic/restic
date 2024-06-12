@@ -343,7 +343,7 @@ func TestRestorer(t *testing.T) {
 			sn, id := saveSnapshot(t, repo, test.Snapshot, noopGetGenericAttributes)
 			t.Logf("snapshot saved as %v", id.Str())
 
-			res := NewRestorer(repo, sn, false, nil)
+			res := NewRestorer(repo, sn, Options{})
 
 			tempdir := rtest.TempDir(t)
 			// make sure we're creating a new subdir of the tempdir
@@ -460,7 +460,7 @@ func TestRestorerRelative(t *testing.T) {
 			sn, id := saveSnapshot(t, repo, test.Snapshot, noopGetGenericAttributes)
 			t.Logf("snapshot saved as %v", id.Str())
 
-			res := NewRestorer(repo, sn, false, nil)
+			res := NewRestorer(repo, sn, Options{})
 
 			tempdir := rtest.TempDir(t)
 			cleanup := rtest.Chdir(t, tempdir)
@@ -689,7 +689,7 @@ func TestRestorerTraverseTree(t *testing.T) {
 			repo := repository.TestRepository(t)
 			sn, _ := saveSnapshot(t, repo, test.Snapshot, noopGetGenericAttributes)
 
-			res := NewRestorer(repo, sn, false, nil)
+			res := NewRestorer(repo, sn, Options{})
 
 			res.SelectFilter = test.Select
 
@@ -765,7 +765,7 @@ func TestRestorerConsistentTimestampsAndPermissions(t *testing.T) {
 		},
 	}, noopGetGenericAttributes)
 
-	res := NewRestorer(repo, sn, false, nil)
+	res := NewRestorer(repo, sn, Options{})
 
 	res.SelectFilter = func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
 		switch filepath.ToSlash(item) {
@@ -820,7 +820,7 @@ func TestVerifyCancel(t *testing.T) {
 	repo := repository.TestRepository(t)
 	sn, _ := saveSnapshot(t, repo, snapshot, noopGetGenericAttributes)
 
-	res := NewRestorer(repo, sn, false, nil)
+	res := NewRestorer(repo, sn, Options{})
 
 	tempdir := rtest.TempDir(t)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -862,7 +862,7 @@ func TestRestorerSparseFiles(t *testing.T) {
 		archiver.SnapshotOptions{})
 	rtest.OK(t, err)
 
-	res := NewRestorer(repo, sn, true, nil)
+	res := NewRestorer(repo, sn, Options{Sparse: true})
 
 	tempdir := rtest.TempDir(t)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -892,4 +892,93 @@ func TestRestorerSparseFiles(t *testing.T) {
 	// file system as well as the OS.
 	t.Logf("wrote %d zeros as %d blocks, %.1f%% sparse",
 		len(zeros), blocks, 100*sparsity)
+}
+
+func TestRestorerOverwriteBehavior(t *testing.T) {
+	baseTime := time.Now()
+	baseSnapshot := Snapshot{
+		Nodes: map[string]Node{
+			"foo": File{Data: "content: foo\n", ModTime: baseTime},
+			"dirtest": Dir{
+				Nodes: map[string]Node{
+					"file": File{Data: "content: file\n", ModTime: baseTime},
+				},
+				ModTime: baseTime,
+			},
+		},
+	}
+	overwriteSnapshot := Snapshot{
+		Nodes: map[string]Node{
+			"foo": File{Data: "content: new\n", ModTime: baseTime.Add(time.Second)},
+			"dirtest": Dir{
+				Nodes: map[string]Node{
+					"file": File{Data: "content: file2\n", ModTime: baseTime.Add(-time.Second)},
+				},
+			},
+		},
+	}
+
+	var tests = []struct {
+		Overwrite OverwriteBehavior
+		Files     map[string]string
+	}{
+		{
+			Overwrite: OverwriteAlways,
+			Files: map[string]string{
+				"foo":          "content: new\n",
+				"dirtest/file": "content: file2\n",
+			},
+		},
+		{
+			Overwrite: OverwriteIfNewer,
+			Files: map[string]string{
+				"foo":          "content: new\n",
+				"dirtest/file": "content: file\n",
+			},
+		},
+		{
+			Overwrite: OverwriteNever,
+			Files: map[string]string{
+				"foo":          "content: foo\n",
+				"dirtest/file": "content: file\n",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			repo := repository.TestRepository(t)
+			tempdir := filepath.Join(rtest.TempDir(t), "target")
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			// base snapshot
+			sn, id := saveSnapshot(t, repo, baseSnapshot, noopGetGenericAttributes)
+			t.Logf("base snapshot saved as %v", id.Str())
+
+			res := NewRestorer(repo, sn, Options{})
+			rtest.OK(t, res.RestoreTo(ctx, tempdir))
+
+			// overwrite snapshot
+			sn, id = saveSnapshot(t, repo, overwriteSnapshot, noopGetGenericAttributes)
+			t.Logf("overwrite snapshot saved as %v", id.Str())
+			res = NewRestorer(repo, sn, Options{Overwrite: test.Overwrite})
+			rtest.OK(t, res.RestoreTo(ctx, tempdir))
+
+			_, err := res.VerifyFiles(ctx, tempdir)
+			rtest.OK(t, err)
+
+			for filename, content := range test.Files {
+				data, err := os.ReadFile(filepath.Join(tempdir, filepath.FromSlash(filename)))
+				if err != nil {
+					t.Errorf("unable to read file %v: %v", filename, err)
+					continue
+				}
+
+				if !bytes.Equal(data, []byte(content)) {
+					t.Errorf("file %v has wrong content: want %q, got %q", filename, content, data)
+				}
+			}
+		})
+	}
 }

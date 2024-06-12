@@ -2,6 +2,7 @@ package restorer
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync/atomic"
@@ -17,11 +18,13 @@ import (
 
 // Restorer is used to restore a snapshot to a directory.
 type Restorer struct {
-	repo   restic.Repository
-	sn     *restic.Snapshot
-	sparse bool
+	repo      restic.Repository
+	sn        *restic.Snapshot
+	sparse    bool
+	progress  *restoreui.Progress
+	overwrite OverwriteBehavior
 
-	progress *restoreui.Progress
+	fileList map[string]struct{}
 
 	Error        func(location string, err error) error
 	Warn         func(message string)
@@ -30,15 +33,66 @@ type Restorer struct {
 
 var restorerAbortOnAllErrors = func(_ string, err error) error { return err }
 
+type Options struct {
+	Sparse    bool
+	Progress  *restoreui.Progress
+	Overwrite OverwriteBehavior
+}
+
+type OverwriteBehavior int
+
+// Constants for different overwrite behavior
+const (
+	OverwriteAlways  OverwriteBehavior = 0
+	OverwriteIfNewer OverwriteBehavior = 1
+	OverwriteNever   OverwriteBehavior = 2
+	OverwriteInvalid OverwriteBehavior = 3
+)
+
+// Set implements the method needed for pflag command flag parsing.
+func (c *OverwriteBehavior) Set(s string) error {
+	switch s {
+	case "always":
+		*c = OverwriteAlways
+	case "if-newer":
+		*c = OverwriteIfNewer
+	case "never":
+		*c = OverwriteNever
+	default:
+		*c = OverwriteInvalid
+		return fmt.Errorf("invalid overwrite behavior %q, must be one of (always|if-newer|never)", s)
+	}
+
+	return nil
+}
+
+func (c *OverwriteBehavior) String() string {
+	switch *c {
+	case OverwriteAlways:
+		return "always"
+	case OverwriteIfNewer:
+		return "if-newer"
+	case OverwriteNever:
+		return "never"
+	default:
+		return "invalid"
+	}
+
+}
+func (c *OverwriteBehavior) Type() string {
+	return "behavior"
+}
+
 // NewRestorer creates a restorer preloaded with the content from the snapshot id.
-func NewRestorer(repo restic.Repository, sn *restic.Snapshot, sparse bool,
-	progress *restoreui.Progress) *Restorer {
+func NewRestorer(repo restic.Repository, sn *restic.Snapshot, opts Options) *Restorer {
 	r := &Restorer{
 		repo:         repo,
-		sparse:       sparse,
+		sparse:       opts.Sparse,
+		progress:     opts.Progress,
+		overwrite:    opts.Overwrite,
+		fileList:     make(map[string]struct{}),
 		Error:        restorerAbortOnAllErrors,
 		SelectFilter: func(string, string, *restic.Node) (bool, bool) { return true, true },
-		progress:     progress,
 		sn:           sn,
 	}
 
@@ -170,10 +224,7 @@ func (res *Restorer) restoreNodeTo(ctx context.Context, node *restic.Node, targe
 		return err
 	}
 
-	if res.progress != nil {
-		res.progress.AddProgress(location, 0, 0)
-	}
-
+	res.progress.AddProgress(location, 0, 0)
 	return res.restoreNodeMetadataTo(node, target, location)
 }
 
@@ -195,37 +246,10 @@ func (res *Restorer) restoreHardlinkAt(node *restic.Node, target, path, location
 		return errors.WithStack(err)
 	}
 
-	if res.progress != nil {
-		res.progress.AddProgress(location, 0, 0)
-	}
+	res.progress.AddProgress(location, 0, 0)
 
 	// TODO investigate if hardlinks have separate metadata on any supported system
 	return res.restoreNodeMetadataTo(node, path, location)
-}
-
-func (res *Restorer) restoreEmptyFileAt(node *restic.Node, target, location string) error {
-	wr, err := os.OpenFile(target, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
-	if fs.IsAccessDenied(err) {
-		// If file is readonly, clear the readonly flag by resetting the
-		// permissions of the file and try again
-		// as the metadata will be set again in the second pass and the
-		// readonly flag will be applied again if needed.
-		if err = fs.ResetPermissions(target); err != nil {
-			return err
-		}
-		if wr, err = os.OpenFile(target, os.O_TRUNC|os.O_WRONLY, 0600); err != nil {
-			return err
-		}
-	}
-	if err = wr.Close(); err != nil {
-		return err
-	}
-
-	if res.progress != nil {
-		res.progress.AddProgress(location, 0, 0)
-	}
-
-	return res.restoreNodeMetadataTo(node, target, location)
 }
 
 // RestoreTo creates the directories and files in the snapshot below dst.
@@ -250,9 +274,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 	_, err = res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
 		enterDir: func(_ *restic.Node, target, location string) error {
 			debug.Log("first pass, enterDir: mkdir %q, leaveDir should restore metadata", location)
-			if res.progress != nil {
-				res.progress.AddFile(0)
-			}
+			res.progress.AddFile(0)
 			// create dir with default permissions
 			// #leaveDir restores dir metadata after visiting all children
 			return fs.MkdirAll(target, 0700)
@@ -268,37 +290,25 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 			}
 
 			if node.Type != "file" {
-				if res.progress != nil {
-					res.progress.AddFile(0)
-				}
+				res.progress.AddFile(0)
 				return nil
-			}
-
-			if node.Size == 0 {
-				if res.progress != nil {
-					res.progress.AddFile(node.Size)
-				}
-				return nil // deal with empty files later
 			}
 
 			if node.Links > 1 {
 				if idx.Has(node.Inode, node.DeviceID) {
-					if res.progress != nil {
-						// a hardlinked file does not increase the restore size
-						res.progress.AddFile(0)
-					}
+					// a hardlinked file does not increase the restore size
+					res.progress.AddFile(0)
 					return nil
 				}
 				idx.Add(node.Inode, node.DeviceID, location)
 			}
 
-			if res.progress != nil {
+			return res.withOverwriteCheck(node, target, false, func() error {
 				res.progress.AddFile(node.Size)
-			}
-
-			filerestorer.addFile(location, node.Content, int64(node.Size))
-
-			return nil
+				filerestorer.addFile(location, node.Content, int64(node.Size))
+				res.trackFile(location)
+				return nil
+			})
 		},
 	})
 	if err != nil {
@@ -317,32 +327,79 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 		visitNode: func(node *restic.Node, target, location string) error {
 			debug.Log("second pass, visitNode: restore node %q", location)
 			if node.Type != "file" {
-				return res.restoreNodeTo(ctx, node, target, location)
-			}
-
-			// create empty files, but not hardlinks to empty files
-			if node.Size == 0 && (node.Links < 2 || !idx.Has(node.Inode, node.DeviceID)) {
-				if node.Links > 1 {
-					idx.Add(node.Inode, node.DeviceID, location)
-				}
-				return res.restoreEmptyFileAt(node, target, location)
+				return res.withOverwriteCheck(node, target, false, func() error {
+					return res.restoreNodeTo(ctx, node, target, location)
+				})
 			}
 
 			if idx.Has(node.Inode, node.DeviceID) && idx.Value(node.Inode, node.DeviceID) != location {
-				return res.restoreHardlinkAt(node, filerestorer.targetPath(idx.Value(node.Inode, node.DeviceID)), target, location)
+				return res.withOverwriteCheck(node, target, true, func() error {
+					return res.restoreHardlinkAt(node, filerestorer.targetPath(idx.Value(node.Inode, node.DeviceID)), target, location)
+				})
 			}
 
-			return res.restoreNodeMetadataTo(node, target, location)
+			if res.hasRestoredFile(location) {
+				return res.restoreNodeMetadataTo(node, target, location)
+			}
+			// don't touch skipped files
+			return nil
 		},
 		leaveDir: func(node *restic.Node, target, location string) error {
 			err := res.restoreNodeMetadataTo(node, target, location)
-			if err == nil && res.progress != nil {
+			if err == nil {
 				res.progress.AddProgress(location, 0, 0)
 			}
 			return err
 		},
 	})
 	return err
+}
+
+func (res *Restorer) trackFile(location string) {
+	res.fileList[location] = struct{}{}
+}
+
+func (res *Restorer) hasRestoredFile(location string) bool {
+	_, ok := res.fileList[location]
+	return ok
+}
+
+func (res *Restorer) withOverwriteCheck(node *restic.Node, target string, isHardlink bool, cb func() error) error {
+	overwrite, err := shouldOverwrite(res.overwrite, node, target)
+	if err != nil {
+		return err
+	} else if !overwrite {
+		size := node.Size
+		if isHardlink {
+			size = 0
+		}
+		res.progress.AddSkippedFile(size)
+		return nil
+	}
+	return cb()
+}
+
+func shouldOverwrite(overwrite OverwriteBehavior, node *restic.Node, destination string) (bool, error) {
+	if overwrite == OverwriteAlways {
+		return true, nil
+	}
+
+	fi, err := fs.Lstat(destination)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return true, nil
+		}
+		return false, err
+	}
+
+	if overwrite == OverwriteIfNewer {
+		// return if node is newer
+		return node.ModTime.After(fi.ModTime()), nil
+	} else if overwrite == OverwriteNever {
+		// file exists
+		return false, nil
+	}
+	panic("unknown overwrite behavior")
 }
 
 // Snapshot returns the snapshot this restorer is configured to use.
@@ -375,8 +432,8 @@ func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
 		defer close(work)
 
 		_, err := res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
-			visitNode: func(node *restic.Node, target, _ string) error {
-				if node.Type != "file" {
+			visitNode: func(node *restic.Node, target, location string) error {
+				if node.Type != "file" || !res.hasRestoredFile(location) {
 					return nil
 				}
 				select {

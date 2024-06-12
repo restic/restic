@@ -269,7 +269,7 @@ func setup(t *testing.T, nodesMap map[string]Node) *Restorer {
 	sn, _ := saveSnapshot(t, repo, Snapshot{
 		Nodes: nodesMap,
 	}, getFileAttributes)
-	res := NewRestorer(repo, sn, false, nil)
+	res := NewRestorer(repo, sn, Options{})
 	return res
 }
 

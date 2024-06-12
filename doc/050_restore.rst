@@ -88,6 +88,15 @@ disk space. Note that the exact location of the holes can differ from those in
 the original file, as their location is determined while restoring and is not
 stored explicitly.
 
+Restoring in-place
+------------------
+
+By default, the ``restore`` command overwrites already existing files in the target
+directory. This behavior can be configured via the ``--overwrite`` option. The
+default is ``--overwrite always``. To only overwrite existing files if the file in
+the snapshot is newer, use ``--overwrite if-newer``. To never overwrite existing files,
+use ``--overwrite never``.
+
 Restore using mount
 ===================
 

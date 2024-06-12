@@ -14,11 +14,6 @@ import (
 	"github.com/restic/restic/internal/ui/restore"
 )
 
-// TODO if a blob is corrupt, there may be good blob copies in other packs
-// TODO evaluate if it makes sense to split download and processing workers
-//      pro: can (slowly) read network and decrypt/write files concurrently
-//      con: each worker needs to keep one pack in memory
-
 const (
 	largeFileBlobCount = 25
 )
@@ -120,6 +115,13 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 	// create packInfo from fileInfo
 	for _, file := range r.files {
 		fileBlobs := file.blobs.(restic.IDs)
+		if len(fileBlobs) == 0 {
+			err := r.restoreEmptyFileAt(file.location)
+			if errFile := r.sanitizeError(file, err); errFile != nil {
+				return errFile
+			}
+		}
+
 		largeFile := len(fileBlobs) > largeFileBlobCount
 		var packsMap map[restic.ID][]fileBlobInfo
 		if largeFile {
@@ -159,6 +161,8 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 			file.blobs = packsMap
 		}
 	}
+	// drop no longer necessary file list
+	r.files = nil
 
 	wg, ctx := errgroup.WithContext(ctx)
 	downloadCh := make(chan *packInfo)
@@ -193,6 +197,19 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 	})
 
 	return wg.Wait()
+}
+
+func (r *fileRestorer) restoreEmptyFileAt(location string) error {
+	f, err := createFile(r.targetPath(location), 0, false)
+	if err != nil {
+		return err
+	}
+	if err = f.Close(); err != nil {
+		return err
+	}
+
+	r.progress.AddProgress(location, 0, 0)
+	return nil
 }
 
 type blobToFileOffsetsMapping map[restic.ID]struct {
@@ -240,32 +257,6 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) error {
 
 	// track already processed blobs for precise error reporting
 	processedBlobs := restic.NewBlobSet()
-	for _, entry := range blobs {
-		occurrences := 0
-		for _, offsets := range entry.files {
-			occurrences += len(offsets)
-		}
-		// With a maximum blob size of 8MB, the normal blob streaming has to write
-		// at most 800MB for a single blob. This should be short enough to avoid
-		// network connection timeouts. Based on a quick test, a limit of 100 only
-		// selects a very small number of blobs (the number of references per blob
-		// - aka. `count` - seem to follow a expontential distribution)
-		if occurrences > 100 {
-			// process frequently referenced blobs first as these can take a long time to write
-			// which can cause backend connections to time out
-			delete(blobs, entry.blob.ID)
-			partialBlobs := blobToFileOffsetsMapping{entry.blob.ID: entry}
-			err := r.downloadBlobs(ctx, pack.id, partialBlobs, processedBlobs)
-			if err := r.reportError(blobs, processedBlobs, err); err != nil {
-				return err
-			}
-		}
-	}
-
-	if len(blobs) == 0 {
-		return nil
-	}
-
 	err := r.downloadBlobs(ctx, pack.id, blobs, processedBlobs)
 	return r.reportError(blobs, processedBlobs, err)
 }
@@ -339,11 +330,7 @@ func (r *fileRestorer) downloadBlobs(ctx context.Context, packID restic.ID,
 							createSize = file.size
 						}
 						writeErr := r.filesWriter.writeToFile(r.targetPath(file.location), blobData, offset, createSize, file.sparse)
-
-						if r.progress != nil {
-							r.progress.AddProgress(file.location, uint64(len(blobData)), uint64(file.size))
-						}
-
+						r.progress.AddProgress(file.location, uint64(len(blobData)), uint64(file.size))
 						return writeErr
 					}
 					err := r.sanitizeError(file, writeToFile())

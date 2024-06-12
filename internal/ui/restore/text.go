@@ -17,30 +17,36 @@ func NewTextProgress(terminal term) ProgressPrinter {
 	}
 }
 
-func (t *textPrinter) Update(filesFinished, filesTotal, allBytesWritten, allBytesTotal uint64, duration time.Duration) {
+func (t *textPrinter) Update(p State, duration time.Duration) {
 	timeLeft := ui.FormatDuration(duration)
-	formattedAllBytesWritten := ui.FormatBytes(allBytesWritten)
-	formattedAllBytesTotal := ui.FormatBytes(allBytesTotal)
-	allPercent := ui.FormatPercent(allBytesWritten, allBytesTotal)
+	formattedAllBytesWritten := ui.FormatBytes(p.AllBytesWritten)
+	formattedAllBytesTotal := ui.FormatBytes(p.AllBytesTotal)
+	allPercent := ui.FormatPercent(p.AllBytesWritten, p.AllBytesTotal)
 	progress := fmt.Sprintf("[%s] %s  %v files/dirs %s, total %v files/dirs %v",
-		timeLeft, allPercent, filesFinished, formattedAllBytesWritten, filesTotal, formattedAllBytesTotal)
+		timeLeft, allPercent, p.FilesFinished, formattedAllBytesWritten, p.FilesTotal, formattedAllBytesTotal)
+	if p.FilesSkipped > 0 {
+		progress += fmt.Sprintf(", skipped %v files/dirs %v", p.FilesSkipped, ui.FormatBytes(p.AllBytesSkipped))
+	}
 
 	t.terminal.SetStatus([]string{progress})
 }
 
-func (t *textPrinter) Finish(filesFinished, filesTotal, allBytesWritten, allBytesTotal uint64, duration time.Duration) {
+func (t *textPrinter) Finish(p State, duration time.Duration) {
 	t.terminal.SetStatus([]string{})
 
 	timeLeft := ui.FormatDuration(duration)
-	formattedAllBytesTotal := ui.FormatBytes(allBytesTotal)
+	formattedAllBytesTotal := ui.FormatBytes(p.AllBytesTotal)
 
 	var summary string
-	if filesFinished == filesTotal && allBytesWritten == allBytesTotal {
-		summary = fmt.Sprintf("Summary: Restored %d files/dirs (%s) in %s", filesTotal, formattedAllBytesTotal, timeLeft)
+	if p.FilesFinished == p.FilesTotal && p.AllBytesWritten == p.AllBytesTotal {
+		summary = fmt.Sprintf("Summary: Restored %d files/dirs (%s) in %s", p.FilesTotal, formattedAllBytesTotal, timeLeft)
 	} else {
-		formattedAllBytesWritten := ui.FormatBytes(allBytesWritten)
+		formattedAllBytesWritten := ui.FormatBytes(p.AllBytesWritten)
 		summary = fmt.Sprintf("Summary: Restored %d / %d files/dirs (%s / %s) in %s",
-			filesFinished, filesTotal, formattedAllBytesWritten, formattedAllBytesTotal, timeLeft)
+			p.FilesFinished, p.FilesTotal, formattedAllBytesWritten, formattedAllBytesTotal, timeLeft)
+	}
+	if p.FilesSkipped > 0 {
+		summary += fmt.Sprintf(", skipped %v files/dirs %v", p.FilesSkipped, ui.FormatBytes(p.AllBytesSkipped))
 	}
 
 	t.terminal.Print(summary)

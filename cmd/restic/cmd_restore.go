@@ -47,8 +47,9 @@ type RestoreOptions struct {
 	includePatternOptions
 	Target string
 	restic.SnapshotFilter
-	Sparse bool
-	Verify bool
+	Sparse    bool
+	Verify    bool
+	Overwrite restorer.OverwriteBehavior
 }
 
 var restoreOptions RestoreOptions
@@ -65,6 +66,7 @@ func init() {
 	initSingleSnapshotFilter(flags, &restoreOptions.SnapshotFilter)
 	flags.BoolVar(&restoreOptions.Sparse, "sparse", false, "restore files as sparse")
 	flags.BoolVar(&restoreOptions.Verify, "verify", false, "verify restored files content")
+	flags.Var(&restoreOptions.Overwrite, "overwrite", "overwrite behavior, one of (always|if-newer|never) (default: always)")
 }
 
 func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
@@ -137,7 +139,11 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	}
 
 	progress := restoreui.NewProgress(printer, calculateProgressInterval(!gopts.Quiet, gopts.JSON))
-	res := restorer.NewRestorer(repo, sn, opts.Sparse, progress)
+	res := restorer.NewRestorer(repo, sn, restorer.Options{
+		Sparse:    opts.Sparse,
+		Progress:  progress,
+		Overwrite: opts.Overwrite,
+	})
 
 	totalErrors := 0
 	res.Error = func(location string, err error) error {
