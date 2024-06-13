@@ -3,6 +3,7 @@ package restorer
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sync/atomic"
@@ -18,13 +19,11 @@ import (
 
 // Restorer is used to restore a snapshot to a directory.
 type Restorer struct {
-	repo      restic.Repository
-	sn        *restic.Snapshot
-	sparse    bool
-	progress  *restoreui.Progress
-	overwrite OverwriteBehavior
+	repo restic.Repository
+	sn   *restic.Snapshot
+	opts Options
 
-	fileList map[string]struct{}
+	fileList map[string]bool
 
 	Error        func(location string, err error) error
 	Warn         func(message string)
@@ -43,10 +42,13 @@ type OverwriteBehavior int
 
 // Constants for different overwrite behavior
 const (
-	OverwriteAlways  OverwriteBehavior = 0
-	OverwriteIfNewer OverwriteBehavior = 1
-	OverwriteNever   OverwriteBehavior = 2
-	OverwriteInvalid OverwriteBehavior = 3
+	OverwriteAlways OverwriteBehavior = iota
+	// OverwriteIfChanged is like OverwriteAlways except that it skips restoring the content
+	// of files with matching size&mtime. Metatdata is always restored.
+	OverwriteIfChanged
+	OverwriteIfNewer
+	OverwriteNever
+	OverwriteInvalid
 )
 
 // Set implements the method needed for pflag command flag parsing.
@@ -54,6 +56,8 @@ func (c *OverwriteBehavior) Set(s string) error {
 	switch s {
 	case "always":
 		*c = OverwriteAlways
+	case "if-changed":
+		*c = OverwriteIfChanged
 	case "if-newer":
 		*c = OverwriteIfNewer
 	case "never":
@@ -70,6 +74,8 @@ func (c *OverwriteBehavior) String() string {
 	switch *c {
 	case OverwriteAlways:
 		return "always"
+	case OverwriteIfChanged:
+		return "if-changed"
 	case OverwriteIfNewer:
 		return "if-newer"
 	case OverwriteNever:
@@ -87,10 +93,8 @@ func (c *OverwriteBehavior) Type() string {
 func NewRestorer(repo restic.Repository, sn *restic.Snapshot, opts Options) *Restorer {
 	r := &Restorer{
 		repo:         repo,
-		sparse:       opts.Sparse,
-		progress:     opts.Progress,
-		overwrite:    opts.Overwrite,
-		fileList:     make(map[string]struct{}),
+		opts:         opts,
+		fileList:     make(map[string]bool),
 		Error:        restorerAbortOnAllErrors,
 		SelectFilter: func(string, string, *restic.Node) (bool, bool) { return true, true },
 		sn:           sn,
@@ -224,7 +228,7 @@ func (res *Restorer) restoreNodeTo(ctx context.Context, node *restic.Node, targe
 		return err
 	}
 
-	res.progress.AddProgress(location, 0, 0)
+	res.opts.Progress.AddProgress(location, 0, 0)
 	return res.restoreNodeMetadataTo(node, target, location)
 }
 
@@ -246,7 +250,7 @@ func (res *Restorer) restoreHardlinkAt(node *restic.Node, target, path, location
 		return errors.WithStack(err)
 	}
 
-	res.progress.AddProgress(location, 0, 0)
+	res.opts.Progress.AddProgress(location, 0, 0)
 
 	// TODO investigate if hardlinks have separate metadata on any supported system
 	return res.restoreNodeMetadataTo(node, path, location)
@@ -265,16 +269,18 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 
 	idx := NewHardlinkIndex[string]()
 	filerestorer := newFileRestorer(dst, res.repo.LoadBlobsFromPack, res.repo.LookupBlob,
-		res.repo.Connections(), res.sparse, res.progress)
+		res.repo.Connections(), res.opts.Sparse, res.opts.Progress)
 	filerestorer.Error = res.Error
 
 	debug.Log("first pass for %q", dst)
+
+	var buf []byte
 
 	// first tree pass: create directories and collect all files to restore
 	_, err = res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
 		enterDir: func(_ *restic.Node, target, location string) error {
 			debug.Log("first pass, enterDir: mkdir %q, leaveDir should restore metadata", location)
-			res.progress.AddFile(0)
+			res.opts.Progress.AddFile(0)
 			// create dir with default permissions
 			// #leaveDir restores dir metadata after visiting all children
 			return fs.MkdirAll(target, 0700)
@@ -290,25 +296,30 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 			}
 
 			if node.Type != "file" {
-				res.progress.AddFile(0)
+				res.opts.Progress.AddFile(0)
 				return nil
 			}
 
 			if node.Links > 1 {
 				if idx.Has(node.Inode, node.DeviceID) {
 					// a hardlinked file does not increase the restore size
-					res.progress.AddFile(0)
+					res.opts.Progress.AddFile(0)
 					return nil
 				}
 				idx.Add(node.Inode, node.DeviceID, location)
 			}
 
-			return res.withOverwriteCheck(node, target, false, func() error {
-				res.progress.AddFile(node.Size)
-				filerestorer.addFile(location, node.Content, int64(node.Size))
-				res.trackFile(location)
+			buf, err = res.withOverwriteCheck(node, target, false, buf, func(updateMetadataOnly bool, matches *fileState) error {
+				if updateMetadataOnly {
+					res.opts.Progress.AddSkippedFile(node.Size)
+				} else {
+					res.opts.Progress.AddFile(node.Size)
+					filerestorer.addFile(location, node.Content, int64(node.Size), matches)
+				}
+				res.trackFile(location, updateMetadataOnly)
 				return nil
 			})
+			return err
 		},
 	})
 	if err != nil {
@@ -327,18 +338,20 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 		visitNode: func(node *restic.Node, target, location string) error {
 			debug.Log("second pass, visitNode: restore node %q", location)
 			if node.Type != "file" {
-				return res.withOverwriteCheck(node, target, false, func() error {
+				_, err := res.withOverwriteCheck(node, target, false, nil, func(_ bool, _ *fileState) error {
 					return res.restoreNodeTo(ctx, node, target, location)
 				})
+				return err
 			}
 
 			if idx.Has(node.Inode, node.DeviceID) && idx.Value(node.Inode, node.DeviceID) != location {
-				return res.withOverwriteCheck(node, target, true, func() error {
+				_, err := res.withOverwriteCheck(node, target, true, nil, func(_ bool, _ *fileState) error {
 					return res.restoreHardlinkAt(node, filerestorer.targetPath(idx.Value(node.Inode, node.DeviceID)), target, location)
 				})
+				return err
 			}
 
-			if res.hasRestoredFile(location) {
+			if _, ok := res.hasRestoredFile(location); ok {
 				return res.restoreNodeMetadataTo(node, target, location)
 			}
 			// don't touch skipped files
@@ -347,7 +360,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 		leaveDir: func(node *restic.Node, target, location string) error {
 			err := res.restoreNodeMetadataTo(node, target, location)
 			if err == nil {
-				res.progress.AddProgress(location, 0, 0)
+				res.opts.Progress.AddProgress(location, 0, 0)
 			}
 			return err
 		},
@@ -355,32 +368,42 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 	return err
 }
 
-func (res *Restorer) trackFile(location string) {
-	res.fileList[location] = struct{}{}
+func (res *Restorer) trackFile(location string, metadataOnly bool) {
+	res.fileList[location] = metadataOnly
 }
 
-func (res *Restorer) hasRestoredFile(location string) bool {
-	_, ok := res.fileList[location]
-	return ok
+func (res *Restorer) hasRestoredFile(location string) (metadataOnly bool, ok bool) {
+	metadataOnly, ok = res.fileList[location]
+	return metadataOnly, ok
 }
 
-func (res *Restorer) withOverwriteCheck(node *restic.Node, target string, isHardlink bool, cb func() error) error {
-	overwrite, err := shouldOverwrite(res.overwrite, node, target)
+func (res *Restorer) withOverwriteCheck(node *restic.Node, target string, isHardlink bool, buf []byte, cb func(updateMetadataOnly bool, matches *fileState) error) ([]byte, error) {
+	overwrite, err := shouldOverwrite(res.opts.Overwrite, node, target)
 	if err != nil {
-		return err
+		return buf, err
 	} else if !overwrite {
 		size := node.Size
 		if isHardlink {
 			size = 0
 		}
-		res.progress.AddSkippedFile(size)
-		return nil
+		res.opts.Progress.AddSkippedFile(size)
+		return buf, nil
 	}
-	return cb()
+
+	var matches *fileState
+	updateMetadataOnly := false
+	if node.Type == "file" && !isHardlink {
+		// if a file fails to verify, then matches is nil which results in restoring from scratch
+		matches, buf, _ = res.verifyFile(target, node, false, res.opts.Overwrite == OverwriteIfChanged, buf)
+		// skip files that are already correct completely
+		updateMetadataOnly = !matches.NeedsRestore()
+	}
+
+	return buf, cb(updateMetadataOnly, matches)
 }
 
 func shouldOverwrite(overwrite OverwriteBehavior, node *restic.Node, destination string) (bool, error) {
-	if overwrite == OverwriteAlways {
+	if overwrite == OverwriteAlways || overwrite == OverwriteIfChanged {
 		return true, nil
 	}
 
@@ -433,7 +456,10 @@ func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
 
 		_, err := res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
 			visitNode: func(node *restic.Node, target, location string) error {
-				if node.Type != "file" || !res.hasRestoredFile(location) {
+				if node.Type != "file" {
+					return nil
+				}
+				if metadataOnly, ok := res.hasRestoredFile(location); !ok || metadataOnly {
 					return nil
 				}
 				select {
@@ -451,7 +477,7 @@ func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
 		g.Go(func() (err error) {
 			var buf []byte
 			for job := range work {
-				buf, err = res.verifyFile(job.path, job.node, buf)
+				_, buf, err = res.verifyFile(job.path, job.node, true, false, buf)
 				if err != nil {
 					err = res.Error(job.path, err)
 				}
@@ -467,34 +493,72 @@ func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
 	return int(nchecked), g.Wait()
 }
 
+type fileState struct {
+	blobMatches []bool
+	sizeMatches bool
+}
+
+func (s *fileState) NeedsRestore() bool {
+	if s == nil {
+		return true
+	}
+	if !s.sizeMatches {
+		return true
+	}
+	for _, match := range s.blobMatches {
+		if !match {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *fileState) HasMatchingBlob(i int) bool {
+	if s == nil || s.blobMatches == nil {
+		return false
+	}
+	return i < len(s.blobMatches) && s.blobMatches[i]
+}
+
 // Verify that the file target has the contents of node.
 //
 // buf and the first return value are scratch space, passed around for reuse.
 // Reusing buffers prevents the verifier goroutines allocating all of RAM and
 // flushing the filesystem cache (at least on Linux).
-func (res *Restorer) verifyFile(target string, node *restic.Node, buf []byte) ([]byte, error) {
-	f, err := os.Open(target)
+func (res *Restorer) verifyFile(target string, node *restic.Node, failFast bool, trustMtime bool, buf []byte) (*fileState, []byte, error) {
+	f, err := os.OpenFile(target, fs.O_RDONLY|fs.O_NOFOLLOW, 0)
 	if err != nil {
-		return buf, err
+		return nil, buf, err
 	}
 	defer func() {
 		_ = f.Close()
 	}()
 
 	fi, err := f.Stat()
+	sizeMatches := true
 	switch {
 	case err != nil:
-		return buf, err
+		return nil, buf, err
+	case !fi.Mode().IsRegular():
+		return nil, buf, errors.Errorf("Expected %s to be a regular file", target)
 	case int64(node.Size) != fi.Size():
-		return buf, errors.Errorf("Invalid file size for %s: expected %d, got %d",
-			target, node.Size, fi.Size())
+		if failFast {
+			return nil, buf, errors.Errorf("Invalid file size for %s: expected %d, got %d",
+				target, node.Size, fi.Size())
+		}
+		sizeMatches = false
 	}
 
+	if trustMtime && fi.ModTime().Equal(node.ModTime) && sizeMatches {
+		return &fileState{nil, sizeMatches}, buf, nil
+	}
+
+	matches := make([]bool, len(node.Content))
 	var offset int64
-	for _, blobID := range node.Content {
+	for i, blobID := range node.Content {
 		length, found := res.repo.LookupBlobSize(restic.DataBlob, blobID)
 		if !found {
-			return buf, errors.Errorf("Unable to fetch blob %s", blobID)
+			return nil, buf, errors.Errorf("Unable to fetch blob %s", blobID)
 		}
 
 		if length > uint(cap(buf)) {
@@ -503,16 +567,21 @@ func (res *Restorer) verifyFile(target string, node *restic.Node, buf []byte) ([
 		buf = buf[:length]
 
 		_, err = f.ReadAt(buf, offset)
-		if err != nil {
-			return buf, err
+		if err == io.EOF && !failFast {
+			sizeMatches = false
+			break
 		}
-		if !blobID.Equal(restic.Hash(buf)) {
-			return buf, errors.Errorf(
+		if err != nil {
+			return nil, buf, err
+		}
+		matches[i] = blobID.Equal(restic.Hash(buf))
+		if failFast && !matches[i] {
+			return nil, buf, errors.Errorf(
 				"Unexpected content in %s, starting at offset %d",
 				target, offset)
 		}
 		offset += int64(length)
 	}
 
-	return buf, nil
+	return &fileState{matches, sizeMatches}, buf, nil
 }

@@ -5,6 +5,7 @@ package restorer
 
 import (
 	"context"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"syscall"
@@ -117,4 +118,35 @@ func TestRestorerProgressBar(t *testing.T) {
 		AllBytesTotal:   10,
 		AllBytesSkipped: 0,
 	}, mock.s)
+}
+
+func TestRestorePermissions(t *testing.T) {
+	snapshot := Snapshot{
+		Nodes: map[string]Node{
+			"foo": File{Data: "content: foo\n", Mode: 0o600, ModTime: time.Now()},
+		},
+	}
+
+	repo := repository.TestRepository(t)
+	tempdir := filepath.Join(rtest.TempDir(t), "target")
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sn, id := saveSnapshot(t, repo, snapshot, noopGetGenericAttributes)
+	t.Logf("snapshot saved as %v", id.Str())
+
+	res := NewRestorer(repo, sn, Options{})
+	rtest.OK(t, res.RestoreTo(ctx, tempdir))
+
+	for _, overwrite := range []OverwriteBehavior{OverwriteIfChanged, OverwriteAlways} {
+		// tamper with permissions
+		path := filepath.Join(tempdir, "foo")
+		rtest.OK(t, os.Chmod(path, 0o700))
+
+		res = NewRestorer(repo, sn, Options{Overwrite: overwrite})
+		rtest.OK(t, res.RestoreTo(ctx, tempdir))
+		fi, err := os.Stat(path)
+		rtest.OK(t, err)
+		rtest.Equals(t, fs.FileMode(0o600), fi.Mode().Perm(), "unexpected permissions")
+	}
 }

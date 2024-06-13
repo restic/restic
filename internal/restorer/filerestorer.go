@@ -26,6 +26,7 @@ type fileInfo struct {
 	size       int64
 	location   string      // file on local filesystem relative to restorer basedir
 	blobs      interface{} // blobs of the file
+	state      *fileState
 }
 
 type fileBlobInfo struct {
@@ -80,25 +81,25 @@ func newFileRestorer(dst string,
 	}
 }
 
-func (r *fileRestorer) addFile(location string, content restic.IDs, size int64) {
-	r.files = append(r.files, &fileInfo{location: location, blobs: content, size: size})
+func (r *fileRestorer) addFile(location string, content restic.IDs, size int64, state *fileState) {
+	r.files = append(r.files, &fileInfo{location: location, blobs: content, size: size, state: state})
 }
 
 func (r *fileRestorer) targetPath(location string) string {
 	return filepath.Join(r.dst, location)
 }
 
-func (r *fileRestorer) forEachBlob(blobIDs []restic.ID, fn func(packID restic.ID, packBlob restic.Blob)) error {
+func (r *fileRestorer) forEachBlob(blobIDs []restic.ID, fn func(packID restic.ID, packBlob restic.Blob, idx int)) error {
 	if len(blobIDs) == 0 {
 		return nil
 	}
 
-	for _, blobID := range blobIDs {
+	for i, blobID := range blobIDs {
 		packs := r.idx(restic.DataBlob, blobID)
 		if len(packs) == 0 {
 			return errors.Errorf("Unknown blob %s", blobID.String())
 		}
-		fn(packs[0].PackID, packs[0].Blob)
+		fn(packs[0].PackID, packs[0].Blob, i)
 	}
 
 	return nil
@@ -128,8 +129,8 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 			packsMap = make(map[restic.ID][]fileBlobInfo)
 		}
 		fileOffset := int64(0)
-		err := r.forEachBlob(fileBlobs, func(packID restic.ID, blob restic.Blob) {
-			if largeFile {
+		err := r.forEachBlob(fileBlobs, func(packID restic.ID, blob restic.Blob, idx int) {
+			if largeFile && !file.state.HasMatchingBlob(idx) {
 				packsMap[packID] = append(packsMap[packID], fileBlobInfo{id: blob.ID, offset: fileOffset})
 				fileOffset += int64(blob.DataLength())
 			}
@@ -151,6 +152,12 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 			// no need to preallocate files with a single block, thus we can always consider them to be sparse
 			// in addition, a short chunk will never match r.zeroChunk which would prevent sparseness for short files
 			file.sparse = r.sparse
+		}
+		if file.state != nil {
+			// The restorer currently cannot punch new holes into an existing files.
+			// Thus sections that contained data but should be sparse after restoring
+			// the snapshot would still contain the old data resulting in a corrupt restore.
+			file.sparse = false
 		}
 
 		if err != nil {
@@ -232,8 +239,8 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) error {
 		}
 		if fileBlobs, ok := file.blobs.(restic.IDs); ok {
 			fileOffset := int64(0)
-			err := r.forEachBlob(fileBlobs, func(packID restic.ID, blob restic.Blob) {
-				if packID.Equal(pack.id) {
+			err := r.forEachBlob(fileBlobs, func(packID restic.ID, blob restic.Blob, idx int) {
+				if packID.Equal(pack.id) && !file.state.HasMatchingBlob(idx) {
 					addBlob(blob, fileOffset)
 				}
 				fileOffset += int64(blob.DataLength())

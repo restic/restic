@@ -91,11 +91,26 @@ stored explicitly.
 Restoring in-place
 ------------------
 
-By default, the ``restore`` command overwrites already existing files in the target
-directory. This behavior can be configured via the ``--overwrite`` option. The
-default is ``--overwrite always``. To only overwrite existing files if the file in
-the snapshot is newer, use ``--overwrite if-newer``. To never overwrite existing files,
-use ``--overwrite never``.
+.. note::
+
+    Restoring data in-place can leave files in a partially restored state if the ``restore``
+    operation is interrupted. To ensure you can revert back to the previous state, create
+    a current ``backup`` before restoring a different snapshot.
+
+By default, the ``restore`` command overwrites already existing files at the target
+directory. This behavior can be configured via the ``--overwrite`` option. The following
+values are supported:
+
+* ``--overwrite always`` (default): always overwrites already existing files. ``restore``
+  will verify the existing file content and only restore mismatching parts to minimize
+  downloads. Updates the metadata of all files.
+* ``--overwrite if-changed``: like the previous case, but speeds up the file content check
+  by assuming that files with matching size and modification time (mtime) are already up to date.
+  In case of a mismatch, the full file content is verified. Updates the metadata of all files.
+* ``--overwrite if-newer``: only overwrite existing files if the file in the snapshot has a
+  newer modification time (mtime).
+* ``--overwrite never``: never overwrite existing files.
+
 
 Restore using mount
 ===================

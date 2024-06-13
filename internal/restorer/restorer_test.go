@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -894,6 +895,44 @@ func TestRestorerSparseFiles(t *testing.T) {
 		len(zeros), blocks, 100*sparsity)
 }
 
+func TestRestorerSparseOverwrite(t *testing.T) {
+	baseSnapshot := Snapshot{
+		Nodes: map[string]Node{
+			"foo": File{Data: "content: new\n"},
+		},
+	}
+	var zero [14]byte
+	sparseSnapshot := Snapshot{
+		Nodes: map[string]Node{
+			"foo": File{Data: string(zero[:])},
+		},
+	}
+
+	repo := repository.TestRepository(t)
+	tempdir := filepath.Join(rtest.TempDir(t), "target")
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// base snapshot
+	sn, id := saveSnapshot(t, repo, baseSnapshot, noopGetGenericAttributes)
+	t.Logf("base snapshot saved as %v", id.Str())
+
+	res := NewRestorer(repo, sn, Options{Sparse: true})
+	err := res.RestoreTo(ctx, tempdir)
+	rtest.OK(t, err)
+
+	// sparse snapshot
+	sn, id = saveSnapshot(t, repo, sparseSnapshot, noopGetGenericAttributes)
+	t.Logf("base snapshot saved as %v", id.Str())
+
+	res = NewRestorer(repo, sn, Options{Sparse: true, Overwrite: OverwriteAlways})
+	err = res.RestoreTo(ctx, tempdir)
+	rtest.OK(t, err)
+	files, err := res.VerifyFiles(ctx, tempdir)
+	rtest.OK(t, err)
+	rtest.Equals(t, 1, files, "unexpected number of verified files")
+}
+
 func TestRestorerOverwriteBehavior(t *testing.T) {
 	baseTime := time.Now()
 	baseSnapshot := Snapshot{
@@ -924,6 +963,13 @@ func TestRestorerOverwriteBehavior(t *testing.T) {
 	}{
 		{
 			Overwrite: OverwriteAlways,
+			Files: map[string]string{
+				"foo":          "content: new\n",
+				"dirtest/file": "content: file2\n",
+			},
+		},
+		{
+			Overwrite: OverwriteIfChanged,
 			Files: map[string]string{
 				"foo":          "content: new\n",
 				"dirtest/file": "content: file2\n",
@@ -980,5 +1026,90 @@ func TestRestorerOverwriteBehavior(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestRestoreModified(t *testing.T) {
+	// overwrite files between snapshots and also change their filesize
+	snapshots := []Snapshot{
+		{
+			Nodes: map[string]Node{
+				"foo": File{Data: "content: foo\n", ModTime: time.Now()},
+				"bar": File{Data: "content: a\n", ModTime: time.Now()},
+			},
+		},
+		{
+			Nodes: map[string]Node{
+				"foo": File{Data: "content: a\n", ModTime: time.Now()},
+				"bar": File{Data: "content: bar\n", ModTime: time.Now()},
+			},
+		},
+	}
+
+	repo := repository.TestRepository(t)
+	tempdir := filepath.Join(rtest.TempDir(t), "target")
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	for _, snapshot := range snapshots {
+		sn, id := saveSnapshot(t, repo, snapshot, noopGetGenericAttributes)
+		t.Logf("snapshot saved as %v", id.Str())
+
+		res := NewRestorer(repo, sn, Options{Overwrite: OverwriteIfChanged})
+		rtest.OK(t, res.RestoreTo(ctx, tempdir))
+		n, err := res.VerifyFiles(ctx, tempdir)
+		rtest.OK(t, err)
+		rtest.Equals(t, 2, n, "unexpected number of verified files")
+	}
+}
+
+func TestRestoreIfChanged(t *testing.T) {
+	origData := "content: foo\n"
+	modData := "content: bar\n"
+	rtest.Equals(t, len(modData), len(origData), "broken testcase")
+	snapshot := Snapshot{
+		Nodes: map[string]Node{
+			"foo": File{Data: origData, ModTime: time.Now()},
+		},
+	}
+
+	repo := repository.TestRepository(t)
+	tempdir := filepath.Join(rtest.TempDir(t), "target")
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sn, id := saveSnapshot(t, repo, snapshot, noopGetGenericAttributes)
+	t.Logf("snapshot saved as %v", id.Str())
+
+	res := NewRestorer(repo, sn, Options{})
+	rtest.OK(t, res.RestoreTo(ctx, tempdir))
+
+	// modify file but maintain size and timestamp
+	path := filepath.Join(tempdir, "foo")
+	f, err := os.OpenFile(path, os.O_RDWR, 0)
+	rtest.OK(t, err)
+	fi, err := f.Stat()
+	rtest.OK(t, err)
+	_, err = f.Write([]byte(modData))
+	rtest.OK(t, err)
+	rtest.OK(t, f.Close())
+	var utimes = [...]syscall.Timespec{
+		syscall.NsecToTimespec(fi.ModTime().UnixNano()),
+		syscall.NsecToTimespec(fi.ModTime().UnixNano()),
+	}
+	rtest.OK(t, syscall.UtimesNano(path, utimes[:]))
+
+	for _, overwrite := range []OverwriteBehavior{OverwriteIfChanged, OverwriteAlways} {
+		res = NewRestorer(repo, sn, Options{Overwrite: overwrite})
+		rtest.OK(t, res.RestoreTo(ctx, tempdir))
+		data, err := os.ReadFile(path)
+		rtest.OK(t, err)
+		if overwrite == OverwriteAlways {
+			// restore should notice the changed file content
+			rtest.Equals(t, origData, string(data), "expected original file content")
+		} else {
+			// restore should not have noticed the changed file content
+			rtest.Equals(t, modData, string(data), "expeced modified file content")
+		}
 	}
 }
