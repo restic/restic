@@ -6,18 +6,30 @@ package restic
 import (
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 
 	rtest "github.com/restic/restic/internal/test"
 )
 
 func setAndVerifyXattr(t *testing.T, file string, attrs []ExtendedAttribute) {
+	if runtime.GOOS == "windows" {
+		// windows seems to convert the xattr name to upper case
+		for i := range attrs {
+			attrs[i].Name = strings.ToUpper(attrs[i].Name)
+		}
+	}
+
 	node := Node{
+		Type:               "file",
 		ExtendedAttributes: attrs,
 	}
 	rtest.OK(t, node.restoreExtendedAttributes(file))
 
-	nodeActual := Node{}
+	nodeActual := Node{
+		Type: "file",
+	}
 	rtest.OK(t, nodeActual.fillExtendedAttributes(file, false))
 
 	rtest.Assert(t, nodeActual.sameExtendedAttributes(node), "xattr mismatch got %v expected %v", nodeActual.ExtendedAttributes, node.ExtendedAttributes)

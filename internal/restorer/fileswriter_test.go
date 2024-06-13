@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"syscall"
+	"runtime"
 	"testing"
 
 	"github.com/restic/restic/internal/errors"
@@ -72,7 +72,7 @@ func TestCreateFile(t *testing.T) {
 				rtest.OK(t, os.Mkdir(path, 0o700))
 				rtest.OK(t, os.WriteFile(filepath.Join(path, "file"), []byte("data"), 0o400))
 			},
-			err: syscall.ENOTEMPTY,
+			err: notEmptyDirError(),
 		},
 		{
 			name: "hardlinks",
@@ -81,6 +81,11 @@ func TestCreateFile(t *testing.T) {
 				rtest.OK(t, os.Link(path, path+"h"))
 			},
 			check: func(t testing.TB, path string) {
+				if runtime.GOOS == "windows" {
+					// hardlinks are not supported on windows
+					return
+				}
+
 				data, err := os.ReadFile(path + "h")
 				rtest.OK(t, err)
 				rtest.Equals(t, "test-test-test-data", string(data), "unexpected content change")
