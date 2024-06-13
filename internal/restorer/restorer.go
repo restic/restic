@@ -541,7 +541,7 @@ func (s *fileState) HasMatchingBlob(i int) bool {
 // Reusing buffers prevents the verifier goroutines allocating all of RAM and
 // flushing the filesystem cache (at least on Linux).
 func (res *Restorer) verifyFile(target string, node *restic.Node, failFast bool, trustMtime bool, buf []byte) (*fileState, []byte, error) {
-	f, err := os.OpenFile(target, fs.O_RDONLY|fs.O_NOFOLLOW, 0)
+	f, err := fs.OpenFile(target, fs.O_RDONLY|fs.O_NOFOLLOW, 0)
 	if err != nil {
 		return nil, buf, err
 	}
