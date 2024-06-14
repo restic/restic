@@ -105,17 +105,20 @@ func ClearAttribute(path string, attribute uint32) error {
 }
 
 // OpenHandleForEA return a file handle for file or dir for setting/getting EAs
-func OpenHandleForEA(nodeType, path string) (handle windows.Handle, err error) {
+func OpenHandleForEA(nodeType, path string, writeAccess bool) (handle windows.Handle, err error) {
 	path = fixpath(path)
+	fileAccess := windows.FILE_READ_EA
+	if writeAccess {
+		fileAccess = fileAccess | windows.FILE_WRITE_EA
+	}
+
 	switch nodeType {
 	case "file":
 		utf16Path := windows.StringToUTF16Ptr(path)
-		fileAccessRightReadWriteEA := (0x8 | 0x10)
-		handle, err = windows.CreateFile(utf16Path, uint32(fileAccessRightReadWriteEA), 0, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL, 0)
+		handle, err = windows.CreateFile(utf16Path, uint32(fileAccess), 0, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL, 0)
 	case "dir":
 		utf16Path := windows.StringToUTF16Ptr(path)
-		fileAccessRightReadWriteEA := (0x8 | 0x10)
-		handle, err = windows.CreateFile(utf16Path, uint32(fileAccessRightReadWriteEA), 0, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL|windows.FILE_FLAG_BACKUP_SEMANTICS, 0)
+		handle, err = windows.CreateFile(utf16Path, uint32(fileAccess), 0, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL|windows.FILE_FLAG_BACKUP_SEMANTICS, 0)
 	default:
 		return 0, nil
 	}

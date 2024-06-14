@@ -88,7 +88,7 @@ func (node Node) restoreExtendedAttributes(path string) (err error) {
 // fill extended attributes in the node. This also includes the Generic attributes for windows.
 func (node *Node) fillExtendedAttributes(path string, _ bool) (err error) {
 	var fileHandle windows.Handle
-	if fileHandle, err = fs.OpenHandleForEA(node.Type, path); fileHandle == 0 {
+	if fileHandle, err = fs.OpenHandleForEA(node.Type, path, false); fileHandle == 0 {
 		return nil
 	}
 	if err != nil {
@@ -130,7 +130,7 @@ func closeFileHandle(fileHandle windows.Handle, path string) {
 // The Windows API requires setting of all the Extended Attributes in one call.
 func restoreExtendedAttributes(nodeType, path string, eas []fs.ExtendedAttribute) (err error) {
 	var fileHandle windows.Handle
-	if fileHandle, err = fs.OpenHandleForEA(nodeType, path); fileHandle == 0 {
+	if fileHandle, err = fs.OpenHandleForEA(nodeType, path, true); fileHandle == 0 {
 		return nil
 	}
 	if err != nil {
