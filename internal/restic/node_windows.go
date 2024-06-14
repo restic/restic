@@ -155,6 +155,26 @@ func restoreExtendedAttributes(nodeType, path string, eas []fs.ExtendedAttribute
 	}
 	defer closeFileHandle(fileHandle, path) // Replaced inline defer with named function call
 
+	// clear old unexpected xattrs by setting them to an empty value
+	oldEAs, err := fs.GetFileEA(fileHandle)
+	if err != nil {
+		return err
+	}
+
+	for _, oldEA := range oldEAs {
+		found := false
+		for _, ea := range eas {
+			if strings.EqualFold(ea.Name, oldEA.Name) {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			eas = append(eas, fs.ExtendedAttribute{Name: oldEA.Name, Value: nil})
+		}
+	}
+
 	if err = fs.SetFileEA(fileHandle, eas); err != nil {
 		return errors.Errorf("set EA failed for path %v, with: %v", path, err)
 	}
