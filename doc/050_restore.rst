@@ -188,6 +188,31 @@ e.g.:
 
     $ restic -r /srv/restic-repo dump --path /production.sql latest production.sql | mysql
 
+This example assumes you ran a backup using an absolute path, which coincides with the
+path within the snaphots.
+See https://restic.readthedocs.io/en/stable/040_backup.html#backing-up for the difference
+between the path used to create the repository and the paths within the snaphots.
+
+If you ran a backup using the relative path ``work/``, the ``dump`` command would look like:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo dump latest /work/README.md
+
+
+If dump results in the error message ``cannot dump file: path "/home" not found in snapshot``
+first double check you used the path within the snaphot, using the ``ls latest /`` command,
+which for the repository above results in:
+
+.. code-block:: console
+
+    $ restic -r /srv/restic-repo ls latest /
+    enter password for repository:
+    snapshot 1541acae of [/home/other/work] filtered by [/] at 2023-08-09 04:00:03.533117139 +0200 CEST):
+    /work
+
+
+
 It is also possible to ``dump`` the contents of a whole folder structure to
 stdout. To retain the information about the files and folders Restic will
 output the contents in the tar (default) or zip format:
