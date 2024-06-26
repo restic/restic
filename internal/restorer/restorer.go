@@ -221,6 +221,9 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 
 func (res *Restorer) restoreNodeTo(ctx context.Context, node *restic.Node, target, location string) error {
 	debug.Log("restoreNode %v %v %v", node.Name, target, location)
+	if err := fs.Remove(target); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return errors.Wrap(err, "RemoveNode")
+	}
 
 	err := node.CreateAt(ctx, target, res.repo)
 	if err != nil {
@@ -242,7 +245,7 @@ func (res *Restorer) restoreNodeMetadataTo(node *restic.Node, target, location s
 }
 
 func (res *Restorer) restoreHardlinkAt(node *restic.Node, target, path, location string) error {
-	if err := fs.Remove(path); !os.IsNotExist(err) {
+	if err := fs.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return errors.Wrap(err, "RemoveCreateHardlink")
 	}
 	err := fs.Link(target, path)
@@ -254,6 +257,23 @@ func (res *Restorer) restoreHardlinkAt(node *restic.Node, target, path, location
 
 	// TODO investigate if hardlinks have separate metadata on any supported system
 	return res.restoreNodeMetadataTo(node, path, location)
+}
+
+func (res *Restorer) ensureDir(target string) error {
+	fi, err := fs.Lstat(target)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("failed to check for directory: %w", err)
+	}
+	if err == nil && !fi.IsDir() {
+		// try to cleanup unexpected file
+		if err := fs.Remove(target); err != nil {
+			return fmt.Errorf("failed to remove stale item: %w", err)
+		}
+	}
+
+	// create parent dir with default permissions
+	// second pass #leaveDir restores dir metadata after visiting/restoring all children
+	return fs.MkdirAll(target, 0700)
 }
 
 // RestoreTo creates the directories and files in the snapshot below dst.
@@ -281,17 +301,12 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 		enterDir: func(_ *restic.Node, target, location string) error {
 			debug.Log("first pass, enterDir: mkdir %q, leaveDir should restore metadata", location)
 			res.opts.Progress.AddFile(0)
-			// create dir with default permissions
-			// #leaveDir restores dir metadata after visiting all children
-			return fs.MkdirAll(target, 0700)
+			return res.ensureDir(target)
 		},
 
 		visitNode: func(node *restic.Node, target, location string) error {
 			debug.Log("first pass, visitNode: mkdir %q, leaveDir on second pass should restore metadata", location)
-			// create parent dir with default permissions
-			// second pass #leaveDir restores dir metadata after visiting/restoring all children
-			err := fs.MkdirAll(filepath.Dir(target), 0700)
-			if err != nil {
+			if err := res.ensureDir(filepath.Dir(target)); err != nil {
 				return err
 			}
 
@@ -526,7 +541,7 @@ func (s *fileState) HasMatchingBlob(i int) bool {
 // Reusing buffers prevents the verifier goroutines allocating all of RAM and
 // flushing the filesystem cache (at least on Linux).
 func (res *Restorer) verifyFile(target string, node *restic.Node, failFast bool, trustMtime bool, buf []byte) (*fileState, []byte, error) {
-	f, err := os.OpenFile(target, fs.O_RDONLY|fs.O_NOFOLLOW, 0)
+	f, err := fs.OpenFile(target, fs.O_RDONLY|fs.O_NOFOLLOW, 0)
 	if err != nil {
 		return nil, buf, err
 	}

@@ -40,6 +40,11 @@ func setxattr(path, name string, data []byte) error {
 	return handleXattrErr(xattr.LSet(path, name, data))
 }
 
+// removexattr removes the attribute name from path.
+func removexattr(path, name string) error {
+	return handleXattrErr(xattr.LRemove(path, name))
+}
+
 func handleXattrErr(err error) error {
 	switch e := err.(type) {
 	case nil:
@@ -70,12 +75,29 @@ func (node *Node) fillGenericAttributes(_ string, _ os.FileInfo, _ *statT) (allo
 }
 
 func (node Node) restoreExtendedAttributes(path string) error {
+	expectedAttrs := map[string]struct{}{}
 	for _, attr := range node.ExtendedAttributes {
 		err := setxattr(path, attr.Name, attr.Value)
 		if err != nil {
 			return err
 		}
+		expectedAttrs[attr.Name] = struct{}{}
 	}
+
+	// remove unexpected xattrs
+	xattrs, err := listxattr(path)
+	if err != nil {
+		return err
+	}
+	for _, name := range xattrs {
+		if _, ok := expectedAttrs[name]; ok {
+			continue
+		}
+		if err := removexattr(path, name); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
