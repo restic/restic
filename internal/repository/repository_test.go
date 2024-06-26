@@ -473,4 +473,14 @@ func TestNoDoubleInit(t *testing.T) {
 	rtest.OK(t, be.Remove(context.TODO(), backend.Handle{Type: backend.ConfigFile}))
 	err = repo.Init(context.TODO(), r.Config().Version, test.TestPassword, &pol)
 	rtest.Assert(t, strings.Contains(err.Error(), "repository already contains keys"), "expected already contains keys error, got %q", err)
+
+	// must also prevent init if a snapshot exists and keys were deleted
+	var data [32]byte
+	hash := restic.Hash(data[:])
+	rtest.OK(t, be.Save(context.TODO(), backend.Handle{Type: backend.SnapshotFile, Name: hash.String()}, backend.NewByteReader(data[:], be.Hasher())))
+	rtest.OK(t, be.List(context.TODO(), restic.KeyFile, func(fi backend.FileInfo) error {
+		return be.Remove(context.TODO(), backend.Handle{Type: restic.KeyFile, Name: fi.Name})
+	}))
+	err = repo.Init(context.TODO(), r.Config().Version, test.TestPassword, &pol)
+	rtest.Assert(t, strings.Contains(err.Error(), "repository already contains snapshots"), "expected already contains snapshots error, got %q", err)
 }

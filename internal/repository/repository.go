@@ -780,6 +780,15 @@ func (r *Repository) Init(ctx context.Context, version uint, password string, ch
 	}); err != nil {
 		return err
 	}
+	// Also check for snapshots to detect repositories with a misconfigured retention
+	// policy that deletes files older than x days. For such repositories usually the
+	// config and key files are removed first and therefore the check would not detect
+	// the old repository.
+	if err := r.List(ctx, restic.SnapshotFile, func(_ restic.ID, _ int64) error {
+		return errors.New("repository already contains snapshots")
+	}); err != nil {
+		return err
+	}
 
 	cfg, err := restic.CreateConfig(version)
 	if err != nil {
