@@ -1,0 +1,6 @@
+Enhancement: Update dependencies
+
+A few potentially vulnerable dependencies were updated.
+
+https://github.com/restic/restic/issues/4873
+https://github.com/restic/restic/pull/4878
