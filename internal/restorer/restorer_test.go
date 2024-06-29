@@ -192,7 +192,7 @@ func TestRestorer(t *testing.T) {
 		Files      map[string]string
 		ErrorsMust map[string]map[string]struct{}
 		ErrorsMay  map[string]map[string]struct{}
-		Select     func(item string, dstpath string, node *restic.Node) (selectForRestore bool, childMayBeSelected bool)
+		Select     func(item string, dstpath string, isDir bool) (selectForRestore bool, childMayBeSelected bool)
 	}{
 		// valid test cases
 		{
@@ -284,7 +284,7 @@ func TestRestorer(t *testing.T) {
 			Files: map[string]string{
 				"dir/file": "content: file\n",
 			},
-			Select: func(item, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
+			Select: func(item, dstpath string, isDir bool) (selectedForRestore bool, childMayBeSelected bool) {
 				switch item {
 				case filepath.FromSlash("/dir"):
 					childMayBeSelected = true
@@ -370,7 +370,7 @@ func TestRestorer(t *testing.T) {
 			// make sure we're creating a new subdir of the tempdir
 			tempdir = filepath.Join(tempdir, "target")
 
-			res.SelectFilter = func(item, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
+			res.SelectFilter = func(item, dstpath string, isDir bool) (selectedForRestore bool, childMayBeSelected bool) {
 				t.Logf("restore %v to %v", item, dstpath)
 				if !fs.HasPathPrefix(tempdir, dstpath) {
 					t.Errorf("would restore %v to %v, which is not within the target dir %v",
@@ -379,7 +379,7 @@ func TestRestorer(t *testing.T) {
 				}
 
 				if test.Select != nil {
-					return test.Select(item, dstpath, node)
+					return test.Select(item, dstpath, isDir)
 				}
 
 				return true, true
@@ -570,7 +570,7 @@ func checkVisitOrder(list []TreeVisit) TraverseTreeCheck {
 func TestRestorerTraverseTree(t *testing.T) {
 	var tests = []struct {
 		Snapshot
-		Select  func(item string, dstpath string, node *restic.Node) (selectForRestore bool, childMayBeSelected bool)
+		Select  func(item string, dstpath string, isDir bool) (selectForRestore bool, childMayBeSelected bool)
 		Visitor TraverseTreeCheck
 	}{
 		{
@@ -586,7 +586,7 @@ func TestRestorerTraverseTree(t *testing.T) {
 					"foo": File{Data: "content: foo\n"},
 				},
 			},
-			Select: func(item string, dstpath string, node *restic.Node) (selectForRestore bool, childMayBeSelected bool) {
+			Select: func(item string, dstpath string, isDir bool) (selectForRestore bool, childMayBeSelected bool) {
 				return true, true
 			},
 			Visitor: checkVisitOrder([]TreeVisit{
@@ -613,7 +613,7 @@ func TestRestorerTraverseTree(t *testing.T) {
 					"foo": File{Data: "content: foo\n"},
 				},
 			},
-			Select: func(item string, dstpath string, node *restic.Node) (selectForRestore bool, childMayBeSelected bool) {
+			Select: func(item string, dstpath string, isDir bool) (selectForRestore bool, childMayBeSelected bool) {
 				if item == "/foo" {
 					return true, false
 				}
@@ -635,7 +635,7 @@ func TestRestorerTraverseTree(t *testing.T) {
 					}},
 				},
 			},
-			Select: func(item string, dstpath string, node *restic.Node) (selectForRestore bool, childMayBeSelected bool) {
+			Select: func(item string, dstpath string, isDir bool) (selectForRestore bool, childMayBeSelected bool) {
 				if item == "/aaa" {
 					return true, false
 				}
@@ -659,7 +659,7 @@ func TestRestorerTraverseTree(t *testing.T) {
 					"foo": File{Data: "content: foo\n"},
 				},
 			},
-			Select: func(item string, dstpath string, node *restic.Node) (selectForRestore bool, childMayBeSelected bool) {
+			Select: func(item string, dstpath string, isDir bool) (selectForRestore bool, childMayBeSelected bool) {
 				if strings.HasPrefix(item, "/dir") {
 					return true, true
 				}
@@ -688,7 +688,7 @@ func TestRestorerTraverseTree(t *testing.T) {
 					"foo": File{Data: "content: foo\n"},
 				},
 			},
-			Select: func(item string, dstpath string, node *restic.Node) (selectForRestore bool, childMayBeSelected bool) {
+			Select: func(item string, dstpath string, isDir bool) (selectForRestore bool, childMayBeSelected bool) {
 				switch item {
 				case "/dir":
 					return false, true
@@ -788,7 +788,7 @@ func TestRestorerConsistentTimestampsAndPermissions(t *testing.T) {
 
 	res := NewRestorer(repo, sn, Options{})
 
-	res.SelectFilter = func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
+	res.SelectFilter = func(item string, dstpath string, isDir bool) (selectedForRestore bool, childMayBeSelected bool) {
 		switch filepath.ToSlash(item) {
 		case "/dir":
 			childMayBeSelected = true
