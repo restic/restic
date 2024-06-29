@@ -51,6 +51,7 @@ const (
 	ActionFileRestored  ItemAction = "file restored"
 	ActionFileUpdated   ItemAction = "file updated"
 	ActionFileUnchanged ItemAction = "file unchanged"
+	ActionDeleted       ItemAction = "deleted"
 )
 
 func NewProgress(printer ProgressPrinter, interval time.Duration) *Progress {
@@ -124,6 +125,17 @@ func (p *Progress) AddSkippedFile(name string, size uint64) {
 	p.s.AllBytesSkipped += size
 
 	p.printer.CompleteItem(ActionFileUnchanged, name, size)
+}
+
+func (p *Progress) ReportDeletedFile(name string) {
+	if p == nil {
+		return
+	}
+
+	p.m.Lock()
+	defer p.m.Unlock()
+
+	p.printer.CompleteItem(ActionDeleted, name, 0)
 }
 
 func (p *Progress) Finish() {

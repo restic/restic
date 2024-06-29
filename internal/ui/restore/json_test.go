@@ -53,6 +53,7 @@ func TestJSONPrintCompleteItem(t *testing.T) {
 		{ActionFileRestored, 123, "{\"message_type\":\"verbose_status\",\"action\":\"restored\",\"item\":\"test\",\"size\":123}\n"},
 		{ActionFileUpdated, 123, "{\"message_type\":\"verbose_status\",\"action\":\"updated\",\"item\":\"test\",\"size\":123}\n"},
 		{ActionFileUnchanged, 123, "{\"message_type\":\"verbose_status\",\"action\":\"unchanged\",\"item\":\"test\",\"size\":123}\n"},
+		{ActionDeleted, 0, "{\"message_type\":\"verbose_status\",\"action\":\"deleted\",\"item\":\"test\",\"size\":0}\n"},
 	} {
 		term, printer := createJSONProgress()
 		printer.CompleteItem(data.action, "test", data.size)
