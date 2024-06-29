@@ -27,7 +27,7 @@ type Restorer struct {
 
 	Error        func(location string, err error) error
 	Warn         func(message string)
-	SelectFilter func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool)
+	SelectFilter func(item string, dstpath string, isDir bool) (selectedForRestore bool, childMayBeSelected bool)
 }
 
 var restorerAbortOnAllErrors = func(_ string, err error) error { return err }
@@ -97,7 +97,7 @@ func NewRestorer(repo restic.Repository, sn *restic.Snapshot, opts Options) *Res
 		opts:         opts,
 		fileList:     make(map[string]bool),
 		Error:        restorerAbortOnAllErrors,
-		SelectFilter: func(string, string, *restic.Node) (bool, bool) { return true, true },
+		SelectFilter: func(string, string, bool) (bool, bool) { return true, true },
 		sn:           sn,
 	}
 
@@ -154,7 +154,7 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 			continue
 		}
 
-		selectedForRestore, childMayBeSelected := res.SelectFilter(nodeLocation, nodeTarget, node)
+		selectedForRestore, childMayBeSelected := res.SelectFilter(nodeLocation, nodeTarget, node.Type == "dir")
 		debug.Log("SelectFilter returned %v %v for %q", selectedForRestore, childMayBeSelected, nodeLocation)
 
 		if selectedForRestore {
