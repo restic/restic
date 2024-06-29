@@ -120,7 +120,9 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 		return hasRestored, res.Error(location, err)
 	}
 
-	for _, node := range tree.Nodes {
+	for i, node := range tree.Nodes {
+		// allow GC of tree node
+		tree.Nodes[i] = nil
 
 		// ensure that the node name does not contain anything that refers to a
 		// top-level directory.
