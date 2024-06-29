@@ -37,6 +37,7 @@ type Options struct {
 	Sparse    bool
 	Progress  *restoreui.Progress
 	Overwrite OverwriteBehavior
+	Delete    bool
 }
 
 type OverwriteBehavior int
@@ -107,22 +108,61 @@ func NewRestorer(repo restic.Repository, sn *restic.Snapshot, opts Options) *Res
 type treeVisitor struct {
 	enterDir  func(node *restic.Node, target, location string) error
 	visitNode func(node *restic.Node, target, location string) error
-	leaveDir  func(node *restic.Node, target, location string) error
+	// 'entries' contains all files the snapshot contains for this node. This also includes files
+	// ignored by the SelectFilter.
+	leaveDir func(node *restic.Node, target, location string, entries []string) error
 }
 
 // traverseTree traverses a tree from the repo and calls treeVisitor.
 // target is the path in the file system, location within the snapshot.
-func (res *Restorer) traverseTree(ctx context.Context, target, location string, treeID restic.ID, visitor treeVisitor) (hasRestored bool, err error) {
+func (res *Restorer) traverseTree(ctx context.Context, target string, treeID restic.ID, visitor treeVisitor) error {
+	location := string(filepath.Separator)
+	sanitizeError := func(err error) error {
+		switch err {
+		case nil, context.Canceled, context.DeadlineExceeded:
+			// Context errors are permanent.
+			return err
+		default:
+			return res.Error(location, err)
+		}
+	}
+
+	if visitor.enterDir != nil {
+		err := sanitizeError(visitor.enterDir(nil, target, location))
+		if err != nil {
+			return err
+		}
+	}
+	childFilenames, hasRestored, err := res.traverseTreeInner(ctx, target, location, treeID, visitor)
+	if err != nil {
+		return err
+	}
+	if hasRestored && visitor.leaveDir != nil {
+		err = sanitizeError(visitor.leaveDir(nil, target, location, childFilenames))
+	}
+
+	return err
+}
+
+func (res *Restorer) traverseTreeInner(ctx context.Context, target, location string, treeID restic.ID, visitor treeVisitor) (filenames []string, hasRestored bool, err error) {
 	debug.Log("%v %v %v", target, location, treeID)
 	tree, err := restic.LoadTree(ctx, res.repo, treeID)
 	if err != nil {
 		debug.Log("error loading tree %v: %v", treeID, err)
-		return hasRestored, res.Error(location, err)
+		return nil, hasRestored, res.Error(location, err)
 	}
 
+	if res.opts.Delete {
+		filenames = make([]string, 0, len(tree.Nodes))
+	}
 	for i, node := range tree.Nodes {
 		// allow GC of tree node
 		tree.Nodes[i] = nil
+		if res.opts.Delete {
+			// just track all files included in the tree node to simplify the control flow.
+			// tracking too many files does not matter except for a slightly elevated memory usage
+			filenames = append(filenames, node.Name)
+		}
 
 		// ensure that the node name does not contain anything that refers to a
 		// top-level directory.
@@ -131,8 +171,10 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 			debug.Log("node %q has invalid name %q", node.Name, nodeName)
 			err := res.Error(location, errors.Errorf("invalid child node name %s", node.Name))
 			if err != nil {
-				return hasRestored, err
+				return nil, hasRestored, err
 			}
+			// force disable deletion to prevent unexpected behavior
+			res.opts.Delete = false
 			continue
 		}
 
@@ -144,8 +186,10 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 			debug.Log("node %q has invalid target path %q", node.Name, nodeTarget)
 			err := res.Error(nodeLocation, errors.New("node has invalid path"))
 			if err != nil {
-				return hasRestored, err
+				return nil, hasRestored, err
 			}
+			// force disable deletion to prevent unexpected behavior
+			res.opts.Delete = false
 			continue
 		}
 
@@ -173,25 +217,26 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 
 		if node.Type == "dir" {
 			if node.Subtree == nil {
-				return hasRestored, errors.Errorf("Dir without subtree in tree %v", treeID.Str())
+				return nil, hasRestored, errors.Errorf("Dir without subtree in tree %v", treeID.Str())
 			}
 
 			if selectedForRestore && visitor.enterDir != nil {
 				err = sanitizeError(visitor.enterDir(node, nodeTarget, nodeLocation))
 				if err != nil {
-					return hasRestored, err
+					return nil, hasRestored, err
 				}
 			}
 
 			// keep track of restored child status
 			// so metadata of the current directory are restored on leaveDir
 			childHasRestored := false
+			var childFilenames []string
 
 			if childMayBeSelected {
-				childHasRestored, err = res.traverseTree(ctx, nodeTarget, nodeLocation, *node.Subtree, visitor)
+				childFilenames, childHasRestored, err = res.traverseTreeInner(ctx, nodeTarget, nodeLocation, *node.Subtree, visitor)
 				err = sanitizeError(err)
 				if err != nil {
-					return hasRestored, err
+					return nil, hasRestored, err
 				}
 				// inform the parent directory to restore parent metadata on leaveDir if needed
 				if childHasRestored {
@@ -202,9 +247,9 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 			// metadata need to be restore when leaving the directory in both cases
 			// selected for restore or any child of any subtree have been restored
 			if (selectedForRestore || childHasRestored) && visitor.leaveDir != nil {
-				err = sanitizeError(visitor.leaveDir(node, nodeTarget, nodeLocation))
+				err = sanitizeError(visitor.leaveDir(node, nodeTarget, nodeLocation, childFilenames))
 				if err != nil {
-					return hasRestored, err
+					return nil, hasRestored, err
 				}
 			}
 
@@ -214,12 +259,12 @@ func (res *Restorer) traverseTree(ctx context.Context, target, location string, 
 		if selectedForRestore {
 			err = sanitizeError(visitor.visitNode(node, nodeTarget, nodeLocation))
 			if err != nil {
-				return hasRestored, err
+				return nil, hasRestored, err
 			}
 		}
 	}
 
-	return hasRestored, nil
+	return filenames, hasRestored, nil
 }
 
 func (res *Restorer) restoreNodeTo(ctx context.Context, node *restic.Node, target, location string) error {
@@ -310,10 +355,12 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 	var buf []byte
 
 	// first tree pass: create directories and collect all files to restore
-	_, err = res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
+	err = res.traverseTree(ctx, dst, *res.sn.Tree, treeVisitor{
 		enterDir: func(_ *restic.Node, target, location string) error {
 			debug.Log("first pass, enterDir: mkdir %q, leaveDir should restore metadata", location)
-			res.opts.Progress.AddFile(0)
+			if location != "/" {
+				res.opts.Progress.AddFile(0)
+			}
 			return res.ensureDir(target)
 		},
 
@@ -373,7 +420,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 	debug.Log("second pass for %q", dst)
 
 	// second tree pass: restore special files and filesystem metadata
-	_, err = res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
+	err = res.traverseTree(ctx, dst, *res.sn.Tree, treeVisitor{
 		visitNode: func(node *restic.Node, target, location string) error {
 			debug.Log("second pass, visitNode: restore node %q", location)
 			if node.Type != "file" {
@@ -396,7 +443,11 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 			// don't touch skipped files
 			return nil
 		},
-		leaveDir: func(node *restic.Node, target, location string) error {
+		leaveDir: func(node *restic.Node, target, location string, expectedFilenames []string) error {
+			if node == nil {
+				return nil
+			}
+
 			err := res.restoreNodeMetadataTo(node, target, location)
 			if err == nil {
 				res.opts.Progress.AddProgress(location, restoreui.ActionDirRestored, 0, 0)
@@ -493,7 +544,7 @@ func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
 	g.Go(func() error {
 		defer close(work)
 
-		_, err := res.traverseTree(ctx, dst, string(filepath.Separator), *res.sn.Tree, treeVisitor{
+		err := res.traverseTree(ctx, dst, *res.sn.Tree, treeVisitor{
 			visitNode: func(node *restic.Node, target, location string) error {
 				if node.Type != "file" {
 					return nil
