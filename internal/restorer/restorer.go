@@ -349,7 +349,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 
 	idx := NewHardlinkIndex[string]()
 	filerestorer := newFileRestorer(dst, res.repo.LoadBlobsFromPack, res.repo.LookupBlob,
-		res.repo.Connections(), res.opts.Sparse, res.opts.Progress)
+		res.repo.Connections(), res.opts.Sparse, res.opts.Delete, res.opts.Progress)
 	filerestorer.Error = res.Error
 
 	debug.Log("first pass for %q", dst)

@@ -1214,6 +1214,27 @@ func TestRestoreDryRun(t *testing.T) {
 	rtest.Assert(t, errors.Is(err, os.ErrNotExist), "expected no file to be created, got %v", err)
 }
 
+func TestRestoreOverwriteDirectory(t *testing.T) {
+	saveSnapshotsAndOverwrite(t,
+		Snapshot{
+			Nodes: map[string]Node{
+				"dir": Dir{
+					Mode: normalizeFileMode(0755 | os.ModeDir),
+					Nodes: map[string]Node{
+						"anotherfile": File{Data: "content: file\n"},
+					},
+				},
+			},
+		},
+		Snapshot{
+			Nodes: map[string]Node{
+				"dir": File{Data: "content: file\n"},
+			},
+		},
+		Options{Delete: true},
+	)
+}
+
 func TestRestoreDelete(t *testing.T) {
 	repo := repository.TestRepository(t)
 	tempdir := rtest.TempDir(t)
