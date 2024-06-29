@@ -81,7 +81,7 @@ func TestFirstProgressOnAFile(t *testing.T) {
 
 	result, items := testProgress(func(progress *Progress) bool {
 		progress.AddFile(expectedBytesTotal)
-		progress.AddProgress("test", false, false, expectedBytesWritten, expectedBytesTotal)
+		progress.AddProgress("test", ActionFileUpdated, expectedBytesWritten, expectedBytesTotal)
 		return false
 	})
 	test.Equals(t, printerTrace{
@@ -95,9 +95,9 @@ func TestLastProgressOnAFile(t *testing.T) {
 
 	result, items := testProgress(func(progress *Progress) bool {
 		progress.AddFile(fileSize)
-		progress.AddProgress("test", false, false, 30, fileSize)
-		progress.AddProgress("test", false, false, 35, fileSize)
-		progress.AddProgress("test", false, false, 35, fileSize)
+		progress.AddProgress("test", ActionFileUpdated, 30, fileSize)
+		progress.AddProgress("test", ActionFileUpdated, 35, fileSize)
+		progress.AddProgress("test", ActionFileUpdated, 35, fileSize)
 		return false
 	})
 	test.Equals(t, printerTrace{
@@ -114,9 +114,9 @@ func TestLastProgressOnLastFile(t *testing.T) {
 	result, items := testProgress(func(progress *Progress) bool {
 		progress.AddFile(fileSize)
 		progress.AddFile(50)
-		progress.AddProgress("test1", false, false, 50, 50)
-		progress.AddProgress("test2", false, false, 50, fileSize)
-		progress.AddProgress("test2", false, false, 50, fileSize)
+		progress.AddProgress("test1", ActionFileUpdated, 50, 50)
+		progress.AddProgress("test2", ActionFileUpdated, 50, fileSize)
+		progress.AddProgress("test2", ActionFileUpdated, 50, fileSize)
 		return false
 	})
 	test.Equals(t, printerTrace{
@@ -134,8 +134,8 @@ func TestSummaryOnSuccess(t *testing.T) {
 	result, _ := testProgress(func(progress *Progress) bool {
 		progress.AddFile(fileSize)
 		progress.AddFile(50)
-		progress.AddProgress("test1", false, false, 50, 50)
-		progress.AddProgress("test2", false, false, fileSize, fileSize)
+		progress.AddProgress("test1", ActionFileUpdated, 50, 50)
+		progress.AddProgress("test2", ActionFileUpdated, fileSize, fileSize)
 		return true
 	})
 	test.Equals(t, printerTrace{
@@ -149,8 +149,8 @@ func TestSummaryOnErrors(t *testing.T) {
 	result, _ := testProgress(func(progress *Progress) bool {
 		progress.AddFile(fileSize)
 		progress.AddFile(50)
-		progress.AddProgress("test1", false, false, 50, 50)
-		progress.AddProgress("test2", false, false, fileSize/2, fileSize)
+		progress.AddProgress("test1", ActionFileUpdated, 50, 50)
+		progress.AddProgress("test2", ActionFileUpdated, fileSize/2, fileSize)
 		return true
 	})
 	test.Equals(t, printerTrace{
@@ -179,8 +179,8 @@ func TestProgressTypes(t *testing.T) {
 	_, items := testProgress(func(progress *Progress) bool {
 		progress.AddFile(fileSize)
 		progress.AddFile(0)
-		progress.AddProgress("dir", true, false, fileSize, fileSize)
-		progress.AddProgress("new", false, true, 0, 0)
+		progress.AddProgress("dir", ActionDirRestored, fileSize, fileSize)
+		progress.AddProgress("new", ActionFileRestored, 0, 0)
 		return true
 	})
 	test.Equals(t, itemTrace{
