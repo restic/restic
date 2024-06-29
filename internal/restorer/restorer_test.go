@@ -1219,3 +1219,115 @@ func TestRestoreDryRun(t *testing.T) {
 	_, err := os.Stat(tempdir)
 	rtest.Assert(t, errors.Is(err, os.ErrNotExist), "expected no file to be created, got %v", err)
 }
+
+func TestRestoreDelete(t *testing.T) {
+	repo := repository.TestRepository(t)
+	tempdir := rtest.TempDir(t)
+
+	sn, _ := saveSnapshot(t, repo, Snapshot{
+		Nodes: map[string]Node{
+			"dir": Dir{
+				Mode: normalizeFileMode(0755 | os.ModeDir),
+				Nodes: map[string]Node{
+					"file1":       File{Data: "content: file\n"},
+					"anotherfile": File{Data: "content: file\n"},
+				},
+			},
+			"dir2": Dir{
+				Mode: normalizeFileMode(0755 | os.ModeDir),
+				Nodes: map[string]Node{
+					"anotherfile": File{Data: "content: file\n"},
+				},
+			},
+			"anotherfile": File{Data: "content: file\n"},
+		},
+	}, noopGetGenericAttributes)
+
+	// should delete files that no longer exist in the snapshot
+	deleteSn, _ := saveSnapshot(t, repo, Snapshot{
+		Nodes: map[string]Node{
+			"dir": Dir{
+				Mode: normalizeFileMode(0755 | os.ModeDir),
+				Nodes: map[string]Node{
+					"file1": File{Data: "content: file\n"},
+				},
+			},
+		},
+	}, noopGetGenericAttributes)
+
+	tests := []struct {
+		selectFilter func(item string, dstpath string, isDir bool) (selectedForRestore bool, childMayBeSelected bool)
+		fileState    map[string]bool
+	}{
+		{
+			selectFilter: nil,
+			fileState: map[string]bool{
+				"dir":                                true,
+				filepath.Join("dir", "anotherfile"):  false,
+				filepath.Join("dir", "file1"):        true,
+				"dir2":                               false,
+				filepath.Join("dir2", "anotherfile"): false,
+				"anotherfile":                        false,
+			},
+		},
+		{
+			selectFilter: func(item, dstpath string, isDir bool) (selectedForRestore bool, childMayBeSelected bool) {
+				return false, false
+			},
+			fileState: map[string]bool{
+				"dir":                                true,
+				filepath.Join("dir", "anotherfile"):  true,
+				filepath.Join("dir", "file1"):        true,
+				"dir2":                               true,
+				filepath.Join("dir2", "anotherfile"): true,
+				"anotherfile":                        true,
+			},
+		},
+		{
+			selectFilter: func(item, dstpath string, isDir bool) (selectedForRestore bool, childMayBeSelected bool) {
+				switch item {
+				case filepath.FromSlash("/dir"):
+					selectedForRestore = true
+				case filepath.FromSlash("/dir2"):
+					selectedForRestore = true
+				}
+				return
+			},
+			fileState: map[string]bool{
+				"dir":                                true,
+				filepath.Join("dir", "anotherfile"):  true,
+				filepath.Join("dir", "file1"):        true,
+				"dir2":                               false,
+				filepath.Join("dir2", "anotherfile"): false,
+				"anotherfile":                        true,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			res := NewRestorer(repo, sn, Options{})
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			err := res.RestoreTo(ctx, tempdir)
+			rtest.OK(t, err)
+
+			res = NewRestorer(repo, deleteSn, Options{Delete: true})
+			if test.selectFilter != nil {
+				res.SelectFilter = test.selectFilter
+			}
+			err = res.RestoreTo(ctx, tempdir)
+			rtest.OK(t, err)
+
+			for fn, shouldExist := range test.fileState {
+				_, err := os.Stat(filepath.Join(tempdir, fn))
+				if shouldExist {
+					rtest.OK(t, err)
+				} else {
+					rtest.Assert(t, errors.Is(err, os.ErrNotExist), "file %v: unexpected error got %v, expected ErrNotExist", fn, err)
+				}
+			}
+		})
+	}
+}

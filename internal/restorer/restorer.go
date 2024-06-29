@@ -25,8 +25,10 @@ type Restorer struct {
 
 	fileList map[string]bool
 
-	Error        func(location string, err error) error
-	Warn         func(message string)
+	Error func(location string, err error) error
+	Warn  func(message string)
+	// SelectFilter determines whether the item is selectedForRestore or whether a childMayBeSelected.
+	// selectedForRestore must not depend on isDir as `removeUnexpectedFiles` always passes false to isDir.
 	SelectFilter func(item string, dstpath string, isDir bool) (selectedForRestore bool, childMayBeSelected bool)
 }
 
@@ -444,6 +446,12 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 			return nil
 		},
 		leaveDir: func(node *restic.Node, target, location string, expectedFilenames []string) error {
+			if res.opts.Delete {
+				if err := res.removeUnexpectedFiles(target, location, expectedFilenames); err != nil {
+					return err
+				}
+			}
+
 			if node == nil {
 				return nil
 			}
@@ -456,6 +464,50 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 		},
 	})
 	return err
+}
+
+func (res *Restorer) removeUnexpectedFiles(target, location string, expectedFilenames []string) error {
+	if !res.opts.Delete {
+		panic("internal error")
+	}
+
+	entries, err := fs.Readdirnames(fs.Local{}, target, fs.O_NOFOLLOW)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	keep := map[string]struct{}{}
+	for _, name := range expectedFilenames {
+		keep[name] = struct{}{}
+	}
+
+	for _, entry := range entries {
+		if _, ok := keep[entry]; ok {
+			continue
+		}
+
+		nodeTarget := filepath.Join(target, entry)
+		nodeLocation := filepath.Join(location, entry)
+
+		if target == nodeTarget || !fs.HasPathPrefix(target, nodeTarget) {
+			return fmt.Errorf("skipping deletion due to invalid filename: %v", entry)
+		}
+
+		// TODO pass a proper value to the isDir parameter once this becomes relevant for the filters
+		selectedForRestore, _ := res.SelectFilter(nodeLocation, nodeTarget, false)
+		// only delete files that were selected for restore
+		if selectedForRestore {
+			if !res.opts.DryRun {
+				if err := fs.RemoveAll(nodeTarget); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
 }
 
 func (res *Restorer) trackFile(location string, metadataOnly bool) {
