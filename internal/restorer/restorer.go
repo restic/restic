@@ -480,11 +480,11 @@ func (res *Restorer) removeUnexpectedFiles(target, location string, expectedFile
 
 	keep := map[string]struct{}{}
 	for _, name := range expectedFilenames {
-		keep[name] = struct{}{}
+		keep[toComparableFilename(name)] = struct{}{}
 	}
 
 	for _, entry := range entries {
-		if _, ok := keep[entry]; ok {
+		if _, ok := keep[toComparableFilename(entry)]; ok {
 			continue
 		}
 
