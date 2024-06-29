@@ -234,7 +234,7 @@ func (res *Restorer) restoreNodeTo(ctx context.Context, node *restic.Node, targe
 		}
 	}
 
-	res.opts.Progress.AddProgress(location, false, true, 0, 0)
+	res.opts.Progress.AddProgress(location, restoreui.ActionFileRestored, 0, 0)
 	return res.restoreNodeMetadataTo(node, target, location)
 }
 
@@ -261,7 +261,7 @@ func (res *Restorer) restoreHardlinkAt(node *restic.Node, target, path, location
 		}
 	}
 
-	res.opts.Progress.AddProgress(location, false, true, 0, 0)
+	res.opts.Progress.AddProgress(location, restoreui.ActionFileRestored, 0, 0)
 	// TODO investigate if hardlinks have separate metadata on any supported system
 	return res.restoreNodeMetadataTo(node, path, location)
 }
@@ -343,8 +343,12 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 					if !res.opts.DryRun {
 						filerestorer.addFile(location, node.Content, int64(node.Size), matches)
 					} else {
+						action := restoreui.ActionFileUpdated
+						if matches == nil {
+							action = restoreui.ActionFileRestored
+						}
 						// immediately mark as completed
-						res.opts.Progress.AddProgress(location, false, matches == nil, node.Size, node.Size)
+						res.opts.Progress.AddProgress(location, action, node.Size, node.Size)
 					}
 				}
 				res.trackFile(location, updateMetadataOnly)
@@ -393,7 +397,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 		leaveDir: func(node *restic.Node, target, location string) error {
 			err := res.restoreNodeMetadataTo(node, target, location)
 			if err == nil {
-				res.opts.Progress.AddProgress(location, false, true, 0, 0)
+				res.opts.Progress.AddProgress(location, restoreui.ActionDirRestored, 0, 0)
 			}
 			return err
 		},

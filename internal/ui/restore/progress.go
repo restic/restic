@@ -88,7 +88,7 @@ func (p *Progress) AddFile(size uint64) {
 }
 
 // AddProgress accumulates the number of bytes written for a file
-func (p *Progress) AddProgress(name string, isDir bool, isNew bool, bytesWrittenPortion uint64, bytesTotal uint64) {
+func (p *Progress) AddProgress(name string, action ItemAction, bytesWrittenPortion uint64, bytesTotal uint64) {
 	if p == nil {
 		return
 	}
@@ -108,12 +108,6 @@ func (p *Progress) AddProgress(name string, isDir bool, isNew bool, bytesWritten
 		delete(p.progressInfoMap, name)
 		p.s.FilesFinished++
 
-		action := ActionFileUpdated
-		if isDir {
-			action = ActionDirRestored
-		} else if isNew {
-			action = ActionFileRestored
-		}
 		p.printer.CompleteItem(action, name, bytesTotal)
 	}
 }
