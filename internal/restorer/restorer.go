@@ -29,7 +29,7 @@ type Restorer struct {
 	Warn  func(message string)
 	// SelectFilter determines whether the item is selectedForRestore or whether a childMayBeSelected.
 	// selectedForRestore must not depend on isDir as `removeUnexpectedFiles` always passes false to isDir.
-	SelectFilter func(item string, dstpath string, isDir bool) (selectedForRestore bool, childMayBeSelected bool)
+	SelectFilter func(item string, isDir bool) (selectedForRestore bool, childMayBeSelected bool)
 }
 
 var restorerAbortOnAllErrors = func(_ string, err error) error { return err }
@@ -100,7 +100,7 @@ func NewRestorer(repo restic.Repository, sn *restic.Snapshot, opts Options) *Res
 		opts:         opts,
 		fileList:     make(map[string]bool),
 		Error:        restorerAbortOnAllErrors,
-		SelectFilter: func(string, string, bool) (bool, bool) { return true, true },
+		SelectFilter: func(string, bool) (bool, bool) { return true, true },
 		sn:           sn,
 	}
 
@@ -200,7 +200,7 @@ func (res *Restorer) traverseTreeInner(ctx context.Context, target, location str
 			continue
 		}
 
-		selectedForRestore, childMayBeSelected := res.SelectFilter(nodeLocation, nodeTarget, node.Type == "dir")
+		selectedForRestore, childMayBeSelected := res.SelectFilter(nodeLocation, node.Type == "dir")
 		debug.Log("SelectFilter returned %v %v for %q", selectedForRestore, childMayBeSelected, nodeLocation)
 
 		if selectedForRestore {
@@ -496,7 +496,7 @@ func (res *Restorer) removeUnexpectedFiles(target, location string, expectedFile
 		}
 
 		// TODO pass a proper value to the isDir parameter once this becomes relevant for the filters
-		selectedForRestore, _ := res.SelectFilter(nodeLocation, nodeTarget, false)
+		selectedForRestore, _ := res.SelectFilter(nodeLocation, false)
 		// only delete files that were selected for restore
 		if selectedForRestore {
 			if !res.opts.DryRun {

@@ -164,7 +164,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		msg.E("Warning: %s\n", message)
 	}
 
-	selectExcludeFilter := func(item string, _ string, isDir bool) (selectedForRestore bool, childMayBeSelected bool) {
+	selectExcludeFilter := func(item string, isDir bool) (selectedForRestore bool, childMayBeSelected bool) {
 		matched := false
 		for _, rejectFn := range excludePatternFns {
 			matched = matched || rejectFn(item)
@@ -186,7 +186,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		return selectedForRestore, childMayBeSelected
 	}
 
-	selectIncludeFilter := func(item string, _ string, isDir bool) (selectedForRestore bool, childMayBeSelected bool) {
+	selectIncludeFilter := func(item string, isDir bool) (selectedForRestore bool, childMayBeSelected bool) {
 		selectedForRestore = false
 		childMayBeSelected = false
 		for _, includeFn := range includePatternFns {
