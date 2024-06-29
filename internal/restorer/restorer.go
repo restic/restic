@@ -499,6 +499,7 @@ func (res *Restorer) removeUnexpectedFiles(target, location string, expectedFile
 		selectedForRestore, _ := res.SelectFilter(nodeLocation, false)
 		// only delete files that were selected for restore
 		if selectedForRestore {
+			res.opts.Progress.ReportDeletedFile(nodeLocation)
 			if !res.opts.DryRun {
 				if err := fs.RemoveAll(nodeTarget); err != nil {
 					return err
