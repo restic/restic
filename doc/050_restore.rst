@@ -111,6 +111,27 @@ values are supported:
   newer modification time (mtime).
 * ``--overwrite never``: never overwrite existing files.
 
+Delete files not in snapshot
+----------------------------
+
+When restoring into a directory that already contains files, it can be useful to remove all
+files that do not exist in the snapshot. For this, pass the ``--delete`` option to the ``restore``
+command. The command will then **delete all files** from the target directory that do not
+exist in the snapshot.
+
+The ``--delete`` option also allows overwriting a non-empty directory if the snapshot contains a
+file with the same name.
+
+.. warning::
+
+    Always use the ``--dry-run -vv`` option to verify what would be deleted before running the actual
+    command.
+
+When specifying ``--include`` or ``--exclude`` options, only files or directories matched by those
+options will be deleted. For example, the command
+``restic -r /srv/restic-repo restore 79766175:/work --target /tmp/restore-work --include /foo --delete``
+would only delete files within ``/tmp/restore-work/foo``.
+
 Dry run
 -------
 
