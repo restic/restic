@@ -304,7 +304,7 @@ func (arch *Archiver) saveDir(ctx context.Context, snPath string, dir string, fi
 		return FutureNode{}, err
 	}
 
-	names, err := readdirnames(arch.FS, dir, fs.O_NOFOLLOW)
+	names, err := fs.Readdirnames(arch.FS, dir, fs.O_NOFOLLOW)
 	if err != nil {
 		return FutureNode{}, err
 	}
@@ -707,27 +707,6 @@ func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *Tree, 
 	return fn, len(nodes), nil
 }
 
-// flags are passed to fs.OpenFile. O_RDONLY is implied.
-func readdirnames(filesystem fs.FS, dir string, flags int) ([]string, error) {
-	f, err := filesystem.OpenFile(dir, fs.O_RDONLY|flags, 0)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	entries, err := f.Readdirnames(-1)
-	if err != nil {
-		_ = f.Close()
-		return nil, errors.Wrapf(err, "Readdirnames %v failed", dir)
-	}
-
-	err = f.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	return entries, nil
-}
-
 // resolveRelativeTargets replaces targets that only contain relative
 // directories ("." or "../../") with the contents of the directory. Each
 // element of target is processed with fs.Clean().
@@ -743,7 +722,7 @@ func resolveRelativeTargets(filesys fs.FS, targets []string) ([]string, error) {
 		}
 
 		debug.Log("replacing %q with readdir(%q)", target, target)
-		entries, err := readdirnames(filesys, target, fs.O_NOFOLLOW)
+		entries, err := fs.Readdirnames(filesys, target, fs.O_NOFOLLOW)
 		if err != nil {
 			return nil, err
 		}
