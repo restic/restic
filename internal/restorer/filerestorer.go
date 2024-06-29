@@ -53,6 +53,8 @@ type fileRestorer struct {
 	sparse      bool
 	progress    *restore.Progress
 
+	allowRecursiveDelete bool
+
 	dst   string
 	files []*fileInfo
 	Error func(string, error) error
@@ -63,21 +65,23 @@ func newFileRestorer(dst string,
 	idx func(restic.BlobType, restic.ID) []restic.PackedBlob,
 	connections uint,
 	sparse bool,
+	allowRecursiveDelete bool,
 	progress *restore.Progress) *fileRestorer {
 
 	// as packs are streamed the concurrency is limited by IO
 	workerCount := int(connections)
 
 	return &fileRestorer{
-		idx:         idx,
-		blobsLoader: blobsLoader,
-		filesWriter: newFilesWriter(workerCount),
-		zeroChunk:   repository.ZeroChunk(),
-		sparse:      sparse,
-		progress:    progress,
-		workerCount: workerCount,
-		dst:         dst,
-		Error:       restorerAbortOnAllErrors,
+		idx:                  idx,
+		blobsLoader:          blobsLoader,
+		filesWriter:          newFilesWriter(workerCount, allowRecursiveDelete),
+		zeroChunk:            repository.ZeroChunk(),
+		sparse:               sparse,
+		progress:             progress,
+		allowRecursiveDelete: allowRecursiveDelete,
+		workerCount:          workerCount,
+		dst:                  dst,
+		Error:                restorerAbortOnAllErrors,
 	}
 }
 
@@ -207,7 +211,7 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 }
 
 func (r *fileRestorer) restoreEmptyFileAt(location string) error {
-	f, err := createFile(r.targetPath(location), 0, false)
+	f, err := createFile(r.targetPath(location), 0, false, r.allowRecursiveDelete)
 	if err != nil {
 		return err
 	}

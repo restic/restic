@@ -13,7 +13,7 @@ import (
 
 func TestFilesWriterBasic(t *testing.T) {
 	dir := rtest.TempDir(t)
-	w := newFilesWriter(1)
+	w := newFilesWriter(1, false)
 
 	f1 := dir + "/f1"
 	f2 := dir + "/f2"
@@ -37,6 +37,29 @@ func TestFilesWriterBasic(t *testing.T) {
 	buf, err = os.ReadFile(f2)
 	rtest.OK(t, err)
 	rtest.Equals(t, []byte{2, 2}, buf)
+}
+
+func TestFilesWriterRecursiveOverwrite(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "test")
+
+	// create filled directory
+	rtest.OK(t, os.Mkdir(path, 0o700))
+	rtest.OK(t, os.WriteFile(filepath.Join(path, "file"), []byte("data"), 0o400))
+
+	// must error if recursive delete is not allowed
+	w := newFilesWriter(1, false)
+	err := w.writeToFile(path, []byte{1}, 0, 2, false)
+	rtest.Assert(t, errors.Is(err, notEmptyDirError()), "unexepected error got %v", err)
+	rtest.Equals(t, 0, len(w.buckets[0].files))
+
+	// must replace directory
+	w = newFilesWriter(1, true)
+	rtest.OK(t, w.writeToFile(path, []byte{1, 1}, 0, 2, false))
+	rtest.Equals(t, 0, len(w.buckets[0].files))
+
+	buf, err := os.ReadFile(path)
+	rtest.OK(t, err)
+	rtest.Equals(t, []byte{1, 1}, buf)
 }
 
 func TestCreateFile(t *testing.T) {
@@ -110,7 +133,7 @@ func TestCreateFile(t *testing.T) {
 			for j, test := range tests {
 				path := basepath + fmt.Sprintf("%v%v", i, j)
 				sc.create(t, path)
-				f, err := createFile(path, test.size, test.isSparse)
+				f, err := createFile(path, test.size, test.isSparse, false)
 				if sc.err == nil {
 					rtest.OK(t, err)
 					fi, err := f.Stat()
@@ -128,4 +151,20 @@ func TestCreateFile(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCreateFileRecursiveDelete(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "test")
+
+	// create filled directory
+	rtest.OK(t, os.Mkdir(path, 0o700))
+	rtest.OK(t, os.WriteFile(filepath.Join(path, "file"), []byte("data"), 0o400))
+
+	// replace it
+	f, err := createFile(path, 42, false, true)
+	rtest.OK(t, err)
+	fi, err := f.Stat()
+	rtest.OK(t, err)
+	rtest.Assert(t, fi.Mode().IsRegular(), "wrong filetype %v", fi.Mode())
+	rtest.OK(t, f.Close())
 }
