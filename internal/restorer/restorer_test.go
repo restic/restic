@@ -1214,6 +1214,32 @@ func TestRestoreDryRun(t *testing.T) {
 	rtest.Assert(t, errors.Is(err, os.ErrNotExist), "expected no file to be created, got %v", err)
 }
 
+func TestRestoreDryRunDelete(t *testing.T) {
+	snapshot := Snapshot{
+		Nodes: map[string]Node{
+			"foo": File{Data: "content: foo\n"},
+		},
+	}
+
+	repo := repository.TestRepository(t)
+	tempdir := filepath.Join(rtest.TempDir(t), "target")
+	tempfile := filepath.Join(tempdir, "existing")
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	rtest.OK(t, os.Mkdir(tempdir, 0o755))
+	f, err := os.Create(tempfile)
+	rtest.OK(t, err)
+	rtest.OK(t, f.Close())
+
+	sn, _ := saveSnapshot(t, repo, snapshot, noopGetGenericAttributes)
+	res := NewRestorer(repo, sn, Options{DryRun: true, Delete: true})
+	rtest.OK(t, res.RestoreTo(ctx, tempdir))
+
+	_, err = os.Stat(tempfile)
+	rtest.Assert(t, err == nil, "expected file to still exist, got error %v", err)
+}
+
 func TestRestoreOverwriteDirectory(t *testing.T) {
 	saveSnapshotsAndOverwrite(t,
 		Snapshot{
