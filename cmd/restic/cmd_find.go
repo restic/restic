@@ -33,7 +33,10 @@ restic find --pack 025c1d06
 EXIT STATUS
 ===========
 
-Exit status is 0 if the command was successful, and non-zero if there was any error.
+Exit status is 0 if the command was successful.
+Exit status is 1 if there was any error.
+Exit status is 4 if the repository is already locked.
+Exit status is 5 if the repository does not exist.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {

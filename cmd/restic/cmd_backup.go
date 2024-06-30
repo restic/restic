@@ -41,6 +41,8 @@ EXIT STATUS
 Exit status is 0 if the command was successful.
 Exit status is 1 if there was a fatal error (no snapshot created).
 Exit status is 3 if some source data could not be read (incomplete snapshot created).
+Exit status is 4 if the repository is already locked.
+Exit status is 5 if the repository does not exist.
 `,
 	PreRun: func(_ *cobra.Command, _ []string) {
 		if backupOptions.Host == "" {
