@@ -38,6 +38,31 @@ to ``cat config``) and it may print a different error message. If there
 are no errors, restic will return a zero exit code and print the repository
 metadata.
 
+Exit codes
+**********
+
+Restic commands return an exit code that signals whether the command was successful.
+The following table provides a general description, see the help of each command for
+a more specific description.
+
+.. warning::
+    New exit codes will be added over time. If an unknown exit code is returned, then it
+    MUST treat as a command failure.
+
++-----+----------------------------------------------------+
+| 0   | Command was successful                             |
++-----+----------------------------------------------------+
+| 1   | Command failed, see command help for more details  |
++-----+----------------------------------------------------+
+| 2   | Go runtime error                                   |
++-----+----------------------------------------------------+
+| 3   | ``backup`` command could not read some source data |
++-----+----------------------------------------------------+
+| 4   | Failed to lock repository                          |
++-----+----------------------------------------------------+
+| 130 | Restic was interrupted using SIGINT or SIGSTOP     |
++-----+----------------------------------------------------+
+
 JSON output
 ***********
 
