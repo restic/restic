@@ -19,7 +19,8 @@ The "add" sub-command creates a new key and validates the key. Returns the new k
 EXIT STATUS
 ===========
 
-Exit status is 0 if the command is successful, and non-zero if there was any error.
+Exit status is 0 if the command was successful.
+Exit status is 1 if there was any error.
 	`,
 	DisableAutoGenTag: true,
 }
