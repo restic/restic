@@ -368,10 +368,22 @@ detect this and yield the same error as when you tried to restore:
     $ restic -r /srv/restic-repo check
     ...
     load indexes
-    error: error loading index de30f323: load <index/de30f3231c>: invalid data returned
-    Fatal: LoadIndex returned errors
+    error: error loading index de30f3231ca2e6a59af4aa84216dfe2ef7339c549dc11b09b84000997b139628: LoadRaw(<index/de30f3231c>): invalid data returned
 
-If the repository structure is intact, restic will show that no errors were found:
+    The repository index is damaged and must be repaired. You must run `restic repair index' to correct this.
+
+    Fatal: repository contains errors
+
+.. warning::
+
+    If ``check`` reports an error in the repository, then you must repair the repository.
+    As long as a repository is damaged, restoring some files or directories will fail. New
+    snapshots are not guaranteed to be restorable either.
+
+    For instructions how to repair a damaged repository, see the :ref:`troubleshooting`
+    section or follow the instructions provided by the ``check`` command.
+
+If the repository structure is intact, restic will show that ``no errors were found``:
 
 .. code-block:: console
 
