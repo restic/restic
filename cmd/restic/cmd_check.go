@@ -274,7 +274,9 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		for _, err := range errs {
 			printer.E("error: %v\n", err)
 		}
-		return errors.Fatal("LoadIndex returned errors")
+
+		printer.E("\nThe repository index is damaged and must be repaired. You must run `restic repair index' to correct this.\n\n")
+		return errors.Fatal("repository contains errors")
 	}
 
 	orphanedPacks := 0
