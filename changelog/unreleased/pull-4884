@@ -1,0 +1,11 @@
+Change: return exit code 10 or 11 if repository does not exist or is locked
+
+If a repository does not exist or cannot be locked, then restic always returned
+exit code 1. This made it difficult to distinguish these cases from other
+errors.
+
+Now, restic returns exit code 10 if the repository does not exist and exit code
+11 if the repository could be not locked due to a conflicting lock.
+
+https://github.com/restic/restic/issues/956
+https://github.com/restic/restic/pull/4884
