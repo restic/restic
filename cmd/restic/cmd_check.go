@@ -279,14 +279,24 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 
 	orphanedPacks := 0
 	errChan := make(chan error)
+	salvagePacks := restic.NewIDSet()
 
 	printer.P("check all packs\n")
 	go chkr.Packs(ctx, errChan)
 
 	for err := range errChan {
-		if checker.IsOrphanedPack(err) {
-			orphanedPacks++
-			printer.P("%v\n", err)
+		var packErr *checker.PackError
+		if errors.As(err, &packErr) {
+			if packErr.Orphaned {
+				orphanedPacks++
+				printer.P("%v\n", err)
+			} else {
+				if packErr.Truncated {
+					salvagePacks.Insert(packErr.ID)
+				}
+				errorsFound = true
+				printer.E("%v\n", err)
+			}
 		} else if err == checker.ErrLegacyLayout {
 			errorsFound = true
 			printer.E("error: repository still uses the S3 legacy layout\nYou must run `restic migrate s3legacy` to correct this.\n")
@@ -355,26 +365,14 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 
 		go chkr.ReadPacks(ctx, packs, p, errChan)
 
-		var salvagePacks restic.IDs
-
 		for err := range errChan {
 			errorsFound = true
 			printer.E("%v\n", err)
 			if err, ok := err.(*repository.ErrPackData); ok {
-				salvagePacks = append(salvagePacks, err.PackID)
+				salvagePacks.Insert(err.PackID)
 			}
 		}
 		p.Done()
-
-		if len(salvagePacks) > 0 {
-			printer.E("\nThe repository contains damaged pack files. These damaged files must be removed to repair the repository. This can be done using the following commands. Please read the troubleshooting guide at https://restic.readthedocs.io/en/stable/077_troubleshooting.html first.\n\n")
-			var strIDs []string
-			for _, id := range salvagePacks {
-				strIDs = append(strIDs, id.String())
-			}
-			printer.E("restic repair packs %v\nrestic repair snapshots --forget\n\n", strings.Join(strIDs, " "))
-			printer.E("Damaged pack files can be caused by backend problem, hardware problems or bugs in restic. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting!\n")
-		}
 	}
 
 	switch {
@@ -416,6 +414,16 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 			return errors.Fatal("internal error: failed to select packs to check")
 		}
 		doReadData(packs)
+	}
+
+	if len(salvagePacks) > 0 {
+		printer.E("\nThe repository contains damaged pack files. These damaged files must be removed to repair the repository. This can be done using the following commands. Please read the troubleshooting guide at https://restic.readthedocs.io/en/stable/077_troubleshooting.html first.\n\n")
+		var strIDs []string
+		for id := range salvagePacks {
+			strIDs = append(strIDs, id.String())
+		}
+		printer.E("restic repair packs %v\nrestic repair snapshots --forget\n\n", strings.Join(strIDs, " "))
+		printer.E("Damaged pack files can be caused by backend problems, hardware problems or bugs in restic. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting!\n")
 	}
 
 	if ctx.Err() != nil {
