@@ -367,13 +367,13 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		p.Done()
 
 		if len(salvagePacks) > 0 {
-			printer.E("\nThe repository contains pack files with damaged blobs. These blobs must be removed to repair the repository. This can be done using the following commands. Please read the troubleshooting guide at https://restic.readthedocs.io/en/stable/077_troubleshooting.html first.\n\n")
+			printer.E("\nThe repository contains damaged pack files. These damaged files must be removed to repair the repository. This can be done using the following commands. Please read the troubleshooting guide at https://restic.readthedocs.io/en/stable/077_troubleshooting.html first.\n\n")
 			var strIDs []string
 			for _, id := range salvagePacks {
 				strIDs = append(strIDs, id.String())
 			}
 			printer.E("restic repair packs %v\nrestic repair snapshots --forget\n\n", strings.Join(strIDs, " "))
-			printer.E("Corrupted blobs are either caused by hardware problems or bugs in restic. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting!\n")
+			printer.E("Damaged pack files can be caused by backend problem, hardware problems or bugs in restic. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting!\n")
 		}
 	}
 
