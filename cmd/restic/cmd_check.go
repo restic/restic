@@ -264,7 +264,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		term.Print("Duplicate packs are non-critical, you can run `restic repair index' to correct this.\n")
 	}
 	if suggestLegacyIndexRebuild {
-		printer.E("Found indexes using the legacy format, you must run `restic repair index' to correct this.\n")
+		printer.E("error: Found indexes using the legacy format, you must run `restic repair index' to correct this.\n")
 	}
 	if mixedFound {
 		term.Print("Mixed packs with tree and data blobs are non-critical, you can run `restic prune` to correct this.\n")
@@ -288,7 +288,8 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 			orphanedPacks++
 			printer.P("%v\n", err)
 		} else if err == checker.ErrLegacyLayout {
-			printer.P("repository still uses the S3 legacy layout\nPlease run `restic migrate s3legacy` to correct this.\n")
+			errorsFound = true
+			printer.E("error: repository still uses the S3 legacy layout\nYou must run `restic migrate s3legacy` to correct this.\n")
 		} else {
 			errorsFound = true
 			printer.E("%v\n", err)
