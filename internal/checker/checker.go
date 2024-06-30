@@ -183,20 +183,14 @@ func (c *Checker) LoadIndex(ctx context.Context, p *progress.Counter) (hints []e
 
 // PackError describes an error with a specific pack.
 type PackError struct {
-	ID       restic.ID
-	Orphaned bool
-	Err      error
+	ID        restic.ID
+	Orphaned  bool
+	Truncated bool
+	Err       error
 }
 
 func (e *PackError) Error() string {
 	return "pack " + e.ID.String() + ": " + e.Err.Error()
-}
-
-// IsOrphanedPack returns true if the error describes a pack which is not
-// contained in any index.
-func IsOrphanedPack(err error) bool {
-	var e *PackError
-	return errors.As(err, &e) && e.Orphaned
 }
 
 func isS3Legacy(b backend.Backend) bool {
@@ -250,7 +244,7 @@ func (c *Checker) Packs(ctx context.Context, errChan chan<- error) {
 			select {
 			case <-ctx.Done():
 				return
-			case errChan <- &PackError{ID: id, Err: errors.Errorf("unexpected file size: got %d, expected %d", reposize, size)}:
+			case errChan <- &PackError{ID: id, Truncated: true, Err: errors.Errorf("unexpected file size: got %d, expected %d", reposize, size)}:
 			}
 		}
 	}
