@@ -10,6 +10,8 @@
   ^ for subsubsections
   " for paragraphs
 
+.. _troubleshooting:
+
 #########################
 Troubleshooting
 #########################
