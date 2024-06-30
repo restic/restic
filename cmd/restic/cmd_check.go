@@ -431,6 +431,9 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 	}
 
 	if errorsFound {
+		if len(salvagePacks) == 0 {
+			printer.E("\nThe repository is damaged and must be repaired. Please follow the troubleshooting guide at https://restic.readthedocs.io/en/stable/077_troubleshooting.html .\n\n")
+		}
 		return errors.Fatal("repository contains errors")
 	}
 	printer.P("no errors were found\n")
