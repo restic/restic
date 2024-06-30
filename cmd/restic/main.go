@@ -158,6 +158,8 @@ func main() {
 		exitCode = 3
 	case restic.IsAlreadyLocked(err):
 		exitCode = 4
+	case errors.Is(err, ErrNoRepository):
+		exitCode = 5
 	case errors.Is(err, context.Canceled):
 		exitCode = 130
 	default:

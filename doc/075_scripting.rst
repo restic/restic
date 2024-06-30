@@ -58,7 +58,9 @@ a more specific description.
 +-----+----------------------------------------------------+
 | 3   | ``backup`` command could not read some source data |
 +-----+----------------------------------------------------+
-| 4   | Failed to lock repository                          |
+| 4   | Failed to lock repository (since restic 0.17.0)    |
++-----+----------------------------------------------------+
+| 5   | Repository does not exist (since restic 0.17.0)    |
 +-----+----------------------------------------------------+
 | 130 | Restic was interrupted using SIGINT or SIGSTOP     |
 +-----+----------------------------------------------------+
