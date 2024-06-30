@@ -296,7 +296,8 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		}
 	}
 
-	if orphanedPacks > 0 {
+	if orphanedPacks > 0 && !errorsFound {
+		// hide notice if repository is damaged
 		printer.P("%d additional files were found in the repo, which likely contain duplicate data.\nThis is non-critical, you can run `restic prune` to correct this.\n", orphanedPacks)
 	}
 	if ctx.Err() != nil {
