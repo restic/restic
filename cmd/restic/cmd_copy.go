@@ -30,6 +30,12 @@ This means that copied files, which existed in both the source and destination
 repository, /may occupy up to twice their space/ in the destination repository.
 This can be mitigated by the "--copy-chunker-params" option when initializing a
 new destination repository using the "init" command.
+
+EXIT STATUS
+===========
+
+Exit status is 0 if the command was successful.
+Exit status is 1 if there was any error.
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runCopy(cmd.Context(), copyOptions, globalOptions, args)
