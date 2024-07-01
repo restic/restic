@@ -29,7 +29,7 @@ func TempFile(dir, prefix string) (f *os.File, err error) {
 	return f, nil
 }
 
-// isNotSuported returns true if the error is caused by an unsupported file system feature.
+// isNotSupported returns true if the error is caused by an unsupported file system feature.
 func isNotSupported(err error) bool {
 	if perr, ok := err.(*os.PathError); ok && perr.Err == syscall.ENOTSUP {
 		return true

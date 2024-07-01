@@ -128,7 +128,7 @@ func TestAssociatedSetWithExtendedIndex(t *testing.T) {
 	mi.StorePack(blob2.PackID, []restic.Blob{blob2.Blob})
 	test.OK(t, mi.SaveIndex(context.TODO(), &noopSaver{}))
 
-	// non-existant
+	// non-existent
 	test.Equals(t, false, bs.Has(of))
 	// set
 	bs.Set(of, 5)

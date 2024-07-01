@@ -34,12 +34,12 @@ func internalOpenWithLocked(ctx context.Context, gopts GlobalOptions, dryRun boo
 }
 
 func openWithReadLock(ctx context.Context, gopts GlobalOptions, noLock bool) (context.Context, *repository.Repository, func(), error) {
-	// TODO enfore read-only operations once the locking code has moved to the repository
+	// TODO enforce read-only operations once the locking code has moved to the repository
 	return internalOpenWithLocked(ctx, gopts, noLock, false)
 }
 
 func openWithAppendLock(ctx context.Context, gopts GlobalOptions, dryRun bool) (context.Context, *repository.Repository, func(), error) {
-	// TODO enfore non-exclusive operations once the locking code has moved to the repository
+	// TODO enforce non-exclusive operations once the locking code has moved to the repository
 	return internalOpenWithLocked(ctx, gopts, dryRun, false)
 }
 

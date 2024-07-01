@@ -1162,7 +1162,7 @@ func TestRestoreIfChanged(t *testing.T) {
 			rtest.Equals(t, origData, string(data), "expected original file content")
 		} else {
 			// restore should not have noticed the changed file content
-			rtest.Equals(t, modData, string(data), "expeced modified file content")
+			rtest.Equals(t, modData, string(data), "expected modified file content")
 		}
 	}
 }

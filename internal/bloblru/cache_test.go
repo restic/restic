@@ -79,14 +79,14 @@ func TestCacheGetOrCompute(t *testing.T) {
 		return data1, nil
 	})
 	rtest.OK(t, err)
-	rtest.Equals(t, &data1[0], &blob[0], "wrong buffer returend")
+	rtest.Equals(t, &data1[0], &blob[0], "wrong buffer returned")
 
 	// now the buffer should be returned without calling the compute function
 	blob, err = c.GetOrCompute(id1, func() ([]byte, error) {
 		return nil, e
 	})
 	rtest.OK(t, err)
-	rtest.Equals(t, &data1[0], &blob[0], "wrong buffer returend")
+	rtest.Equals(t, &data1[0], &blob[0], "wrong buffer returned")
 
 	// check concurrency
 	wg, _ := errgroup.WithContext(context.TODO())

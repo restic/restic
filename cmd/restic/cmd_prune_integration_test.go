@@ -51,8 +51,8 @@ func testPruneVariants(t *testing.T, unsafeNoSpaceRecovery bool) {
 		testPrune(t, opts, checkOpts)
 	})
 
-	t.Run("CachableOnly"+suffix, func(t *testing.T) {
-		opts := PruneOptions{MaxUnused: "5%", RepackCachableOnly: true, unsafeRecovery: unsafeNoSpaceRecovery}
+	t.Run("CacheableOnly"+suffix, func(t *testing.T) {
+		opts := PruneOptions{MaxUnused: "5%", RepackCacheableOnly: true, unsafeRecovery: unsafeNoSpaceRecovery}
 		checkOpts := CheckOptions{ReadData: true}
 		testPrune(t, opts, checkOpts)
 	})
