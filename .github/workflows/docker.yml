@@ -55,7 +55,7 @@ jobs:
         if: github.ref != 'refs/heads/master'
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@2cdde995de11925a030ce8070c3d77a52ffcf1c0
+        uses: docker/build-push-action@15560696de535e4014efeff63c48f16952e52dd1
         with:
           push: true
           context: .
