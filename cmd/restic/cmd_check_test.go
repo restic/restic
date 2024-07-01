@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/ui/progress"
@@ -228,4 +229,18 @@ func TestPrepareCheckCache(t *testing.T) {
 			rtest.Assert(t, len(files) == 0, "Expected cache directory to be removed, but it still exists: %v", files)
 		})
 	}
+}
+
+func TestPrepareDefaultCheckCache(t *testing.T) {
+	gopts := GlobalOptions{CacheDir: ""}
+	cleanup := prepareCheckCache(CheckOptions{}, &gopts, &progress.NoopPrinter{})
+	_, err := os.ReadDir(gopts.CacheDir)
+	rtest.OK(t, err)
+
+	// Call the cleanup function to remove the temporary cache directory
+	cleanup()
+
+	// Verify that the cache directory has been removed
+	_, err = os.ReadDir(gopts.CacheDir)
+	rtest.Assert(t, errors.Is(err, os.ErrNotExist), "Expected cache directory to be removed, but it still exists")
 }

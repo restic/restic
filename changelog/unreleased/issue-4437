@@ -7,3 +7,4 @@ The  `check` command now attempts to create the cache directory before initializ
 
 https://github.com/restic/restic/issues/4437
 https://github.com/restic/restic/pull/4805
+https://github.com/restic/restic/pull/4883
