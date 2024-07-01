@@ -51,7 +51,7 @@ type PruneOptions struct {
 	MaxRepackSize  string
 	MaxRepackBytes uint64
 
-	RepackCachableOnly bool
+	RepackCacheableOnly bool
 	RepackSmall        bool
 	RepackUncompressed bool
 }
@@ -70,7 +70,7 @@ func addPruneOptions(c *cobra.Command, pruneOptions *PruneOptions) {
 	f := c.Flags()
 	f.StringVar(&pruneOptions.MaxUnused, "max-unused", "5%", "tolerate given `limit` of unused data (absolute value in bytes with suffixes k/K, m/M, g/G, t/T, a value in % or the word 'unlimited')")
 	f.StringVar(&pruneOptions.MaxRepackSize, "max-repack-size", "", "maximum `size` to repack (allowed suffixes: k/K, m/M, g/G, t/T)")
-	f.BoolVar(&pruneOptions.RepackCachableOnly, "repack-cacheable-only", false, "only repack packs which are cacheable")
+	f.BoolVar(&pruneOptions.RepackCacheableOnly, "repack-cacheable-only", false, "only repack packs which are cacheable")
 	f.BoolVar(&pruneOptions.RepackSmall, "repack-small", false, "repack pack files below 80% of target pack size")
 	f.BoolVar(&pruneOptions.RepackUncompressed, "repack-uncompressed", false, "repack all uncompressed data")
 }
@@ -183,7 +183,7 @@ func runPruneWithRepo(ctx context.Context, opts PruneOptions, gopts GlobalOption
 		MaxUnusedBytes: opts.maxUnusedBytes,
 		MaxRepackBytes: opts.MaxRepackBytes,
 
-		RepackCachableOnly: opts.RepackCachableOnly,
+		RepackCacheableOnly: opts.RepackCacheableOnly,
 		RepackSmall:        opts.RepackSmall,
 		RepackUncompressed: opts.RepackUncompressed,
 	}

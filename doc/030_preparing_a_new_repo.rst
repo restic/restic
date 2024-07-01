@@ -873,5 +873,5 @@ with an empty password, use the following command.
 
 
 The ``init`` and ``copy`` command also support the option ``--from-insecure-no-password``
-which applies to the source repository. The ``key add`` and ``key passwd`` comands
-include the ``--new-insecure-no-password`` option to add or set and emtpy password.
+which applies to the source repository. The ``key add`` and ``key passwd`` commands
+include the ``--new-insecure-no-password`` option to add or set and empty password.

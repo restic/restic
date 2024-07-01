@@ -135,7 +135,7 @@ as separator.
     /home/user
     /home/user/work.txt
 
-To show more details about the files in a snapshot, you can use the ``--long`` option.  The colums include
+To show more details about the files in a snapshot, you can use the ``--long`` option.  The columns include
 file permissions, UID, GID, file size, modification time and file path. For scripting usage, the
 ``ls`` command supports the ``--json`` flag; the JSON output format is described at :ref:`ls json`.
 

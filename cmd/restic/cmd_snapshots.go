@@ -81,9 +81,9 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions
 		if opts.Last {
 			// This branch should be removed in the same time
 			// that --last.
-			list = FilterLastestSnapshots(list, 1)
+			list = FilterLatestSnapshots(list, 1)
 		} else if opts.Latest > 0 {
-			list = FilterLastestSnapshots(list, opts.Latest)
+			list = FilterLatestSnapshots(list, opts.Latest)
 		}
 		sort.Sort(sort.Reverse(list))
 		snapshotGroups[k] = list
@@ -126,11 +126,11 @@ func newFilterLastSnapshotsKey(sn *restic.Snapshot) filterLastSnapshotsKey {
 	return filterLastSnapshotsKey{sn.Hostname, strings.Join(paths, "|")}
 }
 
-// FilterLastestSnapshots filters a list of snapshots to only return
+// FilterLatestSnapshots filters a list of snapshots to only return
 // the limit last entries for each hostname and path. If the snapshot
 // contains multiple paths, they will be joined and treated as one
 // item.
-func FilterLastestSnapshots(list restic.Snapshots, limit int) restic.Snapshots {
+func FilterLatestSnapshots(list restic.Snapshots, limit int) restic.Snapshots {
 	// Sort the snapshots so that the newer ones are listed first
 	sort.SliceStable(list, func(i, j int) bool {
 		return list[i].Time.After(list[j].Time)
@@ -307,7 +307,7 @@ type Snapshot struct {
 	ShortID string     `json:"short_id"`
 }
 
-// SnapshotGroup helps to print SnaphotGroups as JSON with their GroupReasons included.
+// SnapshotGroup helps to print SnapshotGroups as JSON with their GroupReasons included.
 type SnapshotGroup struct {
 	GroupKey  restic.SnapshotGroupKey `json:"group_key"`
 	Snapshots []Snapshot              `json:"snapshots"`

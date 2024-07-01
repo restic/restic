@@ -228,7 +228,7 @@ func (node Node) restoreGenericAttributes(path string, warn func(msg string)) (e
 	return errors.CombineErrors(errs...)
 }
 
-// genericAttributesToWindowsAttrs converts the generic attributes map to a WindowsAttributes and also returns a string of unkown attributes that it could not convert.
+// genericAttributesToWindowsAttrs converts the generic attributes map to a WindowsAttributes and also returns a string of unknown attributes that it could not convert.
 func genericAttributesToWindowsAttrs(attrs map[GenericAttributeType]json.RawMessage) (windowsAttributes WindowsAttributes, unknownAttribs []GenericAttributeType, err error) {
 	waValue := reflect.ValueOf(&windowsAttributes).Elem()
 	unknownAttribs, err = genericAttributesToOSAttrs(attrs, reflect.TypeOf(windowsAttributes), &waValue, "windows")
