@@ -18,7 +18,7 @@ import (
 	restoreui "github.com/restic/restic/internal/ui/restore"
 )
 
-func TestRestorerRestoreEmptyHardlinkedFileds(t *testing.T) {
+func TestRestorerRestoreEmptyHardlinkedFields(t *testing.T) {
 	repo := repository.TestRepository(t)
 
 	sn, _ := saveSnapshot(t, repo, Snapshot{

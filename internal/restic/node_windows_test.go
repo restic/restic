@@ -70,7 +70,7 @@ func getNode(name string, fileType string, genericAttributes map[GenericAttribut
 func getWindowsAttr(t *testing.T, testPath string, node *Node) WindowsAttributes {
 	windowsAttributes, unknownAttribs, err := genericAttributesToWindowsAttrs(node.GenericAttributes)
 	test.OK(t, errors.Wrapf(err, "Error getting windows attr from generic attr: %s", testPath))
-	test.Assert(t, len(unknownAttribs) == 0, "Unkown attribs found: %s for: %s", unknownAttribs, testPath)
+	test.Assert(t, len(unknownAttribs) == 0, "Unknown attribs found: %s for: %s", unknownAttribs, testPath)
 	return windowsAttributes
 }
 
@@ -263,7 +263,7 @@ func TestNewGenericAttributeType(t *testing.T) {
 		_, ua, err := genericAttributesToWindowsAttrs(node.GenericAttributes)
 		test.OK(t, err)
 		// Since this GenericAttribute is unknown to this version of the software, it will not get set on the file.
-		test.Assert(t, len(ua) == 0, "Unkown attributes: %s found for path: %s", ua, testPath)
+		test.Assert(t, len(ua) == 0, "Unknown attributes: %s found for path: %s", ua, testPath)
 	}
 }
 
