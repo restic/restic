@@ -54,7 +54,7 @@ Usage help is available:
           --cleanup-cache              auto remove old cache directories
           --compression mode           compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION) (default auto)
       -h, --help                       help for restic
-          --http-user-agent value      set a custom user agent for outgoing http requests
+          --http-user-agent string     set a http user agent for outgoing http requests
           --insecure-no-password       use an empty password for the repository, must be passed to every restic command (insecure)
           --insecure-tls               skip TLS certificate verification when connecting to the repository (insecure)
           --json                       set output mode to JSON for commands that support it
@@ -122,6 +122,7 @@ command:
       -x, --one-file-system                        exclude other file systems, don't cross filesystem boundaries and subvolumes
           --parent snapshot                        use this parent snapshot (default: latest snapshot in the group determined by --group-by and not newer than the timestamp determined by --time)
           --read-concurrency n                     read n files concurrently (default: $RESTIC_READ_CONCURRENCY or 2)
+          --skip-if-unchanged                      skip snapshot creation if identical to parent snapshot
           --stdin                                  read backup from stdin
           --stdin-filename filename                filename to use when reading from stdin (default "stdin")
           --stdin-from-command                     interpret arguments as command to execute and store its stdout
@@ -135,7 +136,7 @@ command:
           --cache-dir directory        set the cache directory. (default: use system default cache directory)
           --cleanup-cache              auto remove old cache directories
           --compression mode           compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION) (default auto)
-          --http-user-agent value      set a custom user agent for outgoing http requests
+          --http-user-agent string     set a http user agent for outgoing http requests
           --insecure-no-password       use an empty password for the repository, must be passed to every restic command (insecure)
           --insecure-tls               skip TLS certificate verification when connecting to the repository (insecure)
           --json                       set output mode to JSON for commands that support it
