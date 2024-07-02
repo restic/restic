@@ -511,6 +511,22 @@ Status
 |``bytes_skipped``     | Total size of skipped files                                |
 +----------------------+------------------------------------------------------------+
 
+Verbose Status
+^^^^^^^^^^^^^^
+
+Verbose status provides details about the progress, including details about restored files.
+Only printed if `--verbose=2` is specified.
+
++----------------------+-----------------------------------------------------------+
+| ``message_type``     | Always "verbose_status"                                   |
++----------------------+-----------------------------------------------------------+
+| ``action``           | Either "restored", "updated", "unchanged" or "deleted"    |
++----------------------+-----------------------------------------------------------+
+| ``item``             | The item in question                                      |
++----------------------+-----------------------------------------------------------+
+| ``size``             | Size of the item in bytes                                 |
++----------------------+-----------------------------------------------------------+
+
 Summary
 ^^^^^^^
 

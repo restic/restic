@@ -9,6 +9,7 @@ import (
 	"math"
 	"os"
 	"path"
+	"path/filepath"
 	"syscall"
 	"testing"
 	"time"
@@ -536,6 +537,47 @@ func TestDirAttributeCombinationsOverwrite(t *testing.T) {
 				_, err1 := os.Stat(mainDirPath)
 				rtest.Assert(t, !errors.Is(err1, os.ErrNotExist), "The directory "+dirInfo.name+" does not exist")
 			})
+		}
+	}
+}
+
+func TestRestoreDeleteCaseInsensitive(t *testing.T) {
+	repo := repository.TestRepository(t)
+	tempdir := rtest.TempDir(t)
+
+	sn, _ := saveSnapshot(t, repo, Snapshot{
+		Nodes: map[string]Node{
+			"anotherfile": File{Data: "content: file\n"},
+		},
+	}, noopGetGenericAttributes)
+
+	// should delete files that no longe exist in the snapshot
+	deleteSn, _ := saveSnapshot(t, repo, Snapshot{
+		Nodes: map[string]Node{
+			"AnotherfilE": File{Data: "content: file\n"},
+		},
+	}, noopGetGenericAttributes)
+
+	res := NewRestorer(repo, sn, Options{})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	err := res.RestoreTo(ctx, tempdir)
+	rtest.OK(t, err)
+
+	res = NewRestorer(repo, deleteSn, Options{Delete: true})
+	err = res.RestoreTo(ctx, tempdir)
+	rtest.OK(t, err)
+
+	fileState := map[string]bool{
+		"anotherfile": true,
+	}
+	for fn, shouldExist := range fileState {
+		_, err := os.Stat(filepath.Join(tempdir, fn))
+		if shouldExist {
+			rtest.OK(t, err)
+		} else {
+			rtest.Assert(t, errors.Is(err, os.ErrNotExist), "file %v: unexpected error got %v, expected ErrNotExist", fn, err)
 		}
 	}
 }

@@ -39,8 +39,20 @@ type term interface {
 
 type ProgressPrinter interface {
 	Update(progress State, duration time.Duration)
+	CompleteItem(action ItemAction, item string, size uint64)
 	Finish(progress State, duration time.Duration)
 }
+
+type ItemAction string
+
+// Constants for the different CompleteItem actions.
+const (
+	ActionDirRestored   ItemAction = "dir restored"
+	ActionFileRestored  ItemAction = "file restored"
+	ActionFileUpdated   ItemAction = "file updated"
+	ActionFileUnchanged ItemAction = "file unchanged"
+	ActionDeleted       ItemAction = "deleted"
+)
 
 func NewProgress(printer ProgressPrinter, interval time.Duration) *Progress {
 	p := &Progress{
@@ -77,7 +89,7 @@ func (p *Progress) AddFile(size uint64) {
 }
 
 // AddProgress accumulates the number of bytes written for a file
-func (p *Progress) AddProgress(name string, bytesWrittenPortion uint64, bytesTotal uint64) {
+func (p *Progress) AddProgress(name string, action ItemAction, bytesWrittenPortion uint64, bytesTotal uint64) {
 	if p == nil {
 		return
 	}
@@ -96,10 +108,12 @@ func (p *Progress) AddProgress(name string, bytesWrittenPortion uint64, bytesTot
 	if entry.bytesWritten == entry.bytesTotal {
 		delete(p.progressInfoMap, name)
 		p.s.FilesFinished++
+
+		p.printer.CompleteItem(action, name, bytesTotal)
 	}
 }
 
-func (p *Progress) AddSkippedFile(size uint64) {
+func (p *Progress) AddSkippedFile(name string, size uint64) {
 	if p == nil {
 		return
 	}
@@ -109,6 +123,19 @@ func (p *Progress) AddSkippedFile(size uint64) {
 
 	p.s.FilesSkipped++
 	p.s.AllBytesSkipped += size
+
+	p.printer.CompleteItem(ActionFileUnchanged, name, size)
+}
+
+func (p *Progress) ReportDeletedFile(name string) {
+	if p == nil {
+		return
+	}
+
+	p.m.Lock()
+	defer p.m.Unlock()
+
+	p.printer.CompleteItem(ActionDeleted, name, 0)
 }
 
 func (p *Progress) Finish() {

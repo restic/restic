@@ -7,12 +7,14 @@ import (
 )
 
 type jsonPrinter struct {
-	terminal term
+	terminal  term
+	verbosity uint
 }
 
-func NewJSONProgress(terminal term) ProgressPrinter {
+func NewJSONProgress(terminal term, verbosity uint) ProgressPrinter {
 	return &jsonPrinter{
-		terminal: terminal,
+		terminal:  terminal,
+		verbosity: verbosity,
 	}
 }
 
@@ -36,6 +38,36 @@ func (t *jsonPrinter) Update(p State, duration time.Duration) {
 		status.PercentDone = float64(p.AllBytesWritten) / float64(p.AllBytesTotal)
 	}
 
+	t.print(status)
+}
+
+func (t *jsonPrinter) CompleteItem(messageType ItemAction, item string, size uint64) {
+	if t.verbosity < 3 {
+		return
+	}
+
+	var action string
+	switch messageType {
+	case ActionDirRestored:
+		action = "restored"
+	case ActionFileRestored:
+		action = "restored"
+	case ActionFileUpdated:
+		action = "updated"
+	case ActionFileUnchanged:
+		action = "unchanged"
+	case ActionDeleted:
+		action = "deleted"
+	default:
+		panic("unknown message type")
+	}
+
+	status := verboseUpdate{
+		MessageType: "verbose_status",
+		Action:      action,
+		Item:        item,
+		Size:        size,
+	}
 	t.print(status)
 }
 
@@ -63,6 +95,13 @@ type statusUpdate struct {
 	TotalBytes     uint64  `json:"total_bytes,omitempty"`
 	BytesRestored  uint64  `json:"bytes_restored,omitempty"`
 	BytesSkipped   uint64  `json:"bytes_skipped,omitempty"`
+}
+
+type verboseUpdate struct {
+	MessageType string `json:"message_type"` // "verbose_status"
+	Action      string `json:"action"`
+	Item        string `json:"item"`
+	Size        uint64 `json:"size"`
 }
 
 type summaryOutput struct {

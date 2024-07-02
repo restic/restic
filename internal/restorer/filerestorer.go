@@ -53,6 +53,8 @@ type fileRestorer struct {
 	sparse      bool
 	progress    *restore.Progress
 
+	allowRecursiveDelete bool
+
 	dst   string
 	files []*fileInfo
 	Error func(string, error) error
@@ -63,21 +65,23 @@ func newFileRestorer(dst string,
 	idx func(restic.BlobType, restic.ID) []restic.PackedBlob,
 	connections uint,
 	sparse bool,
+	allowRecursiveDelete bool,
 	progress *restore.Progress) *fileRestorer {
 
 	// as packs are streamed the concurrency is limited by IO
 	workerCount := int(connections)
 
 	return &fileRestorer{
-		idx:         idx,
-		blobsLoader: blobsLoader,
-		filesWriter: newFilesWriter(workerCount),
-		zeroChunk:   repository.ZeroChunk(),
-		sparse:      sparse,
-		progress:    progress,
-		workerCount: workerCount,
-		dst:         dst,
-		Error:       restorerAbortOnAllErrors,
+		idx:                  idx,
+		blobsLoader:          blobsLoader,
+		filesWriter:          newFilesWriter(workerCount, allowRecursiveDelete),
+		zeroChunk:            repository.ZeroChunk(),
+		sparse:               sparse,
+		progress:             progress,
+		allowRecursiveDelete: allowRecursiveDelete,
+		workerCount:          workerCount,
+		dst:                  dst,
+		Error:                restorerAbortOnAllErrors,
 	}
 }
 
@@ -207,7 +211,7 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 }
 
 func (r *fileRestorer) restoreEmptyFileAt(location string) error {
-	f, err := createFile(r.targetPath(location), 0, false)
+	f, err := createFile(r.targetPath(location), 0, false, r.allowRecursiveDelete)
 	if err != nil {
 		return err
 	}
@@ -215,7 +219,7 @@ func (r *fileRestorer) restoreEmptyFileAt(location string) error {
 		return err
 	}
 
-	r.progress.AddProgress(location, 0, 0)
+	r.progress.AddProgress(location, restore.ActionFileRestored, 0, 0)
 	return nil
 }
 
@@ -337,7 +341,11 @@ func (r *fileRestorer) downloadBlobs(ctx context.Context, packID restic.ID,
 							createSize = file.size
 						}
 						writeErr := r.filesWriter.writeToFile(r.targetPath(file.location), blobData, offset, createSize, file.sparse)
-						r.progress.AddProgress(file.location, uint64(len(blobData)), uint64(file.size))
+						action := restore.ActionFileUpdated
+						if file.state == nil {
+							action = restore.ActionFileRestored
+						}
+						r.progress.AddProgress(file.location, action, uint64(len(blobData)), uint64(file.size))
 						return writeErr
 					}
 					err := r.sanitizeError(file, writeToFile())

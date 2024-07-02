@@ -8,12 +8,14 @@ import (
 )
 
 type textPrinter struct {
-	terminal term
+	terminal  term
+	verbosity uint
 }
 
-func NewTextProgress(terminal term) ProgressPrinter {
+func NewTextProgress(terminal term, verbosity uint) ProgressPrinter {
 	return &textPrinter{
-		terminal: terminal,
+		terminal:  terminal,
+		verbosity: verbosity,
 	}
 }
 
@@ -29,6 +31,34 @@ func (t *textPrinter) Update(p State, duration time.Duration) {
 	}
 
 	t.terminal.SetStatus([]string{progress})
+}
+
+func (t *textPrinter) CompleteItem(messageType ItemAction, item string, size uint64) {
+	if t.verbosity < 3 {
+		return
+	}
+
+	var action string
+	switch messageType {
+	case ActionDirRestored:
+		action = "restored"
+	case ActionFileRestored:
+		action = "restored"
+	case ActionFileUpdated:
+		action = "updated"
+	case ActionFileUnchanged:
+		action = "unchanged"
+	case ActionDeleted:
+		action = "deleted"
+	default:
+		panic("unknown message type")
+	}
+
+	if messageType == ActionDirRestored || messageType == ActionDeleted {
+		t.terminal.Print(fmt.Sprintf("%-9v %v", action, item))
+	} else {
+		t.terminal.Print(fmt.Sprintf("%-9v %v with size %v", action, item, ui.FormatBytes(size)))
+	}
 }
 
 func (t *textPrinter) Finish(p State, duration time.Duration) {
