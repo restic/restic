@@ -47,6 +47,7 @@ type RestoreOptions struct {
 	includePatternOptions
 	Target string
 	restic.SnapshotFilter
+	DryRun    bool
 	Sparse    bool
 	Verify    bool
 	Overwrite restorer.OverwriteBehavior
@@ -64,6 +65,7 @@ func init() {
 	initIncludePatternOptions(flags, &restoreOptions.includePatternOptions)
 
 	initSingleSnapshotFilter(flags, &restoreOptions.SnapshotFilter)
+	flags.BoolVar(&restoreOptions.DryRun, "dry-run", false, "do not write any data, just show what would be done")
 	flags.BoolVar(&restoreOptions.Sparse, "sparse", false, "restore files as sparse")
 	flags.BoolVar(&restoreOptions.Verify, "verify", false, "verify restored files content")
 	flags.Var(&restoreOptions.Overwrite, "overwrite", "overwrite behavior, one of (always|if-changed|if-newer|never) (default: always)")
@@ -99,6 +101,9 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	if hasExcludes && hasIncludes {
 		return errors.Fatal("exclude and include patterns are mutually exclusive")
 	}
+	if opts.DryRun && opts.Verify {
+		return errors.Fatal("--dry-run and --verify are mutually exclusive")
+	}
 
 	snapshotIDString := args[0]
 
@@ -133,13 +138,14 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	msg := ui.NewMessage(term, gopts.verbosity)
 	var printer restoreui.ProgressPrinter
 	if gopts.JSON {
-		printer = restoreui.NewJSONProgress(term)
+		printer = restoreui.NewJSONProgress(term, gopts.verbosity)
 	} else {
-		printer = restoreui.NewTextProgress(term)
+		printer = restoreui.NewTextProgress(term, gopts.verbosity)
 	}
 
 	progress := restoreui.NewProgress(printer, calculateProgressInterval(!gopts.Quiet, gopts.JSON))
 	res := restorer.NewRestorer(repo, sn, restorer.Options{
+		DryRun:    opts.DryRun,
 		Sparse:    opts.Sparse,
 		Progress:  progress,
 		Overwrite: opts.Overwrite,
