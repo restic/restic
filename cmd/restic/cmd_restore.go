@@ -25,7 +25,7 @@ a directory.
 The special snapshotID "latest" can be used to restore the latest snapshot in the
 repository.
 
-To only restore a specific subfolder, you can use the "<snapshotID>:<subfolder>"
+To only restore a specific subfolder, you can use the "snapshotID:subfolder"
 syntax, where "subfolder" is a path within the snapshot.
 
 EXIT STATUS

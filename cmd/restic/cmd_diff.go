@@ -33,7 +33,7 @@ Metadata comparison will likely not work if a backup was created using the
 '--ignore-inode' or '--ignore-ctime' option.
 
 To only compare files in specific subfolders, you can use the
-"<snapshotID>:<subfolder>" syntax, where "subfolder" is a path within the
+"snapshotID:subfolder" syntax, where "subfolder" is a path within the
 snapshot.
 
 EXIT STATUS
