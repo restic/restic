@@ -80,9 +80,9 @@ func TestPrune(t *testing.T) {
 		{
 			name: "cachableonly",
 			opts: repository.PruneOptions{
-				MaxRepackBytes:     math.MaxUint64,
-				MaxUnusedBytes:     func(used uint64) (unused uint64) { return used / 20 },
-				RepackCachableOnly: true,
+				MaxRepackBytes:      math.MaxUint64,
+				MaxUnusedBytes:      func(used uint64) (unused uint64) { return used / 20 },
+				RepackCacheableOnly: true,
 			},
 		},
 		{

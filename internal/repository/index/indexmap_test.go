@@ -156,7 +156,7 @@ func TestIndexMapFirstIndex(t *testing.T) {
 
 	for i := 1; i <= 400; i++ {
 		r.Read(id[:])
-		rtest.Equals(t, -1, m.firstIndex(id), "wrong firstIndex for nonexistant id")
+		rtest.Equals(t, -1, m.firstIndex(id), "wrong firstIndex for nonexistent id")
 
 		m.add(id, 0, 0, 0, 0)
 		idx := m.firstIndex(id)

@@ -135,7 +135,7 @@ func TestOutOfBoundsAccess(t *testing.T) {
 
 	// load out of bounds
 	err := wbe.Load(context.TODO(), h, 100, 100, func(rd io.Reader) error {
-		t.Error("cache returned non-existant file section")
+		t.Error("cache returned non-existent file section")
 		return errors.New("broken")
 	})
 	test.Assert(t, strings.Contains(err.Error(), " is too short"), "expected too short error, got %v", err)
@@ -147,7 +147,7 @@ func TestOutOfBoundsAccess(t *testing.T) {
 
 	// start within bounds, but request too large chunk
 	err = wbe.Load(context.TODO(), h, 100, 0, func(rd io.Reader) error {
-		t.Error("cache returned non-existant file section")
+		t.Error("cache returned non-existent file section")
 		return errors.New("broken")
 	})
 	test.Assert(t, strings.Contains(err.Error(), " is too short"), "expected too short error, got %v", err)

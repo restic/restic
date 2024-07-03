@@ -25,9 +25,9 @@ type PruneOptions struct {
 	MaxUnusedBytes func(used uint64) (unused uint64) // calculates the number of unused bytes after repacking, according to MaxUnused
 	MaxRepackBytes uint64
 
-	RepackCachableOnly bool
-	RepackSmall        bool
-	RepackUncompressed bool
+	RepackCacheableOnly bool
+	RepackSmall         bool
+	RepackUncompressed  bool
 }
 
 type PruneStats struct {
@@ -381,7 +381,7 @@ func decidePackAction(ctx context.Context, opts PruneOptions, repo *Repository, 
 			stats.Blobs.Remove += p.unusedBlobs
 			stats.Size.Remove += p.unusedSize
 
-		case opts.RepackCachableOnly && p.tpe == restic.DataBlob:
+		case opts.RepackCacheableOnly && p.tpe == restic.DataBlob:
 			// if this is a data pack and --repack-cacheable-only is set => keep pack!
 			stats.Packs.Keep++
 

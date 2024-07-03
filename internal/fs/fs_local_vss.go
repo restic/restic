@@ -72,7 +72,7 @@ type LocalVss struct {
 var _ FS = &LocalVss{}
 
 // parseMountPoints try to convert semicolon separated list of mount points
-// to map of lowercased volume GUID pathes. Mountpoints already in volume
+// to map of lowercased volume GUID paths. Mountpoints already in volume
 // GUID path format will be validated and normalized.
 func parseMountPoints(list string, msgError ErrorHandler) (volumes map[string]struct{}) {
 	if list == "" {

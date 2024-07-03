@@ -54,7 +54,7 @@ func TestRunForgetSafetyNet(t *testing.T) {
 	err = testRunForgetMayFail(env.gopts, ForgetOptions{})
 	rtest.Assert(t, strings.Contains(err.Error(), `no policy was specified, no snapshots will be removed`), "wrong error message got %v", err)
 
-	// `forget --host example --unsafe-allow-remmove-all` should work
+	// `forget --host example --unsafe-allow-remove-all` should work
 	testRunForget(t, env.gopts, ForgetOptions{
 		UnsafeAllowRemoveAll: true,
 		GroupBy:              restic.SnapshotGroupByOptions{Host: true, Path: true},
