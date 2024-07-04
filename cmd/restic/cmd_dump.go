@@ -28,7 +28,7 @@ The special snapshotID "latest" can be used to use the latest snapshot in the
 repository.
 
 To include the folder content at the root of the archive, you can use the
-"<snapshotID>:<subfolder>" syntax, where "subfolder" is a path within the
+"snapshotID:subfolder" syntax, where "subfolder" is a path within the
 snapshot.
 
 EXIT STATUS
