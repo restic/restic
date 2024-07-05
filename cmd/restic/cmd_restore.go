@@ -51,6 +51,7 @@ type RestoreOptions struct {
 	Sparse    bool
 	Verify    bool
 	Overwrite restorer.OverwriteBehavior
+	Delete    bool
 }
 
 var restoreOptions RestoreOptions
@@ -69,6 +70,7 @@ func init() {
 	flags.BoolVar(&restoreOptions.Sparse, "sparse", false, "restore files as sparse")
 	flags.BoolVar(&restoreOptions.Verify, "verify", false, "verify restored files content")
 	flags.Var(&restoreOptions.Overwrite, "overwrite", "overwrite behavior, one of (always|if-changed|if-newer|never) (default: always)")
+	flags.BoolVar(&restoreOptions.Delete, "delete", false, "delete files from target directory if they do not exist in snapshot. Use '--dry-run -vv' to check what would be deleted")
 }
 
 func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
@@ -149,6 +151,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		Sparse:    opts.Sparse,
 		Progress:  progress,
 		Overwrite: opts.Overwrite,
+		Delete:    opts.Delete,
 	})
 
 	totalErrors := 0
@@ -161,7 +164,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		msg.E("Warning: %s\n", message)
 	}
 
-	selectExcludeFilter := func(item string, _ string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
+	selectExcludeFilter := func(item string, isDir bool) (selectedForRestore bool, childMayBeSelected bool) {
 		matched := false
 		for _, rejectFn := range excludePatternFns {
 			matched = matched || rejectFn(item)
@@ -178,12 +181,12 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		// therefore childMayMatch does not matter, but we should not go down
 		// unless the dir is selected for restore
 		selectedForRestore = !matched
-		childMayBeSelected = selectedForRestore && node.Type == "dir"
+		childMayBeSelected = selectedForRestore && isDir
 
 		return selectedForRestore, childMayBeSelected
 	}
 
-	selectIncludeFilter := func(item string, _ string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
+	selectIncludeFilter := func(item string, isDir bool) (selectedForRestore bool, childMayBeSelected bool) {
 		selectedForRestore = false
 		childMayBeSelected = false
 		for _, includeFn := range includePatternFns {
@@ -195,7 +198,7 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 				break
 			}
 		}
-		childMayBeSelected = childMayBeSelected && node.Type == "dir"
+		childMayBeSelected = childMayBeSelected && isDir
 
 		return selectedForRestore, childMayBeSelected
 	}

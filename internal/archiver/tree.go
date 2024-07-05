@@ -233,7 +233,7 @@ func unrollTree(f fs.FS, t *Tree) error {
 	// nodes, add the contents of Path to the nodes.
 	if t.Path != "" && len(t.Nodes) > 0 {
 		debug.Log("resolve path %v", t.Path)
-		entries, err := readdirnames(f, t.Path, 0)
+		entries, err := fs.Readdirnames(f, t.Path, 0)
 		if err != nil {
 			return err
 		}

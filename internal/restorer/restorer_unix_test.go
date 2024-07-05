@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/repository"
-	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 	restoreui "github.com/restic/restic/internal/ui/restore"
 )
@@ -33,10 +32,6 @@ func TestRestorerRestoreEmptyHardlinkedFields(t *testing.T) {
 	}, noopGetGenericAttributes)
 
 	res := NewRestorer(repo, sn, Options{})
-
-	res.SelectFilter = func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
-		return true, true
-	}
 
 	tempdir := rtest.TempDir(t)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -108,9 +103,6 @@ func testRestorerProgressBar(t *testing.T, dryRun bool) {
 	mock := &printerMock{}
 	progress := restoreui.NewProgress(mock, 0)
 	res := NewRestorer(repo, sn, Options{Progress: progress, DryRun: dryRun})
-	res.SelectFilter = func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
-		return true, true
-	}
 
 	tempdir := rtest.TempDir(t)
 	ctx, cancel := context.WithCancel(context.Background())

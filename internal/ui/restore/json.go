@@ -56,6 +56,8 @@ func (t *jsonPrinter) CompleteItem(messageType ItemAction, item string, size uin
 		action = "updated"
 	case ActionFileUnchanged:
 		action = "unchanged"
+	case ActionDeleted:
+		action = "deleted"
 	default:
 		panic("unknown message type")
 	}

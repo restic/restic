@@ -8,6 +8,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strings"
 	"syscall"
@@ -192,7 +193,7 @@ func TestRestorer(t *testing.T) {
 		Files      map[string]string
 		ErrorsMust map[string]map[string]struct{}
 		ErrorsMay  map[string]map[string]struct{}
-		Select     func(item string, dstpath string, node *restic.Node) (selectForRestore bool, childMayBeSelected bool)
+		Select     func(item string, isDir bool) (selectForRestore bool, childMayBeSelected bool)
 	}{
 		// valid test cases
 		{
@@ -284,7 +285,7 @@ func TestRestorer(t *testing.T) {
 			Files: map[string]string{
 				"dir/file": "content: file\n",
 			},
-			Select: func(item, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
+			Select: func(item string, isDir bool) (selectedForRestore bool, childMayBeSelected bool) {
 				switch item {
 				case filepath.FromSlash("/dir"):
 					childMayBeSelected = true
@@ -370,16 +371,10 @@ func TestRestorer(t *testing.T) {
 			// make sure we're creating a new subdir of the tempdir
 			tempdir = filepath.Join(tempdir, "target")
 
-			res.SelectFilter = func(item, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
-				t.Logf("restore %v to %v", item, dstpath)
-				if !fs.HasPathPrefix(tempdir, dstpath) {
-					t.Errorf("would restore %v to %v, which is not within the target dir %v",
-						item, dstpath, tempdir)
-					return false, false
-				}
-
+			res.SelectFilter = func(item string, isDir bool) (selectedForRestore bool, childMayBeSelected bool) {
+				t.Logf("restore %v", item)
 				if test.Select != nil {
-					return test.Select(item, dstpath, node)
+					return test.Select(item, isDir)
 				}
 
 				return true, true
@@ -527,16 +522,17 @@ func TestRestorerRelative(t *testing.T) {
 type TraverseTreeCheck func(testing.TB) treeVisitor
 
 type TreeVisit struct {
-	funcName string // name of the function
-	location string // location passed to the function
+	funcName string   // name of the function
+	location string   // location passed to the function
+	files    []string // file list passed to the function
 }
 
 func checkVisitOrder(list []TreeVisit) TraverseTreeCheck {
 	var pos int
 
 	return func(t testing.TB) treeVisitor {
-		check := func(funcName string) func(*restic.Node, string, string) error {
-			return func(node *restic.Node, target, location string) error {
+		check := func(funcName string) func(*restic.Node, string, string, []string) error {
+			return func(node *restic.Node, target, location string, expectedFilenames []string) error {
 				if pos >= len(list) {
 					t.Errorf("step %v, %v(%v): expected no more than %d function calls", pos, funcName, location, len(list))
 					pos++
@@ -554,14 +550,24 @@ func checkVisitOrder(list []TreeVisit) TraverseTreeCheck {
 					t.Errorf("step %v: want location %v, got %v", pos, list[pos].location, location)
 				}
 
+				if !reflect.DeepEqual(expectedFilenames, v.files) {
+					t.Errorf("step %v: want files %v, got %v", pos, list[pos].files, expectedFilenames)
+				}
+
 				pos++
 				return nil
 			}
 		}
+		checkNoFilename := func(funcName string) func(*restic.Node, string, string) error {
+			f := check(funcName)
+			return func(node *restic.Node, target, location string) error {
+				return f(node, target, location, nil)
+			}
+		}
 
 		return treeVisitor{
-			enterDir:  check("enterDir"),
-			visitNode: check("visitNode"),
+			enterDir:  checkNoFilename("enterDir"),
+			visitNode: checkNoFilename("visitNode"),
 			leaveDir:  check("leaveDir"),
 		}
 	}
@@ -570,7 +576,7 @@ func checkVisitOrder(list []TreeVisit) TraverseTreeCheck {
 func TestRestorerTraverseTree(t *testing.T) {
 	var tests = []struct {
 		Snapshot
-		Select  func(item string, dstpath string, node *restic.Node) (selectForRestore bool, childMayBeSelected bool)
+		Select  func(item string, isDir bool) (selectForRestore bool, childMayBeSelected bool)
 		Visitor TraverseTreeCheck
 	}{
 		{
@@ -586,17 +592,19 @@ func TestRestorerTraverseTree(t *testing.T) {
 					"foo": File{Data: "content: foo\n"},
 				},
 			},
-			Select: func(item string, dstpath string, node *restic.Node) (selectForRestore bool, childMayBeSelected bool) {
+			Select: func(item string, isDir bool) (selectForRestore bool, childMayBeSelected bool) {
 				return true, true
 			},
 			Visitor: checkVisitOrder([]TreeVisit{
-				{"enterDir", "/dir"},
-				{"visitNode", "/dir/otherfile"},
-				{"enterDir", "/dir/subdir"},
-				{"visitNode", "/dir/subdir/file"},
-				{"leaveDir", "/dir/subdir"},
-				{"leaveDir", "/dir"},
-				{"visitNode", "/foo"},
+				{"enterDir", "/", nil},
+				{"enterDir", "/dir", nil},
+				{"visitNode", "/dir/otherfile", nil},
+				{"enterDir", "/dir/subdir", nil},
+				{"visitNode", "/dir/subdir/file", nil},
+				{"leaveDir", "/dir/subdir", []string{"file"}},
+				{"leaveDir", "/dir", []string{"otherfile", "subdir"}},
+				{"visitNode", "/foo", nil},
+				{"leaveDir", "/", []string{"dir", "foo"}},
 			}),
 		},
 
@@ -613,14 +621,16 @@ func TestRestorerTraverseTree(t *testing.T) {
 					"foo": File{Data: "content: foo\n"},
 				},
 			},
-			Select: func(item string, dstpath string, node *restic.Node) (selectForRestore bool, childMayBeSelected bool) {
+			Select: func(item string, isDir bool) (selectForRestore bool, childMayBeSelected bool) {
 				if item == "/foo" {
 					return true, false
 				}
 				return false, false
 			},
 			Visitor: checkVisitOrder([]TreeVisit{
-				{"visitNode", "/foo"},
+				{"enterDir", "/", nil},
+				{"visitNode", "/foo", nil},
+				{"leaveDir", "/", []string{"dir", "foo"}},
 			}),
 		},
 		{
@@ -635,14 +645,16 @@ func TestRestorerTraverseTree(t *testing.T) {
 					}},
 				},
 			},
-			Select: func(item string, dstpath string, node *restic.Node) (selectForRestore bool, childMayBeSelected bool) {
+			Select: func(item string, isDir bool) (selectForRestore bool, childMayBeSelected bool) {
 				if item == "/aaa" {
 					return true, false
 				}
 				return false, false
 			},
 			Visitor: checkVisitOrder([]TreeVisit{
-				{"visitNode", "/aaa"},
+				{"enterDir", "/", nil},
+				{"visitNode", "/aaa", nil},
+				{"leaveDir", "/", []string{"aaa", "dir"}},
 			}),
 		},
 
@@ -659,19 +671,21 @@ func TestRestorerTraverseTree(t *testing.T) {
 					"foo": File{Data: "content: foo\n"},
 				},
 			},
-			Select: func(item string, dstpath string, node *restic.Node) (selectForRestore bool, childMayBeSelected bool) {
+			Select: func(item string, isDir bool) (selectForRestore bool, childMayBeSelected bool) {
 				if strings.HasPrefix(item, "/dir") {
 					return true, true
 				}
 				return false, false
 			},
 			Visitor: checkVisitOrder([]TreeVisit{
-				{"enterDir", "/dir"},
-				{"visitNode", "/dir/otherfile"},
-				{"enterDir", "/dir/subdir"},
-				{"visitNode", "/dir/subdir/file"},
-				{"leaveDir", "/dir/subdir"},
-				{"leaveDir", "/dir"},
+				{"enterDir", "/", nil},
+				{"enterDir", "/dir", nil},
+				{"visitNode", "/dir/otherfile", nil},
+				{"enterDir", "/dir/subdir", nil},
+				{"visitNode", "/dir/subdir/file", nil},
+				{"leaveDir", "/dir/subdir", []string{"file"}},
+				{"leaveDir", "/dir", []string{"otherfile", "subdir"}},
+				{"leaveDir", "/", []string{"dir", "foo"}},
 			}),
 		},
 
@@ -688,7 +702,7 @@ func TestRestorerTraverseTree(t *testing.T) {
 					"foo": File{Data: "content: foo\n"},
 				},
 			},
-			Select: func(item string, dstpath string, node *restic.Node) (selectForRestore bool, childMayBeSelected bool) {
+			Select: func(item string, isDir bool) (selectForRestore bool, childMayBeSelected bool) {
 				switch item {
 				case "/dir":
 					return false, true
@@ -699,8 +713,10 @@ func TestRestorerTraverseTree(t *testing.T) {
 				}
 			},
 			Visitor: checkVisitOrder([]TreeVisit{
-				{"visitNode", "/dir/otherfile"},
-				{"leaveDir", "/dir"},
+				{"enterDir", "/", nil},
+				{"visitNode", "/dir/otherfile", nil},
+				{"leaveDir", "/dir", []string{"otherfile", "subdir"}},
+				{"leaveDir", "/", []string{"dir", "foo"}},
 			}),
 		},
 	}
@@ -710,7 +726,8 @@ func TestRestorerTraverseTree(t *testing.T) {
 			repo := repository.TestRepository(t)
 			sn, _ := saveSnapshot(t, repo, test.Snapshot, noopGetGenericAttributes)
 
-			res := NewRestorer(repo, sn, Options{})
+			// set Delete option to enable tracking filenames in a directory
+			res := NewRestorer(repo, sn, Options{Delete: true})
 
 			res.SelectFilter = test.Select
 
@@ -721,7 +738,7 @@ func TestRestorerTraverseTree(t *testing.T) {
 			// make sure we're creating a new subdir of the tempdir
 			target := filepath.Join(tempdir, "target")
 
-			_, err := res.traverseTree(ctx, target, string(filepath.Separator), *sn.Tree, test.Visitor(t))
+			err := res.traverseTree(ctx, target, *sn.Tree, test.Visitor(t))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -788,7 +805,7 @@ func TestRestorerConsistentTimestampsAndPermissions(t *testing.T) {
 
 	res := NewRestorer(repo, sn, Options{})
 
-	res.SelectFilter = func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
+	res.SelectFilter = func(item string, isDir bool) (selectedForRestore bool, childMayBeSelected bool) {
 		switch filepath.ToSlash(item) {
 		case "/dir":
 			childMayBeSelected = true
@@ -1195,4 +1212,163 @@ func TestRestoreDryRun(t *testing.T) {
 
 	_, err := os.Stat(tempdir)
 	rtest.Assert(t, errors.Is(err, os.ErrNotExist), "expected no file to be created, got %v", err)
+}
+
+func TestRestoreDryRunDelete(t *testing.T) {
+	snapshot := Snapshot{
+		Nodes: map[string]Node{
+			"foo": File{Data: "content: foo\n"},
+		},
+	}
+
+	repo := repository.TestRepository(t)
+	tempdir := filepath.Join(rtest.TempDir(t), "target")
+	tempfile := filepath.Join(tempdir, "existing")
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	rtest.OK(t, os.Mkdir(tempdir, 0o755))
+	f, err := os.Create(tempfile)
+	rtest.OK(t, err)
+	rtest.OK(t, f.Close())
+
+	sn, _ := saveSnapshot(t, repo, snapshot, noopGetGenericAttributes)
+	res := NewRestorer(repo, sn, Options{DryRun: true, Delete: true})
+	rtest.OK(t, res.RestoreTo(ctx, tempdir))
+
+	_, err = os.Stat(tempfile)
+	rtest.Assert(t, err == nil, "expected file to still exist, got error %v", err)
+}
+
+func TestRestoreOverwriteDirectory(t *testing.T) {
+	saveSnapshotsAndOverwrite(t,
+		Snapshot{
+			Nodes: map[string]Node{
+				"dir": Dir{
+					Mode: normalizeFileMode(0755 | os.ModeDir),
+					Nodes: map[string]Node{
+						"anotherfile": File{Data: "content: file\n"},
+					},
+				},
+			},
+		},
+		Snapshot{
+			Nodes: map[string]Node{
+				"dir": File{Data: "content: file\n"},
+			},
+		},
+		Options{Delete: true},
+	)
+}
+
+func TestRestoreDelete(t *testing.T) {
+	repo := repository.TestRepository(t)
+	tempdir := rtest.TempDir(t)
+
+	sn, _ := saveSnapshot(t, repo, Snapshot{
+		Nodes: map[string]Node{
+			"dir": Dir{
+				Mode: normalizeFileMode(0755 | os.ModeDir),
+				Nodes: map[string]Node{
+					"file1":       File{Data: "content: file\n"},
+					"anotherfile": File{Data: "content: file\n"},
+				},
+			},
+			"dir2": Dir{
+				Mode: normalizeFileMode(0755 | os.ModeDir),
+				Nodes: map[string]Node{
+					"anotherfile": File{Data: "content: file\n"},
+				},
+			},
+			"anotherfile": File{Data: "content: file\n"},
+		},
+	}, noopGetGenericAttributes)
+
+	// should delete files that no longer exist in the snapshot
+	deleteSn, _ := saveSnapshot(t, repo, Snapshot{
+		Nodes: map[string]Node{
+			"dir": Dir{
+				Mode: normalizeFileMode(0755 | os.ModeDir),
+				Nodes: map[string]Node{
+					"file1": File{Data: "content: file\n"},
+				},
+			},
+		},
+	}, noopGetGenericAttributes)
+
+	tests := []struct {
+		selectFilter func(item string, isDir bool) (selectedForRestore bool, childMayBeSelected bool)
+		fileState    map[string]bool
+	}{
+		{
+			selectFilter: nil,
+			fileState: map[string]bool{
+				"dir":                                true,
+				filepath.Join("dir", "anotherfile"):  false,
+				filepath.Join("dir", "file1"):        true,
+				"dir2":                               false,
+				filepath.Join("dir2", "anotherfile"): false,
+				"anotherfile":                        false,
+			},
+		},
+		{
+			selectFilter: func(item string, isDir bool) (selectedForRestore bool, childMayBeSelected bool) {
+				return false, false
+			},
+			fileState: map[string]bool{
+				"dir":                                true,
+				filepath.Join("dir", "anotherfile"):  true,
+				filepath.Join("dir", "file1"):        true,
+				"dir2":                               true,
+				filepath.Join("dir2", "anotherfile"): true,
+				"anotherfile":                        true,
+			},
+		},
+		{
+			selectFilter: func(item string, isDir bool) (selectedForRestore bool, childMayBeSelected bool) {
+				switch item {
+				case filepath.FromSlash("/dir"):
+					selectedForRestore = true
+				case filepath.FromSlash("/dir2"):
+					selectedForRestore = true
+				}
+				return
+			},
+			fileState: map[string]bool{
+				"dir":                                true,
+				filepath.Join("dir", "anotherfile"):  true,
+				filepath.Join("dir", "file1"):        true,
+				"dir2":                               false,
+				filepath.Join("dir2", "anotherfile"): false,
+				"anotherfile":                        true,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			res := NewRestorer(repo, sn, Options{})
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			err := res.RestoreTo(ctx, tempdir)
+			rtest.OK(t, err)
+
+			res = NewRestorer(repo, deleteSn, Options{Delete: true})
+			if test.selectFilter != nil {
+				res.SelectFilter = test.selectFilter
+			}
+			err = res.RestoreTo(ctx, tempdir)
+			rtest.OK(t, err)
+
+			for fn, shouldExist := range test.fileState {
+				_, err := os.Stat(filepath.Join(tempdir, fn))
+				if shouldExist {
+					rtest.OK(t, err)
+				} else {
+					rtest.Assert(t, errors.Is(err, os.ErrNotExist), "file %v: unexpected error got %v, expected ErrNotExist", fn, err)
+				}
+			}
+		})
+	}
 }

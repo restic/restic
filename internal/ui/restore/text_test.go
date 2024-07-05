@@ -65,6 +65,7 @@ func TestPrintCompleteItem(t *testing.T) {
 		{ActionFileRestored, 123, "restored  test with size 123 B"},
 		{ActionFileUpdated, 123, "updated   test with size 123 B"},
 		{ActionFileUnchanged, 123, "unchanged test with size 123 B"},
+		{ActionDeleted, 0, "deleted   test"},
 	} {
 		term, printer := createTextProgress()
 		printer.CompleteItem(data.action, "test", data.size)

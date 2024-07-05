@@ -19,7 +19,8 @@ import (
 // TODO I am not 100% convinced this is necessary, i.e. it may be okay
 // to use multiple os.File to write to the same target file
 type filesWriter struct {
-	buckets []filesWriterBucket
+	buckets              []filesWriterBucket
+	allowRecursiveDelete bool
 }
 
 type filesWriterBucket struct {
@@ -33,13 +34,14 @@ type partialFile struct {
 	sparse bool
 }
 
-func newFilesWriter(count int) *filesWriter {
+func newFilesWriter(count int, allowRecursiveDelete bool) *filesWriter {
 	buckets := make([]filesWriterBucket, count)
 	for b := 0; b < count; b++ {
 		buckets[b].files = make(map[string]*partialFile)
 	}
 	return &filesWriter{
-		buckets: buckets,
+		buckets:              buckets,
+		allowRecursiveDelete: allowRecursiveDelete,
 	}
 }
 
@@ -60,7 +62,7 @@ func openFile(path string) (*os.File, error) {
 	return f, nil
 }
 
-func createFile(path string, createSize int64, sparse bool) (*os.File, error) {
+func createFile(path string, createSize int64, sparse bool, allowRecursiveDelete bool) (*os.File, error) {
 	f, err := fs.OpenFile(path, fs.O_CREATE|fs.O_WRONLY|fs.O_NOFOLLOW, 0600)
 	if err != nil && fs.IsAccessDenied(err) {
 		// If file is readonly, clear the readonly flag by resetting the
@@ -109,8 +111,14 @@ func createFile(path string, createSize int64, sparse bool) (*os.File, error) {
 		}
 
 		// not what we expected, try to get rid of it
-		if err := fs.Remove(path); err != nil {
-			return nil, err
+		if allowRecursiveDelete {
+			if err := fs.RemoveAll(path); err != nil {
+				return nil, err
+			}
+		} else {
+			if err := fs.Remove(path); err != nil {
+				return nil, err
+			}
 		}
 		// create a new file, pass O_EXCL to make sure there are no surprises
 		f, err = fs.OpenFile(path, fs.O_CREATE|fs.O_WRONLY|fs.O_EXCL|fs.O_NOFOLLOW, 0600)
@@ -169,7 +177,7 @@ func (w *filesWriter) writeToFile(path string, blob []byte, offset int64, create
 		var f *os.File
 		var err error
 		if createSize >= 0 {
-			f, err = createFile(path, createSize, sparse)
+			f, err = createFile(path, createSize, sparse, w.allowRecursiveDelete)
 			if err != nil {
 				return nil, err
 			}

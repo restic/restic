@@ -124,7 +124,7 @@ func (s *Scanner) scan(ctx context.Context, stats ScanStats, target string) (Sca
 		stats.Files++
 		stats.Bytes += uint64(fi.Size())
 	case fi.Mode().IsDir():
-		names, err := readdirnames(s.FS, target, fs.O_NOFOLLOW)
+		names, err := fs.Readdirnames(s.FS, target, fs.O_NOFOLLOW)
 		if err != nil {
 			return stats, s.Error(target, err)
 		}
