@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/archiver"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -1165,4 +1166,33 @@ func TestRestoreIfChanged(t *testing.T) {
 			rtest.Equals(t, modData, string(data), "expected modified file content")
 		}
 	}
+}
+
+func TestRestoreDryRun(t *testing.T) {
+	snapshot := Snapshot{
+		Nodes: map[string]Node{
+			"foo":  File{Data: "content: foo\n", Links: 2, Inode: 42},
+			"foo2": File{Data: "content: foo\n", Links: 2, Inode: 42},
+			"dirtest": Dir{
+				Nodes: map[string]Node{
+					"file": File{Data: "content: file\n"},
+				},
+			},
+			"link": Symlink{Target: "foo"},
+		},
+	}
+
+	repo := repository.TestRepository(t)
+	tempdir := filepath.Join(rtest.TempDir(t), "target")
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sn, id := saveSnapshot(t, repo, snapshot, noopGetGenericAttributes)
+	t.Logf("snapshot saved as %v", id.Str())
+
+	res := NewRestorer(repo, sn, Options{DryRun: true})
+	rtest.OK(t, res.RestoreTo(ctx, tempdir))
+
+	_, err := os.Stat(tempdir)
+	rtest.Assert(t, errors.Is(err, os.ErrNotExist), "expected no file to be created, got %v", err)
 }

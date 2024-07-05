@@ -76,11 +76,21 @@ type printerMock struct {
 
 func (p *printerMock) Update(_ restoreui.State, _ time.Duration) {
 }
+func (p *printerMock) CompleteItem(action restoreui.ItemAction, item string, size uint64) {
+}
 func (p *printerMock) Finish(s restoreui.State, _ time.Duration) {
 	p.s = s
 }
 
 func TestRestorerProgressBar(t *testing.T) {
+	testRestorerProgressBar(t, false)
+}
+
+func TestRestorerProgressBarDryRun(t *testing.T) {
+	testRestorerProgressBar(t, true)
+}
+
+func testRestorerProgressBar(t *testing.T, dryRun bool) {
 	repo := repository.TestRepository(t)
 
 	sn, _ := saveSnapshot(t, repo, Snapshot{
@@ -97,7 +107,7 @@ func TestRestorerProgressBar(t *testing.T) {
 
 	mock := &printerMock{}
 	progress := restoreui.NewProgress(mock, 0)
-	res := NewRestorer(repo, sn, Options{Progress: progress})
+	res := NewRestorer(repo, sn, Options{Progress: progress, DryRun: dryRun})
 	res.SelectFilter = func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
 		return true, true
 	}
