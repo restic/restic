@@ -69,7 +69,7 @@ There are case insensitive variants of ``--exclude`` and ``--include`` called
 ignore the casing of paths.
 
 There are also ``--include-file``, ``--exclude-file``, ``--iinclude-file`` and
- ``--iexclude-file`` flags that read the include and exclude patterns from a file.
+``--iexclude-file`` flags that read the include and exclude patterns from a file.
 
 Restoring symbolic links on windows is only possible when the user has
 ``SeCreateSymbolicLinkPrivilege`` privilege or is running as admin. This is a
