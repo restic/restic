@@ -264,7 +264,7 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		term.Print("Duplicate packs are non-critical, you can run `restic repair index' to correct this.\n")
 	}
 	if suggestLegacyIndexRebuild {
-		printer.E("Found indexes using the legacy format, you must run `restic repair index' to correct this.\n")
+		printer.E("error: Found indexes using the legacy format, you must run `restic repair index' to correct this.\n")
 	}
 	if mixedFound {
 		term.Print("Mixed packs with tree and data blobs are non-critical, you can run `restic prune` to correct this.\n")
@@ -274,28 +274,42 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		for _, err := range errs {
 			printer.E("error: %v\n", err)
 		}
-		return errors.Fatal("LoadIndex returned errors")
+
+		printer.E("\nThe repository index is damaged and must be repaired. You must run `restic repair index' to correct this.\n\n")
+		return errors.Fatal("repository contains errors")
 	}
 
 	orphanedPacks := 0
 	errChan := make(chan error)
+	salvagePacks := restic.NewIDSet()
 
 	printer.P("check all packs\n")
 	go chkr.Packs(ctx, errChan)
 
 	for err := range errChan {
-		if checker.IsOrphanedPack(err) {
-			orphanedPacks++
-			printer.P("%v\n", err)
+		var packErr *checker.PackError
+		if errors.As(err, &packErr) {
+			if packErr.Orphaned {
+				orphanedPacks++
+				printer.V("%v\n", err)
+			} else {
+				if packErr.Truncated {
+					salvagePacks.Insert(packErr.ID)
+				}
+				errorsFound = true
+				printer.E("%v\n", err)
+			}
 		} else if err == checker.ErrLegacyLayout {
-			printer.P("repository still uses the S3 legacy layout\nPlease run `restic migrate s3legacy` to correct this.\n")
+			errorsFound = true
+			printer.E("error: repository still uses the S3 legacy layout\nYou must run `restic migrate s3legacy` to correct this.\n")
 		} else {
 			errorsFound = true
 			printer.E("%v\n", err)
 		}
 	}
 
-	if orphanedPacks > 0 {
+	if orphanedPacks > 0 && !errorsFound {
+		// hide notice if repository is damaged
 		printer.P("%d additional files were found in the repo, which likely contain duplicate data.\nThis is non-critical, you can run `restic prune` to correct this.\n", orphanedPacks)
 	}
 	if ctx.Err() != nil {
@@ -353,26 +367,14 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 
 		go chkr.ReadPacks(ctx, packs, p, errChan)
 
-		var salvagePacks restic.IDs
-
 		for err := range errChan {
 			errorsFound = true
 			printer.E("%v\n", err)
 			if err, ok := err.(*repository.ErrPackData); ok {
-				salvagePacks = append(salvagePacks, err.PackID)
+				salvagePacks.Insert(err.PackID)
 			}
 		}
 		p.Done()
-
-		if len(salvagePacks) > 0 {
-			printer.E("\nThe repository contains pack files with damaged blobs. These blobs must be removed to repair the repository. This can be done using the following commands. Please read the troubleshooting guide at https://restic.readthedocs.io/en/stable/077_troubleshooting.html first.\n\n")
-			var strIDs []string
-			for _, id := range salvagePacks {
-				strIDs = append(strIDs, id.String())
-			}
-			printer.E("restic repair packs %v\nrestic repair snapshots --forget\n\n", strings.Join(strIDs, " "))
-			printer.E("Corrupted blobs are either caused by hardware problems or bugs in restic. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting!\n")
-		}
 	}
 
 	switch {
@@ -416,11 +418,24 @@ func runCheck(ctx context.Context, opts CheckOptions, gopts GlobalOptions, args 
 		doReadData(packs)
 	}
 
+	if len(salvagePacks) > 0 {
+		printer.E("\nThe repository contains damaged pack files. These damaged files must be removed to repair the repository. This can be done using the following commands. Please read the troubleshooting guide at https://restic.readthedocs.io/en/stable/077_troubleshooting.html first.\n\n")
+		var strIDs []string
+		for id := range salvagePacks {
+			strIDs = append(strIDs, id.String())
+		}
+		printer.E("restic repair packs %v\nrestic repair snapshots --forget\n\n", strings.Join(strIDs, " "))
+		printer.E("Damaged pack files can be caused by backend problems, hardware problems or bugs in restic. Please open an issue at https://github.com/restic/restic/issues/new/choose for further troubleshooting!\n")
+	}
+
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
 
 	if errorsFound {
+		if len(salvagePacks) == 0 {
+			printer.E("\nThe repository is damaged and must be repaired. Please follow the troubleshooting guide at https://restic.readthedocs.io/en/stable/077_troubleshooting.html .\n\n")
+		}
 		return errors.Fatal("repository contains errors")
 	}
 	printer.P("no errors were found\n")
