@@ -315,11 +315,8 @@ func sanitizeLines(lines []string, width int) []string {
 
 // SetStatus updates the status lines.
 // The lines should not contain newlines; this method adds them.
+// Pass nil or an empty array to remove the status lines.
 func (t *Terminal) SetStatus(lines []string) {
-	if len(lines) == 0 {
-		return
-	}
-
 	// only truncate interactive status output
 	var width int
 	if t.canUpdateStatus {
