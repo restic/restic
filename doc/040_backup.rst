@@ -506,9 +506,9 @@ and displays a small statistic, just pass the command two snapshot IDs:
     $ restic -r /srv/restic-repo diff 5845b002 2ab627a6
     comparing snapshot ea657ce5 to 2ab627a6:
 
-     M   /restic/cmd_diff.go
+    M    /restic/cmd_diff.go
     +    /restic/foo
-     M   /restic/restic
+    M    /restic/restic
 
     Files:           0 new,     0 removed,     2 changed
     Dirs:            1 new,     0 removed
@@ -528,7 +528,7 @@ folder, you could use the following command:
     $ restic -r /srv/restic-repo diff 5845b002:/restic 2ab627a6:/restic
 
 By default, the ``diff`` command only lists differences in file contents.
-The flag `--metadata` shows changes to file metadata, too.
+The flag ``--metadata`` shows changes to file metadata, too.
 
 The characters left of the file path show what has changed for this file:
 
