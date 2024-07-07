@@ -367,9 +367,11 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 			return nil
 		}
 
+		printedDir := false
 		if withinDir(nodepath) {
 			// if we're within a dir, print the node
 			printer.Node(nodepath, node)
+			printedDir = true
 
 			// if recursive listing is requested, signal the walker that it
 			// should continue walking recursively
@@ -387,6 +389,9 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		// otherwise, signal the walker to not walk recursively into any
 		// subdirs
 		if node.Type == "dir" {
+			if printedDir {
+				printer.LeaveDir(nodepath)
+			}
 			return walker.ErrSkipNode
 		}
 		return nil
