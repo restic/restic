@@ -9,3 +9,4 @@ You can use it as follows: `restic ls latest --ncdu | ncdu -f -`
 
 https://github.com/restic/restic/issues/4549
 https://github.com/restic/restic/pull/4550
+https://github.com/restic/restic/pull/4911
