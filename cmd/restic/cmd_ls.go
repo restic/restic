@@ -193,10 +193,13 @@ func lsNcduNode(_ string, node *restic.Node) ([]byte, error) {
 		Mtime  int64  `json:"mtime"`
 	}
 
+	const blockSize = 512
+
 	outNode := NcduNode{
-		Name:   node.Name,
-		Asize:  node.Size,
-		Dsize:  node.Size,
+		Name:  node.Name,
+		Asize: node.Size,
+		// round up to nearest full blocksize
+		Dsize:  (node.Size + blockSize - 1) / blockSize * blockSize,
 		Dev:    node.DeviceID,
 		Ino:    node.Inode,
 		NLink:  node.Links,
