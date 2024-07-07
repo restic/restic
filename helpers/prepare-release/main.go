@@ -323,6 +323,11 @@ func updateVersion() {
 }
 
 func updateVersionDev() {
+	err := os.WriteFile("VERSION", []byte(opts.Version+"-dev\n"), 0644)
+	if err != nil {
+		die("unable to write version to file: %v", err)
+	}
+
 	newVersion := fmt.Sprintf(`const version = "%s-dev (compiled manually)"`, opts.Version)
 	replace(versionCodeFile, versionPattern, newVersion)
 
