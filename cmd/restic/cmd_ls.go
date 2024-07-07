@@ -71,7 +71,7 @@ func init() {
 
 type lsPrinter interface {
 	Snapshot(sn *restic.Snapshot)
-	Node(path string, node *restic.Node)
+	Node(path string, node *restic.Node, isPrefixDirectory bool)
 	LeaveDir(path string)
 	Close()
 }
@@ -102,7 +102,10 @@ func (p *jsonLsPrinter) Snapshot(sn *restic.Snapshot) {
 }
 
 // Print node in our custom JSON format, followed by a newline.
-func (p *jsonLsPrinter) Node(path string, node *restic.Node) {
+func (p *jsonLsPrinter) Node(path string, node *restic.Node, isPrefixDirectory bool) {
+	if isPrefixDirectory {
+		return
+	}
 	err := lsNodeJSON(p.enc, path, node)
 	if err != nil {
 		Warnf("JSON encode failed: %v\n", err)
@@ -217,7 +220,7 @@ func lsNcduNode(_ string, node *restic.Node) ([]byte, error) {
 	return json.Marshal(outNode)
 }
 
-func (p *ncduLsPrinter) Node(path string, node *restic.Node) {
+func (p *ncduLsPrinter) Node(path string, node *restic.Node, _ bool) {
 	out, err := lsNcduNode(path, node)
 	if err != nil {
 		Warnf("JSON encode failed: %v\n", err)
@@ -249,8 +252,10 @@ type textLsPrinter struct {
 func (p *textLsPrinter) Snapshot(sn *restic.Snapshot) {
 	Verbosef("%v filtered by %v:\n", sn, p.dirs)
 }
-func (p *textLsPrinter) Node(path string, node *restic.Node) {
-	Printf("%s\n", formatNode(path, node, p.ListLong, p.HumanReadable))
+func (p *textLsPrinter) Node(path string, node *restic.Node, isPrefixDirectory bool) {
+	if !isPrefixDirectory {
+		Printf("%s\n", formatNode(path, node, p.ListLong, p.HumanReadable))
+	}
 }
 
 func (p *textLsPrinter) LeaveDir(_ string) {}
@@ -369,8 +374,8 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 
 		printedDir := false
 		if withinDir(nodepath) {
-			// if we're within a dir, print the node
-			printer.Node(nodepath, node)
+			// if we're within a target path, print the node
+			printer.Node(nodepath, node, false)
 			printedDir = true
 
 			// if recursive listing is requested, signal the walker that it
@@ -383,12 +388,17 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		// if there's an upcoming match deeper in the tree (but we're not
 		// there yet), signal the walker to descend into any subdirs
 		if approachingMatchingTree(nodepath) {
+			// print node leading up to the target paths
+			if !printedDir {
+				printer.Node(nodepath, node, true)
+			}
 			return nil
 		}
 
 		// otherwise, signal the walker to not walk recursively into any
 		// subdirs
 		if node.Type == "dir" {
+			// immediately generate leaveDir if the directory is skipped
 			if printedDir {
 				printer.LeaveDir(nodepath)
 			}
@@ -401,7 +411,7 @@ func runLs(ctx context.Context, opts LsOptions, gopts GlobalOptions, args []stri
 		ProcessNode: processNode,
 		LeaveDir: func(path string) {
 			// the root path `/` has no corresponding node and is thus also skipped by processNode
-			if withinDir(path) && path != "/" {
+			if path != "/" {
 				printer.LeaveDir(path)
 			}
 		},

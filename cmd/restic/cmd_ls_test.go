@@ -140,12 +140,12 @@ func TestLsNcdu(t *testing.T) {
 	printer.Node("/directory", &restic.Node{
 		Type: "dir",
 		Name: "directory",
-	})
+	}, false)
 	printer.Node("/directory/data", &restic.Node{
 		Type: "file",
 		Name: "data",
 		Size: 42,
-	})
+	}, false)
 	printer.LeaveDir("/directory")
 	printer.Close()
 
