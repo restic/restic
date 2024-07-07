@@ -132,6 +132,9 @@ func getCredentials(cfg Config) (*credentials.Credentials, error) {
 
 	if c.SignerType == credentials.SignatureAnonymous {
 		debug.Log("using anonymous access for %#v", cfg.Endpoint)
+		// short circuit credentials resolution when using anonymous access
+		// otherwise the IAM provider would continuously try to (unsuccessfully) retrieve new credentials
+		creds = credentials.New(&credentials.Static{})
 	}
 
 	roleArn := os.Getenv("RESTIC_AWS_ASSUME_ROLE_ARN")
