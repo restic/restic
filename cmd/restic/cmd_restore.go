@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"path/filepath"
 	"time"
 
 	"github.com/restic/restic/internal/debug"
@@ -105,6 +106,10 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 	}
 	if opts.DryRun && opts.Verify {
 		return errors.Fatal("--dry-run and --verify are mutually exclusive")
+	}
+
+	if opts.Delete && filepath.Clean(opts.Target) == "/" && !hasExcludes && !hasIncludes {
+		return errors.Fatal("'--target / --delete' must be combined with an include or exclude filter")
 	}
 
 	snapshotIDString := args[0]
