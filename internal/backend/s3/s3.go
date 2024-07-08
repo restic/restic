@@ -98,6 +98,10 @@ func open(ctx context.Context, cfg Config, rt http.RoundTripper) (*Backend, erro
 // getCredentials -- runs through the various credential types and returns the first one that works.
 // additionally if the user has specified a role to assume, it will do that as well.
 func getCredentials(cfg Config, tr http.RoundTripper) (*credentials.Credentials, error) {
+	if cfg.UnsafeAnonymousAuth {
+		return credentials.New(&credentials.Static{}), nil
+	}
+
 	// Chains all credential types, in the following order:
 	// 	- Static credentials provided by user
 	//	- AWS env vars (i.e. AWS_ACCESS_KEY_ID)
@@ -131,9 +135,14 @@ func getCredentials(cfg Config, tr http.RoundTripper) (*credentials.Credentials,
 	}
 
 	if c.SignerType == credentials.SignatureAnonymous {
+		// Fail if no credentials were found to prevent repeated attempts to (unsuccessfully) retrieve new credentials.
+		// The first attempt still has to timeout which slows down restic usage considerably. Thus, migrate towards forcing
+		// users to explicitly decide between authenticated and anonymous access.
+		if feature.Flag.Enabled(feature.ExplicitS3AnonymousAuth) {
+			return nil, fmt.Errorf("no credentials found. Use `-o s3.unsafe-anonymous-auth=true` for anonymous authentication")
+		}
+
 		debug.Log("using anonymous access for %#v", cfg.Endpoint)
-		// short circuit credentials resolution when using anonymous access
-		// otherwise the IAM provider would continuously try to (unsuccessfully) retrieve new credentials
 		creds = credentials.New(&credentials.Static{})
 	}
 
