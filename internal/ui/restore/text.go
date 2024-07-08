@@ -62,7 +62,7 @@ func (t *textPrinter) CompleteItem(messageType ItemAction, item string, size uin
 }
 
 func (t *textPrinter) Finish(p State, duration time.Duration) {
-	t.terminal.SetStatus([]string{})
+	t.terminal.SetStatus(nil)
 
 	timeLeft := ui.FormatDuration(duration)
 	formattedAllBytesTotal := ui.FormatBytes(p.AllBytesTotal)

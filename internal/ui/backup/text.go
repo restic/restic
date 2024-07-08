@@ -121,7 +121,7 @@ func (b *TextProgress) ReportTotal(start time.Time, s archiver.ScanStats) {
 // Reset status
 func (b *TextProgress) Reset() {
 	if b.term.CanUpdateStatus() {
-		b.term.SetStatus([]string{""})
+		b.term.SetStatus(nil)
 	}
 }
 

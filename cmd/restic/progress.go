@@ -53,7 +53,7 @@ func newGenericProgressMax(show bool, max uint64, description string, print func
 func newTerminalProgressMax(show bool, max uint64, description string, term *termstatus.Terminal) *progress.Counter {
 	return newGenericProgressMax(show, max, description, func(status string, final bool) {
 		if final {
-			term.SetStatus([]string{})
+			term.SetStatus(nil)
 			term.Print(status)
 		} else {
 			term.SetStatus([]string{status})
