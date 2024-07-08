@@ -303,7 +303,7 @@ func generateFiles() {
 	}
 }
 
-var versionPattern = `const version = ".*"`
+var versionPattern = `var version = ".*"`
 
 const versionCodeFile = "cmd/restic/global.go"
 
@@ -313,7 +313,7 @@ func updateVersion() {
 		die("unable to write version to file: %v", err)
 	}
 
-	newVersion := fmt.Sprintf("const version = %q", opts.Version)
+	newVersion := fmt.Sprintf("var version = %q", opts.Version)
 	replace(versionCodeFile, versionPattern, newVersion)
 
 	if len(uncommittedChanges("VERSION")) > 0 || len(uncommittedChanges(versionCodeFile)) > 0 {
@@ -323,7 +323,12 @@ func updateVersion() {
 }
 
 func updateVersionDev() {
-	newVersion := fmt.Sprintf(`const version = "%s-dev (compiled manually)"`, opts.Version)
+	err := os.WriteFile("VERSION", []byte(opts.Version+"-dev\n"), 0644)
+	if err != nil {
+		die("unable to write version to file: %v", err)
+	}
+
+	newVersion := fmt.Sprintf(`var version = "%s-dev (compiled manually)"`, opts.Version)
 	replace(versionCodeFile, versionPattern, newVersion)
 
 	msg("committing cmd/restic/global.go with dev version")
