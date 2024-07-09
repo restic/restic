@@ -276,7 +276,7 @@ func statsWalkTree(repo restic.Loader, opts StatsOptions, stats *statsContainer,
 			// will still be restored
 			stats.TotalFileCount++
 
-			if node.Links == 1 || node.Type == "dir" {
+			if node.Links == 1 || node.Type == restic.NodeTypeDir {
 				stats.TotalSize += node.Size
 			} else {
 				// if hardlinks are present only count each deviceID+inode once

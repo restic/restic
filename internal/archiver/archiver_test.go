@@ -730,7 +730,7 @@ func TestFilChangedSpecialCases(t *testing.T) {
 	t.Run("type-change", func(t *testing.T) {
 		fi := lstat(t, filename)
 		node := nodeFromFI(t, filename, fi)
-		node.Type = "symlink"
+		node.Type = "restic.NodeTypeSymlink"
 		if !fileChanged(&fs.Local{}, fi, node, 0) {
 			t.Fatal("node with changed type detected as unchanged")
 		}

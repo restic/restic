@@ -232,7 +232,7 @@ func (arch *Archiver) trackItem(item string, previous, current *restic.Node, s I
 	}
 
 	switch current.Type {
-	case "dir":
+	case restic.NodeTypeDir:
 		switch {
 		case previous == nil:
 			arch.summary.Dirs.New++
@@ -242,7 +242,7 @@ func (arch *Archiver) trackItem(item string, previous, current *restic.Node, s I
 			arch.summary.Dirs.Changed++
 		}
 
-	case "file":
+	case restic.NodeTypeFile:
 		switch {
 		case previous == nil:
 			arch.summary.Files.New++
@@ -261,7 +261,7 @@ func (arch *Archiver) nodeFromFileInfo(snPath, filename string, fi os.FileInfo, 
 		node.AccessTime = node.ModTime
 	}
 	if feature.Flag.Enabled(feature.DeviceIDForHardlinks) {
-		if node.Links == 1 || node.Type == "dir" {
+		if node.Links == 1 || node.Type == restic.NodeTypeDir {
 			// the DeviceID is only necessary for hardlinked files
 			// when using subvolumes or snapshots their deviceIDs tend to change which causes
 			// restic to upload new tree blobs
@@ -280,7 +280,7 @@ func (arch *Archiver) nodeFromFileInfo(snPath, filename string, fi os.FileInfo, 
 // loadSubtree tries to load the subtree referenced by node. In case of an error, nil is returned.
 // If there is no node to load, then nil is returned without an error.
 func (arch *Archiver) loadSubtree(ctx context.Context, node *restic.Node) (*restic.Tree, error) {
-	if node == nil || node.Type != "dir" || node.Subtree == nil {
+	if node == nil || node.Type != restic.NodeTypeDir || node.Subtree == nil {
 		return nil, nil
 	}
 
@@ -583,7 +583,7 @@ func fileChanged(fs fs.FS, fi os.FileInfo, node *restic.Node, ignoreFlags uint) 
 	switch {
 	case node == nil:
 		return true
-	case node.Type != "file":
+	case node.Type != restic.NodeTypeFile:
 		// We're only called for regular files, so this is a type change.
 		return true
 	case uint64(fi.Size()) != node.Size:

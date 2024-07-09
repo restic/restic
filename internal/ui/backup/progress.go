@@ -124,7 +124,7 @@ func (p *Progress) CompleteItem(item string, previous, current *restic.Node, s a
 	}
 
 	switch current.Type {
-	case "dir":
+	case restic.NodeTypeDir:
 		p.mu.Lock()
 		p.addProcessed(Counter{Dirs: 1})
 		p.mu.Unlock()
@@ -138,7 +138,7 @@ func (p *Progress) CompleteItem(item string, previous, current *restic.Node, s a
 			p.printer.CompleteItem("dir modified", item, s, d)
 		}
 
-	case "file":
+	case restic.NodeTypeFile:
 		p.mu.Lock()
 		p.addProcessed(Counter{Files: 1})
 		delete(p.currentFiles, item)

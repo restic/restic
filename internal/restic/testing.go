@@ -81,7 +81,7 @@ func (fs *fakeFileSystem) saveTree(ctx context.Context, seed int64, depth int) I
 
 			node := &Node{
 				Name:    fmt.Sprintf("dir-%v", treeSeed),
-				Type:    "dir",
+				Type:    NodeTypeDir,
 				Mode:    0755,
 				Subtree: &id,
 			}
@@ -95,7 +95,7 @@ func (fs *fakeFileSystem) saveTree(ctx context.Context, seed int64, depth int) I
 
 		node := &Node{
 			Name: fmt.Sprintf("file-%v", fileSeed),
-			Type: "file",
+			Type: NodeTypeFile,
 			Mode: 0644,
 			Size: uint64(fileSize),
 		}

@@ -25,7 +25,7 @@ func inodeFromName(parent uint64, name string) uint64 {
 
 // inodeFromNode generates an inode number for a file within a snapshot.
 func inodeFromNode(parent uint64, node *restic.Node) (inode uint64) {
-	if node.Links > 1 && node.Type != "dir" {
+	if node.Links > 1 && node.Type != restic.NodeTypeDir {
 		// If node has hard links, give them all the same inode,
 		// irrespective of the parent.
 		var buf [16]byte

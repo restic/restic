@@ -38,7 +38,7 @@ func buildTreeMap(tree TestTree, m TreeMap) restic.ID {
 		case TestFile:
 			err := tb.AddNode(&restic.Node{
 				Name: name,
-				Type: "file",
+				Type: restic.NodeTypeFile,
 				Size: elem.Size,
 			})
 			if err != nil {
@@ -49,7 +49,7 @@ func buildTreeMap(tree TestTree, m TreeMap) restic.ID {
 			err := tb.AddNode(&restic.Node{
 				Name:    name,
 				Subtree: &id,
-				Type:    "dir",
+				Type:    restic.NodeTypeDir,
 			})
 			if err != nil {
 				panic(err)

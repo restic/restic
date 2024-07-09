@@ -139,7 +139,7 @@ func closeFileHandle(fileHandle windows.Handle, path string) {
 
 // restoreExtendedAttributes handles restore of the Windows Extended Attributes to the specified path.
 // The Windows API requires setting of all the Extended Attributes in one call.
-func restoreExtendedAttributes(nodeType, path string, eas []ExtendedAttribute) (err error) {
+func restoreExtendedAttributes(nodeType restic.NodeType, path string, eas []ExtendedAttribute) (err error) {
 	var fileHandle windows.Handle
 	if fileHandle, err = OpenHandleForEA(nodeType, path, true); fileHandle == 0 {
 		return nil
@@ -386,7 +386,7 @@ func nodeFillGenericAttributes(node *restic.Node, path string, fi os.FileInfo, s
 	}
 
 	var sd *[]byte
-	if node.Type == "file" || node.Type == "dir" {
+	if node.Type == restic.NodeTypeFile || node.Type == restic.NodeTypeDir {
 		// Check EA support and get security descriptor for file/dir only
 		allowExtended, err = checkAndStoreEASupport(path)
 		if err != nil {

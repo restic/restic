@@ -344,7 +344,7 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 
 	for _, node := range tree.Nodes {
 		switch node.Type {
-		case "file":
+		case restic.NodeTypeFile:
 			if node.Content == nil {
 				errs = append(errs, &Error{TreeID: id, Err: errors.Errorf("file %q has nil blob list", node.Name)})
 			}
@@ -380,7 +380,7 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 				c.blobRefs.Unlock()
 			}
 
-		case "dir":
+		case restic.NodeTypeDir:
 			if node.Subtree == nil {
 				errs = append(errs, &Error{TreeID: id, Err: errors.Errorf("dir node %q has no subtree", node.Name)})
 				continue
@@ -391,7 +391,7 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 				continue
 			}
 
-		case "symlink", "socket", "chardev", "dev", "fifo":
+		case restic.NodeTypeSymlink, restic.NodeTypeSocket, restic.NodeTypeCharDev, restic.NodeTypeDev, restic.NodeTypeFifo:
 			// nothing to check
 
 		default:

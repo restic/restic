@@ -79,16 +79,16 @@ func (d *Dumper) dumpNodeTar(ctx context.Context, node *restic.Node, w *tar.Writ
 		header.Mode |= cISVTX
 	}
 
-	if IsFile(node) {
+	if node.Type == restic.NodeTypeFile {
 		header.Typeflag = tar.TypeReg
 	}
 
-	if IsLink(node) {
+	if node.Type == restic.NodeTypeSymlink {
 		header.Typeflag = tar.TypeSymlink
 		header.Linkname = node.LinkTarget
 	}
 
-	if IsDir(node) {
+	if node.Type == restic.NodeTypeDir {
 		header.Typeflag = tar.TypeDir
 		header.Name += "/"
 	}

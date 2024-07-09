@@ -289,7 +289,7 @@ func TestEnsureTree(ctx context.Context, t testing.TB, prefix string, repo resti
 
 		switch e := entry.(type) {
 		case TestDir:
-			if node.Type != "dir" {
+			if node.Type != restic.NodeTypeDir {
 				t.Errorf("tree node %v has wrong type %q, want %q", nodePrefix, node.Type, "dir")
 				return
 			}
@@ -301,13 +301,13 @@ func TestEnsureTree(ctx context.Context, t testing.TB, prefix string, repo resti
 
 			TestEnsureTree(ctx, t, path.Join(prefix, node.Name), repo, *node.Subtree, e)
 		case TestFile:
-			if node.Type != "file" {
+			if node.Type != restic.NodeTypeFile {
 				t.Errorf("tree node %v has wrong type %q, want %q", nodePrefix, node.Type, "file")
 			}
 			TestEnsureFileContent(ctx, t, repo, nodePrefix, node, e)
 		case TestSymlink:
-			if node.Type != "symlink" {
-				t.Errorf("tree node %v has wrong type %q, want %q", nodePrefix, node.Type, "file")
+			if node.Type != restic.NodeTypeSymlink {
+				t.Errorf("tree node %v has wrong type %q, want %q", nodePrefix, node.Type, "symlink")
 			}
 
 			if e.Target != node.LinkTarget {

@@ -42,7 +42,7 @@ func checkFile(t testing.TB, stat *syscall.Stat_t, node *restic.Node) {
 		t.Errorf("Dev does not match, want %v, got %v", stat.Dev, node.DeviceID)
 	}
 
-	if node.Size != uint64(stat.Size) && node.Type != "symlink" {
+	if node.Size != uint64(stat.Size) && node.Type != restic.NodeTypeSymlink {
 		t.Errorf("Size does not match, want %v, got %v", stat.Size, node.Size)
 	}
 
@@ -135,9 +135,9 @@ func TestNodeFromFileInfo(t *testing.T) {
 			}
 
 			switch node.Type {
-			case "file", "symlink":
+			case restic.NodeTypeFile, restic.NodeTypeSymlink:
 				checkFile(t, s, node)
-			case "dev", "chardev":
+			case restic.NodeTypeDev, restic.NodeTypeCharDev:
 				checkFile(t, s, node)
 				checkDevice(t, s, node)
 			default:

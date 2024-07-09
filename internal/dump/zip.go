@@ -40,7 +40,7 @@ func (d *Dumper) dumpNodeZip(ctx context.Context, node *restic.Node, zw *zip.Wri
 	}
 	header.SetMode(node.Mode)
 
-	if IsDir(node) {
+	if node.Type == restic.NodeTypeDir {
 		header.Name += "/"
 	}
 
@@ -49,7 +49,7 @@ func (d *Dumper) dumpNodeZip(ctx context.Context, node *restic.Node, zw *zip.Wri
 		return errors.Wrap(err, "ZipHeader")
 	}
 
-	if IsLink(node) {
+	if node.Type == restic.NodeTypeSymlink {
 		if _, err = w.Write([]byte(node.LinkTarget)); err != nil {
 			return errors.Wrap(err, "Write")
 		}

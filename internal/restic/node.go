@@ -67,10 +67,24 @@ func storeGenericAttributeType(attributeTypes ...GenericAttributeType) {
 	}
 }
 
+type NodeType string
+
+var (
+	NodeTypeFile      = NodeType("file")
+	NodeTypeDir       = NodeType("dir")
+	NodeTypeSymlink   = NodeType("symlink")
+	NodeTypeDev       = NodeType("dev")
+	NodeTypeCharDev   = NodeType("chardev")
+	NodeTypeFifo      = NodeType("fifo")
+	NodeTypeSocket    = NodeType("socket")
+	NodeTypeIrregular = NodeType("irregular")
+	NodeTypeInvalid   = NodeType("")
+)
+
 // Node is a file, directory or other item in a backup.
 type Node struct {
 	Name       string      `json:"name"`
-	Type       string      `json:"type"`
+	Type       NodeType    `json:"type"`
 	Mode       os.FileMode `json:"mode,omitempty"`
 	ModTime    time.Time   `json:"mtime,omitempty"`
 	AccessTime time.Time   `json:"atime,omitempty"`
@@ -110,19 +124,19 @@ func (n Nodes) Swap(i, j int)      { n[i], n[j] = n[j], n[i] }
 func (node Node) String() string {
 	var mode os.FileMode
 	switch node.Type {
-	case "file":
+	case NodeTypeFile:
 		mode = 0
-	case "dir":
+	case NodeTypeDir:
 		mode = os.ModeDir
-	case "symlink":
+	case NodeTypeSymlink:
 		mode = os.ModeSymlink
-	case "dev":
+	case NodeTypeDev:
 		mode = os.ModeDevice
-	case "chardev":
+	case NodeTypeCharDev:
 		mode = os.ModeDevice | os.ModeCharDevice
-	case "fifo":
+	case NodeTypeFifo:
 		mode = os.ModeNamedPipe
-	case "socket":
+	case NodeTypeSocket:
 		mode = os.ModeSocket
 	}
 

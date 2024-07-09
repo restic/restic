@@ -163,7 +163,7 @@ func (s *fileSaver) saveFile(ctx context.Context, chnker *chunker.Chunker, snPat
 		return
 	}
 
-	if node.Type != "file" {
+	if node.Type != restic.NodeTypeFile {
 		_ = f.Close()
 		completeError(errors.Errorf("node type %q is wrong", node.Type))
 		return

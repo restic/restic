@@ -298,7 +298,7 @@ func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error 
 		}
 
 		var errIfNoMatch error
-		if node.Type == "dir" {
+		if node.Type == restic.NodeTypeDir {
 			var childMayMatch bool
 			for _, pat := range f.pat.pattern {
 				mayMatch, err := filter.ChildMatch(pat, normalizedNodepath)
@@ -357,7 +357,7 @@ func (f *Finder) findIDs(ctx context.Context, sn *restic.Snapshot) error {
 			return nil
 		}
 
-		if node.Type == "dir" && f.treeIDs != nil {
+		if node.Type == restic.NodeTypeDir && f.treeIDs != nil {
 			treeID := node.Subtree
 			found := false
 			if _, ok := f.treeIDs[treeID.Str()]; ok {
@@ -377,7 +377,7 @@ func (f *Finder) findIDs(ctx context.Context, sn *restic.Snapshot) error {
 			}
 		}
 
-		if node.Type == "file" && f.blobIDs != nil {
+		if node.Type == restic.NodeTypeFile && f.blobIDs != nil {
 			for _, id := range node.Content {
 				if ctx.Err() != nil {
 					return ctx.Err()

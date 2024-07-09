@@ -124,7 +124,7 @@ func TestFieldTooLong(t *testing.T) {
 	node := restic.Node{
 		Name: "file_with_xattr",
 		Path: "/file_with_xattr",
-		Type: "file",
+		Type: restic.NodeTypeFile,
 		Mode: 0644,
 		ExtendedAttributes: []restic.ExtendedAttribute{
 			{

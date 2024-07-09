@@ -46,7 +46,7 @@ func FindUsedBlobs(ctx context.Context, repo Loader, treeIDs IDs, blobs FindBlob
 			lock.Lock()
 			for _, node := range tree.Nodes {
 				switch node.Type {
-				case "file":
+				case NodeTypeFile:
 					for _, blob := range node.Content {
 						blobs.Insert(BlobHandle{ID: blob, Type: DataBlob})
 					}
