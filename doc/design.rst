@@ -296,8 +296,8 @@ of a JSON document like the following:
     }
 
 This JSON document lists Packs and the blobs contained therein. In this
-example, the Pack ``73d04e61`` contains two data Blobs and one Tree
-blob, the plaintext hashes are listed afterwards. The ``length`` field
+example, the Pack ``73d04e61`` contains three data Blobs,
+the plaintext hashes are listed afterwards. The ``length`` field
 corresponds to ``Length(encrypted_blob)`` in the pack file header.
 Field ``uncompressed_length`` is only present for compressed blobs and
 therefore is never present in version 1 of the repository format. It is
