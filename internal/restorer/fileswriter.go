@@ -2,7 +2,6 @@ package restorer
 
 import (
 	"fmt"
-	stdfs "io/fs"
 	"os"
 	"sync"
 	"syscall"
@@ -82,7 +81,7 @@ func createFile(path string, createSize int64, sparse bool, allowRecursiveDelete
 		return nil, err
 	}
 
-	var fi stdfs.FileInfo
+	var fi os.FileInfo
 	if f != nil {
 		// stat to check that we've opened a regular file
 		fi, err = f.Stat()
@@ -135,7 +134,7 @@ func createFile(path string, createSize int64, sparse bool, allowRecursiveDelete
 	return ensureSize(f, fi, createSize, sparse)
 }
 
-func ensureSize(f *os.File, fi stdfs.FileInfo, createSize int64, sparse bool) (*os.File, error) {
+func ensureSize(f *os.File, fi os.FileInfo, createSize int64, sparse bool) (*os.File, error) {
 	if sparse {
 		err := truncateSparse(f, createSize)
 		if err != nil {
