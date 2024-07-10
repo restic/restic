@@ -1372,3 +1372,25 @@ func TestRestoreDelete(t *testing.T) {
 		})
 	}
 }
+
+func TestRestoreToFile(t *testing.T) {
+	snapshot := Snapshot{
+		Nodes: map[string]Node{
+			"foo": File{Data: "content: foo\n"},
+		},
+	}
+
+	repo := repository.TestRepository(t)
+	tempdir := filepath.Join(rtest.TempDir(t), "target")
+
+	// create a file in the place of the target directory
+	rtest.OK(t, os.WriteFile(tempdir, []byte{}, 0o700))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sn, _ := saveSnapshot(t, repo, snapshot, noopGetGenericAttributes)
+	res := NewRestorer(repo, sn, Options{})
+	err := res.RestoreTo(ctx, tempdir)
+	rtest.Assert(t, strings.Contains(err.Error(), "cannot create target directory"), "unexpected error %v", err)
+}
