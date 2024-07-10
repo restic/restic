@@ -35,13 +35,16 @@ func TestRunLsNcdu(t *testing.T) {
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
-	testRunInit(t, env.gopts)
+	testSetupBackupData(t, env)
 	opts := BackupOptions{}
 	testRunBackup(t, filepath.Dir(env.testdata), []string{"testdata"}, opts, env.gopts)
 
-	ncdu := testRunLsWithOpts(t, env.gopts, LsOptions{Ncdu: true}, []string{"latest"})
-	assertIsValidJSON(t, ncdu)
-
-	ncdu = testRunLsWithOpts(t, env.gopts, LsOptions{Ncdu: true}, []string{"latest", "/testdata"})
-	assertIsValidJSON(t, ncdu)
+	for _, paths := range [][]string{
+		{"latest"},
+		{"latest", "/testdata"},
+		{"latest", "/testdata/0", "/testdata/0/tests"},
+	} {
+		ncdu := testRunLsWithOpts(t, env.gopts, LsOptions{Ncdu: true}, paths)
+		assertIsValidJSON(t, ncdu)
+	}
 }
