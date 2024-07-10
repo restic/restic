@@ -10,3 +10,4 @@ statistics use `restic snapshots --json` or `restic cat snapshot <snapshotID>`.
 
 https://github.com/restic/restic/issues/693
 https://github.com/restic/restic/pull/4705
+https://github.com/restic/restic/pull/4913

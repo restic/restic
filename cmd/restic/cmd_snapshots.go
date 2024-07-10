@@ -190,6 +190,9 @@ func PrintSnapshots(stdout io.Writer, list restic.Snapshots, reasons []restic.Ke
 		tab.AddColumn("Time", "{{ .Timestamp }}")
 		tab.AddColumn("Host", "{{ .Hostname }}")
 		tab.AddColumn("Tags  ", `{{ join .Tags "\n" }}`)
+		if hasSize {
+			tab.AddColumn("Size", `{{ .Size }}`)
+		}
 	} else {
 		tab.AddColumn("ID", "{{ .ID }}")
 		tab.AddColumn("Time", "{{ .Timestamp }}")
