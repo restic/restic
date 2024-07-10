@@ -2,9 +2,12 @@ package backend
 
 import (
 	"context"
+	"fmt"
 	"hash"
 	"io"
 )
+
+var ErrNoRepository = fmt.Errorf("repository does not exist")
 
 // Backend is used to store and access data.
 //
