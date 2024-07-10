@@ -155,6 +155,10 @@ Files with already up to date content are reported as ``unchanged``. Files whose
 was modified are ``updated`` and files that are new are shown as ``restored``. Directories
 and other file types like symlinks are always reported as ``restored``.
 
+To reliably determine which files would be updated, a dry-run also verifies the content of
+already existing files according to the specified overwrite behavior. To skip these checks
+either specify ``--overwrite never`` or specify a non-existing ``--target`` directory.
+
 Restore using mount
 ===================
 
