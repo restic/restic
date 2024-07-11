@@ -1,0 +1,6 @@
+Enhancement: Update snapshot summary on rewrite
+
+Restic now recalculates the total number of files and bytes processed when files are excluded during rewrite.
+
+https://github.com/restic/restic/issues/4902
+https://github.com/restic/restic/pull/4905

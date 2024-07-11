@@ -303,6 +303,60 @@ func TestRewriter(t *testing.T) {
 	}
 }
 
+func TestSnapshotSizeQuery(t *testing.T) {
+	tree := TestTree{
+		"foo": TestFile{Size: 21},
+		"bar": TestFile{Size: 21},
+		"subdir": TestTree{
+			"subfile": TestFile{Size: 21},
+		},
+	}
+	newTree := TestTree{
+		"foo": TestFile{Size: 42},
+		"subdir": TestTree{
+			"subfile": TestFile{Size: 42},
+		},
+	}
+	t.Run("", func(t *testing.T) {
+		repo, root := BuildTreeMap(tree)
+		expRepo, expRoot := BuildTreeMap(newTree)
+		modrepo := WritableTreeMap{repo}
+
+		ctx, cancel := context.WithCancel(context.TODO())
+		defer cancel()
+
+		rewriteNode := func(node *restic.Node, path string) *restic.Node {
+			if path == "/bar" {
+				return nil
+			}
+			if node.Type == "file" {
+				node.Size += 21
+			}
+			return node
+		}
+		rewriter, querySize := NewSnapshotSizeRewriter(rewriteNode)
+		newRoot, err := rewriter.RewriteTree(ctx, modrepo, "/", root)
+		if err != nil {
+			t.Error(err)
+		}
+
+		ss := querySize()
+
+		test.Equals(t, uint(2), ss.FileCount, "snapshot file count mismatch")
+		test.Equals(t, uint64(84), ss.FileSize, "snapshot size mismatch")
+
+		// verifying against the expected tree root also implicitly checks the structural integrity
+		if newRoot != expRoot {
+			t.Error("hash mismatch")
+			fmt.Println("Got")
+			modrepo.Dump()
+			fmt.Println("Expected")
+			WritableTreeMap{expRepo}.Dump()
+		}
+	})
+
+}
+
 func TestRewriterFailOnUnknownFields(t *testing.T) {
 	tm := WritableTreeMap{TreeMap{}}
 	node := []byte(`{"nodes":[{"name":"subfile","type":"file","mtime":"0001-01-01T00:00:00Z","atime":"0001-01-01T00:00:00Z","ctime":"0001-01-01T00:00:00Z","uid":0,"gid":0,"content":null,"unknown_field":42}]}`)
