@@ -149,11 +149,12 @@ func TestLsNcdu(t *testing.T) {
 	printer.LeaveDir("/directory")
 	printer.Close()
 
-	rtest.Equals(t, `[1, 2, {"time":"0001-01-01T00:00:00Z","tree":null,"paths":["/example"],"hostname":"host"},
+	rtest.Equals(t, `[1, 2, {"time":"0001-01-01T00:00:00Z","tree":null,"paths":["/example"],"hostname":"host"}, [{"name":""},
   [
     {"name":"directory","asize":0,"dsize":0,"dev":0,"ino":0,"nlink":0,"notreg":false,"uid":0,"gid":0,"mode":0,"mtime":-62135596800},
     {"name":"data","asize":42,"dsize":512,"dev":0,"ino":0,"nlink":0,"notreg":false,"uid":0,"gid":0,"mode":0,"mtime":-62135596800}
   ]
+]
 ]
 `, buf.String())
 }

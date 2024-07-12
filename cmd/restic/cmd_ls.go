@@ -178,7 +178,7 @@ func (p *ncduLsPrinter) Snapshot(sn *restic.Snapshot) {
 		Warnf("JSON encode failed: %v\n", err)
 	}
 	p.depth++
-	fmt.Fprintf(p.out, "[%d, %d, %s", NcduMajorVer, NcduMinorVer, string(snapshotBytes))
+	fmt.Fprintf(p.out, "[%d, %d, %s, [{\"name\":\"\"}", NcduMajorVer, NcduMinorVer, string(snapshotBytes))
 }
 
 func lsNcduNode(_ string, node *restic.Node) ([]byte, error) {
@@ -246,7 +246,7 @@ func (p *ncduLsPrinter) LeaveDir(_ string) {
 }
 
 func (p *ncduLsPrinter) Close() {
-	fmt.Fprint(p.out, "\n]\n")
+	fmt.Fprint(p.out, "\n]\n]\n")
 }
 
 type textLsPrinter struct {
