@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"math"
 	"os"
@@ -32,6 +33,7 @@ type Snapshot struct {
 
 type File struct {
 	Data       string
+	DataParts  []string
 	Links      uint64
 	Inode      uint64
 	Mode       os.FileMode
@@ -59,11 +61,11 @@ type FileAttributes struct {
 	Encrypted bool
 }
 
-func saveFile(t testing.TB, repo restic.BlobSaver, node File) restic.ID {
+func saveFile(t testing.TB, repo restic.BlobSaver, data string) restic.ID {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	id, _, _, err := repo.SaveBlob(ctx, restic.DataBlob, []byte(node.Data), restic.ID{}, false)
+	id, _, _, err := repo.SaveBlob(ctx, restic.DataBlob, []byte(data), restic.ID{}, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,17 +82,24 @@ func saveDir(t testing.TB, repo restic.BlobSaver, nodes map[string]Node, inode u
 		inode++
 		switch node := n.(type) {
 		case File:
-			fi := n.(File).Inode
+			fi := node.Inode
 			if fi == 0 {
 				fi = inode
 			}
-			lc := n.(File).Links
+			lc := node.Links
 			if lc == 0 {
 				lc = 1
 			}
 			fc := []restic.ID{}
-			if len(n.(File).Data) > 0 {
-				fc = append(fc, saveFile(t, repo, node))
+			size := 0
+			if len(node.Data) > 0 {
+				size = len(node.Data)
+				fc = append(fc, saveFile(t, repo, node.Data))
+			} else if len(node.DataParts) > 0 {
+				for _, part := range node.DataParts {
+					fc = append(fc, saveFile(t, repo, part))
+					size += len(part)
+				}
 			}
 			mode := node.Mode
 			if mode == 0 {
@@ -104,22 +113,21 @@ func saveDir(t testing.TB, repo restic.BlobSaver, nodes map[string]Node, inode u
 				UID:               uint32(os.Getuid()),
 				GID:               uint32(os.Getgid()),
 				Content:           fc,
-				Size:              uint64(len(n.(File).Data)),
+				Size:              uint64(size),
 				Inode:             fi,
 				Links:             lc,
 				GenericAttributes: getGenericAttributes(node.attributes, false),
 			})
 			rtest.OK(t, err)
 		case Symlink:
-			symlink := n.(Symlink)
 			err := tree.Insert(&restic.Node{
 				Type:       "symlink",
 				Mode:       os.ModeSymlink | 0o777,
-				ModTime:    symlink.ModTime,
+				ModTime:    node.ModTime,
 				Name:       name,
 				UID:        uint32(os.Getuid()),
 				GID:        uint32(os.Getgid()),
-				LinkTarget: symlink.Target,
+				LinkTarget: node.Target,
 				Inode:      inode,
 				Links:      1,
 			})
@@ -1048,6 +1056,27 @@ func TestRestorerOverwriteBehavior(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRestorerOverwriteLarge(t *testing.T) {
+	parts := make([]string, 100)
+	for i := 0; i < len(parts); i++ {
+		parts[i] = fmt.Sprint(i)
+	}
+
+	baseTime := time.Now()
+	baseSnapshot := Snapshot{
+		Nodes: map[string]Node{
+			"foo": File{DataParts: parts[0:5], ModTime: baseTime},
+		},
+	}
+	overwriteSnapshot := Snapshot{
+		Nodes: map[string]Node{
+			"foo": File{DataParts: parts, ModTime: baseTime},
+		},
+	}
+
+	saveSnapshotsAndOverwrite(t, baseSnapshot, overwriteSnapshot, Options{Overwrite: OverwriteAlways})
 }
 
 func TestRestorerOverwriteSpecial(t *testing.T) {
