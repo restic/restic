@@ -100,7 +100,9 @@ func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (backend.Backen
 	}
 
 	bucket, err := client.Bucket(ctx, cfg.Bucket)
-	if err != nil {
+	if b2.IsNotExist(err) {
+		return nil, backend.ErrNoRepository
+	} else if err != nil {
 		return nil, errors.Wrap(err, "Bucket")
 	}
 

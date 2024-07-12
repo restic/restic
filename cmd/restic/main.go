@@ -156,6 +156,10 @@ func main() {
 		exitCode = 0
 	case err == ErrInvalidSourceData:
 		exitCode = 3
+	case errors.Is(err, ErrNoRepository):
+		exitCode = 10
+	case restic.IsAlreadyLocked(err):
+		exitCode = 11
 	case errors.Is(err, context.Canceled):
 		exitCode = 130
 	default:

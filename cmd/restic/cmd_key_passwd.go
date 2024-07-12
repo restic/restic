@@ -19,7 +19,10 @@ Returns the new key ID.
 EXIT STATUS
 ===========
 
-Exit status is 0 if the command is successful, and non-zero if there was any error.
+Exit status is 0 if the command was successful.
+Exit status is 1 if there was any error.
+Exit status is 10 if the repository does not exist.
+Exit status is 11 if the repository is already locked.
 	`,
 	DisableAutoGenTag: true,
 }

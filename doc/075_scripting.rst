@@ -21,22 +21,50 @@ Check if a repository is already initialized
 ********************************************
 
 You may find a need to check if a repository is already initialized,
-perhaps to prevent your script from initializing a repository multiple
-times. The command ``cat config`` may be used for this purpose:
+perhaps to prevent your script from trying to initialize a repository multiple
+times (the ``init`` command contains a check to prevent overwriting existing
+repositories). The command ``cat config`` may be used for this purpose:
 
 .. code-block:: console
 
     $ restic -r /srv/restic-repo cat config
-    Fatal: unable to open config file: stat /srv/restic-repo/config: no such file or directory
+    Fatal: repository does not exist: unable to open config file: stat /srv/restic-repo/config: no such file or directory
     Is there a repository at the following location?
     /srv/restic-repo
 
-If a repository does not exist, restic will return a non-zero exit code
-and print an error message. Note that restic will also return a non-zero
-exit code if a different error is encountered (e.g.: incorrect password
-to ``cat config``) and it may print a different error message. If there
-are no errors, restic will return a zero exit code and print the repository
+If a repository does not exist, restic (since 0.17.0) will return exit code ``10``
+and print a corresponding error message. Older versions return exit code ``1``.
+Note that restic will also return exit code ``1`` if a different error is encountered
+(e.g.: incorrect password to ``cat config``) and it may print a different error message.
+If there are no errors, restic will return a zero exit code and print the repository
 metadata.
+
+Exit codes
+**********
+
+Restic commands return an exit code that signals whether the command was successful.
+The following table provides a general description, see the help of each command for
+a more specific description.
+
+.. warning::
+    New exit codes will be added over time. If an unknown exit code is returned, then it
+    MUST be treated as a command failure.
+
++-----+----------------------------------------------------+
+| 0   | Command was successful                             |
++-----+----------------------------------------------------+
+| 1   | Command failed, see command help for more details  |
++-----+----------------------------------------------------+
+| 2   | Go runtime error                                   |
++-----+----------------------------------------------------+
+| 3   | ``backup`` command could not read some source data |
++-----+----------------------------------------------------+
+| 10  | Repository does not exist (since restic 0.17.0)    |
++-----+----------------------------------------------------+
+| 11  | Failed to lock repository (since restic 0.17.0)    |
++-----+----------------------------------------------------+
+| 130 | Restic was interrupted using SIGINT or SIGSTOP     |
++-----+----------------------------------------------------+
 
 JSON output
 ***********
