@@ -134,8 +134,12 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 		}
 		fileOffset := int64(0)
 		err := r.forEachBlob(fileBlobs, func(packID restic.ID, blob restic.Blob, idx int) {
-			if largeFile && !file.state.HasMatchingBlob(idx) {
-				packsMap[packID] = append(packsMap[packID], fileBlobInfo{id: blob.ID, offset: fileOffset})
+			if largeFile {
+				if !file.state.HasMatchingBlob(idx) {
+					packsMap[packID] = append(packsMap[packID], fileBlobInfo{id: blob.ID, offset: fileOffset})
+				} else {
+					r.reportBlobProgress(file, uint64(blob.DataLength()))
+				}
 			}
 			fileOffset += int64(blob.DataLength())
 			pack, ok := packs[packID]
@@ -244,8 +248,12 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) error {
 		if fileBlobs, ok := file.blobs.(restic.IDs); ok {
 			fileOffset := int64(0)
 			err := r.forEachBlob(fileBlobs, func(packID restic.ID, blob restic.Blob, idx int) {
-				if packID.Equal(pack.id) && !file.state.HasMatchingBlob(idx) {
-					addBlob(blob, fileOffset)
+				if packID.Equal(pack.id) {
+					if !file.state.HasMatchingBlob(idx) {
+						addBlob(blob, fileOffset)
+					} else {
+						r.reportBlobProgress(file, uint64(blob.DataLength()))
+					}
 				}
 				fileOffset += int64(blob.DataLength())
 			})
@@ -349,11 +357,7 @@ func (r *fileRestorer) downloadBlobs(ctx context.Context, packID restic.ID,
 							createSize = file.size
 						}
 						writeErr := r.filesWriter.writeToFile(r.targetPath(file.location), blobData, offset, createSize, file.sparse)
-						action := restore.ActionFileUpdated
-						if file.state == nil {
-							action = restore.ActionFileRestored
-						}
-						r.progress.AddProgress(file.location, action, uint64(len(blobData)), uint64(file.size))
+						r.reportBlobProgress(file, uint64(len(blobData)))
 						return writeErr
 					}
 					err := r.sanitizeError(file, writeToFile())
@@ -364,4 +368,12 @@ func (r *fileRestorer) downloadBlobs(ctx context.Context, packID restic.ID,
 			}
 			return nil
 		})
+}
+
+func (r *fileRestorer) reportBlobProgress(file *fileInfo, blobSize uint64) {
+	action := restore.ActionFileUpdated
+	if file.state == nil {
+		action = restore.ActionFileRestored
+	}
+	r.progress.AddProgress(file.location, action, uint64(blobSize), uint64(file.size))
 }
