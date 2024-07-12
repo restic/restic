@@ -347,6 +347,14 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 		}
 	}
 
+	if !res.opts.DryRun {
+		// ensure that the target directory exists and is actually a directory
+		// Using ensureDir is too aggressive here as it also removes unexpected files
+		if err := fs.MkdirAll(dst, 0700); err != nil {
+			return fmt.Errorf("cannot create target directory: %w", err)
+		}
+	}
+
 	idx := NewHardlinkIndex[string]()
 	filerestorer := newFileRestorer(dst, res.repo.LoadBlobsFromPack, res.repo.LookupBlob,
 		res.repo.Connections(), res.opts.Sparse, res.opts.Delete, res.opts.Progress)
