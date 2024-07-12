@@ -22,6 +22,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	restoreui "github.com/restic/restic/internal/ui/restore"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -940,7 +941,7 @@ func TestRestorerSparseFiles(t *testing.T) {
 		len(zeros), blocks, 100*sparsity)
 }
 
-func saveSnapshotsAndOverwrite(t *testing.T, baseSnapshot Snapshot, overwriteSnapshot Snapshot, options Options) string {
+func saveSnapshotsAndOverwrite(t *testing.T, baseSnapshot Snapshot, overwriteSnapshot Snapshot, baseOptions, overwriteOptions Options) string {
 	repo := repository.TestRepository(t)
 	tempdir := filepath.Join(rtest.TempDir(t), "target")
 	ctx, cancel := context.WithCancel(context.Background())
@@ -950,13 +951,13 @@ func saveSnapshotsAndOverwrite(t *testing.T, baseSnapshot Snapshot, overwriteSna
 	sn, id := saveSnapshot(t, repo, baseSnapshot, noopGetGenericAttributes)
 	t.Logf("base snapshot saved as %v", id.Str())
 
-	res := NewRestorer(repo, sn, options)
+	res := NewRestorer(repo, sn, baseOptions)
 	rtest.OK(t, res.RestoreTo(ctx, tempdir))
 
 	// overwrite snapshot
 	sn, id = saveSnapshot(t, repo, overwriteSnapshot, noopGetGenericAttributes)
 	t.Logf("overwrite snapshot saved as %v", id.Str())
-	res = NewRestorer(repo, sn, options)
+	res = NewRestorer(repo, sn, overwriteOptions)
 	rtest.OK(t, res.RestoreTo(ctx, tempdir))
 
 	_, err := res.VerifyFiles(ctx, tempdir)
@@ -978,7 +979,20 @@ func TestRestorerSparseOverwrite(t *testing.T) {
 		},
 	}
 
-	saveSnapshotsAndOverwrite(t, baseSnapshot, sparseSnapshot, Options{Sparse: true, Overwrite: OverwriteAlways})
+	opts := Options{Sparse: true, Overwrite: OverwriteAlways}
+	saveSnapshotsAndOverwrite(t, baseSnapshot, sparseSnapshot, opts, opts)
+}
+
+type printerMock struct {
+	s restoreui.State
+}
+
+func (p *printerMock) Update(_ restoreui.State, _ time.Duration) {
+}
+func (p *printerMock) CompleteItem(action restoreui.ItemAction, item string, size uint64) {
+}
+func (p *printerMock) Finish(s restoreui.State, _ time.Duration) {
+	p.s = s
 }
 
 func TestRestorerOverwriteBehavior(t *testing.T) {
@@ -1008,12 +1022,21 @@ func TestRestorerOverwriteBehavior(t *testing.T) {
 	var tests = []struct {
 		Overwrite OverwriteBehavior
 		Files     map[string]string
+		Progress  restoreui.State
 	}{
 		{
 			Overwrite: OverwriteAlways,
 			Files: map[string]string{
 				"foo":          "content: new\n",
 				"dirtest/file": "content: file2\n",
+			},
+			Progress: restoreui.State{
+				FilesFinished:   3,
+				FilesTotal:      3,
+				FilesSkipped:    0,
+				AllBytesWritten: 28,
+				AllBytesTotal:   28,
+				AllBytesSkipped: 0,
 			},
 		},
 		{
@@ -1022,12 +1045,28 @@ func TestRestorerOverwriteBehavior(t *testing.T) {
 				"foo":          "content: new\n",
 				"dirtest/file": "content: file2\n",
 			},
+			Progress: restoreui.State{
+				FilesFinished:   3,
+				FilesTotal:      3,
+				FilesSkipped:    0,
+				AllBytesWritten: 28,
+				AllBytesTotal:   28,
+				AllBytesSkipped: 0,
+			},
 		},
 		{
 			Overwrite: OverwriteIfNewer,
 			Files: map[string]string{
 				"foo":          "content: new\n",
 				"dirtest/file": "content: file\n",
+			},
+			Progress: restoreui.State{
+				FilesFinished:   2,
+				FilesTotal:      2,
+				FilesSkipped:    1,
+				AllBytesWritten: 13,
+				AllBytesTotal:   13,
+				AllBytesSkipped: 15,
 			},
 		},
 		{
@@ -1036,12 +1075,22 @@ func TestRestorerOverwriteBehavior(t *testing.T) {
 				"foo":          "content: foo\n",
 				"dirtest/file": "content: file\n",
 			},
+			Progress: restoreui.State{
+				FilesFinished:   1,
+				FilesTotal:      1,
+				FilesSkipped:    2,
+				AllBytesWritten: 0,
+				AllBytesTotal:   0,
+				AllBytesSkipped: 28,
+			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			tempdir := saveSnapshotsAndOverwrite(t, baseSnapshot, overwriteSnapshot, Options{Overwrite: test.Overwrite})
+			mock := &printerMock{}
+			progress := restoreui.NewProgress(mock, 0)
+			tempdir := saveSnapshotsAndOverwrite(t, baseSnapshot, overwriteSnapshot, Options{}, Options{Overwrite: test.Overwrite, Progress: progress})
 
 			for filename, content := range test.Files {
 				data, err := os.ReadFile(filepath.Join(tempdir, filepath.FromSlash(filename)))
@@ -1054,14 +1103,19 @@ func TestRestorerOverwriteBehavior(t *testing.T) {
 					t.Errorf("file %v has wrong content: want %q, got %q", filename, content, data)
 				}
 			}
+
+			progress.Finish()
+			rtest.Equals(t, test.Progress, mock.s)
 		})
 	}
 }
 
 func TestRestorerOverwriteLarge(t *testing.T) {
 	parts := make([]string, 100)
+	size := 0
 	for i := 0; i < len(parts); i++ {
 		parts[i] = fmt.Sprint(i)
+		size += len(parts[i])
 	}
 
 	baseTime := time.Now()
@@ -1076,7 +1130,18 @@ func TestRestorerOverwriteLarge(t *testing.T) {
 		},
 	}
 
-	saveSnapshotsAndOverwrite(t, baseSnapshot, overwriteSnapshot, Options{Overwrite: OverwriteAlways})
+	mock := &printerMock{}
+	progress := restoreui.NewProgress(mock, 0)
+	saveSnapshotsAndOverwrite(t, baseSnapshot, overwriteSnapshot, Options{}, Options{Overwrite: OverwriteAlways, Progress: progress})
+	progress.Finish()
+	rtest.Equals(t, restoreui.State{
+		FilesFinished:   1,
+		FilesTotal:      1,
+		FilesSkipped:    0,
+		AllBytesWritten: uint64(size),
+		AllBytesTotal:   uint64(size),
+		AllBytesSkipped: 0,
+	}, mock.s)
 }
 
 func TestRestorerOverwriteSpecial(t *testing.T) {
@@ -1109,7 +1174,8 @@ func TestRestorerOverwriteSpecial(t *testing.T) {
 		"file":    "foo2",
 	}
 
-	tempdir := saveSnapshotsAndOverwrite(t, baseSnapshot, overwriteSnapshot, Options{Overwrite: OverwriteAlways})
+	opts := Options{Overwrite: OverwriteAlways}
+	tempdir := saveSnapshotsAndOverwrite(t, baseSnapshot, overwriteSnapshot, opts, opts)
 
 	for filename, content := range files {
 		data, err := os.ReadFile(filepath.Join(tempdir, filepath.FromSlash(filename)))
@@ -1286,6 +1352,7 @@ func TestRestoreOverwriteDirectory(t *testing.T) {
 				"dir": File{Data: "content: file\n"},
 			},
 		},
+		Options{},
 		Options{Delete: true},
 	)
 }
