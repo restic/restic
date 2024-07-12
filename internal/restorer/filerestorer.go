@@ -192,6 +192,7 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 
 	// the main restore loop
 	wg.Go(func() error {
+		defer close(downloadCh)
 		for _, id := range packOrder {
 			pack := packs[id]
 			// allow garbage collection of packInfo
@@ -203,7 +204,6 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 				debug.Log("Scheduled download pack %s", pack.id.Str())
 			}
 		}
-		close(downloadCh)
 		return nil
 	})
 
