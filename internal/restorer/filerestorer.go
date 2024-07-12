@@ -327,6 +327,11 @@ func (r *fileRestorer) downloadBlobs(ctx context.Context, packID restic.ID,
 			}
 			for file, offsets := range blob.files {
 				for _, offset := range offsets {
+					// avoid long cancelation delays for frequently used blobs
+					if ctx.Err() != nil {
+						return ctx.Err()
+					}
+
 					writeToFile := func() error {
 						// this looks overly complicated and needs explanation
 						// two competing requirements:
