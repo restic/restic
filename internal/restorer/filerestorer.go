@@ -136,8 +136,8 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 		err := r.forEachBlob(fileBlobs, func(packID restic.ID, blob restic.Blob, idx int) {
 			if largeFile && !file.state.HasMatchingBlob(idx) {
 				packsMap[packID] = append(packsMap[packID], fileBlobInfo{id: blob.ID, offset: fileOffset})
-				fileOffset += int64(blob.DataLength())
 			}
+			fileOffset += int64(blob.DataLength())
 			pack, ok := packs[packID]
 			if !ok {
 				pack = &packInfo{
