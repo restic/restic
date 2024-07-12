@@ -363,7 +363,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 	err = res.traverseTree(ctx, dst, *res.sn.Tree, treeVisitor{
 		enterDir: func(_ *restic.Node, target, location string) error {
 			debug.Log("first pass, enterDir: mkdir %q, leaveDir should restore metadata", location)
-			if location != "/" {
+			if location != string(filepath.Separator) {
 				res.opts.Progress.AddFile(0)
 			}
 			return res.ensureDir(target)
