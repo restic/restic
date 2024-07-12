@@ -273,10 +273,13 @@ func (r *fileRestorer) downloadPack(ctx context.Context, pack *packInfo) error {
 }
 
 func (r *fileRestorer) sanitizeError(file *fileInfo, err error) error {
-	if err != nil {
-		err = r.Error(file.location, err)
+	switch err {
+	case nil, context.Canceled, context.DeadlineExceeded:
+		// Context errors are permanent.
+		return err
+	default:
+		return r.Error(file.location, err)
 	}
-	return err
 }
 
 func (r *fileRestorer) reportError(blobs blobToFileOffsetsMapping, processedBlobs restic.BlobSet, err error) error {
