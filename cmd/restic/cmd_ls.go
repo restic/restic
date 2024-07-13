@@ -222,6 +222,10 @@ func lsNcduNode(_ string, node *restic.Node) ([]byte, error) {
 	if node.Mode&os.ModeSticky != 0 {
 		outNode.Mode |= 0o1000
 	}
+	if outNode.Mtime < 0 {
+		// ncdu does not allow negative times
+		outNode.Mtime = 0
+	}
 
 	return json.Marshal(outNode)
 }
