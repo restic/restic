@@ -109,11 +109,11 @@ func TestLsNodeJSON(t *testing.T) {
 
 func TestLsNcduNode(t *testing.T) {
 	for i, expect := range []string{
-		`{"name":"baz","asize":12345,"dsize":12800,"dev":0,"ino":0,"nlink":1,"notreg":false,"uid":10000000,"gid":20000000,"mode":0,"mtime":-62135596800}`,
-		`{"name":"empty","asize":0,"dsize":0,"dev":0,"ino":0,"nlink":3840,"notreg":false,"uid":1001,"gid":1001,"mode":0,"mtime":-62135596800}`,
-		`{"name":"link","asize":0,"dsize":0,"dev":0,"ino":0,"nlink":0,"notreg":true,"uid":0,"gid":0,"mode":511,"mtime":-62135596800}`,
+		`{"name":"baz","asize":12345,"dsize":12800,"dev":0,"ino":0,"nlink":1,"notreg":false,"uid":10000000,"gid":20000000,"mode":0,"mtime":0}`,
+		`{"name":"empty","asize":0,"dsize":0,"dev":0,"ino":0,"nlink":3840,"notreg":false,"uid":1001,"gid":1001,"mode":0,"mtime":0}`,
+		`{"name":"link","asize":0,"dsize":0,"dev":0,"ino":0,"nlink":0,"notreg":true,"uid":0,"gid":0,"mode":511,"mtime":0}`,
 		`{"name":"directory","asize":0,"dsize":0,"dev":0,"ino":0,"nlink":0,"notreg":false,"uid":0,"gid":0,"mode":493,"mtime":1577934245}`,
-		`{"name":"sticky","asize":0,"dsize":0,"dev":0,"ino":0,"nlink":0,"notreg":false,"uid":0,"gid":0,"mode":4077,"mtime":-62135596800}`,
+		`{"name":"sticky","asize":0,"dsize":0,"dev":0,"ino":0,"nlink":0,"notreg":false,"uid":0,"gid":0,"mode":4077,"mtime":0}`,
 	} {
 		c := lsTestNodes[i]
 		out, err := lsNcduNode(c.path, &c.Node)
@@ -132,28 +132,39 @@ func TestLsNcdu(t *testing.T) {
 	printer := &ncduLsPrinter{
 		out: &buf,
 	}
+	modTime := time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC)
 
 	printer.Snapshot(&restic.Snapshot{
 		Hostname: "host",
 		Paths:    []string{"/example"},
 	})
 	printer.Node("/directory", &restic.Node{
-		Type: "dir",
-		Name: "directory",
+		Type:    "dir",
+		Name:    "directory",
+		ModTime: modTime,
 	}, false)
 	printer.Node("/directory/data", &restic.Node{
-		Type: "file",
-		Name: "data",
-		Size: 42,
+		Type:    "file",
+		Name:    "data",
+		Size:    42,
+		ModTime: modTime,
 	}, false)
 	printer.LeaveDir("/directory")
+	printer.Node("/file", &restic.Node{
+		Type:    "file",
+		Name:    "file",
+		Size:    12345,
+		ModTime: modTime,
+	}, false)
 	printer.Close()
 
-	rtest.Equals(t, `[1, 2, {"time":"0001-01-01T00:00:00Z","tree":null,"paths":["/example"],"hostname":"host"},
+	rtest.Equals(t, `[1, 2, {"time":"0001-01-01T00:00:00Z","tree":null,"paths":["/example"],"hostname":"host"}, [{"name":"/"},
   [
-    {"name":"directory","asize":0,"dsize":0,"dev":0,"ino":0,"nlink":0,"notreg":false,"uid":0,"gid":0,"mode":0,"mtime":-62135596800},
-    {"name":"data","asize":42,"dsize":512,"dev":0,"ino":0,"nlink":0,"notreg":false,"uid":0,"gid":0,"mode":0,"mtime":-62135596800}
-  ]
+    {"name":"directory","asize":0,"dsize":0,"dev":0,"ino":0,"nlink":0,"notreg":false,"uid":0,"gid":0,"mode":0,"mtime":1577934245},
+    {"name":"data","asize":42,"dsize":512,"dev":0,"ino":0,"nlink":0,"notreg":false,"uid":0,"gid":0,"mode":0,"mtime":1577934245}
+  ],
+  {"name":"file","asize":12345,"dsize":12800,"dev":0,"ino":0,"nlink":0,"notreg":false,"uid":0,"gid":0,"mode":0,"mtime":1577934245}
+]
 ]
 `, buf.String())
 }
