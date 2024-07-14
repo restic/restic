@@ -1110,23 +1110,33 @@ func TestRestorerOverwriteBehavior(t *testing.T) {
 	}
 }
 
-func TestRestorerOverwriteLarge(t *testing.T) {
+func TestRestorerOverwritePartial(t *testing.T) {
 	parts := make([]string, 100)
 	size := 0
 	for i := 0; i < len(parts); i++ {
 		parts[i] = fmt.Sprint(i)
 		size += len(parts[i])
+		if i < 8 {
+			// small file
+			size += len(parts[i])
+		}
 	}
 
+	// the data of both snapshots is stored in different pack files
+	// thus both small an foo in the overwriteSnapshot contain blobs from
+	// two different pack files. This tests basic handling of blobs from
+	// different pack files.
 	baseTime := time.Now()
 	baseSnapshot := Snapshot{
 		Nodes: map[string]Node{
-			"foo": File{DataParts: parts[0:5], ModTime: baseTime},
+			"foo":   File{DataParts: parts[0:5], ModTime: baseTime},
+			"small": File{DataParts: parts[0:5], ModTime: baseTime},
 		},
 	}
 	overwriteSnapshot := Snapshot{
 		Nodes: map[string]Node{
-			"foo": File{DataParts: parts, ModTime: baseTime},
+			"foo":   File{DataParts: parts, ModTime: baseTime},
+			"small": File{DataParts: parts[0:8], ModTime: baseTime},
 		},
 	}
 
@@ -1135,8 +1145,8 @@ func TestRestorerOverwriteLarge(t *testing.T) {
 	saveSnapshotsAndOverwrite(t, baseSnapshot, overwriteSnapshot, Options{}, Options{Overwrite: OverwriteAlways, Progress: progress})
 	progress.Finish()
 	rtest.Equals(t, restoreui.State{
-		FilesFinished:   1,
-		FilesTotal:      1,
+		FilesFinished:   2,
+		FilesTotal:      2,
 		FilesSkipped:    0,
 		AllBytesWritten: uint64(size),
 		AllBytesTotal:   uint64(size),
