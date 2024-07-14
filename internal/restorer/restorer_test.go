@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"math"
 	"os"
@@ -21,6 +22,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	restoreui "github.com/restic/restic/internal/ui/restore"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -32,6 +34,7 @@ type Snapshot struct {
 
 type File struct {
 	Data       string
+	DataParts  []string
 	Links      uint64
 	Inode      uint64
 	Mode       os.FileMode
@@ -59,11 +62,11 @@ type FileAttributes struct {
 	Encrypted bool
 }
 
-func saveFile(t testing.TB, repo restic.BlobSaver, node File) restic.ID {
+func saveFile(t testing.TB, repo restic.BlobSaver, data string) restic.ID {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	id, _, _, err := repo.SaveBlob(ctx, restic.DataBlob, []byte(node.Data), restic.ID{}, false)
+	id, _, _, err := repo.SaveBlob(ctx, restic.DataBlob, []byte(data), restic.ID{}, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,17 +83,24 @@ func saveDir(t testing.TB, repo restic.BlobSaver, nodes map[string]Node, inode u
 		inode++
 		switch node := n.(type) {
 		case File:
-			fi := n.(File).Inode
+			fi := node.Inode
 			if fi == 0 {
 				fi = inode
 			}
-			lc := n.(File).Links
+			lc := node.Links
 			if lc == 0 {
 				lc = 1
 			}
 			fc := []restic.ID{}
-			if len(n.(File).Data) > 0 {
-				fc = append(fc, saveFile(t, repo, node))
+			size := 0
+			if len(node.Data) > 0 {
+				size = len(node.Data)
+				fc = append(fc, saveFile(t, repo, node.Data))
+			} else if len(node.DataParts) > 0 {
+				for _, part := range node.DataParts {
+					fc = append(fc, saveFile(t, repo, part))
+					size += len(part)
+				}
 			}
 			mode := node.Mode
 			if mode == 0 {
@@ -104,22 +114,21 @@ func saveDir(t testing.TB, repo restic.BlobSaver, nodes map[string]Node, inode u
 				UID:               uint32(os.Getuid()),
 				GID:               uint32(os.Getgid()),
 				Content:           fc,
-				Size:              uint64(len(n.(File).Data)),
+				Size:              uint64(size),
 				Inode:             fi,
 				Links:             lc,
 				GenericAttributes: getGenericAttributes(node.attributes, false),
 			})
 			rtest.OK(t, err)
 		case Symlink:
-			symlink := n.(Symlink)
 			err := tree.Insert(&restic.Node{
 				Type:       "symlink",
 				Mode:       os.ModeSymlink | 0o777,
-				ModTime:    symlink.ModTime,
+				ModTime:    node.ModTime,
 				Name:       name,
 				UID:        uint32(os.Getuid()),
 				GID:        uint32(os.Getgid()),
-				LinkTarget: symlink.Target,
+				LinkTarget: node.Target,
 				Inode:      inode,
 				Links:      1,
 			})
@@ -932,7 +941,7 @@ func TestRestorerSparseFiles(t *testing.T) {
 		len(zeros), blocks, 100*sparsity)
 }
 
-func saveSnapshotsAndOverwrite(t *testing.T, baseSnapshot Snapshot, overwriteSnapshot Snapshot, options Options) string {
+func saveSnapshotsAndOverwrite(t *testing.T, baseSnapshot Snapshot, overwriteSnapshot Snapshot, baseOptions, overwriteOptions Options) string {
 	repo := repository.TestRepository(t)
 	tempdir := filepath.Join(rtest.TempDir(t), "target")
 	ctx, cancel := context.WithCancel(context.Background())
@@ -942,13 +951,13 @@ func saveSnapshotsAndOverwrite(t *testing.T, baseSnapshot Snapshot, overwriteSna
 	sn, id := saveSnapshot(t, repo, baseSnapshot, noopGetGenericAttributes)
 	t.Logf("base snapshot saved as %v", id.Str())
 
-	res := NewRestorer(repo, sn, options)
+	res := NewRestorer(repo, sn, baseOptions)
 	rtest.OK(t, res.RestoreTo(ctx, tempdir))
 
 	// overwrite snapshot
 	sn, id = saveSnapshot(t, repo, overwriteSnapshot, noopGetGenericAttributes)
 	t.Logf("overwrite snapshot saved as %v", id.Str())
-	res = NewRestorer(repo, sn, options)
+	res = NewRestorer(repo, sn, overwriteOptions)
 	rtest.OK(t, res.RestoreTo(ctx, tempdir))
 
 	_, err := res.VerifyFiles(ctx, tempdir)
@@ -970,7 +979,20 @@ func TestRestorerSparseOverwrite(t *testing.T) {
 		},
 	}
 
-	saveSnapshotsAndOverwrite(t, baseSnapshot, sparseSnapshot, Options{Sparse: true, Overwrite: OverwriteAlways})
+	opts := Options{Sparse: true, Overwrite: OverwriteAlways}
+	saveSnapshotsAndOverwrite(t, baseSnapshot, sparseSnapshot, opts, opts)
+}
+
+type printerMock struct {
+	s restoreui.State
+}
+
+func (p *printerMock) Update(_ restoreui.State, _ time.Duration) {
+}
+func (p *printerMock) CompleteItem(action restoreui.ItemAction, item string, size uint64) {
+}
+func (p *printerMock) Finish(s restoreui.State, _ time.Duration) {
+	p.s = s
 }
 
 func TestRestorerOverwriteBehavior(t *testing.T) {
@@ -1000,12 +1022,21 @@ func TestRestorerOverwriteBehavior(t *testing.T) {
 	var tests = []struct {
 		Overwrite OverwriteBehavior
 		Files     map[string]string
+		Progress  restoreui.State
 	}{
 		{
 			Overwrite: OverwriteAlways,
 			Files: map[string]string{
 				"foo":          "content: new\n",
 				"dirtest/file": "content: file2\n",
+			},
+			Progress: restoreui.State{
+				FilesFinished:   3,
+				FilesTotal:      3,
+				FilesSkipped:    0,
+				AllBytesWritten: 28,
+				AllBytesTotal:   28,
+				AllBytesSkipped: 0,
 			},
 		},
 		{
@@ -1014,12 +1045,28 @@ func TestRestorerOverwriteBehavior(t *testing.T) {
 				"foo":          "content: new\n",
 				"dirtest/file": "content: file2\n",
 			},
+			Progress: restoreui.State{
+				FilesFinished:   3,
+				FilesTotal:      3,
+				FilesSkipped:    0,
+				AllBytesWritten: 28,
+				AllBytesTotal:   28,
+				AllBytesSkipped: 0,
+			},
 		},
 		{
 			Overwrite: OverwriteIfNewer,
 			Files: map[string]string{
 				"foo":          "content: new\n",
 				"dirtest/file": "content: file\n",
+			},
+			Progress: restoreui.State{
+				FilesFinished:   2,
+				FilesTotal:      2,
+				FilesSkipped:    1,
+				AllBytesWritten: 13,
+				AllBytesTotal:   13,
+				AllBytesSkipped: 15,
 			},
 		},
 		{
@@ -1028,12 +1075,22 @@ func TestRestorerOverwriteBehavior(t *testing.T) {
 				"foo":          "content: foo\n",
 				"dirtest/file": "content: file\n",
 			},
+			Progress: restoreui.State{
+				FilesFinished:   1,
+				FilesTotal:      1,
+				FilesSkipped:    2,
+				AllBytesWritten: 0,
+				AllBytesTotal:   0,
+				AllBytesSkipped: 28,
+			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			tempdir := saveSnapshotsAndOverwrite(t, baseSnapshot, overwriteSnapshot, Options{Overwrite: test.Overwrite})
+			mock := &printerMock{}
+			progress := restoreui.NewProgress(mock, 0)
+			tempdir := saveSnapshotsAndOverwrite(t, baseSnapshot, overwriteSnapshot, Options{}, Options{Overwrite: test.Overwrite, Progress: progress})
 
 			for filename, content := range test.Files {
 				data, err := os.ReadFile(filepath.Join(tempdir, filepath.FromSlash(filename)))
@@ -1046,8 +1103,55 @@ func TestRestorerOverwriteBehavior(t *testing.T) {
 					t.Errorf("file %v has wrong content: want %q, got %q", filename, content, data)
 				}
 			}
+
+			progress.Finish()
+			rtest.Equals(t, test.Progress, mock.s)
 		})
 	}
+}
+
+func TestRestorerOverwritePartial(t *testing.T) {
+	parts := make([]string, 100)
+	size := 0
+	for i := 0; i < len(parts); i++ {
+		parts[i] = fmt.Sprint(i)
+		size += len(parts[i])
+		if i < 8 {
+			// small file
+			size += len(parts[i])
+		}
+	}
+
+	// the data of both snapshots is stored in different pack files
+	// thus both small an foo in the overwriteSnapshot contain blobs from
+	// two different pack files. This tests basic handling of blobs from
+	// different pack files.
+	baseTime := time.Now()
+	baseSnapshot := Snapshot{
+		Nodes: map[string]Node{
+			"foo":   File{DataParts: parts[0:5], ModTime: baseTime},
+			"small": File{DataParts: parts[0:5], ModTime: baseTime},
+		},
+	}
+	overwriteSnapshot := Snapshot{
+		Nodes: map[string]Node{
+			"foo":   File{DataParts: parts, ModTime: baseTime},
+			"small": File{DataParts: parts[0:8], ModTime: baseTime},
+		},
+	}
+
+	mock := &printerMock{}
+	progress := restoreui.NewProgress(mock, 0)
+	saveSnapshotsAndOverwrite(t, baseSnapshot, overwriteSnapshot, Options{}, Options{Overwrite: OverwriteAlways, Progress: progress})
+	progress.Finish()
+	rtest.Equals(t, restoreui.State{
+		FilesFinished:   2,
+		FilesTotal:      2,
+		FilesSkipped:    0,
+		AllBytesWritten: uint64(size),
+		AllBytesTotal:   uint64(size),
+		AllBytesSkipped: 0,
+	}, mock.s)
 }
 
 func TestRestorerOverwriteSpecial(t *testing.T) {
@@ -1080,7 +1184,8 @@ func TestRestorerOverwriteSpecial(t *testing.T) {
 		"file":    "foo2",
 	}
 
-	tempdir := saveSnapshotsAndOverwrite(t, baseSnapshot, overwriteSnapshot, Options{Overwrite: OverwriteAlways})
+	opts := Options{Overwrite: OverwriteAlways}
+	tempdir := saveSnapshotsAndOverwrite(t, baseSnapshot, overwriteSnapshot, opts, opts)
 
 	for filename, content := range files {
 		data, err := os.ReadFile(filepath.Join(tempdir, filepath.FromSlash(filename)))
@@ -1257,6 +1362,7 @@ func TestRestoreOverwriteDirectory(t *testing.T) {
 				"dir": File{Data: "content: file\n"},
 			},
 		},
+		Options{},
 		Options{Delete: true},
 	)
 }

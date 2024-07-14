@@ -115,22 +115,23 @@ type treeVisitor struct {
 	leaveDir func(node *restic.Node, target, location string, entries []string) error
 }
 
+func (res *Restorer) sanitizeError(location string, err error) error {
+	switch err {
+	case nil, context.Canceled, context.DeadlineExceeded:
+		// Context errors are permanent.
+		return err
+	default:
+		return res.Error(location, err)
+	}
+}
+
 // traverseTree traverses a tree from the repo and calls treeVisitor.
 // target is the path in the file system, location within the snapshot.
 func (res *Restorer) traverseTree(ctx context.Context, target string, treeID restic.ID, visitor treeVisitor) error {
 	location := string(filepath.Separator)
-	sanitizeError := func(err error) error {
-		switch err {
-		case nil, context.Canceled, context.DeadlineExceeded:
-			// Context errors are permanent.
-			return err
-		default:
-			return res.Error(location, err)
-		}
-	}
 
 	if visitor.enterDir != nil {
-		err := sanitizeError(visitor.enterDir(nil, target, location))
+		err := res.sanitizeError(location, visitor.enterDir(nil, target, location))
 		if err != nil {
 			return err
 		}
@@ -140,7 +141,7 @@ func (res *Restorer) traverseTree(ctx context.Context, target string, treeID res
 		return err
 	}
 	if hasRestored && visitor.leaveDir != nil {
-		err = sanitizeError(visitor.leaveDir(nil, target, location, childFilenames))
+		err = res.sanitizeError(location, visitor.leaveDir(nil, target, location, childFilenames))
 	}
 
 	return err
@@ -151,13 +152,17 @@ func (res *Restorer) traverseTreeInner(ctx context.Context, target, location str
 	tree, err := restic.LoadTree(ctx, res.repo, treeID)
 	if err != nil {
 		debug.Log("error loading tree %v: %v", treeID, err)
-		return nil, hasRestored, res.Error(location, err)
+		return nil, hasRestored, res.sanitizeError(location, err)
 	}
 
 	if res.opts.Delete {
 		filenames = make([]string, 0, len(tree.Nodes))
 	}
 	for i, node := range tree.Nodes {
+		if ctx.Err() != nil {
+			return nil, hasRestored, ctx.Err()
+		}
+
 		// allow GC of tree node
 		tree.Nodes[i] = nil
 		if res.opts.Delete {
@@ -171,7 +176,7 @@ func (res *Restorer) traverseTreeInner(ctx context.Context, target, location str
 		nodeName := filepath.Base(filepath.Join(string(filepath.Separator), node.Name))
 		if nodeName != node.Name {
 			debug.Log("node %q has invalid name %q", node.Name, nodeName)
-			err := res.Error(location, errors.Errorf("invalid child node name %s", node.Name))
+			err := res.sanitizeError(location, errors.Errorf("invalid child node name %s", node.Name))
 			if err != nil {
 				return nil, hasRestored, err
 			}
@@ -186,7 +191,7 @@ func (res *Restorer) traverseTreeInner(ctx context.Context, target, location str
 		if target == nodeTarget || !fs.HasPathPrefix(target, nodeTarget) {
 			debug.Log("target: %v %v", target, nodeTarget)
 			debug.Log("node %q has invalid target path %q", node.Name, nodeTarget)
-			err := res.Error(nodeLocation, errors.New("node has invalid path"))
+			err := res.sanitizeError(nodeLocation, errors.New("node has invalid path"))
 			if err != nil {
 				return nil, hasRestored, err
 			}
@@ -207,23 +212,13 @@ func (res *Restorer) traverseTreeInner(ctx context.Context, target, location str
 			hasRestored = true
 		}
 
-		sanitizeError := func(err error) error {
-			switch err {
-			case nil, context.Canceled, context.DeadlineExceeded:
-				// Context errors are permanent.
-				return err
-			default:
-				return res.Error(nodeLocation, err)
-			}
-		}
-
 		if node.Type == "dir" {
 			if node.Subtree == nil {
 				return nil, hasRestored, errors.Errorf("Dir without subtree in tree %v", treeID.Str())
 			}
 
 			if selectedForRestore && visitor.enterDir != nil {
-				err = sanitizeError(visitor.enterDir(node, nodeTarget, nodeLocation))
+				err = res.sanitizeError(nodeLocation, visitor.enterDir(node, nodeTarget, nodeLocation))
 				if err != nil {
 					return nil, hasRestored, err
 				}
@@ -236,7 +231,7 @@ func (res *Restorer) traverseTreeInner(ctx context.Context, target, location str
 
 			if childMayBeSelected {
 				childFilenames, childHasRestored, err = res.traverseTreeInner(ctx, nodeTarget, nodeLocation, *node.Subtree, visitor)
-				err = sanitizeError(err)
+				err = res.sanitizeError(nodeLocation, err)
 				if err != nil {
 					return nil, hasRestored, err
 				}
@@ -249,7 +244,7 @@ func (res *Restorer) traverseTreeInner(ctx context.Context, target, location str
 			// metadata need to be restore when leaving the directory in both cases
 			// selected for restore or any child of any subtree have been restored
 			if (selectedForRestore || childHasRestored) && visitor.leaveDir != nil {
-				err = sanitizeError(visitor.leaveDir(node, nodeTarget, nodeLocation, childFilenames))
+				err = res.sanitizeError(nodeLocation, visitor.leaveDir(node, nodeTarget, nodeLocation, childFilenames))
 				if err != nil {
 					return nil, hasRestored, err
 				}
@@ -259,7 +254,7 @@ func (res *Restorer) traverseTreeInner(ctx context.Context, target, location str
 		}
 
 		if selectedForRestore {
-			err = sanitizeError(visitor.visitNode(node, nodeTarget, nodeLocation))
+			err = res.sanitizeError(nodeLocation, visitor.visitNode(node, nodeTarget, nodeLocation))
 			if err != nil {
 				return nil, hasRestored, err
 			}
@@ -368,7 +363,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 	err = res.traverseTree(ctx, dst, *res.sn.Tree, treeVisitor{
 		enterDir: func(_ *restic.Node, target, location string) error {
 			debug.Log("first pass, enterDir: mkdir %q, leaveDir should restore metadata", location)
-			if location != "/" {
+			if location != string(filepath.Separator) {
 				res.opts.Progress.AddFile(0)
 			}
 			return res.ensureDir(target)
@@ -394,7 +389,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 				idx.Add(node.Inode, node.DeviceID, location)
 			}
 
-			buf, err = res.withOverwriteCheck(node, target, location, false, buf, func(updateMetadataOnly bool, matches *fileState) error {
+			buf, err = res.withOverwriteCheck(ctx, node, target, location, false, buf, func(updateMetadataOnly bool, matches *fileState) error {
 				if updateMetadataOnly {
 					res.opts.Progress.AddSkippedFile(location, node.Size)
 				} else {
@@ -434,14 +429,14 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 		visitNode: func(node *restic.Node, target, location string) error {
 			debug.Log("second pass, visitNode: restore node %q", location)
 			if node.Type != "file" {
-				_, err := res.withOverwriteCheck(node, target, location, false, nil, func(_ bool, _ *fileState) error {
+				_, err := res.withOverwriteCheck(ctx, node, target, location, false, nil, func(_ bool, _ *fileState) error {
 					return res.restoreNodeTo(ctx, node, target, location)
 				})
 				return err
 			}
 
 			if idx.Has(node.Inode, node.DeviceID) && idx.Value(node.Inode, node.DeviceID) != location {
-				_, err := res.withOverwriteCheck(node, target, location, true, nil, func(_ bool, _ *fileState) error {
+				_, err := res.withOverwriteCheck(ctx, node, target, location, true, nil, func(_ bool, _ *fileState) error {
 					return res.restoreHardlinkAt(node, filerestorer.targetPath(idx.Value(node.Inode, node.DeviceID)), target, location)
 				})
 				return err
@@ -528,7 +523,7 @@ func (res *Restorer) hasRestoredFile(location string) (metadataOnly bool, ok boo
 	return metadataOnly, ok
 }
 
-func (res *Restorer) withOverwriteCheck(node *restic.Node, target, location string, isHardlink bool, buf []byte, cb func(updateMetadataOnly bool, matches *fileState) error) ([]byte, error) {
+func (res *Restorer) withOverwriteCheck(ctx context.Context, node *restic.Node, target, location string, isHardlink bool, buf []byte, cb func(updateMetadataOnly bool, matches *fileState) error) ([]byte, error) {
 	overwrite, err := shouldOverwrite(res.opts.Overwrite, node, target)
 	if err != nil {
 		return buf, err
@@ -545,7 +540,7 @@ func (res *Restorer) withOverwriteCheck(node *restic.Node, target, location stri
 	updateMetadataOnly := false
 	if node.Type == "file" && !isHardlink {
 		// if a file fails to verify, then matches is nil which results in restoring from scratch
-		matches, buf, _ = res.verifyFile(target, node, false, res.opts.Overwrite == OverwriteIfChanged, buf)
+		matches, buf, _ = res.verifyFile(ctx, target, node, false, res.opts.Overwrite == OverwriteIfChanged, buf)
 		// skip files that are already correct completely
 		updateMetadataOnly = !matches.NeedsRestore()
 	}
@@ -628,10 +623,8 @@ func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
 		g.Go(func() (err error) {
 			var buf []byte
 			for job := range work {
-				_, buf, err = res.verifyFile(job.path, job.node, true, false, buf)
-				if err != nil {
-					err = res.Error(job.path, err)
-				}
+				_, buf, err = res.verifyFile(ctx, job.path, job.node, true, false, buf)
+				err = res.sanitizeError(job.path, err)
 				if err != nil || ctx.Err() != nil {
 					break
 				}
@@ -676,7 +669,7 @@ func (s *fileState) HasMatchingBlob(i int) bool {
 // buf and the first return value are scratch space, passed around for reuse.
 // Reusing buffers prevents the verifier goroutines allocating all of RAM and
 // flushing the filesystem cache (at least on Linux).
-func (res *Restorer) verifyFile(target string, node *restic.Node, failFast bool, trustMtime bool, buf []byte) (*fileState, []byte, error) {
+func (res *Restorer) verifyFile(ctx context.Context, target string, node *restic.Node, failFast bool, trustMtime bool, buf []byte) (*fileState, []byte, error) {
 	f, err := fs.OpenFile(target, fs.O_RDONLY|fs.O_NOFOLLOW, 0)
 	if err != nil {
 		return nil, buf, err
@@ -707,6 +700,9 @@ func (res *Restorer) verifyFile(target string, node *restic.Node, failFast bool,
 	matches := make([]bool, len(node.Content))
 	var offset int64
 	for i, blobID := range node.Content {
+		if ctx.Err() != nil {
+			return nil, buf, ctx.Err()
+		}
 		length, found := res.repo.LookupBlobSize(restic.DataBlob, blobID)
 		if !found {
 			return nil, buf, errors.Errorf("Unable to fetch blob %s", blobID)
