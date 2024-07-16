@@ -11,6 +11,12 @@ import (
 
 type NodeRewriteFunc func(node *restic.Node, path string) *restic.Node
 type FailedTreeRewriteFunc func(nodeID restic.ID, path string, err error) (restic.ID, error)
+type QueryRewrittenSizeFunc func() SnapshotSize
+
+type SnapshotSize struct {
+	FileCount uint
+	FileSize  uint64
+}
 
 type RewriteOpts struct {
 	// return nil to remove the node
@@ -50,6 +56,29 @@ func NewTreeRewriter(opts RewriteOpts) *TreeRewriter {
 		}
 	}
 	return rw
+}
+
+func NewSnapshotSizeRewriter(rewriteNode NodeRewriteFunc) (*TreeRewriter, QueryRewrittenSizeFunc) {
+	var count uint
+	var size uint64
+
+	t := NewTreeRewriter(RewriteOpts{
+		RewriteNode: func(node *restic.Node, path string) *restic.Node {
+			node = rewriteNode(node, path)
+			if node != nil && node.Type == "file" {
+				count++
+				size += node.Size
+			}
+			return node
+		},
+		DisableNodeCache: true,
+	})
+
+	ss := func() SnapshotSize {
+		return SnapshotSize{count, size}
+	}
+
+	return t, ss
 }
 
 type BlobLoadSaver interface {
