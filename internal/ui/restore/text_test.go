@@ -63,6 +63,7 @@ func TestPrintCompleteItem(t *testing.T) {
 	}{
 		{ActionDirRestored, 0, "restored  test"},
 		{ActionFileRestored, 123, "restored  test with size 123 B"},
+		{ActionOtherRestored, 0, "restored  test"},
 		{ActionFileUpdated, 123, "updated   test with size 123 B"},
 		{ActionFileUnchanged, 123, "unchanged test with size 123 B"},
 		{ActionDeleted, 0, "deleted   test"},
