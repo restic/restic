@@ -15,4 +15,6 @@ RUN apk add --no-cache ca-certificates fuse openssh-client tzdata jq
 
 COPY --from=builder /go/src/github.com/restic/restic/restic /usr/bin
 
-ENTRYPOINT ["/usr/bin/restic"]
+COPY docker/entrypoint.sh /
+
+ENTRYPOINT ["/entrypoint.sh"]
