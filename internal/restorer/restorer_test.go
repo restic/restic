@@ -1003,6 +1003,7 @@ func TestRestorerOverwriteBehavior(t *testing.T) {
 			"dirtest": Dir{
 				Nodes: map[string]Node{
 					"file": File{Data: "content: file\n", ModTime: baseTime},
+					"foo":  File{Data: "content: foobar", ModTime: baseTime},
 				},
 				ModTime: baseTime,
 			},
@@ -1014,6 +1015,7 @@ func TestRestorerOverwriteBehavior(t *testing.T) {
 			"dirtest": Dir{
 				Nodes: map[string]Node{
 					"file": File{Data: "content: file2\n", ModTime: baseTime.Add(-time.Second)},
+					"foo":  File{Data: "content: foo", ModTime: baseTime},
 				},
 			},
 		},
@@ -1029,13 +1031,14 @@ func TestRestorerOverwriteBehavior(t *testing.T) {
 			Files: map[string]string{
 				"foo":          "content: new\n",
 				"dirtest/file": "content: file2\n",
+				"dirtest/foo":  "content: foo",
 			},
 			Progress: restoreui.State{
-				FilesFinished:   3,
-				FilesTotal:      3,
+				FilesFinished:   4,
+				FilesTotal:      4,
 				FilesSkipped:    0,
-				AllBytesWritten: 28,
-				AllBytesTotal:   28,
+				AllBytesWritten: 40,
+				AllBytesTotal:   40,
 				AllBytesSkipped: 0,
 			},
 		},
@@ -1044,13 +1047,14 @@ func TestRestorerOverwriteBehavior(t *testing.T) {
 			Files: map[string]string{
 				"foo":          "content: new\n",
 				"dirtest/file": "content: file2\n",
+				"dirtest/foo":  "content: foo",
 			},
 			Progress: restoreui.State{
-				FilesFinished:   3,
-				FilesTotal:      3,
+				FilesFinished:   4,
+				FilesTotal:      4,
 				FilesSkipped:    0,
-				AllBytesWritten: 28,
-				AllBytesTotal:   28,
+				AllBytesWritten: 40,
+				AllBytesTotal:   40,
 				AllBytesSkipped: 0,
 			},
 		},
@@ -1059,14 +1063,15 @@ func TestRestorerOverwriteBehavior(t *testing.T) {
 			Files: map[string]string{
 				"foo":          "content: new\n",
 				"dirtest/file": "content: file\n",
+				"dirtest/foo":  "content: foobar",
 			},
 			Progress: restoreui.State{
 				FilesFinished:   2,
 				FilesTotal:      2,
-				FilesSkipped:    1,
+				FilesSkipped:    2,
 				AllBytesWritten: 13,
 				AllBytesTotal:   13,
-				AllBytesSkipped: 15,
+				AllBytesSkipped: 27,
 			},
 		},
 		{
@@ -1074,14 +1079,15 @@ func TestRestorerOverwriteBehavior(t *testing.T) {
 			Files: map[string]string{
 				"foo":          "content: foo\n",
 				"dirtest/file": "content: file\n",
+				"dirtest/foo":  "content: foobar",
 			},
 			Progress: restoreui.State{
 				FilesFinished:   1,
 				FilesTotal:      1,
-				FilesSkipped:    2,
+				FilesSkipped:    3,
 				AllBytesWritten: 0,
 				AllBytesTotal:   0,
-				AllBytesSkipped: 28,
+				AllBytesSkipped: 40,
 			},
 		},
 	}
