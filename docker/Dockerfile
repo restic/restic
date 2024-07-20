@@ -17,4 +17,6 @@ COPY --from=builder /go/src/github.com/restic/restic/restic /usr/bin
 
 COPY docker/entrypoint.sh /
 
+VOLUME ["/data"]
+
 ENTRYPOINT ["/entrypoint.sh"]

@@ -1,0 +1,13 @@
+services:
+  restic:
+    hostname: restic
+    volumes:
+      - $HOME/importantdirectory:/data
+    environment:
+      - RESTIC_REPOSITORY=rest:https://user:pass@hostname/
+      - RESTIC_PASSWORD=/run/secrets/restic_password
+    image: restic/restic:latest
+
+secrets:
+  restic_password:
+    file: .restic_password.secret
