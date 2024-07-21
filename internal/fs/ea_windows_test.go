@@ -46,7 +46,7 @@ import (
 // under MIT license.
 
 var (
-	testEas = []ExtendedAttribute{
+	testEas = []extendedAttribute{
 		{Name: "foo", Value: []byte("bar")},
 		{Name: "fizz", Value: []byte("buzz")},
 	}
@@ -58,14 +58,14 @@ var (
 )
 
 func TestRoundTripEas(t *testing.T) {
-	b, err := EncodeExtendedAttributes(testEas)
+	b, err := encodeExtendedAttributes(testEas)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(testEasEncoded, b) {
 		t.Fatalf("Encoded mismatch %v %v", testEasEncoded, b)
 	}
-	eas, err := DecodeExtendedAttributes(b)
+	eas, err := decodeExtendedAttributes(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -75,7 +75,7 @@ func TestRoundTripEas(t *testing.T) {
 }
 
 func TestEasDontNeedPaddingAtEnd(t *testing.T) {
-	eas, err := DecodeExtendedAttributes(testEasNotPadded)
+	eas, err := decodeExtendedAttributes(testEasNotPadded)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,21 +85,21 @@ func TestEasDontNeedPaddingAtEnd(t *testing.T) {
 }
 
 func TestTruncatedEasFailCorrectly(t *testing.T) {
-	_, err := DecodeExtendedAttributes(testEasTruncated)
+	_, err := decodeExtendedAttributes(testEasTruncated)
 	if err == nil {
 		t.Fatal("expected error")
 	}
 }
 
 func TestNilEasEncodeAndDecodeAsNil(t *testing.T) {
-	b, err := EncodeExtendedAttributes(nil)
+	b, err := encodeExtendedAttributes(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(b) != 0 {
 		t.Fatal("expected empty")
 	}
-	eas, err := DecodeExtendedAttributes(nil)
+	eas, err := decodeExtendedAttributes(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -178,8 +178,8 @@ func setupTestFolder(t *testing.T) string {
 	return testfolderPath
 }
 
-func generateTestEAs(t *testing.T, nAttrs int, path string) []ExtendedAttribute {
-	testEAs := make([]ExtendedAttribute, nAttrs)
+func generateTestEAs(t *testing.T, nAttrs int, path string) []extendedAttribute {
+	testEAs := make([]extendedAttribute, nAttrs)
 	for i := 0; i < nAttrs; i++ {
 		testEAs[i].Name = fmt.Sprintf("TESTEA%d", i+1)
 		testEAs[i].Value = make([]byte, getRandomInt())
@@ -231,12 +231,12 @@ func cleanupTestFile(t *testing.T, path string) {
 	}
 }
 
-func testSetGetEA(t *testing.T, path string, handle windows.Handle, testEAs []ExtendedAttribute) {
-	if err := SetFileEA(handle, testEAs); err != nil {
+func testSetGetEA(t *testing.T, path string, handle windows.Handle, testEAs []extendedAttribute) {
+	if err := fsetEA(handle, testEAs); err != nil {
 		t.Fatalf("set EA for path %s failed: %s", path, err)
 	}
 
-	readEAs, err := GetFileEA(handle)
+	readEAs, err := fgetEA(handle)
 	if err != nil {
 		t.Fatalf("get EA for path %s failed: %s", path, err)
 	}
@@ -262,7 +262,7 @@ func TestPathSupportsExtendedAttributes(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			supported, err := PathSupportsExtendedAttributes(tc.path)
+			supported, err := pathSupportsExtendedAttributes(tc.path)
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
@@ -273,7 +273,7 @@ func TestPathSupportsExtendedAttributes(t *testing.T) {
 	}
 
 	// Test with an invalid path
-	_, err := PathSupportsExtendedAttributes("Z:\\NonExistentPath-UAS664da5s4dyu56das45f5as")
+	_, err := pathSupportsExtendedAttributes("Z:\\NonExistentPath-UAS664da5s4dyu56das45f5as")
 	if err == nil {
 		t.Error("Expected an error for non-existent path, but got nil")
 	}
@@ -305,7 +305,7 @@ func TestGetVolumePathName(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			volumeName, err := GetVolumePathName(tc.path)
+			volumeName, err := getVolumePathName(tc.path)
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
@@ -316,7 +316,7 @@ func TestGetVolumePathName(t *testing.T) {
 	}
 
 	// Test with an invalid path
-	_, err := GetVolumePathName("Z:\\NonExistentPath")
+	_, err := getVolumePathName("Z:\\NonExistentPath")
 	if err == nil {
 		t.Error("Expected an error for non-existent path, but got nil")
 	}

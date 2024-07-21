@@ -19,14 +19,14 @@ var (
 	onceBackup  sync.Once
 	onceRestore sync.Once
 
-	// SeBackupPrivilege allows the application to bypass file and directory ACLs to back up files and directories.
-	SeBackupPrivilege = "SeBackupPrivilege"
-	// SeRestorePrivilege allows the application to bypass file and directory ACLs to restore files and directories.
-	SeRestorePrivilege = "SeRestorePrivilege"
-	// SeSecurityPrivilege allows read and write access to all SACLs.
-	SeSecurityPrivilege = "SeSecurityPrivilege"
-	// SeTakeOwnershipPrivilege allows the application to take ownership of files and directories, regardless of the permissions set on them.
-	SeTakeOwnershipPrivilege = "SeTakeOwnershipPrivilege"
+	// seBackupPrivilege allows the application to bypass file and directory ACLs to back up files and directories.
+	seBackupPrivilege = "SeBackupPrivilege"
+	// seRestorePrivilege allows the application to bypass file and directory ACLs to restore files and directories.
+	seRestorePrivilege = "SeRestorePrivilege"
+	// seSecurityPrivilege allows read and write access to all SACLs.
+	seSecurityPrivilege = "SeSecurityPrivilege"
+	// seTakeOwnershipPrivilege allows the application to take ownership of files and directories, regardless of the permissions set on them.
+	seTakeOwnershipPrivilege = "SeTakeOwnershipPrivilege"
 
 	lowerPrivileges atomic.Bool
 )
@@ -40,10 +40,10 @@ var lowBackupSecurityFlags windows.SECURITY_INFORMATION = windows.OWNER_SECURITY
 // Flags for restore without admin permissions. If there are no admin permissions, only the DACL from the SD can be restored and owner and group will be set based on the current user.
 var lowRestoreSecurityFlags windows.SECURITY_INFORMATION = windows.DACL_SECURITY_INFORMATION | windows.ATTRIBUTE_SECURITY_INFORMATION | windows.PROTECTED_DACL_SECURITY_INFORMATION
 
-// GetSecurityDescriptor takes the path of the file and returns the SecurityDescriptor for the file.
+// getSecurityDescriptor takes the path of the file and returns the SecurityDescriptor for the file.
 // This needs admin permissions or SeBackupPrivilege for getting the full SD.
 // If there are no admin permissions, only the current user's owner, group and DACL will be got.
-func GetSecurityDescriptor(filePath string) (securityDescriptor *[]byte, err error) {
+func getSecurityDescriptor(filePath string) (securityDescriptor *[]byte, err error) {
 	onceBackup.Do(enableBackupPrivilege)
 
 	var sd *windows.SECURITY_DESCRIPTOR
@@ -59,7 +59,7 @@ func GetSecurityDescriptor(filePath string) (securityDescriptor *[]byte, err err
 		if !useLowerPrivileges && isHandlePrivilegeNotHeldError(err) {
 			// If ERROR_PRIVILEGE_NOT_HELD is encountered, fallback to backups/restores using lower non-admin privileges.
 			lowerPrivileges.Store(true)
-			return GetSecurityDescriptor(filePath)
+			return getSecurityDescriptor(filePath)
 		} else if errors.Is(err, windows.ERROR_NOT_SUPPORTED) {
 			return nil, nil
 		} else {
@@ -74,15 +74,15 @@ func GetSecurityDescriptor(filePath string) (securityDescriptor *[]byte, err err
 	return &sdBytes, nil
 }
 
-// SetSecurityDescriptor sets the SecurityDescriptor for the file at the specified path.
+// setSecurityDescriptor sets the SecurityDescriptor for the file at the specified path.
 // This needs admin permissions or SeRestorePrivilege, SeSecurityPrivilege and SeTakeOwnershipPrivilege
 // for setting the full SD.
 // If there are no admin permissions/required privileges, only the DACL from the SD can be set and
 // owner and group will be set based on the current user.
-func SetSecurityDescriptor(filePath string, securityDescriptor *[]byte) error {
+func setSecurityDescriptor(filePath string, securityDescriptor *[]byte) error {
 	onceRestore.Do(enableRestorePrivilege)
 	// Set the security descriptor on the file
-	sd, err := SecurityDescriptorBytesToStruct(*securityDescriptor)
+	sd, err := securityDescriptorBytesToStruct(*securityDescriptor)
 	if err != nil {
 		return fmt.Errorf("error converting bytes to security descriptor: %w", err)
 	}
@@ -120,7 +120,7 @@ func SetSecurityDescriptor(filePath string, securityDescriptor *[]byte) error {
 		if !useLowerPrivileges && isHandlePrivilegeNotHeldError(err) {
 			// If ERROR_PRIVILEGE_NOT_HELD is encountered, fallback to backups/restores using lower non-admin privileges.
 			lowerPrivileges.Store(true)
-			return SetSecurityDescriptor(filePath, securityDescriptor)
+			return setSecurityDescriptor(filePath, securityDescriptor)
 		} else {
 			return fmt.Errorf("set named security info failed with: %w", err)
 		}
@@ -150,7 +150,7 @@ func setNamedSecurityInfoLow(filePath string, dacl *windows.ACL) error {
 
 // enableBackupPrivilege enables privilege for backing up security descriptors
 func enableBackupPrivilege() {
-	err := enableProcessPrivileges([]string{SeBackupPrivilege})
+	err := enableProcessPrivileges([]string{seBackupPrivilege})
 	if err != nil {
 		debug.Log("error enabling backup privilege: %v", err)
 	}
@@ -158,7 +158,7 @@ func enableBackupPrivilege() {
 
 // enableBackupPrivilege enables privilege for restoring security descriptors
 func enableRestorePrivilege() {
-	err := enableProcessPrivileges([]string{SeRestorePrivilege, SeSecurityPrivilege, SeTakeOwnershipPrivilege})
+	err := enableProcessPrivileges([]string{seRestorePrivilege, seSecurityPrivilege, seTakeOwnershipPrivilege})
 	if err != nil {
 		debug.Log("error enabling restore/security privilege: %v", err)
 	}
@@ -174,9 +174,9 @@ func isHandlePrivilegeNotHeldError(err error) bool {
 	return false
 }
 
-// SecurityDescriptorBytesToStruct converts the security descriptor bytes representation
+// securityDescriptorBytesToStruct converts the security descriptor bytes representation
 // into a pointer to windows SECURITY_DESCRIPTOR.
-func SecurityDescriptorBytesToStruct(sd []byte) (*windows.SECURITY_DESCRIPTOR, error) {
+func securityDescriptorBytesToStruct(sd []byte) (*windows.SECURITY_DESCRIPTOR, error) {
 	if l := int(unsafe.Sizeof(windows.SECURITY_DESCRIPTOR{})); len(sd) < l {
 		return nil, fmt.Errorf("securityDescriptor (%d) smaller than expected (%d): %w", len(sd), l, windows.ERROR_INCORRECT_SIZE)
 	}
@@ -245,13 +245,13 @@ var (
 	privNameMutex sync.Mutex
 )
 
-// PrivilegeError represents an error enabling privileges.
-type PrivilegeError struct {
+// privilegeError represents an error enabling privileges.
+type privilegeError struct {
 	privileges []uint64
 }
 
 // Error returns the string message for the error.
-func (e *PrivilegeError) Error() string {
+func (e *privilegeError) Error() string {
 	s := "Could not enable privilege "
 	if len(e.privileges) > 1 {
 		s = "Could not enable privileges "

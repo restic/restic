@@ -306,7 +306,7 @@ func nodeRestoreMetadata(node *restic.Node, path string, warn func(msg string)) 
 	// calling Chmod below will no longer allow any modifications to be made on the file and the
 	// calls above would fail.
 	if node.Type != restic.NodeTypeSymlink {
-		if err := Chmod(path, node.Mode); err != nil {
+		if err := chmod(path, node.Mode); err != nil {
 			if firsterr == nil {
 				firsterr = errors.WithStack(err)
 			}

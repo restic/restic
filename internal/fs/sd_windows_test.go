@@ -28,7 +28,7 @@ func TestSetGetFileSecurityDescriptors(t *testing.T) {
 		}
 	}()
 
-	testSecurityDescriptors(t, TestFileSDs, testfilePath)
+	testSecurityDescriptors(t, testFileSDs, testfilePath)
 }
 
 func TestSetGetFolderSecurityDescriptors(t *testing.T) {
@@ -40,7 +40,7 @@ func TestSetGetFolderSecurityDescriptors(t *testing.T) {
 		t.Fatalf("failed to create temporary file: %s", err)
 	}
 
-	testSecurityDescriptors(t, TestDirSDs, testfolderPath)
+	testSecurityDescriptors(t, testDirSDs, testfolderPath)
 }
 
 func testSecurityDescriptors(t *testing.T, testSDs []string, testPath string) {
@@ -48,13 +48,13 @@ func testSecurityDescriptors(t *testing.T, testSDs []string, testPath string) {
 		sdInputBytes, err := base64.StdEncoding.DecodeString(testSD)
 		test.OK(t, errors.Wrapf(err, "Error decoding SD: %s", testPath))
 
-		err = SetSecurityDescriptor(testPath, &sdInputBytes)
+		err = setSecurityDescriptor(testPath, &sdInputBytes)
 		test.OK(t, errors.Wrapf(err, "Error setting file security descriptor for: %s", testPath))
 
 		var sdOutputBytes *[]byte
-		sdOutputBytes, err = GetSecurityDescriptor(testPath)
+		sdOutputBytes, err = getSecurityDescriptor(testPath)
 		test.OK(t, errors.Wrapf(err, "Error getting file security descriptor for: %s", testPath))
 
-		CompareSecurityDescriptors(t, testPath, sdInputBytes, *sdOutputBytes)
+		compareSecurityDescriptors(t, testPath, sdInputBytes, *sdOutputBytes)
 	}
 }

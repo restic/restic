@@ -23,10 +23,10 @@ import (
 func TestRestoreSecurityDescriptors(t *testing.T) {
 	t.Parallel()
 	tempDir := t.TempDir()
-	for i, sd := range TestFileSDs {
+	for i, sd := range testFileSDs {
 		testRestoreSecurityDescriptor(t, sd, tempDir, restic.NodeTypeFile, fmt.Sprintf("testfile%d", i))
 	}
-	for i, sd := range TestDirSDs {
+	for i, sd := range testDirSDs {
 		testRestoreSecurityDescriptor(t, sd, tempDir, restic.NodeTypeDir, fmt.Sprintf("testdir%d", i))
 	}
 }
@@ -47,13 +47,13 @@ func testRestoreSecurityDescriptor(t *testing.T, sd string, tempDir string, file
 	sdByteFromRestoredNode := getWindowsAttr(t, testPath, node).SecurityDescriptor
 
 	// Get the security descriptor for the test path after the restore.
-	sdBytesFromRestoredPath, err := GetSecurityDescriptor(testPath)
+	sdBytesFromRestoredPath, err := getSecurityDescriptor(testPath)
 	test.OK(t, errors.Wrapf(err, "Error while getting the security descriptor for: %s", testPath))
 
 	// Compare the input SD and the SD got from the restored file.
-	CompareSecurityDescriptors(t, testPath, sdInputBytes, *sdBytesFromRestoredPath)
+	compareSecurityDescriptors(t, testPath, sdInputBytes, *sdBytesFromRestoredPath)
 	// Compare the SD got from node constructed from the restored file info and the SD got directly from the restored file.
-	CompareSecurityDescriptors(t, testPath, *sdByteFromRestoredNode, *sdBytesFromRestoredPath)
+	compareSecurityDescriptors(t, testPath, *sdByteFromRestoredNode, *sdBytesFromRestoredPath)
 }
 
 func getNode(name string, fileType restic.NodeType, genericAttributes map[restic.GenericAttributeType]json.RawMessage) restic.Node {
@@ -312,12 +312,12 @@ func TestRestoreExtendedAttributes(t *testing.T) {
 			test.OK(t, errors.Wrapf(err, "Error closing file for: %s", testPath))
 		}()
 
-		extAttr, err := GetFileEA(handle)
+		extAttr, err := fgetEA(handle)
 		test.OK(t, errors.Wrapf(err, "Error getting extended attributes for: %s", testPath))
 		test.Equals(t, len(node.ExtendedAttributes), len(extAttr))
 
 		for _, expectedExtAttr := range node.ExtendedAttributes {
-			var foundExtAttr *ExtendedAttribute
+			var foundExtAttr *extendedAttribute
 			for _, ea := range extAttr {
 				if strings.EqualFold(ea.Name, expectedExtAttr.Name) {
 					foundExtAttr = &ea
@@ -491,13 +491,13 @@ func TestPrepareVolumeName(t *testing.T) {
 			test.Equals(t, tc.expectedVolume, volume)
 
 			if tc.isRealPath {
-				isEASupportedVolume, err := PathSupportsExtendedAttributes(volume + `\`)
+				isEASupportedVolume, err := pathSupportsExtendedAttributes(volume + `\`)
 				// If the prepared volume name is not valid, we will next fetch the actual volume name.
 				test.OK(t, err)
 
 				test.Equals(t, tc.expectedEASupported, isEASupportedVolume)
 
-				actualVolume, err := GetVolumePathName(tc.path)
+				actualVolume, err := getVolumePathName(tc.path)
 				test.OK(t, err)
 				test.Equals(t, tc.expectedVolume, actualVolume)
 			}

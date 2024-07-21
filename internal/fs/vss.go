@@ -33,9 +33,9 @@ func HasSufficientPrivilegesForVSS() error {
 	return errors.New("VSS snapshots are only supported on windows")
 }
 
-// GetVolumeNameForVolumeMountPoint add trailing backslash to input parameter
+// getVolumeNameForVolumeMountPoint add trailing backslash to input parameter
 // and calls the equivalent windows api.
-func GetVolumeNameForVolumeMountPoint(mountPoint string) (string, error) {
+func getVolumeNameForVolumeMountPoint(mountPoint string) (string, error) {
 	return mountPoint, nil
 }
 

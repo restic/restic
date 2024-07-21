@@ -85,9 +85,9 @@ func nodeRestoreSymlinkTimestamps(path string, utimes [2]syscall.Timespec) error
 func nodeRestoreExtendedAttributes(node *restic.Node, path string) (err error) {
 	count := len(node.ExtendedAttributes)
 	if count > 0 {
-		eas := make([]ExtendedAttribute, count)
+		eas := make([]extendedAttribute, count)
 		for i, attr := range node.ExtendedAttributes {
-			eas[i] = ExtendedAttribute{Name: attr.Name, Value: attr.Value}
+			eas[i] = extendedAttribute{Name: attr.Name, Value: attr.Value}
 		}
 		if errExt := restoreExtendedAttributes(node.Type, path, eas); errExt != nil {
 			return errExt
@@ -99,7 +99,7 @@ func nodeRestoreExtendedAttributes(node *restic.Node, path string) (err error) {
 // fill extended attributes in the node. This also includes the Generic attributes for windows.
 func nodeFillExtendedAttributes(node *restic.Node, path string, _ bool) (err error) {
 	var fileHandle windows.Handle
-	if fileHandle, err = OpenHandleForEA(node.Type, path, false); fileHandle == 0 {
+	if fileHandle, err = openHandleForEA(node.Type, path, false); fileHandle == 0 {
 		return nil
 	}
 	if err != nil {
@@ -107,8 +107,8 @@ func nodeFillExtendedAttributes(node *restic.Node, path string, _ bool) (err err
 	}
 	defer closeFileHandle(fileHandle, path) // Replaced inline defer with named function call
 	//Get the windows Extended Attributes using the file handle
-	var extAtts []ExtendedAttribute
-	extAtts, err = GetFileEA(fileHandle)
+	var extAtts []extendedAttribute
+	extAtts, err = fgetEA(fileHandle)
 	debug.Log("fillExtendedAttributes(%v) %v", path, extAtts)
 	if err != nil {
 		return errors.Errorf("get EA failed for path %v, with: %v", path, err)
@@ -139,9 +139,9 @@ func closeFileHandle(fileHandle windows.Handle, path string) {
 
 // restoreExtendedAttributes handles restore of the Windows Extended Attributes to the specified path.
 // The Windows API requires setting of all the Extended Attributes in one call.
-func restoreExtendedAttributes(nodeType restic.NodeType, path string, eas []ExtendedAttribute) (err error) {
+func restoreExtendedAttributes(nodeType restic.NodeType, path string, eas []extendedAttribute) (err error) {
 	var fileHandle windows.Handle
-	if fileHandle, err = OpenHandleForEA(nodeType, path, true); fileHandle == 0 {
+	if fileHandle, err = openHandleForEA(nodeType, path, true); fileHandle == 0 {
 		return nil
 	}
 	if err != nil {
@@ -150,7 +150,7 @@ func restoreExtendedAttributes(nodeType restic.NodeType, path string, eas []Exte
 	defer closeFileHandle(fileHandle, path) // Replaced inline defer with named function call
 
 	// clear old unexpected xattrs by setting them to an empty value
-	oldEAs, err := GetFileEA(fileHandle)
+	oldEAs, err := fgetEA(fileHandle)
 	if err != nil {
 		return err
 	}
@@ -165,11 +165,11 @@ func restoreExtendedAttributes(nodeType restic.NodeType, path string, eas []Exte
 		}
 
 		if !found {
-			eas = append(eas, ExtendedAttribute{Name: oldEA.Name, Value: nil})
+			eas = append(eas, extendedAttribute{Name: oldEA.Name, Value: nil})
 		}
 	}
 
-	if err = SetFileEA(fileHandle, eas); err != nil {
+	if err = fsetEA(fileHandle, eas); err != nil {
 		return errors.Errorf("set EA failed for path %v, with: %v", path, err)
 	}
 	return nil
@@ -230,7 +230,7 @@ func nodeRestoreGenericAttributes(node *restic.Node, path string, warn func(msg 
 		}
 	}
 	if windowsAttributes.SecurityDescriptor != nil {
-		if err := SetSecurityDescriptor(path, windowsAttributes.SecurityDescriptor); err != nil {
+		if err := setSecurityDescriptor(path, windowsAttributes.SecurityDescriptor); err != nil {
 			errs = append(errs, fmt.Errorf("error restoring security descriptor for: %s : %v", path, err))
 		}
 	}
@@ -296,7 +296,7 @@ func fixEncryptionAttribute(path string, attrs *uint32, pathPointer *uint16) (er
 				if err != nil {
 					return fmt.Errorf("failed to encrypt file: failed to reset permissions: %s : %v", path, err)
 				}
-				err = ClearSystem(path)
+				err = clearSystem(path)
 				if err != nil {
 					return fmt.Errorf("failed to encrypt file: failed to clear system flag: %s : %v", path, err)
 				}
@@ -324,7 +324,7 @@ func fixEncryptionAttribute(path string, attrs *uint32, pathPointer *uint16) (er
 					if err != nil {
 						return fmt.Errorf("failed to encrypt file: failed to reset permissions: %s : %v", path, err)
 					}
-					err = ClearSystem(path)
+					err = clearSystem(path)
 					if err != nil {
 						return fmt.Errorf("failed to decrypt file: failed to clear system flag: %s : %v", path, err)
 					}
@@ -392,7 +392,7 @@ func nodeFillGenericAttributes(node *restic.Node, path string, fi os.FileInfo, s
 		if err != nil {
 			return false, err
 		}
-		if sd, err = GetSecurityDescriptor(path); err != nil {
+		if sd, err = getSecurityDescriptor(path); err != nil {
 			return allowExtended, err
 		}
 	}
@@ -422,7 +422,7 @@ func checkAndStoreEASupport(path string) (isEASupportedVolume bool, err error) {
 			return eaSupportedValue.(bool), nil
 		}
 		// If not found, check if EA is supported with manually prepared volume name
-		isEASupportedVolume, err = PathSupportsExtendedAttributes(volumeName + `\`)
+		isEASupportedVolume, err = pathSupportsExtendedAttributes(volumeName + `\`)
 		// If the prepared volume name is not valid, we will fetch the actual volume name next.
 		if err != nil && !errors.Is(err, windows.DNS_ERROR_INVALID_NAME) {
 			debug.Log("Error checking if extended attributes are supported for prepared volume name %s: %v", volumeName, err)
@@ -431,8 +431,8 @@ func checkAndStoreEASupport(path string) (isEASupportedVolume bool, err error) {
 			return false, nil
 		}
 	}
-	// If an entry is not found, get the actual volume name using the GetVolumePathName function
-	volumeNameActual, err := GetVolumePathName(path)
+	// If an entry is not found, get the actual volume name
+	volumeNameActual, err := getVolumePathName(path)
 	if err != nil {
 		debug.Log("Error getting actual volume name %s for path %s: %v", volumeName, path, err)
 		// There can be multiple errors like path does not exist, bad network path, etc.
@@ -447,7 +447,7 @@ func checkAndStoreEASupport(path string) (isEASupportedVolume bool, err error) {
 			return eaSupportedValue.(bool), nil
 		}
 		// If the actual volume name is different and is not in the map, again check if the new volume supports extended attributes with the actual volume name
-		isEASupportedVolume, err = PathSupportsExtendedAttributes(volumeNameActual + `\`)
+		isEASupportedVolume, err = pathSupportsExtendedAttributes(volumeNameActual + `\`)
 		// Debug log for cases where the prepared volume name is not valid
 		if err != nil {
 			debug.Log("Error checking if extended attributes are supported for actual volume name %s: %v", volumeNameActual, err)
