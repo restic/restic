@@ -88,15 +88,6 @@ func OpenFile(name string, flag int, perm os.FileMode) (*os.File, error) {
 	return os.OpenFile(fixpath(name), flag, perm)
 }
 
-// RemoveIfExists removes a file, returning no error if it does not exist.
-func RemoveIfExists(filename string) error {
-	err := os.Remove(filename)
-	if err != nil && os.IsNotExist(err) {
-		err = nil
-	}
-	return err
-}
-
 // Chtimes changes the access and modification times of the named file,
 // similar to the Unix utime() or utimes() functions.
 //
