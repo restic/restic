@@ -3,14 +3,7 @@ package fs
 import (
 	"fmt"
 	"os"
-	"time"
 )
-
-// Mkdir creates a new directory with the specified name and permission bits.
-// If there is an error, it will be of type *PathError.
-func Mkdir(name string, perm os.FileMode) error {
-	return os.Mkdir(fixpath(name), perm)
-}
 
 // MkdirAll creates a directory named path, along with any necessary parents,
 // and returns nil, or else returns an error. The permission bits perm are used
@@ -18,12 +11,6 @@ func Mkdir(name string, perm os.FileMode) error {
 // MkdirAll does nothing and returns nil.
 func MkdirAll(path string, perm os.FileMode) error {
 	return os.MkdirAll(fixpath(path), perm)
-}
-
-// Readlink returns the destination of the named symbolic link.
-// If there is an error, it will be of type *PathError.
-func Readlink(name string) (string, error) {
-	return os.Readlink(fixpath(name))
 }
 
 // Remove removes the named file or directory.
@@ -40,20 +27,6 @@ func RemoveAll(path string) error {
 	return os.RemoveAll(fixpath(path))
 }
 
-// Rename renames (moves) oldpath to newpath.
-// If newpath already exists, Rename replaces it.
-// OS-specific restrictions may apply when oldpath and newpath are in different directories.
-// If there is an error, it will be of type *LinkError.
-func Rename(oldpath, newpath string) error {
-	return os.Rename(fixpath(oldpath), fixpath(newpath))
-}
-
-// Symlink creates newname as a symbolic link to oldname.
-// If there is an error, it will be of type *LinkError.
-func Symlink(oldname, newname string) error {
-	return os.Symlink(oldname, fixpath(newname))
-}
-
 // Link creates newname as a hard link to oldname.
 // If there is an error, it will be of type *LinkError.
 func Link(oldname, newname string) error {
@@ -66,11 +39,6 @@ func Link(oldname, newname string) error {
 // If there is an error, it will be of type *PathError.
 func Lstat(name string) (os.FileInfo, error) {
 	return os.Lstat(fixpath(name))
-}
-
-// Open opens a file for reading.
-func Open(name string) (File, error) {
-	return os.Open(fixpath(name))
 }
 
 // OpenFile is the generalized open call; most users will use Open

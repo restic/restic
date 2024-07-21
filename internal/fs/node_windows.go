@@ -58,7 +58,7 @@ func lchown(_ string, _ int, _ int) (err error) {
 // restoreSymlinkTimestamps restores timestamps for symlinks
 func nodeRestoreSymlinkTimestamps(path string, utimes [2]syscall.Timespec) error {
 	// tweaked version of UtimesNano from go/src/syscall/syscall_windows.go
-	pathp, e := syscall.UTF16PtrFromString(path)
+	pathp, e := syscall.UTF16PtrFromString(fixpath(path))
 	if e != nil {
 		return e
 	}

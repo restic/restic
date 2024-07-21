@@ -13,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -83,7 +82,7 @@ func checkTar(t *testing.T, testDir string, srcTar *bytes.Buffer) error {
 				return fmt.Errorf("foldernames must end with separator got %v", hdr.Name)
 			}
 		case tar.TypeSymlink:
-			target, err := fs.Readlink(matchPath)
+			target, err := os.Readlink(matchPath)
 			if err != nil {
 				return err
 			}

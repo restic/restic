@@ -1223,7 +1223,7 @@ func TestRestorerOverwriteSpecial(t *testing.T) {
 		}
 	}
 	for filename, target := range links {
-		link, err := fs.Readlink(filepath.Join(tempdir, filepath.FromSlash(filename)))
+		link, err := os.Readlink(filepath.Join(tempdir, filepath.FromSlash(filename)))
 		rtest.OK(t, err)
 		rtest.Equals(t, link, target, "wrong symlink target")
 	}

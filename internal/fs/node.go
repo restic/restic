@@ -80,7 +80,7 @@ func nodeFillExtra(node *restic.Node, path string, fi os.FileInfo, ignoreXattrLi
 	case restic.NodeTypeDir:
 	case restic.NodeTypeSymlink:
 		var err error
-		node.LinkTarget, err = Readlink(path)
+		node.LinkTarget, err = os.Readlink(fixpath(path))
 		node.Links = uint64(stat.nlink())
 		if err != nil {
 			return errors.WithStack(err)
@@ -212,7 +212,7 @@ func NodeCreateAt(node *restic.Node, path string) error {
 }
 
 func nodeCreateDirAt(node *restic.Node, path string) error {
-	err := Mkdir(path, node.Mode)
+	err := os.Mkdir(fixpath(path), node.Mode)
 	if err != nil && !os.IsExist(err) {
 		return errors.WithStack(err)
 	}
@@ -234,7 +234,7 @@ func nodeCreateFileAt(path string) error {
 }
 
 func nodeCreateSymlinkAt(node *restic.Node, path string) error {
-	if err := Symlink(node.LinkTarget, path); err != nil {
+	if err := os.Symlink(node.LinkTarget, fixpath(path)); err != nil {
 		return errors.WithStack(err)
 	}
 
