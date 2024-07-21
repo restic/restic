@@ -60,12 +60,6 @@ func Link(oldname, newname string) error {
 	return os.Link(fixpath(oldname), fixpath(newname))
 }
 
-// Stat returns a FileInfo structure describing the named file.
-// If there is an error, it will be of type *PathError.
-func Stat(name string) (os.FileInfo, error) {
-	return os.Stat(fixpath(name))
-}
-
 // Lstat returns the FileInfo structure describing the named file.
 // If the file is a symbolic link, the returned FileInfo
 // describes the symbolic link.  Lstat makes no attempt to follow the link.
