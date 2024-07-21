@@ -1664,15 +1664,6 @@ type MockFS struct {
 	bytesRead map[string]int // tracks bytes read from all opened files
 }
 
-func (m *MockFS) Open(name string) (fs.File, error) {
-	f, err := m.FS.Open(name)
-	if err != nil {
-		return f, err
-	}
-
-	return MockFile{File: f, fs: m, filename: name}, nil
-}
-
 func (m *MockFS) OpenFile(name string, flag int, perm os.FileMode) (fs.File, error) {
 	f, err := m.FS.OpenFile(name, flag, perm)
 	if err != nil {
@@ -2059,14 +2050,6 @@ type TrackFS struct {
 
 	opened map[string]uint
 	m      sync.Mutex
-}
-
-func (m *TrackFS) Open(name string) (fs.File, error) {
-	m.m.Lock()
-	m.opened[name]++
-	m.m.Unlock()
-
-	return m.FS.Open(name)
 }
 
 func (m *TrackFS) OpenFile(name string, flag int, perm os.FileMode) (fs.File, error) {

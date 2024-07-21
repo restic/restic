@@ -15,27 +15,6 @@ import (
 	"github.com/restic/restic/internal/test"
 )
 
-func verifyFileContentOpen(t testing.TB, fs FS, filename string, want []byte) {
-	f, err := fs.Open(filename)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	buf, err := io.ReadAll(f)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = f.Close()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if !cmp.Equal(want, buf) {
-		t.Error(cmp.Diff(want, buf))
-	}
-}
-
 func verifyFileContentOpenFile(t testing.TB, fs FS, filename string, want []byte) {
 	f, err := fs.OpenFile(filename, O_RDONLY, 0)
 	if err != nil {
@@ -58,7 +37,7 @@ func verifyFileContentOpenFile(t testing.TB, fs FS, filename string, want []byte
 }
 
 func verifyDirectoryContents(t testing.TB, fs FS, dir string, want []string) {
-	f, err := fs.Open(dir)
+	f, err := fs.OpenFile(dir, os.O_RDONLY, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -96,7 +75,7 @@ func (s fiSlice) Swap(i, j int) {
 }
 
 func verifyDirectoryContentsFI(t testing.TB, fs FS, dir string, want []os.FileInfo) {
-	f, err := fs.Open(dir)
+	f, err := fs.OpenFile(dir, os.O_RDONLY, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -220,12 +199,6 @@ func TestFSReader(t *testing.T) {
 			},
 		},
 		{
-			name: "file/Open",
-			f: func(t *testing.T, fs FS) {
-				verifyFileContentOpen(t, fs, filename, data)
-			},
-		},
-		{
 			name: "file/OpenFile",
 			f: func(t *testing.T, fs FS) {
 				verifyFileContentOpenFile(t, fs, filename, data)
@@ -245,7 +218,7 @@ func TestFSReader(t *testing.T) {
 		{
 			name: "file/Stat",
 			f: func(t *testing.T, fs FS) {
-				f, err := fs.Open(filename)
+				f, err := fs.OpenFile(filename, os.O_RDONLY, 0)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -417,7 +390,7 @@ func TestFSReaderMinFileSize(t *testing.T) {
 				AllowEmptyFile: test.allowEmpty,
 			}
 
-			f, err := fs.Open("testfile")
+			f, err := fs.OpenFile("testfile", os.O_RDONLY, 0)
 			if err != nil {
 				t.Fatal(err)
 			}

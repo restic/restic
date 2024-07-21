@@ -72,7 +72,7 @@ func TestFileSaver(t *testing.T) {
 	var results []FutureNode
 
 	for _, filename := range files {
-		f, err := testFs.Open(filename)
+		f, err := testFs.OpenFile(filename, os.O_RDONLY, 0)
 		if err != nil {
 			t.Fatal(err)
 		}

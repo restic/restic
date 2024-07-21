@@ -7,7 +7,6 @@ import (
 
 // FS bundles all methods needed for a file system.
 type FS interface {
-	Open(name string) (File, error)
 	OpenFile(name string, flag int, perm os.FileMode) (File, error)
 	Stat(name string) (os.FileInfo, error)
 	Lstat(name string) (os.FileInfo, error)

@@ -39,29 +39,6 @@ func (fs *Reader) VolumeName(_ string) string {
 	return ""
 }
 
-// Open opens a file for reading.
-func (fs *Reader) Open(name string) (f File, err error) {
-	switch name {
-	case fs.Name:
-		fs.open.Do(func() {
-			f = newReaderFile(fs.ReadCloser, fs.fi(), fs.AllowEmptyFile)
-		})
-
-		if f == nil {
-			return nil, pathError("open", name, syscall.EIO)
-		}
-
-		return f, nil
-	case "/", ".":
-		f = fakeDir{
-			entries: []os.FileInfo{fs.fi()},
-		}
-		return f, nil
-	}
-
-	return nil, pathError("open", name, syscall.ENOENT)
-}
-
 func (fs *Reader) fi() os.FileInfo {
 	return fakeFileInfo{
 		name:    fs.Name,
@@ -82,15 +59,25 @@ func (fs *Reader) OpenFile(name string, flag int, _ os.FileMode) (f File, err er
 			fmt.Errorf("invalid combination of flags 0x%x", flag))
 	}
 
-	fs.open.Do(func() {
-		f = newReaderFile(fs.ReadCloser, fs.fi(), fs.AllowEmptyFile)
-	})
+	switch name {
+	case fs.Name:
+		fs.open.Do(func() {
+			f = newReaderFile(fs.ReadCloser, fs.fi(), fs.AllowEmptyFile)
+		})
 
-	if f == nil {
-		return nil, pathError("open", name, syscall.EIO)
+		if f == nil {
+			return nil, pathError("open", name, syscall.EIO)
+		}
+
+		return f, nil
+	case "/", ".":
+		f = fakeDir{
+			entries: []os.FileInfo{fs.fi()},
+		}
+		return f, nil
 	}
 
-	return f, nil
+	return nil, pathError("open", name, syscall.ENOENT)
 }
 
 // Stat returns a FileInfo describing the named file. If there is an error, it
