@@ -35,8 +35,8 @@ func nodeFillExtendedAttributes(_ *restic.Node, _ string, _ bool) error {
 	return nil
 }
 
-// IsListxattrPermissionError is a no-op on AIX.
-func IsListxattrPermissionError(_ error) bool {
+// isListxattrPermissionError is a no-op on AIX.
+func isListxattrPermissionError(_ error) bool {
 	return false
 }
 

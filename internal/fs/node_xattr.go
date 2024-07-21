@@ -28,7 +28,7 @@ func listxattr(path string) ([]string, error) {
 	return l, handleXattrErr(err)
 }
 
-func IsListxattrPermissionError(err error) bool {
+func isListxattrPermissionError(err error) bool {
 	var xerr *xattr.Error
 	if errors.As(err, &xerr) {
 		return xerr.Op == "xattr.list" && errors.Is(xerr.Err, os.ErrPermission)
@@ -106,7 +106,7 @@ func nodeFillExtendedAttributes(node *restic.Node, path string, ignoreListError 
 	xattrs, err := listxattr(path)
 	debug.Log("fillExtendedAttributes(%v) %v %v", path, xattrs, err)
 	if err != nil {
-		if ignoreListError && IsListxattrPermissionError(err) {
+		if ignoreListError && isListxattrPermissionError(err) {
 			return nil
 		}
 		return err

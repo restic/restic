@@ -25,8 +25,8 @@ func nodeFillExtendedAttributes(_ *restic.Node, _ string, _ bool) error {
 	return nil
 }
 
-// IsListxattrPermissionError is a no-op on openbsd.
-func IsListxattrPermissionError(_ error) bool {
+// isListxattrPermissionError is a no-op on openbsd.
+func isListxattrPermissionError(_ error) bool {
 	return false
 }
 
