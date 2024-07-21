@@ -138,6 +138,8 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 				restoredBlobs = true
 			} else {
 				r.reportBlobProgress(file, uint64(blob.DataLength()))
+				// completely ignore blob
+				return
 			}
 			pack, ok := packs[packID]
 			if !ok {
