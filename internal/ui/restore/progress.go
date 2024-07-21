@@ -51,6 +51,7 @@ const (
 	ActionFileRestored  ItemAction = "file restored"
 	ActionFileUpdated   ItemAction = "file updated"
 	ActionFileUnchanged ItemAction = "file unchanged"
+	ActionOtherRestored ItemAction = "other restored"
 	ActionDeleted       ItemAction = "deleted"
 )
 

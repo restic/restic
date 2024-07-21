@@ -52,6 +52,8 @@ func (t *jsonPrinter) CompleteItem(messageType ItemAction, item string, size uin
 		action = "restored"
 	case ActionFileRestored:
 		action = "restored"
+	case ActionOtherRestored:
+		action = "restored"
 	case ActionFileUpdated:
 		action = "updated"
 	case ActionFileUnchanged:

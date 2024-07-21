@@ -278,7 +278,7 @@ func (res *Restorer) restoreNodeTo(ctx context.Context, node *restic.Node, targe
 		}
 	}
 
-	res.opts.Progress.AddProgress(location, restoreui.ActionFileRestored, 0, 0)
+	res.opts.Progress.AddProgress(location, restoreui.ActionOtherRestored, 0, 0)
 	return res.restoreNodeMetadataTo(node, target, location)
 }
 
@@ -305,7 +305,7 @@ func (res *Restorer) restoreHardlinkAt(node *restic.Node, target, path, location
 		}
 	}
 
-	res.opts.Progress.AddProgress(location, restoreui.ActionFileRestored, 0, 0)
+	res.opts.Progress.AddProgress(location, restoreui.ActionOtherRestored, 0, 0)
 	// TODO investigate if hardlinks have separate metadata on any supported system
 	return res.restoreNodeMetadataTo(node, path, location)
 }

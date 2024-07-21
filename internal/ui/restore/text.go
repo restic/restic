@@ -44,6 +44,8 @@ func (t *textPrinter) CompleteItem(messageType ItemAction, item string, size uin
 		action = "restored"
 	case ActionFileRestored:
 		action = "restored"
+	case ActionOtherRestored:
+		action = "restored"
 	case ActionFileUpdated:
 		action = "updated"
 	case ActionFileUnchanged:
@@ -54,7 +56,7 @@ func (t *textPrinter) CompleteItem(messageType ItemAction, item string, size uin
 		panic("unknown message type")
 	}
 
-	if messageType == ActionDirRestored || messageType == ActionDeleted {
+	if messageType == ActionDirRestored || messageType == ActionOtherRestored || messageType == ActionDeleted {
 		t.terminal.Print(fmt.Sprintf("%-9v %v", action, item))
 	} else {
 		t.terminal.Print(fmt.Sprintf("%-9v %v with size %v", action, item, ui.FormatBytes(size)))
