@@ -10,7 +10,6 @@ import (
 
 	"github.com/restic/restic/internal/backend/cache"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/ui"
 	"github.com/restic/restic/internal/ui/table"
 	"github.com/spf13/cobra"
@@ -89,7 +88,7 @@ func runCache(opts CacheOptions, gopts GlobalOptions, args []string) error {
 
 		for _, item := range oldDirs {
 			dir := filepath.Join(cachedir, item.Name())
-			err = fs.RemoveAll(dir)
+			err = os.RemoveAll(dir)
 			if err != nil {
 				Warnf("unable to remove %v: %v\n", dir, err)
 			}

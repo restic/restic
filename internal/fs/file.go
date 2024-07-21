@@ -88,15 +88,6 @@ func OpenFile(name string, flag int, perm os.FileMode) (*os.File, error) {
 	return os.OpenFile(fixpath(name), flag, perm)
 }
 
-// Chtimes changes the access and modification times of the named file,
-// similar to the Unix utime() or utimes() functions.
-//
-// The underlying filesystem may truncate or round the values to a less
-// precise time unit. If there is an error, it will be of type *PathError.
-func Chtimes(name string, atime time.Time, mtime time.Time) error {
-	return os.Chtimes(fixpath(name), atime, mtime)
-}
-
 // IsAccessDenied checks if the error is due to permission error.
 func IsAccessDenied(err error) bool {
 	return os.IsPermission(err)
