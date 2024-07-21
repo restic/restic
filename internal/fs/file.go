@@ -3,7 +3,6 @@ package fs
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 )
 
@@ -75,15 +74,6 @@ func Lstat(name string) (os.FileInfo, error) {
 	return os.Lstat(fixpath(name))
 }
 
-// Create creates the named file with mode 0666 (before umask), truncating
-// it if it already exists. If successful, methods on the returned
-// File can be used for I/O; the associated file descriptor has mode
-// O_RDWR.
-// If there is an error, it will be of type *PathError.
-func Create(name string) (*os.File, error) {
-	return os.Create(fixpath(name))
-}
-
 // Open opens a file for reading.
 func Open(name string) (File, error) {
 	return os.Open(fixpath(name))
@@ -96,16 +86,6 @@ func Open(name string) (File, error) {
 // If there is an error, it will be of type *PathError.
 func OpenFile(name string, flag int, perm os.FileMode) (*os.File, error) {
 	return os.OpenFile(fixpath(name), flag, perm)
-}
-
-// Walk walks the file tree rooted at root, calling walkFn for each file or
-// directory in the tree, including root. All errors that arise visiting files
-// and directories are filtered by walkFn. The files are walked in lexical
-// order, which makes the output deterministic but means that for very
-// large directories Walk can be inefficient.
-// Walk does not follow symbolic links.
-func Walk(root string, walkFn filepath.WalkFunc) error {
-	return filepath.Walk(fixpath(root), walkFn)
 }
 
 // RemoveIfExists removes a file, returning no error if it does not exist.
