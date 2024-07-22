@@ -1,7 +1,7 @@
-Enhancement: Add --target flag to the dump command
+Enhancement: Add `--target` option to the `dump` command
 
-Restic `dump` always printed to the standard output. It now permits to select a
-`--target` file to write the output to.
+Restic `dump` always printed to the standard output. It now supports specifying
+a `--target` file to write its output to.
 
 https://github.com/restic/restic/issues/4678
 https://github.com/restic/restic/pull/4682

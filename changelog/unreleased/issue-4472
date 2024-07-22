@@ -1,11 +1,11 @@
-Enhancement: Allow AWS Assume Role to be used for S3 backend
+Enhancement: Support AWS Assume Role for S3 backend
 
 Previously only credentials discovered via the Minio discovery methods
 were used to authenticate.
 
 However, there are many circumstances where the discovered credentials have
 lower permissions and need to assume a specific role. This is now possible
-using the following new environment variables.
+using the following new environment variables:
 
 - RESTIC_AWS_ASSUME_ROLE_ARN
 - RESTIC_AWS_ASSUME_ROLE_SESSION_NAME
