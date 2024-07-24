@@ -239,7 +239,7 @@ By default, restic always creates a new snapshot even if nothing has changed
 compared to the parent snapshot. To omit the creation of a new snapshot in this
 case, specify the ``--skip-if-unchanged`` option.
 
-Note that when using absolute paths to specify the backup target, then also
+Note that when using absolute paths to specify the backup source, then also
 changes to the parent folders result in a changed snapshot. For example, a backup
 of ``/home/user/work`` will create a new snapshot if the metadata of either
 ``/``, ``/home`` or ``/home/user`` change. To avoid this problem run restic from

@@ -1,7 +1,7 @@
 Enhancement: Support `--group-by` for backup parent selection
 
 Previously, the `backup` command by default selected the parent snapshot based
-on the hostname and the backup targets. When the backup path list changed, the
+on the hostname and the backup paths. When the backup path list changed, the
 `backup` command was unable to determine a suitable parent snapshot and had to
 read all files again.
 

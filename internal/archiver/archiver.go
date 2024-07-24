@@ -634,7 +634,7 @@ func (arch *Archiver) saveTree(ctx context.Context, snPath string, atree *Tree, 
 		}
 
 		debug.Log("%v, dir node data loaded from %v", snPath, atree.FileInfoPath)
-		// in some cases reading xattrs for directories above the backup target is not allowed
+		// in some cases reading xattrs for directories above the backup source is not allowed
 		// thus ignore errors for such folders.
 		node, err = arch.nodeFromFileInfo(snPath, atree.FileInfoPath, fi, true)
 		if err != nil {
