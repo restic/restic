@@ -1,4 +1,4 @@
-Enhancement: Support reading backup from a commands's standard output
+Enhancement: Support reading backup from a command's standard output
 
 The `backup` command now supports the `--stdin-from-command` option. When using
 this option, the arguments to `backup` are interpreted as a command instead of

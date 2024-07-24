@@ -1,4 +1,4 @@
-Enhancement: Improve `repair packs` command
+Enhancement: Improve features of the `repair packs` command
 
 The `repair packs` command has been improved to also be able to process
 truncated pack files. The `check` and `check --read-data` command will provide
