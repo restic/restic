@@ -603,7 +603,7 @@ restic users. The changes are ordered by importance.
  * Enhancement #3941: Support `--group-by` for backup parent selection
 
    Previously, the `backup` command by default selected the parent snapshot based on the
-   hostname and the backup targets. When the backup path list changed, the `backup` command was
+   hostname and the backup paths. When the backup path list changed, the `backup` command was
    unable to determine a suitable parent snapshot and had to read all files again.
 
    The new `--group-by` option for the `backup` command allows filtering snapshots for the
@@ -2575,10 +2575,10 @@ restic users. The changes are ordered by importance.
    https://github.com/restic/restic/issues/3166
    https://github.com/restic/restic/pull/3207
 
- * Bugfix #3232: Correct statistics for overlapping targets
+ * Bugfix #3232: Correct statistics for overlapping backup sources
 
    A user reported that restic's statistics and progress information during backup was not
-   correctly calculated when the backup targets (files/dirs to save) overlap. For example,
+   correctly calculated when the backup sources (files/dirs to save) overlap. For example,
    consider a directory `foo` which contains (among others) a file `foo/bar`. When `restic
    backup foo foo/bar` was run, restic counted the size of the file `foo/bar` twice, so the
    completeness percentage as well as the number of files was wrong. This is now corrected.

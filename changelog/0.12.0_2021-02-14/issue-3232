@@ -1,7 +1,7 @@
-Bugfix: Correct statistics for overlapping targets
+Bugfix: Correct statistics for overlapping backup sources
 
 A user reported that restic's statistics and progress information during backup
-was not correctly calculated when the backup targets (files/dirs to save)
+was not correctly calculated when the backup sources (files/dirs to save)
 overlap. For example, consider a directory `foo` which contains (among others)
 a file `foo/bar`. When `restic backup foo foo/bar` was run, restic counted the
 size of the file `foo/bar` twice, so the completeness percentage as well as the
