@@ -1,4 +1,4 @@
-Enhancement: Omit snapshot creation if nothing changed
+Enhancement: Optionally skip snapshot creation if nothing changed
 
 The `backup` command always created a snapshot even if nothing in the
 backup set changed compared to the parent snapshot.

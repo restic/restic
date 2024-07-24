@@ -1,7 +1,7 @@
-Bugfix: Handle unreadable xattrs in folders above `backup` target
+Bugfix: Handle unreadable xattrs in folders above `backup` source
 
-When backup targets are specified using absolute paths, `backup` also includes
-information about the parent folders of the backup targets in the snapshot.
+When backup sources are specified using absolute paths, `backup` also includes
+information about the parent folders of the backup sources in the snapshot.
 
 If the extended attributes for some of these folders could not be read due to
 missing permissions, this caused the backup to fail. This has now been fixed.
