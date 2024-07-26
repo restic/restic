@@ -47,7 +47,7 @@ import (
 // to a missing backend storage location or config file
 var ErrNoRepository = errors.New("repository does not exist")
 
-var version = "0.16.5-dev (compiled manually)"
+var version = "0.17.0"
 
 // TimeFormat is the format used for all timestamps printed by restic.
 const TimeFormat = "2006-01-02 15:04:05"
