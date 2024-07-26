@@ -11,6 +11,9 @@ import (
 // to the previous process group.
 //
 // The command's environment has all RESTIC_* variables removed.
+//
+// Return exec.ErrDot if it would implicitly run an executable from the current
+// directory.
 func StartForeground(cmd *exec.Cmd) (bg func() error, err error) {
 	env := os.Environ() // Returns a copy that we can modify.
 
