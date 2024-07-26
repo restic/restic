@@ -584,11 +584,13 @@ Reading data from a command
 Sometimes, it can be useful to directly save the output of a program, for example,
 ``mysqldump`` so that the SQL can later be restored. Restic supports this mode
 of operation; just supply the option ``--stdin-from-command`` when using the
-``backup`` action, and write the command in place of the files/directories:
+``backup`` action, and write the command in place of the files/directories. To prevent
+restic from interpreting the arguments for the commmand, make sure to add ``--`` before
+the command starts:
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo backup --stdin-from-command mysqldump [...]
+    $ restic -r /srv/restic-repo backup --stdin-from-command -- mysqldump --host example mydb [...]
 
 This command creates a new snapshot based on the standard output of ``mysqldump``.
 By default, the command's standard output is saved in a file named ``stdin``.
@@ -596,7 +598,7 @@ A different name can be specified with ``--stdin-filename``:
 
 .. code-block:: console
 
-    $ restic -r /srv/restic-repo backup --stdin-filename production.sql --stdin-from-command mysqldump [...]
+    $ restic -r /srv/restic-repo backup --stdin-filename production.sql --stdin-from-command -- mysqldump --host example mydb [...]
 
 Restic uses the command exit code to determine whether the command succeeded. A
 non-zero exit code from the command causes restic to cancel the backup. This causes
