@@ -88,7 +88,7 @@ func startClient(cfg Config) (*SFTP, error) {
 
 	bg, err := util.StartForeground(cmd)
 	if err != nil {
-		if util.IsErrDot(err) {
+		if errors.Is(err, exec.ErrDot) {
 			return nil, errors.Errorf("cannot implicitly run relative executable %v found in current directory, use -o sftp.command=./<command> to override", cmd.Path)
 		}
 		return nil, err
