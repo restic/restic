@@ -15,7 +15,6 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/klauspost/compress v1.17.9
 	github.com/minio/minio-go/v7 v7.0.74
-	github.com/minio/sha256-simd v1.0.1
 	github.com/ncw/swift/v2 v2.0.2
 	github.com/peterbourgon/unixtransport v0.0.4
 	github.com/pkg/errors v0.9.1
