@@ -3,6 +3,7 @@ package test
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"math/rand"
@@ -12,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/minio/sha256-simd"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
