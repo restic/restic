@@ -21,19 +21,34 @@ The special snapshotID "latest" can be used to restore the latest snapshot in th
 repository.
 
 .PP
-To only restore a specific subfolder, you can use the ":"
+To only restore a specific subfolder, you can use the "snapshotID:subfolder"
 syntax, where "subfolder" is a path within the snapshot.
 
 
 .SH EXIT STATUS
 .PP
-Exit status is 0 if the command was successful, and non-zero if there was any error.
+Exit status is 0 if the command was successful.
+Exit status is 1 if there was any error.
+Exit status is 10 if the repository does not exist.
+Exit status is 11 if the repository is already locked.
 
 
 .SH OPTIONS
 .PP
+\fB--delete\fP[=false]
+	delete files from target directory if they do not exist in snapshot. Use '--dry-run -vv' to check what would be deleted
+
+.PP
+\fB--dry-run\fP[=false]
+	do not write any data, just show what would be done
+
+.PP
 \fB-e\fP, \fB--exclude\fP=[]
 	exclude a \fBpattern\fR (can be specified multiple times)
+
+.PP
+\fB--exclude-file\fP=[]
+	read exclude patterns from a \fBfile\fR (can be specified multiple times)
 
 .PP
 \fB-h\fP, \fB--help\fP[=false]
@@ -41,23 +56,39 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 
 .PP
 \fB-H\fP, \fB--host\fP=[]
-	only consider snapshots for this \fBhost\fR, when snapshot ID "latest" is given (can be specified multiple times)
+	only consider snapshots for this \fBhost\fR, when snapshot ID "latest" is given (can be specified multiple times) (default: $RESTIC_HOST)
 
 .PP
 \fB--iexclude\fP=[]
-	same as --exclude but ignores the casing of \fBpattern\fR
+	same as --exclude \fBpattern\fR but ignores the casing of filenames
+
+.PP
+\fB--iexclude-file\fP=[]
+	same as --exclude-file but ignores casing of \fBfile\fRnames in patterns
 
 .PP
 \fB--iinclude\fP=[]
-	same as --include but ignores the casing of \fBpattern\fR
+	same as --include \fBpattern\fR but ignores the casing of filenames
+
+.PP
+\fB--iinclude-file\fP=[]
+	same as --include-file but ignores casing of \fBfile\fRnames in patterns
 
 .PP
 \fB-i\fP, \fB--include\fP=[]
-	include a \fBpattern\fR, exclude everything else (can be specified multiple times)
+	include a \fBpattern\fR (can be specified multiple times)
+
+.PP
+\fB--include-file\fP=[]
+	read include patterns from a \fBfile\fR (can be specified multiple times)
+
+.PP
+\fB--overwrite\fP=always
+	overwrite behavior, one of (always|if-changed|if-newer|never) (default: always)
 
 .PP
 \fB--path\fP=[]
-	only consider snapshots including this (absolute) \fBpath\fR, when snapshot ID "latest" is given (can be specified multiple times)
+	only consider snapshots including this (absolute) \fBpath\fR, when snapshot ID "latest" is given (can be specified multiple times, snapshots must include all specified paths)
 
 .PP
 \fB--sparse\fP[=false]
@@ -92,6 +123,14 @@ Exit status is 0 if the command was successful, and non-zero if there was any er
 .PP
 \fB--compression\fP=auto
 	compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION)
+
+.PP
+\fB--http-user-agent\fP=""
+	set a http user agent for outgoing http requests
+
+.PP
+\fB--insecure-no-password\fP[=false]
+	use an empty password for the repository, must be passed to every restic command (insecure)
 
 .PP
 \fB--insecure-tls\fP[=false]

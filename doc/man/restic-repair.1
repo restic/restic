@@ -40,6 +40,14 @@ Repair the repository
 	compression mode (only available for repository format version 2), one of (auto|off|max) (default: $RESTIC_COMPRESSION)
 
 .PP
+\fB--http-user-agent\fP=""
+	set a http user agent for outgoing http requests
+
+.PP
+\fB--insecure-no-password\fP[=false]
+	use an empty password for the repository, must be passed to every restic command (insecure)
+
+.PP
 \fB--insecure-tls\fP[=false]
 	skip TLS certificate verification when connecting to the repository (insecure)
 

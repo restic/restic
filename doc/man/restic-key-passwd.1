@@ -3,29 +3,18 @@
 
 .SH NAME
 .PP
-restic-dump - Print a backed-up file to stdout
+restic-key-passwd - Change key (password); creates a new key ID and removes the old key ID, returns new key ID
 
 
 .SH SYNOPSIS
 .PP
-\fBrestic dump [flags] snapshotID file\fP
+\fBrestic key passwd [flags]\fP
 
 
 .SH DESCRIPTION
 .PP
-The "dump" command extracts files from a snapshot from the repository. If a
-single file is selected, it prints its contents to stdout. Folders are output
-as a tar (default) or zip file containing the contents of the specified folder.
-Pass "/" as file name to dump the whole snapshot as an archive file.
-
-.PP
-The special snapshotID "latest" can be used to use the latest snapshot in the
-repository.
-
-.PP
-To include the folder content at the root of the archive, you can use the
-"snapshotID:subfolder" syntax, where "subfolder" is a path within the
-snapshot.
+The "passwd" sub-command creates a new key, validates the key and remove the old key ID.
+Returns the new key ID.
 
 
 .SH EXIT STATUS
@@ -38,28 +27,24 @@ Exit status is 11 if the repository is already locked.
 
 .SH OPTIONS
 .PP
-\fB-a\fP, \fB--archive\fP="tar"
-	set archive \fBformat\fR as "tar" or "zip"
-
-.PP
 \fB-h\fP, \fB--help\fP[=false]
-	help for dump
+	help for passwd
 
 .PP
-\fB-H\fP, \fB--host\fP=[]
-	only consider snapshots for this \fBhost\fR, when snapshot ID "latest" is given (can be specified multiple times) (default: $RESTIC_HOST)
+\fB--host\fP=""
+	the hostname for new key
 
 .PP
-\fB--path\fP=[]
-	only consider snapshots including this (absolute) \fBpath\fR, when snapshot ID "latest" is given (can be specified multiple times, snapshots must include all specified paths)
+\fB--new-insecure-no-password\fP[=false]
+	add an empty password for the repository (insecure)
 
 .PP
-\fB--tag\fP=[]
-	only consider snapshots including \fBtag[,tag,...]\fR, when snapshot ID "latest" is given (can be specified multiple times)
+\fB--new-password-file\fP=""
+	\fBfile\fR from which to read the new password
 
 .PP
-\fB-t\fP, \fB--target\fP=""
-	write the output to target \fBpath\fR
+\fB--user\fP=""
+	the username for new key
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
@@ -162,4 +147,4 @@ Exit status is 11 if the repository is already locked.
 
 .SH SEE ALSO
 .PP
-\fBrestic(1)\fP
+\fBrestic-key(1)\fP

@@ -3,29 +3,19 @@
 
 .SH NAME
 .PP
-restic-dump - Print a backed-up file to stdout
+restic-key-list - List keys (passwords)
 
 
 .SH SYNOPSIS
 .PP
-\fBrestic dump [flags] snapshotID file\fP
+\fBrestic key list [flags]\fP
 
 
 .SH DESCRIPTION
 .PP
-The "dump" command extracts files from a snapshot from the repository. If a
-single file is selected, it prints its contents to stdout. Folders are output
-as a tar (default) or zip file containing the contents of the specified folder.
-Pass "/" as file name to dump the whole snapshot as an archive file.
-
-.PP
-The special snapshotID "latest" can be used to use the latest snapshot in the
-repository.
-
-.PP
-To include the folder content at the root of the archive, you can use the
-"snapshotID:subfolder" syntax, where "subfolder" is a path within the
-snapshot.
+The "list" sub-command lists all the keys (passwords) associated with the repository.
+Returns the key ID, username, hostname, created time and if it's the current key being
+used to access the repository.
 
 
 .SH EXIT STATUS
@@ -38,28 +28,8 @@ Exit status is 11 if the repository is already locked.
 
 .SH OPTIONS
 .PP
-\fB-a\fP, \fB--archive\fP="tar"
-	set archive \fBformat\fR as "tar" or "zip"
-
-.PP
 \fB-h\fP, \fB--help\fP[=false]
-	help for dump
-
-.PP
-\fB-H\fP, \fB--host\fP=[]
-	only consider snapshots for this \fBhost\fR, when snapshot ID "latest" is given (can be specified multiple times) (default: $RESTIC_HOST)
-
-.PP
-\fB--path\fP=[]
-	only consider snapshots including this (absolute) \fBpath\fR, when snapshot ID "latest" is given (can be specified multiple times, snapshots must include all specified paths)
-
-.PP
-\fB--tag\fP=[]
-	only consider snapshots including \fBtag[,tag,...]\fR, when snapshot ID "latest" is given (can be specified multiple times)
-
-.PP
-\fB-t\fP, \fB--target\fP=""
-	write the output to target \fBpath\fR
+	help for list
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
@@ -162,4 +132,4 @@ Exit status is 11 if the repository is already locked.
 
 .SH SEE ALSO
 .PP
-\fBrestic(1)\fP
+\fBrestic-key(1)\fP
