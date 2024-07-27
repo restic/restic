@@ -8,14 +8,15 @@ import (
 )
 
 type textPrinter struct {
-	terminal  term
-	verbosity uint
+	*ui.Message
+
+	terminal ui.Terminal
 }
 
-func NewTextProgress(terminal term, verbosity uint) ProgressPrinter {
+func NewTextProgress(terminal ui.Terminal, verbosity uint) ProgressPrinter {
 	return &textPrinter{
-		terminal:  terminal,
-		verbosity: verbosity,
+		Message:  ui.NewMessage(terminal, verbosity),
+		terminal: terminal,
 	}
 }
 
@@ -33,11 +34,12 @@ func (t *textPrinter) Update(p State, duration time.Duration) {
 	t.terminal.SetStatus([]string{progress})
 }
 
-func (t *textPrinter) CompleteItem(messageType ItemAction, item string, size uint64) {
-	if t.verbosity < 3 {
-		return
-	}
+func (t *textPrinter) Error(item string, err error) error {
+	t.E("ignoring error for %s: %s\n", item, err)
+	return nil
+}
 
+func (t *textPrinter) CompleteItem(messageType ItemAction, item string, size uint64) {
 	var action string
 	switch messageType {
 	case ActionDirRestored:
@@ -57,9 +59,9 @@ func (t *textPrinter) CompleteItem(messageType ItemAction, item string, size uin
 	}
 
 	if messageType == ActionDirRestored || messageType == ActionOtherRestored || messageType == ActionDeleted {
-		t.terminal.Print(fmt.Sprintf("%-9v %v", action, item))
+		t.VV("%-9v %v", action, item)
 	} else {
-		t.terminal.Print(fmt.Sprintf("%-9v %v with size %v", action, item, ui.FormatBytes(size)))
+		t.VV("%-9v %v with size %v", action, item, ui.FormatBytes(size))
 	}
 }
 

@@ -2,19 +2,17 @@ package ui
 
 import (
 	"fmt"
-
-	"github.com/restic/restic/internal/ui/termstatus"
 )
 
 // Message reports progress with messages of different verbosity.
 type Message struct {
-	term *termstatus.Terminal
+	term Terminal
 	v    uint
 }
 
 // NewMessage returns a message progress reporter with underlying terminal
 // term.
-func NewMessage(term *termstatus.Terminal, verbosity uint) *Message {
+func NewMessage(term Terminal, verbosity uint) *Message {
 	return &Message{
 		term: term,
 		v:    verbosity,

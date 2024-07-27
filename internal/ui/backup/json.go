@@ -7,14 +7,13 @@ import (
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui"
-	"github.com/restic/restic/internal/ui/termstatus"
 )
 
 // JSONProgress reports progress for the `backup` command in JSON.
 type JSONProgress struct {
 	*ui.Message
 
-	term *termstatus.Terminal
+	term ui.Terminal
 	v    uint
 }
 
@@ -22,7 +21,7 @@ type JSONProgress struct {
 var _ ProgressPrinter = &JSONProgress{}
 
 // NewJSONProgress returns a new backup progress reporter.
-func NewJSONProgress(term *termstatus.Terminal, verbosity uint) *JSONProgress {
+func NewJSONProgress(term ui.Terminal, verbosity uint) *JSONProgress {
 	return &JSONProgress{
 		Message: ui.NewMessage(term, verbosity),
 		term:    term,

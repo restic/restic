@@ -1,0 +1,8 @@
+Bugfix: Include missing backup error text with `--json`
+
+Restic was not actually providing the text of an error message during
+backup if `--json` was passed, instead only printing `"error": {}`.
+Restic now includes the error text in JSON output.
+
+https://github.com/restic/restic/issues/4945
+https://github.com/restic/restic/pull/4946

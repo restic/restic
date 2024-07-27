@@ -15,7 +15,7 @@ import (
 type TextProgress struct {
 	*ui.Message
 
-	term      *termstatus.Terminal
+	term      ui.Terminal
 	verbosity uint
 }
 
@@ -23,7 +23,7 @@ type TextProgress struct {
 var _ ProgressPrinter = &TextProgress{}
 
 // NewTextProgress returns a new backup progress reporter.
-func NewTextProgress(term *termstatus.Terminal, verbosity uint) *TextProgress {
+func NewTextProgress(term ui.Terminal, verbosity uint) *TextProgress {
 	return &TextProgress{
 		Message:   ui.NewMessage(term, verbosity),
 		term:      term,
