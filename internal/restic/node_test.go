@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/test"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -381,4 +382,15 @@ func TestSymlinkSerializationFormat(t *testing.T) {
 		test.Equals(t, d.linkTarget, n2.LinkTarget)
 		test.Assert(t, n2.LinkTargetRaw == nil, "quoted link target is just a helper field and must be unset after decoding")
 	}
+}
+
+func TestNodeRestoreMetadataError(t *testing.T) {
+	tempdir := t.TempDir()
+
+	node := nodeTests[0]
+	nodePath := filepath.Join(tempdir, node.Name)
+
+	// This will fail because the target file does not exist
+	err := node.RestoreMetadata(nodePath, func(msg string) { rtest.OK(t, fmt.Errorf("Warning triggered for path: %s: %s", nodePath, msg)) })
+	test.Assert(t, errors.Is(err, os.ErrNotExist), "failed for an unexpected reason")
 }
