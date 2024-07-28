@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -102,6 +103,30 @@ func tweakGoGC() {
 	}
 }
 
+func printExitError(code int, message string) {
+	if globalOptions.JSON {
+		type jsonExitError struct {
+			MessageType string `json:"message_type"` // exit_error
+			Code        int    `json:"code"`
+			Message     string `json:"message"`
+		}
+
+		jsonS := jsonExitError{
+			MessageType: "exit_error",
+			Code:        code,
+			Message:     message,
+		}
+
+		err := json.NewEncoder(globalOptions.stderr).Encode(jsonS)
+		if err != nil {
+			Warnf("JSON encode failed: %v\n", err)
+			return
+		}
+	} else {
+		fmt.Fprintf(globalOptions.stderr, "%v\n", message)
+	}
+}
+
 func main() {
 	tweakGoGC()
 	// install custom global logger into a buffer, if an error occurs
@@ -131,21 +156,22 @@ func main() {
 		err = nil
 	}
 
+	var exitMessage string
 	switch {
 	case restic.IsAlreadyLocked(err):
-		fmt.Fprintf(os.Stderr, "%v\nthe `unlock` command can be used to remove stale locks\n", err)
+		exitMessage = fmt.Sprintf("%v\nthe `unlock` command can be used to remove stale locks", err)
 	case err == ErrInvalidSourceData:
-		fmt.Fprintf(os.Stderr, "Warning: %v\n", err)
+		exitMessage = fmt.Sprintf("Warning: %v", err)
 	case errors.IsFatal(err):
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+		exitMessage = err.Error()
 	case err != nil:
-		fmt.Fprintf(os.Stderr, "%+v\n", err)
+		exitMessage = fmt.Sprintf("%+v", err)
 
 		if logBuffer.Len() > 0 {
-			fmt.Fprintf(os.Stderr, "also, the following messages were logged by a library:\n")
+			exitMessage += "also, the following messages were logged by a library:\n"
 			sc := bufio.NewScanner(logBuffer)
 			for sc.Scan() {
-				fmt.Fprintln(os.Stderr, sc.Text())
+				exitMessage += fmt.Sprintln(sc.Text())
 			}
 		}
 	}
@@ -164,6 +190,10 @@ func main() {
 		exitCode = 130
 	default:
 		exitCode = 1
+	}
+
+	if exitCode != 0 {
+		printExitError(exitCode, exitMessage)
 	}
 	Exit(exitCode)
 }
