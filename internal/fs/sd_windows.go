@@ -129,22 +129,22 @@ func SetSecurityDescriptor(filePath string, securityDescriptor *[]byte) error {
 
 // getNamedSecurityInfoHigh gets the higher level SecurityDescriptor which requires admin permissions.
 func getNamedSecurityInfoHigh(filePath string) (*windows.SECURITY_DESCRIPTOR, error) {
-	return windows.GetNamedSecurityInfo(filePath, windows.SE_FILE_OBJECT, highSecurityFlags)
+	return windows.GetNamedSecurityInfo(fixpath(filePath), windows.SE_FILE_OBJECT, highSecurityFlags)
 }
 
 // getNamedSecurityInfoLow gets the lower level SecurityDescriptor which requires no admin permissions.
 func getNamedSecurityInfoLow(filePath string) (*windows.SECURITY_DESCRIPTOR, error) {
-	return windows.GetNamedSecurityInfo(filePath, windows.SE_FILE_OBJECT, lowBackupSecurityFlags)
+	return windows.GetNamedSecurityInfo(fixpath(filePath), windows.SE_FILE_OBJECT, lowBackupSecurityFlags)
 }
 
 // setNamedSecurityInfoHigh sets the higher level SecurityDescriptor which requires admin permissions.
 func setNamedSecurityInfoHigh(filePath string, owner *windows.SID, group *windows.SID, dacl *windows.ACL, sacl *windows.ACL) error {
-	return windows.SetNamedSecurityInfo(filePath, windows.SE_FILE_OBJECT, highSecurityFlags, owner, group, dacl, sacl)
+	return windows.SetNamedSecurityInfo(fixpath(filePath), windows.SE_FILE_OBJECT, highSecurityFlags, owner, group, dacl, sacl)
 }
 
 // setNamedSecurityInfoLow sets the lower level SecurityDescriptor which requires no admin permissions.
 func setNamedSecurityInfoLow(filePath string, dacl *windows.ACL) error {
-	return windows.SetNamedSecurityInfo(filePath, windows.SE_FILE_OBJECT, lowRestoreSecurityFlags, nil, nil, dacl, nil)
+	return windows.SetNamedSecurityInfo(fixpath(filePath), windows.SE_FILE_OBJECT, lowRestoreSecurityFlags, nil, nil, dacl, nil)
 }
 
 // enableBackupPrivilege enables privilege for backing up security descriptors

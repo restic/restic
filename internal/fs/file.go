@@ -134,7 +134,7 @@ func IsAccessDenied(err error) bool {
 // ResetPermissions resets the permissions of the file at the specified path
 func ResetPermissions(path string) error {
 	// Set the default file permissions
-	if err := os.Chmod(path, 0600); err != nil {
+	if err := os.Chmod(fixpath(path), 0600); err != nil {
 		return err
 	}
 	return nil
