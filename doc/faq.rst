@@ -90,7 +90,7 @@ The error here is that the tilde ``~`` in ``"~/documents"`` didn't get expanded 
     /home/john/documents
 
     $ echo "~/documents"
-    ~/document
+    ~/documents
 
     $ echo "$HOME/documents"
     /home/john/documents
