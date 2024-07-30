@@ -43,6 +43,7 @@ Exit status is 1 if there was a fatal error (no snapshot created).
 Exit status is 3 if some source data could not be read (incomplete snapshot created).
 Exit status is 10 if the repository does not exist.
 Exit status is 11 if the repository is already locked.
+Exit status is 12 if the password is incorrect.
 `,
 	PreRun: func(_ *cobra.Command, _ []string) {
 		if backupOptions.Host == "" {
