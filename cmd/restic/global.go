@@ -493,7 +493,7 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 		}
 	}
 	if err != nil {
-		if errors.IsFatal(err) {
+		if errors.IsFatal(err) || errors.Is(err, repository.ErrNoKeyFound) {
 			return nil, err
 		}
 		return nil, errors.Fatalf("%s", err)
