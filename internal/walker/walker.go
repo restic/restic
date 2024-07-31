@@ -57,6 +57,10 @@ func walk(ctx context.Context, repo restic.BlobLoader, prefix string, parentTree
 	})
 
 	for _, node := range tree.Nodes {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
 		p := path.Join(prefix, node.Name)
 
 		if node.Type == "" {

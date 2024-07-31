@@ -85,6 +85,10 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.BlobLoade
 	item := filepath.Join(prefix, pathComponents[0])
 	l := len(pathComponents)
 	for _, node := range tree.Nodes {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
 		// If dumping something in the highest level it will just take the
 		// first item it finds and dump that according to the switch case below.
 		if node.Name == pathComponents[0] {

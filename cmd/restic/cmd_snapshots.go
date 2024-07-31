@@ -81,6 +81,10 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions
 	}
 
 	for k, list := range snapshotGroups {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
 		if opts.Last {
 			// This branch should be removed in the same time
 			// that --last.
@@ -101,6 +105,10 @@ func runSnapshots(ctx context.Context, opts SnapshotOptions, gopts GlobalOptions
 	}
 
 	for k, list := range snapshotGroups {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
 		if grouped {
 			err := PrintSnapshotGroupHeader(globalOptions.stdout, k)
 			if err != nil {

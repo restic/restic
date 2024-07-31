@@ -95,6 +95,10 @@ func checkPackInner(ctx context.Context, r *Repository, id restic.ID, blobs []re
 
 		it := newPackBlobIterator(id, newBufReader(bufRd), 0, blobs, r.Key(), dec)
 		for {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+
 			val, err := it.Next()
 			if err == errPackEOF {
 				break

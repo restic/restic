@@ -177,6 +177,10 @@ func (c *Comparer) printDir(ctx context.Context, mode string, stats *DiffStat, b
 	}
 
 	for _, node := range tree.Nodes {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
 		name := path.Join(prefix, node.Name)
 		if node.Type == "dir" {
 			name += "/"
@@ -204,6 +208,10 @@ func (c *Comparer) collectDir(ctx context.Context, blobs restic.BlobSet, id rest
 	}
 
 	for _, node := range tree.Nodes {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
 		addBlobs(blobs, node)
 
 		if node.Type == "dir" {
@@ -255,6 +263,10 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 	tree1Nodes, tree2Nodes, names := uniqueNodeNames(tree1, tree2)
 
 	for _, name := range names {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
 		node1, t1 := tree1Nodes[name]
 		node2, t2 := tree2Nodes[name]
 

@@ -107,6 +107,10 @@ func (d *dir) open(ctx context.Context) error {
 	}
 	items := make(map[string]*restic.Node)
 	for _, n := range tree.Nodes {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
 		nodes, err := replaceSpecialNodes(ctx, d.root.repo, n)
 		if err != nil {
 			debug.Log("  replaceSpecialNodes(%v) failed: %v", n, err)
@@ -171,6 +175,10 @@ func (d *dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	})
 
 	for _, node := range d.items {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+
 		name := cleanupNodeName(node.Name)
 		var typ fuse.DirentType
 		switch node.Type {

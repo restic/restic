@@ -246,6 +246,10 @@ func runForget(ctx context.Context, opts ForgetOptions, pruneOptions PruneOption
 		printer.P("Applying Policy: %v\n", policy)
 
 		for k, snapshotGroup := range snapshotGroups {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+
 			if gopts.Verbose >= 1 && !gopts.JSON {
 				err = PrintSnapshotGroupHeader(globalOptions.stdout, k)
 				if err != nil {

@@ -118,6 +118,10 @@ func runRecover(ctx context.Context, gopts GlobalOptions) error {
 		return nil
 	}
 
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
 	tree := restic.NewTree(len(roots))
 	for id := range roots {
 		var subtreeID = id

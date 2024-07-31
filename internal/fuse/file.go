@@ -66,12 +66,16 @@ func (f *file) Attr(_ context.Context, a *fuse.Attr) error {
 
 }
 
-func (f *file) Open(_ context.Context, _ *fuse.OpenRequest, _ *fuse.OpenResponse) (fs.Handle, error) {
+func (f *file) Open(ctx context.Context, _ *fuse.OpenRequest, _ *fuse.OpenResponse) (fs.Handle, error) {
 	debug.Log("open file %v with %d blobs", f.node.Name, len(f.node.Content))
 
 	var bytes uint64
 	cumsize := make([]uint64, 1+len(f.node.Content))
 	for i, id := range f.node.Content {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+
 		size, found := f.root.repo.LookupBlobSize(restic.DataBlob, id)
 		if !found {
 			return nil, errors.Errorf("id %v not found in repository", id)

@@ -122,6 +122,10 @@ func (r *fileRestorer) restoreFiles(ctx context.Context) error {
 
 	// create packInfo from fileInfo
 	for _, file := range r.files {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
 		fileBlobs := file.blobs.(restic.IDs)
 		largeFile := len(fileBlobs) > largeFileBlobCount
 		var packsMap map[restic.ID][]fileBlobInfo
