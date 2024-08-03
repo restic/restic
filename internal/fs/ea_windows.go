@@ -53,6 +53,15 @@ var (
 	errInvalidEaBuffer = errors.New("invalid extended attribute buffer")
 	errEaNameTooLarge  = errors.New("extended attribute name too large")
 	errEaValueTooLarge = errors.New("extended attribute value too large")
+
+	kernel32dll = syscall.NewLazyDLL("kernel32.dll")
+
+	procGetVolumeInformationW = kernel32dll.NewProc("GetVolumeInformationW")
+)
+
+const (
+	// fileSupportsExtendedAttributes is a bitmask that indicates whether the file system supports extended attributes.
+	fileSupportsExtendedAttributes = 0x00000004
 )
 
 // ExtendedAttribute represents a single Windows EA.
@@ -282,4 +291,35 @@ func setFileEA(handle windows.Handle, iosb *ioStatusBlock, buf *uint8, bufLen ui
 	r0, _, _ := syscall.SyscallN(procNtSetEaFile.Addr(), uintptr(handle), uintptr(unsafe.Pointer(iosb)), uintptr(unsafe.Pointer(buf)), uintptr(bufLen))
 	status = ntStatus(r0)
 	return
+}
+
+// PathSupportsExtendedAttributes returns true if the path supports extended attributes.
+func PathSupportsExtendedAttributes(path string) (bool, error) {
+	var (
+		volumeName      [syscall.MAX_PATH + 1]uint16
+		fsName          [syscall.MAX_PATH + 1]uint16
+		volumeSerial    uint32
+		maxComponentLen uint32
+		fileSystemFlags uint32
+	)
+	utf16Path, err := windows.UTF16PtrFromString(path)
+	if err != nil {
+		return false, err
+	}
+	ret, _, err := procGetVolumeInformationW.Call(
+		uintptr(unsafe.Pointer(utf16Path)),
+		uintptr(unsafe.Pointer(&volumeName[0])),
+		uintptr(len(volumeName)),
+		uintptr(unsafe.Pointer(&volumeSerial)),
+		uintptr(unsafe.Pointer(&maxComponentLen)),
+		uintptr(unsafe.Pointer(&fileSystemFlags)),
+		uintptr(unsafe.Pointer(&fsName[0])),
+		uintptr(len(fsName)),
+	)
+	if ret == 0 {
+		return false, err
+	}
+
+	supportsEAs := (fileSystemFlags & fileSupportsExtendedAttributes) != 0
+	return supportsEAs, nil
 }

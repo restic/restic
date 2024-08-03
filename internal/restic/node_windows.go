@@ -32,6 +32,9 @@ var (
 	modAdvapi32     = syscall.NewLazyDLL("advapi32.dll")
 	procEncryptFile = modAdvapi32.NewProc("EncryptFileW")
 	procDecryptFile = modAdvapi32.NewProc("DecryptFileW")
+
+	// eaUnsupportedVolumesMap is a map of volumes that do not support extended attributes.
+	eaUnsupportedVolumesMap = map[string]bool{}
 )
 
 // mknod is not supported on Windows.
@@ -358,7 +361,20 @@ func (node *Node) fillGenericAttributes(path string, fi os.FileInfo, stat *statT
 		// Also do not allow processing of extended attributes for ADS.
 		return false, nil
 	}
-	if !strings.HasSuffix(filepath.Clean(path), `\`) {
+	if strings.HasSuffix(filepath.Clean(path), `\`) {
+		// This path is a volume
+		supportsEAs, err := fs.PathSupportsExtendedAttributes(path)
+		if err != nil {
+			return false, err
+		}
+		if supportsEAs {
+			delete(eaUnsupportedVolumesMap, filepath.VolumeName(path))
+		} else {
+			// Add the volume to the map of volumes that do not support extended attributes.
+			eaUnsupportedVolumesMap[filepath.VolumeName(path)] = true
+		}
+		return supportsEAs, nil
+	} else {
 		// Do not process file attributes and created time for windows directories like
 		// C:, D:
 		// Filepath.Clean(path) ends with '\' for Windows root drives only.
@@ -375,8 +391,8 @@ func (node *Node) fillGenericAttributes(path string, fi os.FileInfo, stat *statT
 			FileAttributes:     &stat.FileAttributes,
 			SecurityDescriptor: sd,
 		})
+		return !eaUnsupportedVolumesMap[filepath.VolumeName(path)], err
 	}
-	return true, err
 }
 
 // windowsAttrsToGenericAttributes converts the WindowsAttributes to a generic attributes map using reflection
