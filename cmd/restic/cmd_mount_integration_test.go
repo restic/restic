@@ -13,6 +13,7 @@ import (
 	"time"
 
 	systemFuse "github.com/anacrolix/fuse"
+	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
 )
@@ -203,6 +204,11 @@ func TestMount(t *testing.T) {
 func TestMountSameTimestamps(t *testing.T) {
 	if !rtest.RunFuseTest {
 		t.Skip("Skipping fuse tests")
+	}
+
+	debugEnabled := debug.TestLogToStderr(t)
+	if debugEnabled {
+		defer debug.TestDisableLog(t)
 	}
 
 	env, cleanup := withTestEnvironment(t)
