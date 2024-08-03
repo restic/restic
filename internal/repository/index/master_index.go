@@ -456,6 +456,9 @@ func (mi *MasterIndex) Rewrite(ctx context.Context, repo restic.Unpacked, exclud
 	worker := func() error {
 		for idx := range saveCh {
 			idx.Finalize()
+			if len(idx.packs) == 0 {
+				continue
+			}
 			if _, err := idx.SaveIndex(wgCtx, repo); err != nil {
 				return err
 			}
