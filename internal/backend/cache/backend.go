@@ -162,7 +162,9 @@ func (b *Backend) Load(ctx context.Context, h backend.Handle, length int, offset
 	// try loading from cache without checking that the handle is actually cached
 	inCache, err := b.loadFromCache(h, length, offset, consumer)
 	if inCache {
-		debug.Log("error loading %v from cache: %v", h, err)
+		if err != nil {
+			debug.Log("error loading %v from cache: %v", h, err)
+		}
 		// the caller must explicitly use cache.Forget() to remove the cache entry
 		return err
 	}
