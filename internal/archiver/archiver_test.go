@@ -3,6 +3,7 @@ package archiver
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -2337,4 +2338,29 @@ func TestRacyFileSwap(t *testing.T) {
 	if excluded {
 		t.Errorf("Save() excluded the node, that's unexpected")
 	}
+}
+
+func TestMetadataBackupErrorFiltering(t *testing.T) {
+	tempdir := t.TempDir()
+	repo := repository.TestRepository(t)
+
+	filename := filepath.Join(tempdir, "file")
+	rtest.OK(t, os.WriteFile(filename, []byte("example"), 0o600))
+	fi, err := os.Stat(filename)
+	rtest.OK(t, err)
+
+	arch := New(repo, fs.Local{}, Options{})
+
+	var filteredErr error
+	replacementErr := fmt.Errorf("replacement")
+	arch.Error = func(item string, err error) error {
+		filteredErr = err
+		return replacementErr
+	}
+
+	// check that errors from reading extended metadata are properly filtered
+	node, err := arch.nodeFromFileInfo("file", filename+"invalid", fi, false)
+	rtest.Assert(t, node != nil, "node is missing")
+	rtest.Assert(t, err == replacementErr, "expected %v got %v", replacementErr, err)
+	rtest.Assert(t, filteredErr != nil, "missing inner error")
 }
