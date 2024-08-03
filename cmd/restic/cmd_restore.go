@@ -164,9 +164,8 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 
 	totalErrors := 0
 	res.Error = func(location string, err error) error {
-		msg.E("ignoring error for %s: %s\n", location, err)
 		totalErrors++
-		return nil
+		return progress.Error(location, err)
 	}
 	res.Warn = func(message string) {
 		msg.E("Warning: %s\n", message)

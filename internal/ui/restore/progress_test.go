@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/test"
 )
 
@@ -23,15 +24,28 @@ type itemTraceEntry struct {
 }
 
 type itemTrace []itemTraceEntry
+
+type errorTraceEntry struct {
+	item string
+	err  error
+}
+
+type errorTrace []errorTraceEntry
+
 type mockPrinter struct {
-	trace printerTrace
-	items itemTrace
+	trace  printerTrace
+	items  itemTrace
+	errors errorTrace
 }
 
 const mockFinishDuration = 42 * time.Second
 
 func (p *mockPrinter) Update(progress State, duration time.Duration) {
 	p.trace = append(p.trace, printerTraceEntry{progress, duration, false})
+}
+func (p *mockPrinter) Error(item string, err error) error {
+	p.errors = append(p.errors, errorTraceEntry{item, err})
+	return nil
 }
 func (p *mockPrinter) CompleteItem(action ItemAction, item string, size uint64) {
 	p.items = append(p.items, itemTraceEntry{action, item, size})
@@ -40,20 +54,21 @@ func (p *mockPrinter) Finish(progress State, _ time.Duration) {
 	p.trace = append(p.trace, printerTraceEntry{progress, mockFinishDuration, true})
 }
 
-func testProgress(fn func(progress *Progress) bool) (printerTrace, itemTrace) {
+func testProgress(fn func(progress *Progress) bool) (printerTrace, itemTrace, errorTrace) {
 	printer := &mockPrinter{}
 	progress := NewProgress(printer, 0)
 	final := fn(progress)
 	progress.update(0, final)
 	trace := append(printerTrace{}, printer.trace...)
 	items := append(itemTrace{}, printer.items...)
+	errors := append(errorTrace{}, printer.errors...)
 	// cleanup to avoid goroutine leak, but copy trace first
 	progress.Finish()
-	return trace, items
+	return trace, items, errors
 }
 
 func TestNew(t *testing.T) {
-	result, items := testProgress(func(progress *Progress) bool {
+	result, items, _ := testProgress(func(progress *Progress) bool {
 		return false
 	})
 	test.Equals(t, printerTrace{
@@ -65,7 +80,7 @@ func TestNew(t *testing.T) {
 func TestAddFile(t *testing.T) {
 	fileSize := uint64(100)
 
-	result, items := testProgress(func(progress *Progress) bool {
+	result, items, _ := testProgress(func(progress *Progress) bool {
 		progress.AddFile(fileSize)
 		return false
 	})
@@ -79,7 +94,7 @@ func TestFirstProgressOnAFile(t *testing.T) {
 	expectedBytesWritten := uint64(5)
 	expectedBytesTotal := uint64(100)
 
-	result, items := testProgress(func(progress *Progress) bool {
+	result, items, _ := testProgress(func(progress *Progress) bool {
 		progress.AddFile(expectedBytesTotal)
 		progress.AddProgress("test", ActionFileUpdated, expectedBytesWritten, expectedBytesTotal)
 		return false
@@ -93,7 +108,7 @@ func TestFirstProgressOnAFile(t *testing.T) {
 func TestLastProgressOnAFile(t *testing.T) {
 	fileSize := uint64(100)
 
-	result, items := testProgress(func(progress *Progress) bool {
+	result, items, _ := testProgress(func(progress *Progress) bool {
 		progress.AddFile(fileSize)
 		progress.AddProgress("test", ActionFileUpdated, 30, fileSize)
 		progress.AddProgress("test", ActionFileUpdated, 35, fileSize)
@@ -111,7 +126,7 @@ func TestLastProgressOnAFile(t *testing.T) {
 func TestLastProgressOnLastFile(t *testing.T) {
 	fileSize := uint64(100)
 
-	result, items := testProgress(func(progress *Progress) bool {
+	result, items, _ := testProgress(func(progress *Progress) bool {
 		progress.AddFile(fileSize)
 		progress.AddFile(50)
 		progress.AddProgress("test1", ActionFileUpdated, 50, 50)
@@ -131,7 +146,7 @@ func TestLastProgressOnLastFile(t *testing.T) {
 func TestSummaryOnSuccess(t *testing.T) {
 	fileSize := uint64(100)
 
-	result, _ := testProgress(func(progress *Progress) bool {
+	result, _, _ := testProgress(func(progress *Progress) bool {
 		progress.AddFile(fileSize)
 		progress.AddFile(50)
 		progress.AddProgress("test1", ActionFileUpdated, 50, 50)
@@ -146,7 +161,7 @@ func TestSummaryOnSuccess(t *testing.T) {
 func TestSummaryOnErrors(t *testing.T) {
 	fileSize := uint64(100)
 
-	result, _ := testProgress(func(progress *Progress) bool {
+	result, _, _ := testProgress(func(progress *Progress) bool {
 		progress.AddFile(fileSize)
 		progress.AddFile(50)
 		progress.AddProgress("test1", ActionFileUpdated, 50, 50)
@@ -161,7 +176,7 @@ func TestSummaryOnErrors(t *testing.T) {
 func TestSkipFile(t *testing.T) {
 	fileSize := uint64(100)
 
-	result, items := testProgress(func(progress *Progress) bool {
+	result, items, _ := testProgress(func(progress *Progress) bool {
 		progress.AddSkippedFile("test", fileSize)
 		return true
 	})
@@ -176,7 +191,7 @@ func TestSkipFile(t *testing.T) {
 func TestProgressTypes(t *testing.T) {
 	fileSize := uint64(100)
 
-	_, items := testProgress(func(progress *Progress) bool {
+	_, items, _ := testProgress(func(progress *Progress) bool {
 		progress.AddFile(fileSize)
 		progress.AddFile(0)
 		progress.AddProgress("dir", ActionDirRestored, fileSize, fileSize)
@@ -189,4 +204,18 @@ func TestProgressTypes(t *testing.T) {
 		itemTraceEntry{ActionFileRestored, "new", 0},
 		itemTraceEntry{ActionDeleted, "del", 0},
 	}, items)
+}
+
+func TestProgressError(t *testing.T) {
+	err1 := errors.New("err1")
+	err2 := errors.New("err2")
+	_, _, errors := testProgress(func(progress *Progress) bool {
+		test.Equals(t, progress.Error("first", err1), nil)
+		test.Equals(t, progress.Error("second", err2), nil)
+		return true
+	})
+	test.Equals(t, errorTrace{
+		errorTraceEntry{"first", err1},
+		errorTraceEntry{"second", err2},
+	}, errors)
 }
