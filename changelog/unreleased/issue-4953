@@ -1,0 +1,7 @@
+Bugfix: Correctly handle long paths on older Windows versions
+
+When using older Windows versions, like Windows Server 2012, restic 0.17.0
+failed to back up files with long paths. This has been fixed.
+
+https://github.com/restic/restic/issues/4953
+https://github.com/restic/restic/pull/4954

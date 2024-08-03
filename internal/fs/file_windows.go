@@ -85,7 +85,7 @@ func ClearSystem(path string) error {
 
 // ClearAttribute removes the specified attribute from the file.
 func ClearAttribute(path string, attribute uint32) error {
-	ptr, err := windows.UTF16PtrFromString(path)
+	ptr, err := windows.UTF16PtrFromString(fixpath(path))
 	if err != nil {
 		return err
 	}

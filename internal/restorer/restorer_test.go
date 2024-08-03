@@ -1506,3 +1506,36 @@ func TestRestoreToFile(t *testing.T) {
 	err := res.RestoreTo(ctx, tempdir)
 	rtest.Assert(t, strings.Contains(err.Error(), "cannot create target directory"), "unexpected error %v", err)
 }
+
+func TestRestorerLongPath(t *testing.T) {
+	tmp := t.TempDir()
+
+	longPath := tmp
+	for i := 0; i < 20; i++ {
+		longPath = filepath.Join(longPath, "aaaaaaaaaaaaaaaaaaaa")
+	}
+
+	rtest.OK(t, os.MkdirAll(longPath, 0o700))
+	f, err := fs.OpenFile(filepath.Join(longPath, "file"), fs.O_CREATE|fs.O_RDWR, 0o600)
+	rtest.OK(t, err)
+	_, err = f.WriteString("Hello, World!")
+	rtest.OK(t, err)
+	rtest.OK(t, f.Close())
+
+	repo := repository.TestRepository(t)
+
+	local := &fs.Local{}
+	sc := archiver.NewScanner(local)
+	rtest.OK(t, sc.Scan(context.TODO(), []string{tmp}))
+	arch := archiver.New(repo, local, archiver.Options{})
+	sn, _, _, err := arch.Snapshot(context.Background(), []string{tmp}, archiver.SnapshotOptions{})
+	rtest.OK(t, err)
+
+	res := NewRestorer(repo, sn, Options{})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	rtest.OK(t, res.RestoreTo(ctx, tmp))
+	_, err = res.VerifyFiles(ctx, tmp)
+	rtest.OK(t, err)
+}
