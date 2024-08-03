@@ -29,6 +29,10 @@ type CommandReader struct {
 }
 
 func NewCommandReader(ctx context.Context, args []string, logOutput io.Writer) (*CommandReader, error) {
+	if len(args) == 0 {
+		return nil, fmt.Errorf("no command was specified as argument")
+	}
+
 	// Prepare command and stdout
 	command := exec.CommandContext(ctx, args[0], args[1:]...)
 	stdout, err := command.StdoutPipe()

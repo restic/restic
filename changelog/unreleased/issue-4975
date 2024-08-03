@@ -1,0 +1,6 @@
+Bugfix: Prevent `backup --stdin-from-command` from panicking
+
+If --stdin-from-command is used, restic now checks whether there is a command behind it.
+
+https://github.com/restic/restic/issues/4975
+https://github.com/restic/restic/pull/4976
