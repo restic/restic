@@ -1000,6 +1000,10 @@ func streamPackPart(ctx context.Context, beLoad backendLoadFn, loadBlobFn loadBl
 	it := newPackBlobIterator(packID, newByteReader(data), dataStart, blobs, key, dec)
 
 	for {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
 		val, err := it.Next()
 		if err == errPackEOF {
 			break

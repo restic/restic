@@ -177,6 +177,10 @@ func (c *Comparer) printDir(ctx context.Context, mode string, stats *DiffStat, b
 	}
 
 	for _, node := range tree.Nodes {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
 		name := path.Join(prefix, node.Name)
 		if node.Type == "dir" {
 			name += "/"
@@ -187,13 +191,13 @@ func (c *Comparer) printDir(ctx context.Context, mode string, stats *DiffStat, b
 
 		if node.Type == "dir" {
 			err := c.printDir(ctx, mode, stats, blobs, name, *node.Subtree)
-			if err != nil {
+			if err != nil && err != context.Canceled {
 				Warnf("error: %v\n", err)
 			}
 		}
 	}
 
-	return nil
+	return ctx.Err()
 }
 
 func (c *Comparer) collectDir(ctx context.Context, blobs restic.BlobSet, id restic.ID) error {
@@ -204,17 +208,21 @@ func (c *Comparer) collectDir(ctx context.Context, blobs restic.BlobSet, id rest
 	}
 
 	for _, node := range tree.Nodes {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
 		addBlobs(blobs, node)
 
 		if node.Type == "dir" {
 			err := c.collectDir(ctx, blobs, *node.Subtree)
-			if err != nil {
+			if err != nil && err != context.Canceled {
 				Warnf("error: %v\n", err)
 			}
 		}
 	}
 
-	return nil
+	return ctx.Err()
 }
 
 func uniqueNodeNames(tree1, tree2 *restic.Tree) (tree1Nodes, tree2Nodes map[string]*restic.Node, uniqueNames []string) {
@@ -255,6 +263,10 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 	tree1Nodes, tree2Nodes, names := uniqueNodeNames(tree1, tree2)
 
 	for _, name := range names {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
 		node1, t1 := tree1Nodes[name]
 		node2, t2 := tree2Nodes[name]
 
@@ -304,7 +316,7 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 				} else {
 					err = c.diffTree(ctx, stats, name, *node1.Subtree, *node2.Subtree)
 				}
-				if err != nil {
+				if err != nil && err != context.Canceled {
 					Warnf("error: %v\n", err)
 				}
 			}
@@ -318,7 +330,7 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 
 			if node1.Type == "dir" {
 				err := c.printDir(ctx, "-", &stats.Removed, stats.BlobsBefore, prefix, *node1.Subtree)
-				if err != nil {
+				if err != nil && err != context.Canceled {
 					Warnf("error: %v\n", err)
 				}
 			}
@@ -332,14 +344,14 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStatsContainer, pref
 
 			if node2.Type == "dir" {
 				err := c.printDir(ctx, "+", &stats.Added, stats.BlobsAfter, prefix, *node2.Subtree)
-				if err != nil {
+				if err != nil && err != context.Canceled {
 					Warnf("error: %v\n", err)
 				}
 			}
 		}
 	}
 
-	return nil
+	return ctx.Err()
 }
 
 func runDiff(ctx context.Context, opts DiffOptions, gopts GlobalOptions, args []string) error {

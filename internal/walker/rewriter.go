@@ -116,6 +116,10 @@ func (t *TreeRewriter) RewriteTree(ctx context.Context, repo BlobLoadSaver, node
 
 	tb := restic.NewTreeJSONBuilder()
 	for _, node := range curTree.Nodes {
+		if ctx.Err() != nil {
+			return restic.ID{}, ctx.Err()
+		}
+
 		path := path.Join(nodepath, node.Name)
 		node = t.opts.RewriteNode(node, path)
 		if node == nil {

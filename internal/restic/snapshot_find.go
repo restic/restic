@@ -134,6 +134,10 @@ func (f *SnapshotFilter) FindAll(ctx context.Context, be Lister, loader LoaderUn
 		ids := NewIDSet()
 		// Process all snapshot IDs given as arguments.
 		for _, s := range snapshotIDs {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+
 			var sn *Snapshot
 			if s == "latest" {
 				if usedFilter {

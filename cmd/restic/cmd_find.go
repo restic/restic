@@ -377,6 +377,10 @@ func (f *Finder) findIDs(ctx context.Context, sn *restic.Snapshot) error {
 
 		if node.Type == "file" && f.blobIDs != nil {
 			for _, id := range node.Content {
+				if ctx.Err() != nil {
+					return ctx.Err()
+				}
+
 				idStr := id.String()
 				if _, ok := f.blobIDs[idStr]; !ok {
 					// Look for short ID form
