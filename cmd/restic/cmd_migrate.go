@@ -74,8 +74,10 @@ func checkMigrations(ctx context.Context, repo restic.Repository, printer progre
 func applyMigrations(ctx context.Context, opts MigrateOptions, gopts GlobalOptions, repo restic.Repository, args []string, term *termstatus.Terminal, printer progress.Printer) error {
 	var firsterr error
 	for _, name := range args {
+		found := false
 		for _, m := range migrations.All {
 			if m.Name() == name {
+				found = true
 				ok, reason, err := m.Check(ctx, repo)
 				if err != nil {
 					return err
@@ -118,6 +120,9 @@ func applyMigrations(ctx context.Context, opts MigrateOptions, gopts GlobalOptio
 
 				printer.P("migration %v: success\n", m.Name())
 			}
+		}
+		if !found {
+			printer.E("unknown migration %v", name)
 		}
 	}
 
