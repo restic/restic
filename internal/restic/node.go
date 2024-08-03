@@ -229,6 +229,13 @@ func (node *Node) CreateAt(ctx context.Context, path string, repo BlobLoader) er
 func (node Node) RestoreMetadata(path string, warn func(msg string)) error {
 	err := node.restoreMetadata(path, warn)
 	if err != nil {
+		// It is common to have permission errors for folders like /home
+		// unless you're running as root, so ignore those.
+		if os.Geteuid() > 0 && errors.Is(err, os.ErrPermission) {
+			debug.Log("not running as root, ignoring permission error for %v: %v",
+				path, err)
+			return nil
+		}
 		debug.Log("restoreMetadata(%s) error %v", path, err)
 	}
 
@@ -239,33 +246,26 @@ func (node Node) restoreMetadata(path string, warn func(msg string)) error {
 	var firsterr error
 
 	if err := lchown(path, int(node.UID), int(node.GID)); err != nil {
-		// Like "cp -a" and "rsync -a" do, we only report lchown permission errors
-		// if we run as root.
-		if os.Geteuid() > 0 && os.IsPermission(err) {
-			debug.Log("not running as root, ignoring lchown permission error for %v: %v",
-				path, err)
-		} else {
-			firsterr = errors.WithStack(err)
-		}
+		firsterr = errors.WithStack(err)
 	}
 
 	if err := node.RestoreTimestamps(path); err != nil {
 		debug.Log("error restoring timestamps for dir %v: %v", path, err)
-		if firsterr != nil {
+		if firsterr == nil {
 			firsterr = err
 		}
 	}
 
 	if err := node.restoreExtendedAttributes(path); err != nil {
 		debug.Log("error restoring extended attributes for %v: %v", path, err)
-		if firsterr != nil {
+		if firsterr == nil {
 			firsterr = err
 		}
 	}
 
 	if err := node.restoreGenericAttributes(path, warn); err != nil {
 		debug.Log("error restoring generic attributes for %v: %v", path, err)
-		if firsterr != nil {
+		if firsterr == nil {
 			firsterr = err
 		}
 	}
@@ -275,7 +275,7 @@ func (node Node) restoreMetadata(path string, warn func(msg string)) error {
 	// calls above would fail.
 	if node.Type != "symlink" {
 		if err := fs.Chmod(path, node.Mode); err != nil {
-			if firsterr != nil {
+			if firsterr == nil {
 				firsterr = errors.WithStack(err)
 			}
 		}

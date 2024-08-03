@@ -1,0 +1,7 @@
+Bugfix: Don't ignore metadata-setting errors during restore
+
+Restic was accidentally ignoring errors when setting timestamps,
+attributes, or file modes during restore. It will now report those
+errors (unless it's just a permission error when not running as root).
+
+https://github.com/restic/restic/pull/4958
