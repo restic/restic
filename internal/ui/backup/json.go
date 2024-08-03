@@ -67,7 +67,7 @@ func (b *JSONProgress) Update(total, processed Counter, errors uint, currentFile
 func (b *JSONProgress) ScannerError(item string, err error) error {
 	b.error(errorUpdate{
 		MessageType: "error",
-		Error:       err.Error(),
+		Error:       errorObject{err.Error()},
 		During:      "scan",
 		Item:        item,
 	})
@@ -78,7 +78,7 @@ func (b *JSONProgress) ScannerError(item string, err error) error {
 func (b *JSONProgress) Error(item string, err error) error {
 	b.error(errorUpdate{
 		MessageType: "error",
-		Error:       err.Error(),
+		Error:       errorObject{err.Error()},
 		During:      "archival",
 		Item:        item,
 	})
@@ -205,11 +205,15 @@ type statusUpdate struct {
 	CurrentFiles     []string `json:"current_files,omitempty"`
 }
 
+type errorObject struct {
+	Message string `json:"message"`
+}
+
 type errorUpdate struct {
-	MessageType string `json:"message_type"` // "error"
-	Error       string `json:"error"`
-	During      string `json:"during"`
-	Item        string `json:"item"`
+	MessageType string      `json:"message_type"` // "error"
+	Error       errorObject `json:"error"`
+	During      string      `json:"during"`
+	Item        string      `json:"item"`
 }
 
 type verboseUpdate struct {

@@ -66,5 +66,5 @@ func TestJSONPrintCompleteItem(t *testing.T) {
 func TestJSONError(t *testing.T) {
 	term, printer := createJSONProgress()
 	test.Equals(t, printer.Error("/path", errors.New("error \"message\"")), nil)
-	test.Equals(t, []string{"{\"message_type\":\"error\",\"error\":\"error \\\"message\\\"\",\"during\":\"restore\",\"item\":\"/path\"}\n"}, term.Errors)
+	test.Equals(t, []string{"{\"message_type\":\"error\",\"error\":{\"message\":\"error \\\"message\\\"\"},\"during\":\"restore\",\"item\":\"/path\"}\n"}, term.Errors)
 }

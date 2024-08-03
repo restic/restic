@@ -48,7 +48,7 @@ func (t *jsonPrinter) Update(p State, duration time.Duration) {
 func (t *jsonPrinter) Error(item string, err error) error {
 	t.error(errorUpdate{
 		MessageType: "error",
-		Error:       err.Error(),
+		Error:       errorObject{err.Error()},
 		During:      "restore",
 		Item:        item,
 	})
@@ -113,11 +113,15 @@ type statusUpdate struct {
 	BytesSkipped   uint64  `json:"bytes_skipped,omitempty"`
 }
 
+type errorObject struct {
+	Message string `json:"message"`
+}
+
 type errorUpdate struct {
-	MessageType string `json:"message_type"` // "error"
-	Error       string `json:"error"`
-	During      string `json:"during"`
-	Item        string `json:"item"`
+	MessageType string      `json:"message_type"` // "error"
+	Error       errorObject `json:"error"`
+	During      string      `json:"during"`
+	Item        string      `json:"item"`
 }
 
 type verboseUpdate struct {
