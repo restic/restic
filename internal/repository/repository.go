@@ -725,7 +725,7 @@ func (r *Repository) prepareCache() error {
 
 	// clear old snapshots
 	snapshots := restic.NewIDSet()
-	err = r.List(context.TODO(), restic.SnapshotFile, func(id restic.ID, size int64) error {
+	err = r.List(context.TODO(), restic.SnapshotFile, func(id restic.ID, _ int64) error {
 		snapshots.Insert(id)
 		return nil
 	})
