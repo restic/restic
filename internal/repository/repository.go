@@ -723,6 +723,21 @@ func (r *Repository) prepareCache() error {
 		fmt.Fprintf(os.Stderr, "error clearing pack files in cache: %v\n", err)
 	}
 
+	// clear old snapshots
+	snapshots := restic.NewIDSet()
+	err = r.List(context.TODO(), restic.SnapshotFile, func(id restic.ID, _ int64) error {
+		snapshots.Insert(id)
+		return nil
+	})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error listing snapshots: %v\n", err)
+	}
+
+	err = r.Cache.Clear(restic.SnapshotFile, snapshots)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error clearing snapshot files in cache: %v\n", err)
+	}
+
 	return nil
 }
 
