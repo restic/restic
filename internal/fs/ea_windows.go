@@ -53,16 +53,6 @@ var (
 	errInvalidEaBuffer = errors.New("invalid extended attribute buffer")
 	errEaNameTooLarge  = errors.New("extended attribute name too large")
 	errEaValueTooLarge = errors.New("extended attribute value too large")
-
-	kernel32dll = syscall.NewLazyDLL("kernel32.dll")
-
-	procGetVolumeInformationW = kernel32dll.NewProc("GetVolumeInformationW")
-)
-
-const (
-	// fileSupportsExtendedAttributes is a bitmask that indicates whether the file system supports extended attributes.
-	// https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntifs/ns-ntifs-_file_fs_attribute_information
-	fileSupportsExtendedAttributes = 0x00800000
 )
 
 // ExtendedAttribute represents a single Windows EA.
@@ -295,32 +285,16 @@ func setFileEA(handle windows.Handle, iosb *ioStatusBlock, buf *uint8, bufLen ui
 }
 
 // PathSupportsExtendedAttributes returns true if the path supports extended attributes.
-func PathSupportsExtendedAttributes(path string) (bool, error) {
-	var (
-		volumeName      [syscall.MAX_PATH + 1]uint16
-		fsName          [syscall.MAX_PATH + 1]uint16
-		volumeSerial    uint32
-		maxComponentLen uint32
-		fileSystemFlags uint32
-	)
+func PathSupportsExtendedAttributes(path string) (supported bool, err error) {
+	var fileSystemFlags uint32
 	utf16Path, err := windows.UTF16PtrFromString(path)
 	if err != nil {
 		return false, err
 	}
-	ret, _, err := procGetVolumeInformationW.Call(
-		uintptr(unsafe.Pointer(utf16Path)),
-		uintptr(unsafe.Pointer(&volumeName[0])),
-		uintptr(len(volumeName)),
-		uintptr(unsafe.Pointer(&volumeSerial)),
-		uintptr(unsafe.Pointer(&maxComponentLen)),
-		uintptr(unsafe.Pointer(&fileSystemFlags)),
-		uintptr(unsafe.Pointer(&fsName[0])),
-		uintptr(len(fsName)),
-	)
-	if ret == 0 {
+	err = windows.GetVolumeInformation(utf16Path, nil, 0, nil, nil, &fileSystemFlags, nil, 0)
+	if err != nil {
 		return false, err
 	}
-
-	supportsEAs := (fileSystemFlags & fileSupportsExtendedAttributes) != 0
-	return supportsEAs, nil
+	supported = (fileSystemFlags & windows.FILE_SUPPORTS_EXTENDED_ATTRIBUTES) != 0
+	return supported, nil
 }

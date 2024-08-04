@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+	"sync"
 	"syscall"
 	"unsafe"
 
@@ -33,8 +34,8 @@ var (
 	procEncryptFile = modAdvapi32.NewProc("EncryptFileW")
 	procDecryptFile = modAdvapi32.NewProc("DecryptFileW")
 
-	// eaUnsupportedVolumesMap is a map of volumes that do not support extended attributes.
-	eaUnsupportedVolumesMap = map[string]bool{}
+	// eaSupportedVolumesMap is a map of volumes to boolean values indicating if they support extended attributes.
+	eaSupportedVolumesMap = sync.Map{}
 )
 
 // mknod is not supported on Windows.
@@ -354,45 +355,58 @@ func decryptFile(pathPointer *uint16) error {
 }
 
 // fillGenericAttributes fills in the generic attributes for windows like File Attributes,
-// Created time etc.
+// Created time and Security Descriptors.
+// It also checks if the volume supports extended attributes and stores the result in a map
+// so that it does not have to be checked again for subsequent calls for paths in the same volume.
 func (node *Node) fillGenericAttributes(path string, fi os.FileInfo, stat *statT) (allowExtended bool, err error) {
 	if strings.Contains(filepath.Base(path), ":") {
-		//Do not process for Alternate Data Streams in Windows
+		// Do not process for Alternate Data Streams in Windows
 		// Also do not allow processing of extended attributes for ADS.
 		return false, nil
 	}
-	if strings.HasSuffix(filepath.Clean(path), `\`) {
-		// This path is a volume
-		supportsEAs, err := fs.PathSupportsExtendedAttributes(path)
-		if err != nil {
-			return false, err
-		}
-		if supportsEAs {
-			delete(eaUnsupportedVolumesMap, filepath.VolumeName(path))
-		} else {
-			// Add the volume to the map of volumes that do not support extended attributes.
-			eaUnsupportedVolumesMap[filepath.VolumeName(path)] = true
-		}
-		return supportsEAs, nil
-	} else {
-		// Do not process file attributes and created time for windows directories like
-		// C:, D:
-		// Filepath.Clean(path) ends with '\' for Windows root drives only.
-		var sd *[]byte
-		if node.Type == "file" || node.Type == "dir" {
-			if sd, err = fs.GetSecurityDescriptor(path); err != nil {
-				return true, err
-			}
-		}
-
-		// Add Windows attributes
-		node.GenericAttributes, err = WindowsAttrsToGenericAttributes(WindowsAttributes{
-			CreationTime:       getCreationTime(fi, path),
-			FileAttributes:     &stat.FileAttributes,
-			SecurityDescriptor: sd,
-		})
-		return !eaUnsupportedVolumesMap[filepath.VolumeName(path)], err
+	volumeName := filepath.VolumeName(path)
+	allowExtended, err = checkAndStoreEASupport(volumeName)
+	if err != nil {
+		return false, err
 	}
+	if strings.HasSuffix(filepath.Clean(path), `\`) {
+		// filepath.Clean(path) ends with '\' for Windows root volume paths only
+		// Do not process file attributes, created time and sd for windows root volume paths
+		// Security descriptors are not supported for root volume paths.
+		// Though file attributes and created time are supported for root volume paths,
+		// we ignore them and we do not want to replace them during every restore.
+		return allowExtended, nil
+	}
+
+	var sd *[]byte
+	if node.Type == "file" || node.Type == "dir" {
+		if sd, err = fs.GetSecurityDescriptor(path); err != nil {
+			return true, err
+		}
+	}
+	// Add Windows attributes
+	node.GenericAttributes, err = WindowsAttrsToGenericAttributes(WindowsAttributes{
+		CreationTime:       getCreationTime(fi, path),
+		FileAttributes:     &stat.FileAttributes,
+		SecurityDescriptor: sd,
+	})
+	return allowExtended, err
+}
+
+// checkAndStoreEASupport checks if a volume supports extended attributes and stores the result in a map
+// If the result is already in the map, it returns the result from the map.
+func checkAndStoreEASupport(volumeName string) (isEASupportedVolume bool, err error) {
+	eaSupportedValue, exists := eaSupportedVolumesMap.Load(volumeName)
+	if exists {
+		return eaSupportedValue.(bool), nil
+	}
+
+	// Add backslash to the volume name to ensure it is a valid path
+	isEASupportedVolume, err = fs.PathSupportsExtendedAttributes(volumeName + `\`)
+	if err == nil {
+		eaSupportedVolumesMap.Store(volumeName, isEASupportedVolume)
+	}
+	return isEASupportedVolume, err
 }
 
 // windowsAttrsToGenericAttributes converts the WindowsAttributes to a generic attributes map using reflection
