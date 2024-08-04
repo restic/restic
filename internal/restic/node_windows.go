@@ -364,11 +364,13 @@ func (node *Node) fillGenericAttributes(path string, fi os.FileInfo, stat *statT
 		// Also do not allow processing of extended attributes for ADS.
 		return false, nil
 	}
+
 	volumeName := filepath.VolumeName(path)
 	allowExtended, err = checkAndStoreEASupport(volumeName)
 	if err != nil {
 		return false, err
 	}
+
 	if strings.HasSuffix(filepath.Clean(path), `\`) {
 		// filepath.Clean(path) ends with '\' for Windows root volume paths only
 		// Do not process file attributes, created time and sd for windows root volume paths
