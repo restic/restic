@@ -398,9 +398,27 @@ func (node *Node) fillGenericAttributes(path string, fi os.FileInfo, stat *statT
 	return allowExtended, err
 }
 
-// checkAndStoreEASupport checks if a volume supports extended attributes and stores the result in a map
+// checkAndStoreEASupport checks if the volume of the path supports extended attributes and stores the result in a map
 // If the result is already in the map, it returns the result from the map.
-func checkAndStoreEASupport(volumeName string) (isEASupportedVolume bool, err error) {
+func checkAndStoreEASupport(path string) (isEASupportedVolume bool, err error) {
+	// Check if it's a UNC path and format it correctly
+	if strings.HasPrefix(path, `\\?\UNC\`) {
+		// Convert \\?\UNC\ path to standard path to get the volume name correctly
+		path = `\\` + strings.TrimPrefix(path, `\\?\UNC\`)
+	} else if strings.HasPrefix(path, `\\?\GLOBALROOT`) {
+		// EAs are not supported for \\?\GLOBALROOT i.e. VSS snapshots
+		return false, nil
+	} else {
+		// Use the absolute path
+		path, err = filepath.Abs(path)
+		if err != nil {
+			return false, fmt.Errorf("failed to get absolute path: %w", err)
+		}
+	}
+	volumeName := filepath.VolumeName(path)
+	if volumeName == "" {
+		return false, nil
+	}
 	eaSupportedValue, exists := eaSupportedVolumesMap.Load(volumeName)
 	if exists {
 		return eaSupportedValue.(bool), nil
