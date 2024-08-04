@@ -61,7 +61,8 @@ var (
 
 const (
 	// fileSupportsExtendedAttributes is a bitmask that indicates whether the file system supports extended attributes.
-	fileSupportsExtendedAttributes = 0x00000004
+	// https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntifs/ns-ntifs-_file_fs_attribute_information
+	fileSupportsExtendedAttributes = 0x00800000
 )
 
 // ExtendedAttribute represents a single Windows EA.
