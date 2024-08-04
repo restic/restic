@@ -493,10 +493,7 @@ func OpenRepository(ctx context.Context, opts GlobalOptions) (*repository.Reposi
 		}
 	}
 	if err != nil {
-		if errors.IsFatal(err) {
-			return nil, err
-		}
-		return nil, errors.Fatalf("%s", err)
+		return nil, err
 	}
 
 	if stdoutIsTerminal() && !opts.JSON {
