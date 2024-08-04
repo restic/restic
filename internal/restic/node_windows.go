@@ -365,23 +365,26 @@ func (node *Node) fillGenericAttributes(path string, fi os.FileInfo, stat *statT
 		return false, nil
 	}
 
-	volumeName := filepath.VolumeName(path)
-	allowExtended, err = checkAndStoreEASupport(volumeName)
-	if err != nil {
-		return false, err
-	}
-
 	if strings.HasSuffix(filepath.Clean(path), `\`) {
 		// filepath.Clean(path) ends with '\' for Windows root volume paths only
 		// Do not process file attributes, created time and sd for windows root volume paths
 		// Security descriptors are not supported for root volume paths.
 		// Though file attributes and created time are supported for root volume paths,
 		// we ignore them and we do not want to replace them during every restore.
+		allowExtended, err = checkAndStoreEASupport(filepath.VolumeName(path))
+		if err != nil {
+			return false, err
+		}
 		return allowExtended, nil
 	}
 
 	var sd *[]byte
 	if node.Type == "file" || node.Type == "dir" {
+		// Check EA support and get security descriptor for file/dir only
+		allowExtended, err = checkAndStoreEASupport(filepath.VolumeName(path))
+		if err != nil {
+			return false, err
+		}
 		if sd, err = fs.GetSecurityDescriptor(path); err != nil {
 			return true, err
 		}
