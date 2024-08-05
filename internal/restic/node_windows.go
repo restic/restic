@@ -38,6 +38,12 @@ var (
 	eaSupportedVolumesMap = sync.Map{}
 )
 
+const (
+	extendedPathPrefix = `\\?\`
+	uncPathPrefix      = `\\?\UNC\`
+	globalRootPrefix   = `\\?\GLOBALROOT\`
+)
+
 // mknod is not supported on Windows.
 func mknod(_ string, _ uint32, _ uint64) (err error) {
 	return errors.New("device nodes cannot be created on windows")
@@ -371,7 +377,7 @@ func (node *Node) fillGenericAttributes(path string, fi os.FileInfo, stat *statT
 		// Security descriptors are not supported for root volume paths.
 		// Though file attributes and created time are supported for root volume paths,
 		// we ignore them and we do not want to replace them during every restore.
-		allowExtended, err = checkAndStoreEASupport(filepath.VolumeName(path))
+		allowExtended, err = checkAndStoreEASupport(path)
 		if err != nil {
 			return false, err
 		}
@@ -381,7 +387,7 @@ func (node *Node) fillGenericAttributes(path string, fi os.FileInfo, stat *statT
 	var sd *[]byte
 	if node.Type == "file" || node.Type == "dir" {
 		// Check EA support and get security descriptor for file/dir only
-		allowExtended, err = checkAndStoreEASupport(filepath.VolumeName(path))
+		allowExtended, err = checkAndStoreEASupport(path)
 		if err != nil {
 			return false, err
 		}
@@ -401,11 +407,14 @@ func (node *Node) fillGenericAttributes(path string, fi os.FileInfo, stat *statT
 // checkAndStoreEASupport checks if the volume of the path supports extended attributes and stores the result in a map
 // If the result is already in the map, it returns the result from the map.
 func checkAndStoreEASupport(path string) (isEASupportedVolume bool, err error) {
-	// Check if it's a UNC path and format it correctly
-	if strings.HasPrefix(path, `\\?\UNC\`) {
-		// Convert \\?\UNC\ path to standard path to get the volume name correctly
-		path = `\\` + strings.TrimPrefix(path, `\\?\UNC\`)
-	} else if strings.HasPrefix(path, `\\?\GLOBALROOT`) {
+	// Check if it's an extended length path
+	if strings.HasPrefix(path, uncPathPrefix) {
+		// Convert \\?\UNC\ extended path to standard path to get the volume name correctly
+		path = `\\` + path[len(uncPathPrefix):]
+	} else if strings.HasPrefix(path, extendedPathPrefix) {
+		//Extended length path prefix needs to be trimmed to get the volume name correctly
+		path = path[len(extendedPathPrefix):]
+	} else if strings.HasPrefix(path, globalRootPrefix) {
 		// EAs are not supported for \\?\GLOBALROOT i.e. VSS snapshots
 		return false, nil
 	} else {
