@@ -23,7 +23,6 @@ type Reader struct {
 	// for FileInfo
 	Mode    os.FileMode
 	ModTime time.Time
-	Size    int64
 
 	AllowEmptyFile bool
 
@@ -65,7 +64,6 @@ func (fs *Reader) Open(name string) (f File, err error) {
 func (fs *Reader) fi() os.FileInfo {
 	return fakeFileInfo{
 		name:    fs.Name,
-		size:    fs.Size,
 		mode:    fs.Mode,
 		modtime: fs.ModTime,
 	}
@@ -107,7 +105,6 @@ func (fs *Reader) Lstat(name string) (os.FileInfo, error) {
 	getDirInfo := func(name string) os.FileInfo {
 		fi := fakeFileInfo{
 			name:    fs.Base(name),
-			size:    0,
 			mode:    os.ModeDir | 0755,
 			modtime: time.Now(),
 		}
@@ -292,7 +289,6 @@ func (d fakeDir) Readdir(n int) ([]os.FileInfo, error) {
 // fakeFileInfo implements the bare minimum of os.FileInfo.
 type fakeFileInfo struct {
 	name    string
-	size    int64
 	mode    os.FileMode
 	modtime time.Time
 }
@@ -302,7 +298,8 @@ func (fi fakeFileInfo) Name() string {
 }
 
 func (fi fakeFileInfo) Size() int64 {
-	return fi.size
+	// Fake size to fool the archiver's empty file check.
+	return -1
 }
 
 func (fi fakeFileInfo) Mode() os.FileMode {
