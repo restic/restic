@@ -238,7 +238,8 @@ func runRestore(ctx context.Context, opts RestoreOptions, gopts GlobalOptions,
 		}
 		var count int
 		t0 := time.Now()
-		count, err = res.VerifyFiles(ctx, opts.Target)
+		bar := newVerifyTerminalProgress(gopts.Quiet, gopts.JSON, term)
+		count, err = res.VerifyFiles(ctx, opts.Target, bar)
 		if err != nil {
 			return err
 		}

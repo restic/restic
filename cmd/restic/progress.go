@@ -110,6 +110,10 @@ func newIndexTerminalProgress(quiet bool, json bool, term *termstatus.Terminal) 
 	return newTerminalProgressMax(!quiet && !json && stdoutIsTerminal(), 0, "index files loaded", term)
 }
 
+func newVerifyTerminalProgress(quiet bool, json bool, term *termstatus.Terminal) *progress.Counter {
+	return newTerminalProgressMax(!quiet && !json && stdoutIsTerminal(), 0, "files verified", term)
+}
+
 type terminalProgressPrinter struct {
 	term *termstatus.Terminal
 	ui.Message
