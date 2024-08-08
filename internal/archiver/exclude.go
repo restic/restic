@@ -316,3 +316,21 @@ func RejectBySize(maxSize int64) (RejectFunc, error) {
 		return false
 	}, nil
 }
+
+// RejectCloudFiles returns a func which rejects files which are online-only cloud files
+func RejectCloudFiles(warnf func(msg string, args ...interface{})) (RejectFunc, error) {
+	return func(item string, fi *fs.ExtendedFileInfo, _ fs.FS) bool {
+		recall, err := fi.RecallOnDataAccess()
+		if err != nil {
+			warnf("item %v: error checking online-only status: %v", item, err)
+			return false
+		}
+
+		if recall {
+			debug.Log("rejecting online-only cloud file %s", item)
+			return true
+		}
+
+		return false
+	}, nil
+}

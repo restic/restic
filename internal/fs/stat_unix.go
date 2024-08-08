@@ -32,3 +32,8 @@ func extendedStat(fi os.FileInfo) *ExtendedFileInfo {
 		ChangeTime: time.Unix(s.Ctim.Unix()),
 	}
 }
+
+// RecallOnDataAccess checks windows-specific attributes to determine if a file is a cloud-only placeholder.
+func (*ExtendedFileInfo) RecallOnDataAccess() (bool, error) {
+	return false, nil
+}
