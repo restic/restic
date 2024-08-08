@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui/progress"
 	restoreui "github.com/restic/restic/internal/ui/restore"
 
 	"golang.org/x/sync/errgroup"
@@ -587,16 +588,23 @@ const nVerifyWorkers = 8
 // have been successfully written to dst. It stops when it encounters an
 // error. It returns that error and the number of files it has successfully
 // verified.
-func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
+func (res *Restorer) VerifyFiles(ctx context.Context, dst string, p *progress.Counter) (int, error) {
 	type mustCheck struct {
 		node *restic.Node
 		path string
 	}
 
 	var (
-		nchecked uint64
-		work     = make(chan mustCheck, 2*nVerifyWorkers)
+		nchecked         uint64
+		numFilesVerified uint64
+		work             = make(chan mustCheck, 2*nVerifyWorkers)
 	)
+
+	if p != nil {
+		numFilesVerified = uint64(res.sn.Summary.TotalFilesProcessed)
+		p.SetMax(numFilesVerified)
+		defer p.Done()
+	}
 
 	g, ctx := errgroup.WithContext(ctx)
 
@@ -632,6 +640,7 @@ func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
 				if err != nil || ctx.Err() != nil {
 					break
 				}
+				p.Add(1)
 				atomic.AddUint64(&nchecked, 1)
 			}
 			return err

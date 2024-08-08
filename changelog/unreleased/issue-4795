@@ -1,0 +1,6 @@
+Enhancement: `restore --verify` now shows verification progress with a progress bar
+
+If restore command was run with `--verify` restic didn't show any progress indication, now it shows a progress bar while 'verification' is running.
+
+https://github.com/restic/restic/issues/4795
+https://github.com/restic/restic/pull/4989

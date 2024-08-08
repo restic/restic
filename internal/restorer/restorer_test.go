@@ -22,6 +22,7 @@ import (
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/ui/progress"
 	restoreui "github.com/restic/restic/internal/ui/restore"
 	"golang.org/x/sync/errgroup"
 )
@@ -29,7 +30,10 @@ import (
 type Node interface{}
 
 type Snapshot struct {
-	Nodes map[string]Node
+	Nodes   map[string]Node
+	Summary struct {
+		TotalFilesProcessed uint
+	}
 }
 
 type File struct {
@@ -409,7 +413,7 @@ func TestRestorer(t *testing.T) {
 			}
 
 			if len(test.ErrorsMust)+len(test.ErrorsMay) == 0 {
-				_, err = res.VerifyFiles(ctx, tempdir)
+				_, err = res.VerifyFiles(ctx, tempdir, nil)
 				rtest.OK(t, err)
 			}
 
@@ -458,7 +462,8 @@ func TestRestorer(t *testing.T) {
 func TestRestorerRelative(t *testing.T) {
 	var tests = []struct {
 		Snapshot
-		Files map[string]string
+		Files     map[string]string
+		FileCount uint64
 	}{
 		{
 			Snapshot: Snapshot{
@@ -470,11 +475,15 @@ func TestRestorerRelative(t *testing.T) {
 						},
 					},
 				},
+				Summary: struct{ TotalFilesProcessed uint }{
+					TotalFilesProcessed: 2,
+				},
 			},
 			Files: map[string]string{
 				"foo":          "content: foo\n",
 				"dirtest/file": "content: file\n",
 			},
+			FileCount: 2,
 		},
 	}
 
@@ -483,6 +492,9 @@ func TestRestorerRelative(t *testing.T) {
 			repo := repository.TestRepository(t)
 
 			sn, id := saveSnapshot(t, repo, test.Snapshot, noopGetGenericAttributes)
+			sn.Summary = &restic.SnapshotSummary{
+				TotalFilesProcessed: test.Summary.TotalFilesProcessed,
+			}
 			t.Logf("snapshot saved as %v", id.Str())
 
 			res := NewRestorer(repo, sn, Options{})
@@ -505,9 +517,14 @@ func TestRestorerRelative(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			nverified, err := res.VerifyFiles(ctx, "restore")
+			p := progress.NewCounter(time.Second, test.FileCount, func(value uint64, total uint64, runtime time.Duration, final bool) {})
+			defer p.Done()
+			nverified, err := res.VerifyFiles(ctx, "restore", p)
 			rtest.OK(t, err)
 			rtest.Equals(t, len(test.Files), nverified)
+			counterValue, maxValue := p.Get()
+			rtest.Equals(t, counterValue, uint64(2))
+			rtest.Equals(t, maxValue, uint64(2))
 
 			for filename, err := range errors {
 				t.Errorf("unexpected error for %v found: %v", filename, err)
@@ -883,7 +900,7 @@ func TestVerifyCancel(t *testing.T) {
 		return err
 	}
 
-	nverified, err := res.VerifyFiles(ctx, tempdir)
+	nverified, err := res.VerifyFiles(ctx, tempdir, nil)
 	rtest.Equals(t, 0, nverified)
 	rtest.Assert(t, err != nil, "nil error from VerifyFiles")
 	rtest.Equals(t, 1, len(errs))
@@ -960,7 +977,7 @@ func saveSnapshotsAndOverwrite(t *testing.T, baseSnapshot Snapshot, overwriteSna
 	res = NewRestorer(repo, sn, overwriteOptions)
 	rtest.OK(t, res.RestoreTo(ctx, tempdir))
 
-	_, err := res.VerifyFiles(ctx, tempdir)
+	_, err := res.VerifyFiles(ctx, tempdir, nil)
 	rtest.OK(t, err)
 
 	return tempdir
@@ -1239,7 +1256,7 @@ func TestRestoreModified(t *testing.T) {
 
 		res := NewRestorer(repo, sn, Options{Overwrite: OverwriteIfChanged})
 		rtest.OK(t, res.RestoreTo(ctx, tempdir))
-		n, err := res.VerifyFiles(ctx, tempdir)
+		n, err := res.VerifyFiles(ctx, tempdir, nil)
 		rtest.OK(t, err)
 		rtest.Equals(t, 2, n, "unexpected number of verified files")
 	}
@@ -1536,6 +1553,6 @@ func TestRestorerLongPath(t *testing.T) {
 	defer cancel()
 
 	rtest.OK(t, res.RestoreTo(ctx, tmp))
-	_, err = res.VerifyFiles(ctx, tmp)
+	_, err = res.VerifyFiles(ctx, tmp, nil)
 	rtest.OK(t, err)
 }
