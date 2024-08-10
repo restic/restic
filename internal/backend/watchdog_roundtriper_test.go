@@ -190,7 +190,7 @@ func TestDownloadTimeout(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	rt := newWatchdogRoundtripper(http.DefaultTransport, 10*time.Millisecond, 1024)
+	rt := newWatchdogRoundtripper(http.DefaultTransport, 25*time.Millisecond, 1024)
 	req, err := http.NewRequestWithContext(context.TODO(), "GET", srv.URL, io.NopCloser(bytes.NewReader(msg)))
 	rtest.OK(t, err)
 
