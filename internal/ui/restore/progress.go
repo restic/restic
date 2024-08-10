@@ -32,13 +32,9 @@ type progressInfoEntry struct {
 	bytesTotal   uint64
 }
 
-type term interface {
-	Print(line string)
-	SetStatus(lines []string)
-}
-
 type ProgressPrinter interface {
 	Update(progress State, duration time.Duration)
+	Error(item string, err error) error
 	CompleteItem(action ItemAction, item string, size uint64)
 	Finish(progress State, duration time.Duration)
 }
@@ -137,6 +133,17 @@ func (p *Progress) ReportDeletedFile(name string) {
 	defer p.m.Unlock()
 
 	p.printer.CompleteItem(ActionDeleted, name, 0)
+}
+
+func (p *Progress) Error(item string, err error) error {
+	if p == nil {
+		return nil
+	}
+
+	p.m.Lock()
+	defer p.m.Unlock()
+
+	return p.printer.Error(item, err)
 }
 
 func (p *Progress) Finish() {

@@ -1,0 +1,8 @@
+Enhancement: Print JSON-formatted errors during `restore --json`
+
+Restic printed any restore errors directly to the console as freeform
+text messages, even with `--json`. Restic now prints them as JSON formatted
+messages when `--json` is passed.
+
+https://github.com/restic/restic/issues/4944
+https://github.com/restic/restic/pull/4946
