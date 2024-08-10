@@ -3,7 +3,9 @@ package repository_test
 import (
 	"context"
 	"math"
+	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/repository"
@@ -14,10 +16,14 @@ import (
 )
 
 func testPrune(t *testing.T, opts repository.PruneOptions, errOnUnused bool) {
+	seed := time.Now().UnixNano()
+	random := rand.New(rand.NewSource(seed))
+	t.Logf("rand initialized with seed %d", seed)
+
 	repo, be := repository.TestRepositoryWithVersion(t, 0)
-	createRandomBlobs(t, repo, 4, 0.5, true)
-	createRandomBlobs(t, repo, 5, 0.5, true)
-	keep, _ := selectBlobs(t, repo, 0.5)
+	createRandomBlobs(t, random, repo, 4, 0.5, true)
+	createRandomBlobs(t, random, repo, 5, 0.5, true)
+	keep, _ := selectBlobs(t, random, repo, 0.5)
 
 	var wg errgroup.Group
 	repo.StartPackUploader(context.TODO(), &wg)

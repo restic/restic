@@ -2,7 +2,9 @@ package repository_test
 
 import (
 	"context"
+	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/checker"
@@ -17,9 +19,13 @@ func listIndex(t *testing.T, repo restic.Lister) restic.IDSet {
 }
 
 func testRebuildIndex(t *testing.T, readAllPacks bool, damage func(t *testing.T, repo *repository.Repository, be backend.Backend)) {
+	seed := time.Now().UnixNano()
+	random := rand.New(rand.NewSource(seed))
+	t.Logf("rand initialized with seed %d", seed)
+
 	repo, be := repository.TestRepositoryWithVersion(t, 0)
-	createRandomBlobs(t, repo, 4, 0.5, true)
-	createRandomBlobs(t, repo, 5, 0.5, true)
+	createRandomBlobs(t, random, repo, 4, 0.5, true)
+	createRandomBlobs(t, random, repo, 5, 0.5, true)
 	indexes := listIndex(t, repo)
 	t.Logf("old indexes %v", indexes)
 

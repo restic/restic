@@ -19,10 +19,10 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func generateRandomFiles(t testing.TB, tpe backend.FileType, c *Cache) restic.IDSet {
+func generateRandomFiles(t testing.TB, random *rand.Rand, tpe backend.FileType, c *Cache) restic.IDSet {
 	ids := restic.NewIDSet()
-	for i := 0; i < rand.Intn(15)+10; i++ {
-		buf := rtest.Random(rand.Int(), 1<<19)
+	for i := 0; i < random.Intn(15)+10; i++ {
+		buf := rtest.Random(random.Int(), 1<<19)
 		id := restic.Hash(buf)
 		h := backend.Handle{Type: tpe, Name: id.String()}
 
@@ -88,7 +88,7 @@ func clearFiles(t testing.TB, c *Cache, tpe restic.FileType, valid restic.IDSet)
 func TestFiles(t *testing.T) {
 	seed := time.Now().Unix()
 	t.Logf("seed is %v", seed)
-	rand.Seed(seed)
+	random := rand.New(rand.NewSource(seed))
 
 	c := TestNewCache(t)
 
@@ -100,7 +100,7 @@ func TestFiles(t *testing.T) {
 
 	for _, tpe := range tests {
 		t.Run(tpe.String(), func(t *testing.T) {
-			ids := generateRandomFiles(t, tpe, c)
+			ids := generateRandomFiles(t, random, tpe, c)
 			id := randomID(ids)
 
 			h := backend.Handle{Type: tpe, Name: id.String()}
@@ -140,12 +140,12 @@ func TestFiles(t *testing.T) {
 func TestFileLoad(t *testing.T) {
 	seed := time.Now().Unix()
 	t.Logf("seed is %v", seed)
-	rand.Seed(seed)
+	random := rand.New(rand.NewSource(seed))
 
 	c := TestNewCache(t)
 
 	// save about 5 MiB of data in the cache
-	data := rtest.Random(rand.Int(), 5234142)
+	data := rtest.Random(random.Int(), 5234142)
 	id := restic.ID{}
 	copy(id[:], data)
 	h := backend.Handle{
@@ -223,6 +223,10 @@ func TestFileSaveConcurrent(t *testing.T) {
 		t.Skip("may not work due to FILE_SHARE_DELETE issue")
 	}
 
+	seed := time.Now().Unix()
+	t.Logf("seed is %v", seed)
+	random := rand.New(rand.NewSource(seed))
+
 	const nproc = 40
 
 	var (
@@ -231,7 +235,8 @@ func TestFileSaveConcurrent(t *testing.T) {
 		g    errgroup.Group
 		id   restic.ID
 	)
-	rand.Read(id[:])
+
+	random.Read(id[:])
 
 	h := backend.Handle{
 		Type: restic.PackFile,

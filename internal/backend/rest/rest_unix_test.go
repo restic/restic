@@ -1,5 +1,5 @@
-//go:build !windows && go1.20
-// +build !windows,go1.20
+//go:build !windows
+// +build !windows
 
 package rest_test
 

@@ -2,11 +2,10 @@ package restic
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"io"
-
-	"github.com/minio/sha256-simd"
 )
 
 // Hash returns the ID for data.

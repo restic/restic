@@ -3,6 +3,7 @@ package test
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"math/rand"
@@ -12,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/minio/sha256-simd"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
@@ -21,10 +21,11 @@ import (
 	"github.com/restic/restic/internal/backend"
 )
 
-func seedRand(t testing.TB) {
+func seedRand(t testing.TB) *rand.Rand {
 	seed := time.Now().UnixNano()
-	rand.Seed(seed)
+	random := rand.New(rand.NewSource(seed))
 	t.Logf("rand initialized with seed %d", seed)
+	return random
 }
 
 func beTest(ctx context.Context, be backend.Backend, h backend.Handle) (bool, error) {
@@ -128,7 +129,7 @@ func (s *Suite[C]) TestConfig(t *testing.T) {
 
 // TestLoad tests the backend's Load function.
 func (s *Suite[C]) TestLoad(t *testing.T) {
-	seedRand(t)
+	random := seedRand(t)
 
 	b := s.open(t)
 	defer s.close(t, b)
@@ -140,7 +141,7 @@ func (s *Suite[C]) TestLoad(t *testing.T) {
 	test.Assert(t, b.IsNotExist(err), "IsNotExist() did not recognize non-existing blob: %v", err)
 	test.Assert(t, b.IsPermanentError(err), "IsPermanentError() did not recognize non-existing blob: %v", err)
 
-	length := rand.Intn(1<<24) + 2000
+	length := random.Intn(1<<24) + 2000
 
 	data := test.Random(23, length)
 	id := restic.Hash(data)
@@ -173,8 +174,8 @@ func (s *Suite[C]) TestLoad(t *testing.T) {
 	}
 
 	for i := 0; i < loadTests; i++ {
-		l := rand.Intn(length + 2000)
-		o := rand.Intn(length + 2000)
+		l := random.Intn(length + 2000)
+		o := random.Intn(length + 2000)
 
 		d := data
 		if o < len(d) {
@@ -186,7 +187,7 @@ func (s *Suite[C]) TestLoad(t *testing.T) {
 
 		getlen := l
 		if l >= len(d) {
-			if rand.Float32() >= 0.5 {
+			if random.Float32() >= 0.5 {
 				getlen = 0
 			} else {
 				getlen = len(d)
@@ -254,9 +255,9 @@ type setter interface {
 
 // TestList makes sure that the backend implements List() pagination correctly.
 func (s *Suite[C]) TestList(t *testing.T) {
-	seedRand(t)
+	random := seedRand(t)
 
-	numTestFiles := rand.Intn(20) + 20
+	numTestFiles := random.Intn(20) + 20
 
 	b := s.open(t)
 	defer s.close(t, b)
@@ -277,7 +278,7 @@ func (s *Suite[C]) TestList(t *testing.T) {
 	list1 := make(map[restic.ID]int64)
 
 	for i := 0; i < numTestFiles; i++ {
-		data := test.Random(rand.Int(), rand.Intn(100)+55)
+		data := test.Random(random.Int(), random.Intn(100)+55)
 		id := restic.Hash(data)
 		h := backend.Handle{Type: backend.PackFile, Name: id.String()}
 		err := b.Save(context.TODO(), h, backend.NewByteReader(data, b.Hasher()))
@@ -353,8 +354,6 @@ func (s *Suite[C]) TestList(t *testing.T) {
 
 // TestListCancel tests that the context is respected and the error is returned by List.
 func (s *Suite[C]) TestListCancel(t *testing.T) {
-	seedRand(t)
-
 	numTestFiles := 5
 
 	b := s.open(t)
@@ -498,7 +497,7 @@ func (ec errorCloser) Rewind() error {
 
 // TestSave tests saving data in the backend.
 func (s *Suite[C]) TestSave(t *testing.T) {
-	seedRand(t)
+	random := seedRand(t)
 
 	b := s.open(t)
 	defer s.close(t, b)
@@ -510,7 +509,7 @@ func (s *Suite[C]) TestSave(t *testing.T) {
 	}
 
 	for i := 0; i < saveTests; i++ {
-		length := rand.Intn(1<<23) + 200000
+		length := random.Intn(1<<23) + 200000
 		data := test.Random(23, length)
 		id = sha256.Sum256(data)
 
@@ -554,7 +553,7 @@ func (s *Suite[C]) TestSave(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	length := rand.Intn(1<<23) + 200000
+	length := random.Intn(1<<23) + 200000
 	data := test.Random(23, length)
 	id = sha256.Sum256(data)
 
@@ -614,7 +613,7 @@ func (r *incompleteByteReader) Length() int64 {
 
 // TestSaveError tests saving data in the backend.
 func (s *Suite[C]) TestSaveError(t *testing.T) {
-	seedRand(t)
+	random := seedRand(t)
 
 	b := s.open(t)
 	defer func() {
@@ -623,7 +622,7 @@ func (s *Suite[C]) TestSaveError(t *testing.T) {
 		_ = b.Close()
 	}()
 
-	length := rand.Intn(1<<23) + 200000
+	length := random.Intn(1<<23) + 200000
 	data := test.Random(24, length)
 	var id restic.ID
 	copy(id[:], data)
@@ -653,7 +652,7 @@ func (b *wrongByteReader) Hash() []byte {
 
 // TestSaveWrongHash tests that uploads with a wrong hash fail
 func (s *Suite[C]) TestSaveWrongHash(t *testing.T) {
-	seedRand(t)
+	random := seedRand(t)
 
 	b := s.open(t)
 	defer s.close(t, b)
@@ -662,7 +661,7 @@ func (s *Suite[C]) TestSaveWrongHash(t *testing.T) {
 		return
 	}
 
-	length := rand.Intn(1<<23) + 200000
+	length := random.Intn(1<<23) + 200000
 	data := test.Random(25, length)
 	var id restic.ID
 	copy(id[:], data)

@@ -3,6 +3,7 @@ package repository
 import (
 	"bufio"
 	"context"
+	"crypto/sha256"
 	"io"
 	"os"
 	"runtime"
@@ -17,8 +18,6 @@ import (
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository/pack"
-
-	"github.com/minio/sha256-simd"
 )
 
 // packer holds a pack.packer together with a hash writer.
