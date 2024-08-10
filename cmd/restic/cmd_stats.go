@@ -70,10 +70,20 @@ type StatsOptions struct {
 
 var statsOptions StatsOptions
 
+func must(err error) {
+	if err != nil {
+		panic(fmt.Sprintf("error during setup: %v", err))
+	}
+}
+
 func init() {
 	cmdRoot.AddCommand(cmdStats)
 	f := cmdStats.Flags()
 	f.StringVar(&statsOptions.countMode, "mode", countModeRestoreSize, "counting mode: restore-size (default), files-by-contents, blobs-per-file or raw-data")
+	must(cmdStats.RegisterFlagCompletionFunc("mode", func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+		return []string{countModeRestoreSize, countModeUniqueFilesByContents, countModeBlobsPerFile, countModeRawData}, cobra.ShellCompDirectiveDefault
+	}))
+
 	initMultiSnapshotFilter(f, &statsOptions.SnapshotFilter, true)
 }
 
