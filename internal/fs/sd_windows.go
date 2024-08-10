@@ -11,6 +11,7 @@ import (
 	"unsafe"
 
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
 	"golang.org/x/sys/windows"
 )
 
@@ -60,6 +61,8 @@ func GetSecurityDescriptor(filePath string) (securityDescriptor *[]byte, err err
 			if err != nil {
 				return nil, fmt.Errorf("get low-level named security info failed with: %w", err)
 			}
+		} else if errors.Is(err, windows.ERROR_NOT_SUPPORTED) {
+			return nil, nil
 		} else {
 			return nil, fmt.Errorf("get named security info failed with: %w", err)
 		}

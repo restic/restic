@@ -1,0 +1,12 @@
+Bugfix: Skip EA processing in Windows for volumes that do not support EA
+
+Restic was failing to backup files on some windows paths like network
+drives because of errors while fetching extended attributes.
+Either they return error codes like windows.E_NOT_SET or
+windows.ERROR_INVALID_FUNCTION or it results in slower backups.
+Restic now completely skips the attempt to fetch extended attributes
+for such volumes where it is not supported.
+
+https://github.com/restic/restic/pull/4980
+https://github.com/restic/restic/issues/4955
+https://github.com/restic/restic/issues/4950
