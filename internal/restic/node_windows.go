@@ -392,7 +392,7 @@ func (node *Node) fillGenericAttributes(path string, fi os.FileInfo, stat *statT
 			return false, err
 		}
 		if sd, err = fs.GetSecurityDescriptor(path); err != nil {
-			return true, err
+			return allowExtended, err
 		}
 	}
 	// Add Windows attributes
