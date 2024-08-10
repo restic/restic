@@ -135,7 +135,7 @@ func TestUploadTimeout(t *testing.T) {
 	rtest.OK(t, err)
 
 	resp, err := rt.RoundTrip(req)
-	rtest.Equals(t, context.Canceled, err)
+	rtest.Equals(t, errRequestTimeout, err)
 	// make linter happy
 	if resp != nil {
 		rtest.OK(t, resp.Body.Close())
@@ -162,7 +162,7 @@ func TestProcessingTimeout(t *testing.T) {
 	rtest.OK(t, err)
 
 	resp, err := rt.RoundTrip(req)
-	rtest.Equals(t, context.Canceled, err)
+	rtest.Equals(t, errRequestTimeout, err)
 	// make linter happy
 	if resp != nil {
 		rtest.OK(t, resp.Body.Close())
