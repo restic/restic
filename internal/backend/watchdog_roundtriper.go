@@ -65,6 +65,9 @@ func (w *watchdogRoundtripper) RoundTrip(req *http.Request) (*http.Response, err
 
 	resp, err := w.rt.RoundTrip(req)
 	if err != nil {
+		if isTimeout(err) {
+			err = errRequestTimeout
+		}
 		return nil, err
 	}
 
