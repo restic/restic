@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"os"
 	"runtime"
 	"sort"
 	"sync"
@@ -586,9 +585,8 @@ func (r *Repository) ListPacksFromIndex(ctx context.Context, packs restic.IDSet)
 }
 
 // SetIndex instructs the repository to use the given index.
-func (r *Repository) SetIndex(i restic.MasterIndex) error {
+func (r *Repository) SetIndex(i restic.MasterIndex) {
 	r.idx = i.(*index.MasterIndex)
-	return r.prepareCache()
 }
 
 func (r *Repository) clearIndex() {
@@ -628,12 +626,8 @@ func (r *Repository) LoadIndex(ctx context.Context, p *progress.Counter) error {
 			return errors.New("index uses feature not supported by repository version 1")
 		}
 	}
-	if ctx.Err() != nil {
-		return ctx.Err()
-	}
 
-	// remove index files from the cache which have been removed in the repo
-	return r.prepareCache()
+	return ctx.Err()
 }
 
 // createIndexFromPacks creates a new index by reading all given pack files (with sizes).
@@ -697,33 +691,6 @@ func (r *Repository) createIndexFromPacks(ctx context.Context, packsize map[rest
 	}
 
 	return invalid, nil
-}
-
-// prepareCache initializes the local cache. indexIDs is the list of IDs of
-// index files still present in the repo.
-func (r *Repository) prepareCache() error {
-	if r.Cache == nil {
-		return nil
-	}
-
-	indexIDs := r.idx.IDs()
-	debug.Log("prepare cache with %d index files", len(indexIDs))
-
-	// clear old index files
-	err := r.Cache.Clear(restic.IndexFile, indexIDs)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error clearing index files in cache: %v\n", err)
-	}
-
-	packs := r.idx.Packs(restic.NewIDSet())
-
-	// clear old packs
-	err = r.Cache.Clear(restic.PackFile, packs)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error clearing pack files in cache: %v\n", err)
-	}
-
-	return nil
 }
 
 // SearchKey finds a key with the supplied password, afterwards the config is
