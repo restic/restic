@@ -417,11 +417,13 @@ func checkAndStoreEASupport(path string) (isEASupportedVolume bool, err error) {
 		// First check if the manually prepared volume name is already in the map
 		eaSupportedValue, exists := eaSupportedVolumesMap.Load(volumeName)
 		if exists {
+			// Cache hit, immediately return the cached value
 			return eaSupportedValue.(bool), nil
 		}
 		// If not found, check if EA is supported with manually prepared volume name
 		isEASupportedVolume, err = fs.PathSupportsExtendedAttributes(volumeName + `\`)
-		if err != nil {
+		// If the prepared volume name is not valid, we will next fetch the actual volume name.
+		if err != nil && !errors.Is(err, windows.DNS_ERROR_INVALID_NAME) {
 			return false, err
 		}
 	}
@@ -434,6 +436,7 @@ func checkAndStoreEASupport(path string) (isEASupportedVolume bool, err error) {
 		// If the actual volume name is different, check cache for the actual volume name
 		eaSupportedValue, exists := eaSupportedVolumesMap.Load(volumeNameActual)
 		if exists {
+			// Cache hit, immediately return the cached value
 			return eaSupportedValue.(bool), nil
 		}
 		// If the actual volume name is different and is not in the map, again check if the new volume supports extended attributes with the actual volume name
