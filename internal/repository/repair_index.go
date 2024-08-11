@@ -52,10 +52,8 @@ func RepairIndex(ctx context.Context, repo *Repository, opts RepairIndexOptions,
 			return err
 		}
 
-		err = repo.SetIndex(mi)
-		if err != nil {
-			return err
-		}
+		repo.SetIndex(mi)
+
 		packSizeFromIndex, err = pack.Size(ctx, repo, false)
 		if err != nil {
 			return err
