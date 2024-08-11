@@ -1,0 +1,9 @@
+Enhancement: Clear removed snapshots, index and pack files from the local cache
+
+Restic did not clear removed snapshots from the cache after the `forget` 
+operation; only indexes and pack files were removed automatically.  
+Restic now automatically clears removed indexes, packs and snapshots from the
+local cache.
+
+https://github.com/restic/restic/issues/4934
+https://github.com/restic/restic/pull/4981
