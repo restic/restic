@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/ui/progress"
 	restoreui "github.com/restic/restic/internal/ui/restore"
 
 	"golang.org/x/sync/errgroup"
@@ -333,12 +334,13 @@ func (res *Restorer) ensureDir(target string) error {
 
 // RestoreTo creates the directories and files in the snapshot below dst.
 // Before an item is created, res.Filter is called.
-func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
+func (res *Restorer) RestoreTo(ctx context.Context, dst string) (uint64, error) {
+	restoredFileCount := uint64(0)
 	var err error
 	if !filepath.IsAbs(dst) {
 		dst, err = filepath.Abs(dst)
 		if err != nil {
-			return errors.Wrap(err, "Abs")
+			return restoredFileCount, errors.Wrap(err, "Abs")
 		}
 	}
 
@@ -346,7 +348,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 		// ensure that the target directory exists and is actually a directory
 		// Using ensureDir is too aggressive here as it also removes unexpected files
 		if err := fs.MkdirAll(dst, 0700); err != nil {
-			return fmt.Errorf("cannot create target directory: %w", err)
+			return restoredFileCount, fmt.Errorf("cannot create target directory: %w", err)
 		}
 	}
 
@@ -406,19 +408,22 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 					}
 				}
 				res.trackFile(location, updateMetadataOnly)
+				if !updateMetadataOnly {
+					restoredFileCount++
+				}
 				return nil
 			})
 			return err
 		},
 	})
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	if !res.opts.DryRun {
 		err = filerestorer.restoreFiles(ctx)
 		if err != nil {
-			return err
+			return 0, err
 		}
 	}
 
@@ -466,7 +471,7 @@ func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 			return err
 		},
 	})
-	return err
+	return restoredFileCount, err
 }
 
 func (res *Restorer) removeUnexpectedFiles(ctx context.Context, target, location string, expectedFilenames []string) error {
@@ -587,7 +592,7 @@ const nVerifyWorkers = 8
 // have been successfully written to dst. It stops when it encounters an
 // error. It returns that error and the number of files it has successfully
 // verified.
-func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
+func (res *Restorer) VerifyFiles(ctx context.Context, dst string, countRestoredFiles uint64, p *progress.Counter) (int, error) {
 	type mustCheck struct {
 		node *restic.Node
 		path string
@@ -597,6 +602,11 @@ func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
 		nchecked uint64
 		work     = make(chan mustCheck, 2*nVerifyWorkers)
 	)
+
+	if p != nil {
+		p.SetMax(countRestoredFiles)
+		defer p.Done()
+	}
 
 	g, ctx := errgroup.WithContext(ctx)
 
@@ -632,6 +642,7 @@ func (res *Restorer) VerifyFiles(ctx context.Context, dst string) (int, error) {
 				if err != nil || ctx.Err() != nil {
 					break
 				}
+				p.Add(1)
 				atomic.AddUint64(&nchecked, 1)
 			}
 			return err
