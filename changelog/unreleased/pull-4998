@@ -1,0 +1,8 @@
+Bugfix: Fix extended attributes handling for VSS snapshots
+
+Restic was failing to backup extended attributes for VSS snapshots
+after the fix for https://github.com/restic/restic/pull/4980.
+Restic now correctly handles extended attributes for VSS snapshots.
+
+https://github.com/restic/restic/pull/4998
+https://github.com/restic/restic/pull/4980
