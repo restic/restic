@@ -57,6 +57,13 @@ func randomData(n int) (backend.Handle, []byte) {
 	return h, data
 }
 
+func list(t testing.TB, be backend.Backend, fn func(backend.FileInfo) error) {
+	err := be.List(context.TODO(), backend.IndexFile, fn)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestBackend(t *testing.T) {
 	be := mem.New()
 	c := TestNewCache(t)
@@ -237,4 +244,55 @@ func TestErrorBackend(t *testing.T) {
 	}
 
 	wg.Wait()
+}
+
+func TestAutomaticCacheClear(t *testing.T) {
+	be := mem.New()
+	c := TestNewCache(t)
+	wbe := c.Wrap(be)
+
+	// add two handles h1 and h2
+	h1, data := randomData(2000)
+	// save h1 directly to the backend
+	save(t, be, h1, data)
+	if c.Has(h1) {
+		t.Errorf("cache has file1 too early")
+	}
+
+	h2, data2 := randomData(3000)
+
+	// save h2 directly to the backend
+	save(t, be, h2, data2)
+	if c.Has(h2) {
+		t.Errorf("cache has file2 too early")
+	}
+
+	loadAndCompare(t, wbe, h1, data)
+	if !c.Has(h1) {
+		t.Errorf("cache doesn't have file1 after load")
+	}
+
+	loadAndCompare(t, wbe, h2, data2)
+	if !c.Has(h2) {
+		t.Errorf("cache doesn't have file2 after load")
+	}
+
+	// remove h1 directly from the backend
+	remove(t, be, h1)
+	if !c.Has(h1) {
+		t.Errorf("file1 not in cache any more, should be removed from cache only after list")
+	}
+
+	// list all files in the backend
+	list(t, wbe, func(_ backend.FileInfo) error { return nil })
+
+	// h1 should be removed from the cache
+	if c.Has(h1) {
+		t.Errorf("cache has file1 after remove")
+	}
+
+	// h2 should still be in the cache
+	if !c.Has(h2) {
+		t.Errorf("cache doesn't have file2 after list")
+	}
 }
