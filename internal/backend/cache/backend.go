@@ -247,6 +247,10 @@ func (b *Backend) List(ctx context.Context, t backend.FileType, fn func(f backen
 		return err
 	}
 
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
 	// clear the cache for files that are not in the repo anymore, ignore errors
 	err = b.Cache.Clear(t, ids)
 	if err != nil {
