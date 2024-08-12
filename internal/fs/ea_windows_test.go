@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"syscall"
 	"testing"
 	"unsafe"
@@ -243,5 +244,80 @@ func testSetGetEA(t *testing.T, path string, handle windows.Handle, testEAs []Ex
 	if !reflect.DeepEqual(readEAs, testEAs) {
 		t.Logf("expected: %+v, found: %+v\n", testEAs, readEAs)
 		t.Fatalf("EAs read from path %s don't match", path)
+	}
+}
+
+func TestPathSupportsExtendedAttributes(t *testing.T) {
+	testCases := []struct {
+		name     string
+		path     string
+		expected bool
+	}{
+		{
+			name:     "System drive",
+			path:     os.Getenv("SystemDrive") + `\`,
+			expected: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			supported, err := PathSupportsExtendedAttributes(tc.path)
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+			if supported != tc.expected {
+				t.Errorf("Expected %v, got %v for path %s", tc.expected, supported, tc.path)
+			}
+		})
+	}
+
+	// Test with an invalid path
+	_, err := PathSupportsExtendedAttributes("Z:\\NonExistentPath-UAS664da5s4dyu56das45f5as")
+	if err == nil {
+		t.Error("Expected an error for non-existent path, but got nil")
+	}
+}
+
+func TestGetVolumePathName(t *testing.T) {
+	tempDirVolume := filepath.VolumeName(os.TempDir())
+	testCases := []struct {
+		name           string
+		path           string
+		expectedPrefix string
+	}{
+		{
+			name:           "Root directory",
+			path:           os.Getenv("SystemDrive") + `\`,
+			expectedPrefix: os.Getenv("SystemDrive"),
+		},
+		{
+			name:           "Nested directory",
+			path:           os.Getenv("SystemDrive") + `\Windows\System32`,
+			expectedPrefix: os.Getenv("SystemDrive"),
+		},
+		{
+			name:           "Temp directory",
+			path:           os.TempDir() + `\`,
+			expectedPrefix: tempDirVolume,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			volumeName, err := GetVolumePathName(tc.path)
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+			if !strings.HasPrefix(volumeName, tc.expectedPrefix) {
+				t.Errorf("Expected volume name to start with %s, but got %s", tc.expectedPrefix, volumeName)
+			}
+		})
+	}
+
+	// Test with an invalid path
+	_, err := GetVolumePathName("Z:\\NonExistentPath")
+	if err == nil {
+		t.Error("Expected an error for non-existent path, but got nil")
 	}
 }
