@@ -37,7 +37,7 @@ func TestRestorerRestoreEmptyHardlinkedFields(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	err := res.RestoreTo(ctx, tempdir)
+	_, err := res.RestoreTo(ctx, tempdir)
 	rtest.OK(t, err)
 
 	f1, err := os.Stat(filepath.Join(tempdir, "dirtest/file1"))
@@ -96,7 +96,7 @@ func testRestorerProgressBar(t *testing.T, dryRun bool) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	err := res.RestoreTo(ctx, tempdir)
+	_, err := res.RestoreTo(ctx, tempdir)
 	rtest.OK(t, err)
 	progress.Finish()
 
@@ -126,7 +126,8 @@ func TestRestorePermissions(t *testing.T) {
 	t.Logf("snapshot saved as %v", id.Str())
 
 	res := NewRestorer(repo, sn, Options{})
-	rtest.OK(t, res.RestoreTo(ctx, tempdir))
+	_, err := res.RestoreTo(ctx, tempdir)
+	rtest.OK(t, err)
 
 	for _, overwrite := range []OverwriteBehavior{OverwriteIfChanged, OverwriteAlways} {
 		// tamper with permissions
@@ -134,7 +135,8 @@ func TestRestorePermissions(t *testing.T) {
 		rtest.OK(t, os.Chmod(path, 0o700))
 
 		res = NewRestorer(repo, sn, Options{Overwrite: overwrite})
-		rtest.OK(t, res.RestoreTo(ctx, tempdir))
+		_, err := res.RestoreTo(ctx, tempdir)
+		rtest.OK(t, err)
 		fi, err := os.Stat(path)
 		rtest.OK(t, err)
 		rtest.Equals(t, fs.FileMode(0o600), fi.Mode().Perm(), "unexpected permissions")
