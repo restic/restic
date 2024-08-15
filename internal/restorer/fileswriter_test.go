@@ -49,7 +49,7 @@ func TestFilesWriterRecursiveOverwrite(t *testing.T) {
 	// must error if recursive delete is not allowed
 	w := newFilesWriter(1, false)
 	err := w.writeToFile(path, []byte{1}, 0, 2, false)
-	rtest.Assert(t, errors.Is(err, notEmptyDirError()), "unexepected error got %v", err)
+	rtest.Assert(t, errors.Is(err, notEmptyDirError()), "unexpected error got %v", err)
 	rtest.Equals(t, 0, len(w.buckets[0].files))
 
 	// must replace directory

@@ -585,7 +585,7 @@ Sometimes, it can be useful to directly save the output of a program, for exampl
 ``mysqldump`` so that the SQL can later be restored. Restic supports this mode
 of operation; just supply the option ``--stdin-from-command`` when using the
 ``backup`` action, and write the command in place of the files/directories. To prevent
-restic from interpreting the arguments for the commmand, make sure to add ``--`` before
+restic from interpreting the arguments for the command, make sure to add ``--`` before
 the command starts:
 
 .. code-block:: console
