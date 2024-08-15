@@ -25,17 +25,19 @@ Exit status is 1 if there was any error.
 	Run: func(_ *cobra.Command, _ []string) {
 		if globalOptions.JSON {
 			type jsonVersion struct {
-				Version   string `json:"version"`
-				GoVersion string `json:"go_version"`
-				GoOS      string `json:"go_os"`
-				GoArch    string `json:"go_arch"`
+				MessageType string `json:"message_type"` // version
+				Version     string `json:"version"`
+				GoVersion   string `json:"go_version"`
+				GoOS        string `json:"go_os"`
+				GoArch      string `json:"go_arch"`
 			}
 
 			jsonS := jsonVersion{
-				Version:   version,
-				GoVersion: runtime.Version(),
-				GoOS:      runtime.GOOS,
-				GoArch:    runtime.GOARCH,
+				MessageType: "version",
+				Version:     version,
+				GoVersion:   runtime.Version(),
+				GoOS:        runtime.GOOS,
+				GoArch:      runtime.GOARCH,
 			}
 
 			err := json.NewEncoder(globalOptions.stdout).Encode(jsonS)
