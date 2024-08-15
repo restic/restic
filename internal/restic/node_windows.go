@@ -42,6 +42,7 @@ const (
 	extendedPathPrefix = `\\?\`
 	uncPathPrefix      = `\\?\UNC\`
 	globalRootPrefix   = `\\?\GLOBALROOT\`
+	volumeGUIDPrefix   = `\\?\Volume{`
 )
 
 // mknod is not supported on Windows.
@@ -407,38 +408,91 @@ func (node *Node) fillGenericAttributes(path string, fi os.FileInfo, stat *statT
 // checkAndStoreEASupport checks if the volume of the path supports extended attributes and stores the result in a map
 // If the result is already in the map, it returns the result from the map.
 func checkAndStoreEASupport(path string) (isEASupportedVolume bool, err error) {
-	// Check if it's an extended length path
-	if strings.HasPrefix(path, uncPathPrefix) {
-		// Convert \\?\UNC\ extended path to standard path to get the volume name correctly
-		path = `\\` + path[len(uncPathPrefix):]
-	} else if strings.HasPrefix(path, extendedPathPrefix) {
-		//Extended length path prefix needs to be trimmed to get the volume name correctly
-		path = path[len(extendedPathPrefix):]
-	} else if strings.HasPrefix(path, globalRootPrefix) {
-		// EAs are not supported for \\?\GLOBALROOT i.e. VSS snapshots
-		return false, nil
-	} else {
-		// Use the absolute path
-		path, err = filepath.Abs(path)
-		if err != nil {
-			return false, fmt.Errorf("failed to get absolute path: %w", err)
-		}
-	}
-	volumeName := filepath.VolumeName(path)
-	if volumeName == "" {
-		return false, nil
-	}
-	eaSupportedValue, exists := eaSupportedVolumesMap.Load(volumeName)
-	if exists {
-		return eaSupportedValue.(bool), nil
+	var volumeName string
+	volumeName, err = prepareVolumeName(path)
+	if err != nil {
+		return false, err
 	}
 
-	// Add backslash to the volume name to ensure it is a valid path
-	isEASupportedVolume, err = fs.PathSupportsExtendedAttributes(volumeName + `\`)
-	if err == nil {
-		eaSupportedVolumesMap.Store(volumeName, isEASupportedVolume)
+	if volumeName != "" {
+		// First check if the manually prepared volume name is already in the map
+		eaSupportedValue, exists := eaSupportedVolumesMap.Load(volumeName)
+		if exists {
+			// Cache hit, immediately return the cached value
+			return eaSupportedValue.(bool), nil
+		}
+		// If not found, check if EA is supported with manually prepared volume name
+		isEASupportedVolume, err = fs.PathSupportsExtendedAttributes(volumeName + `\`)
+		// If the prepared volume name is not valid, we will fetch the actual volume name next.
+		if err != nil && !errors.Is(err, windows.DNS_ERROR_INVALID_NAME) {
+			debug.Log("Error checking if extended attributes are supported for prepared volume name %s: %v", volumeName, err)
+			// There can be multiple errors like path does not exist, bad network path, etc.
+			// We just gracefully disallow extended attributes for cases.
+			return false, nil
+		}
+	}
+	// If an entry is not found, get the actual volume name using the GetVolumePathName function
+	volumeNameActual, err := fs.GetVolumePathName(path)
+	if err != nil {
+		debug.Log("Error getting actual volume name %s for path %s: %v", volumeName, path, err)
+		// There can be multiple errors like path does not exist, bad network path, etc.
+		// We just gracefully disallow extended attributes for cases.
+		return false, nil
+	}
+	if volumeNameActual != volumeName {
+		// If the actual volume name is different, check cache for the actual volume name
+		eaSupportedValue, exists := eaSupportedVolumesMap.Load(volumeNameActual)
+		if exists {
+			// Cache hit, immediately return the cached value
+			return eaSupportedValue.(bool), nil
+		}
+		// If the actual volume name is different and is not in the map, again check if the new volume supports extended attributes with the actual volume name
+		isEASupportedVolume, err = fs.PathSupportsExtendedAttributes(volumeNameActual + `\`)
+		// Debug log for cases where the prepared volume name is not valid
+		if err != nil {
+			debug.Log("Error checking if extended attributes are supported for actual volume name %s: %v", volumeNameActual, err)
+			// There can be multiple errors like path does not exist, bad network path, etc.
+			// We just gracefully disallow extended attributes for cases.
+			return false, nil
+		} else {
+			debug.Log("Checking extended attributes. Prepared volume name: %s, actual volume name: %s, isEASupportedVolume: %v, err: %v", volumeName, volumeNameActual, isEASupportedVolume, err)
+		}
+	}
+	if volumeNameActual != "" {
+		eaSupportedVolumesMap.Store(volumeNameActual, isEASupportedVolume)
 	}
 	return isEASupportedVolume, err
+}
+
+// prepareVolumeName prepares the volume name for different cases in Windows
+func prepareVolumeName(path string) (volumeName string, err error) {
+	// Check if it's an extended length path
+	if strings.HasPrefix(path, globalRootPrefix) {
+		// Extract the VSS snapshot volume name eg. `\\?\GLOBALROOT\Device\HarddiskVolumeShadowCopyXX`
+		if parts := strings.SplitN(path, `\`, 7); len(parts) >= 6 {
+			volumeName = strings.Join(parts[:6], `\`)
+		} else {
+			volumeName = filepath.VolumeName(path)
+		}
+	} else {
+		if !strings.HasPrefix(path, volumeGUIDPrefix) { // Handle volume GUID path
+			if strings.HasPrefix(path, uncPathPrefix) {
+				// Convert \\?\UNC\ extended path to standard path to get the volume name correctly
+				path = `\\` + path[len(uncPathPrefix):]
+			} else if strings.HasPrefix(path, extendedPathPrefix) {
+				//Extended length path prefix needs to be trimmed to get the volume name correctly
+				path = path[len(extendedPathPrefix):]
+			} else {
+				// Use the absolute path
+				path, err = filepath.Abs(path)
+				if err != nil {
+					return "", fmt.Errorf("failed to get absolute path: %w", err)
+				}
+			}
+		}
+		volumeName = filepath.VolumeName(path)
+	}
+	return volumeName, nil
 }
 
 // windowsAttrsToGenericAttributes converts the WindowsAttributes to a generic attributes map using reflection

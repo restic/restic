@@ -12,6 +12,7 @@ import (
 	"strings"
 	"syscall"
 	"testing"
+	"time"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/fs"
@@ -328,4 +329,199 @@ func TestRestoreExtendedAttributes(t *testing.T) {
 			test.Equals(t, expectedExtAttr.Value, foundExtAttr.Value)
 		}
 	}
+}
+
+func TestPrepareVolumeName(t *testing.T) {
+	currentVolume := filepath.VolumeName(func() string {
+		// Get the current working directory
+		pwd, err := os.Getwd()
+		if err != nil {
+			t.Fatalf("Failed to get current working directory: %v", err)
+		}
+		return pwd
+	}())
+	// Create a temporary directory for the test
+	tempDir, err := os.MkdirTemp("", "restic_test_"+time.Now().Format("20060102150405"))
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Create a long file name
+	longFileName := `\Very\Long\Path\That\Exceeds\260\Characters\` + strings.Repeat(`\VeryLongFolderName`, 20) + `\\LongFile.txt`
+	longFilePath := filepath.Join(tempDir, longFileName)
+
+	tempDirVolume := filepath.VolumeName(tempDir)
+	// Create the file
+	content := []byte("This is a test file with a very long name.")
+	err = os.MkdirAll(filepath.Dir(longFilePath), 0755)
+	test.OK(t, err)
+	if err != nil {
+		t.Fatalf("Failed to create long folder: %v", err)
+	}
+	err = os.WriteFile(longFilePath, content, 0644)
+	test.OK(t, err)
+	if err != nil {
+		t.Fatalf("Failed to create long file: %v", err)
+	}
+	osVolumeGUIDPath := getOSVolumeGUIDPath(t)
+	osVolumeGUIDVolume := filepath.VolumeName(osVolumeGUIDPath)
+
+	testCases := []struct {
+		name                string
+		path                string
+		expectedVolume      string
+		expectError         bool
+		expectedEASupported bool
+		isRealPath          bool
+	}{
+		{
+			name:                "Network drive path",
+			path:                `Z:\Shared\Documents`,
+			expectedVolume:      `Z:`,
+			expectError:         false,
+			expectedEASupported: false,
+		},
+		{
+			name:                "Subst drive path",
+			path:                `X:\Virtual\Folder`,
+			expectedVolume:      `X:`,
+			expectError:         false,
+			expectedEASupported: false,
+		},
+		{
+			name:                "Windows reserved path",
+			path:                `\\.\` + os.Getenv("SystemDrive") + `\System32\drivers\etc\hosts`,
+			expectedVolume:      `\\.\` + os.Getenv("SystemDrive"),
+			expectError:         false,
+			expectedEASupported: true,
+			isRealPath:          true,
+		},
+		{
+			name:                "Long UNC path",
+			path:                `\\?\UNC\LongServerName\VeryLongShareName\DeepPath\File.txt`,
+			expectedVolume:      `\\LongServerName\VeryLongShareName`,
+			expectError:         false,
+			expectedEASupported: false,
+		},
+		{
+			name:                "Volume GUID path",
+			path:                osVolumeGUIDPath,
+			expectedVolume:      osVolumeGUIDVolume,
+			expectError:         false,
+			expectedEASupported: true,
+			isRealPath:          true,
+		},
+		{
+			name:                "Volume GUID path with subfolder",
+			path:                osVolumeGUIDPath + `\Windows`,
+			expectedVolume:      osVolumeGUIDVolume,
+			expectError:         false,
+			expectedEASupported: true,
+			isRealPath:          true,
+		},
+		{
+			name:                "Standard path",
+			path:                os.Getenv("SystemDrive") + `\Users\`,
+			expectedVolume:      os.Getenv("SystemDrive"),
+			expectError:         false,
+			expectedEASupported: true,
+			isRealPath:          true,
+		},
+		{
+			name:                "Extended length path",
+			path:                longFilePath,
+			expectedVolume:      tempDirVolume,
+			expectError:         false,
+			expectedEASupported: true,
+			isRealPath:          true,
+		},
+		{
+			name:                "UNC path",
+			path:                `\\server\share\folder`,
+			expectedVolume:      `\\server\share`,
+			expectError:         false,
+			expectedEASupported: false,
+		},
+		{
+			name:                "Extended UNC path",
+			path:                `\\?\UNC\server\share\folder`,
+			expectedVolume:      `\\server\share`,
+			expectError:         false,
+			expectedEASupported: false,
+		},
+		{
+			name:                "Volume Shadow Copy path",
+			path:                `\\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy1\Users\test`,
+			expectedVolume:      `\\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy1`,
+			expectError:         false,
+			expectedEASupported: false,
+		},
+		{
+			name: "Relative path",
+			path: `folder\subfolder`,
+
+			expectedVolume:      currentVolume, // Get current volume
+			expectError:         false,
+			expectedEASupported: true,
+		},
+		{
+			name:                "Empty path",
+			path:                ``,
+			expectedVolume:      currentVolume,
+			expectError:         false,
+			expectedEASupported: true,
+			isRealPath:          false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			isEASupported, err := checkAndStoreEASupport(tc.path)
+			test.OK(t, err)
+			test.Equals(t, tc.expectedEASupported, isEASupported)
+
+			volume, err := prepareVolumeName(tc.path)
+
+			if tc.expectError {
+				test.Assert(t, err != nil, "Expected an error, but got none")
+			} else {
+				test.OK(t, err)
+			}
+			test.Equals(t, tc.expectedVolume, volume)
+
+			if tc.isRealPath {
+				isEASupportedVolume, err := fs.PathSupportsExtendedAttributes(volume + `\`)
+				// If the prepared volume name is not valid, we will next fetch the actual volume name.
+				test.OK(t, err)
+
+				test.Equals(t, tc.expectedEASupported, isEASupportedVolume)
+
+				actualVolume, err := fs.GetVolumePathName(tc.path)
+				test.OK(t, err)
+				test.Equals(t, tc.expectedVolume, actualVolume)
+			}
+		})
+	}
+}
+
+func getOSVolumeGUIDPath(t *testing.T) string {
+	// Get the path of the OS drive (usually C:\)
+	osDrive := os.Getenv("SystemDrive") + "\\"
+
+	// Convert to a volume GUID path
+	volumeName, err := windows.UTF16PtrFromString(osDrive)
+	test.OK(t, err)
+	if err != nil {
+		return ""
+	}
+
+	var volumeGUID [windows.MAX_PATH]uint16
+	err = windows.GetVolumeNameForVolumeMountPoint(volumeName, &volumeGUID[0], windows.MAX_PATH)
+	test.OK(t, err)
+	if err != nil {
+		return ""
+	}
+
+	return windows.UTF16ToString(volumeGUID[:])
 }

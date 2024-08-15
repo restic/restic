@@ -8,5 +8,6 @@ Restic now completely skips the attempt to fetch extended attributes
 for such volumes where it is not supported.
 
 https://github.com/restic/restic/pull/4980
+https://github.com/restic/restic/pull/4998
 https://github.com/restic/restic/issues/4955
 https://github.com/restic/restic/issues/4950
