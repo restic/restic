@@ -146,7 +146,11 @@ func (c *Checker) LoadIndex(ctx context.Context, p *progress.Counter) (hints []e
 		return hints, append(errs, err)
 	}
 
-	c.repo.SetIndex(c.masterIndex)
+	err = c.repo.SetIndex(c.masterIndex)
+	if err != nil {
+		debug.Log("SetIndex returned error: %v", err)
+		errs = append(errs, err)
+	}
 
 	// compute pack size using index entries
 	c.packs, err = pack.Size(ctx, c.repo, false)
