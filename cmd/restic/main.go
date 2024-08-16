@@ -18,6 +18,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/feature"
 	"github.com/restic/restic/internal/options"
+	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 )
 
@@ -164,6 +165,8 @@ func main() {
 		exitMessage = fmt.Sprintf("Warning: %v", err)
 	case errors.IsFatal(err):
 		exitMessage = err.Error()
+	case errors.Is(err, repository.ErrNoKeyFound):
+		exitMessage = fmt.Sprintf("Fatal: %v", err)
 	case err != nil:
 		exitMessage = fmt.Sprintf("%+v", err)
 
@@ -186,6 +189,8 @@ func main() {
 		exitCode = 10
 	case restic.IsAlreadyLocked(err):
 		exitCode = 11
+	case errors.Is(err, repository.ErrNoKeyFound):
+		exitCode = 12
 	case errors.Is(err, context.Canceled):
 		exitCode = 130
 	default:
