@@ -22,7 +22,7 @@ type Repository interface {
 	Key() *crypto.Key
 
 	LoadIndex(ctx context.Context, p *progress.Counter) error
-	SetIndex(mi MasterIndex)
+	SetIndex(mi MasterIndex) error
 
 	LookupBlob(t BlobType, id ID) []PackedBlob
 	LookupBlobSize(t BlobType, id ID) (size uint, exists bool)
