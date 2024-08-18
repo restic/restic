@@ -100,7 +100,7 @@ It will hold the error message and the exit code.
 +----------------------+-------------------------------------------+
 | ``code``             | Exit code (see above chart)               |
 +----------------------+-------------------------------------------+
-| ``error``            | Error message                             |
+| ``message``          | Error message                             |
 +----------------------+-------------------------------------------+
 
 Output formats
