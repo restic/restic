@@ -357,6 +357,30 @@ func TestBackendLoadCircuitBreaker(t *testing.T) {
 	test.Equals(t, notFound, err, "expected circuit breaker to reset, got %v")
 }
 
+func TestBackendLoadCircuitBreakerCancel(t *testing.T) {
+	cctx, cancel := context.WithCancel(context.Background())
+	be := mock.NewBackend()
+	be.OpenReaderFn = func(ctx context.Context, h backend.Handle, length int, offset int64) (io.ReadCloser, error) {
+		cancel()
+		return nil, errors.New("something")
+	}
+	nilRd := func(rd io.Reader) (err error) {
+		return nil
+	}
+
+	TestFastRetries(t)
+	retryBackend := New(be, 2, nil, nil)
+	// canceling the context should not trip the circuit breaker
+	err := retryBackend.Load(cctx, backend.Handle{Name: "other"}, 0, 0, nilRd)
+	test.Equals(t, context.Canceled, err, "unexpected error")
+
+	// reset context and check that the cirucit breaker does not return an error
+	cctx, cancel = context.WithCancel(context.Background())
+	defer cancel()
+	err = retryBackend.Load(cctx, backend.Handle{Name: "other"}, 0, 0, nilRd)
+	test.Equals(t, context.Canceled, err, "unexpected error")
+}
+
 func TestBackendStatNotExists(t *testing.T) {
 	// stat should not retry if the error matches IsNotExist
 	notFound := errors.New("not found")
