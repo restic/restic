@@ -103,10 +103,14 @@ func NewExclusiveLock(ctx context.Context, repo Unpacked) (*Lock, error) {
 
 var waitBeforeLockCheck = 200 * time.Millisecond
 
+// delay increases by factor 2 on each retry
+var initialWaitBetweenLockRetries = 5 * time.Second
+
 // TestSetLockTimeout can be used to reduce the lock wait timeout for tests.
 func TestSetLockTimeout(t testing.TB, d time.Duration) {
 	t.Logf("setting lock timeout to %v", d)
 	waitBeforeLockCheck = d
+	initialWaitBetweenLockRetries = d
 }
 
 func newLock(ctx context.Context, repo Unpacked, excl bool) (*Lock, error) {
@@ -170,8 +174,17 @@ func (l *Lock) checkForOtherLocks(ctx context.Context) error {
 	if l.lockID != nil {
 		checkedIDs.Insert(*l.lockID)
 	}
+	delay := initialWaitBetweenLockRetries
 	// retry locking a few times
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 4; i++ {
+		if i != 0 {
+			// sleep between retries to give backend some time to settle
+			if err := cancelableDelay(ctx, delay); err != nil {
+				return err
+			}
+			delay *= 2
+		}
+
 		// Store updates in new IDSet to prevent data races
 		var m sync.Mutex
 		newCheckedIDs := NewIDSet(checkedIDs.List()...)
@@ -211,6 +224,18 @@ func (l *Lock) checkForOtherLocks(ctx context.Context) error {
 		return &invalidLockError{err}
 	}
 	return err
+}
+
+func cancelableDelay(ctx context.Context, delay time.Duration) error {
+	// delay next try a bit
+	timer := time.NewTimer(delay)
+	select {
+	case <-ctx.Done():
+		timer.Stop()
+		return ctx.Err()
+	case <-timer.C:
+	}
+	return nil
 }
 
 // createLock acquires the lock by creating a file in the repository.
