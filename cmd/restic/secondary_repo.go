@@ -50,7 +50,7 @@ func initSecondaryRepoOptions(f *pflag.FlagSet, opts *secondaryRepoOptions, repo
 	f.StringVarP(&opts.PasswordFile, "from-password-file", "", "", "`file` to read the source repository password from (default: $RESTIC_FROM_PASSWORD_FILE)")
 	f.StringVarP(&opts.KeyHint, "from-key-hint", "", "", "key ID of key to try decrypting the source repository first (default: $RESTIC_FROM_KEY_HINT)")
 	f.StringVarP(&opts.PasswordCommand, "from-password-command", "", "", "shell `command` to obtain the source repository password from (default: $RESTIC_FROM_PASSWORD_COMMAND)")
-	f.BoolVar(&opts.InsecureNoPassword, "from-insecure-no-password", false, "use an empty password for the source repository, must be passed to every restic command (insecure)")
+	f.BoolVar(&opts.InsecureNoPassword, "from-insecure-no-password", false, "use an empty password for the source repository (insecure)")
 
 	opts.Repo = os.Getenv("RESTIC_FROM_REPOSITORY")
 	opts.RepositoryFile = os.Getenv("RESTIC_FROM_REPOSITORY_FILE")
