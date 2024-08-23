@@ -32,6 +32,7 @@ var cmdDebug = &cobra.Command{
 	Use:               "debug",
 	Short:             "Debug commands",
 	GroupID:           cmdGroupDefault,
+	DisableAutoGenTag: true,
 }
 
 var cmdDebugDump = &cobra.Command{
