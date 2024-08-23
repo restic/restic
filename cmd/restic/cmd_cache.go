@@ -28,6 +28,7 @@ EXIT STATUS
 Exit status is 0 if the command was successful.
 Exit status is 1 if there was any error.
 `,
+	GroupID:           cmdGroupDefault,
 	DisableAutoGenTag: true,
 	RunE: func(_ *cobra.Command, args []string) error {
 		return runCache(cacheOptions, globalOptions, args)

@@ -20,7 +20,7 @@ EXIT STATUS
 Exit status is 0 if the command was successful.
 Exit status is 1 if there was any error.
 `,
-	Hidden:            true,
+	GroupID:           cmdGroupAdvanced,
 	DisableAutoGenTag: true,
 	Run: func(_ *cobra.Command, _ []string) {
 		fmt.Printf("All Extended Options:\n")

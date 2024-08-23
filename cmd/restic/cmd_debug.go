@@ -29,8 +29,9 @@ import (
 )
 
 var cmdDebug = &cobra.Command{
-	Use:   "debug",
-	Short: "Debug commands",
+	Use:               "debug",
+	Short:             "Debug commands",
+	GroupID:           cmdGroupDefault,
 }
 
 var cmdDebugDump = &cobra.Command{

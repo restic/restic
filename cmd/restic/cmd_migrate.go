@@ -29,6 +29,7 @@ Exit status is 11 if the repository is already locked.
 Exit status is 12 if the password is incorrect.
 `,
 	DisableAutoGenTag: true,
+	GroupID:           cmdGroupDefault,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		term, cancel := setupTermstatus()
 		defer cancel()
